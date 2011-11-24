@@ -1,0 +1,8 @@
+useDynLib(riskRegression)
+export("ARR",
+       "LRR",
+       "FGR")
+
+S3method(print,ARR)
+S3method(print,LRR)
+S3method(print,FGR)
