@@ -1,5 +1,11 @@
-print.riskRegression <- function(object, digits=3,eps=10^-4, verbose=TRUE,...) {
-  # {{{ echho model type, IPCW and link function
+summary.riskRegression <- function(object,
+                             times,
+                             digits=3,
+                             eps=10^-4,
+                             verbose=TRUE,
+                             ...) {
+  # {{{ echo model type, IPCW and link function
+  
   cat("\nriskRegression: Competing risks regression model \n")
   cat("\nIPCW estimation. The weights are based on\n",
       switch(object$censModel,
@@ -21,14 +27,11 @@ print.riskRegression <- function(object, digits=3,eps=10^-4, verbose=TRUE,...) {
 
   # }}}
   # {{{ find covariates and factor levels 
-
   cvars <- all.vars(object$design$const$formula)
   tvars <- all.vars(object$design$timevar$formula)
   Flevels <- object$factorLevels
-
   # }}}
   # {{{ time varying coefs
-
   if (!is.null(tvars)){
     cat("\nCovariates with time-varying effects:\n\n")
     nix <- lapply(tvars,function(v){
@@ -41,20 +44,23 @@ print.riskRegression <- function(object, digits=3,eps=10^-4, verbose=TRUE,...) {
     })
   }
   if (length(tvars)==0){
-    cat("No covariates with time-varying coefficient specified.\n")
+    cat("None.")
   }
   else{
     cat("\nThe effects of these variables depend on time.")
   }
   cat("The column 'Intercept' is the baseline risk")
   cat(" where all the covariates have value zero\n\n")
-  showTimes <- sindex(eval.times=quantile(object$time),jump.times=object$time)
+  if (missing(times)) times <- quantile(object$time)
+  showTimes <- sindex(eval.times=times,jump.times=object$time)
   showMat <- signif(exp(object$timeVaryingEffects$coef[showTimes,-1,drop=FALSE]),digits)
   rownames(showMat) <- signif(object$timeVaryingEffects$coef[showTimes,1],2)
   print(showMat)
-  cat("\nShown are selected time points, use 'plot.riskRegression' to investigate the full shape.\n\n")
+  cat("\nShown are selected time points, use\n\nplot.riskRegression\n\nto investigate the full shape.\n\n")
+
   # }}}
   # {{{ time constant coefs
+
   if (!is.null(cvars)){
     cat("\nCovariates with time-constant effects:\n\n")
     nix <- lapply(cvars,function(v){
@@ -67,7 +73,7 @@ print.riskRegression <- function(object, digits=3,eps=10^-4, verbose=TRUE,...) {
     })
   }
   cat("\nTime constant regression coefficients:\n\n")
-  if (is.null(object$timeConstantEffects$coef)){
+  if (is.null(object$timeConstantEffects)){
     cat("\nNone.\n")
     coefMat <- NULL
   }
@@ -108,6 +114,7 @@ print.riskRegression <- function(object, digits=3,eps=10^-4, verbose=TRUE,...) {
                   paste("\t",x," (power=",as.character(object$design$const$specialArguments[[x]]),")\n",sep="")}),
                 "are interpreted as per factor unit  multiplied by time^power.\n",sep=""))
   }
+
   # }}}
   invisible(coefMat)
 }

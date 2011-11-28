@@ -53,7 +53,7 @@ Research report 11/7. Department of Biostatistics, University of Copenhagen
 }
 \examples{
 \dontrun{
-library(cmprisk)
+library(cmprsk)
 }
 d <- prodlim:::SimCompRisk(100)
 f1 <- FGR(Hist(time,cause)~X1+X2,data=d)
@@ -85,7 +85,7 @@ f5 <- FGR(Hist(time,cause)~cov2(X1,tf=qFun)+cov2(X2),data=d)
 f5a <- FGR(Hist(time,cause)~cov2(X1,tf=qFun)+cov2(X2,tf=noFun),data=d)
 
 ## multiply X1 by time^2 and X2 by sqrt(time)
-f5b <- FGR(Hist(time,cause)~cov2(X1,tf=qFun)+cov2(X2,tf=sqFun),data=d)
+f5b <- FGR(Hist(time,cause)~cov2(X1,tf=qFun)+cov2(X2,tf=sqFun),data=d,cause=1)
 
 }
 % Add one or more standard keywords, see file 'KEYWORDS' in the

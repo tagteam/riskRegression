@@ -7,12 +7,11 @@ check.code("riskRegression")
 ttt <- seq(0,80,1)
 f <- riskRegression(Hist(time,cause)~X1+X2,times=ttt,link="relative",data=d)
 b <- ARR(Hist(time,cause)~X1+X2,times=ttt,data=d)
+
+b2 <- ARR(Hist(time,cause)~pow(X1)+X2,times=ttt,data=d)
+
 fg <- riskRegression(Hist(time,cause)~X1+X2,times=ttt,link="prop",data=d)
 fl <- LRR(Hist(time,cause)~X1+X2,times=ttt,data=d)
-
-
-
-
 
 ## set.seed(17)
 ttt <- seq(0,4,.1)

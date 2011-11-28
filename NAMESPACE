@@ -1,8 +1,15 @@
 useDynLib(riskRegression)
 export("ARR",
        "LRR",
-       "FGR")
+       "FGR",
+       "cumincCox",
+       "riskRegression")
 
-S3method(print,ARR)
-S3method(print,LRR)
+S3method(print,cumincCox)
 S3method(print,FGR)
+S3method(print,riskRegression)
+
+S3method(predict,riskRegression)
+S3method(predict,FGR)
+
+S3method(summary,riskRegression)
