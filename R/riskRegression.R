@@ -3,9 +3,9 @@ riskRegression <- function(formula,
                            times,
                            link="relative",
                            cause,
-                           resample.iid=1,
+                           confint=TRUE,
                            cens.model,
-                           n.sim=0,
+                           numSimu=0,
                            silent=1,
                            maxiter=50,
                            convLevel=6,
@@ -28,8 +28,7 @@ riskRegression <- function(formula,
                   "prop"=2,     # Proportional hazards (Cox, FG)
                   "logistic"=3, # Logistic absolute risks 
                   "relative"=4) # Relative absolute risks
-  if (n.sim==0) sim <- 0 else sim <- 1
-  nSimu <- n.sim
+  if (numSimu==0) sim <- 0 else sim <- 1
 
   # }}}
   # {{{ check if formula has the form Hist(time,event)~X1+X2+...
@@ -52,7 +51,11 @@ riskRegression <- function(formula,
   m <- m[match(c("","formula","data","subset","na.action"),names(m),nomatch = 0)]
   m[[1]]  <-  as.name("model.frame")
   if (missing(data)) stop("Argument 'data' is missing")
-  formList <- readFormula(formula,specials=c("const","timevar","cluster"),specialArgumentNames=list("const"="power","timevar"="test"),unspecified="const")
+  formList <- readFormula(formula,
+                          specials=c("const","timevar","cluster"),
+                          specialArgumentNames=list("const"="power","timevar"="test"),
+                          alias=list("tp"="const","strata"="timevar"),
+                          unspecified="const")
   ##   formList <- readFormula(formula,specials=c("tv","cluster"),unspecified="const")
   m$formula <- formList$allVars
   theData <- eval(m, parent.frame())
@@ -149,7 +152,7 @@ riskRegression <- function(formula,
     refLevelsZ <- attr(Z,"refLevels")
     specArgsZ <- formList$const$specialArguments
     default.timePower <- 0
-    if (is.null(specArgsZ)){
+    if (all(sapply(specArgsZ,is.null))){
       timePower <- rep(default.timePower,dimZ)
     }
     else{
@@ -158,14 +161,17 @@ riskRegression <- function(formula,
         if (!wo)
           wo <- match(strsplit(z,":.*")[[1]],names(specArgsZ),nomatch=FALSE)
         if (!wo){
-          NULL
-          warning("Cannot identify timepower for ",z)
-        } else{
-          specArgsZ[[wo]]$power
+          message("Timepower for ",z," set to ",default.timePower)
+          wo <- NULL
         }
-      })
+        if (is.null(wo)||is.null(specArgsZ[[wo]]$power))
+          default.timePower
+        else
+            specArgsZ[[wo]]$power
+        })
       stopifnot(length(timePower)==dimZ)
     }
+    ## print(timePower)
     timePower <- as.numeric(timePower)
     names(timePower) <- colnames(Z)
     stopifnot(length(timePower)==dimZ)
@@ -199,11 +205,11 @@ riskRegression <- function(formula,
   iData$istatus <- response[,"status"]
   iFormula <- as.formula(paste("Surv(itime,istatus)","~",as.character(formula)[[3]]))
   if (missing(cens.model)) cens.model <- "KM"
-  imodel <- switch(cens.model,"KM"="marginal","cox"="cox","aalen"="aalen","uncensored"="none")
+  imodel <- switch(tolower(cens.model),"KM"="marginal","cox"="cox","aalen"="aalen","uncensored"="none")
   Gcx <- subjectWeights(formula=iFormula,data=iData,method=cens.model,lag=1)$weights
   # }}}
   # {{{ prepare fitting
-  if (resample.iid == 1){
+  if (confint == TRUE){
     biid  <-  double(ntimes* antclust * dimX);
     gamiid <-  double(antclust *dimZ);
   } else {
@@ -231,8 +237,8 @@ riskRegression <- function(formula,
             est=double(ntimes*(dimX+1)),
             var=double(ntimes*(dimX+1)),
             as.integer(sim),
-            as.integer(nSimu),
-            test=double(nSimu*3*dimX),
+            as.integer(numSimu),
+            test=double(numSimu*3*dimX),
             testOBS=double(3*dimX),
             Ut=double(ntimes*(dimX+1)),
             simUt=double(ntimes*50*dimX),
@@ -249,7 +255,7 @@ riskRegression <- function(formula,
             as.integer(detail),
             biid=as.double(biid),
             gamiid=as.double(gamiid),
-            as.integer(resample.iid),
+            as.integer(as.numeric(confint)),
             as.double(timePower),
             as.integer(clusters),
             as.integer(antclust),
@@ -281,7 +287,7 @@ riskRegression <- function(formula,
   ##   time power test
   testedSlope <- out$gamma2
   names(testedSlope) <- colnamesX
-  if (resample.iid==1)  {
+  if (confint==1)  {
     biid <- matrix(out$biid,ntimes,antclust*dimX)
     if (fixed==1) gamiid <- matrix(out$gamiid,antclust,dimZ) else gamiid <- NULL
     B.iid <- list()
@@ -298,7 +304,7 @@ riskRegression <- function(formula,
     for (i in (0:49)*dimX) UIt[[i/dimX+1]] <- as.matrix(simUt[,i+(1:dimX)])
     Ut <- matrix(out$Ut,ntimes,dimX+1)
     colnames(Ut) <-  c("time",colnamesX)
-    test <- matrix(out$test,nSimu,3*dimX)
+    test <- matrix(out$test,numSimu,3*dimX)
     testOBS <- out$testOBS
     supUtOBS <- apply(abs(Ut[,-1,drop=FALSE]),2,max)
     # {{{ confidence bands
@@ -369,7 +375,7 @@ riskRegression <- function(formula,
              factorLevels=c(factorLevelsX,factorLevelsZ),
              refLevels=c(refLevelsX,refLevelsZ))
 
-  if (resample.iid && sim==1)
+  if (confint && sim==1)
     ud <- c(ud,list(resampleResults=list(conf.band=unifCI,
                       B.iid=B.iid,
                       gamma.iid=gamiid,

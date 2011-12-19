@@ -1,62 +1,22 @@
 \name{riskRegression}
 \alias{riskRegression}
-\title{Competings Risks Regression} 
+\alias{ARR}
+\alias{LRR}
+\title{Risk Regression} 
 \description{
-Fits a semiparametric regression model for the cumulative incidence function:
-\deqn{
-P(T < t, cause=1 | x,z) = P_1(t,x,z) = h(g(t,x,z))
-}
-for a known link-function \eqn{h()},
-predictor variables with time-constant effect z,
-predictor variables with time-varying effect x, 
-and known prediction-function \eqn{g(t,x,z)}.
-for the probability of dying from cause 1 in a situation with 
-competing causes of death. 
-
-We consider the following models :
-
-(default) the "relative" model where
-\eqn{h(x)=\exp(-x)} and 
-\deqn{
-  g(t,x,z) = x^T A(t) + (diag(t^p) z)^T \beta
-}
-
-The interpretation of the regression coefficients 
-
-(optional) the additive model where
-\eqn{h(x)=1-\exp(-x)} and 
-\deqn{
-g(t,x,z) = x^T A(t) + (diag(t^p) z)^T \beta
-
-}
-2)  
-the proportional setting that includes the Fine & Gray (FG) model and
-some extensions where 
-\eqn{h(x)=1-\exp(-\exp(x))} and 
-\deqn{
-g(t,x,z) = \exp(x^T A(t) + (diag(t^p) z)^T \beta)
-}
-The FG model is obtained when \eqn{x=1}. 
-
-3) a logistic model where 
-\eqn{h(x)=\exp(x)/( 1+\exp(x))} and 
-\deqn{
-g(t,x,z) = x^T A(t) + (diag(t^p) z)^T \beta
-}
-
-Where p by default is 1 for the additive model and 0 for 
-the other models.
-In general p may be powers of the same length as z. 
+  Fits a regression model for the risk of an event -- allowing for competing risks.
 }
 \usage{
+ARR(formula, data, times,cause,...)
+LRR(formula, data, times,cause,...)
 riskRegression(formula,
-	 data = sys.parent(),
-	 times = NULL,
+	 data,
+	 times,
 	 link = "relative",
-	 cause = 1,
+	 cause,
 	 resample.iid = 1,
-	 cens.model = "KM",
-	 n.sim = 500,
+	 cens.model,
+	 numSim = 0,
 	 maxiter = 50,
 	 silent = 1,
 	 convLevel = 6,
@@ -64,45 +24,53 @@ riskRegression(formula,
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
-  \item{formula}{
-    Example: Hist(time,status)~age + const(sex,power=1)
+  \item{formula}{ Formula where the left hand side specifies the
+    event history response and the right hand side the linear predictor.
+    See examples.
   }
   \item{data}{
+    The data for fitting the model in which includes all the variables included in formula.
   }
   \item{times}{
     Vector of times. For each time point in \code{times} estimate the baseline risk and the timevarying
     coefficients.
   }
-  \item{link}{
+  \item{link}{\code{"relative"} for the absolute risk regression model.
+    \code{"logistic"} for the logistic risk regression model.
+    \code{"prop"} for the Fine-Gray regression model.
   }
   \item{cause}{
     The cause of interest. 
   }
-  \item{resample.iid}{
-%%     ~~Describe \code{resample.iid} here~~
+  \item{confint}{
+    If \code{TRUE} return the iid decomposition, that can be used to construct confidence bands for predictions.
 }
-  \item{cens.model}{
-%%     ~~Describe \code{cens.model} here~~
+\item{cens.model}{
+  Specified the model for the (conditional) censoring distribution used for deriving
+  weights (ICPW). Defaults to "KM" (the Kaplan-Meier method ignoring
+  covariates) alternatively it may be "Cox" (Cox regression).
 }
-  \item{n.sim}{
-%%     ~~Describe \code{n.sim} here~~
+\item{numSimu}{
+  Number of simulations in resampling.
 }
-  \item{maxiter}{
-%%     ~~Describe \code{maxiter} here~~
+\item{silent}{
+  Set this to \code{0} to see some system messages during fitting.
+  }
+\item{maxiter}{
+  Maximal number of iterations.
 }
-  \item{silent}{
-%%     ~~Describe \code{silent} here~~
-}
-  \item{convLevel}{
-%%     ~~Describe \code{convLevel} here~~
-}
+\item{convLevel}{
+  Integer between 1 and 10, specifying the
+  convergence  criterion for the fitting algorithm 
+  as \code{10^{-convLevel}}. 
+  }
   \item{\dots}{
-%%     ~~Describe \code{\dots} here~~
+    Not used.
 }
 }
-\details{
-%%  ~~ If necessary, more details than the description above ~~
-}
+ \details{
+   This is a sister of the function \code{comp.risk} (timereg package).
+ }
 \value{
 %%  ~Describe the value returned
 %%  If it is a LIST, use
@@ -111,59 +79,105 @@ riskRegression(formula,
 %% ...
 }
 \references{
-%% ~put references to the literature/web site here ~
+Scheike, Zhang and Gerds (2008), Predicting cumulativeincidence probability by direct binomial regression,Biometrika, 95, 205-220.           
+
+Scheike and Zhang (2007), Flexible competing risks regression modelling and goodness of fit, LIDA, 14, 464-483.
+
+Martinussen and Scheike (2006), Dynamic regression models for survival data, Springer.
 }
 \author{
-%%  ~~who you are~~
+  Thomas H. Scheike
+  \email{ts@biostat.ku.dk}
+  
+  Thomas A. Gerds
+  \email{tag@biostat.ku.dk} 
 }
-\note{
+% \note{
 %%  ~~further notes~~
-}
+% }
 
 %% ~Make other sections like Warning with \section{Warning }{....} ~
 
-\seealso{
+% \seealso{
 %% ~~objects to See Also as \code{\link{help}}, ~~~
-}
+% }
 \examples{
 
 data(Melanoma)
 
-## 1. a single binary factor 
-## absolute risk regression
+# {{{ Single binary factor
+
+## absolute risk regression 
 fit.arr <- ARR(Hist(time,status)~sex,data=Melanoma,cause=1)
-summary(fit.arr)
-pred.arr <- predict(fit.arr,newdata=data.frame(sex=c("Female","Male")))
+print(fit.arr)
+# show predicted cumulative incidences
+plot(fit.arr,col=3:4,newdata=data.frame(sex=c("Female","Male")))
+
+## compare with non-parametric Aalen-Johansen estimate
+library(prodlim)
+fit.aj <- prodlim(Hist(time,status)~sex,data=Melanoma)
+plot(fit.aj,confint=FALSE)
+plot(fit.arr,add=TRUE,col=3:4,newdata=data.frame(sex=c("Female","Male")))
+
+## with time-dependent effect
+fit.tarr <- ARR(Hist(time,status)~strata(sex),data=Melanoma,cause=1)
+plot(fit.tarr,newdata=data.frame(sex=c("Female","Male")))
 
 ## logistic risk regression
 fit.lrr <- LRR(Hist(time,status)~sex,data=Melanoma,cause=1)
 summary(fit.lrr)
-pred.lrr <- predict(fit.lrr,newdata=data.frame(sex=c("Female","Male")))
 
-## non-parametric Aalen-Johansen estimate
+# }}}
+
+# {{{ Single continuous factor
+
+## tumor thickness on the log-scale
+Melanoma$logthick <- log(Melanoma$thick)
+
+## absolute risk regression 
+fit2.arr <- ARR(Hist(time,status)~logthick,data=Melanoma,cause=1)
+print(fit2.arr)
+# show predicted cumulative incidences
+plot(fit2.arr,col=1:5,newdata=data.frame(logthick=quantile(Melanoma$logthick)))
+
+## comparison with nearest neighbor non-parametric Aalen-Johansen estimate
 library(prodlim)
-fit.aj <- prodlim(Hist(time,status)~sex,data=Melanoma)
-plot(fit.aj,confint=FALSE)
+fit2.aj <- prodlim(Hist(time,status)~logthick,data=Melanoma)
+plot(fit2.aj,confint=FALSE,newdata=data.frame(logthick=quantile(Melanoma$logthick)))
+plot(fit2.arr,add=TRUE,col=1:5,lty=3,newdata=data.frame(logthick=quantile(Melanoma$logthick)))
 
-plot(pred.arr)
-lines(pred.arr$time,pred.arr$cuminc[1,],col=1,lty=3,type="s",lwd=3)
-lines(pred.arr$time,pred.arr$cuminc[2,],col=2,lty=3,type="s",lwd=3)
 
-lines(pred.lrr$time,pred.lrr$cuminc[1,],col=1,lty=2,type="s",lwd=3)
-lines(pred.lrr$time,pred.lrr$cuminc[2,],col=2,lty=2,type="s",lwd=3)
+## logistic risk regression
+fit2.lrr <- LRR(Hist(time,status)~logthick,data=Melanoma,cause=1)
+summary(fit2.lrr)
 
-# a single continuous factor
-# absolute risk regression
-fit.arr2 <- ARR(Hist(time,status)~thick,data=Melanoma,cause=1)
+##  compare prediction errors
+plot(pec(list(ARR=fit2.arr,AJ=fit2.aj,LRR=fit2.lrr),data=Melanoma,maxtime=3000))
+
+# }}}
+
+# {{{ multiple regression
+
+# absolute risk model
+multi.arr <- ARR(Hist(time,status)~logthick+sex+age+ulcer,data=Melanoma,cause=1)
+
+# stratified model allowing different baseline risk for the two gender
+multi.arr <- ARR(Hist(time,status)~thick+strata(sex)+age+ulcer,data=Melanoma,cause=1)
+
+# stratify by a continuous variable
+multi.arr <- ARR(Hist(time,status)~tp(thick,power=1)+strata(sex)+age+ulcer,data=Melanoma,cause=1)
+
 fit.arr2a <- ARR(Hist(time,status)~const(thick,power=1),data=Melanoma,cause=1)
 fit.arr2b <- ARR(Hist(time,status)~timevar(thick),data=Melanoma,cause=1)
 summary(fit.arr)
-pred.arr <- predict(fit.arr,newdata=data.frame(sex=c("Female","Male")))
 
-## logistic risk regression
+## logistic risk model
 fit.lrr <- LRR(Hist(time,status)~thick,data=Melanoma,cause=1)
 summary(fit.lrr)
-pred.lrr <- predict(fit.lrr,newdata=data.frame(thick=Melanoma$thick))
+
+# }}}
+
+
 
 ## nearest neighbor non-parametric Aalen-Johansen estimate
 library(prodlim)

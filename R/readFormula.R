@@ -1,4 +1,8 @@
-readFormula <- function(formula,specials,specialArgumentNames,unspecified="unSpec"){
+readFormula <- function(formula,
+                        specials,
+                        specialArgumentNames,
+                        alias,
+                        unspecified="unSpec"){
   # {{{ check formula and convert to character
   if (length(grep(":|\\*",formula))>0)
     stop("Interaction terms are not allowed")
@@ -12,7 +16,7 @@ readFormula <- function(formula,specials,specialArgumentNames,unspecified="unSpe
   # {{{ split the rhs into terms
   rhs <- ff[[3]]
   terms <- strsplit(rhs,"\\+|\\-")[[1]]
-  terms <- sapply(terms,function(tt){## remove whitespace
+  terms <- sapply(terms,function(tt){ ## remove whitespace
     gsub(" ","",tt)
   })
   # }}}
@@ -37,10 +41,21 @@ readFormula <- function(formula,specials,specialArgumentNames,unspecified="unSpe
   ##   listTerms <- listTerms[-grep("^[0-9]+$",terms,value=FALSE)]
   isSpecial <- sapply(listTerms,length)
   specialNames <- sapply(listTerms[isSpecial==2],function(x){x[[1]]})
+  # {{{ resolve alias names
+  if (!missing(alias)){
+    isAlias <- match(specialNames,names(alias),nomatch=0)
+    if (any(isAlias>0)){
+      specialNames[isAlias!=0] <- alias[isAlias]
+    }}
+  # }}}
   if (any(isSpecial>2))
     stop("Mispecified formula: constructions like 'const(factor(sex))' are not supported")
   if (any(notFound <- match(specialNames,specials,nomatch=0)==0))
-    stop("Mispecified formula: special(s) '",paste(specialNames[notFound],collapse=" and "),"' are not supported")
+    stop("Mispecified formula: special(s) '",
+         paste(specialNames[notFound],collapse=" and "),
+         "' ",
+         ifelse(length(notFound)>1,"are","is"),
+         " not supported")
   # }}}
   # {{{ find special variable names and extra arguments
   listTermsWithArguments <- unlist(lapply(listTerms[isSpecial==2],function(x)strsplit(x[[2]],",")),recursive=FALSE)
@@ -63,7 +78,7 @@ readFormula <- function(formula,specials,specialArgumentNames,unspecified="unSpe
       args <- specialArguments[[i]]
       if (!is.null(args)){
         fullvalue <- strsplit(args,"=")
-        fullvalue <- lapply(fullvalue,function(x){## remove whitespace
+        fullvalue <- lapply(fullvalue,function(x){ ## remove whitespace
           gsub(" ","",x)
         })
         givennames <- sapply(fullvalue,function(x){
@@ -78,7 +93,7 @@ readFormula <- function(formula,specials,specialArgumentNames,unspecified="unSpe
           else
             x[[2]]
         })
-        specName <- specialNames[i]
+        specName <- specialNames[[i]]
         if (is.null(specialArgumentNames[[specName]]))
           wantednames <- paste("Arg",1:length(args),sep=".")
         else{

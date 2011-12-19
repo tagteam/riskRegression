@@ -1,5 +1,10 @@
-print.riskRegression <- function(object, digits=3,eps=10^-4, verbose=TRUE,...) {
-  # {{{ echho model type, IPCW and link function
+print.riskRegression <- function(object,
+                                 times,
+                                 digits=3,
+                                 eps=10^-4,
+                                 verbose=TRUE,
+                                 ...) {
+  # {{{ echo model type, IPCW and link function
   cat("\nriskRegression: Competing risks regression model \n")
   cat("\nIPCW estimation. The weights are based on\n",
       switch(object$censModel,
@@ -11,12 +16,14 @@ print.riskRegression <- function(object, digits=3,eps=10^-4, verbose=TRUE,...) {
   summary(object$response)
   ##   cat("\n",rep("_",options()$width/2),"\n",sep="")
   cat("\nLink function: \'",
+      switch(object$link,"prop"="proportional","logistic"="logistic","additive"="additive","relative"="relative"),
+      "\' yielding ",
       switch(object$link,
-             "prop"="proportional (Fine & Gray 1999)",
-             "logistic"="logistic",
-             "additive"="additive",
-             "relative"="relative"),
-      "\', see help(riskRegression)\n",
+             "prop"="sub-hazard ratios (Fine & Gray 1999)",
+             "logistic"="odds ratios",
+             "additive"="absolute risk differences",
+             "relative"="absolute risk ratios"),
+      ", see help(riskRegression).\n",
       sep="")
 
   # }}}
@@ -48,11 +55,13 @@ print.riskRegression <- function(object, digits=3,eps=10^-4, verbose=TRUE,...) {
   }
   cat("The column 'Intercept' is the baseline risk")
   cat(" where all the covariates have value zero\n\n")
-  showTimes <- sindex(eval.times=quantile(object$time),jump.times=object$time)
+  if (missing(times)) times <- quantile(object$time)
+  showTimes <- sindex(eval.times=times,jump.times=object$time)
   showMat <- signif(exp(object$timeVaryingEffects$coef[showTimes,-1,drop=FALSE]),digits)
   rownames(showMat) <- signif(object$timeVaryingEffects$coef[showTimes,1],2)
   print(showMat)
-  cat("\nShown are selected time points, use 'plot.riskRegression' to investigate the full shape.\n\n")
+  cat("\nShown are selected time points, use\n\nplot.riskRegression\n\nto investigate the full shape.\n\n")
+
   # }}}
   # {{{ time constant coefs
   if (!is.null(cvars)){
@@ -67,7 +76,7 @@ print.riskRegression <- function(object, digits=3,eps=10^-4, verbose=TRUE,...) {
     })
   }
   cat("\nTime constant regression coefficients:\n\n")
-  if (is.null(object$timeConstantEffects$coef)){
+  if (is.null(object$timeConstantEffects)){
     cat("\nNone.\n")
     coefMat <- NULL
   }
@@ -98,16 +107,24 @@ print.riskRegression <- function(object, digits=3,eps=10^-4, verbose=TRUE,...) {
       }
       out
     }))
-    colnames(coefMat) <- c("Factor","Coef","exp(Coef)","StandardError","z","Pvalue")
-    rownames(coefMat) <- rep("",NROW(coefMat))
-    print(coefMat,quote=FALSE,right=TRUE)
-    tp <- sapply(object$design$const$specialArguments,function(x)!is.null(x$power))
-    if (any(tp))
-      cat(paste("\n\nNote:The coeffient(s) for the following variable(s)\n",
-                sapply(names(object$design$const$specialArguments[tp]),function(x){
-                  paste("\t",x," (power=",as.character(object$design$const$specialArguments[[x]]),")\n",sep="")}),
-                "are interpreted as per factor unit  multiplied by time^power.\n",sep=""))
+    if (!is.null(coefMat)){
+      colnames(coefMat) <- c("Factor","Coef","exp(Coef)","StandardError","z","Pvalue")
+      rownames(coefMat) <- rep("",NROW(coefMat))
+      print(coefMat,quote=FALSE,right=TRUE)
+      cat(paste("\n\nNote: The values exp(Coef) are",switch(object$link,
+                                                            "prop"="sub-hazard ratios (Fine & Gray 1999)",
+                                                            "logistic"="odds ratios",
+                                                            "additive"="absolute risk differences",
+                                                            "relative"="absolute risk ratios")),"\n")
+      tp <- sapply(object$design$const$specialArguments,function(x)!is.null(x$power))
+      if (any(tp))
+        cat(paste("\n\nNote:The coeffient(s) for the following variable(s)\n",
+                  sapply(names(object$design$const$specialArguments[tp]),function(x){
+                    paste("\t",x," (power=",as.character(object$design$const$specialArguments[[x]]),")\n",sep="")}),
+                  "are interpreted as per factor unit  multiplied by time^power.\n",sep=""))
+    }
   }
+
   # }}}
   invisible(coefMat)
 }

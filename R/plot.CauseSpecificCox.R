@@ -1,22 +1,23 @@
-plot.riskRegression <- function(x,
-                                what,
-                                newdata,
-                                add=FALSE,
-                                xlab,
-                                ylab,
-                                xlim,
-                                ylim,
-                                lwd,
-                                col,
-                                lty,
-                                grid=FALSE,
-                                axes=TRUE,
-                                percent=TRUE,
-                                ...){
+plot.CauseSpecificCox <- function(x,
+                                  cause,
+                                  newdata,
+                                  add=FALSE,
+                                  xlab,
+                                  ylab,
+                                  xlim,
+                                  ylim,
+                                  lwd,
+                                  col,
+                                  lty,
+                                  grid=FALSE,
+                                  axes=TRUE,
+                                  percent=TRUE,
+                                  ...){
   # {{{ getting predicted risk
-  plot.times <- x$time
+  if (missing(cause)) cause <- x$theCause
+  plot.times <- x$response[,"time"]
   if (missing(newdata)){
-    P1 <- predict(x,newdata=eval(x$call$data),time=plot.times)$cuminc
+    P1 <- predictEventProb(x,newdata=eval(x$call$data),time=plot.times)
     medianP1 <- P1[,sindex(plot.times,median(plot.times))]
     P1 <- P1[order(medianP1),]
     p1 <- P1[round(quantile(1:NROW(P1))),]
@@ -101,5 +102,5 @@ plot.riskRegression <- function(x,
   ## par(xpd=TRUE)
   ## do.call("legend",smartA$legend)
   ## par(xpd=save.xpd)
-# }}}
+  # }}}
 }

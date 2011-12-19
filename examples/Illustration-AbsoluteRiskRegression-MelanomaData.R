@@ -7,167 +7,111 @@ library(pec)    ## to estimate the prediction performance
 ## install.packages("pec", repos = "http://R-Forge.R-project.org")
 ## may need most recent version of prodlim 
 ## install.packages("prodlim", repos = "http://R-Forge.R-project.org")
-library(cmprsk) ## for comparison with Fine-Gray model
+library(cmprsk) ## for comparison with the Fine-Gray model
 data(Melanoma)
+help(Melanoma)
 # }}}
 
-# {{{ a single categorical factor
-
-## Stratified Aalen-Johansen 
-np.inv <- prodlim(Hist(time,status)~invasion,data=Melanoma)
-
+# {{{ fitting different models
 ## Absolute risk regression
-arr.inv <- ARR(Hist(time,status)~invasion,data=Melanoma,cause=1)
-print(arr.inv)
+arr.fit <- ARR(Hist(time,status)~invasion+sex+epicel+ulcer+age+thick,data=Melanoma,cause=1)
+print(arr.fit)
 
 ## Logistic risk regression
-lrr.inv <- LRR(Hist(time,status)~invasion,data=Melanoma,cause=1)
-print(lrr.inv)
+lrr.fit <- LRR(Hist(time,status)~invasion+sex+epicel+ulcer+age+thick,data=Melanoma,cause=1)
+print(lrr.fit)
 
 ## Fine-Gray regression model
-fg.inv <- FGR(Hist(time,status)~invasion,data=Melanoma,cause=1)
-print(fg.inv)
+fg.fit <- FGR(Hist(time,status)~invasion+sex+epicel+ulcer+age+thick,data=Melanoma,cause=1)
+print(fg.fit)
 
 ## combined cause-specific Cox models
-cox.inv <- cumincCox(Hist(time,status)~invasion,data=Melanoma)
-print(cox.inv)
+cox.fit <- CSC(Hist(time,status)~invasion+sex+epicel+ulcer+age+thick,data=Melanoma)
+print(cox.fit)
+# }}}
 
-## comparison of predictions
-## e.g. ARR versus combined Cox regression
-## after 5 years = 1826.25 days
-newd <- data.frame(invasion=levels(Melanoma$invasion))
-p.arr <- predictEventProb(arr.inv,times=1826.25,newdata= newd)
-p.lrr <- predictEventProb(lrr.inv,times=1826.25,newdata= newd)
-p.fg <- predictEventProb(fg.inv,times=1826.25,newdata= newd)
-p.cox <- predictEventProb(cox.inv,times=1826.25,newdata= newd)
-x <- data.frame(newd,
-           ARR=round(100*p.arr,1),
-           LRR=round(100*p.lrr,1),
-           FGR=round(100*p.fg,1),
-           CoxR=round(100*p.cox,1))
-cat("\nPredicted probabilities of death\n due to malignant melanoma after 5 years\n\n")
-print(x)
-
-
-
-## prediction error
-perr <- pec(list(Strat.AJ=np.inv,AbsRisk=arr.inv,LogisticRisk=lrr.inv,FineGray=fg.inv),formula=Hist(time,status)~invasion,data=Melanoma,maxtime=3000)
-plot(perr)
-## conclusion: all models have similar prediction performance
+# {{{ 
 
 # }}}
 
-# {{{ combining several categorical factors
+# {{{ model checking for the ARR
 
-## Absolute risk regression
-arr.strat <- ARR(Hist(time,status)~invasion+sex+epicel+ulcer,data=Melanoma,cause=1)
-print(arr.strat)
+## model with time-varying effect for invasion, ulcer and age
+times <- sort(unique(Melanoma$time[Melanoma$time>800]))
+tarr.fit <- ARR(Hist(time,status)~timevar(invasion)+sex+epicel+timevar(ulcer)+timevar(age)+thick,data=Melanoma,cause=1,times=times)
+## comp.fit <- comp.risk(Surv(time,status!=0)~invasion+const(sex)+const(epicel)+ulcer+age+const(thick),data=Melanoma,cause=Melanoma$status,causeS=1,model="rcif",time.pow=0)
+## comp.fit$var.cum
+## comp.fit$cum
+## plot(comp.fit,specific.comp=3)
+## plot(comp.fit,score=1,xlim=c(800,3000))
 
-## Logistic risk regression
-lrr.strat <- LRR(Hist(time,status)~invasion+sex+epicel+ulcer,data=Melanoma,cause=1)
-print(lrr.strat)
+plotCoef(tarr.fit,~invasion,xlim=c(800,3000),ylim=c(-4,4))
 
-## Fine-Gray regression model
-fg.strat <- FGR(Hist(time,status)~invasion+sex+epicel+ulcer,data=Melanoma,cause=1)
-print(fg.strat)
+plotEffects(tarr.fit,~invasion,xlim=c(800,3000),ylim=c(-4,4))
+
+plotEffects(tarr.fit,~ulcer,xlim=c(800,3000))
+plotEffects(tarr.fit,~age,ylim=c(-0.1,0.1),xlim=c(800,3000))
+
+tarr.fit2 <- ARR(Hist(time,status)~invasion+sex+epicel+timevar(ulcer)+age+thick,data=Melanoma,cause=1,times=times)
+plotEffects(tarr.fit2,~ulcer,xlim=c(800,3000))
+# }}}
+
+# {{{ Show individual predictions
 
 ## combined cause-specific Cox models
-cox.strat <- cumincCox(Hist(time,status)~invasion+sex+epicel+ulcer,data=Melanoma)
-print(cox.strat)
+plotPredictEventProb(cox.fit,
+                     newdata=Melanoma,
+                     col=as.numeric(Melanoma$ulcer))
+## absolute risk regression model
+plotPredictEventProb(arr.fit,
+                     newdata=Melanoma,
+                     col=as.numeric(Melanoma$ulcer))
+## logistic risk regression model
+plotPredictEventProb(lrr.fit,
+                     newdata=Melanoma,
+                     col=as.numeric(Melanoma$ulcer))
+## Fine-Gray model
+plotPredictEventProb(fg.fit,
+                     newdata=Melanoma,
+                     col=as.numeric(Melanoma$ulcer))
 
-## comparison of predictions
-## e.g. ARR versus combined Cox regression
-## after 5 years = 1826.25 days
-plot(predictEventProb(arr.strat,times=1826.25,newdata=Melanoma),
-     predictEventProb(cox.strat,times=1826.25,newdata=Melanoma),
+# }}}
+
+# {{{ Comparison of predictions
+# e.g. ARR versus combined Cox regression
+# after 5 years = 1826.25 days
+plot(predictEventProb(arr.fit,times=1826.25,newdata=Melanoma),
+     predictEventProb(cox.fit,times=1826.25,newdata=Melanoma),
      main="Predicted probabilities of death due to malignant melanoma\nafter five years",
      xlim=c(0,1),
      ylim=c(0,1),
-     xlab="Absolute risk model",ylab="Combined cause-specific Cox models",
+     xlab="Absolute risk model",
+     ylab="Combined cause-specific Cox models",
      axes=FALSE)
 prodlim:::PercentAxis(1,at=seq(0,1,.25))
 prodlim:::PercentAxis(2,at=seq(0,1,.25))
 abline(a=0,b=1)
-
-## prediction error
-perr.strat <- pec(list(AbsRisk=arr.strat,LogisticRisk=lrr.strat,FineGray=fg.strat),formula=Hist(time,status)~invasion+sex+epicel+ulcer,data=Melanoma,maxtime=3000)
-summary(perr.strat,times=seq(0,3000,365.25))
-plot(perr.strat)
-
 # }}}
 
-# {{{ a single continuous variable
+# {{{ prediction error
 
-## Absolute risk regression
-## 
-arr.thick <- ARR(Hist(time,status)~thick,data=Melanoma,cause=1)
-arr.thick.timevar <- ARR(Hist(time,status)~timevar(thick),data=Melanoma,cause=1)
-arr.thick.timepower <- ARR(Hist(time,status)~const(thick,power=1),data=Melanoma,cause=1)
-print(arr.thick)
-print(arr.thick.timevar)
-print(arr.thick.timepower)
+## compare alternative link functions
+perr.link <- pec(list(AbsRisk=arr.fit,
+                       CSC=cox.fit,
+                       FineGray=fg.fit,
+                       LogisticRisk=lrr.fit),
+                  formula=Hist(time,status)~invasion+sex+epicel+ulcer+age+thick,
+                  data=Melanoma,
+                  maxtime=3000)
+plot(perr.link)
 
-## Logistic risk regression
-lrr.thick <- LRR(Hist(time,status)~thick,data=Melanoma,cause=1)
-print(lrr.thick)
-
-## Fine-Gray regression model
-fg.thick <- FGR(Hist(time,status)~thick,data=Melanoma,cause=1)
-print(fg.thick)
-
-## combined cause-specific Cox models
-cox.thick <- cumincCox(Hist(time,status)~thick,data=Melanoma)
-print(cox.thick)
-
-## prediction error
-## different versions of 
-perr.thick.arr <- pec(list(ARR.const=arr.thick,ARR.timevar=arr.thick.timevar,ARR.timepower=arr.thick.timepower),formula=Hist(time,status)~thick,data=Melanoma,maxtime=3000)
-plot(perr.thick.arr)
-## conclusion: model with thick * time does not fit very well
-
-perr.thick <- pec(list(AbsRisk=arr.thick,LogisticRisk=lrr.thick,FineGray=fg.thick),formula=Hist(time,status)~thick,data=Melanoma,maxtime=3000)
-plot(perr.thick)
-## conclusion: all models have similar prediction performance
-
-# }}}
-
-# {{{ mixture of categorical and continuous variables 
-
-## Absolute risk regression
-arr.multi <- ARR(Hist(time,status)~invasion+sex+epicel+ulcer+age+thick,data=Melanoma,cause=1)
-print(arr.multi)
-
-## Logistic risk regression
-lrr.multi <- LRR(Hist(time,status)~invasion+sex+epicel+ulcer+age+thick,data=Melanoma,cause=1)
-print(lrr.multi)
-
-## Fine-Gray regression model
-fg.multi <- FGR(Hist(time,status)~invasion+sex+epicel+ulcer+age+thick,data=Melanoma,cause=1)
-print(fg.multi)
-
-## combined cause-specific Cox models
-cox.multi <- cumincCox(Hist(time,status)~invasion+sex+epicel+ulcer+age+thick,data=Melanoma)
-print(cox.multi)
-
-
-## comparison of predictions
-## e.g. ARR versus combined Cox regression
-## after 5 years = 1826.25 days
-plot(predictEventProb(arr.multi,times=1826.25,newdata=Melanoma),
-     predictEventProb(cox.multi,times=1826.25,newdata=Melanoma),
-     main="Predicted probabilities of death due to malignant melanoma\nafter five years",
-     xlim=c(0,1),
-     ylim=c(0,1),
-     xlab="Absolute risk model",ylab="Combined cause-specific Cox models",
-     axes=FALSE)
-prodlim:::PercentAxis(1,at=seq(0,1,.25))
-prodlim:::PercentAxis(2,at=seq(0,1,.25))
-abline(a=0,b=1)
-
-
-## prediction error
-
-perr.multi <- pec(list(AbsRisk=arr.multi,LogisticRisk=lrr.multi,FineGray=fg.multi),formula=Hist(time,status)~invasion+sex+epicel+ulcer+age+thick,data=Melanoma,maxtime=3000)
-plot(perr.multi)
+## compare absrisk model with time-constant effects
+## to absrisk model where ulcer has a time-varying effect
+perr.tv <- pec(list("AbsRisk"=arr.fit,
+                 "AbsRisk: effect Ulcer timevar"=tarr.fit2),
+            formula=Hist(time,status)~invasion+sex+epicel+ulcer+age+thick,
+            data=Melanoma,
+            maxtime=3000)
+plot(perr.tv)
 
 # }}}

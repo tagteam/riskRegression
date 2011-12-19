@@ -2,12 +2,16 @@ useDynLib(riskRegression)
 export("ARR",
        "LRR",
        "FGR",
-       "cumincCox",
-       "riskRegression")
+       "CSC",
+       "riskRegression",
+       "plotEffects")
 
-S3method(print,cumincCox)
+S3method(print,CauseSpecificCox)
 S3method(print,FGR)
 S3method(print,riskRegression)
+
+S3method(plot,riskRegression)
+S3method(plot,CauseSpecificCox)
 
 S3method(predict,riskRegression)
 S3method(predict,FGR)

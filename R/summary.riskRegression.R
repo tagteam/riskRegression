@@ -17,12 +17,14 @@ summary.riskRegression <- function(object,
   summary(object$response)
   ##   cat("\n",rep("_",options()$width/2),"\n",sep="")
   cat("\nLink function: \'",
+      switch(object$link,"prop"="proportional","logistic"="logistic","additive"="additive","relative"="relative"),
+      "\' yielding ",
       switch(object$link,
-             "prop"="proportional (Fine & Gray 1999)",
-             "logistic"="logistic",
-             "additive"="additive",
-             "relative"="relative"),
-      "\', see help(riskRegression)\n",
+             "prop"="sub-hazard ratios (Fine & Gray 1999)",
+             "logistic"="odds ratios",
+             "additive"="absolute risk differences",
+             "relative"="absolute risk ratios"),
+      ", see help(riskRegression).\n",
       sep="")
 
   # }}}
@@ -44,7 +46,7 @@ summary.riskRegression <- function(object,
     })
   }
   if (length(tvars)==0){
-    cat("None.")
+    cat("No covariates with time-varying coefficient specified.\n")
   }
   else{
     cat("\nThe effects of these variables depend on time.")
@@ -60,7 +62,6 @@ summary.riskRegression <- function(object,
 
   # }}}
   # {{{ time constant coefs
-
   if (!is.null(cvars)){
     cat("\nCovariates with time-constant effects:\n\n")
     nix <- lapply(cvars,function(v){
@@ -107,6 +108,11 @@ summary.riskRegression <- function(object,
     colnames(coefMat) <- c("Factor","Coef","exp(Coef)","StandardError","z","Pvalue")
     rownames(coefMat) <- rep("",NROW(coefMat))
     print(coefMat,quote=FALSE,right=TRUE)
+    cat(paste("\n\nNote: The values exp(Coef) are",switch(object$link,
+                                                          "prop"="sub-hazard ratios (Fine & Gray 1999)",
+                                                          "logistic"="odds ratios",
+                                                          "additive"="absolute risk differences",
+                                                          "relative"="absolute risk ratios")),"\n")
     tp <- sapply(object$design$const$specialArguments,function(x)!is.null(x$power))
     if (any(tp))
       cat(paste("\n\nNote:The coeffient(s) for the following variable(s)\n",

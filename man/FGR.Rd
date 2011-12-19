@@ -2,7 +2,7 @@
 \alias{FGR}
 %- Also NEED an '\alias' for EACH other topic documented here.
 \title{
- Formula interface for Fine-Gray regression competing risk models.
+  Formula interface for Fine-Gray regression competing risk models.
 }
 \description{
   Formula interface for the function \code{crr} from the \code{cmprsk} package. 

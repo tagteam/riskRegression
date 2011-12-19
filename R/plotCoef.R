@@ -2,7 +2,6 @@ plotCoef <- function(x,formula,confint=.95,ylim,xlab="Time",ylab="Cumulative coe
   if (missing(formula)){
     formula <- x$design$timevar$formula
   }
-  time <- x$timeVarCoef[,1,drop=TRUE]
   var <- all.vars(formula)[1]
   matchVar <- grep(var,colnames(x$timeVarCoef))
   coef <- x$timeVarCoef[,matchVar,drop=FALSE]

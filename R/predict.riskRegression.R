@@ -34,12 +34,17 @@ predict.riskRegression <- function(object,
   else
     nobs <- max(NROW(Z),NROW(X))
   Xcoef  <-  data.frame(object$timeVaryingEffects$coef)
-  
   # }}}
   # {{{ compute the linear predictor
   fittime  <-  object$time
   ntime  <-  nrow(fittime)
-  timeVarLP <- X %*% t(Xcoef[,-1]) ## remove the time column 
+  timeVarLP <- X %*% t(Xcoef[,-1]) ## remove the time column
+  ## FIXME: manually set extreme values if LP = 0
+  ##        should be done in the c-routine
+  timeVarLP <- t(apply(timeVarLP,1,function(lp){fixedlp <- lp;
+                                                ## fixedlp[fixedlp==0] <- min(fixedlp)
+                                                fixedlp[fixedlp==0] <- -Inf
+                                                fixedlp}))
   if (semi==TRUE) {
     timePower <- sapply(colnames(Z),function(z){
       tp <- object$timePower[[z]]
