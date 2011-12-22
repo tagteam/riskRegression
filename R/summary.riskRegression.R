@@ -12,7 +12,7 @@ summary.riskRegression <- function(object,
              "KM"={"the Kaplan-Meier estimate" },
              "cox"={"a Cox model" },                             
              "aalen"={"a non-parametric additive Aalen model"}),
-      "for the censoring distribution.\n",sep="")
+      " for the censoring distribution.\n",sep="")
   ##   cat("\n",rep("_",options()$width/2),"\n",sep="")
   summary(object$response)
   ##   cat("\n",rep("_",options()$width/2),"\n",sep="")

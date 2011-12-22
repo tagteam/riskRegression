@@ -52,8 +52,8 @@ FGR <- function(formula,data,cause=1,...){
   # }}}
   # {{{ covariate design matrices
   cov1 <- modelMatrix(formula=formList$cov1$formula,
-                   data=theData,
-                   intercept=NULL)
+                      data=theData,
+                      intercept=NULL)
   cov2 <- modelMatrix(formula=formList$cov2$formula,
                       data=theData,
                       intercept=NULL)
@@ -70,25 +70,26 @@ FGR <- function(formula,data,cause=1,...){
                failcode=cause,
                cencode=length(states)+1)
   if (NCOL(cov2)>0){
-    if (all(this <- sapply(formList$cov2$specialArguments,is.null)))
-      args$tf <- function(x){matrix(x,ncol=NCOL(cov2),byrow=FALSE)}
-    else{
-      tf.temp <- lapply(formList$cov2$specialArguments,function(a)a$tf)
-      if (any(this)){
-        id <- function(x)x
-        tf.temp[this] <- "id" 
-      }
-      args$tf <- function(x){
-        do.call("cbind",lapply(tf.temp,function(f){
-          do.call(f,list(x))
-        }))
-      }
+    this <- sapply(formList$cov2$specialArguments,is.null)
+    ## if (all(this <- sapply(formList$cov2$specialArguments,is.null))){
+    ## args$tf <- function(x){matrix(x,ncol=NCOL(cov2),byrow=FALSE)}
+    ## args$tf <- function(x){matrix(x,ncol=NCOL(cov2),byrow=FALSE)}
+    ## }
+    ## else{
+    tf.temp <- lapply(formList$cov2$specialArguments,function(a)a$tf)
+    if (any(this)){
+      id <- function(x)x
+      tf.temp[this] <- "id" 
+    }
+    args$tf <- function(x){
+      do.call("cbind",lapply(tf.temp,function(f){
+        do.call(f,list(x))
+      }))
     }
   }
   else{
     args$tf <- function(x){matrix(x,ncol=NCOL(cov2),byrow=FALSE)}
   }
-  ## print(args$tf(1:10))
   args <- args[!sapply(args,is.null)]
   fit <- do.call("crr",args)
   out <- list(crrFit=fit,response=response,cause=cause)

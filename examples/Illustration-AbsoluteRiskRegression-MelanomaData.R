@@ -1,84 +1,100 @@
-# {{{ load libraries and data
+## load libraries and data
+
 library(riskRegression)
-## install from Rforge
-## install.packages("riskRegression", repos = "http://R-Forge.R-project.org")
 library(pec)    ## to estimate the prediction performance
-## install from Rforge
-## install.packages("pec", repos = "http://R-Forge.R-project.org")
-## may need most recent version of prodlim 
-## install.packages("prodlim", repos = "http://R-Forge.R-project.org")
 library(cmprsk) ## for comparison with the Fine-Gray model
 data(Melanoma)
+Melanoma$logthick <- log(Melanoma$thick)
 help(Melanoma)
-# }}}
 
-# {{{ fitting different models
+## censoring distribution
+
+coxph(Surv(time,status==0)~sex+epicel+ulcer+age+logthick,data=Melanoma)
+
 ## Absolute risk regression
-arr.fit <- ARR(Hist(time,status)~invasion+sex+epicel+ulcer+age+thick,data=Melanoma,cause=1)
+arr.invasion <- ARR(Hist(time,status)~invasion,
+                    data=Melanoma,
+                    cause=1,
+                    cens.model="cox",
+                    cens.formula=~sex+epicel+ulcer+age+logthick)
+print(arr.invasion)
+
+## Compare with stratified Aalen-Johansen
+aj.invasion <- prodlim(Hist(time,status)~invasion,data=Melanoma)
+plot(aj.invasion,cause=1,confint=FALSE)
+plot(arr.invasion,newdata=data.frame(invasion=levels(Melanoma$invasion)),add=TRUE,lty=3,col=1:3)
+
+
+## Fine-Gray regression model
+library(cmprsk)
+fg.invasion <- FGR(Hist(time,status)~invasion,data=Melanoma,cause=1)
+print(fg.invasion)
+
+## combined cause-specific Cox regression models (same formula for both causes)
+## see below for an example with different formulae 
+cox.invasion <- CSC(Hist(time,status)~invasion,data=Melanoma)
+print(cox.invasion)
+
+
+## Absolute risk regression with continuous predictor
+arr.thick <- ARR(Hist(time,status)~thick,
+                 data=Melanoma,
+                 cause=1,
+                 cens.model="cox",
+                 cens.formula=~sex+epicel+ulcer+age+logthick)
+plot(arr.thick)
+
+## Nearest neighbor Aalen-Johansen at quantiles of thickness
+aj.thick <- prodlim(Hist(time,status)~thick,data=Melanoma)
+plot(aj.thick,cause=1,newdata=data.frame(thick=quantile(Melanoma$thick)),confint=FALSE,xlim=c(0,3000))
+plot(arr.thick,newdata=data.frame(thick=quantile(Melanoma$thick)),add=TRUE,lty=3,col=1:5)
+
+## putting thickness on log-scale
+Melanoma$logthick <- log(Melanoma$thick)
+arr.logthick <- ARR(Hist(time,status)~logthick,
+                    data=Melanoma,
+                    cause=1,
+                    cens.model="cox",
+                    cens.formula=~sex+epicel+ulcer+age+logthick)
+plot(aj.thick,cause=1,newdata=data.frame(thick=quantile(Melanoma$thick)),confint=FALSE,xlim=c(0,3000))
+plot(arr.logthick,newdata=data.frame(logthick=quantile(Melanoma$logthick)),add=TRUE,lty=3,col=1:5)
+
+## comparison to logistic risk model
+lrr.logthick <- LRR(Hist(time,status)~logthick,
+                    data=Melanoma,
+                    cause=1,
+                    cens.model="cox",
+                    cens.formula=~sex+epicel+ulcer+age+logthick)
+plot(lrr.logthick)
+plot(arr.logthick,newdata=data.frame(logthick=quantile(Melanoma$logthick)),add=TRUE,lty=3,col=1:5)
+
+## comparison to combined cause-specific Cox regression models
+csc.logthick <- CSC(Hist(time,status)~logthick,data=Melanoma,cause=1)
+plot(csc.logthick)
+plot(arr.logthick,newdata=data.frame(logthick=quantile(Melanoma$logthick)),add=TRUE,lty=3,col=1:5)
+
+## Absolute risk regression
+arr.fit <- ARR(Hist(time,status)~sex+epicel+ulcer+age+logthick,data=Melanoma,cause=1,
+                    cens.model="cox",
+                    cens.formula=~sex+epicel+ulcer+age+logthick)
 print(arr.fit)
 
 ## Logistic risk regression
-lrr.fit <- LRR(Hist(time,status)~invasion+sex+epicel+ulcer+age+thick,data=Melanoma,cause=1)
+lrr.fit <- LRR(Hist(time,status)~sex+epicel+ulcer+age+logthick,data=Melanoma,cause=1,
+                    cens.model="cox",
+                    cens.formula=~sex+epicel+ulcer+age+logthick)
 print(lrr.fit)
 
 ## Fine-Gray regression model
-fg.fit <- FGR(Hist(time,status)~invasion+sex+epicel+ulcer+age+thick,data=Melanoma,cause=1)
+fg.fit <- FGR(Hist(time,status)~sex+epicel+ulcer+age+logthick,data=Melanoma,cause=1)
 print(fg.fit)
 
 ## combined cause-specific Cox models
-cox.fit <- CSC(Hist(time,status)~invasion+sex+epicel+ulcer+age+thick,data=Melanoma)
+cox.fit <- CSC(list(cause1=Hist(time,status)~sex+epicel+ulcer+age+logthick,
+                    cause2=Hist(time,status)~sex+age),data=Melanoma)
 print(cox.fit)
-# }}}
 
-# {{{ 
-
-# }}}
-
-# {{{ model checking for the ARR
-
-## model with time-varying effect for invasion, ulcer and age
-times <- sort(unique(Melanoma$time[Melanoma$time>800]))
-tarr.fit <- ARR(Hist(time,status)~timevar(invasion)+sex+epicel+timevar(ulcer)+timevar(age)+thick,data=Melanoma,cause=1,times=times)
-## comp.fit <- comp.risk(Surv(time,status!=0)~invasion+const(sex)+const(epicel)+ulcer+age+const(thick),data=Melanoma,cause=Melanoma$status,causeS=1,model="rcif",time.pow=0)
-## comp.fit$var.cum
-## comp.fit$cum
-## plot(comp.fit,specific.comp=3)
-## plot(comp.fit,score=1,xlim=c(800,3000))
-
-plotCoef(tarr.fit,~invasion,xlim=c(800,3000),ylim=c(-4,4))
-
-plotEffects(tarr.fit,~invasion,xlim=c(800,3000),ylim=c(-4,4))
-
-plotEffects(tarr.fit,~ulcer,xlim=c(800,3000))
-plotEffects(tarr.fit,~age,ylim=c(-0.1,0.1),xlim=c(800,3000))
-
-tarr.fit2 <- ARR(Hist(time,status)~invasion+sex+epicel+timevar(ulcer)+age+thick,data=Melanoma,cause=1,times=times)
-plotEffects(tarr.fit2,~ulcer,xlim=c(800,3000))
-# }}}
-
-# {{{ Show individual predictions
-
-## combined cause-specific Cox models
-plotPredictEventProb(cox.fit,
-                     newdata=Melanoma,
-                     col=as.numeric(Melanoma$ulcer))
-## absolute risk regression model
-plotPredictEventProb(arr.fit,
-                     newdata=Melanoma,
-                     col=as.numeric(Melanoma$ulcer))
-## logistic risk regression model
-plotPredictEventProb(lrr.fit,
-                     newdata=Melanoma,
-                     col=as.numeric(Melanoma$ulcer))
-## Fine-Gray model
-plotPredictEventProb(fg.fit,
-                     newdata=Melanoma,
-                     col=as.numeric(Melanoma$ulcer))
-
-# }}}
-
-# {{{ Comparison of predictions
-# e.g. ARR versus combined Cox regression
+# ARR versus combined Cox regression
 # after 5 years = 1826.25 days
 plot(predictEventProb(arr.fit,times=1826.25,newdata=Melanoma),
      predictEventProb(cox.fit,times=1826.25,newdata=Melanoma),
@@ -91,27 +107,24 @@ plot(predictEventProb(arr.fit,times=1826.25,newdata=Melanoma),
 prodlim:::PercentAxis(1,at=seq(0,1,.25))
 prodlim:::PercentAxis(2,at=seq(0,1,.25))
 abline(a=0,b=1)
-# }}}
 
-# {{{ prediction error
 
-## compare alternative link functions
+## prediction error 
 perr.link <- pec(list(AbsRisk=arr.fit,
-                       CSC=cox.fit,
+                       CauseSpecCox=cox.fit,
                        FineGray=fg.fit,
                        LogisticRisk=lrr.fit),
-                  formula=Hist(time,status)~invasion+sex+epicel+ulcer+age+thick,
+                  formula=Hist(time,status)~sex+epicel+ulcer+age+logthick,
+                  cens.model="cox",
                   data=Melanoma,
-                  maxtime=3000)
+                  maxtime=2500)
+print(perr.link)
+
 plot(perr.link)
 
-## compare absrisk model with time-constant effects
-## to absrisk model where ulcer has a time-varying effect
-perr.tv <- pec(list("AbsRisk"=arr.fit,
-                 "AbsRisk: effect Ulcer timevar"=tarr.fit2),
-            formula=Hist(time,status)~invasion+sex+epicel+ulcer+age+thick,
-            data=Melanoma,
-            maxtime=3000)
-plot(perr.tv)
-
-# }}}
+## graphical model checking
+tarr.fit <- ARR(Hist(time,status)~sex+epicel+strata(ulcer)+age+strata(logthick),data=Melanoma,cause=1,
+                    cens.model="cox",
+                    cens.formula=~sex+epicel+ulcer+age+logthick)
+plotEffects(tarr.fit,formula=~ulcer,xlim=c(1000,3000),ylim=c(-3,3))
+plotEffects(tarr.fit,formula=~logthick,xlim=c(1000,3000),ylim=c(-3,3))

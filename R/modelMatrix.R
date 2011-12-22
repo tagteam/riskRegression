@@ -1,4 +1,7 @@
-modelMatrix <- function(formula,data,factorLevels=NULL,intercept){
+modelMatrix <- function(formula,
+                        data,
+                        factorLevels=NULL,
+                        intercept){
   if (is.null(formula)){
     if (!missing(intercept))
       cbind(Intercept=rep(intercept,NROW(data)))
@@ -17,9 +20,22 @@ modelMatrix <- function(formula,data,factorLevels=NULL,intercept){
       ## }
       if (match(v,names(factorLevels),nomatch=0)==0){
         ff <- data[,v,drop=TRUE]
-        if (is.factor(ff)) fflevels <- levels(ff)
-        else fflevels <- NULL
-        x <- contrast(ff,name=v,levels=fflevels)
+        if (is.factor(ff)){
+          fflevels <- levels(ff)
+          x <- contrast(ff,name=v,levels=fflevels)
+        }
+        else{
+          ## DOES NOT MAKE SENSE
+          ## BECAUSE WE DO NOT KNOW THE REF LEVEL
+          ## OF ORIGINAL DATA WHEN LOOKING AT
+          ## NEW DATA (which does not have to include all levels)
+          ## if (length(unique(ff))<3){
+          ## fflevels <- unique(ff)
+          ## x <- contrast.factor(ff,name=v,levels=fflevels)
+          ## } else{
+          x <- contrast(ff,name=v)
+          ## }
+        }
       }
       else{
         x <- contrast(data[,v,drop=TRUE],name=v,levels=factorLevels[[v]])

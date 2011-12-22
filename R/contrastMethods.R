@@ -14,10 +14,11 @@ contrast.matrix <- function(x,...){
   stop("No contrast method for a matrix")
 }
 contrast.numeric <- function(x,name,...){
-  out <- matrix(x,ncol=1)
-  colnames(out) <- name
-  out
+    out <- matrix(x,ncol=1)
+    colnames(out) <- name
+    out
 }
+
 contrast.integer <- function(x,name,...){
   contrast.numeric(x=x,name=name,...)
 }

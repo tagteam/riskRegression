@@ -1,19 +1,15 @@
 predict.riskRegression <- function(object,
-                             newdata,
-                             n.sim=500,
-                             uniform=TRUE,
-                             se=FALSE,
-                             alpha=0.05,
-                             ...){
-  # {{{ read design 
+                                   newdata,
+                                   ...){
+  # {{{ read design
   Link  <-  object$link
   n  <-  length(object$B.iid)
   ## n is the number of clusters (or number of individuals
   ## if no cluster structure is specified)
-  if (is.null(object$B.iid)==TRUE && se==TRUE) {
-    se <- FALSE
-    warning("This object has no resampling results stored, hence se=TRUE has no effect.\n You may set resample.iid=1 an run again.");
-  }
+  ## if (is.null(object$B.iid)==TRUE && se==TRUE) {
+  ## se <- FALSE
+  ## warning("This object has no resampling results stored, hence se=TRUE has no effect.\n You may set resample.iid=1 an run again.");
+  ## }
   Zcoef <- c(object$timeConstantEffects$coef)
   semi <- !is.null(Zcoef)
   
@@ -21,9 +17,10 @@ predict.riskRegression <- function(object,
   Z <- modelMatrix(formula=object$design$const$formula,
                    data=newdata,
                    factorLevels=object$factorLevels)
-  if (!(all(colnames(Z) %in% names(object$timePower))))
-    stop("\nProblem with factor names.\nCheck if the storage type of factors in the original data are compatible with those in newdata\n\nOffending names: ",paste(colnames(Z)[!colnames(Z)%in% names(object$timePower)],collapse=", ")," does not match ",paste(names(object$timePower)[!names(object$timePower)%in%colnames(Z)],collapse=" ,"),".")
+  ## FIXME: RefLevel can be different in newdata!
   
+  if (!(all(colnames(Z) %in% names(object$timePower))))
+    stop("\nProblem with factor names.\nCheck if the storage type of all factors\nin the original data are compatible with those in newdata\n\nOffending variable(s): ",paste(colnames(Z)[!colnames(Z)%in% names(object$timePower)],collapse=", ")," does not match ",paste(names(object$timePower)[!names(object$timePower)%in%colnames(Z)],collapse=" ,"),".")
   ## The time-varying effects
   X <- modelMatrix(formula=object$design$timevar$formula,
                    data=newdata,
@@ -59,7 +56,7 @@ predict.riskRegression <- function(object,
   }
   else
     timeConstLP <- 0
-  LP=timeConstLP+timeVarLP
+  LP <- timeConstLP+timeVarLP
   # }}}
   # {{{ compute P1
   P1 <- switch(object$link,"relative"={
@@ -73,6 +70,7 @@ predict.riskRegression <- function(object,
   })
   # }}}
   # {{{ standard errors and confidence bands
+
   ##   se.P1  <-  NULL
   ## i.i.d decomposition for computation of standard errors 
   ##   if (se==1) {
@@ -137,17 +135,18 @@ predict.riskRegression <- function(object,
   ##   } else {
   ##     uband <- NULL;
   ##   }
+
   # }}}
   # {{{ output
   out <- list(time=fittime,
               ## unif.band=uband,
               ## model=Link,
               ## alpha=alpha,
-              cuminc=P1)
-  if(se==TRUE){
-    out$se.cuminc  <-  se.P1
-  }
-  class(out) <- "predictCuminc"
+              risk=P1)
+  ## if(se==TRUE){
+  ## out$se.risk  <-  se.P1
+  ## }
+  class(out) <- "predictedRisk"
   out
   # }}}
 }

@@ -1,4 +1,4 @@
-plot.CauseSpecificCox <- function(x,
+plot.predictedRisk <- function(x,
                                   cause,
                                   newdata,
                                   xlab,

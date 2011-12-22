@@ -4,16 +4,26 @@ export("ARR",
        "FGR",
        "CSC",
        "riskRegression",
+       "subjectWeights",
        "plotEffects")
 
 S3method(print,CauseSpecificCox)
 S3method(print,FGR)
 S3method(print,riskRegression)
 
+S3method(summary,riskRegression)
+
+S3method(subjectWeights,none)
+S3method(subjectWeights,marginal)
+S3method(subjectWeights,nonpar)
+S3method(subjectWeights,cox)
+## S3method(subjectWeights,aalen)
+
 S3method(plot,riskRegression)
+S3method(plot,predictedRisk)
 S3method(plot,CauseSpecificCox)
 
 S3method(predict,riskRegression)
+## S3method(predict,CauseSpecificCox)
 S3method(predict,FGR)
 
-S3method(summary,riskRegression)

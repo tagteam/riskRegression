@@ -5,9 +5,10 @@ riskRegression <- function(formula,
                            cause,
                            confint=TRUE,
                            cens.model,
+                           cens.formula,
                            numSimu=0,
-                           silent=1,
                            maxiter=50,
+                           silent=1,
                            convLevel=6,
                            ...){
   # {{{ preliminaries
@@ -57,28 +58,42 @@ riskRegression <- function(formula,
                           alias=list("tp"="const","strata"="timevar"),
                           unspecified="const")
   ##   formList <- readFormula(formula,specials=c("tv","cluster"),unspecified="const")
-  m$formula <- formList$allVars
+
+  if (!missing(cens.formula)){
+    varlist <- unique(c(all.vars(formList$allVars),all.vars(cens.formula)))
+    m$formula <- formula(paste("~",paste(varlist,collapse="+")))
+  }
+  else{
+    m$formula <- formList$allVars
+  }
   theData <- eval(m, parent.frame())
   if ((nMiss <- (NROW(data)-NROW(theData)))>0)
     warning("Missing values: ",nMiss," lines have been removed from data before estimation.")
   if (NROW(theData) == 0) stop("No (non-missing) observations")
   # }}}
-  # {{{ response
+  # {{{ response and order the data
   response <- model.response(model.frame(formula=formList$Response,data=theData))
   responseType <- attr(response,"model")
+  states <- getStates(response)
   stopifnot(responseType %in% c("survival","competing.risks"))
   censType <- attr(response,"cens.type")
   stopifnot(censType %in% c("rightCensored","uncensored"))
+  neworder <- order(response[,"time"],-response[,"status"])
+  response <- response[neworder,,drop=FALSE]
+  theData <- theData[neworder,]
   if (responseType!="survival" && !("event" %in% colnames(response)))
     warning("Only one cause of failure found in data.")
   Y <- as.vector(response[,"time"])
   time  <- numeric(length(Y))
   status <- as.vector(response[,"status"])
-  states <- getStates(response)
-  if (responseType=="survival")
+  if (responseType=="survival"){
     event <- status
-  else
-    event <-   as.numeric(getEvent(response))
+  }
+  else{
+    attr(response,"model") <- "competing.risks"
+    attr(response,"states") <- states
+    event <-   getEvent(response,mode="numeric")
+  }
   if (responseType=="competing.risks" && missing(cause)){
     cause <- 1
     message("Argument cause missing. Analyse cause: ",states[1])
@@ -100,7 +115,6 @@ riskRegression <- function(formula,
   intercept <-  formList$Intercept
   # }}}
   # {{{ variables with time-varying coefficients
-
   X <- modelMatrix(formula=formList$timevar$formula,
                    data=theData,
                    intercept=intercept)
@@ -130,7 +144,6 @@ riskRegression <- function(formula,
   stopifnot(length(timevar.test)==dimX)
   if (!(all(timevar.test %in% 0:2)))
     stop("Time power tests only available for powers 0,1,2")
-
   # }}}
   # {{{ variables with time-constant coefficients
   npar <- is.null(formList$const$formula)
@@ -200,13 +213,20 @@ riskRegression <- function(formula,
   ntimes <- length(times)
   # }}}
   # {{{ estimate ipcw
-  iData <- data
+  iData <- theData
   iData$itime <- response[,"time"]
   iData$istatus <- response[,"status"]
-  iFormula <- as.formula(paste("Surv(itime,istatus)","~",as.character(formula)[[3]]))
+  if (missing(cens.formula))
+    cens.formula <- rhs(formula)
+  else
+    cens.formula <- rhs(cens.formula)
+  iFormula <- as.formula(paste("Surv(itime,istatus)","~",as.character(cens.formula)[[length(as.character(cens.formula))]]))
   if (missing(cens.model)) cens.model <- "KM"
   imodel <- switch(tolower(cens.model),"KM"="marginal","cox"="cox","aalen"="aalen","uncensored"="none")
-  Gcx <- subjectWeights(formula=iFormula,data=iData,method=cens.model,lag=1)$weights
+  Gcx <- subjectWeights(formula=iFormula,
+                        data=iData,
+                        method=cens.model,
+                        lag=1)$weights
   # }}}
   # {{{ prepare fitting
   if (confint == TRUE){
@@ -220,6 +240,9 @@ riskRegression <- function(formula,
   line <- ifelse(trans==1,1,0)
   # if line=1 then test "b(t) = gamma t"
   # if line=0 then test "b(t) = gamma "
+  ## out <- list("itfit",as.double(times),as.integer(ntimes),as.double(Y),as.integer(delta),as.integer(event),as.double(Gcx),as.double(X),as.integer(n),as.integer(dimX),as.integer(maxiter),double(dimX),score=double(ntimes*(dimX+1)),double(dimX*dimX),est=double(ntimes*(dimX+1)),var=double(ntimes*(dimX+1)),as.integer(sim),as.integer(numSimu),test=double(numSimu*3*dimX),testOBS=double(3*dimX),Ut=double(ntimes*(dimX+1)),simUt=double(ntimes*50*dimX),as.integer(weighted),gamma=double(dimZ),var.gamma=double(dimZ*dimZ),as.integer(fixed),as.double(Z),as.integer(dimZ),as.integer(trans),gamma2=double(dimX),as.integer(cause),as.integer(line),as.integer(detail),biid=as.double(biid),gamiid=as.double(gamiid),as.integer(as.numeric(confint)),as.double(timePower),as.integer(clusters),as.integer(antclust),as.double(timevar.test),silent=as.integer(silent),conv=as.double(conv),PACKAGE="riskRegression")
+  ## save(out,file="~/tmp/x1.rda")
+  
   out <- .C("itfit",
             as.double(times),
             as.integer(ntimes),

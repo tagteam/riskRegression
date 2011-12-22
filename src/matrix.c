@@ -7,8 +7,8 @@
 #include <R_ext/Linpack.h>
 #include <R_ext/Applic.h>
 #include <R_ext/Random.h>
+#include <R.h>
 #include "riskregression.h"
-
 void free_mat(matrix *M){
 
   Free(M->entries);
@@ -46,9 +46,9 @@ void print_a_matrix(matrix *M){
   int j, k;
   for(j=0; j < nrow_matrix(M); j++){
     for(k = 0; k < ncol_matrix(M); k++){
-      printf("%+7.7g ", ME(M,j,k));
+      Rprintf("%+7.7g ", ME(M,j,k));
     }
-    printf("\n");
+    Rprintf("\n");
   }  
 
 }
@@ -344,7 +344,7 @@ void invertSPDunsafe(matrix *A, matrix *AI){
   F77_CALL(dtrco)(AI->entries, &n, &n, &rcond, z, &job);
     
   if(rcond < tol){
-    printf("Error in invertSPD: estimated condition number = %7.7e\n",1/rcond); 
+    Rprintf("Error in invertSPD: estimated condition number = %7.7e\n",1/rcond); 
     
     for(i = 0; i < n; i++){
       for(j = 0; j < n; j++){
@@ -365,16 +365,16 @@ void invertSPDunsafe(matrix *A, matrix *AI){
     F77_CALL(dpotrf)(&uplo, &n, AI->entries, &lda, &info); 
 
     if(info < 0){
-      printf("Error in invertSPD: arg %d of DPOTRF\n",-info);
+      Rprintf("Error in invertSPD: arg %d of DPOTRF\n",-info);
     } else if(info > 0){
-      printf("Error in invertSPD: matrix does not appear to be SPD\n");
+      Rprintf("Error in invertSPD: matrix does not appear to be SPD\n");
     } 
        
     // then use this factorization to compute the inverse of A
     F77_CALL(dpotri)(&uplo, &n, AI->entries, &lda, &info);
 
     if(info != 0){
-      printf("Error in invertSPD: DPOTRI returned info = %d \n",info);
+      Rprintf("Error in invertSPD: DPOTRI returned info = %d \n",info);
     }
 
     // Lastly turn the vector a into the matrix AI
@@ -582,14 +582,14 @@ void print_mat(matrix *M){
  
   int j, k;
 
-  printf("Matrix nrow=%d ncol=%d \n",nrow_matrix(M),ncol_matrix(M)); 
+  Rprintf("Matrix nrow=%d ncol=%d \n",nrow_matrix(M),ncol_matrix(M)); 
   for(j=0; j < nrow_matrix(M); j++){
     for(k = 0; k < ncol_matrix(M); k++){
-//      printf("%5.5g ", ME(M,j,k));
-      // printf("%+15.15g ", ME(M,j,k));
-      printf("%lf ", ME(M,j,k));
+//      Rprintf("%5.5g ", ME(M,j,k));
+      // Rprintf("%+15.15g ", ME(M,j,k));
+      Rprintf("%lf ", ME(M,j,k));
     }
-    printf("\n");
+    Rprintf("\n");
   }  
 
 }
@@ -599,13 +599,13 @@ void head_matrix(matrix *M){
  
   int j, k;
 
-  printf("head:Matrix nrow=%d ncol=%d \n",nrow_matrix(M),ncol_matrix(M)); 
+  Rprintf("head:Matrix nrow=%d ncol=%d \n",nrow_matrix(M),ncol_matrix(M)); 
   for(j=0; j < min(nrow_matrix(M),6); j++){
     for(k = 0; k < min(ncol_matrix(M),6); k++){
-      //printf("%5.5g ", ME(M,j,k));
-      printf("%lf ", ME(M,j,k));
+      //Rprintf("%5.5g ", ME(M,j,k));
+      Rprintf("%lf ", ME(M,j,k));
     }
-    printf("\n");
+    Rprintf("\n");
   }  
 
 }
@@ -615,11 +615,11 @@ void head_vector(vector *V){
  
   int j;
 
-  printf("head:Vector lengthn=%d \n",length_vector(V)); 
+  Rprintf("head:Vector lengthn=%d \n",length_vector(V)); 
   for(j=0; j < min(length_vector(V),6); j++){
-    printf("%lf ", VE(V,j));
+    Rprintf("%lf ", VE(V,j));
   }  
-  printf("\n");
+  Rprintf("\n");
 
 }
 
@@ -629,11 +629,11 @@ void print_vec(vector *v){
  
   int j;
 
-  printf("Vector lengthn=%d \n",length_vector(v)); 
+  Rprintf("Vector lengthn=%d \n",length_vector(v)); 
   for(j=0; j < length_vector(v); j++){
-    printf("%lf ", VE(v,j));
+    Rprintf("%lf ", VE(v,j));
   }  
-  printf("\n");
+  Rprintf("\n");
   
 }
 
@@ -1105,7 +1105,7 @@ void invertUnsafe(matrix *A, matrix *Ainv){
 
   if(info != 0){
     //Avoid printing this error message
-    printf("Error in invert: DGETRF returned info = %d \n",info);
+    Rprintf("Error in invert: DGETRF returned info = %d \n",info);
     mat_zeros(Ainv);
   } else {
   
@@ -1116,13 +1116,13 @@ void invertUnsafe(matrix *A, matrix *Ainv){
     
     if(info != 0){
       //Avoid printing this error message
-      printf("Error in invert: DGETRF returned info = %d \n",info);
+      Rprintf("Error in invert: DGETRF returned info = %d \n",info);
       mat_zeros(Ainv);
       return;
     } 
     
     if(rcond < tol){
-      printf("Error in invert: estimated reciprocal condition number = %7.7e\n",rcond); 
+      Rprintf("Error in invert: estimated reciprocal condition number = %7.7e\n",rcond); 
       mat_zeros(Ainv);
       return;
     }
@@ -1131,13 +1131,13 @@ void invertUnsafe(matrix *A, matrix *Ainv){
     F77_CALL(dgetri)(&n, Ainv->entries, &lda, ipiv, work, &lwork, &info);
 
     if(info != 0){
-      printf("Error in invert: DPOTRI returned info = %d \n",info);
+      Rprintf("Error in invert: DPOTRI returned info = %d \n",info);
       mat_zeros(Ainv);
     }
 
     if (fabs(ME(Ainv,0,0))>99999999999999)  { // TS 23-10
       print_mat(Ainv);
-      printf("Inversion unstable, large elements  \n");
+      Rprintf("Inversion unstable, large elements  \n");
       mat_zeros(Ainv);
     }
   }
@@ -1184,7 +1184,7 @@ void invertUnsafeS(matrix *A, matrix *Ainv,int silent){
 
   if(info != 0){
     //Avoid printing this error message
-    if (silent==0) printf("Error in invert: DGETRF returned info = %d \n",info);
+    if (silent==0) Rprintf("Error in invert: DGETRF returned info = %d \n",info);
     mat_zeros(Ainv);
   } else {
   
@@ -1195,13 +1195,13 @@ void invertUnsafeS(matrix *A, matrix *Ainv,int silent){
     
     if(info != 0){
       //Avoid printing this error message
-      if (silent==0) printf("Error in invert: DGETRF returned info = %d \n",info);
+      if (silent==0) Rprintf("Error in invert: DGETRF returned info = %d \n",info);
       mat_zeros(Ainv);
       return;
     } 
     
     if(rcond < tol ){
-      if (silent==0) printf("Error in invert: estimated reciprocal condition number = %7.7e\n",rcond); 
+      if (silent==0) Rprintf("Error in invert: estimated reciprocal condition number = %7.7e\n",rcond); 
       mat_zeros(Ainv);
       return;
     }
@@ -1210,12 +1210,12 @@ void invertUnsafeS(matrix *A, matrix *Ainv,int silent){
     F77_CALL(dgetri)(&n, Ainv->entries, &lda, ipiv, work, &lwork, &info);
 
     if(info != 0 ){
-      if (silent==0) printf("Error in invert: DPOTRI returned info = %d \n",info);
+      if (silent==0) Rprintf("Error in invert: DPOTRI returned info = %d \n",info);
       mat_zeros(Ainv);
     }
 
     if (fabs(ME(Ainv,0,0))>99999999999999 )  { // TS 23-10
-      if (silent==0) printf("Inversion unstable, large elements  \n");
+      if (silent==0) Rprintf("Inversion unstable, large elements  \n");
       mat_zeros(Ainv);
     }
   }
@@ -1277,7 +1277,7 @@ void print_clock(clock_t *intime, int i){
 
   clock_t outtime = clock();
   
-  printf("### point %d, time %7.7e\n", i, difftime(outtime,*intime));
+  Rprintf("### point %d, time %7.7e\n", i, difftime(outtime,*intime));
   
   *intime = outtime;
 
@@ -1301,7 +1301,7 @@ void zcntr(counter *C){
 
 void print_counter(int i, counter *C){
 
-  printf("### counter %d, time %7.7g, calls %d\n", i, C->timec, C->callc);
+  Rprintf("### counter %d, time %7.7g, calls %d\n", i, C->timec, C->callc);
   
 }
 

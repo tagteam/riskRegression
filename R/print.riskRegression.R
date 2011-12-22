@@ -1,4 +1,4 @@
-print.riskRegression <- function(object,
+print.riskRegression <- function(x,
                                  times,
                                  digits=3,
                                  eps=10^-4,
@@ -7,18 +7,18 @@ print.riskRegression <- function(object,
   # {{{ echo model type, IPCW and link function
   cat("\nriskRegression: Competing risks regression model \n")
   cat("\nIPCW estimation. The weights are based on\n",
-      switch(object$censModel,
-             "KM"={"the Kaplan-Meier estimate" },
+      switch(tolower(x$censModel),
+             "km"={"the Kaplan-Meier estimate" },
              "cox"={"a Cox model" },                             
              "aalen"={"a non-parametric additive Aalen model"}),
-      "for the censoring distribution.\n",sep="")
+      " for the censoring distribution.\n",sep="")
   ##   cat("\n",rep("_",options()$width/2),"\n",sep="")
-  summary(object$response)
+  summary(x$response)
   ##   cat("\n",rep("_",options()$width/2),"\n",sep="")
   cat("\nLink function: \'",
-      switch(object$link,"prop"="proportional","logistic"="logistic","additive"="additive","relative"="relative"),
+      switch(x$link,"prop"="proportional","logistic"="logistic","additive"="additive","relative"="relative"),
       "\' yielding ",
-      switch(object$link,
+      switch(x$link,
              "prop"="sub-hazard ratios (Fine & Gray 1999)",
              "logistic"="odds ratios",
              "additive"="absolute risk differences",
@@ -29,9 +29,9 @@ print.riskRegression <- function(object,
   # }}}
   # {{{ find covariates and factor levels 
 
-  cvars <- all.vars(object$design$const$formula)
-  tvars <- all.vars(object$design$timevar$formula)
-  Flevels <- object$factorLevels
+  cvars <- all.vars(x$design$const$formula)
+  tvars <- all.vars(x$design$timevar$formula)
+  Flevels <- x$factorLevels
 
   # }}}
   # {{{ time varying coefs
@@ -55,10 +55,10 @@ print.riskRegression <- function(object,
   }
   cat("The column 'Intercept' is the baseline risk")
   cat(" where all the covariates have value zero\n\n")
-  if (missing(times)) times <- quantile(object$time)
-  showTimes <- sindex(eval.times=times,jump.times=object$time)
-  showMat <- signif(exp(object$timeVaryingEffects$coef[showTimes,-1,drop=FALSE]),digits)
-  rownames(showMat) <- signif(object$timeVaryingEffects$coef[showTimes,1],2)
+  if (missing(times)) times <- quantile(x$time)
+  showTimes <- sindex(eval.times=times,jump.times=x$time)
+  showMat <- signif(exp(x$timeVaryingEffects$coef[showTimes,-1,drop=FALSE]),digits)
+  rownames(showMat) <- signif(x$timeVaryingEffects$coef[showTimes,1],2)
   print(showMat)
   cat("\nShown are selected time points, use\n\nplot.riskRegression\n\nto investigate the full shape.\n\n")
 
@@ -76,13 +76,13 @@ print.riskRegression <- function(object,
     })
   }
   cat("\nTime constant regression coefficients:\n\n")
-  if (is.null(object$timeConstantEffects)){
+  if (is.null(x$timeConstantEffects)){
     cat("\nNone.\n")
     coefMat <- NULL
   }
   else{
-    const.coef <- object$timeConstantEffects$coef
-    const.se <- sqrt(diag(object$timeConstantEffects$var))
+    const.coef <- x$timeConstantEffects$coef
+    const.se <- sqrt(diag(x$timeConstantEffects$var))
     wald <- const.coef/const.se
     waldp <- (1 - pnorm(abs(wald))) * 2
     format.waldp <- format.pval(waldp,digits=digits,eps=eps)
@@ -96,7 +96,7 @@ print.riskRegression <- function(object,
         out <- c(v,signif(c(const.coef[v],exp(const.coef[v]),const.se[v],wald[v]),digits),format.waldp[v])
       }
       else{
-        rlev <- object$refLevels[[covname]]
+        rlev <- x$refLevels[[covname]]
         out <- do.call("rbind",lapply(Flevels[[covname]],function(l){
           V <- paste(covname,l,sep=":")
           if (match(V,paste(covname,rlev,sep=":"),nomatch=FALSE))
@@ -111,16 +111,16 @@ print.riskRegression <- function(object,
       colnames(coefMat) <- c("Factor","Coef","exp(Coef)","StandardError","z","Pvalue")
       rownames(coefMat) <- rep("",NROW(coefMat))
       print(coefMat,quote=FALSE,right=TRUE)
-      cat(paste("\n\nNote: The values exp(Coef) are",switch(object$link,
+      cat(paste("\n\nNote: The values exp(Coef) are",switch(x$link,
                                                             "prop"="sub-hazard ratios (Fine & Gray 1999)",
                                                             "logistic"="odds ratios",
                                                             "additive"="absolute risk differences",
                                                             "relative"="absolute risk ratios")),"\n")
-      tp <- sapply(object$design$const$specialArguments,function(x)!is.null(x$power))
+      tp <- sapply(x$design$const$specialArguments,function(x)!is.null(x$power))
       if (any(tp))
         cat(paste("\n\nNote:The coeffient(s) for the following variable(s)\n",
-                  sapply(names(object$design$const$specialArguments[tp]),function(x){
-                    paste("\t",x," (power=",as.character(object$design$const$specialArguments[[x]]),")\n",sep="")}),
+                  sapply(names(x$design$const$specialArguments[tp]),function(x){
+                    paste("\t",x," (power=",as.character(x$design$const$specialArguments[[x]]),")\n",sep="")}),
                   "are interpreted as per factor unit  multiplied by time^power.\n",sep=""))
     }
   }

@@ -46,9 +46,9 @@ CSC(formula, data, cause, survtype = "hazard", ...)
 \item{causes }{the other causes}
 %% ...
 }
-\references{
-  %% ~put references to the literature/web site here ~
-}
+% \references{
+  % %% ~put references to the literature/web site here ~
+% }
 \author{
   Thomas A. Gerds
   \email{tag@biostat.ku.dk}

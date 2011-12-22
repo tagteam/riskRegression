@@ -28,13 +28,20 @@ plotEffects <- function(x,
   zval <- qnorm(1- (1-confint)/2, 0,1)
   lower <- coef-zval*se
   upper <- coef + zval*se
-
+  
+  # select levels for categorical variables
+  levs <- colnames(coef)
+  if (!missing(level)) {
+    levs <- levs[match(level,levs,nomatch=0)]
+    matchVarnames <- matchVarnames[match(levs,matchVarnames,nomatch=0)]
+  }
+  if (length(levs)==0) stop(paste("Could not find level(s): ",paste(level,collapse=", ")),"\nAvailable levels: ",paste(colnames(coef),collapse=", "))
   # }}}
   # {{{  plotting limits, colors, etc
   if (missing(ylim))
     ylim <- c(floor(min(lower)),ceiling(max(upper)))
   if (missing(xlim))
-    xlim=c(0,max(time))
+    xlim=c(min(time),max(time))
   if (missing(col))
     col <- 1:12
   col <- rep(col,length.out=NCOL(coef))
@@ -46,7 +53,8 @@ plotEffects <- function(x,
   lwd <- rep(lwd,length.out=NCOL(coef))
   # }}}
   # {{{  setting default arguments
-  if (missing(legend)) legend <- length(matchVar)>1
+  ## if (missing(legend)) legend <- length(matchVar)>1
+  if (missing(legend)) legend <- TRUE
   background.DefaultArgs <- list(xlim=xlim,ylim=ylim,horizontal=seq(0,1,.25),vertical=NULL,bg="white",fg="gray88")
   axis1.DefaultArgs <- list()
   axis2.DefaultArgs <- list(side=2)
@@ -67,13 +75,13 @@ plotEffects <- function(x,
   # {{{ smart control
 
   smartA <- SmartControl(call=  list(...),
-                         keys=c("plot","lines","legend","confint","background","axis1","axis2"),
-                         ignore=c("x","formula","refLine","add","col","lty","lwd","ylim","xlim","xlab","ylab","legend","confint","percent","axes"),
+                         keys=c("plot","legend","confint","axis1","axis2"),
+                         ignore=c("x","formula","refLine","add","col","lty","lwd","ylim","xlim","xlab","ylab","legend","confint","axes"),
                          defaults=list("plot"=plot.DefaultArgs,
-                           "lines"=lines.DefaultArgs,
+                           ## "lines"=lines.DefaultArgs,
                            "legend"=legend.DefaultArgs,
                            ## "confint"=confint.DefaultArgs,
-                           "background"=background.DefaultArgs,
+                           ## "background"=background.DefaultArgs,
                            "axis1"=axis1.DefaultArgs,
                            "axis2"=axis2.DefaultArgs),
                          forced=list("plot"=list(axes=FALSE),"axis1"=list(side=1)),
@@ -97,32 +105,12 @@ plotEffects <- function(x,
   }
 
   # }}}
-  # {{{  legend
-
-  if(legend==TRUE && !add && !is.null(matchVarnames)){
-
-    if (smartA$legend$trimnames==TRUE){
-      smartA$legend$legend <- sapply(strsplit(names(Y),"="),function(x)x[[2]])
-    }
-    smartA$legend <- smartA$legend[-match("trimnames",names(smartA$legend))]
-    save.xpd <- par()$xpd
-    par(xpd=TRUE)
-    do.call("legend",smartA$legend)
-    par(xpd=save.xpd)
-  }
-
-  # }}}
   # {{{ adding the lines
 
   if (length(matchVar)>1){
     ref <- x$refLevels[var]
     if (refLine==TRUE)
       abline(h=0,col="gray55",lwd=2)
-    levs <- colnames(coef)
-    if (!missing(level)) {
-      levs <- levs[match(level,levs,nomatch=0)]
-    }
-    if (length(levs)==0) stop(paste("Could not find level(s): ",paste(level,collapse=", ")),"\nAvailable levels: ",paste(colnames(coef),collapse=", "))
     nix <- lapply(1:length(levs),function(l){
       i <- match(levs[l],colnames(coef),nomatch=0)
       lines(time,coef[,i],col=col[l],lwd=lwd[l],lty=lty[l],type="s")
@@ -147,4 +135,19 @@ plotEffects <- function(x,
   }
 
   # }}}
+    # {{{  legend
+
+  if(legend==TRUE && !add && !is.null(matchVarnames)){
+
+    ## if (smartA$legend$trimnames==TRUE){
+    ## smartA$legend$legend <- sapply(strsplit(names(Y),"="),function(x)x[[2]])
+    ## }
+    smartA$legend <- smartA$legend[-match("trimnames",names(smartA$legend))]
+    save.xpd <- par()$xpd
+    par(xpd=TRUE)
+    do.call("legend",smartA$legend)
+    par(xpd=save.xpd)
+  }
+  # }}}
+
 }

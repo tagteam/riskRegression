@@ -7,16 +7,17 @@
   Fits a regression model for the risk of an event -- allowing for competing risks.
 }
 \usage{
-ARR(formula, data, times,cause,...)
-LRR(formula, data, times,cause,...)
+ARR(formula, data, times,cause,cens.model,cens.formula,...)
+LRR(formula, data, times,cause,cens.model,cens.formula,...)
 riskRegression(formula,
 	 data,
 	 times,
 	 link = "relative",
 	 cause,
-	 resample.iid = 1,
+	 confint = TRUE,
 	 cens.model,
-	 numSim = 0,
+	 cens.formula,
+	 numSimu = 0,
 	 maxiter = 50,
 	 silent = 1,
 	 convLevel = 6,
@@ -42,13 +43,17 @@ riskRegression(formula,
   \item{cause}{
     The cause of interest. 
   }
-  \item{confint}{
+\item{confint}{
     If \code{TRUE} return the iid decomposition, that can be used to construct confidence bands for predictions.
 }
 \item{cens.model}{
   Specified the model for the (conditional) censoring distribution used for deriving
   weights (ICPW). Defaults to "KM" (the Kaplan-Meier method ignoring
   covariates) alternatively it may be "Cox" (Cox regression).
+}
+\item{cens.formula}{
+  Right hand side of the formula used for fitting the censoring model.
+  If not specified the right hand side of \code{formula} is used.
 }
 \item{numSimu}{
   Number of simulations in resampling.
@@ -71,14 +76,19 @@ riskRegression(formula,
  \details{
    This is a sister of the function \code{comp.risk} (timereg package).
  }
-\value{
+% \value{
 %%  ~Describe the value returned
 %%  If it is a LIST, use
 %%  \item{comp1 }{Description of 'comp1'}
 %%  \item{comp2 }{Description of 'comp2'}
 %% ...
-}
+% }
 \references{
+Gerds, TA and Scheike, T and Andersen, PK (2011)
+Absolute risk regression for competing risks: interpretation, link functions and prediction
+Research report 11/8. Department of Biostatistics, University of
+Copenhagen
+
 Scheike, Zhang and Gerds (2008), Predicting cumulativeincidence probability by direct binomial regression,Biometrika, 95, 205-220.           
 
 Scheike and Zhang (2007), Flexible competing risks regression modelling and goodness of fit, LIDA, 14, 464-483.
@@ -104,6 +114,8 @@ Martinussen and Scheike (2006), Dynamic regression models for survival data, Spr
 \examples{
 
 data(Melanoma)
+## tumor thickness on the log-scale
+Melanoma$logthick <- log(Melanoma$thick)
 
 # {{{ Single binary factor
 
@@ -146,14 +158,19 @@ fit2.aj <- prodlim(Hist(time,status)~logthick,data=Melanoma)
 plot(fit2.aj,confint=FALSE,newdata=data.frame(logthick=quantile(Melanoma$logthick)))
 plot(fit2.arr,add=TRUE,col=1:5,lty=3,newdata=data.frame(logthick=quantile(Melanoma$logthick)))
 
-
 ## logistic risk regression
 fit2.lrr <- LRR(Hist(time,status)~logthick,data=Melanoma,cause=1)
 summary(fit2.lrr)
 
-##  compare prediction errors
-plot(pec(list(ARR=fit2.arr,AJ=fit2.aj,LRR=fit2.lrr),data=Melanoma,maxtime=3000))
+## change model for censoring weights
+fit2a.lrr <- LRR(Hist(time,status)~logthick,data=Melanoma,cause=1,cens.model="cox",cens.formula=~sex+epicel+ulcer+age+logthick)
+summary(fit2a.lrr)
 
+##  compare prediction errors
+\dontrun{
+library(pec
+plot(pec(list(ARR=fit2.arr,AJ=fit2.aj,LRR=fit2.lrr),data=Melanoma,maxtime=3000))
+}
 # }}}
 
 # {{{ multiple regression
@@ -184,10 +201,11 @@ library(prodlim)
 fit.aj <- prodlim(Hist(time,status)~thick,data=Melanoma)
 plot(fit.aj,confint=FALSE)
 
+\dontrun{
 # prediction error
 library(pec)
 x <- pec(list(fit.arr2,fit.arr2a,fit.arr2b,fit.lrr),data=Melanoma,formula=Hist(time,status)~1,cause=1,B=10,splitMethod="none")
-
+}
 }
 % Add one or more standard keywords, see file 'KEYWORDS' in the
 % R documentation directory.

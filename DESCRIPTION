@@ -1,11 +1,11 @@
 Package: riskRegression
 Type: Package
 Title: Risk regression for survival analysis
-Version: 1.0.3
+Version: 0.0.5
 Date: 2011-17-11
-Author: Thomas Harder Scheike, Thomas Alexander Gerds
-Depends: R (>= 1.9.1), prodlim
-Suggests: cmprsk, survival, rms, pec
+Author: Thomas Alexander Gerds, Thomas Harder Scheike
+Depends: R (>= 1.9.1), prodlim (>= 1.2.9), rms, pec (>= 2.1.2)
+Suggests: survival (>= 2.36), cmprsk (>= 2.2.2)
 Maintainer: Thomas Alexander Gerds <tag@biostat.ku.dk>
 Description: Risk regression models for survival analysis with and without competing risks
 License: GPL (>= 2)
