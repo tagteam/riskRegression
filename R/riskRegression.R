@@ -335,8 +335,8 @@ riskRegression <- function(formula,
     percen<-function(x,per){
       n<-length(x)
       tag<-round(n*per)+1
-      ud<-sort(x)[tag];
-      return(ud)
+      out<-sort(x)[tag];
+      return(out)
     }
     unifCI <- do.call("cbind",lapply(1:dimX,function(i)percen(test[,i],0.95)))
     colnames(unifCI) <- colnamesX
@@ -385,7 +385,7 @@ riskRegression <- function(formula,
                              factorLevels=factorLevelsZ)
   class(timeVaryingEffects) <- "timeVaryingEffects"
   
-  ud <- list(call=call,
+  out <- list(call=call,
              response=response,
              design=formList,
              link=link,
@@ -397,19 +397,20 @@ riskRegression <- function(formula,
              censModel= cens.model,
              factorLevels=c(factorLevelsX,factorLevelsZ),
              refLevels=c(refLevelsX,refLevelsZ))
-
   if (confint && sim==1)
-    ud <- c(ud,list(resampleResults=list(conf.band=unifCI,
+    out <- c(out,list(resampleResults=list(conf.band=unifCI,
                       B.iid=B.iid,
                       gamma.iid=gamiid,
                       test.procBeqC=Ut,
                       sim.test.procBeqC=UIt)))
   if (sim==1)
-    ud <- c(ud,list(timeVarSigTest=timeVarSignifTest,
+    out <- c(out,list(timeVarSigTest=timeVarSignifTest,
                     timeVarKolmSmirTest=timeVarKolmSmirTest,
                     timeVarKramvMisTest=timeVarKramvMisTest))
-  class(ud) <- "riskRegression"
-  return(ud)
+  if (is.null(out$call$cause))
+    out$call$cause <- cause
+  class(out) <- "riskRegression"
+  return(out)
 
   # }}}
 }

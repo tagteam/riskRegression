@@ -35,7 +35,12 @@ FGR <- function(formula,data,cause=1,...){
   Y <- as.vector(response[,"time"])
   time  <- numeric(length(Y))
   status <- as.vector(response[,"status"])
-  event <-   as.numeric(getEvent(response))
+  if (match("event",colnames(response),nomatch=0)==0){
+    event <- status
+  }
+  else{
+    event <- as.numeric(getEvent(response))
+  }
   # }}}
   # {{{ cause of interest
   states <- getStates(response)
@@ -96,6 +101,8 @@ FGR <- function(formula,data,cause=1,...){
   # }}}
   # {{{ clean up
   out$call <- match.call()
+  if (is.null(out$call$cause))
+    out$call$cause <- cause
   class(out) <- "FGR"
   # }}}
   out
