@@ -63,7 +63,8 @@ CSC <- function (formula,data,cause,survtype="hazard",...){
       fit$call$formula <- fit$formula
       fit
     })
-    names(CoxModels) <- paste("Cause",causes)
+    ## names(CoxModels) <- paste("Cause",causes)
+    names(CoxModels) <- paste("Cause",c(theCause,otherCauses))
   }
   else{
     CoxModels <- lapply(1:2,function(x){

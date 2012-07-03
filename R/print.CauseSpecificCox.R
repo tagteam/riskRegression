@@ -3,7 +3,7 @@ print.CauseSpecificCox <- function(x,...){
   print(x$response)
   if (x$survtype=="hazard"){
     nix <- lapply(1:length(x$causes),function(c){
-      cat("\n\n----------> Cause: ",x$cause[c],"\n\n")
+      cat("\n\n----------> Cause: ",x$causes[c],"\n\n")
       print(summary(x$models[[c]]),...)
     })
   }

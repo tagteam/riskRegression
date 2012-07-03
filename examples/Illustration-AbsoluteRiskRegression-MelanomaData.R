@@ -110,10 +110,7 @@ abline(a=0,b=1)
 
 
 ## prediction error 
-perr.link <- pec(list(AbsRisk=arr.fit,
-                       CauseSpecCox=cox.fit,
-                       FineGray=fg.fit,
-                       LogisticRisk=lrr.fit),
+perr.link <- pec(list(AbsRisk=arr.fit,CauseSpecCox=cox.fit,FineGray=fg.fit,LogisticRisk=lrr.fit),
                   formula=Hist(time,status)~sex+epicel+ulcer+age+logthick,
                   cens.model="cox",
                   data=Melanoma,

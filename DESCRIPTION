@@ -1,7 +1,7 @@
 Package: riskRegression
 Type: Package
 Title: Risk regression for survival analysis
-Version: 0.0.5
+Version: 0.0.6
 Date: 2011-17-11
 Author: Thomas Alexander Gerds, Thomas Harder Scheike
 Depends: R (>= 1.9.1), prodlim (>= 1.2.9), rms, pec (>= 2.1.2)
