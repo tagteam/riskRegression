@@ -7,6 +7,8 @@ export("ARR",
        "subjectWeights",
        "plotEffects")
 
+import(prodlim,pec,rms,cmprsk,survival)
+
 S3method(print,CauseSpecificCox)
 S3method(print,FGR)
 S3method(print,riskRegression)

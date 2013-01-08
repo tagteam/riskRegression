@@ -66,6 +66,8 @@ CSC(formula, data, cause, survtype = "hazard", ...)
   \code{\link{coxph}}
 }
 \examples{
+library(pec)
+library(survival)
 data(Melanoma)
 ## fit two cause-specific Cox models
 ## different formula for the two causes

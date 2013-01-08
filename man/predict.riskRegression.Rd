@@ -59,7 +59,6 @@ Copenhagen
 % }
 \examples{
 data(Melanoma)
-
 fit.tarr <- ARR(Hist(time,status)~age+invasion+strata(sex),data=Melanoma,cause=1)
 predict(fit.tarr,newdata=data.frame(age=48,invasion="level.1",sex="Female"))
 predict(fit.tarr,newdata=data.frame(age=48,invasion="level.1",sex="Male"))

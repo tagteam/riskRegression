@@ -72,6 +72,8 @@ Thomas Alexander Gerds <tag@biostat.ku.dk>
 % \seealso{
 % }
 \examples{
+
+library(pec)
 data(Melanoma)
 
 fit.arr <- ARR(Hist(time,status)~invasion+age+strata(sex),data=Melanoma,cause=1)

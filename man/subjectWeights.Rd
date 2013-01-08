@@ -55,6 +55,7 @@ subjectWeights(formula,
 
 % \seealso{}
 \examples{
+library(pec)
 dat=prodlim:::SimSurv(300)
 
 dat <- dat[order(dat$time,-dat$status),]

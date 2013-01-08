@@ -8,7 +8,7 @@ CSC <- function (formula,data,cause,survtype="hazard",...){
   responseFormula <- reformulate("1", formula[[1]][[2]])
   # }}}
   # {{{ response
-  require(survival)
+  ## require(survival)
   call <- match.call()
   # get information from formula
   mf <- model.frame(responseFormula, data = data, na.action = na.omit)

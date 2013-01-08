@@ -13,7 +13,7 @@ FGR <- function(formula,data,cause=1,...){
   # }}}
   # {{{ read the data and the design
   call <- match.call()
-  m <- match.call(expand = FALSE)
+  m <- match.call(expand.dots = FALSE)
   if (match("subset",names(call),nomatch=FALSE))
     stop("Subsetting of data is not possible.")
   m <- m[match(c("","formula","data","subset","na.action"),names(m),nomatch = 0)]

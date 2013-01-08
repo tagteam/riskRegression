@@ -96,7 +96,7 @@ plotEffects(x, formula, level, refLine = TRUE, confint = 0.95, xlim, ylim, xlab 
 %% ~~objects to See Also as \code{\link{help}}, ~~~
 % }
 \examples{
-
+library(pec)
 data(Melanoma)
 
 fit.tarr <- ARR(Hist(time,status)~strata(sex),data=Melanoma,cause=1)

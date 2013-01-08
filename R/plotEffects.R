@@ -22,7 +22,7 @@ plotEffects <- function(x,
   var <- all.vars(formula)[1]
   time <- x$time
   matchVar <- grep(var,colnames(x$timeVaryingEffects$coef))
-  matchVarnames <- grep(var,colnames(x$timeVaryingEffects$coef),val=TRUE)
+  matchVarnames <- grep(var,colnames(x$timeVaryingEffects$coef),value=TRUE)
   coef <- x$timeVaryingEffects$coef[,matchVar,drop=FALSE]
   se <- sqrt(x$timeVaryingEffects$var[,matchVar,drop=FALSE])
   zval <- qnorm(1- (1-confint)/2, 0,1)

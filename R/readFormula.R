@@ -70,7 +70,7 @@ readFormula <- function(formula,
     specialArgumentNames <- lapply(specials,function(x)NULL)
   }
   else {
-    if (!(all(match(names(specialArgumentNames),specials))))
+    if (!(all(match(names(specialArgumentNames),specials,nomatch=0))))
       stop("Mispecified argument specialArgumentNames")
   }
   if (length(specialArguments)>0){

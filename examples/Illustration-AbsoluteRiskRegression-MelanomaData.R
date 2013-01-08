@@ -119,6 +119,24 @@ print(perr.link)
 
 plot(perr.link)
 
+cv.perr.link <- pec(list(AbsRisk=arr.fit,CauseSpecCox=cox.fit,FineGray=fg.fit,LogisticRisk=lrr.fit),
+                  formula=Hist(time,status)~sex+epicel+ulcer+age+logthick,
+                  cens.model="cox",
+                   splitMethod="bootcv",
+                    B=10,
+                  data=Melanoma,
+                  maxtime=2500)
+
+
+cv.cindex <- cindex(list(AbsRisk=arr.fit,CauseSpecCox=cox.fit,FineGray=fg.fit,LogisticRisk=lrr.fit),
+                  formula=Hist(time,status)~sex+epicel+ulcer+age+logthick,
+                  cens.model="cox",
+                   splitMethod="bootcv",
+                    B=10,
+                  data=Melanoma,
+                  maxtime=2500)
+
+
 ## graphical model checking
 tarr.fit <- ARR(Hist(time,status)~sex+epicel+strata(ulcer)+age+strata(logthick),data=Melanoma,cause=1,
                     cens.model="cox",

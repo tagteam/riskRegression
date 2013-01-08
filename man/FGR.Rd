@@ -52,6 +52,7 @@ Research report 11/7. Department of Biostatistics, University of Copenhagen
 \code{\link{riskRegression}}
 }
 \examples{
+library(pec)
 library(cmprsk)
 d <- prodlim:::SimCompRisk(100)
 f1 <- FGR(Hist(time,cause)~X1+X2,data=d)
