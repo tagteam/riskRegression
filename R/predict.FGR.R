@@ -18,7 +18,8 @@ predict.FGR <- function(object,newdata,times,...){
   # }}}
   args <- list(object=object$crrFit,cov1=cov1,cov2=cov2,...)
   args <- args[!sapply(args,is.null)]
-  pred <- do.call("predict.crr",args)
+  predcrr <- cmprsk:::predict.crr
+  pred <- do.call("predcrr",args)
   out <- pred[,-1,drop=FALSE]
   if (!missing(times)){
     tind <- sindex(jump.times=pred[,1],eval.times=times)

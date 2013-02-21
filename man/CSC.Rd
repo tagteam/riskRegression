@@ -66,6 +66,8 @@ CSC(formula, data, cause, survtype = "hazard", ...)
   \code{\link{coxph}}
 }
 \examples{
+library(riskRegression)
+library(prodlim)
 library(pec)
 library(survival)
 data(Melanoma)

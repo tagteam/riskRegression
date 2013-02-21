@@ -168,13 +168,15 @@ summary(fit2a.lrr)
 
 ##  compare prediction errors
 \dontrun{
-library(pec
+library(pec)
 plot(pec(list(ARR=fit2.arr,AJ=fit2.aj,LRR=fit2.lrr),data=Melanoma,maxtime=3000))
 }
 # }}}
 
 # {{{ multiple regression
-
+library(pec)
+library(riskRegression)
+library(prodlim)
 # absolute risk model
 multi.arr <- ARR(Hist(time,status)~logthick+sex+age+ulcer,data=Melanoma,cause=1)
 
