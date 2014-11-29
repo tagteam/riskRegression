@@ -50,7 +50,7 @@ readFormula <- function(formula,
         }}
     # }}}
     if (any(isSpecial>2))
-        stop("Mispecified formula: constructions like 'const(factor(sex))' are not supported")
+        stop("Mispecified formula: constructions like 'strata(factor(sex))' are not supported")
     if (any(notFound <- match(specialNames,specials,nomatch=0)==0))
         stop("Mispecified formula: special(s) '",
              paste(specialNames[notFound],collapse=" and "),

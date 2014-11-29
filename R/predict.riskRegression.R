@@ -16,88 +16,110 @@
 #' prediction Research report 11/8. Department of Biostatistics, University of
 #' Copenhagen
 #' @keywords survival
-#' @examples
-#' 
-#' data(Melanoma)
-#' fit.tarr <- ARR(Hist(time,status)~age+invasion+strata(sex),data=Melanoma,cause=1)
-#' predict(fit.tarr,newdata=data.frame(age=48,invasion="level.1",sex="Female"))
-#' predict(fit.tarr,newdata=data.frame(age=48,invasion="level.1",sex="Male"))
-#' predict(fit.tarr,newdata=data.frame(age=c(48,58,68),invasion="level.1",sex="Male"))
-#' predict(fit.tarr,newdata=Melanoma[1:4,])
-#'
+##' @examples
+##' 
+##' data(Melanoma)
+##' library(prodlim)
+##' fit.tarr <- ARR(Hist(time,status)~age+invasion+strata(sex),data=Melanoma,cause=1)
+##' predict(fit.tarr,newdata=data.frame(age=48,
+##'                      invasion=factor("level.1",
+##'                          levels=levels(Melanoma$invasion)),
+##'                      sex=factor("Female",levels=levels(Melanoma$sex))))
+##' predict(fit.tarr,newdata=data.frame(age=48,
+##'                      invasion=factor("level.1",
+##'                          levels=levels(Melanoma$invasion)),
+##'                      sex=factor("Male",levels=levels(Melanoma$sex))))
+##' predict(fit.tarr,newdata=data.frame(age=c(48,58,68),
+##'                      invasion=factor("level.1",
+##'                          levels=levels(Melanoma$invasion)),
+##'                      sex=factor("Male",levels=levels(Melanoma$sex))))
+##' predict(fit.tarr,newdata=Melanoma[1:4,])
 #' @S3method predict riskRegression
 predict.riskRegression <- function(object,
                                    newdata,
                                    ...){
-  # {{{ read design
-  Link  <-  object$link
-  n  <-  length(object$B.iid)
-  ## n is the number of clusters (or number of individuals
-  ## if no cluster structure is specified)
-  ## if (is.null(object$B.iid)==TRUE && se==TRUE) {
-  ## se <- FALSE
-  ## warning("This object has no resampling results stored, hence se=TRUE has no effect.\n You may set resample.iid=1 an run again.");
-  ## }
-  Zcoef <- c(object$timeConstantEffects$coef)
-  semi <- !is.null(Zcoef)
-  
-  ##  The time-constant effects
-  Z <- modelMatrix(formula=object$design$const$formula,
-                   data=newdata,
-                   factorLevels=object$factorLevels)
-  ## FIXME: RefLevel can be different in newdata!
-  
-  if (!(all(colnames(Z) %in% names(object$timePower))))
-    stop("\nProblem with factor names.\nCheck if the storage type of all factors\nin the original data are compatible with those in newdata\n\nOffending variable(s): ",paste(colnames(Z)[!colnames(Z)%in% names(object$timePower)],collapse=", ")," does not match ",paste(names(object$timePower)[!names(object$timePower)%in%colnames(Z)],collapse=" ,"),".")
-  ## The time-varying effects
-  X <- modelMatrix(formula=object$design$timevar$formula,
-                   data=newdata,
-                   factorLevels=object$factorLevels,
-                   intercept=object$design$Intercept)
-  if (is.null(Z) && is.null(X))
-    nobs <- NROW(newdata)
-  else
-    nobs <- max(NROW(Z),NROW(X))
-  Xcoef  <-  data.frame(object$timeVaryingEffects$coef)
-  # }}}
-  # {{{ compute the linear predictor
-  fittime  <-  object$time
-  ntime  <-  nrow(fittime)
-  timeVarLP <- X %*% t(Xcoef[,-1]) ## remove the time column
-  ## FIXME: manually set extreme values if LP = 0
-  ##        should be done in the c-routine
-  timeVarLP <- t(apply(timeVarLP,1,function(lp){fixedlp <- lp;
-                                                ## fixedlp[fixedlp==0] <- min(fixedlp)
-                                                fixedlp[fixedlp==0] <- -Inf
-                                                fixedlp}))
-  if (semi==TRUE) {
-    timePower <- sapply(colnames(Z),function(z){
-      tp <- object$timePower[[z]]
+    # {{{ read design
+    Link  <-  object$link
+    n  <-  length(object$B.iid)
+    ## n is the number of clusters (or number of individuals
+    ## if no cluster structure is specified)
+    ## if (is.null(object$B.iid)==TRUE && se==TRUE) {
+    ## se <- FALSE
+    ## warning("This object has no resampling results stored, hence se=TRUE has no effect.\n You may set resample.iid=1 an run again.");
+    ## }
+    Zcoef <- c(object$timeConstantEffects$coef)
+    semi <- !is.null(Zcoef)
+    m <- model.frame(formula=delete.response(object$design$Terms),
+                     data=newdata,na.action="na.fail")
+    PF <- prodlim::model.design(m,
+                                dropIntercept=TRUE,
+                                specialsDesign=TRUE,
+                                stripSpecialNames=TRUE)
+    ##  The time-constant effects
+    Z <- cbind(PF$tp,PF$design)
+    factorLevelsZ <- sapply(list(PF$tp,PF$design),function(e)attr(e,"levels"))
+    factorLevelsZ <- factorLevelsZ[!sapply(factorLevelsZ,is.null)]
+    refLevelsZ <- lapply(factorLevelsZ,function(x)x[1])
+    if (!(all(colnames(Z) %in% names(object$design$timepower))))
+        stop("\nProblem with factor names.\nCheck if the storage type of all factors\nin the original data are compatible with those in newdata\n\nOffending variable(s): ",paste(colnames(Z)[!colnames(Z)%in% names(object$timePower)],collapse=", ")," does not match ",paste(names(object$timePower)[!names(object$timePower)%in%colnames(Z)],collapse=" ,"),".")
+    ## The time-varying effects
+    X <- cbind(PF$timevar,PF$strata)
+    factorLevelsX <- sapply(list(PF$timevar,PF$strata),function(e)attr(e,"levels"))
+    factorLevelsX <- factorLevelsX[!sapply(factorLevelsX,is.null)]
+    refLevelsX <- lapply(factorLevelsX,function(x)x[1])
+    if (is.null(Z) && is.null(X))
+        nobs <- NROW(newdata)
+    else
+        nobs <- max(NROW(Z),NROW(X))
+    Xcoef  <-  data.frame(object$timeVaryingEffects$coef)
+    # }}}
+    # {{{ compute the linear predictor
+    fittime  <-  object$time
+    ntime  <-  NROW(fittime)
+    ## intercept
+    if (NROW(X)==0){
+        ## X <- cbind("Intercept"=1)
+        ## remove the time column
+        intercept <- t(Xcoef[,-1,drop=FALSE])
+        timeVarLP <- matrix(rep(intercept,NROW(Z)),byrow=TRUE,nrow=NROW(Z))
+    }
+    else {
+        X <- cbind("Intercept"=1,X)
+        colnamesX <- c("Intercept",colnames(X))
+        timeVarLP <- X %*% t(Xcoef[,-1,drop=FALSE]) ## remove the time column
+    }
+    ## FIXME: manually set extreme values if LP = 0
+    ##        should be done in the c-routine
+    timeVarLP <- t(apply(timeVarLP,1,function(lp){fixedlp <- lp;
+                                                  ## fixedlp[fixedlp==0] <- min(fixedlp)
+                                                  fixedlp[fixedlp==0] <- -Inf
+                                                  fixedlp}))
+    if (semi==TRUE) {
+        timepower <- object$design$timepower
+        if (any(timepower>0)){
+            timeFactor <- matrix(fittime,nrow=length(Zcoef),ncol=length(fittime),byrow=TRUE)
+            timeConstLP  <-  Z %*% (Zcoef * (timeFactor^timepower))
+        }
+        else{
+            timeConstLP  <-  colSums(t(Z) * Zcoef)
+        }
+    }
+    else
+        timeConstLP <- 0
+    LP <- timeConstLP+timeVarLP
+    # }}}
+    # {{{ compute P1
+    P1 <- switch(object$link,"relative"={
+        pmin(exp(LP),1)
+    },"additive"={
+        P1=1-exp(-LP)
+    },"prop"={
+        P1 <- 1-exp(-exp(LP))
+    },"logistic"={
+        P1 <- exp(LP)/(1+exp(LP))
     })
-    if (any(timePower>0)){
-      timeFactor <- matrix(fittime,nrow=length(Zcoef),ncol=length(fittime),byrow=TRUE)
-      timeConstLP  <-  Z %*% (Zcoef * (timeFactor^timePower))
-    }
-    else{
-      timeConstLP  <-  colSums(t(Z) * Zcoef)
-    }
-  }
-  else
-    timeConstLP <- 0
-  LP <- timeConstLP+timeVarLP
-  # }}}
-  # {{{ compute P1
-  P1 <- switch(object$link,"relative"={
-    pmin(exp(LP),1)
-  },"additive"={
-    P1=1-exp(-LP)
-  },"prop"={
-    P1 <- 1-exp(-exp(LP))
-  },"logistic"={
-    P1 <- exp(LP)/(1+exp(LP))
-  })
-  # }}}
-  # {{{ standard errors and confidence bands
+    # }}}
+    # {{{ standard errors and confidence bands
 
   ##   se.P1  <-  NULL
   ## i.i.d decomposition for computation of standard errors 

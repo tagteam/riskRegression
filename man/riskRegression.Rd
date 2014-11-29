@@ -2,7 +2,9 @@
 \alias{ARR}
 \alias{LRR}
 \alias{riskRegression}
-\title{Risk Regression}
+\title{Risk Regression
+Fits a regression model for the risk of an event -- allowing for competing
+risks.}
 \usage{
 riskRegression(formula, data, times, link = "relative", cause,
   confint = TRUE, cens.model, cens.formula, numSimu = 0, maxiter = 50,
@@ -56,24 +58,18 @@ riskRegression(formula, data, times, link = "relative", cause,
   that ignores the contribution by the estimate of the
   inverse of the probability of censoring weights}
 
-  \item{...}{}
-
-  \item{\dots}{Not used.}
+  \item{...}{Not used.}
 }
 \description{
-Fits a regression model for the risk of an event --
-allowing for competing risks.
-}
-\details{
-This is more a twin-sister than a wrapper of the function
-\code{\link{comp.risk}} (timereg package).
+This is the twin-sister of the function \code{comp.risk}
+from the timereg package.
 }
 \examples{
 data(Melanoma,package="riskRegression")
 ## tumor thickness on the log-scale
 Melanoma$logthick <- log(Melanoma$thick)
 
-# {{{ Single binary factor
+# Single binary factor
 
 ## absolute risk regression
 library(prodlim)
@@ -96,9 +92,8 @@ plot(fit.tarr,newdata=data.frame(sex=c("Female","Male")))
 fit.lrr <- LRR(Hist(time,status)~sex,data=Melanoma,cause=1)
 summary(fit.lrr)
 
-# }}}
 
-# {{{ Single continuous factor
+# Single continuous factor
 
 ## tumor thickness on the log-scale
 Melanoma$logthick <- log(Melanoma$thick)
@@ -132,9 +127,9 @@ summary(fit2a.lrr)
     library(pec)
     plot(pec(list(ARR=fit2.arr,AJ=fit2.aj,LRR=fit2.lrr),data=Melanoma,maxtime=3000))
 }
-# }}}
 
-# {{{ multiple regression
+
+# multiple regression
 library(pec)
 library(riskRegression)
 library(prodlim)
@@ -144,12 +139,12 @@ multi.arr <- ARR(Hist(time,status)~logthick+sex+age+ulcer,data=Melanoma,cause=1)
 # stratified model allowing different baseline risk for the two gender
 multi.arr <- ARR(Hist(time,status)~thick+strata(sex)+age+ulcer,data=Melanoma,cause=1)
 
-# stratify by a continuous variable
-multi.arr <- ARR(Hist(time,status)~tp(thick,power=1)+strata(sex)+age+ulcer,
+# stratify by a continuous variable: strata(age)
+multi.arr <- ARR(Hist(time,status)~tp(thick,power=1)+strata(age)+sex+ulcer,
                  data=Melanoma,
                  cause=1)
 
-fit.arr2a <- ARR(Hist(time,status)~const(thick,power=1),data=Melanoma,cause=1)
+fit.arr2a <- ARR(Hist(time,status)~tp(thick,power=1),data=Melanoma,cause=1)
 fit.arr2b <- ARR(Hist(time,status)~timevar(thick),data=Melanoma,cause=1)
 summary(fit.arr)
 
@@ -157,7 +152,7 @@ summary(fit.arr)
 fit.lrr <- LRR(Hist(time,status)~thick,data=Melanoma,cause=1)
 summary(fit.lrr)
 
-# }}}
+
 
 
 
@@ -176,12 +171,10 @@ plot(fit.aj,confint=FALSE)
              B=10,
              splitMethod="none")
 }
-#'
 }
 \author{
-Thomas H. Scheike \email{ts@biostat.ku.dk}
-
-Thomas A. Gerds \email{tag@biostat.ku.dk}
+Thomas H. Scheike \email{ts@biostat.ku.dk} Thomas A. Gerds
+\email{tag@biostat.ku.dk}
 }
 \references{
 Gerds, TA and Scheike, T and Andersen, PK (2011) Absolute

@@ -56,6 +56,7 @@ a function of time.
 }
 \examples{
 library(pec)
+library(prodlim)
 data(Melanoma)
 
 fit.arr <- ARR(Hist(time,status)~invasion+age+strata(sex),data=Melanoma,cause=1)

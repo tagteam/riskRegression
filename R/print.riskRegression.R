@@ -6,75 +6,70 @@ print.riskRegression <- function(x,
                                  verbose=TRUE,
                                  ...) {
   # {{{ echo model type, IPCW and link function
-  cat("\nriskRegression: Competing risks regression model \n")
-  cat("\nIPCW estimation. The weights are based on\n",
+  cat("Competing risks regression model \n")
+  cat("\nIPCW weights:",
       switch(tolower(x$censModel),
-             "km"={"the Kaplan-Meier estimate" },
-             "cox"={"a Cox model" },                             
-             "aalen"={"a non-parametric additive Aalen model"}),
-      " for the censoring distribution.\n",sep="")
-  ##   cat("\n",rep("_",options()$width/2),"\n",sep="")
+             "km"={"marginal Kaplan-Meier" },
+             "cox"={"Cox regression model" },                             
+             "aalen"={"non-parametric additive Aalen model"}),
+      " for the censoring distribution.",sep="")
   summary(x$response)
-  ##   cat("\n",rep("_",options()$width/2),"\n",sep="")
-  cat("\nLink function: \'",
-      switch(x$link,"prop"="proportional","logistic"="logistic","additive"="additive","relative"="relative"),
+  cat("\nLink: \'",
+      switch(x$link,"prop"="cloglog","logistic"="logistic","additive"="linear","relative"="log"),
       "\' yielding ",
       switch(x$link,
              "prop"="sub-hazard ratios (Fine & Gray 1999)",
              "logistic"="odds ratios",
              "additive"="absolute risk differences",
              "relative"="absolute risk ratios"),
-      ", see help(riskRegression).\n",
+      ## ", see help(riskRegression).\n",
       sep="")
 
   # }}}
   # {{{ find covariates and factor levels 
 
   cvars <- x$design$const
-  tvars <- x$design$timevar
+  if (Ipos <- match("Intercept",x$design$timevar,nomatch=0))
+      tvars <- x$design$timevar[-Ipos]
+  else
+      tvars <- x$design$timevar
   Flevels <- x$factorLevels
 
   # }}}
   # {{{ time varying coefs
-
-  if (!is.null(tvars)){
-    cat("\nCovariates with time-varying effects:\n\n")
-    nix <- lapply(tvars,function(v){
-      if (is.null(flevs <- Flevels[[v]])){
-        cat(" ",v," (numeric)\n",sep="")
-      }
-      else{
-        cat(" ",v," (factor with levels: ",paste(flevs,collapse=", "),")\n",sep="")
-      }
-    })
+  if (length(tvars)>0){
+      cat("\nCovariates with time-varying effects:\n\n")
+      nix <- lapply(tvars,function(v){
+          if (is.null(flevs <- Flevels[[v]])){
+              cat(" ",v," (numeric)\n",sep="")
+          }
+          else{
+              cat(" ",v," (factor with levels: ",paste(flevs,collapse=", "),")\n",sep="")
+          }
+      })
+  } else{
+      cat("No covariates with time-varying coefficient specified.\n")
   }
-  if (length(tvars)==0){
-    cat("No covariates with time-varying coefficient specified.\n")
-  }
-  else{
-    cat("\nThe effects of these variables depend on time.")
-  }
-  cat("The column 'Intercept' is the baseline risk")
-  cat(" where all the covariates have value zero\n\n")
-  if (missing(times)) times <- quantile(x$time)
-  showTimes <- prodlim::sindex(eval.times=times,jump.times=x$time)
-  showMat <- signif(exp(x$timeVaryingEffects$coef[showTimes,-1,drop=FALSE]),digits)
-  rownames(showMat) <- signif(x$timeVaryingEffects$coef[showTimes,1],2)
-  print(showMat)
-  cat("\nShown are selected time points, use\n\nplot.riskRegression\n\nto investigate the full shape.\n\n")
-
+  ## cat("The column 'Intercept' is the baseline risk")
+  ## cat(" where all the covariates have value zero\n\n")
+  ## if (missing(times)) times <- quantile(x$time)
+  ## showTimes <- prodlim::sindex(eval.times=times,jump.times=x$time)
+  ## showMat <- signif(exp(x$timeVaryingEffects$coef[showTimes,-1,drop=FALSE]),digits)
+  ## rownames(showMat) <- signif(x$timeVaryingEffects$coef[showTimes,1],2)
+  ## print(showMat)
+  ## cat("\nShown are selected time points, use\n\nplot.riskRegression\n\nto investigate the full shape.\n\n")
   # }}}
   # {{{ time constant coefs
   ## if (!is.null(cvars)){
-      ## cat("\nCovariates with time-constant effects:\n\n")
-      ## nix <- lapply(cvars,function(v){
-          ## if (is.null(flevs <- Flevels[[v]])){
-              ## cat(" ",v," (numeric)\n",sep="")
-          ## }
-          ## else{
-              ## cat(" ",v," (factor with levels: ",paste(flevs,collapse=", "),")\n",sep="")
-          ## }
-      ## })
+  ## cat("\nCovariates with time-constant effects:\n\n")
+  ## nix <- lapply(cvars,function(v){
+  ## if (is.null(flevs <- Flevels[[v]])){
+  ## cat(" ",v," (numeric)\n",sep="")
+  ## }
+  ## else{
+  ## cat(" ",v," (factor with levels: ",paste(flevs,collapse=", "),")\n",sep="")
+  ## }
+  ## })
   ## }
   cat("\nTime constant regression coefficients:\n\n")
   if (is.null(x$timeConstantEffects)){
@@ -115,12 +110,11 @@ print.riskRegression <- function(x,
           cat(paste("\n\nNote: The values exp(Coef) are",switch(x$link,"prop"="sub-hazard ratios (Fine & Gray 1999)","logistic"="odds ratios","additive"="absolute risk differences","relative"="absolute risk ratios")),"\n")
           tp <- x$design$timepower!=0
           if (any(tp))
-              cat(paste("\n\nNote:The coeffient(s) for the following variable(s)\n",
+              cat(paste("\n\nNote:The coeffient(s) for the variable(s)\n",
                         paste(names(x$design$timepower)[tp],collapse=", "),
-                        "are interpreted as per factor unit multiplied by time^power.\n",sep=""))
+                        " are to be interpreted as effect per unit multiplied by time^power.\n",sep=""))
       }
   }
-
   # }}}
   invisible(coefMat)
 }

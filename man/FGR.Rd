@@ -68,9 +68,17 @@ sqFun <- function(x){x^0.5}
 
 ## multiply X1 by time^2 and X2 by time:
 f5 <- FGR(Hist(time,cause)~cov2(X1,tf=qFun)+cov2(X2),data=d)
+print(f5)
+print(f5$crrFit)
+## same results as crr
+with(d,crr(ftime=time,
+           fstatus=cause,
+           cov2=d[,c("X1","X2")],
+           tf=function(time){cbind(qFun(time),time)}))
 
-## the same but more explicit
+## still same result, but more explicit
 f5a <- FGR(Hist(time,cause)~cov2(X1,tf=qFun)+cov2(X2,tf=noFun),data=d)
+f5a$crrFit
 
 ## multiply X1 by time^2 and X2 by sqrt(time)
 f5b <- FGR(Hist(time,cause)~cov2(X1,tf=qFun)+cov2(X2,tf=sqFun),data=d,cause=1)

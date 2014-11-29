@@ -137,10 +137,10 @@ summary.riskRegression <- function(object,
                                                                   "logistic"="odds ratios",
                                                                   "additive"="absolute risk differences",
                                                                   "relative"="absolute risk ratios")),"\n")
-            tp <- x$design$timepower!=0
+            tp <- object$design$timepower!=0
             if (any(tp))
                 cat(paste("\n\nNote:The coeffient(s) for the following variable(s)\n",
-                          paste(names(x$design$timepower)[tp],collapse=", "),
+                          paste(names(object$design$timepower)[tp],collapse=", "),
                           "are interpreted as per factor unit multiplied by time^power.\n",sep=""))
         }
     }

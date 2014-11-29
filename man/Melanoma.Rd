@@ -3,18 +3,17 @@
 \alias{Melanoma}
 \title{Malignant melanoma data}
 \format{A data frame with 205 observations on the following 12 variables.
-\describe{ \item{list("time")}{ time in days from operation}
-\item{list("event")}{a factor with levels \code{censored}
-\code{death.malignant.melanoma} \code{death.other.causes}}
-\item{list("status")}{a numeric with values \code{0=censored}
-\code{1=death.malignant.melanoma} \code{2=death.other.causes}}
-\item{list("invasion")}{a factor with levels \code{level.0}, \code{level.1},
-\code{level.2}} \item{list("ici")}{inflammatory cell infiltration (ICI): 0,
-1, 2 or 3} \item{list("epicel")}{a factor with levels \code{not present}
-\code{present}} \item{list("ulcer")}{a factor with levels \code{not present}
-\code{present}} \item{list("thick")}{tumour thickness (in 1/100 mm)}
-\item{list("sex")}{a factor with levels \code{Female} \code{Male}}
-\item{list("age")}{age at operation (years)} }}
+\describe{
+\item{time}{ time in days from operation}
+\item{status}{a numeric with values \code{0=censored} \code{1=death.malignant.melanoma} \code{2=death.other.causes}}
+\item{event}{a factor with levels \code{censored} \code{death.malignant.melanoma} \code{death.other.causes}}
+\item{invasion}{a factor with levels \code{level.0}, \code{level.1}, \code{level.2}}
+\item{ici}{inflammatory cell infiltration (ICI): 0, 1, 2 or 3}
+\item{epicel}{a factor with levels \code{not present} \code{present}}
+\item{ulcer}{a factor with levels \code{not present} \code{present}}
+\item{thick}{tumour thickness (in 1/100 mm)}
+\item{sex}{a factor with levels \code{Female} \code{Male}}
+\item{age}{age at operation (years)} }}
 \source{
 \url{http://192.38.117.59/~linearpredictors/?page=datasets&dataset=Melanoma}
 }

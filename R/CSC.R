@@ -77,13 +77,13 @@ CSC <- function (formula,data,cause,survtype="hazard",...){
     response <- model.response(mf)
     time <- response[, "time"]
     status <- response[, "status"]
-    event <- getEvent(response)
+    event <- prodlim::getEvent(response)
     # }}}
     # {{{ event times
     eventTimes <- unique(sort(as.numeric(time[status != 0])))
     # }}}
     # {{{ causes
-    causes <- getStates(response)
+    causes <- prodlim::getStates(response)
     if (survtype=="hazard")
         NC <- length(causes)
     else
@@ -126,7 +126,7 @@ CSC <- function (formula,data,cause,survtype="hazard",...){
                 covData <- cbind(EHF$design,EHF$strata)
             ## response <- model.response(covData)
             time <- as.numeric(EHF$event.history[, "time",drop=TRUE])
-            event <- getEvent(EHF$event.history)
+            event <- prodlim::getEvent(EHF$event.history)
             statusX <- as.numeric(event==causeX)
             workData <- data.frame(time=time,status=statusX)
             workData <- cbind(workData,covData)
@@ -148,7 +148,7 @@ CSC <- function (formula,data,cause,survtype="hazard",...){
             covData <- model.frame(formulaX,data=data)
             response <- model.response(covData)
             time <- response[, "time"]
-            event <- getEvent(response)
+            event <- prodlim::getEvent(response)
             if (x==1){
                 statusX <- event==causeX
             }

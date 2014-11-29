@@ -3,7 +3,12 @@ predict.FGR <- function(object,newdata,times,...){
     # {{{ check the data and the design
     if (missing(newdata)) stop("Argument 'newdata' is missing")
     if (NROW(newdata) == 0) stop("No (non-missing) observations")
-    EHF <- prodlim::EventHistory.frame(object$call$formula,newdata,specials=c("cov1","cov2"),specialsDesign=TRUE)
+    rhs <- as.formula(delete.response(object$terms))
+    EHF <- prodlim::EventHistory.frame(rhs,
+                                       newdata,
+                                       check.formula=FALSE,
+                                       specials=c("cov1","cov2"),
+                                       specialsDesign=TRUE)
     # }}}
     # {{{ covariate design matrices
     cov1 <- cbind(EHF$cov1,EHF$design)

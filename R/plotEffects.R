@@ -29,30 +29,41 @@
 #' 
 #' Thomas A. Gerds \email{tag@@biostat.ku.dk}
 #' @keywords survival
-#' @examples
-#' 
-#' library(pec)
-#' data(Melanoma)
-#' 
-#' fit.tarr <- ARR(Hist(time,status)~strata(sex),data=Melanoma,cause=1)
-#' plotEffects(fit.tarr)
-#' 
-#' fit.tarr <- ARR(Hist(time,status)~strata(sex)+strata(invasion),data=Melanoma,cause=1,times=seq(800,3000,20))
-#' plotEffects(fit.tarr,formula=~sex)
-#' plotEffects(fit.tarr,formula=~invasion)
-#' plotEffects(fit.tarr,formula=~invasion,level="invasion:level.1")
-#' 
-#' ## legend arguments are transcluded:
-#' plotEffects(fit.tarr,formula=~invasion,legend.bty="b",legend.cex=1)
-#' 
-#' ## and other smart arguments too:
-#' plotEffects(fit.tarr,
-#' 	    formula=~invasion,
-#' 	    legend.bty="b",
-#'             axis2.las=2,
-#' 	    legend.cex=1)
-#' 
-#'
+##' @examples
+##' 
+##' library(pec)
+##' library(prodlim)
+##' data(Melanoma)
+##' 
+##' fit.tarr <- ARR(Hist(time,status)~strata(sex),
+##'                 data=Melanoma,
+##'                 cause=1)
+##' plotEffects(fit.tarr)
+##' 
+##' fit.tarr <- ARR(Hist(time,status)~strata(sex)+strata(invasion),
+##'                 data=Melanoma,
+##'                 cause=1,
+##'                 times=seq(800,3000,20))
+##' plotEffects(fit.tarr,formula=~sex)
+##' plotEffects(fit.tarr,formula=~invasion)
+##' plotEffects(fit.tarr,
+##'             formula=~invasion,
+##'             level="invasionlevel.1")
+##' 
+##' ## legend arguments are transcluded:
+##' plotEffects(fit.tarr,
+##'             formula=~invasion,
+##'             legend.bty="b",
+##'             legend.cex=1)
+##' 
+##' ## and other smart arguments too:
+##' plotEffects(fit.tarr,
+##' 	    formula=~invasion,
+##' 	    legend.bty="b",
+##' axis2.las=2,
+##' 	    legend.cex=1)
+##' 
+##' #'
 #' @export
 plotEffects <- function(x,
                         formula,
@@ -72,50 +83,52 @@ plotEffects <- function(x,
                         ...){
   # {{{ find variables and coefficients with confidence limits
 
-  timevars <- all.vars(x$design$timevar$formula)
-  if (length(timevars)==0) stop("No variable with time-varying effect in model design.")
-  if (missing(formula)) formula <- x$design$timevar$formula
-  var <- all.vars(formula)[1]
-  time <- x$time
-  matchVar <- grep(var,colnames(x$timeVaryingEffects$coef))
-  matchVarnames <- grep(var,colnames(x$timeVaryingEffects$coef),value=TRUE)
-  coef <- x$timeVaryingEffects$coef[,matchVar,drop=FALSE]
-  se <- sqrt(x$timeVaryingEffects$var[,matchVar,drop=FALSE])
-  zval <- qnorm(1- (1-confint)/2, 0,1)
-  lower <- coef-zval*se
-  upper <- coef + zval*se
+    timevars <- x$design$timevar
+    if (length(timevars)==0) stop("No variable with time-varying effect in model design.")
+    if (missing(formula))
+        thisvar <- timevars[1]
+    else 
+        thisvar <- all.vars(formula)[1]
+    time <- x$time
+    matchVar <- grep(thisvar,colnames(x$timeVaryingEffects$coef))
+    matchVarnames <- grep(thisvar,colnames(x$timeVaryingEffects$coef),value=TRUE)
+    coef <- x$timeVaryingEffects$coef[,matchVar,drop=FALSE]
+    se <- sqrt(x$timeVaryingEffects$var[,matchVar,drop=FALSE])
+    zval <- qnorm(1- (1-confint)/2, 0,1)
+    lower <- coef-zval*se
+    upper <- coef + zval*se
   
-  # select levels for categorical variables
-  levs <- colnames(coef)
-  if (!missing(level)) {
-    levs <- levs[match(level,levs,nomatch=0)]
-    matchVarnames <- matchVarnames[match(levs,matchVarnames,nomatch=0)]
-  }
-  if (length(levs)==0) stop(paste("Could not find level(s): ",paste(level,collapse=", ")),"\nAvailable levels: ",paste(colnames(coef),collapse=", "))
-  # }}}
-  # {{{  plotting limits, colors, etc
-  if (missing(ylim))
-    ylim <- c(floor(min(lower)),ceiling(max(upper)))
-  if (missing(xlim))
-    xlim=c(min(time),max(time))
-  if (missing(col))
-    col <- 1:12
-  col <- rep(col,length.out=NCOL(coef))
-  if (missing(lty))
-    lty <- 1
-  lty <- rep(lty,length.out=NCOL(coef))
-  if (missing(lwd))
-    lwd <- 2
-  lwd <- rep(lwd,length.out=NCOL(coef))
-  # }}}
-  # {{{  setting default arguments
-  ## if (missing(legend)) legend <- length(matchVar)>1
-  if (missing(legend)) legend <- TRUE
-  background.DefaultArgs <- list(xlim=xlim,ylim=ylim,horizontal=seq(0,1,.25),vertical=NULL,bg="white",fg="gray88")
-  axis1.DefaultArgs <- list()
-  axis2.DefaultArgs <- list(side=2)
-  lines.DefaultArgs <- list(type="s")
-  plot.DefaultArgs <- list(x=0,y=0,type = "n",ylim = ylim,xlim = xlim,xlab = xlab,ylab = ylab)
+    # select levels for categorical variables
+    levs <- colnames(coef)
+    if (!missing(level)) {
+        levs <- levs[match(level,levs,nomatch=0)]
+        matchVarnames <- matchVarnames[match(levs,matchVarnames,nomatch=0)]
+    }
+    if (length(levs)==0) stop(paste("Could not find level(s): ",paste(level,collapse=", ")),"\nAvailable levels: ",paste(colnames(coef),collapse=", "))
+    # }}}
+    # {{{  plotting limits, colors, etc
+    if (missing(ylim))
+        ylim <- c(floor(min(lower)),ceiling(max(upper)))
+    if (missing(xlim))
+        xlim=c(min(time),max(time))
+    if (missing(col))
+        col <- 1:12
+    col <- rep(col,length.out=NCOL(coef))
+    if (missing(lty))
+        lty <- 1
+    lty <- rep(lty,length.out=NCOL(coef))
+    if (missing(lwd))
+        lwd <- 2
+    lwd <- rep(lwd,length.out=NCOL(coef))
+    # }}}
+    # {{{  setting default arguments
+    ## if (missing(legend)) legend <- length(matchVar)>1
+    if (missing(legend)) legend <- TRUE
+    background.DefaultArgs <- list(xlim=xlim,ylim=ylim,horizontal=seq(0,1,.25),vertical=NULL,bg="white",fg="gray88")
+    axis1.DefaultArgs <- list()
+    axis2.DefaultArgs <- list(side=2)
+    lines.DefaultArgs <- list(type="s")
+    plot.DefaultArgs <- list(x=0,y=0,type = "n",ylim = ylim,xlim = xlim,xlab = xlab,ylab = ylab)
   
   legend.DefaultArgs <- list(legend=matchVarnames,
                              trimnames=FALSE,
@@ -164,7 +177,7 @@ plotEffects <- function(x,
   # {{{ adding the lines
 
   if (length(matchVar)>1){
-    ref <- x$refLevels[var]
+    ref <- x$refLevels[thisvar]
     if (refLine==TRUE)
       abline(h=0,col="gray55",lwd=2)
     nix <- lapply(1:length(levs),function(l){

@@ -1,18 +1,18 @@
 Package: riskRegression
 Type: Package
 Title: Risk regression for survival analysis
-Version: 1.0.4
+Version: 1.0.6
 Date: 2014-07-17
 Author: Thomas Alexander Gerds, Thomas Harder Scheike
-Depends:
-    R (>= 1.9.1),
 Imports:
     prodlim,
     rms,
     pec,
-    rms,
     cmprsk,
-    survival
+    survival,
+    randomForestSRC
+Suggests:
+    lava
 Maintainer: Thomas Alexander Gerds <tag@biostat.ku.dk>
 Description: Risk regression models for survival analysis with and without
     competing risks

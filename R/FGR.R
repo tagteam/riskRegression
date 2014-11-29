@@ -58,27 +58,21 @@
 ##' f5 <- FGR(Hist(time,cause)~cov2(X1,tf=qFun)+cov2(X2),data=d)
 ##' print(f5)
 ##' print(f5$crrFit)
-##' ## same results as
+##' ## same results as crr
 ##' with(d,crr(ftime=time,
 ##'            fstatus=cause,
 ##'            cov2=d[,c("X1","X2")],
 ##'            tf=function(time){cbind(qFun(time),time)}))
-##' with(d,
-##'      crr(ftime=time,
-##'          fstatus=cause,
-##'          cov2=d[,c("X1","X2")],
-##'          tf=function(x){do.call("cbind",
-##'              lapply(list("qFun", "id"), function(f) {do.call(f,list(x))}))}))
 ##' 
-##'      ## same, but more explicit
-##'      f5a <- FGR(Hist(time,cause)~cov2(X1,tf=qFun)+cov2(X2,tf=noFun),data=d)
+##' ## still same result, but more explicit
+##' f5a <- FGR(Hist(time,cause)~cov2(X1,tf=qFun)+cov2(X2,tf=noFun),data=d)
+##' f5a$crrFit
 ##' 
-##'      ## multiply X1 by time^2 and X2 by sqrt(time)
-##'      f5b <- FGR(Hist(time,cause)~cov2(X1,tf=qFun)+cov2(X2,tf=sqFun),data=d,cause=1)
+##' ## multiply X1 by time^2 and X2 by sqrt(time)
+##' f5b <- FGR(Hist(time,cause)~cov2(X1,tf=qFun)+cov2(X2,tf=sqFun),data=d,cause=1)
 ##' 
-##'      ## additional arguments for crr
-##'      f6<- FGR(Hist(time,cause)~X1+X2,data=d, cause=1,gtol=1e-5)
- 
+##' ## additional arguments for crr
+##' f6<- FGR(Hist(time,cause)~X1+X2,data=d, cause=1,gtol=1e-5)
 #' @export
 FGR <- function(formula,data,cause=1,y=TRUE,...){
     # {{{ read the data and the design
@@ -103,11 +97,11 @@ FGR <- function(formula,data,cause=1,y=TRUE,...){
         event <- status
     }
     else{
-        event <- as.numeric(getEvent(response))
+        event <- as.numeric(prodlim::getEvent(response))
     }
     # }}}
     # {{{ cause of interest
-    states <- getStates(response)
+    states <- prodlim::getStates(response)
     if (missing(cause)){
         cause <- 1
         message("Argument cause missing. Analyse cause: ",states[1])
@@ -134,9 +128,7 @@ FGR <- function(formula,data,cause=1,y=TRUE,...){
         ## it is a bit silly to first remove special and then to add it again,
         ## but it seems to work.
         specialArguments <- sapply(paste("cov2(",colnames(cov2),")",sep=""),function(s)
-                                   prodlim::parseSpecialNames(s,
-                                                              "cov2",
-                                                              list(cov2="tf")))
+                                   prodlim::parseSpecialNames(s,"cov2",list(cov2="tf")))
         this <- sapply(specialArguments,is.null)
         if (all(this)){
             args$tf <- bquote(function(x){matrix(rep(x,.(NCOL(cov2))),ncol=.(NCOL(cov2)),byrow=FALSE)})
@@ -170,20 +162,8 @@ FGR <- function(formula,data,cause=1,y=TRUE,...){
     # {{{ clean up
     out$call <- match.call()
     if (is.null(out$call$cause)) out$call$cause <- cause
-    out$call$formula <- formula
-    ## out$call$formula <- parent.frame()[[all.names(out$call$formula)]]
+    out$terms <- terms(formula)
     class(out) <- "FGR"
     # }}}
     out
 }
-#' Dummy functions for FGR to communicate how covariates are treated
-#' 
-#' @title Dummy functions for FGR
-#' @export
-#' @param x  covariate name  
-cov1 <- function(x)x
-#' @export
-#' @title Dummy function for FGR
-#' @param x covariate name 
-#' @param x time function
-cov2 <- function(x,tf)x

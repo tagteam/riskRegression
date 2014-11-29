@@ -9,7 +9,7 @@
 \title{Estimation of censoring probabilities at subject specific times}
 \usage{
 subjectWeights(formula, data, method = c("cox", "marginal", "km", "nonpar",
-  "rfsrc", "none"), args, lag = 1)
+  "forest", "none"), args, lag = 1)
 }
 \arguments{
   \item{formula}{A survival formula like,
@@ -25,6 +25,9 @@ subjectWeights(formula, data, method = c("cox", "marginal", "km", "nonpar",
 
   \item{method}{Censoring model used for estimation of the
   (conditional) censoring distribution.}
+
+  \item{args}{Arguments passed to the fitter of the
+  method.}
 
   \item{lag}{If equal to \code{1} then obtain
   \code{G(T_i-|X_i)}, if equal to \code{0} estimate the
@@ -59,6 +62,7 @@ IMPORTANT: the data set should be ordered,
 }
 \examples{
 library(pec)
+library(prodlim)
 dat=SimSurv(300)
 
 dat <- dat[order(dat$time,-dat$status),]
