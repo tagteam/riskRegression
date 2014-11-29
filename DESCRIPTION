@@ -4,10 +4,21 @@ Title: Risk regression for survival analysis
 Version: 0.0.9
 Date: 2011-17-11
 Author: Thomas Alexander Gerds, Thomas Harder Scheike
-Depends: R (>= 1.9.1), prodlim (>= 1.2.9), rms, pec (>= 2.1.2)
-Imports: rms, cmprsk, survival
-Suggests: rms, cmprsk, survival
+Depends:
+    R (>= 1.9.1),
+    prodlim (>= 1.2.9),
+    rms,
+    pec (>= 2.1.2)
+Imports:
+    rms,
+    cmprsk,
+    survival
+Suggests:
+    rms,
+    cmprsk,
+    survival
 Maintainer: Thomas Alexander Gerds <tag@biostat.ku.dk>
-Description: Risk regression models for survival analysis with and without competing risks
+Description: Risk regression models for survival analysis with and without
+    competing risks
 License: GPL (>= 2)
 Packaged: 17 Nov 2011 (15:06) ;tag

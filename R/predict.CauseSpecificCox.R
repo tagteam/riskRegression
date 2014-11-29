@@ -24,7 +24,7 @@
   ## }
   ## else{
     ## tdiff <- min(diff(eTimes))/2
-    ## lagsurv <- pec:::predictSurvProb(object$models[["OverallSurvival"]],times=eTimes-tdiff,newdata=newdata)
+    ## lagsurv <- predictSurvProb(object$models[["OverallSurvival"]],times=eTimes-tdiff,newdata=newdata)
     ## cuminc1 <- t(apply(lagsurv*Haz1,1,cumsum))
   ## }
   ## pos <- sindex(jump.times=eTimes, eval.times=times)

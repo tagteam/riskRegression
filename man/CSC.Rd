@@ -75,6 +75,8 @@ data(Melanoma)
 ## different formula for the two causes
 fit1 <- CSC(list(Hist(time,status)~sex,Hist(time,status)~invasion+epicel+age),data=Melanoma)
 print(fit1)
+fit1a <- CSC(list(Hist(time,status)~sex,Hist(time,status)~invasion+epicel+age),data=Melanoma,survtype="surv")
+print(fit1a)
 
 ## same formula for both causes
 fit2 <- CSC(Hist(time,status)~invasion+epicel+age,data=Melanoma)

@@ -56,7 +56,7 @@ library(riskRegression)
 library(prodlim)
 library(pec)
 library(cmprsk)
-d <- prodlim:::SimCompRisk(100)
+d <- SimCompRisk(100)
 f1 <- FGR(Hist(time,cause)~X1+X2,data=d)
 print(f1)
 

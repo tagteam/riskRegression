@@ -15,7 +15,7 @@ FGR <- function(formula,data,cause=1,...){
   call <- match.call()
   m <- match.call(expand.dots = FALSE)
   if (match("subset",names(call),nomatch=FALSE))
-    stop("Subsetting of data is not possible.")
+      stop("Subsetting of data is not possible.")
   m <- m[match(c("","formula","data","subset","na.action"),names(m),nomatch = 0)]
   m[[1]]  <-  as.name("model.frame")
   if (missing(data)) stop("Argument 'data' is missing")
@@ -26,7 +26,7 @@ FGR <- function(formula,data,cause=1,...){
   m$formula <- formList$allVars
   theData <- eval(m, parent.frame()) 
   if ((nMiss <- (NROW(data)-NROW(theData)))>0)
-    warning(nMiss," lines have been removed from data due to missing values")
+      warning(nMiss," lines have been removed from data due to missing values")
   if (NROW(theData) == 0) stop("No (non-missing) observations")
   # }}}
   # {{{ response
@@ -36,23 +36,23 @@ FGR <- function(formula,data,cause=1,...){
   time  <- numeric(length(Y))
   status <- as.vector(response[,"status"])
   if (match("event",colnames(response),nomatch=0)==0){
-    event <- status
+      event <- status
   }
   else{
-    event <- as.numeric(getEvent(response))
+      event <- as.numeric(getEvent(response))
   }
   # }}}
   # {{{ cause of interest
   states <- getStates(response)
   if (missing(cause)){
-    cause <- 1
-    message("Argument cause missing. Analyse cause: ",states[1])
+      cause <- 1
+      message("Argument cause missing. Analyse cause: ",states[1])
   }
   else{
-    if ((foundCause <- match(as.character(cause),states,nomatch=0))==0)
-      stop(paste("Requested cause: ",cause," Available causes: ", states))
-    else
-      cause <- foundCause
+      if ((foundCause <- match(as.character(cause),states,nomatch=0))==0)
+          stop(paste("Requested cause: ",cause," Available causes: ", states))
+      else
+          cause <- foundCause
   }  
   # }}}
   # {{{ covariate design matrices
@@ -63,9 +63,9 @@ FGR <- function(formula,data,cause=1,...){
                       data=theData,
                       intercept=NULL)
   if (!is.null(cov1))
-    class(cov1) <- "matrix"
+      class(cov1) <- "matrix"
   if (!is.null(cov2))
-    class(cov2) <- "matrix"
+      class(cov2) <- "matrix"
   # }}}
   # {{{ call crr
   args <- list(ftime=Y,
@@ -73,36 +73,37 @@ FGR <- function(formula,data,cause=1,...){
                cov1=cov1,
                cov2=cov2,
                failcode=cause,
-               cencode=length(states)+1)
+               cencode=length(states)+1,...)
   if (NCOL(cov2)>0){
-    this <- sapply(formList$cov2$specialArguments,is.null)
-    ## if (all(this <- sapply(formList$cov2$specialArguments,is.null))){
-    ## args$tf <- function(x){matrix(x,ncol=NCOL(cov2),byrow=FALSE)}
-    ## args$tf <- function(x){matrix(x,ncol=NCOL(cov2),byrow=FALSE)}
-    ## }
-    ## else{
-    tf.temp <- lapply(formList$cov2$specialArguments,function(a)a$tf)
-    if (any(this)){
-      id <- function(x)x
-      tf.temp[this] <- "id" 
-    }
-    args$tf <- function(x){
-      do.call("cbind",lapply(tf.temp,function(f){
-        do.call(f,list(x))
-      }))
-    }
+      this <- sapply(formList$cov2$specialArguments,is.null)
+      ## if (all(this <- sapply(formList$cov2$specialArguments,is.null))){
+      ## args$tf <- function(x){matrix(x,ncol=NCOL(cov2),byrow=FALSE)}
+      ## args$tf <- function(x){matrix(x,ncol=NCOL(cov2),byrow=FALSE)}
+      ## }
+      ## else{
+      tf.temp <- lapply(formList$cov2$specialArguments,function(a)a$tf)
+      if (any(this)){
+          id <- function(x)x
+          tf.temp[this] <- "id" 
+      }
+      args$tf <- function(x){
+          do.call("cbind",lapply(tf.temp,function(f){
+              do.call(f,list(x))
+          }))
+      }
   }
   else{
-    args$tf <- function(x){matrix(x,ncol=NCOL(cov2),byrow=FALSE)}
+      args$tf <- function(x){matrix(x,ncol=NCOL(cov2),byrow=FALSE)}
   }
   args <- args[!sapply(args,is.null)]
   fit <- do.call("crr",args)
+  fit$call <- NULL
   out <- list(crrFit=fit,response=response,cause=cause)
   # }}}
   # {{{ clean up
   out$call <- match.call()
-  if (is.null(out$call$cause))
-    out$call$cause <- cause
+  if (is.null(out$call$cause)) out$call$cause <- cause
+  out$call$formula <- eval(out$call$formula)
   class(out) <- "FGR"
   # }}}
   out

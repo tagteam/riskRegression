@@ -1,22 +1,22 @@
 # inverse of the probability of censoring weigths at the subject specific event times
 # {{{ method root
 subjectWeights <- function(formula,data,method=c("cox","marginal","km","nonpar","aalen","none"),lag=1){
-  if (lag!=1 && lag!=0){ stop("lag must be either 0 or 1")}
-  method <- tolower(method)
-  method <- match.arg(method,c("cox","marginal","km","nonpar","aalen","none"))
-  class(method) <- method
-  UseMethod("subjectWeights",method)
+    if (lag!=1 && lag!=0){ stop("lag must be either 0 or 1")}
+    method <- tolower(method)
+    method <- match.arg(method,c("cox","marginal","km","nonpar","aalen","none"))
+    class(method) <- method
+    UseMethod("subjectWeights",method)
 }
 # }}}
 # {{{ None: set weights to 1
 subjectWeights.none <- function(formula,data,method,lag=1){
-  weights <- rep(1,NROW(data))
-  out <- list(weights=weights,
-              fit=NULL,
-              call=match.call(),
-              method=method)
-  class(out) <- "subjectWeights"
-  out
+    weights <- rep(1,NROW(data))
+    out <- list(weights=weights,
+                fit=NULL,
+                call=match.call(),
+                method=method)
+    class(out) <- "subjectWeights"
+    out
 }
 subjectWeights.none <- subjectWeights.none
 # }}}
@@ -24,7 +24,7 @@ subjectWeights.none <- subjectWeights.none
 subjectWeights.marginal <- function(formula,data,method,lag=1){
   formula <- update.formula(formula,"~1")
   fit <- prodlim(formula,data=data,reverse=TRUE)
-  weights <- prodlim:::predictSurvIndividual(fit,lag=lag)
+  weights <- predictSurvIndividual(fit,lag=lag)
   out <- list(weights=weights,fit=fit,lag=lag,call=match.call(),method=method)
   class(out) <- "subjectWeights"
   out

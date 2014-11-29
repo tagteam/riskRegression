@@ -35,7 +35,6 @@ print(fg.invasion)
 cox.invasion <- CSC(Hist(time,status)~invasion,data=Melanoma)
 print(cox.invasion)
 
-
 ## Absolute risk regression with continuous predictor
 arr.thick <- ARR(Hist(time,status)~thick,
                  data=Melanoma,
@@ -104,8 +103,8 @@ plot(predictEventProb(arr.fit,times=1826.25,newdata=Melanoma),
      xlab="Absolute risk model",
      ylab="Combined cause-specific Cox models",
      axes=FALSE)
-prodlim:::PercentAxis(1,at=seq(0,1,.25))
-prodlim:::PercentAxis(2,at=seq(0,1,.25))
+PercentAxis(1,at=seq(0,1,.25))
+PercentAxis(2,at=seq(0,1,.25))
 abline(a=0,b=1)
 
 

@@ -61,6 +61,7 @@ CSC <- function (formula,data,cause,survtype="hazard",...){
       formulaXX <- as.formula(paste("Surv(time,status)",as.character(delete.response(terms.formula(formulaX)))[[2]],sep="~"))
       fit <- coxph(formulaXX, data = workData,...)
       fit$call$formula <- fit$formula
+      ## fit$call$data <- data
       fit
     })
     ## names(CoxModels) <- paste("Cause",causes)
@@ -82,7 +83,10 @@ CSC <- function (formula,data,cause,survtype="hazard",...){
       }
       workData <- cbind(time=time,status=statusX,covData[,-1,drop=FALSE])
       formulaXX <- as.formula(paste("Surv(time,status)",as.character(delete.response(terms.formula(formulaX)))[[2]],sep="~"))
-      coxph(formulaXX, data = workData,...)
+      fit <- coxph(formulaXX, data = workData,...)
+      ## fit$call$data <- data
+      fit$call$formula <- fit$formula
+      fit
     })
     names(CoxModels) <- c(paste("Cause",theCause),"OverallSurvival")
   }
