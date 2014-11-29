@@ -113,14 +113,17 @@ CSC <- function (formula,data,cause,survtype="hazard",...){
                 causeX <- theCause
             else
                 causeX <- otherCauses[x-1]
-            ## EHF <- prodlim::EventHistory.frame(formula=formula[[x]],
-            EHF <- EventHistory.frame(formula=formula[[x]],
-                                      data=data,
-                                      unspecialsDesign=FALSE,
-                                      specials="strata",
-                                      specialsDesign=FALSE)
+            EHF <- prodlim::EventHistory.frame(formula=formula[[x]],
+                                               data=data,
+                                               unspecialsDesign=FALSE,
+                                               specialsFactor=FALSE,
+                                               specials="strata",
+                                               specialsDesign=FALSE)
             formulaX <- formula[[x]]
-            covData <- cbind(EHF$design,EHF$strata)
+            if (is.null(EHF$strata))
+                covData <- cbind(EHF$design)
+            else
+                covData <- cbind(EHF$design,EHF$strata)
             ## response <- model.response(covData)
             time <- as.numeric(EHF$event.history[, "time",drop=TRUE])
             event <- getEvent(EHF$event.history)
