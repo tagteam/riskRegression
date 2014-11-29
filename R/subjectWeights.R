@@ -112,8 +112,8 @@ subjectWeights.nonpar <- function(formula,data,method,args,lag=1){
 subjectWeights.cox <- function(formula,data,method,args,lag=1){
     ## require(rms)
     require(survival)
-    EHF <- prodlim::EventHistory.frame(formula,data,specials=NULL)
-    wdata <- as.data.frame(EHF)
+    EHF <- prodlim::EventHistory.frame(formula,data,specials=NULL,unspecialsDesign=FALSE)
+    wdata <- data.frame(cbind(unclass(EHF$event.history),EHF$design))
     wdata$status <- 1-wdata$status
     wform <- update(formula,"Surv(time,status)~.")
     stopifnot(NROW(na.omit(wdata))>0)    
@@ -130,8 +130,8 @@ subjectWeights.cox <- function(formula,data,method,args,lag=1){
 # {{{ reverse random forest
 #' @S3method subjectWeights rfsrc
 subjectWeights.rfsrc <- function(formula,data,method,args,lag=1){
-    EHF <- prodlim::EventHistory.frame(formula,data,specials=NULL)
-    wdata <- as.data.frame(EHF)
+    EHF <- prodlim::EventHistory.frame(formula,data,specials=NULL,unspecialsDesign=FALSE)
+    wdata <- data.frame(cbind(unclass(EHF$event.history),EHF$design))
     wdata$status <- 1-wdata$status
     wform <- update(formula,"Surv(time,status)~.")
     stopifnot(NROW(na.omit(wdata))>0)    
