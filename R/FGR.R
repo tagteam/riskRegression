@@ -6,13 +6,15 @@
 #' The function \code{crr} allows to multiply some covariates by time before
 #' they enter the linear predictor. This can be achieved with the formula
 #' interface, however, the code becomes a little cumbersome. See the examples.
-#' 
+#'
+#' @title Formula wrapper for crr from cmprsk 
 #' @param formula A formula whose left hand side is a \code{Hist} object -- see
 #' \code{\link{Hist}}.  The right hand side specifies (a linear combination of)
 #' the covariates. See examples below.
 #' @param data A data.frame in which all the variables of \code{formula} can be
 #' interpreted.
 #' @param cause The failure type of interest. Defaults to \code{1}.
+#' @param y logical value: if \code{TRUE}, the response vector is returned in component \code{response}.
 #' @param \dots ...
 #' @return See \code{crr}.
 #' @author Thomas Alexander Gerds \email{tag@@biostat.ku.dk}
@@ -65,11 +67,7 @@
 #' f6<- FGR(Hist(time,cause)~X1+X2,data=d, cause=1,gtol=1e-5)
 #' 
 #' @export
-cov1 <- function(x)x
-#' @export
-cov2 <- function(x,tf)x
-#' @export
-FGR <- function(formula,data,cause=1,...){
+FGR <- function(formula,data,cause=1,y=TRUE,...){
     # {{{ read the data and the design
     cov1 <- function(x)x
     cov2 <- function(x)x
@@ -147,9 +145,10 @@ FGR <- function(formula,data,cause=1,...){
     fit <- do.call(cmprsk::crr,args)
     fit$call <- NULL
     out <- list(crrFit=fit,
-                response=response,
                 cause=cause,
                 "na.action"=attr(EHF,"na.action"))
+    if (y==TRUE)
+        out <- c(out,list(response=response))
     # }}}
     # {{{ clean up
     out$call <- match.call()
@@ -160,3 +159,14 @@ FGR <- function(formula,data,cause=1,...){
     # }}}
     out
 }
+#' Dummy functions for FGR to communicate how covariates are treated
+#' 
+#' @title Dummy functions for FGR
+#' @export
+#' @param x  covariate name  
+cov1 <- function(x)x
+#' @export
+#' @title Dummy function for FGR
+#' @param x covariate name 
+#' @param x time function
+cov2 <- function(x,tf)x

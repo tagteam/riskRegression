@@ -10,8 +10,8 @@ riskRegression(formula, data, times, link = "relative", cause,
 }
 \arguments{
   \item{formula}{Formula where the left hand side specifies
-  the event history response and the right hand side the
-  linear predictor.  See examples.}
+  the event history event.history and the right hand side
+  the linear predictor.  See examples.}
 
   \item{data}{The data for fitting the model in which
   includes all the variables included in formula.}

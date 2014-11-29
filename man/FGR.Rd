@@ -1,8 +1,8 @@
 \name{FGR}
 \alias{FGR}
-\title{Formula interface for Fine-Gray regression competing risk models.}
+\title{Formula wrapper for crr from cmprsk}
 \usage{
-FGR(formula, data, cause = 1, ...)
+FGR(formula, data, cause = 1, y = TRUE, ...)
 }
 \arguments{
   \item{formula}{A formula whose left hand side is a
@@ -16,16 +16,22 @@ FGR(formula, data, cause = 1, ...)
   \item{cause}{The failure type of interest. Defaults to
   \code{1}.}
 
+  \item{y}{logical value: if \code{TRUE}, the response
+  vector is returned in component \code{response}.}
+
   \item{\dots}{...}
 }
 \value{
 See \code{crr}.
 }
 \description{
-Formula interface for the function \code{crr} from the
-\code{cmprsk} package.
+Formula interface for Fine-Gray regression competing risk
+models.
 }
 \details{
+Formula interface for the function \code{crr} from the
+\code{cmprsk} package.
+
 The function \code{crr} allows to multiply some covariates
 by time before they enter the linear predictor. This can be
 achieved with the formula interface, however, the code
@@ -36,6 +42,7 @@ library(riskRegression)
 library(prodlim)
 library(pec)
 library(cmprsk)
+library(lava)
 d <- SimCompRisk(100)
 f1 <- FGR(Hist(time,cause)~X1+X2,data=d)
 print(f1)
@@ -67,6 +74,9 @@ f5a <- FGR(Hist(time,cause)~cov2(X1,tf=qFun)+cov2(X2,tf=noFun),data=d)
 
 ## multiply X1 by time^2 and X2 by sqrt(time)
 f5b <- FGR(Hist(time,cause)~cov2(X1,tf=qFun)+cov2(X2,tf=sqFun),data=d,cause=1)
+
+## additional arguments for crr
+f6<- FGR(Hist(time,cause)~X1+X2,data=d, cause=1,gtol=1e-5)
 }
 \author{
 Thomas Alexander Gerds \email{tag@biostat.ku.dk}
