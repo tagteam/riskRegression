@@ -24,48 +24,61 @@
 #' prediction Research report 11/7. Department of Biostatistics, University of
 #' Copenhagen
 #' @keywords survival
-#' @examples
-#' 
-#' library(riskRegression)
-#' library(prodlim)
-#' library(pec)
-#' library(cmprsk)
-#' library(lava)
-#' d <- SimCompRisk(100)
-#' f1 <- FGR(Hist(time,cause)~X1+X2,data=d)
-#' print(f1)
-#' 
-#' ## crr allows that some covariates are multiplied by
-#' ## a function of time (see argument tf of crr)
-#' ## by FGR uses the identity matrix
-#' f2 <- FGR(Hist(time,cause)~cov2(X1)+X2,data=d)
-#' print(f2)
-#' 
-#' ## same thing, but more explicit:
-#' f3 <- FGR(Hist(time,cause)~cov2(X1)+cov1(X2),data=d)
-#' print(f3)
-#' 
-#' ## both variables can enter cov2:
-#' f4 <- FGR(Hist(time,cause)~cov2(X1)+cov2(X2),data=d)
-#' print(f4)
-#' 
-#' ## change the function of time
-#' qFun <- function(x){x^2}
-#' noFun <- function(x){x}
-#' sqFun <- function(x){x^0.5}
-#' 
-#' ## multiply X1 by time^2 and X2 by time:
-#' f5 <- FGR(Hist(time,cause)~cov2(X1,tf=qFun)+cov2(X2),data=d)
-#' 
-#' ## the same but more explicit
-#' f5a <- FGR(Hist(time,cause)~cov2(X1,tf=qFun)+cov2(X2,tf=noFun),data=d)
-#' 
-#' ## multiply X1 by time^2 and X2 by sqrt(time)
-#' f5b <- FGR(Hist(time,cause)~cov2(X1,tf=qFun)+cov2(X2,tf=sqFun),data=d,cause=1)
-#'
-#' ## additional arguments for crr
-#' f6<- FGR(Hist(time,cause)~X1+X2,data=d, cause=1,gtol=1e-5)
-#' 
+##' @examples
+##' 
+##' library(riskRegression)
+##' library(prodlim)
+##' library(pec)
+##' library(cmprsk)
+##' library(lava)
+##' d <- SimCompRisk(100)
+##' f1 <- FGR(Hist(time,cause)~X1+X2,data=d)
+##' print(f1)
+##' 
+##' ## crr allows that some covariates are multiplied by
+##' ## a function of time (see argument tf of crr)
+##' ## by FGR uses the identity matrix
+##' f2 <- FGR(Hist(time,cause)~cov2(X1)+X2,data=d)
+##' print(f2)
+##' 
+##' ## same thing, but more explicit:
+##' f3 <- FGR(Hist(time,cause)~cov2(X1)+cov1(X2),data=d)
+##' print(f3)
+##' 
+##' ## both variables can enter cov2:
+##' f4 <- FGR(Hist(time,cause)~cov2(X1)+cov2(X2),data=d)
+##' print(f4)
+##' 
+##' ## change the function of time
+##' qFun <- function(x){x^2}
+##' noFun <- function(x){x}
+##' sqFun <- function(x){x^0.5}
+##' 
+##' ## multiply X1 by time^2 and X2 by time:
+##' f5 <- FGR(Hist(time,cause)~cov2(X1,tf=qFun)+cov2(X2),data=d)
+##' print(f5)
+##' print(f5$crrFit)
+##' ## same results as
+##' with(d,crr(ftime=time,
+##'            fstatus=cause,
+##'            cov2=d[,c("X1","X2")],
+##'            tf=function(time){cbind(qFun(time),time)}))
+##' with(d,
+##'      crr(ftime=time,
+##'          fstatus=cause,
+##'          cov2=d[,c("X1","X2")],
+##'          tf=function(x){do.call("cbind",
+##'              lapply(list("qFun", "id"), function(f) {do.call(f,list(x))}))}))
+##' 
+##'      ## same, but more explicit
+##'      f5a <- FGR(Hist(time,cause)~cov2(X1,tf=qFun)+cov2(X2,tf=noFun),data=d)
+##' 
+##'      ## multiply X1 by time^2 and X2 by sqrt(time)
+##'      f5b <- FGR(Hist(time,cause)~cov2(X1,tf=qFun)+cov2(X2,tf=sqFun),data=d,cause=1)
+##' 
+##'      ## additional arguments for crr
+##'      f6<- FGR(Hist(time,cause)~X1+X2,data=d, cause=1,gtol=1e-5)
+ 
 #' @export
 FGR <- function(formula,data,cause=1,y=TRUE,...){
     # {{{ read the data and the design
@@ -75,7 +88,7 @@ FGR <- function(formula,data,cause=1,y=TRUE,...){
                                        data,
                                        specials=c("cov1","cov2"),
                                        specialsDesign=TRUE,
-                                       stripSpecialNames=FALSE)
+                                       stripSpecialNames=TRUE)
     EHF$cov1 <- cbind(EHF$cov1,EHF$design)
     EHF$design <- NULL
     theData <- data.frame(cbind(unclass(EHF$event.history),do.call("cbind",EHF[-1])))
@@ -118,28 +131,32 @@ FGR <- function(formula,data,cause=1,y=TRUE,...){
                  failcode=cause,
                  cencode=length(states)+1,...)
     if (!is.null(cov2) && NCOL(cov2)>0){
-        specialArguments <- sapply(colnames(cov2),function(s)
+        ## it is a bit silly to first remove special and then to add it again,
+        ## but it seems to work.
+        specialArguments <- sapply(paste("cov2(",colnames(cov2),")",sep=""),function(s)
                                    prodlim::parseSpecialNames(s,
                                                               "cov2",
                                                               list(cov2="tf")))
         this <- sapply(specialArguments,is.null)
         if (all(this)){
-            args$tf <- function(x){matrix(x,ncol=NCOL(cov2),byrow=FALSE)}
+            args$tf <- bquote(function(x){matrix(rep(x,.(NCOL(cov2))),ncol=.(NCOL(cov2)),byrow=FALSE)})
         }
         else{
             tf.temp <- lapply(specialArguments,function(a)a$tf)
             if (any(this)){
-                id <- function(x)x
-                tf.temp[this] <- "id" 
+                tf.temp[this] <- "I" 
             }
-            args$tf <- function(x){
-                do.call("cbind",lapply(tf.temp,function(f){
+            names(tf.temp) <- NULL
+            args$tf <- bquote(function(x){
+                do.call("cbind",lapply(.(tf.temp),function(f){
                     do.call(f,list(x))
                 }))
-            }
+            })
         }
     }else{
-        args$tf <- function(x){matrix(x,ncol=NCOL(cov2),byrow=FALSE)}
+        args$tf <- function(x){args$tf <- bquote(function(x){matrix(rep(x,.(NCOL(cov2))),
+                                                                    ncol=.(NCOL(cov2)),
+                                                                    byrow=FALSE)})}
     }
     args <- args[!sapply(args,is.null)]
     fit <- do.call(cmprsk::crr,args)
