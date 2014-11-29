@@ -3,7 +3,7 @@
 #' Fits a regression model for the risk of an event -- allowing for competing
 #' risks.
 #' 
-#' This is a sister of the function \code{comp.risk} (timereg package).
+#' This is a twin-sister not a wrapper of the function \code{comp.risk} (timereg package).
 #' 
 #' @aliases riskRegression ARR LRR
 #' @param formula Formula where the left hand side specifies the event history
@@ -49,105 +49,117 @@
 #' Martinussen and Scheike (2006), Dynamic regression models for survival data,
 #' Springer.
 #' @keywords survival
-#' @examples
-#' 
-#' 
-#' data(Melanoma)
-#' ## tumor thickness on the log-scale
-#' Melanoma$logthick <- log(Melanoma$thick)
-#' 
-#' # {{{ Single binary factor
-#' 
-#' ## absolute risk regression 
-#' fit.arr <- ARR(Hist(time,status)~sex,data=Melanoma,cause=1)
-#' print(fit.arr)
-#' # show predicted cumulative incidences
-#' plot(fit.arr,col=3:4,newdata=data.frame(sex=c("Female","Male")))
-#' 
-#' ## compare with non-parametric Aalen-Johansen estimate
-#' library(prodlim)
-#' fit.aj <- prodlim(Hist(time,status)~sex,data=Melanoma)
-#' plot(fit.aj,confint=FALSE)
-#' plot(fit.arr,add=TRUE,col=3:4,newdata=data.frame(sex=c("Female","Male")))
-#' 
-#' ## with time-dependent effect
-#' fit.tarr <- ARR(Hist(time,status)~strata(sex),data=Melanoma,cause=1)
-#' plot(fit.tarr,newdata=data.frame(sex=c("Female","Male")))
-#' 
-#' ## logistic risk regression
-#' fit.lrr <- LRR(Hist(time,status)~sex,data=Melanoma,cause=1)
-#' summary(fit.lrr)
-#' 
-#' # }}}
-#' 
-#' # {{{ Single continuous factor
-#' 
-#' ## tumor thickness on the log-scale
-#' Melanoma$logthick <- log(Melanoma$thick)
-#' 
-#' ## absolute risk regression 
-#' fit2.arr <- ARR(Hist(time,status)~logthick,data=Melanoma,cause=1)
-#' print(fit2.arr)
-#' # show predicted cumulative incidences
-#' plot(fit2.arr,col=1:5,newdata=data.frame(logthick=quantile(Melanoma$logthick)))
-#' 
-#' ## comparison with nearest neighbor non-parametric Aalen-Johansen estimate
-#' library(prodlim)
-#' fit2.aj <- prodlim(Hist(time,status)~logthick,data=Melanoma)
-#' plot(fit2.aj,confint=FALSE,newdata=data.frame(logthick=quantile(Melanoma$logthick)))
-#' plot(fit2.arr,add=TRUE,col=1:5,lty=3,newdata=data.frame(logthick=quantile(Melanoma$logthick)))
-#' 
-#' ## logistic risk regression
-#' fit2.lrr <- LRR(Hist(time,status)~logthick,data=Melanoma,cause=1)
-#' summary(fit2.lrr)
-#' 
-#' ## change model for censoring weights
-#' fit2a.lrr <- LRR(Hist(time,status)~logthick,data=Melanoma,cause=1,cens.model="cox",cens.formula=~sex+epicel+ulcer+age+logthick)
-#' summary(fit2a.lrr)
-#' 
-#' ##  compare prediction errors
-#' \dontrun{
-#' library(pec)
-#' plot(pec(list(ARR=fit2.arr,AJ=fit2.aj,LRR=fit2.lrr),data=Melanoma,maxtime=3000))
-#' }
-#' # }}}
-#' 
-#' # {{{ multiple regression
-#' library(pec)
-#' library(riskRegression)
-#' library(prodlim)
-#' # absolute risk model
-#' multi.arr <- ARR(Hist(time,status)~logthick+sex+age+ulcer,data=Melanoma,cause=1)
-#' 
-#' # stratified model allowing different baseline risk for the two gender
-#' multi.arr <- ARR(Hist(time,status)~thick+strata(sex)+age+ulcer,data=Melanoma,cause=1)
-#' 
-#' # stratify by a continuous variable
-#' multi.arr <- ARR(Hist(time,status)~tp(thick,power=1)+strata(sex)+age+ulcer,data=Melanoma,cause=1)
-#' 
-#' fit.arr2a <- ARR(Hist(time,status)~const(thick,power=1),data=Melanoma,cause=1)
-#' fit.arr2b <- ARR(Hist(time,status)~timevar(thick),data=Melanoma,cause=1)
-#' summary(fit.arr)
-#' 
-#' ## logistic risk model
-#' fit.lrr <- LRR(Hist(time,status)~thick,data=Melanoma,cause=1)
-#' summary(fit.lrr)
-#' 
-#' # }}}
-#' 
-#' 
-#' 
-#' ## nearest neighbor non-parametric Aalen-Johansen estimate
-#' library(prodlim)
-#' fit.aj <- prodlim(Hist(time,status)~thick,data=Melanoma)
-#' plot(fit.aj,confint=FALSE)
-#' 
-#' \dontrun{
-#' # prediction error
-#' library(pec)
-#' x <- pec(list(fit.arr2,fit.arr2a,fit.arr2b,fit.lrr),data=Melanoma,formula=Hist(time,status)~1,cause=1,B=10,splitMethod="none")
-#' }
-#'
+##' @examples
+##' 
+##' 
+##' data(Melanoma,package="riskRegression")
+##' ## tumor thickness on the log-scale
+##' Melanoma$logthick <- log(Melanoma$thick)
+##' 
+##' # {{{ Single binary factor
+##' 
+##' ## absolute risk regression
+##' library(prodlim)
+##' fit.arr <- ARR(Hist(time,status)~sex,data=Melanoma,cause=1)
+##' print(fit.arr)
+##' # show predicted cumulative incidences
+##' plot(fit.arr,col=3:4,newdata=data.frame(sex=c("Female","Male")))
+##' 
+##' ## compare with non-parametric Aalen-Johansen estimate
+##' library(prodlim)
+##' fit.aj <- prodlim(Hist(time,status)~sex,data=Melanoma)
+##' plot(fit.aj,confint=FALSE)
+##' plot(fit.arr,add=TRUE,col=3:4,newdata=data.frame(sex=c("Female","Male")))
+##' 
+##' ## with time-dependent effect
+##' fit.tarr <- ARR(Hist(time,status)~strata(sex),data=Melanoma,cause=1)
+##' plot(fit.tarr,newdata=data.frame(sex=c("Female","Male")))
+##' 
+##' ## logistic risk regression
+##' fit.lrr <- LRR(Hist(time,status)~sex,data=Melanoma,cause=1)
+##' summary(fit.lrr)
+##' 
+##' # }}}
+##' 
+##' # {{{ Single continuous factor
+##' 
+##' ## tumor thickness on the log-scale
+##' Melanoma$logthick <- log(Melanoma$thick)
+##' 
+##' ## absolute risk regression 
+##' fit2.arr <- ARR(Hist(time,status)~logthick,data=Melanoma,cause=1)
+##' print(fit2.arr)
+##' # show predicted cumulative incidences
+##' plot(fit2.arr,col=1:5,newdata=data.frame(logthick=quantile(Melanoma$logthick)))
+##' 
+##' ## comparison with nearest neighbor non-parametric Aalen-Johansen estimate
+##' library(prodlim)
+##' fit2.aj <- prodlim(Hist(time,status)~logthick,data=Melanoma)
+##' plot(fit2.aj,confint=FALSE,newdata=data.frame(logthick=quantile(Melanoma$logthick)))
+##' plot(fit2.arr,add=TRUE,col=1:5,lty=3,newdata=data.frame(logthick=quantile(Melanoma$logthick)))
+##' 
+##' ## logistic risk regression
+##' fit2.lrr <- LRR(Hist(time,status)~logthick,data=Melanoma,cause=1)
+##' summary(fit2.lrr)
+##' 
+##' ## change model for censoring weights
+##' fit2a.lrr <- LRR(Hist(time,status)~logthick,
+##'                  data=Melanoma,
+##'                  cause=1,
+##'                  cens.model="cox",
+##'                  cens.formula=~sex+epicel+ulcer+age+logthick)
+##' summary(fit2a.lrr)
+##' 
+##' ##  compare prediction errors
+##' \dontrun{
+##'     library(pec)
+##'     plot(pec(list(ARR=fit2.arr,AJ=fit2.aj,LRR=fit2.lrr),data=Melanoma,maxtime=3000))
+##' }
+##' # }}}
+##' 
+##' # {{{ multiple regression
+##' library(pec)
+##' library(riskRegression)
+##' library(prodlim)
+##' # absolute risk model
+##' multi.arr <- ARR(Hist(time,status)~logthick+sex+age+ulcer,data=Melanoma,cause=1)
+##' 
+##' # stratified model allowing different baseline risk for the two gender
+##' multi.arr <- ARR(Hist(time,status)~thick+strata(sex)+age+ulcer,data=Melanoma,cause=1)
+##' 
+##' # stratify by a continuous variable
+##' multi.arr <- ARR(Hist(time,status)~tp(thick,power=1)+strata(sex)+age+ulcer,
+##'                  data=Melanoma,
+##'                  cause=1)
+##' 
+##' fit.arr2a <- ARR(Hist(time,status)~const(thick,power=1),data=Melanoma,cause=1)
+##' fit.arr2b <- ARR(Hist(time,status)~timevar(thick),data=Melanoma,cause=1)
+##' summary(fit.arr)
+##' 
+##' ## logistic risk model
+##' fit.lrr <- LRR(Hist(time,status)~thick,data=Melanoma,cause=1)
+##' summary(fit.lrr)
+##' 
+##' # }}}
+##' 
+##' 
+##' 
+##' ## nearest neighbor non-parametric Aalen-Johansen estimate
+##' library(prodlim)
+##' fit.aj <- prodlim(Hist(time,status)~thick,data=Melanoma)
+##' plot(fit.aj,confint=FALSE)
+##' 
+##' \dontrun{
+##'     # prediction error
+##'     library(pec)
+##'     x <- pec(list(fit.arr2,fit.arr2a,fit.arr2b,fit.lrr),
+##'              data=Melanoma,
+##'              formula=Hist(time,status)~1,
+##'              cause=1,
+##'              B=10,
+##'              splitMethod="none")
+##' }
+##' #'
 #' @export
 riskRegression <- function(formula,
                            data,
@@ -162,283 +174,232 @@ riskRegression <- function(formula,
                            silent=1,
                            convLevel=6,
                            ...){
-  # {{{ preliminaries
-  interval=0.01
-  weighted=0
-  detail=0
-  stopifnot(is.numeric(maxiter)&&maxiter>0&&(round(maxiter)==maxiter))
-  stopifnot(silent %in% c(0,1))
-  stopifnot(convLevel %in% 1:10)
-  conv <- 10^{-convLevel}
-  # trans=1 P_1=1-exp(- ( x' b(b)+ z' gam t^time.pow) ), 
-  # trans=2 P_1=1-exp(-exp(x a(t)+ z` b )
-  # trans=not done P_1=1-exp(-x a(t) exp(z` b )) is not good numerically
-  # trans=3 P_1=exp(-exp(x a(t)+ z` b )
-  ##   trans <- switch(link,"log"=
-  trans <- switch(link,
-                  "additive"=1, # 
-                  "prop"=2,     # Proportional hazards (Cox, FG)
-                  "logistic"=3, # Logistic absolute risks 
-                  "relative"=4) # Relative absolute risks
-  if (numSimu==0) sim <- 0 else sim <- 1
-
-  # }}}
-  # {{{ check if formula has the form Hist(time,event)~X1+X2+...
-  
-  formula.names <- try(all.names(formula),silent=TRUE)
-  if (!(formula.names[1]=="~")
-      ||
-      (match("$",formula.names,nomatch=0)+match("[",formula.names,nomatch=0)>0)){
-    stop("Invalid specification of formula. Perhaps forgotten right hand side?\nNote that any subsetting, ie data$var or data[,\"var\"], is invalid for this function.")
-  }
-  else
-    if (!(formula.names[2] %in% c("Hist"))) stop("formula is NOT a proper event history formula,\nwhich must have a `Hist' object as response.")
-
-  # }}}
-  # {{{ read the data and the design
-  call <- match.call()
-  m <- match.call(expand.dots = FALSE)
-  if (match("subset",names(call),nomatch=FALSE))
-    stop("Subsetting of data is not possible.")
-  m <- m[match(c("","formula","data","subset","na.action"),names(m),nomatch = 0)]
-  m[[1]]  <-  as.name("model.frame")
-  if (missing(data)) stop("Argument 'data' is missing")
-  formList <- readFormula(formula,
-                          specials=c("const","timevar","cluster"),
-                          specialArgumentNames=list("const"="power","timevar"="test"),
-                          alias=list("tp"="const","strata"="timevar"),
-                          unspecified="const")
-  ##   formList <- readFormula(formula,specials=c("tv","cluster"),unspecified="const")
-
-  if (!missing(cens.formula)){
-    varlist <- unique(c(all.vars(formList$allVars),all.vars(cens.formula)))
-    m$formula <- formula(paste("~",paste(varlist,collapse="+")))
-  }
-  else{
-    m$formula <- formList$allVars
-  }
-  theData <- eval(m, parent.frame())
-  if ((nMiss <- (NROW(data)-NROW(theData)))>0)
-    warning("Missing values: ",nMiss," lines have been removed from data before estimation.")
-  if (NROW(theData) == 0) stop("No (non-missing) observations")
-  # }}}
-  # {{{ response and order the data
-  response <- model.response(model.frame(formula=formList$Response,data=theData))
-  responseType <- attr(response,"model")
-  states <- getStates(response)
-  stopifnot(responseType %in% c("survival","competing.risks"))
-  censType <- attr(response,"cens.type")
-  stopifnot(censType %in% c("rightCensored","uncensored"))
-  neworder <- order(response[,"time"],-response[,"status"])
-  response <- response[neworder,,drop=FALSE]
-  theData <- theData[neworder,]
-  if (responseType!="survival" && !("event" %in% colnames(response)))
-    warning("Only one cause of failure found in data.")
-  Y <- as.vector(response[,"time"])
-  time  <- numeric(length(Y))
-  status <- as.vector(response[,"status"])
-  if (responseType=="survival"){
-    event <- status
-  }
-  else{
-    attr(response,"model") <- "competing.risks"
-    attr(response,"states") <- states
-    event <-   getEvent(response,mode="numeric")
-  }
-  if (responseType=="competing.risks" && missing(cause)){
-    cause <- 1
-    message("Argument cause missing. Analyse cause: ",states[1])
-  }
-  else{
-    if (responseType=="survival")
-      cause <- 1
-    else{
-      if ((foundCause <- match(as.character(cause),states,nomatch=0))==0)
-        stop(paste("Requested cause: ",cause," Available causes: ", states))
-      else
-        cause <- foundCause
+    # {{{ preliminaries
+    weighted=0
+    detail=0
+    stopifnot(is.numeric(maxiter)&&maxiter>0&&(round(maxiter)==maxiter))
+    stopifnot(silent %in% c(0,1))
+    stopifnot(convLevel %in% 1:10)
+    conv <- 10^{-convLevel}
+    # trans=1 P_1=1-exp(- ( x' b(b)+ z' gam t^time.pow) ), 
+    # trans=2 P_1=1-exp(-exp(x a(t)+ z` b )
+    # trans=not done P_1=1-exp(-x a(t) exp(z` b )) is not good numerically
+    # trans=3 P_1=exp(-exp(x a(t)+ z` b )
+    ##   trans <- switch(link,"log"=
+    trans <- switch(link,
+                    "additive"=1, # 
+                    "prop"=2,     # Proportional hazards (Cox, FG)
+                    "logistic"=3, # Logistic absolute risks 
+                    "relative"=4) # Relative absolute risks
+    if (numSimu==0) sim <- 0 else sim <- 1
+    # }}}
+    # {{{ read the data and the design
+    call <- match.call()
+    EHF <- prodlim::EventHistory.frame(formula,
+                                       data,
+                                       specials=c("prop","const","timevar","strata"),
+                                       specialsDesign=TRUE,
+                                       stripSpecialNames=FALSE)
+    delayed <- !(is.null(attr(EHF$event.history,"entry.type"))) && !(attr(EHF$event.history,"entry.type")=="")
+    if (delayed){
+        stop("Delayed entry is not (not yet) supported.")
     }
-  }
-  delta <- as.vector(response[,"status"])
-  n <- length(Y)
-  # }}}
-  # {{{ intercept
-  intercept <-  formList$Intercept
-  # }}}
-  # {{{ variables with time-varying coefficients
-  X <- modelMatrix(formula=formList$timevar$formula,
-                   data=theData,
-                   intercept=intercept)
-  if (NROW(X)==0)
-    X <- cbind("Intercept"=rep(1,n))
-  colnamesX <- colnames(X)
-  dimX <- NCOL(X)
-  factorLevelsX <- attr(X,"factorLevels")
-  refLevelsX <- attr(X,"refLevels")
-  default.timevar.test <- 0
-  specArgsX <- formList$timevar$specialArguments
-  given.timevar.test <- sapply(specArgsX,function(x){x$test})
-  
-  timevarTest <- sapply(colnamesX[colnamesX!="Intercept"],function(x){
-    xx=strsplit(x,":")[[1]][[1]]
-    if (found <- match(xx,names(given.timevar.test),nomatch=0))
-      if (is.null(given.timevar.test[[found]]))
-        given.timevar.test <- 0
-      else
-        as.numeric(given.timevar.test[found])
-    else
-      default.timevar.test
-  })
-  ## the intercept should not be tested, therefore we
-  ## set the first element of timevarTest to zero
-  timevar.test <- c(0,as.numeric(timevarTest))
-  stopifnot(length(timevar.test)==dimX)
-  if (!(all(timevar.test %in% 0:2)))
-    stop("Time power tests only available for powers 0,1,2")
-  # }}}
-  # {{{ variables with time-constant coefficients
-  npar <- is.null(formList$const$formula)
-  if (npar){
-    Z <- matrix(0,n,1)
-    dimZ <- 1
-    colnamesZ <- NULL
-    fixed <- 0
-    factorLevelsZ <- NULL
-    refLevelsZ <- NULL
-    timePower <- NULL
-  }
-  else{
-    Z <- modelMatrix(formula=formList$const$formula,data=theData)
-    dimZ <- NCOL(Z)
-    fixed <- 1
-    colnamesZ <- colnames(Z)
-    factorLevelsZ <- attr(Z,"factorLevels")
-    refLevelsZ <- attr(Z,"refLevels")
-    specArgsZ <- formList$const$specialArguments
-    default.timePower <- 0
-    if (all(sapply(specArgsZ,is.null))){
-      timePower <- rep(default.timePower,dimZ)
+    Z <- cbind(EHF$const,EHF$tp,EHF$design)
+    factorLevelsZ <- sapply(list(EHF$const,EHF$tp,EHF$design),function(e)attr(e,"levels"))
+    refLevelsZ <- lapply(factorLevelsZ,function(x)x[1])
+    X <- cbind(EHF$timevar,EHF$strata)
+    factorLevelsX <- sapply(list(EHF$timevar,EHF$strata),function(e)attr(e,"levels"))
+    refLevelsX <- lapply(factorLevelsX,function(x)x[1])
+    theData <- data.frame(cbind(unclass(EHF$event.history),do.call("cbind",EHF[-1])))
+    # }}}
+    # {{{ response and order the data
+    response <- EHF$event.history
+    responseType <- attr(response,"model")
+    states <- prodlim::getStates(response)
+    stopifnot(responseType %in% c("survival","competing.risks"))
+    censType <- attr(response,"cens.type")
+    stopifnot(censType %in% c("rightCensored","uncensored"))
+    neworder <- order(response[,"time"],-response[,"status"])
+    response <- response[neworder,,drop=FALSE]
+    theData <- theData[neworder,]
+    if (responseType!="survival" && !("event" %in% colnames(response)))
+        warning("Only one cause of failure found in data.")
+    Y <- as.vector(response[,"time"])
+    time  <- numeric(length(Y))
+    status <- as.vector(response[,"status"])
+    if (responseType=="survival"){
+        event <- status
     }
     else{
-      timePower <- sapply(colnames(Z),function(z){
-        wo <- match(z,names(specArgsZ),nomatch=FALSE)
-        if (!wo)
-          wo <- match(strsplit(z,":.*")[[1]],names(specArgsZ),nomatch=FALSE)
-        if (!wo){
-          message("Timepower for ",z," set to ",default.timePower)
-          wo <- NULL
+        attr(response,"model") <- "competing.risks"
+        attr(response,"states") <- states
+        event <- prodlim::getEvent(response,mode="numeric")
+    }
+    if (responseType=="competing.risks" && missing(cause)){
+        cause <- 1
+        message("Argument cause missing. Analyse cause: ",states[1])
+    }
+    else{
+        if (responseType=="survival")
+            cause <- 1
+        else{
+            if ((foundCause <- match(as.character(cause),states,nomatch=0))==0)
+                stop(paste("Requested cause: ",cause," Available causes: ", states))
+            else
+                cause <- foundCause
         }
-        if (is.null(wo)||is.null(specArgsZ[[wo]]$power))
-          default.timePower
-        else
-            specArgsZ[[wo]]$power
-        })
-      stopifnot(length(timePower)==dimZ)
     }
-    ## print(timePower)
-    timePower <- as.numeric(timePower)
-    names(timePower) <- colnames(Z)
-    stopifnot(length(timePower)==dimZ)
-    if (!(all(timePower %in% 0:2)))
-      stop("Only powers of time in 0,1,2 can be multipled to constant covariates")
-  }
-  # }}}
-  # {{{ cluster variable
-  clusters <- modelMatrix(formula=formList$cluster$formula,data=theData)
-  if(is.null(clusters)){
-    clusters  <-  0:(NROW(X) - 1)
-    antclust  <-  NROW(X)
-  } else {
-    clusters  <-  as.integer(factor(clusters))-1
-    antclust  <-  length(unique(clusters))
-  }
-  # }}}
-  # {{{ time points for timevarametric components
-  if (missing(times)) {
-    times <- sort(unique(Y[event==cause]));
-    ## times <- times[-c(1:5)] 
-  }
-  else{
-    times <- sort(unique(times))
-  }
-  ntimes <- length(times)
-  # }}}
-  # {{{ estimate ipcw
-  iData <- theData
-  iData$itime <- response[,"time"]
-  iData$istatus <- response[,"status"]
-  if (missing(cens.formula))
-    cens.formula <- rhs(formula)
-  else
-    cens.formula <- rhs(cens.formula)
-  iFormula <- as.formula(paste("Surv(itime,istatus)","~",as.character(cens.formula)[[length(as.character(cens.formula))]]))
-  if (missing(cens.model)) cens.model <- "KM"
-  imodel <- switch(tolower(cens.model),"KM"="marginal","cox"="cox","aalen"="aalen","uncensored"="none")
-  Gcx <- subjectWeights(formula=iFormula,
-                        data=iData,
-                        method=cens.model,
-                        lag=1)$weights
-  # }}}
-  # {{{ prepare fitting
-  if (confint == TRUE){
-    biid  <-  double(ntimes* antclust * dimX);
-    gamiid <-  double(antclust *dimZ);
-  } else {
-    gamiid  <-  biid  <-  NULL;
-  }
-  # }}}
-  # {{{ C does the hard work
-  line <- ifelse(trans==1,1,0)
-  # if line=1 then test "b(t) = gamma t"
-  # if line=0 then test "b(t) = gamma "
-  ## out <- list("itfit",as.double(times),as.integer(ntimes),as.double(Y),as.integer(delta),as.integer(event),as.double(Gcx),as.double(X),as.integer(n),as.integer(dimX),as.integer(maxiter),double(dimX),score=double(ntimes*(dimX+1)),double(dimX*dimX),est=double(ntimes*(dimX+1)),var=double(ntimes*(dimX+1)),as.integer(sim),as.integer(numSimu),test=double(numSimu*3*dimX),testOBS=double(3*dimX),Ut=double(ntimes*(dimX+1)),simUt=double(ntimes*50*dimX),as.integer(weighted),gamma=double(dimZ),var.gamma=double(dimZ*dimZ),as.integer(fixed),as.double(Z),as.integer(dimZ),as.integer(trans),gamma2=double(dimX),as.integer(cause),as.integer(line),as.integer(detail),biid=as.double(biid),gamiid=as.double(gamiid),as.integer(as.numeric(confint)),as.double(timePower),as.integer(clusters),as.integer(antclust),as.double(timevar.test),silent=as.integer(silent),conv=as.double(conv),PACKAGE="riskRegression")
-  ## save(out,file="~/tmp/x1.rda")
+    delta <- as.vector(response[,"status"])
+    n <- length(Y)
+    # }}}
+    # {{{ intercept
+    #FIXME: ???
+    # }}}
+    # {{{ variables with time-varying coefficients
+    timeconst.power <- sapply(colnames(Z),function(s){
+        if (length(grep(",[ ]*power[ ]*=[ ]*",s))>0)
+            gsub(".*,[ ]*power[ ]*=[ ]*|).*","",s)
+        else
+            0
+    })
+    timevar.test <- sapply(colnames(X),function(s){
+        if (length(grep(",[ ]*test[ ]*=[ ]*",s))>0)
+            gsub(".*,[ ]*test[ ]*=[ ]*|).*","",s)
+        else
+            0
+    })
+    if (NROW(X)==0) X <- cbind("Intercept"=rep(1,n))
+    else X <- cbind("Intercept"=rep(1,n),X)
+    colnamesX <- colnames(X)
+    dimX <- NCOL(X)
+    ## the intercept should not be tested, therefore we
+    ## set the first element of timevarTest to zero
+    timevar.test <- c(0,as.numeric(timevar.test))
+    stopifnot(length(timevar.test)==dimX)
+    if (!(all(timevar.test %in% 0:2)))
+        stop("Time power tests only available for powers 0,1,2")
+    # }}}
+    # {{{ variables with time-constant coefficients
+    npar <- is.null(Z)
+    if (npar){
+        Z <- matrix(0,n,1)
+        dimZ <- 1
+        colnamesZ <- NULL
+        fixed <- 0
+        factorLevelsZ <- NULL
+        refLevelsZ <- NULL
+        timeconst.power <- NULL
+    }
+    else{
+        dimZ <- NCOL(Z)
+        fixed <- 1
+        colnamesZ <- colnames(Z)
+        stopifnot(length(timeconst.power)==dimZ)
+        ## print(timeconst.power)
+        timeconst.power <- as.numeric(timeconst.power)
+        names(timeconst.power) <- colnames(Z)
+        stopifnot(length(timeconst.power)==dimZ)
+        if (!(all(timeconst.power %in% 0:2)))
+            stop("Only powers of time in 0,1,2 can be multipled to constant covariates")
+    }
+    # }}}
+    # {{{ cluster variable
+    clusters <- EHF$cluster
+    if(is.null(clusters)){
+        clusters  <-  0:(NROW(X) - 1)
+        antclust  <-  NROW(X)
+    } else {
+        clusters  <-  as.integer(factor(clusters))-1
+        antclust  <-  length(unique(clusters))
+    }
+    # }}}
+    # {{{ time points for timevarametric components
+    if (missing(times)) {
+        times <- sort(unique(Y[event==cause]));
+        ## times <- times[-c(1:5)] 
+    }
+    else{
+        times <- sort(unique(times))
+    }
+    ntimes <- length(times)
+    # }}}
+    # {{{ estimate ipcw
+    iData <- theData
+    iData$itime <- response[,"time"]
+    iData$istatus <- response[,"status"]
+    if (missing(cens.formula))
+        cens.formula <- rhs(formula)
+    else
+        cens.formula <- rhs(cens.formula)
+    iFormula <- as.formula(paste("Surv(itime,istatus)","~",as.character(cens.formula)[[length(as.character(cens.formula))]]))
+    if (missing(cens.model)) cens.model <- "KM"
+    imodel <- switch(tolower(cens.model),"KM"="marginal","cox"="cox","aalen"="aalen","uncensored"="none")
+    Gcx <- subjectWeights(formula=iFormula,
+                          data=iData,
+                          method=cens.model,
+                          lag=1)$weights
+    # }}}
+    # {{{ prepare fitting
+    if (confint == TRUE){
+        biid  <-  double(ntimes* antclust * dimX);
+        gamiid <-  double(antclust *dimZ);
+    } else {
+        gamiid  <-  biid  <-  NULL;
+    }
+    # }}}
+    # {{{ C does the hard work
+    line <- ifelse(trans==1,1,0)
+    # if line=1 then test "b(t) = gamma t"
+    # if line=0 then test "b(t) = gamma "
+    ## out <- list("itfit",as.double(times),as.integer(ntimes),as.double(Y),as.integer(delta),as.integer(event),as.double(Gcx),as.double(X),as.integer(n),as.integer(dimX),as.integer(maxiter),double(dimX),score=double(ntimes*(dimX+1)),double(dimX*dimX),est=double(ntimes*(dimX+1)),var=double(ntimes*(dimX+1)),as.integer(sim),as.integer(numSimu),test=double(numSimu*3*dimX),testOBS=double(3*dimX),Ut=double(ntimes*(dimX+1)),simUt=double(ntimes*50*dimX),as.integer(weighted),gamma=double(dimZ),var.gamma=double(dimZ*dimZ),as.integer(fixed),as.double(Z),as.integer(dimZ),as.integer(trans),gamma2=double(dimX),as.integer(cause),as.integer(line),as.integer(detail),biid=as.double(biid),gamiid=as.double(gamiid),as.integer(as.numeric(confint)),as.double(timeconst.power),as.integer(clusters),as.integer(antclust),as.double(timevar.test),silent=as.integer(silent),conv=as.double(conv),PACKAGE="riskRegression")
+    ## save(out,file="~/tmp/x1.rda")
   
-  out <- .C("itfit",
-            as.double(times),
-            as.integer(ntimes),
-            as.double(Y),
-            as.integer(delta),
-            as.integer(event),
-            as.double(Gcx),
-            as.double(X),
-            as.integer(n),
-            as.integer(dimX),
-            as.integer(maxiter),
-            double(dimX),
-            score=double(ntimes*(dimX+1)),
-            double(dimX*dimX),
-            est=double(ntimes*(dimX+1)),
-            var=double(ntimes*(dimX+1)),
-            as.integer(sim),
-            as.integer(numSimu),
-            test=double(numSimu*3*dimX),
-            testOBS=double(3*dimX),
-            Ut=double(ntimes*(dimX+1)),
-            simUt=double(ntimes*50*dimX),
-            as.integer(weighted),
-            gamma=double(dimZ),
-            var.gamma=double(dimZ*dimZ),
-            as.integer(fixed),
-            as.double(Z),
-            as.integer(dimZ),
-            as.integer(trans),
-            gamma2=double(dimX),
-            as.integer(cause),
-            as.integer(line),
-            as.integer(detail),
-            biid=as.double(biid),
-            gamiid=as.double(gamiid),
-            as.integer(as.numeric(confint)),
-            as.double(timePower),
-            as.integer(clusters),
-            as.integer(antclust),
-            as.double(timevar.test),
-            silent=as.integer(silent),
-            conv=as.double(conv),
-            PACKAGE="riskRegression")
-  # }}}
-  # {{{ prepare the output
+    out <- .C("itfit",
+              as.double(times),
+              as.integer(ntimes),
+              as.double(Y),
+              as.integer(delta),
+              as.integer(event),
+              as.double(Gcx),
+              as.double(X),
+              as.integer(n),
+              as.integer(dimX),
+              as.integer(maxiter),
+              double(dimX),
+              score=double(ntimes*(dimX+1)),
+              double(dimX*dimX),
+              est=double(ntimes*(dimX+1)),
+              var=double(ntimes*(dimX+1)),
+              as.integer(sim),
+              as.integer(numSimu),
+              test=double(numSimu*3*dimX),
+              testOBS=double(3*dimX),
+              Ut=double(ntimes*(dimX+1)),
+              simUt=double(ntimes*50*dimX),
+              as.integer(weighted),
+              gamma=double(dimZ),
+              var.gamma=double(dimZ*dimZ),
+              as.integer(fixed),
+              as.double(Z),
+              as.integer(dimZ),
+              as.integer(trans),
+              gamma2=double(dimX),
+              as.integer(cause),
+              as.integer(line),
+              as.integer(detail),
+              biid=as.double(biid),
+              gamiid=as.double(gamiid),
+              as.integer(as.numeric(confint)),
+              as.double(timeconst.power),
+              as.integer(clusters),
+              as.integer(antclust),
+              as.double(timevar.test),
+              silent=as.integer(silent),
+              conv=as.double(conv),
+              
+              PACKAGE="riskRegression")
+    # }}}
+    # {{{ prepare the output
 
   if (fixed==1){
     timeConstantCoef <- out$gamma
@@ -531,35 +492,35 @@ riskRegression <- function(formula,
   class(timeConstantEffects) <- "timeConstantEffects"
   timeVaryingEffects <- list(coef=timeVaryingCoef,
                              var=timeVaryingVar,
-                             formula=formList$timevar$formula,
                              refLevels=refLevelsZ,
                              factorLevels=factorLevelsZ)
   class(timeVaryingEffects) <- "timeVaryingEffects"
   
   out <- list(call=call,
-             response=response,
-             design=formList,
-             link=link,
-             time=times,
-             timeConstantEffects=timeConstantEffects,
-             timePower=timePower,
-             timeVaryingEffects=timeVaryingEffects,
-             score=score,
-             censModel= cens.model,
-             factorLevels=c(factorLevelsX,factorLevelsZ),
-             refLevels=c(refLevelsX,refLevelsZ))
+              response=response,
+              design=list(const=colnamesZ,timevar=colnamesX,timepower=timeconst.power),
+              link=link,
+              time=times,
+              timeConstantEffects=timeConstantEffects,
+              timeconst.power=timeconst.power,
+              timeVaryingEffects=timeVaryingEffects,
+              score=score,
+              censModel= cens.model,
+              factorLevels=c(factorLevelsX,factorLevelsZ),
+              refLevels=c(refLevelsX,refLevelsZ),
+              "na.action"=attr(EHF,"na.action"))
   if (confint && sim==1)
-    out <- c(out,list(resampleResults=list(conf.band=unifCI,
-                      B.iid=B.iid,
-                      gamma.iid=gamiid,
-                      test.procBeqC=Ut,
-                      sim.test.procBeqC=UIt)))
+      out <- c(out,list(resampleResults=list(conf.band=unifCI,
+                            B.iid=B.iid,
+                            gamma.iid=gamiid,
+                            test.procBeqC=Ut,
+                            sim.test.procBeqC=UIt)))
   if (sim==1)
-    out <- c(out,list(timeVarSigTest=timeVarSignifTest,
-                    timeVarKolmSmirTest=timeVarKolmSmirTest,
-                    timeVarKramvMisTest=timeVarKramvMisTest))
+      out <- c(out,list(timeVarSigTest=timeVarSignifTest,
+                        timeVarKolmSmirTest=timeVarKolmSmirTest,
+                        timeVarKramvMisTest=timeVarKramvMisTest))
   if (is.null(out$call$cause))
-    out$call$cause <- cause
+      out$call$cause <- cause
   class(out) <- "riskRegression"
   return(out)
 

@@ -130,7 +130,7 @@ plotEffects <- function(x,
   # }}}
   # {{{ smart control
 
-  smartA <- SmartControl(call=  list(...),
+  smartA <- prodlim::SmartControl(call=  list(...),
                          keys=c("plot","legend","confint","axis1","axis2"),
                          ignore=c("x","formula","refLine","add","col","lty","lwd","ylim","xlim","xlab","ylab","legend","confint","axes"),
                          defaults=list("plot"=plot.DefaultArgs,

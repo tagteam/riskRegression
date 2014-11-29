@@ -3,7 +3,6 @@
 #' Interface for fitting cause-specific Cox proportional hazard regression
 #' models in competing risk.
 #' 
-#' 
 #' @param formula A list of formulae, one for each cause, each specifying a
 #' cause-specific Cox regression model.
 #' @param data A data in which to fit the models.
@@ -24,34 +23,42 @@
 #' Ulla B. Mogensen \email{ulmo@@biostat.ku.dk}
 #' @seealso \code{\link{coxph}}
 #' @keywords survival
-#' @examples
-#' 
-#' library(riskRegression)
-#' library(prodlim)
-#' library(pec)
-#' library(survival)
-#' data(Melanoma)
-#' ## fit two cause-specific Cox models
-#' ## different formula for the two causes
-#' fit1 <- CSC(list(Hist(time,status)~sex,Hist(time,status)~invasion+epicel+age),data=Melanoma)
-#' print(fit1)
-#' fit1a <- CSC(list(Hist(time,status)~sex,Hist(time,status)~invasion+epicel+age),data=Melanoma,survtype="surv")
-#' print(fit1a)
-#' 
-#' ## same formula for both causes
-#' fit2 <- CSC(Hist(time,status)~invasion+epicel+age,data=Melanoma)
-#' print(fit2)
-#' 
-#' ## combine a cause-specific Cox regression model for cause 2 
-#' ## and a Cox regression model for the event-free survival:
-#' ## different formula for cause 2 and event-free survival
-#' fit3 <- CSC(list(Hist(time,status)~sex+invasion+epicel+age,Hist(time,status)~invasion+epicel+age),data=Melanoma)
-#' print(fit3)
-#' 
-#' ## same formula for both causes
-#' fit4 <- CSC(Hist(time,status)~invasion+epicel+age,data=Melanoma,survtype="surv")
-#' print(fit4)
-#'
+##' @examples
+##' 
+##' library(riskRegression)
+##' library(prodlim)
+##' library(pec)
+##' library(survival)
+##' data(Melanoma)
+##' ## fit two cause-specific Cox models
+##' ## different formula for the two causes
+##' fit1 <- CSC(list(Hist(time,status)~sex,Hist(time,status)~invasion+epicel+age),
+##'             data=Melanoma)
+##' print(fit1)
+##' fit1a <- CSC(list(Hist(time,status)~sex,Hist(time,status)~invasion+epicel+age),
+##'              data=Melanoma,
+##'              survtype="surv")
+##' print(fit1a)
+##' 
+##' ## same formula for both causes
+##' fit2 <- CSC(Hist(time,status)~invasion+epicel+age,
+##'             data=Melanoma)
+##' print(fit2)
+##' 
+##' ## combine a cause-specific Cox regression model for cause 2 
+##' ## and a Cox regression model for the event-free survival:
+##' ## different formula for cause 2 and event-free survival
+##' fit3 <- CSC(list(Hist(time,status)~sex+invasion+epicel+age,
+##'                  Hist(time,status)~invasion+epicel+age),
+##'             data=Melanoma)
+##' print(fit3)
+##' 
+##' ## same formula for both causes
+##' fit4 <- CSC(Hist(time,status)~invasion+epicel+age,
+##'             data=Melanoma,
+##'             survtype="surv")
+##' print(fit4)
+##' #'
 #' @export
 CSC <- function (formula,data,cause,survtype="hazard",...){
   # {{{ type
@@ -113,13 +120,12 @@ CSC <- function (formula,data,cause,survtype="hazard",...){
       event <- getEvent(response)
       statusX <- event==causeX
       workData <- cbind(time=time,status=statusX,covData[,-1,drop=FALSE])
-      formulaXX <- as.formula(paste("Surv(time,status)",as.character(delete.response(terms.formula(formulaX)))[[2]],sep="~"))
-      fit <- coxph(formulaXX, data = workData,...)
-      fit$call$formula <- fit$formula
-      ## fit$call$data <- data
+      formulaXX <- as.formula(paste("survival::Surv(time,status)",as.character(delete.response(terms.formula(formulaX)))[[2]],sep="~"))
+      fit <- survival::coxph(formulaXX, data = workData,...)
+      ## fit$call$formula <- fit$formula
+      fit$call$formula <- formulaXX
       fit
     })
-    ## names(CoxModels) <- paste("Cause",causes)
     names(CoxModels) <- paste("Cause",c(theCause,otherCauses))
   }
   else{
@@ -138,9 +144,9 @@ CSC <- function (formula,data,cause,survtype="hazard",...){
       }
       workData <- cbind(time=time,status=statusX,covData[,-1,drop=FALSE])
       formulaXX <- as.formula(paste("Surv(time,status)",as.character(delete.response(terms.formula(formulaX)))[[2]],sep="~"))
-      fit <- coxph(formulaXX, data = workData,...)
-      ## fit$call$data <- data
-      fit$call$formula <- fit$formula
+      fit <- survival::coxph(formulaXX, data = workData,...)
+      ## fit$call$formula <- fit$formula
+      fit$call$formula <- formulaXX
       fit
     })
     names(CoxModels) <- c(paste("Cause",theCause),"OverallSurvival")

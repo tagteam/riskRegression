@@ -30,8 +30,8 @@ print.riskRegression <- function(x,
   # }}}
   # {{{ find covariates and factor levels 
 
-  cvars <- all.vars(x$design$const$formula)
-  tvars <- all.vars(x$design$timevar$formula)
+  cvars <- x$design$colnamesZ
+  tvars <- x$design$colnamesX
   Flevels <- x$factorLevels
 
   # }}}
@@ -57,7 +57,7 @@ print.riskRegression <- function(x,
   cat("The column 'Intercept' is the baseline risk")
   cat(" where all the covariates have value zero\n\n")
   if (missing(times)) times <- quantile(x$time)
-  showTimes <- sindex(eval.times=times,jump.times=x$time)
+  showTimes <- prodlim::sindex(eval.times=times,jump.times=x$time)
   showMat <- signif(exp(x$timeVaryingEffects$coef[showTimes,-1,drop=FALSE]),digits)
   rownames(showMat) <- signif(x$timeVaryingEffects$coef[showTimes,1],2)
   print(showMat)
@@ -66,64 +66,59 @@ print.riskRegression <- function(x,
   # }}}
   # {{{ time constant coefs
   if (!is.null(cvars)){
-    cat("\nCovariates with time-constant effects:\n\n")
-    nix <- lapply(cvars,function(v){
-      if (is.null(flevs <- Flevels[[v]])){
-        cat(" ",v," (numeric)\n",sep="")
-      }
-      else{
-        cat(" ",v," (factor with levels: ",paste(flevs,collapse=", "),")\n",sep="")
-      }
-    })
+      cat("\nCovariates with time-constant effects:\n\n")
+      nix <- lapply(cvars,function(v){
+          if (is.null(flevs <- Flevels[[v]])){
+              cat(" ",v," (numeric)\n",sep="")
+          }
+          else{
+              cat(" ",v," (factor with levels: ",paste(flevs,collapse=", "),")\n",sep="")
+          }
+      })
   }
   cat("\nTime constant regression coefficients:\n\n")
   if (is.null(x$timeConstantEffects)){
-    cat("\nNone.\n")
-    coefMat <- NULL
+      cat("\nNone.\n")
+      coefMat <- NULL
   }
   else{
-    const.coef <- x$timeConstantEffects$coef
-    const.se <- sqrt(diag(x$timeConstantEffects$var))
-    wald <- const.coef/const.se
-    waldp <- (1 - pnorm(abs(wald))) * 2
-    format.waldp <- format.pval(waldp,digits=digits,eps=eps)
-    names(format.waldp) <- names(waldp)
-    format.waldp[const.se==0] <- NA
-    if (any(const.se==0))
-      warning("Some standard errors are zero. It seems that the model did not converge")
-    coefMat <- do.call("rbind",lapply(cvars,function(v){
-      covname <- strsplit(v,":")[[1]][[1]]
-      if (is.null(Flevels[[covname]])){
-        out <- c(v,signif(c(const.coef[v],exp(const.coef[v]),const.se[v],wald[v]),digits),format.waldp[v])
+      const.coef <- x$timeConstantEffects$coef
+      const.se <- sqrt(diag(x$timeConstantEffects$var))
+      wald <- const.coef/const.se
+      waldp <- (1 - pnorm(abs(wald))) * 2
+      format.waldp <- format.pval(waldp,digits=digits,eps=eps)
+      names(format.waldp) <- names(waldp)
+      format.waldp[const.se==0] <- NA
+      if (any(const.se==0))
+          warning("Some standard errors are zero. It seems that the model did not converge")
+      coefMat <- do.call("rbind",lapply(cvars,function(v){
+          covname <- strsplit(v,":")[[1]][[1]]
+          if (is.null(Flevels[[covname]])){
+              out <- c(v,signif(c(const.coef[v],exp(const.coef[v]),const.se[v],wald[v]),digits),format.waldp[v])
+          }
+          else{
+              rlev <- x$refLevels[[covname]]
+              out <- do.call("rbind",lapply(Flevels[[covname]],function(l){
+                  V <- paste(covname,l,sep=":")
+                  if (match(V,paste(covname,rlev,sep=":"),nomatch=FALSE))
+                      c(paste(covname,rlev,sep=":"),"--","--","--","--","--")
+                  else
+                      c(V,signif(c(const.coef[V],exp(const.coef[V]),const.se[V],wald[V]),digits),format.waldp[V])
+              }))
+          }
+          out
+      }))
+      if (!is.null(coefMat)){
+          colnames(coefMat) <- c("Factor","Coef","exp(Coef)","StandardError","z","Pvalue")
+          rownames(coefMat) <- rep("",NROW(coefMat))
+          print(coefMat,quote=FALSE,right=TRUE)
+          cat(paste("\n\nNote: The values exp(Coef) are",switch(x$link,"prop"="sub-hazard ratios (Fine & Gray 1999)","logistic"="odds ratios","additive"="absolute risk differences","relative"="absolute risk ratios")),"\n")
+          tp <- x$design$timepower!=0
+          if (any(tp))
+              cat(paste("\n\nNote:The coeffient(s) for the following variable(s)\n",
+                        paste(names(x$design$timepower)[tp],collapse=", "),
+                        "are interpreted as per factor unit multiplied by time^power.\n",sep=""))
       }
-      else{
-        rlev <- x$refLevels[[covname]]
-        out <- do.call("rbind",lapply(Flevels[[covname]],function(l){
-          V <- paste(covname,l,sep=":")
-          if (match(V,paste(covname,rlev,sep=":"),nomatch=FALSE))
-            c(paste(covname,rlev,sep=":"),"--","--","--","--","--")
-          else
-            c(V,signif(c(const.coef[V],exp(const.coef[V]),const.se[V],wald[V]),digits),format.waldp[V])
-        }))
-      }
-      out
-    }))
-    if (!is.null(coefMat)){
-      colnames(coefMat) <- c("Factor","Coef","exp(Coef)","StandardError","z","Pvalue")
-      rownames(coefMat) <- rep("",NROW(coefMat))
-      print(coefMat,quote=FALSE,right=TRUE)
-      cat(paste("\n\nNote: The values exp(Coef) are",switch(x$link,
-                                                            "prop"="sub-hazard ratios (Fine & Gray 1999)",
-                                                            "logistic"="odds ratios",
-                                                            "additive"="absolute risk differences",
-                                                            "relative"="absolute risk ratios")),"\n")
-      tp <- sapply(x$design$const$specialArguments,function(x)!is.null(x$power))
-      if (any(tp))
-        cat(paste("\n\nNote:The coeffient(s) for the following variable(s)\n",
-                  sapply(names(x$design$const$specialArguments[tp]),function(x){
-                    paste("\t",x," (power=",as.character(x$design$const$specialArguments[[x]]),")\n",sep="")}),
-                  "are interpreted as per factor unit  multiplied by time^power.\n",sep=""))
-    }
   }
 
   # }}}

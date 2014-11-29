@@ -63,13 +63,14 @@ This is a sister of the function \code{comp.risk} (timereg
 package).
 }
 \examples{
-data(Melanoma)
+data(Melanoma,package="riskRegression")
 ## tumor thickness on the log-scale
 Melanoma$logthick <- log(Melanoma$thick)
 
 # {{{ Single binary factor
 
 ## absolute risk regression
+library(prodlim)
 fit.arr <- ARR(Hist(time,status)~sex,data=Melanoma,cause=1)
 print(fit.arr)
 # show predicted cumulative incidences
@@ -113,13 +114,17 @@ fit2.lrr <- LRR(Hist(time,status)~logthick,data=Melanoma,cause=1)
 summary(fit2.lrr)
 
 ## change model for censoring weights
-fit2a.lrr <- LRR(Hist(time,status)~logthick,data=Melanoma,cause=1,cens.model="cox",cens.formula=~sex+epicel+ulcer+age+logthick)
+fit2a.lrr <- LRR(Hist(time,status)~logthick,
+                 data=Melanoma,
+                 cause=1,
+                 cens.model="cox",
+                 cens.formula=~sex+epicel+ulcer+age+logthick)
 summary(fit2a.lrr)
 
 ##  compare prediction errors
 \dontrun{
-library(pec)
-plot(pec(list(ARR=fit2.arr,AJ=fit2.aj,LRR=fit2.lrr),data=Melanoma,maxtime=3000))
+    library(pec)
+    plot(pec(list(ARR=fit2.arr,AJ=fit2.aj,LRR=fit2.lrr),data=Melanoma,maxtime=3000))
 }
 # }}}
 
@@ -134,7 +139,9 @@ multi.arr <- ARR(Hist(time,status)~logthick+sex+age+ulcer,data=Melanoma,cause=1)
 multi.arr <- ARR(Hist(time,status)~thick+strata(sex)+age+ulcer,data=Melanoma,cause=1)
 
 # stratify by a continuous variable
-multi.arr <- ARR(Hist(time,status)~tp(thick,power=1)+strata(sex)+age+ulcer,data=Melanoma,cause=1)
+multi.arr <- ARR(Hist(time,status)~tp(thick,power=1)+strata(sex)+age+ulcer,
+                 data=Melanoma,
+                 cause=1)
 
 fit.arr2a <- ARR(Hist(time,status)~const(thick,power=1),data=Melanoma,cause=1)
 fit.arr2b <- ARR(Hist(time,status)~timevar(thick),data=Melanoma,cause=1)
@@ -154,10 +161,16 @@ fit.aj <- prodlim(Hist(time,status)~thick,data=Melanoma)
 plot(fit.aj,confint=FALSE)
 
 \dontrun{
-# prediction error
-library(pec)
-x <- pec(list(fit.arr2,fit.arr2a,fit.arr2b,fit.lrr),data=Melanoma,formula=Hist(time,status)~1,cause=1,B=10,splitMethod="none")
+    # prediction error
+    library(pec)
+    x <- pec(list(fit.arr2,fit.arr2a,fit.arr2b,fit.lrr),
+             data=Melanoma,
+             formula=Hist(time,status)~1,
+             cause=1,
+             B=10,
+             splitMethod="none")
 }
+#'
 }
 \author{
 Thomas H. Scheike \email{ts@biostat.ku.dk}

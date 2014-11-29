@@ -84,7 +84,7 @@ plot.riskRegression <- function(x,
         else{
           P1 <- predict(x,newdata=eval(x$call$data),times=plot.times)$risk
         }
-        medianP1 <- P1[,sindex(plot.times,median(plot.times))]
+        medianP1 <- P1[,prodlim::sindex(plot.times,median(plot.times))]
         P1 <- P1[order(medianP1),]
         p1 <- P1[round(quantile(1:NROW(P1))),]
         rownames(p1) <- paste("Predicted risk",c("Min","q25","Median","q75","Max"),sep="=")
@@ -131,18 +131,18 @@ plot.riskRegression <- function(x,
   # }}}
   # {{{ smart control
 
-  smartA <- SmartControl(call=  list(...),
-                                   keys=c("plot","lines","legend","confint","marktime","axis1","axis2"),
-                                   ignore=c("x","type","cause","newdata","add","col","lty","lwd","ylim","xlim","xlab","ylab","legend","marktime","confint","automar","atrisk","timeOrigin","percent","axes","atrisk.args","confint.args","legend.args"),
-                                   ignore.case=TRUE,
-                                   defaults=list("plot"=plot.DefaultArgs,
-                                     "axis1"=axis1.DefaultArgs,
-                                     "axis2"=axis2.DefaultArgs,
-                                     "legend"=legend.DefaultArgs,
-                                     "lines"=lines.DefaultArgs),
-                                   forced=list("plot"=list(axes=FALSE),
-                                     "axis1"=list(side=1)),
-                                   verbose=TRUE)
+  smartA <- prodlim::SmartControl(call=  list(...),
+                                  keys=c("plot","lines","legend","confint","marktime","axis1","axis2"),
+                                  ignore=c("x","type","cause","newdata","add","col","lty","lwd","ylim","xlim","xlab","ylab","legend","marktime","confint","automar","atrisk","timeOrigin","percent","axes","atrisk.args","confint.args","legend.args"),
+                                  ignore.case=TRUE,
+                                  defaults=list("plot"=plot.DefaultArgs,
+                                      "axis1"=axis1.DefaultArgs,
+                                      "axis2"=axis2.DefaultArgs,
+                                      "legend"=legend.DefaultArgs,
+                                      "lines"=lines.DefaultArgs),
+                                  forced=list("plot"=list(axes=FALSE),
+                                      "axis1"=list(side=1)),
+                                  verbose=TRUE)
 
   # }}}
   # {{{ empty plot

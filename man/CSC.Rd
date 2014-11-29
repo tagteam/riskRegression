@@ -44,24 +44,33 @@ library(survival)
 data(Melanoma)
 ## fit two cause-specific Cox models
 ## different formula for the two causes
-fit1 <- CSC(list(Hist(time,status)~sex,Hist(time,status)~invasion+epicel+age),data=Melanoma)
+fit1 <- CSC(list(Hist(time,status)~sex,Hist(time,status)~invasion+epicel+age),
+            data=Melanoma)
 print(fit1)
-fit1a <- CSC(list(Hist(time,status)~sex,Hist(time,status)~invasion+epicel+age),data=Melanoma,survtype="surv")
+fit1a <- CSC(list(Hist(time,status)~sex,Hist(time,status)~invasion+epicel+age),
+             data=Melanoma,
+             survtype="surv")
 print(fit1a)
 
 ## same formula for both causes
-fit2 <- CSC(Hist(time,status)~invasion+epicel+age,data=Melanoma)
+fit2 <- CSC(Hist(time,status)~invasion+epicel+age,
+            data=Melanoma)
 print(fit2)
 
 ## combine a cause-specific Cox regression model for cause 2
 ## and a Cox regression model for the event-free survival:
 ## different formula for cause 2 and event-free survival
-fit3 <- CSC(list(Hist(time,status)~sex+invasion+epicel+age,Hist(time,status)~invasion+epicel+age),data=Melanoma)
+fit3 <- CSC(list(Hist(time,status)~sex+invasion+epicel+age,
+                 Hist(time,status)~invasion+epicel+age),
+            data=Melanoma)
 print(fit3)
 
 ## same formula for both causes
-fit4 <- CSC(Hist(time,status)~invasion+epicel+age,data=Melanoma,survtype="surv")
+fit4 <- CSC(Hist(time,status)~invasion+epicel+age,
+            data=Melanoma,
+            survtype="surv")
 print(fit4)
+#'
 }
 \author{
 Thomas A. Gerds \email{tag@biostat.ku.dk}

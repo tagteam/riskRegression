@@ -30,9 +30,9 @@ summary.riskRegression <- function(object,
             sep="")
     }
     # }}}
-    # {{{ find covariates and factor levels 
-    cvars <- all.vars(object$design$const$formula)
-    tvars <- all.vars(object$design$timevar$formula)
+    # {{{ find covariates and factor levels
+    cvars <- x$design$colnamesZ
+    tvars <- x$design$colnamesX
     Flevels <- object$factorLevels
     # }}}
     # {{{ time varying coefs
@@ -57,7 +57,7 @@ summary.riskRegression <- function(object,
         cat(" where all the covariates have value zero\n\n")
     }
     if (missing(times)) times <- quantile(object$time)
-    showTimes <- sindex(eval.times=times,jump.times=object$time)
+    showTimes <- prodlim::sindex(eval.times=times,jump.times=object$time)
     showMat <- format(exp(object$timeVaryingEffects$coef[showTimes,-1,drop=FALSE]),digits=digits,nsmall=digits)
     rownames(showMat) <- signif(object$timeVaryingEffects$coef[showTimes,1],2)
     if (verbose){
@@ -137,12 +137,11 @@ summary.riskRegression <- function(object,
                                                                   "logistic"="odds ratios",
                                                                   "additive"="absolute risk differences",
                                                                   "relative"="absolute risk ratios")),"\n")
-            tp <- sapply(object$design$const$specialArguments,function(x)!is.null(x$power))
+            tp <- x$design$timepower!=0
             if (any(tp))
                 cat(paste("\n\nNote:The coeffient(s) for the following variable(s)\n",
-                          sapply(names(object$design$const$specialArguments[tp]),function(x){
-                              paste("\t",x," (power=",as.character(object$design$const$specialArguments[[x]]),")\n",sep="")}),
-                          "are interpreted as per factor unit  multiplied by time^power.\n",sep=""))
+                          paste(names(x$design$timepower)[tp],collapse=", "),
+                          "are interpreted as per factor unit multiplied by time^power.\n",sep=""))
         }
     }
     # }}}

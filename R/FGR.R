@@ -28,6 +28,7 @@
 #' library(prodlim)
 #' library(pec)
 #' library(cmprsk)
+#' library(lava)
 #' d <- SimCompRisk(100)
 #' f1 <- FGR(Hist(time,cause)~X1+X2,data=d)
 #' print(f1)
@@ -59,116 +60,103 @@
 #' 
 #' ## multiply X1 by time^2 and X2 by sqrt(time)
 #' f5b <- FGR(Hist(time,cause)~cov2(X1,tf=qFun)+cov2(X2,tf=sqFun),data=d,cause=1)
-#' 
 #'
+#' ## additional arguments for crr
+#' f6<- FGR(Hist(time,cause)~X1+X2,data=d, cause=1,gtol=1e-5)
+#' 
+#' @export
+cov1 <- function(x)x
+#' @export
+cov2 <- function(x,tf)x
 #' @export
 FGR <- function(formula,data,cause=1,...){
-  # {{{ check if formula has the form Hist(time,event)~X1+X2+...
-
-  formula.names <- try(all.names(formula),silent=TRUE)
-  if (!(formula.names[1]=="~")
-      ||
-      (match("$",formula.names,nomatch=0)+match("[",formula.names,nomatch=0)>0)){
-    stop("Invalid specification of formula. Perhaps forgotten right hand side?\nNote that any subsetting, ie data$var or data[,\"var\"], is invalid for this function.")
-  }
-  else
-    if (!(formula.names[2] %in% c("Hist"))) stop("formula is NOT a proper event history formula,\nwhich must have a `Hist' object as response.")
-  
-  # }}}
-  # {{{ read the data and the design
-  call <- match.call()
-  m <- match.call(expand.dots = FALSE)
-  if (match("subset",names(call),nomatch=FALSE))
-      stop("Subsetting of data is not possible.")
-  m <- m[match(c("","formula","data","subset","na.action"),names(m),nomatch = 0)]
-  m[[1]]  <-  as.name("model.frame")
-  if (missing(data)) stop("Argument 'data' is missing")
-  formList <- readFormula(formula,
-                          specials=c("cov2","cov1"),
-                          specialArgumentNames=list("cov2"="tf"),
-                          unspecified="cov1")
-  m$formula <- formList$allVars
-  theData <- eval(m, parent.frame()) 
-  if ((nMiss <- (NROW(data)-NROW(theData)))>0)
-      warning(nMiss," lines have been removed from data due to missing values")
-  if (NROW(theData) == 0) stop("No (non-missing) observations")
-  # }}}
-  # {{{ response
-  response <- model.response(model.frame(formula=formList$Response,data=theData))
-  cens.code <- attr(response,"cens.code")
-  Y <- as.vector(response[,"time"])
-  time  <- numeric(length(Y))
-  status <- as.vector(response[,"status"])
-  if (match("event",colnames(response),nomatch=0)==0){
-      event <- status
-  }
-  else{
-      event <- as.numeric(getEvent(response))
-  }
-  # }}}
-  # {{{ cause of interest
-  states <- getStates(response)
-  if (missing(cause)){
-      cause <- 1
-      message("Argument cause missing. Analyse cause: ",states[1])
-  }
-  else{
-      if ((foundCause <- match(as.character(cause),states,nomatch=0))==0)
-          stop(paste("Requested cause: ",cause," Available causes: ", states))
-      else
-          cause <- foundCause
-  }  
-  # }}}
-  # {{{ covariate design matrices
-  cov1 <- modelMatrix(formula=formList$cov1$formula,
-                      data=theData,
-                      intercept=NULL)
-  cov2 <- modelMatrix(formula=formList$cov2$formula,
-                      data=theData,
-                      intercept=NULL)
-  if (!is.null(cov1))
-      class(cov1) <- "matrix"
-  if (!is.null(cov2))
-      class(cov2) <- "matrix"
-  # }}}
-  # {{{ call crr
-  args <- list(ftime=Y,
-               fstatus=event,
-               cov1=cov1,
-               cov2=cov2,
-               failcode=cause,
-               cencode=length(states)+1,...)
-  if (NCOL(cov2)>0){
-      this <- sapply(formList$cov2$specialArguments,is.null)
-      ## if (all(this <- sapply(formList$cov2$specialArguments,is.null))){
-      ## args$tf <- function(x){matrix(x,ncol=NCOL(cov2),byrow=FALSE)}
-      ## args$tf <- function(x){matrix(x,ncol=NCOL(cov2),byrow=FALSE)}
-      ## }
-      ## else{
-      tf.temp <- lapply(formList$cov2$specialArguments,function(a)a$tf)
-      if (any(this)){
-          id <- function(x)x
-          tf.temp[this] <- "id" 
-      }
-      args$tf <- function(x){
-          do.call("cbind",lapply(tf.temp,function(f){
-              do.call(f,list(x))
-          }))
-      }
-  }
-  else{
-      args$tf <- function(x){matrix(x,ncol=NCOL(cov2),byrow=FALSE)}
-  }
-  args <- args[!sapply(args,is.null)]
-  fit <- do.call("crr",args)
-  fit$call <- NULL
-  out <- list(crrFit=fit,response=response,cause=cause)
-  # }}}
-  # {{{ clean up
-  out$call <- match.call()
-  if (is.null(out$call$cause)) out$call$cause <- cause
-  out$call$formula <- eval(out$call$formula)
-  class(out) <- "FGR"
-  # }}}
-  out
+    # {{{ read the data and the design
+    cov1 <- function(x)x
+    cov2 <- function(x)x
+    EHF <- prodlim::EventHistory.frame(formula,
+                                       data,
+                                       specials=c("cov1","cov2"),
+                                       specialsDesign=TRUE,
+                                       stripSpecialNames=FALSE)
+    EHF$cov1 <- cbind(EHF$cov1,EHF$design)
+    EHF$design <- NULL
+    theData <- data.frame(cbind(unclass(EHF$event.history),do.call("cbind",EHF[-1])))
+    ## theData <- data.frame(EHF)
+    # }}}
+    # {{{ response
+    response <- EHF$event.history
+    cens.code <- attr(response,"cens.code")
+    Y <- as.vector(response[,"time"])
+    status <- as.vector(response[,"status"])
+    if (match("event",colnames(response),nomatch=0)==0){
+        event <- status
+    }
+    else{
+        event <- as.numeric(getEvent(response))
+    }
+    # }}}
+    # {{{ cause of interest
+    states <- getStates(response)
+    if (missing(cause)){
+        cause <- 1
+        message("Argument cause missing. Analyse cause: ",states[1])
+    }
+    else{
+        if ((foundCause <- match(as.character(cause),states,nomatch=0))==0)
+            stop(paste("Requested cause: ",cause," Available causes: ", states))
+        else
+            cause <- foundCause
+    }  
+    # }}}
+    # {{{ covariate design matrices
+    cov1 <- EHF$cov1
+    cov2 <- EHF$cov2
+    # }}}
+    # {{{ call crr
+    args <- list(ftime=Y,
+                 fstatus=event,
+                 cov1=cov1,
+                 cov2=cov2,
+                 failcode=cause,
+                 cencode=length(states)+1,...)
+    if (!is.null(cov2) && NCOL(cov2)>0){
+        specialArguments <- sapply(colnames(cov2),function(s)
+                                   prodlim::parseSpecialNames(s,
+                                                              "cov2",
+                                                              list(cov2="tf")))
+        this <- sapply(specialArguments,is.null)
+        if (all(this)){
+            args$tf <- function(x){matrix(x,ncol=NCOL(cov2),byrow=FALSE)}
+        }
+        else{
+            tf.temp <- lapply(specialArguments,function(a)a$tf)
+            if (any(this)){
+                id <- function(x)x
+                tf.temp[this] <- "id" 
+            }
+            args$tf <- function(x){
+                do.call("cbind",lapply(tf.temp,function(f){
+                    do.call(f,list(x))
+                }))
+            }
+        }
+    }else{
+        args$tf <- function(x){matrix(x,ncol=NCOL(cov2),byrow=FALSE)}
+    }
+    args <- args[!sapply(args,is.null)]
+    fit <- do.call(cmprsk::crr,args)
+    fit$call <- NULL
+    out <- list(crrFit=fit,
+                response=response,
+                cause=cause,
+                "na.action"=attr(EHF,"na.action"))
+    # }}}
+    # {{{ clean up
+    out$call <- match.call()
+    if (is.null(out$call$cause)) out$call$cause <- cause
+    out$call$formula <- formula
+    ## out$call$formula <- parent.frame()[[all.names(out$call$formula)]]
+    class(out) <- "FGR"
+    # }}}
+    out
 }
