@@ -1,3 +1,4 @@
+#' @S3method coef riskRegression
 coef.riskRegression <- function(object,digits=3,eps=10^-4,...){
   cvars <- all.vars(object$design$const$formula)
   Flevels <- object$factorLevels

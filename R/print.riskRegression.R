@@ -1,3 +1,4 @@
+#' @S3method print riskRegression
 print.riskRegression <- function(x,
                                  times,
                                  digits=3,

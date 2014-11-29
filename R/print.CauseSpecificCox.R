@@ -1,3 +1,4 @@
+#' @S3method print CauseSpecificCox
 print.CauseSpecificCox <- function(x,...){
   print(x$call)
   print(x$response)

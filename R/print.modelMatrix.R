@@ -1,3 +1,4 @@
+#' @S3method print modelMatrix
 print.modelMatrix <- function(x,...){
   levs <- attr(x,"factorLevels")
   refs <- attr(x,"refLevels")

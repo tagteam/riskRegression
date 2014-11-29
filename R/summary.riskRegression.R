@@ -1,3 +1,4 @@
+#' @S3method summary riskRegression
 summary.riskRegression <- function(object,
                                    times,
                                    digits=3,

@@ -1,55 +1,35 @@
 \name{FGR}
 \alias{FGR}
-%- Also NEED an '\alias' for EACH other topic documented here.
-\title{
-  Formula interface for Fine-Gray regression competing risk models.
-}
-\description{
-  Formula interface for the function \code{crr} from the \code{cmprsk} package. 
-}
+\title{Formula interface for Fine-Gray regression competing risk models.}
 \usage{
- FGR(formula, data, cause = 1, ...)
+FGR(formula, data, cause = 1, ...)
 }
-%- maybe also 'usage' for other objects documented here.
 \arguments{
-  \item{formula}{
-    A formula whose left hand side is 
-    a \code{Hist} object -- see \code{\link{Hist}}.
-    The right hand side specifies (a linear combination of)
-    the covariates. See examples below.
-  }
-  \item{data}{
-    A data.frame in which all the variables of
-    \code{formula} can be interpreted.
-  }
-  \item{cause}{
-    The failure type of interest. Defaults to \code{1}.
-  }
-  \item{\dots}{
-    ...
-}
-}
-\details{
-  The function \code{crr} allows to multiply some covariates by time
-  before they enter the linear predictor. This can be achieved with the
-  formula interface, however, the code becomes a little cumbersome. See
-  the examples.  
+  \item{formula}{A formula whose left hand side is a
+  \code{Hist} object -- see \code{\link{Hist}}.  The right
+  hand side specifies (a linear combination of) the
+  covariates. See examples below.}
+
+  \item{data}{A data.frame in which all the variables of
+  \code{formula} can be interpreted.}
+
+  \item{cause}{The failure type of interest. Defaults to
+  \code{1}.}
+
+  \item{\dots}{...}
 }
 \value{
 See \code{crr}.
 }
-\references{
-Gerds, TA and Scheike, T and Andersen, PK (2011)
-Absolute risk regression for competing risks: interpretation, link functions and prediction
-Research report 11/7. Department of Biostatistics, University of Copenhagen
+\description{
+Formula interface for the function \code{crr} from the
+\code{cmprsk} package.
 }
-\author{Thomas Alexander Gerds \email{tag@biostat.ku.dk} }
-% \note{
-%%  ~~further notes~~
-% }
-%% ~Make other sections like Warning with \section{Warning }{....} ~
-\seealso{
-\code{\link{riskRegression}}
+\details{
+The function \code{crr} allows to multiply some covariates
+by time before they enter the linear predictor. This can be
+achieved with the formula interface, however, the code
+becomes a little cumbersome. See the examples.
 }
 \examples{
 library(riskRegression)
@@ -87,8 +67,18 @@ f5a <- FGR(Hist(time,cause)~cov2(X1,tf=qFun)+cov2(X2,tf=noFun),data=d)
 
 ## multiply X1 by time^2 and X2 by sqrt(time)
 f5b <- FGR(Hist(time,cause)~cov2(X1,tf=qFun)+cov2(X2,tf=sqFun),data=d,cause=1)
-
 }
-% Add one or more standard keywords, see file 'KEYWORDS' in the
-% R documentation directory.
+\author{
+Thomas Alexander Gerds \email{tag@biostat.ku.dk}
+}
+\references{
+Gerds, TA and Scheike, T and Andersen, PK (2011) Absolute
+risk regression for competing risks: interpretation, link
+functions and prediction Research report 11/7. Department
+of Biostatistics, University of Copenhagen
+}
+\seealso{
+\code{\link{riskRegression}}
+}
 \keyword{survival}
+

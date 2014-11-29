@@ -1,3 +1,4 @@
+#' @S3method print subjectWeights
 print.subjectWeights <- function(x,digits=3){
   cat("\nEstimated inverse of the probability of censoring weights (subjectWeights)\n\n")
   method=switch(x$method,

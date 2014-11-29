@@ -1,3 +1,4 @@
+#' @S3method plot predictedRisk
 plot.predictedRisk <- function(x,
                                   cause,
                                   newdata,

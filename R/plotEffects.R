@@ -1,3 +1,59 @@
+#' Plotting time-varying effects from a risk regression model.
+#' 
+#' Plot time-varying effects from a risk regression model.
+#' 
+#' 
+#' @param x Fitted object obtained with one of \code{ARR}, \code{LRR},
+#' \code{riskRegression}.
+#' @param formula A formula to specify the variable(s) whose regression
+#' coefficients should be plotted.
+#' @param level For categorical variables the level (group) whose contrast to
+#' the reference level (group) should be plotted.
+#' @param refLine Logical. If \code{TRUE} then add a horizontal line at zero.
+#' @param confint Logical. If \code{TRUE} then add confidence limits.  % Can be
+#' % controlled using smart arguments. See examples
+#' @param xlim See \code{plot}
+#' @param ylim See \code{plot}
+#' @param xlab See \code{plot}
+#' @param ylab See \code{plot}
+#' @param col A vector of colors for the regression coefficients.
+#' @param lty A vector of line types for the regression coefficients.
+#' @param lwd A vector of line thicknesses for the regression coefficients.
+#' @param add Logical. If \code{TRUE} then add lines to an existing plot.
+#' @param legend Logical. If \code{TRUE} then add a legend. Can be controlled
+#' using smart arguments. See examples.
+#' @param axes Logical. If \code{FALSE} then do not draw axes.
+#' @param \dots Used for transclusion of smart arguments for \code{plot},
+#' \code{axis}. See function \code{\link{SmartControl}} from prodlim.
+#' @author Thomas H. Scheike \email{ts@@biostat.ku.dk}
+#' 
+#' Thomas A. Gerds \email{tag@@biostat.ku.dk}
+#' @keywords survival
+#' @examples
+#' 
+#' library(pec)
+#' data(Melanoma)
+#' 
+#' fit.tarr <- ARR(Hist(time,status)~strata(sex),data=Melanoma,cause=1)
+#' plotEffects(fit.tarr)
+#' 
+#' fit.tarr <- ARR(Hist(time,status)~strata(sex)+strata(invasion),data=Melanoma,cause=1,times=seq(800,3000,20))
+#' plotEffects(fit.tarr,formula=~sex)
+#' plotEffects(fit.tarr,formula=~invasion)
+#' plotEffects(fit.tarr,formula=~invasion,level="invasion:level.1")
+#' 
+#' ## legend arguments are transcluded:
+#' plotEffects(fit.tarr,formula=~invasion,legend.bty="b",legend.cex=1)
+#' 
+#' ## and other smart arguments too:
+#' plotEffects(fit.tarr,
+#' 	    formula=~invasion,
+#' 	    legend.bty="b",
+#'             axis2.las=2,
+#' 	    legend.cex=1)
+#' 
+#'
+#' @export
 plotEffects <- function(x,
                         formula,
                         level,

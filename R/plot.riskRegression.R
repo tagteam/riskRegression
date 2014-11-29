@@ -1,3 +1,45 @@
+#' Plotting predicted risk
+#' 
+#' Show predicted risk obtained by a risk prediction model as a function of
+#' time.
+#' 
+#' 
+#' @aliases plot.riskRegression plot.predictedRisk plot.CauseSpecificCox
+#' @param x Fitted object obtained with one of \code{ARR}, \code{LRR},
+#' \code{riskRegression}.
+#' @param cause For CauseSpecificCox models the cause of interest.
+#' @param newdata A data frame containing predictor variable combinations for
+#' which to compute predicted risk.
+#' @param xlim See \code{plot}
+#' @param ylim See \code{plot}
+#' @param xlab See \code{plot}
+#' @param ylab See \code{plot}
+#' @param lwd A vector of line thicknesses for the regression coefficients.
+#' @param col A vector of colors for the regression coefficients.
+#' @param lty A vector of line types for the regression coefficients.
+#' @param axes Logical. If \code{FALSE} then do not draw axes.
+#' @param percent If true the y-axis is labeled in percent.
+#' @param legend If true draw a legend.
+#' @param add Logical. If \code{TRUE} then add lines to an existing plot.
+#' @param \dots Used for transclusion of smart arguments for \code{plot},
+#' \code{lines}, \code{axis} and \code{background}. See function
+#' \code{\link{SmartControl}} from prodlim.
+#' @author Thomas Alexander Gerds <tag@@biostat.ku.dk>
+#' @keywords survival
+#' @examples
+#' 
+#' 
+#' library(pec)
+#' data(Melanoma)
+#' 
+#' fit.arr <- ARR(Hist(time,status)~invasion+age+strata(sex),data=Melanoma,cause=1)
+#' plot(fit.arr)
+#' 
+#' fit.csc <- CSC(Hist(time,status)~invasion+age+sex,data=Melanoma,cause=1)
+#' plot(fit.csc)
+#' 
+#'
+#' @S3method plot CauseSpecificCox
 plot.riskRegression <- function(x,
                                 cause,
                                 newdata,

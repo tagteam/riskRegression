@@ -1,3 +1,4 @@
+#' @S3method print timevarCoefList
 print.timevarCoefList <- function(x,digits=3,eps=10^-4,...){
   times <- names(x)
   lapply(1:length(x),function(i){
