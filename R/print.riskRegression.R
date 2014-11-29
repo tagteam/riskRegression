@@ -30,8 +30,8 @@ print.riskRegression <- function(x,
   # }}}
   # {{{ find covariates and factor levels 
 
-  cvars <- x$design$colnamesZ
-  tvars <- x$design$colnamesX
+  cvars <- x$design$const
+  tvars <- x$design$timevar
   Flevels <- x$factorLevels
 
   # }}}
@@ -65,17 +65,17 @@ print.riskRegression <- function(x,
 
   # }}}
   # {{{ time constant coefs
-  if (!is.null(cvars)){
-      cat("\nCovariates with time-constant effects:\n\n")
-      nix <- lapply(cvars,function(v){
-          if (is.null(flevs <- Flevels[[v]])){
-              cat(" ",v," (numeric)\n",sep="")
-          }
-          else{
-              cat(" ",v," (factor with levels: ",paste(flevs,collapse=", "),")\n",sep="")
-          }
-      })
-  }
+  ## if (!is.null(cvars)){
+      ## cat("\nCovariates with time-constant effects:\n\n")
+      ## nix <- lapply(cvars,function(v){
+          ## if (is.null(flevs <- Flevels[[v]])){
+              ## cat(" ",v," (numeric)\n",sep="")
+          ## }
+          ## else{
+              ## cat(" ",v," (factor with levels: ",paste(flevs,collapse=", "),")\n",sep="")
+          ## }
+      ## })
+  ## }
   cat("\nTime constant regression coefficients:\n\n")
   if (is.null(x$timeConstantEffects)){
       cat("\nNone.\n")

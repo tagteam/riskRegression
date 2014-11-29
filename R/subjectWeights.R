@@ -111,6 +111,7 @@ subjectWeights.nonpar <- function(formula,data,method,args,lag=1){
 #' @S3method subjectWeights cox
 subjectWeights.cox <- function(formula,data,method,args,lag=1){
     ## require(rms)
+    require(survival)
     EHF <- prodlim::EventHistory.frame(formula,data,specials=NULL)
     wdata <- as.data.frame(EHF)
     wdata$status <- 1-wdata$status

@@ -31,8 +31,8 @@ summary.riskRegression <- function(object,
     }
     # }}}
     # {{{ find covariates and factor levels
-    cvars <- x$design$colnamesZ
-    tvars <- x$design$colnamesX
+    cvars <- object$design$const
+    tvars <- object$design$timevar
     Flevels <- object$factorLevels
     # }}}
     # {{{ time varying coefs

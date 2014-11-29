@@ -3,6 +3,7 @@
 library(riskRegression)
 library(pec)    ## to estimate the prediction performance
 library(cmprsk) ## for comparison with the Fine-Gray model
+library(prodlim)
 data(Melanoma)
 Melanoma$logthick <- log(Melanoma$thick)
 help(Melanoma)

@@ -1,6 +1,7 @@
 #' @S3method coef riskRegression
 coef.riskRegression <- function(object,digits=3,eps=10^-4,...){
-  cvars <- all.vars(object$design$const$formula)
+
+  cvars <- object$design$const
   Flevels <- object$factorLevels
   cat("\nTime constant regression coefficients:\n\n")
   if (is.null(object$timeConstantEffects)){
@@ -37,11 +38,11 @@ coef.riskRegression <- function(object,digits=3,eps=10^-4,...){
     colnames(coefMat) <- c("Factor","Coef","exp(Coef)","StandardError","z","Pvalue")
     rownames(coefMat) <- rep("",NROW(coefMat))
     print(coefMat,quote=FALSE,right=TRUE)
-    tp <- sapply(object$design$const$specialArguments,function(x)!is.null(x$power))
+    tp <- object$design$timepower[object$design$timepower>0]
     if (any(tp))
       cat(paste("\n\nNote:The coeffient(s) for the following variable(s)\n",
-                sapply(names(object$design$const$specialArguments[tp]),function(x){
-                  paste("\t",x," (power=",as.character(object$design$const$specialArguments[[x]]),")\n",sep="")}),
+                sapply(names(tp),function(x){
+                  paste("\t",x," (power=",as.character(tp[x]),")\n",sep="")}),
                 "are interpreted as per factor unit  multiplied by time^power.\n",sep=""))
   }
   invisible(coefMat)

@@ -6,7 +6,7 @@
 \usage{
 riskRegression(formula, data, times, link = "relative", cause,
   confint = TRUE, cens.model, cens.formula, numSimu = 0, maxiter = 50,
-  silent = 1, convLevel = 6, ...)
+  silent = 1, convLevel = 6, conservative = TRUE, ...)
 }
 \arguments{
   \item{formula}{Formula where the left hand side specifies
@@ -21,8 +21,8 @@ riskRegression(formula, data, times, link = "relative", cause,
   timevarying coefficients.}
 
   \item{link}{\code{"relative"} for the absolute risk
-  regression model. \code{"logistic"} for the logistic risk
-  regression model.  \code{"prop"} for the Fine-Gray
+  regression model.  \code{"logistic"} for the logistic
+  risk regression model. \code{"prop"} for the Fine-Gray
   regression model.}
 
   \item{cause}{The cause of interest.}
@@ -43,14 +43,20 @@ riskRegression(formula, data, times, link = "relative", cause,
 
   \item{numSimu}{Number of simulations in resampling.}
 
+  \item{maxiter}{Maximal number of iterations.}
+
   \item{silent}{Set this to \code{0} to see some system
   messages during fitting.}
-
-  \item{maxiter}{Maximal number of iterations.}
 
   \item{convLevel}{Integer between 1 and 10, specifying the
   convergence criterion for the fitting algorithm as
   \code{10^{-convLevel}}.}
+
+  \item{conservative}{If \code{TRUE} use variance formula
+  that ignores the contribution by the estimate of the
+  inverse of the probability of censoring weights}
+
+  \item{...}{}
 
   \item{\dots}{Not used.}
 }
@@ -59,8 +65,8 @@ Fits a regression model for the risk of an event --
 allowing for competing risks.
 }
 \details{
-This is a sister of the function \code{comp.risk} (timereg
-package).
+This is more a twin-sister than a wrapper of the function
+\code{\link{comp.risk}} (timereg package).
 }
 \examples{
 data(Melanoma,package="riskRegression")
