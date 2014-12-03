@@ -115,6 +115,7 @@ fit2.lrr <- LRR(Hist(time,status)~logthick,data=Melanoma,cause=1)
 summary(fit2.lrr)
 
 ## change model for censoring weights
+library(rms)
 fit2a.lrr <- LRR(Hist(time,status)~logthick,
                  data=Melanoma,
                  cause=1,
@@ -140,13 +141,14 @@ multi.arr <- ARR(Hist(time,status)~logthick+sex+age+ulcer,data=Melanoma,cause=1)
 multi.arr <- ARR(Hist(time,status)~thick+strata(sex)+age+ulcer,data=Melanoma,cause=1)
 
 # stratify by a continuous variable: strata(age)
-multi.arr <- ARR(Hist(time,status)~tp(thick,power=1)+strata(age)+sex+ulcer,
+multi.arr <- ARR(Hist(time,status)~tp(thick,power=0)+strata(age)+sex+ulcer,
                  data=Melanoma,
                  cause=1)
 
 fit.arr2a <- ARR(Hist(time,status)~tp(thick,power=1),data=Melanoma,cause=1)
+summary(fit.arr2a)
 fit.arr2b <- ARR(Hist(time,status)~timevar(thick),data=Melanoma,cause=1)
-summary(fit.arr)
+summary(fit.arr2b)
 
 ## logistic risk model
 fit.lrr <- LRR(Hist(time,status)~thick,data=Melanoma,cause=1)

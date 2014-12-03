@@ -7,7 +7,7 @@ print.riskRegression <- function(x,
                                  ...) {
   # {{{ echo model type, IPCW and link function
   cat("Competing risks regression model \n")
-  cat("\nIPCW weights:",
+  cat("\nIPCW weights: ",
       switch(tolower(x$censModel),
              "km"={"marginal Kaplan-Meier" },
              "cox"={"Cox regression model" },                             
@@ -48,7 +48,7 @@ print.riskRegression <- function(x,
           }
       })
   } else{
-      cat("No covariates with time-varying coefficient specified.\n")
+      cat("\nNo covariates with time-varying coefficient specified.\n")
   }
   ## cat("The column 'Intercept' is the baseline risk")
   ## cat(" where all the covariates have value zero\n\n")
@@ -71,12 +71,12 @@ print.riskRegression <- function(x,
   ## }
   ## })
   ## }
-  cat("\nTime constant regression coefficients:\n\n")
-  if (is.null(x$timeConstantEffects)){
-      cat("\nNone.\n")
+  if (is.null(x$timeConstantEffects$coef)){
+      cat("\nNo time constant regression coefficients in model.\n")
       coefMat <- NULL
   }
   else{
+      cat("\nTime constant regression coefficients:\n")
       const.coef <- x$timeConstantEffects$coef
       const.se <- sqrt(diag(x$timeConstantEffects$var))
       wald <- const.coef/const.se

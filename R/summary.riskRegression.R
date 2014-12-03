@@ -48,7 +48,7 @@ summary.riskRegression <- function(object,
                 }
             })}
         if (length(tvars)==0){
-            cat("No covariates with time-varying coefficient specified.\n")
+            cat("No covariates with time-varying coefficients specified.\n")
         }
         else{
             cat("\nThe effects of these variables depend on time.")
@@ -80,9 +80,9 @@ summary.riskRegression <- function(object,
     }
     if (verbose)
         cat("\nTime constant regression coefficients:\n\n")
-    if (is.null(object$timeConstantEffects)){
+    if (is.null(object$timeConstantEffects$coef)){
         if (verbose)
-            cat("\nNone.\n")
+            cat("No covariates with time-constant coefficients specified.\n")
         coefMat <- NULL
     }
     else{
@@ -141,7 +141,7 @@ summary.riskRegression <- function(object,
             if (any(tp))
                 cat(paste("\n\nNote:The coeffient(s) for the following variable(s)\n",
                           paste(names(object$design$timepower)[tp],collapse=", "),
-                          "are interpreted as per factor unit multiplied by time^power.\n",sep=""))
+                          " are interpreted as per factor unit multiplied by time^power.\n",sep=""))
         }
     }
     # }}}

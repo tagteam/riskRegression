@@ -34,6 +34,7 @@
 ##'                          levels=levels(Melanoma$invasion)),
 ##'                      sex=factor("Male",levels=levels(Melanoma$sex))))
 ##' predict(fit.tarr,newdata=Melanoma[1:4,])
+ 
 #' @S3method predict riskRegression
 predict.riskRegression <- function(object,
                                    newdata,
@@ -49,23 +50,31 @@ predict.riskRegression <- function(object,
     ## }
     Zcoef <- c(object$timeConstantEffects$coef)
     semi <- !is.null(Zcoef)
-    m <- model.frame(formula=delete.response(object$design$Terms),
-                     data=newdata,na.action="na.fail")
-    PF <- prodlim::model.design(m,
-                                dropIntercept=TRUE,
-                                specialsDesign=TRUE,
-                                stripSpecialNames=TRUE)
+    ## m <- model.frame(formula=delete.response(object$design$Terms),
+    ## data=newdata,na.action="na.fail")
+    tt <- delete.response(object$design$Terms)
+    PF <- prodlim::EventHistory.frame(formula(tt),
+                                      newdata,
+                                      specials=c("timevar","strata","prop","const","tp"),
+                                      stripSpecials=c("timevar","prop"),
+                                      stripArguments=list("prop"=list("power"=0),"timevar"=list("test"=0)),
+                                      stripAlias=list("timevar"=c("strata"),"prop"=c("tp","const")),
+                                      stripUnspecials="prop",
+                                      specialsDesign=TRUE,
+                                      dropIntercept=TRUE,check.formula=FALSE,response=FALSE)
+    ## PF <- prodlim::model.design(object$design$Terms,
+    ## newdata,
+    ## dropIntercept=TRUE,
+    ## specialsDesign=TRUE)
     ##  The time-constant effects
-    Z <- cbind(PF$tp,PF$design)
-    factorLevelsZ <- sapply(list(PF$tp,PF$design),function(e)attr(e,"levels"))
-    factorLevelsZ <- factorLevelsZ[!sapply(factorLevelsZ,is.null)]
+    Z <- PF$prop
+    factorLevelsZ <- attr(PF$prop,"levels")
     refLevelsZ <- lapply(factorLevelsZ,function(x)x[1])
     if (!(all(colnames(Z) %in% names(object$design$timepower))))
         stop("\nProblem with factor names.\nCheck if the storage type of all factors\nin the original data are compatible with those in newdata\n\nOffending variable(s): ",paste(colnames(Z)[!colnames(Z)%in% names(object$timePower)],collapse=", ")," does not match ",paste(names(object$timePower)[!names(object$timePower)%in%colnames(Z)],collapse=" ,"),".")
     ## The time-varying effects
-    X <- cbind(PF$timevar,PF$strata)
-    factorLevelsX <- sapply(list(PF$timevar,PF$strata),function(e)attr(e,"levels"))
-    factorLevelsX <- factorLevelsX[!sapply(factorLevelsX,is.null)]
+    X <- PF$timevar
+    factorLevelsX <- attr(PF$timevar,"levels")
     refLevelsX <- lapply(factorLevelsX,function(x)x[1])
     if (is.null(Z) && is.null(X))
         nobs <- NROW(newdata)

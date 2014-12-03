@@ -58,7 +58,15 @@
 ##'             data=Melanoma,
 ##'             survtype="surv")
 ##' print(fit4)
-##' #'
+##'
+##' ## strata
+##' fit5 <- CSC(Hist(time,status)~invasion+epicel+age+strata(sex),
+##'             data=Melanoma,
+##'             survtype="surv")
+##' print(fit5)
+##' 
+##' tmp <- coxph(Surv(time,status==1)~invasion+epicel+age+strata(sex),data=Melanoma)
+##' tmp2 <- coxph(Surv(time,status==1)~invasion+epicel+age,data=Melanoma)
 #' @export
 CSC <- function (formula,data,cause,survtype="hazard",...){
     # {{{ type
@@ -73,7 +81,7 @@ CSC <- function (formula,data,cause,survtype="hazard",...){
     ## require(survival)
     call <- match.call()
     # get information from formula
-    mf <- model.frame(responseFormula, data = data, na.action = na.omit)
+    mf <- model.frame(update(responseFormula,".~1"), data = data, na.action = na.omit)
     response <- model.response(mf)
     time <- response[, "time"]
     status <- response[, "status"]
@@ -108,61 +116,58 @@ CSC <- function (formula,data,cause,survtype="hazard",...){
     # }}}
     # {{{ fit Cox models
     if (survtype=="hazard"){
-        CoxModels <- lapply(1:NC,function(x){
+        nmodels <- NC
+    }else {
+        nmodels <- 2}
+    CoxModels <- lapply(1:nmodels,function(x){
+        if (survtype=="hazard"){
             if (x==1)
                 causeX <- theCause
             else
-                causeX <- otherCauses[x-1]
-            EHF <- prodlim::EventHistory.frame(formula=formula[[x]],
-                                               data=data,
-                                               unspecialsDesign=FALSE,
-                                               specialsFactor=FALSE,
-                                               specials="strata",
-                                               specialsDesign=FALSE)
-            formulaX <- formula[[x]]
-            if (is.null(EHF$strata))
-                covData <- cbind(EHF$design)
-            else
-                covData <- cbind(EHF$design,EHF$strata)
-            ## response <- model.response(covData)
-            time <- as.numeric(EHF$event.history[, "time",drop=TRUE])
-            event <- prodlim::getEvent(EHF$event.history)
-            statusX <- as.numeric(event==causeX)
-            workData <- data.frame(time=time,status=statusX)
-            workData <- cbind(workData,covData)
-            formulaXX <- as.formula(paste("survival::Surv(time,status)",as.character(delete.response(terms.formula(formulaX)))[[2]],sep="~"))
-            fit <- survival::coxph(formulaXX, data = workData,...)
-            ## fit <- rms::cph(formulaXX, data = workData,...)
-            ## fit$call$formula <- fit$formula
-            fit$call$data <- workData
-            ## fit$call$data <- NULL
-            fit$call$formula <- formulaXX
-            fit
-        })
-        names(CoxModels) <- paste("Cause",c(theCause,otherCauses))
-    }
-    else{
-        CoxModels <- lapply(1:2,function(x){
+                causeX <- otherCauses[x-1]}
+        else{
             causeX <- theCause
-            formulaX <- formula[[x]]
-            covData <- model.frame(formulaX,data=data)
-            response <- model.response(covData)
-            time <- response[, "time"]
-            event <- prodlim::getEvent(response)
+        }
+        EHF <- prodlim::EventHistory.frame(formula=formula[[x]],
+                                           data=data,
+                                           unspecialsDesign=FALSE,
+                                           specialsFactor=FALSE,
+                                           specials="strata",
+                                           stripSpecials="strata",
+                                           stripArguments=list("strata"=NULL),
+                                           specialsDesign=FALSE)
+        formulaX <- formula[[x]]
+        if (is.null(EHF$strata))
+            covData <- cbind(EHF$design)
+        else
+            covData <- cbind(EHF$design,EHF$strata)
+        ## response <- model.response(covData)
+        time <- as.numeric(EHF$event.history[, "time",drop=TRUE])
+        event <- prodlim::getEvent(EHF$event.history)
+        if (survtype=="hazard"){
+            statusX <- as.numeric(event==causeX)
+        }else{
             if (x==1){
                 statusX <- event==causeX
             }
-            else{
+            else{ ## event-free status 
                 statusX <- response[,"status"]
             }
-            workData <- cbind(time=time,status=statusX,covData[,-1,drop=FALSE])
-            formulaXX <- as.formula(paste("Surv(time,status)",as.character(delete.response(terms.formula(formulaX)))[[2]],sep="~"))
-            fit <- survival::coxph(formulaXX, data = workData,...)
-            ## fit <- rms::cph(formulaXX, data = workData,...)
-            ## fit$call$formula <- fit$formula
-            fit$call$formula <- formulaXX
-            fit
-        })
+        }
+        workData <- data.frame(time=time,status=statusX)
+        workData <- cbind(workData,covData)
+        formulaXX <- as.formula(paste("survival::Surv(time,status)",as.character(delete.response(terms.formula(formulaX)))[[2]],sep="~"))
+        fit <- survival::coxph(formulaXX, data = workData,...)
+        ## fit <- rms::cph(formulaXX, data = workData,...)
+        ## fit$call$formula <- fit$formula
+        fit$call$data <- workData
+        ## fit$call$data <- NULL
+        fit$call$formula <- formulaXX
+        fit
+    })
+    if (survtype=="hazard"){
+        names(CoxModels) <- paste("Cause",c(theCause,otherCauses))
+    }else{
         names(CoxModels) <- c(paste("Cause",theCause),"OverallSurvival")
     }
     # }}}

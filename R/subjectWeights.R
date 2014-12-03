@@ -43,6 +43,7 @@
 #' 
 #' library(pec)
 #' library(prodlim)
+#' library(survival)
 #' dat=SimSurv(300)
 #' 
 #' dat <- dat[order(dat$time,-dat$status),]
@@ -117,9 +118,14 @@ subjectWeights.cox <- function(formula,data,method,args,lag=1){
     ## require(survival)
     EHF <- prodlim::EventHistory.frame(formula,
                                        data,
-                                       specials=NULL,
+                                       specials=c("strat"),
+                                       stripSpecials=c("strat"),
+                                       specialsDesign=FALSE,
                                        unspecialsDesign=FALSE)
-    wdata <- data.frame(cbind(unclass(EHF$event.history),EHF$design))
+    if (is.null(EHF$strat))
+        wdata <- data.frame(cbind(unclass(EHF$event.history),EHF$design))
+    else
+        wdata <- data.frame(cbind(unclass(EHF$event.history),EHF$design,EHF$strat))
     wdata$status <- 1-wdata$status
     ## wform <- update(formula,"survival::Surv(time,status)~.")
     stopifnot(NROW(na.omit(wdata))>0)
@@ -143,7 +149,10 @@ subjectWeights.cox <- function(formula,data,method,args,lag=1){
 #' @S3method subjectWeights forest
 subjectWeights.forest <- function(formula,data,method,args,lag=1){
     call <- match.call() ## needed for refit in crossvalidation loop
-    EHF <- prodlim::EventHistory.frame(formula,data,specials=NULL,unspecialsDesign=FALSE)
+    EHF <- prodlim::EventHistory.frame(formula,
+                                       data,
+                                       specials=NULL,
+                                       unspecialsDesign=FALSE)
     wdata <- data.frame(cbind(unclass(EHF$event.history),EHF$design))
     ## wdata$status <- 1-wdata$status
     ## wform <- update(formula,"survival::Surv(time,status)~.")

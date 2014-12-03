@@ -70,7 +70,15 @@ fit4 <- CSC(Hist(time,status)~invasion+epicel+age,
             data=Melanoma,
             survtype="surv")
 print(fit4)
-#'
+
+## strata
+fit5 <- CSC(Hist(time,status)~invasion+epicel+age+strata(sex),
+            data=Melanoma,
+            survtype="surv")
+print(fit5)
+
+tmp <- coxph(Surv(time,status==1)~invasion+epicel+age+strata(sex),data=Melanoma)
+tmp2 <- coxph(Surv(time,status==1)~invasion+epicel+age,data=Melanoma)
 }
 \author{
 Thomas A. Gerds \email{tag@biostat.ku.dk}

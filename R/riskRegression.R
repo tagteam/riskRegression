@@ -49,7 +49,6 @@
 #' 
 #' Martinussen and Scheike (2006), Dynamic regression models for survival data,
 #' Springer.
-#' @keywords survival
 ##' @examples
 ##' 
 ##' 
@@ -101,8 +100,9 @@
 ##' ## logistic risk regression
 ##' fit2.lrr <- LRR(Hist(time,status)~logthick,data=Melanoma,cause=1)
 ##' summary(fit2.lrr)
-##' 
+##'
 ##' ## change model for censoring weights
+##' library(rms)
 ##' fit2a.lrr <- LRR(Hist(time,status)~logthick,
 ##'                  data=Melanoma,
 ##'                  cause=1,
@@ -128,13 +128,14 @@
 ##' multi.arr <- ARR(Hist(time,status)~thick+strata(sex)+age+ulcer,data=Melanoma,cause=1)
 ##' 
 ##' # stratify by a continuous variable: strata(age)
-##' multi.arr <- ARR(Hist(time,status)~tp(thick,power=1)+strata(age)+sex+ulcer,
+##' multi.arr <- ARR(Hist(time,status)~tp(thick,power=0)+strata(age)+sex+ulcer,
 ##'                  data=Melanoma,
 ##'                  cause=1)
 ##' 
 ##' fit.arr2a <- ARR(Hist(time,status)~tp(thick,power=1),data=Melanoma,cause=1)
+##' summary(fit.arr2a)
 ##' fit.arr2b <- ARR(Hist(time,status)~timevar(thick),data=Melanoma,cause=1)
-##' summary(fit.arr)
+##' summary(fit.arr2b)
 ##' 
 ##' ## logistic risk model
 ##' fit.lrr <- LRR(Hist(time,status)~thick,data=Melanoma,cause=1)
@@ -159,8 +160,7 @@
 ##'              B=10,
 ##'              splitMethod="none")
 ##' }
- 
- 
+#' @keywords survival
 #' @export
 riskRegression <- function(formula,
                            data,
@@ -199,21 +199,73 @@ riskRegression <- function(formula,
     call <- match.call()
     EHF <- prodlim::EventHistory.frame(formula,
                                        data,
-                                       specials=c("tp","timevar","strata"),
+                                       specials=c("timevar","strata","prop","const","tp"),
+                                       stripSpecials=c("timevar","prop"),
+                                       stripArguments=list("prop"=list("power"=0),"timevar"=list("test"=0)),
+                                       stripAlias=list("timevar"=c("strata"),"prop"=c("tp","const")),
+                                       stripUnspecials="prop",
                                        specialsDesign=TRUE,
-                                       dropIntercept=TRUE,
-                                       stripSpecialNames=TRUE)
+                                       dropIntercept=TRUE)
+    ## Terms <- attr(EHF,"Terms")
+    Terms <- terms(formula)
     event.history <- EHF$event.history
-    Z <- cbind(EHF$tp,EHF$design)
-    factorLevelsZ <- unlist(lapply(list(EHF$tp,EHF$design),function(e)attr(e,"levels")),recursive=FALSE)
-    ## factorLevelsZ <- factorLevelsZ[!sapply(factorLevelsZ,is.null)]
-    refLevelsZ <- lapply(factorLevelsZ,function(x)x[1])
-    X <- cbind(EHF$timevar,EHF$strata)
-    factorLevelsX <- unlist(lapply(list(EHF$timevar,EHF$strata),function(e)attr(e,"levels")),recursive=FALSE)
-    ## factorLevelsX <- factorLevelsX[!sapply(factorLevelsX,is.null)]
-    refLevelsX <- lapply(factorLevelsX,function(x)x[1])
-    theData <- data.frame(cbind(unclass(event.history),
-                                do.call("cbind",EHF[-1])))
+    n <- NROW(event.history)
+    # }}}
+    # {{{ time-constant design matrix Z
+    ## Specials <- attr(Terms,"stripped.specials")
+    ## strippedArguments <- attr(Terms,"stripped.arguments")
+    Z <- EHF$prop
+    if (!is.null(Z)){
+        power.args <- attr(EHF$prop,"arguments.terms")$power
+        stopifnot(all(match(colnames(Z),names(power.args),nomatch=0)))
+        timeconst.power <- as.numeric(power.args[colnames(Z)])
+        factorLevelsZ <- attr(EHF$prop,"levels")
+        refLevelsZ <- lapply(factorLevelsZ,function(x)x[1])
+        colnamesZ <- colnames(Z)
+        dimZ <- NCOL(Z)
+        fixed <- 1
+        names(timeconst.power) <- colnames(Z)
+        stopifnot(length(timeconst.power)==dimZ)
+        if (!(all(timeconst.power %in% 0:2)))
+            stop("Only powers of time in 0,1,2 can be multipled to constant covariates")
+    } else{
+        Z <- matrix(0,n,1)
+        dimZ <- 1
+        colnamesZ <- NULL
+        fixed <- 0
+        factorLevelsZ <- NULL
+        refLevelsZ <- NULL
+        timeconst.power <- NULL
+    }
+    # }}}
+    # {{{ time-varying design matrix X
+    X <- EHF$timevar
+    if (!is.null(X)){
+        test.args <- attr(EHF$timevar,"arguments.terms")$test
+        stopifnot(all(match(colnames(X),names(test.args),nomatch=0)))
+        timevar.test <- as.numeric(test.args[colnames(X)])
+        names(timevar.test) <- colnames(X)
+        factorLevelsX <- attr(EHF$timevar,"levels")
+        refLevelsX <- lapply(factorLevelsX,function(x)x[1])
+        ## intercept 
+        X <- cbind("Intercept"=rep(1,n),X)
+        timevar.test <- c(0,as.numeric(timevar.test))
+        dimX <- NCOL(X)
+    } else{
+        ## X <- matrix(0,n,1)
+        dimX <- 1
+        colnamesX <- NULL
+        factorLevelsX <- NULL
+        refLevelsX <- NULL
+        timevar.test <- 0
+        ## intercept 
+        X <- cbind("Intercept"=rep(1,n))
+    }
+    stopifnot(length(timevar.test)==dimX)
+    colnamesX <- colnames(X)
+    if (!(all(timevar.test %in% 0:2)))
+        stop("Time power tests only available for powers 0,1,2")
+    theData <- data.frame(cbind(unclass(event.history),do.call("cbind",EHF[-1])))
     # }}}
     # {{{ event.history and order the data
     delayed <- !(is.null(attr(event.history,"entry.type"))) && !(attr(EHF$event.history,"entry.type")=="")
@@ -256,64 +308,6 @@ riskRegression <- function(formula,
             stop("Works only for right-censored data")
         }
     }else{stop("Response is neither competing risks nor survival.")}
-    n <- length(eventtime)
-    # }}}
-    # {{{ variables with time-varying coefficients
-    if (length(colnames(Z))>0){
-        timeconst.power <- prodlim::parseSpecialNames(paste("tp(",colnames(Z),")",sep=""),"tp",list(tp="power"))
-        colnames(Z) <- names(timeconst.power)
-        timeconst.power[sapply(timeconst.power,is.null)] <- 0
-        timeconst.power <- unlist(timeconst.power)
-    }
-    if (length(colnames(X))>0){
-        timevar.test <- prodlim::parseSpecialNames(paste("timevar(",colnames(X),")",sep=""),
-                                                   "timevar",
-                                                   list(timevar="test"))
-        colnames(X) <- names(timevar.test)
-        timevar.test[sapply(timevar.test,is.null)] <- 0
-        timevar.test <- unlist(timevar.test)
-    }else{
-        timevar.test <- NULL
-    }
-    ## intercept 
-    if (NROW(X)==0){
-        X <- cbind("Intercept"=rep(1,n))
-    }
-    else {
-        X <- cbind("Intercept"=rep(1,n),X)
-    }
-    colnamesX <- colnames(X)
-    dimX <- NCOL(X)
-    ## the intercept should not be tested, therefore we
-    ## set the first element of timevarTest to zero
-    timevar.test <- c(0,as.numeric(timevar.test))
-    stopifnot(length(timevar.test)==dimX)
-    if (!(all(timevar.test %in% 0:2)))
-        stop("Time power tests only available for powers 0,1,2")
-    # }}}
-    # {{{ variables with time-constant coefficients
-    npar <- is.null(Z)
-    if (npar){
-        Z <- matrix(0,n,1)
-        dimZ <- 1
-        colnamesZ <- NULL
-        fixed <- 0
-        factorLevelsZ <- NULL
-        refLevelsZ <- NULL
-        timeconst.power <- NULL
-    }
-    else{
-        dimZ <- NCOL(Z)
-        fixed <- 1
-        colnamesZ <- colnames(Z)
-        stopifnot(length(timeconst.power)==dimZ)
-        ## print(timeconst.power)
-        timeconst.power <- as.numeric(timeconst.power)
-        names(timeconst.power) <- colnames(Z)
-        stopifnot(length(timeconst.power)==dimZ)
-        if (!(all(timeconst.power %in% 0:2)))
-            stop("Only powers of time in 0,1,2 can be multipled to constant covariates")
-    }
     # }}}
     # {{{ cluster variable
     clusters <- EHF$cluster
@@ -337,42 +331,47 @@ riskRegression <- function(formula,
     if (ntimes>1) silent <- c(silent,rep(0,ntimes-1))
     # }}}
     # {{{ estimate ipcw
-    if (missing(cens.formula))
-        cens.formula <- rhs(formula)
+    if (missing(cens.formula)){
+        cterms <- prodlim::strip.terms(terms(update(formula,NULL~.),specials=c("tp","timevar","strata")),
+                                       specials=c("tp","timevar","strata"),
+                                       arguments=list("tp"="power","timevar"="test","strata"="test"))
+        cens.formula <- formula(cterms)
+    }
     else
-        cens.formula <- rhs(cens.formula)
-    browser()
+        cens.formula <- update(cens.formula,NULL~.)
     iFormula <- update(cens.formula,"survival::Surv(time,status)~.")
     if (missing(cens.model)) cens.model <- "KM"
-    imodel <- switch(tolower(cens.model),"KM"="marginal","cox"="cox","aalen"="aalen","uncensored"="none")
-    if (match(all.vars(cens.formula),names(theData),nomatch=FALSE)){
-        iData <- cbind(theData,model.frame(cens.formula,data)[neworder,])
-        Gcx <- subjectWeights(formula=iFormula,
-                              data=iData,
-                              method=cens.model,
-                              lag=1)$weights
-    }else{
-        Gcx <- subjectWeights(formula=iFormula,
-                              data=theData,
-                              method=cens.model,
-                              lag=1)$weights
+    imodel <- switch(tolower(cens.model),"km"="marginal","cox"="cox","aalen"="aalen","uncensored"="none")
+    if (imodel=="marginal")
+        iData <- data.frame(event.history)
+    else{
+        iData <- cbind(event.history,get_all_vars(cens.formula,
+                                                  data)[neworder,])
     }
+    stopifnot(NROW(iData)==NROW(event.history))
+    Gcx <- subjectWeights(formula=iFormula,
+                          data=iData,
+                          method=cens.model,
+                          lag=1)$weights
+    ## }
     # }}}
     # {{{ prepare fitting
     if (confint == TRUE){
-        biid  <-  double(ntimes* antclust * dimX);
-        gamiid <-  double(antclust *dimZ);
+        biid  <-  double(ntimes* antclust * dimX)
+        gamiid <-  double(antclust *dimZ)
     } else {
-        gamiid  <-  biid  <-  NULL;
+        gamiid  <-  biid  <-  NULL
     }
     # }}}
     # {{{ C does the hard work
+
     line <- ifelse(trans==1,1,0)
     # if line=1 then test "b(t) = gamma t"
     # if line=0 then test "b(t) = gamma "
     ordertime <- order(eventtime,-delta)
     out <- .C("itfit",times=as.double(times),ntimes=as.integer(ntimes),eventtime=as.double(eventtime),cens.code=as.integer(cens.code),event=as.integer(event),Gcx=as.double(Gcx),X=as.double(X),n=as.integer(n),dimX=as.integer(dimX),maxiter=as.integer(maxiter),betas=double(dimX),score=double(ntimes*(dimX+1)),double(dimX*dimX),est=double(ntimes*(dimX+1)),var=double(ntimes*(dimX+1)),sim=as.integer(sim),numSimu=as.integer(numSimu),test=double(numSimu*3*dimX),testOBS=double(3*dimX),Ut=double(ntimes*(dimX+1)),simUt=double(ntimes*50*dimX),weighted=as.integer(weighted),gamma=double(dimZ),var.gamma=double(dimZ*dimZ),fixed=as.integer(fixed),Z=as.double(Z),dimZ=as.integer(dimZ),trans=as.integer(trans),gamma2=double(dimX),cause=as.integer(1),line=as.integer(line),detail=as.integer(detail),biid=as.double(biid),gamiid=as.double(gamiid),resample.iid=as.integer(as.numeric(confint)),timeconst.power=as.double(timeconst.power),clusters=as.integer(clusters),antclust=as.integer(antclust),timevar.test=as.double(timevar.test),silent=as.integer(silent),conv=as.double(conv),# new since 10 Sep 2014 (07:07)
               weights=as.double(rep(1,n)),entry=as.double(rep(0,length(eventtime))),trunkp=as.double(rep(1,n)),estimator=as.integer(1),fixgamma=as.integer(0),stratum=as.integer(0),ordertime=as.integer(ordertime-1),conservative=as.integer(conservative),ssf=double(0),KMtimes=as.double(rep(1,length(times))),PACKAGE="riskRegression")
+
     # }}}
     # {{{ prepare the output
 
@@ -407,59 +406,58 @@ riskRegression <- function(formula,
         }
         if (fixed==1) colnames(gamiid) <- colnamesZ
     } else B.iid <- gamiid <- NULL
-  
-  if (sim==1) {
-    simUt <- matrix(out$simUt,ntimes,50*dimX)
-    UIt <- list()
-    for (i in (0:49)*dimX) UIt[[i/dimX+1]] <- as.matrix(simUt[,i+(1:dimX)])
-    Ut <- matrix(out$Ut,ntimes,dimX+1)
-    colnames(Ut) <-  c("time",colnamesX)
-    test <- matrix(out$test,numSimu,3*dimX)
-    testOBS <- out$testOBS
-    supUtOBS <- apply(abs(Ut[,-1,drop=FALSE]),2,max)
-    # {{{ confidence bands
+    if (sim==1) {
+        simUt <- matrix(out$simUt,ntimes,50*dimX)
+        UIt <- list()
+        for (i in (0:49)*dimX) UIt[[i/dimX+1]] <- as.matrix(simUt[,i+(1:dimX)])
+        Ut <- matrix(out$Ut,ntimes,dimX+1)
+        colnames(Ut) <-  c("time",colnamesX)
+        test <- matrix(out$test,numSimu,3*dimX)
+        testOBS <- out$testOBS
+        supUtOBS <- apply(abs(Ut[,-1,drop=FALSE]),2,max)
+        # {{{ confidence bands
     
-    percen<-function(x,per){
-      n<-length(x)
-      tag<-round(n*per)+1
-      out<-sort(x)[tag];
-      return(out)
+        percen<-function(x,per){
+            n<-length(x)
+            tag<-round(n*per)+1
+            out<-sort(x)[tag]
+            return(out)
+        }
+        unifCI <- do.call("cbind",lapply(1:dimX,function(i)percen(test[,i],0.95)))
+        colnames(unifCI) <- colnamesX
+        # }}}
+        # {{{ Significance test
+        posSig <- 1:dimX
+        sTestSig <- testOBS[posSig]
+        names(sTestSig) <- colnamesX
+        pval<-function(simt,Otest)
+            {
+                simt<-sort(simt)
+                p<-sum(Otest<simt)/length(simt)
+                return(p)
+            }
+    
+        pTestSig <- sapply(posSig,function(i){pval(test[,i],testOBS[i])})
+        names(pTestSig) <- colnamesX
+        timeVarSignifTest <- list(Z=sTestSig,pValue=pTestSig)
+        # }}}
+        # {{{ Kolmogoroff-Smirnoff test
+        posKS <- (dimX+1):(2*dimX)
+        sTestKS <- testOBS[posKS]
+        names(sTestKS) <- colnamesX
+        pTestKS <- sapply(posKS,function(i){pval(test[,i],testOBS[i])})
+        names(pTestKS) <- colnamesX
+        timeVarKolmSmirTest <- list(Z=sTestKS,pValue=pTestKS)
+        # }}}
+        # {{{ Kramer-von-Mises test
+        posKvM <- (2*dimX+1):(3*dimX)
+        sTestKvM <- testOBS[posKvM]
+        names(sTestKvM) <- colnamesX
+        pTestKvM <- sapply(posKvM,function(i){pval(test[,i],testOBS[i])})
+        names(pTestKvM) <- colnamesX
+        timeVarKramvMisTest <- list(Z=sTestKvM,pValue=pTestKvM)
+        # }}}
     }
-    unifCI <- do.call("cbind",lapply(1:dimX,function(i)percen(test[,i],0.95)))
-    colnames(unifCI) <- colnamesX
-    # }}}
-    # {{{ Significance test
-    posSig <- 1:dimX
-    sTestSig <- testOBS[posSig]
-    names(sTestSig) <- colnamesX
-    pval<-function(simt,Otest)
-      {
-        simt<-sort(simt);
-        p<-sum(Otest<simt)/length(simt);
-        return(p)
-      }
-    
-    pTestSig <- sapply(posSig,function(i){pval(test[,i],testOBS[i])})
-    names(pTestSig) <- colnamesX
-    timeVarSignifTest <- list(Z=sTestSig,pValue=pTestSig)
-    # }}}
-    # {{{ Kolmogoroff-Smirnoff test
-    posKS <- (dimX+1):(2*dimX)
-    sTestKS <- testOBS[posKS]
-    names(sTestKS) <- colnamesX
-    pTestKS <- sapply(posKS,function(i){pval(test[,i],testOBS[i])})
-    names(pTestKS) <- colnamesX
-    timeVarKolmSmirTest <- list(Z=sTestKS,pValue=pTestKS)
-    # }}}
-    # {{{ Kramer-von-Mises test
-    posKvM <- (2*dimX+1):(3*dimX)
-    sTestKvM <- testOBS[posKvM]
-    names(sTestKvM) <- colnamesX
-    pTestKvM <- sapply(posKvM,function(i){pval(test[,i],testOBS[i])})
-    names(pTestKvM) <- colnamesX
-    timeVarKramvMisTest <- list(Z=sTestKvM,pValue=pTestKvM)
-    # }}}
-}
     # }}}
     # {{{ return results
     timeConstantEffects <- list(coef=timeConstantCoef,var=timeConstantVar)
@@ -469,7 +467,7 @@ riskRegression <- function(formula,
     class(timeVaryingEffects) <- "timeVaryingEffects"
     out <- list(call=call,
                 response=event.history,
-                design=list(Terms=attr(EHF,"Terms"),
+                design=list(Terms=Terms,
                     const=colnamesZ,
                     timevar=colnamesX,
                     timepower=timeconst.power),

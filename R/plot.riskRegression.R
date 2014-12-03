@@ -26,20 +26,20 @@
 #' \code{\link{SmartControl}} from prodlim.
 #' @author Thomas Alexander Gerds <tag@@biostat.ku.dk>
 #' @keywords survival
-#' @examples
-#' 
-#' 
-#' library(pec)
-#' library(prodlim)
-#' data(Melanoma)
-#' 
-#' fit.arr <- ARR(Hist(time,status)~invasion+age+strata(sex),data=Melanoma,cause=1)
-#' plot(fit.arr)
-#' 
-#' fit.csc <- CSC(Hist(time,status)~invasion+age+sex,data=Melanoma,cause=1)
-#' plot(fit.csc)
-#' 
-#'
+##' @examples
+##' 
+##' 
+##' library(pec)
+##' library(prodlim)
+##' data(Melanoma)
+##' 
+##' fit.arr <- ARR(Hist(time,status)~invasion+age+strata(sex),data=Melanoma,cause=1)
+##' plot(fit.arr)
+##' 
+##' fit.csc <- CSC(Hist(time,status)~invasion+age+sex,data=Melanoma,cause=1)
+##' plot(fit.csc)
+##' 
+##' #'
 #' @S3method plot riskRegression
 plot.riskRegression <- function(x,
                                 cause,
@@ -66,7 +66,7 @@ plot.riskRegression <- function(x,
     else{
         if (missing(newdata)){
             ff <- eval(x$call$formula)
-            xdat <- unique(eval(x$call$data)[all.vars(rhs(ff))])
+            xdat <- unique(eval(x$call$data)[all.vars(update(ff,NULL~.))])
             if (NROW(xdat)<5){
                 if (class(x)=="CauseSpecificCox"){
                     p1 <- pec::predictEventProb(x,newdata=xdat,times=plot.times,cause=cause)

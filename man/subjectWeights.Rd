@@ -63,6 +63,7 @@ IMPORTANT: the data set should be ordered,
 \examples{
 library(pec)
 library(prodlim)
+library(survival)
 dat=SimSurv(300)
 
 dat <- dat[order(dat$time,-dat$status),]

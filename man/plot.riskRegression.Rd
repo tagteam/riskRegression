@@ -64,6 +64,8 @@ plot(fit.arr)
 
 fit.csc <- CSC(Hist(time,status)~invasion+age+sex,data=Melanoma,cause=1)
 plot(fit.csc)
+
+#'
 }
 \author{
 Thomas Alexander Gerds <tag@biostat.ku.dk>
