@@ -1,7 +1,7 @@
 Package: riskRegression
 Type: Package
 Title: Risk regression models for survival analysis with competing risks
-Version: 1.0.6
+Version: 1.0.7
 Date: 2014-07-17
 Author: Thomas Alexander Gerds, Thomas Harder Scheike
 Imports:
