@@ -2,6 +2,8 @@ context("Binomial regression")
 
 test_that("Absolute risk regression",{
     set.seed(17)
+    library(riskRegression)
+    library(prodlim)
     d <- prodlim::SimCompRisk(100)
     a <- ARR(Hist(time,event)~X1+X2,data=d)
     const <- function(x)x
@@ -9,6 +11,7 @@ test_that("Absolute risk regression",{
     expect_equal(as.numeric(a$timeConstantEffects$coef),c(b$gamma))
     A <- ARR(Hist(time,event)~X1+strata(X2),data=d)
     B <- timereg::comp.risk(Hist(time,event)~ const(X1)+X2,data=d,cause=1,model="rcif")
+    B <- timereg::comp.risk(Event(time,event)~ const(X1)+X2,data=d,cause=1,model="rcif")
     ## head(A$timeVaryingEffects$coef)
     ## head(B$cum)
     expect_equal(as.numeric(A$timeConstantEffects$coef),c(B$gamma))    

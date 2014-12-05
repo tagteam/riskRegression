@@ -19,6 +19,7 @@ Extract predictions from a risk prediction model.
 \examples{
 data(Melanoma)
 library(prodlim)
+
 fit.tarr <- ARR(Hist(time,status)~age+invasion+strata(sex),data=Melanoma,cause=1)
 predict(fit.tarr,newdata=data.frame(age=48,
                      invasion=factor("level.1",

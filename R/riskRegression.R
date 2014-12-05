@@ -153,7 +153,7 @@
 ##' \dontrun{
 ##'     # prediction error
 ##'     library(pec)
-##'     x <- pec(list(fit.arr2,fit.arr2a,fit.arr2b,fit.lrr),
+##'     x <- pec(list(fit.arr2a,fit.arr2b,fit.lrr),
 ##'              data=Melanoma,
 ##'              formula=Hist(time,status)~1,
 ##'              cause=1,
