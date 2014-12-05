@@ -4,8 +4,50 @@
 \alias{plot.riskRegression}
 \title{Plotting predicted risk}
 \usage{
-\method{plot}{riskRegression}(x, cause, newdata, xlab, ylab, xlim, ylim, lwd,
-  col, lty, axes = TRUE, percent = TRUE, legend = TRUE, add = FALSE,
+\method{plot}{riskRegression}(x,
+  cause,
+  newdata,
+  xlab,
+  ylab,
+  xlim,
+  ylim,
+  lwd,
+  col,
+  lty,
+  axes=TRUE,
+  percent=TRUE,
+  legend=TRUE,
+  add=FALSE,
+  ...)
+\method{plot}{CauseSpecificCox}(x,
+  cause,
+  newdata,
+  xlab,
+  ylab,
+  xlim,
+  ylim,
+  lwd,
+  col,
+  lty,
+  axes=TRUE,
+  percent=TRUE,
+  legend=TRUE,
+  add=FALSE,
+  ...)
+\method{plot}{predictedRisk}(x,
+  cause,
+  newdata,
+  xlab,
+  ylab,
+  xlim,
+  ylim,
+  lwd,
+  col,
+  lty,
+  axes=TRUE,
+  percent=TRUE,
+  legend=TRUE,
+  add=FALSE,
   ...)
 }
 \arguments{
@@ -64,8 +106,6 @@ plot(fit.arr)
 
 fit.csc <- CSC(Hist(time,status)~invasion+age+sex,data=Melanoma,cause=1)
 plot(fit.csc)
-
-#'
 }
 \author{
 Thomas Alexander Gerds <tag@biostat.ku.dk>

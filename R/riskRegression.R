@@ -348,6 +348,7 @@ riskRegression <- function(formula,
         iData <- cbind(event.history,get_all_vars(cens.formula,
                                                   data)[neworder,])
     }
+    ## browser()
     stopifnot(NROW(iData)==NROW(event.history))
     Gcx <- subjectWeights(formula=iFormula,
                           data=iData,
@@ -369,8 +370,59 @@ riskRegression <- function(formula,
     # if line=1 then test "b(t) = gamma t"
     # if line=0 then test "b(t) = gamma "
     ordertime <- order(eventtime,-delta)
-    out <- .C("itfit",times=as.double(times),ntimes=as.integer(ntimes),eventtime=as.double(eventtime),cens.code=as.integer(cens.code),event=as.integer(event),Gcx=as.double(Gcx),X=as.double(X),n=as.integer(n),dimX=as.integer(dimX),maxiter=as.integer(maxiter),betas=double(dimX),score=double(ntimes*(dimX+1)),double(dimX*dimX),est=double(ntimes*(dimX+1)),var=double(ntimes*(dimX+1)),sim=as.integer(sim),numSimu=as.integer(numSimu),test=double(numSimu*3*dimX),testOBS=double(3*dimX),Ut=double(ntimes*(dimX+1)),simUt=double(ntimes*50*dimX),weighted=as.integer(weighted),gamma=double(dimZ),var.gamma=double(dimZ*dimZ),fixed=as.integer(fixed),Z=as.double(Z),dimZ=as.integer(dimZ),trans=as.integer(trans),gamma2=double(dimX),cause=as.integer(1),line=as.integer(line),detail=as.integer(detail),biid=as.double(biid),gamiid=as.double(gamiid),resample.iid=as.integer(as.numeric(confint)),timeconst.power=as.double(timeconst.power),clusters=as.integer(clusters),antclust=as.integer(antclust),timevar.test=as.double(timevar.test),silent=as.integer(silent),conv=as.double(conv),# new since 10 Sep 2014 (07:07)
-              weights=as.double(rep(1,n)),entry=as.double(rep(0,length(eventtime))),trunkp=as.double(rep(1,n)),estimator=as.integer(1),fixgamma=as.integer(0),stratum=as.integer(0),ordertime=as.integer(ordertime-1),conservative=as.integer(conservative),ssf=double(0),KMtimes=as.double(rep(1,length(times))),PACKAGE="riskRegression")
+    out <- .C("itfit",
+              times=as.double(times),
+              ntimes=as.integer(ntimes),
+              eventtime=as.double(eventtime),
+              cens.code=as.integer(cens.code),
+              event=as.integer(event),
+              Gcx=as.double(Gcx),
+              X=as.double(X),
+              n=as.integer(n),
+              dimX=as.integer(dimX),
+              maxiter=as.integer(maxiter),
+              betas=double(dimX),
+              score=double(ntimes*(dimX+1)),
+              double(dimX*dimX),
+              est=double(ntimes*(dimX+1)),
+              var=double(ntimes*(dimX+1)),
+              sim=as.integer(sim),
+              numSimu=as.integer(numSimu),
+              test=double(numSimu*3*dimX),
+              testOBS=double(3*dimX),
+              Ut=double(ntimes*(dimX+1)),
+              simUt=double(ntimes*50*dimX),
+              weighted=as.integer(weighted),
+              gamma=double(dimZ),
+              var.gamma=double(dimZ*dimZ),
+              fixed=as.integer(fixed),
+              Z=as.double(Z),
+              dimZ=as.integer(dimZ),
+              trans=as.integer(trans),
+              gamma2=double(dimX),
+              cause=as.integer(1),
+              line=as.integer(line),
+              detail=as.integer(detail),
+              biid=as.double(biid),
+              gamiid=as.double(gamiid),
+              resample.iid=as.integer(as.numeric(confint)),
+              timeconst.power=as.double(timeconst.power),
+              clusters=as.integer(clusters),
+              antclust=as.integer(antclust),
+              timevar.test=as.double(timevar.test),
+              silent=as.integer(silent),
+              conv=as.double(conv),
+              # new since 10 Sep 2014 (07:07)
+              weights=as.double(rep(1,n)),
+              entry=as.double(rep(0,length(eventtime))),
+              trunkp=as.double(rep(1,n)),
+              estimator=as.integer(1),
+              fixgamma=as.integer(0),
+              stratum=as.integer(0),
+              ordertime=as.integer(ordertime-1),
+              ssf=double(0),
+              conservative=as.integer(conservative),
+              PACKAGE="riskRegression")
 
     # }}}
     # {{{ prepare the output

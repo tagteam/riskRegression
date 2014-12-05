@@ -3,8 +3,53 @@
 #' Show predicted risk obtained by a risk prediction model as a function of
 #' time.
 #' 
-#' 
 #' @aliases plot.riskRegression plot.predictedRisk plot.CauseSpecificCox
+#' @usage
+#' \method{plot}{riskRegression}(x,
+##'   cause,
+##'   newdata,
+##'   xlab,
+##'   ylab,
+##'   xlim,
+##'   ylim,
+##'   lwd,
+##'   col,
+##'   lty,
+##'   axes=TRUE,
+##'   percent=TRUE,
+##'   legend=TRUE,
+##'   add=FALSE,
+##'   ...)
+#' \method{plot}{CauseSpecificCox}(x,
+##'   cause,
+##'   newdata,
+##'   xlab,
+##'   ylab,
+##'   xlim,
+##'   ylim,
+##'   lwd,
+##'   col,
+##'   lty,
+##'   axes=TRUE,
+##'   percent=TRUE,
+##'   legend=TRUE,
+##'   add=FALSE,
+##'   ...)
+#' \method{plot}{predictedRisk}(x,
+##'   cause,
+##'   newdata,
+##'   xlab,
+##'   ylab,
+##'   xlim,
+##'   ylim,
+##'   lwd,
+##'   col,
+##'   lty,
+##'   axes=TRUE,
+##'   percent=TRUE,
+##'   legend=TRUE,
+##'   add=FALSE,
+##'   ...)
 #' @param x Fitted object obtained with one of \code{ARR}, \code{LRR},
 #' \code{riskRegression}.
 #' @param cause For CauseSpecificCox models the cause of interest.
@@ -28,7 +73,6 @@
 #' @keywords survival
 ##' @examples
 ##' 
-##' 
 ##' library(pec)
 ##' library(prodlim)
 ##' data(Melanoma)
@@ -39,7 +83,7 @@
 ##' fit.csc <- CSC(Hist(time,status)~invasion+age+sex,data=Melanoma,cause=1)
 ##' plot(fit.csc)
 ##' 
-##' #'
+##' 
 #' @S3method plot riskRegression
 plot.riskRegression <- function(x,
                                 cause,

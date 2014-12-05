@@ -2,7 +2,7 @@
 #include <math.h>
 #include "riskregression.h"
 	 
-void itfit(times,
+void itfit(times, 
 	   Ntimes,
 	   x,
 	   censcode,
@@ -50,12 +50,11 @@ void itfit(times,
 	   fixgamma,
 	   stratum,
 	   ordertime,
-	   conservative,
-	   ssf,
-	   KMtimes)
+	   conservative) /* ssf) */
 double *times,*betaS,*x,*KMc,*z,*score,*hess,*est,*var,*test,*testOBS,
-*Ut,*simUt,*gamma,*zsem,*gamma2,*biid,*gamiid,*vargamma,*timepow,
-	*timepowtest,*convc,*weights,*entry,*trunkp,*ssf,*KMtimes;
+  *Ut,*simUt,*gamma,*zsem,*gamma2,*biid,*gamiid,*vargamma,*timepow,
+  *timepowtest,*convc,*weights,*entry,*trunkp;
+  /* *ssf; */
 int *n,*px,*Ntimes,*Nit,*cause,*censcode,*sim,*antsim,*weighted,
 *semi,*pg,*trans,*CA,*line,*detail,*resample,*clusters,*antclust,*silent,*estimator,*fixgamma,*stratum,*ordertime,*conservative;
 { // {{{
@@ -114,7 +113,7 @@ for (s=0;s<*Ntimes;s++)
 
   for (it=0;it<*Nit;it++) // {{{ 
   { 
-   ssf[0]=0; 
+   /* ssf[0]=0;  */
    R_CheckUserInterrupt();
     totrisk=0; 
 
@@ -187,7 +186,7 @@ for (s=0;s<*Ntimes;s++)
 	  if (varp>0.001) VE(Y,j)=VE(Y,j)/varp; else VE(Y,j)=VE(Y,j)/0.001; 
       }
       prede=(VE(Y,j)-VE(pbhat,j)); 
-      ssf[0]=ssf[0]+pow(prede,2); 
+      /* ssf[0]=ssf[0]+pow(prede,2);  */
       VE(Y,j)=pow(weights[j],0.5)*VE(Y,j); 
 
     } // j=0;j<n*;j++ }}}
@@ -312,11 +311,54 @@ if (convt==1 ) { // {{{ iid decomp
       comptestfunc(times,Ntimes,px,est,var,vcudif,antsim,test,testOBS,Ut,
 		   simUt,cumAt,weighted,antclust,gamma2,line,timepowtest); 
   } else {
-    itfitsemi(times,Ntimes,x,censcode,cause,KMc,z,n,px,Nit,
-	      score,hess,est,var,sim,antsim,test,testOBS,Ut,simUt,weighted,
-	      gamma,vargamma,semi,zsem,pg,trans,gamma2,CA,line,detail,biid,
-	      gamiid,resample,timepow,clusters,antclust,timepowtest,silent,convc,weights,
-	      entry,trunkp,estimator,fixgamma,stratum,ordertime,conservative,ssf,KMtimes);
+    itfitsemi(times,
+	      Ntimes,
+	      x,
+	      censcode,
+	      cause,
+	      KMc,
+	      z,
+	      n,
+	      px,
+	      Nit,
+	      score,
+	      hess,
+	      est,
+	      var,
+	      sim,
+	      antsim,
+	      test,
+	      testOBS,
+	      Ut,
+	      simUt,
+	      weighted,
+	      gamma,
+	      vargamma,
+	      semi,
+	      zsem,
+	      pg,
+	      trans,
+	      gamma2,
+	      CA,
+	      line,
+	      detail,
+	      biid,
+	      gamiid,
+	      resample,
+	      timepow,
+	      clusters,
+	      antclust,
+	      timepowtest,
+	      silent,
+	      convc,
+	      weights,
+	      entry,
+	      trunkp,
+	      estimator,
+	      fixgamma,
+	      stratum,
+	      ordertime,
+	      conservative); /* ssf); */
   }
  
   if (convproblems>0) convc[0]=1; 
@@ -381,11 +423,10 @@ void itfitsemi(times,
 	       fixgamma,
 	       stratum,
 	       ordertime,
-	       conservative,
-	       ssf,
-	       KMtimes)
+	       conservative)	       /* ssf) */
 double *times,*x,*KMc,*z,*score,*hess,*est,*var,*test,*testOBS,*Ut,*simUt,*gamma,*zsem,
-       *vargamma,*gamma2,*biid,*gamiid,*timepow,*timepowtest,*entry,*trunkp,*convc,*weights,*ssf,*KMtimes;
+  *vargamma,*gamma2,*biid,*gamiid,*timepow,*timepowtest,*entry,*trunkp,*convc,*weights;
+/* *ssf; */
 int *antpers,*px,*Ntimes,*Nit,*cause,*censcode,*sim,*antsim,*weighted,
 *semi,*pg,*trans,*CA,*line,*detail,*resample,*clusters,*antclust,*silent,*estimator,*fixgamma,*stratum,*ordertime,*conservative;
 { // {{{
@@ -463,7 +504,7 @@ malloc_vec((*px)+(*pg),qs);
 
   for (itt=0;itt<*Nit;itt++)  // {{{
     {
-    ssf[0]=0; 
+    /* ssf[0]=0;  */
     R_CheckUserInterrupt();
     mat_zeros(Ct); mat_zeros(CGam); vec_zeros(IZGdN); vec_zeros(IZGlamt); 
 
@@ -660,9 +701,9 @@ malloc_vec((*px)+(*pg),qs);
 	   else VE(Y,j)=((VE(Y,j)/KMc[j])-VE(plamt,j)/trunkp[j])*(time>entry[j]);
 	   } else if (*estimator==3) VE(Y,j)=(VE(Y,j)-VE(plamt,j)/trunkp[j])*(time<KMc[j])*(time>entry[j]);
 	   else if (*estimator==5) {
-	      if (x[j]<time) VE(Y,j)=VE(Y,j)*KMtimes[s]/KMc[j]; 
+	      if (x[j]<time) VE(Y,j)=VE(Y,j)*1/KMc[j]; 
 	   }
-	   ssf[0]+=pow(VE(Y,j)-VE(plamt,j),2); 
+	   /* ssf[0]+=pow(VE(Y,j)-VE(plamt,j),2);  */
 	   VE(Y,j)=svarp*pow(weights[j],0.5)*VE(Y,j); 
 
      }  // }}}
@@ -792,7 +833,7 @@ malloc_vec((*px)+(*pg),qs);
 
       if (*detail==1) { 
 	Rprintf(" iteration %d %d \n",itt,*Nit); 
-	Rprintf("Total sum of squares %lf \n",ssf[0]); 
+	/* Rprintf("Total sum of squares %lf \n",ssf[0]);  */
 	Rprintf("Total sum of changes %lf \n",dummy); 
 	Rprintf("Gamma parameters \n"); print_vec(gam); 
 	Rprintf("Change in Gamma \n"); print_vec(dgam); 
