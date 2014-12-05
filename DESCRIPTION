@@ -16,7 +16,6 @@ Imports:
 Suggests:
     lava
 Maintainer: Thomas Alexander Gerds <tag@biostat.ku.dk>
-Description: Risk regression models for survival analysis with and without
-    competing risks.
+Description: Risk regression models for survival analysis with and without competing risks.
 License: GPL (>= 2)
 Packaged: 17 Nov 2011 (15:06) ;tag
