@@ -100,7 +100,7 @@
 ##' ## logistic risk regression
 ##' fit2.lrr <- LRR(Hist(time,status)~logthick,data=Melanoma,cause=1)
 ##' summary(fit2.lrr)
-##'
+##' 
 ##' ## change model for censoring weights
 ##' library(rms)
 ##' fit2a.lrr <- LRR(Hist(time,status)~logthick,
@@ -160,6 +160,8 @@
 ##'              B=10,
 ##'              splitMethod="none")
 ##' }
+##'
+##' 
 #' @keywords survival
 #' @export
 riskRegression <- function(formula,

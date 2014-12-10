@@ -1,5 +1,5 @@
 #include <stdlib.h>
-#include <stdio.h>
+//#include <stdio.h>
 #include <stdarg.h>
 #include <math.h>
 #include <R_ext/BLAS.h>
@@ -7,26 +7,25 @@
 #include <R_ext/Linpack.h>
 #include <R_ext/Applic.h>
 #include <R_ext/Random.h>
-#include <R.h>
-#include "riskregression.h"
-void free_mat(matrix *M){
+#include "matrix.h"
 
+void free_mat(matrix *M){
   Free(M->entries);
   Free(M);
+}
 
+void free_mat3(matrix3 *M){
+  Free(M->entries);
+  Free(M);
 }
 
 void free_vec(vector *V){
-
   Free(V->entries);
   Free(V);
-
 }
 
 int nrow_matrix(matrix *M){
-
   return M->nr;
-
 }
 
 int ncol_matrix(matrix *M){
@@ -93,6 +92,7 @@ F77_SUB(dgetrf)(const int* m, const int* n, double* a, const int* lda,
 extern void
 F77_SUB(dgetri)(const int* n, double* a, const int* lda,
                  int* ipiv, double* work, const int* lwork, int* info);
+
 
 // cumsum of matrix apply(X,2,cusum)
 // rev=1 apply(X[n:1,],2,cumsum)[n:1,]
@@ -278,6 +278,90 @@ void MtM(matrix *M, matrix *A){
   }
 }
 
+// Does cholesky of := A, where A is symmetric positive definite, of order *n
+void cholesky(matrix *A, matrix *AI){ // {{{ 
+
+  if( !(nrow_matrix(A)  == ncol_matrix(A) && 
+	nrow_matrix(AI) == ncol_matrix(AI) &&
+	nrow_matrix(A)  == ncol_matrix(AI)) ){
+    oops("Error: dimensions in invertSPD\n");
+  }
+
+  // Ensure that A and AI do not occupy the same memory. 
+  if(A != AI){
+//	  printf(" er her\n"); 
+    choleskyunsafe(A, AI);
+  } else {
+    // if M and A occupy the same memory, store the results in a
+    // temporary matrix. 
+    matrix *temp;
+    malloc_mat(nrow_matrix(AI),ncol_matrix(AI),temp);
+
+    choleskyunsafe(A, temp);
+    
+    // Copy these results into AI, then remove the temporary matrix
+    mat_copy(temp,AI);    
+    free_mat(temp);
+  }
+
+} // }}} 
+
+// cholesky := A, where A is symmetric positive definite, of order *n
+void choleskyunsafe(matrix *A, matrix *AI){ // {{{ 
+  //unsafe because it assumes A and AI are both square and of the same
+  //dimensions, and that they occupy different memory
+
+//  char uplo = 'U'; // lower version 
+  int i, j;
+  int n = nrow_matrix(A);
+//  int lda = n; // matrix A has dimensions *n x *n
+  int info = -999;
+//    double rcond;
+//  int pivot[n];
+//  double z[n];
+//  double qraux[n];
+//  double work[2*n];
+//  int rank = 0;
+//  int job=1;
+//  double tol = 1.0e-07;
+  
+// First copy the matrix A into the matrix AI
+//  print_mat(A); 
+   mat_copy(A,AI); 
+//  print_mat(AI); 
+
+//  printf("sssssssssss======================\n"); 
+//  job = 1; // Indicates that AI is upper triangular
+//  rcond = 999.0;
+
+    // First find the Cholesky factorization of A,
+    // stored as an upper triangular matrix
+    char uplo1 = 'U'; // lower version 
+    F77_CALL(dpotrf)(&uplo1, &n, AI->entries, &n, &info); 
+
+    // Lastly turn the vector a into the matrix AI
+    // Take only the lower triangular portion, since this 
+    // is the relevant part returned by dpotrf
+    for(i = 0; i < n; i++){
+      for(j = 0; j < i; j++){
+	      ME(AI,i,j) = 0; 
+      }
+    }
+//    print_mat(AI); 
+
+//    Rprintf("in chol \n"); 
+//    printf("======================\n"); 
+//    print_mat(A); 
+//    print_mat(AI); 
+//    printf(" check chol back\n"); 
+//    matrix *tmp; 
+//    malloc_mat(n,n,tmp); 
+//    MtM(AI,tmp); 
+//    print_mat(tmp); 
+//    free_mat(tmp); 
+
+} // }}} 
+
 // Does AI := inverse(A), where A is symmetric positive definite, of order *n
 void invertSPD(matrix *A, matrix *AI){
 
@@ -321,7 +405,7 @@ void invertSPDunsafe(matrix *A, matrix *AI){
   double qraux[n];
   double work[2*n];
   int rank = 0;
-  int job;
+  int job=1;
   double tol = 1.0e-07;
   
   // First copy the matrix A into the matrix AI
@@ -331,6 +415,9 @@ void invertSPDunsafe(matrix *A, matrix *AI){
     }
   }
     
+//  dqrdc(x,ldx,n,p, qraux,jpvt,work,job)
+//  F77_CALL(dqrdc)(AI->entries, &n, &n, &n, &rank, qraux, pivot, work,job);
+//  dqrdc2(x,ldx,n,p,tol,k,qraux,jpvt,work)
   F77_CALL(dqrdc2)(AI->entries, &n, &n, &n, &tol, &rank, qraux, pivot, work);
 
   for(i = 0; i < n; i++){
@@ -385,6 +472,7 @@ void invertSPDunsafe(matrix *A, matrix *AI){
 	ME(AI,i,j) = ME(AI,j,i);
       }
     }
+    
   }
 
 }
@@ -591,7 +679,7 @@ void print_mat(matrix *M){
     }
     Rprintf("\n");
   }  
-
+    Rprintf("\n");
 }
 
 // Simple I/O function that prints the top of a matrix
@@ -607,7 +695,7 @@ void head_matrix(matrix *M){
     }
     Rprintf("\n");
   }  
-
+    Rprintf("\n");
 }
 
 // Simple I/O function that prints the first few entries of a vector
@@ -633,7 +721,7 @@ void print_vec(vector *v){
   for(j=0; j < length_vector(v); j++){
     Rprintf("%lf ", VE(v,j));
   }  
-  Rprintf("\n");
+  Rprintf("\n\n");
   
 }
 
@@ -1105,8 +1193,9 @@ void invertUnsafe(matrix *A, matrix *Ainv){
 
   if(info != 0){
     //Avoid printing this error message
-    Rprintf("Error in invert: DGETRF returned info = %d \n",info);
+    Rprintf("2 Error in invert: DGETRF returned info = %d \n",info);
     mat_zeros(Ainv);
+    print_mat(Ainv); 
   } else {
   
     for(i = 0; i < n; i++){
@@ -1116,7 +1205,7 @@ void invertUnsafe(matrix *A, matrix *Ainv){
     
     if(info != 0){
       //Avoid printing this error message
-      Rprintf("Error in invert: DGETRF returned info = %d \n",info);
+      Rprintf("1 Error in invert: DGETRF returned info = %d \n",info);
       mat_zeros(Ainv);
       return;
     } 
@@ -1137,7 +1226,7 @@ void invertUnsafe(matrix *A, matrix *Ainv){
 
     if (fabs(ME(Ainv,0,0))>99999999999999)  { // TS 23-10
       print_mat(Ainv);
-      Rprintf("Inversion unstable, large elements  \n");
+      Rprintf("Inversion, unstable large elements  \n");
       mat_zeros(Ainv);
     }
   }
@@ -1184,8 +1273,8 @@ void invertUnsafeS(matrix *A, matrix *Ainv,int silent){
 
   if(info != 0){
     //Avoid printing this error message
-    if (silent==0) Rprintf("Error in invert: DGETRF returned info = %d \n",info);
     mat_zeros(Ainv);
+    if (silent==0) Rprintf("3 Error in invert: DGETRF returned info = %d \n",info);
   } else {
   
     for(i = 0; i < n; i++){
@@ -1195,14 +1284,16 @@ void invertUnsafeS(matrix *A, matrix *Ainv,int silent){
     
     if(info != 0){
       //Avoid printing this error message
-      if (silent==0) Rprintf("Error in invert: DGETRF returned info = %d \n",info);
       mat_zeros(Ainv);
+      free(work); free(iwork); free(dwork); free(ipiv);
+      if (silent==0) Rprintf("4 Error in invert: DGETRF returned info = %d \n",info);
       return;
     } 
     
     if(rcond < tol ){
-      if (silent==0) Rprintf("Error in invert: estimated reciprocal condition number = %7.7e\n",rcond); 
       mat_zeros(Ainv);
+      free(work); free(iwork); free(dwork); free(ipiv);
+      if (silent==0) Rprintf("Error in invert: estimated reciprocal condition number = %7.7e\n",rcond); 
       return;
     }
 
@@ -1210,20 +1301,17 @@ void invertUnsafeS(matrix *A, matrix *Ainv,int silent){
     F77_CALL(dgetri)(&n, Ainv->entries, &lda, ipiv, work, &lwork, &info);
 
     if(info != 0 ){
-      if (silent==0) Rprintf("Error in invert: DPOTRI returned info = %d \n",info);
       mat_zeros(Ainv);
+      if (silent==0) Rprintf("Error in invert: DPOTRI returned info = %d \n",info);
     }
 
     if (fabs(ME(Ainv,0,0))>99999999999999 )  { // TS 23-10
-      if (silent==0) Rprintf("Inversion unstable, large elements  \n");
       mat_zeros(Ainv);
+      if (silent==0) Rprintf("Inversion, unstable large elements  \n");
     }
   }
   
-  free(work);
-  free(iwork);
-  free(dwork);
-  free(ipiv);
+  free(work); free(iwork); free(dwork); free(ipiv);
 }
 
 
@@ -1429,7 +1517,7 @@ void replace_col(matrix *M, int col_to_set, vector *v){
 void LevenbergMarquardt(matrix *S,matrix *SI,vector *U,vector *delta,double *lm,double *step)
 { // {{{
   int i,nrow;
-  double x=0,ss=0;
+  double ss=0;
   matrix *S2; 
 
   if(!(length_vector(U) == nrow_matrix(S))){ oops("Error: LM : S and U not consistent\n"); }
@@ -1442,16 +1530,15 @@ void LevenbergMarquardt(matrix *S,matrix *SI,vector *U,vector *delta,double *lm,
 
   mat_copy(S,S2); 
 
-  if  (ss> 5/(*step)) {
+  if  (ss > *lm ) {
      MxA(S,S,S2);
-     x=1;
-     for (i=0;i<nrow;i++) ME(S2,i,i)=ME(S2,i,i)+x*VE(U,i)*VE(U,i);
-     invert(S2,SI); MxA(SI,S,S2); Mv(S2,U,delta);
+     for (i=0;i<nrow;i++) ME(S2,i,i)=ME(S2,i,i)+min(VE(U,i)*VE(U,i),100);
+     invertS(S2,SI,1); MxA(SI,S,S2); Mv(S2,U,delta);
   } else {
-    invert(S2,SI); Mv(SI,U,delta);
+    invertS(S2,SI,1); Mv(SI,U,delta);
   }
   if  (*step>0.0001) scl_vec_mult(*step,delta,delta); 
-  free(S2); 
+  free_mat(S2); 
 } // }}}
 
 void readXt2(int *antpers,int *nx,int *p,double *designX,

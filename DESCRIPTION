@@ -1,7 +1,7 @@
 Package: riskRegression
 Type: Package
 Title: Risk regression models for survival analysis with competing risks
-Version: 1.0.9
+Version: 1.1.1
 Date: 2014-07-17
 Author: Thomas Alexander Gerds, Thomas Harder Scheike
 Depends:
@@ -16,6 +16,7 @@ Imports:
 Suggests:
     lava
 Maintainer: Thomas Alexander Gerds <tag@biostat.ku.dk>
-Description: Risk regression models for survival analysis with and without competing risks.
+Description: Risk regression models for survival analysis with and without
+    competing risks.
 License: GPL (>= 2)
 Packaged: 17 Nov 2011 (15:06) ;tag
