@@ -7,7 +7,7 @@
 #include <R_ext/Linpack.h>
 #include <R_ext/Applic.h>
 #include <R_ext/Random.h>
-#include "matrix.h"
+#include "riskregression.h"
 
 void free_mat(matrix *M){
   Free(M->entries);
