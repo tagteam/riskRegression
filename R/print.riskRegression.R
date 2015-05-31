@@ -1,4 +1,4 @@
-#' @S3method print riskRegression
+#' @export 
 print.riskRegression <- function(x,
                                  times,
                                  digits=3,

@@ -1,8 +1,6 @@
 #' Plotting time-varying effects from a risk regression model.
 #' 
 #' Plot time-varying effects from a risk regression model.
-#' 
-#' 
 #' @param x Fitted object obtained with one of \code{ARR}, \code{LRR},
 #' \code{riskRegression}.
 #' @param formula A formula to specify the variable(s) whose regression
@@ -10,8 +8,8 @@
 #' @param level For categorical variables the level (group) whose contrast to
 #' the reference level (group) should be plotted.
 #' @param refLine Logical. If \code{TRUE} then add a horizontal line at zero.
-#' @param confint Logical. If \code{TRUE} then add confidence limits.  % Can be
-#' % controlled using smart arguments. See examples
+#' @param confint Logical. If \code{TRUE} then add confidence limits.  Can be
+#'                controlled using smart arguments. See examples
 #' @param xlim See \code{plot}
 #' @param ylim See \code{plot}
 #' @param xlab See \code{plot}
@@ -63,7 +61,7 @@
 ##' axis2.las=2,
 ##' 	    legend.cex=1)
 ##' 
-##' #'
+##' 
 #' @export
 plotEffects <- function(x,
                         formula,

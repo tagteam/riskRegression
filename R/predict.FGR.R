@@ -1,4 +1,4 @@
-#' @S3method predict FGR
+#' @export 
 predict.FGR <- function(object,newdata,times,...){
     # {{{ check the data and the design
     if (missing(newdata)) stop("Argument 'newdata' is missing")

@@ -1,4 +1,4 @@
-#' @S3method coef riskRegression
+#' @export 
 coef.riskRegression <- function(object,digits=3,eps=10^-4,...){
 
   cvars <- object$design$const

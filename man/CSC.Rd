@@ -23,12 +23,10 @@ CSC(formula, data, cause, survtype = "hazard", ...)
   \item{\dots}{Arguments given to \code{coxph}.}
 }
 \value{
-%% ~Describe the value returned % If it is a LIST, use
-\item{call }{the call} \item{models }{a list with the
-fitted (cause-specific) Cox regression objects}
-\item{response }{the event history response }
-\item{eventTimes }{the sorted (unique) event times }
-\item{survtype }{the value of \code{survtype}}
+\item{models }{a list with the fitted (cause-specific) Cox
+regression objects} \item{response }{the event history
+response } \item{eventTimes }{the sorted (unique) event
+times } \item{survtype }{the value of \code{survtype}}
 \item{theCause }{the cause of interest. see \code{cause}}
 \item{causes }{the other causes} %% ...
 }
@@ -47,7 +45,7 @@ data(Melanoma)
 fit1 <- CSC(list(Hist(time,status)~sex,Hist(time,status)~invasion+epicel+age),
             data=Melanoma)
 print(fit1)
-fit1a <- CSC(list(Hist(time,status)~sex,Hist(time,status)~invasion+epicel+age),
+fit1a <- CSC(list(Hist(time,status)~sex+log(age),Hist(time,status)~invasion+epicel+log(age)),
              data=Melanoma,
              survtype="surv")
 print(fit1a)
@@ -77,8 +75,10 @@ fit5 <- CSC(Hist(time,status)~invasion+epicel+age+strata(sex),
             survtype="surv")
 print(fit5)
 
-tmp <- coxph(Surv(time,status==1)~invasion+epicel+age+strata(sex),data=Melanoma)
-tmp2 <- coxph(Surv(time,status==1)~invasion+epicel+age,data=Melanoma)
+cox1 <- coxph(Surv(time,status==1)~invasion+epicel+age+strata(sex),data=Melanoma)
+cox2 <- coxph(Surv(time,status!=0)~invasion+epicel+age+strata(sex),data=Melanoma)
+all.equal(cox1,fit5$models[[1]])
+all.equal(cox2,fit5$models[[2]])
 }
 \author{
 Thomas A. Gerds \email{tag@biostat.ku.dk}

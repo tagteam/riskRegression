@@ -84,7 +84,7 @@
 ##' plot(fit.csc)
 ##' 
 ##' 
-#' @S3method plot riskRegression
+#' @export 
 plot.riskRegression <- function(x,
                                 cause,
                                 newdata,

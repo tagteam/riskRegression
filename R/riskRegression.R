@@ -353,7 +353,6 @@ riskRegression <- function(formula,
         iData <- cbind(event.history,get_all_vars(cens.formula,
                                                   data)[neworder,,drop=FALSE])
     }
-    ## browser()
     stopifnot(NROW(iData)==NROW(event.history))
     Gcx <- subjectWeights(formula=iFormula,
                           data=iData,

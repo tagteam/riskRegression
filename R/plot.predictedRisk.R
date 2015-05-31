@@ -1,4 +1,4 @@
-#' @S3method plot predictedRisk
+#' @export 
 plot.predictedRisk <- function(x,
                                   cause,
                                   newdata,

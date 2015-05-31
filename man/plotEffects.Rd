@@ -21,7 +21,7 @@ plotEffects(x, formula, level, refLine = TRUE, confint = 0.95, xlim, ylim,
   horizontal line at zero.}
 
   \item{confint}{Logical. If \code{TRUE} then add
-  confidence limits.  % Can be % controlled using smart
+  confidence limits.  Can be controlled using smart
   arguments. See examples}
 
   \item{xlim}{See \code{plot}}
@@ -89,8 +89,6 @@ plotEffects(fit.tarr,
 	    legend.bty="b",
 axis2.las=2,
 	    legend.cex=1)
-
-#'
 }
 \author{
 Thomas H. Scheike \email{ts@biostat.ku.dk}

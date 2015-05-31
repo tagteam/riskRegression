@@ -153,9 +153,10 @@ FGR <- function(formula,data,cause=1,y=TRUE,...){
         }
     }else{
         args$tf <- function(x){
-            args$tf <- bquote(function(x){matrix(rep(x,.(NCOL(cov2))),
-                                                 ncol=.(NCOL(cov2)),
-                                                 byrow=FALSE)})}
+            args$tf <- bquote(function(x){
+                matrix(rep(x,.(NCOL(cov2))),
+                       ncol=.(NCOL(cov2)),
+                       byrow=FALSE)})}
     }
     ## print(args$tf)
     args <- args[!sapply(args,is.null)]

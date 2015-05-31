@@ -1,4 +1,4 @@
-#' @S3method print CauseSpecificCox
+#' @export 
 print.CauseSpecificCox <- function(x,...){
     print(x$call)
     print(x$response)
@@ -7,7 +7,10 @@ print.CauseSpecificCox <- function(x,...){
             cat("\n\n----------> Cause: ",x$causes[c],"\n\n")
             xc <- x$models[[c]]
             xc$call$data <- NULL
-            print(summary(xc),...)
+            if (x$fitter=="coxph")
+                print(summary(xc),...)
+            else
+                print(xc,...)
         })
     }
     else{ # survtype=="survival"
@@ -18,6 +21,9 @@ print.CauseSpecificCox <- function(x,...){
         cat("\n\n----------> Event-free survival:\n\n")
         x2 <- x$models[[2]]
         x2$call$data <- NULL
-        print(summary(x2),...)
+        if (x$fitter=="coxph")
+            print(summary(x2),...)
+        else
+            print(x2,...)            
     }
 }

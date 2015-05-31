@@ -67,7 +67,7 @@
 #' plot(WKM2$fit,add=FALSE)
 #' 
 #'
-#' @export subjectWeights
+#' @export 
 subjectWeights <- function(formula,data,method=c("cox","marginal","km","nonpar","forest","none"),args,lag=1){
     if (lag!=1 && lag!=0){ stop("lag must be either 0 or 1")}
     method <- tolower(method)
@@ -77,7 +77,7 @@ subjectWeights <- function(formula,data,method=c("cox","marginal","km","nonpar",
 }
 # }}}
 # {{{ None: set weights to 1
-#' @S3method subjectWeights none
+#' @export 
 subjectWeights.none <- function(formula,data,method,args,lag=1){
     weights <- rep(1,NROW(data))
     out <- list(weights=weights,
@@ -90,7 +90,7 @@ subjectWeights.none <- function(formula,data,method,args,lag=1){
 subjectWeights.none <- subjectWeights.none
 # }}}
 # {{{ reverse Kaplan-Meier
-#' @S3method subjectWeights marginal
+#' @export 
 subjectWeights.marginal <- function(formula,data,method,args,lag=1){
     formula <- update.formula(formula,"~1")
     fit <- prodlim::prodlim(formula,data=data,reverse=TRUE)
@@ -102,7 +102,7 @@ subjectWeights.marginal <- function(formula,data,method,args,lag=1){
 subjectWeights.km <- subjectWeights.marginal
 # }}}
 # {{{ reverse Stone-Beran
-#' @S3method subjectWeights nonpar
+#' @export 
 subjectWeights.nonpar <- function(formula,data,method,args,lag=1){
     fit <- prodlim::prodlim(formula,data=data,reverse=TRUE,bandwidth="smooth")
     weights <- prodlim::predictSurvIndividual(fit,lag=lag)
@@ -112,7 +112,7 @@ subjectWeights.nonpar <- function(formula,data,method,args,lag=1){
 }
 # }}}
 # {{{ reverse Cox via Harrel's package
-#' @S3method subjectWeights cox
+#' @export 
 subjectWeights.cox <- function(formula,data,method,args,lag=1){
     ## require(rms)
     ## require(survival)
@@ -146,7 +146,7 @@ subjectWeights.cox <- function(formula,data,method,args,lag=1){
 }
 # }}}
 # {{{ reverse random forest
-#' @S3method subjectWeights forest
+#' @export 
 subjectWeights.forest <- function(formula,data,method,args,lag=1){
     call <- match.call() ## needed for refit in crossvalidation loop
     EHF <- prodlim::EventHistory.frame(formula,

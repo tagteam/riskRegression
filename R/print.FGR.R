@@ -1,4 +1,4 @@
-#' @S3method print FGR
+#' @export 
 print.FGR <- function(x,...){
   summary(x$response)
   cat("\n\nFine-Gray model: analysis of cause",x$cause,"\n")

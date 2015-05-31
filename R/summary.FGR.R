@@ -1,4 +1,4 @@
-#' @S3method summary FGR
+#' @export 
 summary.FGR <- function(object,...){
   f <- object$crrFit
   f$call <- object$call

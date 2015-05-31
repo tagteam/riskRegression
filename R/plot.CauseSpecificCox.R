@@ -1,4 +1,4 @@
-#' @S3method plot CauseSpecificCox
+#' @export 
 plot.CauseSpecificCox <- function(x,
                                   cause,
                                   newdata,

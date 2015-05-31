@@ -37,7 +37,7 @@
 ##' predict(fit.tarr,newdata=Melanoma[1:4,])
 ##'
 ##' 
-#' @S3method predict riskRegression
+#' @export 
 predict.riskRegression <- function(object,
                                    newdata,
                                    ...){

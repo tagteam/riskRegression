@@ -26,6 +26,13 @@ test_that("strata",{
     expect_equal(coef(A$models[[2]]),coef(A2))
 })
 
+test_that("CSC many character valued causes",{
+    set.seed(17)
+    d <- data.frame(time=sample(1:100),event=sample(letters,size=100,replace=TRUE),X1=rnorm(100),X2=rbinom(100,1,0.4))
+    m1 <- CSC(Hist(time,event)~strata(X2)+X1,data=d)
+    m2 <- CSC(Hist(time,event)~strata(X2)+X1,data=d,survtype="surv",cause="n")
+})
+
 
 
 
