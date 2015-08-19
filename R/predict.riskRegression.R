@@ -52,7 +52,7 @@ predict.riskRegression <- function(object,
     ## }
     Zcoef <- c(object$timeConstantEffects$coef)
     semi <- !is.null(Zcoef)
-    ## m <- model.frame(formula=delete.response(object$design$Terms),
+    ## m <- stats::model.frame(formula=delete.response(object$design$Terms),
     ## data=newdata,na.action="na.fail")
     tt <- delete.response(object$design$Terms)
     PF <- prodlim::EventHistory.frame(formula(tt),

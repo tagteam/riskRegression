@@ -9,7 +9,7 @@
   ## stopifnot(match(as.character(cause),causes,nomatch=0)!=0)
   ## # predict cumulative cause specific hazards
   ## baseHaz1 <- baselineHazard.coxph(object$models[[paste("Cause",cause)]],times=eTimes)
-  ## cumHaz1 <- predict(object$models[[paste("Cause",cause)]],type="risk")%*%baseHaz1
+  ## cumHaz1 <- stats::predict(object$models[[paste("Cause",cause)]],type="risk")%*%baseHaz1
   ## cumHaz1a <- -log(predictSurvProb(object$models[[paste("Cause",cause)]],times=eTimes,newdata=newdata))
   ## if (length(eTimes)==1)
     ## Haz1 <- cumHaz1

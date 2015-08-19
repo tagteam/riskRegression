@@ -51,7 +51,7 @@
 #' # using the marginal Kaplan-Meier for the censoring times
 #' 
 #' WKM=subjectWeights(Hist(time,status)~X2,data=dat,method="marginal")
-#' plot(WKM$fit)
+#' graphics::plot(WKM$fit)
 #' WKM$fit
 #' WKM$weights
 #' 
@@ -59,12 +59,12 @@
 #' 
 #' WCox=subjectWeights(Surv(time,status)~X2,data=dat,method="cox")
 #' WCox
-#' plot(WCox$weights,WKM$weights)
+#' graphics::plot(WCox$weights,WKM$weights)
 #' 
 #' # using the stratified Kaplan-Meier for the censoring times given X2
 #' 
 #' WKM2 <- subjectWeights(Surv(time,status)~X2,data=dat,method="nonpar")
-#' plot(WKM2$fit,add=FALSE)
+#' graphics::plot(WKM2$fit,add=FALSE)
 #' 
 #'
 #' @export 
@@ -165,7 +165,7 @@ subjectWeights.forest <- function(formula,data,method,args,lag=1){
     ## print(fit)
     fit$call <- NULL
     # forest weights
-    FW <- predict(fit,newdata=wdata,forest.wt=TRUE)$forest.wt
+    FW <- stats::predict(fit,newdata=wdata,forest.wt=TRUE)$forest.wt
     #  weigths at requested times
     #  predicted survival probabilities for all training subjects are in object$survival
     #  out-of-bag prediction in object$survival.oob

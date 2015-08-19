@@ -4,9 +4,9 @@ test_that("predictions",{
     library(riskRegression)
     library(prodlim)
     data(Melanoma)
-    p1 <- predict(ARR(Hist(time,status)~strata(sex),data=Melanoma,cause=1),newdata=Melanoma,times=c(0,1,100,1000))
+    p1 <- stats::predict(ARR(Hist(time,status)~strata(sex),data=Melanoma,cause=1),newdata=Melanoma,times=c(0,1,100,1000))
     f2 <- ARR(Hist(time,status)~timevar(sex),data=Melanoma,cause=1)
-    p2 <- predict(f2,newdata=Melanoma,times=c(0,1,100,1000))
+    p2 <- stats::predict(f2,newdata=Melanoma,times=c(0,1,100,1000))
 }
 
 test_that("Brier score",{

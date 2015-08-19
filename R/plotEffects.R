@@ -210,10 +210,10 @@ plotEffects <- function(x,
     ## smartA$legend$legend <- sapply(strsplit(names(Y),"="),function(x)x[[2]])
     ## }
     smartA$legend <- smartA$legend[-match("trimnames",names(smartA$legend))]
-    save.xpd <- par()$xpd
-    par(xpd=TRUE)
+    save.xpd <- graphics::par()$xpd
+    graphics::par(xpd=TRUE)
     do.call("legend",smartA$legend)
-    par(xpd=save.xpd)
+    graphics::par(xpd=save.xpd)
   }
   # }}}
 

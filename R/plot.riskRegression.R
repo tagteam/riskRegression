@@ -78,10 +78,10 @@
 ##' data(Melanoma)
 ##' 
 ##' fit.arr <- ARR(Hist(time,status)~invasion+age+strata(sex),data=Melanoma,cause=1)
-##' plot(fit.arr)
+##' graphics::plot(fit.arr)
 ##' 
 ##' fit.csc <- CSC(Hist(time,status)~invasion+age+sex,data=Melanoma,cause=1)
-##' plot(fit.csc)
+##' graphics::plot(fit.csc)
 ##' 
 ##' 
 #' @export 
@@ -116,7 +116,7 @@ plot.riskRegression <- function(x,
                     p1 <- pec::predictEventProb(x,newdata=xdat,times=plot.times,cause=cause)
                 }
                 else{
-                    p1 <- predict(x,newdata=xdat,times=plot.times)$risk}
+                    p1 <- stats::predict(x,newdata=xdat,times=plot.times)$risk}
                 rownames(p1) <- paste("id",1:NROW(xdat))
             }
             else{
@@ -127,7 +127,7 @@ plot.riskRegression <- function(x,
                                            cause=cause)
                 }
                 else{
-                    P1 <- predict(x,
+                    P1 <- stats::predict(x,
                                   newdata=eval(x$call$data),
                                   times=plot.times)$risk
                 }
@@ -141,7 +141,7 @@ plot.riskRegression <- function(x,
             }
         }
         else{
-            p1 <- predict(x,newdata=newdata,time=plot.times)$risk
+            p1 <- stats::predict(x,newdata=newdata,time=plot.times)$risk
         }
         Y <- lapply(1:NROW(p1),function(i){p1[i,]})
         if (!is.null(rownames(p1)))
@@ -222,10 +222,10 @@ plot.riskRegression <- function(x,
       smartA$legend$title <- unique(sapply(nlist,function(x)x[[1]]))
     }
     smartA$legend <- smartA$legend[-match("trimnames",names(smartA$legend))]
-    save.xpd <- par()$xpd
-    par(xpd=TRUE)
+    save.xpd <- graphics::par()$xpd
+    graphics::par(xpd=TRUE)
     do.call("legend",smartA$legend)
-    par(xpd=save.xpd)
+    graphics::par(xpd=save.xpd)
   }
   # }}}
 }

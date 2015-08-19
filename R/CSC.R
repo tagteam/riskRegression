@@ -76,7 +76,13 @@
 ##'
 ##' 
 #' @export
-CSC <- function (formula,data,cause,survtype="hazard",fitter="coxph",...){
+CSC <- function(formula,
+                data,
+                cause,
+                survtype="hazard",
+                fitter="coxph",
+                ## strip.environment
+                ...){
     # {{{ type
     survtype <- match.arg(survtype,c("hazard","survival"))
     # }}}
@@ -89,7 +95,7 @@ CSC <- function (formula,data,cause,survtype="hazard",fitter="coxph",...){
     ## require(survival)
     call <- match.call()
     # get information from formula
-    mf <- model.frame(update(responseFormula,".~1"), data = data, na.action = na.omit)
+    mf <- stats::model.frame(update(responseFormula,".~1"), data = data, na.action = na.omit)
     response <- model.response(mf)
     time <- response[, "time"]
     status <- response[, "status"]
@@ -172,14 +178,17 @@ CSC <- function (formula,data,cause,survtype="hazard",fitter="coxph",...){
                             formulaXX <- as.formula(paste("survival::Surv(time,status)",
                                                           as.character(delete.response(terms.formula(formulaX)))[[2]],
                                                           sep="~"))
-                            if (fitter=="coxph")
+                            if (fitter=="coxph"){
                                 fit <- survival::coxph(formulaXX, data = workData,...)
-                            else
-                                fit <- rms::cph(formulaXX, data = workData,surv=TRUE,...)
+                            } else {
+                                  fit <- rms::cph(formulaXX, data = workData,surv=TRUE,...)
+                              }
+                            ## fit$formula <- terms(fit$formula)
+                            ## fit$call$formula <- terms(formulaXX)
                             ## fit$call$formula <- fit$formula
-                            fit$call$data <- workData
                             ## fit$call$data <- NULL
                             fit$call$formula <- formulaXX
+                            fit$call$data <- workData
                             fit
                         })
     if (survtype=="hazard"){
