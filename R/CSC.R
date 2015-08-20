@@ -48,12 +48,13 @@
 ##' fit2 <- CSC(Hist(time,status)~invasion+epicel+age,
 ##'             data=Melanoma)
 ##' print(fit2)
-##' 
+##'
 ##' ## combine a cause-specific Cox regression model for cause 2 
 ##' ## and a Cox regression model for the event-free survival:
 ##' ## different formula for cause 2 and event-free survival
 ##' fit3 <- CSC(list(Hist(time,status)~sex+invasion+epicel+age,
 ##'                  Hist(time,status)~invasion+epicel+age),
+##'             survtype="surv",
 ##'             data=Melanoma)
 ##' print(fit3)
 ##' 
@@ -68,12 +69,33 @@
 ##'             data=Melanoma,
 ##'             survtype="surv")
 ##' print(fit5)
+##'
+##' ## sanity check
 ##' 
 ##' cox1 <- coxph(Surv(time,status==1)~invasion+epicel+age+strata(sex),data=Melanoma)
 ##' cox2 <- coxph(Surv(time,status!=0)~invasion+epicel+age+strata(sex),data=Melanoma)
 ##' all.equal(cox1,fit5$models[[1]])
 ##' all.equal(cox2,fit5$models[[2]])
 ##'
+##' ## predictions
+##' ##
+##' ## survtype = "hazard": predictions for both causes can be extracted
+##' ## from the same fit
+##' library(pec)
+##' fit2 <- CSC(Hist(time,status)~invasion+epicel+age, data=Melanoma)
+##' pec:::predictEventProb(fit2,cause=1,newdata=Melanoma[c(17,99,108),],times=c(100,1000))
+##' pec:::predictEventProb(fit2,cause=2,newdata=Melanoma[c(17,99,108),],times=c(100,1000))
+##' 
+##' ## survtype = "surv" we need to change the cause of interest 
+##'
+##' fit5.2 <- CSC(Hist(time,status)~invasion+epicel+age+strata(sex),
+##'             data=Melanoma,
+##'             survtype="surv",cause=2)
+##' ## now this does not work
+##' try(pec:::predictEventProb(fit5.2,cause=1,newdata=Melanoma,times=4))
+##' 
+##' ## but this does
+##' try(pec:::predictEventProb(fit5.2,cause=2,newdata=Melanoma,times=100))
 ##' 
 #' @export
 CSC <- function(formula,
