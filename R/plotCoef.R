@@ -18,7 +18,7 @@ plotCoef <- function(x,formula,confint=.95,ylim,xlab="Time",ylab="Cumulative coe
   if (missing(ylim))
       ylim <- c(floor(min(lower)),ceiling(max(upper)))
   if (!add)
-    graphics::plot(0,0,type="n",xlab=xlab,ylab=ylab,xlim=c(0,max(x$time)),ylim=ylim)
+    plot(0,0,type="n",xlab=xlab,ylab=ylab,xlim=c(0,max(x$time)),ylim=ylim)
   col <- 1:12
   if (length(matchVar)>1){
     ref <- x$refLevels[var]

@@ -93,14 +93,15 @@ time.
 }
 \examples{
 library(pec)
+library(survival)
 library(prodlim)
 data(Melanoma)
 
 fit.arr <- ARR(Hist(time,status)~invasion+age+strata(sex),data=Melanoma,cause=1)
-graphics::plot(fit.arr)
+plot(fit.arr)
 
 fit.csc <- CSC(Hist(time,status)~invasion+age+sex,data=Melanoma,cause=1)
-graphics::plot(fit.csc)
+plot(fit.csc)
 }
 \author{
 Thomas Alexander Gerds <tag@biostat.ku.dk>

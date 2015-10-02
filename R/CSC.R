@@ -15,8 +15,7 @@
 #' @param fitter Routine to fit the Cox regression models.
 #' If \code{coxph} use \code{survival::coxph} else use \code{rms::cph}.
 #' The latter is much faster when it comes to prediction.
-#' @param ...
-#' @param \dots Arguments given to \code{coxph}.
+#' @param ... Arguments given to \code{coxph}.
 #' @return \item{models }{a list with the fitted (cause-specific) Cox
 #' regression objects} \item{response }{the event history response }
 #' \item{eventTimes }{the sorted (unique) event times } \item{survtype }{the
@@ -118,7 +117,7 @@ CSC <- function(formula,
     call <- match.call()
     # get information from formula
     mf <- stats::model.frame(update(responseFormula,".~1"), data = data, na.action = na.omit)
-    response <- model.response(mf)
+    response <- stats::model.response(mf)
     time <- response[, "time"]
     status <- response[, "status"]
     event <- prodlim::getEvent(response)
@@ -178,7 +177,7 @@ CSC <- function(formula,
                                 covData <- cbind(EHF$design)
                             else
                                 covData <- cbind(EHF$design,EHF$strata)
-                            ## response <- model.response(covData)
+                            ## response <- stats::model.response(covData)
                             time <- as.numeric(EHF$event.history[, "time",drop=TRUE])
                             event <- prodlim::getEvent(EHF$event.history)
                             if (survtype=="hazard"){

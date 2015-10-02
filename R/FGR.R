@@ -27,6 +27,7 @@
 ##' @examples
 ##' 
 ##' library(prodlim)
+##' library(survival)
 ##' library(pec)
 ##' library(cmprsk)
 ##' library(lava)

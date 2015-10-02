@@ -24,9 +24,7 @@ also a Cox regression model for event-free survival.}
 If \code{coxph} use \code{survival::coxph} else use \code{rms::cph}.
 The latter is much faster when it comes to prediction.}
 
-\item{...}{}
-
-\item{\dots}{Arguments given to \code{coxph}.}
+\item{...}{Arguments given to \code{coxph}.}
 }
 \value{
 \item{models }{a list with the fitted (cause-specific) Cox
@@ -106,7 +104,7 @@ fit5.2 <- CSC(Hist(time,status)~invasion+epicel+age+strata(sex),
 try(pec:::predictEventProb(fit5.2,cause=1,newdata=Melanoma,times=4))
 
 ## but this does
-try(pec:::predictEventProb(fit5.2,cause=2,newdata=Melanoma,times=4))
+try(pec:::predictEventProb(fit5.2,cause=2,newdata=Melanoma,times=100))
 }
 \author{
 Thomas A. Gerds \email{tag@biostat.ku.dk}

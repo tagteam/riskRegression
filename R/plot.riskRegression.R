@@ -74,14 +74,15 @@
 ##' @examples
 ##' 
 ##' library(pec)
+##' library(survival)
 ##' library(prodlim)
 ##' data(Melanoma)
 ##' 
 ##' fit.arr <- ARR(Hist(time,status)~invasion+age+strata(sex),data=Melanoma,cause=1)
-##' graphics::plot(fit.arr)
+##' plot(fit.arr)
 ##' 
 ##' fit.csc <- CSC(Hist(time,status)~invasion+age+sex,data=Melanoma,cause=1)
-##' graphics::plot(fit.csc)
+##' plot(fit.csc)
 ##' 
 ##' 
 #' @export 
@@ -222,10 +223,10 @@ plot.riskRegression <- function(x,
       smartA$legend$title <- unique(sapply(nlist,function(x)x[[1]]))
     }
     smartA$legend <- smartA$legend[-match("trimnames",names(smartA$legend))]
-    save.xpd <- graphics::par()$xpd
-    graphics::par(xpd=TRUE)
+    save.xpd <- par()$xpd
+    par(xpd=TRUE)
     do.call("legend",smartA$legend)
-    graphics::par(xpd=save.xpd)
+    par(xpd=save.xpd)
   }
   # }}}
 }

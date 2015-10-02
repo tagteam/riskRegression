@@ -66,7 +66,7 @@ dat <- dat[order(dat$time,-dat$status),]
 # using the marginal Kaplan-Meier for the censoring times
 
 WKM=subjectWeights(Hist(time,status)~X2,data=dat,method="marginal")
-graphics::plot(WKM$fit)
+plot(WKM$fit)
 WKM$fit
 WKM$weights
 
@@ -74,12 +74,12 @@ WKM$weights
 
 WCox=subjectWeights(Surv(time,status)~X2,data=dat,method="cox")
 WCox
-graphics::plot(WCox$weights,WKM$weights)
+plot(WCox$weights,WKM$weights)
 
 # using the stratified Kaplan-Meier for the censoring times given X2
 
 WKM2 <- subjectWeights(Surv(time,status)~X2,data=dat,method="nonpar")
-graphics::plot(WKM2$fit,add=FALSE)
+plot(WKM2$fit,add=FALSE)
 }
 \author{
 Thomas A. Gerds \email{tag@biostat.ku.dk}

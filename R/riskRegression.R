@@ -59,21 +59,22 @@
 ##' # Single binary factor
 ##' 
 ##' ## absolute risk regression
+##' library(survival)
 ##' library(prodlim)
 ##' fit.arr <- ARR(Hist(time,status)~sex,data=Melanoma,cause=1)
 ##' print(fit.arr)
 ##' # show predicted cumulative incidences
-##' graphics::plot(fit.arr,col=3:4,newdata=data.frame(sex=c("Female","Male")))
+##' plot(fit.arr,col=3:4,newdata=data.frame(sex=c("Female","Male")))
 ##' 
 ##' ## compare with non-parametric Aalen-Johansen estimate
 ##' library(prodlim)
 ##' fit.aj <- prodlim(Hist(time,status)~sex,data=Melanoma)
-##' graphics::plot(fit.aj,confint=FALSE)
-##' graphics::plot(fit.arr,add=TRUE,col=3:4,newdata=data.frame(sex=c("Female","Male")))
+##' plot(fit.aj,confint=FALSE)
+##' plot(fit.arr,add=TRUE,col=3:4,newdata=data.frame(sex=c("Female","Male")))
 ##' 
 ##' ## with time-dependent effect
 ##' fit.tarr <- ARR(Hist(time,status)~strata(sex),data=Melanoma,cause=1)
-##' graphics::plot(fit.tarr,newdata=data.frame(sex=c("Female","Male")))
+##' plot(fit.tarr,newdata=data.frame(sex=c("Female","Male")))
 ##' 
 ##' ## logistic risk regression
 ##' fit.lrr <- LRR(Hist(time,status)~sex,data=Melanoma,cause=1)
@@ -89,13 +90,13 @@
 ##' fit2.arr <- ARR(Hist(time,status)~logthick,data=Melanoma,cause=1)
 ##' print(fit2.arr)
 ##' # show predicted cumulative incidences
-##' graphics::plot(fit2.arr,col=1:5,newdata=data.frame(logthick=quantile(Melanoma$logthick)))
+##' plot(fit2.arr,col=1:5,newdata=data.frame(logthick=quantile(Melanoma$logthick)))
 ##' 
 ##' ## comparison with nearest neighbor non-parametric Aalen-Johansen estimate
 ##' library(prodlim)
 ##' fit2.aj <- prodlim(Hist(time,status)~logthick,data=Melanoma)
-##' graphics::plot(fit2.aj,confint=FALSE,newdata=data.frame(logthick=quantile(Melanoma$logthick)))
-##' graphics::plot(fit2.arr,add=TRUE,col=1:5,lty=3,newdata=data.frame(logthick=quantile(Melanoma$logthick)))
+##' plot(fit2.aj,confint=FALSE,newdata=data.frame(logthick=quantile(Melanoma$logthick)))
+##' plot(fit2.arr,add=TRUE,col=1:5,lty=3,newdata=data.frame(logthick=quantile(Melanoma$logthick)))
 ##' 
 ##' ## logistic risk regression
 ##' fit2.lrr <- LRR(Hist(time,status)~logthick,data=Melanoma,cause=1)
@@ -113,7 +114,7 @@
 ##' ##  compare prediction errors
 ##' \dontrun{
 ##'     library(pec)
-##'     graphics::plot(pec(list(ARR=fit2.arr,AJ=fit2.aj,LRR=fit2.lrr),data=Melanoma,maxtime=3000))
+##'     plot(pec(list(ARR=fit2.arr,AJ=fit2.aj,LRR=fit2.lrr),data=Melanoma,maxtime=3000))
 ##' }
 ##' 
 ##' 
@@ -148,7 +149,7 @@
 ##' ## nearest neighbor non-parametric Aalen-Johansen estimate
 ##' library(prodlim)
 ##' fit.aj <- prodlim(Hist(time,status)~thick,data=Melanoma)
-##' graphics::plot(fit.aj,confint=FALSE)
+##' plot(fit.aj,confint=FALSE)
 ##' 
 ##' \dontrun{
 ##'     # prediction error
