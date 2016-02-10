@@ -119,6 +119,11 @@ predict.riskRegression <- function(object,
     else
         timeConstLP <- 0
     LP <- timeConstLP+timeVarLP
+    ## tag
+    ## added 23 Jan 2016 (16:33)
+    ## to fix bug in predictEventProb.riskRegression
+    if (length(fittime)==1)
+        LP <- t(LP)
     # }}}
     # {{{ compute P1
     P1 <- switch(object$link,"relative"={
@@ -133,70 +138,70 @@ predict.riskRegression <- function(object,
     # }}}
     # {{{ standard errors and confidence bands
 
-  ##   se.P1  <-  NULL
-  ## i.i.d decomposition for computation of standard errors 
-  ##   if (se==1) {
-  ##     pg <- length(object$gamma); 
-  ##     delta <- c();
-  ##     for (i in 1:n) {
-  ##       tmp <-  as.matrix(X) %*% t(object$B.iid[[i]]) 
-  ##       if (semi==TRUE) {
-  ##         gammai  <-  matrix(object$gamma.iid[i,],pg,1); 
-  ##         tmp.const  <-  Z %*% gammai;
-  ##       }
-  ##       if (i==0) {
-  ##         print(tmp.const);
-  ##         if (Link=="additive" || Link == 'aalen'){ 
-  ##           print(tmp.const %*% matrix(time,1,nt))
-  ##         } else if (Link=="prop"){
-  ##           print(tmp.const %*% matrix(1,1,nt));
-  ##         } else if (Link=="cox.aalen") {
-  ##           tmp  <-  RR * tmp + RR * cumhaz * matrix(tmp.const,nobs,nt);
-  ##         }
-  ##       }
-  ##       if (semi==TRUE){
-  ##         if(link=="additive" || link == "aalen") {
-  ##           # || Link=="1-additive") {
-  ##           tmp <- tmp+tmp.const %*% matrix(time,1,nt)
-  ##         } else if (Link=="prop" || Link=="1-additive") {
-  ##           tmp <- RR*tmp+RR*matrix(tmp.const,nobs,nt);
-  ## 	  ## modification of jeremy's code RR
-  ##         } else if (Link=="cox.aalen") {
-  ##           tmp  <-  RR * tmp + RR * cumhaz * matrix(tmp.const,nobs,nt);
-  ##         }
-  ##       }
-  ##       delta <- cbind(delta,c(tmp)); 
-  ##     }
-  ##     se <- apply(delta^2,1,sum)^.5
-  ##     if(Link == 'additive' || Link == 'prop'){
-  ##       se.P1 <- matrix(se,nobs,nt)*(1-P1) 
-  ##     } 
-  ##     else if(Link == '1-additive'){
-  ##       se.P1 <- matrix(se,nobs,nt)*(P1) 
-  ##     } 
-  ##     else if (Link == 'logistic'){
-  ##       se.P1 <- matrix(se,nobs,nt)*P1/(1+RR)
-  ##     } 
-  ##     else if (Link == 'aalen' || Link == 'cox.aalen'){
-  ##       se.S0 <- matrix(se,nobs,nt)*S0
-  ##     }
-  ##     ### uniform confidence bands, based on resampling 
-  ##     if (uniform==1) {
-  ##       mpt  <-  .C('confBandBasePredict',
-  ##                   delta = as.double(delta),
-  ##                   nObs = as.integer(nobs),
-  ##                   nt = as.integer(nt),
-  ##                   n = as.integer(n),
-  ##                   se = as.double(se),
-  ##                   mpt = double(n.sim*nobs),
-  ##                   nSims = as.integer(n.sim),
-  ##                   PACKAGE="riskRegression")$mpt;
-  ##       mpt  <-  matrix(mpt,n.sim,nobs,byrow = TRUE);
-  ##       uband  <-  apply(mpt,2,percen,per=1-alpha);
-  ##     } else uband <- NULL; 
-  ##   } else {
-  ##     uband <- NULL;
-  ##   }
+    ##   se.P1  <-  NULL
+    ## i.i.d decomposition for computation of standard errors 
+    ##   if (se==1) {
+    ##     pg <- length(object$gamma); 
+    ##     delta <- c();
+    ##     for (i in 1:n) {
+    ##       tmp <-  as.matrix(X) %*% t(object$B.iid[[i]]) 
+    ##       if (semi==TRUE) {
+    ##         gammai  <-  matrix(object$gamma.iid[i,],pg,1); 
+    ##         tmp.const  <-  Z %*% gammai;
+    ##       }
+    ##       if (i==0) {
+    ##         print(tmp.const);
+    ##         if (Link=="additive" || Link == 'aalen'){ 
+    ##           print(tmp.const %*% matrix(time,1,nt))
+    ##         } else if (Link=="prop"){
+    ##           print(tmp.const %*% matrix(1,1,nt));
+    ##         } else if (Link=="cox.aalen") {
+    ##           tmp  <-  RR * tmp + RR * cumhaz * matrix(tmp.const,nobs,nt);
+    ##         }
+    ##       }
+    ##       if (semi==TRUE){
+    ##         if(link=="additive" || link == "aalen") {
+    ##           # || Link=="1-additive") {
+    ##           tmp <- tmp+tmp.const %*% matrix(time,1,nt)
+    ##         } else if (Link=="prop" || Link=="1-additive") {
+    ##           tmp <- RR*tmp+RR*matrix(tmp.const,nobs,nt);
+    ## 	  ## modification of jeremy's code RR
+    ##         } else if (Link=="cox.aalen") {
+    ##           tmp  <-  RR * tmp + RR * cumhaz * matrix(tmp.const,nobs,nt);
+    ##         }
+    ##       }
+    ##       delta <- cbind(delta,c(tmp)); 
+    ##     }
+    ##     se <- apply(delta^2,1,sum)^.5
+    ##     if(Link == 'additive' || Link == 'prop'){
+    ##       se.P1 <- matrix(se,nobs,nt)*(1-P1) 
+    ##     } 
+    ##     else if(Link == '1-additive'){
+    ##       se.P1 <- matrix(se,nobs,nt)*(P1) 
+    ##     } 
+    ##     else if (Link == 'logistic'){
+    ##       se.P1 <- matrix(se,nobs,nt)*P1/(1+RR)
+    ##     } 
+    ##     else if (Link == 'aalen' || Link == 'cox.aalen'){
+    ##       se.S0 <- matrix(se,nobs,nt)*S0
+    ##     }
+    ##     ### uniform confidence bands, based on resampling 
+    ##     if (uniform==1) {
+    ##       mpt  <-  .C('confBandBasePredict',
+    ##                   delta = as.double(delta),
+    ##                   nObs = as.integer(nobs),
+    ##                   nt = as.integer(nt),
+    ##                   n = as.integer(n),
+    ##                   se = as.double(se),
+    ##                   mpt = double(n.sim*nobs),
+    ##                   nSims = as.integer(n.sim),
+    ##                   PACKAGE="riskRegression")$mpt;
+    ##       mpt  <-  matrix(mpt,n.sim,nobs,byrow = TRUE);
+    ##       uband  <-  apply(mpt,2,percen,per=1-alpha);
+    ##     } else uband <- NULL; 
+    ##   } else {
+    ##     uband <- NULL;
+    ##   }
 
   # }}}
   # {{{ output
