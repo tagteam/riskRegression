@@ -1,14 +1,16 @@
+// [[Rcpp::depends(RcppArmadillo)]]
+#include <RcppArmadillo.h>
 #include <iostream> 
 #include <Rmath.h> 
 
-using namespace Rcpp ;
-using namespace std ;
-using namespace arma ;
+using namespace Rcpp;
+// using namespace std;
+// using namespace arma;
 
-const double CST_EPSILON = std::numeric_limits < double>::epsilon();
-NumericVector caclEventtimes_cpp(const IntegerVector& status, const NumericVector& alltimes, int n_patients, int cause);
-NumericVector sortNV_hpp(NumericVector x) ;
-
+// const double CST_EPSILON = std::numeric_limits < double>::epsilon();
+// NumericVector caclEventtimes_cpp(const IntegerVector& status, const NumericVector& alltimes, int n_patients, int cause);
+// NumericVector sortNV_hpp(NumericVector x) ;
+//' @export
 // [[Rcpp::export]]
 List BaselineHazardFast_cpp(const IntegerVector& status, const NumericVector& pattimes, const NumericVector& Xb, int n_patients,
                             const NumericVector& eventtimes, int cause){

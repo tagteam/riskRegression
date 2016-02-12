@@ -25,9 +25,6 @@ Z <- d[,c("X1","X2","X3","X4")]
 # Comparing function: 
 #
 
-source("P:/Thomas/EfronCoxph/predictSurvProb2_strata.R")
-source("P:/Thomas/EfronCoxph/predictEventProb2.R")
-
 f <- coxph(Surv(time,status)~X1+strata(X4),data=d, ties="breslow")
 
 #
