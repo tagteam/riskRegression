@@ -1,5 +1,3 @@
-// [[Rcpp::depends(RcppArmadillo)]]
-#include <RcppArmadillo.h> 
 #include <iostream> 
 #include <Rmath.h> 
 

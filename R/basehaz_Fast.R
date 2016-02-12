@@ -29,11 +29,11 @@
 #' res1 <- basehaz_Fast(fit, d$status, d$time, method = "dt")
 #' res2 <- basehaz_Fast(fit, d$status, d$time, method = "cpp")
 #' test_that("basehaz_Fast",{
-#'   expect_equal(res0, res1)    
+#'   expect_equal(res0, as.data.frame(res1))    
 #' })
 #' 
 #' test_that("basehaz_Fast",{
-#'   expect_equal(res0, res2)    
+#'   expect_equal(res0, as.data.frame(res2))    
 #' })
 #' 
 #' #### check timing
