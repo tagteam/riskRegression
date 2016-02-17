@@ -64,38 +64,91 @@ h_theta_breslow_strata <- function(object,time, status, Z,cause){
 # Own PredictSurvProb
 #
 
-predictSurvProb.coxph<- function (object, times, newdata, time, status, Z, cause) {
-  NewBasehaz <- h_theta_breslow_strata(object, time,status, Z,cause)
-  p <- matrix(NA, nrow=nrow(newdata), ncol=length(times))
-  strataspecials = attr(object$terms,"specials")$strata
+# predictSurvProb.coxph<- function (object, times, newdata, time, status, Z, cause) {
+#   NewBasehaz <- h_theta_breslow_strata(object, time,status, Z,cause)
+#   p <- matrix(NA, nrow=nrow(newdata), ncol=length(times))
+#   strataspecials = attr(object$terms,"specials")$strata
+#   
+#   if (is.null(strataspecials)){
+#     time.index = sort(sindex(jump.times=NewBasehaz$time,eval.times=times))
+#     for (i in 1:nrow(newdata)) {
+#       for (j in 1:length(times)) { 
+#         t <-  sort(times)[j]
+#         p[i,j] <- exp(-c(0,NewBasehaz[,1])[1+time.index[j]])^exp(sum(newdata[i,names(Z)]*object$coef))
+#       }
+#     }
+#     return(p)
+#   }
+#   else{
+#     stratalabels = attr(object$terms,"term.labels")[strataspecials-1]
+#     Terms <- attr(object$terms, "term.labels")
+#     BaseVar <- Terms[ Terms != stratalabels ]
+#     
+#     for (i in 1:nrow(newdata)) {
+#       Base <- NewBasehaz[NewBasehaz$strata==eval(parse(text = stratalabels), newdata)[i],]
+#       newdata$strata <- eval(parse(text = stratalabels), newdata)
+#       time.index = sort(sindex(jump.times=Base$time,eval.times=times))
+#       
+#       for (j in 1:length(times)) { 
+#         t <-  sort(times)[j]   
+#         Si <- (newdata$strata == eval(parse(text = stratalabels), newdata)[i])
+#         p[i,j] <- exp(-c(0,Base[,1])[1+time.index[j]])^exp(sum(newdata[i,BaseVar]*object$coef))
+#       }
+#     }
+#     
+#     return(p)
+#   }
+# }
+
+predictSurvProb.coxph <- function (object, times, newdata, cause = 1, method.baseHaz = "dt") {
   
-  if (is.null(strataspecials)){
-    time.index = sort(sindex(jump.times=NewBasehaz$time,eval.times=times))
-    for (i in 1:nrow(newdata)) {
-      for (j in 1:length(times)) { 
-        t <-  sort(times)[j]
-        p[i,j] <- exp(-c(0,NewBasehaz[,1])[1+time.index[j]])^exp(sum(newdata[i,names(Z)]*object$coef))
-      }
-    }
-    return(p)
-  }
-  else{
-    stratalabels = attr(object$terms,"term.labels")[strataspecials-1]
-    Terms <- attr(object$terms, "term.labels")
-    BaseVar <- Terms[ Terms != stratalabels ]
+  times <- sort(times)
+  Lambda0 <- baseHaz(object, cause = cause, method = method.baseHaz, center = FALSE, lasttime = times[length(times)])
+  Xb <- predict(object, newdata, type = "lp") # seems to crash if only strata variables
+  
+  strataspecials <- attr(object$terms,"specials")$strata 
+  
+  if(is.null(strataspecials)){
+    time.index <- prodlim::sindex(jump.times = c(-1, Lambda0$time), eval.times = times) # -1 if times before first event
+    resSurv <- exp(exp(Xb) %o% c(0,-Lambda0$cumHazard)[time.index]) 
+    resSurv <- data.table( resSurv )
+    setnames(resSurv, paste0("t",times))
     
-    for (i in 1:nrow(newdata)) {
-      Base <- NewBasehaz[NewBasehaz$strata==eval(parse(text = stratalabels), newdata)[i],]
-      newdata$strata <- eval(parse(text = stratalabels), newdata)
-      time.index = sort(sindex(jump.times=Base$time,eval.times=times))
+  }else{
+    
+    if("XXstrata" %in% names(newdata)){
+      stop("predictSurvProb2.coxph: \'newdata\' must not contains a column named \"XXstrata\" \n")
+    }
       
-      for (j in 1:length(times)) { 
-        t <-  sort(times)[j]   
-        Si <- (newdata$strata == eval(parse(text = stratalabels), newdata)[i])
-        p[i,j] <- exp(-c(0,Base[,1])[1+time.index[j]])^exp(sum(newdata[i,BaseVar]*object$coef))
-      }
-    }
+    require(data.table)
+    newdata <- as.data.table(newdata)
     
-    return(p)
+    # define the strata
+    stratalabels <- attr(object$terms,"term.labels")[strataspecials - 1]
+    names.newdata<- names(newdata)
+    strataVar <- names.newdata[which(paste0("strata(", names.newdata,")") %in% stratalabels)]
+    nStrata <- length(strataVar)
+    sapply(1:nStrata, function(x){
+      newdata[, strataVar[x] := paste0(strataVar[x],"=",.SD[[1]]),.SDcols = strataVar[x], with = FALSE]
+    })
+    newdata[, XXstrata := interaction(.SD, drop = TRUE, sep = ", ") ,.SDcols = strataVar]
+    
+     # compute the survival
+    resSurv <- NULL
+    levelsStrata <- levels(newdata$XXstrata)
+    for(iterS in levelsStrata){
+      indexTempo <- Lambda0[,.I[strata == iterS]]
+      time.index <- prodlim::sindex(jump.times=c(-1,Lambda0[indexTempo,time]),eval.times=times)  
+      
+      resSurv_tempo <- exp(exp(Xb[newdata[, I(XXstrata == iterS)]]) %o% c(0,-Lambda0$cumHazard[indexTempo])[time.index] )
+      resSurv <-  rbindlist(list(resSurv, 
+                                 data.table(resSurv_tempo, iterS)),
+                            use.names = TRUE, fill = TRUE)
+    }
+    setnames(resSurv, c(paste0("t",times),"strata"))
+    
   }
+  
+  # export
+  return(resSurv)
 }
