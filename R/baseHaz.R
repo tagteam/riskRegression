@@ -1,23 +1,28 @@
+baseHaz <- function (x, ...) {
+  UseMethod("baseHaz", x)
+}
+
 #' @title Compute the baseline hazard
 #
-#' @param coxph the fitted coxph model
-#' @param event the type of event corresponding to each observation [possible improvement: may be directly extracted from coxph ??]
-#' @param time the time at which the event occured for each observation [possible improvement: may be directly extracted from coxph ??]
-#' @param cause the event of interest
-#' @param method the implementation to be used: "dt" or "cpp"
+#' @param object The fitted coxph model
+#' @param cause The event of interest
+#' @param method The implementation to be used: "dt" or "cpp"
+#' @param centered If TRUE remove the centering factor used by coxph in the linear predictor
+#' @param lasttime Baseline hazard will be computed for each event before lasttime
 #' 
 #' @details 
 #' Not suited for time varying cox models
 #' 
-#' @return a data table containing the time, the strata (if any), the hazard and the cumulative hazard
+#' When considering strata, return the result in a different order compared to basehaz
+#' interaction not optimal in term of computation time
+#' 
+#' @return a data table containing the time, the strata (if any), the hazard and the cumulative hazard.
 #' 
 #' @examples 
 #' 
 #' library(data.table)
-#' library(rbenchmark)
+#' library(survival)
 #' library(prodlim)
-#' library(rms)
-#' library(testthat)
 #' 
 #' set.seed(10)
 #' d <- SimSurv(1e3)
@@ -25,23 +30,24 @@
 #' fit <- coxph(Surv(time,status)~X1 * X2,data=d, ties="breslow")
 #' # table(duplicated(d$time))
 #'
-#' res1 <- baseHaz(fit, d$status, d$time, method = "dt")
-#' res2 <- baseHaz(fit, d$status, d$time, method = "cpp")
+#' res1 <- baseHaz(fit, method = "dt", centered = FALSE)
+#' res2 <- baseHaz(fit, method = "cpp", centered = FALSE)
 #' 
-#' res3 <- baseHaz(fit, d$status, d$time, method = "dt", lasttime = 5)
-#' res4 <- baseHaz(fit, d$status, d$time, method = "cpp", lasttime = 5)
+#' res3 <- baseHaz(fit, method = "dt", centered = FALSE, lasttime = 5)
+#' res4 <- baseHaz(fit, method = "cpp", centered = FALSE, lasttime = 5)
 #' 
 #' # strata
 #' fitS <- coxph(Surv(time,status)~strata(X1)+X2,data=d, ties="breslow")
 #' 
-#' res1S <- baseHaz(fitS, d$status, d$time, method = "dt")
-#' res2S <- baseHaz(fitS, d$status, d$time, method = "cpp")
+#' res1S <- baseHaz(fitS, method = "dt", centered = FALSE)
+#' res2S <- baseHaz(fitS, method = "cpp", centered = FALSE)
 #' 
-#' res3S <- baseHaz(fitS, d$status, d$time, method = "dt", lasttime = 5)
-#' res4S <- baseHaz(fitS, d$status, d$time, method = "cpp", lasttime = 5)
+#' res3S <- baseHaz(fitS, method = "dt", centered = FALSE, lasttime = 5)
+#' res4S <- baseHaz(fitS, method = "cpp", centered = FALSE, lasttime = 5)
 #' 
 #' @export
-baseHaz <- function(object, cause = 1, method, center = TRUE, lasttime = Inf){
+#' 
+baseHaz.coxph <- function(object, cause = 1, method, centered = TRUE, lasttime = Inf){
   
   # as in survival:::agsurv
   event <- object$y[, ncol(object$y)]
@@ -59,7 +65,7 @@ baseHaz <- function(object, cause = 1, method, center = TRUE, lasttime = Inf){
   
   ## linear predictor
   lp <- object$linear.predictors
-  if(center){
+  if(centered == FALSE){
     lp <- lp + sum(object$means*coef(object))
   }
   

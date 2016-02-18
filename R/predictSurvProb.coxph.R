@@ -2,63 +2,63 @@
 # Bazeline Hazard (Cum.)
 #
 
-h_theta_breslow_strata <- function(object,time, status, Z,cause){
-  
-  strataspecials = attr(object$terms,"specials")$strata
-  if (is.null(strataspecials)) {
-    eventtimes <- unique(sort(time[status!=0]))
-    h_theta_event <- numeric(length=length(unique(eventtimes)))
-    coef <- object$coef[sort(names(object$coef))]
-    
-    for (i in order(eventtimes)){
-      Ri <- (time>=eventtimes[i])
-      ExpCov <- matrix(NA, nrow=sum(Ri),ncol=1)
-      for (j in 1:sum(Ri)) { 
-        ExpCov[j] <- exp(coef%*%t(Z[Ri,])[,j])
-      }
-      h_theta_event[i] <- sum((time==eventtimes[i]) & (status==cause))/sum(ExpCov)  
-    }
-    
-    h_theta <- h_theta_event[match(unique(sort(time)),eventtimes)]
-    h_theta[is.na(h_theta)] <- 0
-    H_theta <- cumsum(h_theta)
-    new_basehaz <- data.frame(hazard = H_theta, time = sort(unique(time)))
-    return(new_basehaz)
-  } 
-  else {
-    new_basehaz <- NULL
-    stratalabels = attr(object$terms,"term.labels")[strataspecials-1]
-    strata <- object$xlevels[[stratalabels]] 
-    mod <- model.frame(object) 
-    Terms <- attr(object$terms, "term.labels")
-    BaseVar <- Terms[ Terms != stratalabels ]
-    
-    for (s in 1:length(strata)){
-      Si <- mod[stratalabels][,1]==levels(mod[stratalabels][,1])[s]
-      strataeventtimes <- unique(sort(time[status!=0 & Si]))
-      stratatime <- time[Si]
-      h_theta_event <- numeric(length=length(unique(strataeventtimes)))
-      for (i in order(strataeventtimes)){
-        Ri <- (stratatime>=strataeventtimes[i])
-        ExpCov <- matrix(NA, nrow=sum(Ri),ncol=1)
-        for (j in 1:sum(Ri)) { 
-          if(length(BaseVar)!=1){
-            ExpCov[j] <- exp(object$coef%*%t((Z[Si,BaseVar][Ri,][j,])))}
-          else {
-            ExpCov[j] <- exp(object$coef%*%t((Z[Si,BaseVar][Ri][j])))
-          }
-        }
-        h_theta_event[i] <- sum((stratatime==strataeventtimes[i]) & (status[Si]==cause))/sum(ExpCov)
-      }
-      h_theta <- h_theta_event[match(unique(sort(stratatime)),strataeventtimes)]
-      h_theta[is.na(h_theta)] <- 0
-      H_theta <- cumsum(h_theta)
-      new_basehaz <- rbind(new_basehaz, data.frame(hazard = H_theta,
-                                                   time = sort(unique(stratatime)), strata=levels(mod[stratalabels][,1])[s]))
-    }
-    return(new_basehaz)
-  }
-}
+# h_theta_breslow_strata <- function(object,time, status, Z,cause){
+#   
+#   strataspecials = attr(object$terms,"specials")$strata
+#   if (is.null(strataspecials)) {
+#     eventtimes <- unique(sort(time[status!=0]))
+#     h_theta_event <- numeric(length=length(unique(eventtimes)))
+#     coef <- object$coef[sort(names(object$coef))]
+#     
+#     for (i in order(eventtimes)){
+#       Ri <- (time>=eventtimes[i])
+#       ExpCov <- matrix(NA, nrow=sum(Ri),ncol=1)
+#       for (j in 1:sum(Ri)) { 
+#         ExpCov[j] <- exp(coef%*%t(Z[Ri,])[,j])
+#       }
+#       h_theta_event[i] <- sum((time==eventtimes[i]) & (status==cause))/sum(ExpCov)  
+#     }
+#     
+#     h_theta <- h_theta_event[match(unique(sort(time)),eventtimes)]
+#     h_theta[is.na(h_theta)] <- 0
+#     H_theta <- cumsum(h_theta)
+#     new_basehaz <- data.frame(hazard = H_theta, time = sort(unique(time)))
+#     return(new_basehaz)
+#   } 
+#   else {
+#     new_basehaz <- NULL
+#     stratalabels = attr(object$terms,"term.labels")[strataspecials-1]
+#     strata <- object$xlevels[[stratalabels]] 
+#     mod <- model.frame(object) 
+#     Terms <- attr(object$terms, "term.labels")
+#     BaseVar <- Terms[ Terms != stratalabels ]
+#     
+#     for (s in 1:length(strata)){
+#       Si <- mod[stratalabels][,1]==levels(mod[stratalabels][,1])[s]
+#       strataeventtimes <- unique(sort(time[status!=0 & Si]))
+#       stratatime <- time[Si]
+#       h_theta_event <- numeric(length=length(unique(strataeventtimes)))
+#       for (i in order(strataeventtimes)){
+#         Ri <- (stratatime>=strataeventtimes[i])
+#         ExpCov <- matrix(NA, nrow=sum(Ri),ncol=1)
+#         for (j in 1:sum(Ri)) { 
+#           if(length(BaseVar)!=1){
+#             ExpCov[j] <- exp(object$coef%*%t((Z[Si,BaseVar][Ri,][j,])))}
+#           else {
+#             ExpCov[j] <- exp(object$coef%*%t((Z[Si,BaseVar][Ri][j])))
+#           }
+#         }
+#         h_theta_event[i] <- sum((stratatime==strataeventtimes[i]) & (status[Si]==cause))/sum(ExpCov)
+#       }
+#       h_theta <- h_theta_event[match(unique(sort(stratatime)),strataeventtimes)]
+#       h_theta[is.na(h_theta)] <- 0
+#       H_theta <- cumsum(h_theta)
+#       new_basehaz <- rbind(new_basehaz, data.frame(hazard = H_theta,
+#                                                    time = sort(unique(stratatime)), strata=levels(mod[stratalabels][,1])[s]))
+#     }
+#     return(new_basehaz)
+#   }
+# }
 
 #
 # Own PredictSurvProb
@@ -100,17 +100,72 @@ h_theta_breslow_strata <- function(object,time, status, Z,cause){
 #   }
 # }
 
-predictSurvProb.coxph <- function (object, times, newdata, cause = 1, method.baseHaz = "dt") {
+#' @title Compute the baseline hazard
+#
+#' @param object The fitted coxph model
+#' @param newdata A data frame containing the values of the variables in the right hand side of 'coxph' for each patient.
+#' @param times Vector of times at which to return the estimated probabilities
+#' @param cause The event of interest
+#' @param method.baseHaz The implementation to be used for computing the baseline hazard: "dt" or "cpp"
+#' @param NAafterLast The implementation to be used for computing the baseline hazard: "dt" or "cpp"
+#' 
+#' @details 
+#' Not suited for time varying cox models
+#' 
+#' We need to decide what to do after the last event
+#' Strange behavior of predict when strata
+#' What to return if stratified Cox model with no covariate
+#' Can use copy to have direct display of the result
+#' 
+#' @return a data table containing the predictions for each patient (in rows) and each time (in columns) and the strata (if any).
+#' 
+#' @examples 
+#' 
+#' library(data.table)
+#' library(survival)
+#' library(prodlim)
+#' library(pec)    # needed to define the  predictSurvProb method
+#' 
+#' set.seed(10)
+#' d <- SimSurv(1e3)
+#' d$time <- round(d$time,1)
+#' fit <- coxph(Surv(time,status)~X1 * X2,data=d, ties="breslow")
+#' # table(duplicated(d$time))
+#'
+#' res1 <- predictSurvProb(fit, newdata = d, times = 10)
+#' res2 <- predictSurvProb(fit, newdata = d, times = d$time)
+#' 
+#' # strata
+#' fitS <- coxph(Surv(time,status)~strata(X1)+X2,data=d, ties="breslow")
+#' 
+#' res1S <- predictSurvProb(fitS, newdata = d, times = 10)
+#' res2S <- predictSurvProb(fitS, newdata = d, times = d$time)
+#' 
+#' @export
+#' 
+predictSurvProb.coxph <- function (object, newdata, times, cause = 1, 
+                                   method.baseHaz = "dt", NAafterLast = TRUE) {
   
   times <- sort(times)
-  Lambda0 <- baseHaz(object, cause = cause, method = method.baseHaz, center = FALSE, lasttime = times[length(times)])
-  Xb <- predict(object, newdata, type = "lp") # seems to crash if only strata variables
-  
+  Lambda0 <- baseHaz(object, cause = cause, method = method.baseHaz, centered = TRUE, lasttime = Inf) #  times[length(times)] ok if no strata but if strata we would need the last event
   strataspecials <- attr(object$terms,"specials")$strata 
-  
+
   if(is.null(strataspecials)){
-    time.index <- prodlim::sindex(jump.times = c(-1, Lambda0$time), eval.times = times) # -1 if times before first event
-    resSurv <- exp(exp(Xb) %o% c(0,-Lambda0$cumHazard)[time.index]) 
+    Xb <- predict(object, newdata, type = "lp")
+    
+    ## set hazard before and after events 
+    Lambda0 <- rbindlist( list(data.table(time = -1, hazard = 0, cumHazard = 0),
+                               Lambda0)
+                         )
+    if(NAafterLast == TRUE){
+      Lambda0 <- rbindlist( list(Lambda0,
+                                 data.table(time = (1 + 1e-12)*Lambda0[.N,time], hazard = NA, cumHazard = NA))
+      )
+    }
+    
+    ## compute survival
+    time.index <- prodlim::sindex(jump.times = Lambda0$time, eval.times = times)
+    resSurv <- exp(exp(Xb) %o% -Lambda0$cumHazard[time.index]) 
     resSurv <- data.table( resSurv )
     setnames(resSurv, paste0("t",times))
     
@@ -123,7 +178,18 @@ predictSurvProb.coxph <- function (object, times, newdata, cause = 1, method.bas
     require(data.table)
     newdata <- as.data.table(newdata)
     
-    # define the strata
+    ## linear predictor
+    stratalabels = attr(object$terms,"term.labels")[strataspecials-1]
+    Terms <- attr(object$terms, "term.labels")
+    BaseVar <- Terms[ Terms %in% stratalabels == FALSE]
+    if(length(BaseVar)>0){ # predict crashes if no additional variable
+      Xb <-  rowSums(predict(object, newdata, type = "terms")) 
+      # predict(object, newdata, type = "lp") has an output that I do not understand and do not match "terms" in presence of strata
+    }else{
+      Xb <- rep(0, nrow(newdata))
+    }
+    
+    ## define the strata
     stratalabels <- attr(object$terms,"term.labels")[strataspecials - 1]
     names.newdata<- names(newdata)
     strataVar <- names.newdata[which(paste0("strata(", names.newdata,")") %in% stratalabels)]
@@ -133,18 +199,31 @@ predictSurvProb.coxph <- function (object, times, newdata, cause = 1, method.bas
     })
     newdata[, XXstrata := interaction(.SD, drop = TRUE, sep = ", ") ,.SDcols = strataVar]
     
-     # compute the survival
+    ## set hazard before and after events
+    Lambda0 <- Lambda0[, rbindlist(list(data.table(time = -1, hazard = 0, cumHazard = 0),
+                                        .SD)), 
+                       by = strata]
+    if(NAafterLast == TRUE){
+      Lambda0 <- Lambda0[, rbindlist(list(.SD,
+                                          data.table(time = (1 + 1e-12)*.SD[.N,time], hazard = NA, cumHazard = NA))), 
+                         by = strata]
+    }
+    
+    ## compute survival
     resSurv <- NULL
     levelsStrata <- levels(newdata$XXstrata)
     for(iterS in levelsStrata){
-      indexTempo <- Lambda0[,.I[strata == iterS]]
-      time.index <- prodlim::sindex(jump.times=c(-1,Lambda0[indexTempo,time]),eval.times=times)  
+      indexHaz <- Lambda0[,.I[strata == iterS]]
+      indexNew <- newdata[,.I[XXstrata == iterS]]
+      time.index <- prodlim::sindex(jump.times=Lambda0[indexHaz,time],eval.times=times)  
+      resSurv_tempo <- exp(exp(Xb[indexNew]) %o% -Lambda0[indexHaz[time.index],cumHazard] )
       
-      resSurv_tempo <- exp(exp(Xb[newdata[, I(XXstrata == iterS)]]) %o% c(0,-Lambda0$cumHazard[indexTempo])[time.index] )
       resSurv <-  rbindlist(list(resSurv, 
-                                 data.table(resSurv_tempo, iterS)),
-                            use.names = TRUE, fill = TRUE)
+                                 data.table(resSurv_tempo, strata = iterS, index = indexNew))
+                            )
     }
+    setkey(resSurv,index)
+    resSurv[,index := NULL]
     setnames(resSurv, c(paste0("t",times),"strata"))
     
   }
