@@ -1,6 +1,6 @@
 // [[Rcpp::depends(RcppArmadillo)]]
 #include <RcppArmadillo.h>
-#include <sortS.h>
+#include "sortS.h"
 
 using namespace Rcpp;
 using namespace std;
