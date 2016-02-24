@@ -1,3 +1,131 @@
+#' @title Compute the baseline hazard
+#
+#' @param object The fitted coxph model
+#' @param newdata A data frame containing the values of the variables in the right hand side of 'coxph' for each patient.
+#' @param times Vector of times at which to return the estimated probabilities
+#' @param cause The event of interest
+#' @param tYpe should the survival or the cumulative hazard be returned
+#' @param method.baseHaz The implementation to be used for computing the baseline hazard: "dt" or "cpp"
+#' 
+#' @details 
+#' Not suited for time varying cox models
+#' 
+#' We need to decide what to do after the last event
+#' Strange behavior of predict when strata
+#' What to return if stratified Cox model with no covariate
+#' Can use copy to have direct display of the result
+#' 
+#' @return a data table containing the predictions for each patient (in rows) and each time (in columns) and the strata (if any).
+#' 
+#' @examples 
+#' 
+#' library(data.table)
+#' library(survival)
+#' library(prodlim)
+#' library(pec)    # needed to define the  predictSurvProb method
+#' 
+#' set.seed(10)
+#' d <- SimSurv(1e3)
+#' d$time <- round(d$time,1)
+#' fit <- coxph(Surv(time,status)~X1 * X2,data=d, ties="breslow")
+#' # table(duplicated(d$time))
+#'
+#' res1 <- predictSurvProb(fit, newdata = d, times = 10)
+#' res2 <- predictSurvProb(fit, newdata = d, times = d$time)
+#' 
+#' # strata
+#' fitS <- coxph(Surv(time,status)~strata(X1)+X2,data=d, ties="breslow")
+#' 
+#' res1S <- predictSurvProb(fitS, newdata = d, times = 10)
+#' res2S <- predictSurvProb(fitS, newdata = d, times = d$time)
+#' 
+#' @export
+#' 
+predictSurvProb.coxph <- function (object, newdata, times, cause = 1, type = "survival",
+                                   method.baseHaz = "dt") {
+  
+  match.arg(type, choices = c("hazard", "cumHazard","survival"), several.ok = FALSE)
+  
+  times <- sort(times)
+  Lambda0 <- baseHaz(object, cause = cause, method = method.baseHaz, centered = TRUE, lasttime =  times[length(times)],
+                     addFirst = TRUE, addLast = TRUE) 
+  
+  strataspecials <- attr(object$terms,"specials")$strata 
+
+  if(is.null(strataspecials)){
+    Xb <- predict(object, newdata, type = "lp")
+    
+    ## compute survival
+    time.index <- prodlim::sindex(jump.times = Lambda0$time, eval.times = times)
+    
+    resPred <- switch(type,
+                      "hazard" = data.table( exp(Xb) %o% Lambda0$hazard[time.index] ),
+                      "cumHazard" = data.table( exp(Xb) %o% Lambda0$cumHazard[time.index] ),
+                      "survival" = data.table( exp(- exp(Xb) %o% Lambda0$cumHazard[time.index]) )
+                      
+    )
+    
+    setnames(resPred, paste0("t",times))
+    
+  }else{
+    
+    if("XXstrata" %in% names(newdata)){
+      stop("predictSurvProb2.coxph: \'newdata\' must not contains a column named \"XXstrata\" \n")
+    }
+      
+    require(data.table)
+    newdata <- as.data.table(newdata)
+    
+    ## linear predictor
+    stratalabels = attr(object$terms,"term.labels")[strataspecials-1]
+    Terms <- attr(object$terms, "term.labels")
+    BaseVar <- Terms[ Terms %in% stratalabels == FALSE]
+    if(length(BaseVar)>0){ # predict crashes if no additional variable
+      Xb <-  rowSums(predict(object, newdata, type = "terms")) 
+      # predict(object, newdata, type = "lp") has an output that I do not understand and that does not match "terms" in presence of strata
+    }else{
+      Xb <- rep(0, nrow(newdata))
+    }
+    
+    ## define the strata
+    stratalabels <- attr(object$terms,"term.labels")[strataspecials - 1]
+    names.newdata<- names(newdata)
+    strataVar <- names.newdata[which(paste0("strata(", names.newdata,")") %in% stratalabels)]
+    nStrata <- length(strataVar)
+    sapply(1:nStrata, function(x){
+      newdata[, strataVar[x] := paste0(strataVar[x],"=",.SD[[1]]),.SDcols = strataVar[x], with = FALSE]
+    })
+    newdata[, XXstrata := interaction(.SD, drop = TRUE, sep = ", ") ,.SDcols = strataVar]
+    
+    ## compute survival
+    resPred <- NULL
+    levelsStrata <- levels(newdata$XXstrata)
+    for(iterS in levelsStrata){
+      indexHaz <- Lambda0[,.I[strata == iterS]]
+      indexNew <- newdata[,.I[XXstrata == iterS]]
+      time.index <- prodlim::sindex(jump.times=Lambda0[indexHaz,time],eval.times=times)  
+      resPred_tempo <- switch(type,
+                              "hazard" = exp(Xb[indexNew]) %o% Lambda0[indexHaz[time.index],hazard],
+                              "cumHazard" = exp(Xb[indexNew]) %o% Lambda0[indexHaz[time.index],cumHazard],
+                              "survival" = exp(- exp(Xb[indexNew]) %o% Lambda0[indexHaz[time.index],cumHazard] )
+      )
+      
+      resPred <-  rbindlist(list(resPred, 
+                                 data.table(resPred_tempo, strata = iterS, index = indexNew))
+                            )
+    }
+    setkey(resPred,index)
+    resPred[,index := NULL]
+    setnames(resPred, c(paste0("t",times),"strata"))
+    
+  }
+  
+  # export
+  return(resPred)
+}
+
+
+
 #
 # Bazeline Hazard (Cum.)
 #
@@ -99,135 +227,3 @@
 #     return(p)
 #   }
 # }
-
-#' @title Compute the baseline hazard
-#
-#' @param object The fitted coxph model
-#' @param newdata A data frame containing the values of the variables in the right hand side of 'coxph' for each patient.
-#' @param times Vector of times at which to return the estimated probabilities
-#' @param cause The event of interest
-#' @param method.baseHaz The implementation to be used for computing the baseline hazard: "dt" or "cpp"
-#' @param NAafterLast The implementation to be used for computing the baseline hazard: "dt" or "cpp"
-#' 
-#' @details 
-#' Not suited for time varying cox models
-#' 
-#' We need to decide what to do after the last event
-#' Strange behavior of predict when strata
-#' What to return if stratified Cox model with no covariate
-#' Can use copy to have direct display of the result
-#' 
-#' @return a data table containing the predictions for each patient (in rows) and each time (in columns) and the strata (if any).
-#' 
-#' @examples 
-#' 
-#' library(data.table)
-#' library(survival)
-#' library(prodlim)
-#' library(pec)    # needed to define the  predictSurvProb method
-#' 
-#' set.seed(10)
-#' d <- SimSurv(1e3)
-#' d$time <- round(d$time,1)
-#' fit <- coxph(Surv(time,status)~X1 * X2,data=d, ties="breslow")
-#' # table(duplicated(d$time))
-#'
-#' res1 <- predictSurvProb(fit, newdata = d, times = 10)
-#' res2 <- predictSurvProb(fit, newdata = d, times = d$time)
-#' 
-#' # strata
-#' fitS <- coxph(Surv(time,status)~strata(X1)+X2,data=d, ties="breslow")
-#' 
-#' res1S <- predictSurvProb(fitS, newdata = d, times = 10)
-#' res2S <- predictSurvProb(fitS, newdata = d, times = d$time)
-#' 
-#' @export
-#' 
-predictSurvProb.coxph <- function (object, newdata, times, cause = 1, 
-                                   method.baseHaz = "dt", NAafterLast = TRUE) {
-  
-  times <- sort(times)
-  Lambda0 <- baseHaz(object, cause = cause, method = method.baseHaz, centered = TRUE, lasttime = Inf) #  times[length(times)] ok if no strata but if strata we would need the last event
-  strataspecials <- attr(object$terms,"specials")$strata 
-
-  if(is.null(strataspecials)){
-    Xb <- predict(object, newdata, type = "lp")
-    
-    ## set hazard before and after events 
-    Lambda0 <- rbindlist( list(data.table(time = -1, hazard = 0, cumHazard = 0),
-                               Lambda0)
-                         )
-    if(NAafterLast == TRUE){
-      Lambda0 <- rbindlist( list(Lambda0,
-                                 data.table(time = (1 + 1e-12)*Lambda0[.N,time], hazard = NA, cumHazard = NA))
-      )
-    }
-    
-    ## compute survival
-    time.index <- prodlim::sindex(jump.times = Lambda0$time, eval.times = times)
-    resSurv <- exp(exp(Xb) %o% -Lambda0$cumHazard[time.index]) 
-    resSurv <- data.table( resSurv )
-    setnames(resSurv, paste0("t",times))
-    
-  }else{
-    
-    if("XXstrata" %in% names(newdata)){
-      stop("predictSurvProb2.coxph: \'newdata\' must not contains a column named \"XXstrata\" \n")
-    }
-      
-    require(data.table)
-    newdata <- as.data.table(newdata)
-    
-    ## linear predictor
-    stratalabels = attr(object$terms,"term.labels")[strataspecials-1]
-    Terms <- attr(object$terms, "term.labels")
-    BaseVar <- Terms[ Terms %in% stratalabels == FALSE]
-    if(length(BaseVar)>0){ # predict crashes if no additional variable
-      Xb <-  rowSums(predict(object, newdata, type = "terms")) 
-      # predict(object, newdata, type = "lp") has an output that I do not understand and do not match "terms" in presence of strata
-    }else{
-      Xb <- rep(0, nrow(newdata))
-    }
-    
-    ## define the strata
-    stratalabels <- attr(object$terms,"term.labels")[strataspecials - 1]
-    names.newdata<- names(newdata)
-    strataVar <- names.newdata[which(paste0("strata(", names.newdata,")") %in% stratalabels)]
-    nStrata <- length(strataVar)
-    sapply(1:nStrata, function(x){
-      newdata[, strataVar[x] := paste0(strataVar[x],"=",.SD[[1]]),.SDcols = strataVar[x], with = FALSE]
-    })
-    newdata[, XXstrata := interaction(.SD, drop = TRUE, sep = ", ") ,.SDcols = strataVar]
-    
-    ## set hazard before and after events
-    Lambda0 <- Lambda0[, rbindlist(list(data.table(time = -1, hazard = 0, cumHazard = 0),
-                                        .SD)), 
-                       by = strata]
-    if(NAafterLast == TRUE){
-      Lambda0 <- Lambda0[, rbindlist(list(.SD,
-                                          data.table(time = (1 + 1e-12)*.SD[.N,time], hazard = NA, cumHazard = NA))), 
-                         by = strata]
-    }
-    
-    ## compute survival
-    resSurv <- NULL
-    levelsStrata <- levels(newdata$XXstrata)
-    for(iterS in levelsStrata){
-      indexHaz <- Lambda0[,.I[strata == iterS]]
-      indexNew <- newdata[,.I[XXstrata == iterS]]
-      time.index <- prodlim::sindex(jump.times=Lambda0[indexHaz,time],eval.times=times)  
-      resSurv_tempo <- exp(exp(Xb[indexNew]) %o% -Lambda0[indexHaz[time.index],cumHazard] )
-      
-      resSurv <-  rbindlist(list(resSurv, 
-                                 data.table(resSurv_tempo, strata = iterS, index = indexNew))
-                            )
-    }
-    setkey(resSurv,index)
-    resSurv[,index := NULL]
-    setnames(resSurv, c(paste0("t",times),"strata"))
-    
-  }
-  
-  # export
-  return(resSurv)
-}

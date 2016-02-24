@@ -9,12 +9,12 @@ using namespace std;
 // Q2 export from BaseHaz_cpp may be improved
 
 vector< vector<double> > BaseHaz_cpp(const vector<double>& alltimes, const vector<int>& status, const vector<double>& Xb, 
-                                     int nPatients, double lasttime, int cause);
+                                     int nPatients, double lasttime, int cause, double addFirst, double addLast);
 
 //' @export
 // [[Rcpp::export]]
 List BaseHazStrata_cpp(const NumericVector& alltimes, const IntegerVector& status, const NumericVector& Xb, const IntegerVector& strata,
-                       int nPatients, int nStrata, double lasttime, int cause){
+                       int nPatients, int nStrata, double lasttime, int cause, bool addFirst, bool addLast){
   // WARNING strata0 must begin at 0
   
   vector<int> nObsStrata(nStrata,0);
@@ -70,6 +70,15 @@ List BaseHazStrata_cpp(const NumericVector& alltimes, const IntegerVector& statu
   vector<double> cumHazardRes(0);
   vector<double> strataRes(0);
   
+  double alltimes_min = NA_REAL, alltimes_max = NA_REAL;
+  if(addFirst){
+    alltimes_min = 0;
+  }
+  if(addLast){
+    alltimes_max = max(alltimes) + 1e-10;
+  }
+  
+  
   for(int iter_s = 0 ; iter_s < nStrata ; iter_s++){
     
     // reorder the data
@@ -78,9 +87,9 @@ List BaseHazStrata_cpp(const NumericVector& alltimes, const IntegerVector& statu
     // deal with specific cases
     if(test == false){
       return(List::create(Named("time") = NA_REAL,
+                          Named("strata") = NA_REAL,
                           Named("hazard") = NA_REAL,
                           Named("cumHazard") = NA_REAL,
-                          Named("strata") = NA_REAL,
                           Named("Pb") = "Could not allocate memory in sortS")
       );
     }
@@ -90,7 +99,8 @@ List BaseHazStrata_cpp(const NumericVector& alltimes, const IntegerVector& statu
     
     // compute the hazard
     resH = BaseHaz_cpp(alltimes_S[iter_s], status_S[iter_s], Xb_S[iter_s], 
-                              nObsStrata[iter_s], lasttime, cause);
+                              nObsStrata[iter_s], lasttime, cause, 
+                              alltimes_min, alltimes_max);
     
     // store results
     timeRes.insert( timeRes.end(), resH[0].begin(), resH[0].end() );
@@ -102,7 +112,7 @@ List BaseHazStrata_cpp(const NumericVector& alltimes, const IntegerVector& statu
   }
   
   
-  //// 4- export
+  //// 3- export
   return(List::create(Named("time")  = timeRes,
                       Named("strata") = strataRes,
                       Named("hazard")  = hazardRes,
@@ -112,7 +122,7 @@ List BaseHazStrata_cpp(const NumericVector& alltimes, const IntegerVector& statu
 
 
 vector< vector<double> > BaseHaz_cpp(const vector<double>& alltimes, const vector<int>& status, const vector<double>& Xb, 
-                                     int nPatients, double lasttime, int cause){
+                                     int nPatients, double lasttime, int cause, double addFirst, double addLast){
   
   //// 1- count the number of events
   size_t nEvents = 1, nEventsLast = 1;
@@ -172,6 +182,19 @@ vector< vector<double> > BaseHaz_cpp(const vector<double>& alltimes, const vecto
     
   }
   
+  //// 4- before and after the events
+  if(!R_IsNA(addFirst)){
+    time.insert(time.begin(),addFirst);
+    hazard.insert(hazard.begin(),0);
+    cumHazard.insert(cumHazard.begin(),0);
+  }
+  if(!R_IsNA(addLast)){
+    time.push_back(addLast);
+    hazard.push_back(NA_REAL);
+    cumHazard.push_back(NA_REAL);
+  }
+  
+    
   //// export
   vector< vector<double> > res(3);
   res[0] = time;
