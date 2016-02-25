@@ -1,3 +1,11 @@
+predictHazard <- function (x, ...) {
+  UseMethod("predictHazard", x)
+}
+
+predictSurvProb <- function (x, ...) {
+  UseMethod("predictSurvProb2", x)
+}
+
 #' @title Predicting hazard or cumulative hazard
 #' 
 #' @aliases predictHazard predictHazard.coxph predictSurvProb predictSurvProb.coxph
@@ -5,7 +13,6 @@
 #' @param object The fitted coxph model
 #' @param newdata A data frame containing the values of the variables in the right hand side of 'coxph' for each patient.
 #' @param times Vector of times at which to return the estimated hazards/survival
-#' @param cause The event of interest
 #' @param type should the hazard or the cumulative hazard be returned
 #' @param method.baseHaz The implementation to be used for computing the baseline hazard: "dt" or "cpp"
 #' 
@@ -43,17 +50,29 @@
 #' res3S <- predictSurvProb.coxph(fitS, newdata = d, times = 10)
 #' res4S <- predictSurvProb.coxph(fitS, newdata = d, times = d$time)
 #' 
+#' # PROBLEM
+#' df.CR <- prodlim:::SimCompRisk(n)
+#' df.CR$time <- round(df.CR$time,1)
+#' CSC.NS <- CSC(Hist(time,event) ~ X1,data=df.CR)
+#' coxph.NS <- coxph(Surv(time,event == 1) ~ X1,data=df.CR, ties="breslow")
+#' 
+#' cbind(
+#' baseHaz.coxph(CSC.NS$models[[paste("Cause", 1)]], method = "dt"),
+#' baseHaz.coxph(coxph.NS, method = "dt"),
+#' basehaz(CSC.NS$models[[paste("Cause", 1)]]),
+#' basehaz(coxph.NS)
+#' )
 #' @export
 #' 
 
-predictHazard.coxph <- function (object, newdata, times, cause = 1, type = "hazard",
+predictHazard.coxph <- function (object, newdata, times, type = "hazard",
                                  method.baseHaz = "dt") {
   
   require(data.table)
   match.arg(type, choices = c("hazard", "cumHazard"), several.ok = FALSE)
   
   times <- sort(times)
-  Lambda0 <- baseHaz(object, cause = cause, method = method.baseHaz, centered = TRUE, lasttime =  times[length(times)],
+  Lambda0 <- baseHaz(object, method = method.baseHaz, centered = TRUE, lasttime =  times[length(times)],
                      addFirst = TRUE, addLast = TRUE) 
   
   strataspecials <- attr(object$terms,"specials")$strata 
@@ -119,10 +138,10 @@ predictHazard.coxph <- function (object, newdata, times, cause = 1, type = "haza
   return(resPred)
 }
 
-predictSurvProb.coxph <- function(object, newdata, times, cause = 1,
+predictSurvProb.coxph <- function(object, newdata, times,
                                   method.baseHaz = "dt") {
   
-  res <- predictHazard.coxph(object, newdata = newdata, times = times, cause = cause, type = "cumHazard",
+  res <- predictHazard.coxph(object, newdata = newdata, times = times, type = "cumHazard",
                              method.baseHaz = method.baseHaz)
   n.times <- length(times)
   

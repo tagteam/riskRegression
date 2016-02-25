@@ -3,14 +3,9 @@ baseHaz <- function (x, ...) {
 }
 
 
-predictHazard <- function (x, ...) {
-  UseMethod("predictHazard", x)
-}
-
 #' @title Computing baseline hazard
 #
 #' @param object The fitted coxph model
-#' @param cause The event of interest
 #' @param method The implementation to be used: "dt" or "cpp"
 #' @param centered If TRUE remove the centering factor used by coxph in the linear predictor
 #' @param lasttime Baseline hazard will be computed for each event before lasttime
@@ -54,9 +49,10 @@ predictHazard <- function (x, ...) {
 #' 
 #' @export
 #' 
-baseHaz.coxph <- function(object, cause = 1, method, centered = TRUE, lasttime = Inf, addFirst = FALSE, addLast = FALSE){
+baseHaz.coxph <- function(object, method, centered = TRUE, lasttime = Inf, addFirst = FALSE, addLast = FALSE){
   
   # as in survival:::agsurv
+  cause <- 1
   event <- object$y[, ncol(object$y)]
   time <- object$y[, ncol(object$y) - 1]
   
@@ -81,7 +77,7 @@ baseHaz.coxph <- function(object, cause = 1, method, centered = TRUE, lasttime =
     
     if (is.null(strataspecials)){
       resCpp <- BaseHazStrata_cpp(alltimes = time, status = event, Xb = lp, strata = NA,
-                                  nPatients = object$n, nStrata = 1, lasttime = lasttime, cause = 1,
+                                  nPatients = object$n, nStrata = 1, lasttime = lasttime, cause = cause,
                                   addFirst = addFirst, addLast = addLast)
       
       resCpp$strata <- NULL
@@ -96,7 +92,7 @@ baseHaz.coxph <- function(object, cause = 1, method, centered = TRUE, lasttime =
       nStrata <- length(levelsStrata)
       
       resCpp <- BaseHazStrata_cpp(alltimes = time, status = event, Xb = lp, strata = as.numeric(mod) - 1,
-                                  nPatients = object$n, nStrata = nStrata, lasttime = lasttime, cause = 1,
+                                  nPatients = object$n, nStrata = nStrata, lasttime = lasttime, cause = cause,
                                   addFirst = addFirst, addLast = addLast)
      
       if(is.na(resCpp$time[1])){ # failure or no event before lasttime
@@ -123,6 +119,7 @@ baseHaz.coxph <- function(object, cause = 1, method, centered = TRUE, lasttime =
       dt.d[,strata:=mod]
       setorder(dt.d, strata,time, - event)
     }
+    # browser()
     
     dt.d[, utime := cumsum(!duplicated(time)),by=strata]
     dt.d[, di := sum(event == cause), by = list(strata,utime)]
