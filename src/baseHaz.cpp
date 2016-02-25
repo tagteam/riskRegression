@@ -9,7 +9,7 @@ using namespace std;
 // Q2 export from BaseHaz_cpp may be improved
 
 vector< vector<double> > BaseHaz_cpp(const vector<double>& alltimes, const vector<int>& status, const vector<double>& Xb, 
-                                     int nPatients, double lasttime, int cause, double addFirst, double addLast);
+                                     int nPatients, double lasttime, int cause, bool addFirst, bool addLast);
 
 //' @export
 // [[Rcpp::export]]
@@ -70,16 +70,7 @@ List BaseHazStrata_cpp(const NumericVector& alltimes, const IntegerVector& statu
   vector<double> cumHazardRes(0);
   vector<double> strataRes(0);
   
-  double alltimes_min = NA_REAL, alltimes_max = NA_REAL;
-  if(addFirst){
-    alltimes_min = 0;
-  }
-  if(addLast){
-    alltimes_max = max(alltimes) + 1e-10;
-  }
-  
-  
-  for(int iter_s = 0 ; iter_s < nStrata ; iter_s++){
+   for(int iter_s = 0 ; iter_s < nStrata ; iter_s++){
     
     // reorder the data
     test = sortS(alltimes_S[iter_s], status_S[iter_s], Xb_S[iter_s], nObsStrata[iter_s]); // update alltimes, status and Xb
@@ -100,7 +91,7 @@ List BaseHazStrata_cpp(const NumericVector& alltimes, const IntegerVector& statu
     // compute the hazard
     resH = BaseHaz_cpp(alltimes_S[iter_s], status_S[iter_s], Xb_S[iter_s], 
                               nObsStrata[iter_s], lasttime, cause, 
-                              alltimes_min, alltimes_max);
+                              addFirst, addLast);
     
     // store results
     timeRes.insert( timeRes.end(), resH[0].begin(), resH[0].end() );
@@ -122,7 +113,7 @@ List BaseHazStrata_cpp(const NumericVector& alltimes, const IntegerVector& statu
 
 
 vector< vector<double> > BaseHaz_cpp(const vector<double>& alltimes, const vector<int>& status, const vector<double>& Xb, 
-                                     int nPatients, double lasttime, int cause, double addFirst, double addLast){
+                                     int nPatients, double lasttime, int cause, bool addFirst, bool addLast){
   
   //// 1- count the number of events
   size_t nEvents = 1, nEventsLast = 1;
@@ -183,17 +174,16 @@ vector< vector<double> > BaseHaz_cpp(const vector<double>& alltimes, const vecto
   }
   
   //// 4- before and after the events
-  if(!R_IsNA(addFirst)){
-    time.insert(time.begin(),addFirst);
-    hazard.insert(hazard.begin(),0);
-    cumHazard.insert(cumHazard.begin(),0);
-  }
-  if(!R_IsNA(addLast)){
-    time.push_back(addLast);
+  if(addLast){
+    time.push_back(time[nEventsLast-1]);
     hazard.push_back(NA_REAL);
     cumHazard.push_back(NA_REAL);
   }
-  
+  if(addFirst){
+    time.insert(time.begin(),0);
+    hazard.insert(hazard.begin(),0);
+    cumHazard.insert(cumHazard.begin(),0);
+  }
     
   //// export
   vector< vector<double> > res(3);

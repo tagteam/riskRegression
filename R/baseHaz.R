@@ -2,7 +2,12 @@ baseHaz <- function (x, ...) {
   UseMethod("baseHaz", x)
 }
 
-#' @title Compute the baseline hazard
+
+predictHazard <- function (x, ...) {
+  UseMethod("predictHazard", x)
+}
+
+#' @title Computing baseline hazard
 #
 #' @param object The fitted coxph model
 #' @param cause The event of interest
@@ -59,7 +64,7 @@ baseHaz.coxph <- function(object, cause = 1, method, centered = TRUE, lasttime =
   strataspecials = attr(object$terms,"specials")$strata
   if (!is.null(strataspecials)){
     stratalabels = attr(object$terms,"term.labels")[strataspecials - 1]
-    mod <- interaction(model.frame(object)[,stratalabels], drop = TRUE, sep = ", ")
+    mod <- interaction(model.frame(object)[,stratalabels], drop = TRUE, sep = ", ") # [COULD BE OPTIMIZED in C]
   }
   
   ## method
@@ -141,8 +146,7 @@ baseHaz.coxph <- function(object, cause = 1, method, centered = TRUE, lasttime =
         dt.d <- dt.d[, .(time = c(0,time), hazard = c(0,hazard), cumHazard = c(0,cumHazard))  , by = strata]
       }
       if (addLast){
-        max_time <- max(dt.d[,time[.N],by = strata]$V1) + 1e-10
-        dt.d <- dt.d[, .(time = c(time,max_time), hazard = c(hazard,NA), cumHazard = c(cumHazard,NA))  , by = strata]
+        dt.d <- dt.d[, .(time = c(time, time[.N] + 1e-10), hazard = c(hazard,NA), cumHazard = c(cumHazard,NA))  , by = strata]
         setcolorder(dt.d, c("time", "strata", "hazard", "cumHazard"))
       }
     if (is.null(strataspecials)){ 
