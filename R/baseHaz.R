@@ -49,8 +49,8 @@ baseHaz <- function (x, ...) {
 #' 
 #' @export
 #' 
-baseHaz.coxph <- function(object, method, centered = TRUE, lasttime = Inf, addFirst = FALSE, addLast = FALSE){
-  
+baseHaz.coxph <- function(object, method, centered = TRUE, lasttime = Inf, addFirst = FALSE, addLast = FALSE, Efron = FALSE){
+
   # as in survival:::agsurv
   cause <- 1
   event <- object$y[, ncol(object$y)]
@@ -65,6 +65,10 @@ baseHaz.coxph <- function(object, method, centered = TRUE, lasttime = Inf, addFi
   
   ## method
   match.arg(method, choices = c("dt","cpp"), several.ok = FALSE)
+  if(object$method %in% c("efron","exact")){
+    warning("baseHaz.coxph: ",object$method," correction for ties is not implemented \n",
+            "Breslow estimator will be used instead \n")
+  }
   
   ## linear predictor
   lp <- object$linear.predictors
@@ -78,7 +82,7 @@ baseHaz.coxph <- function(object, method, centered = TRUE, lasttime = Inf, addFi
     if (is.null(strataspecials)){
       resCpp <- BaseHazStrata_cpp(alltimes = time, status = event, Xb = lp, strata = NA,
                                   nPatients = object$n, nStrata = 1, lasttime = lasttime, cause = cause,
-                                  addFirst = addFirst, addLast = addLast)
+                                  Efron = Efron, addFirst = addFirst, addLast = addLast)
       
       resCpp$strata <- NULL
       
@@ -93,7 +97,7 @@ baseHaz.coxph <- function(object, method, centered = TRUE, lasttime = Inf, addFi
       
       resCpp <- BaseHazStrata_cpp(alltimes = time, status = event, Xb = lp, strata = as.numeric(mod) - 1,
                                   nPatients = object$n, nStrata = nStrata, lasttime = lasttime, cause = cause,
-                                  addFirst = addFirst, addLast = addLast)
+                                  Efron = Efron, addFirst = addFirst, addLast = addLast)
      
       if(is.na(resCpp$time[1])){ # failure or no event before lasttime
         resCpp <- matrix(nrow = 0,ncol = 4)
@@ -119,7 +123,7 @@ baseHaz.coxph <- function(object, method, centered = TRUE, lasttime = Inf, addFi
       dt.d[,strata:=mod]
       setorder(dt.d, strata,time, - event)
     }
-    # browser()
+
     
     dt.d[, utime := cumsum(!duplicated(time)),by=strata]
     dt.d[, di := sum(event == cause), by = list(strata,utime)]
@@ -150,7 +154,7 @@ baseHaz.coxph <- function(object, method, centered = TRUE, lasttime = Inf, addFi
       dt.d[,strata:=NULL]
     }
       
-      #addFirst = FALSE, addLast = FALSE
+
       
     return(dt.d)
   }

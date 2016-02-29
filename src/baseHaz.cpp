@@ -9,12 +9,12 @@ using namespace std;
 // Q2 export from BaseHaz_cpp may be improved
 
 vector< vector<double> > BaseHaz_cpp(const vector<double>& alltimes, const vector<int>& status, const vector<double>& Xb, 
-                                     int nPatients, double lasttime, int cause, bool addFirst, bool addLast);
+                                     int nPatients, double lasttime, int cause, bool Efron, bool addFirst, bool addLast);
 
 //' @export
 // [[Rcpp::export]]
 List BaseHazStrata_cpp(const NumericVector& alltimes, const IntegerVector& status, const NumericVector& Xb, const IntegerVector& strata,
-                       int nPatients, int nStrata, double lasttime, int cause, bool addFirst, bool addLast){
+                       int nPatients, int nStrata, double lasttime, int cause, bool Efron, bool addFirst, bool addLast){
   // WARNING strata0 must begin at 0
   
   vector<int> nObsStrata(nStrata,0);
@@ -70,7 +70,7 @@ List BaseHazStrata_cpp(const NumericVector& alltimes, const IntegerVector& statu
   vector<double> cumHazardRes(0);
   vector<double> strataRes(0);
   
-   for(int iter_s = 0 ; iter_s < nStrata ; iter_s++){
+  for(int iter_s = 0 ; iter_s < nStrata ; iter_s++){
     
     // reorder the data
     test = sortS(alltimes_S[iter_s], status_S[iter_s], Xb_S[iter_s], nObsStrata[iter_s]); // update alltimes, status and Xb
@@ -90,15 +90,15 @@ List BaseHazStrata_cpp(const NumericVector& alltimes, const IntegerVector& statu
     
     // compute the hazard
     resH = BaseHaz_cpp(alltimes_S[iter_s], status_S[iter_s], Xb_S[iter_s], 
-                              nObsStrata[iter_s], lasttime, cause, 
-                              addFirst, addLast);
+                       nObsStrata[iter_s], lasttime, cause, 
+                       Efron, addFirst, addLast);
     
     // store results
     timeRes.insert( timeRes.end(), resH[0].begin(), resH[0].end() );
     hazardRes.insert( hazardRes.end(), resH[1].begin(), resH[1].end() );
     cumHazardRes.insert( cumHazardRes.end(), resH[2].begin(), resH[2].end() );
     if(nStrata > 1){
-    strataRes.resize( strataRes.size() + resH[0].size(), iter_s);
+      strataRes.resize( strataRes.size() + resH[0].size(), iter_s);
     }
   }
   
@@ -113,7 +113,7 @@ List BaseHazStrata_cpp(const NumericVector& alltimes, const IntegerVector& statu
 
 
 vector< vector<double> > BaseHaz_cpp(const vector<double>& alltimes, const vector<int>& status, const vector<double>& Xb, 
-                                     int nPatients, double lasttime, int cause, bool addFirst, bool addLast){
+                                     int nPatients, double lasttime, int cause, bool Efron, bool addFirst, bool addLast){
   
   //// 1- count the number of events
   size_t nEvents = 1, nEventsLast = 1;
@@ -131,11 +131,13 @@ vector< vector<double> > BaseHaz_cpp(const vector<double>& alltimes, const vecto
   
   ////// 2- merge the data by event
   vector<double> time(nEventsLast);
-  vector<int> death(nEventsLast,0); // could be avoined by only computing the number of deaths at the current time in 3
+  vector<int> death(nEventsLast,0); // could be avoided by only computing the number of deaths at the current time in 3
+  vector<int> event(nEventsLast,0); // only for Efron correction
   vector<double> sumEXb(nEvents);
   
   // first observation
   time[0] = alltimes[0];
+  event[0]++;  // only for Efron correction
   death[0] = (status[0]==cause);
   sumEXb[nEvents-1] = exp(Xb[nPatients-1]);
   
@@ -157,7 +159,85 @@ vector< vector<double> > BaseHaz_cpp(const vector<double>& alltimes, const vecto
       time[index_tempo] = alltimes[iterPat];
     }
     death[index_tempo] += (status[iterPat]==cause);
+    event[index_tempo]++;  // only for Efron correction
   }
+  
+//   //// OPT- Efron correction
+//   if(Efron){
+//     
+//     double correction, Wtempo, Wbase, Wdiff;
+//     int countEvent= 0; 
+//     sumEXb.push_back(0);
+//     
+//     index_tempo = 0;
+//     Wbase = sumEXb[index_tempo];
+//     Wtempo = 1;
+//     Wdiff = sumEXb[index_tempo] - sumEXb[index_tempo+1];
+//     
+//     countEvent ++;
+//     correction = Wdiff * (countEvent-1)/((double) event[index_tempo]);
+//     Wtempo *= pow(Wbase - 0*correction, 1/((double) event[index_tempo]));
+//     
+//     for(int iterPat = 0 ; iterPat < nPatients ; iterPat++){ 
+//       
+//       if(alltimes[iterPat] != alltimes[iterPat-1]){
+//         sumEXb[index_tempo] = Wbase;// Wtempo;
+//         index_tempo++;
+//         Wbase = sumEXb[index_tempo];
+//         Wtempo = 1;
+//         Wdiff = sumEXb[index_tempo] - sumEXb[index_tempo+1];
+//         countEvent = 0;
+//       }
+//       countEvent ++;
+//       correction = Wdiff * (countEvent-1)/((double) event[index_tempo]);
+//      
+//       Wtempo *= pow(Wbase - 0*correction, 1/((double) event[index_tempo]));
+//       Rcout << nEvents << " " <<  index_tempo << " "  << event[index_tempo]  << " " << 1/((double) event[index_tempo]) << " "  << Wbase << " " << Wtempo << endl;
+//     }
+//     
+//     sumEXb[index_tempo] = Wtempo;
+//   }           
+      
+//       for(size_t iterTime = 0 ; iterTime < nEventsLast-1 ; iterTime ++){ 
+//         
+//         correction = event[iterTime] * (event[iterTime]-1)/((double)2 * event[nEventsLast-1]);
+//         sumEXb[iterTime] = sumEXb[iterTime] - (sumEXb[iterTime] - sumEXb[iterTime+1]) * correction;
+//         
+//       }
+      
+//       correction = event[nEventsLast-1] * (event[nEventsLast-1]-1)/((double)2 * event[nEventsLast-1]);
+//       sumEXb[nEventsLast-1] = sumEXb[nEventsLast-1] - sumEXb[nEventsLast-1] * correction;
+     
+
+    
+    
+
+//   if(Efron){
+//     index_tempo = nEvents-1;
+//     int countEvent= 1;
+//     double Wtempo = 0;
+//     
+//     for(int iterPat = nPatients-2 ; iterPat >= 0 ; iterPat--){
+//       
+//       if(alltimes[iterPat] != alltimes[iterPat+1]){
+//         Wtempo = ((countEvent+1)/2.0 - 1)/((double)countEvent);
+//         // Rcout <<  countEvent << " " << Wtempo << endl;
+//         sumEXb[index_tempo] = sumEXb[index_tempo] - (sumEXb[index_tempo] - sumEXb[index_tempo+1]) * Wtempo;
+//         
+//         index_tempo--;
+//         countEvent = 1;
+//         
+//       }else{
+//         countEvent++;
+//       }
+//     }
+//     
+//     if(alltimes[0] == alltimes[1]){
+//       Wtempo = ((countEvent+1)/2.0 - 1)/((double)countEvent); 
+//       //Rcout <<  countEvent << " " << Wtempo << endl;
+//       sumEXb[index_tempo] =  sumEXb[index_tempo] - (sumEXb[index_tempo] - sumEXb[index_tempo+1]) * Wtempo;//pow(Wtempo,1/(double)death[index_tempo]);
+//     }
+//   }
   
   //// 3- Computation of the hazards
   vector<double> hazard(nEventsLast, NA_REAL);
@@ -170,7 +250,6 @@ vector< vector<double> > BaseHaz_cpp(const vector<double>& alltimes, const vecto
     
     hazard[iterTime] = death[iterTime] / sumEXb[iterTime];
     cumHazard[iterTime] = cumHazard[iterTime-1] + hazard[iterTime];
-    
   }
   
   //// 4- before and after the events
@@ -184,7 +263,7 @@ vector< vector<double> > BaseHaz_cpp(const vector<double>& alltimes, const vecto
     hazard.insert(hazard.begin(),0);
     cumHazard.insert(cumHazard.begin(),0);
   }
-    
+  
   //// export
   vector< vector<double> > res(3);
   res[0] = time;
@@ -192,5 +271,5 @@ vector< vector<double> > BaseHaz_cpp(const vector<double>& alltimes, const vecto
   res[2] = cumHazard;
   
   return res;
- 
+  
 }

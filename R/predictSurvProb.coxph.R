@@ -3,7 +3,7 @@ predictHazard <- function (x, ...) {
 }
 
 predictSurvProb <- function (x, ...) {
-  UseMethod("predictSurvProb2", x)
+  UseMethod("predictSurvProb", x)
 }
 
 #' @title Predicting hazard or cumulative hazard
@@ -15,6 +15,7 @@ predictSurvProb <- function (x, ...) {
 #' @param times Vector of times at which to return the estimated hazards/survival
 #' @param type should the hazard or the cumulative hazard be returned
 #' @param method.baseHaz The implementation to be used for computing the baseline hazard: "dt" or "cpp"
+#' @param col.strata Should an additional column containing the strata level be returned
 #' 
 #' @details 
 #' Not suited for time varying cox models
@@ -22,7 +23,7 @@ predictSurvProb <- function (x, ...) {
 #' Strange behavior of predict when strata
 #' What to return if stratified Cox model with no covariate
 #' 
-#' @return a data table containing the predictions for each patient (in rows) and each time (in columns) and the strata (if any).
+#' @return a data table (or a list of) containing the predictions for each patient (in rows) and each time (in columns) and the strata (if requested). 
 #' 
 #' @examples 
 #' 
@@ -51,7 +52,7 @@ predictSurvProb <- function (x, ...) {
 #' res4S <- predictSurvProb.coxph(fitS, newdata = d, times = d$time)
 #' 
 #' # PROBLEM
-#' df.CR <- prodlim:::SimCompRisk(n)
+#' df.CR <- prodlim:::SimCompRisk(100)
 #' df.CR$time <- round(df.CR$time,1)
 #' CSC.NS <- CSC(Hist(time,event) ~ X1,data=df.CR)
 #' coxph.NS <- coxph(Surv(time,event == 1) ~ X1,data=df.CR, ties="breslow")
@@ -66,29 +67,34 @@ predictSurvProb <- function (x, ...) {
 #' 
 
 predictHazard.coxph <- function (object, newdata, times, type = "hazard",
-                                 method.baseHaz = "dt") {
+                                 method.baseHaz = "cpp", col.strata = FALSE) {
   
   require(data.table)
-  match.arg(type, choices = c("hazard", "cumHazard"), several.ok = FALSE)
+  
+  ## preparation
+  match.arg(type, choices = c("hazard", "cumHazard"), several.ok = TRUE)
+  n.type <- length(type)
   
   times <- sort(times)
   Lambda0 <- baseHaz(object, method = method.baseHaz, centered = TRUE, lasttime =  times[length(times)],
                      addFirst = TRUE, addLast = TRUE) 
   
   strataspecials <- attr(object$terms,"specials")$strata 
+  resPred <- list()
   
-  if(is.null(strataspecials)){
+  if(is.null(strataspecials)){ ## no strata
     Xb <- predict(object, newdata, type = "lp")
-    
-    ## compute hazard
     time.index <- prodlim::sindex(jump.times = Lambda0$time, eval.times = times)
-    resPred <- data.table( Lambda0[time.index, exp(Xb) %o% .SD[[1]], .SDcols = type] )
-    setnames(resPred, paste0("t",times))
     
-  }else{
+    for(iterType in 1:n.type){
+      resPred[[iterType]] <- data.table( Lambda0[time.index, exp(Xb) %o% .SD[[1]], .SDcols = type[iterType]] )
+      setnames(resPred[[iterType]], paste0("t",times))
+    }
+    
+  }else{ ## strata
     
     if("XXstrata" %in% names(newdata)){
-      stop("predictSurvProb2.coxph: \'newdata\' must not contains a column named \"XXstrata\" \n")
+      stop("predictSurvProb.coxph: \'newdata\' must not contains a column named \"XXstrata\" \n")
     }
     if(!is.data.table(newdata)){
     newdata <- as.data.table(newdata)
@@ -116,33 +122,51 @@ predictHazard.coxph <- function (object, newdata, times, type = "hazard",
     newdata[, XXstrata := interaction(.SD, drop = TRUE, sep = ", ") ,.SDcols = strataVar]
     
     ## compute hazard
-    resPred <- NULL
+    res.hazard <- NULL
+    res.cumHazard <- NULL
     levelsStrata <- levels(newdata$XXstrata)
-    for(iterS in levelsStrata){
-      indexHaz <- Lambda0[,.I[strata == iterS]]
-      indexNew <- newdata[,.I[XXstrata == iterS]]
-      time.index <- prodlim::sindex(jump.times=Lambda0[indexHaz,time],eval.times=times)  
-      resPred_tempo <- Lambda0[indexHaz[time.index], exp(Xb[indexNew]) %o% .SD[[1]], .SDcols = type]
+    
+    for(iterType in 1:n.type){
+      resPred[[iterType]] <- data.table()
       
-      resPred <-  rbindlist(list(resPred, 
-                                 data.table(resPred_tempo, strata = iterS, index = indexNew))
-      )
+      for(iterS in levelsStrata){
+        indexHaz <- Lambda0[,.I[strata == iterS]]
+        indexNew <- newdata[,.I[XXstrata == iterS]]
+        time.index <- prodlim::sindex(jump.times=Lambda0[indexHaz,time],eval.times=times)  
+        
+        
+        res.tempo <- Lambda0[indexHaz[time.index], exp(Xb[indexNew]) %o% .SD[[1]], .SDcols = type[iterType]]
+        resPred[[iterType]] <-  rbindlist(list(resPred[[iterType]], 
+                                               data.table(res.tempo, strata = iterS, index = indexNew))
+        )
+        
+      }
+      setkey(resPred[[iterType]],index)
+      resPred[[iterType]][,index := NULL]
+      setnames(resPred[[iterType]], c(paste0("t",times),"strata"))
+      if(col.strata == FALSE){
+        resPred[[iterType]][,strata := NULL]
+      }
     }
-    setkey(resPred,index)
-    resPred[,index := NULL]
-    setnames(resPred, c(paste0("t",times),"strata"))
     
   }
+ 
+  ## export
+  names(resPred) <- type
+  switch(as.character(n.type),
+         "1" = return(resPred[[1]]),
+         resPred
+  )
   
-  # export
-  return(resPred)
 }
 
+#' @export
+#' 
 predictSurvProb.coxph <- function(object, newdata, times,
-                                  method.baseHaz = "dt") {
-  
+                                  method.baseHaz = "cpp", col.strata = FALSE) {
+
   res <- predictHazard.coxph(object, newdata = newdata, times = times, type = "cumHazard",
-                             method.baseHaz = method.baseHaz)
+                             method.baseHaz = method.baseHaz, col.strata = col.strata)
   n.times <- length(times)
   
   ## convert cumulative hazard to survival
