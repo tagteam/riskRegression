@@ -273,3 +273,5 @@ vector< vector<double> > BaseHaz_cpp(const vector<double>& alltimes, const vecto
   return res;
   
 }
+
+
