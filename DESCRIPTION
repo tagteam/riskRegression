@@ -5,7 +5,8 @@ Version: 1.1.8
 Author: Thomas Alexander Gerds, Thomas Harder Scheike
 Depends:
     R (>= 2.9.0),
-    prodlim (>= 1.4.9)
+    prodlim (>= 1.4.9),
+	data.table (>= 1.9.6)
 Imports:
     rms (>= 4.2-0),
     pec (>= 2.4.3),

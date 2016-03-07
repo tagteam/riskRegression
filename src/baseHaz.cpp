@@ -1,13 +1,10 @@
 #include <Rcpp.h>
 #include "sortS.h"
 
-// [[Rcpp::plugins(cpp11)]]
-
 using namespace Rcpp;
 using namespace std;
 
-// Q1 is that better to do 1 and 2 (two loops one to get the number of patient by strata then create the vector for each strata) or use push.back
-// Q2 export from BaseHaz_cpp may be improved
+const double CST_EPSILON = 1e-10;
 
 vector< vector<double> > BaseHaz_cpp(const vector<double>& alltimes, const vector<int>& status, const vector<double>& Xb, 
                                      int nPatients, double lasttime, int cause, bool Efron, bool addFirst, bool addLast);
@@ -85,6 +82,22 @@ List BaseHazStrata_cpp(const NumericVector& alltimes, const IntegerVector& statu
       );
     }
     if(lasttime < alltimes_S[iter_s][0]){
+      if(addFirst){
+        timeRes.push_back(0);
+        hazardRes.push_back(0);
+        cumHazardRes.push_back(0);
+        if(nStrata > 1){
+          strataRes.push_back(iter_s);
+        }
+      }
+      if(addLast){
+        timeRes.push_back(alltimes_S[iter_s][alltimes_S[iter_s].size()-1]+1e-10);
+        hazardRes.push_back(NA_REAL);
+        cumHazardRes.push_back(NA_REAL);
+        if(nStrata > 1){
+        strataRes.push_back(iter_s);
+        }
+      }
       continue;
     }
     
@@ -211,7 +224,7 @@ vector< vector<double> > BaseHaz_cpp(const vector<double>& alltimes, const vecto
   
   //// 4- before and after the events
   if(addLast){
-    time.push_back(time[nEventsLast-1]+1e-10);
+    time.push_back(alltimes[nPatients-1] + CST_EPSILON);
     hazard.push_back(NA_REAL);
     cumHazard.push_back(NA_REAL);
   }

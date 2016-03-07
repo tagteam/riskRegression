@@ -1,10 +1,14 @@
+#' @export
 baseHaz <- function (x, ...) {
   UseMethod("baseHaz", x)
 }
 
+.CST_EPSILON <- 1e-10 # time gap after the last event for the survival to be set to NA
 
 #' @title Computing baseline hazard
-#
+#' 
+#' @aliases baseHaz baseHaz.coxph
+#' 
 #' @param object The fitted coxph model
 #' @param method The implementation to be used: "dt" or "cpp"
 #' @param centered If TRUE remove the centering factor used by coxph in the linear predictor
@@ -15,16 +19,10 @@ baseHaz <- function (x, ...) {
 #' @details 
 #' Not suited for time varying cox models
 #' 
-#' When considering strata, return the result in a different order compared to basehaz
-#' interaction not optimal in term of computation time
-#' 
 #' @return a data table containing the time, the strata (if any), the hazard and the cumulative hazard.
 #' 
 #' @examples 
-#' 
-#' library(data.table)
 #' library(survival)
-#' library(prodlim)
 #' 
 #' set.seed(10)
 #' d <- SimSurv(1e3)
@@ -32,23 +30,22 @@ baseHaz <- function (x, ...) {
 #' fit <- coxph(Surv(time,status)~X1 * X2,data=d, ties="breslow")
 #' # table(duplicated(d$time))
 #'
-#' res1 <- baseHaz(fit, method = "dt", centered = FALSE)
-#' res2 <- baseHaz(fit, method = "cpp", centered = FALSE)
+#' res1 <- baseHaz(fit, method = "dt")
+#' res2 <- baseHaz(fit, method = "cpp")
 #' 
-#' res3 <- baseHaz(fit, method = "dt", centered = FALSE, lasttime = 5)
-#' res4 <- baseHaz(fit, method = "cpp", centered = FALSE, lasttime = 5)
+#' res3 <- baseHaz(fit, method = "dt", lasttime = 5)
+#' res4 <- baseHaz(fit, method = "cpp", lasttime = 5)
 #' 
 #' # strata
 #' fitS <- coxph(Surv(time,status)~strata(X1)+X2,data=d, ties="breslow")
 #' 
-#' res1S <- baseHaz(fitS, method = "dt", centered = FALSE)
-#' res2S <- baseHaz(fitS, method = "cpp", centered = FALSE)
+#' res1S <- baseHaz(fitS, method = "dt")
+#' res2S <- baseHaz(fitS, method = "cpp")
 #' 
-#' res3S <- baseHaz(fitS, method = "dt", centered = FALSE, lasttime = 5)
-#' res4S <- baseHaz(fitS, method = "cpp", centered = FALSE, lasttime = 5)
+#' res3S <- baseHaz(fitS, method = "dt", lasttime = 5)
+#' res4S <- baseHaz(fitS, method = "cpp", lasttime = 5)
 #' 
 #' @export
-#' 
 baseHaz.coxph <- function(object, method, centered = TRUE, lasttime = Inf, addFirst = FALSE, addLast = FALSE){
   
   # as in survival:::agsurv
@@ -61,6 +58,8 @@ baseHaz.coxph <- function(object, method, centered = TRUE, lasttime = Inf, addFi
   if (!is.null(strataspecials)){
     stratalabels = attr(object$terms,"term.labels")[strataspecials - 1]
     mod <- interaction(model.frame(object)[,stratalabels], drop = TRUE, sep = ", ", lex.order = TRUE) # [COULD BE OPTIMIZED in C]
+  }else{
+    mod <- factor("1")
   }
   
   ## method
@@ -85,7 +84,8 @@ baseHaz.coxph <- function(object, method, centered = TRUE, lasttime = Inf, addFi
       
       resCpp$strata <- NULL
       
-      if(is.na(resCpp$time[1])){ # failure or no event before lasttime
+      if(length(resCpp$time) == 1 && is.na(resCpp$time[1])){ # failure
+        warning("baseHaz.coxph: failure \n")
         resCpp <- matrix(nrow = 0,ncol = 3)
         colnames(resCpp) <- c("time", "hazard", "cumHazard")
       }
@@ -98,7 +98,8 @@ baseHaz.coxph <- function(object, method, centered = TRUE, lasttime = Inf, addFi
                                   nPatients = object$n, nStrata = nStrata, lasttime = lasttime, cause = cause,
                                   Efron = (object$method == "efron"), addFirst = addFirst, addLast = addLast)
       
-      if(is.na(resCpp$time[1])){ # failure or no event before lasttime
+      if(length(resCpp$time) == 1 && is.na(resCpp$time[1])){ # failure or no event before lasttime
+        warning("baseHaz.coxph: failure \n")
         resCpp <- matrix(nrow = 0,ncol = 4)
         colnames(resCpp) <- c("time", "strata", "hazard", "cumHazard")
       }else{
@@ -106,19 +107,18 @@ baseHaz.coxph <- function(object, method, centered = TRUE, lasttime = Inf, addFi
       }
     }
     
-    return(as.data.table(resCpp))
+    return(data.table::as.data.table(resCpp))
     
   }else{ # method == "dt"
     
     #  R(ti) = {j ; Tj >= ti}
     #  sum_{j in R(ti)} sum_{k Tk = Tj} exp(beta^T Zk)
-    require(data.table)
     
-    dt.d <- data.table(time = time, event = event, lp = lp)
+    dt.d <- data.table::data.table(time = time, event = event, lp = lp)
     
     ## strata
     if (is.null(strataspecials)){
-      dt.d[,strata:=1]
+      dt.d[,strata:="1"]
       setorder(dt.d, time, -event)
     } else{
       dt.d[,strata:=mod]
@@ -133,12 +133,15 @@ baseHaz.coxph <- function(object, method, centered = TRUE, lasttime = Inf, addFi
     if(object$method == "efron"){
       dt.d[, Wti_event := sum(elp*(event == cause)), by = list(strata,utime)]
     }
-    setkey(dt.d,strata,time)
+    data.table::setkey(dt.d,strata,time)
     
     ## group level
     dt.d <- dt.d[unique(dt.d[,c("strata","time"),with=FALSE]),,mult="first"]
     dt.d[, W := rev(cumsum(rev(Wti))),by=strata]
     
+    if (addLast){
+      maxTimeEvent <- dt.d[, time[.N], by = strata][[2]]
+    }
     if(!is.infinite(lasttime)){
       dt.d <- dt.d[time <= lasttime]
     }
@@ -159,11 +162,26 @@ baseHaz.coxph <- function(object, method, centered = TRUE, lasttime = Inf, addFi
     ## add before or after first or last event
     if (addFirst){ 
       dt.d <- dt.d[, .(time = c(0,time), hazard = c(0,hazard), cumHazard = c(0,cumHazard))  , by = strata]
+      if( length(unique(dt.d$strata)) != length(levels(mod)) ){ # if some strata has been removed due to lasttime
+        dt.d <- data.table::rbindlist(list(dt.d,
+                                           data.table::data.table(strata = setdiff(levels(mod),unique(dt.d$strata)), time = 0, hazard = 0, cumHazard = 0)))
+        data.table::setkey(dt.d,strata,time)
+      }
+      data.table::setcolorder(dt.d, c("time", "strata", "hazard", "cumHazard"))
     }
+    
     if (addLast){
-      dt.d <- dt.d[, .(time = c(time, time[.N] + 1e-10), hazard = c(hazard,NA), cumHazard = c(cumHazard,NA))  , by = strata]
-      setcolorder(dt.d, c("time", "strata", "hazard", "cumHazard"))
+      dt.d <- dt.d[, .(time = c(time, maxTimeEvent[.GRP] + .CST_EPSILON), hazard = c(hazard,NA), cumHazard = c(cumHazard,NA))  , by = strata]
+      
+      if( length(unique(dt.d$strata)) != length(levels(mod)) ){# if some strata has been removed due to lasttime
+        index.diff <- which(levels(mod) %in% unique(dt.d$strata) == FALSE)
+        dt.d <- data.table::rbindlist(list(dt.d,
+                                           data.table::data.table(strata = levels(mod)[index.diff], time = maxTimeEvent[index.diff] + .CST_EPSILON, hazard = NA, cumHazard = NA)))
+        data.table::setkey(dt.d,strata,time)
+      }
+      data.table::setcolorder(dt.d, c("time", "strata", "hazard", "cumHazard"))
     }
+    
     ## remove strata
     if (is.null(strataspecials)){ 
       dt.d[,strata:=NULL]

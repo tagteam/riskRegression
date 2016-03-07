@@ -1,3 +1,4 @@
+#' @export
 predictEventProb <- function (x, ...) {
   UseMethod("predictEventProb", x)
 }
@@ -58,14 +59,9 @@ predictEventProb <- function (x, ...) {
 #     p
 # }
 
-##### 
-## Questions: why cause=as.numeric(causes[-match(cause, causes)]) indead of c in the lapply in the initial function
-##            why test whether predictSurvProb.coxph fails
-##            survtype == "hazard" or what
-
 #' @title Predicting hazard or cumulative hazard
 #' 
-#' @aliases predictHazard predictHazard.coxph predictSurvProb predictSurvProb.coxph
+#' @aliases predictEventProb predictEventProb.CauseSpecificCox
 #
 #' @param object The fitted coxph model
 #' @param newdata A data frame containing the values of the variables in the right hand side of 'coxph' for each patient.
@@ -74,23 +70,21 @@ predictEventProb <- function (x, ...) {
 #' @param method.baseHaz The implementation to be used for computing the baseline hazard: "dt" or "cpp"
 #' 
 #' @details 
-#' Not suited for time varying cox models
+#' Not suited for time varying cox models.
 #' 
-#' @return a data table containing the predictions for each patient (in rows) and each time (in columns). 
+#' @return A data table containing the predictions for each patient (in rows) and each time (in columns). 
 #' 
 #' @examples 
 #' 
-#' data <- prodlim:::SimCompRisk(n)
+#' data <- SimCompRisk(1e3)
 #' data$time <- round(data$time,1)
 #' CSC.fit <- CSC(Hist(time,event)~ X1*X2,data=data, ties = "breslow" )
 #' 
-#' predCSC <- predictEventProb(CSC.fit, newdata = data, times = unique(sort(data$time)), cause = 1, method = "cpp")
+#' predCSC <- predictEventProb(CSC.fit, newdata = data, cause = 2, times = unique(sort(data$time)))
 #' 
 #' @export
-#' 
-
-predictEventProb.CauseSpecificCox <- function (object, newdata, times, cause, method.baseHaz = "cpp"){
-  require(pec)
+predictEventProb.CauseSpecificCox <- function (object, newdata, times, cause,
+                                               col.strata = FALSE, method.baseHaz = "cpp"){
   survtype <- object$survtype
   N <- NROW(newdata)
   NC <- length(object$model)
@@ -108,31 +102,58 @@ predictEventProb.CauseSpecificCox <- function (object, newdata, times, cause, me
       stop("Object can be used to predict cause ", object$theCause, 
            " but not ", cause, ".\nNote: the cause can be specified in CSC(...,cause=).")
   }
-  resPred <- predictHazard.coxph(object$models[[paste("Cause",cause)]], times = eTimes, 
-                                 newdata = newdata, type = c("hazard","cumHazard"), method = "cpp", col.strata = FALSE)
   
-  cumHaz1 <- resPred$cumHazard
-  Haz1 <- resPred$hazard
+  resPred <- predictHazard.coxph(object$models[[paste("Cause",cause)]], times = eTimes, 
+                                 newdata = newdata, type = c("hazard","cumHazard"), method = method.baseHaz, col.strata = col.strata)
+  
+  
+  range(t(apply(resPred[[2]], 1, diff)) - resPred[[1]][,-1, with = FALSE], na.rm = TRUE)
+ 
+  if(col.strata){
+    strata <- resPred$hazard$strata
+    resPred$hazard[, strata := NULL]
+    resPred$cumHazard[, strata := NULL]
+  }
+  ncol.pred <-  ncol(resPred$cumHazard)
   
   if (survtype == "hazard") {
     cumHazOther <- lapply(causes[-match(cause, causes)], 
                           function(c) {
                             predictHazard.coxph(object$models[[paste("Cause",c)]], times = eTimes, 
-                                                newdata = newdata, type = "cumHazard", col.strata = FALSE)
+                                                newdata = newdata, type = "cumHazard", method = method.baseHaz, col.strata = FALSE)
                           })
-    lagsurv <- exp(-cumHaz1 - Reduce("+", cumHazOther))
-    cuminc1 <- t(apply(lagsurv * Haz1, 1, cumsum))
-  }
-  else {
+
+    resPred$cumHazard[, 1:ncol.pred := resPred$hazard * exp(-.SD - Reduce("+", cumHazOther)) , .SD = 1:ncol.pred]
+    
+    resPred$cumHazard[, 1:ncol.pred := unlist(apply(apply(.SD, 1, cumsum), 1 , list), recursive = FALSE),
+                      .SD = 1:ncol.pred] 
+    
+    resPred$cumHazard[, tFirst := 0]
+    
+    data.table::setcolorder(resPred$cumHazard, c("tFirst", setdiff(names(resPred$cumHazard), "tFirst")))
+    
+  } else { ### NOT TESTED
+    
     tdiff <- min(diff(eTimes))/2
-    lagsurv <- predictSurvProb.coxph(object$models[["OverallSurvival"]], times = eTimes - tdiff, newdata = newdata)
-    cuminc1 <- t(apply(lagsurv * Haz1, 1, cumsum))
+    
+    cuminc1 <- predictSurvProb.coxph(object$models[["OverallSurvival"]], times = eTimes - tdiff, 
+                                   newdata = newdata, method = method.baseHaz, col.strata = FALSE)
+    
+    cuminc1[, 1:ncol.pred := unlist(apply(apply(.SD* Haz1, 1, cumsum), 1 , list), recursive = FALSE),
+                  .SD = 1:ncol.pred] 
   }
+
   pos <- prodlim::sindex(jump.times = eTimes, eval.times = times)
-  p <- cbind(0, cuminc1)[, pos + 1, drop = FALSE]
+  p <- resPred$cumHazard[, pos + 1, with = FALSE]
   if (NROW(p) != NROW(newdata) || NCOL(p) != length(times)) 
     stop(paste("\nPrediction matrix has wrong dimension:\nRequested newdata x times: ", 
                NROW(newdata), " x ", length(times), "\nProvided prediction matrix: ", 
                NROW(p), " x ", NCOL(p), "\n\n", sep = ""))
-  p
+  
+  ## export
+  if(col.strata == TRUE){
+    return(data.table::data.table(p, strata = strata))
+  }else{
+    p
+  }
 }
