@@ -83,7 +83,7 @@ List BaseHazStrata_cpp(const NumericVector& alltimes, const IntegerVector& statu
     }
     if(lasttime < alltimes_S[iter_s][0]){
       if(addFirst){
-        timeRes.push_back(0);
+        timeRes.push_back(CST_EPSILON);
         hazardRes.push_back(0);
         cumHazardRes.push_back(0);
         if(nStrata > 1){
@@ -91,7 +91,7 @@ List BaseHazStrata_cpp(const NumericVector& alltimes, const IntegerVector& statu
         }
       }
       if(addLast){
-        timeRes.push_back(alltimes_S[iter_s][alltimes_S[iter_s].size()-1]+1e-10);
+        timeRes.push_back(alltimes_S[iter_s][alltimes_S[iter_s].size()-1]+CST_EPSILON);
         hazardRes.push_back(NA_REAL);
         cumHazardRes.push_back(NA_REAL);
         if(nStrata > 1){
@@ -229,7 +229,7 @@ vector< vector<double> > BaseHaz_cpp(const vector<double>& alltimes, const vecto
     cumHazard.push_back(NA_REAL);
   }
   if(addFirst){
-    time.insert(time.begin(),0);
+    time.insert(time.begin(),-CST_EPSILON);
     hazard.insert(hazard.begin(),0);
     cumHazard.insert(cumHazard.begin(),0);
   }
