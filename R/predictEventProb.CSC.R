@@ -56,7 +56,8 @@ predictEventProbRR.CauseSpecificCox <- function (object, newdata, times, cause,
   }
   
   resPred <- predictSurvProbRR(object$models[[paste("Cause",cause)]], times = eTimes, 
-                             newdata = newdata, type = c("hazard","cumHazard"), method = method.baseHaz, col.strata = col.strata)
+                             newdata = newdata, type = c("hazard","cumHazard"), method = method.baseHaz, 
+                             format = if(col.strata){"data.table"}else{"matrix"},col.strata = col.strata)
   
    if(col.strata){
     strata <- resPred$hazard$strata
@@ -69,17 +70,12 @@ predictEventProbRR.CauseSpecificCox <- function (object, newdata, times, cause,
     cumHazOther <- lapply(causes[-match(cause, causes)], 
                           function(c) {
                             predictSurvProbRR(object$models[[paste("Cause",c)]], times = eTimes, 
-                                          newdata = newdata, type = "cumHazard", method = method.baseHaz, col.strata = FALSE)
+                                          newdata = newdata, type = "cumHazard", method = method.baseHaz, 
+                                          format = "matrix", col.strata = FALSE)
                           })
 
-#     resPred$cumHazard[, 1:ncol.pred := resPred$hazard * exp(-.SD - Reduce("+", cumHazOther)) , .SD = 1:ncol.pred]
     resPred <- t(apply(resPred$hazard * exp(-resPred$cumHazard - Reduce("+", cumHazOther)), 1, cumsum))
 
-#     resPred$cumHazard[, 1:ncol.pred := unlist(apply(apply(.SD, 1, cumsum), 1 , list), recursive = FALSE),
-#                          .SD = 1:ncol.pred] 
-#     resPred$cumHazard[, tFirst := 0]
-#     data.table::setcolorder(resPred$cumHazard, c("tFirst", setdiff(names(resPred$cumHazard), "tFirst")))
-           
   } else { ### NOT TESTED
     
     tdiff <- min(diff(eTimes))/2
@@ -88,14 +84,11 @@ predictEventProbRR.CauseSpecificCox <- function (object, newdata, times, cause,
                                newdata = newdata, method = method.baseHaz, col.strata = FALSE)
     
     resPred <- t(apply(resPred * Haz1, 1, cumsum))
-    
-#     resPred[, 1:ncol.pred := unlist(apply(apply(.SD* Haz1, 1, cumsum), 1 , list), recursive = FALSE),
-#                   .SD = 1:ncol.pred] 
   }
 
   pos <- prodlim::sindex(jump.times = eTimes, eval.times = times)
   p <- cbind(0, resPred)[, pos + 1]
-#   p <- resPred$cumHazard[, pos + 1, with = FALSE]
+
   if (NROW(p) != NROW(newdata) || NCOL(p) != length(times)) 
     stop(paste("\nPrediction matrix has wrong dimension:\nRequested newdata x times: ", 
                NROW(newdata), " x ", length(times), "\nProvided prediction matrix: ", 

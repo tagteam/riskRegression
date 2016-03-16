@@ -8,7 +8,7 @@ predictSurvProbRR <- function (x, ...) {
   UseMethod("predictSurvProbRR", x)
 }
 
-#' @title Predicting hazard or cumulative hazard
+#' @title Predicting survival, hazard or cumulative hazard
 #' 
 #' @aliases predictSurvProbRR predictSurvProbRR.coxph predictSurvProbRR.cph
 #
@@ -17,12 +17,13 @@ predictSurvProbRR <- function (x, ...) {
 #' @param times Vector of times at which to return the estimated hazards/survival
 #' @param type should the hazard or the cumulative hazard be returned
 #' @param method.baseHaz The implementation to be used for computing the baseline hazard: "dt" or "cpp"
-#' @param col.strata Should an additional column containing the strata level be returned
+#' @param format The format in which the results should be written.
+#' @param col.strata Should an additional column containing the strata level be returned? If so, format must be set to data.table
 #' 
 #' @details 
 #' Not suited for time varying cox models
 #' 
-#' @return A data table (or a list of) containing the predictions for each patient (in rows) and each time (in columns) and the strata (if requested). 
+#' @return A data table or a matrix containing the predictions for each patient (in rows) and each time (in columns) and the strata (if requested).
 #' 
 #' @examples 
 #' 
@@ -49,7 +50,7 @@ predictSurvProbRR <- function (x, ...) {
 #' res4S <- predictSurvProbRR(fitS, newdata = d, times = seq_times, type = "cumHazard")
 #' @export
 predictSurvProbRR.coxph <- function (object, newdata, times, type = "Survival",
-                                     method.baseHaz = "cpp", col.strata = FALSE) {
+                                     method.baseHaz = "cpp", format = "data.table", col.strata = FALSE) {
   
   times <- sort(times)
   if(any(duplicated(times))){
@@ -85,14 +86,14 @@ predictSurvProbRR.coxph <- function (object, newdata, times, type = "Survival",
                                       }else if(test.Nstrata){ survival:::predict.coxph(object, newdata, type = "lp") 
                                       }else { rowSums(survival:::predict.coxph(object, newdata = newdata, type = "terms")) },
                                     test.Nstrata = test.Nstrata, stratalabels = stratalabels, strataVar = strataVar, 
-                                    col.strata = col.strata)
+                                    format = format, col.strata = col.strata)
   )
   
   
 }
 
 predictSurvProbRR.cph <- function (object, newdata, times, type = "Survival",
-                                   method.baseHaz = "cpp", col.strata = FALSE) {
+                                   method.baseHaz = "cpp", format = "data.table", col.strata = FALSE) {
   
   times <- sort(times)
   if(any(duplicated(times))){
@@ -125,7 +126,7 @@ predictSurvProbRR.cph <- function (object, newdata, times, type = "Survival",
                                     newdata = newdata, times = times, type = type, 
                                     Xb = if(length(BaseVar) > 0){predict(object, newdata, type = "lp")}else{ rep(0, nrow(newdata)) },
                                     test.Nstrata = test.Nstrata, stratalabels = stratalabels, strataVar = strataVar, 
-                                    col.strata = col.strata)
+                                    format = format, col.strata = col.strata)
   )
   
   
@@ -133,10 +134,15 @@ predictSurvProbRR.cph <- function (object, newdata, times, type = "Survival",
 
 ## Warning times must be in ascending order
 predictSurvProbRR_internal <- function (Lambda0, newdata, times, type, Xb,
-                                    test.Nstrata, stratalabels, strataVar, col.strata) {
+                                    test.Nstrata, stratalabels, strataVar,
+                                    format, col.strata) {
   
   ## preparation
   match.arg(type, choices = c("Survival", "cumHazard", "hazard"), several.ok = TRUE)
+  match.arg(format, choices = c("matrix", "data.table"), several.ok = FALSE)
+  if(col.strata == TRUE && format != "data.table"){
+    stop("predictSurvProbRR_internal: set argument \'format\' to TRUE to get col.stata \n")
+  }
   n.type <- length(type)
 
   resPred <- list()
@@ -147,58 +153,50 @@ predictSurvProbRR_internal <- function (Lambda0, newdata, times, type, Xb,
       
       if(type[iterType] == "Survival"){ # step function interpolation
         time.index <- prodlim::sindex(jump.times = Lambda0$time, eval.times = times)
-        resPred[[iterType]] <- data.table::data.table( Lambda0[time.index, exp(- exp(Xb) %o% .SD[[1]]), .SDcols = "cumHazard"] )
+        resPred[[iterType]] <- Lambda0[time.index, exp(- exp(Xb) %o% .SD[[1]]), .SDcols = "cumHazard"]
       }else if(type[iterType] == "cumHazard"){ # step function interpolation
         time.index <- prodlim::sindex(jump.times = Lambda0$time, eval.times = times)
-        resPred[[iterType]] <- data.table::data.table( Lambda0[time.index, exp(Xb) %o% .SD[[1]], .SDcols = "cumHazard"] )
+        resPred[[iterType]] <- Lambda0[time.index, exp(Xb) %o% .SD[[1]], .SDcols = "cumHazard"]
       }else if(type[iterType] == "hazard"){ # dirac function interpolation
-        resPred[[iterType]] <- data.table::data.table(matrix(0, nrow = nrow(newdata), ncol = length(times)))
+        resPred[[iterType]] <- matrix(0, nrow = nrow(newdata), ncol = length(times))
         time.index <- which(Lambda0$time %in% times)
         if(length(time.index)>0){
-          resPred[[iterType]][, which(times %in% Lambda0$time) := data.frame(Lambda0[time.index, exp(Xb) %o% .SD[[1]], .SDcols = "hazard"]), with = FALSE ]
+          resPred[[iterType]][, which(times %in% Lambda0$time)] <- Lambda0[time.index, exp(Xb) %o% .SD[[1]], .SDcols = "hazard"]
         }
       }
       
-      data.table::setnames(resPred[[iterType]], paste0("t",times))
+      colnames(resPred[[iterType]]) <- paste0("t",times)
       
-      if(col.strata == TRUE){
-        resPred[[iterType]][, strata := "1"]
+      if(format == "data.table"){
+        resPred[[iterType]] <- as.data.table(resPred[[iterType]])
+        if(col.strata == TRUE){
+          resPred[[iterType]][, strata := "1"]
+        }
       }
+      
+      
+      
     }
     
   }else{ ## strata
     
-
-      
-    nStrata <- length(strataVar)
-    #     XXstrata <- interaction(lapply(1:length(strataVar),function(x){paste0(strataVar[x], "=", newdata[[strataVar[x]]])}), drop = TRUE, sep = ", ")
-      
-    if("XXstrata" %in% names(newdata)){
-          stop("predictSurvProbRR.coxph: \'newdata\' must not contains a column named \"XXstrata\" \n")
-    }
+    nPatient <- NROW(newdata)  
     
     ##### define the strata # [COULD BE OPTIMIZED in C]
-    if(!data.table::is.data.table(newdata)){
-      newdata <- data.table::as.data.table(newdata)
-    }
-    sapply(1:nStrata, function(x){
-      newdata[, strataVar[x] := paste0(strataVar[x],"=",.SD[[1]]),.SDcols = strataVar[x], with = FALSE]
-    })
-    newdata[, XXstrata := interaction(.SD, drop = TRUE, sep = ", ") ,.SDcols = strataVar]
+    XXstrata <- interaction(lapply(1:length(strataVar),function(x){paste0(strataVar[x], "=", newdata[[strataVar[x]]])}), drop = TRUE, sep = ", ")
+    levelsStrata <- levels(XXstrata)
+    resStrata <- character(nPatient)
     
     ## compute hazard
-    levelsStrata <- levels(newdata$XXstrata)
-#      levelsStrata <- levels(XXstrata)
-     
     for(iterType in 1:n.type){
       
-      resPred[[iterType]] <- data.table::data.table()
+      resPred[[iterType]] <- matrix(nrow = nPatient, ncol = length(times))
+      colnames(resPred[[iterType]]) <- paste0("t",times)
       
       for(iterS in levelsStrata){
         
-#          indexNew <- which(XXstrata == iterS)
-         indexNew <- newdata[,.I[XXstrata == iterS]]
-        indexHaz <- Lambda0[,.I[strata == iterS]]
+         indexNew <- which(XXstrata == iterS)
+         indexHaz <- Lambda0[,.I[strata == iterS]]
         if(length(indexHaz) == 0){
           stop("predictSurvProbRR_internal: unknown strata ",iterS," \n",
                "existing strata: \"",paste(levels(Lambda0$strata), collapse = "\" \""),"\"\n")
@@ -217,19 +215,20 @@ predictSurvProbRR_internal <- function (Lambda0, newdata, times, type, Xb,
             res.tempo[,which(times %in% Lambda0[indexHaz,time])] <- Lambda0[indexHaz[time.index], exp(Xb[indexNew]) %o% .SD[[1]], .SDcols ="hazard"]
           }
         }
-        
-        resPred[[iterType]] <-  data.table::rbindlist(list(resPred[[iterType]], 
-                                                           data.table::data.table(res.tempo, strata = iterS, index = indexNew))
-        )
-        
+         
+        resPred[[iterType]][indexNew,] <- res.tempo
+        if(col.strata == TRUE){
+        resStrata[indexNew] <- iterS
+        }
       }
       
-      data.table::setkey(resPred[[iterType]],index)
-      resPred[[iterType]][,index := NULL]
-      data.table::setnames(resPred[[iterType]], c(paste0("t",times),"strata"))
-      if(col.strata == FALSE){
-        resPred[[iterType]][,strata := NULL]
+      if(format == "data.table"){
+        resPred[[iterType]] <- as.data.table(resPred[[iterType]])
+        if(col.strata == TRUE){
+          resPred[[iterType]][,strata := resStrata]
+        }
       }
+      
     }
     
   }
