@@ -4,14 +4,13 @@
 using namespace Rcpp;
 using namespace std;
 
-const double CST_EPSILON = 1e-10;
 
 vector< vector<double> > BaseHaz_cpp(const vector<double>& alltimes, const vector<int>& status, const vector<double>& Xb, 
-                                     int nPatients, double lasttime, int cause, bool Efron, bool addFirst, bool addLast);
+                                     int nPatients, double maxtime, int cause, bool Efron);
 
 // [[Rcpp::export]]
 List BaseHazStrata_cpp(const NumericVector& alltimes, const IntegerVector& status, const NumericVector& Xb, const IntegerVector& strata,
-                       int nPatients, int nStrata, double lasttime, int cause, bool Efron, bool addFirst, bool addLast){
+                       int nPatients, int nStrata, double maxtime, int cause, bool Efron){
   // WARNING strata0 must begin at 0
   
   vector<int> nObsStrata(nStrata,0);
@@ -79,32 +78,12 @@ List BaseHazStrata_cpp(const NumericVector& alltimes, const IntegerVector& statu
                           Named("hazard") = NA_REAL,
                           Named("cumHazard") = NA_REAL,
                           Named("Pb") = "Could not allocate memory in sortS")
-      );
+	     );
     }
-    if(lasttime < alltimes_S[iter_s][0]){
-      if(addFirst){
-        timeRes.push_back(CST_EPSILON);
-        hazardRes.push_back(0);
-        cumHazardRes.push_back(0);
-        if(nStrata > 1){
-          strataRes.push_back(iter_s);
-        }
-      }
-      if(addLast){
-        timeRes.push_back(alltimes_S[iter_s][alltimes_S[iter_s].size()-1]+CST_EPSILON);
-        hazardRes.push_back(NA_REAL);
-        cumHazardRes.push_back(NA_REAL);
-        if(nStrata > 1){
-        strataRes.push_back(iter_s);
-        }
-      }
-      continue;
-    }
-    
     // compute the hazard
     resH = BaseHaz_cpp(alltimes_S[iter_s], status_S[iter_s], Xb_S[iter_s], 
-                       nObsStrata[iter_s], lasttime, cause, 
-                       Efron, addFirst, addLast);
+                       nObsStrata[iter_s], maxtime, cause, 
+                       Efron);
     
     // store results
     timeRes.insert( timeRes.end(), resH[0].begin(), resH[0].end() );
@@ -126,7 +105,7 @@ List BaseHazStrata_cpp(const NumericVector& alltimes, const IntegerVector& statu
 
 
 vector< vector<double> > BaseHaz_cpp(const vector<double>& alltimes, const vector<int>& status, const vector<double>& Xb, 
-                                     int nPatients, double lasttime, int cause, bool Efron, bool addFirst, bool addLast){
+                                     int nPatients, double maxtime, int cause, bool Efron){
   
   //// 1- count the number of events
   size_t nEvents = 1, nEventsLast = 1;
@@ -135,8 +114,8 @@ vector< vector<double> > BaseHaz_cpp(const vector<double>& alltimes, const vecto
     
     if(alltimes[iterPat] != alltimes[iterPat-1]){
       nEvents++; // total number of events
-      if(lasttime >= alltimes[iterPat]){
-        nEventsLast++; // up to lasttime
+      if(maxtime >= alltimes[iterPat]){
+        nEventsLast++; // up to maxtime
       }
     }
     
@@ -177,7 +156,7 @@ vector< vector<double> > BaseHaz_cpp(const vector<double>& alltimes, const vecto
   index_tempo = 0;
   for(int iterPat = 1 ; iterPat < nPatients ; iterPat++){
     if(alltimes[iterPat] != alltimes[iterPat-1]){
-      if(lasttime < alltimes[iterPat]){break;}      // if after the last time we want to predict
+      if(maxtime < alltimes[iterPat]){break;}      // if after the last time we want to predict
       index_tempo++;
       time[index_tempo] = alltimes[iterPat];
     }
@@ -220,18 +199,6 @@ vector< vector<double> > BaseHaz_cpp(const vector<double>& alltimes, const vecto
     
     hazard[iterTime] = death[iterTime] / sumEXb[iterTime];
     cumHazard[iterTime] = cumHazard[iterTime-1] + hazard[iterTime];
-  }
-  
-  //// 4- before and after the events
-  if(addLast){
-    time.push_back(alltimes[nPatients-1] + CST_EPSILON);
-    hazard.push_back(NA_REAL);
-    cumHazard.push_back(NA_REAL);
-  }
-  if(addFirst){
-    time.insert(time.begin(),-CST_EPSILON);
-    hazard.insert(hazard.begin(),0);
-    cumHazard.insert(cumHazard.begin(),0);
   }
   
   //// export

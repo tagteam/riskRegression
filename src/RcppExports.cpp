@@ -6,19 +6,36 @@
 
 using namespace Rcpp;
 
-// BaselineHazardFast_cpp
-List BaselineHazardFast_cpp(const IntegerVector& status, const NumericVector& pattimes, const NumericVector& Xb, int n_patients, const NumericVector& eventtimes, int cause);
-RcppExport SEXP riskRegression_BaselineHazardFast_cpp(SEXP statusSEXP, SEXP pattimesSEXP, SEXP XbSEXP, SEXP n_patientsSEXP, SEXP eventtimesSEXP, SEXP causeSEXP) {
+// BaseHazStrata_cpp
+List BaseHazStrata_cpp(const NumericVector& alltimes, const IntegerVector& status, const NumericVector& Xb, const IntegerVector& strata, int nPatients, int nStrata, double maxtime, int cause, bool Efron);
+RcppExport SEXP riskRegression_BaseHazStrata_cpp(SEXP alltimesSEXP, SEXP statusSEXP, SEXP XbSEXP, SEXP strataSEXP, SEXP nPatientsSEXP, SEXP nStrataSEXP, SEXP maxtimeSEXP, SEXP causeSEXP, SEXP EfronSEXP) {
 BEGIN_RCPP
     Rcpp::RObject __result;
     Rcpp::RNGScope __rngScope;
+    Rcpp::traits::input_parameter< const NumericVector& >::type alltimes(alltimesSEXP);
     Rcpp::traits::input_parameter< const IntegerVector& >::type status(statusSEXP);
-    Rcpp::traits::input_parameter< const NumericVector& >::type pattimes(pattimesSEXP);
     Rcpp::traits::input_parameter< const NumericVector& >::type Xb(XbSEXP);
-    Rcpp::traits::input_parameter< int >::type n_patients(n_patientsSEXP);
-    Rcpp::traits::input_parameter< const NumericVector& >::type eventtimes(eventtimesSEXP);
+    Rcpp::traits::input_parameter< const IntegerVector& >::type strata(strataSEXP);
+    Rcpp::traits::input_parameter< int >::type nPatients(nPatientsSEXP);
+    Rcpp::traits::input_parameter< int >::type nStrata(nStrataSEXP);
+    Rcpp::traits::input_parameter< double >::type maxtime(maxtimeSEXP);
     Rcpp::traits::input_parameter< int >::type cause(causeSEXP);
-    __result = Rcpp::wrap(BaselineHazardFast_cpp(status, pattimes, Xb, n_patients, eventtimes, cause));
+    Rcpp::traits::input_parameter< bool >::type Efron(EfronSEXP);
+    __result = Rcpp::wrap(BaseHazStrata_cpp(alltimes, status, Xb, strata, nPatients, nStrata, maxtime, cause, Efron));
+    return __result;
+END_RCPP
+}
+// baseHazEfron_survival_cpp
+NumericVector baseHazEfron_survival_cpp(int ntimes, IntegerVector ndead, NumericVector risk, NumericVector riskDead);
+RcppExport SEXP riskRegression_baseHazEfron_survival_cpp(SEXP ntimesSEXP, SEXP ndeadSEXP, SEXP riskSEXP, SEXP riskDeadSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject __result;
+    Rcpp::RNGScope __rngScope;
+    Rcpp::traits::input_parameter< int >::type ntimes(ntimesSEXP);
+    Rcpp::traits::input_parameter< IntegerVector >::type ndead(ndeadSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type risk(riskSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type riskDead(riskDeadSEXP);
+    __result = Rcpp::wrap(baseHazEfron_survival_cpp(ntimes, ndead, risk, riskDead));
     return __result;
 END_RCPP
 }
