@@ -59,7 +59,6 @@ List BaseHazStrata_cpp(const NumericVector& alltimes, const IntegerVector& statu
   }
   
   ////// 2- Select and compute
-  bool test;
   vector<vector <double> > resH;
   vector<double> timeRes(0);
   vector<double> hazardRes(0);
@@ -69,17 +68,12 @@ List BaseHazStrata_cpp(const NumericVector& alltimes, const IntegerVector& statu
   for(int iter_s = 0 ; iter_s < nStrata ; iter_s++){
     
     // reorder the data
-    test = sortS(alltimes_S[iter_s], status_S[iter_s], Xb_S[iter_s], nObsStrata[iter_s]); // update alltimes, status and Xb
+    sortS(alltimes_S[iter_s], status_S[iter_s], Xb_S[iter_s], nObsStrata[iter_s]); // update alltimes, status and Xb
     
-    // deal with specific cases
-    if(test == false){
-      return(List::create(Named("time") = NA_REAL,
-                          Named("strata") = NA_REAL,
-                          Named("hazard") = NA_REAL,
-                          Named("cumHazard") = NA_REAL,
-                          Named("Pb") = "Could not allocate memory in sortS")
-	     );
+    if(maxtime < alltimes_S[iter_s][0]){ // if after the last time we need 
+      continue;
     }
+    
     // compute the hazard
     resH = BaseHaz_cpp(alltimes_S[iter_s], status_S[iter_s], Xb_S[iter_s], 
                        nObsStrata[iter_s], maxtime, cause, 
@@ -96,11 +90,18 @@ List BaseHazStrata_cpp(const NumericVector& alltimes, const IntegerVector& statu
   
   
   //// 3- export
-  return(List::create(Named("time")  = timeRes,
-                      Named("strata") = strataRes,
-                      Named("hazard")  = hazardRes,
-                      Named("cumHazard")  = cumHazardRes)
-  );
+  if(nStrata == 1){
+    return(List::create(Named("time")  = timeRes,
+                        Named("hazard")  = hazardRes,
+                        Named("cumHazard")  = cumHazardRes)
+    );  
+  }else{
+    return(List::create(Named("time")  = timeRes,
+                        Named("strata") = strataRes,
+                        Named("hazard")  = hazardRes,
+                        Named("cumHazard")  = cumHazardRes)
+    );  
+  }
 }
 
 
@@ -123,6 +124,9 @@ vector< vector<double> > BaseHaz_cpp(const vector<double>& alltimes, const vecto
   
   ////// 2- merge the data by event
   vector<double> time(nEventsLast);
+  vector<double> hazard(nEventsLast, NA_REAL);
+  vector<double> cumHazard(nEventsLast, NA_REAL);
+  
   vector<int> death(nEvents,0);
   vector<double> sumEXb(nEvents);
   vector<double> sumEXb_event(nEvents,0.0); // only used if efron correction
@@ -189,9 +193,6 @@ vector< vector<double> > BaseHaz_cpp(const vector<double>& alltimes, const vecto
     }
   
   //// 3- Computation of the hazards
-  vector<double> hazard(nEventsLast, NA_REAL);
-  vector<double> cumHazard(nEventsLast, NA_REAL);
-  
   hazard[0] = death[0] / sumEXb[0];
   cumHazard[0] = hazard[0];
   
