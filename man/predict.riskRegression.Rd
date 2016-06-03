@@ -4,7 +4,7 @@
 \alias{predict.riskRegression}
 \title{Predict individual risk.}
 \usage{
-predict.riskRegression(object, newdata, ...)
+\method{predict}{riskRegression}(object, newdata, ...)
 }
 \arguments{
 \item{object}{Fitted object obtained with one of \code{ARR}, \code{LRR},

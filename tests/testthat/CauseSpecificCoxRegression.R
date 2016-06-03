@@ -1,5 +1,18 @@
 context("Cause-specific Cox regression")
 
+
+test_that("predictSurv",{
+    set.seed(17)
+    library(pec)
+    library(prodlim)
+    d <- prodlim::SimSurv(100)
+    f <- coxph(Surv(time,status)~X1+X2,data=d)
+    h <- cph(Surv(time,status)~X1+X2,data=d,surv=TRUE)
+    af <- predictSurvProb(f,newdata=d[c(17,88,3),],times=c(0,1,8.423,100,1000))
+    bf <- predictSurv(f,newdata=d[c(17,88,3),],times=c(0,1,8.423,100,1000))
+    expect_equal(af,bf)
+})
+
 test_that("Cox models",{
     set.seed(17)
     d <- prodlim::SimCompRisk(100)
@@ -28,9 +41,11 @@ test_that("strata",{
 
 test_that("CSC many character valued causes",{
     set.seed(17)
-    d <- data.frame(time=sample(1:100),event=sample(letters,size=100,replace=TRUE),X1=rnorm(100),X2=rbinom(100,1,0.4))
-    m1 <- CSC(Hist(time,event)~strata(X2)+X1,data=d)
-    m2 <- CSC(Hist(time,event)~strata(X2)+X1,data=d,survtype="surv",cause="n")
+    d <- prodlim::SimCompRisk(100)
+    d$event <- as.character(factor(d$event,labels=c("a","b","c")))
+    m1 <- CSC(Hist(time,event)~strata(X1)+X2,data=d)
+    m2 <- CSC(Hist(time,event)~strata(X1)+X2,data=d,survtype="surv",cause="b")
+    expect_equal(round(coef(m1$models[[2]])[[1]],6),0.535059)
 })
 
 

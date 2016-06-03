@@ -1,15 +1,9 @@
-# Still need to check/update
-# 1. When ties are present in own predictEventProb2
-# - idea: the ties are calculated in CSC for efron ties - own code is breslow
-# 2. Update own basehaz and the 2 predict functions to efron ties
-
 
 library(pec)
 library(CoxBoost)
 library(survival)
 library(riskRegression)
 library(prodlim)
-
 #
 # Test data - basehaz:
 #
@@ -51,9 +45,8 @@ time2 <- round(train$time)
 ## cb.fit <- coxboost(Hist(time,cause)~X1+X2,cause=1,data=train,stepno=10)
 ## predictEventProb(cb.fit,newdata=test,times=seq(1:10),cause=1)
 
-#with strate
+#with strata
 cox.fit2  <- CSC(list(Hist(time,cause)~X2+strata(X1),Hist(time,cause)~X1+X2),data=train)
-cox.fit3  <- CSC(Hist(time2,cause)~X1+strata(X2),data=train)
 
 predictEventProb(cox.fit3,newdata=test,times=seq(0:10),cause=1)
 predictEventProb2(cox.fit3,newdata=test,times=seq(0:10),cause=1,time,status,Z)

@@ -1,5 +1,6 @@
 #' @title Computing baseline hazard
-#' 
+#'
+#' Fast routine to get baseline hazards and subject specific hazards as well as survival probabilities from a coxph or cph object
 #' @param object The fitted coxph or cph model
 #' @param centered If TRUE remove the centering factor used by coxph in the linear predictor
 #' @param maxtime Baseline hazard will be computed for each event before maxtime
@@ -13,13 +14,14 @@
 #' library(survival)
 #' 
 #' set.seed(10)
-#' d <- SimSurv(1e3)
+#' d <- SimSurv(1e2)
 #' d$time <- round(d$time,1)
 #' fit <- coxph(Surv(time,status)~X1 * X2,data=d, ties="breslow")
 #' # table(duplicated(d$time))
-#'
-#' res1 <- baseHazRR(fit) 
-#' res2 <- baseHazRR(fit, maxtime = 5)
+#' 
+#' baseHazRR(fit)
+#' cbind(survival::basehaz(fit),baseHazRR(fit))
+#' baseHazRR(fit, maxtime = 5)
 #' 
 #' # strata
 #' fitS <- coxph(Surv(time,status)~strata(X1)+X2,data=d, ties="breslow")
@@ -30,7 +32,7 @@
 baseHazRR <- function(object,
                       centered = TRUE,
                       maxtime = Inf){
-  
+    
   ## extract elements from objects
   if ("cph" %in% class(object)){
     
@@ -49,18 +51,18 @@ baseHazRR <- function(object,
     
   } else if ("coxph" %in% class(object)){
     
-    nPatients <- object$n
-    strataspecials <- attr(object$terms,"specials")$strata
-    no.strata <- is.null(strataspecials)
-    if(!no.strata){
-      stratavars <- attr(object$terms,"term.labels")[strataspecials - 1]
-      strataF <- interaction(model.frame(object)[,stratavars], drop = TRUE, sep = ".", lex.order = TRUE) 
-    }else{
-      strataF <- factor("1")
-    }
+      nPatients <- object$n
+      strataspecials <- attr(object$terms,"specials")$strata
+      no.strata <- is.null(strataspecials)
+      if(!no.strata){
+          stratavars <- attr(object$terms,"term.labels")[strataspecials - 1]
+          strataF <- interaction(stats::model.frame(object)[,stratavars], drop = TRUE, sep = ".", lex.order = TRUE) 
+      }else{
+          strataF <- factor("1")
+      }
     
   } else {
-    stop("baseHazRR: only implemented for \"coxph\" and \"cph\" objects \n")
+      stop("baseHazRR: only implemented for \"coxph\" and \"cph\" objects \n")
   }
   
   
@@ -70,9 +72,9 @@ baseHazRR <- function(object,
   }
   if (is.na(maxtime)) maxtime <- Inf
   
-  ## main
-  levelsStrata <- levels(strataF)
-  nStrata <- length(levelsStrata)
+    ## main
+    levelsStrata <- levels(strataF)
+    nStrata <- length(levelsStrata)
   
   resCpp <- BaseHazStrata_cpp(alltimes = object$y[, ncol(object$y) - 1],
                               status = object$y[, ncol(object$y)],

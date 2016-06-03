@@ -13,16 +13,25 @@ df.NS <- SimCompRisk(n)
 df.NS$time <- round(df.NS$time,2)
 # table(duplicated(df.NS$time))
 
+
+test <- CSC(Hist(time,event) ~ X1+X2,data = df.NS,x = TRUE, y = TRUE )
+predictSurv(test$model[[1]],newdata = df.NS[1:3,],type="survival")$survival[,1:8,with=FALSE]
+predictSurv(test$model[[1]],newdata = df.NS[1:3,],type="cumHazard")$cumHazard[,1:8,with=FALSE]
+predictSurvProb(test$model[[1]],newdata = df.NS[1:3,],times=test$model[[1]]$y[,1])[,1:8]
+
+Source(pec);predictEventProb.CauseSpecificCox(CSC.NS, newdata = df.NS[1:3,], times = 8, cause = 1)
+Source(riskRegression);predict(CSC.NS, newdata = df.NS[1:3,], times = 8, cause = 1)
+
 seqTime <- c(unique(sort(df.NS$time)), max(df.NS$time) + 1)
 
 for(model in c("coxph","cph")){
   for(method.ties in c("breslow","efron")){
     
-    CSC.NS <- CSC(Hist(time,event) ~ X1*X2,data = df.NS, ties = method.ties, fitter = model, x = TRUE, y = TRUE )
+    CSC.NS <- CSC(Hist(time,event) ~ X1*X2,data = df.NS, method = method.ties, fitter = model, x = TRUE, y = TRUE )
     
       for(cause in 1:2){ 
-        Event0.NS <- pec:::predictEventProb.CauseSpecificCox(CSC.NS, newdata = df.NS, times = seqTime, cause = cause)
-        EventTest.NS <- predictEvent(CSC.NS, newdata = df.NS, times = seqTime, cause = cause)
+        Event0.NS <- pec::predictEventProb.CauseSpecificCox(CSC.NS, newdata = df.NS, times = seqTime, cause = cause)
+        EventTest.NS <- predict(CSC.NS, newdata = df.NS, times = seqTime, cause = cause)
         
         test_that(paste0("pec vs predictEventProbRR - no strata, method.ties/method.baseHaz/model/cause = ",method.ties,"/",model,"/",cause,""),{
           expect_equal(as.numeric(Event0.NS),as.numeric(unlist(EventTest.NS)), tolerance = 1e-8)
@@ -50,7 +59,7 @@ for(model in c("coxph","cph")){
     }
     
     for(cause in 1:2){ 
-      Event0.S <- pec:::predictEventProb.CauseSpecificCox(CSC.S, newdata = df.S, times = seqTime, cause = cause)
+      Event0.S <- pec::predictEventProb.CauseSpecificCox(CSC.S, newdata = df.S, times = seqTime, cause = cause)
       EventTest.S <- predictEvent(CSC.S, newdata = df.S, times = seqTime, cause = cause)
       
       test_that(paste0("pec vs predictEventProbRR - strata, method.ties/method.baseHaz/model/cause = ",method.ties,"/",model,"/",cause,""),{

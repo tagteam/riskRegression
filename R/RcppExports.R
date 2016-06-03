@@ -9,3 +9,11 @@ baseHazEfron_survival_cpp <- function(ntimes, ndead, risk, riskDead) {
     .Call('riskRegression_baseHazEfron_survival_cpp', PACKAGE = 'riskRegression', ntimes, ndead, risk, riskDead)
 }
 
+colCumSum <- function(m) {
+    .Call('riskRegression_colCumSum', PACKAGE = 'riskRegression', m)
+}
+
+rowCumSum <- function(m) {
+    .Call('riskRegression_rowCumSum', PACKAGE = 'riskRegression', m)
+}
+

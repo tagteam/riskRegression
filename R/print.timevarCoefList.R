@@ -1,4 +1,11 @@
-#' @export 
+#' Print time varying coefficients
+#'
+#' Print time varying coefficients
+#' @param x object with time varying coefficients 
+#' @param digits Number of digits for all numbers but p-values
+#' @param eps p-values smaller than this number are shown as such
+#' @param ... not used
+#' @export
 print.timevarCoefList <- function(x,digits=3,eps=10^-4,...){
   times <- names(x)
   lapply(1:length(x),function(i){

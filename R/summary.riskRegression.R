@@ -1,4 +1,14 @@
-#' @export 
+#' Summary of a risk regression model
+#'
+#' Summary of a risk regression model
+#' @param object Object obtained with ARR, LRR or riskRegression
+#' @param times Time points at which to show time-dependent coefficients
+#' @param digits Number of digits for all numbers but p-values
+#' @param pvalue.digits Number of digits for p-values
+#' @param eps p-values smaller than this number are shown as such
+#' @param verbose Level of verbosity
+#' @param ... not used
+#' @export
 summary.riskRegression <- function(object,
                                    times,
                                    digits=3,

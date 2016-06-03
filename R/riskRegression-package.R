@@ -39,17 +39,13 @@
 ##' @examples
 ##' 
 ##' data(Melanoma)
-
-
-#' Functions for scoring risk markers and risk prediction models
-#'
-#' riskScore allows you to assess many markers/models simultaneously
 #'
 #' @docType package
 #' @name riskRegression
 #' @useDynLib riskRegression
 #' @importFrom Rcpp sourceCpp evalCpp
 #' @importFrom survival Surv
+#' @importFrom data.table data.table ":="
 #' @importFrom survival coxph
 #' @importFrom prodlim Hist
 #' @importFrom grDevices col2rgb

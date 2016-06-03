@@ -93,8 +93,8 @@ all.equal(cox2,fit5$models[[2]])
 ## from the same fit
 library(pec)
 fit2 <- CSC(Hist(time,status)~invasion+epicel+age, data=Melanoma)
-pec:::predictEventProb(fit2,cause=1,newdata=Melanoma[c(17,99,108),],times=c(100,1000))
-pec:::predictEventProb(fit2,cause=2,newdata=Melanoma[c(17,99,108),],times=c(100,1000))
+pec::predictEventProb(fit2,cause=1,newdata=Melanoma[c(17,99,108),],times=c(100,1000))
+pec::predictEventProb(fit2,cause=2,newdata=Melanoma[c(17,99,108),],times=c(100,1000))
 
 ## survtype = "surv" we need to change the cause of interest 
 
@@ -102,16 +102,16 @@ fit5.2 <- CSC(Hist(time,status)~invasion+epicel+age+strata(sex),
             data=Melanoma,
             survtype="surv",cause=2)
 ## now this does not work
-try(pec:::predictEventProb(fit5.2,cause=1,newdata=Melanoma,times=4))
+try(pec::predictEventProb(fit5.2,cause=1,newdata=Melanoma,times=4))
 
 ## but this does
-try(pec:::predictEventProb(fit5.2,cause=2,newdata=Melanoma,times=100))
+try(pec::predictEventProb(fit5.2,cause=2,newdata=Melanoma,times=100))
 
 }
 \author{
 Thomas A. Gerds \email{tag@biostat.ku.dk}
 
-Ulla B. Mogensen \email{ulmo@biostat.ku.dk}
+Thomas A. Gerds \email{tag@biostat.ku.dk} and Ulla B. Mogensen
 }
 \seealso{
 \code{\link{coxph}}

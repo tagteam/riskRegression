@@ -1,4 +1,9 @@
-#' @export 
+#' Print of a Cause-Specific Cox regression model
+#' 
+#' Print of a Cause-Specific Cox regression model
+#' @param x Object obtained with CSC
+#' @param ... Passed to print
+#' @export
 print.CauseSpecificCox <- function(x,...){
     print(x$call)
     print(x$response)

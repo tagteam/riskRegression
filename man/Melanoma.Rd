@@ -37,9 +37,6 @@ present).
 \examples{
 
 data(Melanoma)
-Functions for scoring risk markers and risk prediction models
-
-riskScore allows you to assess many markers/models simultaneously
 
 }
 \references{
