@@ -2,71 +2,66 @@
 % Please edit documentation in R/ateCSC.R
 \name{ateCSC}
 \alias{ateCSC}
-\title{Compute the average treatment effect using CSC
-
-Use the g-formula to estimate the average treatment effect}
+\title{Compute the average treatment effect using CSC}
 \usage{
-ateCSC(data, treatVar, treatLevels = NULL, ls.formula, times, cause,
-  return.model = FALSE, addTime = TRUE, n.bootstrap = 0, ncpus = 1,
-  seed = NULL, alpha = 0.05, ...)
+ateCSC(formula, data, treatment, contrasts = NULL, times, cause,
+  n.bootstrap = 0, fitter = "cph", handler = c("mclapply",
+  "sfClusterApplyLB"), mc.cores = 1, conf.level = 0.95,
+  return.model = TRUE, verbose = TRUE, ...)
 }
 \arguments{
-\item{data}{dataset}
+\item{formula}{formula argument for CSC}
 
-\item{treatVar}{name of the column containing the treatment variable}
+\item{data}{data argument for CSC}
 
-\item{treatLevels}{the levels of treatment to be compared}
+\item{treatment}{name of the column containing the treatment
+variable}
 
-\item{ls.formula}{formula argument of CSC}
+\item{contrasts}{the levels of treatment variable to be compared}
 
-\item{times}{time argument of CSC}
+\item{times}{time points at which to evaluate risks}
 
-\item{cause}{argument of CSC}
+\item{cause}{cause of intererst}
 
-\item{return.model}{should the fitted CSC model be returned}
+\item{n.bootstrap}{the number of bootstrap replications used to
+compute the confidence interval}
 
-\item{addTime}{should the time be specified in the output}
+\item{fitter}{Either \code{"cph"} or \code{"coxph"} passed to CSC}
 
-\item{n.bootstrap}{the number of bootstrap replications used to compute the confidence interval}
+\item{handler}{parallel handler for bootstrap. Either "mclapply" or
+"sfClusterApplyLB"}
 
-\item{ncpus}{the number of CPU to use for the bootstrap}
+\item{mc.cores}{Passed on to \code{mclapply} or
+\code{sfClusterApplyLB}. The number of cores to use, i.e. at
+most how many child processes will be run simultaneously.  The
+option is initialized from environment variable MC_CORES if
+set.}
 
-\item{seed}{the seed to set at the beginning of the bootstrap}
+\item{conf.level}{the level for bootstrap confidence intervals}
 
-\item{alpha}{the type 1 error}
+\item{return.model}{Logical. if \code{TRUE} the fitted CSC is
+returned as part of the output.}
 
-\item{...}{passed on}
+\item{verbose}{Logical. If \code{TRUE} inform about estimated run time.}
+
+\item{...}{passed to CSC}
 }
 \value{
-A list with:
-model: the CSC model
-averageCIF: the predicted CIF averaged over patient for a given treatment modality (column) and time (row)
-gFormula: A list (times) containing the value of the g formula comparing all pair of treatment modality, with the first one as a reference.
-averageCIFCIsup: the lower bound of the CI for averageCIF
-averageCIFCIinf: the upper bound of the CI for averageCIF
-gFormulaCIsup: the lower bound of the CI for averageCIFCIsup
-gFormulaCIinf: the upper bound of the CI for averageCIFCIinf
+A list with: point estimates, bootstrap quantile confidence intervals
+model: the CSC model (optional)
 }
-\details{
-Require the snowfall package for the bootstrap.
+\description{
+Use the g-formula to estimate the average treatment effect
 }
 \examples{
-#library(snowfall)
-data <- SimCompRisk(1e3)
-data$time <- round(data$time,1)
+dt <- SimCompRisk(1e3)
+dt$time <- round(dt$time,1)
+seqtimes <- sample(x = unique(sort(dt$time)), size = 100) 
+dt$X1 <- factor(rbinom(1e3, prob = c(0.2,0.3,0.2) , size = 3), labels = paste0("T",0:3))
+ateCSC(formula = Hist(time,event)~ X1+X2,data = dt, treatment = "X1", contrasts = NULL,
+        times = 7, cause = 1, n.bootstrap = 3, mc.cores=1)
 
-seqtimes <- sample(x = unique(sort(data$time)), size = 100) 
-
-data$X1 <- factor(rbinom(1e3, prob = c(0.2,0.3,0.2) , size = 3), labels = paste0("T",0:3))
-res.Gformula <- ateCSC(data = data, treatVar = "X1", treatLevels = NULL,
-                         ls.formula = Hist(time,event)~ X1*X2, 
-                         times = 1:10, cause = 1,
-                         n.bootstrap = 10)
- paste0(res.Gformula$averageCIF[res.Gformula$averageCIF[,"time"] == 5,"T0"],
-       " [",
-        res.Gformula$averageCIFCIinf[res.Gformula$averageCIFCIinf[,"time"] == 5,"T0"],
-        " ; ",
-        res.Gformula$averageCIFCIsup[res.Gformula$averageCIFCIsup[,"time"] == 5,"T0"],
-        "]")
+ateCSC(formula = Hist(time,event)~ X1+X2,data = dt, treatment = "X1", contrasts = NULL,
+        times = 7, cause = 1, n.bootstrap = 3, mc.cores=2,fitter="cph")
 }
 

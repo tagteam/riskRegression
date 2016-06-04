@@ -19,8 +19,6 @@
 \item{verbose}{Level of verbosity}
 
 \item{...}{not used}
-
-\item{pvalue.digits}{Number of digits for p-values}
 }
 \description{
 Print function for riskRegression models

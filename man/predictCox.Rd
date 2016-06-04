@@ -30,10 +30,13 @@ in the linear predictor.}
 \item{type}{One or several strings that match (either in lower or upper case or mixtures) one
 or several of the strings \code{"hazard"},\code{"cumhazard"}, \code{"survival"}}
 
-\item{keep.strata}{Logical. If \code{TRUE} add the strata in the newdata. Only if there any.}
+\item{keep.strata}{Logical. If \code{TRUE} add the (newdata) strata to the output. Only if there any.}
+
+\item{keep.times}{Logical. If \code{TRUE} add the evaluation times to the output.}
 }
 \value{
-a data table containing the time, the strata (if any), the hazard and the cumulative hazard.
+A list optionally containing the time, the strata (if any), the hazard, the
+        cumulative hazard and survival probabilities.
 }
 \details{
 Not working with time varying predictor variables or
@@ -44,19 +47,38 @@ library(survival)
 
 set.seed(10)
 d <- SimSurv(1e2)
+nd <- SimSurv(10)
 d$time <- round(d$time,1)
 fit <- coxph(Surv(time,status)~X1 * X2,data=d, ties="breslow")
 # table(duplicated(d$time))
 
 predictCox(fit)
-cbind(survival::basehaz(fit),baseHazRR(fit))
-predictCox(fit, maxtime = 5)
+predictCox(fit,newdata=nd)
+cbind(survival::basehaz(fit),predictCox(fit,type="cumHazard"))
+predictCox(fit, maxtime = 5,keep.times=TRUE)
+predictCox(fit, maxtime = 1,keep.times=TRUE)
 
-# strata
+# one strata variable
 fitS <- coxph(Surv(time,status)~strata(X1)+X2,data=d, ties="breslow")
 
 predictCox(fitS)
 predictCox(fitS, maxtime = 5)
+predictCox(fitS, maxtime = 5,newdata=nd)
+
+# two strata variables
+set.seed(1)
+d$U=sample(letters[1:5],replace=TRUE,size=NROW(d))
+d$V=sample(letters[4:10],replace=TRUE,size=NROW(d))
+nd$U=sample(letters[1:5],replace=TRUE,size=NROW(nd))
+nd$V=sample(letters[4:10],replace=TRUE,size=NROW(nd))
+fit2S <- coxph(Surv(time,status)~X1+strata(U)+strata(V)+X2,data=d, ties="breslow")
+
+cbind(survival::basehaz(fit2S),predictCox(fit2S,type="cumHazard"))
+predictCox(fit2S)
+predictCox(fitS, maxtime = 5)
+predictCox(fitS, maxtime = 5,newdata=nd)
+
+
 }
 \author{
 Brice Ozenne broz@sund.ku.dk, Thomas A. Gerds tag@biostat.ku.dk

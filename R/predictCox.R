@@ -1,4 +1,4 @@
-#' @title  Fast prediction of survival, hazard and cumulative hazard from Cox regression model 
+#' Fast prediction of survival, hazard and cumulative hazard from Cox regression model 
 #'
 #' Fast routine to get baseline hazards and subject specific hazards
 #' as well as survival probabilities from a coxph or cph object
@@ -12,35 +12,52 @@
 #' @param centered If TRUE remove the centering factor used by \code{coxph}
 #'     in the linear predictor.
 #' @param maxtime Baseline hazard will be computed for each event before maxtime
-#' 
 #' @param type One or several strings that match (either in lower or upper case or mixtures) one
 #' or several of the strings \code{"hazard"},\code{"cumhazard"}, \code{"survival"}
 #' @param keep.strata Logical. If \code{TRUE} add the (newdata) strata to the output. Only if there any. 
 #' @param keep.times Logical. If \code{TRUE} add the evaluation times to the output. 
 #' @details Not working with time varying predictor variables or
 #'     delayed entry.
-#'
 #' @author Brice Ozenne broz@@sund.ku.dk, Thomas A. Gerds tag@@biostat.ku.dk
-#' @return a data table containing the time, the strata (if any), the hazard and the cumulative hazard.
-#' 
+#' @return A list optionally containing the time, the strata (if any), the hazard, the
+#'         cumulative hazard and survival probabilities.
 #' @examples 
 #' library(survival)
 #' 
 #' set.seed(10)
 #' d <- SimSurv(1e2)
+#' nd <- SimSurv(10)
 #' d$time <- round(d$time,1)
 #' fit <- coxph(Surv(time,status)~X1 * X2,data=d, ties="breslow")
 #' # table(duplicated(d$time))
 #' 
 #' predictCox(fit)
-#' cbind(survival::basehaz(fit),baseHazRR(fit))
-#' predictCox(fit, maxtime = 5)
+#' predictCox(fit,newdata=nd)
+#' cbind(survival::basehaz(fit),predictCox(fit,type="cumHazard"))
+#' predictCox(fit, maxtime = 5,keep.times=TRUE)
+#' predictCox(fit, maxtime = 1,keep.times=TRUE)
 #' 
-#' # strata
+#' # one strata variable
 #' fitS <- coxph(Surv(time,status)~strata(X1)+X2,data=d, ties="breslow")
 #' 
 #' predictCox(fitS)
 #' predictCox(fitS, maxtime = 5)
+#' predictCox(fitS, maxtime = 5,newdata=nd)
+#'
+#' # two strata variables
+#' set.seed(1)
+#' d$U=sample(letters[1:5],replace=TRUE,size=NROW(d))
+#' d$V=sample(letters[4:10],replace=TRUE,size=NROW(d))
+#' nd$U=sample(letters[1:5],replace=TRUE,size=NROW(nd))
+#' nd$V=sample(letters[4:10],replace=TRUE,size=NROW(nd))
+#' fit2S <- coxph(Surv(time,status)~X1+strata(U)+strata(V)+X2,data=d, ties="breslow")
+#'
+#' cbind(survival::basehaz(fit2S),predictCox(fit2S,type="cumHazard"))
+#' predictCox(fit2S)
+#' predictCox(fitS, maxtime = 5)
+#' predictCox(fitS, maxtime = 5,newdata=nd)
+#' 
+#' 
 #' @export
 predictCox <- function(object,
                        newdata=NULL,
@@ -62,7 +79,7 @@ predictCox <- function(object,
         stratavars <- xvars[strataspecials]
         is.strata <- length(strataspecials)>0
         if(is.strata){
-            sterms <- drop.terms(xterms,(1:length(xterms))[-strataspecials])
+            sterms <- stats::drop.terms(xterms,(1:length(xterms))[-strataspecials])
             stratavars <- xvars[strataspecials]
             strataF <- object$Strata
             stratalevels <- object$strata
@@ -76,7 +93,7 @@ predictCox <- function(object,
         stratavars <- xvars[strataspecials]
         is.strata <- length(strataspecials)>0
         if(is.strata){
-            sterms <- drop.terms(xterms,(1:length(xterms))[-strataspecials])
+            sterms <- stats::drop.terms(xterms,(1:length(xterms))[-strataspecials])
             stratalevels <- object$xlevels[stratavars]
             strataF <- interaction(stats::model.frame(object)[,stratavars], drop = TRUE, sep = ".", lex.order = TRUE) 
         }else{
@@ -97,7 +114,7 @@ predictCox <- function(object,
     status <- object$y[,"status"]
     Lambda0 <- BaseHazStrata_cpp(alltimes = ytimes,
                                  status = status,
-                                 Xb = if(centered == FALSE){object$linear.predictors + sum(object$means*coef(object))}else{object$linear.predictors},
+                                 Xb = if(centered == FALSE){object$linear.predictors + sum(object$means*stats::coef(object))}else{object$linear.predictors},
                                  strata = as.numeric(strataF) - 1,
                                  nPatients = nPatients,
                                  nStrata = nStrata,
@@ -111,7 +128,11 @@ predictCox <- function(object,
     if (is.strata == TRUE){ ## rename the strata value with the correct levels
         Lambda0$strata <- factor(Lambda0$strata, levels = 0:(nStrata-1), labels = levelsStrata)
     }
-    if (!is.null(newdata)){
+    if (is.null(newdata)){
+        hazard <- Lambda0$hazard
+        cumHazard <- Lambda0$cumHazard
+        survival <- exp(-Lambda0$cumHazard)
+    } else{
         ## linear predictor
         if  ("cph" %in% class(object)){
             if(length(xvars) > length(stratavars)){
@@ -162,6 +183,7 @@ predictCox <- function(object,
             }
         }
     }
+        
     out <- list()
     if (missing(times)){
         if ("hazard" %in% type) out <- c(out,list(hazard=hazard))
@@ -184,7 +206,7 @@ predictCox <- function(object,
             }
         }
         if ("cumHazard" %in% type || "survival" %in% type){
-            tindex <- sindex(jump.times=etimes,eval.times=times)
+            tindex <- prodlim::sindex(jump.times=etimes,eval.times=times)
         }
         if ("cumHazard" %in% type) out <- c(out,list(cumHazard=cbind(0,cumHazard)[,tindex+1]))
         if ("survival" %in% type) out <- c(out,list(survival=cbind(1,survival)[,tindex+1]))

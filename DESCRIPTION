@@ -1,7 +1,7 @@
 Package: riskRegression
 Type: Package
 Title: Risk Regression Models for Survival Analysis with Competing Risks
-Version: 1.2.0
+Version: 1.2.1
 Author: Thomas Alexander Gerds, Thomas Harder Scheike
 Depends:
     R (>= 2.9.0),
@@ -14,10 +14,12 @@ Imports:
     cmprsk (>= 2.2-7),
     survival (>= 2.37-7),
     randomForestSRC (>= 1.5.5),
-    snowfall (>= 1.84),
+    parallel,
 LinkingTo: Rcpp, RcppArmadillo
 Suggests:
-    lava
+    lava,   
+    testthat,
+    rbenchmark,
 Maintainer: Thomas Alexander Gerds <tag@biostat.ku.dk>
 Description: Risk regression models for survival analysis with and without
     competing risks.

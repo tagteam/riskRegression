@@ -1,4 +1,4 @@
-#' @title Predicting hazard or cumulative hazard
+#' Predicting hazard or cumulative hazard
 #'
 #' Apply formula to combine two or more Cox models into absolute risk
 #' (cumulative incidence function)

@@ -2,10 +2,7 @@
 % Please edit documentation in R/predict.CauseSpecificCox.R
 \name{predict.CauseSpecificCox}
 \alias{predict.CauseSpecificCox}
-\title{Predicting hazard or cumulative hazard
-
-Apply formula to combine two or more Cox models into absolute risk
-(cumulative incidence function)}
+\title{Predicting hazard or cumulative hazard}
 \usage{
 \method{predict}{CauseSpecificCox}(object, newdata, times, cause,
   keep.strata = FALSE, ...)
@@ -28,6 +25,10 @@ containing the strata level.}
 }
 \value{
 A data table containing the predictions for each patient (in rows) and each time (in columns).
+}
+\description{
+Apply formula to combine two or more Cox models into absolute risk
+(cumulative incidence function)
 }
 \details{
 Note: for Cox regression models with time varying
