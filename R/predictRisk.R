@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun  6 2016 (09:02) 
 ## Version: 
-## last-updated: Jun  6 2016 (16:24) 
+## last-updated: Jun  7 2016 (07:05) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 27
+##     Update #: 31
 #----------------------------------------------------------------------
 ## 
 ### Commentary:
@@ -351,22 +351,18 @@ predictRisk.selectCox <- function(object,newdata,times,...){
 ##' @export 
 predictRisk.prodlim <- function(object,newdata,times,cause,...){
     ## require(prodlim)
-    p <- predict(object=object,
-                 cause=cause,
-                 type="cuminc",
-                 newdata=newdata,
-                 times=times,
-                 mode="matrix",
-                 level.chaos=1)
+    if (object$model=="competing.risks" && missing(cause))
+        stop(paste0("Cause is missing. Should be one of the following values: ",paste(attr(object$model.response,"states"),collapse=", ")))
+    p <- predict(object=object,cause=cause,type="cuminc",newdata=newdata,times=times,mode="matrix",level.chaos=1)
     ## if the model has no covariates
     ## then all cases get the same prediction
-    ## in this exceptional case we proceed a vector
+    ## in this exceptional case we return a vector
     if (NROW(p)==1 && NROW(newdata)>=1)
         p <- as.vector(p)
     ## p[is.na(p)] <- 0
-    if (is.null(dim(p)))
-    {if (length(p)!=length(times))
-         stop(paste("\nPrediction matrix has wrong dimensions:\nRequested newdata x times: ",NROW(newdata)," x ",length(times),"\nProvided prediction matrix: ",NROW(p)," x ",NCOL(p),"\n\n",sep=""))
+    if (is.null(dim(p))){
+        if (length(p)!=length(times))
+            stop(paste("\nPrediction matrix has wrong dimensions:\nRequested newdata x times: ",NROW(newdata)," x ",length(times),"\nProvided prediction matrix: ",NROW(p)," x ",NCOL(p),"\n\n",sep=""))
     }
     else{
         if (NROW(p) != NROW(newdata) || NCOL(p) != length(times))

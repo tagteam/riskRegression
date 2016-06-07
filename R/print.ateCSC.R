@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun  6 2016 (06:48) 
 ## Version: 
-## last-updated: Jun  6 2016 (10:41) 
+## last-updated: Jun  7 2016 (06:41) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 5
+##     Update #: 6
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -26,7 +26,7 @@ print.ateCSC <- function(x,digits=3,...){
     cat(paste(x$contrats,collapse=", "),"\n\n")
     cat("\nMean risks on probability scale [0,1] in hypothetical worlds\nin which all subjects are treated with one of the treatment options:\n\n")
     print(x$meanRisk,digits=digits,...)
-    cat("\nComparison of risks on probability scale [0,1] between\nhypothetical worlds are interpretated as in a randomized trial:\n\n")    
+    cat("\nComparison of risks on probability scale [0,1] between\nhypothetical worlds are interpretated as if the treatment was randomized:\n\n")    
     print(x$riskComparison,digits=digits,...)
     ##
     cat("\nBootstrap confidence intervals are based on ",x$n.bootstrap," bootstrap samples\nthat were drawn with replacement from the original data.\n",sep="")

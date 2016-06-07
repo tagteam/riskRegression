@@ -79,7 +79,10 @@ predictCox <- function(object,
         stratavars <- xvars[strataspecials]
         is.strata <- length(strataspecials)>0
         if(is.strata){
-            sterms <- stats::drop.terms(xterms,(1:length(xvars))[-strataspecials])
+            if (length(xvars)>length(strataspecials)) 
+                sterms <- stats::drop.terms(xterms,(1:length(xvars))[-strataspecials])
+            else 
+                sterms <- xterms
             stratavars <- xvars[strataspecials]
             strataF <- object$Strata
             ## stratalevels <- levels(factor(object$strata))
@@ -93,7 +96,10 @@ predictCox <- function(object,
         stratavars <- xvars[strataspecials]
         is.strata <- length(strataspecials)>0
         if(is.strata){
-            sterms <- stats::drop.terms(xterms,(1:length(xvars))[-strataspecials])
+            if (length(xvars)>length(strataspecials)) 
+                sterms <- stats::drop.terms(xterms,(1:length(xvars))[-strataspecials])
+            else 
+                sterms <- xterms
             stratalevels <- object$xlevels[stratavars]
             strataF <- interaction(stats::model.frame(object)[,stratavars], drop = TRUE, sep = ", ", lex.order = TRUE) 
         }else{
@@ -138,11 +144,11 @@ predictCox <- function(object,
             if(length(xvars) > length(stratavars)){
                 Xb <- stats::predict(object, newdata, type = "lp")}
             else{ 
-                Xb <- rep(0, nrow(newdata)) 
+                Xb <- rep(0, NROW(newdata)) 
             }
         } else{ ## coxph
             if(length(xvars) == length(stratavars)){ 
-                Xb <- rep(0, nrow(newdata))
+                Xb <- rep(0, NROW(newdata))
             } else if(is.strata){ 
                 Xb <- rowSums(stats::predict(object, newdata = newdata, type = "terms")) 
             }else { 

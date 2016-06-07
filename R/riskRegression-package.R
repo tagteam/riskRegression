@@ -44,12 +44,11 @@
 #' @name riskRegression
 #' @useDynLib riskRegression
 #' @importFrom Rcpp sourceCpp evalCpp
-#' @importFrom survival Surv
+#' @importFrom rms strat cph
+#' @importFrom survival Surv strata coxph
 #' @importFrom data.table data.table ":=" setnames setorder setcolorder setkey rbindlist
-#' @importFrom survival coxph
 #' @importFrom prodlim Hist dimColor prodlim
 #' @importFrom foreach "%dopar%" foreach
-#' @importFrom survival Surv
 #' @importFrom cmprsk predict.crr
 #' @importFrom prodlim Hist jackknife prodlim sindex
 #' @importFrom grDevices col2rgb gray

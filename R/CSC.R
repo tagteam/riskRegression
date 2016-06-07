@@ -108,6 +108,7 @@ CSC <- function(formula,
                 fitter="coxph",
                 ## strip.environment
                 ...){
+    fitter <- match.arg(fitter,c("coxph","cph"))
     # {{{ type
     survtype <- match.arg(survtype,c("hazard","survival"))
     # }}}
@@ -158,69 +159,69 @@ CSC <- function(formula,
     if (survtype=="hazard"){
         nmodels <- NC
     }else {
-         nmodels <- 2}
+        nmodels <- 2}
     CoxModels <- lapply(1:nmodels,function(x){
-                            if (survtype=="hazard"){
-                                if (x==1)
-                                    causeX <- theCause
-                                else
-                                    causeX <- otherCauses[x-1]}
-                            else{
-                                causeX <- theCause
-                            }
-                            EHF <- prodlim::EventHistory.frame(formula=formula[[x]],
-                                                               data=data,
-                                                               unspecialsDesign=FALSE,
-                                                               specialsFactor=FALSE,
-                                                               specials="strata",
-                                                               stripSpecials="strata",
-                                                               stripArguments=list("strata"=NULL),
-                                                               specialsDesign=FALSE)
-                            formulaX <- formula[[x]]
-                            if (is.null(EHF$strata))
-                                covData <- cbind(EHF$design)
-                            else
-                                covData <- cbind(EHF$design,EHF$strata)
-                            ## response <- stats::model.response(covData)
-                            time <- as.numeric(EHF$event.history[, "time",drop=TRUE])
-                            event <- prodlim::getEvent(EHF$event.history)
-                            if (survtype=="hazard"){
-                                statusX <- as.numeric(event==causeX)
-                            }else{
-                                 if (x==1){
-                                     statusX <- 1*(event==causeX)
-                                 }
-                                 else{ ## event-free status 
-                                     statusX <- response[,"status"]
-                                 }
-                             }
-                            workData <- data.frame(time=time,status=statusX)
-                            ## to interprete formula
-                            ## we need the variables. in case of log(age) terms
-                            ## covData has wrong names 
-                            ## workData <- cbind(workData,covData)
-                            workData <- cbind(workData,data)
-                            formulaXX <- as.formula(paste("survival::Surv(time,status)",
-                                                          as.character(delete.response(terms.formula(formulaX)))[[2]],
-                                                          sep="~"))
-                            if (fitter=="coxph"){
-                                fit <- survival::coxph(formulaXX, data = workData,...)
-                            } else {
-                                  fit <- rms::cph(formulaXX, data = workData,surv=TRUE,y=TRUE,...)
-                              }
-                            ## fit$formula <- terms(fit$formula)
-                            ## fit$call$formula <- terms(formulaXX)
-                            ## fit$call$formula <- fit$formula
-                            ## fit$call$data <- NULL
-                            fit$call$formula <- formulaXX
-                            fit$call$data <- workData
-                            fit
-                        })
+        if (survtype=="hazard"){
+            if (x==1)
+                causeX <- theCause
+            else
+                causeX <- otherCauses[x-1]}
+        else{
+            causeX <- theCause
+        }
+        EHF <- prodlim::EventHistory.frame(formula=formula[[x]],
+                                           data=data,
+                                           unspecialsDesign=FALSE,
+                                           specialsFactor=FALSE,
+                                           specials="strata",
+                                           stripSpecials="strata",
+                                           stripArguments=list("strata"=NULL),
+                                           specialsDesign=FALSE)
+        formulaX <- formula[[x]]
+        if (is.null(EHF$strata))
+            covData <- cbind(EHF$design)
+        else
+            covData <- cbind(EHF$design,EHF$strata)
+        ## response <- stats::model.response(covData)
+        time <- as.numeric(EHF$event.history[, "time",drop=TRUE])
+        event <- prodlim::getEvent(EHF$event.history)
+        if (survtype=="hazard"){
+            statusX <- as.numeric(event==causeX)
+        }else{
+            if (x==1){
+                statusX <- 1*(event==causeX)
+            }
+            else{ ## event-free status 
+                statusX <- response[,"status"]
+            }
+        }
+        workData <- data.frame(time=time,status=statusX)
+        ## to interprete formula
+        ## we need the variables. in case of log(age) terms
+        ## covData has wrong names 
+        ## workData <- cbind(workData,covData)
+        workData <- cbind(workData,data)
+        formulaXX <- as.formula(paste("survival::Surv(time,status)",
+                                      as.character(delete.response(terms.formula(formulaX)))[[2]],
+                                      sep="~"))
+        if (fitter=="coxph"){
+            fit <- survival::coxph(formulaXX, data = workData,...)
+        } else {
+            fit <- rms::cph(formulaXX, data = workData,surv=TRUE,y=TRUE,...)
+        }
+        ## fit$formula <- terms(fit$formula)
+        ## fit$call$formula <- terms(formulaXX)
+        ## fit$call$formula <- fit$formula
+        ## fit$call$data <- NULL
+        fit$call$formula <- formulaXX
+        fit$call$data <- workData
+        fit
+    })
     if (survtype=="hazard"){
         names(CoxModels) <- paste("Cause",c(theCause,otherCauses))
     }else{
-         names(CoxModels) <- c(paste("Cause",theCause),"OverallSurvival")
-     }
+        names(CoxModels) <- c(paste("Cause",theCause),"OverallSurvival")
+    }
     # }}}
     out <- list(call=call,
                 models=CoxModels,
