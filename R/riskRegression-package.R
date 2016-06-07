@@ -45,10 +45,15 @@
 #' @useDynLib riskRegression
 #' @importFrom Rcpp sourceCpp evalCpp
 #' @importFrom survival Surv
-#' @importFrom data.table data.table ":="
+#' @importFrom data.table data.table ":=" setnames setorder setcolorder setkey rbindlist
 #' @importFrom survival coxph
-#' @importFrom prodlim Hist
-#' @importFrom grDevices col2rgb
-#' @importFrom graphics plot abline lines polygon par
-#' @importFrom stats as.formula delete.response formula get_all_vars median na.omit pnorm qnorm quantile reformulate terms terms.formula time update update.formula
+#' @importFrom prodlim Hist dimColor prodlim
+#' @importFrom foreach "%dopar%" foreach
+#' @importFrom survival Surv
+#' @importFrom cmprsk predict.crr
+#' @importFrom prodlim Hist jackknife prodlim sindex
+#' @importFrom grDevices col2rgb gray
+#' @importFrom graphics bxp  abline axis box legend lines mtext par plot points segments text title polygon par boxplot
+#' @importFrom utils capture.output head select.list
+#' @importFrom stats glm uniroot as.formula delete.response formula get_all_vars median na.omit pnorm qnorm quantile reformulate terms terms.formula time update update.formula model.frame model.response coef family median model.matrix na.fail na.omit pnorm predict quantile rbinom rexp runif sd smooth var wilcox.test qnorm
 NULL

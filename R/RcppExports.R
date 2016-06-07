@@ -9,11 +9,73 @@ baseHazEfron_survival_cpp <- function(ntimes, ndead, risk, riskDead) {
     .Call('riskRegression_baseHazEfron_survival_cpp', PACKAGE = 'riskRegression', ntimes, ndead, risk, riskDead)
 }
 
-colCumSum <- function(m) {
-    .Call('riskRegression_colCumSum', PACKAGE = 'riskRegression', m)
+#' Apply cumsum in each column 
+#'
+#' @description Fast computation of apply(x,2,cumsum)
+#' @param x A matrix.
+#' @return A matrix of same size as x.
+#' @author Thomas Alexander Gerds <tag@@biostat.ku.dk>
+#' @examples
+#' x <- matrix(1:8,ncol=2)
+#' colCumSum(x)
+#' @export
+colCumSum <- function(x) {
+    .Call('riskRegression_colCumSum', PACKAGE = 'riskRegression', x)
 }
 
-rowCumSum <- function(m) {
-    .Call('riskRegression_rowCumSum', PACKAGE = 'riskRegression', m)
+#' Apply crossprod and colSums 
+#'
+#' @description Fast computation of crossprod(colSums(X),Y) 
+#' @param X A matrix with dimensions k*n. Hence the result of \code{colSums(X)} has length n.
+#' @param Y A matrix with dimenions n*m. Can be a matrix with dimension m*n but then \code{transposeY} should be \code{TRUE}.
+#' @param transposeY Logical. If \code{TRUE} transpose Y before matrix multiplication.
+#' @return A vector of length m.
+#' @author Thomas Alexander Gerds <tag@@biostat.ku.dk>
+#' @examples
+#' x <- matrix(1:8,ncol=2)
+#' y <- matrix(1:16,ncol=8)
+#' colSumsCrossprod(x,y,0)
+#' 
+#' x <- matrix(1:8,ncol=2)
+#' y <- matrix(1:16,ncol=2)
+#' colSumsCrossprod(x,y,1)
+#' @export
+colSumsCrossprod <- function(X, Y, transposeY) {
+    .Call('riskRegression_colSumsCrossprod', PACKAGE = 'riskRegression', X, Y, transposeY)
+}
+
+#' Apply cumsum in each row 
+#'
+#' @description Fast computation of t(apply(x,1,cumsum))
+#' @param x A matrix.
+#' @return A matrix of same size as x.
+#' @author Thomas Alexander Gerds <tag@@biostat.ku.dk>
+#' @examples
+#' x <- matrix(1:8,ncol=2)
+#' rowCumSum(x)
+#' @export
+rowCumSum <- function(x) {
+    .Call('riskRegression_rowCumSum', PACKAGE = 'riskRegression', x)
+}
+
+#' Apply crossprod and rowSums
+#'
+#' @description Fast computation of crossprod(rowSums(X),Y)
+#' @param X A matrix with dimensions n*k. Hence the result of \code{rowSums(X)} has length n.
+#' @param Y A matrix with dimenions n*m. Can be a matrix with dimension m*n but then \code{transposeY} should be \code{TRUE}.
+#' @param transposeY Logical. If \code{TRUE} transpose Y before matrix multiplication.
+#' @return A vector of length m.
+#' @author Thomas Alexander Gerds <tag@@biostat.ku.dk>
+#' @examples
+#' x <- matrix(1:10,nrow=5)
+#' y <- matrix(1:20,ncol=4)
+#' rowSumsCrossprod(x,y,0)
+#'
+#' x <- matrix(1:10,nrow=5)
+#' y <- matrix(1:20,ncol=5)
+#' rowSumsCrossprod(x,y,1)
+#' @export
+rowSumsCrossprod <- function(X, Y, transposeY) {
+    .Call('riskRegression_rowSumsCrossprod', PACKAGE = 'riskRegression', X, Y, transposeY)
 }
 

@@ -4,10 +4,9 @@
 \alias{ateCSC}
 \title{Compute the average treatment effect using CSC}
 \usage{
-ateCSC(formula, data, treatment, contrasts = NULL, times, cause,
-  n.bootstrap = 0, fitter = "cph", handler = c("mclapply",
-  "sfClusterApplyLB"), mc.cores = 1, conf.level = 0.95,
-  return.model = TRUE, verbose = TRUE, ...)
+ateCSC(formula, data, treatment, contrasts = NULL, times, cause, B = 0,
+  seed, fitter = "cph", handler = c("mclapply", "foreach"), mc.cores = 1,
+  conf.level = 0.95, return.model = TRUE, verbose = TRUE, ...)
 }
 \arguments{
 \item{formula}{formula argument for CSC}
@@ -23,8 +22,11 @@ variable}
 
 \item{cause}{cause of intererst}
 
-\item{n.bootstrap}{the number of bootstrap replications used to
-compute the confidence interval}
+\item{B}{the number of bootstrap replications used to
+compute the confidence interval.}
+
+\item{seed}{An integer used to generate seeds for bootstrap and to achieve
+reproducibility of the bootstrap confidence intervals.}
 
 \item{fitter}{Either \code{"cph"} or \code{"coxph"} passed to CSC}
 
@@ -42,26 +44,30 @@ set.}
 \item{return.model}{Logical. if \code{TRUE} the fitted CSC is
 returned as part of the output.}
 
-\item{verbose}{Logical. If \code{TRUE} inform about estimated run time.}
+\item{verbose}{Logical. If \code{TRUE} inform about estimated run
+time.}
 
 \item{...}{passed to CSC}
 }
 \value{
-A list with: point estimates, bootstrap quantile confidence intervals
-model: the CSC model (optional)
+A list with: point estimates, bootstrap quantile confidence
+    intervals model: the CSC model (optional)
 }
 \description{
 Use the g-formula to estimate the average treatment effect
 }
 \examples{
-dt <- SimCompRisk(1e3)
+dt <- sampleData(1e3,outcome="competing.risks")
 dt$time <- round(dt$time,1)
 seqtimes <- sample(x = unique(sort(dt$time)), size = 100) 
 dt$X1 <- factor(rbinom(1e3, prob = c(0.2,0.3,0.2) , size = 3), labels = paste0("T",0:3))
 ateCSC(formula = Hist(time,event)~ X1+X2,data = dt, treatment = "X1", contrasts = NULL,
-        times = 7, cause = 1, n.bootstrap = 3, mc.cores=1)
+        times = 7, cause = 1, B = 3, mc.cores=1)
 
 ateCSC(formula = Hist(time,event)~ X1+X2,data = dt, treatment = "X1", contrasts = NULL,
-        times = 7, cause = 1, n.bootstrap = 3, mc.cores=2,fitter="cph")
+        times = 7, cause = 1, B = 3, mc.cores=2,fitter="cph")
+
+ateCSC(formula = Hist(time,event)~ X1+X2,data = dt, treatment = "X1", contrasts = NULL,
+        times = 7, cause = 1, B = 3,handler="foreach", mc.cores=2,fitter="cph")
 }
 

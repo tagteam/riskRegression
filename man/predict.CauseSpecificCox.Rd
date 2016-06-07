@@ -38,20 +38,19 @@ Note: for Cox regression models with time varying
 }
 \examples{
 
-dt <- SimCompRisk(1e2)
-dt$time <- round(dt$time,1)
-
-ttt <- sample(x = unique(sort(dt$time)), size = 10) 
+d <- SimCompRisk(1e2)
+d$time <- round(d$time,1)
+ttt <- sample(x = unique(sort(d$time)), size = 10) 
 
 #### coxph function
-CSC.fit <- CSC(Hist(time,event)~ X1+X2,data=dt, method = "breslow" )
+CSC.fit <- CSC(Hist(time,event)~ X1+X2,data=d, method = "breslow" )
 
-predCSC <- predict(CSC.fit, newdata = dt, cause = 2, times = ttt)
+predCSC <- predict(CSC.fit, newdata = d, cause = 2, times = ttt)
 
 #### cph function
-CSC.cph <- CSC(Hist(time,event)~ X1+X2,data=dt, method = "breslow", fitter = "cph", y = TRUE)
+CSC.cph <- CSC(Hist(time,event)~ X1+X2,data=d, method = "breslow", fitter = "cph")
 
-predcph <- predict(CSC.cph, newdata = dt, cause = 2, times = ttt)
+predcph <- predict(CSC.cph, newdata = d, cause = 2, times = ttt)
 
 
 

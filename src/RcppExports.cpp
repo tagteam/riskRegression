@@ -40,24 +40,50 @@ BEGIN_RCPP
 END_RCPP
 }
 // colCumSum
-NumericMatrix colCumSum(NumericMatrix m);
-RcppExport SEXP riskRegression_colCumSum(SEXP mSEXP) {
+NumericMatrix colCumSum(NumericMatrix x);
+RcppExport SEXP riskRegression_colCumSum(SEXP xSEXP) {
 BEGIN_RCPP
     Rcpp::RObject __result;
     Rcpp::RNGScope __rngScope;
-    Rcpp::traits::input_parameter< NumericMatrix >::type m(mSEXP);
-    __result = Rcpp::wrap(colCumSum(m));
+    Rcpp::traits::input_parameter< NumericMatrix >::type x(xSEXP);
+    __result = Rcpp::wrap(colCumSum(x));
+    return __result;
+END_RCPP
+}
+// colSumsCrossprod
+NumericMatrix colSumsCrossprod(NumericMatrix X, NumericMatrix Y, bool transposeY);
+RcppExport SEXP riskRegression_colSumsCrossprod(SEXP XSEXP, SEXP YSEXP, SEXP transposeYSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject __result;
+    Rcpp::RNGScope __rngScope;
+    Rcpp::traits::input_parameter< NumericMatrix >::type X(XSEXP);
+    Rcpp::traits::input_parameter< NumericMatrix >::type Y(YSEXP);
+    Rcpp::traits::input_parameter< bool >::type transposeY(transposeYSEXP);
+    __result = Rcpp::wrap(colSumsCrossprod(X, Y, transposeY));
     return __result;
 END_RCPP
 }
 // rowCumSum
-NumericMatrix rowCumSum(NumericMatrix m);
-RcppExport SEXP riskRegression_rowCumSum(SEXP mSEXP) {
+NumericMatrix rowCumSum(NumericMatrix x);
+RcppExport SEXP riskRegression_rowCumSum(SEXP xSEXP) {
 BEGIN_RCPP
     Rcpp::RObject __result;
     Rcpp::RNGScope __rngScope;
-    Rcpp::traits::input_parameter< NumericMatrix >::type m(mSEXP);
-    __result = Rcpp::wrap(rowCumSum(m));
+    Rcpp::traits::input_parameter< NumericMatrix >::type x(xSEXP);
+    __result = Rcpp::wrap(rowCumSum(x));
+    return __result;
+END_RCPP
+}
+// rowSumsCrossprod
+NumericMatrix rowSumsCrossprod(NumericMatrix X, NumericMatrix Y, bool transposeY);
+RcppExport SEXP riskRegression_rowSumsCrossprod(SEXP XSEXP, SEXP YSEXP, SEXP transposeYSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject __result;
+    Rcpp::RNGScope __rngScope;
+    Rcpp::traits::input_parameter< NumericMatrix >::type X(XSEXP);
+    Rcpp::traits::input_parameter< NumericMatrix >::type Y(YSEXP);
+    Rcpp::traits::input_parameter< bool >::type transposeY(transposeYSEXP);
+    __result = Rcpp::wrap(rowSumsCrossprod(X, Y, transposeY));
     return __result;
 END_RCPP
 }

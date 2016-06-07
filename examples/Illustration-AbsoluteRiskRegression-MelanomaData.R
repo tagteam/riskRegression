@@ -96,8 +96,8 @@ print(cox.fit)
 
 # ARR versus combined Cox regression
 # after 5 years = 1826.25 days
-plot(predictEventProb(arr.fit,times=1826.25,newdata=Melanoma),
-     predictEventProb(cox.fit,times=1826.25,newdata=Melanoma),
+plot(predictRisk(arr.fit,times=1826.25,newdata=Melanoma),
+     predictRisk(cox.fit,times=1826.25,newdata=Melanoma),
      main="Predicted probabilities of death due to malignant melanoma\nafter five years",
      xlim=c(0,1),
      ylim=c(0,1),

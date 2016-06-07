@@ -32,7 +32,8 @@
 #' @param convLevel Integer between 1 and 10, specifying the
 #' convergence criterion for the fitting algorithm as
 #' \code{10^{-convLevel}}.
-#' @param conservative If \code{TRUE} use variance formula that ignores the contribution by the estimate of the inverse of the probability of censoring weights 
+#' @param conservative If \code{TRUE} use variance formula that ignores the contribution
+#' by the estimate of the inverse of the probability of censoring weights 
 #' @param ... Not used.
 #' @author Thomas H. Scheike \email{ts@@biostat.ku.dk}
 #' Thomas A. Gerds \email{tag@@biostat.ku.dk}

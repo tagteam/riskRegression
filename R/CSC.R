@@ -82,8 +82,8 @@
 ##' ## from the same fit
 ##' library(pec)
 ##' fit2 <- CSC(Hist(time,status)~invasion+epicel+age, data=Melanoma)
-##' pec::predictEventProb(fit2,cause=1,newdata=Melanoma[c(17,99,108),],times=c(100,1000,10000))
-##' pec::predictEventProb(fit2,cause=2,newdata=Melanoma[c(17,99,108),],times=c(100,1000,10000))
+##' predictRisk(fit2,cause=1,newdata=Melanoma[c(17,99,108),],times=c(100,1000,10000))
+##' predictRisk(fit2,cause=2,newdata=Melanoma[c(17,99,108),],times=c(100,1000,10000))
 ##' predict(fit2,cause=1,newdata=Melanoma[c(17,99,108),],times=c(100,1000,10000))
 ##' predict(fit2,cause=2,newdata=Melanoma[c(17,99,108),],times=c(100,1000,10000))
 ##' 
@@ -93,10 +93,10 @@
 ##'             data=Melanoma,
 ##'             survtype="surv",cause=2)
 ##' ## now this does not work
-##' try(pec::predictEventProb(fit5.2,cause=1,newdata=Melanoma,times=4))
+##' try(predictRisk(fit5.2,cause=1,newdata=Melanoma,times=4))
 ##' 
 ##' ## but this does
-##' pec::predictEventProb(fit5.2,cause=2,newdata=Melanoma,times=100)
+##' predictRisk(fit5.2,cause=2,newdata=Melanoma,times=100)
 ##' predict(fit5.2,cause=2,newdata=Melanoma,times=100)
 ##' predict(fit5.2,cause=2,newdata=Melanoma[4,],times=100)
 ##' 

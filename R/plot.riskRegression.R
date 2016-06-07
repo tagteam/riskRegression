@@ -114,7 +114,7 @@ plot.riskRegression <- function(x,
             xdat <- unique(eval(x$call$data)[all.vars(update(ff,NULL~.))])
             if (NROW(xdat)<5){
                 if (class(x)=="CauseSpecificCox"){
-                    p1 <- pec::predictEventProb(x,newdata=xdat,times=plot.times,cause=cause)
+                    p1 <- predictRisk(x,newdata=xdat,times=plot.times,cause=cause)
                 }
                 else{
                     p1 <- stats::predict(x,newdata=xdat,times=plot.times)$risk}
@@ -122,7 +122,7 @@ plot.riskRegression <- function(x,
             }
             else{
                 if (class(x)=="CauseSpecificCox"){
-                    P1 <- pec::predictEventProb(x,
+                    P1 <- predictRisk(x,
                                            newdata=eval(x$call$data),
                                            times=plot.times,
                                            cause=cause)

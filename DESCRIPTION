@@ -1,28 +1,50 @@
 Package: riskRegression
 Type: Package
-Title: Risk Regression Models for Survival Analysis with Competing Risks
-Version: 1.2.1
-Author: Thomas Alexander Gerds, Thomas Harder Scheike
+Title: Risk Regression Models and Prediction Scores for Survival Analysis with Competing Risks
+Version: 1.2.2
+Author: Thomas Alexander Gerds, Thomas Harder Scheike, Paul Blanche, Brice Ozenne
 Depends:
     R (>= 2.9.0),
-    prodlim (>= 1.4.9),
+    prodlim (>= 1.5.7),
     data.table (>= 1.9.6)
 Imports:
-    rms (>= 4.2-0),
-    pec (>= 2.4.3),
-    Rcpp (>= 0.12.2),
-    cmprsk (>= 2.2-7),
-    survival (>= 2.37-7),
-    randomForestSRC (>= 1.5.5),
+    stats,
+    graphics,
+    rms,
+    Rcpp,
+    foreach,
+    cmprsk,
+    survival,
+    randomForestSRC,
     parallel,
+    doParallel,
 LinkingTo: Rcpp, RcppArmadillo
 Suggests:
     lava,   
+    pec,
+    Daim,
+    pROC,
     testthat,
+    timereg,
     rbenchmark,
+    penalized,
+    party,
+    rpart,
+    doMC,
+    CoxBoost,
 Maintainer: Thomas Alexander Gerds <tag@biostat.ku.dk>
-Description: Risk regression models for survival analysis with and without
-    competing risks.
+Description: Implementation of the following methods for event history analysis.
+             Risk regression models for survival endpoints also in the presence of
+             competing risks are fitted using binomial regression based on a time sequence
+             of binary event status variables. A formula interface for the Fine-Gray regression 
+             model and an interface for the combination of cause-specific Cox regression models.
+             A toolbox for assessing and
+             comparing performance of risk predictions (risk markers and risk prediction models).
+             Prediction performance is measured by the Brier score and the area under the ROC curve
+             for binary possibly time-dependent outcome.
+             Inverse probability of censoring weighting and pseudo values are used to deal with right censored data.
+             Lists of risk markers and lists of risk models are assessed simultaneously.
+             Cross-validation repeatedly splits the data, trains the risk prediction models on one part of each split
+             and then summarizes and compares the performance across splits.  
 License: GPL (>= 2)
-Packaged: 17 Nov 2011 (15:06) ;tag
 RoxygenNote: 5.0.1

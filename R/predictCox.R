@@ -79,11 +79,11 @@ predictCox <- function(object,
         stratavars <- xvars[strataspecials]
         is.strata <- length(strataspecials)>0
         if(is.strata){
-            sterms <- stats::drop.terms(xterms,(1:length(xterms))[-strataspecials])
+            sterms <- stats::drop.terms(xterms,(1:length(xvars))[-strataspecials])
             stratavars <- xvars[strataspecials]
             strataF <- object$Strata
-            stratalevels <- object$strata
-            names(stratalevels) <- stratavars
+            ## stratalevels <- levels(factor(object$strata))
+            ## names(stratalevels) <- stratavars
         }else{
             strataF <- factor("1")
         }
@@ -93,9 +93,9 @@ predictCox <- function(object,
         stratavars <- xvars[strataspecials]
         is.strata <- length(strataspecials)>0
         if(is.strata){
-            sterms <- stats::drop.terms(xterms,(1:length(xterms))[-strataspecials])
+            sterms <- stats::drop.terms(xterms,(1:length(xvars))[-strataspecials])
             stratalevels <- object$xlevels[stratavars]
-            strataF <- interaction(stats::model.frame(object)[,stratavars], drop = TRUE, sep = ".", lex.order = TRUE) 
+            strataF <- interaction(stats::model.frame(object)[,stratavars], drop = TRUE, sep = ", ", lex.order = TRUE) 
         }else{
             strataF <- factor("1")
         }
@@ -162,7 +162,15 @@ predictCox <- function(object,
             }
         }else{
             hazard <- matrix(0, nrow = NROW(newdata), ncol = length(etimes))
-            newstrata <- prodlim::model.design(sterms,data=newdata,xlev=stratalevels,specialsFactor=TRUE)$strata[[1]]
+            if ("cph" %in% class(object)){
+                tmp <- model.frame(sterms,newdata)
+                colnames(tmp) <- names(prodlim::parseSpecialNames(names(tmp),"strat"))
+                tmp <- data.frame(lapply(1:NCOL(tmp),function(j){factor(paste0(names(tmp)[j],"=",tmp[,j,drop=TRUE]))}))
+                newstrata <- apply(tmp,1,paste,collapse=".")
+                ## newstrata <- prodlim::model.design(sterms,data=newdata,specialsFactor=TRUE)$strat[[1]]                
+            }else{
+                newstrata <- prodlim::model.design(sterms,data=newdata,xlev=stratalevels,specialsFactor=TRUE)$strata[[1]]
+            }
             ## loop across strata
             for(S in unique(newstrata)){
                 id.S <- Lambda0$strata==S
@@ -183,7 +191,6 @@ predictCox <- function(object,
             }
         }
     }
-        
     out <- list()
     if (missing(times)){
         if ("hazard" %in% type) out <- c(out,list(hazard=hazard))
@@ -195,11 +202,11 @@ predictCox <- function(object,
             hits <- etimes%in%times
             if (sum(hits)<length(times)){
                 if (sum(hits==0)) {
-                    out <- c(out,list(hazard=matrix(0,ncol=length(times),nrow=nPatients)))
+                    out <- c(out,list(hazard=matrix(0,ncol=length(times),nrow=NROW(newdata))))
                 }else{
-                    hh <- matrix(0,ncol=length(times),nrow=nPatients)
-                    hh[,hits] <- hazard[times%in%etimes,]
-                    out <- c(out,list(hazard=hazard[,hits,drop=FALSE]))
+                    hh <- matrix(0,ncol=length(times),nrow=NROW(newdata))
+                    hh[,hits] <- hazard[times%in%etimes,,drop=FALSE]
+                    out <- c(out,list(hazard=hh))
                 }
             }else{
                 out <- c(out,list(hazard=hazard[,hits,drop=FALSE]))
@@ -212,7 +219,7 @@ predictCox <- function(object,
         if ("survival" %in% type) out <- c(out,list(survival=cbind(1,survival)[,tindex+1]))
         if (keep.times==TRUE) out <- c(out,list(times=times))
     }
-    if (is.strata && keep.strata==TRUE) out <- c(out,list(strata=strata))
+    if (is.strata && keep.strata==TRUE) out <- c(out,list(strata=newstrata))
     out
 }
 

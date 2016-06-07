@@ -1,4 +1,11 @@
-#' @export 
+#' Predict subject specific risks (cumulative incidence) based on Fine-Gray regression model
+#'
+#' Predict subject specific risks (cumulative incidence) based on Fine-Gray regression model
+#' @param object Result of call to \code{FGR}
+#' @param newdata Predictor values of subjects for who to predict risks
+#' @param times Time points at which to evaluate the risks 
+#' @param ... passed to predict.crr
+#' @export
 predict.FGR <- function(object,newdata,times,...){
     # {{{ check the data and the design
     if (missing(newdata)) stop("Argument 'newdata' is missing")
@@ -18,7 +25,7 @@ predict.FGR <- function(object,newdata,times,...){
     args <- list(object=object$crrFit,cov1=cov1,cov2=cov2,...)
     args <- args[!sapply(args,is.null)]
     ## warning("uuu")
-    pred <- do.call("predict.crr",args)
+    pred <- do.call(cmprsk::predict.crr,args)
     ## warning("bbb")
     out <- pred[,-1,drop=FALSE]
     if (!missing(times)){

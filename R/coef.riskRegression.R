@@ -1,4 +1,11 @@
-#' @export 
+#' Extract coefficients from riskRegression model
+#'
+#' Extract coefficients from riskRegression model
+#' @param object Object obtained with \code{ARR} or \code{LRR} or \code{riskRegression}
+#' @param digits Number of digits
+#' @param eps P-values below this number are shown as \code{<eps}
+#' @param ... not used
+#' @export
 coef.riskRegression <- function(object,digits=3,eps=10^-4,...){
 
   cvars <- object$design$const

@@ -8,8 +8,10 @@
 #' @param contrasts the levels of treatment variable to be compared
 #' @param times time points at which to evaluate risks
 #' @param cause cause of intererst
-#' @param n.bootstrap the number of bootstrap replications used to
-#'     compute the confidence interval
+#' @param B the number of bootstrap replications used to
+#'     compute the confidence interval.
+#' @param seed An integer used to generate seeds for bootstrap and to achieve
+#'        reproducibility of the bootstrap confidence intervals. 
 #' @param fitter Either \code{"cph"} or \code{"coxph"} passed to CSC
 #' @param handler parallel handler for bootstrap. Either "mclapply" or
 #'     "sfClusterApplyLB"
@@ -21,21 +23,25 @@
 #' @param conf.level the level for bootstrap confidence intervals
 #' @param return.model Logical. if \code{TRUE} the fitted CSC is
 #'     returned as part of the output.
-#' @param verbose Logical. If \code{TRUE} inform about estimated run time.
+#' @param verbose Logical. If \code{TRUE} inform about estimated run
+#'     time.
 #' @param ... passed to CSC
-#' @return A list with: point estimates, bootstrap quantile confidence intervals
-#' model: the CSC model (optional)
+#' @return A list with: point estimates, bootstrap quantile confidence
+#'     intervals model: the CSC model (optional)
 #' 
 #' @examples 
-#' dt <- SimCompRisk(1e3)
+#' dt <- sampleData(1e3,outcome="competing.risks")
 #' dt$time <- round(dt$time,1)
 #' seqtimes <- sample(x = unique(sort(dt$time)), size = 100) 
 #' dt$X1 <- factor(rbinom(1e3, prob = c(0.2,0.3,0.2) , size = 3), labels = paste0("T",0:3))
 #' ateCSC(formula = Hist(time,event)~ X1+X2,data = dt, treatment = "X1", contrasts = NULL,
-#'         times = 7, cause = 1, n.bootstrap = 3, mc.cores=1)
+#'         times = 7, cause = 1, B = 3, mc.cores=1)
 #' 
 #' ateCSC(formula = Hist(time,event)~ X1+X2,data = dt, treatment = "X1", contrasts = NULL,
-#'         times = 7, cause = 1, n.bootstrap = 3, mc.cores=2,fitter="cph")
+#'         times = 7, cause = 1, B = 3, mc.cores=2,fitter="cph")
+#'
+#' ateCSC(formula = Hist(time,event)~ X1+X2,data = dt, treatment = "X1", contrasts = NULL,
+#'         times = 7, cause = 1, B = 3,handler="foreach", mc.cores=2,fitter="cph")
 #' @export
 #' 
 ateCSC <- function(formula,
@@ -44,15 +50,16 @@ ateCSC <- function(formula,
                    contrasts = NULL,
                    times,
                    cause, 
-                   n.bootstrap = 0,
+                   B = 0,
+                   seed,
                    fitter="cph",
-                   handler=c("mclapply","sfClusterApplyLB"),
+                   handler=c("mclapply","foreach"),
                    mc.cores = 1,
                    conf.level = .95,
                    return.model=TRUE,
                    verbose=TRUE,
                    ...){
-    meanRisk=Treatment=ratio=Treatment.A=Treatment.B=NULL
+    meanRisk=Treatment=ratio=Treatment.A=Treatment.B=b=NULL
     #### Prepare
     if(treatment %in% names(data) == FALSE){
         stop("The data set does not seem to have a variable ",treatment," (argument: treatment). \n")
@@ -97,18 +104,26 @@ ateCSC <- function(formula,
         out
     }
     #### point estimate
-    estimateTime <- system.time(pointEstimate <- Gformula(data=data, treatment=treatment, contrasts=contrasts, formula=formula, times=times, cause=cause, return.model=return.model, ...))
+    estimateTime <- system.time(pointEstimate <- Gformula(data=data,
+                                                          treatment=treatment,
+                                                          contrasts=contrasts,
+                                                          formula=formula,
+                                                          times=times,
+                                                          cause=cause,
+                                                          fitter=fitter,
+                                                          return.model=return.model,
+                                                          ...))
     #### Bootstrap
-    if(n.bootstrap>0){
+    if(B>0){
         if (verbose==TRUE)
             message(paste0("Approximated bootstrap netto run time (without time for copying data to cores):\n",
                            round(estimateTime["user.self"],2),
                            " seconds times ",
-                           n.bootstrap,
+                           B,
                            " bootstraps / ",
                            mc.cores,
                            " cores = ",
-                           round(estimateTime["user.self"]*n.bootstrap/mc.cores,2)," seconds.\n",
+                           round(estimateTime["user.self"]*B/mc.cores,2)," seconds.\n",
                            "To reduce computation time you may consider a coarser time grid,\n e.g., round event times to weeks, months or years ...\n"))
         x.cores <- parallel::detectCores()
         if(mc.cores > x.cores){
@@ -116,29 +131,42 @@ ateCSC <- function(formula,
                     "available: ",parallel::detectCores()," | requested: ",mc.cores,"\n")
             mc.cores=x.cores
         }
-        if (handler[[1]]=="sfClusterApplyLB"){
-            snowfall::sfInit(parallel = TRUE, cpus = mc.cores)
-            VarnamesToLoad <- c("n.obs", "data",  "treatment", "contrasts", "formula", "times", "cause","fitter", names(list(...)))
-            snowfall::sfExport(list = as.list(VarnamesToLoad))
-            LibraryToLoad <- c("riskRegression")
-            sapply(LibraryToLoad, function(x){eval(call("sfLibrary", x, character.only = TRUE, verbose = FALSE))})
-            res.boot <- snow::sfClusterApplyLB(1:n.bootstrap, function(iterN){
+        if (!missing(seed)) set.seed(seed)
+        bootseeds <- sample(1:1000000,size=B,replace=FALSE)
+        if (handler[[1]]=="foreach"){
+            cl <- parallel::makeCluster(mc.cores)
+            doParallel::registerDoParallel(mc.cores)
+            boots <- foreach::foreach(b=1:B,packages=c("riskRegression"),.export=NULL) %dopar%{
+                set.seed(bootseeds[[b]])
                 dataBoot <- data[sample(1:n.obs, size = n.obs, replace = TRUE),]
-                Gformula(data=dataBoot, treatment=treatment, contrasts=contrasts, formula=formula, times=times, cause=cause,fitter=fitter, return.model = FALSE, ...)
-            })
-            snowfall::sfStop()
+                Gformula(data=dataBoot,treatment=treatment,contrasts=contrasts,formula=formula,times=times,cause=cause,fitter=fitter,return.model = FALSE,...)
+            }
+            parallel::stopCluster(cl)
         } else{
-            res.boot <- parallel::mclapply(1:n.bootstrap, function(b){
+            boots <- parallel::mclapply(1:B, function(b){
+                set.seed(bootseeds[[b]])
                 dataBoot <- data[sample(1:n.obs, size = n.obs, replace = TRUE),]
                 Gformula(data=dataBoot, treatment=treatment, contrasts=contrasts, formula=formula, times=times, cause=cause,fitter=fitter, return.model = FALSE, ...)
             })
         }
-        meanRisksBoot <- data.table::rbindlist(lapply(res.boot,function(x)x$meanRisk))
-        riskComparisonsBoot <- data.table::rbindlist(lapply(res.boot,function(x)x$riskComparison))
+        ## gc()
+        meanRisksBoot <- data.table::rbindlist(lapply(boots,function(x)x$meanRisk))
+        riskComparisonsBoot <- data.table::rbindlist(lapply(boots,function(x)x$riskComparison))
         alpha <- 1-conf.level
-        out <- c(pointEstimate,list(meanRisks=meanRisksBoot[,data.table::data.table(meanB=mean(meanRisk),lower=quantile(meanRisk,alpha/2),upper=quantile(meanRisk,1-(alpha/2))),by=Treatment],
-                                    compareRisks=riskComparisonsBoot[,data.table::data.table(diff.mean=mean(diff),diff.lower=quantile(diff,alpha/2),diff.upper=quantile(diff,1-(alpha/2)),ratio.mean=mean(ratio),ratio.lower=quantile(ratio,alpha/2),ratio.upper=quantile(ratio,1-(alpha/2))),by=list(Treatment.A,Treatment.B)]))
+        mrisks <- meanRisksBoot[,data.table::data.table(meanRiskBoot=mean(meanRisk),lower=quantile(meanRisk,alpha/2),upper=quantile(meanRisk,1-(alpha/2))),by=Treatment]
+        ## merge with pointEstimate
+        mrisks <- merge(pointEstimate$meanRisk,mrisks,by="Treatment")
+        crisks <- riskComparisonsBoot[,data.table::data.table(diffMeanBoot=mean(diff),diff.lower=quantile(diff,alpha/2),diff.upper=quantile(diff,1-(alpha/2)),ratioMeanBoot=mean(ratio),ratio.lower=quantile(ratio,alpha/2),ratio.upper=quantile(ratio,1-(alpha/2))),by=list(Treatment.A,Treatment.B)]
+        crisks <- merge(pointEstimate$riskComparison,crisks,by=c("Treatment.A","Treatment.B"))
+        out <- list(meanRisk=mrisks,
+                    riskComparison=crisks,
+                    treatment=treatment,
+                    contrasts=contrasts,
+                    times=times,
+                    n.bootstrap=B,
+                    seeds=bootseeds)
     }
     class(out) <- "ateCSC"
     out
 }
+

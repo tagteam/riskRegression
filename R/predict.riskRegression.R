@@ -121,7 +121,7 @@ predict.riskRegression <- function(object,
     LP <- timeConstLP+timeVarLP
     ## tag
     ## added 23 Jan 2016 (16:33)
-    ## to fix bug in predictEventProb.riskRegression
+    ## to fix bug in predictRisk.riskRegression
     if (length(fittime)==1)
         LP <- t(LP)
     # }}}

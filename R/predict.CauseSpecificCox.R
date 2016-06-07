@@ -22,20 +22,19 @@
 #' 
 #' @examples 
 #' 
-#' dt <- SimCompRisk(1e2)
-#' dt$time <- round(dt$time,1)
-#' 
-#' ttt <- sample(x = unique(sort(dt$time)), size = 10) 
+#' d <- SimCompRisk(1e2)
+#' d$time <- round(d$time,1)
+#' ttt <- sample(x = unique(sort(d$time)), size = 10) 
 #'
 #' #### coxph function
-#' CSC.fit <- CSC(Hist(time,event)~ X1+X2,data=dt, method = "breslow" )
+#' CSC.fit <- CSC(Hist(time,event)~ X1+X2,data=d, method = "breslow" )
 #' 
-#' predCSC <- predict(CSC.fit, newdata = dt, cause = 2, times = ttt)
+#' predCSC <- predict(CSC.fit, newdata = d, cause = 2, times = ttt)
 #' 
 #' #### cph function
-#' CSC.cph <- CSC(Hist(time,event)~ X1+X2,data=dt, method = "breslow", fitter = "cph", y = TRUE)
+#' CSC.cph <- CSC(Hist(time,event)~ X1+X2,data=d, method = "breslow", fitter = "cph")
 #' 
-#' predcph <- predict(CSC.cph, newdata = dt, cause = 2, times = ttt)
+#' predcph <- predict(CSC.cph, newdata = d, cause = 2, times = ttt)
 #'
 #' 
 #' 
@@ -65,10 +64,9 @@ predict.CauseSpecificCox <- function(object,newdata,times,cause,keep.strata = FA
                               times=object$eventTimes,
                               type = c("hazard","cumHazard"), 
                               keep.strata = keep.strata,keep.times=TRUE)
+
     if(keep.strata){
         strata <- causeHazard$hazard$strata
-        causeHazard$hazard[, strata:=NULL]
-        causeHazard$cumHazard[, strata := NULL]
     }
     ncol.pred <-  ncol(causeHazard$cumHazard)
     if (survtype == "hazard") {
@@ -83,17 +81,17 @@ predict.CauseSpecificCox <- function(object,newdata,times,cause,keep.strata = FA
         survProb <- exp(-causeHazard$cumHazard - cumHazOther)
     } else { 
         survProb <- predictCox(object$models[["OverallSurvival"]],
-                               type = "cumHazard",
+                               type = "survival",
                                times=object$eventTimes,
                                newdata = newdata,
-                               keep.strata = FALSE)$cumHazard
+                               keep.strata = FALSE)$survival
     }
     ## system.time(out <- t(apply(survProb * causeHazard$hazard, 1, cumsum)))
-    out <- rowCumSum(as.matrix(survProb * causeHazard$hazard))
+    out <- rowCumSum(survProb * causeHazard$hazard)
     ## FIXME: try to get rid of the censored times where nothing happens to F1 earlier
     ## pos <- prodlim::sindex(jump.times = object$eventTimes, eval.times = times)
     pos <- prodlim::sindex(jump.times = causeHazard$times, eval.times = times)
-    p <- cbind(0, out)[, pos + 1]
+    p <- cbind(0, out)[, pos + 1,drop=FALSE]
     if (NROW(p) != NROW(newdata) || NCOL(p) != length(times)) 
         stop(paste("\nPrediction matrix has wrong dimension:\nRequested newdata x times: ", 
                    NROW(newdata), " x ", length(times), "\nProvided prediction matrix: ", 

@@ -2,10 +2,7 @@
 % Please edit documentation in R/predictCox.R
 \name{predictCox}
 \alias{predictCox}
-\title{Fast prediction of survival, hazard and cumulative hazard from Cox regression model 
-
-Fast routine to get baseline hazards and subject specific hazards
-as well as survival probabilities from a coxph or cph object}
+\title{Fast prediction of survival, hazard and cumulative hazard from Cox regression model}
 \usage{
 predictCox(object, newdata = NULL, times, centered = TRUE, maxtime = Inf,
   type = c("hazard", "cumHazard", "survival"), keep.strata = FALSE,
@@ -37,6 +34,10 @@ or several of the strings \code{"hazard"},\code{"cumhazard"}, \code{"survival"}}
 \value{
 A list optionally containing the time, the strata (if any), the hazard, the
         cumulative hazard and survival probabilities.
+}
+\description{
+Fast routine to get baseline hazards and subject specific hazards
+as well as survival probabilities from a coxph or cph object
 }
 \details{
 Not working with time varying predictor variables or

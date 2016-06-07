@@ -52,7 +52,8 @@ during fitting.}
 convergence criterion for the fitting algorithm as
 \code{10^{-convLevel}}.}
 
-\item{conservative}{If \code{TRUE} use variance formula that ignores the contribution by the estimate of the inverse of the probability of censoring weights}
+\item{conservative}{If \code{TRUE} use variance formula that ignores the contribution
+by the estimate of the inverse of the probability of censoring weights}
 
 \item{...}{Not used.}
 }
