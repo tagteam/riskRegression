@@ -84,9 +84,6 @@ test_that("strat and strata",{
 test_that("CSC many character valued causes",{
     set.seed(17)
     d <- prodlim::SimCompRisk(100)
-    d$X3 <- factor(d$X3,levels=c("0","1"),labels=c("a-5","b-7"))
-    d$X4 <- factor(d$X4,levels=c("0","1"),labels=c("a label","tag 1"))
-    d$X5 <- factor(d$X5,levels=c("0","1"),labels=c("0","1"))
     d$event <- as.character(factor(d$event,labels=c("a","b","c")))
     m1 <- CSC(Hist(time,event)~strat(X1)+X2,data=d,fitter="cph")
     m2 <- CSC(Hist(time,event)~strata(X1)+X2,data=d,survtype="surv",cause="b")
