@@ -364,7 +364,11 @@ Score.list <- function(object,
                         response[,WTi:=Weights$IPCW.subjectTimes]
                     }else{
                         censMethod <- "jackknife.pseudo.values"
-                        pseudoResponse <- getPseudoValues(formula=formula,data=testdata,responseType=responseType,times=times,cause=cause)
+                        pseudoResponse <- getPseudoValues(formula=formula,
+                                                          data=testdata,
+                                                          responseType=responseType,
+                                                          times=times,
+                                                          cause=cause)
                     }
                 } else{
                     if (censType=="uncensored"){
@@ -395,10 +399,13 @@ Score.list <- function(object,
             }else{
                 if (!is.null(traindata)){
                     set.seed(trainseed)
+                    ## remove response from traindata to avoid clash when model uses Hist(time,status)
+                    ## where status has 0,1,2 but now event history response has status=0,1
+                    nResp <- switch(responseType,"binary"=1,"survival"=2,"competing.risks"=3)
                     if (f==0)
-                        trained.model <- trainModel(model=nullobject[[1]],data=traindata)
+                        trained.model <- trainModel(model=nullobject[[1]],data=traindata[,-c(1:nResp),with=FALSE])
                     else
-                        trained.model <- trainModel(model=object[[f]],data=traindata)
+                        trained.model <- trainModel(model=object[[f]],data=traindata[,-c(1:nResp),with=FALSE])
                     if ("try-error" %in% class(trained.model)){
                         ## browser(skipCalls=TRUE)
                         stop(paste0("Failed to fit model ",f,ifelse(try(b>0,silent=TRUE),paste0(" in cross-validation step ",b,"."))))
@@ -507,7 +514,20 @@ Score.list <- function(object,
             traindata=data[splitMethod$index[,b],,drop=FALSE]
             ## subset.data.table preserves order
             testdata <- subset(data,(match(1:N,unique(splitMethod$index[,b]),nomatch=0)==0),drop=FALSE)
-            cb <- computePerformance(object=object,nullobject=nullobject,testdata=testdata,traindata=traindata,trainseed=trainseeds[b],metrics=metrics,plots=plots,times=times,cause=cause,test=test,alpha=alpha,dolist=dolist,NF=NF,NT=NT)
+            cb <- computePerformance(object=object,
+                                     nullobject=nullobject,
+                                     testdata=testdata,
+                                     traindata=traindata,
+                                     trainseed=trainseeds[b],
+                                     metrics=metrics,
+                                     plots=plots,
+                                     times=times,
+                                     cause=cause,
+                                     test=test,
+                                     alpha=alpha,
+                                     dolist=dolist,
+                                     NF=NF,
+                                     NT=NT)
             cb
         }
         ## browser(skipCalls=1)
