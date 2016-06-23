@@ -600,7 +600,7 @@ Score.list <- function(object,
     }
     for (m in c(metrics,summary)){
         output[[m]]$metrics <- m
-        class(output[[m]]) <- c("highscore")
+        class(output[[m]]) <- paste0("score",m)
     }
     class(output) <- "Score"
     output
@@ -745,88 +745,7 @@ plot.riskQuantile <- function(x,text.title="Outcome after 10 years",xlab="",text
 }
 
 
-##' Plot ROC curve 
-##'
-##' @title Plot ROC curve
-#' @export
-##' @param x Object obtained with \code{Score.list}
-##' @param models Choice of models to plot
-##' @param timepoint Time point specifying the prediction horizon
-##' @param lwd line width
-##' @param legend Logical. If \code{TRUE} draw legend.
-##' @param legend.title Legend title
-##' @param ... Not yet used
-plot.score.ROC <- function(x,models,timepoint,lwd=3,legend=TRUE,legend.title,...){
-    model=FPR=TPR=times=NULL
-    pframe <- x$ROC$plotframe
-    if (!missing(models)){
-        pframe <- pframe[model%in%models]
-    }
-    setkey(pframe,model)
-    if (missing(timepoint))
-        timepoint <- max(pframe[["times"]])
-    else ## can only do one timepoint
-        timepoint <- timepoint[[1]]
-    plot(0,0,type="n",ylim = 0:1,
-         xlim = 0:1,
-         axes=FALSE,
-         xlab = "1-Specificity",
-         ylab = "Sensitivity")
-    prodlim::PercentAxis(1,at=seq(0,1,.25))
-    prodlim::PercentAxis(2,at=seq(0,1,.25))
-    if (!missing(models)) pframe <- pframe[model %in% models]
-    pframe[,col:=as.numeric(as.factor(model))]
-    pframe[,lwd:=lwd]
-    pframe[,lines(FPR,TPR,type="l",lwd=lwd,col=col),by=model]
-    if (legend!=FALSE){
-        if (!is.character(legend)){
-            if (!missing(models))
-                auc <- x$AUC$score[(times==timepoint) & (model%in%models)]
-            else
-                auc <- x$AUC$score[(times==timepoint)]
-            setkey(auc,model)
-            ## legend <- paste0(auc$model,": ",Publish::formatCI(100*auc$AUC,100*auc$lower.AUC,100*auc$upper.AUC,showX=TRUE,digits=1))
-            legend <- paste0(auc$model,": ",sprintf(format="%s [%s;%s]",round(100*auc$AUC,digits=1),round(100*auc$lower.AUC,digits=1),round(100*auc$upper.AUC,digits=1)))
-        }
-        if (missing(legend.title)) legend.title <- "AUC"
-        pframe[,legend(x="bottomright",legend=legend,lwd=lwd[[1]],title=legend.title,col=unique(col))]
-    }
-    abline(a=0,b=1,col="gray77",lwd=3)
-    invisible(x)
-}
 
-##' Plot AUC curve
-##'
-##' @title Plot AUC curve
-#' @export
-##' @param x Object obtained with \code{Score.list}
-##' @param models Choice of models to plot
-##' @param lwd Line width
-##' @param xlim Limits for x-axis 
-##' @param ylim Limits for y-axis 
-##' @param axes Logical. If \code{TRUE} draw axes.
-##' @param ... Not yet used
-plot.score.AUC <- function(x,models,lwd=3,xlim,ylim,axes=TRUE,...){
-    times=model=AUC=dimcol=lower.AUC=upper.AUC=NULL
-    pframe <- x$AUC$score
-    if (missing(xlim)) xlim <- pframe[,range(times)]
-    if (missing(ylim)) ylim <- c(0.5,1)
-    plot(0,0,type="n",ylim = ylim,
-         xlim = xlim,
-         axes=FALSE,
-         xlab = "Time",
-         ylab = "AUC")
-    if (axes){
-        axis(1)
-        prodlim::PercentAxis(2,at=seq(ylim[1],ylim[2],(ylim[2]-ylim[1])/5))
-    }
-    if (!missing(models)) pframe <- pframe[model %in% models]
-    pframe[,col:=as.numeric(as.factor(model))]
-    pframe[,lwd:=lwd]
-    pframe[,lines(times,AUC,type="l",lwd=lwd,col=col),by=model]
-    pframe[,dimcol:=prodlim::dimColor(col[[1]],density=55),by=model]
-    pframe[,polygon(x=c(times,rev(times)),y=c(lower.AUC,rev(upper.AUC)),col=dimcol,border=NA),by=model]
-}
 
 ##' Plot Brier curve
 ##'
