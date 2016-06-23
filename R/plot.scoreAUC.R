@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun 23 2016 (09:19) 
 ## Version: 
-## last-updated: Jun 23 2016 (13:14) 
+## last-updated: Jun 23 2016 (13:27) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 13
+##     Update #: 14
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -17,17 +17,17 @@
 ##' Plot AUC curve
 ##'
 ##' @title Plot AUC curve
-#' @export
 ##' @param x Object obtained with \code{Score.list}
 ##' @param models Choice of models to plot
 ##' @param type Character. Either \code{"score"} to show AUC or \code{"test"} to show differences between AUC.
 ##' @param lwd Line width
 ##' @param xlim Limits for x-axis
 ##' @param ylim Limits for y-axis
-##' @param col
+##' @param col Color
 ##' @param axes Logical. If \code{TRUE} draw axes.
 ##' @param confint Logical. If \code{TRUE} draw confidence shadows.
 ##' @param ... Not yet used
+#' @export
 plot.scoreAUC <- function(x,models,type="score",lwd=2,xlim,ylim,col,axes=TRUE,confint=FALSE,...){
     times=model=AUC=lower.AUC=upper.AUC=NULL
     pframe <- switch(type,"score"={x$AUC$score},"test"={x$AUC$test},{stop("Type has to be either 'score' for AUC or 'test' for differences in AUC.")})
