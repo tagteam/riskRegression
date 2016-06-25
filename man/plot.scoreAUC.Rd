@@ -31,4 +31,13 @@
 \description{
 Plot AUC curve
 }
+\examples{
+library(survival)
+d=sampleData(100,outcome="survival")
+nd=sampleData(100,outcome="survival")
+f1=coxph(Surv(time,event)~X1+X6+X8,data=d)
+f2=coxph(Surv(time,event)~X2+X5+X9,data=d)
+xx=Score(list(f1,f2),formula=Surv(time,event)~1,data=nd,metrics="auc")
+plot.scoreAUC(xx)
+}
 

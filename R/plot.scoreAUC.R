@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun 23 2016 (09:19) 
 ## Version: 
-## last-updated: Jun 23 2016 (13:27) 
+## last-updated: Jun 25 2016 (10:17) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 14
+##     Update #: 18
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -27,6 +27,14 @@
 ##' @param axes Logical. If \code{TRUE} draw axes.
 ##' @param confint Logical. If \code{TRUE} draw confidence shadows.
 ##' @param ... Not yet used
+##' @examples
+##' library(survival)
+##' d=sampleData(100,outcome="survival")
+##' nd=sampleData(100,outcome="survival")
+##' f1=coxph(Surv(time,event)~X1+X6+X8,data=d)
+##' f2=coxph(Surv(time,event)~X2+X5+X9,data=d)
+##' xx=Score(list(f1,f2),formula=Surv(time,event)~1,data=nd,metrics="auc")
+##' plot.scoreAUC(xx)
 #' @export
 plot.scoreAUC <- function(x,models,type="score",lwd=2,xlim,ylim,col,axes=TRUE,confint=FALSE,...){
     times=model=AUC=lower.AUC=upper.AUC=NULL
@@ -64,7 +72,8 @@ plot.scoreAUC <- function(x,models,type="score",lwd=2,xlim,ylim,col,axes=TRUE,co
     ## geom_segment(aes(x=xlim[1],xend=xlim[1],y=ylim[1],yend=ylim[2]))
     ## x-axis
     ## pp <- pp+ geom_segment(aes(x=xlim[1],xend=xlim[2],y=ylim[1],yend=ylim[1]))
-    pp <- pp+ theme_light()
+    pp <- pp+ theme_bw()
+    ## browser()
     pp <- pp + geom_line(size=lwd) + xlim(xlim) + theme(legend.key = element_blank())
     ## + theme_classic()
     ## pp <- theme(axis.text.x= element_text(family, face, colour, size))

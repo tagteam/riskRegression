@@ -6,7 +6,8 @@ Author: Thomas Alexander Gerds, Thomas Harder Scheike, Paul Blanche, Brice Ozenn
 Depends:
     R (>= 2.9.0),
     prodlim (>= 1.5.7),
-    data.table (>= 1.9.6)
+    data.table (>= 1.9.6),
+    ggplot2 (>= 2.1.0)
 Imports:
     stats,
     graphics,
