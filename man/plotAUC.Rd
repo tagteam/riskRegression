@@ -4,7 +4,7 @@
 \alias{plotAUC}
 \title{Plot AUC curve}
 \usage{
-plotAUC(x, models, type = "score", lwd = 2, xlim, ylim, col, axes = TRUE,
+plotAUC(x, models, type = "score", lwd = 2, xlim, ylim, axes = TRUE,
   confint = FALSE, ...)
 }
 \arguments{
@@ -19,8 +19,6 @@ plotAUC(x, models, type = "score", lwd = 2, xlim, ylim, col, axes = TRUE,
 \item{xlim}{Limits for x-axis}
 
 \item{ylim}{Limits for y-axis}
-
-\item{col}{Color}
 
 \item{axes}{Logical. If \code{TRUE} draw axes.}
 
@@ -37,7 +35,11 @@ d=sampleData(100,outcome="survival")
 nd=sampleData(100,outcome="survival")
 f1=coxph(Surv(time,event)~X1+X6+X8,data=d)
 f2=coxph(Surv(time,event)~X2+X5+X9,data=d)
-xx=Score(list(f1,f2),formula=Surv(time,event)~1,data=nd,metrics="auc")
+xx=Score(list(f1,f2),formula=Surv(time,event)~1,data=nd,metrics="auc",nullModel=FALSE,times=seq(3:10))
 plotAUC(xx)
+plotAUC(xx,confint=TRUE)
+plotAUC(xx,type="test")
+plotAUC(xx,type="test",confint=TRUE)
+
 }
 

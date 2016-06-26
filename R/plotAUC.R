@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun 23 2016 (09:19) 
 ## Version: 
-## last-updated: Jun 25 2016 (10:24) 
+## last-updated: Jun 26 2016 (09:40) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 19
+##     Update #: 38
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -23,7 +23,6 @@
 ##' @param lwd Line width
 ##' @param xlim Limits for x-axis
 ##' @param ylim Limits for y-axis
-##' @param col Color
 ##' @param axes Logical. If \code{TRUE} draw axes.
 ##' @param confint Logical. If \code{TRUE} draw confidence shadows.
 ##' @param ... Not yet used
@@ -33,57 +32,55 @@
 ##' nd=sampleData(100,outcome="survival")
 ##' f1=coxph(Surv(time,event)~X1+X6+X8,data=d)
 ##' f2=coxph(Surv(time,event)~X2+X5+X9,data=d)
-##' xx=Score(list(f1,f2),formula=Surv(time,event)~1,data=nd,metrics="auc")
+##' xx=Score(list(f1,f2),formula=Surv(time,event)~1,data=nd,metrics="auc",nullModel=FALSE,times=seq(3:10))
 ##' plotAUC(xx)
+##' plotAUC(xx,confint=TRUE)
+##' plotAUC(xx,type="test")
+##' plotAUC(xx,type="test",confint=TRUE)
+##' 
 #' @export
-plotAUC <- function(x,models,type="score",lwd=2,xlim,ylim,col,axes=TRUE,confint=FALSE,...){
+plotAUC <- function(x,models,type="score",lwd=2,xlim,ylim,axes=TRUE,confint=FALSE,...){
     times=model=AUC=lower.AUC=upper.AUC=NULL
+    ## cbPalette <- c("#999999", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
+    cbbPalette <- c("#000000", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
     pframe <- switch(type,"score"={x$AUC$score},"test"={x$AUC$test},{stop("Type has to be either 'score' for AUC or 'test' for differences in AUC.")})
-    ## plot(0,0,type="n",ylim = ylim,xlim = xlim,axes=FALSE,xlab = "Time",ylab = "AUC")
-    ## if (axes){
-    ## axis(1)
-    ## prodlim::PercentAxis(2,at=seq(ylim[1],ylim[2],(ylim[2]-ylim[1])/5))
-    ## }
-    ## pframe[,lines(times,AUC,type="l",lwd=lwd,col=col),by=model]
-    ## pframe[,dimcol:=prodlim::dimColor(col[[1]],density=55),by=model]
+    if (length(pframe$times)<2) stop(paste("Need at least two time points for plotting time-dependent AUC. Object has only ",length(pframe$times),"times"))
     if (type=="score"){
+        ## AUC
         if (!missing(models)) pframe <- pframe[model %in% models]
-        pframe[,col:=as.numeric(as.factor(model))]
         pframe[,lwd:=lwd]
         if (missing(xlim)) xlim <- pframe[,range(times)]
         if (missing(ylim)) ylim <- c(0.5,1)
-        if (missing(col)) col <- 1:length(unique(pframe$model))
+        yticks <- seq(0,1,0.05)
+        yticks <- yticks[yticks>=ylim[1] & yticks<=ylim[2]]
         pp <- ggplot(data=pframe,aes(times,AUC,fill=model,colour=model))
+        pp + geom_line(size=lwd)
     }else{
-        ## test
+        ## delta AUC
         pframe[,contrast:=paste(model,reference,sep=" - ")]
-        pframe[,col:=as.numeric(as.factor(contrast))]
         pframe[,lwd:=lwd]
         if (missing(xlim)) xlim <- pframe[,range(times)]
         if (missing(ylim)) ylim <- c(min(pframe$lower),max(pframe$upper))
-        if (missing(col)) col <- 1:length(unique(pframe$contrast))
+        yticks <- seq(-1,1,0.05)
+        yticks <- yticks[yticks>=ylim[1] & yticks<=ylim[2]]
         pp <- ggplot(data=pframe,aes(times,delta,fill=contrast,colour=contrast)) 
     }
-    ## pp <- pp + theme_bw() + theme(axis.line = element_line(colour = "black"),
-    ## panel.grid.major = element_blank(),
-    ## panel.grid.minor = element_blank(),
-    ## panel.border = element_blank(),
-    ## panel.background = element_blank())
-    ## geom_segment(aes(x=xlim[1],xend=xlim[1],y=ylim[1],yend=ylim[2]))
     ## x-axis
     ## pp <- pp+ geom_segment(aes(x=xlim[1],xend=xlim[2],y=ylim[1],yend=ylim[1]))
-    pp <- pp+ theme_bw()
-    ## browser()
+    pp <- pp+theme_bw() %+replace% theme(axis.line = element_line(colour = "black"), 
+                                             panel.grid.major = element_line(), panel.grid.major.x = element_blank(), 
+                                             panel.grid.major.y = element_blank(), panel.grid.minor = element_line(), 
+                                             panel.grid.minor.x = element_blank(), panel.grid.minor.y = element_blank(), 
+                                             strip.background = element_rect(colour = "black", 
+                                                                             size = 0.5), legend.key = element_blank())
+    pp <- pp+ scale_fill_manual(values=cbbPalette)+ scale_colour_manual(values=cbbPalette)
+    ## add the lines
     pp <- pp + geom_line(size=lwd) + xlim(xlim) + theme(legend.key = element_blank())
-    ## + theme_classic()
-    ## pp <- theme(axis.text.x= element_text(family, face, colour, size))
-    ## pp <- pp+theme(axis.line= element_line(colour="black", size=1,linetype="solid"))
-    ## pp <- pp+ theme(axis.line.x = element_line(color="black", size = 1),
-    ## axis.line.y = element_line(color="black", size = 1,limits=c(.6,.8)))
     ## y-axis
-    pp <- pp + scale_y_continuous(expand=c(0,0),limits=ylim,breaks=seq(ylim[1],ylim[2],(ylim[2]-ylim[1])/4),
-                                  labels=paste(round(100*seq(ylim[1],ylim[2],(ylim[2]-ylim[1])/4),1),"%"))
-    pp
+    pp <- pp + scale_y_continuous(expand=c(0,0),
+                                  limits=ylim,
+                                  breaks=yticks,
+                                  labels=paste(round(100*yticks,1),"%"))
     if (confint==TRUE){
         if (type=="score"){
             ## pframe[,polygon(x=c(times,rev(times)),y=c(lower.AUC,rev(upper.AUC)),col=dimcol,border=NA),by=model]
