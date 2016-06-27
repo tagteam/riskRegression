@@ -138,6 +138,11 @@ predictCox <- function(object,
         hazard <- Lambda0$hazard
         cumHazard <- Lambda0$cumHazard
         survival <- exp(-Lambda0$cumHazard)
+        
+        if(is.strata && keep.strata==TRUE){
+          newstrata <- Lambda0$strata
+        }
+        
     } else{
         ## linear predictor
         if  ("cph" %in% class(object)){
@@ -204,6 +209,10 @@ predictCox <- function(object,
         if ("survival" %in% type) out <- c(out,list(survival=survival))
         if (keep.times==TRUE) out <- c(out,list(times=Lambda0$time))
     }else{
+      if(any(times < 0)){
+        stop("Time points at which to evaluate the predictions must be positive \n")
+      }
+      
         if ("hazard" %in% type) {
             hits <- etimes%in%times
             if (sum(hits)<length(times)){
