@@ -171,7 +171,7 @@ predictCox <- function(object,
             if ("survival" %in% type){
                 survival <- exp(-cumHazard)
             }
-        }else{
+        }else{ 
             hazard <- matrix(0, nrow = NROW(newdata), ncol = length(etimes))
             if ("cph" %in% class(object)){
                 tmp <- model.frame(sterms,newdata)
@@ -215,16 +215,16 @@ predictCox <- function(object,
       
         if ("hazard" %in% type) {
             hits <- etimes%in%times
-            if (sum(hits)<length(times)){
-                if (sum(hits==0)) {
+            if (sum(hits)<length(times)){ ## some times do not correspond to an event
+                if (sum(hits)==0) {
                     out <- c(out,list(hazard=matrix(0,ncol=length(times),nrow=NROW(newdata))))
                 }else{
-                    hh <- matrix(0,ncol=length(times),nrow=NROW(newdata))
-                    hh[,hits] <- hazard[times%in%etimes,,drop=FALSE]
+                    hh <- matrix(0,ncol=length(times),nrow=NROW(newdata), dimnames = dimnames(hazard))
+                    hh[,hits] <- hazard[, match(times[hits], etimes), drop = FALSE]
                     out <- c(out,list(hazard=hh))
                 }
-            }else{
-                out <- c(out,list(hazard=hazard[,hits,drop=FALSE]))
+            }else{ ## all times corresponds to an event
+                out <- c(out,list(hazard=hazard[,match(times, etimes),drop=FALSE]))
             }
         }
         if ("cumHazard" %in% type || "survival" %in% type){
@@ -233,6 +233,12 @@ predictCox <- function(object,
         if ("cumHazard" %in% type) out <- c(out,list(cumHazard=cbind(0,cumHazard)[,tindex+1]))
         if ("survival" %in% type) out <- c(out,list(survival=cbind(1,survival)[,tindex+1]))
         if (keep.times==TRUE) out <- c(out,list(times=times))
+        
+        if(any(times>etimes[length(etimes)])){
+          if ("hazard" %in% type) out$hazard[,times>etimes[length(etimes)]] <- NA
+          if ("cumHazard" %in% type) out$cumHazard[,times>etimes[length(etimes)]] <- NA
+          if ("survival" %in% type) out$survival[,times>etimes[length(etimes)]] <- NA
+        }
     }
     if (is.strata && keep.strata==TRUE) out <- c(out,list(strata=newstrata))
     out
