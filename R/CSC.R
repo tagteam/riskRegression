@@ -21,14 +21,16 @@
 #' \item{eventTimes }{the sorted (unique) event times } \item{survtype }{the
 #' value of \code{survtype}} \item{theCause }{the cause of interest. see
 #' \code{cause}} \item{causes }{the other causes} %% ...
-#' @author Thomas A. Gerds \email{tag@@biostat.ku.dk}
+#' @author Thomas A. Gerds \email{tag@@biostat.ku.dk} and Ulla B. Mogensen
+#' @references
+#' J Benichou and Mitchell H Gail. Estimates of absolute cause-specific risk
+#' in cohort studies. Biometrics, pages 813--826, 1990.
 #' 
-#' Thomas A. Gerds \email{tag@@biostat.ku.dk} and Ulla B. Mogensen
 #' @seealso \code{\link{coxph}}
 #' @keywords survival
-##' @examples
-##' 
-##' library(riskRegression)
+#' @examples
+#' 
+#' library(riskRegression)
 ##' library(prodlim)
 ##' library(pec)
 ##' library(survival)

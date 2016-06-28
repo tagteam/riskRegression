@@ -364,7 +364,11 @@ Score.list <- function(object,
                         response[,WTi:=Weights$IPCW.subjectTimes]
                     }else{
                         censMethod <- "jackknife.pseudo.values"
-                        pseudoResponse <- getPseudoValues(formula=formula,data=testdata,responseType=responseType,times=times,cause=cause)
+                        pseudoResponse <- getPseudoValues(formula=formula,
+                                                          data=testdata,
+                                                          responseType=responseType,
+                                                          times=times,
+                                                          cause=cause)
                     }
                 } else{
                     if (censType=="uncensored"){
@@ -395,10 +399,13 @@ Score.list <- function(object,
             }else{
                 if (!is.null(traindata)){
                     set.seed(trainseed)
+                    ## remove response from traindata to avoid clash when model uses Hist(time,status)
+                    ## where status has 0,1,2 but now event history response has status=0,1
+                    nResp <- switch(responseType,"binary"=1,"survival"=2,"competing.risks"=3)
                     if (f==0)
-                        trained.model <- trainModel(model=nullobject[[1]],data=traindata)
+                        trained.model <- trainModel(model=nullobject[[1]],data=traindata[,-c(1:nResp),with=FALSE])
                     else
-                        trained.model <- trainModel(model=object[[f]],data=traindata)
+                        trained.model <- trainModel(model=object[[f]],data=traindata[,-c(1:nResp),with=FALSE])
                     if ("try-error" %in% class(trained.model)){
                         ## browser(skipCalls=TRUE)
                         stop(paste0("Failed to fit model ",f,ifelse(try(b>0,silent=TRUE),paste0(" in cross-validation step ",b,"."))))
@@ -507,7 +514,20 @@ Score.list <- function(object,
             traindata=data[splitMethod$index[,b],,drop=FALSE]
             ## subset.data.table preserves order
             testdata <- subset(data,(match(1:N,unique(splitMethod$index[,b]),nomatch=0)==0),drop=FALSE)
-            cb <- computePerformance(object=object,nullobject=nullobject,testdata=testdata,traindata=traindata,trainseed=trainseeds[b],metrics=metrics,plots=plots,times=times,cause=cause,test=test,alpha=alpha,dolist=dolist,NF=NF,NT=NT)
+            cb <- computePerformance(object=object,
+                                     nullobject=nullobject,
+                                     testdata=testdata,
+                                     traindata=traindata,
+                                     trainseed=trainseeds[b],
+                                     metrics=metrics,
+                                     plots=plots,
+                                     times=times,
+                                     cause=cause,
+                                     test=test,
+                                     alpha=alpha,
+                                     dolist=dolist,
+                                     NF=NF,
+                                     NT=NT)
             cb
         }
         ## browser(skipCalls=1)
@@ -580,7 +600,7 @@ Score.list <- function(object,
     }
     for (m in c(metrics,summary)){
         output[[m]]$metrics <- m
-        class(output[[m]]) <- c("highscore")
+        class(output[[m]]) <- paste0("score",m)
     }
     class(output) <- "Score"
     output
@@ -725,88 +745,7 @@ plot.riskQuantile <- function(x,text.title="Outcome after 10 years",xlab="",text
 }
 
 
-##' Plot ROC curve 
-##'
-##' @title Plot ROC curve
-#' @export
-##' @param x Object obtained with \code{Score.list}
-##' @param models Choice of models to plot
-##' @param timepoint Time point specifying the prediction horizon
-##' @param lwd line width
-##' @param legend Logical. If \code{TRUE} draw legend.
-##' @param legend.title Legend title
-##' @param ... Not yet used
-plot.score.ROC <- function(x,models,timepoint,lwd=3,legend=TRUE,legend.title,...){
-    model=FPR=TPR=times=NULL
-    pframe <- x$ROC$plotframe
-    if (!missing(models)){
-        pframe <- pframe[model%in%models]
-    }
-    setkey(pframe,model)
-    if (missing(timepoint))
-        timepoint <- max(pframe[["times"]])
-    else ## can only do one timepoint
-        timepoint <- timepoint[[1]]
-    plot(0,0,type="n",ylim = 0:1,
-         xlim = 0:1,
-         axes=FALSE,
-         xlab = "1-Specificity",
-         ylab = "Sensitivity")
-    prodlim::PercentAxis(1,at=seq(0,1,.25))
-    prodlim::PercentAxis(2,at=seq(0,1,.25))
-    if (!missing(models)) pframe <- pframe[model %in% models]
-    pframe[,col:=as.numeric(as.factor(model))]
-    pframe[,lwd:=lwd]
-    pframe[,lines(FPR,TPR,type="l",lwd=lwd,col=col),by=model]
-    if (legend!=FALSE){
-        if (!is.character(legend)){
-            if (!missing(models))
-                auc <- x$AUC$score[(times==timepoint) & (model%in%models)]
-            else
-                auc <- x$AUC$score[(times==timepoint)]
-            setkey(auc,model)
-            ## legend <- paste0(auc$model,": ",Publish::formatCI(100*auc$AUC,100*auc$lower.AUC,100*auc$upper.AUC,showX=TRUE,digits=1))
-            legend <- paste0(auc$model,": ",sprintf(format="%s [%s;%s]",round(100*auc$AUC,digits=1),round(100*auc$lower.AUC,digits=1),round(100*auc$upper.AUC,digits=1)))
-        }
-        if (missing(legend.title)) legend.title <- "AUC"
-        pframe[,legend(x="bottomright",legend=legend,lwd=lwd[[1]],title=legend.title,col=unique(col))]
-    }
-    abline(a=0,b=1,col="gray77",lwd=3)
-    invisible(x)
-}
 
-##' Plot AUC curve
-##'
-##' @title Plot AUC curve
-#' @export
-##' @param x Object obtained with \code{Score.list}
-##' @param models Choice of models to plot
-##' @param lwd Line width
-##' @param xlim Limits for x-axis 
-##' @param ylim Limits for y-axis 
-##' @param axes Logical. If \code{TRUE} draw axes.
-##' @param ... Not yet used
-plot.score.AUC <- function(x,models,lwd=3,xlim,ylim,axes=TRUE,...){
-    times=model=AUC=dimcol=lower.AUC=upper.AUC=NULL
-    pframe <- x$AUC$score
-    if (missing(xlim)) xlim <- pframe[,range(times)]
-    if (missing(ylim)) ylim <- c(0.5,1)
-    plot(0,0,type="n",ylim = ylim,
-         xlim = xlim,
-         axes=FALSE,
-         xlab = "Time",
-         ylab = "AUC")
-    if (axes){
-        axis(1)
-        prodlim::PercentAxis(2,at=seq(ylim[1],ylim[2],(ylim[2]-ylim[1])/5))
-    }
-    if (!missing(models)) pframe <- pframe[model %in% models]
-    pframe[,col:=as.numeric(as.factor(model))]
-    pframe[,lwd:=lwd]
-    pframe[,lines(times,AUC,type="l",lwd=lwd,col=col),by=model]
-    pframe[,dimcol:=prodlim::dimColor(col[[1]],density=55),by=model]
-    pframe[,polygon(x=c(times,rev(times)),y=c(lower.AUC,rev(upper.AUC)),col=dimcol,border=NA),by=model]
-}
 
 ##' Plot Brier curve
 ##'

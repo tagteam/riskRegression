@@ -113,9 +113,11 @@ predict(fit5.2,cause=2,newdata=Melanoma[4,],times=100)
 
 }
 \author{
-Thomas A. Gerds \email{tag@biostat.ku.dk}
-
 Thomas A. Gerds \email{tag@biostat.ku.dk} and Ulla B. Mogensen
+}
+\references{
+J Benichou and Mitchell H Gail. Estimates of absolute cause-specific risk
+in cohort studies. Biometrics, pages 813--826, 1990.
 }
 \seealso{
 \code{\link{coxph}}

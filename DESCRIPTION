@@ -1,12 +1,13 @@
 Package: riskRegression
 Type: Package
 Title: Risk Regression Models and Prediction Scores for Survival Analysis with Competing Risks
-Version: 1.2.2
+Version: 1.2.3
 Author: Thomas Alexander Gerds, Thomas Harder Scheike, Paul Blanche, Brice Ozenne
 Depends:
     R (>= 2.9.0),
     prodlim (>= 1.5.7),
-    data.table (>= 1.9.6)
+    data.table (>= 1.9.6),
+    ggplot2 (>= 2.1.0)
 Imports:
     stats,
     graphics,
