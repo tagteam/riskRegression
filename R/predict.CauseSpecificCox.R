@@ -58,6 +58,7 @@ predict.CauseSpecificCox <- function(object,newdata,times,cause,keep.strata = FA
             stop("Object can be used to predict cause ", object$theCause, 
                  " but not ", cause, ".\nNote: the cause can be specified in CSC(...,cause=).")
     }
+    
     # predict cumulative cause specific hazards
     causeHazard <- predictCox(object$models[[paste("Cause",cause)]],
                               newdata = newdata,
@@ -66,7 +67,7 @@ predict.CauseSpecificCox <- function(object,newdata,times,cause,keep.strata = FA
                               keep.strata = keep.strata,keep.times=TRUE)
 
     if(keep.strata){
-        strata <- causeHazard$hazard$strata
+        strata <- causeHazard$strata
     }
     ncol.pred <-  ncol(causeHazard$cumHazard)
     if (survtype == "hazard") {

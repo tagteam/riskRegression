@@ -127,23 +127,17 @@ predictCox <- function(object,
                                  maxtime = maxtime,
                                  cause = 1,
                                  Efron = (object$method == "efron"))
-    if (is.strata)
-        etimes <- sort(unique(Lambda0$time))
-    else
-        etimes <- Lambda0$time
-    if (is.strata == TRUE){ ## rename the strata value with the correct levels
-        Lambda0$strata <- factor(Lambda0$strata, levels = 0:(nStrata-1), labels = levelsStrata)
-    }
+    
     if (is.null(newdata)){
         hazard <- Lambda0$hazard
         cumHazard <- Lambda0$cumHazard
         survival <- exp(-Lambda0$cumHazard)
         
         if(is.strata && keep.strata==TRUE){
-          newstrata <- Lambda0$strata
+          newstrata <- factor(Lambda0$strata, levels = 0:(nStrata-1), labels = levelsStrata)
         }
         
-    } else{
+    } else {
         ## linear predictor
         if  ("cph" %in% class(object)){
             if(length(xvars) > length(stratavars)){
@@ -162,6 +156,14 @@ predictCox <- function(object,
         }
         ## subject specific hazard
         if (is.strata==FALSE){
+          
+          # remove useless event time for prediction, i.e. censored times except if it is the last observation in the strata
+          keep.eventtime <- union(which(Lambda0$hazard>0), length(Lambda0$hazard))
+          Lambda0 <- lapply(Lambda0, function(x){x[keep.eventtime]})
+          
+          etimes <- Lambda0$time
+          etimes.max <- max(etimes)
+          
             if ("hazard" %in% type){
                 hazard <- exp(Xb) %o% Lambda0$hazard
             }
@@ -171,7 +173,20 @@ predictCox <- function(object,
             if ("survival" %in% type){
                 survival <- exp(-cumHazard)
             }
+          
         }else{ 
+          
+          # remove useless event time for prediction, i.e. censored times except if it is the last observation in the strata
+          keep.eventtime <- tapply(Lambda0$hazard, Lambda0$strata, function(x){
+            tempo <- (x>0)
+            tempo[length(tempo)] <- TRUE
+            return(tempo)
+          })
+          Lambda0 <- lapply(Lambda0, function(x){x[unlist(keep.eventtime)]})
+          
+          Lambda0$strata <- factor(Lambda0$strata, levels = 0:(nStrata-1), labels = levelsStrata) 
+          etimes <- sort(unique(Lambda0$time))
+          
             hazard <- matrix(0, nrow = NROW(newdata), ncol = length(etimes))
             if ("cph" %in% class(object)){
                 tmp <- model.frame(sterms,newdata)
@@ -183,13 +198,15 @@ predictCox <- function(object,
                 newstrata <- prodlim::model.design(sterms,data=newdata,xlev=stratalevels,specialsFactor=TRUE)$strata[[1]]
             }
             ## loop across strata
-            for(S in unique(newstrata)){
+            allStrata <- unique(newstrata)
+            etimes.max <- setNames(numeric(length(allStrata)),allStrata)
+            for(S in allStrata){
                 id.S <- Lambda0$strata==S
                 newid.S <- newstrata==S
                 hazard.S <- Lambda0$hazard[id.S]
-                maxtime <- max(Lambda0$time[id.S])
+                etimes.max[S] <- max(Lambda0$time[id.S])
                 ## take care of early ending strata
-                hazard[newid.S,etimes>maxtime] <- NA
+                hazard[newid.S,etimes>etimes.max[S]] <- NA # not ok if last event in the strata is 4100 and the following event in other strata is 4200 while we want to predict at 4150. It will not return an NA while it should return one
                 ## find event times within this strata
                 time.index.S <- match(Lambda0$time[id.S],etimes,nomatch=0L)
                 hazard[newid.S,time.index.S] <- exp(Xb[newid.S]) %o% Lambda0$hazard[id.S]
@@ -203,18 +220,21 @@ predictCox <- function(object,
         }
     }
     out <- list()
-    if (missing(times)){
+    if (is.null(newdata)){
         if ("hazard" %in% type) out <- c(out,list(hazard=hazard))
         if ("cumHazard" %in% type) out <- c(out,list(cumHazard=cumHazard))
         if ("survival" %in% type) out <- c(out,list(survival=survival))
         if (keep.times==TRUE) out <- c(out,list(times=Lambda0$time))
     }else{
+      if(missing(times)){
+        stop("Time points at which to evaluate the predictions are missing \n")
+      }
       if(any(times < 0)){
         stop("Time points at which to evaluate the predictions must be positive \n")
       }
       
         if ("hazard" %in% type) {
-            hits <- etimes%in%times
+            hits <- times%in%etimes
             if (sum(hits)<length(times)){ ## some times do not correspond to an event
                 if (sum(hits)==0) {
                     out <- c(out,list(hazard=matrix(0,ncol=length(times),nrow=NROW(newdata))))
@@ -238,6 +258,23 @@ predictCox <- function(object,
           if ("hazard" %in% type) out$hazard[,times>etimes[length(etimes)]] <- NA
           if ("cumHazard" %in% type) out$cumHazard[,times>etimes[length(etimes)]] <- NA
           if ("survival" %in% type) out$survival[,times>etimes[length(etimes)]] <- NA
+        }
+        
+        if (is.strata==FALSE){  # set hazard/cumHazard/survival to NA after the last event
+          if(any(times>etimes[length(etimes)])){
+            if ("hazard" %in% type) out$hazard[,times>etimes[length(etimes)]] <- NA
+            if ("cumHazard" %in% type) out$cumHazard[,times>etimes[length(etimes)]] <- NA
+            if ("survival" %in% type) out$survival[,times>etimes[length(etimes)]] <- NA
+          }
+        }else{ # set hazard/cumHazard/survival to NA after the last event in the strata
+          for(S in allStrata){
+            if(any(times>etimes.max[S])){ 
+              newid.S <- newstrata==S
+              if ("hazard" %in% type) out$hazard[newid.S,times>etimes.max[S]] <- NA
+              if ("cumHazard" %in% type) out$cumHazard[newid.S,times>etimes.max[S]] <- NA
+              if ("survival" %in% type) out$survival[newid.S,times>etimes.max[S]] <- NA
+            }
+          }
         }
     }
     if (is.strata && keep.strata==TRUE) out <- c(out,list(strata=newstrata))
