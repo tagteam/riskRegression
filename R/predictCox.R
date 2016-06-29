@@ -42,7 +42,7 @@
 #' 
 #' predictCox(fitS)
 #' predictCox(fitS, maxtime = 5)
-#' predictCox(fitS, maxtime = 5,newdata=nd)
+#' predictCox(fitS, maxtime = 5, newdata=nd, times = 1)
 #'
 #' # two strata variables
 #' set.seed(1)
@@ -55,7 +55,7 @@
 #' cbind(survival::basehaz(fit2S),predictCox(fit2S,type="cumHazard"))
 #' predictCox(fit2S)
 #' predictCox(fitS, maxtime = 5)
-#' predictCox(fitS, maxtime = 5,newdata=nd)
+#' predictCox(fitS, maxtime = 5,newdata=nd, times = 3)
 #' 
 #' 
 #' @export
@@ -162,7 +162,6 @@ predictCox <- function(object,
           Lambda0 <- lapply(Lambda0, function(x){x[keep.eventtime]})
           
           etimes <- Lambda0$time
-          etimes.max <- max(etimes)
           
             if ("hazard" %in% type){
                 hazard <- exp(Xb) %o% Lambda0$hazard
@@ -249,24 +248,16 @@ predictCox <- function(object,
         }
         if ("cumHazard" %in% type || "survival" %in% type){
             tindex <- prodlim::sindex(jump.times=etimes,eval.times=times)
+            if(any(times>etimes[length(etimes)])){
+              tindex[times>etimes[length(etimes)]] <- NA # for cumHazard and survival 
+              out$hazard[,times>etimes[length(etimes)]] <- NA
+            }
         }
-        if ("cumHazard" %in% type) out <- c(out,list(cumHazard=cbind(0,cumHazard)[,tindex+1]))
-        if ("survival" %in% type) out <- c(out,list(survival=cbind(1,survival)[,tindex+1]))
+        if ("cumHazard" %in% type) out <- c(out,list(cumHazard=cbind(0,cumHazard)[,tindex+1, drop = FALSE]))
+        if ("survival" %in% type) out <- c(out,list(survival=cbind(1,survival)[,tindex+1, drop = FALSE]))
         if (keep.times==TRUE) out <- c(out,list(times=times))
         
-        if(any(times>etimes[length(etimes)])){
-          if ("hazard" %in% type) out$hazard[,times>etimes[length(etimes)]] <- NA
-          if ("cumHazard" %in% type) out$cumHazard[,times>etimes[length(etimes)]] <- NA
-          if ("survival" %in% type) out$survival[,times>etimes[length(etimes)]] <- NA
-        }
-        
-        if (is.strata==FALSE){  # set hazard/cumHazard/survival to NA after the last event
-          if(any(times>etimes[length(etimes)])){
-            if ("hazard" %in% type) out$hazard[,times>etimes[length(etimes)]] <- NA
-            if ("cumHazard" %in% type) out$cumHazard[,times>etimes[length(etimes)]] <- NA
-            if ("survival" %in% type) out$survival[,times>etimes[length(etimes)]] <- NA
-          }
-        }else{ # set hazard/cumHazard/survival to NA after the last event in the strata
+        if (is.strata==TRUE){ # set hazard/cumHazard/survival to NA after the last event in the strata
           for(S in allStrata){
             if(any(times>etimes.max[S])){ 
               newid.S <- newstrata==S
