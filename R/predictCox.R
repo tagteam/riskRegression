@@ -134,7 +134,9 @@ predictCox <- function(object,
         survival <- exp(-Lambda0$cumHazard)
         
         if(is.strata && keep.strata==TRUE){
-          newstrata <- factor(Lambda0$strata, levels = 0:(nStrata-1), labels = levelsStrata)
+          newstrata <- factor(Lambda0$strata,
+                              levels = 0:(nStrata-1),
+                              labels = levelsStrata)
         }
         
     } else {
@@ -205,7 +207,7 @@ predictCox <- function(object,
                 hazard.S <- Lambda0$hazard[id.S]
                 etimes.max[S] <- max(Lambda0$time[id.S])
                 ## take care of early ending strata
-                hazard[newid.S,etimes>etimes.max[S]] <- NA # not ok if last event in the strata is 4100 and the following event in other strata is 4200 while we want to predict at 4150. It will not return an NA while it should return one
+                hazard[newid.S,etimes>etimes.max[S]] <- NA
                 ## find event times within this strata
                 time.index.S <- match(Lambda0$time[id.S],etimes,nomatch=0L)
                 hazard[newid.S,time.index.S] <- exp(Xb[newid.S]) %o% Lambda0$hazard[id.S]
@@ -225,47 +227,56 @@ predictCox <- function(object,
         if ("survival" %in% type) out <- c(out,list(survival=survival))
         if (keep.times==TRUE) out <- c(out,list(times=Lambda0$time))
     }else{
-      if(missing(times)){
-        stop("Time points at which to evaluate the predictions are missing \n")
-      }
-      if(any(times < 0)){
-        stop("Time points at which to evaluate the predictions must be positive \n")
-      }
-      
+        if(missing(times)){
+            stop("Time points at which to evaluate the predictions are missing \n")
+        }
+        if(any(times < 0)){
+            stop("Time points at which to evaluate the predictions must be positive \n")
+        }
         if ("hazard" %in% type) {
             hits <- times%in%etimes
             if (sum(hits)<length(times)){ ## some times do not correspond to an event
                 if (sum(hits)==0) {
-                    out <- c(out,list(hazard=matrix(0,ncol=length(times),nrow=NROW(newdata))))
+                    hazard=matrix(0,ncol=length(times),nrow=NROW(newdata))
                 }else{
                     hh <- matrix(0,ncol=length(times),nrow=NROW(newdata), dimnames = dimnames(hazard))
                     hh[,hits] <- hazard[, match(times[hits], etimes), drop = FALSE]
-                    out <- c(out,list(hazard=hh))
+                    hazard=hh
                 }
             }else{ ## all times corresponds to an event
-                out <- c(out,list(hazard=hazard[,match(times, etimes),drop=FALSE]))
+                hazard=hazard[,match(times, etimes),drop=FALSE]
             }
+            ## set hazard to NA for times beyond the last observation time
+            hazard[,times>etimes[length(etimes)]] <- NA
+            out <- c(out,list(hazard=hazard))
         }
+        ## 
         if ("cumHazard" %in% type || "survival" %in% type){
             tindex <- prodlim::sindex(jump.times=etimes,eval.times=times)
             if(any(times>etimes[length(etimes)])){
-              tindex[times>etimes[length(etimes)]] <- NA # for cumHazard and survival 
-              out$hazard[,times>etimes[length(etimes)]] <- NA
+                tindex[times>etimes[length(etimes)]] <- NA # for cumHazard and survival 
             }
         }
+
+        
         if ("cumHazard" %in% type) out <- c(out,list(cumHazard=cbind(0,cumHazard)[,tindex+1, drop = FALSE]))
         if ("survival" %in% type) out <- c(out,list(survival=cbind(1,survival)[,tindex+1, drop = FALSE]))
         if (keep.times==TRUE) out <- c(out,list(times=times))
         
         if (is.strata==TRUE){ # set hazard/cumHazard/survival to NA after the last event in the strata
-          for(S in allStrata){
-            if(any(times>etimes.max[S])){ 
-              newid.S <- newstrata==S
-              if ("hazard" %in% type) out$hazard[newid.S,times>etimes.max[S]] <- NA
-              if ("cumHazard" %in% type) out$cumHazard[newid.S,times>etimes.max[S]] <- NA
-              if ("survival" %in% type) out$survival[newid.S,times>etimes.max[S]] <- NA
+            # 
+            # still need to care about the case where if last event time in the stratum is 4100 but 
+            # there is a higher event time e.g. 4200 in a different stratum and times include a value such as 4150.
+            # In this case we want to return NA
+            #
+            for(S in allStrata){
+                if(any(times>etimes.max[S])){ 
+                    newid.S <- newstrata==S
+                    if ("hazard" %in% type) out$hazard[newid.S,times>etimes.max[S]] <- NA
+                    if ("cumHazard" %in% type) out$cumHazard[newid.S,times>etimes.max[S]] <- NA
+                    if ("survival" %in% type) out$survival[newid.S,times>etimes.max[S]] <- NA
+                }
             }
-          }
         }
     }
     if (is.strata && keep.strata==TRUE) out <- c(out,list(strata=newstrata))
