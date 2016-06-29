@@ -18,7 +18,7 @@ Imports:
     survival,
     randomForestSRC,
     parallel,
-    doParallel,
+    doParallel
 LinkingTo: Rcpp, RcppArmadillo
 Suggests:
     lava,   
@@ -32,7 +32,7 @@ Suggests:
     party,
     rpart,
     doMC,
-    CoxBoost,
+    CoxBoost
 Maintainer: Thomas Alexander Gerds <tag@biostat.ku.dk>
 Description: Implementation of the following methods for event history analysis.
              Risk regression models for survival endpoints also in the presence of
