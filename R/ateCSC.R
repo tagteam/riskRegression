@@ -77,7 +77,7 @@ ateCSC <- function(formula,
     Gformula <- function(data, treatment, contrasts, formula, times, cause,fitter, return.model, ...){
         ## fit
         CSC.fit <- CSC(formula = formula, data = data, cause = cause,fitter=fitter, ...)  
-        meanRisk <- lapply(1:n.contrasts,function(i){
+         meanRisk <- lapply(1:n.contrasts,function(i){
             ## prediction for the hypothetical worlds in which every subject is treated with the same treatment
             data.i <- data
             data.i[[treatment]] <- factor(contrasts[i], levels = levels)
@@ -87,6 +87,7 @@ ateCSC <- function(formula,
                 mean(stats::predict(CSC.fit, newdata = data.i, times = times, cause = cause))
             }
         })
+         
         riskComparison <- data.table::rbindlist(lapply(1:n.contrasts,function(i){
             data.table::rbindlist(lapply((i:n.contrasts),function(j){
                 ## compute differences between all pairs of treatments
@@ -113,6 +114,7 @@ ateCSC <- function(formula,
                                                           fitter=fitter,
                                                           return.model=return.model,
                                                           ...))
+    
     #### Bootstrap
     if(B>0){
         if (verbose==TRUE)
@@ -140,7 +142,8 @@ ateCSC <- function(formula,
             boots <- foreach::`%dopar%`(foreach::foreach(b=1:B,.packages=c("riskRegression"),.export=NULL), {
               set.seed(bootseeds[[b]])
               dataBoot <- data[sample(1:n.obs, size = n.obs, replace = TRUE),]
-              Gformula(data=dataBoot,treatment=treatment,contrasts=contrasts,formula=formula,times=times,cause=cause,fitter=fitter,return.model = FALSE,...)
+              tryCatch(Gformula(data=dataBoot,treatment=treatment,contrasts=contrasts,formula=formula,times=times,cause=cause,fitter=fitter,return.model = FALSE,...),
+                       error = function(x){return(NULL)})
             })
             
             parallel::stopCluster(cl)
@@ -154,23 +157,27 @@ ateCSC <- function(formula,
             boots <- parallel::mclapply(1:B, function(b){
                 set.seed(bootseeds[[b]])
                 dataBoot <- data[sample(1:n.obs, size = n.obs, replace = TRUE),]
-                Gformula(data=dataBoot, treatment=treatment, contrasts=contrasts, formula=formula, times=times, cause=cause,fitter=fitter, return.model = FALSE, ...)
+                tryCatch(Gformula(data=dataBoot, treatment=treatment, contrasts=contrasts, formula=formula, times=times, cause=cause,fitter=fitter, return.model = FALSE, ...),
+                         error = function(x){return(NULL)})
             }, mc.cores = mc.cores)
         }
+        
         ## gc()
         meanRisksBoot <- data.table::rbindlist(lapply(boots,function(x)x$meanRisk))
         riskComparisonsBoot <- data.table::rbindlist(lapply(boots,function(x)x$riskComparison))
         alpha <- 1-conf.level
-        mrisks <- meanRisksBoot[,data.table::data.table(meanRiskBoot=mean(meanRisk),
-                                                        lower=quantile(meanRisk,alpha/2)
-                                                        ,upper=quantile(meanRisk,1-(alpha/2))),
+        mrisks <- meanRisksBoot[,data.table::data.table(meanRiskBoot=mean(meanRisk, na.rm = TRUE),
+                                                        lower=quantile(meanRisk,alpha/2, na.rm = TRUE),
+                                                        upper=quantile(meanRisk,1-(alpha/2), na.rm = TRUE),
+                                                        n.boot=sum(!is.na(meanRisk))),
                                 by=Treatment]
-        crisks <- riskComparisonsBoot[,data.table::data.table(diffMeanBoot=mean(diff),
-                                                              diff.lower=quantile(diff,alpha/2),
-                                                              diff.upper=quantile(diff,1-(alpha/2)),
-                                                              ratioMeanBoot=mean(ratio),
-                                                              ratio.lower=quantile(ratio,alpha/2),
-                                                              ratio.upper=quantile(ratio,1-(alpha/2))),
+        crisks <- riskComparisonsBoot[,data.table::data.table(diffMeanBoot=mean(diff, na.rm = TRUE),
+                                                              diff.lower=quantile(diff,alpha/2, na.rm = TRUE),
+                                                              diff.upper=quantile(diff,1-(alpha/2), na.rm = TRUE),
+                                                              ratioMeanBoot=mean(ratio, na.rm = TRUE),
+                                                              ratio.lower=quantile(ratio,alpha/2, na.rm = TRUE),
+                                                              ratio.upper=quantile(ratio,1-(alpha/2), na.rm = TRUE),
+                                                              n.boot=sum(!is.na(diff))),
                                       by=list(Treatment.A,Treatment.B)]
     }else{
       mrisks <- data.table::data.table(Treatment = pointEstimate$meanRisk$Treatment, meanRiskBoot = NA, lower = NA, upper = NA)
