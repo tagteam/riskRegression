@@ -135,19 +135,27 @@ ateCSC <- function(formula,
         bootseeds <- sample(1:1000000,size=B,replace=FALSE)
         if (handler[[1]]=="foreach"){
             cl <- parallel::makeCluster(mc.cores)
-            doParallel::registerDoParallel(mc.cores)
-            boots <- foreach::foreach(b=1:B,packages=c("riskRegression"),.export=NULL) %dopar%{
-                set.seed(bootseeds[[b]])
-                dataBoot <- data[sample(1:n.obs, size = n.obs, replace = TRUE),]
-                Gformula(data=dataBoot,treatment=treatment,contrasts=contrasts,formula=formula,times=times,cause=cause,fitter=fitter,return.model = FALSE,...)
-            }
+            doParallel::registerDoParallel(cl)
+            
+            boots <- foreach::`%dopar%`(foreach::foreach(b=1:B,.packages=c("riskRegression"),.export=NULL), {
+              set.seed(bootseeds[[b]])
+              dataBoot <- data[sample(1:n.obs, size = n.obs, replace = TRUE),]
+              Gformula(data=dataBoot,treatment=treatment,contrasts=contrasts,formula=formula,times=times,cause=cause,fitter=fitter,return.model = FALSE,...)
+            })
+            
             parallel::stopCluster(cl)
-        } else{
+        } else {
+          if(Sys.info()["sysname"] == "Windows" && mc.cores>1){
+            warning("mclapply cannot perform parallel computations on Windows \n",
+                    "consider setting argument handler to \"foreach\" \n")
+            mc.cores <- 1
+          }
+          
             boots <- parallel::mclapply(1:B, function(b){
                 set.seed(bootseeds[[b]])
                 dataBoot <- data[sample(1:n.obs, size = n.obs, replace = TRUE),]
                 Gformula(data=dataBoot, treatment=treatment, contrasts=contrasts, formula=formula, times=times, cause=cause,fitter=fitter, return.model = FALSE, ...)
-            })
+            }, mc.cores = mc.cores)
         }
         ## gc()
         meanRisksBoot <- data.table::rbindlist(lapply(boots,function(x)x$meanRisk))
