@@ -206,6 +206,9 @@ predictCox <- function(object,
             }
             ## loop across strata
             allStrata <- unique(newstrata)
+            if (any(allStrata %in% levelsStrata == FALSE)){
+              stop("unknown strata: ",allStrata[allStrata %in% levelsStrata == FALSE],"\n")
+            }
             for(S in allStrata){
                 id.S <- Lambda0$strata==S
                 newid.S <- newstrata==S

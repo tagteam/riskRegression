@@ -289,7 +289,6 @@ test_that("baseline hazard - correct number of events",{
   expect_equal(unname(lengthRes), rep(length(unique(fit.cph$y[,"time"])), 4))
 })
 
-
 # test_that("Refuse negative time points",{
 #   expect_error(predictCox(fit.coxph, times = -1, newdata = dataset1))
 # })
@@ -390,5 +389,9 @@ test_that("Prediction with Cox model (strata) - sorted vs. unsorted times",{
   expect_equal(predictionS, lapply(predictionUNS, function(x){x[,order(newOrder)]}))
 })
 
+test_that("Prediction with Cox model (strata) - incorrect strata",{
+  dataset1$invasion <- "5616"
+  expect_error(predictCox(fit.coxph, times = times1, newdata = dataset1))
+})
 #----------------------------------------------------------------------
 ### predictRisk.R ends here
