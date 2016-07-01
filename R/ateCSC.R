@@ -153,19 +153,35 @@ ateCSC <- function(formula,
         meanRisksBoot <- data.table::rbindlist(lapply(boots,function(x)x$meanRisk))
         riskComparisonsBoot <- data.table::rbindlist(lapply(boots,function(x)x$riskComparison))
         alpha <- 1-conf.level
-        mrisks <- meanRisksBoot[,data.table::data.table(meanRiskBoot=mean(meanRisk),lower=quantile(meanRisk,alpha/2),upper=quantile(meanRisk,1-(alpha/2))),by=Treatment]
-        ## merge with pointEstimate
-        mrisks <- merge(pointEstimate$meanRisk,mrisks,by="Treatment")
-        crisks <- riskComparisonsBoot[,data.table::data.table(diffMeanBoot=mean(diff),diff.lower=quantile(diff,alpha/2),diff.upper=quantile(diff,1-(alpha/2)),ratioMeanBoot=mean(ratio),ratio.lower=quantile(ratio,alpha/2),ratio.upper=quantile(ratio,1-(alpha/2))),by=list(Treatment.A,Treatment.B)]
-        crisks <- merge(pointEstimate$riskComparison,crisks,by=c("Treatment.A","Treatment.B"))
-        out <- list(meanRisk=mrisks,
-                    riskComparison=crisks,
-                    treatment=treatment,
-                    contrasts=contrasts,
-                    times=times,
-                    n.bootstrap=B,
-                    seeds=bootseeds)
+        mrisks <- meanRisksBoot[,data.table::data.table(meanRiskBoot=mean(meanRisk),
+                                                        lower=quantile(meanRisk,alpha/2)
+                                                        ,upper=quantile(meanRisk,1-(alpha/2))),
+                                by=Treatment]
+        crisks <- riskComparisonsBoot[,data.table::data.table(diffMeanBoot=mean(diff),
+                                                              diff.lower=quantile(diff,alpha/2),
+                                                              diff.upper=quantile(diff,1-(alpha/2)),
+                                                              ratioMeanBoot=mean(ratio),
+                                                              ratio.lower=quantile(ratio,alpha/2),
+                                                              ratio.upper=quantile(ratio,1-(alpha/2))),
+                                      by=list(Treatment.A,Treatment.B)]
+    }else{
+      mrisks <- data.table::data.table(Treatment = pointEstimate$meanRisk$Treatment, meanRiskBoot = NA, lower = NA, upper = NA)
+      crisks <- data.table::data.table(Treatment.A = pointEstimate$riskComparison$Treatment.A, Treatment.B = pointEstimate$riskComparison$Treatment.B,
+                                       diffMeanBoot = NA, diff.lower = NA, diff.upper = NA, ratioMeanBoot = NA, ratio.lower = NA, ratio.upper = NA)
+      bootseeds <- NULL
     }
+    
+       ## merge bootstrap with pointEstimate
+      mrisks <- merge(pointEstimate$meanRisk,mrisks,by="Treatment")
+      crisks <- merge(pointEstimate$riskComparison,crisks,by=c("Treatment.A","Treatment.B"))
+      out <- list(meanRisk=mrisks,
+                  riskComparison=crisks,
+                  treatment=treatment,
+                  contrasts=contrasts,
+                  times=times,
+                  n.bootstrap=B,
+                  seeds=bootseeds)
+    
     class(out) <- "ateCSC"
     out
 }
