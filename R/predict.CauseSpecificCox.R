@@ -64,8 +64,8 @@ predict.CauseSpecificCox <- function(object,newdata,times,cause,keep.strata = FA
                               newdata = newdata,
                               times=object$eventTimes,
                               type = c("hazard","cumHazard"), 
-                              keep.strata = keep.strata,keep.times=TRUE)
-
+                              keep.strata = TRUE,keep.times=TRUE,keep.lastEventTime = TRUE)
+ 
     if(keep.strata){
         strata <- causeHazard$strata
     }
@@ -92,11 +92,27 @@ predict.CauseSpecificCox <- function(object,newdata,times,cause,keep.strata = FA
     ## FIXME: try to get rid of the censored times where nothing happens to F1 earlier
     ## pos <- prodlim::sindex(jump.times = object$eventTimes, eval.times = times)
     pos <- prodlim::sindex(jump.times = causeHazard$times, eval.times = times)
+    etimes.max <- max(causeHazard$lastEventTime)
+    if(any(times>etimes.max)){ ## Set NA to predictions after the last event 
+      pos[times>etimes.max] <- NA
+    }
     p <- cbind(0, out)[, pos + 1,drop=FALSE]
     if (NROW(p) != NROW(newdata) || NCOL(p) != length(times)) 
         stop(paste("\nPrediction matrix has wrong dimension:\nRequested newdata x times: ", 
                    NROW(newdata), " x ", length(times), "\nProvided prediction matrix: ", 
                    NROW(p), " x ", NCOL(p), "\n\n", sep = ""))
+    
+    ## Set NA to predictions between the last event of each strata and the last event
+    if(!is.null(causeHazard$strata)){
+      for(S in names(causeHazard$lastEventTime)){
+        test.times <- (times>causeHazard$lastEventTime[S])*(times<=etimes.max)
+        if(any(test.times>0)){ 
+          newid.S <- causeHazard$strata==S
+          p[newid.S,test.times>0] <- NA
+        }
+      }
+    }
+    
     ## export
     if(keep.strata == TRUE){
         return(list(p, strata = strata))

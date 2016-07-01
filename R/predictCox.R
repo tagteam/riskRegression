@@ -16,6 +16,7 @@
 #' or several of the strings \code{"hazard"},\code{"cumhazard"}, \code{"survival"}
 #' @param keep.strata Logical. If \code{TRUE} add the (newdata) strata to the output. Only if there any. 
 #' @param keep.times Logical. If \code{TRUE} add the evaluation times to the output. 
+#' @param keep.lastEventTime Logical. If \code{TRUE} add the time at which the last event occured for each strata to the output. 
 #' @details Not working with time varying predictor variables or
 #'     delayed entry.
 #' @author Brice Ozenne broz@@sund.ku.dk, Thomas A. Gerds tag@@biostat.ku.dk
@@ -66,7 +67,8 @@ predictCox <- function(object,
                        maxtime = NULL,
                        type=c("hazard","cumHazard","survival"),
                        keep.strata = FALSE,
-                       keep.times = FALSE){ 
+                       keep.times = FALSE,
+                       keep.lastEventTime = FALSE){ 
     ## extract elements from objects
     xterms <- delete.response(object$terms)
     xvars <- attr(xterms,"term.labels")
@@ -172,7 +174,7 @@ predictCox <- function(object,
            etimes <- Lambda0$time
            # last event time
            # Cannot be max(Lambda0$time) because the censored observations have been removed from Lambda0
-           etimes.lastStrata <- max(ytimes)  
+           etimes.max <- etimes.lastStrata <- max(ytimes) 
            
             if ("hazard" %in% type){
                 hazard <- exp(Xb) %o% Lambda0$hazard
@@ -190,6 +192,7 @@ predictCox <- function(object,
           # last event time within each strata
           # Cannot be tapply(Lambda0$times, Lambda0$strata, tail, n = 1) because the censored observations have been removed from Lambda0
           etimes.lastStrata <- tapply(ytimes, strataF, max)
+          etimes.max <- max(etimes.lastStrata)
           
             hazard <- matrix(0, nrow = NROW(newdata), ncol = length(etimes))
             if ("cph" %in% class(object)){
@@ -252,8 +255,8 @@ predictCox <- function(object,
         ## 
         if ("cumHazard" %in% type || "survival" %in% type){
             tindex <- prodlim::sindex(jump.times=etimes,eval.times=times)
-            if(any(times>etimes[length(etimes)])){
-                tindex[times>max(etimes.lastStrata)] <- NA # for cumHazard and survival 
+            if(any(times>etimes.max)){
+                tindex[times>etimes.max] <- NA # for cumHazard and survival 
             }
         }
 
@@ -268,16 +271,18 @@ predictCox <- function(object,
             # there is a higher event time e.g. 4200 in a different stratum and times include a value such as 4150.
             # In this case we want to return NA
             #
-            for(S in allStrata){
-                if(any(times>etimes.lastStrata[S])){ 
+           for(S in allStrata){
+             test.times <- (times>etimes.lastStrata[S])*(times<=etimes.max)
+                if(any(test.times>0)){ 
                     newid.S <- newstrata==S
-                    if ("hazard" %in% type) out$hazard[newid.S,times>etimes.lastStrata[S]] <- NA
-                    if ("cumHazard" %in% type) out$cumHazard[newid.S,times>etimes.lastStrata[S]] <- NA
-                    if ("survival" %in% type) out$survival[newid.S,times>etimes.lastStrata[S]] <- NA
+                    if ("hazard" %in% type) out$hazard[newid.S,test.times>0] <- NA
+                    if ("cumHazard" %in% type) out$cumHazard[newid.S,test.times>0] <- NA
+                    if ("survival" %in% type) out$survival[newid.S,test.times>0] <- NA
                 }
             }
         }
     }
+    if( keep.lastEventTime==TRUE) out <- c(out,list(lastEventTime=etimes.lastStrata))
     if (is.strata && keep.strata==TRUE) out <- c(out,list(strata=newstrata))
     out
 }
