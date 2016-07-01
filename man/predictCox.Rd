@@ -4,9 +4,9 @@
 \alias{predictCox}
 \title{Fast prediction of survival, hazard and cumulative hazard from Cox regression model}
 \usage{
-predictCox(object, newdata = NULL, times, centered = TRUE, maxtime = Inf,
+predictCox(object, newdata = NULL, times, centered = TRUE, maxtime = NULL,
   type = c("hazard", "cumHazard", "survival"), keep.strata = FALSE,
-  keep.times = FALSE)
+  keep.times = FALSE, keep.lastEventTime = FALSE)
 }
 \arguments{
 \item{object}{The fitted Cox regression model object either
@@ -30,6 +30,8 @@ or several of the strings \code{"hazard"},\code{"cumhazard"}, \code{"survival"}}
 \item{keep.strata}{Logical. If \code{TRUE} add the (newdata) strata to the output. Only if there any.}
 
 \item{keep.times}{Logical. If \code{TRUE} add the evaluation times to the output.}
+
+\item{keep.lastEventTime}{Logical. If \code{TRUE} add the time at which the last event occured for each strata to the output.}
 }
 \value{
 A list optionally containing the time, the strata (if any), the hazard, the
@@ -54,7 +56,7 @@ fit <- coxph(Surv(time,status)~X1 * X2,data=d, ties="breslow")
 # table(duplicated(d$time))
 
 predictCox(fit)
-predictCox(fit,newdata=nd)
+predictCox(fit, newdata=nd, times = 5)
 cbind(survival::basehaz(fit),predictCox(fit,type="cumHazard"))
 predictCox(fit, maxtime = 5,keep.times=TRUE)
 predictCox(fit, maxtime = 1,keep.times=TRUE)
@@ -64,7 +66,7 @@ fitS <- coxph(Surv(time,status)~strata(X1)+X2,data=d, ties="breslow")
 
 predictCox(fitS)
 predictCox(fitS, maxtime = 5)
-predictCox(fitS, maxtime = 5,newdata=nd)
+predictCox(fitS, maxtime = 5, newdata=nd, times = 1)
 
 # two strata variables
 set.seed(1)
@@ -77,7 +79,7 @@ fit2S <- coxph(Surv(time,status)~X1+strata(U)+strata(V)+X2,data=d, ties="breslow
 cbind(survival::basehaz(fit2S),predictCox(fit2S,type="cumHazard"))
 predictCox(fit2S)
 predictCox(fitS, maxtime = 5)
-predictCox(fitS, maxtime = 5,newdata=nd)
+predictCox(fitS, maxtime = 5,newdata=nd, times = 3)
 
 
 }

@@ -60,7 +60,7 @@ set.seed(10)
 n <- 300
 df <- SimCompRisk(n)
 dn <- SimCompRisk(17)
-seqTime <- c(unique(sort(df$time)), max(df$time) + 1)
+seqTime <- c(unique(sort(df$time)), max(df$time) + 1)[1:10] # to be removed in future versions
 for(model in c("coxph","cph")){
     for(method.ties in c("breslow","efron")){
         CSC.NS <- CSC(Hist(time,event) ~ X1*X2,data = df, method = method.ties, fitter = model)
@@ -80,7 +80,7 @@ n <- 300
 df.S <- SimCompRisk(n)
 df.S$time <- round(df.S$time,2)
 df.S$X3 <- rbinom(n, size = 4, prob = rep(0.25,4))
-seqTime <- c(unique(sort(df.S$time)), max(df.S$time) + 1)
+seqTime <- c(unique(sort(df.S$time)), max(df.S$time) + 1)[1:10] # to be removed in future versions
 for(model in c("coxph","cph")){
     for(method.ties in c("breslow","efron")){
         if(model == "coxph"){
