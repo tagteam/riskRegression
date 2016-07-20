@@ -80,7 +80,7 @@ List BaseHazStrata_cpp(const NumericVector& alltimes, const IntegerVector& statu
     resH = BaseHaz_cpp(alltimes_S[iter_s], status_S[iter_s], Xb_S[iter_s], 
                        nObsStrata[iter_s], maxtime, cause, 
                        Efron, se);
-    
+      
     // store results
     timeRes.insert( timeRes.end(), resH[0].begin(), resH[0].end() );
     hazardRes.insert( hazardRes.end(), resH[1].begin(), resH[1].end() );
@@ -125,7 +125,7 @@ vector< vector<double> > BaseHaz_cpp(const vector<double>& alltimes, const vecto
     }
     
   }
-  
+   
   ////// 2- merge the data by event
   vector<double> time(nEventsLast);
   vector<double> hazard(nEventsLast, NA_REAL), SEhazard, SEcumHazard;
@@ -179,7 +179,6 @@ vector< vector<double> > BaseHaz_cpp(const vector<double>& alltimes, const vecto
   }
   
   //// OPT- Efron correction
-  
   if(Efron){
     
     double Wm1_tempo, Wm2_tempo = NA_REAL, sumRi, sumRi_di, di; // it is important that di is a double and not an in for the division in the for loop
@@ -205,7 +204,9 @@ vector< vector<double> > BaseHaz_cpp(const vector<double>& alltimes, const vecto
          
         // Make the average over the patient having the event at time i
         sumEXb[iterEvent] = di/Wm1_tempo;
-        isumEXb2[iterEvent] = di/Wm2_tempo;
+        if(se){
+          isumEXb2[iterEvent] = di/Wm2_tempo;
+        }
         
       }else if(se){
         isumEXb2[iterEvent] = sumEXb[iterEvent]*sumEXb[iterEvent];

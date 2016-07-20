@@ -393,5 +393,12 @@ test_that("Prediction with Cox model (strata) - incorrect strata",{
   dataset1$invasion <- "5616"
   expect_error(predictCox(fit.coxph, times = times1, newdata = dataset1))
 })
+
+test_that("Prediction with Cox model (strata) - no event before prediction time",{
+  data(lung, package = "survival")
+  fitS <- coxph(Surv(time, status) ~ age + strata(ph.ecog) + inst, lung[1:20,])
+  predictCox(fitS, newdata = lung[1:10,], times = 10)
+})
+
 #----------------------------------------------------------------------
 ### predictRisk.R ends here
