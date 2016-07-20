@@ -155,16 +155,16 @@ for(model in c("coxph","cph")){
 # limits the computation of the baseline hazard to time<=maxtime
 
 set.seed(10)
-n <- 1e5
+n <- 1e3
 df <- SimCompRisk(n)
 dn <- SimCompRisk(17)
 F1 <- CSC(Hist(time,event) ~ X1+X2,data = df)
 
 timeBase <- system.time(
-  resBase <- predictCox(F1$models[[1]], newdata=dn, times = c(0,0.1), maxtime = Inf)
+  resBase <- predictCox(F1$models[[1]], newdata=dn, times = c(0,0.001), maxtime = Inf)
 )
 timeMaxTime <- system.time(
-  resMaxTime <- predictCox(F1$models[[1]], newdata=dn, times = c(0,0.1))
+  resMaxTime <- predictCox(F1$models[[1]], newdata=dn, times = c(0,0.001))
 )
 print( (timeBase-timeMaxTime) )
 test_that("baseline hazard (no strata) - maxtime",{ 
@@ -172,13 +172,13 @@ test_that("baseline hazard (no strata) - maxtime",{
 })
 
 
-F1 <- CSC(Hist(time,event) ~ strata(X1)+X2, data = df)
+F1 <- CSC(Hist(time,event) ~ strata(X1)+X2, data = df) # tapply(df$time, df$X1, max)
 
 timeBase <- system.time(
-  resBase <- predictCox(F1$models[[1]], newdata=dn, times = c(0,0.1), maxtime = Inf)
+  resBase <- predictCox(F1$models[[1]], newdata=dn, times = c(0,0.001), maxtime = Inf)
 )
 timeMaxTime <- system.time(
-  resMaxTime <- predictCox(F1$models[[1]], newdata=dn, times = c(0,0.1))
+  resMaxTime <- predictCox(F1$models[[1]], newdata=dn, times = c(0,0.001))
 )
 print( (timeBase-timeMaxTime) )
 
