@@ -1,23 +1,41 @@
-#include <Rcpp.h>
+// [[Rcpp::depends(RcppArmadillo)]]
+#include <RcppArmadillo.h>
 #include "sortS.h"
 
 using namespace Rcpp;
+using namespace arma;
 using namespace std;
 
+struct structExport {
+  vector<double> time;
+  vector<double> hazard;
+  vector<double> cumHazard;
+  vector<double> SEhazard;
+  vector<double> SEcumHazard;
+  arma::mat Xbar;
+  arma::mat XbarCumSum;
+};
 
-vector< vector<double> > BaseHaz_cpp(const vector<double>& alltimes, const vector<int>& status, const vector<double>& Xb, 
-                                     int nPatients, double maxtime, int cause, bool Efron, bool se);
+structExport BaseHaz_cpp(const vector<double>& alltimes, const vector<int>& status, const vector<double>& Xb, 
+                                     bool se, const arma::mat& data, int nVar,
+                                     int nPatients, double maxtime, int cause, bool Efron);
 
 // [[Rcpp::export]]
 List BaseHazStrata_cpp(const NumericVector& alltimes, const IntegerVector& status, const NumericVector& Xb, const IntegerVector& strata,
-                       int nPatients, int nStrata, double maxtime, int cause, bool Efron, bool se){
+                       bool se, arma::mat data, int nVar,
+                       int nPatients, int nStrata, double maxtime, int cause, bool Efron){
   // WARNING strata0 must begin at 0
   
   vector<int> nObsStrata(nStrata,0);
   vector< vector<double> > alltimes_S(nStrata);
   vector< vector<int> > status_S(nStrata);
   vector< vector<double> > Xb_S(nStrata);
-  
+  vector< uvec > index_S(nStrata);
+  vector< arma::mat > data_S(nStrata);
+  uvec seqVar;
+  if(se){
+    seqVar = linspace<uvec>(0,nVar-1,nVar);
+  }
   ////// 1- Strata  
   if(nStrata == 1){
     
@@ -25,11 +43,15 @@ List BaseHazStrata_cpp(const NumericVector& alltimes, const IntegerVector& statu
     alltimes_S[0].resize(nPatients);
     status_S[0].resize(nPatients);
     Xb_S[0].resize(nPatients);
+    index_S[0].set_size(nPatients);
+    if(se){data_S[0].set_size(nPatients,nVar);}
     
     for(int iter_p = 0 ; iter_p < nPatients ; iter_p++){
       alltimes_S[0][iter_p] = alltimes[iter_p];
       status_S[0][iter_p] = status[iter_p];
       Xb_S[0][iter_p] = Xb[iter_p];
+      index_S[0][iter_p] = iter_p;
+      if(se){data_S[0].row(iter_p) = data.row(iter_p);}
     }
     
   }else{
@@ -44,6 +66,8 @@ List BaseHazStrata_cpp(const NumericVector& alltimes, const IntegerVector& statu
       alltimes_S[iter_s].resize(nObsStrata[iter_s]);
       status_S[iter_s].resize(nObsStrata[iter_s]);
       Xb_S[iter_s].resize(nObsStrata[iter_s]);
+      index_S[iter_s].set_size(nObsStrata[iter_s]);
+      if(se){data_S[iter_s].set_size(nObsStrata[iter_s],nVar);}
     }
     
     vector<int> index_tempo(nStrata,0); // indicates position of the last observation in each strata
@@ -54,43 +78,53 @@ List BaseHazStrata_cpp(const NumericVector& alltimes, const IntegerVector& statu
       alltimes_S[strata_tempo][index_tempo[strata_tempo]] = alltimes[iter_p];
       status_S[strata_tempo][index_tempo[strata_tempo]] = status[iter_p];
       Xb_S[strata_tempo][index_tempo[strata_tempo]] = Xb[iter_p];
+      index_S[strata_tempo][index_tempo[strata_tempo]] = index_tempo[strata_tempo];
+      if(se){data_S[strata_tempo].row(index_tempo[strata_tempo]) = data.row(iter_p);}
       index_tempo[strata_tempo]++;
     }
   }
   
   ////// 2- Select and compute
-  vector<vector <double> > resH;
+  structExport resH;
   vector<double> timeRes(0);
   vector<double> hazardRes(0);
   vector<double> SEhazardRes(0);
   vector<double> cumHazardRes(0);
   vector<double> SEcumHazardRes(0);
   vector<double> strataRes(0);
+  arma::mat XbarRes(0,nVar);
+  arma::mat XbarCumSumRes(0,nVar);
   
   for(int iter_s = 0 ; iter_s < nStrata ; iter_s++){
     
     // reorder the data
-    sortS(alltimes_S[iter_s], status_S[iter_s], Xb_S[iter_s], nObsStrata[iter_s]); // update alltimes, status and Xb
+    sortS(alltimes_S[iter_s], status_S[iter_s], Xb_S[iter_s], index_S[iter_s], nObsStrata[iter_s]); // update alltimes, status and Xb
+    
+    if(se){
+    data_S[iter_s] = data_S[iter_s].submat(index_S[iter_s], seqVar);
+    }
     
     if(maxtime < alltimes_S[iter_s][0]){ // if after the last time we need 
       continue;
     }
     
     // compute the hazard
-    resH = BaseHaz_cpp(alltimes_S[iter_s], status_S[iter_s], Xb_S[iter_s], 
+    resH = BaseHaz_cpp(alltimes_S[iter_s], status_S[iter_s], Xb_S[iter_s],
+                       se, data_S[iter_s], nVar, 
                        nObsStrata[iter_s], maxtime, cause, 
-                       Efron, se);
-      
+                       Efron);
     // store results
-    timeRes.insert( timeRes.end(), resH[0].begin(), resH[0].end() );
-    hazardRes.insert( hazardRes.end(), resH[1].begin(), resH[1].end() );
-    cumHazardRes.insert( cumHazardRes.end(), resH[2].begin(), resH[2].end() );
+    timeRes.insert( timeRes.end(), resH.time.begin(), resH.time.end() );
+    hazardRes.insert( hazardRes.end(), resH.hazard.begin(), resH.hazard.end() );
+    cumHazardRes.insert( cumHazardRes.end(), resH.cumHazard.begin(), resH.cumHazard.end() );
     if(nStrata > 1){
-      strataRes.resize( strataRes.size() + resH[0].size(), iter_s);
+      strataRes.resize( strataRes.size() + resH.time.size(), iter_s);
     }
     if(se){
-      SEhazardRes.insert( SEhazardRes.end(), resH[3].begin(), resH[3].end() );
-      SEcumHazardRes.insert( SEcumHazardRes.end(), resH[4].begin(), resH[4].end() );
+      SEhazardRes.insert( SEhazardRes.end(), resH.SEhazard.begin(), resH.SEhazard.end() );
+      SEcumHazardRes.insert( SEcumHazardRes.end(), resH.SEcumHazard.begin(), resH.SEcumHazard.end() );
+      XbarRes = join_vert(XbarRes, resH.Xbar);
+      XbarCumSumRes = join_vert(XbarCumSumRes, resH.XbarCumSum);
     }
   }
   
@@ -101,7 +135,9 @@ List BaseHazStrata_cpp(const NumericVector& alltimes, const IntegerVector& statu
                           Named("se.hazard")  = SEhazardRes,
                           Named("cumHazard")  = cumHazardRes,
                           Named("se.cumHazard")  = SEcumHazardRes,
-                          Named("strata")  = strataRes
+                          Named("strata")  = strataRes,
+                          Named("Xbar")  = XbarRes,
+                          Named("XbarCumSumRes")  = XbarCumSumRes
   );
   
   return(res);  
@@ -109,8 +145,9 @@ List BaseHazStrata_cpp(const NumericVector& alltimes, const IntegerVector& statu
 }
 
 
-vector< vector<double> > BaseHaz_cpp(const vector<double>& alltimes, const vector<int>& status, const vector<double>& Xb, 
-                                     int nPatients, double maxtime, int cause, bool Efron, bool se){
+structExport BaseHaz_cpp(const vector<double>& alltimes, const vector<int>& status, const vector<double>& Xb, 
+                                     bool se, const arma::mat& data, int nVar,
+                                     int nPatients, double maxtime, int cause, bool Efron){
   
   //// 1- count the number of events
   size_t nEvents = 1, nEventsLast = 1;
@@ -125,22 +162,35 @@ vector< vector<double> > BaseHaz_cpp(const vector<double>& alltimes, const vecto
     }
     
   }
-   
+  
   ////// 2- merge the data by event
+  // sumEXb : sum(patient still at risk) exp(XB)
+  // sumEXb_event : sum(patient having the event at that time) exp(XB)
+  // sumEXb_data : sum(patient still at risk) X exp(XB)
+  // sumEXb_eventData : sum(patient having the event at that time) X exp(XB)
+  
+  // temp2 <- rowsum(risk * x, dtime) # at each time the sum of the product between the individual risk and the value of the covariates (E[Xexp(Xb)])
+  // xsum <- apply(temp2, 2, rcumsum) # cumulative E[Xexp(XB)]
+  // xsum2 <- rowsum((risk * death) * x, dtime) # same as temp2 but the sum is only for people with event 
+    
   vector<double> time(nEventsLast);
   vector<double> hazard(nEventsLast, NA_REAL), SEhazard, SEcumHazard;
   vector<double> cumHazard(nEventsLast, NA_REAL);
+  arma::mat Xbar, XbarCumSum;
   if(se){
-    SEhazard.resize(nEventsLast, NA_REAL);
+    SEhazard.resize(nEventsLast, NA_REAL);  
     SEcumHazard.resize(nEventsLast, NA_REAL);
+    Xbar.set_size(nEvents, nVar); Xbar.fill(0);
   }
   
   vector<int> death(nEvents,0);
-  vector<double> sumEXb(nEvents), isumEXb, isumEXb2;
+  vector<double> sumEXb(nEvents), sumEXb2;
   vector<double> sumEXb_event(nEvents,0.0); // only used if efron correction
+  arma::mat sumEXb_data, sumEXb_eventData;
   if(se){
-    isumEXb.resize(nEvents, NA_REAL);
-    isumEXb2.resize(nEvents, NA_REAL);
+    sumEXb2.resize(nEvents, NA_REAL);
+    sumEXb_data.set_size(nEvents, nVar);
+    sumEXb_eventData.set_size(nEvents, nVar); sumEXb_eventData.fill(0);
   }
   
   // last observation
@@ -148,7 +198,9 @@ vector< vector<double> > BaseHaz_cpp(const vector<double>& alltimes, const vecto
   death[nEvents-1] = (status[nPatients-1]==cause);
   if(Efron && (status[nPatients-1]==cause)){
     sumEXb_event[nEvents-1] += exp(Xb[nPatients-1]);
+    if(se){sumEXb_eventData.row(nEvents-1) = data.row(nPatients-1) * exp(Xb[nPatients-1]);}
   }
+  if(se){sumEXb_data.row(nEvents-1) = data.row(nPatients-1) * exp(Xb[nPatients-1]);}
   
   // remaining observations
   size_t index_tempo = nEvents-1;
@@ -156,16 +208,19 @@ vector< vector<double> > BaseHaz_cpp(const vector<double>& alltimes, const vecto
     if(alltimes[iterPat] != alltimes[iterPat+1]){
       index_tempo--;
       sumEXb[index_tempo] = sumEXb[index_tempo+1];
+      if(se){sumEXb_data.row(index_tempo) = sumEXb_data.row(index_tempo+1);}
     }
     
     death[index_tempo] += (status[iterPat]==cause);
     sumEXb[index_tempo] += exp(Xb[iterPat]);
     if(Efron && (status[iterPat]==cause)){
       sumEXb_event[index_tempo] += exp(Xb[iterPat]);
+      if(se){sumEXb_eventData.row(index_tempo) += data.row(iterPat) * exp(Xb[iterPat]);}
     }
+    if(se){sumEXb_data.row(index_tempo) += data.row(iterPat) * exp(Xb[iterPat]);}
   }
-  
-  // first observation
+
+ // first observation
   time[0] = alltimes[0];
   
   // remaining observations
@@ -178,13 +233,16 @@ vector< vector<double> > BaseHaz_cpp(const vector<double>& alltimes, const vecto
     }
   }
   
-  //// OPT- Efron correction
+      
+      
+  //// OPT- Efron correction [from the survival package, function agsurv5]
   if(Efron){
     
-    double Wm1_tempo, Wm2_tempo = NA_REAL, sumRi, sumRi_di, di; // it is important that di is a double and not an in for the division in the for loop
+    double Wm1_tempo, Wm2_tempo = NA_REAL, sumRi, sumRi_di, sumRi_Efron, di; // it is important that di is a double and not an in for the division in the for loop
+    rowvec Wm3_tempo(nVar);
     
     for(size_t iterEvent = 0 ; iterEvent < nEventsLast ; iterEvent++){
-      
+   
       if (death[iterEvent]>1){
         sumRi = sumEXb[iterEvent];
         sumRi_di = sumEXb_event[iterEvent];
@@ -192,60 +250,83 @@ vector< vector<double> > BaseHaz_cpp(const vector<double>& alltimes, const vecto
         
         Wm1_tempo = 1/sumRi;
         if(se){
-          Wm2_tempo = 1/(sumRi*sumRi);
+          Wm2_tempo = 1/pow(sumRi,2);
+          Wm3_tempo = sumEXb_data.row(iterEvent) * pow(1/sumRi,2);
+        }
+        // Rcout << "* "<< Wm3_tempo << endl;
+        for(int iterPat = 1; iterPat < di; iterPat++){
+          sumRi_Efron = 1/(sumRi - sumRi_di*iterPat/di);
+          Wm1_tempo += sumRi_Efron;
+          if(se){
+            Wm2_tempo += pow(sumRi_Efron,2);
+            Wm3_tempo += (sumEXb_data.row(iterEvent) - sumEXb_eventData.row(iterEvent)*iterPat/di) * pow(sumRi_Efron,2);
+          }
+          
         }
         
-        for(int iterPat = 1; iterPat < di; iterPat++){
-          Wm1_tempo += 1/(sumRi - sumRi_di*iterPat/di);
-          if(se){
-            Wm2_tempo += pow(1/(sumRi - sumRi_di*iterPat/di),2);
-          }
-        }
-         
         // Make the average over the patient having the event at time i
         sumEXb[iterEvent] = di/Wm1_tempo;
         if(se){
-          isumEXb2[iterEvent] = di/Wm2_tempo;
+          sumEXb2[iterEvent] = di/Wm2_tempo;
+          Xbar.row(iterEvent) = Wm3_tempo; 
         }
         
-      }else if(se){
-        isumEXb2[iterEvent] = sumEXb[iterEvent]*sumEXb[iterEvent];
+      }else if(se && death[iterEvent]==1){
+        sumEXb2[iterEvent] = pow(sumEXb[iterEvent],2);
+        Xbar.row(iterEvent) = sumEXb_data.row(iterEvent) * pow(1/sumEXb[iterEvent],2);
       }
-      
     }
     
+    XbarCumSum =  cumsum(Xbar, 0);  // cumulative sum by column
+    
   }
+    
+   
   
   //// 3- Computation of the hazards
   hazard[0] = death[0] / sumEXb[0];
   cumHazard[0] = hazard[0];
   if(se){
-    SEhazard[0] = death[0] / isumEXb2[0];
-    SEcumHazard[0] = SEhazard[0];
+    if(death[0]>0){
+      SEhazard[0] = death[0] / sumEXb2[0];
+      SEcumHazard[0] = SEhazard[0];
+    }else{
+      SEhazard[0] = 0;
+      SEcumHazard[0] = 0;
+    }
   }
   
   for( size_t iterTime = 1 ; iterTime < nEventsLast ; iterTime ++){ // up to last time
-    
     hazard[iterTime] = death[iterTime] / sumEXb[iterTime];
     cumHazard[iterTime] = cumHazard[iterTime-1] + hazard[iterTime];
     
     if(se){
-      SEhazard[iterTime] = death[iterTime] / isumEXb2[iterTime];
-      SEcumHazard[iterTime] = SEcumHazard[iterTime-1] + SEhazard[iterTime];
+      if(death[iterTime]>0){
+        SEhazard[iterTime] = death[iterTime] / sumEXb2[iterTime];
+        SEcumHazard[iterTime] = SEcumHazard[iterTime-1] + SEhazard[iterTime];
+      }else{
+        SEhazard[iterTime] = 0;
+        SEcumHazard[iterTime] = SEcumHazard[iterTime-1];
+      }
     }
+    
   }
   
   //// export
-  vector< vector<double> > res(5);
-  res[0] = time;
-  res[1] = hazard;
-  res[2] = cumHazard;
-  res[3] = SEhazard;//SEhazard;
-  res[4] = SEcumHazard;//SEcumHazard;
+  structExport res;
+  res.time = time;
+  res.hazard = hazard;
+  res.cumHazard = cumHazard;
+  res.SEhazard = SEhazard;
+  res.SEcumHazard = SEcumHazard;
+  res.Xbar = Xbar;
+  res.XbarCumSum = XbarCumSum;
   
   return res;
   
 }
+
+
 
 
 //// NOTE Adaptation of the Cagsurv5 from the survival package with no weight
