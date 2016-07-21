@@ -119,6 +119,9 @@ predictCox <- function(object,
   if(!missing(times) && any(is.na(times))){
     stop("NA values in argument \'times\' \n")
   }
+  if(se && object$method != "efron"){
+    stop("standard errors only implemented for object$method = efron \n")
+  }
   ## main
   levelsStrata <- levels(strataF)
   nStrata <- length(levelsStrata)
@@ -209,6 +212,7 @@ predictCox <- function(object,
       
       etimes <- Lambda0$time
       etimes.max <- max(ytimes) # last event time (cannot be max(Lambda0$time) because the censored observations have been removed from Lambda0)
+      test.timeNA <- times>etimes.max
       
       if ("hazard" %in% type){
         hits <- times%in%etimes
@@ -218,25 +222,22 @@ predictCox <- function(object,
           out$hazard <- matrix(0, nrow = NROW(newdata), ncol = n.times)
           out$hazard[,hits] <- exp(Xb) %o% Lambda0$hazard[match(times[hits], etimes)] #  match is needed here instead of %in% to handle non-increasing times.
         }
-        out$hazard[,times>etimes.max] <- NA
+        if(any(test.timeNA)){out$hazard[,times>etimes.max] <- NA}
       }
       
       if ("cumHazard" %in% type || "survival" %in% type){
         cumHazard <- exp(Xb) %o% Lambda0$cumHazard
         
         tindex <- prodlim::sindex(jump.times=etimes,eval.times=times)
-        tindex[times>etimes.max] <- NA
+        if(any(test.timeNA)){tindex[times>etimes.max] <- NA}
       }
       
       if ("cumHazard" %in% type){
         out$cumHazard <- cbind(0,cumHazard)[,tindex+1, drop = FALSE]
-        out$cumHazard[,times>etimes.max] <- NA
       }
       
       if ("survival" %in% type){
-        survival <- exp(-cumHazard)
-        out$survival <- cbind(1,survival)[,tindex+1, drop = FALSE]
-        out$survival[,times>etimes.max] <- NA
+        out$survival <- cbind(1,exp(-cumHazard))[,tindex+1, drop = FALSE]
       }
       
     }else{ 
@@ -273,6 +274,7 @@ predictCox <- function(object,
         id.S <- Lambda0$strata==S
         newid.S <- newstrata==S
         etimes.S <- Lambda0$time[id.S]
+        test.timeNA <- times>etimes.max[S]
         ## 
         if ("hazard" %in% type){
           hits <- times%in%etimes.S
@@ -281,22 +283,19 @@ predictCox <- function(object,
           }else{
             out$hazard[newid.S,hits] <- exp(Xb[newid.S]) %o% Lambda0$hazard[id.S][match(times[hits], etimes.S)] #  match is needed here instead of %in% to handle non-increasing times.
           }
-          out$hazard[newid.S,times>etimes.max[S]] <- NA
+          if(any(test.timeNA)){out$hazard[newid.S,test.timeNA] <- NA}
         }
         
         if ("cumHazard" %in% type || "survival" %in% type){
           tindex.S <- prodlim::sindex(jump.times=etimes.S,eval.times=times)
-          tindex.S[times>max(etimes.S)] <- NA
+          if(any(test.timeNA)){tindex.S[test.timeNA] <- NA}
           cumHazard.S <-  exp(Xb[newid.S]) %o% Lambda0$cumHazard[id.S]
         }
         if ("cumHazard" %in% type){
           out$cumHazard[newid.S,] <- cbind(0,cumHazard.S)[,tindex.S+1, drop = FALSE]
-          out$cumHazard[newid.S,times>etimes.max[S]] <- NA
         }
         if ("survival" %in% type){
-          survival.S <-  exp(-cumHazard.S)
-          out$survival[newid.S,] <- cbind(1,survival.S)[,tindex.S+1, drop = FALSE]
-          out$survival[newid.S,times>etimes.max[S]] <- NA
+          out$survival[newid.S,] <- cbind(1,exp(-cumHazard.S))[,tindex.S+1, drop = FALSE]
         } 
       }
     }
