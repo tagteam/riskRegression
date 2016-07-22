@@ -124,7 +124,7 @@ predictCox <- function(object,
   } else {
     stop("Only implemented for \"coxph\" and \"cph\" objects \n")
   }
-  ## method
+  ## checks
   if(object$method == "exact"){
     stop("Prediction with exact correction for ties is not implemented \n")
   }
@@ -134,6 +134,10 @@ predictCox <- function(object,
   if(se && object$method != "efron"){
     stop("standard errors only implemented for object$method = efron \n")
   }
+  if(!is.null(object$weights)){
+    stop("predictCox does not know how to handle Cox models fitted with weights \n")
+  }
+  
   ## main
   levelsStrata <- levels(strataF)
   nStrata <- length(levelsStrata)
