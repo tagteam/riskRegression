@@ -5,7 +5,7 @@
 \title{Predicting hazard or cumulative hazard}
 \usage{
 \method{predict}{CauseSpecificCox}(object, newdata, times, cause,
-  keep.strata = FALSE, ...)
+  keep.strata = FALSE, se = FALSE, ...)
 }
 \arguments{
 \item{object}{The fitted cause specific Cox model}
@@ -20,6 +20,8 @@ hazards/survival}
 
 \item{keep.strata}{If \code{TRUE} return an additional column
 containing the strata level.}
+
+\item{se}{Logical. If \code{TRUE} add the standard errors corresponding to the output. Experimental !!}
 
 \item{...}{not used}
 }

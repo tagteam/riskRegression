@@ -124,7 +124,7 @@ predictCox <- function(object,
   } else {
     stop("Only implemented for \"coxph\" and \"cph\" objects \n")
   }
-  ## method
+  ## checks
   if(object$method == "exact"){
     stop("Prediction with exact correction for ties is not implemented \n")
   }
@@ -134,6 +134,10 @@ predictCox <- function(object,
   if(se && object$method != "efron"){
     stop("standard errors only implemented for object$method = efron \n")
   }
+  if(!is.null(object$weights)){
+    stop("predictCox does not know how to handle Cox models fitted with weights \n")
+  }
+  
   ## main
   levelsStrata <- levels(strataF)
   nStrata <- length(levelsStrata)
@@ -162,8 +166,8 @@ predictCox <- function(object,
                                maxtime = maxtime,
                                cause = 1,
                                Efron = (object$method == "efron")
-                               )
- 
+  )
+  
   if (is.strata == TRUE){ ## rename the strata value with the correct levels
     Lambda0$strata <- factor(Lambda0$strata, levels = 0:(nStrata-1), labels = levelsStrata)
   }
@@ -191,7 +195,7 @@ predictCox <- function(object,
     }
     
   } else {
-
+    
     if(missing(times)){
       stop("Time points at which to evaluate the predictions are missing \n")
     }
@@ -224,7 +228,7 @@ predictCox <- function(object,
       if(is.matrix(x)){return(x[index,,drop = FALSE])}
       if(is.vector(x) || "vector" %in% is(x)){return(x[index])}
     }
-   
+    
     ## subject specific hazard
     if (is.strata==FALSE){
       
@@ -258,7 +262,7 @@ predictCox <- function(object,
       
       if(se){
         out <- c(out,
-                 predictSE(object, newdata, times, type, Lambda0, survival = out$survival, eXb = exp(Xb), stratavars = NULL)
+                 seCox(object, newdata, times, type, Lambda0, survival = out$survival, eXb = exp(Xb), stratavars = NULL)
         )
       }
       
@@ -318,7 +322,7 @@ predictCox <- function(object,
           if(any(test.timeNA)){out$hazard[newid.S,test.timeNA] <- NA}
         }
         
-         if ("cumHazard" %in% type || "survival" %in% type){
+        if ("cumHazard" %in% type || "survival" %in% type){
           tindex.S <- prodlim::sindex(jump.times=etimes.S,eval.times=times)
           if(any(test.timeNA)){tindex.S[test.timeNA] <- NA}
           cumHazard.S <-  exp(Xb[newid.S]) %o% Lambda0$cumHazard[id.S]
@@ -327,12 +331,12 @@ predictCox <- function(object,
         if ("survival" %in% type){out$survival[newid.S,] <- cbind(1,exp(-cumHazard.S))[,tindex.S+1, drop = FALSE]}
         
         if(se){
-          outSE <- predictSE(object, newdata = newdata[newid.S,,drop = FALSE], 
-                             times, type, 
-                             Lambda0 = lapply(Lambda0, subset2, which(id.S)), 
-                             survival = out$survival[newid.S,], 
-                             eXb = exp(Xb[newid.S]),
-                             stratavars = stratavars)
+          outSE <- seCox(object, newdata = newdata[newid.S,,drop = FALSE], 
+                         times, type, 
+                         Lambda0 = lapply(Lambda0, subset2, which(id.S)), 
+                         survival = out$survival[newid.S,], 
+                         eXb = exp(Xb[newid.S]),
+                         stratavars = stratavars)
           if ("hazard" %in% type){out$hazard.se[newid.S,] <- outSE$hazard.se}
           if ("cumHazard" %in% type){out$cumHazard.se[newid.S,] <- outSE$cumHazard.se}
           if ("survival" %in% type){out$survival.se[newid.S,] <- outSE$survival.se}
@@ -366,7 +370,7 @@ predictCox <- function(object,
 #' @param stratavars the name of the strata variables
 #' @author Brice Ozenne broz@@sund.ku.dk, Thomas A. Gerds tag@@biostat.ku.dk
 #' @return A list optionally containing the standard error for the survival, cumulative hazard and hazard.
-predictSE <- function(object, newdata, times, type, Lambda0, eXb, survival, stratavars){
+seCox <- function(object, newdata, times, type, Lambda0, eXb, survival, stratavars){
   
   ## prepare dataset
   if("cph" %in% class(object)){
@@ -391,7 +395,7 @@ predictSE <- function(object, newdata, times, type, Lambda0, eXb, survival, stra
   n.newdata <- NROW(newdata)
   etimes <- Lambda0$time
   tindex <- prodlim::sindex(jump.times=etimes,eval.times=times)
-
+  
   ##
   if("hazard" %in% type){
     se.hazard0.tindex <- c(0,Lambda0$se.hazard)[tindex+1]
