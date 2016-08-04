@@ -332,19 +332,11 @@ predictCox <- function(object,
         
         if(se){
           outSE <- seCox(object, newdata = newdata[newid.S,,drop = FALSE], 
-<<<<<<< HEAD
-                             times, type, 
-                             Lambda0 = lapply(Lambda0, subset2, which(id.S)), 
-                             survival = out$survival[newid.S,], 
-                             eXb = exp(Xb[newid.S]),
-                             stratavars = stratavars)
-=======
                          times, type, 
                          Lambda0 = lapply(Lambda0, subset2, which(id.S)), 
                          survival = out$survival[newid.S,], 
                          eXb = exp(Xb[newid.S]),
                          stratavars = stratavars)
->>>>>>> a3152abab7d5bce1b8d33a3a3560829d7497f068
           if ("hazard" %in% type){out$hazard.se[newid.S,] <- outSE$hazard.se}
           if ("cumHazard" %in% type){out$cumHazard.se[newid.S,] <- outSE$cumHazard.se}
           if ("survival" %in% type){out$survival.se[newid.S,] <- outSE$survival.se}
