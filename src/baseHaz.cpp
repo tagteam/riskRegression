@@ -232,14 +232,23 @@ structExport BaseHaz_cpp(const vector<double>& alltimes, const vector<int>& stat
       time[index_tempo] = alltimes[iterPat];
     }
   }
-  
-  
-  
+
+  if(se){
+    for(size_t iterEvent = 0 ; iterEvent < nEventsLast ; iterEvent++){
+      if(death[iterEvent]>0){ // otherwise it will not be used anyway to compute SEhazard
+        sumEXb2[iterEvent] = pow(sumEXb[iterEvent],2);
+        Xbar.row(iterEvent) = sumEXb_data.row(iterEvent) * pow(1/sumEXb[iterEvent],2);
+      }
+    }
+  }    
+
   //// OPT- Efron correction [from the survival package, function agsurv5]
   if(Efron){
     
     double Wm1_tempo, Wm2_tempo = NA_REAL, sumRi, sumRi_di, sumRi_Efron, di; // it is important that di is a double and not an in for the division in the for loop
-    rowvec Wm3_tempo(nVar);
+    //sumRi is the sum over the patient at risk of exp(Xbeta)
+    //sumRi_di is the sum of the number at risk who experience the event at the specific time, of exp(Xbeta)
+    //sumRi_Efron is the corrected sum of the number at risk of exp(Xbeta)
     
     for(size_t iterEvent = 0 ; iterEvent < nEventsLast ; iterEvent++){
       
@@ -248,32 +257,23 @@ structExport BaseHaz_cpp(const vector<double>& alltimes, const vector<int>& stat
         sumRi_di = sumEXb_event[iterEvent];
         di = death[iterEvent];
         
-        Wm1_tempo = 1/sumRi;
-        if(se){
-          Wm2_tempo = 1/pow(sumRi,2);
-          Wm3_tempo = sumEXb_data.row(iterEvent) * pow(1/sumRi,2);
-        }
-        // Rcout << "* "<< Wm3_tempo << endl;
+        Wm1_tempo = 1/sumEXb[iterEvent];
+        if(se){ Wm2_tempo = 1/sumEXb2[iterEvent];}
+        
         for(int iterPat = 1; iterPat < di; iterPat++){
-          sumRi_Efron = 1/(sumRi - sumRi_di*iterPat/di);
+          sumRi_Efron = 1/(sumRi - (iterPat/di)*sumRi_di);
           Wm1_tempo += sumRi_Efron;
           if(se){
             Wm2_tempo += pow(sumRi_Efron,2);
-            Wm3_tempo += (sumEXb_data.row(iterEvent) - sumEXb_eventData.row(iterEvent)*iterPat/di) * pow(sumRi_Efron,2);
+            Xbar.row(iterEvent) += (sumEXb_data.row(iterEvent) - (iterPat/di)*sumEXb_eventData.row(iterEvent)) * pow(sumRi_Efron,2);
           }
           
         }
         
         // Make the average over the patient having the event at time i
         sumEXb[iterEvent] = di/Wm1_tempo;
-        if(se){
-          sumEXb2[iterEvent] = di/Wm2_tempo;
-          Xbar.row(iterEvent) = Wm3_tempo; 
-        }
+        if(se){sumEXb2[iterEvent] = di/Wm2_tempo;}
         
-      }else if(se && death[iterEvent]==1){
-        sumEXb2[iterEvent] = pow(sumEXb[iterEvent],2);
-        Xbar.row(iterEvent) = sumEXb_data.row(iterEvent) * pow(1/sumEXb[iterEvent],2);
       }
     }
     

@@ -40,7 +40,11 @@
 #' 
 #' 
 #' @export
+<<<<<<< HEAD
 predict.CauseSpecificCox <- function(object,newdata,times,cause,keep.strata = FALSE, se = FALSE,...){
+=======
+predict.CauseSpecificCox <- function(object,newdata,times,cause,keep.strata = FALSE, se = FALSE, ...){
+>>>>>>> a3152abab7d5bce1b8d33a3a3560829d7497f068
     survtype <- object$survtype
     if (length(cause) > 1){
         stop(paste0("Can only predict one cause. Provided are: ", 
@@ -73,11 +77,14 @@ predict.CauseSpecificCox <- function(object,newdata,times,cause,keep.strata = FA
                               type = c("hazard","cumHazard", if(se){"survival"}else{NULL}), 
                               keep.strata = TRUE,keep.times=TRUE,keep.lastEventTime = TRUE,
                               se = se)
+<<<<<<< HEAD
     
+=======
+ 
+>>>>>>> a3152abab7d5bce1b8d33a3a3560829d7497f068
     if(keep.strata){
         strata <- causeHazard$strata
     }
-    ncol.pred <-  ncol(causeHazard$cumHazard)
     if (survtype == "hazard") {
       cumHazOther <- Reduce("+",lapply(causes[-match(cause, causes)], 
                                          function(c) {
@@ -87,6 +94,7 @@ predict.CauseSpecificCox <- function(object,newdata,times,cause,keep.strata = FA
                                                         type = "cumHazard",
                                                         keep.strata = FALSE)$cumHazard
                                          }))
+<<<<<<< HEAD
       if(se){
         causeCompete <- predictCox(object$models[[paste("Cause",causes[-match(cause, causes)])]],
                                    newdata = newdata,
@@ -95,6 +103,16 @@ predict.CauseSpecificCox <- function(object,newdata,times,cause,keep.strata = FA
                                    keep.strata = FALSE,
                                    se = TRUE)
       }
+=======
+        if(se){
+          causeCompete <- predictCox(object$models[[paste("Cause",causes[-match(cause, causes)])]],
+                                     newdata = newdata,
+                                     times=object$eventTimes,
+                                     type = "survival",
+                                     keep.strata = FALSE,
+                                     se = TRUE)
+        }
+>>>>>>> a3152abab7d5bce1b8d33a3a3560829d7497f068
         survProb <- exp(-causeHazard$cumHazard - cumHazOther)
     } else { 
         survProb <- predictCox(object$models[["OverallSurvival"]],
@@ -119,7 +137,11 @@ predict.CauseSpecificCox <- function(object,newdata,times,cause,keep.strata = FA
                    NROW(p), " x ", NCOL(p), "\n\n", sep = ""))
     
     if(se){
+<<<<<<< HEAD
       out <- seCSC(indexTimes = pos,
+=======
+      outSE <- seCSC(indexTimes = pos,
+>>>>>>> a3152abab7d5bce1b8d33a3a3560829d7497f068
                    hazardCause1 = causeHazard$hazard, survivalCause1 = causeHazard$survival, survivalCause2 = causeCompete$survival,
                    hazardCause1.se = causeHazard$hazard.se, survivalCause1.se = causeHazard$survival.se, survivalCause2.se = causeCompete$survival.se)
     }
@@ -131,19 +153,27 @@ predict.CauseSpecificCox <- function(object,newdata,times,cause,keep.strata = FA
         if(any(test.times>0)){ 
           newid.S <- causeHazard$strata==S
           p[newid.S,test.times>0] <- NA
+<<<<<<< HEAD
           if(se){}
+=======
+          if(se){outSE[newid.S,test.times>0]}
+>>>>>>> a3152abab7d5bce1b8d33a3a3560829d7497f068
         }
       }
     }
     
     ## export
-    if(keep.strata == TRUE){
-        return(list(p, strata = strata))
+    if(keep.strata == FALSE && se == FALSE){
+      return(p)
     }else{
-        p
+      out <- list(prediction = p)
+      if(keep.strata == TRUE){out$strata <- strata}
+      if(se == TRUE){out$prediction.se <- outSE}
+      return(out)
     }
 }
 
+<<<<<<< HEAD
 
 seCSC <- function(indexTimes,
                   hazardCause1, survivalCause1, survivalCause2,
@@ -155,5 +185,13 @@ seCSC <- function(indexTimes,
   
   integrand <- (hazardCause1*survivalCause1*survivalCause2.se)^2 + (hazardCause1*survivalCause1.se*survivalCause2)^2 + (hazardCause1.se*survivalCause1*survivalCause2.var)^2
   out <- c(0, rowCumSum(integrand))[,indexTimes + 1,drop=FALSE] # it is unclear to which value should be set the variance of the absolute risk before the first event. 0???
+=======
+seCSC <- function(indexTimes,
+                  hazardCause1, survivalCause1, survivalCause2,
+                  hazardCause1.se, survivalCause1.se, survivalCause2.se){
+  
+  integrand <- (hazardCause1*survivalCause1*survivalCause2.se)^2 + (hazardCause1*survivalCause1.se*survivalCause2)^2 + (hazardCause1.se*survivalCause1*survivalCause2.se)^2
+  out <- c(0, rowCumSum(integrand))[,indexTimes + 1,drop = FALSE] # it is unclear to which value should be set the variance of the absolute risk before the first event. 0???
+>>>>>>> a3152abab7d5bce1b8d33a3a3560829d7497f068
   return(out)
 }

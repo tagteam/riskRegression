@@ -16,7 +16,7 @@ in the right hand side of 'coxph' for each patient.}
 \item{times}{Vector of times at which to return the estimated
 hazards/survival}
 
-\item{cause}{should the hazard or the cumulative hazard be returned}
+\item{cause}{Identifies the cause of interest among the competing events.}
 
 \item{keep.strata}{If \code{TRUE} return an additional column
 containing the strata level.}
