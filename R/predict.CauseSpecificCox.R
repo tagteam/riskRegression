@@ -7,9 +7,10 @@
 #'     in the right hand side of 'coxph' for each patient.
 #' @param times Vector of times at which to return the estimated
 #'     hazards/survival
-#' @param cause should the hazard or the cumulative hazard be returned
+#' @param cause Identifies the cause of interest among the competing events.
 #' @param keep.strata If \code{TRUE} return an additional column
 #'     containing the strata level.
+#' @param se Logical. If \code{TRUE} add the standard errors corresponding to the output. Experimental !!
 #' @param ... not used
 #' @author Brice Ozenne broz@@sund.ku.dk, Thomas A. Gerds
 #'     tag@@biostat.ku.dk
@@ -39,7 +40,7 @@
 #' 
 #' 
 #' @export
-predict.CauseSpecificCox <- function(object,newdata,times,cause,keep.strata = FALSE,...){
+predict.CauseSpecificCox <- function(object,newdata,times,cause,keep.strata = FALSE, se = FALSE,...){
     survtype <- object$survtype
     if (length(cause) > 1){
         stop(paste0("Can only predict one cause. Provided are: ", 
@@ -58,20 +59,27 @@ predict.CauseSpecificCox <- function(object,newdata,times,cause,keep.strata = FA
             stop("Object can be used to predict cause ", object$theCause, 
                  " but not ", cause, ".\nNote: the cause can be specified in CSC(...,cause=).")
     }
+    if(se && length(causes)!=2){
+      stop("Can only compute the standard error for a model with two competing risks")
+    }
+    if(se && survtype != "hazard"){
+      stop("Can only compute the standard error for survtype=hazard")
+    }
     
     # predict cumulative cause specific hazards
     causeHazard <- predictCox(object$models[[paste("Cause",cause)]],
                               newdata = newdata,
                               times=object$eventTimes,
-                              type = c("hazard","cumHazard"), 
-                              keep.strata = TRUE,keep.times=TRUE,keep.lastEventTime = TRUE)
- 
+                              type = c("hazard","cumHazard", if(se){"survival"}else{NULL}), 
+                              keep.strata = TRUE,keep.times=TRUE,keep.lastEventTime = TRUE,
+                              se = se)
+    
     if(keep.strata){
         strata <- causeHazard$strata
     }
     ncol.pred <-  ncol(causeHazard$cumHazard)
     if (survtype == "hazard") {
-        cumHazOther <- Reduce("+",lapply(causes[-match(cause, causes)], 
+      cumHazOther <- Reduce("+",lapply(causes[-match(cause, causes)], 
                                          function(c) {
                                              predictCox(object$models[[paste("Cause",c)]],
                                                         newdata = newdata,
@@ -79,6 +87,14 @@ predict.CauseSpecificCox <- function(object,newdata,times,cause,keep.strata = FA
                                                         type = "cumHazard",
                                                         keep.strata = FALSE)$cumHazard
                                          }))
+      if(se){
+        causeCompete <- predictCox(object$models[[paste("Cause",causes[-match(cause, causes)])]],
+                                   newdata = newdata,
+                                   times=object$eventTimes,
+                                   type = "survival",
+                                   keep.strata = FALSE,
+                                   se = TRUE)
+      }
         survProb <- exp(-causeHazard$cumHazard - cumHazOther)
     } else { 
         survProb <- predictCox(object$models[["OverallSurvival"]],
@@ -102,6 +118,12 @@ predict.CauseSpecificCox <- function(object,newdata,times,cause,keep.strata = FA
                    NROW(newdata), " x ", length(times), "\nProvided prediction matrix: ", 
                    NROW(p), " x ", NCOL(p), "\n\n", sep = ""))
     
+    if(se){
+      out <- seCSC(indexTimes = pos,
+                   hazardCause1 = causeHazard$hazard, survivalCause1 = causeHazard$survival, survivalCause2 = causeCompete$survival,
+                   hazardCause1.se = causeHazard$hazard.se, survivalCause1.se = causeHazard$survival.se, survivalCause2.se = causeCompete$survival.se)
+    }
+    
     ## Set NA to predictions between the last event of each strata and the last event
     if(!is.null(causeHazard$strata)){
       for(S in names(causeHazard$lastEventTime)){
@@ -109,6 +131,7 @@ predict.CauseSpecificCox <- function(object,newdata,times,cause,keep.strata = FA
         if(any(test.times>0)){ 
           newid.S <- causeHazard$strata==S
           p[newid.S,test.times>0] <- NA
+          if(se){}
         }
       }
     }
@@ -119,4 +142,18 @@ predict.CauseSpecificCox <- function(object,newdata,times,cause,keep.strata = FA
     }else{
         p
     }
+}
+
+
+seCSC <- function(indexTimes,
+                  hazardCause1, survivalCause1, survivalCause2,
+                  hazardCause1.se, survivalCause1.se, survivalCause2.se){
+
+  hazardCause1.var <- hazardCause1.se^2  
+  survivalCause1.var <- survivalCause1.se^2
+  survivalCause2.var <- survivalCause2.se^2
+  
+  integrand <- (hazardCause1*survivalCause1*survivalCause2.se)^2 + (hazardCause1*survivalCause1.se*survivalCause2)^2 + (hazardCause1.se*survivalCause1*survivalCause2.var)^2
+  out <- c(0, rowCumSum(integrand))[,indexTimes + 1,drop=FALSE] # it is unclear to which value should be set the variance of the absolute risk before the first event. 0???
+  return(out)
 }

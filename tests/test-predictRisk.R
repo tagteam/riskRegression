@@ -270,7 +270,7 @@ test_that("Prediction with CSC - NA after last event",{
 
 
 test_that("Prediction with CSC - no event before prediction time",{
-  test.times < min(Melanoma$time)-1e-5
+  test.times <- min(Melanoma$time)-1e-5
   
   prediction <- predict(fit.CSC, times = test.times, newdata = Melanoma[1,,drop = FALSE], cause = 1)
   expect_equal(as.double(prediction), 0)
@@ -333,7 +333,7 @@ test_that("Prediction with Cox model (strata) - no event before prediction time"
 })
 
 test_that("Prediction with CSC (strata)  - no event before prediction time",{
-  test.times < min(Melanoma$time)-1e-5
+  test.times <- min(Melanoma$time)-1e-5
   
   prediction <- predict(fit.CSC, times = test.times, newdata = Melanoma[1,,drop = FALSE], cause = 1)
   expect_equal(as.double(prediction), 0)
@@ -410,8 +410,8 @@ test_that("Prediction with CSC (strata) - sorted vs. unsorted times",{
   expect_equal(predictionS, predictionUNS[,order(newOrder)])
 })
 
-test_that("Deal with time points",{
-  expect_equal(predictCox(fit.coxph, times = -1, newdata = dataset1)$survival,matrix(1,nrow = nrow(dataset1), ncol = 1))
+test_that("Deal with negative time points",{
+  expect_equal(unname(predictCox(fit.coxph, times = -1, newdata = dataset1)$survival), matrix(1,nrow = nrow(dataset1), ncol = 1))
 })
 
 test_that("Prediction with Cox model - NA in times",{

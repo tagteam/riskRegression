@@ -149,7 +149,7 @@ ateCSC <- function(formula,
             parallel::stopCluster(cl)
         } else {
           if(Sys.info()["sysname"] == "Windows" && mc.cores>1){
-            warning("mclapply cannot perform parallel computations on Windows \n",
+            message("mclapply cannot perform parallel computations on Windows \n",
                     "consider setting argument handler to \"foreach\" \n")
             mc.cores <- 1
           }

@@ -17,8 +17,8 @@ struct structExport {
 };
 
 structExport BaseHaz_cpp(const vector<double>& alltimes, const vector<int>& status, const vector<double>& Xb, 
-                                     bool se, const arma::mat& data, int nVar,
-                                     int nPatients, double maxtime, int cause, bool Efron);
+                         bool se, const arma::mat& data, int nVar,
+                         int nPatients, double maxtime, int cause, bool Efron);
 
 // [[Rcpp::export]]
 List BaseHazStrata_cpp(const NumericVector& alltimes, const IntegerVector& status, const NumericVector& Xb, const IntegerVector& strata,
@@ -101,7 +101,7 @@ List BaseHazStrata_cpp(const NumericVector& alltimes, const IntegerVector& statu
     sortS(alltimes_S[iter_s], status_S[iter_s], Xb_S[iter_s], index_S[iter_s], nObsStrata[iter_s]); // update alltimes, status and Xb
     
     if(se){
-    data_S[iter_s] = data_S[iter_s].submat(index_S[iter_s], seqVar);
+      data_S[iter_s] = data_S[iter_s].submat(index_S[iter_s], seqVar);
     }
     
     if(maxtime < alltimes_S[iter_s][0]){ // if after the last time we need 
@@ -146,8 +146,8 @@ List BaseHazStrata_cpp(const NumericVector& alltimes, const IntegerVector& statu
 
 
 structExport BaseHaz_cpp(const vector<double>& alltimes, const vector<int>& status, const vector<double>& Xb, 
-                                     bool se, const arma::mat& data, int nVar,
-                                     int nPatients, double maxtime, int cause, bool Efron){
+                         bool se, const arma::mat& data, int nVar,
+                         int nPatients, double maxtime, int cause, bool Efron){
   
   //// 1- count the number of events
   size_t nEvents = 1, nEventsLast = 1;
@@ -172,7 +172,7 @@ structExport BaseHaz_cpp(const vector<double>& alltimes, const vector<int>& stat
   // temp2 <- rowsum(risk * x, dtime) # at each time the sum of the product between the individual risk and the value of the covariates (E[Xexp(Xb)])
   // xsum <- apply(temp2, 2, rcumsum) # cumulative E[Xexp(XB)]
   // xsum2 <- rowsum((risk * death) * x, dtime) # same as temp2 but the sum is only for people with event 
-    
+  
   vector<double> time(nEventsLast);
   vector<double> hazard(nEventsLast, NA_REAL), SEhazard, SEcumHazard;
   vector<double> cumHazard(nEventsLast, NA_REAL);
@@ -219,8 +219,8 @@ structExport BaseHaz_cpp(const vector<double>& alltimes, const vector<int>& stat
     }
     if(se){sumEXb_data.row(index_tempo) += data.row(iterPat) * exp(Xb[iterPat]);}
   }
-
- // first observation
+  
+  // first observation
   time[0] = alltimes[0];
   
   // remaining observations
@@ -233,8 +233,8 @@ structExport BaseHaz_cpp(const vector<double>& alltimes, const vector<int>& stat
     }
   }
   
-      
-      
+  
+  
   //// OPT- Efron correction [from the survival package, function agsurv5]
   if(Efron){
     
@@ -242,7 +242,7 @@ structExport BaseHaz_cpp(const vector<double>& alltimes, const vector<int>& stat
     rowvec Wm3_tempo(nVar);
     
     for(size_t iterEvent = 0 ; iterEvent < nEventsLast ; iterEvent++){
-   
+      
       if (death[iterEvent]>1){
         sumRi = sumEXb[iterEvent];
         sumRi_di = sumEXb_event[iterEvent];
@@ -280,8 +280,8 @@ structExport BaseHaz_cpp(const vector<double>& alltimes, const vector<int>& stat
     XbarCumSum =  cumsum(Xbar, 0);  // cumulative sum by column
     
   }
-    
-   
+  
+  
   
   //// 3- Computation of the hazards
   hazard[0] = death[0] / sumEXb[0];

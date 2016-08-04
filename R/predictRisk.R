@@ -512,7 +512,7 @@ predictRisk.ARR <- function(object,newdata,times,cause,...){
 
 
 ##' @export 
-predictRisk.CauseSpecificCox <- function (object, newdata, times, cause, ...) {
+predictRisk.CauseSpecificCox <- function (object, newdata, times, cause, ...) { 
     p <- predict(object=object,newdata=newdata,times=times,cause=cause,keep.strata=FALSE)
     if (NROW(p) != NROW(newdata) || NCOL(p) != length(times))
         stop(paste("\nPrediction matrix has wrong dimension:\nRequested newdata x times: ",NROW(newdata)," x ",length(times),"\nProvided prediction matrix: ",NROW(p)," x ",NCOL(p),"\n\n",sep=""))

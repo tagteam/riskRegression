@@ -262,7 +262,7 @@ predictCox <- function(object,
       
       if(se){
         out <- c(out,
-                 predictSE(object, newdata, times, type, Lambda0, survival = out$survival, eXb = exp(Xb), stratavars = NULL)
+                 seCox(object, newdata, times, type, Lambda0, survival = out$survival, eXb = exp(Xb), stratavars = NULL)
         )
       }
       
@@ -331,7 +331,7 @@ predictCox <- function(object,
         if ("survival" %in% type){out$survival[newid.S,] <- cbind(1,exp(-cumHazard.S))[,tindex.S+1, drop = FALSE]}
         
         if(se){
-          outSE <- predictSE(object, newdata = newdata[newid.S,,drop = FALSE], 
+          outSE <- seCox(object, newdata = newdata[newid.S,,drop = FALSE], 
                              times, type, 
                              Lambda0 = lapply(Lambda0, subset2, which(id.S)), 
                              survival = out$survival[newid.S,], 
@@ -370,7 +370,7 @@ predictCox <- function(object,
 #' @param stratavars the name of the strata variables
 #' @author Brice Ozenne broz@@sund.ku.dk, Thomas A. Gerds tag@@biostat.ku.dk
 #' @return A list optionally containing the standard error for the survival, cumulative hazard and hazard.
-predictSE <- function(object, newdata, times, type, Lambda0, eXb, survival, stratavars){
+seCox <- function(object, newdata, times, type, Lambda0, eXb, survival, stratavars){
   
   ## prepare dataset
   if("cph" %in% class(object)){
