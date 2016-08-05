@@ -165,8 +165,7 @@ predictCox <- function(object,
                                nStrata = nStrata,
                                maxtime = maxtime,
                                cause = 1,
-                               Efron = (object$method == "efron")
-  )
+                               Efron = (object$method == "efron"))
   
   if (is.strata == TRUE){ ## rename the strata value with the correct levels
     Lambda0$strata <- factor(Lambda0$strata, levels = 0:(nStrata-1), labels = levelsStrata)
@@ -232,13 +231,14 @@ predictCox <- function(object,
     ## subject specific hazard
     if (is.strata==FALSE){
       
-      ## remove useless event times for prediction, i.e. keep only event times that are the closest non-superior time for a prediction time
-      keep.eventtime <- unique(sort(findInterval2(times, vec = Lambda0$time)))  # keep ascending time order
-      Lambda0 <- lapply(Lambda0, subset2, keep.eventtime)
+        ## remove useless event times for prediction, i.e. keep only event times that are the closest non-superior time for a prediction time
+        ## keep.eventtime <- unique(sort(findInterval2(times, vec = Lambda0$time)))  # keep ascending time order
+        keep.eventtime <- prodlim::sindex(jump.times=Lambda0$time,eval.times=times)
+        Lambda0 <- lapply(Lambda0, subset2, keep.eventtime)
       
-      etimes <- Lambda0$time
-      etimes.max <- max(ytimes) # last event time (cannot be max(Lambda0$time) because the censored observations have been removed from Lambda0)
-      test.timeNA <- times>etimes.max
+        etimes <- Lambda0$time
+        etimes.max <- max(ytimes) # last event time (cannot be max(Lambda0$time) because the censored observations have been removed from Lambda0)
+        test.timeNA <- times>etimes.max
       
       if ("hazard" %in% type){
         hits <- times%in%etimes
@@ -270,6 +270,7 @@ predictCox <- function(object,
     }else{ 
       ## remove useless event times for prediction, i.e. keep only event times that are, within each strata, the closest non-superior time for a prediction time
       ## index[1] - 1  is 0 for the first strata then the index of the observation just before the second strata and so on
+        browser()
       keep.eventtime <- tapply(1:length(Lambda0$strata), Lambda0$strata, 
                                function(index){index[1] - 1 + findInterval2(times, vec = Lambda0$time[index])})
       keep.eventtime <- unique(sort(unlist(keep.eventtime))) # keep ascending time/strata order
@@ -317,7 +318,8 @@ predictCox <- function(object,
           if (sum(hits)==0) {
             out$hazard[newid.S,] <- matrix(0,nrow=sum(newid.S),ncol=n.times)
           }else{
-            out$hazard[newid.S,hits] <- exp(Xb[newid.S]) %o% Lambda0$hazard[id.S][match(times[hits], etimes.S)] #  match is needed here instead of %in% to handle non-increasing times.
+              #  match is needed here instead of %in% to handle non-increasing times.
+              out$hazard[newid.S,hits] <- exp(Xb[newid.S]) %o% Lambda0$hazard[id.S][match(times[hits], etimes.S)]
           }
           if(any(test.timeNA)){out$hazard[newid.S,test.timeNA] <- NA}
         }
