@@ -7,8 +7,8 @@
 using namespace Rcpp;
 
 // BaseHazStrata_cpp
-List BaseHazStrata_cpp(const NumericVector& alltimes, const IntegerVector& status, const NumericVector& Xb, const IntegerVector& strata, int nPatients, int nStrata, double maxtime, int cause, bool Efron);
-RcppExport SEXP riskRegression_BaseHazStrata_cpp(SEXP alltimesSEXP, SEXP statusSEXP, SEXP XbSEXP, SEXP strataSEXP, SEXP nPatientsSEXP, SEXP nStrataSEXP, SEXP maxtimeSEXP, SEXP causeSEXP, SEXP EfronSEXP) {
+List BaseHazStrata_cpp(const NumericVector& alltimes, const IntegerVector& status, const NumericVector& Xb, const IntegerVector& strata, bool se, arma::mat data, int nVar, int nPatients, int nStrata, double maxtime, int cause, bool Efron);
+RcppExport SEXP riskRegression_BaseHazStrata_cpp(SEXP alltimesSEXP, SEXP statusSEXP, SEXP XbSEXP, SEXP strataSEXP, SEXP seSEXP, SEXP dataSEXP, SEXP nVarSEXP, SEXP nPatientsSEXP, SEXP nStrataSEXP, SEXP maxtimeSEXP, SEXP causeSEXP, SEXP EfronSEXP) {
 BEGIN_RCPP
     Rcpp::RObject __result;
     Rcpp::RNGScope __rngScope;
@@ -16,12 +16,15 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< const IntegerVector& >::type status(statusSEXP);
     Rcpp::traits::input_parameter< const NumericVector& >::type Xb(XbSEXP);
     Rcpp::traits::input_parameter< const IntegerVector& >::type strata(strataSEXP);
+    Rcpp::traits::input_parameter< bool >::type se(seSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type data(dataSEXP);
+    Rcpp::traits::input_parameter< int >::type nVar(nVarSEXP);
     Rcpp::traits::input_parameter< int >::type nPatients(nPatientsSEXP);
     Rcpp::traits::input_parameter< int >::type nStrata(nStrataSEXP);
     Rcpp::traits::input_parameter< double >::type maxtime(maxtimeSEXP);
     Rcpp::traits::input_parameter< int >::type cause(causeSEXP);
     Rcpp::traits::input_parameter< bool >::type Efron(EfronSEXP);
-    __result = Rcpp::wrap(BaseHazStrata_cpp(alltimes, status, Xb, strata, nPatients, nStrata, maxtime, cause, Efron));
+    __result = Rcpp::wrap(BaseHazStrata_cpp(alltimes, status, Xb, strata, se, data, nVar, nPatients, nStrata, maxtime, cause, Efron));
     return __result;
 END_RCPP
 }
@@ -61,6 +64,54 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< bool >::type transposeY(transposeYSEXP);
     __result = Rcpp::wrap(colSumsCrossprod(X, Y, transposeY));
     return __result;
+END_RCPP
+}
+// predictSurvStrata_cpp
+List predictSurvStrata_cpp(const NumericVector& cumHazard, const NumericVector& hazard, const NumericVector& eventtimes, const NumericVector& times, const NumericVector& Xb, const IntegerVector& originStrata, const IntegerVector& newStrata, int nStrata, Function f, bool returnSurvival, bool returnCumHazard, bool returnHazard);
+RcppExport SEXP riskRegression_predictSurvStrata_cpp(SEXP cumHazardSEXP, SEXP hazardSEXP, SEXP eventtimesSEXP, SEXP timesSEXP, SEXP XbSEXP, SEXP originStrataSEXP, SEXP newStrataSEXP, SEXP nStrataSEXP, SEXP fSEXP, SEXP returnSurvivalSEXP, SEXP returnCumHazardSEXP, SEXP returnHazardSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject __result;
+    Rcpp::RNGScope __rngScope;
+    Rcpp::traits::input_parameter< const NumericVector& >::type cumHazard(cumHazardSEXP);
+    Rcpp::traits::input_parameter< const NumericVector& >::type hazard(hazardSEXP);
+    Rcpp::traits::input_parameter< const NumericVector& >::type eventtimes(eventtimesSEXP);
+    Rcpp::traits::input_parameter< const NumericVector& >::type times(timesSEXP);
+    Rcpp::traits::input_parameter< const NumericVector& >::type Xb(XbSEXP);
+    Rcpp::traits::input_parameter< const IntegerVector& >::type originStrata(originStrataSEXP);
+    Rcpp::traits::input_parameter< const IntegerVector& >::type newStrata(newStrataSEXP);
+    Rcpp::traits::input_parameter< int >::type nStrata(nStrataSEXP);
+    Rcpp::traits::input_parameter< Function >::type f(fSEXP);
+    Rcpp::traits::input_parameter< bool >::type returnSurvival(returnSurvivalSEXP);
+    Rcpp::traits::input_parameter< bool >::type returnCumHazard(returnCumHazardSEXP);
+    Rcpp::traits::input_parameter< bool >::type returnHazard(returnHazardSEXP);
+    __result = Rcpp::wrap(predictSurvStrata_cpp(cumHazard, hazard, eventtimes, times, Xb, originStrata, newStrata, nStrata, f, returnSurvival, returnCumHazard, returnHazard));
+    return __result;
+END_RCPP
+}
+// predictSurv_cpp
+void predictSurv_cpp(const NumericVector& cumHazard, const NumericVector& hazard, const NumericVector& eventtimes, const NumericVector& times, const NumericVector& Xb, const IntegerVector& jumpIndex, const IntegerVector& originIndex, const IntegerVector& newIndex, int nTimes, int nPatients, double eventtime_last, arma::mat& res_Survival, arma::mat& res_cumHazard, arma::mat& res_hazard, bool returnSurvival, bool returnCumHazard, bool returnHazard);
+RcppExport SEXP riskRegression_predictSurv_cpp(SEXP cumHazardSEXP, SEXP hazardSEXP, SEXP eventtimesSEXP, SEXP timesSEXP, SEXP XbSEXP, SEXP jumpIndexSEXP, SEXP originIndexSEXP, SEXP newIndexSEXP, SEXP nTimesSEXP, SEXP nPatientsSEXP, SEXP eventtime_lastSEXP, SEXP res_SurvivalSEXP, SEXP res_cumHazardSEXP, SEXP res_hazardSEXP, SEXP returnSurvivalSEXP, SEXP returnCumHazardSEXP, SEXP returnHazardSEXP) {
+BEGIN_RCPP
+    Rcpp::RNGScope __rngScope;
+    Rcpp::traits::input_parameter< const NumericVector& >::type cumHazard(cumHazardSEXP);
+    Rcpp::traits::input_parameter< const NumericVector& >::type hazard(hazardSEXP);
+    Rcpp::traits::input_parameter< const NumericVector& >::type eventtimes(eventtimesSEXP);
+    Rcpp::traits::input_parameter< const NumericVector& >::type times(timesSEXP);
+    Rcpp::traits::input_parameter< const NumericVector& >::type Xb(XbSEXP);
+    Rcpp::traits::input_parameter< const IntegerVector& >::type jumpIndex(jumpIndexSEXP);
+    Rcpp::traits::input_parameter< const IntegerVector& >::type originIndex(originIndexSEXP);
+    Rcpp::traits::input_parameter< const IntegerVector& >::type newIndex(newIndexSEXP);
+    Rcpp::traits::input_parameter< int >::type nTimes(nTimesSEXP);
+    Rcpp::traits::input_parameter< int >::type nPatients(nPatientsSEXP);
+    Rcpp::traits::input_parameter< double >::type eventtime_last(eventtime_lastSEXP);
+    Rcpp::traits::input_parameter< arma::mat& >::type res_Survival(res_SurvivalSEXP);
+    Rcpp::traits::input_parameter< arma::mat& >::type res_cumHazard(res_cumHazardSEXP);
+    Rcpp::traits::input_parameter< arma::mat& >::type res_hazard(res_hazardSEXP);
+    Rcpp::traits::input_parameter< bool >::type returnSurvival(returnSurvivalSEXP);
+    Rcpp::traits::input_parameter< bool >::type returnCumHazard(returnCumHazardSEXP);
+    Rcpp::traits::input_parameter< bool >::type returnHazard(returnHazardSEXP);
+    predictSurv_cpp(cumHazard, hazard, eventtimes, times, Xb, jumpIndex, originIndex, newIndex, nTimes, nPatients, eventtime_last, res_Survival, res_cumHazard, res_hazard, returnSurvival, returnCumHazard, returnHazard);
+    return R_NilValue;
 END_RCPP
 }
 // rowCumSum

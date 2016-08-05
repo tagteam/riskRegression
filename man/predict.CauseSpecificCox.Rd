@@ -5,7 +5,7 @@
 \title{Predicting hazard or cumulative hazard}
 \usage{
 \method{predict}{CauseSpecificCox}(object, newdata, times, cause,
-  keep.strata = FALSE, ...)
+  keep.strata = FALSE, se = FALSE, ...)
 }
 \arguments{
 \item{object}{The fitted cause specific Cox model}
@@ -16,10 +16,12 @@ in the right hand side of 'coxph' for each patient.}
 \item{times}{Vector of times at which to return the estimated
 hazards/survival}
 
-\item{cause}{should the hazard or the cumulative hazard be returned}
+\item{cause}{Identifies the cause of interest among the competing events.}
 
 \item{keep.strata}{If \code{TRUE} return an additional column
 containing the strata level.}
+
+\item{se}{Logical. If \code{TRUE} add the standard errors corresponding to the output. Experimental !!}
 
 \item{...}{not used}
 }

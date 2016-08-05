@@ -6,7 +6,7 @@
 \usage{
 predictCox(object, newdata = NULL, times, centered = TRUE, maxtime = NULL,
   type = c("hazard", "cumHazard", "survival"), keep.strata = FALSE,
-  keep.times = FALSE, keep.lastEventTime = FALSE)
+  keep.times = FALSE, keep.lastEventTime = FALSE, se = FALSE)
 }
 \arguments{
 \item{object}{The fitted Cox regression model object either
@@ -32,6 +32,8 @@ or several of the strings \code{"hazard"},\code{"cumhazard"}, \code{"survival"}}
 \item{keep.times}{Logical. If \code{TRUE} add the evaluation times to the output.}
 
 \item{keep.lastEventTime}{Logical. If \code{TRUE} add the time at which the last event occured for each strata to the output.}
+
+\item{se}{Logical. If \code{TRUE} add the standard errors corresponding to the output. Experimental !!}
 }
 \value{
 A list optionally containing the time, the strata (if any), the hazard, the

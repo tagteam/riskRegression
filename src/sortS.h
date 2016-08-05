@@ -1,6 +1,8 @@
-#include <Rcpp.h>
+// [[Rcpp::depends(RcppArmadillo)]]
+#include <RcppArmadillo.h>
 
 using namespace Rcpp;
+using namespace arma;
 using namespace std;
 
 int compareS (const void * a, const void * b);
@@ -9,11 +11,13 @@ struct structS {
   double time;
   int status;
   double Xb;
+  int index;
 };
+
 
 ////// sort functions
 
-void sortS(vector<double>& time, vector<int>& status, vector<double>& Xb, int n){
+void sortS(vector<double>& time, vector<int>& status, vector<double>& Xb, uvec& index, int n){
 //bool sortS(NumericVector& time, IntegerVector& status, NumericVector& Xb, int n){
   // warning time, status and Xb are called by reference and modified during the execution of the function
   
@@ -22,14 +26,15 @@ void sortS(vector<double>& time, vector<int>& status, vector<double>& Xb, int n)
  
   // initialisation
   dataS = (structS*) malloc(n * sizeof(structS));
-//   if (dataS==NULL) {
-//     return(false);
-//   }
+  // if (dataS==NULL) {
+  //   return(false);
+  // }
   
   for (int i = 0; i < n; ++i) {
     dataS[i].time = time[i];
     dataS[i].status = status[i];
     dataS[i].Xb = Xb[i];
+    dataS[i].index = index[i];
   }
   
   // qsort
@@ -40,11 +45,12 @@ void sortS(vector<double>& time, vector<int>& status, vector<double>& Xb, int n)
     time[i] = dataS[i].time;
     status[i] = dataS[i].status;
     Xb[i] = dataS[i].Xb;
+    index[i] =  dataS[i].index;
   }
   
   free(dataS);
   
-  //     return(true);
+  // return(true);
 }
 
 
