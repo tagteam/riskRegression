@@ -647,7 +647,7 @@ Score <- function(object,...){
 ##' data(Melanoma)
 ##' fitconv = CSC(Hist(time,status)~invasion+age+sex+logthick,data=Melanoma)
 ##' fitnew = CSC(Hist(time,status)~invasion+age+sex,data=Melanoma)
-##' scoreobj=Score(list(new=fitnew,conv=fitconv),formula=Hist(time,status)~1,
+##' scoreobj=Score(list(conv=fitconv,new=fitnew),formula=Hist(time,status)~1,
 ##'                data=Melanoma,summary="riskQuantile",times=5*365.25,nullModel=FALSE)
 ##' boxplot(scoreobj)
 #' @export

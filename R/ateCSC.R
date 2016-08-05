@@ -153,13 +153,12 @@ ateCSC <- function(formula,
                     "consider setting argument handler to \"foreach\" \n")
             mc.cores <- 1
           }
-          
-            boots <- parallel::mclapply(1:B, function(b){
-                set.seed(bootseeds[[b]])
-                dataBoot <- data[sample(1:n.obs, size = n.obs, replace = TRUE),]
-                tryCatch(Gformula(data=dataBoot, treatment=treatment, contrasts=contrasts, formula=formula, times=times, cause=cause,fitter=fitter, return.model = FALSE, ...),
-                         error = function(x){return(NULL)})
-            }, mc.cores = mc.cores)
+          boots <- parallel::mclapply(1:B, function(b){
+              set.seed(bootseeds[[b]])
+              dataBoot <- data[sample(1:n.obs, size = n.obs, replace = TRUE),]
+              tryCatch(Gformula(data=dataBoot, treatment=treatment, contrasts=contrasts, formula=formula, times=times, cause=cause,fitter=fitter, return.model = FALSE, ...),
+                       error = function(x){return(NULL)})
+          }, mc.cores = mc.cores)
         }
         
         ## gc()
@@ -180,10 +179,10 @@ ateCSC <- function(formula,
                                                               n.boot=sum(!is.na(diff))),
                                       by=list(Treatment.A,Treatment.B)]
     }else{
-      mrisks <- data.table::data.table(Treatment = pointEstimate$meanRisk$Treatment, meanRiskBoot = NA, lower = NA, upper = NA)
-      crisks <- data.table::data.table(Treatment.A = pointEstimate$riskComparison$Treatment.A, Treatment.B = pointEstimate$riskComparison$Treatment.B,
-                                       diffMeanBoot = NA, diff.lower = NA, diff.upper = NA, ratioMeanBoot = NA, ratio.lower = NA, ratio.upper = NA)
-      bootseeds <- NULL
+        mrisks <- data.table::data.table(Treatment = pointEstimate$meanRisk$Treatment, meanRiskBoot = NA, lower = NA, upper = NA)
+        crisks <- data.table::data.table(Treatment.A = pointEstimate$riskComparison$Treatment.A, Treatment.B = pointEstimate$riskComparison$Treatment.B,
+                                         diffMeanBoot = NA, diff.lower = NA, diff.upper = NA, ratioMeanBoot = NA, ratio.lower = NA, ratio.upper = NA)
+        bootseeds <- NULL
     }
     
        ## merge bootstrap with pointEstimate
