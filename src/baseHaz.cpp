@@ -276,12 +276,9 @@ structExport BaseHaz_cpp(const vector<double>& alltimes, const vector<int>& stat
         
       }
     }
-    
-    XbarCumSum =  cumsum(Xbar, 0);  // cumulative sum by column
-    
   }
   
-  
+  if(se){XbarCumSum =  cumsum(Xbar, 0);}  // cumulative sum by column
   
   //// 3- Computation of the hazards
   hazard[0] = death[0] / sumEXb[0];

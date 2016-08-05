@@ -12,40 +12,47 @@ d <- SimSurv(1e2)
 nd <- SimSurv(10)
 d$time <- round(d$time,1)
 d <- d[order(d$time),][1:10,]
-fit_coxph <- coxph(Surv(time,status) ~ X1 + X2,data=d, ties="efron")
-fit_cph <- cph(Surv(time,status) ~ X1 + X2,data=d, ties="efron", y = TRUE)
-# table(duplicated(d$time))
 
-res_surv <- survival:::predict.coxph(fit_coxph, newdata = d, type="expected", se.fit = TRUE)
-resCoxph <- predictCox(fit_coxph, newdata = d, times = d$time,  se = TRUE)
-
-resCph <- predictCox(fit_cph, newdata = d, times = d$time,  se = TRUE)
-res_pec <- pec::predictSurvProb(fit_coxph, newdata = d, times = d$time)
-
-test_that("predictCox - valide se cumHazard",{
-expect_equal(res_surv$fit,diag(resCoxph$cumHazard))
-expect_equal(res_surv$se.fit,diag(resCoxph$cumHazard.se))
-expect_equal(resCph, resCoxph, tolerance = 1e-5, scale = 1)
-})
-
+for(ties in c("efron")){ #"breslow"
+  fit_coxph <- coxph(Surv(time,status) ~ X1 + X2,data=d, ties=ties)
+  fit_cph <- cph(Surv(time,status) ~ X1 + X2,data=d, method=ties, y = TRUE)
+  # table(duplicated(d$time))
+  
+  res_surv <- survival:::predict.coxph(fit_coxph, newdata = d, type="expected", se.fit = TRUE)
+  resCoxph <- predictCox(fit_coxph, newdata = d, times = d$time,  se = TRUE)
+  
+  resCph <- predictCox(fit_cph, newdata = d, times = d$time,  se = TRUE)
+  res_pec <- pec::predictSurvProb(fit_coxph, newdata = d, times = d$time)
+  
+  test_that(paste("predictCox - valide se cumHazard",ties),{
+    expect_equal(res_surv$fit,diag(resCoxph$cumHazard))
+    expect_equal(res_surv$se.fit,diag(resCoxph$cumHazard.se))
+    expect_equal(resCph, resCoxph, tolerance = 1e-5, scale = 1)
+  })
+}
 
 #### strata
-fit_coxph <- coxph(Surv(time,status) ~ strata(X1) + X2,data=d, ties="efron")
-fit_cph <- cph(Surv(time,status) ~ strat(X1) + X2,data=d, ties="efron", y = TRUE)
-# table(duplicated(d$time))
-
-res_surv <- survival:::predict.coxph(fit_coxph, newdata = d, type="expected", se.fit = TRUE)
-resCoxph <- predictCox(fit_coxph, newdata = d, times = d$time,  se = TRUE)
-resCph <- predictCox(fit_cph, newdata = d, times = d$time,  se = TRUE)
-res_pec <- pec::predictSurvProb(fit_coxph, newdata = d, times = d$time)
-
-test_that("predictCox (strata) - valide se cumHazard",{
-  expect_equal(res_surv$fit,diag(t(resCoxph$cumHazard)))
-  expect_equal(res_surv$se.fit,diag(resCoxph$cumHazard.se))
-  expect_equal(resCph,resCoxph, tolerance = 1e-5, scale = 1)
-})
+for(ties in c("efron")){ #"breslow"
+  fit_coxph <- coxph(Surv(time,status) ~ strata(X1) + X2,data=d, ties=ties)
+  fit_cph <- cph(Surv(time,status) ~ strat(X1) + X2,data=d, method=ties, y = TRUE)
+  # table(duplicated(d$time))
+  
+  res_surv <- survival:::predict.coxph(fit_coxph, newdata = d, type="expected", se.fit = TRUE)
+  resCoxph <- predictCox(fit_coxph, newdata = d, times = d$time,  se = TRUE)
+  resCph <- predictCox(fit_cph, newdata = d, times = d$time,  se = TRUE)
+  res_pec <- pec::predictSurvProb(fit_coxph, newdata = d, times = d$time)
+  
+  test_that(paste("predictCox (strata) - valide se cumHazard",ties),{
+    expect_equal(res_surv$fit,diag(t(resCoxph$cumHazard)))
+    expect_equal(res_surv$se.fit,diag(resCoxph$cumHazard.se))
+    expect_equal(resCph,resCoxph, tolerance = 1e-5, scale = 1)
+  })
+}
 
 #### bootstrap version
+
+test <- FALSE
+if(test){
 
 n <- 1e3
 df <- sampleData(n, outcome =  "survival")
@@ -89,5 +96,5 @@ ls.seBOOT <- list(hazard.se = apply(array.boot$hazard, 1:2, sd),
 (ls.seBOOT$cumHazard.se-resPredict$survival.se)/ls.seBOOT$survival.se
 
 
-
+}
 

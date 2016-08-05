@@ -116,7 +116,7 @@ predictCox <- function(object,
       strataF <- factor("1")
     }
     if(se){
-      modeldata <- stats::model.matrix(object$formula,survival:::model.frame.coxph(object))[,names(object$means),drop=FALSE]
+      modeldata <- prodlim::model.design(xterms,data=newdata,xlev=NULL)$design[,names(object$means),drop=FALSE]
       modeldata <- sweep(modeldata, FUN = "-", MARGIN = 2, STATS = object$means)
     }else{
       modeldata <- matrix(0)
