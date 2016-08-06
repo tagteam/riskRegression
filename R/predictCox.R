@@ -11,7 +11,6 @@
 #' @param times Time points at which to evaluate the predictions. 
 #' @param centered If TRUE remove the centering factor used by \code{coxph}
 #'     in the linear predictor.
-#' @param maxtime Baseline hazard will be computed for each event before maxtime
 #' @param type One or several strings that match (either in lower or upper case or mixtures) one
 #' or several of the strings \code{"hazard"},\code{"cumhazard"}, \code{"survival"}
 #' @param keep.strata Logical. If \code{TRUE} add the (newdata) strata to the output. Only if there any. 
@@ -36,15 +35,12 @@
 #' predictCox(fit)
 #' predictCox(fit, newdata=nd, times = 5)
 #' cbind(survival::basehaz(fit),predictCox(fit,type="cumHazard"))
-#' predictCox(fit, maxtime = 5,keep.times=TRUE)
-#' predictCox(fit, maxtime = 1,keep.times=TRUE)
 #' 
 #' # one strata variable
 #' fitS <- coxph(Surv(time,status)~strata(X1)+X2,data=d, ties="breslow")
 #' 
 #' predictCox(fitS)
-#' predictCox(fitS, maxtime = 5)
-#' predictCox(fitS, maxtime = 5, newdata=nd, times = 1)
+#' predictCox(fitS, newdata=nd, times = 1)
 #'
 #' # two strata variables
 #' set.seed(1)
@@ -56,8 +52,7 @@
 #'
 #' cbind(survival::basehaz(fit2S),predictCox(fit2S,type="cumHazard"))
 #' predictCox(fit2S)
-#' predictCox(fitS, maxtime = 5)
-#' predictCox(fitS, maxtime = 5,newdata=nd, times = 3)
+#' predictCox(fitS, newdata=nd, times = 3)
 #' 
 #' 
 #' @export
@@ -65,7 +60,6 @@ predictCox <- function(object,
                        newdata=NULL,
                        times,
                        centered = TRUE,
-                       maxtime = NULL,
                        type=c("hazard","cumHazard","survival"),
                        keep.strata = FALSE,
                        keep.times = FALSE,
@@ -144,15 +138,7 @@ predictCox <- function(object,
   ytimes <- object$y[,"time"]
   status <- object$y[,"status"]
   nVar <- ncol(modeldata)
-  
-  if (is.null(maxtime)){ # avoid useless computation of the baseline hazard for times after the prediction time
-    if(!is.null(newdata) && !missing(times)){
-      etimes.min <- if(is.strata){tapply(ytimes, strataF, min)}else{min(ytimes)} # first event in each strata
-      maxtime <- max(c(times,etimes.min)) + 1e-5
-    }else{
-      maxtime <- Inf
-    }
-  } 
+  if(is.strata){ etimes.max <- tapply(ytimes, strataF, max) }else{ etimes.max <- max(ytimes) } # last event time
   
   Lambda0 <- BaseHazStrata_cpp(alltimes = ytimes,
                                status = status,
@@ -163,7 +149,8 @@ predictCox <- function(object,
                                nVar = nVar,
                                nPatients = nPatients,
                                nStrata = nStrata,
-                               maxtime = maxtime,
+                               emaxtimes = etimes.max,
+                               predtimes = if(missing(times)){numeric(0)}else{sort(times)},
                                cause = 1,
                                Efron = (object$method == "efron"))
   
@@ -218,27 +205,11 @@ predictCox <- function(object,
       }
     }
     
-    findInterval2 <- function(...){ # if all the prediction times are before the first event then return the index of the first event
-      res <- setdiff(findInterval(...),0)
-      if(length(res)==0){return(1)}else{res}
-    }
-    subset2 <- function(x, index){ # subset function for the result of BaseHazStrata_cpp
-      if(length(x)==0){return(x)}
-      if(is.matrix(x)){return(x[index,,drop = FALSE])}
-      if(is.vector(x) || "vector" %in% is(x)){return(x[index])}
-    }
-    
     ## subject specific hazard
     if (is.strata==FALSE){
       
-        ## remove useless event times for prediction, i.e. keep only event times that are the closest non-superior time for a prediction time
-        ## keep.eventtime <- unique(sort(findInterval2(times, vec = Lambda0$time)))  # keep ascending time order
-        keep.eventtime <- prodlim::sindex(jump.times=Lambda0$time,eval.times=times)
-        Lambda0 <- lapply(Lambda0, subset2, keep.eventtime)
-      
-        etimes <- Lambda0$time
-        etimes.max <- max(ytimes) # last event time (cannot be max(Lambda0$time) because the censored observations have been removed from Lambda0)
-        test.timeNA <- times>etimes.max
+      etimes <- Lambda0$time
+      test.timeNA <- times>etimes.max
       
       if ("hazard" %in% type){
         hits <- times%in%etimes
@@ -268,16 +239,6 @@ predictCox <- function(object,
       
       
     }else{ 
-      ## remove useless event times for prediction, i.e. keep only event times that are, within each strata, the closest non-superior time for a prediction time
-      ## index[1] - 1  is 0 for the first strata then the index of the observation just before the second strata and so on
-        browser()
-      keep.eventtime <- tapply(1:length(Lambda0$strata), Lambda0$strata, 
-                               function(index){index[1] - 1 + findInterval2(times, vec = Lambda0$time[index])})
-      keep.eventtime <- unique(sort(unlist(keep.eventtime))) # keep ascending time/strata order
-      Lambda0 <- lapply(Lambda0, subset2, keep.eventtime)
-      
-      etimes.max <- tapply(ytimes, strataF, max) # last event time (cannot be tapply(Lambda0$times, Lambda0$strata, tail, n = 1) because the censored observations have been removed from Lambda0)
-      
       ## find strata for the new observations
       if ("cph" %in% class(object)){
         tmp <- model.frame(sterms,newdata)
@@ -318,8 +279,8 @@ predictCox <- function(object,
           if (sum(hits)==0) {
             out$hazard[newid.S,] <- matrix(0,nrow=sum(newid.S),ncol=n.times)
           }else{
-              #  match is needed here instead of %in% to handle non-increasing times.
-              out$hazard[newid.S,hits] <- exp(Xb[newid.S]) %o% Lambda0$hazard[id.S][match(times[hits], etimes.S)]
+            #  match is needed here instead of %in% to handle non-increasing times.
+            out$hazard[newid.S,hits] <- exp(Xb[newid.S]) %o% Lambda0$hazard[id.S][match(times[hits], etimes.S)]
           }
           if(any(test.timeNA)){out$hazard[newid.S,test.timeNA] <- NA}
         }
@@ -335,10 +296,12 @@ predictCox <- function(object,
         if(se){
           outSE <- seCox(object, newdata = newdata[newid.S,,drop = FALSE], 
                          times, type, 
-                         Lambda0 = lapply(Lambda0, subset2, which(id.S)), 
+                         Lambda0 = Lambda0, 
                          survival = out$survival[newid.S,], 
                          eXb = exp(Xb[newid.S]),
-                         stratavars = stratavars)
+                         stratavars = stratavars, 
+                         subset.Lambda0 = which(id.S))
+          
           if ("hazard" %in% type){out$hazard.se[newid.S,] <- outSE$hazard.se}
           if ("cumHazard" %in% type){out$cumHazard.se[newid.S,] <- outSE$cumHazard.se}
           if ("survival" %in% type){out$survival.se[newid.S,] <- outSE$survival.se}
@@ -348,7 +311,6 @@ predictCox <- function(object,
     
     if (keep.times==TRUE) out <- c(out,list(times=times))
   }
-  
   if( keep.lastEventTime==TRUE) out <- c(out,list(lastEventTime=etimes.max))
   if (is.strata && keep.strata==TRUE) out <- c(out,list(strata=newstrata))
   return(out)
@@ -370,9 +332,12 @@ predictCox <- function(object,
 #' @param eXb exponential (covariates * coefficients)
 #' @param survival the predicted survival (only necessary when type contains survival)
 #' @param stratavars the name of the strata variables
+#' @param subset.Lambda0 an index giving the subset of observations to be used in Lambda0
+#' 
 #' @author Brice Ozenne broz@@sund.ku.dk, Thomas A. Gerds tag@@biostat.ku.dk
+#' 
 #' @return A list optionally containing the standard error for the survival, cumulative hazard and hazard.
-seCox <- function(object, newdata, times, type, Lambda0, eXb, survival, stratavars){
+seCox <- function(object, newdata, times, type, Lambda0, eXb, survival, stratavars, subset.Lambda0 = 1:length(Lambda0$time)){
   
   ## prepare dataset
   if("cph" %in% class(object)){
@@ -388,43 +353,39 @@ seCox <- function(object, newdata, times, type, Lambda0, eXb, survival, stratava
   terms.X <- delete.response(terms(formulaObj))
   if(!is.null(stratavars)){terms.X <- drop.terms(terms.X, which(attr(terms.X,"term.labels") %in% stratavars))}
   formulaX <- formula(terms.X)
-  
   newdata.design <- stats::model.matrix(formulaX,newdata)[,names.Xcenter,drop=FALSE]
   newdata.design <- sweep(newdata.design, FUN = "-", MARGIN = 2, STATS = Xcenter)
   
   ##
   n.times <- length(times)
   n.newdata <- NROW(newdata)
-  etimes <- Lambda0$time
+  etimes <- Lambda0$time[subset.Lambda0]
   tindex <- prodlim::sindex(jump.times=etimes,eval.times=times)
   
   ##
   if("hazard" %in% type){
-    se.hazard0.tindex <- c(0,Lambda0$se.hazard)[tindex+1]
-    hazard0.tindex <- c(0,Lambda0$hazard)[tindex+1]
+    se.hazard0.tindex <- c(0,Lambda0$se.hazard[subset.Lambda0])[tindex+1]
+    hazard0.tindex <- c(0,Lambda0$hazard[subset.Lambda0])[tindex+1]
     se.betaHazard.tindex <- matrix(NA, nrow = n.newdata, ncol = n.times)
   }
   if("cumHazard" %in% type || "survival" %in% type){
-    se.cumHazard0.tindex <- c(0,Lambda0$se.cumHazard)[tindex+1]
-    cumHazard0.tindex <- c(0,Lambda0$cumHazard)[tindex+1]
+    se.cumHazard0.tindex <- c(0,Lambda0$se.cumHazard[subset.Lambda0])[tindex+1]
+    cumHazard0.tindex <- c(0,Lambda0$cumHazard[subset.Lambda0])[tindex+1]
     se.betaCumHazard.tindex <- matrix(NA, nrow = n.newdata, ncol = n.times)
   }
   
   ##
   for(indexT in 1:n.times){
-    time_loop <- times[indexT]
     
     if("hazard" %in% type){
-      Xbar_loop <- rbind(0,Lambda0$Xbar)[tindex[indexT]+1,,drop = FALSE]
+      Xbar_loop <- rbind(0,Lambda0$Xbar[subset.Lambda0,,drop = FALSE])[tindex[indexT]+1,,drop = FALSE]
       hazard0_loop <- hazard0.tindex[indexT]
-      se.hazard0_loop <- se.hazard0.tindex[indexT]
       hazardX_loop <- sweep(newdata.design*hazard0_loop, MARGIN = 2, FUN = "-",  STATS = as.double(Xbar_loop))
       se.betaHazard.tindex[,indexT] <- rowSums(hazardX_loop %*% object$var * hazardX_loop)
     }
     if("cumHazard" %in% type || "survival" %in% type){
-      XbarCumSum_loop <- rbind(0,Lambda0$XbarCumSum)[tindex[indexT]+1,,drop = FALSE]
+      XbarCumSum_loop <- rbind(0,Lambda0$XbarCumSum[subset.Lambda0,,drop = FALSE])[tindex[indexT]+1,,drop = FALSE]
       cumHazard0_loop <- cumHazard0.tindex[indexT]
-      se.cumHazard0_loop <- se.cumHazard0.tindex[indexT]
       cumHazardX_loop <- sweep(newdata.design*cumHazard0_loop, MARGIN = 2, FUN = "-",  STATS = as.double(XbarCumSum_loop))
       se.betaCumHazard.tindex[,indexT] <- rowSums(cumHazardX_loop %*% object$var * cumHazardX_loop)
     }

@@ -14,16 +14,22 @@ struct structExport {
   vector<double> SEcumHazard;
   arma::mat Xbar;
   arma::mat XbarCumSum;
+  int n;
 };
 
 structExport BaseHaz_cpp(const vector<double>& alltimes, const vector<int>& status, const vector<double>& Xb, 
                          bool se, const arma::mat& data, int nVar,
                          int nPatients, double maxtime, int cause, bool Efron);
 
+void subset_structExport(structExport& res, const NumericVector& newtimes, int nNew, bool se);
+
+// alltimes: all event times
+// emaxtimes: last event time in each strata
+// predtimes times at which we want to compute the hazard/survival
 // [[Rcpp::export]]
 List BaseHazStrata_cpp(const NumericVector& alltimes, const IntegerVector& status, const NumericVector& Xb, const IntegerVector& strata,
                        bool se, arma::mat data, int nVar,
-                       int nPatients, int nStrata, double maxtime, int cause, bool Efron){
+                       int nPatients, int nStrata, const NumericVector& emaxtimes, const NumericVector& predtimes, int cause, bool Efron){
   // WARNING strata0 must begin at 0
   
   vector<int> nObsStrata(nStrata,0);
@@ -36,6 +42,12 @@ List BaseHazStrata_cpp(const NumericVector& alltimes, const IntegerVector& statu
   if(se){
     seqVar = linspace<uvec>(0,nVar-1,nVar);
   }
+  int nPredtimes = predtimes.size();
+  double max_predtimes, maxtime;
+  if(nPredtimes>0){
+    max_predtimes = max(predtimes);
+  }
+  
   ////// 1- Strata  
   if(nStrata == 1){
     
@@ -104,8 +116,12 @@ List BaseHazStrata_cpp(const NumericVector& alltimes, const IntegerVector& statu
       data_S[iter_s] = data_S[iter_s].submat(index_S[iter_s], seqVar);
     }
     
-    if(maxtime < alltimes_S[iter_s][0]){ // if after the last time we need 
-      continue;
+    if(nPredtimes>0){ // set maxtime to the first event after the maximum prediction time
+      size_t i = 0;
+      while(i<(nObsStrata[iter_s]-1) && alltimes_S[iter_s][i]<max_predtimes) i++;
+      maxtime = alltimes_S[iter_s][i];
+    }else{
+      maxtime = emaxtimes[iter_s];
     }
     
     // compute the hazard
@@ -113,12 +129,18 @@ List BaseHazStrata_cpp(const NumericVector& alltimes, const IntegerVector& statu
                        se, data_S[iter_s], nVar, 
                        nObsStrata[iter_s], maxtime, cause, 
                        Efron);
+    
+    // subset results according to predtime
+    if(nPredtimes>0){
+      subset_structExport(resH, predtimes, nPredtimes, se);
+    }
+    
     // store results
     timeRes.insert( timeRes.end(), resH.time.begin(), resH.time.end() );
     hazardRes.insert( hazardRes.end(), resH.hazard.begin(), resH.hazard.end() );
     cumHazardRes.insert( cumHazardRes.end(), resH.cumHazard.begin(), resH.cumHazard.end() );
     if(nStrata > 1){
-      strataRes.resize( strataRes.size() + resH.time.size(), iter_s);
+      strataRes.resize( strataRes.size() + resH.n, iter_s);
     }
     if(se){
       SEhazardRes.insert( SEhazardRes.end(), resH.SEhazard.begin(), resH.SEhazard.end() );
@@ -318,13 +340,35 @@ structExport BaseHaz_cpp(const vector<double>& alltimes, const vector<int>& stat
   res.SEcumHazard = SEcumHazard;
   res.Xbar = Xbar;
   res.XbarCumSum = XbarCumSum;
+  res.n = nEventsLast;
   
   return res;
   
 }
 
-
-
+void subset_structExport(structExport& res, const NumericVector& newtimes, int nNew, bool se){
+  
+ // find the index of the new times [WARNING: for times after the last event, the value at the last event is used]
+ int n = res.n;
+ int i = 0;
+ uvec index(nNew, fill::zeros);
+ for (size_t t=0;t<nNew;t++){
+   while(i<(n-1) && res.time[i]<newtimes[t]) i++;
+   index[t] = i;
+ }
+ 
+ // subset the struct
+ res.time = conv_to< vector<double> >::from(conv_to<vec>::from(res.time).elem(index));
+ res.hazard = conv_to< vector<double> >::from(conv_to<vec>::from(res.hazard).elem(index));
+ res.cumHazard = conv_to< vector<double> >::from(conv_to<vec>::from(res.cumHazard).elem(index));
+ if(se){
+   res.SEhazard = conv_to< vector<double> >::from(conv_to<vec>::from(res.SEhazard).elem(index));
+   res.SEcumHazard = conv_to< vector<double> >::from(conv_to<vec>::from(res.SEcumHazard).elem(index));
+   res.Xbar = res.Xbar.rows(index);
+   res.XbarCumSum = res.XbarCumSum.rows(index);
+ }
+ res.n = index.size();
+}
 
 //// NOTE Adaptation of the Cagsurv5 from the survival package with no weight
 // ntimes number of observations (unique death times)

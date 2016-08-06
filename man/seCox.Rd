@@ -4,7 +4,8 @@
 \alias{seCox}
 \title{Computation of standard errors for predictions}
 \usage{
-seCox(object, newdata, times, type, Lambda0, eXb, survival, stratavars)
+seCox(object, newdata, times, type, Lambda0, eXb, survival, stratavars,
+  subset.Lambda0 = 1:length(Lambda0$time))
 }
 \arguments{
 \item{object}{The fitted Cox regression model object either
@@ -27,6 +28,8 @@ or several of the strings \code{"hazard"},\code{"cumhazard"}, \code{"survival"}.
 \item{survival}{the predicted survival (only necessary when type contains survival)}
 
 \item{stratavars}{the name of the strata variables}
+
+\item{subset.Lambda0}{an index giving the subset of observations to be used in Lambda0}
 }
 \value{
 A list optionally containing the standard error for the survival, cumulative hazard and hazard.

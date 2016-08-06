@@ -4,7 +4,7 @@
 \alias{predictCox}
 \title{Fast prediction of survival, hazard and cumulative hazard from Cox regression model}
 \usage{
-predictCox(object, newdata = NULL, times, centered = TRUE, maxtime = NULL,
+predictCox(object, newdata = NULL, times, centered = TRUE,
   type = c("hazard", "cumHazard", "survival"), keep.strata = FALSE,
   keep.times = FALSE, keep.lastEventTime = FALSE, se = FALSE)
 }
@@ -21,8 +21,6 @@ the same structure as the data set used to fit the \code{object}.}
 
 \item{centered}{If TRUE remove the centering factor used by \code{coxph}
 in the linear predictor.}
-
-\item{maxtime}{Baseline hazard will be computed for each event before maxtime}
 
 \item{type}{One or several strings that match (either in lower or upper case or mixtures) one
 or several of the strings \code{"hazard"},\code{"cumhazard"}, \code{"survival"}}
@@ -60,15 +58,12 @@ fit <- coxph(Surv(time,status)~X1 * X2,data=d, ties="breslow")
 predictCox(fit)
 predictCox(fit, newdata=nd, times = 5)
 cbind(survival::basehaz(fit),predictCox(fit,type="cumHazard"))
-predictCox(fit, maxtime = 5,keep.times=TRUE)
-predictCox(fit, maxtime = 1,keep.times=TRUE)
 
 # one strata variable
 fitS <- coxph(Surv(time,status)~strata(X1)+X2,data=d, ties="breslow")
 
 predictCox(fitS)
-predictCox(fitS, maxtime = 5)
-predictCox(fitS, maxtime = 5, newdata=nd, times = 1)
+predictCox(fitS, newdata=nd, times = 1)
 
 # two strata variables
 set.seed(1)
@@ -80,8 +75,7 @@ fit2S <- coxph(Surv(time,status)~X1+strata(U)+strata(V)+X2,data=d, ties="breslow
 
 cbind(survival::basehaz(fit2S),predictCox(fit2S,type="cumHazard"))
 predictCox(fit2S)
-predictCox(fitS, maxtime = 5)
-predictCox(fitS, maxtime = 5,newdata=nd, times = 3)
+predictCox(fitS, newdata=nd, times = 3)
 
 
 }
