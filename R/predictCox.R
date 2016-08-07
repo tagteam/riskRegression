@@ -65,13 +65,12 @@ predictCox <- function(object,
                        keep.times = FALSE,
                        keep.lastEventTime = FALSE,
                        se = FALSE){ 
-    
+  
   if(!is.null(newdata)){n.newdata <- NROW(newdata)}
-
+  
   #### extract elements from objects ####
   xterms <- delete.response(object$terms)
   xvars <- attr(xterms,"term.labels")
-  
   #### cph object
   if ("cph" %in% class(object)){
     nPatients <- sum(object$n)
@@ -92,8 +91,13 @@ predictCox <- function(object,
       strataF <- factor("1")
     }
     if(se){ ## cph:design matrix for standard error
-      modeldata <- stats::model.matrix(object$sformula,model.frame(object))[,object$Design$mmcolnames,drop=FALSE]
-      modeldata <- sweep(modeldata, FUN = "-", MARGIN = 2, STATS = object$mean)
+      if(length(object$Design$mmcolnames)==0){
+        #stop("Cannot compute standard errors when there is no confounder \n")
+        modeldata <- matrix(0, nrow = nPatients, ncol = 1)
+      }else{
+        modeldata <- as.matrix(model.frame(object)[,object$Design$mmcolnames,drop=FALSE])
+        modeldata <- sweep(modeldata, FUN = "-", MARGIN = 2, STATS = object$mean)
+      }
     }else{
       modeldata <- matrix(0)
     }
@@ -115,8 +119,13 @@ predictCox <- function(object,
       strataF <- factor("1")
     }
     if(se){ ## cph:design matrix for standard error
-      modeldata <- prodlim::model.design(xterms,data=newdata,xlev=NULL)$design[,names(object$means),drop=FALSE]
-      modeldata <- sweep(modeldata, FUN = "-", MARGIN = 2, STATS = object$means)
+      if(length(object$means)==0){
+        stop("Cannot compute standard errors when there is no confounder \n")
+        # modeldata <- matrix(0, nrow = nPatients, ncol = 1)
+      }else{
+        modeldata <- as.matrix(model.frame(object)[,names(object$means),drop = FALSE])
+        modeldata <- sweep(modeldata, FUN = "-", MARGIN = 2, STATS = object$means)
+      }
     }else{
       modeldata <- matrix(0)
     }
@@ -130,9 +139,9 @@ predictCox <- function(object,
   if(!missing(times) && any(is.na(times))){
     stop("NA values in argument \'times\' \n")
   }
-  if(se && object$method != "efron"){
-    stop("standard errors only implemented for object$method = efron \n")
-  }
+  #   if(se && object$method != "efron"){
+  #     stop("standard errors only implemented for object$method = efron \n")
+  #   }
   if(!is.null(object$weights)){
     stop("predictCox does not know how to handle Cox models fitted with weights \n")
   }
@@ -149,18 +158,18 @@ predictCox <- function(object,
   if(is.strata){ etimes.max <- tapply(ytimes, strataF, max) }else{ etimes.max <- max(ytimes) } # last event time
   
   Lambda0 <- baseHaz_cpp(alltimes = ytimes,
-                        status = status,
-                        eXb = if(centered == FALSE){exp(object$linear.predictors + sum(object$means*stats::coef(object)))}else{exp(object$linear.predictors)},
-                        strata = as.numeric(strataF) - 1,
-                        se = se,
-                        data = modeldata,
-                        nVar = nVar,
-                        nPatients = nPatients,
-                        nStrata = nStrata,
-                        emaxtimes = etimes.max,
-                        predtimes = if(missing(times)){numeric(0)}else{sort(times)},
-                        cause = 1,
-                        Efron = (object$method == "efron"))
+                         status = status,
+                         eXb = if(centered == FALSE){exp(object$linear.predictors + sum(object$means*stats::coef(object)))}else{exp(object$linear.predictors)},
+                         strata = as.numeric(strataF) - 1,
+                         se = se,
+                         data = modeldata,
+                         nVar = nVar,
+                         nPatients = nPatients,
+                         nStrata = nStrata,
+                         emaxtimes = etimes.max,
+                         predtimes = if(missing(times)){numeric(0)}else{sort(times)},
+                         cause = 1,
+                         Efron = (object$method == "efron"))
   
   if (is.strata == TRUE){ ## rename the strata value with the correct levels
     Lambda0$strata <- factor(Lambda0$strata, levels = 0:(nStrata-1), labels = levelsStrata)
@@ -210,10 +219,10 @@ predictCox <- function(object,
     
     if ("hazard" %in% type == FALSE){ Lambda0$hazard <- NULL } 
     if ("hazard" %in% type == FALSE || se == FALSE){  Lambda0$se.hazard <- NULL }
-      
+    
     if ("cumHazard" %in% type == FALSE){ Lambda0$cumHazard <- NULL } 
     if ("cumHazard" %in% type == FALSE || se == FALSE){  Lambda0$se.cumHazard <- NULL }
-
+    
     if ("survival" %in% type){ 
       Lambda0$survival = exp(-Lambda0$cumHazard)
       if(se){Lambda0$se.survival = sqrt( Lambda0$se.cumHazard*exp(-2*Lambda0$cumHazard) )} # delta method: Var(exp(b)) = exp(2b)var(b)
@@ -258,7 +267,7 @@ predictCox <- function(object,
         if ("survival" %in% type){out$survival <- exp(-cumHazard)}
       }
       
-      if(se){
+      if(se){ 
         out <- c(out,
                  seCox(object, newdata, times, type, Lambda0, survival = out$survival, eXb = eXb, stratavars = NULL)
         )
@@ -382,7 +391,7 @@ seCox <- function(object, newdata, times, type, Lambda0, eXb, survival, stratava
   etimes <- Lambda0$time[subset.Lambda0]
   
   ##
-   if("hazard" %in% type){
+  if("hazard" %in% type){
     se.hazard0.tindex <- Lambda0$se.hazard[subset.Lambda0]
     hazard0.tindex <- Lambda0$hazard[subset.Lambda0]
     se.betaHazard.tindex <- matrix(NA, nrow = n.newdata, ncol = n.times)

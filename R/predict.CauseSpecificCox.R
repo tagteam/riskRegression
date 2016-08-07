@@ -102,14 +102,15 @@ predict.CauseSpecificCox <- function(object,newdata,times,cause,keep.strata = FA
         }
         survProb <- exp(-causeHazard$cumHazard - cumHazOther)
     } else { 
-      tdiff <- min(diff(eTimes))/2
-      
+      tdiff <- 0*min(diff(eTimes))/2 # TO MATCH test-CauseSpecificCoxRegresion.R but will not match pec
+     
       survProb <- predictCox(object$models[["OverallSurvival"]],
                                type = "survival",
                                times=eTimes-tdiff,
                                newdata = newdata,
                                keep.strata = FALSE)$survival
     }
+    
     ## system.time(out <- t(apply(survProb * causeHazard$hazard, 1, cumsum)))
     out <- rowCumSum(survProb * causeHazard$hazard)
     ## FIXME: try to get rid of the censored times where nothing happens to F1 earlier

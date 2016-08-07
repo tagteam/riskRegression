@@ -22,6 +22,8 @@ test_that("CSC vs prodlim",{
     pc <- predictRisk(c,times=c(0,10,100,1000,2000),newdata=nd,cause=1)
     expect_equal(c(pb),c(pa),tolerance=0.1)
     expect_equal(c(pb),c(pc),tolerance=0.00000001)
+#     pd <- predictEventProb(c,times=c(0,10,100,1000,2000),newdata=nd,cause=1)
+#     expect_equal(c(pc),c(pd),tolerance=0.00000001)
     u <- CSC(Hist(time,status)~strat(sex)+age+invasion,data=Melanoma,fitter="cph")
     v <- CSC(Hist(time,status)~strat(sex)+age+invasion,data=Melanoma,survtype="survival",fitter="cph")
     pu <- predictRisk(u,times=c(0,10,100,1000,2000),newdata=Melanoma[c(17,84),],cause=1)

@@ -12,7 +12,18 @@ nd <- sampleData(10, outcome = "survival")
 d$time <- round(d$time,1)
 d <- d[order(d$time),][1:10,]
 
-for(ties in c("efron")){ #"breslow"
+for(ties in c("breslow","efron")){ # ties <- "breslow"
+  
+  test_that(paste("predictCox(empty) - valide se cumHazard",ties),{
+    fit_coxph <- coxph(Surv(time,event) ~ 1,data=d, ties=ties)
+    fit_cph <- cph(Surv(time,event) ~ 1,data=d, method=ties, y = TRUE)
+    
+    #res_surv <- survival:::predict.coxph(fit_coxph, newdata = d, type="expected", se.fit = TRUE)
+    resCoxph <- predictCox(fit_coxph, newdata = d, times = d$time,  se = FALSE)
+    resCph <- predictCox(fit_cph, newdata = d, times = d$time,  se = FALSE)
+    expect_error(resCoxph <- predictCox(fit_coxph, newdata = d, times = d$time,  se = TRUE))
+    expect_error(resCph <- predictCox(fit_cph, newdata = d, times = d$time,  se = TRUE))
+  })
   
   test_that(paste("predictCox(univariate) - valide se cumHazard",ties),{
     fit_coxph <- coxph(Surv(time,event) ~ X1,data=d, ties=ties)
@@ -20,10 +31,8 @@ for(ties in c("efron")){ #"breslow"
     
     res_surv <- survival:::predict.coxph(fit_coxph, newdata = d, type="expected", se.fit = TRUE)
     resCoxph <- predictCox(fit_coxph, newdata = d, times = d$time,  se = TRUE)
-    
     resCph <- predictCox(fit_cph, newdata = d, times = d$time,  se = TRUE)
-    res_pec <- pec::predictSurvProb(fit_coxph, newdata = d, times = d$time)
-  
+    
     expect_equal(res_surv$fit,diag(resCoxph$cumHazard))
     expect_equal(res_surv$se.fit,diag(resCoxph$cumHazard.se))
     expect_equal(resCph, resCoxph, tolerance = 1e-5, scale = 1)
@@ -46,7 +55,18 @@ for(ties in c("efron")){ #"breslow"
 }
 
 #### strata
-for(ties in c("efron")){ #"breslow"
+for(ties in c("breslow","efron")){ #
+  test_that(paste("predictCox (strata, empty) - valide se cumHazard",ties),{
+    fit_coxph <- coxph(Surv(time,event) ~ strata(X1),data=d, ties=ties)
+    fit_cph <- cph(Surv(time,event) ~ strat(X1),data=d, method=ties, y = TRUE)
+    
+    # res_surv <- survival:::predict.coxph(fit_coxph, newdata = d, type="expected", se.fit = TRUE)
+    resCoxph <- predictCox(fit_coxph, newdata = d, times = d$time,  se = FALSE)
+    resCph <- predictCox(fit_cph, newdata = d, times = d$time,  se = FALSE)
+    expect_error(resCoxph <- predictCox(fit_coxph, newdata = d, times = d$time,  se = TRUE))
+    expect_error(resCph <- predictCox(fit_cph, newdata = d, times = d$time,  se = TRUE))
+    # res_pec <- pec::predictSurvProb(fit_coxph, newdata = d, times = d$time)
+  })
   
   test_that(paste("predictCox (strata, univariate) - valide se cumHazard",ties),{
     fit_coxph <- coxph(Surv(time,event) ~ strata(X1) + X2,data=d, ties=ties)

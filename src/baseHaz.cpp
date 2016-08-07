@@ -311,6 +311,10 @@ structExport baseHazStrata_cpp(const vector<double>& alltimes, const vector<int>
         
       }
     }
+  }else if(se){ // Breslow se
+    for(size_t iterEvent = 0 ; iterEvent < nEventsLast ; iterEvent++){
+      Xbar.row(iterEvent) *= death[iterEvent];
+    }
   }
   
   if(se){XbarCumSum =  cumsum(Xbar, 0);}  // cumulative sum by column
