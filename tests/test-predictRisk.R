@@ -22,6 +22,7 @@ library(survival)
 context("Risk prediction")
 
 #### 1- Comparison between results from riskRegression and pec package ####
+cat("*")
 
 #### CSC  model
 ## predictRisk (predict.CauseSpecificCox function) vs. predictEventProb
@@ -153,6 +154,7 @@ for(model in c("coxph","cph")){
 
 
 #### 2- [predictCox,CSC] Check prediction after and before the last event ####
+cat("*")
 data(Melanoma)
 times1 <- unique(Melanoma$time)
 times2 <- c(0,0.9*min(times1),times1*1.1)
@@ -310,7 +312,7 @@ test_that("Prediction with CSC (strata)  - no event before prediction time",{
 })
 
 #### 3- [predictCSC] survtype = "survival" ####
-
+cat("*")
 set.seed(10)
 d <- sampleData(3e2, outcome = "competing.risks")
 d$time <- round(d$time,2)
@@ -327,7 +329,7 @@ test_that("Prediction with CSC (survtype = survival)  - no strata",{
   # expect_equal(unname(p1), unname(pGS))
 })
 
-test_that("Prediction with CSC (survtype = survival)  - no strata",{
+test_that("Prediction with CSC (survtype = survival)  - strata",{
   CSC.fitS <- riskRegression:::CSC(Hist(time,event)~ strata(X1) + X5 + strata(X3) + X7 +X2,data=d, method = "breslow", survtype = "survival")
   
   p1 <- predict(CSC.fitS, newdata = d2, times = times, cause = 1)
@@ -338,7 +340,8 @@ test_that("Prediction with CSC (survtype = survival)  - no strata",{
 
 
 
-#### 3- [predictCox] Dealing with weights ####
+#### 4- [predictCox] Dealing with weights ####
+cat("*")
 set.seed(10)
 data(Melanoma)
 wdata <- runif(nrow(Melanoma), 0, 1)
@@ -362,7 +365,8 @@ expect_error(resW <- predictCox(fitW.cph, times = Melanoma$time, newdata = Melan
 # expect_equal(diag(resW$cumHazard), resGSW)
 
 
-#### 4- [predictCox,CSC] Check influence of the order of the prediction times ####
+#### 5- [predictCox,CSC] Check influence of the order of the prediction times ####
+cat("*")
 data(Melanoma)
 times2 <- sort(c(0,0.9*min(Melanoma$time),Melanoma$time[5],max(Melanoma$time)*1.1))
 newOrder <- sample.int(length(times2),length(times2),replace = FALSE)
@@ -421,7 +425,8 @@ test_that("Deal with NA in times",{
 })
 
 
-#### 5- [predictCox] Check baseline hazard ####
+#### 6- [predictCox] Check baseline hazard ####
+cat("*")
 data(Melanoma)
 
 test_that("baseline hazard - match basehaz results",{
@@ -472,7 +477,8 @@ test_that("baseline hazard (strata) - match basehaz results",{
   #              tolerance = 100*max(abs(coef(fit.coxph)-coef(fit.cph))))
 })
 
-#### 6- [predictCox] Check format of the output ####
+#### 7- [predictCox] Check format of the output ####
+cat("*")
 data(Melanoma)
 times1 <- unique(Melanoma$time)
 times2 <- c(0,0.9*min(times1),times1*1.1)
@@ -548,7 +554,8 @@ test_that("Prediction with Cox model (strata) - incorrect strata",{
 
 
 
-#### 6- Others ####
+#### 8- Others ####
+cat("*")
 n <- 3
 set.seed(3)
 dn <- SimCompRisk(n)
@@ -574,7 +581,10 @@ predictCox(CSC.h$models[[2]],newdata = dn[1,],times=6.55,type="hazard")
 
 predictCox(CSC.h$models[["Cause 1"]],newdata = dn[1,],times=CSC.h$eventTimes,type="hazard")$hazard
 
+test_that("Prediction with CSC - categorical cause",{
 predictRisk(CSC.h, newdata = dn[1,], times = c(2), cause = "1")
+})
+
 predictRisk(CSC.h, newdata = dn, times = c(1,2,3.24,3.25,3.26,5,10,15,20), cause = cause)
 predictRisk(CSC.s, newdata = dn, times = c(1,5,10,15,20), cause = cause)
 

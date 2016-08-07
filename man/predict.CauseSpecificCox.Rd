@@ -2,14 +2,10 @@
 % Please edit documentation in R/predict.CauseSpecificCox.R
 \name{predict.CauseSpecificCox}
 \alias{predict.CauseSpecificCox}
-\alias{predictBig.CauseSpecificCox}
 \title{Predicting hazard or cumulative hazard}
 \usage{
 \method{predict}{CauseSpecificCox}(object, newdata, times, cause,
-  keep.strata = FALSE, colnames = TRUE, se = FALSE, ...)
-
-\method{predictBig}{CauseSpecificCox}(object, newdata, times, cause,
-  colnames = TRUE, ...)
+  colnames = TRUE, se = FALSE, ...)
 }
 \arguments{
 \item{object}{The fitted cause specific Cox model}
@@ -21,9 +17,6 @@ in the right hand side of 'coxph' for each patient.}
 hazards/survival}
 
 \item{cause}{Identifies the cause of interest among the competing events.}
-
-\item{keep.strata}{If \code{TRUE} return an additional column
-containing the strata level.}
 
 \item{colnames}{Logical. If \code{TRUE} name the columns of the matrix containing the absolute risk with times}
 
@@ -58,8 +51,6 @@ predCSC <- predict(CSC.fit, newdata = d, cause = 2, times = ttt)
 CSC.cph <- CSC(Hist(time,event)~ X1+X2,data=d, method = "breslow", fitter = "cph")
 
 predcph <- predict(CSC.cph, newdata = d, cause = 2, times = ttt)
-
-
 
 }
 \author{
