@@ -309,6 +309,35 @@ test_that("Prediction with CSC (strata)  - no event before prediction time",{
   expect_equal(as.double(prediction), 0)
 })
 
+#### 3- [predictCSC] survtype = "survival" ####
+
+set.seed(10)
+d <- sampleData(3e2, outcome = "competing.risks")
+d$time <- round(d$time,2)
+ttt <- sample(x = unique(sort(d$time)), size = 10) 
+d2 <- d
+times <- sort(c(0,d$time))
+
+test_that("Prediction with CSC (survtype = survival)  - no strata",{
+  CSC.fit <- riskRegression:::CSC(Hist(time,event)~ X1+X2+X6,data=d, method = "breslow", survtype = "survival")
+  
+  p1 <- predict(CSC.fit, newdata = d2, times = times, cause = 1)
+  pGS <- pec::predictEventProb(CSC.fit, newdata = d2, times = times, cause = 1)
+  
+  expect_equal(unname(p1), unname(pGS))
+})
+
+test_that("Prediction with CSC (survtype = survival)  - no strata",{
+  CSC.fitS <- riskRegression:::CSC(Hist(time,event)~ strata(X1) + X5 + strata(X3) + X7 +X2,data=d, method = "breslow", survtype = "survival")
+  
+  p1 <- predict(CSC.fitS, newdata = d2, times = times, cause = 1)
+  pGS <- pec::predictEventProb(CSC.fitS, newdata = d2, times = times, cause = 1)
+  
+  expect_equal(max(abs(na.omit(p1 - pGS)))>1e-8,FALSE)
+})
+
+
+
 #### 3- [predictCox] Dealing with weights ####
 set.seed(10)
 data(Melanoma)

@@ -56,6 +56,7 @@ predict.CauseSpecificCox <- function(object,newdata,times,cause,keep.strata = FA
         cause <- object$theCause
     }
     causes <- object$causes
+    eTimes <- object$eventTimes
     if (any(match(as.character(cause), causes, nomatch = 0)==0L))
         stop(paste0("Requested cause ",as.character(cause)," does not match fitted causes which are:\n ",paste0("- ",causes,collapse="\n")))
     ## stopifnot(match(as.character(cause), causes, nomatch = 0) != 
@@ -75,7 +76,7 @@ predict.CauseSpecificCox <- function(object,newdata,times,cause,keep.strata = FA
     # predict cumulative cause specific hazards
     causeHazard <- predictCox(object$models[[paste("Cause",cause)]],
                               newdata = newdata,
-                              times=object$eventTimes,
+                              times=eTimes,
                               type = c("hazard","cumHazard", if(se){"survival"}else{NULL}), 
                               keep.strata = TRUE,keep.times=TRUE,keep.lastEventTime = TRUE,
                               se = se)
@@ -87,30 +88,32 @@ predict.CauseSpecificCox <- function(object,newdata,times,cause,keep.strata = FA
                                          function(c) {
                                              predictCox(object$models[[paste("Cause",c)]],
                                                         newdata = newdata,
-                                                        times=object$eventTimes,
+                                                        times=eTimes,
                                                         type = "cumHazard",
                                                         keep.strata = FALSE)$cumHazard
                                          }))
         if(se){
           causeCompete <- predictCox(object$models[[paste("Cause",causes[-match(cause, causes)])]],
                                      newdata = newdata,
-                                     times=object$eventTimes,
+                                     times=eTimes,
                                      type = "survival",
                                      keep.strata = FALSE,
                                      se = TRUE)
         }
         survProb <- exp(-causeHazard$cumHazard - cumHazOther)
     } else { 
-        survProb <- predictCox(object$models[["OverallSurvival"]],
+      tdiff <- min(diff(eTimes))/2
+      
+      survProb <- predictCox(object$models[["OverallSurvival"]],
                                type = "survival",
-                               times=object$eventTimes,
+                               times=eTimes-tdiff,
                                newdata = newdata,
                                keep.strata = FALSE)$survival
     }
     ## system.time(out <- t(apply(survProb * causeHazard$hazard, 1, cumsum)))
     out <- rowCumSum(survProb * causeHazard$hazard)
     ## FIXME: try to get rid of the censored times where nothing happens to F1 earlier
-    ## pos <- prodlim::sindex(jump.times = object$eventTimes, eval.times = times)
+    ## pos <- prodlim::sindex(jump.times = eTimes, eval.times = times)
     pos <- prodlim::sindex(jump.times = causeHazard$times, eval.times = times)
     etimes.max <- max(causeHazard$lastEventTime)
     if(any(times>etimes.max)){ ## Set NA to predictions after the last event 
@@ -172,6 +175,7 @@ predictBig.CauseSpecificCox <- function(object,newdata,times,cause, colnames = T
     cause <- object$theCause
   }
   causes <- object$causes
+  eTimes <- object$eventTimes
   if (any(match(as.character(cause), causes, nomatch = 0)==0L))
     stop(paste0("Requested cause ",as.character(cause)," does not match fitted causes which are:\n ",paste0("- ",causes,collapse="\n")))
   ## stopifnot(match(as.character(cause), causes, nomatch = 0) != 
@@ -186,34 +190,62 @@ predictBig.CauseSpecificCox <- function(object,newdata,times,cause, colnames = T
   }
   
   # predict cumulative cause specific hazards
-  eventTimes <- object$eventTimes[which(object$eventTimes <= max(times))]
-  nCause <- length(causes)
+  eventTimes <- eTimes[which(eTimes <= max(times))]
   nData <- NROW(newdata)
   nTimes <- length(eventTimes)
   
-  ls.hazard <- vector(mode = "list", length = nCause)
-  ls.cumHazard <- vector(mode = "list", length = nCause)
-  M.eXb <- matrix(NA, nrow = nData, ncol = nCause)
-  M.strata <- matrix(NA, nrow = nData, ncol = nCause)
-  M.etimes.max <- matrix(NA, nrow = nData, ncol = nCause)
+  if (survtype == "hazard") {
+    nCause <- length(causes)
   
-  
-  for(iterC in 1:nCause){
-    causeBaseline <- predictCox(object$models[[paste("Cause",iterC)]],
+    ls.hazard <- vector(mode = "list", length = nCause)
+    ls.cumHazard <- vector(mode = "list", length = nCause)
+    M.eXb_h <- matrix(NA, nrow = nData, ncol = nCause)
+    M.strata <- matrix(NA, nrow = nData, ncol = nCause)
+    M.etimes.max <- matrix(NA, nrow = nData, ncol = nCause)
+    
+    for(iterC in 1:nCause){
+      causeBaseline <- predictCox(object$models[[paste("Cause",iterC)]],
+                                  times = eventTimes, newdata = newdata,
+                                  type = c("hazard","cumHazard","eXb", "newstrata"), 
+                                  keep.strata = TRUE, keep.lastEventTime = TRUE, keep.times = TRUE,
+                                  se = FALSE)
+      # as.data.table(causeBaseline[1:4])
+      
+      ls.hazard[[iterC]] <- matrix(causeBaseline$hazard, byrow = FALSE, nrow = nTimes)
+      ls.cumHazard[[iterC]] <- matrix(causeBaseline$cumHazard, byrow = FALSE, nrow = nTimes) 
+      M.strata[,iterC] <- as.numeric(causeBaseline$newstrata)-1
+      M.etimes.max[,iterC] <- causeBaseline$lastEventTime[M.strata[,iterC]+1]
+      M.eXb_h[,iterC] <- causeBaseline$eXb
+    }
+    
+    M.eXb_cumH <- M.eXb_h
+    
+  }else{
+    nCause <- 1
+    tdiff <- min(diff(eTimes))/2
+    
+    causeBaseline <- predictCox(object$models[[paste("Cause",cause)]],
                                 times = eventTimes, newdata = newdata,
                                 type = c("hazard","cumHazard","eXb", "newstrata"), 
                                 keep.strata = TRUE, keep.lastEventTime = TRUE, keep.times = TRUE,
                                 se = FALSE)
-    # as.data.table(causeBaseline[1:4])
     
-    ls.hazard[[iterC]] <- matrix(causeBaseline$hazard, byrow = FALSE, nrow = nTimes)
-    ls.cumHazard[[iterC]] <- matrix(causeBaseline$cumHazard, byrow = FALSE, nrow = nTimes) 
-    M.strata[,iterC] <- as.numeric(causeBaseline$newstrata)-1
-    M.etimes.max[,iterC] <- causeBaseline$lastEventTime[M.strata[,iterC]+1]
-    M.eXb[,iterC] <- causeBaseline$eXb
+    overallBaseline <- predictCox(object$models[["OverallSurvival"]],
+                              times = eventTimes-tdiff, newdata = newdata,
+                              type = c("cumHazard","eXb"), 
+                              keep.strata = TRUE, keep.lastEventTime = TRUE, keep.times = TRUE,
+                              se = FALSE)
+    
+    ls.hazard <- list(as.matrix(causeBaseline$hazard))
+    ls.cumHazard <- list(as.matrix(overallBaseline$cumHazard))
+    M.eXb_h <- cbind(causeBaseline$eXb)
+    M.eXb_cumH <- cbind(overallBaseline$eXb)
+    M.strata <- cbind(as.numeric(causeBaseline$newstrata)-1)
+    M.etimes.max <- cbind(causeBaseline$lastEventTime[M.strata+1])
+    
   }
   
-  CIF <- predictCIF_cpp(hazard = ls.hazard, cumHazard = ls.cumHazard, eXb = M.eXb, strata = M.strata,
+  CIF <- predictCIF_cpp(hazard = ls.hazard, cumHazard = ls.cumHazard, eXb_h = M.eXb_h, eXb_cumH = M.eXb_cumH, strata = M.strata,
                         newtimes = sort(times), etimes = eventTimes, etimeMax = apply(M.etimes.max,1,min),
                         nTimes = nTimes, nNewTimes = length(times), nData = nData, cause = cause - 1, nCause = nCause)
     
