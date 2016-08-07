@@ -6,25 +6,26 @@
 
 using namespace Rcpp;
 
-// BaseHazStrata_cpp
-List BaseHazStrata_cpp(const NumericVector& alltimes, const IntegerVector& status, const NumericVector& Xb, const IntegerVector& strata, bool se, arma::mat data, int nVar, int nPatients, int nStrata, double maxtime, int cause, bool Efron);
-RcppExport SEXP riskRegression_BaseHazStrata_cpp(SEXP alltimesSEXP, SEXP statusSEXP, SEXP XbSEXP, SEXP strataSEXP, SEXP seSEXP, SEXP dataSEXP, SEXP nVarSEXP, SEXP nPatientsSEXP, SEXP nStrataSEXP, SEXP maxtimeSEXP, SEXP causeSEXP, SEXP EfronSEXP) {
+// baseHaz_cpp
+List baseHaz_cpp(const NumericVector& alltimes, const IntegerVector& status, const NumericVector& eXb, const IntegerVector& strata, bool se, arma::mat data, int nVar, const std::vector<double>& predtimes, const NumericVector& emaxtimes, int nPatients, int nStrata, int cause, bool Efron);
+RcppExport SEXP riskRegression_baseHaz_cpp(SEXP alltimesSEXP, SEXP statusSEXP, SEXP eXbSEXP, SEXP strataSEXP, SEXP seSEXP, SEXP dataSEXP, SEXP nVarSEXP, SEXP predtimesSEXP, SEXP emaxtimesSEXP, SEXP nPatientsSEXP, SEXP nStrataSEXP, SEXP causeSEXP, SEXP EfronSEXP) {
 BEGIN_RCPP
     Rcpp::RObject __result;
     Rcpp::RNGScope __rngScope;
     Rcpp::traits::input_parameter< const NumericVector& >::type alltimes(alltimesSEXP);
     Rcpp::traits::input_parameter< const IntegerVector& >::type status(statusSEXP);
-    Rcpp::traits::input_parameter< const NumericVector& >::type Xb(XbSEXP);
+    Rcpp::traits::input_parameter< const NumericVector& >::type eXb(eXbSEXP);
     Rcpp::traits::input_parameter< const IntegerVector& >::type strata(strataSEXP);
     Rcpp::traits::input_parameter< bool >::type se(seSEXP);
     Rcpp::traits::input_parameter< arma::mat >::type data(dataSEXP);
     Rcpp::traits::input_parameter< int >::type nVar(nVarSEXP);
+    Rcpp::traits::input_parameter< const std::vector<double>& >::type predtimes(predtimesSEXP);
+    Rcpp::traits::input_parameter< const NumericVector& >::type emaxtimes(emaxtimesSEXP);
     Rcpp::traits::input_parameter< int >::type nPatients(nPatientsSEXP);
     Rcpp::traits::input_parameter< int >::type nStrata(nStrataSEXP);
-    Rcpp::traits::input_parameter< double >::type maxtime(maxtimeSEXP);
     Rcpp::traits::input_parameter< int >::type cause(causeSEXP);
     Rcpp::traits::input_parameter< bool >::type Efron(EfronSEXP);
-    __result = Rcpp::wrap(BaseHazStrata_cpp(alltimes, status, Xb, strata, se, data, nVar, nPatients, nStrata, maxtime, cause, Efron));
+    __result = Rcpp::wrap(baseHaz_cpp(alltimes, status, eXb, strata, se, data, nVar, predtimes, emaxtimes, nPatients, nStrata, cause, Efron));
     return __result;
 END_RCPP
 }
@@ -63,6 +64,28 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< NumericMatrix >::type Y(YSEXP);
     Rcpp::traits::input_parameter< bool >::type transposeY(transposeYSEXP);
     __result = Rcpp::wrap(colSumsCrossprod(X, Y, transposeY));
+    return __result;
+END_RCPP
+}
+// predictCIF_cpp
+arma::mat predictCIF_cpp(const std::vector<arma::mat>& hazard, const std::vector<arma::mat>& cumHazard, const arma::mat& eXb, const arma::mat& strata, const std::vector<double>& newtimes, const std::vector<double>& etimes, const std::vector<double>& etimeMax, int nTimes, int nNewTimes, int nData, int cause, int nCause);
+RcppExport SEXP riskRegression_predictCIF_cpp(SEXP hazardSEXP, SEXP cumHazardSEXP, SEXP eXbSEXP, SEXP strataSEXP, SEXP newtimesSEXP, SEXP etimesSEXP, SEXP etimeMaxSEXP, SEXP nTimesSEXP, SEXP nNewTimesSEXP, SEXP nDataSEXP, SEXP causeSEXP, SEXP nCauseSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject __result;
+    Rcpp::RNGScope __rngScope;
+    Rcpp::traits::input_parameter< const std::vector<arma::mat>& >::type hazard(hazardSEXP);
+    Rcpp::traits::input_parameter< const std::vector<arma::mat>& >::type cumHazard(cumHazardSEXP);
+    Rcpp::traits::input_parameter< const arma::mat& >::type eXb(eXbSEXP);
+    Rcpp::traits::input_parameter< const arma::mat& >::type strata(strataSEXP);
+    Rcpp::traits::input_parameter< const std::vector<double>& >::type newtimes(newtimesSEXP);
+    Rcpp::traits::input_parameter< const std::vector<double>& >::type etimes(etimesSEXP);
+    Rcpp::traits::input_parameter< const std::vector<double>& >::type etimeMax(etimeMaxSEXP);
+    Rcpp::traits::input_parameter< int >::type nTimes(nTimesSEXP);
+    Rcpp::traits::input_parameter< int >::type nNewTimes(nNewTimesSEXP);
+    Rcpp::traits::input_parameter< int >::type nData(nDataSEXP);
+    Rcpp::traits::input_parameter< int >::type cause(causeSEXP);
+    Rcpp::traits::input_parameter< int >::type nCause(nCauseSEXP);
+    __result = Rcpp::wrap(predictCIF_cpp(hazard, cumHazard, eXb, strata, newtimes, etimes, etimeMax, nTimes, nNewTimes, nData, cause, nCause));
     return __result;
 END_RCPP
 }

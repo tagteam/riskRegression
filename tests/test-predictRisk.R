@@ -152,7 +152,7 @@ for(model in c("coxph","cph")){
 }
 
 
-#### 3- [predictCox,CSC] Check prediction after and before the last event ####
+#### 2- [predictCox,CSC] Check prediction after and before the last event ####
 data(Melanoma)
 times1 <- unique(Melanoma$time)
 times2 <- c(0,0.9*min(times1),times1*1.1)
@@ -175,7 +175,6 @@ test_that("Prediction with Cox model - NA after last event",{
   expect_equal(as.vector(is.na(prediction$hazard)), c(FALSE, FALSE, TRUE))
   expect_equal(as.vector(is.na(prediction$cumHazard)), c(FALSE, FALSE, TRUE))
   expect_equal(as.vector(is.na(prediction$survival)), c(FALSE, FALSE, TRUE))
-
 })
 
 test_that("Prediction with Cox model - no event before prediction time",{
@@ -207,6 +206,47 @@ test_that("Prediction with CSC - no event before prediction time",{
   expect_equal(as.double(prediction), 0)
 })
 
+test_that("Prediction - last event censored",{
+  nData <- length(Melanoma$event)
+  
+  fit.coxph <- coxph(Surv(time,status == 1) ~ thick*age, data = Melanoma)
+  fit.cph <- cph(Surv(time,status == 1) ~ thick*age, data = Melanoma, y = TRUE, x = TRUE)
+  fit.CSC <- CSC(Hist(time,status) ~ thick*age, data = Melanoma, fitter = "cph")
+
+  vec.times <- sort(c(Melanoma$time, Melanoma$time+1/2)) 
+  p1 <- riskRegression:::predictCox(fit.coxph, times = vec.times, newdata = Melanoma)
+  p2 <- riskRegression:::predictCox(fit.cph, times = vec.times, newdata = Melanoma)
+  p3 <- pec::predictSurvProb(fit.coxph, times = vec.times, newdata = Melanoma) # predictSurvProb automatically sort the results
+  
+  expect_equal(p1,p2, tolerance = 1e-4)
+  expect_equal(p1$survival,p3)
+  
+  survLast <- p1$survival[,vec.times==Melanoma$time[nData]]
+  survLastM1 <- p1$survival[,vec.times==Melanoma$time[nData-1]]
+  expect_equal(unname(survLast-survLastM1==0), rep(TRUE, nData)) # check that survival decrease at the last time
+})
+
+test_that("Prediction - last event is a death",{
+  nData <- length(Melanoma$event)
+  Melanoma2 <- Melanoma
+  Melanoma2$status[nData] <- 1
+  fit.coxph <- coxph(Surv(time,status == 1) ~ thick*age, data = Melanoma2)
+  fit.cph <- cph(Surv(time,status == 1) ~ thick*age, data = Melanoma2, y = TRUE, x = TRUE)
+  fit.CSC <- CSC(Hist(time,status) ~ thick*age, data = Melanoma2, fitter = "cph")
+  
+  vec.times <-  sort(c(Melanoma$time, Melanoma$time+1/2)) 
+  p1 <- riskRegression:::predictCox(fit.coxph, times = vec.times, newdata = Melanoma)
+  p2 <- riskRegression:::predictCox(fit.cph, times = vec.times, newdata = Melanoma)
+  p3 <- pec::predictSurvProb(fit.coxph, times = vec.times, newdata = Melanoma) # predictSurvProb automatically sort the results
+  
+  expect_equal(p1,p2, tolerance = 1e-4)
+  expect_equal(p1$survival,p3)
+  
+  survLast <- p1$survival[,vec.times==Melanoma2$time[nData]]
+  survLastM1 <- p1$survival[,vec.times==Melanoma2$time[nData-1]]
+  expect_equal(unname(survLast-survLastM1<0), rep(TRUE, nData)) # check that survival decrease at the last time
+})
+
 #### strata
 fit.coxph <- coxph(Surv(time,status == 1) ~ thick + strata(invasion) + strata(ici), data = Melanoma)
 fit.cph <- cph(Surv(time,status == 1) ~ thick + strat(invasion) + strat(ici), data = Melanoma, y = TRUE, x = TRUE)
@@ -219,7 +259,7 @@ setkeyv(data.test, c("invasion","ici"))
 # identify the last event time for each strata
 epsilon <- min(diff(unique(fit.coxph$y[,"time"])))/10
 baseHazStrata <- as.data.table(predictCox(fit.coxph, keep.strata = TRUE, keep.times = TRUE))
-dt.times <- baseHazStrata[, .(beforeLastTime = times[.N]-epsilon, LastTime = times[.N], afterLastTime = times[.N]+epsilon), by = strata]
+dt.times <- baseHazStrata[, .(beforeLastTime = time[.N]-epsilon, LastTime = time[.N], afterLastTime = time[.N]+epsilon), by = strata]
 
 test_that("Prediction with Cox model (strata) - NA after last event",{
   for(Ttempo in 1:nrow(dt.times)){
@@ -235,7 +275,6 @@ test_that("Prediction with Cox model (strata) - NA after last event",{
     expect_equal(is.na(prediction$cumHazard[Ttempo,]), c(FALSE, FALSE, TRUE))
     expect_equal(is.na(prediction$survival[Ttempo,]), c(FALSE, FALSE, TRUE))
     }
-  
 })
 
 test_that("Prediction with CSC (strata) - NA after last event",{
@@ -243,9 +282,9 @@ test_that("Prediction with CSC (strata) - NA after last event",{
     test.times <- sort(unlist(dt.times[Ttempo, .(beforeLastTime, LastTime, afterLastTime)]))
     
     prediction <- predict(fit.CSC, times = test.times, newdata = data.test, cause = 1)
-    expect_equal(is.na(prediction[Ttempo,]), c(FALSE, FALSE, TRUE))
-    expect_equal(is.na(prediction[Ttempo,]), c(FALSE, FALSE, TRUE))
-    expect_equal(is.na(prediction[Ttempo,]), c(FALSE, FALSE, TRUE))
+    expect_equal(unname(is.na(prediction[Ttempo,])), c(FALSE, FALSE, TRUE))
+    expect_equal(unname(is.na(prediction[Ttempo,])), c(FALSE, FALSE, TRUE))
+    expect_equal(unname(is.na(prediction[Ttempo,])), c(FALSE, FALSE, TRUE))
   }
 })
 
@@ -270,7 +309,7 @@ test_that("Prediction with CSC (strata)  - no event before prediction time",{
   expect_equal(as.double(prediction), 0)
 })
 
-#### 4- [predictCox] Dealing with weights ####
+#### 3- [predictCox] Dealing with weights ####
 set.seed(10)
 data(Melanoma)
 wdata <- runif(nrow(Melanoma), 0, 1)
@@ -294,48 +333,49 @@ expect_error(resW <- predictCox(fitW.cph, times = Melanoma$time, newdata = Melan
 # expect_equal(diag(resW$cumHazard), resGSW)
 
 
-#### 5- [predictCox,CSC] Check influence of the order of the prediction times ####
+#### 4- [predictCox,CSC] Check influence of the order of the prediction times ####
 data(Melanoma)
-times2 <- sort(c(0,0.9*min(Melanoma$time),Melanoma$time[1],max(Melanoma$time)*1.1))
+times2 <- sort(c(0,0.9*min(Melanoma$time),Melanoma$time[5],max(Melanoma$time)*1.1))
 newOrder <- sample.int(length(times2),length(times2),replace = FALSE)
 
 test_that("Prediction with Cox model - sorted vs. unsorted times",{
-  fit.coxph <- coxph(Surv(time,status == 1) ~ thick*age, data = Melanoma)
-  predictionUNS <- predictCox(fit.coxph, times = times2[newOrder], newdata = Melanoma)
-  predictionS <- predictCox(fit.coxph, times = times2, newdata = Melanoma)
+  fit.coxph <- coxph(Surv(time,status == 1) ~ thick, data = Melanoma)
+  predictionUNS <- predictCox(fit.coxph, times = times2[newOrder], newdata = Melanoma[1:5,])
+  predictionS <- predictCox(fit.coxph, times = times2, newdata = Melanoma[1:5,])
+  # predictSurvProb(fit.coxph, times = times2[newOrder], newdata = Melanoma)
+  # predictSurvProb(fit.coxph, times = times2, newdata = Melanoma)
   expect_equal(predictionS, lapply(predictionUNS, function(x){x[,order(newOrder)]}))
 
-  fit.cph <- cph(Surv(time,status == 1) ~ thick*age, data = Melanoma, y = TRUE, x = TRUE)
-  predictionUNS <- predictCox(fit.cph, times = times2[newOrder], newdata = Melanoma)
-  predictionS <- predictCox(fit.coxph, times = times2, newdata = Melanoma)
+  fit.cph <- cph(Surv(time,status == 1) ~ thick, data = Melanoma, y = TRUE, x = TRUE)
+  predictionUNS <- predictCox(fit.cph, times = times2[newOrder], newdata = Melanoma[1:5,])
+  predictionS <- predictCox(fit.cph, times = times2, newdata = Melanoma[1:5,])
   expect_equal(predictionS, lapply(predictionUNS, function(x){x[,order(newOrder)]}))
 })
 
 test_that("Prediction with CSC - sorted vs. unsorted times",{
-  fit.CSC <- CSC(Hist(time,status) ~ thick*age, data = Melanoma)
+  fit.CSC <- CSC(Hist(time,status) ~ thick, data = Melanoma)
   predictionUNS <- predict(fit.CSC, times = times2[newOrder], newdata = Melanoma, cause = 1)
   predictionS <- predict(fit.CSC, times = times2, newdata = Melanoma, cause = 1)
   expect_equal(predictionS, predictionUNS[,order(newOrder)])
 })
 
 test_that("Prediction with Cox model (strata) - sorted vs. unsorted times",{
-  fit.coxph <- coxph(Surv(time,status == 1) ~ thick*age + strata(invasion), data = Melanoma)
+  fit.coxph <- coxph(Surv(time,status == 1) ~ thick + strata(invasion), data = Melanoma)
   predictionUNS <- predictCox(fit.coxph, times = times2[newOrder], newdata = Melanoma)
   predictionS <- predictCox(fit.coxph, times = times2, newdata = Melanoma)
   expect_equal(predictionS, lapply(predictionUNS, function(x){x[,order(newOrder)]}))
   
-  fit.cph <- cph(Surv(time,status == 1) ~ thick*age + strat(invasion), data = Melanoma, y = TRUE, x = TRUE)
+  fit.cph <- cph(Surv(time,status == 1) ~ thick + strat(invasion), data = Melanoma, y = TRUE, x = TRUE)
   predictionUNS <- predictCox(fit.cph, times = times2[newOrder], newdata = Melanoma)
-  predictionS <- predictCox(fit.coxph, times = times2, newdata = Melanoma)
+  predictionS <- predictCox(fit.cph, times = times2, newdata = Melanoma)
   expect_equal(predictionS$hazard, predictionUNS$hazard[,order(newOrder)])
   expect_equal(predictionS$cumHazard, predictionUNS$cumHazard[,order(newOrder)])
   expect_equal(predictionS$survival, predictionUNS$survival[,order(newOrder)])
 })
 # na.omit(predictionS$hazard)
 
-
 test_that("Prediction with CSC (strata) - sorted vs. unsorted times",{
-  fit.CSC <- CSC(Hist(time,status) ~ thick*age + strat(invasion), data = Melanoma)
+  fit.CSC <- CSC(Hist(time,status) ~ thick + strat(invasion), data = Melanoma)
   predictionUNS <- predict(fit.CSC, times = times2[newOrder], newdata = Melanoma, cause = 1)
   predictionS <- predict(fit.CSC, times = times2, newdata = Melanoma, cause = 1)
   expect_equal(predictionS, predictionUNS[,order(newOrder)])
@@ -343,10 +383,12 @@ test_that("Prediction with CSC (strata) - sorted vs. unsorted times",{
 
 test_that("Deal with negative time points",{
   expect_equal(unname(predictCox(fit.coxph, times = -1, newdata = dataset1)$survival), matrix(1,nrow = nrow(dataset1), ncol = 1))
+  expect_equal(unname(predict(fit.CSC, times = -1, newdata = dataset1, cause = 1)), matrix(0,nrow = nrow(dataset1), ncol = 1))
 })
 
-test_that("Prediction with Cox model - NA in times",{
+test_that("Deal with NA in times",{
   expect_error(predictionS <- predictCox(fit.coxph, times = c(times2,NA), newdata = Melanoma))
+  expect_error(predictionS <- predict(fit.CSC, times = c(times2,NA), newdata = Melanoma, cause = 1))
 })
 
 
@@ -401,7 +443,7 @@ test_that("baseline hazard (strata) - match basehaz results",{
   #              tolerance = 100*max(abs(coef(fit.coxph)-coef(fit.cph))))
 })
 
-#### 5- [predictCox] Check format of the output ####
+#### 6- [predictCox] Check format of the output ####
 data(Melanoma)
 times1 <- unique(Melanoma$time)
 times2 <- c(0,0.9*min(times1),times1*1.1)
@@ -440,23 +482,23 @@ test_that("baseline hazard (strata) - correct number of events",{
 test_that("Prediction with Cox model (strata) - export of strata and times",{
   predictTempo <- predictCox(fit.coxph)
   expect_equal(length(predictTempo$strata)>0, FALSE) 
-  expect_equal(length(predictTempo$times)>0, FALSE)
+  expect_equal(length(predictTempo$time)>0, FALSE)
   predictTempo <- predictCox(fit.coxph, keep.strata = TRUE) # as.data.table(predictCox(fit.coxph, keep.strata = TRUE))
   expect_equal(length(predictTempo$strata)>0, TRUE) 
-  expect_equal(length(predictTempo$times)>0, FALSE)
+  expect_equal(length(predictTempo$time)>0, FALSE)
   predictTempo <- predictCox(fit.coxph, keep.strata = TRUE, keep.times = TRUE)
   expect_equal(length(predictTempo$strata)>0, TRUE)
-  expect_equal(length(predictTempo$times)>0, TRUE)
+  expect_equal(length(predictTempo$time)>0, TRUE)
   
   predictTempo <- predictCox(fit.coxph, times = sort(times2), newdata = dataset1)
   expect_equal(length(predictTempo$strata)>0, FALSE) 
-  expect_equal(length(predictTempo$times)>0, FALSE)
+  expect_equal(length(predictTempo$time)>0, FALSE)
   predictTempo <- predictCox(fit.coxph, times = sort(times2), newdata = dataset1, keep.strata = TRUE)
   expect_equal(length(predictTempo$strata)>0, TRUE)
-  expect_equal(length(predictTempo$times)>0, FALSE)
+  expect_equal(length(predictTempo$time)>0, FALSE)
   predictTempo <- predictCox(fit.coxph, times = sort(times2), newdata = dataset1, keep.strata = TRUE, keep.times = TRUE)
   expect_equal(length(predictTempo$strata)>0, TRUE)
-  expect_equal(length(predictTempo$times)>0, TRUE)
+  expect_equal(length(predictTempo$time)>0, TRUE)
 })
 
 test_that("Prediction with Cox model (strata) - consistency of hazard/cumHazard/survival",{
@@ -464,6 +506,11 @@ test_that("Prediction with Cox model (strata) - consistency of hazard/cumHazard/
   expect_equal(predictTempo$hazard[,-1], t(apply(predictTempo$cumHazard,1,diff)), tolerance = 1e-8)
   expect_equal(predictTempo$survival, exp(-predictTempo$cumHazard), tolerance = 1e-8)
 })
+
+predictTempo <- predictCox(fit.coxph, times = c(0,times1[1:10]), newdata = dataset1[1:2,])
+expect_equal(predictTempo$hazard[,-1], t(apply(predictTempo$cumHazard,1,diff)), tolerance = 1e-8)
+expect_equal(predictTempo$survival, exp(-predictTempo$cumHazard), tolerance = 1e-8)
+
 
 test_that("Prediction with Cox model (strata) - incorrect strata",{
   dataset1$invasion <- "5616"

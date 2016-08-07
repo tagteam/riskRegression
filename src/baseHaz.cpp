@@ -17,25 +17,36 @@ struct structExport {
   int n;
 };
 
-structExport BaseHaz_cpp(const vector<double>& alltimes, const vector<int>& status, const vector<double>& Xb, 
-                         bool se, const arma::mat& data, int nVar,
-                         int nPatients, double maxtime, int cause, bool Efron);
+structExport baseHazStrata_cpp(const vector<double>& alltimes, const vector<int>& status, const vector<double>& eXb, 
+                               bool se, const arma::mat& data, int nVar,
+                               int nPatients, double maxtime, int cause, bool Efron);
 
-void subset_structExport(structExport& res, const NumericVector& newtimes, int nNew, bool se);
+structExport subset_structExport(const structExport& resAll, const vector<double>& newtimes,
+                                 double emaxtimes, int nNew, int nVar, bool se);
 
-// alltimes: all event times
+//// Data used to fit the Cox model
+// alltimes: event times
+// status:
+// eXb: 
+// strata:
+// data
 // emaxtimes: last event time in each strata
-// predtimes times at which we want to compute the hazard/survival
+// nPatients
+// nStrata
+//// For prediction
+// times_pred times at which we want to compute the hazard/survival
 // [[Rcpp::export]]
-List BaseHazStrata_cpp(const NumericVector& alltimes, const IntegerVector& status, const NumericVector& Xb, const IntegerVector& strata,
-                       bool se, arma::mat data, int nVar,
-                       int nPatients, int nStrata, const NumericVector& emaxtimes, const NumericVector& predtimes, int cause, bool Efron){
+List baseHaz_cpp(const NumericVector& alltimes, const IntegerVector& status, const NumericVector& eXb, const IntegerVector& strata,
+                 bool se, arma::mat data, int nVar,
+                 const std::vector<double>& predtimes, const NumericVector& emaxtimes,
+                 int nPatients, int nStrata, int cause, bool Efron){
   // WARNING strata0 must begin at 0
+  // WARNING predtimes must be sorted 
   
   vector<int> nObsStrata(nStrata,0);
   vector< vector<double> > alltimes_S(nStrata);
   vector< vector<int> > status_S(nStrata);
-  vector< vector<double> > Xb_S(nStrata);
+  vector< vector<double> > eXb_S(nStrata);
   vector< uvec > index_S(nStrata);
   vector< arma::mat > data_S(nStrata);
   uvec seqVar;
@@ -45,7 +56,7 @@ List BaseHazStrata_cpp(const NumericVector& alltimes, const IntegerVector& statu
   int nPredtimes = predtimes.size();
   double max_predtimes, maxtime;
   if(nPredtimes>0){
-    max_predtimes = max(predtimes);
+    max_predtimes = predtimes[nPredtimes-1];
   }
   
   ////// 1- Strata  
@@ -54,14 +65,14 @@ List BaseHazStrata_cpp(const NumericVector& alltimes, const IntegerVector& statu
     nObsStrata[0] = nPatients;
     alltimes_S[0].resize(nPatients);
     status_S[0].resize(nPatients);
-    Xb_S[0].resize(nPatients);
+    eXb_S[0].resize(nPatients);
     index_S[0].set_size(nPatients);
     if(se){data_S[0].set_size(nPatients,nVar);}
     
     for(int iter_p = 0 ; iter_p < nPatients ; iter_p++){
       alltimes_S[0][iter_p] = alltimes[iter_p];
       status_S[0][iter_p] = status[iter_p];
-      Xb_S[0][iter_p] = Xb[iter_p];
+      eXb_S[0][iter_p] = eXb[iter_p];
       index_S[0][iter_p] = iter_p;
       if(se){data_S[0].row(iter_p) = data.row(iter_p);}
     }
@@ -77,7 +88,7 @@ List BaseHazStrata_cpp(const NumericVector& alltimes, const IntegerVector& statu
     for(int iter_s = 0 ; iter_s < nStrata ; iter_s++){
       alltimes_S[iter_s].resize(nObsStrata[iter_s]);
       status_S[iter_s].resize(nObsStrata[iter_s]);
-      Xb_S[iter_s].resize(nObsStrata[iter_s]);
+      eXb_S[iter_s].resize(nObsStrata[iter_s]);
       index_S[iter_s].set_size(nObsStrata[iter_s]);
       if(se){data_S[iter_s].set_size(nObsStrata[iter_s],nVar);}
     }
@@ -89,7 +100,7 @@ List BaseHazStrata_cpp(const NumericVector& alltimes, const IntegerVector& statu
       strata_tempo = strata[iter_p];
       alltimes_S[strata_tempo][index_tempo[strata_tempo]] = alltimes[iter_p];
       status_S[strata_tempo][index_tempo[strata_tempo]] = status[iter_p];
-      Xb_S[strata_tempo][index_tempo[strata_tempo]] = Xb[iter_p];
+      eXb_S[strata_tempo][index_tempo[strata_tempo]] = eXb[iter_p];
       index_S[strata_tempo][index_tempo[strata_tempo]] = index_tempo[strata_tempo];
       if(se){data_S[strata_tempo].row(index_tempo[strata_tempo]) = data.row(iter_p);}
       index_tempo[strata_tempo]++;
@@ -108,9 +119,10 @@ List BaseHazStrata_cpp(const NumericVector& alltimes, const IntegerVector& statu
   arma::mat XbarCumSumRes(0,nVar);
   
   for(int iter_s = 0 ; iter_s < nStrata ; iter_s++){
+    R_CheckUserInterrupt();
     
     // reorder the data
-    sortS(alltimes_S[iter_s], status_S[iter_s], Xb_S[iter_s], index_S[iter_s], nObsStrata[iter_s]); // update alltimes, status and Xb
+    sortS(alltimes_S[iter_s], status_S[iter_s], eXb_S[iter_s], index_S[iter_s], nObsStrata[iter_s]); // update alltimes, status and eXb
     
     if(se){
       data_S[iter_s] = data_S[iter_s].submat(index_S[iter_s], seqVar);
@@ -125,14 +137,15 @@ List BaseHazStrata_cpp(const NumericVector& alltimes, const IntegerVector& statu
     }
     
     // compute the hazard
-    resH = BaseHaz_cpp(alltimes_S[iter_s], status_S[iter_s], Xb_S[iter_s],
-                       se, data_S[iter_s], nVar, 
-                       nObsStrata[iter_s], maxtime, cause, 
-                       Efron);
+    resH = baseHazStrata_cpp(alltimes_S[iter_s], status_S[iter_s], eXb_S[iter_s],
+                             se, data_S[iter_s], nVar, 
+                             nObsStrata[iter_s], maxtime, cause, 
+                             Efron);
     
     // subset results according to predtime
     if(nPredtimes>0){
-      subset_structExport(resH, predtimes, nPredtimes, se);
+      resH = subset_structExport(resH, predtimes,
+                                 emaxtimes[iter_s], nPredtimes, nVar, se);
     }
     
     // store results
@@ -167,9 +180,9 @@ List BaseHazStrata_cpp(const NumericVector& alltimes, const IntegerVector& statu
 }
 
 
-structExport BaseHaz_cpp(const vector<double>& alltimes, const vector<int>& status, const vector<double>& Xb, 
-                         bool se, const arma::mat& data, int nVar,
-                         int nPatients, double maxtime, int cause, bool Efron){
+structExport baseHazStrata_cpp(const vector<double>& alltimes, const vector<int>& status, const vector<double>& eXb, 
+                               bool se, const arma::mat& data, int nVar,
+                               int nPatients, double maxtime, int cause, bool Efron){
   
   //// 1- count the number of events
   size_t nEvents = 1, nEventsLast = 1;
@@ -216,13 +229,13 @@ structExport BaseHaz_cpp(const vector<double>& alltimes, const vector<int>& stat
   }
   
   // last observation
-  sumEXb[nEvents-1] = exp(Xb[nPatients-1]);
+  sumEXb[nEvents-1] = eXb[nPatients-1];
   death[nEvents-1] = (status[nPatients-1]==cause);
   if(Efron && (status[nPatients-1]==cause)){
-    sumEXb_event[nEvents-1] += exp(Xb[nPatients-1]);
-    if(se){sumEXb_eventData.row(nEvents-1) = data.row(nPatients-1) * exp(Xb[nPatients-1]);}
+    sumEXb_event[nEvents-1] += eXb[nPatients-1];
+    if(se){sumEXb_eventData.row(nEvents-1) = data.row(nPatients-1) * eXb[nPatients-1];}
   }
-  if(se){sumEXb_data.row(nEvents-1) = data.row(nPatients-1) * exp(Xb[nPatients-1]);}
+  if(se){sumEXb_data.row(nEvents-1) = data.row(nPatients-1) * eXb[nPatients-1];}
   
   // remaining observations
   size_t index_tempo = nEvents-1;
@@ -234,12 +247,12 @@ structExport BaseHaz_cpp(const vector<double>& alltimes, const vector<int>& stat
     }
     
     death[index_tempo] += (status[iterPat]==cause);
-    sumEXb[index_tempo] += exp(Xb[iterPat]);
+    sumEXb[index_tempo] += eXb[iterPat];
     if(Efron && (status[iterPat]==cause)){
-      sumEXb_event[index_tempo] += exp(Xb[iterPat]);
-      if(se){sumEXb_eventData.row(index_tempo) += data.row(iterPat) * exp(Xb[iterPat]);}
+      sumEXb_event[index_tempo] += eXb[iterPat];
+      if(se){sumEXb_eventData.row(index_tempo) += data.row(iterPat) * eXb[iterPat];}
     }
-    if(se){sumEXb_data.row(index_tempo) += data.row(iterPat) * exp(Xb[iterPat]);}
+    if(se){sumEXb_data.row(index_tempo) += data.row(iterPat) * eXb[iterPat];}
   }
   
   // first observation
@@ -254,7 +267,7 @@ structExport BaseHaz_cpp(const vector<double>& alltimes, const vector<int>& stat
       time[index_tempo] = alltimes[iterPat];
     }
   }
-
+  
   if(se){
     for(size_t iterEvent = 0 ; iterEvent < nEventsLast ; iterEvent++){
       if(death[iterEvent]>0){ // otherwise it will not be used anyway to compute SEhazard
@@ -263,7 +276,7 @@ structExport BaseHaz_cpp(const vector<double>& alltimes, const vector<int>& stat
       }
     }
   }    
-
+  
   //// OPT- Efron correction [from the survival package, function agsurv5]
   if(Efron){
     
@@ -343,31 +356,60 @@ structExport BaseHaz_cpp(const vector<double>& alltimes, const vector<int>& stat
   res.n = nEventsLast;
   
   return res;
-  
 }
 
-void subset_structExport(structExport& res, const NumericVector& newtimes, int nNew, bool se){
+structExport subset_structExport(const structExport& resAll, const vector<double>& newtimes, 
+                                 double emaxtimes,
+                                 int nNew, int nVar, bool se){
   
- // find the index of the new times [WARNING: for times after the last event, the value at the last event is used]
- int n = res.n;
- int i = 0;
- uvec index(nNew, fill::zeros);
- for (size_t t=0;t<nNew;t++){
-   while(i<(n-1) && res.time[i]<newtimes[t]) i++;
-   index[t] = i;
- }
- 
- // subset the struct
- res.time = conv_to< vector<double> >::from(conv_to<vec>::from(res.time).elem(index));
- res.hazard = conv_to< vector<double> >::from(conv_to<vec>::from(res.hazard).elem(index));
- res.cumHazard = conv_to< vector<double> >::from(conv_to<vec>::from(res.cumHazard).elem(index));
- if(se){
-   res.SEhazard = conv_to< vector<double> >::from(conv_to<vec>::from(res.SEhazard).elem(index));
-   res.SEcumHazard = conv_to< vector<double> >::from(conv_to<vec>::from(res.SEcumHazard).elem(index));
-   res.Xbar = res.Xbar.rows(index);
-   res.XbarCumSum = res.XbarCumSum.rows(index);
- }
- res.n = index.size();
+  structExport resSubset;
+  resSubset.time = newtimes;
+  resSubset.hazard.resize(nNew, NA_REAL);
+  resSubset.cumHazard.resize(nNew, NA_REAL);
+  if(se){
+    resSubset.SEhazard.resize(nNew, NA_REAL);
+    resSubset.SEcumHazard.resize(nNew, NA_REAL);
+    resSubset.Xbar.set_size(nNew, nVar); resSubset.Xbar.fill(NA_REAL);
+    resSubset.XbarCumSum.set_size(nNew, nVar); resSubset.XbarCumSum.fill(NA_REAL);
+  }
+  
+  int i = 0, maxtime;
+  
+  for (size_t t=0;t<nNew;t++){
+    
+    // update index
+    while(i<(resAll.n-1) && resAll.time[i+1]<=newtimes[t]){i++;}
+    
+    // update hazard
+    if(newtimes[t]<=emaxtimes){
+      
+      if(resAll.time[i]==newtimes[t]){ 
+        resSubset.hazard[t] = resAll.hazard[i];
+        if(se){resSubset.SEhazard[t] = resAll.SEhazard[i];}
+      }else{ // if not an event time then 0
+        resSubset.hazard[t] = 0;
+        if(se){resSubset.SEhazard[t] = 0;} // not clear which value should be put here
+      }
+      
+      if(newtimes[t]>=resAll.time[0]){
+        resSubset.cumHazard[t] = resAll.cumHazard[i];
+        if(se){resSubset.SEcumHazard[t] = resAll.SEcumHazard[i];}
+      }else{  // if before the first event then 0
+        resSubset.cumHazard[t] = 0;
+        if(se){resSubset.SEcumHazard[t] = 0;} // not clear which value should be put here
+      }
+      
+    }
+    
+    if(se){
+      resSubset.Xbar.row(t) = resAll.Xbar.row(i);
+      resSubset.XbarCumSum.row(t) = resAll.XbarCumSum.row(i);
+    }
+  }
+  resSubset.n = nNew;
+  
+  // export
+  return(resSubset);
 }
 
 //// NOTE Adaptation of the Cagsurv5 from the survival package with no weight

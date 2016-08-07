@@ -2,10 +2,14 @@
 % Please edit documentation in R/predict.CauseSpecificCox.R
 \name{predict.CauseSpecificCox}
 \alias{predict.CauseSpecificCox}
+\alias{predictBig.CauseSpecificCox}
 \title{Predicting hazard or cumulative hazard}
 \usage{
 \method{predict}{CauseSpecificCox}(object, newdata, times, cause,
-  keep.strata = FALSE, se = FALSE, ...)
+  keep.strata = FALSE, colnames = TRUE, se = FALSE, ...)
+
+\method{predictBig}{CauseSpecificCox}(object, newdata, times, cause,
+  colnames = TRUE, ...)
 }
 \arguments{
 \item{object}{The fitted cause specific Cox model}
@@ -21,6 +25,8 @@ hazards/survival}
 \item{keep.strata}{If \code{TRUE} return an additional column
 containing the strata level.}
 
+\item{colnames}{Logical. If \code{TRUE} name the columns of the matrix containing the absolute risk with times}
+
 \item{se}{Logical. If \code{TRUE} add the standard errors corresponding to the output. Experimental !!}
 
 \item{...}{not used}
@@ -29,8 +35,7 @@ containing the strata level.}
 A data table containing the predictions for each patient (in rows) and each time (in columns).
 }
 \description{
-Apply formula to combine two or more Cox models into absolute risk
-(cumulative incidence function)
+Apply formula to combine two or more Cox models into absolute risk (cumulative incidence function)
 }
 \details{
 Note: for Cox regression models with time varying

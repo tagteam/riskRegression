@@ -1,7 +1,10 @@
-#' Predicting hazard or cumulative hazard
+#' @title Predicting hazard or cumulative hazard
+#' @rdname predict.CauseSpecificCox
+#' @aliases predict.CauseSpecificCox
+#' @aliases predictBig.CauseSpecificCox
 #'
-#' Apply formula to combine two or more Cox models into absolute risk
-#' (cumulative incidence function)
+#' @description  Apply formula to combine two or more Cox models into absolute risk (cumulative incidence function)
+#' 
 #' @param object The fitted cause specific Cox model
 #' @param newdata A data frame containing the values of the variables
 #'     in the right hand side of 'coxph' for each patient.
@@ -10,6 +13,7 @@
 #' @param cause Identifies the cause of interest among the competing events.
 #' @param keep.strata If \code{TRUE} return an additional column
 #'     containing the strata level.
+#' @param colnames Logical. If \code{TRUE} name the columns of the matrix containing the absolute risk with times
 #' @param se Logical. If \code{TRUE} add the standard errors corresponding to the output. Experimental !!
 #' @param ... not used
 #' @author Brice Ozenne broz@@sund.ku.dk, Thomas A. Gerds
@@ -39,8 +43,10 @@
 #'
 #' 
 #' 
+
+#' @rdname predict.CauseSpecificCox
 #' @export
-predict.CauseSpecificCox <- function(object,newdata,times,cause,keep.strata = FALSE, se = FALSE, ...){
+predict.CauseSpecificCox <- function(object,newdata,times,cause,keep.strata = FALSE, colnames = TRUE, se = FALSE, ...){
     survtype <- object$survtype
     if (length(cause) > 1){
         stop(paste0("Can only predict one cause. Provided are: ", 
@@ -135,6 +141,10 @@ predict.CauseSpecificCox <- function(object,newdata,times,cause,keep.strata = FA
     }
     
     ## export
+    if(colnames){
+      colnames(p) <- times
+    }
+    
     if(keep.strata == FALSE && se == FALSE){
       return(p)
     }else{
@@ -143,6 +153,78 @@ predict.CauseSpecificCox <- function(object,newdata,times,cause,keep.strata = FA
       if(se == TRUE){out$prediction.se <- outSE}
       return(out)
     }
+}
+
+
+predictBig <- function(object,newdata,...){
+  UseMethod("predictBig",object)
+}
+
+#' @rdname predict.CauseSpecificCox
+#' @export
+predictBig.CauseSpecificCox <- function(object,newdata,times,cause, colnames = TRUE, ...){
+  survtype <- object$survtype
+  if (length(cause) > 1){
+    stop(paste0("Can only predict one cause. Provided are: ", 
+                paste(cause, collapse = ", "), sep = ""))
+  }
+  if (missing(cause)) {
+    cause <- object$theCause
+  }
+  causes <- object$causes
+  if (any(match(as.character(cause), causes, nomatch = 0)==0L))
+    stop(paste0("Requested cause ",as.character(cause)," does not match fitted causes which are:\n ",paste0("- ",causes,collapse="\n")))
+  ## stopifnot(match(as.character(cause), causes, nomatch = 0) != 
+  ## 0)
+  if (survtype == "survival") {
+    if (object$theCause != cause) 
+      stop("Object can be used to predict cause ", object$theCause, 
+           " but not ", cause, ".\nNote: the cause can be specified in CSC(...,cause=).")
+  }
+  if(any(is.na(times))){
+    stop("NA values in argument \'times\' \n")
+  }
+  
+  # predict cumulative cause specific hazards
+  eventTimes <- object$eventTimes[which(object$eventTimes <= max(times))]
+  nCause <- length(causes)
+  nData <- NROW(newdata)
+  nTimes <- length(eventTimes)
+  
+  ls.hazard <- vector(mode = "list", length = nCause)
+  ls.cumHazard <- vector(mode = "list", length = nCause)
+  M.eXb <- matrix(NA, nrow = nData, ncol = nCause)
+  M.strata <- matrix(NA, nrow = nData, ncol = nCause)
+  M.etimes.max <- matrix(NA, nrow = nData, ncol = nCause)
+  
+  
+  for(iterC in 1:nCause){
+    causeBaseline <- predictCox(object$models[[paste("Cause",iterC)]],
+                                times = eventTimes, newdata = newdata,
+                                type = c("hazard","cumHazard","eXb", "newstrata"), 
+                                keep.strata = TRUE, keep.lastEventTime = TRUE, keep.times = TRUE,
+                                se = FALSE)
+    # as.data.table(causeBaseline[1:4])
+    
+    ls.hazard[[iterC]] <- matrix(causeBaseline$hazard, byrow = FALSE, nrow = nTimes)
+    ls.cumHazard[[iterC]] <- matrix(causeBaseline$cumHazard, byrow = FALSE, nrow = nTimes) 
+    M.strata[,iterC] <- as.numeric(causeBaseline$newstrata)-1
+    M.etimes.max[,iterC] <- causeBaseline$lastEventTime[M.strata[,iterC]+1]
+    M.eXb[,iterC] <- causeBaseline$eXb
+  }
+  
+  CIF <- predictCIF_cpp(hazard = ls.hazard, cumHazard = ls.cumHazard, eXb = M.eXb, strata = M.strata,
+                        newtimes = sort(times), etimes = eventTimes, etimeMax = apply(M.etimes.max,1,min),
+                        nTimes = nTimes, nNewTimes = length(times), nData = nData, cause = cause - 1, nCause = nCause)
+    
+  #### export ###
+  if(any(order(times) != 1:length(times))){# reorder times
+    CIF <- CIF[,order(order(times))]
+  }
+  if(colnames){
+    colnames(CIF) <- times
+  }
+  return(CIF)
 }
 
 seCSC <- function(indexTimes,

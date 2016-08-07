@@ -10,16 +10,15 @@ int compareS (const void * a, const void * b);
 struct structS {
   double time;
   int status;
-  double Xb;
+  double eXb;
   int index;
 };
 
-
 ////// sort functions
 
-void sortS(vector<double>& time, vector<int>& status, vector<double>& Xb, uvec& index, int n){
-//bool sortS(NumericVector& time, IntegerVector& status, NumericVector& Xb, int n){
-  // warning time, status and Xb are called by reference and modified during the execution of the function
+void sortS(vector<double>& time, vector<int>& status, vector<double>& eXb, uvec& index, int n){
+//bool sortS(NumericVector& time, IntegerVector& status, NumericVector& eXb, int n){
+  // warning time, status and eXb are called by reference and modified during the execution of the function
   
   // definitions
   structS * dataS = NULL;
@@ -33,7 +32,7 @@ void sortS(vector<double>& time, vector<int>& status, vector<double>& Xb, uvec& 
   for (int i = 0; i < n; ++i) {
     dataS[i].time = time[i];
     dataS[i].status = status[i];
-    dataS[i].Xb = Xb[i];
+    dataS[i].eXb = eXb[i];
     dataS[i].index = index[i];
   }
   
@@ -44,7 +43,7 @@ void sortS(vector<double>& time, vector<int>& status, vector<double>& Xb, uvec& 
   for (int i = 0; i < n; ++i) {
     time[i] = dataS[i].time;
     status[i] = dataS[i].status;
-    Xb[i] = dataS[i].Xb;
+    eXb[i] = dataS[i].eXb;
     index[i] =  dataS[i].index;
   }
   
@@ -52,7 +51,6 @@ void sortS(vector<double>& time, vector<int>& status, vector<double>& Xb, uvec& 
   
   // return(true);
 }
-
 
 ////// to feed qsort
 int compareS (const void * a, const void * b){ // sort first by time and in case of equality by status (censored last)
@@ -67,4 +65,3 @@ int compareS (const void * a, const void * b){ // sort first by time and in case
   if ((*(structS*)a).time>(*(structS*)b).time) return 1;
   return NA_REAL;
 }
-
