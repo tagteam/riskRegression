@@ -15,16 +15,16 @@ arma::mat predictCIF_cpp(const std::vector<arma::mat>& hazard, const std::vector
   
   double hazard_it;
   double AllcumHazard_it;
-  size_t iterP; // index of the prediction time
+  int iterP; // index of the prediction time
   rowvec strataI(nCause);
   
-  for(size_t iterI=0 ; iterI<nData; iterI++){ // index of the patient
+  for(int iterI=0 ; iterI<nData; iterI++){ // index of the patient
     R_CheckUserInterrupt();
     
     iterP = 0;
     strataI = strata.row(iterI);
     
-    for(size_t iterT=0 ; iterT<nTimes; iterT++){ // index of the time in the integral (event time number)
+    for(int iterT=0 ; iterT<nTimes; iterT++){ // index of the time in the integral (event time number)
       // update position 
       while(iterP < nNewTimes && newtimes[iterP]<etimes[iterT]){
         iterP++;
@@ -36,7 +36,7 @@ arma::mat predictCIF_cpp(const std::vector<arma::mat>& hazard, const std::vector
       
       // sum all cumHazard for all causes and exp the result
       AllcumHazard_it = 0; 
-      for(size_t iterC=0 ; iterC<nCause; iterC++){
+      for(int iterC=0 ; iterC<nCause; iterC++){
         AllcumHazard_it += cumHazard[iterC](iterT,strataI[iterC])*eXb_cumH(iterI,iterC);
       }
       // update the integral
@@ -50,7 +50,7 @@ arma::mat predictCIF_cpp(const std::vector<arma::mat>& hazard, const std::vector
         pred_CIF(iterI,iterP) = NA_REAL;  
       }
       if(iterP < nNewTimes-1){
-        for(size_t iterPP = iterP+1; iterPP<nNewTimes ; iterPP++){
+        for(int iterPP = iterP+1; iterPP<nNewTimes ; iterPP++){
           if(newtimes[iterPP]>etimeMax[iterI]){
             pred_CIF(iterI,iterPP) = NA_REAL;  
           }else{

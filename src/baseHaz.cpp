@@ -54,7 +54,7 @@ List baseHaz_cpp(const NumericVector& alltimes, const IntegerVector& status, con
     seqVar = linspace<uvec>(0,nVar-1,nVar);
   }
   int nPredtimes = predtimes.size();
-  double max_predtimes, maxtime;
+  double maxtime, max_predtimes = 0; // factice intialisation to avoid warning from the compiler
   if(nPredtimes>0){
     max_predtimes = predtimes[nPredtimes-1];
   }
@@ -377,9 +377,9 @@ structExport subset_structExport(const structExport& resAll, const vector<double
     resSubset.XbarCumSum.set_size(nNew, nVar); resSubset.XbarCumSum.fill(NA_REAL);
   }
   
-  int i = 0, maxtime;
+  int i = 0;
   
-  for (size_t t=0;t<nNew;t++){
+  for (int t=0;t<nNew;t++){
     
     // update index
     while(i<(resAll.n-1) && resAll.time[i+1]<=newtimes[t]){i++;}
