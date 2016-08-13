@@ -44,8 +44,8 @@ colSumsCrossprod <- function(X, Y, transposeY) {
     .Call('riskRegression_colSumsCrossprod', PACKAGE = 'riskRegression', X, Y, transposeY)
 }
 
-predictCIF_cpp <- function(hazard, cumHazard, eXb, strata, newtimes, etimes, etimeMax, nTimes, nNewTimes, nData, cause, nCause) {
-    .Call('riskRegression_predictCIF_cpp', PACKAGE = 'riskRegression', hazard, cumHazard, eXb, strata, newtimes, etimes, etimeMax, nTimes, nNewTimes, nData, cause, nCause)
+predictCIF_cpp <- function(hazard, cumHazard, eXb_h, eXb_cumH, strata, newtimes, etimes, etimeMax, nTimes, nNewTimes, nData, cause, nCause) {
+    .Call('riskRegression_predictCIF_cpp', PACKAGE = 'riskRegression', hazard, cumHazard, eXb_h, eXb_cumH, strata, newtimes, etimes, etimeMax, nTimes, nNewTimes, nData, cause, nCause)
 }
 
 #' Apply cumsum in each row 

@@ -49,10 +49,21 @@ data(Melanoma)
 fit1 <- CSC(list(Hist(time,status)~sex,Hist(time,status)~invasion+epicel+age),
             data=Melanoma)
 print(fit1)
+
+
+
+## model hazard of all cause mortality instead of hazard of type 2 
 fit1a <- CSC(list(Hist(time,status)~sex+age,Hist(time,status)~invasion+epicel+log(thick)),
              data=Melanoma,
              survtype="surv")
 print(fit1a)
+
+## special case where cause 2 has no covariates
+fit1b <- CSC(list(Hist(time,status)~sex+age,Hist(time,status)~1),
+             data=Melanoma)
+print(fit1b)
+predict(fit1b,cause=1,times=100,newdata=Melanoma)
+
 
 ## same formula for both causes
 fit2 <- CSC(Hist(time,status)~invasion+epicel+age,
@@ -80,7 +91,7 @@ fit5 <- CSC(Hist(time,status)~invasion+epicel+age+strata(sex),
             survtype="surv")
 print(fit5)
 
-## sanity check
+## sanity checks
 
 cox1 <- coxph(Surv(time,status==1)~invasion+epicel+age+strata(sex),data=Melanoma)
 cox2 <- coxph(Surv(time,status!=0)~invasion+epicel+age+strata(sex),data=Melanoma)

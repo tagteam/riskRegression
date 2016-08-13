@@ -6,9 +6,19 @@ using namespace arma;
 using namespace std;
 
 // [[Rcpp::export]]
-arma::mat predictCIF_cpp(const std::vector<arma::mat>& hazard, const std::vector<arma::mat>& cumHazard, const arma::mat& eXb_h, const arma::mat& eXb_cumH, const arma::mat& strata, 
-                         const std::vector<double>& newtimes, const std::vector<double>& etimes, const std::vector<double>& etimeMax,
-                         int nTimes, int nNewTimes, int nData, int cause, int nCause){
+arma::mat predictCIF_cpp(const std::vector<arma::mat>& hazard,
+			 const std::vector<arma::mat>& cumHazard,
+			 const arma::mat& eXb_h,
+			 const arma::mat& eXb_cumH,
+			 const arma::mat& strata, 
+                         const std::vector<double>& newtimes,
+			 const std::vector<double>& etimes,
+			 const std::vector<double>& etimeMax,
+                         int nTimes,
+			 int nNewTimes,
+			 int nData,
+			 int cause,
+			 int nCause){
   
   arma::mat pred_CIF(nData, nNewTimes);
   pred_CIF.fill(0);
@@ -28,7 +38,7 @@ arma::mat predictCIF_cpp(const std::vector<arma::mat>& hazard, const std::vector
       // update position 
       while(iterP < nNewTimes && newtimes[iterP]<etimes[iterT]){
         iterP++;
-        pred_CIF(iterI,iterP) = pred_CIF(iterI,iterP-1);
+	pred_CIF(iterI,iterP) = pred_CIF(iterI,iterP-1);
       }
       if(iterP >= nNewTimes){break;}
       // get hazard for the cause of interest
@@ -51,7 +61,7 @@ arma::mat predictCIF_cpp(const std::vector<arma::mat>& hazard, const std::vector
       }
       if(iterP < nNewTimes-1){
         for(int iterPP = iterP+1; iterPP<nNewTimes ; iterPP++){
-          if(newtimes[iterPP]>etimeMax[iterI]){
+	  if(newtimes[iterPP]>etimeMax[iterI]){
             pred_CIF(iterI,iterPP) = NA_REAL;  
           }else{
             pred_CIF(iterI,iterPP) = pred_CIF(iterI,iterPP-1);  
