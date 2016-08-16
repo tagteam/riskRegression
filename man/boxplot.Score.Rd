@@ -34,6 +34,7 @@ calculation of risk differences.}
 Retrospective boxplots of risk quantiles conditional on outcome
 }
 \examples{
+# binary outcome
 db=sampleData(100,outcome="binary")
 fitconv=glm(Y~X3+X5,data=db,family=binomial)
 fitnew=glm(Y~X1+X3+X5+X6+X7,data=db,family=binomial)
@@ -41,6 +42,7 @@ scoreobj=Score(list(new=fitnew,conv=fitconv),formula=Y~1,
                data=db,summary="riskQuantile",nullModel=FALSE)
 boxplot(scoreobj)
 
+# survival outcome
 library(survival)
 ds=sampleData(100,outcome="survival")
 fitconv=coxph(Surv(time,event)~X3+X5,data=ds)
@@ -49,12 +51,22 @@ scoreobj=Score(list(conv=fitconv,new=fitnew),formula=Hist(time,event)~1,
                data=ds,summary="riskQuantile",times=5,nullModel=FALSE)
 boxplot(scoreobj)
 
-library(riskRegression)
+# competing risks outcome
 data(Melanoma)
 fitconv = CSC(Hist(time,status)~invasion+age+sex+logthick,data=Melanoma)
 fitnew = CSC(Hist(time,status)~invasion+age+sex,data=Melanoma)
 scoreobj=Score(list(conv=fitconv,new=fitnew),formula=Hist(time,status)~1,
                data=Melanoma,summary="riskQuantile",times=5*365.25,nullModel=FALSE)
 boxplot(scoreobj)
+
+# more than 2 competing risks 
+dcr=sampleData(100,outcome="competing.risks")
+fitconv = CSC(Hist(time,status)~invasion+age+sex+logthick,data=Melanoma)
+fitnew = CSC(Hist(time,status)~invasion+age+sex,data=Melanoma)
+scoreobj=Score(list(conv=fitconv,new=fitnew),formula=Hist(time,status)~1,
+               data=Melanoma,summary="riskQuantile",times=5*365.25,nullModel=FALSE)
+boxplot(scoreobj)
+
+
 }
 

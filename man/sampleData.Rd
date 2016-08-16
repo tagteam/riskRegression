@@ -18,7 +18,8 @@ competing risks response}
 \item{formula}{Specify regression coefficients}
 }
 \value{
-Simulated data with 11 variables: Y (binary outcome), X1-X5 (binary predictors), X6-X10 (continous predictors)
+Simulated data as data.table with n rows and the following columns:
+Y (binary outcome), time (non-binary outcome), event (non-binary outcome), X1-X5 (binary predictors), X6-X10 (continous predictors)
 }
 \description{
 Simulate data with binary outcome and 10 covariates.

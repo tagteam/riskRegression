@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jan  4 2016 (09:43) 
 ## Version: 
-## last-updated: Jan  4 2016 (14:57) 
+## last-updated: Aug 15 2016 (09:30) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 17
+##     Update #: 22
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -24,7 +24,8 @@
 ##' \code{"survival"} = survival response, \code{"competing.risks"} =
 ##' competing risks response
 ##' @param formula Specify regression coefficients
-##' @return Simulated data with 11 variables: Y (binary outcome), X1-X5 (binary predictors), X6-X10 (continous predictors)
+##' @return Simulated data as data.table with n rows and the following columns:
+##' Y (binary outcome), time (non-binary outcome), event (non-binary outcome), X1-X5 (binary predictors), X6-X10 (continous predictors)
 ##' @seealso lvm
 ##' @examples
 ##' sampleData(10,outcome=NULL)
@@ -63,7 +64,8 @@ sampleData <- function(n,outcome=NULL,formula= ~ f(X1,2) + f(X2,-0.033) + f(X3,0
         m <- lava::eventTime(m, time ~ min(eventtime1 = 1, eventtime2 = 2, censtime = 0), "event")
         lava::regression(m) <- stats::update(formula,"eventtime1~.")
     }
-    lava::sim(m,n)
+    data.table::as.data.table(lava::sim(m,n))
+    
 }
 
 #----------------------------------------------------------------------
