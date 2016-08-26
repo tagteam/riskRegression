@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Aug 15 2016 (09:45) 
 ## Version: 
-## last-updated: Aug 15 2016 (14:08) 
+## last-updated: Aug 26 2016 (14:37) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 7
+##     Update #: 27
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -28,32 +28,44 @@
 #' @param xlim x-axis limits
 #' @param xlab x-axis label
 #' @param main title of plot
+#' @param outcomeLabel Title label for column which shows the outcome status 
+#' @param refline Logical, for \code{type="diff"} only. If \code{TRUE} draw a red vertical line at \code{0}.
 #' @param ... not used
 ##' @examples
 ##' # binary outcome
 ##' db=sampleData(100,outcome="binary")
 ##' fitconv=glm(Y~X3+X5,data=db,family=binomial)
 ##' fitnew=glm(Y~X1+X3+X5+X6+X7,data=db,family=binomial)
-##' scoreobj=Score(list(new=fitnew,conv=fitconv),formula=Y~1,
+##' scoreobj=Score(list(new=fitnew,conv=fitconv),formula=Y~1,compare=list(c(2,1)),
 ##'                data=db,summary="riskQuantile",nullModel=FALSE)
 ##' boxplot(scoreobj)
 ##'
 ##' # survival outcome
 ##' library(survival)
 ##' ds=sampleData(100,outcome="survival")
-##' fitconv=coxph(Surv(time,event)~X3+X5,data=ds)
-##' fitnew=coxph(Surv(time,event)~X1+X3+X5+X6+X7,data=ds)
-##' scoreobj=Score(list(conv=fitconv,new=fitnew),formula=Hist(time,event)~1,
-##'                data=ds,summary="riskQuantile",times=5,nullModel=FALSE)
+##' fitconv=coxph(Surv(time,event)~X6,data=ds)
+##' fitnew=coxph(Surv(time,event)~X6+X9,data=ds)
+##' scoreobj=Score(list("conventional model"=fitconv,"new model"=fitnew),
+##'                 formula=Hist(time,event)~1, data=ds,
+##'                 summary="riskQuantile",metrics=NULL, plots=NULL,
+##'                 c(0,0.25,0.5,0.75,1),
+##'                 times=5,nullModel=FALSE)
 ##' boxplot(scoreobj)
+##'
+##' scoreobj1=Score(list("conventional model"=fitconv,"new model"=fitnew),
+##'                 formula=Hist(time,event)~1, data=ds,
+##'                 summary="riskQuantile",metrics=NULL, plots=NULL,
+##'                 times=5,nullModel=FALSE,compare=list(c(2,1)))
+##' boxplot(scoreobj1)
 ##'
 ##' # competing risks outcome
 ##' data(Melanoma)
-##' fitconv = CSC(Hist(time,status)~invasion+age+sex+logthick,data=Melanoma)
-##' fitnew = CSC(Hist(time,status)~invasion+age+sex,data=Melanoma)
-##' scoreobj=Score(list(conv=fitconv,new=fitnew),formula=Hist(time,status)~1,
+##' fitconv = CSC(Hist(time,status)~invasion+age+sex,data=Melanoma)
+##' fitnew = CSC(Hist(time,status)~invasion+age+sex+logthick,data=Melanoma)
+##' scoreobj=Score(list("Conventional model"=fitconv,"New model"=fitnew),formula=Hist(time,status)~1,
 ##'                data=Melanoma,summary="riskQuantile",times=5*365.25,nullModel=FALSE)
 ##' boxplot(scoreobj)
+##' 
 ##'
 ##' # more than 2 competing risks
 ##' m=lava::lvm(~X1+X2+X3)
@@ -67,13 +79,24 @@
 ##' dcr=as.data.table(lava::sim(m,101))
 ##' fitOld = CSC(Hist(time,event)~X1+X2,data=dcr)
 ##' fitNew = CSC(Hist(time,event)~X1+X2+X3,data=dcr)
-##' scoreobj=Score(list(ConventionalModel=fitOld,NewModel=fitNew),formula=Hist(time,event)~1,
+##' scoreobj=Score(list("Conventional model"=fitOld,"New model"=fitNew),formula=Hist(time,event)~1,
 ##'                data=dcr,summary="riskQuantile",times=5,nullModel=FALSE)
 ##' boxplot(scoreobj)
 ##' 
 ##' 
 #' @export
-boxplot.Score <- function(x,model,reference,type,timepoint,lwd=3,xlim,xlab,main,...){
+boxplot.Score <- function(x,
+                          model,
+                          reference,
+                          type,
+                          timepoint,
+                          lwd=3,
+                          xlim,
+                          xlab,
+                          main,
+                          outcomeLabel,
+                          refline=TRUE,
+                          ...){
     times=cause=models=NULL
     fitted <- x$models
     models <- names(x$models)
@@ -110,7 +133,14 @@ boxplot.Score <- function(x,model,reference,type,timepoint,lwd=3,xlim,xlab,main,
             xlim=c(-max,max)
         }
     if (missing(main))
-        if (type=="risk") main=mod else main="Difference in predicted risks"
+        if (type=="risk") main=mod else main=switch(x$responseType,
+                                                    "competing.risks"={paste("Difference in predicted risks\nof an event of type",cause,"\nbefore time",timepoint)},
+                                                    "survival"={paste("Difference in predicted risks\nof an event before time",timepoint)},
+                                                    "binary"={"Difference in predicted risks"})
+    if (missing(outcomeLabel)) outcomeLabel <- switch(x$responseType,
+                                                      "competing.risks"={paste("Event status\nat time",timepoint)},
+                                                      "survival"={paste("Event status\nat time",timepoint)},
+                                                      "binary"={"Event status"})
     if (missing(xlab))
         if (type=="risk") xlab="Predicted risk" else xlab=""
     if (x$responseType!="competing.risks"){
@@ -122,7 +152,7 @@ boxplot.Score <- function(x,model,reference,type,timepoint,lwd=3,xlim,xlab,main,
              xlab = xlab,
              ylab = "")
         axis(1,at=seq(xlim[1],xlim[2],(xlim[2]-xlim[1])/4),labels=paste(seq(xlim[1],xlim[2],(xlim[2]-xlim[1])/4),"%"))
-        text(x=xlim[1],y=c(0.5,1.5,2.5,3),labels=c("Overall","Event","Event-free",expression(bold(Outcome))),pos=2,xpd=NA)
+        text(x=xlim[1],y=c(0.5,1.5,2.5,3),labels=c("Overall","Event","Event-free",outcomeLabel),pos=2,xpd=NA)
         if (type=="diff"){
             mtext(paste(ref,"higher risk"),side=1,adj=0,line=par()$mgp[1])
             mtext(paste(mod,"higher risk"),side=1,adj=1,line=par()$mgp[1])
@@ -138,11 +168,13 @@ boxplot.Score <- function(x,model,reference,type,timepoint,lwd=3,xlim,xlab,main,
              axes=FALSE,
              xlab = xlab,
              ylab = "")
+        if (refline==TRUE)
+            abline(v=0,col=2,lwd=2)
         ## axis(1,at=seq(0,100,25),labels=paste(seq(0,100,25),"%"))
         axis(1,at=seq(xlim[1],xlim[2],(xlim[2]-xlim[1])/4),labels=paste(seq(xlim[1],xlim[2],(xlim[2]-xlim[1])/4),"%"))
         causes <- pframe[,cause]
         ypos <- c((1:(length(causes)))-0.5,length(causes))
-        text(x=xlim[1],y=ypos,labels=c(causes,expression(bold(Outcome))),pos=2,xpd=NA)
+        text(x=xlim[1],y=ypos,labels=c(causes,outcomeLabel),pos=2,xpd=NA)
         if (type=="diff"){
             mtext(paste(ref,"higher risk"),side=1,adj=0,line=par()$mgp[1])
             mtext(paste(mod,"higher risk"),side=1,adj=1,line=par()$mgp[1])

@@ -8,7 +8,7 @@
 \method{Score}{list}(object, formula, data, metrics = c("auc", "brier"),
   summary = NULL, plots = c("roc", "calibration", "pvalues"), cause = 1,
   times, landmarks, useEventTimes = FALSE, nullModel = TRUE, test = TRUE,
-  alpha = 0.05, dolist, probs = c(0.05, 0.25, 0.5, 0.75, 0.95),
+  compare = TRUE, alpha = 0.05, probs = c(0, 0.25, 0.5, 0.75, 1),
   censMethod = "ipcw", censModel = "cox", splitMethod, B, M, seed,
   trainseeds, ...)
 }
@@ -25,8 +25,9 @@ interpreted.}
 \item{metrics}{Character vector specifying which metrics to
 apply. Implemented are \code{"auc"} and \code{"Brier"}.}
 
-\item{summary}{Character vector specifying which summary statistics to
-apply to the predicted risks. Implemented is \code{"riskQuantile"}.}
+\item{summary}{Character vector specifying which summary
+statistics to apply to the predicted risks. Implemented is
+\code{"riskQuantile"}.}
 
 \item{plots}{Character vector specifying which plots to prepare.}
 
@@ -47,15 +48,28 @@ argument \code{times}.}
 \item{nullModel}{If \code{TRUE} add the null model which ignores
 the covariates and predicts the prevalence for all subjects.}
 
-\item{test}{If \code{TRUE} compute confidence intervals. Also do
-model comparisons specified in \code{dolist}.}
+\item{test}{Logical. If \code{TRUE} compute confidence intervals
+for model performance and confidence intervals and p-values
+for contrasts of model performance (see argument
+\code{compare}.}
+
+\item{compare}{Either logical or list of positive integers mixed
+with \code{0}.  If \code{TRUE} do all possible contrasts. For
+example, when \code{object} has two elements and
+\code{nullModel=TRUE} this is equivalent to
+\code{list(c(0,1,2),c(1,2))} where \code{c(0,1,2)} codes for
+two comparisons: 1 vs 0 and 2 vs 0 (positive integers refer to
+elements of \code{object}, 0 refers to the benchmark null
+model which ignores the covariates).  This again is equivalent
+to explicitly setting \code{list(c(0,1),c(0,2),c(1,2))}. A
+more complex example: Suppose object has 7 elements and you
+want to do the following 3 comparisons: 6 vs 3, 2 vs 5 and 2
+vs 3, you should set \code{compare=c(6,3),c(2,5,3)}.}
 
 \item{alpha}{Level of significance.}
 
-\item{dolist}{Vector of integers specifying which risks to compare
-to all other risks in \code{object}.}
-
-\item{probs}{Quantiles for retrospective summary statistics of the predicted risks}
+\item{probs}{Quantiles for retrospective summary statistics of the
+predicted risks}
 
 \item{censMethod}{Method for dealing with right censored
 data. Either \code{"ipcw"} or \code{"pseudo"}.}
@@ -68,16 +82,16 @@ censored weights.}
 \item{B}{Number of cross-validation steps.}
 
 \item{M}{Size of subsamples for cross-validation. If specified it
-has to be an integer smaller than the size of \code{data}.}
-
-\item{seed}{Super seed for setting training data seeds when randomly splitting the data for cross-validation.}
-
-\item{trainseeds}{Seeds for training models during cross-validation.}
+has to be an integer smaller than the size of \code{data}.
+@param seed Super seed for setting training data seeds when
+randomly splitting the data for cross-validation.  @param
+trainseeds Seeds for training models during cross-validation.}
 
 \item{...}{Not used}
 }
 \value{
-Data table with scores and tests.
+Result list with scores and assessments of contrasts
+    (tests) for the assessment metrics, summaries and plots.
 }
 \description{
 Method to Score risk markers and risk prediction models
@@ -138,7 +152,7 @@ splitMethod="bootcv",B=3)
 
 # restrict number of comparisons
 Score(list("Cox(X1+X2+X7+X9)"=cox1,"Cox(X3+X5+X6)"=cox2),
-      formula=Surv(time,event)~1,data=trainSurv,dolist=1,
+      formula=Surv(time,event)~1,data=trainSurv,compare=TRUE,
 nullModel=FALSE,test=TRUE,times=c(5,8),splitMethod="bootcv",B=3)
 
 # competing risks outcome
