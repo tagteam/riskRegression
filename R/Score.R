@@ -55,8 +55,9 @@
 ##' @param B Number of cross-validation steps.
 ##' @param M Size of subsamples for cross-validation. If specified it
 ##'     has to be an integer smaller than the size of \code{data}.
-##'     @param seed Super seed for setting training data seeds when
-##'     randomly splitting the data for cross-validation.  @param
+##' @param seed Super seed for setting training data seeds when
+##'     randomly splitting the data for cross-validation.
+##' @param
 ##'     trainseeds Seeds for training models during cross-validation.
 ##' @param ... Not used
 ##' @return Result list with scores and assessments of contrasts
@@ -204,6 +205,7 @@ Score.list <- function(object,
     if (is.null(censType)) censType <- "uncensoredData"
     # }}}
     # {{{ SplitMethod
+    if (!missing(seed)) set.seed(seed)
     splitMethod <- getSplitMethod(splitMethod=splitMethod,B=B,N=N,M=M)
     B <- splitMethod$B
     splitIndex <- splitMethod$index

@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Aug 15 2016 (09:45) 
 ## Version: 
-## last-updated: Aug 26 2016 (14:37) 
+## last-updated: Aug 30 2016 (14:10) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 27
+##     Update #: 31
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -134,7 +134,7 @@ boxplot.Score <- function(x,
         }
     if (missing(main))
         if (type=="risk") main=mod else main=switch(x$responseType,
-                                                    "competing.risks"={paste("Difference in predicted risks\nof an event of type",cause,"\nbefore time",timepoint)},
+                                                    "competing.risks"={paste("Difference in predicted risks\nof an event of type",x$cause,"\nbefore time",timepoint)},
                                                     "survival"={paste("Difference in predicted risks\nof an event before time",timepoint)},
                                                     "binary"={"Difference in predicted risks"})
     if (missing(outcomeLabel)) outcomeLabel <- switch(x$responseType,
@@ -151,6 +151,8 @@ boxplot.Score <- function(x,
              axes=FALSE,
              xlab = xlab,
              ylab = "")
+        if (refline==TRUE)
+            abline(v=0,col=2,lwd=2)
         axis(1,at=seq(xlim[1],xlim[2],(xlim[2]-xlim[1])/4),labels=paste(seq(xlim[1],xlim[2],(xlim[2]-xlim[1])/4),"%"))
         text(x=xlim[1],y=c(0.5,1.5,2.5,3),labels=c("Overall","Event","Event-free",outcomeLabel),pos=2,xpd=NA)
         if (type=="diff"){
