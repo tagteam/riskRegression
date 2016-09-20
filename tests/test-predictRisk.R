@@ -22,7 +22,7 @@ library(survival)
 context("Risk prediction")
 
 #### 1- Comparison between results from riskRegression and pec package ####
-cat("*")
+cat("riskRegression vs pec \n")
 
 #### CSC  model
 ## predictRisk (predict.CauseSpecificCox function) vs. predictEventProb
@@ -154,7 +154,8 @@ for(model in c("coxph","cph")){
 
 
 #### 2- [predictCox,CSC] Check prediction after and before the last event ####
-cat("*")
+cat("prediction before and after the last event \n")
+
 data(Melanoma)
 times1 <- unique(Melanoma$time)
 times2 <- c(0,0.9*min(times1),times1*1.1)
@@ -312,7 +313,7 @@ test_that("Prediction with CSC (strata)  - no event before prediction time",{
 })
 
 #### 3- [predictCSC] survtype = "survival" ####
-cat("*")
+cat("predictCSC, survtype = \"survival\" \n")
 set.seed(10)
 d <- sampleData(3e2, outcome = "competing.risks")
 d$time <- round(d$time,2)
@@ -341,7 +342,7 @@ test_that("Prediction with CSC (survtype = survival)  - strata",{
 
 
 #### 4- [predictCox] Dealing with weights ####
-cat("*")
+cat("weigthed Cox model \n")
 set.seed(10)
 data(Melanoma)
 wdata <- runif(nrow(Melanoma), 0, 1)
@@ -366,7 +367,7 @@ expect_error(resW <- predictCox(fitW.cph, times = Melanoma$time, newdata = Melan
 
 
 #### 5- [predictCox,CSC] Check influence of the order of the prediction times ####
-cat("*")
+cat("Order of the prediction times \n")
 data(Melanoma)
 times2 <- sort(c(0,0.9*min(Melanoma$time),Melanoma$time[5],max(Melanoma$time)*1.1))
 newOrder <- sample.int(length(times2),length(times2),replace = FALSE)
@@ -426,7 +427,7 @@ test_that("Deal with NA in times",{
 
 
 #### 6- [predictCox] Check baseline hazard ####
-cat("*")
+cat("Estimation of the baseline hazard \n")
 data(Melanoma)
 
 test_that("baseline hazard - match basehaz results",{
@@ -478,7 +479,7 @@ test_that("baseline hazard (strata) - match basehaz results",{
 })
 
 #### 7- [predictCox] Check format of the output ####
-cat("*")
+cat("Format of the output \n")
 data(Melanoma)
 times1 <- unique(Melanoma$time)
 times2 <- c(0,0.9*min(times1),times1*1.1)
@@ -552,10 +553,62 @@ test_that("Prediction with Cox model (strata) - incorrect strata",{
   expect_error(predictCox(fit.coxph, times = times1, newdata = dataset1))
 })
 
+#### 9- Conditional CIF ####
+cat("Conditional CIF \n")
+
+d <- SimCompRisk(1e2)
+d$time <- round(d$time,1)
+ttt <- sample(x = unique(sort(d$time)), size = 10)
+d2 <- SimCompRisk(1e2)
+
+#### coxph function
+CSC.fit <- CSC(Hist(time,event)~ X1+X2,data=d, method = "breslow" )
+
+test_that("Conditional CIF identical to CIF before first event", {
+  pred <- predict(CSC.fit, newdata = d, cause = 2, times = ttt)
+  predC <- predict(CSC.fit, newdata = d, cause = 2, times = ttt, t0 = min(d$time)-1e-1)
+  expect_equal(pred, predC)
+
+  pred <- predict(CSC.fit, newdata = d2, cause = 2, times = ttt)
+  predC <- predict(CSC.fit, newdata = d2, cause = 2, times = ttt, t0 = min(d$time)-1e-1)
+  expect_equal(pred, predC)
+})
+
+test_that("Conditional CIF is NA after the last event", {
+  predC <- predict(CSC.fit, newdata = d, cause = 2, times = ttt, t0 = max(d$time)+1)
+  expect_equal(all(is.na(predC)), TRUE)
+  
+  predC <- predict(CSC.fit, newdata = d2, cause = 2, times = ttt, t0 = max(d$time)+1)
+  expect_equal(all(is.na(predC)), TRUE)
+  
+  t0 <- mean(range(d$time))
+  ttt0 <- c(t0,ttt)
+  predC <- predict(CSC.fit, newdata = d, cause = 2, times = ttt0, t0 = t0)
+  expect_equal(all(is.na(predC[,ttt0<t0])), TRUE)
+  expect_equal(all(!is.na(predC[,ttt0>=t0])), TRUE)
+})
+
+test_that("Value of the conditional CIF", {
+  ttt <- sort(c(0,ttt))
+  indexT0 <- 5
+  
+  cumH1 <- predictCox(CSC.fit$models$`Cause 1`, newdata = d2, times = ttt[indexT0]-1e-6)[["cumHazard"]]
+  cumH2 <- predictCox(CSC.fit$models$`Cause 2`, newdata = d2, times = ttt[indexT0]-1e-6)[["cumHazard"]]
+  Sall <- exp(-cumH1-cumH2)
+  
+  predRef <- predict(CSC.fit, newdata = d2, cause = 2, times = ttt[indexT0]-1e-6)
+  
+  pred <- predict(CSC.fit, newdata = d2, cause = 2, times = ttt)
+  predC_manuel <- (pred-as.double(predRef))/as.double(Sall)
+  predC_manuel[,seq(1,indexT0-1)] <- NA
+  
+  predC_auto <- predict(CSC.fit, newdata = d2, cause = 2, times = ttt, t0 = ttt[indexT0])
+  expect_equal(predC_auto,predC_manuel)
+})
 
 
-#### 8- Others ####
-cat("*")
+#### 10- Others ####
+cat("Others \n")
 n <- 3
 set.seed(3)
 dn <- SimCompRisk(n)

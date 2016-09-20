@@ -7,7 +7,7 @@ using namespace std;
 
 // [[Rcpp::export]]
 arma::mat predictCIF_cpp(const std::vector<arma::mat>& hazard, const std::vector<arma::mat>& cumHazard, const arma::mat& eXb_h, const arma::mat& eXb_cumH, const arma::mat& strata, 
-                         const std::vector<double>& newtimes, const std::vector<double>& etimes, const std::vector<double>& etimeMax,
+                         const std::vector<double>& newtimes, const std::vector<double>& etimes, const std::vector<double>& etimeMax, double t0,
                          int nTimes, int nNewTimes, int nData, int cause, int nCause){
   
   arma::mat pred_CIF(nData, nNewTimes);
@@ -15,6 +15,7 @@ arma::mat predictCIF_cpp(const std::vector<arma::mat>& hazard, const std::vector
   
   double hazard_it;
   double AllcumHazard_it;
+  double survival_t0=1;
   int iterP; // index of the prediction time
   rowvec strataI(nCause);
   
@@ -39,10 +40,24 @@ arma::mat predictCIF_cpp(const std::vector<arma::mat>& hazard, const std::vector
       for(int iterC=0 ; iterC<nCause; iterC++){
         AllcumHazard_it += cumHazard[iterC](iterT,strataI[iterC])*eXb_cumH(iterI,iterC);
       }
+      
       // update the integral
-      pred_CIF(iterI,iterP) += exp(-AllcumHazard_it) * hazard_it;  
-      // Rcout << iterI << "*" << iterP << " | " << eXb(iterI,0) << " " << AllcumHazard_it << " " <<  exp(-AllcumHazard_it) << " " << hazard_it << endl;
+      if(R_IsNA(t0)){
+        pred_CIF(iterI,iterP) += exp(-AllcumHazard_it) * hazard_it;  
+      }else{// [only for conditional CIF]
+        
+        if(etimes[iterT]<t0 && iterT<(nTimes+1) && etimes[iterT+1]>=t0){
+          survival_t0 = exp(-AllcumHazard_it); // get the survival up to t0
+        }
+        
+        if(etimes[iterT] >= t0){ // not needed  newtimes[iterP]>=t0  because newtimes >= etimes see update position above 
+          // Rcout << hazard_it << " ("<< iterP << ","<< etimes[iterT] << ","<< newtimes[iterP] << ")";
+          pred_CIF(iterI,iterP) += exp(-AllcumHazard_it) * hazard_it / survival_t0;
+        }
+        
+      }
     }
+    // Rcout << endl;
     
     if(iterP < nNewTimes){ // deal with prediction times after the last event
       
@@ -61,6 +76,14 @@ arma::mat predictCIF_cpp(const std::vector<arma::mat>& hazard, const std::vector
       
     }
     
+    if(R_IsNA(t0) == false){ // before t0 fill with NA
+      iterP = 0;
+      while(iterP < nNewTimes && newtimes[iterP]<t0){
+        pred_CIF(iterI,iterP) = NA_REAL;
+        iterP++;
+      }
+     
+    }
     
   }
   
