@@ -88,7 +88,7 @@ predict.CauseSpecificCox <- function(object,newdata,times,cause, colnames = TRUE
                                   times = eventTimes, newdata = newdata,
                                   type = c("hazard","cumHazard","eXb", "newstrata"), 
                                   keep.strata = TRUE, keep.lastEventTime = TRUE, keep.times = TRUE,
-                                  se = FALSE)
+                                  se = FALSE, format = "list")
       
       # as.data.table(causeBaseline[1:4])
       
@@ -109,13 +109,13 @@ predict.CauseSpecificCox <- function(object,newdata,times,cause, colnames = TRUE
                                 times = eventTimes, newdata = newdata,
                                 type = c("hazard","cumHazard","eXb", "newstrata"), 
                                 keep.strata = TRUE, keep.lastEventTime = TRUE, keep.times = TRUE,
-                                se = FALSE)
+                                se = FALSE, format = "list")
     
     overallBaseline <- predictCox(object$models[["OverallSurvival"]],
                               times = eventTimes-tdiff, newdata = newdata,
                               type = c("cumHazard","eXb"), 
                               keep.strata = TRUE, keep.lastEventTime = TRUE, keep.times = TRUE,
-                              se = FALSE)
+                              se = FALSE, format = "list")
     
     ls.hazard <- list(matrix(causeBaseline$hazard, byrow = FALSE, nrow = nTimes))
     ls.cumHazard <- list(matrix(overallBaseline$cumHazard, byrow = FALSE, nrow = nTimes))

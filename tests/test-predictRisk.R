@@ -216,8 +216,8 @@ test_that("Prediction - last event censored",{
   fit.CSC <- CSC(Hist(time,status) ~ thick*age, data = Melanoma, fitter = "cph")
 
   vec.times <- sort(c(Melanoma$time, Melanoma$time+1/2)) 
-  p1 <- riskRegression:::predictCox(fit.coxph, times = vec.times, newdata = Melanoma)
-  p2 <- riskRegression:::predictCox(fit.cph, times = vec.times, newdata = Melanoma)
+  p1 <- predictCox(fit.coxph, times = vec.times, newdata = Melanoma)
+  p2 <- predictCox(fit.cph, times = vec.times, newdata = Melanoma)
   p3 <- pec::predictSurvProb(fit.coxph, times = vec.times, newdata = Melanoma) # predictSurvProb automatically sort the results
   
   expect_equal(p1,p2, tolerance = 1e-4)
@@ -237,8 +237,8 @@ test_that("Prediction - last event is a death",{
   fit.CSC <- CSC(Hist(time,status) ~ thick*age, data = Melanoma2, fitter = "cph")
   
   vec.times <-  sort(c(Melanoma$time, Melanoma$time+1/2)) 
-  p1 <- riskRegression:::predictCox(fit.coxph, times = vec.times, newdata = Melanoma)
-  p2 <- riskRegression:::predictCox(fit.cph, times = vec.times, newdata = Melanoma)
+  p1 <- predictCox(fit.coxph, times = vec.times, newdata = Melanoma)
+  p2 <- predictCox(fit.cph, times = vec.times, newdata = Melanoma)
   p3 <- pec::predictSurvProb(fit.coxph, times = vec.times, newdata = Melanoma) # predictSurvProb automatically sort the results
   
   expect_equal(p1,p2, tolerance = 1e-4)
@@ -321,7 +321,7 @@ d2 <- d
 times <- sort(c(0,d$time))
 
 test_that("Prediction with CSC (survtype = survival)  - no strata",{
-  CSC.fit <- riskRegression:::CSC(Hist(time,event)~ X1+X2+X6,data=d, method = "breslow", survtype = "survival")
+  CSC.fit <- CSC(Hist(time,event)~ X1+X2+X6,data=d, method = "breslow", survtype = "survival")
   
   p1 <- predict(CSC.fit, newdata = d2, times = times, cause = 1)
   pGS <- pec::predictEventProb(CSC.fit, newdata = d2, times = times, cause = 1)
@@ -330,7 +330,7 @@ test_that("Prediction with CSC (survtype = survival)  - no strata",{
 })
 
 test_that("Prediction with CSC (survtype = survival)  - strata",{
-  CSC.fitS <- riskRegression:::CSC(Hist(time,event)~ strata(X1) + X5 + strata(X3) + X7 +X2,data=d, method = "breslow", survtype = "survival")
+  CSC.fitS <- CSC(Hist(time,event)~ strata(X1) + X5 + strata(X3) + X7 +X2,data=d, method = "breslow", survtype = "survival")
   
   p1 <- predict(CSC.fitS, newdata = d2, times = times, cause = 1)
   pGS <- pec::predictEventProb(CSC.fitS, newdata = d2, times = times, cause = 1)
@@ -373,34 +373,34 @@ newOrder <- sample.int(length(times2),length(times2),replace = FALSE)
 
 test_that("Prediction with Cox model - sorted vs. unsorted times",{
   fit.coxph <- coxph(Surv(time,status == 1) ~ thick, data = Melanoma)
-  predictionUNS <- predictCox(fit.coxph, times = times2[newOrder], newdata = Melanoma[1:5,])
-  predictionS <- predictCox(fit.coxph, times = times2, newdata = Melanoma[1:5,])
+  predictionUNS <- predictCox(fit.coxph, times = times2[newOrder], newdata = Melanoma[1:5,], keep.times = FALSE)
+  predictionS <- predictCox(fit.coxph, times = times2, newdata = Melanoma[1:5,], keep.times = FALSE)
   # predictSurvProb(fit.coxph, times = times2[newOrder], newdata = Melanoma)
   # predictSurvProb(fit.coxph, times = times2, newdata = Melanoma)
   expect_equal(predictionS, lapply(predictionUNS, function(x){x[,order(newOrder)]}))
 
   fit.cph <- cph(Surv(time,status == 1) ~ thick, data = Melanoma, y = TRUE, x = TRUE)
-  predictionUNS <- predictCox(fit.cph, times = times2[newOrder], newdata = Melanoma[1:5,])
-  predictionS <- predictCox(fit.cph, times = times2, newdata = Melanoma[1:5,])
+  predictionUNS <- predictCox(fit.cph, times = times2[newOrder], newdata = Melanoma[1:5,], keep.times = FALSE)
+  predictionS <- predictCox(fit.cph, times = times2, newdata = Melanoma[1:5,], keep.times = FALSE)
   expect_equal(predictionS, lapply(predictionUNS, function(x){x[,order(newOrder)]}))
 })
 
 test_that("Prediction with CSC - sorted vs. unsorted times",{
   fit.CSC <- CSC(Hist(time,status) ~ thick, data = Melanoma)
-  predictionUNS <- predict(fit.CSC, times = times2[newOrder], newdata = Melanoma, cause = 1)
-  predictionS <- predict(fit.CSC, times = times2, newdata = Melanoma, cause = 1)
+  predictionUNS <- predict(fit.CSC, times = times2[newOrder], newdata = Melanoma, cause = 1, keep.times = FALSE)
+  predictionS <- predict(fit.CSC, times = times2, newdata = Melanoma, cause = 1, keep.times = FALSE)
   expect_equal(predictionS, predictionUNS[,order(newOrder)])
 })
 
 test_that("Prediction with Cox model (strata) - sorted vs. unsorted times",{
   fit.coxph <- coxph(Surv(time,status == 1) ~ thick + strata(invasion), data = Melanoma)
-  predictionUNS <- predictCox(fit.coxph, times = times2[newOrder], newdata = Melanoma)
-  predictionS <- predictCox(fit.coxph, times = times2, newdata = Melanoma)
+  predictionUNS <- predictCox(fit.coxph, times = times2[newOrder], newdata = Melanoma, keep.times = FALSE, keep.strata = FALSE)
+  predictionS <- predictCox(fit.coxph, times = times2, newdata = Melanoma, keep.times = FALSE, keep.strata = FALSE)
   expect_equal(predictionS, lapply(predictionUNS, function(x){x[,order(newOrder)]}))
   
   fit.cph <- cph(Surv(time,status == 1) ~ thick + strat(invasion), data = Melanoma, y = TRUE, x = TRUE)
-  predictionUNS <- predictCox(fit.cph, times = times2[newOrder], newdata = Melanoma)
-  predictionS <- predictCox(fit.cph, times = times2, newdata = Melanoma)
+  predictionUNS <- predictCox(fit.cph, times = times2[newOrder], newdata = Melanoma, keep.times = FALSE, keep.strata = FALSE)
+  predictionS <- predictCox(fit.cph, times = times2, newdata = Melanoma, keep.times = FALSE, keep.strata = FALSE)
   expect_equal(predictionS$hazard, predictionUNS$hazard[,order(newOrder)])
   expect_equal(predictionS$cumHazard, predictionUNS$cumHazard[,order(newOrder)])
   expect_equal(predictionS$survival, predictionUNS$survival[,order(newOrder)])
@@ -516,24 +516,24 @@ test_that("baseline hazard (strata) - correct number of events",{
 
 test_that("Prediction with Cox model (strata) - export of strata and times",{
   predictTempo <- predictCox(fit.coxph)
-  expect_equal(length(predictTempo$strata)>0, FALSE) 
-  expect_equal(length(predictTempo$time)>0, FALSE)
-  predictTempo <- predictCox(fit.coxph, keep.strata = TRUE) # as.data.table(predictCox(fit.coxph, keep.strata = TRUE))
   expect_equal(length(predictTempo$strata)>0, TRUE) 
-  expect_equal(length(predictTempo$time)>0, FALSE)
-  predictTempo <- predictCox(fit.coxph, keep.strata = TRUE, keep.times = TRUE)
-  expect_equal(length(predictTempo$strata)>0, TRUE)
   expect_equal(length(predictTempo$time)>0, TRUE)
+  predictTempo <- predictCox(fit.coxph, keep.strata = FALSE) # as.data.table(predictCox(fit.coxph, keep.strata = TRUE))
+  expect_equal(length(predictTempo$strata)>0, FALSE) 
+  expect_equal(length(predictTempo$time)>0, TRUE)
+  predictTempo <- predictCox(fit.coxph, keep.strata = FALSE, keep.times = FALSE)
+  expect_equal(length(predictTempo$strata)>0, FALSE)
+  expect_equal(length(predictTempo$time)>0, FALSE)
   
   predictTempo <- predictCox(fit.coxph, times = sort(times2), newdata = dataset1)
-  expect_equal(length(predictTempo$strata)>0, FALSE) 
-  expect_equal(length(predictTempo$time)>0, FALSE)
-  predictTempo <- predictCox(fit.coxph, times = sort(times2), newdata = dataset1, keep.strata = TRUE)
-  expect_equal(length(predictTempo$strata)>0, TRUE)
-  expect_equal(length(predictTempo$time)>0, FALSE)
-  predictTempo <- predictCox(fit.coxph, times = sort(times2), newdata = dataset1, keep.strata = TRUE, keep.times = TRUE)
-  expect_equal(length(predictTempo$strata)>0, TRUE)
+  expect_equal(length(predictTempo$strata)>0, TRUE) 
   expect_equal(length(predictTempo$time)>0, TRUE)
+  predictTempo <- predictCox(fit.coxph, times = sort(times2), newdata = dataset1, keep.strata = FALSE)
+  expect_equal(length(predictTempo$strata)>0, FALSE)
+  expect_equal(length(predictTempo$time)>0, TRUE)
+  predictTempo <- predictCox(fit.coxph, times = sort(times2), newdata = dataset1, keep.strata = FALSE, keep.times = FALSE)
+  expect_equal(length(predictTempo$strata)>0, FALSE)
+  expect_equal(length(predictTempo$time)>0, FALSE)
 })
 
 test_that("Prediction with Cox model (strata) - consistency of hazard/cumHazard/survival",{
