@@ -134,9 +134,20 @@ predict.CauseSpecificCox <- function(object,newdata, times, cause, t0 = NA, coln
     
   }
   
-  CIF <- predictCIF_cpp(hazard = ls.hazard, cumHazard = ls.cumHazard, eXb_h = M.eXb_h, eXb_cumH = M.eXb_cumH, strata = M.strata,
-                        newtimes = sort(times), etimes = eventTimes, etimeMax = apply(M.etimes.max,1,min), t0 = t0,
-                        nTimes = nTimes, nNewTimes = length(times), nData = nData, cause = which(causes == cause) - 1, nCause = nCause)
+  CIF <- predictCIF_cpp(hazard = ls.hazard, 
+                        cumHazard = ls.cumHazard, 
+                        eXb_h = M.eXb_h, 
+                        eXb_cumH = M.eXb_cumH, 
+                        strata = M.strata,
+                        newtimes = sort(times), 
+                        etimes = eventTimes, 
+                        etimeMax = apply(M.etimes.max,1,min), 
+                        t0 = t0,
+                        nTimes = nTimes,
+                        nNewTimes = length(times), 
+                        nData = nData,
+                        cause = which(causes == cause) - 1, 
+                        nCause = nCause)
  
   #### export ###
   if(any(order(times) != 1:length(times))){# reorder times

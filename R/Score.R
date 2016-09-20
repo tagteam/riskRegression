@@ -12,8 +12,9 @@
 ##'     interpreted.
 ##' @param metrics Character vector specifying which metrics to
 ##'     apply. Implemented are \code{"auc"} and \code{"Brier"}.
-##' @param summary  Character vector specifying which summary statistics to
-##'     apply to the predicted risks. Implemented is \code{"riskQuantile"}.
+##' @param summary Character vector specifying which summary
+##'     statistics to apply to the predicted risks. Implemented is
+##'     \code{"riskQuantile"}.
 ##' @param plots Character vector specifying which plots to prepare.
 ##' @param cause Event of interest. Used for binary outcome \code{Y}
 ##'     to specify that risks are risks of the event \code{Y=event}
@@ -27,12 +28,25 @@
 ##'     argument \code{times}.
 ##' @param nullModel If \code{TRUE} add the null model which ignores
 ##'     the covariates and predicts the prevalence for all subjects.
-##' @param test If \code{TRUE} compute confidence intervals. Also do
-##'     model comparisons specified in \code{dolist}.
+##' @param test Logical. If \code{TRUE} compute confidence intervals
+##'     for model performance and confidence intervals and p-values
+##'     for contrasts of model performance (see argument
+##'     \code{compare}.
+##' @param compare Either logical or list of positive integers mixed
+##'     with \code{0}.  If \code{TRUE} do all possible contrasts. For
+##'     example, when \code{object} has two elements and
+##'     \code{nullModel=TRUE} this is equivalent to
+##'     \code{list(c(0,1,2),c(1,2))} where \code{c(0,1,2)} codes for
+##'     two comparisons: 1 vs 0 and 2 vs 0 (positive integers refer to
+##'     elements of \code{object}, 0 refers to the benchmark null
+##'     model which ignores the covariates).  This again is equivalent
+##'     to explicitly setting \code{list(c(0,1),c(0,2),c(1,2))}. A
+##'     more complex example: Suppose object has 7 elements and you
+##'     want to do the following 3 comparisons: 6 vs 3, 2 vs 5 and 2
+##'     vs 3, you should set \code{compare=c(6,3),c(2,5,3)}.
 ##' @param alpha Level of significance.
-##' @param dolist Vector of integers specifying which risks to compare
-##'     to all other risks in \code{object}.
-##' @param probs Quantiles for retrospective summary statistics of the predicted risks 
+##' @param probs Quantiles for retrospective summary statistics of the
+##'     predicted risks
 ##' @param censMethod Method for dealing with right censored
 ##'     data. Either \code{"ipcw"} or \code{"pseudo"}.
 ##' @param censModel Model for estimating inverse probability of
@@ -41,10 +55,13 @@
 ##' @param B Number of cross-validation steps.
 ##' @param M Size of subsamples for cross-validation. If specified it
 ##'     has to be an integer smaller than the size of \code{data}.
-##' @param seed Super seed for setting training data seeds when randomly splitting the data for cross-validation.
-##' @param trainseeds Seeds for training models during cross-validation.
+##' @param seed Super seed for setting training data seeds when
+##'     randomly splitting the data for cross-validation.
+##' @param
+##'     trainseeds Seeds for training models during cross-validation.
 ##' @param ... Not used
-##' @return Data table with scores and tests.
+##' @return Result list with scores and assessments of contrasts
+##'     (tests) for the assessment metrics, summaries and plots.
 ##' @examples
 ##' # binary outcome
 ##' library(lava)
@@ -97,7 +114,7 @@
 ##'
 ##' # restrict number of comparisons
 ##' Score(list("Cox(X1+X2+X7+X9)"=cox1,"Cox(X3+X5+X6)"=cox2),
-##'       formula=Surv(time,event)~1,data=trainSurv,dolist=1,
+##'       formula=Surv(time,event)~1,data=trainSurv,compare=TRUE,
 ##' nullModel=FALSE,test=TRUE,times=c(5,8),splitMethod="bootcv",B=3)
 ##'
 ##' # competing risks outcome
@@ -131,9 +148,9 @@ Score.list <- function(object,
                        useEventTimes=FALSE,
                        nullModel=TRUE,
                        test=TRUE,
+                       compare=TRUE,
                        alpha=0.05,
-                       dolist,
-                       probs=c(0.05,0.25,0.5,0.75,0.95),
+                       probs=c(0,0.25,0.5,0.75,1),
                        censMethod="ipcw",
                        censModel="cox",
                        splitMethod,
@@ -180,14 +197,15 @@ Score.list <- function(object,
         formula <- stats::update(formula,"Hist(time,event)~.")
     N <- NROW(response)
     ## predictHandlerFun <- switch(responseType,
-                                ## "survival"="predictRisk",
-                                ## "competing.risks"="predictRisk",
-                                ## "binary"="predictRisk",
-                                ## stop("Dont know how to predict response of type ",responseType))
+    ## "survival"="predictRisk",
+    ## "competing.risks"="predictRisk",
+    ## "binary"="predictRisk",
+    ## stop("Dont know how to predict response of type ",responseType))
     censType <- attr(response,"cens.type")
     if (is.null(censType)) censType <- "uncensoredData"
     # }}}
     # {{{ SplitMethod
+    if (!missing(seed)) set.seed(seed)
     splitMethod <- getSplitMethod(splitMethod=splitMethod,B=B,N=N,M=M)
     B <- splitMethod$B
     splitIndex <- splitMethod$index
@@ -227,13 +245,20 @@ Score.list <- function(object,
         ## names(object) <- names.object
     }
     if ((NF+length(nullobject))<=1) dolist <- NULL 
-    if (test==FALSE) dolist <- NULL
-    ## test <- FALSE
-    if (test==TRUE && missing(dolist)){
-        if (is.null(nullobject)) {
-            dolist <- 1:(NF-1)
-        } else{
-            dolist <- 0:(NF-1)
+    if (is.null(test) || (is.logical(test) && test==FALSE)|| (is.logical(compare) && compare==FALSE)){
+        dolist <- NULL
+    } else{
+        if (is.logical(compare) && compare==TRUE){
+            if (is.null(nullobject)){
+                dolist <- lapply(1:(NF-1),function(i){c(i,(i+1):NF)})
+            } else{
+                dolist <- lapply(0:(NF-1),function(i){c(i,(i+1):NF)})
+            }
+        }else{
+            dolist <- compare
+            if (!is.list(compare)) compare <- list(compare)
+            if (!(all(sapply(dolist,function(x){x<=NF && x>=0}))))
+                stop(paste("Argument compare should be a list of positive integers possibly mixed with 0 that refer to elements of object.\nThe object has ",NF,"elements but "))
         }
     }
     # }}}
@@ -264,15 +289,18 @@ Score.list <- function(object,
                     ## times <- sort(unique(c(start,times)))
                     times <- sort(unique(times))
             }
-            stopifnot(sum(times<=maxtime)>0)
+            (if (any(times>maxtime))
+                 message(paste0("Upper limit of followup is ",
+                                maxtime,"\nThe evaluation time(s) beyond this time point are ignored")))
             times <- times[times<=maxtime]
             NT <-  length(times)
+            if (NT==0)
+                stop("No evaluation time before end of followup.")
         }
         else{
             stop("Landmark updating not yet implemented.")
         }
-    }
-    else{
+    } else{
         if (!missing(times)) warning("Function 'Score': Response type is not time-to-event: argument 'times' will be ignored.",call.=FALSE)
         times <- NULL
         NT <- 1
@@ -341,6 +369,7 @@ Score.list <- function(object,
                                    cause,
                                    test,
                                    alpha,
+                                   probs,
                                    dolist,
                                    NF,
                                    NT){
@@ -446,7 +475,7 @@ Score.list <- function(object,
                       NF=NF,
                       alpha=alpha,
                       test=test,
-                      dolist=dolist,probs=probs,ROC=FALSE)
+                      dolist=dolist,Q=probs,ROC=FALSE)
         if (responseType=="competing.risks")
             input <- c(input,list(cause=cause))
         if (responseType %in% c("survival","competing.risks") &&test==TRUE){
@@ -498,6 +527,7 @@ Score.list <- function(object,
                                   cause=cause,
                                   test=test,
                                   alpha=alpha,
+                                  probs=probs,
                                   dolist=dolist,
                                   NF=NF,
                                   NT=NT)
@@ -525,6 +555,7 @@ Score.list <- function(object,
                                      cause=cause,
                                      test=test,
                                      alpha=alpha,
+                                     probs=probs,
                                      dolist=dolist,
                                      NF=NF,
                                      NT=NT)
@@ -588,6 +619,7 @@ Score.list <- function(object,
     names(models) <- mlabels
     output <- c(output,list(responseType=responseType,
                             dolist=dolist,
+                            cause=cause,
                             models=models,
                             censType=censType,
                             censoringHandling=censMethod,
@@ -610,141 +642,6 @@ Score.list <- function(object,
 Score <- function(object,...){
   UseMethod("Score",object=object)
 }
-
-
-#' Boxplot risk quantiles
-#' 
-#' Retrospective boxplots of risk quantiles conditional on outcome
-#' @param x Score object obtained by calling function \code{Score}.
-#' @param model Choice of risk prediction model
-#' @param reference Choice of reference risk prediction model for
-#'     calculation of risk differences.
-#' @param type Either \code{"risk"} for predicted risks or
-#'     \code{"diff"} for differences between predicted risks.
-#' @param timepoint time point specifying the prediction horizon
-#' @param lwd line width
-#' @param xlim x-axis limits
-#' @param xlab x-axis label
-#' @param main title of plot
-#' @param ... not used
-##' @examples
-##' db=sampleData(100,outcome="binary")
-##' fitconv=glm(Y~X3+X5,data=db,family=binomial)
-##' fitnew=glm(Y~X1+X3+X5+X6+X7,data=db,family=binomial)
-##' scoreobj=Score(list(new=fitnew,conv=fitconv),formula=Y~1,
-##'                data=db,summary="riskQuantile",nullModel=FALSE)
-##' boxplot(scoreobj)
-##' 
-##' library(survival)
-##' ds=sampleData(100,outcome="survival")
-##' fitconv=coxph(Surv(time,event)~X3+X5,data=ds)
-##' fitnew=coxph(Surv(time,event)~X1+X3+X5+X6+X7,data=ds)
-##' scoreobj=Score(list(conv=fitconv,new=fitnew),formula=Hist(time,event)~1,
-##'                data=ds,summary="riskQuantile",times=5,nullModel=FALSE)
-##' boxplot(scoreobj)
-##'
-##' library(riskRegression)
-##' data(Melanoma)
-##' fitconv = CSC(Hist(time,status)~invasion+age+sex+logthick,data=Melanoma)
-##' fitnew = CSC(Hist(time,status)~invasion+age+sex,data=Melanoma)
-##' scoreobj=Score(list(conv=fitconv,new=fitnew),formula=Hist(time,status)~1,
-##'                data=Melanoma,summary="riskQuantile",times=5*365.25,nullModel=FALSE)
-##' boxplot(scoreobj)
-#' @export
-boxplot.Score <- function(x,model,reference,type,timepoint,lwd=3,xlim,xlab,main,...){
-    times=cause=models=NULL
-    fitted <- x$models
-    models <- names(x$models)
-    if (missing(type)) {
-        if (length(models)==1) 
-            type="risk"
-        else
-            type=ifelse(NROW(x$riskQuantile$test)>0,"diff","risk")
-    }
-    if (type=="diff"){
-        pframe <- x$riskQuantile$test
-    } else{
-        pframe <- x$riskQuantile$score
-    }
-    if (x$responseType!='binary'){
-        if (missing(timepoint))
-            timepoint <- max(pframe[["times"]])
-        else ## can only do one timepoint
-            timepoint <- timepoint[[1]]
-        pframe <- pframe[times==timepoint]
-    }
-    if(missing(model)) mod <- pframe[,model[1]] else mod <- model
-    if (type=="diff"){
-        if(missing(reference)) ref <- pframe[,reference[1]] else ref <- reference
-        pframe <- pframe[model==model & reference==reference]
-    }else{
-        pframe <- pframe[model==model ]
-    }
-    qq.pos <- grep("^Q",colnames(pframe))
-    if (missing(xlim))
-        if (type=="risk"){xlim=c(0,100) 
-        } else {
-            max <- ceiling(max(abs(100*(pframe[,qq.pos,with=FALSE]))))
-            xlim=c(-max,max)
-        }
-    if (missing(main))
-        if (type=="risk") main=mod else main="Difference in predicted risks"
-    if (missing(xlab))
-        if (type=="risk") xlab="Predicted risk" else xlab=""
-    if (x$responseType!="competing.risks"){
-        plot(0,0,type="n",
-             main=main,
-             xlim = xlim,
-             ylim = c(0,NROW(pframe)),
-             axes=FALSE,
-             xlab = xlab,
-             ylab = "")
-        axis(1,at=seq(xlim[1],xlim[2],(xlim[2]-xlim[1])/4),labels=paste(seq(xlim[1],xlim[2],(xlim[2]-xlim[1])/4),"%"))
-        text(x=xlim[1],y=c(0.5,1.5,2.5,3),labels=c("Overall","Event","Event-free",expression(bold(Outcome))),pos=2,xpd=NA)
-        if (type=="diff"){
-            mtext(paste(ref,"higher risk"),side=1,adj=0,line=par()$mgp[1])
-            mtext(paste(mod,"higher risk"),side=1,adj=1,line=par()$mgp[1])
-        }
-        bxp(list(stats=t(100*pframe[cause=="overall",qq.pos,with=FALSE,drop=FALSE]),n=10),add=TRUE,horizontal=TRUE,at=0.5,axes=FALSE)
-        bxp(list(stats=t(100*pframe[cause=="event",qq.pos,with=FALSE,drop=FALSE]),n=10),add=TRUE,horizontal=TRUE,at=1.5,axes=FALSE)
-        bxp(list(stats=t(100*pframe[cause=="event-free",qq.pos,with=FALSE,drop=FALSE]),n=10),add=TRUE,horizontal=TRUE,at=2.5,axes=FALSE)
-    }else{
-        plot(0,0,type="n",
-             main=main,
-             xlim = xlim,
-             ylim = c(0,NROW(pframe)),
-             axes=FALSE,
-             xlab = xlab,
-             ylab = "")
-        ## axis(1,at=seq(0,100,25),labels=paste(seq(0,100,25),"%"))
-        axis(1,at=seq(xlim[1],xlim[2],(xlim[2]-xlim[1])/4),labels=paste(seq(xlim[1],xlim[2],(xlim[2]-xlim[1])/4),"%"))
-        causes <- pframe[,cause]
-        ypos <- c((1:(length(causes)))-0.5,length(causes))
-        text(x=xlim[1],y=ypos,labels=c(causes,expression(bold(Outcome))),pos=2,xpd=NA)
-        if (type=="diff"){
-            mtext(paste(ref,"higher risk"),side=1,adj=0,line=par()$mgp[1])
-            mtext(paste(mod,"higher risk"),side=1,adj=1,line=par()$mgp[1])
-        }
-        for (i in 1:length(causes)){
-            cc <- causes[[i]]
-            bxp(list(stats=t(100*pframe[cause==cc,qq.pos,with=FALSE,drop=FALSE]),n=10),add=TRUE,horizontal=TRUE,at=ypos[i],axes=FALSE)
-        }
-    }
-    invisible(x)
-}
-
-plot.riskQuantile <- function(x,text.title="Outcome after 10 years",xlab="",text=rownames(x),...){
-    plot(0,0,type="n",axes=FALSE,xlim=c(-10,10),ylim=c(1,5),xlab=xlab,ylab="")
-    axis(1,at=c(-10,-5,-2.5,0,2.5,5,10))
-    bxp(list(stats=t(100*x[4,,drop=FALSE]),n=10),add=TRUE,horizontal=TRUE,at=1.5,axes=FALSE)
-    bxp(list(stats=t(100*x[3,,drop=FALSE]),n=10),add=TRUE,horizontal=TRUE,at=2.5,axes=FALSE)
-    bxp(list(stats=t(100*x[2,,drop=FALSE]),n=10),add=TRUE,horizontal=TRUE,at=3.5,axes=FALSE)
-    bxp(list(stats=t(100*x[1,,drop=FALSE]),n=10),add=TRUE,horizontal=TRUE,at=4.5,axes=FALSE)
-    text(x=-10,y=c(1.5,2.5,3.5,4.5),labels=rev(text),xpd=NA)
-    text(x=-10,y=5,labels=text.title,xpd=NA)
-}
-
-
 
 
 ##' Plot Brier curve
