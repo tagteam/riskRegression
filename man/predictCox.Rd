@@ -5,8 +5,9 @@
 \title{Fast prediction of survival, hazard and cumulative hazard from Cox regression model}
 \usage{
 predictCox(object, newdata = NULL, times, centered = TRUE,
-  type = c("hazard", "cumHazard", "survival"), keep.strata = FALSE,
-  keep.times = FALSE, keep.lastEventTime = FALSE, se = FALSE)
+  type = c("hazard", "cumHazard", "survival"), keep.strata = TRUE,
+  keep.times = TRUE, keep.lastEventTime = FALSE, se = FALSE,
+  format = "data.frame")
 }
 \arguments{
 \item{object}{The fitted Cox regression model object either
@@ -32,6 +33,8 @@ or several of the strings \code{"hazard"},\code{"cumhazard"}, \code{"survival"}}
 \item{keep.lastEventTime}{Logical. If \code{TRUE} add the time at which the last event occured for each strata to the output.}
 
 \item{se}{Logical. If \code{TRUE} add the standard errors corresponding to the output. Experimental !!}
+
+\item{format}{how to export the baseline hazard. Can be \code{"data.frame"}, \code{"data.table"} or \code{"list"}.}
 }
 \value{
 A list optionally containing the time, the strata (if any), the hazard, the

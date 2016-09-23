@@ -16,6 +16,7 @@
 #' @param keep.strata Logical. If \code{TRUE} add the (newdata) strata to the output. Only if there any. 
 #' @param keep.times Logical. If \code{TRUE} add the evaluation times to the output. 
 #' @param keep.lastEventTime Logical. If \code{TRUE} add the time at which the last event occured for each strata to the output. 
+#' @param format how to export the baseline hazard. Can be \code{"data.frame"}, \code{"data.table"} or \code{"list"}.
 #' @param se Logical. If \code{TRUE} add the standard errors corresponding to the output. Experimental !!
 #' @details Not working with time varying predictor variables or
 #'     delayed entry.
@@ -61,10 +62,11 @@ predictCox <- function(object,
                        times,
                        centered = TRUE,
                        type=c("hazard","cumHazard","survival"),
-                       keep.strata = FALSE,
-                       keep.times = FALSE,
+                       keep.strata = TRUE,
+                       keep.times = TRUE,
                        keep.lastEventTime = FALSE,
-                       se = FALSE){ 
+                       se = FALSE,
+                       format = "data.frame"){ 
   
   if(!is.null(newdata)){n.newdata <- NROW(newdata)}
   
@@ -139,9 +141,14 @@ predictCox <- function(object,
   if(!missing(times) && any(is.na(times))){
     stop("NA values in argument \'times\' \n")
   }
-  #   if(se && object$method != "efron"){
-  #     stop("standard errors only implemented for object$method = efron \n")
-  #   }
+  if(!is.null(newdata) || "eXb" %in% type || "newstrata" %in% type){ # if the baseline hazard is exported
+    if(format %in% c("data.frame","data.table","list") == FALSE){
+      stop("format can only be \'data.frame\', \'data.table\' , or \'list\' \n")
+    }
+    if(format %in% c("data.frame","data.table") && keep.lastEventTime){
+      stop("format must be \'list\' when \'keep.lastEventTime\' equals TRUE \n")
+    }
+  }
   if(!is.null(object$weights)){
     stop("predictCox does not know how to handle Cox models fitted with weights \n")
   }
@@ -174,7 +181,6 @@ predictCox <- function(object,
   if (is.strata == TRUE){ ## rename the strata value with the correct levels
     Lambda0$strata <- factor(Lambda0$strata, levels = 0:(nStrata-1), labels = levelsStrata)
   }
-  
   #### linear predictor and strata for the new data ####
   if(!is.null(newdata)){ 
     if ("cph" %in% class(object)){
@@ -248,7 +254,7 @@ predictCox <- function(object,
       Lambda0$lastEventTime <- etimes.max
     } 
     
-    return(Lambda0)
+    return(do.call(paste0("as.",format), list(Lambda0)))
     
   } else { ## on a new dataset
     out <- list()
@@ -338,6 +344,7 @@ predictCox <- function(object,
     if (keep.times==TRUE) out <- c(out,list(times=times))
     if (is.strata && keep.strata==TRUE) out <- c(out,list(strata=newstrata))
     if( keep.lastEventTime==TRUE) out <- c(out,list(lastEventTime=etimes.max))
+    
     return(out)
   }
   

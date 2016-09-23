@@ -4,7 +4,7 @@
 \alias{predict.CauseSpecificCox}
 \title{Predicting hazard or cumulative hazard}
 \usage{
-\method{predict}{CauseSpecificCox}(object, newdata, times, cause,
+\method{predict}{CauseSpecificCox}(object, newdata, times, cause, t0 = NA,
   colnames = TRUE, se = FALSE, ...)
 }
 \arguments{
@@ -17,6 +17,8 @@ in the right hand side of 'coxph' for each patient.}
 hazards/survival}
 
 \item{cause}{Identifies the cause of interest among the competing events.}
+
+\item{t0}{the starting time for the conditional survival.}
 
 \item{colnames}{Logical. If \code{TRUE} name the columns of the matrix containing the absolute risk with times}
 
@@ -52,6 +54,9 @@ CSC.cph <- CSC(Hist(time,event)~ X1+X2,data=d, method = "breslow", fitter = "cph
 
 predcph <- predict(CSC.cph, newdata = d, cause = 2, times = ttt)
 
+#### conditional survival
+T0 <- 1
+predCSC_afterT0 <- predict(CSC.fit, newdata = d, cause = 2, times = ttt, t0 = T0)
 }
 \author{
 Brice Ozenne broz@sund.ku.dk, Thomas A. Gerds
