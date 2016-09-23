@@ -10,19 +10,24 @@ getInfluenceCurve.AUC.survival <- function(t,n,time,risk,Cases,Controls,ipcwCont
     wcase <- matrix(ipcwCases[Cases],nrow=nbCases,ncol=nbControls)
     wcontrol <- matrix(ipcwControls[Controls],nrow=nbCases,ncol=nbControls,byrow=TRUE)
     htij1 <- (1*(mcase>mcontrol)+.5*(mcase==mcontrol))*wcase*wcontrol*n*n
-    ht <- (sum(htij1))/(n*n) 
+    ht <- (sum(htij1))/(n*n)
     fi1t <- Cases*ipcwCases*n
     colSumshtij1 <- rep(0,n) # initialise at 0
     colSumshtij1[Cases] <- rowSums(htij1) 
     rowSumshtij1 <- rep(0,n) # initialize at 0
     rowSumshtij1[Controls] <- colSums(htij1)
-    hathtstar <- (sum(htij1))/(n*n)  
+    hathtstar <- (sum(htij1))/(n*n)
     vectTisupt <- n*Controls/sum(Controls)
     # Integral_0^T_i dMC_k/S for i %in% Cases
     MC.Ti.cases <- MC[sindex(eval.times=time[Cases],jump.times=unique(time)),,drop=FALSE]
     T1 <- rowSumsCrossprod(htij1,1+MC.Ti.cases,0)/n
     ## print(system.time(T1 <- colSums(crossprod(htij1,1+MC.Ti.cases))/n))
-    T3 <- colSums(hathtstar*(vectTisupt + (fi1t*(1+MC)-F01t)/F01t))
+    ## the matrix MC has as many rows as there are unique time points
+    ## and as many colums as there are subjects
+    ## in case of ties need to expand MC to match the dimension of fi1t
+    MC.all <- MC[match(time,unique(time)),]
+    ## T3 <- colSums(hathtstar*(vectTisupt + (fi1t*(1+MC)-F01t)/F01t))
+    T3 <- colSums(hathtstar*(vectTisupt + (fi1t*(1+MC.all)-F01t)/F01t))
     Term.ijak <- (T1-T3)/(F01t*St)
     Term.ikaj <- (rowSumshtij1 - n*hathtstar)/(F01t*St)
     Term.jkai <-  (colSumshtij1 - n*hathtstar*(vectTisupt+(1/F01t)*(fi1t-F01t)))/(F01t*St)
@@ -90,7 +95,10 @@ getInfluenceCurve.AUC.competing.risks <- function(t,n,time,risk,Cases,Controls1,
     ## T1 <- colSums(crossprod(htij1,1+MC.Ti.cases))
     T2 <- rowSumsCrossprod(htij2,1+MC.Ti.cases,0)
     ## T2 <- colSums(crossprod(htij2,1+MC.Ti.cases))
-    T3 <- colSums((ht*(1-2*F01t)/(F01t*(1-F01t)))*(fi1t*(1+MC)-F01t))
+    ## in case of ties need to expand MC to match the dimension of fi1t
+    MC.all <- MC[match(time,unique(time)),]
+    ## T3 <- colSums((ht*(1-2*F01t)/(F01t*(1-F01t)))*(fi1t*(1+MC)-F01t))
+    T3 <- colSums((ht*(1-2*F01t)/(F01t*(1-F01t)))*(fi1t*(1+MC.all)-F01t))
     Term.ijlk <- ((T1 + T2) - n^2*ht - n*T3)/(F01t*(1-F01t))
     # we compute \frac{1}{n}\sum_{i=1}^n \sum_{j=1}^n \sum_{k=1}^n \Psi_{ijkl}(t)
     Q1 <- sapply(1:n,function(i)sum(htij1*(1+MC.t[i])))

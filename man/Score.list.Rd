@@ -82,10 +82,12 @@ censored weights.}
 \item{B}{Number of cross-validation steps.}
 
 \item{M}{Size of subsamples for cross-validation. If specified it
-has to be an integer smaller than the size of \code{data}.
-@param seed Super seed for setting training data seeds when
-randomly splitting the data for cross-validation.  @param
-trainseeds Seeds for training models during cross-validation.}
+has to be an integer smaller than the size of \code{data}.}
+
+\item{seed}{Super seed for setting training data seeds when
+randomly splitting the data for cross-validation.}
+
+\item{trainseeds}{Seeds for training models during cross-validation.}
 
 \item{...}{Not used}
 }
