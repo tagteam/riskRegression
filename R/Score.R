@@ -334,7 +334,7 @@ Score.list <- function(object,
                                                    responseType=responseType)
                 }
                 else{
-                    censMethod <- "jackknife.pseudo.values"
+                    censMethod <- "pseudo"
                     pseudoResponse <- getPseudoValues(formula=formula,data=testdata,responseType=responseType,times=times,cause=cause)
                 }
             }else{
