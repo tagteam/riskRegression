@@ -21,7 +21,7 @@
 #' @param digits Number of digits
 #' @param ... passed to print
 #' @export
-print.ateCSC <- function(x,digits=3,...){
+print.ateCox <- function(x,digits=3,...){
     cat("The treatment variable ",x$treatment," has the following options:",sep="")
     cat(paste(x$contrats,collapse=", "),"\n\n")
     cat("\nMean risks on probability scale [0,1] in hypothetical worlds\nin which all subjects are treated with one of the treatment options:\n\n")
