@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jan  9 2016 (19:31) 
 ## Version: 
-## last-updated: Aug 30 2016 (13:21) 
+## last-updated: Oct  2 2016 (09:10) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 250
+##     Update #: 251
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -24,7 +24,7 @@ getQuantile <- function(x,Fx,Q){
     quant
 }
 
-riskQuantile.binary <- function(DT,test,alpha,N,NT,NF,dolist,Q,...){
+riskQuantile.binary <- function(DT,N,NT,NF,dolist,Q,...){
     reference=model=ReSpOnSe=risk=cause=X=NULL
     models <- unique(DT[,model])
     if (missing(Q)) Q <- c(0.05,0.25,0.5,0.75,0.95)
@@ -40,7 +40,7 @@ riskQuantile.binary <- function(DT,test,alpha,N,NT,NF,dolist,Q,...){
     qnames <- paste0("Q",".",as.character(round(100*Q)))
     setnames(score,c("model","cause",qnames))
     if (length(dolist)>0){
-        test <- data.table::rbindlist(lapply(dolist,function(g){
+        contrasts <- data.table::rbindlist(lapply(dolist,function(g){
             ## from all models g[-1], substract risk of model g[1] 
             setorder(DT,model,ID)
             DTdiff <- DT[model%in%g[-1]]
@@ -62,13 +62,13 @@ riskQuantile.binary <- function(DT,test,alpha,N,NT,NF,dolist,Q,...){
             data.table::setcolorder(changedist,c("reference",colnames(changedist)[-length(colnames(changedist))]))
             changedist
         }))
-    }else test <- NULL
-    list(score=score,test=test)
+    }else contrasts <- NULL
+    list(score=score,contrasts=contrasts)
 }
 
 
 
-riskQuantile.survival <- function(DT,test,alpha,N,NT,NF,dolist,Q,...){
+riskQuantile.survival <- function(DT,N,NT,NF,dolist,Q,...){
     model=event=X=reference=status=times=cause=risk=Wt=WTi=NULL
     models <- unique(DT[,model])
     if (missing(Q)) Q <- c(0.05,0.25,0.5,0.75,0.95) else Q <- sort(Q) ##
@@ -134,7 +134,7 @@ riskQuantile.survival <- function(DT,test,alpha,N,NT,NF,dolist,Q,...){
     qnames <- paste0("Q",".",as.character(round(100*Q)))
     setnames(score,c("model","times","cause",qnames))
     if (length(dolist)>0){
-        test <- data.table::rbindlist(lapply(dolist,function(g){
+        contrasts <- data.table::rbindlist(lapply(dolist,function(g){
             ## from all models g[-1], substract risk of model g[1] 
             setorder(DT,model,times,ID)
             DTdiff <- DT[model%in%g[-1]]
@@ -157,11 +157,11 @@ riskQuantile.survival <- function(DT,test,alpha,N,NT,NF,dolist,Q,...){
         }))
     }
     else
-        test <- NULL 
-    list(score=score,test=test)
+        contrasts <- NULL 
+    list(score=score,contrasts=contrasts)
 }
 
-riskQuantile.competing.risks <- function(DT,test,alpha,N,NT,NF,dolist,cause,Q,...){
+riskQuantile.competing.risks <- function(DT,N,NT,NF,dolist,cause,Q,...){
     model=event=reference=risk=X=status=times=Wt=WTi=cause=NULL
     models <- unique(DT[,model])
     if (missing(Q)) Q <- c(0.05,0.25,0.5,0.75,0.95)
@@ -246,7 +246,7 @@ riskQuantile.competing.risks <- function(DT,test,alpha,N,NT,NF,dolist,cause,Q,..
     setnames(score,c("model","times","cause",qnames))
     ## browser(skipCalls=1)
     if (length(dolist)>0){
-        test <- data.table::rbindlist(lapply(dolist,function(g){
+        contrasts <- data.table::rbindlist(lapply(dolist,function(g){
             ## from all models g[-1], substract risk of model g[1] 
             setorder(DT,model,times,ID)
             DTdiff <- DT[model%in%g[-1]]
@@ -267,8 +267,8 @@ riskQuantile.competing.risks <- function(DT,test,alpha,N,NT,NF,dolist,cause,Q,..
             data.table::setcolorder(changedist,c("reference",colnames(changedist)[-length(colnames(changedist))]))
             changedist
         }))
-    }else test <- NULL
-    list(score=score,test=test)
+    }else contrasts <- NULL
+    list(score=score,contrasts=contrasts)
 }
 
 

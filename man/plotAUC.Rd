@@ -12,7 +12,7 @@ plotAUC(x, models, type = "score", lwd = 2, xlim, ylim, axes = TRUE,
 
 \item{models}{Choice of models to plot}
 
-\item{type}{Character. Either \code{"score"} to show AUC or \code{"test"} to show differences between AUC.}
+\item{type}{Character. Either \code{"score"} to show AUC or \code{"contrasts"} to show differences between AUC.}
 
 \item{lwd}{Line width}
 
@@ -38,8 +38,8 @@ f2=coxph(Surv(time,event)~X2+X5+X9,data=d)
 xx=Score(list(f1,f2),formula=Surv(time,event)~1,data=nd,metrics="auc",nullModel=FALSE,times=seq(3:10))
 plotAUC(xx)
 plotAUC(xx,confint=TRUE)
-plotAUC(xx,type="test")
-plotAUC(xx,type="test",confint=TRUE)
+plotAUC(xx,type="contrasts")
+plotAUC(xx,type="contrasts",confint=TRUE)
 
 }
 

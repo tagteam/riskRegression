@@ -8,9 +8,9 @@ context("Cox prediction - standard error")
 
 set.seed(10)
 d <- sampleData(1e2, outcome = "survival")
-nd <- sampleData(10, outcome = "survival")
+nd <- sampleData(100, outcome = "survival")
 d$time <- round(d$time,1)
-d <- d[order(d$time),][1:10,]
+d <- d[order(d$time),]
 
 for(ties in c("breslow","efron")){ # ties <- "breslow"
   
@@ -25,7 +25,7 @@ for(ties in c("breslow","efron")){ # ties <- "breslow"
     expect_error(resCph <- predictCox(fit_cph, newdata = d, times = d$time,  se = TRUE))
   })
   
-  test_that(paste("predictCox(univariate) - valide se cumHazard",ties),{
+  test_that(paste("predictCox(univariate) - valid se cumHazard",ties),{
     fit_coxph <- coxph(Surv(time,event) ~ X1,data=d, ties=ties)
     fit_cph <- cph(Surv(time,event) ~ X1,data=d, method=ties, y = TRUE)
     
@@ -38,7 +38,7 @@ for(ties in c("breslow","efron")){ # ties <- "breslow"
     expect_equal(resCph, resCoxph, tolerance = 1e-5, scale = 1)
   })
   
-  test_that(paste("predictCox(multivariate) - valide se cumHazard",ties),{
+  test_that(paste("predictCox(multiple) - valid se cumHazard",ties),{
     fit_coxph <- coxph(Surv(time,event) ~ X1 + X2 + X6,data=d, ties=ties)
     fit_cph <- cph(Surv(time,event) ~ X1 + X2 + X6,data=d, method=ties, y = TRUE)
     

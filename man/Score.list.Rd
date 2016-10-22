@@ -7,8 +7,8 @@
 \usage{
 \method{Score}{list}(object, formula, data, metrics = c("auc", "brier"),
   summary = NULL, plots = c("roc", "calibration", "pvalues"), cause = 1,
-  times, landmarks, useEventTimes = FALSE, nullModel = TRUE, test = TRUE,
-  compare = TRUE, alpha = 0.05, probs = c(0, 0.25, 0.5, 0.75, 1),
+  times, landmarks, useEventTimes = FALSE, nullModel = TRUE,
+  conf.int = 0.95, contrasts = TRUE, probs = c(0, 0.25, 0.5, 0.75, 1),
   censMethod = "ipcw", censModel = "cox", splitMethod, B, M, seed,
   trainseeds, ...)
 }
@@ -45,16 +45,16 @@ maximal observed time in the data set are removed.}
 \item{useEventTimes}{If \code{TRUE} add all unique event times to
 argument \code{times}.}
 
-\item{nullModel}{If \code{TRUE} add the null model which ignores
+\item{nullModel}{If \code{TRUE} fit the null model which ignores
 the covariates and predicts the prevalence for all subjects.}
 
-\item{test}{Logical. If \code{TRUE} compute confidence intervals
-for model performance and confidence intervals and p-values
-for contrasts of model performance (see argument
-\code{compare}.}
+\item{conf.int}{Either logical or a numeric value between 0 and 1. \code{FALSE} prevents the 
+computation confidence intervals. \code{TRUE} means compute 95 percent confidence 
+intervals and corresponding p-values for AUC and Brier score. If set to 0.87, the 
+level of significance is 13 percent.}
 
-\item{compare}{Either logical or list of positive integers mixed
-with \code{0}.  If \code{TRUE} do all possible contrasts. For
+\item{contrasts}{Either logical or list of contrasts, i.e., positive integers mixed
+with \code{0}, defining which.  If \code{TRUE} do all possible contrasts. For
 example, when \code{object} has two elements and
 \code{nullModel=TRUE} this is equivalent to
 \code{list(c(0,1,2),c(1,2))} where \code{c(0,1,2)} codes for
@@ -64,9 +64,7 @@ model which ignores the covariates).  This again is equivalent
 to explicitly setting \code{list(c(0,1),c(0,2),c(1,2))}. A
 more complex example: Suppose object has 7 elements and you
 want to do the following 3 comparisons: 6 vs 3, 2 vs 5 and 2
-vs 3, you should set \code{compare=c(6,3),c(2,5,3)}.}
-
-\item{alpha}{Level of significance.}
+vs 3, you should set \code{contrasts=c(6,3),c(2,5,3)}.}
 
 \item{probs}{Quantiles for retrospective summary statistics of the
 predicted risks}
@@ -92,8 +90,9 @@ randomly splitting the data for cross-validation.}
 \item{...}{Not used}
 }
 \value{
-Result list with scores and assessments of contrasts
-    (tests) for the assessment metrics, summaries and plots.
+Result list with scores and assessments of contrasts, i.e.,
+    tests and confidence limits for difference in performance (AUC and Brier),
+summaries and plots.
 }
 \description{
 Method to Score risk markers and risk prediction models
@@ -135,27 +134,27 @@ testSurv <- sampleData(40,outcome="survival")
 cox1 = coxph(Surv(time,event)~X1+X2+X7+X9,data=trainSurv)
 cox2 = coxph(Surv(time,event)~X3+X5+X6,data=trainSurv)
 Score(list("Cox(X1+X2+X7+X9)"=cox1,"Cox(X3+X5+X6)"=cox2),
-      formula=Surv(time,event)~1,data=testSurv,test=FALSE,times=c(5,8))
+      formula=Surv(time,event)~1,data=testSurv,conf.int=FALSE,times=c(5,8))
 
 # time-dependent AUC for list of markers
 survmarkers = as.list(testSurv[,1:5])
 Score(survmarkers,
       formula=Surv(time,event)~1,metrics="auc",data=testSurv,
-test=TRUE,times=c(5,8))
+conf.int=TRUE,times=c(5,8))
 
 # compare models on test data
 Score(list("Cox(X1+X2+X7+X9)"=cox1,"Cox(X3+X5+X6)"=cox2),
-      formula=Surv(time,event)~1,data=testSurv,test=TRUE,times=c(5,8))
+      formula=Surv(time,event)~1,data=testSurv,conf.int=TRUE,times=c(5,8))
 
 # crossvalidation models in traindata
 Score(list("Cox(X1+X2+X7+X9)"=cox1,"Cox(X3+X5+X6)"=cox2),
-      formula=Surv(time,event)~1,data=trainSurv,test=TRUE,times=c(5,8),
+      formula=Surv(time,event)~1,data=trainSurv,conf.int=TRUE,times=c(5,8),
 splitMethod="bootcv",B=3)
 
 # restrict number of comparisons
 Score(list("Cox(X1+X2+X7+X9)"=cox1,"Cox(X3+X5+X6)"=cox2),
-      formula=Surv(time,event)~1,data=trainSurv,compare=TRUE,
-nullModel=FALSE,test=TRUE,times=c(5,8),splitMethod="bootcv",B=3)
+      formula=Surv(time,event)~1,data=trainSurv,contrasts=TRUE,
+nullModel=FALSE,conf.int=TRUE,times=c(5,8),splitMethod="bootcv",B=3)
 
 # competing risks outcome
 set.seed(18)
@@ -171,7 +170,7 @@ fgr1 = FGR(Hist(time,event)~X1+X2+X7+X9,data=trainCR,cause=1)
 fgr2 = FGR(Hist(time,event)~X3+X5+X6,data=trainCR,cause=1)
 Score(list("CSC(X1+X2+X7+X9)"=csc1,"CSC(X3+X5+X6)"=csc2,
            "FGR(X1+X2+X7+X9)"=fgr1,"FGR(X3+X5+X6)"=fgr2),
-      formula=Hist(time,event)~1,data=testCR,test=TRUE,times=c(5,8))
+      formula=Hist(time,event)~1,data=testCR,se.fit=TRUE,times=c(5,8))
 
 }
 \author{

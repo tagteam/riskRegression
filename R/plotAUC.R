@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun 23 2016 (09:19) 
 ## Version: 
-## last-updated: Jun 26 2016 (09:40) 
+## last-updated: Oct  2 2016 (09:12) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 38
+##     Update #: 39
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -19,7 +19,7 @@
 ##' @title Plot AUC curve
 ##' @param x Object obtained with \code{Score.list}
 ##' @param models Choice of models to plot
-##' @param type Character. Either \code{"score"} to show AUC or \code{"test"} to show differences between AUC.
+##' @param type Character. Either \code{"score"} to show AUC or \code{"contrasts"} to show differences between AUC.
 ##' @param lwd Line width
 ##' @param xlim Limits for x-axis
 ##' @param ylim Limits for y-axis
@@ -35,15 +35,15 @@
 ##' xx=Score(list(f1,f2),formula=Surv(time,event)~1,data=nd,metrics="auc",nullModel=FALSE,times=seq(3:10))
 ##' plotAUC(xx)
 ##' plotAUC(xx,confint=TRUE)
-##' plotAUC(xx,type="test")
-##' plotAUC(xx,type="test",confint=TRUE)
+##' plotAUC(xx,type="contrasts")
+##' plotAUC(xx,type="contrasts",confint=TRUE)
 ##' 
 #' @export
 plotAUC <- function(x,models,type="score",lwd=2,xlim,ylim,axes=TRUE,confint=FALSE,...){
     times=model=AUC=lower.AUC=upper.AUC=NULL
     ## cbPalette <- c("#999999", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
     cbbPalette <- c("#000000", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
-    pframe <- switch(type,"score"={x$AUC$score},"test"={x$AUC$test},{stop("Type has to be either 'score' for AUC or 'test' for differences in AUC.")})
+    pframe <- switch(type,"score"={x$AUC$score},"contrasts"={x$AUC$contrasts},{stop("Type has to be either 'score' for AUC or 'contrasts' for differences in AUC.")})
     if (length(pframe$times)<2) stop(paste("Need at least two time points for plotting time-dependent AUC. Object has only ",length(pframe$times),"times"))
     if (type=="score"){
         ## AUC

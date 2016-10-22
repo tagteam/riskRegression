@@ -1,11 +1,12 @@
+
 ### boxplot.Score.R --- 
 #----------------------------------------------------------------------
 ## author: Thomas Alexander Gerds
 ## created: Aug 15 2016 (09:45) 
 ## Version: 
-## last-updated: Aug 30 2016 (14:10) 
+## last-updated: Oct  3 2016 (07:57) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 31
+##     Update #: 33
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -104,10 +105,10 @@ boxplot.Score <- function(x,
         if (length(models)==1) 
             type="risk"
         else
-            type=ifelse(NROW(x$riskQuantile$test)>0,"diff","risk")
+            type=ifelse(NROW(x$riskQuantile$contrasts)>0,"diff","risk")
     }
     if (type=="diff"){
-        pframe <- x$riskQuantile$test
+        pframe <- x$riskQuantile$contrasts
     } else{
         pframe <- x$riskQuantile$score
     }
