@@ -83,14 +83,14 @@ test_that("strat and strata",{
     expect_equal(pa,pb,tolerance=1e-6)
 })
 
-test_that("CSC many character valued causes",{
-    set.seed(17)
-    d <- prodlim::SimCompRisk(100)
-    d$event <- as.character(factor(d$event,labels=c("a","b","c")))
-    m1 <- CSC(Hist(time,event)~strat(X1)+X2,data=d,fitter="cph")
-    m2 <- CSC(Hist(time,event)~strata(X1)+X2,data=d,survtype="surv",cause="b")
-    expect_equal(round(coef(m1$models[[2]])[[1]],6),0.535059)
-})
+# test_that("CSC many character valued causes",{
+#     set.seed(17)
+#     d <- prodlim::SimCompRisk(100)
+#     d$event <- as.character(factor(d$event,labels=c("a","b","c")))
+#     m1 <- CSC(Hist(time,event)~strat(X1)+X2,data=d,fitter="cph")
+#     m2 <- CSC(Hist(time,event)~strata(X1)+X2,data=d,survtype="surv",cause="b")
+#     expect_equal(round(coef(m1$models[[2]])[[1]],6),0.535059)
+# })
 
 
 
