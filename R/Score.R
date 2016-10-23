@@ -213,11 +213,11 @@ Score.list <- function(object,
     # {{{ Checking the models
     # for predictHandlerFunction
     allmethods <- utils::methods(predictRisk)
-    ## wantedMethods <- lapply(object,function(o){
-    ## candidateMethods <- paste(predictHandlerFun,class(o),sep=".")
-    ## if (all(match(candidateMethods,allmethods,nomatch=0)==0))
-    ## stop(paste("Could not find ",predictHandlerFun," method for ",paste(class(o),collapse=" ,"),sep=""))
-    ## })
+    lapply(object,function(o){
+        candidateMethods <- paste("predictRisk",class(o),sep=".")
+        if (all(match(candidateMethods,allmethods,nomatch=0)==0))
+            stop(paste("Could not find predictRisk S3-method for object with class(es): ",paste(class(o),collapse=" ,"),sep=""))
+    })
     # checking the models for compatibility with resampling
     if (is.null(names(object))){
         names(object) <- sapply(object,function(o)class(o)[1])}

@@ -2,7 +2,7 @@
 #'
 #' Use the g-formula to estimate the average treatment effect
 #' @param formula formula argument for the model
-#' @param model a non-empty character string naming the function to be called to estimate the outcome
+#' @param model the function to be called to estimate the outcome
 #' @param predictor a method to be applied to the model to obtain the predicted outcome for each time and patient.
 #' @param data data argument for CSC
 #' @param treatment name of the column containing the treatment

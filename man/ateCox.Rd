@@ -11,7 +11,7 @@ ateCox(formula, model, predictor, data, treatment, contrasts = NULL, times,
 \arguments{
 \item{formula}{formula argument for the model}
 
-\item{model}{a non-empty character string naming the function to be called to estimate the outcome}
+\item{model}{the function to be called to estimate the outcome}
 
 \item{predictor}{a method to be applied to the model to obtain the predicted outcome for each time and patient.}
 

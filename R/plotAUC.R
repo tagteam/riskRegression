@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun 23 2016 (09:19) 
 ## Version: 
-## last-updated: Oct  2 2016 (09:12) 
+## last-updated: Oct 23 2016 (10:48) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 39
+##     Update #: 41
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -32,7 +32,8 @@
 ##' nd=sampleData(100,outcome="survival")
 ##' f1=coxph(Surv(time,event)~X1+X6+X8,data=d)
 ##' f2=coxph(Surv(time,event)~X2+X5+X9,data=d)
-##' xx=Score(list(f1,f2),formula=Surv(time,event)~1,data=nd,metrics="auc",nullModel=FALSE,times=seq(3:10))
+##' xx=Score(list(f1,f2), formula=Surv(time,event)~1,
+##' data=nd, metrics="auc", nullModel=FALSE, times=seq(3:10))
 ##' plotAUC(xx)
 ##' plotAUC(xx,confint=TRUE)
 ##' plotAUC(xx,type="contrasts")
@@ -53,7 +54,7 @@ plotAUC <- function(x,models,type="score",lwd=2,xlim,ylim,axes=TRUE,confint=FALS
         if (missing(ylim)) ylim <- c(0.5,1)
         yticks <- seq(0,1,0.05)
         yticks <- yticks[yticks>=ylim[1] & yticks<=ylim[2]]
-        pp <- ggplot(data=pframe,aes(times,AUC,fill=model,colour=model))
+        pp <- ggplot2::ggplot(data=pframe,aes(times,AUC,fill=model,colour=model))
         pp + geom_line(size=lwd)
     }else{
         ## delta AUC
