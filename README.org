@@ -12,21 +12,26 @@ install_github("tagteam/riskRegression")
 The following references provide the methodological framework for the
 features of riskRegression.
 
-[1] T.A. Gerds and M. Schumacher. Consistent estimation of the expected Brier
+1. T.A. Gerds and M. Schumacher. Consistent estimation of the expected Brier
     score in general survival models with right-censored event times.
     Biometrical Journal, 48(6):1029--1040, 2006.
-[2] T.A. Gerds and M. Schumacher. Efron-type measures of prediction error for
+
+2. T.A. Gerds and M. Schumacher. Efron-type measures of prediction error for
     survival analysis. Biometrics, 63(4):1283--1287, 2007.
-[3] T.A. Gerds, T. Cai, and M. Schumacher. The performance of risk prediction
+
+3. T.A. Gerds, T. Cai, and M. Schumacher. The performance of risk prediction
     models. Biometrical Journal, 50(4):457--479, 2008.
-[4] U B Mogensen, H. Ishwaran, and T A Gerds. Evaluating random forests for
+
+4. U B Mogensen, H. Ishwaran, and T A Gerds. Evaluating random forests for
     survival analysis using prediction error curves. Journal of Statistical
     Software, 50(11), 2012.
-[5] P. Blanche, J-F Dartigues, and H. Jacqmin-Gadda. Estimating and comparing
+
+5. P. Blanche, J-F Dartigues, and H. Jacqmin-Gadda. Estimating and comparing
     time-dependent areas under receiver operating characteristic curves for
     censored event times with competing risks. Statistics in Medicine, 32(30):
     5381--5397, 2013.
-[6] Paul Blanche, Ce'cile Proust-Lima, Lucie Loube`re, Claudine Berr, Jean-
+
+6. Paul Blanche, Ce'cile Proust-Lima, Lucie Loube`re, Claudine Berr, Jean-
     Franc,ois Dartigues, and He'le`ne Jacqmin-Gadda. Quantifying and comparing
     dynamic predictive accuracy of joint models for longitudinal marker and
     time-to-event in presence of censoring and competing risks. Biometrics, 71
