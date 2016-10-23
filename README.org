@@ -1,0 +1,93 @@
+[[https://travis-ci.org/bozenne/BuyseTest.svg?branch=master][https://travis-ci.org/bozenne/BuyseTest]]
+
+* Install
+
+#+BEGIN_SRC R :exports both :eval never
+library(devtools)
+install_github("tagteam/riskRegression")
+#+END_SRC
+
+* References
+
+The following references provide the methodological framework for the
+features of riskRegression.
+
+#+BEGIN_LaTeX
+@article{gerds2006consistent,
+  title =	 {Consistent Estimation of the Expected {B}rier Score
+                  in General Survival Models with Right-Censored Event
+                  Times},
+  author =	 {Gerds, T.A. and Schumacher, M.},
+  journal =	 {Biometrical Journal},
+  volume =	 48,
+  number =	 6,
+  pages =	 {1029--1040},
+  year =	 2006,
+  publisher =	 {Wiley Online Library}
+}
+
+@article{gerds2007efron,
+  title =	 {Efron-Type Measures of Prediction Error for Survival
+                  Analysis},
+  author =	 {Gerds, T.A. and Schumacher, M.},
+  journal =	 {Biometrics},
+  volume =	 63,
+  number =	 4,
+  pages =	 {1283--1287},
+  year =	 2007,
+  publisher =	 {Wiley Online Library}
+}
+
+@article{gerds2008performance,
+  title =	 {The performance of risk prediction models},
+  author =	 {Gerds, T.A. and Cai, T. and Schumacher, M.},
+  journal =	 {Biometrical Journal},
+  volume =	 50,
+  number =	 4,
+  pages =	 {457--479},
+  year =	 2008,
+  publisher =	 {Wiley Online Library}
+}
+
+@Article{mogensen2012pec,
+  title =	 {Evaluating random forests for survival analysis
+                  using prediction error curves},
+  author =	 {Mogensen, U B and Ishwaran, H. and Gerds, T A},
+  journal =	 {Journal of Statistical Software},
+  year =	 2012,
+  volume =	 50,
+  number =	 11
+}
+
+
+@article{blanche2015,
+  title =	 {Quantifying and comparing dynamic predictive
+                  accuracy of joint models for longitudinal marker and
+                  time-to-event in presence of censoring and competing
+                  risks},
+  author =	 {Blanche, Paul and Proust-Lima, C{\'e}cile and
+                  Loub{\`e}re, Lucie and Berr, Claudine and Dartigues,
+                  Jean-Fran{\c{c}}ois and Jacqmin-Gadda,
+                  H{\'e}l{\`e}ne},
+  journal =	 {Biometrics},
+  volume =	 71,
+  number =	 1,
+  pages =	 {102--113},
+  year =	 2015,
+  publisher =	 {Wiley Online Library}
+}
+
+@article{Blanche2013statmed,
+  title =	 "{Estimating and comparing time-dependent areas under
+                  receiver operating characteristic curves for
+                  censored event times with competing risks}",
+  author =	 {Blanche, P. and Dartigues, J-F and Jacqmin-Gadda,
+                  H.},
+  journal =	 {Statistics in Medicine},
+  volume =	 32,
+  number =	 30,
+  pages =	 {5381--5397},
+  year =	 2013
+}
+#+END_LaTeX
+
