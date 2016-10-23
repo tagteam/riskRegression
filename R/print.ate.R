@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun  6 2016 (06:48) 
 ## Version: 
-## last-updated: Jun  7 2016 (06:41) 
+## last-updated: Oct 23 2016 (09:44) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 6
+##     Update #: 8
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -21,7 +21,7 @@
 #' @param digits Number of digits
 #' @param ... passed to print
 #' @export
-print.ateCox <- function(x,digits=3,...){
+print.ate <- function(x,digits=3,...){
     cat("The treatment variable ",x$treatment," has the following options:",sep="")
     cat(paste(x$contrats,collapse=", "),"\n\n")
     cat("\nMean risks on probability scale [0,1] in hypothetical worlds\nin which all subjects are treated with one of the treatment options:\n\n")
