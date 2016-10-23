@@ -42,7 +42,8 @@ Retrospective boxplots of risk quantiles conditional on outcome
 db=sampleData(100,outcome="binary")
 fitconv=glm(Y~X3+X5,data=db,family=binomial)
 fitnew=glm(Y~X1+X3+X5+X6+X7,data=db,family=binomial)
-scoreobj=Score(list(new=fitnew,conv=fitconv),formula=Y~1,compare=list(c(2,1)),
+scoreobj=Score(list(new=fitnew,conv=fitconv),
+        formula=Y~1,contrasts=list(c(2,1)),
                data=db,summary="riskQuantile",nullModel=FALSE)
 boxplot(scoreobj)
 
@@ -68,7 +69,8 @@ boxplot(scoreobj1)
 data(Melanoma)
 fitconv = CSC(Hist(time,status)~invasion+age+sex,data=Melanoma)
 fitnew = CSC(Hist(time,status)~invasion+age+sex+logthick,data=Melanoma)
-scoreobj=Score(list("Conventional model"=fitconv,"New model"=fitnew),formula=Hist(time,status)~1,
+scoreobj=Score(list("Conventional model"=fitconv,"New model"=fitnew),
+               formula=Hist(time,status)~1,
                data=Melanoma,summary="riskQuantile",times=5*365.25,nullModel=FALSE)
 boxplot(scoreobj)
 
@@ -80,12 +82,14 @@ lava::distribution(m, "eventtime2") <- lava::coxWeibull.lvm(scale = 1/100)
 lava::distribution(m, "eventtime3") <- lava::coxWeibull.lvm(scale = 1/100)
 lava::distribution(m, "censtime") <- lava::coxWeibull.lvm(scale = 1/100)
 lava::regression(m,eventtime2~X3)=1.3
-m <- lava::eventTime(m, time ~ min(eventtime1 = 1, eventtime2 = 2, eventtime3 = 3, censtime = 0), "event")
+m <- lava::eventTime(m,
+time ~ min(eventtime1 = 1, eventtime2 = 2, eventtime3 = 3, censtime = 0), "event")
 set.seed(101)
 dcr=as.data.table(lava::sim(m,101))
 fitOld = CSC(Hist(time,event)~X1+X2,data=dcr)
 fitNew = CSC(Hist(time,event)~X1+X2+X3,data=dcr)
-scoreobj=Score(list("Conventional model"=fitOld,"New model"=fitNew),formula=Hist(time,event)~1,
+scoreobj=Score(list("Conventional model"=fitOld,"New model"=fitNew),
+               formula=Hist(time,event)~1,
                data=dcr,summary="riskQuantile",times=5,nullModel=FALSE)
 boxplot(scoreobj)
 

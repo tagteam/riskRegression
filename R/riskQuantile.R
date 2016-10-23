@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jan  9 2016 (19:31) 
 ## Version: 
-## last-updated: Oct 23 2016 (10:47) 
+## last-updated: Oct 23 2016 (11:01) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 253
+##     Update #: 255
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -213,8 +213,8 @@ riskQuantile.competing.risks <- function(DT,N,NT,NF,dolist,cause,Q,...){
     ##
     ## For 'event-free analyses' P(X<=x|T>t) is estimated by P(T>t|X<=x) P(X<=x)/P(T>t)
     #######
-    surv <- DT[model==models[[1]],data.dable::data.dable("surv"=(1/N*sum((time>times)/Wt))),by=times]
-    cuminc <- lapply(causes,function(cc){DT[model==models[[1]],data.dable::data.dable("cuminc"=1/N*sum((event==cc & time<=times)/WTi)),by=times]})
+    surv <- DT[model==models[[1]],data.table::data.table("surv"=(1/N*sum((time>times)/Wt))),by=times]
+    cuminc <- lapply(causes,function(cc){DT[model==models[[1]],data.table::data.table("cuminc"=1/N*sum((event==cc & time<=times)/WTi)),by=times]})
     names(cuminc) <- causes
     getQ.causes <- function(Q,tp,X,time,event,WTi,cuminc,causes){
         uX <- sort(unique(X))

@@ -3,11 +3,10 @@ library(testthat)
 context("G-formula to estimate the average treatment effect")
 
 #### Cox model ####
-n <- 1e3
+n <- 1e2
 dtS <- sampleData(n,outcome="survival")
 dtS$time <- round(dtS$time,1)
-seqtimes <- sample(x = unique(sort(dtS$time)), size = 10)
-dtS$X1 <- factor(rbinom(n, prob = c(0.2,0.3,0.2) , size = 3), labels = paste0("T",0:3))
+dtS$X1 <- factor(rbinom(n, prob = c(0.3,0.4) , size = 2), labels = paste0("T",0:2))
 
 if(require(rms)){
     test_that("G formula: cph, sequential",{
@@ -54,10 +53,9 @@ if(require(survival)){
 
 
 #### CSC model ####
-df <- sampleData(1e3,outcome="competing.risks")
+df <- sampleData(1e2,outcome="competing.risks")
 df$time <- round(df$time,1)
-seqtimes <- sample(x = unique(sort(df$time)), size = 100) 
-df$X1 <- factor(rbinom(1e3, prob = c(0.2,0.3,0.2) , size = 3), labels = paste0("T",0:3))
+df$X1 <- factor(rbinom(1e2, prob = c(0.4,0.3) , size = 2), labels = paste0("T",0:2))
 
 test_that("no boostrap",{
     fit=CSC(formula = Hist(time,event)~ X1+X2, data = df,cause=1)
@@ -66,11 +64,13 @@ test_that("no boostrap",{
 })
 
 test_that("one boostrap",{
-  res <- ate(fit,data = df,  treatment = "X1", contrasts = NULL,
-                times = 7, cause = 1, B = 1, mc.cores=1)
+    fit=CSC(formula = Hist(time,event)~ X1+X2, data = df,cause=1)
+    res <- ate(fit,data = df,  treatment = "X1", contrasts = NULL,
+               times = 7, cause = 1, B = 1, mc.cores=1)
 })
 
 #### parallel computation
+fit=CSC(formula = Hist(time,event)~ X1+X2, data = df,cause=1)
 time1.mc <- system.time(
     res1.mc <- ate(fit,data = df, treatment = "X1", contrasts = NULL,
                    times = 7, cause = 1, B = 2, mc.cores=1, handler = "mclapply", seed = 10)
@@ -86,13 +86,14 @@ test_that("mcapply vs. foreach",{
 
 
 if(parallel::detectCores()>1){
+    fit=CSC(formula = Hist(time,event)~ X1+X2, data = df,cause=1)
     time2.mc <- system.time(
-        res2.mc <- ateCox(formula = Hist(time,event)~ X1+X2,data = df, model = "CSC", treatment = "X1", contrasts = NULL,
-                          times = 7, cause = 1, B = 2, mc.cores=2, handler = "mclapply", seed = 10)
+        res2.mc <- ate(fit,data = df, treatment = "X1", contrasts = NULL,
+                       times = 7, cause = 1, B = 2, mc.cores=2, handler = "mclapply", seed = 10)
     )
     time2.for <- system.time(
-        res2.for <- ateCox(formula = Hist(time,event)~ X1+X2,data = df, model = "CSC", treatment = "X1", contrasts = NULL,
-                           times = 7, cause = 1, B = 2, mc.cores=2, handler = "foreach", seed = 10)
+        res2.for <- ate(fit,data = df, treatment = "X1", contrasts = NULL,
+                        times = 7, cause = 1, B = 2, mc.cores=2, handler = "foreach", seed = 10)
     )
   
   test_that("mcapply vs. foreach",{
@@ -124,11 +125,10 @@ df[(df$X2 == 1)*(df$time>7)>0, "timeC"] <- 0
 
 
 #### LRR ####
-n <- 1e3
+n <- 1e2
 dtS <- sampleData(n,outcome="survival")
 dtS$time <- round(dtS$time,1)
-seqtimes <- sample(x = unique(sort(dtS$time)), size = 10)
-dtS$X1 <- factor(rbinom(n, prob = c(0.2,0.3,0.2) , size = 3), labels = paste0("T",0:3))
+dtS$X1 <- factor(rbinom(n, prob = c(0.3,0.4) , size = 2), labels = paste0("T",0:2))
 
 
 #### TO BE DISCUSSED WITH TAG WHETHER ONE LRR SHOULD BE USED BY TIMEPOINT
@@ -142,8 +142,7 @@ ate(fitL, data = dtS, treatment = "X1", contrasts = NULL,
 n <- 1e2
 dtS <- sampleData(n,outcome="survival")
 dtS$time <- round(dtS$time,1)
-seqtimes <- sample(x = unique(sort(dtS$time)), size = 10)
-dtS$X1 <- rbinom(n, prob = c(0.2,0.3,0.2) , size = 3)
+dtS$X1 <- rbinom(n, prob = c(0.3,0.4) , size = 2)
 dtS$X1 <- factor(dtS$X1, labels = paste0("T",unique(dtS$X1)))
 
 

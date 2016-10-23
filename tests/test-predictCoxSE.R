@@ -13,7 +13,6 @@ d$time <- round(d$time,1)
 d <- d[order(d$time),]
 
 for(ties in c("breslow","efron")){ # ties <- "breslow"
-  
   test_that(paste("predictCox(empty) - valide se cumHazard",ties),{
     fit_coxph <- coxph(Surv(time,event) ~ 1,data=d, ties=ties)
     fit_cph <- cph(Surv(time,event) ~ 1,data=d, method=ties, y = TRUE)
@@ -56,10 +55,11 @@ for(ties in c("breslow","efron")){ # ties <- "breslow"
 }
 
 #### strata
+if (FALSE){
 for(ties in c("breslow","efron")){ #
-  test_that(paste("predictCox (strata, empty) - valide se cumHazard",ties),{
-    fit_coxph <- coxph(Surv(time,event) ~ strata(X1),data=d, ties=ties)
-    fit_cph <- cph(Surv(time,event) ~ strat(X1),data=d, method=ties, y = TRUE)
+    test_that(paste("predictCox (strata, empty) - valide se cumHazard",ties),{
+        fit_coxph <- coxph(Surv(time,event) ~ strata(X1),data=d, ties=ties)
+        fit_cph <- cph(Surv(time,event) ~ strat(X1),data=d, method=ties, y = TRUE)
     
     # res_surv <- survival:::predict.coxph(fit_coxph, newdata = d, type="expected", se.fit = TRUE)
     resCoxph <- predictCox(fit_coxph, newdata = d, times = d$time,  se = FALSE)
@@ -97,7 +97,7 @@ for(ties in c("breslow","efron")){ #
     # expect_equal(resCph,resCoxph, tolerance = 1e-5, scale = 1)
   })
 }
-
+}
 #### bootstrap version
 
 test <- FALSE
