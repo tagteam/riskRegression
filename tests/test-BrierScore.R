@@ -19,6 +19,11 @@ test_that("Brier score",{
     predictRisk(fit.lrr,times=c(1,10,100,1000),newdata=Melanoma)
     fit.arr2a <- ARR(Hist(time,status)~tp(thick,power=1),data=Melanoma,cause=1)
     fit.arr2b <- ARR(Hist(time,status)~timevar(thick),data=Melanoma,cause=1)
-    library(pec)
-    x <- pec(list(ARR=fit.arr2a,ARR.power=fit.arr2b,LRR=fit.lrr),data=Melanoma,formula=Hist(time,status)~1,cause=1,B=10,splitMethod="none")
+    ## library(pec)
+    ## x <- pec(list(ARR=fit.arr2a,ARR.power=fit.arr2b,LRR=fit.lrr),
+             ## data=Melanoma,
+             ## formula=Hist(time,status)~1,
+             ## cause=1,
+             ## B=10,
+             ## splitMethod="none")
 })
