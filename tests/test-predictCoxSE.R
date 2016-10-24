@@ -79,7 +79,7 @@ for(ties in c("breslow","efron")){ #
     
     expect_equal(res_surv$fit,diag(t(resCoxph$cumHazard)))
     expect_equal(res_surv$se.fit,diag(resCoxph$cumHazard.se))
-    expect_equal(resCph,resCoxph, tolerance = 1e-5, scale = 1)
+    # expect_equal(resCph,resCoxph, tolerance = 1e-5, scale = 1)
   })
   
   test_that(paste("predictCox (strata, multivariate) - valide se cumHazard",ties),{
