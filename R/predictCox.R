@@ -94,7 +94,7 @@ predictCox <- function(object,
     }
     if(se){ ## cph:design matrix for standard error
       if(length(object$Design$mmcolnames)==0){
-        #stop("Cannot compute standard errors when there is no confounder \n")
+        stop("Cannot compute standard errors when there is no confounder \n")
         modeldata <- matrix(0, nrow = nPatients, ncol = 1)
       }else{
         modeldata <- as.matrix(model.frame(object)[,object$Design$mmcolnames,drop=FALSE])
