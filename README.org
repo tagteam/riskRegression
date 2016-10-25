@@ -1,4 +1,4 @@
-[[https://travis-ci.org/bozenne/BuyseTest.svg?branch=master][https://travis-ci.org/bozenne/BuyseTest]]
+[[https://travis-ci.org/tagteam/riskRegression.svg?branch=master][https://travis-ci.org/tagteam/riskRegression]]
 
 * Install
 
