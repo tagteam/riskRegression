@@ -44,6 +44,7 @@ test_that("predictSurv",{
     expect_equal(af,bf,tolerance = 1e-8)
     ah <- predictRisk(h,newdata=d[c(17,88,3),],times=c(0,1,8.423,100,1000))
     bh <- 1-predictSurvProb(h,newdata=d[c(17,88,3),],times=c(0,1,8.423,100,1000))
+    colnames(bh) <- NULL
     expect_equal(ah,bh,tolerance = 1e-8)
 })
 
