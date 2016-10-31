@@ -83,10 +83,13 @@ predictRisk(fit,newdata=nd)
 # generate survival data
 library(prodlim)
 set.seed(100)
-d <- SimSurv(100)
+d <- sampleData(100,outcome="survival")
 # then fit a Cox model
 library(rms)
-coxmodel <- cph(Surv(time,status)~X1+X2,data=d,surv=TRUE)
+cphmodel <- cph(Surv(time,event)~X1+X2,data=d,surv=TRUE,y=TRUE)
+# or via survival
+library(survival)
+coxphmodel <- coxph(Surv(time,event)~X1+X2,data=d)
 
 # Extract predicted survival probabilities 
 # at selected time-points:
@@ -94,18 +97,19 @@ ttt <- quantile(d$time)
 # for selected predictor values:
 ndat <- data.frame(X1=c(0.25,0.25,-0.05,0.05),X2=c(0,1,0,1))
 # as follows
-predictRisk(coxmodel,newdata=ndat,times=ttt)
+predictRisk(cphmodel,newdata=ndat,times=ttt)
+predictRisk(coxphmodel,newdata=ndat,times=ttt)
 
 # stratified cox model
-sfit <- coxph(Surv(time,status)~strata(X1)+X2,data=d,y=TRUE)
+sfit <- coxph(Surv(time,event)~strata(X1)+X2,data=d,y=TRUE)
 predictRisk(sfit,newdata=d[1:3,],times=c(1,3,5,10))
 
 ## simulate learning and validation data
-learndat <- SimSurv(100)
-valdat <- SimSurv(100)
+learndat <- sampleData(100,outcome="survival")
+valdat <- sampleData(100,outcome="survival")
 ## use the learning data to fit a Cox model
 library(survival)
-fitCox <- coxph(Surv(time,status)~X1+X2,data=learndat)
+fitCox <- coxph(Surv(time,event)~X1+X2,data=learndat)
 ## suppose we want to predict the survival probabilities for all patients
 ## in the validation data at the following time points:
 ## 0, 12, 24, 36, 48, 60
@@ -116,13 +120,13 @@ psurv <- predictRisk(fitCox,newdata=valdat,times=seq(0,60,12))
 
 # Do the same for a randomSurvivalForest model
 library(randomForestSRC)
-rsfmodel <- rfsrc(Surv(time,status)~X1+X2,data=learndat)
+rsfmodel <- rfsrc(Surv(time,event)~X1+X2,data=learndat)
 prsfsurv=predictRisk(rsfmodel,newdata=valdat,times=seq(0,60,12))
 # plot(psurv,prsfsurv)
 
 ## Cox with ridge option
-f1 <- coxph(Surv(time,status)~X1+X2,data=learndat)
-f2 <- coxph(Surv(time,status)~ridge(X1)+ridge(X2),data=learndat)
+f1 <- coxph(Surv(time,event)~X1+X2,data=learndat)
+f2 <- coxph(Surv(time,event)~ridge(X1)+ridge(X2),data=learndat)
 \dontrun{
 plot(predictRisk(f1,newdata=valdat,times=10),
      predictRisk.coxph(f2,newdata=valdat,times=10),

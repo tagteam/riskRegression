@@ -15,7 +15,7 @@
 #' or several of the strings \code{"hazard"},\code{"cumhazard"}, \code{"survival"}
 #' @param keep.strata Logical. If \code{TRUE} add the (newdata) strata to the output. Only if there any. 
 #' @param keep.times Logical. If \code{TRUE} add the evaluation times to the output. 
-#' @param keep.lastEventTime Logical. If \code{TRUE} add the time at which the last event occured for each strata to the output. 
+#' @param keep.lastEventTime Logical. If \code{TRUE} add the time at which the last event occured in each strata to the output list. 
 #' @param format how to export the baseline hazard. Can be \code{"data.frame"}, \code{"data.table"} or \code{"list"}.
 #' @param se Logical. If \code{TRUE} add the standard errors corresponding to the output. Experimental !!
 #' @details Not working with time varying predictor variables or

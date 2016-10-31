@@ -30,7 +30,7 @@ or several of the strings \code{"hazard"},\code{"cumhazard"}, \code{"survival"}}
 
 \item{keep.times}{Logical. If \code{TRUE} add the evaluation times to the output.}
 
-\item{keep.lastEventTime}{Logical. If \code{TRUE} add the time at which the last event occured for each strata to the output.}
+\item{keep.lastEventTime}{Logical. If \code{TRUE} add the time at which the last event occured in each strata to the output list.}
 
 \item{se}{Logical. If \code{TRUE} add the standard errors corresponding to the output. Experimental !!}
 

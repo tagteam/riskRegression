@@ -38,7 +38,7 @@ test_that("predictSurv",{
     set.seed(17)
     d <- prodlim::SimSurv(100)
     f <- coxph(Surv(time,status)~X1+X2,data=d)
-    h <- cph(Surv(time,status)~X1+X2,data=d,surv=TRUE)
+    h <- cph(Surv(time,status)~X1+X2,data=d,surv=TRUE,y=TRUE)
     af <- predictRisk(f,newdata=d[c(17,88,3),],times=c(0,1,8.423,100,1000))
     bf <- 1-predictSurvProb(f,newdata=d[c(17,88,3),],times=c(0,1,8.423,100,1000))
     expect_equal(af,bf,tolerance = 1e-8)

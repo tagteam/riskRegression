@@ -143,6 +143,5 @@ if(test){
   (ls.seBOOT$cumHazard.se-resPredict$cumHazard.se)/ls.seBOOT$cumHazard.se
   (ls.seBOOT$cumHazard.se-resPredict$survival.se)/ls.seBOOT$survival.se
   
-  
 }
 
