@@ -118,8 +118,9 @@ for(model in c("coxph","cph")){
         }
         SurvProb <- pec::predictSurvProb(coxph, ttt, newdata = df)
         test_that(paste0("predictRisk vs predictSurvProb - without strata, method.ties/method.baseHaz/model = ",method.ties,"/",model,""),{
-            expect_equal(object = Surv0, expected = 1-SurvProb, tolerance=1e-8)
+            expect_equal(object = as.double(Surv0), expected = as.double(1-SurvProb), tolerance=1e-8)
         })
+        # as.double because predictRisk do not set colnames while predictSurvProb do set times as colnames
     }
 }
 

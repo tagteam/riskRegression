@@ -179,7 +179,7 @@ ate <- function(object,
                 object$call$data <- dataBoot
                 try(objectBoot <- eval(object$call),silent=TRUE)
                 if ("try-error" %in% class(objectBoot)){
-                    stop(paste0("Failed to fit model ",f,ifelse(try(b>0,silent=TRUE),paste0(" in bootstrap step ",b,"."))))
+                    stop(paste0("Failed to fit model ",class(object),ifelse(try(b>0,silent=TRUE),paste0(" in bootstrap step ",b,"."))))
                 }
                 tryCatch(Gformula(object=objectBoot,
                                   data=dataBoot,
