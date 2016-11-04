@@ -11,7 +11,7 @@ dtS$X1 <- factor(rbinom(n, prob = c(0.3,0.4) , size = 2), labels = paste0("T",0:
 if(require(rms)){
     test_that("G formula: cph, sequential",{
         # one time point
-        fit <- cph(Surv(time,event)~ X1+X2,data=dtS,x=TRUE,surv=TRUE,y=TRUE)
+        fit <- cph(Surv(time,event)~ X1+X2,data=dtS,y=TRUE)
         ate(fit,data = dtS, treatment = "X1", contrasts = NULL,
             times = 1, B = 2, y = TRUE, mc.cores=1)
         # several time points
@@ -20,7 +20,7 @@ if(require(rms)){
     })
     if(parallel::detectCores()>1){
         test_that("G formula: cph, parallel",{
-            fit=cph(formula = Surv(time,event)~ strat(X1)+X2,data=dtS,surv=TRUE,y=TRUE)
+            fit=cph(formula = Surv(time,event)~ strat(X1)+X2,data=dtS,y=TRUE)
             ate(object = fit, data = dtS, treatment = "X1", contrasts = NULL,
                 times = 1:2, B = 2, y = TRUE, mc.cores=1, handler = "mclapply", verbose = FALSE)
             ate(object=fit, data = dtS, treatment = "X1", contrasts = NULL,
@@ -32,7 +32,7 @@ if(require(rms)){
 if(require(survival)){
     test_that("G formula: coxph, sequential",{
         # one time point
-        fit <- coxph(Surv(time,event)~ X1+X2,data=dtS,x=TRUE)
+        fit <- coxph(Surv(time,event)~ X1+X2,data=dtS)
         ate(fit,data = dtS, treatment = "X1", contrasts = NULL,
             times = 1, B = 2, y = TRUE, mc.cores=1)
         # several time points
@@ -67,7 +67,7 @@ if(require(rms)){
 if(require(survival)){
   test_that("G formula: coxph, fully stratified",{
     # one time point
-    fit <- coxph(Surv(time,event)~ strata(X1),data=dtS,x=TRUE)
+    fit <- coxph(Surv(time,event)~ strata(X1),data=dtS)
     ate(fit,data = dtS, treatment = "X1", contrasts = NULL,
         times = 1, B = 2, y = TRUE, mc.cores=1)
     
