@@ -637,7 +637,6 @@ Score.list <- function(object,
                     bootcv <- bootcv[,data.table::data.table(mean(eval(as.name(m))),lower=quantile(eval(as.name(m)),alpha/2),upper=quantile(eval(as.name(m)),(1-alpha/2))),by=list(model,times)]
                     data.table::setnames(bootcv,c("model","times",m,paste0(m,c(".lower",".upper"))))
                 } else{
-                    browser()
                     bootcv <- bootcv[,data.table::data.table(mean(eval(as.name(m))),
                                                              lower=quantile(eval(as.name(m)),alpha/2),
                                                              upper=quantile(eval(as.name(m)),(1-alpha/2))),by=list(model)]
