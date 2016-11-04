@@ -48,6 +48,7 @@ test_that("predictSurv",{
     expect_equal(ah,bh,tolerance = 1e-8)
 })
 
+
 test_that("Cox models",{
     set.seed(17)
     d <- prodlim::SimCompRisk(100)
