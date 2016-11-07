@@ -45,7 +45,7 @@
 #' @useDynLib riskRegression
 #' @importFrom Rcpp sourceCpp evalCpp
 #' @importFrom rms strat cph
-#' @importFrom ggplot2 ggplot aes geom_line
+#' @importFrom ggplot2 aes element_blank element_line element_rect geom_line geom_ribbon ggplot scale_colour_manual scale_fill_manual scale_y_continuous theme theme_bw "%+replace%"
 #' @importFrom survival Surv strata coxph
 #' @importFrom data.table data.table ":=" setnames setorder setcolorder setkey rbindlist
 #' @importFrom prodlim Hist dimColor prodlim
