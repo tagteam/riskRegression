@@ -129,7 +129,7 @@ List baseHaz_cpp(const NumericVector& alltimes, const IntegerVector& status, con
     }
     
     if(nPredtimes>0){ // set maxtime to the first event after the maximum prediction time
-      size_t i = 0;
+      int i = 0;
       while(i<(nObsStrata[iter_s]-1) && alltimes_S[iter_s][i]<max_predtimes) i++;
       maxtime = alltimes_S[iter_s][i];
     }else{
