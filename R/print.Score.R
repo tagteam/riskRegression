@@ -18,10 +18,12 @@
 ##' Print method for risk prediction scores
 ##'
 ##' @title Print Score object
-#' @export
 ##' @param x Object obtained with \code{Score.list}
 ##' @param digits Number of digits
 ##' @param ... passed to print
+#'
+#' @method print Score
+#' @export
 print.Score <- function(x,digits=3,...){
     B <- x$splitMethod$B
     for (m in c(x$summary,x$metrics)){
@@ -33,11 +35,13 @@ print.Score <- function(x,digits=3,...){
 ##' Print metric specific element of risk prediction assessment
 ##'
 ##' @title Print metric specific results of risk prediction assessment
-#' @export
 ##' @param x Element of the result of \code{Score.list}
 ##' @param B Number of splits if any.
 ##' @param digits Number of digits
 ##' @param ... passed to print
+#'
+#' @method print highscore
+#' @export
 print.highscore <- function(x,B=0,digits=3,...){
     p=model=reference=times=NULL
     if (B>0){

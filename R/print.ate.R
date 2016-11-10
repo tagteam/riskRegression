@@ -20,6 +20,8 @@
 #' @param x object obtained with function \code{ateCSC}
 #' @param digits Number of digits
 #' @param ... passed to print
+#'
+#' @method print ate
 #' @export
 print.ate <- function(x,digits=3,...){
     cat("The treatment variable ",x$treatment," has the following options:",sep="")

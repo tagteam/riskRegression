@@ -7,6 +7,8 @@
 #' @param eps p-values smaller than this number are shown as such
 #' @param verbose Level of verbosity
 #' @param ... not used
+#'
+#' @method print riskRegression
 #' @export
 print.riskRegression <- function(x,
                                  times,

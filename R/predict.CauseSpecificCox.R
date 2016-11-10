@@ -43,7 +43,8 @@
 #' #### conditional survival
 #' T0 <- 1
 #' predCSC_afterT0 <- predict(CSC.fit, newdata = d, cause = 2, times = ttt, t0 = T0)
-
+#'
+#' @method predict CauseSpecificCox
 #' @export
 predict.CauseSpecificCox <- function(object,newdata, times, cause, t0 = NA, colnames = TRUE, se  = FALSE, ...){
   survtype <- object$survtype

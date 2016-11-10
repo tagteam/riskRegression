@@ -39,7 +39,6 @@ predict(fit.tarr,newdata=data.frame(age=c(48,58,68),
                      sex=factor("Male",levels=levels(Melanoma$sex))))
 predict(fit.tarr,newdata=Melanoma[1:4,])
 
-
 }
 \author{
 Thomas H. Scheike \email{ts@biostat.ku.dk}

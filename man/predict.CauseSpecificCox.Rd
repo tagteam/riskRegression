@@ -57,6 +57,7 @@ predcph <- predict(CSC.cph, newdata = d, cause = 2, times = ttt)
 #### conditional survival
 T0 <- 1
 predCSC_afterT0 <- predict(CSC.fit, newdata = d, cause = 2, times = ttt, t0 = T0)
+
 }
 \author{
 Brice Ozenne broz@sund.ku.dk, Thomas A. Gerds

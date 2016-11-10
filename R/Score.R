@@ -700,7 +700,6 @@ Score <- function(object,...){
 ##' Plot Brier curve
 ##'
 ##' @title Plot Brier curve
-#' @export 
 #' @param x Object obtained with \code{Score.list}
 ##' @param models Choice of models to plot
 ##' @param lwd Line width
@@ -708,6 +707,9 @@ Score <- function(object,...){
 ##' @param ylim Limits for y-axis 
 ##' @param axes Logical. If \code{TRUE} draw axes.
 ##' @param ... Not yet used
+#'
+#' @method plot score.Brier
+#' @export 
 plot.score.Brier <- function(x,models,lwd=3,xlim,ylim,axes=TRUE,...){
     times=model=Brier=dimcol=lower.Brier=upper.Brier=NULL
     pframe <- x$Brier$score

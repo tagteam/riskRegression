@@ -29,6 +29,8 @@
 #' @param type Either \code{"AUC"} or \code{"Brier"}
 #' @param add Logical. If \code{TRUE} add to existing plot
 #' @param ... passed to plot
+#'
+#' @method plot highscore
 #' @export
 plot.highscore <- function(x,models,xlab,ylab,xlim,ylim,col,lwd=3,lty,type,add=FALSE,...){
     model=times=NULL

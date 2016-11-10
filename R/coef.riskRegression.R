@@ -5,6 +5,8 @@
 #' @param digits Number of digits
 #' @param eps P-values below this number are shown as \code{<eps}
 #' @param ... not used
+#' 
+#' @method coef riskRegression
 #' @export
 coef.riskRegression <- function(object,digits=3,eps=10^-4,...){
 

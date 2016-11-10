@@ -37,7 +37,7 @@
 ##'                      sex=factor("Male",levels=levels(Melanoma$sex))))
 ##' predict(fit.tarr,newdata=Melanoma[1:4,])
 ##'
-##' 
+#' @method predict riskRegression
 #' @export 
 predict.riskRegression <- function(object,
                                    newdata,

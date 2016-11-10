@@ -5,6 +5,8 @@
 #' @param newdata Predictor values of subjects for who to predict risks
 #' @param times Time points at which to evaluate the risks 
 #' @param ... passed to predict.crr
+#'
+#' @method predict FGR
 #' @export
 predict.FGR <- function(object,newdata,times,...){
     # {{{ check the data and the design
