@@ -11,7 +11,7 @@ Depends:
 Imports:
     stats,
     graphics,
-    rms (>= 5.0-0),
+    rms,
     Rcpp,
     foreach,
     cmprsk,
