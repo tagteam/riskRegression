@@ -88,7 +88,7 @@ predictCox <- function(object,
       else 
         sterms <- xterms
       stratavars <- xvars[strataspecials]
-      strataF <- object$Strata
+      strataF <- object$strata
     }else{
       strataF <- factor("1")
     }

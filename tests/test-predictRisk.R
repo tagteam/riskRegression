@@ -439,7 +439,7 @@ test_that("baseline hazard - match basehaz results",{
                basehaz(fit.coxph, centered = FALSE)$hazard, tolerance = 1e-8)
   expect_equal(predictCox(fit.coxph, centered = TRUE)$cumHazard, 
                basehaz(fit.coxph, centered = TRUE)$hazard, tolerance = 1e-8)
-  expect_equal(predictCox(fit.cph)$cumHazard[predictCox(fit.cph)$hazard>0], 
+  expect_equal(predictCox(fit.cph)$cumHazard, 
                basehaz(fit.cph)$hazard, tolerance = 1e-8)
   
   ## possible differences due to different fit - coef(fit.coxph)-coef(fit.cph)
@@ -455,7 +455,7 @@ test_that("baseline hazard (strata) - order of the results",{
   
   expect_equal(predictCox(fit.coxph, keep.strata = TRUE)$strata, 
                basehaz(fit.coxph)$strata)
-  expect_equal(predictCox(fit.cph, keep.strata = TRUE)$strata[predictCox(fit.cph)$hazard>0], 
+  expect_equal(predictCox(fit.cph, keep.strata = TRUE)$strata, 
                basehaz(fit.cph)$strata)
   # expect_equal(as.numeric(predictCox(fit.coxph, keep.strata = TRUE)$strata), 
   #              as.numeric(predictCox(fit.cph, keep.strata = TRUE)$strata))
@@ -467,7 +467,7 @@ test_that("baseline hazard (strata) - match basehaz results",{
   
   expect_equal(predictCox(fit.coxph, centered = FALSE)$cumHazard, 
                basehaz(fit.coxph, centered = FALSE)$hazard, tolerance = 1e-8)
-  expect_equal(predictCox(fit.cph)$cumHazard[predictCox(fit.cph)$hazard>0], 
+  expect_equal(predictCox(fit.cph)$cumHazard, 
                basehaz(fit.cph)$hazard)
   
   ## !!! not the same ordering in the strata between cph and coxph thus the results in predictCox differ in order
@@ -503,7 +503,7 @@ fit.cph <- cph(Surv(time,status == 1) ~ thick + strat(invasion) + strat(ici), da
 
 test_that("baseline hazard (strata) - order of the results",{
   expect_equal(as.numeric(predictCox(fit.coxph, keep.strata = TRUE)$strata), as.numeric(basehaz(fit.coxph)$strata))
-  expect_equal(as.numeric(predictCox(fit.cph, keep.strata = TRUE)$strata)[predictCox(fit.cph, keep.strata = TRUE)$hazard>0], as.numeric(basehaz(fit.cph)$strata))
+  expect_equal(as.numeric(predictCox(fit.cph, keep.strata = TRUE)$strata), as.numeric(basehaz(fit.cph)$strata))
 })
 
 test_that("baseline hazard (strata) - correct number of events",{ 
