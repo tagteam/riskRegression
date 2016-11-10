@@ -71,69 +71,9 @@ predictCox <- function(object,
   if(!is.null(newdata)){n.newdata <- NROW(newdata)}
   
   #### extract elements from objects ####
-  xterms <- delete.response(object$terms)
-  xvars <- attr(xterms,"term.labels")
-  #### cph object
-  if ("cph" %in% class(object)){
-    nPatients <- sum(object$n)
-    if(is.null(object$y)){
-      stop("Argument \'y\' must be set to TRUE in cph \n")
-    }
-    strataspecials <- attr(xterms,"specials")$strat
-    stratavars <- xvars[strataspecials]
-    is.strata <- length(strataspecials)>0
-    if(is.strata){ ## cph:strata for estimation of the baseline hazard
-      if (length(xvars)>length(strataspecials)) 
-        sterms <- stats::drop.terms(xterms,(1:length(xvars))[-strataspecials])
-      else 
-        sterms <- xterms
-      stratavars <- xvars[strataspecials]
-      strataF <- object$strata
-    }else{
-      strataF <- factor("1")
-    }
-    if(se){ ## cph:design matrix for standard error
-      if(length(object$Design$mmcolnames)==0){
-        stop("Cannot compute standard errors when there is no confounder \n")
-        modeldata <- matrix(0, nrow = nPatients, ncol = 1)
-      }else{
-        modeldata <- as.matrix(model.frame(object)[,object$Design$mmcolnames,drop=FALSE])
-        modeldata <- sweep(modeldata, FUN = "-", MARGIN = 2, STATS = object$mean)
-      }
-    }else{
-      modeldata <- matrix(0)
-    }
-    
-  } else if ("coxph" %in% class(object)){ #### coxph object
-    
-    nPatients <- object$n
-    strataspecials <- attr(xterms,"specials")$strata
-    stratavars <- xvars[strataspecials]
-    is.strata <- length(strataspecials)>0
-    if(is.strata){ ## cph:strata for estimation of the baseline hazard
-      if (length(xvars)>length(strataspecials)) 
-        sterms <- stats::drop.terms(xterms,(1:length(xvars))[-strataspecials])
-      else 
-        sterms <- xterms
-      stratalevels <- object$xlevels[stratavars]
-      strataF <- interaction(stats::model.frame(object)[,stratavars], drop = TRUE, sep = ", ", lex.order = TRUE) 
-    }else{
-      strataF <- factor("1")
-    }
-    if(se){ ## cph:design matrix for standard error
-      if(length(object$means)==0){
-        stop("Cannot compute standard errors when there is no confounder \n")
-        # modeldata <- matrix(0, nrow = nPatients, ncol = 1)
-      }else{
-        modeldata <- as.matrix(model.frame(object)[,names(object$means),drop = FALSE])
-        modeldata <- sweep(modeldata, FUN = "-", MARGIN = 2, STATS = object$means)
-      }
-    }else{
-      modeldata <- matrix(0)
-    }
-  } else {
-    stop("Only implemented for \"coxph\" and \"cph\" objects \n")
-  }
+  resInfo <- getCoxInfo(object, design = se)
+  is.strata <- resInfo$is.strata
+  
   ## checks
   if(object$method == "exact"){
     stop("Prediction with exact correction for ties is not implemented \n")
@@ -157,21 +97,21 @@ predictCox <- function(object,
   }
   
   #### baseline hazard ####
-  levelsStrata <- levels(strataF)
+  levelsStrata <- levels(resInfo$strataF)
   nStrata <- length(levelsStrata)
   ytimes <- object$y[,"time"]
   status <- object$y[,"status"]
-  nVar <- ncol(modeldata)
-  if(is.strata){ etimes.max <- tapply(ytimes, strataF, max) }else{ etimes.max <- max(ytimes) } # last event time
+  nVar <- ncol(resInfo$modeldata)
+  if(is.strata){ etimes.max <- tapply(ytimes, resInfo$strataF, max) }else{ etimes.max <- max(ytimes) } # last event time
   
   Lambda0 <- baseHaz_cpp(alltimes = ytimes,
                          status = status,
                          eXb = if(centered == FALSE){exp(object$linear.predictors + sum(object$means*stats::coef(object)))}else{exp(object$linear.predictors)},
-                         strata = as.numeric(strataF) - 1,
+                         strata = as.numeric(resInfo$strataF) - 1,
                          se = se,
-                         data = modeldata,
+                         data = resInfo$modeldata,
                          nVar = nVar,
-                         nPatients = nPatients,
+                         nPatients = resInfo$nPatients,
                          nStrata = nStrata,
                          emaxtimes = etimes.max,
                          predtimes = if(missing(times)){numeric(0)}else{sort(times)},
@@ -183,38 +123,22 @@ predictCox <- function(object,
   }
   #### linear predictor and strata for the new data ####
   if(!is.null(newdata)){ 
-    if ("cph" %in% class(object)){
-      if(length(xvars) > length(stratavars)){
-        eXb <- exp(stats::predict(object, newdata, type = "lp"))
-      }else{ 
-        eXb <- rep(1, n.newdata) 
-      }
+
+      eXb <- exp(lpCox(object, data = newdata, 
+                   xvars = resInfo$xvars, stratavars = resInfo$stratavars))
+              
       if(is.strata){
-        tmp <- model.frame(sterms,newdata)
-        colnames(tmp) <- names(prodlim::parseSpecialNames(names(tmp),"strat"))
-        tmp <- data.frame(lapply(1:NCOL(tmp),function(j){factor(paste0(names(tmp)[j],"=",tmp[,j,drop=TRUE]))}))
-        newstrata <- apply(tmp,1,paste,collapse=".")
-        newstrata <- factor(newstrata, levels = levelsStrata) # add all levels - necessary for predict.CauseSpecificCox to able to correctly convert newstrata to numeric
+        newstrata <- defineStrata(object, data = newdata, 
+                                  sterms = resInfo$sterms, 
+                                  stratavars = resInfo$stratavars, 
+                                  levelsStrata = levelsStrata, 
+                                  stratalevels = resInfo$stratalevels)
+        
+        allStrata <- unique(newstrata)
+        if (any(allStrata %in% levelsStrata == FALSE)){
+          stop("unknown strata: ",paste(unique(allStrata[allStrata %in% levelsStrata == FALSE]), collapse = " | "),"\n")
+        }
       }
-    } else if ("coxph" %in% class(object)){
-      if(length(xvars) == length(stratavars)){ 
-        eXb <- rep(1, n.newdata)
-      } else if(is.strata){
-        eXb <- exp(rowSums(stats::predict(object, newdata = newdata, type = "terms")))
-      }else { 
-        eXb <- exp(stats::predict(object, newdata, type = "lp"))
-      }
-      if(is.strata){
-        newstrata <- prodlim::model.design(sterms,data=newdata,xlev=stratalevels,specialsFactor=TRUE)$strata[[1]]
-        newstrata <- factor(newstrata, levels = levelsStrata) # add all levels - necessary for predict.CauseSpecificCox to able to correctly convert newstrata to numeric
-      }
-    }
-    if(is.strata){
-      allStrata <- unique(newstrata)
-      if (any(allStrata %in% levelsStrata == FALSE)){
-        stop("unknown strata: ",paste(unique(allStrata[allStrata %in% levelsStrata == FALSE]), collapse = " | "),"\n")
-      }
-    }
   }
   
   #### compute hazard and survival #### 
@@ -315,7 +239,7 @@ predictCox <- function(object,
                          Lambda0 = Lambda0, 
                          survival = out$survival[newid.S,], 
                          eXb = eXb[newid.S],
-                         stratavars = stratavars, 
+                         stratavars = resInfo$stratavars, 
                          subset.Lambda0 = which(id.S))
           
           if ("hazard" %in% type){out$hazard.se[newid.S,] <- outSE$hazard.se}
@@ -443,3 +367,274 @@ seCox <- function(object, newdata, times, type, Lambda0, eXb, survival, stratava
   ## export
   return(out)
 }
+
+
+#' @title Extract information from a Cox model
+#' @description Extract information from a Cox model that are necessary for computing the baseline hazard, performing predictions or estimating the influence function associated to the Cox model
+#' @name getCoxInfo
+#' 
+#' @param object The fitted Cox regression model object either
+#'     obtained with \code{coxph} (survival package) or \code{cph}
+#'     (rms package).
+#' @param design should the design matrix be returned? 
+#'
+#' @return A named list containing the following elements:
+#' \itemize{
+#'  \item{"nPatients"}{the number of observations}
+#'  \item{"xvars"}{the name of all the regressors (including those used to form the strata)}
+#'  \item{"modeldata"}{the design matrix for the regressors}
+#'  \item{"stratavars"}{the name of the variables used to define the strata}
+#'  \item{"is.strata"}{is there any strata?}
+#'  \item{"sterms"}{terms corresponding to the strata variables}
+#'  \item{"strataF"}{a vector contain the strata factor for each observation}
+#'  \item{"stratalevels"}{a named list containing for each variable used to form the strata all its possible levels}
+#' }
+#' 
+#' @author Brice Ozenne broz@@sund.ku.dk, Thomas A. Gerds tag@@biostat.ku.dk
+#' 
+#' @examples 
+#' \dontrun{
+#' d <- sampleData(1e2, outcome = "survival")
+#' 
+#' ##
+#' library(survival)
+#' mCox <- coxph(Surv(time, event) ~ X1+X2, data = d)
+#' getCoxInfo(mCox, design = FALSE) 
+#' mCoxS <- coxph(Surv(time, event) ~ strata(X1)+strata(X2), data = d)
+#' getCoxInfo(mCoxS, design = FALSE) 
+#' 
+#' ##
+#' library(rms)
+#' mCox <- cph(Surv(time, event) ~ X1+X2, data = d, y = TRUE)
+#' getCoxInfo(mCox, design = FALSE) 
+#' mCoxS <- cph(Surv(time, event) ~ strat(X1)+strat(X2), data = d, y = TRUE)
+#' getCoxInfo(mCoxS, design = FALSE) 
+#' }
+
+#' @rdname getCoxInfo
+getCoxInfo <- function(object, design) UseMethod("getCoxInfo")
+
+#' @rdname getCoxInfo
+getCoxInfo.cph <- function(object, design){
+  
+  xterms <- delete.response(object$terms)
+  xvars <- attr(xterms,"term.labels")
+  
+  nPatients <- sum(object$n)
+  if(is.null(object$y)){
+    stop("Argument \'y\' must be set to TRUE in cph \n")
+  }
+  strataspecials <- attr(xterms,"specials")$strat
+  stratavars <- xvars[strataspecials]
+  is.strata <- length(strataspecials)>0
+  if(is.strata){ ## cph:strata for estimation of the baseline hazard
+    if (length(xvars)>length(strataspecials)) 
+      sterms <- stats::drop.terms(xterms,(1:length(xvars))[-strataspecials])
+    else 
+      sterms <- xterms
+    stratavars <- xvars[strataspecials]
+    strataF <- object$strata
+  }else{
+    sterms <- NULL
+    stratalevels <- NULL
+    strataF <- factor("1")
+  }
+  if(design){ ## cph:design matrix for standard error
+    if(length(object$Design$mmcolnames)==0){
+      stop("Cannot compute standard errors when there is no confounder \n")
+      modeldata <- matrix(0, nrow = nPatients, ncol = 1)
+    }else{
+      modeldata <- as.matrix(model.frame(object)[,object$Design$mmcolnames,drop=FALSE])
+      modeldata <- sweep(modeldata, FUN = "-", MARGIN = 2, STATS = object$mean)
+    }
+  }else{
+    modeldata <- matrix(0)
+  }
+  
+  return(list(nPatients = nPatients,
+              xvars = xvars,
+              modeldata = modeldata,
+              stratavars = stratavars, 
+              is.strata = is.strata,
+              strataF = strataF,
+              stratalevels = NULL,
+              sterms = sterms))
+}
+
+#' @rdname getCoxInfo
+getCoxInfo.coxph <- function(object, design){
+  
+  xterms <- delete.response(object$terms)
+  xvars <- attr(xterms,"term.labels")
+  
+  nPatients <- object$n
+  strataspecials <- attr(xterms,"specials")$strata
+  stratavars <- xvars[strataspecials]
+  is.strata <- length(strataspecials)>0
+  if(is.strata){ ## cph:strata for estimation of the baseline hazard
+    if (length(xvars)>length(strataspecials)) 
+      sterms <- stats::drop.terms(xterms,(1:length(xvars))[-strataspecials])
+    else 
+      sterms <- xterms
+    stratalevels <- object$xlevels[stratavars]
+    strataF <- interaction(stats::model.frame(object)[,stratavars], drop = TRUE, sep = ", ", lex.order = TRUE) 
+  }else{
+    strataF <- factor("1")
+    sterms <- NULL
+    stratalevels <- NULL
+  }
+  
+  if(design){ ## cph:design matrix for standard error
+    if(length(object$means)==0){
+      stop("Cannot compute standard errors when there is no confounder \n")
+      # modeldata <- matrix(0, nrow = nPatients, ncol = 1)
+    }else{
+      modeldata <- as.matrix(model.frame(object)[,names(object$means),drop = FALSE])
+      modeldata <- sweep(modeldata, FUN = "-", MARGIN = 2, STATS = object$means)
+    }
+  }else{
+    modeldata <- matrix(0)
+  }
+  
+  return(list(nPatients = nPatients,
+              xvars = xvars,
+              modeldata = modeldata,
+              stratavars = stratavars, 
+              is.strata = is.strata,
+              strataF = strataF,
+              stratalevels = stratalevels,
+              sterms = sterms))
+}
+
+
+#' @title Compute the linear predictor of a Cox model
+#' @description Compute the linear predictor of a Cox model
+#' @rdname lpCox 
+#' @param object The fitted Cox regression model object either
+#'     obtained with \code{coxph} (survival package) or \code{cph}
+#'     (rms package).
+#' @param data a \code{data.frame} or a \code{data.table}
+#' @param xvars the name of all the regressors (including those used to form the strata)
+#' @param stratavars the variables used to define the strata
+#' 
+#' @author Brice Ozenne broz@@sund.ku.dk, Thomas A. Gerds tag@@biostat.ku.dk
+#' 
+#' @examples 
+#' \dontrun{
+#' d <- sampleData(1e2, outcome = "survival")
+#' 
+#' ##
+#' library(survival)
+#' mCox <- coxph(Surv(time, event) ~ X1+X2, data = d)
+#' lpCox(mCox, data = d, xvars = c("X1","X2"), stratavars = NULL) 
+#' mCoxS <- coxph(Surv(time, event) ~ strata(X1)+X2, data = d)
+#' lpCox(mCoxS, data = d, xvars = c("X1","X2"), stratavars = "X1") 
+#' mCoxS2 <- coxph(Surv(time, event) ~ strata(X1)+strata(X2), data = d)
+#' lpCox(mCoxS2, data = d, xvars = c("X1","X2"), stratavars = c("X1","X2")) 
+#' 
+#' ##
+#' library(rms)
+#' mCox <- cph(Surv(time, event) ~ X1+X2, data = d, y = TRUE)
+#' lpCox(mCox, data = d, xvars = c("X1","X2"), stratavars = NULL) 
+#' mCoxS <- cph(Surv(time, event) ~ strat(X1)+X2, data = d)
+#' lpCox(mCoxS, data = d, xvars = c("X1","X2"), stratavars = "X1") 
+#' mCoxS2 <- cph(Surv(time, event) ~ strat(X1)+strat(X2), data = d, y = TRUE)
+#' lpCox(mCoxS2, data = d, xvars = c("X1","X2"), stratavars = c("X1","X2")) 
+#' }
+
+#' @rdname lpCox
+lpCox <- function(object, data, xvars, stratavars) UseMethod("lpCox")
+
+#' @rdname lpCox
+lpCox.cph <- function(object, data, xvars, stratavars){
+  
+  if(length(xvars) > length(stratavars)){
+    Xb <- stats::predict(object, data, type = "lp")
+  }else{ 
+    Xb <- rep(0, NROW(data)) 
+  }
+  
+  return(Xb)
+}
+  
+#' @rdname lpCox
+lpCox.coxph <- function(object, data, xvars, stratavars){
+
+  if(length(xvars) == length(stratavars)){ 
+    Xb <- rep(0, NROW(data))
+  } else if(length(stratavars)>0){
+    Xb <- rowSums(stats::predict(object, newdata = data, type = "terms"))
+  }else { 
+    Xb <- stats::predict(object, data, type = "lp")
+  }
+  
+  return(Xb)
+}
+
+#' @title Define the strata for a new dataset
+#' @description Define the strata in a dataset to match those of a stratified Cox model
+#' @name defineStrata
+#' @param object The fitted Cox regression model object either
+#'     obtained with \code{coxph} (survival package) or \code{cph}
+#'     (rms package).
+#' @param data a \code{data.frame} or a \code{data.table}
+#' @param sterms terms in the formula corresponding to the strata variables
+#' @param stratavars the name of the variables used to define the strata
+#' @param levelsStrata the strata levels that have been used to fit the Cox model
+#' @param stratalevels a named list containing for each variable used to form the strata all its possible levels
+#' @param ... additional arguments to be passed to the low level functions
+#' 
+#' @author Brice Ozenne broz@@sund.ku.dk, Thomas A. Gerds tag@@biostat.ku.dk
+#' 
+#' @examples 
+#' \dontrun{
+#' d <- sampleData(1e2, outcome = "survival")
+#' 
+#' ##
+#' library(survival)
+#' mCoxS <- coxph(Surv(time, event) ~ strata(X1)+X2, data = d)
+#' info <- getCoxInfo(mCoxS, design = FALSE)
+#' defineStrata(mCoxS, data = d, sterms = info$sterms, stratavars = info$stratavars, 
+#'              levelsStrata = levels(info$strataF), stratalevels = info$stratalevels) 
+#' 
+#' ##
+#' library(rms)
+#' mCoxS <- cph(Surv(time, event) ~ strat(X1)+X2, data = d, y = TRUE)
+#' info <- getCoxInfo(mCoxS, design = FALSE)
+#' defineStrata(mCoxS, data = d, sterms = info$sterms, stratavars = info$stratavars, 
+#'              levelsStrata = levels(info$strataF), stratalevels = info$stratalevels) 
+#' }
+defineStrata <- function(object, data, sterms, stratavars, levelsStrata, ...) UseMethod("defineStrata")
+
+
+#' @rdname defineStrata
+defineStrata.cph <- function(object, data, sterms, stratavars, levelsStrata, ...){
+
+    if(length(stratavars)>0){
+    tmp <- model.frame(sterms,data)
+    colnames(tmp) <- names(prodlim::parseSpecialNames(names(tmp),"strat"))
+    tmp <- data.frame(lapply(1:NCOL(tmp),function(j){factor(paste0(names(tmp)[j],"=",tmp[,j,drop=TRUE]))}))
+    newstrata <- apply(tmp,1,paste,collapse=".")
+    newstrata <- factor(newstrata, levels = levelsStrata) # add all levels - necessary for predict.CauseSpecificCox to able to correctly convert newstrata to numeric
+  }else{
+    newstrata <- NULL
+  } 
+  
+  return(newstrata)
+}
+  
+#' @rdname defineStrata
+defineStrata.coxph <- function(object, data, sterms, stratavars, levelsStrata, stratalevels){
+  
+  if(length(stratavars)>0){
+    newstrata <- prodlim::model.design(sterms,data=data,xlev=stratalevels,specialsFactor=TRUE)$strata[[1]]
+    newstrata <- factor(newstrata, levels = levelsStrata) # add all levels - necessary for predict.CauseSpecificCox to able to correctly convert newstrata to numeric
+  }else{
+    newstrata <- NULL
+  } 
+  
+  return(newstrata)
+}
+  
+   
+  
