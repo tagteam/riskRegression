@@ -73,7 +73,7 @@ predictCox <- function(object,
   #### extract elements from objects ####
   resInfo <- getCoxInfo(object, design = se)
   is.strata <- resInfo$is.strata
-  
+ 
   ## checks
   if(object$method == "exact"){
     stop("Prediction with exact correction for ties is not implemented \n")
@@ -95,6 +95,9 @@ predictCox <- function(object,
   if(any(type %in% c("hazard","cumHazard","survival","eXb","newstrata") == FALSE)){
     stop("type can only be \"hazard\", \"cumHazard\" or/and \"survival\" \n") # eXb and newstrata are only for internal use 
   }
+  # if(se == TRUE && ncol(resInfo$modeldata) == 0){
+  #   stop("cannot compute the standard error when there are not covariates \n")
+  # }
   
   #### baseline hazard ####
   levelsStrata <- levels(resInfo$strataF)
@@ -117,10 +120,12 @@ predictCox <- function(object,
                          predtimes = if(missing(times)){numeric(0)}else{sort(times)},
                          cause = 1,
                          Efron = (object$method == "efron"))
-  
+
   if (is.strata == TRUE){ ## rename the strata value with the correct levels
     Lambda0$strata <- factor(Lambda0$strata, levels = 0:(nStrata-1), labels = levelsStrata)
   }
+  
+  
   #### linear predictor and strata for the new data ####
   if(!is.null(newdata)){ 
 
@@ -300,22 +305,8 @@ predictCox <- function(object,
 seCox <- function(object, newdata, times, type, Lambda0, eXb, survival, stratavars, subset.Lambda0 = 1:length(Lambda0$time)){
   
   ## prepare dataset
-  if("cph" %in% class(object)){
-    formulaObj <- object$sformula
-    names.Xcenter <- object$Design$mmcolnames
-    Xcenter <- object$mean
-  }else if("coxph" %in% class(object)){
-    formulaObj <- object$formula
-    names.Xcenter <- names(object$means)
-    Xcenter <- object$means
-  }  
-  
-  terms.X <- delete.response(terms(formulaObj))
-  if(!is.null(stratavars)){terms.X <- drop.terms(terms.X, which(attr(terms.X,"term.labels") %in% stratavars))}
-  formulaX <- formula(terms.X)
-  newdata.design <- stats::model.matrix(formulaX,newdata)[,names.Xcenter,drop=FALSE]
-  newdata.design <- sweep(newdata.design, FUN = "-", MARGIN = 2, STATS = Xcenter)
-  
+  newdata.design <- centerData(object, data = newdata, stratavars = stratavars)
+ 
   ##
   n.times <- length(times)
   n.newdata <- NROW(newdata)
@@ -337,17 +328,28 @@ seCox <- function(object, newdata, times, type, Lambda0, eXb, survival, stratava
   for(indexT in 1:n.times){
     
     if("hazard" %in% type){
-      Xbar_loop <- Lambda0$Xbar[subset.Lambda0[indexT],,drop = FALSE]
-      hazard0_loop <- hazard0.tindex[indexT]
-      hazardX_loop <- sweep(newdata.design*hazard0_loop, MARGIN = 2, FUN = "-",  STATS = as.double(Xbar_loop))
-      se.betaHazard.tindex[,indexT] <- rowSums(hazardX_loop %*% object$var * hazardX_loop)
+      if(is.null(object$var)){
+        se.betaHazard.tindex[,indexT] <- 0
+      }else{
+        Xbar_loop <- Lambda0$Xbar[subset.Lambda0[indexT],,drop = FALSE]
+        hazard0_loop <- hazard0.tindex[indexT]
+        hazardX_loop <- sweep(newdata.design*hazard0_loop, MARGIN = 2, FUN = "-",  STATS = as.double(Xbar_loop))
+        se.betaHazard.tindex[,indexT] <- rowSums(hazardX_loop %*% object$var * hazardX_loop)
+      }
     }
+    
     if("cumHazard" %in% type || "survival" %in% type){
-      XbarCumSum_loop <- Lambda0$XbarCumSum[subset.Lambda0[indexT],,drop = FALSE]
-      cumHazard0_loop <- cumHazard0.tindex[indexT]
-      cumHazardX_loop <- sweep(newdata.design*cumHazard0_loop, MARGIN = 2, FUN = "-",  STATS = as.double(XbarCumSum_loop))
-      se.betaCumHazard.tindex[,indexT] <- rowSums(cumHazardX_loop %*% object$var * cumHazardX_loop)
+      if(is.null(object$var)){
+        se.betaCumHazard.tindex[,indexT] <- 0
+      }else{
+        XbarCumSum_loop <- Lambda0$XbarCumSum[subset.Lambda0[indexT],,drop = FALSE]
+        cumHazard0_loop <- cumHazard0.tindex[indexT]
+        cumHazardX_loop <- sweep(newdata.design*cumHazard0_loop, MARGIN = 2, FUN = "-",  STATS = as.double(XbarCumSum_loop))
+        se.betaCumHazard.tindex[,indexT] <- rowSums(cumHazardX_loop %*% object$var * cumHazardX_loop)  
+      }
+      
     }
+    
   }
   
   ##
@@ -440,15 +442,9 @@ getCoxInfo.cph <- function(object, design){
     strataF <- factor("1")
   }
   if(design){ ## cph:design matrix for standard error
-    if(length(object$Design$mmcolnames)==0){
-      stop("Cannot compute standard errors when there is no confounder \n")
-      modeldata <- matrix(0, nrow = nPatients, ncol = 1)
-    }else{
-      modeldata <- as.matrix(model.frame(object)[,object$Design$mmcolnames,drop=FALSE])
-      modeldata <- sweep(modeldata, FUN = "-", MARGIN = 2, STATS = object$mean)
-    }
+    modeldata <- centerData(object, data = model.frame(object), stratavars = stratavars)
   }else{
-    modeldata <- matrix(0)
+    modeldata <- matrix(nrow = 0, ncol = 0)
   }
   
   return(list(nPatients = nPatients,
@@ -484,16 +480,11 @@ getCoxInfo.coxph <- function(object, design){
     stratalevels <- NULL
   }
   
-  if(design){ ## cph:design matrix for standard error
-    if(length(object$means)==0){
-      stop("Cannot compute standard errors when there is no confounder \n")
-      # modeldata <- matrix(0, nrow = nPatients, ncol = 1)
-    }else{
-      modeldata <- as.matrix(model.frame(object)[,names(object$means),drop = FALSE])
-      modeldata <- sweep(modeldata, FUN = "-", MARGIN = 2, STATS = object$means)
-    }
+  
+  if(design){ ## coxph:design matrix for standard error
+    modeldata <- centerData(object, data = model.frame(object), stratavars = stratavars)
   }else{
-    modeldata <- matrix(0)
+    modeldata <- matrix(nrow = 0, ncol = 0)
   }
   
   return(list(nPatients = nPatients,
@@ -637,4 +628,88 @@ defineStrata.coxph <- function(object, data, sterms, stratavars, levelsStrata, s
 }
   
    
+
+#' @title Center a dataset
+#' @description Center a dataset around the centering values
+#' @name centerData
+#' @param object The fitted Cox regression model object either
+#'     obtained with \code{coxph} (survival package) or \code{cph}
+#'     (rms package).
+#' @param data a \code{data.frame} or a \code{data.table}
+#' @param ... additional arguments to be passed to the low level functions
+#' 
+#' @author Brice Ozenne broz@@sund.ku.dk, Thomas A. Gerds tag@@biostat.ku.dk
+#' 
+#' @examples 
+#' \dontrun{
+#' d <- sampleData(1e2, outcome = "survival")
+#' 
+#' ##
+#' library(survival)
+#' mCoxS <- coxph(Surv(time, event) ~ X1, data = d) 
+#' centerData(mCoxS, stratavars = NULL)
+#' mCoxS <- coxph(Surv(time, event) ~ X1+X2, data = d) 
+#' centerData(mCoxS, stratavars = NULL)
+#' mCoxS <- coxph(Surv(time, event) ~ strata(X1)+X2, data = d) 
+#' centerData(mCoxS, stratavars = "strata(X1)")
+#' mCoxS <- coxph(Surv(time, event) ~ strata(X1)+strata(X2), data = d) 
+#' centerData(mCoxS, stratavars = c("strata(X1)","strata(X2)"))
+#' 
+#' ##
+#' library(rms)
+#' mCoxS <- cph(Surv(time, event) ~ X1, data = d, y = TRUE) 
+#' centerData(mCoxS, stratavars = NULL)
+#' mCoxS <- cph(Surv(time, event) ~ X1+X2, data = d, y = TRUE) 
+#' centerData(mCoxS, stratavars = NULL)
+#' mCoxS <- cph(Surv(time, event) ~ strat(X1)+X2, data = d, y = TRUE) 
+#' centerData(mCoxS, stratavars = "strat(X1)")
+#' mCoxS <- cph(Surv(time, event) ~ strat(X1)+strat(X2), data = d, y = TRUE) 
+#' centerData(mCoxS, stratavars = c("strat(X1)","strat(X2)"))
+#' }
+centerData <- function(object, data, stratavars, center, ...) UseMethod("centerData")
+
+#' @rdname centerData
+centerData.cph <- function(object, data = model.frame(object), stratavars, center = TRUE, ...){
+
+  if(length(object$Design$mmcolnames)>0){
+    
+    terms.X <- delete.response(terms(object$sformula))
+    if(length(stratavars)>0){terms.X <- drop.terms(terms.X, which(attr(terms.X,"term.labels") %in% stratavars))}
+    formulaX <- formula(terms.X)
+    modeldata <- stats::model.matrix(formulaX,data)[,object$Design$mmcolnames,drop=FALSE]
+    
+    if(center){
+      modeldata <- sweep(modeldata, FUN = "-", MARGIN = 2, STATS = object$means)
+    }
+    
+  }else{
+    
+    modeldata <- matrix(0, ncol = 1, nrow = NROW(data))
+    
+  }
   
+  return(modeldata)
+}
+
+#' @rdname centerData
+centerData.coxph <- function(object, data = model.frame(object), stratavars, center = TRUE, ....){
+  
+  if(length(object$means)>0){
+    
+    terms.X <- delete.response(terms(object$formula))
+    if(length(stratavars)>0){terms.X <- drop.terms(terms.X, which(attr(terms.X,"term.labels") %in% stratavars))}
+    formulaX <- formula(terms.X)
+    modeldata <- stats::model.matrix(formulaX,data)[,names(object$means),drop=FALSE]
+   
+    if(center){
+      modeldata <- sweep(modeldata, FUN = "-", MARGIN = 2, STATS = object$means)
+    }
+    
+  }else{
+    
+    modeldata <- matrix(0, ncol = 1, nrow = NROW(data))
+    
+  }
+  
+  return(modeldata)
+}

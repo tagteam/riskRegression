@@ -20,8 +20,8 @@ for(ties in c("breslow","efron")){ # ties <- "breslow"
     #res_surv <- survival:::predict.coxph(fit_coxph, newdata = d, type="expected", se.fit = TRUE)
     resCoxph <- predictCox(fit_coxph, newdata = d, times = d$time,  se = FALSE)
     resCph <- predictCox(fit_cph, newdata = d, times = d$time,  se = FALSE)
-    expect_error(resCoxph <- predictCox(fit_coxph, newdata = d, times = d$time,  se = TRUE))
-    expect_error(resCph <- predictCox(fit_cph, newdata = d, times = d$time,  se = TRUE))
+    resCoxph <- predictCox(fit_coxph, newdata = d, times = d$time,  se = TRUE)
+    resCph <- predictCox(fit_cph, newdata = d, times = d$time,  se = TRUE)
   })
   
   test_that(paste("predictCox(univariate) - valid se cumHazard",ties),{
@@ -63,8 +63,8 @@ for(ties in c("breslow","efron")){ #
     # res_surv <- survival:::predict.coxph(fit_coxph, newdata = d, type="expected", se.fit = TRUE)
     resCoxph <- predictCox(fit_coxph, newdata = d, times = d$time,  se = FALSE)
     resCph <- predictCox(fit_cph, newdata = d, times = d$time,  se = FALSE)
-    expect_error(resCoxph <- predictCox(fit_coxph, newdata = d, times = d$time,  se = TRUE))
-    expect_error(resCph <- predictCox(fit_cph, newdata = d, times = d$time,  se = TRUE))
+    resCoxph <- predictCox(fit_coxph, newdata = d, times = d$time,  se = TRUE)
+    resCph <- predictCox(fit_cph, newdata = d, times = d$time,  se = TRUE)
     # res_pec <- pec::predictSurvProb(fit_coxph, newdata = d, times = d$time)
   })
   
@@ -82,7 +82,7 @@ for(ties in c("breslow","efron")){ #
     # expect_equal(resCph,resCoxph, tolerance = 1e-5, scale = 1)
   })
   
-  test_that(paste("predictCox (strata, multivariate) - valide se cumHazard",ties),{
+  test_that(paste("predictCox (strata, multiple) - valide se cumHazard",ties),{
     fit_coxph <- coxph(Surv(time,event) ~ strata(X1) + X2 + X6 ,data=d, ties=ties)
     fit_cph <- cph(Surv(time,event) ~ strat(X1) + X2 + X6 ,data=d, method=ties, y = TRUE)
     
