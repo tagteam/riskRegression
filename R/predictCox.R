@@ -632,10 +632,12 @@ defineStrata.coxph <- function(object, data, sterms, stratavars, levelsStrata, s
 #' @title Center a dataset
 #' @description Center a dataset around the centering values
 #' @name centerData
+#' 
 #' @param object The fitted Cox regression model object either
 #'     obtained with \code{coxph} (survival package) or \code{cph}
 #'     (rms package).
 #' @param data a \code{data.frame} or a \code{data.table}
+#' @param stratavars the name of the strata variables
 #' @param ... additional arguments to be passed to the low level functions
 #' 
 #' @author Brice Ozenne broz@@sund.ku.dk, Thomas A. Gerds tag@@biostat.ku.dk
@@ -666,10 +668,10 @@ defineStrata.coxph <- function(object, data, sterms, stratavars, levelsStrata, s
 #' mCoxS <- cph(Surv(time, event) ~ strat(X1)+strat(X2), data = d, y = TRUE) 
 #' centerData(mCoxS, stratavars = c("strat(X1)","strat(X2)"))
 #' }
-centerData <- function(object, data, stratavars, center, ...) UseMethod("centerData")
+centerData <- function(object, data, stratavars, ...) UseMethod("centerData")
 
 #' @rdname centerData
-centerData.cph <- function(object, data = model.frame(object), stratavars, center = TRUE, ...){
+centerData.cph <- function(object, data = model.frame(object), stratavars, ...){
 
   if(length(object$Design$mmcolnames)>0){
     
@@ -692,7 +694,7 @@ centerData.cph <- function(object, data = model.frame(object), stratavars, cente
 }
 
 #' @rdname centerData
-centerData.coxph <- function(object, data = model.frame(object), stratavars, center = TRUE, ....){
+centerData.coxph <- function(object, data = model.frame(object), stratavars, ....){
   
   if(length(object$means)>0){
     

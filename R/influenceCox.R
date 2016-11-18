@@ -1,7 +1,17 @@
 `iid` <- function(x,...) UseMethod("idd")
 
+#' @title Extract i.i.d. decomposition from a Cox model
+#' @description Compute the influence function for each observation used to estimate the model
+#' @name iid
+#' 
+#' @param x object The fitted Cox regression model object either
+#'     obtained with \code{coxph} (survival package) or \code{cph}
+#'     (rms package).
+#' @param ... additional arguments
+#'
 #' @examples
 #' library(survival)
+#' library(data.table)
 #' set.seed(10)
 #' d <- sampleData(2e1, outcome = "survival")[,.(eventtime,event,X1,X6)]
 #' setkey(d, eventtime)
@@ -9,12 +19,20 @@
 #' 
 #' library(timereg)
 #' mGS.cox <- cox.aalen(Surv(eventtime, event) ~ prop(X1)+prop(X6), data = d, resample.iid = TRUE)
+#' ICbeta_GS <- mGS.cox$gamma.iid
+#' IClambda_GS <- t(as.data.table(mGS.cox$B.iid))
 #'  
 #' m.cox <- coxph(Surv(eventtime, event) ~ X1+X6, data = d, y = TRUE)
 #' IC.cox <- iid.coxph(m.cox, center = FALSE)
-#' var(IC.cox$IC)
+#' 
+#' range(IC.cox$iid_timereg$beta-ICbeta_GS)
+#' range(IC.cox$iid_timereg$cumHazard[,1]-IClambda_GS[,2])
+#' 
+#' var(ICbeta_GS)
 #' m.cox$var
-#'
+#' var(ICbeta_GS)/mGS.cox$var.gamma
+#' 
+#' 
 #' var(IC.cox$IC)/m.cox$var
 #'
 #' var(mGS.cox$gamma.iid)
@@ -48,38 +66,39 @@ iid.coxph <- function(x, ...){
   eXb <- eXb[order]
   X <- X[order,,drop = FALSE]
   
-  #### Compute S0, S1, S2, U, E
-  calcS0(t = tau, eventtime, eXb)
-  calcS1(t = tau, eventtime, eXb, X)
-  calcE(t = tau, eventtime, eXb, X)
-  ScoreLv <- calcU(t = tau, eventtime = eventtime, eXb = eXb, X = X, status = status, aggregate = TRUE)
-  cat("Sample average of the individual scores \n")
-  print(ScoreLv)
-  InfoLv <- calcI(t = tau, eventtime = eventtime, eXb = eXb, X = X, status = status, aggregate = TRUE)
-  cat("Difference between the second derivative of the loglikelihood and the inverse of the Variance Covariance matrix \n")
-  print(InfoLv-solve(x$var))
-  
-  martinRes <- calcMartinRes(x = x, data = data, status = status, time = eventtime, type = "cumHazard")
-  cat("Difference between the Martingal residuals from RR and survival \n")
-  print(range(residuals(x, type = "martingale")[order]-diag(martinRes)))
-  d_martinRes <- calcMartinRes(x = x, data = data, status = status, time = eventtime, type = "hazard")
-  
-  # fields:::image.plot(martinRes)
-  # fields:::image.plot(d_martinRes)
-  
-  #### Influence function
+  #### Influence function for the beta
   ICobs <- calcIC1(t = tau, eventtime = eventtime, eXb = eXb, X = X, status = status, iInfo = iInfo)
   # Sigma_IC1 <- var(ICobs)
   
-  # compute the martingale residuals and apply the formula of torben  
-  epsilon1 <- calcEpsilon1(x = x, data = data, eXb = eXb, X = X, status = status, time = eventtime)
   
+  #### Timereg iid
+  iid_timereg <- list()
+  Ueventtime <- unique(eventtime)
+  n.Ueventtime <- length(Ueventtime)
+  n.data <- NROW(data) 
+  
+  ## beta
+  epsilon1 <- calcEpsilon1(x = x, data = data, eXb = eXb, X = X, status = status, time = eventtime)
+  iid_timereg$beta <-  t(apply(epsilon1, 1, function(row){iInfo %*% row}))
   #Var_epsilon1 <- matrix(apply(apply(epsilon1, 1, tcrossprod), 1, sum),2,2)
   #Sigma_Epsilon1 <- NROW(data) * iInfo %*% Var_epsilon1 %*% iInfo
   
+  ## lambda
+  iid_timereg$cumHazard <- matrix(NA, nrow = n.data, ncol = n.Ueventtime)
+  
+  for(iterT in 1:n.Ueventtime){
+    epsilon3 <- calcEpsilon3(x = x, data = data, eXb = eXb, X = X, status = status, time = Ueventtime[iterT])
+    #calcMartinRes(x =x ,data = data,status = status,time = eventtime[1],type = "hazard")/calcS0(t = eventtime[1], eventtime = eventtime, eXb = eXb)
+    H <-  calcH(t = Ueventtime[iterT], eventtime = eventtime, eXb = eXb, X = X, status = status)
+    #calcS1(t = eventtime[1], eventtime = eventtime, eXb = eXb, X = X)/calcS0(t = eventtime[1], eventtime = eventtime, eXb = eXb)^2
+    
+    epsilon2 <- epsilon3 + iid_timereg$beta %*% H
+    iid_timereg$cumHazard[,iterT] <- epsilon2
+  }
+  
+  #### export
   return(list(IC = ICobs, 
-              epsilon1 = epsilon1,
-              epsilon11 = t(apply(epsilon1, 1, function(row){iInfo %*% row}))
+              iid_timereg = iid_timereg
               ))
   
 }
@@ -149,7 +168,7 @@ calcI <- function(t, eventtime, eXb, X, status, aggregate){
   return(info)
 }
 
-fctU0 <- function(t, X, eventtime =  oldtime, status = oldstatus){
+calcU0 <- function(t, X, eventtime, status){
   # here t should be min(t, t_obs) where t is the time at which the IC is computed and t_obs is the event time of the observation
   status[eventtime>t] <- 0 # artificial censoring of the observations after t
   evaltime <- eventtime[status == 1]
@@ -158,8 +177,8 @@ fctU0 <- function(t, X, eventtime =  oldtime, status = oldstatus){
   score0 <- rep(0,NCOL(X))
   
   for(iterT in 1:n.evaltime){
-    Etempo <- fctE(t = evaltime[iterT])
-    S0tempo <- fctS0(t = evaltime[iterT])
+    Etempo <- calcE(t = evaltime[iterT])
+    S0tempo <- calcS0(t = evaltime[iterT])
     
     score0 <- score0 + (X - Etempo)/S0tempo
   }
@@ -175,7 +194,7 @@ calcMartinRes <- function(x, data, status, time, type){ # dNi-dLambdai
     
     martinRes[iterI,time[iterI]<unique(time)] <- 0 # no more at risk => Lambda = 0
     
-    if(type == "cumHazard"){
+    if(type == "cumHazard"){ # add dN
       martinRes[iterI,time[iterI]<=Utime] <- status[iterI] + martinRes[iterI,time[iterI]<=Utime] 
     }else if(type == "hazard"){
       martinRes[iterI,time[iterI]==Utime] <- status[iterI] + martinRes[iterI,time[iterI]==Utime]
@@ -191,7 +210,7 @@ calcEpsilon1 <- function(x, data, eXb, X, status, time){
   d_martinRes <- calcMartinRes(x = x, data = data, status = status, time = time, type = "hazard") # one value for each unique time and each patient
   
   Utime <- unique(time)
-  for(iterT in 1:NCOL(d_martinRes)){
+  for(iterT in 1:length(Utime)){
     Etempo <- calcE(t = Utime[iterT], eventtime = time, eXb = eXb, X = X) # one value for each patient
     epsilon1 <- epsilon1 + sweep(sweep(X, MARGIN = 2, STATS = Etempo, FUN = "-"), 
                                  MARGIN = 1, STATS = d_martinRes[,iterT], FUN = "*")
@@ -199,6 +218,39 @@ calcEpsilon1 <- function(x, data, eXb, X, status, time){
 
   return(epsilon1)
 }  
+
+calcEpsilon3 <- function(x, data, eXb, X, status, time){
+  
+  epsilon3 <- matrix(0, nrow = NROW(X), ncol = 1)
+  d_martinRes <- calcMartinRes(x = x, data = data, status = status, time = time, type = "hazard") # one value for each unique time and each patient
+  
+  Utime <- unique(time)
+  for(iterT in 1:length(Utime)){
+    S0tempo <- calcS0(t = Utime[iterT], eventtime = time, eXb = eXb) # one value for each patient
+    epsilon3 <- epsilon3 + d_martinRes[,iterT]/S0tempo
+  }
+  
+  return(epsilon3)
+}
+
+calcH <- function(t, eventtime, eXb, X, status){
+ 
+  H <- rep(0, times = NCOL(X))
+  
+  Utime <- unique(eventtime[eventtime<=t])
+  
+  for(iterT in 1:length(Utime)){
+    S1tempo <- calcS1(Utime[iterT], eventtime, eXb, X)
+    S0tempo <- calcS0(Utime[iterT], eventtime, eXb)
+
+    # handle ties
+    indexPat <- which(eventtime == eventtime[iterT])
+    H <- H - sum(status[indexPat])*S1tempo/S0tempo^2
+  }
+  
+  return(H)
+} 
+
 
 calcIC1 <- function(t, eventtime, eXb, X, status, iInfo, version = "1"){
   Score <- calcU(t = t, X = X, eXb = eXb, eventtime = eventtime, status = status, aggregate = FALSE)
