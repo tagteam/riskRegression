@@ -44,8 +44,20 @@ colSumsCrossprod <- function(X, Y, transposeY) {
     .Call('riskRegression_colSumsCrossprod', PACKAGE = 'riskRegression', X, Y, transposeY)
 }
 
-predictCIF_cpp <- function(hazard, cumHazard, eXb_h, eXb_cumH, strata, newtimes, etimes, etimeMax, t0, nTimes, nNewTimes, nData, cause, nCause) {
-    .Call('riskRegression_predictCIF_cpp', PACKAGE = 'riskRegression', hazard, cumHazard, eXb_h, eXb_cumH, strata, newtimes, etimes, etimeMax, t0, nTimes, nNewTimes, nData, cause, nCause)
+calcS0_cpp <- function(t, n, eventtime, eXb) {
+    .Call('riskRegression_calcS0_cpp', PACKAGE = 'riskRegression', t, n, eventtime, eXb)
+}
+
+calcS1_cpp <- function(t, n, p, eventtime, eXb, X) {
+    .Call('riskRegression_calcS1_cpp', PACKAGE = 'riskRegression', t, n, p, eventtime, eXb, X)
+}
+
+calcE_cpp <- function(t, n, p, eventtime, eXb, X) {
+    .Call('riskRegression_calcE_cpp', PACKAGE = 'riskRegression', t, n, p, eventtime, eXb, X)
+}
+
+calcU_cpp <- function(newX, newStatus, newN, IndexNewT, ENewT, p, aggregate) {
+    .Call('riskRegression_calcU_cpp', PACKAGE = 'riskRegression', newX, newStatus, newN, IndexNewT, ENewT, p, aggregate)
 }
 
 #' Apply cumsum in each row 

@@ -5,7 +5,9 @@
 \alias{iid.coxph}
 \title{Extract i.i.d. decomposition from a Cox model}
 \usage{
-\method{iid}{coxph}(x, ...)
+iid(x, ...)
+
+\method{iid}{coxph}(x, tau = NULL, ...)
 }
 \arguments{
 \item{x}{object The fitted Cox regression model object either
@@ -24,17 +26,17 @@ set.seed(10)
 d <- sampleData(2e1, outcome = "survival")[,.(eventtime,event,X1,X6)]
 setkey(d, eventtime)
 
-
 library(timereg)
 mGS.cox <- cox.aalen(Surv(eventtime, event) ~ prop(X1)+prop(X6), data = d, resample.iid = TRUE)
 ICbeta_GS <- mGS.cox$gamma.iid
 IClambda_GS <- t(as.data.table(mGS.cox$B.iid))
  
+ 
 m.cox <- coxph(Surv(eventtime, event) ~ X1+X6, data = d, y = TRUE)
 IC.cox <- iid.coxph(m.cox, center = FALSE)
 
-range(IC.cox$iid_timereg$beta-ICbeta_GS)
-range(IC.cox$iid_timereg$cumHazard[,1]-IClambda_GS[,2])
+range(IC.cox$ICbeta-ICbeta_GS)
+range(IC.cox$ICLambda0/IClambda_GS[,NCOL(IClambda_GS)])
 
 var(ICbeta_GS)
 m.cox[["var"]]
@@ -51,7 +53,6 @@ var(mGS.cox$gamma.iid)/m.cox$var
 
  
 IC.cox$epsilon11/mGS.cox$gamma.iid
-
 
 }
 

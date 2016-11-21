@@ -6,7 +6,7 @@
 \alias{centerData.cph}
 \title{Center a dataset}
 \usage{
-centerData(object, data, stratavars)
+centerData(object, data, stratavars, center)
 
 \method{centerData}{cph}(object, data = model.frame(object), stratavars,
   center)

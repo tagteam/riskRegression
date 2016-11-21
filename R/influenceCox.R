@@ -1,5 +1,3 @@
-`iid` <- function(x,...) UseMethod("idd")
-
 #' @title Extract i.i.d. decomposition from a Cox model
 #' @description Compute the influence function for each observation used to estimate the model
 #' @name iid
@@ -21,11 +19,12 @@
 #' ICbeta_GS <- mGS.cox$gamma.iid
 #' IClambda_GS <- t(as.data.table(mGS.cox$B.iid))
 #'  
+#'  
 #' m.cox <- coxph(Surv(eventtime, event) ~ X1+X6, data = d, y = TRUE)
 #' IC.cox <- iid.coxph(m.cox, center = FALSE)
 #' 
-#' range(IC.cox$iid_timereg$beta-ICbeta_GS)
-#' range(IC.cox$iid_timereg$cumHazard[,1]-IClambda_GS[,2])
+#' range(IC.cox$ICbeta-ICbeta_GS)
+#' range(IC.cox$ICLambda0/IClambda_GS[,NCOL(IClambda_GS)])
 #' 
 #' var(ICbeta_GS)
 #' m.cox[["var"]]
@@ -43,8 +42,14 @@
 #'  
 #' IC.cox$epsilon11/mGS.cox$gamma.iid
 #' 
-#' 
-iid.coxph <- function(x, ...){
+
+#' @rdname iid
+#' @export
+`iid` <- function(x,...) UseMethod("idd")
+
+#' @rdname iid
+#' @export
+iid.coxph <- function(x, tau = NULL, ...){
   
   #### extract information from the Cox model
   resInfo <- getCoxInfo(x, design = FALSE, center = FALSE)
@@ -54,7 +59,7 @@ iid.coxph <- function(x, ...){
   eXb <- exp(lpCox(x, data = data, xvars = resInfo$xvars, stratavars = resInfo$stratavars))
   X <- centerData(x, data = eval(x$call$data), stratavars = resInfo$stratavar, center = FALSE)
   
-  tau <- max(eventtime)[1]
+  if(is.null(tau)){tau <- max(eventtime)[1]}
   iInfo <- x$var
   
   # reorder data
@@ -66,10 +71,21 @@ iid.coxph <- function(x, ...){
   X <- X[order,,drop = FALSE]
   
   #### Influence function for the beta
-  # calcU(tau, eventtime = eventtime, eXb = eXb, X = X, status = status, aggregate = FALSE)
-  ICobs <- calcIC1(t = tau, eventtime = eventtime, eXb = eXb, X = X, status = status, iInfo = iInfo)
-  # Sigma_IC1 <- var(ICobs)
+  # print(calcU(newT = eventtime, newX = X, newStatus = status, newN = NROW(X),
+  #             eventtime = eventtime, eXb = eXb, X = X, p = NCOL(X), aggregate = TRUE))
+  # print(calcU_cpp(newT = eventtime, newX = X, newStatus = status, newN = NROW(X),
+  #       eventtime = eventtime, eXb = eXb, X = X, p = NCOL(X), aggregate = FALSE))
   
+  ICbeta <- iidBeta(newT = eventtime, newX = X, newStatus = status,
+                    eventtime = eventtime, eXb = eXb, X = X, status = status, 
+                    iInfo = iInfo)
+ 
+  #### Influence function for the lambda0
+  lambda0 <- predictCox(x, type = "hazard")
+  
+  ICLambda0 <- iidLambda0(tau = tau,
+                          newT = eventtime, neweXb = eXb, newX = X, newStatus = status, ICbeta = ICbeta,
+                          eventtime = eventtime, eXb = eXb, X = X, status = status, lambda0 = lambda0$hazard)
   
   #### Timereg iid
   iid_timereg <- list()
@@ -80,8 +96,6 @@ iid.coxph <- function(x, ...){
   ## beta
   epsilon1 <- calcEpsilon1(x = x, data = data, eXb = eXb, X = X, status = status, time = eventtime)
   iid_timereg$beta <-  t(apply(epsilon1, 1, function(row){iInfo %*% row}))
-  #Var_epsilon1 <- matrix(apply(apply(epsilon1, 1, tcrossprod), 1, sum),2,2)
-  #Sigma_Epsilon1 <- NROW(data) * iInfo %*% Var_epsilon1 %*% iInfo
   
   ## lambda
   iid_timereg$cumHazard <- matrix(NA, nrow = n.data, ncol = n.Ueventtime)
@@ -97,19 +111,84 @@ iid.coxph <- function(x, ...){
   }
   
   #### export
-  return(list(IC = ICobs, 
+  return(list(ICbeta = ICbeta, 
+              ICLambda0 = ICLambda0, 
               iid_timereg = iid_timereg
-              ))
-  
-}
-
-iidBeta <- function(){
+  ))
   
 }
 
 
+iidBeta <- function(newT, newX, newStatus, 
+                    eventtime, eXb, X, status, 
+                    iInfo){
+  # no need to compute E and S0 for all observations, only for each time with an event
+  U1.time <- unique(newT[newStatus>0])
+  U1.index <- match(newT[newStatus>0], U1.time) - 1
+  nU1.time <- length(U1.time)
+  n.obs <- NROW(X)
+  p.X <- NCOL(X)
+  
+  #### Compute E
+  res <- lapply(U1.time, FUN = function(t){
+    return(calcE_cpp(t = t, eventtime = eventtime, eXb = eXb, X = X, n = n.obs, p = p.X))
+  })
+  
+  S0_U1times <- unlist(lapply(res,"[[","S0"))
+  S1_U1times <- matrix(unlist(lapply(res,"[[","S1")), nrow = nU1.time, ncol = p.X, byrow = TRUE)
+  E_U1times <- matrix(unlist(lapply(res,"[[","E")), nrow = nU1.time, ncol = p.X, byrow = TRUE)
+  
+  #### Compute IC
+  IC <- matrix(NA, nrow = n.obs, ncol = p.X)
+  
+  for(iterI in 1:n.obs){
+    term1 <- calcU_cpp(newX = newX[iterI,,drop = FALSE], newStatus= newStatus[iterI], newN = 1,
+                       IndexNewT = U1.index[iterI], ENewT = E_U1times,
+                       p = p.X, aggregate = FALSE)
+    
+    Xtempo <- X[iterI,,drop=FALSE]
+    
+    term2 <- -sweep(sweep(E_U1times[U1.time<=eventtime[iterI],,drop = FALSE], MARGIN = 2, FUN = "-", STATS = Xtempo),
+                    MARGIN = 1, FUN = "/", STATS = S0_U1times[U1.time<=eventtime[iterI]])
+    
+    IC[iterI,] <- as.double(iInfo %*% t(term1 - eXb[iterI] * colSums(term2)))
+  }
+  
+  return(IC)
+}
 
-
+iidLambda0 <- function(tau,
+                       newT, neweXb, newX, newStatus, ICbeta,
+                       eventtime, eXb, X, status, lambda0){
+  
+  n.time <- length(eventtime)
+  n.obs <- NROW(X)
+  p.X <- NCOL(X)
+  
+  #### Compute E
+  res <- lapply(newT, FUN = function(t){
+    return(calcE_cpp(t = t, eventtime = eventtime, eXb = eXb, X = X, n = n.obs, p = p.X))
+  })
+  
+  S0_U1times <- unlist(lapply(res,"[[","S0"))
+  S1_U1times <- matrix(unlist(lapply(res,"[[","S1")), nrow = n.time, ncol = p.X, byrow = TRUE)
+  E_U1times <- matrix(unlist(lapply(res,"[[","E")), nrow = n.time, ncol = p.X, byrow = TRUE)
+  
+  #### Compute IC
+  #iterObs <- 1
+  
+  ICLamda0 <- rep(NA, n.obs)
+  
+  for(iterObs in 1:n.obs){
+    sum1 <- sweep(E_U1times, MARGIN = 1, FUN = "*", STATS = lambda0*(eventtime<=tau))
+    sum2 <- status*lambda0/S0_U1times*(eventtime<=newT[iterObs])*(eventtime<=tau)
+    S0_tempo <- S0_U1times[prodlim::sindex(jump.times = eventtime, eval.times = newT[iterObs])]
+    
+    ICLamda0[iterObs] <- - ICbeta[iterObs,,drop= FALSE] %*% colSums(sum1) - neweXb[iterObs] * sum(sum2) + (newT[iterObs]<=tau) * newStatus[iterObs]/S0_tempo
+  }
+  
+  return(ICLamda0)
+}
 
 calcS0 <- function(t, eventtime, eXb){
   res <- (t<=eventtime) * eXb 
@@ -122,22 +201,22 @@ calcS1 <- function(t, eventtime, eXb, X){
 calcE <- function(t, eventtime, eXb, X){
   calcS1(t, eventtime, eXb, X)/calcS0(t, eventtime, eXb)
 }
-calcU <- function(t, eventtime, eXb, X, status, aggregate){
-  status[eventtime>t] <- 0 # artificial censoring of the observations after t
-  indexEvent <- which(status==1)
-  evalX <- X[indexEvent,,drop = FALSE]
-  evaltime <- unique(eventtime[indexEvent])
-  n.evaltime <- length(evaltime)
+calcU <- function(newT, newX, newStatus, newN,
+                  eventtime, eXb, X, 
+                  p, E, aggregate){
   
-  score <- matrix(0, nrow = NROW(X), ncol = NCOL(X))
+  ## compute E
+  index1 <- which(newStatus>0)
+  U1.time <- unique(newT[index1])
+  E_U1times <- t(sapply(U1.time, function(t){calcE(t = t,  eventtime = eventtime, eXb = eXb, X = X)}))
   
-  for(iterT in 1:n.evaltime){
-    Etempo <- calcE(t = evaltime[iterT], eventtime, eXb, X)
-    # handle ties
-    indexPat <- which(eventtime[indexEvent] == evaltime[iterT])
-    score[indexEvent[indexPat],] <- sweep(evalX[indexPat, ,drop = FALSE], MARGIN = 2, STATS = Etempo, FUN = "-") 
+  ## compute the score
+  score <- matrix(0, nrow = newN, ncol = p)
+  
+  for(iterPat in 1:newN){
+    if(newStatus[iterPat]==0){next}
+    score[iterPat,] <- newX[iterPat, ,drop = FALSE] - E_U1times[U1.time == newT[iterPat],,drop = FALSE]
   }
-  
   if(aggregate){
     score <- colSums(score)
   }
@@ -222,7 +301,7 @@ calcEpsilon1 <- function(x, data, eXb, X, status, time){
     epsilon1 <- epsilon1 + sweep(sweep(X, MARGIN = 2, STATS = Etempo, FUN = "-"), 
                                  MARGIN = 1, STATS = d_martinRes[,iterT], FUN = "*")
   }
-
+  
   return(epsilon1)
 }  
 
@@ -241,7 +320,7 @@ calcEpsilon3 <- function(x, data, eXb, X, status, time){
 }
 
 calcH <- function(t, eventtime, eXb, X, status){
- 
+  
   H <- rep(0, times = NCOL(X))
   
   Utime <- unique(eventtime[eventtime<=t])
@@ -249,7 +328,7 @@ calcH <- function(t, eventtime, eXb, X, status){
   for(iterT in 1:length(Utime)){
     S1tempo <- calcS1(Utime[iterT], eventtime, eXb, X)
     S0tempo <- calcS0(Utime[iterT], eventtime, eXb)
-
+    
     # handle ties
     indexPat <- which(eventtime == eventtime[iterT])
     H <- H - sum(status[indexPat])*S1tempo/S0tempo^2
@@ -260,7 +339,7 @@ calcH <- function(t, eventtime, eXb, X, status){
 
 
 
- 
+
 
 # iid2.coxph <- function(x, newdata = eval(x$call$data), time = NULL, ...){
 # 
@@ -312,135 +391,4 @@ calcH <- function(t, eventtime, eXb, X, status){
 #     time <- tail(oldtime,1)
 #   }
 # 
-#   #### Compute S0, S1, S2, U, E
-#   fctS0 <- function(t, eXb = oldeXb, eventtime = oldtime){
-#     res <- (t<=eventtime) * eXb 
-#     return(sum(res))
-#   }
-#   fctS1 <- function(t, eXb = oldeXb, X = oldX, eventtime = oldtime){
-#     res <- sweep(X, MARGIN = 1, STATS = (t<=eventtime) * eXb, FUN = "*")
-#     return(colSums(res))
-#   }
-#   fctE <- function(t, eXb = oldeXb, X = oldX, eventtime = oldtime){
-#     fctS1(t)/fctS0(t)
-#   }
-#   fctU <- function(t, X, eventtime, status, aggregate){
-#     status[eventtime>t] <- 0 # artificial censoring of the observations after t
-#     indexEvent <- which(status==1)
-#     evalX <- X[indexEvent,,drop = FALSE]
-#     evaltime <- unique(eventtime[indexEvent])
-#     n.evaltime <- length(evaltime)
-#     
-#     score <- matrix(0, nrow = NROW(X), ncol = NCOL(X))
-#     
-#     for(iterT in 1:n.evaltime){
-#       Etempo <- fctE(t = evaltime[iterT])
-#       # handle ties
-#       indexPat <- which(eventtime[indexEvent] == evaltime[iterT])
-#       score[indexEvent[indexPat],] <- sweep(evalX[indexPat, ,drop = FALSE], MARGIN = 2, STATS = Etempo, FUN = "-") 
-#     }
-#     
-#     if(aggregate){
-#       score <- colSums(score)
-#     }
-#     return(score)
-#   }
-#   fctU0 <- function(t, X, eventtime =  oldtime, status = oldstatus){
-#     # here t should be min(t, t_obs) where t is the time at which the IC is computed and t_obs is the event time of the observation
-#     status[eventtime>t] <- 0 # artificial censoring of the observations after t
-#     evaltime <- eventtime[status == 1]
-#     n.evaltime <- sum(status)
-#     
-#     score0 <- rep(0,NCOL(X))
-#     
-#     for(iterT in 1:n.evaltime){
-#       Etempo <- fctE(t = evaltime[iterT])
-#       S0tempo <- fctS0(t = evaltime[iterT])
-#       
-#       score0 <- score0 + (X - Etempo)/S0tempo
-#     }
-#     
-#     return(score0)
-#   }
-#   
-#   fctS2 <- function(t, eXb, X, eventtime){
-#     vecH <- apply(X, 1, function(row){ tcrossprod(row)})
-#     res <- sweep(vecH, MARGIN = 2, STATS = (t<=eventtime) * eXb, FUN = "*")
-#     res <- rowSums(res)
-#     
-#     return(matrix(res, nrow = NCOL(X), ncol = NCOL(X)))
-#   }
-#   fctI <- function(t, eXb, X, eventtime, status, aggregate){
-#     indexEvent <- which(status==1)
-#     evaltime <- eventtime[indexEvent]
-#     n.evaltime <- sum(status)
-#     info <- array(0, dim = c(NCOL(X), NCOL(X), NROW(X)))
-#     
-#     for(iterT in 1:n.evaltime){
-#       Etempo <- fctE(t = evaltime[iterT], eXb = eXb, X = X, eventtime = eventtime)
-#       S0tempo <- fctS0(t = evaltime[iterT], eXb = eXb, eventtime = eventtime)
-#       S2tempo <- fctS2(t = evaltime[iterT], eXb = eXb, X = X, eventtime = eventtime)
-#       
-#       # handle ties
-#       indexPat <- which(eventtime[indexEvent] == evaltime[iterT])
-#       info[,,indexEvent[indexPat]] <- S2tempo/S0tempo-tcrossprod(Etempo)
-#     }
-#     
-#     if(aggregate){
-#        info <- apply(info,1:2,sum)
-#     }
-#     
-#     return(info)
-#   }
-#   
-#   fctS0(t = time)
-#   fctS1(t = time)
-#   fctE(t = time)
-#   ScoreLv <- fctU(t = time, X = oldX, eventtime = oldtime, status = oldstatus, aggregate = TRUE)
-#   print(ScoreLv)
-#   InfoLv <- fctI(t = time, eXb = oldeXb, X = oldX, eventtime = oldtime, status = oldstatus, aggregate = TRUE)
-#   print(InfoLv-solve(x$var))
-#   
-#   
-#   martingalRes <- -predictCox(x, newdata = olddata, times = unique(oldtime), type = "cumHazard", keep.times = FALSE)[[1]]
-#   dmartingalRes <- -predictCox(x, newdata = olddata, times = unique(oldtime), type = "hazard", keep.times = FALSE)[[1]]
-#   for(iterI in 1:NROW(olddata)){
-#     martingalRes[iterI,oldtime[iterI]<unique(oldtime)] <- 0
-#     martingalRes[iterI,oldtime[iterI]<=unique(oldtime)] <- oldstatus[iterI] + martingalRes[iterI,oldtime[iterI]<=unique(oldtime)]
-#     dmartingalRes[iterI,oldtime[iterI]<unique(oldtime)] <- 0
-#     dmartingalRes[iterI,oldtime[iterI]==unique(oldtime)] <- oldstatus[iterI] + dmartingalRes[iterI,oldtime[iterI]==unique(oldtime)]
-#   }
-#   print(range(residuals(x, type = "martingale")[neworder]-diag(martingalRes)))
-#   
-#   # fields:::image.plot(martingalRes)
-#   # fields:::image.plot(dmartingalRes[1:15,1:10], x = 1:15, y = 1:10)
-#   
-#   epsilon1 <- matrix(0, nrow = NROW(newdata), ncol = NCOL(newX))
-#   for(iterT in 1:NCOL(dmartingalRes)){
-#     epsilon1 <- epsilon1 + sweep(sweep(oldX, MARGIN = 2, STATS = fctE(t = unique(oldtime)[iterT]), FUN = "-"), MARGIN = 1, STATS = dmartingalRes[,iterT], FUN = "*")
-#   }
-#   browser()
-#   
-#   #### Influence function
-#   Info <- x$var
-#   iInfo <- solve(Info)
-#   Score <- fctU(t = time, X = newX, eventtime = newtime, status = newstatus, aggregate = FALSE)
-#   fctI(t = time, eXb = oldeXb, X = oldX, eventtime = oldtime, status = oldstatus, aggregate = FALSE)[,,1]
-#   
-#   fctIC <- function(index){
-#     iInfo %*% t(Score[index,,drop=TRUE] - neweXb[index] * fctU0(t = min(time, newtime[index]), X = newX[index,,drop = FALSE]))
-#   }
-#   
-#   IC <- sapply(1:NROW(newX),fctIC)
-#     var(t(IC))
-#                
-#   # compute the martingale residuals and apply the formula of torben  
-#     Veps <- matrix(apply(apply(epsilon1, 1, tcrossprod), 1, sum),2,2)
-#     
-#       
-#     iInfo %*% Veps %*% iInfo
-#     
-#   
-# 
-# }
-# 
+
