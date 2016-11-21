@@ -15,7 +15,6 @@
 #' set.seed(10)
 #' d <- sampleData(2e1, outcome = "survival")[,.(eventtime,event,X1,X6)]
 #' setkey(d, eventtime)
-#' d[,event := 1]
 #' 
 #' library(timereg)
 #' mGS.cox <- cox.aalen(Surv(eventtime, event) ~ prop(X1)+prop(X6), data = d, resample.iid = TRUE)
@@ -29,7 +28,7 @@
 #' range(IC.cox$iid_timereg$cumHazard[,1]-IClambda_GS[,2])
 #' 
 #' var(ICbeta_GS)
-#' m.cox$var
+#' m.cox[["var"]]
 #' var(ICbeta_GS)/mGS.cox$var.gamma
 #' 
 #' 
@@ -48,7 +47,7 @@
 iid.coxph <- function(x, ...){
   
   #### extract information from the Cox model
-  resInfo <- getCoxInfo(x, design = FALSE)
+  resInfo <- getCoxInfo(x, design = FALSE, center = FALSE)
   data <- eval(x$call$data)
   eventtime <- x$y[,"time"]
   status <- x$y[,"status"]
@@ -67,6 +66,7 @@ iid.coxph <- function(x, ...){
   X <- X[order,,drop = FALSE]
   
   #### Influence function for the beta
+  # calcU(tau, eventtime = eventtime, eXb = eXb, X = X, status = status, aggregate = FALSE)
   ICobs <- calcIC1(t = tau, eventtime = eventtime, eXb = eXb, X = X, status = status, iInfo = iInfo)
   # Sigma_IC1 <- var(ICobs)
   
@@ -102,6 +102,13 @@ iid.coxph <- function(x, ...){
               ))
   
 }
+
+iidBeta <- function(){
+  
+}
+
+
+
 
 
 calcS0 <- function(t, eventtime, eXb){
@@ -252,29 +259,7 @@ calcH <- function(t, eventtime, eXb, X, status){
 } 
 
 
-calcIC1 <- function(t, eventtime, eXb, X, status, iInfo, version = "1"){
-  Score <- calcU(t = t, X = X, eXb = eXb, eventtime = eventtime, status = status, aggregate = FALSE)
-  E <- calcE(t = t, eventtime = eventtime, eXb = eXb, X = X)
-  E_alltimes <- t(sapply(eventtime, FUN = function(tt){calcE(tt, eventtime = eventtime, eXb = eXb, X = X)}))
-  
-  S0 <- calcS0(t = t, eventtime = eventtime, eXb = eXb)
-  S0_alltimes <- sapply(eventtime, FUN = calcS0, eventtime = eventtime, eXb = eXb)
-  
-  IC <- matrix(NA, nrow = NROW(X), ncol = NCOL(X))
-  
-  for(iterI in 1:NROW(X)){
-    Xtempo <- X[iterI,,drop=FALSE]
-    
-    term1 <- Score[iterI,,drop=FALSE]
-    term2 <- sweep(sweep(E_alltimes, MARGIN = 2, FUN = "-", STATS = Xtempo),
-                   MARGIN = 1, FUN = "*", STATS = (eventtime <= eventtime[iterI]) * status / S0_alltimes)
-    
-    
-    IC[iterI,] <- iInfo %*% t(term1 - eXb[iterI] * colSums(term2))
-  }
-  
-  return(IC)
-}
+
  
 
 # iid2.coxph <- function(x, newdata = eval(x$call$data), time = NULL, ...){

@@ -23,7 +23,7 @@ library(data.table)
 set.seed(10)
 d <- sampleData(2e1, outcome = "survival")[,.(eventtime,event,X1,X6)]
 setkey(d, eventtime)
-d[,event := 1]
+
 
 library(timereg)
 mGS.cox <- cox.aalen(Surv(eventtime, event) ~ prop(X1)+prop(X6), data = d, resample.iid = TRUE)
@@ -33,17 +33,13 @@ IClambda_GS <- t(as.data.table(mGS.cox$B.iid))
 m.cox <- coxph(Surv(eventtime, event) ~ X1+X6, data = d, y = TRUE)
 IC.cox <- iid.coxph(m.cox, center = FALSE)
 
-
-
 range(IC.cox$iid_timereg$beta-ICbeta_GS)
-range(IC.cox$iid_timereg$cumHazard-IClambda_GS[,1])
+range(IC.cox$iid_timereg$cumHazard[,1]-IClambda_GS[,2])
 
-MGS <- as.data.table(mGS.cox$B.iid)
-MGS[21,]
-IC.cox$iid_timereg$cumHazard
+var(ICbeta_GS)
+m.cox[["var"]]
+var(ICbeta_GS)/mGS.cox$var.gamma
 
-var(IC.cox$IC)
-m.cox$var
 
 var(IC.cox$IC)/m.cox$var
 

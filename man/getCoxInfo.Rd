@@ -6,11 +6,11 @@
 \alias{getCoxInfo.cph}
 \title{Extract information from a Cox model}
 \usage{
-getCoxInfo(object, design)
+getCoxInfo(object, design, center)
 
-\method{getCoxInfo}{cph}(object, design)
+\method{getCoxInfo}{cph}(object, design, center)
 
-\method{getCoxInfo}{coxph}(object, design)
+\method{getCoxInfo}{coxph}(object, design, center)
 }
 \arguments{
 \item{object}{The fitted Cox regression model object either
@@ -18,6 +18,8 @@ obtained with \code{coxph} (survival package) or \code{cph}
 (rms package).}
 
 \item{design}{should the design matrix be returned?}
+
+\item{center}{should the covariates be centered}
 }
 \value{
 A named list containing the following elements:

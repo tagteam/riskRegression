@@ -71,7 +71,7 @@ predictCox <- function(object,
   if(!is.null(newdata)){n.newdata <- NROW(newdata)}
   
   #### extract elements from objects ####
-  resInfo <- getCoxInfo(object, design = se)
+  resInfo <- getCoxInfo(object, design = se, center = TRUE)
   is.strata <- resInfo$is.strata
  
   ## checks
@@ -379,7 +379,8 @@ seCox <- function(object, newdata, times, type, Lambda0, eXb, survival, stratava
 #'     obtained with \code{coxph} (survival package) or \code{cph}
 #'     (rms package).
 #' @param design should the design matrix be returned? 
-#'
+#' @param center should the covariates be centered
+#' 
 #' @return A named list containing the following elements:
 #' \itemize{
 #'  \item{"nPatients"}{the number of observations}
@@ -414,10 +415,10 @@ seCox <- function(object, newdata, times, type, Lambda0, eXb, survival, stratava
 #' }
 
 #' @rdname getCoxInfo
-getCoxInfo <- function(object, design) UseMethod("getCoxInfo")
+getCoxInfo <- function(object, design, center) UseMethod("getCoxInfo")
 
 #' @rdname getCoxInfo
-getCoxInfo.cph <- function(object, design){
+getCoxInfo.cph <- function(object, design, center){
   
   xterms <- delete.response(object$terms)
   xvars <- attr(xterms,"term.labels")
@@ -442,7 +443,7 @@ getCoxInfo.cph <- function(object, design){
     strataF <- factor("1")
   }
   if(design){ ## cph:design matrix for standard error
-    modeldata <- centerData(object, data = model.frame(object), stratavars = stratavars)
+    modeldata <- centerData(object, data = model.frame(object), stratavars = stratavars, center = center)
   }else{
     modeldata <- matrix(nrow = 0, ncol = 0)
   }
@@ -458,7 +459,7 @@ getCoxInfo.cph <- function(object, design){
 }
 
 #' @rdname getCoxInfo
-getCoxInfo.coxph <- function(object, design){
+getCoxInfo.coxph <- function(object, design, center){
   
   xterms <- delete.response(object$terms)
   xvars <- attr(xterms,"term.labels")
@@ -482,7 +483,7 @@ getCoxInfo.coxph <- function(object, design){
   
   
   if(design){ ## coxph:design matrix for standard error
-    modeldata <- centerData(object, data = model.frame(object), stratavars = stratavars)
+    modeldata <- centerData(object, data = model.frame(object), stratavars = stratavars, center = center)
   }else{
     modeldata <- matrix(nrow = 0, ncol = 0)
   }
@@ -638,7 +639,7 @@ defineStrata.coxph <- function(object, data, sterms, stratavars, levelsStrata, s
 #'     (rms package).
 #' @param data a \code{data.frame} or a \code{data.table}
 #' @param stratavars the name of the strata variables
-#' @param ... additional arguments to be passed to the low level functions
+#' @param center should the covariates be centered
 #' 
 #' @author Brice Ozenne broz@@sund.ku.dk, Thomas A. Gerds tag@@biostat.ku.dk
 #' 
@@ -668,10 +669,10 @@ defineStrata.coxph <- function(object, data, sterms, stratavars, levelsStrata, s
 #' mCoxS <- cph(Surv(time, event) ~ strat(X1)+strat(X2), data = d, y = TRUE) 
 #' centerData(mCoxS, stratavars = c("strat(X1)","strat(X2)"))
 #' }
-centerData <- function(object, data, stratavars, ...) UseMethod("centerData")
+centerData <- function(object, data, stratavars, center) UseMethod("centerData")
 
 #' @rdname centerData
-centerData.cph <- function(object, data = model.frame(object), stratavars, ...){
+centerData.cph <- function(object, data = model.frame(object), stratavars, center){
 
   if(length(object$Design$mmcolnames)>0){
     
@@ -694,7 +695,7 @@ centerData.cph <- function(object, data = model.frame(object), stratavars, ...){
 }
 
 #' @rdname centerData
-centerData.coxph <- function(object, data = model.frame(object), stratavars, ....){
+centerData.coxph <- function(object, data = model.frame(object), stratavars,  center){
   
   if(length(object$means)>0){
     

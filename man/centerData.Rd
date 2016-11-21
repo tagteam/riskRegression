@@ -6,13 +6,13 @@
 \alias{centerData.cph}
 \title{Center a dataset}
 \usage{
-centerData(object, data, stratavars, center, ...)
+centerData(object, data, stratavars)
 
 \method{centerData}{cph}(object, data = model.frame(object), stratavars,
-  center = TRUE, ...)
+  center)
 
 \method{centerData}{coxph}(object, data = model.frame(object), stratavars,
-  center = TRUE, ....)
+  center)
 }
 \arguments{
 \item{object}{The fitted Cox regression model object either
@@ -21,7 +21,9 @@ obtained with \code{coxph} (survival package) or \code{cph}
 
 \item{data}{a \code{data.frame} or a \code{data.table}}
 
-\item{...}{additional arguments to be passed to the low level functions}
+\item{stratavars}{the name of the strata variables}
+
+\item{center}{should the covariates be centered}
 }
 \description{
 Center a dataset around the centering values
