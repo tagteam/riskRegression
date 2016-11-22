@@ -15,8 +15,11 @@ double calcS0_cpp(double t, int n,
                   const NumericVector& eXb){
   
   double S0=0;
+  
   for(int iterObs=0;iterObs<n;iterObs++){
-    S0 += (t<=eventtime[iterObs]) * eXb[iterObs];
+    if(t<=eventtime[iterObs]){
+      S0 += eXb[iterObs];
+    }
   }
   
   return(S0);
@@ -32,7 +35,9 @@ NumericVector calcS1_cpp(double t, int n, int p,
   NumericVector S1(p,0.0);
   for(int iterObs=0;iterObs<n;iterObs++){
     for(int iterX=0;iterX<p;iterX++){
-      S1[iterX] += (t<=eventtime[iterObs]) * X(iterObs,iterX) * eXb[iterObs];
+      if(t<=eventtime[iterObs]){
+        S1[iterX] += X(iterObs,iterX) * eXb[iterObs];
+      }
     }
   }
   
@@ -42,15 +47,19 @@ NumericVector calcS1_cpp(double t, int n, int p,
 
 // [[Rcpp::export]]
 List calcE_cpp(double t, int n, int p,
-                        const NumericVector& eventtime,
-                        const NumericVector& eXb,
-                        const arma::mat& X){
+               const NumericVector& eventtime,
+               const NumericVector& eXb,
+               const arma::mat& X){
   
   double S0 = calcS0_cpp(t, n, eventtime, eXb);
   NumericVector S1 = calcS1_cpp(t, n, p, 
                                 eventtime, eXb, X);
+  NumericVector E = S1/S0;
+  if(S0==0){
+    std::fill(E.begin(), E.end(), 0.0);
+  }
   
-  return(List::create(Named("E")  = S1/S0,
+  return(List::create(Named("E")  = E,
                       Named("S1")  = S1,
                       Named("S0")  = S0));
 }

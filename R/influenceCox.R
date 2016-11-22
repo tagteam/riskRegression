@@ -11,14 +11,13 @@
 #' library(survival)
 #' library(data.table)
 #' set.seed(10)
-#' d <- sampleData(2e1, outcome = "survival")[,.(eventtime,event,X1,X6)]
+#' d <- sampleData(1e2, outcome = "survival")[,.(eventtime,event,X1,X6)]
 #' setkey(d, eventtime)
 #' 
 #' library(timereg)
 #' mGS.cox <- cox.aalen(Surv(eventtime, event) ~ prop(X1)+prop(X6), data = d, resample.iid = TRUE)
 #' ICbeta_GS <- mGS.cox$gamma.iid
 #' IClambda_GS <- t(as.data.table(mGS.cox$B.iid))
-#'  
 #'  
 #' m.cox <- coxph(Surv(eventtime, event) ~ X1+X6, data = d, y = TRUE)
 #' IC.cox <- iid.coxph(m.cox, center = FALSE)
@@ -50,6 +49,7 @@
 #' @rdname iid
 #' @export
 iid.coxph <- function(x, tau = NULL, ...){
+  # to be adapted for stratified Cox models
   
   #### extract information from the Cox model
   resInfo <- getCoxInfo(x, design = FALSE, center = FALSE)
@@ -70,15 +70,31 @@ iid.coxph <- function(x, tau = NULL, ...){
   eXb <- eXb[order]
   X <- X[order,,drop = FALSE]
   
+  #### Compute quantities of interest only for event times
+  n.obs <- NROW(X)
+  p.X <- NCOL(X)
+  
+  U1.time <- c(unique(eventtime[status>0]),tail(eventtime,1)+1e-12)
+  nU1.time <- length(U1.time)
+  indexTime1 <- rep(nU1.time, n.obs)
+  indexTime1[status>0] <- match(eventtime[status>0], U1.time)-1
+  resE <- lapply(U1.time, FUN = function(t){
+    return(calcE_cpp(t = t, eventtime = eventtime, eXb = eXb, X = X, n = n.obs, p = p.X))
+  })
+
+  S0_U1times <- unlist(lapply(resE,"[[","S0"))
+  S1_U1times <- matrix(unlist(lapply(resE,"[[","S1")), nrow = nU1.time, ncol = p.X, byrow = TRUE)
+  E_U1times <- matrix(unlist(lapply(resE,"[[","E")), nrow = nU1.time, ncol = p.X, byrow = TRUE)
+  
   #### Influence function for the beta
   # print(calcU(newT = eventtime, newX = X, newStatus = status, newN = NROW(X),
   #             eventtime = eventtime, eXb = eXb, X = X, p = NCOL(X), aggregate = TRUE))
   # print(calcU_cpp(newT = eventtime, newX = X, newStatus = status, newN = NROW(X),
   #       eventtime = eventtime, eXb = eXb, X = X, p = NCOL(X), aggregate = FALSE))
+  ICbeta <- iidBeta(newT = eventtime, neweXb = eXb, newX = X, newStatus = status,
+                    S01 = S0_U1times, E1 = E_U1times, indexTime1 = indexTime1, time1 = U1.time, 
+                    n = n.obs, p = p.X, iInfo = iInfo)
   
-  ICbeta <- iidBeta(newT = eventtime, newX = X, newStatus = status,
-                    eventtime = eventtime, eXb = eXb, X = X, status = status, 
-                    iInfo = iInfo)
  
   #### Influence function for the lambda0
   lambda0 <- predictCox(x, type = "hazard")
@@ -119,39 +135,22 @@ iid.coxph <- function(x, tau = NULL, ...){
 }
 
 
-iidBeta <- function(newT, newX, newStatus, 
-                    eventtime, eXb, X, status, 
-                    iInfo){
-  # no need to compute E and S0 for all observations, only for each time with an event
-  U1.time <- unique(newT[newStatus>0])
-  U1.index <- match(newT[newStatus>0], U1.time) - 1
-  nU1.time <- length(U1.time)
-  n.obs <- NROW(X)
-  p.X <- NCOL(X)
-  
-  #### Compute E
-  res <- lapply(U1.time, FUN = function(t){
-    return(calcE_cpp(t = t, eventtime = eventtime, eXb = eXb, X = X, n = n.obs, p = p.X))
-  })
-  
-  S0_U1times <- unlist(lapply(res,"[[","S0"))
-  S1_U1times <- matrix(unlist(lapply(res,"[[","S1")), nrow = nU1.time, ncol = p.X, byrow = TRUE)
-  E_U1times <- matrix(unlist(lapply(res,"[[","E")), nrow = nU1.time, ncol = p.X, byrow = TRUE)
+iidBeta <- function(newT, neweXb, newX, newStatus,
+                    S01, E1, indexTime1, time1, 
+                    n, p, iInfo){
   
   #### Compute IC
-  IC <- matrix(NA, nrow = n.obs, ncol = p.X)
+  IC <- matrix(NA, nrow = n, ncol = p)
   
-  for(iterI in 1:n.obs){
+  for(iterI in 1:n){
     term1 <- calcU_cpp(newX = newX[iterI,,drop = FALSE], newStatus= newStatus[iterI], newN = 1,
-                       IndexNewT = U1.index[iterI], ENewT = E_U1times,
-                       p = p.X, aggregate = FALSE)
+                       IndexNewT = 0, ENewT = E1[prodlim::sindex(time1, newT[iterI]),,drop = FALSE]*newStatus[iterI],
+                       p = p, aggregate = FALSE)
     
-    Xtempo <- X[iterI,,drop=FALSE]
+    term2 <- -sweep(sweep(E1[time1<=newT[iterI],,drop = FALSE], MARGIN = 2, FUN = "-", STATS = newX[iterI,,drop = FALSE]),
+                    MARGIN = 1, FUN = "/", STATS = S01[time1<=newT[iterI]])
     
-    term2 <- -sweep(sweep(E_U1times[U1.time<=eventtime[iterI],,drop = FALSE], MARGIN = 2, FUN = "-", STATS = Xtempo),
-                    MARGIN = 1, FUN = "/", STATS = S0_U1times[U1.time<=eventtime[iterI]])
-    
-    IC[iterI,] <- as.double(iInfo %*% t(term1 - eXb[iterI] * colSums(term2)))
+    IC[iterI,] <- as.double(iInfo %*% t(term1 - neweXb[iterI] * colSums(term2)))
   }
   
   return(IC)
@@ -175,8 +174,6 @@ iidLambda0 <- function(tau,
   E_U1times <- matrix(unlist(lapply(res,"[[","E")), nrow = n.time, ncol = p.X, byrow = TRUE)
   
   #### Compute IC
-  #iterObs <- 1
-  
   ICLamda0 <- rep(NA, n.obs)
   
   for(iterObs in 1:n.obs){
