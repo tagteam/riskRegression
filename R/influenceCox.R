@@ -101,7 +101,9 @@ iid.coxph <- function(x, tau = NULL, ...){
   
   ICLambda0 <- iidLambda0(tau = tau,
                           newT = eventtime, neweXb = eXb, newX = X, newStatus = status, ICbeta = ICbeta,
-                          eventtime = eventtime, eXb = eXb, X = X, status = status, lambda0 = lambda0$hazard)
+                          S01 = S0_U1times[-nU1.time], E1 = E_U1times[-nU1.time,,drop = FALSE], indexTime1 = indexTime1[-nU1.time], time1 = U1.time[-nU1.time], 
+                          lambda0 = lambda0[match(U1.time[-nU1.time],lambda0[,"time"]),"hazard"],
+                          n = n.obs, p = p.X)
   
   #### Timereg iid
   iid_timereg <- list()
@@ -139,7 +141,6 @@ iidBeta <- function(newT, neweXb, newX, newStatus,
                     S01, E1, indexTime1, time1, 
                     n, p, iInfo){
   
-  #### Compute IC
   IC <- matrix(NA, nrow = n, ncol = p)
   
   for(iterI in 1:n){
@@ -158,28 +159,15 @@ iidBeta <- function(newT, neweXb, newX, newStatus,
 
 iidLambda0 <- function(tau,
                        newT, neweXb, newX, newStatus, ICbeta,
-                       eventtime, eXb, X, status, lambda0){
+                       S01, E1, indexTime1, time1, lambda0,
+                       n, p){
   
-  n.time <- length(eventtime)
-  n.obs <- NROW(X)
-  p.X <- NCOL(X)
+  ICLamda0 <- rep(NA, n)
   
-  #### Compute E
-  res <- lapply(newT, FUN = function(t){
-    return(calcE_cpp(t = t, eventtime = eventtime, eXb = eXb, X = X, n = n.obs, p = p.X))
-  })
-  
-  S0_U1times <- unlist(lapply(res,"[[","S0"))
-  S1_U1times <- matrix(unlist(lapply(res,"[[","S1")), nrow = n.time, ncol = p.X, byrow = TRUE)
-  E_U1times <- matrix(unlist(lapply(res,"[[","E")), nrow = n.time, ncol = p.X, byrow = TRUE)
-  
-  #### Compute IC
-  ICLamda0 <- rep(NA, n.obs)
-  
-  for(iterObs in 1:n.obs){
-    sum1 <- sweep(E_U1times, MARGIN = 1, FUN = "*", STATS = lambda0*(eventtime<=tau))
-    sum2 <- status*lambda0/S0_U1times*(eventtime<=newT[iterObs])*(eventtime<=tau)
-    S0_tempo <- S0_U1times[prodlim::sindex(jump.times = eventtime, eval.times = newT[iterObs])]
+  for(iterObs in 1:n){
+    sum1 <- sweep(E1, MARGIN = 1, FUN = "*", STATS = lambda0*(time1<=tau))
+    sum2 <- lambda0/S01*(time1<=newT[iterObs])*(time1<=tau)
+    S0_tempo <- S01[prodlim::sindex(jump.times = time1, eval.times = newT[iterObs])]
     
     ICLamda0[iterObs] <- - ICbeta[iterObs,,drop= FALSE] %*% colSums(sum1) - neweXb[iterObs] * sum(sum2) + (newT[iterObs]<=tau) * newStatus[iterObs]/S0_tempo
   }
