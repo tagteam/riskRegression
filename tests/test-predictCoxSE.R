@@ -3,6 +3,43 @@ library(riskRegression)
 library(testthat)
 library(rms)
 library(survival)
+
+####
+context("Cox prediction - iid")
+
+if(require(timereg)){
+  set.seed(10)
+  d <- sampleData(2e1, outcome = "survival")[,.(eventtime,event,X1,X6)]
+  d2 <- copy(d)
+  setkey(d,eventtime)
+  
+  mGS.cox <- cox.aalen(Surv(eventtime, event) ~ prop(X1)+prop(X6), data = d, resample.iid = TRUE, max.timepoint.sim=NULL)
+  IClambda_timereg <- t(as.data.table(mGS.cox$B.iid))
+  
+  m.cox <- coxph(Surv(eventtime, event) ~ X1+X6, data = d, y = TRUE)
+  IC.cox <- iid(m.cox, keep.times = FALSE)
+  
+  m.cox2 <- coxph(Surv(eventtime, event) ~ X1+X6, data = d2, y = TRUE)
+  IC.cox2 <- iid(m.cox2, keep.times = FALSE) #### bug here when n = 50
+  
+  m.cox3 <- cph(Surv(eventtime, event) ~ X1+X6, data = d, y = TRUE)
+  IC.cox3 <- iid(m.cox3, keep.times = FALSE)
+  
+  test_that("iid beta",{
+    expect_equal(IC.cox$ICbeta,mGS.cox$gamma.iid)
+    expect_equal(IC.cox$ICbeta[order(d2$eventtime),],IC.cox2$ICbeta)
+    expect_equal(IC.cox3$ICbeta,mGS.cox$gamma.iid, tol = 1e-2)
+  })
+  
+  test_that("iid lambda0",{
+    expect_equal(as.double(IC.cox$ICLambda0), as.double(IClambda_timereg[,-1]))
+    expect_equal(as.double(IC.cox$ICLambda0[order(d2$eventtime),]), as.double(IC.cox2$ICLambda0))
+    expect_equal(as.double(IC.cox3$ICLambda0), as.double(IClambda_timereg[,-1]), tol = 1e-4)
+  })
+  
+}
+
+####
 context("Cox prediction - standard error")
 
 
