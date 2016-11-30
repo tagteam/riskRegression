@@ -2,17 +2,33 @@
 % Please edit documentation in R/influenceCox.R
 \name{iid}
 \alias{iid}
-\alias{iid.coxph}
+\alias{iidCox}
 \title{Extract i.i.d. decomposition from a Cox model}
 \usage{
-iid(x, ...)
-
-\method{iid}{coxph}(x, tau = NULL, ...)
+iidCox(object, newdata = NULL, tauLambda = NULL, tauBeta = NULL,
+  keep.times = TRUE, center.eXb = TRUE, center.LPdata = FALSE,
+  center.lambda0 = TRUE, center.result = TRUE)
 }
 \arguments{
-\item{x}{object The fitted Cox regression model object either
+\item{object}{object The fitted Cox regression model object either
 obtained with \code{coxph} (survival package) or \code{cph}
 (rms package).}
+
+\item{newdata}{Optional new data at which to do i.i.d. decomposition}
+
+\item{tauLambda}{the vector of times at which the i.i.d decomposition of the baseline hazard will be computed}
+
+\item{tauBeta}{the time at which the i.i.d decomposition of the beta will be computed}
+
+\item{keep.times}{Logical. If \code{TRUE} add the evaluation times to the output.}
+
+\item{center.eXb}{Temporary argument. Should the linear predictor be centered on the exponential scale.}
+
+\item{center.LPdata}{Temporary argument. Should the covariates be centered.}
+
+\item{center.lambda0}{Temporary argument. Should the linear predictor be centered when computing the baseline hazard (equivalent to centered in basehaz).}
+
+\item{center.result}{Temporary argument. Should the IF be rescale to match timereg results.}
 
 \item{...}{additional arguments}
 }
@@ -23,36 +39,19 @@ Compute the influence function for each observation used to estimate the model
 library(survival)
 library(data.table)
 set.seed(10)
-d <- sampleData(2e1, outcome = "survival")[,.(eventtime,event,X1,X6)]
+d <- sampleData(7e1, outcome = "survival")[,.(eventtime,event,X1,X6)]
 setkey(d, eventtime)
 
 library(timereg)
-mGS.cox <- cox.aalen(Surv(eventtime, event) ~ prop(X1)+prop(X6), data = d, resample.iid = TRUE)
+mGS.cox <- cox.aalen(Surv(eventtime, event) ~ prop(X1)+prop(X6), data = d, resample.iid = TRUE, max.timepoint.sim=NULL)
 ICbeta_GS <- mGS.cox$gamma.iid
 IClambda_GS <- t(as.data.table(mGS.cox$B.iid))
  
- 
 m.cox <- coxph(Surv(eventtime, event) ~ X1+X6, data = d, y = TRUE)
-IC.cox <- iid.coxph(m.cox, center = FALSE)
+IC.cox <- iidCox(m.cox)
 
-range(IC.cox$ICbeta-ICbeta_GS)
-range(IC.cox$ICLambda0/IClambda_GS[,NCOL(IClambda_GS)])
-
-var(ICbeta_GS)
-m.cox[["var"]]
-var(ICbeta_GS)/mGS.cox$var.gamma
-
-
-var(IC.cox$IC)/m.cox$var
-
-var(mGS.cox$gamma.iid)
-m.cox$var
-
-var(mGS.cox$gamma.iid)/m.cox$var
-
-
+IC.cox <- iidCox(m.cox, tauLambda = 7)
  
-IC.cox$epsilon11/mGS.cox$gamma.iid
 
 }
 

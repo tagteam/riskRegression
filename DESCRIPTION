@@ -59,6 +59,7 @@ Collate:
   'FGR.R'
   'getCensoringWeights.R'
   'getComparisons.R'
+  'getCoxInfo.R'
   'getInfluenceCurve.R'
   'getNullModel.R'
   'getPseudoValues.R'

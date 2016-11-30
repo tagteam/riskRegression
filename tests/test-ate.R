@@ -1,8 +1,9 @@
 library(riskRegression)
 library(testthat)
-context("G-formula to estimate the average treatment effect")
 
 #### Cox model ####
+context("ate for Cox model")
+
 n <- 1e2
 dtS <- sampleData(n,outcome="survival")
 dtS$time <- round(dtS$time,1)
@@ -51,6 +52,8 @@ if(require(survival)){
 }
 
 #### Fully stratified Cox model ####
+context("ate for fully stratified Cox model")
+
 n <- 1e2
 dtS <- sampleData(n,outcome="survival")
 dtS$time <- round(dtS$time,1)
@@ -78,6 +81,8 @@ if(require(survival)){
 }
 
 #### CSC model ####
+context("ate for fully CSC model")
+
 df <- sampleData(1e2,outcome="competing.risks")
 df$time <- round(df$time,1)
 df$X1 <- factor(rbinom(1e2, prob = c(0.4,0.3) , size = 2), labels = paste0("T",0:2))
@@ -95,7 +100,11 @@ test_that("one boostrap",{
 })
 
 #### parallel computation
-fit=CSC(formula = Hist(time,event)~ X1+X2, data = df,cause=1)
+context("ate with parallel computation")
+set.seed(10)
+df <- sampleData(3e2,outcome="competing.risks")
+
+fit <- CSC(formula = Hist(time,event)~ X1+X2, data = df,cause=1)
 time1.mc <- system.time(
     res1.mc <- ate(fit,data = df, treatment = "X1", contrasts = NULL,
                    times = 7, cause = 1, B = 2, mc.cores=1, handler = "mclapply", seed = 10, verbose = FALSE)
@@ -104,6 +113,9 @@ time1.for <- system.time(
     res1.for <- ate(fit,data = df, treatment = "X1", contrasts = NULL,
                     times = 7, cause = 1, B = 2, mc.cores=1, handler = "foreach", seed = 10, verbose = FALSE)
 )
+
+res1.mc$meanRisk
+res1.for$meanRisk
 
 test_that("mcapply vs. foreach",{
   expect_equal(res1.mc,res1.for)
@@ -127,28 +139,9 @@ if(parallel::detectCores()>1){
   
 }
 
-
-#### Strata with different event times
-#boxplot(time ~ X2, df)
-df <- sampleData(5e2,outcome="competing.risks")
-df$timeC <- df$time
-df$eventC <- df$event
-df[(df$X2 == 1)*(df$time>7)>0, "timeC"] <- 7
-df[(df$X2 == 1)*(df$time>7)>0, "timeC"] <- 0
-
-# plot(prodlim(Hist(timeC,eventC)~ X2+X1, df))
-
-test_that("early strata stop",{
-  
-  # df[,max(timeC),by = c("X1","X2")]
-  
-  fit <- CSC(formula =  Hist(timeC,eventC)~ strat(X1) + strat(X2), data = df,cause=1)
-  
-  res <- ate(fit, data = df, treatment = "X1", contrasts = NULL,
-             times = 6.8, cause = 1, B = 1, mc.cores=1, seed = 1, verbose = FALSE)
-})
-
 #### LRR ####
+context("ate for LRR - TO BE DONE")
+
 n <- 1e2
 dtS <- sampleData(n,outcome="survival")
 dtS$time <- round(dtS$time,1)
@@ -163,6 +156,8 @@ dtS$X1 <- factor(rbinom(n, prob = c(0.3,0.4) , size = 2), labels = paste0("T",0:
 #     times = 7, B = 3, mc.cores=1)
 
 #### random forest ####
+context("ate for random forest")
+
 n <- 1e2
 dtS <- sampleData(n,outcome="survival")
 dtS$time <- round(dtS$time,1)

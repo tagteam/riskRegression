@@ -130,6 +130,30 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// predictCIF_cpp
+arma::mat predictCIF_cpp(const std::vector<arma::mat>& hazard, const std::vector<arma::mat>& cumHazard, const arma::mat& eXb_h, const arma::mat& eXb_cumH, const arma::mat& strata, const std::vector<double>& newtimes, const std::vector<double>& etimes, const std::vector<double>& etimeMax, double t0, int nTimes, int nNewTimes, int nData, int cause, int nCause);
+RcppExport SEXP riskRegression_predictCIF_cpp(SEXP hazardSEXP, SEXP cumHazardSEXP, SEXP eXb_hSEXP, SEXP eXb_cumHSEXP, SEXP strataSEXP, SEXP newtimesSEXP, SEXP etimesSEXP, SEXP etimeMaxSEXP, SEXP t0SEXP, SEXP nTimesSEXP, SEXP nNewTimesSEXP, SEXP nDataSEXP, SEXP causeSEXP, SEXP nCauseSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const std::vector<arma::mat>& >::type hazard(hazardSEXP);
+    Rcpp::traits::input_parameter< const std::vector<arma::mat>& >::type cumHazard(cumHazardSEXP);
+    Rcpp::traits::input_parameter< const arma::mat& >::type eXb_h(eXb_hSEXP);
+    Rcpp::traits::input_parameter< const arma::mat& >::type eXb_cumH(eXb_cumHSEXP);
+    Rcpp::traits::input_parameter< const arma::mat& >::type strata(strataSEXP);
+    Rcpp::traits::input_parameter< const std::vector<double>& >::type newtimes(newtimesSEXP);
+    Rcpp::traits::input_parameter< const std::vector<double>& >::type etimes(etimesSEXP);
+    Rcpp::traits::input_parameter< const std::vector<double>& >::type etimeMax(etimeMaxSEXP);
+    Rcpp::traits::input_parameter< double >::type t0(t0SEXP);
+    Rcpp::traits::input_parameter< int >::type nTimes(nTimesSEXP);
+    Rcpp::traits::input_parameter< int >::type nNewTimes(nNewTimesSEXP);
+    Rcpp::traits::input_parameter< int >::type nData(nDataSEXP);
+    Rcpp::traits::input_parameter< int >::type cause(causeSEXP);
+    Rcpp::traits::input_parameter< int >::type nCause(nCauseSEXP);
+    rcpp_result_gen = Rcpp::wrap(predictCIF_cpp(hazard, cumHazard, eXb_h, eXb_cumH, strata, newtimes, etimes, etimeMax, t0, nTimes, nNewTimes, nData, cause, nCause));
+    return rcpp_result_gen;
+END_RCPP
+}
 // rowCumSum
 NumericMatrix rowCumSum(NumericMatrix x);
 RcppExport SEXP riskRegression_rowCumSum(SEXP xSEXP) {

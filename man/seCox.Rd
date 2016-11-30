@@ -4,7 +4,7 @@
 \alias{seCox}
 \title{Computation of standard errors for predictions}
 \usage{
-seCox(object, newdata, times, type, Lambda0, eXb, survival, stratavars,
+seCox(object, newdata, times, type, Lambda0, eXb, survival,
   subset.Lambda0 = 1:length(Lambda0$time))
 }
 \arguments{
@@ -26,8 +26,6 @@ or several of the strings \code{"hazard"},\code{"cumhazard"}, \code{"survival"}.
 \item{eXb}{exponential (covariates * coefficients)}
 
 \item{survival}{the predicted survival (only necessary when type contains survival)}
-
-\item{stratavars}{the name of the strata variables}
 
 \item{subset.Lambda0}{an index giving the subset of observations to be used in Lambda0}
 }

@@ -60,6 +60,10 @@ calcU_cpp <- function(newX, newStatus, newN, IndexNewT, ENewT, p, aggregate) {
     .Call('riskRegression_calcU_cpp', PACKAGE = 'riskRegression', newX, newStatus, newN, IndexNewT, ENewT, p, aggregate)
 }
 
+predictCIF_cpp <- function(hazard, cumHazard, eXb_h, eXb_cumH, strata, newtimes, etimes, etimeMax, t0, nTimes, nNewTimes, nData, cause, nCause) {
+    .Call('riskRegression_predictCIF_cpp', PACKAGE = 'riskRegression', hazard, cumHazard, eXb_h, eXb_cumH, strata, newtimes, etimes, etimeMax, t0, nTimes, nNewTimes, nData, cause, nCause)
+}
+
 #' Apply cumsum in each row 
 #'
 #' @description Fast computation of t(apply(x,1,cumsum))

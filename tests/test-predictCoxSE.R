@@ -8,22 +8,24 @@ library(survival)
 context("Cox prediction - iid")
 
 if(require(timereg)){
+  
   set.seed(10)
   d <- sampleData(2e1, outcome = "survival")[,.(eventtime,event,X1,X6)]
   d2 <- copy(d)
   setkey(d,eventtime)
   
+  #### non stratified Cox model
   mGS.cox <- cox.aalen(Surv(eventtime, event) ~ prop(X1)+prop(X6), data = d, resample.iid = TRUE, max.timepoint.sim=NULL)
   IClambda_timereg <- t(as.data.table(mGS.cox$B.iid))
   
   m.cox <- coxph(Surv(eventtime, event) ~ X1+X6, data = d, y = TRUE)
-  IC.cox <- iid(m.cox, keep.times = FALSE)
+  IC.cox <- iidCox(m.cox, keep.times = FALSE)
   
   m.cox2 <- coxph(Surv(eventtime, event) ~ X1+X6, data = d2, y = TRUE)
-  IC.cox2 <- iid(m.cox2, keep.times = FALSE) #### bug here when n = 50
+  IC.cox2 <- iidCox(m.cox2, keep.times = FALSE) #### bug here when n = 50
   
   m.cox3 <- cph(Surv(eventtime, event) ~ X1+X6, data = d, y = TRUE)
-  IC.cox3 <- iid(m.cox3, keep.times = FALSE)
+  IC.cox3 <- iidCox(m.cox3, keep.times = FALSE)
   
   test_that("iid beta",{
     expect_equal(IC.cox$ICbeta,mGS.cox$gamma.iid)
@@ -36,6 +38,8 @@ if(require(timereg)){
     expect_equal(as.double(IC.cox$ICLambda0[order(d2$eventtime),]), as.double(IC.cox2$ICLambda0))
     expect_equal(as.double(IC.cox3$ICLambda0), as.double(IClambda_timereg[,-1]), tol = 1e-4)
   })
+  
+  #### stratified Cox model
   
 }
 
@@ -53,8 +57,8 @@ for(ties in c("breslow","efron")){ # ties <- "breslow"
   test_that(paste("predictCox(empty) - valide se cumHazard",ties),{
     fit_coxph <- coxph(Surv(time,event) ~ 1,data=d, ties=ties)
     fit_cph <- cph(Surv(time,event) ~ 1,data=d, method=ties, y = TRUE)
-    
-    #res_surv <- survival:::predict.coxph(fit_coxph, newdata = d, type="expected", se.fit = TRUE)
+
+    # res_surv <- survival:::predict.coxph(fit_coxph, newdata = d, type="expected", se.fit = TRUE)
     resCoxph <- predictCox(fit_coxph, newdata = d, times = d$time,  se = FALSE)
     resCph <- predictCox(fit_cph, newdata = d, times = d$time,  se = FALSE)
     resCoxph <- predictCox(fit_coxph, newdata = d, times = d$time,  se = TRUE)

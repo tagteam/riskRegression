@@ -93,19 +93,35 @@ predict.CauseSpecificCox <- function(object,newdata, times, cause, t0 = NA, coln
     M.etimes.max <- matrix(NA, nrow = nData, ncol = nCause)
     
     for(iterC in 1:nCause){
+       
+      infoVar <- CoxStrataVar(object$models[[paste("Cause",iterC)]])
+      
+      ## baseline hazard from the Cox model
       causeBaseline <- predictCox(object$models[[paste("Cause",iterC)]],
-                                  times = eventTimes, newdata = newdata,
-                                  type = c("hazard","cumHazard","eXb", "newstrata"), 
+                                  times = eventTimes, newdata = NULL,
+                                  type = c("hazard","cumHazard"), 
                                   keep.strata = TRUE, keep.lastEventTime = TRUE, keep.times = TRUE,
                                   se = FALSE, format = "list")
       
-      # as.data.table(causeBaseline[1:4])
-      
       ls.hazard[[iterC]] <- matrix(causeBaseline$hazard, byrow = FALSE, nrow = nTimes)
       ls.cumHazard[[iterC]] <- matrix(causeBaseline$cumHazard, byrow = FALSE, nrow = nTimes) 
-      M.strata[,iterC] <- as.numeric(causeBaseline$newstrata)-1
+      
+      ## linear predictor for the new observations
+      newdata.eXb <- exp(CoxLP(object$models[[paste("Cause",iterC)]], data = newdata, 
+                               lpVars = infoVar$lpvars, stratavars = infoVar$stratavars.original, center = FALSE))
+      
+      ## strata for the new observations
+      newdata.strata <- CoxStrata(object$models[[paste("Cause",iterC)]], data = newdata, 
+                                  sterms = infoVar$sterms, 
+                                  stratavars = infoVar$stratavars, 
+                                  levels = levels(causeBaseline$strata), 
+                                  stratalevels = infoVar$stratalevels)
+      
+      M.strata[,iterC] <- as.numeric(newdata.strata)-1
+      M.eXb_h[,iterC] <- newdata.eXb
+      
+      ## last time by strata
       M.etimes.max[,iterC] <- causeBaseline$lastEventTime[M.strata[,iterC]+1]
-      M.eXb_h[,iterC] <- causeBaseline$eXb
     }
     
     M.eXb_cumH <- M.eXb_h
@@ -114,24 +130,49 @@ predict.CauseSpecificCox <- function(object,newdata, times, cause, t0 = NA, coln
     nCause <- 1
     tdiff <- 0*min(diff(eTimes))/2 # TO MATCH test-CauseSpecificCoxRegresion.R but will not match pec
     
+    #### cause ####
+    infoVar_Cause <- CoxStrataVar(object$models[[paste("Cause",cause)]])
+    
+    ## baseline hazard from the Cox model
     causeBaseline <- predictCox(object$models[[paste("Cause",cause)]],
-                                times = eventTimes, newdata = newdata,
-                                type = c("hazard","cumHazard","eXb", "newstrata"), 
+                                times = eventTimes, newdata = NULL,
+                                type = c("hazard","cumHazard"), 
                                 keep.strata = TRUE, keep.lastEventTime = TRUE, keep.times = TRUE,
                                 se = FALSE, format = "list")
     
+    ls.hazard <- list(matrix(causeBaseline$hazard, byrow = FALSE, nrow = nTimes))
+    
+    ## linear predictor for the new observations
+    newdata.eXb_cause <- exp(CoxLP(object$models[[paste("Cause",cause)]], data = newdata, 
+                             lpVars = infoVar_Cause$lpvars, stratavars = infoVar_Cause$stratavars.original, center = FALSE))
+    
+    M.eXb_h <- cbind(newdata.eXb_cause)
+    
+    ## strata for the new observations
+    newdata.strata <- CoxStrata(object$models[[paste("Cause",cause)]], data = newdata, 
+                                sterms = infoVar_Cause$sterms, 
+                                stratavars = infoVar_Cause$stratavars, 
+                                levels = levels(causeBaseline$strata), 
+                                stratalevels = infoVar_Cause$stratalevels)
+    
+    M.strata <- cbind(as.numeric(newdata.strata)-1)
+    M.etimes.max <- cbind(causeBaseline$lastEventTime[M.strata+1]) # last time by strata
+    
+    #### overall ####
+    infoVar_All <- CoxStrataVar(object$models[[paste("Cause",cause)]])
+    
+    ## baseline
     overallBaseline <- predictCox(object$models[["OverallSurvival"]],
-                              times = eventTimes-tdiff, newdata = newdata,
-                              type = c("cumHazard","eXb"), 
+                              times = eventTimes-tdiff, newdata = NULL,
+                              type = "cumHazard", 
                               keep.strata = TRUE, keep.lastEventTime = TRUE, keep.times = TRUE,
                               se = FALSE, format = "list")
-    
-    ls.hazard <- list(matrix(causeBaseline$hazard, byrow = FALSE, nrow = nTimes))
     ls.cumHazard <- list(matrix(overallBaseline$cumHazard, byrow = FALSE, nrow = nTimes))
-    M.eXb_h <- cbind(causeBaseline$eXb)
-    M.eXb_cumH <- cbind(overallBaseline$eXb)
-    M.strata <- cbind(as.numeric(causeBaseline$newstrata)-1)
-    M.etimes.max <- cbind(causeBaseline$lastEventTime[M.strata+1])
+    
+    ## linear predictor for the new observations
+    newdata.eXb_All <- exp(CoxLP(object$models[["OverallSurvival"]], data = newdata, 
+                             lpVars = infoVar_All$lpvars, stratavars = infoVar_All$stratavars.original, center = FALSE))
+    M.eXb_cumH <- cbind(newdata.eXb_All)
     
   }
   

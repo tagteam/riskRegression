@@ -47,13 +47,13 @@
 #' @importFrom rms strat cph
 #' @importFrom ggplot2 aes element_blank element_line element_rect geom_line geom_ribbon ggplot scale_colour_manual scale_fill_manual scale_y_continuous theme theme_bw "%+replace%"
 #' @importFrom survival Surv strata coxph
-#' @importFrom data.table data.table ":=" setnames setorder setcolorder setkey rbindlist
+#' @importFrom data.table as.data.table data.table is.data.table ":=" setnames setorder setcolorder setkey rbindlist
 #' @importFrom prodlim Hist dimColor prodlim
 #' @importFrom foreach "%dopar%" foreach
 #' @importFrom cmprsk predict.crr
 #' @importFrom prodlim Hist jackknife prodlim sindex
 #' @importFrom grDevices col2rgb gray
 #' @importFrom graphics bxp  abline axis box legend lines mtext par plot points segments text title polygon par boxplot
-#' @importFrom utils capture.output head select.list find
+#' @importFrom utils capture.output find head select.list tail
 #' @importFrom stats glm uniroot as.formula delete.response formula get_all_vars median na.omit pnorm qnorm quantile reformulate terms drop.terms terms.formula time update update.formula model.frame model.response coef family median model.matrix na.fail na.omit pnorm predict quantile rbinom rexp runif sd smooth var wilcox.test qnorm
 NULL
