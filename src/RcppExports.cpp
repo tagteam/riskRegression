@@ -67,36 +67,6 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// calcS0_cpp
-double calcS0_cpp(double t, int n, const NumericVector& eventtime, const NumericVector& eXb);
-RcppExport SEXP riskRegression_calcS0_cpp(SEXP tSEXP, SEXP nSEXP, SEXP eventtimeSEXP, SEXP eXbSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< double >::type t(tSEXP);
-    Rcpp::traits::input_parameter< int >::type n(nSEXP);
-    Rcpp::traits::input_parameter< const NumericVector& >::type eventtime(eventtimeSEXP);
-    Rcpp::traits::input_parameter< const NumericVector& >::type eXb(eXbSEXP);
-    rcpp_result_gen = Rcpp::wrap(calcS0_cpp(t, n, eventtime, eXb));
-    return rcpp_result_gen;
-END_RCPP
-}
-// calcS1_cpp
-NumericVector calcS1_cpp(double t, int n, int p, const NumericVector& eventtime, const NumericVector& eXb, const arma::mat& X);
-RcppExport SEXP riskRegression_calcS1_cpp(SEXP tSEXP, SEXP nSEXP, SEXP pSEXP, SEXP eventtimeSEXP, SEXP eXbSEXP, SEXP XSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< double >::type t(tSEXP);
-    Rcpp::traits::input_parameter< int >::type n(nSEXP);
-    Rcpp::traits::input_parameter< int >::type p(pSEXP);
-    Rcpp::traits::input_parameter< const NumericVector& >::type eventtime(eventtimeSEXP);
-    Rcpp::traits::input_parameter< const NumericVector& >::type eXb(eXbSEXP);
-    Rcpp::traits::input_parameter< const arma::mat& >::type X(XSEXP);
-    rcpp_result_gen = Rcpp::wrap(calcS1_cpp(t, n, p, eventtime, eXb, X));
-    return rcpp_result_gen;
-END_RCPP
-}
 // calcE_cpp
 List calcE_cpp(double t, int n, int p, const NumericVector& eventtime, const NumericVector& eXb, const arma::mat& X);
 RcppExport SEXP riskRegression_calcE_cpp(SEXP tSEXP, SEXP nSEXP, SEXP pSEXP, SEXP eventtimeSEXP, SEXP eXbSEXP, SEXP XSEXP) {
@@ -175,6 +145,54 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< NumericMatrix >::type Y(YSEXP);
     Rcpp::traits::input_parameter< bool >::type transposeY(transposeYSEXP);
     rcpp_result_gen = Rcpp::wrap(rowSumsCrossprod(X, Y, transposeY));
+    return rcpp_result_gen;
+END_RCPP
+}
+// colCenter_cpp
+arma::mat colCenter_cpp(arma::mat X, arma::colvec& center);
+RcppExport SEXP riskRegression_colCenter_cpp(SEXP XSEXP, SEXP centerSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::mat >::type X(XSEXP);
+    Rcpp::traits::input_parameter< arma::colvec& >::type center(centerSEXP);
+    rcpp_result_gen = Rcpp::wrap(colCenter_cpp(X, center));
+    return rcpp_result_gen;
+END_RCPP
+}
+// rowCenter_cpp
+arma::mat rowCenter_cpp(arma::mat X, arma::rowvec& center);
+RcppExport SEXP riskRegression_rowCenter_cpp(SEXP XSEXP, SEXP centerSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::mat >::type X(XSEXP);
+    Rcpp::traits::input_parameter< arma::rowvec& >::type center(centerSEXP);
+    rcpp_result_gen = Rcpp::wrap(rowCenter_cpp(X, center));
+    return rcpp_result_gen;
+END_RCPP
+}
+// colScale_cpp
+arma::mat colScale_cpp(arma::mat X, arma::colvec& scale);
+RcppExport SEXP riskRegression_colScale_cpp(SEXP XSEXP, SEXP scaleSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::mat >::type X(XSEXP);
+    Rcpp::traits::input_parameter< arma::colvec& >::type scale(scaleSEXP);
+    rcpp_result_gen = Rcpp::wrap(colScale_cpp(X, scale));
+    return rcpp_result_gen;
+END_RCPP
+}
+// rowScale_cpp
+arma::mat rowScale_cpp(arma::mat X, arma::rowvec& scale);
+RcppExport SEXP riskRegression_rowScale_cpp(SEXP XSEXP, SEXP scaleSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::mat >::type X(XSEXP);
+    Rcpp::traits::input_parameter< arma::rowvec& >::type scale(scaleSEXP);
+    rcpp_result_gen = Rcpp::wrap(rowScale_cpp(X, scale));
     return rcpp_result_gen;
 END_RCPP
 }

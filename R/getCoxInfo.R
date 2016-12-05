@@ -1,3 +1,239 @@
+#### functions #####
+
+#' @title Extract the design matrix for a Cox model
+#' @description Extract the design matrix for a Cox model
+#' @name CoxDesign
+#' 
+#' @param object The fitted Cox regression model object either
+#'     obtained with \code{coxph} (survival package) or \code{cph}
+#'     (rms package).
+#' @param data a \code{data.frame} or a \code{data.table}
+#' @param lpvars the variables used to define the linear predictor
+#' @param stratavars the special variables used to define the strata
+#' @param rm.intercept should the intercept be removed
+#' @param center should the covariates be centered
+#' 
+#' @author Brice Ozenne broz@@sund.ku.dk, Thomas A. Gerds tag@@biostat.ku.dk
+#' 
+#' @details if no variables for the linear predictor or the strata, returns a data.table with one column filled with 0.
+#' 
+#' @examples 
+#' \dontrun{
+#' d <- sampleData(1e2, outcome = "survival")
+#' 
+#' ##
+#' library(survival)
+#' mCoxS <- coxph(Surv(time, event) ~ X1, data = d) 
+#' info <- CoxStrataVar(mCoxS)
+#' CoxDesign(mCoxS, data = CoxData(mCoxS), lpvars = info$lpvars, stratavars = info$stratavars, rm.intercept = TRUE, center = FALSE)
+#' CoxDesign(mCoxS, data = d, lpvars = info$lpvars, stratavars = info$stratavars, rm.intercept = TRUE, center = TRUE)
+#' 
+#' mCoxS <- coxph(Surv(time, event) ~ X1*X2, data = d) 
+#' info <- CoxStrataVar(mCoxS)
+#' CoxDesign(mCoxS, data = CoxData(mCoxS), lpvars = info$lpvars, stratavars = info$stratavars, rm.intercept = TRUE, center = FALSE)
+#' 
+#' mCoxS <- coxph(Surv(time, event) ~ strata(X1)+X2, data = d) 
+#' info <- CoxStrataVar(mCoxS)
+#' CoxDesign(mCoxS, data = CoxData(mCoxS), lpvars = info$lpvars, stratavars = info$stratavars, rm.intercept = TRUE, center = FALSE)
+#' 
+#' mCoxS <- coxph(Surv(time, event) ~ strata(X1)+strata(X2), data = d) 
+#' info <- CoxStrataVar(mCoxS)
+#' CoxDesign(mCoxS, data = CoxData(mCoxS), lpvars = info$lpvars, stratavars = info$stratavars, rm.intercept = TRUE, center = FALSE)
+#' 
+#' ##
+#' library(rms)
+#' mCoxS <- cph(Surv(time, event) ~ X1, data = d) 
+#' info <- CoxStrataVar(mCoxS)
+#' CoxDesign(mCoxS, data = CoxData(mCoxS), lpvars = info$lpvars, stratavars = info$stratavars, rm.intercept = TRUE, center = FALSE)
+#' CoxDesign(mCoxS, data = CoxData(mCoxS), lpvars = info$lpvars, stratavars = info$stratavars, rm.intercept = TRUE, center = TRUE)
+#' 
+#' mCoxS <- cph(Surv(time, event) ~ X1*X2, data = d) 
+#' info <- CoxStrataVar(mCoxS)
+#' CoxDesign(mCoxS, data = CoxData(mCoxS), lpvars = info$lpvars, stratavars = info$stratavars, rm.intercept = TRUE, center = FALSE)
+#' 
+#' mCoxS <- cph(Surv(time, event) ~ strat(X1)+X2, data = d) 
+#' info <- CoxStrataVar(mCoxS)
+#' CoxDesign(mCoxS, data = CoxData(mCoxS), lpvars = info$lpvars, stratavars = info$stratavars, rm.intercept = TRUE, center = FALSE)
+#' 
+#' mCoxS <- cph(Surv(time, event) ~ strat(X1)+strat(X2), data = d) 
+#' info <- CoxStrataVar(mCoxS)
+#' CoxDesign(mCoxS, data = CoxData(mCoxS), lpvars = info$lpvars, stratavars = info$stratavars, rm.intercept = TRUE, center = FALSE)
+#' }
+CoxDesign <- function(object, data, lpvars, stratavars, rm.intercept, center){
+  
+  f <- CoxFormula(object)
+  
+  # remove strata
+  if(length(stratavars)>0){
+    f.strata <- as.formula(paste0(".~ .-",paste(stratavars, collapse = "-")))
+    f <- update(f,
+                f.strata)
+  }
+  
+  # remove Surv
+  terms.f <- delete.response(terms(f))
+  
+  # remove intercept
+  if(rm.intercept == TRUE){attr(terms.f, "intercept") <- 0}
+  
+  # add lp variables
+  modeldata <- as.data.frame(model.matrix(terms.f, 
+                                          data = data, 
+                                          contrasts = NULL))
+  
+  # center data
+  if(center && length(lpvars)>0){
+    modeldata[,lpvars] <- rowCenter_cpp(as.matrix(modeldata[,lpvars,drop = FALSE]), center = CoxCenter(object))
+  }
+  
+  # # add strata variables
+  # if(rm.stratavars == FALSE && length(stratavars)>0){
+  #   f.strata <- as.formula(paste0("~0+",paste(stratavars.original, collapse = "+")))
+  #   
+  #   modeldata <- cbind(modeldata,
+  #                      model.frame(formula = f.strata, 
+  #                                  data = data, contrasts = NULL)
+  #   )
+  #   
+  # }
+  
+  if(NCOL(modeldata) == 0){
+    modeldata <- cbind(modeldata, 0)
+  }
+  
+  return(modeldata)
+} 
+
+#' @title Extract the time and event variable from a Cox model
+#' @description Extract the time and event variable from a Cox model
+#' @rdname CoxResponseVar 
+#' @param object The fitted Cox regression model object either
+#'     obtained with \code{coxph} (survival package) or \code{cph}
+#'     (rms package).
+#' 
+#' @author Brice Ozenne broz@@sund.ku.dk, Thomas A. Gerds tag@@biostat.ku.dk
+#' 
+#' @examples 
+#' \dontrun{
+#' d <- sampleData(1e2, outcome = "survival")
+#' 
+#' ##
+#' library(survival)
+#' mCox <- coxph(Surv(time, event) ~ X1+X2, data = d)
+#' CoxResponseVar(mCox)
+#'
+#' ##
+#' library(rms)
+#' mCox <- cph(Surv(time, event) ~ X1+X2, data = d, y = TRUE)
+#' CoxResponseVar(mCox) 
+#' }
+CoxResponseVar <- function(object){
+  
+  f.surv <- CoxFormula(object)[[2]]
+  if("time" %in% names(f.surv) == FALSE && "event" %in% names(f.surv) == FALSE ){
+    names(f.surv)[2:3] <- c("time","event")
+  }else if("time" %in% names(f.surv) == FALSE){
+    names(f.surv)[setdiff(2:3,which(names(f.surv)=="event"))] <- "time"
+  }else if("event" %in% names(f.surv) == FALSE){
+    names(f.surv)[setdiff(2:3,which(names(f.surv)=="time"))] <- "event"
+  }
+  
+  return(list(time = deparse(f.surv$time),
+              event = deparse(f.surv$event))
+  )
+  
+}
+
+#### methods #####
+
+
+#' @title Extract the mean value of the covariates
+#' @description Extract the mean value of the covariates
+#' @rdname CoxCenter 
+#' @param object The fitted Cox regression model object either
+#'     obtained with \code{coxph} (survival package) or \code{cph}
+#'     (rms package).
+#' 
+#' @author Brice Ozenne broz@@sund.ku.dk, Thomas A. Gerds tag@@biostat.ku.dk
+#' 
+#' @examples 
+#' \dontrun{
+#' d <- sampleData(1e2, outcome = "survival")
+#' d$Xcat <- paste0(d$X3,d$X4)
+#' 
+#' ##
+#' library(survival)
+#' mCox <- coxph(Surv(time, event) ~ X1+X2, data = d)
+#' CoxCenter(mCox)
+#' mCox <- coxph(Surv(time, event) ~ X1+X2+Xcat, data = d)
+#' CoxCenter(mCox)
+#' 
+#' ##
+#' library(rms)
+#' mCox <- cph(Surv(time, event) ~ X1+X2, data = d, y = TRUE)
+#' CoxCenter(mCox)
+#' mCox <- cph(Surv(time, event) ~ X1+X2+Xcat, data = d)
+#' CoxCenter(mCox)
+#' }
+
+#' @rdname CoxCenter
+CoxCenter <- function(object){
+  UseMethod("CoxCenter") 
+} 
+
+#' @rdname CoxCenter
+#' @method CoxCenter cph
+CoxCenter.cph <- function(object){
+  return(setNames(object$means, object$mmcolnames))
+}
+
+#' @rdname CoxCenter
+#' @method CoxCenter coxph
+CoxCenter.coxph <- function(object){
+  return(object$means)
+}
+
+#' @title Extract the dataset used to train a Cox model
+#' @description Extract the dataset used to train a Cox model
+#' @rdname CoxData 
+#' @param object The fitted Cox regression model object either
+#'     obtained with \code{coxph} (survival package) or \code{cph}
+#'     (rms package).
+#' 
+#' @author Brice Ozenne broz@@sund.ku.dk, Thomas A. Gerds tag@@biostat.ku.dk
+#' 
+#' @examples 
+#' \dontrun{
+#' d <- sampleData(1e2, outcome = "survival")
+#' 
+#' ##
+#' library(survival)
+#' mCox <- coxph(Surv(time, event) ~ X1+X2, data = d)
+#' CoxData(mCox)
+#' 
+#' ##
+#' library(rms)
+#' mCox <- cph(Surv(time, event) ~ X1+X2, data = d, y = TRUE)
+#' CoxData(mCox)
+#' }
+
+#' @rdname CoxData
+CoxData <- function(object){
+  UseMethod("CoxData") 
+} 
+
+#' @rdname CoxData
+#' @method CoxData cph
+CoxData.cph <- function(object){
+  return(eval(object$call$data))
+}
+
+#' @rdname CoxData
+#' @method CoxData coxph
+CoxData.coxph <- function(object){
+  return(eval(object$call$data))
+}
+
 #' @title Extract the event times used to fit a Cox model
 #' @description Extract the event times used to fit a Cox model
 #' @rdname CoxEventtime 
@@ -39,21 +275,14 @@ CoxEventtime.coxph <- function(object){
   return(object$y[,"time"])
 }
 
-#' @title Extract data
-#' @description Extract the columns from a dataset involved by a model. Optional argument to center the columns values.
-#' @name CoxData
-#' 
+#' @title Extract the formula from a Cox model
+#' @description Extract the formula from a Cox model
+#' @rdname CoxFormula 
 #' @param object The fitted Cox regression model object either
 #'     obtained with \code{coxph} (survival package) or \code{cph}
 #'     (rms package).
-#' @param data a \code{data.frame} or a \code{data.table}
-#' @param lpVars the name of the covariates 
-#' @param stratavars the name of the strata variables
-#' @param center should the covariates be centered
 #' 
 #' @author Brice Ozenne broz@@sund.ku.dk, Thomas A. Gerds tag@@biostat.ku.dk
-#' 
-#' @details if no variables for the linear predictor or the strata, returns a data.table with one column filled with 0.
 #' 
 #' @examples 
 #' \dontrun{
@@ -61,67 +290,31 @@ CoxEventtime.coxph <- function(object){
 #' 
 #' ##
 #' library(survival)
-#' mCoxS <- coxph(Surv(time, event) ~ X1, data = d) 
-#' CoxData(mCoxS, lpVars = "X1", stratavars = NULL, center = FALSE)
-#' mCoxS <- coxph(Surv(time, event) ~ X1*X2, data = d) 
-#' CoxData(mCoxS, lpVars = c("X1","X2"), stratavars = NULL, center = FALSE)
-#' mCoxS <- coxph(Surv(time, event) ~ strata(X1)+X2, data = d) 
-#' CoxData(mCoxS, lpVars = "X2", stratavars = "strata(X1)", center = FALSE)
-#' mCoxS <- coxph(Surv(time, event) ~ strata(X1)+strata(X2), data = d) 
-#' CoxData(mCoxS, lpVars = NULL, stratavars = c("strata(X1)","strata(X2)"), center = FALSE)
+#' mCox <- coxph(Surv(time, event) ~ X1+X2, data = d)
+#' CoxFormula(mCox)
 #' 
 #' ##
 #' library(rms)
-#' mCoxS <- cph(Surv(time, event) ~ X1, data = d) 
-#' CoxData(mCoxS, lpVars = "X1", data = d, stratavars = NULL, center = FALSE)
-#' mCoxS <- cph(Surv(time, event) ~ X1*X2, data = d) 
-#' CoxData(mCoxS, lpVars = c("X1","X2"), data = d, stratavars = NULL, center = FALSE)
-#' mCoxS <- cph(Surv(time, event) ~ strat(X1)+X2, data = d) 
-#' xx <- CoxData(mCoxS, lpVars = "X2", data = d, stratavars = "X1", center = FALSE)
-#' print(xx)
-#' mCoxS <- cph(Surv(time, event) ~ strat(X1)+strat(X2), data = d) 
-#' xx <- CoxData(mCoxS, lpVars = NULL, data = d, stratavars = c("X1","X2"), center = FALSE)
-#' print(xx)
+#' mCox <- cph(Surv(time, event) ~ X1+X2, data = d, y = TRUE)
+#' CoxFormula(mCox)
 #' }
-CoxData <- function(object, data = model.frame(object), lpVars, stratavars, center){
- 
-  if(!is.data.table(data)){
-    data <- as.data.table(data[,c(lpVars,stratavars), drop = FALSE])
-  }
-  modeldata <- NULL
-  
-  # variables for the linear predictor
-  if(length(lpVars)>0){
-    modeldata <- data[,lpVars,with=FALSE]
-    
-    if(center){
-      modeldata <- sweep(modeldata, FUN = "-", MARGIN = 2, STATS = object$means[lpVars])
-      modeldata <- as.data.table(modeldata)
-    }
-    
-  }
-  
-  # variables for the strata
-  if(length(stratavars)>0){
-     
-    if(is.null(modeldata)){
-      modeldata <- data[,stratavars,with=FALSE]
-    }else{
-      modeldata[,stratavars := data[,stratavars,with=FALSE], with = FALSE]
-    }
-    
-  }
-  
-  if(is.null(modeldata)){
-    
-    n <- if(NROW(data)==0) CoxN(object) else NROW(data)
-    modeldata <- data.table(matrix(0, nrow = n, ncol = 1))
-    
-  }
-  
-  return(modeldata)
-  
+
+#' @rdname CoxFormula
+CoxFormula <- function(object){
+  UseMethod("CoxFormula") 
 } 
+
+#' @rdname CoxFormula
+#' @method CoxFormula cph
+CoxFormula.cph <- function(object){
+  return(object$sformula)
+}
+
+#' @rdname CoxFormula
+#' @method CoxFormula coxph
+CoxFormula.coxph <- function(object){
+  return(object$formula)
+}
 
 #' @title Compute the linear predictor of a Cox model
 #' @description Compute the linear predictor of a Cox model
@@ -130,8 +323,6 @@ CoxData <- function(object, data = model.frame(object), lpVars, stratavars, cent
 #'     obtained with \code{coxph} (survival package) or \code{cph}
 #'     (rms package).
 #' @param data a \code{data.frame} or a \code{data.table}
-#' @param lpVars the name of all the covariates
-#' @param stratavars the variables used to define the strata
 #' @param center should the linear predictor be computed after centering the covariates
 #' 
 #' @author Brice Ozenne broz@@sund.ku.dk, Thomas A. Gerds tag@@biostat.ku.dk
@@ -145,44 +336,59 @@ CoxData <- function(object, data = model.frame(object), lpVars, stratavars, cent
 #' ##
 #' library(survival)
 #' mCox <- coxph(Surv(time, event) ~ X1+X2, data = d)
-#' CoxLP(mCox, data = d, xvars = c("X1","X2"), stratavars = NULL, center = FALSE)
-#' CoxLP(mCox, data = d, xvars = c("X1","X2"), stratavars = NULL, center = TRUE)  
+#' CoxLP(mCox, data = d, center = FALSE)
+#' CoxLP(mCox, data = d, center = TRUE)  
+#' 
 #' mCoxS <- coxph(Surv(time, event) ~ strata(X1)+X2, data = d)
-#' CoxLP(mCoxS, data = d, xvars = c("X1","X2"), stratavars = "strata(X1)", center = FALSE) 
+#' CoxLP(mCoxS, data = d, center = FALSE) 
+#' 
 #' mCoxS2 <- coxph(Surv(time, event) ~ strata(X1)+strata(X2), data = d)
-#' CoxLP(mCoxS2, data = d, xvars = c("X1","X2"), stratavars = c("X1","X2"), center = FALSE) 
+#' CoxLP(mCoxS2, data = d, center = FALSE) 
 #' 
 #' ##
 #' library(rms)
 #' mCox <- cph(Surv(time, event) ~ X1+X2, data = d, y = TRUE)
-#' CoxLP(mCox, data = d, xvars = c("X1","X2"), stratavars = NULL, center = FALSE) 
-#' CoxLP(mCox, data = d, xvars = c("X1","X2"), stratavars = NULL, center = TRUE) 
+#' CoxLP(mCox, data = d, center = FALSE) 
+#' CoxLP(mCox, data = d, center = TRUE) 
+#' 
 #' mCoxS <- cph(Surv(time, event) ~ strat(X1)+X2, data = d)
-#' CoxLP(mCoxS, data = d, xvars = c("X1","X2"), stratavars = "strat(X1)", center = FALSE) 
+#' CoxLP(mCoxS, data = d, center = FALSE) 
+#' 
 #' mCoxS2 <- cph(Surv(time, event) ~ strat(X1)+strat(X2), data = d, y = TRUE)
-#' CoxLP(mCoxS2, data = d, xvars = c("X1","X2"), stratavars = c("X1","X2"), center = FALSE) 
+#' info <- CoxStrataVar(mCoxS2)
+#' CoxLP(mCoxS2, data = d, center = FALSE) 
 #' }
 
 #' @rdname CoxLP
-CoxLP <- function(object, data, lpVars, stratavars, center){
+CoxLP <- function(object, data, center){
   UseMethod("CoxLP") 
 } 
 
 #' @rdname CoxLP
 #' @method CoxLP cph
-CoxLP.cph <- function(object, data = NULL, lpVars, stratavars, center){
+CoxLP.cph <- function(object, data, center){
+  
+  coef <- stats::coef(object)
+  n.varLP <- length(coef)
   
   if(is.null(data)){ ## training dataset
     
     Xb <- object$linear.predictors
-    if(center == FALSE){
-      Xb <- Xb + sum(object$means*stats::coef(object))
+    
+    if(center == FALSE && n.varLP != 0){
+      Xb <- Xb + sum(CoxCenter(object)*coef)
     }
     
   }else{ ## new dataset
-    if(length(lpVars)>0){
-      data <- CoxData(object, data = data, lpVars = lpVars, stratavars = stratavars, center = center) # here the center argument will enable to center the X variables
+    
+    if(n.varLP>0){
+      
       Xb <- stats::predict(object, newdata = as.data.frame(data), type = "lp")
+      
+      if(center && n.varLP != 0){
+        Xb <- Xb - sum(CoxCenter(object)*coef)
+      }
+      
     }else{ 
       Xb <- rep(0, NROW(data)) 
     } 
@@ -193,28 +399,38 @@ CoxLP.cph <- function(object, data = NULL, lpVars, stratavars, center){
 
 #' @rdname CoxLP
 #' @method CoxLP coxph
-CoxLP.coxph <- function(object, data = NULL, lpVars, stratavars, center){
+CoxLP.coxph <- function(object, data, center){
+  
+  coef <- stats::coef(object)
+  n.varLP <- length(coef)
   
   if(is.null(data)){ ## training dataset
     
     Xb <- object$linear.predictors
-    if(center == FALSE){
-      Xb <- Xb + sum(object$means*stats::coef(object))
+    
+    if(center == FALSE && n.varLP != 0){
+      Xb <- Xb + sum(CoxCenter(object)*coef)
     }
     
   }else{ ## new dataset
     
-    if(length(lpVars) == 0){ 
-      Xb <- rep(0, NROW(data))
-    } else{
-      data <- CoxData(object, data = data, lpVars = lpVars, stratavars = stratavars, center = center) # here the center argument will enable to center the X variables
-      if(length(stratavars)>0){
-        Xb <- rowSums(stats::predict(object, newdata = as.data.frame(data), type = "terms"))
-      }else { 
-        Xb <- stats::predict(object, newdata = data.frame(data), type = "lp")
+    if(n.varLP>0){
+      is.strata <- attr(object$terms, "special")$strata
+      
+      if(length(is.strata)>0){
+        Xb <- rowSums(stats::predict(object, newdata = as.data.frame(data), 
+                                     type = "terms"))
+      }else{ 
+        Xb <- stats::predict(object, newdata = as.data.frame(data), type = "lp")
       }
+      
+      if(center && n.varLP != 0){
+        Xb <- Xb - sum(CoxCenter(object)*coef)
+      }
+      
+    }else{ 
+      Xb <- rep(0, NROW(data)) 
     } 
-    
   }
   
   return(Xb)
@@ -259,47 +475,6 @@ CoxN.cph <- function(object){
 #' @method CoxN coxph
 CoxN.coxph <- function(object){
   return(object$n)
-}
-
-
-#' @title Extract the time and event variable from a Cox mode
-#' @description Extract the time and event variable from a Cox mode
-#' @rdname CoxResponseVar 
-#' @param object The fitted Cox regression model object either
-#'     obtained with \code{coxph} (survival package) or \code{cph}
-#'     (rms package).
-#' 
-#' @author Brice Ozenne broz@@sund.ku.dk, Thomas A. Gerds tag@@biostat.ku.dk
-#' 
-#' @examples 
-#' \dontrun{
-#' d <- sampleData(1e2, outcome = "survival")
-#' 
-#' ##
-#' library(survival)
-#' mCox <- coxph(Surv(time, event) ~ X1+X2, data = d)
-#' CoxResponseVar(mCox)
-#'
-#' ##
-#' library(rms)
-#' mCox <- cph(Surv(time, event) ~ X1+X2, data = d, y = TRUE)
-#' CoxResponseVar(mCox) 
-#' }
-CoxResponseVar <- function(object){
-
-  f.surv <- object$call$formula[[2]]
-  if("time" %in% names(f.surv) == FALSE && "event" %in% names(f.surv) == FALSE ){
-    names(f.surv)[2:3] <- c("time","event")
-  }else if("time" %in% names(f.surv) == FALSE){
-    names(f.surv)[setdiff(2:3,which(names(f.surv)=="event"))] <- "time"
-  }else if("event" %in% names(f.surv) == FALSE){
-    names(f.surv)[setdiff(2:3,which(names(f.surv)=="time"))] <- "event"
-  }
-  
-  return(list(time = deparse(f.surv$time),
-              event = deparse(f.surv$event))
-  )
-  
 }
 
 #' @title Extract the event indicator used to fit a Cox model
@@ -514,8 +689,8 @@ CoxStrataVar.coxph <- function(object){
               stratalevels = stratalevels,
               is.strata = is.strata,
               sterms = sterms,
-              lpvars = setdiff(allVars.X,stratavars.original))
-         )
+              lpvars = setdiff(xvars, stratavars))
+  )
 }
 
 #' @rdname CoxStrataVar
@@ -552,7 +727,69 @@ CoxStrataVar.cph <- function(object){
               stratalevels = NULL,
               is.strata = is.strata,
               sterms = sterms,
-              lpvars = setdiff(allVars.X,stratavars.original))
-  )
+              lpvars = setdiff(xvars, stratavars)
+  ))
 }
 
+#' @title Extract the variance covariance matrix of the beta from a Cox model
+#' @description Extract the variance covariance matrix of the beta from a Cox model
+#' @rdname CoxVarCov 
+#' @param object The fitted Cox regression model object either
+#'     obtained with \code{coxph} (survival package) or \code{cph}
+#'     (rms package).
+#' 
+#' @author Brice Ozenne broz@@sund.ku.dk, Thomas A. Gerds tag@@biostat.ku.dk
+#' 
+#' @details Should return \code{NULL} if the Cox model has no covariate. 
+#' The rows and columns of the variance covariance matrix must be named with the names used in the design matrix.
+#' 
+#' @examples 
+#' \dontrun{
+#' d <- sampleData(1e2, outcome = "survival")
+#' 
+#' ##
+#' library(survival)
+#' mCox <- coxph(Surv(time, event) ~ X1+X2, data = d)
+#' CoxVarCov(mCox)
+#' mCox <- coxph(Surv(time, event) ~ 1, data = d, y = TRUE)
+#' CoxVarCov(mCox)
+#' 
+#' ##
+#' library(rms)
+#' mCox <- cph(Surv(time, event) ~ X1+X2, data = d, y = TRUE)
+#' CoxVarCov(mCox)
+#' mCox <- cph(Surv(time, event) ~ 1, data = d, y = TRUE)
+#' CoxVarCov(mCox)
+#' 
+#' }
+
+#' @rdname CoxVarCov
+CoxVarCov <- function(object){
+  UseMethod("CoxVarCov") 
+} 
+
+#' @rdname CoxVarCov
+#' @method CoxVarCov cph
+CoxVarCov.cph <- function(object){
+  
+  Sigma <- object$var
+  if(!is.null(Sigma)){
+    colnames(Sigma) <- object$mmcolnames
+    rownames(Sigma) <- object$mmcolnames
+  }
+  
+  return(Sigma)
+}
+
+#' @rdname CoxVarCov
+#' @method CoxVarCov coxph
+CoxVarCov.coxph <- function(object){
+  
+  Sigma <- object$var
+  if(!is.null(Sigma)){
+    coefName <- names(coef(object))
+    colnames(Sigma) <- coefName
+    rownames(Sigma) <- coefName
+  }
+  return(Sigma)
+}

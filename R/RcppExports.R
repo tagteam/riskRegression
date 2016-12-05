@@ -44,14 +44,6 @@ colSumsCrossprod <- function(X, Y, transposeY) {
     .Call('riskRegression_colSumsCrossprod', PACKAGE = 'riskRegression', X, Y, transposeY)
 }
 
-calcS0_cpp <- function(t, n, eventtime, eXb) {
-    .Call('riskRegression_calcS0_cpp', PACKAGE = 'riskRegression', t, n, eventtime, eXb)
-}
-
-calcS1_cpp <- function(t, n, p, eventtime, eXb, X) {
-    .Call('riskRegression_calcS1_cpp', PACKAGE = 'riskRegression', t, n, p, eventtime, eXb, X)
-}
-
 calcE_cpp <- function(t, n, p, eventtime, eXb, X) {
     .Call('riskRegression_calcE_cpp', PACKAGE = 'riskRegression', t, n, p, eventtime, eXb, X)
 }
@@ -97,5 +89,85 @@ rowCumSum <- function(x) {
 #' @export
 rowSumsCrossprod <- function(X, Y, transposeY) {
     .Call('riskRegression_rowSumsCrossprod', PACKAGE = 'riskRegression', X, Y, transposeY)
+}
+
+#' @title Apply - by column
+#'
+#' @description Fast computation of sweep(X, MARGIN = 1, FUN = "-", STATS = center)
+#' 
+#' @param X A matrix.
+#' @param center a numeric vector of length equal to the number of rows of \code{x}
+#' 
+#' @return A matrix of same size as X.
+#' @author Brice Ozenne <broz@@sund.ku.dk>
+#' @examples
+#' x <- matrix(1,6,5)
+#' sweep(x, MARGIN = 1, FUN = "-", STATS = 1:6)
+#' colCenter_cpp(x, 1:6 )
+#' 
+#' @export
+colCenter_cpp <- function(X, center) {
+    .Call('riskRegression_colCenter_cpp', PACKAGE = 'riskRegression', X, center)
+}
+
+#' @title Apply - by row
+#'
+#' @description Fast computation of sweep(X, MARGIN = 2, FUN = "-", STATS = center)
+#' 
+#' @param X A matrix.
+#' @param center a numeric vector of length equal to the number of rows of \code{x}
+#' 
+#' @return A matrix of same size as X.
+#' @author Brice Ozenne <broz@@sund.ku.dk>
+#' @examples
+#' x <- matrix(1,6,5)
+#' sweep(x, MARGIN = 2, FUN = "-", STATS = 1:5)
+#' rowCenter_cpp(x, 1:5 )
+#' 
+#' rowCenter_cpp(x, colMeans(x) )
+#' 
+#' @export
+rowCenter_cpp <- function(X, center) {
+    .Call('riskRegression_rowCenter_cpp', PACKAGE = 'riskRegression', X, center)
+}
+
+#' @title Apply / by column
+#'
+#' @description Fast computation of sweep(X, MARGIN = 1, FUN = "/", STATS = scale)
+#' 
+#' @param X A matrix.
+#' @param scale a numeric vector of length equal to the number of rows of \code{x}
+#' 
+#' @return A matrix of same size as X.
+#' @author Brice Ozenne <broz@@sund.ku.dk>
+#' @examples
+#' x <- matrix(1,6,5)
+#' sweep(x, MARGIN = 1, FUN = "/", STATS = 1:6)
+#' colScale_cpp(x, 1:6 )
+#' 
+#' @export
+colScale_cpp <- function(X, scale) {
+    .Call('riskRegression_colScale_cpp', PACKAGE = 'riskRegression', X, scale)
+}
+
+#' @title Apply / by row
+#'
+#' @description Fast computation of sweep(X, MARGIN = 2, FUN = "/", STATS = scale)
+#' 
+#' @param X A matrix.
+#' @param scale a numeric vector of length equal to the number of rows of \code{x}
+#' 
+#' @return A matrix of same size as X.
+#' @author Brice Ozenne <broz@@sund.ku.dk>
+#' @examples
+#' x <- matrix(1,6,5)
+#' sweep(x, MARGIN = 2, FUN = "/", STATS = 1:5)
+#' rowScale_cpp(x, 1:5 )
+#' 
+#' rowScale_cpp(x, colMeans(x) )
+#' 
+#' @export
+rowScale_cpp <- function(X, scale) {
+    .Call('riskRegression_rowScale_cpp', PACKAGE = 'riskRegression', X, scale)
 }
 

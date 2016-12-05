@@ -2,28 +2,23 @@
 % Please edit documentation in R/getCoxInfo.R
 \name{CoxData}
 \alias{CoxData}
-\title{Extract data}
+\alias{CoxData.coxph}
+\alias{CoxData.cph}
+\title{Extract the dataset used to train a Cox model}
 \usage{
-CoxData(object, data = model.frame(object), lpVars, stratavars, center)
+CoxData(object)
+
+\method{CoxData}{cph}(object)
+
+\method{CoxData}{coxph}(object)
 }
 \arguments{
 \item{object}{The fitted Cox regression model object either
 obtained with \code{coxph} (survival package) or \code{cph}
 (rms package).}
-
-\item{data}{a \code{data.frame} or a \code{data.table}}
-
-\item{lpVars}{the name of the covariates}
-
-\item{stratavars}{the name of the strata variables}
-
-\item{center}{should the covariates be centered}
 }
 \description{
-Extract the columns from a dataset involved by a model. Optional argument to center the columns values.
-}
-\details{
-if no variables for the linear predictor or the strata, returns a data.table with one column filled with 0.
+Extract the dataset used to train a Cox model
 }
 \examples{
 \dontrun{
@@ -31,27 +26,13 @@ d <- sampleData(1e2, outcome = "survival")
 
 ##
 library(survival)
-mCoxS <- coxph(Surv(time, event) ~ X1, data = d) 
-CoxData(mCoxS, lpVars = "X1", stratavars = NULL, center = FALSE)
-mCoxS <- coxph(Surv(time, event) ~ X1*X2, data = d) 
-CoxData(mCoxS, lpVars = c("X1","X2"), stratavars = NULL, center = FALSE)
-mCoxS <- coxph(Surv(time, event) ~ strata(X1)+X2, data = d) 
-CoxData(mCoxS, lpVars = "X2", stratavars = "strata(X1)", center = FALSE)
-mCoxS <- coxph(Surv(time, event) ~ strata(X1)+strata(X2), data = d) 
-CoxData(mCoxS, lpVars = NULL, stratavars = c("strata(X1)","strata(X2)"), center = FALSE)
+mCox <- coxph(Surv(time, event) ~ X1+X2, data = d)
+CoxData(mCox)
 
 ##
 library(rms)
-mCoxS <- cph(Surv(time, event) ~ X1, data = d) 
-CoxData(mCoxS, lpVars = "X1", data = d, stratavars = NULL, center = FALSE)
-mCoxS <- cph(Surv(time, event) ~ X1*X2, data = d) 
-CoxData(mCoxS, lpVars = c("X1","X2"), data = d, stratavars = NULL, center = FALSE)
-mCoxS <- cph(Surv(time, event) ~ strat(X1)+X2, data = d) 
-xx <- CoxData(mCoxS, lpVars = "X2", data = d, stratavars = "X1", center = FALSE)
-print(xx)
-mCoxS <- cph(Surv(time, event) ~ strat(X1)+strat(X2), data = d) 
-xx <- CoxData(mCoxS, lpVars = NULL, data = d, stratavars = c("X1","X2"), center = FALSE)
-print(xx)
+mCox <- cph(Surv(time, event) ~ X1+X2, data = d, y = TRUE)
+CoxData(mCox)
 }
 }
 \author{

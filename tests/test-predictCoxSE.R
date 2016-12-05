@@ -10,7 +10,8 @@ context("Cox prediction - iid")
 if(require(timereg)){
   
   set.seed(10)
-  d <- sampleData(2e1, outcome = "survival")[,.(eventtime,event,X1,X6)]
+  d <- sampleData(5e1, outcome = "survival")[,.(eventtime,event,X1,X2,X6)]
+  d[ , X16 := X1*X6]
   d2 <- copy(d)
   setkey(d,eventtime)
   
@@ -39,8 +40,57 @@ if(require(timereg)){
     expect_equal(as.double(IC.cox3$ICLambda0), as.double(IClambda_timereg[,-1]), tol = 1e-4)
   })
   
-  #### stratified Cox model
+  #### non stratified Cox model with interactions
+  mIGS.cox <- cox.aalen(Surv(eventtime, event) ~ prop(X1) + prop(X6) + prop(X1*X6), data = d, resample.iid = TRUE, max.timepoint.sim=NULL)
+  ICIlambda_timereg <- t(as.data.table(mIGS.cox$B.iid))
   
+  mI.cox <- coxph(Surv(eventtime, event) ~ X1*X6, data = d, y = TRUE)
+  IC.Icox <- iidCox(mI.cox, keep.times = FALSE)
+  
+  test_that("iid beta - interaction",{
+    expect_equal(IC.Icox$ICbeta,mIGS.cox$gamma.iid)
+  })
+  
+  test_that("iid lambda0 - interaction",{
+    expect_equal(as.double(IC.Icox$ICLambda0), as.double(ICIlambda_timereg[,-1]))
+  })
+  
+  #### Cox model with no covariate
+  # mIGS.cox <- cox.aalen(Surv(eventtime, event) ~ 1, data = d, resample.iid = TRUE, max.timepoint.sim=NULL)
+  # ICIlambda_timereg <- t(as.data.table(mIGS.cox$B.iid))
+  
+  mI.cox <- coxph(Surv(eventtime, event) ~ 1, data = d, y = TRUE)
+  IC.Icox <- iidCox(mI.cox, keep.times = FALSE) # how to test the result
+  
+  #### Cox model with categorical variable
+  d$Xcat2 <- as.factor(paste0(d$X1,d$X2))
+  
+  m.timereg <- cox.aalen(Surv(eventtime, event) ~ prop(Xcat2) + prop(X6), data = d, resample.iid = TRUE, max.timepoint.sim=NULL)
+  IClambda.timereg <- t(as.data.table(m.timereg$B.iid))
+  
+  m.RR <- coxph(Surv(eventtime, event) ~ Xcat2 + X6, data = d, y = TRUE)
+  IC.RR <- iidCox(m.RR, keep.times = FALSE)
+  
+  test_that("iid beta - categorical",{
+    expect_equal(IC.RR$ICbeta,m.timereg$gamma.iid)
+  })
+  
+  test_that("iid lambda0 - categorical",{
+    expect_equal(as.double(IC.RR$ICLambda0), as.double(IClambda.timereg[,-1]))
+  })
+  
+  #### stratified Cox model
+  # dStrata <- rbind(cbind(d, St= 1),
+  #                  cbind(d, St= 2))
+  # mSGS.cox <- cox.aalen(Surv(eventtime, event) ~ strata(St) + prop(X1) + prop(X6), data = dStrata, resample.iid = TRUE, max.timepoint.sim=NULL)
+  # ICSlambda_timereg <- t(as.data.table(mSGS.cox$B.iid))
+  # 
+  # setkeyv(dStrata, c("St", "eventtime"))
+  # mS.cox <- coxph(Surv(eventtime, event) ~ strata(St) + X1 + X6, data = dStrata, y = TRUE)
+  # IC.Scox <- iidCox(mS.cox, keep.times = FALSE)
+  # 
+  # crossprod(mSGS.cox$gamma.iid) / crossprod(IC.Scox$ICbeta)
+  # cbind(mSGS.cox$gamma.iid,IC.Scox$ICbeta)
 }
 
 ####
@@ -100,7 +150,7 @@ for(ties in c("breslow","efron")){ #
     test_that(paste("predictCox (strata, empty) - valide se cumHazard",ties),{
     fit_coxph <- coxph(Surv(time,event) ~ strata(X1),data=d, ties=ties)
     fit_cph <- cph(Surv(time,event) ~ strat(X1),data=d, method=ties, y = TRUE)
-    
+
     # res_surv <- survival:::predict.coxph(fit_coxph, newdata = d, type="expected", se.fit = TRUE)
     resCoxph <- predictCox(fit_coxph, newdata = d, times = d$time,  se = FALSE)
     resCph <- predictCox(fit_cph, newdata = d, times = d$time,  se = FALSE)

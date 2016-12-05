@@ -55,5 +55,5 @@
 #' @importFrom grDevices col2rgb gray
 #' @importFrom graphics bxp  abline axis box legend lines mtext par plot points segments text title polygon par boxplot
 #' @importFrom utils capture.output find head select.list tail
-#' @importFrom stats glm uniroot as.formula delete.response formula get_all_vars median na.omit pnorm qnorm quantile reformulate terms drop.terms terms.formula time update update.formula model.frame model.response coef family median model.matrix na.fail na.omit pnorm predict quantile rbinom rexp runif sd smooth var wilcox.test qnorm
+#' @importFrom stats as.formula coef delete.response drop.terms family formula get_all_vars glm median model.frame model.matrix model.response na.fail na.omit pnorm predict qnorm quantile rbinom reformulate rexp runif sd setNames smooth terms terms.formula time uniroot update update.formula var wilcox.test 
 NULL

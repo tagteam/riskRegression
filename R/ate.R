@@ -169,6 +169,7 @@ ate <- function(object,
         if (!missing(seed)) set.seed(seed)
         bootseeds <- sample(1:1000000,size=B,replace=FALSE)
         if (handler[[1]]=="foreach"){
+          
             cl <- parallel::makeCluster(mc.cores)
             doParallel::registerDoParallel(cl)
             pp <- find(as.character(object$call[[1]]))
@@ -191,6 +192,7 @@ ate <- function(object,
                          error = function(x){return(NULL)})
             })
             parallel::stopCluster(cl)
+            
         } else {
             if(Sys.info()["sysname"] == "Windows" && mc.cores>1){
                 message("mclapply cannot perform parallel computations on Windows \n",

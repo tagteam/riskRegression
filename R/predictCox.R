@@ -86,8 +86,9 @@ predictCox <- function(object,
   nVar <- length(infoVar$lpvars)
   
   if(se){
-    object.LPdata <- as.matrix(CoxData(object, data = model.frame(object), 
-                                       lpVars = infoVar$lpvars, stratavars = NULL, center = TRUE))
+    object.LPdata <- as.matrix(CoxDesign(object, data = CoxData(object), 
+                                         lpvars = infoVar$lpvars, stratavars = infoVar$stratavars,
+                                         rm.intercept = TRUE, center = TRUE))
   }else{
     object.LPdata <- matrix(ncol = 0, nrow = 0)
   }
@@ -99,19 +100,20 @@ predictCox <- function(object,
   if(!is.null(newdata)){
     new.n <- NROW(newdata)
     newdata <- as.data.table(newdata)
+     new.eXb <- exp(CoxLP(object, data = newdata, center = FALSE)) # must be the original name of the strata variables
     
-    new.eXb <- exp(CoxLP(object, data = newdata, lpVars = infoVar$lpvars, stratavars = infoVar$stratavars.original, center = FALSE)) # must be the original name of the strata variables
-
     new.strata <- CoxStrata(object, data = newdata, 
-                                sterms = infoVar$sterms, 
-                                stratavars = infoVar$stratavars, 
-                                levels = object.levelStrata, 
-                                stratalevels = infoVar$stratalevels)
+                            sterms = infoVar$sterms, 
+                            stratavars = infoVar$stratavars, 
+                            levels = object.levelStrata, 
+                            stratalevels = infoVar$stratalevels)
     
     new.levelStrata <- levels(new.strata)
     
     if(se){
-      new.LPdata <- as.matrix(CoxData(object, data = newdata, lpVars = infoVar$lpvars, stratavars = NULL, center = TRUE))
+      new.LPdata <- as.matrix(CoxDesign(object, data = newdata, 
+                                        lpvars = infoVar$lpvars, stratavars = infoVar$stratavars,
+                                        rm.intercept = TRUE, center = TRUE))
     }
     
   }
@@ -144,7 +146,7 @@ predictCox <- function(object,
   #### baseline hazard ####
   nStrata <- length(object.levelStrata)
   if(is.strata){etimes.max <- tapply(object.time, object.strata, max) }else{ etimes.max <- max(object.time) } # last event time
- 
+  
    Lambda0 <- baseHaz_cpp(alltimes = object.time,
                          status = object.status,
                          eXb = object.eXb,

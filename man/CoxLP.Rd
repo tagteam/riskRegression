@@ -6,11 +6,11 @@
 \alias{CoxLP.cph}
 \title{Compute the linear predictor of a Cox model}
 \usage{
-CoxLP(object, data, lpVars, stratavars, center)
+CoxLP(object, data, center)
 
-\method{CoxLP}{cph}(object, data = NULL, lpVars, stratavars, center)
+\method{CoxLP}{cph}(object, data, center)
 
-\method{CoxLP}{coxph}(object, data = NULL, lpVars, stratavars, center)
+\method{CoxLP}{coxph}(object, data, center)
 }
 \arguments{
 \item{object}{The fitted Cox regression model object either
@@ -18,10 +18,6 @@ obtained with \code{coxph} (survival package) or \code{cph}
 (rms package).}
 
 \item{data}{a \code{data.frame} or a \code{data.table}}
-
-\item{lpVars}{the name of all the covariates}
-
-\item{stratavars}{the variables used to define the strata}
 
 \item{center}{should the linear predictor be computed after centering the covariates}
 }
@@ -38,22 +34,27 @@ d <- sampleData(1e2, outcome = "survival")
 ##
 library(survival)
 mCox <- coxph(Surv(time, event) ~ X1+X2, data = d)
-CoxLP(mCox, data = d, xvars = c("X1","X2"), stratavars = NULL, center = FALSE)
-CoxLP(mCox, data = d, xvars = c("X1","X2"), stratavars = NULL, center = TRUE)  
+CoxLP(mCox, data = d, center = FALSE)
+CoxLP(mCox, data = d, center = TRUE)  
+
 mCoxS <- coxph(Surv(time, event) ~ strata(X1)+X2, data = d)
-CoxLP(mCoxS, data = d, xvars = c("X1","X2"), stratavars = "strata(X1)", center = FALSE) 
+CoxLP(mCoxS, data = d, center = FALSE) 
+
 mCoxS2 <- coxph(Surv(time, event) ~ strata(X1)+strata(X2), data = d)
-CoxLP(mCoxS2, data = d, xvars = c("X1","X2"), stratavars = c("X1","X2"), center = FALSE) 
+CoxLP(mCoxS2, data = d, center = FALSE) 
 
 ##
 library(rms)
 mCox <- cph(Surv(time, event) ~ X1+X2, data = d, y = TRUE)
-CoxLP(mCox, data = d, xvars = c("X1","X2"), stratavars = NULL, center = FALSE) 
-CoxLP(mCox, data = d, xvars = c("X1","X2"), stratavars = NULL, center = TRUE) 
+CoxLP(mCox, data = d, center = FALSE) 
+CoxLP(mCox, data = d, center = TRUE) 
+
 mCoxS <- cph(Surv(time, event) ~ strat(X1)+X2, data = d)
-CoxLP(mCoxS, data = d, xvars = c("X1","X2"), stratavars = "strat(X1)", center = FALSE) 
+CoxLP(mCoxS, data = d, center = FALSE) 
+
 mCoxS2 <- cph(Surv(time, event) ~ strat(X1)+strat(X2), data = d, y = TRUE)
-CoxLP(mCoxS2, data = d, xvars = c("X1","X2"), stratavars = c("X1","X2"), center = FALSE) 
+info <- CoxStrataVar(mCoxS2)
+CoxLP(mCoxS2, data = d, center = FALSE) 
 }
 }
 \author{

@@ -62,7 +62,7 @@ predict.CauseSpecificCox <- function(object,newdata, times, cause, t0 = NA, coln
   ## stopifnot(match(as.character(cause), causes, nomatch = 0) != 
   ## 0)
   if(se){
-   stop("Not yet implemented \n")
+    stop("Not yet implemented \n")
   }
   if (survtype == "survival") {
     if (object$theCause != cause) 
@@ -83,9 +83,9 @@ predict.CauseSpecificCox <- function(object,newdata, times, cause, t0 = NA, coln
   # predict cumulative cause specific hazards
   nData <- NROW(newdata)
   nTimes <- length(eventTimes)
-   if (survtype == "hazard") {
+  if (survtype == "hazard") {
     nCause <- length(causes)
-  
+    
     ls.hazard <- vector(mode = "list", length = nCause)
     ls.cumHazard <- vector(mode = "list", length = nCause)
     M.eXb_h <- matrix(NA, nrow = nData, ncol = nCause)
@@ -93,7 +93,7 @@ predict.CauseSpecificCox <- function(object,newdata, times, cause, t0 = NA, coln
     M.etimes.max <- matrix(NA, nrow = nData, ncol = nCause)
     
     for(iterC in 1:nCause){
-       
+      
       infoVar <- CoxStrataVar(object$models[[paste("Cause",iterC)]])
       
       ## baseline hazard from the Cox model
@@ -107,8 +107,7 @@ predict.CauseSpecificCox <- function(object,newdata, times, cause, t0 = NA, coln
       ls.cumHazard[[iterC]] <- matrix(causeBaseline$cumHazard, byrow = FALSE, nrow = nTimes) 
       
       ## linear predictor for the new observations
-      newdata.eXb <- exp(CoxLP(object$models[[paste("Cause",iterC)]], data = newdata, 
-                               lpVars = infoVar$lpvars, stratavars = infoVar$stratavars.original, center = FALSE))
+      newdata.eXb <- exp(CoxLP(object$models[[paste("Cause",iterC)]], data = newdata, center = FALSE))
       
       ## strata for the new observations
       newdata.strata <- CoxStrata(object$models[[paste("Cause",iterC)]], data = newdata, 
@@ -143,9 +142,7 @@ predict.CauseSpecificCox <- function(object,newdata, times, cause, t0 = NA, coln
     ls.hazard <- list(matrix(causeBaseline$hazard, byrow = FALSE, nrow = nTimes))
     
     ## linear predictor for the new observations
-    newdata.eXb_cause <- exp(CoxLP(object$models[[paste("Cause",cause)]], data = newdata, 
-                             lpVars = infoVar_Cause$lpvars, stratavars = infoVar_Cause$stratavars.original, center = FALSE))
-    
+    newdata.eXb_cause <- exp(CoxLP(object$models[[paste("Cause",cause)]], data = newdata, center = FALSE))
     M.eXb_h <- cbind(newdata.eXb_cause)
     
     ## strata for the new observations
@@ -159,19 +156,17 @@ predict.CauseSpecificCox <- function(object,newdata, times, cause, t0 = NA, coln
     M.etimes.max <- cbind(causeBaseline$lastEventTime[M.strata+1]) # last time by strata
     
     #### overall ####
-    infoVar_All <- CoxStrataVar(object$models[[paste("Cause",cause)]])
-    
+
     ## baseline
     overallBaseline <- predictCox(object$models[["OverallSurvival"]],
-                              times = eventTimes-tdiff, newdata = NULL,
-                              type = "cumHazard", 
-                              keep.strata = TRUE, keep.lastEventTime = TRUE, keep.times = TRUE,
-                              se = FALSE, format = "list")
+                                  times = eventTimes-tdiff, newdata = NULL,
+                                  type = "cumHazard", 
+                                  keep.strata = TRUE, keep.lastEventTime = TRUE, keep.times = TRUE,
+                                  se = FALSE, format = "list")
     ls.cumHazard <- list(matrix(overallBaseline$cumHazard, byrow = FALSE, nrow = nTimes))
     
     ## linear predictor for the new observations
-    newdata.eXb_All <- exp(CoxLP(object$models[["OverallSurvival"]], data = newdata, 
-                             lpVars = infoVar_All$lpvars, stratavars = infoVar_All$stratavars.original, center = FALSE))
+    newdata.eXb_All <- exp(CoxLP(object$models[["OverallSurvival"]], data = newdata, center = FALSE))
     M.eXb_cumH <- cbind(newdata.eXb_All)
     
   }
@@ -190,7 +185,7 @@ predict.CauseSpecificCox <- function(object,newdata, times, cause, t0 = NA, coln
                         nData = nData,
                         cause = which(causes == cause) - 1, 
                         nCause = nCause)
- 
+  
   #### export ###
   if(any(order(times) != 1:length(times))){# reorder times
     CIF <- CIF[,order(order(times))]
