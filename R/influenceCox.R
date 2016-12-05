@@ -28,7 +28,7 @@
 #' IClambda_GS <- t(as.data.table(mGS.cox$B.iid))
 #'  
 #' m.cox <- coxph(Surv(eventtime, event) ~ X1+X6, data = d, y = TRUE)
-#' IC.cox <- iidCox(m.cox)
+#' system.time(IC.cox <- iidCox(m.cox))
 #' 
 #' IC.cox <- iidCox(m.cox, tauLambda = 7)
 #'  
@@ -213,8 +213,8 @@ iidBeta <- function(tau, newT, neweXb, newX, newStatus,
       term1 <- matrix(0, nrow = 1, ncol = p)
     }
     
-    term2 <- -sweep(sweep(E1[time1<=min(newT[iterI],tau),,drop = FALSE], MARGIN = 2, FUN = "-", STATS = newX[iterI,,drop = FALSE]),
-                    MARGIN = 1, FUN = "/", STATS = S01[time1<=min(newT[iterI],tau)]) 
+    term2 <- -colScale_cpp(rowCenter_cpp(E1[time1<=min(newT[iterI],tau),,drop = FALSE], center = newX[iterI,,drop = FALSE]), 
+                           scale = S01[time1<=min(newT[iterI],tau)])
     
     IC[iterI,] <- as.double(iInfo %*% t(term1 - neweXb[iterI] * colSums(term2)))
   }
@@ -237,7 +237,7 @@ iidLambda0 <- function(tau, max.time,
     }
     
     for(iterObs in 1:n){
-      sum1 <- sweep(E1, MARGIN = 1, FUN = "*", STATS = lambda0*(time1<=tau[iterTau]))
+      sum1 <- colMultiply_cpp(E1, scale = lambda0*(time1<=tau[iterTau]))
       sum2 <- lambda0/S01*(time1<=newT[iterObs])*(time1<=tau[iterTau])
       S0_tempo <- S01[prodlim::sindex(jump.times = time1, eval.times = newT[iterObs])]
       ICLamda0[iterObs,iterTau] <- - ICbeta[iterObs,,drop= FALSE] %*% colSums(sum1) - neweXb[iterObs] * sum(sum2) + (newT[iterObs]<=tau[iterTau]) * newStatus[iterObs]/S0_tempo
