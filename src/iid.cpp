@@ -43,82 +43,104 @@ NumericVector calcS1_cpp(double t, int n, int p,
 }
 
 // [[Rcpp::export]]
-List calcEstrata_cpp(double tau,
-                     const IntegerVector& strata,
-                     const IntegerVector& status,
-                     int n, int p, int nStrata,
-                     const NumericVector& eventtime,
-                     const NumericVector& eXb,
-                     const arma::mat& X){
+List calcE_cpp(double t, int n, int p,
+               const NumericVector& eventtime,
+               const NumericVector& eXb,
+               const arma::mat& X){
   
-  arma::colvec strata2vec = as<colvec>(strata);
-  
-  // store results
-  vector<vec> lsS0(nStrata);
-  vector<arma::mat> lsS1(nStrata);
-  vector<arma::mat> lsE(nStrata);
-  vector<NumericVector> lsUtime1(nStrata);
-  
-  // tempo
-  NumericVector sub_eventtime, ssub_eventtime, sub_statut, sub_eXb;
-  arma::mat sub_X;
-  int n_iterUtime1;
-  
-  double S0;
-  NumericVector S1, E;
-    
-  for(int iterStrata=0; iterStrata<nStrata; iterStrata++){
-    R_CheckUserInterrupt();
-    
-    Rcout << iterStrata << endl;
-    // subset input according to strata
-    sub_eventtime = eventtime[strata==iterStrata];
-    sub_statut = status[strata==iterStrata];
-    sub_eXb = eXb[strata==iterStrata];
-    sub_X = X.rows(find(strata2vec==iterStrata));
-    
-    Rcout << "a" << endl;
-    // vector of unique time for events
-    ssub_eventtime = sub_eventtime[sub_statut>0];
-    lsUtime1[iterStrata] = unique(ssub_eventtime);
-    n_iterUtime1 = lsUtime1[iterStrata].size();
-    
-    Rcout << "b: " <<  n_iterUtime1 << " " << p << endl;
-    // prepare output
-    // lsS0[1].resize(n_iterUtime1);
-    // lsS1[1].resize(n_iterUtime1, p);
-    // lsE[1].resize(n_iterUtime1, p);
-
-    Rcout << "c" << endl;
-    // for(int iterUTime1=0; iterUTime1<n_iterUtime1; iterUTime1++){
-    //   if(lsUtime1[iterStrata][iterUTime1]>tau){
-    //     
-    //     lsS0[iterUTime1][iterUTime1] = 0;
-    //     for(int iterP=0; iterP<p; iterP++){
-    //       lsS1[iterUTime1](iterUTime1,iterP) = 0;
-    //       lsE[iterUTime1](iterUTime1,iterP) = 0;
-    //     }
-    //     
-    //   }else{
-    //     
-    //     S0 = calcS0_cpp(lsUtime1[iterStrata][iterUTime1], n, sub_eventtime, sub_eXb);
-    //     S1 = calcS1_cpp(lsUtime1[iterStrata][iterUTime1], n, p, sub_eventtime, sub_eXb, sub_X);
-    //     E = S1/S0;
-    //     if(S0==0){std::fill(E.begin(), E.end(), 0.0);}
-    //     lsS0[iterUTime1][iterUTime1] = S0;
-    //     lsS1[iterUTime1].row(iterUTime1) = as<rowvec>(S1);
-    //     lsE[iterUTime1].row(iterUTime1) = as<rowvec>(E);
-    //     
-    //   }
-    // }
-    
+  double S0 = calcS0_cpp(t, n, eventtime, eXb);
+  NumericVector S1 = calcS1_cpp(t, n, p, 
+                                eventtime, eXb, X);
+  NumericVector E = S1/S0;
+  if(S0==0){
+    std::fill(E.begin(), E.end(), 0.0);
   }
   
-  return(List::create(Named("Utime1")  = lsUtime1,
-                      Named("S0")  = lsS0,
-                      Named("S1")  = lsS1,
-                      Named("E")  = lsE));
+  return(List::create(Named("E")  = E,
+                      Named("S1")  = S1,
+                      Named("S0")  = S0));
 }
+
+// // [[Rcpp::export]]
+// List calcEstrata_cpp(double tau,
+//                      const vector<IntegerVector>& indexStrata,
+//                      const IntegerVector& status,
+//                      int p, int nStrata,
+//                      const NumericVector& eventtime,
+//                      const NumericVector& eXb,
+//                      const arma::mat& X, bool add0){
+// 
+//   double valDefault = 0; // NA_REAL
+//   double maxTime = eventtime[eventtime.size()-1];
+//   
+//   // store results
+//   vector<vec> lsS0(nStrata);
+//   vector<arma::mat> lsS1(nStrata);
+//   vector<arma::mat> lsE(nStrata);
+//   vector<NumericVector> lsUtime1(nStrata);
+//   NumericVector n(nStrata);
+//   
+//   // tempo
+//   NumericVector sub_eventtime, ssub_eventtime, sub_statut, sub_eXb, timeTempo;
+//   arma::mat sub_X;
+//   int n_iterUtime1;
+//   arma::vec strataVec;
+//   
+//   double S0;
+//   NumericVector S1, E;
+//    
+//   for(int iterStrata=0; iterStrata<nStrata; iterStrata++){
+//     R_CheckUserInterrupt();
+//     
+//     n[iterStrata] = indexStrata[iterStrata].size();
+//     
+//     // subset input according to strata
+//     sub_eventtime = eventtime[indexStrata[iterStrata]];
+//     sub_statut = status[indexStrata[iterStrata]];
+//     sub_eXb = eXb[indexStrata[iterStrata]];
+//     sub_X = X.rows(as<uvec>(indexStrata[iterStrata]));
+//     
+//     // vector of unique time for events
+//     ssub_eventtime = sub_eventtime[sub_statut>0];
+//     timeTempo = unique(ssub_eventtime);
+//     std::sort(timeTempo.begin(),timeTempo.end());
+//     if(add0){timeTempo.push_back(maxTime+1e-12);}
+//     n_iterUtime1 = timeTempo.size();
+//     
+//     // prepare output
+//     lsS0[iterStrata].set_size(n_iterUtime1);
+//     lsS1[iterStrata].set_size(n_iterUtime1,p);
+//     lsE[iterStrata].set_size(n_iterUtime1,p);
+// 
+//     for(int iterUTime1=0; iterUTime1<n_iterUtime1; iterUTime1++){
+// 
+//       if(timeTempo[iterUTime1] > tau){ // after time of interest
+//         lsS0[iterStrata][iterUTime1] = valDefault;
+//         for(int iterP=0; iterP<p; iterP++){
+//           lsS1[iterStrata](iterUTime1,iterP) = valDefault;
+//           lsE[iterStrata](iterUTime1,iterP) = valDefault;
+//         }
+// 
+//       }else{ // could be improved 
+//         S0 = calcS0_cpp(timeTempo[iterUTime1], n[iterStrata], sub_eventtime, sub_eXb);
+//         S1 = calcS1_cpp(timeTempo[iterUTime1], n[iterStrata], p, sub_eventtime, sub_eXb, sub_X);
+//         E = S1/S0;
+//         if(S0==0){std::fill(E.begin(), E.end(), 0.0);}
+//         lsS0[iterStrata][iterUTime1] = S0;
+//         lsS1[iterStrata].row(iterUTime1) = as<rowvec>(S1);
+//         lsE[iterStrata].row(iterUTime1) = as<rowvec>(E);
+//       }
+//     }
+//     
+//     lsUtime1[iterStrata] = timeTempo;
+//   }
+//   
+//   return(List::create(Named("Utime1")  = lsUtime1,
+//                       Named("S0")  = lsS0,
+//                       Named("S1")  = lsS1,
+//                       Named("E")  = lsE,
+//                       Named("n")  = n));
+// }
 
 // [[Rcpp::export]]
 arma::mat calcU_cpp(const arma::mat& newX, const NumericVector& newStatus, int newN,
