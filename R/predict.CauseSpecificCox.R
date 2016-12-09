@@ -47,34 +47,34 @@
 #' @method predict CauseSpecificCox
 #' @export
 predict.CauseSpecificCox <- function(object,newdata, times, cause, t0 = NA, colnames = TRUE, se  = FALSE, ...){
-  survtype <- object$survtype
-  if (length(cause) > 1){
-    stop(paste0("Can only predict one cause. Provided are: ", 
-                paste(cause, collapse = ", "), sep = ""))
-  }
-  if (missing(cause)) {
-    cause <- object$theCause
-  }
-  causes <- object$causes
-  eTimes <- object$eventTimes
-  if (any(match(as.character(cause), causes, nomatch = 0)==0L))
-    stop(paste0("Requested cause ",as.character(cause)," does not match fitted causes which are:\n ",paste0("- ",causes,collapse="\n")))
-  ## stopifnot(match(as.character(cause), causes, nomatch = 0) != 
-  ## 0)
-  if(se){
-    stop("Not yet implemented \n")
-  }
-  if (survtype == "survival") {
-    if (object$theCause != cause) 
-      stop("Object can be used to predict cause ", object$theCause, 
-           " but not ", cause, ".\nNote: the cause can be specified in CSC(...,cause=).")
-  }
-  if(any(is.na(times))){
-    stop("NA values in argument \'times\' \n")
-  }
-  if(length(t0)!=1){
-    stop("\'t0\' must have length one \n")
-  }
+    survtype <- object$survtype
+    if (length(cause) > 1){
+        stop(paste0("Can only predict one cause. Provided are: ", 
+                    paste(cause, collapse = ", "), sep = ""))
+    }
+    if (missing(cause)) {
+        cause <- object$theCause
+    }
+    causes <- object$causes
+    eTimes <- object$eventTimes
+    if (any(match(as.character(cause), causes, nomatch = 0)==0L))
+        stop(paste0("Requested cause ",as.character(cause)," does not match fitted causes which are:\n ",paste0("- ",causes,collapse="\n")))
+    ## stopifnot(match(as.character(cause), causes, nomatch = 0) != 
+    ## 0)
+    if(se){
+        stop("Not yet implemented \n")
+    }
+    if (survtype == "survival") {
+        if (object$theCause != cause) 
+            stop("Object can be used to predict cause ", object$theCause, 
+                 " but not ", cause, ".\nNote: the cause can be specified in CSC(...,cause=).")
+    }
+    if(any(is.na(times))){
+        stop("NA values in argument \'times\' \n")
+    }
+    if(length(t0)!=1){
+        stop("\'t0\' must have length one \n")
+    }
   
   # relevant event times to use
   eventTimes <- eTimes[which(eTimes <= max(times))] 
@@ -93,11 +93,10 @@ predict.CauseSpecificCox <- function(object,newdata, times, cause, t0 = NA, coln
     M.etimes.max <- matrix(NA, nrow = nData, ncol = nCause)
     
     for(iterC in 1:nCause){
-      
-      infoVar <- CoxStrataVar(object$models[[paste("Cause",iterC)]])
+        infoVar <- CoxStrataVar(object$models[[iterC]])
       
       ## baseline hazard from the Cox model
-      causeBaseline <- predictCox(object$models[[paste("Cause",iterC)]],
+      causeBaseline <- predictCox(object$models[[iterC]],
                                   times = eventTimes, newdata = NULL,
                                   type = c("hazard","cumHazard"), 
                                   keep.strata = TRUE, keep.lastEventTime = TRUE, keep.times = TRUE,
@@ -107,10 +106,10 @@ predict.CauseSpecificCox <- function(object,newdata, times, cause, t0 = NA, coln
       ls.cumHazard[[iterC]] <- matrix(causeBaseline$cumHazard, byrow = FALSE, nrow = nTimes) 
       
       ## linear predictor for the new observations
-      newdata.eXb <- exp(CoxLP(object$models[[paste("Cause",iterC)]], data = newdata, center = FALSE))
+      newdata.eXb <- exp(CoxLP(object$models[[iterC]], data = newdata, center = FALSE))
       
       ## strata for the new observations
-      newdata.strata <- CoxStrata(object$models[[paste("Cause",iterC)]], data = newdata, 
+      newdata.strata <- CoxStrata(object$models[[iterC]], data = newdata, 
                                   sterms = infoVar$sterms, 
                                   stratavars = infoVar$stratavars, 
                                   levels = levels(causeBaseline$strata), 
