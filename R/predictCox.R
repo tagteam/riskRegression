@@ -10,7 +10,7 @@
 #'     the same structure as the data set used to fit the \code{object}.
 #' @param times Time points at which to evaluate the predictions. 
 #' @param centered If TRUE remove the centering factor used by \code{coxph}
-#'     in the linear predictor.
+#'     in the linear predictor. 
 #' @param type One or several strings that match (either in lower or upper case or mixtures) one
 #' or several of the strings \code{"hazard"},\code{"cumhazard"}, \code{"survival"}
 #' @param keep.strata Logical. If \code{TRUE} add the (newdata) strata to the output. Only if there any. 
@@ -20,6 +20,7 @@
 #' @param se Logical. If \code{TRUE} add the standard errors corresponding to the output. Experimental !!
 #' @details Not working with time varying predictor variables or
 #'     delayed entry.
+#' The centered argument enables to reproduce results obtained with the \code{basehaz} function from the survival package.
 #' @author Brice Ozenne broz@@sund.ku.dk, Thomas A. Gerds tag@@biostat.ku.dk
 #' @return A list optionally containing the time, the strata (if any), the hazard, the
 #'         cumulative hazard and survival probabilities.

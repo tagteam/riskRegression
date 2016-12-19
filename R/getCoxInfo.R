@@ -13,7 +13,7 @@
 #' @param rm.intercept should the intercept be removed
 #' @param center should the covariates be centered
 #' 
-#' @author Brice Ozenne broz@@sund.ku.dk, Thomas A. Gerds tag@@biostat.ku.dk
+#' @author Brice Ozenne broz@@sund.ku.dk
 #' 
 #' @details if no variables for the linear predictor or the strata, returns a data.table with one column filled with 0.
 #' 
@@ -111,7 +111,7 @@ CoxDesign <- function(object, data, lpvars, stratavars, rm.intercept, center){
 #'     obtained with \code{coxph} (survival package) or \code{cph}
 #'     (rms package).
 #' 
-#' @author Brice Ozenne broz@@sund.ku.dk, Thomas A. Gerds tag@@biostat.ku.dk
+#' @author Brice Ozenne broz@@sund.ku.dk
 #' 
 #' @examples 
 #' \dontrun{
@@ -154,7 +154,7 @@ CoxResponseVar <- function(object){
 #'     obtained with \code{coxph} (survival package) or \code{cph}
 #'     (rms package).
 #' 
-#' @author Brice Ozenne broz@@sund.ku.dk, Thomas A. Gerds tag@@biostat.ku.dk
+#' @author Brice Ozenne broz@@sund.ku.dk
 #' 
 #' @examples 
 #' \dontrun{
@@ -200,7 +200,7 @@ CoxCenter.coxph <- function(object){
 #'     obtained with \code{coxph} (survival package) or \code{cph}
 #'     (rms package).
 #' 
-#' @author Brice Ozenne broz@@sund.ku.dk, Thomas A. Gerds tag@@biostat.ku.dk
+#' @author Brice Ozenne broz@@sund.ku.dk
 #' 
 #' @examples 
 #' \dontrun{
@@ -241,7 +241,7 @@ CoxData.coxph <- function(object){
 #'     obtained with \code{coxph} (survival package) or \code{cph}
 #'     (rms package).
 #' 
-#' @author Brice Ozenne broz@@sund.ku.dk, Thomas A. Gerds tag@@biostat.ku.dk
+#' @author Brice Ozenne broz@@sund.ku.dk
 #' 
 #' @examples 
 #' \dontrun{
@@ -282,7 +282,7 @@ CoxEventtime.coxph <- function(object){
 #'     obtained with \code{coxph} (survival package) or \code{cph}
 #'     (rms package).
 #' 
-#' @author Brice Ozenne broz@@sund.ku.dk, Thomas A. Gerds tag@@biostat.ku.dk
+#' @author Brice Ozenne broz@@sund.ku.dk
 #' 
 #' @examples 
 #' \dontrun{
@@ -325,7 +325,7 @@ CoxFormula.coxph <- function(object){
 #' @param data a \code{data.frame} or a \code{data.table}
 #' @param center should the linear predictor be computed after centering the covariates
 #' 
-#' @author Brice Ozenne broz@@sund.ku.dk, Thomas A. Gerds tag@@biostat.ku.dk
+#' @author Brice Ozenne broz@@sund.ku.dk
 #' 
 #' @details In case of empty linear predictor returns a vector of 0 with the same length as the number of rows of the dataset
 #' 
@@ -443,7 +443,7 @@ CoxLP.coxph <- function(object, data, center){
 #'     obtained with \code{coxph} (survival package) or \code{cph}
 #'     (rms package).
 #' 
-#' @author Brice Ozenne broz@@sund.ku.dk, Thomas A. Gerds tag@@biostat.ku.dk
+#' @author Brice Ozenne broz@@sund.ku.dk
 #' 
 #' @examples 
 #' \dontrun{
@@ -484,7 +484,7 @@ CoxN.coxph <- function(object){
 #'     obtained with \code{coxph} (survival package) or \code{cph}
 #'     (rms package).
 #' 
-#' @author Brice Ozenne broz@@sund.ku.dk, Thomas A. Gerds tag@@biostat.ku.dk
+#' @author Brice Ozenne broz@@sund.ku.dk
 #' 
 #' @examples 
 #' \dontrun{
@@ -530,7 +530,7 @@ CoxStatus.coxph <- function(object){
 #' @param levels the strata levels that have been used to fit the Cox model
 #' @param stratalevels a named list containing for each variable used to form the strata all its possible levels
 #'
-#' @author Brice Ozenne broz@@sund.ku.dk, Thomas A. Gerds tag@@biostat.ku.dk
+#' @author Brice Ozenne broz@@sund.ku.dk
 #' 
 #' @details if no strata variables returns a vector of \code{"1"} (factor).
 #' 
@@ -620,7 +620,7 @@ CoxStrata.coxph <- function(object, data = NULL, sterms, stratavars, levels, str
 #'     obtained with \code{coxph} (survival package) or \code{cph}
 #'     (rms package).
 #' 
-#' @author Brice Ozenne broz@@sund.ku.dk, Thomas A. Gerds tag@@biostat.ku.dk
+#' @author Brice Ozenne broz@@sund.ku.dk
 #' 
 #' @examples 
 #' \dontrun{
@@ -738,7 +738,7 @@ CoxStrataVar.cph <- function(object){
 #'     obtained with \code{coxph} (survival package) or \code{cph}
 #'     (rms package).
 #' 
-#' @author Brice Ozenne broz@@sund.ku.dk, Thomas A. Gerds tag@@biostat.ku.dk
+#' @author Brice Ozenne broz@@sund.ku.dk
 #' 
 #' @details Should return \code{NULL} if the Cox model has no covariate. 
 #' The rows and columns of the variance covariance matrix must be named with the names used in the design matrix.

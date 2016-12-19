@@ -47,7 +47,7 @@ iidCox <- function(object, newdata = NULL, tauLambda = NULL, tauBeta = NULL, kee
   iInfo <- CoxVarCov(object)
   is.strata <- infoVar$is.strata
   object.designVar <- colnames(iInfo)
-    
+  
   object.n <- CoxN(object)
   object.status <- CoxStatus(object)
   object.time <- CoxEventtime(object)
@@ -59,12 +59,19 @@ iidCox <- function(object, newdata = NULL, tauLambda = NULL, tauBeta = NULL, kee
                                        rm.intercept = TRUE, center = center.LPdata))
   
   # reorder data
-  object.order <- order(object.time)
-  object.time <- object.time[object.order]
-  object.status <- object.status[object.order]
+  dtOrder <- data.table(strata = object.strata, time = object.time)
+  dtOrder[, index := 1:.N]
+  setkeyv(dtOrder, cols = c("strata","time"))
+  object.order <- dtOrder$index
+  
   object.eXb <- object.eXb[object.order]
   object.LPdata <- object.LPdata[object.order,,drop = FALSE]
+  object.status <- object.status[object.order]
+  object.strata <- object.strata[object.order]
+  object.time <- object.time[object.order]
+  
   object.indexStrata <- lapply(object.levelStrata, function(level){which(object.strata==level)-1})
+  
   
   if(is.null(tauLambda)){tauLambda <- object.time[object.status>0]}
   if(is.null(tauBeta)){tauBeta <- tail(object.time[object.status>0],1)}
@@ -101,12 +108,17 @@ iidCox <- function(object, newdata = NULL, tauLambda = NULL, tauBeta = NULL, kee
                                       rm.intercept = TRUE, center = center.LPdata))
     
     # reorder data
-    new.order <- order(new.time)
-    new.time <- new.time[new.order]
-    new.strata <- new.strata[new.order]
-    new.status <- new.status[new.order]
+    dtOrder <- data.table(strata = new.strata, time = new.time)
+    dtOrder[, index := 1:.N]
+    setkeyv(dtOrder, cols = c("strata","time"))
+    object.order <- dtOrder$index
+    
     new.eXb <- new.eXb[new.order]
     new.LPdata <- new.LPdata[new.order,,drop = FALSE]
+    new.status <- new.status[new.order]
+    new.strata <- new.strata[new.order]
+    new.time <- new.time[new.order]
+    
     new.indexStrata <-lapply(object.levelStrata, function(level){which(new.strata==level)-1})
     
     # for factor variables: retain only the relevant column from the design matrix, 
@@ -122,68 +134,63 @@ iidCox <- function(object, newdata = NULL, tauLambda = NULL, tauBeta = NULL, kee
   ## baseline hazard
   lambda0 <- predictCox(object, type = "hazard", centered = center.lambda0, keep.strata = TRUE)
   
-  ### v1
-  # Ecpp <- calcEstrata_cpp(tau = tauBeta,
-  #                         indexStrata = object.indexStrata,
-  #                         status = object.status,
-  #                         p = p, nStrata = nStrata,
-  #                         eventtime = object.time,
-  #                         eXb = object.eXb,
-  #                         X = object.LPdata,
-  #                         add0 = TRUE)
-  
-  ### v2
-  U1.time <- c(unique(object.time[object.status>0]),tail(object.time,1)+1e-12)
-  nU1.time <- length(U1.time)
-  indexTime1 <- rep(nU1.time, object.n)
-  indexTime1[object.status>0] <- match(object.time[object.status>0], U1.time)-1
-
-  resE <- lapply(U1.time, FUN = function(t){
-    return(calcE_cpp(t = t, eventtime = object.time, eXb = object.eXb, X = object.LPdata, n = object.n, p = p))
-  })
-
-  S0_U1times <- unlist(lapply(resE,"[[","S0"))
-  S1_U1times <- matrix(unlist(lapply(resE,"[[","S1")), nrow = nU1.time, ncol = p, byrow = TRUE)
-  if(NCOL(S1_U1times)==0){S1_U1times <- cbind(S1_U1times,0)}
-  E_U1times <- matrix(unlist(lapply(resE,"[[","E")), nrow = nU1.time, ncol = p, byrow = TRUE)
-  if(NCOL(E_U1times)==0){E_U1times <- cbind(E_U1times,0)}
+  ### E
+  Ecpp <- calcEstrata_cpp(tau = tauBeta,
+                          indexStrata = object.indexStrata,
+                          status = object.status,
+                          p = p, nStrata = nStrata,
+                          eventtime = object.time,
+                          eXb = object.eXb,
+                          X = object.LPdata,
+                          add0 = TRUE)
   
   #### Computation of the influence function
-  ICbeta <- iidBeta(tau = tauBeta,
-                    newT = new.time,
-                    neweXb = new.eXb,
-                    newX = new.LPdata,
-                    newStatus = new.status,
-                    S01 = S0_U1times,
-                    E1 = E_U1times,
-                    time1 = U1.time,
-                    n = new.n, p = p, iInfo = iInfo)
-
+  ICbeta <- NULL
+  ICLambda0 <- NULL
   
-  ICLambda0 <- iidLambda0(tau = tauLambda, max.time = lastEventtime,
-                          newT = new.time,
-                          neweXb = new.eXb,
-                          newX = new.LPdata,
-                          newStatus = new.status,
-                          ICbeta = ICbeta,
-                          S01 = S0_U1times[-nU1.time],
-                          E1 = E_U1times[-nU1.time,,drop = FALSE],
-                          time1 = U1.time[-nU1.time],
-                          lambda0 = lambda0[match(U1.time[-nU1.time],lambda0[,"time"]),"hazard"],
-                          n = object.n, p = p)
+  for(iStrata in 1:nStrata){
+    
+    ICbeta_tempo <- iidBeta(tau = tauBeta,
+                            newT = new.time[new.indexStrata[[iStrata]]+1],
+                            neweXb = new.eXb[new.indexStrata[[iStrata]]+1],
+                            newX = new.LPdata[new.indexStrata[[iStrata]]+1,,drop = FALSE],
+                            newStatus = new.status[new.indexStrata[[iStrata]]+1],
+                            S01 = Ecpp$S0[[iStrata]],
+                            E1 = matrix(Ecpp$E[[iStrata]], ncol = p, byrow = FALSE),
+                            time1 = Ecpp$Utime1[[iStrata]],
+                            n = Ecpp$n[iStrata], p = p, iInfo = iInfo)
+    
+    ICbeta <- rbind(ICbeta, ICbeta_tempo)
+    
+    if(p==0){
+      E1tempo <- matrix(0, ncol = 1, nrow = Ecpp$n_Utime1[iStrata]-1)
+      Xtempo <-matrix(0, ncol = 1, nrow = Ecpp$n_Utime1[iStrata]-1)
+    }else{
+      E1tempo <- matrix(Ecpp$E[[iStrata]], ncol = p, byrow = FALSE)[1:(Ecpp$n_Utime1[iStrata]-1),,drop = FALSE]
+      Xtempo <- new.LPdata[new.indexStrata[[iStrata]]+1,,drop = FALSE]
+    }
+    
+    ICLambda0 <- rbind(ICLambda0,
+                       iidLambda0(tau = tauLambda, max.time = lastEventtime,
+                                  newT = new.time[new.indexStrata[[iStrata]]+1],
+                                  neweXb = new.eXb[new.indexStrata[[iStrata]]+1],
+                                  newX = Xtempo,
+                                  newStatus = new.status[new.indexStrata[[iStrata]]+1],
+                                  ICbeta = ICbeta_tempo,
+                                  S01 = Ecpp$S0[[iStrata]][1:(Ecpp$n_Utime1[iStrata]-1)],
+                                  E1 = E1tempo,
+                                  time1 = Ecpp$Utime1[[iStrata]][1:(Ecpp$n_Utime1[iStrata]-1)],
+                                  lambda0 = lambda0[match(Ecpp$Utime1[[iStrata]][1:(Ecpp$n_Utime1[iStrata]-1)],lambda0[,"time"]),"hazard"],
+                                  n = Ecpp$n[iStrata], p = p)
+    )
+    
+  }
 
+  ## rename 
   if(keep.times){
     attr(ICbeta,"time") <- tauBeta
     attr(ICLambda0,"time") <- tauLambda
   }
-  
-  
-  # ls <- list(tau = tauLambda, max.time = lastEventtime,
-  #            newT = new.time, neweXb = new.eXb, newX = new.LPdata, newStatus = new.status, ICbeta = ICbeta,
-  #            S01 = S0_U1times[-nU1.time], E1 = E_U1times[-nU1.time,,drop = FALSE], indexTime1 = indexTime1[-nU1.time], time1 = U1.time[-nU1.time], 
-  #            lambda0 = lambda0[match(U1.time[-nU1.time],lambda0[,"time"]),"hazard"],
-  #            n = object.n, p = p)
-  
   
   ## rescale
   if(center.result == TRUE && !is.null(CoxCenter(object))){
@@ -230,6 +237,8 @@ iidLambda0 <- function(tau, max.time,
   n.tau <- length(tau)
   ICLamda0 <- matrix(NA, nrow = n, ncol = n.tau)
   
+  res <- 0
+  
   for(iterTau in 1:n.tau){
     
     if(tau[iterTau]>max.time){
@@ -241,6 +250,7 @@ iidLambda0 <- function(tau, max.time,
       sum2 <- lambda0/S01*(time1<=newT[iterObs])*(time1<=tau[iterTau])
       S0_tempo <- S01[prodlim::sindex(jump.times = time1, eval.times = newT[iterObs])]
       ICLamda0[iterObs,iterTau] <- - ICbeta[iterObs,,drop= FALSE] %*% colSums(sum1) - neweXb[iterObs] * sum(sum2) + (newT[iterObs]<=tau[iterTau]) * newStatus[iterObs]/S0_tempo
+      res <- res +  (newT[iterObs]<=tau[iterTau]) * newStatus[iterObs]/S0_tempo
     }
     
   }

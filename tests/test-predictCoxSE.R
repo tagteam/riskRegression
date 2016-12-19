@@ -80,17 +80,33 @@ if(require(timereg)){
   })
   
   #### stratified Cox model
-  # dStrata <- rbind(cbind(d, St= 1),
-  #                  cbind(d, St= 2))
-  # mSGS.cox <- cox.aalen(Surv(eventtime, event) ~ strata(St) + prop(X1) + prop(X6), data = dStrata, resample.iid = TRUE, max.timepoint.sim=NULL)
-  # ICSlambda_timereg <- t(as.data.table(mSGS.cox$B.iid))
-  # 
-  # setkeyv(dStrata, c("St", "eventtime"))
-  # mS.cox <- coxph(Surv(eventtime, event) ~ strata(St) + X1 + X6, data = dStrata, y = TRUE)
-  # IC.Scox <- iidCox(mS.cox, keep.times = FALSE)
-  # 
-  # crossprod(mSGS.cox$gamma.iid) / crossprod(IC.Scox$ICbeta)
-  # cbind(mSGS.cox$gamma.iid,IC.Scox$ICbeta)
+  dStrata <- rbind(cbind(d[1:10], St= 1),
+                   cbind(d[1:10], St= 2))
+  dStrata$X1scaled <- scale(dStrata$X1)
+  dStrata$X6scaled <- scale(dStrata$X6)
+  dStrata1 <- dStrata[dStrata$St==1]
+  
+  mGS1.cox <- cox.aalen(Surv(eventtime, event) ~ prop(X1scaled) + prop(X6scaled), data = as.data.frame(dStrata1),
+                        resample.iid = TRUE, max.timepoint.sim=NULL)
+  mGSS.cox <- cox.aalen(Surv(eventtime, event) ~ strata(St) + prop(X1scaled) + prop(X6scaled), data = as.data.frame(dStrata), 
+                        resample.iid = TRUE, max.timepoint.sim=NULL)
+  ## gain:
+  # mGS1.cox$var.gamma/mGSS.cox$var.gamma
+  # mGS1.cox$robvar.gamma/mGSS.cox$robvar.gamma
+  # coef(mGS1.cox)/coef(mGSS.cox)
+  
+  m1.cox <- coxph(Surv(eventtime, event) ~ X1scaled + X6scaled, data = dStrata1, y = TRUE)
+  mS.cox <- coxph(Surv(eventtime, event) ~ strata(St) + X1scaled + X6scaled, data = dStrata, y = TRUE)
+  
+  ## gain:
+  # m1.cox$var/mS.cox$var
+  # coef(m1.cox)/coef(mS.cox)
+  
+  IC.1cox <- iidCox(m1.cox, keep.times = FALSE)
+  IC.Scox <- iidCox(mS.cox, keep.times = FALSE)
+  
+  # crossprod(IC.1cox$ICbeta)/crossprod(IC.Scox$ICbeta)
+  # IC.1cox$ICbeta / IC.Scox$ICbeta[1:10,]
 }
 
 ####
