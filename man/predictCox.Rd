@@ -47,6 +47,7 @@ as well as survival probabilities from a coxph or cph object
 \details{
 Not working with time varying predictor variables or
     delayed entry.
+The centered argument enables to reproduce results obtained with the \code{basehaz} function from the survival package.
 }
 \examples{
 library(survival)

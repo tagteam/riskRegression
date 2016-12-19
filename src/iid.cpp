@@ -63,7 +63,7 @@ List calcE_cpp(double t, int n, int p,
 
 // [[Rcpp::export]]
 List calcEstrata_cpp(double tau,
-                     const vector<IntegerVector>& indexStrata,
+                     const std::vector<IntegerVector>& indexStrata,
                      const IntegerVector& status,
                      int p, int nStrata,
                      const NumericVector& eventtime,

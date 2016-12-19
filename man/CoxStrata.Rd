@@ -57,6 +57,6 @@ CoxStrata(mCoxS, data = d, sterms = resInfo$strata$sterms, stratavars = resInfo$
 }
 }
 \author{
-Brice Ozenne broz@sund.ku.dk, Thomas A. Gerds tag@biostat.ku.dk
+Brice Ozenne broz@sund.ku.dk
 }
 

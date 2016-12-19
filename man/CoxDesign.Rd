@@ -71,6 +71,6 @@ CoxDesign(mCoxS, data = CoxData(mCoxS), lpvars = info$lpvars, stratavars = info$
 }
 }
 \author{
-Brice Ozenne broz@sund.ku.dk, Thomas A. Gerds tag@biostat.ku.dk
+Brice Ozenne broz@sund.ku.dk
 }
 
