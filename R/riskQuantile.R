@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jan  9 2016 (19:31) 
 ## Version: 
-## last-updated: Oct 23 2016 (11:01) 
+## last-updated: Dec  9 2016 (13:44) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 255
+##     Update #: 260
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -118,13 +118,18 @@ riskQuantile.survival <- function(DT,N,NT,NF,dolist,Q,...){
     } 
     getQ.eventFree <- function(Q,tp,X,time,Wt,surv){
         uX <- sort(unique(X[time>tp]))
+## browser()
         Wx <- sapply(uX,function(x){1/N*sum((X<=x & time>tp)/Wt)/surv[times==tp,surv]})
         qRisk <- getQuantile(x=uX,Fx=Wx,Q=Q)
         qR <- data.table(t(qRisk))
         qR[,cause:="event-free"]
         qR
     }
-    score.eventfree <- DT[,getQ.eventFree(Q=Q,tp=times,X=risk,time=time,Wt=Wt,surv=surv),by=list(model,times)]
+    ## browser(skipCalls=1L)
+    ## a <- DT[model==1]
+    ## system.time(a[,getQ.eventFree(Q=Q,tp=times[1],X=risk,time=time,Wt=Wt,surv=surv)])
+    system.time(score.eventfree <- DT[,getQ.eventFree(Q=Q,tp=times,X=risk,time=time,Wt=Wt,surv=surv),by=list(model,times)])
+    setkey(DT,model,times)
     score.event <- DT[,getQ.event(Q=Q,tp=times,X=risk,time=time,status=status,WTi=WTi,cuminc=cuminc),by=list(model,times)]
     score.overall <- DT[,data.table(t(quantile(risk,probs=Q))),by=list(model,times)]
     score.overall[,cause:="overall"]
