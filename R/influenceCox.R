@@ -57,6 +57,7 @@ iidCox <- function(object, newdata = NULL, tauLambda = NULL, tauBeta = NULL, kee
   object.LPdata <- as.matrix(CoxDesign(object, data = CoxData(object), 
                                        lpvars = infoVar$lpvars, stratavars = infoVar$stratavars,
                                        rm.intercept = TRUE, center = center.LPdata))
+  nStrata <- length(levels(object.strata))
   
   # reorder data
   dtOrder <- data.table(strata = object.strata, time = object.time)
@@ -72,10 +73,21 @@ iidCox <- function(object, newdata = NULL, tauLambda = NULL, tauBeta = NULL, kee
   
   object.indexStrata <- lapply(object.levelStrata, function(level){which(object.strata==level)-1})
   
-  
-  if(is.null(tauLambda)){tauLambda <- object.time[object.status>0]}
+  if(is.null(tauLambda)){
+    dtTempo <- data.table(status = object.status, time = object.time, strata = object.strata)
+    tauLambda <- dtTempo[,.(lsTime = list(time[status == 1])),by = strata][["lsTime"]]
+  }else{
+    if(!is.list(tauLambda)){
+      tauLambda <- tauLambda[[1]]
+      tauLambda <- lapply(1:nStrata, function(i){tauLambda})
+    }else if(length(tauLambda)!=nStrata){
+      stop("argument \"tauLambda\" must be a list with ",nStrata," elements \n",
+           "each element being the vector of times for each strata \n")
+    }
+  }
   if(is.null(tauBeta)){tauBeta <- tail(object.time[object.status>0],1)}
-  if(any(tauLambda > tauBeta)){
+
+  if(any(unlist(tauLambda) > tauBeta)){
     stop("Elements in tauLambda must not exceed tauBeta \n")
   }
   
@@ -129,12 +141,11 @@ iidCox <- function(object, newdata = NULL, tauLambda = NULL, tauBeta = NULL, kee
   #### Compute quantities of interest only for event times
   lastEventtime <- object.time[length(object.time)]
   p <- NCOL(object.LPdata)
-  nStrata <- length(levels(object.strata))
   
   ## baseline hazard
   lambda0 <- predictCox(object, type = "hazard", centered = center.lambda0, keep.strata = TRUE)
   
-  ### E
+  ## E
   Ecpp <- calcEstrata_cpp(tau = tauBeta,
                           indexStrata = object.indexStrata,
                           status = object.status,
@@ -144,12 +155,18 @@ iidCox <- function(object, newdata = NULL, tauLambda = NULL, tauBeta = NULL, kee
                           X = object.LPdata,
                           add0 = TRUE)
   
+  ## resale
+  if(center.result == TRUE && !is.null(CoxCenter(object))){
+    scalingFactor <- exp(-as.double(coef(object) %*% CoxCenter(object)))
+  }
+  
   #### Computation of the influence function
   ICbeta <- NULL
   ICLambda0 <- NULL
   
   for(iStrata in 1:nStrata){
-    
+  
+    ## IC BETA
     ICbeta_tempo <- iidBeta(tau = tauBeta,
                             newT = new.time[new.indexStrata[[iStrata]]+1],
                             neweXb = new.eXb[new.indexStrata[[iStrata]]+1],
@@ -162,6 +179,7 @@ iidCox <- function(object, newdata = NULL, tauLambda = NULL, tauBeta = NULL, kee
     
     ICbeta <- rbind(ICbeta, ICbeta_tempo)
     
+    ## IC LAMBDA
     if(p==0){
       E1tempo <- matrix(0, ncol = 1, nrow = Ecpp$n_Utime1[iStrata]-1)
       Xtempo <-matrix(0, ncol = 1, nrow = Ecpp$n_Utime1[iStrata]-1)
@@ -170,8 +188,7 @@ iidCox <- function(object, newdata = NULL, tauLambda = NULL, tauBeta = NULL, kee
       Xtempo <- new.LPdata[new.indexStrata[[iStrata]]+1,,drop = FALSE]
     }
     
-    ICLambda0 <- rbind(ICLambda0,
-                       iidLambda0(tau = tauLambda, max.time = lastEventtime,
+    IClambda0_tempo <- iidLambda0(tau = tauLambda[[iStrata]], max.time = lastEventtime,
                                   newT = new.time[new.indexStrata[[iStrata]]+1],
                                   neweXb = new.eXb[new.indexStrata[[iStrata]]+1],
                                   newX = Xtempo,
@@ -182,27 +199,35 @@ iidCox <- function(object, newdata = NULL, tauLambda = NULL, tauBeta = NULL, kee
                                   time1 = Ecpp$Utime1[[iStrata]][1:(Ecpp$n_Utime1[iStrata]-1)],
                                   lambda0 = lambda0[match(Ecpp$Utime1[[iStrata]][1:(Ecpp$n_Utime1[iStrata]-1)],lambda0[,"time"]),"hazard"],
                                   n = Ecpp$n[iStrata], p = p)
-    )
+   
     
+    # rescale
+    if(center.result == TRUE && !is.null(CoxCenter(object))){
+      IClambda0_tempo <- IClambda0_tempo * scalingFactor
+    }
+    
+    # reorder
+    indexTempo <- new.order[new.strata==levels(new.strata)[iStrata]]
+    IClambda0_tempo <- IClambda0_tempo[indexTempo-(indexTempo[1]-1),,drop=FALSE]
+    
+    # output 
+    if(keep.times){
+       colnames(IClambda0_tempo) <- tauLambda[[iStrata]]
+    }
+    
+    ICLambda0 <- c(ICLambda0, list(IClambda0_tempo))
   }
 
   ## rename 
   if(keep.times){
     attr(ICbeta,"time") <- tauBeta
-    attr(ICLambda0,"time") <- tauLambda
   }
-  
-  ## rescale
-  if(center.result == TRUE && !is.null(CoxCenter(object))){
-    ICLambda0 <- ICLambda0 * exp(-as.double(coef(object) %*% CoxCenter(object)))
-  }
-  
+ 
   #### export
   return(list(ICbeta = ICbeta[new.order,,drop=FALSE],  # restaure original ordering
-              ICLambda0 = ICLambda0[new.order,,drop=FALSE]
+              ICLambda0 = ICLambda0
   ))
 }
-
 
 iidBeta <- function(tau, newT, neweXb, newX, newStatus,
                     S01, E1, time1, 
@@ -233,7 +258,6 @@ iidLambda0 <- function(tau, max.time,
                        newT, neweXb, newX, newStatus, ICbeta,
                        S01, E1, time1, lambda0,
                        n, p){
-  
   n.tau <- length(tau)
   ICLamda0 <- matrix(NA, nrow = n, ncol = n.tau)
   

@@ -86,27 +86,27 @@ if(require(timereg)){
   dStrata$X6scaled <- scale(dStrata$X6)
   dStrata1 <- dStrata[dStrata$St==1]
   
-  mGS1.cox <- cox.aalen(Surv(eventtime, event) ~ prop(X1scaled) + prop(X6scaled), data = as.data.frame(dStrata1),
+  mGSS.cox <- cox.aalen(Surv(eventtime, event) ~ strata(St)-1 + prop(X1scaled) + prop(X6scaled), data = as.data.frame(dStrata), 
                         resample.iid = TRUE, max.timepoint.sim=NULL)
-  mGSS.cox <- cox.aalen(Surv(eventtime, event) ~ strata(St) + prop(X1scaled) + prop(X6scaled), data = as.data.frame(dStrata), 
-                        resample.iid = TRUE, max.timepoint.sim=NULL)
-  ## gain:
-  # mGS1.cox$var.gamma/mGSS.cox$var.gamma
-  # mGS1.cox$robvar.gamma/mGSS.cox$robvar.gamma
-  # coef(mGS1.cox)/coef(mGSS.cox)
+  IClambda.timereg <- t(as.data.table(mGSS.cox$B.iid))
   
-  m1.cox <- coxph(Surv(eventtime, event) ~ X1scaled + X6scaled, data = dStrata1, y = TRUE)
+  
   mS.cox <- coxph(Surv(eventtime, event) ~ strata(St) + X1scaled + X6scaled, data = dStrata, y = TRUE)
-  
-  ## gain:
-  # m1.cox$var/mS.cox$var
-  # coef(m1.cox)/coef(mS.cox)
-  
-  IC.1cox <- iidCox(m1.cox, keep.times = FALSE)
   IC.Scox <- iidCox(mS.cox, keep.times = FALSE)
   
-  # crossprod(IC.1cox$ICbeta)/crossprod(IC.Scox$ICbeta)
-  # IC.1cox$ICbeta / IC.Scox$ICbeta[1:10,]
+  test_that("iid beta - strata",{
+    expect_equal(IC.Scox$ICbeta,mGSS.cox$gamma.iid)
+  })
+  
+  test_that("iid lambda0 - strata",{
+    indexStrata1 <- which(dStrata$St==1)
+    expect_equal(as.double(IC.Scox$ICLambda0[[1]]), as.double(IClambda.timereg[2*(1:20)-1,2*(1:11)-1][indexStrata1,-1]))
+    
+    indexStrata2 <- which(dStrata$St==2)
+    expect_equal(as.double(IC.Scox$ICLambda0[[2]]), as.double(IClambda.timereg[2*(1:20),2*(1:11)][indexStrata2,-1]))
+  })
+  crossprod(IC.1cox$ICbeta)/crossprod(IC.Scox$ICbeta)
+  IC.1cox$ICbeta / IC.Scox$ICbeta[1:10,]
 }
 
 ####
