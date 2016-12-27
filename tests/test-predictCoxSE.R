@@ -23,21 +23,21 @@ if(require(timereg)){
   IC.cox <- iidCox(m.cox, keep.times = FALSE)
   
   m.cox2 <- coxph(Surv(eventtime, event) ~ X1+X6, data = d2, y = TRUE)
-  IC.cox2 <- iidCox(m.cox2, keep.times = FALSE) #### bug here when n = 50
+  IC.cox2 <- iidCox(m.cox2, keep.times = FALSE, keep.originalOrder = TRUE)
   
   m.cox3 <- cph(Surv(eventtime, event) ~ X1+X6, data = d, y = TRUE)
   IC.cox3 <- iidCox(m.cox3, keep.times = FALSE)
   
   test_that("iid beta",{
-    expect_equal(IC.cox$ICbeta,mGS.cox$gamma.iid)
-    expect_equal(IC.cox$ICbeta[order(d2$eventtime),],IC.cox2$ICbeta)
-    expect_equal(IC.cox3$ICbeta,mGS.cox$gamma.iid, tol = 1e-2)
+    expect_equal(unname(IC.cox$ICbeta),mGS.cox$gamma.iid)
+    expect_equal(unname(IC.cox$ICbeta),unname(IC.cox2$ICbeta[order(d2$eventtime),]))
+    expect_equal(unname(IC.cox3$ICbeta),mGS.cox$gamma.iid, tol = 1e-2)
   })
   
   test_that("iid lambda0",{
-    expect_equal(as.double(IC.cox$ICLambda0), as.double(IClambda_timereg[,-1]))
-    expect_equal(as.double(IC.cox$ICLambda0[order(d2$eventtime),]), as.double(IC.cox2$ICLambda0))
-    expect_equal(as.double(IC.cox3$ICLambda0), as.double(IClambda_timereg[,-1]), tol = 1e-4)
+    expect_equal(as.double(IC.cox$ICLambda0[[1]]), as.double(IClambda_timereg[,-1]))
+    expect_equal(as.double(IC.cox$ICLambda0[[1]]), as.double(IC.cox2$ICLambda0[order(d2$eventtime),]))
+    expect_equal(as.double(IC.cox3$ICLambda0[[1]]), as.double(IClambda_timereg[,-1]), tol = 1e-4)
   })
   
   #### non stratified Cox model with interactions
@@ -48,11 +48,11 @@ if(require(timereg)){
   IC.Icox <- iidCox(mI.cox, keep.times = FALSE)
   
   test_that("iid beta - interaction",{
-    expect_equal(IC.Icox$ICbeta,mIGS.cox$gamma.iid)
+    expect_equal(unname(IC.Icox$ICbeta),mIGS.cox$gamma.iid)
   })
   
   test_that("iid lambda0 - interaction",{
-    expect_equal(as.double(IC.Icox$ICLambda0), as.double(ICIlambda_timereg[,-1]))
+    expect_equal(as.double(IC.Icox$ICLambda0[[1]]), as.double(ICIlambda_timereg[,-1]))
   })
   
   #### Cox model with no covariate
@@ -72,41 +72,77 @@ if(require(timereg)){
   IC.RR <- iidCox(m.RR, keep.times = FALSE)
   
   test_that("iid beta - categorical",{
-    expect_equal(IC.RR$ICbeta,m.timereg$gamma.iid)
+    expect_equal(unname(IC.RR$ICbeta),m.timereg$gamma.iid)
   })
   
   test_that("iid lambda0 - categorical",{
-    expect_equal(as.double(IC.RR$ICLambda0), as.double(IClambda.timereg[,-1]))
+    expect_equal(as.double(IC.RR$ICLambda0[[1]]), as.double(IClambda.timereg[,-1]))
   })
   
+  #### Ties
+  d3 <- copy(d)[1:10,]
+  d3[, event := 1]
+  d3[7:8, X1 := 1]
+  d3[7:8, X6 := 1]
+  setkey(d3, eventtime)
+  d3[, eventtimeTies := eventtime]
+  d3[7:8, eventtimeTies := eventtime[1]]
+  # d3[, eventtime := round(eventtime, 0)]
+  
+  mGS.cox0 <- cox.aalen(Surv(eventtime, event) ~ prop(X1)+prop(X6), data = d3, resample.iid = TRUE, max.timepoint.sim=NULL)
+  mGS.cox <- cox.aalen(Surv(eventtimeTies, event) ~ prop(X1)+prop(X6), data = d3, resample.iid = TRUE, max.timepoint.sim=NULL)
+  IClambda_timereg <- t(as.data.table(mGS.cox$B.iid))
+  
+  m.cox0 <- coxph(Surv(eventtime, event) ~ X1+X6, data = d3, y = TRUE)
+  m.cox <- coxph(Surv(eventtimeTies, event) ~ X1+X6, data = d3, y = TRUE)
+  IC.cox0 <- iidCox(m.cox0, keep.times = FALSE)
+  IC.cox <- iidCox(m.cox, keep.times = FALSE)
+  
+  # test_that("iid beta - categorical",{
+  #   expect_equal(unname(IC.cox$ICbeta),mGS.cox$gamma.iid)
+  # })
+  data.frame(RR0 = mGS.cox0$gamma.iid, GS0 = IC.cox0$ICbeta, RR = IC.cox$ICbeta, GS = mGS.cox$gamma.iid)
+  
+  # test_that("iid lambda0 - categorical",{
+  #   expect_equal(as.double(IC.RR$ICLambda0[[1]]), as.double(IClambda.timereg[,-1]))
+  # })
+  
   #### stratified Cox model
-  dStrata <- rbind(cbind(d[1:10], St= 1),
-                   cbind(d[1:10], St= 2))
-  dStrata$X1scaled <- scale(dStrata$X1)
-  dStrata$X6scaled <- scale(dStrata$X6)
-  dStrata1 <- dStrata[dStrata$St==1]
+  # dStrata <- rbind(cbind(d[1:10], St= 1),
+  #                  cbind(d[1:10], St= 2))
+  dStrata <- d
+  dStrata$St <- rbinom(n = NROW(d), size = 2, prob = c(1/3,1/2))
+  dStrata2 <- copy(dStrata)
+  setkeyv(dStrata, c("St", "eventtime"))
   
-  mGSS.cox <- cox.aalen(Surv(eventtime, event) ~ strata(St)-1 + prop(X1scaled) + prop(X6scaled), data = as.data.frame(dStrata), 
+  mGSS.cox <- cox.aalen(Surv(eventtime, event) ~ strata(St)-1 + prop(X1) + prop(X6), data = dStrata, 
                         resample.iid = TRUE, max.timepoint.sim=NULL)
-  IClambda.timereg <- t(as.data.table(mGSS.cox$B.iid))
+  IClambda.timereg1 <- t(as.data.table(lapply(mGSS.cox$B.iid, function(x){x[,1]})))
+  IClambda.timereg2 <- t(as.data.table(lapply(mGSS.cox$B.iid, function(x){x[,2]})))
+  IClambda.timereg3 <- t(as.data.table(lapply(mGSS.cox$B.iid, function(x){x[,3]})))
   
-  
-  mS.cox <- coxph(Surv(eventtime, event) ~ strata(St) + X1scaled + X6scaled, data = dStrata, y = TRUE)
-  IC.Scox <- iidCox(mS.cox, keep.times = FALSE)
+  mS.cox <- coxph(Surv(eventtime, event) ~ strata(St) + X1 + X6, data = dStrata, y = TRUE)
+  IC.Scox <- iidCox(mS.cox, keep.originalOrder = TRUE)
   
   test_that("iid beta - strata",{
-    expect_equal(IC.Scox$ICbeta,mGSS.cox$gamma.iid)
+    expect_equal(unname(IC.Scox$ICbeta),mGSS.cox$gamma.iid)
   })
   
   test_that("iid lambda0 - strata",{
-    indexStrata1 <- which(dStrata$St==1)
-    expect_equal(as.double(IC.Scox$ICLambda0[[1]]), as.double(IClambda.timereg[2*(1:20)-1,2*(1:11)-1][indexStrata1,-1]))
+    common.time <- na.omit(match(mGSS.cox$time.sim.resolution,  sort(unlist(IC.Scox$time))))
+    icommon.time <- na.omit(match(sort(unlist(IC.Scox$time)), mGSS.cox$time.sim.resolution))
     
-    indexStrata2 <- which(dStrata$St==2)
-    expect_equal(as.double(IC.Scox$ICLambda0[[2]]), as.double(IClambda.timereg[2*(1:20),2*(1:11)][indexStrata2,-1]))
-  })
-  crossprod(IC.1cox$ICbeta)/crossprod(IC.Scox$ICbeta)
-  IC.1cox$ICbeta / IC.Scox$ICbeta[1:10,]
+    for(iStrata in 1:length(unique(dStrata$St))){
+      indexStrata <- which(dStrata$St==unique(dStrata$St)[iStrata])
+      IC.GS <- do.call(rbind,
+                       lapply(mGSS.cox$B.iid[indexStrata],function(x){x[,iStrata]})
+      )
+      diff <- IC.Scox$ICLambda0[indexStrata,common.time,drop = FALSE]-IC.GS[,icommon.time]
+      expect_true(all(abs(na.omit(as.double(diff)))<1e-10))
+    }
+  }
+  )
+  
 }
 
 ####
