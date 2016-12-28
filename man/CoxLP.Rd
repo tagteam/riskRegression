@@ -4,6 +4,7 @@
 \alias{CoxLP}
 \alias{CoxLP.coxph}
 \alias{CoxLP.cph}
+\alias{CoxLP.phreg}
 \title{Compute the linear predictor of a Cox model}
 \usage{
 CoxLP(object, data, center)
@@ -11,11 +12,13 @@ CoxLP(object, data, center)
 \method{CoxLP}{cph}(object, data, center)
 
 \method{CoxLP}{coxph}(object, data, center)
+
+\method{CoxLP}{phreg}(object, data, center)
 }
 \arguments{
 \item{object}{The fitted Cox regression model object either
-obtained with \code{coxph} (survival package) or \code{cph}
-(rms package).}
+obtained with \code{coxph} (survival package), \code{cph}
+(rms package), or \code{phreg} (mets package).}
 
 \item{data}{a \code{data.frame} or a \code{data.table}}
 
@@ -30,6 +33,8 @@ In case of empty linear predictor returns a vector of 0 with the same length as 
 \examples{
 \dontrun{
 d <- sampleData(1e2, outcome = "survival")
+d$entry <- 0
+d$id <- 1:NROW(d)
 
 ##
 library(survival)
@@ -48,12 +53,25 @@ library(rms)
 mCox <- cph(Surv(time, event) ~ X1+X2, data = d, y = TRUE)
 CoxLP(mCox, data = d, center = FALSE) 
 CoxLP(mCox, data = d, center = TRUE) 
+CoxLP(mCox, data = NULL, center = FALSE) 
+CoxLP(mCox, data = NULL, center = TRUE) 
 
 mCoxS <- cph(Surv(time, event) ~ strat(X1)+X2, data = d)
 CoxLP(mCoxS, data = d, center = FALSE) 
 
 mCoxS2 <- cph(Surv(time, event) ~ strat(X1)+strat(X2), data = d, y = TRUE)
-info <- CoxStrataVar(mCoxS2)
+CoxLP(mCoxS2, data = d, center = FALSE) 
+
+##
+library(mets)
+mCox <- phreg(Surv(entry, time, event) ~ X1+X2, data = d)
+CoxLP(mCox, data = NULL, center = FALSE) 
+CoxLP(mCox, data = d, center = TRUE) 
+
+mCoxS <- phreg(Surv(entry, time, event) ~ strata(X1)+X2+cluster(id), data = d)
+CoxLP(mCoxS, data = d, center = FALSE) 
+
+mCoxS2 <- phreg(Surv(entry, time, event) ~ X1*X2, data = d)
 CoxLP(mCoxS2, data = d, center = FALSE) 
 }
 }

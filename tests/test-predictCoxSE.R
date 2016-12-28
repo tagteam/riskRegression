@@ -19,13 +19,13 @@ if(require(timereg)){
   mGS.cox <- cox.aalen(Surv(eventtime, event) ~ prop(X1)+prop(X6), data = d, resample.iid = TRUE, max.timepoint.sim=NULL)
   IClambda_timereg <- t(as.data.table(mGS.cox$B.iid))
   
-  m.cox <- coxph(Surv(eventtime, event) ~ X1+X6, data = d, y = TRUE)
+  m.cox <- coxph(Surv(eventtime, event) ~ X1+X6, data = d, y = TRUE, x = TRUE)
   IC.cox <- iidCox(m.cox, keep.times = FALSE)
   
-  m.cox2 <- coxph(Surv(eventtime, event) ~ X1+X6, data = d2, y = TRUE)
+  m.cox2 <- coxph(Surv(eventtime, event) ~ X1+X6, data = d2, y = TRUE, x = TRUE)
   IC.cox2 <- iidCox(m.cox2, keep.times = FALSE, keep.originalOrder = TRUE)
   
-  m.cox3 <- cph(Surv(eventtime, event) ~ X1+X6, data = d, y = TRUE)
+  m.cox3 <- cph(Surv(eventtime, event) ~ X1+X6, data = d, y = TRUE, x = TRUE)
   IC.cox3 <- iidCox(m.cox3, keep.times = FALSE)
   
   test_that("iid beta",{
@@ -44,7 +44,7 @@ if(require(timereg)){
   mIGS.cox <- cox.aalen(Surv(eventtime, event) ~ prop(X1) + prop(X6) + prop(X1*X6), data = d, resample.iid = TRUE, max.timepoint.sim=NULL)
   ICIlambda_timereg <- t(as.data.table(mIGS.cox$B.iid))
   
-  mI.cox <- coxph(Surv(eventtime, event) ~ X1*X6, data = d, y = TRUE)
+  mI.cox <- coxph(Surv(eventtime, event) ~ X1*X6, data = d, y = TRUE, x = TRUE)
   IC.Icox <- iidCox(mI.cox, keep.times = FALSE)
   
   test_that("iid beta - interaction",{
@@ -59,7 +59,7 @@ if(require(timereg)){
   # mIGS.cox <- cox.aalen(Surv(eventtime, event) ~ 1, data = d, resample.iid = TRUE, max.timepoint.sim=NULL)
   # ICIlambda_timereg <- t(as.data.table(mIGS.cox$B.iid))
   
-  mI.cox <- coxph(Surv(eventtime, event) ~ 1, data = d, y = TRUE)
+  mI.cox <- coxph(Surv(eventtime, event) ~ 1, data = d, y = TRUE, x = TRUE)
   IC.Icox <- iidCox(mI.cox, keep.times = FALSE) # how to test the result
   
   #### Cox model with categorical variable
@@ -68,7 +68,7 @@ if(require(timereg)){
   m.timereg <- cox.aalen(Surv(eventtime, event) ~ prop(Xcat2) + prop(X6), data = d, resample.iid = TRUE, max.timepoint.sim=NULL)
   IClambda.timereg <- t(as.data.table(m.timereg$B.iid))
   
-  m.RR <- coxph(Surv(eventtime, event) ~ Xcat2 + X6, data = d, y = TRUE)
+  m.RR <- coxph(Surv(eventtime, event) ~ Xcat2 + X6, data = d, y = TRUE, x = TRUE)
   IC.RR <- iidCox(m.RR, keep.times = FALSE)
   
   test_that("iid beta - categorical",{
@@ -93,8 +93,8 @@ if(require(timereg)){
   mGS.cox <- cox.aalen(Surv(eventtimeTies, event) ~ prop(X1)+prop(X6), data = d3, resample.iid = TRUE, max.timepoint.sim=NULL)
   IClambda_timereg <- t(as.data.table(mGS.cox$B.iid))
   
-  m.cox0 <- coxph(Surv(eventtime, event) ~ X1+X6, data = d3, y = TRUE)
-  m.cox <- coxph(Surv(eventtimeTies, event) ~ X1+X6, data = d3, y = TRUE)
+  m.cox0 <- coxph(Surv(eventtime, event) ~ X1+X6, data = d3, y = TRUE, x = TRUE)
+  m.cox <- coxph(Surv(eventtimeTies, event) ~ X1+X6, data = d3, y = TRUE, x = TRUE)
   IC.cox0 <- iidCox(m.cox0, keep.times = FALSE)
   IC.cox <- iidCox(m.cox, keep.times = FALSE)
   
@@ -121,7 +121,7 @@ if(require(timereg)){
   IClambda.timereg2 <- t(as.data.table(lapply(mGSS.cox$B.iid, function(x){x[,2]})))
   IClambda.timereg3 <- t(as.data.table(lapply(mGSS.cox$B.iid, function(x){x[,3]})))
   
-  mS.cox <- coxph(Surv(eventtime, event) ~ strata(St) + X1 + X6, data = dStrata, y = TRUE)
+  mS.cox <- coxph(Surv(eventtime, event) ~ strata(St) + X1 + X6, data = dStrata, y = TRUE, x = TRUE)
   IC.Scox <- iidCox(mS.cox, keep.originalOrder = TRUE)
   
   test_that("iid beta - strata",{
@@ -140,14 +140,12 @@ if(require(timereg)){
       diff <- IC.Scox$ICLambda0[indexStrata,common.time,drop = FALSE]-IC.GS[,icommon.time]
       expect_true(all(abs(na.omit(as.double(diff)))<1e-10))
     }
-  }
-  )
+  })
   
 }
 
 ####
 context("Cox prediction - standard error")
-
 
 set.seed(10)
 d <- sampleData(1e2, outcome = "survival")
@@ -157,8 +155,8 @@ d <- d[order(d$time),]
 
 for(ties in c("breslow","efron")){ # ties <- "breslow"
   test_that(paste("predictCox(empty) - valide se cumHazard",ties),{
-    fit_coxph <- coxph(Surv(time,event) ~ 1,data=d, ties=ties)
-    fit_cph <- cph(Surv(time,event) ~ 1,data=d, method=ties, y = TRUE)
+    fit_coxph <- coxph(Surv(time,event) ~ 1,data=d, ties=ties, y = TRUE, x = TRUE)
+    fit_cph <- cph(Surv(time,event) ~ 1,data=d, method=ties, y = TRUE, x = TRUE)
 
     # res_surv <- survival:::predict.coxph(fit_coxph, newdata = d, type="expected", se.fit = TRUE)
     resCoxph <- predictCox(fit_coxph, newdata = d, times = d$time,  se = FALSE)
@@ -168,8 +166,8 @@ for(ties in c("breslow","efron")){ # ties <- "breslow"
   })
   
   test_that(paste("predictCox(univariate) - valid se cumHazard",ties),{
-    fit_coxph <- coxph(Surv(time,event) ~ X1,data=d, ties=ties)
-    fit_cph <- cph(Surv(time,event) ~ X1,data=d, method=ties, y = TRUE, surv = TRUE)
+    fit_coxph <- coxph(Surv(time,event) ~ X1,data=d, ties=ties, y = TRUE, x = TRUE)
+    fit_cph <- cph(Surv(time,event) ~ X1,data=d, method=ties, y = TRUE, x = TRUE)
     
     res_surv <- survival:::predict.coxph(fit_coxph, newdata = d, type="expected", se.fit = TRUE)
     resCoxph <- predictCox(fit_coxph, newdata = d, times = d$time,  se = TRUE)
@@ -182,14 +180,13 @@ for(ties in c("breslow","efron")){ # ties <- "breslow"
   })
   
   test_that(paste("predictCox(multiple) - valid se cumHazard",ties),{
-    fit_coxph <- coxph(Surv(time,event) ~ X1 + X2 + X6,data=d, ties=ties)
-    fit_cph <- cph(Surv(time,event) ~ X1 + X2 + X6,data=d, method=ties, y = TRUE)
+    fit_coxph <- coxph(Surv(time,event) ~ X1 + X2 + X6,data=d, ties=ties, y = TRUE, x = TRUE)
+    fit_cph <- cph(Surv(time,event) ~ X1 + X2 + X6,data=d, method=ties, y = TRUE, x = TRUE)
     
     res_surv <- survival:::predict.coxph(fit_coxph, newdata = d, type="expected", se.fit = TRUE)
     resCoxph <- predictCox(fit_coxph, newdata = d, times = d$time,  se = TRUE)
     
     resCph <- predictCox(fit_cph, newdata = d, times = d$time,  se = TRUE)
-    res_pec <- pec::predictSurvProb(fit_coxph, newdata = d, times = d$time)
     
     expect_equal(res_surv$fit,diag(resCoxph$cumHazard))
     expect_equal(res_surv$se.fit,diag(resCoxph$cumHazard.se))  # expected difference coef(fit_cph)-coef(fit_coxph)
@@ -199,9 +196,10 @@ for(ties in c("breslow","efron")){ # ties <- "breslow"
 
 #### strata
 for(ties in c("breslow","efron")){ #
-    test_that(paste("predictCox (strata, empty) - valide se cumHazard",ties),{
-    fit_coxph <- coxph(Surv(time,event) ~ strata(X1),data=d, ties=ties)
-    fit_cph <- cph(Surv(time,event) ~ strat(X1),data=d, method=ties, y = TRUE)
+  
+  test_that(paste("predictCox (strata, empty) - valide se cumHazard",ties),{
+    fit_coxph <- coxph(Surv(time,event) ~ strata(X1),data=d, ties=ties, y = TRUE, x = TRUE)
+    fit_cph <- cph(Surv(time,event) ~ strat(X1),data=d, method=ties, y = TRUE, x = TRUE)
 
     # res_surv <- survival:::predict.coxph(fit_coxph, newdata = d, type="expected", se.fit = TRUE)
     resCoxph <- predictCox(fit_coxph, newdata = d, times = d$time,  se = FALSE)
@@ -212,13 +210,12 @@ for(ties in c("breslow","efron")){ #
   })
   
   test_that(paste("predictCox (strata, univariate) - valide se cumHazard",ties),{
-    fit_coxph <- coxph(Surv(time,event) ~ strata(X1) + X2,data=d, ties=ties)
-    fit_cph <- cph(Surv(time,event) ~ strat(X1) + X2,data=d, method=ties, y = TRUE)
+    fit_coxph <- coxph(Surv(time,event) ~ strata(X1) + X2,data=d, ties=ties, y = TRUE, x = TRUE)
+    fit_cph <- cph(Surv(time,event) ~ strat(X1) + X2,data=d, method=ties, y = TRUE, x = TRUE)
     
-    res_surv <- survival:::predict.coxph(fit_coxph, newdata = d, type="expected", se.fit = TRUE)
+    res_surv <- survival:::predict.coxph(update(fit_coxph, x = FALSE), newdata = d, type="expected", se.fit = TRUE)
     resCoxph <- predictCox(fit_coxph, newdata = d, times = d$time,  se = TRUE)
     resCph <- predictCox(fit_cph, newdata = d, times = d$time,  se = TRUE)
-    res_pec <- pec::predictSurvProb(fit_coxph, newdata = d, times = d$time)
     
     expect_equal(res_surv$fit,diag(t(resCoxph$cumHazard)))
     expect_equal(res_surv$se.fit,diag(resCoxph$cumHazard.se))
@@ -226,13 +223,12 @@ for(ties in c("breslow","efron")){ #
   })
   
   test_that(paste("predictCox (strata, multiple) - valide se cumHazard",ties),{
-    fit_coxph <- coxph(Surv(time,event) ~ strata(X1) + X2 + X6 ,data=d, ties=ties)
-    fit_cph <- cph(Surv(time,event) ~ strat(X1) + X2 + X6 ,data=d, method=ties, y = TRUE)
+    fit_coxph <- coxph(Surv(time,event) ~ strata(X1) + X2 + X6 ,data=d, ties=ties, y = TRUE, x = TRUE)
+    fit_cph <- cph(Surv(time,event) ~ strat(X1) + X2 + X6 ,data=d, method=ties, y = TRUE, x = TRUE)
     
-    res_surv <- survival:::predict.coxph(fit_coxph, newdata = d, type="expected", se.fit = TRUE)
+    res_surv <- survival:::predict.coxph(update(fit_coxph, x = FALSE), newdata = d, type="expected", se.fit = TRUE)
     resCoxph <- predictCox(fit_coxph, newdata = d, times = d$time,  se = TRUE)
     resCph <- predictCox(fit_cph, newdata = d, times = d$time,  se = TRUE)
-    res_pec <- pec::predictSurvProb(fit_coxph, newdata = d, times = d$time)
     
     expect_equal(res_surv$fit,diag(t(resCoxph$cumHazard)))
     expect_equal(res_surv$se.fit,diag(resCoxph$cumHazard.se))

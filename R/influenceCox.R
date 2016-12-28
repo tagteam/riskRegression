@@ -39,55 +39,47 @@ iidCox <- function(object, newdata = NULL, tauLambda = NULL,
                   center.result = TRUE){
   
   center.eXb <- TRUE # Temporary argument. Should the linear predictor be centered on the exponential scale.
-  center.LPdata <- FALSE # Temporary argument. Should the covariates be centered.
   
   #### extract elements from object ####
-  infoVar <- CoxStrataVar(object)
+  infoVar <- CoxVariableName(object)
   iInfo <- CoxVarCov(object)
-  is.strata <- infoVar$is.strata
-  object.designVar <- colnames(iInfo)
+  object.design <- CoxDesign(object)
   
-  object.status <- CoxStatus(object)
-  object.time <- CoxEventtime(object)
+  object.status <- object.design[,"status"]
+  object.time <- object.design[,"time"]
   object.strata <- CoxStrata(object, stratavars = infoVar$stratavars)
   object.levelStrata <- levels(object.strata)
   object.eXb <- exp(CoxLP(object, data = NULL, center = center.eXb))
-  object.LPdata <- as.matrix(CoxDesign(object, data = CoxData(object), 
-                                       lpvars = infoVar$lpvars, stratavars = infoVar$stratavars,
-                                       rm.intercept = TRUE, center = center.LPdata))
+  object.LPdata <- as.matrix(object.design[,infoVar$lpvars,drop = FALSE])
   nStrata <- length(levels(object.strata))
   
-  # for factor variables: retain only the relevant column from the design matrix, 
-  # i.e. remove the column(s) corresponding to the reference level(s)
-  object.LPdata <- object.LPdata[, object.designVar, drop = FALSE]
+  object.center <- CoxCenter(object)
   
   #### Extract new observations ####
   if(!is.null(newdata)){
-    info2 <- CoxResponseVar(object)
-    new.time <- newdata[[info2$time]]
+    
+    if("data.frame" %in% class(newdata) == FALSE){
+      stop("class of \'newdata\' must inherit from data.frame \n")
+    }
+    new.status <- newdata[["status"]]
+    new.time <- newdata[["time"]]
     new.strata <- CoxStrata(object, data = newdata, 
                             sterms = infoVar$sterms, stratavars = infoVar$stratavars, levels = object.levelStrata, stratalevels = infoVar$stratalevels)
-    new.status <- newdata[[info2$event]]
     new.eXb <- exp(CoxLP(object, data = newdata, center = center.eXb))
-    new.LPdata <- as.matrix(CoxDesign(object, data = newdata,  
-                                      lpvars = infoVar$lpvars, stratavars = infoVar$stratavars,
-                                      rm.intercept = TRUE, center = center.LPdata))
+    new.LPdata <- model.matrix(object, newdata)
     
-    # for factor variables: retain only the relevant column from the design matrix, 
-    new.LPdata <- new.LPdata[, object.designVar, drop = FALSE]
   }
   
   
   #### Compute quantities of interest only for event times ####
-  lastEventtime <- object.time[length(object.time)]
   p <- NCOL(object.LPdata)
   
   ## baseline hazard
   lambda0 <- predictCox(object, type = "hazard", centered = TRUE, keep.strata = TRUE)
   
   ## resale factor
-  if(center.result == TRUE && !is.null(CoxCenter(object))){
-    scalingFactor <- exp(-as.double(coef(object) %*% CoxCenter(object)))
+  if(center.result == TRUE && !is.null(object.center)){
+    scalingFactor <- exp(-as.double(coef(object) %*% object.center))
   }
   
   ## time at which the influence function is evaluated

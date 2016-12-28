@@ -92,8 +92,8 @@
 ##' set.seed(18)
 ##' trainSurv <- sampleData(100,outcome="survival")
 ##' testSurv <- sampleData(40,outcome="survival")
-##' cox1 = coxph(Surv(time,event)~X1+X2+X7+X9,data=trainSurv)
-##' cox2 = coxph(Surv(time,event)~X3+X5+X6,data=trainSurv)
+##' cox1 = coxph(Surv(time,event)~X1+X2+X7+X9,data=trainSurv, y=TRUE, x = TRUE)
+##' cox2 = coxph(Surv(time,event)~X3+X5+X6,data=trainSurv, y=TRUE, x = TRUE)
 ##' Score(list("Cox(X1+X2+X7+X9)"=cox1,"Cox(X3+X5+X6)"=cox2),
 ##'       formula=Surv(time,event)~1,data=testSurv,conf.int=FALSE,times=c(5,8))
 ##'

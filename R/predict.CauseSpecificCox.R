@@ -31,7 +31,7 @@
 #' ttt <- sample(x = unique(sort(d$time)), size = 10) 
 #'
 #' #### coxph function
-#' CSC.fit <- CSC(Hist(time,event)~ X1+X2,data=d, method = "breslow" )
+#' CSC.fit <- CSC(Hist(time,event)~ X1+X2,data=d, method = "breslow")
 #' 
 #' predCSC <- predict(CSC.fit, newdata = d, cause = 2, times = ttt)
 #' 
@@ -93,7 +93,7 @@ predict.CauseSpecificCox <- function(object,newdata, times, cause, t0 = NA, coln
     M.etimes.max <- matrix(NA, nrow = nData, ncol = nCause)
     
     for(iterC in 1:nCause){
-        infoVar <- CoxStrataVar(object$models[[iterC]])
+        infoVar <- CoxVariableName(object$models[[iterC]])
       
       ## baseline hazard from the Cox model
       causeBaseline <- predictCox(object$models[[iterC]],
@@ -106,7 +106,7 @@ predict.CauseSpecificCox <- function(object,newdata, times, cause, t0 = NA, coln
       ls.cumHazard[[iterC]] <- matrix(causeBaseline$cumHazard, byrow = FALSE, nrow = nTimes) 
       
       ## linear predictor for the new observations
-      newdata.eXb <- exp(CoxLP(object$models[[iterC]], data = newdata, center = FALSE))
+      newdata.eXb <- exp(CoxLP(object$models[[iterC]], data = newdata, center = TRUE))
       
       ## strata for the new observations
       newdata.strata <- CoxStrata(object$models[[iterC]], data = newdata, 
@@ -129,7 +129,7 @@ predict.CauseSpecificCox <- function(object,newdata, times, cause, t0 = NA, coln
     tdiff <- 0*min(diff(eTimes))/2 # TO MATCH test-CauseSpecificCoxRegresion.R but will not match pec
     
     #### cause ####
-    infoVar_Cause <- CoxStrataVar(object$models[[paste("Cause",cause)]])
+    infoVar_Cause <- CoxVariableName(object$models[[paste("Cause",cause)]])
     
     ## baseline hazard from the Cox model
     causeBaseline <- predictCox(object$models[[paste("Cause",cause)]],
@@ -141,7 +141,7 @@ predict.CauseSpecificCox <- function(object,newdata, times, cause, t0 = NA, coln
     ls.hazard <- list(matrix(causeBaseline$hazard, byrow = FALSE, nrow = nTimes))
     
     ## linear predictor for the new observations
-    newdata.eXb_cause <- exp(CoxLP(object$models[[paste("Cause",cause)]], data = newdata, center = FALSE))
+    newdata.eXb_cause <- exp(CoxLP(object$models[[paste("Cause",cause)]], data = newdata, center = TRUE))
     M.eXb_h <- cbind(newdata.eXb_cause)
     
     ## strata for the new observations
@@ -165,11 +165,10 @@ predict.CauseSpecificCox <- function(object,newdata, times, cause, t0 = NA, coln
     ls.cumHazard <- list(matrix(overallBaseline$cumHazard, byrow = FALSE, nrow = nTimes))
     
     ## linear predictor for the new observations
-    newdata.eXb_All <- exp(CoxLP(object$models[["OverallSurvival"]], data = newdata, center = FALSE))
+    newdata.eXb_All <- exp(CoxLP(object$models[["OverallSurvival"]], data = newdata, center = TRUE))
     M.eXb_cumH <- cbind(newdata.eXb_All)
     
   }
-  
   CIF <- predictCIF_cpp(hazard = ls.hazard, 
                         cumHazard = ls.cumHazard, 
                         eXb_h = M.eXb_h, 

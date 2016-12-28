@@ -224,9 +224,9 @@ CSC <- function(formula,
                                       as.character(delete.response(terms.formula(formulaX)))[[2]],
                                       sep="~"))
         if (fitter=="coxph"){
-            fit <- survival::coxph(formulaXX, data = workData,...)
+            fit <- survival::coxph(formulaXX, data = workData,x=TRUE,y=TRUE,...)
         } else {
-            fit <- rms::cph(formulaXX, data = workData,surv=TRUE,y=TRUE,...)
+            fit <- rms::cph(formulaXX, data = workData,surv=TRUE,x=TRUE,y=TRUE,...)
         }
         ## fit$formula <- terms(fit$formula)
         ## fit$call$formula <- terms(formulaXX)

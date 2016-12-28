@@ -4,6 +4,7 @@
 \alias{CoxCenter}
 \alias{CoxCenter.coxph}
 \alias{CoxCenter.cph}
+\alias{CoxCenter.phreg}
 \title{Extract the mean value of the covariates}
 \usage{
 CoxCenter(object)
@@ -11,11 +12,13 @@ CoxCenter(object)
 \method{CoxCenter}{cph}(object)
 
 \method{CoxCenter}{coxph}(object)
+
+\method{CoxCenter}{phreg}(object)
 }
 \arguments{
 \item{object}{The fitted Cox regression model object either
-obtained with \code{coxph} (survival package) or \code{cph}
-(rms package).}
+obtained with \code{coxph} (survival package), \code{cph}
+(rms package), or \code{phreg} (mets package).}
 }
 \description{
 Extract the mean value of the covariates
@@ -24,6 +27,7 @@ Extract the mean value of the covariates
 \dontrun{
 d <- sampleData(1e2, outcome = "survival")
 d$Xcat <- paste0(d$X3,d$X4)
+d$entry <- 0
 
 ##
 library(survival)
@@ -35,6 +39,13 @@ CoxCenter(mCox)
 ##
 library(rms)
 mCox <- cph(Surv(time, event) ~ X1+X2, data = d, y = TRUE)
+CoxCenter(mCox)
+mCox <- cph(Surv(time, event) ~ X1+X2+Xcat, data = d)
+CoxCenter(mCox)
+
+##
+library(mets)
+mCox <- phreg(Surv(entry, time, event) ~ X1+X2, data = d)
 CoxCenter(mCox)
 mCox <- cph(Surv(time, event) ~ X1+X2+Xcat, data = d)
 CoxCenter(mCox)

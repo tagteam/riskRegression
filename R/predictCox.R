@@ -31,7 +31,7 @@
 #' d <- SimSurv(1e2)
 #' nd <- SimSurv(10)
 #' d$time <- round(d$time,1)
-#' fit <- coxph(Surv(time,status)~X1 * X2,data=d, ties="breslow")
+#' fit <- coxph(Surv(time,status)~X1 * X2,data=d, ties="breslow", x = TRUE, y = TRUE)
 #' # table(duplicated(d$time))
 #' 
 #' predictCox(fit)
@@ -39,7 +39,7 @@
 #' cbind(survival::basehaz(fit),predictCox(fit,type="cumHazard"))
 #' 
 #' # one strata variable
-#' fitS <- coxph(Surv(time,status)~strata(X1)+X2,data=d, ties="breslow")
+#' fitS <- coxph(Surv(time,status)~strata(X1)+X2,data=d, ties="breslow", x = TRUE, y = TRUE)
 #' 
 #' predictCox(fitS)
 #' predictCox(fitS, newdata=nd, times = 1)
@@ -50,7 +50,7 @@
 #' d$V=sample(letters[4:10],replace=TRUE,size=NROW(d))
 #' nd$U=sample(letters[1:5],replace=TRUE,size=NROW(nd))
 #' nd$V=sample(letters[4:10],replace=TRUE,size=NROW(nd))
-#' fit2S <- coxph(Surv(time,status)~X1+strata(U)+strata(V)+X2,data=d, ties="breslow")
+#' fit2S <- coxph(Surv(time,status)~X1+strata(U)+strata(V)+X2,data=d, ties="breslow", x = TRUE, y = TRUE)
 #'
 #' cbind(survival::basehaz(fit2S),predictCox(fit2S,type="cumHazard"))
 #' predictCox(fit2S)
@@ -75,23 +75,23 @@ predictCox <- function(object,
   #                   - the name of each strata
   #                   - the value of the linear predictor for each observation in the training set
   # (optional for se) - the centered dataset for the variables involved the linear predictor
-  infoVar <- CoxStrataVar(object)
+  infoVar <- CoxVariableName(object)
   is.strata <- infoVar$is.strata
   
   object.n <- CoxN(object)
-  object.status <- CoxStatus(object)
-  object.time <- CoxEventtime(object)
+  object.design <- CoxDesign(object)
+  object.status <- object.design[["status"]]
+  object.time <- object.design[["time"]]
   object.strata <- CoxStrata(object, stratavars = infoVar$stratavars)
   object.levelStrata <- levels(object.strata)
   object.eXb <- exp(CoxLP(object, data = NULL, center = centered))
+  object.baseEstimator <- CoxBaseEstimator(object) 
   nVar <- length(infoVar$lpvars)
   
-  if(se){
-    object.LPdata <- as.matrix(CoxDesign(object, data = CoxData(object), 
-                                         lpvars = infoVar$lpvars, stratavars = infoVar$stratavars,
-                                         rm.intercept = TRUE, center = TRUE))
+  if(se && (nVar > 0)){
+    object.LPdata <- as.matrix(CoxDesign(object, center = TRUE)[,infoVar$lpvars,drop=FALSE])
   }else{
-    object.LPdata <- matrix(ncol = 0, nrow = 0)
+    object.LPdata <- matrix(0, ncol = 1, nrow = object.n)
   }
   
   #### Do we want to make prediction for a new dataset ? ####
@@ -101,7 +101,7 @@ predictCox <- function(object,
   if(!is.null(newdata)){
     new.n <- NROW(newdata)
     newdata <- as.data.table(newdata)
-     new.eXb <- exp(CoxLP(object, data = newdata, center = FALSE)) # must be the original name of the strata variables
+    new.eXb <- exp(CoxLP(object, data = newdata, center = TRUE))
     
     new.strata <- CoxStrata(object, data = newdata, 
                             sterms = infoVar$sterms, 
@@ -111,16 +111,17 @@ predictCox <- function(object,
     
     new.levelStrata <- levels(new.strata)
     
-    if(se){
-      new.LPdata <- as.matrix(CoxDesign(object, data = newdata, 
-                                        lpvars = infoVar$lpvars, stratavars = infoVar$stratavars,
-                                        rm.intercept = TRUE, center = TRUE))
+    if(se && (nVar > 0)){
+      new.LPdata <- rowCenter_cpp(model.matrix(object, newdata)[,infoVar$lpvars,drop=FALSE], 
+                                  center = CoxCenter(object))
+    }else{
+      new.LPdata <- matrix(0, ncol = 1, nrow = new.n)
     }
     
   }
   
   ## checks
-  if(object$method == "exact"){
+  if(object.baseEstimator == "exact"){
     stop("Prediction with exact correction for ties is not implemented \n")
   }
   if(!missing(times) && any(is.na(times))){
@@ -140,15 +141,18 @@ predictCox <- function(object,
   if(any(type %in% c("hazard","cumHazard","survival") == FALSE)){
     stop("type can only be \"hazard\", \"cumHazard\" or/and \"survival\" \n") 
   }
+  if(any(object.design[,"start"]!=0)){
+    stop("do not handle left censoring \n") 
+  }
   # if(se == TRUE && ncol(resInfo$modeldata) == 0){
   #   stop("cannot compute the standard error when there are not covariates \n")
   # }
-  
+
   #### baseline hazard ####
   nStrata <- length(object.levelStrata)
   if(is.strata){etimes.max <- tapply(object.time, object.strata, max) }else{ etimes.max <- max(object.time) } # last event time
   
-   Lambda0 <- baseHaz_cpp(alltimes = object.time,
+  Lambda0 <- baseHaz_cpp(alltimes = object.time,
                          status = object.status,
                          eXb = object.eXb,
                          strata = as.numeric(object.strata) - 1,
@@ -160,8 +164,8 @@ predictCox <- function(object,
                          emaxtimes = etimes.max,
                          predtimes = if(missing(times)){numeric(0)}else{sort(times)},
                          cause = 1,
-                         Efron = (object$method == "efron"))
-   
+                         Efron = (object.baseEstimator == "efron"))
+
   if (is.strata == TRUE){ ## rename the strata value with the correct levels
     Lambda0$strata <- factor(Lambda0$strata, levels = 0:(nStrata-1), labels = object.levelStrata)
   }
@@ -215,11 +219,12 @@ predictCox <- function(object,
       }
       
       if(se){ 
-        out <- c(out,
-                 seCox(object, newdata = new.LPdata, times = times, type = type, 
+        outSE <- seCox(object, newdata = new.LPdata, times = times, type = type, 
                        Lambda0 = Lambda0, eXb = new.eXb, survival = out$survival, 
                        subset.Lambda0 = 1:length(Lambda0$time))
-        )
+        if ("hazard" %in% type){out$hazard.se <- outSE$hazard.se}
+        if ("cumHazard" %in% type){out$cumHazard.se <- outSE$cumHazard.se}
+        if ("survival" %in% type){out$survival.se <- outSE$survival.se}
       }
       
     }else{ 
@@ -250,7 +255,7 @@ predictCox <- function(object,
           if ("survival" %in% type){out$survival[newid.S,] <- exp(-cumHazard.S)}
         }
         
-        if(se){
+         if(se){
           outSE <- seCox(object, newdata = new.LPdata[newid.S,,drop = FALSE], 
                          times, type, 
                          Lambda0 = Lambda0, 

@@ -44,16 +44,16 @@ colSumsCrossprod <- function(X, Y, transposeY) {
     .Call('riskRegression_colSumsCrossprod', PACKAGE = 'riskRegression', X, Y, transposeY)
 }
 
-calcE_cpp <- function(t, n, p, eventtime, eXb, X) {
-    .Call('riskRegression_calcE_cpp', PACKAGE = 'riskRegression', t, n, p, eventtime, eXb, X)
+calcE_cpp <- function(eventtime, status, eXb, X, p, add0) {
+    .Call('riskRegression_calcE_cpp', PACKAGE = 'riskRegression', eventtime, status, eXb, X, p, add0)
 }
 
-calcEstrata_cpp <- function(tau, indexStrata, status, p, nStrata, eventtime, eXb, X, add0) {
-    .Call('riskRegression_calcEstrata_cpp', PACKAGE = 'riskRegression', tau, indexStrata, status, p, nStrata, eventtime, eXb, X, add0)
+ICbeta_cpp <- function(newT, neweXb, newX, newStatus, newIndexJump, S01, E1, time1, iInfo, p) {
+    .Call('riskRegression_ICbeta_cpp', PACKAGE = 'riskRegression', newT, neweXb, newX, newStatus, newIndexJump, S01, E1, time1, iInfo, p)
 }
 
-calcU_cpp <- function(newX, newStatus, newN, IndexNewT, ENewT, p, aggregate) {
-    .Call('riskRegression_calcU_cpp', PACKAGE = 'riskRegression', newX, newStatus, newN, IndexNewT, ENewT, p, aggregate)
+IClambda0_cpp <- function(tau, ICbeta, newT, neweXb, newStatus, newIndexJump, S01, E1, time1, lambda0, p) {
+    .Call('riskRegression_IClambda0_cpp', PACKAGE = 'riskRegression', tau, ICbeta, newT, neweXb, newStatus, newIndexJump, S01, E1, time1, lambda0, p)
 }
 
 predictCIF_cpp <- function(hazard, cumHazard, eXb_h, eXb_cumH, strata, newtimes, etimes, etimeMax, t0, nTimes, nNewTimes, nData, cause, nCause) {

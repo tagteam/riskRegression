@@ -87,7 +87,7 @@
 ##' cphmodel <- cph(Surv(time,event)~X1+X2,data=d,surv=TRUE,y=TRUE)
 ##' # or via survival
 ##' library(survival)
-##' coxphmodel <- coxph(Surv(time,event)~X1+X2,data=d)
+##' coxphmodel <- coxph(Surv(time,event)~X1+X2,data=d,x=TRUE,y=TRUE)
 ##' 
 ##' # Extract predicted survival probabilities 
 ##' # at selected time-points:
@@ -99,7 +99,7 @@
 ##' predictRisk(coxphmodel,newdata=ndat,times=ttt)
 ##' 
 ##' # stratified cox model
-##' sfit <- coxph(Surv(time,event)~strata(X1)+X2,data=d,y=TRUE)
+##' sfit <- coxph(Surv(time,event)~strata(X1)+X2,data=d,x=TRUE,y=TRUE)
 ##' predictRisk(sfit,newdata=d[1:3,],times=c(1,3,5,10))
 ##' 
 ##' ## simulate learning and validation data
@@ -107,7 +107,7 @@
 ##' valdat <- sampleData(100,outcome="survival")
 ##' ## use the learning data to fit a Cox model
 ##' library(survival)
-##' fitCox <- coxph(Surv(time,event)~X1+X2,data=learndat)
+##' fitCox <- coxph(Surv(time,event)~X1+X2,data=learndat,x=TRUE,y=TRUE)
 ##' ## suppose we want to predict the survival probabilities for all patients
 ##' ## in the validation data at the following time points:
 ##' ## 0, 12, 24, 36, 48, 60
@@ -123,8 +123,8 @@
 ##' # plot(psurv,prsfsurv)
 ##' 
 ##' ## Cox with ridge option
-##' f1 <- coxph(Surv(time,event)~X1+X2,data=learndat)
-##' f2 <- coxph(Surv(time,event)~ridge(X1)+ridge(X2),data=learndat)
+##' f1 <- coxph(Surv(time,event)~X1+X2,data=learndat,x=TRUE,y=TRUE)
+##' f2 <- coxph(Surv(time,event)~ridge(X1)+ridge(X2),data=learndat,x=TRUE,y=TRUE)
 ##' \dontrun{
 ##' plot(predictRisk(f1,newdata=valdat,times=10),
 ##'      predictRisk.coxph(f2,newdata=valdat,times=10),

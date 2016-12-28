@@ -32,7 +32,7 @@ test_that("Extract risks from coxph and cph and CSC objects",{
     df <- SimCompRisk(n)
     dn <- SimCompRisk(17)
     df$time <- round(df$time,2)
-    F1 <- CSC(Hist(time,event) ~ X1+X2,data = df,x = TRUE, y = TRUE )
+    F1 <- CSC(Hist(time,event) ~ X1+X2,data = df)
     ttt <- sort(unique(df$time))
     ## cause 1
     a <- pec::predictEventProb(F1,times=ttt,newdata=dn,cause=1)
@@ -87,7 +87,7 @@ for(model in c("coxph","cph")){
         if(model == "coxph"){
             CSC.S <- CSC(Hist(time,event) ~ strata(X1) + strata(X3) + X2, data = df.S, ties = method.ties, fitter = "coxph")
         }else if(model == "cph"){
-            CSC.S <- CSC(Hist(time,event) ~ strat(X1) + strat(X3) + X2, data = df.S, ties = method.ties, fitter = "cph" )
+            CSC.S <- CSC(Hist(time,event) ~ strat(X1) + strat(X3) + X2, data = df.S, ties = method.ties, fitter = "cph")
         }
         for(cause in 1:2){ 
             Event0.S <- predictRisk(CSC.S, newdata = df.S, times = seqTime, cause = cause)
@@ -110,7 +110,7 @@ ttt <- c(seq(0, max(df$time)/2, length.out = 10))
 for(model in c("coxph","cph")){
     for(method.ties in c("breslow","efron")){
         if(model == "coxph"){
-            coxph <- coxph(formula = Surv(time,status) ~ X1 +  X2, data = df, ties = method.ties)
+            coxph <- coxph(formula = Surv(time,status) ~ X1 +  X2, data = df, ties = method.ties, x = TRUE, y = TRUE)
             Surv0 <- predictRisk(coxph, newdata = df, times = ttt)
         }else{
             coxph <- cph(formula = Surv(time,status) ~ X1 + X2, data = df, ties = method.ties, surv = TRUE, x = TRUE, y = TRUE)
@@ -137,7 +137,7 @@ for(model in c("coxph","cph")){
   for(method.ties in c("breslow","efron")){
     ## print(method.ties)
     if(model == "coxph"){
-      fit <- coxph(formula = Surv(time,status) ~ strata(X1) + strata(X3) + X2, data = df, method = method.ties)
+      fit <- coxph(formula = Surv(time,status) ~ strata(X1) + strata(X3) + X2, data = df, method = method.ties, x = TRUE, y = TRUE)
       Surv0 <- predictRisk(fit, newdata = df, times = ttt)
     }else{
       fit <- cph(formula = Surv(time,status) ~ strat(X1) + strat(X3) + X2, data = df, method = method.ties, surv = TRUE, x = TRUE, y = TRUE)
@@ -163,7 +163,7 @@ times2 <- c(0,0.9*min(times1),times1*1.1)
 dataset1 <- Melanoma[sample.int(n = nrow(Melanoma), size = 12),]
 
 #### no strata
-fit.coxph <- coxph(Surv(time,status == 1) ~ thick*age, data = Melanoma)
+fit.coxph <- coxph(Surv(time,status == 1) ~ thick*age, data = Melanoma, y = TRUE, x = TRUE)
 fit.cph <- cph(Surv(time,status == 1) ~ thick*age, data = Melanoma, y = TRUE, x = TRUE)
 fit.CSC <- CSC(Hist(time,status) ~ thick*age, data = Melanoma, fitter = "cph")
 
@@ -213,7 +213,7 @@ test_that("Prediction with CSC - no event before prediction time",{
 test_that("Prediction - last event censored",{
   nData <- length(Melanoma$event)
   
-  fit.coxph <- coxph(Surv(time,status == 1) ~ thick*age, data = Melanoma)
+  fit.coxph <- coxph(Surv(time,status == 1) ~ thick*age, data = Melanoma, y = TRUE, x = TRUE)
   fit.cph <- cph(Surv(time,status == 1) ~ thick*age, data = Melanoma, y = TRUE, x = TRUE)
   fit.CSC <- CSC(Hist(time,status) ~ thick*age, data = Melanoma, fitter = "cph")
 
@@ -234,7 +234,7 @@ test_that("Prediction - last event is a death",{
   nData <- length(Melanoma$event)
   Melanoma2 <- Melanoma
   Melanoma2$status[nData] <- 1
-  fit.coxph <- coxph(Surv(time,status == 1) ~ thick*age, data = Melanoma2)
+  fit.coxph <- coxph(Surv(time,status == 1) ~ thick*age, data = Melanoma2, y = TRUE, x = TRUE)
   fit.cph <- cph(Surv(time,status == 1) ~ thick*age, data = Melanoma2, y = TRUE, x = TRUE)
   fit.CSC <- CSC(Hist(time,status) ~ thick*age, data = Melanoma2, fitter = "cph")
   
@@ -252,7 +252,7 @@ test_that("Prediction - last event is a death",{
 })
 
 #### strata
-fit.coxph <- coxph(Surv(time,status == 1) ~ thick + strata(invasion) + strata(ici), data = Melanoma)
+fit.coxph <- coxph(Surv(time,status == 1) ~ thick + strata(invasion) + strata(ici), data = Melanoma, y = TRUE, x = TRUE)
 fit.cph <- cph(Surv(time,status == 1) ~ thick + strat(invasion) + strat(ici), data = Melanoma, y = TRUE, x = TRUE)
 fit.CSC <- CSC(Hist(time,status) ~ thick + strat(invasion) + strat(ici), data = Melanoma, fitter = "cph")
 
@@ -349,16 +349,16 @@ data(Melanoma)
 wdata <- runif(nrow(Melanoma), 0, 1)
 times1 <- unique(Melanoma$time)
 
-fit.coxph <- coxph(Surv(time,status == 1) ~ thick*age, data = Melanoma)
-fitW.coxph <- coxph(Surv(time,status == 1) ~ thick*age, data = Melanoma, weights = wdata)
+fit.coxph <- coxph(Surv(time,status == 1) ~ thick*age, data = Melanoma, y = TRUE, x = TRUE)
+fitW.coxph <- coxph(Surv(time,status == 1) ~ thick*age, data = Melanoma, weights = wdata, y = TRUE, x = TRUE)
 
 fit.cph <- cph(Surv(time,status == 1) ~ thick*age, data = Melanoma, y = TRUE, x = TRUE)
 fitW.cph <- cph(Surv(time,status == 1) ~ thick*age, data = Melanoma, y = TRUE, x = TRUE, weights = wdata)
 
 # res <- predictCox(fit.coxph, times = Melanoma$time, newdata = Melanoma)
 test_that("Prediction with Cox model - weights",{
-expect_error(resW <- predictCox(fitW.coxph, times = Melanoma$time, newdata = Melanoma))
-expect_error(resW <- predictCox(fitW.cph, times = Melanoma$time, newdata = Melanoma))
+  expect_error(resW <- predictCox(fitW.coxph, times = Melanoma$time, newdata = Melanoma))
+  expect_error(resW <- predictCox(fitW.cph, times = Melanoma$time, newdata = Melanoma))
 })
 # resGS <- survival:::predict.coxph(fit.coxph, times = times1, newdata = Melanoma, type = "expected")
 # resGSW <- survival:::predict.coxph(fitW.coxph, times = times1, newdata = Melanoma, type = "expected")
@@ -374,7 +374,7 @@ times2 <- sort(c(0,0.9*min(Melanoma$time),Melanoma$time[5],max(Melanoma$time)*1.
 newOrder <- sample.int(length(times2),length(times2),replace = FALSE)
 
 test_that("Prediction with Cox model - sorted vs. unsorted times",{
-  fit.coxph <- coxph(Surv(time,status == 1) ~ thick, data = Melanoma)
+  fit.coxph <- coxph(Surv(time,status == 1) ~ thick, data = Melanoma, x = TRUE, y = TRUE)
   predictionUNS <- predictCox(fit.coxph, times = times2[newOrder], newdata = Melanoma[1:5,], keep.times = FALSE)
   predictionS <- predictCox(fit.coxph, times = times2, newdata = Melanoma[1:5,], keep.times = FALSE)
   # predictSurvProb(fit.coxph, times = times2[newOrder], newdata = Melanoma)
@@ -395,7 +395,7 @@ test_that("Prediction with CSC - sorted vs. unsorted times",{
 })
 
 test_that("Prediction with Cox model (strata) - sorted vs. unsorted times",{
-  fit.coxph <- coxph(Surv(time,status == 1) ~ thick + strata(invasion), data = Melanoma)
+  fit.coxph <- coxph(Surv(time,status == 1) ~ thick + strata(invasion), data = Melanoma, y = TRUE,  x = TRUE)
   predictionUNS <- predictCox(fit.coxph, times = times2[newOrder], newdata = Melanoma, keep.times = FALSE, keep.strata = FALSE)
   predictionS <- predictCox(fit.coxph, times = times2, newdata = Melanoma, keep.times = FALSE, keep.strata = FALSE)
   expect_equal(predictionS, lapply(predictionUNS, function(x){x[,order(newOrder)]}))
@@ -432,7 +432,7 @@ cat("Estimation of the baseline hazard \n")
 data(Melanoma)
 
 test_that("baseline hazard - match basehaz results",{
-  fit.coxph <- coxph(Surv(time,status == 1) ~ thick + invasion + ici, data = Melanoma)
+  fit.coxph <- coxph(Surv(time,status == 1) ~ thick + invasion + ici, data = Melanoma, y = TRUE, x = TRUE)
   fit.cph <- cph(Surv(time,status == 1) ~ thick + invasion + ici, data = Melanoma, y = TRUE, x = TRUE)
   
   expect_equal(predictCox(fit.coxph, centered = FALSE)$cumHazard, 
@@ -450,7 +450,7 @@ test_that("baseline hazard - match basehaz results",{
 
 #### strata
 test_that("baseline hazard (strata) - order of the results",{
-  fit.coxph <- coxph(Surv(time,status == 1) ~ thick + strata(invasion) + strata(ici), data = Melanoma)
+  fit.coxph <- coxph(Surv(time,status == 1) ~ thick + strata(invasion) + strata(ici), data = Melanoma, y = TRUE, x = TRUE)
   fit.cph <- cph(Surv(time,status == 1) ~ thick + strat(invasion) + strat(ici), data = Melanoma, y = TRUE, x = TRUE)
   
   expect_equal(predictCox(fit.coxph, keep.strata = TRUE)$strata, 
@@ -462,7 +462,7 @@ test_that("baseline hazard (strata) - order of the results",{
 })
 
 test_that("baseline hazard (strata) - match basehaz results",{
-  fit.coxph <- coxph(Surv(time,status == 1) ~ thick + strata(invasion) + strata(ici), data = Melanoma)
+  fit.coxph <- coxph(Surv(time,status == 1) ~ thick + strata(invasion) + strata(ici), data = Melanoma, y = TRUE, x = TRUE)
   fit.cph <- cph(Surv(time,status == 1) ~ thick + strat(invasion) + strat(ici), data = Melanoma, y = TRUE, x = TRUE)
   
   expect_equal(predictCox(fit.coxph, centered = FALSE)$cumHazard, 
@@ -487,7 +487,7 @@ times2 <- c(0,0.9*min(times1),times1*1.1)
 dataset1 <- Melanoma[sample.int(n = nrow(Melanoma), size = 12),]
 
 ## no strata
-fit.coxph <- coxph(Surv(time,status == 1) ~ thick*age, data = Melanoma)
+fit.coxph <- coxph(Surv(time,status == 1) ~ thick*age, data = Melanoma, y = TRUE, x = TRUE)
 fit.cph <- cph(Surv(time,status == 1) ~ thick*age, data = Melanoma, y = TRUE, x = TRUE)
 
 test_that("baseline hazard - correct number of events",{ 
@@ -498,7 +498,7 @@ test_that("baseline hazard - correct number of events",{
 })
 
 ## strata
-fit.coxph <- coxph(Surv(time,status == 1) ~ thick + strata(invasion) + strata(ici), data = Melanoma)
+fit.coxph <- coxph(Surv(time,status == 1) ~ thick + strata(invasion) + strata(ici), data = Melanoma, y = TRUE, x = TRUE)
 fit.cph <- cph(Surv(time,status == 1) ~ thick + strat(invasion) + strat(ici), data = Melanoma, y = TRUE, x = TRUE)
 
 test_that("baseline hazard (strata) - order of the results",{
@@ -563,7 +563,7 @@ ttt <- sample(x = unique(sort(d$time)), size = 10)
 d2 <- SimCompRisk(1e2)
 
 #### coxph function
-CSC.fit <- CSC(Hist(time,event)~ X1+X2,data=d, method = "breslow" )
+CSC.fit <- CSC(Hist(time,event)~ X1+X2,data=d, method = "breslow")
 
 test_that("Conditional CIF identical to CIF before first event", {
   pred <- predict(CSC.fit, newdata = d, cause = 2, times = ttt)
@@ -608,21 +608,31 @@ test_that("Value of the conditional CIF", {
 })
 
 
-#### 10- Others ####
+#### 10 - Delayed entry ####
+cat("Delayed entry \n")
+d <- SimSurv(1e2)
+d$entry <- d$eventtime - abs(rnorm(NROW(d)))
+
+m.cox <- coxph(Surv(entry,eventtime,status)~X1+X2,data=d, x = TRUE)
+test_that("Prediction with Cox model - delayed entry",{
+  expect_error(predictCox(m.cox))
+})
+
+#### 11- Others ####
 cat("Others \n")
 n <- 3
 set.seed(3)
 dn <- SimCompRisk(n)
 dn$time <- round(dn$time,2)
 dn$X3 <- rbinom(n, size = 4, prob = rep(0.25,4))
-CSC.h3 <- CSC(Hist(time,event) ~ X1 + strat(X3) + X2, data = df.S, ties = method.ties, fitter = "cph" )
-CSC.h1 <- CSC(Hist(time,event) ~ strat(X1) + X3 + X2, data = df.S, ties = method.ties, fitter = "cph" )
-CSC.h <- CSC(Hist(time,event) ~ strat(X1) + strat(X3) + X2, data = df.S, ties = method.ties, fitter = "cph" )
-CSC.s <- CSC(Hist(time,event) ~ strata(X1) + strata(X3) + X2, data = df.S, ties = method.ties, fitter = "coxph" )
+CSC.h3 <- CSC(Hist(time,event) ~ X1 + strat(X3) + X2, data = df.S, ties = method.ties, fitter = "cph")
+CSC.h1 <- CSC(Hist(time,event) ~ strat(X1) + X3 + X2, data = df.S, ties = method.ties, fitter = "cph")
+CSC.h <- CSC(Hist(time,event) ~ strat(X1) + strat(X3) + X2, data = df.S, ties = method.ties, fitter = "cph")
+CSC.s <- CSC(Hist(time,event) ~ strata(X1) + strata(X3) + X2, data = df.S, ties = method.ties, fitter = "coxph")
 predictRisk(CSC.h1, newdata = dn, times = c(5,10,15,20), cause = cause)
 predictRisk(CSC.h3, newdata = dn, times = c(5,10,15,20), cause = cause)
 
-CSC.h0 <- CSC(Hist(time,event) ~ X1 + X3 + X2, data = df.S, ties = method.ties, fitter = "cph" )
+CSC.h0 <- CSC(Hist(time,event) ~ X1 + X3 + X2, data = df.S, ties = method.ties, fitter = "cph")
 predictRisk(CSC.h0, newdata = dn, times = c(5,10,15,20), cause = cause)
 
 predictRisk(CSC.h1, newdata = dn, times = c(5,10,15,20), cause = cause)

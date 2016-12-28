@@ -45,7 +45,7 @@ d$time <- round(d$time,1)
 ttt <- sample(x = unique(sort(d$time)), size = 10) 
 
 #### coxph function
-CSC.fit <- CSC(Hist(time,event)~ X1+X2,data=d, method = "breslow" )
+CSC.fit <- CSC(Hist(time,event)~ X1+X2,data=d, method = "breslow")
 
 predCSC <- predict(CSC.fit, newdata = d, cause = 2, times = ttt)
 
