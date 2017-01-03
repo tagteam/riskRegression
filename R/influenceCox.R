@@ -25,7 +25,7 @@
 #' ICbeta_GS <- mGS.cox$gamma.iid
 #' IClambda_GS <- t(as.data.table(mGS.cox$B.iid))
 #'  
-#' m.cox <- coxph(Surv(eventtime, event) ~ X1+X6, data = d, y = TRUE)
+#' m.cox <- coxph(Surv(eventtime, event) ~ X1+X6, data = d, y = TRUE, x = TRUE)
 #' system.time(IC.cox <- iidCox(m.cox))
 #' 
 #' IC.cox <- iidCox(m.cox, tauLambda = 7)

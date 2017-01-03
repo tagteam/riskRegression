@@ -119,6 +119,7 @@ ate <- function(object,
     
     #### calc G formula
     Gformula <- function(object, data, treatment, contrasts, times, cause, ...){
+      
         meanRisk <- lapply(1:n.contrasts,function(i){
             ## prediction for the hypothetical worlds in which every subject is treated with the same treatment
             data.i <- data

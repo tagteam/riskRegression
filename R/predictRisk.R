@@ -84,7 +84,7 @@
 ##' d <- sampleData(100,outcome="survival")
 ##' # then fit a Cox model
 ##' library(rms)
-##' cphmodel <- cph(Surv(time,event)~X1+X2,data=d,surv=TRUE,y=TRUE)
+##' cphmodel <- cph(Surv(time,event)~X1+X2,data=d,surv=TRUE,x=TRUE,y=TRUE)
 ##' # or via survival
 ##' library(survival)
 ##' coxphmodel <- coxph(Surv(time,event)~X1+X2,data=d,x=TRUE,y=TRUE)
@@ -127,7 +127,7 @@
 ##' f2 <- coxph(Surv(time,event)~ridge(X1)+ridge(X2),data=learndat,x=TRUE,y=TRUE)
 ##' \dontrun{
 ##' plot(predictRisk(f1,newdata=valdat,times=10),
-##'      predictRisk.coxph(f2,newdata=valdat,times=10),
+##'      riskRegression:::predictRisk.coxph(f2,newdata=valdat,times=10),
 ##'      xlim=c(0,1),
 ##'      ylim=c(0,1),
 ##'      xlab="Unpenalized predicted survival chance at 10",

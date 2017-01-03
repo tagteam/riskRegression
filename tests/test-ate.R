@@ -49,7 +49,7 @@ if(require(survival)){
                 times = 1:2, B = 2, y = TRUE, mc.cores=1, handler = "mclapply", verbose = FALSE)
             set.seed(10)
             ate(object=fit, data = dtS, treatment = "X1", contrasts = NULL,
-                times = 1:2, B = 10, y = TRUE, mc.cores=1, handler = "foreach", verbose = FALSE)
+                times = 1:2, B = 2, y = TRUE, mc.cores=1, handler = "foreach", verbose = FALSE)
         })
     }
 }
@@ -91,13 +91,13 @@ df$time <- round(df$time,1)
 df$X1 <- factor(rbinom(1e2, prob = c(0.4,0.3) , size = 2), labels = paste0("T",0:2))
 
 test_that("no boostrap",{
-    fit=CSC(formula = Hist(time,event)~ X1+X2, data = df,cause=1,x=TRUE)
+    fit=CSC(formula = Hist(time,event)~ X1+X2, data = df,cause=1)
     res <- ate(fit,data = df, treatment = "X1", contrasts = NULL,
                times = 7, cause = 1, B = 0, mc.cores=1)
 })
 
 test_that("one boostrap",{
-    fit=CSC(formula = Hist(time,event)~ X1+X2, data = df,cause=1,x=TRUE)
+    fit=CSC(formula = Hist(time,event)~ X1+X2, data = df,cause=1)
     res <- ate(fit,data = df,  treatment = "X1", contrasts = NULL,
                times = 7, cause = 1, B = 1, mc.cores=1, verbose = FALSE)
 })
@@ -107,7 +107,7 @@ context("ate with parallel computation")
 set.seed(10)
 df <- sampleData(3e2,outcome="competing.risks")
 
-fit <- CSC(formula = Hist(time,event)~ X1+X2, data = df,cause=1,x=TRUE)
+fit <- CSC(formula = Hist(time,event)~ X1+X2, data = df,cause=1)
 time1.mc <- system.time(
     res1.mc <- ate(fit,data = df, treatment = "X1", contrasts = NULL,
                    times = 7, cause = 1, B = 2, mc.cores=1, handler = "mclapply", seed = 10, verbose = FALSE)
@@ -126,7 +126,7 @@ test_that("mcapply vs. foreach",{
 
 
 if(parallel::detectCores()>1){
-    fit=CSC(formula = Hist(time,event)~ X1+X2, data = df,cause=1,x=TRUE)
+    fit=CSC(formula = Hist(time,event)~ X1+X2, data = df,cause=1)
     time2.mc <- system.time(
         res2.mc <- ate(fit,data = df, treatment = "X1", contrasts = NULL,
                        times = 7, cause = 1, B = 2, mc.cores=2, handler = "mclapply", seed = 10, verbose = FALSE)

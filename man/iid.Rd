@@ -42,7 +42,7 @@ mGS.cox <- cox.aalen(Surv(eventtime, event) ~ prop(X1)+prop(X6), data = d, resam
 ICbeta_GS <- mGS.cox$gamma.iid
 IClambda_GS <- t(as.data.table(mGS.cox$B.iid))
  
-m.cox <- coxph(Surv(eventtime, event) ~ X1+X6, data = d, y = TRUE)
+m.cox <- coxph(Surv(eventtime, event) ~ X1+X6, data = d, y = TRUE, x = TRUE)
 system.time(IC.cox <- iidCox(m.cox))
 
 IC.cox <- iidCox(m.cox, tauLambda = 7)

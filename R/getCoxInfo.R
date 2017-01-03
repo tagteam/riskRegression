@@ -241,11 +241,11 @@ CoxDesign.coxph <- function(object, center = FALSE){
   
   if("x" %in% names(object) == FALSE){
     stop("invalid object \n",
-         "set x=TRUE in the call to cph \n")
+         "set x=TRUE in the call to ",class(object)[1]," \n")
   }
   if("y" %in% names(object) == FALSE){
     stop("invalid object \n",
-         "set y=TRUE in the call to cph \n")
+         "set y=TRUE in the call to ",class(object)[1]," \n")
   }
  
   ## set to null empty slots to be able to use cbind after 
