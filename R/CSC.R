@@ -21,6 +21,7 @@
 #' also a Cox regression model for event-free survival.
 #' @param fitter Routine to fit the Cox regression models.
 #' If \code{coxph} use \code{survival::coxph} else use \code{rms::cph}.
+#' @param iid logical. Compute the value of the influence function for each Cox model and store it in the (cause-specific) Cox regression object.
 #' @param ... Arguments given to \code{coxph}.
 #' @return \item{models }{a list with the fitted (cause-specific) Cox
 #' regression objects} \item{response }{the event history response }
@@ -44,7 +45,7 @@
 ##' ## fit two cause-specific Cox models
 ##' ## different formula for the two causes
 ##' fit1 <- CSC(list(Hist(time,status)~sex,Hist(time,status)~invasion+epicel+age),
-##'             data=Melanoma)
+##'             data=Melanoma, iid = TRUE)
 ##' print(fit1)
 ##'
 ##' 
@@ -125,6 +126,7 @@ CSC <- function(formula,
                 cause,
                 survtype="hazard",
                 fitter="coxph",
+                iid=TRUE,
                 ## strip.environment
                 ...){
     fitter <- match.arg(fitter,c("coxph","cph"))
@@ -242,8 +244,18 @@ CSC <- function(formula,
         names(CoxModels) <- c(paste("Cause",theCause),"OverallSurvival")
     }
     # }}}
+    # {{{ compute the value of the influence function for each observation
+    if(iid){
+      IF <- lapply(CoxModels,function(x){
+        iidCox(x)
+      })
+    }else{
+      IF <- NULL
+    }
+    # }}}
     out <- list(call=call,
                 models=CoxModels,
+                iid=IF,
                 response=response,
                 eventTimes=eventTimes,
                 survtype=survtype,

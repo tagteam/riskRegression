@@ -95,13 +95,14 @@ arma::mat ICbeta_cpp(const NumericVector& newT, const NumericVector& neweXb, con
         Score[iX] = newStatus[iObs] * (newX(iObs,iX)-E1(newIndexJump[iObs],iX) );
       }
       
-      ICbeta.row(iObs) = iInfo * Score;
+      ICbeta.row(iObs) = (iInfo * Score).t();
+      
       iObs++;
       
     }
     
     for(int iTime1=0 ; iTime1<nTime1 ; iTime1++){
-      
+    
       // update the sum
       iS0_iter += 1/S01[iTime1];
       for(int iX=0;iX<p;iX++){
@@ -145,10 +146,9 @@ arma::mat IClambda0_cpp(const NumericVector& tau, const arma::mat& ICbeta,
   
   // Compute  Elambda0 and lamba0_iS0
   arma::mat Elambda0(p, nTau);
-  NumericVector lamba0_iS0(nTau);
+  NumericVector lamba0_iS0(nTime1);
   
   colvec Elambda0_iter(p); Elambda0_iter.fill(0);
-  double lamba0_iS0_iter = 0;
   int iTau = 0;
   
   for(int iTime1 = 0; iTime1 < nTime1; iTime1++){
@@ -158,14 +158,19 @@ arma::mat IClambda0_cpp(const NumericVector& tau, const arma::mat& ICbeta,
         Elambda0_iter[iX] += E1(iTime1,iX) * lambda0[iTime1];
       }
     }
-    lamba0_iS0_iter += lambda0[iTime1]/S01[iTime1];
+    
+    // update lamba0_iS0
+    if(iTime1 == 0){
+      lamba0_iS0[0] = lambda0[0]/S01[0];
+    }else{
+      lamba0_iS0[iTime1] = lamba0_iS0[iTime1-1] + lambda0[iTime1]/S01[iTime1];  
+    }
     
     // store in Elambda0 when time is tau
     while(iTau < nTau && ((iTime1 < (nTime1-1) && time1[iTime1+1]>tau[iTau]) || (iTime1==(nTime1-1) && time1[iTime1]==tau[iTau])) ){
       if(p>0){Elambda0.col(iTau) = Elambda0_iter;}
-      lamba0_iS0[iTau] = lamba0_iS0_iter;
       iTau++;
-    }
+     }
     
     if(iTau == nTau){ break; }
   }
@@ -190,22 +195,26 @@ arma::mat IClambda0_cpp(const NumericVector& tau, const arma::mat& ICbeta,
     
   }
   
-  int tau_newT_iter; // position of the minimum between t and t_chi in lamba0_iS0
+  int index_newT_time1; // position of the minimum between t and t_train in lamba0_iS0
+  IntegerVector Vindex_tau_time1(nTau);
+  for(int iiTau = iTau0 ; iiTau<nTau ; iiTau++){
+    Vindex_tau_time1[iiTau] = sum(time1<=tau[iiTau])-1; 
+  }
+  
   for(int iObs=0; iObs<nObs ; iObs++){ //  first event and after
     
-    tau_newT_iter = sum(time1<=newT[iObs])-1;
+    index_newT_time1 = sum(time1<=newT[iObs])-1;
     
     for(int iiTau = iTau0 ; iiTau<nTau ; iiTau++){
       
       IClambda0(iObs,iiTau) = 0;
       if(p>0){
         for(int iX=0; iX<p; iX++){
-          // Rcout << iX << " " << IClambda0(iObs,iiTau) << " " << ICbeta(iObs,iX) << " " << Elambda0(iX,iTau);
           IClambda0(iObs,iiTau) -= ICbeta(iObs,iX) * Elambda0(iX,iiTau);
         }
-      }
+       }
       
-      IClambda0(iObs,iiTau) -= neweXb[iObs] * lamba0_iS0[min(iiTau,tau_newT_iter)];
+      IClambda0(iObs,iiTau) -= neweXb[iObs] * lamba0_iS0[min(Vindex_tau_time1[iiTau],index_newT_time1)];
       if(newT[iObs]<=tau[iiTau]){
         IClambda0(iObs,iiTau) += delta_iS0[iObs];
       }
