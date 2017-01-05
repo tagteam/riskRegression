@@ -6,7 +6,7 @@
 \title{Extract i.i.d. decomposition from a Cox model}
 \usage{
 iidCox(object, newdata = NULL, tauLambda = NULL, keep.times = TRUE,
-  keep.indexObs = TRUE, keep.originalOrder = FALSE, center.result = TRUE)
+  center.result = TRUE)
 }
 \arguments{
 \item{object}{object The fitted Cox regression model object either
@@ -18,10 +18,6 @@ obtained with \code{coxph} (survival package) or \code{cph}
 \item{tauLambda}{the vector of times at which the i.i.d decomposition of the baseline hazard will be computed}
 
 \item{keep.times}{Logical. If \code{TRUE} add the evaluation times to the output.}
-
-\item{keep.indexObs}{Logical. If \code{TRUE} set the names of the rows in the output to the position of the observations in the original dataset.}
-
-\item{keep.originalOrder}{Temporary argument. Should the linear predictor be centered when computing the baseline hazard (equivalent to centered in basehaz).}
 
 \item{center.result}{Temporary argument. Should the IF be rescale to match timereg results.}
 

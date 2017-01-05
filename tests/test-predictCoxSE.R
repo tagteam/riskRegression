@@ -23,7 +23,7 @@ if(require(timereg)){
   IC.cox <- iidCox(m.cox, keep.times = FALSE)
 
   m.cox2 <- coxph(Surv(eventtime, event) ~ X1+X6, data = d2, y = TRUE, x = TRUE)
-  IC.cox2 <- iidCox(m.cox2, keep.times = FALSE, keep.originalOrder = TRUE)
+  IC.cox2 <- iidCox(m.cox2, keep.times = FALSE)
   
   m.cox3 <- cph(Surv(eventtime, event) ~ X1+X6, data = d, y = TRUE, x = TRUE)
   IC.cox3 <- iidCox(m.cox3, keep.times = FALSE)
@@ -36,7 +36,7 @@ if(require(timereg)){
   
   test_that("iid lambda0",{
     expect_equal(as.double(IC.cox$ICLambda0[[1]]), as.double(IClambda_timereg[,-1]))
-    expect_equal(as.double(IC.cox$ICLambda0[[1]]), as.double(IC.cox2$ICLambda0[order(d2$eventtime),]))
+    expect_equal(as.double(IC.cox$ICLambda0[[1]]), as.double(IC.cox2$ICLambda0[[1]][order(d2$eventtime),]))
     expect_equal(as.double(IC.cox3$ICLambda0[[1]]), as.double(IClambda_timereg[,-1]), tol = 1e-4)
   })
   
@@ -166,7 +166,7 @@ if(require(timereg)){
                         resample.iid = TRUE, max.timepoint.sim=NULL)
   
   mS.cox <- coxph(Surv(eventtime, event) ~ strata(St) + X1 + X6, data = dStrata, y = TRUE, x = TRUE)
-  IC.Scox <- iidCox(mS.cox, keep.originalOrder = TRUE)
+  IC.Scox <- iidCox(mS.cox)
   
   test_that("iid beta - strata",{
     expect_equal(unname(IC.Scox$ICbeta),mGSS.cox$gamma.iid)
@@ -175,30 +175,26 @@ if(require(timereg)){
   test_that("iid lambda0 - strata",{
     
     for(iStrata in 1:length(unique(dStrata$St))){
-      indexStrata <- which(dStrata$St==unique(dStrata$St)[iStrata])
       IC.GS <- do.call(rbind,
-                       lapply(mGSS.cox$B.iid[indexStrata],function(x){x[,iStrata]})
+                       lapply(mGSS.cox$B.iid,function(x){x[,iStrata]})
       )
       colnames(IC.GS) <- mGSS.cox$time.sim.resolution
       
-      checkTimes <- intersect(mGSS.cox$time.sim.resolution,IC.Scox$time)
+      checkTimes <- intersect(mGSS.cox$time.sim.resolution,IC.Scox$time[[iStrata]])
       
-      ICtempo <- IC.Scox$ICLambda0[,duplicated(IC.Scox$time)==FALSE]
-      diff <- ICtempo[indexStrata,which(IC.Scox$time[duplicated(IC.Scox$time)==FALSE] %in% checkTimes),drop = FALSE]-IC.GS[,which(mGSS.cox$time.sim.resolution %in% checkTimes)]
+      
+      diff <- IC.Scox$ICLambda0[[iStrata]][,which(IC.Scox$time[[iStrata]] %in% checkTimes),drop = FALSE]-IC.GS[,which(mGSS.cox$time.sim.resolution %in% checkTimes)]
       expect_true(all(abs(na.omit(as.double(diff)))<1e-10))
     }
     
   })
   
-  # test_that("predictionsSE - strata",{
-  #   predGS <- predict(mGSS.cox, newdata = dStrata, times = 2)
-  #   predRR1 <- predictCox(mS.cox, newdata = dStrata, times = 2, se = TRUE)
-  #   
-  #   range(predGS$S0-predRR1$survival)
-  #   range(predGS$se.S0-predRR1$survival.se)
-  #   expect_equal(predRR1$survival.se, predGS$se.S0)
-  #   cbind(predGS$se.S0, predRR1$survival.se, predGS$se.S0-predRR1$survival.se)
-  # })
+  test_that("predictionsSE - strata",{
+    predGS <- predict(mGSS.cox, newdata = dStrata, times = 2)
+    predRR1 <- predictCox(mS.cox, newdata = dStrata, times = 2, se = TRUE)
+
+    expect_equal(predRR1$survival.se, predGS$se.S0)
+  })
   
 }
 

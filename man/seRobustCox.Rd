@@ -4,8 +4,8 @@
 \alias{seRobustCox}
 \title{Computation of standard errors for predictions}
 \usage{
-seRobustCox(object, times, type, Lambda0, iid, object.strata, nStrata, new.eXb,
-  new.LPdata, new.strata, new.survival)
+seRobustCox(object, times, type, Lambda0, iid, nStrata, new.eXb, new.LPdata,
+  new.strata, new.survival)
 }
 \arguments{
 \item{object}{The fitted Cox regression model object either
@@ -21,9 +21,7 @@ or several of the strings \code{"hazard"},\code{"cumhazard"}, \code{"survival"}.
 
 \item{iid}{the value of the influence function returned by \code{iidCox}.}
 
-\item{object.strata}{the strata indicator for the observations used to fit the Cox model.}
-
-\item{nStrata}{the number of strata}
+\item{nStrata}{the number of strata.}
 
 \item{new.eXb}{the linear predictor evaluated for the new observations}
 

@@ -271,7 +271,7 @@ predictCox <- function(object,
     #### standard error ####
     if(se){ 
       outSE <- seRobustCox(object,  times = times, type = type,
-                           Lambda0 = Lambda0, iid = iid, object.strata = object.strata, nStrata = nStrata,
+                           Lambda0 = Lambda0, iid = iid, nStrata = nStrata,
                            new.eXb = new.eXb, new.LPdata = new.LPdata, new.strata = new.strata, new.survival = out$survival)
       
       if ("hazard" %in% type){out$hazard.se <- outSE$hazard.se}
@@ -317,8 +317,7 @@ predictCox <- function(object,
 #' or several of the strings \code{"hazard"},\code{"cumhazard"}, \code{"survival"}.
 #' @param Lambda0 the baseline hazard estimate returned by \code{BaseHazStrata_cpp}.
 #' @param iid  the value of the influence function returned by \code{iidCox}.
-#' @param object.strata the strata indicator for the observations used to fit the Cox model.
-#' @param nStrata the number of strata
+#' @param nStrata	the number of strata.
 #' @param new.eXb the linear predictor evaluated for the new observations
 #' @param new.LPdata the variables involved in the linear predictor for the new observations
 #' @param new.strata the strata indicator for the new observations
@@ -328,16 +327,12 @@ predictCox <- function(object,
 #' 
 #' @return A list optionally containing the standard error for the survival, cumulative hazard and hazard.
 seRobustCox <- function(object, times, type, 
-                        Lambda0, iid, object.strata, nStrata,
+                        Lambda0, iid, nStrata,
                         new.eXb, new.LPdata, new.strata, new.survival){
   
   n.times <- length(times)
   n.new <- length(new.eXb)
-  n.object <- length(object.strata)
-  
-  object.strata <- as.numeric(object.strata)
-  indexStrata <- lapply(1:nStrata,function(s){which(object.strata==s)})
-  
+
   new.strata <- as.numeric(new.strata)
   
   if(length(Lambda0$strata)==0){
@@ -360,26 +355,19 @@ seRobustCox <- function(object, times, type,
     out$survival.se <- matrix(NA, nrow = n.new, ncol = n.times)
   }
   
-  IF_tempo <- matrix(NA, ncol = n.times, nrow = n.object)
-  
   for(iObs in 1:n.new){
     iObs.strata <- new.strata[iObs]
     X_ICbeta <- iid$ICbeta %*% t(new.LPdata[iObs,,drop=FALSE])
     
     if("hazard" %in% type){
-      for(iStrata in 1:nStrata){
-        IF_tempo[indexStrata[[iStrata]],] <- new.eXb[iObs]*(iid$IClambda0[[iStrata]] + X_ICbeta[indexStrata[[iStrata]],,drop=FALSE] %*% Lambda0$hazard[[iObs.strata]])
-      }
+      IF_tempo <- new.eXb[iObs]*(iid$IClambda0[[iObs.strata]] + X_ICbeta %*% Lambda0$hazard[[iObs.strata]])
       se_tempo <- sqrt(apply(IF_tempo^2,2,sum))
       
       out$hazard.se[iObs,] <- se_tempo
     }
     
     if("cumHazard" %in% type || "survival" %in% type){
-      for(iStrata in 1:nStrata){
-         IF_tempo[indexStrata[[iStrata]],] <- new.eXb[iObs]*(iid$ICLambda0[[iStrata]] + X_ICbeta[indexStrata[[iStrata]],,drop=FALSE] %*% Lambda0$cumHazard[[iObs.strata]])
-      }
-      
+      IF_tempo <- new.eXb[iObs]*(iid$ICLambda0[[iObs.strata]] + X_ICbeta %*% Lambda0$cumHazard[[iObs.strata]])
       se_tempo <- sqrt(apply(IF_tempo^2,2,sum))
       
       if("cumHazard" %in% type){

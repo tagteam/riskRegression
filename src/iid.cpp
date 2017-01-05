@@ -134,15 +134,21 @@ arma::mat ICbeta_cpp(const NumericVector& newT, const NumericVector& neweXb, con
 
 // [[Rcpp::export]]
 arma::mat IClambda0_cpp(const NumericVector& tau, const arma::mat& ICbeta,
-                        const NumericVector& newT, const NumericVector& neweXb, const NumericVector& newStatus, const IntegerVector& newIndexJump, 
+                        const NumericVector& newT, const NumericVector& neweXb, const NumericVector& newStatus, const IntegerVector& newStrata, const IntegerVector& newIndexJump, 
                         const NumericVector& S01, const arma::mat& E1, const NumericVector& time1, const NumericVector& lambda0,
-                        int p){
+                        int p, int strata){
   
   int nObs = newT.size();
   int nTau = tau.size();
   int nTime1 = time1.size();
   arma::mat IClambda0(nObs, nTau);
   IClambda0.fill(NA_REAL);
+  
+  // Compute delta_iS0
+  NumericVector delta_iS0(nObs);
+  for(int iObs=0; iObs<nObs ; iObs++){
+    delta_iS0[iObs] = newStatus[iObs]/S01[newIndexJump[iObs]];
+  } 
   
   // Compute  Elambda0 and lamba0_iS0
   arma::mat Elambda0(p, nTau);
@@ -174,12 +180,6 @@ arma::mat IClambda0_cpp(const NumericVector& tau, const arma::mat& ICbeta,
     
     if(iTau == nTau){ break; }
   }
-  
-  // Compute delta_iS0
-  NumericVector delta_iS0(nObs);
-  for(int iObs=0; iObs<nObs ; iObs++){
-    delta_iS0[iObs] = newStatus[iObs]/S01[newIndexJump[iObs]];
-  } 
   
   // main loop
   int iTau0 = 0;
@@ -214,9 +214,11 @@ arma::mat IClambda0_cpp(const NumericVector& tau, const arma::mat& ICbeta,
         }
        }
       
-      IClambda0(iObs,iiTau) -= neweXb[iObs] * lamba0_iS0[min(Vindex_tau_time1[iiTau],index_newT_time1)];
-      if(newT[iObs]<=tau[iiTau]){
-        IClambda0(iObs,iiTau) += delta_iS0[iObs];
+      if(strata == newStrata[iObs]){
+        IClambda0(iObs,iiTau) -= neweXb[iObs] * lamba0_iS0[min(Vindex_tau_time1[iiTau],index_newT_time1)];
+        if(newT[iObs]<=tau[iiTau]){
+          IClambda0(iObs,iiTau) += delta_iS0[iObs];
+        }
       }
     }
   }
