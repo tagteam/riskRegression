@@ -261,7 +261,9 @@ CoxDesign.coxph <- function(object, center = FALSE){
     object[["strata"]] <- NULL
   }
   if("start" %in% colnames(object$y) == FALSE){
-    object[["y"]] <- cbind(start = default.start, object[["y"]])
+    object[["y"]] <- cbind(start = default.start, 
+                           stop = object[["y"]][,"time"],
+                           status = object[["y"]][,"status"])
   }
   return(as.data.frame(cbind(object[["y"]], object[["x"]], strata=object[["strata"]])))
 }
@@ -271,7 +273,6 @@ CoxDesign.coxph <- function(object, center = FALSE){
 CoxDesign.phreg <- function(object, center = FALSE){
   
   M.outcome <- as.matrix(object$model.frame[,1])
-  colnames(M.outcome)[2] <- "time"
   
   M.X <- model.matrix(CoxFormula(object), data = object$model.frame)[,names(coef(object)),drop=FALSE]
   if(center){

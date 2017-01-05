@@ -30,6 +30,9 @@ obtained with \code{coxph} (survival package) or \code{cph}
 \description{
 Compute the influence function for each observation used to estimate the model
 }
+\details{
+If there is no event in a strata, the influence function for the baseline hazard is set to 0.
+}
 \examples{
 library(survival)
 library(data.table)

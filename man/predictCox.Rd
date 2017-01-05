@@ -6,7 +6,7 @@
 \usage{
 predictCox(object, newdata = NULL, times, centered = TRUE,
   type = c("hazard", "cumHazard", "survival"), keep.strata = TRUE,
-  keep.times = TRUE, keep.lastEventTime = FALSE, se = FALSE,
+  keep.times = TRUE, keep.lastEventTime = FALSE, se = FALSE, iid = NULL,
   format = "data.frame")
 }
 \arguments{
@@ -32,7 +32,9 @@ or several of the strings \code{"hazard"},\code{"cumhazard"}, \code{"survival"}}
 
 \item{keep.lastEventTime}{Logical. If \code{TRUE} add the time at which the last event occured in each strata to the output list.}
 
-\item{se}{Logical. If \code{TRUE} add the standard errors corresponding to the output. Experimental !!}
+\item{se}{Logical. If \code{TRUE} add the standard errors corresponding to the output.}
+
+\item{iid}{the value of the influence function obtained with the function \code{iidCox}.}
 
 \item{format}{how to export the baseline hazard. Can be \code{"data.frame"}, \code{"data.table"} or \code{"list"}.}
 }

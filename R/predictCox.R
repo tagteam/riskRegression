@@ -82,7 +82,7 @@ predictCox <- function(object,
   object.n <- CoxN(object)
   object.design <- CoxDesign(object)
   object.status <- object.design[["status"]]
-  object.time <- object.design[["time"]]
+  object.time <- object.design[["stop"]]
   object.strata <- CoxStrata(object, stratavars = infoVar$stratavars)
   object.levelStrata <- levels(object.strata)
   object.eXb <- exp(CoxLP(object, data = NULL, center = if(is.null(newdata)){centered}else{FALSE})) # if we use the linear predictor then no need to center since the centering term will cancel between the linear predictor and the baseline hazard
