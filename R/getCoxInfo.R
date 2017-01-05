@@ -936,4 +936,39 @@ extractStrata <- function(xterms, xlevels = NULL, special){
 }
 
 
+#' @title Extract design matrix for phreg objects
+#' @description Extract design matrix for phreg objects
+#' @param object a phreg object.
+#' @param data a dataset.
+#' 
+#' @details mainly a copy paste of the begining of the \code{phreg} function.
+#' 
+#' @examples 
+#' \dontrun{
+#' library(mets)
+#' 
+#' n <- 10;
+#' d <- mets:::simCox(n); d$id <- seq(nrow(d)); d$group <- factor(rbinom(nrow(d),1,0.5))
+#' m1 <- phreg(Surv(entry, time,status)~X1+X2+cluster(id)+strata(group),data=d)
+#' riskRegression:::model.matrix(m1, d) 
+#' }
+#' @method model.matrix phreg
+model.matrix.phreg <- function(object, data){
+  special <- c("strata", "cluster")
+  Terms <- terms(eval(object$call$formula), special, data = data)
+
+  ## remove specials
+  if (!is.null(attributes(Terms)$specials$cluster)) {
+    ts <- survival::untangle.specials(Terms, "cluster")
+    Terms <- Terms[-ts$terms]
+  }
+  if (!is.null(stratapos <- attributes(Terms)$specials$strata)) {
+    ts <- survival::untangle.specials(Terms, "strata")
+    Terms <- Terms[-ts$terms]
+  }
+  attr(Terms,"intercept") <- 0
+    
+  return(model.matrix(Terms, data))
+}
+
 
