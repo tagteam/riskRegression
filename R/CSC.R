@@ -129,7 +129,7 @@ CSC <- function(formula,
                 iid=TRUE,
                 ## strip.environment
                 ...){
-    fitter <- match.arg(fitter,c("coxph","cph"))
+    fitter <- match.arg(fitter,c("coxph","cph","phreg"))
     # {{{ type
     survtype <- match.arg(survtype,c("hazard","survival"))
     # }}}
@@ -217,18 +217,28 @@ CSC <- function(formula,
             }
         }
         workData <- data.frame(time=time,status=statusX)
+        if(fitter=="phreg"){
+          if("entry" %in% names(data)){
+            stop("data must not contain a column named \"entry\" when using fitter=\"phreg\"")
+          }
+          workData$entry <- 0
+        }
         ## to interprete formula
         ## we need the variables. in case of log(age) terms
         ## covData has wrong names 
         ## workData <- cbind(workData,covData)
         workData <- cbind(workData,data)
-        formulaXX <- as.formula(paste("survival::Surv(time,status)",
+        
+        response <- paste0("survival::Surv(",if(fitter=="phreg"){"entry,"},"time, status)")
+        formulaXX <- as.formula(paste(response,
                                       as.character(delete.response(terms.formula(formulaX)))[[2]],
                                       sep="~"))
         if (fitter=="coxph"){
-            fit <- survival::coxph(formulaXX, data = workData,x=TRUE,y=TRUE,...)
-        } else {
-            fit <- rms::cph(formulaXX, data = workData,surv=TRUE,x=TRUE,y=TRUE,...)
+          fit <- survival::coxph(formulaXX, data = workData,x=TRUE,y=TRUE,...)
+        } else if(fitter=="cph") {
+          fit <- rms::cph(formulaXX, data = workData,surv=TRUE,x=TRUE,y=TRUE,...)
+        } else if(fitter=="phreg") {
+          fit <- mets::phreg(formulaXX, data = workData, ...)
         }
         ## fit$formula <- terms(fit$formula)
         ## fit$call$formula <- terms(formulaXX)

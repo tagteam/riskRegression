@@ -255,7 +255,7 @@ predictCox <- function(object,
           iid$IChazard <- calcIChazard(iid$ICcumHazard)
           iid <- selectJump(iid, times = times, type = type)
         }else{
-          iid <- iidCox(object, tauLambda = times)
+          iid <- iidCox(object, tauHazard = times)
         }
         
       }else{

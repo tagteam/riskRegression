@@ -11,6 +11,8 @@ d$entry <- 0
 (m2 <- coxph(Surv(time,status)~X1+X2,data=d, x = TRUE, y = TRUE))
 (m3 <- cox.aalen(Surv(time,status)~prop(X1)+prop(X2),data=d))
 
+
+
 #### influence function ####
 IC1 <- iidCox(m1)
 IC2 <- iidCox(m2)
@@ -36,5 +38,23 @@ dStrata <- sampleData(1e2, outcome = "survival")
 dStrata$entry <- 0
 dStrata$id <- 1:NROW(dStrata)
 
-phreg(Surv(time = entry, time2 = eventtime, event = event)~strata(X1)+X2+cluster(id),data=dStrata)
+ph.cox <- phreg(Surv(time = entry, time2 = eventtime, event = event)~strata(X1)+X2+cluster(id),data=dStrata)
 # phreg(Surv(time = entry, time2 = eventtime, event = event)~strata(X1)+strata(X2)+X6+cluster(id),data=dStrata)
+
+#### CSC ####
+data(Melanoma)
+fit1 <- CSC(list(Hist(time,status)~sex,Hist(time,status)~invasion+epicel+age),
+            data=Melanoma, iid = TRUE)
+
+fit2 <- CSC(list(Hist(time,status)~sex,Hist(time,status)~invasion+epicel+age),
+            data=Melanoma, iid = TRUE, fitter = "phreg")
+coef(fit1$models$`Cause 1`)
+coef(fit2$models$`Cause 1`)
+
+coef(fit1$models$`Cause 2`)
+coef(fit2$models$`Cause 2`)
+
+p1 <- predict(fit1, newdata = Melanoma, times = 3000, cause = 1)
+p2 <- predict(fit2, newdata = Melanoma, times = 3000, cause = 1)
+
+range(p1-p2)

@@ -28,7 +28,7 @@
 #' m.cox <- coxph(Surv(eventtime, event) ~ X1+X6, data = d, y = TRUE, x = TRUE)
 #' system.time(IC.cox <- iidCox(m.cox))
 #' 
-#' IC.cox <- iidCox(m.cox, tauLambda = 7)
+#' IC.cox <- iidCox(m.cox, tauHazard = 7)
 #'  
 #' 
 
@@ -172,7 +172,7 @@ iidCox <- function(object, newdata = NULL, tauHazard = NULL,
   
   #### Computation of the influence function ####
   ICbeta <- NULL
-  ICHazard0 <- NULL
+  ICcumHazard <- NULL
   ls.Utime1 <- NULL
   
   #### beta
@@ -211,7 +211,7 @@ iidCox <- function(object, newdata = NULL, tauHazard = NULL,
     
     ## tauHazard
     if(is.null(tauHazard)){
-      tauHazard <- object.time_strata[[iStrata]][object.status_strata[[iStrata]] == 1]
+      tauHazard_strata <- object.time_strata[[iStrata]][object.status_strata[[iStrata]] == 1]
     }else if(is.list(tauHazard)){
       tauHazard_strata <- tauHazard[[nStrata]]
     }else{

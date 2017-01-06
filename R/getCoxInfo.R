@@ -481,7 +481,10 @@ CoxLP.phreg <- function(object, data, center){
   if(is.null(data)){ ## training dataset
     data <- object$model.frame
   }
-  data <- model.matrix(object = eval(object$call$formula),  data)[,names(coef), drop = FALSE]
+  
+  f.term <- delete.response(terms(eval(object$call$formula)))
+  attr(f.term,"intercept") <- 0
+  data <- model.matrix(object = f.term,  data)[,names(coef), drop = FALSE]
   
   if(n.varLP>0){
     Xb <- as.vector(as.matrix(data) %*% coef)

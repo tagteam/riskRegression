@@ -22,7 +22,7 @@ hazards/survival}
 
 \item{colnames}{Logical. If \code{TRUE} name the columns of the matrix containing the absolute risk with times}
 
-\item{se}{Logical. If \code{TRUE} add the standard errors corresponding to the output. Experimental !!}
+\item{se}{Logical. If \code{TRUE} add the standard errors corresponding to the output}
 
 \item{...}{not used}
 }
