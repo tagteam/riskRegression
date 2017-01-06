@@ -6,7 +6,7 @@
 #'     obtained with \code{coxph} (survival package) or \code{cph}
 #'     (rms package).
 #' @param newdata Optional new data at which to do i.i.d. decomposition 
-#' @param tauLambda the vector of times at which the i.i.d decomposition of the baseline hazard will be computed
+#' @param tauHazard the vector of times at which the i.i.d decomposition of the baseline hazard will be computed
 #' @param keep.times Logical. If \code{TRUE} add the evaluation times to the output.
 #' @param center.result Temporary argument. Should the IF be rescale to match timereg results.
 #' @param ... additional arguments
@@ -34,7 +34,7 @@
 
 #' @rdname iid
 #' @export
-iidCox <- function(object, newdata = NULL, tauLambda = NULL, 
+iidCox <- function(object, newdata = NULL, tauHazard = NULL, 
                    keep.times = TRUE, center.result = TRUE){
   
   center.eXb <- TRUE # Temporary argument. Should the linear predictor be centered on the exponential scale.
@@ -79,8 +79,8 @@ iidCox <- function(object, newdata = NULL, tauLambda = NULL,
   
   #### tests ####
   ## time at which the influence function is evaluated
-  if(is.list(tauLambda) && length(tauLambda)!=nStrata){
-    stop("argument \"tauLambda\" must be a list with ",nStrata," elements \n",
+  if(is.list(tauHazard) && length(tauHazard)!=nStrata){
+    stop("argument \"tauHazard\" must be a list with ",nStrata," elements \n",
          "each element being the vector of times for each strata \n")
   }
   
@@ -172,7 +172,7 @@ iidCox <- function(object, newdata = NULL, tauLambda = NULL,
   
   #### Computation of the influence function ####
   ICbeta <- NULL
-  ICLambda0 <- NULL
+  ICHazard0 <- NULL
   ls.Utime1 <- NULL
   
   #### beta
@@ -209,13 +209,13 @@ iidCox <- function(object, newdata = NULL, tauLambda = NULL,
       lambda0_strata <- lambda0[lambda0$strata == object.levelStrata[iStrata],, drop = FALSE]
     }
     
-    ## tauLambda
-    if(is.null(tauLambda)){
-      tauLambda_strata <- object.time_strata[[iStrata]][object.status_strata[[iStrata]] == 1]
-    }else if(is.list(tauLambda)){
-      tauLambda_strata <- tauLambda[[nStrata]]
+    ## tauHazard
+    if(is.null(tauHazard)){
+      tauHazard <- object.time_strata[[iStrata]][object.status_strata[[iStrata]] == 1]
+    }else if(is.list(tauHazard)){
+      tauHazard_strata <- tauHazard[[nStrata]]
     }else{
-      tauLambda_strata <- tauLambda
+      tauHazard_strata <- tauHazard
     }
     
     ## E
@@ -228,7 +228,7 @@ iidCox <- function(object, newdata = NULL, tauLambda = NULL,
     
     ## IF
     if(any(new.status_strata[[iStrata]]>0)){
-      IClambda0_tempo <- IClambda0_cpp(tau = tauLambda_strata,
+      ICcumHazard_tempo <- IClambda0_cpp(tau = tauHazard_strata,
                                        ICbeta = ICbeta,
                                        newT = new.time, neweXb = new.eXb, newStatus = new.status, newIndexJump = new.indexJump[[iStrata]], newStrata = as.numeric(new.strata),
                                        S01 = Ecpp[[iStrata]]$S0[1:(nUtime1_strata-1)],
@@ -239,26 +239,26 @@ iidCox <- function(object, newdata = NULL, tauLambda = NULL,
       
       # rescale
       if(center.result == TRUE && !is.null(CoxCenter(object))){
-        IClambda0_tempo <- IClambda0_tempo * scalingFactor
+        ICcumHazard_tempo <- ICcumHazard_tempo * scalingFactor
       }
       
     }else{
-      IClambda0_tempo <- matrix(0, ncol = 1, nrow = length(new.index_strata[[iStrata]]))
-      if(length(tauLambda_strata)==0){tauLambda_strata <- NA}
+      ICcumHazard_tempo <- matrix(0, ncol = 1, nrow = length(new.index_strata[[iStrata]]))
+      if(length(tauHazard_strata)==0){tauHazard_strata <- NA}
     }
     
     # output 
-    ls.Utime1 <- c(ls.Utime1, list(tauLambda_strata))
+    ls.Utime1 <- c(ls.Utime1, list(tauHazard_strata))
     if(keep.times){
-      colnames(IClambda0_tempo) <- tauLambda_strata
+      colnames(ICcumHazard_tempo) <- tauHazard_strata
     }
-    ICLambda0 <- c(ICLambda0, list(IClambda0_tempo))
+    ICcumHazard <- c(ICcumHazard, list(ICcumHazard_tempo))
     
   }
   
   #### export
   return(list(ICbeta = ICbeta,  # restaure original ordering
-              ICLambda0 = ICLambda0,
+              ICcumHazard = ICcumHazard,
               time = ls.Utime1,
               indexObs = new.order
   ))

@@ -2,7 +2,7 @@
 % Please edit documentation in R/predict.CauseSpecificCox.R
 \name{predict.CauseSpecificCox}
 \alias{predict.CauseSpecificCox}
-\title{Predicting hazard or cumulative hazard}
+\title{Predicting absolute risk from cause-specific Cox models}
 \usage{
 \method{predict}{CauseSpecificCox}(object, newdata, times, cause, t0 = NA,
   colnames = TRUE, se = FALSE, ...)

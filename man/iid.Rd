@@ -5,7 +5,7 @@
 \alias{iidCox}
 \title{Extract i.i.d. decomposition from a Cox model}
 \usage{
-iidCox(object, newdata = NULL, tauLambda = NULL, keep.times = TRUE,
+iidCox(object, newdata = NULL, tauHazard = NULL, keep.times = TRUE,
   center.result = TRUE)
 }
 \arguments{
@@ -15,7 +15,7 @@ obtained with \code{coxph} (survival package) or \code{cph}
 
 \item{newdata}{Optional new data at which to do i.i.d. decomposition}
 
-\item{tauLambda}{the vector of times at which the i.i.d decomposition of the baseline hazard will be computed}
+\item{tauHazard}{the vector of times at which the i.i.d decomposition of the baseline hazard will be computed}
 
 \item{keep.times}{Logical. If \code{TRUE} add the evaluation times to the output.}
 
@@ -44,7 +44,7 @@ IClambda_GS <- t(as.data.table(mGS.cox$B.iid))
 m.cox <- coxph(Surv(eventtime, event) ~ X1+X6, data = d, y = TRUE, x = TRUE)
 system.time(IC.cox <- iidCox(m.cox))
 
-IC.cox <- iidCox(m.cox, tauLambda = 7)
+IC.cox <- iidCox(m.cox, tauHazard = 7)
  
 
 }

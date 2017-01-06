@@ -35,9 +35,9 @@ if(require(timereg)){
   })
   
   test_that("iid lambda0",{
-    expect_equal(as.double(IC.cox$ICLambda0[[1]]), as.double(IClambda_timereg[,-1]))
-    expect_equal(as.double(IC.cox$ICLambda0[[1]]), as.double(IC.cox2$ICLambda0[[1]][order(d2$eventtime),]))
-    expect_equal(as.double(IC.cox3$ICLambda0[[1]]), as.double(IClambda_timereg[,-1]), tol = 1e-4)
+    expect_equal(as.double(IC.cox$ICcumHazard[[1]]), as.double(IClambda_timereg[,-1]))
+    expect_equal(as.double(IC.cox$ICcumHazard[[1]]), as.double(IC.cox2$ICcumHazard[[1]][order(d2$eventtime),]))
+    expect_equal(as.double(IC.cox3$ICcumHazard[[1]]), as.double(IClambda_timereg[,-1]), tol = 1e-4)
   })
   
   test_that("predictionsSE",{
@@ -72,7 +72,7 @@ if(require(timereg)){
   })
   
   test_that("iid lambda0 - start with censoring",{
-    expect_equal(as.double(iid1$ICLambda0[[1]]), as.double(ICGS_lambda0[,-1]))
+    expect_equal(as.double(iid1$ICcumHazard[[1]]), as.double(ICGS_lambda0[,-1]))
   })
   
   #### non stratified Cox model with interactions
@@ -87,7 +87,7 @@ if(require(timereg)){
   })
   
   test_that("iid lambda0 - interaction",{
-    expect_equal(as.double(IC.Icox$ICLambda0[[1]]), as.double(ICIlambda_timereg[,-1]))
+    expect_equal(as.double(IC.Icox$ICcumHazard[[1]]), as.double(ICIlambda_timereg[,-1]))
   })
   
   test_that("predictionsSE - interaction",{
@@ -117,7 +117,7 @@ if(require(timereg)){
   })
   
   test_that("iid lambda0 - categorical",{
-    expect_equal(as.double(IC.RR$ICLambda0[[1]]), as.double(IClambda.timereg[,-1]))
+    expect_equal(as.double(IC.RR$ICcumHazard[[1]]), as.double(IClambda.timereg[,-1]))
   })
   
   test_that("predictionsSE - interaction",{
@@ -151,7 +151,7 @@ if(require(timereg)){
   data.frame(RR0 = mGS.cox0$gamma.iid, GS0 = IC.cox0$ICbeta, RR = IC.cox$ICbeta, GS = mGS.cox$gamma.iid)
   
   # test_that("iid lambda0 - categorical",{
-  #   expect_equal(as.double(IC.RR$ICLambda0[[1]]), as.double(IClambda.timereg[,-1]))
+  #   expect_equal(as.double(IC.RR$ICcumHazard[[1]]), as.double(IClambda.timereg[,-1]))
   # })
   
   #### stratified Cox model
@@ -183,7 +183,7 @@ if(require(timereg)){
       checkTimes <- intersect(mGSS.cox$time.sim.resolution,IC.Scox$time[[iStrata]])
       
       
-      diff <- IC.Scox$ICLambda0[[iStrata]][,which(IC.Scox$time[[iStrata]] %in% checkTimes),drop = FALSE]-IC.GS[,which(mGSS.cox$time.sim.resolution %in% checkTimes)]
+      diff <- IC.Scox$ICcumHazard[[iStrata]][,which(IC.Scox$time[[iStrata]] %in% checkTimes),drop = FALSE]-IC.GS[,which(mGSS.cox$time.sim.resolution %in% checkTimes)]
       expect_true(all(abs(na.omit(as.double(diff)))<1e-10))
     }
     
