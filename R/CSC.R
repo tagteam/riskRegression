@@ -216,6 +216,7 @@ CSC <- function(formula,
                 statusX <- response[,"status"]
             }
         }
+        
         workData <- data.frame(time=time,status=statusX)
         if(fitter=="phreg"){
           if("entry" %in% names(data)){

@@ -59,7 +59,8 @@ predict.CauseSpecificCox <- function(object,newdata, times, cause, t0 = NA, coln
         cause <- object$theCause
     }
     causes <- object$causes
-    eTimes <- object$eventTimes
+    
+    eTimes <- object$eventTimes# cannot use only eventtimes of cause 1 otherwise wrong interpolation in the C++ function
     if (any(match(as.character(cause), causes, nomatch = 0)==0L))
         stop(paste0("Requested cause ",as.character(cause)," does not match fitted causes which are:\n ",paste0("- ",causes,collapse="\n")))
     ## stopifnot(match(as.character(cause), causes, nomatch = 0) != 
@@ -76,7 +77,7 @@ predict.CauseSpecificCox <- function(object,newdata, times, cause, t0 = NA, coln
         stop("\'t0\' must have length one \n")
     }
   
-  # relevant event times to use
+  # relevant event times to use  
   eventTimes <- eTimes[which(eTimes <= max(times))] 
   if(length(eventTimes) == 0){eventTimes <- min(times)} # at least the first event
   
@@ -170,6 +171,7 @@ predict.CauseSpecificCox <- function(object,newdata, times, cause, t0 = NA, coln
     M.eXb_cumH <- cbind(newdata.eXb_All)
     
   }
+  
   CIF <- predictCIF_cpp(hazard = ls.hazard, 
                         cumHazard = ls.cumHazard, 
                         eXb_h = M.eXb_h, 
@@ -212,12 +214,13 @@ predict.CauseSpecificCox <- function(object,newdata, times, cause, t0 = NA, coln
       }
     }
     
-    for(iModel in 1:nCause){ # could be improved in only keeping the jump times for the cause of interest ?
+    for(iModel in 1:nCause){
       object$iid[[iModel]]$IChazard <- calcIChazard(object$iid[[iModel]]$ICcumHazard)
-      object$iid[[iModel]] <- selectJump(object$iid[[iModel]], times = eventTimes, ## eventTimes
+      
+      object$iid[[iModel]] <- selectJump(object$iid[[iModel]], times = eventTimes,
                                          type = c("hazard","cumHazard"))
     }
-    
+   
     CIF.se <- seCSC(hazard = ls.hazard, cumHazard = ls.cumHazard, object.time = eventTimes, object.maxtime = apply(M.etimes.max,1,min), 
                     iid =  object$iid,
                     eXb_h = M.eXb_h, eXb_cumH = M.eXb_cumH, new.LPdata = new.LPdata, new.strata = M.strata, times = sort(times),
@@ -316,6 +319,7 @@ seCSC <- function(hazard, cumHazard, object.time, object.maxtime, iid,
       iICcumHazard <- iICcumHazard + eXb_cumH_tempo*(ICcumHazard0_tempo + X_ICbeta %*% cumHazard_tempo)
     }
     
+   
     CIF.se_tempo <- rowCumSum(rowMultiply_cpp(iIChazard1 - rowMultiply_cpp(iICcumHazard, scale = iHazard1), scale = exp(-iCumHazard)))
     CIF.se_tempo <- cbind(0,CIF.se_tempo)[,prodlim::sindex(object.time, eval.times = times)+1]
     CIF.se[iObs,] <- sqrt(apply(CIF.se_tempo^2,2,sum))

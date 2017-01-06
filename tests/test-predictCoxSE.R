@@ -21,7 +21,7 @@ if(require(timereg)){
   
   m.cox <- coxph(Surv(eventtime, event) ~ X1+X6, data = d, y = TRUE, x = TRUE)
   IC.cox <- iidCox(m.cox, keep.times = FALSE)
-
+  
   m.cox2 <- coxph(Surv(eventtime, event) ~ X1+X6, data = d2, y = TRUE, x = TRUE)
   IC.cox2 <- iidCox(m.cox2, keep.times = FALSE)
   
@@ -192,7 +192,7 @@ if(require(timereg)){
   test_that("predictionsSE - strata",{
     predGS <- predict(mGSS.cox, newdata = dStrata, times = 2)
     predRR1 <- predictCox(mS.cox, newdata = dStrata, times = 2, se = TRUE)
-
+    
     expect_equal(predRR1$survival.se, predGS$se.S0)
     
     predGS <- predict(mGSS.cox, newdata = dStrata, times = 1:3)
@@ -205,79 +205,55 @@ if(require(timereg)){
 
 
 #### bootstrap version
-
 test <- FALSE
 if(test){
   
-  n <- 1e3
-  df <- sampleData(n, outcome =  "survival")
-  df.test <- df[1:10,]
+  set.seed(10)
+  d <- SimCompRisk(1e3)
+  d <- d[order(d$time),c("time", "event", "X1", "X2", "cause")]
+  ttt <- sample(x = unique(sort(d$time)), size = 3)
+  d <- d[order(d$time), ]
   
-  fit_coxph <- coxph(Surv(time,event) ~ X1 + X2 + X3 + X4 + X5, data=df, ties="efron", y = TRUE)
-  resPredict <- predictCox(fit_coxph, newdata = df.test, times = df.test$time, se = TRUE)
-  resSurv <- survival:::predict.coxph(fit_coxph, newdata = df.test, type = "expected", se.fit = TRUE)
-  expect_equal(diag(resPredict$cumHazard), resSurv$fit)
-  expect_equal(diag(resPredict$cumHazard.se), resSurv$se.fit)
+  library(boot)
   
-  n.bootstrap <- 1e3
-  array.boot <- list(hazard = array(NA, dim = c(nrow(df.test), nrow(df.test), n.bootstrap)),
-                     cumHazard = array(NA, dim = c(nrow(df.test), nrow(df.test), n.bootstrap)),
-                     survival = array(NA, dim = c(nrow(df.test), nrow(df.test), n.bootstrap))
-  )
-  
-  pb <- utils::txtProgressBar(min = 0, max = n.bootstrap, initial = 0)
-  for(iterB in 1:n.bootstrap){
-    
-    data_boot <- df[sample.int(nrow(df), nrow(df), replace = TRUE),]
-    fit_boot <- coxph(Surv(time,event) ~ X1 + X2 + X3 + X4 + X5, data=data_boot, 
-                      ties="efron", y = TRUE)
-    res <- predictCox(fit_boot, newdata = df.test, times = df.test$time, se = FALSE)
-    
-    array.boot$hazard[,,iterB] <- res$hazard
-    array.boot$cumHazard[,,iterB] <- res$cumHazard
-    array.boot$survival[,,iterB] <- res$survival
-    setTxtProgressBar(pb, iterB)
+  #### survival
+  predCox <- function(d,i){
+    coxph.fit <- coxph(Surv(time,event==1)~ X1+X2,data=d[i,], method = "breslow", x = TRUE, y = TRUE)
+    res <- predictCox(coxph.fit, newdata = d[1:2,,drop=FALSE], times = seq(2,5,1), se = FALSE, type = "survival")
+    return(res$survival)
   }
-  close(pb)
+  predCox(d, 1:NROW(d))
+  res.boot <- boot(d, predCox, R = 1000, stype = "i", ncpus = 4)
   
-  ls.seBOOT <- list(hazard.se = apply(array.boot$hazard, 1:2, sd),
-                    cumHazard.se = apply(array.boot$cumHazard, 1:2, sd),
-                    survival.se = apply(array.boot$survival, 1:2, sd)
+  coxph.fit <- coxph(Surv(time,event==1)~ X1+X2,data=d, method = "breslow", x = TRUE, y = TRUE)
+  res.IF <- predictCox(coxph.fit, newdata = d[1:2,,drop=FALSE], times = seq(2,5,1), se = TRUE, type = "survival")
+  
+  res.boot$t0-res.IF$survival
+  apply(res.boot$t,2,sd) - as.double(res.IF$survival.se)
+  (apply(res.boot$t,2,sd) - as.double(res.IF$survival.se))/as.double(res.IF$survival.se)
+  
+  #### absolute risk
+  predCSC <- function(d,i){
+    CSC.fit <- CSC(Hist(time,event)~ X1+X2,data=d[i,], method = "breslow", iid = FALSE)
+    res <- predict(CSC.fit, newdata = d[1:2,,drop=FALSE], cause = 1, times = seq(2,5,1), se = FALSE)
+    return(res)
+  }
+  
+  system.time(
+    res.boot <- boot(d, predCSC, R = 500, stype = "i", ncpus = 4)
   )
   
-  ## NOT GOOD!!!
-  (ls.seBOOT$cumHazard.se-resPredict$hazard.se)/ls.seBOOT$hazard.se
-  (ls.seBOOT$cumHazard.se-resPredict$cumHazard.se)/ls.seBOOT$cumHazard.se
-  (ls.seBOOT$cumHazard.se-resPredict$survival.se)/ls.seBOOT$survival.se
+  CSC.fit <- CSC(Hist(time,event)~ X1+X2,data=d, method = "breslow", iid = TRUE)
+  res.IF <- predict(CSC.fit, newdata = d[1:2,,drop=FALSE], cause = 1, times = seq(2,5,1), se = TRUE)
+  
+  res.boot$t0-res.IF
+  apply(res.boot$t,2,sd) - as.double(attr(res.IF,"se"))
+  (apply(res.boot$t,2,sd) - as.double(attr(res.IF,"se")))/as.double(attr(res.IF,"se"))
+  
   
 }
 
 
 
-# 
-# library(butils.base)
-# library(timereg)
-# package.source("riskRegression", Ccode = TRUE)
-# 
-# 
-# set.seed(10)
-# d <- sampleData(5e1, outcome = "survival")[,.(eventtime,event,X1,X2,X6)]
-# d[ , X16 := X1*X6]
-# d2 <- copy(d)
-# setkey(d,eventtime)
-# 
-# #### non stratified Cox model
-# mGS.cox <- cox.aalen(Surv(eventtime, event) ~ prop(X1)+prop(X6), data = d, resample.iid = TRUE, max.timepoint.sim=NULL)
-# IClambda_timereg <- t(as.data.table(mGS.cox$B.iid))
-# 
-# m.cox <- coxph(Surv(eventtime, event) ~ X1+X6, data = d, y = TRUE, x = TRUE)
-# IC.cox <- iidCox(m.cox, keep.times = FALSE)
-# 
-# resRR <- predictCox(m.cox, newdata = d, se = TRUE, time = c(10))
-# 
-# 
-# resGS <- predict(mGS.cox, newdata = d, time = 10)
-# range(resGS$S0 - resRR$survival)
-# range(resGS$S0 - )
-# cbind(resRR$survival.se, resGS$se.S0)
+
 

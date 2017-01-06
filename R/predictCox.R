@@ -267,7 +267,6 @@ predictCox <- function(object,
         iid <- selectJump(iid, times = times.sorted, type = type)
         
       }
-      
       outSE <- seRobustCox(object,  nTimes = nTimes, type = type,
                            Lambda0 = Lambda0, iid = iid, nStrata = nStrata,
                            new.eXb = new.eXb, new.LPdata = new.LPdata, new.strata = new.strata, new.survival = out$survival)
@@ -334,12 +333,13 @@ seRobustCox <- function(object, nTimes, type,
   new.strata <- as.numeric(new.strata)
   
   if(length(Lambda0$strata)==0){
-    Lambda0$strata <- rep(1, length(Lambda0[[type[1]]]))
+    Lambda0$strata <- rep(1, length(Lambda0$time))
   }else{
     Lambda0$strata <- as.numeric(Lambda0$strata)    
   }
+  
   if("hazard" %in% type){Lambda0$hazard <- lapply(1:nStrata,function(s){Lambda0$hazard[Lambda0$strata==s]})}
-  if("cumHazard" %in% type){Lambda0$cumHazard <- lapply(1:nStrata,function(s){Lambda0$cumHazard[Lambda0$strata==s]})}
+  if("cumHazard" %in% type || "survival" %in% type){Lambda0$cumHazard <- lapply(1:nStrata,function(s){Lambda0$cumHazard[Lambda0$strata==s]})}
   
   ## main loop
   out <- list()
@@ -354,6 +354,7 @@ seRobustCox <- function(object, nTimes, type,
   }
   
   for(iObs in 1:n.new){
+    
     iObs.strata <- new.strata[iObs]
     X_ICbeta <- iid$ICbeta %*% t(new.LPdata[iObs,,drop=FALSE])
     
@@ -451,12 +452,18 @@ selectJump <- function(IC, times, type){
   
   nStrata <- length(IC$time)
   for(iStrata in 1:nStrata){
-    indexJump <- prodlim::sindex(jump.times = IC$time[[iStrata]], eval.times = times) 
     
     if("hazard" %in% type){
-      IC$IChazard[[iStrata]] <- cbind(0,IC$IChazard[[iStrata]])[,indexJump+1,drop = FALSE]
+      ICtempo <- matrix(0, nrow = NROW(IC$IChazard[[iStrata]]), ncol = length(times))
+      match.times <- na.omit(match(times, table = IC$time[[iStrata]]))
+      if(length(match.times)>0){
+        ICtempo[,times %in% IC$time[[iStrata]]] <- IC$IChazard[[iStrata]][,match.times,drop=FALSE]
+      }
+      IC$IChazard[[iStrata]] <- ICtempo
     }
+    
     if("cumHazard" %in% type || "survival" %in% type){
+      indexJump <- prodlim::sindex(jump.times = IC$time[[iStrata]], eval.times = times) 
       IC$ICcumHazard[[iStrata]] <- cbind(0,IC$ICcumHazard[[iStrata]])[,indexJump+1,drop = FALSE]
     }
     IC$time[[iStrata]] <- times
