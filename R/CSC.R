@@ -249,6 +249,7 @@ CSC <- function(formula,
       IF <- lapply(CoxModels,function(x){
         iidCox(x)
       })
+      names(IF) <- names(CoxModels)
     }else{
       IF <- NULL
     }

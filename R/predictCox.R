@@ -79,6 +79,7 @@ predictCox <- function(object,
   infoVar <- CoxVariableName(object)
   is.strata <- infoVar$is.strata
   
+  
   object.n <- CoxN(object)
   object.design <- CoxDesign(object)
   object.status <- object.design[["status"]]
@@ -122,6 +123,7 @@ predictCox <- function(object,
   #                           - the strata corresponding to each observation in the new dataset
   # (optional for se)         - subset the dataset to the variable involved in the linear predictor and center these variables
   #                           - the influence function             
+  
   if(!is.null(newdata)){
     new.n <- NROW(newdata)
     newdata <- as.data.table(newdata)
@@ -134,39 +136,7 @@ predictCox <- function(object,
                             stratalevels = infoVar$stratalevels)
     
     new.levelStrata <- levels(new.strata)
-    
-    if(se){
-      
-      if(nVar > 0){
-        new.LPdata <- model.matrix(object, newdata)[,infoVar$lpvars,drop=FALSE]
-      }else{
-        new.LPdata <- matrix(0, ncol = 1, nrow = new.n)
-      }
-      
-      ## influence function 
-      if(is.null(iid)){
-        
-        if("hazard" %in% type){
-          iid <- iidCox(object)
-          iid$IClambda0 <- calcIChazard(iid$ICLambda0)
-          iid <- selectJump(iid, times = times, type = type)
-        }else{
-          iid <- iidCox(object, tauLambda = times)
-        }
-        
-      }else{
-        
-        if("hazard" %in% type){
-          iid$IClambda0 <- calcIChazard(iid$ICLambda0)
-        }
-        iid <- selectJump(iid, times = times, type = type)
-        
-      }
-    }
-    
   }
-  
-  
   
   #### baseline hazard ####
   nStrata <- length(object.levelStrata)
@@ -231,6 +201,7 @@ predictCox <- function(object,
     
     ## subject specific hazard
     if (is.strata==FALSE){
+      
       if ("hazard" %in% type){out$hazard <- (new.eXb %o% Lambda0$hazard)}
       if ("cumHazard" %in% type || "survival" %in% type){
         cumHazard <- new.eXb %o% Lambda0$cumHazard
@@ -270,6 +241,32 @@ predictCox <- function(object,
     
     #### standard error ####
     if(se){ 
+      
+      if(nVar > 0){
+        new.LPdata <- model.matrix(object, newdata)
+      }else{
+        new.LPdata <- matrix(0, ncol = 1, nrow = new.n)
+      }
+      
+      ## influence function 
+      if(is.null(iid)){
+        if("hazard" %in% type){
+          iid <- iidCox(object)
+          iid$IClambda0 <- calcIChazard(iid$ICLambda0)
+          iid <- selectJump(iid, times = times, type = type)
+        }else{
+          iid <- iidCox(object, tauLambda = times)
+        }
+        
+      }else{
+        
+        if("hazard" %in% type){
+          iid$IClambda0 <- calcIChazard(iid$ICLambda0)
+        }
+        iid <- selectJump(iid, times = times, type = type)
+        
+      }
+      
       outSE <- seRobustCox(object,  times = times, type = type,
                            Lambda0 = Lambda0, iid = iid, nStrata = nStrata,
                            new.eXb = new.eXb, new.LPdata = new.LPdata, new.strata = new.strata, new.survival = out$survival)
@@ -332,7 +329,7 @@ seRobustCox <- function(object, times, type,
   
   n.times <- length(times)
   n.new <- length(new.eXb)
-
+  
   new.strata <- as.numeric(new.strata)
   
   if(length(Lambda0$strata)==0){
