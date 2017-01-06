@@ -4,7 +4,7 @@
 \alias{seRobustCox}
 \title{Computation of standard errors for predictions}
 \usage{
-seRobustCox(object, times, type, Lambda0, iid, nStrata, new.eXb, new.LPdata,
+seRobustCox(object, nTimes, type, Lambda0, iid, nStrata, new.eXb, new.LPdata,
   new.strata, new.survival)
 }
 \arguments{
@@ -12,7 +12,7 @@ seRobustCox(object, times, type, Lambda0, iid, nStrata, new.eXb, new.LPdata,
 obtained with \code{coxph} (survival package) or \code{cph}
 (rms package).}
 
-\item{times}{Time points at which to evaluate the standard errors of the predictions.}
+\item{nTimes}{the number of time points at which to evaluate the standard errors of the predictions.}
 
 \item{type}{One or several strings that match (either in lower or upper case or mixtures) one
 or several of the strings \code{"hazard"},\code{"cumhazard"}, \code{"survival"}.}

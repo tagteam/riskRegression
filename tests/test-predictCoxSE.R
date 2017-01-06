@@ -194,6 +194,11 @@ if(require(timereg)){
     predRR1 <- predictCox(mS.cox, newdata = dStrata, times = 2, se = TRUE)
 
     expect_equal(predRR1$survival.se, predGS$se.S0)
+    
+    predGS <- predict(mGSS.cox, newdata = dStrata, times = 1:3)
+    predRR1 <- predictCox(mS.cox, newdata = dStrata, times = 1:3, se = TRUE)
+    
+    expect_equal(predRR1$survival.se, predGS$se.S0)
   })
   
 }

@@ -138,7 +138,7 @@ predict.CauseSpecificCox <- function(object,newdata, times, cause, t0 = NA, coln
                                 type = c("hazard","cumHazard"), 
                                 keep.strata = TRUE, keep.lastEventTime = TRUE, keep.times = TRUE,
                                 se = FALSE, format = "list")
-    
+   
     ls.hazard <- list(matrix(causeBaseline$hazard, byrow = FALSE, nrow = nEventTimes))
     
     ## linear predictor for the new observations
@@ -212,9 +212,10 @@ predict.CauseSpecificCox <- function(object,newdata, times, cause, t0 = NA, coln
       }
     }
     
-    for(iModel in 1:nCause){
+    for(iModel in 1:nCause){ # could be improved in only keeping the jump times for the cause of interest ?
       object$iid[[iModel]]$IChazard <- calcIChazard(object$iid[[iModel]]$ICcumHazard)
-      object$iid[[iModel]] <- selectJump(object$iid[[iModel]], times = eventTimes, type = c("hazard","cumHazard"))
+      object$iid[[iModel]] <- selectJump(object$iid[[iModel]], times = eventTimes, ## eventTimes
+                                         type = c("hazard","cumHazard"))
     }
     
     CIF.se <- seCSC(hazard = ls.hazard, cumHazard = ls.cumHazard, object.time = eventTimes, object.maxtime = apply(M.etimes.max,1,min), 
@@ -315,11 +316,9 @@ seCSC <- function(hazard, cumHazard, object.time, object.maxtime, iid,
       iICcumHazard <- iICcumHazard + eXb_cumH_tempo*(ICcumHazard0_tempo + X_ICbeta %*% cumHazard_tempo)
     }
     
-    
-    CIF.se_tempo <- iIChazard1#rbind(cumHazard_tempo)#rowCumSum(rowMultiply_cpp(iIChazard1 - rowMultiply_cpp(iICcumHazard, scale = iHazard1), scale = iCumHazard))
+    CIF.se_tempo <- rowCumSum(rowMultiply_cpp(iIChazard1 - rowMultiply_cpp(iICcumHazard, scale = iHazard1), scale = exp(-iCumHazard)))
     CIF.se_tempo <- cbind(0,CIF.se_tempo)[,prodlim::sindex(object.time, eval.times = times)+1]
-    CIF.se[iObs,] <- sqrt(apply(CIF.se_tempo^2,2,sum))#CIF.se_tempo#
-    
+    CIF.se[iObs,] <- sqrt(apply(CIF.se_tempo^2,2,sum))
     
   }
   
