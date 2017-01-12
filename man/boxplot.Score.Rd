@@ -5,7 +5,7 @@
 \title{Boxplot risk quantiles}
 \usage{
 \method{boxplot}{Score}(x, model, reference, type, timepoint, lwd = 3, xlim,
-  xlab, main, outcomeLabel, refline = TRUE, ...)
+  xlab, main, outcomeLabel, eventLabels, refline = TRUE, ...)
 }
 \arguments{
 \item{x}{Score object obtained by calling function \code{Score}.}

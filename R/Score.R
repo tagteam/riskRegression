@@ -255,20 +255,22 @@ Score.list <- function(object,
         alpha <- NA
     }
     if ((NF+length(nullobject))<=1) dolist <- NULL 
-    if (se.fit==FALSE || (is.logical(contrasts) && contrasts==FALSE)){
-        dolist <- NULL
-    } else{
-        if (is.logical(contrasts) && contrasts==TRUE){
-            if (is.null(nullobject)){
-                dolist <- lapply(1:(NF-1),function(i){c(i,(i+1):NF)})
-            } else{
-                dolist <- lapply(0:(NF-1),function(i){c(i,(i+1):NF)})
+    else{
+        if (se.fit==FALSE || (is.logical(contrasts) && contrasts==FALSE)){
+            dolist <- NULL
+        } else{
+            if (is.logical(contrasts) && contrasts==TRUE){
+                if (is.null(nullobject)){
+                    dolist <- lapply(1:(NF-1),function(i){c(i,(i+1):NF)})
+                } else{
+                    dolist <- lapply(0:(NF-1),function(i){c(i,(i+1):NF)})
+                }
+            }else{
+                dolist <- contrasts
+                if (!is.list(contrasts)) contrasts <- list(contrasts)
+                if (!(all(sapply(dolist,function(x){x<=NF && x>=0}))))
+                    stop(paste("Argument contrasts should be a list of positive integers possibly mixed with 0 that refer to elements of object.\nThe object has ",NF,"elements but "))
             }
-        }else{
-            dolist <- contrasts
-            if (!is.list(contrasts)) contrasts <- list(contrasts)
-            if (!(all(sapply(dolist,function(x){x<=NF && x>=0}))))
-                stop(paste("Argument contrasts should be a list of positive integers possibly mixed with 0 that refer to elements of object.\nThe object has ",NF,"elements but "))
         }
     }
     # }}}

@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jan  9 2016 (19:31) 
 ## Version: 
-## last-updated: Dec  9 2016 (13:44) 
+## last-updated: Dec 11 2016 (09:34) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 260
+##     Update #: 266
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -118,7 +118,6 @@ riskQuantile.survival <- function(DT,N,NT,NF,dolist,Q,...){
     } 
     getQ.eventFree <- function(Q,tp,X,time,Wt,surv){
         uX <- sort(unique(X[time>tp]))
-## browser()
         Wx <- sapply(uX,function(x){1/N*sum((X<=x & time>tp)/Wt)/surv[times==tp,surv]})
         qRisk <- getQuantile(x=uX,Fx=Wx,Q=Q)
         qR <- data.table(t(qRisk))

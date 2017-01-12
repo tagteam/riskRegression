@@ -4,9 +4,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Aug 15 2016 (09:45) 
 ## Version: 
-## last-updated: Dec  9 2016 (15:01) 
+## last-updated: Dec 12 2016 (07:03) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 37
+##     Update #: 50
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -90,18 +90,7 @@
 ##' 
 ##' 
 #' @export
-boxplot.Score <- function(x,
-                          model,
-                          reference,
-                          type,
-                          timepoint,
-                          lwd=3,
-                          xlim,
-                          xlab,
-                          main,
-                          outcomeLabel,
-                          refline=TRUE,
-                          ...){
+boxplot.Score <- function(x,model,reference,type,timepoint,lwd=3,xlim,xlab,main,outcomeLabel,eventLabels,refline=TRUE,...){
     times=cause=models=NULL
     fitted <- x$models
     models <- names(x$models)
@@ -159,7 +148,9 @@ boxplot.Score <- function(x,
         if (refline==TRUE)
             abline(v=0,col=2,lwd=2)
         axis(1,at=seq(xlim[1],xlim[2],(xlim[2]-xlim[1])/4),labels=paste(seq(xlim[1],xlim[2],(xlim[2]-xlim[1])/4),"%"))
-        text(x=xlim[1],y=c(0.5,1.5,2.5,3),labels=c("Overall","Event","Event-free",outcomeLabel),pos=2,xpd=NA)
+        causes <- pframe[,unique(cause)]
+        if (missing(eventLabels)) eventLabels <- causes
+        text(x=xlim[1],y=c(0.5,1.5,2.5,3),labels=c(eventLabels,outcomeLabel),pos=2,xpd=NA)
         if (type=="diff"){
             mtext(paste(ref,"higher risk"),side=1,adj=0,line=par()$mgp[1])
             mtext(paste(mod,"higher risk"),side=1,adj=1,line=par()$mgp[1])
@@ -179,9 +170,14 @@ boxplot.Score <- function(x,
             abline(v=0,col=2,lwd=2)
         ## axis(1,at=seq(0,100,25),labels=paste(seq(0,100,25),"%"))
         axis(1,at=seq(xlim[1],xlim[2],(xlim[2]-xlim[1])/4),labels=paste(seq(xlim[1],xlim[2],(xlim[2]-xlim[1])/4),"%"))
-        causes <- pframe[,cause]
+        causes <- pframe[,unique(cause)]
+        if (missing(eventLabels)) eventLabels <- causes
         ypos <- c((1:(length(causes)))-0.5,length(causes))
-        text(x=xlim[1],y=ypos,labels=c(causes,outcomeLabel),pos=2,xpd=NA)
+        text(x=xlim[1],
+             y=ypos,
+             labels=c(eventLabels,outcomeLabel),
+             pos=2,
+             xpd=NA)
         if (type=="diff"){
             mtext(paste(ref,"higher risk"),side=1,adj=0,line=par()$mgp[1])
             mtext(paste(mod,"higher risk"),side=1,adj=1,line=par()$mgp[1])
