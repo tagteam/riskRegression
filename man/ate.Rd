@@ -63,7 +63,7 @@ dtS <- sampleData(n,outcome="survival")
 dtS$time <- round(dtS$time,1)
 dtS$X1 <- factor(rbinom(n, prob = c(0.3,0.4) , size = 2), labels = paste0("T",0:2))
 
-fit=cph(formula = Surv(time,event)~ X1+X2,data=dtS,y=TRUE)
+fit=cph(formula = Surv(time,event)~ X1+X2,data=dtS,y=TRUE,x=TRUE)
 ## the cph object carries its call:
 fit$call
 ## and there is a predictRisk method

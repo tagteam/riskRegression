@@ -45,8 +45,8 @@
 ##' # survival outcome
 ##' library(survival)
 ##' ds=sampleData(100,outcome="survival")
-##' fitconv=coxph(Surv(time,event)~X6,data=ds)
-##' fitnew=coxph(Surv(time,event)~X6+X9,data=ds)
+##' fitconv=coxph(Surv(time,event)~X6,data=ds,x=TRUE,y=TRUE)
+##' fitnew=coxph(Surv(time,event)~X6+X9,data=ds,x=TRUE,y=TRUE)
 ##' scoreobj=Score(list("conventional model"=fitconv,"new model"=fitnew),
 ##'                 formula=Hist(time,event)~1, data=ds,
 ##'                 summary="riskQuantile",metrics=NULL, plots=NULL,

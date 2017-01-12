@@ -4,6 +4,7 @@
 \alias{CoxVarCov}
 \alias{CoxVarCov.coxph}
 \alias{CoxVarCov.cph}
+\alias{CoxVarCov.phreg}
 \title{Extract the variance covariance matrix of the beta from a Cox model}
 \usage{
 CoxVarCov(object)
@@ -11,11 +12,13 @@ CoxVarCov(object)
 \method{CoxVarCov}{cph}(object)
 
 \method{CoxVarCov}{coxph}(object)
+
+\method{CoxVarCov}{phreg}(object)
 }
 \arguments{
 \item{object}{The fitted Cox regression model object either
-obtained with \code{coxph} (survival package) or \code{cph}
-(rms package).}
+obtained with \code{coxph} (survival package), \code{cph}
+(rms package), or \code{phreg} (mets package).}
 }
 \description{
 Extract the variance covariance matrix of the beta from a Cox model
@@ -27,6 +30,7 @@ The rows and columns of the variance covariance matrix must be named with the na
 \examples{
 \dontrun{
 d <- sampleData(1e2, outcome = "survival")
+d$entry <- 0
 
 ##
 library(survival)
@@ -42,9 +46,15 @@ CoxVarCov(mCox)
 mCox <- cph(Surv(time, event) ~ 1, data = d, y = TRUE)
 CoxVarCov(mCox)
 
+##
+library(mets)
+mCox <- phreg(Surv(entry, time, event) ~ X1+X2, data = d)
+CoxVarCov(mCox)
+mCox <- cph(Surv(time, event) ~ 1, data = d, y = TRUE)
+CoxVarCov(mCox)
 }
 }
 \author{
-Brice Ozenne broz@sund.ku.dk, Thomas A. Gerds tag@biostat.ku.dk
+Brice Ozenne broz@sund.ku.dk
 }
 

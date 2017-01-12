@@ -6,14 +6,12 @@
 #'     obtained with \code{coxph} (survival package) or \code{cph}
 #'     (rms package).
 #' @param newdata Optional new data at which to do i.i.d. decomposition 
-#' @param tauLambda the vector of times at which the i.i.d decomposition of the baseline hazard will be computed
-#' @param tauBeta the time at which the i.i.d decomposition of the beta will be computed
-#' @param keep.times Logical. If \code{TRUE} add the evaluation times to the output. 
-#' @param center.eXb Temporary argument. Should the linear predictor be centered on the exponential scale.
-#' @param center.LPdata Temporary argument. Should the covariates be centered.
-#' @param center.lambda0 Temporary argument. Should the linear predictor be centered when computing the baseline hazard (equivalent to centered in basehaz).
+#' @param tauHazard the vector of times at which the i.i.d decomposition of the baseline hazard will be computed
+#' @param keep.times Logical. If \code{TRUE} add the evaluation times to the output.
 #' @param center.result Temporary argument. Should the IF be rescale to match timereg results.
 #' @param ... additional arguments
+#'
+#' @details If there is no event in a strata, the influence function for the baseline hazard is set to 0.
 #'
 #' @examples
 #' library(survival)
@@ -27,223 +25,241 @@
 #' ICbeta_GS <- mGS.cox$gamma.iid
 #' IClambda_GS <- t(as.data.table(mGS.cox$B.iid))
 #'  
-#' m.cox <- coxph(Surv(eventtime, event) ~ X1+X6, data = d, y = TRUE)
-#' IC.cox <- iidCox(m.cox)
+#' m.cox <- coxph(Surv(eventtime, event) ~ X1+X6, data = d, y = TRUE, x = TRUE)
+#' system.time(IC.cox <- iidCox(m.cox))
 #' 
-#' IC.cox <- iidCox(m.cox, tauLambda = 7)
+#' IC.cox <- iidCox(m.cox, tauHazard = 7)
 #'  
 #' 
 
 #' @rdname iid
 #' @export
-iidCox <- function(object, newdata = NULL, tauLambda = NULL, tauBeta = NULL, keep.times = TRUE, 
-                   center.eXb = TRUE, center.LPdata = FALSE, center.lambda0 = TRUE, center.result = TRUE){
-  ## TODO
-  # to be adapted for stratified Cox models
-  # check if it is ok for categorical variables
+iidCox <- function(object, newdata = NULL, tauHazard = NULL, 
+                   keep.times = TRUE, center.result = TRUE){
+  
+  center.eXb <- TRUE # Temporary argument. Should the linear predictor be centered on the exponential scale.
   
   #### extract elements from object ####
-  infoVar <- CoxStrataVar(object)
+  infoVar <- CoxVariableName(object)
   iInfo <- CoxVarCov(object)
-  is.strata <- infoVar$is.strata
-  object.designVar <- colnames(iInfo)
-    
-  object.n <- CoxN(object)
-  object.status <- CoxStatus(object)
-  object.time <- CoxEventtime(object)
+  object.design <- CoxDesign(object)
+  
+  object.status <- object.design[,"status"]
+  object.time <- object.design[,"stop"]
   object.strata <- CoxStrata(object, stratavars = infoVar$stratavars)
   object.levelStrata <- levels(object.strata)
   object.eXb <- exp(CoxLP(object, data = NULL, center = center.eXb))
-  object.LPdata <- as.matrix(CoxDesign(object, data = CoxData(object), 
-                                       lpvars = infoVar$lpvars, stratavars = infoVar$stratavars,
-                                       rm.intercept = TRUE, center = center.LPdata))
-  
-  # reorder data
-  object.order <- order(object.time)
-  object.time <- object.time[object.order]
-  object.status <- object.status[object.order]
-  object.eXb <- object.eXb[object.order]
-  object.LPdata <- object.LPdata[object.order,,drop = FALSE]
-  object.indexStrata <- lapply(object.levelStrata, function(level){which(object.strata==level)-1})
-  
-  if(is.null(tauLambda)){tauLambda <- object.time[object.status>0]}
-  if(is.null(tauBeta)){tauBeta <- tail(object.time[object.status>0],1)}
-  if(any(tauLambda > tauBeta)){
-    stop("Elements in tauLambda must not exceed tauBeta \n")
-  }
-  
-  # for factor variables: retain only the relevant column from the design matrix, 
-  # i.e. remove the column(s) corresponding to the reference level(s)
-  object.LPdata <- object.LPdata[, object.designVar, drop = FALSE]
-  
-  #### Extract new observations
-  
-  if(is.null(newdata)){
-    new.n <- object.n
-    new.time <- object.time
-    new.strata <- object.strata
-    new.status <- object.status
-    new.eXb <- object.eXb
-    new.LPdata <- object.LPdata
-    new.indexStrata <- object.indexStrata
-    # reorder data (already done)
-    new.order <- object.order
-  }else{
-    info2 <- CoxResponseVar(object)
-    new.n <- NROW(newdata)
-    new.time <- newdata[[info2$time]]
-    new.strata <- CoxStrata(object, data = newdata, 
-                            sterms = infoVar$sterms, stratavars = infoVar$stratavars, levels = object.levelStrata, stratalevels = infoVar$stratalevels)
-    new.status <- newdata[[info2$event]]
-    new.eXb <- exp(CoxLP(object, data = newdata, center = center.eXb))
-    new.LPdata <- as.matrix(CoxDesign(object, data = newdata,  
-                                      lpvars = infoVar$lpvars, stratavars = infoVar$stratavars,
-                                      rm.intercept = TRUE, center = center.LPdata))
-    
-    # reorder data
-    new.order <- order(new.time)
-    new.time <- new.time[new.order]
-    new.strata <- new.strata[new.order]
-    new.status <- new.status[new.order]
-    new.eXb <- new.eXb[new.order]
-    new.LPdata <- new.LPdata[new.order,,drop = FALSE]
-    new.indexStrata <-lapply(object.levelStrata, function(level){which(new.strata==level)-1})
-    
-    # for factor variables: retain only the relevant column from the design matrix, 
-    new.LPdata <- new.LPdata[, object.designVar, drop = FALSE]
-  }
-  
-  
-  #### Compute quantities of interest only for event times
-  lastEventtime <- object.time[length(object.time)]
-  p <- NCOL(object.LPdata)
+  object.LPdata <- as.matrix(object.design[,infoVar$lpvars,drop = FALSE])
   nStrata <- length(levels(object.strata))
   
-  ## baseline hazard
-  lambda0 <- predictCox(object, type = "hazard", centered = center.lambda0, keep.strata = TRUE)
+  object.center <- CoxCenter(object)
   
-  ### v1
-  # Ecpp <- calcEstrata_cpp(tau = tauBeta,
-  #                         indexStrata = object.indexStrata,
-  #                         status = object.status,
-  #                         p = p, nStrata = nStrata,
-  #                         eventtime = object.time,
-  #                         eXb = object.eXb,
-  #                         X = object.LPdata,
-  #                         add0 = TRUE)
-  
-  ### v2
-  U1.time <- c(unique(object.time[object.status>0]),tail(object.time,1)+1e-12)
-  nU1.time <- length(U1.time)
-  indexTime1 <- rep(nU1.time, object.n)
-  indexTime1[object.status>0] <- match(object.time[object.status>0], U1.time)-1
-
-  resE <- lapply(U1.time, FUN = function(t){
-    return(calcE_cpp(t = t, eventtime = object.time, eXb = object.eXb, X = object.LPdata, n = object.n, p = p))
-  })
-
-  S0_U1times <- unlist(lapply(resE,"[[","S0"))
-  S1_U1times <- matrix(unlist(lapply(resE,"[[","S1")), nrow = nU1.time, ncol = p, byrow = TRUE)
-  if(NCOL(S1_U1times)==0){S1_U1times <- cbind(S1_U1times,0)}
-  E_U1times <- matrix(unlist(lapply(resE,"[[","E")), nrow = nU1.time, ncol = p, byrow = TRUE)
-  if(NCOL(E_U1times)==0){E_U1times <- cbind(E_U1times,0)}
-  
-  #### Computation of the influence function
-  ICbeta <- iidBeta(tau = tauBeta,
-                    newT = new.time,
-                    neweXb = new.eXb,
-                    newX = new.LPdata,
-                    newStatus = new.status,
-                    S01 = S0_U1times,
-                    E1 = E_U1times,
-                    time1 = U1.time,
-                    n = new.n, p = p, iInfo = iInfo)
-
-  
-  ICLambda0 <- iidLambda0(tau = tauLambda, max.time = lastEventtime,
-                          newT = new.time,
-                          neweXb = new.eXb,
-                          newX = new.LPdata,
-                          newStatus = new.status,
-                          ICbeta = ICbeta,
-                          S01 = S0_U1times[-nU1.time],
-                          E1 = E_U1times[-nU1.time,,drop = FALSE],
-                          time1 = U1.time[-nU1.time],
-                          lambda0 = lambda0[match(U1.time[-nU1.time],lambda0[,"time"]),"hazard"],
-                          n = object.n, p = p)
-
-  if(keep.times){
-    attr(ICbeta,"time") <- tauBeta
-    attr(ICLambda0,"time") <- tauLambda
+  #### Extract new observations ####
+  if(!is.null(newdata)){
+    
+    if("data.frame" %in% class(newdata) == FALSE){
+      stop("class of \'newdata\' must inherit from data.frame \n")
+    }
+    new.status <- newdata[[infoVar$status]]
+    new.time <- newdata[[infoVar$time]]
+    new.strata <- CoxStrata(object, data = newdata, 
+                            sterms = infoVar$sterms, stratavars = infoVar$stratavars, levels = object.levelStrata, stratalevels = infoVar$stratalevels)
+    new.eXb <- exp(CoxLP(object, data = newdata, center = center.eXb))
+    new.LPdata <- model.matrix(object, newdata)
+    
+  }else{
+    
+    new.status <-  object.status
+    new.time <-  object.time
+    new.strata <-  object.strata
+    new.eXb <- object.eXb
+    new.LPdata <- object.LPdata
+    
   }
   
+  #### tests ####
+  ## time at which the influence function is evaluated
+  if(is.list(tauHazard) && length(tauHazard)!=nStrata){
+    stop("argument \"tauHazard\" must be a list with ",nStrata," elements \n",
+         "each element being the vector of times for each strata \n")
+  }
   
-  # ls <- list(tau = tauLambda, max.time = lastEventtime,
-  #            newT = new.time, neweXb = new.eXb, newX = new.LPdata, newStatus = new.status, ICbeta = ICbeta,
-  #            S01 = S0_U1times[-nU1.time], E1 = E_U1times[-nU1.time,,drop = FALSE], indexTime1 = indexTime1[-nU1.time], time1 = U1.time[-nU1.time], 
-  #            lambda0 = lambda0[match(U1.time[-nU1.time],lambda0[,"time"]),"hazard"],
-  #            n = object.n, p = p)
+  #### Compute quantities of interest ####
+  p <- NCOL(object.LPdata)
+  
+  ## baseline hazard
+  lambda0 <- predictCox(object, type = "hazard", centered = TRUE, keep.strata = TRUE)
+  
+  ## resale factor
+  if(center.result == TRUE && !is.null(object.center)){
+    scalingFactor <- exp(-as.double(coef(object) %*% object.center))
+  }
+  
+  ## S0, E, jump times
+  object.index_strata <- list() 
+  object.order_strata <- list()
+  
+  object.eXb_strata <- list()
+  object.LPdata_strata <- list()
+  object.status_strata <- list()
+  object.time_strata <- list()
+  
+  new.index_strata <- list()
+  new.order_strata <- list()
+  
+  new.eXb_strata <- list()
+  new.LPdata_strata <- list()
+  new.status_strata <- list()
+  new.time_strata <- list()
+  
+  Ecpp <- list()
+  new.indexJump <- list()
+  new.order <- NULL
+  
+  for(iStrata in 1:nStrata){
+    
+   ## reorder object data
+    object.index_strata[[iStrata]] <- which(object.strata == object.levelStrata[iStrata])
+    object.order_strata[[iStrata]] <- order(object.time[object.index_strata[[iStrata]]])
+    
+    object.eXb_strata[[iStrata]] <- object.eXb[object.index_strata[[iStrata]][object.order_strata[[iStrata]]]]
+    object.LPdata_strata[[iStrata]] <- object.LPdata[object.index_strata[[iStrata]][object.order_strata[[iStrata]]],,drop = FALSE]
+    object.status_strata[[iStrata]] <- object.status[object.index_strata[[iStrata]][object.order_strata[[iStrata]]]]
+    object.time_strata[[iStrata]] <- object.time[object.index_strata[[iStrata]][object.order_strata[[iStrata]]]]
+    
+    ## reorder new data
+    if(!is.null(newdata)){
+      new.index_strata[[iStrata]] <- which(new.strata == object.levelStrata[iStrata])
+      new.order_strata[[iStrata]] <- order(new.time[new.index_strata[[iStrata]]])
+      
+      new.eXb_strata[[iStrata]] <- new.eXb[new.index_strata[[iStrata]][new.order_strata[[iStrata]]]]
+      new.LPdata_strata[[iStrata]] <- new.LPdata[new.index_strata[[iStrata]][new.order_strata[[iStrata]]],,drop = FALSE]
+      new.status_strata[[iStrata]] <- new.status[new.index_strata[[iStrata]][new.order_strata[[iStrata]]]]
+      new.time_strata[[iStrata]] <- new.time[new.index_strata[[iStrata]][new.order_strata[[iStrata]]]]
+    }else{
+      new.index_strata[[iStrata]] <- object.index_strata[[iStrata]]
+      new.order_strata[[iStrata]] <- object.order_strata[[iStrata]]
+      
+      new.eXb_strata[[iStrata]] <- object.eXb_strata[[iStrata]]
+      new.LPdata_strata[[iStrata]] <- object.LPdata_strata[[iStrata]]
+      new.status_strata[[iStrata]] <- object.status_strata[[iStrata]]
+      new.time_strata[[iStrata]] <- object.time_strata[[iStrata]]
+    }
+    
+    ## E
+    Ecpp[[iStrata]] <-  calcE_cpp(status = object.status_strata[[iStrata]], 
+                                  eventtime = object.time_strata[[iStrata]],
+                                  eXb = object.eXb_strata[[iStrata]],
+                                  X = object.LPdata_strata[[iStrata]],
+                                  p = p, add0 = TRUE)
+    
+    new.indexJump[[iStrata]] <- prodlim::sindex(Ecpp[[iStrata]]$Utime1, new.time) - 1
+    # if event/censoring is before the first event in the training dataset 
+    # then sindex return 0 thus indexJump is -1
+    # the following 3 lines convert -1 to 0
+    if(any(new.indexJump[[iStrata]]<0)){
+      new.indexJump[[iStrata]][new.indexJump[[iStrata]]<0] <- 0
+    }
+    
+    ## store order
+    if(length(new.order>0)){
+      new.order <- c(new.order, new.index_strata[[iStrata]][new.order_strata[[iStrata]]])
+    }else{
+      new.order <- new.index_strata[[iStrata]][new.order_strata[[iStrata]]]
+    }
+    
+  }
+  
+  #### Computation of the influence function ####
+  ICbeta <- NULL
+  ICcumHazard <- NULL
+  ls.Utime1 <- NULL
+  
+  #### beta
+  for(iStrata in 1:nStrata){
+    
+    new.indexJump_strata <- new.indexJump[[iStrata]][new.index_strata[[iStrata]][new.order_strata[[iStrata]]]]
+    
+    ## IF
+    if(p>0){
+      ICbeta_tempo <- ICbeta_cpp(newT = new.time_strata[[iStrata]], neweXb = new.eXb_strata[[iStrata]], newX = new.LPdata_strata[[iStrata]], newStatus = new.status_strata[[iStrata]], 
+                                 newIndexJump = new.indexJump_strata, 
+                                 S01 = Ecpp[[iStrata]]$S0, E1 = Ecpp[[iStrata]]$E, time1 = Ecpp[[iStrata]]$Utime1, iInfo = iInfo,
+                                 p = p)    
+    }else{
+      ICbeta_tempo <- matrix(NA, ncol = 1, nrow = length(new.index_strata[[iStrata]]))
+    }
+    
+    ## output
+    ICbeta <- rbind(ICbeta, ICbeta_tempo)
+    
+  }
+  
+  ## set original order
+  ICbeta <- ICbeta[order(new.order),,drop=FALSE]
   
   
-  ## rescale
-  if(center.result == TRUE && !is.null(CoxCenter(object))){
-    ICLambda0 <- ICLambda0 * exp(-as.double(coef(object) %*% CoxCenter(object)))
+  #### lambda
+  for(iStrata in 1:nStrata){
+    
+    ## hazard
+    if(nStrata==1){
+      lambda0_strata <- lambda0
+    }else{
+      lambda0_strata <- lambda0[lambda0$strata == object.levelStrata[iStrata],, drop = FALSE]
+    }
+    
+    ## tauHazard
+    if(is.null(tauHazard)){
+      tauHazard_strata <- object.time_strata[[iStrata]][object.status_strata[[iStrata]] == 1]
+    }else if(is.list(tauHazard)){
+      tauHazard_strata <- tauHazard[[nStrata]]
+    }else{
+      tauHazard_strata <- tauHazard
+    }
+    
+    ## E
+    nUtime1_strata <- length(Ecpp[[iStrata]]$Utime1)
+    if(p>0){
+      Etempo <- Ecpp[[iStrata]]$E[-NROW(Ecpp[[iStrata]]$E),,drop = FALSE]
+    }else{
+      Etempo <- matrix(0, ncol = 1, nrow = nUtime1_strata-1)
+    }
+    
+    ## IF
+    if(any(new.status_strata[[iStrata]]>0)){
+      ICcumHazard_tempo <- IClambda0_cpp(tau = tauHazard_strata,
+                                       ICbeta = ICbeta,
+                                       newT = new.time, neweXb = new.eXb, newStatus = new.status, newIndexJump = new.indexJump[[iStrata]], newStrata = as.numeric(new.strata),
+                                       S01 = Ecpp[[iStrata]]$S0[1:(nUtime1_strata-1)],
+                                       E1 = Etempo,
+                                       time1 = Ecpp[[iStrata]]$Utime1[1:(nUtime1_strata-1)],
+                                       lambda0 = lambda0_strata[match(Ecpp[[iStrata]]$Utime1[-nUtime1_strata],lambda0_strata[,"time"]),"hazard"],
+                                       p = p, strata = iStrata)
+      
+      # rescale
+      if(center.result == TRUE && !is.null(CoxCenter(object))){
+        ICcumHazard_tempo <- ICcumHazard_tempo * scalingFactor
+      }
+      
+    }else{
+      ICcumHazard_tempo <- matrix(0, ncol = 1, nrow = length(new.index_strata[[iStrata]]))
+      if(length(tauHazard_strata)==0){tauHazard_strata <- NA}
+    }
+    
+    # output 
+    ls.Utime1 <- c(ls.Utime1, list(tauHazard_strata))
+    if(keep.times){
+      colnames(ICcumHazard_tempo) <- tauHazard_strata
+    }
+    ICcumHazard <- c(ICcumHazard, list(ICcumHazard_tempo))
+    
   }
   
   #### export
-  return(list(ICbeta = ICbeta[new.order,,drop=FALSE],  # restaure original ordering
-              ICLambda0 = ICLambda0[new.order,,drop=FALSE]
+  return(list(ICbeta = ICbeta,  # restaure original ordering
+              ICcumHazard = ICcumHazard,
+              time = ls.Utime1,
+              indexObs = new.order
   ))
-}
-
-
-iidBeta <- function(tau, newT, neweXb, newX, newStatus,
-                    S01, E1, time1, 
-                    n, p, iInfo){
-  
-  if(is.null(iInfo)){return(matrix(0, nrow = n, ncol = 1))}
-  IC <- matrix(NA, nrow = n, ncol = p)
-  
-  for(iterI in 1:n){
-    if(newT[iterI]<=tau){
-      term1 <- calcU_cpp(newX = newX[iterI,,drop = FALSE], newStatus = newStatus[iterI], newN = 1,
-                         IndexNewT = 0, ENewT = E1[prodlim::sindex(time1, newT[iterI]),,drop = FALSE]*newStatus[iterI],
-                         p = p, aggregate = FALSE)
-    }else{
-      term1 <- matrix(0, nrow = 1, ncol = p)
-    }
-    
-    term2 <- -sweep(sweep(E1[time1<=min(newT[iterI],tau),,drop = FALSE], MARGIN = 2, FUN = "-", STATS = newX[iterI,,drop = FALSE]),
-                    MARGIN = 1, FUN = "/", STATS = S01[time1<=min(newT[iterI],tau)]) 
-    
-    IC[iterI,] <- as.double(iInfo %*% t(term1 - neweXb[iterI] * colSums(term2)))
-  }
-  
-  return(IC)
-}
-
-iidLambda0 <- function(tau, max.time,
-                       newT, neweXb, newX, newStatus, ICbeta,
-                       S01, E1, time1, lambda0,
-                       n, p){
-  
-  n.tau <- length(tau)
-  ICLamda0 <- matrix(NA, nrow = n, ncol = n.tau)
-  
-  for(iterTau in 1:n.tau){
-    
-    if(tau[iterTau]>max.time){
-      return(ICLamda0)
-    }
-    
-    for(iterObs in 1:n){
-      sum1 <- sweep(E1, MARGIN = 1, FUN = "*", STATS = lambda0*(time1<=tau[iterTau]))
-      sum2 <- lambda0/S01*(time1<=newT[iterObs])*(time1<=tau[iterTau])
-      S0_tempo <- S01[prodlim::sindex(jump.times = time1, eval.times = newT[iterObs])]
-      ICLamda0[iterObs,iterTau] <- - ICbeta[iterObs,,drop= FALSE] %*% colSums(sum1) - neweXb[iterObs] * sum(sum2) + (newT[iterObs]<=tau[iterTau]) * newStatus[iterObs]/S0_tempo
-    }
-    
-  }
-  
-  return(ICLamda0)
 }

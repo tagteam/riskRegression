@@ -44,16 +44,20 @@ colSumsCrossprod <- function(X, Y, transposeY) {
     .Call('riskRegression_colSumsCrossprod', PACKAGE = 'riskRegression', X, Y, transposeY)
 }
 
-calcE_cpp <- function(t, n, p, eventtime, eXb, X) {
-    .Call('riskRegression_calcE_cpp', PACKAGE = 'riskRegression', t, n, p, eventtime, eXb, X)
+calcE_cpp <- function(eventtime, status, eXb, X, p, add0) {
+    .Call('riskRegression_calcE_cpp', PACKAGE = 'riskRegression', eventtime, status, eXb, X, p, add0)
 }
 
-calcU_cpp <- function(newX, newStatus, newN, IndexNewT, ENewT, p, aggregate) {
-    .Call('riskRegression_calcU_cpp', PACKAGE = 'riskRegression', newX, newStatus, newN, IndexNewT, ENewT, p, aggregate)
+ICbeta_cpp <- function(newT, neweXb, newX, newStatus, newIndexJump, S01, E1, time1, iInfo, p) {
+    .Call('riskRegression_ICbeta_cpp', PACKAGE = 'riskRegression', newT, neweXb, newX, newStatus, newIndexJump, S01, E1, time1, iInfo, p)
 }
 
-predictCIF_cpp <- function(hazard, cumHazard, eXb_h, eXb_cumH, strata, newtimes, etimes, etimeMax, t0, nTimes, nNewTimes, nData, cause, nCause) {
-    .Call('riskRegression_predictCIF_cpp', PACKAGE = 'riskRegression', hazard, cumHazard, eXb_h, eXb_cumH, strata, newtimes, etimes, etimeMax, t0, nTimes, nNewTimes, nData, cause, nCause)
+IClambda0_cpp <- function(tau, ICbeta, newT, neweXb, newStatus, newStrata, newIndexJump, S01, E1, time1, lambda0, p, strata) {
+    .Call('riskRegression_IClambda0_cpp', PACKAGE = 'riskRegression', tau, ICbeta, newT, neweXb, newStatus, newStrata, newIndexJump, S01, E1, time1, lambda0, p, strata)
+}
+
+predictCIF_cpp <- function(hazard, cumHazard, eXb_h, eXb_cumH, strata, newtimes, etimes, etimeMax, t0, nEventTimes, nNewTimes, nData, cause, nCause) {
+    .Call('riskRegression_predictCIF_cpp', PACKAGE = 'riskRegression', hazard, cumHazard, eXb_h, eXb_cumH, strata, newtimes, etimes, etimeMax, t0, nEventTimes, nNewTimes, nData, cause, nCause)
 }
 
 #' Apply cumsum in each row 
@@ -169,5 +173,45 @@ colScale_cpp <- function(X, scale) {
 #' @export
 rowScale_cpp <- function(X, scale) {
     .Call('riskRegression_rowScale_cpp', PACKAGE = 'riskRegression', X, scale)
+}
+
+#' @title Apply * by column
+#'
+#' @description Fast computation of sweep(X, MARGIN = 1, FUN = "*", STATS = scale)
+#' 
+#' @param X A matrix.
+#' @param scale a numeric vector of length equal to the number of rows of \code{x}
+#' 
+#' @return A matrix of same size as X.
+#' @author Brice Ozenne <broz@@sund.ku.dk>
+#' @examples
+#' x <- matrix(1,6,5)
+#' sweep(x, MARGIN = 1, FUN = "*", STATS = 1:6)
+#' colMultiply_cpp(x, 1:6 )
+#' 
+#' @export
+colMultiply_cpp <- function(X, scale) {
+    .Call('riskRegression_colMultiply_cpp', PACKAGE = 'riskRegression', X, scale)
+}
+
+#' @title Apply * by row
+#'
+#' @description Fast computation of sweep(X, MARGIN = 2, FUN = "*", STATS = scale)
+#' 
+#' @param X A matrix.
+#' @param scale a numeric vector of length equal to the number of rows of \code{x}
+#' 
+#' @return A matrix of same size as X.
+#' @author Brice Ozenne <broz@@sund.ku.dk>
+#' @examples
+#' x <- matrix(1,6,5)
+#' sweep(x, MARGIN = 2, FUN = "*", STATS = 1:5)
+#' rowMultiply_cpp(x, 1:5 )
+#' 
+#' rowMultiply_cpp(x, 1/colMeans(x) )
+#' 
+#' @export
+rowMultiply_cpp <- function(X, scale) {
+    .Call('riskRegression_rowMultiply_cpp', PACKAGE = 'riskRegression', X, scale)
 }
 

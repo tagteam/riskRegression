@@ -15,7 +15,7 @@ arma::mat predictCIF_cpp(const std::vector<arma::mat>& hazard,
                          const std::vector<double>& etimes, 
                          const std::vector<double>& etimeMax, 
                          double t0,
-                         int nTimes, 
+                         int nEventTimes, 
                          int nNewTimes, 
                          int nData, 
                          int cause, 
@@ -36,7 +36,7 @@ arma::mat predictCIF_cpp(const std::vector<arma::mat>& hazard,
     iterP = 0;
     strataI = strata.row(iterI);
     
-    for(int iterT=0 ; iterT<nTimes; iterT++){ // index of the time in the integral (event time number)
+    for(int iterT=0 ; iterT<nEventTimes; iterT++){ // index of the time in the integral (event time number)
       // update position 
       while(iterP < nNewTimes && newtimes[iterP]<etimes[iterT]){
         iterP++;
@@ -57,7 +57,7 @@ arma::mat predictCIF_cpp(const std::vector<arma::mat>& hazard,
         pred_CIF(iterI,iterP) += exp(-AllcumHazard_it) * hazard_it;  
       }else{// [only for conditional CIF]
         
-        if(etimes[iterT]<t0 && iterT<(nTimes+1) && etimes[iterT+1]>=t0){
+        if(etimes[iterT]<t0 && iterT<(nEventTimes+1) && etimes[iterT+1]>=t0){
           survival_t0 = exp(-AllcumHazard_it); // get the survival up to t0
         }
         

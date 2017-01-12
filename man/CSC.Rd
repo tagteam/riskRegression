@@ -4,7 +4,8 @@
 \alias{CSC}
 \title{Cause-specific Cox proportional hazard regression}
 \usage{
-CSC(formula, data, cause, survtype = "hazard", fitter = "coxph", ...)
+CSC(formula, data, cause, survtype = "hazard", fitter = "coxph",
+  iid = TRUE, ...)
 }
 \arguments{
 \item{formula}{Either a single \code{Hist} formula or a list of formulas. 
@@ -27,6 +28,8 @@ also a Cox regression model for event-free survival.}
 
 \item{fitter}{Routine to fit the Cox regression models.
 If \code{coxph} use \code{survival::coxph} else use \code{rms::cph}.}
+
+\item{iid}{logical. Compute the value of the influence function for each Cox model and store it in the (cause-specific) Cox regression object.}
 
 \item{...}{Arguments given to \code{coxph}.}
 }
@@ -55,7 +58,7 @@ data(Melanoma)
 ## fit two cause-specific Cox models
 ## different formula for the two causes
 fit1 <- CSC(list(Hist(time,status)~sex,Hist(time,status)~invasion+epicel+age),
-            data=Melanoma)
+            data=Melanoma, iid = TRUE)
 print(fit1)
 
 

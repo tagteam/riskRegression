@@ -55,7 +55,7 @@
 #' dtS$time <- round(dtS$time,1)
 #' dtS$X1 <- factor(rbinom(n, prob = c(0.3,0.4) , size = 2), labels = paste0("T",0:2))
 #'
-#' fit=cph(formula = Surv(time,event)~ X1+X2,data=dtS,y=TRUE)
+#' fit=cph(formula = Surv(time,event)~ X1+X2,data=dtS,y=TRUE,x=TRUE)
 #' ## the cph object carries its call:
 #' fit$call
 #' ## and there is a predictRisk method
@@ -119,6 +119,7 @@ ate <- function(object,
     
     #### calc G formula
     Gformula <- function(object, data, treatment, contrasts, times, cause, ...){
+      
         meanRisk <- lapply(1:n.contrasts,function(i){
             ## prediction for the hypothetical worlds in which every subject is treated with the same treatment
             data.i <- data
@@ -191,6 +192,7 @@ ate <- function(object,
                                   ...),
                          error = function(x){return(NULL)})
             })
+            
             parallel::stopCluster(cl)
             
         } else {
@@ -223,6 +225,11 @@ ate <- function(object,
         meanRisksBoot <- data.table::rbindlist(lapply(boots,function(x)x$meanRisk))
         riskComparisonsBoot <- data.table::rbindlist(lapply(boots,function(x)x$riskComparison))
         alpha <- 1-conf.level
+        
+        if(NROW(meanRisksBoot)==0){
+          stop("no successful bootstrap \n")
+        }
+        
         mrisks <- meanRisksBoot[,data.table::data.table(meanRiskBoot=mean(meanRisk, na.rm = TRUE),
                                                         lower=quantile(meanRisk,alpha/2, na.rm = TRUE),
                                                         upper=quantile(meanRisk,1-(alpha/2), na.rm = TRUE),

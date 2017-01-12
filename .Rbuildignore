@@ -2,3 +2,5 @@ examples/
 prepareData/
 ^README.org$
 ^\.travis\.yml$
+^.*\.Rproj$
+^\.Rproj\.user$

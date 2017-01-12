@@ -21,6 +21,7 @@
 #' also a Cox regression model for event-free survival.
 #' @param fitter Routine to fit the Cox regression models.
 #' If \code{coxph} use \code{survival::coxph} else use \code{rms::cph}.
+#' @param iid logical. Compute the value of the influence function for each Cox model and store it in the (cause-specific) Cox regression object.
 #' @param ... Arguments given to \code{coxph}.
 #' @return \item{models }{a list with the fitted (cause-specific) Cox
 #' regression objects} \item{response }{the event history response }
@@ -44,7 +45,7 @@
 ##' ## fit two cause-specific Cox models
 ##' ## different formula for the two causes
 ##' fit1 <- CSC(list(Hist(time,status)~sex,Hist(time,status)~invasion+epicel+age),
-##'             data=Melanoma)
+##'             data=Melanoma, iid = TRUE)
 ##' print(fit1)
 ##'
 ##' 
@@ -125,9 +126,10 @@ CSC <- function(formula,
                 cause,
                 survtype="hazard",
                 fitter="coxph",
+                iid=TRUE,
                 ## strip.environment
                 ...){
-    fitter <- match.arg(fitter,c("coxph","cph"))
+    fitter <- match.arg(fitter,c("coxph","cph","phreg"))
     # {{{ type
     survtype <- match.arg(survtype,c("hazard","survival"))
     # }}}
@@ -214,19 +216,30 @@ CSC <- function(formula,
                 statusX <- response[,"status"]
             }
         }
+        
         workData <- data.frame(time=time,status=statusX)
+        if(fitter=="phreg"){
+          if("entry" %in% names(data)){
+            stop("data must not contain a column named \"entry\" when using fitter=\"phreg\"")
+          }
+          workData$entry <- 0
+        }
         ## to interprete formula
         ## we need the variables. in case of log(age) terms
         ## covData has wrong names 
         ## workData <- cbind(workData,covData)
         workData <- cbind(workData,data)
-        formulaXX <- as.formula(paste("survival::Surv(time,status)",
+        
+        response <- paste0("survival::Surv(",if(fitter=="phreg"){"entry,"},"time, status)")
+        formulaXX <- as.formula(paste(response,
                                       as.character(delete.response(terms.formula(formulaX)))[[2]],
                                       sep="~"))
         if (fitter=="coxph"){
-            fit <- survival::coxph(formulaXX, data = workData,...)
-        } else {
-            fit <- rms::cph(formulaXX, data = workData,surv=TRUE,y=TRUE,...)
+          fit <- survival::coxph(formulaXX, data = workData,x=TRUE,y=TRUE,...)
+        } else if(fitter=="cph") {
+          fit <- rms::cph(formulaXX, data = workData,surv=TRUE,x=TRUE,y=TRUE,...)
+        } else if(fitter=="phreg") {
+          fit <- mets::phreg(formulaXX, data = workData, ...)
         }
         ## fit$formula <- terms(fit$formula)
         ## fit$call$formula <- terms(formulaXX)
@@ -242,8 +255,19 @@ CSC <- function(formula,
         names(CoxModels) <- c(paste("Cause",theCause),"OverallSurvival")
     }
     # }}}
+    # {{{ compute the value of the influence function for each observation
+    if(iid){
+      IF <- lapply(CoxModels,function(x){
+        iidCox(x)
+      })
+      names(IF) <- names(CoxModels)
+    }else{
+      IF <- NULL
+    }
+    # }}}
     out <- list(call=call,
                 models=CoxModels,
+                iid=IF,
                 response=response,
                 eventTimes=eventTimes,
                 survtype=survtype,

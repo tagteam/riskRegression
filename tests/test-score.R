@@ -26,8 +26,8 @@ test_that("survival outcome: Brier Score",
 {
     set.seed(112)
     d <- sampleData(112,outcome="survival")
-    f1 <- coxph(Surv(time,event)~X1+X5+X8,data=d)
-    f2 <- coxph(Surv(time,event)~X2+X6+X9+X10,data=d)
+    f1 <- coxph(Surv(time,event)~X1+X5+X8,data=d, x = TRUE, y = TRUE)
+    f2 <- coxph(Surv(time,event)~X2+X6+X9+X10,data=d, x = TRUE, y = TRUE)
     p1 <- pec(list(f1,f2),formula=Surv(time,event)~1,data=d,times=c(3,5,10),exact=FALSE,start=NULL)
     s1 <- Score(list(f1,f2),formula=Surv(time,event)~1,data=d,times=c(3,5,10),conf.int=FALSE,metrics="brier")
     expect_equal(p1$AppErr$coxph,s1$Brier$score[model=="coxph",Brier])

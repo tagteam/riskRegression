@@ -68,41 +68,67 @@ BEGIN_RCPP
 END_RCPP
 }
 // calcE_cpp
-List calcE_cpp(double t, int n, int p, const NumericVector& eventtime, const NumericVector& eXb, const arma::mat& X);
-RcppExport SEXP riskRegression_calcE_cpp(SEXP tSEXP, SEXP nSEXP, SEXP pSEXP, SEXP eventtimeSEXP, SEXP eXbSEXP, SEXP XSEXP) {
+List calcE_cpp(const NumericVector& eventtime, const NumericVector& status, const NumericVector& eXb, const arma::mat& X, int p, bool add0);
+RcppExport SEXP riskRegression_calcE_cpp(SEXP eventtimeSEXP, SEXP statusSEXP, SEXP eXbSEXP, SEXP XSEXP, SEXP pSEXP, SEXP add0SEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< double >::type t(tSEXP);
-    Rcpp::traits::input_parameter< int >::type n(nSEXP);
-    Rcpp::traits::input_parameter< int >::type p(pSEXP);
     Rcpp::traits::input_parameter< const NumericVector& >::type eventtime(eventtimeSEXP);
+    Rcpp::traits::input_parameter< const NumericVector& >::type status(statusSEXP);
     Rcpp::traits::input_parameter< const NumericVector& >::type eXb(eXbSEXP);
     Rcpp::traits::input_parameter< const arma::mat& >::type X(XSEXP);
-    rcpp_result_gen = Rcpp::wrap(calcE_cpp(t, n, p, eventtime, eXb, X));
+    Rcpp::traits::input_parameter< int >::type p(pSEXP);
+    Rcpp::traits::input_parameter< bool >::type add0(add0SEXP);
+    rcpp_result_gen = Rcpp::wrap(calcE_cpp(eventtime, status, eXb, X, p, add0));
     return rcpp_result_gen;
 END_RCPP
 }
-// calcU_cpp
-arma::mat calcU_cpp(const arma::mat& newX, const NumericVector& newStatus, int newN, const IntegerVector& IndexNewT, const arma::mat& ENewT, int p, bool aggregate);
-RcppExport SEXP riskRegression_calcU_cpp(SEXP newXSEXP, SEXP newStatusSEXP, SEXP newNSEXP, SEXP IndexNewTSEXP, SEXP ENewTSEXP, SEXP pSEXP, SEXP aggregateSEXP) {
+// ICbeta_cpp
+arma::mat ICbeta_cpp(const NumericVector& newT, const NumericVector& neweXb, const arma::mat& newX, const NumericVector& newStatus, const IntegerVector& newIndexJump, const NumericVector& S01, const arma::mat& E1, const NumericVector& time1, const arma::mat& iInfo, int p);
+RcppExport SEXP riskRegression_ICbeta_cpp(SEXP newTSEXP, SEXP neweXbSEXP, SEXP newXSEXP, SEXP newStatusSEXP, SEXP newIndexJumpSEXP, SEXP S01SEXP, SEXP E1SEXP, SEXP time1SEXP, SEXP iInfoSEXP, SEXP pSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const NumericVector& >::type newT(newTSEXP);
+    Rcpp::traits::input_parameter< const NumericVector& >::type neweXb(neweXbSEXP);
     Rcpp::traits::input_parameter< const arma::mat& >::type newX(newXSEXP);
     Rcpp::traits::input_parameter< const NumericVector& >::type newStatus(newStatusSEXP);
-    Rcpp::traits::input_parameter< int >::type newN(newNSEXP);
-    Rcpp::traits::input_parameter< const IntegerVector& >::type IndexNewT(IndexNewTSEXP);
-    Rcpp::traits::input_parameter< const arma::mat& >::type ENewT(ENewTSEXP);
+    Rcpp::traits::input_parameter< const IntegerVector& >::type newIndexJump(newIndexJumpSEXP);
+    Rcpp::traits::input_parameter< const NumericVector& >::type S01(S01SEXP);
+    Rcpp::traits::input_parameter< const arma::mat& >::type E1(E1SEXP);
+    Rcpp::traits::input_parameter< const NumericVector& >::type time1(time1SEXP);
+    Rcpp::traits::input_parameter< const arma::mat& >::type iInfo(iInfoSEXP);
     Rcpp::traits::input_parameter< int >::type p(pSEXP);
-    Rcpp::traits::input_parameter< bool >::type aggregate(aggregateSEXP);
-    rcpp_result_gen = Rcpp::wrap(calcU_cpp(newX, newStatus, newN, IndexNewT, ENewT, p, aggregate));
+    rcpp_result_gen = Rcpp::wrap(ICbeta_cpp(newT, neweXb, newX, newStatus, newIndexJump, S01, E1, time1, iInfo, p));
+    return rcpp_result_gen;
+END_RCPP
+}
+// IClambda0_cpp
+arma::mat IClambda0_cpp(const NumericVector& tau, const arma::mat& ICbeta, const NumericVector& newT, const NumericVector& neweXb, const NumericVector& newStatus, const IntegerVector& newStrata, const IntegerVector& newIndexJump, const NumericVector& S01, const arma::mat& E1, const NumericVector& time1, const NumericVector& lambda0, int p, int strata);
+RcppExport SEXP riskRegression_IClambda0_cpp(SEXP tauSEXP, SEXP ICbetaSEXP, SEXP newTSEXP, SEXP neweXbSEXP, SEXP newStatusSEXP, SEXP newStrataSEXP, SEXP newIndexJumpSEXP, SEXP S01SEXP, SEXP E1SEXP, SEXP time1SEXP, SEXP lambda0SEXP, SEXP pSEXP, SEXP strataSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const NumericVector& >::type tau(tauSEXP);
+    Rcpp::traits::input_parameter< const arma::mat& >::type ICbeta(ICbetaSEXP);
+    Rcpp::traits::input_parameter< const NumericVector& >::type newT(newTSEXP);
+    Rcpp::traits::input_parameter< const NumericVector& >::type neweXb(neweXbSEXP);
+    Rcpp::traits::input_parameter< const NumericVector& >::type newStatus(newStatusSEXP);
+    Rcpp::traits::input_parameter< const IntegerVector& >::type newStrata(newStrataSEXP);
+    Rcpp::traits::input_parameter< const IntegerVector& >::type newIndexJump(newIndexJumpSEXP);
+    Rcpp::traits::input_parameter< const NumericVector& >::type S01(S01SEXP);
+    Rcpp::traits::input_parameter< const arma::mat& >::type E1(E1SEXP);
+    Rcpp::traits::input_parameter< const NumericVector& >::type time1(time1SEXP);
+    Rcpp::traits::input_parameter< const NumericVector& >::type lambda0(lambda0SEXP);
+    Rcpp::traits::input_parameter< int >::type p(pSEXP);
+    Rcpp::traits::input_parameter< int >::type strata(strataSEXP);
+    rcpp_result_gen = Rcpp::wrap(IClambda0_cpp(tau, ICbeta, newT, neweXb, newStatus, newStrata, newIndexJump, S01, E1, time1, lambda0, p, strata));
     return rcpp_result_gen;
 END_RCPP
 }
 // predictCIF_cpp
-arma::mat predictCIF_cpp(const std::vector<arma::mat>& hazard, const std::vector<arma::mat>& cumHazard, const arma::mat& eXb_h, const arma::mat& eXb_cumH, const arma::mat& strata, const std::vector<double>& newtimes, const std::vector<double>& etimes, const std::vector<double>& etimeMax, double t0, int nTimes, int nNewTimes, int nData, int cause, int nCause);
-RcppExport SEXP riskRegression_predictCIF_cpp(SEXP hazardSEXP, SEXP cumHazardSEXP, SEXP eXb_hSEXP, SEXP eXb_cumHSEXP, SEXP strataSEXP, SEXP newtimesSEXP, SEXP etimesSEXP, SEXP etimeMaxSEXP, SEXP t0SEXP, SEXP nTimesSEXP, SEXP nNewTimesSEXP, SEXP nDataSEXP, SEXP causeSEXP, SEXP nCauseSEXP) {
+arma::mat predictCIF_cpp(const std::vector<arma::mat>& hazard, const std::vector<arma::mat>& cumHazard, const arma::mat& eXb_h, const arma::mat& eXb_cumH, const arma::mat& strata, const std::vector<double>& newtimes, const std::vector<double>& etimes, const std::vector<double>& etimeMax, double t0, int nEventTimes, int nNewTimes, int nData, int cause, int nCause);
+RcppExport SEXP riskRegression_predictCIF_cpp(SEXP hazardSEXP, SEXP cumHazardSEXP, SEXP eXb_hSEXP, SEXP eXb_cumHSEXP, SEXP strataSEXP, SEXP newtimesSEXP, SEXP etimesSEXP, SEXP etimeMaxSEXP, SEXP t0SEXP, SEXP nEventTimesSEXP, SEXP nNewTimesSEXP, SEXP nDataSEXP, SEXP causeSEXP, SEXP nCauseSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -115,12 +141,12 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< const std::vector<double>& >::type etimes(etimesSEXP);
     Rcpp::traits::input_parameter< const std::vector<double>& >::type etimeMax(etimeMaxSEXP);
     Rcpp::traits::input_parameter< double >::type t0(t0SEXP);
-    Rcpp::traits::input_parameter< int >::type nTimes(nTimesSEXP);
+    Rcpp::traits::input_parameter< int >::type nEventTimes(nEventTimesSEXP);
     Rcpp::traits::input_parameter< int >::type nNewTimes(nNewTimesSEXP);
     Rcpp::traits::input_parameter< int >::type nData(nDataSEXP);
     Rcpp::traits::input_parameter< int >::type cause(causeSEXP);
     Rcpp::traits::input_parameter< int >::type nCause(nCauseSEXP);
-    rcpp_result_gen = Rcpp::wrap(predictCIF_cpp(hazard, cumHazard, eXb_h, eXb_cumH, strata, newtimes, etimes, etimeMax, t0, nTimes, nNewTimes, nData, cause, nCause));
+    rcpp_result_gen = Rcpp::wrap(predictCIF_cpp(hazard, cumHazard, eXb_h, eXb_cumH, strata, newtimes, etimes, etimeMax, t0, nEventTimes, nNewTimes, nData, cause, nCause));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -193,6 +219,30 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< arma::mat >::type X(XSEXP);
     Rcpp::traits::input_parameter< arma::rowvec& >::type scale(scaleSEXP);
     rcpp_result_gen = Rcpp::wrap(rowScale_cpp(X, scale));
+    return rcpp_result_gen;
+END_RCPP
+}
+// colMultiply_cpp
+arma::mat colMultiply_cpp(arma::mat X, arma::colvec& scale);
+RcppExport SEXP riskRegression_colMultiply_cpp(SEXP XSEXP, SEXP scaleSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::mat >::type X(XSEXP);
+    Rcpp::traits::input_parameter< arma::colvec& >::type scale(scaleSEXP);
+    rcpp_result_gen = Rcpp::wrap(colMultiply_cpp(X, scale));
+    return rcpp_result_gen;
+END_RCPP
+}
+// rowMultiply_cpp
+arma::mat rowMultiply_cpp(arma::mat X, arma::rowvec& scale);
+RcppExport SEXP riskRegression_rowMultiply_cpp(SEXP XSEXP, SEXP scaleSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::mat >::type X(XSEXP);
+    Rcpp::traits::input_parameter< arma::rowvec& >::type scale(scaleSEXP);
+    rcpp_result_gen = Rcpp::wrap(rowMultiply_cpp(X, scale));
     return rcpp_result_gen;
 END_RCPP
 }

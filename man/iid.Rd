@@ -5,9 +5,8 @@
 \alias{iidCox}
 \title{Extract i.i.d. decomposition from a Cox model}
 \usage{
-iidCox(object, newdata = NULL, tauLambda = NULL, tauBeta = NULL,
-  keep.times = TRUE, center.eXb = TRUE, center.LPdata = FALSE,
-  center.lambda0 = TRUE, center.result = TRUE)
+iidCox(object, newdata = NULL, tauHazard = NULL, keep.times = TRUE,
+  center.result = TRUE)
 }
 \arguments{
 \item{object}{object The fitted Cox regression model object either
@@ -16,17 +15,9 @@ obtained with \code{coxph} (survival package) or \code{cph}
 
 \item{newdata}{Optional new data at which to do i.i.d. decomposition}
 
-\item{tauLambda}{the vector of times at which the i.i.d decomposition of the baseline hazard will be computed}
-
-\item{tauBeta}{the time at which the i.i.d decomposition of the beta will be computed}
+\item{tauHazard}{the vector of times at which the i.i.d decomposition of the baseline hazard will be computed}
 
 \item{keep.times}{Logical. If \code{TRUE} add the evaluation times to the output.}
-
-\item{center.eXb}{Temporary argument. Should the linear predictor be centered on the exponential scale.}
-
-\item{center.LPdata}{Temporary argument. Should the covariates be centered.}
-
-\item{center.lambda0}{Temporary argument. Should the linear predictor be centered when computing the baseline hazard (equivalent to centered in basehaz).}
 
 \item{center.result}{Temporary argument. Should the IF be rescale to match timereg results.}
 
@@ -34,6 +25,9 @@ obtained with \code{coxph} (survival package) or \code{cph}
 }
 \description{
 Compute the influence function for each observation used to estimate the model
+}
+\details{
+If there is no event in a strata, the influence function for the baseline hazard is set to 0.
 }
 \examples{
 library(survival)
@@ -47,10 +41,10 @@ mGS.cox <- cox.aalen(Surv(eventtime, event) ~ prop(X1)+prop(X6), data = d, resam
 ICbeta_GS <- mGS.cox$gamma.iid
 IClambda_GS <- t(as.data.table(mGS.cox$B.iid))
  
-m.cox <- coxph(Surv(eventtime, event) ~ X1+X6, data = d, y = TRUE)
-IC.cox <- iidCox(m.cox)
+m.cox <- coxph(Surv(eventtime, event) ~ X1+X6, data = d, y = TRUE, x = TRUE)
+system.time(IC.cox <- iidCox(m.cox))
 
-IC.cox <- iidCox(m.cox, tauLambda = 7)
+IC.cox <- iidCox(m.cox, tauHazard = 7)
  
 
 }

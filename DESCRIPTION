@@ -32,7 +32,8 @@ Suggests:
     party,
     rpart,
     doMC,
-    CoxBoost
+    CoxBoost,
+	mets
 Maintainer: Thomas Alexander Gerds <tag@biostat.ku.dk>
 Description: Implementation of the following methods for event history analysis.
              Risk regression models for survival endpoints also in the presence of
@@ -49,3 +50,51 @@ Description: Implementation of the following methods for event history analysis.
              and then summarizes and compares the performance across splits.  
 License: GPL (>= 2)
 RoxygenNote: 5.0.1
+Collate:
+  'ARR.R'
+  'ate.R'
+  'boxplot.Score.R'
+  'coef.riskRegression.R'
+  'contrastMethods.R'
+  'CSC.R'
+  'FGR.R'
+  'getCensoringWeights.R'
+  'getComparisons.R'
+  'getCoxInfo.R'
+  'getInfluenceCurve.R'
+  'getNullModel.R'
+  'getPseudoValues.R'
+  'getResponse.R'
+  'getSplitMethod.R'
+  'influenceCox.R'
+  'ipcw.R'
+  'LRR.R'
+  'plot.CauseSpecificCox.R'
+  'plot.predictedRisk.R'
+  'plot.riskRegression.R'
+  'plotAUC.R'
+  'plotCoef.R'
+  'plotEffects.R'
+  'plotROC.R'
+  'plotScore.R'
+  'predict.CauseSpecificCox.R'
+  'predict.FGR.R'
+  'predict.riskRegression.R'
+  'predictCox.R'
+  'predictRisk.R'
+  'print.ate.R'
+  'print.CauseSpecificCox.R'
+  'print.FGR.R'
+  'print.riskRegression.R'
+  'print.Score.R'
+  'print.subjectWeights.R'
+  'pseudoOrder.R'
+  'RcppExports.R'
+  'riskQuantile.R'
+  'riskRegression-package.R'
+  'riskRegression.R'
+  'sampleData.R'
+  'Score.R'
+  'subjectWeights.R'
+  'summary.FGR.R'
+  'summary.riskRegression.R'

@@ -94,3 +94,48 @@ arma::mat rowScale_cpp(arma::mat X, arma::rowvec& scale){
   X.each_row() /= scale;
   return(X);
 }
+
+//' @title Apply * by column
+//'
+//' @description Fast computation of sweep(X, MARGIN = 1, FUN = "*", STATS = scale)
+//' 
+//' @param X A matrix.
+//' @param scale a numeric vector of length equal to the number of rows of \code{x}
+//' 
+//' @return A matrix of same size as X.
+//' @author Brice Ozenne <broz@@sund.ku.dk>
+//' @examples
+//' x <- matrix(1,6,5)
+//' sweep(x, MARGIN = 1, FUN = "*", STATS = 1:6)
+//' colMultiply_cpp(x, 1:6 )
+//' 
+//' @export
+// [[Rcpp::export]]
+arma::mat colMultiply_cpp(arma::mat X, arma::colvec& scale){
+  X.each_col() %= scale;
+  return(X);
+}
+
+
+//' @title Apply * by row
+//'
+//' @description Fast computation of sweep(X, MARGIN = 2, FUN = "*", STATS = scale)
+//' 
+//' @param X A matrix.
+//' @param scale a numeric vector of length equal to the number of rows of \code{x}
+//' 
+//' @return A matrix of same size as X.
+//' @author Brice Ozenne <broz@@sund.ku.dk>
+//' @examples
+//' x <- matrix(1,6,5)
+//' sweep(x, MARGIN = 2, FUN = "*", STATS = 1:5)
+//' rowMultiply_cpp(x, 1:5 )
+//' 
+//' rowMultiply_cpp(x, 1/colMeans(x) )
+//' 
+//' @export
+// [[Rcpp::export]]
+arma::mat rowMultiply_cpp(arma::mat X, arma::rowvec& scale){
+  X.each_row() %= scale;
+  return(X);
+}

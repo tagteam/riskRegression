@@ -2,75 +2,63 @@
 % Please edit documentation in R/getCoxInfo.R
 \name{CoxDesign}
 \alias{CoxDesign}
-\title{Extract the design matrix for a Cox model}
+\alias{CoxDesign.coxph}
+\alias{CoxDesign.phreg}
+\title{Extract the design matrix used to train a Cox model}
 \usage{
-CoxDesign(object, data, lpvars, stratavars, rm.intercept, center)
+CoxDesign(object, center)
+
+\method{CoxDesign}{coxph}(object, center = FALSE)
+
+\method{CoxDesign}{phreg}(object, center = FALSE)
 }
 \arguments{
 \item{object}{The fitted Cox regression model object either
-obtained with \code{coxph} (survival package) or \code{cph}
-(rms package).}
+obtained with \code{coxph} (survival package), \code{cph}
+(rms package), or \code{phreg} (mets package).}
 
-\item{data}{a \code{data.frame} or a \code{data.table}}
-
-\item{lpvars}{the variables used to define the linear predictor}
-
-\item{stratavars}{the special variables used to define the strata}
-
-\item{rm.intercept}{should the intercept be removed}
-
-\item{center}{should the covariates be centered}
+\item{center}{logical. Should the variable of the linear predictor be centered ?}
 }
 \description{
-Extract the design matrix for a Cox model
-}
-\details{
-if no variables for the linear predictor or the strata, returns a data.table with one column filled with 0.
+Extract the design matrix used to train a Cox model. Should contain the time of event, the type of event, 
+the variable for the linear predictor, the strata variables and the date of entry (in case of delayed entry).
 }
 \examples{
 \dontrun{
-d <- sampleData(1e2, outcome = "survival")
+set.seed(10)
+d <- sampleData(2e1, outcome = "survival")
+d$entry <- 0
 
 ##
 library(survival)
-mCoxS <- coxph(Surv(time, event) ~ X1, data = d) 
-info <- CoxStrataVar(mCoxS)
-CoxDesign(mCoxS, data = CoxData(mCoxS), lpvars = info$lpvars, stratavars = info$stratavars, rm.intercept = TRUE, center = FALSE)
-CoxDesign(mCoxS, data = d, lpvars = info$lpvars, stratavars = info$stratavars, rm.intercept = TRUE, center = TRUE)
-
-mCoxS <- coxph(Surv(time, event) ~ X1*X2, data = d) 
-info <- CoxStrataVar(mCoxS)
-CoxDesign(mCoxS, data = CoxData(mCoxS), lpvars = info$lpvars, stratavars = info$stratavars, rm.intercept = TRUE, center = FALSE)
-
-mCoxS <- coxph(Surv(time, event) ~ strata(X1)+X2, data = d) 
-info <- CoxStrataVar(mCoxS)
-CoxDesign(mCoxS, data = CoxData(mCoxS), lpvars = info$lpvars, stratavars = info$stratavars, rm.intercept = TRUE, center = FALSE)
-
-mCoxS <- coxph(Surv(time, event) ~ strata(X1)+strata(X2), data = d) 
-info <- CoxStrataVar(mCoxS)
-CoxDesign(mCoxS, data = CoxData(mCoxS), lpvars = info$lpvars, stratavars = info$stratavars, rm.intercept = TRUE, center = FALSE)
+mCox <- coxph(Surv(entry, time, event) ~ X1+X2, data = d, x = TRUE, y = TRUE)
+CoxDesign(mCox)
+mCox <- coxph(Surv(time, event) ~ X1*X2+strata(X3), data = d, x = TRUE, y = TRUE)
+CoxDesign(mCox)
+mCox <- coxph(Surv(time, event) ~ X1+X2+strata(X3)+strata(X4), data = d, x = TRUE, y = TRUE)
+CoxDesign(mCox, center = TRUE)
 
 ##
 library(rms)
-mCoxS <- cph(Surv(time, event) ~ X1, data = d) 
-info <- CoxStrataVar(mCoxS)
-CoxDesign(mCoxS, data = CoxData(mCoxS), lpvars = info$lpvars, stratavars = info$stratavars, rm.intercept = TRUE, center = FALSE)
-CoxDesign(mCoxS, data = CoxData(mCoxS), lpvars = info$lpvars, stratavars = info$stratavars, rm.intercept = TRUE, center = TRUE)
+mCox <- cph(Surv(time, event) ~ X1+X2, data = d, x = TRUE, y = TRUE)
+CoxDesign(mCox)
+mCox <- cph(Surv(time, event) ~ X1*X2+strat(X3), data = d, x = TRUE, y = TRUE)
+CoxDesign(mCox, center = TRUE)
+mCox <- cph(Surv(time, event) ~ X1*X2+strat(X3)+strat(X4), data = d, x = TRUE, y = TRUE)
+CoxDesign(mCox)
 
-mCoxS <- cph(Surv(time, event) ~ X1*X2, data = d) 
-info <- CoxStrataVar(mCoxS)
-CoxDesign(mCoxS, data = CoxData(mCoxS), lpvars = info$lpvars, stratavars = info$stratavars, rm.intercept = TRUE, center = FALSE)
+##
+library(mets) 
+d$id <- 1:NROW(d)
 
-mCoxS <- cph(Surv(time, event) ~ strat(X1)+X2, data = d) 
-info <- CoxStrataVar(mCoxS)
-CoxDesign(mCoxS, data = CoxData(mCoxS), lpvars = info$lpvars, stratavars = info$stratavars, rm.intercept = TRUE, center = FALSE)
-
-mCoxS <- cph(Surv(time, event) ~ strat(X1)+strat(X2), data = d) 
-info <- CoxStrataVar(mCoxS)
-CoxDesign(mCoxS, data = CoxData(mCoxS), lpvars = info$lpvars, stratavars = info$stratavars, rm.intercept = TRUE, center = FALSE)
+mCox <- phreg(Surv(entry, time, event) ~ X1*X2, data = d)
+CoxDesign(mCox)
+mCox <- phreg(Surv(entry, time, event) ~ X1+X2+strata(X3)+cluster(id), data = d)
+CoxDesign(mCox)
+# mCox <- phreg(Surv(entry, time, event) ~ X1+X2+strata(X3)+strata(X4)+cluster(id), data = d)
 }
 }
 \author{
-Brice Ozenne broz@sund.ku.dk, Thomas A. Gerds tag@biostat.ku.dk
+Brice Ozenne broz@sund.ku.dk
 }
 

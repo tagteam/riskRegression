@@ -3,6 +3,7 @@ library(testthat)
 
 #### Cox model ####
 context("ate for Cox model")
+set.seed(10)
 
 n <- 1e2
 dtS <- sampleData(n,outcome="survival")
@@ -12,7 +13,7 @@ dtS$X1 <- factor(rbinom(n, prob = c(0.3,0.4) , size = 2), labels = paste0("T",0:
 if(require(rms)){
     test_that("G formula: cph, sequential",{
         # one time point
-        fit <- cph(Surv(time,event)~ X1+X2,data=dtS,y=TRUE)
+        fit <- cph(Surv(time,event)~ X1+X2,data=dtS,y=TRUE,x=TRUE)
         ate(fit,data = dtS, treatment = "X1", contrasts = NULL,
             times = 1, B = 2, y = TRUE, mc.cores=1)
         # several time points
@@ -21,7 +22,7 @@ if(require(rms)){
     })
     if(parallel::detectCores()>1){
         test_that("G formula: cph, parallel",{
-            fit=cph(formula = Surv(time,event)~ strat(X1)+X2,data=dtS,y=TRUE)
+            fit=cph(formula = Surv(time,event)~ strat(X1)+X2,data=dtS,y=TRUE,x=TRUE)
             ate(object = fit, data = dtS, treatment = "X1", contrasts = NULL,
                 times = 1:2, B = 2, y = TRUE, mc.cores=1, handler = "mclapply", verbose = FALSE)
             ate(object=fit, data = dtS, treatment = "X1", contrasts = NULL,
@@ -33,7 +34,7 @@ if(require(rms)){
 if(require(survival)){
     test_that("G formula: coxph, sequential",{
         # one time point
-        fit <- coxph(Surv(time,event)~ X1+X2,data=dtS)
+        fit <- coxph(Surv(time,event)~ X1+X2,data=dtS,y=TRUE,x=TRUE)
         ate(fit,data = dtS, treatment = "X1", contrasts = NULL,
             times = 1, B = 2, y = TRUE, mc.cores=1)
         # several time points
@@ -42,9 +43,11 @@ if(require(survival)){
     })
     if(parallel::detectCores()>1){
         test_that("G formula: coxph, parallel",{
-            fit=coxph(formula = Surv(time,event)~ strata(X1)+X2,data=dtS)
+            fit=coxph(formula = Surv(time,event)~ strata(X1)+X2,data=dtS,y=TRUE,x=TRUE)
+            set.seed(10)
             ate(object = fit, data = dtS, treatment = "X1", contrasts = NULL,
                 times = 1:2, B = 2, y = TRUE, mc.cores=1, handler = "mclapply", verbose = FALSE)
+            set.seed(10)
             ate(object=fit, data = dtS, treatment = "X1", contrasts = NULL,
                 times = 1:2, B = 2, y = TRUE, mc.cores=1, handler = "foreach", verbose = FALSE)
         })
@@ -61,7 +64,7 @@ dtS$X1 <- factor(rbinom(n, prob = c(0.3,0.4) , size = 2), labels = paste0("T",0:
 
 if(require(rms)){
   test_that("G formula: cph, fully stratified",{
-    fit <- cph(formula = Surv(time,event)~ strat(X1),data=dtS,y=TRUE)
+    fit <- cph(formula = Surv(time,event)~ strat(X1),data=dtS,y=TRUE,x=TRUE)
     ate(fit, data = dtS, treatment = "X1", contrasts = NULL,
         times = 1:10, B = 2, y = TRUE, mc.cores=1)
   })
@@ -70,7 +73,7 @@ if(require(rms)){
 if(require(survival)){
   test_that("G formula: coxph, fully stratified",{
     # one time point
-    fit <- coxph(Surv(time,event)~ strata(X1),data=dtS)
+    fit <- coxph(Surv(time,event)~ strata(X1),data=dtS,y=TRUE,x=TRUE)
     ate(fit,data = dtS, treatment = "X1", contrasts = NULL,
         times = 1, B = 2, y = TRUE, mc.cores=1)
     

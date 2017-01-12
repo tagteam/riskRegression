@@ -2,7 +2,7 @@
 % Please edit documentation in R/predict.CauseSpecificCox.R
 \name{predict.CauseSpecificCox}
 \alias{predict.CauseSpecificCox}
-\title{Predicting hazard or cumulative hazard}
+\title{Predicting absolute risk from cause-specific Cox models}
 \usage{
 \method{predict}{CauseSpecificCox}(object, newdata, times, cause, t0 = NA,
   colnames = TRUE, se = FALSE, ...)
@@ -22,7 +22,7 @@ hazards/survival}
 
 \item{colnames}{Logical. If \code{TRUE} name the columns of the matrix containing the absolute risk with times}
 
-\item{se}{Logical. If \code{TRUE} add the standard errors corresponding to the output. Experimental !!}
+\item{se}{Logical. If \code{TRUE} add the standard errors corresponding to the output}
 
 \item{...}{not used}
 }
@@ -45,7 +45,7 @@ d$time <- round(d$time,1)
 ttt <- sample(x = unique(sort(d$time)), size = 10) 
 
 #### coxph function
-CSC.fit <- CSC(Hist(time,event)~ X1+X2,data=d, method = "breslow" )
+CSC.fit <- CSC(Hist(time,event)~ X1+X2,data=d, method = "breslow")
 
 predCSC <- predict(CSC.fit, newdata = d, cause = 2, times = ttt)
 

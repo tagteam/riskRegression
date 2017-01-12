@@ -6,7 +6,7 @@
 \usage{
 predictCox(object, newdata = NULL, times, centered = TRUE,
   type = c("hazard", "cumHazard", "survival"), keep.strata = TRUE,
-  keep.times = TRUE, keep.lastEventTime = FALSE, se = FALSE,
+  keep.times = TRUE, keep.lastEventTime = FALSE, se = FALSE, iid = NULL,
   format = "data.frame")
 }
 \arguments{
@@ -32,7 +32,9 @@ or several of the strings \code{"hazard"},\code{"cumhazard"}, \code{"survival"}}
 
 \item{keep.lastEventTime}{Logical. If \code{TRUE} add the time at which the last event occured in each strata to the output list.}
 
-\item{se}{Logical. If \code{TRUE} add the standard errors corresponding to the output. Experimental !!}
+\item{se}{Logical. If \code{TRUE} add the standard errors corresponding to the output.}
+
+\item{iid}{the value of the influence function obtained with the function \code{iidCox}.}
 
 \item{format}{how to export the baseline hazard. Can be \code{"data.frame"}, \code{"data.table"} or \code{"list"}.}
 }
@@ -47,6 +49,7 @@ as well as survival probabilities from a coxph or cph object
 \details{
 Not working with time varying predictor variables or
     delayed entry.
+The centered argument enables to reproduce results obtained with the \code{basehaz} function from the survival package.
 }
 \examples{
 library(survival)
@@ -55,7 +58,7 @@ set.seed(10)
 d <- SimSurv(1e2)
 nd <- SimSurv(10)
 d$time <- round(d$time,1)
-fit <- coxph(Surv(time,status)~X1 * X2,data=d, ties="breslow")
+fit <- coxph(Surv(time,status)~X1 * X2,data=d, ties="breslow", x = TRUE, y = TRUE)
 # table(duplicated(d$time))
 
 predictCox(fit)
@@ -63,7 +66,7 @@ predictCox(fit, newdata=nd, times = 5)
 cbind(survival::basehaz(fit),predictCox(fit,type="cumHazard"))
 
 # one strata variable
-fitS <- coxph(Surv(time,status)~strata(X1)+X2,data=d, ties="breslow")
+fitS <- coxph(Surv(time,status)~strata(X1)+X2,data=d, ties="breslow", x = TRUE, y = TRUE)
 
 predictCox(fitS)
 predictCox(fitS, newdata=nd, times = 1)
@@ -74,7 +77,7 @@ d$U=sample(letters[1:5],replace=TRUE,size=NROW(d))
 d$V=sample(letters[4:10],replace=TRUE,size=NROW(d))
 nd$U=sample(letters[1:5],replace=TRUE,size=NROW(nd))
 nd$V=sample(letters[4:10],replace=TRUE,size=NROW(nd))
-fit2S <- coxph(Surv(time,status)~X1+strata(U)+strata(V)+X2,data=d, ties="breslow")
+fit2S <- coxph(Surv(time,status)~X1+strata(U)+strata(V)+X2,data=d, ties="breslow", x = TRUE, y = TRUE)
 
 cbind(survival::basehaz(fit2S),predictCox(fit2S,type="cumHazard"))
 predictCox(fit2S)

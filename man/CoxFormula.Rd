@@ -4,6 +4,7 @@
 \alias{CoxFormula}
 \alias{CoxFormula.coxph}
 \alias{CoxFormula.cph}
+\alias{CoxFormula.phreg}
 \title{Extract the formula from a Cox model}
 \usage{
 CoxFormula(object)
@@ -11,11 +12,13 @@ CoxFormula(object)
 \method{CoxFormula}{cph}(object)
 
 \method{CoxFormula}{coxph}(object)
+
+\method{CoxFormula}{phreg}(object)
 }
 \arguments{
 \item{object}{The fitted Cox regression model object either
-obtained with \code{coxph} (survival package) or \code{cph}
-(rms package).}
+obtained with \code{coxph} (survival package), \code{cph}
+(rms package), or \code{phreg} (mets package).}
 }
 \description{
 Extract the formula from a Cox model
@@ -31,11 +34,12 @@ CoxFormula(mCox)
 
 ##
 library(rms)
-mCox <- cph(Surv(time, event) ~ X1+X2, data = d, y = TRUE)
+f <- Surv(time, event) ~ X1+X2
+mCox <- cph(f, data = d, y = TRUE)
 CoxFormula(mCox)
 }
 }
 \author{
-Brice Ozenne broz@sund.ku.dk, Thomas A. Gerds tag@biostat.ku.dk
+Brice Ozenne broz@sund.ku.dk
 }
 
