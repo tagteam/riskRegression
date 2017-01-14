@@ -32,7 +32,8 @@
 #' d <- SimSurv(1e2)
 #' nd <- SimSurv(10)
 #' d$time <- round(d$time,1)
-#' fit <- coxph(Surv(time,status)~X1 * X2,data=d, ties="breslow", x = TRUE, y = TRUE)
+#' fit <- coxph(Surv(time,status)~X1 * X2,
+#'              data=d, ties="breslow", x = TRUE, y = TRUE)
 #' # table(duplicated(d$time))
 #' 
 #' predictCox(fit)
@@ -40,7 +41,8 @@
 #' cbind(survival::basehaz(fit),predictCox(fit,type="cumHazard"))
 #' 
 #' # one strata variable
-#' fitS <- coxph(Surv(time,status)~strata(X1)+X2,data=d, ties="breslow", x = TRUE, y = TRUE)
+#' fitS <- coxph(Surv(time,status)~strata(X1)+X2,
+#'               data=d, ties="breslow", x = TRUE, y = TRUE)
 #' 
 #' predictCox(fitS)
 #' predictCox(fitS, newdata=nd, times = 1)
@@ -51,7 +53,8 @@
 #' d$V=sample(letters[4:10],replace=TRUE,size=NROW(d))
 #' nd$U=sample(letters[1:5],replace=TRUE,size=NROW(nd))
 #' nd$V=sample(letters[4:10],replace=TRUE,size=NROW(nd))
-#' fit2S <- coxph(Surv(time,status)~X1+strata(U)+strata(V)+X2,data=d, ties="breslow", x = TRUE, y = TRUE)
+#' fit2S <- coxph(Surv(time,status)~X1+strata(U)+strata(V)+X2,
+#'               data=d, ties="breslow", x = TRUE, y = TRUE)
 #'
 #' cbind(survival::basehaz(fit2S),predictCox(fit2S,type="cumHazard"))
 #' predictCox(fit2S)

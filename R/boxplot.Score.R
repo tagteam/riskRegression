@@ -4,9 +4,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Aug 15 2016 (09:45) 
 ## Version: 
-## last-updated: Dec 12 2016 (07:03) 
+## last-updated: Jan 14 2017 (08:36) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 50
+##     Update #: 51
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -29,8 +29,11 @@
 #' @param xlim x-axis limits
 #' @param xlab x-axis label
 #' @param main title of plot
-#' @param outcomeLabel Title label for column which shows the outcome status 
-#' @param refline Logical, for \code{type="diff"} only. If \code{TRUE} draw a red vertical line at \code{0}.
+#' @param outcomeLabel Title label for column which shows the outcome
+#'     status
+#' @param eventLabels Labels for the different events (causes).
+#' @param refline Logical, for \code{type="diff"} only. If \code{TRUE}
+#'     draw a red vertical line at \code{0}.
 #' @param ... not used
 ##' @examples
 ##' # binary outcome
@@ -90,7 +93,19 @@
 ##' 
 ##' 
 #' @export
-boxplot.Score <- function(x,model,reference,type,timepoint,lwd=3,xlim,xlab,main,outcomeLabel,eventLabels,refline=TRUE,...){
+boxplot.Score <- function(x,
+                          model,
+                          reference,
+                          type,
+                          timepoint,
+                          lwd=3,
+                          xlim,
+                          xlab,
+                          main,
+                          outcomeLabel,
+                          eventLabels,
+                          refline=TRUE,
+                          ...){
     times=cause=models=NULL
     fitted <- x$models
     models <- names(x$models)

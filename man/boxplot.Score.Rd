@@ -28,9 +28,13 @@ calculation of risk differences.}
 
 \item{main}{title of plot}
 
-\item{outcomeLabel}{Title label for column which shows the outcome status}
+\item{outcomeLabel}{Title label for column which shows the outcome
+status}
 
-\item{refline}{Logical, for \code{type="diff"} only. If \code{TRUE} draw a red vertical line at \code{0}.}
+\item{eventLabels}{Labels for the different events (causes).}
+
+\item{refline}{Logical, for \code{type="diff"} only. If \code{TRUE}
+draw a red vertical line at \code{0}.}
 
 \item{...}{not used}
 }

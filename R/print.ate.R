@@ -1,11 +1,11 @@
-### print.ateCSC.R --- 
+### print.ate.R --- 
 #----------------------------------------------------------------------
 ## author: Thomas Alexander Gerds
 ## created: Jun  6 2016 (06:48) 
 ## Version: 
-## last-updated: Oct 23 2016 (09:44) 
+## last-updated: Jan 12 2017 (14:47) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 8
+##     Update #: 10
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -17,7 +17,7 @@
 #' Print average treatment effects
 #'
 #' Print average treatment effects
-#' @param x object obtained with function \code{ateCSC}
+#' @param x object obtained with function \code{ate}
 #' @param digits Number of digits
 #' @param ... passed to print
 #'
@@ -37,4 +37,4 @@ print.ate <- function(x,digits=3,...){
 
 
 #----------------------------------------------------------------------
-### print.ateCSC.R ends here
+### print.ate.R ends here

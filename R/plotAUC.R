@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun 23 2016 (09:19) 
 ## Version: 
-## last-updated: Oct 23 2016 (10:48) 
+## last-updated: Jan 14 2017 (09:04) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 41
+##     Update #: 42
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -41,7 +41,7 @@
 ##' 
 #' @export
 plotAUC <- function(x,models,type="score",lwd=2,xlim,ylim,axes=TRUE,confint=FALSE,...){
-    times=model=AUC=lower.AUC=upper.AUC=NULL
+    times=model=AUC=lower.AUC=upper.AUC=lower=upper=delta=reference=NULL
     ## cbPalette <- c("#999999", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
     cbbPalette <- c("#000000", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
     pframe <- switch(type,"score"={x$AUC$score},"contrasts"={x$AUC$contrasts},{stop("Type has to be either 'score' for AUC or 'contrasts' for differences in AUC.")})

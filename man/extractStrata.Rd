@@ -27,7 +27,8 @@ mCox <- coxph(Surv(time, event) ~ X1+X2, data = d)
 extractStrata(delete.response(mCox$terms), special = CoxSpecialStrata(mCox))
 
 mCox <- coxph(Surv(event, time = entry, time2 = time) ~ strata(X1)+strata(X2), data = d)
-extractStrata(delete.response(mCox$terms), xlevels =  mCox$xlevels, special = CoxSpecialStrata(mCox))
+extractStrata(delete.response(mCox$terms),
+              xlevels =  mCox$xlevels, special = CoxSpecialStrata(mCox))
 
 ##
 library(rms)
@@ -35,7 +36,8 @@ mCox <- cph(Surv(time, event) ~ X1+X2, data = d)
 extractStrata(delete.response(mCox$terms), special = CoxSpecialStrata(mCox))
 
 mCox <- cph(Surv(event, time = entry, time2 = time) ~ strat(X1)+strat(X2), data = d)
-extractStrata(delete.response(mCox$terms), xlevels =  mCox$xlevels, special = CoxSpecialStrata(mCox))
+extractStrata(delete.response(mCox$terms),
+              xlevels =  mCox$xlevels, special = CoxSpecialStrata(mCox))
 
 }
 }

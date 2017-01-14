@@ -7,7 +7,7 @@
 \method{print}{ate}(x, digits = 3, ...)
 }
 \arguments{
-\item{x}{object obtained with function \code{ateCSC}}
+\item{x}{object obtained with function \code{ate}}
 
 \item{digits}{Number of digits}
 
