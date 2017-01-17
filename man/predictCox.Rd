@@ -6,8 +6,8 @@
 \usage{
 predictCox(object, newdata = NULL, times, centered = TRUE,
   type = c("hazard", "cumHazard", "survival"), keep.strata = TRUE,
-  keep.times = TRUE, keep.lastEventTime = FALSE, se = FALSE, iid = NULL,
-  format = "data.frame")
+  keep.times = TRUE, keep.lastEventTime = FALSE, se = FALSE,
+  iid = FALSE, format = "data.frame")
 }
 \arguments{
 \item{object}{The fitted Cox regression model object either
@@ -34,7 +34,7 @@ or several of the strings \code{"hazard"},\code{"cumhazard"}, \code{"survival"}}
 
 \item{se}{Logical. If \code{TRUE} add the standard errors corresponding to the output.}
 
-\item{iid}{the value of the influence function obtained with the function \code{iidCox}.}
+\item{iid}{Logical. If \code{TRUE} add the influence function corresponding ot the output.}
 
 \item{format}{how to export the baseline hazard. Can be \code{"data.frame"}, \code{"data.table"} or \code{"list"}.}
 }
@@ -50,6 +50,10 @@ as well as survival probabilities from a coxph or cph object
 Not working with time varying predictor variables or
     delayed entry.
 The centered argument enables to reproduce results obtained with the \code{basehaz} function from the survival package.
+
+To avoid the computation of the influence function within the predictCox function, one can create a slot iid in the object
+and put in this slot the value of the influence function for the baseline hazard and the beta.
+This slot must have the format as the output of the function \code{iidCox}.
 }
 \examples{
 library(survival)

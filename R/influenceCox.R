@@ -257,7 +257,7 @@ iidCox <- function(object, newdata = NULL, tauHazard = NULL,
   }
   
   #### export
-  return(list(ICbeta = ICbeta,  # restaure original ordering
+  return(list(ICbeta = ICbeta,  
               ICcumHazard = ICcumHazard,
               time = ls.Utime1,
               indexObs = new.order

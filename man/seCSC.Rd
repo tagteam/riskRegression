@@ -38,7 +38,7 @@ seCSC(hazard, cumHazard, object.time, object.maxtime, iid, eXb_h, eXb_cumH,
 Standard error of the absolute risk predicted from cause-specific Cox models.
 }
 \examples{
-\dontrun{
+
 set.seed(10)
 d <- SimCompRisk(2e1)
 d$time <- round(d$time,1)
@@ -49,14 +49,5 @@ CSC.fit <- CSC(Hist(time,event)~ X1+X2,data=d, method = "breslow")
 
 predCSC <- predict(CSC.fit, newdata = d[1,,drop=FALSE], cause = 2, times = ttt, se = TRUE)
 
-predC <- predictCox(CSC.fit$model[[2]], newdata = d[1,,drop=FALSE], times = ttt, type = "hazard", se = FALSE)
-
-
-predC <- predictCox(CSC.fit$model[[2]], newdata = d[1,], times = ttt, type = "hazard", se = FALSE)
-predC <- predictCox(CSC.fit$model[[2]], newdata = d[1,], times = ttt, type = c("hazard","cumHazard"), se = FALSE)
-
-attr(predCSC,"se")-predC$hazard.se
-predC$hazard.se
-}
 }
 

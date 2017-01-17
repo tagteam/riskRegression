@@ -26,8 +26,8 @@
 \usage{
 \method{predictRisk}{glm}(object,newdata,...)
 \method{predictRisk}{cox.aalen}(object,newdata,times,...)
-\method{predictRisk}{cph}(object,newdata,times,...)
-\method{predictRisk}{coxph}(object,newdata,times,...)
+\method{predictRisk}{cph}(object,newdata,times,se=FALSE,iid=FALSE,...)
+\method{predictRisk}{coxph}(object,newdata,times,se=FALSE,iid=FALSE,...)
 \method{predictRisk}{matrix}(object,newdata,times,cause,...)
 \method{predictRisk}{selectCox}(object,newdata,times,...)
 \method{predictRisk}{psm}(object,newdata,times,...)
@@ -36,7 +36,7 @@
 \method{predictRisk}{prodlim}(object,newdata,times,cause,...)
 \method{predictRisk}{rfsrc}(object,newdata,times,cause,...)
 \method{predictRisk}{FGR}(object,newdata,times,cause,...)
-\method{predictRisk}{CauseSpecificCox}(object,newdata,times,cause,...)
+\method{predictRisk}{CauseSpecificCox}(object,newdata,times,cause,se=FALSE,iid=FALSE,...)
 }
 \arguments{
 \item{object}{A fitted model from which to extract predicted event
@@ -49,6 +49,10 @@ which to compute predicted event probabilities.}
 which the cumulative incidences event probabilities are computed.}
 
 \item{cause}{Identifies the cause of interest among the competing events.}
+
+\item{se}{Logical. If \code{TRUE} add the standard errors corresponding to the output.}
+
+\item{iid}{Logical. If \code{TRUE} add the influence function corresponding ot the output.}
 
 \item{\dots}{Additional arguments that are passed on to the current method.}
 }

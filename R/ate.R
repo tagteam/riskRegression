@@ -24,8 +24,9 @@
 #' @param contrasts the levels of treatment variable to be compared
 #' @param times time points at which to evaluate risks
 #' @param cause the cause of interest
+#' @param se Logical. If \code{TRUE} add the standard errors / confidence intervals  corresponding to the output. 
 #' @param B the number of bootstrap replications used to compute the
-#'     confidence interval.
+#'     confidence intervals.
 #' @param seed An integer used to generate seeds for bootstrap and to
 #'     achieve reproducibility of the bootstrap confidence intervals.
 #' @param handler parallel handler for bootstrap. Either "mclapply" or
@@ -79,7 +80,8 @@ ate <- function(object,
                 contrasts = NULL,
                 times,
                 cause,
-                B = 0,
+                se = FALSE,
+                B = 0,                
                 seed,
                 handler=c("mclapply","foreach"),
                 mc.cores = 1,
@@ -141,6 +143,7 @@ ate <- function(object,
         out
     }
     #### point estimate
+   
     estimateTime <- system.time(
         pointEstimate <- Gformula(object=object,
                                   data=data,
@@ -149,8 +152,11 @@ ate <- function(object,
                                   times=times,
                                   cause=cause,
                                   ...))
-    #### Bootstrap
-    if(B>0){
+    
+    ##### Confidence interval
+    if(se){
+        
+    if(B>0){ #### Bootstrap
         if (verbose==TRUE)
             message(paste0("Approximated bootstrap netto run time (without time for copying data to cores):\n",
                            round(estimateTime["user.self"],2),
@@ -244,6 +250,65 @@ ate <- function(object,
                                                               ratio.upper=quantile(ratio,1-(alpha/2), na.rm = TRUE),
                                                               n.boot=sum(!is.na(diff))),
                                       keyby=c("Treatment.A","Treatment.B","time")]
+    } else { #### Influence function
+
+        ICrisk <- lapply(1:n.contrasts,function(i){
+            ## influence function for the hypothetical worlds in which every subject is treated with the same treatment
+            data.i <- data
+            data.i[[treatment]] <- factor(contrasts[i], levels = levels)
+            risk.i <- do.call("predictRisk",args = list(object, newdata = data.i, times = times, cause = cause, iid = TRUE, ...))
+            return(risk.i)
+        })
+
+        sdIF.treatment <- unlist(lapply(ICrisk, function(iIC){
+            apply(attr(iIC,"iid"), 2, function(x){          
+                sqrt(sum(colMeans(x)^2))
+            })
+        })) 
+            
+        sdIF.fct <- data.table::rbindlist(lapply(1:(n.contrasts-1),function(i){
+            data.table::rbindlist(lapply(((i+1):n.contrasts),function(j){
+                ## compute differences between all pairs of treatments
+                # IC had dimension n.predictions (row), n.times (columns), n.dataTrain (length)
+                # apply 2 do for each time: extract the value of IF with n.predictions (row) and n.dataTrain (length)
+                # colSums: compute the IF for the G formula for each observation in the training data set
+                # sqrt(sum 2)) compute the variance of the estimator over the observations in the training data set
+
+             
+                
+                data.table(Treatment.A=contrasts[[i]],
+                           Treatment.B=contrasts[[j]],
+                           time = times,
+                           diff = apply(attr(ICrisk[[i]],"iid")-attr(ICrisk[[j]],"iid"), 2,
+                                       function(x){ sqrt(sum(colMeans(x)^2))}),
+                           ratio = sapply(1:n.times,
+                                          function(x){
+                                              ratio1 <- colScale_cpp(attr(ICrisk[[i]],"iid")[,x,], scale = ICrisk[[j]][,x])
+                                              ratio2 <- colMultiply_cpp(attr(ICrisk[[j]],"iid")[,x,], scale = ICrisk[[i]][,x]/ICrisk[[j]][,x]^2)
+                                              
+                                              sqrt(sum( (colMeans(ratio1)/colMeans(ratio2))^2 ))
+                                          })                                
+                            )
+            }))}))
+
+        mrisks <- data.table::data.table(Treatment = pointEstimate$meanRisk$Treatment,
+                                         time = times,
+                                         meanRiskBoot = NA,
+                                         lower = pointEstimate$meanRisk$meanRisk - 1.96 * sdIF.treatment,
+                                         upper = pointEstimate$meanRisk$meanRisk + 1.96 * sdIF.treatment)
+        crisks <- data.table::data.table(Treatment.A = pointEstimate$riskComparison$Treatment.A,
+                                         Treatment.B = pointEstimate$riskComparison$Treatment.B,
+                                         time = times,
+                                         diffMeanBoot = NA,
+                                         diff.lower = pointEstimate$riskComparison$diff - 1.96 * sdIF.fct$diff,
+                                         diff.upper = pointEstimate$riskComparison$diff + 1.96 * sdIF.fct$diff,
+                                         ratioMeanBoot = NA,
+                                         ratio.lower = pointEstimate$riskComparison$ratio - 1.96 * sdIF.fct$ratio,
+                                         ratio.upper = pointEstimate$riskComparison$ratio + 1.96 * sdIF.fct$ratio)
+
+        bootseeds <- NULL
+    }
+        
     }else{
         
         mrisks <- data.table::data.table(Treatment = pointEstimate$meanRisk$Treatment,

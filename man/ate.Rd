@@ -4,9 +4,9 @@
 \alias{ate}
 \title{Compute the average treatment effect using CSC}
 \usage{
-ate(object, data, treatment, contrasts = NULL, times, cause, B = 0, seed,
-  handler = c("mclapply", "foreach"), mc.cores = 1, conf.level = 0.95,
-  verbose = TRUE, ...)
+ate(object, data, treatment, contrasts = NULL, times, cause, se = FALSE,
+  B = 0, seed, handler = c("mclapply", "foreach"), mc.cores = 1,
+  conf.level = 0.95, verbose = TRUE, ...)
 }
 \arguments{
 \item{object}{outcome model which describes how event risk depends on treatment and covariates.
@@ -22,8 +22,10 @@ The object carry its own call and have a \code{predictRisk} method. See examples
 
 \item{cause}{the cause of interest}
 
+\item{se}{Logical. If \code{TRUE} add the standard errors / confidence intervals  corresponding to the output.}
+
 \item{B}{the number of bootstrap replications used to compute the
-confidence interval.}
+confidence intervals.}
 
 \item{seed}{An integer used to generate seeds for bootstrap and to
 achieve reproducibility of the bootstrap confidence intervals.}

@@ -5,7 +5,7 @@
 \title{Predicting absolute risk from cause-specific Cox models}
 \usage{
 \method{predict}{CauseSpecificCox}(object, newdata, times, cause, t0 = NA,
-  colnames = TRUE, se = FALSE, ...)
+  colnames = TRUE, se = FALSE, iid = FALSE, ...)
 }
 \arguments{
 \item{object}{The fitted cause specific Cox model}
@@ -22,7 +22,9 @@ hazards/survival}
 
 \item{colnames}{Logical. If \code{TRUE} name the columns of the matrix containing the absolute risk with times}
 
-\item{se}{Logical. If \code{TRUE} add the standard errors corresponding to the output}
+\item{se}{Logical. If \code{TRUE} add the standard errors corresponding to the output.}
+
+\item{iid}{Logical. If \code{TRUE} add the influence function corresponding ot the output.}
 
 \item{...}{not used}
 }

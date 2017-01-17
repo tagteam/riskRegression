@@ -83,6 +83,40 @@ if(require(survival)){
   })
 }
 
+#### standard error
+set.seed(10)
+n <- 5e1
+
+dtS <- sampleData(n,outcome="survival")
+dtS$time <- round(dtS$time,1)
+dtS$X1 <- factor(rbinom(n, prob = c(0.3,0.4) , size = 2), labels = paste0("T",0:2))
+
+fit <- cph(formula = Surv(time,event)~ X1+X2,data=dtS,y=TRUE,x=TRUE)
+## automatically
+ateFit <- ate(fit, data = dtS, treatment = "X1", contrasts = NULL,
+              times = 5:7, B = 0, se = TRUE, mc.cores=1)
+
+## manually
+newdata0 <- copy(dtS)
+newdata0$X1 <- "T0"
+res <- predictRisk(fit, newdata = newdata0, time = 5:7, iid = TRUE)
+
+IF <- NULL
+for(i in 1:NROW(dtS)){# i <- 1
+  IF <- rbind(IF,
+              colMeans(attr(res,"iid")[,,i])
+  )
+}
+resManuel <- data.frame(mean = colMeans(res), se = sqrt(apply(IF^2, 2, sum)))
+resManuel$lower <- resManuel$mean - 1.96 * resManuel$se
+resManuel$upper <- resManuel$mean + 1.96 * resManuel$se
+
+
+expect_equal(resManuel$lower, ateFit$meanRisk[ateFit$meanRisk$Treatment == "T0",lower])
+expect_equal(resManuel$upper, ateFit$meanRisk[ateFit$meanRisk$Treatment == "T0",upper])
+
+riskRegression:::colMultiply_cpp(matrix(1,10,10),1:10)
+
 #### CSC model ####
 context("ate for fully CSC model")
 

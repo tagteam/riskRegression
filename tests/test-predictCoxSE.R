@@ -43,7 +43,10 @@ if(require(timereg)){
   test_that("predictionsSE",{
     predGS <- predict(mGS.cox, newdata = d, times = 10)
     predRR1 <- predictCox(m.cox, newdata = d, times = 10, se = TRUE)
-    predRR2 <- predictCox(m.cox, newdata = d, times = 10, se = TRUE, iid = iidCox(m.cox))
+    
+    m.cox2 <- m.cox
+    m.cox2$iid <- iidCox(m.cox)
+    predRR2 <- predictCox(m.cox2, newdata = d, times = 10, se = TRUE, iid = )
     expect_equal(predRR1$survival.se, predGS$se.S0)
     expect_equal(predRR2$survival.se, predGS$se.S0)
     
@@ -202,58 +205,5 @@ if(require(timereg)){
   })
   
 }
-
-
-#### bootstrap version
-test <- FALSE
-if(test){
-  
-  set.seed(10)
-  d <- SimCompRisk(1e3)
-  d <- d[order(d$time),c("time", "event", "X1", "X2", "cause")]
-  ttt <- sample(x = unique(sort(d$time)), size = 3)
-  d <- d[order(d$time), ]
-  
-  library(boot)
-  
-  #### survival
-  predCox <- function(d,i){
-    coxph.fit <- coxph(Surv(time,event==1)~ X1+X2,data=d[i,], method = "breslow", x = TRUE, y = TRUE)
-    res <- predictCox(coxph.fit, newdata = d[1:2,,drop=FALSE], times = seq(2,5,1), se = FALSE, type = "survival")
-    return(res$survival)
-  }
-  predCox(d, 1:NROW(d))
-  res.boot <- boot(d, predCox, R = 1000, stype = "i", ncpus = 4)
-  
-  coxph.fit <- coxph(Surv(time,event==1)~ X1+X2,data=d, method = "breslow", x = TRUE, y = TRUE)
-  res.IF <- predictCox(coxph.fit, newdata = d[1:2,,drop=FALSE], times = seq(2,5,1), se = TRUE, type = "survival")
-  
-  res.boot$t0-res.IF$survival
-  apply(res.boot$t,2,sd) - as.double(res.IF$survival.se)
-  (apply(res.boot$t,2,sd) - as.double(res.IF$survival.se))/as.double(res.IF$survival.se)
-  
-  #### absolute risk
-  predCSC <- function(d,i){
-    CSC.fit <- CSC(Hist(time,event)~ X1+X2,data=d[i,], method = "breslow", iid = FALSE)
-    res <- predict(CSC.fit, newdata = d[1:2,,drop=FALSE], cause = 1, times = seq(2,5,1), se = FALSE)
-    return(res)
-  }
-  
-  system.time(
-    res.boot <- boot(d, predCSC, R = 500, stype = "i", ncpus = 4)
-  )
-  
-  CSC.fit <- CSC(Hist(time,event)~ X1+X2,data=d, method = "breslow", iid = TRUE)
-  res.IF <- predict(CSC.fit, newdata = d[1:2,,drop=FALSE], cause = 1, times = seq(2,5,1), se = TRUE)
-  
-  res.boot$t0-res.IF
-  apply(res.boot$t,2,sd) - as.double(attr(res.IF,"se"))
-  (apply(res.boot$t,2,sd) - as.double(attr(res.IF,"se")))/as.double(attr(res.IF,"se"))
-  
-  
-}
-
-
-
 
 

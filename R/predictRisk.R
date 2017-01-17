@@ -40,8 +40,8 @@
 #' @usage
 #' \method{predictRisk}{glm}(object,newdata,...)
 #' \method{predictRisk}{cox.aalen}(object,newdata,times,...)
-#' \method{predictRisk}{cph}(object,newdata,times,...)
-#' \method{predictRisk}{coxph}(object,newdata,times,...)
+#' \method{predictRisk}{cph}(object,newdata,times,se=FALSE,iid=FALSE,...)
+#' \method{predictRisk}{coxph}(object,newdata,times,se=FALSE,iid=FALSE,...)
 #' \method{predictRisk}{matrix}(object,newdata,times,cause,...)
 #' \method{predictRisk}{selectCox}(object,newdata,times,...)
 #' \method{predictRisk}{psm}(object,newdata,times,...)
@@ -50,7 +50,7 @@
 #' \method{predictRisk}{prodlim}(object,newdata,times,cause,...)
 #' \method{predictRisk}{rfsrc}(object,newdata,times,cause,...)
 #' \method{predictRisk}{FGR}(object,newdata,times,cause,...)
-#' \method{predictRisk}{CauseSpecificCox}(object,newdata,times,cause,...)
+#' \method{predictRisk}{CauseSpecificCox}(object,newdata,times,cause,se=FALSE,iid=FALSE,...)
 #' @param object A fitted model from which to extract predicted event
 #' probabilities
 #' @param newdata A data frame containing predictor variable combinations for
@@ -58,6 +58,8 @@
 #' @param times A vector of times in the range of the response variable, for
 #' which the cumulative incidences event probabilities are computed.
 #' @param cause Identifies the cause of interest among the competing events.
+#' @param se Logical. If \code{TRUE} add the standard errors corresponding to the output.
+#' @param iid Logical. If \code{TRUE} add the influence function corresponding ot the output.
 #' @param \dots Additional arguments that are passed on to the current method.
 #' @return For binary outcome a vector with predicted risks. For survival outcome with and without
 #' competing risks
@@ -297,11 +299,16 @@ predictRisk.cox.aalen <- function(object,newdata,times,...){
 
     
 ##' @export
-predictRisk.coxph <- function(object,newdata,times,...){
-    p <- predictCox(object=object,newdata=newdata,times=times,se=FALSE,keep.times=FALSE,keep.lastEventTime=FALSE,type="survival")$survival
-    if (NROW(p) != NROW(newdata) || NCOL(p) != length(times))
+predictRisk.coxph <- function(object,newdata,times,se=FALSE,iid=FALSE,...){
+    res <- predictCox(object=object,newdata=newdata,times=times, se = se, iid = iid,keep.times=FALSE,keep.lastEventTime=FALSE,type="survival")
+
+    p <- 1-res$survival
+    if (NROW(p) != NROW(newdata) || NCOL(p) != length(times)){
         stop(paste("\nPrediction matrix has wrong dimensions:\nRequested newdata x times: ",NROW(newdata)," x ",length(times),"\nProvided prediction matrix: ",NROW(p)," x ",NCOL(p),"\n\n",sep=""))
-    1-p
+    }
+    if(se){attr(p,"se") <- res$survival.se}
+    if(iid){attr(p,"iid") <- res$survival.iid}
+    return(p)
 }
 ## predictRisk.coxph <- function(object,newdata,times,...){
 ## baselineHazard.coxph(object,times)
@@ -355,14 +362,19 @@ predictRisk.coxph.penal <- function(object,newdata,times,...){
 
 
 ##' @export 
-predictRisk.cph <- function(object,newdata,times,...){
+predictRisk.cph <- function(object,newdata,times,se=FALSE,iid=FALSE,...){
     ## if (!match("surv",names(object),nomatch=0)) stop("Argument missing: set surv=TRUE in the call to cph!")
     ## p <- rms::survest(object,times=times,newdata=newdata,se.fit=FALSE,what="survival")$surv
     ## if (is.null(dim(p))) p <- matrix(p,nrow=NROW(newdata))
-    p <- predictCox(object=object,newdata=newdata,times=times,se=FALSE,keep.times=FALSE,keep.lastEventTime=FALSE,type="survival")$survival
+    res <- predictCox(object=object,newdata=newdata,times=times,se = se, iid = iid,keep.times=FALSE,keep.lastEventTime=FALSE,type="survival")
+    
+    p <- 1-res$survival
     if (NROW(p) != NROW(newdata) || NCOL(p) != length(times))
         stop(paste("\nPrediction matrix has wrong dimensions:\nRequested newdata x times: ",NROW(newdata)," x ",length(times),"\nProvided prediction matrix: ",NROW(p)," x ",NCOL(p),"\n\n",sep=""))
-    1-p
+    
+    if(se){attr(p,"se") <- res$survival.se}
+    if(iid){attr(p,"iid") <- res$survival.iid}
+    return(p)
 }
 
 ##' @export
@@ -535,8 +547,8 @@ predictRisk.ARR <- function(object,newdata,times,cause,...){
 
 
 ##' @export 
-predictRisk.CauseSpecificCox <- function (object, newdata, times, cause, ...) { 
-    p <- predict(object=object,newdata=newdata,times=times,cause=cause,keep.strata=FALSE)
+predictRisk.CauseSpecificCox <- function (object, newdata, times, cause, se = FALSE, iid = FALSE, ...) { 
+    p <- predict(object=object,newdata=newdata,times=times,cause=cause,keep.strata=FALSE, se = se, iid = iid)
     if (NROW(p) != NROW(newdata) || NCOL(p) != length(times))
         stop(paste("\nPrediction matrix has wrong dimension:\nRequested newdata x times: ",NROW(newdata)," x ",length(times),"\nProvided prediction matrix: ",NROW(p)," x ",NCOL(p),"\n\n",sep=""))
     p
