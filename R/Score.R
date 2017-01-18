@@ -255,20 +255,22 @@ Score.list <- function(object,
         alpha <- NA
     }
     if ((NF+length(nullobject))<=1) dolist <- NULL 
-    if (se.fit==FALSE || (is.logical(contrasts) && contrasts==FALSE)){
-        dolist <- NULL
-    } else{
-        if (is.logical(contrasts) && contrasts==TRUE){
-            if (is.null(nullobject)){
-                dolist <- lapply(1:(NF-1),function(i){c(i,(i+1):NF)})
-            } else{
-                dolist <- lapply(0:(NF-1),function(i){c(i,(i+1):NF)})
+    else{
+        if (se.fit==FALSE || (is.logical(contrasts) && contrasts==FALSE)){
+            dolist <- NULL
+        } else{
+            if (is.logical(contrasts) && contrasts==TRUE){
+                if (is.null(nullobject)){
+                    dolist <- lapply(1:(NF-1),function(i){c(i,(i+1):NF)})
+                } else{
+                    dolist <- lapply(0:(NF-1),function(i){c(i,(i+1):NF)})
+                }
+            }else{
+                dolist <- contrasts
+                if (!is.list(contrasts)) contrasts <- list(contrasts)
+                if (!(all(sapply(dolist,function(x){x<=NF && x>=0}))))
+                    stop(paste("Argument contrasts should be a list of positive integers possibly mixed with 0 that refer to elements of object.\nThe object has ",NF,"elements but "))
             }
-        }else{
-            dolist <- contrasts
-            if (!is.list(contrasts)) contrasts <- list(contrasts)
-            if (!(all(sapply(dolist,function(x){x<=NF && x>=0}))))
-                stop(paste("Argument contrasts should be a list of positive integers possibly mixed with 0 that refer to elements of object.\nThe object has ",NF,"elements but "))
         }
     }
     # }}}
@@ -599,8 +601,8 @@ Score.list <- function(object,
                     ## Brier <- data.table::rbindlist(lapply(crossval,function(x)x[["Brier"]]))
                     ## Brier[,list(looboot=mean(ipcwResiduals)),by=list(model,times,ID)]
                     ## bootcv=Brier[,list(bootcv=mean(ipcwResiduals)),by=list(model,times,b)]
-
                     if (length(crossval[[1]][[m]]$score)>0){
+                        Ibi=perf=.SD=NULL
                         if (nullModel==TRUE) init <- data.table(ID=rep(1:N, each=(NF+1)*B), b=rep(1:B, each=(NF+1), times=N), model=rep(0:NF, times=B))
                         else init <- data.table(ID=rep(1:N, each=NF*B), b=rep(1:B, each=NF, times=N), model=rep(1:NF, times=B))
                         
@@ -736,7 +738,7 @@ plot.score.Brier <- function(x,models,lwd=3,xlim,ylim,axes=TRUE,...){
 
 
 Brier.binary <- function(DT,se.fit,alpha,N,NT,NF,dolist,keep.residuals=FALSE,DT.residuals,DT.bootcount,...){
-    residuals=risk=model=ReSpOnSe=lower.Brier=upper.Brier=se.Brier=NULL
+    residuals=Brier=risk=model=ReSpOnSe=lower.Brier=upper.Brier=se.Brier=NULL
     DT[,residuals:=(ReSpOnSe-risk)^2,by=model]
     if (se.fit==TRUE){
         data.table::setorder(DT,model,ReSpOnSe)
@@ -759,7 +761,7 @@ Brier.binary <- function(DT,se.fit,alpha,N,NT,NF,dolist,keep.residuals=FALSE,DT.
 }
 
 Brier.survival <- function(DT,MC,se.fit,alpha,N,NT,NF,dolist,keep.residuals=FALSE,DT.residuals,DT.bootcount,...){
-    Yt=time=times=Residuals=risk=ipcwResiduals=WTi=Wt=status=setorder=model=IC.Brier=data.table=sd=lower.Brier=qnorm=se.Brier=upper.Brier=NULL
+    Yt=time=times=Residuals=risk=Brier=ipcwResiduals=WTi=Wt=status=setorder=model=IC.Brier=data.table=sd=lower.Brier=qnorm=se.Brier=upper.Brier=NULL
     ## compute 0/1 outcome:
     DT[,Yt:=1*(time<=times)]
     ## compute residuals
@@ -793,7 +795,7 @@ Brier.survival <- function(DT,MC,se.fit,alpha,N,NT,NF,dolist,keep.residuals=FALS
 }
 
 Brier.competing.risks <- function(DT,MC,se.fit,alpha,N,NT,NF,dolist,keep.residuals=FALSE,DT.residuals,DT.bootcount,cause,...){
-    Yt=time=times=event=Residuals=risk=ipcwResiduals=WTi=Wt=status=setorder=model=IC.Brier=data.table=sd=lower.Brier=qnorm=se.Brier=upper.Brier=NULL
+    Yt=time=times=event=Brier=Residuals=risk=ipcwResiduals=WTi=Wt=status=setorder=model=IC.Brier=data.table=sd=lower.Brier=qnorm=se.Brier=upper.Brier=NULL
     ## compute 0/1 outcome:
     DT[,Yt:=1*(time<=times & event==cause)]
     ## compute residuals

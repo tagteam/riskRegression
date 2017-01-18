@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jan  9 2016 (19:31) 
 ## Version: 
-## last-updated: Dec  9 2016 (13:44) 
+## last-updated: Jan 14 2017 (09:04) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 260
+##     Update #: 267
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -25,7 +25,7 @@ getQuantile <- function(x,Fx,Q){
 }
 
 riskQuantile.binary <- function(DT,N,NT,NF,dolist,Q,...){
-    reference=model=ReSpOnSe=risk=cause=X=NULL
+    reference=model=ReSpOnSe=risk=cause=X=ID=NULL
     models <- unique(DT[,model])
     if (missing(Q)) Q <- c(0.05,0.25,0.5,0.75,0.95)
     else Q <- sort(Q)
@@ -118,7 +118,6 @@ riskQuantile.survival <- function(DT,N,NT,NF,dolist,Q,...){
     } 
     getQ.eventFree <- function(Q,tp,X,time,Wt,surv){
         uX <- sort(unique(X[time>tp]))
-## browser()
         Wx <- sapply(uX,function(x){1/N*sum((X<=x & time>tp)/Wt)/surv[times==tp,surv]})
         qRisk <- getQuantile(x=uX,Fx=Wx,Q=Q)
         qR <- data.table(t(qRisk))

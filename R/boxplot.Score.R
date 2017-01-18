@@ -4,9 +4,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Aug 15 2016 (09:45) 
 ## Version: 
-## last-updated: Dec  9 2016 (15:01) 
+## last-updated: Jan 14 2017 (08:36) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 37
+##     Update #: 51
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -29,8 +29,11 @@
 #' @param xlim x-axis limits
 #' @param xlab x-axis label
 #' @param main title of plot
-#' @param outcomeLabel Title label for column which shows the outcome status 
-#' @param refline Logical, for \code{type="diff"} only. If \code{TRUE} draw a red vertical line at \code{0}.
+#' @param outcomeLabel Title label for column which shows the outcome
+#'     status
+#' @param eventLabels Labels for the different events (causes).
+#' @param refline Logical, for \code{type="diff"} only. If \code{TRUE}
+#'     draw a red vertical line at \code{0}.
 #' @param ... not used
 ##' @examples
 ##' # binary outcome
@@ -100,6 +103,7 @@ boxplot.Score <- function(x,
                           xlab,
                           main,
                           outcomeLabel,
+                          eventLabels,
                           refline=TRUE,
                           ...){
     times=cause=models=NULL
@@ -159,7 +163,9 @@ boxplot.Score <- function(x,
         if (refline==TRUE)
             abline(v=0,col=2,lwd=2)
         axis(1,at=seq(xlim[1],xlim[2],(xlim[2]-xlim[1])/4),labels=paste(seq(xlim[1],xlim[2],(xlim[2]-xlim[1])/4),"%"))
-        text(x=xlim[1],y=c(0.5,1.5,2.5,3),labels=c("Overall","Event","Event-free",outcomeLabel),pos=2,xpd=NA)
+        causes <- pframe[,unique(cause)]
+        if (missing(eventLabels)) eventLabels <- causes
+        text(x=xlim[1],y=c(0.5,1.5,2.5,3),labels=c(eventLabels,outcomeLabel),pos=2,xpd=NA)
         if (type=="diff"){
             mtext(paste(ref,"higher risk"),side=1,adj=0,line=par()$mgp[1])
             mtext(paste(mod,"higher risk"),side=1,adj=1,line=par()$mgp[1])
@@ -179,9 +185,14 @@ boxplot.Score <- function(x,
             abline(v=0,col=2,lwd=2)
         ## axis(1,at=seq(0,100,25),labels=paste(seq(0,100,25),"%"))
         axis(1,at=seq(xlim[1],xlim[2],(xlim[2]-xlim[1])/4),labels=paste(seq(xlim[1],xlim[2],(xlim[2]-xlim[1])/4),"%"))
-        causes <- pframe[,cause]
+        causes <- pframe[,unique(cause)]
+        if (missing(eventLabels)) eventLabels <- causes
         ypos <- c((1:(length(causes)))-0.5,length(causes))
-        text(x=xlim[1],y=ypos,labels=c(causes,outcomeLabel),pos=2,xpd=NA)
+        text(x=xlim[1],
+             y=ypos,
+             labels=c(eventLabels,outcomeLabel),
+             pos=2,
+             xpd=NA)
         if (type=="diff"){
             mtext(paste(ref,"higher risk"),side=1,adj=0,line=par()$mgp[1])
             mtext(paste(mod,"higher risk"),side=1,adj=1,line=par()$mgp[1])

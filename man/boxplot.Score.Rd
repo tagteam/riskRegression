@@ -5,7 +5,7 @@
 \title{Boxplot risk quantiles}
 \usage{
 \method{boxplot}{Score}(x, model, reference, type, timepoint, lwd = 3, xlim,
-  xlab, main, outcomeLabel, refline = TRUE, ...)
+  xlab, main, outcomeLabel, eventLabels, refline = TRUE, ...)
 }
 \arguments{
 \item{x}{Score object obtained by calling function \code{Score}.}
@@ -28,9 +28,13 @@ calculation of risk differences.}
 
 \item{main}{title of plot}
 
-\item{outcomeLabel}{Title label for column which shows the outcome status}
+\item{outcomeLabel}{Title label for column which shows the outcome
+status}
 
-\item{refline}{Logical, for \code{type="diff"} only. If \code{TRUE} draw a red vertical line at \code{0}.}
+\item{eventLabels}{Labels for the different events (causes).}
+
+\item{refline}{Logical, for \code{type="diff"} only. If \code{TRUE}
+draw a red vertical line at \code{0}.}
 
 \item{...}{not used}
 }

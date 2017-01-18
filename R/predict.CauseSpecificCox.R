@@ -325,4 +325,3 @@ seCSC <- function(hazard, cumHazard, object.time, object.maxtime, iid,
   
    return(CIF.se)
 }
-
