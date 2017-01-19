@@ -27,8 +27,20 @@
 #' and put in this slot the value of the influence function for the baseline hazard and the beta.
 #' This slot must have the format as the output of the function \code{iidCox}.
 #' @author Brice Ozenne broz@@sund.ku.dk, Thomas A. Gerds tag@@biostat.ku.dk
-#' @return A list optionally containing the time, the strata (if any), the hazard, the
-#'         cumulative hazard and survival probabilities.
+#' @return When extracting the baseline hazard (missing newdata and times argument),
+#' a data frame containing the jump times, the baseline hazard, the cumulative baseline hazard, the strata (optional), and the baseline survival.
+#'
+#' Otherwise, when performing prediction, a list containing:
+#' \itemize{
+#' \item{hazard}: (matrix) the hazard predicted for each patient (in rows) and each time (in columns).
+#' \item{hazard.se}: (matrix) the standard errors of the predicted hazard.
+#' \item{cumHazard}: (matrix) the cumulative hazard predicted for each patient (in rows) and each time (in columns).
+#' \item{cumHazard.se}: (matrix) the standard errors of the predicted cumulative hazard.
+#' \item{survival}: (matrix) the survival predicted for each patient (in rows) and each time (in columns).
+#' \item{survival.se}: (matrix) the standard errors of the predicted survival.
+#' \item{times}: (vector) the evaluation times.
+#' \item{strata}: (vector) the strata indicator.
+#' }
 #' @examples 
 #' library(survival)
 #' 
@@ -283,7 +295,6 @@ predictCox <- function(object,
                            Lambda0 = Lambda0, iid = iid.object, object.n = object.n, nStrata = nStrata, 
                            new.eXb = new.eXb, new.LPdata = new.LPdata, new.strata = new.strata, new.survival = out$survival,
                            export = if(se){"se"} else {"iid"})
-      
       if(se){
         if ("hazard" %in% type){out$hazard.se <- outSE$hazard.se}
         if ("cumHazard" %in% type){out$cumHazard.se <- outSE$cumHazard.se}
@@ -382,13 +393,13 @@ seRobustCox <- function(nTimes, type,
     iObs.strata <- new.strata[iObs]
     X_ICbeta <- iid$ICbeta %*% t(new.LPdata[iObs,,drop=FALSE])
     
-    if("hazard" %in% type){
+      if("hazard" %in% type){
       IF_tempo <- IClambda2hazard(eXb = new.eXb[iObs],
                                   lambda0 = Lambda0$hazard[[iObs.strata]],
                                   X_ICbeta = X_ICbeta,
                                   IClambda0 = iid$IChazard[[iObs.strata]])
       if(export == "iid"){
-        out$hazard.iid[iObs,,] <- IF_tempo  
+        out$hazard.iid[iObs,,] <- t(IF_tempo)
       }else if(export == "se"){
         se_tempo <- sqrt(apply(IF_tempo^2,2,sum))
         out$hazard.se[iObs,] <- se_tempo
@@ -402,8 +413,8 @@ seRobustCox <- function(nTimes, type,
                                   IClambda0 = iid$ICcumHazard[[iObs.strata]])
       
       if(export == "iid"){
-        if("cumHazard" %in% type){out$cumHazard.iid[iObs,,] <- IF_tempo}
-        if("survival" %in% type){out$survival.iid[iObs,,] <- rowMultiply_cpp(IF_tempo, scale = new.survival[iObs,,drop=FALSE])}
+        if("cumHazard" %in% type){out$cumHazard.iid[iObs,,] <- t(IF_tempo)}
+        if("survival" %in% type){out$survival.iid[iObs,,] <- t(rowMultiply_cpp(IF_tempo, scale = new.survival[iObs,,drop=FALSE]))}
       }else if(export == "se"){
         se_tempo <- sqrt(apply(IF_tempo^2,2,sum))
         if("cumHazard" %in% type){out$cumHazard.se[iObs,] <- se_tempo}

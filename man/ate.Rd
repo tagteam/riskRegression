@@ -4,9 +4,9 @@
 \alias{ate}
 \title{Compute the average treatment effect using CSC}
 \usage{
-ate(object, data, treatment, contrasts = NULL, times, cause, se = FALSE,
-  B = 0, seed, handler = c("mclapply", "foreach"), mc.cores = 1,
-  conf.level = 0.95, verbose = TRUE, ...)
+ate(object, data, treatment, contrasts = NULL, times, cause,
+  conf.level = 0.95, B = 0, seed, handler = c("mclapply", "foreach"),
+  mc.cores = 1, verbose = TRUE, ...)
 }
 \arguments{
 \item{object}{outcome model which describes how event risk depends on treatment and covariates.
@@ -22,10 +22,11 @@ The object carry its own call and have a \code{predictRisk} method. See examples
 
 \item{cause}{the cause of interest}
 
-\item{se}{Logical. If \code{TRUE} add the standard errors / confidence intervals  corresponding to the output.}
+\item{conf.level}{Numeric. Confidence level of the confidence intervals. Disregarded if negative.}
 
 \item{B}{the number of bootstrap replications used to compute the
-confidence intervals.}
+confidence intervals. If it equals 0, then Wald-type confidence intervals are computed.
+They rely on the standard error estimated using the influence function of the estimator.}
 
 \item{seed}{An integer used to generate seeds for bootstrap and to
 achieve reproducibility of the bootstrap confidence intervals.}
@@ -38,8 +39,6 @@ achieve reproducibility of the bootstrap confidence intervals.}
 most how many child processes will be run simultaneously.  The
 option is initialized from environment variable MC_CORES if
 set.}
-
-\item{conf.level}{the level for bootstrap confidence intervals}
 
 \item{verbose}{Logical. If \code{TRUE} inform about estimated run
 time.}
@@ -58,7 +57,7 @@ library(survival)
 library(rms)
 
 set.seed(10)
-n <- 1e3
+n <- 1e2
 
 ## Cox model
 dtS <- sampleData(n,outcome="survival")
@@ -74,6 +73,9 @@ fit$call
 ateFit=ate(fit, data = dtS, treatment = "X1", contrasts = NULL,
         times = 5:7, B = 3, y = TRUE, mc.cores=1)
 
+ateFit=ate(fit, data = dtS, treatment = "X1", contrasts = NULL,
+        times = 5:7, B = 0, y = TRUE, mc.cores=1)
+
 ## Cause specific cox model
 dt <- sampleData(1e3,outcome="competing.risks")
 dt$time <- round(dt$time,1)
@@ -81,6 +83,11 @@ dt$X1 <- factor(rbinom(1e3, prob = c(0.2,0.3,0.2) , size = 3), labels = paste0("
 fitCR= CSC(Hist(time,event)~ X1+X2,data=dt,cause=1)
 ate(fitCR, data = dt, treatment = "X1", contrasts = NULL,
         times = 5:7, cause = 1, B = 3, mc.cores=1)
+
+\dontrun{
+ ate(fitCR, data = dt, treatment = "X1", contrasts = NULL,
+        times = 5:7, cause = 1, B = 0, mc.cores=1)
+}
 
 }
 

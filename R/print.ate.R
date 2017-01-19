@@ -31,9 +31,16 @@ print.ate <- function(x,digits=3,...){
     cat("\nComparison of risks on probability scale [0,1] between\nhypothetical worlds are interpretated as if the treatment was randomized:\n\n")    
     print(x$riskComparison,digits=digits,...)
     ##
-    cat("\nBootstrap confidence intervals are based on ",x$n.bootstrap," bootstrap samples\nthat were drawn with replacement from the original data.\n",sep="")
+    if( (x$conf.level > 0 && (x$conf.level < 1)) ){
+
+        if(x$n.bootstrap==0){
+            cat("\n",100*x$conf.level,"% Wald confidence intervals.\n",sep="")
+        }else {
+            cat("\n",100*x$conf.level,"% bootstrap confidence intervals are based on ",x$n.bootstrap," bootstrap samples\nthat were drawn with replacement from the original data.\n",sep="")
+        }
+    }
     invisible(x)
-}
+    }
 
 
 #----------------------------------------------------------------------

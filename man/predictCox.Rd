@@ -39,8 +39,20 @@ or several of the strings \code{"hazard"},\code{"cumhazard"}, \code{"survival"}}
 \item{format}{how to export the baseline hazard. Can be \code{"data.frame"}, \code{"data.table"} or \code{"list"}.}
 }
 \value{
-A list optionally containing the time, the strata (if any), the hazard, the
-        cumulative hazard and survival probabilities.
+When extracting the baseline hazard (missing newdata and times argument),
+a data frame containing the jump times, the baseline hazard, the cumulative baseline hazard, the strata (optional), and the baseline survival.
+
+Otherwise, when performing prediction, a list containing:
+\itemize{
+\item{hazard}: (matrix) the hazard predicted for each patient (in rows) and each time (in columns).
+\item{hazard.se}: (matrix) the standard errors of the predicted hazard.
+\item{cumHazard}: (matrix) the cumulative hazard predicted for each patient (in rows) and each time (in columns).
+\item{cumHazard.se}: (matrix) the standard errors of the predicted cumulative hazard.
+\item{survival}: (matrix) the survival predicted for each patient (in rows) and each time (in columns).
+\item{survival.se}: (matrix) the standard errors of the predicted survival.
+\item{times}: (vector) the evaluation times.
+\item{strata}: (vector) the strata indicator.
+}
 }
 \description{
 Fast routine to get baseline hazards and subject specific hazards
