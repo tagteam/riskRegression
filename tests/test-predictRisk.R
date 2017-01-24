@@ -199,15 +199,14 @@ test_that("Prediction with CSC - NA after last event",{
   test.times <- max(Melanoma$time) + c(-1e-1,0,1e-1)
   
   prediction <- predict(fit.CSC, times = test.times, newdata = Melanoma[1,,drop = FALSE], cause = 1)
-  expect_equal(as.vector(is.na(prediction)), c(FALSE, FALSE, TRUE))
+  expect_equal(as.vector(is.na(prediction$absRisk)), c(FALSE, FALSE, TRUE))
 })
-
 
 test_that("Prediction with CSC - no event before prediction time",{
   test.times <- min(Melanoma$time)-1e-5
   
   prediction <- predict(fit.CSC, times = test.times, newdata = Melanoma[1,,drop = FALSE], cause = 1)
-  expect_equal(as.double(prediction), 0)
+  expect_equal(as.double(prediction$absRisk), 0)
 })
 
 test_that("Prediction - last event censored",{
@@ -286,9 +285,9 @@ test_that("Prediction with CSC (strata) - NA after last event",{
     test.times <- sort(unlist(dt.times[Ttempo, .(beforeLastTime, LastTime, afterLastTime)]))
     
     prediction <- predict(fit.CSC, times = test.times, newdata = data.test, cause = 1)
-    expect_equal(unname(is.na(prediction[Ttempo,])), c(FALSE, FALSE, TRUE))
-    expect_equal(unname(is.na(prediction[Ttempo,])), c(FALSE, FALSE, TRUE))
-    expect_equal(unname(is.na(prediction[Ttempo,])), c(FALSE, FALSE, TRUE))
+    expect_equal(unname(is.na(prediction$absRisk[Ttempo,])), c(FALSE, FALSE, TRUE))
+    expect_equal(unname(is.na(prediction$absRisk[Ttempo,])), c(FALSE, FALSE, TRUE))
+    expect_equal(unname(is.na(prediction$absRisk[Ttempo,])), c(FALSE, FALSE, TRUE))
   }
 })
 
@@ -310,7 +309,7 @@ test_that("Prediction with CSC (strata)  - no event before prediction time",{
   test.times <- min(Melanoma$time)-1e-5
   
   prediction <- predict(fit.CSC, times = test.times, newdata = Melanoma[1,,drop = FALSE], cause = 1)
-  expect_equal(as.double(prediction), 0)
+  expect_equal(as.double(prediction$absRisk), 0)
 })
 
 #### 3- [predictCSC] survtype = "survival" ####
@@ -391,7 +390,7 @@ test_that("Prediction with CSC - sorted vs. unsorted times",{
   fit.CSC <- CSC(Hist(time,status) ~ thick, data = Melanoma)
   predictionUNS <- predict(fit.CSC, times = times2[newOrder], newdata = Melanoma, cause = 1, keep.times = FALSE)
   predictionS <- predict(fit.CSC, times = times2, newdata = Melanoma, cause = 1, keep.times = FALSE)
-  expect_equal(predictionS, predictionUNS[,order(newOrder)])
+  expect_equal(predictionS$absRisk, predictionUNS$absRisk[,order(newOrder)])
 })
 
 test_that("Prediction with Cox model (strata) - sorted vs. unsorted times",{
@@ -413,12 +412,14 @@ test_that("Prediction with CSC (strata) - sorted vs. unsorted times",{
   fit.CSC <- CSC(Hist(time,status) ~ thick + strat(invasion), data = Melanoma)
   predictionUNS <- predict(fit.CSC, times = times2[newOrder], newdata = Melanoma, cause = 1)
   predictionS <- predict(fit.CSC, times = times2, newdata = Melanoma, cause = 1)
-  expect_equal(predictionS, predictionUNS[,order(newOrder)])
+  expect_equal(predictionS$absRisk, predictionUNS$absRisk[,order(newOrder)])
 })
 
 test_that("Deal with negative time points",{
-  expect_equal(unname(predictCox(fit.coxph, times = -1, newdata = dataset1)$survival), matrix(1,nrow = nrow(dataset1), ncol = 1))
-  expect_equal(unname(predict(fit.CSC, times = -1, newdata = dataset1, cause = 1)), matrix(0,nrow = nrow(dataset1), ncol = 1))
+    expect_equal(unname(predictCox(fit.coxph, times = -1, newdata = dataset1)$survival),
+                 matrix(1,nrow = nrow(dataset1), ncol = 1))
+    expect_equal(unname(predict(fit.CSC, times = -1, newdata = dataset1, cause = 1)$absRisk),
+                 matrix(0,nrow = nrow(dataset1), ncol = 1))
 })
 
 test_that("Deal with NA in times",{
@@ -577,16 +578,16 @@ test_that("Conditional CIF identical to CIF before first event", {
 
 test_that("Conditional CIF is NA after the last event", {
   predC <- predict(CSC.fit, newdata = d, cause = 2, times = ttt, t0 = max(d$time)+1)
-  expect_equal(all(is.na(predC)), TRUE)
+  expect_equal(all(is.na(predC$absRisk)), TRUE)
   
   predC <- predict(CSC.fit, newdata = d2, cause = 2, times = ttt, t0 = max(d$time)+1)
-  expect_equal(all(is.na(predC)), TRUE)
+  expect_equal(all(is.na(predC$absRisk)), TRUE)
   
   t0 <- mean(range(d$time))
   ttt0 <- c(t0,ttt)
   predC <- predict(CSC.fit, newdata = d, cause = 2, times = ttt0, t0 = t0)
-  expect_equal(all(is.na(predC[,ttt0<t0])), TRUE)
-  expect_equal(all(!is.na(predC[,ttt0>=t0])), TRUE)
+  expect_equal(all(is.na(predC$absRisk[,ttt0<t0])), TRUE)
+  expect_equal(all(!is.na(predC$absRisk[,ttt0>=t0])), TRUE)
 })
 
 test_that("Value of the conditional CIF", {
@@ -600,11 +601,11 @@ test_that("Value of the conditional CIF", {
   predRef <- predict(CSC.fit, newdata = d2, cause = 2, times = ttt[indexT0]-1e-6)
   
   pred <- predict(CSC.fit, newdata = d2, cause = 2, times = ttt)
-  predC_manuel <- (pred-as.double(predRef))/as.double(Sall)
+  predC_manuel <- (pred$absRisk-as.double(predRef$absRisk))/as.double(Sall)
   predC_manuel[,seq(1,indexT0-1)] <- NA
   
   predC_auto <- predict(CSC.fit, newdata = d2, cause = 2, times = ttt, t0 = ttt[indexT0])
-  expect_equal(predC_auto,predC_manuel)
+  expect_equal(predC_auto$absRisk,predC_manuel)
 })
 
 

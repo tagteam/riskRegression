@@ -1,4 +1,3 @@
-?phreg
 library(timereg)
 library(mets)
 library(riskRegression)
@@ -10,8 +9,6 @@ d$entry <- 0
 (m1 <- phreg(Surv(entry, time,status)~X1+X2,data=d))
 (m2 <- coxph(Surv(time,status)~X1+X2,data=d, x = TRUE, y = TRUE))
 (m3 <- cox.aalen(Surv(time,status)~prop(X1)+prop(X2),data=d))
-
-
 
 #### influence function ####
 IC1 <- iidCox(m1)
@@ -58,3 +55,21 @@ p1 <- predict(fit1, newdata = Melanoma, times = 3000, cause = 1)
 p2 <- predict(fit2, newdata = Melanoma, times = 3000, cause = 1)
 
 range(p1-p2)
+
+
+#### issue with delayed entry ####
+library(mets)
+library(riskRegression)
+
+n <- 100
+d <- sampleData(n, outcome = "competing.risks")
+d$entry <- 0
+
+head(d)
+
+m2 <- coxph(Surv(entry,time,event==1)~X1+X2,data=d, x = TRUE)
+CSC(Hist(time = time, event = event)~ 1, data = d)
+CSC(Hist(entry,time,event)~X1+X2, data = d) # error
+
+
+

@@ -31,6 +31,7 @@ cbind(IFhaz[[1]][,3], IFall$ICLambda0[[1]][,3]-IFall$ICLambda0[[1]][,2])
 }
 }
 \author{
-Brice Ozenne broz@sund.ku.dk
+Brice Ozenne bro
+z@sund.ku.dk
 }
 

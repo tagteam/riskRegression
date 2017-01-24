@@ -4,14 +4,10 @@
 \alias{seRobustCox}
 \title{Computation of standard errors for predictions}
 \usage{
-seRobustCox(object, nTimes, type, Lambda0, iid, nStrata, new.eXb, new.LPdata,
-  new.strata, new.survival)
+seRobustCox(nTimes, type, Lambda0, iid, object.n, nStrata, new.eXb, new.LPdata,
+  new.strata, new.survival, export)
 }
 \arguments{
-\item{object}{The fitted Cox regression model object either
-obtained with \code{coxph} (survival package) or \code{cph}
-(rms package).}
-
 \item{nTimes}{the number of time points at which to evaluate the standard errors of the predictions.}
 
 \item{type}{One or several strings that match (either in lower or upper case or mixtures) one
@@ -20,6 +16,8 @@ or several of the strings \code{"hazard"},\code{"cumhazard"}, \code{"survival"}.
 \item{Lambda0}{the baseline hazard estimate returned by \code{BaseHazStrata_cpp}.}
 
 \item{iid}{the value of the influence function returned by \code{iidCox}.}
+
+\item{object.n}{the number of observations in the dataset used to estimate the object.}
 
 \item{nStrata}{the number of strata.}
 
@@ -30,6 +28,12 @@ or several of the strings \code{"hazard"},\code{"cumhazard"}, \code{"survival"}.
 \item{new.strata}{the strata indicator for the new observations}
 
 \item{new.survival}{the survival evaluated for the new observations}
+
+\item{export}{can be "iid" to return the value of the influence function for each observation or "se" to return the standard error.}
+
+\item{object}{The fitted Cox regression model object either
+obtained with \code{coxph} (survival package) or \code{cph}
+(rms package).}
 }
 \value{
 A list optionally containing the standard error for the survival, cumulative hazard and hazard.

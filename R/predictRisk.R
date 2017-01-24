@@ -147,7 +147,7 @@
 #' ## with strata
 #' cox.fit2  <- CSC(list(Hist(time,cause)~strata(X1)+X2,Hist(time,cause)~X1+X2),data=train)
 #' predictRisk(cox.fit2,newdata=test,times=seq(1:10),cause=1)
-#' 
+#'
 #' @export 
 predictRisk <- function(object,newdata,...){
   UseMethod("predictRisk",object)
@@ -298,10 +298,19 @@ predictRisk.cox.aalen <- function(object,newdata,times,...){
     
 ##' @export
 predictRisk.coxph <- function(object,newdata,times,...){
-    p <- predictCox(object=object,newdata=newdata,times=times,se=FALSE,keep.times=FALSE,keep.lastEventTime=FALSE,type="survival")$survival
-    if (NROW(p) != NROW(newdata) || NCOL(p) != length(times))
+    p <- predictCox(object=object,
+                      newdata=newdata,
+                      times=times,
+                      se = FALSE,
+                      iid = FALSE,
+                      keep.times=FALSE,
+                      keep.lastEventTime=FALSE,
+                      type="survival")$survival
+
+    if (NROW(p) != NROW(newdata) || NCOL(p) != length(times)){
         stop(paste("\nPrediction matrix has wrong dimensions:\nRequested newdata x times: ",NROW(newdata)," x ",length(times),"\nProvided prediction matrix: ",NROW(p)," x ",NCOL(p),"\n\n",sep=""))
-    1-p
+    }
+    return(1-p)
 }
 ## predictRisk.coxph <- function(object,newdata,times,...){
 ## baselineHazard.coxph(object,times)
@@ -359,10 +368,10 @@ predictRisk.cph <- function(object,newdata,times,...){
     ## if (!match("surv",names(object),nomatch=0)) stop("Argument missing: set surv=TRUE in the call to cph!")
     ## p <- rms::survest(object,times=times,newdata=newdata,se.fit=FALSE,what="survival")$surv
     ## if (is.null(dim(p))) p <- matrix(p,nrow=NROW(newdata))
-    p <- predictCox(object=object,newdata=newdata,times=times,se=FALSE,keep.times=FALSE,keep.lastEventTime=FALSE,type="survival")$survival
+    p <- predictCox(object=object,newdata=newdata,times=times,se = FALSE, iid = FALSE,keep.times=FALSE,keep.lastEventTime=FALSE,type="survival")$survival
     if (NROW(p) != NROW(newdata) || NCOL(p) != length(times))
         stop(paste("\nPrediction matrix has wrong dimensions:\nRequested newdata x times: ",NROW(newdata)," x ",length(times),"\nProvided prediction matrix: ",NROW(p)," x ",NCOL(p),"\n\n",sep=""))
-    1-p
+    return(1-p)
 }
 
 ##' @export
@@ -536,7 +545,13 @@ predictRisk.ARR <- function(object,newdata,times,cause,...){
 
 ##' @export 
 predictRisk.CauseSpecificCox <- function (object, newdata, times, cause, ...) { 
-    p <- predict(object=object,newdata=newdata,times=times,cause=cause,keep.strata=FALSE)
+    p <- predict(object=object,
+                 newdata=newdata,
+                 times=times,
+                 cause=cause,
+                 keep.strata=FALSE,
+                 se = FALSE,
+                 iid = FALSE)$absRisk
     if (NROW(p) != NROW(newdata) || NCOL(p) != length(times))
         stop(paste("\nPrediction matrix has wrong dimension:\nRequested newdata x times: ",NROW(newdata)," x ",length(times),"\nProvided prediction matrix: ",NROW(p)," x ",NCOL(p),"\n\n",sep=""))
     p

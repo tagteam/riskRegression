@@ -18,13 +18,29 @@
 #' @param keep.lastEventTime Logical. If \code{TRUE} add the time at which the last event occured in each strata to the output list. 
 #' @param format how to export the baseline hazard. Can be \code{"data.frame"}, \code{"data.table"} or \code{"list"}.
 #' @param se Logical. If \code{TRUE} add the standard errors corresponding to the output. 
-#' @param iid the value of the influence function obtained with the function \code{iidCox}.
+#' @param iid Logical. If \code{TRUE} add the influence function corresponding ot the output.
 #' @details Not working with time varying predictor variables or
 #'     delayed entry.
 #' The centered argument enables to reproduce results obtained with the \code{basehaz} function from the survival package.
+#'
+#' To avoid the computation of the influence function within the predictCox function, one can create a slot iid in the object
+#' and put in this slot the value of the influence function for the baseline hazard and the beta.
+#' This slot must have the format as the output of the function \code{iidCox}.
 #' @author Brice Ozenne broz@@sund.ku.dk, Thomas A. Gerds tag@@biostat.ku.dk
-#' @return A list optionally containing the time, the strata (if any), the hazard, the
-#'         cumulative hazard and survival probabilities.
+#' @return When extracting the baseline hazard (missing newdata and times argument),
+#' a data frame containing the jump times, the baseline hazard, the cumulative baseline hazard, the strata (optional), and the baseline survival.
+#'
+#' Otherwise, when performing prediction, a list containing:
+#' \itemize{
+#' \item{hazard}: (matrix) the hazard predicted for each patient (in rows) and each time (in columns).
+#' \item{hazard.se}: (matrix) the standard errors of the predicted hazard.
+#' \item{cumHazard}: (matrix) the cumulative hazard predicted for each patient (in rows) and each time (in columns).
+#' \item{cumHazard.se}: (matrix) the standard errors of the predicted cumulative hazard.
+#' \item{survival}: (matrix) the survival predicted for each patient (in rows) and each time (in columns).
+#' \item{survival.se}: (matrix) the standard errors of the predicted survival.
+#' \item{times}: (vector) the evaluation times.
+#' \item{strata}: (vector) the strata indicator.
+#' }
 #' @examples 
 #' library(survival)
 #' 
@@ -70,18 +86,16 @@ predictCox <- function(object,
                        keep.strata = TRUE,
                        keep.times = TRUE,
                        keep.lastEventTime = FALSE,
-                       se = FALSE,
-                       iid = NULL,
+                       se = FALSE, iid = FALSE,
                        format = "data.frame"){ 
   
-  #### extract elements from object ####
+  #### Extract elements from object ####
   # we need:          - the total number of observations, the status and eventtime for each observation
   #                   - the strata corresponding to each observation in the training set
   #                   - the name of each strata
   #                   - the value of the linear predictor for each observation in the training set
   infoVar <- CoxVariableName(object)
   is.strata <- infoVar$is.strata
-  
   
   object.n <- CoxN(object)
   object.design <- CoxDesign(object)
@@ -121,6 +135,14 @@ predictCox <- function(object,
     # if(se == TRUE && ncol(resInfo$modeldata) == 0){
     #   stop("cannot compute the standard error when there are not covariates \n")
     # }
+    if(se == TRUE && iid == TRUE){
+    stop("cannot return the standard error and the value of the influence function at the same time \n",
+         "set se or iid to FALSE \n")
+    }
+  
+  # if(se == TRUE && ncol(resInfo$modeldata) == 0){
+  #   stop("cannot compute the standard error when there are not covariates \n")
+  # }
   
   #### Do we want to make prediction for a new dataset ? ####
   # if yes we need to define: - the linear predictor for the new dataset
@@ -145,7 +167,7 @@ predictCox <- function(object,
   #### baseline hazard ####
   nStrata <- length(object.levelStrata)
   if(is.strata){etimes.max <- tapply(object.time, object.strata, max) }else{ etimes.max <- max(object.time) } # last event time
- 
+  
   Lambda0 <- baseHaz_cpp(alltimes = object.time,
                          status = object.status,
                          eXb = object.eXb,
@@ -244,7 +266,7 @@ predictCox <- function(object,
     }
     
     #### standard error ####
-    if(se){ 
+    if(se || iid){ 
       
       if(nVar > 0){
         new.LPdata <- model.matrix(object, newdata)
@@ -254,30 +276,38 @@ predictCox <- function(object,
       
       ## influence function 
       times.sorted <- sort(times)
-      if(is.null(iid)){
+      iid.object <- object$iid
+      
+      if(is.null(iid.object)){
         if("hazard" %in% type){
-          iid <- iidCox(object)
-          iid$IChazard <- calcIChazard(iid$ICcumhazard)
-          iid <- selectJump(iid, times = times.sorted, type = type)
+          iid.object <- iidCox(object)
+          iid.object$IChazard <- calcIChazard(iid.object$ICcumHazard)
+          iid.object <- selectJump(iid.object, times = times.sorted, type = type)
         }else{
-          iid <- iidCox(object, tauHazard = times.sorted)
+          iid.object <- iidCox(object, tauHazard = times.sorted)
         }
         
       }else{
         
         if("hazard" %in% type){
-          iid$IChazard <- calcIChazard(iid$ICcumhazard)
+          iid.object$IChazard <- calcIChazard(iid.object$ICcumHazard)
         }
-        iid <- selectJump(iid, times = times.sorted, type = type)
+        iid.object <- selectJump(iid.object, times = times.sorted, type = type)
         
       }
-      outSE <- seRobustCox(object,  nTimes = nTimes, type = type,
-                           Lambda0 = Lambda0, iid = iid, nStrata = nStrata,
-                           new.eXb = new.eXb, new.LPdata = new.LPdata, new.strata = new.strata, new.survival = out$survival)
-      
-      if ("hazard" %in% type){out$hazard.se <- outSE$hazard.se}
-      if ("cumhazard" %in% type){out$cumhazard.se <- outSE$cumhazard.se}
-      if ("survival" %in% type){out$survival.se <- outSE$survival.se}
+      outSE <- seRobustCox(nTimes = nTimes, type = type,
+                           Lambda0 = Lambda0, iid = iid.object, object.n = object.n, nStrata = nStrata, 
+                           new.eXb = new.eXb, new.LPdata = new.LPdata, new.strata = new.strata, new.survival = out$survival,
+                           export = if(se){"se"} else {"iid"})
+      if(se){
+        if ("hazard" %in% type){out$hazard.se <- outSE$hazard.se}
+        if ("cumHazard" %in% type){out$cumHazard.se <- outSE$cumHazard.se}
+        if ("survival" %in% type){out$survival.se <- outSE$survival.se}
+      }else {
+        if ("hazard" %in% type){out$hazard.iid <- outSE$hazard.iid}
+        if ("cumHazard" %in% type){out$cumHazard.iid <- outSE$cumHazard.iid}
+        if ("survival" %in% type){out$survival.iid <- outSE$survival.iid}
+      }
     }
     
     #### export ####
@@ -319,18 +349,21 @@ predictCox <- function(object,
 #' or several of the strings \code{"hazard"},\code{"cumhazard"}, \code{"survival"}.
 #' @param Lambda0 the baseline hazard estimate returned by \code{BaseHazStrata_cpp}.
 #' @param iid  the value of the influence function returned by \code{iidCox}.
-#' @param nStrata	the number of strata.
+#' @param object.n the number of observations in the dataset used to estimate the object. 
+#' @param nStrata the number of strata.
 #' @param new.eXb the linear predictor evaluated for the new observations
 #' @param new.LPdata the variables involved in the linear predictor for the new observations
 #' @param new.strata the strata indicator for the new observations
 #' @param new.survival the survival evaluated for the new observations
-#' 
+#' @param export can be "iid" to return the value of the influence function for each observation or "se" to return the standard error.
+#'  
 #' @author Brice Ozenne broz@@sund.ku.dk, Thomas A. Gerds tag@@biostat.ku.dk
 #' 
 #' @return A list optionally containing the standard error for the survival, cumulative hazard and hazard.
-seRobustCox <- function(object, nTimes, type, 
-                        Lambda0, iid, nStrata,
-                        new.eXb, new.LPdata, new.strata, new.survival){
+seRobustCox <- function(nTimes, type, 
+                        Lambda0, iid, object.n, nStrata,
+                        new.eXb, new.LPdata, new.strata, new.survival,
+                        export){
   
   n.new <- length(new.eXb)
   
@@ -347,14 +380,15 @@ seRobustCox <- function(object, nTimes, type,
   
   ## main loop
   out <- list()
-  if("hazard" %in% type){
-    out$hazard.se <- matrix(NA, nrow = n.new, ncol = nTimes)
+  if(export=="se"){
+    if("hazard" %in% type){out$hazard.se <- matrix(NA, nrow = n.new, ncol = nTimes)}
+    if("cumHazard" %in% type){out$cumHazard.se <- matrix(NA, nrow = n.new, ncol = nTimes)}
+    if("survival" %in% type){out$survival.se <- matrix(NA, nrow = n.new, ncol = nTimes)}
   }
-  if("cumhazard" %in% type){
-    out$cumhazard.se <- matrix(NA, nrow = n.new, ncol = nTimes)
-  }
-  if("survival" %in% type){
-    out$survival.se <- matrix(NA, nrow = n.new, ncol = nTimes)
+  if(export=="iid"){
+    if("hazard" %in% type){out$hazard.iid <- array(NA, dim = c(n.new, nTimes, object.n))}
+    if("cumHazard" %in% type){out$cumHazard.iid <- array(NA, dim = c(n.new, nTimes, object.n))}
+    if("survival" %in% type){out$survival.iid <- array(NA, dim = c(n.new, nTimes, object.n))}
   }
   
   for(iObs in 1:n.new){
@@ -362,24 +396,34 @@ seRobustCox <- function(object, nTimes, type,
     iObs.strata <- new.strata[iObs]
     X_ICbeta <- iid$ICbeta %*% t(new.LPdata[iObs,,drop=FALSE])
     
-    if("hazard" %in% type){
-      IF_tempo <- new.eXb[iObs]*(iid$IChazard[[iObs.strata]] + X_ICbeta %*% Lambda0$hazard[[iObs.strata]])
-      se_tempo <- sqrt(apply(IF_tempo^2,2,sum))
-      
-      out$hazard.se[iObs,] <- se_tempo
+      if("hazard" %in% type){
+      IF_tempo <- IClambda2hazard(eXb = new.eXb[iObs],
+                                  lambda0 = Lambda0$hazard[[iObs.strata]],
+                                  X_ICbeta = X_ICbeta,
+                                  IClambda0 = iid$IChazard[[iObs.strata]])
+      if(export == "iid"){
+        out$hazard.iid[iObs,,] <- t(IF_tempo)
+      }else if(export == "se"){
+        se_tempo <- sqrt(apply(IF_tempo^2,2,sum))
+        out$hazard.se[iObs,] <- se_tempo
+      }
     }
     
-    if("cumhazard" %in% type || "survival" %in% type){
-      IF_tempo <- new.eXb[iObs]*(iid$ICcumhazard[[iObs.strata]] + X_ICbeta %*% Lambda0$cumhazard[[iObs.strata]])
-      se_tempo <- sqrt(apply(IF_tempo^2,2,sum))
+    if("cumHazard" %in% type || "survival" %in% type){
+      IF_tempo <- IClambda2hazard(eXb = new.eXb[iObs],
+                                  lambda0 = Lambda0$cumHazard[[iObs.strata]],
+                                  X_ICbeta = X_ICbeta,
+                                  IClambda0 = iid$ICcumHazard[[iObs.strata]])
       
-      if("cumhazard" %in% type){
-        out$cumhazard.se[iObs,] <- se_tempo
+      if(export == "iid"){
+        if("cumHazard" %in% type){out$cumHazard.iid[iObs,,] <- t(IF_tempo)}
+        if("survival" %in% type){out$survival.iid[iObs,,] <- t(rowMultiply_cpp(IF_tempo, scale = new.survival[iObs,,drop=FALSE]))}
+      }else if(export == "se"){
+        se_tempo <- sqrt(apply(IF_tempo^2,2,sum))
+        if("cumHazard" %in% type){out$cumHazard.se[iObs,] <- se_tempo}
+        if("survival" %in% type){out$survival.se[iObs,] <- se_tempo * new.survival[iObs,,drop=FALSE]}
       }
       
-      if("survival" %in% type){
-        out$survival.se[iObs,] <- se_tempo * new.survival[iObs,,drop=FALSE]
-      }
     }
     
   }
@@ -389,12 +433,26 @@ seRobustCox <- function(object, nTimes, type,
 }
 
 
+##' @title Evaluate the influence function for the hazard based on the one of the baseline hazard##' 
+##' @description Evaluate the influence function for the hazard based on the one of the baseline hazard
+##'
+##' @param eXb the linear predictor
+##' @param X_ICbeta the design matrix times the influence function of beta
+##' @param lambda0 the baseline hazard
+##' @param IClambda0 the influence function of the baseline hazard 
+##' 
+##' 
+IClambda2hazard <- function(eXb, X_ICbeta, lambda0, IClambda0){
+  return(eXb*(IClambda0 + X_ICbeta %*% lambda0))
+}
+
 #' @title Evaluate the influence function for the hazard functional
 #'
 #' @description  Evaluate the influence function for the hazard functional using the one of the cumulative hazard
 #' @param ICcumhazard influence function of the cumulative hazard
 #' 
-#' @author Brice Ozenne broz@@sund.ku.dk
+#' @author Brice Ozenne bro
+#' z@@sund.ku.dk
 #' 
 #' @return An object with the same dimensions as ICcumhazard, i.e. a list with one element per strata each element being a matrix observation*time.
 #' 

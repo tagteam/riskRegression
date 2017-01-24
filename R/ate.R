@@ -24,8 +24,10 @@
 #' @param contrasts the levels of treatment variable to be compared
 #' @param times time points at which to evaluate risks
 #' @param cause the cause of interest
+#' @param conf.level Numeric. Confidence level of the confidence intervals. Disregarded if negative.
 #' @param B the number of bootstrap replications used to compute the
-#'     confidence interval.
+#' confidence intervals. If it equals 0, then Wald-type confidence intervals are computed.
+#' They rely on the standard error estimated using the influence function of the estimator.
 #' @param seed An integer used to generate seeds for bootstrap and to
 #'     achieve reproducibility of the bootstrap confidence intervals.
 #' @param handler parallel handler for bootstrap. Either "mclapply" or
@@ -35,7 +37,6 @@
 #'     most how many child processes will be run simultaneously.  The
 #'     option is initialized from environment variable MC_CORES if
 #'     set.
-#' @param conf.level the level for bootstrap confidence intervals
 #' @param verbose Logical. If \code{TRUE} inform about estimated run
 #'     time.
 #' @param ... passed to predictRisk
@@ -48,7 +49,7 @@
 #' library(rms)
 #' 
 #' set.seed(10)
-#' n <- 1e3
+#' n <- 1e2
 #' 
 #' ## Cox model
 #' dtS <- sampleData(n,outcome="survival")
@@ -63,6 +64,9 @@
 #' 
 #' ateFit=ate(fit, data = dtS, treatment = "X1", contrasts = NULL,
 #'         times = 5:7, B = 3, y = TRUE, mc.cores=1)
+#'
+#' ateFit=ate(fit, data = dtS, treatment = "X1", contrasts = NULL,
+#'         times = 5:7, B = 0, y = TRUE, mc.cores=1)
 #' 
 #' ## Cause specific cox model
 #' dt <- sampleData(1e3,outcome="competing.risks")
@@ -72,6 +76,11 @@
 #' ate(fitCR, data = dt, treatment = "X1", contrasts = NULL,
 #'         times = 5:7, cause = 1, B = 3, mc.cores=1)
 #'
+#' \dontrun{
+#'  ate(fitCR, data = dt, treatment = "X1", contrasts = NULL,
+#'         times = 5:7, cause = 1, B = 0, mc.cores=1)
+#' }
+#' 
 #' @export
 ate <- function(object,
                 data,
@@ -79,11 +88,11 @@ ate <- function(object,
                 contrasts = NULL,
                 times,
                 cause,
-                B = 0,
+                conf.level = 0.95,
+                B = 0,                
                 seed,
                 handler=c("mclapply","foreach"),
                 mc.cores = 1,
-                conf.level = .95,
                 verbose=TRUE,
                 ...){
     meanRisk=Treatment=ratio=Treatment.A=Treatment.B=b=NULL
@@ -141,6 +150,7 @@ ate <- function(object,
         out
     }
     #### point estimate
+   
     estimateTime <- system.time(
         pointEstimate <- Gformula(object=object,
                                   data=data,
@@ -149,8 +159,13 @@ ate <- function(object,
                                   times=times,
                                   cause=cause,
                                   ...))
-    #### Bootstrap
-    if(B>0){
+    
+    ##### Confidence interval
+    if((conf.level > 0) && (conf.level <1) ){
+
+        alpha <- 1-conf.level
+        
+    if(B>0){ #### Bootstrap
         if (verbose==TRUE)
             message(paste0("Approximated bootstrap netto run time (without time for copying data to cores):\n",
                            round(estimateTime["user.self"],2),
@@ -224,8 +239,7 @@ ate <- function(object,
         ## gc()
         meanRisksBoot <- data.table::rbindlist(lapply(boots,function(x)x$meanRisk))
         riskComparisonsBoot <- data.table::rbindlist(lapply(boots,function(x)x$riskComparison))
-        alpha <- 1-conf.level
-        
+           
         if(NROW(meanRisksBoot)==0){
           stop("no successful bootstrap \n")
         }
@@ -244,6 +258,66 @@ ate <- function(object,
                                                               ratio.upper=quantile(ratio,1-(alpha/2), na.rm = TRUE),
                                                               n.boot=sum(!is.na(diff))),
                                       keyby=c("Treatment.A","Treatment.B","time")]
+    } else { #### Influence function
+        ICrisk <- lapply(1:n.contrasts,function(i){
+            ## influence function for the hypothetical worlds in which every subject is treated with the same treatment
+            data.i <- data
+            data.i[[treatment]] <- factor(contrasts[i], levels = levels)
+            risk.i <- do.call("predictRisk",args = list(object, newdata = data.i, times = times, cause = cause, ...))
+            attr(risk.i,"iid") <- do.call("predictRiskIID",args = list(object, newdata = data.i, times = times, cause = cause, ...))
+            return(risk.i)
+        })
+
+        
+        sdIF.treatment <- unlist(lapply(ICrisk, function(iIC){
+            apply(attr(iIC,"iid"), 2, function(x){          
+                sqrt(sum(colMeans(x)^2))
+            })
+        })) 
+            
+        sdIF.fct <- data.table::rbindlist(lapply(1:(n.contrasts-1),function(i){
+            data.table::rbindlist(lapply(((i+1):n.contrasts),function(j){
+                ## compute differences between all pairs of treatments
+                # IC had dimension n.predictions (row), n.times (columns), n.dataTrain (length)
+                # apply 2 do for each time: extract the value of IF with n.predictions (row) and n.dataTrain (length)
+                # colSums: compute the IF for the G formula for each observation in the training data set
+                # sqrt(sum 2)) compute the variance of the estimator over the observations in the training data set
+
+             
+                
+                data.table(Treatment.A=contrasts[[i]],
+                           Treatment.B=contrasts[[j]],
+                           time = times,
+                           diff = apply(attr(ICrisk[[i]],"iid")-attr(ICrisk[[j]],"iid"), 2,
+                                       function(x){ sqrt(sum(colMeans(x)^2))}),
+                           ratio = sapply(1:n.times,
+                                          function(x){
+                                              ratio1 <- colScale_cpp(attr(ICrisk[[i]],"iid")[,x,], scale = ICrisk[[j]][,x])
+                                              ratio2 <- colMultiply_cpp(attr(ICrisk[[j]],"iid")[,x,], scale = ICrisk[[i]][,x]/ICrisk[[j]][,x]^2)
+                                              
+                                              sqrt(sum( (colMeans(ratio1)/colMeans(ratio2))^2 ))
+                                          })                                
+                            )
+            }))}))
+
+        mrisks <- data.table::data.table(Treatment = pointEstimate$meanRisk$Treatment,
+                                         time = times,
+                                         meanRiskBoot = NA,
+                                         lower = pointEstimate$meanRisk$meanRisk + qnorm(alpha/2) * sdIF.treatment,
+                                         upper = pointEstimate$meanRisk$meanRisk + qnorm(1-alpha/2) * sdIF.treatment)
+        crisks <- data.table::data.table(Treatment.A = pointEstimate$riskComparison$Treatment.A,
+                                         Treatment.B = pointEstimate$riskComparison$Treatment.B,
+                                         time = times,
+                                         diffMeanBoot = NA,
+                                         diff.lower = pointEstimate$riskComparison$diff + qnorm(alpha/2) * sdIF.fct$diff,
+                                         diff.upper = pointEstimate$riskComparison$diff + qnorm(1-alpha/2) * sdIF.fct$diff,
+                                         ratioMeanBoot = NA,
+                                         ratio.lower = pointEstimate$riskComparison$ratio + qnorm(alpha/2) * sdIF.fct$ratio,
+                                         ratio.upper = pointEstimate$riskComparison$ratio + qnorm(1-alpha/2) * sdIF.fct$ratio)
+
+        bootseeds <- NULL
+    }
+        
     }else{
         
         mrisks <- data.table::data.table(Treatment = pointEstimate$meanRisk$Treatment,
@@ -272,7 +346,8 @@ ate <- function(object,
                 contrasts=contrasts,
                 times=times,
                 n.bootstrap=B,
-                seeds=bootseeds)
+                seeds=bootseeds,
+                conf.level=conf.level)
     
     class(out) <- c("ate",class(object))
     out

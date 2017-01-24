@@ -6,8 +6,8 @@
 \usage{
 predictCox(object, newdata = NULL, times, centered = TRUE,
   type = c("hazard", "cumhazard", "survival"), keep.strata = TRUE,
-  keep.times = TRUE, keep.lastEventTime = FALSE, se = FALSE, iid = NULL,
-  format = "data.frame")
+  keep.times = TRUE, keep.lastEventTime = FALSE, se = FALSE,
+  iid = FALSE, format = "data.frame")
 }
 \arguments{
 \item{object}{The fitted Cox regression model object either
@@ -34,13 +34,25 @@ or several of the strings \code{"hazard"},\code{"cumhazard"}, \code{"survival"}}
 
 \item{se}{Logical. If \code{TRUE} add the standard errors corresponding to the output.}
 
-\item{iid}{the value of the influence function obtained with the function \code{iidCox}.}
+\item{iid}{Logical. If \code{TRUE} add the influence function corresponding ot the output.}
 
 \item{format}{how to export the baseline hazard. Can be \code{"data.frame"}, \code{"data.table"} or \code{"list"}.}
 }
 \value{
-A list optionally containing the time, the strata (if any), the hazard, the
-        cumulative hazard and survival probabilities.
+When extracting the baseline hazard (missing newdata and times argument),
+a data frame containing the jump times, the baseline hazard, the cumulative baseline hazard, the strata (optional), and the baseline survival.
+
+Otherwise, when performing prediction, a list containing:
+\itemize{
+\item{hazard}: (matrix) the hazard predicted for each patient (in rows) and each time (in columns).
+\item{hazard.se}: (matrix) the standard errors of the predicted hazard.
+\item{cumHazard}: (matrix) the cumulative hazard predicted for each patient (in rows) and each time (in columns).
+\item{cumHazard.se}: (matrix) the standard errors of the predicted cumulative hazard.
+\item{survival}: (matrix) the survival predicted for each patient (in rows) and each time (in columns).
+\item{survival.se}: (matrix) the standard errors of the predicted survival.
+\item{times}: (vector) the evaluation times.
+\item{strata}: (vector) the strata indicator.
+}
 }
 \description{
 Fast routine to get baseline hazards and subject specific hazards
@@ -50,6 +62,10 @@ as well as survival probabilities from a coxph or cph object
 Not working with time varying predictor variables or
     delayed entry.
 The centered argument enables to reproduce results obtained with the \code{basehaz} function from the survival package.
+
+To avoid the computation of the influence function within the predictCox function, one can create a slot iid in the object
+and put in this slot the value of the influence function for the baseline hazard and the beta.
+This slot must have the format as the output of the function \code{iidCox}.
 }
 \examples{
 library(survival)

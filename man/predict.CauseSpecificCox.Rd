@@ -5,7 +5,7 @@
 \title{Predicting absolute risk from cause-specific Cox models}
 \usage{
 \method{predict}{CauseSpecificCox}(object, newdata, times, cause, t0 = NA,
-  colnames = TRUE, se = FALSE, ...)
+  keep.times = TRUE, se = FALSE, iid = FALSE, ...)
 }
 \arguments{
 \item{object}{The fitted cause specific Cox model}
@@ -20,14 +20,23 @@ hazards/survival}
 
 \item{t0}{the starting time for the conditional survival.}
 
-\item{colnames}{Logical. If \code{TRUE} name the columns of the matrix containing the absolute risk with times}
+\item{keep.times}{Logical. If \code{TRUE} add the evaluation times to the output.}
 
-\item{se}{Logical. If \code{TRUE} add the standard errors corresponding to the output}
+\item{se}{Logical. If \code{TRUE} add the standard errors corresponding to the output.}
+
+\item{iid}{Logical. If \code{TRUE} add the influence function corresponding ot the output.}
 
 \item{...}{not used}
 }
 \value{
-A data table containing the predictions for each patient (in rows) and each time (in columns).
+A list containing:
+\itemize{
+\item{absRisk}: (data table) the predictions for each patient (in rows) and each time (in columns).
+\item{absRisk.se}: (data table) the standard errors of the predictions.
+\item(absRisk.iid): (array) the value of the influence of each patient used to fit the object (dim 3)
+for each patient in newdata (dim 1) and each time (dim 2).
+\item{times}: (vector) the evaluation times.
+}
 }
 \description{
 Apply formula to combine two or more Cox models into absolute risk (cumulative incidence function)
@@ -48,6 +57,11 @@ ttt <- sample(x = unique(sort(d$time)), size = 10)
 CSC.fit <- CSC(Hist(time,event)~ X1+X2,data=d, method = "breslow")
 
 predCSC <- predict(CSC.fit, newdata = d, cause = 2, times = ttt)
+predCSC.se <- predict(CSC.fit, newdata = d[1:5,], cause = 2, times = ttt, se = TRUE)
+predCSC.iid <- predict(CSC.fit, newdata = d[1:5,], cause = 2, times = ttt, iid = TRUE)
+
+# predCSC.se$absRisk.se
+# sqrt(apply(predCSC.iid$absRisk.iid[,1,]^2,1,function(x){sum(x)}))
 
 #### cph function
 CSC.cph <- CSC(Hist(time,event)~ X1+X2,data=d, method = "breslow", fitter = "cph")

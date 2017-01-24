@@ -5,7 +5,7 @@ library(testthat)
 context("ate for Cox model")
 set.seed(10)
 
-n <- 1e2
+n <- 5e1
 dtS <- sampleData(n,outcome="survival")
 dtS$time <- round(dtS$time,1)
 dtS$X1 <- factor(rbinom(n, prob = c(0.3,0.4) , size = 2), labels = paste0("T",0:2))
@@ -18,7 +18,7 @@ if(require(rms)){
             times = 1, B = 2, y = TRUE, mc.cores=1)
         # several time points
         ate(fit, data = dtS, treatment = "X1", contrasts = NULL,
-            times = 1:10, B = 2, y = TRUE, mc.cores=1)
+            times = 1:2, B = 2, y = TRUE, mc.cores=1)
     })
     if(parallel::detectCores()>1){
         test_that("G formula: cph, parallel",{
@@ -39,7 +39,7 @@ if(require(survival)){
             times = 1, B = 2, y = TRUE, mc.cores=1)
         # several time points
         ate(fit, data = dtS, treatment = "X1", contrasts = NULL,
-            times = 1:10, B = 2, y = TRUE, mc.cores=1)
+            times = 1:2, B = 2, y = TRUE, mc.cores=1)
     })
     if(parallel::detectCores()>1){
         test_that("G formula: coxph, parallel",{
@@ -57,7 +57,7 @@ if(require(survival)){
 #### Fully stratified Cox model ####
 context("ate for fully stratified Cox model")
 
-n <- 1e2
+n <- 5e1
 dtS <- sampleData(n,outcome="survival")
 dtS$time <- round(dtS$time,1)
 dtS$X1 <- factor(rbinom(n, prob = c(0.3,0.4) , size = 2), labels = paste0("T",0:2))
@@ -66,7 +66,7 @@ if(require(rms)){
   test_that("G formula: cph, fully stratified",{
     fit <- cph(formula = Surv(time,event)~ strat(X1),data=dtS,y=TRUE,x=TRUE)
     ate(fit, data = dtS, treatment = "X1", contrasts = NULL,
-        times = 1:10, B = 2, y = TRUE, mc.cores=1)
+        times = 1:2, B = 2, y = TRUE, mc.cores=1)
   })
 }
 
@@ -82,6 +82,42 @@ if(require(survival)){
     
   })
 }
+
+#### standard error
+# package.source("riskRegression", Ccode = TRUE)
+
+set.seed(10)
+n <- 5e1
+
+dtS <- sampleData(n,outcome="survival")
+dtS$time <- round(dtS$time,1)
+dtS$X1 <- factor(rbinom(n, prob = c(0.3,0.4) , size = 2), labels = paste0("T",0:2))
+
+fit <- cph(formula = Surv(time,event)~ X1+X2,data=dtS,y=TRUE,x=TRUE)
+## automatically
+ateFit <- ate(fit, data = dtS, treatment = "X1", contrasts = NULL,
+              times = 5:7, B = 0, se = TRUE, mc.cores=1)
+
+## manually
+newdata0 <- copy(dtS)
+newdata0$X1 <- "T0"
+resIID <- predictRiskIID(fit, newdata = newdata0, time = 5:7)
+resRisk <- predictRisk(fit, newdata = newdata0, time = 5:7)
+
+IF <- NULL
+for(i in 1:NROW(dtS)){# i <- 1
+  IF <- rbind(IF,
+              colMeans(resIID[,,i])
+              )
+  print(colMeans(resIID[,,i]))
+}
+resManuel <- data.frame(mean = colMeans(resRisk), se = sqrt(apply(IF^2, 2, sum)))
+resManuel$lower <- resManuel$mean + qnorm(0.025) * resManuel$se
+resManuel$upper <- resManuel$mean + qnorm(0.975) * resManuel$se
+
+
+expect_equal(resManuel$lower, ateFit$meanRisk[ateFit$meanRisk$Treatment == "T0",lower])
+expect_equal(resManuel$upper, ateFit$meanRisk[ateFit$meanRisk$Treatment == "T0",upper])
 
 #### CSC model ####
 context("ate for fully CSC model")
@@ -168,8 +204,8 @@ dtS$X1 <- rbinom(n, prob = c(0.3,0.4) , size = 2)
 dtS$X1 <- factor(dtS$X1, labels = paste0("T",unique(dtS$X1)))
 
 if(require(randomForestSRC)){
-    fitRF <- rfsrc(formula = Surv(time,event)~ X1+X2, data=dtS)
-    ate(fitRF, data = dtS, treatment = "X1", contrasts = NULL,
+   fitRF <- rfsrc(formula = Surv(time,event)~ X1+X2, data=dtS)
+   ate(fitRF, data = dtS, treatment = "X1", contrasts = NULL,
         times = 5:7, B = 2, mc.cores=1)
 }
 
