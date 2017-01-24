@@ -21,7 +21,8 @@
 #' setkey(d, eventtime)
 #' 
 #' library(timereg)
-#' mGS.cox <- cox.aalen(Surv(eventtime, event) ~ prop(X1)+prop(X6), data = d, resample.iid = TRUE, max.timepoint.sim=NULL)
+#' mGS.cox <- cox.aalen(Surv(eventtime, event) ~ prop(X1)+prop(X6),
+#'                      data = d, resample.iid = TRUE, max.timepoint.sim=NULL)
 #' ICbeta_GS <- mGS.cox$gamma.iid
 #' IClambda_GS <- t(as.data.table(mGS.cox$B.iid))
 #'  

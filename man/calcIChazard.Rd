@@ -4,13 +4,13 @@
 \alias{calcIChazard}
 \title{Evaluate the influence function for the hazard functional}
 \usage{
-calcIChazard(ICcumHazard)
+calcIChazard(ICcumhazard)
 }
 \arguments{
-\item{ICcumHazard}{influence function of the cumulative hazard}
+\item{ICcumhazard}{influence function of the cumulative hazard}
 }
 \value{
-An object with the same dimensions as ICcumHazard, i.e. a list with one element per strata each element being a matrix observation*time.
+An object with the same dimensions as ICcumhazard, i.e. a list with one element per strata each element being a matrix observation*time.
 }
 \description{
 Evaluate the influence function for the hazard functional using the one of the cumulative hazard

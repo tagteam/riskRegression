@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun 23 2016 (10:27) 
 ## Version: 
-## last-updated: Aug 30 2016 (14:16) 
+## last-updated: Jan 15 2017 (16:40) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 7
+##     Update #: 8
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -31,7 +31,6 @@ plotROC <- function(x,models,timepoint,lwd=3,legend=TRUE,legend.title,...){
     if (!missing(models)){
         pframe <- pframe[model%in%models]
     }
-    browser()
     setkey(pframe,model)
     if (missing(timepoint))
         timepoint <- max(pframe[["times"]])
