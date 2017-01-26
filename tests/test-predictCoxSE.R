@@ -46,7 +46,7 @@ if(require(timereg)){
     
     m.cox2 <- m.cox
     m.cox2$iid <- iidCox(m.cox)
-    predRR2 <- predictCox(m.cox2, newdata = d, times = 10, se = TRUE, iid = )
+    predRR2 <- predictCox(m.cox2, newdata = d, times = 10, se = TRUE)
     expect_equal(predRR1$survival.se, predGS$se.S0)
     expect_equal(predRR2$survival.se, predGS$se.S0)
     

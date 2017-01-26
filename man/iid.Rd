@@ -33,7 +33,7 @@ If there is no event in a strata, the influence function for the baseline hazard
 library(survival)
 library(data.table)
 set.seed(10)
-d <- sampleData(7e1, outcome = "survival")[,.(eventtime,event,X1,X6)]
+d <- sampleData(2e1, outcome = "survival")[,.(eventtime,event,X1,X6)]
 setkey(d, eventtime)
 
 library(timereg)
@@ -44,7 +44,7 @@ IClambda_GS <- t(as.data.table(mGS.cox$B.iid))
 m.cox <- coxph(Surv(eventtime, event) ~ X1+X6, data = d, y = TRUE, x = TRUE)
 system.time(IC.cox <- iidCox(m.cox))
 
-IC.cox <- iidCox(m.cox, tauHazard = 7)
+IC.cox <- iidCox(m.cox, tauHazard = sort(unique(c(7,d$eventtime))))
  
 
 }

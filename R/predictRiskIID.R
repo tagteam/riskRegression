@@ -44,6 +44,7 @@
 #' CSCmodel <- CSC(Hist(time,event)~X1+X2, data = d)
 #'
 #' predictRiskIID(CSCmodel, newdata = d[1:5,], times = 1:3, cause = 1)
+#' 
 #' @export 
 predictRiskIID <- function(object, newdata,...){
   UseMethod("predictRiskIID",object)

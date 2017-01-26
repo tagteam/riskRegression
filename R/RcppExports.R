@@ -52,8 +52,8 @@ ICbeta_cpp <- function(newT, neweXb, newX, newStatus, newIndexJump, S01, E1, tim
     .Call('riskRegression_ICbeta_cpp', PACKAGE = 'riskRegression', newT, neweXb, newX, newStatus, newIndexJump, S01, E1, time1, iInfo, p)
 }
 
-IClambda0_cpp <- function(tau, ICbeta, newT, neweXb, newStatus, newStrata, newIndexJump, S01, E1, time1, lambda0, p, strata) {
-    .Call('riskRegression_IClambda0_cpp', PACKAGE = 'riskRegression', tau, ICbeta, newT, neweXb, newStatus, newStrata, newIndexJump, S01, E1, time1, lambda0, p, strata)
+IClambda0_cpp <- function(tau, ICbeta, newT, neweXb, newStatus, newStrata, newIndexJump, S01, E1, time1, lastTime1, lambda0, p, strata) {
+    .Call('riskRegression_IClambda0_cpp', PACKAGE = 'riskRegression', tau, ICbeta, newT, neweXb, newStatus, newStrata, newIndexJump, S01, E1, time1, lastTime1, lambda0, p, strata)
 }
 
 predictCIF_cpp <- function(hazard, cumHazard, eXb_h, eXb_cumH, strata, newtimes, etimes, etimeMax, t0, nEventTimes, nNewTimes, nData, cause, nCause) {

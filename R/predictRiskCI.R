@@ -123,7 +123,7 @@ predictRiskCI.CauseSpecificCox <- function(object,
         stop(paste("\nPrediction matrix has wrong dimensions:\nRequested newdata x times: ",NROW(newdata)," x ",length(times),"\nProvided prediction matrix: ",NROW(p$estimate)," x ",NCOL(p$estimate),"\n\n",sep=""))
     }
 
-    if(any(p$lower<0)){
+    if(!all(is.na(p$lower)) && any(p$lower<0)){
         warning("Some of the bounds of the confidence intervals are below 0. \n Wald-type confidence intervals may not be appropriate for all predictions \n")
     }
     return(p)
