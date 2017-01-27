@@ -208,7 +208,6 @@ iidCox <- function(object, newdata = NULL, tauHazard = NULL,
   ## set original order
   ICbeta <- ICbeta[order(new.order),,drop=FALSE]
   
-  
   #### lambda
   for(iStrata in 1:nStrata){
     
@@ -255,8 +254,8 @@ iidCox <- function(object, newdata = NULL, tauHazard = NULL,
       }
       
     }else{
-      IClambda_res <- list(hazard = matrix(0, ncol = 1, nrow = length(new.index_strata[[iStrata]])),
-                           cumHazard = matrix(0, ncol = 1, nrow = length(new.index_strata[[iStrata]]))
+      IClambda_res <- list(hazard = matrix(0, ncol = length(tauHazard_strata), nrow = length(new.index_strata[[iStrata]])),
+                           cumHazard = matrix(0, ncol = length(tauHazard_strata), nrow = length(new.index_strata[[iStrata]]))
       )
       if(length(tauHazard_strata)==0){tauHazard_strata <- NA}
     }
