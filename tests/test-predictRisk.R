@@ -171,12 +171,12 @@ test_that("Prediction with Cox model - NA after last event",{
   
   prediction <- predictCox(fit.coxph, times = test.times, newdata = Melanoma[1,,drop = FALSE])
   expect_equal(as.vector(is.na(prediction$hazard)), c(FALSE, FALSE, TRUE))
-  expect_equal(as.vector(is.na(prediction$cumHazard)), c(FALSE, FALSE, TRUE))
+  expect_equal(as.vector(is.na(prediction$cumhazard)), c(FALSE, FALSE, TRUE))
   expect_equal(as.vector(is.na(prediction$survival)), c(FALSE, FALSE, TRUE))
   
   prediction <- predictCox(fit.cph, times = test.times, newdata = Melanoma[1,,drop = FALSE])
   expect_equal(as.vector(is.na(prediction$hazard)), c(FALSE, FALSE, TRUE))
-  expect_equal(as.vector(is.na(prediction$cumHazard)), c(FALSE, FALSE, TRUE))
+  expect_equal(as.vector(is.na(prediction$cumhazard)), c(FALSE, FALSE, TRUE))
   expect_equal(as.vector(is.na(prediction$survival)), c(FALSE, FALSE, TRUE))
 })
 
@@ -185,12 +185,12 @@ test_that("Prediction with Cox model - no event before prediction time",{
   
   prediction <- predictCox(fit.coxph, times = test.times, newdata = Melanoma[1,,drop = FALSE])
   expect_equal(as.double(prediction$hazard), 0)
-  expect_equal(as.double(prediction$cumHazard), 0)
+  expect_equal(as.double(prediction$cumhazard), 0)
   expect_equal(as.double(prediction$survival), 1)
   
   prediction <- predictCox(fit.cph, times = test.times, newdata = Melanoma[1,,drop = FALSE])
   expect_equal(as.double(prediction$hazard), 0)
-  expect_equal(as.double(prediction$cumHazard), 0)
+  expect_equal(as.double(prediction$cumhazard), 0)
   expect_equal(as.double(prediction$survival), 1)
 })
 
@@ -269,12 +269,12 @@ test_that("Prediction with Cox model (strata) - NA after last event",{
     
     prediction <- predictCox(fit.coxph, times = test.times, newdata = data.test)
     expect_equal(is.na(prediction$hazard[Ttempo,]), c(FALSE, FALSE, TRUE))
-    expect_equal(is.na(prediction$cumHazard[Ttempo,]), c(FALSE, FALSE, TRUE))
+    expect_equal(is.na(prediction$cumhazard[Ttempo,]), c(FALSE, FALSE, TRUE))
     expect_equal(is.na(prediction$survival[Ttempo,]), c(FALSE, FALSE, TRUE))
     
     prediction <- predictCox(fit.cph, times = test.times, newdata = data.test)
     expect_equal(is.na(prediction$hazard[Ttempo,]), c(FALSE, FALSE, TRUE))
-    expect_equal(is.na(prediction$cumHazard[Ttempo,]), c(FALSE, FALSE, TRUE))
+    expect_equal(is.na(prediction$cumhazard[Ttempo,]), c(FALSE, FALSE, TRUE))
     expect_equal(is.na(prediction$survival[Ttempo,]), c(FALSE, FALSE, TRUE))
     }
 })
@@ -295,12 +295,12 @@ test_that("Prediction with Cox model (strata) - no event before prediction time"
   
   prediction <- predictCox(fit.coxph, times = test.times, newdata = Melanoma[1,,drop = FALSE])
   expect_equal(as.double(prediction$hazard), 0)
-  expect_equal(as.double(prediction$cumHazard), 0)
+  expect_equal(as.double(prediction$cumhazard), 0)
   expect_equal(as.double(prediction$survival), 1)
   
   prediction <- predictCox(fit.cph, times = test.times, newdata = Melanoma[1,,drop = FALSE])
   expect_equal(as.double(prediction$hazard), 0)
-  expect_equal(as.double(prediction$cumHazard), 0)
+  expect_equal(as.double(prediction$cumhazard), 0)
   expect_equal(as.double(prediction$survival), 1)
 })
 
@@ -361,8 +361,8 @@ test_that("Prediction with Cox model - weights",{
 # resGS <- survival:::predict.coxph(fit.coxph, times = times1, newdata = Melanoma, type = "expected")
 # resGSW <- survival:::predict.coxph(fitW.coxph, times = times1, newdata = Melanoma, type = "expected")
 
-# expect_equal(diag(res$cumHazard), resGS)
-# expect_equal(diag(resW$cumHazard), resGSW)
+# expect_equal(diag(res$cumhazard), resGS)
+# expect_equal(diag(resW$cumhazard), resGSW)
 
 
 #### 5- [predictCox,CSC] Check influence of the order of the prediction times ####
@@ -402,7 +402,7 @@ test_that("Prediction with Cox model (strata) - sorted vs. unsorted times",{
   predictionUNS <- predictCox(fit.cph, times = times2[newOrder], newdata = Melanoma, keep.times = FALSE, keep.strata = FALSE)
   predictionS <- predictCox(fit.cph, times = times2, newdata = Melanoma, keep.times = FALSE, keep.strata = FALSE)
   expect_equal(predictionS$hazard, predictionUNS$hazard[,order(newOrder)])
-  expect_equal(predictionS$cumHazard, predictionUNS$cumHazard[,order(newOrder)])
+  expect_equal(predictionS$cumhazard, predictionUNS$cumhazard[,order(newOrder)])
   expect_equal(predictionS$survival, predictionUNS$survival[,order(newOrder)])
 })
 # na.omit(predictionS$hazard)
@@ -435,11 +435,11 @@ test_that("baseline hazard - match basehaz results",{
   fit.coxph <- coxph(Surv(time,status == 1) ~ thick + invasion + ici, data = Melanoma, y = TRUE, x = TRUE)
   fit.cph <- cph(Surv(time,status == 1) ~ thick + invasion + ici, data = Melanoma, y = TRUE, x = TRUE)
   
-  expect_equal(predictCox(fit.coxph, centered = FALSE)$cumHazard, 
+  expect_equal(predictCox(fit.coxph, centered = FALSE)$cumhazard, 
                basehaz(fit.coxph, centered = FALSE)$hazard, tolerance = 1e-8)
-  expect_equal(predictCox(fit.coxph, centered = TRUE)$cumHazard, 
+  expect_equal(predictCox(fit.coxph, centered = TRUE)$cumhazard, 
                basehaz(fit.coxph, centered = TRUE)$hazard, tolerance = 1e-8)
-  expect_equal(predictCox(fit.cph)$cumHazard, 
+  expect_equal(predictCox(fit.cph)$cumhazard, 
                basehaz(fit.cph)$hazard, tolerance = 1e-8)
   
   ## possible differences due to different fit - coef(fit.coxph)-coef(fit.cph)
@@ -465,9 +465,9 @@ test_that("baseline hazard (strata) - match basehaz results",{
   fit.coxph <- coxph(Surv(time,status == 1) ~ thick + strata(invasion) + strata(ici), data = Melanoma, y = TRUE, x = TRUE)
   fit.cph <- cph(Surv(time,status == 1) ~ thick + strat(invasion) + strat(ici), data = Melanoma, y = TRUE, x = TRUE)
   
-  expect_equal(predictCox(fit.coxph, centered = FALSE)$cumHazard, 
+  expect_equal(predictCox(fit.coxph, centered = FALSE)$cumhazard, 
                basehaz(fit.coxph, centered = FALSE)$hazard, tolerance = 1e-8)
-  expect_equal(predictCox(fit.cph)$cumHazard, 
+  expect_equal(predictCox(fit.cph)$cumhazard, 
                basehaz(fit.cph)$hazard)
   
   ## !!! not the same ordering in the strata between cph and coxph thus the results in predictCox differ in order
@@ -538,15 +538,15 @@ test_that("Prediction with Cox model (strata) - export of strata and times",{
   expect_equal(length(predictTempo$time)>0, FALSE)
 })
 
-test_that("Prediction with Cox model (strata) - consistency of hazard/cumHazard/survival",{
+test_that("Prediction with Cox model (strata) - consistency of hazard/cumhazard/survival",{
   predictTempo <- predictCox(fit.coxph, times = times1, newdata = dataset1)
-  expect_equal(predictTempo$hazard[,-1], t(apply(predictTempo$cumHazard,1,diff)), tolerance = 1e-8)
-  expect_equal(predictTempo$survival, exp(-predictTempo$cumHazard), tolerance = 1e-8)
+  expect_equal(predictTempo$hazard[,-1], t(apply(predictTempo$cumhazard,1,diff)), tolerance = 1e-8)
+  expect_equal(predictTempo$survival, exp(-predictTempo$cumhazard), tolerance = 1e-8)
 })
 
 predictTempo <- predictCox(fit.coxph, times = c(0,times1[1:10]), newdata = dataset1[1:2,])
-expect_equal(predictTempo$hazard[,-1], t(apply(predictTempo$cumHazard,1,diff)), tolerance = 1e-8)
-expect_equal(predictTempo$survival, exp(-predictTempo$cumHazard), tolerance = 1e-8)
+expect_equal(predictTempo$hazard[,-1], t(apply(predictTempo$cumhazard,1,diff)), tolerance = 1e-8)
+expect_equal(predictTempo$survival, exp(-predictTempo$cumhazard), tolerance = 1e-8)
 
 
 test_that("Prediction with Cox model (strata) - incorrect strata",{
@@ -593,8 +593,8 @@ test_that("Value of the conditional CIF", {
   ttt <- sort(c(0,ttt))
   indexT0 <- 5
   
-  cumH1 <- predictCox(CSC.fit$models$`Cause 1`, newdata = d2, times = ttt[indexT0]-1e-6)[["cumHazard"]]
-  cumH2 <- predictCox(CSC.fit$models$`Cause 2`, newdata = d2, times = ttt[indexT0]-1e-6)[["cumHazard"]]
+  cumH1 <- predictCox(CSC.fit$models$`Cause 1`, newdata = d2, times = ttt[indexT0]-1e-6)[["cumhazard"]]
+  cumH2 <- predictCox(CSC.fit$models$`Cause 2`, newdata = d2, times = ttt[indexT0]-1e-6)[["cumhazard"]]
   Sall <- exp(-cumH1-cumH2)
   
   predRef <- predict(CSC.fit, newdata = d2, cause = 2, times = ttt[indexT0]-1e-6)

@@ -7,7 +7,7 @@ using namespace std;
 
 // [[Rcpp::export]]
 arma::mat predictCIF_cpp(const std::vector<arma::mat>& hazard, 
-                         const std::vector<arma::mat>& cumHazard, 
+                         const std::vector<arma::mat>& cumhazard, 
                          const arma::mat& eXb_h, 
                          const arma::mat& eXb_cumH, 
                          const arma::mat& strata, 
@@ -25,7 +25,7 @@ arma::mat predictCIF_cpp(const std::vector<arma::mat>& hazard,
   pred_CIF.fill(0);
   
   double hazard_it;
-  double AllcumHazard_it;
+  double Allcumhazard_it;
   double survival_t0=1;
   int iterP; // index of the prediction time
   rowvec strataI(nCause);
@@ -46,24 +46,24 @@ arma::mat predictCIF_cpp(const std::vector<arma::mat>& hazard,
       // get hazard for the cause of interest
       hazard_it = hazard[cause](iterT,strataI[cause])*eXb_h(iterI,cause);
       
-      // sum all cumHazard for all causes and exp the result
-      AllcumHazard_it = 0; 
+      // sum all cumhazard for all causes and exp the result
+      Allcumhazard_it = 0; 
       for(int iterC=0 ; iterC<nCause; iterC++){
-        AllcumHazard_it += cumHazard[iterC](iterT,strataI[iterC])*eXb_cumH(iterI,iterC);
+        Allcumhazard_it += cumhazard[iterC](iterT,strataI[iterC])*eXb_cumH(iterI,iterC);
       }
       
       // update the integral
       if(R_IsNA(t0)){
-        pred_CIF(iterI,iterP) += exp(-AllcumHazard_it) * hazard_it;  
+        pred_CIF(iterI,iterP) += exp(-Allcumhazard_it) * hazard_it;  
       }else{// [only for conditional CIF]
         
         if(etimes[iterT]<t0 && iterT<(nEventTimes+1) && etimes[iterT+1]>=t0){
-          survival_t0 = exp(-AllcumHazard_it); // get the survival up to t0
+          survival_t0 = exp(-Allcumhazard_it); // get the survival up to t0
         }
         
         if(etimes[iterT] >= t0){ // not needed  newtimes[iterP]>=t0  because newtimes >= etimes see update position above 
           // Rcout << hazard_it << " ("<< iterP << ","<< etimes[iterT] << ","<< newtimes[iterP] << ")";
-          pred_CIF(iterI,iterP) += exp(-AllcumHazard_it) * hazard_it / survival_t0;
+          pred_CIF(iterI,iterP) += exp(-Allcumhazard_it) * hazard_it / survival_t0;
         }
         
       }

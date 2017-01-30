@@ -34,8 +34,8 @@
 #' \itemize{
 #' \item{hazard}: (matrix) the hazard predicted for each patient (in rows) and each time (in columns).
 #' \item{hazard.se}: (matrix) the standard errors of the predicted hazard.
-#' \item{cumHazard}: (matrix) the cumulative hazard predicted for each patient (in rows) and each time (in columns).
-#' \item{cumHazard.se}: (matrix) the standard errors of the predicted cumulative hazard.
+#' \item{cumhazard}: (matrix) the cumulative hazard predicted for each patient (in rows) and each time (in columns).
+#' \item{cumhazard.se}: (matrix) the standard errors of the predicted cumulative hazard.
 #' \item{survival}: (matrix) the survival predicted for each patient (in rows) and each time (in columns).
 #' \item{survival.se}: (matrix) the standard errors of the predicted survival.
 #' \item{times}: (vector) the evaluation times.
@@ -293,11 +293,11 @@ predictCox <- function(object,
                              export = if(se){"se"} else {"iid"})
         if(se){
             if ("hazard" %in% type){out$hazard.se <- outSE$hazard.se}
-            if ("cumHazard" %in% type){out$cumHazard.se <- outSE$cumHazard.se}
+            if ("cumhazard" %in% type){out$cumhazard.se <- outSE$cumhazard.se}
             if ("survival" %in% type){out$survival.se <- outSE$survival.se}
         }else {
             if ("hazard" %in% type){out$hazard.iid <- outSE$hazard.iid}
-            if ("cumHazard" %in% type){out$cumHazard.iid <- outSE$cumHazard.iid}
+            if ("cumhazard" %in% type){out$cumhazard.iid <- outSE$cumhazard.iid}
             if ("survival" %in% type){out$survival.iid <- outSE$survival.iid}
         }
     }
@@ -374,12 +374,12 @@ seRobustCox <- function(nTimes, type,
   out <- list()
   if(export=="se"){
     if("hazard" %in% type){out$hazard.se <- matrix(NA, nrow = n.new, ncol = nTimes)}
-    if("cumHazard" %in% type){out$cumHazard.se <- matrix(NA, nrow = n.new, ncol = nTimes)}
+    if("cumhazard" %in% type){out$cumhazard.se <- matrix(NA, nrow = n.new, ncol = nTimes)}
     if("survival" %in% type){out$survival.se <- matrix(NA, nrow = n.new, ncol = nTimes)}
   }
   if(export=="iid"){
     if("hazard" %in% type){out$hazard.iid <- array(NA, dim = c(n.new, nTimes, object.n))}
-    if("cumHazard" %in% type){out$cumHazard.iid <- array(NA, dim = c(n.new, nTimes, object.n))}
+    if("cumhazard" %in% type){out$cumhazard.iid <- array(NA, dim = c(n.new, nTimes, object.n))}
     if("survival" %in% type){out$survival.iid <- array(NA, dim = c(n.new, nTimes, object.n))}
   }
   
@@ -400,18 +400,18 @@ seRobustCox <- function(nTimes, type,
       }
     }
     
-      if("cumHazard" %in% type || "survival" %in% type){
+      if("cumhazard" %in% type || "survival" %in% type){
       IF_tempo <- IClambda2hazard(eXb = new.eXb[iObs],
-                                  lambda0 = Lambda0$cumHazard[[iObs.strata]],
+                                  lambda0 = Lambda0$cumhazard[[iObs.strata]],
                                   X_ICbeta = X_ICbeta,
-                                  IClambda0 = iid$ICcumHazard[[iObs.strata]])
+                                  IClambda0 = iid$ICcumhazard[[iObs.strata]])
       
       if(export == "iid"){
-        if("cumHazard" %in% type){out$cumHazard.iid[iObs,,] <- t(IF_tempo)}
+        if("cumhazard" %in% type){out$cumhazard.iid[iObs,,] <- t(IF_tempo)}
         if("survival" %in% type){out$survival.iid[iObs,,] <- t(rowMultiply_cpp(IF_tempo, scale = new.survival[iObs,,drop=FALSE]))}
       }else if(export == "se"){
         se_tempo <- sqrt(apply(IF_tempo^2,2,sum))
-        if("cumHazard" %in% type){out$cumHazard.se[iObs,] <- se_tempo}
+        if("cumhazard" %in% type){out$cumhazard.se[iObs,] <- se_tempo}
         if("survival" %in% type){out$survival.se[iObs,] <- se_tempo * new.survival[iObs,,drop=FALSE]}
       }
       
@@ -484,11 +484,11 @@ selectJump <- function(IC, times, type){
     
     if("cumhazard" %in% type || "survival" %in% type){
       indexJump <- prodlim::sindex(jump.times = IC$time[[iStrata]], eval.times = times) 
-      IC$ICcumHazard[[iStrata]] <- cbind(0,IC$ICcumHazard[[iStrata]])[,indexJump+1,drop = FALSE]
+      IC$ICcumhazard[[iStrata]] <- cbind(0,IC$ICcumhazard[[iStrata]])[,indexJump+1,drop = FALSE]
       
       ## name columns
-      if(!is.null(colnames(IC$ICcumHazard[[iStrata]]))){
-        colnames(IC$ICcumHazard[[iStrata]]) <- times
+      if(!is.null(colnames(IC$ICcumhazard[[iStrata]]))){
+        colnames(IC$ICcumhazard[[iStrata]]) <- times
       }
     }
     

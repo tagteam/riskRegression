@@ -46,8 +46,8 @@ Otherwise, when performing prediction, a list containing:
 \itemize{
 \item{hazard}: (matrix) the hazard predicted for each patient (in rows) and each time (in columns).
 \item{hazard.se}: (matrix) the standard errors of the predicted hazard.
-\item{cumHazard}: (matrix) the cumulative hazard predicted for each patient (in rows) and each time (in columns).
-\item{cumHazard.se}: (matrix) the standard errors of the predicted cumulative hazard.
+\item{cumhazard}: (matrix) the cumulative hazard predicted for each patient (in rows) and each time (in columns).
+\item{cumhazard.se}: (matrix) the standard errors of the predicted cumulative hazard.
 \item{survival}: (matrix) the survival predicted for each patient (in rows) and each time (in columns).
 \item{survival.se}: (matrix) the standard errors of the predicted survival.
 \item{times}: (vector) the evaluation times.

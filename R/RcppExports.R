@@ -56,8 +56,8 @@ IClambda0_cpp <- function(tau, ICbeta, newT, neweXb, newStatus, newStrata, newIn
     .Call('riskRegression_IClambda0_cpp', PACKAGE = 'riskRegression', tau, ICbeta, newT, neweXb, newStatus, newStrata, newIndexJump, S01, E1, time1, lastTime1, lambda0, p, strata)
 }
 
-predictCIF_cpp <- function(hazard, cumHazard, eXb_h, eXb_cumH, strata, newtimes, etimes, etimeMax, t0, nEventTimes, nNewTimes, nData, cause, nCause) {
-    .Call('riskRegression_predictCIF_cpp', PACKAGE = 'riskRegression', hazard, cumHazard, eXb_h, eXb_cumH, strata, newtimes, etimes, etimeMax, t0, nEventTimes, nNewTimes, nData, cause, nCause)
+predictCIF_cpp <- function(hazard, cumhazard, eXb_h, eXb_cumH, strata, newtimes, etimes, etimeMax, t0, nEventTimes, nNewTimes, nData, cause, nCause) {
+    .Call('riskRegression_predictCIF_cpp', PACKAGE = 'riskRegression', hazard, cumhazard, eXb_h, eXb_cumH, strata, newtimes, etimes, etimeMax, t0, nEventTimes, nNewTimes, nData, cause, nCause)
 }
 
 #' Apply cumsum in each row 

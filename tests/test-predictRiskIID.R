@@ -11,7 +11,7 @@ d <- SimCompRisk(n)
 d <- d[order(d$time),c("time", "event", "X1", "X2", "cause")]
 timeFirstEvent <- min(d[d$event==1,]$time)
 times <-  timeFirstEvent+1:5
-type <- c("survival","cumHazard")
+type <- c("survival","cumhazard")
 newdata <- d[1:4,]
 
 range(d$time)
@@ -30,9 +30,9 @@ expect_equal(apply(resIID, 1:2, function(x){sqrt(sum(x^2))}),
 #### Cox model ####
 iidTEST <-  iidCox(coxph.fit)
 
-test_that("cumsum(iid hazard) = iid cumHazard",{
+test_that("cumsum(iid hazard) = iid cumhazard",{
   Mcs <- t(apply(iidTEST$IChazard[[1]], 1, cumsum))
-  expect_equal(Mcs, iidTEST$ICcumHazard[[1]])
+  expect_equal(Mcs, iidTEST$ICcumhazard[[1]])
 })
 
 test_that("iid equivalent parametrisation",{
@@ -47,8 +47,8 @@ test_that("iid hazard = 0 at non event times",{
   expect_equal(iidTEST2$IChazard[[1]][,as.character(iidTEST$time[[1]])],
                iidTEST$IChazard[[1]])
 
-  expect_equal(iidTEST2$ICcumHazard[[1]][,as.character(iidTEST$time[[1]])],
-               iidTEST$ICcumHazard[[1]])
+  expect_equal(iidTEST2$ICcumhazard[[1]][,as.character(iidTEST$time[[1]])],
+               iidTEST$ICcumhazard[[1]])
 
   otherTimes0 <- setdiff(iidTEST2$time[[1]][iidTEST2$time[[1]]<max(coxph.fit$y[,1])],
                          iidTEST$time[[1]])
@@ -65,8 +65,8 @@ test_that("iid hazard = 0 at non event times",{
   expect_equal(iidTEST3$IChazard[[1]],
                iidTEST$IChazard[[1]][,as.character(iidTEST3$time[[1]])])
   
-  expect_equal(iidTEST3$ICcumHazard[[1]],
-               iidTEST$ICcumHazard[[1]][,as.character(iidTEST3$time[[1]])])
+  expect_equal(iidTEST3$ICcumhazard[[1]],
+               iidTEST$ICcumhazard[[1]][,as.character(iidTEST3$time[[1]])])
   
 })
 
@@ -79,8 +79,8 @@ test_that("iid ok when the last event is other cause",{
   postLastEvent <- m.CSC$eventTimes[m.CSC$eventTimes>lastEvent]
   
   sapply(postLastEvent, function(t){
-    expect_equal(IC1$ICcumHazard[[1]][,as.character(t)],
-                 IC1$ICcumHazard[[1]][,as.character(lastEvent)])  
+    expect_equal(IC1$ICcumhazard[[1]][,as.character(t)],
+                 IC1$ICcumhazard[[1]][,as.character(lastEvent)])  
   })
   
 })

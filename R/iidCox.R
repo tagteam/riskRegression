@@ -175,7 +175,7 @@ iidCox <- function(object, newdata = NULL, tauHazard = NULL,
   
   #### Computation of the influence function ####
   ICbeta <- NULL
-  ICcumHazard <- NULL
+  ICcumhazard <- NULL
   IChazard <- NULL
   ls.Utime1 <- NULL
   
@@ -250,12 +250,13 @@ iidCox <- function(object, newdata = NULL, tauHazard = NULL,
       # rescale
       if(center.result == TRUE && !is.null(CoxCenter(object))){
         IClambda_res$hazard <- IClambda_res$hazard * scalingFactor
-        IClambda_res$cumHazard <- IClambda_res$cumHazard * scalingFactor
+        IClambda_res$cumhazard <- IClambda_res$cumhazard * scalingFactor
       }
       
     }else{
+      if(length(tauHazard_strata)==0){tauHazard_strata <- max(object.time_strata[[iStrata]])}
       IClambda_res <- list(hazard = matrix(0, ncol = length(tauHazard_strata), nrow = length(new.index_strata[[iStrata]])),
-                           cumHazard = matrix(0, ncol = length(tauHazard_strata), nrow = length(new.index_strata[[iStrata]]))
+                           cumhazard = matrix(0, ncol = length(tauHazard_strata), nrow = length(new.index_strata[[iStrata]]))
       )
       if(length(tauHazard_strata)==0){tauHazard_strata <- NA}
     }
@@ -264,16 +265,16 @@ iidCox <- function(object, newdata = NULL, tauHazard = NULL,
     ls.Utime1 <- c(ls.Utime1, list(tauHazard_strata))
     if(keep.times){
       colnames(IClambda_res$hazard) <- tauHazard_strata
-      colnames(IClambda_res$cumHazard) <- tauHazard_strata
+      colnames(IClambda_res$cumhazard) <- tauHazard_strata
     }
     IChazard <- c(IChazard, list(IClambda_res$hazard))
-    ICcumHazard <- c(ICcumHazard, list(IClambda_res$cumHazard))
+    ICcumhazard <- c(ICcumhazard, list(IClambda_res$cumhazard))
   }
   
   #### export
   return(list(ICbeta = ICbeta,  
               IChazard = IChazard,
-              ICcumHazard = ICcumHazard,
+              ICcumhazard = ICcumhazard,
               time = ls.Utime1,
               indexObs = new.order
   ))

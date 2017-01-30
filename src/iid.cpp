@@ -247,10 +247,10 @@ List IClambda0_cpp(const NumericVector& tau, const arma::mat& ICbeta,
   //                     Named("cumElambda0") = cumElambda0, 
   //                     Named("Elambda0") = Elambda0, 
   //                     Named("hazard") = IClambda0,
-  //                     Named("cumHazard") = ICLambda0));
+  //                     Named("cumhazard") = ICLambda0));
   
   return(List::create(Named("hazard") = IClambda0,
-                      Named("cumHazard") = ICLambda0));
+                      Named("cumhazard") = ICLambda0));
   
 }  
 
