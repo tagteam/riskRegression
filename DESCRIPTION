@@ -32,7 +32,6 @@ Suggests:
     penalized,
     party,
     rpart,
-    doMC,
     CoxBoost,
     mets
 Maintainer: Thomas Alexander Gerds <tag@biostat.ku.dk>

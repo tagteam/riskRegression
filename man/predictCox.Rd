@@ -5,7 +5,7 @@
 \title{Fast prediction of survival, hazard and cumulative hazard from Cox regression model}
 \usage{
 predictCox(object, newdata = NULL, times, centered = TRUE,
-  type = c("hazard", "cumHazard", "survival"), keep.strata = TRUE,
+  type = c("hazard", "cumhazard", "survival"), keep.strata = TRUE,
   keep.times = TRUE, keep.lastEventTime = FALSE, se = FALSE,
   iid = FALSE, format = "data.frame")
 }
@@ -80,7 +80,7 @@ fit <- coxph(Surv(time,status)~X1 * X2,
 
 predictCox(fit)
 predictCox(fit, newdata=nd, times = 5)
-cbind(survival::basehaz(fit),predictCox(fit,type="cumHazard"))
+cbind(survival::basehaz(fit),predictCox(fit,type="cumhazard"))
 
 # one strata variable
 fitS <- coxph(Surv(time,status)~strata(X1)+X2,
@@ -98,7 +98,7 @@ nd$V=sample(letters[4:10],replace=TRUE,size=NROW(nd))
 fit2S <- coxph(Surv(time,status)~X1+strata(U)+strata(V)+X2,
               data=d, ties="breslow", x = TRUE, y = TRUE)
 
-cbind(survival::basehaz(fit2S),predictCox(fit2S,type="cumHazard"))
+cbind(survival::basehaz(fit2S),predictCox(fit2S,type="cumhazard"))
 predictCox(fit2S)
 predictCox(fitS, newdata=nd, times = 3)
 

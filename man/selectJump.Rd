@@ -11,7 +11,7 @@ selectJump(IC, times, type)
 
 \item{times}{the times at which the influence function should be assessed}
 
-\item{type}{can be \code{"hazard"} or/and \code{"cumHazard"}.}
+\item{type}{can be \code{"hazard"} or/and \code{"cumhazard"}.}
 }
 \value{
 An object with the same dimensions as IC
@@ -28,7 +28,7 @@ d <- SimSurv(1e2)
 fit <- coxph(Surv(time,status)~X1 * X2,data=d, ties="breslow", x = TRUE, y = TRUE)
 
 IFall <- iidCox(fit)
-selectJump(IFall, times = 1:2, type = "cumHazard") 
+selectJump(IFall, times = 1:2, type = "cumhazard") 
  
 }
 }

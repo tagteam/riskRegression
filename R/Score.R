@@ -602,7 +602,7 @@ Score.list <- function(object,
                     ## Brier[,list(looboot=mean(ipcwResiduals)),by=list(model,times,ID)]
                     ## bootcv=Brier[,list(bootcv=mean(ipcwResiduals)),by=list(model,times,b)]
                     if (length(crossval[[1]][[m]]$score)>0){
-                        Ibi=perf=.SD=NULL
+                        Ibi=perf=.SD=ipcwResiduals=NULL
                         if (nullModel==TRUE) init <- data.table(ID=rep(1:N, each=(NF+1)*B), b=rep(1:B, each=(NF+1), times=N), model=rep(0:NF, times=B))
                         else init <- data.table(ID=rep(1:N, each=NF*B), b=rep(1:B, each=NF, times=N), model=rep(1:NF, times=B))
                         
