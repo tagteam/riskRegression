@@ -4,13 +4,13 @@
 \alias{seCSC}
 \title{Standard error of the absolute risk predicted from cause-specific Cox models}
 \usage{
-seCSC(hazard, cumHazard, object.time, object.maxtime, iid, eXb_h, eXb_cumH,
+seCSC(hazard, cumhazard, object.time, object.maxtime, iid, eXb_h, eXb_cumH,
   new.LPdata, new.strata, times, new.n, cause, nCause, return.se)
 }
 \arguments{
 \item{hazard}{list containing the baseline hazard for each cause in a matrix form. Columns correspond to the strata.}
 
-\item{cumHazard}{list containing the cumulative baseline hazard for each cause in a matrix form. Columns correspond to the strata.}
+\item{cumhazard}{list containing the cumulative baseline hazard for each cause in a matrix form. Columns correspond to the strata.}
 
 \item{object.time}{a vector containing all the events regardless to the cause.}
 

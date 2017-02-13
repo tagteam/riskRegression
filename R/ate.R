@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Oct 23 2016 (08:53) 
 ## Version: 
-## last-updated: Oct 23 2016 (10:41) 
+## last-updated: Feb  1 2017 (14:38) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 40
+##     Update #: 43
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -75,6 +75,9 @@
 #' fitCR= CSC(Hist(time,event)~ X1+X2,data=dt,cause=1)
 #' ate(fitCR, data = dt, treatment = "X1", contrasts = NULL,
 #'         times = 5:7, cause = 1, B = 3, mc.cores=1)
+#'
+#' atefit=ate(fitCR, data = dt, treatment = "X1", contrasts = NULL,
+#'         times = 1:7, cause = 1, B = 0, mc.cores=1,conf.level=FALSE)
 #'
 #' \dontrun{
 #'  ate(fitCR, data = dt, treatment = "X1", contrasts = NULL,
@@ -159,7 +162,6 @@ ate <- function(object,
                                   times=times,
                                   cause=cause,
                                   ...))
-    
     ##### Confidence interval
     if((conf.level > 0) && (conf.level <1) ){
 
@@ -316,9 +318,7 @@ ate <- function(object,
                                          ratio.upper = pointEstimate$riskComparison$ratio + qnorm(1-alpha/2) * sdIF.fct$ratio)
 
         bootseeds <- NULL
-    }
-        
-    }else{
+    } } else{
         
         mrisks <- data.table::data.table(Treatment = pointEstimate$meanRisk$Treatment,
                                          time = times,

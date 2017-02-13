@@ -88,7 +88,7 @@ iidCox <- function(object, newdata = NULL, tauHazard = NULL,
   #### Compute quantities of interest ####
   p <- NCOL(object.LPdata)
   
-  ## baseline hazard
+    ## baseline hazard
   lambda0 <- predictCox(object, type = "hazard", centered = TRUE, keep.strata = TRUE)
   
   ## resale factor
@@ -173,7 +173,7 @@ iidCox <- function(object, newdata = NULL, tauHazard = NULL,
   
   #### Computation of the influence function ####
   ICbeta <- NULL
-  ICcumHazard <- NULL
+  ICcumhazard <- NULL
   ls.Utime1 <- NULL
   
   #### beta
@@ -229,7 +229,7 @@ iidCox <- function(object, newdata = NULL, tauHazard = NULL,
     
     ## IF
     if(any(new.status_strata[[iStrata]]>0)){
-      ICcumHazard_tempo <- IClambda0_cpp(tau = tauHazard_strata,
+      ICcumhazard_tempo <- IClambda0_cpp(tau = tauHazard_strata,
                                        ICbeta = ICbeta,
                                        newT = new.time, neweXb = new.eXb, newStatus = new.status, newIndexJump = new.indexJump[[iStrata]], newStrata = as.numeric(new.strata),
                                        S01 = Ecpp[[iStrata]]$S0[1:(nUtime1_strata-1)],
@@ -240,26 +240,26 @@ iidCox <- function(object, newdata = NULL, tauHazard = NULL,
       
       # rescale
       if(center.result == TRUE && !is.null(CoxCenter(object))){
-        ICcumHazard_tempo <- ICcumHazard_tempo * scalingFactor
+        ICcumhazard_tempo <- ICcumhazard_tempo * scalingFactor
       }
       
     }else{
-      ICcumHazard_tempo <- matrix(0, ncol = 1, nrow = length(new.index_strata[[iStrata]]))
+      ICcumhazard_tempo <- matrix(0, ncol = 1, nrow = length(new.index_strata[[iStrata]]))
       if(length(tauHazard_strata)==0){tauHazard_strata <- NA}
     }
     
     # output 
     ls.Utime1 <- c(ls.Utime1, list(tauHazard_strata))
     if(keep.times){
-      colnames(ICcumHazard_tempo) <- tauHazard_strata
+      colnames(ICcumhazard_tempo) <- tauHazard_strata
     }
-    ICcumHazard <- c(ICcumHazard, list(ICcumHazard_tempo))
+    ICcumhazard <- c(ICcumhazard, list(ICcumhazard_tempo))
     
   }
   
   #### export
   return(list(ICbeta = ICbeta,  
-              ICcumHazard = ICcumHazard,
+              ICcumhazard = ICcumhazard,
               time = ls.Utime1,
               indexObs = new.order
   ))

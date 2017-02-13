@@ -37,7 +37,7 @@
 #' @keywords survival
 #' @examples
 #' 
-#' library(riskRegression)
+##' library(riskRegression)
 ##' library(prodlim)
 ##' library(pec)
 ##' library(survival)

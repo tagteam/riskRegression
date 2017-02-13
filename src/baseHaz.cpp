@@ -9,9 +9,9 @@ using namespace std;
 struct structExport {
   vector<double> time;
   vector<double> hazard;
-  vector<double> cumHazard;
+  vector<double> cumhazard;
   vector<double> SEhazard;
-  vector<double> SEcumHazard;
+  vector<double> SEcumhazard;
   arma::mat Xbar;
   arma::mat XbarCumSum;
   int n;
@@ -112,8 +112,8 @@ List baseHaz_cpp(const NumericVector& alltimes, const IntegerVector& status, con
   vector<double> timeRes(0);
   vector<double> hazardRes(0);
   vector<double> SEhazardRes(0);
-  vector<double> cumHazardRes(0);
-  vector<double> SEcumHazardRes(0);
+  vector<double> cumhazardRes(0);
+  vector<double> SEcumhazardRes(0);
   vector<double> strataRes(0);
   arma::mat XbarRes(0,nVar);
   arma::mat XbarCumSumRes(0,nVar);
@@ -151,13 +151,13 @@ List baseHaz_cpp(const NumericVector& alltimes, const IntegerVector& status, con
     // store results
     timeRes.insert( timeRes.end(), resH.time.begin(), resH.time.end() );
     hazardRes.insert( hazardRes.end(), resH.hazard.begin(), resH.hazard.end() );
-    cumHazardRes.insert( cumHazardRes.end(), resH.cumHazard.begin(), resH.cumHazard.end() );
+    cumhazardRes.insert( cumhazardRes.end(), resH.cumhazard.begin(), resH.cumhazard.end() );
     if(nStrata > 1){
       strataRes.resize( strataRes.size() + resH.n, iter_s);
     }
     if(se){
       SEhazardRes.insert( SEhazardRes.end(), resH.SEhazard.begin(), resH.SEhazard.end() );
-      SEcumHazardRes.insert( SEcumHazardRes.end(), resH.SEcumHazard.begin(), resH.SEcumHazard.end() );
+      SEcumhazardRes.insert( SEcumhazardRes.end(), resH.SEcumhazard.begin(), resH.SEcumhazard.end() );
       XbarRes = join_vert(XbarRes, resH.Xbar);
       XbarCumSumRes = join_vert(XbarCumSumRes, resH.XbarCumSum);
     }
@@ -168,8 +168,8 @@ List baseHaz_cpp(const NumericVector& alltimes, const IntegerVector& status, con
   List res = List::create(Named("time")  = timeRes,
                           Named("hazard")  = hazardRes,
                           Named("se.hazard")  = SEhazardRes,
-                          Named("cumHazard")  = cumHazardRes,
-                          Named("se.cumHazard")  = SEcumHazardRes,
+                          Named("cumhazard")  = cumhazardRes,
+                          Named("se.cumhazard")  = SEcumhazardRes,
                           Named("strata")  = strataRes,
                           Named("Xbar")  = XbarRes,
                           Named("XbarCumSumRes")  = XbarCumSumRes
@@ -209,12 +209,12 @@ structExport baseHazStrata_cpp(const vector<double>& alltimes, const vector<int>
   // xsum2 <- rowsum((risk * death) * x, dtime) # same as temp2 but the sum is only for people with event 
   
   vector<double> time(nEventsLast);
-  vector<double> hazard(nEventsLast, NA_REAL), SEhazard, SEcumHazard;
-  vector<double> cumHazard(nEventsLast, NA_REAL);
+  vector<double> hazard(nEventsLast, NA_REAL), SEhazard, SEcumhazard;
+  vector<double> cumhazard(nEventsLast, NA_REAL);
   arma::mat Xbar, XbarCumSum;
   if(se){
     SEhazard.resize(nEventsLast, NA_REAL);  
-    SEcumHazard.resize(nEventsLast, NA_REAL);
+    SEcumhazard.resize(nEventsLast, NA_REAL);
     Xbar.set_size(nEvents, nVar); Xbar.fill(0);
   }
   
@@ -321,28 +321,28 @@ structExport baseHazStrata_cpp(const vector<double>& alltimes, const vector<int>
   
   //// 3- Computation of the hazards
   hazard[0] = death[0] / sumEXb[0];
-  cumHazard[0] = hazard[0];
+  cumhazard[0] = hazard[0];
   if(se){
     if(death[0]>0){
       SEhazard[0] = death[0] / sumEXb2[0];
-      SEcumHazard[0] = SEhazard[0];
+      SEcumhazard[0] = SEhazard[0];
     }else{
       SEhazard[0] = 0;
-      SEcumHazard[0] = 0;
+      SEcumhazard[0] = 0;
     }
   }
   
   for( size_t iterTime = 1 ; iterTime < nEventsLast ; iterTime ++){ // up to last time
     hazard[iterTime] = death[iterTime] / sumEXb[iterTime];
-    cumHazard[iterTime] = cumHazard[iterTime-1] + hazard[iterTime];
+    cumhazard[iterTime] = cumhazard[iterTime-1] + hazard[iterTime];
     
     if(se){
       if(death[iterTime]>0){
         SEhazard[iterTime] = death[iterTime] / sumEXb2[iterTime];
-        SEcumHazard[iterTime] = SEcumHazard[iterTime-1] + SEhazard[iterTime];
+        SEcumhazard[iterTime] = SEcumhazard[iterTime-1] + SEhazard[iterTime];
       }else{
         SEhazard[iterTime] = 0;
-        SEcumHazard[iterTime] = SEcumHazard[iterTime-1];
+        SEcumhazard[iterTime] = SEcumhazard[iterTime-1];
       }
     }
     
@@ -352,9 +352,9 @@ structExport baseHazStrata_cpp(const vector<double>& alltimes, const vector<int>
   structExport res;
   res.time = time;
   res.hazard = hazard;
-  res.cumHazard = cumHazard;
+  res.cumhazard = cumhazard;
   res.SEhazard = SEhazard;
-  res.SEcumHazard = SEcumHazard;
+  res.SEcumhazard = SEcumhazard;
   res.Xbar = Xbar;
   res.XbarCumSum = XbarCumSum;
   res.n = nEventsLast;
@@ -369,10 +369,10 @@ structExport subset_structExport(const structExport& resAll, const vector<double
   structExport resSubset;
   resSubset.time = newtimes;
   resSubset.hazard.resize(nNew, NA_REAL);
-  resSubset.cumHazard.resize(nNew, NA_REAL);
+  resSubset.cumhazard.resize(nNew, NA_REAL);
   if(se){
     resSubset.SEhazard.resize(nNew, NA_REAL);
-    resSubset.SEcumHazard.resize(nNew, NA_REAL);
+    resSubset.SEcumhazard.resize(nNew, NA_REAL);
     resSubset.Xbar.set_size(nNew, nVar); resSubset.Xbar.fill(NA_REAL);
     resSubset.XbarCumSum.set_size(nNew, nVar); resSubset.XbarCumSum.fill(NA_REAL);
   }
@@ -396,11 +396,11 @@ structExport subset_structExport(const structExport& resAll, const vector<double
       }
       
       if(newtimes[t]>=resAll.time[0]){
-        resSubset.cumHazard[t] = resAll.cumHazard[i];
-        if(se){resSubset.SEcumHazard[t] = resAll.SEcumHazard[i];}
+        resSubset.cumhazard[t] = resAll.cumhazard[i];
+        if(se){resSubset.SEcumhazard[t] = resAll.SEcumhazard[i];}
       }else{  // if before the first event then 0
-        resSubset.cumHazard[t] = 0;
-        if(se){resSubset.SEcumHazard[t] = 0;} // not clear which value should be put here
+        resSubset.cumhazard[t] = 0;
+        if(se){resSubset.SEcumhazard[t] = 0;} // not clear which value should be put here
       }
       
     }

@@ -84,6 +84,9 @@ fitCR= CSC(Hist(time,event)~ X1+X2,data=dt,cause=1)
 ate(fitCR, data = dt, treatment = "X1", contrasts = NULL,
         times = 5:7, cause = 1, B = 3, mc.cores=1)
 
+atefit=ate(fitCR, data = dt, treatment = "X1", contrasts = NULL,
+        times = 1:7, cause = 1, B = 0, mc.cores=1,conf.level=FALSE)
+
 \dontrun{
  ate(fitCR, data = dt, treatment = "X1", contrasts = NULL,
         times = 5:7, cause = 1, B = 0, mc.cores=1)

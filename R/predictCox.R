@@ -34,8 +34,8 @@
 #' \itemize{
 #' \item{hazard}: (matrix) the hazard predicted for each patient (in rows) and each time (in columns).
 #' \item{hazard.se}: (matrix) the standard errors of the predicted hazard.
-#' \item{cumHazard}: (matrix) the cumulative hazard predicted for each patient (in rows) and each time (in columns).
-#' \item{cumHazard.se}: (matrix) the standard errors of the predicted cumulative hazard.
+#' \item{cumhazard}: (matrix) the cumulative hazard predicted for each patient (in rows) and each time (in columns).
+#' \item{cumhazard.se}: (matrix) the standard errors of the predicted cumulative hazard.
 #' \item{survival}: (matrix) the survival predicted for each patient (in rows) and each time (in columns).
 #' \item{survival.se}: (matrix) the standard errors of the predicted survival.
 #' \item{times}: (vector) the evaluation times.
@@ -190,7 +190,6 @@ predictCox <- function(object,
   if (is.strata == TRUE){ ## rename the strata value with the correct levels
     Lambda0$strata <- factor(Lambda0$strata, levels = 0:(nStrata-1), labels = object.levelStrata)
   }
-  
   #### compute hazard and survival #### 
   if (is.null(newdata)){  ## on the training dataset
     
@@ -214,8 +213,8 @@ predictCox <- function(object,
     if( keep.lastEventTime==TRUE){
       Lambda0$lastEventTime <- etimes.max
     } 
-    
-    return(do.call(paste0("as.",format), list(Lambda0)))
+      out <- do.call(paste0("as.",format), list(Lambda0))
+      return(out)
     
   } else { ## on a new dataset
     out <- list()
@@ -281,7 +280,7 @@ predictCox <- function(object,
       if(is.null(iid.object)){
         if("hazard" %in% type){
           iid.object <- iidCox(object)
-          iid.object$IChazard <- calcIChazard(iid.object$ICcumHazard)
+          iid.object$IChazard <- calcIChazard(iid.object$ICcumhazard)
           iid.object <- selectJump(iid.object, times = times.sorted, type = type)
         }else{
           iid.object <- iidCox(object, tauHazard = times.sorted)
@@ -290,7 +289,7 @@ predictCox <- function(object,
       }else{
         
         if("hazard" %in% type){
-          iid.object$IChazard <- calcIChazard(iid.object$ICcumHazard)
+          iid.object$IChazard <- calcIChazard(iid.object$ICcumhazard)
         }
         iid.object <- selectJump(iid.object, times = times.sorted, type = type)
         
@@ -301,11 +300,11 @@ predictCox <- function(object,
                            export = if(se){"se"} else {"iid"})
       if(se){
         if ("hazard" %in% type){out$hazard.se <- outSE$hazard.se}
-        if ("cumHazard" %in% type){out$cumHazard.se <- outSE$cumHazard.se}
+        if ("cumhazard" %in% type){out$cumhazard.se <- outSE$cumhazard.se}
         if ("survival" %in% type){out$survival.se <- outSE$survival.se}
       }else {
         if ("hazard" %in% type){out$hazard.iid <- outSE$hazard.iid}
-        if ("cumHazard" %in% type){out$cumHazard.iid <- outSE$cumHazard.iid}
+        if ("cumhazard" %in% type){out$cumhazard.iid <- outSE$cumhazard.iid}
         if ("survival" %in% type){out$survival.iid <- outSE$survival.iid}
       }
     }
@@ -382,12 +381,12 @@ seRobustCox <- function(nTimes, type,
   out <- list()
   if(export=="se"){
     if("hazard" %in% type){out$hazard.se <- matrix(NA, nrow = n.new, ncol = nTimes)}
-    if("cumHazard" %in% type){out$cumHazard.se <- matrix(NA, nrow = n.new, ncol = nTimes)}
+    if("cumhazard" %in% type){out$cumhazard.se <- matrix(NA, nrow = n.new, ncol = nTimes)}
     if("survival" %in% type){out$survival.se <- matrix(NA, nrow = n.new, ncol = nTimes)}
   }
   if(export=="iid"){
     if("hazard" %in% type){out$hazard.iid <- array(NA, dim = c(n.new, nTimes, object.n))}
-    if("cumHazard" %in% type){out$cumHazard.iid <- array(NA, dim = c(n.new, nTimes, object.n))}
+    if("cumhazard" %in% type){out$cumhazard.iid <- array(NA, dim = c(n.new, nTimes, object.n))}
     if("survival" %in% type){out$survival.iid <- array(NA, dim = c(n.new, nTimes, object.n))}
   }
   
@@ -409,18 +408,18 @@ seRobustCox <- function(nTimes, type,
       }
     }
     
-    if("cumHazard" %in% type || "survival" %in% type){
+    if("cumhazard" %in% type || "survival" %in% type){
       IF_tempo <- IClambda2hazard(eXb = new.eXb[iObs],
-                                  lambda0 = Lambda0$cumHazard[[iObs.strata]],
+                                  lambda0 = Lambda0$cumhazard[[iObs.strata]],
                                   X_ICbeta = X_ICbeta,
-                                  IClambda0 = iid$ICcumHazard[[iObs.strata]])
+                                  IClambda0 = iid$ICcumhazard[[iObs.strata]])
       
       if(export == "iid"){
-        if("cumHazard" %in% type){out$cumHazard.iid[iObs,,] <- t(IF_tempo)}
+        if("cumhazard" %in% type){out$cumhazard.iid[iObs,,] <- t(IF_tempo)}
         if("survival" %in% type){out$survival.iid[iObs,,] <- t(rowMultiply_cpp(IF_tempo, scale = new.survival[iObs,,drop=FALSE]))}
       }else if(export == "se"){
         se_tempo <- sqrt(apply(IF_tempo^2,2,sum))
-        if("cumHazard" %in% type){out$cumHazard.se[iObs,] <- se_tempo}
+        if("cumhazard" %in% type){out$cumhazard.se[iObs,] <- se_tempo}
         if("survival" %in% type){out$survival.se[iObs,] <- se_tempo * new.survival[iObs,,drop=FALSE]}
       }
       
