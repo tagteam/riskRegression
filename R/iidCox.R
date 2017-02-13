@@ -17,19 +17,13 @@
 #' library(survival)
 #' library(data.table)
 #' set.seed(10)
-#' d <- sampleData(7e1, outcome = "survival")[,.(eventtime,event,X1,X6)]
+#' d <- sampleData(2e1, outcome = "survival")[,.(eventtime,event,X1,X6)]
 #' setkey(d, eventtime)
 #' 
-#' library(timereg)
-#' mGS.cox <- cox.aalen(Surv(eventtime, event) ~ prop(X1)+prop(X6),
-#'                      data = d, resample.iid = TRUE, max.timepoint.sim=NULL)
-#' ICbeta_GS <- mGS.cox$gamma.iid
-#' IClambda_GS <- t(as.data.table(mGS.cox$B.iid))
-#'  
 #' m.cox <- coxph(Surv(eventtime, event) ~ X1+X6, data = d, y = TRUE, x = TRUE)
 #' system.time(IC.cox <- iidCox(m.cox))
 #' 
-#' IC.cox <- iidCox(m.cox, tauHazard = 7)
+#' IC.cox <- iidCox(m.cox, tauHazard = sort(unique(c(7,d$eventtime))))
 #'  
 #' 
 
@@ -61,8 +55,16 @@ iidCox <- function(object, newdata = NULL, tauHazard = NULL,
     if("data.frame" %in% class(newdata) == FALSE){
       stop("class of \'newdata\' must inherit from data.frame \n")
     }
-    new.status <- newdata[[infoVar$status]]
-    new.time <- newdata[[infoVar$time]]
+    
+    # if(infoVar$status %in% names(newdata)){ # call Cox model with with event==1
+      tempo <- with(newdata, eval(CoxFormula(object)[[2]]))
+      new.status <- tempo[,2]
+      new.time <- tempo[,1]
+    # }else{ # Cox model from CSC 
+    #    new.status <- newdata[[infoVar$status]]
+    #    new.time <- newdata[[infoVar$time]]
+    # }
+      
     new.strata <- CoxStrata(object, data = newdata, 
                             sterms = infoVar$sterms, stratavars = infoVar$stratavars, levels = object.levelStrata, stratalevels = infoVar$stratalevels)
     new.eXb <- exp(CoxLP(object, data = newdata, center = center.eXb))
@@ -119,7 +121,7 @@ iidCox <- function(object, newdata = NULL, tauHazard = NULL,
   
   for(iStrata in 1:nStrata){
     
-   ## reorder object data
+    ## reorder object data
     object.index_strata[[iStrata]] <- which(object.strata == object.levelStrata[iStrata])
     object.order_strata[[iStrata]] <- order(object.time[object.index_strata[[iStrata]]])
     
@@ -174,6 +176,7 @@ iidCox <- function(object, newdata = NULL, tauHazard = NULL,
   #### Computation of the influence function ####
   ICbeta <- NULL
   ICcumhazard <- NULL
+  IChazard <- NULL
   ls.Utime1 <- NULL
   
   #### beta
@@ -183,9 +186,15 @@ iidCox <- function(object, newdata = NULL, tauHazard = NULL,
     
     ## IF
     if(p>0){
-      ICbeta_tempo <- ICbeta_cpp(newT = new.time_strata[[iStrata]], neweXb = new.eXb_strata[[iStrata]], newX = new.LPdata_strata[[iStrata]], newStatus = new.status_strata[[iStrata]], 
+      ICbeta_tempo <- ICbeta_cpp(newT = new.time_strata[[iStrata]],
+                                 neweXb = new.eXb_strata[[iStrata]],
+                                 newX = new.LPdata_strata[[iStrata]],
+                                 newStatus = new.status_strata[[iStrata]], 
                                  newIndexJump = new.indexJump_strata, 
-                                 S01 = Ecpp[[iStrata]]$S0, E1 = Ecpp[[iStrata]]$E, time1 = Ecpp[[iStrata]]$Utime1, iInfo = iInfo,
+                                 S01 = Ecpp[[iStrata]]$S0,
+                                 E1 = Ecpp[[iStrata]]$E,
+                                 time1 = Ecpp[[iStrata]]$Utime1,
+                                 iInfo = iInfo,
                                  p = p)    
     }else{
       ICbeta_tempo <- matrix(NA, ncol = 1, nrow = length(new.index_strata[[iStrata]]))
@@ -198,7 +207,6 @@ iidCox <- function(object, newdata = NULL, tauHazard = NULL,
   
   ## set original order
   ICbeta <- ICbeta[order(new.order),,drop=FALSE]
-  
   
   #### lambda
   for(iStrata in 1:nStrata){
@@ -229,36 +237,43 @@ iidCox <- function(object, newdata = NULL, tauHazard = NULL,
     
     ## IF
     if(any(new.status_strata[[iStrata]]>0)){
-      ICcumhazard_tempo <- IClambda0_cpp(tau = tauHazard_strata,
-                                       ICbeta = ICbeta,
-                                       newT = new.time, neweXb = new.eXb, newStatus = new.status, newIndexJump = new.indexJump[[iStrata]], newStrata = as.numeric(new.strata),
-                                       S01 = Ecpp[[iStrata]]$S0[1:(nUtime1_strata-1)],
-                                       E1 = Etempo,
-                                       time1 = Ecpp[[iStrata]]$Utime1[1:(nUtime1_strata-1)],
-                                       lambda0 = lambda0_strata[match(Ecpp[[iStrata]]$Utime1[-nUtime1_strata],lambda0_strata[,"time"]),"hazard"],
-                                       p = p, strata = iStrata)
+      
+      IClambda_res <- IClambda0_cpp(tau = tauHazard_strata,
+                                    ICbeta = ICbeta,
+                                    newT = new.time, neweXb = new.eXb, newStatus = new.status, newIndexJump = new.indexJump[[iStrata]], newStrata = as.numeric(new.strata),
+                                    S01 = Ecpp[[iStrata]]$S0[1:(nUtime1_strata-1)],
+                                    E1 = Etempo,
+                                    time1 = Ecpp[[iStrata]]$Utime1[1:(nUtime1_strata-1)], lastTime1 = Ecpp[[iStrata]]$Utime1[nUtime1_strata],
+                                    lambda0 = lambda0_strata[match(Ecpp[[iStrata]]$Utime1[-nUtime1_strata],lambda0_strata[,"time"]),"hazard"],
+                                    p = p, strata = iStrata)
       
       # rescale
       if(center.result == TRUE && !is.null(CoxCenter(object))){
-        ICcumhazard_tempo <- ICcumhazard_tempo * scalingFactor
+        IClambda_res$hazard <- IClambda_res$hazard * scalingFactor
+        IClambda_res$cumhazard <- IClambda_res$cumhazard * scalingFactor
       }
       
     }else{
-      ICcumhazard_tempo <- matrix(0, ncol = 1, nrow = length(new.index_strata[[iStrata]]))
+      if(length(tauHazard_strata)==0){tauHazard_strata <- max(object.time_strata[[iStrata]])}
+      IClambda_res <- list(hazard = matrix(0, ncol = length(tauHazard_strata), nrow = length(new.index_strata[[iStrata]])),
+                           cumhazard = matrix(0, ncol = length(tauHazard_strata), nrow = length(new.index_strata[[iStrata]]))
+      )
       if(length(tauHazard_strata)==0){tauHazard_strata <- NA}
     }
     
     # output 
     ls.Utime1 <- c(ls.Utime1, list(tauHazard_strata))
     if(keep.times){
-      colnames(ICcumhazard_tempo) <- tauHazard_strata
+      colnames(IClambda_res$hazard) <- tauHazard_strata
+      colnames(IClambda_res$cumhazard) <- tauHazard_strata
     }
-    ICcumhazard <- c(ICcumhazard, list(ICcumhazard_tempo))
-    
+    IChazard <- c(IChazard, list(IClambda_res$hazard))
+    ICcumhazard <- c(ICcumhazard, list(IClambda_res$cumhazard))
   }
   
   #### export
   return(list(ICbeta = ICbeta,  
+              IChazard = IChazard,
               ICcumhazard = ICcumhazard,
               time = ls.Utime1,
               indexObs = new.order

@@ -14,7 +14,6 @@
 #----------------------------------------------------------------------
 ## 
 ### Code:
-library(testthat)
 library(riskRegression)
 library(testthat)
 library(rms)

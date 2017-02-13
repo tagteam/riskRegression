@@ -84,7 +84,6 @@ if(require(survival)){
 }
 
 #### standard error
-# package.source("riskRegression", Ccode = TRUE)
 
 set.seed(10)
 n <- 5e1
@@ -109,7 +108,6 @@ for(i in 1:NROW(dtS)){# i <- 1
   IF <- rbind(IF,
               colMeans(resIID[,,i])
               )
-  print(colMeans(resIID[,,i]))
 }
 resManuel <- data.frame(mean = colMeans(resRisk), se = sqrt(apply(IF^2, 2, sum)))
 resManuel$lower <- resManuel$mean + qnorm(0.025) * resManuel$se

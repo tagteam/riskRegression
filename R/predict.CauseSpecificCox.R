@@ -158,7 +158,7 @@ predict.CauseSpecificCox <- function(object, newdata, times, cause, t0 = NA, kee
                                 type = c("hazard","cumhazard"), 
                                 keep.strata = TRUE, keep.lastEventTime = TRUE, keep.times = TRUE,
                                 se = FALSE, format = "list")
-   
+
     ls.hazard <- list(matrix(causeBaseline$hazard, byrow = FALSE, nrow = nEventTimes))
     
     ## linear predictor for the new observations
@@ -205,6 +205,7 @@ predict.CauseSpecificCox <- function(object, newdata, times, cause, t0 = NA, kee
                         nData = new.n,
                         cause = which(causes == cause) - 1, 
                         nCause = nCause)
+
   
   #### standard error ####
   if(se || iid){
@@ -226,27 +227,24 @@ predict.CauseSpecificCox <- function(object, newdata, times, cause, t0 = NA, kee
     }
     
     ## influence function 
-    if(is.null(object$iid)){
+    
+     if(is.null(object$iid)){
       object$iid <- list()
       for(iModel in 1:nCause){
-        object$iid[[iModel]] <- iidCox(object$models[[iModel]])
+        object$iid[[iModel]] <- iidCox(object$models[[iModel]], tauHazard = eventTimes)
+      }
+    }else{
+      for(iModel in 1:nCause){
+        object$iid[[iModel]] <- selectJump(object$iid[[iModel]], times = eventTimes,
+                                           type = c("hazard","cumhazard"))
       }
     }
     
-    for(iModel in 1:nCause){
-      object$iid[[iModel]]$IChazard <- calcIChazard(object$iid[[iModel]]$ICcumhazard)
-      
-      object$iid[[iModel]] <- selectJump(object$iid[[iModel]], times = eventTimes,
-                                         type = c("hazard","cumhazard"))
-    }
-
-
-    
     out.seCSC <- seCSC(hazard = ls.hazard, cumhazard = ls.cumhazard, object.time = eventTimes, object.maxtime = apply(M.etimes.max,1,min), 
-                       iid =  object$iid,
-                       eXb_h = M.eXb_h, eXb_cumH = M.eXb_cumH, new.LPdata = new.LPdata, new.strata = M.strata, times = sort(times),
-                       new.n = new.n, cause = which(causes == cause), nCause = nCause,
-                       return.se = se)
+                    iid =  object$iid,
+                    eXb_h = M.eXb_h, eXb_cumH = M.eXb_cumH, new.LPdata = new.LPdata, new.strata = M.strata, times = sort(times),
+                    new.n = new.n, cause = which(causes == cause), nCause = nCause,
+                    return.se = se)
   }
   
     #### export ###
@@ -292,6 +290,7 @@ predict.CauseSpecificCox <- function(object, newdata, times, cause, t0 = NA, kee
 #' CSC.fit <- CSC(Hist(time,event)~ X1+X2,data=d, method = "breslow")
 #' 
 #' predCSC <- predict(CSC.fit, newdata = d[1,,drop=FALSE], cause = 2, times = ttt, se = TRUE)
+#'
 #' 
 seCSC <- function(hazard, cumhazard, object.time, object.maxtime, iid,
                   eXb_h, eXb_cumH, new.LPdata, new.strata, times,
@@ -307,37 +306,37 @@ seCSC <- function(hazard, cumhazard, object.time, object.maxtime, iid,
     
   for(iObs in 1:new.n){
     
-    iStrata <- new.strata[iObs,]
-    
-    iHazard1 <- hazard[[cause]][,iStrata[cause]+1]
+    iStrata <- new.strata[iObs,]        
     iCumHazard <- rep(0, nEtimes)
     iIChazard1 <- NULL
-    iICcumhazard <- matrix(0, nrow = object.n, ncol = nEtimes)
-    
-      for(iCause in 1:nCause){
-          #
-          iCumHazard <- iCumHazard + cumhazard[[iCause]][,iStrata[iCause]+1]
+    iICcumhazard <- matrix(0, nrow = object.n, ncol = nEtimes)    
       
+      for(iCause in 1:nCause){
+
+          #
+          iCumHazard <- iCumHazard + cumhazard[[iCause]][,iStrata[iCause]+1]*eXb_cumH[iObs,iCause]
           #
           X_ICbeta <- iid[[iCause]]$ICbeta %*% t(new.LPdata[[iCause]][iObs,,drop=FALSE])
-      
-          if(cause == iCause){
+
+          iICcumhazard <- iICcumhazard + IClambda2hazard(eXb = eXb_cumH[iObs,iCause],
+                                                         lambda0 = cumhazard[[iCause]][,iStrata[iCause]+1],
+                                                         X_ICbeta = X_ICbeta,
+                                                         IClambda0 = iid[[iCause]]$ICcumhazard[[iStrata[iCause]+1]])
           
+          if(cause == iCause){
+              iHazard1 <- hazard[[cause]][,iStrata[cause]+1]*eXb_h[iObs,iCause]
+              
               iIChazard1 <- IClambda2hazard(eXb = eXb_h[iObs,iCause],
                                             lambda0 = hazard[[iCause]][,iStrata[iCause]+1],
                                             X_ICbeta = X_ICbeta,
                                             IClambda0 = iid[[iCause]]$IChazard[[iStrata[iCause]+1]])
               
           }
-          iICcumhazard <- iICcumhazard + IClambda2hazard(eXb = eXb_cumH[iObs,iCause],
-                                                         lambda0 = cumhazard[[iCause]][,iStrata[iCause]+1],
-                                                         X_ICbeta = X_ICbeta,
-                                                         IClambda0 = iid[[iCause]]$ICcumhazard[[iStrata[iCause]+1]])
+          
       }
-    
-      
+
       CIF.se_tempo <- rowCumSum(rowMultiply_cpp(iIChazard1 - rowMultiply_cpp(iICcumhazard, scale = iHazard1),
-                                                scale = exp(-iCumHazard)))
+                                              scale = exp(-iCumHazard)))
       CIF.se_tempo <- cbind(0,CIF.se_tempo)[,prodlim::sindex(object.time, eval.times = times)+1,drop=FALSE]
 
       if(return.se){
@@ -347,6 +346,5 @@ seCSC <- function(hazard, cumhazard, object.time, object.maxtime, iid,
       }
     
   }
-  
    return(out)
 }

@@ -51,5 +51,6 @@ CSC.fit <- CSC(Hist(time,event)~ X1+X2,data=d, method = "breslow")
 
 predCSC <- predict(CSC.fit, newdata = d[1,,drop=FALSE], cause = 2, times = ttt, se = TRUE)
 
+
 }
 
