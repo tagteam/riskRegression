@@ -192,7 +192,6 @@ predictCox <- function(object,
   if (is.strata == TRUE){ ## rename the strata value with the correct levels
     Lambda0$strata <- factor(Lambda0$strata, levels = 0:(nStrata-1), labels = object.levelStrata)
   }
-  
   #### compute hazard and survival #### 
   if (is.null(newdata)){  ## on the training dataset
     
@@ -216,8 +215,8 @@ predictCox <- function(object,
     if( keep.lastEventTime==TRUE){
       Lambda0$lastEventTime <- etimes.max
     } 
-    
-    return(do.call(paste0("as.",format), list(Lambda0)))
+      out <- do.call(paste0("as.",format), list(Lambda0))
+      return(out)
     
   } else { ## on a new dataset
     out <- list()
@@ -434,7 +433,7 @@ seRobustCox <- function(nTimes, type,
       }
     }
     
-      if("cumhazard" %in% type || "survival" %in% type){
+    if("cumhazard" %in% type || "survival" %in% type){
       IF_tempo <- IClambda2hazard(eXb = new.eXb[iObs],
                                   lambda0 = Lambda0$cumhazard[[iObs.strata]],
                                   X_ICbeta = X_ICbeta,

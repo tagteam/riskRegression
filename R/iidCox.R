@@ -90,7 +90,7 @@ iidCox <- function(object, newdata = NULL, tauHazard = NULL,
   #### Compute quantities of interest ####
   p <- NCOL(object.LPdata)
   
-  ## baseline hazard
+    ## baseline hazard
   lambda0 <- predictCox(object, type = "hazard", centered = TRUE, keep.strata = TRUE)
   
     ## resale factor

@@ -3,7 +3,7 @@
 ##' We compute the Brier score and the area under the ROC curve. For
 ##' survival possibly with competing risk both are time-dependent.
 ##' @title Score risk predictions
-##' @aliases Score
+##' @aliases Score Score.list
 ##' @param object List of risk predictions (see details and examples).
 ##' @param formula A formula which identifies the outcome (left hand
 ##'     side). For right censored outcome, the right hand side of the
@@ -213,11 +213,6 @@ Score.list <- function(object,
     # {{{ Checking the models
     # for predictHandlerFunction
     allmethods <- utils::methods(predictRisk)
-    lapply(object,function(o){
-        candidateMethods <- paste("predictRisk",class(o),sep=".")
-        if (all(match(candidateMethods,allmethods,nomatch=0)==0))
-            stop(paste("Could not find predictRisk S3-method for object with class(es): ",paste(class(o),collapse=" ,"),sep=""))
-    })
     # checking the models for compatibility with resampling
     if (is.null(names(object))){
         names(object) <- sapply(object,function(o)class(o)[1])}
@@ -225,6 +220,24 @@ Score.list <- function(object,
             names(object)[(names(object)=="")] <- sapply(object[(names(object)=="")],function(o)class(o)[1])
         }
     names.object <- names(object) <- make.unique(names(object))
+    ## sanity checks
+    lapply(names.object,function(name){
+        if (any(c("integer","factor","numeric","matrix") %in% class(object[[name]]))){
+            if (splitMethod$internal.name!="noPlan")
+                stop(paste0("Cannot crossvalidate performance of deterministic risk predictions:",name))
+        }
+        if (c("factor") %in% class(object[[name]])){
+            if (length(grep("^brier$",metrics,ignore.case=TRUE)>0) || length(grep("^cal",plots,ignore.case=TRUE)>0)){
+                stop(paste0("Cannot compute Brier score or calibration plots for predictions that are coded as factor: ",name))
+            }
+        }
+        candidateMethods <- paste("predictRisk",class(object[[name]]),sep=".")
+        if (all(match(candidateMethods,allmethods,nomatch=0)==0)){
+            stop(paste("Cannot find function (S3-method) called ",
+                       candidateMethods,
+                       sep=""))
+        }
+    })
     NF <- length(object)
     if (!is.null(nullobject)) {
         mlevs <- 0:NF
@@ -435,9 +448,9 @@ Score.list <- function(object,
             if (f!=0 && any(c("integer","factor","numeric","matrix") %in% class(object[[f]]))){
                 ## sort predictions by ID
                 if (is.null(dim(object[[f]])))
-                    p <- c(object[[f]][testdata[["ID"]]])
+                    p <- c(do.call("predictRisk", c(list(object=object[[f]]),args)))[testdata[["ID"]]]
                 else
-                    p <- c(object[[f]][testdata[["ID"]]])
+                    p <- do.call("predictRisk", c(list(object=object[[f]]),args))[testdata[["ID"]],]
             }else{
                 if (!is.null(traindata)){
                     set.seed(trainseed)

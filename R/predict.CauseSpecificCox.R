@@ -59,11 +59,11 @@
 #'
 #' @method predict CauseSpecificCox
 #' @export
-predict.CauseSpecificCox <- function(object, newdata, times, cause, t0 = NA, keep.times = TRUE,
+predict.CauseSpecificCox <- function(object, newdata, times, cause, t0 = NA, keep.times = TRUE, conf.level=0.95,
                                      se  = FALSE, iid = FALSE, ...){
   
     if(object$fitter=="phreg"){newdata$entry <- 0} 
-  
+
     survtype <- object$survtype
     if (length(cause) > 1){
         stop(paste0("Can only predict one cause. Provided are: ", 
@@ -91,8 +91,8 @@ predict.CauseSpecificCox <- function(object, newdata, times, cause, t0 = NA, kee
         stop("\'t0\' must have length one \n")
     }
     if(se == TRUE && iid == TRUE){
-    stop("cannot return the standard error and the value of the influence function at the same time \n",
-         "set se or iid to FALSE \n")
+        stop("cannot return the standard error and the value of the influence function at the same time \n",
+             "set se or iid to FALSE \n")
     }
 
   
@@ -248,14 +248,16 @@ predict.CauseSpecificCox <- function(object, newdata, times, cause, t0 = NA, kee
   }
   
     #### export ###
-    out <- list(absRisk = CIF[,order(order(times)),drop=FALSE])
+    out <- list(absRisk = CIF[,order(order(times)),drop=FALSE], conf.level=conf.level)
 
     if(se){out$absRisk.se <- out.seCSC[,order(order(times)),drop=FALSE]}
     if(iid){out$absRisk.iid <- out.seCSC[,order(order(times)),,drop=FALSE]}
     if(keep.times){out$times <- times}
- 
-  return(out)
+    class(out) <- "predictCSC"
+    return(out)
 }
+
+
 
 #' @title Standard error of the absolute risk predicted from cause-specific Cox models
 #' @rdname seCSC

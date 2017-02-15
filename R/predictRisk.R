@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun  6 2016 (09:02) 
 ## Version: 
-## last-updated: Oct 31 2016 (07:38) 
+## last-updated: Jan 29 2017 (15:28) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 37
+##     Update #: 38
 #----------------------------------------------------------------------
 ## 
 ### Commentary:
@@ -166,6 +166,12 @@ predictRisk.double <- function(object,newdata,times,cause,...){
 
 ##' @export
 predictRisk.integer <- function(object,newdata,times,cause,...){
+    stopifnot(NROW(object)==NROW(newdata))
+    object
+}
+
+##' @export
+predictRisk.factor <- function(object,newdata,times,cause,...){
     stopifnot(NROW(object)==NROW(newdata))
     object
 }
