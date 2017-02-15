@@ -93,10 +93,10 @@ iidCox <- function(object, newdata = NULL, tauHazard = NULL,
   ## baseline hazard
   lambda0 <- predictCox(object, type = "hazard", centered = TRUE, keep.strata = TRUE)
   
-  ## resale factor
-  if(center.result == TRUE && !is.null(object.center)){
-    scalingFactor <- exp(-as.double(coef(object) %*% object.center))
-  }
+    ## resale factor
+    if(center.result == TRUE && !is.null(object.center)){
+        scalingFactor <- exp(-as.double(coef(object) %*% object.center))
+    }
   
   ## S0, E, jump times
   object.index_strata <- list() 
@@ -248,7 +248,7 @@ iidCox <- function(object, newdata = NULL, tauHazard = NULL,
                                     p = p, strata = iStrata)
       
       # rescale
-      if(center.result == TRUE && !is.null(CoxCenter(object))){
+        if(center.result == TRUE && !is.null(CoxCenter(object))){
         IClambda_res$hazard <- IClambda_res$hazard * scalingFactor
         IClambda_res$cumhazard <- IClambda_res$cumhazard * scalingFactor
       }

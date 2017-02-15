@@ -29,7 +29,8 @@ or several of the strings \code{"hazard"},\code{"cumhazard"}, \code{"survival"}.
 
 \item{new.survival}{the survival evaluated for the new observations}
 
-\item{export}{can be "iid" to return the value of the influence function for each observation or "se" to return the standard error.}
+\item{export}{can be "iid" to return the value of the influence function for each observation
+"se" to return the standard error for a given timepoint}
 
 \item{object}{The fitted Cox regression model object either
 obtained with \code{coxph} (survival package) or \code{cph}

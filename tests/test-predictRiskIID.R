@@ -98,3 +98,25 @@ res <- predictRiskCI(m.CSC, newdata = d, cause = 1, time = 1:7)
 
 
 
+
+
+
+
+######
+library(butils.base)
+package.source("riskRegression", RorderDescription=FALSE, Ccode = TRUE)
+
+
+
+
+library(survival)
+ 
+set.seed(10)
+d <- SimSurv(1e2)
+nd <- SimSurv(10)
+d$time <- round(d$time,1)
+fit <- coxph(Surv(time,status)~X1 * X2, data=d, ties="breslow", x = TRUE, y = TRUE)
+ # table(duplicated(d$time))
+predictCox(fit, newdata=nd, times = 5, se = TRUE)
+
+ 

@@ -13,7 +13,7 @@ d$X1scaled <- scale(d$X1)
 d$X2scaled <- scale(d$X2)
 
 ## Cox
-CoxS <- coxph(Surv(time,status)~X1 + X2, data=d, ties="breslow")
+CoxS <- coxph(Surv(time,status)~X1 + X2, data=d, ties="breslow", y = TRUE, x = TRUE)
 
 # by default Cox center the linear predictor 
 lp <- as.matrix(d[,c("X1","X2")]) %*% coef(CoxS)
@@ -46,5 +46,8 @@ range(predictCox(CoxS)$hazard - Lambda0$hazard)
 resRaw <- iidCox(CoxS, center.result = FALSE)
 resScaled <- iidCox(CoxS, center.result = TRUE)
 
-range(resRaw$ICbeta-resScaled$ICbeta)
-range(resRaw$ICLambda0/resScaled$ICLambda0)
+range(resRaw$ICbeta-resScaled$ICbeta) #no change
+range(resRaw$ICcumhazard[[1]]/resScaled$ICcumhazard[[1]]) # fixed factor
+exp(as.double(coef(CoxS) %*% CoxS$means)) # this term is one if the variables are centered
+
+
