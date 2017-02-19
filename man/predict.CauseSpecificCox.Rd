@@ -5,7 +5,7 @@
 \title{Predicting absolute risk from cause-specific Cox models}
 \usage{
 \method{predict}{CauseSpecificCox}(object, newdata, times, cause, t0 = NA,
-  keep.times = TRUE, se = FALSE, iid = FALSE, ...)
+  keep.times = TRUE, conf.level = 0.95, se = FALSE, iid = FALSE, ...)
 }
 \arguments{
 \item{object}{The fitted cause specific Cox model}

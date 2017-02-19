@@ -148,7 +148,6 @@ predict.CauseSpecificCox <- function(object, newdata, times, cause, t0 = NA, kee
   }else{
     nCause <- 1
     tdiff <- 0*min(diff(eTimes))/2 # TO MATCH test-CauseSpecificCoxRegresion.R but will not match pec
-    
     #### cause ####
     infoVar_Cause <- CoxVariableName(object$models[[paste("Cause",cause)]])
     
