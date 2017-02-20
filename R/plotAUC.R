@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun 23 2016 (09:19) 
 ## Version: 
-## last-updated: Jan 14 2017 (09:04) 
+## last-updated: Feb 19 2017 (15:57) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 42
+##     Update #: 43
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -37,7 +37,8 @@
 ##' plotAUC(xx)
 ##' plotAUC(xx,confint=TRUE)
 ##' plotAUC(xx,type="contrasts")
-##' plotAUC(xx,type="contrasts",confint=TRUE)
+##' a=plotAUC(xx,type="contrasts",confint=TRUE)
+##' a+theme_bw()
 ##' 
 #' @export
 plotAUC <- function(x,models,type="score",lwd=2,xlim,ylim,axes=TRUE,confint=FALSE,...){
