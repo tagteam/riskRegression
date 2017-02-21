@@ -73,7 +73,6 @@
 #' @keywords survival
 ##' @examples
 ##' 
-##' library(pec)
 ##' library(survival)
 ##' library(prodlim)
 ##' data(Melanoma)

@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Oct 23 2016 (08:53) 
 ## Version: 
-## last-updated: Feb  1 2017 (14:38) 
+## last-updated: Feb 21 2017 (09:13) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 43
+##     Update #: 46
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -265,8 +265,9 @@ ate <- function(object,
             ## influence function for the hypothetical worlds in which every subject is treated with the same treatment
             data.i <- data
             data.i[[treatment]] <- factor(contrasts[i], levels = levels)
+            risk.i <- do.call("predict",args = list(object, newdata = data.i, times = times, cause = cause, iid=TRUE, ...))
             risk.i <- do.call("predictRisk",args = list(object, newdata = data.i, times = times, cause = cause, ...))
-            attr(risk.i,"iid") <- do.call("predictRiskIID",args = list(object, newdata = data.i, times = times, cause = cause, ...))
+            attr(risk.i,"iid") <- do.call("predict",args = list(object, newdata = data.i, times = times, cause = cause,iid=TRUE, ...))
             return(risk.i)
         })
 

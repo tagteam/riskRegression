@@ -40,7 +40,8 @@ data=nd, metrics="auc", nullModel=FALSE, times=seq(3:10))
 plotAUC(xx)
 plotAUC(xx,confint=TRUE)
 plotAUC(xx,type="contrasts")
-plotAUC(xx,type="contrasts",confint=TRUE)
+a=plotAUC(xx,type="contrasts",confint=TRUE)
+a+theme_bw()
 
 }
 

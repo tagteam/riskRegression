@@ -15,7 +15,7 @@ Imports:
     Rcpp,
     foreach,
     cmprsk,
-    survival (>=2.40.1),
+    survival (>= 2.40.1),
     parallel,
     doParallel
 LinkingTo: Rcpp, RcppArmadillo
