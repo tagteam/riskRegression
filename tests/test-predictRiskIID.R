@@ -89,6 +89,15 @@ test_that("iid with newdata with an operator in status (here event==1 in Surv)",
 })
 
 
+#### CSC model ####
+m.CSC <- CSC(Hist(time,event)~ X1+X2,data=d, iid = FALSE)
+
+res <- predict(m.CSC, newdata = d, cause = 1, time = 1:7, se = TRUE)
+print(res, ci = TRUE)
+
+
+
+
 
 
 

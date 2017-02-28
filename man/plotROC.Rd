@@ -33,6 +33,7 @@ Plot ROC curve
 ## binary
 set.seed(18)
 library(randomForest)
+library(survival)
 bdl <- sampleData(40,outcome="binary")
 bdt <- sampleData(58,outcome="binary")
 bdl[,y:=factor(Y)]

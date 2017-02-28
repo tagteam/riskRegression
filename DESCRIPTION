@@ -5,35 +5,36 @@ Version: 1.2.8
 Author: Thomas Alexander Gerds, Thomas Harder Scheike, Paul Blanche, Brice Ozenne
 Depends:
     R (>= 2.9.0),
-    prodlim (>= 1.5.7),
     data.table (>= 1.9.6),
-    ggplot2 (>= 2.1.0)
+    ggplot2 (>= 2.1.0),
+    prodlim (>= 1.5.7)
 Imports:
-    stats,
-    graphics,
-    rms (>= 5.0-0),
-    Rcpp,
-    foreach,
     cmprsk,
-    survival (>= 2.40.1),
+    doParallel,
+    foreach,
+    graphics,
     parallel,
-    doParallel
+    Rcpp,
+    rms (>= 5.0-0),
+    stats,
+    survival (>= 2.40.1)
 LinkingTo: Rcpp, RcppArmadillo
 Suggests:
-    lava,
     boot,   
-    pec,
-    Daim,
-    pROC,
-    testthat,
-    randomForestSRC,
-    timereg,
-    rbenchmark,
-    penalized,
-    party,
-    rpart,
     CoxBoost,
-    mets
+    Daim,
+    lava,
+    mets,
+    party,
+    pec,
+    penalized,
+    pROC,
+    randomForest,
+    randomForestSRC,
+    rbenchmark,
+    rpart,
+    testthat,
+    timereg
 Maintainer: Thomas Alexander Gerds <tag@biostat.ku.dk>
 Description: Implementation of the following methods for event history analysis.
              Risk regression models for survival endpoints also in the presence of

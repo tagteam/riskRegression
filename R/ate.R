@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Oct 23 2016 (08:53) 
 ## Version: 
-## last-updated: Feb 24 2017 (15:00) 
-##           By: Thomas Alexander Gerds
-##     Update #: 58
+## last-updated: feb 28 2017 (13:32) 
+##           By: Brice Ozenne
+##     Update #: 59
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -153,7 +153,6 @@ ate <- function(object,
         out
     }
     #### point estimate
-   
     estimateTime <- system.time(
         pointEstimate <- Gformula(object=object,
                                   data=data,

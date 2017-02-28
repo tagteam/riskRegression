@@ -6,8 +6,8 @@
 \usage{
 predictCox(object, newdata = NULL, times, centered = TRUE,
   type = c("hazard", "cumhazard", "survival"), keep.strata = TRUE,
-  keep.times = TRUE, keep.lastEventTime = FALSE, se = FALSE,
-  iid = FALSE, format = "data.frame")
+  keep.times = TRUE, keep.lastEventTime = FALSE, keep.newdata = FALSE,
+  se = FALSE, iid = FALSE, format = "data.frame")
 }
 \arguments{
 \item{object}{The fitted Cox regression model object either
@@ -32,7 +32,9 @@ or several of the strings \code{"hazard"},\code{"cumhazard"}, \code{"survival"}}
 
 \item{keep.lastEventTime}{Logical. If \code{TRUE} add the time at which the last event occured in each strata to the output list.}
 
-\item{se}{Logical. If \code{TRUE} add the standard errors corresponding to the output.}
+\item{keep.newdata}{Logical. If \code{TRUE} add the value of the covariates used to make the prediction in the output list.}
+
+\item{se}{Logical. If \code{TRUE} add the standard error corresponding to the output.}
 
 \item{iid}{Logical. If \code{TRUE} add the influence function corresponding ot the output.}
 

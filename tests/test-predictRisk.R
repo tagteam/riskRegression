@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun  6 2016 (09:35) 
 ## Version: 
-## last-updated: Jan 26 2017 (08:33) 
-##           By: Thomas Alexander Gerds
-##     Update #: 17
+## last-updated: feb 28 2017 (14:00) 
+##           By: Brice Ozenne
+##     Update #: 21
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -221,8 +221,8 @@ test_that("Prediction - last event censored",{
   p3 <- pec::predictSurvProb(fit.coxph, times = vec.times, newdata = Melanoma) # predictSurvProb automatically sort the results
   
   expect_equal(p1,p2, tolerance = 1e-4)
-  expect_equal(p1$survival,p3)
-  
+  expect_equal(p1$survival, unname(p3))
+
   survLast <- p1$survival[,vec.times==Melanoma$time[nData]]
   survLastM1 <- p1$survival[,vec.times==Melanoma$time[nData-1]]
   expect_equal(unname(survLast-survLastM1==0), rep(TRUE, nData)) # check that survival decrease at the last time
@@ -242,7 +242,7 @@ test_that("Prediction - last event is a death",{
   p3 <- pec::predictSurvProb(fit.coxph, times = vec.times, newdata = Melanoma) # predictSurvProb automatically sort the results
   
   expect_equal(p1,p2, tolerance = 1e-4)
-  expect_equal(p1$survival,p3)
+  expect_equal(p1$survival, unname(p3))
   
   survLast <- p1$survival[,vec.times==Melanoma2$time[nData]]
   survLastM1 <- p1$survival[,vec.times==Melanoma2$time[nData-1]]
@@ -375,13 +375,16 @@ test_that("Prediction with Cox model - sorted vs. unsorted times",{
   fit.coxph <- coxph(Surv(time,status == 1) ~ thick, data = Melanoma, x = TRUE, y = TRUE)
   predictionUNS <- predictCox(fit.coxph, times = times2[newOrder], newdata = Melanoma[1:5,], keep.times = FALSE)
   predictionS <- predictCox(fit.coxph, times = times2, newdata = Melanoma[1:5,], keep.times = FALSE)
+  class(predictionS) <- NULL
   # predictSurvProb(fit.coxph, times = times2[newOrder], newdata = Melanoma)
   # predictSurvProb(fit.coxph, times = times2, newdata = Melanoma)
-  expect_equal(predictionS, lapply(predictionUNS, function(x){x[,order(newOrder)]}))
-
+  expect_equal(predictionS,
+               lapply(predictionUNS, function(x){x[,order(newOrder)]}))
+  
   fit.cph <- cph(Surv(time,status == 1) ~ thick, data = Melanoma, y = TRUE, x = TRUE)
   predictionUNS <- predictCox(fit.cph, times = times2[newOrder], newdata = Melanoma[1:5,], keep.times = FALSE)
   predictionS <- predictCox(fit.cph, times = times2, newdata = Melanoma[1:5,], keep.times = FALSE)
+  class(predictionS) <- NULL
   expect_equal(predictionS, lapply(predictionUNS, function(x){x[,order(newOrder)]}))
 })
 
@@ -396,6 +399,7 @@ test_that("Prediction with Cox model (strata) - sorted vs. unsorted times",{
   fit.coxph <- coxph(Surv(time,status == 1) ~ thick + strata(invasion), data = Melanoma, y = TRUE,  x = TRUE)
   predictionUNS <- predictCox(fit.coxph, times = times2[newOrder], newdata = Melanoma, keep.times = FALSE, keep.strata = FALSE)
   predictionS <- predictCox(fit.coxph, times = times2, newdata = Melanoma, keep.times = FALSE, keep.strata = FALSE)
+  class(predictionS) <- NULL
   expect_equal(predictionS, lapply(predictionUNS, function(x){x[,order(newOrder)]}))
   
   fit.cph <- cph(Surv(time,status == 1) ~ thick + strat(invasion), data = Melanoma, y = TRUE, x = TRUE)

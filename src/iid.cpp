@@ -5,6 +5,7 @@ using namespace Rcpp;
 using namespace arma;
 using namespace std;
 
+// {{{ calcE_cpp
 // [[Rcpp::export]]
 List calcE_cpp(const NumericVector& eventtime, 
                const NumericVector& status,
@@ -63,7 +64,8 @@ List calcE_cpp(const NumericVector& eventtime,
                       Named("S0")  = resS0,
                       Named("Utime1") = t));
 }
-
+// }}}
+// {{{ ICbeta_cpp
 // [[Rcpp::export]]
 arma::mat ICbeta_cpp(const NumericVector& newT, const NumericVector& neweXb, const arma::mat& newX, const NumericVector& newStatus, const IntegerVector& newIndexJump, 
                      const NumericVector& S01, const arma::mat& E1, const NumericVector& time1, const arma::mat& iInfo,
@@ -130,8 +132,9 @@ arma::mat ICbeta_cpp(const NumericVector& newT, const NumericVector& neweXb, con
   
   return(ICbeta);
 }
+// }}}
 
-
+// {{{ IClambda0_cpp
 // [[Rcpp::export]]
 List IClambda0_cpp(const NumericVector& tau, const arma::mat& ICbeta,
                    const NumericVector& newT, const NumericVector& neweXb, const NumericVector& newStatus, const IntegerVector& newStrata, const IntegerVector& newIndexJump, 
@@ -159,6 +162,8 @@ List IClambda0_cpp(const NumericVector& tau, const arma::mat& ICbeta,
   int iTau = 0;
   
   colvec Elambda0_iter(p), cumElambda0_iter(p); 
+  cumElambda0_iter.fill(0);
+
   for(int iTime1 = 0; iTime1 < nTime1; iTime1++){
     Elambda0_iter.fill(0);
     
@@ -229,7 +234,7 @@ List IClambda0_cpp(const NumericVector& tau, const arma::mat& ICbeta,
       }
       
       if(strata == newStrata[iObs]){
-        // // second term
+        // second term
         if(tau[iiTau]==time1[Vindex_tau_time1[iiTau]] && time1[Vindex_tau_time1[iiTau]] <= newT[iObs]){ IClambda0(iObs,iiTau) -= neweXb[iObs] * lambda0_iS0[Vindex_tau_time1[iiTau]]; }
         ICLambda0(iObs,iiTau) -= neweXb[iObs] * cumLambda0_iS0[min(Vindex_tau_time1[iiTau],index_newT_time1)];
 
@@ -254,4 +259,4 @@ List IClambda0_cpp(const NumericVector& tau, const arma::mat& ICbeta,
   
 }  
 
-
+// }}}

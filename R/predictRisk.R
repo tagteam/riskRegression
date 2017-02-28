@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun  6 2016 (09:02) 
 ## Version: 
-## last-updated: Jan 29 2017 (15:28) 
-##           By: Thomas Alexander Gerds
-##     Update #: 38
+## last-updated: feb 15 2017 (16:57) 
+##           By: Brice Ozenne
+##     Update #: 39
 #----------------------------------------------------------------------
 ## 
 ### Commentary:
@@ -374,7 +374,14 @@ predictRisk.cph <- function(object,newdata,times,...){
     ## if (!match("surv",names(object),nomatch=0)) stop("Argument missing: set surv=TRUE in the call to cph!")
     ## p <- rms::survest(object,times=times,newdata=newdata,se.fit=FALSE,what="survival")$surv
     ## if (is.null(dim(p))) p <- matrix(p,nrow=NROW(newdata))
-    p <- predictCox(object=object,newdata=newdata,times=times,se = FALSE, iid = FALSE,keep.times=FALSE,keep.lastEventTime=FALSE,type="survival")$survival
+    p <- predictCox(object=object,
+                    newdata=newdata,
+                    times=times,
+                    se = FALSE,
+                    iid = FALSE,
+                    keep.times=FALSE,
+                    keep.lastEventTime=FALSE,
+                    type="survival")$survival
     if (NROW(p) != NROW(newdata) || NCOL(p) != length(times))
         stop(paste("\nPrediction matrix has wrong dimensions:\nRequested newdata x times: ",NROW(newdata)," x ",length(times),"\nProvided prediction matrix: ",NROW(p)," x ",NCOL(p),"\n\n",sep=""))
     return(1-p)
