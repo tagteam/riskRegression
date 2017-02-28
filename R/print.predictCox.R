@@ -108,7 +108,8 @@ print.predictCox <- function(x,
                                      times = x$times,
                                      digit = digit,
                                      name.outcome = iType,
-                                     conf.level = conf.level)
+                                     conf.level = conf.level,
+                                     lower = 0, upper = if(iType == "survival"){1}else{Inf})
         res[[iType]] <- ls.resPrint$res
         resDisplay[[iType]] <- ls.resPrint$resDisplay            
 
@@ -131,7 +132,7 @@ print.predictCox <- function(x,
 
 
 predict2print <- function(outcome, outcome.se, newdata, strata, times,
-                          digit, name.outcome, conf.level){
+                          digit, name.outcome, conf.level, lower, upper){
 
     n.obs <- NROW(outcome)
     n.time <- NCOL(outcome)
@@ -147,8 +148,8 @@ predict2print <- function(outcome, outcome.se, newdata, strata, times,
     }else{
         resDisplay <- upper <- lower <- matrix(NA, nrow = n.obs, ncol = n.time, dimnames = dimnames(outcome))
             
-        lower[] <- pmax(0,outcome + qnorm((1-conf.level)/2) * outcome.se)
-        upper[] <- pmin(1,outcome + qnorm(1-(1-conf.level)/2) * outcome.se)
+        lower[] <- pmax(lower,outcome + qnorm((1-conf.level)/2) * outcome.se)
+        upper[] <- pmin(upper,outcome + qnorm(1-(1-conf.level)/2) * outcome.se)
 
         resDisplay[] <- paste0(formatC(outcome, format = "f", digits = digit),
                              " [",formatC(lower, format = "f", digits = digit),

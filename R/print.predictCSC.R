@@ -73,7 +73,8 @@ print.predictCSC <- function(x,
                               times = x$times,
                               digit = digit,
                               name.outcome = "absolute risk",
-                              conf.level = conf.level)
+                              conf.level = conf.level,
+                              lower = 0, upper = Inf)
 
     resDisplay <- ls.print$resDisplay
     res <- ls.print$res
