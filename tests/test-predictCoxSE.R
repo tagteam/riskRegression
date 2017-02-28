@@ -194,11 +194,6 @@ if(require(timereg)){
 # }}}
 
 # {{{ Cox predict SE
-
-ci2se <- function(x){
-    res <- (x$survival.upper-x$survival.lower)/(qnorm(0.975)-qnorm(0.025))
-    return(as.double(res))
-    }
     
 if(require(timereg)){
   
@@ -206,24 +201,22 @@ if(require(timereg)){
    
     test_that("predictionsSE",{
         predGS <- predict(m.cox_GS, newdata = d, times = 10)
-        predRR1 <- predictCox(m.coxph, newdata = d, times = 10, ci = TRUE)
-        predRR2 <- predictCox(m.coxph_d2, newdata = d, times = 10, ci = TRUE)
+        predRR1 <- predictCox(m.coxph, newdata = d, times = 10, se = TRUE)
+        predRR2 <- predictCox(m.coxph_d2, newdata = d, times = 10, se = TRUE)
 
     
-    expect_equal(ci2se(predRR1), as.double(predGS$se.S0))
-    expect_equal(ci2se(predRR2), as.double(predGS$se.S0))
+    expect_equal(as.double(predRR1$survival.se), as.double(predGS$se.S0))
+    expect_equal(as.double(predRR2$survival.se), as.double(predGS$se.S0))
     
-    predRR1 <- predictCox(m.coxph, newdata = d, times = 1e8, ci = TRUE)
-    expect_true(all(is.na(predRR1$survival.lower)))
-    expect_true(all(is.na(predRR1$survival.upper)))
+    predRR1 <- predictCox(m.coxph, newdata = d, times = 1e8, se = TRUE)
+    expect_true(all(is.na(predRR1$survival.se)))
     
-    predRR1 <- predictCox(m.coxph, newdata = d, times = 1e-8, ci = TRUE)
-    expect_true(all(predRR1$survival.lower==predRR1$survival.upper))
+    predRR1 <- predictCox(m.coxph, newdata = d, times = 1e-8, se = TRUE)
+    expect_true(all(predRR1$survival.se==0))
     
-    predRR1 <- predictCox(m.coxph, newdata = d, times = c(1e-8,10,1e8), ci = TRUE)
-    expect_true(all(is.na(predRR1$survival.lower[,3])))
-    expect_true(all(is.na(predRR1$survival.upper[,3])))
-    expect_true(all(predRR1$survival.lower[,1]==predRR1$survival.upper[,1]))
+    predRR1 <- predictCox(m.coxph, newdata = d, times = c(1e-8,10,1e8), se = TRUE)
+    expect_true(all(is.na(predRR1$survival.se[,3])))
+    expect_true(all(predRR1$survival.se[,1]==0))
 })
   # }}}
   
@@ -231,8 +224,8 @@ if(require(timereg)){
   # {{{ no strata, interactions, continous  
     test_that("predictionsSE - interaction",{
         predGS <- predict(mI.cox_GS, newdata = d, times = 10)
-        predRR1 <- predictCox(mI.coxph, newdata = d, times = 10, ci = TRUE)
-        expect_equal(ci2se(predRR1), as.double(predGS$se.S0))
+        predRR1 <- predictCox(mI.coxph, newdata = d, times = 10, se = TRUE)
+        expect_equal(as.double(predRR1$survival.se), as.double(predGS$se.S0))
     })
   
     # }}}
@@ -240,8 +233,8 @@ if(require(timereg)){
   # {{{ no strata, no interaction, with a categorical variable
     test_that("predictionsSE - categorical",{
         predGS <- predict(mCAT.cox_GS, newdata = d, times = 10)
-        predRR1 <- predictCox(mCAT.coxph, newdata = d, times = 10, ci = TRUE)
-        expect_equal(ci2se(predRR1), as.double(predGS$se.S0))
+        predRR1 <- predictCox(mCAT.coxph, newdata = d, times = 10, se = TRUE)
+        expect_equal(as.double(predRR1$survival.se), as.double(predGS$se.S0))
     })
 
     # }}}
@@ -250,14 +243,14 @@ if(require(timereg)){
 
     test_that("predictionsSE - strata",{
     predGS <- predict(mStrata.cox_GS, newdata = dStrata, times = 2)
-    predRR1 <- predictCox(mStrata.coxph, newdata = dStrata, times = 2, ci = TRUE)
+    predRR1 <- predictCox(mStrata.coxph, newdata = dStrata, times = 2, se = TRUE)
     
-    expect_equal(ci2se(predRR1), as.double(predGS$se.S0))
+    expect_equal(as.double(predRR1$survival.se), as.double(predGS$se.S0))
     
     predGS <- predict(mStrata.cox_GS, newdata = dStrata, times = 1:3)
-    predRR1 <- predictCox(mStrata.coxph, newdata = dStrata, times = 1:3, ci = TRUE)
+    predRR1 <- predictCox(mStrata.coxph, newdata = dStrata, times = 1:3, se = TRUE)
     
-    expect_equal(ci2se(predRR1), as.double(predGS$se.S0))
+    expect_equal(as.double(predRR1$survival.se), as.double(predGS$se.S0))
     })
  
     # }}}

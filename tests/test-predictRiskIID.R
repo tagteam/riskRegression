@@ -93,7 +93,8 @@ test_that("iid with newdata with an operator in status (here event==1 in Surv)",
 #### CSC model ####
 m.CSC <- CSC(Hist(time,event)~ X1+X2,data=d, iid = FALSE)
 
-res <- predictRiskCI(m.CSC, newdata = d, cause = 1, time = 1:7)
+res <- predict(m.CSC, newdata = d, cause = 1, time = 1:7, se = TRUE)
+print(res, ci = TRUE)
 
 
 
@@ -101,22 +102,3 @@ res <- predictRiskCI(m.CSC, newdata = d, cause = 1, time = 1:7)
 
 
 
-
-######
-library(butils.base)
-package.source("riskRegression", RorderDescription=FALSE, Ccode = TRUE)
-
-
-
-
-library(survival)
- 
-set.seed(10)
-d <- SimSurv(1e2)
-nd <- SimSurv(10)
-d$time <- round(d$time,1)
-fit <- coxph(Surv(time,status)~X1 * X2, data=d, ties="breslow", x = TRUE, y = TRUE)
- # table(duplicated(d$time))
-predictCox(fit, newdata=nd, times = 5, se = TRUE)
-
- 

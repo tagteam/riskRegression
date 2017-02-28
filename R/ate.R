@@ -153,7 +153,6 @@ ate <- function(object,
         out
     }
     #### point estimate
-   
     estimateTime <- system.time(
         pointEstimate <- Gformula(object=object,
                                   data=data,
@@ -269,7 +268,7 @@ ate <- function(object,
             attr(risk.i,"iid") <- do.call("predictRiskIID",args = list(object, newdata = data.i, times = times, cause = cause, ...))
             return(risk.i)
         })
-
+      
         
         sdIF.treatment <- unlist(lapply(ICrisk, function(iIC){
             apply(attr(iIC,"iid"), 2, function(x){          

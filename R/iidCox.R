@@ -235,40 +235,40 @@ iidCox <- function(object, newdata = NULL, tauHazard = NULL,
       Etempo <- matrix(0, ncol = 1, nrow = nUtime1_strata-1)
     }
     
-    ## IF
-    if(any(new.status_strata[[iStrata]]>0)){
+      ## IF
+      if(any(new.status_strata[[iStrata]]>0)){
+  
+          IClambda_res <- IClambda0_cpp(tau = tauHazard_strata,
+                                        ICbeta = ICbeta,
+                                        newT = new.time, neweXb = new.eXb, newStatus = new.status, newIndexJump = new.indexJump[[iStrata]], newStrata = as.numeric(new.strata),
+                                        S01 = Ecpp[[iStrata]]$S0[1:(nUtime1_strata-1)],
+                                        E1 = Etempo,
+                                        time1 = Ecpp[[iStrata]]$Utime1[1:(nUtime1_strata-1)], lastTime1 = Ecpp[[iStrata]]$Utime1[nUtime1_strata],
+                                        lambda0 = lambda0_strata[match(Ecpp[[iStrata]]$Utime1[-nUtime1_strata],lambda0_strata[,"time"]),"hazard"],
+                                        p = p, strata = iStrata)
+          
+          # rescale
+          if(center.result == TRUE && !is.null(CoxCenter(object))){
+              IClambda_res$hazard <- IClambda_res$hazard * scalingFactor
+              IClambda_res$cumhazard <- IClambda_res$cumhazard * scalingFactor
+          }
       
-      IClambda_res <- IClambda0_cpp(tau = tauHazard_strata,
-                                    ICbeta = ICbeta,
-                                    newT = new.time, neweXb = new.eXb, newStatus = new.status, newIndexJump = new.indexJump[[iStrata]], newStrata = as.numeric(new.strata),
-                                    S01 = Ecpp[[iStrata]]$S0[1:(nUtime1_strata-1)],
-                                    E1 = Etempo,
-                                    time1 = Ecpp[[iStrata]]$Utime1[1:(nUtime1_strata-1)], lastTime1 = Ecpp[[iStrata]]$Utime1[nUtime1_strata],
-                                    lambda0 = lambda0_strata[match(Ecpp[[iStrata]]$Utime1[-nUtime1_strata],lambda0_strata[,"time"]),"hazard"],
-                                    p = p, strata = iStrata)
-      
-      # rescale
-        if(center.result == TRUE && !is.null(CoxCenter(object))){
-        IClambda_res$hazard <- IClambda_res$hazard * scalingFactor
-        IClambda_res$cumhazard <- IClambda_res$cumhazard * scalingFactor
+      }else{
+          if(length(tauHazard_strata)==0){tauHazard_strata <- max(object.time_strata[[iStrata]])}
+          IClambda_res <- list(hazard = matrix(0, ncol = length(tauHazard_strata), nrow = NROW(ICbeta)),
+                               cumhazard = matrix(0, ncol = length(tauHazard_strata), nrow = NROW(ICbeta))
+                               )
+          if(length(tauHazard_strata)==0){tauHazard_strata <- NA}
       }
-      
-    }else{
-      if(length(tauHazard_strata)==0){tauHazard_strata <- max(object.time_strata[[iStrata]])}
-      IClambda_res <- list(hazard = matrix(0, ncol = length(tauHazard_strata), nrow = length(new.index_strata[[iStrata]])),
-                           cumhazard = matrix(0, ncol = length(tauHazard_strata), nrow = length(new.index_strata[[iStrata]]))
-      )
-      if(length(tauHazard_strata)==0){tauHazard_strata <- NA}
-    }
     
-    # output 
-    ls.Utime1 <- c(ls.Utime1, list(tauHazard_strata))
-    if(keep.times){
-      colnames(IClambda_res$hazard) <- tauHazard_strata
-      colnames(IClambda_res$cumhazard) <- tauHazard_strata
-    }
-    IChazard <- c(IChazard, list(IClambda_res$hazard))
-    ICcumhazard <- c(ICcumhazard, list(IClambda_res$cumhazard))
+      # output 
+      ls.Utime1 <- c(ls.Utime1, list(tauHazard_strata))
+      if(keep.times){
+          colnames(IClambda_res$hazard) <- tauHazard_strata
+          colnames(IClambda_res$cumhazard) <- tauHazard_strata
+      }
+      IChazard <- c(IChazard, list(IClambda_res$hazard))
+      ICcumhazard <- c(ICcumhazard, list(IClambda_res$cumhazard))
   }
   
   #### export

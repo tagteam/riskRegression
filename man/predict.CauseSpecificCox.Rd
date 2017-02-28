@@ -5,7 +5,8 @@
 \title{Predicting absolute risk from cause-specific Cox models}
 \usage{
 \method{predict}{CauseSpecificCox}(object, newdata, times, cause, t0 = NA,
-  keep.times = TRUE, se = FALSE, iid = FALSE, ...)
+  keep.times = TRUE, keep.newdata = FALSE, keep.strata = FALSE,
+  se = FALSE, iid = FALSE, ...)
 }
 \arguments{
 \item{object}{The fitted cause specific Cox model}
@@ -21,6 +22,10 @@ hazards/survival}
 \item{t0}{the starting time for the conditional survival.}
 
 \item{keep.times}{Logical. If \code{TRUE} add the evaluation times to the output.}
+
+\item{keep.newdata}{Logical. If \code{TRUE} add the value of the covariates used to make the prediction in the output list.}
+
+\item{keep.strata}{Logical. If \code{TRUE} add the value of the strata used to make the prediction in the output list.}
 
 \item{se}{Logical. If \code{TRUE} add the standard errors corresponding to the output.}
 

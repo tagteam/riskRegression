@@ -13,6 +13,8 @@
 #' @param cause Identifies the cause of interest among the competing events.
 #' @param t0 the starting time for the conditional survival.
 #' @param keep.times Logical. If \code{TRUE} add the evaluation times to the output.
+#' @param keep.newdata Logical. If \code{TRUE} add the value of the covariates used to make the prediction in the output list. 
+#' @param keep.strata Logical. If \code{TRUE} add the value of the strata used to make the prediction in the output list. 
 #' @param se Logical. If \code{TRUE} add the standard errors corresponding to the output.
 #' @param iid Logical. If \code{TRUE} add the influence function corresponding ot the output.
 #' @param ... not used
@@ -59,11 +61,13 @@
 #'
 #' @method predict CauseSpecificCox
 #' @export
-predict.CauseSpecificCox <- function(object, newdata, times, cause, t0 = NA, keep.times = TRUE, conf.level=0.95,
+predict.CauseSpecificCox <- function(object, newdata, times, cause, t0 = NA,
+                                     keep.times = TRUE, keep.newdata = FALSE, keep.strata = FALSE,
                                      se  = FALSE, iid = FALSE, ...){
   
     if(object$fitter=="phreg"){newdata$entry <- 0} 
-
+    if(missing(newdata)){newdata <- eval(object$call$data)}
+    
     survtype <- object$survtype
     if (length(cause) > 1){
         stop(paste0("Can only predict one cause. Provided are: ", 
@@ -248,11 +252,21 @@ predict.CauseSpecificCox <- function(object, newdata, times, cause, t0 = NA, kee
   }
   
     #### export ###
-    out <- list(absRisk = CIF[,order(order(times)),drop=FALSE], conf.level=conf.level)
+    out <- list(absRisk = CIF[,order(order(times)),drop=FALSE])
 
     if(se){out$absRisk.se <- out.seCSC[,order(order(times)),drop=FALSE]}
     if(iid){out$absRisk.iid <- out.seCSC[,order(order(times)),,drop=FALSE]}
     if(keep.times){out$times <- times}
+    if(keep.newdata==TRUE){
+        allVars <- unique(unlist(lapply(object$models, function(m){CoxVariableName(m)$lpvars})))
+        out$newdata <- newdata[, allVars, with = FALSE]
+    }
+    if(keep.strata==TRUE){
+        allStrata <- unique(unlist(lapply(object$models, function(m){CoxVariableName(m)$stratavars.original})))
+        newdata <- copy(newdata[,allStrata, with = FALSE])
+        newdata[, (allStrata) := lapply(allStrata, function(col){paste0(col,"=",.SD[[col]])})]
+        out$strata <- newdata[, interaction(.SD, sep = " "), .SDcols = allStrata]
+    } 
     class(out) <- "predictCSC"
     return(out)
 }
@@ -304,47 +318,45 @@ seCSC <- function(hazard, cumhazard, object.time, object.maxtime, iid,
         out <- array(NA, dim = c(new.n, length(times), object.n))
     }
     
-  for(iObs in 1:new.n){
-    
-    iStrata <- new.strata[iObs,]        
-    iCumHazard <- rep(0, nEtimes)
-    iIChazard1 <- NULL
-    iICcumhazard <- matrix(0, nrow = object.n, ncol = nEtimes)    
-      
-      for(iCause in 1:nCause){
+    for(iObs in 1:new.n){
+        iStrata <- new.strata[iObs,]        
+        iCumHazard <- rep(0, nEtimes)
+        iIChazard1 <- NULL
+        iICcumhazard <- matrix(0, nrow = object.n, ncol = nEtimes)    
+        for(iCause in 1:nCause){
+            #
+            iCumHazard <- iCumHazard + cumhazard[[iCause]][,iStrata[iCause]+1]*eXb_cumH[iObs,iCause]
+            #
+            X_ICbeta <- iid[[iCause]]$ICbeta %*% t(new.LPdata[[iCause]][iObs,,drop=FALSE])
 
-          #
-          iCumHazard <- iCumHazard + cumhazard[[iCause]][,iStrata[iCause]+1]*eXb_cumH[iObs,iCause]
-          #
-          X_ICbeta <- iid[[iCause]]$ICbeta %*% t(new.LPdata[[iCause]][iObs,,drop=FALSE])
-
-          iICcumhazard <- iICcumhazard + IClambda2hazard(eXb = eXb_cumH[iObs,iCause],
-                                                         lambda0 = cumhazard[[iCause]][,iStrata[iCause]+1],
-                                                         X_ICbeta = X_ICbeta,
-                                                         IClambda0 = iid[[iCause]]$ICcumhazard[[iStrata[iCause]+1]])
+            iICcumhazard <- iICcumhazard + IClambda2hazard(eXb = eXb_cumH[iObs,iCause],
+                                                           lambda0 = cumhazard[[iCause]][,iStrata[iCause]+1],
+                                                           X_ICbeta = X_ICbeta,
+                                                           IClambda0 = iid[[iCause]]$ICcumhazard[[iStrata[iCause]+1]])
           
-          if(cause == iCause){
-              iHazard1 <- hazard[[cause]][,iStrata[cause]+1]*eXb_h[iObs,iCause]
+            lapply(iid[[iCause]]$ICcumhazard, dim)
+            if(cause == iCause){
+                iHazard1 <- hazard[[cause]][,iStrata[cause]+1]*eXb_h[iObs,iCause]
               
-              iIChazard1 <- IClambda2hazard(eXb = eXb_h[iObs,iCause],
-                                            lambda0 = hazard[[iCause]][,iStrata[iCause]+1],
-                                            X_ICbeta = X_ICbeta,
-                                            IClambda0 = iid[[iCause]]$IChazard[[iStrata[iCause]+1]])
+                iIChazard1 <- IClambda2hazard(eXb = eXb_h[iObs,iCause],
+                                              lambda0 = hazard[[iCause]][,iStrata[iCause]+1],
+                                              X_ICbeta = X_ICbeta,
+                                              IClambda0 = iid[[iCause]]$IChazard[[iStrata[iCause]+1]])
               
           }
           
       }
 
-      CIF.se_tempo <- rowCumSum(rowMultiply_cpp(iIChazard1 - rowMultiply_cpp(iICcumhazard, scale = iHazard1),
-                                              scale = exp(-iCumHazard)))
-      CIF.se_tempo <- cbind(0,CIF.se_tempo)[,prodlim::sindex(object.time, eval.times = times)+1,drop=FALSE]
+        CIF.se_tempo <- rowCumSum(rowMultiply_cpp(iIChazard1 - rowMultiply_cpp(iICcumhazard, scale = iHazard1),
+                                                  scale = exp(-iCumHazard)))
+        CIF.se_tempo <- cbind(0,CIF.se_tempo)[,prodlim::sindex(object.time, eval.times = times)+1,drop=FALSE]
+        if(return.se){
+            out[iObs,] <- sqrt(apply(CIF.se_tempo^2,2,sum))
+        }else{
+            out[iObs,,] <- t(CIF.se_tempo)
+        }
+    }
+          
 
-      if(return.se){
-          out[iObs,] <- sqrt(apply(CIF.se_tempo^2,2,sum))
-      }else{
-          out[iObs,,] <- t(CIF.se_tempo)
-      }
-    
-  }
-   return(out)
+    return(out)
 }
