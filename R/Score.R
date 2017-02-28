@@ -149,7 +149,6 @@
 ##' Evaluating Random Forests for Survival Analysis Using Prediction Error
 ##' Curves. Journal of Statistical Software, 50(11), 1-23. URL
 ##' http://www.jstatsoft.org/v50/i11/.
-' 
 #' E. Graf et al.  (1999), Assessment and comparison of prognostic
 #' classification schemes for survival data. Statistics in Medicine, vol 18,
 #' pp= 2529--2545.
