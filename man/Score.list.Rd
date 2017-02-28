@@ -7,8 +7,8 @@
 \usage{
 \method{Score}{list}(object, formula, data, metrics = c("auc", "brier"),
   summary = NULL, plots = NULL, cause = 1, times, landmarks,
-  useEventTimes = FALSE, nullModel = I("brier" \%in\% tolower(metrics)),
-  conf.int = 0.95, contrasts = TRUE, probs = c(0, 0.25, 0.5, 0.75, 1),
+  useEventTimes = FALSE, nullModel = TRUE, conf.int = 0.95,
+  contrasts = TRUE, probs = c(0, 0.25, 0.5, 0.75, 1),
   censMethod = "outside.ipcw", censModel = "cox", splitMethod, B, M, seed,
   trainseeds, ...)
 }

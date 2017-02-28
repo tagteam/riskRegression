@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun 23 2016 (09:19) 
 ## Version: 
-## last-updated: Feb 27 2017 (08:22) 
+## last-updated: Feb 28 2017 (12:16) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 46
+##     Update #: 48
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -35,7 +35,7 @@
 ##' xx=Score(list(f1,f2), formula=Surv(time,event)~1,
 ##' data=nd, metrics="auc", nullModel=FALSE, times=seq(3:10))
 ##' aucgraph<-plotAUC(xx)
-##' plotAUC(xx,confint=TRUE)
+##' plotAUC(xx,confint=TRUE)+ggtitle("AUC")+theme_classic()
 ##' plotAUC(xx,type="contrasts")
 ##' a=plotAUC(xx,type="contrasts",confint=TRUE)
 ##' a+theme_bw()
