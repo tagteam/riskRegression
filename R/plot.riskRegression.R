@@ -3,7 +3,7 @@
 #' Show predicted risk obtained by a risk prediction model as a function of
 #' time.
 #' 
-#' @aliases plot.riskRegression plot.predictedRisk plot.CauseSpecificCox
+#' @aliases plot.riskRegression plot.CauseSpecificCox
 #' @usage
 #' \method{plot}{riskRegression}(x,
 ##'   cause,
@@ -21,21 +21,6 @@
 ##'   add=FALSE,
 ##'   ...)
 #' \method{plot}{CauseSpecificCox}(x,
-##'   cause,
-##'   newdata,
-##'   xlab,
-##'   ylab,
-##'   xlim,
-##'   ylim,
-##'   lwd,
-##'   col,
-##'   lty,
-##'   axes=TRUE,
-##'   percent=TRUE,
-##'   legend=TRUE,
-##'   add=FALSE,
-##'   ...)
-#' \method{plot}{predictedRisk}(x,
 ##'   cause,
 ##'   newdata,
 ##'   xlab,

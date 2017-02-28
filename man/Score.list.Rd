@@ -6,10 +6,10 @@
 \title{Score risk predictions}
 \usage{
 \method{Score}{list}(object, formula, data, metrics = c("auc", "brier"),
-  summary = NULL, plots = c("roc", "calibration", "pvalues"), cause = 1,
-  times, landmarks, useEventTimes = FALSE, nullModel = TRUE,
+  summary = NULL, plots = NULL, cause = 1, times, landmarks,
+  useEventTimes = FALSE, nullModel = I("brier" \%in\% tolower(metrics)),
   conf.int = 0.95, contrasts = TRUE, probs = c(0, 0.25, 0.5, 0.75, 1),
-  censMethod = "ipcw", censModel = "cox", splitMethod, B, M, seed,
+  censMethod = "outside.ipcw", censModel = "cox", splitMethod, B, M, seed,
   trainseeds, ...)
 }
 \arguments{
@@ -70,7 +70,9 @@ vs 3, you should set \code{contrasts=c(6,3),c(2,5,3)}.}
 predicted risks}
 
 \item{censMethod}{Method for dealing with right censored
-data. Either \code{"ipcw"} or \code{"pseudo"}.}
+data. Either \code{"outside.ipcw"} or \code{"inside.ipcw"}. At some point
+jackknife pseudo-values may become another option for all statistics. Right now
+they are only used for calibration curves.}
 
 \item{censModel}{Model for estimating inverse probability of
 censored weights.}
@@ -113,8 +115,12 @@ lr1 = glm(Y~X1+X2+X7+X9,data=learndat,family=binomial)
 lr2 = glm(Y~X3+X5+X6,data=learndat,family=binomial)
 Score(list("LR(X1+X2+X7+X9)"=lr1,"LR(X3+X5+X6)"=lr2),formula=Y~1,data=testdat)
 
+xb=Score(list("LR(X1+X2+X7+X9)"=lr1,"LR(X3+X5+X6)"=lr2),formula=Y~1,
+        data=testdat,plots=c("calibration","ROC"))
+plotROC(xb)
+
 # compute AUC for a list of continuous markers
-markers = as.list(testdat[,1:5])
+markers = as.list(testdat[,.(X6,X7,X8,X9,X10)])
 u=Score(markers,formula=Y~1,data=testdat,metrics=c("auc"))
 
 # cross-validation
@@ -133,11 +139,11 @@ trainSurv <- sampleData(100,outcome="survival")
 testSurv <- sampleData(40,outcome="survival")
 cox1 = coxph(Surv(time,event)~X1+X2+X7+X9,data=trainSurv, y=TRUE, x = TRUE)
 cox2 = coxph(Surv(time,event)~X3+X5+X6,data=trainSurv, y=TRUE, x = TRUE)
-Score(list("Cox(X1+X2+X7+X9)"=cox1,"Cox(X3+X5+X6)"=cox2),
+xs=Score(list("Cox(X1+X2+X7+X9)"=cox1,"Cox(X3+X5+X6)"=cox2),
       formula=Surv(time,event)~1,data=testSurv,conf.int=FALSE,times=c(5,8))
 
 # time-dependent AUC for list of markers
-survmarkers = as.list(testSurv[,1:5])
+survmarkers = as.list(testSurv[,.(X6,X7,X8,X9,X10)])
 Score(survmarkers,
       formula=Surv(time,event)~1,metrics="auc",data=testSurv,
 conf.int=TRUE,times=c(5,8))
@@ -149,7 +155,7 @@ Score(list("Cox(X1+X2+X7+X9)"=cox1,"Cox(X3+X5+X6)"=cox2),
 # crossvalidation models in traindata
 Score(list("Cox(X1+X2+X7+X9)"=cox1,"Cox(X3+X5+X6)"=cox2),
       formula=Surv(time,event)~1,data=trainSurv,conf.int=TRUE,times=c(5,8),
-splitMethod="bootcv",B=3)
+      splitMethod="bootcv",B=3)
 
 # restrict number of comparisons
 Score(list("Cox(X1+X2+X7+X9)"=cox1,"Cox(X3+X5+X6)"=cox2),
@@ -175,5 +181,34 @@ Score(list("CSC(X1+X2+X7+X9)"=csc1,"CSC(X3+X5+X6)"=csc2,
 }
 \author{
 Thomas A Gerds \email{tag@biostat.ku.dk} and Paul Blanche \email{paul.blanche@univ-ubs.fr}
+}
+\references{
+Ulla B. Mogensen, Hemant Ishwaran, Thomas A. Gerds (2012).
+Evaluating Random Forests for Survival Analysis Using Prediction Error
+Curves. Journal of Statistical Software, 50(11), 1-23. URL
+http://www.jstatsoft.org/v50/i11/.
+
+E. Graf et al.  (1999), Assessment and comparison of prognostic
+classification schemes for survival data. Statistics in Medicine, vol 18,
+pp= 2529--2545.
+
+Efron, Tibshirani (1997) Journal of the American Statistical Association 92,
+548--560 Improvement On Cross-Validation: The .632+ Bootstrap Method.
+
+Gerds, Schumacher (2006), Consistent estimation of the expected Brier score
+in general survival models with right-censored event times. Biometrical
+Journal, vol 48, 1029--1040.
+
+Thomas A. Gerds, Martin Schumacher (2007) Efron-Type Measures of Prediction
+Error for Survival Analysis Biometrics, 63(4), 1283--1287
+doi:10.1111/j.1541-0420.2007.00832.x
+
+Martin Schumacher, Harald Binder, and Thomas Gerds. Assessment of survival
+prediction models based on microarray data. Bioinformatics, 23(14):1768-74,
+2007.
+
+Mark A. van de Wiel, Johannes Berkhof, and Wessel N. van Wieringen Testing
+the prediction error difference between 2 predictors Biostatistics (2009)
+10(3): 550-560 doi:10.1093/biostatistics/kxp011
 }
 

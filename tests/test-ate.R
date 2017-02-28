@@ -100,7 +100,7 @@ ateFit <- ate(fit, data = dtS, treatment = "X1", contrasts = NULL,
 ## manually
 newdata0 <- copy(dtS)
 newdata0$X1 <- "T0"
-resIID <- predictRiskIID(fit, newdata = newdata0, time = 5:7)
+resIID <- predictCox(fit, newdata = newdata0, time = 5:7,iid=TRUE)$survival.iid
 resRisk <- predictRisk(fit, newdata = newdata0, time = 5:7)
 
 IF <- NULL
@@ -124,13 +124,13 @@ df <- sampleData(1e2,outcome="competing.risks")
 df$time <- round(df$time,1)
 df$X1 <- factor(rbinom(1e2, prob = c(0.4,0.3) , size = 2), labels = paste0("T",0:2))
 
-test_that("no boostrap",{
+test_that("no bootstrap",{
     fit=CSC(formula = Hist(time,event)~ X1+X2, data = df,cause=1)
     res <- ate(fit,data = df, treatment = "X1", contrasts = NULL,
                times = 7, cause = 1, B = 0, mc.cores=1)
 })
 
-test_that("one boostrap",{
+test_that("one bootstrap",{
     fit=CSC(formula = Hist(time,event)~ X1+X2, data = df,cause=1)
     res <- ate(fit,data = df,  treatment = "X1", contrasts = NULL,
                times = 7, cause = 1, B = 1, mc.cores=1, verbose = FALSE)

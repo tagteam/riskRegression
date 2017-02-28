@@ -321,12 +321,8 @@ predictCox <- function(object,
     if (keep.times==TRUE) out <- c(out,list(times=times))
     if (is.strata && keep.strata==TRUE) out <- c(out,list(strata=new.strata))
     if( keep.lastEventTime==TRUE) out <- c(out,list(lastEventTime=etimes.max))
-    
     return(out)
   }
-  
-  
-  
 }
 
 #' Computation of standard errors for predictions

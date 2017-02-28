@@ -10,11 +10,16 @@
 #'     in the right hand side of 'coxph' for each patient.
 #' @param times Vector of times at which to return the estimated
 #'     hazards/survival
-#' @param cause Identifies the cause of interest among the competing events.
+#' @param cause Identifies the cause of interest among the competing
+#'     events.
 #' @param t0 the starting time for the conditional survival.
-#' @param keep.times Logical. If \code{TRUE} add the evaluation times to the output.
-#' @param se Logical. If \code{TRUE} add the standard errors corresponding to the output.
-#' @param iid Logical. If \code{TRUE} add the influence function corresponding ot the output.
+#' @param keep.times Logical. If \code{TRUE} add the evaluation times
+#'     to the output.
+#' @param conf.level The confidence level.
+#' @param se Logical. If \code{TRUE} add the standard errors
+#'     corresponding to the output.
+#' @param iid Logical. If \code{TRUE} add the influence function
+#'     corresponding ot the output.
 #' @param ... not used
 #' @author Brice Ozenne broz@@sund.ku.dk, Thomas A. Gerds
 #'     tag@@biostat.ku.dk

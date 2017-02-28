@@ -4,14 +4,19 @@
 \alias{plotROC}
 \title{Plot ROC curve}
 \usage{
-plotROC(x, models, timepoint, lwd = 3, legend = TRUE, legend.title, ...)
+plotROC(x, models, times, xlab = "1-Specificity", ylab = "Sensitivity",
+  lwd = 3, legend = TRUE, legend.title, ...)
 }
 \arguments{
 \item{x}{Object obtained with \code{Score.list}}
 
 \item{models}{Choice of models to plot}
 
-\item{timepoint}{Time point specifying the prediction horizon}
+\item{times}{Time point specifying the prediction horizon}
+
+\item{xlab}{Label for x-axis}
+
+\item{ylab}{Label for y-axis}
 
 \item{lwd}{line width}
 
@@ -23,5 +28,13 @@ plotROC(x, models, timepoint, lwd = 3, legend = TRUE, legend.title, ...)
 }
 \description{
 Plot ROC curve
+}
+\examples{
+data(Melanoma)
+f1 <- CSC(Hist(time,status)~age+sex+epicel+ulcer,data=Melanoma)
+f2 <- CSC(Hist(time,status)~age+sex+logthick+epicel+ulcer,data=Melanoma)
+x <- Score(list(model1=f1,model2=f2),Hist(time,status)~1,data=Melanoma,
+            cause=1,times=5*365.25,plots="roc")
+plotROC(x)
 }
 
