@@ -140,15 +140,7 @@ predictCox <- function(object,
     # if(se == TRUE && ncol(resInfo$modeldata) == 0){
     #   stop("cannot compute the standard error when there are not covariates \n")
     # }
-    if(se == TRUE && iid == TRUE){
-        stop("cannot return the standard error and the value of the influence function at the same time \n",
-             "set se or iid to FALSE \n")
-    }
-  
-  # if(se == TRUE && ncol(resInfo$modeldata) == 0){
-  #   stop("cannot compute the standard error when there are not covariates \n")
-  # }
-  
+    
   #### Do we want to make prediction for a new dataset ? ####
   # if yes we need to define: - the linear predictor for the new dataset
   #                           - the strata corresponding to each observation in the new dataset
@@ -309,21 +301,16 @@ predictCox <- function(object,
         outSE <- seRobustCox(nTimes = nTimes, type = type,
                              Lambda0 = Lambda0, iid = iid.object, object.n = object.n, nStrata = nStrata, 
                              new.eXb = new.eXb, new.LPdata = new.LPdata, new.strata = new.strata, new.survival = out$survival,
-                             export = if(se == FALSE){"iid"} else {"se"})
-        if(se == FALSE){
+                             export = c("iid","se")[c(iid,se)])
+        if(iid == TRUE){
             if ("hazard" %in% type){out$hazard.iid <- outSE$hazard.iid}
             if ("cumhazard" %in% type){out$cumhazard.iid <- outSE$cumhazard.iid}
             if ("survival" %in% type){out$survival.iid <- outSE$survival.iid}
-        }else {
-            if ("hazard" %in% type){
-                out$hazard.se <- outSE$hazard.se
-            }
-            if ("cumhazard" %in% type){
-                out$cumhazard.se <- outSE$cumhazard.se
-            }
-            if ("survival" %in% type){
-                out$survival.se <- outSE$survival.se
-            }
+        }
+        if(se == TRUE){
+            if ("hazard" %in% type){out$hazard.se <- outSE$hazard.se}
+            if ("cumhazard" %in% type){out$cumhazard.se <- outSE$cumhazard.se}
+            if ("survival" %in% type){out$survival.se <- outSE$survival.se}
         }
     }
 
@@ -333,21 +320,18 @@ predictCox <- function(object,
         oorder.times <- order(order(times))
         if ("hazard" %in% type){
             out$hazard <- out$hazard[,oorder.times, drop = FALSE]
-            if(se){
-                out$hazard.se <- outSE$hazard.se[,oorder.times, drop = FALSE]
-            }
+            if(se){ out$hazard.se <- outSE$hazard.se[,oorder.times, drop = FALSE] }            
+            if(iid){ out$hazard.iid <- outSE$hazard.iid[,oorder.times,, drop = FALSE] }
         }
         if ("cumhazard" %in% type){
             out$cumhazard <- out$cumhazard[,oorder.times, drop = FALSE]
-            if(se){
-                out$cumhazard.se <- outSE$cumhazard.se[,oorder.times, drop = FALSE]
-            }
+            if(se){ out$cumhazard.se <- outSE$cumhazard.se[,oorder.times, drop = FALSE] }
+            if(iid){ out$cumhazard.iid <- outSE$cumhazard.iid[,oorder.times,, drop = FALSE] }
         }
         if ("survival" %in% type){
             out$survival <- out$survival[,oorder.times, drop = FALSE]
-            if(se){
-                out$survival.se <- outSE$survival.se[,oorder.times, drop = FALSE]
-            }
+            if(se){ out$survival.se <- outSE$survival.se[,oorder.times, drop = FALSE] }
+            if(iid){ out$survival.iid <- outSE$survival.iid[,oorder.times,, drop = FALSE] }
         }
     }
     if (keep.times==TRUE) out <- c(out,list(times=times))
@@ -409,12 +393,12 @@ seRobustCox <- function(nTimes, type,
   
   ## main loop
   out <- list()
-  if(export=="se"){
+  if("se" %in% export){
     if("hazard" %in% type){out$hazard.se <- matrix(NA, nrow = n.new, ncol = nTimes)}
     if("cumhazard" %in% type){out$cumhazard.se <- matrix(NA, nrow = n.new, ncol = nTimes)}
     if("survival" %in% type){out$survival.se <- matrix(NA, nrow = n.new, ncol = nTimes)}
   }
-  if(export=="iid"){
+  if("iid" %in% export){
     if("hazard" %in% type){out$hazard.iid <- array(NA, dim = c(n.new, nTimes, object.n))}
     if("cumhazard" %in% type){out$cumhazard.iid <- array(NA, dim = c(n.new, nTimes, object.n))}
     if("survival" %in% type){out$survival.iid <- array(NA, dim = c(n.new, nTimes, object.n))}
@@ -429,9 +413,10 @@ seRobustCox <- function(nTimes, type,
                                   lambda0 = Lambda0$hazard[[iObs.strata]],
                                   X_ICbeta = X_ICbeta,
                                   IClambda0 = iid$IChazard[[iObs.strata]])
-      if(export == "iid"){
+      if("iid" %in% export){
         out$hazard.iid[iObs,,] <- t(IF_tempo)
-      }else if(export == "se"){
+      }
+      if("se" %in% export){
         se_tempo <- sqrt(apply(IF_tempo^2,2,sum))
         out$hazard.se[iObs,] <- se_tempo
       }
@@ -443,10 +428,11 @@ seRobustCox <- function(nTimes, type,
                                   X_ICbeta = X_ICbeta,
                                   IClambda0 = iid$ICcumhazard[[iObs.strata]])
       
-      if(export == "iid"){
+      if("iid" %in% export){
         if("cumhazard" %in% type){out$cumhazard.iid[iObs,,] <- t(IF_tempo)}
         if("survival" %in% type){out$survival.iid[iObs,,] <- t(rowMultiply_cpp(IF_tempo, scale = new.survival[iObs,,drop=FALSE]))}
-      }else if(export == "se"){
+      }
+      if("se" %in% export){
         se_tempo <- sqrt(apply(IF_tempo^2,2,sum))
         if("cumhazard" %in% type){out$cumhazard.se[iObs,] <- se_tempo}
         if("survival" %in% type){out$survival.se[iObs,] <- se_tempo * new.survival[iObs,,drop=FALSE]}
