@@ -69,7 +69,7 @@
 ##' # binary outcome
 ##' library(lava)
 ##' set.seed(18)
-##' learndat <- sampleData(100,outcome="binary")
+##' learndat <- sampleData(48,outcome="binary")
 ##' testdat <- sampleData(40,outcome="binary")
 ##'
 ##' # score logistic regression models
@@ -103,27 +103,31 @@
 ##' cox2 = coxph(Surv(time,event)~X3+X5+X6,data=trainSurv, y=TRUE, x = TRUE)
 ##' xs=Score(list("Cox(X1+X2+X7+X9)"=cox1,"Cox(X3+X5+X6)"=cox2),
 ##'       formula=Surv(time,event)~1,data=testSurv,conf.int=FALSE,times=c(5,8))
-##'
+##' xs
+##' 
 ##' # time-dependent AUC for list of markers
 ##' survmarkers = as.list(testSurv[,.(X6,X7,X8,X9,X10)])
 ##' Score(survmarkers,
 ##'       formula=Surv(time,event)~1,metrics="auc",data=testSurv,
-##' conf.int=TRUE,times=c(5,8))
+##'       conf.int=TRUE,times=c(5,8))
 ##' 
 ##' # compare models on test data
 ##' Score(list("Cox(X1+X2+X7+X9)"=cox1,"Cox(X3+X5+X6)"=cox2),
 ##'       formula=Surv(time,event)~1,data=testSurv,conf.int=TRUE,times=c(5,8))
 ##'
 ##' # crossvalidation models in traindata
+##' \dontrun{
 ##' Score(list("Cox(X1+X2+X7+X9)"=cox1,"Cox(X3+X5+X6)"=cox2),
 ##'       formula=Surv(time,event)~1,data=trainSurv,conf.int=TRUE,times=c(5,8),
 ##'       splitMethod="bootcv",B=3)
+##' }
 ##'
 ##' # restrict number of comparisons
+##'\dontrun{
 ##' Score(list("Cox(X1+X2+X7+X9)"=cox1,"Cox(X3+X5+X6)"=cox2),
 ##'       formula=Surv(time,event)~1,data=trainSurv,contrasts=TRUE,
 ##' nullModel=FALSE,conf.int=TRUE,times=c(5,8),splitMethod="bootcv",B=3)
-##'
+##'}
 ##' # competing risks outcome
 ##' set.seed(18)
 ##' trainCR <- sampleData(40,outcome="competing.risks")
@@ -141,11 +145,11 @@
 ##'       formula=Hist(time,event)~1,data=testCR,se.fit=TRUE,times=c(5,8))
 ##' 
 ##' @author Thomas A Gerds \email{tag@@biostat.ku.dk} and Paul Blanche \email{paul.blanche@@univ-ubs.fr}
-#' @references Ulla B. Mogensen, Hemant Ishwaran, Thomas A. Gerds (2012).
-#' Evaluating Random Forests for Survival Analysis Using Prediction Error
-#' Curves. Journal of Statistical Software, 50(11), 1-23. URL
-#' http://www.jstatsoft.org/v50/i11/.
-#' 
+##' @references Ulla B. Mogensen, Hemant Ishwaran, Thomas A. Gerds (2012).
+##' Evaluating Random Forests for Survival Analysis Using Prediction Error
+##' Curves. Journal of Statistical Software, 50(11), 1-23. URL
+##' http://www.jstatsoft.org/v50/i11/.
+' 
 #' E. Graf et al.  (1999), Assessment and comparison of prognostic
 #' classification schemes for survival data. Statistics in Medicine, vol 18,
 #' pp= 2529--2545.

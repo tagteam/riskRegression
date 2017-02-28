@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Feb 23 2017 (11:07) 
 ## Version: 
-## last-updated: Feb 28 2017 (06:52) 
+## last-updated: Feb 28 2017 (20:21) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 5
+##     Update #: 6
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -25,7 +25,13 @@
 ##' @param ylim Limits for y-axis 
 ##' @param axes Logical. If \code{TRUE} draw axes.
 ##' @param ... Not yet used
-#'
+##' @examples
+##' survival
+##' ds1=sampleData(40,outcome="survival")
+##' ds2=sampleData(40,outcome="survival")
+##' f1 <- coxph(Surv(time,event)~X1+X3+X5+X7+X9,data=ds1,x=TRUE)
+##' f2 <- coxph(Surv(time,event)~X2+X4+6+X8+X10,data=ds1,x=TRUE)
+##' xscore <- Score(list(f1,f2),formula=Hist(time,event)~1,data=ds2,metrics="brier")
 #' @export 
 plotBrier <- function(x,models,lwd=3,xlim,ylim,axes=TRUE,...){
     times=model=Brier=dimcol=lower.Brier=upper.Brier=NULL
