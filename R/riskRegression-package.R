@@ -47,6 +47,7 @@
 #' @importFrom rms strat cph
 #' @importFrom ggplot2 aes aes_string element_blank element_line element_rect geom_errorbar geom_line geom_point geom_ribbon ggplot scale_colour_manual scale_fill_manual scale_y_continuous theme theme_bw "%+replace%" xlab
 #' @importFrom survival Surv strata coxph
+#' @importFrom lava transform<-
 #' @importFrom data.table as.data.table copy data.table is.data.table melt rbindlist setnames setorder setcolorder setkey ":=" ".N" ".SD"
 #' @importFrom prodlim Hist dimColor prodlim
 #' @importFrom foreach "%dopar%" foreach

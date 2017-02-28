@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: feb 17 2017 (10:06) 
 ## Version: 
-## last-updated: feb 28 2017 (10:13) 
-##           By: Brice Ozenne
-##     Update #: 100
+## last-updated: Feb 28 2017 (18:45) 
+##           By: Thomas Alexander Gerds
+##     Update #: 109
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -30,23 +30,29 @@
 #' 
 #' @examples
 #' library(survival)
+#' library(ggplot2)
 #' 
 #' d <- sampleData(1e2, outcome = "survival")
-#' m.cox <- coxph(Surv(time,event)~ X1 + X2 + X3, data = d, x = TRUE, y = TRUE)
+#' m.cox <- coxph(Surv(time,event)~ X1 + X2 + X3,
+#'                 data = d, x = TRUE, y = TRUE)
 #' dt.basehaz <- predictCox(m.cox)
 #' ggplot(dt.basehaz, aes(x = time, y = survival)) + geom_point() + geom_line()
 #'
-#' pred.cox <- predictCox(m.cox, newdata = d[1:4,], times = 1:5, type = "survival", se = TRUE, keep.newdata = TRUE)
+#' pred.cox <- predictCox(m.cox, newdata = d[1:4,],
+#'   times = 1:5, type = "survival", se = TRUE, keep.newdata = TRUE)
 #' plot(pred.cox)
 #' plot(pred.cox, groupBy = "covariates")
 #' plot(pred.cox, groupBy = "covariates", reduce.data = TRUE)
 #' 
 #' 
-#' m.cox.strata <- coxph(Surv(time,event)~ strata(X1) + strata(X2) + X3 + X6, data = d, x = TRUE, y = TRUE)
-#' pred.cox.strata <- predictCox(m.cox.strata, newdata = d[c(1:5,10,50),], time = 1:5, keep.newdata = TRUE)
+#' m.cox.strata <- coxph(Surv(time,event)~ strata(X1) + strata(X2) + X3 + X6,
+#' data = d, x = TRUE, y = TRUE)
+#' pred.cox.strata <- predictCox(m.cox.strata, newdata = d[c(1:5,10,50),],
+#' time = 1:5, keep.newdata = TRUE)
 #' plot(pred.cox.strata, type = "survival")
 #' plot(pred.cox.strata, type = "survival", groupBy = "strata")
-#' res <- plot(pred.cox.strata, type = "survival", groupBy = "covariates")
+#' res <- plot(pred.cox.strata, type = "survival",
+#' groupBy = "covariates")
 #'
 #' # customize display
 #' res$plot + geom_point(size = 3)
@@ -163,9 +169,7 @@ predict2plot <- function(outcome, outcome.se, newdata, strata, times,
     }else if(groupBy == "strata"){
         outcome[, strata := strata]
     }
-
     gg.dtL <- melt(outcome, id.vars = union("row",groupBy),
-                   measure.vars = patterns(pattern),
                    variable.name = "time", value.name = gsub("_","",pattern))
     gg.dtL[, time := gsub(pattern[1],"",time)]
     if(!is.null(times)){

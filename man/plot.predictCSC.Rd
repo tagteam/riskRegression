@@ -38,11 +38,12 @@ plot(pred.CSC)
 pred.CSC <- predict(m.CSC, newdata = d[1:3,],
                     time = 1:5, cause = 1, se = TRUE, keep.newdata = TRUE)
 plot(pred.CSC, groupBy = "covariates")
-plot(pred.CSC, groupBy = "covariates", ci = TRUE)
 
 ## strata
-m.SCSC <- CSC(Hist(time,event)~ strata(X1) + strata(X2) + X6, data = d)
-pred.SCSC <- predict(m.SCSC, time = 1:3, cause = 1, se = TRUE, keep.newdata = TRUE, keep.strata = TRUE)
+m.SCSC <- CSC(Hist(time,event)~ strata(X1) + strata(X2) + X6,
+data = d)
+pred.SCSC <- predict(m.SCSC, time = 1:3,
+cause = 1, se = TRUE, keep.newdata = TRUE, keep.strata = TRUE)
 plot(pred.SCSC)
 plot(pred.SCSC, groupBy = "strata")
 
