@@ -10,13 +10,17 @@
 #'     in the right hand side of 'coxph' for each patient.
 #' @param times Vector of times at which to return the estimated
 #'     hazards/survival
-#' @param cause Identifies the cause of interest among the competing events.
+#' @param cause Identifies the cause of interest among the competing
+#'     events.
 #' @param t0 the starting time for the conditional survival.
-#' @param keep.times Logical. If \code{TRUE} add the evaluation times to the output.
+#' @param keep.times Logical. If \code{TRUE} add the evaluation times
+#'     to the output.
 #' @param keep.newdata Logical. If \code{TRUE} add the value of the covariates used to make the prediction in the output list. 
 #' @param keep.strata Logical. If \code{TRUE} add the value of the strata used to make the prediction in the output list. 
-#' @param se Logical. If \code{TRUE} add the standard errors corresponding to the output.
-#' @param iid Logical. If \code{TRUE} add the influence function corresponding ot the output.
+#' @param se Logical. If \code{TRUE} add the standard errors
+#'     corresponding to the output.
+#' @param iid Logical. If \code{TRUE} add the influence function
+#'     corresponding ot the output.
 #' @param ... not used
 #' @author Brice Ozenne broz@@sund.ku.dk, Thomas A. Gerds
 #'     tag@@biostat.ku.dk
@@ -152,7 +156,6 @@ predict.CauseSpecificCox <- function(object, newdata, times, cause, t0 = NA,
   }else{
     nCause <- 1
     tdiff <- 0*min(diff(eTimes))/2 # TO MATCH test-CauseSpecificCoxRegresion.R but will not match pec
-    
     #### cause ####
     infoVar_Cause <- CoxVariableName(object$models[[paste("Cause",cause)]])
     

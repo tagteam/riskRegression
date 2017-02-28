@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun 23 2016 (09:19) 
 ## Version: 
-## last-updated: Jan 14 2017 (09:04) 
+## last-updated: Feb 27 2017 (08:22) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 42
+##     Update #: 46
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -34,14 +34,15 @@
 ##' f2=coxph(Surv(time,event)~X2+X5+X9,data=d,x=TRUE,y=TRUE)
 ##' xx=Score(list(f1,f2), formula=Surv(time,event)~1,
 ##' data=nd, metrics="auc", nullModel=FALSE, times=seq(3:10))
-##' plotAUC(xx)
+##' aucgraph<-plotAUC(xx)
 ##' plotAUC(xx,confint=TRUE)
 ##' plotAUC(xx,type="contrasts")
-##' plotAUC(xx,type="contrasts",confint=TRUE)
+##' a=plotAUC(xx,type="contrasts",confint=TRUE)
+##' a+theme_bw()
 ##' 
 #' @export
 plotAUC <- function(x,models,type="score",lwd=2,xlim,ylim,axes=TRUE,confint=FALSE,...){
-    times=model=AUC=lower.AUC=upper.AUC=lower=upper=delta=reference=NULL
+    times=contrast=model=AUC=lower.AUC=upper.AUC=lower=upper=delta=reference=NULL
     ## cbPalette <- c("#999999", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
     cbbPalette <- c("#000000", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
     pframe <- switch(type,"score"={x$AUC$score},"contrasts"={x$AUC$contrasts},{stop("Type has to be either 'score' for AUC or 'contrasts' for differences in AUC.")})

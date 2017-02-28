@@ -2,7 +2,6 @@
 % Please edit documentation in R/plot.riskRegression.R
 \name{plot.riskRegression}
 \alias{plot.CauseSpecificCox}
-\alias{plot.predictedRisk}
 \alias{plot.riskRegression}
 \title{Plotting predicted risk}
 \usage{
@@ -22,21 +21,6 @@
   add=FALSE,
   ...)
 \method{plot}{CauseSpecificCox}(x,
-  cause,
-  newdata,
-  xlab,
-  ylab,
-  xlim,
-  ylim,
-  lwd,
-  col,
-  lty,
-  axes=TRUE,
-  percent=TRUE,
-  legend=TRUE,
-  add=FALSE,
-  ...)
-\method{plot}{predictedRisk}(x,
   cause,
   newdata,
   xlab,
@@ -93,7 +77,6 @@ time.
 }
 \examples{
 
-library(pec)
 library(survival)
 library(prodlim)
 data(Melanoma)

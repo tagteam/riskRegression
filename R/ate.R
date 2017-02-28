@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Oct 23 2016 (08:53) 
 ## Version: 
-## last-updated: Feb  1 2017 (14:38) 
-##           By: Thomas Alexander Gerds
-##     Update #: 43
+## last-updated: feb 28 2017 (13:32) 
+##           By: Brice Ozenne
+##     Update #: 59
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -264,11 +264,31 @@ ate <- function(object,
             ## influence function for the hypothetical worlds in which every subject is treated with the same treatment
             data.i <- data
             data.i[[treatment]] <- factor(contrasts[i], levels = levels)
-            risk.i <- do.call("predictRisk",args = list(object, newdata = data.i, times = times, cause = cause, ...))
-            attr(risk.i,"iid") <- do.call("predictRiskIID",args = list(object, newdata = data.i, times = times, cause = cause, ...))
+            if (class(object)=="CauseSpecificCox"){
+                pred.i <- do.call("predict",args = list(object,
+                                                        newdata = data.i,
+                                                        times = times,
+                                                        cause=cause,
+                                                        se=FALSE,
+                                                        iid=TRUE,
+                                                        keep.times=FALSE,
+                                                        keep.lastEventTime=FALSE))
+                risk.i <- pred.i$absRisk
+                attr(risk.i,"iid") <- pred.i$absRisk.iid
+            } else{
+                pred.i <- do.call("predictCox",args = list(object,
+                                                           newdata = data.i,
+                                                           times = times,
+                                                           se=FALSE,
+                                                           iid=TRUE,
+                                                           keep.times=FALSE,
+                                                           keep.lastEventTime=FALSE,
+                                                           type="survival"))
+                risk.i <- 1-pred.i$survival
+                attr(risk.i,"iid") <- pred.i$survival.iid
+            }
             return(risk.i)
         })
-      
         
         sdIF.treatment <- unlist(lapply(ICrisk, function(iIC){
             apply(attr(iIC,"iid"), 2, function(x){          
@@ -303,16 +323,16 @@ ate <- function(object,
 
         mrisks <- data.table::data.table(Treatment = pointEstimate$meanRisk$Treatment,
                                          time = times,
-                                         meanRiskBoot = NA,
+                                         ## meanRiskBoot = NA,
                                          lower = pointEstimate$meanRisk$meanRisk + qnorm(alpha/2) * sdIF.treatment,
                                          upper = pointEstimate$meanRisk$meanRisk + qnorm(1-alpha/2) * sdIF.treatment)
         crisks <- data.table::data.table(Treatment.A = pointEstimate$riskComparison$Treatment.A,
                                          Treatment.B = pointEstimate$riskComparison$Treatment.B,
                                          time = times,
-                                         diffMeanBoot = NA,
+                                         ## diffMeanBoot = NA,
                                          diff.lower = pointEstimate$riskComparison$diff + qnorm(alpha/2) * sdIF.fct$diff,
                                          diff.upper = pointEstimate$riskComparison$diff + qnorm(1-alpha/2) * sdIF.fct$diff,
-                                         ratioMeanBoot = NA,
+                                         ## ratioMeanBoot = NA,
                                          ratio.lower = pointEstimate$riskComparison$ratio + qnorm(alpha/2) * sdIF.fct$ratio,
                                          ratio.upper = pointEstimate$riskComparison$ratio + qnorm(1-alpha/2) * sdIF.fct$ratio)
 

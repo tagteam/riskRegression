@@ -10,7 +10,7 @@
 \title{Estimation of censoring probabilities}
 \usage{
 ipcw(formula, data, method, args, times, subjectTimes, subjectTimesLag = 1,
-  what)
+  what, keep = NULL)
 }
 \arguments{
 \item{formula}{A survival formula like, \code{Surv(time,status)~1}, where
@@ -44,9 +44,11 @@ i.e. (\code{G(T_i|X_i)}).}
 \code{times}.  If equal to \code{"IPCW.subjectTimes"} then weights
 are estimated at individual \code{subjectTimes}.  If missing then
 produce both.}
+
+\item{keep}{Which elements to add to the output. Any subset of the vector \code{c("times","fit","call")}.}
 }
 \value{
-\item{times}{The times at which weights are estimated}
+A list with elements depending on argument \code{keep}. \item{times}{The times at which weights are estimated}
 \item{IPCW.times}{Estimated weights at \code{times}}
 \item{IPCW.subjectTimes}{Estimated weights at individual time values
 \code{subjectTimes}} \item{fit}{The fitted censoring model}
@@ -83,7 +85,7 @@ WKM=ipcw(Hist(time,status)~X2,
   data=dat,
   method="marginal",
   times=sort(unique(dat$time)),
-  subjectTimes=dat$time)
+  subjectTimes=dat$time,keep=c("fit"))
 plot(WKM$fit)
 WKM$fit
 
@@ -93,7 +95,7 @@ WCox=ipcw(Hist(time=time,event=status)~X2,
   data=dat,
   method="cox",
   times=sort(unique(dat$time)),
-  subjectTimes=dat$time)
+  subjectTimes=dat$time,keep=c("fit"))
 WCox$fit
 
 plot(WKM$fit)
@@ -117,7 +119,7 @@ WKM2=ipcw(Hist(time,status)~X2,
   data=dat,
   method="nonpar",
   times=sort(unique(dat$time)),
-  subjectTimes=dat$time)
+  subjectTimes=dat$time,keep=c("fit"))
 plot(WKM2$fit,add=FALSE)
 
 

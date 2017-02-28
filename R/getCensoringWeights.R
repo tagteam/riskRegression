@@ -17,9 +17,14 @@ getCensoringWeights <- function(formula,
     if (responseType=="competing.risks"){
         iFormula <- as.formula(paste("Surv(itime,istatus)","~",as.character(formula)[[3]]))
         iData <- data
-        iData$itime <- response[,"time",with=FALSE]
-        iData$istatus <- response[,"status",with=FALSE]
-        weights <- ipcw(formula=iFormula,data=iData,method=censModel,times=times,subjectTimes=iData$itime,subjectTimesLag=1)
+        iData$itime <- response[["time"]]
+        iData$istatus <- response[["status"]]
+        weights <- ipcw(formula=iFormula,
+                        data=iData,
+                        method=censModel,
+                        times=times,
+                        subjectTimes=iData$itime,
+                        subjectTimesLag=1,keep=NULL)
     }
     else{
         weights <- ipcw(formula=formula,
@@ -27,7 +32,7 @@ getCensoringWeights <- function(formula,
                         method=censModel,
                         times=times,
                         subjectTimes=data[["time"]],
-                        subjectTimesLag=1)
+                        subjectTimesLag=1,keep=NULL)
     }
     weights$dim <- if (censModel %in% c("marginal","none")) 0 else 1
     weights

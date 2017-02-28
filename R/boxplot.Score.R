@@ -1,12 +1,11 @@
-
 ### boxplot.Score.R --- 
 #----------------------------------------------------------------------
 ## author: Thomas Alexander Gerds
 ## created: Aug 15 2016 (09:45) 
 ## Version: 
-## last-updated: Jan 14 2017 (08:36) 
+## last-updated: Feb 27 2017 (09:32) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 51
+##     Update #: 53
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 

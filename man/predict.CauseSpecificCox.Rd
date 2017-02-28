@@ -17,19 +17,23 @@ in the right hand side of 'coxph' for each patient.}
 \item{times}{Vector of times at which to return the estimated
 hazards/survival}
 
-\item{cause}{Identifies the cause of interest among the competing events.}
+\item{cause}{Identifies the cause of interest among the competing
+events.}
 
 \item{t0}{the starting time for the conditional survival.}
 
-\item{keep.times}{Logical. If \code{TRUE} add the evaluation times to the output.}
+\item{keep.times}{Logical. If \code{TRUE} add the evaluation times
+to the output.}
 
 \item{keep.newdata}{Logical. If \code{TRUE} add the value of the covariates used to make the prediction in the output list.}
 
 \item{keep.strata}{Logical. If \code{TRUE} add the value of the strata used to make the prediction in the output list.}
 
-\item{se}{Logical. If \code{TRUE} add the standard errors corresponding to the output.}
+\item{se}{Logical. If \code{TRUE} add the standard errors
+corresponding to the output.}
 
-\item{iid}{Logical. If \code{TRUE} add the influence function corresponding ot the output.}
+\item{iid}{Logical. If \code{TRUE} add the influence function
+corresponding ot the output.}
 
 \item{...}{not used}
 }

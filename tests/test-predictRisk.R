@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun  6 2016 (09:35) 
 ## Version: 
-## last-updated: feb 28 2017 (10:11) 
+## last-updated: feb 28 2017 (14:00) 
 ##           By: Brice Ozenne
-##     Update #: 19
+##     Update #: 21
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -221,8 +221,8 @@ test_that("Prediction - last event censored",{
   p3 <- pec::predictSurvProb(fit.coxph, times = vec.times, newdata = Melanoma) # predictSurvProb automatically sort the results
   
   expect_equal(p1,p2, tolerance = 1e-4)
-  expect_equal(p1$survival,p3)
-  
+  expect_equal(p1$survival, unname(p3))
+
   survLast <- p1$survival[,vec.times==Melanoma$time[nData]]
   survLastM1 <- p1$survival[,vec.times==Melanoma$time[nData-1]]
   expect_equal(unname(survLast-survLastM1==0), rep(TRUE, nData)) # check that survival decrease at the last time
@@ -242,7 +242,7 @@ test_that("Prediction - last event is a death",{
   p3 <- pec::predictSurvProb(fit.coxph, times = vec.times, newdata = Melanoma) # predictSurvProb automatically sort the results
   
   expect_equal(p1,p2, tolerance = 1e-4)
-  expect_equal(p1$survival,p3)
+  expect_equal(p1$survival, unname(p3))
   
   survLast <- p1$survival[,vec.times==Melanoma2$time[nData]]
   survLastM1 <- p1$survival[,vec.times==Melanoma2$time[nData-1]]

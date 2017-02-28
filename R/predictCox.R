@@ -1,5 +1,6 @@
 
 # {{{ predictCox
+
 #' Fast prediction of survival, hazard and cumulative hazard from Cox regression model 
 #'
 #' Fast routine to get baseline hazards and subject specific hazards
@@ -101,15 +102,15 @@ predictCox <- function(object,
   infoVar <- CoxVariableName(object)
   is.strata <- infoVar$is.strata
   
-  object.n <- CoxN(object)
-  object.design <- CoxDesign(object)
-  object.status <- object.design[["status"]]
-  object.time <- object.design[["stop"]]
-  object.strata <- CoxStrata(object, stratavars = infoVar$stratavars)
-  object.levelStrata <- levels(object.strata)
-  object.eXb <- exp(CoxLP(object, data = NULL, center = if(is.null(newdata)){centered}else{FALSE})) # if we use the linear predictor then no need to center since the centering term will cancel between the linear predictor and the baseline hazard
-  object.baseEstimator <- CoxBaseEstimator(object) 
-  nVar <- length(infoVar$lpvars)
+    object.n <- CoxN(object)
+    object.design <- CoxDesign(object)
+    object.status <- object.design[["status"]]
+    object.time <- object.design[["stop"]]
+    object.strata <- CoxStrata(object, stratavars = infoVar$stratavars)
+    object.levelStrata <- levels(object.strata)
+    object.eXb <- exp(CoxLP(object, data = NULL, center = if(is.null(newdata)){centered}else{FALSE})) # if we use the linear predictor then no need to center since the centering term will cancel between the linear predictor and the baseline hazard
+    object.baseEstimator <- CoxBaseEstimator(object) 
+    nVar <- length(infoVar$lpvars)
   
     #### checks ####
     if(object.baseEstimator == "exact"){
@@ -230,7 +231,6 @@ predictCox <- function(object,
     
     ## subject specific hazard
     if (is.strata==FALSE){
-      
       if ("hazard" %in% type){out$hazard <- (new.eXb %o% Lambda0$hazard)}
       if ("cumhazard" %in% type || "survival" %in% type){
         cumhazard <- new.eXb %o% Lambda0$cumhazard
@@ -359,10 +359,8 @@ predictCox <- function(object,
     class(out) <- "predictCox"
     return(out)
   }
-  
-  
-  
 }
+
 # }}}
 
 # {{{ seRobustCox

@@ -19,11 +19,10 @@ range(d$time)
 coxph.fit <- coxph(Surv(time,event==1)~ X1+X2,data=d, method = "breslow", x = TRUE, y = TRUE)
 
 resSE <- predictCox(coxph.fit, newdata = newdata, times = times, se = TRUE, type = type)
-resIID_0 <- predictCox(coxph.fit, newdata = newdata, times = times, iid = TRUE, type = type)
-resIID <- predictRiskIID(coxph.fit, newdata = newdata, times = times)
+resIID <- predictCox(coxph.fit, newdata = newdata, times = times, iid = TRUE, type = type)
 
 test_that("Export IID for survival",
-expect_equal(apply(resIID, 1:2, function(x){sqrt(sum(x^2))}),
+expect_equal(apply(resIID$survival.iid, 1:2, function(x){sqrt(sum(x^2))}),
              resSE$survival.se)
 )
 

@@ -442,7 +442,7 @@ CoxLP.cph <- function(object, data, center){
     } 
   }
   
-  return(Xb)
+  return(unname(Xb))
 }
 
 #' @rdname CoxLP
@@ -482,7 +482,7 @@ CoxLP.coxph <- function(object, data, center){
     } 
   }
   
-  return(Xb)
+  return(unname(Xb))
 }
 
 #' @rdname CoxLP
@@ -715,7 +715,7 @@ CoxStrata.coxph <- function(object, data = NULL, sterms, stratavars, levels, str
     
   }else{  ## strata variables
     
-    if(is.null(data)){ ## training dataset
+      if(is.null(data)){ ## training dataset
       strata <- interaction(stats::model.frame(object)[,stratavars], drop = TRUE, sep = ", ", lex.order = TRUE) 
     }else { ## new dataset
       strata <- prodlim::model.design(sterms,data=data,xlev=stratalevels,specialsFactor=TRUE)$strata[[1]]
