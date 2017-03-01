@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: feb 17 2017 (10:06) 
 ## Version: 
-## last-updated: Mar  1 2017 (10:01) 
+## last-updated: Mar  1 2017 (15:22) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 112
+##     Update #: 113
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -15,6 +15,7 @@
 ## 
 ### Code:
 
+# {{{ plot.predictCox
 #' @title Plot predictions from a Cox model
 #' @description Plot predictions from a Cox model
 #' 
@@ -124,18 +125,22 @@ plot.predictCox <- function(x,
                            digit = digit,
                            name.outcome = typename,
                            conf.level = conf.level,
-                           groupBy = groupBy)
+                           groupBy = groupBy,
+                           lower = 0, upper = if(type == "survival"){1}else{Inf})
 
     if(plot){
-        print(gg.res)
+        print(gg.res$plot)
     }
     
-    return(invisible(list(plot = gg.res,
-                          data = newdata)))
+    return(invisible(list(plot = gg.res$plot,
+                          data = gg.res$data)))
 }
+# }}}
 
+# {{{ predict2plot
 predict2plot <- function(outcome, outcome.se, newdata, strata, times,
-                         digit, name.outcome, conf.level, groupBy){
+                         digit, name.outcome, conf.level, groupBy,
+                         lower, upper){
 
     n.obs <- NROW(outcome)
     n.time <- NCOL(outcome)
@@ -151,8 +156,8 @@ predict2plot <- function(outcome, outcome.se, newdata, strata, times,
         pattern <- c(paste0(name.outcome,"_"),"lower_","upper_")
 
         lower <- upper <- matrix(NA, nrow = n.obs, ncol = n.time)
-        lower[] <- pmax(0,outcome + qnorm((1-conf.level)/2) * outcome.se)
-        upper[] <- pmin(1,outcome + qnorm(1-(1-conf.level)/2) * outcome.se)
+        lower[] <- pmax(lower,outcome + qnorm((1-conf.level)/2) * outcome.se)
+        upper[] <- pmin(upper,outcome + qnorm(1-(1-conf.level)/2) * outcome.se)
         colnames(lower) <- paste0("lower_",time.names)
         colnames(upper) <- paste0("upper_",time.names)
         outcome <- data.table::as.data.table(cbind(outcome,lower,upper))
@@ -183,9 +188,10 @@ predict2plot <- function(outcome, outcome.se, newdata, strata, times,
         gg.base <- gg.base + geom_errorbar(aes(ymin = lower, ymax = upper))
     }
     
-    return(gg.base)
+    return(list(plot = gg.base,
+                data = gg.dtL))
 }
-
+# }}}
 
 #----------------------------------------------------------------------
 ### plot.predictCox.R ends here
