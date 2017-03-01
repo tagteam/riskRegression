@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun 23 2016 (09:19) 
 ## Version: 
-## last-updated: Mar  1 2017 (07:13) 
+## last-updated: Mar  1 2017 (08:59) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 76
+##     Update #: 116
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -17,7 +17,7 @@
 ##' Plot AUC curve
 ##'
 ##' @title Plot AUC curve
-#' @param x Object obtained with \code{Score.list}
+#' @param x Object obtained with \code{Score}
 #' @param models Choice of models to plot
 #' @param which Character. Either \code{"score"} to show AUC or
 #'     \code{"contrasts"} to show differences between AUC.
@@ -32,15 +32,16 @@
 #' @param pch point style
 #' @param type line type
 #' @param axes Logical. If \code{TRUE} draw axes.
-#' @param percent Logical. If \code{TRUE} scale y-axis in %.
+#' @param percent Logical. If \code{TRUE} scale y-axis in percent.
 #' @param confint Logical. If \code{TRUE} draw confidence shadows.
 #' @param legend Logical. If \code{TRUE} draw legend.
 #' @param ... Used for additional control of the subroutines: plot,
 #'     axis, lines, legend. See \code{\link{SmartControl}}.
 ##' @examples
 ##' library(survival)
-##' d=sampleData(100,outcome="survival")
-##' nd=sampleData(100,outcome="survival")
+##' set.seed(21)
+##' d=sampleData(50,outcome="survival")
+##' nd=sampleData(50,outcome="survival")
 ##' 
 ##' f1=coxph(Surv(time,event)~X1+X6+X8,data=d,x=TRUE,y=TRUE)
 ##' f2=coxph(Surv(time,event)~X2+X5+X9,data=d,x=TRUE,y=TRUE)
@@ -49,37 +50,60 @@
 ##'          data=nd, metrics="auc", nullModel=FALSE, times=seq(3:10))
 ##' plotAUC(xx)
 ##' plotAUC(xx,confint=TRUE)
-##' plotAUC(xx,type="contrasts")
-##' a=plotAUC(xx,type="contrasts",confint=TRUE)
-##' a+theme_bw()
+##' plotAUC(xx,which="contrasts")
 ##' 
 #' @export
 plotAUC <- function(x,models,which="score",xlim,ylim,xlab,ylab,col,lwd,lty=1,cex=1,pch=1,type="l",axes=1L,percent=1L,confint=0L,legend=1L,...){
     times=contrast=model=AUC=lower.AUC=upper.AUC=lower=upper=delta=reference=NULL
     ## cbPalette <- c("#999999", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
     cbbPalette <- c("#000000", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
-    pframe <- switch(which,"score"={x$AUC$score},"contrasts"={x$AUC$contrasts},{stop("argument 'which' has to be either 'score' for AUC or 'contrasts' for differences in AUC.")})
+    pframe <- switch(which,"score"={copy(x$AUC$score)},"contrasts"={copy(x$AUC$contrasts)},{stop("argument 'which' has to be either 'score' for AUC or 'contrasts' for differences in AUC.")})
+    if (!missing(models)) pframe <- pframe[model %in% models]
     if (length(pframe$times)<2) stop(paste("Need at least two time points for plotting time-dependent AUC. Object has only ",length(pframe$times),"times"))
-    mm <- unique(pframe$model)
+    if (which=="score"){
+        mm <- unique(pframe$model)
+    }else{
+        pframe[,contrast:=factor(paste(model,reference,sep=" - "))]
+        mm <- unique(pframe$contrast)
+    }
     lenmm <- length(mm)
     if(missing(xlab)) xlab <- "Time"
-    if(missing(ylab)) ylab <- "AUC"
+    if(missing(ylab)) if (which=="score") ylab <- "AUC" else ylab <- expression(paste(Delta, " AUC"))
     if(missing(col)) col <- rep(cbbPalette,length.out=lenmm)
     names(col) <- mm
     if(missing(lwd)) lwd <- 2
     lwd <- rep(lwd,length.out=lenmm)
     names(lwd) <- mm
+    pch <- rep(pch,length.out=lenmm)
+    names(pch) <- mm
+    type <- rep(type,length.out=lenmm)
+    names(type) <- mm
     if(missing(lwd)) lty <- 1
     lty <- rep(lty,length.out=lenmm)
     names(lty) <- mm
     if (missing(xlim)) xlim <- pframe[,range(times)]
     if (missing(ylim))
-        if (which=="score") ylim <- c(0.5,1)
-        else ylim <- c(min(pframe$lower),max(pframe$upper))
+        if (which=="score") {
+            ylim <- c(0.5,1)
+            axis2.DefaultArgs <- list(side=2,las=2,at=seq(0,ylim[2],ylim[2]/4),mgp=c(4,1,0))
+        }
+        else{
+            ylim <- c(floor(10*min(pframe$lower))/10,ceiling(10*max(pframe$upper))/10)
+            yat <- seq(ylim[1],ylim[2],0.05)
+            ## this is a strange behaviour of R: seq(-0.6,.1,0.05)
+            ## [1] -6.000000e-01 -5.500000e-01 -5.000000e-01 -4.500000e-01 -4.000000e-01 -3.500000e-01 -3.000000e-01 -2.500000e-01
+            ## [9] -2.000000e-01 -1.500000e-01 -1.000000e-01 -5.000000e-02  1.110223e-16  5.000000e-02  1.000000e-01
+            yat <- round(100*yat)/100
+            ## axis2.DefaultArgs <- list(side=2,las=2,at=seq(ylim[1],ylim[2],abs(ylim[2]-ylim[1])/4),mgp=c(4,1,0))
+            axis2.DefaultArgs <- list(side=2,las=2,at=yat,mgp=c(4,1,0))
+        }
     lines.DefaultArgs <- list(pch=pch,type=type,cex=cex,lwd=lwd,col=col,lty=lty)
     axis1.DefaultArgs <- list(side=1,las=1,at=seq(0,xlim[2],xlim[2]/4))
-    axis2.DefaultArgs <- list(side=2,las=2,at=seq(0,ylim[2],ylim[2]/4),mgp=c(4,1,0))
-    legend.DefaultArgs <- list(legend=mm,lwd=lwd,col=col,lty=lty,cex=cex,bty="n",y.intersp=1.3,x="topleft")
+    if (which=="score"){
+        legend.DefaultArgs <- list(legend=mm,lwd=lwd,col=col,lty=lty,cex=cex,bty="n",y.intersp=1.3,x="topleft")
+    } else{
+        legend.DefaultArgs <- list(legend=as.character(unique(pframe$contrast)),lwd=lwd,col=col,lty=lty,cex=cex,bty="n",y.intersp=1.3,x="topleft")
+    }
     plot.DefaultArgs <- list(x=0,y=0,type = "n",ylim = ylim,xlim = xlim,ylab=ylab,xlab=xlab)
     control <- prodlim::SmartControl(call= list(...),
                                      keys=c("plot","lines","legend","axis1","axis2"),
@@ -96,16 +120,28 @@ plotAUC <- function(x,models,which="score",xlim,ylim,xlab,ylab,col,lwd,lty=1,cex
     
     if (which=="score"){
         ## AUC
-        if (!missing(models)) pframe <- pframe[model %in% models]
-        yticks <- seq(0,1,0.05)
-        yticks <- yticks[yticks>=ylim[1] & yticks<=ylim[2]]
         do.call("plot",control$plot)
-        pframe[,lines(times,AUC,col=col[model],lwd=lwd[model],lty=lty[model]),by=model]
+        pframe[,{thisline <- control$line
+            thisline$col=thisline$col[[as.character(model[1])]]
+            thisline$lwd=thisline$lwd[[as.character(model[1])]]
+            thisline$lty=thisline$lty[[as.character(model[1])]]
+            thisline$pch=thisline$pch[[as.character(model[1])]]
+            thisline$type=thisline$type[[as.character(model[1])]]
+            thisline$x=times
+            thisline$y=AUC
+            do.call("lines",thisline)},by=model]
     }else{
         ## delta AUC
         do.call("plot",control$plot)
-        pframe[,contrast:=paste(model,reference,sep=" - ")]
-        pframe[,lines(times,AUC,col=col[model],lwd[model],lty[model]),by=contrast]
+        pframe[,{thisline <- control$line;
+            thisline$col=thisline$col[[as.character(contrast[1])]];
+            thisline$lwd=thisline$lwd[[as.character(contrast[1])]];
+            thisline$lty=thisline$lty[[as.character(contrast[1])]];
+            thisline$pch=thisline$pch[[as.character(contrast[1])]];
+            thisline$type=thisline$type[[as.character(contrast[1])]];
+            thisline$x=times;
+            thisline$y=delta;
+            do.call("lines",thisline)},by=contrast]
     }
     ## legend
     if (!(is.logical(legend[1]) && legend[1]==FALSE)){
@@ -116,9 +152,9 @@ plotAUC <- function(x,models,which="score",xlim,ylim,xlab,ylab,col,lwd,lty=1,cex
         dimcol <- sapply(col,function(cc){prodlim::dimColor(cc)})
         names(dimcol) <- names(col)
         if (which=="score"){
-            pframe[,polygon(x=c(times,rev(times)),y=c(lower.AUC,rev(upper.AUC)),col=dimcol[model],border=NA),by=model]
+            pframe[,polygon(x=c(times,rev(times)),y=c(lower.AUC,rev(upper.AUC)),col=dimcol[[as.character(model)]],border=NA),by=model]
         }else{
-            pframe[,polygon(x=c(times,rev(times)),y=c(lower,rev(upper)),col=dimcol[model],border=NA),by=model]
+            pframe[,polygon(x=c(times,rev(times)),y=c(lower,rev(upper)),col=dimcol[[as.character(contrast)]],border=NA),by=contrast]
         }
     }
     if (axes){

@@ -9,7 +9,7 @@ plotAUC(x, models, which = "score", xlim, ylim, xlab, ylab, col, lwd,
   confint = 0L, legend = 1L, ...)
 }
 \arguments{
-\item{x}{Object obtained with \code{Score.list}}
+\item{x}{Object obtained with \code{Score}}
 
 \item{models}{Choice of models to plot}
 
@@ -38,7 +38,7 @@ plotAUC(x, models, which = "score", xlim, ylim, xlab, ylab, col, lwd,
 
 \item{axes}{Logical. If \code{TRUE} draw axes.}
 
-\item{percent}{Logical. If \code{TRUE} scale y-axis in %.}
+\item{percent}{Logical. If \code{TRUE} scale y-axis in percent.}
 
 \item{confint}{Logical. If \code{TRUE} draw confidence shadows.}
 
@@ -52,8 +52,9 @@ Plot AUC curve
 }
 \examples{
 library(survival)
-d=sampleData(100,outcome="survival")
-nd=sampleData(100,outcome="survival")
+set.seed(21)
+d=sampleData(50,outcome="survival")
+nd=sampleData(50,outcome="survival")
 
 f1=coxph(Surv(time,event)~X1+X6+X8,data=d,x=TRUE,y=TRUE)
 f2=coxph(Surv(time,event)~X2+X5+X9,data=d,x=TRUE,y=TRUE)
@@ -62,9 +63,7 @@ xx=Score(list("Cox X1+X6+X8"=f1,"Cox X2+X5+X9"=f2), formula=Surv(time,event)~1,
          data=nd, metrics="auc", nullModel=FALSE, times=seq(3:10))
 plotAUC(xx)
 plotAUC(xx,confint=TRUE)
-plotAUC(xx,type="contrasts")
-a=plotAUC(xx,type="contrasts",confint=TRUE)
-a+theme_bw()
+plotAUC(xx,which="contrasts")
 
 }
 

@@ -4,35 +4,59 @@
 \alias{plotBrier}
 \title{Plot Brier curve}
 \usage{
-plotBrier(x, models, lwd = 3, xlim, ylim, axes = TRUE, ...)
+plotBrier(x, models, which = "score", xlim, ylim, xlab, ylab, col, lwd,
+  lty = 1, cex = 1, pch = 1, type = "l", axes = 1L, percent = 1L,
+  confint = 0L, legend = 1L, ...)
 }
 \arguments{
-\item{x}{Object obtained with \code{Score.list}}
+\item{x}{Object obtained with \code{Score}}
 
 \item{models}{Choice of models to plot}
 
-\item{lwd}{Line width}
+\item{which}{Character. Either \code{"score"} to show AUC or
+\code{"contrasts"} to show differences between AUC.}
 
 \item{xlim}{Limits for x-axis}
 
 \item{ylim}{Limits for y-axis}
 
+\item{xlab}{Label for x-axis}
+
+\item{ylab}{Label for y-axis}
+
+\item{col}{line color}
+
+\item{lwd}{line width}
+
+\item{lty}{line style}
+
+\item{cex}{point size}
+
+\item{pch}{point style}
+
+\item{type}{line type}
+
 \item{axes}{Logical. If \code{TRUE} draw axes.}
 
-\item{...}{Not yet used}
+\item{percent}{Logical. If \code{TRUE} scale y-axis in percent.}
+
+\item{confint}{Logical. If \code{TRUE} draw confidence shadows.}
+
+\item{legend}{Logical. If \code{TRUE} draw legend.}
+
+\item{...}{Used for additional control of the subroutines: plot,
+axis, lines, legend. See \code{\link{SmartControl}}.}
 }
 \description{
 Plot Brier score curves
 }
-\details{
-Plot Brier score curves
-}
 \examples{
-survival
+# survival
 ds1=sampleData(40,outcome="survival")
 ds2=sampleData(40,outcome="survival")
 f1 <- coxph(Surv(time,event)~X1+X3+X5+X7+X9,data=ds1,x=TRUE)
 f2 <- coxph(Surv(time,event)~X2+X4+6+X8+X10,data=ds1,x=TRUE)
-xscore <- Score(list(f1,f2),formula=Hist(time,event)~1,data=ds2,metrics="brier")
+xscore <- Score(list(f1,f2),formula=Hist(time,event)~1,data=ds2,times=0:12,metrics="brier")
+plotBrier(xscore)
 }
 

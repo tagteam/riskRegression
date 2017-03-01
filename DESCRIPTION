@@ -9,16 +9,16 @@ Depends:
     ggplot2 (>= 2.1.0),
     prodlim (>= 1.5.7)
 Imports:
+    stats,
+    graphics,
+    survival (>= 2.40.1),
+    lava (>= 1.4.7),
     cmprsk,
     doParallel,
     foreach,
-    graphics,
     parallel,
     Rcpp,
-    rms (>= 5.0-0),
-    stats,
-    lava (>= 1.4.7),
-    survival (>= 2.40.1)
+    rms (>= 5.0-0)
 LinkingTo: Rcpp, RcppArmadillo
 Suggests:
     boot,   

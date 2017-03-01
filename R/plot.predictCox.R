@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: feb 17 2017 (10:06) 
 ## Version: 
-## last-updated: Feb 28 2017 (18:45) 
+## last-updated: Mar  1 2017 (10:01) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 109
+##     Update #: 112
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -40,7 +40,7 @@
 #'
 #' pred.cox <- predictCox(m.cox, newdata = d[1:4,],
 #'   times = 1:5, type = "survival", se = TRUE, keep.newdata = TRUE)
-#' plot(pred.cox)
+#' plot(pred.cox,ci=TRUE)
 #' plot(pred.cox, groupBy = "covariates")
 #' plot(pred.cox, groupBy = "covariates", reduce.data = TRUE)
 #' 
@@ -52,7 +52,7 @@
 #' plot(pred.cox.strata, type = "survival")
 #' plot(pred.cox.strata, type = "survival", groupBy = "strata")
 #' res <- plot(pred.cox.strata, type = "survival",
-#' groupBy = "covariates")
+#'             groupBy = "covariates")
 #'
 #' # customize display
 #' res$plot + geom_point(size = 3)
