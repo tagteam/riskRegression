@@ -42,7 +42,7 @@
 #' 
 #' d <- SimCompRisk(1e2)
 #' d$time <- round(d$time,1)
-#' ttt <- sample(x = unique(sort(d$time)), size = 10) 
+#' ttt <- sort(sample(x = unique(d$time), size = 10))
 #'
 #' #### coxph function
 #' CSC.fit <- CSC(Hist(time,event)~ X1+X2,data=d, method = "breslow")

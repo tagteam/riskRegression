@@ -1,11 +1,11 @@
-### plotAUC.R --- 
+### qplotAUC.R --- 
 #----------------------------------------------------------------------
 ## author: Thomas Alexander Gerds
 ## created: Jun 23 2016 (09:19) 
 ## Version: 
-## last-updated: Feb 28 2017 (12:16) 
+## last-updated: Feb 28 2017 (16:22) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 48
+##     Update #: 50
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -40,8 +40,9 @@
 ##' a=plotAUC(xx,type="contrasts",confint=TRUE)
 ##' a+theme_bw()
 ##' 
+#'
 #' @export
-plotAUC <- function(x,models,type="score",lwd=2,xlim,ylim,axes=TRUE,confint=FALSE,...){
+qplotAUC <- function(x,models,type="score",lwd=2,xlim,ylim,axes=TRUE,confint=FALSE,...){
     times=contrast=model=AUC=lower.AUC=upper.AUC=lower=upper=delta=reference=NULL
     ## cbPalette <- c("#999999", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
     cbbPalette <- c("#000000", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
@@ -70,11 +71,11 @@ plotAUC <- function(x,models,type="score",lwd=2,xlim,ylim,axes=TRUE,confint=FALS
     ## x-axis
     ## pp <- pp+ geom_segment(aes(x=xlim[1],xend=xlim[2],y=ylim[1],yend=ylim[1]))
     pp <- pp+theme_bw() %+replace% theme(axis.line = element_line(colour = "black"), 
-                                             panel.grid.major = element_line(), panel.grid.major.x = element_blank(), 
-                                             panel.grid.major.y = element_blank(), panel.grid.minor = element_line(), 
-                                             panel.grid.minor.x = element_blank(), panel.grid.minor.y = element_blank(), 
-                                             strip.background = element_rect(colour = "black", 
-                                                                             size = 0.5), legend.key = element_blank())
+                                         panel.grid.major = element_line(), panel.grid.major.x = element_blank(), 
+                                         panel.grid.major.y = element_blank(), panel.grid.minor = element_line(), 
+                                         panel.grid.minor.x = element_blank(), panel.grid.minor.y = element_blank(), 
+                                         strip.background = element_rect(colour = "black", 
+                                                                         size = 0.5), legend.key = element_blank())
     pp <- pp+ scale_fill_manual(values=cbbPalette)+ scale_colour_manual(values=cbbPalette)
     ## add the lines
     pp <- pp + geom_line(size=lwd) + xlim(xlim) + theme(legend.key = element_blank())
@@ -95,4 +96,4 @@ plotAUC <- function(x,models,type="score",lwd=2,xlim,ylim,axes=TRUE,confint=FALS
 }
 
 #----------------------------------------------------------------------
-### plotAUC.R ends here
+### qplotAUC.R ends here

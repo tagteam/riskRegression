@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Feb 11 2017 (10:01) 
 ## Version: 
-## last-updated: feb 27 2017 (11:47) 
-##           By: Brice Ozenne
-##     Update #: 57
+## last-updated: Feb 28 2017 (16:28) 
+##           By: Thomas Alexander Gerds
+##     Update #: 58
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -28,14 +28,17 @@
 #' ## no strata
 #' d <- sampleData(1e2, outcome = "competing.risks")
 #' m.CSC <- CSC(Hist(time,event)~ X1 + X2 + X6, data = d)
-#' pred.CSC <- predict(m.CSC, time = 1:5, cause = 1, se = TRUE, keep.newdata = TRUE)
+#' pred.CSC <- predict(m.CSC, time = 1:5, cause = 1,
+#'                       se = TRUE, keep.newdata = TRUE)
 #'
 #' pred.CSC
 #' print(pred.CSC, ci = TRUE)
 #'
 #' ## strata
-#' m.SCSC <- CSC(Hist(time,event)~ strata(X1) + strata(X2) + X6, data = d)
-#' pred.SCSC <- predict(m.SCSC, time = 1:5, cause = 1, se = TRUE, keep.newdata = TRUE, keep.strata = TRUE)
+#' m.SCSC <- CSC(Hist(time,event)~ strata(X1) + strata(X2) + X6,
+#'               data = d)
+#' pred.SCSC <- predict(m.SCSC, time = 1:5, cause = 1,
+#'                se = TRUE, keep.newdata = TRUE, keep.strata = TRUE)
 #' pred.SCSC
 #' print(pred.SCSC, ci = TRUE)
 #' 

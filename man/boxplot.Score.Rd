@@ -43,7 +43,7 @@ Retrospective boxplots of risk quantiles conditional on outcome
 }
 \examples{
 # binary outcome
-db=sampleData(100,outcome="binary")
+db=sampleData(40,outcome="binary")
 fitconv=glm(Y~X3+X5,data=db,family=binomial)
 fitnew=glm(Y~X1+X3+X5+X6+X7,data=db,family=binomial)
 scoreobj=Score(list(new=fitnew,conv=fitconv),
@@ -53,7 +53,7 @@ boxplot(scoreobj)
 
 # survival outcome
 library(survival)
-ds=sampleData(100,outcome="survival")
+ds=sampleData(40,outcome="survival")
 fitconv=coxph(Surv(time,event)~X6,data=ds,x=TRUE,y=TRUE)
 fitnew=coxph(Surv(time,event)~X6+X9,data=ds,x=TRUE,y=TRUE)
 scoreobj=Score(list("conventional model"=fitconv,"new model"=fitnew),
@@ -75,7 +75,7 @@ fitconv = CSC(Hist(time,status)~invasion+age+sex,data=Melanoma)
 fitnew = CSC(Hist(time,status)~invasion+age+sex+logthick,data=Melanoma)
 scoreobj=Score(list("Conventional model"=fitconv,"New model"=fitnew),
                formula=Hist(time,status)~1,
-               data=Melanoma,summary="riskQuantile",times=5*365.25,nullModel=FALSE)
+               data=Melanoma,metrics=NULL,summary="riskQuantile",times=5*365.25,nullModel=FALSE)
 boxplot(scoreobj)
 
 

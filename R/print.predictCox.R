@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: feb 15 2017 (17:36) 
 ## Version: 
-## last-updated: feb 28 2017 (12:46) 
-##           By: Brice Ozenne
-##     Update #: 103
+## last-updated: Feb 28 2017 (16:27) 
+##           By: Thomas Alexander Gerds
+##     Update #: 104
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -31,28 +31,37 @@
 #' 
 #' set.seed(10)
 #' d <- sampleData(1e2, outcome = "survival")
-#' m.cox <- coxph(Surv(time,event)~ X1 + X2 + X3, data = d, x = TRUE, y = TRUE)
+#' m.cox <- coxph(Surv(time,event)~ X1 + X2 + X3,
+#'                data = d, x = TRUE, y = TRUE)
 #' predictCox(m.cox)
 #'
-#' pred <- predictCox(m.cox, newdata = d[1:5,], times = 1:5, type = "survival")
+#' pred <- predictCox(m.cox, newdata = d[1:5,],
+#'                    times = 1:5, type = "survival")
 #' pred
 #' 
-#' pred.data <- predictCox(m.cox, newdata = d[1:4,], times = 1:5, type = "survival", keep.newdata = TRUE)
+#' pred.data <- predictCox(m.cox, newdata = d[1:4,],
+#'              times = 1:5, type = "survival", keep.newdata = TRUE)
 #' pred.data
 #' print(pred.data, reduce.data = TRUE)
 #'
-#' pred.ci <- predictCox(m.cox, newdata = d[1:5,], times = 1:5, se = TRUE)
+#' pred.ci <- predictCox(m.cox, newdata = d[1:5,],
+#'                       times = 1:5,se = TRUE)
 #' print(pred.ci, ci = TRUE)
 #' 
-#' m.cox <- coxph(Surv(time,event)~ strata(X1) + strata(X2) + X3 + X6, data = d, x = TRUE, y = TRUE)
-#' pred.cox <- predictCox(m.cox, newdata = d[c(1:5,10,50),], time = 1:5)
+#' m.cox <- coxph(Surv(time,event)~ strata(X1) + strata(X2) + X3 + X6,
+#'                data = d, x = TRUE, y = TRUE)
+#' pred.cox <- predictCox(m.cox, newdata = d[c(1:5,10,50),],
+#'                        time = 1:5)
 #' pred.cox
 #' 
-#' m.cox <- cph(Surv(time,event)~ strat(X1) + strat(X2) + X3 + X6, data = d, x = TRUE, y = TRUE)
-#' pred.cox <- predictCox(m.cox, newdata = d[c(1:5,10,50),], time = 1:5)
+#' m.cox <- cph(Surv(time,event)~ strat(X1) + strat(X2) + X3 + X6,
+#'              data = d, x = TRUE, y = TRUE)
+#' pred.cox <- predictCox(m.cox, newdata = d[c(1:5,10,50),],
+#'                        time = 1:5)
 #' pred.cox
 #' 
-#' pred.dataci <- predictCox(m.cox, newdata = d[1:5,], times = 1:5, keep.newdata = TRUE, se = TRUE)
+#' pred.dataci <- predictCox(m.cox, newdata = d[1:5,],
+#'                        times = 1:5, keep.newdata = TRUE, se = TRUE)
 #' pred.dataci
 #' print(pred.dataci, ci = TRUE)
 #'
