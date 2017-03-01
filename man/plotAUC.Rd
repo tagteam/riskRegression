@@ -4,27 +4,48 @@
 \alias{plotAUC}
 \title{Plot AUC curve}
 \usage{
-plotAUC(x, models, type = "score", lwd = 2, xlim, ylim, axes = TRUE,
-  confint = FALSE, ...)
+plotAUC(x, models, which = "score", xlim, ylim, xlab, ylab, col, lwd,
+  lty = 1, cex = 1, pch = 1, type = "l", axes = 1L, percent = 1L,
+  confint = 0L, legend = 1L, ...)
 }
 \arguments{
 \item{x}{Object obtained with \code{Score.list}}
 
 \item{models}{Choice of models to plot}
 
-\item{type}{Character. Either \code{"score"} to show AUC or \code{"contrasts"} to show differences between AUC.}
-
-\item{lwd}{Line width}
+\item{which}{Character. Either \code{"score"} to show AUC or
+\code{"contrasts"} to show differences between AUC.}
 
 \item{xlim}{Limits for x-axis}
 
 \item{ylim}{Limits for y-axis}
 
+\item{xlab}{Label for x-axis}
+
+\item{ylab}{Label for y-axis}
+
+\item{col}{line color}
+
+\item{lwd}{line width}
+
+\item{lty}{line style}
+
+\item{cex}{point size}
+
+\item{pch}{point style}
+
+\item{type}{line type}
+
 \item{axes}{Logical. If \code{TRUE} draw axes.}
+
+\item{percent}{Logical. If \code{TRUE} scale y-axis in %.}
 
 \item{confint}{Logical. If \code{TRUE} draw confidence shadows.}
 
-\item{...}{Not yet used}
+\item{legend}{Logical. If \code{TRUE} draw legend.}
+
+\item{...}{Used for additional control of the subroutines: plot,
+axis, lines, legend. See \code{\link{SmartControl}}.}
 }
 \description{
 Plot AUC curve
@@ -33,12 +54,14 @@ Plot AUC curve
 library(survival)
 d=sampleData(100,outcome="survival")
 nd=sampleData(100,outcome="survival")
+
 f1=coxph(Surv(time,event)~X1+X6+X8,data=d,x=TRUE,y=TRUE)
 f2=coxph(Surv(time,event)~X2+X5+X9,data=d,x=TRUE,y=TRUE)
-xx=Score(list(f1,f2), formula=Surv(time,event)~1,
-data=nd, metrics="auc", nullModel=FALSE, times=seq(3:10))
-aucgraph<-plotAUC(xx)
-plotAUC(xx,confint=TRUE)+ggtitle("AUC")+theme_classic()
+
+xx=Score(list("Cox X1+X6+X8"=f1,"Cox X2+X5+X9"=f2), formula=Surv(time,event)~1,
+         data=nd, metrics="auc", nullModel=FALSE, times=seq(3:10))
+plotAUC(xx)
+plotAUC(xx,confint=TRUE)
 plotAUC(xx,type="contrasts")
 a=plotAUC(xx,type="contrasts",confint=TRUE)
 a+theme_bw()

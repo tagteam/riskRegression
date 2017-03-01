@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Feb 23 2017 (11:15) 
 ## Version: 
-## last-updated: Feb 27 2017 (11:44) 
+## last-updated: Mar  1 2017 (07:10) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 102
+##     Update #: 103
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -176,31 +176,19 @@ plotCalibration <- function(x,
     # }}}
     # {{{ SmartControl
     modelnames <- pframe[,unique(model)]
-    axis1.DefaultArgs <- list(side=1,las=1,at=seq(0,ylim[2],ylim[2]/4))
+    axis1.DefaultArgs <- list(side=1,las=1,at=seq(0,xlim[2],xlim[2]/4))
     axis2.DefaultArgs <- list(side=2,las=2,at=seq(0,ylim[2],ylim[2]/4),mgp=c(4,1,0))
     if (bars){
         legend.DefaultArgs <- list(legend=modelnames,col=col,cex=cex,bty="n",x="topleft")
         names.DefaultArgs <- list(cex=.7*par()$cex,y=c(-abs(diff(ylim))/15,-abs(diff(ylim))/25))
         frequencies.DefaultArgs <- list(cex=.7*par()$cex,percent=FALSE,offset=0)
     } else{
-        legend.DefaultArgs <- list(legend=modelnames,
-                                   lwd=lwd,
-                                   col=col,
-                                   lty=lty,
-                                   cex=cex,
-                                   bty="n",
-                                   y.intersp=1.3,
-                                   x="topleft")
+        legend.DefaultArgs <- list(legend=modelnames,lwd=lwd,col=col,lty=lty,cex=cex,bty="n",y.intersp=1.3,x="topleft")
     }
     if(bars){
         legend.DefaultArgs$legend <- c("Predicted risks","Observed frequencies")
     }
-    lines.DefaultArgs <- list(pch=pch,
-                              type=type,
-                              cex=cex,
-                              lwd=lwd,
-                              col=col,
-                              lty=lty)
+    lines.DefaultArgs <- list(pch=pch,type=type,cex=cex,lwd=lwd,col=col,lty=lty)
     abline.DefaultArgs <- list(lwd=1,col="red")
     if (missing(ylim)){
         if (showPseudo && !bars){
@@ -419,9 +407,9 @@ plotCalibration <- function(x,
     # }}}
     # {{{ do the actual plot
     if (plot){
-         if (out$add==FALSE && !out$bars){
-              do.call("plot",control$plot)
-         }
+        if (out$add==FALSE && !out$bars){
+            do.call("plot",control$plot)
+        }
         if (out$diag && !out$bars){
             segments(x0=0,y0=0,x1=1,y1=1,col="gray77",lwd=2,xpd=FALSE)
         }
