@@ -54,7 +54,7 @@ time = 1:5, keep.newdata = TRUE)
 plot(pred.cox.strata, type = "survival")
 plot(pred.cox.strata, type = "survival", groupBy = "strata")
 res <- plot(pred.cox.strata, type = "survival",
-groupBy = "covariates")
+            groupBy = "covariates")
 
 # customize display
 res$plot + geom_point(size = 3)

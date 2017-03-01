@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Feb 23 2017 (11:07) 
 ## Version: 
-## last-updated: Mar  1 2017 (15:21) 
+## last-updated: Mar  1 2017 (16:17) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 31
+##     Update #: 32
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -49,7 +49,7 @@
 #'
 #' 
 plotBrier <- function(x,models,which="score",xlim,ylim,xlab,ylab,col,lwd,lty=1,cex=1,pch=1,type="l",axes=1L,percent=1L,confint=0L,legend=1L,...){
-    times=contrast=model=Brier=lower.Brier=upper.Brier=lower=upper=delta=reference=NULL
+    times=contrast=model=se.Brier=se.delta=Brier=lower.Brier=upper.Brier=lower=upper=delta=reference=NULL
     ## cbPalette <- c("#999999", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
     cbbPalette <- c("#000000", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
     pframe <- switch(which,"score"={copy(x$Brier$score)},"contrasts"={copy(x$Brier$contrasts)},{stop("argument 'which' has to be either 'score' for Brier or 'contrasts' for differences in Brier.")})

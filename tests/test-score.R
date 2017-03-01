@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jan  4 2016 (14:30) 
 ## Version: 
-## last-updated: feb 28 2017 (14:10) 
-##           By: Brice Ozenne
-##     Update #: 16
+## last-updated: Mar  1 2017 (16:16) 
+##           By: Thomas Alexander Gerds
+##     Update #: 17
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -32,7 +32,7 @@ test_that("survival outcome: Brier Score",
     s1 <- Score(list(f1,f2),formula=Surv(time,event)~1,data=d,times=c(3,5,10),conf.int=FALSE,metrics="brier")
     expect_equal(p1$AppErr$coxph,s1$Brier$score[model=="coxph",Brier])
     expect_equal(p1$AppErr$coxph.1,s1$Brier$score[model=="coxph.1",Brier])
-    expect_equal(p1$AppErr$Reference,s1$Brier$score[model=="Kaplan-Meier",Brier])
+    expect_equal(p1$AppErr$Reference,s1$Brier$score[model=="Null model",Brier])
 })
 
 test_that("survival outcome,Brier Score, external prediction",

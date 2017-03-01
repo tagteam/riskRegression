@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: feb 17 2017 (10:06) 
 ## Version: 
-## last-updated: Mar  1 2017 (15:22) 
+## last-updated: Mar  1 2017 (15:59) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 113
+##     Update #: 114
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -41,7 +41,7 @@
 #'
 #' pred.cox <- predictCox(m.cox, newdata = d[1:4,],
 #'   times = 1:5, type = "survival", se = TRUE, keep.newdata = TRUE)
-#' plot(pred.cox,ci=TRUE)
+#' plot(pred.cox)
 #' plot(pred.cox, groupBy = "covariates")
 #' plot(pred.cox, groupBy = "covariates", reduce.data = TRUE)
 #' 
