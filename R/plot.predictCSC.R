@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: feb 27 2017 (10:47) 
 ## Version: 
-## last-updated: feb 28 2017 (09:46) 
+## last-updated: mar  1 2017 (10:13) 
 ##           By: Brice Ozenne
-##     Update #: 32
+##     Update #: 34
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -94,16 +94,17 @@ plot.predictCSC <- function(x,
                            digit = digit,
                            name.outcome = "absoluteRisk", # must not contain space to avoid error in ggplot2
                            conf.level = conf.level,
-                           groupBy = groupBy)
+                           groupBy = groupBy,
+                           lower = 0, upper = 1)
 
-    gg.res <- gg.res + xlab("absolute risk")
+    gg.res$plot <- gg.res$plot + xlab("absolute risk")
     
     if(plot){
-        print(gg.res)
+        print(gg.res$plot)
     }
     
-    return(invisible(list(plot = gg.res,
-                          data = newdata)))
+    return(invisible(list(plot = gg.res$plot,
+                          data = gg.res$data)))
 }
 
 #----------------------------------------------------------------------
