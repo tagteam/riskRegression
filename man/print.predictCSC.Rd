@@ -4,19 +4,12 @@
 \alias{print.predictCSC}
 \title{Print predictions from a Cause-specific Cox proportional hazard regression}
 \usage{
-\method{print}{predictCSC}(x, ci = FALSE, reduce.data = FALSE,
-  conf.level = 0.95, digit = 3, ...)
+\method{print}{predictCSC}(x, digits = 3, ...)
 }
 \arguments{
 \item{x}{object obtained with the function \code{predictCox}.}
 
-\item{ci}{Logical. If \code{TRUE} display the confidence intervals for the predictions.}
-
-\item{reduce.data}{Logical. If \code{TRUE} only the covariates that does take indentical values for all observations are displayed.}
-
-\item{conf.level}{confidence level of the interval.}
-
-\item{digit}{integer indicating the number of decimal places.}
+\item{digits}{integer indicating the number of decimal places.}
 
 \item{...}{Passed to print.}
 }

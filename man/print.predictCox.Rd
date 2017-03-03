@@ -9,15 +9,9 @@
 \arguments{
 \item{x}{object obtained with the function \code{predictCox}.}
 
+\item{digits}{integer indicating the number of decimal places.}
+
 \item{...}{Passed to print.}
-
-\item{ci}{Logical. If \code{TRUE} display the confidence intervals for the predictions.}
-
-\item{reduce.data}{Logical. If \code{TRUE} only the covariates that does take indentical values for all observations are displayed.}
-
-\item{conf.level}{confidence level of the interval.}
-
-\item{digit}{integer indicating the number of decimal places.}
 }
 \description{
 Print predictions from a Cox model
@@ -36,14 +30,9 @@ pred <- predictCox(m.cox, newdata = d[1:5,],
                    times = 1:5, type = "survival")
 pred
 
-pred.data <- predictCox(m.cox, newdata = d[1:4,],
+pred.data <- predictCox(m.cox, newdata = d[1:4,],se=1L,
              times = 1:5, type = "survival", keep.newdata = TRUE)
 pred.data
-print(pred.data, reduce.data = TRUE)
-
-pred.ci <- predictCox(m.cox, newdata = d[1:5,],
-                      times = 1:5,se = TRUE)
-print(pred.ci, ci = TRUE)
 
 m.cox <- coxph(Surv(time,event)~ strata(X1) + strata(X2) + X3 + X6,
                data = d, x = TRUE, y = TRUE)
@@ -60,7 +49,6 @@ pred.cox
 pred.dataci <- predictCox(m.cox, newdata = d[1:5,],
                        times = 1:5, keep.newdata = TRUE, se = TRUE)
 pred.dataci
-print(pred.dataci, ci = TRUE)
 
 }
 

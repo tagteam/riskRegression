@@ -4,9 +4,9 @@
 \alias{predict.CauseSpecificCox}
 \title{Predicting absolute risk from cause-specific Cox models}
 \usage{
-\method{predict}{CauseSpecificCox}(object, newdata, times, cause, t0 = NA,
-  keep.times = TRUE, keep.newdata = FALSE, keep.strata = FALSE,
-  se = FALSE, iid = FALSE, ...)
+\method{predict}{CauseSpecificCox}(object, newdata, times, cause,
+  landmark = NA, keep.times = 1L, keep.newdata = 1L, keep.strata = 1L,
+  se = FALSE, iid = FALSE, conf.level = 0.95, ...)
 }
 \arguments{
 \item{object}{The fitted cause specific Cox model}
@@ -20,7 +20,7 @@ hazards/survival}
 \item{cause}{Identifies the cause of interest among the competing
 events.}
 
-\item{t0}{the starting time for the conditional survival.}
+\item{landmark}{the starting time for the computation of the cumulative risk}
 
 \item{keep.times}{Logical. If \code{TRUE} add the evaluation times
 to the output.}
@@ -34,6 +34,8 @@ corresponding to the output.}
 
 \item{iid}{Logical. If \code{TRUE} add the influence function
 corresponding ot the output.}
+
+\item{conf.level}{Level of confidence.}
 
 \item{...}{not used}
 }
@@ -58,28 +60,31 @@ Note: for Cox regression models with time varying
 }
 \examples{
 
-d <- SimCompRisk(1e2)
+d <- sampleData(50,outcome="comp")
 d$time <- round(d$time,1)
 ttt <- sort(sample(x = unique(d$time), size = 10))
 
-#### coxph function
+# coxph function
 CSC.fit <- CSC(Hist(time,event)~ X1+X2,data=d, method = "breslow")
 
 predCSC <- predict(CSC.fit, newdata = d, cause = 2, times = ttt)
-predCSC.se <- predict(CSC.fit, newdata = d[1:5,], cause = 2, times = ttt, se = TRUE)
+predCSC.se <- predict(CSC.fit, newdata = d[1:5,], cause = 2, times = ttt, se = TRUE,keep.newdata=TRUE)
 predCSC.iid <- predict(CSC.fit, newdata = d[1:5,], cause = 2, times = ttt, iid = TRUE)
 
 # predCSC.se$absRisk.se
 # sqrt(apply(predCSC.iid$absRisk.iid[,1,]^2,1,function(x){sum(x)}))
-
-#### cph function
+## strata
+CSC.fit.s <- CSC(list(Hist(time,event)~ strata(X1)+X2+X9,Hist(time,event)~ X2+strata(X4)+X8+X7),data=d, method = "breslow")
+predict(CSC.fit.s,cause=1,times=ttt,se=1L)
+# cph function
 CSC.cph <- CSC(Hist(time,event)~ X1+X2,data=d, method = "breslow", fitter = "cph")
 
-predcph <- predict(CSC.cph, newdata = d, cause = 2, times = ttt)
+predict(CSC.cph, newdata = d, cause = 2, times = ttt)
 
-#### conditional survival
+# landmark analysis
 T0 <- 1
-predCSC_afterT0 <- predict(CSC.fit, newdata = d, cause = 2, times = ttt, t0 = T0)
+predCSC_afterT0 <- predict(CSC.fit, newdata = d, cause = 2, times = ttt[ttt>T0], landmark = T0)
+predCSC_afterT0
 
 }
 \author{

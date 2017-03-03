@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: feb 17 2017 (10:06) 
 ## Version: 
-## last-updated: Mar  1 2017 (15:59) 
+## last-updated: Mar  3 2017 (10:59) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 114
+##     Update #: 115
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -28,7 +28,6 @@
 #' @param conf.level confidence level of the interval.
 #' @param digit integer indicating the number of decimal places
 #' @param ... not used. Only for compatibility with the plot method.
-#' 
 #' @examples
 #' library(survival)
 #' library(ggplot2)

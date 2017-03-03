@@ -60,11 +60,12 @@
 #' # cph function
 #' CSC.cph <- CSC(Hist(time,event)~ X1+X2,data=d, method = "breslow", fitter = "cph")
 #' 
-#' predcph <- predict(CSC.cph, newdata = d, cause = 2, times = ttt)
-#'
+#' predict(CSC.cph, newdata = d, cause = 2, times = ttt)
+#' 
 #' # landmark analysis
 #' T0 <- 1
-#' predCSC_afterT0 <- predict(CSC.fit, newdata = d, cause = 2, times = ttt, landmark = T0)
+#' predCSC_afterT0 <- predict(CSC.fit, newdata = d, cause = 2, times = ttt[ttt>T0], landmark = T0)
+#' predCSC_afterT0
 #'
 #' @method predict CauseSpecificCox
 #' @export
