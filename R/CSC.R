@@ -235,11 +235,11 @@ CSC <- function(formula,
                                       as.character(delete.response(terms.formula(formulaX)))[[2]],
                                       sep="~"))
         if (fitter=="coxph"){
-          fit <- survival::coxph(formulaXX, data = workData,x=TRUE,y=TRUE,...)
+            fit <- survival::coxph(formulaXX, data = workData,x=TRUE,y=TRUE,...)
         } else if(fitter=="cph") {
-          fit <- rms::cph(formulaXX, data = workData,surv=TRUE,x=TRUE,y=TRUE,...)
+            fit <- rms::cph(formulaXX, data = workData,surv=TRUE,x=TRUE,y=TRUE,...)
         } else if(fitter=="phreg") {
-          fit <- mets::phreg(formulaXX, data = workData, ...)
+            fit <- mets::phreg(formulaXX, data = workData, ...)
         }
         ## fit$formula <- terms(fit$formula)
         ## fit$call$formula <- terms(formulaXX)
@@ -257,12 +257,12 @@ CSC <- function(formula,
     # }}}
     # {{{ compute the value of the influence function for each observation
     if(iid){
-      IF <- lapply(CoxModels,function(x){
-        iidCox(x)
-      })
-      names(IF) <- names(CoxModels)
+        IF <- lapply(CoxModels,function(x){
+            iidCox(x)
+        })
+        names(IF) <- names(CoxModels)
     }else{
-      IF <- NULL
+        IF <- NULL
     }
     # }}}
     out <- list(call=call,
