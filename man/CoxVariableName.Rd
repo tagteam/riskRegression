@@ -22,6 +22,7 @@ d$id <- 1:NROW(d)
 
 ##
 library(survival)
+d$X1=factor(d$X1)
 mCox <- coxph(Surv(time, event) ~ X1+X2, data = d, x = TRUE, y = TRUE)
 CoxVariableName(mCox)
 mCoxS <- coxph(Surv(time, event) ~ strata(X1)+X2, data = d, x = TRUE, y = TRUE)

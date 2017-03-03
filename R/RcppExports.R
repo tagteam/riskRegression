@@ -5,10 +5,6 @@ baseHaz_cpp <- function(alltimes, status, eXb, strata, predtimes, emaxtimes, nPa
     .Call('riskRegression_baseHaz_cpp', PACKAGE = 'riskRegression', alltimes, status, eXb, strata, predtimes, emaxtimes, nPatients, nStrata, cause, Efron)
 }
 
-baseHazEfron_survival_cpp <- function(ntimes, ndead, risk, riskDead) {
-    .Call('riskRegression_baseHazEfron_survival_cpp', PACKAGE = 'riskRegression', ntimes, ndead, risk, riskDead)
-}
-
 #' Apply cumsum in each column 
 #'
 #' @description Fast computation of apply(x,2,cumsum)

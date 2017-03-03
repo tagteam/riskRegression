@@ -37,7 +37,6 @@
 #' @keywords survival
 #' @examples
 #' 
-##' library(riskRegression)
 ##' library(prodlim)
 ##' library(pec)
 ##' library(survival)
@@ -102,6 +101,7 @@
 ##' ## from the same fit
 ##' library(pec)
 ##' fit2 <- CSC(Hist(time,status)~invasion+epicel+age, data=Melanoma)
+##' predict(fit2,cause=1,newdata=Melanoma[c(17,99,108),],times=c(100,1000,10000))
 ##' predictRisk(fit2,cause=1,newdata=Melanoma[c(17,99,108),],times=c(100,1000,10000))
 ##' predictRisk(fit2,cause=2,newdata=Melanoma[c(17,99,108),],times=c(100,1000,10000))
 ##' predict(fit2,cause=1,newdata=Melanoma[c(17,99,108),],times=c(100,1000,10000))

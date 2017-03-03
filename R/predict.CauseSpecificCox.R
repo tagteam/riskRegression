@@ -295,7 +295,7 @@ predict.CauseSpecificCox <- function(object,
     }
     if(keep.times){out$times <- times}
     if(keep.newdata==TRUE){
-        allVars <- unique(unlist(lapply(object$models, function(m){CoxVariableName(m)$lpvars})))
+        allVars <- unique(unlist(lapply(object$models, function(m){CoxCovars(m)})))
         out$newdata <- newdata[, allVars, with = FALSE]
     }
     if(keep.strata==TRUE){

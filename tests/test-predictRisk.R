@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun  6 2016 (09:35) 
 ## Version: 
-## last-updated: feb 28 2017 (14:00) 
-##           By: Brice Ozenne
-##     Update #: 21
+## last-updated: Mar  3 2017 (17:38) 
+##           By: Thomas Alexander Gerds
+##     Update #: 22
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -378,8 +378,8 @@ test_that("Prediction with Cox model - sorted vs. unsorted times",{
   class(predictionS) <- NULL
   # predictSurvProb(fit.coxph, times = times2[newOrder], newdata = Melanoma)
   # predictSurvProb(fit.coxph, times = times2, newdata = Melanoma)
-  expect_equal(predictionS,
-               lapply(predictionUNS, function(x){x[,order(newOrder)]}))
+  expect_equal(predictionS[predictionUNS$type],
+               lapply(predictionUNS[predictionUNS$type], function(x){x[,order(newOrder)]}))
   
   fit.cph <- cph(Surv(time,status == 1) ~ thick, data = Melanoma, y = TRUE, x = TRUE)
   predictionUNS <- predictCox(fit.cph, times = times2[newOrder], newdata = Melanoma[1:5,], keep.times = FALSE)

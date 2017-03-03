@@ -249,20 +249,21 @@ predictCox <- function(object,
         if (is.strata==FALSE){
             if ("hazard" %in% type){
                 out$hazard <- (new.eXb %o% Lambda0$hazard)
-                if (needOrder) out$hazard <- out$hazard[oorder.times,,drop=0L]
+                if (needOrder) out$hazard <- out$hazard[,oorder.times,drop=0L]
             }
             if ("cumhazard" %in% type || "survival" %in% type){
                 cumhazard <- new.eXb %o% Lambda0$cumhazard
                 if ("cumhazard" %in% type){
                     if (needOrder)
-                        out$cumhazard <- cumhazard[oorder.times,,drop=0L]
+                        out$cumhazard <- cumhazard[,oorder.times,drop=0L]
                     else
                         out$cumhazard <- cumhazard
                 }
                 if ("survival" %in% type){
                     out$survival <- exp(-cumhazard)
+                    ## browser()
                     if (needOrder)
-                        out$survival <- out$survival[oorder.times,,drop=0L]
+                        out$survival <- out$survival[,oorder.times,drop=0L]
                 }
             }
             
@@ -299,20 +300,20 @@ predictCox <- function(object,
                 if ("hazard" %in% type){
                     out$hazard[newid.S,] <- new.eXb[newid.S] %o% Lambda0$hazard[id.S]
                     if (needOrder)
-                        out$hazard <- out$hazard[oorder.times,,drop=0L]
+                        out$hazard <- out$hazard[,oorder.times,drop=0L]
                 }
                 if ("cumhazard" %in% type || "survival" %in% type){
                     cumhazard.S <-  new.eXb[newid.S] %o% Lambda0$cumhazard[id.S]
                     if ("cumhazard" %in% type){
                         if (needOrder)
-                            out$cumhazard[newid.S,] <- cumhazard.S[oorder.times,,drop=0L]
+                            out$cumhazard[newid.S,] <- cumhazard.S[,oorder.times,drop=0L]
                         else
                             out$cumhazard[newid.S,] <- cumhazard.S
                     }
                     if ("survival" %in% type){
                         out$survival[newid.S,] <- exp(-cumhazard.S)
                         if (needOrder)
-                            out$survival[newid.S,] <- out$survival[newid.S,][oorder.times,,drop=0L]
+                            out$survival[newid.S,] <- out$survival[newid.S,][,oorder.times,drop=0L]
                     }
                 }
             }
@@ -372,7 +373,7 @@ predictCox <- function(object,
                 zval <- qnorm(1- (1-conf.level)/2, 0,1)
                 if ("hazard" %in% type){
                     if (needOrder)
-                        out$hazard.se <- outSE$hazard.se[oorder.times,,drop=0L]
+                        out$hazard.se <- outSE$hazard.se[,oorder.times,drop=0L]
                     else
                         out$hazard.se <- outSE$hazard.se
                     out$hazard.lower <- apply(out$hazard - zval*out$hazard.se,2,pmax,0)
@@ -380,7 +381,7 @@ predictCox <- function(object,
                 }
                 if ("cumhazard" %in% type){
                     if (needOrder)
-                        out$cumhazard.se <- outSE$cumhazard.se[oorder.times,,drop=0L]
+                        out$cumhazard.se <- outSE$cumhazard.se[,oorder.times,drop=0L]
                     else
                         out$cumhazard.se <- outSE$cumhazard.se
                     out$cumhazard.lower <- apply(out$cumhazard - zval*out$cumhazard.se,2,pmax,0)
@@ -388,7 +389,7 @@ predictCox <- function(object,
                 }
                 if ("survival" %in% type){
                     if (needOrder)
-                        out$survival.se <- outSE$survival.se[oorder.times,,drop=0L]
+                        out$survival.se <- outSE$survival.se[,oorder.times,drop=0L]
                     else
                         out$survival.se <- outSE$survival.se
                     out$survival.lower <- apply(out$survival - zval*out$survival.se,2,pmax,0)
@@ -400,7 +401,7 @@ predictCox <- function(object,
         if (is.strata && keep.strata==TRUE) out <- c(out,list(strata=new.strata))
         out <- c(out,list(lastEventTime=etimes.max,se=se,type=type))
         if( keep.newdata==TRUE){
-            out$newdata <- newdata[, infoVar$lpvars, with = FALSE]
+            out$newdata <- newdata[, CoxCovars(x), with = FALSE]
         }
         class(out) <- "predictCox"
         return(out)

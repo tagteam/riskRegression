@@ -18,6 +18,7 @@
 #' 
 #' ##
 #' library(survival)
+#' d$X1=factor(d$X1)
 #' mCox <- coxph(Surv(time, event) ~ X1+X2, data = d, x = TRUE, y = TRUE)
 #' CoxVariableName(mCox)
 #' mCoxS <- coxph(Surv(time, event) ~ strata(X1)+X2, data = d, x = TRUE, y = TRUE)
@@ -50,27 +51,33 @@
 
 #' @rdname CoxVariableName
 CoxVariableName <- function(object){
+
+    f <- CoxFormula(object)
+    special.object <- CoxSpecialStrata(object)
+    ## response
+    ls.SurvVar <- SurvResponseVar(f)
+    ## strata
+    xterms <- delete.response(terms(f,
+                                    special = special.object,
+                                    data = CoxDesign(object)))
+    ls.StrataInfo <- extractStrata(xterms,
+                                   special = CoxSpecialStrata(object))
   
-  f <- CoxFormula(object)
-  special.object <- CoxSpecialStrata(object)
-  
-  ## response
-  ls.SurvVar <- SurvResponseVar(f)
-  
-  ## strata
-  xterms <- delete.response(terms(f, special = special.object, data = CoxDesign(object)))
-  ls.StrataInfo <- extractStrata(xterms, special = CoxSpecialStrata(object))
-  
-  ## export
-  return(c(list(entry = ls.SurvVar$entry),
-           list(time = ls.SurvVar$time),
-           list(status = ls.SurvVar$status),
-           ls.StrataInfo,
-           list(lpvars = names(coef(object)))
-  ))
+    ## export
+    return(c(list(entry = ls.SurvVar$entry),
+             list(time = ls.SurvVar$time),
+             list(status = ls.SurvVar$status),
+             ls.StrataInfo,
+             list(lpvars = names(coef(object)))
+             ))
 } 
 # }}}
 
+CoxCovars <- function(object){
+    ttobj <- terms(object)
+    ## colnames(attr(ttobj,"factors"))
+    all.vars(attr(delete.response(ttobj),"variables"))
+}
 
 #### methods #####
 

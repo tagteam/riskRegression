@@ -26,20 +26,6 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// baseHazEfron_survival_cpp
-NumericVector baseHazEfron_survival_cpp(int ntimes, IntegerVector ndead, NumericVector risk, NumericVector riskDead);
-RcppExport SEXP riskRegression_baseHazEfron_survival_cpp(SEXP ntimesSEXP, SEXP ndeadSEXP, SEXP riskSEXP, SEXP riskDeadSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< int >::type ntimes(ntimesSEXP);
-    Rcpp::traits::input_parameter< IntegerVector >::type ndead(ndeadSEXP);
-    Rcpp::traits::input_parameter< NumericVector >::type risk(riskSEXP);
-    Rcpp::traits::input_parameter< NumericVector >::type riskDead(riskDeadSEXP);
-    rcpp_result_gen = Rcpp::wrap(baseHazEfron_survival_cpp(ntimes, ndead, risk, riskDead));
-    return rcpp_result_gen;
-END_RCPP
-}
 // colCumSum
 NumericMatrix colCumSum(NumericMatrix x);
 RcppExport SEXP riskRegression_colCumSum(SEXP xSEXP) {
