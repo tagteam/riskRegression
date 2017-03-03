@@ -198,10 +198,20 @@ predictCox <- function(object,
     #### baseline hazard ####
     nStrata <- length(object.levelStrata)
     if(is.strata){etimes.max <- tapply(object.time, object.strata, max) }else{ etimes.max <- max(object.time) } # last event time
-    Lambda0 <- baseHaz_cpp(alltimes = object.time,
-                           status = object.status,
-                           eXb = object.eXb,
-                           strata = as.numeric(object.strata) - 1,
+    
+    # sort the data
+    dt.prepare <- data.table(alltimes = object.time,
+                             status = object.status,
+                             eXb = object.eXb,
+                             strata = as.numeric(object.strata) - 1)
+    dt.prepare[, statusM1 := 1-status] # sort by statusM1 such that deaths appear first and then censored events
+    setkeyv(dt.prepare, c("strata", "alltimes", "statusM1"))
+    
+    # compute the baseline hazard
+    Lambda0 <- baseHaz_cpp(alltimes = dt.prepare$alltimes,
+                           status = dt.prepare$status,
+                           eXb = dt.prepare$eXb,
+                           strata = dt.prepare$strata,
                            nPatients = object.n,
                            nStrata = nStrata,
                            emaxtimes = etimes.max,

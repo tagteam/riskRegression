@@ -1,6 +1,5 @@
 // [[Rcpp::depends(RcppArmadillo)]]
 #include <RcppArmadillo.h>
-#include "sortS.h"
 
 using namespace Rcpp;
 using namespace arma;
@@ -14,42 +13,41 @@ struct structExport {
 };
 
 structExport baseHazStrata_cpp(const vector<double>& alltimes,
-			       const vector<int>& status,
-			       const vector<double>& eXb, 
+                               const vector<int>& status,
+                               const vector<double>& eXb, 
                                int nPatients,
-			       double maxtime,
-			       int cause,
-			       bool Efron);
+                               double maxtime,
+                               int cause,
+                               bool Efron);
 
 structExport subset_structExport(const structExport& resAll,
-				 const vector<double>& newtimes,
+                                 const vector<double>& newtimes,
                                  double emaxtimes,
-				 int nNew);
+                                 int nNew);
 
 //// Data used to fit the Cox model
-// alltimes: event times
-// status:
-// eXb: 
-// strata:
+// alltimes: event times. 
+// status: status 0/1
+// eXb: linear predictor 
+// strata: must begin at 0
 // data
 // emaxtimes: last event time in each strata
 // nPatients
 // nStrata
 //// For prediction
-// times_pred times at which we want to compute the hazard/survival
+// times_pred times at which we want to compute the hazard/survival. Must be sorted 
+//// WARNING alltimes status eXb and strata must be sorted by strata, alltimes, and status
 // [[Rcpp::export]]
 List baseHaz_cpp(const NumericVector& alltimes,
-		 const IntegerVector& status,
-		 const NumericVector& eXb,
-		 const IntegerVector& strata,
+                 const IntegerVector& status,
+                 const NumericVector& eXb,
+                 const IntegerVector& strata,
                  const std::vector<double>& predtimes,
-		 const NumericVector& emaxtimes,
+                 const NumericVector& emaxtimes,
                  int nPatients,
-		 int nStrata,
-		 int cause,
-		 bool Efron){
-  // WARNING strata0 must begin at 0
-  // WARNING predtimes must be sorted 
+                 int nStrata,
+                 int cause,
+                 bool Efron){
   
   vector<int> nObsStrata(nStrata,0);
   vector< vector<double> > alltimes_S(nStrata);
@@ -117,10 +115,6 @@ List baseHaz_cpp(const NumericVector& alltimes,
   for(int iter_s = 0 ; iter_s < nStrata ; iter_s++){
     R_CheckUserInterrupt();
     
-    // reorder the data
-    sortS(alltimes_S[iter_s], status_S[iter_s], eXb_S[iter_s], index_S[iter_s], nObsStrata[iter_s]); // update alltimes, status and eXb
-    
-    
     if(nPredtimes>0){ // set maxtime to the first event after the maximum prediction time
       int i = 0;
       while(i<(nObsStrata[iter_s]-1) && alltimes_S[iter_s][i]<max_predtimes) i++;
@@ -137,9 +131,9 @@ List baseHaz_cpp(const NumericVector& alltimes,
     // subset results according to predtime
     if(nPredtimes>0){
       resH = subset_structExport(resH,
-				 predtimes,
+                                 predtimes,
                                  emaxtimes[iter_s],
-				 nPredtimes);
+                                          nPredtimes);
     }
     
     // store results
@@ -159,17 +153,16 @@ List baseHaz_cpp(const NumericVector& alltimes,
                           Named("strata")  = strataRes);
   
   return(res);  
-  
 }
 
 
 structExport baseHazStrata_cpp(const vector<double>& alltimes,
-			       const vector<int>& status,
-			       const vector<double>& eXb, 
+                               const vector<int>& status,
+                               const vector<double>& eXb, 
                                int nPatients,
-			       double maxtime,
-			       int cause,
-			       bool Efron){
+                               double maxtime,
+                               int cause,
+                               bool Efron){
   
   //// 1- count the number of events
   size_t nEvents = 1, nEventsLast = 1;
@@ -238,7 +231,7 @@ structExport baseHazStrata_cpp(const vector<double>& alltimes,
   //// OPT- Efron correction [from the survival package, function agsurv5]
   if(Efron){
     
-    double Wm1_tempo, Wm2_tempo = NA_REAL, sumRi, sumRi_di, sumRi_Efron, di; // it is important that di is a double and not an in for the division in the for loop
+    double Wm1_tempo, sumRi, sumRi_di, sumRi_Efron, di; // it is important that di is a double and not an in for the division in the for loop
     //sumRi is the sum over the patient at risk of exp(Xbeta)
     //sumRi_di is the sum of the number at risk who experience the event at the specific time, of exp(Xbeta)
     //sumRi_Efron is the corrected sum of the number at risk of exp(Xbeta)
@@ -320,41 +313,4 @@ structExport subset_structExport(const structExport& resAll, const vector<double
   
   // export
   return(resSubset);
-}
-
-//// NOTE Adaptation of the Cagsurv5 from the survival package with no weight
-// ntimes number of observations (unique death times)
-// ndead number of deaths at that time
-// risk number at risk at the time
-// riskDead number at risk at the time for the deaths
-
-// [[Rcpp::export]]
-NumericVector baseHazEfron_survival_cpp(int ntimes, IntegerVector ndead, 
-                                        NumericVector risk, NumericVector riskDead) {
-  double temp;
-  int t, j;
-  double di;
-  NumericVector W(ntimes, 0.0);
-  
-  for (t=0; t < ntimes; t++) {
-    di = ndead[t];
-    
-    if (di==1){
-      
-      W[t] = 1/risk[t];
-      
-    } else if (di>1){
-      
-      for (j=0; j < di; j++) {
-        
-        temp = 1/(risk[t] - riskDead[t]*j/di);
-        W[t] += temp/di;
-        
-      }
-      
-    }
-    
-  }
-  
-  return(W);
 }
