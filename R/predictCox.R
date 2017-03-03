@@ -113,6 +113,8 @@ predictCox <- function(object,
                        se = FALSE,
                        iid = FALSE,
                        conf.level=0.95){
+    status=statusM1=NULL
+    
     # {{{ treatment of times and stopping rules
 
     #### Extract elements from object ####
@@ -205,7 +207,7 @@ predictCox <- function(object,
                              eXb = object.eXb,
                              strata = as.numeric(object.strata) - 1)
     dt.prepare[, statusM1 := 1-status] # sort by statusM1 such that deaths appear first and then censored events
-    setkeyv(dt.prepare, c("strata", "alltimes", "statusM1"))
+    data.table::setkeyv(dt.prepare, c("strata", "alltimes", "statusM1"))
     # compute the baseline hazard
     Lambda0 <- baseHaz_cpp(alltimes = dt.prepare$alltimes,
                            status = dt.prepare$status,

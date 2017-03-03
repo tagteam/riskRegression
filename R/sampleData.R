@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jan  4 2016 (09:43) 
 ## Version: 
-## last-updated: Mar  2 2017 (14:56) 
+## last-updated: Mar  3 2017 (21:28) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 25
+##     Update #: 26
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -31,7 +31,6 @@
 ##' sampleData(10,outcome="binary")
 ##' sampleData(10,outcome="survival")
 ##' sampleData(10,outcome="competing.risks")
-##' sampleData(10,outcome=c("binary","survival"))
 ##' @export 
 ##' @author Thomas A. Gerds <tag@@biostat.ku.dk>
 sampleData <- function(n,outcome="competing.risks",formula= ~ f(X1,2) + f(X2,-0.033) + f(X3,0.4) + f(X6,.1) + f(X7,-.1) + f(X8,.5) + f(X9,-1)){

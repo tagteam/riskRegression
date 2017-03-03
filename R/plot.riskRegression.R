@@ -68,7 +68,7 @@ plot.riskRegression <- function(x,
                                 add=FALSE,
                                 ...){
     # {{{ getting predicted risk
-    if (class(x)=="CauseSpecificCox")
+    if ("CauseSpecificCox"%in%class(x))
         plot.times <- x$eventTimes
     else
         plot.times <- x$time
@@ -79,7 +79,7 @@ plot.riskRegression <- function(x,
             ff <- eval(x$call$formula)
             xdat <- unique(eval(x$call$data)[all.vars(update(ff,NULL~.))])
             if (NROW(xdat)<5){
-                if (class(x)=="CauseSpecificCox"){
+                if ("CauseSpecificCox"%in%class(x)){
                     p1 <- predictRisk(x,newdata=xdat,times=plot.times,cause=cause)
                 }
                 else{
@@ -87,7 +87,7 @@ plot.riskRegression <- function(x,
                 rownames(p1) <- paste("id",1:NROW(xdat))
             }
             else{
-                if (class(x)=="CauseSpecificCox"){
+                if ("CauseSpecificCox"%in%class(x)){
                     P1 <- predictRisk(x,
                                            newdata=eval(x$call$data),
                                            times=plot.times,

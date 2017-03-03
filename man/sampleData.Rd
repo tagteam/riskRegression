@@ -31,7 +31,6 @@ For the actual lava::regression parameters see the function definition.
 sampleData(10,outcome="binary")
 sampleData(10,outcome="survival")
 sampleData(10,outcome="competing.risks")
-sampleData(10,outcome=c("binary","survival"))
 }
 \author{
 Thomas A. Gerds <tag@biostat.ku.dk>
