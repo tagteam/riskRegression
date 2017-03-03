@@ -74,7 +74,7 @@ CoxVariableName <- function(object){
 # }}}
 
 CoxCovars <- function(object){
-    ttobj <- terms(object)
+    ttobj <- stats::terms(object)
     ## colnames(attr(ttobj,"factors"))
     all.vars(attr(delete.response(ttobj),"variables"))
 }
