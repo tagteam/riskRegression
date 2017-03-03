@@ -215,7 +215,7 @@ predict.CauseSpecificCox <- function(object,
         M.eXb_cumH <- cbind(newdata.eXb_All)
         
     }
-    
+
     CIF <- predictCIF_cpp(hazard = ls.hazard, 
                           cumhazard = ls.cumhazard, 
                           eXb_h = M.eXb_h, 
@@ -230,7 +230,6 @@ predict.CauseSpecificCox <- function(object,
                           nData = new.n,
                           cause = which(causes == cause) - 1, 
                           nCause = nCause)
-
     
     #### standard error ####
     if(se || iid){
@@ -389,8 +388,12 @@ seCSC <- function(hazard, cumhazard, object.time, object.maxtime, iid,
       }
 
         CIF.se_tempo <- rowCumSum(rowMultiply_cpp(iIChazard1 - rowMultiply_cpp(iICcumhazard, scale = iHazard1),
-                                                  scale = exp(-iCumHazard)))
+                                                  scale = exp(-iCumHazard)))        
         CIF.se_tempo <- cbind(0,CIF.se_tempo)[,prodlim::sindex(object.time, eval.times = times)+1,drop=FALSE]
+        if(any(times > object.maxtime[iObs])){ # add NA after the last event in the strata
+             CIF.se_tempo[,times > object.maxtime[iObs]] <- NA
+        }
+        
         if(return.se){
             out[iObs,] <- sqrt(apply(CIF.se_tempo^2,2,sum))
         }else{
