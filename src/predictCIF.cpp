@@ -22,27 +22,37 @@ arma::mat predictCIF_cpp(const std::vector<arma::mat>& hazard,
                          int nCause){
   
   arma::mat pred_CIF(nData, nNewTimes);
-  pred_CIF.fill(0);
+  pred_CIF.fill(NA_REAL);
   
   double hazard_it;
   double Allcumhazard_it;
+  double CIF_it;
   double survival_t0=1;
   int iterP; // index of the prediction time
   rowvec strataI(nCause);
-  
+   
   for(int iterI=0 ; iterI<nData; iterI++){ // index of the patient
     R_CheckUserInterrupt();
     
+    CIF_it = 0;
     iterP = 0;
     strataI = strata.row(iterI);
-    
+
     for(int iterT=0 ; iterT<nEventTimes; iterT++){ // index of the time in the integral (event time number)
       // update position 
       while(iterP < nNewTimes && newtimes[iterP]<etimes[iterT]){
+        if(newtimes[iterP] <= etimeMax[iterI]){
+          pred_CIF(iterI,iterP) = CIF_it;
+        }
         iterP++;
-        pred_CIF(iterI,iterP) = pred_CIF(iterI,iterP-1);
       }
-      if(iterP >= nNewTimes){break;}
+      
+      // if CIF has been calculated for all patients no need to continue to loop
+      // if the next prediction time is after the last event no need to continue (all NA)
+      if(iterP >= nNewTimes || newtimes[iterP] > etimeMax[iterI]){
+        break;
+       } 
+      
       // get hazard for the cause of interest
       hazard_it = hazard[cause](iterT,strataI[cause])*eXb_h(iterI,cause);
       
@@ -54,7 +64,7 @@ arma::mat predictCIF_cpp(const std::vector<arma::mat>& hazard,
       
       // update the integral
       if(R_IsNA(t0)){
-        pred_CIF(iterI,iterP) += exp(-Allcumhazard_it) * hazard_it;  
+        CIF_it += exp(-Allcumhazard_it) * hazard_it;  
       }else{// [only for conditional CIF]
         
         if(etimes[iterT]<t0 && iterT<(nEventTimes+1) && etimes[iterT+1]>=t0){
@@ -63,25 +73,22 @@ arma::mat predictCIF_cpp(const std::vector<arma::mat>& hazard,
         
         if(etimes[iterT] >= t0){ // not needed  newtimes[iterP]>=t0  because newtimes >= etimes see update position above 
           // Rcout << hazard_it << " ("<< iterP << ","<< etimes[iterT] << ","<< newtimes[iterP] << ")";
-          pred_CIF(iterI,iterP) += exp(-Allcumhazard_it) * hazard_it / survival_t0;
+          CIF_it += exp(-Allcumhazard_it) * hazard_it / survival_t0;
         }
         
       }
     }
-    // Rcout << endl;
     
-    if(iterP < nNewTimes){ // deal with prediction times after the last event
-      
-      if(newtimes[iterP]>etimeMax[iterI]){ // was the computation complete for this event
-        pred_CIF(iterI,iterP) = NA_REAL;  
-      }
-      if(iterP < nNewTimes-1){
-        for(int iterPP = iterP+1; iterPP<nNewTimes ; iterPP++){
-          if(newtimes[iterPP]>etimeMax[iterI]){
-            pred_CIF(iterI,iterPP) = NA_REAL;  
-          }else{
-            pred_CIF(iterI,iterPP) = pred_CIF(iterI,iterPP-1);  
-          }
+    
+    if(iterP < nNewTimes){ // deal with prediction times before or equal to the last event 
+     //> censored event are not in etimes thus prediction time after the last death and before the last censored event should be CIF_it and not NA
+     //> prediction time exactly equal to the last event will not be assigned any value in the previous loop (because newtimes[iterP]<etimes[iterT]). It will be updated here.
+     
+      for(int iterPP = iterP; iterPP<nNewTimes ; iterPP++){
+        if(newtimes[iterPP] <= etimeMax[iterI]){
+          pred_CIF(iterI,iterPP) = CIF_it;  
+        }else{
+          break;
         }
       }
       
