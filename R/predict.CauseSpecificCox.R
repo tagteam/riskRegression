@@ -390,7 +390,6 @@ seCSC <- function(hazard, cumhazard, object.time, object.maxtime, iid,
                                                   scale = exp(-iCumHazard)))        
         CIF.se_tempo <- cbind(0,CIF.se_tempo)[,prodlim::sindex(object.time, eval.times = times)+1,drop=FALSE]
         if(any(times > object.maxtime[iObs])){ # add NA after the last event in the strata
-            indexNA <- which(times > object.maxtime[iObs])
              CIF.se_tempo[,times > object.maxtime[iObs]] <- NA
         }
         
