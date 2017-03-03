@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun  6 2016 (09:02) 
 ## Version: 
-## last-updated: feb 15 2017 (16:57) 
-##           By: Brice Ozenne
-##     Update #: 39
+## last-updated: Mar  2 2017 (09:27) 
+##           By: Thomas Alexander Gerds
+##     Update #: 42
 #----------------------------------------------------------------------
 ## 
 ### Commentary:
@@ -108,7 +108,7 @@
 ##' ## use the learning data to fit a Cox model
 ##' library(survival)
 ##' fitCox <- coxph(Surv(time,event)~X1+X2,data=learndat,x=TRUE,y=TRUE)
-##' ## suppose we want to predict the survival probabilities for all patients
+##' ## suppose we want to predict the survival probabilities for all subjects
 ##' ## in the validation data at the following time points:
 ##' ## 0, 12, 24, 36, 48, 60
 ##' psurv <- predictRisk(fitCox,newdata=valdat,times=seq(0,60,12))
@@ -310,7 +310,6 @@ predictRisk.coxph <- function(object,newdata,times,...){
                       se = FALSE,
                       iid = FALSE,
                       keep.times=FALSE,
-                      keep.lastEventTime=FALSE,
                       type="survival")$survival
 
     if (NROW(p) != NROW(newdata) || NCOL(p) != length(times)){
@@ -380,7 +379,6 @@ predictRisk.cph <- function(object,newdata,times,...){
                     se = FALSE,
                     iid = FALSE,
                     keep.times=FALSE,
-                    keep.lastEventTime=FALSE,
                     type="survival")$survival
     if (NROW(p) != NROW(newdata) || NCOL(p) != length(times))
         stop(paste("\nPrediction matrix has wrong dimensions:\nRequested newdata x times: ",NROW(newdata)," x ",length(times),"\nProvided prediction matrix: ",NROW(p)," x ",NCOL(p),"\n\n",sep=""))

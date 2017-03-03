@@ -10,8 +10,18 @@
 \arguments{
 \item{x}{object obtained with the function \code{predictCox}.}
 
-\item{type}{One or several strings that match (either in lower or upper case or mixtures) one
-or several of the strings \code{"hazard"},\code{"cumhazard"}, \code{"survival"}}
+\item{type}{the type of predicted value. Choices are \itemize{
+\item \code{"hazard"} the baseline hazard function when
+argument \code{newdata} is not used and the hazard function
+when argument \code{newdata} is used.  \item \code{"cumhazard"}
+the cumulative baseline hazard function when argument
+\code{newdata} is not used and the cumulative hazard function
+when argument \code{newdata} is used.  \item \code{"survival"}
+the survival baseline hazard function when argument
+\code{newdata} is not used and the cumulative hazard function
+when argument \code{newdata} is used.  } Several choices can be
+combined in a vector of strings that match (no matter the case)
+strings \code{"hazard"},\code{"cumhazard"}, \code{"survival"}.}
 
 \item{ci}{Logical. If \code{TRUE} display the confidence intervals for the predictions.}
 

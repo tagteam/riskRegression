@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Feb 23 2017 (11:15) 
 ## Version: 
-## last-updated: Mar  1 2017 (07:10) 
+## last-updated: Mar  2 2017 (09:10) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 103
+##     Update #: 104
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -291,7 +291,7 @@ plotCalibration <- function(x,
                        ## Round probabilities to 2 digits
                        ## to avoid memory explosion ...
                        ## a difference in the 3 digit should
-                       ## not play a role for the patient.
+                       ## not play a role for the single subject.
                        if (round==TRUE){
                            if (!is.null(bandwidth) && bandwidth>=1){
                                ## message("No need to round predicted probabilities to calculate calibration in the large")

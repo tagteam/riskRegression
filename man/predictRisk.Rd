@@ -110,7 +110,7 @@ valdat <- sampleData(100,outcome="survival")
 ## use the learning data to fit a Cox model
 library(survival)
 fitCox <- coxph(Surv(time,event)~X1+X2,data=learndat,x=TRUE,y=TRUE)
-## suppose we want to predict the survival probabilities for all patients
+## suppose we want to predict the survival probabilities for all subjects
 ## in the validation data at the following time points:
 ## 0, 12, 24, 36, 48, 60
 psurv <- predictRisk(fitCox,newdata=valdat,times=seq(0,60,12))

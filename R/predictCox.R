@@ -1,63 +1,81 @@
-
 # {{{ predictCox
+# {{{ header
 
-#' Fast prediction of survival, hazard and cumulative hazard from Cox regression model 
+#' Fast computation of survival probabilities, hazards and cumulative hazards from Cox regression models 
 #'
 #' Fast routine to get baseline hazards and subject specific hazards
-#' as well as survival probabilities from a coxph or cph object
+#' as well as survival probabilities from a \code{survival::coxph} or \code{rms::cph} object
 #' @param object The fitted Cox regression model object either
 #'     obtained with \code{coxph} (survival package) or \code{cph}
 #'     (rms package).
-#' @param newdata  A data frame or table containing the values of the
-#'     predictor variables defining subject specific predictions. Should have
-#'     the same structure as the data set used to fit the \code{object}.
-#' @param times Time points at which to evaluate the predictions. 
-#' @param centered If TRUE remove the centering factor used by \code{coxph}
-#'     in the linear predictor. 
-#' @param type One or several strings that match (either in lower or upper case or mixtures) one
-#' or several of the strings \code{"hazard"},\code{"cumhazard"}, \code{"survival"}
-#' @param keep.strata Logical. If \code{TRUE} add the (newdata) strata to the output. Only if there any. 
-#' @param keep.times Logical. If \code{TRUE} add the evaluation times to the output. 
-#' @param keep.lastEventTime Logical. If \code{TRUE} add the time at which the last event occured in each strata to the output list. 
-#' @param keep.newdata Logical. If \code{TRUE} add the value of the covariates used to make the prediction in the output list. 
-#' @param format how to export the baseline hazard. Can be \code{"data.frame"}, \code{"data.table"} or \code{"list"}.
-#' @param se Logical. If \code{TRUE} add the standard error corresponding to the output. 
-#' @param iid Logical. If \code{TRUE} add the influence function corresponding ot the output.
+#' @param newdata A \code{data.frame} or \code{data.table} containing
+#'     the values of the predictor variables defining subject specific
+#'     predictions. Should have the same structure as the data set
+#'     used to fit the \code{object}.
+#' @param times Time points at which to evaluate the predictions.
+#' @param centered Logical. If \code{TRUE} return prediction at the
+#'     mean values of the covariates \code{fit$mean}, if \code{FALSE}
+#'     return a prediction for all covariates equal to zero.  in the
+#'     linear predictor. Will be ignored if argument \code{newdata} is
+#'     used.
+#' @param type the type of predicted value. Choices are \itemize{
+#'     \item \code{"hazard"} the baseline hazard function when
+#'     argument \code{newdata} is not used and the hazard function
+#'     when argument \code{newdata} is used.  \item \code{"cumhazard"}
+#'     the cumulative baseline hazard function when argument
+#'     \code{newdata} is not used and the cumulative hazard function
+#'     when argument \code{newdata} is used.  \item \code{"survival"}
+#'     the survival baseline hazard function when argument
+#'     \code{newdata} is not used and the cumulative hazard function
+#'     when argument \code{newdata} is used.  } Several choices can be
+#'     combined in a vector of strings that match (no matter the case)
+#'     strings \code{"hazard"},\code{"cumhazard"}, \code{"survival"}.
+#' @param keep.strata Logical. If \code{TRUE} add the (newdata) strata
+#'     to the output. Only if there any.
+#' @param keep.times Logical. If \code{TRUE} add the evaluation times
+#'     to the output.
+#' @param keep.newdata Logical. If \code{TRUE} add the value of the
+#'     covariates used to make the prediction in the output list.
+#' @param se Logical. If \code{TRUE} add the standard error
+#'     corresponding to the output.
+#' @param iid Logical. If \code{TRUE} add the influence function
+#'     corresponding to the output.
+#' @param conf.level Level of confidence.
 #' @details Not working with time varying predictor variables or
-#'     delayed entry.
-#' The centered argument enables to reproduce results obtained with the \code{basehaz} function from the survival package.
+#'     delayed entry.  The centered argument enables us to reproduce
+#'     the results obtained with the \code{basehaz} function from the
+#'     survival package.
 #'
-#' To avoid the computation of the influence function within the predictCox function, one can create a slot iid in the object
-#' and put in this slot the value of the influence function for the baseline hazard and the beta.
-#' This slot must have the format as the output of the function \code{iidCox}.
 #' @author Brice Ozenne broz@@sund.ku.dk, Thomas A. Gerds tag@@biostat.ku.dk
-#' @return When extracting the baseline hazard (missing newdata and times argument),
-#' a data frame containing the jump times, the baseline hazard, the cumulative baseline hazard, the strata (optional), and the baseline survival.
-#'
-#' Otherwise, when performing prediction, a list containing:
+#' @return 
+#' A list some or all of the following elements containing:
 #' \itemize{
-#' \item{hazard}: (matrix) the hazard predicted for each patient (in rows) and each time (in columns).
-#' \item{hazard.se}: (matrix) the standard errors of the predicted hazard.
-#' \item{cumhazard}: (matrix) the cumulative hazard predicted for each patient (in rows) and each time (in columns).
-#' \item{cumhazard.se}: (matrix) the standard errors of the predicted cumulative hazard.
-#' \item{survival}: (matrix) the survival predicted for each patient (in rows) and each time (in columns).
-#' \item{survival.se}: (matrix) the standard errors of the predicted survival.
-#' \item{times}: (vector) the evaluation times.
-#' \item{strata}: (vector) the strata indicator.
+#' \item{times}: the time points at which the other elements are evaluated.
+#' \item{hazard}: When argument \code{newdata} is not used the baseline hazard function, otherwise the predicted hazard function. 
+#' \item{hazard.se}: The standard errors of the predicted hazard function.
+#' \item{cumhazard}: When argument \code{newdata} is not used the cumulative baseline hazard function, otherwise the predicted cumulative hazard function. 
+#' \item{cumhazard.se}: The standard errors of the predicted cumulative hazard function.
+#' \item{survival}: When argument \code{newdata} is not used the survival probabilities corresponding to the baseline hazard, otherwise the predicted survival probabilities.
+#' \item{survival.se}: The standard errors of the predicted survival.
+#' \item{strata}: The strata variable.
 #' }
 #' @examples 
 #' library(survival)
 #' 
 #' set.seed(10)
-#' d <- SimSurv(1e2)
-#' nd <- SimSurv(10)
+#' d <- sampleData(40,outcome="survival")
+#' nd <- sampleData(4,outcome="survival")
 #' d$time <- round(d$time,1)
-#' fit <- coxph(Surv(time,status)~X1 * X2,
+#' fit <- coxph(Surv(time,event)~X1 + strata(X2) + X6,
 #'              data=d, ties="breslow", x = TRUE, y = TRUE)
 #' # table(duplicated(d$time))
-#' 
+#'
 #' predictCox(fit)
-#' predictCox(fit, newdata=nd, times = 5)
+#' predictCox(fit,centered=FALSE,type="hazard")
+#' predictCox(fit,centered=TRUE,type="hazard")
+#' predictCox(fit, newdata=nd, times=c(3,8),se=TRUE)
+#' predictCox(fit, newdata=nd, times = 5,iid=TRUE)
+#' 
 #' cbind(survival::basehaz(fit),predictCox(fit,type="cumhazard"))
 #' 
 #' # one strata variable
@@ -82,6 +100,8 @@
 #' 
 #' 
 #' @export
+
+# }}}
 predictCox <- function(object,
                        newdata=NULL,
                        times,
@@ -89,45 +109,57 @@ predictCox <- function(object,
                        type=c("hazard","cumhazard","survival"),
                        keep.strata = TRUE,
                        keep.times = TRUE,
-                       keep.lastEventTime = FALSE,
                        keep.newdata = FALSE,
-                       se = FALSE, iid = FALSE,
-                       format = "data.frame"){ 
-  
-  #### Extract elements from object ####
-  # we need:          - the total number of observations, the status and eventtime for each observation
-  #                   - the strata corresponding to each observation in the training set
-  #                   - the name of each strata
-  #                   - the value of the linear predictor for each observation in the training set
-  infoVar <- CoxVariableName(object)
-  is.strata <- infoVar$is.strata
-  
+                       se = FALSE,
+                       iid = FALSE,
+                       conf.level=0.95){
+    # {{{ treatment of times and stopping rules
+
+    #### Extract elements from object ####
+    # we need:          - the total number of observations, the status and eventtime for each observation
+    #                   - the strata corresponding to each observation in the training set
+    #                   - the name of each strata
+    #                   - the value of the linear predictor for each observation in the training set
+    if (se==1L || iid==1L){
+        if (missing(newdata)) stop("Argument 'newdata' is missing. Cannot compute standard errors in this case.")
+    }
+    infoVar <- CoxVariableName(object)
+    is.strata <- infoVar$is.strata
+    if (missing(times)) {
+        nTimes <- 0
+        times <- numeric(0)
+    }else{
+        nTimes <- length(times)
+    }
+    needOrder <- (nTimes>0 && is.unsorted(times))
+    if (needOrder) {
+        times.sorted <- sort(times)
+        oorder.times <- order(order(times))
+    }else{
+        if (nTimes==0)
+            times.sorted <- numeric(0)
+        else
+            times.sorted <- times
+    }
     object.n <- CoxN(object)
     object.design <- CoxDesign(object)
     object.status <- object.design[["status"]]
     object.time <- object.design[["stop"]]
     object.strata <- CoxStrata(object, stratavars = infoVar$stratavars)
     object.levelStrata <- levels(object.strata)
-    object.eXb <- exp(CoxLP(object, data = NULL, center = if(is.null(newdata)){centered}else{FALSE})) # if we use the linear predictor then no need to center since the centering term will cancel between the linear predictor and the baseline hazard
+    # if we predict the hazard for newdata then there is no need to center the covariates
+    object.eXb <- exp(CoxLP(object, data = NULL, center = if(is.null(newdata)){centered}else{FALSE})) 
     object.baseEstimator <- CoxBaseEstimator(object) 
     nVar <- length(infoVar$lpvars)
-  
+    
     #### checks ####
     if(object.baseEstimator == "exact"){
-        stop("Prediction with exact correction for ties is not implemented \n")
+        stop("Prediction with exact handling of ties is not implemented.\n")
     }
-    if(!missing(times) && any(is.na(times))){
-        stop("NA values in argument \'times\' \n")
+    if(nTimes>0 && any(is.na(times))){
+        stop("Missing (NA) values in argument \'times\' are not allowed.\n")
     }
     type <- tolower(type)
-    if(!is.null(newdata) || "exb" %in% type || "newstrata" %in% type){ # if the baseline hazard is exported
-        if(format %in% c("data.frame","data.table","list") == FALSE){
-            stop("format can only be \'data.frame\', \'data.table\' , or \'list\' \n")
-        }
-        if(format %in% c("data.frame","data.table") && keep.lastEventTime){
-            stop("format must be \'list\' when \'keep.lastEventTime\' equals TRUE \n")
-        }
-    }
     if(!is.null(object$weights)){
         stop("predictCox does not know how to handle Cox models fitted with weights \n")
     }
@@ -141,211 +173,233 @@ predictCox <- function(object,
     #   stop("cannot compute the standard error when there are not covariates \n")
     # }
     
-  #### Do we want to make prediction for a new dataset ? ####
-  # if yes we need to define: - the linear predictor for the new dataset
-  #                           - the strata corresponding to each observation in the new dataset
-  # (optional for se)         - subset the dataset to the variable involved in the linear predictor and center these variables
-  #                           - the influence function             
-  
-  if(!is.null(newdata)){
-    new.n <- NROW(newdata)
-    newdata <- as.data.table(newdata)
-    new.eXb <- exp(CoxLP(object, data = newdata, center = FALSE))
-    
-    new.strata <- CoxStrata(object, data = newdata, 
-                            sterms = infoVar$sterms, 
-                            stratavars = infoVar$stratavars, 
-                            levels = object.levelStrata, 
-                            stratalevels = infoVar$stratalevels)
-    
-    new.levelStrata <- levels(new.strata)
-  }
-  
-  #### baseline hazard ####
-  nStrata <- length(object.levelStrata)
-  if(is.strata){etimes.max <- tapply(object.time, object.strata, max) }else{ etimes.max <- max(object.time) } # last event time
-  
-  Lambda0 <- baseHaz_cpp(alltimes = object.time,
-                         status = object.status,
-                         eXb = object.eXb,
-                         strata = as.numeric(object.strata) - 1,
-                         se = FALSE, # to be ignored
-                         data = matrix(0, ncol = 1, nrow = object.n), # to be ignored
-                         nVar = 1, # to be ignored
-                         nPatients = object.n,
-                         nStrata = nStrata,
-                         emaxtimes = etimes.max,
-                         predtimes = if(missing(times)){numeric(0)}else{sort(times)},
-                         cause = 1,
-                         Efron = (object.baseEstimator == "efron"))
-  
-  Lambda0$Xbar <- NULL
-  Lambda0$XbarCumSumRes <- NULL
-  Lambda0$se.hazard <- NULL
-  Lambda0$se.cumhazard <- NULL
-  
-  if (is.strata == TRUE){ ## rename the strata value with the correct levels
-    Lambda0$strata <- factor(Lambda0$strata, levels = 0:(nStrata-1), labels = object.levelStrata)
-  }
-  #### compute hazard and survival #### 
-  if (is.null(newdata)){  ## on the training dataset
-    
-    if ("hazard" %in% type == FALSE){ Lambda0$hazard <- NULL } 
-    
-    if ("survival" %in% type){  # must be before cumhazard
-      Lambda0$survival = exp(-Lambda0$cumhazard)
-    } 
-    
-    if ("cumhazard" %in% type == FALSE){ Lambda0$cumhazard <- NULL } 
-    
-    
-    if (keep.times==FALSE){
-      Lambda0$time <- NULL
-    } 
-    
-    if(is.strata == FALSE || keep.strata==FALSE){
-      Lambda0$strata <- NULL
-    }
-    
-    if( keep.lastEventTime==TRUE){
-      Lambda0$lastEventTime <- etimes.max
-    } 
-      out <- do.call(paste0("as.",format), list(Lambda0))
-      return(out)
-    
-  } else { ## on a new dataset
-    out <- list()
-    
-    if(missing(times) || length(times)==0){
-      stop("Time points at which to evaluate the predictions are missing \n")
-    }
-    nTimes <- length(times)
-    
-    ## subject specific hazard
-    if (is.strata==FALSE){
-      if ("hazard" %in% type){out$hazard <- (new.eXb %o% Lambda0$hazard)}
-      if ("cumhazard" %in% type || "survival" %in% type){
-        cumhazard <- new.eXb %o% Lambda0$cumhazard
-        if ("cumhazard" %in% type){out$cumhazard <- cumhazard}
-        if ("survival" %in% type){out$survival <- exp(-cumhazard)}
-      }
-      
-    }else{ 
-      
-      ## initialization
-      if ("hazard" %in% type){
-        out$hazard <- matrix(0, nrow = new.n, ncol = nTimes)
-        if(se){
-            out$hazard.se <- matrix(0, nrow = new.n, ncol = nTimes)
-        }
-      }
-      if ("cumhazard" %in% type){
-        out$cumhazard <- matrix(NA, nrow = new.n, ncol = nTimes)
-        if(se){
-            out$cumhazard.se <- matrix(0, nrow = new.n, ncol = nTimes)
-        }
-      }
-      if ("survival" %in% type){
-        out$survival <- matrix(NA, nrow = new.n, ncol = nTimes)
-        if(se){
-            out$survival.se <- matrix(0, nrow = new.n, ncol = nTimes)
-        }
-      }
-      
-      ## loop across strata
-      for(S in new.levelStrata){
-        id.S <- Lambda0$strata==S
-        newid.S <- new.strata==S
+    #### Do we want to make prediction for a new dataset ? ####
+    # if yes we need to define: - the linear predictor for the new dataset
+    #                           - the strata corresponding to each observation in the new dataset
+    # (optional for se)         - subset the dataset to the variable involved in the linear predictor and center these variables
+    #                           - the influence function             
+
+    # }}}
+    # {{{ computation of the baseline hazard
+    if(!is.null(newdata)){
+        new.n <- NROW(newdata)
+        newdata <- as.data.table(newdata)
+        new.eXb <- exp(CoxLP(object, data = newdata, center = FALSE))
         
-        if ("hazard" %in% type){out$hazard[newid.S,] <- new.eXb[newid.S] %o% Lambda0$hazard[id.S]}
-        if ("cumhazard" %in% type || "survival" %in% type){
-          cumhazard.S <-  new.eXb[newid.S] %o% Lambda0$cumhazard[id.S]
-          if ("cumhazard" %in% type){out$cumhazard[newid.S,] <- cumhazard.S}
-          if ("survival" %in% type){out$survival[newid.S,] <- exp(-cumhazard.S)}
-        }
-      }
+        new.strata <- CoxStrata(object, data = newdata, 
+                                sterms = infoVar$sterms, 
+                                stratavars = infoVar$stratavars, 
+                                levels = object.levelStrata, 
+                                stratalevels = infoVar$stratalevels)
+        
+        new.levelStrata <- levels(new.strata)
     }
     
-    #### standard error ####
-    if(se || iid){ 
-
-        if(nVar > 0){
-
-            # remove response variable
-            f.object <- stats::reformulate(attr(stats::terms(CoxFormula(object)),"term.label"),
-                                           response = NULL)
-            # use prodlim to get the design matrix
-            terms.newdata <- stats::terms(f.object, special = CoxSpecialStrata(object), data = newdata)
-            new.LPdata <- prodlim::model.design(stats::terms(terms.newdata),
-                                                   data = newdata,
-                                                   specialsFactor = TRUE,
-                                                   dropIntercept = TRUE)$design
-
-            if(NROW(new.LPdata)!=NROW(newdata)){
-                stop("NROW of the design matrix and newdata differ \n",
-                     "maybe because newdata contains NA values \n")
-            }
+    #### baseline hazard ####
+    nStrata <- length(object.levelStrata)
+    if(is.strata){etimes.max <- tapply(object.time, object.strata, max) }else{ etimes.max <- max(object.time) } # last event time
+    Lambda0 <- baseHaz_cpp(alltimes = object.time,
+                           status = object.status,
+                           eXb = object.eXb,
+                           strata = as.numeric(object.strata) - 1,
+                           nPatients = object.n,
+                           nStrata = nStrata,
+                           emaxtimes = etimes.max,
+                           predtimes = times.sorted,
+                           cause = 1,
+                           Efron = (object.baseEstimator == "efron"))
+    # }}}
+    #### compute hazard and survival #### 
+    if (is.null(newdata)){  
+        # {{{ results from the training dataset
+        if (!("hazard" %in% type)){ Lambda0$hazard <- NULL } 
+        if ("survival" %in% type){  # must be before cumhazard
+            Lambda0$survival = exp(-Lambda0$cumhazard)
+        }
+        if (!("cumhazard" %in% type)){ Lambda0$cumhazard <- NULL } 
+        if (keep.times==FALSE){
+            Lambda0$time <- NULL
+        } 
+        if (is.strata == TRUE && keep.strata==1L){ ## rename the strata value with the correct levels
+            Lambda0$strata <- factor(Lambda0$strata, levels = 0:(nStrata-1), labels = object.levelStrata)
         }else{
-            new.LPdata <- matrix(0, ncol = 1, nrow = new.n)
+            Lambda0$strata <- NULL
         }
-      
-        ## influence function 
-        times.sorted <- sort(times)
-        iid.object <- object$iid
-      
-        if(is.null(iid.object)){
-            iid.object <- iidCox(object, tauHazard = times.sorted)
-        }else{        
-            iid.object <- selectJump(iid.object, times = times.sorted, type = type)        
+        Lambda0$lastEventTime <- etimes.max
+        return(Lambda0)
+        # }}}
+    } else {
+        # {{{ predictions in new dataset
+        out <- list()
+        if(missing(times) || nTimes==0){
+            stop("Time points at which to evaluate the predictions are missing \n")
         }
-        outSE <- seRobustCox(nTimes = nTimes, type = type,
-                             Lambda0 = Lambda0, iid = iid.object, object.n = object.n, nStrata = nStrata, 
-                             new.eXb = new.eXb, new.LPdata = new.LPdata, new.strata = new.strata, new.survival = out$survival,
-                             export = c("iid","se")[c(iid,se)])
-        if(iid == TRUE){
-            if ("hazard" %in% type){out$hazard.iid <- outSE$hazard.iid}
-            if ("cumhazard" %in% type){out$cumhazard.iid <- outSE$cumhazard.iid}
-            if ("survival" %in% type){out$survival.iid <- outSE$survival.iid}
+        
+        ## subject specific hazard
+        if (is.strata==FALSE){
+            if ("hazard" %in% type){
+                out$hazard <- (new.eXb %o% Lambda0$hazard)
+                if (needOrder) out$hazard <- out$hazard[oorder.times,,drop=0L]
+            }
+            if ("cumhazard" %in% type || "survival" %in% type){
+                cumhazard <- new.eXb %o% Lambda0$cumhazard
+                if ("cumhazard" %in% type){
+                    if (needOrder)
+                        out$cumhazard <- cumhazard[oorder.times,,drop=0L]
+                    else
+                        out$cumhazard <- cumhazard
+                }
+                if ("survival" %in% type){
+                    out$survival <- exp(-cumhazard)
+                    if (needOrder)
+                        out$survival <- out$survival[oorder.times,,drop=0L]
+                }
+            }
+            
+        }else{ 
+            
+            ## initialization
+            if ("hazard" %in% type){
+                out$hazard <- matrix(0, nrow = new.n, ncol = nTimes)
+                if(se){
+                    out$hazard.se <- matrix(0, nrow = new.n, ncol = nTimes)
+                }
+            }
+            if ("cumhazard" %in% type){
+                out$cumhazard <- matrix(NA, nrow = new.n, ncol = nTimes)
+                if(se){
+                    out$cumhazard.se <- matrix(0, nrow = new.n, ncol = nTimes)
+                }
+            }
+            if ("survival" %in% type){
+                out$survival <- matrix(NA, nrow = new.n, ncol = nTimes)
+                if(se){
+                    out$survival.se <- matrix(0, nrow = new.n, ncol = nTimes)
+                }
+            }
+            if (is.strata == TRUE){ ## rename the strata value with the correct levels
+                Lambda0$strata <- factor(Lambda0$strata, levels = 0:(nStrata-1), labels = object.levelStrata)
+            }
+            
+            ## loop across strata
+            for(S in new.levelStrata){
+                id.S <- Lambda0$strata==S
+                newid.S <- new.strata==S
+                
+                if ("hazard" %in% type){
+                    out$hazard[newid.S,] <- new.eXb[newid.S] %o% Lambda0$hazard[id.S]
+                    if (needOrder)
+                        out$hazard <- out$hazard[oorder.times,,drop=0L]
+                }
+                if ("cumhazard" %in% type || "survival" %in% type){
+                    cumhazard.S <-  new.eXb[newid.S] %o% Lambda0$cumhazard[id.S]
+                    if ("cumhazard" %in% type){
+                        if (needOrder)
+                            out$cumhazard[newid.S,] <- cumhazard.S[oorder.times,,drop=0L]
+                        else
+                            out$cumhazard[newid.S,] <- cumhazard.S
+                    }
+                    if ("survival" %in% type){
+                        out$survival[newid.S,] <- exp(-cumhazard.S)
+                        if (needOrder)
+                            out$survival[newid.S,] <- out$survival[newid.S,][oorder.times,,drop=0L]
+                    }
+                }
+            }
         }
-        if(se == TRUE){
-            if ("hazard" %in% type){out$hazard.se <- outSE$hazard.se}
-            if ("cumhazard" %in% type){out$cumhazard.se <- outSE$cumhazard.se}
-            if ("survival" %in% type){out$survival.se <- outSE$survival.se}
+        #### standard error ####
+        if(se==1L || iid==1L){ 
+            if(nVar > 0){
+                # remove response variable
+                f.object <- stats::reformulate(attr(stats::terms(CoxFormula(object)),"term.label"),
+                                               response = NULL)
+                # use prodlim to get the design matrix
+                terms.newdata <- stats::terms(f.object, special = CoxSpecialStrata(object), data = newdata)
+                new.LPdata <- prodlim::model.design(stats::terms(terms.newdata),
+                                                    data = newdata,
+                                                    specialsFactor = TRUE,
+                                                    dropIntercept = TRUE)$design
+                if(NROW(new.LPdata)!=NROW(newdata)){
+                    stop("NROW of the design matrix and newdata differ \n",
+                         "maybe because newdata contains NA values \n")
+                }
+            }else{
+                new.LPdata <- matrix(0, ncol = 1, nrow = new.n)
+            }
+            ## influence function 
+            iid.object <- object$iid
+            
+            if(is.null(iid.object)){
+                iid.object <- iidCox(object, tauHazard = times.sorted)
+            }else{        
+                iid.object <- selectJump(iid.object, times = times.sorted, type = type)        
+            }
+            outSE <- seRobustCox(nTimes = nTimes, type = type,
+                                 Lambda0 = Lambda0, iid = iid.object, object.n = object.n, nStrata = nStrata, 
+                                 new.eXb = new.eXb, new.LPdata = new.LPdata, new.strata = new.strata, new.survival = out$survival,
+                                 export = c("iid","se")[c(iid,se)])
+            if(iid == TRUE){
+                if ("hazard" %in% type){
+                    if (needOrder)
+                        out$hazard.iid <- outSE$hazard.iid[,oorder.times,,drop=0L]
+                    else
+                        out$hazard.iid <- outSE$hazard.iid
+                }
+                if ("cumhazard" %in% type){
+                    if (needOrder)
+                        out$cumhazard.iid <- outSE$cumhazard.iid[,oorder.times,,drop=0L]
+                    else
+                        out$cumhazard.iid <- outSE$cumhazard.iid
+                }
+                if ("survival" %in% type){
+                    if (needOrder)
+                        out$survival.iid <- outSE$survival.iid[,oorder.times,,drop=0L]
+                    else
+                        out$survival.iid <- outSE$survival.iid
+                }
+            }
+            if(se == TRUE){
+                if ("hazard" %in% type){
+                    if (needOrder)
+                        out$hazard.se <- outSE$hazard.se[oorder.times,,drop=0L]
+                    else
+                        out$hazard.se <- outSE$hazard.se
+                    out$hazard.lower <- apply(out$hazard - qnorm((1-conf.level)/2)*out$hazard.se,2,pmax,0)
+                    out$hazard.upper <- out$hazard + qnorm((1-conf.level)/2)*out$hazard.se
+                }
+                if ("cumhazard" %in% type){
+                    if (needOrder)
+                        out$cumhazard.se <- outSE$cumhazard.se[oorder.times,,drop=0L]
+                    else
+                        out$cumhazard.se <- outSE$cumhazard.se
+                    out$cumhazard.lower <- apply(out$cumhazard - qnorm((1-conf.level)/2)*out$cumhazard.se,2,pmax,0)
+                    out$cumhazard.upper <- out$cumhazard + qnorm((1-conf.level)/2)*out$cumhazard.se
+                }
+                if ("survival" %in% type){
+                    if (needOrder)
+                        out$survival.se <- outSE$survival.se[oorder.times,,drop=0L]
+                    else
+                        out$survival.se <- outSE$survival.se
+                    out$survival.lower <- apply(out$survival - qnorm((1-conf.level)/2)*out$survival.se,2,pmax,0)
+                    out$survival.upper <- apply(out$survival + qnorm((1-conf.level)/2)*out$survival.se,2,pmin,1)
+                }
+            }
         }
+        if (keep.times==TRUE) out <- c(out,list(times=times))
+        if (is.strata && keep.strata==TRUE) out <- c(out,list(strata=new.strata))
+        out <- c(out,list(lastEventTime=etimes.max,se=se,type=type))
+        if( keep.newdata==TRUE){
+            out$newdata <- newdata[, infoVar$lpvars, with = FALSE]
+        }
+        class(out) <- "predictCox"
+        return(out)
     }
-
-    #### export ####
-    ## if necessary reorder columns according to time
-    if(any(order(times) != 1:length(times))){
-        oorder.times <- order(order(times))
-        if ("hazard" %in% type){
-            out$hazard <- out$hazard[,oorder.times, drop = FALSE]
-            if(se){ out$hazard.se <- outSE$hazard.se[,oorder.times, drop = FALSE] }            
-            if(iid){ out$hazard.iid <- outSE$hazard.iid[,oorder.times,, drop = FALSE] }
-        }
-        if ("cumhazard" %in% type){
-            out$cumhazard <- out$cumhazard[,oorder.times, drop = FALSE]
-            if(se){ out$cumhazard.se <- outSE$cumhazard.se[,oorder.times, drop = FALSE] }
-            if(iid){ out$cumhazard.iid <- outSE$cumhazard.iid[,oorder.times,, drop = FALSE] }
-        }
-        if ("survival" %in% type){
-            out$survival <- out$survival[,oorder.times, drop = FALSE]
-            if(se){ out$survival.se <- outSE$survival.se[,oorder.times, drop = FALSE] }
-            if(iid){ out$survival.iid <- outSE$survival.iid[,oorder.times,, drop = FALSE] }
-        }
-    }
-    if (keep.times==TRUE) out <- c(out,list(times=times))
-    if (is.strata && keep.strata==TRUE) out <- c(out,list(strata=new.strata))
-    if( keep.lastEventTime==TRUE) out <- c(out,list(lastEventTime=etimes.max))
-    if( keep.newdata==TRUE){
-        out$newdata <- newdata[, infoVar$lpvars, with = FALSE]
-    }
-    class(out) <- "predictCox"
-    return(out)
-  }
+    # }}}
 }
 
 # }}}
+
+#### Auxiliary functions ####
 
 # {{{ seRobustCox
 
@@ -449,67 +503,6 @@ seRobustCox <- function(nTimes, type,
 
 # }}}
 
-# {{{ bandCox
-
-# bandCox <- function(object,
-#                     newdata,
-#                     times,
-#                     type=c("hazard","cumhazard","survival"),
-#                     keep.strata = TRUE,
-#                     keep.times = TRUE,
-#                     keep.lastEventTime = FALSE,
-#                     n.sim = 1000, seed = 10){
-# 
-#     ## check arguments
-#     if(length(times)>1){
-#         stop("argument times can only contain one timepoint \n")
-#     }
-# 
-#     ## extract information
-#     object.design <- CoxDesign(object)
-#     object.status <- object.design[["status"]]
-#     object.time <- object.design[["stop"]][object.status == 1]
-#     object.time <- object.time[object.time<=times]
-#     n <- CoxN(object)
-#     nTimes <- length(object.time)
-# 
-#     ## compute influence function
-#     pred <- predictCox(object,
-#                        newdata = newdata,
-#                        times = object.time,
-#                        centered = TRUE,
-#                        type = type,
-#                        keep.strata = keep.strata,
-#                        keep.lastEventTime = keep.lastEventTime,
-#                        se = FALSE, iid = TRUE)
-# 
-# 
-# 
-#     ## simulate Gaussian processes
-# #    A <- array(1,dim=c(5,3,4))
-# #    Ab <- sweep(A, MARGIN = 3, STATS = 1:4, FUN = "*")
-#     #    apply(Ab, 1:2, sum)
-#     set.seed(seed)
-#     A.GP <- array(NA, dim = c(n,nTimes,n.sim))
-# 
-#     for(iSim in 1:n.sim){
-#         Gvar <- rnorm(n)
-#         A.GP[,,iSim] <- apply(sweep(pred$survival.iid, MARGIN = 3, STATS = Gvar, FUN = "*"),
-#                               1:2, sum)
-#     }
-# 
-#     matplot(A.GP[1,,1:2], type = "l")
-#     browser()
-#     plot(GaussProcess[1,])
-#     dim(GaussProcess)
-#     names(iid)
-# 
-#  }
-
-# }}}
-
-#### Auxiliary functions ####
-
 # {{{ lambda2hazard
 
 ##' @title Evaluate the influence function for the hazard based on the one of the baseline hazard##' 
@@ -593,89 +586,3 @@ selectJump <- function(IC, times, type){
 
 # }}}
 
-#' #' Computation of standard errors for predictions
-#' #'
-#' #' Compute the standard error associated to the predictions from Cox regression model using the functional delta method.
-#' #' @param object The fitted Cox regression model object either
-#' #'     obtained with \code{coxph} (survival package) or \code{cph}
-#' #'     (rms package).
-#' #' @param newdata  A data frame or table containing the values of the
-#' #'     predictor variables defining subject specific predictions. Should have
-#' #'     the same structure as the data set used to fit the \code{object}.
-#' #' @param times Time points at which to evaluate the predictions. 
-#' #' @param type One or several strings that match (either in lower or upper case or mixtures) one
-#' #' or several of the strings \code{"hazard"},\code{"cumhazard"}, \code{"survival"}.
-#' #' @param Lambda0 the baseline hazard estimate returned by BaseHazStrata_cpp.
-#' #' @param eXb exponential (covariates * coefficients)
-#' #' @param survival the predicted survival (only necessary when type contains survival)
-#' #' @param subset.Lambda0 an index giving the subset of observations to be used in Lambda0
-#' #' 
-#' #' @author Brice Ozenne broz@@sund.ku.dk, Thomas A. Gerds tag@@biostat.ku.dk
-#' #' 
-#' #' @return A list optionally containing the standard error for the survival, cumulative hazard and hazard.
-#' seCox <- function(object, newdata, times, type, Lambda0, eXb, survival, subset.Lambda0 = 1:length(Lambda0$time)){
-#'   
-#'   ## WARNING newdata must be centered
-#'   n.times <- length(times)
-#'   n.newdata <- NROW(newdata)
-#'   etimes <- Lambda0$time[subset.Lambda0]
-#'   newdata <- as.matrix(newdata)
-#'   
-#'   ##
-#'   if("hazard" %in% type){
-#'     se.hazard0.tindex <- Lambda0$se.hazard[subset.Lambda0]
-#'     hazard0.tindex <- Lambda0$hazard[subset.Lambda0]
-#'     se.betaHazard.tindex <- matrix(NA, nrow = n.newdata, ncol = n.times)
-#'   }
-#'   if("cumhazard" %in% type || "survival" %in% type){
-#'     se.cumhazard0.tindex <- Lambda0$se.cumhazard[subset.Lambda0]
-#'     cumhazard0.tindex <- Lambda0$cumhazard[subset.Lambda0]
-#'     se.betaCumHazard.tindex <- matrix(NA, nrow = n.newdata, ncol = n.times)
-#'   }
-#'   
-#'   ##
-#'   for(indexT in 1:n.times){
-#'     
-#'     if("hazard" %in% type){
-#'       if(is.null(object$var)){
-#'         se.betaHazard.tindex[,indexT] <- 0
-#'       }else{
-#'         Xbar_loop <- Lambda0$Xbar[subset.Lambda0[indexT],,drop = FALSE]
-#'         hazard0_loop <- hazard0.tindex[indexT]
-#'         
-#'         hazardX_loop <- sweep(newdata*hazard0_loop, MARGIN = 2, FUN = "-",  STATS = as.double(Xbar_loop))
-#'         se.betaHazard.tindex[,indexT] <- rowSums(hazardX_loop %*% object$var * hazardX_loop)
-#'       }
-#'     }
-#'     
-#'     if("cumhazard" %in% type || "survival" %in% type){
-#'       if(is.null(object$var)){
-#'         se.betaCumHazard.tindex[,indexT] <- 0
-#'       }else{
-#'         XbarCumSum_loop <- Lambda0$XbarCumSum[subset.Lambda0[indexT],,drop = FALSE]
-#'         cumhazard0_loop <- cumhazard0.tindex[indexT]
-#'         cumhazardX_loop <- sweep(newdata*cumhazard0_loop, MARGIN = 2, FUN = "-",  STATS = as.double(XbarCumSum_loop))
-#'         se.betaCumHazard.tindex[,indexT] <- rowSums(cumhazardX_loop %*% object$var * cumhazardX_loop)  
-#'       }
-#'       
-#'     }
-#'     
-#'   }
-#'   
-#'   ##
-#'   out <- list()
-#'   if("hazard" %in% type){
-#'     tempo <- sqrt(sweep(se.betaHazard.tindex, MARGIN = 2, FUN = "+", STATS = se.hazard0.tindex))
-#'     out$hazard.se <- sweep(tempo, MARGIN = 1, FUN = "*", STATS = eXb) 
-#'   }
-#'   if("cumhazard" %in% type){
-#'     tempo <- sqrt(sweep(se.betaCumHazard.tindex, MARGIN = 2, FUN = "+", STATS = se.cumhazard0.tindex))
-#'     out$cumhazard.se <- sweep(tempo, MARGIN = 1, FUN = "*", STATS = eXb) 
-#'   }
-#'   if("survival" %in% type){
-#'     out$survival.se <- out$cumhazard.se*exp(-survival)
-#'   }
-#'   
-#'   ## export
-#'   return(out)
-#' }

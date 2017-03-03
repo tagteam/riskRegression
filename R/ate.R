@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Oct 23 2016 (08:53) 
 ## Version: 
-## last-updated: feb 28 2017 (13:32) 
-##           By: Brice Ozenne
-##     Update #: 59
+## last-updated: Mar  2 2017 (09:27) 
+##           By: Thomas Alexander Gerds
+##     Update #: 60
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -271,8 +271,7 @@ ate <- function(object,
                                                         cause=cause,
                                                         se=FALSE,
                                                         iid=TRUE,
-                                                        keep.times=FALSE,
-                                                        keep.lastEventTime=FALSE))
+                                                        keep.times=FALSE))
                 risk.i <- pred.i$absRisk
                 attr(risk.i,"iid") <- pred.i$absRisk.iid
             } else{
@@ -282,7 +281,6 @@ ate <- function(object,
                                                            se=FALSE,
                                                            iid=TRUE,
                                                            keep.times=FALSE,
-                                                           keep.lastEventTime=FALSE,
                                                            type="survival"))
                 risk.i <- 1-pred.i$survival
                 attr(risk.i,"iid") <- pred.i$survival.iid

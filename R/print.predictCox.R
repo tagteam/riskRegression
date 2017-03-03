@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: feb 15 2017 (17:36) 
 ## Version: 
-## last-updated: Feb 28 2017 (16:27) 
+## last-updated: Mar  3 2017 (09:22) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 104
+##     Update #: 138
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -68,109 +68,33 @@
 #' @method print predictCox
 #' @export
 print.predictCox <- function(x,
-                             type = NULL,
-                             ci = FALSE,
-                             reduce.data = FALSE,
-                             conf.level = 0.95,
-                             digit = 3, ...){
-
-    ## initialise type
-    possible.type <- c("hazard","cumhazard","survival")
-    if(is.null(type)){        
-        type <- possible.type[possible.type %in% names(x)]
-    }else if(any(possible.type %in% names(x) == FALSE)){
-        stop(paste(possible.type[possible.type %in% names(x) == FALSE], collapse = " ")," are not in the object \n")
+                             digits = 3, ...){
+    if (is.null(x$newdata)){
+        print.listof(x)
+    } else{
+        nd=x$newdata
+        data.table::setDT(nd)
+        out <- data.table::rbindlist(lapply(1:length(x$times),function(tt){
+            ndtt=copy(nd)
+            nd[,times:=x$times[[tt]]]
+            if (!is.null(x$strata))
+                nd[,strata:=x$strata]
+            for (name in x$type){
+                tyc <- cbind(x[[name]][,tt])
+                colnames(tyc) <- name
+                if (x$se==1L){
+                    tyc <- cbind(tyc,x[[paste0(name,".se")]][,tt],x[[paste0(name,".lower")]][,tt],x[[paste0(name,".upper")]][,tt])
+                    colnames(tyc) <- paste0(name,c("",".se",".lower",".upper"))
+                }
+                ## setDT(tyc)
+                nd <- cbind(nd,tyc)
+            }
+            nd   
+        }))
+        print(out,digits=digits,...)
+        invisible(out)
     }
-
-    ## check the presence of the standard errors
-    if(ci && any(paste0(type,".se") %in% names(x)==FALSE)){
-        stop("argument \'ci\' cannot be TRUE when no standard error have been computed \n",
-             "set argment \'se\' to TRUE when calling predictCox \n")
-    }
-
-    ## remove covariates that have the same value for all observations
-    newdata <- copy(x$newdata)
-    if(!is.null(newdata) && reduce.data){
-        test <- unlist(newdata[,lapply(.SD, function(col){length(unique(col))==1})])
-        if(any(test)){
-            newdata[, (names(test)[test]):=NULL]
-        }        
-    }
-
-    ## 
-    res <- resDisplay <- list()
-    
-    for(iType in type){
-        ls.resPrint <- predict2print(outcome = x[[iType]],
-                                     outcome.se = if(ci){x[[paste0(iType,".se")]]}else{NULL},
-                                     newdata = newdata,
-                                     strata = x$strata,
-                                     times = x$times,
-                                     digit = digit,
-                                     name.outcome = iType,
-                                     conf.level = conf.level,
-                                     lower = 0, upper = if(iType == "survival"){1}else{Inf})
-        res[[iType]] <- ls.resPrint$res
-        resDisplay[[iType]] <- ls.resPrint$resDisplay            
-
-    }
-
-    ## rename the element of the list for the display
-    names(resDisplay) <- paste0(type, " (columns: ",
-                                if(!is.null(x$strata)){"strata|"},
-                                if(!is.null(newdata)){"covariate|"},
-                                "time, rows: individuals",
-                                if(ci){paste0(", [.;.] ",100*conf.level,"% confidence interval)")}else{")"}
-                                )
-
-    ## display
-    print(noquote(resDisplay), ...)
-
-    ## export
-    return(invisible(res))    
 }
-
-
-predict2print <- function(outcome, outcome.se, newdata, strata, times,
-                          digit, name.outcome, conf.level, lower, upper){
-
-    n.obs <- NROW(outcome)
-    n.time <- NCOL(outcome)
-    if(!is.null(times)){
-        colnames(outcome) <- times
-    }else{
-        time.names <- 1:n.time
-    }
-    
-    if(is.null(outcome.se)){
-        res <- outcome
-        resDisplay <- round(outcome, digit)
-    }else{
-        resDisplay <- upper <- lower <- matrix(NA, nrow = n.obs, ncol = n.time, dimnames = dimnames(outcome))
-            
-        lower[] <- pmax(lower,outcome + qnorm((1-conf.level)/2) * outcome.se)
-        upper[] <- pmin(upper,outcome + qnorm(1-(1-conf.level)/2) * outcome.se)
-
-        resDisplay[] <- paste0(formatC(outcome, format = "f", digits = digit),
-                             " [",formatC(lower, format = "f", digits = digit),
-                             ";",formatC(upper, format = "f", digits = digit),"]")
-
-        res <- list(outcome, lower, upper)
-        names(res) <- c(name.outcome, "lower", "upper")
-    }
-    if(!is.null(newdata)){
-        index.numeric <- which(unlist(lapply(newdata, is.numeric)))
-        
-        resDisplay <- cbind(newdata,resDisplay)            
-    }
-    if(!is.null(strata)){
-        resDisplay <- cbind(strata = as.character(strata),resDisplay)            
-    }
-
-    return(list(res = res,
-                resDisplay = data.table::as.data.table(resDisplay)))
-}
-
 
 
 #----------------------------------------------------------------------

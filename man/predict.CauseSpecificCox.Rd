@@ -12,7 +12,7 @@
 \item{object}{The fitted cause specific Cox model}
 
 \item{newdata}{A data frame containing the values of the variables
-in the right hand side of 'coxph' for each patient.}
+in the right hand side of 'coxph' for each subject.}
 
 \item{times}{Vector of times at which to return the estimated
 hazards/survival}
@@ -40,10 +40,10 @@ corresponding ot the output.}
 \value{
 A list containing:
 \itemize{
-\item{absRisk}: (data table) the predictions for each patient (in rows) and each time (in columns).
+\item{absRisk}: (data table) the predictions for each subject (in rows) and each time (in columns).
 \item{absRisk.se}: (data table) the standard errors of the predictions.
-\item(absRisk.iid): (array) the value of the influence of each patient used to fit the object (dim 3)
-for each patient in newdata (dim 1) and each time (dim 2).
+\item(absRisk.iid): (array) the value of the influence of each subject used to fit the object (dim 3)
+for each subject in newdata (dim 1) and each time (dim 2).
 \item{times}: (vector) the evaluation times.
 }
 }

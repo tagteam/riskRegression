@@ -17,7 +17,7 @@
 #' library(survival)
 #' library(data.table)
 #' set.seed(10)
-#' d <- sampleData(2e1, outcome = "survival")[,.(eventtime,event,X1,X6)]
+#' d <- sampleData(40, outcome = "survival")[,.(eventtime,event,X1,X6)]
 #' setkey(d, eventtime)
 #' 
 #' m.cox <- coxph(Surv(eventtime, event) ~ X1+X6, data = d, y = TRUE, x = TRUE)
@@ -32,20 +32,20 @@
 iidCox <- function(object, newdata = NULL, tauHazard = NULL, 
                    keep.times = TRUE, center.result = TRUE){
   
-  center.eXb <- TRUE # Temporary argument. Should the linear predictor be centered on the exponential scale.
+    center.eXb <- TRUE # Temporary argument. Should the linear predictor be centered on the exponential scale.
   
-  #### extract elements from object ####
-  infoVar <- CoxVariableName(object)
-  iInfo <- CoxVarCov(object)
-  object.design <- CoxDesign(object)
+    #### extract elements from object ####
+    infoVar <- CoxVariableName(object)
+    iInfo <- CoxVarCov(object)
+    object.design <- CoxDesign(object)
   
-  object.status <- object.design[,"status"]
-  object.time <- object.design[,"stop"]
-  object.strata <- CoxStrata(object, stratavars = infoVar$stratavars)
-  object.levelStrata <- levels(object.strata)
-  object.eXb <- exp(CoxLP(object, data = NULL, center = center.eXb))
-  object.LPdata <- as.matrix(object.design[,infoVar$lpvars,drop = FALSE])
-  nStrata <- length(levels(object.strata))
+    object.status <- object.design[,"status"]
+    object.time <- object.design[,"stop"]
+    object.strata <- CoxStrata(object, stratavars = infoVar$stratavars)
+    object.levelStrata <- levels(object.strata)
+    object.eXb <- exp(CoxLP(object, data = NULL, center = center.eXb))
+    object.LPdata <- as.matrix(object.design[,infoVar$lpvars,drop = FALSE])
+    nStrata <- length(levels(object.strata))
   
   object.center <- CoxCenter(object)
   
@@ -91,7 +91,11 @@ iidCox <- function(object, newdata = NULL, tauHazard = NULL,
   p <- NCOL(object.LPdata)
   
     ## baseline hazard
-  lambda0 <- predictCox(object, type = "hazard", centered = TRUE, keep.strata = TRUE)
+    lambda0 <- predictCox(object,
+                          type = "hazard",
+                          centered = TRUE,
+                          keep.strata = TRUE)
+    
   
     ## resale factor
     if(center.result == TRUE && !is.null(object.center)){
@@ -208,32 +212,33 @@ iidCox <- function(object, newdata = NULL, tauHazard = NULL,
   ## set original order
   ICbeta <- ICbeta[order(new.order),,drop=FALSE]
   
-  #### lambda
-  for(iStrata in 1:nStrata){
+    #### lambda
+    for(iStrata in 1:nStrata){
+        ## hazard
+        if(nStrata==1){
+            timeStrata <- lambda0$time
+            lambda0Strata <- lambda0$hazard
+        }else{
+            testStrata <- lambda0$strata == object.levelStrata[iStrata]
+            timeStrata <- lambda0$time[testStrata]
+            lambda0Strata <- lambda0$hazard[testStrata]
+        }
+        ## tauHazard
+        if(is.null(tauHazard)){
+            tauHazard_strata <- object.time_strata[[iStrata]][object.status_strata[[iStrata]] == 1]
+        }else if(is.list(tauHazard)){
+            tauHazard_strata <- tauHazard[[nStrata]]
+        }else{
+            tauHazard_strata <- tauHazard
+        }
     
-    ## hazard
-    if(nStrata==1){
-      lambda0_strata <- lambda0
-    }else{
-      lambda0_strata <- lambda0[lambda0$strata == object.levelStrata[iStrata],, drop = FALSE]
-    }
-    
-    ## tauHazard
-    if(is.null(tauHazard)){
-      tauHazard_strata <- object.time_strata[[iStrata]][object.status_strata[[iStrata]] == 1]
-    }else if(is.list(tauHazard)){
-      tauHazard_strata <- tauHazard[[nStrata]]
-    }else{
-      tauHazard_strata <- tauHazard
-    }
-    
-    ## E
-    nUtime1_strata <- length(Ecpp[[iStrata]]$Utime1)
-    if(p>0){
-      Etempo <- Ecpp[[iStrata]]$E[-NROW(Ecpp[[iStrata]]$E),,drop = FALSE]
-    }else{
-      Etempo <- matrix(0, ncol = 1, nrow = nUtime1_strata-1)
-    }
+        ## E
+        nUtime1_strata <- length(Ecpp[[iStrata]]$Utime1)
+        if(p>0){
+            Etempo <- Ecpp[[iStrata]]$E[-NROW(Ecpp[[iStrata]]$E),,drop = FALSE]
+        }else{
+            Etempo <- matrix(0, ncol = 1, nrow = nUtime1_strata-1)
+        }
     
       ## IF
       if(any(new.status_strata[[iStrata]]>0)){
@@ -244,7 +249,7 @@ iidCox <- function(object, newdata = NULL, tauHazard = NULL,
                                         S01 = Ecpp[[iStrata]]$S0[1:(nUtime1_strata-1)],
                                         E1 = Etempo,
                                         time1 = Ecpp[[iStrata]]$Utime1[1:(nUtime1_strata-1)], lastTime1 = Ecpp[[iStrata]]$Utime1[nUtime1_strata],
-                                        lambda0 = lambda0_strata[match(Ecpp[[iStrata]]$Utime1[-nUtime1_strata],lambda0_strata[,"time"]),"hazard"],
+                                        lambda0 = lambda0Strata[match(Ecpp[[iStrata]]$Utime1[-nUtime1_strata],timeStrata)],
                                         p = p, strata = iStrata)
           
           # rescale
@@ -261,15 +266,15 @@ iidCox <- function(object, newdata = NULL, tauHazard = NULL,
           if(length(tauHazard_strata)==0){tauHazard_strata <- NA}
       }
     
-      # output 
-      ls.Utime1 <- c(ls.Utime1, list(tauHazard_strata))
-      if(keep.times){
-          colnames(IClambda_res$hazard) <- tauHazard_strata
-          colnames(IClambda_res$cumhazard) <- tauHazard_strata
-      }
-      IChazard <- c(IChazard, list(IClambda_res$hazard))
-      ICcumhazard <- c(ICcumhazard, list(IClambda_res$cumhazard))
-  }
+        # output 
+        ls.Utime1 <- c(ls.Utime1, list(tauHazard_strata))
+        if(keep.times){
+            colnames(IClambda_res$hazard) <- tauHazard_strata
+            colnames(IClambda_res$cumhazard) <- tauHazard_strata
+        }
+        IChazard <- c(IChazard, list(IClambda_res$hazard))
+        ICcumhazard <- c(ICcumhazard, list(IClambda_res$cumhazard))
+    }
   
   #### export
   return(list(ICbeta = ICbeta,  

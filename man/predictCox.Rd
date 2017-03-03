@@ -2,86 +2,104 @@
 % Please edit documentation in R/predictCox.R
 \name{predictCox}
 \alias{predictCox}
-\title{Fast prediction of survival, hazard and cumulative hazard from Cox regression model}
+\title{Fast computation of survival probabilities, hazards and cumulative hazards from Cox regression models}
 \usage{
 predictCox(object, newdata = NULL, times, centered = TRUE,
   type = c("hazard", "cumhazard", "survival"), keep.strata = TRUE,
-  keep.times = TRUE, keep.lastEventTime = FALSE, keep.newdata = FALSE,
-  se = FALSE, iid = FALSE, format = "data.frame")
+  keep.times = TRUE, keep.newdata = FALSE, se = FALSE, iid = FALSE,
+  conf.level = 0.95, format)
 }
 \arguments{
 \item{object}{The fitted Cox regression model object either
 obtained with \code{coxph} (survival package) or \code{cph}
 (rms package).}
 
-\item{newdata}{A data frame or table containing the values of the
-predictor variables defining subject specific predictions. Should have
-the same structure as the data set used to fit the \code{object}.}
+\item{newdata}{A \code{data.frame} or \code{data.table} containing
+the values of the predictor variables defining subject specific
+predictions. Should have the same structure as the data set
+used to fit the \code{object}.}
 
 \item{times}{Time points at which to evaluate the predictions.}
 
-\item{centered}{If TRUE remove the centering factor used by \code{coxph}
-in the linear predictor.}
+\item{centered}{Logical. If \code{TRUE} return prediction at the
+mean values of the covariates \code{fit$mean}, if \code{FALSE}
+return a prediction for all covariates equal to zero.  in the
+linear predictor. Will be ignored if argument \code{newdata} is
+used.}
 
-\item{type}{One or several strings that match (either in lower or upper case or mixtures) one
-or several of the strings \code{"hazard"},\code{"cumhazard"}, \code{"survival"}}
+\item{type}{the type of predicted value. Choices are \itemize{
+\item \code{"hazard"} the baseline hazard function when
+argument \code{newdata} is not used and the hazard function
+when argument \code{newdata} is used.  \item \code{"cumhazard"}
+the cumulative baseline hazard function when argument
+\code{newdata} is not used and the cumulative hazard function
+when argument \code{newdata} is used.  \item \code{"survival"}
+the survival baseline hazard function when argument
+\code{newdata} is not used and the cumulative hazard function
+when argument \code{newdata} is used.  } Several choices can be
+combined in a vector of strings that match (no matter the case)
+strings \code{"hazard"},\code{"cumhazard"}, \code{"survival"}.}
 
-\item{keep.strata}{Logical. If \code{TRUE} add the (newdata) strata to the output. Only if there any.}
+\item{keep.strata}{Logical. If \code{TRUE} add the (newdata) strata
+to the output. Only if there any.}
 
-\item{keep.times}{Logical. If \code{TRUE} add the evaluation times to the output.}
+\item{keep.times}{Logical. If \code{TRUE} add the evaluation times
+to the output.}
 
-\item{keep.lastEventTime}{Logical. If \code{TRUE} add the time at which the last event occured in each strata to the output list.}
+\item{keep.newdata}{Logical. If \code{TRUE} add the value of the
+covariates used to make the prediction in the output list.}
 
-\item{keep.newdata}{Logical. If \code{TRUE} add the value of the covariates used to make the prediction in the output list.}
+\item{se}{Logical. If \code{TRUE} add the standard error
+corresponding to the output.}
 
-\item{se}{Logical. If \code{TRUE} add the standard error corresponding to the output.}
+\item{iid}{Logical. If \code{TRUE} add the influence function
+corresponding to the output.}
 
-\item{iid}{Logical. If \code{TRUE} add the influence function corresponding ot the output.}
+\item{conf.level}{Level of confidence.}
 
-\item{format}{how to export the baseline hazard. Can be \code{"data.frame"}, \code{"data.table"} or \code{"list"}.}
+\item{format}{How to export the baseline hazard. Can be
+\code{"data.frame"}, \code{"data.table"} or \code{"list"}.}
 }
 \value{
-When extracting the baseline hazard (missing newdata and times argument),
-a data frame containing the jump times, the baseline hazard, the cumulative baseline hazard, the strata (optional), and the baseline survival.
-
-Otherwise, when performing prediction, a list containing:
+A list some or all of the following elements containing:
 \itemize{
-\item{hazard}: (matrix) the hazard predicted for each patient (in rows) and each time (in columns).
-\item{hazard.se}: (matrix) the standard errors of the predicted hazard.
-\item{cumhazard}: (matrix) the cumulative hazard predicted for each patient (in rows) and each time (in columns).
-\item{cumhazard.se}: (matrix) the standard errors of the predicted cumulative hazard.
-\item{survival}: (matrix) the survival predicted for each patient (in rows) and each time (in columns).
-\item{survival.se}: (matrix) the standard errors of the predicted survival.
-\item{times}: (vector) the evaluation times.
-\item{strata}: (vector) the strata indicator.
+\item{times}: the time points at which the other elements are evaluated.
+\item{hazard}: When argument \code{newdata} is not used the baseline hazard function, otherwise the predicted hazard function. 
+\item{hazard.se}: The standard errors of the predicted hazard function.
+\item{cumhazard}: When argument \code{newdata} is not used the cumulative baseline hazard function, otherwise the predicted cumulative hazard function. 
+\item{cumhazard.se}: The standard errors of the predicted cumulative hazard function.
+\item{survival}: When argument \code{newdata} is not used the survival probabilities corresponding to the baseline hazard, otherwise the predicted survival probabilities.
+\item{survival.se}: The standard errors of the predicted survival.
+\item{strata}: The strata variable.
 }
 }
 \description{
 Fast routine to get baseline hazards and subject specific hazards
-as well as survival probabilities from a coxph or cph object
+as well as survival probabilities from a \code{survival::coxph} or \code{rms::cph} object
 }
 \details{
 Not working with time varying predictor variables or
-    delayed entry.
-The centered argument enables to reproduce results obtained with the \code{basehaz} function from the survival package.
-
-To avoid the computation of the influence function within the predictCox function, one can create a slot iid in the object
-and put in this slot the value of the influence function for the baseline hazard and the beta.
-This slot must have the format as the output of the function \code{iidCox}.
+    delayed entry.  The centered argument enables us to reproduce
+    the results obtained with the \code{basehaz} function from the
+    survival package.
 }
 \examples{
 library(survival)
 
 set.seed(10)
-d <- SimSurv(1e2)
-nd <- SimSurv(10)
+d <- sampleData(40,outcome="survival")
+nd <- sampleData(4,outcome="survival")
 d$time <- round(d$time,1)
-fit <- coxph(Surv(time,status)~X1 * X2,
+fit <- coxph(Surv(time,event)~X1 + strata(X2) + X6,
              data=d, ties="breslow", x = TRUE, y = TRUE)
 # table(duplicated(d$time))
 
 predictCox(fit)
-predictCox(fit, newdata=nd, times = 5)
+predictCox(fit,centered=FALSE,type="hazard")
+predictCox(fit,centered=TRUE,type="hazard")
+predictCox(fit, newdata=nd, times=c(3,8),se=TRUE)
+predictCox(fit, newdata=nd, times = 5,iid=TRUE)
+
 cbind(survival::basehaz(fit),predictCox(fit,type="cumhazard"))
 
 # one strata variable

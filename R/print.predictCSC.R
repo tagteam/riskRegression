@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Feb 11 2017 (10:01) 
 ## Version: 
-## last-updated: Feb 28 2017 (16:28) 
+## last-updated: Mar  1 2017 (16:41) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 58
+##     Update #: 59
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -52,7 +52,7 @@ print.predictCSC <- function(x,
 
     ## check the presence of the standard errors
     if(ci && "absRisk.se" %in% names(x)==FALSE){
-        stop("argument \'ci\' cannot be TRUE when no standard error have been computed \n",
+        stop("argument \'ci\' cannot be TRUE when no standard errors have been computed \n",
              "set argment \'se\' to TRUE when calling predictCox \n")
     }
 

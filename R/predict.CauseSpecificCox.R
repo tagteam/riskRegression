@@ -7,7 +7,7 @@
 #' 
 #' @param object The fitted cause specific Cox model
 #' @param newdata A data frame containing the values of the variables
-#'     in the right hand side of 'coxph' for each patient.
+#'     in the right hand side of 'coxph' for each subject.
 #' @param times Vector of times at which to return the estimated
 #'     hazards/survival
 #' @param cause Identifies the cause of interest among the competing
@@ -31,10 +31,10 @@
 #' 
 #' @return A list containing:
 #' \itemize{
-#' \item{absRisk}: (data table) the predictions for each patient (in rows) and each time (in columns).
+#' \item{absRisk}: (data table) the predictions for each subject (in rows) and each time (in columns).
 #' \item{absRisk.se}: (data table) the standard errors of the predictions.
-#' \item(absRisk.iid): (array) the value of the influence of each patient used to fit the object (dim 3)
-#' for each patient in newdata (dim 1) and each time (dim 2).
+#' \item(absRisk.iid): (array) the value of the influence of each subject used to fit the object (dim 3)
+#' for each subject in newdata (dim 1) and each time (dim 2).
 #' \item{times}: (vector) the evaluation times.
 #' }
 #'  
@@ -124,12 +124,12 @@ predict.CauseSpecificCox <- function(object, newdata, times, cause, t0 = NA,
     for(iterC in 1:nCause){
         infoVar <- CoxVariableName(object$models[[iterC]])
       
-      ## baseline hazard from the Cox model
-      causeBaseline <- predictCox(object$models[[iterC]], centered = FALSE,
-                                  times = eventTimes, newdata = NULL,
-                                  type = c("hazard","cumhazard"), 
-                                  keep.strata = TRUE, keep.lastEventTime = TRUE, keep.times = TRUE,
-                                  se = FALSE, format = "list")
+        ## baseline hazard from the Cox model
+        causeBaseline <- predictCox(object$models[[iterC]], centered = FALSE,
+                                    times = eventTimes, newdata = NULL,
+                                    type = c("hazard","cumhazard"), 
+                                    keep.strata = TRUE, keep.times = TRUE,
+                                    se = FALSE, format = "list")
       
       ls.hazard[[iterC]] <- matrix(causeBaseline$hazard, byrow = FALSE, nrow = nEventTimes)
       ls.cumhazard[[iterC]] <- matrix(causeBaseline$cumhazard, byrow = FALSE, nrow = nEventTimes) 
@@ -163,7 +163,7 @@ predict.CauseSpecificCox <- function(object, newdata, times, cause, t0 = NA,
     causeBaseline <- predictCox(object$models[[paste("Cause",cause)]], centered = FALSE,
                                 times = eventTimes, newdata = NULL,
                                 type = c("hazard","cumhazard"), 
-                                keep.strata = TRUE, keep.lastEventTime = TRUE, keep.times = TRUE,
+                                keep.strata = TRUE, keep.times = TRUE,
                                 se = FALSE, format = "list")
 
     ls.hazard <- list(matrix(causeBaseline$hazard, byrow = FALSE, nrow = nEventTimes))
@@ -188,7 +188,7 @@ predict.CauseSpecificCox <- function(object, newdata, times, cause, t0 = NA,
     overallBaseline <- predictCox(object$models[["OverallSurvival"]], centered = FALSE,
                                   times = eventTimes-tdiff, newdata = NULL,
                                   type = "cumhazard", 
-                                  keep.strata = TRUE, keep.lastEventTime = TRUE, keep.times = TRUE,
+                                  keep.strata = TRUE, keep.times = TRUE,
                                   se = FALSE, format = "list")
     ls.cumhazard <- list(matrix(overallBaseline$cumhazard, byrow = FALSE, nrow = nEventTimes))
     

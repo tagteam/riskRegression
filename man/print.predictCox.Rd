@@ -4,14 +4,12 @@
 \alias{print.predictCox}
 \title{Print predictions from a Cox model}
 \usage{
-\method{print}{predictCox}(x, type = NULL, ci = FALSE,
-  reduce.data = FALSE, conf.level = 0.95, digit = 3, ...)
+\method{print}{predictCox}(x, digits = 3, ...)
 }
 \arguments{
 \item{x}{object obtained with the function \code{predictCox}.}
 
-\item{type}{One or several strings that match (either in lower or upper case or mixtures) one
-or several of the strings \code{"hazard"},\code{"cumhazard"}, \code{"survival"}}
+\item{...}{Passed to print.}
 
 \item{ci}{Logical. If \code{TRUE} display the confidence intervals for the predictions.}
 
@@ -20,8 +18,6 @@ or several of the strings \code{"hazard"},\code{"cumhazard"}, \code{"survival"}}
 \item{conf.level}{confidence level of the interval.}
 
 \item{digit}{integer indicating the number of decimal places.}
-
-\item{...}{Passed to print.}
 }
 \description{
 Print predictions from a Cox model

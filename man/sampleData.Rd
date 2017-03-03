@@ -4,8 +4,8 @@
 \alias{sampleData}
 \title{Simulate data with binary or time-to-event outcome}
 \usage{
-sampleData(n, outcome = NULL, formula = ~f(X1, 2) + f(X2, -0.033) + f(X3,
-  0.4) + f(X6, 0.1) + f(X7, -0.1) + f(X8, 0.5) + f(X9, -1))
+sampleData(n, outcome = "competing.risks", formula = ~f(X1, 2) + f(X2,
+  -0.033) + f(X3, 0.4) + f(X6, 0.1) + f(X7, -0.1) + f(X8, 0.5) + f(X9, -1))
 }
 \arguments{
 \item{n}{Sample size}
@@ -28,7 +28,6 @@ Simulate data with binary outcome and 10 covariates.
 For the actual lava::regression parameters see the function definition.
 }
 \examples{
-sampleData(10,outcome=NULL)
 sampleData(10,outcome="binary")
 sampleData(10,outcome="survival")
 sampleData(10,outcome="competing.risks")

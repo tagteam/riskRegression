@@ -255,7 +255,7 @@ CoxDesign.coxph <- function(object, center = FALSE){
              "set y=TRUE in the call to ",class(object)[1]," \n")
     }
  
-    ## set to null empty slots to be able to use cbind after 
+    ## set to null to be able to use cbind after 
     # (otherwise $x may have dimension <0,0> that cannot be bind with $y)
     if(NCOL(object[["x"]])==0){
         object[["x"]] <- NULL

@@ -7,8 +7,8 @@
 using namespace Rcpp;
 
 // baseHaz_cpp
-List baseHaz_cpp(const NumericVector& alltimes, const IntegerVector& status, const NumericVector& eXb, const IntegerVector& strata, bool se, arma::mat data, int nVar, const std::vector<double>& predtimes, const NumericVector& emaxtimes, int nPatients, int nStrata, int cause, bool Efron);
-RcppExport SEXP riskRegression_baseHaz_cpp(SEXP alltimesSEXP, SEXP statusSEXP, SEXP eXbSEXP, SEXP strataSEXP, SEXP seSEXP, SEXP dataSEXP, SEXP nVarSEXP, SEXP predtimesSEXP, SEXP emaxtimesSEXP, SEXP nPatientsSEXP, SEXP nStrataSEXP, SEXP causeSEXP, SEXP EfronSEXP) {
+List baseHaz_cpp(const NumericVector& alltimes, const IntegerVector& status, const NumericVector& eXb, const IntegerVector& strata, const std::vector<double>& predtimes, const NumericVector& emaxtimes, int nPatients, int nStrata, int cause, bool Efron);
+RcppExport SEXP riskRegression_baseHaz_cpp(SEXP alltimesSEXP, SEXP statusSEXP, SEXP eXbSEXP, SEXP strataSEXP, SEXP predtimesSEXP, SEXP emaxtimesSEXP, SEXP nPatientsSEXP, SEXP nStrataSEXP, SEXP causeSEXP, SEXP EfronSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -16,16 +16,13 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< const IntegerVector& >::type status(statusSEXP);
     Rcpp::traits::input_parameter< const NumericVector& >::type eXb(eXbSEXP);
     Rcpp::traits::input_parameter< const IntegerVector& >::type strata(strataSEXP);
-    Rcpp::traits::input_parameter< bool >::type se(seSEXP);
-    Rcpp::traits::input_parameter< arma::mat >::type data(dataSEXP);
-    Rcpp::traits::input_parameter< int >::type nVar(nVarSEXP);
     Rcpp::traits::input_parameter< const std::vector<double>& >::type predtimes(predtimesSEXP);
     Rcpp::traits::input_parameter< const NumericVector& >::type emaxtimes(emaxtimesSEXP);
     Rcpp::traits::input_parameter< int >::type nPatients(nPatientsSEXP);
     Rcpp::traits::input_parameter< int >::type nStrata(nStrataSEXP);
     Rcpp::traits::input_parameter< int >::type cause(causeSEXP);
     Rcpp::traits::input_parameter< bool >::type Efron(EfronSEXP);
-    rcpp_result_gen = Rcpp::wrap(baseHaz_cpp(alltimes, status, eXb, strata, se, data, nVar, predtimes, emaxtimes, nPatients, nStrata, cause, Efron));
+    rcpp_result_gen = Rcpp::wrap(baseHaz_cpp(alltimes, status, eXb, strata, predtimes, emaxtimes, nPatients, nStrata, cause, Efron));
     return rcpp_result_gen;
 END_RCPP
 }
