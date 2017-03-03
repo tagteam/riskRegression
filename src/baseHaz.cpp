@@ -127,7 +127,6 @@ List baseHaz_cpp(const NumericVector& alltimes,
     resH = baseHazStrata_cpp(alltimes_S[iter_s], status_S[iter_s], eXb_S[iter_s],
                              nObsStrata[iter_s], maxtime, cause, 
                              Efron);
-    
     // subset results according to predtime
     if(nPredtimes>0){
       resH = subset_structExport(resH,

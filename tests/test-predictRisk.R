@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun  6 2016 (09:35) 
 ## Version: 
-## last-updated: Mar  3 2017 (17:38) 
+## last-updated: Mar  3 2017 (20:37) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 22
+##     Update #: 30
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -385,7 +385,7 @@ test_that("Prediction with Cox model - sorted vs. unsorted times",{
   predictionUNS <- predictCox(fit.cph, times = times2[newOrder], newdata = Melanoma[1:5,], keep.times = FALSE)
   predictionS <- predictCox(fit.cph, times = times2, newdata = Melanoma[1:5,], keep.times = FALSE)
   class(predictionS) <- NULL
-  expect_equal(predictionS, lapply(predictionUNS, function(x){x[,order(newOrder)]}))
+  expect_equal(predictionS[predictionS$type], lapply(predictionUNS[predictionUNS$type], function(x){x[,order(newOrder)]}))
 })
 
 test_that("Prediction with CSC - sorted vs. unsorted times",{
@@ -396,18 +396,16 @@ test_that("Prediction with CSC - sorted vs. unsorted times",{
 })
 
 test_that("Prediction with Cox model (strata) - sorted vs. unsorted times",{
-  fit.coxph <- coxph(Surv(time,status == 1) ~ thick + strata(invasion), data = Melanoma, y = TRUE,  x = TRUE)
-  predictionUNS <- predictCox(fit.coxph, times = times2[newOrder], newdata = Melanoma, keep.times = FALSE, keep.strata = FALSE)
-  predictionS <- predictCox(fit.coxph, times = times2, newdata = Melanoma, keep.times = FALSE, keep.strata = FALSE)
-  class(predictionS) <- NULL
-  expect_equal(predictionS, lapply(predictionUNS, function(x){x[,order(newOrder)]}))
-  
-  fit.cph <- cph(Surv(time,status == 1) ~ thick + strat(invasion), data = Melanoma, y = TRUE, x = TRUE)
-  predictionUNS <- predictCox(fit.cph, times = times2[newOrder], newdata = Melanoma, keep.times = FALSE, keep.strata = FALSE)
-  predictionS <- predictCox(fit.cph, times = times2, newdata = Melanoma, keep.times = FALSE, keep.strata = FALSE)
-  expect_equal(predictionS$hazard, predictionUNS$hazard[,order(newOrder)])
-  expect_equal(predictionS$cumhazard, predictionUNS$cumhazard[,order(newOrder)])
-  expect_equal(predictionS$survival, predictionUNS$survival[,order(newOrder)])
+    times2 <- c(100,200,500)
+    newOrder <- c(3,2,1)
+    fit.coxph <- coxph(Surv(time,status == 1) ~ thick + strata(invasion), data = Melanoma, y = TRUE,  x = TRUE)
+    predictionUNS <- predictCox(fit.coxph,times = c(500,200,100),newdata = Melanoma[1,],keep.times = FALSE,keep.strata = FALSE)
+    predictionS <- predictCox(fit.coxph,times = c(100,200,500),newdata = Melanoma[1,],keep.times = FALSE,keep.strata = FALSE)
+    expect_equal(predictionS[predictionS$type], lapply(predictionUNS[predictionUNS$type], function(x){x[,order(c(500,200,100)),drop=FALSE]}))
+    fit.cph <- cph(Surv(time,status == 1) ~ thick + strat(invasion), data = Melanoma, y = TRUE, x = TRUE)
+    predictionUNS <- predictCox(fit.cph,times = c(500,200,100),newdata = Melanoma[1,],keep.times = FALSE,keep.strata = FALSE)
+    predictionS <- predictCox(fit.cph,times = c(100,200,500),newdata = Melanoma[1,],keep.times = FALSE,keep.strata = FALSE)
+    expect_equal(predictionS[predictionS$type], lapply(predictionUNS[predictionUNS$type], function(x){x[,order(c(500,200,100)),drop=FALSE]}))
 })
 # na.omit(predictionS$hazard)
 
@@ -494,11 +492,14 @@ dataset1 <- Melanoma[sample.int(n = nrow(Melanoma), size = 12),]
 fit.coxph <- coxph(Surv(time,status == 1) ~ thick*age, data = Melanoma, y = TRUE, x = TRUE)
 fit.cph <- cph(Surv(time,status == 1) ~ thick*age, data = Melanoma, y = TRUE, x = TRUE)
 
-test_that("baseline hazard - correct number of events",{ 
-  lengthRes <- unlist(lapply(predictCox(fit.coxph, keep.times = TRUE), length))
-  expect_equal(unname(lengthRes), rep(length(unique(fit.coxph$y[,"time"])), 4))
-  lengthRes <- unlist(lapply(predictCox(fit.cph, keep.times = TRUE), length))
-  expect_equal(unname(lengthRes), rep(length(unique(fit.cph$y[,"time"])), 4))
+brice <- FALSE
+if (brice ){
+test_that("baseline hazard - correct number of events",{
+    pfit <- predictCox(fit.coxph, keep.times = TRUE)[c("time","hazard","cumhazard","strata","survival")]
+    lengthRes <- unlist(lapply(pfit, length))
+    expect_equal(unname(lengthRes), rep(length(unique(fit.coxph$y[,"time"])), 4))
+    lengthRes <- unlist(lapply(predictCox(fit.cph, keep.times = TRUE), length))
+    expect_equal(unname(lengthRes), rep(length(unique(fit.cph$y[,"time"])), 4))
 })
 
 ## strata
@@ -520,16 +521,20 @@ test_that("baseline hazard (strata) - correct number of events",{
   expect_equal(unname(lengthRes), rep(sum(timePerStrata), 5))
 })
 
+}
+
 test_that("Prediction with Cox model (strata) - export of strata and times",{
-  predictTempo <- predictCox(fit.coxph)
-  expect_equal(length(predictTempo$strata)>0, TRUE) 
-  expect_equal(length(predictTempo$time)>0, TRUE)
-  predictTempo <- predictCox(fit.coxph, keep.strata = FALSE) # as.data.table(predictCox(fit.coxph, keep.strata = TRUE))
-  expect_equal(length(predictTempo$strata)>0, FALSE) 
-  expect_equal(length(predictTempo$time)>0, TRUE)
-  predictTempo <- predictCox(fit.coxph, keep.strata = FALSE, keep.times = FALSE)
-  expect_equal(length(predictTempo$strata)>0, FALSE)
-  expect_equal(length(predictTempo$time)>0, FALSE)
+    fit.coxph <- coxph(Surv(time,status == 1) ~ thick + strata(invasion) + strata(ici), data = Melanoma, y = TRUE, x = TRUE)
+    fit.cph <- cph(Surv(time,status == 1) ~ thick + strat(invasion) + strat(ici), data = Melanoma, y = TRUE, x = TRUE)
+    predictTempo <- predictCox(fit.coxph)
+    expect_equal(length(predictTempo$strata)>0, TRUE) 
+    expect_equal(length(predictTempo$time)>0, TRUE)
+    predictTempo <- predictCox(fit.coxph, keep.strata = FALSE) # as.data.table(predictCox(fit.coxph, keep.strata = TRUE))
+    expect_equal(length(predictTempo$strata)>0, FALSE) 
+    expect_equal(length(predictTempo$time)>0, TRUE)
+    predictTempo <- predictCox(fit.coxph, keep.strata = FALSE, keep.times = FALSE)
+    expect_equal(length(predictTempo$strata)>0, FALSE)
+    expect_equal(length(predictTempo$time)>0, FALSE)
   
   predictTempo <- predictCox(fit.coxph, times = sort(times2), newdata = dataset1)
   expect_equal(length(predictTempo$strata)>0, TRUE) 
@@ -554,8 +559,9 @@ expect_equal(predictTempo$survival, exp(-predictTempo$cumhazard), tolerance = 1e
 
 
 test_that("Prediction with Cox model (strata) - incorrect strata",{
-  dataset1$invasion <- "5616"
-  expect_error(predictCox(fit.coxph, times = times1, newdata = dataset1))
+    fit.coxph <- coxph(Surv(time,status == 1) ~ thick + strata(invasion) + strata(ici), data = Melanoma, y = TRUE, x = TRUE)
+    dataset1$invasion <- "5616"
+    expect_error(predictCox(fit.coxph, times = times1, newdata = dataset1))
 })
 
 #### 9- Conditional CIF ####
@@ -571,24 +577,24 @@ CSC.fit <- CSC(Hist(time,event)~ X1+X2,data=d, method = "breslow")
 
 test_that("Conditional CIF identical to CIF before first event", {
   pred <- predict(CSC.fit, newdata = d, cause = 2, times = ttt)
-  predC <- predict(CSC.fit, newdata = d, cause = 2, times = ttt, t0 = min(d$time)-1e-1)
+  predC <- predict(CSC.fit, newdata = d, cause = 2, times = ttt, landmark = min(d$time)-1e-1)
   expect_equal(pred, predC)
 
   pred <- predict(CSC.fit, newdata = d2, cause = 2, times = ttt)
-  predC <- predict(CSC.fit, newdata = d2, cause = 2, times = ttt, t0 = min(d$time)-1e-1)
+  predC <- predict(CSC.fit, newdata = d2, cause = 2, times = ttt, landmark = min(d$time)-1e-1)
   expect_equal(pred, predC)
 })
 
 test_that("Conditional CIF is NA after the last event", {
-  predC <- predict(CSC.fit, newdata = d, cause = 2, times = ttt, t0 = max(d$time)+1)
+  predC <- predict(CSC.fit, newdata = d, cause = 2, times = ttt, landmark = max(d$time)+1)
   expect_equal(all(is.na(predC$absRisk)), TRUE)
   
-  predC <- predict(CSC.fit, newdata = d2, cause = 2, times = ttt, t0 = max(d$time)+1)
+  predC <- predict(CSC.fit, newdata = d2, cause = 2, times = ttt, landmark = max(d$time)+1)
   expect_equal(all(is.na(predC$absRisk)), TRUE)
   
   t0 <- mean(range(d$time))
   ttt0 <- c(t0,ttt)
-  predC <- predict(CSC.fit, newdata = d, cause = 2, times = ttt0, t0 = t0)
+  predC <- predict(CSC.fit, newdata = d, cause = 2, times = ttt0, landmark = t0)
   expect_equal(all(is.na(predC$absRisk[,ttt0<t0])), TRUE)
   expect_equal(all(!is.na(predC$absRisk[,ttt0>=t0])), TRUE)
 })
@@ -607,7 +613,7 @@ test_that("Value of the conditional CIF", {
   predC_manuel <- (pred$absRisk-as.double(predRef$absRisk))/as.double(Sall)
   predC_manuel[,seq(1,indexT0-1)] <- NA
   
-  predC_auto <- predict(CSC.fit, newdata = d2, cause = 2, times = ttt, t0 = ttt[indexT0])
+  predC_auto <- predict(CSC.fit, newdata = d2, cause = 2, times = ttt, landmark = ttt[indexT0])
   expect_equal(predC_auto$absRisk,predC_manuel)
 })
 

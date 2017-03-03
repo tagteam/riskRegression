@@ -97,7 +97,7 @@ predictCox(fit,centered=TRUE,type="hazard")
 predictCox(fit, newdata=nd, times=c(3,8),se=TRUE)
 predictCox(fit, newdata=nd, times = 5,iid=TRUE)
 
-cbind(survival::basehaz(fit),predictCox(fit,type="cumhazard"))
+cbind(survival::basehaz(fit),predictCox(fit,type="cumhazard")$cumhazard)
 
 # one strata variable
 fitS <- coxph(Surv(time,status)~strata(X1)+X2,
@@ -115,7 +115,7 @@ nd$V=sample(letters[4:10],replace=TRUE,size=NROW(nd))
 fit2S <- coxph(Surv(time,status)~X1+strata(U)+strata(V)+X2,
               data=d, ties="breslow", x = TRUE, y = TRUE)
 
-cbind(survival::basehaz(fit2S),predictCox(fit2S,type="cumhazard"))
+cbind(survival::basehaz(fit2S),predictCox(fit2S,type="cumhazard")$cumhazard)
 predictCox(fit2S)
 predictCox(fitS, newdata=nd, times = 3)
 

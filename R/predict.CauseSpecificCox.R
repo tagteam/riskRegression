@@ -49,13 +49,16 @@
 #' CSC.fit <- CSC(Hist(time,event)~ X1+X2,data=d, method = "breslow")
 #' 
 #' predCSC <- predict(CSC.fit, newdata = d, cause = 2, times = ttt)
-#' predCSC.se <- predict(CSC.fit, newdata = d[1:5,], cause = 2, times = ttt, se = TRUE,keep.newdata=TRUE)
-#' predCSC.iid <- predict(CSC.fit, newdata = d[1:5,], cause = 2, times = ttt, iid = TRUE)
+#' predCSC.se <- predict(CSC.fit, newdata = d[1:5,], cause = 2, times = ttt,
+#'                       se = TRUE,keep.newdata=TRUE)
+#' predCSC.iid <- predict(CSC.fit, newdata = d[1:5,],
+#'                        cause = 2, times = ttt, iid = TRUE)
 #'
 #' # predCSC.se$absRisk.se
 #' # sqrt(apply(predCSC.iid$absRisk.iid[,1,]^2,1,function(x){sum(x)}))
 #' ## strata
-#' CSC.fit.s <- CSC(list(Hist(time,event)~ strata(X1)+X2+X9,Hist(time,event)~ X2+strata(X4)+X8+X7),data=d, method = "breslow")
+#' CSC.fit.s <- CSC(list(Hist(time,event)~ strata(X1)+X2+X9,
+#'  Hist(time,event)~ X2+strata(X4)+X8+X7),data=d, method = "breslow")
 #' predict(CSC.fit.s,cause=1,times=ttt,se=1L)
 #' # cph function
 #' CSC.cph <- CSC(Hist(time,event)~ X1+X2,data=d, method = "breslow", fitter = "cph")

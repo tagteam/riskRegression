@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: feb 27 2017 (10:47) 
 ## Version: 
-## last-updated: Mar  3 2017 (11:41) 
+## last-updated: Mar  3 2017 (20:27) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 37
+##     Update #: 38
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -33,7 +33,7 @@
 #' 
 #' pred.CSC <- predict(m.CSC, newdata = d[1:3,],
 #'                     time = 1:5, cause = 1, se = TRUE, keep.newdata = TRUE)
-#' plot(pred.CSC, groupBy = "covariates")
+#' 
 #'
 #' ## strata
 #' m.SCSC <- CSC(Hist(time,event)~ strata(X1) + strata(X2) + X6,
@@ -41,14 +41,13 @@
 #' pred.SCSC <- predict(m.SCSC, time = 1:3,
 #' cause = 1, se = TRUE, keep.newdata = TRUE, keep.strata = TRUE)
 #' plot(pred.SCSC)
-#' plot(pred.SCSC, groupBy = "strata")
+#' plot(pred.SCSC)
 #'
 #' @method plot predictCSC
 #' 
 #' @export
 plot.predictCSC <- function(x,
                             ci = FALSE,
-                            groupBy = "row",
                             digits = 2, ...){
     plotframe <- as.data.table(x)
 }

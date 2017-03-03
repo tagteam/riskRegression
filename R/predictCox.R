@@ -76,7 +76,7 @@
 #' predictCox(fit, newdata=nd, times=c(3,8),se=TRUE)
 #' predictCox(fit, newdata=nd, times = 5,iid=TRUE)
 #' 
-#' cbind(survival::basehaz(fit),predictCox(fit,type="cumhazard"))
+#' cbind(survival::basehaz(fit),predictCox(fit,type="cumhazard")$cumhazard)
 #' 
 #' # one strata variable
 #' fitS <- coxph(Surv(time,status)~strata(X1)+X2,
@@ -94,7 +94,7 @@
 #' fit2S <- coxph(Surv(time,status)~X1+strata(U)+strata(V)+X2,
 #'               data=d, ties="breslow", x = TRUE, y = TRUE)
 #'
-#' cbind(survival::basehaz(fit2S),predictCox(fit2S,type="cumhazard"))
+#' cbind(survival::basehaz(fit2S),predictCox(fit2S,type="cumhazard")$cumhazard)
 #' predictCox(fit2S)
 #' predictCox(fitS, newdata=nd, times = 3)
 #' 
@@ -133,8 +133,8 @@ predictCox <- function(object,
     }
     needOrder <- (nTimes>0 && is.unsorted(times))
     if (needOrder) {
-        times.sorted <- sort(times)
         oorder.times <- order(order(times))
+        times.sorted <- sort(times)
     }else{
         if (nTimes==0)
             times.sorted <- numeric(0)
@@ -206,7 +206,6 @@ predictCox <- function(object,
                              strata = as.numeric(object.strata) - 1)
     dt.prepare[, statusM1 := 1-status] # sort by statusM1 such that deaths appear first and then censored events
     setkeyv(dt.prepare, c("strata", "alltimes", "statusM1"))
-    
     # compute the baseline hazard
     Lambda0 <- baseHaz_cpp(alltimes = dt.prepare$alltimes,
                            status = dt.prepare$status,
@@ -218,6 +217,7 @@ predictCox <- function(object,
                            predtimes = times.sorted,
                            cause = 1,
                            Efron = (object.baseEstimator == "efron"))
+    
     # }}}
     #### compute hazard and survival #### 
     if (is.null(newdata)){  
@@ -305,15 +305,17 @@ predictCox <- function(object,
                 if ("cumhazard" %in% type || "survival" %in% type){
                     cumhazard.S <-  new.eXb[newid.S] %o% Lambda0$cumhazard[id.S]
                     if ("cumhazard" %in% type){
-                        if (needOrder)
+                        if (needOrder){
                             out$cumhazard[newid.S,] <- cumhazard.S[,oorder.times,drop=0L]
-                        else
+                        } else{
                             out$cumhazard[newid.S,] <- cumhazard.S
+                        }
                     }
                     if ("survival" %in% type){
                         out$survival[newid.S,] <- exp(-cumhazard.S)
-                        if (needOrder)
-                            out$survival[newid.S,] <- out$survival[newid.S,][,oorder.times,drop=0L]
+                        if (needOrder){
+                            out$survival[newid.S,] <- out$survival[,oorder.times,drop=0L]
+                        }
                     }
                 }
             }

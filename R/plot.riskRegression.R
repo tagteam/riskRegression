@@ -3,24 +3,9 @@
 #' Show predicted risk obtained by a risk prediction model as a function of
 #' time.
 #' 
-#' @aliases plot.riskRegression plot.CauseSpecificCox
+#' @aliases plot.riskRegression 
 #' @usage
 #' \method{plot}{riskRegression}(x,
-##'   cause,
-##'   newdata,
-##'   xlab,
-##'   ylab,
-##'   xlim,
-##'   ylim,
-##'   lwd,
-##'   col,
-##'   lty,
-##'   axes=TRUE,
-##'   percent=TRUE,
-##'   legend=TRUE,
-##'   add=FALSE,
-##'   ...)
-#' \method{plot}{CauseSpecificCox}(x,
 ##'   cause,
 ##'   newdata,
 ##'   xlab,
@@ -64,9 +49,6 @@
 ##' 
 ##' fit.arr <- ARR(Hist(time,status)~invasion+age+strata(sex),data=Melanoma,cause=1)
 ##' plot(fit.arr)
-##' 
-##' fit.csc <- CSC(Hist(time,status)~invasion+age+sex,data=Melanoma,cause=1)
-##' plot(fit.csc)
 ##' 
 ##' 
 #' @export 
