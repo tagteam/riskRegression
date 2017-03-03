@@ -7,7 +7,7 @@
 predictCox(object, newdata = NULL, times, centered = TRUE,
   type = c("hazard", "cumhazard", "survival"), keep.strata = TRUE,
   keep.times = TRUE, keep.newdata = FALSE, se = FALSE, iid = FALSE,
-  conf.level = 0.95, format)
+  conf.level = 0.95)
 }
 \arguments{
 \item{object}{The fitted Cox regression model object either
@@ -56,9 +56,6 @@ corresponding to the output.}
 corresponding to the output.}
 
 \item{conf.level}{Level of confidence.}
-
-\item{format}{How to export the baseline hazard. Can be
-\code{"data.frame"}, \code{"data.table"} or \code{"list"}.}
 }
 \value{
 A list some or all of the following elements containing:

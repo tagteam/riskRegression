@@ -347,7 +347,7 @@ predictCox <- function(object,
             outSE <- seRobustCox(nTimes = nTimes, type = type,
                                  Lambda0 = Lambda0, iid = iid.object, object.n = object.n, nStrata = nStrata, 
                                  new.eXb = new.eXb, new.LPdata = new.LPdata, new.strata = new.strata, new.survival = out$survival,
-                                 export = c("iid","se")[c(iid,se)])
+                                 export = c("iid"[iid==TRUE],"se"[se==TRUE]))
             if(iid == TRUE){
                 if ("hazard" %in% type){
                     if (needOrder)
@@ -369,29 +369,30 @@ predictCox <- function(object,
                 }
             }
             if(se == TRUE){
+                zval <- qnorm(1- (1-conf.level)/2, 0,1)
                 if ("hazard" %in% type){
                     if (needOrder)
                         out$hazard.se <- outSE$hazard.se[oorder.times,,drop=0L]
                     else
                         out$hazard.se <- outSE$hazard.se
-                    out$hazard.lower <- apply(out$hazard - qnorm((1-conf.level)/2)*out$hazard.se,2,pmax,0)
-                    out$hazard.upper <- out$hazard + qnorm((1-conf.level)/2)*out$hazard.se
+                    out$hazard.lower <- apply(out$hazard - zval*out$hazard.se,2,pmax,0)
+                    out$hazard.upper <- out$hazard + zval*out$hazard.se
                 }
                 if ("cumhazard" %in% type){
                     if (needOrder)
                         out$cumhazard.se <- outSE$cumhazard.se[oorder.times,,drop=0L]
                     else
                         out$cumhazard.se <- outSE$cumhazard.se
-                    out$cumhazard.lower <- apply(out$cumhazard - qnorm((1-conf.level)/2)*out$cumhazard.se,2,pmax,0)
-                    out$cumhazard.upper <- out$cumhazard + qnorm((1-conf.level)/2)*out$cumhazard.se
+                    out$cumhazard.lower <- apply(out$cumhazard - zval*out$cumhazard.se,2,pmax,0)
+                    out$cumhazard.upper <- out$cumhazard + zval*out$cumhazard.se
                 }
                 if ("survival" %in% type){
                     if (needOrder)
                         out$survival.se <- outSE$survival.se[oorder.times,,drop=0L]
                     else
                         out$survival.se <- outSE$survival.se
-                    out$survival.lower <- apply(out$survival - qnorm((1-conf.level)/2)*out$survival.se,2,pmax,0)
-                    out$survival.upper <- apply(out$survival + qnorm((1-conf.level)/2)*out$survival.se,2,pmin,1)
+                    out$survival.lower <- apply(out$survival - zval*out$survival.se,2,pmax,0)
+                    out$survival.upper <- apply(out$survival + zval*out$survival.se,2,pmin,1)
                 }
             }
         }
