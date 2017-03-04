@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun  6 2016 (09:35) 
 ## Version: 
-## last-updated: Mar  3 2017 (20:37) 
-##           By: Thomas Alexander Gerds
-##     Update #: 30
+## last-updated: mar  4 2017 (19:39) 
+##           By: Brice
+##     Update #: 33
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -260,7 +260,8 @@ setkeyv(data.test, c("invasion","ici"))
 
 # identify the last event time for each strata
 epsilon <- min(diff(unique(fit.coxph$y[,"time"])))/10
-baseHazStrata <- as.data.table(predictCox(fit.coxph, keep.strata = TRUE, keep.times = TRUE))
+pred.coxph <- predictCox(fit.coxph, keep.strata = TRUE, keep.times = TRUE)
+baseHazStrata <- as.data.table(pred.coxph[c("time","hazard","cumhazard","strata","survival")])
 dt.times <- baseHazStrata[, .(beforeLastTime = time[.N]-epsilon, LastTime = time[.N], afterLastTime = time[.N]+epsilon), by = strata]
 
 test_that("Prediction with Cox model (strata) - NA after last event",{
@@ -492,13 +493,15 @@ dataset1 <- Melanoma[sample.int(n = nrow(Melanoma), size = 12),]
 fit.coxph <- coxph(Surv(time,status == 1) ~ thick*age, data = Melanoma, y = TRUE, x = TRUE)
 fit.cph <- cph(Surv(time,status == 1) ~ thick*age, data = Melanoma, y = TRUE, x = TRUE)
 
-brice <- FALSE
-if (brice ){
 test_that("baseline hazard - correct number of events",{
-    pfit <- predictCox(fit.coxph, keep.times = TRUE)[c("time","hazard","cumhazard","strata","survival")]
-    lengthRes <- unlist(lapply(pfit, length))
+    # c("time","hazard","cumhazard","survival") remove lastEventTime from pfit
+    # time hazard cumhazard survival should have length equals to the number of eventtimes (including censored events)
+    # this is not true for lastEventTime which is has length the number of strata
+    pfit.coxph <- predictCox(fit.coxph, keep.times = TRUE)[c("time","hazard","cumhazard","survival")]
+    lengthRes <- unlist(lapply(pfit.coxph, length))
     expect_equal(unname(lengthRes), rep(length(unique(fit.coxph$y[,"time"])), 4))
-    lengthRes <- unlist(lapply(predictCox(fit.cph, keep.times = TRUE), length))
+    pfit.cph <- predictCox(fit.cph, keep.times = TRUE)[c("time","hazard","cumhazard","survival")]
+    lengthRes <- unlist(lapply(pfit.cph, length))
     expect_equal(unname(lengthRes), rep(length(unique(fit.cph$y[,"time"])), 4))
 })
 
@@ -507,21 +510,29 @@ fit.coxph <- coxph(Surv(time,status == 1) ~ thick + strata(invasion) + strata(ic
 fit.cph <- cph(Surv(time,status == 1) ~ thick + strat(invasion) + strat(ici), data = Melanoma, y = TRUE, x = TRUE)
 
 test_that("baseline hazard (strata) - order of the results",{
-  expect_equal(as.numeric(predictCox(fit.coxph, keep.strata = TRUE)$strata), as.numeric(basehaz(fit.coxph)$strata))
-  expect_equal(as.numeric(predictCox(fit.cph, keep.strata = TRUE)$strata), as.numeric(basehaz(fit.cph)$strata))
+  expect_equal(as.numeric(predictCox(fit.coxph, keep.strata = TRUE)$strata),
+               as.numeric(basehaz(fit.coxph)$strata))
+  expect_equal(as.numeric(predictCox(fit.cph, keep.strata = TRUE)$strata),
+               as.numeric(basehaz(fit.cph)$strata))
 })
 
-test_that("baseline hazard (strata) - correct number of events",{ 
+test_that("baseline hazard (strata) - correct number of events",{
+    # c("time","hazard","cumhazard","survival", "strata") remove lastEventTime from pfit
+    # time hazard cumhazard survival and strata should have length equals to the number of eventtimes (including censored events)
+    # this is not true for lastEventTime which is has length the number of strata
+
   strata <- interaction(Melanoma$invasion, Melanoma$ici)
   timePerStrata <- tapply(fit.coxph$y[,"time"],strata, function(x){length(unique(x))})
-  
-  lengthRes <- unlist(lapply(predictCox(fit.coxph, keep.times = TRUE, keep.strata = TRUE), length))
+
+  pfit.coxph <- predictCox(fit.coxph, keep.times = TRUE, keep.strata = TRUE)[c("time","hazard","cumhazard","survival","strata")]
+  lengthRes <- unlist(lapply(pfit.coxph, length))
   expect_equal(unname(lengthRes), rep(sum(timePerStrata), 5))
-  lengthRes <- unlist(lapply(predictCox(fit.cph, keep.times = TRUE, keep.strata = TRUE), length))
+  pfit.cph <- predictCox(fit.cph, keep.times = TRUE, keep.strata = TRUE)[c("time","hazard","cumhazard","survival","strata")]
+  lengthRes <- unlist(lapply(pfit.cph, length))
   expect_equal(unname(lengthRes), rep(sum(timePerStrata), 5))
 })
 
-}
+
 
 test_that("Prediction with Cox model (strata) - export of strata and times",{
     fit.coxph <- coxph(Surv(time,status == 1) ~ thick + strata(invasion) + strata(ici), data = Melanoma, y = TRUE, x = TRUE)
