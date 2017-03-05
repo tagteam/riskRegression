@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Feb 27 2017 (09:52) 
 ## Version: 
-## last-updated: Feb 28 2017 (20:09) 
+## last-updated: Mar  5 2017 (18:19) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 26
+##     Update #: 63
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -43,20 +43,22 @@ simMelanoma <- function(n){
     ## F2 <- survival::survreg(Surv(time,status==2)~age+sex,data=Melanoma)
     m <- lava::lvm(~ulcer+epicel+sex+age+logthick)
     ## m <- categorical(m,~ici, K=4,p=pici[-3])
+    lava::distribution(m,~age) <- lava::normal.lvm(mean=55,sd=10)
+    lava::distribution(m,~logthick) <- lava::normal.lvm(sd=0.8)
     lava::distribution(m,~ici1) <- lava::binomial.lvm(p=0.29)
     lava::distribution(m,~ici2) <- lava::binomial.lvm(p=0.52)
     lava::distribution(m,~ici3) <- lava::binomial.lvm(p=0.11)
     lava::distribution(m,~sex) <- lava::binomial.lvm(p=0.39)
     lava::distribution(m,~ulcer) <- lava::binomial.lvm(p=0.44)
     lava::distribution(m,~epicel) <- lava::binomial.lvm(p=0.44)
-    lava::distribution(m,~t0) <- lava::coxWeibull.lvm(scale=exp(-2-8/0.33),shape=1/0.33)
+    lava::distribution(m,~t0) <- lava::coxWeibull.lvm(scale=exp(-8/0.33),shape=1/0.33)
     lava::distribution(m,~t1) <- lava::coxWeibull.lvm(scale=exp(-11.5/0.8),shape=1/0.8)
-    lava::distribution(m,~t2) <- lava::coxWeibull.lvm(scale=exp(3+-16/1.3),shape=1/1.3)
+    lava::distribution(m,~t2) <- lava::coxWeibull.lvm(scale=exp(-16/1.3),shape=1/1.3)
     transform(m,thick~logthick) <- function(x){exp(x)}
     lava::regression(m,sex~ulcer+epicel+ici1+ici2+ici3) <- c(0.83,0.67,-0.28,0.03,-0.28)
-    lava::regression(m,logthick~age+sex+ulcer+epicel+ici1+ici2+ici3) <- c(0.01,0.23,0.9,-0.35,0.56,0.73,0.83)
-    lava::regression(m,age~sex) <- 2.34
+    lava::regression(m,logthick~age+sex+ulcer+epicel+ici1+ici2+ici3) <- c(0.007,0.23,0.9,-0.35,0.56,0.73,0.83)
     lava::regression(m,t1~logthick+age+sex+ulcer+epicel+ici1+ici2+ici3) <- -c(-0.29,-0.02,-0.34,-0.77,0.53,-1.39,-1.32,-1.7)/0.8
+    lava::intercept(m,"logthick") <- -1.3
     lava::regression(m,t2~age+sex) <- -c(-0.08,-0.39)/1.3
     m <- lava::eventTime(m,time~min(t0=0,t1=1,t2=2),"status")
     simdat <- lava::sim(m,n)

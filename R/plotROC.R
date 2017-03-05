@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun 23 2016 (10:27) 
 ## Version: 
-## last-updated: feb 28 2017 (13:42) 
-##           By: Brice Ozenne
-##     Update #: 24
+## last-updated: Mar  5 2017 (18:40) 
+##           By: Thomas Alexander Gerds
+##     Update #: 55
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -16,16 +16,22 @@
 ### Code:
 ##' Plot ROC curve 
 ##'
-##' @title Plot ROC curve
-##' @param x Object obtained with \code{Score.list}
-##' @param models Choice of models to plot
-##' @param times Time point specifying the prediction horizon
-##' @param xlab Label for x-axis
-##' @param ylab Label for y-axis
-##' @param lwd line width
-##' @param legend Logical. If \code{TRUE} draw legend.
-##' @param legend.title Legend title
-##' @param ... Not yet used
+##' @title Plot ROC curves
+#' @param x Object obtained with function \code{Score}
+#' @param models  Choice of models to plot
+#' @param times A single time point specifying the prediction horizon
+#' @param xlab Label for x-axis
+#' @param ylab Label for y-axis
+#' @param col line color
+#' @param lwd line width
+#' @param lty line style
+#' @param cex point size
+#' @param pch point style
+#' @param lwd line width
+#' @param legend logical. If \code{1L} draw a legend with the values of AUC.
+#' @param add logical. If \code{1L} add lines to an existing plot.
+#' @param ... Used for additional control of the subroutines: plot,
+#'     axis, lines, legend. See \code{\link{SmartControl}}.
 ##' @examples
 ##' ## binary
 ##' set.seed(18)
@@ -62,11 +68,16 @@ plotROC <- function(x,
                     times,
                     xlab="1-Specificity",
                     ylab="Sensitivity",
+                    col,
                     lwd=3,
+                    lty=1,
+                    cex=1,
+                    pch=1,
                     legend=TRUE,
-                    legend.title,
+                    add=FALSE,
                     ...){
     model=FPR=TPR=times=NULL
+    cbbPalette <- c("#000000", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
     pframe <- x$ROC$plotframe
     if (!missing(models)){
         pframe <- pframe[model%in%models]
@@ -76,20 +87,19 @@ plotROC <- function(x,
         }
     }
     setkey(pframe,model)
-    if (x$responseType!="binary"){
-        if (missing(times))
-            times <- max(pframe[["times"]])
-        else ## can only do one times
-            times <- times[[1]]
-        pframe <- pframe[times==times]
-    }
-    plot(0,0,type="n",ylim = 0:1,xlim = 0:1,axes=FALSE,xlab = xlab,ylab = ylab)
-    prodlim::PercentAxis(1,at=seq(0,1,.25))
-    prodlim::PercentAxis(2,at=seq(0,1,.25))
-    if (!missing(models)) pframe <- pframe[model %in% models]
-    pframe[,col:=as.numeric(as.factor(model))]
-    pframe[,lwd:=lwd]
-    pframe[,lines(c(0,FPR,1),c(0,TPR,1),type="l",lwd=lwd,col=col),by=model]
+    mm <- unique(pframe$model)
+    lenmm <- length(mm)
+    if(missing(col)) col <- rep(cbbPalette,length.out=lenmm)
+    names(col) <- mm
+    if(missing(lwd)) lwd <- 2
+    lwd <- rep(lwd,length.out=lenmm)
+    names(lwd) <- mm
+    pch <- rep(pch,length.out=lenmm)
+    names(pch) <- mm
+    if(missing(lwd)) lty <- 1
+    lty <- rep(lty,length.out=lenmm)
+    names(lty) <- mm
+    lines.DefaultArgs <- list(pch=pch,cex=cex,lwd=lwd,type="l",col=col,lty=lty)
     if (legend!=FALSE){
         if (!is.character(legend)){
             if (x$responseType=="binary"){
@@ -112,16 +122,57 @@ plotROC <- function(x,
                 }
             }
             setkey(auc,model)
-            ## legend <- paste0(auc$model,": ",Publish::formatCI(100*auc$AUC,100*auc$lower.AUC,100*auc$upper.AUC,showX=TRUE,digits=1))
-            legend <- paste0(auc$model,": ",sprintf(fmt="%s [%s;%s]",
+        }
+        auc.legend <- paste0(auc$model,": ",sprintf(fmt="%s [%s;%s]",
                                                     round(100*auc$AUC,digits=1),
                                                     round(100*auc$lower.AUC,digits=1),
                                                     round(100*auc$upper.AUC,digits=1)))
-        }
-        if (missing(legend.title)) legend.title <- "AUC"
-        pframe[,legend(x="bottomright",legend=legend,lwd=lwd[[1]],title=legend.title,col=unique(col))]
     }
+    legend.DefaultArgs <- list(legend=auc.legend,lwd=lwd,col=col,lty=lty,cex=cex,bty="n",y.intersp=1.3,x="bottomright",title="AUC")
+    plot.DefaultArgs <- list(x=0,y=0,type = "n",ylim = c(0,1),xlim = c(0,1),ylab=ylab,xlab=xlab)
+    axis1.DefaultArgs <- list(side=1,las=1,at=seq(0,1,.25))
+    axis2.DefaultArgs <- list(side=2,las=1,at=seq(0,1,.25))
+    control <- prodlim::SmartControl(call= list(...),
+                                     keys=c("plot","lines","legend","axis1","axis2"),
+                                     ignore=NULL,
+                                     ignore.case=TRUE,
+                                     defaults=list("plot"=plot.DefaultArgs,
+                                                   "lines"=lines.DefaultArgs,
+                                                   "legend"=legend.DefaultArgs,
+                                                   "axis1"=axis1.DefaultArgs,
+                                                   "axis2"=axis2.DefaultArgs),
+                                     forced=list("plot"=list(axes=FALSE),
+                                                 "axis1"=list(side=1),"axis2"=list(side=2)),
+                                     verbose=TRUE)
+    if (x$responseType!="binary"){
+        if (missing(times))
+            times <- max(pframe[["times"]])
+        else ## can only do one times
+            times <- times[[1]]
+        pframe <- pframe[times==times]
+    }
+    if (add==0L) do.call("plot",control$plot)
+    ## plot(0,0,type="n",ylim = 0:1,xlim = 0:1,axes=FALSE,xlab = xlab,ylab = ylab)
+    control$axis1$labels <- paste(100*control$axis1$at,"%")
+    control$axis2$labels <- paste(100*control$axis2$at,"%")
+    do.call("axis",control$axis1)
+    do.call("axis",control$axis2)
+    if (!(is.logical(legend[1]) && legend[1]==FALSE)){
+        do.call("legend",control$legend)
+    }
+    ## pframe[,col:=as.numeric(as.factor(model))]
+    ## pframe[,lwd:=lwd]
+    ## pframe[,lines(c(0,FPR,1),c(0,TPR,1),type="l",lwd=lwd,col=col),by=model]
     abline(a=0,b=1,col="gray77",lwd=3)
+    pframe[,{thisline <- control$line;
+        thisline$col=thisline$col[[as.character(model[1])]];
+        thisline$lwd=thisline$lwd[[as.character(model[1])]];
+        thisline$lty=thisline$lty[[as.character(model[1])]];
+        thisline$pch=thisline$pch[[as.character(model[1])]];
+        ## thisline$type=thisline$type[[as.character(model[1])]];
+        thisline$x=c(0,FPR,1);
+        thisline$y=c(0,TPR,1);
+        do.call("lines",thisline)},by=model]
     invisible(x)
 }
 

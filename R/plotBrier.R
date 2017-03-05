@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Feb 23 2017 (11:07) 
 ## Version: 
-## last-updated: Mar  1 2017 (16:17) 
+## last-updated: Mar  5 2017 (14:44) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 32
+##     Update #: 33
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -48,7 +48,24 @@
 #' @export
 #'
 #' 
-plotBrier <- function(x,models,which="score",xlim,ylim,xlab,ylab,col,lwd,lty=1,cex=1,pch=1,type="l",axes=1L,percent=1L,confint=0L,legend=1L,...){
+plotBrier <- function(x,
+                      models,
+                      which="score",
+                      xlim,
+                      ylim,
+                      xlab,
+                      ylab,
+                      col,
+                      lwd,
+                      lty=1,
+                      cex=1,
+                      pch=1,
+                      type="l",
+                      axes=1L,
+                      percent=1L,
+                      confint=0L,
+                      legend=1L,
+                      ...){
     times=contrast=model=se.Brier=se.delta=Brier=lower.Brier=upper.Brier=lower=upper=delta=reference=NULL
     ## cbPalette <- c("#999999", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
     cbbPalette <- c("#000000", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
@@ -121,26 +138,26 @@ plotBrier <- function(x,models,which="score",xlim,ylim,xlab,ylab,col,lwd,lty=1,c
         ## Brier
         do.call("plot",control$plot)
         pframe[,{thisline <- control$line
-               thisline$col=thisline$col[[as.character(model[1])]]
-               thisline$lwd=thisline$lwd[[as.character(model[1])]]
-               thisline$lty=thisline$lty[[as.character(model[1])]]
-               thisline$pch=thisline$pch[[as.character(model[1])]]
-               thisline$type=thisline$type[[as.character(model[1])]]
-               thisline$x=times
-               thisline$y=Brier
-               do.call("lines",thisline)},by=model]
+            thisline$col=thisline$col[[as.character(model[1])]]
+            thisline$lwd=thisline$lwd[[as.character(model[1])]]
+            thisline$lty=thisline$lty[[as.character(model[1])]]
+            thisline$pch=thisline$pch[[as.character(model[1])]]
+            thisline$type=thisline$type[[as.character(model[1])]]
+            thisline$x=times
+            thisline$y=Brier
+            do.call("lines",thisline)},by=model]
     }else{
         ## delta Brier
         do.call("plot",control$plot)
         pframe[,{thisline <- control$line;
-               thisline$col=thisline$col[[as.character(contrast[1])]];
-               thisline$lwd=thisline$lwd[[as.character(contrast[1])]];
-               thisline$lty=thisline$lty[[as.character(contrast[1])]];
-               thisline$pch=thisline$pch[[as.character(contrast[1])]];
-               thisline$type=thisline$type[[as.character(contrast[1])]];
-               thisline$x=times;
-               thisline$y=delta;
-               do.call("lines",thisline)},by=contrast]
+            thisline$col=thisline$col[[as.character(contrast[1])]];
+            thisline$lwd=thisline$lwd[[as.character(contrast[1])]];
+            thisline$lty=thisline$lty[[as.character(contrast[1])]];
+            thisline$pch=thisline$pch[[as.character(contrast[1])]];
+            thisline$type=thisline$type[[as.character(contrast[1])]];
+            thisline$x=times;
+            thisline$y=delta;
+            do.call("lines",thisline)},by=contrast]
     }
     ## legend
     if (!(is.logical(legend[1]) && legend[1]==FALSE)){
