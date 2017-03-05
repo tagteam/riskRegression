@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Feb 23 2017 (11:15) 
 ## Version: 
-## last-updated: Mar  2 2017 (09:10) 
+## last-updated: Mar  4 2017 (11:32) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 104
+##     Update #: 113
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -129,11 +129,13 @@ plotCalibration <- function(x,
     if (missing(showPseudo)) 
         showPseudo <- x$censType=="rightCensored"
     pframe <- x$Calibration$plotframe
+    if (is.null(pframe))
+        stop("Object has no information for calibration plot.\nYou should call the function \"riskRegression::Score\" with plots=\"calibration\".")
     Rvar <- grep("^(ReSpOnSe|pseudovalue)$",names(pframe),value=TRUE)
     if (!missing(models)){
         pframe <- pframe[model%in%models]
     }
-    setkey(pframe,model)
+    data.table::setkey(pframe,model)
     if (x$responseType!="binary"){
         if (missing(times))
             tp <- max(pframe[["times"]])

@@ -40,13 +40,17 @@
 #' }
 #'  
 #' @examples 
-#' 
-#' d <- sampleData(50,outcome="comp")
+#' set.seed(5)
+#' d <- sampleData(80,outcome="comp")
+#' nd <- sampleData(4,outcome="comp")
 #' d$time <- round(d$time,1)
 #' ttt <- sort(sample(x = unique(d$time), size = 10))
 #'
 #' # coxph function
-#' CSC.fit <- CSC(Hist(time,event)~ X1+X2,data=d, method = "breslow")
+#' CSC.fit <- CSC(Hist(time,event)~ X3+X8,data=d, method = "breslow")
+#' x= predict(CSC.fit,newdata=nd,times=1:10,cause=1,se=1L)
+#' px=print(x)
+#' px
 #' 
 #' predCSC <- predict(CSC.fit, newdata = d, cause = 2, times = ttt)
 #' predCSC.se <- predict(CSC.fit, newdata = d[1:5,], cause = 2, times = ttt,
