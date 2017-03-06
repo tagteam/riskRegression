@@ -35,8 +35,6 @@ plotROC(x, models, times, xlab = "1-Specificity", ylab = "Sensitivity", col,
 
 \item{...}{Used for additional control of the subroutines: plot,
 axis, lines, legend. See \code{\link{SmartControl}}.}
-
-\item{lwd}{line width}
 }
 \description{
 Plot ROC curve

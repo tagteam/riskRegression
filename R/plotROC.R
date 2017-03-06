@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun 23 2016 (10:27) 
 ## Version: 
-## last-updated: Mar  5 2017 (18:40) 
+## last-updated: Mar  6 2017 (14:40) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 55
+##     Update #: 56
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -27,7 +27,6 @@
 #' @param lty line style
 #' @param cex point size
 #' @param pch point style
-#' @param lwd line width
 #' @param legend logical. If \code{1L} draw a legend with the values of AUC.
 #' @param add logical. If \code{1L} add lines to an existing plot.
 #' @param ... Used for additional control of the subroutines: plot,
