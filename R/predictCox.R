@@ -209,6 +209,16 @@ predictCox <- function(object,
     dt.prepare[, statusM1 := 1-status] # sort by statusM1 such that deaths appear first and then censored events
     data.table::setkeyv(dt.prepare, c("strata", "alltimes", "statusM1"))
     # compute the baseline hazard
+    print(str(list(alltimes = dt.prepare$alltimes,
+                           status = dt.prepare$status,
+                           eXb = dt.prepare$eXb,
+                           strata = dt.prepare$strata,
+                           nPatients = object.n,
+                           nStrata = nStrata,
+                           emaxtimes = etimes.max,
+                           predtimes = times.sorted,
+                           cause = 1,
+                           Efron = (object.baseEstimator == "efron"))))
     Lambda0 <- baseHaz_cpp(alltimes = dt.prepare$alltimes,
                            status = dt.prepare$status,
                            eXb = dt.prepare$eXb,

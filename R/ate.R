@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Oct 23 2016 (08:53) 
 ## Version: 
-## last-updated: Mar  2 2017 (09:27) 
+## last-updated: Mar  6 2017 (00:06) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 60
+##     Update #: 62
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -69,12 +69,14 @@
 #'         times = 5:7, B = 0, y = TRUE, mc.cores=1)
 #' 
 #' ## Cause specific cox model
-#' dt <- sampleData(1e3,outcome="competing.risks")
+#' set.seed(17)
+#' n=200
+#' dt <- sampleData(n,outcome="competing.risks")
 #' dt$time <- round(dt$time,1)
-#' dt$X1 <- factor(rbinom(1e3, prob = c(0.2,0.3,0.2) , size = 3), labels = paste0("T",0:3))
-#' fitCR= CSC(Hist(time,event)~ X1+X2,data=dt,cause=1)
+#' dt$X1 <- factor(rbinom(n, prob = c(0.2,0.3,0.2) , size = 3), labels = paste0("T",0:3))
+#' fitCR= CSC(Hist(time,event)~ X1+X8,data=dt,cause=1)
 #' ate(fitCR, data = dt, treatment = "X1", contrasts = NULL,
-#'         times = 5:7, cause = 1, B = 3, mc.cores=1)
+#'         times = 7, cause = 1, B = 2, mc.cores=1)
 #'
 #' atefit=ate(fitCR, data = dt, treatment = "X1", contrasts = NULL,
 #'         times = 1:7, cause = 1, B = 0, mc.cores=1,conf.level=FALSE)
@@ -264,7 +266,7 @@ ate <- function(object,
             ## influence function for the hypothetical worlds in which every subject is treated with the same treatment
             data.i <- data
             data.i[[treatment]] <- factor(contrasts[i], levels = levels)
-            if (class(object)=="CauseSpecificCox"){
+            if ("CauseSpecificCox"%in% class(object)){
                 pred.i <- do.call("predict",args = list(object,
                                                         newdata = data.i,
                                                         times = times,

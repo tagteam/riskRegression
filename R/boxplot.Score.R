@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Aug 15 2016 (09:45) 
 ## Version: 
-## last-updated: Feb 28 2017 (20:01) 
+## last-updated: Mar  6 2017 (00:07) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 54
+##     Update #: 55
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -63,6 +63,7 @@
 ##' boxplot(scoreobj1)
 ##'
 ##' # competing risks outcome
+##' \dontrun{
 ##' data(Melanoma)
 ##' fitconv = CSC(Hist(time,status)~invasion+age+sex,data=Melanoma)
 ##' fitnew = CSC(Hist(time,status)~invasion+age+sex+logthick,data=Melanoma)
@@ -70,7 +71,7 @@
 ##'                formula=Hist(time,status)~1,
 ##'                data=Melanoma,metrics=NULL,summary="riskQuantile",times=5*365.25,nullModel=FALSE)
 ##' boxplot(scoreobj)
-##' 
+##' }
 ##'
 ##' # more than 2 competing risks
 ##' m=lava::lvm(~X1+X2+X3)

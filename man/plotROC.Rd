@@ -2,29 +2,41 @@
 % Please edit documentation in R/plotROC.R
 \name{plotROC}
 \alias{plotROC}
-\title{Plot ROC curve}
+\title{Plot ROC curves}
 \usage{
-plotROC(x, models, times, xlab = "1-Specificity", ylab = "Sensitivity",
-  lwd = 3, legend = TRUE, legend.title, ...)
+plotROC(x, models, times, xlab = "1-Specificity", ylab = "Sensitivity", col,
+  lwd = 3, lty = 1, cex = 1, pch = 1, legend = TRUE, add = FALSE,
+  ...)
 }
 \arguments{
-\item{x}{Object obtained with \code{Score.list}}
+\item{x}{Object obtained with function \code{Score}}
 
 \item{models}{Choice of models to plot}
 
-\item{times}{Time point specifying the prediction horizon}
+\item{times}{A single time point specifying the prediction horizon}
 
 \item{xlab}{Label for x-axis}
 
 \item{ylab}{Label for y-axis}
 
+\item{col}{line color}
+
 \item{lwd}{line width}
 
-\item{legend}{Logical. If \code{TRUE} draw legend.}
+\item{lty}{line style}
 
-\item{legend.title}{Legend title}
+\item{cex}{point size}
 
-\item{...}{Not yet used}
+\item{pch}{point style}
+
+\item{legend}{logical. If \code{1L} draw a legend with the values of AUC.}
+
+\item{add}{logical. If \code{1L} add lines to an existing plot.}
+
+\item{...}{Used for additional control of the subroutines: plot,
+axis, lines, legend. See \code{\link{SmartControl}}.}
+
+\item{lwd}{line width}
 }
 \description{
 Plot ROC curve

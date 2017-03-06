@@ -86,10 +86,11 @@
 ##' u=Score(markers,formula=Y~1,data=testdat,metrics=c("auc"))
 ##'
 ##' # cross-validation
+##' \dontrun{
 ##' lr1a = glm(Y~X6,data=learndat,family=binomial)
 ##' lr2a = glm(Y~X7+X8+X9,data=learndat,family=binomial)
 ##' Score(list("LR1"=lr1a,"LR2"=lr2a),formula=Y~1,data=learndat,splitMethod="bootcv",B=3)
-##'
+##'}
 ##' # survival outcome
 ##' 
 ##' # Score Cox regression models

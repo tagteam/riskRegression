@@ -77,12 +77,14 @@ ateFit=ate(fit, data = dtS, treatment = "X1", contrasts = NULL,
         times = 5:7, B = 0, y = TRUE, mc.cores=1)
 
 ## Cause specific cox model
-dt <- sampleData(1e3,outcome="competing.risks")
+set.seed(17)
+n=200
+dt <- sampleData(n,outcome="competing.risks")
 dt$time <- round(dt$time,1)
-dt$X1 <- factor(rbinom(1e3, prob = c(0.2,0.3,0.2) , size = 3), labels = paste0("T",0:3))
-fitCR= CSC(Hist(time,event)~ X1+X2,data=dt,cause=1)
+dt$X1 <- factor(rbinom(n, prob = c(0.2,0.3,0.2) , size = 3), labels = paste0("T",0:3))
+fitCR= CSC(Hist(time,event)~ X1+X8,data=dt,cause=1)
 ate(fitCR, data = dt, treatment = "X1", contrasts = NULL,
-        times = 5:7, cause = 1, B = 3, mc.cores=1)
+        times = 7, cause = 1, B = 2, mc.cores=1)
 
 atefit=ate(fitCR, data = dt, treatment = "X1", contrasts = NULL,
         times = 1:7, cause = 1, B = 0, mc.cores=1,conf.level=FALSE)

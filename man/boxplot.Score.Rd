@@ -70,6 +70,7 @@ scoreobj1=Score(list("conventional model"=fitconv,"new model"=fitnew),
 boxplot(scoreobj1)
 
 # competing risks outcome
+\dontrun{
 data(Melanoma)
 fitconv = CSC(Hist(time,status)~invasion+age+sex,data=Melanoma)
 fitnew = CSC(Hist(time,status)~invasion+age+sex+logthick,data=Melanoma)
@@ -77,7 +78,7 @@ scoreobj=Score(list("Conventional model"=fitconv,"New model"=fitnew),
                formula=Hist(time,status)~1,
                data=Melanoma,metrics=NULL,summary="riskQuantile",times=5*365.25,nullModel=FALSE)
 boxplot(scoreobj)
-
+}
 
 # more than 2 competing risks
 m=lava::lvm(~X1+X2+X3)
