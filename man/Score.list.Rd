@@ -16,20 +16,22 @@
 \item{object}{List of risk predictions (see details and examples).}
 
 \item{formula}{A formula which identifies the outcome (left hand
-side). For right censored outcome, the right hand side of the
-formula is used to estimate the IPCW model.}
+    side). E.g., \code{Y ~ 1} for binary and \code{Hist(time,status) ~ 1} for time-to-event outcome.
+In right censored data, the right hand side of the
+    formula is used to estimate the inverse probability of censoring weights (IPCW) model.}
 
-\item{data}{Data set or table in which the formula can be
+\item{data}{\code{data.frame} or \code{data.table} in which the formula can be
 interpreted.}
 
 \item{metrics}{Character vector specifying which metrics to
-apply. Implemented are \code{"auc"} and \code{"Brier"}.}
+apply. Case does not matter. Choices are \code{"AUC"} and \code{"Brier"}.}
 
 \item{summary}{Character vector specifying which summary
-statistics to apply to the predicted risks. Implemented is
-\code{"riskQuantile"}.}
+statistics to apply to the predicted risks. The only choice is 
+\code{"riskQuantile"} which enables (time-point specific) boxplots of predicted risks conditional on the outcome (at the time-point).
+Set to \code{NULL} to avoid estimation of retrospective risk quantiles.}
 
-\item{plots}{Character vector specifying which plots to prepare.}
+\item{plots}{Character vector specifying which plots to prepare. Choices}
 
 \item{cause}{Event of interest. Used for binary outcome \code{Y}
 to specify that risks are risks of the event \code{Y=event}
@@ -38,70 +40,95 @@ interest.}
 
 \item{times}{For survival and competing risks outcome: list of
 prediction horizons. All times which are greater than the
-maximal observed time in the data set are removed.}
+maximal observed time in the data set are automatically removed.
+Note that the object returned by the function may become huge when
+the prediction performance is estimated at many prediction horizons.}
 
 \item{landmarks}{Not yet implemented.}
 
-\item{useEventTimes}{If \code{TRUE} add all unique event times to
-argument \code{times}.}
+\item{useEventTimes}{If \code{TRUE} merge all unique event times with 
+the vector given by argument \code{times}.}
 
-\item{nullModel}{If \code{TRUE} fit the null model which ignores
-the covariates and predicts the prevalence for all subjects.}
+\item{nullModel}{If \code{TRUE} fit a risk prediction model which ignores
+    the covariates and predicts the same value for all subjects. The model is fitted using \code{data}
+and the left hand side of \code{formula}. For binary outcome this is just the empirical prevalence. For (right censored) time to event outcome, the null models are
+equal to the Kaplan-Meier estimator (no competing risks) and the Aalen-Johansen estimator (with competing risks).}
 
-\item{conf.int}{Either logical or a numeric value between 0 and 1. \code{FALSE} prevents the 
+\item{conf.int}{Either logical or a numeric value between 0 and 1. In right censored data,
+confidence intervals are based on Blanche et al (see references). Setting \code{FALSE} prevents the 
 computation confidence intervals. \code{TRUE} means compute 95 percent confidence 
 intervals and corresponding p-values for AUC and Brier score. If set to 0.87, the 
-level of significance is 13 percent.}
+level of significance is 13 percent. So, do not set it to 0.87.}
 
-\item{contrasts}{Either logical or list of contrasts, i.e., positive integers mixed
-with \code{0}, defining which.  If \code{TRUE} do all possible contrasts. For
-example, when \code{object} has two elements and
-\code{nullModel=TRUE} this is equivalent to
-\code{list(c(0,1,2),c(1,2))} where \code{c(0,1,2)} codes for
-two comparisons: 1 vs 0 and 2 vs 0 (positive integers refer to
-elements of \code{object}, 0 refers to the benchmark null
-model which ignores the covariates).  This again is equivalent
-to explicitly setting \code{list(c(0,1),c(0,2),c(1,2))}. A
-more complex example: Suppose object has 7 elements and you
-want to do the following 3 comparisons: 6 vs 3, 2 vs 5 and 2
-vs 3, you should set \code{contrasts=c(6,3),c(2,5,3)}.}
+\item{contrasts}{Either logical or a list of contrasts. A list of contrasts defines which risk prediction models (markers)
+ should be contrasted with respect to their prediction performance.
+If \code{TRUE} do all possible comparisons. For
+  example, when \code{object} is a list with two risk prediction models and
+  \code{nullModel=TRUE} setting \code{TRUE} is equivalent to
+  \code{list(c(0,1,2),c(1,2))} where \code{c(0,1,2)} codes for the
+  two comparisons: 1 vs 0 and 2 vs 0 (positive integers refer to
+  elements of \code{object}, 0 refers to the benchmark null
+  model which ignores the covariates).  This again is equivalent
+  to explicitly setting \code{list(c(0,1),c(0,2),c(1,2))}. A
+  more complex example: Suppose \code{object} has 7 elements and you
+  want to do the following 3 comparisons: 6 vs 3, 2 vs 5 and 2
+  vs 3, you should set \code{contrasts=c(6,3),c(2,5,3)}.}
 
 \item{probs}{Quantiles for retrospective summary statistics of the
-predicted risks}
+predicted risks. This affects the result of the function \code{boxplot.Score}.}
 
 \item{censMethod}{Method for dealing with right censored
-data. Either \code{"outside.ipcw"} or \code{"inside.ipcw"}. At some point
-jackknife pseudo-values may become another option for all statistics. Right now
-they are only used for calibration curves.}
+    data. Either \code{"outside.ipcw"} or \code{"inside.ipcw"}. \code{"outside.ipcw"} 
+    Here IPCW refers to inverse probability of censoring weights. The attributes inside and outside are
+     only relevant for cross-validation (\code{splitMethod}) where the inside method computes the IPCW model
+in the the loop in each of the current test data sets whereas the outside method computes the IPCW model only once in the full data.
+    Also, jackknife pseudo-values may become another option for all statistics. Right now
+    they are only used for calibration curves.}
 
 \item{censModel}{Model for estimating inverse probability of
-censored weights.}
+    censored weights. Implemented are the Kaplan-Meier method (\code{"km"}) and
+Cox regression (\code{"cox"}) both applied to the censored times. If the right hand side of \code{formula} does not specify covariates,
+the Kaplan-Meier method is used even if this argument is set to \code{"cox"}.}
 
-\item{splitMethod}{Method for cross-validation.}
+\item{splitMethod}{Method for cross-validation. Right now the only choice is \code{bootcv} in which case bootstrap learning sets
+are drawn with our without replacement (argument \code{M}) from \code{data}. The data not included in the current bootstrap learning
+set are used as validation set to compute the prediction performance.}
 
-\item{B}{Number of cross-validation steps.}
+\item{B}{Number of bootstrap sets for cross-validation.}
 
-\item{M}{Size of subsamples for cross-validation. If specified it
+\item{M}{Size of subsamples for bootstrap cross-validation. If specified it
 has to be an integer smaller than the size of \code{data}.}
 
 \item{seed}{Super seed for setting training data seeds when
-randomly splitting the data for cross-validation.}
+randomly splitting (bootstrapping) the data during cross-validation.}
 
 \item{trainseeds}{Seeds for training models during cross-validation.}
 
 \item{...}{Not used}
 }
 \value{
-Result list with scores and assessments of contrasts, i.e.,
-    tests and confidence limits for difference in performance (AUC and Brier),
-summaries and plots.
+List with scores and assessments of contrasts, i.e.,
+    tests and confidence limits for performance and difference in performance (AUC and Brier),
+    summaries and plots. Most elements are in\code{data.table} format.
 }
 \description{
-Method to Score risk markers and risk prediction models
+Methods to score the predictive performance of risk markers and risk prediction models
 }
 \details{
-We compute the Brier score and the area under the ROC curve. For
-survival possibly with competing risk both are time-dependent.
+The function implements toolbox for the risk prediction modeller:
+all tools work for the three outcomes: (1) binary (uncensored),
+(2) right censored time to event without competing risks,
+(3) right censored time to event with competing risks
+
+Computed are the (time-dependent) Brier score and the (time-dependent)
+area under the ROC curve for a list of risk prediction models either in
+external validation data or in the learning data using bootstrap
+cross-validation. The function optionally provides results for plotting (time-point specific)
+ROC curves, for (time-point specific) calibration curves and for (time-point specific) retrospective boxplots.
+
+For uncensored binary outcome the Delong-Delong test is used to contrast AUC of rival models in all other cases
+the p-values correspond to Wald tests based on standard errors obtained with an estimate of the influence function
+as described in detain in the appendix of Blanche et al. (2015).
 }
 \examples{
 # binary outcome
@@ -192,6 +219,17 @@ Ulla B. Mogensen, Hemant Ishwaran, Thomas A. Gerds (2012).
 Evaluating Random Forests for Survival Analysis Using Prediction Error
 Curves. Journal of Statistical Software, 50(11), 1-23. URL
 http://www.jstatsoft.org/v50/i11/.
+
+Paul Blanche, Cecile Proust-Lima, Lucie Loubere, Claudine Berr, Jean- Francois Dartigues, and
+Helene Jacqmin-Gadda. Quantifying and comparing
+dynamic predictive accuracy of joint models for longitudinal marker and
+time-to-event in presence of censoring and competing risks. Biometrics, 71
+(1):102--113, 2015.
+P. Blanche, J-F Dartigues, and H. Jacqmin-Gadda. Estimating and comparing
+    time-dependent areas under receiver operating characteristic curves for
+    censored event times with competing risks. Statistics in Medicine, 32(30):
+    5381--5397, 2013.
+
 E. Graf et al.  (1999), Assessment and comparison of prognostic
 classification schemes for survival data. Statistics in Medicine, vol 18,
 pp= 2529--2545.

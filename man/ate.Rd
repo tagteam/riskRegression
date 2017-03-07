@@ -2,7 +2,7 @@
 % Please edit documentation in R/ate.R
 \name{ate}
 \alias{ate}
-\title{Compute the average treatment effect using CSC}
+\title{Compute the average treatment effect using CSC.}
 \usage{
 ate(object, data, treatment, contrasts = NULL, times, cause,
   conf.level = 0.95, B = 0, seed, handler = c("mclapply", "foreach"),

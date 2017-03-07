@@ -58,7 +58,7 @@ corresponding to the output.}
 \item{conf.level}{Level of confidence.}
 }
 \value{
-A list some or all of the following elements containing:
+A list with some or all of the following elements:
 \itemize{
 \item{times}: the time points at which the other elements are evaluated.
 \item{hazard}: When argument \code{newdata} is not used the baseline hazard function, otherwise the predicted hazard function. 

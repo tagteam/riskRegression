@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Oct 23 2016 (08:53) 
 ## Version: 
-## last-updated: Mar  6 2017 (00:06) 
+## last-updated: Mar  7 2017 (13:58) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 62
+##     Update #: 63
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -14,7 +14,7 @@
 #----------------------------------------------------------------------
 ## 
 ### Code:
-#' Compute the average treatment effect using CSC
+#' Compute the average treatment effect using CSC.
 #'
 #' Use the g-formula to estimate the average treatment effect
 #' @param object outcome model which describes how event risk depends on treatment and covariates.

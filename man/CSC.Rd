@@ -140,6 +140,10 @@ Thomas A. Gerds \email{tag@biostat.ku.dk} and Ulla B. Mogensen
 \references{
 J Benichou and Mitchell H Gail. Estimates of absolute cause-specific risk
 in cohort studies. Biometrics, pages 813--826, 1990.
+
+T.A. Gerds, T.H. Scheike, and P.K. Andersen. Absolute risk regression for
+competing risks: interpretation, link functions, and prediction. Statistics
+in Medicine, 31(29):3921--3930, 2012.
 }
 \seealso{
 \code{\link{coxph}}
