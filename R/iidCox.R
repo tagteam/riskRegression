@@ -159,7 +159,7 @@ iidCox <- function(object, newdata = NULL, tauHazard = NULL,
                                   eXb = object.eXb_strata[[iStrata]],
                                   X = object.LPdata_strata[[iStrata]],
                                   p = p, add0 = TRUE)
-    
+   
     new.indexJump[[iStrata]] <- prodlim::sindex(Ecpp[[iStrata]]$Utime1, new.time) - 1
     # if event/censoring is before the first event in the training dataset 
     # then sindex return 0 thus indexJump is -1
@@ -215,14 +215,17 @@ iidCox <- function(object, newdata = NULL, tauHazard = NULL,
     #### lambda
     for(iStrata in 1:nStrata){
         ## hazard
-        if(nStrata==1){
-            timeStrata <- lambda0$time
-            lambda0Strata <- lambda0$hazard
-        }else{
-            testStrata <- lambda0$strata == object.levelStrata[iStrata]
-            timeStrata <- lambda0$time[testStrata]
-            lambda0Strata <- lambda0$hazard[testStrata]
+        if(nStrata==1){ # select only the time,lambda corresponding to the events and not censored observations
+            timeStrata <- lambda0$time[lambda0$time %in% Ecpp[[1]]$Utime1]
+            lambda0Strata <- lambda0$hazard[lambda0$time %in% Ecpp[[1]]$Utime1]
+        }else{ # same within the strata
+            index.strata <- which(lambda0$strata == object.levelStrata[iStrata])
+            index.keep <- index.strata[lambda0$time[index.strata] %in% Ecpp[[iStrata]]$Utime1]
+            
+            timeStrata <- lambda0$time[index.keep]
+            lambda0Strata <- lambda0$hazard[index.keep]
         }
+      
         ## tauHazard
         if(is.null(tauHazard)){
             tauHazard_strata <- object.time_strata[[iStrata]][object.status_strata[[iStrata]] == 1]
@@ -242,14 +245,14 @@ iidCox <- function(object, newdata = NULL, tauHazard = NULL,
     
       ## IF
       if(any(new.status_strata[[iStrata]]>0)){
-  
+        
           IClambda_res <- IClambda0_cpp(tau = tauHazard_strata,
                                         ICbeta = ICbeta,
                                         newT = new.time, neweXb = new.eXb, newStatus = new.status, newIndexJump = new.indexJump[[iStrata]], newStrata = as.numeric(new.strata),
-                                        S01 = Ecpp[[iStrata]]$S0[1:(nUtime1_strata-1)],
+                                        S01 = Ecpp[[iStrata]]$S0,
                                         E1 = Etempo,
-                                        time1 = Ecpp[[iStrata]]$Utime1[1:(nUtime1_strata-1)], lastTime1 = Ecpp[[iStrata]]$Utime1[nUtime1_strata],
-                                        lambda0 = lambda0Strata[match(Ecpp[[iStrata]]$Utime1[-nUtime1_strata],timeStrata)],
+                                        time1 = timeStrata, lastTime1 = Ecpp[[iStrata]]$Utime1[nUtime1_strata], # here lastTime1 will not correspond to timeStrata[length(timeStrata)] when there are censored observations
+                                        lambda0 = lambda0Strata,
                                         p = p, strata = iStrata)
           
           # rescale
