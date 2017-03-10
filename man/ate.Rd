@@ -52,6 +52,9 @@ A list with: point estimates, bootstrap quantile confidence
 \description{
 Use the g-formula to estimate the average treatment effect
 }
+\details{
+WARNING: the p.value and the confidence intervals for the ratio using Wald-type approximations are still experimental.
+}
 \examples{
 library(survival)
 library(rms)
