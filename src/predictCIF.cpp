@@ -67,8 +67,10 @@ arma::mat predictCIF_cpp(const std::vector<arma::mat>& hazard,
         CIF_it += exp(-Allcumhazard_it) * hazard_it;  
       }else{// [only for conditional CIF]
         
-        if(etimes[iterT]<t0 && iterT<(nEventTimes+1) && etimes[iterT+1]>=t0){
-          survival_t0 = exp(-Allcumhazard_it); // get the survival up to t0
+        // get the survival up to t0 i.e. the survival at etimes just before t0
+        if(etimes[iterT]<t0 && iterT<(nEventTimes-1) && etimes[iterT+1]>=t0){
+          // NOTE: if iterT = nEventTimes-1 and etimes[iterT]<t0 then the landmark (t0) is after the last event so the CIF will be set to NA (since always etimes[iterT] < t0)
+          survival_t0 = exp(-Allcumhazard_it); 
         }
         
         if(etimes[iterT] >= t0){ // not needed  newtimes[iterP]>=t0  because newtimes >= etimes see update position above 
