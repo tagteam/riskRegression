@@ -381,7 +381,6 @@ seCSC <- function(hazard, cumhazard, object.time, object.maxtime, iid,
                                                            X_ICbeta = X_ICbeta,
                                                            IClambda0 = iid[[iCause]]$ICcumhazard[[iStrata[iCause]+1]])
           
-            lapply(iid[[iCause]]$ICcumhazard, dim)
             if(cause == iCause){
                 iHazard1 <- hazard[[cause]][,iStrata[cause]+1]*eXb_h[iObs,iCause]
               
