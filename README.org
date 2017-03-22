@@ -1,4 +1,6 @@
-[[https://travis-ci.org/tagteam/riskRegression.svg?branch=master][https://travis-ci.org/tagteam/riskRegression]]
+#+BEGIN_HTML
+<a href="https://travis-ci.org/tagteam/riskRegression"><img src="https://travis-ci.org/tagteam/riskRegression.svg?branch=master"></a>
+#+END_HTML
 
 * Install
 
