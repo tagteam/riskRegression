@@ -8,8 +8,6 @@
 #' @param newdata Optional new data at which to do i.i.d. decomposition 
 #' @param tauHazard the vector of times at which the i.i.d decomposition of the baseline hazard will be computed
 #' @param keep.times Logical. If \code{TRUE} add the evaluation times to the output.
-#' @param center.result Temporary argument. Should the IF be rescale to match timereg results.
-#' @param ... additional arguments
 #'
 #' @details If there is no event in a strata, the influence function for the baseline hazard is set to 0.
 #'
@@ -30,9 +28,7 @@
 #' @rdname iid
 #' @export
 iidCox <- function(object, newdata = NULL, tauHazard = NULL, 
-                   keep.times = TRUE, center.result = TRUE){
-  
-    center.eXb <- TRUE # Temporary argument. Should the linear predictor be centered on the exponential scale.
+                   keep.times = TRUE){
   
     #### extract elements from object ####
     infoVar <- CoxVariableName(object)
@@ -43,11 +39,9 @@ iidCox <- function(object, newdata = NULL, tauHazard = NULL,
     object.time <- object.design[,"stop"]
     object.strata <- CoxStrata(object, stratavars = infoVar$stratavars)
     object.levelStrata <- levels(object.strata)
-    object.eXb <- exp(CoxLP(object, data = NULL, center = center.eXb))
+    object.eXb <- exp(CoxLP(object, data = NULL, center = FALSE))
     object.LPdata <- as.matrix(object.design[,infoVar$lpvars,drop = FALSE])
     nStrata <- length(levels(object.strata))
-  
-  object.center <- CoxCenter(object)
   
   #### Extract new observations ####
   if(!is.null(newdata)){
@@ -67,7 +61,7 @@ iidCox <- function(object, newdata = NULL, tauHazard = NULL,
       
     new.strata <- CoxStrata(object, data = newdata, 
                             sterms = infoVar$sterms, stratavars = infoVar$stratavars, levels = object.levelStrata, stratalevels = infoVar$stratalevels)
-    new.eXb <- exp(CoxLP(object, data = newdata, center = center.eXb))
+    new.eXb <- exp(CoxLP(object, data = newdata, center = FALSE))
     new.LPdata <- model.matrix(object, newdata)
     
   }else{
@@ -93,14 +87,8 @@ iidCox <- function(object, newdata = NULL, tauHazard = NULL,
     ## baseline hazard
     lambda0 <- predictCox(object,
                           type = "hazard",
-                          centered = TRUE,
+                          centered = FALSE,
                           keep.strata = TRUE)
-    
-  
-    ## resale factor
-    if(center.result == TRUE && !is.null(object.center)){
-        scalingFactor <- exp(-as.double(coef(object) %*% object.center))
-    }
   
   ## S0, E, jump times
   object.index_strata <- list() 
@@ -254,12 +242,6 @@ iidCox <- function(object, newdata = NULL, tauHazard = NULL,
                                         time1 = timeStrata, lastTime1 = Ecpp[[iStrata]]$Utime1[nUtime1_strata], # here lastTime1 will not correspond to timeStrata[length(timeStrata)] when there are censored observations
                                         lambda0 = lambda0Strata,
                                         p = p, strata = iStrata)
-          
-          # rescale
-          if(center.result == TRUE && !is.null(CoxCenter(object))){
-              IClambda_res$hazard <- IClambda_res$hazard * scalingFactor
-              IClambda_res$cumhazard <- IClambda_res$cumhazard * scalingFactor
-          }
       
       }else{
           if(length(tauHazard_strata)==0){tauHazard_strata <- max(object.time_strata[[iStrata]])}
