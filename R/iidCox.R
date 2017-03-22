@@ -37,7 +37,7 @@ iidCox <- function(object, newdata = NULL, tauHazard = NULL,
   
     object.status <- object.design[,"status"]
     object.time <- object.design[,"stop"]
-    object.strata <- CoxStrata(object, stratavars = infoVar$stratavars)
+    object.strata <- CoxStrata(object, data = NULL, stratavars = infoVar$stratavars)
     object.levelStrata <- levels(object.strata)
     object.eXb <- exp(CoxLP(object, data = NULL, center = FALSE))
     object.LPdata <- as.matrix(object.design[,infoVar$lpvars,drop = FALSE])

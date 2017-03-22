@@ -685,7 +685,7 @@ CoxStrata <- function(object, data, sterms, stratavars, levels, stratalevels) Us
 
 #' @rdname CoxStrata
 #' @method CoxStrata coxph
-CoxStrata.cph <- function(object, data = NULL, sterms, stratavars, levels, stratalevels){
+CoxStrata.cph <- function(object, data, sterms, stratavars, levels, stratalevels){
   
   if(length(stratavars)==0){ ## no strata variables
     
@@ -715,7 +715,7 @@ CoxStrata.cph <- function(object, data = NULL, sterms, stratavars, levels, strat
 
 #' @rdname CoxStrata
 #' @method CoxStrata coxph
-CoxStrata.coxph <- function(object, data = NULL, sterms, stratavars, levels, stratalevels){
+CoxStrata.coxph <- function(object, data, sterms, stratavars, levels, stratalevels){
   
   if(length(stratavars)==0){ ## no strata variables
     

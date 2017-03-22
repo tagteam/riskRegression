@@ -147,7 +147,7 @@ predictCox <- function(object,
     object.design <- CoxDesign(object)
     object.status <- object.design[["status"]]
     object.time <- object.design[["stop"]]
-    object.strata <- CoxStrata(object, stratavars = infoVar$stratavars)
+    object.strata <- CoxStrata(object, data = NULL, stratavars = infoVar$stratavars)
     object.levelStrata <- levels(object.strata)
     # if we predict the hazard for newdata then there is no need to center the covariates
     object.eXb <- exp(CoxLP(object, data = NULL, center = if(is.null(newdata)){centered}else{FALSE})) 
@@ -263,7 +263,7 @@ predictCox <- function(object,
                 }
                 if ("survival" %in% type){
                     out$survival <- exp(-cumhazard)
-                    ## browser()
+                    # browser()
                     if (needOrder)
                         out$survival <- out$survival[,oorder.times,drop=0L]
                 }
@@ -298,11 +298,10 @@ predictCox <- function(object,
             for(S in new.levelStrata){
                 id.S <- Lambda0$strata==S
                 newid.S <- new.strata==S
-                
                 if ("hazard" %in% type){
                     out$hazard[newid.S,] <- new.eXb[newid.S] %o% Lambda0$hazard[id.S]
                     if (needOrder)
-                        out$hazard <- out$hazard[,oorder.times,drop=0L]
+                        out$hazard[newid.S,] <- out$hazard[newid.S,oorder.times,drop=0L]
                 }
                 if ("cumhazard" %in% type || "survival" %in% type){
                     cumhazard.S <-  new.eXb[newid.S] %o% Lambda0$cumhazard[id.S]
@@ -314,9 +313,10 @@ predictCox <- function(object,
                         }
                     }
                     if ("survival" %in% type){
-                        out$survival[newid.S,] <- exp(-cumhazard.S)
                         if (needOrder){
-                            out$survival[newid.S,] <- out$survival[,oorder.times,drop=0L]
+                            out$survival[newid.S,] <- exp(-cumhazard.S)[,oorder.times,drop=0L]
+                        }else{
+                          out$survival[newid.S,] <- exp(-cumhazard.S)
                         }
                     }
                 }
