@@ -57,7 +57,6 @@ order to get the \code{weights} in the right order for some choices of
 }
 \examples{
 
-library(pec)
 library(prodlim)
 library(survival)
 dat=SimSurv(300)

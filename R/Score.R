@@ -458,6 +458,8 @@ Score.list <- function(object,
                 jack <- data.table(ID=data[["ID"]],
                                    times=rep(times,rep(N,NT)),
                                    pseudovalue=c(prodlim::jackknife(margFit,cause=cause,times=times)))
+                if (responseType=="survival") jack[,pseudovalue:=1-pseudovalue]
+                                    
             }
         }
     }
@@ -577,8 +579,9 @@ Score.list <- function(object,
         if (item ==0 & "Calibration" %in% plots){
             if (responseType=="binary" || censType=="uncensored")
                 out[["Calibration"]]$plotframe <- merge(response,pred[model!=0],by="ID")
-            else
+            else{
                 out[["Calibration"]]$plotframe <- merge(jack,pred[model!=0],by=c("ID","times"))
+            }
             out[["Calibration"]]$plotframe[,model:=factor(model,levels=mlevs,mlabels)]
         }
         if (!is.null(Weights)){

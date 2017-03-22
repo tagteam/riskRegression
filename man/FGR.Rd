@@ -38,7 +38,6 @@ interface, however, the code becomes a little cumbersome. See the examples.
 
 library(prodlim)
 library(survival)
-library(pec)
 library(cmprsk)
 library(lava)
 d <- SimCompRisk(100)

@@ -42,7 +42,6 @@
 #' @examples
 #' 
 ##' library(prodlim)
-##' library(pec)
 ##' library(survival)
 ##' data(Melanoma)
 ##' ## fit two cause-specific Cox models
@@ -103,7 +102,6 @@
 ##' ##
 ##' ## survtype = "hazard": predictions for both causes can be extracted
 ##' ## from the same fit
-##' library(pec)
 ##' fit2 <- CSC(Hist(time,status)~invasion+epicel+age, data=Melanoma)
 ##' predict(fit2,cause=1,newdata=Melanoma[c(17,99,108),],times=c(100,1000,10000))
 ##' predictRisk(fit2,cause=1,newdata=Melanoma[c(17,99,108),],times=c(100,1000,10000))

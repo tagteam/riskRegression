@@ -52,7 +52,6 @@ Plot time-varying effects from a risk regression model.
 }
 \examples{
 
-library(pec)
 library(survival)
 library(prodlim)
 data(Melanoma)

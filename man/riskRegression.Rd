@@ -122,15 +122,11 @@ fit2a.lrr <- LRR(Hist(time,status)~logthick,
                  cens.formula=~sex+epicel+ulcer+age+logthick)
 summary(fit2a.lrr)
 
-##  compare prediction errors
-\dontrun{
-    library(pec)
-    plot(pec(list(ARR=fit2.arr,AJ=fit2.aj,LRR=fit2.lrr),data=Melanoma,maxtime=3000))
-}
+##  compare prediction performance
+Score(list(ARR=fit2.arr,AJ=fit2.aj,LRR=fit2.lrr),formula=Hist(time,status)~1,data=Melanoma)
 
 
 # multiple regression
-library(pec)
 library(riskRegression)
 library(prodlim)
 # absolute risk model
@@ -162,16 +158,12 @@ library(prodlim)
 fit.aj <- prodlim(Hist(time,status)~thick,data=Melanoma)
 plot(fit.aj,confint=FALSE)
 
-\dontrun{
-    # prediction error
-    library(pec)
-    x <- pec(list(fit.arr2a,fit.arr2b,fit.lrr),
+# prediction performance
+x <- Score(list(fit.arr2a,fit.arr2b,fit.lrr),
              data=Melanoma,
              formula=Hist(time,status)~1,
              cause=1,
-             B=10,
              splitMethod="none")
-}
 
 
 }

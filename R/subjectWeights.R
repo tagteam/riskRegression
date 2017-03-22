@@ -41,7 +41,6 @@
 #' @keywords survival
 #' @examples
 #' 
-#' library(pec)
 #' library(prodlim)
 #' library(survival)
 #' dat=SimSurv(300)
