@@ -182,7 +182,7 @@ CoxCenter.cph <- function(object){
 #' @rdname CoxCenter
 #' @method CoxCenter coxph
 CoxCenter.coxph <- function(object){
-  return(setNames(object$means, coef(object)))
+  return(setNames(object$means, names(coef(object))))
 }
 
 #' @rdname CoxCenter
@@ -355,6 +355,7 @@ CoxFormula.phreg <- function(object){
 # }}}
 
 # {{{ CoxLP
+
 #' @title Compute the linear predictor of a Cox model
 #' @description Compute the linear predictor of a Cox model
 #' @rdname CoxLP 
@@ -520,6 +521,7 @@ CoxLP.phreg <- function(object, data, center){
   
   return(Xb)
 }
+
 # }}}
 
 # {{{ CoxN
