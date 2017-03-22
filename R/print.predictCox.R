@@ -60,13 +60,9 @@
 #' @export
 print.predictCox <- function(x,
                              digits = 3, ...){
-    if (is.null(x$newdata)){
-        print.listof(x)
-    } else{
-        out <- as.data.table(x)
-        print(out,digits=digits,...)
-        invisible(out)
-    }
+    out <- as.data.table(x)
+    print(out,digits=digits,...)
+    invisible(out)
 }
 
 
