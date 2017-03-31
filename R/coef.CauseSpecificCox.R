@@ -1,10 +1,11 @@
 #' Extract coefficients from a Cause-Specific Cox regression model
 #' 
 #' Extract coefficients from a Cause-Specific Cox regression model
-#' @param x Object obtained with CSC
+#' @param object Object obtained with CSC
+#' @param ... not used
 #'
 #' @method coef CauseSpecificCox
 #' @export
-coef.CauseSpecificCox <- function(x){
-  return(lapply(x$models,coef))
+coef.CauseSpecificCox <- function(object, ...){
+  return(lapply(object$models,coef))
 }

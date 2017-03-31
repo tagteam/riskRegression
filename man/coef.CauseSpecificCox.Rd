@@ -4,10 +4,12 @@
 \alias{coef.CauseSpecificCox}
 \title{Extract coefficients from a Cause-Specific Cox regression model}
 \usage{
-\method{coef}{CauseSpecificCox}(x)
+\method{coef}{CauseSpecificCox}(object, ...)
 }
 \arguments{
-\item{x}{Object obtained with CSC}
+\item{object}{Object obtained with CSC}
+
+\item{...}{not used}
 }
 \description{
 Extract coefficients from a Cause-Specific Cox regression model
