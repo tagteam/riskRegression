@@ -20,6 +20,10 @@
 #' 
 #' @param x object obtained with the function \code{predictCox}.
 #' @param ci Logical. If \code{TRUE} display the confidence intervals for the predictions.
+#' @param groupBy The grouping factor used to color the prediction curves. Can be \code{"row"}, \code{"strata"}, or \code{"covariates"}. 
+#' @param reduce.data Logical. If \code{TRUE} only the covariates that does take indentical values for all observations are displayed.
+#' @param plot Logical. Should the graphic be plotted.
+#' @param conf.level confidence level of the interval.
 #' @param digits integer indicating the number of decimal places
 #' @param ... not used. Only for compatibility with the plot method.
 #' 
@@ -41,15 +45,66 @@
 #' pred.SCSC <- predict(m.SCSC, time = 1:3,
 #' cause = 1, se = TRUE, keep.newdata = TRUE, keep.strata = TRUE)
 #' plot(pred.SCSC)
-#' plot(pred.SCSC)
 #'
 #' @method plot predictCSC
 #' 
 #' @export
 plot.predictCSC <- function(x,
                             ci = FALSE,
+                            groupBy = "row",
+                            reduce.data = FALSE,
+                            plot = TRUE,
+                            conf.level = 0.95,
                             digits = 2, ...){
-    plotframe <- as.data.table(x)
+  
+  ## initialize and check        
+  possibleGroupBy <- c("row","covariates","strata")
+  if(groupBy %in% possibleGroupBy == FALSE){
+    stop("argument \"groupBy\" must be in \"",paste(possibleGroupBy, collapse = "\" \""),"\"\n")
+  }
+  
+  if(groupBy == "covariates" && ("newdata" %in% names(x) == FALSE)){
+    stop("argument \'groupBy\' cannot be \"covariates\" when newdata is missing in the object \n",
+         "set argment \'keep.newdata\' to TRUE when calling predictCox \n")
+  }
+  if(groupBy == "strata" && ("strata" %in% names(x) == FALSE)){
+    stop("argument \'groupBy\' cannot be \"strata\" when strata is missing in the object \n",
+         "set argment \'keep.strata\' to TRUE when calling predictCox \n")
+  }
+  
+  if(ci && "absRisk.se" %in% names(x) == FALSE){
+    stop("argument \'ci\' cannot be TRUE when no standard error have been computed \n",
+         "set argment \'se\' to TRUE when calling predictCox \n")
+  }
+  
+  ## display
+  newdata <- copy(x$newdata)
+  if(!is.null(newdata) && reduce.data){
+    test <- unlist(newdata[,lapply(.SD, function(col){length(unique(col))==1})])
+    if(any(test)){
+      newdata[, (names(test)[test]):=NULL]
+    }        
+  }
+  
+  gg.res <- predict2plot(outcome = x$absRisk,
+                         outcome.se = if(ci){x$absRisk.se}else{NULL},
+                         newdata = newdata,
+                         strata = x$strata,
+                         times = x$times,
+                         digits = digits,
+                         name.outcome = "absoluteRisk", # must not contain space to avoid error in ggplot2
+                         conf.level = conf.level,
+                         groupBy = groupBy,
+                         lower = 0, upper = 1)
+  
+  gg.res$plot <- gg.res$plot + xlab("absolute risk")
+  
+  if(plot){
+    print(gg.res$plot)
+  }
+  
+  return(invisible(list(plot = gg.res$plot,
+                        data = gg.res$data)))
 }
 
 #----------------------------------------------------------------------

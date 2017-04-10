@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: feb 28 2017 (09:52) 
 ## Version: 
-## last-updated: feb 28 2017 (14:30) 
+## last-updated: feb 28 2017 (15:03) 
 ##           By: Brice Ozenne
-##     Update #: 5
+##     Update #: 6
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -40,6 +40,9 @@ d[, group := factor(rbinom(.N,2,0.5))]
 m.phreg <- phreg(Surv(entry,eventtime,event)~X1+X2,data=d)
 m.coxph <- coxph(Surv(eventtime,event)~X1+X2,data=d, x = TRUE, y = TRUE)
 expect_equal(predictCox(m.phreg),predictCox(m.coxph), tol = 1e-3)
+
+predictCox(m.phreg, iid = TRUE, newdata = d[1:5,], times = 1:6) 
+outSE$cumhazard.iid
 
 pred.phreg <- predictCox(m.phreg, newdata = d, time = 1:5, se = TRUE)
 pred.coxph <- predictCox(m.coxph, newdata = d, time = 1:5, se = TRUE)

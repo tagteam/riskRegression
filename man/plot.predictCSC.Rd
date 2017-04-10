@@ -4,12 +4,21 @@
 \alias{plot.predictCSC}
 \title{Plot predictions from a Cause-specific Cox proportional hazard regression}
 \usage{
-\method{plot}{predictCSC}(x, ci = FALSE, digits = 2, ...)
+\method{plot}{predictCSC}(x, ci = FALSE, groupBy = "row",
+  reduce.data = FALSE, plot = TRUE, conf.level = 0.95, digits = 2, ...)
 }
 \arguments{
 \item{x}{object obtained with the function \code{predictCox}.}
 
 \item{ci}{Logical. If \code{TRUE} display the confidence intervals for the predictions.}
+
+\item{groupBy}{The grouping factor used to color the prediction curves. Can be \code{"row"}, \code{"strata"}, or \code{"covariates"}.}
+
+\item{reduce.data}{Logical. If \code{TRUE} only the covariates that does take indentical values for all observations are displayed.}
+
+\item{plot}{Logical. Should the graphic be plotted.}
+
+\item{conf.level}{confidence level of the interval.}
 
 \item{digits}{integer indicating the number of decimal places}
 
@@ -35,7 +44,6 @@ m.SCSC <- CSC(Hist(time,event)~ strata(X1) + strata(X2) + X6,
 data = d)
 pred.SCSC <- predict(m.SCSC, time = 1:3,
 cause = 1, se = TRUE, keep.newdata = TRUE, keep.strata = TRUE)
-plot(pred.SCSC)
 plot(pred.SCSC)
 
 }
