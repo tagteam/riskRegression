@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Oct 23 2016 (08:53) 
 ## Version: 
-## last-updated: mar 10 2017 (19:09) 
+## last-updated: apr 11 2017 (09:15) 
 ##           By: Brice Ozenne
-##     Update #: 64
+##     Update #: 73
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -39,6 +39,7 @@
 #'     set.
 #' @param verbose Logical. If \code{TRUE} inform about estimated run
 #'     time.
+#' @param logTransform Should the confidence interval for the ratio be computed using a log-tranformation. Only active if Wald-type confidence intervals are computed.
 #' @param ... passed to predictRisk
 #' @return A list with: point estimates, bootstrap quantile confidence
 #'     intervals model: the CSC model (optional)
@@ -100,8 +101,11 @@ ate <- function(object,
                 handler=c("mclapply","foreach"),
                 mc.cores = 1,
                 verbose=TRUE,
+                logTransform=TRUE,
                 ...){
-  meanRisk=Treatment=ratio=Treatment.A=Treatment.B=b=NULL
+    meanRisk=Treatment=ratio=Treatment.A=Treatment.B=b=NULL
+    
+    
   #### Prepare
   if(treatment %in% names(data) == FALSE){
     stop("The data set does not seem to have a variable ",treatment," (argument: treatment). \n")
@@ -323,15 +327,19 @@ ate <- function(object,
                                       sigma_ATE.X <- sqrt(sum(IF_ATE.X^2))
                                       sigma_ATE.Y <- sqrt(sum(IF_ATE.Y^2))
                                       sigma_ATE.XY <- sqrt(sum(IF_ATE.X*IF_ATE.Y))
+
+                                      if(logTransform){
+                                          #### log transformed: var(log(Y/X)) = var(log(Y) - log(X)) = sigmaY/Y^2 - 2*sigmaXY/XY + sigmaX/X^2
+                                          sigma.logRatio <- sigma_ATE.Y / ATE.Y^2  - 2 * sigma_ATE.XY / (ATE.X*ATE.Y)  + sigma_ATE.X / ATE.X^2
+                                          return(sigma.logRatio)
+                                      }else{
+                                          #### no transformation : var(Y/X) = sigmaY/X^2 + Y^2 sigmaX/X^4 - 2 Y sigmaXY / X^3
+                                          sigma.ratio <- sigma_ATE.Y / ATE.X^2 + ATE.Y^2 * sigma_ATE.X / ATE.X^4 - 2 * ATE.Y * sigma_ATE.XY / ATE.X^3
+                                          return(sigma.ratio)
+                                      }
                                       
-                                      #### no transformation : var(Y/X) = sigmaY/X^2 + Y^2 sigmaX/X^4 - 2 Y sigmaXY / X^3
-                                      # sigma.ratio <- sigma_ATE.Y / ATE.X^2 + ATE.Y^2 * sigma_ATE.X / ATE.X^4 - 2 * ATE.Y * sigma_ATE.XY / ATE.X^3
-                                      # print(sigma.ratio)
-                                      # return(sigma.ratio)
                                       
-                                      #### log transformed: var(log(Y/X)) = var(log(Y) - log(X)) = sigmaY/Y^2 - 2*sigmaXY/XY + sigmaX/X^2
-                                      sigma.logRatio <- sigma_ATE.Y / ATE.Y^2  - 2 * sigma_ATE.XY / (ATE.X*ATE.Y)  + sigma_ATE.X / ATE.X^2
-                                      return(sigma.logRatio)
+                                      
                                     })                                
           )
         }))}))
@@ -342,6 +350,17 @@ ate <- function(object,
                                        lower = pointEstimate$meanRisk$meanRisk + qnorm(alpha/2) * sdIF.treatment,
                                        upper = pointEstimate$meanRisk$meanRisk + qnorm(1-alpha/2) * sdIF.treatment)
       
+
+      if(logTransform){
+          ratio.lower <- exp(log(pointEstimate$riskComparison$ratio) + qnorm(alpha/2) * sdIF.fct$ratio)
+          ratio.upper <- exp(log(pointEstimate$riskComparison$ratio) + qnorm(1-alpha/2) * sdIF.fct$ratio)
+          ratio.p.value <- 2*(1-pnorm(abs(log(pointEstimate$riskComparison$ratio)), sd = sdIF.fct$ratio))
+      }else{
+          ratio.lower <- pointEstimate$riskComparison$ratio + qnorm(alpha/2) * sdIF.fct$ratio
+          ratio.upper <- pointEstimate$riskComparison$ratio + qnorm(1-alpha/2) * sdIF.fct$ratio
+          ratio.p.value <- 2*(1-pnorm(abs(pointEstimate$riskComparison$ratio-1), sd = sdIF.fct$ratio))
+      }
+      
       crisks <- data.table::data.table(Treatment.A = pointEstimate$riskComparison$Treatment.A,
                                        Treatment.B = pointEstimate$riskComparison$Treatment.B,
                                        time = times,
@@ -349,19 +368,13 @@ ate <- function(object,
                                        diff.lower = pointEstimate$riskComparison$diff + qnorm(alpha/2) * sdIF.fct$diff,
                                        diff.upper = pointEstimate$riskComparison$diff + qnorm(1-alpha/2) * sdIF.fct$diff,
                                        diff.p.value = 2*(1-pnorm(abs(pointEstimate$riskComparison$diff), sd = sdIF.fct$diff)),
-                                       ## ratioMeanBoot = NA,
-                                       #### no transformation
-                                       # ratio.lower = pointEstimate$riskComparison$ratio + qnorm(alpha/2) * sdIF.fct$ratio,
-                                       # ratio.upper = pointEstimate$riskComparison$ratio + qnorm(1-alpha/2) * sdIF.fct$ratio,
-                                       # ratio.p.value = 2*(1-pnorm(abs(pointEstimate$riskComparison$ratio-1), sd = sdIF.fct$ratio))
-                                       #### log transformed
-                                       ratio.lower = exp(log(pointEstimate$riskComparison$ratio) + qnorm(alpha/2) * sdIF.fct$ratio),
-                                       ratio.upper = exp(log(pointEstimate$riskComparison$ratio) + qnorm(1-alpha/2) * sdIF.fct$ratio),
-                                       ratio.p.value = 2*(1-pnorm(abs(log(pointEstimate$riskComparison$ratio)), sd = sdIF.fct$ratio))
-      )
+                                       ratio.lower = ratio.lower,
+                                       ratio.upper = ratio.upper,
+                                       ratio.p.value = ratio.p.value                                       
+                                       )
       
       bootseeds <- NULL
-    } } else{
+     }} else{
       
       mrisks <- data.table::data.table(Treatment = pointEstimate$meanRisk$Treatment,
                                        time = times,
