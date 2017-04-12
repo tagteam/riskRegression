@@ -3,7 +3,6 @@ library(riskRegression)
 library(testthat)
 library(rms)
 library(survival)
-library(mstate)
 
 # {{{ data
 set.seed(10)
@@ -266,19 +265,28 @@ if(require(mstate)){
 data(aidssi)
 dt.aidssi <- as.data.table(aidssi)
 setkey(dt.aidssi, time)
-dt.aidssi[,statusSurv := status]
-dt.aidssi[status>1,statusSurv := 1]
 
-## survival 
-GS.KM <- as.data.table(Cuminc(time = dt.aidssi$time, status=dt.aidssi$statusSurv))
+  ## survival 
+  GS.KM <- as.data.table(Cuminc(time = dt.aidssi$time, status=dt.aidssi$status>0))
+  # m.prodlim <- prodlim(Hist(time, status>0) ~ 1, data = dt.aidssi)
+  # e.prodlim <- predict(m.prodlim, times = GS.KM[["time"]])
+  # quantile(e.prodlim-GS.KM[["Surv"]])
+  
+  seqTime <- GS.KM[[1]]
+  m.coxph <- coxph(Surv(time, status>0) ~ 1, data =  dt.aidssi, x = TRUE, y = TRUE)
+  e.RR <- predictCox(m.coxph, newdata = dt.aidssi[1], times = seqTime, se = TRUE)
+  print(e.RR)
 
-seqTime <- GS.KM[[1]]
-m.coxph <- coxph(Surv(time, statusSurv) ~ 1, data =  dt.aidssi, x = TRUE, y = TRUE)
-e.RR <- predictCox(m.coxph, newdata = dt.aidssi[1], times = seqTime, se = TRUE)
-print(e.RR)
-
-quantile(GS.KM$seSurv-as.data.table(e.RR)[["survival.se"]])
-quantile(GS.KM$Surv-as.data.table(e.RR)[["survival"]])
+  # dt.tempo <- rbind(data.table(survival = GS.KM$Surv, time = GS.KM$time, 
+  #                              method = "mstate", n.censor = 0, n.event = 1),
+  #                   data.table(survival = as.data.table(e.RR)[["survival"]], time = GS.KM$time, 
+  #                              method = "riskRegression", n.censor = 0, n.event = 1)
+  # )
+  # butils:::ggSurv.data.table(dt.tempo, survivalVar = "survival", strataVar = "method", timeVar = "time")
+  
+  quantile(GS.KM$Surv-as.data.table(e.RR)[["survival"]])
+  quantile(GS.KM$seSurv-as.data.table(e.RR)[["survival.se"]])
+  
 ## cumulative incidence
 GS.NA <- as.data.table(Cuminc(time = dt.aidssi$time, status=dt.aidssi$status))
 
