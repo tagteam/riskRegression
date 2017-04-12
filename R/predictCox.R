@@ -263,7 +263,6 @@ predictCox <- function(object,
                 }
                 if ("survival" %in% type){
                     out$survival <- exp(-cumhazard)
-                    # browser()
                     if (needOrder)
                         out$survival <- out$survival[,oorder.times,drop=0L]
                 }
@@ -322,7 +321,8 @@ predictCox <- function(object,
                 }
             }
         }
-        #### standard error ####
+        # }}}
+        # {{{ standard error
         if(se==1L || iid==1L){ 
             if(nVar > 0){
                 # remove response variable
@@ -352,7 +352,7 @@ predictCox <- function(object,
             outSE <- seRobustCox(nTimes = nTimes, type = type,
                                  Lambda0 = Lambda0, iid = iid.object, object.n = object.n, nStrata = nStrata, 
                                  new.eXb = new.eXb, new.LPdata = new.LPdata, new.strata = new.strata, new.survival = out$survival,
-                                 export = c("iid"[iid==TRUE],"se"[se==TRUE]))
+                                 nVar = nVar, export = c("iid"[iid==TRUE],"se"[se==TRUE]))
             if(iid == TRUE){
                 if ("hazard" %in% type){
                     if (needOrder)
@@ -380,7 +380,9 @@ predictCox <- function(object,
                         out$hazard.se <- outSE$hazard.se[,oorder.times,drop=0L]
                     else
                         out$hazard.se <- outSE$hazard.se
-                    out$hazard.lower <- apply(out$hazard - zval*out$hazard.se,2,pmax,0)
+                    
+                    out$hazard.lower <- matrix(NA, nrow = NROW(out$hazard.se), ncol = NCOL(out$hazard.se)) # to keep matrix format even when out$hazard contains only one line
+                    out$hazard.lower[] <- apply(out$hazard - zval*out$hazard.se,2,pmax,0)
                     out$hazard.upper <- out$hazard + zval*out$hazard.se
                 }
                 if ("cumhazard" %in% type){
@@ -388,7 +390,9 @@ predictCox <- function(object,
                         out$cumhazard.se <- outSE$cumhazard.se[,oorder.times,drop=0L]
                     else
                         out$cumhazard.se <- outSE$cumhazard.se
-                    out$cumhazard.lower <- apply(out$cumhazard - zval*out$cumhazard.se,2,pmax,0)
+                    
+                    out$cumhazard.lower <- matrix(NA, nrow = NROW(out$cumhazard.se), ncol = NCOL(out$cumhazard.se)) # to keep matrix format even when out$cumhazard contains only one line
+                    out$cumhazard.lower[] <- apply(out$cumhazard - zval*out$cumhazard.se,2,pmax,0)
                     out$cumhazard.upper <- out$cumhazard + zval*out$cumhazard.se
                 }
                 if ("survival" %in% type){
@@ -396,11 +400,16 @@ predictCox <- function(object,
                         out$survival.se <- outSE$survival.se[,oorder.times,drop=0L]
                     else
                         out$survival.se <- outSE$survival.se
-                    out$survival.lower <- apply(out$survival - zval*out$survival.se,2,pmax,0)
-                    out$survival.upper <- apply(out$survival + zval*out$survival.se,2,pmin,1)
+
+                    # to keep matrix format even when out$survival contains only one line
+                    out$survival.lower <- out$survival.upper <- matrix(NA, nrow = NROW(out$survival.se), ncol = NCOL(out$survival.se)) 
+                    out$survival.lower[] <- apply(out$survival - zval*out$survival.se,2,pmax,0)
+                    out$survival.upper[] <- apply(out$survival + zval*out$survival.se,2,pmin,1)
                 }
             }
         }
+        # }}}
+        # {{{ export 
         if (keep.times==TRUE) out <- c(out,list(times=times))
         if (is.strata && keep.strata==TRUE) out <- c(out,list(strata=new.strata))
         out <- c(out,list(lastEventTime=etimes.max,se=se,type=type))
@@ -409,8 +418,9 @@ predictCox <- function(object,
         }
         class(out) <- "predictCox"
         return(out)
+        # }}}
     }
-    # }}}
+    
 }
 
 # }}}
@@ -436,6 +446,7 @@ predictCox <- function(object,
 #' @param new.LPdata the variables involved in the linear predictor for the new observations
 #' @param new.strata the strata indicator for the new observations
 #' @param new.survival the survival evaluated for the new observations
+#' @param nVar the number of variables that form the linear predictor
 #' @param export can be "iid" to return the value of the influence function for each observation
 #'                      "se" to return the standard error for a given timepoint
 #'                      
@@ -446,8 +457,8 @@ predictCox <- function(object,
 seRobustCox <- function(nTimes, type, 
                         Lambda0, iid, object.n, nStrata,
                         new.eXb, new.LPdata, new.strata, new.survival,
-                        export){
-  
+                        nVar, export){
+
   n.new <- length(new.eXb)
   
   new.strata <- as.numeric(new.strata)
@@ -482,7 +493,8 @@ seRobustCox <- function(nTimes, type,
       IF_tempo <- IClambda2hazard(eXb = new.eXb[iObs],
                                   lambda0 = Lambda0$hazard[[iObs.strata]],
                                   X_ICbeta = X_ICbeta,
-                                  IClambda0 = iid$IChazard[[iObs.strata]])
+                                  IClambda0 = iid$IChazard[[iObs.strata]],
+                                  nVar = nVar)
       if("iid" %in% export){
         out$hazard.iid[iObs,,] <- t(IF_tempo)
       }
@@ -496,7 +508,8 @@ seRobustCox <- function(nTimes, type,
       IF_tempo <- IClambda2hazard(eXb = new.eXb[iObs],
                                   lambda0 = Lambda0$cumhazard[[iObs.strata]],
                                   X_ICbeta = X_ICbeta,
-                                  IClambda0 = iid$ICcumhazard[[iObs.strata]])
+                                  IClambda0 = iid$ICcumhazard[[iObs.strata]],
+                                  nVar = nVar)
       
       if("iid" %in% export){
         if("cumhazard" %in% type){out$cumhazard.iid[iObs,,] <- t(IF_tempo)}
@@ -528,10 +541,15 @@ seRobustCox <- function(nTimes, type,
 ##' @param X_ICbeta the design matrix times the influence function of beta
 ##' @param lambda0 the baseline hazard
 ##' @param IClambda0 the influence function of the baseline hazard 
+##' @param nVar the number of variables that form the linear predictor
 ##' 
 ##' 
-IClambda2hazard <- function(eXb, X_ICbeta, lambda0, IClambda0){
-  return(eXb*(IClambda0 + X_ICbeta %*% lambda0))
+IClambda2hazard <- function(eXb, X_ICbeta, lambda0, IClambda0, nVar){
+    if(nVar == 0){
+        return(IClambda0)
+    }else{
+        return(eXb*(IClambda0 + X_ICbeta %*% lambda0))
+    }
 }
 
 # }}}

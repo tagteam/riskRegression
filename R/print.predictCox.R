@@ -4,8 +4,8 @@
 ## created: feb 15 2017 (17:36) 
 ## Version: 
 ## last-updated: Mar  3 2017 (09:55) 
-##           By: Thomas Alexander Gerds
-##     Update #: 141
+##           By: Brice Ozenne
+##     Update #: 143
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 

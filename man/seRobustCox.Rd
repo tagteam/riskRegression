@@ -5,7 +5,7 @@
 \title{Computation of standard errors for predictions}
 \usage{
 seRobustCox(nTimes, type, Lambda0, iid, object.n, nStrata, new.eXb, new.LPdata,
-  new.strata, new.survival, export)
+  new.strata, new.survival, nVar, export)
 }
 \arguments{
 \item{nTimes}{the number of time points at which to evaluate the standard errors of the predictions.}
@@ -28,6 +28,8 @@ or several of the strings \code{"hazard"},\code{"cumhazard"}, \code{"survival"}.
 \item{new.strata}{the strata indicator for the new observations}
 
 \item{new.survival}{the survival evaluated for the new observations}
+
+\item{nVar}{the number of variables that form the linear predictor}
 
 \item{export}{can be "iid" to return the value of the influence function for each observation
 "se" to return the standard error for a given timepoint}

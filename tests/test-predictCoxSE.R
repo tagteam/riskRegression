@@ -3,6 +3,7 @@ library(riskRegression)
 library(testthat)
 library(rms)
 library(survival)
+library(mstate)
 
 # {{{ data
 set.seed(10)
@@ -259,6 +260,36 @@ if(require(timereg)){
 # }}}
 
 
+
+# {{{ Comparaison with mstate
+if(require(mstate)){
+data(aidssi)
+dt.aidssi <- as.data.table(aidssi)
+setkey(dt.aidssi, time)
+dt.aidssi[,statusSurv := status]
+dt.aidssi[status>1,statusSurv := 1]
+
+## survival 
+GS.KM <- as.data.table(Cuminc(time = dt.aidssi$time, status=dt.aidssi$statusSurv))
+
+seqTime <- GS.KM[[1]]
+m.coxph <- coxph(Surv(time, statusSurv) ~ 1, data =  dt.aidssi, x = TRUE, y = TRUE)
+e.RR <- predictCox(m.coxph, newdata = dt.aidssi[1], times = seqTime, se = TRUE)
+print(e.RR)
+
+quantile(GS.KM$seSurv-as.data.table(e.RR)[["survival.se"]])
+quantile(GS.KM$Surv-as.data.table(e.RR)[["survival"]])
+## cumulative incidence
+GS.NA <- as.data.table(Cuminc(time = dt.aidssi$time, status=dt.aidssi$status))
+
+m.CSC <- CSC(Hist(time, status) ~ 1, data = dt.aidssi)
+e.RR2 <- predict(m.CSC, newdata = dt.aidssi[1], times = seqTime, se = TRUE, cause = 1)
+e.RR2
+
+quantile(GS.NA[["CI.1"]]-as.data.table(e.RR2)[["absRisk"]])
+quantile(GS.NA[["seCI.1"]]-as.data.table(e.RR2)[["absRisk.se"]])
+}
+# }}}
 
 # {{{ Cox confidence band
 # package.source("riskRegression", Ccode = TRUE, RorderDescription=FALSE)

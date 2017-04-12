@@ -270,6 +270,10 @@ predict.CauseSpecificCox <- function(object,
                                                    type = c("hazard","cumhazard"))
             }
         }
+
+        nVar <- unlist(lapply(object$models,function(m){
+            length(CoxVariableName(m)$lpvars)
+        }))
         
         out.seCSC <- seCSC(hazard = ls.hazard,
                            cumhazard = ls.cumhazard,
@@ -284,6 +288,7 @@ predict.CauseSpecificCox <- function(object,
                            new.n = new.n,
                            cause = which(causes == cause),
                            nCause = nCause,
+                           nVar = nVar,
                            return.se = se)
     }
     
@@ -294,8 +299,11 @@ predict.CauseSpecificCox <- function(object,
     if(se){
         out$absRisk.se <- out.seCSC[,ootimes,drop=FALSE]
         zval <- qnorm(1- (1-conf.level)/2, 0,1)
-        out$absRisk.lower <- apply(out$absRisk - zval*out$absRisk.se,2,pmax,0)
-        out$absRisk.upper <- apply(out$absRisk + zval*out$absRisk.se,2,pmin,1)
+        
+        # to keep matrix format even when out$absRisk contains only one line
+        out$absRisk.lower <- out$absRisk.upper <- matrix(NA, nrow = NROW(out$absRisk.se), ncol = NCOL(out$absRisk.se))
+        out$absRisk.lower[] <- apply(out$absRisk - zval*out$absRisk.se,2,pmax,0)
+        out$absRisk.upper[] <- apply(out$absRisk + zval*out$absRisk.se,2,pmin,1)
     }
     if(iid){
         out$absRisk.iid <- out.seCSC[,ootimes,,drop=FALSE]
@@ -303,7 +311,9 @@ predict.CauseSpecificCox <- function(object,
     if(keep.times){out$times <- times}
     if(keep.newdata==TRUE){
         allVars <- unique(unlist(lapply(object$models, function(m){CoxCovars(m)})))
-        out$newdata <- newdata[, allVars, with = FALSE]
+        if(length(allVars)>0){
+            out$newdata <- newdata[, allVars, with = FALSE]
+        }
     }
     if(keep.strata==TRUE){
         allStrata <- unique(unlist(lapply(object$models, function(m){CoxVariableName(m)$stratavars.original})))
@@ -339,6 +349,7 @@ predict.CauseSpecificCox <- function(object,
 #' @param cause the cause of interest.
 #' @param nCause the number of causes.
 #' @param return.se Logical. Should the standard error be output. Otherwise the value of the influence function will be output.
+#' @param nVar the number of variables that form the linear predictor in each Cox model
 #' 
 #' @examples 
 #' 
@@ -355,7 +366,7 @@ predict.CauseSpecificCox <- function(object,
 #' 
 seCSC <- function(hazard, cumhazard, object.time, object.maxtime, iid,
                   eXb_h, eXb_cumH, new.LPdata, new.strata, times,
-                  new.n, cause, nCause, return.se){
+                  new.n, cause, nCause, nVar, return.se){
    
     nEtimes <- length(object.time)
     object.n <- NROW(iid[[1]]$ICbeta)
@@ -379,7 +390,8 @@ seCSC <- function(hazard, cumhazard, object.time, object.maxtime, iid,
             iICcumhazard <- iICcumhazard + IClambda2hazard(eXb = eXb_cumH[iObs,iCause],
                                                            lambda0 = cumhazard[[iCause]][,iStrata[iCause]+1],
                                                            X_ICbeta = X_ICbeta,
-                                                           IClambda0 = iid[[iCause]]$ICcumhazard[[iStrata[iCause]+1]])
+                                                           IClambda0 = iid[[iCause]]$ICcumhazard[[iStrata[iCause]+1]],
+                                                           nVar = nVar[iCause])
           
             if(cause == iCause){
                 iHazard1 <- hazard[[cause]][,iStrata[cause]+1]*eXb_h[iObs,iCause]
@@ -387,7 +399,8 @@ seCSC <- function(hazard, cumhazard, object.time, object.maxtime, iid,
                 iIChazard1 <- IClambda2hazard(eXb = eXb_h[iObs,iCause],
                                               lambda0 = hazard[[iCause]][,iStrata[iCause]+1],
                                               X_ICbeta = X_ICbeta,
-                                              IClambda0 = iid[[iCause]]$IChazard[[iStrata[iCause]+1]])
+                                              IClambda0 = iid[[iCause]]$IChazard[[iStrata[iCause]+1]],
+                                              nVar = nVar[iCause])
               
           }
           
