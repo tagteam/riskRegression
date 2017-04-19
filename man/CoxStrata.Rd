@@ -9,13 +9,13 @@
 \usage{
 CoxStrata(object, data, sterms, stratavars, levels, stratalevels)
 
-\method{CoxStrata}{coxph}(object, data = NULL, sterms, stratavars, levels,
+\method{CoxStrata}{coxph}(object, data, sterms, stratavars, levels,
   stratalevels)
 
-\method{CoxStrata}{coxph}(object, data = NULL, sterms, stratavars, levels,
+\method{CoxStrata}{coxph}(object, data, sterms, stratavars, levels,
   stratalevels)
 
-\method{CoxStrata}{phreg}(object, data = NULL, sterms, stratavars, levels,
+\method{CoxStrata}{phreg}(object, data, sterms, stratavars, levels,
   stratalevels)
 }
 \arguments{

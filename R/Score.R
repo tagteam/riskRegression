@@ -242,7 +242,7 @@ Score.list <- function(object,
                        trainseeds,
                        keep,
                        ...){
-    id=time=status=id=WTi=b=time=status=model=reference=p=model=NULL
+    id=time=status=id=WTi=b=time=status=model=reference=p=model=pseudovalue=NULL
 # }}}
     theCall <- match.call()
     # -----------------parse arguments and prepare data---------

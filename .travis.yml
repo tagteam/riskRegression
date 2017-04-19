@@ -4,3 +4,6 @@ language: R
 sudo: required
 r_check_args: --as-cran
 cache: packages
+
+r_github_packages:
+- cran/survival

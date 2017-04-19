@@ -25,6 +25,7 @@ Suggests:
     CoxBoost,
     Daim,
     mets,
+    mstate,
     party,
     pec,
     penalized,

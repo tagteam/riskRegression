@@ -639,7 +639,15 @@ test_that("Prediction with Cox model - delayed entry",{
   expect_error(predictCox(m.cox))
 })
 
-#### 11- Others ####
+#### 11 - Strata ####
+cat("strata \n")
+# check previous issue with strata
+f1 <- coxph(Surv(time,status==1) ~ age+logthick+epicel+strata(sex),data=Melanoma,
+            x=TRUE,y=TRUE)
+res <- predictCox(f1,newdata=Melanoma[c(17,101,123),],
+                  times=c(7,3,5)*365.25)
+
+#### 12- Others ####
 cat("Others \n")
 n <- 3
 set.seed(3)

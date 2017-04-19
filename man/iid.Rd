@@ -5,8 +5,7 @@
 \alias{iidCox}
 \title{Extract i.i.d. decomposition from a Cox model}
 \usage{
-iidCox(object, newdata = NULL, tauHazard = NULL, keep.times = TRUE,
-  center.result = TRUE)
+iidCox(object, newdata = NULL, tauHazard = NULL, keep.times = TRUE)
 }
 \arguments{
 \item{object}{object The fitted Cox regression model object either
@@ -18,10 +17,6 @@ obtained with \code{coxph} (survival package) or \code{cph}
 \item{tauHazard}{the vector of times at which the i.i.d decomposition of the baseline hazard will be computed}
 
 \item{keep.times}{Logical. If \code{TRUE} add the evaluation times to the output.}
-
-\item{center.result}{Temporary argument. Should the IF be rescale to match timereg results.}
-
-\item{...}{additional arguments}
 }
 \description{
 Compute the influence function for each observation used to estimate the model

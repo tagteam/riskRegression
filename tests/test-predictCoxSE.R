@@ -260,6 +260,45 @@ if(require(timereg)){
 
 
 
+# {{{ Comparaison with mstate
+if(require(mstate)){
+data(aidssi)
+dt.aidssi <- as.data.table(aidssi)
+setkey(dt.aidssi, time)
+
+  ## survival 
+  GS.KM <- as.data.table(Cuminc(time = dt.aidssi$time, status=dt.aidssi$status>0))
+  # m.prodlim <- prodlim(Hist(time, status>0) ~ 1, data = dt.aidssi)
+  # e.prodlim <- predict(m.prodlim, times = GS.KM[["time"]])
+  # quantile(e.prodlim-GS.KM[["Surv"]])
+  
+  seqTime <- GS.KM[[1]]
+  m.coxph <- coxph(Surv(time, status>0) ~ 1, data =  dt.aidssi, x = TRUE, y = TRUE)
+  e.RR <- predictCox(m.coxph, newdata = dt.aidssi[1], times = seqTime, se = TRUE)
+  print(e.RR)
+
+  # dt.tempo <- rbind(data.table(survival = GS.KM$Surv, time = GS.KM$time, 
+  #                              method = "mstate", n.censor = 0, n.event = 1),
+  #                   data.table(survival = as.data.table(e.RR)[["survival"]], time = GS.KM$time, 
+  #                              method = "riskRegression", n.censor = 0, n.event = 1)
+  # )
+  # butils:::ggSurv.data.table(dt.tempo, survivalVar = "survival", strataVar = "method", timeVar = "time")
+  
+  quantile(GS.KM$Surv-as.data.table(e.RR)[["survival"]])
+  quantile(GS.KM$seSurv-as.data.table(e.RR)[["survival.se"]])
+  
+## cumulative incidence
+GS.NA <- as.data.table(Cuminc(time = dt.aidssi$time, status=dt.aidssi$status))
+
+m.CSC <- CSC(Hist(time, status) ~ 1, data = dt.aidssi)
+e.RR2 <- predict(m.CSC, newdata = dt.aidssi[1], times = seqTime, se = TRUE, cause = 1)
+e.RR2
+
+quantile(GS.NA[["CI.1"]]-as.data.table(e.RR2)[["absRisk"]])
+quantile(GS.NA[["seCI.1"]]-as.data.table(e.RR2)[["absRisk.se"]])
+}
+# }}}
+
 # {{{ Cox confidence band
 # package.source("riskRegression", Ccode = TRUE, RorderDescription=FALSE)
 # 

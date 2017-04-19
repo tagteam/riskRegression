@@ -4,7 +4,7 @@
 \alias{IClambda2hazard}
 \title{Evaluate the influence function for the hazard based on the one of the baseline hazard##'}
 \usage{
-IClambda2hazard(eXb, X_ICbeta, lambda0, IClambda0)
+IClambda2hazard(eXb, X_ICbeta, lambda0, IClambda0, nVar)
 }
 \arguments{
 \item{eXb}{the linear predictor}
@@ -14,6 +14,8 @@ IClambda2hazard(eXb, X_ICbeta, lambda0, IClambda0)
 \item{lambda0}{the baseline hazard}
 
 \item{IClambda0}{the influence function of the baseline hazard}
+
+\item{nVar}{the number of variables that form the linear predictor}
 }
 \description{
 Evaluate the influence function for the hazard based on the one of the baseline hazard
