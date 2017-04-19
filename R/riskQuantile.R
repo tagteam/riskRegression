@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jan  9 2016 (19:31) 
 ## Version: 
-## last-updated: Jan 14 2017 (09:04) 
+## last-updated: Apr 11 2017 (08:11) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 267
+##     Update #: 277
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -108,9 +108,10 @@ riskQuantile.survival <- function(DT,N,NT,NF,dolist,Q,...){
     #######
     surv <- DT[model==models[[1]],data.table::data.table("surv"=(1/N*sum((time>times)/Wt))),by=times]
     surv[,cuminc:=1-surv]
-    getQ.event <- function(Q,tp,X,time,status,WTi,cuminc){
+    getQ.event <- function(Q,tp,X,time,status,WTi,surv){
         uX <- sort(unique(X[time<=tp & status==1]))
-        Wx <- sapply(uX,function(x){1/N*sum((X<=x & time<=tp & status==1)/WTi)/surv[times==tp,cuminc]})
+        ## browser(skipCalls=1L)
+        Wx <- sapply(uX,function(x){sum((X<=x & time<=tp & status==1)/WTi)})/(N*surv[times==tp,cuminc])
         qRisk <- getQuantile(x=uX,Fx=Wx,Q=Q)
         qR <- data.table(t(qRisk))
         qR[,cause:="event"]
@@ -118,7 +119,7 @@ riskQuantile.survival <- function(DT,N,NT,NF,dolist,Q,...){
     } 
     getQ.eventFree <- function(Q,tp,X,time,Wt,surv){
         uX <- sort(unique(X[time>tp]))
-        Wx <- sapply(uX,function(x){1/N*sum((X<=x & time>tp)/Wt)/surv[times==tp,surv]})
+        Wx <- sapply(uX,function(x){sum((X<=x & time>tp)/Wt)})/(N*surv[times==tp,surv])
         qRisk <- getQuantile(x=uX,Fx=Wx,Q=Q)
         qR <- data.table(t(qRisk))
         qR[,cause:="event-free"]
@@ -127,9 +128,11 @@ riskQuantile.survival <- function(DT,N,NT,NF,dolist,Q,...){
     ## browser(skipCalls=1L)
     ## a <- DT[model==1]
     ## system.time(a[,getQ.eventFree(Q=Q,tp=times[1],X=risk,time=time,Wt=Wt,surv=surv)])
-    system.time(score.eventfree <- DT[,getQ.eventFree(Q=Q,tp=times,X=risk,time=time,Wt=Wt,surv=surv),by=list(model,times)])
-    setkey(DT,model,times)
-    score.event <- DT[,getQ.event(Q=Q,tp=times,X=risk,time=time,status=status,WTi=WTi,cuminc=cuminc),by=list(model,times)]
+    score.eventfree <- DT[,getQ.eventFree(Q=Q,tp=times,X=risk,time=time,Wt=Wt,surv=surv),by=list(model,times)]
+    ## setkey(DT,model,times)
+    save(surv,file="~/tmp/surv.rda")
+    save(DT,file="~/tmp/DT.rda")
+    score.event <- DT[,getQ.event(Q=Q,tp=times,X=risk,time=time,status=status,WTi=WTi,surv=surv),by=list(model,times)]
     score.overall <- DT[,data.table(t(quantile(risk,probs=Q))),by=list(model,times)]
     score.overall[,cause:="overall"]
     colnames(score.overall) <- colnames(score.event)
@@ -148,7 +151,7 @@ riskQuantile.survival <- function(DT,N,NT,NF,dolist,Q,...){
             Xrange <- DTdiff[,range(X)]
             Xmed <- DTdiff[,median(X)]
             changedist.eventfree <- DTdiff[,getQ.eventFree(Q=Q,tp=times,X=X,time=time,Wt=Wt,surv=surv),by=list(model,times)]
-            changedist.event <- DTdiff[,getQ.event(Q=Q,tp=times,X=X,time=time,status=status,WTi=WTi,cuminc=cuminc),by=list(model,times)]
+            changedist.event <- DTdiff[,getQ.event(Q=Q,tp=times,X=X,time=time,status=status,WTi=WTi,surv=surv),by=list(model,times)]
             changedist.overall <- DTdiff[,data.table(t(quantile(X,probs=Q))),by=list(model,times)]
             changedist.overall[,cause:="overall"]
             colnames(changedist.overall) <- colnames(changedist.event)
@@ -224,7 +227,7 @@ riskQuantile.competing.risks <- function(DT,N,NT,NF,dolist,cause,Q,...){
         uX <- sort(unique(X))
         rbindlist(lapply(causes,function(cause){
             # Note that event==cause implies status==1
-            Wx <- sapply(uX,function(x){1/N*sum((X<=x & event==cause & time<=tp)/WTi)/cuminc[[cause]][times==tp,cuminc]})
+            Wx <- sapply(uX,function(x){sum((X<=x & event==cause & time<=tp)/WTi)})/(N*cuminc[[cause]][times==tp,cuminc])
             qRisk <- getQuantile(x=uX,Fx=Wx,Q=Q)
             qR <- data.table(t(qRisk))
             qR[,cause:=cause]
@@ -233,12 +236,13 @@ riskQuantile.competing.risks <- function(DT,N,NT,NF,dolist,cause,Q,...){
     }
     getQ.eventFree <- function(Q,tp,X,Xmed,time,Wt,surv){
         uX <- sort(unique(X))
-        Wx <- sapply(uX,function(x){1/N*sum((X<=x & time>tp)/Wt)/surv[times==tp,surv]})
+        Wx <- sapply(uX,function(x){sum((X<=x & time>tp)/Wt)})/(N*surv[times==tp,surv])
         qRisk <- getQuantile(x=uX,Fx=Wx,Q=Q)
         qR <- data.table(t(qRisk))
         qR[,cause:="event-free"]
         qR
     }
+    ## browser(skipCalls=1)
     score.eventfree <- DT[,getQ.eventFree(Q=Q,tp=times,X=risk,time=time,Wt=Wt,surv=surv),by=list(model,times)]
     score.causes <- DT[,getQ.causes(Q=Q,tp=times,X=risk,time=time,event=event,WTi=WTi,cuminc=cuminc,causes=causes),by=list(model,times)]
     score.overall <- DT[,data.table(t(quantile(risk,probs=Q))),by=list(model,times)]
@@ -248,7 +252,6 @@ riskQuantile.competing.risks <- function(DT,N,NT,NF,dolist,cause,Q,...){
     setcolorder(score,c("model","times","cause",paste0("V",1:length(Q))))
     qnames <- paste0("Q",".",as.character(round(100*Q)))
     setnames(score,c("model","times","cause",qnames))
-    ## browser(skipCalls=1)
     if (length(dolist)>0){
         contrasts <- data.table::rbindlist(lapply(dolist,function(g){
             ## from all models g[-1], substract risk of model g[1] 

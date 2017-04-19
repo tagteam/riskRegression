@@ -10,7 +10,7 @@
   useEventTimes = FALSE, nullModel = TRUE, conf.int = 0.95,
   contrasts = TRUE, probs = c(0, 0.25, 0.5, 0.75, 1),
   censMethod = "outside.ipcw", censModel = "cox", splitMethod, B, M, seed,
-  trainseeds, ...)
+  trainseeds, keep, ...)
 }
 \arguments{
 \item{object}{List of risk predictions (see details and examples).}
@@ -28,7 +28,8 @@ apply. Case does not matter. Choices are \code{"AUC"} and \code{"Brier"}.}
 
 \item{summary}{Character vector specifying which summary
 statistics to apply to the predicted risks. The only choice is 
-\code{"riskQuantile"} which enables (time-point specific) boxplots of predicted risks conditional on the outcome (at the time-point).
+\code{"riskQuantile"} which enables (time-point specific) boxplots of
+predicted risks conditional on the outcome (at the time-point).
 Set to \code{NULL} to avoid estimation of retrospective risk quantiles.}
 
 \item{plots}{Character vector specifying which plots to prepare. Choices}
@@ -104,6 +105,8 @@ randomly splitting (bootstrapping) the data during cross-validation.}
 
 \item{trainseeds}{Seeds for training models during cross-validation.}
 
+\item{keep}{provide about additional output}
+
 \item{...}{Not used}
 }
 \value{
@@ -115,7 +118,7 @@ List with scores and assessments of contrasts, i.e.,
 Methods to score the predictive performance of risk markers and risk prediction models
 }
 \details{
-The function implements toolbox for the risk prediction modeller:
+The function implements a toolbox for the risk prediction modeller:
 all tools work for the three outcomes: (1) binary (uncensored),
 (2) right censored time to event without competing risks,
 (3) right censored time to event with competing risks
@@ -145,6 +148,7 @@ Score(list("LR(X1+X2+X7+X9)"=lr1,"LR(X3+X5+X6)"=lr2),formula=Y~1,data=testdat)
 xb=Score(list("LR(X1+X2+X7+X9)"=lr1,"LR(X3+X5+X6)"=lr2),formula=Y~1,
         data=testdat,plots=c("calibration","ROC"))
 plotROC(xb)
+plotCalibration(xb)
 
 # compute AUC for a list of continuous markers
 markers = as.list(testdat[,.(X6,X7,X8,X9,X10)])
