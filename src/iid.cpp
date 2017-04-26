@@ -70,7 +70,7 @@ List calcE_cpp(const NumericVector& eventtime,
 arma::mat ICbeta_cpp(const NumericVector& newT, const NumericVector& neweXb, const arma::mat& newX, const NumericVector& newStatus, const IntegerVector& newIndexJump, 
                      const NumericVector& S01, const arma::mat& E1, const NumericVector& time1, const arma::mat& iInfo,
                      int p){
- 
+  
   arma::mat ICbeta;
   int nObs = newIndexJump.size();
   
@@ -138,7 +138,7 @@ arma::mat ICbeta_cpp(const NumericVector& newT, const NumericVector& neweXb, con
 // [[Rcpp::export]]
 arma::mat ICbetaApprox_cpp(const arma::mat& newX, const NumericVector& newStatus, const IntegerVector& newIndexJump, 
                            const arma::mat& E1, const arma::mat& iInfo, int p){
-
+  
   arma::mat ICbeta;
   int nObs = newIndexJump.size();
   
@@ -151,7 +151,7 @@ arma::mat ICbetaApprox_cpp(const arma::mat& newX, const NumericVector& newStatus
     
     arma::colvec Score(p);    
     int iObs = 0;
-
+    
     while(iObs < nObs){ // before the first event
       
       // compute the score
@@ -176,7 +176,7 @@ arma::mat ICbetaApprox_cpp(const arma::mat& newX, const NumericVector& newStatus
 List IClambda0_cpp(const NumericVector& tau, const arma::mat& ICbeta,
                    const NumericVector& newT, const NumericVector& neweXb, const NumericVector& newStatus, const IntegerVector& newStrata, const IntegerVector& newIndexJump, 
                    const NumericVector& S01, const arma::mat& E1, const NumericVector& time1, double lastTime1, const NumericVector& lambda0,
-                   int p, int strata, bool exact){
+                   int p, int strata, bool exact, bool minimalExport){
   
   int nObs = newT.size();
   int nTau = tau.size();
@@ -200,7 +200,7 @@ List IClambda0_cpp(const NumericVector& tau, const arma::mat& ICbeta,
   
   colvec Elambda0_iter(p), cumElambda0_iter(p); 
   cumElambda0_iter.fill(0);
-
+  
   for(int iTime1 = 0; iTime1 < nTime1; iTime1++){
     Elambda0_iter.fill(0);
     
@@ -235,7 +235,13 @@ List IClambda0_cpp(const NumericVector& tau, const arma::mat& ICbeta,
     
     if(iTau == nTau){ break; }
   }
-
+  
+  if(minimalExport){
+    return(List::create(Named("delta_iS0") = delta_iS0,
+                        Named("Elambda0") = Elambda0,
+                        Named("cumElambda0") = cumElambda0));
+  }
+  
   // main loop
   int iTau0 = 0;
   
@@ -246,7 +252,7 @@ List IClambda0_cpp(const NumericVector& tau, const arma::mat& ICbeta,
     iTau0++;
     
   }
-
+  
   int index_newT_time1; // position of the minimum between t and t_train in cumLamba0_iS0
   int nTau_beforeLast=iTau0; // number of evaluation time before the last event
   IntegerVector Vindex_tau_time1(nTau);
@@ -274,11 +280,11 @@ List IClambda0_cpp(const NumericVector& tau, const arma::mat& ICbeta,
       
       if(strata == newStrata[iObs]){
         // second term
-	if(exact){
-         if(tau[iiTau]==time1[Vindex_tau_time1[iiTau]] && time1[Vindex_tau_time1[iiTau]] <= newT[iObs]){ IClambda0(iObs,iiTau) -= neweXb[iObs] * lambda0_iS0[Vindex_tau_time1[iiTau]]; }
+        if(exact){
+          if(tau[iiTau]==time1[Vindex_tau_time1[iiTau]] && time1[Vindex_tau_time1[iiTau]] <= newT[iObs]){ IClambda0(iObs,iiTau) -= neweXb[iObs] * lambda0_iS0[Vindex_tau_time1[iiTau]]; }
           ICLambda0(iObs,iiTau) -= neweXb[iObs] * cumLambda0_iS0[min(Vindex_tau_time1[iiTau],index_newT_time1)];
-	}
-	
+        }
+        
         // third term
         if(newT[iObs]<=tau[iiTau]){
           if(newT[iObs]==tau[iiTau]){IClambda0(iObs,iiTau) += delta_iS0[iObs];}

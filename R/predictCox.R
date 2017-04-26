@@ -112,7 +112,7 @@ predictCox <- function(object,
                        keep.newdata = FALSE,
                        se = FALSE,
                        iid = FALSE,
-                       conf.level=0.95){
+                       conf.level=0.95, ...){
     status=statusM1=NULL
     
     # {{{ treatment of times and stopping rules
@@ -345,7 +345,7 @@ predictCox <- function(object,
             iid.object <- object$iid
             
             if(is.null(iid.object)){
-                iid.object <- iidCox(object, tauHazard = times.sorted)
+                iid.object <- iidCox(object, tauHazard = times.sorted, ...)
             }else{        
                 iid.object <- selectJump(iid.object, times = times.sorted, type = type)        
             }
