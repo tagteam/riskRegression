@@ -70,9 +70,9 @@ List calcE_cpp(const NumericVector& eventtime,
 arma::mat ICbeta_cpp(const NumericVector& newT, const NumericVector& neweXb, const arma::mat& newX, const NumericVector& newStatus, const IntegerVector& newIndexJump, 
                      const NumericVector& S01, const arma::mat& E1, const NumericVector& time1, const arma::mat& iInfo,
                      int p){
-  
+ 
   arma::mat ICbeta;
-  int nObs = newT.size();
+  int nObs = newIndexJump.size();
   
   if(p==0){
     ICbeta.resize(nObs, 1);
@@ -134,12 +134,49 @@ arma::mat ICbeta_cpp(const NumericVector& newT, const NumericVector& neweXb, con
 }
 // }}}
 
+// {{{ ICbetaApprox_cpp
+// [[Rcpp::export]]
+arma::mat ICbetaApprox_cpp(const arma::mat& newX, const NumericVector& newStatus, const IntegerVector& newIndexJump, 
+                           const arma::mat& E1, const arma::mat& iInfo, int p){
+
+  arma::mat ICbeta;
+  int nObs = newIndexJump.size();
+  
+  if(p==0){
+    ICbeta.resize(nObs, 1);
+    ICbeta.fill(0);
+  }else{
+    ICbeta.resize(nObs, p);
+    ICbeta.fill(NA_REAL);
+    
+    arma::colvec Score(p);    
+    int iObs = 0;
+
+    while(iObs < nObs){ // before the first event
+      
+      // compute the score
+      for(int iX=0;iX<p;iX++){
+        Score[iX] = newStatus[iObs] * (newX(iObs,iX)-E1(newIndexJump[iObs],iX) );
+      }
+      
+      ICbeta.row(iObs) = (iInfo * Score).t();
+      
+      iObs++;
+      
+    }
+    
+  }
+  
+  return(ICbeta);
+}
+// }}}
+
 // {{{ IClambda0_cpp
 // [[Rcpp::export]]
 List IClambda0_cpp(const NumericVector& tau, const arma::mat& ICbeta,
                    const NumericVector& newT, const NumericVector& neweXb, const NumericVector& newStatus, const IntegerVector& newStrata, const IntegerVector& newIndexJump, 
                    const NumericVector& S01, const arma::mat& E1, const NumericVector& time1, double lastTime1, const NumericVector& lambda0,
-                   int p, int strata){
+                   int p, int strata, bool exact){
   
   int nObs = newT.size();
   int nTau = tau.size();
@@ -148,7 +185,7 @@ List IClambda0_cpp(const NumericVector& tau, const arma::mat& ICbeta,
   arma::mat ICLambda0(nObs, nTau);
   IClambda0.fill(NA_REAL);
   ICLambda0.fill(NA_REAL);
-
+  
   // Compute delta_iS0
   NumericVector delta_iS0(nObs);
   for(int iObs=0; iObs<nObs ; iObs++){
@@ -175,11 +212,13 @@ List IClambda0_cpp(const NumericVector& tau, const arma::mat& ICbeta,
     }
     
     // update (cum)Lambda0_iS0
-    lambda0_iS0[iTime1] = lambda0[iTime1]/S01[iTime1];
-    if(iTime1 == 0){
-      cumLambda0_iS0[0] = lambda0_iS0[0];
-    }else{
-      cumLambda0_iS0[iTime1] = cumLambda0_iS0[iTime1-1] + lambda0_iS0[iTime1];  
+    if(exact){
+      lambda0_iS0[iTime1] = lambda0[iTime1]/S01[iTime1];
+      if(iTime1 == 0){
+        cumLambda0_iS0[0] = lambda0_iS0[0];
+      }else{
+        cumLambda0_iS0[iTime1] = cumLambda0_iS0[iTime1-1] + lambda0_iS0[iTime1];  
+      }
     }
     
     
@@ -196,7 +235,7 @@ List IClambda0_cpp(const NumericVector& tau, const arma::mat& ICbeta,
     
     if(iTau == nTau){ break; }
   }
-  
+
   // main loop
   int iTau0 = 0;
   
@@ -235,9 +274,11 @@ List IClambda0_cpp(const NumericVector& tau, const arma::mat& ICbeta,
       
       if(strata == newStrata[iObs]){
         // second term
-        if(tau[iiTau]==time1[Vindex_tau_time1[iiTau]] && time1[Vindex_tau_time1[iiTau]] <= newT[iObs]){ IClambda0(iObs,iiTau) -= neweXb[iObs] * lambda0_iS0[Vindex_tau_time1[iiTau]]; }
-        ICLambda0(iObs,iiTau) -= neweXb[iObs] * cumLambda0_iS0[min(Vindex_tau_time1[iiTau],index_newT_time1)];
-
+	if(exact){
+         if(tau[iiTau]==time1[Vindex_tau_time1[iiTau]] && time1[Vindex_tau_time1[iiTau]] <= newT[iObs]){ IClambda0(iObs,iiTau) -= neweXb[iObs] * lambda0_iS0[Vindex_tau_time1[iiTau]]; }
+          ICLambda0(iObs,iiTau) -= neweXb[iObs] * cumLambda0_iS0[min(Vindex_tau_time1[iiTau],index_newT_time1)];
+	}
+	
         // third term
         if(newT[iObs]<=tau[iiTau]){
           if(newT[iObs]==tau[iiTau]){IClambda0(iObs,iiTau) += delta_iS0[iObs];}
@@ -246,13 +287,6 @@ List IClambda0_cpp(const NumericVector& tau, const arma::mat& ICbeta,
       }
     }
   }
-  
-  // export
-  // return(List::create(Named("cumLambda0_iS0") = cumLambda0_iS0, 
-  //                     Named("cumElambda0") = cumElambda0, 
-  //                     Named("Elambda0") = Elambda0, 
-  //                     Named("hazard") = IClambda0,
-  //                     Named("cumhazard") = ICLambda0));
   
   return(List::create(Named("hazard") = IClambda0,
                       Named("cumhazard") = ICLambda0));

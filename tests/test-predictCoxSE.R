@@ -31,12 +31,14 @@ setkeyv(dStrata, c("St", "eventtime"))
 # {{{ models - Gold standard
 if(require(timereg)){
   # {{{ no strata, no interaction, continous
-m.coxph <- coxph(Surv(eventtime, event) ~ X1+X6, data = d, y = TRUE, x = TRUE)
-m.coxph_d2 <- coxph(Surv(eventtime, event) ~ X1+X6, data = d2, y = TRUE, x = TRUE)
-m.cph <- cph(Surv(eventtime, event) ~ X1+X6, data = d, y = TRUE, x = TRUE)
-  
-m.cox_GS <- cox.aalen(Surv(eventtime, event) ~ prop(X1)+prop(X6), data = d, resample.iid = TRUE, max.timepoint.sim=NULL)
-IClambda_GS <- t(as.data.table(m.cox_GS$B.iid))
+    m.coxph <- coxph(Surv(eventtime, event) ~ X1+X6, data = d, y = TRUE, x = TRUE)
+    m.coxph_d2 <- coxph(Surv(eventtime, event) ~ X1+X6, data = d2, y = TRUE, x = TRUE)
+    m.cph <- cph(Surv(eventtime, event) ~ X1+X6, data = d, y = TRUE, x = TRUE)
+    
+    m.cox_GS <- cox.aalen(Surv(eventtime, event) ~ prop(X1)+prop(X6), data = d, resample.iid = TRUE, max.timepoint.sim=NULL)
+    IClambda_GS <- t(as.data.table(m.cox_GS$B.iid))
+    m.cox_GSapprox <- cox.aalen(Surv(eventtime, event) ~ prop(X1)+prop(X6), data = d, resample.iid = TRUE, rate.sim = 0, clusters = 1:NROW(d), max.timepoint.sim=NULL)
+    IClambda_GSapprox <- t(as.data.table(m.cox_GSapprox$B.iid))
   # }}}
   # {{{ no strata, interactions, continous
 mI.coxph <- coxph(Surv(eventtime, event) ~ X1*X6, data = d, y = TRUE, x = TRUE)
@@ -79,6 +81,7 @@ if(require(timereg)){
   
     # {{{ no strata, no interaction, continous
   IC.coxph <- iidCox(m.coxph, keep.times = FALSE)
+  ICapprox.coxph <- iidCox(m.coxph, keep.times = FALSE, exact = FALSE)
     
   IC.coxph_d2 <- iidCox(m.coxph_d2, keep.times = FALSE)
   
@@ -88,14 +91,18 @@ if(require(timereg)){
     expect_equal(unname(IC.coxph$ICbeta),m.cox_GS$gamma.iid)
     expect_equal(unname(IC.coxph$ICbeta),unname(IC.coxph_d2$ICbeta[order(d2$eventtime),]))
     expect_equal(unname(IC.cph$ICbeta),m.cox_GS$gamma.iid, tol = 1e-2)
+
+    expect_equal(unname(ICapprox.coxph$ICbeta),m.cox_GSapprox$gamma.iid)
   })
   
     test_that("iid lambda0",{
-    expect_equal(as.double(IC.coxph$ICcumhazard[[1]]), as.double(IClambda_GS[,-1]))
-    expect_equal(as.double(IC.coxph$ICcumhazard[[1]]), as.double(IC.coxph_d2$ICcumhazard[[1]][order(d2$eventtime),]))
-    expect_equal(as.double(IC.cph$ICcumhazard[[1]]), as.double(IClambda_GS[,-1]), tol = 1e-4)
-  })
-  # }}}
+        expect_equal(as.double(IC.coxph$ICcumhazard[[1]]), as.double(IClambda_GS[,-1]))
+        expect_equal(as.double(IC.coxph$ICcumhazard[[1]]), as.double(IC.coxph_d2$ICcumhazard[[1]][order(d2$eventtime),]))
+        expect_equal(as.double(IC.cph$ICcumhazard[[1]]), as.double(IClambda_GS[,-1]), tol = 1e-4)
+
+        expect_equal(as.double(ICapprox.coxph$ICcumhazard[[1]]), as.double(IClambda_GSapprox[,-1]))
+    })
+    # }}}
   
   # {{{ before the first event
   data(Melanoma)

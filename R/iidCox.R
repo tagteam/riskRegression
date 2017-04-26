@@ -8,18 +8,22 @@
 #' @param newdata Optional new data at which to do i.i.d. decomposition 
 #' @param tauHazard the vector of times at which the i.i.d decomposition of the baseline hazard will be computed
 #' @param keep.times Logical. If \code{TRUE} add the evaluation times to the output.
-#'
+#' @param exact Logical. If \code{TRUE} then the exact influence function is computed.
+#' Otherwise the influence function is estimated using the counting processes instead of the estimated martingales.
+#' 
 #' @details If there is no event in a strata, the influence function for the baseline hazard is set to 0.
 #'
 #' @examples
 #' library(survival)
 #' library(data.table)
 #' set.seed(10)
-#' d <- sampleData(40, outcome = "survival")[,.(eventtime,event,X1,X6)]
+#' d <- sampleData(100, outcome = "survival")[,.(eventtime,event,X1,X6)]
 #' setkey(d, eventtime)
 #' 
 #' m.cox <- coxph(Surv(eventtime, event) ~ X1+X6, data = d, y = TRUE, x = TRUE)
 #' system.time(IC.cox <- iidCox(m.cox))
+#' system.time(IC.cox_approx <- iidCox(m.cox, exact = FALSE))
+#'
 #' 
 #' IC.cox <- iidCox(m.cox, tauHazard = sort(unique(c(7,d$eventtime))))
 #'  
@@ -28,7 +32,7 @@
 #' @rdname iid
 #' @export
 iidCox <- function(object, newdata = NULL, tauHazard = NULL, 
-                   keep.times = TRUE){
+                   keep.times = TRUE, exact = TRUE){
   
     #### extract elements from object ####
     infoVar <- CoxVariableName(object)
@@ -176,21 +180,30 @@ iidCox <- function(object, newdata = NULL, tauHazard = NULL,
     
     new.indexJump_strata <- new.indexJump[[iStrata]][new.index_strata[[iStrata]][new.order_strata[[iStrata]]]]
     
-    ## IF
-    if(p>0){
-      ICbeta_tempo <- ICbeta_cpp(newT = new.time_strata[[iStrata]],
-                                 neweXb = new.eXb_strata[[iStrata]],
-                                 newX = new.LPdata_strata[[iStrata]],
-                                 newStatus = new.status_strata[[iStrata]], 
-                                 newIndexJump = new.indexJump_strata, 
-                                 S01 = Ecpp[[iStrata]]$S0,
-                                 E1 = Ecpp[[iStrata]]$E,
-                                 time1 = Ecpp[[iStrata]]$Utime1,
-                                 iInfo = iInfo,
-                                 p = p)    
-    }else{
-      ICbeta_tempo <- matrix(NA, ncol = 1, nrow = length(new.index_strata[[iStrata]]))
-    }
+      ## IF
+      if(p>0){
+          if(exact){
+              ICbeta_tempo <- ICbeta_cpp(newT = new.time_strata[[iStrata]],
+                                         neweXb = new.eXb_strata[[iStrata]],
+                                         newX = new.LPdata_strata[[iStrata]],
+                                         newStatus = new.status_strata[[iStrata]], 
+                                         newIndexJump = new.indexJump_strata, 
+                                         S01 = Ecpp[[iStrata]]$S0,
+                                         E1 = Ecpp[[iStrata]]$E,
+                                         time1 = Ecpp[[iStrata]]$Utime1,
+                                         iInfo = iInfo,
+                                         p = p)
+          }else{
+              ICbeta_tempo <- ICbetaApprox_cpp(newX = new.LPdata_strata[[iStrata]],
+                                               newStatus = new.status_strata[[iStrata]],
+                                               newIndexJump = new.indexJump_strata,  
+                                               E1 = Ecpp[[iStrata]]$E,
+                                               iInfo = iInfo,
+                                               p = p)
+          }
+      }else{
+          ICbeta_tempo <- matrix(NA, ncol = 1, nrow = length(new.index_strata[[iStrata]]))
+      }
     
     ## output
     ICbeta <- rbind(ICbeta, ICbeta_tempo)
@@ -241,7 +254,7 @@ iidCox <- function(object, newdata = NULL, tauHazard = NULL,
                                         E1 = Etempo,
                                         time1 = timeStrata, lastTime1 = Ecpp[[iStrata]]$Utime1[nUtime1_strata], # here lastTime1 will not correspond to timeStrata[length(timeStrata)] when there are censored observations
                                         lambda0 = lambda0Strata,
-                                        p = p, strata = iStrata)
+                                        p = p, strata = iStrata, exact = exact)
       
       }else{
           if(length(tauHazard_strata)==0){tauHazard_strata <- max(object.time_strata[[iStrata]])}
