@@ -40,7 +40,10 @@
 #'     corresponding to the output.
 #' @param iid Logical. If \code{TRUE} add the influence function
 #'     corresponding to the output.
+#' @param nSim.band the number of simulations used to compute the quantiles for the confidence bands.
+#' The quantiles are computed as soon as this number is strictly positive.
 #' @param conf.level Level of confidence.
+#' @param ... arguments to be passed to the function \code{iidCox}.
 #' @details Not working with time varying predictor variables or
 #'     delayed entry.  The centered argument enables us to reproduce
 #'     the results obtained with the \code{basehaz} function from the
@@ -112,6 +115,7 @@ predictCox <- function(object,
                        keep.newdata = FALSE,
                        se = FALSE,
                        iid = FALSE,
+                       nSim.band = 0,
                        conf.level=0.95, ...){
     status=statusM1=NULL
     
@@ -153,6 +157,14 @@ predictCox <- function(object,
     object.eXb <- exp(CoxLP(object, data = NULL, center = if(is.null(newdata)){centered}else{FALSE})) 
     object.baseEstimator <- CoxBaseEstimator(object) 
     nVar <- length(infoVar$lpvars)
+
+    #### Confidence bands ####
+    if(nSim.band>0){
+        iid.save <- iid
+        se.save <- se
+        iid <- TRUE
+        se <- TRUE
+    }
     
     #### checks ####
     if(object.baseEstimator == "exact"){
@@ -171,16 +183,10 @@ predictCox <- function(object,
     if(any(object.design[,"start"]!=0)){
         stop("do not handle left censoring \n") 
     }
-    # if(se == TRUE && ncol(resInfo$modeldata) == 0){
-    #   stop("cannot compute the standard error when there are not covariates \n")
-    # }
+    if(nSim.band>0 && "hazard" %in% type){
+        stop("confidence bands cannot be computed for the hazard \n")
+    }
     
-    #### Do we want to make prediction for a new dataset ? ####
-    # if yes we need to define: - the linear predictor for the new dataset
-    #                           - the strata corresponding to each observation in the new dataset
-    # (optional for se)         - subset the dataset to the variable involved in the linear predictor and center these variables
-    #                           - the influence function             
-
     # }}}
     # {{{ computation of the baseline hazard
     if(!is.null(newdata)){
@@ -409,10 +415,51 @@ predictCox <- function(object,
             }
         }
         # }}}
+        # {{{ quantiles for the confidence bands
+        if(nSim.band > 0){
+            
+            out$quantile.band <- confBandCox(iid = out[[paste(type[1],"iid",sep=".")]],
+                                             se = out[[paste(type[1],"se",sep=".")]],
+                                             times = times-1e-5,
+                                             n.object = object.n,
+                                             n.new = new.n,
+                                             n.sim = nSim.band,
+                                             conf.level = conf.level)
+            
+            if(iid.save==FALSE){
+                out[paste(type,"iid",sep=".")] <- NULL
+            }
+
+            if ("cumhazard" %in% type){
+                quantile95 <- colMultiply_cpp(out$cumhazard.se,out$quantile.band)
+                
+                out$cumhazard.lowerBand <- matrix(NA, nrow = NROW(out$cumhazard.se), ncol = NCOL(out$cumhazard.se))
+                out$cumhazard.lowerBand[] <- apply(out$cumhazard - quantile95,2,pmax,0)
+                out$cumhazard.upperBand <- out$cumhazard + quantile95
+
+            }
+            if ("survival" %in% type){
+                quantile95 <- colMultiply_cpp(out$survival.se,out$quantile.band)
+                
+                out$survival.lowerBand <- out$survival.upperBand <- matrix(NA, nrow = NROW(out$survival.se), ncol = NCOL(out$survival.se)) 
+                out$survival.lowerBand[] <- apply(out$survival - quantile95,2,pmax,0)
+                out$survival.upperBand[] <- apply(out$survival + quantile95,2,pmin,1)
+                
+            }
+            
+            if(se.save==FALSE){
+                out[paste(type,"se",sep=".")] <- NULL
+                out[paste(type,"lower",sep=".")] <- NULL
+                out[paste(type,"upper",sep=".")] <- NULL
+            }
+
+
+        }
+        # }}}
         # {{{ export 
         if (keep.times==TRUE) out <- c(out,list(times=times))
         if (is.strata && keep.strata==TRUE) out <- c(out,list(strata=new.strata))
-        out <- c(out,list(lastEventTime=etimes.max,se=se,type=type))
+        out <- c(out,list(lastEventTime=etimes.max,se=se,type=type, conf.level = conf.level))
         if( keep.newdata==TRUE){
             out$newdata <- newdata[, CoxCovars(object), with = FALSE]
         }

@@ -4,8 +4,9 @@
 \alias{plot.predictCox}
 \title{Plot predictions from a Cox model}
 \usage{
-\method{plot}{predictCox}(x, type = NULL, ci = FALSE, groupBy = "row",
-  reduce.data = FALSE, plot = TRUE, conf.level = 0.95, digits = 2, ...)
+\method{plot}{predictCox}(x, type = NULL, ci = FALSE, band = FALSE,
+  groupBy = "row", reduce.data = FALSE, plot = TRUE, digits = 2,
+  alpha = 0.1, ...)
 }
 \arguments{
 \item{x}{object obtained with the function \code{predictCox}.}
@@ -25,15 +26,17 @@ strings \code{"hazard"},\code{"cumhazard"}, \code{"survival"}.}
 
 \item{ci}{Logical. If \code{TRUE} display the confidence intervals for the predictions.}
 
+\item{band}{Logical. If \code{TRUE} display the confidence bands for the predictions.}
+
 \item{groupBy}{The grouping factor used to color the prediction curves. Can be \code{"row"}, \code{"strata"}, or \code{"covariates"}.}
 
 \item{reduce.data}{Logical. If \code{TRUE} only the covariates that does take indentical values for all observations are displayed.}
 
 \item{plot}{Logical. Should the graphic be plotted.}
 
-\item{conf.level}{confidence level of the interval.}
-
 \item{digits}{integer indicating the number of decimal places}
+
+\item{alpha}{transparency of the confidence bands. Argument passed to \code{ggplot2::geom_ribbon}.}
 
 \item{...}{not used. Only for compatibility with the plot method.}
 }
@@ -44,6 +47,7 @@ Plot predictions from a Cox model
 library(survival)
 library(ggplot2)
 
+## predictions ##
 d <- sampleData(1e2, outcome = "survival")
 m.cox <- coxph(Surv(time,event)~ X1 + X2 + X3,
                 data = d, x = TRUE, y = TRUE)
@@ -51,7 +55,7 @@ dt.basehaz <- predictCox(m.cox)
 ggplot(as.data.table(dt.basehaz), aes(x = time, y = survival)) + geom_point() + geom_line()
 
 pred.cox <- predictCox(m.cox, newdata = d[1:4,],
-  times = 1:5, type = "survival", se = TRUE, keep.newdata = TRUE)
+  times = 1:5, type = "survival", keep.newdata = TRUE)
 plot(pred.cox)
 plot(pred.cox, groupBy = "covariates")
 plot(pred.cox, groupBy = "covariates", reduce.data = TRUE)
@@ -67,7 +71,18 @@ res <- plot(pred.cox.strata, type = "survival",
             groupBy = "covariates")
 
 # customize display
-res$plot + geom_point(size = 3)
+res$plot + geom_point(data = res$dataDuplicated, size = 3)
+
+## predictions with confidence interval
+pred.cox <- predictCox(m.cox, newdata = d[1:4,],
+  times = 1:5, type = "survival", se = TRUE, keep.newdata = TRUE)
+plot(pred.cox, ci = TRUE)
+
+## predictions with confidence bands
+pred.cox <- predictCox(m.cox, newdata = d[1,,drop=FALSE],
+  times = 1:5, type = "survival", nSim.band = 500, keep.newdata = TRUE)
+plot(pred.cox, band = TRUE)
+
 
 }
 

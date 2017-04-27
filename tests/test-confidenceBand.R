@@ -1,0 +1,81 @@
+library(timereg)
+library(cmprsk)
+library(riskRegression)
+
+# {{{ survival
+
+# {{{ simulation
+set.seed(10)
+d <- sampleData(1e2, outcome = "survival")
+newdata <- d[1:10,]
+
+fit <- cox.aalen(Surv(time, event) ~ prop(X1) + prop(X2), data = d)
+fit.coxph <- coxph(Surv(time, event) ~ X1 + X2, data = d, x = TRUE, y = TRUE)
+
+object.design <- riskRegression:::CoxDesign.coxph(fit.coxph)
+times <- unique(sort(object.design[object.design$status==1,"stop"]))-1e-5
+# }}}
+
+# {{{ compute quantile for confidence bands
+pred <- predictCox(fit.coxph,
+                   newdata = newdata,
+                   times = times,
+                   se = TRUE,
+                   iid = TRUE,
+                   type = "cumhazard")
+set.seed(10)
+resRR <- confBandCox(
+    iid = pred$cumhazard.iid,
+    se = pred$cumhazard.se,
+    n.sim = 500, n.object = NROW(d), n.new = NROW(newdata)
+)
+
+resTimereg <- list()
+for(i in 1:NROW(newdata)){
+    set.seed(10)
+    resTimereg[[i]] <- predict.timereg(fit,
+                                     newdata = newdata[i,,drop=FALSE],
+                                     times = fit$time.sim.resolution,
+                                     resample.iid = 1,
+                                     n.sim = 500)
+}
+
+set.seed(10)
+predRR <- predictCox(fit.coxph,
+                     newdata = newdata,
+                     times = times,
+                     se = TRUE,
+                     iid = TRUE,
+                     nSim.band = 500,
+                     type = c("cumhazard","survival")
+                     )
+
+test_that("computation of the quantile for the confidence band of the cumhazard", {
+    ref <- unlist(lapply(resTimereg,"[[", "unif.band"))
+    expect_equal(resRR,ref)
+    expect_equal(predRR$quantile.band,ref)
+})
+
+# }}}
+
+# {{{ display
+predRR <- predictCox(fit.coxph,
+                     newdata = newdata[1,],
+                     times = times,
+                     se = TRUE,
+                     iid = TRUE,
+                     nSim.band = 500,
+                     type = c("cumhazard","survival")
+                     )
+
+dev.new()
+plotRR <- plot(predRR, type = "survival", band = TRUE, ci = TRUE, plot = FALSE)
+
+dev.new()
+plotTR <- plot.predict.timereg(resTimereg[[1]])
+dev.new()
+plotRR$plot + coord_cartesian(ylim = c(0,1))
+
+# }}}
+
+# }}}

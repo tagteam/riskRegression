@@ -21,6 +21,8 @@
 #'     corresponding to the output.
 #' @param iid Logical. If \code{TRUE} add the influence function
 #'     corresponding ot the output.
+#' @param nSim.band the number of simulations used to compute the quantiles for the confidence bands.
+#' The quantiles are computed as soon as this number is strictly positive.
 #' @param conf.level Level of confidence.
 #' @param ... not used
 #' @author Brice Ozenne broz@@sund.ku.dk, Thomas A. Gerds
@@ -86,6 +88,7 @@ predict.CauseSpecificCox <- function(object,
                                      keep.strata = 1L,
                                      se  = FALSE,
                                      iid = FALSE,
+                                     nSim.band = 0,
                                      conf.level=0.95,
                                      ...){
     
@@ -104,6 +107,8 @@ predict.CauseSpecificCox <- function(object,
     causes <- object$causes
     # cannot use only eventtimes of cause 1 otherwise wrong interpolation in the C++ function
     eTimes <- object$eventTimes
+    browser()
+    
     if (any(match(as.character(cause), causes, nomatch = 0)==0L))
         stop(paste0("Requested cause ",as.character(cause)," does not match fitted causes which are:\n ",paste0("- ",causes,collapse="\n")))
     ## stopifnot(match(as.character(cause), causes, nomatch = 0) != 
@@ -119,11 +124,14 @@ predict.CauseSpecificCox <- function(object,
     if(length(landmark)!=1){
         stop("\'t0\' must have length one \n")
     }
-    if(se == TRUE && iid == TRUE){
-        stop("cannot return the standard error and the value of the influence function at the same time \n",
-             "set se or iid to FALSE \n")
-    }
 
+    ## Confidence bands
+    if(nSim.band>0){
+        iid.save <- iid
+        se.save <- se
+        iid <- TRUE
+        se <- TRUE
+    }
     
     # relevant event times to use  
     eventTimes <- eTimes[which(eTimes <= max(times))] 
@@ -289,15 +297,17 @@ predict.CauseSpecificCox <- function(object,
                            cause = which(causes == cause),
                            nCause = nCause,
                            nVar = nVar,
-                           return.se = se)
+                           export.se = se,
+                           export.iid = iid)
     }
     
     #### export ###
     ootimes <- order(order(times))
     out <- list(absRisk = CIF[,ootimes,drop=FALSE])
 
+
     if(se){
-        out$absRisk.se <- out.seCSC[,ootimes,drop=FALSE]
+        out$absRisk.se <- out.seCSC$se[,ootimes,drop=FALSE]
         zval <- qnorm(1- (1-conf.level)/2, 0,1)
         
         # to keep matrix format even when out$absRisk contains only one line
@@ -306,8 +316,34 @@ predict.CauseSpecificCox <- function(object,
         out$absRisk.upper[] <- apply(out$absRisk + zval*out$absRisk.se,2,pmin,1)
     }
     if(iid){
-        out$absRisk.iid <- out.seCSC[,ootimes,,drop=FALSE]
+        out$absRisk.iid <- out.seCSC$iid[,ootimes,,drop=FALSE]
     }
+    if(nSim.band>0){
+        
+        out$quantile.band <- confBandCox(iid = out$absRisk.iid,
+                                         se = out$absRisk.se,
+                                         times = times-1e-5,
+                                         n.object = dim(out$absRisk.iid)[3],
+                                         n.new = new.n,
+                                         n.sim = nSim.band,
+                                         conf.level = conf.level)
+            
+        if(iid.save==FALSE){
+            out$absRisk.iid <- NULL
+        }
+
+        quantile95 <- colMultiply_cpp(out$absRisk.se,out$quantile.band)
+                
+        out$absRisk.lowerBand <- matrix(NA, nrow = NROW(out$absRisk.se), ncol = NCOL(out$absRisk.se))
+        out$absRisk.lowerBand[] <- apply(out$absRisk - quantile95,2,pmax,0)
+        out$absRisk.upperBand <- out$absRisk + quantile95
+
+        if(se.save==FALSE){
+            out$absRisk.se <- NULL
+            out$absRisk.lower <- NULL
+            out$absRisk.upper <- NULL
+        }
+    }    
     if(keep.times){out$times <- times}
     if(keep.newdata==TRUE){
         allVars <- unique(unlist(lapply(object$models, function(m){CoxCovars(m)})))
@@ -323,6 +359,7 @@ predict.CauseSpecificCox <- function(object,
             out$strata <- newdata[, interaction(.SD, sep = " "), .SDcols = allStrata]
         }
     }
+    out$conf.level <- conf.level
     out <- c(out,list(se=se))
     class(out) <- "predictCSC"
     return(out)
@@ -350,6 +387,10 @@ predict.CauseSpecificCox <- function(object,
 #' @param nCause the number of causes.
 #' @param return.se Logical. Should the standard error be output. Otherwise the value of the influence function will be output.
 #' @param nVar the number of variables that form the linear predictor in each Cox model
+#' @param se Logical. If \code{TRUE} add the standard errors
+#'     corresponding to the output.
+#' @param iid Logical. If \code{TRUE} add the influence function
+#'     corresponding ot the output.
 #' 
 #' @examples 
 #' 
@@ -366,14 +407,16 @@ predict.CauseSpecificCox <- function(object,
 #' 
 seCSC <- function(hazard, cumhazard, object.time, object.maxtime, iid,
                   eXb_h, eXb_cumH, new.LPdata, new.strata, times,
-                  new.n, cause, nCause, nVar, return.se){
-   
+                  new.n, cause, nCause, nVar, export.iid, export.se){
+
+    out <- list()
     nEtimes <- length(object.time)
     object.n <- NROW(iid[[1]]$ICbeta)
-    if(return.se){  
-        out <- matrix(NA, nrow = new.n, ncol = length(times))
-    }else{
-        out <- array(NA, dim = c(new.n, length(times), object.n))
+    if(export.se){  
+        out$se <- matrix(NA, nrow = new.n, ncol = length(times))
+    }
+    if(export.iid){
+        out$iid <- array(NA, dim = c(new.n, length(times), object.n))
     }
     
     for(iObs in 1:new.n){
@@ -413,10 +456,11 @@ seCSC <- function(hazard, cumhazard, object.time, object.maxtime, iid,
              CIF.se_tempo[,times > object.maxtime[iObs]] <- NA
         }
         
-        if(return.se){
-            out[iObs,] <- sqrt(apply(CIF.se_tempo^2,2,sum))
-        }else{
-            out[iObs,,] <- t(CIF.se_tempo)
+        if(export.se){
+            out$se[iObs,] <- sqrt(apply(CIF.se_tempo^2,2,sum))
+        }
+        if(export.iid){
+            out$iid[iObs,,] <- t(CIF.se_tempo)
         }
     }
     return(out)

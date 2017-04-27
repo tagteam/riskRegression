@@ -5,7 +5,8 @@
 \alias{iidCox}
 \title{Extract i.i.d. decomposition from a Cox model}
 \usage{
-iidCox(object, newdata = NULL, tauHazard = NULL, keep.times = TRUE)
+iidCox(object, newdata = NULL, tauHazard = NULL, keep.times = TRUE,
+  exact = TRUE, minimalExport = FALSE)
 }
 \arguments{
 \item{object}{object The fitted Cox regression model object either
@@ -17,6 +18,11 @@ obtained with \code{coxph} (survival package) or \code{cph}
 \item{tauHazard}{the vector of times at which the i.i.d decomposition of the baseline hazard will be computed}
 
 \item{keep.times}{Logical. If \code{TRUE} add the evaluation times to the output.}
+
+\item{exact}{Logical. If \code{TRUE} then the exact influence function is computed.}
+
+\item{minimalExport}{Logical. If \code{TRUE} do not export the i.i.d. decomposition for the baseline hazard but export the necessary element to compute it.
+Otherwise the influence function is estimated using the counting processes instead of the estimated martingales.}
 }
 \description{
 Compute the influence function for each observation used to estimate the model
@@ -28,11 +34,13 @@ If there is no event in a strata, the influence function for the baseline hazard
 library(survival)
 library(data.table)
 set.seed(10)
-d <- sampleData(40, outcome = "survival")[,.(eventtime,event,X1,X6)]
+d <- sampleData(100, outcome = "survival")[,.(eventtime,event,X1,X6)]
 setkey(d, eventtime)
 
 m.cox <- coxph(Surv(eventtime, event) ~ X1+X6, data = d, y = TRUE, x = TRUE)
 system.time(IC.cox <- iidCox(m.cox))
+system.time(IC.cox_approx <- iidCox(m.cox, exact = FALSE))
+
 
 IC.cox <- iidCox(m.cox, tauHazard = sort(unique(c(7,d$eventtime))))
  

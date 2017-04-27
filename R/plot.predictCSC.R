@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: feb 27 2017 (10:47) 
 ## Version: 
-## last-updated: Mar  3 2017 (20:27) 
-##           By: Thomas Alexander Gerds
-##     Update #: 38
+## last-updated: apr 27 2017 (15:23) 
+##           By: Brice Ozenne
+##     Update #: 49
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -20,11 +20,12 @@
 #' 
 #' @param x object obtained with the function \code{predictCox}.
 #' @param ci Logical. If \code{TRUE} display the confidence intervals for the predictions.
+#' @param band Logical. If \code{TRUE} display the confidence bands for the predictions.
 #' @param groupBy The grouping factor used to color the prediction curves. Can be \code{"row"}, \code{"strata"}, or \code{"covariates"}. 
 #' @param reduce.data Logical. If \code{TRUE} only the covariates that does take indentical values for all observations are displayed.
 #' @param plot Logical. Should the graphic be plotted.
-#' @param conf.level confidence level of the interval.
 #' @param digits integer indicating the number of decimal places
+#' @param alpha transparency of the confidence bands. Argument passed to \code{ggplot2::geom_ribbon}.
 #' @param ... not used. Only for compatibility with the plot method.
 #' 
 #' @examples
@@ -32,7 +33,7 @@
 #' d <- sampleData(1e2, outcome = "competing.risks")
 #' m.CSC <- CSC(Hist(time,event)~ X1 + X2 + X6, data = d)
 #' 
-#' pred.CSC <- predict(m.CSC, time = 1:5, cause = 1)
+#' pred.CSC <- predict(m.CSC, newdata = d[1:2,], time = 1:5, cause = 1)
 #' plot(pred.CSC)
 #' 
 #' pred.CSC <- predict(m.CSC, newdata = d[1:3,],
@@ -51,11 +52,11 @@
 #' @export
 plot.predictCSC <- function(x,
                             ci = FALSE,
+                            band = FALSE,
                             groupBy = "row",
                             reduce.data = FALSE,
                             plot = TRUE,
-                            conf.level = 0.95,
-                            digits = 2, ...){
+                            digits = 2, alpha = 0.1, ...){
   
   ## initialize and check        
   possibleGroupBy <- c("row","covariates","strata")
@@ -86,16 +87,18 @@ plot.predictCSC <- function(x,
     }        
   }
   
-  gg.res <- predict2plot(outcome = x$absRisk,
-                         outcome.se = if(ci){x$absRisk.se}else{NULL},
+  gg.res <- predict2plot(outcome = x$absRisk, ci = ci, band = band, alpha = alpha,
+                         outcome.lower = if(ci){x$absRisk.lower}else{NULL},
+                         outcome.upper = if(ci){x$absRisk.upper}else{NULL},
+                         outcome.lowerBand = if(band){x$absRisk.lowerBand}else{NULL},
+                         outcome.upperBand = if(band){x$absRisk.upperBand}else{NULL},
                          newdata = newdata,
                          strata = x$strata,
                          times = x$times,
                          digits = digits,
                          name.outcome = "absoluteRisk", # must not contain space to avoid error in ggplot2
-                         conf.level = conf.level,
                          groupBy = groupBy,
-                         lower = 0, upper = 1)
+                         conf.level = x$conf.level)
   
   gg.res$plot <- gg.res$plot + xlab("absolute risk")
   
@@ -103,8 +106,7 @@ plot.predictCSC <- function(x,
     print(gg.res$plot)
   }
   
-  return(invisible(list(plot = gg.res$plot,
-                        data = gg.res$data)))
+  return(invisible(gg.res))
 }
 
 #----------------------------------------------------------------------

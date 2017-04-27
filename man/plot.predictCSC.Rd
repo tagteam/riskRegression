@@ -4,13 +4,15 @@
 \alias{plot.predictCSC}
 \title{Plot predictions from a Cause-specific Cox proportional hazard regression}
 \usage{
-\method{plot}{predictCSC}(x, ci = FALSE, groupBy = "row",
-  reduce.data = FALSE, plot = TRUE, conf.level = 0.95, digits = 2, ...)
+\method{plot}{predictCSC}(x, ci = FALSE, band = FALSE, groupBy = "row",
+  reduce.data = FALSE, plot = TRUE, digits = 2, alpha = 0.1, ...)
 }
 \arguments{
 \item{x}{object obtained with the function \code{predictCox}.}
 
 \item{ci}{Logical. If \code{TRUE} display the confidence intervals for the predictions.}
+
+\item{band}{Logical. If \code{TRUE} display the confidence bands for the predictions.}
 
 \item{groupBy}{The grouping factor used to color the prediction curves. Can be \code{"row"}, \code{"strata"}, or \code{"covariates"}.}
 
@@ -18,9 +20,9 @@
 
 \item{plot}{Logical. Should the graphic be plotted.}
 
-\item{conf.level}{confidence level of the interval.}
-
 \item{digits}{integer indicating the number of decimal places}
+
+\item{alpha}{transparency of the confidence bands. Argument passed to \code{ggplot2::geom_ribbon}.}
 
 \item{...}{not used. Only for compatibility with the plot method.}
 }
@@ -32,7 +34,7 @@ Plot predictions from a Cause-specific Cox proportional hazard regression
 d <- sampleData(1e2, outcome = "competing.risks")
 m.CSC <- CSC(Hist(time,event)~ X1 + X2 + X6, data = d)
 
-pred.CSC <- predict(m.CSC, time = 1:5, cause = 1)
+pred.CSC <- predict(m.CSC, newdata = d[1:2,], time = 1:5, cause = 1)
 plot(pred.CSC)
 
 pred.CSC <- predict(m.CSC, newdata = d[1:3,],

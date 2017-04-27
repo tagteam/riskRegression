@@ -7,7 +7,7 @@
 predictCox(object, newdata = NULL, times, centered = TRUE,
   type = c("hazard", "cumhazard", "survival"), keep.strata = TRUE,
   keep.times = TRUE, keep.newdata = FALSE, se = FALSE, iid = FALSE,
-  conf.level = 0.95)
+  nSim.band = 0, conf.level = 0.95, ...)
 }
 \arguments{
 \item{object}{The fitted Cox regression model object either
@@ -55,7 +55,12 @@ corresponding to the output.}
 \item{iid}{Logical. If \code{TRUE} add the influence function
 corresponding to the output.}
 
+\item{nSim.band}{the number of simulations used to compute the quantiles for the confidence bands.
+The quantiles are computed as soon as this number is strictly positive.}
+
 \item{conf.level}{Level of confidence.}
+
+\item{...}{arguments to be passed to the function \code{iidCox}.}
 }
 \value{
 A list with some or all of the following elements:

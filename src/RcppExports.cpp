@@ -50,6 +50,22 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// quantileProcess_cpp
+NumericVector quantileProcess_cpp(int nObject, int nNew, int nSim, arma::cube iid, arma::mat se, double confLevel);
+RcppExport SEXP riskRegression_quantileProcess_cpp(SEXP nObjectSEXP, SEXP nNewSEXP, SEXP nSimSEXP, SEXP iidSEXP, SEXP seSEXP, SEXP confLevelSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< int >::type nObject(nObjectSEXP);
+    Rcpp::traits::input_parameter< int >::type nNew(nNewSEXP);
+    Rcpp::traits::input_parameter< int >::type nSim(nSimSEXP);
+    Rcpp::traits::input_parameter< arma::cube >::type iid(iidSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type se(seSEXP);
+    Rcpp::traits::input_parameter< double >::type confLevel(confLevelSEXP);
+    rcpp_result_gen = Rcpp::wrap(quantileProcess_cpp(nObject, nNew, nSim, iid, se, confLevel));
+    return rcpp_result_gen;
+END_RCPP
+}
 // calcE_cpp
 List calcE_cpp(const NumericVector& eventtime, const NumericVector& status, const NumericVector& eXb, const arma::mat& X, int p, bool add0);
 RcppExport SEXP riskRegression_calcE_cpp(SEXP eventtimeSEXP, SEXP statusSEXP, SEXP eXbSEXP, SEXP XSEXP, SEXP pSEXP, SEXP add0SEXP) {
@@ -86,9 +102,25 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// ICbetaApprox_cpp
+arma::mat ICbetaApprox_cpp(const arma::mat& newX, const NumericVector& newStatus, const IntegerVector& newIndexJump, const arma::mat& E1, const arma::mat& iInfo, int p);
+RcppExport SEXP riskRegression_ICbetaApprox_cpp(SEXP newXSEXP, SEXP newStatusSEXP, SEXP newIndexJumpSEXP, SEXP E1SEXP, SEXP iInfoSEXP, SEXP pSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const arma::mat& >::type newX(newXSEXP);
+    Rcpp::traits::input_parameter< const NumericVector& >::type newStatus(newStatusSEXP);
+    Rcpp::traits::input_parameter< const IntegerVector& >::type newIndexJump(newIndexJumpSEXP);
+    Rcpp::traits::input_parameter< const arma::mat& >::type E1(E1SEXP);
+    Rcpp::traits::input_parameter< const arma::mat& >::type iInfo(iInfoSEXP);
+    Rcpp::traits::input_parameter< int >::type p(pSEXP);
+    rcpp_result_gen = Rcpp::wrap(ICbetaApprox_cpp(newX, newStatus, newIndexJump, E1, iInfo, p));
+    return rcpp_result_gen;
+END_RCPP
+}
 // IClambda0_cpp
-List IClambda0_cpp(const NumericVector& tau, const arma::mat& ICbeta, const NumericVector& newT, const NumericVector& neweXb, const NumericVector& newStatus, const IntegerVector& newStrata, const IntegerVector& newIndexJump, const NumericVector& S01, const arma::mat& E1, const NumericVector& time1, double lastTime1, const NumericVector& lambda0, int p, int strata);
-RcppExport SEXP riskRegression_IClambda0_cpp(SEXP tauSEXP, SEXP ICbetaSEXP, SEXP newTSEXP, SEXP neweXbSEXP, SEXP newStatusSEXP, SEXP newStrataSEXP, SEXP newIndexJumpSEXP, SEXP S01SEXP, SEXP E1SEXP, SEXP time1SEXP, SEXP lastTime1SEXP, SEXP lambda0SEXP, SEXP pSEXP, SEXP strataSEXP) {
+List IClambda0_cpp(const NumericVector& tau, const arma::mat& ICbeta, const NumericVector& newT, const NumericVector& neweXb, const NumericVector& newStatus, const IntegerVector& newStrata, const IntegerVector& newIndexJump, const NumericVector& S01, const arma::mat& E1, const NumericVector& time1, double lastTime1, const NumericVector& lambda0, int p, int strata, bool exact, bool minimalExport);
+RcppExport SEXP riskRegression_IClambda0_cpp(SEXP tauSEXP, SEXP ICbetaSEXP, SEXP newTSEXP, SEXP neweXbSEXP, SEXP newStatusSEXP, SEXP newStrataSEXP, SEXP newIndexJumpSEXP, SEXP S01SEXP, SEXP E1SEXP, SEXP time1SEXP, SEXP lastTime1SEXP, SEXP lambda0SEXP, SEXP pSEXP, SEXP strataSEXP, SEXP exactSEXP, SEXP minimalExportSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -106,7 +138,9 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< const NumericVector& >::type lambda0(lambda0SEXP);
     Rcpp::traits::input_parameter< int >::type p(pSEXP);
     Rcpp::traits::input_parameter< int >::type strata(strataSEXP);
-    rcpp_result_gen = Rcpp::wrap(IClambda0_cpp(tau, ICbeta, newT, neweXb, newStatus, newStrata, newIndexJump, S01, E1, time1, lastTime1, lambda0, p, strata));
+    Rcpp::traits::input_parameter< bool >::type exact(exactSEXP);
+    Rcpp::traits::input_parameter< bool >::type minimalExport(minimalExportSEXP);
+    rcpp_result_gen = Rcpp::wrap(IClambda0_cpp(tau, ICbeta, newT, neweXb, newStatus, newStrata, newIndexJump, S01, E1, time1, lastTime1, lambda0, p, strata, exact, minimalExport));
     return rcpp_result_gen;
 END_RCPP
 }

@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: feb 17 2017 (10:06) 
 ## Version: 
-## last-updated: Mar  1 2017 (15:59) 
-##           By: Thomas Alexander Gerds
-##     Update #: 114
+## last-updated: apr 27 2017 (15:18) 
+##           By: Brice Ozenne
+##     Update #: 224
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -22,17 +22,19 @@
 #' @param x object obtained with the function \code{predictCox}.
 #' @inheritParams predictCox
 #' @param ci Logical. If \code{TRUE} display the confidence intervals for the predictions.
+#' @param band Logical. If \code{TRUE} display the confidence bands for the predictions.
 #' @param groupBy The grouping factor used to color the prediction curves. Can be \code{"row"}, \code{"strata"}, or \code{"covariates"}.
 #' @param reduce.data Logical. If \code{TRUE} only the covariates that does take indentical values for all observations are displayed.
 #' @param plot Logical. Should the graphic be plotted.
-#' @param conf.level confidence level of the interval.
 #' @param digits integer indicating the number of decimal places
+#' @param alpha transparency of the confidence bands. Argument passed to \code{ggplot2::geom_ribbon}.
 #' @param ... not used. Only for compatibility with the plot method.
 #' 
 #' @examples
 #' library(survival)
 #' library(ggplot2)
-#' 
+#'
+#' ## predictions ##
 #' d <- sampleData(1e2, outcome = "survival")
 #' m.cox <- coxph(Surv(time,event)~ X1 + X2 + X3,
 #'                 data = d, x = TRUE, y = TRUE)
@@ -40,7 +42,7 @@
 #' ggplot(as.data.table(dt.basehaz), aes(x = time, y = survival)) + geom_point() + geom_line()
 #'
 #' pred.cox <- predictCox(m.cox, newdata = d[1:4,],
-#'   times = 1:5, type = "survival", se = TRUE, keep.newdata = TRUE)
+#'   times = 1:5, type = "survival", keep.newdata = TRUE)
 #' plot(pred.cox)
 #' plot(pred.cox, groupBy = "covariates")
 #' plot(pred.cox, groupBy = "covariates", reduce.data = TRUE)
@@ -56,18 +58,29 @@
 #'             groupBy = "covariates")
 #'
 #' # customize display
-#' res$plot + geom_point(size = 3)
+#' res$plot + geom_point(data = res$dataDuplicated, size = 3)
 #'
+#' ## predictions with confidence interval
+#' pred.cox <- predictCox(m.cox, newdata = d[1:4,],
+#'   times = 1:5, type = "survival", se = TRUE, keep.newdata = TRUE)
+#' plot(pred.cox, ci = TRUE)
+#'
+#' ## predictions with confidence bands
+#' pred.cox <- predictCox(m.cox, newdata = d[1,,drop=FALSE],
+#'   times = 1:5, type = "survival", nSim.band = 500, keep.newdata = TRUE)
+#' plot(pred.cox, band = TRUE)
+#'
+#' 
 #' @method plot predictCox
 #' @export
 plot.predictCox <- function(x,
                             type = NULL,
                             ci = FALSE,
+                            band = FALSE,
                             groupBy = "row",
                             reduce.data = FALSE,
                             plot = TRUE,
-                            conf.level = 0.95,
-                            digits = 2, ...){
+                            digits = 2, alpha = 0.1, ...){
   
   ## initialize and check    
   possibleType <- c("hazard","cumhazard","survival")
@@ -107,89 +120,141 @@ plot.predictCox <- function(x,
     stop("argument \'ci\' cannot be TRUE when no standard error have been computed \n",
          "set argment \'se\' to TRUE when calling predictCox \n")
   }
-  
-  ## display
-  newdata <- copy(x$newdata)
-  if(!is.null(newdata) && reduce.data){
-    test <- unlist(newdata[,lapply(.SD, function(col){length(unique(col))==1})])
-    if(any(test)){
-      newdata[, (names(test)[test]):=NULL]
-    }        
+
+  if(ci && (paste0(type,".se") %in% names(x) == FALSE)){
+       stop("argument \'ci\' cannot be TRUE when no standard error have been computed \n",
+            "set argment \'se\' to TRUE when calling predictCox \n")
   }
-  
-  gg.res <- predict2plot(outcome = x[[type]],
-                         outcome.se = if(ci){x[[paste0(type,".se")]]}else{NULL},
-                         newdata = newdata,
-                         strata = x$strata,
-                         times = x$times,
-                         digits = digits,
-                         name.outcome = typename,
-                         conf.level = conf.level,
-                         groupBy = groupBy,
-                         lower = 0, upper = if(type == "survival"){1}else{Inf})
+    
+    ## display
+    newdata <- copy(x$newdata)
+    if(!is.null(newdata) && reduce.data){
+        test <- unlist(newdata[,lapply(.SD, function(col){length(unique(col))==1})])
+        if(any(test)){
+            newdata[, (names(test)[test]):=NULL]
+        }        
+    }
+        
+    gg.res <- predict2plot(outcome = x[[type]], ci = ci, band = band, alpha = alpha,
+                           outcome.lower = if(ci){x[[paste0(type,".lower")]]}else{NULL},
+                           outcome.upper = if(ci){x[[paste0(type,".upper")]]}else{NULL},
+                           outcome.lowerBand = if(band){x[[paste0(type,".lowerBand")]]}else{NULL},
+                           outcome.upperBand = if(band){x[[paste0(type,".upperBand")]]}else{NULL},
+                           newdata = newdata,
+                           strata = x$strata,
+                           times = x$times,
+                           digits = digits,
+                           name.outcome = typename,
+                           groupBy = groupBy,
+                           conf.level = x$conf.level
+                           )
   
   if(plot){
     print(gg.res$plot)
   }
   
-  return(invisible(list(plot = gg.res$plot,
-                        data = gg.res$data)))
+  return(invisible(gg.res))
 }
 # }}}
 
 # {{{ predict2plot
-predict2plot <- function(outcome, outcome.se, newdata, strata, times,
-                         digits, name.outcome, conf.level, groupBy,
-                         lower, upper){
-  
-  n.obs <- NROW(outcome)
-  n.time <- NCOL(outcome)
-  if(!is.null(time)){
-    time.names <- times
-  }else{
-    time.names <- 1:n.time
-  }    
-  colnames(outcome) <- paste0(name.outcome,"_",time.names)
-  
-  
-  if(!is.null(outcome.se)){
-    pattern <- c(paste0(name.outcome,"_"),"lower_","upper_")
+predict2plot <- function(outcome,
+                         ci, outcome.lower, outcome.upper,
+                         band, outcome.lowerBand, outcome.upperBand, alpha,
+                         newdata, strata, times,
+                         digits, name.outcome,  groupBy,
+                         conf.level){
+
+    # for CRAN tests
+    original <- lowerCI <- upperCI <- lowerBand <- upperBand <- NULL
+    patterns <- function(){}
     
-    lower <- upper <- matrix(NA, nrow = n.obs, ncol = n.time)
-    lower[] <- pmax(lower,outcome + qnorm((1-conf.level)/2) * outcome.se)
-    upper[] <- pmin(upper,outcome + qnorm(1-(1-conf.level)/2) * outcome.se)
-    colnames(lower) <- paste0("lower_",time.names)
-    colnames(upper) <- paste0("upper_",time.names)
-    outcome <- data.table::as.data.table(cbind(outcome,lower,upper))
-  }else{
-    outcome <- data.table::as.data.table(outcome)
+    n.obs <- NROW(outcome)
+    n.time <- NCOL(outcome)
+    if(!is.null(time)){
+        time.names <- times 
+    }else{
+        time.names <- 1:n.time
+    }    
+    colnames(outcome) <- paste0(name.outcome,"_",time.names)
+    keep.cols <- unique(c("time",name.outcome,"row",groupBy))
+    
+    #### merge outcome with CI and band ####
     pattern <- paste0(name.outcome,"_")
-  }
-  
-  outcome[, row := 1:.N]
-  if(groupBy == "covariates"){
-    cov.names <- names(newdata)
-    newdata <- newdata[, (cov.names) := lapply(cov.names, function(col){paste0(col,"=",round(.SD[[col]],digits))})]
-    outcome[, ("covariates") := interaction(newdata,sep = " ")]
-  }else if(groupBy == "strata"){
-    outcome[, strata := strata]
-  }
-  gg.dtL <- melt(outcome, id.vars = union("row",groupBy),
-                 variable.name = "time", value.name = gsub("_","",pattern))
-  gg.dtL[, time := gsub(pattern[1],"",time)]
-  if(!is.null(times)){
-    gg.dtL[, time := as.numeric(time)]
-  }
-  gg.base <- ggplot(data = gg.dtL, aes_string(x = "time",y = name.outcome, group = "row", color = groupBy))
-  
-  gg.base <- ggplot(data = gg.dtL, aes_string(x = "time", y = name.outcome, group = "row", color = groupBy))
-  gg.base <- gg.base + geom_point() + geom_line()
-  if(!is.null(outcome.se)){
-    gg.base <- gg.base + geom_errorbar(aes(ymin = lower, ymax = upper))
-  }
-  
-  return(list(plot = gg.base,
-              data = gg.dtL))
+    if(ci){
+        pattern <- c(pattern,"lowerCI_","upperCI_")
+    
+        colnames(outcome.lower) <- paste0("lowerCI_",time.names)
+        colnames(outcome.upper) <- paste0("upperCI_",time.names)
+    }
+    if(band){
+        pattern <- c(pattern,"lowerBand_","upperBand_")
+        keep.cols <- c(keep.cols,"lowerBand","upperBand")
+        
+        colnames(outcome.lowerBand) <- paste0("lowerBand_",time.names)
+        colnames(outcome.upperBand) <- paste0("upperBand_",time.names)
+    }
+
+    outcome <- data.table::as.data.table(
+                               cbind(outcome,
+                                     outcome.lower, outcome.upper,
+                                     outcome.lowerBand,outcome.upperBand)
+                           )
+
+    #### merge outcome with convariates ####
+    outcome[, row := 1:.N]
+    if(groupBy == "covariates"){
+        cov.names <- names(newdata)
+        newdata <- newdata[, (cov.names) := lapply(cov.names, function(col){paste0(col,"=",round(.SD[[col]],digits))})]
+        outcome[, ("covariates") := interaction(newdata,sep = " ")]
+    }else if(groupBy == "strata"){
+        outcome[, strata := strata]
+    }
+    
+    #### reshape to long format ####
+    gg.dtL <- melt(outcome, id.vars = union("row",groupBy),
+                   measure= patterns(pattern),
+                   variable.name = "time", value.name = gsub("_","",pattern))
+    gg.dtL[, time := as.numeric(as.character(factor(time, labels = time.names)))]
+
+    #### duplicate observations to obtain step curves ####
+    gg.dtL[, original := TRUE]
+
+    dtTempo <- copy(gg.dtL)
+    dtTempo[, (c("time","original")) := list(time = c(0,.SD$time[-.N] + .Machine$double.eps*100),
+                                             original = FALSE),
+            by = row]
+
+    gg.dtL_duplicated <- rbind(gg.dtL[,unique(keep.cols), with = FALSE],
+                               dtTempo[,unique(keep.cols), with = FALSE])
+    
+    #### display ####
+    gg.base <- ggplot(mapping = aes_string(x = "time", y = name.outcome, group = "row", color = groupBy))
+    gg.base <- gg.base + geom_point(data = gg.dtL_duplicated) + geom_line(data = gg.dtL_duplicated)
+    gg.base <- gg.base + ggplot2::labs(color="observation")
+    if(ci){
+        labelCI <- paste0(conf.level*100,"% confidence interval")
+        gg.base <- gg.base + geom_errorbar(data = gg.dtL, aes(ymin = lowerCI, ymax = upperCI, linetype = labelCI))
+        gg.base <- gg.base + scale_linetype_manual("",values=setNames(1,labelCI))
+    }
+    if(band){
+        labelBand <- paste0(conf.level*100,"% confidence band")
+        gg.base <- gg.base + geom_ribbon(data = gg.dtL_duplicated, aes(ymin = lowerBand, ymax = upperBand, fill = labelBand), alpha = 0.1)
+        gg.base <- gg.base + scale_fill_manual("", values="grey12")        
+    }
+    
+    if(ci && band){
+        gg.base <- gg.base + ggplot2::guides(group = ggplot2::guide_legend(order = 1),
+                                             se = ggplot2::guide_legend(order = 2),
+                                             fill = ggplot2::guide_legend(order = 3))
+    }
+
+    ## export
+    ls.export <- list(plot = gg.base,
+                      data = gg.dtL,
+                      dataDuplicated = gg.dtL_duplicated)
+    
+    return(ls.export)
 }
 # }}}
 
