@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun  6 2016 (09:35) 
 ## Version: 
-## last-updated: apr 28 2017 (15:49) 
+## last-updated: apr 28 2017 (15:58) 
 ##           By: Brice Ozenne
-##     Update #: 39
+##     Update #: 40
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -524,10 +524,10 @@ test_that("baseline hazard (strata) - correct number of events",{
   strata <- interaction(Melanoma$invasion, Melanoma$ici)
   timePerStrata <- tapply(fit.coxph$y[,"time"],strata, function(x){length(unique(x))})
 
-  pfit.coxph <- predictCox(fit.coxph, keep.times = TRUE, keep.strata = TRUE)[c("time","hazard","cumhazard","survival","strata")]
+  pfit.coxph <- predictCox(fit.coxph, type = c("hazard","cumhazard","survival"), keep.times = TRUE, keep.strata = TRUE)[c("time","hazard","cumhazard","survival","strata")]
   lengthRes <- unlist(lapply(pfit.coxph, length))
   expect_equal(unname(lengthRes), rep(sum(timePerStrata), 5))
-  pfit.cph <- predictCox(fit.cph, keep.times = TRUE, keep.strata = TRUE)[c("time","hazard","cumhazard","survival","strata")]
+  pfit.cph <- predictCox(fit.cph, type = c("hazard","cumhazard","survival"), keep.times = TRUE, keep.strata = TRUE)[c("time","hazard","cumhazard","survival","strata")]
   lengthRes <- unlist(lapply(pfit.cph, length))
   expect_equal(unname(lengthRes), rep(sum(timePerStrata), 5))
 })

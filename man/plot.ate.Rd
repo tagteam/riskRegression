@@ -21,10 +21,6 @@
 \item{alpha}{transparency of the confidence bands. Argument passed to \code{ggplot2::geom_ribbon}.}
 
 \item{...}{not used. Only for compatibility with the plot method.}
-
-\item{groupBy}{The grouping factor used to color the prediction curves. Can be \code{"row"}, \code{"strata"}, or \code{"covariates"}.}
-
-\item{reduce.data}{Logical. If \code{TRUE} only the covariates that does take indentical values for all observations are displayed.}
 }
 \description{
 Plot predictions from a Cause-specific Cox proportional hazard regression
@@ -46,7 +42,7 @@ seqTimes <- sort(unique(fit$y[,1]))
 seqTimes5 <-seqTimes[seqTimes>5 & seqTimes<10]
 ateFit <- ate(fit, data = dtS, treatment = "X1", contrasts = NULL,
               times = seqTimes, B = 0, nSim.band = 500, y = TRUE, mc.cores=1)
-plot(ateFit)
+plot(ateFit, band = TRUE)
 
 }
 

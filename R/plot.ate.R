@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: apr 28 2017 (14:19) 
 ## Version: 
-## last-updated: apr 28 2017 (15:41) 
+## last-updated: apr 28 2017 (15:58) 
 ##           By: Brice Ozenne
-##     Update #: 18
+##     Update #: 19
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -55,7 +55,7 @@ plot.ate <- function(x,
                      digits = 2, alpha = 0.1, ...){
 
     ## for CRAN check
-    Treatment <- NUUL
+    Treatment <- NULL
     
     ## initialize and check          
     if(ci && all(is.na(x$meanRisk$upper))){
