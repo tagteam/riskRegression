@@ -1,7 +1,7 @@
 # {{{ roxy header
 ##' Methods to score the predictive performance of risk markers and risk prediction models
 ##'
-##' The function implements toolbox for the risk prediction modeller:
+##' The function implements a toolbox for the risk prediction modeller:
 ##' all tools work for the three outcomes: (1) binary (uncensored),
 ##' (2) right censored time to event without competing risks,
 ##' (3) right censored time to event with competing risks
@@ -28,7 +28,8 @@
 ##'     apply. Case does not matter. Choices are \code{"AUC"} and \code{"Brier"}.
 ##' @param summary Character vector specifying which summary
 ##'     statistics to apply to the predicted risks. The only choice is 
-##'     \code{"riskQuantile"} which enables (time-point specific) boxplots of predicted risks conditional on the outcome (at the time-point).
+##'     \code{"riskQuantile"} which enables (time-point specific) boxplots of
+##'     predicted risks conditional on the outcome (at the time-point).
 ##'     Set to \code{NULL} to avoid estimation of retrospective risk quantiles.
 ##' @param plots Character vector specifying which plots to prepare. Choices
 ##' @param cause Event of interest. Used for binary outcome \code{Y}
@@ -86,8 +87,8 @@
 ##'     has to be an integer smaller than the size of \code{data}.
 ##' @param seed Super seed for setting training data seeds when
 ##'     randomly splitting (bootstrapping) the data during cross-validation.
-##' @param
-##'     trainseeds Seeds for training models during cross-validation.
+##' @param trainseeds Seeds for training models during cross-validation.
+##' @param keep provide about additional output
 ##' @param ... Not used
 ##' @return List with scores and assessments of contrasts, i.e.,
 ##'     tests and confidence limits for performance and difference in performance (AUC and Brier),
@@ -107,6 +108,7 @@
 ##' xb=Score(list("LR(X1+X2+X7+X9)"=lr1,"LR(X3+X5+X6)"=lr2),formula=Y~1,
 ##'         data=testdat,plots=c("calibration","ROC"))
 ##' plotROC(xb)
+##' plotCalibration(xb)
 ##' 
 ##' # compute AUC for a list of continuous markers
 ##' markers = as.list(testdat[,.(X6,X7,X8,X9,X10)])
@@ -221,7 +223,7 @@ Score.list <- function(object,
                        formula,
                        data,
                        metrics=c("auc","brier"),
-                       summary=NULL, # riskQuantile
+                       summary=NULL, # riskQuantile, risk
                        plots= NULL, # c("roc","calibration","boxplot","p-values"),
                        cause=1,
                        times,
@@ -238,6 +240,7 @@ Score.list <- function(object,
                        M,
                        seed,
                        trainseeds,
+                       keep,
                        ...){
     id=time=status=id=WTi=b=time=status=model=reference=p=model=pseudovalue=NULL
 # }}}
@@ -336,7 +339,7 @@ Score.list <- function(object,
     }
     # }}}
     # {{{ resolve se.fit and contrasts
-    if (is.logical(conf.int) && conf.int==FALSE) 
+    if (is.logical(conf.int) && conf.int==FALSE || conf.int<=0 || conf.int>=1) 
         se.fit <- FALSE
     else
         se.fit <- TRUE
@@ -348,6 +351,7 @@ Score.list <- function(object,
     }else{
         alpha <- NA
     }
+    if (!missing(keep) && is.character(keep) && "residuals" %in% tolower(keep)) keep.residuals=TRUE else keep.residuals = FALSE
     if ((NF+length(nullobject))<=1) dolist <- NULL 
     else{
         if (se.fit==FALSE || (is.logical(contrasts) && contrasts==FALSE)){
@@ -415,6 +419,8 @@ Score.list <- function(object,
     # ----------------------------find metrics and plots ----------------------
     # {{{
     ## Metrics <- lapply(metrics,grep,c("AUC","Brier"),ignore.case=TRUE,value=TRUE)
+    summary[grep("^riskQuantile",summary,ignore.case=TRUE)] <- "riskQuantile"
+    summary[grep("^risk$|^risks$",summary,ignore.case=TRUE)] <- "risks"
     metrics[grep("^auc$",metrics,ignore.case=TRUE)] <- "AUC"
     metrics[grep("^brier$",metrics,ignore.case=TRUE)] <- "Brier"
     plots[grep("^roc$",plots,ignore.case=TRUE)] <- "ROC"
@@ -481,6 +487,7 @@ Score.list <- function(object,
                                    times,
                                    cause,
                                    se.fit,
+                                   keep.residuals,
                                    alpha,
                                    probs,
                                    dolist,
@@ -607,6 +614,7 @@ Score.list <- function(object,
                       NF=NF,
                       alpha=alpha,
                       se.fit=se.fit,
+                      keep.residuals=keep.residuals,
                       dolist=dolist,Q=probs,ROC=FALSE)
         if (responseType=="competing.risks")
             input <- c(input,list(cause=cause))
@@ -619,7 +627,11 @@ Score.list <- function(object,
             }
         }
         for (s in summary){
-            out[[s]] <- do.call(paste(s,responseType,sep="."),input)
+            if (s=="risks") {
+                out[[s]] <- list(score=copy(input$DT),contrasts=NULL)
+            } else{
+                out[[s]] <- do.call(paste(s,responseType,sep="."),input)
+            }
             out[[s]]$score[,model:=factor(model,levels=mlevs,mlabels)]
             if (NROW(out[[s]]$contrasts)>0){
                 out[[s]]$contrasts[,model:=factor(model,levels=mlevs,mlabels)]
@@ -661,6 +673,7 @@ Score.list <- function(object,
                                   times=times,
                                   cause=cause,
                                   se.fit=se.fit,
+                                  keep.residuals=keep.residuals,
                                   alpha=alpha,
                                   probs=probs,
                                   dolist=dolist,
@@ -714,6 +727,7 @@ Score.list <- function(object,
                                      times=times,
                                      cause=cause,
                                      se.fit=se.fit,
+                                     keep.residuals=keep.residuals,
                                      alpha=alpha,
                                      probs=probs,
                                      dolist=dolist,
@@ -855,6 +869,7 @@ Brier.binary <- function(DT,se.fit,alpha,N,NT,NF,dolist,keep.residuals=FALSE,DT.
     }else{
         output <- list(score=DT[,list(Brier=mean(residuals)),by=list(model)])
     }
+    if (keep.residuals) output <- c(output,list(residuals=DT))
     output
 }
 
@@ -889,6 +904,7 @@ Brier.survival <- function(DT,MC,se.fit,alpha,N,NT,NF,dolist,keep.residuals=FALS
     }else{
         output <- list(score=DT[,data.table(Brier=sum(ipcwResiduals)/N),by=list(model,times)])
     }
+    if (keep.residuals) output <- c(output,list(residuals=DT))
     output
 }
 
@@ -923,6 +939,7 @@ Brier.competing.risks <- function(DT,MC,se.fit,alpha,N,NT,NF,dolist,keep.residua
     }else{
         output <- list(score=DT[,data.table(Brier=sum(ipcwResiduals)/N),by=list(model,times)])
     }
+    if (keep.residuals) output <- c(output,list(residuals=DT))
     output
 }
 

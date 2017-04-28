@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun  6 2016 (06:48) 
 ## Version: 
-## last-updated: apr 28 2017 (13:42) 
+## last-updated: apr 28 2017 (16:12) 
 ##           By: Brice Ozenne
-##     Update #: 15
+##     Update #: 16
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -24,8 +24,8 @@
 #' @method print ate
 #' @export
 print.ate <- function(x,digits=3,...){
-    cat("The treatment variable ",x$treatment," has the following options:",sep="")
-    cat(paste(x$contrats,collapse=", "),"\n\n")
+    cat("The treatment variable ",x$treatment," has the following options:\n",sep="")
+    cat(paste(x$contrasts,collapse=", "),"\n")
     cat("\nMean risks on probability scale [0,1] in hypothetical worlds\nin which all subjects are treated with one of the treatment options:\n\n")
     print(x$meanRisk,digits=digits,...)
     cat("\nComparison of risks on probability scale [0,1] between\nhypothetical worlds are interpretated as if the treatment was randomized:\n\n")    

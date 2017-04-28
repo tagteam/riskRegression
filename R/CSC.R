@@ -221,10 +221,10 @@ CSC <- function(formula,
         
         workData <- data.frame(time=time,status=statusX)
         if(fitter=="phreg"){
-          if("entry" %in% names(data)){
-            stop("data must not contain a column named \"entry\" when using fitter=\"phreg\"")
-          }
-          workData$entry <- 0
+            if("entry" %in% names(data)){
+                stop("data may not contain a column named \"entry\" when using fitter=\"phreg\"")
+            }
+            workData$entry <- 0
         }
         ## to interprete formula
         ## we need the variables. in case of log(age) terms

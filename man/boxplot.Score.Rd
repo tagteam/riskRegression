@@ -4,8 +4,9 @@
 \alias{boxplot.Score}
 \title{Boxplot risk quantiles}
 \usage{
-\method{boxplot}{Score}(x, model, reference, type, timepoint, lwd = 3, xlim,
-  xlab, main, outcomeLabel, eventLabels, refline = TRUE, ...)
+\method{boxplot}{Score}(x, model, reference, type, timepoint, overall = 1L,
+  lwd = 3, xlim, xlab = "", main, outcomeLabel, eventLabels,
+  refline = (type == "diff"), add = FALSE, ...)
 }
 \arguments{
 \item{x}{Score object obtained by calling function \code{Score}.}
@@ -70,7 +71,7 @@ scoreobj1=Score(list("conventional model"=fitconv,"new model"=fitnew),
 boxplot(scoreobj1)
 
 # competing risks outcome
-\dontrun{
+library(survival)
 data(Melanoma)
 fitconv = CSC(Hist(time,status)~invasion+age+sex,data=Melanoma)
 fitnew = CSC(Hist(time,status)~invasion+age+sex+logthick,data=Melanoma)
@@ -78,7 +79,6 @@ scoreobj=Score(list("Conventional model"=fitconv,"New model"=fitnew),
                formula=Hist(time,status)~1,
                data=Melanoma,metrics=NULL,summary="riskQuantile",times=5*365.25,nullModel=FALSE)
 boxplot(scoreobj)
-}
 
 # more than 2 competing risks
 m=lava::lvm(~X1+X2+X3)

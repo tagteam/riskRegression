@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Oct 23 2016 (08:53) 
 ## Version: 
-## last-updated: apr 28 2017 (14:35) 
+## last-updated: apr 28 2017 (16:15) 
 ##           By: Brice Ozenne
-##     Update #: 145
+##     Update #: 147
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -123,7 +123,7 @@ ate <- function(object,
     contrasts <- levels(data[[treatment]])
     if (length(contrasts)>5) stop("Treatment variable has more than 5 levels.\nIf this is not a mistake,
                                    you should use the argument `contrasts'.")
-  }
+  }else{levels <- contrasts}
   n.contrasts <- length(contrasts)
   n.times <- length(times)
   n.obs <- NROW(data)
@@ -145,27 +145,26 @@ ate <- function(object,
   # {{{ calc G formula
   Gformula <- function(object, data, treatment, contrasts, times, cause, ...){
     
-    meanRisk <- lapply(1:n.contrasts,function(i){
-      ## prediction for the hypothetical worlds in which every subject is treated with the same treatment
-      data.i <- data
-      data.i[[treatment]] <- factor(contrasts[i], levels = levels)
-      risk.i <- colMeans(do.call("predictRisk",args = list(object, newdata = data.i, times = times, cause = cause, ...)))
-    })
-    riskComparison <- data.table::rbindlist(lapply(1:(n.contrasts-1),function(i){
-      data.table::rbindlist(lapply(((i+1):n.contrasts),function(j){
-        ## compute differences between all pairs of treatments
-        data.table(Treatment.A=contrasts[[i]],
-                   Treatment.B=contrasts[[j]],
-                   time = times,
-                   diff=meanRisk[[i]]-meanRisk[[j]],
-                   ratio=meanRisk[[i]]/meanRisk[[j]])
-      }))}))
-    name.Treatment <- unlist(lapply(1:n.contrasts, function(c){rep(contrasts[c],length(meanRisk[[c]]))}))
-    out <- list(meanRisk = data.table(Treatment=name.Treatment, time = times, meanRisk=unlist(meanRisk)),
-                riskComparison = riskComparison)
-    out
+      meanRisk <- lapply(1:n.contrasts,function(i){
+          ## prediction for the hypothetical worlds in which every subject is treated with the same treatment
+          data.i <- data
+          data.i[[treatment]] <- factor(contrasts[i], levels = levels)
+          risk.i <- colMeans(do.call("predictRisk",args = list(object, newdata = data.i, times = times, cause = cause, ...)))
+      })
+      riskComparison <- data.table::rbindlist(lapply(1:(n.contrasts-1),function(i){
+          data.table::rbindlist(lapply(((i+1):n.contrasts),function(j){
+              ## compute differences between all pairs of treatments
+              data.table(Treatment.A=contrasts[[i]],
+                         Treatment.B=contrasts[[j]],
+                         time = times,
+                         diff=meanRisk[[i]]-meanRisk[[j]],
+                         ratio=meanRisk[[i]]/meanRisk[[j]])
+          }))}))
+      name.Treatment <- unlist(lapply(1:n.contrasts, function(c){rep(contrasts[c],length(meanRisk[[c]]))}))
+      out <- list(meanRisk = data.table(Treatment=name.Treatment, time = times, meanRisk=unlist(meanRisk)),
+                  riskComparison = riskComparison)
+      out
   }
-
     # }}}
     
     # {{{ point estimate
@@ -180,6 +179,7 @@ ate <- function(object,
     # }}}
     
     # {{{ Confidence interval
+    ##### Confidence interval
     if((conf.level > 0) && (conf.level <1) ){
     
     alpha <- 1-conf.level
