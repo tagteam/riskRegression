@@ -321,7 +321,7 @@ predict.CauseSpecificCox <- function(object,
         
         out$quantile.band <- confBandCox(iid = out$absRisk.iid,
                                          se = out$absRisk.se,
-                                         times = times-1e-5,
+                                         times = times,
                                          n.object = dim(out$absRisk.iid)[3],
                                          n.new = new.n,
                                          n.sim = nSim.band,
