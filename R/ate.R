@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Oct 23 2016 (08:53) 
 ## Version: 
-## last-updated: apr 11 2017 (09:15) 
+## last-updated: apr 28 2017 (14:35) 
 ##           By: Brice Ozenne
-##     Update #: 73
+##     Update #: 145
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -28,6 +28,8 @@
 #' @param B the number of bootstrap replications used to compute the
 #' confidence intervals. If it equals 0, then Wald-type confidence intervals are computed.
 #' They rely on the standard error estimated using the influence function of the estimator.
+#' @param nSim.band the number of simulations used to compute the quantiles for the confidence bands.
+#' The quantiles are computed as soon as this number is strictly positive.
 #' @param seed An integer used to generate seeds for bootstrap and to
 #'     achieve reproducibility of the bootstrap confidence intervals.
 #' @param handler parallel handler for bootstrap. Either "mclapply" or
@@ -65,10 +67,10 @@
 #' "predictRisk.cph" %in% methods("predictRisk")
 #' 
 #' ateFit=ate(fit, data = dtS, treatment = "X1", contrasts = NULL,
-#'         times = 5:7, B = 3, y = TRUE, mc.cores=1)
+#'         times = 5:8, B = 3, y = TRUE, mc.cores=1)
 #'
 #' ateFit=ate(fit, data = dtS, treatment = "X1", contrasts = NULL,
-#'         times = 5:7, B = 0, y = TRUE, mc.cores=1)
+#'         times = 5:8, B = 0, y = TRUE, mc.cores=1)
 #' 
 #' ## Cause specific cox model
 #' set.seed(17)
@@ -96,7 +98,8 @@ ate <- function(object,
                 times,
                 cause,
                 conf.level = 0.95,
-                B = 0,                
+                B = 0,
+                nSim.band = 0,
                 seed,
                 handler=c("mclapply","foreach"),
                 mc.cores = 1,
@@ -106,7 +109,7 @@ ate <- function(object,
     meanRisk=Treatment=ratio=Treatment.A=Treatment.B=b=NULL
     
     
-  #### Prepare
+  # {{{ Prepare
   if(treatment %in% names(data) == FALSE){
     stop("The data set does not seem to have a variable ",treatment," (argument: treatment). \n")
   }
@@ -124,8 +127,10 @@ ate <- function(object,
   n.contrasts <- length(contrasts)
   n.times <- length(times)
   n.obs <- NROW(data)
-  
-  # {{{ Checking the model
+    # }}}
+    
+    # {{{ Checking the model
+
   # for predictRisk S3-method
   allmethods <- utils::methods(predictRisk)
   candidateMethods <- paste("predictRisk",class(object),sep=".")
@@ -134,9 +139,10 @@ ate <- function(object,
   # for compatibility with resampling
   if(is.null(object$call))
     stop(paste("The object does not contain its own call, which is needed to refit the model in the bootstrap loop."))
+
   # }}}
   
-  #### calc G formula
+  # {{{ calc G formula
   Gformula <- function(object, data, treatment, contrasts, times, cause, ...){
     
     meanRisk <- lapply(1:n.contrasts,function(i){
@@ -159,256 +165,308 @@ ate <- function(object,
                 riskComparison = riskComparison)
     out
   }
-  #### point estimate
-  estimateTime <- system.time(
-    pointEstimate <- Gformula(object=object,
-                              data=data,
-                              treatment=treatment,
-                              contrasts=contrasts,
-                              times=times,
-                              cause=cause,
-                              ...))
-  ##### Confidence interval
-  if((conf.level > 0) && (conf.level <1) ){
+
+    # }}}
+    
+    # {{{ point estimate
+    estimateTime <- system.time(
+        pointEstimate <- Gformula(object=object,
+                                  data=data,
+                                  treatment=treatment,
+                                  contrasts=contrasts,
+                                  times=times,
+                                  cause=cause,
+                                  ...))
+    # }}}
+    
+    # {{{ Confidence interval
+    if((conf.level > 0) && (conf.level <1) ){
     
     alpha <- 1-conf.level
     
-    if(B>0){ #### Bootstrap
-      if (verbose==TRUE)
-        message(paste0("Approximated bootstrap netto run time (without time for copying data to cores):\n",
-                       round(estimateTime["user.self"],2),
-                       " seconds times ",
-                       B,
-                       " bootstraps / ",
-                       mc.cores,
-                       " cores = ",
-                       round(estimateTime["user.self"]*B/mc.cores,2)," seconds.\n",
-                       "To reduce computation time you may consider a coarser time grid,\n e.g., round event times to weeks, months or years.\n"))
-      x.cores <- parallel::detectCores()
-      if(mc.cores > x.cores){
-        warning("Not enough available cores \n",
-                "available: ",parallel::detectCores()," | requested: ",mc.cores,"\n")
-        mc.cores=x.cores
-      }
-      if (!missing(seed)) set.seed(seed)
-      bootseeds <- sample(1:1000000,size=B,replace=FALSE)
-      if (handler[[1]]=="foreach"){
+        if(B>0){
+            # {{{ Bootstrap
+            if (verbose==TRUE)
+                message(paste0("Approximated bootstrap netto run time (without time for copying data to cores):\n",
+                               round(estimateTime["user.self"],2),
+                               " seconds times ",
+                               B,
+                               " bootstraps / ",
+                               mc.cores,
+                               " cores = ",
+                               round(estimateTime["user.self"]*B/mc.cores,2)," seconds.\n",
+                               "To reduce computation time you may consider a coarser time grid,\n e.g., round event times to weeks, months or years.\n"))
+            x.cores <- parallel::detectCores()
+            if(mc.cores > x.cores){
+                warning("Not enough available cores \n",
+                        "available: ",parallel::detectCores()," | requested: ",mc.cores,"\n")
+                mc.cores=x.cores
+            }
+            if (!missing(seed)) set.seed(seed)
+            bootseeds <- sample(1:1000000,size=B,replace=FALSE)
+            if (handler[[1]]=="foreach"){
         
-        cl <- parallel::makeCluster(mc.cores)
-        doParallel::registerDoParallel(cl)
-        pp <- find(as.character(object$call[[1]]))
-        addPackage <- if(grep("package:",pp)){gsub("package:","",pp[grep("package:",pp)])}else{NULL}
-        boots <- foreach::`%dopar%`(foreach::foreach(b=1:B,.packages=c("riskRegression",addPackage),.export=NULL), {
-          set.seed(bootseeds[[b]])
-          dataBoot <- data[sample(1:n.obs, size = n.obs, replace = TRUE),]
-          object$call$data <- dataBoot
-          objectBoot <- try(eval(object$call),silent=TRUE)
-          if ("try-error" %in% class(objectBoot)){
-            stop(paste0("Failed to fit model ",class(object),ifelse(try(b>0,silent=TRUE),paste0(" in bootstrap step ",b,"."))))
-          }
-          tryCatch(Gformula(object=objectBoot,
-                            data=dataBoot,
-                            treatment=treatment,
-                            contrasts=contrasts,
-                            times=times,
-                            cause=cause,
-                            ...),
-                   error = function(x){return(NULL)})
-        })
+                cl <- parallel::makeCluster(mc.cores)
+                doParallel::registerDoParallel(cl)
+                pp <- find(as.character(object$call[[1]]))
+                addPackage <- if(grep("package:",pp)){gsub("package:","",pp[grep("package:",pp)])}else{NULL}
+                boots <- foreach::`%dopar%`(foreach::foreach(b=1:B,.packages=c("riskRegression",addPackage),.export=NULL), {
+                    set.seed(bootseeds[[b]])
+                    dataBoot <- data[sample(1:n.obs, size = n.obs, replace = TRUE),]
+                    object$call$data <- dataBoot
+                    objectBoot <- try(eval(object$call),silent=TRUE)
+                    if ("try-error" %in% class(objectBoot)){
+                        stop(paste0("Failed to fit model ",class(object),ifelse(try(b>0,silent=TRUE),paste0(" in bootstrap step ",b,"."))))
+                    }
+                    tryCatch(Gformula(object=objectBoot,
+                                      data=dataBoot,
+                                      treatment=treatment,
+                                      contrasts=contrasts,
+                                      times=times,
+                                      cause=cause,
+                                      ...),
+                             error = function(x){return(NULL)})
+                })
         
-        parallel::stopCluster(cl)
+                parallel::stopCluster(cl)
         
-      } else {
-        if(Sys.info()["sysname"] == "Windows" && mc.cores>1){
-          message("mclapply cannot perform parallel computations on Windows \n",
-                  "consider setting argument handler to \"foreach\" \n")
-          mc.cores <- 1
-        }
+            } else {
+                if(Sys.info()["sysname"] == "Windows" && mc.cores>1){
+                    message("mclapply cannot perform parallel computations on Windows \n",
+                            "consider setting argument handler to \"foreach\" \n")
+                    mc.cores <- 1
+                }
         
-        boots <- parallel::mclapply(1:B, function(b){
-          set.seed(bootseeds[[b]])
-          dataBoot <- data[sample(1:n.obs, size = n.obs, replace = TRUE),]
-          object$call$data <- dataBoot
-          objectBoot <- try(eval(object$call),silent=TRUE)
-          if ("try-error" %in% class(objectBoot)){
-            stop(paste0("Failed to fit model",ifelse(try(b>0,silent=TRUE),paste0(" in bootstrap step ",b,"."))))
-          }
-          tryCatch(Gformula(object=objectBoot,
-                            data=dataBoot,
-                            treatment=treatment,
-                            contrasts=contrasts,
-                            times=times,
-                            cause=cause,
-                            ...),
-                   error = function(x){return(NULL)})
-        }, mc.cores = mc.cores)
-      }
+                boots <- parallel::mclapply(1:B, function(b){
+                    set.seed(bootseeds[[b]])
+                    dataBoot <- data[sample(1:n.obs, size = n.obs, replace = TRUE),]
+                    object$call$data <- dataBoot
+                    objectBoot <- try(eval(object$call),silent=TRUE)
+                    if ("try-error" %in% class(objectBoot)){
+                        stop(paste0("Failed to fit model",ifelse(try(b>0,silent=TRUE),paste0(" in bootstrap step ",b,"."))))
+                    }
+                    tryCatch(Gformula(object=objectBoot,
+                                      data=dataBoot,
+                                      treatment=treatment,
+                                      contrasts=contrasts,
+                                      times=times,
+                                      cause=cause,
+                                      ...),
+                             error = function(x){return(NULL)})
+                }, mc.cores = mc.cores)
+            }
       
-      ## gc()
-      meanRisksBoot <- data.table::rbindlist(lapply(boots,function(x)x$meanRisk))
-      riskComparisonsBoot <- data.table::rbindlist(lapply(boots,function(x)x$riskComparison))
+            ## gc()
+            meanRisksBoot <- data.table::rbindlist(lapply(boots,function(x)x$meanRisk))
+            riskComparisonsBoot <- data.table::rbindlist(lapply(boots,function(x)x$riskComparison))
       
-      if(NROW(meanRisksBoot)==0){
-        stop("no successful bootstrap \n")
-      }
-      
-      mrisks <- meanRisksBoot[,data.table::data.table(meanRiskBoot=mean(meanRisk, na.rm = TRUE),
-                                                      lower=quantile(meanRisk,alpha/2, na.rm = TRUE),
-                                                      upper=quantile(meanRisk,1-(alpha/2), na.rm = TRUE),
-                                                      n.boot=sum(!is.na(meanRisk))),
-                              keyby=c("Treatment","time")]
-      
-      crisks <- riskComparisonsBoot[,data.table::data.table(diffMeanBoot=mean(diff, na.rm = TRUE),
-                                                            diff.lower=quantile(diff,alpha/2, na.rm = TRUE),
-                                                            diff.upper=quantile(diff,1-(alpha/2), na.rm = TRUE),
-                                                            diff.p.value=findP1(diff, alternative = "two.sided"),
-                                                            ratioMeanBoot=mean(ratio, na.rm = TRUE),
-                                                            ratio.lower=quantile(ratio,alpha/2, na.rm = TRUE),
-                                                            ratio.upper=quantile(ratio,1-(alpha/2), na.rm = TRUE),
-                                                            ratio.p.value=findP1(ratio-1, alternative = "two.sided"),
-                                                            n.boot=sum(!is.na(diff))),
-                                    keyby=c("Treatment.A","Treatment.B","time")]
-    } else { #### Influence function
-      ICrisk <- lapply(1:n.contrasts,function(i){
-        ## influence function for the hypothetical worlds in which every subject is treated with the same treatment
-        data.i <- data
-        data.i[[treatment]] <- factor(contrasts[i], levels = levels)
-        if ("CauseSpecificCox"%in% class(object)){
-          pred.i <- do.call("predict",args = list(object,
-                                                  newdata = data.i,
-                                                  times = times,
-                                                  cause=cause,
-                                                  se=FALSE,
-                                                  iid=TRUE,
-                                                  keep.times=FALSE))
-          risk.i <- pred.i$absRisk
-          attr(risk.i,"iid") <- pred.i$absRisk.iid
-        } else{
-          pred.i <- do.call("predictCox",args = list(object,
-                                                     newdata = data.i,
-                                                     times = times,
-                                                     se=FALSE,
-                                                     iid=TRUE,
-                                                     keep.times=FALSE,
-                                                     type="survival"))
-          risk.i <- 1-pred.i$survival
-          attr(risk.i,"iid") <- pred.i$survival.iid
-        }
-        return(risk.i)
-      })
-      
-      sdIF.treatment <- unlist(lapply(ICrisk, function(iIC){
-        apply(attr(iIC,"iid"), 2, function(x){          
-          sqrt(sum(colMeans(x)^2))
-        })
-      })) 
-      
-      sdIF.fct <- data.table::rbindlist(lapply(1:(n.contrasts-1),function(i){
-        data.table::rbindlist(lapply(((i+1):n.contrasts),function(j){
-          ## compute differences between all pairs of treatments
-          # IC had dimension n.predictions (row), n.times (columns), n.dataTrain (length)
-          # apply 2 do for each time: extract the value of IF with n.predictions (row) and n.dataTrain (length)
-          # colSums: compute the IF for the G formula for each observation in the training data set
-          # sqrt(sum 2)) compute the variance of the estimator over the observations in the training data set
-          
-          
-          
-          data.table(Treatment.A=contrasts[[i]],
-                     Treatment.B=contrasts[[j]],
-                     time = times,
-                     diff = apply(attr(ICrisk[[i]],"iid")-attr(ICrisk[[j]],"iid"), 2, # var(Y-X)
-                                  function(x){ sqrt(sum(colMeans(x)^2))}),
-                     ratio = sapply(1:n.times, 
-                                    function(x){ 
-                                      ATE.X <- mean(ICrisk[[i]][,x])
-                                      ATE.Y <- mean(ICrisk[[j]][,x])
-                                      IF_ATE.X <- colMeans(attr(ICrisk[[i]],"iid")[,x,])
-                                      IF_ATE.Y <- colMeans(attr(ICrisk[[j]],"iid")[,x,])
-                                      sigma_ATE.X <- sqrt(sum(IF_ATE.X^2))
-                                      sigma_ATE.Y <- sqrt(sum(IF_ATE.Y^2))
-                                      sigma_ATE.XY <- sqrt(sum(IF_ATE.X*IF_ATE.Y))
+            if(NROW(meanRisksBoot)==0){
+                stop("no successful bootstrap \n")
+            }
 
-                                      if(logTransform){
-                                          #### log transformed: var(log(Y/X)) = var(log(Y) - log(X)) = sigmaY/Y^2 - 2*sigmaXY/XY + sigmaX/X^2
-                                          sigma.logRatio <- sigma_ATE.Y / ATE.Y^2  - 2 * sigma_ATE.XY / (ATE.X*ATE.Y)  + sigma_ATE.X / ATE.X^2
-                                          return(sigma.logRatio)
-                                      }else{
-                                          #### no transformation : var(Y/X) = sigmaY/X^2 + Y^2 sigmaX/X^4 - 2 Y sigmaXY / X^3
-                                          sigma.ratio <- sigma_ATE.Y / ATE.X^2 + ATE.Y^2 * sigma_ATE.X / ATE.X^4 - 2 * ATE.Y * sigma_ATE.XY / ATE.X^3
-                                          return(sigma.ratio)
-                                      }
-                                      
-                                      
-                                      
-                                    })                                
-          )
-        }))}))
+            mrisks <- meanRisksBoot[,data.table::data.table(meanRiskBoot=mean(meanRisk, na.rm = TRUE),
+                                                            lower=quantile(meanRisk,alpha/2, na.rm = TRUE),
+                                                            upper=quantile(meanRisk,1-(alpha/2), na.rm = TRUE),
+                                                            n.boot=sum(!is.na(meanRisk))),
+                                    keyby=c("Treatment","time")]
       
-      mrisks <- data.table::data.table(Treatment = pointEstimate$meanRisk$Treatment,
-                                       time = times,
-                                       ## meanRiskBoot = NA,
-                                       lower = pointEstimate$meanRisk$meanRisk + qnorm(alpha/2) * sdIF.treatment,
-                                       upper = pointEstimate$meanRisk$meanRisk + qnorm(1-alpha/2) * sdIF.treatment)
-      
+            crisks <- riskComparisonsBoot[,data.table::data.table(diffMeanBoot=mean(diff, na.rm = TRUE),
+                                                                  diff.lower=quantile(diff,alpha/2, na.rm = TRUE),
+                                                                  diff.upper=quantile(diff,1-(alpha/2), na.rm = TRUE),
+                                                                  diff.p.value=findP1(diff, alternative = "two.sided"),
+                                                                  ratioMeanBoot=mean(ratio, na.rm = TRUE),
+                                                                  ratio.lower=quantile(ratio,alpha/2, na.rm = TRUE),
+                                                                  ratio.upper=quantile(ratio,1-(alpha/2), na.rm = TRUE),
+                                                                  ratio.p.value=findP1(ratio-1, alternative = "two.sided"),
+                                                                  n.boot=sum(!is.na(diff))),
+                                          keyby=c("Treatment.A","Treatment.B","time")]
+            # }}}
+        } else {
+            
+            # {{{ Influence function
+            ICrisk <- lapply(1:n.contrasts,function(i){
+                #### influence function for the hypothetical worlds in which every subject is treated with the same treatment
+                data.i <- data
+                data.i[[treatment]] <- factor(contrasts[i], levels = levels)
+                ## influence function for the absolute risk
+                if ("CauseSpecificCox" %in% class(object)){
+                    pred.i <- do.call("predict",args = list(object,
+                                                            newdata = data.i,
+                                                            times = times,
+                                                            cause=cause,
+                                                            se=FALSE,
+                                                            iid=TRUE,
+                                                            keep.times=FALSE))
+                    risk.i <- pred.i$absRisk
+                    attr(risk.i,"iid") <- pred.i$absRisk.iid
+                } else{
+                    pred.i <- do.call("predictCox",args = list(object,
+                                                               newdata = data.i,
+                                                               times = times,
+                                                               se=FALSE,
+                                                               iid=TRUE,
+                                                               keep.times=FALSE,
+                                                               type="survival"))
+                    risk.i <- 1-pred.i$survival
+                    attr(risk.i,"iid") <- pred.i$survival.iid
+                }
+                return(risk.i)
+            })
 
-      if(logTransform){
-          ratio.lower <- exp(log(pointEstimate$riskComparison$ratio) + qnorm(alpha/2) * sdIF.fct$ratio)
-          ratio.upper <- exp(log(pointEstimate$riskComparison$ratio) + qnorm(1-alpha/2) * sdIF.fct$ratio)
-          ratio.p.value <- 2*(1-pnorm(abs(log(pointEstimate$riskComparison$ratio)), sd = sdIF.fct$ratio))
-      }else{
-          ratio.lower <- pointEstimate$riskComparison$ratio + qnorm(alpha/2) * sdIF.fct$ratio
-          ratio.upper <- pointEstimate$riskComparison$ratio + qnorm(1-alpha/2) * sdIF.fct$ratio
-          ratio.p.value <- 2*(1-pnorm(abs(pointEstimate$riskComparison$ratio-1), sd = sdIF.fct$ratio))
-      }
+            ## influence function for the ate
+            iid.treatment <- array(NA, dim = c(n.contrasts, n.times, n.obs ))
+            sdIF.treatment <- matrix(NA, nrow = n.contrasts, ncol = n.times)
+            for(iTreat in 1:n.contrasts){ # iTreat <- 1
+                iid.treatment[iTreat,,] <- apply(attr(ICrisk[[iTreat]],"iid"),2:3,mean)
+                sdIF.treatment[iTreat,] <- apply(iid.treatment[iTreat,,,drop=FALSE],2, ## MARGIN=2 and drop=FALSE to deal with the case of one timepoint
+                                                 function(x){sqrt(sum(x^2))}
+                                                 )
+            }
+            
+            nall.contrasts <- n.contrasts*(n.contrasts-1)/2
+            vec.contrast <- 1:n.contrasts
+            iid_diff.contrasts <- array(NA, dim = c(nall.contrasts, n.times, n.obs))
+            sdIF_diff.contrasts <- matrix(NA, nrow = nall.contrasts, ncol = n.times)
+            iid_ratio.contrasts <- array(NA, dim = c(nall.contrasts, n.times, n.obs))
+            sdIF_ratio.contrasts <- matrix(NA, nrow = nall.contrasts, ncol = n.times)
+            iiCon <- 0
+            for(iCon in 1:((n.contrasts-1))){ # iCon <- 1
+                for(iCon2 in (iCon+1):n.contrasts){ # iCon2 <- 2
+                    ## compute differences between all pairs of treatments
+                    # IC had dimension n.predictions (row), n.times (columns), n.dataTrain (length)
+                    # apply 2 do for each time: extract the value of IF with n.predictions (row) and n.dataTrain (length)
+                    # colSums: compute the IF for the G formula for each observation in the training data set
+                    # sqrt(sum 2)) compute the variance of the estimator over the observations in the training data set
+                    iiCon <- iiCon + 1
+                    iid_diff.contrasts[iiCon,,] <- apply(attr(ICrisk[[iCon]],"iid")-attr(ICrisk[[iCon2]],"iid"), 2:3, mean)
+                    sdIF_diff.contrasts[iiCon,] <- apply(iid_diff.contrasts[iiCon,,,drop=FALSE],2,
+                                                         function(x){sqrt(sum(x^2))}
+                                                         )
+                    
+                    iidTempo1 <- aperm(attr(ICrisk[[iCon]],"iid"), c(3,2,1))
+                    term1 <- aperm(sliceScale_cpp(iidTempo1, ICrisk[[iCon]]), c(3,2,1))
+
+                    iidTempo2 <- aperm(attr(ICrisk[[iCon2]],"iid"), c(3,2,1))
+                    term2 <- aperm(sliceMultiply_cpp(iidTempo2, ICrisk[[iCon]]/ICrisk[[iCon2]]^2), c(3,2,1))
+                    
+                    iid_ratio.contrasts[iiCon,,] <- apply(term1 - term2, 2:3, mean)
+                    sdIF_ratio.contrasts[iiCon,] <- apply(iid_ratio.contrasts[iiCon,,,drop=FALSE],2,
+                                                         function(x){sqrt(sum(x^2))}
+                                                         )
+                    names(vec.contrast)[iiCon] <- paste0(contrasts[[iCon]],contrasts[[iCon2]])
+                }
+            }
+
+            band <- nSim.band>0
+            if(band){ # nSim.band <- 500
+
+                quantileIF <- confBandCox(iid = abind::abind(iid.treatment, iid_diff.contrasts, iid_ratio.contrasts, along = 1),
+                                          se = rbind(sdIF.treatment, sdIF_diff.contrasts, sdIF_ratio.contrasts),
+                                          times = times,
+                                          n.sim = nSim.band,
+                                          conf.level = conf.level)
+                
+                qIF.treatment <- quantileIF[1:n.contrasts]
+                qIF_diff.contrasts <- quantileIF[(n.contrasts+1):(n.contrasts+nall.contrasts)]
+                qIF_ratio.contrasts <- quantileIF[(n.contrasts+1+nall.contrasts):(n.contrasts+2*nall.contrasts)]
+                
+            }
+
+            ## treatment
+            sdIF.treatment <- as.double(t(sdIF.treatment))
+            if(band){qIF.treatment <- as.double(sapply(qIF.treatment,rep,n.times))}
+            mrisks <- data.table::data.table(Treatment = pointEstimate$meanRisk$Treatment,
+                                             time = times,
+                                             lower = pointEstimate$meanRisk$meanRisk + qnorm(alpha/2) * sdIF.treatment,
+                                             upper = pointEstimate$meanRisk$meanRisk + qnorm(1-alpha/2) * sdIF.treatment,
+                                             lowerBand = if(band){pointEstimate$meanRisk$meanRisk - qIF.treatment * sdIF.treatment}else{NA},
+                                             upperBand = if(band){pointEstimate$meanRisk$meanRisk + qIF.treatment * sdIF.treatment}else{NA}
+                                             )
+            ## contrasts
+            sdIF.fct <- data.table::rbindlist(lapply(1:(n.contrasts-1),function(i){
+                data.table::rbindlist(lapply(((i+1):n.contrasts),function(j){
+                    ## compute differences between all pairs of treatments
+                    # IC had dimension n.predictions (row), n.times (columns), n.dataTrain (length)
+                    # apply 2 do for each time: extract the value of IF with n.predictions (row) and n.dataTrain (length)
+                    # colSums: compute the IF for the G formula for each observation in the training data set
+                    # sqrt(sum 2)) compute the variance of the estimator over the observations in the training data set
+
+                    iiCon <- vec.contrast[paste0(contrasts[[i]],contrasts[[j]])]
+                    data.table(Treatment.A=contrasts[[i]],
+                               Treatment.B=contrasts[[j]],
+                               time = times,
+                               diff = sdIF_diff.contrasts[iiCon,],
+                               ratio = sdIF_ratio.contrasts[iiCon,],                                 
+                               qDiff = if(band){qIF_diff.contrasts[iiCon]}else{NA},                                 
+                               qRatio = if(band){qIF_ratio.contrasts[iiCon]}else{NA}
+                               )
+                }))}))
       
-      crisks <- data.table::data.table(Treatment.A = pointEstimate$riskComparison$Treatment.A,
-                                       Treatment.B = pointEstimate$riskComparison$Treatment.B,
-                                       time = times,
-                                       ## diffMeanBoot = NA,
-                                       diff.lower = pointEstimate$riskComparison$diff + qnorm(alpha/2) * sdIF.fct$diff,
-                                       diff.upper = pointEstimate$riskComparison$diff + qnorm(1-alpha/2) * sdIF.fct$diff,
-                                       diff.p.value = 2*(1-pnorm(abs(pointEstimate$riskComparison$diff), sd = sdIF.fct$diff)),
-                                       ratio.lower = ratio.lower,
-                                       ratio.upper = ratio.upper,
-                                       ratio.p.value = ratio.p.value                                       
-                                       )
+            ## if(logTransform){
+            ##     ratio.lower <- exp(log(pointEstimate$riskComparison$ratio) + qnorm(alpha/2) * sdIF.fct$ratio)
+            ##     ratio.upper <- exp(log(pointEstimate$riskComparison$ratio) + qnorm(1-alpha/2) * sdIF.fct$ratio)
+            ##     ratio.p.value <- 2*(1-pnorm(abs(log(pointEstimate$riskComparison$ratio)), sd = sdIF.fct$ratio))
+            ## }else{
+                ratio.lower <- pointEstimate$riskComparison$ratio + qnorm(alpha/2) * sdIF.fct$ratio
+                ratio.upper <- pointEstimate$riskComparison$ratio + qnorm(1-alpha/2) * sdIF.fct$ratio
+                ratio.p.value <- 2*(1-pnorm(abs(pointEstimate$riskComparison$ratio-1), sd = sdIF.fct$ratio))
+                ratioBand.lower <- pointEstimate$riskComparison$ratio - sdIF.fct$qRatio * sdIF.fct$ratio
+                ratioBand.upper <- pointEstimate$riskComparison$ratio + sdIF.fct$qRatio * sdIF.fct$ratio
+            ## }
       
-      bootseeds <- NULL
-     }} else{
+            crisks <- data.table::data.table(Treatment.A = pointEstimate$riskComparison$Treatment.A,
+                                             Treatment.B = pointEstimate$riskComparison$Treatment.B,
+                                             time = times,
+                                             diff.lower = pointEstimate$riskComparison$diff + qnorm(alpha/2) * sdIF.fct$diff,
+                                             diff.upper = pointEstimate$riskComparison$diff + qnorm(1-alpha/2) * sdIF.fct$diff,
+                                             diff.p.value = 2*(1-pnorm(abs(pointEstimate$riskComparison$diff), sd = sdIF.fct$diff)),
+                                             ratio.lower = ratio.lower,
+                                             ratio.upper = ratio.upper,
+                                             diffBand.lower = pointEstimate$riskComparison$diff - sdIF.fct$qDiff * sdIF.fct$diff,
+                                             diffBand.upper = pointEstimate$riskComparison$diff + sdIF.fct$qDiff * sdIF.fct$diff,
+                                             ratioBand.lower = ratioBand.lower,
+                                             ratioBand.upper = ratioBand.upper
+                                             )
       
-      mrisks <- data.table::data.table(Treatment = pointEstimate$meanRisk$Treatment,
-                                       time = times,
-                                       meanRiskBoot = NA,
-                                       lower = NA,
-                                       upper = NA)
-      crisks <- data.table::data.table(Treatment.A = pointEstimate$riskComparison$Treatment.A,
-                                       Treatment.B = pointEstimate$riskComparison$Treatment.B,
-                                       time = times,
-                                       diffMeanBoot = NA,
-                                       diff.lower = NA,
-                                       diff.upper = NA,
-                                       diff.p.value = NA,
-                                       ratioMeanBoot = NA,
-                                       ratio.lower = NA,
-                                       ratio.upper = NA,
-                                       ratio.p.value = NA)
-      bootseeds <- NULL
-    }
+            bootseeds <- NULL
+        }} else{
+      
+             mrisks <- data.table::data.table(Treatment = pointEstimate$meanRisk$Treatment,
+                                              time = times,
+                                              meanRiskBoot = NA,
+                                              lower = NA,
+                                              upper = NA)
+             crisks <- data.table::data.table(Treatment.A = pointEstimate$riskComparison$Treatment.A,
+                                              Treatment.B = pointEstimate$riskComparison$Treatment.B,
+                                              time = times,
+                                              diffMeanBoot = NA,
+                                              diff.lower = NA,
+                                              diff.upper = NA,
+                                              diff.p.value = NA,
+                                              ratioMeanBoot = NA,
+                                              ratio.lower = NA,
+                                              ratio.upper = NA,
+                                              ratio.p.value = NA)
+             bootseeds <- NULL
+             # }}}
+         }
   
-  ## merge bootstrap with pointEstimate
-  mrisks <- merge(pointEstimate$meanRisk,mrisks,by=c("Treatment","time"))
-  crisks <- merge(pointEstimate$riskComparison,crisks,by=c("Treatment.A","Treatment.B","time"))
-  out <- list(meanRisk=mrisks,
-              riskComparison=crisks,
-              treatment=treatment,
-              contrasts=contrasts,
-              times=times,
-              n.bootstrap=B,
-              seeds=bootseeds,
-              conf.level=conf.level)
+    ## merge bootstrap with pointEstimate
+    mrisks <- merge(pointEstimate$meanRisk,mrisks,by=c("Treatment","time"))
+    crisks <- merge(pointEstimate$riskComparison,crisks,by=c("Treatment.A","Treatment.B","time"))
+    out <- list(meanRisk=mrisks,
+                riskComparison=crisks,
+                treatment=treatment,
+                contrasts=contrasts,
+                times=times,
+                n.bootstrap=B,
+                seeds=bootseeds,
+                conf.level=conf.level,
+                nSim.band = nSim.band,
+                logTransform = logTransform)
   
-  class(out) <- c("ate",class(object))
-  out
+    class(out) <- c("ate",class(object))
+    out
 }
 
 

@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun  6 2016 (09:35) 
 ## Version: 
-## last-updated: mar  4 2017 (19:39) 
-##           By: Brice
-##     Update #: 33
+## last-updated: apr 28 2017 (15:49) 
+##           By: Brice Ozenne
+##     Update #: 39
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -169,12 +169,12 @@ fit.CSC <- CSC(Hist(time,status) ~ thick*age, data = Melanoma, fitter = "cph")
 test_that("Prediction with Cox model - NA after last event",{
   test.times <- max(Melanoma$time) + c(-1e-1,0,1e-1)
   
-  prediction <- predictCox(fit.coxph, times = test.times, newdata = Melanoma[1,,drop = FALSE])
+  prediction <- predictCox(fit.coxph, type = c("hazard","cumhazard","survival"), times = test.times, newdata = Melanoma[1,,drop = FALSE])
   expect_equal(as.vector(is.na(prediction$hazard)), c(FALSE, FALSE, TRUE))
   expect_equal(as.vector(is.na(prediction$cumhazard)), c(FALSE, FALSE, TRUE))
   expect_equal(as.vector(is.na(prediction$survival)), c(FALSE, FALSE, TRUE))
   
-  prediction <- predictCox(fit.cph, times = test.times, newdata = Melanoma[1,,drop = FALSE])
+  prediction <- predictCox(fit.cph, type = c("hazard","cumhazard","survival"), times = test.times, newdata = Melanoma[1,,drop = FALSE])
   expect_equal(as.vector(is.na(prediction$hazard)), c(FALSE, FALSE, TRUE))
   expect_equal(as.vector(is.na(prediction$cumhazard)), c(FALSE, FALSE, TRUE))
   expect_equal(as.vector(is.na(prediction$survival)), c(FALSE, FALSE, TRUE))
@@ -183,12 +183,12 @@ test_that("Prediction with Cox model - NA after last event",{
 test_that("Prediction with Cox model - no event before prediction time",{
   test.times <- min(Melanoma$time)-1e-5
   
-  prediction <- predictCox(fit.coxph, times = test.times, newdata = Melanoma[1,,drop = FALSE])
+  prediction <- predictCox(fit.coxph, type = c("hazard","cumhazard","survival"), times = test.times, newdata = Melanoma[1,,drop = FALSE])
   expect_equal(as.double(prediction$hazard), 0)
   expect_equal(as.double(prediction$cumhazard), 0)
   expect_equal(as.double(prediction$survival), 1)
   
-  prediction <- predictCox(fit.cph, times = test.times, newdata = Melanoma[1,,drop = FALSE])
+  prediction <- predictCox(fit.cph, type = c("hazard","cumhazard","survival"), times = test.times, newdata = Melanoma[1,,drop = FALSE])
   expect_equal(as.double(prediction$hazard), 0)
   expect_equal(as.double(prediction$cumhazard), 0)
   expect_equal(as.double(prediction$survival), 1)
@@ -268,12 +268,12 @@ test_that("Prediction with Cox model (strata) - NA after last event",{
   for(Ttempo in 1:nrow(dt.times)){
     test.times <- sort(unlist(dt.times[Ttempo, .(beforeLastTime, LastTime, afterLastTime)]))
     
-    prediction <- predictCox(fit.coxph, times = test.times, newdata = data.test)
+    prediction <- predictCox(fit.coxph, type = c("hazard","cumhazard","survival"), times = test.times, newdata = data.test)
     expect_equal(is.na(prediction$hazard[Ttempo,]), c(FALSE, FALSE, TRUE))
     expect_equal(is.na(prediction$cumhazard[Ttempo,]), c(FALSE, FALSE, TRUE))
     expect_equal(is.na(prediction$survival[Ttempo,]), c(FALSE, FALSE, TRUE))
     
-    prediction <- predictCox(fit.cph, times = test.times, newdata = data.test)
+    prediction <- predictCox(fit.cph, type = c("hazard","cumhazard","survival"), times = test.times, newdata = data.test)
     expect_equal(is.na(prediction$hazard[Ttempo,]), c(FALSE, FALSE, TRUE))
     expect_equal(is.na(prediction$cumhazard[Ttempo,]), c(FALSE, FALSE, TRUE))
     expect_equal(is.na(prediction$survival[Ttempo,]), c(FALSE, FALSE, TRUE))
@@ -294,12 +294,12 @@ test_that("Prediction with CSC (strata) - NA after last event",{
 test_that("Prediction with Cox model (strata) - no event before prediction time",{
   test.times <- min(Melanoma$time)-1e-5
   
-  prediction <- predictCox(fit.coxph, times = test.times, newdata = Melanoma[1,,drop = FALSE])
+  prediction <- predictCox(fit.coxph, type = c("hazard","cumhazard","survival"), times = test.times, newdata = Melanoma[1,,drop = FALSE])
   expect_equal(as.double(prediction$hazard), 0)
   expect_equal(as.double(prediction$cumhazard), 0)
   expect_equal(as.double(prediction$survival), 1)
   
-  prediction <- predictCox(fit.cph, times = test.times, newdata = Melanoma[1,,drop = FALSE])
+  prediction <- predictCox(fit.cph, type = c("hazard","cumhazard","survival"), times = test.times, newdata = Melanoma[1,,drop = FALSE])
   expect_equal(as.double(prediction$hazard), 0)
   expect_equal(as.double(prediction$cumhazard), 0)
   expect_equal(as.double(prediction$survival), 1)
@@ -497,10 +497,10 @@ test_that("baseline hazard - correct number of events",{
     # c("time","hazard","cumhazard","survival") remove lastEventTime from pfit
     # time hazard cumhazard survival should have length equals to the number of eventtimes (including censored events)
     # this is not true for lastEventTime which is has length the number of strata
-    pfit.coxph <- predictCox(fit.coxph, keep.times = TRUE)[c("time","hazard","cumhazard","survival")]
+    pfit.coxph <- predictCox(fit.coxph, type = c("hazard","cumhazard","survival"), keep.times = TRUE)[c("time","hazard","cumhazard","survival")]
     lengthRes <- unlist(lapply(pfit.coxph, length))
     expect_equal(unname(lengthRes), rep(length(unique(fit.coxph$y[,"time"])), 4))
-    pfit.cph <- predictCox(fit.cph, keep.times = TRUE)[c("time","hazard","cumhazard","survival")]
+    pfit.cph <- predictCox(fit.cph, type = c("hazard","cumhazard","survival"), keep.times = TRUE)[c("time","hazard","cumhazard","survival")]
     lengthRes <- unlist(lapply(pfit.cph, length))
     expect_equal(unname(lengthRes), rep(length(unique(fit.cph$y[,"time"])), 4))
 })
@@ -559,12 +559,12 @@ test_that("Prediction with Cox model (strata) - export of strata and times",{
 })
 
 test_that("Prediction with Cox model (strata) - consistency of hazard/cumhazard/survival",{
-  predictTempo <- predictCox(fit.coxph, times = times1, newdata = dataset1)
+  predictTempo <- predictCox(fit.coxph, type = c("hazard","cumhazard","survival"), times = times1, newdata = dataset1)
   expect_equal(predictTempo$hazard[,-1], t(apply(predictTempo$cumhazard,1,diff)), tolerance = 1e-8)
   expect_equal(predictTempo$survival, exp(-predictTempo$cumhazard), tolerance = 1e-8)
 })
 
-predictTempo <- predictCox(fit.coxph, times = c(0,times1[1:10]), newdata = dataset1[1:2,])
+predictTempo <- predictCox(fit.coxph, type = c("hazard","cumhazard","survival"), times = c(0,times1[1:10]), newdata = dataset1[1:2,])
 expect_equal(predictTempo$hazard[,-1], t(apply(predictTempo$cumhazard,1,diff)), tolerance = 1e-8)
 expect_equal(predictTempo$survival, exp(-predictTempo$cumhazard), tolerance = 1e-8)
 

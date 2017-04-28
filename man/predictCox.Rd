@@ -5,7 +5,7 @@
 \title{Fast computation of survival probabilities, hazards and cumulative hazards from Cox regression models}
 \usage{
 predictCox(object, newdata = NULL, times, centered = TRUE,
-  type = c("hazard", "cumhazard", "survival"), keep.strata = TRUE,
+  type = c("cumhazard", "survival"), keep.strata = TRUE,
   keep.times = TRUE, keep.newdata = FALSE, se = FALSE, iid = FALSE,
   nSim.band = 0, conf.level = 0.95, ...)
 }
@@ -67,7 +67,6 @@ A list with some or all of the following elements:
 \itemize{
 \item{times}: the time points at which the other elements are evaluated.
 \item{hazard}: When argument \code{newdata} is not used the baseline hazard function, otherwise the predicted hazard function. 
-\item{hazard.se}: The standard errors of the predicted hazard function.
 \item{cumhazard}: When argument \code{newdata} is not used the cumulative baseline hazard function, otherwise the predicted cumulative hazard function. 
 \item{cumhazard.se}: The standard errors of the predicted cumulative hazard function.
 \item{survival}: When argument \code{newdata} is not used the survival probabilities corresponding to the baseline hazard, otherwise the predicted survival probabilities.

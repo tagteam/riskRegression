@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: feb 17 2017 (10:06) 
 ## Version: 
-## last-updated: apr 27 2017 (15:18) 
+## last-updated: apr 28 2017 (15:36) 
 ##           By: Brice Ozenne
-##     Update #: 224
+##     Update #: 258
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -121,10 +121,15 @@ plot.predictCox <- function(x,
          "set argment \'se\' to TRUE when calling predictCox \n")
   }
 
-  if(ci && (paste0(type,".se") %in% names(x) == FALSE)){
-       stop("argument \'ci\' cannot be TRUE when no standard error have been computed \n",
-            "set argment \'se\' to TRUE when calling predictCox \n")
-  }
+    if(ci && (paste0(type,".se") %in% names(x) == FALSE)){
+        stop("argument \'ci\' cannot be TRUE when no standard error have been computed \n",
+             "set argment \'se\' to TRUE when calling predictCox \n")
+    }
+
+    if(band && ("quantile.band" %in% names(x) == FALSE)){
+        stop("argument \'band\' cannot be TRUE when no quantiles for the confidence bands have not been computed \n",
+             "set argment \'nSim.band\' to a positive integer when calling predictCox \n")
+    }
     
     ## display
     newdata <- copy(x$newdata)
@@ -134,19 +139,27 @@ plot.predictCox <- function(x,
             newdata[, (names(test)[test]):=NULL]
         }        
     }
-        
-    gg.res <- predict2plot(outcome = x[[type]], ci = ci, band = band, alpha = alpha,
-                           outcome.lower = if(ci){x[[paste0(type,".lower")]]}else{NULL},
-                           outcome.upper = if(ci){x[[paste0(type,".upper")]]}else{NULL},
-                           outcome.lowerBand = if(band){x[[paste0(type,".lowerBand")]]}else{NULL},
-                           outcome.upperBand = if(band){x[[paste0(type,".upperBand")]]}else{NULL},
-                           newdata = newdata,
-                           strata = x$strata,
-                           times = x$times,
-                           digits = digits,
+
+    dataL <- predict2melt(outcome = x[[type]], ci = ci, band = band,
+                          outcome.lower = if(ci){x[[paste0(type,".lower")]]}else{NULL},
+                          outcome.upper = if(ci){x[[paste0(type,".upper")]]}else{NULL},
+                          outcome.lowerBand = if(band){x[[paste0(type,".lowerBand")]]}else{NULL},
+                          outcome.upperBand = if(band){x[[paste0(type,".upperBand")]]}else{NULL},
+                          newdata = newdata,
+                          strata = x$strata,
+                          times = x$times,
+                          name.outcome = typename,
+                          groupBy = groupBy,
+                          digits = digits
+                          )
+
+    gg.res <- predict2plot(dataL = dataL,
                            name.outcome = typename,
+                           ci = ci,
+                           band = band,
                            groupBy = groupBy,
-                           conf.level = x$conf.level
+                           conf.level = x$conf.level,
+                           alpha = alpha
                            )
   
   if(plot){
@@ -157,19 +170,15 @@ plot.predictCox <- function(x,
 }
 # }}}
 
-# {{{ predict2plot
-predict2plot <- function(outcome,
+# {{{ predict2melt
+predict2melt <- function(outcome, name.outcome,
                          ci, outcome.lower, outcome.upper,
-                         band, outcome.lowerBand, outcome.upperBand, alpha,
-                         newdata, strata, times,
-                         digits, name.outcome,  groupBy,
-                         conf.level){
+                         band, outcome.lowerBand, outcome.upperBand,
+                         newdata, strata, times, groupBy, digits){
 
-    # for CRAN tests
-    original <- lowerCI <- upperCI <- lowerBand <- upperBand <- NULL
+    ## for CRAN tests
     patterns <- function(){}
     
-    n.obs <- NROW(outcome)
     n.time <- NCOL(outcome)
     if(!is.null(time)){
         time.names <- times 
@@ -201,7 +210,7 @@ predict2plot <- function(outcome,
                                      outcome.lowerBand,outcome.upperBand)
                            )
 
-    #### merge outcome with convariates ####
+    #### merge with convariates ####
     outcome[, row := 1:.N]
     if(groupBy == "covariates"){
         cov.names <- names(newdata)
@@ -212,34 +221,52 @@ predict2plot <- function(outcome,
     }
     
     #### reshape to long format ####
-    gg.dtL <- melt(outcome, id.vars = union("row",groupBy),
+    dataL <- melt(outcome, id.vars = union("row",groupBy),
                    measure= patterns(pattern),
                    variable.name = "time", value.name = gsub("_","",pattern))
-    gg.dtL[, time := as.numeric(as.character(factor(time, labels = time.names)))]
+    dataL[, time := as.numeric(as.character(factor(time, labels = time.names)))]
 
+    return(dataL)    
+}
+
+# }}}
+# {{{ predict2plot
+predict2plot <- function(dataL, name.outcome,
+                         ci, band, groupBy,                         
+                         conf.level, alpha){
+
+    # for CRAN tests
+    original <- lowerCI <- upperCI <- lowerBand <- upperBand <- NULL
     #### duplicate observations to obtain step curves ####
-    gg.dtL[, original := TRUE]
+    keep.cols <- unique(c("time",name.outcome,"row",groupBy))
+    if(band){
+        keep.cols <- c(keep.cols,"lowerBand","upperBand")
+    }
+    dataL[, original := TRUE]
 
-    dtTempo <- copy(gg.dtL)
+    dtTempo <- copy(dataL)
     dtTempo[, (c("time","original")) := list(time = c(0,.SD$time[-.N] + .Machine$double.eps*100),
                                              original = FALSE),
             by = row]
 
-    gg.dtL_duplicated <- rbind(gg.dtL[,unique(keep.cols), with = FALSE],
-                               dtTempo[,unique(keep.cols), with = FALSE])
-    
+    dataL_duplicated <- rbind(dataL[,unique(keep.cols), with = FALSE],
+                              dtTempo[,unique(keep.cols), with = FALSE])
+
     #### display ####
+
     gg.base <- ggplot(mapping = aes_string(x = "time", y = name.outcome, group = "row", color = groupBy))
-    gg.base <- gg.base + geom_point(data = gg.dtL_duplicated) + geom_line(data = gg.dtL_duplicated)
-    gg.base <- gg.base + ggplot2::labs(color="observation")
+    gg.base <- gg.base + geom_point(data = dataL_duplicated) + geom_line(data = dataL_duplicated)
+    if(groupBy=="row"){
+        gg.base <- gg.base + ggplot2::labs(color="observation")
+    }
     if(ci){
         labelCI <- paste0(conf.level*100,"% confidence interval")
-        gg.base <- gg.base + geom_errorbar(data = gg.dtL, aes(ymin = lowerCI, ymax = upperCI, linetype = labelCI))
+        gg.base <- gg.base + geom_errorbar(data = dataL, aes(ymin = lowerCI, ymax = upperCI, linetype = labelCI))
         gg.base <- gg.base + scale_linetype_manual("",values=setNames(1,labelCI))
     }
     if(band){
         labelBand <- paste0(conf.level*100,"% confidence band")
-        gg.base <- gg.base + geom_ribbon(data = gg.dtL_duplicated, aes(ymin = lowerBand, ymax = upperBand, fill = labelBand), alpha = 0.1)
+        gg.base <- gg.base + geom_ribbon(data = dataL_duplicated, aes(ymin = lowerBand, ymax = upperBand, fill = labelBand), alpha = alpha)
         gg.base <- gg.base + scale_fill_manual("", values="grey12")        
     }
     
@@ -251,8 +278,8 @@ predict2plot <- function(outcome,
 
     ## export
     ls.export <- list(plot = gg.base,
-                      data = gg.dtL,
-                      dataDuplicated = gg.dtL_duplicated)
+                      data = dataL,
+                      dataDuplicated = dataL_duplicated)
     
     return(ls.export)
 }

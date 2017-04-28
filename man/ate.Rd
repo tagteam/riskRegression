@@ -5,8 +5,8 @@
 \title{Compute the average treatment effect using CSC.}
 \usage{
 ate(object, data, treatment, contrasts = NULL, times, cause,
-  conf.level = 0.95, B = 0, seed, handler = c("mclapply", "foreach"),
-  mc.cores = 1, verbose = TRUE, logTransform = TRUE, ...)
+  conf.level = 0.95, B = 0, nSim.band = 0, seed, handler = c("mclapply",
+  "foreach"), mc.cores = 1, verbose = TRUE, logTransform = TRUE, ...)
 }
 \arguments{
 \item{object}{outcome model which describes how event risk depends on treatment and covariates.
@@ -27,6 +27,9 @@ The object carry its own call and have a \code{predictRisk} method. See examples
 \item{B}{the number of bootstrap replications used to compute the
 confidence intervals. If it equals 0, then Wald-type confidence intervals are computed.
 They rely on the standard error estimated using the influence function of the estimator.}
+
+\item{nSim.band}{the number of simulations used to compute the quantiles for the confidence bands.
+The quantiles are computed as soon as this number is strictly positive.}
 
 \item{seed}{An integer used to generate seeds for bootstrap and to
 achieve reproducibility of the bootstrap confidence intervals.}
@@ -76,10 +79,10 @@ fit$call
 "predictRisk.cph" \%in\% methods("predictRisk")
 
 ateFit=ate(fit, data = dtS, treatment = "X1", contrasts = NULL,
-        times = 5:7, B = 3, y = TRUE, mc.cores=1)
+        times = 5:8, B = 3, y = TRUE, mc.cores=1)
 
 ateFit=ate(fit, data = dtS, treatment = "X1", contrasts = NULL,
-        times = 5:7, B = 0, y = TRUE, mc.cores=1)
+        times = 5:8, B = 0, y = TRUE, mc.cores=1)
 
 ## Cause specific cox model
 set.seed(17)

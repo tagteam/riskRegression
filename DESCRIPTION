@@ -9,6 +9,7 @@ Depends:
     ggplot2 (>= 2.1.0),
     prodlim (>= 1.5.7)
 Imports:
+    abind,
     stats,
     graphics,
     survival (>= 2.40.1),

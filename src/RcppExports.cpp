@@ -193,74 +193,98 @@ BEGIN_RCPP
 END_RCPP
 }
 // colCenter_cpp
-arma::mat colCenter_cpp(arma::mat X, arma::colvec& center);
+arma::mat colCenter_cpp(arma::mat X, const arma::colvec& center);
 RcppExport SEXP riskRegression_colCenter_cpp(SEXP XSEXP, SEXP centerSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< arma::mat >::type X(XSEXP);
-    Rcpp::traits::input_parameter< arma::colvec& >::type center(centerSEXP);
+    Rcpp::traits::input_parameter< const arma::colvec& >::type center(centerSEXP);
     rcpp_result_gen = Rcpp::wrap(colCenter_cpp(X, center));
     return rcpp_result_gen;
 END_RCPP
 }
 // rowCenter_cpp
-arma::mat rowCenter_cpp(arma::mat X, arma::rowvec& center);
+arma::mat rowCenter_cpp(arma::mat X, const arma::rowvec& center);
 RcppExport SEXP riskRegression_rowCenter_cpp(SEXP XSEXP, SEXP centerSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< arma::mat >::type X(XSEXP);
-    Rcpp::traits::input_parameter< arma::rowvec& >::type center(centerSEXP);
+    Rcpp::traits::input_parameter< const arma::rowvec& >::type center(centerSEXP);
     rcpp_result_gen = Rcpp::wrap(rowCenter_cpp(X, center));
     return rcpp_result_gen;
 END_RCPP
 }
 // colScale_cpp
-arma::mat colScale_cpp(arma::mat X, arma::colvec& scale);
+arma::mat colScale_cpp(arma::mat X, const arma::colvec& scale);
 RcppExport SEXP riskRegression_colScale_cpp(SEXP XSEXP, SEXP scaleSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< arma::mat >::type X(XSEXP);
-    Rcpp::traits::input_parameter< arma::colvec& >::type scale(scaleSEXP);
+    Rcpp::traits::input_parameter< const arma::colvec& >::type scale(scaleSEXP);
     rcpp_result_gen = Rcpp::wrap(colScale_cpp(X, scale));
     return rcpp_result_gen;
 END_RCPP
 }
 // rowScale_cpp
-arma::mat rowScale_cpp(arma::mat X, arma::rowvec& scale);
+arma::mat rowScale_cpp(arma::mat X, const arma::rowvec& scale);
 RcppExport SEXP riskRegression_rowScale_cpp(SEXP XSEXP, SEXP scaleSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< arma::mat >::type X(XSEXP);
-    Rcpp::traits::input_parameter< arma::rowvec& >::type scale(scaleSEXP);
+    Rcpp::traits::input_parameter< const arma::rowvec& >::type scale(scaleSEXP);
     rcpp_result_gen = Rcpp::wrap(rowScale_cpp(X, scale));
     return rcpp_result_gen;
 END_RCPP
 }
 // colMultiply_cpp
-arma::mat colMultiply_cpp(arma::mat X, arma::colvec& scale);
+arma::mat colMultiply_cpp(arma::mat X, const arma::colvec& scale);
 RcppExport SEXP riskRegression_colMultiply_cpp(SEXP XSEXP, SEXP scaleSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< arma::mat >::type X(XSEXP);
-    Rcpp::traits::input_parameter< arma::colvec& >::type scale(scaleSEXP);
+    Rcpp::traits::input_parameter< const arma::colvec& >::type scale(scaleSEXP);
     rcpp_result_gen = Rcpp::wrap(colMultiply_cpp(X, scale));
     return rcpp_result_gen;
 END_RCPP
 }
 // rowMultiply_cpp
-arma::mat rowMultiply_cpp(arma::mat X, arma::rowvec& scale);
+arma::mat rowMultiply_cpp(arma::mat X, const arma::rowvec& scale);
 RcppExport SEXP riskRegression_rowMultiply_cpp(SEXP XSEXP, SEXP scaleSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< arma::mat >::type X(XSEXP);
-    Rcpp::traits::input_parameter< arma::rowvec& >::type scale(scaleSEXP);
+    Rcpp::traits::input_parameter< const arma::rowvec& >::type scale(scaleSEXP);
     rcpp_result_gen = Rcpp::wrap(rowMultiply_cpp(X, scale));
+    return rcpp_result_gen;
+END_RCPP
+}
+// sliceMultiply_cpp
+arma::cube sliceMultiply_cpp(arma::cube X, const arma::mat& M);
+RcppExport SEXP riskRegression_sliceMultiply_cpp(SEXP XSEXP, SEXP MSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::cube >::type X(XSEXP);
+    Rcpp::traits::input_parameter< const arma::mat& >::type M(MSEXP);
+    rcpp_result_gen = Rcpp::wrap(sliceMultiply_cpp(X, M));
+    return rcpp_result_gen;
+END_RCPP
+}
+// sliceScale_cpp
+arma::cube sliceScale_cpp(arma::cube X, const arma::mat& M);
+RcppExport SEXP riskRegression_sliceScale_cpp(SEXP XSEXP, SEXP MSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::cube >::type X(XSEXP);
+    Rcpp::traits::input_parameter< const arma::mat& >::type M(MSEXP);
+    rcpp_result_gen = Rcpp::wrap(sliceScale_cpp(X, M));
     return rcpp_result_gen;
 END_RCPP
 }

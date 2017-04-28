@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: feb 27 2017 (10:47) 
 ## Version: 
-## last-updated: apr 27 2017 (15:23) 
+## last-updated: apr 28 2017 (15:41) 
 ##           By: Brice Ozenne
-##     Update #: 49
+##     Update #: 56
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -58,26 +58,30 @@ plot.predictCSC <- function(x,
                             plot = TRUE,
                             digits = 2, alpha = 0.1, ...){
   
-  ## initialize and check        
-  possibleGroupBy <- c("row","covariates","strata")
-  if(groupBy %in% possibleGroupBy == FALSE){
-    stop("argument \"groupBy\" must be in \"",paste(possibleGroupBy, collapse = "\" \""),"\"\n")
-  }
+    ## initialize and check        
+    possibleGroupBy <- c("row","covariates","strata")
+    if(groupBy %in% possibleGroupBy == FALSE){
+        stop("argument \"groupBy\" must be in \"",paste(possibleGroupBy, collapse = "\" \""),"\"\n")
+    }
   
-  if(groupBy == "covariates" && ("newdata" %in% names(x) == FALSE)){
-    stop("argument \'groupBy\' cannot be \"covariates\" when newdata is missing in the object \n",
-         "set argment \'keep.newdata\' to TRUE when calling predictCox \n")
-  }
-  if(groupBy == "strata" && ("strata" %in% names(x) == FALSE)){
-    stop("argument \'groupBy\' cannot be \"strata\" when strata is missing in the object \n",
-         "set argment \'keep.strata\' to TRUE when calling predictCox \n")
-  }
+    if(groupBy == "covariates" && ("newdata" %in% names(x) == FALSE)){
+        stop("argument \'groupBy\' cannot be \"covariates\" when newdata is missing in the object \n",
+             "set argment \'keep.newdata\' to TRUE when calling predictCox \n")
+    }
+    if(groupBy == "strata" && ("strata" %in% names(x) == FALSE)){
+        stop("argument \'groupBy\' cannot be \"strata\" when strata is missing in the object \n",
+             "set argment \'keep.strata\' to TRUE when calling predictCox \n")
+    }
   
-  if(ci && "absRisk.se" %in% names(x) == FALSE){
-    stop("argument \'ci\' cannot be TRUE when no standard error have been computed \n",
-         "set argment \'se\' to TRUE when calling predictCox \n")
-  }
-  
+    if(ci && "absRisk.se" %in% names(x) == FALSE){
+        stop("argument \'ci\' cannot be TRUE when no standard error have been computed \n",
+             "set argment \'se\' to TRUE when calling predictCox \n")
+    }
+    if(band && "quantile.band" %in% names(x) == FALSE){
+        stop("argument \'band\' cannot be TRUE when the quantiles for the confidence bands have not been computed \n",
+             "set argment \'nSim.band\' to a positive integer when calling predict.CauseSpecificCox \n")
+    }
+    
   ## display
   newdata <- copy(x$newdata)
   if(!is.null(newdata) && reduce.data){
@@ -86,21 +90,30 @@ plot.predictCSC <- function(x,
       newdata[, (names(test)[test]):=NULL]
     }        
   }
-  
-  gg.res <- predict2plot(outcome = x$absRisk, ci = ci, band = band, alpha = alpha,
-                         outcome.lower = if(ci){x$absRisk.lower}else{NULL},
-                         outcome.upper = if(ci){x$absRisk.upper}else{NULL},
-                         outcome.lowerBand = if(band){x$absRisk.lowerBand}else{NULL},
-                         outcome.upperBand = if(band){x$absRisk.upperBand}else{NULL},
-                         newdata = newdata,
-                         strata = x$strata,
-                         times = x$times,
-                         digits = digits,
-                         name.outcome = "absoluteRisk", # must not contain space to avoid error in ggplot2
-                         groupBy = groupBy,
-                         conf.level = x$conf.level)
-  
-  gg.res$plot <- gg.res$plot + xlab("absolute risk")
+
+    dataL <- predict2melt(outcome = x$absRisk, ci = ci, band = band, 
+                          outcome.lower = if(ci){x$absRisk.lower}else{NULL},
+                          outcome.upper = if(ci){x$absRisk.upper}else{NULL},
+                          outcome.lowerBand = if(band){x$absRisk.lowerBand}else{NULL},
+                          outcome.upperBand = if(band){x$absRisk.upperBand}else{NULL},
+                          newdata = newdata,
+                          strata = x$strata,
+                          times = x$times,
+                          name.outcome = "absoluteRisk",
+                          groupBy = groupBy,
+                          digits = digits
+                          )
+
+    gg.res <- predict2plot(dataL = dataL,
+                           name.outcome = "absoluteRisk", # must not contain space to avoid error in ggplot2
+                           ci = ci,
+                           band = band,
+                           groupBy = groupBy,
+                           conf.level = x$conf.level,
+                           alpha = alpha
+                           )
+    
+  gg.res$plot <- gg.res$plot + ggplot2::ylab("absolute risk")
   
   if(plot){
     print(gg.res$plot)

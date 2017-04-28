@@ -97,6 +97,9 @@ fit <- cph(formula = Surv(time,event)~ X1+X2,data=dtS,y=TRUE,x=TRUE)
 ateFit <- ate(fit, data = dtS, treatment = "X1", contrasts = NULL,
               times = 5:7, B = 0, se = TRUE, mc.cores=1)
 
+ateFit
+
+
 ## manually
 newdata0 <- copy(dtS)
 newdata0$X1 <- "T0"

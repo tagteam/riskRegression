@@ -24,11 +24,11 @@ pred <- predictCox(fit.coxph,
                    iid = TRUE,
                    type = "cumhazard")
 set.seed(10)
-resRR <- riskRegression:::confBandCox(
-    iid = pred$cumhazard.iid,
-    se = pred$cumhazard.se,
-    n.sim = 500, n.object = NROW(d), n.new = NROW(newdata)
-)
+resRR <- riskRegression:::confBandCox(iid = pred$cumhazard.iid,
+                                      se = pred$cumhazard.se,
+                                      times = times,
+                                      n.sim = 500, conf.level = 0.95)
+
 
 resTimereg <- list()
 for(i in 1:NROW(newdata)){

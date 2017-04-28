@@ -4,7 +4,7 @@
 \alias{confBandCox}
 \title{Compute quantiles of a gaussian process}
 \usage{
-confBandCox(iid, se, times, n.object, n.new, n.sim = 500, conf.level = 0.95)
+confBandCox(iid, se, times, n.sim, conf.level)
 }
 \arguments{
 \item{iid}{The iid decomposition of the estimator over time.}
@@ -12,10 +12,6 @@ confBandCox(iid, se, times, n.object, n.new, n.sim = 500, conf.level = 0.95)
 \item{se}{The variance of the estimate over time.}
 
 \item{times}{The time points covered by the confidence bands.}
-
-\item{n.object}{the number of observations in dataset used to fit the model.}
-
-\item{n.new}{the number of observations for which the quantiles should be computed.}
 
 \item{n.sim}{The number of simulations used to compute the quantiles.}
 

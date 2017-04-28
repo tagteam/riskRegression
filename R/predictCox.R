@@ -55,7 +55,6 @@
 #' \itemize{
 #' \item{times}: the time points at which the other elements are evaluated.
 #' \item{hazard}: When argument \code{newdata} is not used the baseline hazard function, otherwise the predicted hazard function. 
-#' \item{hazard.se}: The standard errors of the predicted hazard function.
 #' \item{cumhazard}: When argument \code{newdata} is not used the cumulative baseline hazard function, otherwise the predicted cumulative hazard function. 
 #' \item{cumhazard.se}: The standard errors of the predicted cumulative hazard function.
 #' \item{survival}: When argument \code{newdata} is not used the survival probabilities corresponding to the baseline hazard, otherwise the predicted survival probabilities.
@@ -109,7 +108,7 @@ predictCox <- function(object,
                        newdata=NULL,
                        times,
                        centered = TRUE,
-                       type=c("hazard","cumhazard","survival"),
+                       type=c("cumhazard","survival"),
                        keep.strata = TRUE,
                        keep.times = TRUE,
                        keep.newdata = FALSE,
@@ -183,10 +182,12 @@ predictCox <- function(object,
     if(any(object.design[,"start"]!=0)){
         stop("do not handle left censoring \n") 
     }
+    if(se && "hazard" %in% type){
+        stop("confidence intervals cannot be computed for the hazard \n")
+    }
     if(nSim.band>0 && "hazard" %in% type){
         stop("confidence bands cannot be computed for the hazard \n")
-    }
-    
+    }    
     # }}}
     # {{{ computation of the baseline hazard
     if(!is.null(newdata)){
@@ -279,9 +280,6 @@ predictCox <- function(object,
             ## initialization
             if ("hazard" %in% type){
                 out$hazard <- matrix(0, nrow = new.n, ncol = nTimes)
-                if(se){
-                    out$hazard.se <- matrix(0, nrow = new.n, ncol = nTimes)
-                }
             }
             if ("cumhazard" %in% type){
                 out$cumhazard <- matrix(NA, nrow = new.n, ncol = nTimes)
@@ -380,17 +378,7 @@ predictCox <- function(object,
                 }
             }
             if(se == TRUE){
-                zval <- qnorm(1- (1-conf.level)/2, 0,1)
-                if ("hazard" %in% type){
-                    if (needOrder)
-                        out$hazard.se <- outSE$hazard.se[,oorder.times,drop=0L]
-                    else
-                        out$hazard.se <- outSE$hazard.se
-                    
-                    out$hazard.lower <- matrix(NA, nrow = NROW(out$hazard.se), ncol = NCOL(out$hazard.se)) # to keep matrix format even when out$hazard contains only one line
-                    out$hazard.lower[] <- apply(out$hazard - zval*out$hazard.se,2,pmax,0)
-                    out$hazard.upper <- out$hazard + zval*out$hazard.se
-                }
+                zval <- qnorm(1- (1-conf.level)/2, 0,1)                
                 if ("cumhazard" %in% type){
                     if (needOrder)
                         out$cumhazard.se <- outSE$cumhazard.se[,oorder.times,drop=0L]
@@ -420,9 +408,7 @@ predictCox <- function(object,
             
             out$quantile.band <- confBandCox(iid = out[[paste(type[1],"iid",sep=".")]],
                                              se = out[[paste(type[1],"se",sep=".")]],
-                                             times = times-1e-5,
-                                             n.object = object.n,
-                                             n.new = new.n,
+                                             times = times-1e-5,                                            
                                              n.sim = nSim.band,
                                              conf.level = conf.level)
             
@@ -522,7 +508,6 @@ seRobustCox <- function(nTimes, type,
   ## main loop
   out <- list()
   if("se" %in% export){
-    if("hazard" %in% type){out$hazard.se <- matrix(NA, nrow = n.new, ncol = nTimes)}
     if("cumhazard" %in% type){out$cumhazard.se <- matrix(NA, nrow = n.new, ncol = nTimes)}
     if("survival" %in% type){out$survival.se <- matrix(NA, nrow = n.new, ncol = nTimes)}
   }
@@ -544,11 +529,7 @@ seRobustCox <- function(nTimes, type,
                                   nVar = nVar)
       if("iid" %in% export){
         out$hazard.iid[iObs,,] <- t(IF_tempo)
-      }
-      if("se" %in% export){
-        se_tempo <- sqrt(apply(IF_tempo^2,2,sum))
-        out$hazard.se[iObs,] <- se_tempo
-      }
+      }    
     }
     
     if("cumhazard" %in% type || "survival" %in% type){
