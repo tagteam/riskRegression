@@ -158,7 +158,7 @@ predictCox <- function(object,
     object.baseEstimator <- CoxBaseEstimator(object) 
     nVar <- length(infoVar$lpvars)
 
-    #### Confidence bands ####
+    ## Confidence bands
     if(nSim.band>0){
         iid.save <- iid
         se.save <- se

@@ -107,7 +107,6 @@ predict.CauseSpecificCox <- function(object,
     causes <- object$causes
     # cannot use only eventtimes of cause 1 otherwise wrong interpolation in the C++ function
     eTimes <- object$eventTimes
-    browser()
     
     if (any(match(as.character(cause), causes, nomatch = 0)==0L))
         stop(paste0("Requested cause ",as.character(cause)," does not match fitted causes which are:\n ",paste0("- ",causes,collapse="\n")))
@@ -385,11 +384,10 @@ predict.CauseSpecificCox <- function(object,
 #' @param new.n the number of new observations.
 #' @param cause the cause of interest.
 #' @param nCause the number of causes.
-#' @param return.se Logical. Should the standard error be output. Otherwise the value of the influence function will be output.
 #' @param nVar the number of variables that form the linear predictor in each Cox model
-#' @param se Logical. If \code{TRUE} add the standard errors
+#' @param export.se Logical. If \code{TRUE} add the standard errors
 #'     corresponding to the output.
-#' @param iid Logical. If \code{TRUE} add the influence function
+#' @param export.iid Logical. If \code{TRUE} add the influence function
 #'     corresponding ot the output.
 #' 
 #' @examples 

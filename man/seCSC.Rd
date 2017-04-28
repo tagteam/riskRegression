@@ -5,7 +5,8 @@
 \title{Standard error of the absolute risk predicted from cause-specific Cox models}
 \usage{
 seCSC(hazard, cumhazard, object.time, object.maxtime, iid, eXb_h, eXb_cumH,
-  new.LPdata, new.strata, times, new.n, cause, nCause, nVar, return.se)
+  new.LPdata, new.strata, times, new.n, cause, nCause, nVar, export.iid,
+  export.se)
 }
 \arguments{
 \item{hazard}{list containing the baseline hazard for each cause in a matrix form. Columns correspond to the strata.}
@@ -36,7 +37,11 @@ seCSC(hazard, cumhazard, object.time, object.maxtime, iid, eXb_h, eXb_cumH,
 
 \item{nVar}{the number of variables that form the linear predictor in each Cox model}
 
-\item{return.se}{Logical. Should the standard error be output. Otherwise the value of the influence function will be output.}
+\item{export.iid}{Logical. If \code{TRUE} add the influence function
+corresponding ot the output.}
+
+\item{export.se}{Logical. If \code{TRUE} add the standard errors
+corresponding to the output.}
 }
 \description{
 Standard error of the absolute risk predicted from cause-specific Cox models.

@@ -1,5 +1,5 @@
 library(timereg)
-library(cmprsk)
+library(testthat)
 library(riskRegression)
 
 # {{{ survival
@@ -24,7 +24,7 @@ pred <- predictCox(fit.coxph,
                    iid = TRUE,
                    type = "cumhazard")
 set.seed(10)
-resRR <- confBandCox(
+resRR <- riskRegression:::confBandCox(
     iid = pred$cumhazard.iid,
     se = pred$cumhazard.se,
     n.sim = 500, n.object = NROW(d), n.new = NROW(newdata)
@@ -75,6 +75,30 @@ dev.new()
 plotTR <- plot.predict.timereg(resTimereg[[1]])
 dev.new()
 plotRR$plot + coord_cartesian(ylim = c(0,1))
+
+# }}}
+
+# }}}
+
+# {{{ absolute risk
+
+# {{{ simulation
+set.seed(10)
+d <- sampleData(1e2, outcome = "competing.risks")
+newdata <- d[1:10,]
+
+fit.CSC <- CSC(Hist(time, event) ~ X1 + X2, data = d)
+seqTimes <- fit.CSC$eventTimes
+
+res <- predict(fit.CSC, newdata = newdata, times = seqTimes-1e-5, nSim.band = 500, cause = 1)
+
+res <- predict(fit.CSC, newdata = newdata[1,,], times = seqTimes-1e-5, nSim.band = 500, cause = 1)
+plot(res, band = TRUE)
+
+
+setkey(d,time)
+res$times - d$time[d$event>0]
+d$event[d$event>0]
 
 # }}}
 

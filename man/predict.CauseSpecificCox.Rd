@@ -6,7 +6,7 @@
 \usage{
 \method{predict}{CauseSpecificCox}(object, newdata, times, cause,
   landmark = NA, keep.times = 1L, keep.newdata = 1L, keep.strata = 1L,
-  se = FALSE, iid = FALSE, conf.level = 0.95, ...)
+  se = FALSE, iid = FALSE, nSim.band = 0, conf.level = 0.95, ...)
 }
 \arguments{
 \item{object}{The fitted cause specific Cox model}
@@ -34,6 +34,9 @@ corresponding to the output.}
 
 \item{iid}{Logical. If \code{TRUE} add the influence function
 corresponding ot the output.}
+
+\item{nSim.band}{the number of simulations used to compute the quantiles for the confidence bands.
+The quantiles are computed as soon as this number is strictly positive.}
 
 \item{conf.level}{Level of confidence.}
 
