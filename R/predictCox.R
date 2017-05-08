@@ -36,13 +36,15 @@
 #'     to the output.
 #' @param keep.newdata Logical. If \code{TRUE} add the value of the
 #'     covariates used to make the prediction in the output list.
-#' @param se Logical. If \code{TRUE} add the standard error
-#'     corresponding to the output.
-#' @param iid Logical. If \code{TRUE} add the influence function
-#'     corresponding to the output.
-#' @param nSim.band the number of simulations used to compute the quantiles for the confidence bands.
-#' The quantiles are computed as soon as this number is strictly positive.
+#' @param se Logical. If \code{TRUE} add the standard error to the output.
+#' @param band Logical. If \code{TRUE} add the confidence band to the output.
+#' @param iid Logical. If \code{TRUE} add the influence function to the output.
+#' @param nSim.band the number of simulations used to compute the quantiles
+#' for the confidence bands..
 #' @param conf.level Level of confidence.
+#' @param ci.logTransform Should the confidence intervals/bands be computed on the log (hazard) and
+#' log(-log) (survival) scale and be backtransformed.
+#' Otherwise they are computed on the original scale and truncated (if necessary).
 #' @param ... arguments to be passed to the function \code{iidCox}.
 #' @details Not working with time varying predictor variables or
 #'     delayed entry.  The centered argument enables us to reproduce
@@ -76,6 +78,7 @@
 #' predictCox(fit,centered=FALSE,type="hazard")
 #' predictCox(fit,centered=TRUE,type="hazard")
 #' predictCox(fit, newdata=nd, times=c(3,8),se=TRUE)
+#' predictCox(fit, newdata=nd, times=c(3,8),se=TRUE, ci.logTransform = TRUE)
 #' predictCox(fit, newdata=nd, times = 5,iid=TRUE)
 #' 
 #' cbind(survival::basehaz(fit),predictCox(fit,type="cumhazard")$cumhazard)
@@ -113,9 +116,11 @@ predictCox <- function(object,
                        keep.times = TRUE,
                        keep.newdata = FALSE,
                        se = FALSE,
+                       band = FALSE,
                        iid = FALSE,
-                       nSim.band = 0,
-                       conf.level=0.95, ...){
+                       nSim.band = 1e4,
+                       conf.level=0.95,
+                       ci.logTransform = FALSE, ...){
     status=statusM1=NULL
     
     # {{{ treatment of times and stopping rules
@@ -158,7 +163,7 @@ predictCox <- function(object,
     nVar <- length(infoVar$lpvars)
 
     ## Confidence bands
-    if(nSim.band>0){
+    if(band>0){
         iid.save <- iid
         se.save <- se
         iid <- TRUE
@@ -185,9 +190,12 @@ predictCox <- function(object,
     if(se && "hazard" %in% type){
         stop("confidence intervals cannot be computed for the hazard \n")
     }
-    if(nSim.band>0 && "hazard" %in% type){
+    if(band>0 && "hazard" %in% type){
         stop("confidence bands cannot be computed for the hazard \n")
-    }    
+    }
+    if(ci.logTransform>0 && "hazard" %in% type){
+        stop("log transformation cannot be applied to the hazard \n")
+    } 
     # }}}
     # {{{ computation of the baseline hazard
     if(!is.null(newdata)){
@@ -355,8 +363,10 @@ predictCox <- function(object,
             }
             outSE <- seRobustCox(nTimes = nTimes, type = type,
                                  Lambda0 = Lambda0, iid = iid.object, object.n = object.n, nStrata = nStrata, 
-                                 new.eXb = new.eXb, new.LPdata = new.LPdata, new.strata = new.strata, new.survival = out$survival,
-                                 nVar = nVar, export = c("iid"[iid==TRUE],"se"[se==TRUE]))
+                                 new.eXb = new.eXb, new.LPdata = new.LPdata, new.strata = new.strata,
+                                 new.cumhazard = out$cumhazard, new.survival = out$survival,
+                                 nVar = nVar, logTransform = ci.logTransform,
+                                 export = c("iid"[iid==TRUE],"se"[se==TRUE]))
             if(iid == TRUE){
                 if ("hazard" %in% type){
                     if (needOrder)
@@ -378,16 +388,21 @@ predictCox <- function(object,
                 }
             }
             if(se == TRUE){
-                zval <- qnorm(1- (1-conf.level)/2, 0,1)                
+                zval <- qnorm(1- (1-conf.level)/2, 0,1)
                 if ("cumhazard" %in% type){
                     if (needOrder)
                         out$cumhazard.se <- outSE$cumhazard.se[,oorder.times,drop=0L]
                     else
                         out$cumhazard.se <- outSE$cumhazard.se
-                    
-                    out$cumhazard.lower <- matrix(NA, nrow = NROW(out$cumhazard.se), ncol = NCOL(out$cumhazard.se)) # to keep matrix format even when out$cumhazard contains only one line
-                    out$cumhazard.lower[] <- apply(out$cumhazard - zval*out$cumhazard.se,2,pmax,0)
-                    out$cumhazard.upper <- out$cumhazard + zval*out$cumhazard.se
+
+                    if(ci.logTransform){
+                        out$cumhazard.lower <- exp(log(out$cumhazard) - zval*out$cumhazard.se)
+                        out$cumhazard.upper <- exp(log(out$cumhazard) + zval*out$cumhazard.se)
+                    }else{
+                        out$cumhazard.lower <- matrix(NA, nrow = NROW(out$cumhazard.se), ncol = NCOL(out$cumhazard.se)) # to keep matrix format even when out$cumhazard contains only one line
+                        out$cumhazard.lower[] <- apply(out$cumhazard - zval*out$cumhazard.se,2,pmax,0)
+                        out$cumhazard.upper <- out$cumhazard + zval*out$cumhazard.se
+                    }
                 }
                 if ("survival" %in% type){
                     if (needOrder)
@@ -395,16 +410,21 @@ predictCox <- function(object,
                     else
                         out$survival.se <- outSE$survival.se
 
-                    # to keep matrix format even when out$survival contains only one line
-                    out$survival.lower <- out$survival.upper <- matrix(NA, nrow = NROW(out$survival.se), ncol = NCOL(out$survival.se)) 
-                    out$survival.lower[] <- apply(out$survival - zval*out$survival.se,2,pmax,0)
-                    out$survival.upper[] <- apply(out$survival + zval*out$survival.se,2,pmin,1)
+                    if(ci.logTransform){
+                        out$survival.lower <- exp(-exp(log(-log(out$survival)) + zval*out$survival.se))
+                        out$survival.upper <- exp(-exp(log(-log(out$survival)) - zval*out$survival.se))                
+                    }else{
+                        # to keep matrix format even when out$survival contains only one line
+                        out$survival.lower <- out$survival.upper <- matrix(NA, nrow = NROW(out$survival.se), ncol = NCOL(out$survival.se)) 
+                        out$survival.lower[] <- apply(out$survival - zval*out$survival.se,2,pmax,0)
+                        out$survival.upper[] <- apply(out$survival + zval*out$survival.se,2,pmin,1)
+                    }
                 }
             }
         }
         # }}}
         # {{{ quantiles for the confidence bands
-        if(nSim.band > 0){
+        if(band > 0){
             
             out$quantile.band <- confBandCox(iid = out[[paste(type[1],"iid",sep=".")]],
                                              se = out[[paste(type[1],"se",sep=".")]],
@@ -418,18 +438,29 @@ predictCox <- function(object,
 
             if ("cumhazard" %in% type){
                 quantile95 <- colMultiply_cpp(out$cumhazard.se,out$quantile.band)
-                
-                out$cumhazard.lowerBand <- matrix(NA, nrow = NROW(out$cumhazard.se), ncol = NCOL(out$cumhazard.se))
-                out$cumhazard.lowerBand[] <- apply(out$cumhazard - quantile95,2,pmax,0)
-                out$cumhazard.upperBand <- out$cumhazard + quantile95
+
+               
+                if(ci.logTransform){
+                    out$cumhazard.lowerBand <- exp(log(out$cumhazard) - zval*quantile95)
+                    out$cumhazard.upperBand <- exp(log(out$cumhazard) + zval*quantile95)
+                }else{
+                    out$cumhazard.lowerBand <- matrix(NA, nrow = NROW(out$cumhazard.se), ncol = NCOL(out$cumhazard.se))
+                    out$cumhazard.lowerBand[] <- apply(out$cumhazard - quantile95,2,pmax,0)
+                    out$cumhazard.upperBand <- out$cumhazard + quantile95
+                }
 
             }
             if ("survival" %in% type){
                 quantile95 <- colMultiply_cpp(out$survival.se,out$quantile.band)
                 
-                out$survival.lowerBand <- out$survival.upperBand <- matrix(NA, nrow = NROW(out$survival.se), ncol = NCOL(out$survival.se)) 
-                out$survival.lowerBand[] <- apply(out$survival - quantile95,2,pmax,0)
-                out$survival.upperBand[] <- apply(out$survival + quantile95,2,pmin,1)
+                if(ci.logTransform){
+                    out$survival.lowerBand <- exp(-exp(log(-log(out$survival)) - quantile95))
+                    out$survival.upperBand <- exp(-exp(log(-log(out$survival)) + quantile95))
+                }else{
+                    out$survival.lowerBand <- out$survival.upperBand <- matrix(NA, nrow = NROW(out$survival.se), ncol = NCOL(out$survival.se)) 
+                    out$survival.lowerBand[] <- apply(out$survival - quantile95,2,pmax,0)
+                    out$survival.upperBand[] <- apply(out$survival + quantile95,2,pmin,1)
+                }
                 
             }
             
@@ -478,8 +509,10 @@ predictCox <- function(object,
 #' @param new.eXb the linear predictor evaluated for the new observations
 #' @param new.LPdata the variables involved in the linear predictor for the new observations
 #' @param new.strata the strata indicator for the new observations
+#' @param new.cumhazard the cumulative hazard evaluated for the new observations
 #' @param new.survival the survival evaluated for the new observations
 #' @param nVar the number of variables that form the linear predictor
+#' @param logTransform Should the variance/influence function be computed on the log or log(-log) scale
 #' @param export can be "iid" to return the value of the influence function for each observation
 #'                      "se" to return the standard error for a given timepoint
 #'                      
@@ -489,8 +522,8 @@ predictCox <- function(object,
 #' @return A list optionally containing the standard error for the survival, cumulative hazard and hazard.
 seRobustCox <- function(nTimes, type, 
                         Lambda0, iid, object.n, nStrata,
-                        new.eXb, new.LPdata, new.strata, new.survival,
-                        nVar, export){
+                        new.eXb, new.LPdata, new.strata, new.survival, new.cumhazard,
+                        nVar, logTransform, export){
 
   n.new <- length(new.eXb)
   
@@ -518,6 +551,8 @@ seRobustCox <- function(nTimes, type,
   }
   
     for(iObs in 1:n.new){
+        #NOTE: cannot perfom log transformation if hazard %in% type (error in predictCox)
+        
         iObs.strata <- new.strata[iObs]
         X_ICbeta <- iid$ICbeta %*% t(new.LPdata[iObs,,drop=FALSE])
     
@@ -528,7 +563,7 @@ seRobustCox <- function(nTimes, type,
                                   IClambda0 = iid$IChazard[[iObs.strata]],
                                   nVar = nVar)
       if("iid" %in% export){
-        out$hazard.iid[iObs,,] <- t(IF_tempo)
+        out$hazard.iid[iObs,,] <- t(IF_tempo) 
       }    
     }
     
@@ -538,22 +573,35 @@ seRobustCox <- function(nTimes, type,
                                   X_ICbeta = X_ICbeta,
                                   IClambda0 = iid$ICcumhazard[[iObs.strata]],
                                   nVar = nVar)
-      
-      if("iid" %in% export){
-        if("cumhazard" %in% type){out$cumhazard.iid[iObs,,] <- t(IF_tempo)}
-        if("survival" %in% type){out$survival.iid[iObs,,] <- t(rowMultiply_cpp(IF_tempo, scale = new.survival[iObs,,drop=FALSE]))}
+
+      if(logTransform){
+          IF_tempo <- rowScale_cpp(IF_tempo, scale = new.cumhazard[iObs,,drop=FALSE])
+          #factorTempo <- new.survival[iObs,,drop=FALSE]/(new.survival[iObs,,drop=FALSE]*log(new.survival[iObs,,drop=FALSE]))
+          #IF_tempo.survival <- rowMultiply_cpp(IF_tempo, scale = factorTempo)
+          if("iid" %in% export){
+              if("cumhazard" %in% type){out$cumhazard.iid[iObs,,] <-  t(IF_tempo)}
+              if("survival" %in% type){out$survival.iid[iObs,,] <- t(-IF_tempo)}
+          }
+          if("se" %in% export){
+              se_tempo <- sqrt(apply(IF_tempo^2,2,sum))
+              if("cumhazard" %in% type){out$cumhazard.se[iObs,] <- se_tempo}
+              if("survival" %in% type){out$survival.se[iObs,] <- se_tempo}
+          }
+      }else{
+          if("iid" %in% export){
+              if("cumhazard" %in% type){out$cumhazard.iid[iObs,,] <-  t(IF_tempo)}
+              if("survival" %in% type){out$survival.iid[iObs,,] <- t(rowMultiply_cpp(IF_tempo, scale = new.survival[iObs,,drop=FALSE]))}
+          }
+          if("se" %in% export){
+              se_tempo <- sqrt(apply(IF_tempo^2,2,sum))
+              if("cumhazard" %in% type){out$cumhazard.se[iObs,] <- se_tempo}
+              if("survival" %in% type){out$survival.se[iObs,] <- se_tempo * new.survival[iObs,,drop=FALSE]}
+          }
       }
-      if("se" %in% export){
-        se_tempo <- sqrt(apply(IF_tempo^2,2,sum))
-        if("cumhazard" %in% type){out$cumhazard.se[iObs,] <- se_tempo}
-        if("survival" %in% type){out$survival.se[iObs,] <- se_tempo * new.survival[iObs,,drop=FALSE]}
-      }
-     
     }
-    
   }
-  
-  ## export
+
+    ## export
     return(out)
     
 }

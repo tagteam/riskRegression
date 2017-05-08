@@ -5,7 +5,7 @@
 ## Version: 
 ## last-updated: maj  8 2017 (12:10) 
 ##           By: Brice Ozenne
-##     Update #: 191
+##     Update #: 194
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -26,7 +26,7 @@
 #' @param cause the cause of interest
 #' @param conf.level Numeric. Confidence level of the confidence intervals.
 #' @param se Logical. If \code{TRUE} add the standard errors and confidence intervals
-#' corresponding to the output.
+#' to the output.
 #' @param B the number of bootstrap replications used to compute the
 #' confidence intervals. If it equals 0, then Wald-type confidence intervals are computed.
 #' They rely on the standard error estimated using the influence function of the estimator.
@@ -43,7 +43,7 @@
 #'     set.
 #' @param verbose Logical. If \code{TRUE} inform about estimated run
 #'     time.
-#' @param logTransform Should the confidence interval for the ratio be computed using a log-tranformation. Only active if Wald-type confidence intervals are computed.
+#' @param ci.logTransform Should the confidence interval for the ratio be computed using a log-tranformation. Only active if Wald-type confidence intervals are computed.
 #' @param ... passed to predictRisk
 #' @return A list with: point estimates, bootstrap quantile confidence
 #'     intervals model: the CSC model (optional)
@@ -108,7 +108,7 @@ ate <- function(object,
                 handler=c("mclapply","foreach"),
                 mc.cores = 1,
                 verbose=TRUE,
-                logTransform=FALSE,
+                ci.logTransform=FALSE,
                 ...){
     meanRisk=Treatment=ratio=Treatment.A=Treatment.B=b <- NULL
     .=.I <- NULL

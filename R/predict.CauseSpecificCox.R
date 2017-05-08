@@ -17,13 +17,15 @@
 #'     to the output.
 #' @param keep.newdata Logical. If \code{TRUE} add the value of the covariates used to make the prediction in the output list. 
 #' @param keep.strata Logical. If \code{TRUE} add the value of the strata used to make the prediction in the output list. 
-#' @param se Logical. If \code{TRUE} add the standard errors
-#'     corresponding to the output.
-#' @param iid Logical. If \code{TRUE} add the influence function
-#'     corresponding ot the output.
-#' @param nSim.band the number of simulations used to compute the quantiles for the confidence bands.
-#' The quantiles are computed as soon as this number is strictly positive.
+#' @param se Logical. If \code{TRUE} add the standard errors to the output.
+#' @param band Logical. If \code{TRUE} add the confidence band to the output.
+#' @param iid Logical. If \code{TRUE} add the influence function to the output.
+#' @param nSim.band the number of simulations used to compute the quantiles
+#' for the confidence bands.
 #' @param conf.level Level of confidence.
+#' @param ci.logTransform Should the confidence intervals/bands be computed on the
+#' log(-log) scale and be backtransformed.
+#' Otherwise they are computed on the original scale and truncated (if necessary).
 #' @param ... not used
 #' @author Brice Ozenne broz@@sund.ku.dk, Thomas A. Gerds
 #'     tag@@biostat.ku.dk
@@ -53,6 +55,8 @@
 #' x= predict(CSC.fit,newdata=nd,times=1:10,cause=1,se=1L)
 #' px=print(x)
 #' px
+#' x2 = predict(CSC.fit,newdata=nd,times=1:10,cause=1,se=1L,
+#'            ci.logTransform = TRUE)
 #' 
 #' predCSC <- predict(CSC.fit, newdata = d, cause = 2, times = ttt)
 #' predCSC.se <- predict(CSC.fit, newdata = d[1:5,], cause = 2, times = ttt,
@@ -87,8 +91,10 @@ predict.CauseSpecificCox <- function(object,
                                      keep.newdata = 1L,
                                      keep.strata = 1L,
                                      se  = FALSE,
+                                     band = FALSE,
                                      iid = FALSE,
-                                     nSim.band = 0,
+                                     nSim.band = 1e4,
+                                     ci.logTransform = FALSE,
                                      conf.level=0.95,
                                      ...){
     
@@ -125,7 +131,7 @@ predict.CauseSpecificCox <- function(object,
     }
 
     ## Confidence bands
-    if(nSim.band>0){
+    if(band>0){
         iid.save <- iid
         se.save <- se
         iid <- TRUE
@@ -135,7 +141,10 @@ predict.CauseSpecificCox <- function(object,
     # relevant event times to use  
     eventTimes <- eTimes[which(eTimes <= max(times))] 
     if(length(eventTimes) == 0){eventTimes <- min(times)} # at least the first event
-    
+
+    # order prediction times
+    ootimes <- order(order(times))
+
     # predict cumulative cause specific hazards
     new.n <- NROW(newdata)
     nEventTimes <- length(eventTimes)
@@ -282,7 +291,8 @@ predict.CauseSpecificCox <- function(object,
             length(CoxVariableName(m)$lpvars)
         }))
         
-        out.seCSC <- seCSC(hazard = ls.hazard,
+        out.seCSC <- seCSC(cif = CIF,
+                           hazard = ls.hazard,
                            cumhazard = ls.cumhazard,
                            object.time = eventTimes,
                            object.maxtime = apply(M.etimes.max,1,min), 
@@ -296,28 +306,31 @@ predict.CauseSpecificCox <- function(object,
                            cause = which(causes == cause),
                            nCause = nCause,
                            nVar = nVar,
-                           export.se = se,
-                           export.iid = iid)
+                           logTransform = ci.logTransform,
+                           export = c("iid"[iid==TRUE],"se"[se==TRUE]))
     }
     
-    #### export ###
-    ootimes <- order(order(times))
-    out <- list(absRisk = CIF[,ootimes,drop=FALSE])
-
+    #### export ####
+    out <- list(absRisk = CIF[,ootimes,drop=FALSE]) # reorder prediction times
 
     if(se){
         out$absRisk.se <- out.seCSC$se[,ootimes,drop=FALSE]
-        zval <- qnorm(1- (1-conf.level)/2, 0,1)
-        
-        # to keep matrix format even when out$absRisk contains only one line
-        out$absRisk.lower <- out$absRisk.upper <- matrix(NA, nrow = NROW(out$absRisk.se), ncol = NCOL(out$absRisk.se))
-        out$absRisk.lower[] <- apply(out$absRisk - zval*out$absRisk.se,2,pmax,0)
-        out$absRisk.upper[] <- apply(out$absRisk + zval*out$absRisk.se,2,pmin,1)
+        zval <- qnorm(1-(1-conf.level)/2, 0,1)
+
+        if(ci.logTransform){
+            out$absRisk.lower <- exp(-exp(log(-log(out$absRisk)) + zval*out$absRisk.se))
+            out$absRisk.upper <- exp(-exp(log(-log(out$absRisk)) - zval*out$absRisk.se))
+        }else{            
+            # to keep matrix format even when out$absRisk contains only one line
+            out$absRisk.lower <- out$absRisk.upper <- matrix(NA, nrow = NROW(out$absRisk.se), ncol = NCOL(out$absRisk.se))
+            out$absRisk.lower[] <- apply(out$absRisk - zval*out$absRisk.se,2,pmax,0)
+            out$absRisk.upper[] <- apply(out$absRisk + zval*out$absRisk.se,2,pmin,1)
+        }
     }
     if(iid){
         out$absRisk.iid <- out.seCSC$iid[,ootimes,,drop=FALSE]
     }
-    if(nSim.band>0){
+    if(band>0){
         
         out$quantile.band <- confBandCox(iid = out$absRisk.iid,
                                          se = out$absRisk.se,
@@ -331,10 +344,15 @@ predict.CauseSpecificCox <- function(object,
 
         quantile95 <- colMultiply_cpp(out$absRisk.se,out$quantile.band)
                 
-        out$absRisk.lowerBand <- matrix(NA, nrow = NROW(out$absRisk.se), ncol = NCOL(out$absRisk.se))
-        out$absRisk.lowerBand[] <- apply(out$absRisk - quantile95,2,pmax,0)
-        out$absRisk.upperBand <- out$absRisk + quantile95
-
+        if(ci.logTransform){
+            out$absRisk.lowerBand <- exp(-exp(log(-log(out$absRsik)) + quantile95))
+            out$absRisk.upperBand <- exp(-exp(log(-log(out$absRsik)) - quantile95))
+        }else{            
+            out$absRisk.lowerBand <- matrix(NA, nrow = NROW(out$absRisk.se), ncol = NCOL(out$absRisk.se))
+            out$absRisk.lowerBand[] <- apply(out$absRisk - quantile95,2,pmax,0)
+            out$absRisk.upperBand <- out$absRisk + quantile95
+        }
+        
         if(se.save==FALSE){
             out$absRisk.se <- NULL
             out$absRisk.lower <- NULL
@@ -369,6 +387,7 @@ predict.CauseSpecificCox <- function(object,
 #'
 #' @description  Standard error of the absolute risk predicted from cause-specific Cox models.
 #'
+#' @param cif the cumulative incidence function at each prediction time for each individual.
 #' @param hazard list containing the baseline hazard for each cause in a matrix form. Columns correspond to the strata.
 #' @param cumhazard list containing the cumulative baseline hazard for each cause in a matrix form. Columns correspond to the strata.
 #' @param object.time a vector containing all the events regardless to the cause.
@@ -383,10 +402,9 @@ predict.CauseSpecificCox <- function(object,
 #' @param cause the cause of interest.
 #' @param nCause the number of causes.
 #' @param nVar the number of variables that form the linear predictor in each Cox model
-#' @param export.se Logical. If \code{TRUE} add the standard errors
-#'     corresponding to the output.
-#' @param export.iid Logical. If \code{TRUE} add the influence function
-#'     corresponding ot the output.
+#' @param logTransform Should the variance/influence function be computed on the log(-log) scale
+#' @param export can be "iid" to return the value of the influence function for each observation
+#'                      "se" to return the standard error for a given timepoint
 #' 
 #' @examples 
 #' 
@@ -401,17 +419,17 @@ predict.CauseSpecificCox <- function(object,
 #' predCSC <- predict(CSC.fit, newdata = d[1,,drop=FALSE], cause = 2, times = ttt, se = TRUE)
 #'
 #' 
-seCSC <- function(hazard, cumhazard, object.time, object.maxtime, iid,
+seCSC <- function(cif, hazard, cumhazard, object.time, object.maxtime, iid,
                   eXb_h, eXb_cumH, new.LPdata, new.strata, times,
-                  new.n, cause, nCause, nVar, export.iid, export.se){
+                  new.n, cause, nCause, nVar, logTransform, export){
 
     out <- list()
     nEtimes <- length(object.time)
     object.n <- NROW(iid[[1]]$ICbeta)
-    if(export.se){  
+    if("se" %in% export){  
         out$se <- matrix(NA, nrow = new.n, ncol = length(times))
     }
-    if(export.iid){
+    if("iid" %in% export){
         out$iid <- array(NA, dim = c(new.n, length(times), object.n))
     }
     
@@ -445,19 +463,24 @@ seCSC <- function(hazard, cumhazard, object.time, object.maxtime, iid,
           
       }
 
-        CIF.se_tempo <- rowCumSum(rowMultiply_cpp(iIChazard1 - rowMultiply_cpp(iICcumhazard, scale = iHazard1),
-                                                  scale = exp(-iCumHazard)))        
-        CIF.se_tempo <- cbind(0,CIF.se_tempo)[,prodlim::sindex(object.time, eval.times = times)+1,drop=FALSE]
+        IF_tempo <- rowCumSum(rowMultiply_cpp(iIChazard1 - rowMultiply_cpp(iICcumhazard, scale = iHazard1),
+                                              scale = exp(-iCumHazard)))        
+        IF_tempo <- cbind(0,IF_tempo)[,prodlim::sindex(object.time, eval.times = times)+1,drop=FALSE]
         if(any(times > object.maxtime[iObs])){ # add NA after the last event in the strata
-             CIF.se_tempo[,times > object.maxtime[iObs]] <- NA
+             IF_tempo[,times > object.maxtime[iObs]] <- NA
+        }
+
+        if(logTransform){
+            IF_tempo <- rowScale_cpp(IF_tempo, scale = cif[iObs,,drop=FALSE]*log(cif[iObs,,drop=FALSE])) 
         }
         
-        if(export.se){
-            out$se[iObs,] <- sqrt(apply(CIF.se_tempo^2,2,sum))
+        if("se" %in% export){
+            out$se[iObs,] <- sqrt(apply(IF_tempo^2,2,sum))
         }
-        if(export.iid){
-            out$iid[iObs,,] <- t(CIF.se_tempo)
+        if("iid" %in% export){
+            out$iid[iObs,,] <- t(IF_tempo)
         }
+
     }
     return(out)
 }
