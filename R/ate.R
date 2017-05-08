@@ -5,7 +5,7 @@
 ## Version: 
 ## last-updated: maj  8 2017 (12:10) 
 ##           By: Brice Ozenne
-##     Update #: 186
+##     Update #: 191
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -361,9 +361,10 @@ ate <- function(object,
                     sdIF_diff.contrasts[iiCon,] <- apply(iid_diff.contrasts[iiCon,,,drop=FALSE],2,
                                                          function(x){sqrt(sum(x^2))}
                                                          )
-                    
+
+                    # IF(A/B) = IF(A)/B-IF(B)A/B^2
                     iidTempo1 <- aperm(attr(ICrisk[[iCon]],"iid"), c(3,2,1))
-                    term1 <- aperm(sliceScale_cpp(iidTempo1, ICrisk[[iCon]]), c(3,2,1))
+                    term1 <- aperm(sliceScale_cpp(iidTempo1, ICrisk[[iCon2]]), c(3,2,1))
 
                     iidTempo2 <- aperm(attr(ICrisk[[iCon2]],"iid"), c(3,2,1))
                     term2 <- aperm(sliceMultiply_cpp(iidTempo2, ICrisk[[iCon]]/ICrisk[[iCon2]]^2), c(3,2,1))
