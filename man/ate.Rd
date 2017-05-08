@@ -5,8 +5,9 @@
 \title{Compute the average treatment effect using CSC.}
 \usage{
 ate(object, data, treatment, contrasts = NULL, times, cause,
-  conf.level = 0.95, B = 0, nSim.band = 0, seed, handler = c("mclapply",
-  "foreach"), mc.cores = 1, verbose = TRUE, logTransform = TRUE, ...)
+  conf.level = 0.95, se = TRUE, band = FALSE, B = 0, nSim.band = 1000,
+  seed, handler = c("mclapply", "foreach"), mc.cores = 1, verbose = TRUE,
+  logTransform = FALSE, ...)
 }
 \arguments{
 \item{object}{outcome model which describes how event risk depends on treatment and covariates.
@@ -22,14 +23,18 @@ The object carry its own call and have a \code{predictRisk} method. See examples
 
 \item{cause}{the cause of interest}
 
-\item{conf.level}{Numeric. Confidence level of the confidence intervals. Disregarded if negative.}
+\item{conf.level}{Numeric. Confidence level of the confidence intervals.}
+
+\item{se}{Logical. If \code{TRUE} add the standard errors and confidence intervals
+corresponding to the output.}
+
+\item{band}{Logical. If \code{TRUE} add the confidence bands to the output.}
 
 \item{B}{the number of bootstrap replications used to compute the
 confidence intervals. If it equals 0, then Wald-type confidence intervals are computed.
 They rely on the standard error estimated using the influence function of the estimator.}
 
-\item{nSim.band}{the number of simulations used to compute the quantiles for the confidence bands.
-The quantiles are computed as soon as this number is strictly positive.}
+\item{nSim.band}{the number of simulations used to compute the quantiles for the confidence bands.}
 
 \item{seed}{An integer used to generate seeds for bootstrap and to
 achieve reproducibility of the bootstrap confidence intervals.}
@@ -79,10 +84,10 @@ fit$call
 "predictRisk.cph" \%in\% methods("predictRisk")
 
 ateFit=ate(fit, data = dtS, treatment = "X1", contrasts = NULL,
-        times = 5:8, B = 3, y = TRUE, mc.cores=1)
+        times = 5:8, B = 3, y = TRUE,  mc.cores=1)
 
 ateFit=ate(fit, data = dtS, treatment = "X1", contrasts = NULL,
-        times = 5:8, B = 0, y = TRUE, mc.cores=1)
+        times = 5:8, B = 0, y = TRUE, band = TRUE, mc.cores=1)
 
 ## Cause specific cox model
 set.seed(17)
@@ -95,11 +100,11 @@ ate(fitCR, data = dt, treatment = "X1", contrasts = NULL,
         times = 7, cause = 1, B = 2, mc.cores=1)
 
 atefit=ate(fitCR, data = dt, treatment = "X1", contrasts = NULL,
-        times = 1:7, cause = 1, B = 0, mc.cores=1,conf.level=FALSE)
+        times = 1:7, cause = 1, mc.cores=1, se = FALSE, band = FALSE)
 
 \dontrun{
  ate(fitCR, data = dt, treatment = "X1", contrasts = NULL,
-        times = 5:7, cause = 1, B = 0, mc.cores=1)
+        times = 5:7, cause = 1, B = 0, se = TRUE, band = TRUE, mc.cores=1)
 }
 
 }
