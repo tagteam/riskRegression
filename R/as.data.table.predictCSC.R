@@ -33,15 +33,21 @@ as.data.table.predictCSC <- function(x,keep.rownames=FALSE,...){
     nd[,times:=x$times[[tt]]]
     if (!is.null(x$strata))
       nd[,strata:=x$strata]
-    ar <- cbind(x[["absRisk"]][,tt])
-    colnames(ar) <- "absRisk"
+    ar <- cbind(absRisk= x[["absRisk"]][,tt])
+    
+    vec.names <- c("absRisk")
     if (x$se==1L){
       ar <- cbind(ar,
-                  x[["absRisk.se"]][,tt],
-                  x[["absRisk.lower"]][,tt],
-                  x[["absRisk.upper"]][,tt])
-      colnames(ar) <- paste0("absRisk",c("",".se",".lower",".upper"))
+                  absRisk.se=x[["absRisk.se"]][,tt],
+                  absRisk.lower=x[["absRisk.lower"]][,tt],
+                  absRisk.upper=x[["absRisk.upper"]][,tt])
     }
+    if (x$band==1L){
+      ar <- cbind(ar,
+                  absRisk.lowerBand=x[["absRisk.lowerBand"]][,tt],
+                  absRisk.upperBand=x[["absRisk.upperBand"]][,tt])
+    }
+    
     ## setDT(tyc)
     nd <- cbind(nd,ar)
     nd   

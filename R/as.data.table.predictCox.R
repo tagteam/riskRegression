@@ -36,13 +36,22 @@ as.data.table.predictCox <- function(x,keep.rownames=FALSE,...){
       for (name in x$type){
           tyc <- cbind(x[[name]][,tt])
           colnames(tyc) <- name
+          vec.names <- c("")
           if (x$se==1L){
               tyc <- cbind(tyc,
                            x[[paste0(name,".se")]][,tt],
                            x[[paste0(name,".lower")]][,tt],
                            x[[paste0(name,".upper")]][,tt])
-              colnames(tyc) <- paste0(name,c("",".se",".lower",".upper"))
+              vec.names <- c(vec.names,".se",".lower",".upper")
           }
+          if (x$band==1L){
+            tyc <- cbind(tyc,
+                         x[[paste0(name,".lowerBand")]][,tt],
+                         x[[paste0(name,".upperBand")]][,tt])
+            vec.names <- c(vec.names,".lowerBand",".upperBand")
+          }
+          colnames(tyc) <- paste0(name,vec.names)
+          
           ## setDT(tyc)
           nd <- cbind(nd,tyc)
       }

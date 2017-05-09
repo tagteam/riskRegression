@@ -266,20 +266,21 @@ predict2plot <- function(dataL, name.outcome,
                                                     limits = c(0.5, length(uniqueObs) + 0.5))
     }
     if(ci){
-        labelCI <- paste0(conf.level*100,"% confidence interval")
+        labelCI <- paste0(conf.level*100,"% confidence \n interval")
         gg.base <- gg.base + geom_errorbar(data = dataL, aes(ymin = lowerCI, ymax = upperCI, linetype = labelCI))
         gg.base <- gg.base + scale_linetype_manual("",values=setNames(1,labelCI))
     }
     if(band){
-        labelBand <- paste0(conf.level*100,"% confidence band")
+        labelBand <- paste0(conf.level*100,"% confidence \n band")
         gg.base <- gg.base + geom_ribbon(data = dataL_duplicated, aes(ymin = lowerBand, ymax = upperBand, fill = labelBand), alpha = alpha)
         gg.base <- gg.base + scale_fill_manual("", values="grey12")        
     }
     
     if(ci && band){
-        gg.base <- gg.base + ggplot2::guides(group = ggplot2::guide_legend(order = 1),
-                                             se = ggplot2::guide_legend(order = 2),
-                                             fill = ggplot2::guide_legend(order = 3))
+      gg.base <- gg.base + ggplot2::guides(linetype = ggplot2::guide_legend(order = 1),
+                                           fill = ggplot2::guide_legend(order = 2),
+                                           group = ggplot2::guide_legend(order = 3)
+      )
     }
     
     ## export

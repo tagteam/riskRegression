@@ -23,7 +23,7 @@
 #' @param nSim.band the number of simulations used to compute the quantiles
 #' for the confidence bands.
 #' @param conf.level Level of confidence.
-#' @param ci.logTransform Should the confidence intervals/bands be computed on the
+#' @param logTransform Should the confidence intervals/bands be computed on the
 #' log(-log) scale and be backtransformed.
 #' Otherwise they are computed on the original scale and truncated (if necessary).
 #' @param ... not used
@@ -56,7 +56,7 @@
 #' px=print(x)
 #' px
 #' x2 = predict(CSC.fit,newdata=nd,times=1:10,cause=1,se=1L,
-#'            ci.logTransform = TRUE)
+#'            logTransform = TRUE)
 #' 
 #' predCSC <- predict(CSC.fit, newdata = d, cause = 2, times = ttt)
 #' predCSC.se <- predict(CSC.fit, newdata = d[1:5,], cause = 2, times = ttt,
@@ -94,7 +94,7 @@ predict.CauseSpecificCox <- function(object,
                                      band = FALSE,
                                      iid = FALSE,
                                      nSim.band = 1e4,
-                                     ci.logTransform = FALSE,
+                                     logTransform = FALSE,
                                      conf.level=0.95,
                                      ...){
     
@@ -306,7 +306,7 @@ predict.CauseSpecificCox <- function(object,
                            cause = which(causes == cause),
                            nCause = nCause,
                            nVar = nVar,
-                           logTransform = ci.logTransform,
+                           logTransform = logTransform,
                            export = c("iid"[iid==TRUE],"se"[se==TRUE]))
     }
     
@@ -317,7 +317,7 @@ predict.CauseSpecificCox <- function(object,
         out$absRisk.se <- out.seCSC$se[,ootimes,drop=FALSE]
         zval <- qnorm(1-(1-conf.level)/2, 0,1)
 
-        if(ci.logTransform){
+        if(logTransform){
             out$absRisk.lower <- exp(-exp(log(-log(out$absRisk)) + zval*out$absRisk.se))
             out$absRisk.upper <- exp(-exp(log(-log(out$absRisk)) - zval*out$absRisk.se))
         }else{            
@@ -344,7 +344,7 @@ predict.CauseSpecificCox <- function(object,
 
         quantile95 <- colMultiply_cpp(out$absRisk.se,out$quantile.band)
                 
-        if(ci.logTransform){
+        if(logTransform){
             out$absRisk.lowerBand <- exp(-exp(log(-log(out$absRsik)) + quantile95))
             out$absRisk.upperBand <- exp(-exp(log(-log(out$absRsik)) - quantile95))
         }else{            
@@ -375,7 +375,7 @@ predict.CauseSpecificCox <- function(object,
         }
     }
     out$conf.level <- conf.level
-    out <- c(out,list(se=se))
+    out <- c(out,list(se = se, band = band, nSim.band = nSim.band, logTransform = logTransform))
     class(out) <- "predictCSC"
     return(out)
 }

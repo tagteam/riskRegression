@@ -42,7 +42,7 @@
 #' @param nSim.band the number of simulations used to compute the quantiles
 #' for the confidence bands..
 #' @param conf.level Level of confidence.
-#' @param ci.logTransform Should the confidence intervals/bands be computed on the log (hazard) and
+#' @param logTransform Should the confidence intervals/bands be computed on the log (hazard) and
 #' log(-log) (survival) scale and be backtransformed.
 #' Otherwise they are computed on the original scale and truncated (if necessary).
 #' @param ... arguments to be passed to the function \code{iidCox}.
@@ -78,7 +78,7 @@
 #' predictCox(fit,centered=FALSE,type="hazard")
 #' predictCox(fit,centered=TRUE,type="hazard")
 #' predictCox(fit, newdata=nd, times=c(3,8),se=TRUE)
-#' predictCox(fit, newdata=nd, times=c(3,8),se=TRUE, ci.logTransform = TRUE)
+#' predictCox(fit, newdata=nd, times=c(3,8),se=TRUE, logTransform = TRUE)
 #' predictCox(fit, newdata=nd, times = 5,iid=TRUE)
 #' 
 #' cbind(survival::basehaz(fit),predictCox(fit,type="cumhazard")$cumhazard)
@@ -120,7 +120,7 @@ predictCox <- function(object,
                        iid = FALSE,
                        nSim.band = 1e4,
                        conf.level=0.95,
-                       ci.logTransform = FALSE, ...){
+                       logTransform = FALSE, ...){
     status=statusM1=NULL
     
     # {{{ treatment of times and stopping rules
@@ -193,7 +193,7 @@ predictCox <- function(object,
     if(band>0 && "hazard" %in% type){
         stop("confidence bands cannot be computed for the hazard \n")
     }
-    if(ci.logTransform>0 && "hazard" %in% type){
+    if(logTransform>0 && "hazard" %in% type){
         stop("log transformation cannot be applied to the hazard \n")
     } 
     # }}}
@@ -365,7 +365,7 @@ predictCox <- function(object,
                                  Lambda0 = Lambda0, iid = iid.object, object.n = object.n, nStrata = nStrata, 
                                  new.eXb = new.eXb, new.LPdata = new.LPdata, new.strata = new.strata,
                                  new.cumhazard = out$cumhazard, new.survival = out$survival,
-                                 nVar = nVar, logTransform = ci.logTransform,
+                                 nVar = nVar, logTransform = logTransform,
                                  export = c("iid"[iid==TRUE],"se"[se==TRUE]))
             if(iid == TRUE){
                 if ("hazard" %in% type){
@@ -395,7 +395,7 @@ predictCox <- function(object,
                     else
                         out$cumhazard.se <- outSE$cumhazard.se
 
-                    if(ci.logTransform){
+                    if(logTransform){
                         out$cumhazard.lower <- exp(log(out$cumhazard) - zval*out$cumhazard.se)
                         out$cumhazard.upper <- exp(log(out$cumhazard) + zval*out$cumhazard.se)
                     }else{
@@ -410,7 +410,7 @@ predictCox <- function(object,
                     else
                         out$survival.se <- outSE$survival.se
 
-                    if(ci.logTransform){
+                    if(logTransform){
                         out$survival.lower <- exp(-exp(log(-log(out$survival)) + zval*out$survival.se))
                         out$survival.upper <- exp(-exp(log(-log(out$survival)) - zval*out$survival.se))                
                     }else{
@@ -440,7 +440,7 @@ predictCox <- function(object,
                 quantile95 <- colMultiply_cpp(out$cumhazard.se,out$quantile.band)
 
                
-                if(ci.logTransform){
+                if(logTransform){
                     out$cumhazard.lowerBand <- exp(log(out$cumhazard) - zval*quantile95)
                     out$cumhazard.upperBand <- exp(log(out$cumhazard) + zval*quantile95)
                 }else{
@@ -453,7 +453,7 @@ predictCox <- function(object,
             if ("survival" %in% type){
                 quantile95 <- colMultiply_cpp(out$survival.se,out$quantile.band)
                 
-                if(ci.logTransform){
+                if(logTransform){
                     out$survival.lowerBand <- exp(-exp(log(-log(out$survival)) - quantile95))
                     out$survival.upperBand <- exp(-exp(log(-log(out$survival)) + quantile95))
                 }else{
@@ -476,7 +476,7 @@ predictCox <- function(object,
         # {{{ export 
         if (keep.times==TRUE) out <- c(out,list(times=times))
         if (is.strata && keep.strata==TRUE) out <- c(out,list(strata=new.strata))
-        out <- c(out,list(lastEventTime=etimes.max,se=se,type=type, conf.level = conf.level))
+        out <- c(out,list(lastEventTime=etimes.max, se=se, band = band, nSim.band = nSim.band, type=type, conf.level = conf.level, logTransform = logTransform))
         if( keep.newdata==TRUE){
             out$newdata <- newdata[, CoxCovars(object), with = FALSE]
         }

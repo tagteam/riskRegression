@@ -8,7 +8,7 @@ predictCox(object, newdata = NULL, times, centered = TRUE,
   type = c("cumhazard", "survival"), keep.strata = TRUE,
   keep.times = TRUE, keep.newdata = FALSE, se = FALSE, band = FALSE,
   iid = FALSE, nSim.band = 10000, conf.level = 0.95,
-  ci.logTransform = FALSE, ...)
+  logTransform = FALSE, ...)
 }
 \arguments{
 \item{object}{The fitted Cox regression model object either
@@ -61,7 +61,7 @@ for the confidence bands..}
 
 \item{conf.level}{Level of confidence.}
 
-\item{ci.logTransform}{Should the confidence intervals/bands be computed on the log (hazard) and
+\item{logTransform}{Should the confidence intervals/bands be computed on the log (hazard) and
 log(-log) (survival) scale and be backtransformed.
 Otherwise they are computed on the original scale and truncated (if necessary).}
 
@@ -104,7 +104,7 @@ predictCox(fit)
 predictCox(fit,centered=FALSE,type="hazard")
 predictCox(fit,centered=TRUE,type="hazard")
 predictCox(fit, newdata=nd, times=c(3,8),se=TRUE)
-predictCox(fit, newdata=nd, times=c(3,8),se=TRUE, ci.logTransform = TRUE)
+predictCox(fit, newdata=nd, times=c(3,8),se=TRUE, logTransform = TRUE)
 predictCox(fit, newdata=nd, times = 5,iid=TRUE)
 
 cbind(survival::basehaz(fit),predictCox(fit,type="cumhazard")$cumhazard)

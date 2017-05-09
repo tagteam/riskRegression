@@ -43,7 +43,7 @@
 #'     set.
 #' @param verbose Logical. If \code{TRUE} inform about estimated run
 #'     time.
-#' @param ci.logTransform Should the confidence interval for the ratio be computed using a log-tranformation. Only active if Wald-type confidence intervals are computed.
+#' @param logTransform Should the confidence interval for the ratio be computed using a log-tranformation. Only active if Wald-type confidence intervals are computed.
 #' @param ... passed to predictRisk
 #' @return A list with: point estimates, bootstrap quantile confidence
 #'     intervals model: the CSC model (optional)
@@ -108,7 +108,7 @@ ate <- function(object,
                 handler=c("mclapply","foreach"),
                 mc.cores = 1,
                 verbose=TRUE,
-                ci.logTransform=FALSE,
+                logTransform=FALSE,
                 ...){
     meanRisk=Treatment=ratio=Treatment.A=Treatment.B=b <- NULL
     .=.I <- NULL
@@ -409,7 +409,7 @@ ate <- function(object,
                                              time = times)
             
             mrisks[, meanRisk := pointEstimate$meanRisk$meanRisk]
-            if(ci.logTransform){
+            if(logTransform){
                 stop("not implemented yet \n")
                 ##     ratio.lower <- exp(log(pointEstimate$riskComparison$ratio) + qnorm(alpha/2) * sdIF.fct$ratio)
                 ##     ratio.upper <- exp(log(pointEstimate$riskComparison$ratio) + qnorm(1-alpha/2) * sdIF.fct$ratio)
@@ -463,11 +463,13 @@ ate <- function(object,
                 treatment=treatment,
                 contrasts=contrasts,
                 times=times,
+                se = se,
                 n.bootstrap=B,
+                band = band,
+                nSim.band = nSim.band,
                 seeds=bootseeds,
                 conf.level=conf.level,
-                nSim.band = nSim.band,
-                ci.logTransform = ci.logTransform)
+                logTransform = logTransform)
   
     class(out) <- c("ate",class(object))
     out
