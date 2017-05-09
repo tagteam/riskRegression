@@ -6,8 +6,9 @@
 \usage{
 predictCox(object, newdata = NULL, times, centered = TRUE,
   type = c("cumhazard", "survival"), keep.strata = TRUE,
-  keep.times = TRUE, keep.newdata = FALSE, se = FALSE, iid = FALSE,
-  nSim.band = 0, conf.level = 0.95, ...)
+  keep.times = TRUE, keep.newdata = FALSE, se = FALSE, band = FALSE,
+  iid = FALSE, nSim.band = 10000, conf.level = 0.95,
+  ci.logTransform = FALSE, ...)
 }
 \arguments{
 \item{object}{The fitted Cox regression model object either
@@ -49,16 +50,20 @@ to the output.}
 \item{keep.newdata}{Logical. If \code{TRUE} add the value of the
 covariates used to make the prediction in the output list.}
 
-\item{se}{Logical. If \code{TRUE} add the standard error
-corresponding to the output.}
+\item{se}{Logical. If \code{TRUE} add the standard error to the output.}
 
-\item{iid}{Logical. If \code{TRUE} add the influence function
-corresponding to the output.}
+\item{band}{Logical. If \code{TRUE} add the confidence band to the output.}
 
-\item{nSim.band}{the number of simulations used to compute the quantiles for the confidence bands.
-The quantiles are computed as soon as this number is strictly positive.}
+\item{iid}{Logical. If \code{TRUE} add the influence function to the output.}
+
+\item{nSim.band}{the number of simulations used to compute the quantiles
+for the confidence bands..}
 
 \item{conf.level}{Level of confidence.}
+
+\item{ci.logTransform}{Should the confidence intervals/bands be computed on the log (hazard) and
+log(-log) (survival) scale and be backtransformed.
+Otherwise they are computed on the original scale and truncated (if necessary).}
 
 \item{...}{arguments to be passed to the function \code{iidCox}.}
 }
@@ -99,6 +104,7 @@ predictCox(fit)
 predictCox(fit,centered=FALSE,type="hazard")
 predictCox(fit,centered=TRUE,type="hazard")
 predictCox(fit, newdata=nd, times=c(3,8),se=TRUE)
+predictCox(fit, newdata=nd, times=c(3,8),se=TRUE, ci.logTransform = TRUE)
 predictCox(fit, newdata=nd, times = 5,iid=TRUE)
 
 cbind(survival::basehaz(fit),predictCox(fit,type="cumhazard")$cumhazard)

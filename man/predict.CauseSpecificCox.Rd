@@ -6,7 +6,8 @@
 \usage{
 \method{predict}{CauseSpecificCox}(object, newdata, times, cause,
   landmark = NA, keep.times = 1L, keep.newdata = 1L, keep.strata = 1L,
-  se = FALSE, iid = FALSE, nSim.band = 0, conf.level = 0.95, ...)
+  se = FALSE, band = FALSE, iid = FALSE, nSim.band = 10000,
+  ci.logTransform = FALSE, conf.level = 0.95, ...)
 }
 \arguments{
 \item{object}{The fitted cause specific Cox model}
@@ -29,14 +30,18 @@ to the output.}
 
 \item{keep.strata}{Logical. If \code{TRUE} add the value of the strata used to make the prediction in the output list.}
 
-\item{se}{Logical. If \code{TRUE} add the standard errors
-corresponding to the output.}
+\item{se}{Logical. If \code{TRUE} add the standard errors to the output.}
 
-\item{iid}{Logical. If \code{TRUE} add the influence function
-corresponding ot the output.}
+\item{band}{Logical. If \code{TRUE} add the confidence band to the output.}
 
-\item{nSim.band}{the number of simulations used to compute the quantiles for the confidence bands.
-The quantiles are computed as soon as this number is strictly positive.}
+\item{iid}{Logical. If \code{TRUE} add the influence function to the output.}
+
+\item{nSim.band}{the number of simulations used to compute the quantiles
+for the confidence bands.}
+
+\item{ci.logTransform}{Should the confidence intervals/bands be computed on the
+log(-log) scale and be backtransformed.
+Otherwise they are computed on the original scale and truncated (if necessary).}
 
 \item{conf.level}{Level of confidence.}
 
@@ -73,6 +78,8 @@ CSC.fit <- CSC(Hist(time,event)~ X3+X8,data=d, method = "breslow")
 x= predict(CSC.fit,newdata=nd,times=1:10,cause=1,se=1L)
 px=print(x)
 px
+x2 = predict(CSC.fit,newdata=nd,times=1:10,cause=1,se=1L,
+           ci.logTransform = TRUE)
 
 predCSC <- predict(CSC.fit, newdata = d, cause = 2, times = ttt)
 predCSC.se <- predict(CSC.fit, newdata = d[1:5,], cause = 2, times = ttt,

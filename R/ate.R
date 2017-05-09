@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Oct 23 2016 (08:53) 
 ## Version: 
-## last-updated: maj  8 2017 (12:10) 
+## last-updated: maj  9 2017 (09:23) 
 ##           By: Brice Ozenne
-##     Update #: 194
+##     Update #: 197
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -191,6 +191,7 @@ ate <- function(object,
     # }}}
     
     # {{{ Confidence interval
+
     ##### Confidence interval
     if(se || band){
     
@@ -402,12 +403,13 @@ ate <- function(object,
             # }}}
             
             # {{{ compute confidence intervals and bands
+
             crisks <- sdIF.fct[,.(Treatment.A,Treatment.B,time)]
             mrisks <- data.table::data.table(Treatment = pointEstimate$meanRisk$Treatment,
                                              time = times)
             
             mrisks[, meanRisk := pointEstimate$meanRisk$meanRisk]
-            if(logTransform){
+            if(ci.logTransform){
                 stop("not implemented yet \n")
                 ##     ratio.lower <- exp(log(pointEstimate$riskComparison$ratio) + qnorm(alpha/2) * sdIF.fct$ratio)
                 ##     ratio.upper <- exp(log(pointEstimate$riskComparison$ratio) + qnorm(1-alpha/2) * sdIF.fct$ratio)
@@ -437,6 +439,7 @@ ate <- function(object,
                 }
             }            
             mrisks[, meanRisk := NULL]
+
             # }}}
             
             bootseeds <- NULL
@@ -448,6 +451,7 @@ ate <- function(object,
                                               Treatment.B = pointEstimate$riskComparison$Treatment.B,
                                               time = times)
              bootseeds <- NULL
+
              # }}}
          }
 
@@ -463,7 +467,7 @@ ate <- function(object,
                 seeds=bootseeds,
                 conf.level=conf.level,
                 nSim.band = nSim.band,
-                logTransform = logTransform)
+                ci.logTransform = ci.logTransform)
   
     class(out) <- c("ate",class(object))
     out

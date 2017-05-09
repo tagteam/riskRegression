@@ -7,7 +7,7 @@
 ate(object, data, treatment, contrasts = NULL, times, cause,
   conf.level = 0.95, se = TRUE, band = FALSE, B = 0, nSim.band = 1000,
   seed, handler = c("mclapply", "foreach"), mc.cores = 1, verbose = TRUE,
-  logTransform = FALSE, ...)
+  ci.logTransform = FALSE, ...)
 }
 \arguments{
 \item{object}{outcome model which describes how event risk depends on treatment and covariates.
@@ -26,7 +26,7 @@ The object carry its own call and have a \code{predictRisk} method. See examples
 \item{conf.level}{Numeric. Confidence level of the confidence intervals.}
 
 \item{se}{Logical. If \code{TRUE} add the standard errors and confidence intervals
-corresponding to the output.}
+to the output.}
 
 \item{band}{Logical. If \code{TRUE} add the confidence bands to the output.}
 
@@ -51,7 +51,7 @@ set.}
 \item{verbose}{Logical. If \code{TRUE} inform about estimated run
 time.}
 
-\item{logTransform}{Should the confidence interval for the ratio be computed using a log-tranformation. Only active if Wald-type confidence intervals are computed.}
+\item{ci.logTransform}{Should the confidence interval for the ratio be computed using a log-tranformation. Only active if Wald-type confidence intervals are computed.}
 
 \item{...}{passed to predictRisk}
 }

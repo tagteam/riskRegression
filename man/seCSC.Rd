@@ -4,11 +4,13 @@
 \alias{seCSC}
 \title{Standard error of the absolute risk predicted from cause-specific Cox models}
 \usage{
-seCSC(hazard, cumhazard, object.time, object.maxtime, iid, eXb_h, eXb_cumH,
-  new.LPdata, new.strata, times, new.n, cause, nCause, nVar, export.iid,
-  export.se)
+seCSC(cif, hazard, cumhazard, object.time, object.maxtime, iid, eXb_h, eXb_cumH,
+  new.LPdata, new.strata, times, new.n, cause, nCause, nVar, logTransform,
+  export)
 }
 \arguments{
+\item{cif}{the cumulative incidence function at each prediction time for each individual.}
+
 \item{hazard}{list containing the baseline hazard for each cause in a matrix form. Columns correspond to the strata.}
 
 \item{cumhazard}{list containing the cumulative baseline hazard for each cause in a matrix form. Columns correspond to the strata.}
@@ -37,11 +39,10 @@ seCSC(hazard, cumhazard, object.time, object.maxtime, iid, eXb_h, eXb_cumH,
 
 \item{nVar}{the number of variables that form the linear predictor in each Cox model}
 
-\item{export.iid}{Logical. If \code{TRUE} add the influence function
-corresponding ot the output.}
+\item{logTransform}{Should the variance/influence function be computed on the log(-log) scale}
 
-\item{export.se}{Logical. If \code{TRUE} add the standard errors
-corresponding to the output.}
+\item{export}{can be "iid" to return the value of the influence function for each observation
+"se" to return the standard error for a given timepoint}
 }
 \description{
 Standard error of the absolute risk predicted from cause-specific Cox models.
