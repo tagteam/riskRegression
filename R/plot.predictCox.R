@@ -257,7 +257,13 @@ predict2plot <- function(dataL, name.outcome,
     gg.base <- ggplot(mapping = aes_string(x = "time", y = name.outcome, group = "row", color = groupBy))
     gg.base <- gg.base + geom_point(data = dataL_duplicated) + geom_line(data = dataL_duplicated)
     if(groupBy=="row"){
-        gg.base <- gg.base + ggplot2::labs(color="observation")
+        gg.base <- gg.base + ggplot2::labs(color="observation") + theme(legend.key.height=unit(0.1,"npc"),
+                                                                        legend.key.width=unit(0.08,"npc"))
+        
+        # display only integer values
+        uniqueObs <- unique(dataL$row)
+        gg.base <- gg.base + scale_color_continuous(breaks = uniqueObs[seq(1,length(uniqueObs), length.out = min(10,length(uniqueObs)))],
+                                                    limits = c(0.5, length(uniqueObs) + 0.5))
     }
     if(ci){
         labelCI <- paste0(conf.level*100,"% confidence interval")
@@ -275,7 +281,7 @@ predict2plot <- function(dataL, name.outcome,
                                              se = ggplot2::guide_legend(order = 2),
                                              fill = ggplot2::guide_legend(order = 3))
     }
-
+    
     ## export
     ls.export <- list(plot = gg.base,
                       data = dataL,
