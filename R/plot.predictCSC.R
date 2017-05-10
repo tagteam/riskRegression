@@ -5,7 +5,7 @@
 ## Version: 
 ## last-updated: apr 28 2017 (15:41) 
 ##           By: Brice Ozenne
-##     Update #: 56
+##     Update #: 57
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -56,7 +56,7 @@ plot.predictCSC <- function(x,
                             groupBy = "row",
                             reduce.data = FALSE,
                             plot = TRUE,
-                            digits = 2, alpha = 0.1, ...){
+                            digits = 2, alpha = NA, ...){
   
     ## initialize and check        
     possibleGroupBy <- c("row","covariates","strata")

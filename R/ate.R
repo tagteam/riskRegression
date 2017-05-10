@@ -207,8 +207,7 @@ ate <- function(object,
                                " bootstraps / ",
                                mc.cores,
                                " cores = ",
-                               round(estimateTime["user.self"]*B/mc.cores,2)," seconds.\n",
-                               "To reduce computation time you may consider a coarser time grid,\n e.g., round event times to weeks, months or years.\n"))
+                               round(estimateTime["user.self"]*B/mc.cores,2)," seconds.\n"))
             x.cores <- parallel::detectCores()
             if(mc.cores > x.cores){
                 warning("Not enough available cores \n",

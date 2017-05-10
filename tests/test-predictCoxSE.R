@@ -268,69 +268,54 @@ if(require(timereg)){
 
 
 # {{{ Comparaison with mstate
-if(require(mstate)){
-data(aidssi)
-dt.aidssi <- as.data.table(aidssi)
-setkey(dt.aidssi, time)
+if(FALSE){
 
-  ## survival 
-  GS.KM <- as.data.table(Cuminc(time = dt.aidssi$time, status=dt.aidssi$status>0))
-  # m.prodlim <- prodlim(Hist(time, status>0) ~ 1, data = dt.aidssi)
-  # e.prodlim <- predict(m.prodlim, times = GS.KM[["time"]])
-  # quantile(e.prodlim-GS.KM[["Surv"]])
+  library(mstate)
+  library(riskRegression)
+  library(microbenchmark)
   
-  seqTime <- GS.KM[[1]]
-  m.coxph <- coxph(Surv(time, status>0) ~ 1, data =  dt.aidssi, x = TRUE, y = TRUE)
-  e.RR <- predictCox(m.coxph, newdata = dt.aidssi[1], times = seqTime, se = TRUE)
-  print(e.RR)
-
-  # dt.tempo <- rbind(data.table(survival = GS.KM$Surv, time = GS.KM$time, 
-  #                              method = "mstate", n.censor = 0, n.event = 1),
-  #                   data.table(survival = as.data.table(e.RR)[["survival"]], time = GS.KM$time, 
-  #                              method = "riskRegression", n.censor = 0, n.event = 1)
-  # )
-  # butils:::ggSurv.data.table(dt.tempo, survivalVar = "survival", strataVar = "method", timeVar = "time")
+  set.seed(10)
+  d <- sampleData(1e3, outcome = "competing.risk")
   
-  quantile(GS.KM$Surv-as.data.table(e.RR)[["survival"]])
-  quantile(GS.KM$seSurv-as.data.table(e.RR)[["survival.se"]])
   
-## cumulative incidence
-GS.NA <- as.data.table(Cuminc(time = dt.aidssi$time, status=dt.aidssi$status))
-
-m.CSC <- CSC(Hist(time, status) ~ 1, data = dt.aidssi)
-e.RR2 <- predict(m.CSC, newdata = dt.aidssi[1], times = seqTime, se = TRUE, cause = 1)
-e.RR2
-
-quantile(GS.NA[["CI.1"]]-as.data.table(e.RR2)[["absRisk"]])
-quantile(GS.NA[["seCI.1"]]-as.data.table(e.RR2)[["absRisk.se"]])
+  run.mstate <- function(se){
+    newdata.L <- data.frame(X1.1 = c(0, 0), X1.2 = c(0, 0),
+                            trans = c(1, 2), strata = c(1, 2))
+    
+    tmat <- trans.comprisk(2, names = c("0", "1", "2"))
+    d[, event1 := as.numeric(event == 1)]
+    d[, event2 := as.numeric(event == 2)]   
+    dL <- msprep(time = c(NA, "time", "time"),
+                 status = c(NA,"event1", "event2"),
+                 data = d, keep = paste0("X",1:9),
+                 trans = tmat)
+    dL.exp <- expand.covs(dL, "X1")
+    
+    e.coxph <- coxph(Surv(time, status) ~ X1.1 + X1.2 + strata(trans),
+                     data = dL.exp)
+    
+    pred.msfit <- msfit(e.coxph, newdata = newdata.L, trans = tmat, variance = se) # args(msfit)
+    pred.probtrans <- probtrans(pred.msfit,0)[[1]]
+  }
+  
+  run.RR <- function(se){
+    newdata <- data.frame(X1 = 0)
+    e.CSC <- CSC(Hist(time,event)~X1, data = d)
+    pred.RR <- predict(e.CSC, newdata, cause = 1, time = pred.probtrans[,"time"],
+                       keep.newdata = FALSE, se = se)
+  }
+  
+  
+  res.bench <- microbenchmark(run.RR(se = TRUE),
+                              run.mstate(se = TRUE), 
+                              times = 10)
+  
+  pred.RR <- run.RR(se = TRUE)
+  # run.mstate(se = FALSE) ## return an erro
+  pred.probtrans <- run.mstate(se = TRUE)
+  cbind(as.data.table(pred.RR)[,.(times,absRisk,absRisk.se)], 
+        pred.probtrans[,c("time","pstate2","se2")])
+  
+    
 }
 # }}}
-
-# {{{ Cox confidence band
-# package.source("riskRegression", Ccode = TRUE, RorderDescription=FALSE)
-# 
-#   predGS <- predict(m.cox_GS, newdata = d, times = 10)
-#   predRR1 <- predictCox(m.coxph, newdata = d, times = 10, ci = TRUE)
-# 
-#   bandCox(m.coxph,
-#           newdata = d[1:5,],
-#           times = 10)
-# Edrr2 <- predictCox(m.coxph_d2,
-#                     newdata = d[1:5,],
-#                     times = 10,
-#                     ci = TRUE)
-
-
-# }}}
-
-##  ### uniform confidence bands, based on resampling  ## {{{
-##     if (uniform==1) {
-##       mpt <- .C('confBandBasePredict',
-##                 delta = as.double(delta), nObs = as.integer(nobs), nt = as.integer(nt),
-##                 n = as.integer(n), se = as.double(se), mpt = double(n.sim*nobs),
-##                 nSims = as.integer(n.sim), PACKAGE="timereg")$mpt;
-  
-##       mpt <- matrix(mpt,n.sim,nobs,byrow = TRUE);
-##       uband <- apply(mpt,2,percen,per=1-alpha);
-##     } else uband<-NULL; 
-## ## }}}

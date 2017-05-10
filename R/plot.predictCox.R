@@ -5,7 +5,7 @@
 ## Version: 
 ## last-updated: apr 28 2017 (15:36) 
 ##           By: Brice Ozenne
-##     Update #: 258
+##     Update #: 302
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -80,7 +80,7 @@ plot.predictCox <- function(x,
                             groupBy = "row",
                             reduce.data = FALSE,
                             plot = TRUE,
-                            digits = 2, alpha = 0.1, ...){
+                            digits = 2, alpha = NA, ...){
   
   ## initialize and check    
   possibleType <- c("hazard","cumhazard","survival")
@@ -238,7 +238,10 @@ predict2plot <- function(dataL, name.outcome,
     # for CRAN tests
     original <- lowerCI <- upperCI <- lowerBand <- upperBand <- NULL
     #### duplicate observations to obtain step curves ####
-    keep.cols <- unique(c("time",name.outcome,"row",groupBy))
+    keep.cols <- unique(c("time",name.outcome,"row",groupBy,"original"))
+    if(ci){
+        keep.cols <- c(keep.cols,"lowerCI","upperCI")
+    }
     if(band){
         keep.cols <- c(keep.cols,"lowerBand","upperBand")
     }
@@ -249,13 +252,12 @@ predict2plot <- function(dataL, name.outcome,
                                              original = FALSE),
             by = row]
 
-    dataL_duplicated <- rbind(dataL[,unique(keep.cols), with = FALSE],
-                              dtTempo[,unique(keep.cols), with = FALSE])
-
+    dataL <- rbind(dataL[,unique(keep.cols), with = FALSE],
+                   dtTempo[,unique(keep.cols), with = FALSE])
+    
     #### display ####
-
     gg.base <- ggplot(mapping = aes_string(x = "time", y = name.outcome, group = "row", color = groupBy))
-    gg.base <- gg.base + geom_point(data = dataL_duplicated) + geom_line(data = dataL_duplicated)
+    gg.base <- gg.base + geom_point(data = dataL) + geom_line(data = dataL)
     if(groupBy=="row"){
         gg.base <- gg.base + ggplot2::labs(color="observation") + theme(legend.key.height=unit(0.1,"npc"),
                                                                         legend.key.width=unit(0.08,"npc"))
@@ -267,26 +269,42 @@ predict2plot <- function(dataL, name.outcome,
     }
     if(ci){
         labelCI <- paste0(conf.level*100,"% confidence \n interval")
-        gg.base <- gg.base + geom_errorbar(data = dataL, aes(ymin = lowerCI, ymax = upperCI, linetype = labelCI))
-        gg.base <- gg.base + scale_linetype_manual("",values=setNames(1,labelCI))
+        if(!is.na(alpha)){
+            gg.base <- gg.base + geom_errorbar(data = dataL[original==TRUE],
+                                               aes(ymin = lowerCI, ymax = upperCI, linetype = labelCI))
+            gg.base <- gg.base + scale_linetype_manual("",values=setNames(1,labelCI))
+
+        }else{
+            gg.base <- gg.base + geom_ribbon(data = dataL, aes(ymin = lowerCI, ymax = upperCI, linetype = "ci") , fill = NA, color = "black")
+        }
     }
     if(band){
         labelBand <- paste0(conf.level*100,"% confidence \n band")
-        gg.base <- gg.base + geom_ribbon(data = dataL_duplicated, aes(ymin = lowerBand, ymax = upperBand, fill = labelBand), alpha = alpha)
-        gg.base <- gg.base + scale_fill_manual("", values="grey12")        
+        if(!is.na(alpha)){
+            gg.base <- gg.base + geom_ribbon(data = dataL,
+                                             aes(ymin = lowerBand, ymax = upperBand, fill = labelBand),
+                                             alpha = alpha)
+            gg.base <- gg.base + scale_fill_manual("", values="grey12")        
+        }else{
+            gg.base <- gg.base + geom_ribbon(data = dataL, aes(ymin = lowerBand, ymax = upperBand, linetype = "band"), fill = NA, color = "black")
+        }
     }
-    
-    if(ci && band){
-      gg.base <- gg.base + ggplot2::guides(linetype = ggplot2::guide_legend(order = 1),
-                                           fill = ggplot2::guide_legend(order = 2),
-                                           group = ggplot2::guide_legend(order = 3)
-      )
+
+    if(is.na(alpha) && (band || ci)){
+        indexTempo <- which(c(ci,band)==1)
+        gg.base <- gg.base + scale_linetype_manual("", breaks = c("ci","band")[indexTempo],
+                                                   labels = c(labelCI,labelBand)[indexTempo],
+                                                   values = c(1,3)[indexTempo])
+    }else if(ci && band){
+        gg.base <- gg.base + ggplot2::guides(linetype = ggplot2::guide_legend(order = 1),
+                                             fill = ggplot2::guide_legend(order = 2),
+                                             group = ggplot2::guide_legend(order = 3)
+                                             )
     }
     
     ## export
     ls.export <- list(plot = gg.base,
-                      data = dataL,
-                      dataDuplicated = dataL_duplicated)
+                      data = dataL)
     
     return(ls.export)
 }
