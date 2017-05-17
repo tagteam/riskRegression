@@ -8,8 +8,7 @@ using namespace std;
 // [[Rcpp::export]]
 arma::mat predictCIF_cpp(const std::vector<arma::mat>& hazard, 
                          const std::vector<arma::mat>& cumhazard, 
-                         const arma::mat& eXb_h, 
-                         const arma::mat& eXb_cumH, 
+                         const arma::mat& eXb,
                          const arma::mat& strata, 
                          const std::vector<double>& newtimes, 
                          const std::vector<double>& etimes, 
@@ -19,15 +18,16 @@ arma::mat predictCIF_cpp(const std::vector<arma::mat>& hazard,
                          int nNewTimes, 
                          int nData, 
                          int cause, 
-                         int nCause){
+                         int nCause,
+                         bool productLimit){
   
   arma::mat pred_CIF(nData, nNewTimes);
   pred_CIF.fill(NA_REAL);
   
-  double hazard_it;
-  double Allcumhazard_it;
-  double CIF_it;
-  double survival_t0=1;
+  double hazard_it; // hazard for the cause of interest at time t for individual i
+  double survival_it; // overall survival at time t for individual i
+  double CIF_it;// cumulative incidence at time t for individual i
+  double survival_it0=1;// survival at time t0 for individual i
   int iterP; // index of the prediction time
   rowvec strataI(nCause);
    
@@ -36,6 +36,7 @@ arma::mat predictCIF_cpp(const std::vector<arma::mat>& hazard,
     
     CIF_it = 0;
     iterP = 0;
+    survival_it = 1;
     strataI = strata.row(iterI);
 
     for(int iterT=0 ; iterT<nEventTimes; iterT++){ // index of the time in the integral (event time number)
@@ -54,28 +55,37 @@ arma::mat predictCIF_cpp(const std::vector<arma::mat>& hazard,
        } 
       
       // get hazard for the cause of interest
-      hazard_it = hazard[cause](iterT,strataI[cause])*eXb_h(iterI,cause);
+      hazard_it = hazard[cause](iterT,strataI[cause])*eXb(iterI,cause);
       
-      // sum all cumhazard for all causes and exp the result
-      Allcumhazard_it = 0; 
-      for(int iterC=0 ; iterC<nCause; iterC++){
-        Allcumhazard_it += cumhazard[iterC](iterT,strataI[iterC])*eXb_cumH(iterI,iterC);
-      }
+      // sum all cumhazard for all causes times the linear predictor and then take the exponential
+      if(iterT>0){ // it is survival at t- which is computed i.e. the survival at the previous eventtime (censoring does not affect survival)
+        
+        if(productLimit){
+          survival_it *= (1-eXb(iterI,1)*hazard[1](iterT-1,strataI[1]));
+        }else{
+          survival_it = 0; 
+          for(int iterC=0 ; iterC<nCause; iterC++){
+            survival_it += cumhazard[iterC](iterT,strataI[iterC])*eXb(iterI,iterC);
+          }
+          survival_it = exp(-survival_it);
+        }
+        
+      } // otherwise the survival stay at 1
       
       // update the integral
       if(R_IsNA(t0)){
-        CIF_it += exp(-Allcumhazard_it) * hazard_it;  
+        CIF_it += survival_it * hazard_it;  
       }else{// [only for conditional CIF]
         
         // get the survival up to t0 i.e. the survival at etimes just before t0
         if(etimes[iterT]<t0 && iterT<(nEventTimes-1) && etimes[iterT+1]>=t0){
           // NOTE: if iterT = nEventTimes-1 and etimes[iterT]<t0 then the landmark (t0) is after the last event so the CIF will be set to NA (since always etimes[iterT] < t0)
-          survival_t0 = exp(-Allcumhazard_it); 
+          survival_it0 = survival_it; 
         }
         
         if(etimes[iterT] >= t0){ // not needed  newtimes[iterP]>=t0  because newtimes >= etimes see update position above 
           // Rcout << hazard_it << " ("<< iterP << ","<< etimes[iterT] << ","<< newtimes[iterP] << ")";
-          CIF_it += exp(-Allcumhazard_it) * hazard_it / survival_t0;
+          CIF_it += survival_it * hazard_it / survival_it0;
         }
         
       }
