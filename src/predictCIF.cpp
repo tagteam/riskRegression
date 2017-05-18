@@ -19,12 +19,14 @@ arma::mat predictCIF_cpp(const std::vector<arma::mat>& hazard,
                          int nData, 
                          int cause, 
                          int nCause,
+			 bool survtype,
                          bool productLimit){
   
   arma::mat pred_CIF(nData, nNewTimes);
   pred_CIF.fill(NA_REAL);
   
   double hazard_it; // hazard for the cause of interest at time t for individual i
+  double hazard_tempo; // hazard for the cause of interest at time t for individual i
   double survival_it; // overall survival at time t for individual i
   double CIF_it;// cumulative incidence at time t for individual i
   double survival_it0=1;// survival at time t0 for individual i
@@ -60,32 +62,49 @@ arma::mat predictCIF_cpp(const std::vector<arma::mat>& hazard,
       // sum all cumhazard for all causes times the linear predictor and then take the exponential
       if(iterT>0){ // it is survival at t- which is computed i.e. the survival at the previous eventtime (censoring does not affect survival)
         
-        if(productLimit){
-          survival_it *= (1-eXb(iterI,1)*hazard[1](iterT-1,strataI[1]));
-        }else{
-          survival_it = 0; 
-          for(int iterC=0 ; iterC<nCause; iterC++){
-            survival_it += cumhazard[iterC](iterT,strataI[iterC])*eXb(iterI,iterC);
-          }
-          survival_it = exp(-survival_it);
+        if(productLimit){ // product limit - equivalent to mstate
+
+	  if(survtype){ // product limit 
+            survival_it *= (1-eXb(iterI,1)*hazard[1](iterT-1,strataI[1]));
+	  }else{	    
+	    hazard_tempo = 0;
+	    for(int iterC=0 ; iterC<nCause; iterC++){
+	      hazard_tempo += eXb(iterI,iterC)*hazard[iterC](iterT-1,strataI[iterC]);
+	    }
+	    survival_it *= (1-hazard_tempo);
+	  }
+	  
+	}else{
+	  
+	  if(survtype){
+	    survival_it = exp(-cumhazard[1](iterT-1,strataI[1])*eXb(iterI,1));
+	  }else{	     
+	    survival_it = 0; 
+	    for(int iterC=0 ; iterC<nCause; iterC++){
+	      survival_it += cumhazard[iterC](iterT-1,strataI[iterC])*eXb(iterI,iterC);
+	    }
+	    survival_it = exp(-survival_it);
+	  }
+	  
         }
-        
+	
       } // otherwise the survival stay at 1
       
       // update the integral
-      if(R_IsNA(t0)){
-        CIF_it += survival_it * hazard_it;  
+      if(R_IsNA(t0)){	
+        CIF_it += survival_it * hazard_it;
+	
       }else{// [only for conditional CIF]
-        
-        // get the survival up to t0 i.e. the survival at etimes just before t0
-        if(etimes[iterT]<t0 && iterT<(nEventTimes-1) && etimes[iterT+1]>=t0){
+
+	// get the survival up to t0 i.e. the survival at etimes just before t0
+        if(etimes[iterT]>=t0 && ((iterT>1 && etimes[iterT-1]<t0) || iterT == 0)){
           // NOTE: if iterT = nEventTimes-1 and etimes[iterT]<t0 then the landmark (t0) is after the last event so the CIF will be set to NA (since always etimes[iterT] < t0)
-          survival_it0 = survival_it; 
-        }
+          survival_it0 = survival_it;
+	}
         
         if(etimes[iterT] >= t0){ // not needed  newtimes[iterP]>=t0  because newtimes >= etimes see update position above 
           // Rcout << hazard_it << " ("<< iterP << ","<< etimes[iterT] << ","<< newtimes[iterP] << ")";
-          CIF_it += survival_it * hazard_it / survival_it0;
+	  CIF_it += survival_it * hazard_it / survival_it0;
         }
         
       }

@@ -1,8 +1,29 @@
+### test-predictCox_vs_timereg.R --- 
+#----------------------------------------------------------------------
+## author: Brice Ozenne
+## created: maj 18 2017 (09:23) 
+## Version: 
+## last-updated: maj 18 2017 (20:27) 
+##           By: Brice Ozenne
+##     Update #: 17
+#----------------------------------------------------------------------
+## 
+### Commentary: 
+## Compare the iid decomposition (lambda and beta) obtained with iidCox and timereg:
+## Compare the survival and its standard error obtained with iidCox and timereg:
+### Change Log:
+#----------------------------------------------------------------------
+## 
+### Code:
+
 library(prodlim)
 library(riskRegression)
 library(testthat)
 library(rms)
 library(survival)
+library(timereg)
+
+context("Compare predictCox to timereg")
 
 # {{{ data
 set.seed(10)
@@ -29,7 +50,6 @@ setkeyv(dStrata, c("St", "eventtime"))
 
 
 # {{{ models - Gold standard
-if(require(timereg)){
   # {{{ no strata, no interaction, continous
     m.coxph <- coxph(Surv(eventtime, event) ~ X1+X6, data = d, y = TRUE, x = TRUE)
     m.coxph_d2 <- coxph(Surv(eventtime, event) ~ X1+X6, data = d2, y = TRUE, x = TRUE)
@@ -71,15 +91,14 @@ IClambdaCAT_GS <- t(as.data.table(mCAT.cox_GS$B.iid))
   
   mStrata.coxph <- coxph(Surv(eventtime, event) ~ strata(St) + X1 + X6, data = dStrata, y = TRUE, x = TRUE)
   # }}}
-}
+
 # }}}
 
 
-# {{{ Cox influence function
+# {{{ 1- Compare iid decomposition (Cox)
 
-if(require(timereg)){
   
-    # {{{ no strata, no interaction, continous
+  # {{{ 1a- no strata, no interaction, continous
   IC.coxph <- iidCox(m.coxph, keep.times = FALSE)
   ICapprox.coxph <- iidCox(m.coxph, keep.times = FALSE, exact = FALSE)
     
@@ -104,7 +123,7 @@ if(require(timereg)){
     })
     # }}}
   
-  # {{{ before the first event
+  # {{{ 1b- before the first event
   data(Melanoma)
   Melanoma$status[order(Melanoma$time)]
   fitGS <- cox.aalen(Surv(time,status==1)~prop(sex), data=Melanoma)
@@ -122,7 +141,7 @@ if(require(timereg)){
   })
   # }}}
 
-  # {{{ no strata, interactions, continous  
+  # {{{ 1c- no strata, interactions, continous  
   ICI.coxph <- iidCox(mI.coxph, keep.times = FALSE)
   
   test_that("iid beta - interaction",{
@@ -135,11 +154,11 @@ if(require(timereg)){
   
     # }}}
 
-  # {{{ no covariate
+  # {{{ 1d- no covariate
     IC0.coxph <- iidCox(m0.coxph, keep.times = FALSE) # how to test the result
     # }}}
     
-  # {{{ no strata, no interaction, with a categorical variable
+  # {{{ 1e- no strata, no interaction, with a categorical variable
   ICCAT.coxph <- iidCox(mCAT.coxph, keep.times = FALSE)
   
   test_that("iid beta - categorical",{
@@ -153,7 +172,7 @@ if(require(timereg)){
 
     # }}}
 
-  # {{{ no strata but with ties 
+  # {{{ 1f- no strata but with ties 
   
   ICTies.coxph <- iidCox(mTies.coxph, keep.times = FALSE)
   
@@ -168,7 +187,7 @@ if(require(timereg)){
     # })
     # }}}
 
-  # {{{ strata, no interaction, continuous
+  # {{{ 1g - strata, no interaction, continuous
   
   ICStrata.coxph <- iidCox(mStrata.coxph)
   
@@ -196,126 +215,114 @@ if(require(timereg)){
   })
  
     # }}}
-}
+
 
 # }}}
 
-# {{{ Cox predict SE
-    
-if(require(timereg)){
-  
-  # {{{ no strata, no interaction, continous    
-   
-    test_that("predictionsSE",{
-        predGS <- predict(m.cox_GS, newdata = d, times = 10)
-        predRR1 <- predictCox(m.coxph, newdata = d, times = 10, se = TRUE)
-        predRR2 <- predictCox(m.coxph_d2, newdata = d, times = 10, se = TRUE)
 
+# {{{ 3- Compare survival and standard errror of the survival (Cox)
+    
+# {{{ 3a- no strata, no interaction, continous    
+   
+test_that("predictionsSE",{
+    ## at fix time
+    predGS <- predict(m.cox_GS, newdata = d, times = 10)
+    predRR1 <- predictCox(m.coxph, newdata = d, times = 10, se = TRUE)
+    predRR2 <- predictCox(m.coxph_d2, newdata = d, times = 10, se = TRUE)
+
+    expect_equal(as.double(predRR1$survival), as.double(predGS$S0))
+    expect_equal(as.double(predRR2$survival), as.double(predGS$S0))
     
     expect_equal(as.double(predRR1$survival.se), as.double(predGS$se.S0))
     expect_equal(as.double(predRR2$survival.se), as.double(predGS$se.S0))
+
+    # at event time
+    predGS <- predict(m.cox_GS, newdata = d, times = d$eventtime)
+    predRR1 <- predictCox(m.coxph, newdata = d, times = d$eventtime-1e-12, se = TRUE)
+    predRR2 <- predictCox(m.coxph_d2, newdata = d, times = d$eventtime-1e-12, se = TRUE)
+
+    expect_equal(as.double(predRR1$survival), as.double(predGS$S0))
+    expect_equal(as.double(predRR2$survival), as.double(predGS$S0))
     
+    expect_equal(as.double(predRR1$survival.se), as.double(predGS$se.S0))
+    expect_equal(as.double(predRR2$survival.se), as.double(predGS$se.S0))
+
+    # after last event
     predRR1 <- predictCox(m.coxph, newdata = d, times = 1e8, se = TRUE)
+    expect_true(all(is.na(predRR1$survival)))
     expect_true(all(is.na(predRR1$survival.se)))
-    
+
+    # before first event
     predRR1 <- predictCox(m.coxph, newdata = d, times = 1e-8, se = TRUE)
+    expect_true(all(predRR1$survival==1))
     expect_true(all(predRR1$survival.se==0))
-    
+
+    # both
     predRR1 <- predictCox(m.coxph, newdata = d, times = c(1e-8,10,1e8), se = TRUE)
+    expect_true(all(is.na(predRR1$survival[,3])))
+    expect_true(all(predRR1$survival[,1]==1))
     expect_true(all(is.na(predRR1$survival.se[,3])))
     expect_true(all(predRR1$survival.se[,1]==0))
 })
   # }}}
   
 
-  # {{{ no strata, interactions, continous  
+  # {{{ 3b- no strata, interactions, continous  
     test_that("predictionsSE - interaction",{
         predGS <- predict(mI.cox_GS, newdata = d, times = 10)
         predRR1 <- predictCox(mI.coxph, newdata = d, times = 10, se = TRUE)
+        expect_equal(as.double(predRR1$survival), as.double(predGS$S0))
+        expect_equal(as.double(predRR1$survival.se), as.double(predGS$se.S0))
+
+        predGS <- predict(mI.cox_GS, newdata = d, times = d$eventtime)
+        predRR1 <- predictCox(mI.coxph, newdata = d, times = d$eventtime-1e-12, se = TRUE)
+        expect_equal(as.double(predRR1$survival), as.double(predGS$S0))
         expect_equal(as.double(predRR1$survival.se), as.double(predGS$se.S0))
     })
   
     # }}}
     
-  # {{{ no strata, no interaction, with a categorical variable
+  # {{{ 3c- no strata, no interaction, with a categorical variable
     test_that("predictionsSE - categorical",{
         predGS <- predict(mCAT.cox_GS, newdata = d, times = 10)
         predRR1 <- predictCox(mCAT.coxph, newdata = d, times = 10, se = TRUE)
+        expect_equal(as.double(predRR1$survival), as.double(predGS$S0))
+        expect_equal(as.double(predRR1$survival.se), as.double(predGS$se.S0))
+
+        predGS <- predict(mCAT.cox_GS, newdata = d, times = d$eventtime)
+        predRR1 <- predictCox(mCAT.coxph, newdata = d, times = d$eventtime-1e-12, se = TRUE)
+        expect_equal(as.double(predRR1$survival), as.double(predGS$S0))
         expect_equal(as.double(predRR1$survival.se), as.double(predGS$se.S0))
     })
 
     # }}}
 
-  # {{{ strata, no interaction, continuous
+  # {{{ 3d- strata, no interaction, continuous
 
-    test_that("predictionsSE - strata",{
+test_that("predictionsSE - strata",{
     predGS <- predict(mStrata.cox_GS, newdata = dStrata, times = 2)
     predRR1 <- predictCox(mStrata.coxph, newdata = dStrata, times = 2, se = TRUE)
     
+    expect_equal(as.double(predRR1$survival), as.double(predGS$S0))
     expect_equal(as.double(predRR1$survival.se), as.double(predGS$se.S0))
     
     predGS <- predict(mStrata.cox_GS, newdata = dStrata, times = 1:3)
     predRR1 <- predictCox(mStrata.coxph, newdata = dStrata, times = 1:3, se = TRUE)
     
+    expect_equal(as.double(predRR1$survival), as.double(predGS$S0))
+    expect_equal(as.double(predRR1$survival.se), as.double(predGS$se.S0))
+
+    predGS <- predict(mStrata.cox_GS, newdata = dStrata, times = d$eventtime[1:10])
+    predRR1 <- predictCox(mStrata.coxph, newdata = dStrata, times = d$eventtime[1:10]-1e-12, se = TRUE)
+    
+    expect_equal(as.double(predRR1$survival), as.double(predGS$S0))
     expect_equal(as.double(predRR1$survival.se), as.double(predGS$se.S0))
     })
  
-    # }}}
-}
+# }}}
 
 # }}}
 
 
-
-# {{{ Comparaison with mstate
-if(FALSE){
-
-  library(mstate)
-  library(riskRegression)
-  library(microbenchmark)
-  
-  set.seed(10)
-  d <- sampleData(1e3, outcome = "competing.risk")
-  
-  
-  run.mstate <- function(se){
-    newdata.L <- data.frame(X1.1 = c(0, 0), X1.2 = c(0, 0),
-                            trans = c(1, 2), strata = c(1, 2))
-    
-    tmat <- trans.comprisk(2, names = c("0", "1", "2"))
-    d[, event1 := as.numeric(event == 1)]
-    d[, event2 := as.numeric(event == 2)]   
-    dL <- msprep(time = c(NA, "time", "time"),
-                 status = c(NA,"event1", "event2"),
-                 data = d, keep = paste0("X",1:9),
-                 trans = tmat)
-    dL.exp <- expand.covs(dL, "X1")
-    
-    e.coxph <- coxph(Surv(time, status) ~ X1.1 + X1.2 + strata(trans),
-                     data = dL.exp)
-    
-    pred.msfit <- msfit(e.coxph, newdata = newdata.L, trans = tmat, variance = se) # args(msfit)
-    pred.probtrans <- probtrans(pred.msfit,0)[[1]]
-  }
-  
-  run.RR <- function(se){
-    newdata <- data.frame(X1 = 0)
-    e.CSC <- CSC(Hist(time,event)~X1, data = d)
-    pred.RR <- predict(e.CSC, newdata, cause = 1, time = pred.probtrans[,"time"],
-                       keep.newdata = FALSE, se = se)
-  }
-  
-  
-  res.bench <- microbenchmark(run.RR(se = TRUE),
-                              run.mstate(se = TRUE), 
-                              times = 10)
-  
-  pred.RR <- run.RR(se = TRUE)
-  # run.mstate(se = FALSE) ## return an erro
-  pred.probtrans <- run.mstate(se = TRUE)
-  cbind(as.data.table(pred.RR)[,.(times,absRisk,absRisk.se)], 
-        pred.probtrans[,c("time","pstate2","se2")])
-  
-    
-}
-# }}}
+#----------------------------------------------------------------------
+### test-predictCox_vs_timereg.R ends here

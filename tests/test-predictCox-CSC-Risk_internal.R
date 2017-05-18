@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun  6 2016 (09:35) 
 ## Version: 
-## last-updated: apr 28 2017 (15:58) 
+## last-updated: maj 18 2017 (22:21) 
 ##           By: Brice Ozenne
-##     Update #: 40
+##     Update #: 104
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -18,142 +18,12 @@ library(riskRegression)
 library(testthat)
 library(rms)
 library(survival)
+library(mstate)
+tmat <- trans.comprisk(2, names = c("0", "1", "2"))
+
 context("Risk prediction")
 
-#### 1- Comparison between results from riskRegression and pec package ####
-cat("riskRegression vs pec \n")
-
-#### CSC  model
-## predictRisk (predict.CauseSpecificCox function) vs. predictEventProb
-test_that("Extract risks from coxph and cph and CSC objects",{
-    set.seed(10)
-    n <- 300
-    df <- SimCompRisk(n)
-    dn <- SimCompRisk(17)
-    df$time <- round(df$time,2)
-    F1 <- CSC(Hist(time,event) ~ X1+X2,data = df)
-    ttt <- sort(unique(df$time))
-    ## cause 1
-    a <- pec::predictEventProb(F1,times=ttt,newdata=dn,cause=1)
-    b <- riskRegression::predictRisk(F1,times=ttt,newdata=dn,cause=1)
-    attributes(a) <- attributes(b)
-    expect_equal(a,b)
-    ## cause 2
-    a <- pec::predictEventProb(F1,times=ttt,newdata=dn,cause=2)
-    b <- riskRegression::predictRisk(F1,times=ttt,newdata=dn,cause=2)
-    attributes(a) <- attributes(b)
-    expect_equal(a,b)
-    ## Cox object 1
-    a <- pec::predictSurvProb(F1$models[[1]],times=ttt,newdata=dn)
-    b <- 1-riskRegression::predictRisk(F1$model[[1]],times=ttt,newdata=dn)
-    attributes(a) <- attributes(b)
-    expect_equal(a,b)
-    ## Cox object 2
-    a <- pec::predictSurvProb(F1$models[[2]],times=ttt,newdata=dn)
-    b <- 1-riskRegression::predictRisk(F1$model[[2]],times=ttt,newdata=dn)
-    attributes(a) <- attributes(b)
-    expect_equal(a,b)
-})
-
-## fitter and method to handle ties - no strata
-set.seed(10)
-n <- 300
-df <- SimCompRisk(n)
-dn <- SimCompRisk(17)
-seqTime <- c(unique(sort(df$time)), max(df$time) + 1)[1:10] # to be removed in future versions
-for(model in c("coxph","cph")){
-    for(method.ties in c("breslow","efron")){
-        CSC.NS <- CSC(Hist(time,event) ~ X1*X2,data = df, method = method.ties, fitter = model)
-        for(cause in 1:2){ 
-            Event0.NS <- predictRisk(CSC.NS, newdata = dn, times = seqTime, cause = cause)
-            EventTest.NS <- pec::predictEventProb(CSC.NS, newdata = dn, times = seqTime, cause = cause)
-            test_that(paste0("predictRisk vs predictEventProb - no strata, method.ties/method.baseHaz/model/cause = ",method.ties,"/",model,"/",cause,""),{
-                expect_equal(as.numeric(Event0.NS),as.numeric(unlist(EventTest.NS)), tolerance = 1e-8)
-            })
-        }
-    }
-}
-
-## fitter and method to handle ties - with strata
-set.seed(10)
-n <- 300
-df.S <- SimCompRisk(n)
-df.S$time <- round(df.S$time,2)
-df.S$X3 <- rbinom(n, size = 4, prob = rep(0.25,4))
-seqTime <- c(unique(sort(df.S$time)), max(df.S$time) + 1)[1:10] # to be removed in future versions
-for(model in c("coxph","cph")){
-    for(method.ties in c("breslow","efron")){
-        if(model == "coxph"){
-            CSC.S <- CSC(Hist(time,event) ~ strata(X1) + strata(X3) + X2, data = df.S, ties = method.ties, fitter = "coxph")
-        }else if(model == "cph"){
-            CSC.S <- CSC(Hist(time,event) ~ strat(X1) + strat(X3) + X2, data = df.S, ties = method.ties, fitter = "cph")
-        }
-        for(cause in 1:2){ 
-            Event0.S <- predictRisk(CSC.S, newdata = df.S, times = seqTime, cause = cause)
-            EventTest.S <- pec::predictEventProb(CSC.S, newdata = df.S, times = seqTime, cause = cause)
-            test_that(paste0("predictRisk vs predictEventProb - strata, method.ties/method.baseHaz/model/cause = ",method.ties,"/",model,"/",cause,""),{
-                expect_equal(as.numeric(Event0.S),as.numeric(unlist(EventTest.S)), tolerance = 1e-8)
-            })
-        }
-    }
-}
-
-#### Cox model: predictRisk (predictCox function) vs. predictSurvProb
-## no strata
-set.seed(10)
-n <- 100
-df <- SimSurv(n)
-df$time <- round(df$time,1)
-## ttt <- c(seq(0, max(df$time), length.out = 10), max(df$time) + 1)
-ttt <- c(seq(0, max(df$time)/2, length.out = 10))
-for(model in c("coxph","cph")){
-    for(method.ties in c("breslow","efron")){
-        if(model == "coxph"){
-            coxph <- coxph(formula = Surv(time,status) ~ X1 +  X2, data = df, ties = method.ties, x = TRUE, y = TRUE)
-            Surv0 <- predictRisk(coxph, newdata = df, times = ttt)
-        }else{
-            coxph <- cph(formula = Surv(time,status) ~ X1 + X2, data = df, ties = method.ties, surv = TRUE, x = TRUE, y = TRUE)
-            Surv0 <- predictRisk(coxph, newdata = df, times = ttt)
-        }
-        SurvProb <- pec::predictSurvProb(coxph, ttt, newdata = df)
-        test_that(paste0("predictRisk vs predictSurvProb - without strata, method.ties/method.baseHaz/model = ",method.ties,"/",model,""),{
-            expect_equal(object = as.double(Surv0), expected = as.double(1-SurvProb), tolerance=1e-8)
-        })
-        # as.double because predictRisk do not set colnames while predictSurvProb do set times as colnames
-    }
-}
-
-## strata
-set.seed(10)
-n <- 100
-df <- SimSurv(n)
-df$time <- round(df$time,1)
-df$X3 <- rbinom(n, size = 4, prob = rep(0.25,4))
-## ttt <- c(seq(0, max(df$time), length.out = 10), max(df$time) + 1)
-ttt <- c(seq(0, max(df$time), length.out = 10))
-for(model in c("coxph","cph")){
-  ## print(model)
-  for(method.ties in c("breslow","efron")){
-    ## print(method.ties)
-    if(model == "coxph"){
-      fit <- coxph(formula = Surv(time,status) ~ strata(X1) + strata(X3) + X2, data = df, method = method.ties, x = TRUE, y = TRUE)
-      Surv0 <- predictRisk(fit, newdata = df, times = ttt)
-    }else{
-      fit <- cph(formula = Surv(time,status) ~ strat(X1) + strat(X3) + X2, data = df, method = method.ties, surv = TRUE, x = TRUE, y = TRUE)
-      Surv0 <- predictRisk(fit, newdata = df, times = ttt)
-    }
-    SurvProb <- pec::predictSurvProb(fit, ttt, newdata = df)
-    test_that(paste0("predictRisk vs predictSurvProb - without strata, method.ties/model = ",method.ties,"/",model,""),{
-      a <- Surv0
-      b <- 1-SurvProb
-      attributes(a) <- attributes(b)
-      expect_equal(object = a, expected = b, tolerance=1e-6)
-    })
-  }
-}
-
-
-#### 2- [predictCox,CSC] Check prediction after and before the last event ####
+# {{{ 1- [predictCox,CSC] Check prediction after and before the last event 
 cat("prediction before and after the last event \n")
 
 data(Melanoma)
@@ -215,17 +85,24 @@ test_that("Prediction - last event censored",{
   fit.cph <- cph(Surv(time,status == 1) ~ thick*age, data = Melanoma, y = TRUE, x = TRUE)
   fit.CSC <- CSC(Hist(time,status) ~ thick*age, data = Melanoma, fitter = "cph")
 
-  vec.times <- sort(c(Melanoma$time, Melanoma$time+1/2)) 
-  p1 <- predictCox(fit.coxph, times = vec.times, newdata = Melanoma)
-  p2 <- predictCox(fit.cph, times = vec.times, newdata = Melanoma)
-  p3 <- pec::predictSurvProb(fit.coxph, times = vec.times, newdata = Melanoma) # predictSurvProb automatically sort the results
+  vec.times <- sort(c(Melanoma$time, Melanoma$time+1/2))[c(1,10,50,80,125,400,409,410)]
+  p1 <- predictCox(fit.coxph, times = vec.times, newdata = Melanoma[1:5,])
+  p2 <- predictCox(fit.cph, times = vec.times, newdata = Melanoma[1:5,])
+  p3 <- rbind(c(1,0.9901893,0.8210527,0.685011,0.5877866,0.3577521,0.3577521,NA),
+              c(1,0.9969463,0.9406704,0.8892678,0.8480293,0.7269743,0.7269743,NA),
+              c(1,0.9973169,0.9476885,0.9020417,0.8651891,0.7556985,0.7556985,NA),
+              c(1,0.9946451,0.8981872,0.8138074,0.7487177,0.5713246,0.5713246,NA),
+              c(1,0.9830808,0.7108797,0.5195539,0.3986327,0.1687930,0.1687930,NA)
+              )
+  # pec::predictSurvProb(fit.coxph, times = vec.times, newdata = Melanoma[1:5,])            
+  # predictSurvProb automatically sort the results
   
   expect_equal(p1,p2, tolerance = 1e-4)
-  expect_equal(p1$survival, unname(p3))
+  expect_equal(p1$survival, unname(p3), tolerance = 1e-7)
 
-  survLast <- p1$survival[,vec.times==Melanoma$time[nData]]
-  survLastM1 <- p1$survival[,vec.times==Melanoma$time[nData-1]]
-  expect_equal(unname(survLast-survLastM1==0), rep(TRUE, nData)) # check that survival decrease at the last time
+  survLast <- p1$survival[,6]
+  survLastM1 <- p1$survival[,7]
+  expect_equal(unname(survLast-survLastM1==0), rep(TRUE, 5)) # check that survival decrease at the last time
 })
 
 test_that("Prediction - last event is a death",{
@@ -236,17 +113,24 @@ test_that("Prediction - last event is a death",{
   fit.cph <- cph(Surv(time,status == 1) ~ thick*age, data = Melanoma2, y = TRUE, x = TRUE)
   fit.CSC <- CSC(Hist(time,status) ~ thick*age, data = Melanoma2, fitter = "cph")
   
-  vec.times <-  sort(c(Melanoma$time, Melanoma$time+1/2)) 
-  p1 <- predictCox(fit.coxph, times = vec.times, newdata = Melanoma)
-  p2 <- predictCox(fit.cph, times = vec.times, newdata = Melanoma)
-  p3 <- pec::predictSurvProb(fit.coxph, times = vec.times, newdata = Melanoma) # predictSurvProb automatically sort the results
+  vec.times <- sort(c(Melanoma$time, Melanoma$time+1/2))[c(1,10,50,80,125,400,409,410)]
+  p1 <- predictCox(fit.coxph, times = vec.times, newdata = Melanoma[1:5,])
+  p2 <- predictCox(fit.cph, times = vec.times, newdata = Melanoma[1:5,])
+  p3 <-  rbind(c(1, 0.9901893, 0.8210527, 0.6850110, 0.5877866, 0.3577521, 0.020881916, NA),
+               c(1, 0.9969463, 0.9406704, 0.8892678, 0.8480293, 0.7269743, 0.301151229, NA),
+               c(1, 0.9973169, 0.9476885, 0.9020417, 0.8651891, 0.7556985, 0.348439663, NA),
+               c(1, 0.9946451, 0.8981872, 0.8138074, 0.7487177, 0.5713246, 0.121605930, NA),
+               c(1, 0.9830808, 0.7108797, 0.5195539, 0.3986327, 0.1687930, 0.001235699, NA)
+               )
+  #pec::predictSurvProb(fit.coxph, times = vec.times, newdata = Melanoma[1:5,])
+  # predictSurvProb automatically sort the results
   
   expect_equal(p1,p2, tolerance = 1e-4)
-  expect_equal(p1$survival, unname(p3))
+  expect_equal(p1$survival, unname(p3), tolerance = 1e-7)
   
-  survLast <- p1$survival[,vec.times==Melanoma2$time[nData]]
-  survLastM1 <- p1$survival[,vec.times==Melanoma2$time[nData-1]]
-  expect_equal(unname(survLast-survLastM1<0), rep(TRUE, nData)) # check that survival decrease at the last time
+  survLast <- p1$survival[,7]
+  survLastM1 <- p1$survival[,6]
+  expect_equal(unname(survLast-survLastM1<0), rep(TRUE, 5)) # check that survival decrease at the last time
 })
 
 #### strata
@@ -311,37 +195,9 @@ test_that("Prediction with CSC (strata)  - no event before prediction time",{
   prediction <- predict(fit.CSC, times = test.times, newdata = Melanoma[1,,drop = FALSE], cause = 1)
   expect_equal(as.double(prediction$absRisk), 0)
 })
+# }}}
 
-#### 3- [predictCSC] survtype = "survival" ####
-cat("predictCSC, survtype = \"survival\" \n")
-set.seed(10)
-d <- sampleData(3e2, outcome = "competing.risks")
-d$time <- round(d$time,2)
-ttt <- sample(x = unique(sort(d$time)), size = 10) 
-d2 <- d
-times <- sort(c(0,d$time))
-
-test_that("Prediction with CSC (survtype = survival)  - no strata",{
-  CSC.fit <- CSC(Hist(time,event)~ X1+X2+X6,data=d, method = "breslow", survtype = "survival")
-  
-  p1 <- predict(CSC.fit, newdata = d2, times = times, cause = 1)
-  pGS <- pec::predictEventProb(CSC.fit, newdata = d2, times = times, cause = 1)
-  
-  # expect_equal(unname(p1), unname(pGS))
-})
-
-test_that("Prediction with CSC (survtype = survival)  - strata",{
-  CSC.fitS <- CSC(Hist(time,event)~ strata(X1) + X5 + strata(X3) + X7 +X2,data=d, method = "breslow", survtype = "survival")
-  
-  p1 <- predict(CSC.fitS, newdata = d2, times = times, cause = 1)
-  pGS <- pec::predictEventProb(CSC.fitS, newdata = d2, times = times, cause = 1)
-  
-  # expect_equal(max(abs(na.omit(p1 - pGS)))>1e-8,FALSE)
-})
-
-
-
-#### 4- [predictCox] Dealing with weights ####
+# {{{ 2- [predictCox] Dealing with weights
 cat("weigthed Cox model \n")
 set.seed(10)
 data(Melanoma)
@@ -364,9 +220,9 @@ test_that("Prediction with Cox model - weights",{
 
 # expect_equal(diag(res$cumhazard), resGS)
 # expect_equal(diag(resW$cumhazard), resGSW)
+# }}}
 
-
-#### 5- [predictCox,CSC] Check influence of the order of the prediction times ####
+# {{{ 4- [predictCox,CSC] Check influence of the order of the prediction times
 cat("Order of the prediction times \n")
 data(Melanoma)
 times2 <- sort(c(0,0.9*min(Melanoma$time),Melanoma$time[5],max(Melanoma$time)*1.1))
@@ -428,9 +284,9 @@ test_that("Deal with NA in times",{
   expect_error(predictionS <- predictCox(fit.coxph, times = c(times2,NA), newdata = Melanoma))
   expect_error(predictionS <- predict(fit.CSC, times = c(times2,NA), newdata = Melanoma, cause = 1))
 })
+# }}}
 
-
-#### 6- [predictCox] Check baseline hazard ####
+# {{{ 5- [predictCox] Check baseline hazard
 cat("Estimation of the baseline hazard \n")
 data(Melanoma)
 
@@ -482,7 +338,9 @@ test_that("baseline hazard (strata) - match basehaz results",{
   #              tolerance = 100*max(abs(coef(fit.coxph)-coef(fit.cph))))
 })
 
-#### 7- [predictCox] Check format of the output ####
+# }}}
+
+# {{{ 6- [predictCox] Check format of the output
 cat("Format of the output \n")
 data(Melanoma)
 times1 <- unique(Melanoma$time)
@@ -574,10 +432,12 @@ test_that("Prediction with Cox model (strata) - incorrect strata",{
     dataset1$invasion <- "5616"
     expect_error(predictCox(fit.coxph, times = times1, newdata = dataset1))
 })
+# }}}
 
-#### 9- Conditional CIF ####
+# {{{ 7- Conditional CIF 
 cat("Conditional CIF \n")
 
+set.seed(10)
 d <- SimCompRisk(1e2)
 d$time <- round(d$time,1)
 ttt <- sample(x = unique(sort(d$time)), size = 10)
@@ -588,11 +448,11 @@ CSC.fit <- CSC(Hist(time,event)~ X1+X2,data=d, method = "breslow")
 
 test_that("Conditional CIF identical to CIF before first event", {
   pred <- predict(CSC.fit, newdata = d, cause = 2, times = ttt)
-  predC <- predict(CSC.fit, newdata = d, cause = 2, times = ttt, landmark = min(d$time)-1e-1)
+  predC <- predict(CSC.fit, newdata = d, cause = 2, times = ttt, landmark = min(d$time)-1e-5)
   expect_equal(pred, predC)
 
   pred <- predict(CSC.fit, newdata = d2, cause = 2, times = ttt)
-  predC <- predict(CSC.fit, newdata = d2, cause = 2, times = ttt, landmark = min(d$time)-1e-1)
+  predC <- predict(CSC.fit, newdata = d2, cause = 2, times = ttt, landmark = min(d$time)-1e-5)
   expect_equal(pred, predC)
 })
 
@@ -610,26 +470,56 @@ test_that("Conditional CIF is NA after the last event", {
   expect_equal(all(!is.na(predC$absRisk[,ttt0>=t0])), TRUE)
 })
 
+test_that("Value of the conditional CIF | at the last event", {
+    tau <-  max(d[cause==2,time])
+    
+    predC_auto <- predict(CSC.fit, newdata = d2[1:5], cause = 2, times = tau, landmark = tau, productLimit = FALSE)
+    pred <- as.data.table(predictCox(CSC.fit$models[[2]], times = tau, newdata = d2[1:5], type = "hazard"))
+    expect_equal(as.double(predC_auto$absRisk),pred$hazard)
+
+    predC_auto <- predict(CSC.fit, newdata = d2[1:5], cause = 2, times = tau, landmark = tau, productLimit = TRUE)
+    pred <- as.data.table(predictCox(CSC.fit$models[[2]], times = tau, newdata = d2[1:5], type = "hazard"))
+    expect_equal(as.double(predC_auto$absRisk),pred$hazard)
+})
+
 test_that("Value of the conditional CIF", {
-  ttt <- sort(c(0,ttt))
+  sttt <- sort(c(0,ttt))
   indexT0 <- 5
-  
-  cumH1 <- predictCox(CSC.fit$models$`Cause 1`, newdata = d2, times = ttt[indexT0]-1e-6)[["cumhazard"]]
-  cumH2 <- predictCox(CSC.fit$models$`Cause 2`, newdata = d2, times = ttt[indexT0]-1e-6)[["cumhazard"]]
+    
+  # productLimit = FALSE
+  cumH1 <- predictCox(CSC.fit$models$`Cause 1`, newdata = d2, times = sttt[indexT0]-1e-6)[["cumhazard"]]
+  cumH2 <- predictCox(CSC.fit$models$`Cause 2`, newdata = d2, times = sttt[indexT0]-1e-6)[["cumhazard"]]
   Sall <- exp(-cumH1-cumH2)
   
-  predRef <- predict(CSC.fit, newdata = d2, cause = 2, times = ttt[indexT0]-1e-6)
+  predRef <- predict(CSC.fit, newdata = d2, cause = 2, times = sttt[indexT0]-1e-6, productLimit = FALSE)
   
-  pred <- predict(CSC.fit, newdata = d2, cause = 2, times = ttt)
+  pred <- predict(CSC.fit, newdata = d2, cause = 2, times = sttt, productLimit = FALSE)
   predC_manuel <- (pred$absRisk-as.double(predRef$absRisk))/as.double(Sall)
   predC_manuel[,seq(1,indexT0-1)] <- NA
   
-  predC_auto <- predict(CSC.fit, newdata = d2, cause = 2, times = ttt, landmark = ttt[indexT0])
+  predC_auto <- predict(CSC.fit, newdata = d2, cause = 2, times = sttt, landmark = sttt[indexT0], productLimit = FALSE)
   expect_equal(predC_auto$absRisk,predC_manuel)
+  # predC_auto$absRisk - predC_manuel
+
+  # productLimit = TRUE
+  h1 <- predictCox(CSC.fit$models$`Cause 1`, newdata = d2, times = CSC.fit$eventTimes, type = "hazard")[["hazard"]]
+  h2 <- predictCox(CSC.fit$models$`Cause 2`, newdata = d2, times = CSC.fit$eventTimes, type = "hazard")[["hazard"]]
+  Sall <- apply(1-h1-h2,1, function(x){
+      c(1,cumprod(x))[sindex(jump.times = CSC.fit$eventTimes, eval.times = sttt[indexT0]-1e-6)+1]
+  })
+  predRef <- predict(CSC.fit, newdata = d2, cause = 2, times = sttt[indexT0]-1e-6, productLimit = TRUE)
+  
+  pred <- predict(CSC.fit, newdata = d2, cause = 2, times = sttt, productLimit = TRUE)
+  predC_manuel <- sweep(pred$absRisk-as.double(predRef$absRisk), MARGIN = 1, FUN ="/", STATS = as.double(Sall))
+  predC_manuel[,seq(1,indexT0-1)] <- NA
+  
+  predC_auto <- predict(CSC.fit, newdata = d2, cause = 2, times = sttt, landmark = sttt[indexT0], productLimit = TRUE)
+  expect_equal(predC_auto$absRisk,predC_manuel)
+  # predC_auto$absRisk-predC_manuel
 })
+# }}}
 
-
-#### 10 - Delayed entry ####
+# {{{ 8 - Delayed entry 
 cat("Delayed entry \n")
 d <- SimSurv(1e2)
 d$entry <- d$eventtime - abs(rnorm(NROW(d)))
@@ -638,17 +528,28 @@ m.cox <- coxph(Surv(entry,eventtime,status)~X1+X2,data=d, x = TRUE)
 test_that("Prediction with Cox model - delayed entry",{
   expect_error(predictCox(m.cox))
 })
+# }}}
 
-#### 11 - Strata ####
+# {{{ 10 - Strata
 cat("strata \n")
 # check previous issue with strata
 f1 <- coxph(Surv(time,status==1) ~ age+logthick+epicel+strata(sex),data=Melanoma,
             x=TRUE,y=TRUE)
 res <- predictCox(f1,newdata=Melanoma[c(17,101,123),],
                   times=c(7,3,5)*365.25)
+# }}}
 
-#### 12- Others ####
+# {{{ 11- [predictRisk] Others
 cat("Others \n")
+
+set.seed(10)
+n <- 300
+df.S <- SimCompRisk(n)
+df.S$time <- round(df.S$time,2)
+df.S$X3 <- rbinom(n, size = 4, prob = rep(0.25,4))
+method.ties <- "efron"
+cause <- 1
+
 n <- 3
 set.seed(3)
 dn <- SimCompRisk(n)
@@ -688,7 +589,7 @@ predictRisk(CSC.s$models[[1]], newdata = dn, times = c(5,10,15,20), cause = caus
 
 predictRisk(CSC.h$models[[2]], newdata = dn, times = c(5,10,15,20), cause = cause)
 predictRisk(CSC.s$models[[2]], newdata = dn, times = c(5,10,15,20), cause = cause)
-
+# }}}
 
 #----------------------------------------------------------------------
 ### predictRisk.R ends here
