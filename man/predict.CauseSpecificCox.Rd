@@ -7,7 +7,7 @@
 \method{predict}{CauseSpecificCox}(object, newdata, times, cause,
   landmark = NA, keep.times = 1L, keep.newdata = 1L, keep.strata = 1L,
   se = FALSE, band = FALSE, iid = FALSE, nSim.band = 10000,
-  logTransform = FALSE, conf.level = 0.95, ...)
+  logTransform = FALSE, productLimit = TRUE, conf.level = 0.95, ...)
 }
 \arguments{
 \item{object}{The fitted cause specific Cox model}
@@ -42,6 +42,9 @@ for the confidence bands.}
 \item{logTransform}{Should the confidence intervals/bands be computed on the
 log(-log) scale and be backtransformed.
 Otherwise they are computed on the original scale and truncated (if necessary).}
+
+\item{productLimit}{Logical. If true the survival is computed using the product limit estimator.
+Otherwise the exponential approximation is used (i.e. exp(-cumulative hazard)).}
 
 \item{conf.level}{Level of confidence.}
 

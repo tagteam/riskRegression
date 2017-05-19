@@ -6,7 +6,7 @@
 \usage{
 \method{plot}{predictCox}(x, type = NULL, ci = FALSE, band = FALSE,
   groupBy = "row", reduce.data = FALSE, plot = TRUE, digits = 2,
-  alpha = 0.1, ...)
+  alpha = NA, ...)
 }
 \arguments{
 \item{x}{object obtained with the function \code{predictCox}.}
@@ -63,7 +63,7 @@ plot(pred.cox, groupBy = "covariates", reduce.data = TRUE)
 
 m.cox.strata <- coxph(Surv(time,event)~ strata(X1) + strata(X2) + X3 + X6,
 data = d, x = TRUE, y = TRUE)
-pred.cox.strata <- predictCox(m.cox.strata, newdata = d[c(1:5,10,50),],
+pred.cox.strata <- predictCox(m.cox.strata, newdata = d[1,,drop=FALSE],
 time = 1:5, keep.newdata = TRUE)
 plot(pred.cox.strata, type = "survival")
 plot(pred.cox.strata, type = "survival", groupBy = "strata")
@@ -71,16 +71,16 @@ res <- plot(pred.cox.strata, type = "survival",
             groupBy = "covariates")
 
 # customize display
-res$plot + geom_point(data = res$dataDuplicated, size = 3)
+res$plot + geom_point(data = res$data, size = 5)
 
 ## predictions with confidence interval
-pred.cox <- predictCox(m.cox, newdata = d[1:4,],
+pred.cox <- predictCox(m.cox, newdata = d[1,,drop=FALSE],
   times = 1:5, type = "survival", se = TRUE, keep.newdata = TRUE)
 plot(pred.cox, ci = TRUE)
 
 ## predictions with confidence bands
 pred.cox <- predictCox(m.cox, newdata = d[1,,drop=FALSE],
-  times = 1:5, type = "survival", nSim.band = 500, keep.newdata = TRUE)
+  times = 1:5, type = "survival", nSim.band = 500,  band = TRUE, keep.newdata = TRUE)
 plot(pred.cox, band = TRUE)
 
 

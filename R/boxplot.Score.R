@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Aug 15 2016 (09:45) 
 ## Version: 
-## last-updated: Apr 12 2017 (11:53) 
-##           By: Thomas Alexander Gerds
-##     Update #: 77
+## last-updated: maj 19 2017 (16:53) 
+##           By: Brice Ozenne
+##     Update #: 86
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -33,6 +33,8 @@
 #' @param eventLabels Labels for the different events (causes).
 #' @param refline Logical, for \code{type="diff"} only. If \code{TRUE}
 #'     draw a red vertical line at \code{0}.
+#' @param overall Logical. Tag to be documented.
+#' @param add Logical. Tag to be documented.
 #' @param ... not used
 ##' @examples
 ##' # binary outcome
@@ -49,22 +51,24 @@
 ##' ds=sampleData(40,outcome="survival")
 ##' fitconv=coxph(Surv(time,event)~X6,data=ds,x=TRUE,y=TRUE)
 ##' fitnew=coxph(Surv(time,event)~X6+X9,data=ds,x=TRUE,y=TRUE)
+##' \dontrun{ # [ERROR: Error in gzfile(file, "wb") : cannot open the connection]
 ##' scoreobj=Score(list("conventional model"=fitconv,"new model"=fitnew),
 ##'                 formula=Hist(time,event)~1, data=ds,
 ##'                 summary="riskQuantile",metrics=NULL, plots=NULL,
 ##'                 c(0,0.25,0.5,0.75,1),
 ##'                 times=5,nullModel=FALSE)
 ##' boxplot(scoreobj)
-##'
+##' 
 ##' scoreobj1=Score(list("conventional model"=fitconv,"new model"=fitnew),
 ##'                 formula=Hist(time,event)~1, data=ds,
 ##'                 summary="riskQuantile",metrics=NULL, plots=NULL,
 ##'                 times=5,nullModel=FALSE,compare=list(c(2,1)))
 ##' boxplot(scoreobj1)
-##'
+##' }
+##' 
 ##' # competing risks outcome
 ##' library(survival)
-##' data(Melanoma)
+##' data(Melanoma, package = "riskRegression")
 ##' fitconv = CSC(Hist(time,status)~invasion+age+sex,data=Melanoma)
 ##' fitnew = CSC(Hist(time,status)~invasion+age+sex+logthick,data=Melanoma)
 ##' scoreobj=Score(list("Conventional model"=fitconv,"New model"=fitnew),
@@ -107,6 +111,7 @@ boxplot.Score <- function(x,
                           refline=(type=="diff"),
                           add=FALSE,
                           ...){
+    
     times=cause=models=NULL
     fitted <- x$models
     models <- names(x$models)
@@ -116,6 +121,7 @@ boxplot.Score <- function(x,
         else
             type=ifelse(NROW(x$riskQuantile$contrasts)>0,"diff","risk")
     }
+
     if (type=="diff"){
         pframe <- x$riskQuantile$contrasts
     } else{

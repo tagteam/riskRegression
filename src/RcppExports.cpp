@@ -145,15 +145,14 @@ BEGIN_RCPP
 END_RCPP
 }
 // predictCIF_cpp
-arma::mat predictCIF_cpp(const std::vector<arma::mat>& hazard, const std::vector<arma::mat>& cumhazard, const arma::mat& eXb_h, const arma::mat& eXb_cumH, const arma::mat& strata, const std::vector<double>& newtimes, const std::vector<double>& etimes, const std::vector<double>& etimeMax, double t0, int nEventTimes, int nNewTimes, int nData, int cause, int nCause);
-RcppExport SEXP riskRegression_predictCIF_cpp(SEXP hazardSEXP, SEXP cumhazardSEXP, SEXP eXb_hSEXP, SEXP eXb_cumHSEXP, SEXP strataSEXP, SEXP newtimesSEXP, SEXP etimesSEXP, SEXP etimeMaxSEXP, SEXP t0SEXP, SEXP nEventTimesSEXP, SEXP nNewTimesSEXP, SEXP nDataSEXP, SEXP causeSEXP, SEXP nCauseSEXP) {
+arma::mat predictCIF_cpp(const std::vector<arma::mat>& hazard, const std::vector<arma::mat>& cumhazard, const arma::mat& eXb, const arma::mat& strata, const std::vector<double>& newtimes, const std::vector<double>& etimes, const std::vector<double>& etimeMax, double t0, int nEventTimes, int nNewTimes, int nData, int cause, int nCause, bool survtype, bool productLimit);
+RcppExport SEXP riskRegression_predictCIF_cpp(SEXP hazardSEXP, SEXP cumhazardSEXP, SEXP eXbSEXP, SEXP strataSEXP, SEXP newtimesSEXP, SEXP etimesSEXP, SEXP etimeMaxSEXP, SEXP t0SEXP, SEXP nEventTimesSEXP, SEXP nNewTimesSEXP, SEXP nDataSEXP, SEXP causeSEXP, SEXP nCauseSEXP, SEXP survtypeSEXP, SEXP productLimitSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< const std::vector<arma::mat>& >::type hazard(hazardSEXP);
     Rcpp::traits::input_parameter< const std::vector<arma::mat>& >::type cumhazard(cumhazardSEXP);
-    Rcpp::traits::input_parameter< const arma::mat& >::type eXb_h(eXb_hSEXP);
-    Rcpp::traits::input_parameter< const arma::mat& >::type eXb_cumH(eXb_cumHSEXP);
+    Rcpp::traits::input_parameter< const arma::mat& >::type eXb(eXbSEXP);
     Rcpp::traits::input_parameter< const arma::mat& >::type strata(strataSEXP);
     Rcpp::traits::input_parameter< const std::vector<double>& >::type newtimes(newtimesSEXP);
     Rcpp::traits::input_parameter< const std::vector<double>& >::type etimes(etimesSEXP);
@@ -164,7 +163,9 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< int >::type nData(nDataSEXP);
     Rcpp::traits::input_parameter< int >::type cause(causeSEXP);
     Rcpp::traits::input_parameter< int >::type nCause(nCauseSEXP);
-    rcpp_result_gen = Rcpp::wrap(predictCIF_cpp(hazard, cumhazard, eXb_h, eXb_cumH, strata, newtimes, etimes, etimeMax, t0, nEventTimes, nNewTimes, nData, cause, nCause));
+    Rcpp::traits::input_parameter< bool >::type survtype(survtypeSEXP);
+    Rcpp::traits::input_parameter< bool >::type productLimit(productLimitSEXP);
+    rcpp_result_gen = Rcpp::wrap(predictCIF_cpp(hazard, cumhazard, eXb, strata, newtimes, etimes, etimeMax, t0, nEventTimes, nNewTimes, nData, cause, nCause, survtype, productLimit));
     return rcpp_result_gen;
 END_RCPP
 }

@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: feb 27 2017 (10:47) 
 ## Version: 
-## last-updated: apr 28 2017 (15:41) 
+## last-updated: maj 19 2017 (17:45) 
 ##           By: Brice Ozenne
-##     Update #: 57
+##     Update #: 59
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -43,9 +43,9 @@
 #' ## strata
 #' m.SCSC <- CSC(Hist(time,event)~ strata(X1) + strata(X2) + X6,
 #' data = d)
-#' pred.SCSC <- predict(m.SCSC, time = 1:3,
+#' pred.SCSC <- predict(m.SCSC, time = 1:3, newdata = d[1:4,],
 #' cause = 1, se = TRUE, keep.newdata = TRUE, keep.strata = TRUE)
-#' plot(pred.SCSC)
+#' plot(pred.SCSC, groupBy = "strata")
 #'
 #' @method plot predictCSC
 #' 
@@ -73,11 +73,11 @@ plot.predictCSC <- function(x,
              "set argment \'keep.strata\' to TRUE when calling predictCox \n")
     }
   
-    if(ci && "absRisk.se" %in% names(x) == FALSE){
+    if(ci && x$se == FALSE){
         stop("argument \'ci\' cannot be TRUE when no standard error have been computed \n",
              "set argment \'se\' to TRUE when calling predictCox \n")
     }
-    if(band && "quantile.band" %in% names(x) == FALSE){
+    if(band && x$band == FALSE){
         stop("argument \'band\' cannot be TRUE when the quantiles for the confidence bands have not been computed \n",
              "set argment \'nSim.band\' to a positive integer when calling predict.CauseSpecificCox \n")
     }

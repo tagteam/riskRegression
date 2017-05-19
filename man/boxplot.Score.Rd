@@ -21,6 +21,8 @@ calculation of risk differences.}
 
 \item{timepoint}{time point specifying the prediction horizon}
 
+\item{overall}{Logical. Tag to be documented.}
+
 \item{lwd}{line width}
 
 \item{xlim}{x-axis limits}
@@ -36,6 +38,8 @@ status}
 
 \item{refline}{Logical, for \code{type="diff"} only. If \code{TRUE}
 draw a red vertical line at \code{0}.}
+
+\item{add}{Logical. Tag to be documented.}
 
 \item{...}{not used}
 }
@@ -57,6 +61,7 @@ library(survival)
 ds=sampleData(40,outcome="survival")
 fitconv=coxph(Surv(time,event)~X6,data=ds,x=TRUE,y=TRUE)
 fitnew=coxph(Surv(time,event)~X6+X9,data=ds,x=TRUE,y=TRUE)
+\dontrun{ # [ERROR: Error in gzfile(file, "wb") : cannot open the connection]
 scoreobj=Score(list("conventional model"=fitconv,"new model"=fitnew),
                 formula=Hist(time,event)~1, data=ds,
                 summary="riskQuantile",metrics=NULL, plots=NULL,
@@ -69,10 +74,11 @@ scoreobj1=Score(list("conventional model"=fitconv,"new model"=fitnew),
                 summary="riskQuantile",metrics=NULL, plots=NULL,
                 times=5,nullModel=FALSE,compare=list(c(2,1)))
 boxplot(scoreobj1)
+}
 
 # competing risks outcome
 library(survival)
-data(Melanoma)
+data(Melanoma, package = "riskRegression")
 fitconv = CSC(Hist(time,status)~invasion+age+sex,data=Melanoma)
 fitnew = CSC(Hist(time,status)~invasion+age+sex+logthick,data=Melanoma)
 scoreobj=Score(list("Conventional model"=fitconv,"New model"=fitnew),

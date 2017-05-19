@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: maj 18 2017 (09:23) 
 ## Version: 
-## last-updated: maj 18 2017 (22:58) 
+## last-updated: maj 19 2017 (17:46) 
 ##           By: Brice Ozenne
-##     Update #: 114
+##     Update #: 118
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -33,9 +33,9 @@ df1 <- data.frame(time = rep(1:10,2),
 df1$event1 <- as.numeric(df1$event == 1)
 df1$event2 <- as.numeric(df1$event == 2)
 
-dfS1 <- rbind(cbind(df, grp = 1, X2 = 0),
-             cbind(rbind(df,df),grp = 2, X2 = 0),
-             cbind(df, grp = 3, X2 = 0)
+dfS <- rbind(cbind(df1, grp = 1, X2 = 0),
+             cbind(rbind(df1,df1),grp = 2, X2 = 0),
+             cbind(df1, grp = 3, X2 = 0)
              )
 
 ## distinct events
@@ -524,7 +524,7 @@ test_that("predict.CSC(2b) - compare to mstate",{
     CSC.RR2 <- CSC(Hist(time,event)~X1+X2+X16, data = d, survtype = "survival", method = "breslow")
     pred.RR2a <- predict(CSC.RR2, newdata, cause = 1, time = pred.probtrans[,"time"],
                         keep.newdata = FALSE, se = TRUE, productLimit = TRUE)
-    pred.RR2a <- predict(CSC.RR2, newdata, cause = 1, time = pred.probtrans[,"time"],
+    pred.RR2b <- predict(CSC.RR2, newdata, cause = 1, time = pred.probtrans[,"time"],
                         keep.newdata = FALSE, se = TRUE, productLimit = FALSE)
 
 
@@ -613,7 +613,7 @@ df.S$X3 <- rbinom(n, size = 4, prob = rep(0.25,4))
 seqTime <- c(unique(sort(df.S$time)), max(df.S$time) + 1)[c(1,2,5,12,90,125,200,241,267,268)]
 
 test_that("predictCSC with strata",{
-    CSC.S <- CSC(Hist(time,event) ~ strata(X1) + strata(X3) + X2, data = df.S, ties = method.ties, fitter = "coxph")
+    CSC.S <- CSC(Hist(time,event) ~ strata(X1) + strata(X3) + X2, data = df.S, ties = "efron", fitter = "coxph")
 
     ## cause 1
     Event0.S <- predict(CSC.S, newdata = df.S[1:10,], times = seqTime, cause = 1, se = TRUE)

@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Oct 23 2016 (08:53) 
 ## Version: 
-## last-updated: maj  9 2017 (09:23) 
+## last-updated: maj 19 2017 (16:57) 
 ##           By: Brice Ozenne
-##     Update #: 197
+##     Update #: 205
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -110,47 +110,58 @@ ate <- function(object,
                 verbose=TRUE,
                 logTransform=FALSE,
                 ...){
+    
     meanRisk=Treatment=ratio=Treatment.A=Treatment.B=b <- NULL
     .=.I <- NULL
     diff.se=ratio.se=.GRP=lower=upper=diff.lower=diff.upper=diff.p.value=ratio.lower=ratio.upper=ratio.p.value <- NULL
     lowerBand=upperBand=diffBand.lower=diffBand.upper=ratioBand.lower=ratioBand.upper <- NULL
     
     
-  # {{{ Prepare
-  if(band && B>0){
-    stop("the confidence bands cannot be computed when using the bootstrap approach \n",
-         "set argument \'band\' to FALSE to not compute the confidence bands \n",
-         "or set argument \'B\' to 0 to use the influence function instead of the bootstrap\n")
-  }
-  if(treatment %in% names(data) == FALSE){
-    stop("The data set does not seem to have a variable ",treatment," (argument: treatment). \n")
-  }
-  test.CR <- !missing(cause) # test whether the argument cause has been specified, i.e. it is a competing risk model
-  if(test.CR==FALSE){cause <- NA}
+    # {{{ Prepare
+    dots <- list(...)
+    
+    if(band && B>0){
+        stop("the confidence bands cannot be computed when using the bootstrap approach \n",
+             "set argument \'band\' to FALSE to not compute the confidence bands \n",
+             "or set argument \'B\' to 0 to use the influence function instead of the bootstrap\n")
+    }
+    if(treatment %in% names(data) == FALSE){
+        stop("The data set does not seem to have a variable ",treatment," (argument: treatment). \n")
+    }
+    test.CR <- !missing(cause) # test whether the argument cause has been specified, i.e. it is a competing risk model
+    if(test.CR==FALSE){cause <- NA}
   
   data[[treatment]] <- factor(data[[treatment]])
   
-  if(is.null(contrasts)){
-    levels <- levels(data[[treatment]])
-    contrasts <- levels(data[[treatment]])
-    if (length(contrasts)>5) stop("Treatment variable has more than 5 levels.\nIf this is not a mistake,
+    if(is.null(contrasts)){
+        levels <- levels(data[[treatment]])
+        contrasts <- levels(data[[treatment]])
+        if (length(contrasts)>5) stop("Treatment variable has more than 5 levels.\nIf this is not a mistake,
                                    you should use the argument `contrasts'.")
-  }else{levels <- contrasts}
-  n.contrasts <- length(contrasts)
-  n.times <- length(times)
-  n.obs <- NROW(data)
+    }else{levels <- contrasts}
+    n.contrasts <- length(contrasts)
+    n.times <- length(times)
+    n.obs <- NROW(data)
+
+    if("CauseSpecificCox" %in% class(object) && "iid" %in% names(list(...)) == FALSE){
+        if( (B>0 && (se>0||band>0))  || (se==0&&band==0) ){
+            message("The iid decomposition need not to be computed \n",
+                    "The iid argument will be set to FALSE \n")
+            dots <- c(dots, iid = FALSE)
+        }
+    }
     # }}}
     
     # {{{ Checking the model
 
-  # for predictRisk S3-method
-  allmethods <- utils::methods(predictRisk)
-  candidateMethods <- paste("predictRisk",class(object),sep=".")
-  if (all(match(candidateMethods,allmethods,nomatch=0)==0))
-    stop(paste("Could not find predictRisk S3-method for ",class(object),collapse=" ,"),sep="")
-  # for compatibility with resampling
-  if(is.null(object$call))
-    stop(paste("The object does not contain its own call, which is needed to refit the model in the bootstrap loop."))
+    # for predictRisk S3-method
+    allmethods <- utils::methods(predictRisk)
+    candidateMethods <- paste("predictRisk",class(object),sep=".")
+    if (all(match(candidateMethods,allmethods,nomatch=0)==0))
+        stop(paste("Could not find predictRisk S3-method for ",class(object),collapse=" ,"),sep="")
+    # for compatibility with resampling
+    if(is.null(object$call))
+        stop(paste("The object does not contain its own call, which is needed to refit the model in the bootstrap loop."))
 
   # }}}
   
@@ -187,7 +198,7 @@ ate <- function(object,
                                   contrasts=contrasts,
                                   times=times,
                                   cause=cause,
-                                  ...))
+                                  dots))
     # }}}
     
     # {{{ Confidence interval
@@ -236,7 +247,7 @@ ate <- function(object,
                                       contrasts=contrasts,
                                       times=times,
                                       cause=cause,
-                                      ...),
+                                      dots),
                              error = function(x){return(NULL)})
                 })
         
@@ -263,7 +274,7 @@ ate <- function(object,
                                       contrasts=contrasts,
                                       times=times,
                                       cause=cause,
-                                      ...),
+                                      dots),
                              error = function(x){return(NULL)})
                 }, mc.cores = mc.cores)
             }

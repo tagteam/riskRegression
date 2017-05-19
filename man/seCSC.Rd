@@ -4,9 +4,8 @@
 \alias{seCSC}
 \title{Standard error of the absolute risk predicted from cause-specific Cox models}
 \usage{
-seCSC(cif, hazard, cumhazard, object.time, object.maxtime, iid, eXb_h, eXb_cumH,
-  new.LPdata, new.strata, times, new.n, cause, nCause, nVar, logTransform,
-  export)
+seCSC(cif, hazard, cumhazard, object.time, object.maxtime, iid, eXb, new.LPdata,
+  new.strata, times, survtype, new.n, cause, nCause, nVar, logTransform, export)
 }
 \arguments{
 \item{cif}{the cumulative incidence function at each prediction time for each individual.}
@@ -21,15 +20,15 @@ seCSC(cif, hazard, cumhazard, object.time, object.maxtime, iid, eXb_h, eXb_cumH,
 
 \item{iid}{the value of the influence function for each cause}
 
-\item{eXb_h}{a matrix containing the exponential of the linear predictor evaluated for the new observations (rows) for each cause (columns)}
-
-\item{eXb_cumH}{same as before except when considering \code{survtype == "survival"}}
+\item{eXb}{a matrix containing the exponential of the linear predictor evaluated for the new observations (rows) for each cause (columns)}
 
 \item{new.LPdata}{a list of design matrices for the new observations for each cause.}
 
 \item{new.strata}{a matrix containing the strata indicator for each observation and each cause.}
 
 \item{times}{the time points at which to evaluate the predictions.}
+
+\item{survtype}{see the survtype argument of \code{\link{CSC}}.}
 
 \item{new.n}{the number of new observations.}
 

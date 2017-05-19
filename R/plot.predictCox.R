@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: feb 17 2017 (10:06) 
 ## Version: 
-## last-updated: apr 28 2017 (15:36) 
+## last-updated: maj 19 2017 (17:43) 
 ##           By: Brice Ozenne
-##     Update #: 302
+##     Update #: 325
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -50,7 +50,7 @@
 #' 
 #' m.cox.strata <- coxph(Surv(time,event)~ strata(X1) + strata(X2) + X3 + X6,
 #' data = d, x = TRUE, y = TRUE)
-#' pred.cox.strata <- predictCox(m.cox.strata, newdata = d[c(1:5,10,50),],
+#' pred.cox.strata <- predictCox(m.cox.strata, newdata = d[1,,drop=FALSE],
 #' time = 1:5, keep.newdata = TRUE)
 #' plot(pred.cox.strata, type = "survival")
 #' plot(pred.cox.strata, type = "survival", groupBy = "strata")
@@ -58,16 +58,16 @@
 #'             groupBy = "covariates")
 #'
 #' # customize display
-#' res$plot + geom_point(data = res$dataDuplicated, size = 3)
+#' res$plot + geom_point(data = res$data, size = 5)
 #'
 #' ## predictions with confidence interval
-#' pred.cox <- predictCox(m.cox, newdata = d[1:4,],
+#' pred.cox <- predictCox(m.cox, newdata = d[1,,drop=FALSE],
 #'   times = 1:5, type = "survival", se = TRUE, keep.newdata = TRUE)
 #' plot(pred.cox, ci = TRUE)
 #'
 #' ## predictions with confidence bands
 #' pred.cox <- predictCox(m.cox, newdata = d[1,,drop=FALSE],
-#'   times = 1:5, type = "survival", nSim.band = 500, keep.newdata = TRUE)
+#'   times = 1:5, type = "survival", nSim.band = 500,  band = TRUE, keep.newdata = TRUE)
 #' plot(pred.cox, band = TRUE)
 #'
 #' 
@@ -121,12 +121,12 @@ plot.predictCox <- function(x,
          "set argment \'se\' to TRUE when calling predictCox \n")
   }
 
-    if(ci && (paste0(type,".se") %in% names(x) == FALSE)){
+    if(ci && x$se == FALSE){
         stop("argument \'ci\' cannot be TRUE when no standard error have been computed \n",
              "set argment \'se\' to TRUE when calling predictCox \n")
     }
 
-    if(band && ("quantile.band" %in% names(x) == FALSE)){
+    if(band && x$band == FALSE){
         stop("argument \'band\' cannot be TRUE when no quantiles for the confidence bands have not been computed \n",
              "set argment \'nSim.band\' to a positive integer when calling predictCox \n")
     }
@@ -256,45 +256,59 @@ predict2plot <- function(dataL, name.outcome,
                    dtTempo[,unique(keep.cols), with = FALSE])
     
     #### display ####
+    labelCI <- paste0(conf.level*100,"% confidence \n interval")
+    labelBand <- paste0(conf.level*100,"% confidence \n band")
+
     gg.base <- ggplot(mapping = aes_string(x = "time", y = name.outcome, group = "row", color = groupBy))
-    gg.base <- gg.base + geom_point(data = dataL) + geom_line(data = dataL)
+    gg.base <- gg.base + geom_line(data = dataL, size = 2)
     if(groupBy=="row"){
         gg.base <- gg.base + ggplot2::labs(color="observation") + theme(legend.key.height=unit(0.1,"npc"),
                                                                         legend.key.width=unit(0.08,"npc"))
         
         # display only integer values
         uniqueObs <- unique(dataL$row)
-        gg.base <- gg.base + scale_color_continuous(breaks = uniqueObs[seq(1,length(uniqueObs), length.out = min(10,length(uniqueObs)))],
-                                                    limits = c(0.5, length(uniqueObs) + 0.5))
+
+        if(length(uniqueObs)==1){
+            gg.base <- gg.base + scale_color_continuous(guide=FALSE)
+        }else{
+            gg.base <- gg.base + scale_color_continuous(breaks = uniqueObs[seq(1,length(uniqueObs), length.out = min(10,length(uniqueObs)))],
+                                                        limits = c(0.5, length(uniqueObs) + 0.5))
+        }
     }
     if(ci){
-        labelCI <- paste0(conf.level*100,"% confidence \n interval")
         if(!is.na(alpha)){
             gg.base <- gg.base + geom_errorbar(data = dataL[original==TRUE],
                                                aes(ymin = lowerCI, ymax = upperCI, linetype = labelCI))
             gg.base <- gg.base + scale_linetype_manual("",values=setNames(1,labelCI))
 
         }else{
-            gg.base <- gg.base + geom_ribbon(data = dataL, aes(ymin = lowerCI, ymax = upperCI, linetype = "ci") , fill = NA, color = "black")
+            gg.base <- gg.base + geom_line(data = dataL, aes(y = lowerCI, linetype = "ci"), size = 1.2, color = "black")
+            gg.base <- gg.base + geom_line(data = dataL, aes(y = upperCI, linetype = "ci"), size = 1.2, color = "black")
+#            gg.base <- gg.base + geom_ribbon(data = dataL, aes(ymin = lowerCI, ymax = upperCI, linetype = "ci") , fill = NA, color = "black")
         }
     }
     if(band){
-        labelBand <- paste0(conf.level*100,"% confidence \n band")
         if(!is.na(alpha)){
             gg.base <- gg.base + geom_ribbon(data = dataL,
                                              aes(ymin = lowerBand, ymax = upperBand, fill = labelBand),
                                              alpha = alpha)
             gg.base <- gg.base + scale_fill_manual("", values="grey12")        
         }else{
-            gg.base <- gg.base + geom_ribbon(data = dataL, aes(ymin = lowerBand, ymax = upperBand, linetype = "band"), fill = NA, color = "black")
+            gg.base <- gg.base + geom_line(data = dataL, aes(y = lowerBand, linetype = "band"), size = 1.2, color = "black")
+            gg.base <- gg.base + geom_line(data = dataL, aes(y = upperBand, linetype = "band"), size = 1.2, color = "black")
         }
     }
 
     if(is.na(alpha) && (band || ci)){
         indexTempo <- which(c(ci,band)==1)
+        if(band && ci){
+            value <- c(1,2)
+        }else{
+            value <- 1
+        }
         gg.base <- gg.base + scale_linetype_manual("", breaks = c("ci","band")[indexTempo],
                                                    labels = c(labelCI,labelBand)[indexTempo],
-                                                   values = c(1,3)[indexTempo])
+                                                   values = value)
     }else if(ci && band){
         gg.base <- gg.base + ggplot2::guides(linetype = ggplot2::guide_legend(order = 1),
                                              fill = ggplot2::guide_legend(order = 2),

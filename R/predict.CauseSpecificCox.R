@@ -23,6 +23,8 @@
 #' @param nSim.band the number of simulations used to compute the quantiles
 #' for the confidence bands.
 #' @param conf.level Level of confidence.
+#' @param productLimit Logical. If true the survival is computed using the product limit estimator.
+#' Otherwise the exponential approximation is used (i.e. exp(-cumulative hazard)).
 #' @param logTransform Should the confidence intervals/bands be computed on the
 #' log(-log) scale and be backtransformed.
 #' Otherwise they are computed on the original scale and truncated (if necessary).

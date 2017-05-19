@@ -5,7 +5,7 @@
 \title{Plot predictions from a Cause-specific Cox proportional hazard regression}
 \usage{
 \method{plot}{predictCSC}(x, ci = FALSE, band = FALSE, groupBy = "row",
-  reduce.data = FALSE, plot = TRUE, digits = 2, alpha = 0.1, ...)
+  reduce.data = FALSE, plot = TRUE, digits = 2, alpha = NA, ...)
 }
 \arguments{
 \item{x}{object obtained with the function \code{predictCox}.}
@@ -44,9 +44,9 @@ pred.CSC <- predict(m.CSC, newdata = d[1:3,],
 ## strata
 m.SCSC <- CSC(Hist(time,event)~ strata(X1) + strata(X2) + X6,
 data = d)
-pred.SCSC <- predict(m.SCSC, time = 1:3,
+pred.SCSC <- predict(m.SCSC, time = 1:3, newdata = d[1:4,],
 cause = 1, se = TRUE, keep.newdata = TRUE, keep.strata = TRUE)
-plot(pred.SCSC)
+plot(pred.SCSC, groupBy = "strata")
 
 }
 
