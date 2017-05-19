@@ -489,11 +489,15 @@ seCSC <- function(cif, hazard, cumhazard, object.time, object.maxtime, iid,
           
         }
 
+        # set to s-
+        iICcumhazard <- cbind(0,iICcumhazard[,1:(nEtimes-1),drop=FALSE])
+        iCumHazard <- c(0,iCumHazard[1:(nEtimes-1),drop=FALSE])
+
         IF_tempo <- rowCumSum(rowMultiply_cpp(iIChazard1 - rowMultiply_cpp(iICcumhazard, scale = iHazard1),
                                               scale = exp(-iCumHazard)))        
         IF_tempo <- cbind(0,IF_tempo)[,prodlim::sindex(object.time, eval.times = times)+1,drop=FALSE]
         if(any(times > object.maxtime[iObs])){ # add NA after the last event in the strata
-             IF_tempo[,times > object.maxtime[iObs]] <- NA
+            IF_tempo[,times > object.maxtime[iObs]] <- NA
         }
 
         if(logTransform){
