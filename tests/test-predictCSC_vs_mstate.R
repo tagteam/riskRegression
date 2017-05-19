@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: maj 18 2017 (09:23) 
 ## Version: 
-## last-updated: maj 19 2017 (18:44) 
+## last-updated: maj 19 2017 (18:47) 
 ##           By: Brice Ozenne
-##     Update #: 123
+##     Update #: 124
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -137,7 +137,7 @@ expect_equal(as.double(pred.prodlimE$absRisk),
 })
 
 test_that("predict.CSC (1a) - compare to mstate",{
-    for(iData in 1:2){
+    for(iData in 1:2){# iData <- 1
         df <- switch(as.character(iData),
                      "1"=df1,
                      "2"=df2)
@@ -163,7 +163,12 @@ test_that("predict.CSC (1a) - compare to mstate",{
             pred.probtrans <- probtrans(pred.msfit,0)[[1]]
         )
 
-        pred.RR <- predict(CSC.exp, times = pred.probtrans[,"time"], newdata = newdata, cause = 1, productLimit = TRUE)
+        pred.RR <- predict(CSC.exp,
+                           times = pred.probtrans[,"time"],
+                           newdata = newdata,
+                           cause = 1,
+                           se = FALSE,
+                           productLimit = TRUE)
         
         expect_equal(pred.probtrans[,"pstate2"],
                      as.double(pred.RR$absRisk)

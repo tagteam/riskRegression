@@ -370,8 +370,8 @@ predict.CauseSpecificCox <- function(object,
         quantile95 <- colMultiply_cpp(out$absRisk.se,out$quantile.band)
                 
         if(logTransform){
-            out$absRisk.lowerBand <- exp(-exp(log(-log(out$absRsik)) + quantile95))
-            out$absRisk.upperBand <- exp(-exp(log(-log(out$absRsik)) - quantile95))
+            out$absRisk.lowerBand <- exp(-exp(log(-log(out$absRisk)) + quantile95))
+            out$absRisk.upperBand <- exp(-exp(log(-log(out$absRisk)) - quantile95))
         }else{            
             out$absRisk.lowerBand <- matrix(NA, nrow = NROW(out$absRisk.se), ncol = NCOL(out$absRisk.se))
             out$absRisk.lowerBand[] <- apply(out$absRisk - quantile95,2,pmax,0)
