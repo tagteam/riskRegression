@@ -52,10 +52,10 @@ test_that("computation of the quantile for the confidence band of the cumhazard"
                          se = TRUE,
                          band = TRUE,
                          nSim.band = 500,
-                         type = c("cumhazard","survival")
+                         type = c("cumhazard")
                          )
-    expect_equal(resRR,ref)
     expect_equal(predRR$quantile.band,ref)
+    expect_equal(resRR,ref)
 })
 
 # }}}

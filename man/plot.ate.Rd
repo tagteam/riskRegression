@@ -34,7 +34,6 @@ n <- 1e2
 
 ## Cox model
 dtS <- sampleData(n,outcome="survival")
-dtS$X1 <- factor(rbinom(n, prob = c(0.3,0.4) , size = 2), labels = paste0("T",0:2))
 
 fit=cph(formula = Surv(time,event)~ X1+X2,data=dtS,y=TRUE,x=TRUE)
 
@@ -42,7 +41,7 @@ seqTimes <- sort(unique(fit$y[,1]))
 seqTimes5 <-seqTimes[seqTimes>5 & seqTimes<10]
 ateFit <- ate(fit, data = dtS, treatment = "X1", contrasts = NULL,
               times = seqTimes, B = 0, band = TRUE, nSim.band = 500, y = TRUE, mc.cores=1)
-plot(ateFit, band = TRUE)
+plot(ateFit, band = TRUE, ci = TRUE)
 
 }
 
