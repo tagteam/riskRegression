@@ -35,7 +35,6 @@
 #' 
 #' ## Cox model
 #' dtS <- sampleData(n,outcome="survival")
-#' dtS$X1 <- factor(rbinom(n, prob = c(0.3,0.4) , size = 2), labels = paste0("T",0:2))
 #'
 #' fit=cph(formula = Surv(time,event)~ X1+X2,data=dtS,y=TRUE,x=TRUE)
 #'
@@ -43,7 +42,7 @@
 #' seqTimes5 <-seqTimes[seqTimes>5 & seqTimes<10]
 #' ateFit <- ate(fit, data = dtS, treatment = "X1", contrasts = NULL,
 #'               times = seqTimes, B = 0, band = TRUE, nSim.band = 500, y = TRUE, mc.cores=1)
-#' plot(ateFit, band = TRUE)
+#' plot(ateFit, band = TRUE, ci = TRUE)
 #' 
 #' @method plot ate
 #' 
@@ -70,13 +69,15 @@ plot.ate <- function(x,
     ## display
     dataL <- copy(x$meanRisk)
     dataL[,row := as.numeric(as.factor(Treatment))]
+    setnames(dataL, old = c("lower","upper"), new = c("lowerCI","upperCI"))
     
     gg.res <- predict2plot(dataL = dataL,
                            name.outcome = "meanRisk", # must not contain space to avoid error in ggplot2
                            ci = ci, band = band,
                            groupBy = "Treatment",
                            conf.level = x$conf.level,
-                           alpha = alpha)
+                           alpha = alpha,
+                           origin = min(x$time))
   
     gg.res$plot <- gg.res$plot + ggplot2::ylab("average absolute risk")
   

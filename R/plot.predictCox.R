@@ -159,7 +159,8 @@ plot.predictCox <- function(x,
                            band = band,
                            groupBy = groupBy,
                            conf.level = x$conf.level,
-                           alpha = alpha
+                           alpha = alpha,
+                           origin = min(x$times)
                            )
   
   if(plot){
@@ -233,7 +234,7 @@ predict2melt <- function(outcome, name.outcome,
 # {{{ predict2plot
 predict2plot <- function(dataL, name.outcome,
                          ci, band, groupBy,                         
-                         conf.level, alpha){
+                         conf.level, alpha, origin){
 
     # for CRAN tests
     original <- lowerCI <- upperCI <- lowerBand <- upperBand <- NULL
@@ -248,7 +249,7 @@ predict2plot <- function(dataL, name.outcome,
     dataL[, original := TRUE]
 
     dtTempo <- copy(dataL)
-    dtTempo[, (c("time","original")) := list(time = c(0,.SD$time[-.N] + .Machine$double.eps*100),
+    dtTempo[, (c("time","original")) := list(time = c(origin,.SD$time[-.N] + .Machine$double.eps*100),
                                              original = FALSE),
             by = row]
 

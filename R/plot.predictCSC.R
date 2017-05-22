@@ -110,7 +110,8 @@ plot.predictCSC <- function(x,
                            band = band,
                            groupBy = groupBy,
                            conf.level = x$conf.level,
-                           alpha = alpha
+                           alpha = alpha,
+                           origin = min(x$time)
                            )
     
   gg.res$plot <- gg.res$plot + ggplot2::ylab("absolute risk")
