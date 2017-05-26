@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: maj 18 2017 (09:23) 
 ## Version: 
-## last-updated: maj 18 2017 (20:27) 
+## last-updated: maj 26 2017 (17:19) 
 ##           By: Brice Ozenne
-##     Update #: 17
+##     Update #: 23
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -47,7 +47,6 @@ dStrata$St <- rbinom(n = NROW(d), size = 2, prob = c(1/3,1/2)) # strata
 dStrata2 <- copy(dStrata)
 setkeyv(dStrata, c("St", "eventtime"))
 # }}}
-
 
 # {{{ models - Gold standard
   # {{{ no strata, no interaction, continous
@@ -98,48 +97,48 @@ IClambdaCAT_GS <- t(as.data.table(mCAT.cox_GS$B.iid))
 # {{{ 1- Compare iid decomposition (Cox)
 
   
-  # {{{ 1a- no strata, no interaction, continous
-  IC.coxph <- iidCox(m.coxph, keep.times = FALSE)
-  ICapprox.coxph <- iidCox(m.coxph, keep.times = FALSE, exact = FALSE)
+# {{{ 1a- no strata, no interaction, continous
+IC.coxph <- iidCox(m.coxph, keep.times = FALSE)
+ICapprox.coxph <- iidCox(m.coxph, keep.times = FALSE, exact = FALSE)
     
-  IC.coxph_d2 <- iidCox(m.coxph_d2, keep.times = FALSE)
+IC.coxph_d2 <- iidCox(m.coxph_d2, keep.times = FALSE)
   
-  IC.cph <- iidCox(m.cph, keep.times = FALSE)
+IC.cph <- iidCox(m.cph, keep.times = FALSE)
   
-  test_that("iid beta",{
+test_that("iid beta",{
     expect_equal(unname(IC.coxph$ICbeta),m.cox_GS$gamma.iid)
     expect_equal(unname(IC.coxph$ICbeta),unname(IC.coxph_d2$ICbeta[order(d2$eventtime),]))
     expect_equal(unname(IC.cph$ICbeta),m.cox_GS$gamma.iid, tol = 1e-2)
 
     expect_equal(unname(ICapprox.coxph$ICbeta),m.cox_GSapprox$gamma.iid)
-  })
+})
   
-    test_that("iid lambda0",{
-        expect_equal(as.double(IC.coxph$ICcumhazard[[1]]), as.double(IClambda_GS[,-1]))
-        expect_equal(as.double(IC.coxph$ICcumhazard[[1]]), as.double(IC.coxph_d2$ICcumhazard[[1]][order(d2$eventtime),]))
-        expect_equal(as.double(IC.cph$ICcumhazard[[1]]), as.double(IClambda_GS[,-1]), tol = 1e-4)
+test_that("iid lambda0",{
+    expect_equal(as.double(IC.coxph$ICcumhazard[[1]]), as.double(IClambda_GS[,-1]))
+    expect_equal(as.double(IC.coxph$ICcumhazard[[1]]), as.double(IC.coxph_d2$ICcumhazard[[1]][order(d2$eventtime),]))
+    expect_equal(as.double(IC.cph$ICcumhazard[[1]]), as.double(IClambda_GS[,-1]), tol = 1e-4)
 
-        expect_equal(as.double(ICapprox.coxph$ICcumhazard[[1]]), as.double(IClambda_GSapprox[,-1]))
-    })
-    # }}}
+    expect_equal(as.double(ICapprox.coxph$ICcumhazard[[1]]), as.double(IClambda_GSapprox[,-1]))
+})
+# }}}
   
-  # {{{ 1b- before the first event
-  data(Melanoma)
-  Melanoma$status[order(Melanoma$time)]
-  fitGS <- cox.aalen(Surv(time,status==1)~prop(sex), data=Melanoma)
-  ICGS_lambda0 <- t(as.data.table(fitGS$B.iid))
+# {{{ 1b- before the first event
+data(Melanoma)
+Melanoma$status[order(Melanoma$time)]
+fitGS <- cox.aalen(Surv(time,status==1)~prop(sex), data=Melanoma)
+ICGS_lambda0 <- t(as.data.table(fitGS$B.iid))
   
-  fit1 <- coxph(Surv(time,status==1)~sex, data=Melanoma, x=TRUE, y=TRUE)
-  iid1 <- iidCox(fit1)
+fit1 <- coxph(Surv(time,status==1)~sex, data=Melanoma, x=TRUE, y=TRUE)
+iid1 <- iidCox(fit1)
   
-  test_that("iid beta - start with censoring",{
+test_that("iid beta - start with censoring",{
     expect_equal(unname(iid1$ICbeta),fitGS$gamma.iid)
-  })
+})
   
-  test_that("iid lambda0 - start with censoring",{
+test_that("iid lambda0 - start with censoring",{
     expect_equal(as.double(iid1$ICcumhazard[[1]]), as.double(ICGS_lambda0[,-1]))
-  })
-  # }}}
+})
+# }}}
 
   # {{{ 1c- no strata, interactions, continous  
   ICI.coxph <- iidCox(mI.coxph, keep.times = FALSE)
@@ -238,8 +237,8 @@ test_that("predictionsSE",{
 
     # at event time
     predGS <- predict(m.cox_GS, newdata = d, times = d$eventtime)
-    predRR1 <- predictCox(m.coxph, newdata = d, times = d$eventtime-1e-12, se = TRUE)
-    predRR2 <- predictCox(m.coxph_d2, newdata = d, times = d$eventtime-1e-12, se = TRUE)
+    predRR1 <- predictCox(m.coxph, newdata = d, times = d$eventtime, se = TRUE)
+    predRR2 <- predictCox(m.coxph_d2, newdata = d, times = d$eventtime, se = TRUE)
 
     expect_equal(as.double(predRR1$survival), as.double(predGS$S0))
     expect_equal(as.double(predRR2$survival), as.double(predGS$S0))
@@ -267,37 +266,37 @@ test_that("predictionsSE",{
   # }}}
   
 
-  # {{{ 3b- no strata, interactions, continous  
-    test_that("predictionsSE - interaction",{
-        predGS <- predict(mI.cox_GS, newdata = d, times = 10)
-        predRR1 <- predictCox(mI.coxph, newdata = d, times = 10, se = TRUE)
-        expect_equal(as.double(predRR1$survival), as.double(predGS$S0))
-        expect_equal(as.double(predRR1$survival.se), as.double(predGS$se.S0))
+# {{{ 3b- no strata, interactions, continous  
+test_that("predictionsSE - interaction",{
+    predGS <- predict(mI.cox_GS, newdata = d, times = 10)
+    predRR1 <- predictCox(mI.coxph, newdata = d, times = 10, se = TRUE)
+    expect_equal(as.double(predRR1$survival), as.double(predGS$S0))
+    expect_equal(as.double(predRR1$survival.se), as.double(predGS$se.S0))
 
-        predGS <- predict(mI.cox_GS, newdata = d, times = d$eventtime)
-        predRR1 <- predictCox(mI.coxph, newdata = d, times = d$eventtime-1e-12, se = TRUE)
-        expect_equal(as.double(predRR1$survival), as.double(predGS$S0))
-        expect_equal(as.double(predRR1$survival.se), as.double(predGS$se.S0))
-    })
+    predGS <- predict(mI.cox_GS, newdata = d, times = d$eventtime)
+    predRR1 <- predictCox(mI.coxph, newdata = d, times = d$eventtime, se = TRUE)
+    expect_equal(as.double(predRR1$survival), as.double(predGS$S0))
+    expect_equal(as.double(predRR1$survival.se), as.double(predGS$se.S0))
+})
   
-    # }}}
+# }}}
     
-  # {{{ 3c- no strata, no interaction, with a categorical variable
-    test_that("predictionsSE - categorical",{
-        predGS <- predict(mCAT.cox_GS, newdata = d, times = 10)
-        predRR1 <- predictCox(mCAT.coxph, newdata = d, times = 10, se = TRUE)
-        expect_equal(as.double(predRR1$survival), as.double(predGS$S0))
-        expect_equal(as.double(predRR1$survival.se), as.double(predGS$se.S0))
+# {{{ 3c- no strata, no interaction, with a categorical variable
+test_that("predictionsSE - categorical",{
+    predGS <- predict(mCAT.cox_GS, newdata = d, times = 10)
+    predRR1 <- predictCox(mCAT.coxph, newdata = d, times = 10, se = TRUE)
+    expect_equal(as.double(predRR1$survival), as.double(predGS$S0))
+    expect_equal(as.double(predRR1$survival.se), as.double(predGS$se.S0))
 
-        predGS <- predict(mCAT.cox_GS, newdata = d, times = d$eventtime)
-        predRR1 <- predictCox(mCAT.coxph, newdata = d, times = d$eventtime-1e-12, se = TRUE)
-        expect_equal(as.double(predRR1$survival), as.double(predGS$S0))
-        expect_equal(as.double(predRR1$survival.se), as.double(predGS$se.S0))
-    })
+    predGS <- predict(mCAT.cox_GS, newdata = d, times = d$eventtime)
+    predRR1 <- predictCox(mCAT.coxph, newdata = d, times = d$eventtime, se = TRUE)
+    expect_equal(as.double(predRR1$survival), as.double(predGS$S0))
+    expect_equal(as.double(predRR1$survival.se), as.double(predGS$se.S0))
+})
 
-    # }}}
+# }}}
 
-  # {{{ 3d- strata, no interaction, continuous
+# {{{ 3d- strata, no interaction, continuous
 
 test_that("predictionsSE - strata",{
     predGS <- predict(mStrata.cox_GS, newdata = dStrata, times = 2)
@@ -313,11 +312,11 @@ test_that("predictionsSE - strata",{
     expect_equal(as.double(predRR1$survival.se), as.double(predGS$se.S0))
 
     predGS <- predict(mStrata.cox_GS, newdata = dStrata, times = d$eventtime[1:10])
-    predRR1 <- predictCox(mStrata.coxph, newdata = dStrata, times = d$eventtime[1:10]-1e-12, se = TRUE)
+    predRR1 <- predictCox(mStrata.coxph, newdata = dStrata, times = d$eventtime[1:10], se = TRUE)
     
     expect_equal(as.double(predRR1$survival), as.double(predGS$S0))
     expect_equal(as.double(predRR1$survival.se), as.double(predGS$se.S0))
-    })
+})
  
 # }}}
 

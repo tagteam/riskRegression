@@ -31,11 +31,15 @@ eventTime(m) <- eventtime ~ min(y=1,cens=0)
 d <- as.data.table(sim(m,n))
 setkey(d, eventtime)
   
-m.cox <- coxph(Surv(eventtime, status) ~ X1+X6, data = d, y = TRUE, x = TRUE)
-survNoStrata <- predictCox(m.cox, type = "survival", newdata = newdata, times = time, iid = TRUE, se = TRUE)
+m.cox <- coxph(Surv(eventtime, status) ~ X1+X6, 
+               data = d, y = TRUE, x = TRUE)
+survNoStrata <- predictCox(m.cox, type = "survival",
+                           newdata = newdata, times = time, iid = TRUE, se = TRUE)
   
-mStrata.cox <- coxph(Surv(eventtime, status) ~ strata(X1)+X6, data = d, y = TRUE, x = TRUE)
-survStrata <- predictCox(mStrata.cox, type = "survival", newdata = newdata, times = time, iid = TRUE, se = TRUE)
+mStrata.cox <- coxph(Surv(eventtime, status) ~ strata(X1)+X6, 
+                     data = d, y = TRUE, x = TRUE)
+survStrata <- predictCox(mStrata.cox, type = "survival", 
+                         newdata = newdata, times = time, iid = TRUE, se = TRUE)
   
 res <- influenceTest(survStrata, survNoStrata, type = "survival")
 return(res)
@@ -56,10 +60,12 @@ d <- as.data.table(sim(m,n))
   setkey(d, eventtime)
   
 m.cox <- coxph(Surv(eventtime, status) ~ X1+X6, data = d, y = TRUE, x = TRUE)
-survNoStrata <- predictCox(m.cox, type = "survival", newdata = newdata, times = time, iid = TRUE, se = TRUE)
+survNoStrata <- predictCox(m.cox, type = "survival", 
+                           newdata = newdata, times = time, iid = TRUE, se = TRUE)
   
 mStrata.cox <- coxph(Surv(eventtime, status) ~ strata(X1)+X6, data = d, y = TRUE, x = TRUE)
-survStrata <- predictCox(mStrata.cox, type = "survival", newdata = newdata, times = time, iid = TRUE, se = TRUE)
+survStrata <- predictCox(mStrata.cox, type = "survival", 
+                         newdata = newdata, times = time, iid = TRUE, se = TRUE)
 res <- influenceTest(survStrata, survNoStrata, type = "survival")
 return(res)
 }
