@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Oct 23 2016 (08:53) 
 ## Version: 
-## last-updated: maj 19 2017 (16:57) 
+## last-updated: maj 26 2017 (18:14) 
 ##           By: Brice Ozenne
-##     Update #: 205
+##     Update #: 223
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -69,7 +69,7 @@
 #' "predictRisk.cph" %in% methods("predictRisk")
 #' 
 #' ateFit=ate(fit, data = dtS, treatment = "X1", contrasts = NULL,
-#'         times = 5:8, B = 3, y = TRUE,  mc.cores=1)
+#'         times = 5:8, B = 1e3, y = TRUE,  mc.cores=1)
 #'
 #' ateFit=ate(fit, data = dtS, treatment = "X1", contrasts = NULL,
 #'         times = 5:8, B = 0, y = TRUE, band = TRUE, mc.cores=1)
@@ -165,7 +165,7 @@ ate <- function(object,
 
   # }}}
   
-  # {{{ calc G formula
+    # {{{ calc G formula
   Gformula <- function(object, data, treatment, contrasts, times, cause, ...){
     
       meanRisk <- lapply(1:n.contrasts,function(i){
@@ -337,10 +337,14 @@ ate <- function(object,
             })
 
             ## influence function for the average treatment effect
-            iid.treatment <- array(NA, dim = c(n.contrasts, n.times, n.obs ))
+            iid.treatment <- array(NA, dim = c(n.contrasts, n.times, n.obs))
             sdIF.treatment <- matrix(NA, nrow = n.contrasts, ncol = n.times)
             for(iTreat in 1:n.contrasts){ # iTreat <- 1
-                iid.treatment[iTreat,,] <- apply(attr(ICrisk[[iTreat]],"iid"),2:3,mean)
+                term1 <- apply(attr(ICrisk[[iTreat]],"iid"),2:3,mean)
+                term2 <- rowCenter_cpp(ICrisk[[iTreat]], center = pointEstimate$meanRisk[Treatment==contrasts[iTreat],meanRisk])
+
+                # we get n * IF instead of IF for the absolute risk. This is why the second term need to be rescaled
+                iid.treatment[iTreat,,] <- term1 + t(term2)/sqrt(n.obs)
                 sdIF.treatment[iTreat,] <- apply(iid.treatment[iTreat,,,drop=FALSE],2, ## MARGIN=2 and drop=FALSE to deal with the case of one timepoint
                                                  function(x){sqrt(sum(x^2))}
                                                  )
@@ -368,7 +372,10 @@ ate <- function(object,
                     # colSums: compute the IF for the G formula for each observation in the training data set
                     # sqrt(sum 2)) compute the variance of the estimator over the observations in the training data set
                     iiCon <- iiCon + 1
-                    iid_diff.contrasts[iiCon,,] <- apply(attr(ICrisk[[iCon]],"iid")-attr(ICrisk[[iCon2]],"iid"), 2:3, mean)
+                    term1 <- apply(attr(ICrisk[[iCon]],"iid")-attr(ICrisk[[iCon2]],"iid"), 2:3, mean)
+                    term2 <- rowCenter_cpp(ICrisk[[iCon]]-ICrisk[[iCon2]],
+                                           center = pointEstimate$riskComparison[Treatment.A==contrasts[iCon] & Treatment.B==contrasts[iCon2],diff])
+                    iid_diff.contrasts[iiCon,,] <- term1 + t(term2)/sqrt(n.obs)
                     sdIF_diff.contrasts[iiCon,] <- apply(iid_diff.contrasts[iiCon,,,drop=FALSE],2,
                                                          function(x){sqrt(sum(x^2))}
                                                          )
@@ -379,8 +386,11 @@ ate <- function(object,
 
                     iidTempo2 <- aperm(attr(ICrisk[[iCon2]],"iid"), c(3,2,1))
                     term2 <- aperm(sliceMultiply_cpp(iidTempo2, ICrisk[[iCon]]/ICrisk[[iCon2]]^2), c(3,2,1))
+
+                    term3 <- rowCenter_cpp(ICrisk[[iCon]]/ICrisk[[iCon2]],
+                                           center = pointEstimate$riskComparison[Treatment.A==contrasts[iCon] & Treatment.B==contrasts[iCon2],ratio])
                     
-                    iid_ratio.contrasts[iiCon,,] <- apply(term1 - term2, 2:3, mean)
+                    iid_ratio.contrasts[iiCon,,] <- apply(term1 - term2, 2:3, mean) + t(term3)/sqrt(n.obs)
                     sdIF_ratio.contrasts[iiCon,] <- apply(iid_ratio.contrasts[iiCon,,,drop=FALSE],2,
                                                          function(x){sqrt(sum(x^2))}
                                                          )

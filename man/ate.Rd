@@ -84,7 +84,7 @@ fit$call
 "predictRisk.cph" \%in\% methods("predictRisk")
 
 ateFit=ate(fit, data = dtS, treatment = "X1", contrasts = NULL,
-        times = 5:8, B = 3, y = TRUE,  mc.cores=1)
+        times = 5:8, B = 1e3, y = TRUE,  mc.cores=1)
 
 ateFit=ate(fit, data = dtS, treatment = "X1", contrasts = NULL,
         times = 5:8, B = 0, y = TRUE, band = TRUE, mc.cores=1)
