@@ -307,7 +307,7 @@ ate <- function(object,
         } else {
             
             # {{{ Influence function and variance
-            ICrisk <- lapply(1:n.contrasts,function(i){
+            IFrisk <- lapply(1:n.contrasts,function(i){
                 #### influence function for the hypothetical worlds in which every subject is treated with the same treatment
                 data.i <- data
                 data.i[[treatment]] <- factor(contrasts[i], levels = levels)
@@ -340,8 +340,8 @@ ate <- function(object,
             iid.treatment <- array(NA, dim = c(n.contrasts, n.times, n.obs))
             sdIF.treatment <- matrix(NA, nrow = n.contrasts, ncol = n.times)
             for(iTreat in 1:n.contrasts){ # iTreat <- 1
-                term1 <- apply(attr(ICrisk[[iTreat]],"iid"),2:3,mean)
-                term2 <- rowCenter_cpp(ICrisk[[iTreat]], center = pointEstimate$meanRisk[Treatment==contrasts[iTreat],meanRisk])
+                term1 <- apply(attr(IFrisk[[iTreat]],"iid"),2:3,mean)
+                term2 <- rowCenter_cpp(IFrisk[[iTreat]], center = pointEstimate$meanRisk[Treatment==contrasts[iTreat],meanRisk])
 
                 # we get n * IF instead of IF for the absolute risk. This is why the second term need to be rescaled
                 iid.treatment[iTreat,,] <- term1 + t(term2)/sqrt(n.obs)
@@ -367,13 +367,13 @@ ate <- function(object,
             for(iCon in 1:((n.contrasts-1))){ # iCon <- 1
                 for(iCon2 in (iCon+1):n.contrasts){ # iCon2 <- 2
                     ## compute differences between all pairs of treatments
-                    # IC had dimension n.predictions (row), n.times (columns), n.dataTrain (length)
+                    # IF had dimension n.predictions (row), n.times (columns), n.dataTrain (length)
                     # apply 2 do for each time: extract the value of IF with n.predictions (row) and n.dataTrain (length)
                     # colSums: compute the IF for the G formula for each observation in the training data set
                     # sqrt(sum 2)) compute the variance of the estimator over the observations in the training data set
                     iiCon <- iiCon + 1
-                    term1 <- apply(attr(ICrisk[[iCon]],"iid")-attr(ICrisk[[iCon2]],"iid"), 2:3, mean)
-                    term2 <- rowCenter_cpp(ICrisk[[iCon]]-ICrisk[[iCon2]],
+                    term1 <- apply(attr(IFrisk[[iCon]],"iid")-attr(IFrisk[[iCon2]],"iid"), 2:3, mean)
+                    term2 <- rowCenter_cpp(IFrisk[[iCon]]-IFrisk[[iCon2]],
                                            center = pointEstimate$riskComparison[Treatment.A==contrasts[iCon] & Treatment.B==contrasts[iCon2],diff])
                     iid_diff.contrasts[iiCon,,] <- term1 + t(term2)/sqrt(n.obs)
                     sdIF_diff.contrasts[iiCon,] <- apply(iid_diff.contrasts[iiCon,,,drop=FALSE],2,
@@ -381,13 +381,13 @@ ate <- function(object,
                                                          )
 
                     # IF(A/B) = IF(A)/B-IF(B)A/B^2
-                    iidTempo1 <- aperm(attr(ICrisk[[iCon]],"iid"), c(3,2,1))
-                    term1 <- aperm(sliceScale_cpp(iidTempo1, ICrisk[[iCon2]]), c(3,2,1))
+                    iidTempo1 <- aperm(attr(IFrisk[[iCon]],"iid"), c(3,2,1))
+                    term1 <- aperm(sliceScale_cpp(iidTempo1, IFrisk[[iCon2]]), c(3,2,1))
 
-                    iidTempo2 <- aperm(attr(ICrisk[[iCon2]],"iid"), c(3,2,1))
-                    term2 <- aperm(sliceMultiply_cpp(iidTempo2, ICrisk[[iCon]]/ICrisk[[iCon2]]^2), c(3,2,1))
+                    iidTempo2 <- aperm(attr(IFrisk[[iCon2]],"iid"), c(3,2,1))
+                    term2 <- aperm(sliceMultiply_cpp(iidTempo2, IFrisk[[iCon]]/IFrisk[[iCon2]]^2), c(3,2,1))
 
-                    term3 <- rowCenter_cpp(ICrisk[[iCon]]/ICrisk[[iCon2]],
+                    term3 <- rowCenter_cpp(IFrisk[[iCon]]/IFrisk[[iCon2]],
                                            center = pointEstimate$riskComparison[Treatment.A==contrasts[iCon] & Treatment.B==contrasts[iCon2],ratio])
                     
                     iid_ratio.contrasts[iiCon,,] <- apply(term1 - term2, 2:3, mean) + t(term3)/sqrt(n.obs)

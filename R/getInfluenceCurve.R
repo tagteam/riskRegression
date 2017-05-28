@@ -121,7 +121,7 @@ getInfluenceCurve.Brier <- function(t,time,Yt,ipcwResiduals,MC){
     ## FIXME: make sure that sindex cannot be 0
     ## browser(skipCalls=1)
     Int0tdMCsurEffARisk <- MC[prodlim::sindex(jump.times=unique(time),eval.times=t),,drop=FALSE]
-    IC.Brier=hit1+hit2-Brier + mean(hit1)*Int0tdMCsurEffARisk + colMeans(MC*hit2)
+    IF.Brier=hit1+hit2-Brier + mean(hit1)*Int0tdMCsurEffARisk + colMeans(MC*hit2)
 }
 
 

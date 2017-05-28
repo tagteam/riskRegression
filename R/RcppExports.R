@@ -48,16 +48,16 @@ calcE_cpp <- function(eventtime, status, eXb, X, p, add0) {
     .Call('riskRegression_calcE_cpp', PACKAGE = 'riskRegression', eventtime, status, eXb, X, p, add0)
 }
 
-ICbeta_cpp <- function(newT, neweXb, newX, newStatus, newIndexJump, S01, E1, time1, iInfo, p) {
-    .Call('riskRegression_ICbeta_cpp', PACKAGE = 'riskRegression', newT, neweXb, newX, newStatus, newIndexJump, S01, E1, time1, iInfo, p)
+IFbeta_cpp <- function(newT, neweXb, newX, newStatus, newIndexJump, S01, E1, time1, iInfo, p) {
+    .Call('riskRegression_IFbeta_cpp', PACKAGE = 'riskRegression', newT, neweXb, newX, newStatus, newIndexJump, S01, E1, time1, iInfo, p)
 }
 
-ICbetaApprox_cpp <- function(newX, newStatus, newIndexJump, E1, iInfo, p) {
-    .Call('riskRegression_ICbetaApprox_cpp', PACKAGE = 'riskRegression', newX, newStatus, newIndexJump, E1, iInfo, p)
+IFbetaApprox_cpp <- function(newX, newStatus, newIndexJump, E1, iInfo, p) {
+    .Call('riskRegression_IFbetaApprox_cpp', PACKAGE = 'riskRegression', newX, newStatus, newIndexJump, E1, iInfo, p)
 }
 
-IClambda0_cpp <- function(tau, ICbeta, newT, neweXb, newStatus, newStrata, newIndexJump, S01, E1, time1, lastTime1, lambda0, p, strata, exact, minimalExport) {
-    .Call('riskRegression_IClambda0_cpp', PACKAGE = 'riskRegression', tau, ICbeta, newT, neweXb, newStatus, newStrata, newIndexJump, S01, E1, time1, lastTime1, lambda0, p, strata, exact, minimalExport)
+IFlambda0_cpp <- function(tau, IFbeta, newT, neweXb, newStatus, newStrata, newIndexJump, S01, E1, time1, lastTime1, lambda0, p, strata, exact, minimalExport) {
+    .Call('riskRegression_IFlambda0_cpp', PACKAGE = 'riskRegression', tau, IFbeta, newT, neweXb, newStatus, newStrata, newIndexJump, S01, E1, time1, lastTime1, lambda0, p, strata, exact, minimalExport)
 }
 
 predictCIF_cpp <- function(hazard, cumhazard, eXb, strata, newtimes, etimes, etimeMax, t0, nEventTimes, nNewTimes, nData, cause, nCause, survtype, productLimit) {
