@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: maj 18 2017 (09:23) 
 ## Version: 
-## last-updated: maj 28 2017 (15:26) 
-##           By: Brice Ozenne
-##     Update #: 37
+## last-updated: jun  5 2017 (15:06) 
+##           By: Brice
+##     Update #: 46
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -69,8 +69,7 @@ IFlambdaI_GS <- t(as.data.table(mI.cox_GS$B.iid))
 # cox.aalen do not work without covariable
 # m0.cox_GS <- cox.aalen(Surv(eventtime, event) ~ 1, data = d, resample.iid = TRUE, max.timepoint.sim=NULL)
 # IFlambda0_GS <- t(as.data.table(m0.cox_GS$B.iid))
-  
-m0.coxph <- coxph(Surv(eventtime, event) ~ 1, data = d, y = TRUE, x = TRUE)
+  m0.coxph <- coxph(Surv(eventtime, event) ~ 1, data = d, y = TRUE, x = TRUE)
   # }}}
   # {{{ no strata, no interaction, with a categorical variable
 mCAT.coxph <- coxph(Surv(eventtime, event) ~ Xcat2 + X6, data = d, y = TRUE, x = TRUE)
@@ -324,7 +323,17 @@ test_that("predictionsSE - strata",{
 
 # }}}
 
-# {{{ 3- Fast computation standard error
+
+# {{{ 3- IChazard vs ICcumhazard
+
+IF.coxph <- iidCox(m.coxph, keep.times = FALSE)
+
+expect_equal(IF.coxph$IFcumhazard[[1]],t(apply(IF.coxph$IFhazard[[1]],1,cumsum)))
+
+
+# }}}
+
+# {{{ 4- Fast computation standard error
 set.seed(10)
 d <- sampleData(50, outcome = "survival")
 setkey(d,time)
@@ -338,32 +347,104 @@ newdata <- d
 ##     res1 <- predictCox(m.coxph, times = seqTime, newdata = newdata, method.iid = "minimal", se = TRUE, iid = FALSE)
 ## )
 ## system.time(
-##     res3 <- predictCox(m.coxph, times = seqTime, newdata = newdata, method.iid = "exact", se = TRUE, iid = FALSE)
+##     res3 <- predictCox(m.coxph, times = seqTime, newdata = newdata, method.iid = "full", se = TRUE, iid = FALSE)
 ## )
 
 test_that("iid minimal - no strata", {
-    res1 <- predictCox(m.coxph, times = seqTime, newdata = newdata, method.iid = "minimal", se = TRUE, iid = TRUE)
-    res3 <- predictCox(m.coxph, times = seqTime, newdata = newdata, method.iid = "exact", se = TRUE, iid = TRUE)
+    res1 <- predictCox(m.coxph, times = seqTime, newdata = newdata,
+                       logTransform = TRUE, type = c("cumhazard", "survival"),
+                       method.iid = "minimal", se = TRUE, iid = TRUE)
+    res3 <- predictCox(m.coxph, times = seqTime, newdata = newdata,
+                       logTransform = TRUE, type = c("cumhazard", "survival"),
+                       method.iid = "full", se = TRUE, iid = TRUE)
     expect_equal(res1$cumhazard.se,res3$cumhazard.se)
+    expect_equal(res1$survival.se,res3$survival.se)
     expect_equal(res1$cumhazard.iid,res3$cumhazard.iid)
+    expect_equal(res1$survival.iid,res3$survival.iid)
+
+    res1 <- predictCox(m.coxph, times = seqTime, newdata = newdata,
+                       logTransform = FALSE, type = c("cumhazard", "survival"),
+                       method.iid = "minimal", se = TRUE, iid = TRUE) 
+    res2 <- predictCox(m.coxph, times = seqTime, newdata = newdata,
+                       logTransform = FALSE, type = c("cumhazard", "survival"),
+                       method.iid = "minimal", average.iid = TRUE) 
+    res3 <- predictCox(m.coxph, times = seqTime, newdata = newdata,
+                       logTransform = FALSE, type = c("cumhazard", "survival"),
+                       method.iid = "full", se = TRUE, iid = TRUE)
+    expect_equal(res1$cumhazard.se,res3$cumhazard.se)
+    expect_equal(res1$survival.se,res3$survival.se)
+    expect_equal(res1$cumhazard.iid,res3$cumhazard.iid)
+    expect_equal(res1$survival.iid,res3$survival.iid)
+
+    expect_equal(res2$cumhazard.iid, t(apply(res3$cumhazard.iid,2:3,mean)))
+    expect_equal(res2$survival.iid, t(apply(res3$survival.iid,2:3,mean)))
 })
 
 m.coxph <- coxph(Surv(time, event) ~ strata(X1)+X6, data = d, y = TRUE, x = TRUE)
  
-seqTime <- c(1e-16,4:10,d$time[1:10],1e6)[2]
-newdata <- d[1]
+seqTime <- c(1e-16,4:10,d$time[1:10],1e6)
+newdata <- d
 
 test_that("iid minimal - strata", {
-    res1 <- predictCox(m.coxph, times = seqTime, newdata = newdata, method.iid = "minimal", se = TRUE, iid = TRUE)
-    res3 <- predictCox(m.coxph, times = seqTime, newdata = newdata, method.iid = "exact", se = TRUE, iid = TRUE)
+    res1 <- predictCox(m.coxph, times = seqTime, newdata = newdata,
+                       logTransform = TRUE, type = c("cumhazard", "survival"),
+                       method.iid = "minimal", se = TRUE, iid = TRUE)
+    res3 <- predictCox(m.coxph, times = seqTime, newdata = newdata,
+                       logTransform = TRUE, type = c("cumhazard", "survival"),
+                       method.iid = "full", se = TRUE, iid = TRUE)
     expect_equal(res1$cumhazard.se,res3$cumhazard.se)
-    expect_equal(res1$cumhazard.iid,res3$cumhazard.iid)    
+    expect_equal(res1$survival.se,res3$survival.se)
+    expect_equal(res1$cumhazard.iid,res3$cumhazard.iid)
+    expect_equal(res1$survival.iid,res3$survival.iid)
+
+    newdata <- rbind(d[1],d[1])
+    res1 <- predictCox(m.coxph, times = seqTime, newdata = newdata,
+                       logTransform = FALSE, type = c("cumhazard", "survival"),
+                       method.iid = "minimal", se = TRUE, iid = TRUE) 
+    res2 <- predictCox(m.coxph, times = seqTime, newdata = newdata,
+                       logTransform = FALSE, type = c("cumhazard", "survival"),
+                       method.iid = "minimal", average.iid = TRUE) 
+    res3 <- predictCox(m.coxph, times = seqTime, newdata = newdata,
+                       logTransform = FALSE, type = c("cumhazard", "survival"),
+                       method.iid = "full", se = TRUE, iid = TRUE)
+    expect_equal(res1$cumhazard.se,res3$cumhazard.se)
+    expect_equal(res1$survival.se,res3$survival.se)
+    expect_equal(res1$cumhazard.iid,res3$cumhazard.iid)
+    expect_equal(res1$survival.iid,res3$survival.iid)
+
+    expect_equal(res2$cumhazard.iid, t(apply(res3$cumhazard.iid,2:3,mean)))
+    expect_equal(res2$survival.iid, t(apply(res3$survival.iid,2:3,mean)))
 })
 
 # }}}
 
 
+## set.seed(10)
+## d <- sampleData(5000, outcome = "survival")
+## setkey(d,time)
 
+## m.coxph <- coxph(Surv(time, event) ~ X1+X6, data = d, y = TRUE, x = TRUE)
+
+## newdata <- d
+
+## system.time(
+##     res1 <- predictCox(m.coxph, times = 10:11, newdata = newdata,
+##                        logTransform = FALSE, type = "survival",
+##                        method.iid = "minimal", average.iid = TRUE, se = TRUE)
+## )
+
+## system.time(
+##     res3 <- predictCox(m.coxph, times = 1:5, newdata = newdata[1:10],
+##                        logTransform = TRUE, type = "survival",
+##                        method.iid = "full"x, se = TRUE, iid = FALSE)
+## )
+## system.time(
+##     res3 <- predictCox(m.coxph, times = 1:5, newdata = newdata[1:10],
+##                        logTransform = TRUE, type = "survival",
+##                        method.iid = "minimal", se = TRUE, iid = FALSE)
+## )
+##     apply(res3$survival.iid,1:2,mean)
 
 #----------------------------------------------------------------------
 ### test-predictCox_vs_timereg.R ends here
+

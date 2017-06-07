@@ -50,6 +50,7 @@
 #' }
 
 #' @rdname CoxVariableName
+#' @export
 CoxVariableName <- function(object){
 
     f <- CoxFormula(object)
@@ -113,18 +114,21 @@ CoxCovars <- function(object){
 #' }
 
 #' @rdname CoxBaseEstimator
+#' @export
 CoxBaseEstimator <- function(object){
   UseMethod("CoxBaseEstimator") 
 } 
 
 #' @rdname CoxBaseEstimator
 #' @method CoxBaseEstimator coxph
+#' @export
 CoxBaseEstimator.coxph <- function(object){
   return(object$method)
 }
 
 #' @rdname CoxBaseEstimator
 #' @method CoxBaseEstimator phreg
+#' @export
 CoxBaseEstimator.phreg <- function(object){
   return("breslow")
 }
@@ -169,24 +173,28 @@ CoxBaseEstimator.phreg <- function(object){
 #' }
 
 #' @rdname CoxCenter
+#' @export
 CoxCenter <- function(object){
   UseMethod("CoxCenter") 
 } 
 
 #' @rdname CoxCenter
 #' @method CoxCenter cph
+#' @export
 CoxCenter.cph <- function(object){
   return(setNames(object$means, object$mmcolnames))
 }
 
 #' @rdname CoxCenter
 #' @method CoxCenter coxph
+#' @export
 CoxCenter.coxph <- function(object){
   return(setNames(object$means, names(coef(object))))
 }
 
 #' @rdname CoxCenter
 #' @method CoxCenter phreg
+#' @export
 CoxCenter.phreg <- function(object){
   data <- model.matrix(object = eval(object$call$formula),  object$model.frame)[,names(coef(object)), drop = FALSE]
   return(apply(data,2,mean))
@@ -241,12 +249,14 @@ CoxCenter.phreg <- function(object){
 #' }
 
 #' @rdname CoxDesign
+#' @export
 CoxDesign <- function(object, center){
   UseMethod("CoxDesign") 
 } 
 
 #' @rdname CoxDesign
 #' @method CoxDesign coxph
+#' @export
 CoxDesign.coxph <- function(object, center = FALSE){
 
     default.start <- 0
@@ -287,6 +297,7 @@ CoxDesign.coxph <- function(object, center = FALSE){
 
 #' @rdname CoxDesign
 #' @method CoxDesign phreg
+#' @export
 CoxDesign.phreg <- function(object, center = FALSE){
   
   M.outcome <- as.matrix(object$model.frame[,1])
@@ -331,24 +342,28 @@ CoxDesign.phreg <- function(object, center = FALSE){
 #' }
 
 #' @rdname CoxFormula
+#' @export
 CoxFormula <- function(object){
   UseMethod("CoxFormula") 
 } 
 
 #' @rdname CoxFormula
 #' @method CoxFormula cph
+#' @export
 CoxFormula.cph <- function(object){
   return(object$sformula)
 }
 
 #' @rdname CoxFormula
 #' @method CoxFormula coxph
+#' @export
 CoxFormula.coxph <- function(object){
   return(object$formula)
 }
 
 #' @rdname CoxFormula
 #' @method CoxFormula phreg
+#' @export
 CoxFormula.phreg <- function(object){
   return(eval(object$call$formula))
 }
@@ -368,6 +383,7 @@ CoxFormula.phreg <- function(object){
 #' @author Brice Ozenne broz@@sund.ku.dk
 #' 
 #' @details In case of empty linear predictor returns a vector of 0 with the same length as the number of rows of the dataset
+#'
 #' 
 #' @examples 
 #' \dontrun{
@@ -416,12 +432,14 @@ CoxFormula.phreg <- function(object){
 #' }
 
 #' @rdname CoxLP
+#' @export
 CoxLP <- function(object, data, center){
   UseMethod("CoxLP") 
 } 
 
 #' @rdname CoxLP
 #' @method CoxLP cph
+#' @export
 CoxLP.cph <- function(object, data, center){
   
   coef <- stats::coef(object)
@@ -455,6 +473,7 @@ CoxLP.cph <- function(object, data, center){
 
 #' @rdname CoxLP
 #' @method CoxLP coxph
+#' @export
 CoxLP.coxph <- function(object, data, center){
   
   coef <- stats::coef(object)
@@ -495,6 +514,7 @@ CoxLP.coxph <- function(object, data, center){
 
 #' @rdname CoxLP
 #' @method CoxLP phreg
+#' @export
 CoxLP.phreg <- function(object, data, center){
   coef <- stats::coef(object)
   n.varLP <- length(coef)
@@ -556,24 +576,28 @@ CoxLP.phreg <- function(object, data, center){
 #' }
 
 #' @rdname CoxN
+#' @export
 CoxN <- function(object){
   UseMethod("CoxN") 
 } 
 
 #' @rdname CoxN
 #' @method CoxN cph
+#' @export
 CoxN.cph <- function(object){
   return(sum(object$n))
 }
 
 #' @rdname CoxN
 #' @method CoxN coxph
+#' @export
 CoxN.coxph <- function(object){
   return(object$n)
 }
 
 #' @rdname CoxN
 #' @method CoxN phreg
+#' @export
 CoxN.phreg <- function(object){
   return(NROW(object$model.frame))
 }
@@ -611,22 +635,26 @@ CoxN.phreg <- function(object){
 #' }
 
 #' @rdname CoxSpecialStrata
+#' @export
 CoxSpecialStrata <- function(object) UseMethod("CoxSpecialStrata")
 
 #' @rdname CoxSpecialStrata
 #' @method CoxSpecialStrata coxph
+#' @export
 CoxSpecialStrata.coxph <- function(object){
   return("strata")
 }
 
 #' @rdname CoxSpecialStrata
 #' @method CoxSpecialStrata cph
+#' @export
 CoxSpecialStrata.cph <- function(object){
   return("strat")
 }
 
 #' @rdname CoxSpecialStrata
 #' @method CoxSpecialStrata phreg
+#' @export
 CoxSpecialStrata.phreg <- function(object){
   return("strata")
 }
@@ -681,10 +709,12 @@ CoxSpecialStrata.phreg <- function(object){
 #' }
 
 #' @rdname CoxStrata
+#' @export
 CoxStrata <- function(object, data, sterms, stratavars, levels, stratalevels) UseMethod("CoxStrata")
 
 #' @rdname CoxStrata
 #' @method CoxStrata coxph
+#' @export
 CoxStrata.cph <- function(object, data, sterms, stratavars, levels, stratalevels){
   
   if(length(stratavars)==0){ ## no strata variables
@@ -715,6 +745,7 @@ CoxStrata.cph <- function(object, data, sterms, stratavars, levels, stratalevels
 
 #' @rdname CoxStrata
 #' @method CoxStrata coxph
+#' @export
 CoxStrata.coxph <- function(object, data, sterms, stratavars, levels, stratalevels){
   
   if(length(stratavars)==0){ ## no strata variables
@@ -741,6 +772,7 @@ CoxStrata.coxph <- function(object, data, sterms, stratavars, levels, strataleve
 
 #' @rdname CoxStrata
 #' @method CoxStrata phreg
+# '@export
 CoxStrata.phreg <- CoxStrata.coxph
 # }}}
 
@@ -785,12 +817,14 @@ CoxStrata.phreg <- CoxStrata.coxph
 #' }
 
 #' @rdname CoxVarCov
+#' @export
 CoxVarCov <- function(object){
   UseMethod("CoxVarCov") 
 } 
 
 #' @rdname CoxVarCov
 #' @method CoxVarCov cph
+#' @export
 CoxVarCov.cph <- function(object){
   
   Sigma <- object$var
@@ -804,6 +838,7 @@ CoxVarCov.cph <- function(object){
 
 #' @rdname CoxVarCov
 #' @method CoxVarCov coxph
+#' @export
 CoxVarCov.coxph <- function(object){
   
   Sigma <- object$var
@@ -817,6 +852,7 @@ CoxVarCov.coxph <- function(object){
 
 #' @rdname CoxVarCov
 #' @method CoxVarCov phreg
+#' @export
 CoxVarCov.phreg <- function(object){
   
   Sigma <- -solve(object$hessian)

@@ -10,7 +10,6 @@
 /* .C calls */
 extern void itfit(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *);
 
-/* .Call calls */
 extern SEXP riskRegression_baseHaz_cpp(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 extern SEXP riskRegression_calcE_cpp(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 extern SEXP riskRegression_colCenter_cpp(SEXP, SEXP);
@@ -18,9 +17,11 @@ extern SEXP riskRegression_colCumSum(SEXP);
 extern SEXP riskRegression_colMultiply_cpp(SEXP, SEXP);
 extern SEXP riskRegression_colScale_cpp(SEXP, SEXP);
 extern SEXP riskRegression_colSumsCrossprod(SEXP, SEXP, SEXP);
-extern SEXP riskRegression_ICbeta_cpp(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
-extern SEXP riskRegression_ICbetaApprox_cpp(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
-extern SEXP riskRegression_IClambda0_cpp(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
+extern SEXP riskRegression_calcSeHazard_cpp(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
+extern SEXP riskRegression_calcSeCif_cpp(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
+extern SEXP riskRegression_IFbeta_cpp(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);                                     
+extern SEXP riskRegression_IFbetaApprox_cpp(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
+extern SEXP riskRegression_IFlambda0_cpp(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 extern SEXP riskRegression_predictCIF_cpp(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 extern SEXP riskRegression_quantileProcess_cpp(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 extern SEXP riskRegression_rowCenter_cpp(SEXP, SEXP);
@@ -36,6 +37,7 @@ static const R_CMethodDef CEntries[] = {
     {NULL, NULL, 0}
 };
 
+
 static const R_CallMethodDef CallEntries[] = {
     {"riskRegression_baseHaz_cpp",         (DL_FUNC) &riskRegression_baseHaz_cpp,         10},
     {"riskRegression_calcE_cpp",           (DL_FUNC) &riskRegression_calcE_cpp,            6},
@@ -44,9 +46,11 @@ static const R_CallMethodDef CallEntries[] = {
     {"riskRegression_colMultiply_cpp",     (DL_FUNC) &riskRegression_colMultiply_cpp,      2},
     {"riskRegression_colScale_cpp",        (DL_FUNC) &riskRegression_colScale_cpp,         2},
     {"riskRegression_colSumsCrossprod",    (DL_FUNC) &riskRegression_colSumsCrossprod,     3},
-    {"riskRegression_ICbeta_cpp",          (DL_FUNC) &riskRegression_ICbeta_cpp,          10},
-    {"riskRegression_ICbetaApprox_cpp",    (DL_FUNC) &riskRegression_ICbetaApprox_cpp,     6},
-    {"riskRegression_IClambda0_cpp",       (DL_FUNC) &riskRegression_IClambda0_cpp,       16},
+    {"riskRegression_calcSeHazard_cpp",    (DL_FUNC) &riskRegression_calcSeHazard_cpp,    26},
+    {"riskRegression_calcSeCif_cpp",       (DL_FUNC) &riskRegression_calcSeCif_cpp,       33},
+    {"riskRegression_IFbeta_cpp",          (DL_FUNC) &riskRegression_IFbeta_cpp,          10},
+    {"riskRegression_IFbetaApprox_cpp",    (DL_FUNC) &riskRegression_IFbetaApprox_cpp,     6},
+    {"riskRegression_IFlambda0_cpp",       (DL_FUNC) &riskRegression_IFlambda0_cpp,       16},   
     {"riskRegression_predictCIF_cpp",      (DL_FUNC) &riskRegression_predictCIF_cpp,      15},
     {"riskRegression_quantileProcess_cpp", (DL_FUNC) &riskRegression_quantileProcess_cpp,  6},
     {"riskRegression_rowCenter_cpp",       (DL_FUNC) &riskRegression_rowCenter_cpp,        2},

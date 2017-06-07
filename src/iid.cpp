@@ -185,7 +185,13 @@ List IFlambda0_cpp(const NumericVector& tau, const arma::mat& IFbeta,
   arma::mat IFLambda0(nObs, nTau);
   IFlambda0.fill(NA_REAL);
   IFLambda0.fill(NA_REAL);
-  
+
+  // Find early times
+  int iTau0 = 0;
+  while(iTau0 < nTau && time1[0]>tau[iTau0]){
+        iTau0++;
+  }
+
   // Compute delta_iS0
   NumericVector delta_iS0(nObs);
   for(int iObs=0; iObs<nObs ; iObs++){
@@ -196,7 +202,7 @@ List IFlambda0_cpp(const NumericVector& tau, const arma::mat& IFbeta,
   arma::mat Elambda0(p, nTau), cumElambda0(p, nTau);
   Elambda0.fill(0.0); cumElambda0.fill(0.0);
   NumericVector lambda0_iS0(nTime1,0.0), cumLambda0_iS0(nTime1,0.0);
-  int iTau = 0;
+  int iTau = iTau0;
   
   colvec Elambda0_iter(p), cumElambda0_iter(p); 
   cumElambda0_iter.fill(0);
@@ -245,14 +251,11 @@ List IFlambda0_cpp(const NumericVector& tau, const arma::mat& IFbeta,
   }
   
   // main loop
-  int iTau0 = 0;
-  
-  while((iTau0 < nTau) && time1[0]>tau[iTau0]){ // before the first event
-    
-    IFlambda0.col(iTau0).zeros();
-    IFLambda0.col(iTau0).zeros();
-    iTau0++;
-    
+  if(iTau0>0){
+    for(int iiTau=0 ; iiTau<iTau0; iiTau++){ // before the first event    
+    IFlambda0.col(iiTau).zeros();
+    IFLambda0.col(iiTau).zeros();    
+  }
   }
   
   int index_newT_time1; // position of the minimum between t and t_train in cumLamba0_iS0
@@ -283,17 +286,20 @@ List IFlambda0_cpp(const NumericVector& tau, const arma::mat& IFbeta,
       if(strata == newStrata[iObs]){
         // second term
         if(exact){
-          if(tau[iiTau]==time1[Vindex_tau_time1[iiTau]] && time1[Vindex_tau_time1[iiTau]] <= newT[iObs]){ IFlambda0(iObs,iiTau) -= neweXb[iObs] * lambda0_iS0[Vindex_tau_time1[iiTau]]; }
+          if(tau[iiTau]==time1[Vindex_tau_time1[iiTau]] && time1[Vindex_tau_time1[iiTau]] <= newT[iObs]){
+	    IFlambda0(iObs,iiTau) -= neweXb[iObs] * lambda0_iS0[Vindex_tau_time1[iiTau]];
+	  }
           IFLambda0(iObs,iiTau) -= neweXb[iObs] * cumLambda0_iS0[min(Vindex_tau_time1[iiTau],index_newT_time1)];
         }
-        
+
         // third term
         if(newT[iObs]<=tau[iiTau]){
-          if(newT[iObs]==tau[iiTau]){IFlambda0(iObs,iiTau) += delta_iS0[iObs];}
+          if(newT[iObs]==tau[iiTau]){
+          IFlambda0(iObs,iiTau) += delta_iS0[iObs];}
           IFLambda0(iObs,iiTau) += delta_iS0[iObs];
         }
       }
-    }
+    }   
   }
   
   return(List::create(Named("hazard") = IFlambda0,

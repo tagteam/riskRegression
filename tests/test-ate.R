@@ -103,7 +103,7 @@ ateFit
 ## manually
 newdata0 <- copy(dtS)
 newdata0$X1 <- "T0"
-resIID <- predictCox(fit, newdata = newdata0, time = 5:7,iid=TRUE)$survival.iid
+resIID <- predictCox(fit, newdata = newdata0, time = 5:7, iid = TRUE, logTransform = FALSE)$survival.iid
 resRisk <- predictRisk(fit, newdata = newdata0, time = 5:7)
 resManuel <- data.frame(mean = colMeans(resRisk))
 
@@ -122,6 +122,10 @@ resManuel$upper <- resManuel$mean + qnorm(0.975) * resManuel$se
 
 expect_equal(resManuel$lower, ateFit$meanRisk[ateFit$meanRisk$Treatment == "T0",lower])
 expect_equal(resManuel$upper, ateFit$meanRisk[ateFit$meanRisk$Treatment == "T0",upper])
+expect_equal(c(0.2005312, 0.2467174, 0.2739946), ateFit$meanRisk[ateFit$meanRisk$Treatment == "T0",lower],
+             tol = 1e-6)
+expect_equal(c(0.7264070, 0.7764495, 0.8029922), ateFit$meanRisk[ateFit$meanRisk$Treatment == "T0",upper],
+             tol = 1e-6)
 
 #### CSC model ####
 context("ate for fully CSC model")

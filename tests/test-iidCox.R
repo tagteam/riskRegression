@@ -30,8 +30,8 @@ expect_equal(apply(resIID$survival.iid, 1:2, function(x){sqrt(sum(x^2))}),
 iidTEST <-  iidCox(coxph.fit)
 
 test_that("cumsum(iid hazard) = iid cumhazard",{
-  Mcs <- t(apply(iidTEST$IChazard[[1]], 1, cumsum))
-  expect_equal(Mcs, iidTEST$ICcumhazard[[1]])
+  Mcs <- t(apply(iidTEST$IFhazard[[1]], 1, cumsum))
+  expect_equal(Mcs, iidTEST$IFcumhazard[[1]])
 })
 
 test_that("iid equivalent parametrisation",{
@@ -43,43 +43,43 @@ test_that("iid equivalent parametrisation",{
 iidTEST2 <- iidCox(coxph.fit, tauHazard = sort(c(iidTEST$time[[1]],c(0.1,1,5,8,12,25))))
 test_that("iid hazard = 0 at non event times",{
 
-  expect_equal(iidTEST2$IChazard[[1]][,as.character(iidTEST$time[[1]])],
-               iidTEST$IChazard[[1]])
+  expect_equal(iidTEST2$IFhazard[[1]][,as.character(iidTEST$time[[1]])],
+               iidTEST$IFhazard[[1]])
 
-  expect_equal(iidTEST2$ICcumhazard[[1]][,as.character(iidTEST$time[[1]])],
-               iidTEST$ICcumhazard[[1]])
+  expect_equal(iidTEST2$IFcumhazard[[1]][,as.character(iidTEST$time[[1]])],
+               iidTEST$IFcumhazard[[1]])
 
   otherTimes0 <- setdiff(iidTEST2$time[[1]][iidTEST2$time[[1]]<max(coxph.fit$y[,1])],
                          iidTEST$time[[1]])
-  expect_true(all(iidTEST2$IChazard[[1]][,as.character(otherTimes0)] == 0))
+  expect_true(all(iidTEST2$IFhazard[[1]][,as.character(otherTimes0)] == 0))
 
   otherTimesNA <- iidTEST2$time[[1]][iidTEST2$time[[1]]>max(coxph.fit$y[,1])]
-  expect_true(all(is.na(iidTEST2$IChazard[[1]][,as.character(otherTimesNA)])))
+  expect_true(all(is.na(iidTEST2$IFhazard[[1]][,as.character(otherTimesNA)])))
 })
 
 
 iidTEST3 <- iidCox(coxph.fit, tauHazard = iidTEST$time[[1]][2:3])
 test_that("iid hazard = 0 at non event times",{
   
-  expect_equal(iidTEST3$IChazard[[1]],
-               iidTEST$IChazard[[1]][,as.character(iidTEST3$time[[1]])])
+  expect_equal(iidTEST3$IFhazard[[1]],
+               iidTEST$IFhazard[[1]][,as.character(iidTEST3$time[[1]])])
   
-  expect_equal(iidTEST3$ICcumhazard[[1]],
-               iidTEST$ICcumhazard[[1]][,as.character(iidTEST3$time[[1]])])
+  expect_equal(iidTEST3$IFcumhazard[[1]],
+               iidTEST$IFcumhazard[[1]][,as.character(iidTEST3$time[[1]])])
   
 })
 
-m.CSC <- CSC(Hist(time,event)~ X1+X2,data=d, iid = FALSE)
+m.CSC <- CSC(Hist(time,event)~ X1+X2,data=d)
 test_that("iid ok when the last event is other cause",{
   d$status <- d$event==1
-  IC1 <- iidCox(m.CSC$models$`Cause 1`, newdata = d[1:2,], tauHazard = m.CSC$eventTimes)
+  IF1 <- iidCox(m.CSC$models$`Cause 1`, newdata = d[1:2,], tauHazard = m.CSC$eventTimes)
   
   lastEvent <- m.CSC$models$`Cause 1`$y[tail(which(m.CSC$models$`Cause 1`$y[,2]==1),1),1]
   postLastEvent <- m.CSC$eventTimes[m.CSC$eventTimes>lastEvent]
   
   sapply(postLastEvent, function(t){
-    expect_equal(IC1$ICcumhazard[[1]][,as.character(t)],
-                 IC1$ICcumhazard[[1]][,as.character(lastEvent)])  
+    expect_equal(IF1$IFcumhazard[[1]][,as.character(t)],
+                 IF1$IFcumhazard[[1]][,as.character(lastEvent)])  
   })
   
 })
@@ -90,7 +90,7 @@ test_that("iid with newdata with an operator in status (here event==1 in Surv)",
 
 
 #### CSC model ####
-m.CSC <- CSC(Hist(time,event)~ X1+X2,data=d, iid = FALSE)
+m.CSC <- CSC(Hist(time,event)~ X1+X2,data=d)
 
 res <- predict(m.CSC, newdata = d, cause = 1, time = 1:7, se = TRUE)
 print(res, ci = TRUE)

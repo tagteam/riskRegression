@@ -1,4 +1,3 @@
-# {{{ predictCox
 # {{{ header
 #' Fast computation of survival probabilities, hazards and cumulative hazards from Cox regression models 
 #'
@@ -38,12 +37,15 @@
 #' @param se Logical. If \code{TRUE} add the standard error to the output.
 #' @param band Logical. If \code{TRUE} add the confidence band to the output.
 #' @param iid Logical. If \code{TRUE} add the influence function to the output.
+#' @param average.iid Logical. If \code{TRUE} add the average of the influence function over \code{newdata} to the output.
 #' @param nSim.band the number of simulations used to compute the quantiles
 #' for the confidence bands..
 #' @param conf.level Level of confidence.
 #' @param logTransform Should the confidence intervals/bands be computed on the log (hazard) and
 #' log(-log) (survival) scale and be backtransformed.
 #' Otherwise they are computed on the original scale and truncated (if necessary).
+#' @param method.iid the method used to compute the influence function and the standard error.
+#' Can be \code{"full"} or \code{"minimal"}. See the details section of \code{\link{calcSeCox}}.
 #' @param ... arguments to be passed to the function \code{iidCox}.
 #' @details Not working with time varying predictor variables or
 #'     delayed entry.  The centered argument enables us to reproduce
@@ -78,6 +80,7 @@
 #' predictCox(fit,centered=TRUE,type="hazard")
 #' predictCox(fit, newdata=nd, times=c(3,8),se=TRUE)
 #' predictCox(fit, newdata=nd, times=c(3,8),se=TRUE, logTransform = TRUE)
+#' predictCox(fit, newdata=nd, times=c(3,8),se=TRUE, method.iid = "minimal")
 #' predictCox(fit, newdata=nd, times = 5,iid=TRUE)
 #' 
 #' cbind(survival::basehaz(fit),predictCox(fit,type="cumhazard")$cumhazard)
@@ -106,6 +109,7 @@
 #' @export
 
 # }}}
+
 predictCox <- function(object,
                        newdata=NULL,
                        times,
@@ -117,10 +121,11 @@ predictCox <- function(object,
                        se = FALSE,
                        band = FALSE,
                        iid = FALSE,
+                       average.iid = FALSE,
                        nSim.band = 1e4,
                        conf.level=0.95,
                        logTransform = TRUE,
-                       method.iid = "exact"){
+                       method.iid = "full"){
     status=statusM1=NULL
     
     # {{{ treatment of times and stopping rules
@@ -248,6 +253,13 @@ predictCox <- function(object,
         return(Lambda0)
         # }}}
     } else {
+        if(iid || se || band || average.iid){
+            # cumhazard is needed to logTransform iid/se
+            type2 <- union(type,"cumhazard")
+        }else{
+            type2 <- type
+        }
+        
         # {{{ predictions in new dataset
         out <- list()
         if(missing(times) || nTimes==0){
@@ -260,9 +272,9 @@ predictCox <- function(object,
                 out$hazard <- (new.eXb %o% Lambda0$hazard)
                 if (needOrder) out$hazard <- out$hazard[,oorder.times,drop=0L]
             }
-            if ("cumhazard" %in% type || "survival" %in% type){
+            if ("cumhazard" %in% type2 || "survival" %in% type){
                 cumhazard <- new.eXb %o% Lambda0$cumhazard
-                if ("cumhazard" %in% type){
+                if ("cumhazard" %in% type2){
                     if (needOrder)
                         out$cumhazard <- cumhazard[,oorder.times,drop=0L]
                     else
@@ -281,17 +293,11 @@ predictCox <- function(object,
             if ("hazard" %in% type){
                 out$hazard <- matrix(0, nrow = new.n, ncol = nTimes)
             }
-            if ("cumhazard" %in% type){
-                out$cumhazard <- matrix(NA, nrow = new.n, ncol = nTimes)
-                if(se){
-                    out$cumhazard.se <- matrix(0, nrow = new.n, ncol = nTimes)
-                }
+            if ("cumhazard" %in% type2){
+                out$cumhazard <- matrix(NA, nrow = new.n, ncol = nTimes)                
             }
             if ("survival" %in% type){
-                out$survival <- matrix(NA, nrow = new.n, ncol = nTimes)
-                if(se){
-                    out$survival.se <- matrix(0, nrow = new.n, ncol = nTimes)
-                }
+                out$survival <- matrix(NA, nrow = new.n, ncol = nTimes)               
             }
             if (is.strata == TRUE){ ## rename the strata value with the correct levels
                 Lambda0$strata <- factor(Lambda0$strata, levels = 0:(nStrata-1), labels = object.levelStrata)
@@ -306,9 +312,9 @@ predictCox <- function(object,
                     if (needOrder)
                         out$hazard[newid.S,] <- out$hazard[newid.S,oorder.times,drop=0L]
                 }
-                if ("cumhazard" %in% type || "survival" %in% type){
+                if ("cumhazard" %in% type2 || "survival" %in% type){
                     cumhazard.S <-  new.eXb[newid.S] %o% Lambda0$cumhazard[id.S]
-                    if ("cumhazard" %in% type){
+                    if ("cumhazard" %in% type2){
                         if (needOrder){
                             out$cumhazard[newid.S,] <- cumhazard.S[,oorder.times,drop=0L]
                         } else{
@@ -327,7 +333,7 @@ predictCox <- function(object,
         }
         # }}}
         # {{{ standard error
-        if(se==1L || iid==1L){
+        if(se==1L || iid==1L || average.iid==1L){
             if(se && "hazard" %in% type){
                 stop("confidence intervals cannot be computed for the hazard \n")
             }
@@ -362,7 +368,13 @@ predictCox <- function(object,
                                new.eXb = new.eXb, new.LPdata = new.LPdata, new.strata = new.strata,
                                new.cumhazard = out$cumhazard, new.survival = out$survival,
                                nVar = nVar, logTransform = logTransform,
-                               export = c("iid"[iid==TRUE],"se"[se==TRUE]), method.iid = method.iid)
+                               export = c("iid"[iid==TRUE],"se"[se==TRUE],"average.iid"[average.iid==TRUE]), method.iid = method.iid)
+            if("cumhazard" %in% type == FALSE){
+                out$cumhazard <- NULL                
+            }
+            if("survival" %in% type == FALSE){
+                out$survival <- NULL                
+            }
             
             if(iid == TRUE){
                 if ("hazard" %in% type){
@@ -380,6 +392,20 @@ predictCox <- function(object,
                 if ("survival" %in% type){
                     if (needOrder)
                         out$survival.iid <- outSE$survival.iid[,oorder.times,,drop=0L]
+                    else
+                        out$survival.iid <- outSE$survival.iid
+                }
+            }
+            if(average.iid == TRUE){
+                if ("cumhazard" %in% type){
+                    if (needOrder)
+                        out$cumhazard.iid <- outSE$cumhazard.iid[,oorder.times,drop=0L]
+                    else
+                        out$cumhazard.iid <- outSE$cumhazard.iid
+                }
+                if ("survival" %in% type){
+                    if (needOrder)
+                        out$survival.iid <- outSE$survival.iid[,oorder.times,drop=0L]
                     else
                         out$survival.iid <- outSE$survival.iid
                 }
@@ -483,7 +509,4 @@ predictCox <- function(object,
     }
     
 }
-
-# }}}
-
 

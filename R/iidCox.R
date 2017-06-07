@@ -8,12 +8,18 @@
 #' @param newdata Optional new data at which to do i.i.d. decomposition 
 #' @param tauHazard the vector of times at which the i.i.d decomposition of the baseline hazard will be computed
 #' @param keep.times Logical. If \code{TRUE} add the evaluation times to the output.
-#' @param exact Logical. If \code{TRUE} then the exact influence function is computed.
-#' @param minimalExport Logical. If \code{TRUE} do not export the i.i.d. decomposition for the baseline hazard but export the necessary element to compute it.
-#' Otherwise the influence function is estimated using the counting processes instead of the estimated martingales.
-#' 
+#' @param method.iid the method used to compute the influence function and the standard error.
+#' Can be \code{"full"}, \code{"approx"} or \code{"minimal"}. See the details section.
+
 #' @details If there is no event in a strata, the influence function for the baseline hazard is set to 0.
 #'
+#' \code{method.iid} equal to \code{"full"} exports the influence function for the coefficients
+#' and the baseline hazard at each event time.
+#' \code{method.iid} equal to \code{"approx"} does the same except that the terms that do not contributes
+#' to the variance are not ignored (i.e. set to 0)
+#' \code{method.iid} equal to \code{"minimal"} exports the influence function for the coefficients. For the
+#' baseline hazard it only computes the quantities necessary to compute the influence function in order to save memory.
+#' 
 #' @return A list containing:
 #'  \itemize{
 #'  \item{IFbeta}{Influence function for the regression coefficient.}
@@ -45,7 +51,7 @@
 #' @rdname iid
 #' @export
 iidCox <- function(object, newdata = NULL, tauHazard = NULL, 
-                   keep.times = TRUE, method.iid = "exact"){
+                   keep.times = TRUE, method.iid = "full"){
 
     #### extract elements from object ####
     infoVar <- CoxVariableName(object)
@@ -98,8 +104,8 @@ iidCox <- function(object, newdata = NULL, tauHazard = NULL,
              "each element being the vector of times for each strata \n")
     }
 
-    if(method.iid %in% c("exact","approx","minimal") == FALSE){
-        stop("method.iid can only be \"exact\", or \"approx\" or \"minimal\"\n")
+    if(method.iid %in% c("full","approx","minimal") == FALSE){
+        stop("method.iid can only be \"full\", or \"approx\" or \"minimal\"\n")
     }
     
 

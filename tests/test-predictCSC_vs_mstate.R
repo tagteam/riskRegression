@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: maj 18 2017 (09:23) 
 ## Version: 
-## last-updated: maj 19 2017 (18:47) 
-##           By: Brice Ozenne
-##     Update #: 124
+## last-updated: jun  6 2017 (00:09) 
+##           By: Brice
+##     Update #: 132
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -803,5 +803,73 @@ test_that("conditional predictCSC with strata",{
 # }}}
 
 # }}}
+
+
+# {{{ 5- Fast SE
+set.seed(10)
+d <- sampleData(1e2, outcome = "competing.risks")
+setkey(d,time)
+
+m.CSC <- CSC(Hist(time, event) ~ X1+X6, data = d)
+ 
+seqTime <- c(1e-16,4:10,d$time[1:10],1e6)
+newdata <- d
+
+test_that("iid minimal - no strata", {
+    res1 <- predict(m.CSC, times = seqTime, newdata = newdata,
+                    logTransform = TRUE, cause = 1,
+                    method.iid = "minimal", se = TRUE, iid = TRUE)
+    res3 <- predict(m.CSC, times = seqTime, newdata = newdata,
+                    logTransform = TRUE, cause = 1,
+                    method.iid = "full", se = TRUE, iid = TRUE)
+    expect_equal(res1$absRisk.se,res3$absRisk.se)
+    expect_equal(res1$absRisk.iid,res3$absRisk.iid)
+    
+    res1 <- predict(m.CSC, times = seqTime, newdata = newdata,
+                    logTransform = FALSE, cause = 1,
+                    method.iid = "minimal", se = TRUE, iid = TRUE)
+    res2 <- predict(m.CSC, times = seqTime, newdata = newdata,
+                    logTransform = FALSE, cause = 1,
+                    method.iid = "minimal", average.iid = TRUE)
+    res3 <- predict(m.CSC, times = seqTime, newdata = newdata,
+                    logTransform = FALSE, cause = 1,
+                    method.iid = "full", se = TRUE, iid = TRUE)
+    expect_equal(res1$absRisk.se,res3$absRisk.se)
+    expect_equal(res1$absRisk.iid,res3$absRisk.iid)
+    expect_equal(res2$absRisk.iid, t(apply(res3$absRisk.iid,2:3,mean)))
+})
+
+m.CSC <- CSC(Hist(time, event) ~ strata(X1)+X6, data = d)
+seqTime <- c(1e-16,4:10,d$time[1:10],1e6)
+newdata <- d
+
+test_that("iid minimal - strata", {
+    res1 <- predict(m.CSC, times = seqTime, newdata = newdata,
+                    logTransform = TRUE, cause = 1,
+                    method.iid = "minimal", se = TRUE, iid = TRUE)
+    res3 <- predict(m.CSC, times = seqTime, newdata = newdata,
+                    logTransform = TRUE, cause = 1,
+                    method.iid = "full", se = TRUE, iid = TRUE)
+    expect_equal(res1$absRisk.se,res3$absRisk.se)    
+    expect_equal(res1$absRisk.iid,res3$absRisk.iid)
+    
+    res1 <- predict(m.CSC, times = seqTime, newdata = newdata,
+                    logTransform = FALSE, cause = 1,
+                    method.iid = "minimal", se = TRUE, iid = TRUE)
+    res2 <- predict(m.CSC, times = seqTime, newdata = newdata,
+                    logTransform = FALSE, cause = 1,
+                    method.iid = "minimal", average.iid = TRUE)
+    res3 <- predict(m.CSC, times = seqTime, newdata = newdata,
+                    logTransform = FALSE, cause = 1,
+                    method.iid = "full", se = TRUE, iid = TRUE)
+    expect_equal(res1$absRisk.se,res3$absRisk.se)
+    expect_equal(res1$absRisk.iid,res3$absRisk.iid)
+    expect_equal(res2$absRisk.iid, t(apply(res3$absRisk.iid,2:3,mean)))
+})
+
+
+    
+# }}}
+
 #----------------------------------------------------------------------
 ### test-predictCSC_vs_mstate.R ends here
