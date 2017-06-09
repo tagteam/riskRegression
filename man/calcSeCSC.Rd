@@ -61,33 +61,3 @@ before computing the standard error / influence functions.
 This avoid to store all the influence functions but may lead to repeated evaluation of the influence function.
 This solution is therefore efficient more efficient in memory usage but may not be in term of computation time.
 }
-\examples{
-
-set.seed(10)
-d <- SimCompRisk(1e3)
-d$time <- round(d$time,1)
-ttt <- unique(sort(d$time))#sort(sample(x = unique(sort(d$time)), size = 10))
-
-#### coxph function
-CSC.fit <- CSC(Hist(time,event)~ strata(X1)+X2,data=d, method = "breslow")
-
-predCSC <- predict(CSC.fit, newdata = d[1:5,,drop=FALSE], cause = 2, times = ttt, se = TRUE)
-
-CSC.fit <- CSC(Hist(time,event)~ X1+X2,data=d, method = "breslow")
-
-ttt2 <- ttt
-newdata <- d
-system.time(
-predCSC1 <- predict(CSC.fit, newdata = newdata, cause = 1, times = ttt2, se = TRUE, 
-                    iid = FALSE, method.iid = "minimal")
-)
-system.time(
-predCSC2 <- predict(CSC.fit, newdata = newdata, cause = 1, times = ttt2, se = TRUE, 
-                    iid = FALSE, method.iid = "full")
-)
-quantile(predCSC1$absRisk.iid-predCSC2$absRisk.iid)
-quantile(predCSC1$absRisk.se-predCSC2$absRisk.se)
-
-iidCox(CSC.fit$models[[2]], tauHazard = ttt2[6])$IFcumhazard[[1]]
-
-}

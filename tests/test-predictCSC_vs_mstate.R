@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: maj 18 2017 (09:23) 
 ## Version: 
-## last-updated: jun  6 2017 (00:09) 
-##           By: Brice
-##     Update #: 132
+## last-updated: jun  8 2017 (20:32) 
+##           By: Brice Ozenne
+##     Update #: 137
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -91,49 +91,49 @@ test_that("predict.CSC/predictCox (1a,df1) - compare to manual estimation",{
 })
 
 test_that("predict.CSC/predictCox (1a,df2) - compare to manual estimation",{
-CSC.exp <- CSC(Hist(time,event) ~ 1, data = df2)
-pred.exp <- predict(CSC.exp, times = 1:10, newdata = data.frame(NA), cause = 1, productLimit = FALSE)  
-pred.exp2 <- predict(CSC.exp, times = 1:10, newdata = data.frame(NA), cause = 1, productLimit = TRUE)  
+    CSC.exp <- CSC(Hist(time,event) ~ 1, data = df2)
+    pred.exp <- predict(CSC.exp, times = 1:10, newdata = data.frame(NA), cause = 1, productLimit = FALSE)  
+    pred.exp2 <- predict(CSC.exp, times = 1:10, newdata = data.frame(NA), cause = 1, productLimit = TRUE)  
 
-CSC.prodlim <- CSC(Hist(time,event) ~ 1, data = df2, survtype = "survival", method = "breslow")
-pred.prodlim <- predict(CSC.prodlim, times = 1:10, newdata = data.frame(NA), cause = 1, productLimit = TRUE)  
-expect_equal(pred.exp2, pred.prodlim)
+    CSC.prodlim <- CSC(Hist(time,event) ~ 1, data = df2, survtype = "survival", method = "breslow")
+    pred.prodlim <- predict(CSC.prodlim, times = 1:10, newdata = data.frame(NA), cause = 1, productLimit = TRUE)  
+    expect_equal(pred.exp2, pred.prodlim)
 
-CSC.prodlimE <- CSC(Hist(time,event) ~ 1, data = df2, survtype = "survival", method = "efron")
-pred.prodlimE <- predict(CSC.prodlimE, times = 1:10, newdata = data.frame(NA), cause = 1, productLimit = TRUE)  
+    CSC.prodlimE <- CSC(Hist(time,event) ~ 1, data = df2, survtype = "survival", method = "efron")
+    pred.prodlimE <- predict(CSC.prodlimE, times = 1:10, newdata = data.frame(NA), cause = 1, productLimit = TRUE)  
 
-## test baseline hazard
-lambda1 <- 1/seq(19,1,by = -2)
-lambda2 <- 1/seq(20,2,by = -2)
-lambda2E <- as.data.table(predictCox(CSC.prodlimE$models[[2]], type = "hazard"))
+    ## test baseline hazard
+    lambda1 <- 1/seq(19,1,by = -2)
+    lambda2 <- 1/seq(20,2,by = -2)
+    lambda2E <- as.data.table(predictCox(CSC.prodlimE$models[[2]], type = "hazard"))
 
-expect_equal(predictCox(CSC.exp$models[[1]], times = 1:10, type = "hazard")$hazard,
-             lambda1)
-expect_equal(predictCox(CSC.exp$models[[2]], times = -0.1 + 1:10, type = "hazard")$hazard,
-             lambda2)
-expect_equal(predictCox(CSC.prodlim$models[[1]], times = 1:10, type = "hazard")$hazard,
-             lambda1)
-expect_equal(predictCox(CSC.prodlim$models[[2]], type = "hazard")$hazard,
-             as.double(rbind(lambda2,lambda1)))
-expect_equal(basehaz(CSC.prodlimE$models[[2]])$hazard,
-             cumsum(lambda2E$hazard)
-             )
+    expect_equal(predictCox(CSC.exp$models[[1]], times = 1:10, type = "hazard")$hazard,
+                 lambda1)
+    expect_equal(predictCox(CSC.exp$models[[2]], times = -0.1 + 1:10, type = "hazard")$hazard,
+                 lambda2)
+    expect_equal(predictCox(CSC.prodlim$models[[1]], times = 1:10, type = "hazard")$hazard,
+                 lambda1)
+    expect_equal(predictCox(CSC.prodlim$models[[2]], type = "hazard")$hazard,
+                 as.double(rbind(lambda2,lambda1)))
+    expect_equal(basehaz(CSC.prodlimE$models[[2]])$hazard,
+                 cumsum(lambda2E$hazard)
+                 )
 
-## test absolute risk
-vec.lambda <- cumsum(as.double(rbind(lambda2,lambda1)))
-survival <- exp(-matrix(vec.lambda, ncol = 2, byrow = TRUE)[,1])
-expect_equal(as.double(pred.exp$absRisk),
-             cumsum(lambda1*survival))
+    ## test absolute risk
+    vec.lambda <- cumsum(as.double(rbind(lambda2,lambda1)))
+    survival <- exp(-matrix(vec.lambda, ncol = 2, byrow = TRUE)[,1])
+    expect_equal(as.double(pred.exp$absRisk),
+                 cumsum(lambda1*survival))
 
-vec.lambda <- as.double(rbind(lambda2,lambda1))
-survival <- matrix(cumprod(1-vec.lambda), ncol = 2, byrow = TRUE)[,1]
-expect_equal(as.double(pred.prodlim$absRisk),
-             cumsum(lambda1*survival))
+    vec.lambda <- as.double(rbind(lambda2,lambda1))
+    survival <- matrix(cumprod(1-vec.lambda), ncol = 2, byrow = TRUE)[,1]
+    expect_equal(as.double(pred.prodlim$absRisk),
+                 cumsum(lambda1*survival))
 
-vec.lambda <-lambda2E$hazard
-survival <- matrix(cumprod(1-vec.lambda), ncol = 2, byrow = TRUE)[,1]
-expect_equal(as.double(pred.prodlimE$absRisk),
-             cumsum(lambda1*survival))
+    vec.lambda <-lambda2E$hazard
+    survival <- matrix(cumprod(1-vec.lambda), ncol = 2, byrow = TRUE)[,1]
+    expect_equal(as.double(pred.prodlimE$absRisk),
+                 cumsum(lambda1*survival))
 })
 
 test_that("predict.CSC (1a) - compare to mstate",{
@@ -368,9 +368,6 @@ test_that("predict.CSC(1c) - compare to mstate",{
         dL.exp <- expand.covs(dL,  c("X1"))
         e.coxph <- coxph(Surv(time, status) ~ X1.1 + X1.2 + strata(trans),
                          data = dL.exp)
-
-        coef(e.coxph)
-        coef(CSC.exp)
         
         ## compare
         for(iX1 in 0:1){ # iX1 <- 0
@@ -804,7 +801,6 @@ test_that("conditional predictCSC with strata",{
 
 # }}}
 
-
 # {{{ 5- Fast SE
 set.seed(10)
 d <- sampleData(1e2, outcome = "competing.risks")
@@ -869,6 +865,19 @@ test_that("iid minimal - strata", {
 
 
     
+# }}}
+
+# {{{ 6- Prediction when iid is stored
+data(Melanoma, package = "riskRegression")
+cfit1 <- CSC(formula=list(Hist(time,status)~age+logthick+epicel+strata(sex),
+                          Hist(time,status)~age+strata(sex)),
+             data=Melanoma)
+cfit1$iid <- lapply(cfit1$model,iidCox)
+
+
+res <- predict(cfit1,newdata=Melanoma[1,,drop=FALSE],cause=1,
+               times=4,se=TRUE,band=TRUE)
+
 # }}}
 
 #----------------------------------------------------------------------
