@@ -14,4 +14,3 @@
 \description{
 Print of a Fine-Gray regression model
 }
-

@@ -14,4 +14,3 @@
 \description{
 Extract coefficients from a Cause-Specific Cox regression model
 }
-

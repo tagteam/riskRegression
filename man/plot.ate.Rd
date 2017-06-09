@@ -44,4 +44,3 @@ ateFit <- ate(fit, data = dtS, treatment = "X1", contrasts = NULL,
 plot(ateFit, band = TRUE, ci = TRUE)
 
 }
-

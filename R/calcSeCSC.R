@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: maj 27 2017 (21:23) 
 ## Version: 
-## last-updated: jun  5 2017 (15:44) 
-##           By: Brice
-##     Update #: 156
+## last-updated: jun  8 2017 (20:31) 
+##           By: Brice Ozenne
+##     Update #: 157
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -63,7 +63,7 @@ calcSeCSC <- function(object, cif, hazard, cumhazard, object.time, object.maxtim
             object$iid[[iModel]] <- iidCox(object$models[[iModel]], tauHazard = object.time, method.iid = method.iid)
         }
     }else{
-        method.iid <- object$iid[[iModel]]$method.iid
+        method.iid <- object$iid[[1]]$method.iid
         for(iModel in 1:nCause){
             object$iid[[iModel]] <- selectJump(object$iid[[iModel]], times = object.time,
                                                type = c("hazard","cumhazard"))

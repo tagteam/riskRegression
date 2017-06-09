@@ -92,4 +92,3 @@ Thomas H. Scheike \email{ts@biostat.ku.dk}
 Thomas A. Gerds \email{tag@biostat.ku.dk}
 }
 \keyword{survival}
-

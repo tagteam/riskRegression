@@ -78,10 +78,12 @@ CSC.fit <- CSC(Hist(time,event)~ X1+X2,data=d, method = "breslow")
 ttt2 <- ttt
 newdata <- d
 system.time(
-predCSC1 <- predict(CSC.fit, newdata = newdata, cause = 1, times = ttt2, se = TRUE, iid = FALSE, method.iid = "minimal")
+predCSC1 <- predict(CSC.fit, newdata = newdata, cause = 1, times = ttt2, se = TRUE, 
+                    iid = FALSE, method.iid = "minimal")
 )
 system.time(
-predCSC2 <- predict(CSC.fit, newdata = newdata, cause = 1, times = ttt2, se = TRUE, iid = FALSE, method.iid = "full")
+predCSC2 <- predict(CSC.fit, newdata = newdata, cause = 1, times = ttt2, se = TRUE, 
+                    iid = FALSE, method.iid = "full")
 )
 quantile(predCSC1$absRisk.iid-predCSC2$absRisk.iid)
 quantile(predCSC1$absRisk.se-predCSC2$absRisk.se)
@@ -89,4 +91,3 @@ quantile(predCSC1$absRisk.se-predCSC2$absRisk.se)
 iidCox(CSC.fit$models[[2]], tauHazard = ttt2[6])$IFcumhazard[[1]]
 
 }
-

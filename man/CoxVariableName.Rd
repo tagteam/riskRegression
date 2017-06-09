@@ -56,4 +56,3 @@ CoxVariableName(mCoxI)
 \author{
 Brice Ozenne broz@sund.ku.dk
 }
-
