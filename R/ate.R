@@ -44,7 +44,7 @@
 #' @param verbose Logical. If \code{TRUE} inform about estimated run
 #'     time.
 #' @param logTransform Should the confidence interval for the ratio be computed using a log-tranformation. Only active if Wald-type confidence intervals are computed.
-#' @param method.iid Implementation used to estimate the standard error. Can be \code{"full"} or \code{"minimal"}.
+#' @param store.iid Implementation used to estimate the standard error. Can be \code{"full"} or \code{"minimal"}.
 #' \code{"minimal"} requires less memory but can only estimate the standard for the difference between treatment effects (and not for the ratio).
 #' @param ... passed to predictRisk
 #' @return A list with: point estimates, bootstrap quantile confidence
@@ -83,7 +83,7 @@
 #'
 #' ateFit3 <- ate(fit, data = dtS, treatment = "X1", contrasts = NULL,
 #'            times = 5:8, B = 0, y = TRUE, band = TRUE, mc.cores=1,
-#'            method.iid = "minimal")
+#'            store.iid = "minimal")
 #' 
 #' ## Cause specific cox model
 #' set.seed(17)
@@ -120,7 +120,7 @@ ate <- function(object,
                 mc.cores = 1,
                 verbose=TRUE,
                 logTransform=FALSE,
-                method.iid="full",
+                store.iid="full",
                 ...){
     
     meanRisk=Treatment=ratio=Treatment.A=Treatment.B=b <- NULL
@@ -319,8 +319,8 @@ ate <- function(object,
         } else {
             
             # {{{ Influence function and variance
-            average.iid <- method.iid=="minimal"
-            iid <- method.iid!="minimal"
+            average.iid <- store.iid=="minimal"
+            iid <- store.iid!="minimal"
             
             IFrisk <- lapply(1:n.contrasts,function(i){
                 #### influence function for the hypothetical worlds in which every subject is treated with the same treatment
@@ -336,7 +336,7 @@ ate <- function(object,
                                                             iid=iid,
                                                             keep.times=FALSE,
                                                             logTransform=FALSE,
-                                                            method.iid=method.iid,
+                                                            store.iid=store.iid,
                                                             average.iid=average.iid))
                     risk.i <- pred.i$absRisk
                     attr(risk.i,"iid") <- pred.i$absRisk.iid
@@ -349,7 +349,7 @@ ate <- function(object,
                                                                keep.times=FALSE,
                                                                logTransform=FALSE,
                                                                type="survival",
-                                                               method.iid=method.iid,
+                                                               store.iid=store.iid,
                                                                average.iid=average.iid))
                     risk.i <- 1-pred.i$survival
                     attr(risk.i,"iid") <- pred.i$survival.iid

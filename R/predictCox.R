@@ -44,7 +44,7 @@
 #' @param logTransform Should the confidence intervals/bands be computed on the log (hazard) and
 #' log(-log) (survival) scale and be backtransformed.
 #' Otherwise they are computed on the original scale and truncated (if necessary).
-#' @param method.iid the method used to compute the influence function and the standard error.
+#' @param store.iid Implementation used to estimate the influence function and the standard error.
 #' Can be \code{"full"} or \code{"minimal"}. See the details section of \code{\link{calcSeCox}}.
 #' @param ... arguments to be passed to the function \code{iidCox}.
 #' @details Not working with time varying predictor variables or
@@ -80,7 +80,7 @@
 #' predictCox(fit,centered=TRUE,type="hazard")
 #' predictCox(fit, newdata=nd, times=c(3,8),se=TRUE)
 #' predictCox(fit, newdata=nd, times=c(3,8),se=TRUE, logTransform = TRUE)
-#' predictCox(fit, newdata=nd, times=c(3,8),se=TRUE, method.iid = "minimal")
+#' predictCox(fit, newdata=nd, times=c(3,8),se=TRUE, store.iid = "minimal")
 #' predictCox(fit, newdata=nd, times = 5,iid=TRUE)
 #' 
 #' cbind(survival::basehaz(fit),predictCox(fit,type="cumhazard")$cumhazard)
@@ -125,7 +125,7 @@ predictCox <- function(object,
                        nSim.band = 1e4,
                        conf.level=0.95,
                        logTransform = TRUE,
-                       method.iid = "full"){
+                       store.iid = "full"){
     status=statusM1=NULL
     
     # {{{ treatment of times and stopping rules
@@ -368,7 +368,7 @@ predictCox <- function(object,
                                new.eXb = new.eXb, new.LPdata = new.LPdata, new.strata = new.strata,
                                new.cumhazard = out$cumhazard, new.survival = out$survival,
                                nVar = nVar, logTransform = logTransform,
-                               export = c("iid"[iid==TRUE],"se"[se==TRUE],"average.iid"[average.iid==TRUE]), method.iid = method.iid)
+                               export = c("iid"[iid==TRUE],"se"[se==TRUE],"average.iid"[average.iid==TRUE]), store.iid = store.iid)
             if("cumhazard" %in% type == FALSE){
                 out$cumhazard <- NULL                
             }

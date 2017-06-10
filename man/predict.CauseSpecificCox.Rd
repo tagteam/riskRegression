@@ -8,7 +8,7 @@
   landmark = NA, keep.times = 1L, keep.newdata = 1L, keep.strata = 1L,
   se = FALSE, band = FALSE, iid = FALSE, average.iid = FALSE,
   nSim.band = 10000, logTransform = FALSE, productLimit = TRUE,
-  conf.level = 0.95, method.iid = "full", ...)
+  conf.level = 0.95, store.iid = "full", ...)
 }
 \arguments{
 \item{object}{The fitted cause specific Cox model}
@@ -51,7 +51,7 @@ Otherwise the exponential approximation is used (i.e. exp(-cumulative hazard)).}
 
 \item{conf.level}{Level of confidence.}
 
-\item{method.iid}{the method used to compute the influence function and the standard error.
+\item{store.iid}{Implementation used to estimate the influence function and the standard error.
 Can be \code{"full"} or \code{"minimal"}. See the details section of \code{\link{calcSeCSC}}.}
 
 \item{...}{not used}

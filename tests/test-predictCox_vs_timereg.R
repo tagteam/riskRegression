@@ -98,8 +98,8 @@ IFlambdaCAT_GS <- t(as.data.table(mCAT.cox_GS$B.iid))
   
 # {{{ 1a- no strata, no interaction, continous
 IF.coxph <- iidCox(m.coxph, keep.times = FALSE)
-IFapprox.coxph <- iidCox(m.coxph, keep.times = FALSE, method.iid = "approx")
-IFminimal.coxph <- iidCox(m.coxph, keep.times = FALSE, method.iid = "minimal")
+IFapprox.coxph <- iidCox(m.coxph, keep.times = FALSE, store.iid = "approx")
+IFminimal.coxph <- iidCox(m.coxph, keep.times = FALSE, store.iid = "minimal")
     
 IF.coxph_d2 <- iidCox(m.coxph_d2, keep.times = FALSE)
   
@@ -344,19 +344,19 @@ seqTime <- c(1e-16,4:10,d$time[1:10],1e6)
 newdata <- d
 
 ## system.time(
-##     res1 <- predictCox(m.coxph, times = seqTime, newdata = newdata, method.iid = "minimal", se = TRUE, iid = FALSE)
+##     res1 <- predictCox(m.coxph, times = seqTime, newdata = newdata, store.iid = "minimal", se = TRUE, iid = FALSE)
 ## )
 ## system.time(
-##     res3 <- predictCox(m.coxph, times = seqTime, newdata = newdata, method.iid = "full", se = TRUE, iid = FALSE)
+##     res3 <- predictCox(m.coxph, times = seqTime, newdata = newdata, store.iid = "full", se = TRUE, iid = FALSE)
 ## )
 
 test_that("iid minimal - no strata", {
     res1 <- predictCox(m.coxph, times = seqTime, newdata = newdata,
                        logTransform = TRUE, type = c("cumhazard", "survival"),
-                       method.iid = "minimal", se = TRUE, iid = TRUE)
+                       store.iid = "minimal", se = TRUE, iid = TRUE)
     res3 <- predictCox(m.coxph, times = seqTime, newdata = newdata,
                        logTransform = TRUE, type = c("cumhazard", "survival"),
-                       method.iid = "full", se = TRUE, iid = TRUE)
+                       store.iid = "full", se = TRUE, iid = TRUE)
     expect_equal(res1$cumhazard.se,res3$cumhazard.se)
     expect_equal(res1$survival.se,res3$survival.se)
     expect_equal(res1$cumhazard.iid,res3$cumhazard.iid)
@@ -364,13 +364,13 @@ test_that("iid minimal - no strata", {
 
     res1 <- predictCox(m.coxph, times = seqTime, newdata = newdata,
                        logTransform = FALSE, type = c("cumhazard", "survival"),
-                       method.iid = "minimal", se = TRUE, iid = TRUE) 
+                       store.iid = "minimal", se = TRUE, iid = TRUE) 
     res2 <- predictCox(m.coxph, times = seqTime, newdata = newdata,
                        logTransform = FALSE, type = c("cumhazard", "survival"),
-                       method.iid = "minimal", average.iid = TRUE) 
+                       store.iid = "minimal", average.iid = TRUE) 
     res3 <- predictCox(m.coxph, times = seqTime, newdata = newdata,
                        logTransform = FALSE, type = c("cumhazard", "survival"),
-                       method.iid = "full", se = TRUE, iid = TRUE)
+                       store.iid = "full", se = TRUE, iid = TRUE)
     expect_equal(res1$cumhazard.se,res3$cumhazard.se)
     expect_equal(res1$survival.se,res3$survival.se)
     expect_equal(res1$cumhazard.iid,res3$cumhazard.iid)
@@ -388,10 +388,10 @@ newdata <- d
 test_that("iid minimal - strata", {
     res1 <- predictCox(m.coxph, times = seqTime, newdata = newdata,
                        logTransform = TRUE, type = c("cumhazard", "survival"),
-                       method.iid = "minimal", se = TRUE, iid = TRUE)
+                       store.iid = "minimal", se = TRUE, iid = TRUE)
     res3 <- predictCox(m.coxph, times = seqTime, newdata = newdata,
                        logTransform = TRUE, type = c("cumhazard", "survival"),
-                       method.iid = "full", se = TRUE, iid = TRUE)
+                       store.iid = "full", se = TRUE, iid = TRUE)
     expect_equal(res1$cumhazard.se,res3$cumhazard.se)
     expect_equal(res1$survival.se,res3$survival.se)
     expect_equal(res1$cumhazard.iid,res3$cumhazard.iid)
@@ -400,13 +400,13 @@ test_that("iid minimal - strata", {
     newdata <- rbind(d[1],d[1])
     res1 <- predictCox(m.coxph, times = seqTime, newdata = newdata,
                        logTransform = FALSE, type = c("cumhazard", "survival"),
-                       method.iid = "minimal", se = TRUE, iid = TRUE) 
+                       store.iid = "minimal", se = TRUE, iid = TRUE) 
     res2 <- predictCox(m.coxph, times = seqTime, newdata = newdata,
                        logTransform = FALSE, type = c("cumhazard", "survival"),
-                       method.iid = "minimal", average.iid = TRUE) 
+                       store.iid = "minimal", average.iid = TRUE) 
     res3 <- predictCox(m.coxph, times = seqTime, newdata = newdata,
                        logTransform = FALSE, type = c("cumhazard", "survival"),
-                       method.iid = "full", se = TRUE, iid = TRUE)
+                       store.iid = "full", se = TRUE, iid = TRUE)
     expect_equal(res1$cumhazard.se,res3$cumhazard.se)
     expect_equal(res1$survival.se,res3$survival.se)
     expect_equal(res1$cumhazard.iid,res3$cumhazard.iid)
@@ -430,18 +430,18 @@ test_that("iid minimal - strata", {
 ## system.time(
 ##     res1 <- predictCox(m.coxph, times = 10:11, newdata = newdata,
 ##                        logTransform = FALSE, type = "survival",
-##                        method.iid = "minimal", average.iid = TRUE, se = TRUE)
+##                        store.iid = "minimal", average.iid = TRUE, se = TRUE)
 ## )
 
 ## system.time(
 ##     res3 <- predictCox(m.coxph, times = 1:5, newdata = newdata[1:10],
 ##                        logTransform = TRUE, type = "survival",
-##                        method.iid = "full"x, se = TRUE, iid = FALSE)
+##                        store.iid = "full"x, se = TRUE, iid = FALSE)
 ## )
 ## system.time(
 ##     res3 <- predictCox(m.coxph, times = 1:5, newdata = newdata[1:10],
 ##                        logTransform = TRUE, type = "survival",
-##                        method.iid = "minimal", se = TRUE, iid = FALSE)
+##                        store.iid = "minimal", se = TRUE, iid = FALSE)
 ## )
 ##     apply(res3$survival.iid,1:2,mean)
 

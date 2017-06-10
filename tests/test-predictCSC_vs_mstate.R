@@ -814,22 +814,22 @@ newdata <- d
 test_that("iid minimal - no strata", {
     res1 <- predict(m.CSC, times = seqTime, newdata = newdata,
                     logTransform = TRUE, cause = 1,
-                    method.iid = "minimal", se = TRUE, iid = TRUE)
+                    store.iid = "minimal", se = TRUE, iid = TRUE)
     res3 <- predict(m.CSC, times = seqTime, newdata = newdata,
                     logTransform = TRUE, cause = 1,
-                    method.iid = "full", se = TRUE, iid = TRUE)
+                    store.iid = "full", se = TRUE, iid = TRUE)
     expect_equal(res1$absRisk.se,res3$absRisk.se)
     expect_equal(res1$absRisk.iid,res3$absRisk.iid)
     
     res1 <- predict(m.CSC, times = seqTime, newdata = newdata,
                     logTransform = FALSE, cause = 1,
-                    method.iid = "minimal", se = TRUE, iid = TRUE)
+                    store.iid = "minimal", se = TRUE, iid = TRUE)
     res2 <- predict(m.CSC, times = seqTime, newdata = newdata,
                     logTransform = FALSE, cause = 1,
-                    method.iid = "minimal", average.iid = TRUE)
+                    store.iid = "minimal", average.iid = TRUE)
     res3 <- predict(m.CSC, times = seqTime, newdata = newdata,
                     logTransform = FALSE, cause = 1,
-                    method.iid = "full", se = TRUE, iid = TRUE)
+                    store.iid = "full", se = TRUE, iid = TRUE)
     expect_equal(res1$absRisk.se,res3$absRisk.se)
     expect_equal(res1$absRisk.iid,res3$absRisk.iid)
     expect_equal(res2$absRisk.iid, t(apply(res3$absRisk.iid,2:3,mean)))
@@ -842,22 +842,22 @@ newdata <- d
 test_that("iid minimal - strata", {
     res1 <- predict(m.CSC, times = seqTime, newdata = newdata,
                     logTransform = TRUE, cause = 1,
-                    method.iid = "minimal", se = TRUE, iid = TRUE)
+                    store.iid = "minimal", se = TRUE, iid = TRUE)
     res3 <- predict(m.CSC, times = seqTime, newdata = newdata,
                     logTransform = TRUE, cause = 1,
-                    method.iid = "full", se = TRUE, iid = TRUE)
+                    store.iid = "full", se = TRUE, iid = TRUE)
     expect_equal(res1$absRisk.se,res3$absRisk.se)    
     expect_equal(res1$absRisk.iid,res3$absRisk.iid)
     
     res1 <- predict(m.CSC, times = seqTime, newdata = newdata,
                     logTransform = FALSE, cause = 1,
-                    method.iid = "minimal", se = TRUE, iid = TRUE)
+                    store.iid = "minimal", se = TRUE, iid = TRUE)
     res2 <- predict(m.CSC, times = seqTime, newdata = newdata,
                     logTransform = FALSE, cause = 1,
-                    method.iid = "minimal", average.iid = TRUE)
+                    store.iid = "minimal", average.iid = TRUE)
     res3 <- predict(m.CSC, times = seqTime, newdata = newdata,
                     logTransform = FALSE, cause = 1,
-                    method.iid = "full", se = TRUE, iid = TRUE)
+                    store.iid = "full", se = TRUE, iid = TRUE)
     expect_equal(res1$absRisk.se,res3$absRisk.se)
     expect_equal(res1$absRisk.iid,res3$absRisk.iid)
     expect_equal(res2$absRisk.iid, t(apply(res3$absRisk.iid,2:3,mean)))

@@ -29,7 +29,7 @@
 #' @param productLimit Logical. If true the survival is computed using the product limit estimator.
 #' Otherwise the exponential approximation is used (i.e. exp(-cumulative hazard)).
 #' @param conf.level Level of confidence.
-#' @param method.iid the method used to compute the influence function and the standard error.
+#' @param store.iid Implementation used to estimate the influence function and the standard error.
 #' Can be \code{"full"} or \code{"minimal"}. See the details section of \code{\link{calcSeCSC}}.
 #' @param ... not used
 #' @author Brice Ozenne broz@@sund.ku.dk, Thomas A. Gerds
@@ -103,7 +103,7 @@ predict.CauseSpecificCox <- function(object,
                                      logTransform = FALSE,
                                      productLimit = TRUE,
                                      conf.level=0.95,
-                                     method.iid="full",
+                                     store.iid="full",
                                      ...){
     if(object$fitter=="phreg"){newdata$entry <- 0} 
     if(missing(newdata)){newdata <- eval(object$call$data)}
@@ -323,7 +323,7 @@ predict.CauseSpecificCox <- function(object,
                                survtype = survtype,
                                logTransform = logTransform,
                                export = c("iid"[iid==TRUE],"se"[se==TRUE],"average.iid"[average.iid==TRUE]),
-                               method.iid = method.iid)
+                               store.iid = store.iid)
     }
     
     #### export ####

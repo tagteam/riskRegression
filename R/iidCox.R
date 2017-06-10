@@ -8,16 +8,16 @@
 #' @param newdata Optional new data at which to do i.i.d. decomposition 
 #' @param tauHazard the vector of times at which the i.i.d decomposition of the baseline hazard will be computed
 #' @param keep.times Logical. If \code{TRUE} add the evaluation times to the output.
-#' @param method.iid the method used to compute the influence function and the standard error.
+#' @param store.iid the method used to compute the influence function and the standard error.
 #' Can be \code{"full"}, \code{"approx"} or \code{"minimal"}. See the details section.
 
 #' @details If there is no event in a strata, the influence function for the baseline hazard is set to 0.
 #'
-#' \code{method.iid} equal to \code{"full"} exports the influence function for the coefficients
+#' \code{store.iid} equal to \code{"full"} exports the influence function for the coefficients
 #' and the baseline hazard at each event time.
-#' \code{method.iid} equal to \code{"approx"} does the same except that the terms that do not contributes
+#' \code{store.iid} equal to \code{"approx"} does the same except that the terms that do not contributes
 #' to the variance are not ignored (i.e. set to 0)
-#' \code{method.iid} equal to \code{"minimal"} exports the influence function for the coefficients. For the
+#' \code{store.iid} equal to \code{"minimal"} exports the influence function for the coefficients. For the
 #' baseline hazard it only computes the quantities necessary to compute the influence function in order to save memory.
 #' 
 #' @return A list containing:
@@ -41,7 +41,7 @@
 #' 
 #' m.cox <- coxph(Surv(eventtime, event) ~ X1+X6, data = d, y = TRUE, x = TRUE)
 #' system.time(IF.cox <- iidCox(m.cox))
-#' system.time(IF.cox_approx <- iidCox(m.cox, method.iid = "approx"))
+#' system.time(IF.cox_approx <- iidCox(m.cox, store.iid = "approx"))
 #'
 #' 
 #' IF.cox <- iidCox(m.cox, tauHazard = sort(unique(c(7,d$eventtime))))
@@ -51,7 +51,7 @@
 #' @rdname iid
 #' @export
 iidCox <- function(object, newdata = NULL, tauHazard = NULL, 
-                   keep.times = TRUE, method.iid = "full"){
+                   keep.times = TRUE, store.iid = "full"){
 
     #### extract elements from object ####
     infoVar <- CoxVariableName(object)
@@ -104,8 +104,8 @@ iidCox <- function(object, newdata = NULL, tauHazard = NULL,
              "each element being the vector of times for each strata \n")
     }
 
-    if(method.iid %in% c("full","approx","minimal") == FALSE){
-        stop("method.iid can only be \"full\", or \"approx\" or \"minimal\"\n")
+    if(store.iid %in% c("full","approx","minimal") == FALSE){
+        stop("store.iid can only be \"full\", or \"approx\" or \"minimal\"\n")
     }
     
 
@@ -213,7 +213,7 @@ iidCox <- function(object, newdata = NULL, tauHazard = NULL,
     
     ## IF
     if(p>0){
-      if(method.iid != "approx"){
+      if(store.iid != "approx"){
         IFbeta_tempo <- IFbeta_cpp(newT = new.time_strata[[iStrata]],
                                    neweXb = new.eXb_strata[[iStrata]],
                                    newX = new.LPdata_strata[[iStrata]],
@@ -287,7 +287,7 @@ iidCox <- function(object, newdata = NULL, tauHazard = NULL,
                                     time1 = timeStrata, lastTime1 = Ecpp[[iStrata]]$Utime1[nUtime1_strata], # here lastTime1 will not correspond to timeStrata[length(timeStrata)] when there are censored observations
                                     lambda0 = lambda0Strata,
                                     p = p, strata = iStrata,
-                                    exact = (method.iid!="approx"), minimalExport = (method.iid=="minimal")
+                                    exact = (store.iid!="approx"), minimalExport = (store.iid=="minimal")
                                     )      
     }else{
       if(length(tauHazard_strata)==0){tauHazard_strata <- max(object.time_strata[[iStrata]])}
@@ -299,7 +299,7 @@ iidCox <- function(object, newdata = NULL, tauHazard = NULL,
 
       # output 
       ls.Utime1 <- c(ls.Utime1, list(tauHazard_strata))
-      if(method.iid=="minimal"){
+      if(store.iid=="minimal"){
           calcIFhazard$delta_iS0 <- c(calcIFhazard$delta_iS0, list(IFlambda_res$delta_iS0))
           calcIFhazard$Elambda0 <- c(calcIFhazard$Elambda0, list(IFlambda_res$Elambda0))
           calcIFhazard$cumElambda0 <- c(calcIFhazard$cumElambda0, list(IFlambda_res$cumElambda0))
@@ -325,6 +325,6 @@ iidCox <- function(object, newdata = NULL, tauHazard = NULL,
                 etime1.min = etime1.min,
                 etime.max = lambda0$lastEventTime,
                 indexObs = new.order,
-                method.iid = method.iid
+                store.iid = store.iid
                 ))
 }

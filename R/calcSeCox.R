@@ -46,15 +46,15 @@
 #' @param export can be "iid" to return the value of the influence function for each observation
 #'                      "se" to return the standard error for a given timepoint
 #'                      
-#' @param method.iid the method used to compute the influence function and the standard error.
+#' @param store.iid Implementation used to estimate the influence function and the standard error.
 #' Can be \code{"full"} or \code{"minimal"}. See the details section.
 #' 
 #' @details Can also return the empirical influence function of the functionals cumulative hazard or survival
 #' or the sum over the observations of the empirical influence function.
 #'
-#' \code{method.iid="full"} compute the influence function for each observation at each time in the argument \code{times}
+#' \code{store.iid="full"} compute the influence function for each observation at each time in the argument \code{times}
 #' before computing the standard error / influence functions.
-#' \code{method.iid="minimal"} recompute for each subject specific prediction the influence function for the baseline hazard.
+#' \code{store.iid="minimal"} recompute for each subject specific prediction the influence function for the baseline hazard.
 #' This avoid to store all the influence functions but may lead to repeated evaluation of the influence function.
 #' This solution is therefore efficient more efficient in memory usage but may not be in term of computation time.
 #' 
@@ -66,14 +66,14 @@
 calcSeCox <- function(object, times, nTimes, type, 
                       Lambda0, object.n, object.time, object.eXb, object.strata, nStrata,
                       new.eXb, new.LPdata, new.strata, new.survival, new.cumhazard,
-                      nVar, logTransform, export, method.iid){
+                      nVar, logTransform, export, store.iid){
 
     # {{{ computation of the influence function
     iid.object <- object$iid            
     if(is.null(iid.object)){
-        iid.object <- iidCox(object, tauHazard = times, method.iid = method.iid)
+        iid.object <- iidCox(object, tauHazard = times, store.iid = store.iid)
     }else{
-        method.iid <- iid.object$method.iid
+        store.iid <- iid.object$store.iid
         iid.object <- selectJump(iid.object, times = times, type = type)        
     }
     # }}}
@@ -106,12 +106,12 @@ calcSeCox <- function(object, times, nTimes, type,
     }
     # }}}
 
-    if(method.iid == "minimal"){
+    if(store.iid == "minimal"){
         # {{{ method = minimal
         object.strata <- as.numeric(object.strata)
 
         if("hazard" %in% type){
-            stop("method.iid=\"minimal\" cannot be used to extract the influence function of the hazard \n")
+            stop("store.iid=\"minimal\" cannot be used to extract the influence function of the hazard \n")
         }
         if(all(c("iid","average.iid") %in% export)){
             stop("Cannot export both average.iid and iid \n")
@@ -304,7 +304,7 @@ selectJump <- function(IF, times, type){
   for(iStrata in 1:nStrata){
       indexJump <- prodlim::sindex(jump.times = IF$time[[iStrata]], eval.times = times)
       
-      if(IF$method.iid == "minimal"){          
+      if(IF$store.iid == "minimal"){          
           IF$calcIFhazard$Elambda0[[iStrata]] <- IF$calcIFhazard$Elambda0[[iStrata]][indexJump,,drop=FALSE]
           IF$calcIFhazard$cumElambda0[[iStrata]] <- IF$calcIFhazard$cumElambda0[[iStrata]][indexJump,,drop=FALSE]
       }else{

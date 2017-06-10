@@ -6,7 +6,7 @@
 \title{Extract i.i.d. decomposition from a Cox model}
 \usage{
 iidCox(object, newdata = NULL, tauHazard = NULL, keep.times = TRUE,
-  method.iid = "full")
+  store.iid = "full")
 }
 \arguments{
 \item{object}{object The fitted Cox regression model object either
@@ -19,7 +19,7 @@ obtained with \code{coxph} (survival package) or \code{cph}
 
 \item{keep.times}{Logical. If \code{TRUE} add the evaluation times to the output.}
 
-\item{method.iid}{the method used to compute the influence function and the standard error.
+\item{store.iid}{the method used to compute the influence function and the standard error.
 Can be \code{"full"}, \code{"approx"} or \code{"minimal"}. See the details section.}
 }
 \value{
@@ -41,11 +41,11 @@ Compute the influence function for each observation used to estimate the model
 \details{
 If there is no event in a strata, the influence function for the baseline hazard is set to 0.
 
-\code{method.iid} equal to \code{"full"} exports the influence function for the coefficients
+\code{store.iid} equal to \code{"full"} exports the influence function for the coefficients
 and the baseline hazard at each event time.
-\code{method.iid} equal to \code{"approx"} does the same except that the terms that do not contributes
+\code{store.iid} equal to \code{"approx"} does the same except that the terms that do not contributes
 to the variance are not ignored (i.e. set to 0)
-\code{method.iid} equal to \code{"minimal"} exports the influence function for the coefficients. For the
+\code{store.iid} equal to \code{"minimal"} exports the influence function for the coefficients. For the
 baseline hazard it only computes the quantities necessary to compute the influence function in order to save memory.
 }
 \examples{
@@ -57,7 +57,7 @@ setkey(d, eventtime)
 
 m.cox <- coxph(Surv(eventtime, event) ~ X1+X6, data = d, y = TRUE, x = TRUE)
 system.time(IF.cox <- iidCox(m.cox))
-system.time(IF.cox_approx <- iidCox(m.cox, method.iid = "approx"))
+system.time(IF.cox_approx <- iidCox(m.cox, store.iid = "approx"))
 
 
 IF.cox <- iidCox(m.cox, tauHazard = sort(unique(c(7,d$eventtime))))

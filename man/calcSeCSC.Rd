@@ -6,7 +6,7 @@
 \usage{
 calcSeCSC(object, cif, hazard, cumhazard, object.time, object.maxtime, eXb,
   new.LPdata, new.strata, times, survtype, new.n, cause, nCause, nVar,
-  logTransform, export, method.iid)
+  logTransform, export, store.iid)
 }
 \arguments{
 \item{object}{The fitted cause specific Cox model}
@@ -44,7 +44,7 @@ calcSeCSC(object, cif, hazard, cumhazard, object.time, object.maxtime, eXb,
 \item{export}{can be "iid" to return the value of the influence function for each observation
 "se" to return the standard error for a given timepoint}
 
-\item{method.iid}{the method used to compute the influence function and the standard error.
+\item{store.iid}{the method used to compute the influence function and the standard error.
 Can be \code{"full"} or \code{"minimal"}. See the details section.}
 }
 \description{
@@ -55,9 +55,9 @@ using a first order von Mises expansion of the absolute risk functional.
 Can also return the empirical influence function of the functionals cumulative hazard or survival
 or the sum over the observations of the empirical influence function.
 
-\code{method.iid="full"} compute the influence function for each observation at each time in the argument \code{times}
+\code{store.iid="full"} compute the influence function for each observation at each time in the argument \code{times}
 before computing the standard error / influence functions.
-\code{method.iid="minimal"} recompute for each subject specific prediction the influence function for the baseline hazard.
+\code{store.iid="minimal"} recompute for each subject specific prediction the influence function for the baseline hazard.
 This avoid to store all the influence functions but may lead to repeated evaluation of the influence function.
 This solution is therefore efficient more efficient in memory usage but may not be in term of computation time.
 }

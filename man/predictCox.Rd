@@ -8,7 +8,7 @@ predictCox(object, newdata = NULL, times, centered = TRUE,
   type = c("cumhazard", "survival"), keep.strata = TRUE,
   keep.times = TRUE, keep.newdata = FALSE, se = FALSE, band = FALSE,
   iid = FALSE, average.iid = FALSE, nSim.band = 10000,
-  conf.level = 0.95, logTransform = TRUE, method.iid = "full")
+  conf.level = 0.95, logTransform = TRUE, store.iid = "full")
 }
 \arguments{
 \item{object}{The fitted Cox regression model object either
@@ -67,7 +67,7 @@ for the confidence bands..}
 log(-log) (survival) scale and be backtransformed.
 Otherwise they are computed on the original scale and truncated (if necessary).}
 
-\item{method.iid}{the method used to compute the influence function and the standard error.
+\item{store.iid}{Implementation used to estimate the influence function and the standard error.
 Can be \code{"full"} or \code{"minimal"}. See the details section of \code{\link{calcSeCox}}.}
 
 \item{...}{arguments to be passed to the function \code{iidCox}.}
@@ -110,7 +110,7 @@ predictCox(fit,centered=FALSE,type="hazard")
 predictCox(fit,centered=TRUE,type="hazard")
 predictCox(fit, newdata=nd, times=c(3,8),se=TRUE)
 predictCox(fit, newdata=nd, times=c(3,8),se=TRUE, logTransform = TRUE)
-predictCox(fit, newdata=nd, times=c(3,8),se=TRUE, method.iid = "minimal")
+predictCox(fit, newdata=nd, times=c(3,8),se=TRUE, store.iid = "minimal")
 predictCox(fit, newdata=nd, times = 5,iid=TRUE)
 
 cbind(survival::basehaz(fit),predictCox(fit,type="cumhazard")$cumhazard)
