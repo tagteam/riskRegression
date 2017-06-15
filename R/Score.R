@@ -1056,11 +1056,13 @@ AUC.binary <- function(DT,breaks=NULL,se.fit,alpha,N,NT,NF,dolist,ROC,...){
     }
     if (se.fit==TRUE){
         xRisk <- data.table::dcast.data.table(DT,ID~model,value.var="risk")[,-1,with=FALSE]
-        delong.res <- delongtest(risk=xRisk,score=output$score,dolist=dolist,response=DT[model==1,ReSpOnSe],cause="1",alpha=alpha)
-        output$score <- delong.res$auc
         if (length(dolist)>0){
+            delong.res <- delongtest(risk=xRisk,score=output$score,dolist=dolist,response=DT[model==1,ReSpOnSe],cause="1",alpha=alpha)
+            output$score <- delong.res$auc
             contrasts.AUC <- delong.res$difference
             output <- c(output,list(contrasts=contrasts.AUC))
+        }else{
+            output <- c(output,list(contrasts=NULL))
         }
     }else{
         output
