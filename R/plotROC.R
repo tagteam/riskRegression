@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun 23 2016 (10:27) 
 ## Version: 
-## last-updated: May  4 2017 (20:37) 
+## last-updated: Jun 10 2017 (17:45) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 58
+##     Update #: 60
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -75,6 +75,8 @@ plotROC <- function(x,
                     legend=TRUE,
                     add=FALSE,
                     ...){
+    if (is.null(x$ROC))
+        stop("Object has no information for ROC curves.\nYou should call the function \"riskRegression::Score\" with plots=\"ROC\".")
     model=FPR=TPR=times=NULL
     cbbPalette <- c("#000000", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
     pframe <- x$ROC$plotframe
