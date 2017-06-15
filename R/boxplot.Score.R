@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Aug 15 2016 (09:45) 
 ## Version: 
-## last-updated: maj 19 2017 (16:53) 
-##           By: Brice Ozenne
-##     Update #: 86
+## last-updated: Jun 10 2017 (17:44) 
+##           By: Thomas Alexander Gerds
+##     Update #: 97
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -107,11 +107,13 @@ boxplot.Score <- function(x,
                           xlab="",
                           main,
                           outcomeLabel,
+                          outcomeLabel.offset=0,
                           eventLabels,
                           refline=(type=="diff"),
                           add=FALSE,
                           ...){
-    
+    if (is.null(x$riskQuantile))
+        stop("Object has no information for reclassification boxplots.\nYou should call the function \"riskRegression::Score\" with summary=\"riskQuantile\".")
     times=cause=models=NULL
     fitted <- x$models
     models <- names(x$models)
@@ -145,9 +147,9 @@ boxplot.Score <- function(x,
     causes <- pframe[,unique(cause)]
     if (overall==FALSE) causes <- causes[causes!="overall"]
     if (missing(xlim))
-        if (type=="risk"){xlim=c(0,100) 
+        if (type=="risk"){xlim=c(0,1) 
         } else {
-            max <- ceiling(max(abs(100*(pframe[,qq.pos,with=FALSE]))))
+            max <- ceiling(max(abs(100*(pframe[,qq.pos,with=FALSE]))))/100
             xlim=c(-max,max)
         }
     if (missing(main))
@@ -160,7 +162,10 @@ boxplot.Score <- function(x,
                                                       "survival"={paste("Event status\nat time",timepoint)},
                                                       "binary"={"Event status"})
     plot.DefaultArgs <- list(x=0,y=0,type = "n",ylim = c(0,length(causes)),xlim = xlim,ylab="",xlab=xlab)
-    axis1.DefaultArgs <- list(side=1,las=1,at=seq(xlim[1],xlim[2],(xlim[2]-xlim[1])/4),paste(seq(xlim[1],xlim[2],(xlim[2]-xlim[1])/4),"%"))
+    axis1.DefaultArgs <- list(side=1,
+                              las=1,
+                              at=seq(xlim[1],xlim[2],(xlim[2]-xlim[1])/4),
+                              paste(100*seq(xlim[1],xlim[2],(xlim[2]-xlim[1])/4),"%"))
     abline.DefaultArgs <- list(v=0,col=2,lwd=2)
     bxp.DefaultArgs <- list(border="black",add=TRUE,horizontal=TRUE,axes=FALSE)
     control <- prodlim::SmartControl(call= list(...),
@@ -181,7 +186,7 @@ boxplot.Score <- function(x,
     if (missing(eventLabels)) eventLabels <- causes
     ypos <- c((1:(length(causes)))-0.5,length(causes))
     text(x=xlim[1],
-         y=ypos,
+         y=ypos + c(rep(0,length(eventLabels)),outcomeLabel.offset),
          labels=c(eventLabels,outcomeLabel),
          pos=2,
          xpd=NA)
@@ -192,7 +197,7 @@ boxplot.Score <- function(x,
     for (i in 1:length(causes)){
         cc <- causes[[i]]
         args.i <- control$bxp
-        args.i$z <- list(stats=t(100*pframe[cause==cc,qq.pos,with=FALSE,drop=FALSE]),n=10)
+        args.i$z <- list(stats=t(pframe[cause==cc,qq.pos,with=FALSE,drop=FALSE]),n=10)
         args.i$at=ypos[i]
         do.call("bxp",args.i)
         ## bxp(,add=TRUE,horizontal=TRUE,at=ypos[i],axes=FALSE)
