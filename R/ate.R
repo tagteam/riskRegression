@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Oct 23 2016 (08:53) 
 ## Version: 
-## last-updated: maj 19 2017 (16:57) 
+## last-updated: jun  7 2017 (09:47) 
 ##           By: Brice Ozenne
-##     Update #: 205
+##     Update #: 238
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -44,6 +44,8 @@
 #' @param verbose Logical. If \code{TRUE} inform about estimated run
 #'     time.
 #' @param logTransform Should the confidence interval for the ratio be computed using a log-tranformation. Only active if Wald-type confidence intervals are computed.
+#' @param store.iid Implementation used to estimate the standard error. Can be \code{"full"} or \code{"minimal"}.
+#' \code{"minimal"} requires less memory but can only estimate the standard for the difference between treatment effects (and not for the ratio).
 #' @param ... passed to predictRisk
 #' @return A list with: point estimates, bootstrap quantile confidence
 #'     intervals model: the CSC model (optional)
@@ -67,12 +69,21 @@
 #' fit$call
 #' ## and there is a predictRisk method
 #' "predictRisk.cph" %in% methods("predictRisk")
-#' 
-#' ateFit=ate(fit, data = dtS, treatment = "X1", contrasts = NULL,
-#'         times = 5:8, B = 3, y = TRUE,  mc.cores=1)
 #'
-#' ateFit=ate(fit, data = dtS, treatment = "X1", contrasts = NULL,
+#' \dontrun{
+#' ateFit1 <- ate(fit, data = dtS, treatment = "X1", contrasts = NULL,
+#'         times = 5:8, B = 1e3, y = TRUE,  mc.cores=1)
+#' }
+#' \dontshow{
+#' ateFit1 <- ate(fit, data = dtS, treatment = "X1", contrasts = NULL,
+#'         times = 5:8, B = 1e1, y = TRUE,  mc.cores=1)
+#' }
+#' ateFit2 <- ate(fit, data = dtS, treatment = "X1", contrasts = NULL,
 #'         times = 5:8, B = 0, y = TRUE, band = TRUE, mc.cores=1)
+#'
+#' ateFit3 <- ate(fit, data = dtS, treatment = "X1", contrasts = NULL,
+#'            times = 5:8, B = 0, y = TRUE, band = TRUE, mc.cores=1,
+#'            store.iid = "minimal")
 #' 
 #' ## Cause specific cox model
 #' set.seed(17)
@@ -109,6 +120,7 @@ ate <- function(object,
                 mc.cores = 1,
                 verbose=TRUE,
                 logTransform=FALSE,
+                store.iid="full",
                 ...){
     
     meanRisk=Treatment=ratio=Treatment.A=Treatment.B=b <- NULL
@@ -130,8 +142,16 @@ ate <- function(object,
     }
     test.CR <- !missing(cause) # test whether the argument cause has been specified, i.e. it is a competing risk model
     if(test.CR==FALSE){cause <- NA}
-  
-  data[[treatment]] <- factor(data[[treatment]])
+
+    if(B==0 && (se || band)){
+        validClass <- c("CauseSpecificCox","coxph","cph","phreg")
+        if(all(validClass %in% class(object) == FALSE)){
+            stop("Standard error based on the influence function only implemented for \n",
+                 paste(validClass, collapse = " ")," objects \n",
+                 "set argument \'B\' to a positive integer to use a boostrap instead \n")
+        }
+    }
+    data[[treatment]] <- factor(data[[treatment]])
   
     if(is.null(contrasts)){
         levels <- levels(data[[treatment]])
@@ -143,13 +163,6 @@ ate <- function(object,
     n.times <- length(times)
     n.obs <- NROW(data)
 
-    if("CauseSpecificCox" %in% class(object) && "iid" %in% names(list(...)) == FALSE){
-        if( (B>0 && (se>0||band>0))  || (se==0&&band==0) ){
-            message("The iid decomposition need not to be computed \n",
-                    "The iid argument will be set to FALSE \n")
-            dots <- c(dots, iid = FALSE)
-        }
-    }
     # }}}
     
     # {{{ Checking the model
@@ -165,9 +178,8 @@ ate <- function(object,
 
   # }}}
   
-  # {{{ calc G formula
+    # {{{ calc G formula
   Gformula <- function(object, data, treatment, contrasts, times, cause, ...){
-    
       meanRisk <- lapply(1:n.contrasts,function(i){
           ## prediction for the hypothetical worlds in which every subject is treated with the same treatment
           data.i <- data
@@ -307,7 +319,10 @@ ate <- function(object,
         } else {
             
             # {{{ Influence function and variance
-            ICrisk <- lapply(1:n.contrasts,function(i){
+            average.iid <- store.iid=="minimal"
+            iid <- store.iid!="minimal"
+            
+            IFrisk <- lapply(1:n.contrasts,function(i){
                 #### influence function for the hypothetical worlds in which every subject is treated with the same treatment
                 data.i <- data
                 data.i[[treatment]] <- factor(contrasts[i], levels = levels)
@@ -318,8 +333,11 @@ ate <- function(object,
                                                             times = times,
                                                             cause=cause,
                                                             se=FALSE,
-                                                            iid=TRUE,
-                                                            keep.times=FALSE))
+                                                            iid=iid,
+                                                            keep.times=FALSE,
+                                                            logTransform=FALSE,
+                                                            store.iid=store.iid,
+                                                            average.iid=average.iid))
                     risk.i <- pred.i$absRisk
                     attr(risk.i,"iid") <- pred.i$absRisk.iid
                 } else{
@@ -327,9 +345,12 @@ ate <- function(object,
                                                                newdata = data.i,
                                                                times = times,
                                                                se=FALSE,
-                                                               iid=TRUE,
+                                                               iid=iid,
                                                                keep.times=FALSE,
-                                                               type="survival"))
+                                                               logTransform=FALSE,
+                                                               type="survival",
+                                                               store.iid=store.iid,
+                                                               average.iid=average.iid))
                     risk.i <- 1-pred.i$survival
                     attr(risk.i,"iid") <- pred.i$survival.iid
                 }
@@ -337,10 +358,19 @@ ate <- function(object,
             })
 
             ## influence function for the average treatment effect
-            iid.treatment <- array(NA, dim = c(n.contrasts, n.times, n.obs ))
+            iid.treatment <- array(NA, dim = c(n.contrasts, n.times, n.obs))
             sdIF.treatment <- matrix(NA, nrow = n.contrasts, ncol = n.times)
             for(iTreat in 1:n.contrasts){ # iTreat <- 1
-                iid.treatment[iTreat,,] <- apply(attr(ICrisk[[iTreat]],"iid"),2:3,mean)
+                if(average.iid){
+                     term1 <- t(attr(IFrisk[[iTreat]],"iid"))
+                }else{
+                    term1 <- apply(attr(IFrisk[[iTreat]],"iid"),2:3,mean)
+                }
+
+                term2 <- rowCenter_cpp(IFrisk[[iTreat]], center = pointEstimate$meanRisk[Treatment==contrasts[iTreat],meanRisk])
+
+                # we get n * IF instead of IF for the absolute risk. This is why the second term need to be rescaled
+                iid.treatment[iTreat,,] <- term1 + t(term2)/sqrt(n.obs)
                 sdIF.treatment[iTreat,] <- apply(iid.treatment[iTreat,,,drop=FALSE],2, ## MARGIN=2 and drop=FALSE to deal with the case of one timepoint
                                                  function(x){sqrt(sum(x^2))}
                                                  )
@@ -363,27 +393,41 @@ ate <- function(object,
             for(iCon in 1:((n.contrasts-1))){ # iCon <- 1
                 for(iCon2 in (iCon+1):n.contrasts){ # iCon2 <- 2
                     ## compute differences between all pairs of treatments
-                    # IC had dimension n.predictions (row), n.times (columns), n.dataTrain (length)
+                    # IF had dimension n.predictions (row), n.times (columns), n.dataTrain (length)
                     # apply 2 do for each time: extract the value of IF with n.predictions (row) and n.dataTrain (length)
                     # colSums: compute the IF for the G formula for each observation in the training data set
                     # sqrt(sum 2)) compute the variance of the estimator over the observations in the training data set
                     iiCon <- iiCon + 1
-                    iid_diff.contrasts[iiCon,,] <- apply(attr(ICrisk[[iCon]],"iid")-attr(ICrisk[[iCon2]],"iid"), 2:3, mean)
+                    if(average.iid){
+                        term1 <- t(attr(IFrisk[[iCon]],"iid")-attr(IFrisk[[iCon2]],"iid"))
+                    }else{
+                        term1 <- apply(attr(IFrisk[[iCon]],"iid")-attr(IFrisk[[iCon2]],"iid"), 2:3, mean)
+                    }
+                    term2 <- rowCenter_cpp(IFrisk[[iCon]]-IFrisk[[iCon2]],
+                                           center = pointEstimate$riskComparison[Treatment.A==contrasts[iCon] & Treatment.B==contrasts[iCon2],diff])
+                    iid_diff.contrasts[iiCon,,] <- term1 + t(term2)/sqrt(n.obs)
                     sdIF_diff.contrasts[iiCon,] <- apply(iid_diff.contrasts[iiCon,,,drop=FALSE],2,
                                                          function(x){sqrt(sum(x^2))}
                                                          )
 
                     # IF(A/B) = IF(A)/B-IF(B)A/B^2
-                    iidTempo1 <- aperm(attr(ICrisk[[iCon]],"iid"), c(3,2,1))
-                    term1 <- aperm(sliceScale_cpp(iidTempo1, ICrisk[[iCon2]]), c(3,2,1))
+                    if(average.iid){
+                        sdIF_ratio.contrasts[iiCon,] <- as.numeric(NA)
+                    }else{
+                        iidTempo1 <- aperm(attr(IFrisk[[iCon]],"iid"), c(3,2,1))
+                        term1 <- aperm(sliceScale_cpp(iidTempo1, IFrisk[[iCon2]]), c(3,2,1))
 
-                    iidTempo2 <- aperm(attr(ICrisk[[iCon2]],"iid"), c(3,2,1))
-                    term2 <- aperm(sliceMultiply_cpp(iidTempo2, ICrisk[[iCon]]/ICrisk[[iCon2]]^2), c(3,2,1))
+                    iidTempo2 <- aperm(attr(IFrisk[[iCon2]],"iid"), c(3,2,1))
+                    term2 <- aperm(sliceMultiply_cpp(iidTempo2, IFrisk[[iCon]]/IFrisk[[iCon2]]^2), c(3,2,1))
+
+                    term3 <- rowCenter_cpp(IFrisk[[iCon]]/IFrisk[[iCon2]],
+                                           center = pointEstimate$riskComparison[Treatment.A==contrasts[iCon] & Treatment.B==contrasts[iCon2],ratio])
                     
-                    iid_ratio.contrasts[iiCon,,] <- apply(term1 - term2, 2:3, mean)
+                    iid_ratio.contrasts[iiCon,,] <- apply(term1 - term2, 2:3, mean) + t(term3)/sqrt(n.obs)
                     sdIF_ratio.contrasts[iiCon,] <- apply(iid_ratio.contrasts[iiCon,,,drop=FALSE],2,
-                                                         function(x){sqrt(sum(x^2))}
-                                                         )
+                                                          function(x){sqrt(sum(x^2))}
+                                                          )
+                    }
                     ## store the result
                     index.contrasts <- sdIF.fct[, .I[Treatment.A==contrasts[[iCon]] & Treatment.B==contrasts[[iCon2]]]]
                     if(se){

@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Feb 23 2017 (11:15) 
 ## Version: 
-## last-updated: Mar  4 2017 (11:32) 
-##           By: Thomas Alexander Gerds
-##     Update #: 113
+## last-updated: jun  6 2017 (07:39) 
+##           By: Brice
+##     Update #: 121
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -315,7 +315,7 @@ plotCalibration <- function(x,
                            ## }
                        } else{
                            bw <- bandwidth
-                       }
+                       }                       
                        if (bw>=1){
                            ## calibration in the large
                            plotFrame <- data.frame(Pred=mean(p),Obs=mean(jackF))
@@ -342,7 +342,6 @@ plotCalibration <- function(x,
                    }
                })
     }
-    
     plotFrames <- lapply(modelnames,function(f){getXY(f)})
     names(plotFrames) <- modelnames
     # }}}

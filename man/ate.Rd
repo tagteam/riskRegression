@@ -7,7 +7,7 @@
 ate(object, data, treatment, contrasts = NULL, times, cause,
   conf.level = 0.95, se = TRUE, band = FALSE, B = 0, nSim.band = 1000,
   seed, handler = c("mclapply", "foreach"), mc.cores = 1, verbose = TRUE,
-  logTransform = FALSE, ...)
+  logTransform = FALSE, store.iid = "full", ...)
 }
 \arguments{
 \item{object}{outcome model which describes how event risk depends on treatment and covariates.
@@ -53,6 +53,9 @@ time.}
 
 \item{logTransform}{Should the confidence interval for the ratio be computed using a log-tranformation. Only active if Wald-type confidence intervals are computed.}
 
+\item{store.iid}{Implementation used to estimate the standard error. Can be \code{"full"} or \code{"minimal"}.
+\code{"minimal"} requires less memory but can only estimate the standard for the difference between treatment effects (and not for the ratio).}
+
 \item{...}{passed to predictRisk}
 }
 \value{
@@ -83,11 +86,20 @@ fit$call
 ## and there is a predictRisk method
 "predictRisk.cph" \%in\% methods("predictRisk")
 
-ateFit=ate(fit, data = dtS, treatment = "X1", contrasts = NULL,
-        times = 5:8, B = 3, y = TRUE,  mc.cores=1)
-
-ateFit=ate(fit, data = dtS, treatment = "X1", contrasts = NULL,
+\dontrun{
+ateFit1 <- ate(fit, data = dtS, treatment = "X1", contrasts = NULL,
+        times = 5:8, B = 1e3, y = TRUE,  mc.cores=1)
+}
+\dontshow{
+ateFit1 <- ate(fit, data = dtS, treatment = "X1", contrasts = NULL,
+        times = 5:8, B = 1e1, y = TRUE,  mc.cores=1)
+}
+ateFit2 <- ate(fit, data = dtS, treatment = "X1", contrasts = NULL,
         times = 5:8, B = 0, y = TRUE, band = TRUE, mc.cores=1)
+
+ateFit3 <- ate(fit, data = dtS, treatment = "X1", contrasts = NULL,
+           times = 5:8, B = 0, y = TRUE, band = TRUE, mc.cores=1,
+           store.iid = "minimal")
 
 ## Cause specific cox model
 set.seed(17)
@@ -108,4 +120,3 @@ atefit=ate(fitCR, data = dt, treatment = "X1", contrasts = NULL,
 }
 
 }
-

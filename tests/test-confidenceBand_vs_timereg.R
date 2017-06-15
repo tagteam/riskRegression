@@ -130,7 +130,7 @@ d$event[d$event>0]
 
 ## X.design <- model.matrix(formula(fit.coxph),newdata[i,,drop=FALSE])[,-1]
 ## eLP <- exp(X.design %*% cbind(coef(fit.coxph)))
-## Xiid.beta <- X.design %*% iid.coxph$ICbeta[1,]
+## Xiid.beta <- X.design %*% iid.coxph$IFbeta[1,]
 
 ## term1 <- as.numeric(eLP * iid.lambda)
 ## term2 <- as.numeric(eLP * cumHazard.coxph * Xiid.beta)

@@ -19,7 +19,7 @@
 #' @param confint If \code{TRUE} return the iid decomposition, that
 #' can be used to construct confidence bands for predictions.
 #' @param cens.model Specified the model for the (conditional)
-#' censoring distribution used for deriving weights (ICPW). Defaults
+#' censoring distribution used for deriving weights (IFPW). Defaults
 #' to "KM" (the Kaplan-Meier method ignoring covariates) alternatively
 #' it may be "Cox" (Cox regression).
 #' @param cens.formula Right hand side of the formula used for fitting

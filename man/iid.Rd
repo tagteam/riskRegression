@@ -6,7 +6,7 @@
 \title{Extract i.i.d. decomposition from a Cox model}
 \usage{
 iidCox(object, newdata = NULL, tauHazard = NULL, keep.times = TRUE,
-  exact = TRUE, minimalExport = FALSE)
+  store.iid = "full")
 }
 \arguments{
 \item{object}{object The fitted Cox regression model object either
@@ -19,16 +19,34 @@ obtained with \code{coxph} (survival package) or \code{cph}
 
 \item{keep.times}{Logical. If \code{TRUE} add the evaluation times to the output.}
 
-\item{exact}{Logical. If \code{TRUE} then the exact influence function is computed.}
-
-\item{minimalExport}{Logical. If \code{TRUE} do not export the i.i.d. decomposition for the baseline hazard but export the necessary element to compute it.
-Otherwise the influence function is estimated using the counting processes instead of the estimated martingales.}
+\item{store.iid}{the method used to compute the influence function and the standard error.
+Can be \code{"full"}, \code{"approx"} or \code{"minimal"}. See the details section.}
+}
+\value{
+A list containing:
+ \itemize{
+ \item{IFbeta}{Influence function for the regression coefficient.}
+ \item{IFhazard}{Time differential of the influence function of the hazard.}
+ \item{IFcumhazard}{Influence function of the cumulative hazard.}
+ \item{calcIFhazard}{Elements used to compute the influence function at a given time.}
+ \item{time}{Times at which the influence function has been evaluated.}
+ \item{etime1.min}{Time of first event (i.e. jump) in each strata.}
+ \item{etime.max}{Last observation time (i.e. jump or censoring) in each strata.}
+ \item{indexObs}{Index of the observation in the original dataset.}
+}
 }
 \description{
 Compute the influence function for each observation used to estimate the model
 }
 \details{
 If there is no event in a strata, the influence function for the baseline hazard is set to 0.
+
+\code{store.iid} equal to \code{"full"} exports the influence function for the coefficients
+and the baseline hazard at each event time.
+\code{store.iid} equal to \code{"approx"} does the same except that the terms that do not contributes
+to the variance are not ignored (i.e. set to 0)
+\code{store.iid} equal to \code{"minimal"} exports the influence function for the coefficients. For the
+baseline hazard it only computes the quantities necessary to compute the influence function in order to save memory.
 }
 \examples{
 library(survival)
@@ -38,12 +56,11 @@ d <- sampleData(100, outcome = "survival")[,.(eventtime,event,X1,X6)]
 setkey(d, eventtime)
 
 m.cox <- coxph(Surv(eventtime, event) ~ X1+X6, data = d, y = TRUE, x = TRUE)
-system.time(IC.cox <- iidCox(m.cox))
-system.time(IC.cox_approx <- iidCox(m.cox, exact = FALSE))
+system.time(IF.cox <- iidCox(m.cox))
+system.time(IF.cox_approx <- iidCox(m.cox, store.iid = "approx"))
 
 
-IC.cox <- iidCox(m.cox, tauHazard = sort(unique(c(7,d$eventtime))))
+IF.cox <- iidCox(m.cox, tauHazard = sort(unique(c(7,d$eventtime))))
  
 
 }
-

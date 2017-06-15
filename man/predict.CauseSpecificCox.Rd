@@ -6,8 +6,9 @@
 \usage{
 \method{predict}{CauseSpecificCox}(object, newdata, times, cause,
   landmark = NA, keep.times = 1L, keep.newdata = 1L, keep.strata = 1L,
-  se = FALSE, band = FALSE, iid = FALSE, nSim.band = 10000,
-  logTransform = FALSE, productLimit = TRUE, conf.level = 0.95, ...)
+  se = FALSE, band = FALSE, iid = FALSE, average.iid = FALSE,
+  nSim.band = 10000, logTransform = FALSE, productLimit = TRUE,
+  conf.level = 0.95, store.iid = "full", ...)
 }
 \arguments{
 \item{object}{The fitted cause specific Cox model}
@@ -16,7 +17,7 @@
 in the right hand side of 'coxph' for each subject.}
 
 \item{times}{Vector of times at which to return the estimated
-hazards/survival}
+absolute risk.}
 
 \item{cause}{Identifies the cause of interest among the competing
 events.}
@@ -36,6 +37,8 @@ to the output.}
 
 \item{iid}{Logical. If \code{TRUE} add the influence function to the output.}
 
+\item{average.iid}{Logical. If \code{TRUE} add the average of the influence function over \code{newdata} to the output.}
+
 \item{nSim.band}{the number of simulations used to compute the quantiles
 for the confidence bands.}
 
@@ -47,6 +50,9 @@ Otherwise they are computed on the original scale and truncated (if necessary).}
 Otherwise the exponential approximation is used (i.e. exp(-cumulative hazard)).}
 
 \item{conf.level}{Level of confidence.}
+
+\item{store.iid}{Implementation used to estimate the influence function and the standard error.
+Can be \code{"full"} or \code{"minimal"}. See the details section of \code{\link{calcSeCSC}}.}
 
 \item{...}{not used}
 }
@@ -111,4 +117,3 @@ predCSC_afterT0
 Brice Ozenne broz@sund.ku.dk, Thomas A. Gerds
     tag@biostat.ku.dk
 }
-

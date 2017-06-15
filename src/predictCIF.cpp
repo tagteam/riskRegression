@@ -88,7 +88,7 @@ arma::mat predictCIF_cpp(const std::vector<arma::mat>& hazard,
 	  
         }
 	
-      } // otherwise the survival stay at 1
+      } // otherwise the survival stays at 1
       
       // update the integral
       if(R_IsNA(t0)){	

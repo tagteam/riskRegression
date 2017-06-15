@@ -85,4 +85,3 @@ plot(pred.cox, band = TRUE)
 
 
 }
-

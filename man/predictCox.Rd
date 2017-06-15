@@ -7,8 +7,8 @@
 predictCox(object, newdata = NULL, times, centered = TRUE,
   type = c("cumhazard", "survival"), keep.strata = TRUE,
   keep.times = TRUE, keep.newdata = FALSE, se = FALSE, band = FALSE,
-  iid = FALSE, nSim.band = 10000, conf.level = 0.95,
-  logTransform = FALSE, ...)
+  iid = FALSE, average.iid = FALSE, nSim.band = 10000,
+  conf.level = 0.95, logTransform = TRUE, store.iid = "full")
 }
 \arguments{
 \item{object}{The fitted Cox regression model object either
@@ -56,6 +56,8 @@ covariates used to make the prediction in the output list.}
 
 \item{iid}{Logical. If \code{TRUE} add the influence function to the output.}
 
+\item{average.iid}{Logical. If \code{TRUE} add the average of the influence function over \code{newdata} to the output.}
+
 \item{nSim.band}{the number of simulations used to compute the quantiles
 for the confidence bands..}
 
@@ -64,6 +66,9 @@ for the confidence bands..}
 \item{logTransform}{Should the confidence intervals/bands be computed on the log (hazard) and
 log(-log) (survival) scale and be backtransformed.
 Otherwise they are computed on the original scale and truncated (if necessary).}
+
+\item{store.iid}{Implementation used to estimate the influence function and the standard error.
+Can be \code{"full"} or \code{"minimal"}. See the details section of \code{\link{calcSeCox}}.}
 
 \item{...}{arguments to be passed to the function \code{iidCox}.}
 }
@@ -105,6 +110,7 @@ predictCox(fit,centered=FALSE,type="hazard")
 predictCox(fit,centered=TRUE,type="hazard")
 predictCox(fit, newdata=nd, times=c(3,8),se=TRUE)
 predictCox(fit, newdata=nd, times=c(3,8),se=TRUE, logTransform = TRUE)
+predictCox(fit, newdata=nd, times=c(3,8),se=TRUE, store.iid = "minimal")
 predictCox(fit, newdata=nd, times = 5,iid=TRUE)
 
 cbind(survival::basehaz(fit),predictCox(fit,type="cumhazard")$cumhazard)
@@ -134,4 +140,3 @@ predictCox(fitS, newdata=nd, times = 3)
 \author{
 Brice Ozenne broz@sund.ku.dk, Thomas A. Gerds tag@biostat.ku.dk
 }
-
