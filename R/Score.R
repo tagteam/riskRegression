@@ -243,7 +243,7 @@ Score.list <- function(object,
                        keep,
                        ...){
     id=time=status=id=WTi=b=time=status=model=reference=p=model=pseudovalue=NULL
-# }}}
+    # }}}
     theCall <- match.call()
     # -----------------parse arguments and prepare data---------
     # {{{ Response
@@ -383,6 +383,7 @@ Score.list <- function(object,
         eventTimes <- unique(data[,time])
         maxtime <- eventTimes[length(eventTimes)]
         ## print(maxtime)
+        include.times <- NULL
         if (missing(landmarks)){
             start <- 0
             if (missing(times)){
@@ -401,8 +402,10 @@ Score.list <- function(object,
             }
             (if (any(times>maxtime))
                  message(paste0("Upper limit of followup is ",
-                                maxtime,"\nThe evaluation time(s) beyond this time point are ignored")))
-            times <- times[times<=maxtime]
+                                maxtime,"\nResults at evaluation time(s) beyond this time point are not computed.")))
+            ## need to save indices to modify matrix input
+            include.times <- times<=maxtime
+            times <- times[include.times]
             NT <-  length(times)
             if (NT==0)
                 stop("No evaluation time before end of followup.")
@@ -541,12 +544,18 @@ Score.list <- function(object,
                        "competing.risks"={list(newdata=X,times=times,cause=cause)},
                        stop("Unknown responseType."))
         pred <- data.table::rbindlist(lapply(mlevs, function(f){
+            
             if (f!=0 && any(c("integer","factor","numeric","matrix") %in% class(object[[f]]))){
                 ## sort predictions by ID
-                if (is.null(dim(object[[f]])))
-                    p <- c(do.call("predictRisk", c(list(object=object[[f]]),args)))[testdata[["ID"]]]
-                else
+                if (!is.null(dim(object[[f]]))) {## input matrix
+                    if(!is.null(include.times)) ## remove columns at times beyond max time
+                        p <- c(do.call("predictRisk",c(list(object=object[[f]][,include.times,drop=FALSE]),args))[testdata[["ID"]],])
+                    else
+                        p <- c(do.call("predictRisk",c(list(object=object[[f]]),args))[testdata[["ID"]],])
+                }
+                else{ ## input vector (only one time point)
                     p <- do.call("predictRisk", c(list(object=object[[f]]),args))[testdata[["ID"]],]
+                }
             }else{
                 if (!is.null(traindata)){
                     set.seed(trainseed)
