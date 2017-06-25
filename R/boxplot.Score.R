@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Aug 15 2016 (09:45) 
 ## Version: 
-## last-updated: Jun 10 2017 (17:44) 
+## last-updated: Jun 25 2017 (12:30) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 97
+##     Update #: 98
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -30,6 +30,7 @@
 #' @param main title of plot
 #' @param outcomeLabel Title label for column which shows the outcome
 #'     status
+#' @param outcomeLabel.offset Vertical offset for outcomeLabel 
 #' @param eventLabels Labels for the different events (causes).
 #' @param refline Logical, for \code{type="diff"} only. If \code{TRUE}
 #'     draw a red vertical line at \code{0}.
