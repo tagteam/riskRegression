@@ -548,13 +548,14 @@ Score.list <- function(object,
             if (f!=0 && any(c("integer","factor","numeric","matrix") %in% class(object[[f]]))){
                 ## sort predictions by ID
                 if (!is.null(dim(object[[f]]))) {## input matrix
-                    if(!is.null(include.times)) ## remove columns at times beyond max time
+                    if(!is.null(include.times)){ ## remove columns at times beyond max time
                         p <- c(do.call("predictRisk",c(list(object=object[[f]][,include.times,drop=FALSE]),args))[testdata[["ID"]],])
-                    else
+                    } else{ 
                         p <- c(do.call("predictRisk",c(list(object=object[[f]]),args))[testdata[["ID"]],])
+                    }
                 }
-                else{ ## input vector (only one time point)
-                    p <- do.call("predictRisk", c(list(object=object[[f]]),args))[testdata[["ID"]],]
+                else{ ## either binary or only one time point
+                    p <- do.call("predictRisk", c(list(object=object[[f]]),args))[testdata[["ID"]]]
                 }
             }else{
                 if (!is.null(traindata)){
