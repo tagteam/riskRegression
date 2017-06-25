@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jan  4 2016 (14:30) 
 ## Version: 
-## last-updated: Mar  1 2017 (16:16) 
+## last-updated: Jun 25 2017 (11:34) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 17
+##     Update #: 19
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -33,6 +33,16 @@ test_that("survival outcome: Brier Score",
     expect_equal(p1$AppErr$coxph,s1$Brier$score[model=="coxph",Brier])
     expect_equal(p1$AppErr$coxph.1,s1$Brier$score[model=="coxph.1",Brier])
     expect_equal(p1$AppErr$Reference,s1$Brier$score[model=="Null model",Brier])
+})
+test_that("survival outcome: matrix input",
+{
+    set.seed(112)
+    dtrain <- sampleData(112,outcome="survival")
+    dtest <- sampleData(4,outcome="survival")
+    f1 <- coxph(Surv(time,event)~X1+X5+X8,data=dtrain, x = TRUE, y = TRUE)
+    f2 <- predictRisk(f1,newdata=dtest,times=c(3,5,10))
+    s1 <- Score(list(f1,f2),formula=Surv(time,event)~1,data=dtest,times=c(3,5,10),conf.int=FALSE,nullModel=0L,metrics="brier")
+    expect_equal(s1$Brier$score[model=="coxph",Brier],s1$Brier$score[model=="matrix",Brier])
 })
 
 test_that("survival outcome,Brier Score, external prediction",

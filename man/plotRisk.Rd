@@ -64,3 +64,4 @@ plotRisk(xs,times=5)
 \author{
 Thomas A. Gerds <tag@biostat.ku.dk>
 }
+

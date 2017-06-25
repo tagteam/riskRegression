@@ -64,3 +64,4 @@ IF.cox <- iidCox(m.cox, tauHazard = sort(unique(c(7,d$eventtime))))
  
 
 }
+
