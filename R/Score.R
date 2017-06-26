@@ -259,6 +259,7 @@ Score.list <- function(object,
     responseFormula <- stats::update(formula,~1)
     ## if (missing(event)) event <- 1
     responsevars <- all.vars(responseFormula)
+    if (!all(responsevars%in%names(data)))stop("Response variable(s) ",paste(responsevars,collapse=", ")," not found in data.")
     response <- getResponse(formula=responseFormula,
                             data=data,
                             cause=cause,
@@ -339,7 +340,9 @@ Score.list <- function(object,
     }
     # }}}
     # {{{ resolve se.fit and contrasts
-    if (is.logical(conf.int) && conf.int==FALSE || conf.int<=0 || conf.int>=1) 
+    if (is.logical(conf.int) && conf.int==FALSE
+        || conf.int<0
+        || conf.int>1) 
         se.fit <- FALSE
     else
         se.fit <- TRUE
@@ -863,7 +866,8 @@ Brier.binary <- function(DT,se.fit,alpha,N,NT,NF,dolist,keep.residuals=FALSE,DT.
     residuals=Brier=risk=model=ReSpOnSe=lower.Brier=upper.Brier=se.Brier=NULL
     DT[,residuals:=(ReSpOnSe-risk)^2,by=model]
     if (se.fit==TRUE){
-        data.table::setorder(DT,model,ReSpOnSe)
+        ## data.table::setorder(DT,model,ReSpOnSe)
+        data.table::setkey(DT,model,ID)
         score <- DT[,data.table::data.table(Brier=sum(residuals)/N,se.Brier=sd(residuals)/sqrt(N)),by=list(model)]
         score[,lower.Brier:=pmax(0,Brier-qnorm(1-alpha/2)*se.Brier)]
         score[,upper.Brier:=Brier + qnorm(1-alpha/2)*se.Brier]
@@ -989,44 +993,47 @@ delongtest <-  function(risk, score, dolist, response, cause, alpha) {
     W10 <- cov(V10)
     W01 <- cov(V01)
     S <- W10/nCases + W01/nControls
-    q1 <- auc/(2 - auc)
-    q2 <- 2 * auc^2/(1 + auc)
-    aucvar <- (auc * (1 - auc) + (nCases - 1) * (q1 - auc^2) + (nControls - 1) * (q2 - auc^2))/(nCases * nControls)
-    ncomp <- nauc * (nauc - 1)/2
-    delta.auc <- numeric(ncomp) 
-    se.auc <- numeric(ncomp)
-    model <- numeric(ncomp)
-    reference <- numeric(ncomp)
-    ctr <- 1
-    Qnorm <- qnorm(1 - alpha/2)
-    for (i in 1:(nauc - 1)) {
-        for (j in (i + 1):nauc) {
-            delta.auc[ctr] <- auc[j]-auc[i]
-            ## cor.auc[ctr] <- S[i, j]/sqrt(S[i, i] * S[j, j])
-            LSL <- t(c(1, -1)) %*% S[c(j, i), c(j, i)] %*% c(1, -1)
-            ## print(c(1/LSL,rms::matinv(LSL)))
-            se.auc[ctr] <- sqrt(LSL)
-            ## tmpz <- (delta.auc[ctr]) %*% rms::matinv(LSL) %*% delta.auc[ctr]
-            ## tmpz <- (delta.auc[ctr]) %*% (1/LSL) %*% delta.auc[ctr]
-            model[ctr] <- modelnames[j]
-            reference[ctr] <- modelnames[i]
-            ctr <- ctr + 1
-        }
-    }
-    deltaAUC <- data.table(model,reference,delta.auc=as.vector(delta.auc),se.auc)
-    deltaAUC[,lower:=delta.auc-Qnorm*se.auc]
-    deltaAUC[,upper:=delta.auc+Qnorm*se.auc]
-    deltaAUC[,p:=2*pnorm(abs(delta.auc)/se.auc,lower.tail=FALSE)]
+    score <- data.table(auc, sqrt(diag(S)))
+    setnames(score,c("AUC","se.AUC"))
+    score[,model:=colnames(risk)]
+    score[,lower.AUC:=pmax(0,AUC-qnorm(1-alpha/2)*se.AUC)]
+    score[,upper.AUC:=pmin(1,AUC+qnorm(1-alpha/2)*se.AUC)]
+    setcolorder(score,c("model","AUC","se.AUC","lower.AUC","upper.AUC"))
     names(auc) <- 1:nauc
-    auc <- data.table(auc, sqrt(diag(S)))
-    setnames(auc,c("AUC","se.AUC"))
-    auc[,model:=colnames(risk)]
-    auc[,lower.AUC:=pmax(0,AUC-qnorm(1-alpha/2)*se.AUC)]
-    auc[,upper.AUC:=pmin(1,AUC+qnorm(1-alpha/2)*se.AUC)]
-    setcolorder(auc,c("model","AUC","se.AUC","lower.AUC","upper.AUC"))
-    list(auc = auc, difference = deltaAUC)
+    ## q1 <- auc/(2 - auc)
+    ## q2 <- 2 * auc^2/(1 + auc)
+    ## aucvar <- (auc * (1 - auc) + (nCases - 1) * (q1 - auc^2) + (nControls - 1) * (q2 - auc^2))/(nCases * nControls)
+    if (length(dolist)>0){
+        ncomp <- nauc * (nauc - 1)/2
+        delta.auc <- numeric(ncomp) 
+        se.auc <- numeric(ncomp)
+        model <- numeric(ncomp)
+        reference <- numeric(ncomp)
+        ctr <- 1
+        Qnorm <- qnorm(1 - alpha/2)
+        for (i in 1:(nauc - 1)) {
+            for (j in (i + 1):nauc) {
+                delta.auc[ctr] <- auc[j]-auc[i]
+                ## cor.auc[ctr] <- S[i, j]/sqrt(S[i, i] * S[j, j])
+                LSL <- t(c(1, -1)) %*% S[c(j, i), c(j, i)] %*% c(1, -1)
+                ## print(c(1/LSL,rms::matinv(LSL)))
+                se.auc[ctr] <- sqrt(LSL)
+                ## tmpz <- (delta.auc[ctr]) %*% rms::matinv(LSL) %*% delta.auc[ctr]
+                ## tmpz <- (delta.auc[ctr]) %*% (1/LSL) %*% delta.auc[ctr]
+                model[ctr] <- modelnames[j]
+                reference[ctr] <- modelnames[i]
+                ctr <- ctr + 1
+            }
+        }
+        deltaAUC <- data.table(model,reference,delta.auc=as.vector(delta.auc),se.auc)
+        deltaAUC[,lower:=delta.auc-Qnorm*se.auc]
+        deltaAUC[,upper:=delta.auc+Qnorm*se.auc]
+        deltaAUC[,p:=2*pnorm(abs(delta.auc)/se.auc,lower.tail=FALSE)]
+        list(score = score, contrasts = deltaAUC)
+    }else{
+        list(score = score, contrasts = NULL)
+    }
 }
-
 
 auRoc.numeric <- function(X,D,breaks,ROC){
     if (is.null(breaks)) breaks <- rev(sort(unique(X))) ## need to reverse when high X is concordant with {response=1}  
@@ -1048,8 +1055,7 @@ auRoc.factor <- function(X,D,ROC){
 
 AUC.binary <- function(DT,breaks=NULL,se.fit,alpha,N,NT,NF,dolist,ROC,...){
     model=risk=ReSpOnSe=FPR=TPR=NULL
-    data.table::setorder(DT,model)
-    ## data.table::setorder(DT,model,risk)
+    data.table::setkey(DT,model,ID)
     if (is.factor(DT[["risk"]])){
         score <- DT[,auRoc.factor(risk,ReSpOnSe,ROC=ROC),by=list(model)]
     }
@@ -1066,14 +1072,15 @@ AUC.binary <- function(DT,breaks=NULL,se.fit,alpha,N,NT,NF,dolist,ROC,...){
     }
     if (se.fit==TRUE){
         xRisk <- data.table::dcast.data.table(DT,ID~model,value.var="risk")[,-1,with=FALSE]
-        if (length(dolist)>0){
-            delong.res <- delongtest(risk=xRisk,score=output$score,dolist=dolist,response=DT[model==1,ReSpOnSe],cause="1",alpha=alpha)
-            output$score <- delong.res$auc
-            contrasts.AUC <- delong.res$difference
-            output <- c(output,list(contrasts=contrasts.AUC))
-        }else{
-            output <- c(output,list(contrasts=NULL))
-        }
+        delong.res <- delongtest(risk=xRisk,
+                                 score=output$score,
+                                 dolist=dolist,
+                                 response=DT[model==1,ReSpOnSe],
+                                 cause="1",
+                                 alpha=alpha)
+        output$score <- delong.res$score
+        contrasts.AUC <- delong.res$contrasts
+        output <- c(output,list(contrasts=contrasts.AUC))
     }else{
         output
     }

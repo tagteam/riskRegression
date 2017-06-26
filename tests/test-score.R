@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jan  4 2016 (14:30) 
 ## Version: 
-## last-updated: Jun 25 2017 (11:34) 
+## last-updated: Jun 26 2017 (10:20) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 19
+##     Update #: 29
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -22,7 +22,71 @@ library(pROC)
 library(data.table)
 library(Daim)
 context("riskRegression")
-test_that("survival outcome: Brier Score",
+test_that("binary outcome: robustness against order of data set",{
+    set.seed(112)
+    d <- sampleData(112,outcome="binary")
+    f1 <- glm(Y~X1+X5+X8,data=d, family="binomial")
+    f2 <- glm(Y~X2+X6+X9+X10,data=d, family="binomial")
+    f3 <- d$X8
+    s1 <- Score(list(f1,f2,f3),formula=Y~1,data=d,conf.int=TRUE)
+    s1b <- Score(list(f1,f2,f3),formula=Y~1,data=d,conf.int=.95,metrics="auc")
+    setkey(d,X4)
+    s2 <- Score(list(f1,f2,f3),formula=Y~1,data=d,conf.int=.95)
+    s2b <- Score(list(f1,f2,f3),formula=Y~1,data=d,conf.int=.95,metrics="auc")
+    setorder(d,time,-event)
+    s3 <- Score(list(f1,f2,f3),formula=Y~1,data=d,conf.int=.95)
+    s3b <- Score(list(f1,f2,f3),formula=Y~1,data=d,conf.int=.95,metrics="auc")
+    expect_equal(s1,s2)
+    expect_equal(s1,s3)
+    expect_equal(s1$AUC,s1b$AUC)
+    expect_equal(s2$AUC,s2b$AUC)
+    expect_equal(s3$AUC,s3b$AUC)
+})
+test_that("survival outcome: robustness against order of data set",{
+    set.seed(112)
+    d <- sampleData(112,outcome="survival")
+    f1 <- coxph(Surv(time,event)~X1+X5+X8,data=d, x = TRUE, y = TRUE)
+    f2 <- coxph(Surv(time,event)~X2+X6+X9+X10,data=d, x = TRUE, y = TRUE)
+    f3 <- cbind(d$X8,d$X8,d$X8)
+    s1 <- Score(list(f1,f2,f3),formula=Surv(time,event)~1,data=d,times=c(3,5,10),conf.int=TRUE)
+    s1b <- Score(list(f1,f2,f3),formula=Surv(time,event)~1,data=d,times=c(3,5,10),conf.int=.95,metrics="auc")
+    setkey(d,X4)
+    f3 <- cbind(d$X8,d$X8,d$X8)
+    s2 <- Score(list(f1,f2,f3),formula=Surv(time,event)~1,data=d,times=c(3,5,10),conf.int=.95)
+    s2b <- Score(list(f1,f2,f3),formula=Surv(time,event)~1,data=d,times=c(3,5,10),conf.int=.95,metrics="auc")
+    setorder(d,time,-event)
+    f3 <- cbind(d$X8,d$X8,d$X8)
+    s3 <- Score(list(f1,f2,f3),formula=Surv(time,event)~1,data=d,times=c(3,5,10),conf.int=.95)
+    s3b <- Score(list(f1,f2,f3),formula=Surv(time,event)~1,data=d,times=c(3,5,10),conf.int=.95,metrics="auc")
+    expect_equal(s1,s2)
+    expect_equal(s1,s3)
+    expect_equal(s1$AUC,s1b$AUC)
+    expect_equal(s2$AUC,s2b$AUC)
+    expect_equal(s3$AUC,s3b$AUC)
+})
+test_that("competing risks outcome: robustness against order of data set",{
+    set.seed(112)
+    d <- sampleData(112,outcome="competing.risks")
+    f1 <- CSC(Hist(time,event)~X1+X5+X8,data=d)
+    f2 <- FGR(Hist(time,event)~X2+X6+X9+X10,data=d,cause=1)
+    f3 <- cbind(d$X8,d$X8,d$X8)
+    s1 <- Score(list(f1,f2,f3),formula=Hist(time,event)~1,data=d,times=c(3,5,10),conf.int=TRUE,cause=1)
+    s1b <- Score(list(f1,f2,f3),formula=Hist(time,event)~1,data=d,times=c(3,5,10),conf.int=.95,cause=1,metrics="auc")
+    setkey(d,X4)
+    f3 <- cbind(d$X8,d$X8,d$X8)
+    s2 <- Score(list(f1,f2,f3),formula=Hist(time,event)~1,data=d,times=c(3,5,10),conf.int=.95,cause=1)
+    s2b <- Score(list(f1,f2,f3),formula=Hist(time,event)~1,data=d,times=c(3,5,10),conf.int=.95,cause=1,metrics="auc")
+    setorder(d,time,-event)
+    f3 <- cbind(d$X8,d$X8,d$X8)
+    s3 <- Score(list(f1,f2,f3),formula=Hist(time,event)~1,data=d,times=c(3,5,10),conf.int=.95,cause=1)
+    s3b <- Score(list(f1,f2,f3),formula=Hist(time,event)~1,data=d,times=c(3,5,10),conf.int=.95,cause=1,metrics="auc")
+    expect_equal(s1,s2)
+    expect_equal(s1,s3)
+    expect_equal(s1$AUC,s1b$AUC)
+    expect_equal(s2$AUC,s2b$AUC)
+    expect_equal(s3$AUC,s3b$AUC)
+})
+test_that("survival outcome: Brier Score pec vs Score",
 {
     set.seed(112)
     d <- sampleData(112,outcome="survival")
@@ -34,8 +98,7 @@ test_that("survival outcome: Brier Score",
     expect_equal(p1$AppErr$coxph.1,s1$Brier$score[model=="coxph.1",Brier])
     expect_equal(p1$AppErr$Reference,s1$Brier$score[model=="Null model",Brier])
 })
-test_that("survival outcome: matrix input",
-{
+test_that("survival outcome: matrix input",{
     set.seed(112)
     dtrain <- sampleData(112,outcome="survival")
     dtest <- sampleData(4,outcome="survival")
@@ -45,8 +108,7 @@ test_that("survival outcome: matrix input",
     expect_equal(s1$Brier$score[model=="coxph",Brier],s1$Brier$score[model=="matrix",Brier])
 })
 
-test_that("survival outcome,Brier Score, external prediction",
-{
+test_that("survival outcome,Brier Score, external prediction",{
     ## generate simulated data
     set.seed(130971)
     n <- 4
@@ -66,37 +128,27 @@ test_that("survival outcome,Brier Score, external prediction",
     expect_equal(b$Brier$score[,Brier],as.vector(unlist(a$AppErr)))
 })
 
-test <- FALSE
-# Brice: I can't run 
-    ## expect_equal(daim.auc,score.auc)
-    ## expect_equal(daim.diff$"CI(lower)",-score.diff$upper)
-    ## expect_equal(daim.diff$"CI(upper)",-score.diff$lower)
-    ## expect_equal(daim.diff$"P.Value",score.diff$p)
+test_that("binary outcome: Brier",{
+    set.seed(47)
+    D <- sampleData(n=47,outcome="binary")
+    s1 <- Score(list(X6=glm(Y~X6,data=D,family='binomial'),X9=glm(Y~X9,data=D,family='binomial'),X10=glm(Y~X10,data=D,family='binomial')),formula=Y~1,data=D,nullModel=FALSE,metrics="brier",cause="1")
+    s2 <- Score(list(X6=glm(Y~X6,data=D,family='binomial'),X9=glm(Y~X9,data=D,family='binomial'),X10=glm(Y~X10,data=D,family='binomial')),formula=Y~1,data=D,nullModel=FALSE,metrics=c("auc","brier"),cause="1")
+    s3 <- Score(list(X6=glm(Y~X6,data=D,family='binomial'),X9=glm(Y~X9,data=D,family='binomial'),X10=glm(Y~X10,data=D,family='binomial')),formula=Y~1,data=D,nullModel=FALSE,metrics=c("auc","brier"),se.fit=FALSE,cause="1")
+    setkey(D,Y)
+    S1 <- Score(list(X6=glm(Y~X6,data=D,family='binomial'),X9=glm(Y~X9,data=D,family='binomial'),X10=glm(Y~X10,data=D,family='binomial')),formula=Y~1,data=D,nullModel=FALSE,metrics="brier",cause="1")
+    S2 <- Score(list(X6=glm(Y~X6,data=D,family='binomial'),X9=glm(Y~X9,data=D,family='binomial'),X10=glm(Y~X10,data=D,family='binomial')),formula=Y~1,data=D,nullModel=FALSE,metrics=c("auc","brier"),cause="1")
+    S3 <- Score(list(X6=glm(Y~X6,data=D,family='binomial'),X9=glm(Y~X9,data=D,family='binomial'),X10=glm(Y~X10,data=D,family='binomial')),formula=Y~1,data=D,nullModel=FALSE,metrics=c("auc","brier"),se.fit=FALSE,cause="1")
+    expect_equal(s1,S1)
+    expect_equal(s2,S2)
+    expect_equal(s3,S3)
+    expect_equal(s1$Brier,s2$Brier)
+    expect_equal(s1$Brier,s3$Brier)
+    expect_equal(s2$Brier,s3$Brier)
+    expect_equal(S1$Brier,S2$Brier)
+    expect_equal(S1$Brier,S3$Brier)
+    expect_equal(S2$Brier,S3$Brier)
+})
 
-# on my computer I get the following error
-    ## Error: `daim.auc` not equal to `score.auc`.
-    ## Component "SD(DeLong)": Mean relative difference: 0.3720713
-
-    ## Error: daim.diff$"CI(lower)" not equal to -score.diff$upper.
-    ## 3/3 mismatches (average diff: 0.0204)
-    ## [1]  0.0421 -  0.0327 == 0.00936
-    ## [2] -0.2796 - -0.3052 == 0.02561
-    ## [3] -0.5012 - -0.5274 == 0.02628
-
-    ## Error: daim.diff$"CI(upper)" not equal to -score.diff$lower.
-    ## 3/3 mismatches (average diff: 0.0204)
-    ## [1]  0.3418 -  0.3512 == -0.00936
-    ## [2] -0.0881 - -0.0625 == -0.02561
-    ## [3] -0.2505 - -0.2242 == -0.02628
-
-    ## Error: daim.diff$P.Value not equal to score.diff$p.
-    ## 3/3 mismatches (average diff: 0.00297)
-    ## [1] 1.21e-02 - 1.81e-02 == -6.08e-03
-    ## [2] 1.68e-04 - 2.99e-03 == -2.82e-03
-    ## [3] 4.20e-09 - 1.19e-06 == -1.18e-06
-
-if(test){
-    
 test_that("binary outcome: AUC", {   
     set.seed(17)
     y <- rbinom(100, 1, .5)
@@ -115,6 +167,10 @@ test_that("binary outcome: AUC", {
     scoreres <- Score(list(X1=~x1,X2=~x2,X3=~x3),formula=y~1,data=d,nullModel=FALSE,cause="1")
     ## Roc(list(X1=glm(y~x1,data=d,family='binomial'),X2=glm(y~x2,data=d,family='binomial'),X3=glm(y~x3,data=d,family='binomial')),formula=y~1,data=d)
     scoreres <- Score(list(X1=glm(y~x1,data=d,family='binomial'),X2=glm(y~x2,data=d,family='binomial'),X3=glm(y~x3,data=d,family='binomial')),formula=y~1,data=d,nullModel=FALSE,cause="1")
+    ## to avoid side effects of data.table features we check the following 
+    scoreres1 <- Score(list(X1=glm(y~x1,data=d,family='binomial'),X2=glm(y~x2,data=d,family='binomial'),X3=glm(y~x3,data=d,family='binomial')),formula=y~1,data=d,nullModel=FALSE,metrics="auc",cause="1")
+    scoreres1a <- Score(list(X1=glm(y~x1,data=d,family='binomial'),X2=glm(y~x2,data=d,family='binomial'),X3=glm(y~x3,data=d,family='binomial')),formula=y~1,data=d,nullModel=FALSE,metrics="auc",se.fit=0L,cause="1")
+    expect_equal(scoreres$AUC,scoreres1$AUC)
     daim.auc <- daimres$AUC[,c("AUC","SD(DeLong)")]
     score.auc <- as.data.frame(scoreres$AUC$score[,c("AUC","se.AUC"),with=FALSE])
     rownames(score.auc) <- rownames(daim.auc)
@@ -128,7 +184,5 @@ test_that("binary outcome: AUC", {
     expect_equal(daim.diff$"CI(upper)",-score.diff$lower)
     expect_equal(daim.diff$"P.Value",score.diff$p)
 })
-
-}
 #----------------------------------------------------------------------
 ### test-Score.R ends here
