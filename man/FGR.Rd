@@ -86,6 +86,9 @@ f6
 f6a<- FGR(Hist(time,cause)~X1+X2,data=d, cause=1,gtol=0.1)
 f6a
 }
+\author{
+Thomas Alexander Gerds \email{tag@biostat.ku.dk}
+}
 \references{
 Gerds, TA and Scheike, T and Andersen, PK (2011) Absolute risk
 regression for competing risks: interpretation, link functions and
@@ -95,7 +98,5 @@ Copenhagen
 \seealso{
 \code{\link{riskRegression}}
 }
-\author{
-Thomas Alexander Gerds \email{tag@biostat.ku.dk}
-}
 \keyword{survival}
+

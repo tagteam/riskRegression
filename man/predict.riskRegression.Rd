@@ -40,15 +40,16 @@ predict(fit.tarr,newdata=data.frame(age=c(48,58,68),
 predict(fit.tarr,newdata=Melanoma[1:4,])
 
 }
+\author{
+Thomas H. Scheike \email{ts@biostat.ku.dk}
+
+Thomas A. Gerds \email{tag@biostat.ku.dk}
+}
 \references{
 Gerds, TA and Scheike, T and Andersen, PK (2011) Absolute risk
 regression for competing risks: interpretation, link functions and
 prediction Research report 11/8. Department of Biostatistics, University of
 Copenhagen
 }
-\author{
-Thomas H. Scheike \email{ts@biostat.ku.dk}
-
-Thomas A. Gerds \email{tag@biostat.ku.dk}
-}
 \keyword{survival}
+

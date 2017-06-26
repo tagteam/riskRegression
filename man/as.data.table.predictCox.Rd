@@ -16,3 +16,4 @@
 \description{
 Turn predictCox object into a \code{data.table}
 }
+

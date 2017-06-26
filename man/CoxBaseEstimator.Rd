@@ -44,3 +44,4 @@ CoxBaseEstimator(mCox)
 \author{
 Brice Ozenne broz@sund.ku.dk
 }
+

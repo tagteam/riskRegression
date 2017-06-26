@@ -31,3 +31,4 @@ rowSumsCrossprod(x,y,1)
 \author{
 Thomas Alexander Gerds <tag@biostat.ku.dk>
 }
+

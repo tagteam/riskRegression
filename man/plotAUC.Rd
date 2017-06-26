@@ -66,3 +66,4 @@ plotAUC(xx,confint=TRUE)
 plotAUC(xx,which="contrasts")
 
 }
+

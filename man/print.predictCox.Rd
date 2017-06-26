@@ -51,3 +51,4 @@ pred.dataci <- predictCox(m.cox, newdata = d[1:5,],
 pred.dataci
 
 }
+

@@ -49,3 +49,4 @@ cause = 1, se = TRUE, keep.newdata = TRUE, keep.strata = TRUE)
 plot(pred.SCSC, groupBy = "strata")
 
 }
+

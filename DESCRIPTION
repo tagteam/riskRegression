@@ -38,7 +38,7 @@ Suggests:
     rbenchmark,
     rpart,
     testthat,
-    timereg
+    timereg (>= 1.9.1)
 Maintainer: Thomas Alexander Gerds <tag@biostat.ku.dk>
 Description: Implementation of the following methods for event history analysis.
     Risk regression models for survival endpoints also in the presence of competing
@@ -54,4 +54,4 @@ Description: Implementation of the following methods for event history analysis.
     the risk prediction models on one part of each split and then summarizes and
     compares the performance across splits.
 License: GPL (>= 2)
-RoxygenNote: 6.0.1
+RoxygenNote: 5.0.1

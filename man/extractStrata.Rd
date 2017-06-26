@@ -44,3 +44,4 @@ extractStrata(delete.response(mCox$terms),
 \author{
 Brice Ozenne broz@sund.ku.dk and Thomas A. Gerds tag@biostat.ku.dk
 }
+

@@ -16,3 +16,4 @@
 \description{
 Print average treatment effects
 }
+

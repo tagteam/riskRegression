@@ -3,25 +3,25 @@
 \name{predictRisk}
 \alias{predictRisk}
 \alias{predictRisk.CauseSpecificCox}
-\alias{predictRisk.riskRegression}
 \alias{predictRisk.FGR}
-\alias{predictRisk.prodlim}
-\alias{predictRisk.rfsrc}
 \alias{predictRisk.aalen}
 \alias{predictRisk.cox.aalen}
 \alias{predictRisk.coxph}
 \alias{predictRisk.cph}
 \alias{predictRisk.default}
+\alias{predictRisk.glm}
+\alias{predictRisk.lrm}
 \alias{predictRisk.matrix}
-\alias{predictRisk.pecCtree}
 \alias{predictRisk.pecCforest}
+\alias{predictRisk.pecCtree}
+\alias{predictRisk.prodlim}
 \alias{predictRisk.psm}
+\alias{predictRisk.randomForest}
+\alias{predictRisk.rfsrc}
+\alias{predictRisk.riskRegression}
+\alias{predictRisk.rpart}
 \alias{predictRisk.selectCox}
 \alias{predictRisk.survfit}
-\alias{predictRisk.randomForest}
-\alias{predictRisk.lrm}
-\alias{predictRisk.glm}
-\alias{predictRisk.rpart}
 \title{Extrating predicting risks from regression models}
 \usage{
 \method{predictRisk}{glm}(object,newdata,...)
@@ -45,12 +45,12 @@ probabilities}
 \item{newdata}{A data frame containing predictor variable combinations for
 which to compute predicted event probabilities.}
 
-\item{\dots}{Additional arguments that are passed on to the current method.}
-
 \item{times}{A vector of times in the range of the response variable, for
 which the cumulative incidences event probabilities are computed.}
 
 \item{cause}{Identifies the cause of interest among the competing events.}
+
+\item{\dots}{Additional arguments that are passed on to the current method.}
 }
 \value{
 For binary outcome a vector with predicted risks. For survival outcome with and without
@@ -151,10 +151,11 @@ cox.fit2  <- CSC(list(Hist(time,cause)~strata(X1)+X2,Hist(time,cause)~X1+X2),dat
 predictRisk(cox.fit2,newdata=test,times=seq(1:10),cause=1)
 
 }
-\seealso{
-See \code{\link{predictRisk}}.
-}
 \author{
 Thomas A. Gerds \email{tag@biostat.ku.dk}
 }
+\seealso{
+See \code{\link{predictRisk}}.
+}
 \keyword{survival}
+

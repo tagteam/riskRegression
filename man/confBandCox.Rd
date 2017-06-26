@@ -20,3 +20,4 @@ confBandCox(iid, se, times, n.sim, conf.level)
 \description{
 Compute quantiles of a gaussian process
 }
+

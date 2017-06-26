@@ -20,3 +20,4 @@ IFlambda2hazard(eXb, X_IFbeta, lambda0, IFlambda0, nVar)
 \description{
 Evaluate the influence function for the hazard based on the one of the baseline hazard
 }
+
