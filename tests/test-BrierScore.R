@@ -11,22 +11,6 @@ test_that("predictions",{
     p2 <- stats::predict(f2,newdata=Melanoma,times=c(0,1,100,1000))
 })
 
-test <- FALSE
-# Brice: I can't run 
-    ## old <- pec(list(ARR=fit.arr2a,ARR.power=fit.arr2b,LRR=fit.lrr),
-    ##            data=Melanoma,
-    ##            formula=Hist(time,status)~1,
-    ##            cause=1, B=10,splitMethod="none")
-# on my computer I get the following error
-    ## Error in predictEventProb.riskRegression(object = list(call = ARR(formula = Hist(time,  : 
-  
-    ## Prediction matrix has wrong dimension:
-    ## Requested newdata x times: 205 x 195
-    ## Provided prediction matrix: 57 x 195
-
-    ## No traceback available 
-if(test){
-
 test_that("Brier score",{
     library(riskRegression)
     library(survival)
@@ -50,5 +34,3 @@ test_that("Brier score",{
         expect_equal(new$Brier$score[model==names(new$models)[m]][["Brier"]],old$AppErr[[names(old$AppErr)[[m]]]])})
 
 })
-
-}

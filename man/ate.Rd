@@ -120,4 +120,3 @@ atefit=ate(fitCR, data = dt, treatment = "X1", contrasts = NULL,
 }
 
 }
-

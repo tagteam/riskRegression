@@ -2,8 +2,8 @@
 % Please edit documentation in R/getCoxInfo.R
 \name{CoxCenter}
 \alias{CoxCenter}
-\alias{CoxCenter.coxph}
 \alias{CoxCenter.cph}
+\alias{CoxCenter.coxph}
 \alias{CoxCenter.phreg}
 \title{Extract the mean value of the covariates}
 \usage{
@@ -54,4 +54,3 @@ CoxCenter(mCox)
 \author{
 Brice Ozenne broz@sund.ku.dk
 }
-

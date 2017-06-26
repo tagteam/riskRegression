@@ -2,11 +2,11 @@
 % Please edit documentation in R/ipcw.R
 \name{ipcw}
 \alias{ipcw}
-\alias{ipcw.aalen}
-\alias{ipcw.cox}
-\alias{ipcw.marginal}
 \alias{ipcw.none}
+\alias{ipcw.marginal}
 \alias{ipcw.nonpar}
+\alias{ipcw.cox}
+\alias{ipcw.aalen}
 \title{Estimation of censoring probabilities}
 \usage{
 ipcw(formula, data, method, args, times, subjectTimes, subjectTimesLag = 1,
@@ -128,4 +128,3 @@ plot(WKM2$fit,add=FALSE)
 Thomas A. Gerds \email{tag@biostat.ku.dk}
 }
 \keyword{survival}
-

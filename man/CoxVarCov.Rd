@@ -2,8 +2,8 @@
 % Please edit documentation in R/getCoxInfo.R
 \name{CoxVarCov}
 \alias{CoxVarCov}
-\alias{CoxVarCov.coxph}
 \alias{CoxVarCov.cph}
+\alias{CoxVarCov.coxph}
 \alias{CoxVarCov.phreg}
 \title{Extract the variance covariance matrix of the beta from a Cox model}
 \usage{
@@ -57,4 +57,3 @@ CoxVarCov(mCox)
 \author{
 Brice Ozenne broz@sund.ku.dk
 }
-

@@ -74,6 +74,9 @@ Note: for Cox regression models with time varying
     covariates it does not make sense to use this function, because
     the predicted risk has to be a measurable function of the data
     available at the time origin.
+
+When setting \code{logTransform} to \code{TRUE}, the standard error that is returned is 
+before back-transformation to the original scale.
 }
 \examples{
 set.seed(5)
@@ -117,4 +120,3 @@ predCSC_afterT0
 Brice Ozenne broz@sund.ku.dk, Thomas A. Gerds
     tag@biostat.ku.dk
 }
-

@@ -16,4 +16,3 @@
 \description{
 Turn predictCSC object into a \code{data.table}
 }
-

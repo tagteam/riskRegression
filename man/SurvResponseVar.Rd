@@ -36,4 +36,3 @@ SurvResponseVar(mCox$formula)
 \author{
 Brice Ozenne broz@sund.ku.dk
 }
-

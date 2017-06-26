@@ -39,6 +39,9 @@
 #'     the predicted risk has to be a measurable function of the data
 #'     available at the time origin.
 #' 
+#' When setting \code{logTransform} to \code{TRUE}, the standard error that is returned is 
+#' before back-transformation to the original scale.
+#' 
 #' @return A list containing:
 #' \itemize{
 #' \item{absRisk}: (data table) the predictions for each subject (in rows) and each time (in columns).

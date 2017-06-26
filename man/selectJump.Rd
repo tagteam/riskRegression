@@ -35,4 +35,3 @@ selectJump(IFall, times = 1:2, type = "cumhazard")
 \author{
 Brice Ozenne broz@sund.ku.dk
 }
-

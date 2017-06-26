@@ -51,7 +51,10 @@
 #'     delayed entry.  The centered argument enables us to reproduce
 #'     the results obtained with the \code{basehaz} function from the
 #'     survival package.
-#'
+#'     
+#' When setting \code{logTransform} to \code{TRUE}, the standard error that is returned is 
+#' before back-transformation to the original scale.
+#' 
 #' @author Brice Ozenne broz@@sund.ku.dk, Thomas A. Gerds tag@@biostat.ku.dk
 #' @return 
 #' A list with some or all of the following elements:

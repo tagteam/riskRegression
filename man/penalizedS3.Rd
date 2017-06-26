@@ -51,4 +51,3 @@ penS3 <- penalizedS3(Surv(time,event)~ER+Age+pen(8:33)+Diam+pen(34:77)+N+Grade,
                     data=nki70, lambda1=1)
 }
 }
-
