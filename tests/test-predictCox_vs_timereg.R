@@ -16,8 +16,6 @@
 ## 
 ### Code:
 
-test=FALSE
-if (test){
 library(prodlim)
 library(riskRegression)
 library(testthat)
@@ -446,7 +444,6 @@ test_that("iid minimal - strata", {
 ##                        store.iid = "minimal", se = TRUE, iid = FALSE)
 ## )
 ##     apply(res3$survival.iid,1:2,mean)
-}
 
 #----------------------------------------------------------------------
 ### test-predictCox_vs_timereg.R ends here

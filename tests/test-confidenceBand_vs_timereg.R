@@ -1,5 +1,3 @@
-test=FALSE
-if (test){
 library(timereg)
 library(testthat)
 library(riskRegression)
@@ -147,5 +145,3 @@ d$event[d$event>0]
 ##           nObs = as.integer(nobs), nt = as.integer(nt), n = as.integer(n), 
 ##           se = as.double(se), mpt = double(n.sim * nobs), nSims = as.integer(n.sim), 
 ##           PACKAGE = "timereg")$mpt
-
-}
