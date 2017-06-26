@@ -863,7 +863,7 @@ Score <- function(object,...){
 
 
 Brier.binary <- function(DT,se.fit,alpha,N,NT,NF,dolist,keep.residuals=FALSE,DT.residuals,DT.bootcount,...){
-    residuals=Brier=risk=model=ReSpOnSe=lower.Brier=upper.Brier=se.Brier=NULL
+    residuals=Brier=risk=model=ReSpOnSe=lower.Brier=upper.Brier=se.Brier=ID=NULL
     DT[,residuals:=(ReSpOnSe-risk)^2,by=model]
     if (se.fit==TRUE){
         ## data.table::setorder(DT,model,ReSpOnSe)
@@ -1054,7 +1054,7 @@ auRoc.factor <- function(X,D,ROC){
 }
 
 AUC.binary <- function(DT,breaks=NULL,se.fit,alpha,N,NT,NF,dolist,ROC,...){
-    model=risk=ReSpOnSe=FPR=TPR=NULL
+    model=risk=ReSpOnSe=FPR=TPR=ID=NULL
     data.table::setkey(DT,model,ID)
     if (is.factor(DT[["risk"]])){
         score <- DT[,auRoc.factor(risk,ReSpOnSe,ROC=ROC),by=list(model)]

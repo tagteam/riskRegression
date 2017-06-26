@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jan  4 2016 (14:30) 
 ## Version: 
-## last-updated: Jun 26 2017 (10:20) 
+## last-updated: Jun 26 2017 (11:57) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 29
+##     Update #: 32
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -31,11 +31,15 @@ test_that("binary outcome: robustness against order of data set",{
     s1 <- Score(list(f1,f2,f3),formula=Y~1,data=d,conf.int=TRUE)
     s1b <- Score(list(f1,f2,f3),formula=Y~1,data=d,conf.int=.95,metrics="auc")
     setkey(d,X4)
+    f3 <- d$X8
     s2 <- Score(list(f1,f2,f3),formula=Y~1,data=d,conf.int=.95)
     s2b <- Score(list(f1,f2,f3),formula=Y~1,data=d,conf.int=.95,metrics="auc")
-    setorder(d,time,-event)
+    setorder(d,Y)
+    f3 <- d$X8
     s3 <- Score(list(f1,f2,f3),formula=Y~1,data=d,conf.int=.95)
     s3b <- Score(list(f1,f2,f3),formula=Y~1,data=d,conf.int=.95,metrics="auc")
+    ## lapply(names(s1),function(n){print(n);expect_equal(s1[[n]],s3[[n]])})
+    s1$call$conf.int <- .95
     expect_equal(s1,s2)
     expect_equal(s1,s3)
     expect_equal(s1$AUC,s1b$AUC)
@@ -58,6 +62,7 @@ test_that("survival outcome: robustness against order of data set",{
     f3 <- cbind(d$X8,d$X8,d$X8)
     s3 <- Score(list(f1,f2,f3),formula=Surv(time,event)~1,data=d,times=c(3,5,10),conf.int=.95)
     s3b <- Score(list(f1,f2,f3),formula=Surv(time,event)~1,data=d,times=c(3,5,10),conf.int=.95,metrics="auc")
+    s1$call$conf.int <- .95
     expect_equal(s1,s2)
     expect_equal(s1,s3)
     expect_equal(s1$AUC,s1b$AUC)
@@ -80,6 +85,7 @@ test_that("competing risks outcome: robustness against order of data set",{
     f3 <- cbind(d$X8,d$X8,d$X8)
     s3 <- Score(list(f1,f2,f3),formula=Hist(time,event)~1,data=d,times=c(3,5,10),conf.int=.95,cause=1)
     s3b <- Score(list(f1,f2,f3),formula=Hist(time,event)~1,data=d,times=c(3,5,10),conf.int=.95,cause=1,metrics="auc")
+    s1$call$conf.int <- .95
     expect_equal(s1,s2)
     expect_equal(s1,s3)
     expect_equal(s1$AUC,s1b$AUC)
