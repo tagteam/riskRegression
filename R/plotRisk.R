@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Mar 13 2017 (16:53) 
 ## Version: 
-## Last-Updated: Apr 28 2017 (07:32) 
+## Last-Updated: Jun 25 2017 (12:31) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 32
+##     Update #: 33
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -64,6 +64,7 @@ plotRisk <- function(x,
                      pch=1,
                      cex=1,
                      ...){
+    model=ReSpOnSe=risk=status=NULL
     if (!is.null(x$nullModel))
         pframe <- x$risks$score[model!=x$nullModel]
     else

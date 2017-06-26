@@ -34,6 +34,8 @@ calculation of risk differences.}
 \item{outcomeLabel}{Title label for column which shows the outcome
 status}
 
+\item{outcomeLabel.offset}{Vertical offset for outcomeLabel}
+
 \item{eventLabels}{Labels for the different events (causes).}
 
 \item{refline}{Logical, for \code{type="diff"} only. If \code{TRUE}
