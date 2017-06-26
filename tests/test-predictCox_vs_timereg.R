@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: maj 18 2017 (09:23) 
 ## Version: 
-## last-updated: jun  5 2017 (15:06) 
-##           By: Brice
-##     Update #: 46
+## last-updated: Jun 26 2017 (11:35) 
+##           By: Thomas Alexander Gerds
+##     Update #: 47
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -16,6 +16,8 @@
 ## 
 ### Code:
 
+test=FALSE
+if (test){
 library(prodlim)
 library(riskRegression)
 library(testthat)
@@ -444,6 +446,7 @@ test_that("iid minimal - strata", {
 ##                        store.iid = "minimal", se = TRUE, iid = FALSE)
 ## )
 ##     apply(res3$survival.iid,1:2,mean)
+}
 
 #----------------------------------------------------------------------
 ### test-predictCox_vs_timereg.R ends here

@@ -1,3 +1,5 @@
+test=FALSE
+if (test){
 library(timereg)
 library(testthat)
 library(riskRegression)
@@ -27,7 +29,6 @@ resTimereg <- list()
                                            resample.iid = 1,
                                            n.sim = n.sim)
     }
-
 test_that("computation of the quantile for the confidence band of the cumhazard", {
     pred <- predictCox(fit.coxph,
                        newdata = newdata,
@@ -60,7 +61,6 @@ test_that("computation of the quantile for the confidence band of the cumhazard"
     #expect_equal(resRR,c(2.850666, 2.562949, 2.992631, 2.992631, 2.850666, 2.992631, 2.850666, 2.992631, 2.992631, 2.562949), tol = 1e-6)
     #expect_equal(predRR$quantile.band,c(2.850666, 2.562949, 2.992631, 2.992631, 2.850666, 2.992631, 2.850666, 2.992631, 2.992631, 2.562949), tol = 1e-6)
 })
-
 # }}}
 
 # {{{ display
@@ -147,3 +147,5 @@ d$event[d$event>0]
 ##           nObs = as.integer(nobs), nt = as.integer(nt), n = as.integer(n), 
 ##           se = as.double(se), mpt = double(n.sim * nobs), nSims = as.integer(n.sim), 
 ##           PACKAGE = "timereg")$mpt
+
+}

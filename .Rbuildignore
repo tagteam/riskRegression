@@ -1,5 +1,7 @@
 examples/
 prepareData/
+^.*\.o$
+^.*\.so$
 ^README.org$
 ^\.travis\.yml$
 ^.*\.Rproj$
