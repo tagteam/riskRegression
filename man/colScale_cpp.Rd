@@ -26,4 +26,3 @@ colScale_cpp(x, 1:6 )
 \author{
 Brice Ozenne <broz@sund.ku.dk>
 }
-

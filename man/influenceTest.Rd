@@ -86,4 +86,3 @@ quantile(unlist(resStrata["se.delta",]))
 mean(unlist(resStrata["p.value",])<0.05)
 }
 }
-

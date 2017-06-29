@@ -32,10 +32,9 @@ sampleData(10,outcome="binary")
 sampleData(10,outcome="survival")
 sampleData(10,outcome="competing.risks")
 }
-\author{
-Thomas A. Gerds <tag@biostat.ku.dk>
-}
 \seealso{
 lvm
 }
-
+\author{
+Thomas A. Gerds <tag@biostat.ku.dk>
+}

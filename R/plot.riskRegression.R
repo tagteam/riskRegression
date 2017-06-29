@@ -48,7 +48,7 @@
 ##' data(Melanoma)
 ##' 
 ##' fit.arr <- ARR(Hist(time,status)~invasion+age+strata(sex),data=Melanoma,cause=1)
-##' plot(fit.arr)
+##' plot(fit.arr,xlim=c(500,3000)
 ##' 
 ##' 
 #' @export 

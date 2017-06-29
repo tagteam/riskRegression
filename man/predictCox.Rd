@@ -143,4 +143,3 @@ predictCox(fitS, newdata=nd, times = 3)
 \author{
 Brice Ozenne broz@sund.ku.dk, Thomas A. Gerds tag@biostat.ku.dk
 }
-

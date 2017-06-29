@@ -2,7 +2,7 @@ Package: riskRegression
 Type: Package
 Title: Risk Regression Models and Prediction Scores for Survival Analysis with
     Competing Risks
-Version: 1.4.1
+Version: 1.4.2
 Author: Thomas Alexander Gerds, Thomas Harder Scheike, Paul Blanche, Brice
     Ozenne
 Depends:
@@ -54,4 +54,4 @@ Description: Implementation of the following methods for event history analysis.
     the risk prediction models on one part of each split and then summarizes and
     compares the performance across splits.
 License: GPL (>= 2)
-RoxygenNote: 5.0.1
+RoxygenNote: 6.0.1

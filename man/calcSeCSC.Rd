@@ -61,4 +61,3 @@ before computing the standard error / influence functions.
 This avoid to store all the influence functions but may lead to repeated evaluation of the influence function.
 This solution is therefore efficient more efficient in memory usage but may not be in term of computation time.
 }
-

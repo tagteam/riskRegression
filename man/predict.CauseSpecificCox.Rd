@@ -120,4 +120,3 @@ predCSC_afterT0
 Brice Ozenne broz@sund.ku.dk, Thomas A. Gerds
     tag@biostat.ku.dk
 }
-

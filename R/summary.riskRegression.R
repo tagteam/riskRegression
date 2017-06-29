@@ -24,9 +24,10 @@ summary.riskRegression <- function(object,
         cat("\nIPCW estimation. The weights are based on\n",
             switch(object$censModel,
                    "KM"={"the Kaplan-Meier estimate" },
-                   "cox"={"a Cox model" },                             
+                   "cox"={"a Cox model" },
                    "aalen"={"a non-parametric additive Aalen model"}),
             " for the censoring distribution.\n",sep="")
+        
         ##   cat("\n",rep("_",options()$width/2),"\n",sep="")
         summary(object$response)
         ##   cat("\n",rep("_",options()$width/2),"\n",sep="")
