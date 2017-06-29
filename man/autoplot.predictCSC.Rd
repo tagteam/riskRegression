@@ -4,12 +4,12 @@
 \alias{autoplot.predictCSC}
 \title{Plot predictions from a Cause-specific Cox proportional hazard regression}
 \usage{
-\method{autoplot}{predictCSC}(x, ci = FALSE, band = FALSE,
+\method{autoplot}{predictCSC}(object, ci = FALSE, band = FALSE,
   groupBy = "row", reduce.data = FALSE, plot = TRUE, digits = 2,
   alpha = NA, ...)
 }
 \arguments{
-\item{x}{object obtained with the function \code{predictCox}.}
+\item{object}{object obtained with the function \code{predictCox}.}
 
 \item{ci}{Logical. If \code{TRUE} display the confidence intervals for the predictions.}
 

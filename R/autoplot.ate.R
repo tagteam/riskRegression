@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: apr 28 2017 (14:19) 
 ## Version: 
-## last-updated: Jun 29 2017 (16:36) 
+## last-updated: Jun 29 2017 (16:55) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 26
+##     Update #: 27
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -18,7 +18,7 @@
 #' @title Plot predictions from a Cause-specific Cox proportional hazard regression
 #' @description Plot predictions from a Cause-specific Cox proportional hazard regression
 #' 
-#' @param x object obtained with the function \code{predictCox}.
+#' @param object object obtained with the function \code{predictCox}.
 #' @param ci Logical. If \code{TRUE} display the confidence intervals for the predictions.
 #' @param band Logical. If \code{TRUE} display the confidence bands for the predictions.
 #' @param plot Logical. Should the graphic be plotted.
@@ -47,7 +47,7 @@
 #' @method autoplot ate
 #' 
 #' @export
-autoplot.ate <- function(x,
+autoplot.ate <- function(object,
                      ci = FALSE,
                      band = FALSE,
                      plot = TRUE,
@@ -57,17 +57,17 @@ autoplot.ate <- function(x,
     Treatment <- NULL
     
     ## initialize and check          
-    if(ci && x$se==FALSE){
+    if(ci && object$se==FALSE){
         stop("argument \'ci\' cannot be TRUE when no standard error have been computed \n",
              "set argment \'se\' to TRUE when calling predictCox \n")
     }
-    if(band && x$band==FALSE){
+    if(band && object$band==FALSE){
         stop("argument \'band\' cannot be TRUE when the quantiles for the confidence bands have not been computed \n",
              "set argment \'nSim.band\' to a positive integer when calling ate \n")
     }
   
     ## display
-    dataL <- copy(x$meanRisk)
+    dataL <- copy(object$meanRisk)
     dataL[,row := as.numeric(as.factor(Treatment))]
     setnames(dataL, old = c("lower","upper"), new = c("lowerCI","upperCI"))
     
@@ -75,9 +75,9 @@ autoplot.ate <- function(x,
                            name.outcome = "meanRisk", # must not contain space to avoid error in ggplot2
                            ci = ci, band = band,
                            groupBy = "Treatment",
-                           conf.level = x$conf.level,
+                           conf.level = object$conf.level,
                            alpha = alpha,
-                           origin = min(x$time))
+                           origin = min(object$time))
   
     gg.res$plot <- gg.res$plot + ggplot2::ylab("Average absolute risk")
     

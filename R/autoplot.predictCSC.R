@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: feb 27 2017 (10:47) 
 ## Version: 
-## last-updated: Jun 29 2017 (16:37) 
+## last-updated: Jun 29 2017 (16:55) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 61
+##     Update #: 62
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -18,7 +18,7 @@
 #' @title Plot predictions from a Cause-specific Cox proportional hazard regression
 #' @description Plot predictions from a Cause-specific Cox proportional hazard regression
 #' 
-#' @param x object obtained with the function \code{predictCox}.
+#' @param object object obtained with the function \code{predictCox}.
 #' @param ci Logical. If \code{TRUE} display the confidence intervals for the predictions.
 #' @param band Logical. If \code{TRUE} display the confidence bands for the predictions.
 #' @param groupBy The grouping factor used to color the prediction curves. Can be \code{"row"}, \code{"strata"}, or \code{"covariates"}. 
@@ -50,7 +50,7 @@
 #' @method autoplot predictCSC
 #' 
 #' @export
-autoplot.predictCSC <- function(x,
+autoplot.predictCSC <- function(object,
                             ci = FALSE,
                             band = FALSE,
                             groupBy = "row",
@@ -64,26 +64,26 @@ autoplot.predictCSC <- function(x,
         stop("argument \"groupBy\" must be in \"",paste(possibleGroupBy, collapse = "\" \""),"\"\n")
     }
   
-    if(groupBy == "covariates" && ("newdata" %in% names(x) == FALSE)){
+    if(groupBy == "covariates" && ("newdata" %in% names(object) == FALSE)){
         stop("argument \'groupBy\' cannot be \"covariates\" when newdata is missing in the object \n",
              "set argment \'keep.newdata\' to TRUE when calling predictCox \n")
     }
-    if(groupBy == "strata" && ("strata" %in% names(x) == FALSE)){
+    if(groupBy == "strata" && ("strata" %in% names(object) == FALSE)){
         stop("argument \'groupBy\' cannot be \"strata\" when strata is missing in the object \n",
              "set argment \'keep.strata\' to TRUE when calling predictCox \n")
     }
   
-    if(ci && x$se == FALSE){
+    if(ci && object$se == FALSE){
         stop("argument \'ci\' cannot be TRUE when no standard error have been computed \n",
              "set argment \'se\' to TRUE when calling predictCox \n")
     }
-    if(band && x$band == FALSE){
+    if(band && object$band == FALSE){
         stop("argument \'band\' cannot be TRUE when the quantiles for the confidence bands have not been computed \n",
              "set argment \'nSim.band\' to a positive integer when calling predict.CauseSpecificCox \n")
     }
     
   ## display
-  newdata <- copy(x$newdata)
+  newdata <- copy(object$newdata)
   if(!is.null(newdata) && reduce.data){
     test <- unlist(newdata[,lapply(.SD, function(col){length(unique(col))==1})])
     if(any(test)){
@@ -91,14 +91,14 @@ autoplot.predictCSC <- function(x,
     }        
   }
 
-    dataL <- predict2melt(outcome = x$absRisk, ci = ci, band = band, 
-                          outcome.lower = if(ci){x$absRisk.lower}else{NULL},
-                          outcome.upper = if(ci){x$absRisk.upper}else{NULL},
-                          outcome.lowerBand = if(band){x$absRisk.lowerBand}else{NULL},
-                          outcome.upperBand = if(band){x$absRisk.upperBand}else{NULL},
+    dataL <- predict2melt(outcome = object$absRisk, ci = ci, band = band, 
+                          outcome.lower = if(ci){object$absRisk.lower}else{NULL},
+                          outcome.upper = if(ci){object$absRisk.upper}else{NULL},
+                          outcome.lowerBand = if(band){object$absRisk.lowerBand}else{NULL},
+                          outcome.upperBand = if(band){object$absRisk.upperBand}else{NULL},
                           newdata = newdata,
-                          strata = x$strata,
-                          times = x$times,
+                          strata = object$strata,
+                          times = object$times,
                           name.outcome = "absoluteRisk",
                           groupBy = groupBy,
                           digits = digits
@@ -109,9 +109,9 @@ autoplot.predictCSC <- function(x,
                            ci = ci,
                            band = band,
                            groupBy = groupBy,
-                           conf.level = x$conf.level,
+                           conf.level = object$conf.level,
                            alpha = alpha,
-                           origin = min(x$time)
+                           origin = min(object$time)
                            )
     
   gg.res$plot <- gg.res$plot + ggplot2::ylab("absolute risk")

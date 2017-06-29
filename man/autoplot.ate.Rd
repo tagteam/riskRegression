@@ -4,11 +4,11 @@
 \alias{autoplot.ate}
 \title{Plot predictions from a Cause-specific Cox proportional hazard regression}
 \usage{
-\method{autoplot}{ate}(x, ci = FALSE, band = FALSE, plot = TRUE,
+\method{autoplot}{ate}(object, ci = FALSE, band = FALSE, plot = TRUE,
   digits = 2, alpha = 0.1, ...)
 }
 \arguments{
-\item{x}{object obtained with the function \code{predictCox}.}
+\item{object}{object obtained with the function \code{predictCox}.}
 
 \item{ci}{Logical. If \code{TRUE} display the confidence intervals for the predictions.}
 

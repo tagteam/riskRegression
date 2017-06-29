@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: feb 17 2017 (10:06) 
 ## Version: 
-## last-updated: Jun 29 2017 (16:38) 
+## last-updated: Jun 29 2017 (16:56) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 329
+##     Update #: 330
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -19,7 +19,7 @@
 #' @title Plot predictions from a Cox model
 #' @description Plot predictions from a Cox model
 #' 
-#' @param x object obtained with the function \code{predictCox}.
+#' @param object object obtained with the function \code{predictCox}.
 #' @inheritParams predictCox
 #' @param ci Logical. If \code{TRUE} display the confidence intervals for the predictions.
 #' @param band Logical. If \code{TRUE} display the confidence bands for the predictions.
@@ -73,7 +73,7 @@
 #' 
 #' @method autoplot predictCox
 #' @export
-autoplot.predictCox <- function(x,
+autoplot.predictCox <- function(object,
                             type = NULL,
                             ci = FALSE,
                             band = FALSE,
@@ -84,7 +84,7 @@ autoplot.predictCox <- function(x,
   
   ## initialize and check    
   possibleType <- c("hazard","cumhazard","survival")
-  possibleType <- possibleType[possibleType %in% names(x)]
+  possibleType <- possibleType[possibleType %in% names(object)]
   
   if(is.null(type)){
     if(length(possibleType) == 1){
@@ -107,32 +107,32 @@ autoplot.predictCox <- function(x,
     stop("argument \"groupBy\" must be in \"",paste(possibleGroupBy, collapse = "\" \""),"\"\n")
   }
   
-  if(groupBy == "covariates" && ("newdata" %in% names(x) == FALSE)){
+  if(groupBy == "covariates" && ("newdata" %in% names(object) == FALSE)){
     stop("argument \'groupBy\' cannot be \"covariates\" when newdata is missing in the object \n",
          "set argment \'keep.newdata\' to TRUE when calling predictCox \n")
   }
-  if(groupBy == "strata" && ("strata" %in% names(x) == FALSE)){
+  if(groupBy == "strata" && ("strata" %in% names(object) == FALSE)){
     stop("argument \'groupBy\' cannot be \"strata\" when strata is missing in the object \n",
          "set argment \'keep.strata\' to TRUE when calling predictCox \n")
   }
   
-  if(ci && (paste0(type,".se") %in% names(x) == FALSE)){
+  if(ci && (paste0(type,".se") %in% names(object) == FALSE)){
     stop("argument \'ci\' cannot be TRUE when no standard error have been computed \n",
          "set argment \'se\' to TRUE when calling predictCox \n")
   }
 
-    if(ci && x$se == FALSE){
+    if(ci && object$se == FALSE){
         stop("argument \'ci\' cannot be TRUE when no standard error have been computed \n",
              "set argment \'se\' to TRUE when calling predictCox \n")
     }
 
-    if(band && x$band == FALSE){
+    if(band && object$band == FALSE){
         stop("argument \'band\' cannot be TRUE when no quantiles for the confidence bands have not been computed \n",
              "set argment \'nSim.band\' to a positive integer when calling predictCox \n")
     }
     
     ## display
-    newdata <- copy(x$newdata)
+    newdata <- copy(object$newdata)
     if(!is.null(newdata) && reduce.data){
         test <- unlist(newdata[,lapply(.SD, function(col){length(unique(col))==1})])
         if(any(test)){
@@ -140,14 +140,14 @@ autoplot.predictCox <- function(x,
         }        
     }
 
-    dataL <- predict2melt(outcome = x[[type]], ci = ci, band = band,
-                          outcome.lower = if(ci){x[[paste0(type,".lower")]]}else{NULL},
-                          outcome.upper = if(ci){x[[paste0(type,".upper")]]}else{NULL},
-                          outcome.lowerBand = if(band){x[[paste0(type,".lowerBand")]]}else{NULL},
-                          outcome.upperBand = if(band){x[[paste0(type,".upperBand")]]}else{NULL},
+    dataL <- predict2melt(outcome = object[[type]], ci = ci, band = band,
+                          outcome.lower = if(ci){object[[paste0(type,".lower")]]}else{NULL},
+                          outcome.upper = if(ci){object[[paste0(type,".upper")]]}else{NULL},
+                          outcome.lowerBand = if(band){object[[paste0(type,".lowerBand")]]}else{NULL},
+                          outcome.upperBand = if(band){object[[paste0(type,".upperBand")]]}else{NULL},
                           newdata = newdata,
-                          strata = x$strata,
-                          times = x$times,
+                          strata = object$strata,
+                          times = object$times,
                           name.outcome = typename,
                           groupBy = groupBy,
                           digits = digits
@@ -158,9 +158,9 @@ autoplot.predictCox <- function(x,
                            ci = ci,
                            band = band,
                            groupBy = groupBy,
-                           conf.level = x$conf.level,
+                           conf.level = object$conf.level,
                            alpha = alpha,
-                           origin = min(x$times)
+                           origin = min(object$times)
                            )
   
   if(plot){

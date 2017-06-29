@@ -4,12 +4,12 @@
 \alias{autoplot.predictCox}
 \title{Plot predictions from a Cox model}
 \usage{
-\method{autoplot}{predictCox}(x, type = NULL, ci = FALSE, band = FALSE,
-  groupBy = "row", reduce.data = FALSE, plot = TRUE, digits = 2,
-  alpha = NA, ...)
+\method{autoplot}{predictCox}(object, type = NULL, ci = FALSE,
+  band = FALSE, groupBy = "row", reduce.data = FALSE, plot = TRUE,
+  digits = 2, alpha = NA, ...)
 }
 \arguments{
-\item{x}{object obtained with the function \code{predictCox}.}
+\item{object}{object obtained with the function \code{predictCox}.}
 
 \item{type}{the type of predicted value. Choices are \itemize{
 \item \code{"hazard"} the baseline hazard function when
