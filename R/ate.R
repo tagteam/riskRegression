@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Oct 23 2016 (08:53) 
 ## Version: 
-## last-updated: Jun 29 2017 (16:48) 
+## last-updated: Jun 29 2017 (16:50) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 239
+##     Update #: 242
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -157,8 +157,8 @@ ate <- function(object,
     if(is.null(contrasts)){
         levels <- levels(data[[treatment]])
         contrasts <- levels(data[[treatment]])
-        if (length(contrasts)>5) stop("Treatment variable has more than 5 levels.\nIf this is not a mistake,
-                                   you should use the argument `contrasts'.")
+        ## if (length(contrasts)>50) warning("Treatment variable has more than 50 levels.\nIf this is not a mistake,
+        ## you should use the argument `contrasts'.")
     }else{levels <- contrasts}
     n.contrasts <- length(contrasts)
     n.times <- length(times)
