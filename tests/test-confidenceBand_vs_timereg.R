@@ -62,22 +62,22 @@ test_that("computation of the quantile for the confidence band of the cumhazard"
 # }}}
 
 # {{{ display
-predRR <- predictCox(fit.coxph,
-                     newdata = newdata[1,],
-                     times = times,
-                     se = TRUE,
-                     band = TRUE,
-                     nSim.band = 500,
-                     type = c("cumhazard","survival")
-                     )
+## predRR <- predictCox(fit.coxph,
+                     ## newdata = newdata[1,],
+                     ## times = times,
+                     ## se = TRUE,
+                     ## band = TRUE,
+                     ## nSim.band = 500,
+                     ## type = c("cumhazard","survival")
+                     ## )
 
-dev.new()
-plotRR <- plot(predRR, type = "survival", band = TRUE, ci = TRUE, plot = FALSE)
+## dev.new()
+## plotRR <- autoplot(predRR, type = "survival", band = TRUE, ci = TRUE, plot = FALSE)
 
-dev.new()
-plotTR <- plot.predict.timereg(resTimereg[[1]])
-dev.new()
-plotRR$plot + coord_cartesian(ylim = c(0,1))
+## dev.new()
+## plotTR <- plot.predict.timereg(resTimereg[[1]])
+## dev.new()
+## plotRR$plot + coord_cartesian(ylim = c(0,1))
 
 # }}}
 
@@ -108,7 +108,7 @@ res <- predict(fit.CSC,
                nSim.band = 500,
                band = TRUE, se = TRUE,
                cause = 1)
-plot(res, band = TRUE, ci = TRUE)
+autoplot(res, band = TRUE, ci = TRUE)
 
 
 setkey(d,time)
