@@ -73,7 +73,7 @@ library(survival)
 library(rms)
 
 set.seed(10)
-n <- 1e2
+n <- 100
 
 ## Cox model
 dtS <- sampleData(n,outcome="survival")
@@ -103,7 +103,7 @@ ateFit3 <- ate(fit, data = dtS, treatment = "X1", contrasts = NULL,
 
 ## Cause specific cox model
 set.seed(17)
-n=200
+n=100
 dt <- sampleData(n,outcome="competing.risks")
 dt$time <- round(dt$time,1)
 dt$X1 <- factor(rbinom(n, prob = c(0.2,0.3,0.2) , size = 3), labels = paste0("T",0:3))
