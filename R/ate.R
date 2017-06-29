@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Oct 23 2016 (08:53) 
 ## Version: 
-## last-updated: jun  7 2017 (09:47) 
-##           By: Brice Ozenne
-##     Update #: 238
+## last-updated: Jun 29 2017 (16:48) 
+##           By: Thomas Alexander Gerds
+##     Update #: 239
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -47,6 +47,7 @@
 #' @param store.iid Implementation used to estimate the standard error. Can be \code{"full"} or \code{"minimal"}.
 #' \code{"minimal"} requires less memory but can only estimate the standard for the difference between treatment effects (and not for the ratio).
 #' @param ... passed to predictRisk
+#' @author Brice Ozenne \email{broz@@sund.ku.dk} and Thomas Alexander Gerds \email{tag@@biostat.ku.dk}
 #' @return A list with: point estimates, bootstrap quantile confidence
 #'     intervals model: the CSC model (optional)
 #' 
