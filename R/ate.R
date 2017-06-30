@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Oct 23 2016 (08:53) 
 ## Version: 
-## last-updated: Jun 29 2017 (17:49) 
+## last-updated: Jun 29 2017 (18:01) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 243
+##     Update #: 245
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -66,27 +66,23 @@
 #' dtS$X1 <- factor(rbinom(n, prob = c(0.3,0.4) , size = 2), labels = paste0("T",0:2))
 #'
 #' fit=cph(formula = Surv(time,event)~ X1+X2,data=dtS,y=TRUE,x=TRUE)
-#' ## the cph object carries its call:
-#' fit$call
-#' ## and there is a predictRisk method
-#' "predictRisk.cph" %in% methods("predictRisk")
 #'
 #' \dontrun{
 #' ateFit1 <- ate(fit, data = dtS, treatment = "X1", contrasts = NULL,
 #'         times = 5:8, B = 1e3, y = TRUE,  mc.cores=1)
-#' }
-#' \dontshow{
+#' 
 #' ateFit1 <- ate(fit, data = dtS, treatment = "X1", contrasts = NULL,
 #'         times = 5:8, B = 1e1, y = TRUE,  mc.cores=1)
-#' }
 #' ateFit2 <- ate(fit, data = dtS, treatment = "X1", contrasts = NULL,
 #'         times = 5:8, B = 0, y = TRUE, band = TRUE, mc.cores=1)
 #'
 #' ateFit3 <- ate(fit, data = dtS, treatment = "X1", contrasts = NULL,
 #'            times = 5:8, B = 0, y = TRUE, band = TRUE, mc.cores=1,
 #'            store.iid = "minimal")
+#' }
 #' 
-#' ## Cause specific cox model
+#' ## Competing risks: Cause specific Cox regression
+#' \dontrun{
 #' set.seed(17)
 #' n=100
 #' dt <- sampleData(n,outcome="competing.risks")
@@ -99,7 +95,7 @@
 #' atefit=ate(fitCR, data = dt, treatment = "X1", contrasts = NULL,
 #'         times = 1:7, cause = 1, mc.cores=1, se = FALSE, band = FALSE)
 #'
-#' \dontrun{
+#' 
 #'  ate(fitCR, data = dt, treatment = "X1", contrasts = NULL,
 #'         times = 5:7, cause = 1, B = 0, se = TRUE, band = TRUE, mc.cores=1)
 #' }
