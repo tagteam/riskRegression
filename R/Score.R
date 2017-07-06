@@ -883,7 +883,7 @@ Brier.binary <- function(DT,se.fit,alpha,N,NT,NF,dolist,keep.residuals=FALSE,DT.
     }else{
         output <- list(score=DT[,list(Brier=mean(residuals)),by=list(model)])
     }
-    if (keep.residuals) output <- c(output,list(residuals=DT))
+    if (keep.residuals) output <- c(output,list(residuals=DT[,.(ID,ReSpOnSe,model,risk,residuals)]))
     output
 }
 

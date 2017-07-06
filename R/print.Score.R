@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: May 31 2016 (11:32) 
 ## Version: 
-## last-updated: Mar  1 2017 (06:34) 
+## last-updated: Jun 30 2017 (14:28) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 15
+##     Update #: 20
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -25,9 +25,17 @@
 #' @method print Score
 #' @export
 print.Score <- function(x,digits=3,...){
-    for (m in c(x$summary,x$metrics,x$plots)){
+    for (s in c(x$summary)){
+        cat(paste0("\nSummary statistics",m,":\n"))
+        print(x[[m]],digits=digits, ...)
+    }
+    for (m in c(x$metrics)){
         cat(paste0("\nMetric ",m,":\n"))
         print(x[[m]],digits=digits, ...)
+    }
+    for (p in c(x$plots)){
+        cat(paste0("\nData for ",p," plot are stored in the object as x[[\"",p,"\"]].\n"))
+        ## print(x[[m]],digits=digits, ...)
     }
 }
 
