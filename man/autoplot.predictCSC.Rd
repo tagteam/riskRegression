@@ -50,3 +50,4 @@ cause = 1, se = TRUE, keep.newdata = TRUE, keep.strata = TRUE)
 autoplot(pred.SCSC, groupBy = "strata")
 
 }
+

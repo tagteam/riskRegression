@@ -341,7 +341,7 @@ Score.list <- function(object,
     # }}}
     # {{{ resolve se.fit and contrasts
     if (is.logical(conf.int) && conf.int==FALSE
-        || conf.int<0
+        || conf.int<=0
         || conf.int>1) 
         se.fit <- FALSE
     else
@@ -883,7 +883,7 @@ Brier.binary <- function(DT,se.fit,alpha,N,NT,NF,dolist,keep.residuals=FALSE,DT.
     }else{
         output <- list(score=DT[,list(Brier=mean(residuals)),by=list(model)])
     }
-    if (keep.residuals) output <- c(output,list(residuals=DT[,.(ID,ReSpOnSe,model,risk,residuals)]))
+    if (keep.residuals) output <- c(output,list(residuals=DT[,data.table::data.table(ID,ReSpOnSe,model,risk,residuals)]))
     output
 }
 

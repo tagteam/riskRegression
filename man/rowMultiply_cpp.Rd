@@ -28,3 +28,4 @@ rowMultiply_cpp(x, 1/colMeans(x) )
 \author{
 Brice Ozenne <broz@sund.ku.dk>
 }
+

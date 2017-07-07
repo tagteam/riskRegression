@@ -45,7 +45,7 @@ corresponding prediction.}
 \item{names}{Barplots only. Names argument passed to
 \code{names.arg} of \code{barplot}.}
 
-\item{pseudo}{If \code{TRUE} show pseudo values}
+\item{pseudo}{If \code{TRUE} show pseudo values (only for right censored data).}
 
 \item{rug}{If \code{TRUE} show rug plot at the predictions}
 
@@ -97,16 +97,8 @@ interpretable on a percent scale.}
 \item{cex}{Default cex used for legend and labels.}
 
 \item{...}{Used to control the subroutines: plot, axis, lines,
-barplot, legend, points (pseudo values), rug. See \code{\link{SmartControl}}.}
-
-\item{showPseudo}{If \code{TRUE} the pseudo-values are shown as
-dots on the plot (only when \code{pseudo=TRUE}).}
-
-\item{pseudo.col}{Colour for pseudo-values.}
-
-\item{pseudo.pch}{Dot type (see par) for pseudo-values.}
-
-\item{jack.density}{Gray scale for pseudo-observations.}
+barplot, legend, points (pseudo values), rug. See
+\code{\link{SmartControl}}.}
 }
 \description{
 Plot Calibration curve
@@ -126,3 +118,4 @@ x <- Score(list(model1=f1,model2=f2),Hist(time,status)~1,data=Melanoma,
            cause= 2,times=5*365.25,plots="cal")
 plotCalibration(x)
 }
+

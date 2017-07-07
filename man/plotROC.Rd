@@ -70,3 +70,4 @@ x <- Score(list(model1=f1,model2=f2),Hist(time,status)~1,data=Melanoma,
             cause=1,times=5*365.25,plots="roc",metrics="auc")
 plotROC(x)
 }
+

@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Feb 23 2017 (11:07) 
 ## Version: 
-## last-updated: Jun 29 2017 (16:26) 
+## last-updated: Jul  7 2017 (09:14) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 34
+##     Update #: 36
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -98,12 +98,11 @@ plotBrier <- function(x,
     lty <- rep(lty,length.out=lenmm)
     names(lty) <- mm
     if (missing(xlim)) xlim <- pframe[,range(times)]
-    if (missing(ylim))
+    if (missing(ylim)){
         if (which=="score") {
             ylim <- c(0,.3)
             axis2.DefaultArgs <- list(side=2,las=2,at=seq(0,ylim[2],ylim[2]/4),mgp=c(4,1,0))
-        }
-        else{
+        } else{
             ylim <- c(floor(10*min(pframe$lower))/10,ceiling(10*max(pframe$upper))/10)
             yat <- seq(ylim[1],ylim[2],0.05)
             ## this is a strange behaviour of R: seq(-0.6,.1,0.05)
@@ -113,6 +112,9 @@ plotBrier <- function(x,
             ## axis2.DefaultArgs <- list(side=2,las=2,at=seq(ylim[1],ylim[2],abs(ylim[2]-ylim[1])/4),mgp=c(4,1,0))
             axis2.DefaultArgs <- list(side=2,las=2,at=yat,mgp=c(4,1,0))
         }
+    }else{
+        axis2.DefaultArgs <- list(side=2,las=2,at=seq(ylim[1],ylim[2],abs(ylim[2]-ylim[1])/4),mgp=c(4,1,0))
+    }
     lines.DefaultArgs <- list(pch=pch,type=type,cex=cex,lwd=lwd,col=col,lty=lty)
     axis1.DefaultArgs <- list(side=1,las=1,at=seq(0,xlim[2],xlim[2]/4))
     if (which=="score"){

@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Feb 23 2017 (11:15) 
 ## Version: 
-## last-updated: Jul  3 2017 (20:15) 
+## last-updated: Jul  7 2017 (08:08) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 163
+##     Update #: 169
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -40,7 +40,7 @@
 ##'     corresponding prediction.
 ##' @param names Barplots only. Names argument passed to
 ##'     \code{names.arg} of \code{barplot}.
-##' @param pseudo If \code{TRUE} show pseudo values
+##' @param pseudo If \code{TRUE} show pseudo values (only for right censored data).
 ##' @param rug If \code{TRUE} show rug plot at the predictions
 ##' @param showFrequencies Barplots only. If \code{TRUE}, show
 ##'     frequencies above the bars.
@@ -71,12 +71,8 @@
 ##'     \code{\link{model.frame}}
 ##' @param cex Default cex used for legend and labels.
 ##' @param ... Used to control the subroutines: plot, axis, lines,
-##'     barplot, legend, points (pseudo values), rug. See \code{\link{SmartControl}}.
-##' @param showPseudo If \code{TRUE} the pseudo-values are shown as
-##'     dots on the plot (only when \code{pseudo=TRUE}).
-##' @param pseudo.col Colour for pseudo-values.
-##' @param pseudo.pch Dot type (see par) for pseudo-values.
-##' @param jack.density Gray scale for pseudo-observations.
+##'     barplot, legend, points (pseudo values), rug. See
+##'     \code{\link{SmartControl}}.
 ##' @examples
 ##' db=sampleData(100,outcome="binary")
 ##' fb1=glm(Y~X1+X5+X7,data=db,family="binomial")
@@ -124,7 +120,7 @@ plotCalibration <- function(x,
                             cex=1,
                             ...){
     # {{{ plot frame
-    model=NULL
+    model=risk=NULL
     if (missing(pseudo) & missing(rug))
         if (x$censType=="rightCensored"){
             showPseudo <- TRUE
@@ -457,12 +453,13 @@ plotCalibration <- function(x,
                 ## show pseudo values 
                 if (showPseudo) {
                     if (!is.null(control$pseudo$density) & control$pseudo$density>0){
-                        control$pseudo$col <- prodlim::dimColor(control$pseudo$col,control$pseudo$density)
+                        control$pseudo$col <- prodlim::dimColor(control$pseudo$col[f],
+                                                                control$pseudo$density)
                     }
                     if ((gotcha <- match("density",names(control$pseudo),nomatch=0))>0){
                         control$pseudo <- control$pseudo[-gotcha]
                     }
-                    do.call(points, c(list(x=pf$Pred,y=pf$Obs),control$pseudo))
+                    do.call(points, c(list(x=pframe[model==modelnames[f]][,risk],y=pframe[model==modelnames[f]][[Rvar]]),control$pseudo))
                 }
                 ## add the lines
                 lineF <- lapply(control$lines,function(x)x[[min(f,length(x))]])

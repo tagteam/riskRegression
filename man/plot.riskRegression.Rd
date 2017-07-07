@@ -74,3 +74,4 @@ plot(fit.arr,xlim=c(500,3000))
 Thomas Alexander Gerds <tag@biostat.ku.dk>
 }
 \keyword{survival}
+

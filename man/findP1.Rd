@@ -35,3 +35,4 @@ riskRegression:::findP1(x, alternative = "greater")
 riskRegression:::findP1(x, alternative = "less") # pnorm(q = 0, mean = -1)
 
 }
+
