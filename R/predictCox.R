@@ -1,4 +1,5 @@
 # {{{ header
+
 #' Fast computation of survival probabilities, hazards and cumulative hazards from Cox regression models 
 #'
 #' Fast routine to get baseline hazards and subject specific hazards
@@ -39,7 +40,7 @@
 #' @param iid Logical. If \code{TRUE} add the influence function to the output.
 #' @param average.iid Logical. If \code{TRUE} add the average of the influence function over \code{newdata} to the output.
 #' @param nSim.band the number of simulations used to compute the quantiles
-#' for the confidence bands..
+#' for the confidence bands.
 #' @param conf.level Level of confidence.
 #' @param logTransform Should the confidence intervals/bands be computed on the log (hazard) and
 #' log(-log) (survival) scale and be backtransformed.
@@ -171,12 +172,13 @@ predictCox <- function(object,
     nVar <- length(infoVar$lpvars)
 
     ## Confidence bands
-    if(band>0){
-        iid.save <- iid
-        se.save <- se
+    if(band>0){ # used to force the computation of the influence function + standard error to get the confidence bands
         iid <- TRUE
         se <- TRUE
     }
+    # original arguments to make this operation invisible for the user
+    se.save <- se
+    iid.save <- iid
     
     #### checks ####
     if(object.baseEstimator == "exact"){
@@ -336,6 +338,7 @@ predictCox <- function(object,
         }
         # }}}
         # {{{ standard error
+
         if(se==1L || iid==1L || average.iid==1L){
             if(se && "hazard" %in% type){
                 stop("confidence intervals cannot be computed for the hazard \n")
@@ -448,13 +451,13 @@ predictCox <- function(object,
                 }
             }
         }
+
         # }}}
         # {{{ quantiles for the confidence bands
         if(band > 0){
-            
+
             out$quantile.band <- confBandCox(iid = out[[paste(type[1],"iid",sep=".")]],
                                              se = out[[paste(type[1],"se",sep=".")]],
-                                             times = times-1e-5,                                            
                                              n.sim = nSim.band,
                                              conf.level = conf.level)
             
@@ -502,7 +505,7 @@ predictCox <- function(object,
         # {{{ export 
         if (keep.times==TRUE) out <- c(out,list(times=times))
         if (is.strata && keep.strata==TRUE) out <- c(out,list(strata=new.strata))
-        out <- c(out,list(lastEventTime=etimes.max, se=se, band = band, nSim.band = nSim.band, type=type, conf.level = conf.level, logTransform = logTransform))
+        out <- c(out,list(lastEventTime=etimes.max, se=se.save, band = band, nSim.band = nSim.band, type=type, conf.level = conf.level, logTransform = logTransform))
         if( keep.newdata==TRUE){
             out$newdata <- newdata[, CoxCovars(object), with = FALSE]
         }

@@ -2,87 +2,101 @@
 % Please edit documentation in R/influenceTest.R
 \name{influenceTest}
 \alias{influenceTest}
+\alias{influenceCoxTest}
+\alias{influenceCoxTest.list}
+\alias{influenceCoxTest.default}
 \title{Influence test [Experimental!!]}
 \usage{
-influenceTest(predict1, predict2, type)
+influenceCoxTest(object, ...)
+
+\method{influenceCoxTest}{list}(object, newdata, times, type, cause, ...)
+
+\method{influenceCoxTest}{default}(object, object2, nSim.band = 10000, ...)
 }
 \arguments{
-\item{predict1}{a list containing an estimate and its influence function}
+\item{object}{either a list of models or an object of class predictCox or predictCSC.}
 
-\item{predict2}{same as predict1 but for another model}
+\item{...}{additional arguments to be passed to lower level functions.}
 
-\item{type}{the type of estimate}
+\item{newdata}{A \code{data.frame} or \code{data.table} containing
+the values of the predictor variables defining subject specific
+predictions.}
+
+\item{times}{Time points at which to evaluate the predictions.}
+
+\item{type}{the type of predicted value.}
+
+\item{cause}{Identifies the cause of interest among the competing
+events.}
+
+\item{object2}{same as predict1 but for another model.}
+
+\item{nSim.band}{the number of simulations used to compute the quantiles
+for the confidence bands.}
 }
 \description{
 Compare two estimates using their influence function
 }
 \examples{
-\dontrun{
-warperNoStrata <- function(n, ...){
-  newdata <- data.frame(X1=0,X6=0)
-  time <- 1
-  
-m <- lvm()
-regression(m) <- y ~ X6 + X1
-distribution(m,~X1) <- binomial.lvm()
-distribution(m,~cens) <- coxWeibull.lvm(scale=1)
-distribution(m,~y) <- a <- coxWeibull.lvm(scale=0.3)
-eventTime(m) <- eventtime ~ min(y=1,cens=0)
-d <- as.data.table(sim(m,n))
-setkey(d, eventtime)
-  
-m.cox <- coxph(Surv(eventtime, status) ~ X1+X6, 
-               data = d, y = TRUE, x = TRUE)
-survNoStrata <- predictCox(m.cox, type = "survival",
-                           newdata = newdata, times = time, iid = TRUE, se = TRUE)
-  
-mStrata.cox <- coxph(Surv(eventtime, status) ~ strata(X1)+X6, 
-                     data = d, y = TRUE, x = TRUE)
-survStrata <- predictCox(mStrata.cox, type = "survival", 
-                         newdata = newdata, times = time, iid = TRUE, se = TRUE)
-  
-res <- influenceTest(survStrata, survNoStrata, type = "survival")
-return(res)
-}
+library(lava)
+library(survival)
+n <- 100
 
-warperStrata <- function(n, ...){
-  newdata <- data.frame(X1=0,X6=0)
-time <- 1
-  
+#### Under H1
+set.seed(1)
+newdata <- data.frame(X1=1)
+
+## simulate non proportional hazard using lava
 m <- lvm()
-regression(m) <- y ~ X6
+regression(m) <- y ~ 1
 regression(m) <- s ~ exp(-2*X1)
 distribution(m,~X1) <- binomial.lvm()
 distribution(m,~cens) <- coxWeibull.lvm(scale=1)
-distribution(m,~y) <- a <- coxWeibull.lvm(scale=0.3,shape=~s)
+distribution(m,~y) <- coxWeibull.lvm(scale=1,shape=~s)
 eventTime(m) <- eventtime ~ min(y=1,cens=0)
 d <- as.data.table(sim(m,n))
-  setkey(d, eventtime)
-  
-m.cox <- coxph(Surv(eventtime, status) ~ X1+X6, data = d, y = TRUE, x = TRUE)
-survNoStrata <- predictCox(m.cox, type = "survival", 
-                           newdata = newdata, times = time, iid = TRUE, se = TRUE)
-  
-mStrata.cox <- coxph(Surv(eventtime, status) ~ strata(X1)+X6, data = d, y = TRUE, x = TRUE)
-survStrata <- predictCox(mStrata.cox, type = "survival", 
-                         newdata = newdata, times = time, iid = TRUE, se = TRUE)
-res <- influenceTest(survStrata, survNoStrata, type = "survival")
-return(res)
-}
+setkey(d, eventtime)
 
-n <- 500
-resNoStrata <- pbsapply(1:200, warperNoStrata, n = n)
+## fit cox models
+m.cox <- coxph(Surv(eventtime, status) ~ X1, 
+               data = d, y = TRUE, x = TRUE)
 
-sd(unlist(resNoStrata["delta",]))
-quantile(unlist(resNoStrata["se.delta",]))
+mStrata.cox <- coxph(Surv(eventtime, status) ~ strata(X1), 
+                     data = d, y = TRUE, x = TRUE)
 
-mean(unlist(resNoStrata["p.value",])<0.05)
+## compare models
+influenceCoxTest(list(m.cox, mStrata.cox),
+                 type = "survival", newdata = newdata, times = seq(0.1,1,by=0.1))
 
-resStrata <- pbsapply(1:100, warperStrata, n = n)
+#### Under H0 (Cox) ####
+set.seed(1)
+d <- sampleData(n, outcome = "survival")
+setkey(d, eventtime)
 
-sd(unlist(resStrata["delta",]))
-quantile(unlist(resStrata["se.delta",]))
+## fit cox models
+m.cox <- coxph(Surv(eventtime, event) ~ X1, 
+               data = d, y = TRUE, x = TRUE)
 
-mean(unlist(resStrata["p.value",])<0.05)
-}
+mStrata.cox <- coxph(Surv(eventtime, event) ~ strata(X1), 
+                     data = d, y = TRUE, x = TRUE)
+
+## compare models
+resH0 <- influenceCoxTest(list(m.cox, mStrata.cox),
+                 type = "survival", newdata = newdata, times = unique(d$eventtime))
+resH0[1:10,]
+
+#### Under H0 (CSC) ####
+set.seed(1)
+d <- sampleData(n, outcome = "competing.risk")
+setkey(d, time)
+
+## fit cox models
+m.CSC <- CSC(Hist(time, event) ~ X1 + X2, data = d)
+mStrata.CSC <- CSC(Hist(time, event) ~ strata(X1) + X2, data = d)
+
+## compare models
+resH0 <- influenceCoxTest(list(m.CSC, mStrata.CSC),
+                 cause = 1, newdata = data.frame(X1=1,X2=1), times = unique(d$time))
+resH0[1:10,]
+
 }

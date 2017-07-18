@@ -52,6 +52,10 @@ quantileProcess_cpp <- function(nObject, nNew, nSim, iid, se, confLevel) {
     .Call(riskRegression_quantileProcess_cpp, nObject, nNew, nSim, iid, se, confLevel)
 }
 
+sampleMaxProcess_cpp <- function(nObject, nNew, nSim, iid, se) {
+    .Call(riskRegression_sampleMaxProcess_cpp, nObject, nNew, nSim, iid, se)
+}
+
 calcE_cpp <- function(eventtime, status, eXb, X, p, add0) {
     .Call(riskRegression_calcE_cpp, eventtime, status, eXb, X, p, add0)
 }

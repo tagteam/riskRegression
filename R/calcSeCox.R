@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: maj 27 2017 (11:46) 
 ## Version: 
-## last-updated: jun  6 2017 (07:57) 
-##           By: Brice
-##     Update #: 231
+## last-updated: jul 18 2017 (16:02) 
+##           By: Brice Ozenne
+##     Update #: 232
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -108,6 +108,7 @@ calcSeCox <- function(object, times, nTimes, type,
 
     if(store.iid == "minimal"){
         # {{{ method = minimal
+
         object.strata <- as.numeric(object.strata)
 
         if("hazard" %in% type){
