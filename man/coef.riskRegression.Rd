@@ -18,3 +18,4 @@
 \description{
 Extract coefficients from riskRegression model
 }
+

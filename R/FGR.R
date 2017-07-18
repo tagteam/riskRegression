@@ -107,7 +107,7 @@ FGR <- function(formula,data,cause=1,y=TRUE,...){
     }
     else{
         if ((foundCause <- match(as.character(cause),states,nomatch=0))==0)
-            stop(paste("Requested cause: ",cause," Available causes: ", states))
+            stop(paste("\nRequested cause: ",cause,"\nAvailable causes: ", states))
         else
             cause <- foundCause
     }  

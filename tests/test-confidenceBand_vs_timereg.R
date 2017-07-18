@@ -72,7 +72,7 @@ predRR <- predictCox(fit.coxph,
                      )
 
 dev.new()
-plotRR <- plot(predRR, type = "survival", band = TRUE, ci = TRUE, plot = FALSE)
+plotRR <- autoplot(predRR, type = "survival", band = TRUE, ci = TRUE, plot = FALSE)
 dev.new()
 plotTR <- plot.predict.timereg(resTimereg[[1]])
 dev.new()

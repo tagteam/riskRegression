@@ -22,3 +22,4 @@ rowCumSum(x)
 \author{
 Thomas Alexander Gerds <tag@biostat.ku.dk>
 }
+

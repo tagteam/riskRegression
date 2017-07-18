@@ -27,3 +27,4 @@ m1 <- phreg(Surv(entry, time,status)~X1+X2+cluster(id)+strata(group),data=d)
 riskRegression:::model.matrix(m1, d) 
 }
 }
+

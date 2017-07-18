@@ -2,8 +2,8 @@
 % Please edit documentation in R/getCoxInfo.R
 \name{CoxN}
 \alias{CoxN}
-\alias{CoxN.cph}
 \alias{CoxN.coxph}
+\alias{CoxN.cph}
 \alias{CoxN.phreg}
 \title{Extract the number of observations from a Cox model}
 \usage{
@@ -47,3 +47,4 @@ CoxN(mCox)
 \author{
 Brice Ozenne broz@sund.ku.dk
 }
+

@@ -4,12 +4,11 @@
 \alias{plotCalibration}
 \title{Plot Calibration curve}
 \usage{
-plotCalibration(x, models, times, showPseudo, pseudo.col = NULL,
-  pseudo.pch = NULL, method = "nne", round = TRUE, bandwidth = NULL,
-  q = 10, bars = FALSE, hanging = FALSE, names = "quantiles",
-  showFrequencies = FALSE, jack.density = 55, plot = TRUE, add = FALSE,
-  diag = !add, legend = !add, axes = !add, xlim = c(0, 1), ylim = c(0,
-  1), xlab = ifelse(bars, "Risk groups", "Predicted risk"),
+plotCalibration(x, models, times, method = "nne", round = TRUE,
+  bandwidth = NULL, q = 10, bars = FALSE, hanging = FALSE,
+  names = "quantiles", pseudo, rug, showFrequencies = FALSE, plot = TRUE,
+  add = FALSE, diag = !add, legend = !add, axes = !add, xlim = c(0,
+  1), ylim = c(0, 1), xlab = ifelse(bars, "Risk groups", "Predicted risk"),
   ylab = "Observed frequency", col, lwd, lty, pch, type, cause = 1,
   percent = TRUE, na.action = na.fail, cex = 1, ...)
 }
@@ -19,13 +18,6 @@ plotCalibration(x, models, times, showPseudo, pseudo.col = NULL,
 \item{models}{Choice of models to plot}
 
 \item{times}{Time point specifying the prediction horizon.}
-
-\item{showPseudo}{If \code{TRUE} the pseudo-values are shown as
-dots on the plot (only when \code{pseudo=TRUE}).}
-
-\item{pseudo.col}{Colour for pseudo-values.}
-
-\item{pseudo.pch}{Dot type (see par) for pseudo-values.}
 
 \item{method}{The method for estimating the calibration curve(s):
 
@@ -53,10 +45,12 @@ corresponding prediction.}
 \item{names}{Barplots only. Names argument passed to
 \code{names.arg} of \code{barplot}.}
 
+\item{pseudo}{If \code{TRUE} show pseudo values (only for right censored data).}
+
+\item{rug}{If \code{TRUE} show rug plot at the predictions}
+
 \item{showFrequencies}{Barplots only. If \code{TRUE}, show
 frequencies above the bars.}
-
-\item{jack.density}{Gray scale for pseudo-observations.}
 
 \item{plot}{If \code{FALSE}, do not plot the results, just return
 a plottable object.}
@@ -103,7 +97,8 @@ interpretable on a percent scale.}
 \item{cex}{Default cex used for legend and labels.}
 
 \item{...}{Used to control the subroutines: plot, axis, lines,
-barplot, legend. See \code{\link{SmartControl}}.}
+barplot, legend, points (pseudo values), rug. See
+\code{\link{SmartControl}}.}
 }
 \description{
 Plot Calibration curve
@@ -123,3 +118,4 @@ x <- Score(list(model1=f1,model2=f2),Hist(time,status)~1,data=Melanoma,
            cause= 2,times=5*365.25,plots="cal")
 plotCalibration(x)
 }
+

@@ -100,3 +100,4 @@ resH0 <- influenceCoxTest(list(m.CSC, mStrata.CSC),
 resH0[1:10,]
 
 }
+

@@ -5,7 +5,7 @@
 ## Version: 
 ## last-updated: Mar  3 2017 (17:23) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 43
+##     Update #: 44
 #----------------------------------------------------------------------
 ## 
 ### Commentary:
@@ -500,7 +500,7 @@ predictRisk.rfsrc <- function(object, newdata, times, cause, ...){
         p
     }else{
         if (object$family=="surv") {
-            ptemp <- predict(object,newdata=newdata,importance="none",...)$survival
+            ptemp <- 1-predict(object,newdata=newdata,importance="none",...)$survival
             pos <- prodlim::sindex(jump.times=object$time.interest,eval.times=times)
             p <- cbind(1,ptemp)[,pos+1,drop=FALSE]
             if (NROW(p) != NROW(newdata) || NCOL(p) != length(times))
