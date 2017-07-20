@@ -242,7 +242,7 @@ calcSeCox <- function(object, times, nTimes, type,
         }
         # }}}
     }
-
+      
     ## export
     return(out)
     

@@ -375,6 +375,7 @@ predictCox <- function(object,
                                new.cumhazard = out$cumhazard, new.survival = out$survival,
                                nVar = nVar, logTransform = logTransform,
                                export = c("iid"[iid==TRUE],"se"[se==TRUE],"average.iid"[average.iid==TRUE]), store.iid = store.iid)
+              
             if("cumhazard" %in% type == FALSE){
                 out$cumhazard <- NULL                
             }
@@ -505,7 +506,12 @@ predictCox <- function(object,
         # {{{ export 
         if (keep.times==TRUE) out <- c(out,list(times=times))
         if (is.strata && keep.strata==TRUE) out <- c(out,list(strata=new.strata))
-        out <- c(out,list(lastEventTime=etimes.max, se=se.save, band = band, nSim.band = nSim.band, type=type, conf.level = conf.level, logTransform = logTransform))
+        transformation.cumhazard <- if("cumhazard" %in% type && logTransform){log}else{NA}
+        transformation.survival <- if("survival" %in% type && logTransform){function(x){log(-log(1-x))}}else{NA}
+
+        out <- c(out,list(lastEventTime=etimes.max, se=se.save, band = band, nSim.band = nSim.band, type=type, conf.level = conf.level, 
+                          transformation.cumhazard = transformation.cumhazard,
+                          transformation.survival = transformation.survival))
         if( keep.newdata==TRUE){
             out$newdata <- newdata[, CoxCovars(object), with = FALSE]
         }

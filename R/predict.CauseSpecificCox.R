@@ -397,7 +397,8 @@ predict.CauseSpecificCox <- function(object,
         }
     }
     out$conf.level <- conf.level
-    out <- c(out,list(se = se.save, band = band, nSim.band = nSim.band, logTransform = logTransform))
+    transformation.absRisk <- if(logTransform){function(x){log(-log(1-x))}}else{NA}
+    out <- c(out,list(se = se.save, band = band, nSim.band = nSim.band, transformation.absRisk = transformation.absRisk))
     class(out) <- "predictCSC"
     return(out)
 }
