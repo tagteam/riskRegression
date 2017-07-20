@@ -47,4 +47,3 @@ Andersen, P.K. and Skovgaard, L.T.
 Springer Verlag
 }
 \keyword{datasets}
-

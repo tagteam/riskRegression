@@ -28,4 +28,3 @@ sliceMultiply_cpp(x, M)
 \author{
 Brice Ozenne <broz@sund.ku.dk>
 }
-

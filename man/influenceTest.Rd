@@ -9,9 +9,11 @@
 \usage{
 influenceCoxTest(object, ...)
 
-\method{influenceCoxTest}{list}(object, newdata, times, type, cause, ...)
+\method{influenceCoxTest}{list}(object, newdata, times, type, cause,
+  logTransform = TRUE, ...)
 
-\method{influenceCoxTest}{default}(object, object2, nSim.band = 10000, ...)
+\method{influenceCoxTest}{default}(object, object2, conf.level = 0.95,
+  nSim.band = 10000, ...)
 }
 \arguments{
 \item{object}{either a list of models or an object of class predictCox or predictCSC.}
@@ -29,7 +31,11 @@ predictions.}
 \item{cause}{Identifies the cause of interest among the competing
 events.}
 
+\item{logTransform}{Should the comparison be made on the log (or log-log) scale or on the original scale ?}
+
 \item{object2}{same as predict1 but for another model.}
+
+\item{conf.level}{Level of confidence.}
 
 \item{nSim.band}{the number of simulations used to compute the quantiles
 for the confidence bands.}
@@ -65,39 +71,60 @@ mStrata.cox <- coxph(Surv(eventtime, status) ~ strata(X1),
                      data = d, y = TRUE, x = TRUE)
 
 ## compare models
-influenceCoxTest(list(m.cox, mStrata.cox),
+influenceCoxTest(list(m.cox, mStrata.cox), logTransform = TRUE,
+                 type = "survival", newdata = newdata, times = seq(0.1,1,by=0.1))
+influenceCoxTest(list(m.cox, mStrata.cox), logTransform = FALSE,
                  type = "survival", newdata = newdata, times = seq(0.1,1,by=0.1))
 
 #### Under H0 (Cox) ####
 set.seed(1)
-d <- sampleData(n, outcome = "survival")
+## simulate proportional hazard using lava
+m <- lvm()
+regression(m) <- y ~ 1
+distribution(m,~X1) <- binomial.lvm()
+distribution(m,~cens) <- coxWeibull.lvm()
+distribution(m,~y) <- coxWeibull.lvm()
+eventTime(m) <- eventtime ~ min(y=1,cens=0)
+d <- as.data.table(sim(m,n))
 setkey(d, eventtime)
 
 ## fit cox models
-m.cox <- coxph(Surv(eventtime, event) ~ X1, 
+Utime <- sort(unique(d$eventtime))
+m.cox <- coxph(Surv(eventtime, status) ~ X1, 
                data = d, y = TRUE, x = TRUE)
 
-mStrata.cox <- coxph(Surv(eventtime, event) ~ strata(X1), 
+mStrata.cox <- coxph(Surv(eventtime, status) ~ strata(X1), 
                      data = d, y = TRUE, x = TRUE)
 
+p.cox <- predictCox(m.cox, newdata = newdata, time = Utime, type = "survival")
+p.coxStrata <- predictCox(mStrata.cox, newdata = newdata, time = Utime, type = "survival")
+autoplot(p.cox)
+autoplot(p.coxStrata)
+ 
 ## compare models
-resH0 <- influenceCoxTest(list(m.cox, mStrata.cox),
-                 type = "survival", newdata = newdata, times = unique(d$eventtime))
-resH0[1:10,]
+influenceCoxTest(list(m.cox, mStrata.cox), logTransform = TRUE,
+                 type = "survival", newdata = newdata, times = Utime[1:(n-10)])
+influenceCoxTest(list(m.cox, mStrata.cox), logTransform = FALSE,
+                 type = "survival", newdata = newdata, times = Utime[1:(n-10)])
 
 #### Under H0 (CSC) ####
 set.seed(1)
-d <- sampleData(n, outcome = "competing.risk")
+ff <- ~ f(X1,2) + f(X2,-0.033)
+ff <- update(ff, ~ .+ f(X3,0) + f(X4,0) + f(X5,0))
+ff <- update(ff, ~ .+ f(X6,0) + f(X7,0) + f(X8,0) + f(X9,0))
+d <- sampleData(n, outcome = "competing.risk", formula = ff)
 setkey(d, time)
+
+Utime <- sort(unique(d$time))
 
 ## fit cox models
 m.CSC <- CSC(Hist(time, event) ~ X1 + X2, data = d)
-mStrata.CSC <- CSC(Hist(time, event) ~ strata(X1) + X2, data = d)
+mStrata.CSC <- CSC(Hist(time, event) ~ strata(X1) + X2 + X3, data = d)
 
 ## compare models
-resH0 <- influenceCoxTest(list(m.CSC, mStrata.CSC),
-                 cause = 1, newdata = data.frame(X1=1,X2=1), times = unique(d$time))
-resH0[1:10,]
+influenceCoxTest(list(m.CSC, mStrata.CSC), logTransform = TRUE,
+                 cause = 1, newdata = data.frame(X1=1,X2=1,X3=1), times = Utime[1:20])
+influenceCoxTest(list(m.CSC, mStrata.CSC), logTransform = FALSE,
+                 cause = 1, newdata = data.frame(X1=1,X2=1,X3=1), times = Utime[1:20]) 
 
 }
-

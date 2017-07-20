@@ -25,4 +25,3 @@ simMelanoma(3)
 \author{
 Thomas A. Gerds <tag@biostat.ku.dk>
 }
-

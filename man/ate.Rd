@@ -119,4 +119,3 @@ atefit=ate(fitCR, data = dt, treatment = "X1", contrasts = NULL,
 \author{
 Brice Ozenne \email{broz@sund.ku.dk} and Thomas Alexander Gerds \email{tag@biostat.ku.dk}
 }
-

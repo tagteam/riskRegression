@@ -23,4 +23,3 @@
 \description{
 Print function for riskRegression models
 }
-

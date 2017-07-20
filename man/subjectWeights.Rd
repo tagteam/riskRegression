@@ -2,12 +2,12 @@
 % Please edit documentation in R/subjectWeights.R
 \name{subjectWeights}
 \alias{subjectWeights}
-\alias{subjectWeights.aalen}
-\alias{subjectWeights.cox}
+\alias{subjectWeights.none}
 \alias{subjectWeights.km}
 \alias{subjectWeights.marginal}
-\alias{subjectWeights.none}
 \alias{subjectWeights.nonpar}
+\alias{subjectWeights.cox}
+\alias{subjectWeights.aalen}
 \title{Estimation of censoring probabilities at subject specific times}
 \usage{
 subjectWeights(formula, data, method = c("cox", "marginal", "km", "nonpar",
@@ -87,4 +87,3 @@ plot(WKM2$fit,add=FALSE)
 Thomas A. Gerds \email{tag@biostat.ku.dk}
 }
 \keyword{survival}
-

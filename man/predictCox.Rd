@@ -59,7 +59,7 @@ covariates used to make the prediction in the output list.}
 \item{average.iid}{Logical. If \code{TRUE} add the average of the influence function over \code{newdata} to the output.}
 
 \item{nSim.band}{the number of simulations used to compute the quantiles
-for the confidence bands..}
+for the confidence bands.}
 
 \item{conf.level}{Level of confidence.}
 
@@ -143,4 +143,3 @@ predictCox(fitS, newdata=nd, times = 3)
 \author{
 Brice Ozenne broz@sund.ku.dk, Thomas A. Gerds tag@biostat.ku.dk
 }
-

@@ -458,23 +458,23 @@ test_that("predict.CSC(2a) - compare to mstate",{
     ## riskRegression
     CSC.RR1 <- CSC(Hist(time,event)~1, data = d, method = "breslow")
     pred.RR1a <- predict(CSC.RR1, newdata, cause = 1, time = pred.probtrans[,"time"],
-                         keep.newdata = FALSE, se = TRUE, productLimit = TRUE)
+                         keep.newdata = FALSE, se = TRUE, productLimit = TRUE, logTransform = FALSE)
 
     pred.RR1b <- predict(CSC.RR1, newdata, cause = 1, time = pred.probtrans[,"time"],
-                         keep.newdata = FALSE, se = TRUE, productLimit = FALSE)
+                         keep.newdata = FALSE, se = TRUE, productLimit = FALSE, logTransform = FALSE)
 
     pred.RR1c <- predict(CSC.RR1, newdata, cause = 2, time = pred.probtrans[,"time"],
-                         keep.newdata = FALSE, se = TRUE, productLimit = TRUE)
+                         keep.newdata = FALSE, se = TRUE, productLimit = TRUE, logTransform = FALSE)
 
     pred.RR1d <- predict(CSC.RR1, newdata, cause = 2, time = pred.probtrans[,"time"],
-                         keep.newdata = FALSE, se = TRUE, productLimit = FALSE)
+                         keep.newdata = FALSE, se = TRUE, productLimit = FALSE, logTransform = FALSE)
     
     CSC.RR2 <- CSC(Hist(time,event)~1, data = d, survtype = "survival", method = "breslow")
     pred.RR2a <- predict(CSC.RR2, newdata, cause = 1, time = pred.probtrans[,"time"],
-                        keep.newdata = FALSE, se = TRUE, productLimit = TRUE)
+                        keep.newdata = FALSE, se = TRUE, productLimit = TRUE, logTransform = FALSE)
 
     pred.RR2b <- predict(CSC.RR2, newdata, cause = 1, time = pred.probtrans[,"time"],
-                        keep.newdata = FALSE, se = TRUE, productLimit = FALSE)
+                        keep.newdata = FALSE, se = TRUE, productLimit = FALSE, logTransform = FALSE)
 
 
     expect_equal(as.double(pred.RR1a$absRisk),pred.probtrans[,"pstate2"])
@@ -515,22 +515,22 @@ test_that("predict.CSC(2b) - compare to mstate",{
         ## riskRegression
         CSC.RR1 <- CSC(Hist(time,event)~X1+X2+X16, data = d, method = "breslow")
         pred.RR1a <- predict(CSC.RR1, newdata, cause = 1, time = pred.probtrans[,"time"],
-                             keep.newdata = FALSE, se = TRUE, productLimit = TRUE)
+                             keep.newdata = FALSE, se = TRUE, productLimit = TRUE, logTransform = FALSE)
 
         pred.RR1b <- predict(CSC.RR1, newdata, cause = 1, time = pred.probtrans[,"time"],
-                             keep.newdata = FALSE, se = TRUE, productLimit = FALSE)
+                             keep.newdata = FALSE, se = TRUE, productLimit = FALSE, logTransform = FALSE)
     
         pred.RR1c <- predict(CSC.RR1, newdata, cause = 2, time = pred.probtrans[,"time"],
-                             keep.newdata = FALSE, se = TRUE, productLimit = TRUE)
+                             keep.newdata = FALSE, se = TRUE, productLimit = TRUE, logTransform = FALSE)
 
         pred.RR1d <- predict(CSC.RR1, newdata, cause = 2, time = pred.probtrans[,"time"],
-                             keep.newdata = FALSE, se = TRUE, productLimit = FALSE)
+                             keep.newdata = FALSE, se = TRUE, productLimit = FALSE, logTransform = FALSE)
     
         CSC.RR2 <- CSC(Hist(time,event)~X1+X2+X16, data = d, survtype = "survival", method = "breslow")
         pred.RR2a <- predict(CSC.RR2, newdata, cause = 1, time = pred.probtrans[,"time"],
-                             keep.newdata = FALSE, se = TRUE, productLimit = TRUE)
+                             keep.newdata = FALSE, se = TRUE, productLimit = TRUE, logTransform = FALSE)
         pred.RR2b <- predict(CSC.RR2, newdata, cause = 1, time = pred.probtrans[,"time"],
-                             keep.newdata = FALSE, se = TRUE, productLimit = FALSE)
+                             keep.newdata = FALSE, se = TRUE, productLimit = FALSE, logTransform = FALSE)
 
 
         expect_equal(as.double(pred.RR1a$absRisk),pred.probtrans[,"pstate2"])
@@ -585,37 +585,37 @@ test_that("predict.CSC(2a) - compare to mstate",{
     ## riskRegression no strata
     CSC.RR1 <- CSC(Hist(time,event)~X1+X2+X16, data = d, method = "breslow")
     pred.RR1a <- predict(CSC.RR1, newdata, cause = 1, time = pred.probtrans[,"time"],
-                         keep.newdata = FALSE, se = TRUE, productLimit = TRUE)
+                         keep.newdata = FALSE, se = TRUE, productLimit = TRUE, logTransform = FALSE)
 
     pred.RR1b <- predict(CSC.RR1, newdata, cause = 1, time = pred.probtrans[,"time"],
-                         keep.newdata = FALSE, se = TRUE, productLimit = FALSE)
+                         keep.newdata = FALSE, se = TRUE, productLimit = FALSE, logTransform = FALSE)
     
     pred.RR1c <- predict(CSC.RR1, newdata, cause = 2, time = pred.probtrans[,"time"],
-                         keep.newdata = FALSE, se = TRUE, productLimit = TRUE)
+                         keep.newdata = FALSE, se = TRUE, productLimit = TRUE, logTransform = FALSE)
 
     pred.RR1d <- predict(CSC.RR1, newdata, cause = 2, time = pred.probtrans[,"time"],
-                         keep.newdata = FALSE, se = TRUE, productLimit = FALSE)
+                         keep.newdata = FALSE, se = TRUE, productLimit = FALSE, logTransform = FALSE)
     
     CSC.RR2 <- CSC(Hist(time,event)~X1+X2+X16, data = d, survtype = "survival", method = "breslow")
     pred.RR2a <- predict(CSC.RR2, newdata, cause = 1, time = pred.probtrans[,"time"],
-                         keep.newdata = FALSE, se = TRUE, productLimit = TRUE)
+                         keep.newdata = FALSE, se = TRUE, productLimit = TRUE, logTransform = FALSE)
     pred.RR2b <- predict(CSC.RR2, newdata, cause = 1, time = pred.probtrans[,"time"],
-                         keep.newdata = FALSE, se = TRUE, productLimit = FALSE)
+                         keep.newdata = FALSE, se = TRUE, productLimit = FALSE, logTransform = FALSE)
 
     ## riskRegression strata
     d2 <- rbind(cbind(d,grp=1),cbind(d,grp=2))
     CSC.RR1_strata <- CSC(Hist(time,event)~X1+X2+X16+strata(grp), data = d2, method = "breslow")
     pred.RR1a_strata <- predict(CSC.RR1_strata, cbind(newdata,grp=1), cause = 1, time = pred.probtrans[,"time"],
-                         keep.newdata = FALSE, se = TRUE, productLimit = TRUE)
+                         keep.newdata = FALSE, se = TRUE, productLimit = TRUE, logTransform = FALSE)
 
     pred.RR1b_strata <- predict(CSC.RR1_strata, cbind(newdata,grp=1), cause = 1, time = pred.probtrans[,"time"],
-                         keep.newdata = FALSE, se = TRUE, productLimit = FALSE)
+                         keep.newdata = FALSE, se = TRUE, productLimit = FALSE, logTransform = FALSE)
     
     pred.RR1c_strata <- predict(CSC.RR1_strata, cbind(newdata,grp=1), cause = 2, time = pred.probtrans[,"time"],
-                         keep.newdata = FALSE, se = TRUE, productLimit = TRUE)
+                         keep.newdata = FALSE, se = TRUE, productLimit = TRUE, logTransform = FALSE)
 
     pred.RR1d_strata <- predict(CSC.RR1_strata, cbind(newdata,grp=1), cause = 2, time = pred.probtrans[,"time"],
-                         keep.newdata = FALSE, se = TRUE, productLimit = FALSE)
+                         keep.newdata = FALSE, se = TRUE, productLimit = FALSE, logTransform = FALSE)
 
     expect_equal(pred.RR1a_strata$absRisk,pred.RR1a$absRisk)
     expect_equal(pred.RR1b_strata$absRisk,pred.RR1b$absRisk)
@@ -624,9 +624,9 @@ test_that("predict.CSC(2a) - compare to mstate",{
 
     CSC.RR2_strata<- CSC(Hist(time,event)~X1+X2+X16+strata(grp), data = d2, survtype = "survival", method = "breslow")
     pred.RR2a_strata <- predict(CSC.RR2_strata, cbind(newdata,grp=1), cause = 1, time = pred.probtrans[,"time"],
-                         keep.newdata = FALSE, se = TRUE, productLimit = TRUE)
+                         keep.newdata = FALSE, se = TRUE, productLimit = TRUE, logTransform = FALSE)
     pred.RR2b_strata <- predict(CSC.RR2_strata, cbind(newdata,grp=1), cause = 1, time = pred.probtrans[,"time"],
-                                keep.newdata = FALSE, se = TRUE, productLimit = FALSE)
+                                keep.newdata = FALSE, se = TRUE, productLimit = FALSE, logTransform = FALSE)
 
     expect_equal(pred.RR2a_strata$absRisk,pred.RR2a$absRisk)
     expect_equal(pred.RR2b_strata$absRisk,pred.RR2b$absRisk)
@@ -706,7 +706,7 @@ test_that("predictCSC with strata",{
     CSC.S <- CSC(Hist(time,event) ~ strata(X1) + strata(X3) + X2, data = df.S, ties = "efron", fitter = "coxph")
 
     ## cause 1
-    Event0.S <- predict(CSC.S, newdata = df.S[1:10,], times = seqTime, cause = 1, se = TRUE)
+    Event0.S <- predict(CSC.S, newdata = df.S[1:10,], times = seqTime, cause = 1, se = TRUE, logTransform = FALSE)
     # exportRes(Event0.S$absRisk)
     EventTest.S <- rbind(c(0, 0, 0.0106144145911254, 0.0106144145911254, 0.187045453946268, 0.285231447678766, 0.532564003644496, 0.592725502528842, NA, NA),
                          c(0, 0, 0.00832104772556249, 0.00832104772556249, 0.149947950248539, 0.232051997221862, 0.455475368419988, 0.516242447145683, NA, NA),
@@ -736,7 +736,7 @@ test_that("predictCSC with strata",{
     expect_equal(as.double(Event0.S$absRisk.se),as.double(EventTest.Sse), tolerance = 1e-8)
 
     ## cause 2
-    Event0.S <- predict(CSC.S, newdata = df.S[1:10,], times = seqTime, cause = 2, se = TRUE)
+    Event0.S <- predict(CSC.S, newdata = df.S[1:10,], times = seqTime, cause = 2, se = TRUE, logTransform = FALSE)
     # exportRes(Event0.S$absRisk)
     EventTest.S <- rbind(c(0, 0, 0, 0.0155103901004989, 0.114819674310264, 0.133554023880907, 0.258482028753579, 0.30121775499437, NA, NA),
                          c(0, 0, 0, 0.0153421834906167, 0.115596334553523, 0.135235912444512, 0.280051350712365, 0.336702700208684, NA, NA),

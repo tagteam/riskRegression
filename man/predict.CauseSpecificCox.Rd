@@ -7,7 +7,7 @@
 \method{predict}{CauseSpecificCox}(object, newdata, times, cause,
   landmark = NA, keep.times = 1L, keep.newdata = 1L, keep.strata = 1L,
   se = FALSE, band = FALSE, iid = FALSE, average.iid = FALSE,
-  nSim.band = 10000, logTransform = FALSE, productLimit = TRUE,
+  nSim.band = 10000, logTransform = TRUE, productLimit = TRUE,
   conf.level = 0.95, store.iid = "full", ...)
 }
 \arguments{
@@ -120,4 +120,3 @@ predCSC_afterT0
 Brice Ozenne broz@sund.ku.dk, Thomas A. Gerds
     tag@biostat.ku.dk
 }
-
