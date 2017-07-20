@@ -483,8 +483,8 @@ predictCox <- function(object,
                 quantile95 <- colMultiply_cpp(out$survival.se,out$quantile.band)
                 
                 if(logTransform){
-                    out$survival.lowerBand <- exp(-exp(log(-log(out$survival)) - quantile95))
-                    out$survival.upperBand <- exp(-exp(log(-log(out$survival)) + quantile95))
+                    out$survival.lowerBand <- exp(-exp(log(-log(out$survival)) + quantile95))
+                    out$survival.upperBand <- exp(-exp(log(-log(out$survival)) - quantile95))
                 }else{
                     out$survival.lowerBand <- out$survival.upperBand <- matrix(NA, nrow = NROW(out$survival.se), ncol = NCOL(out$survival.se)) 
                     out$survival.lowerBand[] <- apply(out$survival - quantile95,2,pmax,0)
