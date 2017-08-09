@@ -63,6 +63,11 @@
 #'                      data = d, y = TRUE, x = TRUE)
 #'
 #' ## compare models
+#' # one time point
+#' influenceCoxTest(list(m.cox, mStrata.cox), logTransform = TRUE,
+#'                  type = "survival", newdata = newdata, times = 0.5)
+#'                 
+#' # several timepoints
 #' influenceCoxTest(list(m.cox, mStrata.cox), logTransform = TRUE,
 #'                  type = "survival", newdata = newdata, times = seq(0.1,1,by=0.1))
 #' influenceCoxTest(list(m.cox, mStrata.cox), logTransform = FALSE,
@@ -166,120 +171,121 @@ influenceCoxTest.list <- function(object, newdata, times, type, cause, logTransf
 #' @export
 influenceCoxTest.default <- function(object, object2, conf.level = 0.95, nSim.band = 1e4, ...){
   
-    ## type
-    if(class(object)=="predictCox"){
-        if(object$type!=object2$type){
-            stop("Cannot compare different types of prediction \n")
-        }
-        type <- object$type
-        if(length(type)!=1){
-            stop("Cannot analyse simulatenously several types of predictions \n",
-                 "here: \"",paste0(type,collapse ="\" \""),"\"\n")
-        }
-    }else if(class(object)=="predictCSC"){
-        type <- "absRisk"
-    }else{
-        stop("Can only deal with object of class \'predictCox\' or \'predictCSC\'")
+  ## type
+  if(class(object)=="predictCox"){
+    if(object$type!=object2$type){
+      stop("Cannot compare different types of prediction \n")
     }
-    estimator1 <- object[[type]]
-    estimator2 <- object2[[type]]
-    if(NROW(estimator1)!=1 || NROW(estimator2)!=1){
-        stop("Cannot analyse simulatenously predictions conditional on several set of covariates \n")
+    type <- object$type
+    if(length(type)!=1){
+      stop("Cannot analyse simulatenously several types of predictions \n",
+           "here: \"",paste0(type,collapse ="\" \""),"\"\n")
     }
-
-    # transformation
-    FCT.trans1 <- object[[paste0("transformation.",type)]]
-    FCT.trans2 <- object2[[paste0("transformation.",type)]]
-    if(!identical(attr(FCT.trans1,"srcref"),attr(FCT.trans2,"srcref"))){
-        stop("The iid decomposition must have been computed using the same transformation \n")
-    }
-    test.transform <- class(FCT.trans1) == "function"
-    if(test.transform){
-        estimator1 <- FCT.trans1(estimator1)
-        estimator2 <- FCT.trans1(estimator2)
-    }
+  }else if(class(object)=="predictCSC"){
+    type <- "absRisk"
+  }else{
+    stop("Can only deal with object of class \'predictCox\' or \'predictCSC\'")
+  }
+  estimator1 <- object[[type]]
+  estimator2 <- object2[[type]]
+  if(NROW(estimator1)!=1 || NROW(estimator2)!=1){
+    stop("Cannot analyse simulatenously predictions conditional on several set of covariates \n")
+  }
   
-    ## influence function
-    type.iid <- paste0(type,".iid")
-    if(type.iid %in% names(object) == FALSE){
-        stop("No iid decomposition for type ",type," in object \n")
-    }else{
-        estimator1.iid <- object[[type.iid]]
-    }
-    if(type.iid %in% names(object2) == FALSE){
-        stop("No iid decomposition for type ",type," in object2 \n")
-    }else{
-        estimator2.iid <- object2[[type.iid]]
-    }
+  # transformation
+  FCT.trans1 <- object[[paste0("transformation.",type)]]
+  FCT.trans2 <- object2[[paste0("transformation.",type)]]
+  if(!identical(attr(FCT.trans1,"srcref"),attr(FCT.trans2,"srcref"))){
+    stop("The iid decomposition must have been computed using the same transformation \n")
+  }
+  test.transform <- class(FCT.trans1) == "function"
+  if(test.transform){
+    estimator1 <- FCT.trans1(estimator1)
+    estimator2 <- FCT.trans1(estimator2)
+  }
   
-    ## check sample size
-    n <- length(estimator1.iid[1,1,])
-    if(n!=length(estimator2.iid[1,1,])){
-        stop("Cannot compare estimates on different sample size \n")
-    }
+  ## influence function
+  type.iid <- paste0(type,".iid")
+  if(type.iid %in% names(object) == FALSE){
+    stop("No iid decomposition for type ",type," in object \n")
+  }else{
+    estimator1.iid <- object[[type.iid]]
+  }
+  if(type.iid %in% names(object2) == FALSE){
+    stop("No iid decomposition for type ",type," in object2 \n")
+  }else{
+    estimator2.iid <- object2[[type.iid]]
+  }
   
-    ## time
-    time <- object$time
-    n.time <- length(time)
+  ## check sample size
+  n <- length(estimator1.iid[1,1,])
+  if(n!=length(estimator2.iid[1,1,])){
+    stop("Cannot compare estimates on different sample size \n")
+  }
   
-    ## prepare
-    delta <- as.numeric(estimator1-estimator2)
-    delta.iid <- t((estimator1.iid-estimator2.iid)[1,,])
-    delta.se <- sqrt(colSums(delta.iid^2))
-    index.NA <- unique(c(which(is.na(delta)),which(is.infinite(delta)),which(is.na(delta.se))))
+  ## time
+  time <- object$time
+  n.time <- length(time)
   
-    ## test (punctual)
-    zval <- qnorm(1- (1-conf.level)/2, 0,1)
-    tableRes <- data.frame(cbind(time = time,
-                                 delta = delta,
-                                 se = delta.se,
-                                 inf = delta - zval*delta.se,
-                                 sup = delta + zval*delta.se,
-                                 z = delta/delta.se))
-    tableRes$p <- 2*(1-pnorm(abs(tableRes$z)))  
-    tableRes$p[delta==0] <- 1 # otherwise 0/0 returns NA
-
-    ## test (band)
-    if(length(time)>0){
-
-        if(length(index.NA)>0){
-            n.timeNNA <- n.time - length(index.NA)
-            A.iid <- array(t(delta.iid[,-index.NA,drop=FALSE]), dim = c(n.timeNNA,n,1))
-            M.se <- matrix(delta.se[-index.NA], ncol = 1)
-        }else{
-            A.iid <- array(t(delta.iid), dim = c(n.time,n,1))
-            M.se <- matrix(delta.se, ncol = 1)
-        }
-      
-      sample.max <- sampleMaxProcess_cpp(nObject = n,
-                                         nNew = 1,
-                                         nSim = nSim.band,
-                                         iid = A.iid,
-                                         se = M.se)
+  ## prepare
+  delta <- as.numeric(estimator1-estimator2)
+  delta.iid <- matrix((estimator1.iid-estimator2.iid)[1,,], nrow = n, ncol = n.time, byrow = TRUE)
+  # t((estimator1.iid-estimator2.iid)[1,,])
+  delta.se <- sqrt(colSums(delta.iid^2))
+  index.NA <- unique(c(which(is.na(delta)),which(is.infinite(delta)),which(is.na(delta.se))))
+  
+  ## test (punctual)
+  zval <- qnorm(1- (1-conf.level)/2, 0,1)
+  tableRes <- data.frame(cbind(time = time,
+                               delta = delta,
+                               se = delta.se,
+                               inf = delta - zval*delta.se,
+                               sup = delta + zval*delta.se,
+                               z = delta/delta.se))
+  tableRes$p <- 2*(1-pnorm(abs(tableRes$z)))  
+  tableRes$p[delta==0] <- 1 # otherwise 0/0 returns NA
+  
+  ## test (band)
+  if(length(time)>0){
     
-        quantile.band <- quantile(sample.max, 0.95)
-        tableRes$infBand <- delta - quantile.band*delta.se
-        tableRes$supBand <- delta + quantile.band*delta.se
-        
-        if(length(index.NA)>0){
-            pBand <- mean(sample.max>max(abs(tableRes$z[-index.NA]), na.rm=TRUE))
-        }else{
-            pBand <- mean(sample.max>max(abs(tableRes$z), na.rm=TRUE))
-        }
-
+    if(length(index.NA)>0){
+      n.timeNNA <- n.time - length(index.NA)
+      A.iid <- array(t(delta.iid[,-index.NA,drop=FALSE]), dim = c(n.timeNNA,n,1))
+      M.se <- matrix(delta.se[-index.NA], ncol = 1)
     }else{
-        quantile.band <- NA
-        pBand <- NA
+      A.iid <- array(t(delta.iid), dim = c(n.time,n,1))
+      M.se <- matrix(delta.se, ncol = 1)
     }
+    
+    sample.max <- sampleMaxProcess_cpp(nObject = n,
+                                       nNew = 1,
+                                       nSim = nSim.band,
+                                       iid = A.iid,
+                                       se = M.se)
+    
+    quantile.band <- quantile(sample.max, 0.95)
+    tableRes$infBand <- delta - quantile.band*delta.se
+    tableRes$supBand <- delta + quantile.band*delta.se
+    
+    if(length(index.NA)>0){
+      pBand <- mean(sample.max>max(abs(tableRes$z[-index.NA]), na.rm=TRUE))
+    }else{
+      pBand <- mean(sample.max>max(abs(tableRes$z), na.rm=TRUE))
+    }
+    
+  }else{
+    quantile.band <- NA
+    pBand <- NA
+  }
   
-    ## export
-    tableRes[index.NA,-(1:2)] <- NA # otherwise 0/0 returns NA
+  ## export
+  tableRes[index.NA,-(1:2)] <- NA # otherwise 0/0 returns NA
   
-    out <- list(table = tableRes, 
-                quantile.band = quantile.band,
-                pBand = pBand,
-                transformation = FCT.trans1)
-    class(out) <- "influenceCoxTest"
+  out <- list(table = tableRes, 
+              quantile.band = quantile.band,
+              pBand = pBand,
+              transformation = FCT.trans1)
+  class(out) <- "influenceCoxTest"
   
   return(out)
 }
