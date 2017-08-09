@@ -71,6 +71,11 @@ mStrata.cox <- coxph(Surv(eventtime, status) ~ strata(X1),
                      data = d, y = TRUE, x = TRUE)
 
 ## compare models
+# one time point
+influenceCoxTest(list(m.cox, mStrata.cox), logTransform = TRUE,
+                 type = "survival", newdata = newdata, times = 0.5)
+                
+# several timepoints
 influenceCoxTest(list(m.cox, mStrata.cox), logTransform = TRUE,
                  type = "survival", newdata = newdata, times = seq(0.1,1,by=0.1))
 influenceCoxTest(list(m.cox, mStrata.cox), logTransform = FALSE,
