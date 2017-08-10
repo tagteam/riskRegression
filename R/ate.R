@@ -64,7 +64,7 @@
 #' dtS$time <- round(dtS$time,1)
 #' dtS$X1 <- factor(rbinom(n, prob = c(0.3,0.4) , size = 2), labels = paste0("T",0:2))
 #'
-#' fit=cph(formula = Surv(time,event)~ X1+X2,data=dtS,y=TRUE,x=TRUE)
+#' fit <- cph(formula = Surv(time,event)~ X1+X2,data=dtS,y=TRUE,x=TRUE)
 #'
 #' \dontrun{
 #' ateFit1 <- ate(fit, data = dtS, treatment = "X1", contrasts = NULL,
@@ -451,7 +451,6 @@ ate <- function(object,
             # }}}
             
             # {{{ compute confidence intervals and bands
-
             crisks <- sdIF.fct[,.(Treatment.A,Treatment.B,time)]
             mrisks <- data.table::data.table(Treatment = pointEstimate$meanRisk$Treatment,
                                              time = times)
@@ -480,6 +479,7 @@ ate <- function(object,
               crisks[, ratioBand.lower := pointEstimate$riskComparison$ratio - sdIF.fct$ratioBand.quantile * sdIF.fct$ratio.se]
               crisks[, ratioBand.upper := pointEstimate$riskComparison$ratio + sdIF.fct$ratioBand.quantile * sdIF.fct$ratio.se]
             }
+            
             mrisks[, meanRisk := NULL]
 
             # }}}
