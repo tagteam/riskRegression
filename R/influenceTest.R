@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: maj 19 2017 (16:01) 
 ## Version: 
-## last-updated: jul 20 2017 (12:15) 
+## last-updated: aug 10 2017 (09:24) 
 ##           By: Brice Ozenne
-##     Update #: 114
+##     Update #: 115
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -32,7 +32,6 @@
 #' @param cause Identifies the cause of interest among the competing
 #'     events.
 #' @param conf.level Level of confidence.
-#' @param logTransform Should the comparison be made on the log (or log-log) scale or on the original scale ?
 #' @param ... additional arguments to be passed to lower level functions.
 #' 
 #' @examples
@@ -64,13 +63,11 @@
 #'
 #' ## compare models
 #' # one time point
-#' influenceCoxTest(list(m.cox, mStrata.cox), logTransform = TRUE,
+#' influenceCoxTest(list(m.cox, mStrata.cox), 
 #'                  type = "survival", newdata = newdata, times = 0.5)
 #'                 
 #' # several timepoints
-#' influenceCoxTest(list(m.cox, mStrata.cox), logTransform = TRUE,
-#'                  type = "survival", newdata = newdata, times = seq(0.1,1,by=0.1))
-#' influenceCoxTest(list(m.cox, mStrata.cox), logTransform = FALSE,
+#' influenceCoxTest(list(m.cox, mStrata.cox), 
 #'                  type = "survival", newdata = newdata, times = seq(0.1,1,by=0.1))
 #'
 #' #### Under H0 (Cox) ####
@@ -99,9 +96,7 @@
 #' autoplot(p.coxStrata)
 #'  
 #' ## compare models
-#' influenceCoxTest(list(m.cox, mStrata.cox), logTransform = TRUE,
-#'                  type = "survival", newdata = newdata, times = Utime[1:(n-10)])
-#' influenceCoxTest(list(m.cox, mStrata.cox), logTransform = FALSE,
+#' influenceCoxTest(list(m.cox, mStrata.cox), 
 #'                  type = "survival", newdata = newdata, times = Utime[1:(n-10)])
 #'
 #' #### Under H0 (CSC) ####
@@ -119,10 +114,8 @@
 #' mStrata.CSC <- CSC(Hist(time, event) ~ strata(X1) + X2 + X3, data = d)
 #'
 #' ## compare models
-#' influenceCoxTest(list(m.CSC, mStrata.CSC), logTransform = TRUE,
+#' influenceCoxTest(list(m.CSC, mStrata.CSC), 
 #'                  cause = 1, newdata = data.frame(X1=1,X2=1,X3=1), times = Utime[1:20])
-#' influenceCoxTest(list(m.CSC, mStrata.CSC), logTransform = FALSE,
-#'                  cause = 1, newdata = data.frame(X1=1,X2=1,X3=1), times = Utime[1:20]) 
 #' 
 #' @export
 `influenceCoxTest` <-
@@ -132,7 +125,7 @@
 # {{{ influenceCoxTest.list
 #' @rdname influenceTest
 #' @export
-influenceCoxTest.list <- function(object, newdata, times, type, cause, logTransform = TRUE, ...){
+influenceCoxTest.list <- function(object, newdata, times, type, cause, ...){
   
   validCox <- c("coxph","cph","phreg")
   ls.pred <- lapply(object, function(x){
@@ -144,8 +137,7 @@ influenceCoxTest.list <- function(object, newdata, times, type, cause, logTransf
                          times = times,
                          iid = TRUE,
                          band = FALSE,
-                         se = TRUE,
-                         logTransform = logTransform)
+                         se = TRUE)
     }else if("CauseSpecificCox" %in% class(x)){ # CSC
       pred <- predict(x,
                       cause = cause,
@@ -153,8 +145,7 @@ influenceCoxTest.list <- function(object, newdata, times, type, cause, logTransf
                       times = times,
                       iid = TRUE,
                       band = FALSE,
-                      se = TRUE,
-                      logTransform = logTransform)
+                      se = TRUE)
     }else{
       stop("can only handle Cox and Cause specific Cox models \n")
     }
@@ -192,17 +183,17 @@ influenceCoxTest.default <- function(object, object2, conf.level = 0.95, nSim.ba
     stop("Cannot analyse simulatenously predictions conditional on several set of covariates \n")
   }
   
-  # transformation
-  FCT.trans1 <- object[[paste0("transformation.",type)]]
-  FCT.trans2 <- object2[[paste0("transformation.",type)]]
-  if(!identical(attr(FCT.trans1,"srcref"),attr(FCT.trans2,"srcref"))){
-    stop("The iid decomposition must have been computed using the same transformation \n")
-  }
-  test.transform <- class(FCT.trans1) == "function"
-  if(test.transform){
-    estimator1 <- FCT.trans1(estimator1)
-    estimator2 <- FCT.trans1(estimator2)
-  }
+  # # transformation
+  # FCT.trans1 <- object[[paste0("transformation.",type)]]
+  # FCT.trans2 <- object2[[paste0("transformation.",type)]]
+  # if(!identical(attr(FCT.trans1,"srcref"),attr(FCT.trans2,"srcref"))){
+  #   stop("The iid decomposition must have been computed using the same transformation \n")
+  # }
+  # test.transform <- class(FCT.trans1) == "function"
+  # if(test.transform){
+  #   estimator1 <- FCT.trans1(estimator1)
+  #   estimator2 <- FCT.trans1(estimator2)
+  # }
   
   ## influence function
   type.iid <- paste0(type,".iid")
@@ -235,7 +226,7 @@ influenceCoxTest.default <- function(object, object2, conf.level = 0.95, nSim.ba
   index.NA <- unique(c(which(is.na(delta)),which(is.infinite(delta)),which(is.na(delta.se))))
   
   ## test (punctual)
-  zval <- qnorm(1- (1-conf.level)/2, 0,1)
+  zval <- qnorm(1-(1-conf.level)/2, 0,1)
   tableRes <- data.frame(cbind(time = time,
                                delta = delta,
                                se = delta.se,
@@ -283,8 +274,7 @@ influenceCoxTest.default <- function(object, object2, conf.level = 0.95, nSim.ba
   
   out <- list(table = tableRes, 
               quantile.band = quantile.band,
-              pBand = pBand,
-              transformation = FCT.trans1)
+              pBand = pBand)
   class(out) <- "influenceCoxTest"
   
   return(out)
