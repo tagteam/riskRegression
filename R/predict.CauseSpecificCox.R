@@ -103,7 +103,7 @@ predict.CauseSpecificCox <- function(object,
                                      iid = FALSE,
                                      average.iid = FALSE,
                                      nSim.band = 1e4,
-                                     logTransform = FALSE,
+                                     logTransform = TRUE,
                                      productLimit = TRUE,
                                      conf.level=0.95,
                                      store.iid="full",
@@ -149,12 +149,13 @@ predict.CauseSpecificCox <- function(object,
     }
   
     ## Confidence bands
-    if(band>0){
-        iid.save <- iid
-        se.save <- se
+    if(band>0){ # used to force the computation of the influence function + standard error to get the confidence bands
         iid <- TRUE
         se <- TRUE
     }
+    # original arguments to make this operation invisible for the user
+    iid.save <- iid
+    se.save <- se
         
     # relevant event times to use  
     eventTimes <- eTimes[which(eTimes <= max(times))] 
@@ -359,7 +360,6 @@ predict.CauseSpecificCox <- function(object,
         
         out$quantile.band <- confBandCox(iid = out$absRisk.iid,
                                          se = out$absRisk.se,
-                                         times = times,                                         
                                          n.sim = nSim.band,
                                          conf.level = conf.level)
             
@@ -400,7 +400,8 @@ predict.CauseSpecificCox <- function(object,
         }
     }
     out$conf.level <- conf.level
-    out <- c(out,list(se = se, band = band, nSim.band = nSim.band, logTransform = logTransform))
+    transformation.absRisk <- if(logTransform){function(x){log(-log(1-x))}}else{NA}
+    out <- c(out,list(se = se.save, band = band, nSim.band = nSim.band, transformation.absRisk = transformation.absRisk))
     class(out) <- "predictCSC"
     return(out)
 }

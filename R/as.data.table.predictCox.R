@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Mar  3 2017 (09:28) 
 ## Version: 
-## Last-Updated: apr 12 2017 (15:34) 
+## Last-Updated: jul 18 2017 (14:45) 
 ##           By: Brice Ozenne
-##     Update #: 13
+##     Update #: 16
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -50,6 +50,7 @@ as.data.table.predictCox <- function(x,keep.rownames=FALSE,...){
                          x[[paste0(name,".upperBand")]][,tt])
             vec.names <- c(vec.names,".lowerBand",".upperBand")
           }
+
           colnames(tyc) <- paste0(name,vec.names)
           
           ## setDT(tyc)

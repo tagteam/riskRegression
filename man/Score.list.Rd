@@ -272,6 +272,9 @@ the prediction error difference between 2 predictors Biostatistics (2009)
 }
 \author{
 Thomas A Gerds \email{tag@biostat.ku.dk} and Paul Blanche \email{paul.blanche@univ-ubs.fr}
+<<<<<<< HEAD
 
 Thomas A. Gerds <tag@biostat.ku.dk>
+=======
+>>>>>>> 5e4b91c3cb10503521a3e664f22520d06a087c57
 }

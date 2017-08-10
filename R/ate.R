@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Oct 23 2016 (08:53) 
 ## Version: 
-## last-updated: Jun 29 2017 (18:01) 
-##           By: Thomas Alexander Gerds
-##     Update #: 245
+## last-updated: jul 18 2017 (15:48) 
+##           By: Brice Ozenne
+##     Update #: 239
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -440,7 +440,6 @@ ate <- function(object,
 
                 quantileIF <- confBandCox(iid = abind::abind(iid.treatment, iid_diff.contrasts, iid_ratio.contrasts, along = 1),
                                           se = rbind(sdIF.treatment, sdIF_diff.contrasts, sdIF_ratio.contrasts),
-                                          times = times,
                                           n.sim = nSim.band,
                                           conf.level = conf.level)
                 

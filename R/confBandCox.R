@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: apr 21 2017 (17:40) 
 ## Version: 
-## last-updated: apr 28 2017 (10:59) 
+## last-updated: jul 18 2017 (14:16) 
 ##           By: Brice Ozenne
-##     Update #: 23
+##     Update #: 24
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -20,12 +20,10 @@
 #' 
 #' @param iid The iid decomposition of the estimator over time.
 #' @param se The variance of the estimate over time.
-#' @param times The time points covered by the confidence bands.
 #' @param n.sim The number of simulations used to compute the quantiles.
 #' @param conf.level Level of confidence.
 #' 
-confBandCox <- function(iid, se, times,
-                        n.sim, conf.level){  
+confBandCox <- function(iid, se, n.sim, conf.level){  
     # NOTE
     # iid must be (n.new,n.times,n.object)
     #  se must be (n.new,n.times)

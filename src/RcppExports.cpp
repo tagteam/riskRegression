@@ -145,6 +145,21 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// sampleMaxProcess_cpp
+arma::mat sampleMaxProcess_cpp(int nObject, int nNew, int nSim, const arma::cube& iid, const arma::mat& se);
+RcppExport SEXP riskRegression_sampleMaxProcess_cpp(SEXP nObjectSEXP, SEXP nNewSEXP, SEXP nSimSEXP, SEXP iidSEXP, SEXP seSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< int >::type nObject(nObjectSEXP);
+    Rcpp::traits::input_parameter< int >::type nNew(nNewSEXP);
+    Rcpp::traits::input_parameter< int >::type nSim(nSimSEXP);
+    Rcpp::traits::input_parameter< const arma::cube& >::type iid(iidSEXP);
+    Rcpp::traits::input_parameter< const arma::mat& >::type se(seSEXP);
+    rcpp_result_gen = Rcpp::wrap(sampleMaxProcess_cpp(nObject, nNew, nSim, iid, se));
+    return rcpp_result_gen;
+END_RCPP
+}
 // calcE_cpp
 List calcE_cpp(const NumericVector& eventtime, const NumericVector& status, const NumericVector& eXb, const arma::mat& X, int p, bool add0);
 RcppExport SEXP riskRegression_calcE_cpp(SEXP eventtimeSEXP, SEXP statusSEXP, SEXP eXbSEXP, SEXP XSEXP, SEXP pSEXP, SEXP add0SEXP) {
