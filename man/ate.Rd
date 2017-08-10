@@ -6,7 +6,7 @@
 \usage{
 ate(object, data, treatment, contrasts = NULL, times, cause,
   conf.level = 0.95, se = TRUE, band = FALSE, B = 0, nSim.band = 1000,
-  seed, handler = c("mclapply", "foreach"), mc.cores = 1, verbose = TRUE,
+  seed, handler = c("foreach", "mclapply"), mc.cores = 1, verbose = TRUE,
   store.iid = "full", ...)
 }
 \arguments{
@@ -40,10 +40,10 @@ They rely on the standard error estimated using the influence function of the es
 achieve reproducibility of the bootstrap confidence intervals.}
 
 \item{handler}{parallel handler for bootstrap. Either "mclapply" or
-"foreach". If "foreach" use \code{doParallel} to create a cluster.}
+"foreach". If "foreach" use \code{doSNOW} to create a cluster.}
 
 \item{mc.cores}{Passed to \code{parallel::mclapply} or
-\code{doParallel::registerDoParallel}. The number of cores to use, i.e. at
+\code{doSNOW::registerDoSNOW}. The number of cores to use, i.e. at
 most how many child processes will be run simultaneously.  The
 option is initialized from environment variable MC_CORES if
 set.}
@@ -78,7 +78,7 @@ dtS <- sampleData(n,outcome="survival")
 dtS$time <- round(dtS$time,1)
 dtS$X1 <- factor(rbinom(n, prob = c(0.3,0.4) , size = 2), labels = paste0("T",0:2))
 
-fit=cph(formula = Surv(time,event)~ X1+X2,data=dtS,y=TRUE,x=TRUE)
+fit <- cph(formula = Surv(time,event)~ X1+X2,data=dtS,y=TRUE,x=TRUE)
 
 \dontrun{
 ateFit1 <- ate(fit, data = dtS, treatment = "X1", contrasts = NULL,
