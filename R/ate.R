@@ -35,9 +35,9 @@
 #' @param seed An integer used to generate seeds for bootstrap and to
 #'     achieve reproducibility of the bootstrap confidence intervals.
 #' @param handler parallel handler for bootstrap. Either "mclapply" or
-#'     "foreach". If "foreach" use \code{doParallel} to create a cluster.
+#'     "foreach". If "foreach" use \code{doSNOW} to create a cluster.
 #' @param mc.cores Passed to \code{parallel::mclapply} or
-#'     \code{doParallel::registerDoParallel}. The number of cores to use, i.e. at
+#'     \code{doSNOW::registerDoSNOW}. The number of cores to use, i.e. at
 #'     most how many child processes will be run simultaneously.  The
 #'     option is initialized from environment variable MC_CORES if
 #'     set.
@@ -237,10 +237,19 @@ ate <- function(object,
             if (handler[[1]]=="foreach"){
         
                 cl <- parallel::makeCluster(mc.cores)
-                doParallel::registerDoParallel(cl)
+                doSNOW::registerDoSNOW(cl)
+                
+                if(verbose){
+                  pb <- txtProgressBar(max = B, style = 3)
+                  progress <- function(n) setTxtProgressBar(pb, n)
+                  opts <- list(progress = progress)
+                }else{
+                  opts <- NULL
+                }
                 pp <- find(as.character(object$call[[1]]))
                 addPackage <- if(grep("package:",pp)){gsub("package:","",pp[grep("package:",pp)])}else{NULL}
-                boots <- foreach::`%dopar%`(foreach::foreach(b=1:B,.packages=c("riskRegression",addPackage),.export=NULL), {
+                
+                boots <- foreach::`%dopar%`(foreach::foreach(b=1:B,.packages=c("riskRegression",addPackage),.options.snow=opts,.export=NULL), {
                     set.seed(bootseeds[[b]])
                     dataBoot <- data[sample(1:n.obs, size = n.obs, replace = TRUE),]
                     object$call$data <- dataBoot
