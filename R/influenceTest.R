@@ -32,6 +32,7 @@
 #' @param cause Identifies the cause of interest among the competing
 #'     events.
 #' @param conf.level Level of confidence.
+#' @param tanhTransform Should the comparison be made on the arc-tangent scale or on the original scale ?
 #' @param ... additional arguments to be passed to lower level functions.
 #' 
 #' @examples
@@ -63,11 +64,15 @@
 #'
 #' ## compare models
 #' # one time point
-#' influenceCoxTest(list(m.cox, mStrata.cox), 
+#' influenceCoxTest(list(m.cox, mStrata.cox), tanhTransform = FALSE,
 #'                  type = "survival", newdata = newdata, times = 0.5)
-#'                 
+#' influenceCoxTest(list(m.cox, mStrata.cox), tanhTransform = TRUE,
+#'                  type = "survival", newdata = newdata, times = 0.5)
+#'                                  
 #' # several timepoints
-#' influenceCoxTest(list(m.cox, mStrata.cox), 
+#' influenceCoxTest(list(m.cox, mStrata.cox), tanhTransform = TRUE,
+#'                  type = "survival", newdata = newdata, times = seq(0.1,1,by=0.1))
+#' influenceCoxTest(list(m.cox, mStrata.cox), tanhTransform = FALSE,
 #'                  type = "survival", newdata = newdata, times = seq(0.1,1,by=0.1))
 #'
 #' #### Under H0 (Cox) ####
@@ -96,7 +101,9 @@
 #' autoplot(p.coxStrata)
 #'  
 #' ## compare models
-#' influenceCoxTest(list(m.cox, mStrata.cox), 
+#' influenceCoxTest(list(m.cox, mStrata.cox), tanhTransform = TRUE,
+#'                  type = "survival", newdata = newdata, times = Utime[1:(n-10)])
+#' influenceCoxTest(list(m.cox, mStrata.cox), tanhTransform = FALSE,
 #'                  type = "survival", newdata = newdata, times = Utime[1:(n-10)])
 #'
 #' #### Under H0 (CSC) ####
@@ -114,8 +121,10 @@
 #' mStrata.CSC <- CSC(Hist(time, event) ~ strata(X1) + X2 + X3, data = d)
 #'
 #' ## compare models
-#' influenceCoxTest(list(m.CSC, mStrata.CSC), 
+#' influenceCoxTest(list(m.CSC, mStrata.CSC), tanhTransform = TRUE,
 #'                  cause = 1, newdata = data.frame(X1=1,X2=1,X3=1), times = Utime[1:20])
+#' influenceCoxTest(list(m.CSC, mStrata.CSC), tanhTransform = FALSE,
+#'                  cause = 1, newdata = data.frame(X1=1,X2=1,X3=1), times = Utime[1:20]) 
 #' 
 #' @export
 `influenceCoxTest` <-
@@ -137,7 +146,8 @@ influenceCoxTest.list <- function(object, newdata, times, type, cause, ...){
                          times = times,
                          iid = TRUE,
                          band = FALSE,
-                         se = TRUE)
+                         se = TRUE,
+                         logTransform = FALSE)
     }else if("CauseSpecificCox" %in% class(x)){ # CSC
       pred <- predict(x,
                       cause = cause,
@@ -145,13 +155,14 @@ influenceCoxTest.list <- function(object, newdata, times, type, cause, ...){
                       times = times,
                       iid = TRUE,
                       band = FALSE,
-                      se = TRUE)
+                      se = TRUE,
+                      logTransform = FALSE)
     }else{
       stop("can only handle Cox and Cause specific Cox models \n")
     }
     return(pred)
   })
-  out <- influenceCoxTest(ls.pred[[1]], ls.pred[[2]])
+  out <- influenceCoxTest(ls.pred[[1]], ls.pred[[2]], ...)
   return(out)
   
 }
@@ -160,7 +171,7 @@ influenceCoxTest.list <- function(object, newdata, times, type, cause, ...){
 # {{{ influenceCoxTest.default
 #' @rdname influenceTest
 #' @export
-influenceCoxTest.default <- function(object, object2, conf.level = 0.95, nSim.band = 1e4, ...){
+influenceCoxTest.default <- function(object, object2, tanhTransform = FALSE, conf.level = 0.95, nSim.band = 1e4, ...){
   
   ## type
   if(class(object)=="predictCox"){
@@ -183,17 +194,12 @@ influenceCoxTest.default <- function(object, object2, conf.level = 0.95, nSim.ba
     stop("Cannot analyse simulatenously predictions conditional on several set of covariates \n")
   }
   
-  # # transformation
-  # FCT.trans1 <- object[[paste0("transformation.",type)]]
-  # FCT.trans2 <- object2[[paste0("transformation.",type)]]
-  # if(!identical(attr(FCT.trans1,"srcref"),attr(FCT.trans2,"srcref"))){
-  #   stop("The iid decomposition must have been computed using the same transformation \n")
-  # }
-  # test.transform <- class(FCT.trans1) == "function"
-  # if(test.transform){
-  #   estimator1 <- FCT.trans1(estimator1)
-  #   estimator2 <- FCT.trans1(estimator2)
-  # }
+  # transformation
+  if(tanhTransform){
+    if(type=="cumhazard"){
+      stop("tanhTransform cannot be used when the argument \'type\' is set to \"cumhazard\"\n")
+    }
+  }
   
   ## influence function
   type.iid <- paste0(type,".iid")
@@ -218,12 +224,16 @@ influenceCoxTest.default <- function(object, object2, conf.level = 0.95, nSim.ba
   time <- object$time
   n.time <- length(time)
   
-  ## prepare
+  ## compute the difference
   delta <- as.numeric(estimator1-estimator2)
   delta.iid <- matrix((estimator1.iid-estimator2.iid)[1,,], nrow = n, ncol = n.time, byrow = TRUE)
-  # t((estimator1.iid-estimator2.iid)[1,,])
+  
+  if(tanhTransform){
+    delta.iid <- rowMultiply_cpp(delta.iid, scale = 1/(1+delta^2))
+    delta <- atanh(delta)
+  }
+  
   delta.se <- sqrt(colSums(delta.iid^2))
-  index.NA <- unique(c(which(is.na(delta)),which(is.infinite(delta)),which(is.na(delta.se))))
   
   ## test (punctual)
   zval <- qnorm(1-(1-conf.level)/2, 0,1)
@@ -233,8 +243,18 @@ influenceCoxTest.default <- function(object, object2, conf.level = 0.95, nSim.ba
                                inf = delta - zval*delta.se,
                                sup = delta + zval*delta.se,
                                z = delta/delta.se))
+  if(tanhTransform){
+    tableRes$delta <- tanh(tableRes$delta)
+    tableRes$inf <- tanh(tableRes$inf)
+    tableRes$sup <- tanh(tableRes$sup)
+  }else{
+    tableRes$inf <- pmax(tableRes$inf,-1)
+    tableRes$sup <- pmin(tableRes$sup,1)
+  }
   tableRes$p <- 2*(1-pnorm(abs(tableRes$z)))  
   tableRes$p[delta==0] <- 1 # otherwise 0/0 returns NA
+  
+  index.NA <- unique(c(which(is.na(delta)),which(is.infinite(delta)),which(is.na(delta.se))))
   
   ## test (band)
   if(length(time)>0){
@@ -257,6 +277,14 @@ influenceCoxTest.default <- function(object, object2, conf.level = 0.95, nSim.ba
     quantile.band <- quantile(sample.max, 0.95)
     tableRes$infBand <- delta - quantile.band*delta.se
     tableRes$supBand <- delta + quantile.band*delta.se
+    
+    if(tanhTransform){
+      tableRes$infBand <- tanh(tableRes$infBand)
+      tableRes$supBand <- tanh(tableRes$supBand)
+    }else{
+      tableRes$infBand <- pmax(tableRes$infBand,-1)
+      tableRes$supBand <- pmin(tableRes$supBand,1)
+    }
     
     if(length(index.NA)>0){
       pBand <- mean(sample.max>max(abs(tableRes$z[-index.NA]), na.rm=TRUE))

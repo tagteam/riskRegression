@@ -9,8 +9,7 @@
 \usage{
 influenceCoxTest(object, ...)
 
-\method{influenceCoxTest}{list}(object, newdata, times, type, cause,
-  logTransform = TRUE, ...)
+\method{influenceCoxTest}{list}(object, newdata, times, type, cause, ...)
 
 \method{influenceCoxTest}{default}(object, object2, conf.level = 0.95,
   nSim.band = 10000, ...)
@@ -30,8 +29,6 @@ predictions.}
 
 \item{cause}{Identifies the cause of interest among the competing
 events.}
-
-\item{logTransform}{Should the comparison be made on the log (or log-log) scale or on the original scale ?}
 
 \item{object2}{same as predict1 but for another model.}
 
@@ -72,13 +69,11 @@ mStrata.cox <- coxph(Surv(eventtime, status) ~ strata(X1),
 
 ## compare models
 # one time point
-influenceCoxTest(list(m.cox, mStrata.cox), logTransform = TRUE,
+influenceCoxTest(list(m.cox, mStrata.cox), 
                  type = "survival", newdata = newdata, times = 0.5)
                 
 # several timepoints
-influenceCoxTest(list(m.cox, mStrata.cox), logTransform = TRUE,
-                 type = "survival", newdata = newdata, times = seq(0.1,1,by=0.1))
-influenceCoxTest(list(m.cox, mStrata.cox), logTransform = FALSE,
+influenceCoxTest(list(m.cox, mStrata.cox), 
                  type = "survival", newdata = newdata, times = seq(0.1,1,by=0.1))
 
 #### Under H0 (Cox) ####
@@ -107,9 +102,7 @@ autoplot(p.cox)
 autoplot(p.coxStrata)
  
 ## compare models
-influenceCoxTest(list(m.cox, mStrata.cox), logTransform = TRUE,
-                 type = "survival", newdata = newdata, times = Utime[1:(n-10)])
-influenceCoxTest(list(m.cox, mStrata.cox), logTransform = FALSE,
+influenceCoxTest(list(m.cox, mStrata.cox), 
                  type = "survival", newdata = newdata, times = Utime[1:(n-10)])
 
 #### Under H0 (CSC) ####
@@ -127,9 +120,7 @@ m.CSC <- CSC(Hist(time, event) ~ X1 + X2, data = d)
 mStrata.CSC <- CSC(Hist(time, event) ~ strata(X1) + X2 + X3, data = d)
 
 ## compare models
-influenceCoxTest(list(m.CSC, mStrata.CSC), logTransform = TRUE,
+influenceCoxTest(list(m.CSC, mStrata.CSC), 
                  cause = 1, newdata = data.frame(X1=1,X2=1,X3=1), times = Utime[1:20])
-influenceCoxTest(list(m.CSC, mStrata.CSC), logTransform = FALSE,
-                 cause = 1, newdata = data.frame(X1=1,X2=1,X3=1), times = Utime[1:20]) 
 
 }

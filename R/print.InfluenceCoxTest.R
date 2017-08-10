@@ -26,13 +26,14 @@
 print.influenceCoxTest <- function(x,...){
   
   ## transformation
-  if(class(x$transformation)=="function"){
-    message <- c(paste0("\nWARNING: values (delta,inf,sup",if(!is.na(x$pBand)){",infBand,supBand"},") are not given on the original scale \n"),
-                 paste0("transformation: ",attr(x$transformation,"srcref"),"\n"))
-    
-  }else{
-    message <- "\nValues are given on the original scale \n"
-  }
+  # if(class(x$transformation)=="function"){
+  #   message <- c(paste0("\nWARNING: values (delta,inf,sup",if(!is.na(x$pBand)){",infBand,supBand"},") are not given on the original scale \n"),
+  #                paste0("transformation: ",attr(x$transformation,"srcref"),"\n"))
+  #   
+  # }else{
+  #   message <- "\nValues are given on the original scale \n"
+  # }
+  message <- NULL
   
   ## band
   keep.name <- c("time","delta","inf","sup")
