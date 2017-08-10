@@ -122,10 +122,6 @@ setkey(d, time)
 
 Utime <- sort(unique(d$time))
 
-<<<<<<< HEAD
-mean(unlist(resStrata["p.value",])<0.05)
-}
-=======
 ## fit cox models
 m.CSC <- CSC(Hist(time, event) ~ X1 + X2, data = d)
 mStrata.CSC <- CSC(Hist(time, event) ~ strata(X1) + X2 + X3, data = d)
@@ -136,5 +132,4 @@ influenceCoxTest(list(m.CSC, mStrata.CSC), logTransform = TRUE,
 influenceCoxTest(list(m.CSC, mStrata.CSC), logTransform = FALSE,
                  cause = 1, newdata = data.frame(X1=1,X2=1,X3=1), times = Utime[1:20]) 
 
->>>>>>> 5e4b91c3cb10503521a3e664f22520d06a087c57
 }
