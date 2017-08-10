@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jan  4 2016 (14:30) 
 ## Version: 
-## last-updated: Aug  7 2017 (10:25) 
+## last-updated: Aug 10 2017 (10:49) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 35
+##     Update #: 37
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -28,9 +28,8 @@ test_that("R squared", {
     d <- sampleData(112,outcome="binary")
     f1 <- glm(Y~X1+X5+X8,data=d, family="binomial")
     f2 <- glm(Y~X2+X6+X9+X10,data=d, family="binomial")
-    f3 <- d$X8
-    full <- Score(list(f1,f2,f3),formula=Y~1,data=d,conf.int=TRUE,summary=c("RR"),plots="ROC")
-}
+    full <- Score(list(f1,f2),formula=Y~1,data=d,conf.int=TRUE,summary=c("RR"),plots="ROC")
+})
 
 test_that("binary outcome: robustness against order of data set",{
     set.seed(112)

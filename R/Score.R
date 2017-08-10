@@ -108,7 +108,6 @@
 ##' for predicting risks. But users can quickly extend the package as explained in detail in Mogensen et al. (2012) for
 ##' the predecessors \code{pec::predictSurvProb} and \code{pec::predictEventProb} which have been unified as
 ##' \code{riskRegression::predictRisk}.
-##'
 ##' 
 ##' @examples
 ##' # binary outcome
@@ -261,7 +260,7 @@ Score.list <- function(object,
                        keep,
                        predictRisk.args,
                        ...){
-    id=time=status=id=WTi=b=time=status=model=reference=p=model=pseudovalue=NULL
+    id=time=status=id=WTi=b=time=status=model=reference=p=model=pseudovalue=ReSpOnSe=event=NULL
     # }}}
     theCall <- match.call()
     # ----------------------------find metrics and plots ----------------------
@@ -274,6 +273,7 @@ Score.list <- function(object,
     plots[grep("^roc$",plots,ignore.case=TRUE)] <- "ROC"
     plots[grep("^cal",plots,ignore.case=TRUE)] <- "Calibration"
     if (length(posRR <- grep("^rr$|^r2|rsquared",summary,ignore.case=TRUE))>0){
+        if (!nullModel) stop("Need the null model to compute R^2 but argument 'nullModel' is FALSE.")
         summary <- summary[-posRR]
         if (!("Brier" %in% metrics)) metrics <- c(metrics,"Brier")
         if (!nullModel) {
@@ -284,9 +284,6 @@ Score.list <- function(object,
     }else{
         rsquared <- FALSE
     }
-    if (!nullModel) stop("Need the null model to compute R^2 but argument 'nullModel' is FALSE.")
-
-
     ## Plots <- lapply(plots,grep,c("Roc","Cal"),ignore.case=TRUE,value=TRUE)
     if ("ROC" %in% plots) {
         ## add AUC if needed
@@ -363,9 +360,9 @@ Score.list <- function(object,
         }
     names.object <- names(object) <- make.unique(names(object))
     ## sanity checks
-    object.classes <- sapply(object,function(x)class(x)[[1]])
+    object.classes <- lapply(object,function(x)class(x))
     lapply(1:NF,function(f){
-        names <- names.object[[f]]
+        name <- names.object[[f]]
         if (any(c("integer","factor","numeric","matrix") %in% object.classes[[f]])){
             if (splitMethod$internal.name!="noPlan")
                 stop(paste0("Cannot crossvalidate performance of deterministic risk predictions:",name))
@@ -375,7 +372,7 @@ Score.list <- function(object,
                 stop(paste0("Cannot compute Brier score or calibration plots for predictions that are coded as factor: ",name))
             }
         }
-        candidateMethods <- paste("predictRisk",object.classes[[f]],sep=".")
+        candidateMethods <- paste("predictRisk",unlist(object.classes[[f]]),sep=".")
         if (all(match(candidateMethods,allmethods,nomatch=0)==0)){
             stop(paste("Cannot find function (S3-method) called ",
                        candidateMethods,
@@ -385,13 +382,13 @@ Score.list <- function(object,
     # }}}
     # {{{ additional arguments for predictRisk methods
     if (!missing(predictRisk.args)){
-        if (!(all(names(predictRisk.args) %in% object.classes)))
+        if (!(all(names(predictRisk.args) %in% unlist(object.classes))))
             stop(paste0("Argument predictRisk.args should be a list whose names match the S3-classes of the argument object.
   For example, if your object contains a random forest model fitted with the function randomForestSRC::rfsrc then you can
   specify additional arguments for the function riskRegression::predictRisk.rfsrc which will pass
   these on to the function randomForestSRC::predict.rfsrc. A specific example in this case would be
   predictRisk.args=list(\"rfsrc\"=list(na.action = \"na.impute\"). \n\nThe classes of your current object are: ",
-  paste(object.classes,collapse=", ")))
+  paste(unlist(object.classes),collapse=", ")))
     }else{
         predictRisk.args <- NULL
     }
@@ -555,6 +552,7 @@ Score.list <- function(object,
                                    item,
                                    NF,
                                    NT){
+        Brier=Rsquared=NULL
         N <- NROW(testdata)
         # split into response and predictors
         response <- testdata[,1:response.dim,with=FALSE]
@@ -601,7 +599,9 @@ Score.list <- function(object,
                        "competing.risks"={list(newdata=X,times=times,cause=cause)},
                        stop("Unknown responseType."))
         pred <- data.table::rbindlist(lapply(mlevs, function(f){
-            if (f>0) args <- c(args,predictRisk.args[[object.classes[[f]]]])
+            if (f>0 && (length(extra.args <- unlist(lapply(object.classes[[f]],function(cc){predictRisk.args[[cc]]})))>0)){
+                args <- c(args,extra.args)
+            }
             if (f!=0 && any(c("integer","factor","numeric","matrix") %in% object.classes[[f]])){
                 ## sort predictions by ID
                 if (!is.null(dim(object[[f]]))) {## input matrix
