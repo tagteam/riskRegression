@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: May 31 2016 (11:32) 
 ## Version: 
-## last-updated: Jun 30 2017 (14:28) 
+## last-updated: Aug  7 2017 (09:12) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 20
+##     Update #: 22
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -26,8 +26,8 @@
 #' @export
 print.Score <- function(x,digits=3,...){
     for (s in c(x$summary)){
-        cat(paste0("\nSummary statistics",m,":\n"))
-        print(x[[m]],digits=digits, ...)
+        cat(paste0("\nSummary statistics ",s,":\n"))
+        print(x[[s]],digits=digits, ...)
     }
     for (m in c(x$metrics)){
         cat(paste0("\nMetric ",m,":\n"))

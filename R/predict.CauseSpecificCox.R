@@ -130,7 +130,10 @@ predict.CauseSpecificCox <- function(object,
     eTimes <- object$eventTimes
     
     if (any(match(as.character(cause), causes, nomatch = 0)==0L))
-        stop(paste0("Requested cause ",as.character(cause)," does not match fitted causes which are:\n ",paste0("- ",causes,collapse="\n")))
+        stop(paste0("Cannot find all requested cause(s) ...\n\n", 
+                    "Requested cause(s): ", paste0(cause, collapse = ", "), 
+                    "\n Available causes: ", paste(causes, collapse = ", "), 
+                    "\n"))
     ## stopifnot(match(as.character(cause), causes, nomatch = 0) != 
     ## 0)
     if (survtype == "survival") {
