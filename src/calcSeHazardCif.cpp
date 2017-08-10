@@ -114,7 +114,7 @@ List calcSeHazard_cpp(const NumericVector& seqTau, // horizon time for the predi
 	    IFsum_cumhazard(iSample,iTime) += IF_cumhazard;	    
 	  }
 	  if(exportIFsum_survival){
-	    IFsum_survival(iSample,iTime) += -IF_cumhazard*newSurvival(iNewObs,iTime);
+	    IFsum_survival(iSample,iTime) += IF_cumhazard*newSurvival(iNewObs,iTime);
 	  }
 	}
       }

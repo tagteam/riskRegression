@@ -165,7 +165,7 @@ calcSeCox <- function(object, times, nTimes, type,
             }else{
                 if("iid" %in% export){
                     if("cumhazard" %in% type){out$cumhazard.iid[indexStrata,,] <-  resCpp$iid}
-                    if("survival" %in% type){out$survival.iid[indexStrata,,] <- sliceMultiply_cpp(-resCpp$iid, M = new.survival[indexStrata,,drop=FALSE])}
+                    if("survival" %in% type){out$survival.iid[indexStrata,,] <- sliceMultiply_cpp(resCpp$iid, M = new.survival[indexStrata,,drop=FALSE])}
                 }else if("average.iid" %in% export){
                     if("cumhazard" %in% type){out$cumhazard.iid <- out$cumhazard.iid + resCpp$iidsum_cumhazard/n.new}
                     if("survival" %in% type){out$survival.iid <- out$survival.iid + resCpp$iidsum_survival/n.new}
@@ -230,7 +230,7 @@ calcSeCox <- function(object, times, nTimes, type,
                 }else{
                     if("iid" %in% export){
                         if("cumhazard" %in% type){out$cumhazard.iid[iObs,,] <-  t(IF_tempo)}
-                        if("survival" %in% type){out$survival.iid[iObs,,] <- t(rowMultiply_cpp(-IF_tempo, scale = new.survival[iObs,,drop=FALSE]))}
+                        if("survival" %in% type){out$survival.iid[iObs,,] <- t(rowMultiply_cpp(IF_tempo, scale = new.survival[iObs,,drop=FALSE]))}
                     }
                     if("se" %in% export){
                         se_tempo <- sqrt(apply(IF_tempo^2,2,sum))
