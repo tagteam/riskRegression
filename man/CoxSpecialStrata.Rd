@@ -47,4 +47,3 @@ CoxSpecialStrata(mCoxS)
 \author{
 Brice Ozenne broz@sund.ku.dk
 }
-

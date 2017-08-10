@@ -28,4 +28,3 @@ rowScale_cpp(x, colMeans(x) )
 \author{
 Brice Ozenne <broz@sund.ku.dk>
 }
-

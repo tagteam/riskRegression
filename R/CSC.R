@@ -169,7 +169,10 @@ CSC <- function(formula,
     }
     else{
         if ((foundCause <- match(as.character(cause),causes,nomatch=0))==0)
-            stop(paste("Requested cause: ",cause," Available causes: ", causes))
+            stop(paste0("Cannot find all requested cause(s) ...\n\n", 
+                        "Requested cause(s): ", paste0(cause, collapse = ", "), 
+                        "\n Available causes: ", paste(causes, collapse = ", "), 
+                        "\n"))
         else{
             theCause <- causes[foundCause]
         }
@@ -188,8 +191,8 @@ CSC <- function(formula,
             else
                 causeX <- otherCauses[x-1]}
         else{
-            causeX <- theCause
-        }
+                    causeX <- theCause
+                }
         EHF <- prodlim::EventHistory.frame(formula=formula[[x]],
                                            data=data,
                                            unspecialsDesign=FALSE,

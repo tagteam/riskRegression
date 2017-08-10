@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun  6 2016 (09:02) 
 ## Version: 
-## last-updated: Mar  3 2017 (17:23) 
+## last-updated: Aug  9 2017 (10:58) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 44
+##     Update #: 48
 #----------------------------------------------------------------------
 ## 
 ### Commentary:
@@ -32,10 +32,10 @@
 #' predictRisk.prodlim predictRisk.rfsrc predictRisk.aalen
 #' predictRisk.riskRegression predictRisk.cox.aalen
 #' predictRisk.coxph predictRisk.cph predictRisk.default
-#' predictRisk.rfsrc predictRisk.matrix predictRisk.pecCtree
+#' predictRisk.matrix predictRisk.pecCtree
 #' predictRisk.pecCforest predictRisk.prodlim predictRisk.psm
 #' predictRisk.selectCox predictRisk.survfit predictRisk.randomForest
-#' predictRisk.lrm predictRisk.default predictRisk.glm
+#' predictRisk.lrm predictRisk.glm
 #' predictRisk.rpart
 #' @usage
 #' \method{predictRisk}{glm}(object,newdata,...)
@@ -155,7 +155,7 @@ predictRisk <- function(object,newdata,...){
 
 ##' @export 
 predictRisk.default <- function(object,newdata,times,cause,...){
-  stop("No method for evaluating predicted probabilities from objects in class: ",class(object),call.=FALSE)
+    stop(paste0("No method available for evaluating predicted probabilities from objects in class: ",class(object),". But, you can write it yourself or ask the package manager."),call.=FALSE)
 }
 
 ##' @export

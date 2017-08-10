@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jan  9 2016 (19:31) 
 ## Version: 
-## last-updated: Apr 11 2017 (08:11) 
+## last-updated: Jul 14 2017 (12:27) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 277
+##     Update #: 284
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -168,7 +168,7 @@ riskQuantile.survival <- function(DT,N,NT,NF,dolist,Q,...){
     list(score=score,contrasts=contrasts)
 }
 
-riskQuantile.competing.risks <- function(DT,N,NT,NF,dolist,cause,Q,...){
+riskQuantile.competing.risks <- function(DT,N,NT,NF,dolist,cause,states,Q,...){
     model=event=reference=risk=X=status=times=Wt=WTi=cause=cuminc=ID=NULL
     models <- unique(DT[,model])
     if (missing(Q)) Q <- c(0.05,0.25,0.5,0.75,0.95)
@@ -178,15 +178,8 @@ riskQuantile.competing.risks <- function(DT,N,NT,NF,dolist,cause,Q,...){
     ## we compute conditional on outcome the quantiles of predicted risks 
     ## and quantiles of changes of predicted risks
     ##
-    ## if (missing(causes)) 
-    causes <- DT[model==models[[1]] & status!=0,sort(unique(event))]
-    ## (predrisk,
-    ## formula,
-    ## data,
-    ## cause,
-    ## times,
-    ## ipcw=FALSE,
-    ## Q=c(L=0.25,M=0.5,U=0.75)){
+    ## if (missing(states))
+    ## states <- DT[model==models[[1]] & status!=0,sort(unique(event))]
     #######
     ## Let X denote the difference between two 10-year predictions for the same subjects.
     ## This function estimates quantiles of the conditional distibutions of X given
@@ -221,11 +214,11 @@ riskQuantile.competing.risks <- function(DT,N,NT,NF,dolist,cause,Q,...){
     ## For 'event-free analyses' P(X<=x|T>t) is estimated by P(T>t|X<=x) P(X<=x)/P(T>t)
     #######
     surv <- DT[model==models[[1]],data.table::data.table("surv"=(1/N*sum((time>times)/Wt))),by=times]
-    cuminc <- lapply(causes,function(cc){DT[model==models[[1]],data.table::data.table("cuminc"=1/N*sum((event==cc & time<=times)/WTi)),by=times]})
-    names(cuminc) <- causes
-    getQ.causes <- function(Q,tp,X,time,event,WTi,cuminc,causes){
+    cuminc <- lapply(states,function(cc){DT[model==models[[1]],data.table::data.table("cuminc"=1/N*sum((event==cc & time<=times)/WTi)),by=times]})
+    names(cuminc) <- states
+    getQ.states <- function(Q,tp,X,time,event,WTi,cuminc,states){
         uX <- sort(unique(X))
-        rbindlist(lapply(causes,function(cause){
+        rbindlist(lapply(states,function(cause){
             # Note that event==cause implies status==1
             Wx <- sapply(uX,function(x){sum((X<=x & event==cause & time<=tp)/WTi)})/(N*cuminc[[cause]][times==tp,cuminc])
             qRisk <- getQuantile(x=uX,Fx=Wx,Q=Q)
@@ -244,11 +237,11 @@ riskQuantile.competing.risks <- function(DT,N,NT,NF,dolist,cause,Q,...){
     }
     ## browser(skipCalls=1)
     score.eventfree <- DT[,getQ.eventFree(Q=Q,tp=times,X=risk,time=time,Wt=Wt,surv=surv),by=list(model,times)]
-    score.causes <- DT[,getQ.causes(Q=Q,tp=times,X=risk,time=time,event=event,WTi=WTi,cuminc=cuminc,causes=causes),by=list(model,times)]
+    score.states <- DT[,getQ.states(Q=Q,tp=times,X=risk,time=time,event=event,WTi=WTi,cuminc=cuminc,states=states),by=list(model,times)]
     score.overall <- DT[,data.table(t(quantile(risk,probs=Q))),by=list(model,times)]
     score.overall[,cause:="overall"]
-    colnames(score.overall) <- colnames(score.causes)
-    score <- rbindlist(list(score.overall,score.causes,score.eventfree))
+    colnames(score.overall) <- colnames(score.states)
+    score <- rbindlist(list(score.overall,score.states,score.eventfree))
     setcolorder(score,c("model","times","cause",paste0("V",1:length(Q))))
     qnames <- paste0("Q",".",as.character(round(100*Q)))
     setnames(score,c("model","times","cause",qnames))
@@ -263,11 +256,11 @@ riskQuantile.competing.risks <- function(DT,N,NT,NF,dolist,cause,Q,...){
             Xrange <- DTdiff[,range(X)]
             Xmed <- DTdiff[,median(X)]
             changedist.eventfree <- DTdiff[,getQ.eventFree(Q=Q,tp=times,X=X,time=time,Wt=Wt,surv=surv),by=list(model,times)]
-            changedist.causes <- DTdiff[,getQ.causes(Q=Q,tp=times,X=X,time=time,event=event,WTi=WTi,cuminc=cuminc,causes=causes),by=list(model,times)]
+            changedist.states <- DTdiff[,getQ.states(Q=Q,tp=times,X=X,time=time,event=event,WTi=WTi,cuminc=cuminc,states=states),by=list(model,times)]
             changedist.overall <- DTdiff[,data.table(t(quantile(X,probs=Q))),by=list(model,times)]
             changedist.overall[,cause:="overall"]
-            colnames(changedist.overall) <- colnames(changedist.causes)
-            changedist <- rbindlist(list(changedist.overall,changedist.causes,changedist.eventfree))
+            colnames(changedist.overall) <- colnames(changedist.states)
+            changedist <- rbindlist(list(changedist.overall,changedist.states,changedist.eventfree))
             setcolorder(changedist,c("model","times","cause",paste0("V",1:length(Q))))
             setnames(changedist,c("model","times","cause",qnames))
             changedist[,reference:=g[1]]

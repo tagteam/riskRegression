@@ -2,8 +2,8 @@
 % Please edit documentation in R/getCoxInfo.R
 \name{CoxLP}
 \alias{CoxLP}
-\alias{CoxLP.coxph}
 \alias{CoxLP.cph}
+\alias{CoxLP.coxph}
 \alias{CoxLP.phreg}
 \title{Compute the linear predictor of a Cox model}
 \usage{
@@ -78,4 +78,3 @@ CoxLP(mCoxS2, data = d, center = FALSE)
 \author{
 Brice Ozenne broz@sund.ku.dk
 }
-

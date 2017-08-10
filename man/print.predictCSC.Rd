@@ -35,4 +35,3 @@ pred.SCSC
 print(pred.SCSC, ci = TRUE)
 
 }
-

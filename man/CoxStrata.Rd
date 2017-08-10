@@ -2,8 +2,8 @@
 % Please edit documentation in R/getCoxInfo.R
 \name{CoxStrata}
 \alias{CoxStrata}
-\alias{CoxStrata.coxph}
 \alias{CoxStrata.cph}
+\alias{CoxStrata.coxph}
 \alias{CoxStrata.phreg}
 \title{Define the strata for a new dataset}
 \usage{
@@ -73,4 +73,3 @@ CoxStrata(mCoxS, data = d, sterms = resInfo$sterms, stratavars = resInfo$stratav
 \author{
 Brice Ozenne broz@sund.ku.dk
 }
-

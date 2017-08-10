@@ -89,10 +89,27 @@
 ##'     randomly splitting (bootstrapping) the data during cross-validation.
 ##' @param trainseeds Seeds for training models during cross-validation.
 ##' @param keep provide about additional output
-##' @param ... Not used
+##' @param predictRisk.args
+##'  A list of argument-lists to control how risks are predicted. 
+##'  The names of the lists should be the S3-classes of the \code{object}.
+##'  The argument-lists are then passed on to the S3-class specific predictRisk method. 
+##'  For example, if your object contains one or several random forest model fitted with the function randomForestSRC::rfsrc then you can
+##'  specify additional arguments for the function riskRegression::predictRisk.rfsrc which will pass
+##'  these on to the function randomForestSRC::predict.rfsrc. A specific example in this case would be
+##'  \code{list(rfsrc=list(na.action="na.impute"))}.
+##'
+##'  A more flexible approach is to write a new predictRisk S3-method. See Details.
+##' @param ... Named list containging additional arguments that are passed on to the \code{predictRisk} methods corresponding to object. See examples.
 ##' @return List with scores and assessments of contrasts, i.e.,
 ##'     tests and confidence limits for performance and difference in performance (AUC and Brier),
 ##'     summaries and plots. Most elements are in\code{data.table} format.
+##' @details
+##' The already existing predictRisk methods (see methods(predictRisk)) may not cover all models and methods
+##' for predicting risks. But users can quickly extend the package as explained in detail in Mogensen et al. (2012) for
+##' the predecessors \code{pec::predictSurvProb} and \code{pec::predictEventProb} which have been unified as
+##' \code{riskRegression::predictRisk}.
+##'
+##' 
 ##' @examples
 ##' # binary outcome
 ##' library(lava)
@@ -219,6 +236,7 @@
 ##'
 # }}}
 # {{{
+##' @author Thomas A. Gerds <tag@@biostat.ku.dk>
 Score.list <- function(object,
                        formula,
                        data,
@@ -241,11 +259,50 @@ Score.list <- function(object,
                        seed,
                        trainseeds,
                        keep,
+                       predictRisk.args,
                        ...){
     id=time=status=id=WTi=b=time=status=model=reference=p=model=pseudovalue=NULL
     # }}}
     theCall <- match.call()
-    # -----------------parse arguments and prepare data---------
+    # ----------------------------find metrics and plots ----------------------
+    # {{{
+    ## Metrics <- lapply(metrics,grep,c("AUC","Brier"),ignore.case=TRUE,value=TRUE)
+    summary[grep("^riskQuantile",summary,ignore.case=TRUE)] <- "riskQuantile"
+    summary[grep("^risk$|^risks$",summary,ignore.case=TRUE)] <- "risks"
+    metrics[grep("^auc$",metrics,ignore.case=TRUE)] <- "AUC"
+    metrics[grep("^brier$",metrics,ignore.case=TRUE)] <- "Brier"
+    plots[grep("^roc$",plots,ignore.case=TRUE)] <- "ROC"
+    plots[grep("^cal",plots,ignore.case=TRUE)] <- "Calibration"
+    if (length(posRR <- grep("^rr$|^r2|rsquared",summary,ignore.case=TRUE))>0){
+        summary <- summary[-posRR]
+        if (!("Brier" %in% metrics)) metrics <- c(metrics,"Brier")
+        if (!nullModel) {
+            nullModel <- TRUE 
+            warning("Value of argument 'nullModel' ignored as the null model is needed to compute R^2.")
+        }
+        rsquared <- TRUE
+    }else{
+        rsquared <- FALSE
+    }
+    if (!nullModel) stop("Need the null model to compute R^2 but argument 'nullModel' is FALSE.")
+
+
+    ## Plots <- lapply(plots,grep,c("Roc","Cal"),ignore.case=TRUE,value=TRUE)
+    if ("ROC" %in% plots) {
+        ## add AUC if needed
+        if (!("AUC" %in% metrics)) metrics <- c(metrics,"AUC")
+    }
+    if ("Calibration" %in% plots) {
+        ## add pseduo if needed
+        if (!("pseudo" %in% censMethod)) censMethod <- c(censMethod,"pseudo")
+    }
+    # }}}
+    # -----------------parse other arguments and prepare data---------
+    # {{{ censoring model arguments
+    if (length(grep("^km|^kaplan|^marg",censModel,ignore.case=TRUE))>0)
+        censModel <- "KaplanMeier"
+    else censModel <- "cox"
+    # }}}
     # {{{ Response
     if (missing(formula)){stop("Argument formula is missing.")}    
     formula.names <- try(all.names(formula),silent=TRUE)
@@ -264,6 +321,7 @@ Score.list <- function(object,
                             data=data,
                             cause=cause,
                             vars=responsevars)
+    states <- attr(response,"states")
     response.dim <- NCOL(response)
     responseType <- attr(response,"model")
     # add null model and find names for the object
@@ -275,15 +333,13 @@ Score.list <- function(object,
     ## put ReSpOnSe for binary and (time, event, status) in the first column(s) 
     ## data[,eval(responsevars):=NULL]
     data <- cbind(response,data)
+    if (responseType=="binary")
+        data[,event:=factor(ReSpOnSe,levels=1:(length(states)+1),labels=c(states,"censored"))]
     if (responseType=="survival")
         formula <- stats::update(formula,"Hist(time,status)~.")
     if (responseType=="competing.risks")
         formula <- stats::update(formula,"Hist(time,event)~.")
     N <- NROW(response)
-    ## predictHandlerFun <- switch(responseType,
-    ## "survival"="predictRisk",
-    ## "competing.risks"="predictRisk",
-    ## "binary"="predictRisk",
     ## stop("Dont know how to predict response of type ",responseType))
     censType <- attr(response,"cens.type")
     if (is.null(censType)) censType <- "uncensoredData"
@@ -295,10 +351,11 @@ Score.list <- function(object,
     splitIndex <- splitMethod$index
     do.resample <- !(is.null(splitIndex))
     # }}}
-    # {{{ Checking the models
-    # for predictHandlerFunction
+    # {{{ Checking the ability of the elements of object to predict risks
+    # {{{ number of models and their labels
+    NF <- length(object)
+    # }}}
     allmethods <- utils::methods(predictRisk)
-    # checking the models for compatibility with resampling
     if (is.null(names(object))){
         names(object) <- sapply(object,function(o)class(o)[1])}
     else {
@@ -306,24 +363,40 @@ Score.list <- function(object,
         }
     names.object <- names(object) <- make.unique(names(object))
     ## sanity checks
-    lapply(names.object,function(name){
-        if (any(c("integer","factor","numeric","matrix") %in% class(object[[name]]))){
+    object.classes <- sapply(object,function(x)class(x)[[1]])
+    lapply(1:NF,function(f){
+        names <- names.object[[f]]
+        if (any(c("integer","factor","numeric","matrix") %in% object.classes[[f]])){
             if (splitMethod$internal.name!="noPlan")
                 stop(paste0("Cannot crossvalidate performance of deterministic risk predictions:",name))
         }
-        if (c("factor") %in% class(object[[name]])){
+        if (c("factor") %in% object.classes[[f]]){
             if (length(grep("^brier$",metrics,ignore.case=TRUE)>0) || length(grep("^cal",plots,ignore.case=TRUE)>0)){
                 stop(paste0("Cannot compute Brier score or calibration plots for predictions that are coded as factor: ",name))
             }
         }
-        candidateMethods <- paste("predictRisk",class(object[[name]]),sep=".")
+        candidateMethods <- paste("predictRisk",object.classes[[f]],sep=".")
         if (all(match(candidateMethods,allmethods,nomatch=0)==0)){
             stop(paste("Cannot find function (S3-method) called ",
                        candidateMethods,
                        sep=""))
         }
     })
-    NF <- length(object)
+    # }}}
+    # {{{ additional arguments for predictRisk methods
+    if (!missing(predictRisk.args)){
+        if (!(all(names(predictRisk.args) %in% object.classes)))
+            stop(paste0("Argument predictRisk.args should be a list whose names match the S3-classes of the argument object.
+  For example, if your object contains a random forest model fitted with the function randomForestSRC::rfsrc then you can
+  specify additional arguments for the function riskRegression::predictRisk.rfsrc which will pass
+  these on to the function randomForestSRC::predict.rfsrc. A specific example in this case would be
+  predictRisk.args=list(\"rfsrc\"=list(na.action = \"na.impute\"). \n\nThe classes of your current object are: ",
+  paste(object.classes,collapse=", ")))
+    }else{
+        predictRisk.args <- NULL
+    }
+    # }}}
+    # {{{ add null model and check resampling ability
     if (!is.null(nullobject)) {
         mlevs <- 0:NF
         mlabels <- c(names(nullobject),names(object))
@@ -422,28 +495,9 @@ Score.list <- function(object,
         NT <- 1
     }
     # }}}
-    # ----------------------------find metrics and plots ----------------------
-    # {{{
-    ## Metrics <- lapply(metrics,grep,c("AUC","Brier"),ignore.case=TRUE,value=TRUE)
-    summary[grep("^riskQuantile",summary,ignore.case=TRUE)] <- "riskQuantile"
-    summary[grep("^risk$|^risks$",summary,ignore.case=TRUE)] <- "risks"
-    metrics[grep("^auc$",metrics,ignore.case=TRUE)] <- "AUC"
-    metrics[grep("^brier$",metrics,ignore.case=TRUE)] <- "Brier"
-    plots[grep("^roc$",plots,ignore.case=TRUE)] <- "ROC"
-    plots[grep("^cal",plots,ignore.case=TRUE)] <- "Calibration"
-    ## Plots <- lapply(plots,grep,c("Roc","Cal"),ignore.case=TRUE,value=TRUE)
-    if ("ROC" %in% plots) {
-        ## add AUC if needed
-        if (!("AUC" %in% metrics)) metrics <- c(metrics,"AUC")
-    }
-    if ("Calibration" %in% plots) {
-        ## add pseduo if needed
-        if (!("pseudo" %in% censMethod)) censMethod <- c(censMethod,"pseudo")
-    }
-    # }}}
+
     # -----------------Dealing with censored data outside the loop -----------------------
     # {{{
-    
     if (responseType %in% c("survival","competing.risks")){
         if (censType=="rightCensored"){
             if ("outside.ipcw" %in% censMethod){
@@ -547,8 +601,8 @@ Score.list <- function(object,
                        "competing.risks"={list(newdata=X,times=times,cause=cause)},
                        stop("Unknown responseType."))
         pred <- data.table::rbindlist(lapply(mlevs, function(f){
-            
-            if (f!=0 && any(c("integer","factor","numeric","matrix") %in% class(object[[f]]))){
+            if (f>0) args <- c(args,predictRisk.args[[object.classes[[f]]]])
+            if (f!=0 && any(c("integer","factor","numeric","matrix") %in% object.classes[[f]])){
                 ## sort predictions by ID
                 if (!is.null(dim(object[[f]]))) {## input matrix
                     if(!is.null(include.times)){ ## remove columns at times beyond max time
@@ -630,25 +684,13 @@ Score.list <- function(object,
                       keep.residuals=keep.residuals,
                       dolist=dolist,Q=probs,ROC=FALSE)
         if (responseType=="competing.risks")
-            input <- c(input,list(cause=cause))
+            input <- c(input,list(cause=cause,states=states))
         if (responseType %in% c("survival","competing.risks") && se.fit==TRUE){
             if (censType=="rightCensored"){
                 input <- c(input,list(MC=response[,getInfluenceCurve.KM(time=time,status=status)]))
             }
             else{
                 input <- c(input,list(MC=matrix(0,ncol=length(response$time),nrow=length(unique(response$time)))))
-            }
-        }
-        for (s in summary){
-            if (s=="risks") {
-                out[[s]] <- list(score=copy(input$DT),contrasts=NULL)
-            } else{
-                out[[s]] <- do.call(paste(s,responseType,sep="."),input)
-            }
-            out[[s]]$score[,model:=factor(model,levels=mlevs,mlabels)]
-            if (NROW(out[[s]]$contrasts)>0){
-                out[[s]]$contrasts[,model:=factor(model,levels=mlevs,mlabels)]
-                out[[s]]$contrasts[,reference:=factor(reference,levels=mlevs,mlabels)]
             }
         }
         ## make sure that brier comes first, so that we can remove the nullModel afterwards
@@ -672,6 +714,27 @@ Score.list <- function(object,
                 out[[m]]$contrasts[,reference:=factor(reference,levels=mlevs,mlabels)]
             }
         }
+        ## summary should be after metrics because R^2 depends on Brier score
+        if (rsquared){
+            if (responseType=="binary")
+                out[["Brier"]][["score"]][,Rsquared:=1-Brier/Brier[model=="Null model"]]
+            else
+                out[["Brier"]][["score"]][,Rsquared:=1-Brier/Brier[model=="Null model"],by=times]
+        }
+        
+        for (s in summary){
+            if (s=="risks") {
+                out[[s]] <- list(score=copy(input$DT),contrasts=NULL)
+            } else{
+                out[[s]] <- do.call(paste(s,responseType,sep="."),input)
+            }
+            out[[s]]$score[,model:=factor(model,levels=mlevs,mlabels)]
+            if (NROW(out[[s]]$contrasts)>0){
+                out[[s]]$contrasts[,model:=factor(model,levels=mlevs,mlabels)]
+                out[[s]]$contrasts[,reference:=factor(reference,levels=mlevs,mlabels)]
+            }
+        }
+        
         out
     }
     # }}}
@@ -833,6 +896,7 @@ Score.list <- function(object,
     output <- c(output,list(responseType=responseType,
                             dolist=dolist,
                             cause=cause,
+                            states=states,
                             nullModel=nm,
                             models=models,
                             censType=censType,
@@ -861,6 +925,7 @@ Score <- function(object,...){
     UseMethod("Score",object=object)
 }
 
+# {{{ Brier score
 
 Brier.binary <- function(DT,se.fit,alpha,N,NT,NF,dolist,keep.residuals=FALSE,DT.residuals,DT.bootcount,...){
     residuals=Brier=risk=model=ReSpOnSe=lower.Brier=upper.Brier=se.Brier=ID=NULL
@@ -922,7 +987,7 @@ Brier.survival <- function(DT,MC,se.fit,alpha,N,NT,NF,dolist,keep.residuals=FALS
     output
 }
 
-Brier.competing.risks <- function(DT,MC,se.fit,alpha,N,NT,NF,dolist,keep.residuals=FALSE,DT.residuals,DT.bootcount,cause,...){
+Brier.competing.risks <- function(DT,MC,se.fit,alpha,N,NT,NF,dolist,keep.residuals=FALSE,DT.residuals,DT.bootcount,cause,states,...){
     Yt=time=times=event=Brier=Residuals=risk=ipcwResiduals=WTi=Wt=status=setorder=model=IF.Brier=data.table=sd=lower.Brier=qnorm=se.Brier=upper.Brier=NULL
     ## compute 0/1 outcome:
     DT[,Yt:=1*(time<=times & event==cause)]
@@ -957,7 +1022,9 @@ Brier.competing.risks <- function(DT,MC,se.fit,alpha,N,NT,NF,dolist,keep.residua
     output
 }
 
+# }}}
 
+# {{{ AUC
 
 ## helper functions 
 AireTrap <- function(FP,TP,N){
@@ -1136,7 +1203,7 @@ AUC.survival <- function(DT,MC,se.fit,alpha,N,NT,NF,dolist,ROC,...){
 }
 
 
-AUC.competing.risks <- function(DT,MC,se.fit,alpha,N,NT,NF,dolist,cause,ROC,...){
+AUC.competing.risks <- function(DT,MC,se.fit,alpha,N,NT,NF,dolist,cause,states,ROC,...){
     model=times=risk=Cases=time=status=event=Controls1=Controls2=TPR=FPR=WTi=Wt=ipcwControls1=ipcwControls2=ipcwCases=IF.AUC=lower.AUC=se.AUC=upper.AUC=AUC=NULL
     ## assign Weights before ordering
     DT[,ipcwControls1:=1/(Wt*N)]
@@ -1189,5 +1256,6 @@ AUC.competing.risks <- function(DT,MC,se.fit,alpha,N,NT,NF,dolist,cause,ROC,...)
     output
 }
 
+# }}}
 
 

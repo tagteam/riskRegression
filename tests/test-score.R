@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jan  4 2016 (14:30) 
 ## Version: 
-## last-updated: Jun 26 2017 (11:57) 
+## last-updated: Aug  7 2017 (10:25) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 32
+##     Update #: 35
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -22,6 +22,16 @@ library(pROC)
 library(data.table)
 library(Daim)
 context("riskRegression")
+
+test_that("R squared", { 
+    set.seed(112)
+    d <- sampleData(112,outcome="binary")
+    f1 <- glm(Y~X1+X5+X8,data=d, family="binomial")
+    f2 <- glm(Y~X2+X6+X9+X10,data=d, family="binomial")
+    f3 <- d$X8
+    full <- Score(list(f1,f2,f3),formula=Y~1,data=d,conf.int=TRUE,summary=c("RR"),plots="ROC")
+}
+
 test_that("binary outcome: robustness against order of data set",{
     set.seed(112)
     d <- sampleData(112,outcome="binary")
@@ -92,8 +102,7 @@ test_that("competing risks outcome: robustness against order of data set",{
     expect_equal(s2$AUC,s2b$AUC)
     expect_equal(s3$AUC,s3b$AUC)
 })
-test_that("survival outcome: Brier Score pec vs Score",
-{
+test_that("survival outcome: Brier Score pec vs Score",{
     set.seed(112)
     d <- sampleData(112,outcome="survival")
     f1 <- coxph(Surv(time,event)~X1+X5+X8,data=d, x = TRUE, y = TRUE)
@@ -133,7 +142,6 @@ test_that("survival outcome,Brier Score, external prediction",{
     cbind(b$Brier$score[,Brier],as.vector(unlist(a$AppErr)))
     expect_equal(b$Brier$score[,Brier],as.vector(unlist(a$AppErr)))
 })
-
 test_that("binary outcome: Brier",{
     set.seed(47)
     D <- sampleData(n=47,outcome="binary")
@@ -190,5 +198,6 @@ test_that("binary outcome: AUC", {
     expect_equal(daim.diff$"CI(upper)",-score.diff$lower)
     expect_equal(daim.diff$"P.Value",score.diff$p)
 })
+
 #----------------------------------------------------------------------
 ### test-Score.R ends here

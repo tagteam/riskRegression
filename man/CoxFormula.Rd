@@ -2,8 +2,8 @@
 % Please edit documentation in R/getCoxInfo.R
 \name{CoxFormula}
 \alias{CoxFormula}
-\alias{CoxFormula.coxph}
 \alias{CoxFormula.cph}
+\alias{CoxFormula.coxph}
 \alias{CoxFormula.phreg}
 \title{Extract the formula from a Cox model}
 \usage{
@@ -42,4 +42,3 @@ CoxFormula(mCox)
 \author{
 Brice Ozenne broz@sund.ku.dk
 }
-
