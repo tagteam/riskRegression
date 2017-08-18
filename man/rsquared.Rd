@@ -31,7 +31,8 @@ rsquared(lr1)
 
 library(survival)
 data(pbc)
-cox1= coxph(Surv(time,status!=0)~age+sex+log(bili)+log(albumin)+log(protime),data=na.omit(pbc),x=TRUE)
+cox1= coxph(Surv(time,status!=0)~age+sex+log(bili)+log(albumin)+log(protime),
+data=na.omit(pbc),x=TRUE)
 rsquared(cox1,times=1000)
 
 }

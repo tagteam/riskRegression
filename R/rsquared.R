@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Aug  9 2017 (10:36) 
 ## Version: 
-## Last-Updated: Aug 10 2017 (18:17) 
+## Last-Updated: Aug 10 2017 (18:36) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 61
+##     Update #: 62
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -33,7 +33,8 @@
 ##'
 ##' library(survival)
 ##' data(pbc)
-##' cox1= coxph(Surv(time,status!=0)~age+sex+log(bili)+log(albumin)+log(protime),data=na.omit(pbc),x=TRUE)
+##' cox1= coxph(Surv(time,status!=0)~age+sex+log(bili)+log(albumin)+log(protime),
+##' data=na.omit(pbc),x=TRUE)
 ##' rsquared(cox1,times=1000)
 ##' 
 ##' @export 

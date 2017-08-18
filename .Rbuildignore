@@ -1,5 +1,4 @@
 examples/
-Mailbox/
 prepareData/
 ^.*\.o$
 ^.*\.so$

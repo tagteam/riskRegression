@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun 23 2016 (10:27) 
 ## Version: 
-## last-updated: Jun 10 2017 (17:45) 
+## last-updated: Aug 15 2017 (13:37) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 60
+##     Update #: 65
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -124,12 +124,19 @@ plotROC <- function(x,
             }
             setkey(auc,model)
         }
-        auc.legend <- paste0(auc$model,": ",sprintf(fmt="%s [%s;%s]",
-                                                    round(100*auc$AUC,digits=1),
-                                                    round(100*auc$lower.AUC,digits=1),
-                                                    round(100*auc$upper.AUC,digits=1)))
+        if (length(auc$model)>1){
+            auc.legend <- paste0(auc$model,": ",sprintf(fmt="%s [%s;%s]",
+                                                        round(100*auc$AUC,digits=1),
+                                                        round(100*auc$lower.AUC,digits=1),
+                                                        round(100*auc$upper.AUC,digits=1)))
+        }else{
+            auc.legend <- sprintf(fmt="%s [%s;%s]",
+                                  round(100*auc$AUC,digits=1),
+                                  round(100*auc$lower.AUC,digits=1),
+                                  round(100*auc$upper.AUC,digits=1))
+        }
     }else auc.legend <- FALSE
-    legend.DefaultArgs <- list(legend=auc.legend,lwd=lwd,col=col,lty=lty,cex=cex,bty="n",y.intersp=1.3,x="bottomright",title="AUC")
+    legend.DefaultArgs <- list(legend=auc.legend,lwd=ifelse(length(auc$model)>1,lwd,-1),col=col,lty=lty,cex=cex,bty="n",y.intersp=1.3,x="bottomright",title="AUC")
     plot.DefaultArgs <- list(x=0,y=0,type = "n",ylim = c(0,1),xlim = c(0,1),ylab=ylab,xlab=xlab)
     axis1.DefaultArgs <- list(side=1,las=1,at=seq(0,1,.25))
     axis2.DefaultArgs <- list(side=2,las=1,at=seq(0,1,.25))
