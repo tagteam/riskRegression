@@ -7,12 +7,13 @@
 using namespace Rcpp;
 
 // baseHaz_cpp
-List baseHaz_cpp(const NumericVector& alltimes, const IntegerVector& status, const NumericVector& eXb, const IntegerVector& strata, const std::vector<double>& predtimes, const NumericVector& emaxtimes, int nPatients, int nStrata, int cause, bool Efron);
-RcppExport SEXP riskRegression_baseHaz_cpp(SEXP alltimesSEXP, SEXP statusSEXP, SEXP eXbSEXP, SEXP strataSEXP, SEXP predtimesSEXP, SEXP emaxtimesSEXP, SEXP nPatientsSEXP, SEXP nStrataSEXP, SEXP causeSEXP, SEXP EfronSEXP) {
+List baseHaz_cpp(const NumericVector& starttimes, const NumericVector& stoptimes, const IntegerVector& status, const NumericVector& eXb, const IntegerVector& strata, const std::vector<double>& predtimes, const NumericVector& emaxtimes, int nPatients, int nStrata, int cause, bool Efron);
+RcppExport SEXP riskRegression_baseHaz_cpp(SEXP starttimesSEXP, SEXP stoptimesSEXP, SEXP statusSEXP, SEXP eXbSEXP, SEXP strataSEXP, SEXP predtimesSEXP, SEXP emaxtimesSEXP, SEXP nPatientsSEXP, SEXP nStrataSEXP, SEXP causeSEXP, SEXP EfronSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< const NumericVector& >::type alltimes(alltimesSEXP);
+    Rcpp::traits::input_parameter< const NumericVector& >::type starttimes(starttimesSEXP);
+    Rcpp::traits::input_parameter< const NumericVector& >::type stoptimes(stoptimesSEXP);
     Rcpp::traits::input_parameter< const IntegerVector& >::type status(statusSEXP);
     Rcpp::traits::input_parameter< const NumericVector& >::type eXb(eXbSEXP);
     Rcpp::traits::input_parameter< const IntegerVector& >::type strata(strataSEXP);
@@ -22,7 +23,7 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< int >::type nStrata(nStrataSEXP);
     Rcpp::traits::input_parameter< int >::type cause(causeSEXP);
     Rcpp::traits::input_parameter< bool >::type Efron(EfronSEXP);
-    rcpp_result_gen = Rcpp::wrap(baseHaz_cpp(alltimes, status, eXb, strata, predtimes, emaxtimes, nPatients, nStrata, cause, Efron));
+    rcpp_result_gen = Rcpp::wrap(baseHaz_cpp(starttimes, stoptimes, status, eXb, strata, predtimes, emaxtimes, nPatients, nStrata, cause, Efron));
     return rcpp_result_gen;
 END_RCPP
 }

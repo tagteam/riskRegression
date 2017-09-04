@@ -1,8 +1,8 @@
 # {{{ header
-
-#' Fast computation of survival probabilities, hazards and cumulative hazards from Cox regression models 
-#'
-#' Fast routine to get baseline hazards and subject specific hazards
+#' @title Fast computation of survival probabilities, hazards and cumulative hazards from Cox regression models 
+#' @name predictCox
+#' 
+#' @description Fast routine to get baseline hazards and subject specific hazards
 #' as well as survival probabilities from a \code{survival::coxph} or \code{rms::cph} object
 #' @param object The fitted Cox regression model object either
 #'     obtained with \code{coxph} (survival package) or \code{cph}
@@ -79,7 +79,8 @@
 #'              data=d, ties="breslow", x = TRUE, y = TRUE)
 #' # table(duplicated(d$time))
 #'
-#' predictCox(fit)
+#' predictCox(fit)$cumhazard
+#' riskRegression:::predictCox(fit)$cumhazard
 #' predictCox(fit,centered=FALSE,type="hazard")
 #' predictCox(fit,centered=TRUE,type="hazard")
 #' predictCox(fit, newdata=nd, times=c(3,8),se=TRUE)
@@ -108,12 +109,20 @@
 #' cbind(survival::basehaz(fit2S),predictCox(fit2S,type="cumhazard")$cumhazard)
 #' predictCox(fit2S)
 #' predictCox(fitS, newdata=nd, times = 3)
-#' 
-#' 
-#' @export
-
+#'
+#' # left truncation
+#' test2 <- list(start=c(1,2,5,2,1,7,3,4,8,8), 
+#'               stop=c(2,3,6,7,8,9,9,9,14,17), 
+#'               event=c(1,1,1,1,1,1,1,0,0,0), 
+#'               x=c(1,0,0,1,0,1,1,1,0,0)) 
+#' m.cph <- coxph(Surv(start, stop, event) ~ 1, test2, x = TRUE)
+#' as.data.table(predictCox(m.cph))
+#'
+#' basehaz(m.cph)
 # }}}
 
+#' @rdname predictCox
+#' @export
 predictCox <- function(object,
                        newdata=NULL,
                        times,
@@ -163,7 +172,8 @@ predictCox <- function(object,
     object.n <- CoxN(object)
     object.design <- CoxDesign(object)
     object.status <- object.design[["status"]]
-    object.time <- object.design[["stop"]]
+    object.start <- object.design[["start"]]
+    object.stop <- object.design[["stop"]]
     object.strata <- CoxStrata(object, data = NULL, stratavars = infoVar$stratavars)
     object.levelStrata <- levels(object.strata)
     # if we predict the hazard for newdata then there is no need to center the covariates
@@ -195,7 +205,8 @@ predictCox <- function(object,
         stop("type can only be \"hazard\", \"cumhazard\" or/and \"survival\" \n") 
     }
     if(any(object.design[,"start"]!=0)){
-        stop("do not handle left censoring \n") 
+        warning("The current version of predictCox was not designed to handle left censoring \n",
+                "The function may output incorrect results \n") 
     }      
     # }}}
     # {{{ computation of the baseline hazard
@@ -215,17 +226,19 @@ predictCox <- function(object,
     
     #### baseline hazard ####
     nStrata <- length(object.levelStrata)
-    if(is.strata){etimes.max <- tapply(object.time, object.strata, max) }else{ etimes.max <- max(object.time) } # last event time
+    if(is.strata){etimes.max <- tapply(object.stop, object.strata, max) }else{ etimes.max <- max(object.stop) } # last event time
     
     # sort the data
-    dt.prepare <- data.table(alltimes = object.time,
+    dt.prepare <- data.table(start = object.start,
+                             stop = object.stop,
                              status = object.status,
                              eXb = object.eXb,
                              strata = as.numeric(object.strata) - 1)
     dt.prepare[, statusM1 := 1-status] # sort by statusM1 such that deaths appear first and then censored events
-    data.table::setkeyv(dt.prepare, c("strata", "alltimes", "statusM1"))
+    data.table::setkeyv(dt.prepare, c("strata","stop","start","statusM1"))
     # compute the baseline hazard
-    Lambda0 <- baseHaz_cpp(alltimes = dt.prepare$alltimes,
+    Lambda0 <- baseHaz_cpp(starttimes = dt.prepare$start,
+                           stoptimes = dt.prepare$stop,
                            status = dt.prepare$status,
                            eXb = dt.prepare$eXb,
                            strata = dt.prepare$strata,
@@ -370,7 +383,7 @@ predictCox <- function(object,
 
             ## Computation of the influence function and/or the standard error
             outSE <- calcSeCox(object, times = times.sorted, nTimes = nTimes, type = type,
-                               Lambda0 = Lambda0, object.n = object.n, object.time = object.time, object.eXb = object.eXb, object.strata = object.strata, nStrata = nStrata,
+                               Lambda0 = Lambda0, object.n = object.n, object.time = object.stop, object.eXb = object.eXb, object.strata = object.strata, nStrata = nStrata,
                                new.eXb = new.eXb, new.LPdata = new.LPdata, new.strata = new.strata,
                                new.cumhazard = out$cumhazard, new.survival = out$survival,
                                nVar = nVar, logTransform = logTransform,

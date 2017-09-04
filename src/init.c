@@ -11,7 +11,7 @@
 extern void itfit(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *);
 
 /* .Call calls */
-extern SEXP riskRegression_baseHaz_cpp(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
+extern SEXP riskRegression_baseHaz_cpp(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 extern SEXP riskRegression_calcE_cpp(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 extern SEXP riskRegression_calcSeCif_cpp(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 extern SEXP riskRegression_calcSeHazard_cpp(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
@@ -40,7 +40,7 @@ static const R_CMethodDef CEntries[] = {
 };
 
 static const R_CallMethodDef CallEntries[] = {
-    {"riskRegression_baseHaz_cpp",          (DL_FUNC) &riskRegression_baseHaz_cpp,          10},
+    {"riskRegression_baseHaz_cpp",          (DL_FUNC) &riskRegression_baseHaz_cpp,          11},
     {"riskRegression_calcE_cpp",            (DL_FUNC) &riskRegression_calcE_cpp,             6},
     {"riskRegression_calcSeCif_cpp",        (DL_FUNC) &riskRegression_calcSeCif_cpp,        33},
     {"riskRegression_calcSeHazard_cpp",     (DL_FUNC) &riskRegression_calcSeHazard_cpp,     26},

@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun  6 2016 (09:35) 
 ## Version: 
-## last-updated: sep  4 2017 (10:46) 
+## last-updated: sep  4 2017 (16:40) 
 ##           By: Brice Ozenne
-##     Update #: 109
+##     Update #: 116
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -198,6 +198,7 @@ test_that("Prediction with CSC (strata)  - no event before prediction time",{
 # }}}
 
 # {{{ 2- [predictCox] Dealing with weights
+
 cat("weigthed Cox model \n")
 set.seed(10)
 data(Melanoma)
@@ -220,9 +221,11 @@ test_that("Prediction with Cox model - weights",{
 
 # expect_equal(diag(res$cumhazard), resGS)
 # expect_equal(diag(resW$cumhazard), resGSW)
+
 # }}}
 
 # {{{ 3- [predictCox,CSC] Check influence of the order of the prediction times
+
 cat("Order of the prediction times \n")
 data(Melanoma)
 times2 <- sort(c(0,0.9*min(Melanoma$time),Melanoma$time[5],max(Melanoma$time)*1.1))
@@ -284,6 +287,7 @@ test_that("Deal with NA in times",{
   expect_error(predictionS <- predictCox(fit.coxph, times = c(times2,NA), newdata = Melanoma))
   expect_error(predictionS <- predict(fit.CSC, times = c(times2,NA), newdata = Melanoma, cause = 1))
 })
+
 # }}}
 
 # {{{ 4- Conditional CIF 
@@ -377,9 +381,9 @@ d <- SimSurv(1e2)
 d$entry <- d$eventtime - abs(rnorm(NROW(d)))
 
 m.cox <- coxph(Surv(entry,eventtime,status)~X1+X2,data=d, x = TRUE)
-test_that("Prediction with Cox model - delayed entry",{
-  expect_error(predictCox(m.cox))
-})
+## test_that("Prediction with Cox model - delayed entry",{
+##   expect_error(predictCox(m.cox))
+## })
 # }}}
 
 # {{{ 6- Strata
@@ -389,6 +393,55 @@ f1 <- coxph(Surv(time,status==1) ~ age+logthick+epicel+strata(sex),data=Melanoma
             x=TRUE,y=TRUE)
 res <- predictCox(f1,newdata=Melanoma[c(17,101,123),],
                   times=c(7,3,5)*365.25)
+# }}}
+
+# {{{ 7- absolute risk over 1
+# this section does not perform any test
+# but show an example where the estimated absolute risk
+# is over 1, probably because of the small sample size.
+# I don't know if this is an issue.
+if(FALSE){
+set.seed(5)
+d <- sampleData(80,outcome="comp")
+nd <- sampleData(4,outcome="comp")
+d$time <- round(d$time,1)
+ttt <- sort(sample(x = unique(d$time), size = 10))
+
+CSC.fit.s <- CSC(list(Hist(time,event)~ strata(X1)+X2+X9,
+                      Hist(time,event)~ X2+strata(X4)+X8+X7),data=d)
+predict(CSC.fit.s,cause=1,times=ttt,se=1L)
+
+all.times <- CSC.fit.s$eventTimes
+n.times <- length(CSC.fit.s$eventTimes)
+
+haz1 <- predictCox(CSC.fit.s$models[[1]], newdata = d[52],
+                   type = c("hazard","cumhazard"),
+                   times=all.times)
+haz2 <- predictCox(CSC.fit.s$models[[2]], newdata = d[52],
+                   type = c("hazard","cumhazard"),
+                   times=all.times)
+
+haz1.0 <- setNames(as.numeric(haz1$hazard),haz1$times)
+haz2.0 <- setNames(as.numeric(haz2$hazard),haz2$times)
+cumhaz1.0 <- c(0,setNames(as.numeric(haz1$cumhazard),haz1$times)[-n.times])
+cumhaz2.0 <- c(0,setNames(as.numeric(haz2$cumhazard),haz1$times)[-n.times])
+
+
+cumsum(haz1.0*cumprod(1-haz1.0-haz2.0))[c("1.1","1.3","1.4")]
+predict(CSC.fit.s,newdata = d[52],cause=1,times=CSC.fit.s$eventTimes,
+        productLimit = TRUE)
+##  6:           1  1  1 -0.845  1 -0.446 62.8   1.0 X1=1 X4=1   0.000
+##  7:           1  1  1 -0.845  1 -0.446 62.8   1.1 X1=1 X4=1   0.651
+##  8:           1  1  1 -0.845  1 -0.446 62.8   1.3 X1=1 X4=1   0.808
+##  9:           1  1  1 -0.845  1 -0.446 62.8   1.4 X1=1 X4=1   1.084
+
+cumsum(haz1.0*exp(-cumhaz1.0-cumhaz2.0))[c("1.1","1.3","1.4")]
+predict(CSC.fit.s,newdata = d[52],cause=1,times=CSC.fit.s$eventTimes,
+        productLimit = FALSE)
+## 7:           1  1  1 -0.845  1 -0.446 62.8   1.1 X1=1 X4=1   0.651
+## 8:           1  1  1 -0.845  1 -0.446 62.8   1.3 X1=1 X4=1   0.886
+## 9:           1  1  1 -0.845  1 -0.446 62.8   1.4 X1=1 X4=1   1.363
+}
 # }}}
 
 #----------------------------------------------------------------------

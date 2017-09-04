@@ -20,7 +20,10 @@
 #' @description Plot predictions from a Cox model
 #' 
 #' @param object object obtained with the function \code{predictCox}.
-#' @inheritParams predictCox
+#' @param type the type of predicted value to display. Choices are 
+#' \code{"hazard"} the hazard function,
+#' \code{"cumhazard"} the cumulative hazard function, 
+#' or \code{"survival"} the survival function.
 #' @param ci Logical. If \code{TRUE} display the confidence intervals for the predictions.
 #' @param band Logical. If \code{TRUE} display the confidence bands for the predictions.
 #' @param groupBy The grouping factor used to color the prediction curves. Can be \code{"row"}, \code{"strata"}, or \code{"covariates"}.

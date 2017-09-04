@@ -108,7 +108,8 @@ fit <- coxph(Surv(time,event)~X1 + strata(X2) + X6,
              data=d, ties="breslow", x = TRUE, y = TRUE)
 # table(duplicated(d$time))
 
-predictCox(fit)
+predictCox(fit)$cumhazard
+riskRegression:::predictCox(fit)$cumhazard
 predictCox(fit,centered=FALSE,type="hazard")
 predictCox(fit,centered=TRUE,type="hazard")
 predictCox(fit, newdata=nd, times=c(3,8),se=TRUE)
@@ -138,7 +139,15 @@ cbind(survival::basehaz(fit2S),predictCox(fit2S,type="cumhazard")$cumhazard)
 predictCox(fit2S)
 predictCox(fitS, newdata=nd, times = 3)
 
+# left truncation
+test2 <- list(start=c(1,2,5,2,1,7,3,4,8,8), 
+              stop=c(2,3,6,7,8,9,9,9,14,17), 
+              event=c(1,1,1,1,1,1,1,0,0,0), 
+              x=c(1,0,0,1,0,1,1,1,0,0)) 
+m.cph <- coxph(Surv(start, stop, event) ~ 1, test2, x = TRUE)
+as.data.table(predictCox(m.cph))
 
+basehaz(m.cph)
 }
 \author{
 Brice Ozenne broz@sund.ku.dk, Thomas A. Gerds tag@biostat.ku.dk

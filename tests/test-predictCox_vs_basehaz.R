@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: sep  4 2017 (10:38) 
 ## Version: 
-## last-updated: sep  4 2017 (10:44) 
+## last-updated: sep  4 2017 (14:29) 
 ##           By: Brice Ozenne
-##     Update #: 8
+##     Update #: 20
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -24,7 +24,7 @@ library(testthat)
 library(rms)
 library(survival)
 
-# {{{ 1- [predictCox] Check baseline hazard
+# {{{ 1- [predictCox] Check baseline hazard 
 cat("Estimation of the baseline hazard \n")
 data(Melanoma)
 
@@ -71,7 +71,57 @@ test_that("baseline hazard (strata) - match basehaz results",{
 
 # }}}
 
-# {{{ 2- [predictCox] Check format of the output
+# {{{ 2- [predictCox] Check baseline hazard with time varying variables
+## example from help(coxph)
+
+test2 <- list(start=c(1,2,5,2,1,7,3,4,8,8), 
+              stop=c(2,3,6,7,8,9,9,9,14,17), 
+              event=c(1,1,1,1,1,1,1,0,0,0), 
+              x=c(1,0,0,1,0,1,1,1,0,0)) 
+
+test_that("baseline hazard (time varying) - match basehaz results",{
+    fit.coxph <- coxph(Surv(start, stop, event) ~ x, data = test2, x = TRUE, y = TRUE)
+    fit.cph <- cph(Surv(start, stop, event) ~ x, data = test2, x = TRUE, y = TRUE)
+
+    expect_equal(predictCox(fit.coxph, centered = FALSE)$cumhazard, 
+                 basehaz(fit.coxph, centered = FALSE)$hazard, tolerance = 1e-8)
+    expect_equal(predictCox(fit.coxph, centered = TRUE)$cumhazard, 
+                 basehaz(fit.coxph, centered = TRUE)$hazard, tolerance = 1e-8)
+    expect_equal(predictCox(fit.cph)$cumhazard, 
+                 basehaz(fit.cph)$hazard, tolerance = 1e-8)
+  
+})
+
+test2.strata <- rbind(cbind(as.data.table(test2),S = 1),
+                      cbind(as.data.table(test2),S = 2))
+test2.strata$randomS <- rbinom(NROW(test2.strata),size = 1, prob = 1/2)
+
+test_that("baseline hazard (strata, time varying) - match basehaz results",{
+    fit.coxph <- coxph(Surv(start, stop, event) ~ strata(S) + x, data = test2.strata, x = TRUE, y = TRUE)
+    fit.cph <- cph(Surv(start, stop, event) ~ strat(S) + x, data = test2.strata, x = TRUE, y = TRUE)
+
+    expect_equal(predictCox(fit.coxph, centered = FALSE)$cumhazard, 
+                 basehaz(fit.coxph, centered = FALSE)$hazard, tolerance = 1e-8)
+    expect_equal(predictCox(fit.coxph, centered = TRUE)$cumhazard, 
+                 basehaz(fit.coxph, centered = TRUE)$hazard, tolerance = 1e-8)
+    expect_equal(predictCox(fit.cph)$cumhazard, 
+                 basehaz(fit.cph)$hazard, tolerance = 1e-8)
+    
+    fit.coxph <- coxph(Surv(start, stop, event) ~ strata(randomS) + x, data = test2.strata, x = TRUE, y = TRUE)
+    fit.cph <- cph(Surv(start, stop, event) ~ strat(randomS) + x, data = test2.strata, x = TRUE, y = TRUE)
+
+    expect_equal(predictCox(fit.coxph, centered = FALSE)$cumhazard, 
+                 basehaz(fit.coxph, centered = FALSE)$hazard, tolerance = 1e-8)
+    expect_equal(predictCox(fit.coxph, centered = TRUE)$cumhazard, 
+                 basehaz(fit.coxph, centered = TRUE)$hazard, tolerance = 1e-8)
+    expect_equal(predictCox(fit.cph)$cumhazard, 
+                 basehaz(fit.cph)$hazard, tolerance = 1e-8)
+
+})
+
+# }}}
+
+# {{{ 3- [predictCox] Check format of the output
 cat("Format of the output \n")
 data(Melanoma)
 times1 <- unique(Melanoma$time)

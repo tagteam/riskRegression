@@ -104,7 +104,8 @@ predCSC.iid <- predict(CSC.fit, newdata = d[1:5,],
 ## strata
 CSC.fit.s <- CSC(list(Hist(time,event)~ strata(X1)+X2+X9,
  Hist(time,event)~ X2+strata(X4)+X8+X7),data=d, method = "breslow")
-predict(CSC.fit.s,cause=1,times=ttt,se=1L)
+predict(CSC.fit.s,cause=1,times=ttt,se=1L) ## not absRisk>1 due to small number of observations
+
 # cph function
 CSC.cph <- CSC(Hist(time,event)~ X1+X2,data=d, method = "breslow", fitter = "cph")
 
