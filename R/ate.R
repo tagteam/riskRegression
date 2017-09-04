@@ -356,7 +356,7 @@ ate <- function(object,
                                                                store.iid=store.iid,
                                                                average.iid=average.iid))
                     risk.i <- 1-pred.i$survival
-                    attr(risk.i,"iid") <- pred.i$survival.iid
+                    attr(risk.i,"iid") <- -pred.i$survival.iid
                 }
                 return(risk.i)
             })
