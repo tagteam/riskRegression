@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Oct 23 2016 (08:53) 
 ## Version: 
-## last-updated: Sep  4 2017 (11:49) 
+## last-updated: Sep  4 2017 (16:57) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 316
+##     Update #: 317
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -47,23 +47,16 @@
 #' @param seed An integer used to generate seeds for bootstrap and to
 #'     achieve reproducibility of the bootstrap confidence intervals.
 #' @param handler parallel handler for bootstrap. Either "mclapply" or
-#'     "foreach". If "foreach" use \code{doParallel} to create a
-#'     cluster.
+#'     "foreach". If "foreach" use \code{doSNOW} to create a cluster.
 #' @param mc.cores Passed to \code{parallel::mclapply} or
-#'     \code{doParallel::registerDoParallel}. The number of cores to
-#'     use, i.e. at most how many child processes will be run
-#'     simultaneously.  The option is initialized from environment
-#'     variable MC_CORES if set.
+#'     \code{doSNOW::registerDoSNOW}. The number of cores to use, i.e. at
+#'     most how many child processes will be run simultaneously.  The
+#'     option is initialized from environment variable MC_CORES if
+#'     set.
 #' @param verbose Logical. If \code{TRUE} inform about estimated run
 #'     time.
-#' @param logTransform Should the confidence interval for the ratio be
-#'     computed using a log-tranformation. Only active if Wald-type
-#'     confidence intervals are computed.
-#' @param store.iid Implementation used to estimate the standard
-#'     error. Can be \code{"full"} or \code{"minimal"}.
-#'     \code{"minimal"} requires less memory but can only estimate the
-#'     standard for the difference between treatment effects (and not
-#'     for the ratio).
+#' @param store.iid Implementation used to estimate the standard error. Can be \code{"full"} or \code{"minimal"}.
+#' \code{"minimal"} requires less memory but can only estimate the standard for the difference between treatment effects (and not for the ratio).
 #' @param ... passed to predictRisk
 #' @author Brice Ozenne \email{broz@@sund.ku.dk} and Thomas Alexander
 #'     Gerds \email{tag@@biostat.ku.dk}
@@ -84,7 +77,7 @@
 #' dtS$time <- round(dtS$time,1)
 #' dtS$X1 <- factor(rbinom(n, prob = c(0.3,0.4) , size = 2), labels = paste0("T",0:2))
 #'
-#' fit=cph(formula = Surv(time,event)~ X1+X2,data=dtS,y=TRUE,x=TRUE)
+#' fit <- cph(formula = Surv(time,event)~ X1+X2,data=dtS,y=TRUE,x=TRUE)
 #'
 #' \dontrun{
 #' ateFit1 <- ate(fit, data = dtS, treatment = "X1", contrasts = NULL,
@@ -169,10 +162,9 @@ ate <- function(object,
                 B = 0,
                 nSim.band = ifelse(band,1e3,0),
                 seed,
-                handler=c("mclapply","foreach"),
+                handler=c("foreach","mclapply"),
                 mc.cores = 1,
                 verbose=TRUE,
-                logTransform=FALSE,
                 store.iid="full",
                 ...){
     
@@ -353,10 +345,19 @@ ate <- function(object,
             bootseeds <- sample(1:1000000,size=B,replace=FALSE)
             if (handler[[1]]=="foreach"){
                 cl <- parallel::makeCluster(mc.cores)
-                doParallel::registerDoParallel(cl)
+                doSNOW::registerDoSNOW(cl)
+                
+                if(verbose){
+                  pb <- txtProgressBar(max = B, style = 3)
+                  progress <- function(n) setTxtProgressBar(pb, n)
+                  opts <- list(progress = progress)
+                }else{
+                  opts <- NULL
+                }
                 pp <- find(as.character(object$call[[1]]))
                 addPackage <- if(grep("package:",pp)){gsub("package:","",pp[grep("package:",pp)])}else{NULL}
-                boots <- foreach::`%dopar%`(foreach::foreach(b=1:B,.packages=c("riskRegression",addPackage),.export=NULL), {
+                
+                boots <- foreach::`%dopar%`(foreach::foreach(b=1:B,.packages=c("riskRegression",addPackage),.options.snow=opts,.export=NULL), {
                     set.seed(bootseeds[[b]])
                     dataBoot <- data[sample(1:n.obs, size = n.obs, replace = TRUE),]
                     object$call$data <- dataBoot
@@ -462,7 +463,7 @@ ate <- function(object,
                                                                store.iid=store.iid,
                                                                average.iid=average.iid))
                     risk.i <- 1-pred.i$survival
-                    attr(risk.i,"iid") <- pred.i$survival.iid
+                    attr(risk.i,"iid") <- -pred.i$survival.iid
                 }
                 return(risk.i)
             })
@@ -564,41 +565,35 @@ ate <- function(object,
             # }}}
             
             # {{{ compute confidence intervals and bands
-
             crisks <- sdIF.fct[,.(Treatment.A,Treatment.B,time)]
             mrisks <- data.table::data.table(Treatment = pointEstimate$meanRisk$Treatment,
                                              time = times)
             
             mrisks[, meanRisk := pointEstimate$meanRisk$meanRisk]
-            if(logTransform){
-                stop("not implemented yet \n")
-                ##     ratio.lower <- exp(log(pointEstimate$riskComparison$ratio) + qnorm(alpha/2) * sdIF.fct$ratio)
-                ##     ratio.upper <- exp(log(pointEstimate$riskComparison$ratio) + qnorm(1-alpha/2) * sdIF.fct$ratio)
-                ##     ratio.p.value <- 2*(1-pnorm(abs(log(pointEstimate$riskComparison$ratio)), sd = sdIF.fct$ratio))
-            }else{
-                if(se){                    
-                    mrisks[, lower := meanRisk + qnorm(alpha/2) * sdIF.treatment[.GRP,], by = "Treatment"]
-                    mrisks[, upper := meanRisk + qnorm(1-alpha/2) * sdIF.treatment[.GRP,], by = "Treatment"]
-
-                    crisks[, diff.lower := pointEstimate$riskComparison$diff - qnorm(1-alpha/2) * sdIF.fct$diff.se]
-                    crisks[, diff.upper := pointEstimate$riskComparison$diff + qnorm(1-alpha/2) * sdIF.fct$diff.se]
-                    crisks[, diff.p.value := 2*(1-pnorm(abs(pointEstimate$riskComparison$diff), sd = sdIF.fct$diff.se))]
-
-                    crisks[, ratio.lower := pointEstimate$riskComparison$ratio - qnorm(1-alpha/2) * sdIF.fct$ratio.se]
-                    crisks[, ratio.upper := pointEstimate$riskComparison$ratio + qnorm(1-alpha/2) * sdIF.fct$ratio.se]
-                    crisks[, ratio.p.value := 2*(1-pnorm(abs(pointEstimate$riskComparison$ratio-1), sd = sdIF.fct$ratio.se))]                    
-                }
-                if(band){
-                    mrisks[, lowerBand := meanRisk - qIF.treatment[.GRP] * sdIF.treatment[.GRP,], by = "Treatment"]
-                    mrisks[, upperBand := meanRisk + qIF.treatment[.GRP] * sdIF.treatment[.GRP,], by = "Treatment"]
-
-                    crisks[, diffBand.lower := pointEstimate$riskComparison$diff - sdIF.fct$diffBand.quantile * sdIF.fct$diff.se]
-                    crisks[, diffBand.upper := pointEstimate$riskComparison$diff + sdIF.fct$diffBand.quantile * sdIF.fct$diff.se]
-
-                    crisks[, ratioBand.lower := pointEstimate$riskComparison$ratio - sdIF.fct$ratioBand.quantile * sdIF.fct$ratio.se]
-                    crisks[, ratioBand.upper := pointEstimate$riskComparison$ratio + sdIF.fct$ratioBand.quantile * sdIF.fct$ratio.se]
-                }
-            }            
+            
+            if(se){                    
+              mrisks[, lower := meanRisk + qnorm(alpha/2) * sdIF.treatment[.GRP,], by = "Treatment"]
+              mrisks[, upper := meanRisk + qnorm(1-alpha/2) * sdIF.treatment[.GRP,], by = "Treatment"]
+              
+              crisks[, diff.lower := pointEstimate$riskComparison$diff - qnorm(1-alpha/2) * sdIF.fct$diff.se]
+              crisks[, diff.upper := pointEstimate$riskComparison$diff + qnorm(1-alpha/2) * sdIF.fct$diff.se]
+              crisks[, diff.p.value := 2*(1-pnorm(abs(pointEstimate$riskComparison$diff), sd = sdIF.fct$diff.se))]
+              
+              crisks[, ratio.lower := pointEstimate$riskComparison$ratio - qnorm(1-alpha/2) * sdIF.fct$ratio.se]
+              crisks[, ratio.upper := pointEstimate$riskComparison$ratio + qnorm(1-alpha/2) * sdIF.fct$ratio.se]
+              crisks[, ratio.p.value := 2*(1-pnorm(abs(pointEstimate$riskComparison$ratio-1), sd = sdIF.fct$ratio.se))]                    
+            }
+            if(band){
+              mrisks[, lowerBand := meanRisk - qIF.treatment[.GRP] * sdIF.treatment[.GRP,], by = "Treatment"]
+              mrisks[, upperBand := meanRisk + qIF.treatment[.GRP] * sdIF.treatment[.GRP,], by = "Treatment"]
+              
+              crisks[, diffBand.lower := pointEstimate$riskComparison$diff - sdIF.fct$diffBand.quantile * sdIF.fct$diff.se]
+              crisks[, diffBand.upper := pointEstimate$riskComparison$diff + sdIF.fct$diffBand.quantile * sdIF.fct$diff.se]
+              
+              crisks[, ratioBand.lower := pointEstimate$riskComparison$ratio - sdIF.fct$ratioBand.quantile * sdIF.fct$ratio.se]
+              crisks[, ratioBand.upper := pointEstimate$riskComparison$ratio + sdIF.fct$ratioBand.quantile * sdIF.fct$ratio.se]
+            }
+            
             mrisks[, meanRisk := NULL]
 
             # }}}
@@ -623,8 +618,7 @@ ate <- function(object,
                 band = band,
                 nSim.band = nSim.band,
                 seeds=bootseeds,
-                conf.level=conf.level,
-                logTransform = logTransform)
+                conf.level=conf.level)
   
     class(out) <- c("ate",class(object))
     out

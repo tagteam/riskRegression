@@ -9,11 +9,10 @@
 \usage{
 influenceCoxTest(object, ...)
 
-\method{influenceCoxTest}{list}(object, newdata, times, type, cause,
-  logTransform = TRUE, ...)
+\method{influenceCoxTest}{list}(object, newdata, times, type, cause, ...)
 
-\method{influenceCoxTest}{default}(object, object2, conf.level = 0.95,
-  nSim.band = 10000, ...)
+\method{influenceCoxTest}{default}(object, object2, tanhTransform = FALSE,
+  conf.level = 0.95, nSim.band = 10000, ...)
 }
 \arguments{
 \item{object}{either a list of models or an object of class predictCox or predictCSC.}
@@ -31,9 +30,9 @@ predictions.}
 \item{cause}{Identifies the cause of interest among the competing
 events.}
 
-\item{logTransform}{Should the comparison be made on the log (or log-log) scale or on the original scale ?}
-
 \item{object2}{same as predict1 but for another model.}
+
+\item{tanhTransform}{Should the comparison be made on the arc-tangent scale or on the original scale ?}
 
 \item{conf.level}{Level of confidence.}
 
@@ -72,13 +71,15 @@ mStrata.cox <- coxph(Surv(eventtime, status) ~ strata(X1),
 
 ## compare models
 # one time point
-influenceCoxTest(list(m.cox, mStrata.cox), logTransform = TRUE,
+influenceCoxTest(list(m.cox, mStrata.cox), tanhTransform = FALSE,
                  type = "survival", newdata = newdata, times = 0.5)
-                
+influenceCoxTest(list(m.cox, mStrata.cox), tanhTransform = TRUE,
+                 type = "survival", newdata = newdata, times = 0.5)
+                                 
 # several timepoints
-influenceCoxTest(list(m.cox, mStrata.cox), logTransform = TRUE,
+influenceCoxTest(list(m.cox, mStrata.cox), tanhTransform = TRUE,
                  type = "survival", newdata = newdata, times = seq(0.1,1,by=0.1))
-influenceCoxTest(list(m.cox, mStrata.cox), logTransform = FALSE,
+influenceCoxTest(list(m.cox, mStrata.cox), tanhTransform = FALSE,
                  type = "survival", newdata = newdata, times = seq(0.1,1,by=0.1))
 
 #### Under H0 (Cox) ####
@@ -107,9 +108,9 @@ autoplot(p.cox)
 autoplot(p.coxStrata)
  
 ## compare models
-influenceCoxTest(list(m.cox, mStrata.cox), logTransform = TRUE,
+influenceCoxTest(list(m.cox, mStrata.cox), tanhTransform = TRUE,
                  type = "survival", newdata = newdata, times = Utime[1:(n-10)])
-influenceCoxTest(list(m.cox, mStrata.cox), logTransform = FALSE,
+influenceCoxTest(list(m.cox, mStrata.cox), tanhTransform = FALSE,
                  type = "survival", newdata = newdata, times = Utime[1:(n-10)])
 
 #### Under H0 (CSC) ####
@@ -127,9 +128,9 @@ m.CSC <- CSC(Hist(time, event) ~ X1 + X2, data = d)
 mStrata.CSC <- CSC(Hist(time, event) ~ strata(X1) + X2 + X3, data = d)
 
 ## compare models
-influenceCoxTest(list(m.CSC, mStrata.CSC), logTransform = TRUE,
+influenceCoxTest(list(m.CSC, mStrata.CSC), tanhTransform = TRUE,
                  cause = 1, newdata = data.frame(X1=1,X2=1,X3=1), times = Utime[1:20])
-influenceCoxTest(list(m.CSC, mStrata.CSC), logTransform = FALSE,
+influenceCoxTest(list(m.CSC, mStrata.CSC), tanhTransform = FALSE,
                  cause = 1, newdata = data.frame(X1=1,X2=1,X3=1), times = Utime[1:20]) 
 
 }

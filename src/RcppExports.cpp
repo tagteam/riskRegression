@@ -7,12 +7,13 @@
 using namespace Rcpp;
 
 // baseHaz_cpp
-List baseHaz_cpp(const NumericVector& alltimes, const IntegerVector& status, const NumericVector& eXb, const IntegerVector& strata, const std::vector<double>& predtimes, const NumericVector& emaxtimes, int nPatients, int nStrata, int cause, bool Efron);
-RcppExport SEXP _riskRegression_baseHaz_cpp(SEXP alltimesSEXP, SEXP statusSEXP, SEXP eXbSEXP, SEXP strataSEXP, SEXP predtimesSEXP, SEXP emaxtimesSEXP, SEXP nPatientsSEXP, SEXP nStrataSEXP, SEXP causeSEXP, SEXP EfronSEXP) {
+List baseHaz_cpp(const NumericVector& starttimes, const NumericVector& stoptimes, const IntegerVector& status, const NumericVector& eXb, const IntegerVector& strata, const std::vector<double>& predtimes, const NumericVector& emaxtimes, int nPatients, int nStrata, int cause, bool Efron);
+RcppExport SEXP _riskRegression_baseHaz_cpp(SEXP starttimesSEXP, SEXP stoptimesSEXP, SEXP statusSEXP, SEXP eXbSEXP, SEXP strataSEXP, SEXP predtimesSEXP, SEXP emaxtimesSEXP, SEXP nPatientsSEXP, SEXP nStrataSEXP, SEXP causeSEXP, SEXP EfronSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< const NumericVector& >::type alltimes(alltimesSEXP);
+    Rcpp::traits::input_parameter< const NumericVector& >::type starttimes(starttimesSEXP);
+    Rcpp::traits::input_parameter< const NumericVector& >::type stoptimes(stoptimesSEXP);
     Rcpp::traits::input_parameter< const IntegerVector& >::type status(statusSEXP);
     Rcpp::traits::input_parameter< const NumericVector& >::type eXb(eXbSEXP);
     Rcpp::traits::input_parameter< const IntegerVector& >::type strata(strataSEXP);
@@ -22,7 +23,7 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< int >::type nStrata(nStrataSEXP);
     Rcpp::traits::input_parameter< int >::type cause(causeSEXP);
     Rcpp::traits::input_parameter< bool >::type Efron(EfronSEXP);
-    rcpp_result_gen = Rcpp::wrap(baseHaz_cpp(alltimes, status, eXb, strata, predtimes, emaxtimes, nPatients, nStrata, cause, Efron));
+    rcpp_result_gen = Rcpp::wrap(baseHaz_cpp(starttimes, stoptimes, status, eXb, strata, predtimes, emaxtimes, nPatients, nStrata, cause, Efron));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -384,16 +385,10 @@ BEGIN_RCPP
 END_RCPP
 }
 
-/* .C calls */
-// extern void itfit(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *);
-
-// static const R_CMethodDef CEntries[] = {
-    // {"itfit", (DL_FUNC) &itfit, 50},
-    // {NULL, NULL, 0}
-// };
+RcppExport void itfit(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *);
 
 static const R_CallMethodDef CallEntries[] = {
-    {"_riskRegression_baseHaz_cpp", (DL_FUNC) &_riskRegression_baseHaz_cpp, 10},
+    {"_riskRegression_baseHaz_cpp", (DL_FUNC) &_riskRegression_baseHaz_cpp, 11},
     {"_riskRegression_calcSeHazard_cpp", (DL_FUNC) &_riskRegression_calcSeHazard_cpp, 26},
     {"_riskRegression_calcSeCif_cpp", (DL_FUNC) &_riskRegression_calcSeCif_cpp, 33},
     {"_riskRegression_colCumSum", (DL_FUNC) &_riskRegression_colCumSum, 1},
@@ -415,10 +410,11 @@ static const R_CallMethodDef CallEntries[] = {
     {"_riskRegression_rowMultiply_cpp", (DL_FUNC) &_riskRegression_rowMultiply_cpp, 2},
     {"_riskRegression_sliceMultiply_cpp", (DL_FUNC) &_riskRegression_sliceMultiply_cpp, 2},
     {"_riskRegression_sliceScale_cpp", (DL_FUNC) &_riskRegression_sliceScale_cpp, 2},
+    {"itfit", (DL_FUNC) &itfit, 50},
     {NULL, NULL, 0}
 };
 
 RcppExport void R_init_riskRegression(DllInfo *dll) {
-  R_registerRoutines(dll, NULL, CallEntries, NULL, NULL);
-  R_useDynamicSymbols(dll, FALSE);
+    R_registerRoutines(dll, NULL, CallEntries, NULL, NULL);
+    R_useDynamicSymbols(dll, FALSE);
 }

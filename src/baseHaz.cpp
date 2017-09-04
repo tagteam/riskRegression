@@ -12,7 +12,8 @@ struct structExport {
   int n;
 };
 
-structExport baseHazStrata_cpp(const vector<double>& alltimes,
+structExport baseHazStrata_cpp(const vector<double>& starttimes,
+			       const vector<double>& stoptimes,
                                const vector<int>& status,
                                const vector<double>& eXb, 
                                int nPatients,
@@ -26,7 +27,7 @@ structExport subset_structExport(const structExport& resAll,
                                  int nNew);
 
 //// Data used to fit the Cox model
-// alltimes: event times. 
+// stoptimes: event times. 
 // status: status 0/1
 // eXb: linear predictor 
 // strata: must begin at 0
@@ -36,9 +37,10 @@ structExport subset_structExport(const structExport& resAll,
 // nStrata
 //// For prediction
 // times_pred times at which we want to compute the hazard/survival. Must be sorted 
-//// WARNING alltimes status eXb and strata must be sorted by strata, alltimes, and status
+//// WARNING stoptimes status eXb and strata must be sorted by strata, stoptimes, and status
 // [[Rcpp::export]]
-List baseHaz_cpp(const NumericVector& alltimes,
+List baseHaz_cpp(const NumericVector& starttimes,
+		 const NumericVector& stoptimes,
                  const IntegerVector& status,
                  const NumericVector& eXb,
                  const IntegerVector& strata,
@@ -50,7 +52,8 @@ List baseHaz_cpp(const NumericVector& alltimes,
                  bool Efron){
   
   vector<int> nObsStrata(nStrata,0);
-  vector< vector<double> > alltimes_S(nStrata);
+  vector< vector<double> > starttimes_S(nStrata);
+  vector< vector<double> > stoptimes_S(nStrata);
   vector< vector<int> > status_S(nStrata);
   vector< vector<double> > eXb_S(nStrata);
   vector< uvec > index_S(nStrata);
@@ -65,13 +68,15 @@ List baseHaz_cpp(const NumericVector& alltimes,
   if(nStrata == 1){
     
     nObsStrata[0] = nPatients;
-    alltimes_S[0].resize(nPatients);
+    starttimes_S[0].resize(nPatients);
+    stoptimes_S[0].resize(nPatients);
     status_S[0].resize(nPatients);
     eXb_S[0].resize(nPatients);
     index_S[0].set_size(nPatients);
     
     for(int iter_p = 0 ; iter_p < nPatients ; iter_p++){
-      alltimes_S[0][iter_p] = alltimes[iter_p];
+      starttimes_S[0][iter_p] = starttimes[iter_p];
+      stoptimes_S[0][iter_p] = stoptimes[iter_p];
       status_S[0][iter_p] = status[iter_p];
       eXb_S[0][iter_p] = eXb[iter_p];
       index_S[0][iter_p] = iter_p;
@@ -86,7 +91,8 @@ List baseHaz_cpp(const NumericVector& alltimes,
     
     //// b- Subset the dataset per strata
     for(int iter_s = 0 ; iter_s < nStrata ; iter_s++){
-      alltimes_S[iter_s].resize(nObsStrata[iter_s]);
+      starttimes_S[iter_s].resize(nObsStrata[iter_s]);
+      stoptimes_S[iter_s].resize(nObsStrata[iter_s]);
       status_S[iter_s].resize(nObsStrata[iter_s]);
       eXb_S[iter_s].resize(nObsStrata[iter_s]);
       index_S[iter_s].set_size(nObsStrata[iter_s]);
@@ -97,7 +103,8 @@ List baseHaz_cpp(const NumericVector& alltimes,
     
     for(int iter_p = 0 ; iter_p < nPatients ; iter_p++){
       strata_tempo = strata[iter_p];
-      alltimes_S[strata_tempo][index_tempo[strata_tempo]] = alltimes[iter_p];
+      starttimes_S[strata_tempo][index_tempo[strata_tempo]] = starttimes[iter_p];
+      stoptimes_S[strata_tempo][index_tempo[strata_tempo]] = stoptimes[iter_p];
       status_S[strata_tempo][index_tempo[strata_tempo]] = status[iter_p];
       eXb_S[strata_tempo][index_tempo[strata_tempo]] = eXb[iter_p];
       index_S[strata_tempo][index_tempo[strata_tempo]] = index_tempo[strata_tempo];
@@ -117,14 +124,14 @@ List baseHaz_cpp(const NumericVector& alltimes,
     
     if(nPredtimes>0){ // set maxtime to the first event after the maximum prediction time
       int i = 0;
-      while(i<(nObsStrata[iter_s]-1) && alltimes_S[iter_s][i]<max_predtimes) i++;
-      maxtime = alltimes_S[iter_s][i];
+      while(i<(nObsStrata[iter_s]-1) && stoptimes_S[iter_s][i]<max_predtimes) i++;
+      maxtime = stoptimes_S[iter_s][i];
     }else{
       maxtime = emaxtimes[iter_s];
     }
     
     // compute the hazard
-    resH = baseHazStrata_cpp(alltimes_S[iter_s], status_S[iter_s], eXb_S[iter_s],
+    resH = baseHazStrata_cpp(starttimes_S[iter_s], stoptimes_S[iter_s], status_S[iter_s], eXb_S[iter_s],
                              nObsStrata[iter_s], maxtime, cause, 
                              Efron);
     // subset results according to predtime
@@ -155,43 +162,62 @@ List baseHaz_cpp(const NumericVector& alltimes,
 }
 
 
-structExport baseHazStrata_cpp(const vector<double>& alltimes,
+structExport baseHazStrata_cpp(const vector<double>& starttimes,
+			       const vector<double>& stoptimes,
                                const vector<int>& status,
                                const vector<double>& eXb, 
                                int nPatients,
                                double maxtime,
                                int cause,
                                bool Efron){
-  
+
+  // check whether there is left truncation
+
   //// 1- count the number of events
   size_t nEvents = 1, nEventsLast = 1;
   
   for(int iterPat = 1 ; iterPat < nPatients ; iterPat++){
     
-    if(alltimes[iterPat] != alltimes[iterPat-1]){
+    if(stoptimes[iterPat] != stoptimes[iterPat-1]){
       nEvents++; // total number of events
-      if(maxtime >= alltimes[iterPat]){
+      if(maxtime >= stoptimes[iterPat]){
         nEventsLast++; // up to maxtime
       }
     }
     
   }
+
+  //// 2- identify the unique event times
+  vector<double> time(nEventsLast);
+
+  // first observation
+  time[0] = stoptimes[0];
   
-  ////// 2- merge the data by event
+  // remaining observations
+  size_t index_tempo = 0;
+  for(int iterPat = 1 ; iterPat < nPatients ; iterPat++){
+    if(stoptimes[iterPat] != stoptimes[iterPat-1]){
+      if(maxtime < stoptimes[iterPat]){break;}      // if after the last time we want to predict
+      index_tempo++;
+      time[index_tempo] = stoptimes[iterPat];
+    }
+  }
+  
+  
+  //// 3- merge the data by event
   // sumEXb : sum(patient still at risk) exp(XB)
   // sumEXb_event : sum(patient having the event at that time) exp(XB)
   // temp2 <- rowsum(risk * x, dtime) # at each time the sum of the product between the individual risk and the value of the covariates (E[Xexp(Xb)])
   // xsum <- apply(temp2, 2, rcumsum) # cumulative E[Xexp(XB)]
   // xsum2 <- rowsum((risk * death) * x, dtime) # same as temp2 but the sum is only for people with event 
-  
-  vector<double> time(nEventsLast);
   vector<double> hazard(nEventsLast, NA_REAL);
   vector<double> cumhazard(nEventsLast, NA_REAL);
   
   vector<int> death(nEvents,0);
   vector<double> sumEXb(nEvents), sumEXb2;
   vector<double> sumEXb_event(nEvents,0.0); // only used if efron correction
-  
+
+
   // last observation
   sumEXb[nEvents-1] = eXb[nPatients-1];
   death[nEvents-1] = (status[nPatients-1]==cause);
@@ -199,10 +225,9 @@ structExport baseHazStrata_cpp(const vector<double>& alltimes,
     sumEXb_event[nEvents-1] += eXb[nPatients-1];
   }
   
-  // remaining observations
-  size_t index_tempo = nEvents-1;
-  for(int iterPat = nPatients-2 ; iterPat >= 0 ; iterPat--){
-    if(alltimes[iterPat] != alltimes[iterPat+1]){
+  index_tempo = nEvents-1;
+   for(int iterPat = nPatients-2 ; iterPat >= 0 ; iterPat--){
+    if(stoptimes[iterPat] != stoptimes[iterPat+1]){
       index_tempo--;
       sumEXb[index_tempo] = sumEXb[index_tempo+1];
     }
@@ -213,19 +238,33 @@ structExport baseHazStrata_cpp(const vector<double>& alltimes,
       sumEXb_event[index_tempo] += eXb[iterPat];
     }
   }
+
+   //// correct for left truncation
+   // test whether there is left truncation
+   bool testAll = std::equal(starttimes.begin() + 1, starttimes.end(), starttimes.begin());
+   
+  if(testAll==false){ 
+    bool ncv;
+    size_t indexTime;
+    
+    for(int iterPat = 0 ; iterPat < nPatients ; iterPat++){
+      indexTime = 0;
+      ncv = true;
+      while(indexTime < nEvents && ncv){
+	if(starttimes[iterPat] >= time[indexTime]){
+	  //Rcout << "time=" << time[indexTime] << ": " << eXb[iterPat] << endl;
+	  //remove the contribution of the patient if not included at the time of event
+	  sumEXb[indexTime] -= eXb[iterPat];	 
+	}else{
+	  // Rcout << "time=" << time[indexTime] << ": " << starttimes[iterPat] << endl;
+	  ncv = false;
+	}
+	indexTime ++;	 
+      }
+    }     
+   }
   
-  // first observation
-  time[0] = alltimes[0];
   
-  // remaining observations
-  index_tempo = 0;
-  for(int iterPat = 1 ; iterPat < nPatients ; iterPat++){
-    if(alltimes[iterPat] != alltimes[iterPat-1]){
-      if(maxtime < alltimes[iterPat]){break;}      // if after the last time we want to predict
-      index_tempo++;
-      time[index_tempo] = alltimes[iterPat];
-    }
-  }
   
   //// OPT- Efron correction [from the survival package, function agsurv5]
   if(Efron){

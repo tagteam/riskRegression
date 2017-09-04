@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: maj 18 2017 (09:23) 
 ## Version: 
-## last-updated: Jun 26 2017 (11:35) 
-##           By: Thomas Alexander Gerds
-##     Update #: 47
+## last-updated: sep  4 2017 (14:30) 
+##           By: Brice Ozenne
+##     Update #: 54
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -91,7 +91,6 @@ IFlambdaCAT_GS <- t(as.data.table(mCAT.cox_GS$B.iid))
   # }}}
 
 # }}}
-
 
 # {{{ 1- Compare iid decomposition (Cox)
 
@@ -219,7 +218,6 @@ test_that("iid lambda0 - start with censoring",{
 
 # }}}
 
-
 # {{{ 2- Compare survival and standard errror of the survival (Cox)
     
 # {{{ 2a- no strata, no interaction, continous    
@@ -323,7 +321,6 @@ test_that("predictionsSE - strata",{
 
 # }}}
 
-
 # {{{ 3- IChazard vs ICcumhazard
 
 IF.coxph <- iidCox(m.coxph, keep.times = FALSE)
@@ -418,33 +415,23 @@ test_that("iid minimal - strata", {
 
 # }}}
 
+# {{{ 5- Time varying variables
+# NOTE: I am not sure what timereg is exactly doing in this case
 
-## set.seed(10)
-## d <- sampleData(5000, outcome = "survival")
-## setkey(d,time)
+d <- sampleData(1e2, outcome = "survival")
+d$start <- runif(NROW(d),min=0,max=(d$eventtime-0.1) )
 
-## m.coxph <- coxph(Surv(time, event) ~ X1+X6, data = d, y = TRUE, x = TRUE)
+test_that("predicted survival with time varying variables",{
 
-## newdata <- d
+    fit.coxph <- coxph(Surv(start, eventtime, event) ~ X1, data = d, x = TRUE, y = TRUE)
+    fit.timereg <- cox.aalen(Surv(start, eventtime, event) ~ prop(X1), data = d)
 
-## system.time(
-##     res1 <- predictCox(m.coxph, times = 10:11, newdata = newdata,
-##                        logTransform = FALSE, type = "survival",
-##                        store.iid = "minimal", average.iid = TRUE, se = TRUE)
-## )
-
-## system.time(
-##     res3 <- predictCox(m.coxph, times = 1:5, newdata = newdata[1:10],
-##                        logTransform = TRUE, type = "survival",
-##                        store.iid = "full"x, se = TRUE, iid = FALSE)
-## )
-## system.time(
-##     res3 <- predictCox(m.coxph, times = 1:5, newdata = newdata[1:10],
-##                        logTransform = TRUE, type = "survival",
-##                        store.iid = "minimal", se = TRUE, iid = FALSE)
-## )
-##     apply(res3$survival.iid,1:2,mean)
-
+    predTimes <- sort(unique(d$eventtime))
+    M1 <- predictCox(fit.coxph, newdata = d, time = predTimes)$survival
+    M2 <- predict(fit.timereg, newdata = d, time = predTimes)$S0
+    expect_equal(M1,M2)
+})
+# }}}
 #----------------------------------------------------------------------
 ### test-predictCox_vs_timereg.R ends here
 

@@ -6,9 +6,8 @@
 \usage{
 ate(object, data, formula, treatment, contrasts = NULL, times, cause,
   landmark, conf.level = 0.95, se = TRUE, band = FALSE, B = 0,
-  nSim.band = ifelse(band, 1000, 0), seed, handler = c("mclapply",
-  "foreach"), mc.cores = 1, verbose = TRUE, logTransform = FALSE,
-  store.iid = "full", ...)
+  nSim.band = ifelse(band, 1000, 0), seed, handler = c("foreach",
+  "mclapply"), mc.cores = 1, verbose = TRUE, store.iid = "full", ...)
 }
 \arguments{
 \item{object}{outcome model which describes how event risk depends
@@ -54,27 +53,19 @@ quantiles for the confidence bands.}
 achieve reproducibility of the bootstrap confidence intervals.}
 
 \item{handler}{parallel handler for bootstrap. Either "mclapply" or
-"foreach". If "foreach" use \code{doParallel} to create a
-cluster.}
+"foreach". If "foreach" use \code{doSNOW} to create a cluster.}
 
 \item{mc.cores}{Passed to \code{parallel::mclapply} or
-\code{doParallel::registerDoParallel}. The number of cores to
-use, i.e. at most how many child processes will be run
-simultaneously.  The option is initialized from environment
-variable MC_CORES if set.}
+\code{doSNOW::registerDoSNOW}. The number of cores to use, i.e. at
+most how many child processes will be run simultaneously.  The
+option is initialized from environment variable MC_CORES if
+set.}
 
 \item{verbose}{Logical. If \code{TRUE} inform about estimated run
 time.}
 
-\item{logTransform}{Should the confidence interval for the ratio be
-computed using a log-tranformation. Only active if Wald-type
-confidence intervals are computed.}
-
-\item{store.iid}{Implementation used to estimate the standard
-error. Can be \code{"full"} or \code{"minimal"}.
-\code{"minimal"} requires less memory but can only estimate the
-standard for the difference between treatment effects (and not
-for the ratio).}
+\item{store.iid}{Implementation used to estimate the standard error. Can be \code{"full"} or \code{"minimal"}.
+\code{"minimal"} requires less memory but can only estimate the standard for the difference between treatment effects (and not for the ratio).}
 
 \item{...}{passed to predictRisk}
 }
@@ -101,7 +92,7 @@ dtS <- sampleData(n,outcome="survival")
 dtS$time <- round(dtS$time,1)
 dtS$X1 <- factor(rbinom(n, prob = c(0.3,0.4) , size = 2), labels = paste0("T",0:2))
 
-fit=cph(formula = Surv(time,event)~ X1+X2,data=dtS,y=TRUE,x=TRUE)
+fit <- cph(formula = Surv(time,event)~ X1+X2,data=dtS,y=TRUE,x=TRUE)
 
 \dontrun{
 ateFit1 <- ate(fit, data = dtS, treatment = "X1", contrasts = NULL,

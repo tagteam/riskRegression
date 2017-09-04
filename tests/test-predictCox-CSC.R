@@ -1,11 +1,11 @@
-### predictRisk.R --- 
+### test-predictCox-CSC.R --- 
 #----------------------------------------------------------------------
 ## author: Thomas Alexander Gerds
 ## created: Jun  6 2016 (09:35) 
 ## Version: 
-## last-updated: maj 18 2017 (22:21) 
+## last-updated: sep  4 2017 (16:40) 
 ##           By: Brice Ozenne
-##     Update #: 104
+##     Update #: 116
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -198,6 +198,7 @@ test_that("Prediction with CSC (strata)  - no event before prediction time",{
 # }}}
 
 # {{{ 2- [predictCox] Dealing with weights
+
 cat("weigthed Cox model \n")
 set.seed(10)
 data(Melanoma)
@@ -220,9 +221,11 @@ test_that("Prediction with Cox model - weights",{
 
 # expect_equal(diag(res$cumhazard), resGS)
 # expect_equal(diag(resW$cumhazard), resGSW)
+
 # }}}
 
-# {{{ 4- [predictCox,CSC] Check influence of the order of the prediction times
+# {{{ 3- [predictCox,CSC] Check influence of the order of the prediction times
+
 cat("Order of the prediction times \n")
 data(Melanoma)
 times2 <- sort(c(0,0.9*min(Melanoma$time),Melanoma$time[5],max(Melanoma$time)*1.1))
@@ -284,157 +287,10 @@ test_that("Deal with NA in times",{
   expect_error(predictionS <- predictCox(fit.coxph, times = c(times2,NA), newdata = Melanoma))
   expect_error(predictionS <- predict(fit.CSC, times = c(times2,NA), newdata = Melanoma, cause = 1))
 })
-# }}}
-
-# {{{ 5- [predictCox] Check baseline hazard
-cat("Estimation of the baseline hazard \n")
-data(Melanoma)
-
-test_that("baseline hazard - match basehaz results",{
-  fit.coxph <- coxph(Surv(time,status == 1) ~ thick + invasion + ici, data = Melanoma, y = TRUE, x = TRUE)
-  fit.cph <- cph(Surv(time,status == 1) ~ thick + invasion + ici, data = Melanoma, y = TRUE, x = TRUE)
-  
-  expect_equal(predictCox(fit.coxph, centered = FALSE)$cumhazard, 
-               basehaz(fit.coxph, centered = FALSE)$hazard, tolerance = 1e-8)
-  expect_equal(predictCox(fit.coxph, centered = TRUE)$cumhazard, 
-               basehaz(fit.coxph, centered = TRUE)$hazard, tolerance = 1e-8)
-  expect_equal(predictCox(fit.cph)$cumhazard, 
-               basehaz(fit.cph)$hazard, tolerance = 1e-8)
-  
-  ## possible differences due to different fit - coef(fit.coxph)-coef(fit.cph)
-  expect_equal(predictCox(fit.cph),
-               predictCox(fit.coxph, centered = TRUE), 
-               tolerance = 100*max(abs(coef(fit.coxph)-coef(fit.cph))))
-})
-
-#### strata
-test_that("baseline hazard (strata) - order of the results",{
-  fit.coxph <- coxph(Surv(time,status == 1) ~ thick + strata(invasion) + strata(ici), data = Melanoma, y = TRUE, x = TRUE)
-  fit.cph <- cph(Surv(time,status == 1) ~ thick + strat(invasion) + strat(ici), data = Melanoma, y = TRUE, x = TRUE)
-  
-  expect_equal(predictCox(fit.coxph, keep.strata = TRUE)$strata, 
-               basehaz(fit.coxph)$strata)
-  expect_equal(predictCox(fit.cph, keep.strata = TRUE)$strata, 
-               basehaz(fit.cph)$strata)
-  # expect_equal(as.numeric(predictCox(fit.coxph, keep.strata = TRUE)$strata), 
-  #              as.numeric(predictCox(fit.cph, keep.strata = TRUE)$strata))
-})
-
-test_that("baseline hazard (strata) - match basehaz results",{
-  fit.coxph <- coxph(Surv(time,status == 1) ~ thick + strata(invasion) + strata(ici), data = Melanoma, y = TRUE, x = TRUE)
-  fit.cph <- cph(Surv(time,status == 1) ~ thick + strat(invasion) + strat(ici), data = Melanoma, y = TRUE, x = TRUE)
-  
-  expect_equal(predictCox(fit.coxph, centered = FALSE)$cumhazard, 
-               basehaz(fit.coxph, centered = FALSE)$hazard, tolerance = 1e-8)
-  expect_equal(predictCox(fit.cph)$cumhazard, 
-               basehaz(fit.cph)$hazard)
-  
-  ## !!! not the same ordering in the strata between cph and coxph thus the results in predictCox differ in order
-  ## possible differences due to different fit - coef(fit.coxph)-coef(fit.cph)
-  # expect_equal(basehaz(fit.coxph)$hazard[predictCox(fit.cph)$hazard>0], 
-  #              basehaz(fit.cph)$hazard)
-  # expect_equal(predictCox(fit.cph, centered = TRUE),
-  #              predictCox(fit.coxph, centered = TRUE), 
-  #              tolerance = 100*max(abs(coef(fit.coxph)-coef(fit.cph))))
-})
 
 # }}}
 
-# {{{ 6- [predictCox] Check format of the output
-cat("Format of the output \n")
-data(Melanoma)
-times1 <- unique(Melanoma$time)
-times2 <- c(0,0.9*min(times1),times1*1.1)
-dataset1 <- Melanoma[sample.int(n = nrow(Melanoma), size = 12),]
-
-## no strata
-fit.coxph <- coxph(Surv(time,status == 1) ~ thick*age, data = Melanoma, y = TRUE, x = TRUE)
-fit.cph <- cph(Surv(time,status == 1) ~ thick*age, data = Melanoma, y = TRUE, x = TRUE)
-
-test_that("baseline hazard - correct number of events",{
-    # c("time","hazard","cumhazard","survival") remove lastEventTime from pfit
-    # time hazard cumhazard survival should have length equals to the number of eventtimes (including censored events)
-    # this is not true for lastEventTime which is has length the number of strata
-    pfit.coxph <- predictCox(fit.coxph, type = c("hazard","cumhazard","survival"), keep.times = TRUE)[c("time","hazard","cumhazard","survival")]
-    lengthRes <- unlist(lapply(pfit.coxph, length))
-    expect_equal(unname(lengthRes), rep(length(unique(fit.coxph$y[,"time"])), 4))
-    pfit.cph <- predictCox(fit.cph, type = c("hazard","cumhazard","survival"), keep.times = TRUE)[c("time","hazard","cumhazard","survival")]
-    lengthRes <- unlist(lapply(pfit.cph, length))
-    expect_equal(unname(lengthRes), rep(length(unique(fit.cph$y[,"time"])), 4))
-})
-
-## strata
-fit.coxph <- coxph(Surv(time,status == 1) ~ thick + strata(invasion) + strata(ici), data = Melanoma, y = TRUE, x = TRUE)
-fit.cph <- cph(Surv(time,status == 1) ~ thick + strat(invasion) + strat(ici), data = Melanoma, y = TRUE, x = TRUE)
-
-test_that("baseline hazard (strata) - order of the results",{
-  expect_equal(as.numeric(predictCox(fit.coxph, keep.strata = TRUE)$strata),
-               as.numeric(basehaz(fit.coxph)$strata))
-  expect_equal(as.numeric(predictCox(fit.cph, keep.strata = TRUE)$strata),
-               as.numeric(basehaz(fit.cph)$strata))
-})
-
-test_that("baseline hazard (strata) - correct number of events",{
-    # c("time","hazard","cumhazard","survival", "strata") remove lastEventTime from pfit
-    # time hazard cumhazard survival and strata should have length equals to the number of eventtimes (including censored events)
-    # this is not true for lastEventTime which is has length the number of strata
-
-  strata <- interaction(Melanoma$invasion, Melanoma$ici)
-  timePerStrata <- tapply(fit.coxph$y[,"time"],strata, function(x){length(unique(x))})
-
-  pfit.coxph <- predictCox(fit.coxph, type = c("hazard","cumhazard","survival"), keep.times = TRUE, keep.strata = TRUE)[c("time","hazard","cumhazard","survival","strata")]
-  lengthRes <- unlist(lapply(pfit.coxph, length))
-  expect_equal(unname(lengthRes), rep(sum(timePerStrata), 5))
-  pfit.cph <- predictCox(fit.cph, type = c("hazard","cumhazard","survival"), keep.times = TRUE, keep.strata = TRUE)[c("time","hazard","cumhazard","survival","strata")]
-  lengthRes <- unlist(lapply(pfit.cph, length))
-  expect_equal(unname(lengthRes), rep(sum(timePerStrata), 5))
-})
-
-
-
-test_that("Prediction with Cox model (strata) - export of strata and times",{
-    fit.coxph <- coxph(Surv(time,status == 1) ~ thick + strata(invasion) + strata(ici), data = Melanoma, y = TRUE, x = TRUE)
-    fit.cph <- cph(Surv(time,status == 1) ~ thick + strat(invasion) + strat(ici), data = Melanoma, y = TRUE, x = TRUE)
-    predictTempo <- predictCox(fit.coxph)
-    expect_equal(length(predictTempo$strata)>0, TRUE) 
-    expect_equal(length(predictTempo$time)>0, TRUE)
-    predictTempo <- predictCox(fit.coxph, keep.strata = FALSE) # as.data.table(predictCox(fit.coxph, keep.strata = TRUE))
-    expect_equal(length(predictTempo$strata)>0, FALSE) 
-    expect_equal(length(predictTempo$time)>0, TRUE)
-    predictTempo <- predictCox(fit.coxph, keep.strata = FALSE, keep.times = FALSE)
-    expect_equal(length(predictTempo$strata)>0, FALSE)
-    expect_equal(length(predictTempo$time)>0, FALSE)
-  
-  predictTempo <- predictCox(fit.coxph, times = sort(times2), newdata = dataset1)
-  expect_equal(length(predictTempo$strata)>0, TRUE) 
-  expect_equal(length(predictTempo$time)>0, TRUE)
-  predictTempo <- predictCox(fit.coxph, times = sort(times2), newdata = dataset1, keep.strata = FALSE)
-  expect_equal(length(predictTempo$strata)>0, FALSE)
-  expect_equal(length(predictTempo$time)>0, TRUE)
-  predictTempo <- predictCox(fit.coxph, times = sort(times2), newdata = dataset1, keep.strata = FALSE, keep.times = FALSE)
-  expect_equal(length(predictTempo$strata)>0, FALSE)
-  expect_equal(length(predictTempo$time)>0, FALSE)
-})
-
-test_that("Prediction with Cox model (strata) - consistency of hazard/cumhazard/survival",{
-  predictTempo <- predictCox(fit.coxph, type = c("hazard","cumhazard","survival"), times = times1, newdata = dataset1)
-  expect_equal(predictTempo$hazard[,-1], t(apply(predictTempo$cumhazard,1,diff)), tolerance = 1e-8)
-  expect_equal(predictTempo$survival, exp(-predictTempo$cumhazard), tolerance = 1e-8)
-})
-
-predictTempo <- predictCox(fit.coxph, type = c("hazard","cumhazard","survival"), times = c(0,times1[1:10]), newdata = dataset1[1:2,])
-expect_equal(predictTempo$hazard[,-1], t(apply(predictTempo$cumhazard,1,diff)), tolerance = 1e-8)
-expect_equal(predictTempo$survival, exp(-predictTempo$cumhazard), tolerance = 1e-8)
-
-
-test_that("Prediction with Cox model (strata) - incorrect strata",{
-    fit.coxph <- coxph(Surv(time,status == 1) ~ thick + strata(invasion) + strata(ici), data = Melanoma, y = TRUE, x = TRUE)
-    dataset1$invasion <- "5616"
-    expect_error(predictCox(fit.coxph, times = times1, newdata = dataset1))
-})
-# }}}
-
-# {{{ 7- Conditional CIF 
+# {{{ 4- Conditional CIF 
 cat("Conditional CIF \n")
 
 set.seed(10)
@@ -519,18 +375,18 @@ test_that("Value of the conditional CIF", {
 })
 # }}}
 
-# {{{ 8 - Delayed entry 
+# {{{ 5- Delayed entry 
 cat("Delayed entry \n")
 d <- SimSurv(1e2)
 d$entry <- d$eventtime - abs(rnorm(NROW(d)))
 
 m.cox <- coxph(Surv(entry,eventtime,status)~X1+X2,data=d, x = TRUE)
-test_that("Prediction with Cox model - delayed entry",{
-  expect_error(predictCox(m.cox))
-})
+## test_that("Prediction with Cox model - delayed entry",{
+##   expect_error(predictCox(m.cox))
+## })
 # }}}
 
-# {{{ 10 - Strata
+# {{{ 6- Strata
 cat("strata \n")
 # check previous issue with strata
 f1 <- coxph(Surv(time,status==1) ~ age+logthick+epicel+strata(sex),data=Melanoma,
@@ -539,57 +395,54 @@ res <- predictCox(f1,newdata=Melanoma[c(17,101,123),],
                   times=c(7,3,5)*365.25)
 # }}}
 
-# {{{ 11- [predictRisk] Others
-cat("Others \n")
+# {{{ 7- absolute risk over 1
+# this section does not perform any test
+# but show an example where the estimated absolute risk
+# is over 1, probably because of the small sample size.
+# I don't know if this is an issue.
+if(FALSE){
+set.seed(5)
+d <- sampleData(80,outcome="comp")
+nd <- sampleData(4,outcome="comp")
+d$time <- round(d$time,1)
+ttt <- sort(sample(x = unique(d$time), size = 10))
 
-set.seed(10)
-n <- 300
-df.S <- SimCompRisk(n)
-df.S$time <- round(df.S$time,2)
-df.S$X3 <- rbinom(n, size = 4, prob = rep(0.25,4))
-method.ties <- "efron"
-cause <- 1
+CSC.fit.s <- CSC(list(Hist(time,event)~ strata(X1)+X2+X9,
+                      Hist(time,event)~ X2+strata(X4)+X8+X7),data=d)
+predict(CSC.fit.s,cause=1,times=ttt,se=1L)
 
-n <- 3
-set.seed(3)
-dn <- SimCompRisk(n)
-dn$time <- round(dn$time,2)
-dn$X3 <- rbinom(n, size = 4, prob = rep(0.25,4))
-CSC.h3 <- CSC(Hist(time,event) ~ X1 + strat(X3) + X2, data = df.S, ties = method.ties, fitter = "cph")
-CSC.h1 <- CSC(Hist(time,event) ~ strat(X1) + X3 + X2, data = df.S, ties = method.ties, fitter = "cph")
-CSC.h <- CSC(Hist(time,event) ~ strat(X1) + strat(X3) + X2, data = df.S, ties = method.ties, fitter = "cph")
-CSC.s <- CSC(Hist(time,event) ~ strata(X1) + strata(X3) + X2, data = df.S, ties = method.ties, fitter = "coxph")
-predictRisk(CSC.h1, newdata = dn, times = c(5,10,15,20), cause = cause)
-predictRisk(CSC.h3, newdata = dn, times = c(5,10,15,20), cause = cause)
+all.times <- CSC.fit.s$eventTimes
+n.times <- length(CSC.fit.s$eventTimes)
 
-CSC.h0 <- CSC(Hist(time,event) ~ X1 + X3 + X2, data = df.S, ties = method.ties, fitter = "cph")
-predictRisk(CSC.h0, newdata = dn, times = c(5,10,15,20), cause = cause)
+haz1 <- predictCox(CSC.fit.s$models[[1]], newdata = d[52],
+                   type = c("hazard","cumhazard"),
+                   times=all.times)
+haz2 <- predictCox(CSC.fit.s$models[[2]], newdata = d[52],
+                   type = c("hazard","cumhazard"),
+                   times=all.times)
 
-predictRisk(CSC.h1, newdata = dn, times = c(5,10,15,20), cause = cause)
-predictRisk(CSC.s, newdata = dn, times = c(5,10,15,20), cause = cause)
+haz1.0 <- setNames(as.numeric(haz1$hazard),haz1$times)
+haz2.0 <- setNames(as.numeric(haz2$hazard),haz2$times)
+cumhaz1.0 <- c(0,setNames(as.numeric(haz1$cumhazard),haz1$times)[-n.times])
+cumhaz2.0 <- c(0,setNames(as.numeric(haz2$cumhazard),haz1$times)[-n.times])
 
 
-df.S[df.S$time==6.55,c("time","event")]
-predictCox(CSC.h$models[[1]],newdata = dn[1,],times=c(2.29,6.55),type="hazard")
-predictCox(CSC.h$models[[2]],newdata = dn[1,],times=6.55,type="hazard")
+cumsum(haz1.0*cumprod(1-haz1.0-haz2.0))[c("1.1","1.3","1.4")]
+predict(CSC.fit.s,newdata = d[52],cause=1,times=CSC.fit.s$eventTimes,
+        productLimit = TRUE)
+##  6:           1  1  1 -0.845  1 -0.446 62.8   1.0 X1=1 X4=1   0.000
+##  7:           1  1  1 -0.845  1 -0.446 62.8   1.1 X1=1 X4=1   0.651
+##  8:           1  1  1 -0.845  1 -0.446 62.8   1.3 X1=1 X4=1   0.808
+##  9:           1  1  1 -0.845  1 -0.446 62.8   1.4 X1=1 X4=1   1.084
 
-predictCox(CSC.h$models[["Cause 1"]],newdata = dn[1,],times=CSC.h$eventTimes,type="hazard")$hazard
-
-test_that("Prediction with CSC - categorical cause",{
-predictRisk(CSC.h, newdata = dn[1,], times = c(2), cause = "1")
-})
-
-predictRisk(CSC.h, newdata = dn, times = c(1,2,3.24,3.25,3.26,5,10,15,20), cause = cause)
-predictRisk(CSC.s, newdata = dn, times = c(1,5,10,15,20), cause = cause)
-
-predictCox(CSC.s$models[[1]], newdata = dn, times = c(5,10,15,20))
-
-predictRisk(CSC.h$models[[1]], newdata = dn, times = c(5,10,15,20), cause = cause)
-predictRisk(CSC.s$models[[1]], newdata = dn, times = c(5,10,15,20), cause = cause)
-
-predictRisk(CSC.h$models[[2]], newdata = dn, times = c(5,10,15,20), cause = cause)
-predictRisk(CSC.s$models[[2]], newdata = dn, times = c(5,10,15,20), cause = cause)
+cumsum(haz1.0*exp(-cumhaz1.0-cumhaz2.0))[c("1.1","1.3","1.4")]
+predict(CSC.fit.s,newdata = d[52],cause=1,times=CSC.fit.s$eventTimes,
+        productLimit = FALSE)
+## 7:           1  1  1 -0.845  1 -0.446 62.8   1.1 X1=1 X4=1   0.651
+## 8:           1  1  1 -0.845  1 -0.446 62.8   1.3 X1=1 X4=1   0.886
+## 9:           1  1  1 -0.845  1 -0.446 62.8   1.4 X1=1 X4=1   1.363
+}
 # }}}
 
 #----------------------------------------------------------------------
-### predictRisk.R ends here
+### test-predictCox-CSC.R ends here
