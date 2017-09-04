@@ -93,39 +93,51 @@ dtS$time <- round(dtS$time,1)
 dtS$X1 <- factor(rbinom(n, prob = c(0.3,0.4) , size = 2), labels = paste0("T",0:2))
 
 fit <- cph(formula = Surv(time,event)~ X1+X2,data=dtS,y=TRUE,x=TRUE)
+
 ## automatically
 ateFit <- ate(fit, data = dtS, treatment = "X1", contrasts = NULL,
               times = 5:7, B = 0, se = TRUE, mc.cores=1)
 
 ateFit
 
+expect_equal(ateFit$meanRisk[ateFit$meanRisk$Treatment == "T0",lower],
+             c(0.2005312, 0.2467174, 0.2739946),
+             tol = 1e-6)
+expect_equal(ateFit$meanRisk[ateFit$meanRisk$Treatment == "T0",upper],
+             c(0.7264070, 0.7764495, 0.8029922),
+             tol = 1e-6)
 
 ## manually
-newdata0 <- copy(dtS)
-newdata0$X1 <- "T0"
-resIID <- predictCox(fit, newdata = newdata0, time = 5:7, iid = TRUE, logTransform = FALSE)$survival.iid
-resRisk <- predictRisk(fit, newdata = newdata0, time = 5:7)
-resManuel <- data.frame(mean = colMeans(resRisk))
+ATE <- list()
+ATE.iid <- list()
 
-IF <- NULL
-for(i in 1:NROW(dtS)){# i <- 1
-  IF <- rbind(IF,
-              colMeans(resIID[,,i])
-              )
+for(iT in c("T0","T1","T2")){ # iT <- "T0"
+  newdata0 <- copy(dtS)
+  newdata0$X1 <- iT
+  resPred <- predictCox(fit, newdata = newdata0, time = 5:7, iid = TRUE, logTransform = FALSE)
+  ATE[[iT]] <- colMeans(1-resPred$survival)
+  
+  ATE.iid_term1 <- apply(-resPred$survival.iid,3,colMeans)
+  ATE.iid_term2 <- apply(1-resPred$survival, 1, function(x){x-ATE[[iT]]})/sqrt(n)
+  ATE.iid[[iT]] <- t(ATE.iid_term1) + t(ATE.iid_term2)
+  
+  ATE.se <- sqrt(apply(ATE.iid[[iT]]^2, 2, sum))
+  ATE.lower <- ATE[[iT]]+ qnorm(0.025) * ATE.se
+  ATE.upper <- ATE[[iT]] + qnorm(0.975) * ATE.se
+  
+  expect_equal(ATE.lower, ateFit$meanRisk[Treatment == iT,lower])
+  expect_equal(ATE.upper, ateFit$meanRisk[Treatment == iT,upper])
 }
-IF <- IF +  t(apply(resRisk, 1, function(x){x-resManuel$mean}))/sqrt(NROW(dtS))
 
-resManuel$se = sqrt(apply(IF^2, 2, sum))
-resManuel$lower <- resManuel$mean + qnorm(0.025) * resManuel$se
-resManuel$upper <- resManuel$mean + qnorm(0.975) * resManuel$se
+diffATE <- ATE[["T0"]]-ATE[["T1"]]
+diffATE.iid <- ATE.iid[["T0"]]-ATE.iid[["T1"]]
+diffATE.se <- sqrt(apply(diffATE.iid^2, 2, sum))
+diffATE.lower <- diffATE + qnorm(0.025) * diffATE.se
+diffATE.upper <- diffATE + qnorm(0.975) * diffATE.se
 
+expect_equal(diffATE.lower, ateFit$riskComparison[Treatment.A == "T0" & Treatment.B == "T1",diff.lower])
+expect_equal(diffATE.upper, ateFit$riskComparison[Treatment.A == "T0" & Treatment.B == "T1",diff.upper])
 
-expect_equal(resManuel$lower, ateFit$meanRisk[ateFit$meanRisk$Treatment == "T0",lower])
-expect_equal(resManuel$upper, ateFit$meanRisk[ateFit$meanRisk$Treatment == "T0",upper])
-expect_equal(c(0.2005312, 0.2467174, 0.2739946), ateFit$meanRisk[ateFit$meanRisk$Treatment == "T0",lower],
-             tol = 1e-6)
-expect_equal(c(0.7264070, 0.7764495, 0.8029922), ateFit$meanRisk[ateFit$meanRisk$Treatment == "T0",upper],
-             tol = 1e-6)
 
 #### CSC model ####
 context("ate for fully CSC model")
