@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Feb 23 2017 (11:15) 
 ## Version: 
-## last-updated: Jul  7 2017 (08:08) 
+## last-updated: Aug 15 2017 (13:36) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 169
+##     Update #: 174
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -190,7 +190,15 @@ plotCalibration <- function(x,
         names.DefaultArgs <- list(cex=.7*par()$cex,y=c(-abs(diff(ylim))/15,-abs(diff(ylim))/25))
         frequencies.DefaultArgs <- list(cex=.7*par()$cex,percent=FALSE,offset=0)
     } else{
-        legend.DefaultArgs <- list(legend=modelnames,lwd=lwd,col=col,lty=lty,cex=cex,bty="n",y.intersp=1.3,x="topleft")
+        if (length(modelnames)<=1){legend=FALSE}
+        legend.DefaultArgs <- list(legend=modelnames,
+                                   lwd=lwd,
+                                   col=col,
+                                   lty=lty,
+                                   cex=cex,
+                                   bty="n",
+                                   y.intersp=1.3,
+                                   x="topleft")
     }
     if(bars){
         legend.DefaultArgs$legend <- c("Predicted risks","Observed frequencies")
@@ -344,7 +352,6 @@ plotCalibration <- function(x,
                 bars=bars,
                 diag=diag,
                 add=add,
-                legend=legend,
                 names=names,
                 method=method,
                 axes=axes,
