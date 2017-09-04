@@ -1,6 +1,6 @@
 library(riskRegression)
 library(testthat)
-
+library(survival)
 #### Cox model ####
 context("ate for Cox model")
 set.seed(10)

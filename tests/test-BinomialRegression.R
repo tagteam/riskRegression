@@ -8,6 +8,7 @@ test_that("Absolute risk regression",{
     library(riskRegression)
     library(timereg)
     library(prodlim)
+    library(survival)
     d <- prodlim::SimCompRisk(100)
     a <- ARR(Hist(time,event)~X1+X2,data=d)
     const <- function(x)x

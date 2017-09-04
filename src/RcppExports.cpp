@@ -410,7 +410,6 @@ static const R_CallMethodDef CallEntries[] = {
     {"_riskRegression_rowMultiply_cpp", (DL_FUNC) &_riskRegression_rowMultiply_cpp, 2},
     {"_riskRegression_sliceMultiply_cpp", (DL_FUNC) &_riskRegression_sliceMultiply_cpp, 2},
     {"_riskRegression_sliceScale_cpp", (DL_FUNC) &_riskRegression_sliceScale_cpp, 2},
-    {"itfit", (DL_FUNC) &itfit, 50},
     {NULL, NULL, 0}
 };
 

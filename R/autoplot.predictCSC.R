@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: feb 27 2017 (10:47) 
 ## Version: 
-## last-updated: Jun 29 2017 (16:55) 
+## last-updated: Sep  4 2017 (17:31) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 62
+##     Update #: 63
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -41,6 +41,7 @@
 #' 
 #'
 #' ## strata
+#' library(survival)
 #' m.SCSC <- CSC(Hist(time,event)~ strata(X1) + strata(X2) + X6,
 #' data = d)
 #' pred.SCSC <- predict(m.SCSC, time = 1:3, newdata = d[1:4,],

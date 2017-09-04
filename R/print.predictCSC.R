@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Feb 11 2017 (10:01) 
 ## Version: 
-## last-updated: Mar  3 2017 (09:56) 
+## last-updated: Sep  4 2017 (17:31) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 60
+##     Update #: 61
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -32,6 +32,7 @@
 #' print(pred.CSC, ci = TRUE)
 #'
 #' ## strata
+#' library(survival)
 #' m.SCSC <- CSC(Hist(time,event)~ strata(X1) + strata(X2) + X6,
 #'               data = d)
 #' pred.SCSC <- predict(m.SCSC, time = 1:5, cause = 1,
