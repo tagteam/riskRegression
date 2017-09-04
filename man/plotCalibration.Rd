@@ -111,6 +111,13 @@ xb=Score(list(model1=fb1,model2=fb2),Y~1,data=db,
           plots="cal",metrics=NULL)
 plotCalibration(xb)
 
+ds=sampleData(100,outcome="survival")
+fs1=coxph(Surv(time,event)~X1+X5+X7,data=ds,x=1)
+fs2=coxph(Surv(time,event)~X1+X3+X6+X7,data=ds,x=1)
+xs=Score(list(Cox1=fs1,Cox2=fs2),Surv(time,event)~1,data=ds,
+          plots="cal",metrics=NULL)
+plotCalibration(xs)
+
 data(Melanoma)
 f1 <- CSC(Hist(time,status)~age+sex+epicel+ulcer,data=Melanoma)
 f2 <- CSC(Hist(time,status)~age+sex+logthick+epicel+ulcer,data=Melanoma)

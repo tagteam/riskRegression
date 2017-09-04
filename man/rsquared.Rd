@@ -10,6 +10,8 @@ rsquared(object, ...)
 \item{object}{Model for which we want R^2}
 
 \item{...}{passed to \code{riskRegression::Score}}
+
+\item{cause}{For competing risk models the event of interest}
 }
 \value{
 Data frame with explained variation values for the full model.

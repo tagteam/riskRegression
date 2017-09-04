@@ -2,59 +2,79 @@
 % Please edit documentation in R/ate.R
 \name{ate}
 \alias{ate}
-\title{Compute the average treatment effect using CSC.}
+\title{Compute the average treatment effects via the g-formula}
 \usage{
-ate(object, data, treatment, contrasts = NULL, times, cause,
-  conf.level = 0.95, se = TRUE, band = FALSE, B = 0, nSim.band = 1000,
-  seed, handler = c("mclapply", "foreach"), mc.cores = 1, verbose = TRUE,
-  logTransform = FALSE, store.iid = "full", ...)
+ate(object, data, formula, treatment, contrasts = NULL, times, cause,
+  landmark, conf.level = 0.95, se = TRUE, band = FALSE, B = 0,
+  nSim.band = ifelse(band, 1000, 0), seed, handler = c("mclapply",
+  "foreach"), mc.cores = 1, verbose = TRUE, logTransform = FALSE,
+  store.iid = "full", ...)
 }
 \arguments{
-\item{object}{outcome model which describes how event risk depends on treatment and covariates.
-The object carry its own call and have a \code{predictRisk} method. See examples.}
+\item{object}{outcome model which describes how event risk depends
+on treatment and covariates.  The object carry its own call and
+have a \code{predictRisk} method. See examples.}
 
-\item{data}{data set in which to evaluate risk predictions based on the outcome model}
+\item{data}{data set in which to evaluate risk predictions based on
+the outcome model}
+
+\item{formula}{For analyses with time-dependent covariates, the response formula. See examples.}
 
 \item{treatment}{name of the treatment variable}
 
-\item{contrasts}{the levels of treatment variable to be compared}
+\item{contrasts}{the levels of the treatment variable to be
+compared}
 
 \item{times}{time points at which to evaluate risks}
 
 \item{cause}{the cause of interest}
 
-\item{conf.level}{Numeric. Confidence level of the confidence intervals.}
+\item{landmark}{for models with time-dependent covariates the landmark time(s) of evaluation.
+In this case, argument \code{time} may only be one value and for the prediction of risks
+it is assumed that that the covariates do not change between landmark and landmark+time.}
 
-\item{se}{Logical. If \code{TRUE} add the standard errors and confidence intervals
-to the output.}
+\item{conf.level}{Numeric. Confidence level of the confidence
+intervals.}
 
-\item{band}{Logical. If \code{TRUE} add the confidence bands to the output.}
+\item{se}{Logical. If \code{TRUE} add the standard errors and
+confidence intervals to the output.}
+
+\item{band}{Logical. If \code{TRUE} add the confidence bands to the
+output.}
 
 \item{B}{the number of bootstrap replications used to compute the
-confidence intervals. If it equals 0, then Wald-type confidence intervals are computed.
-They rely on the standard error estimated using the influence function of the estimator.}
+confidence intervals. If it equals 0, then Wald-type confidence
+intervals are computed.  They rely on the standard error
+estimated using the influence function of the estimator.}
 
-\item{nSim.band}{the number of simulations used to compute the quantiles for the confidence bands.}
+\item{nSim.band}{the number of simulations used to compute the
+quantiles for the confidence bands.}
 
 \item{seed}{An integer used to generate seeds for bootstrap and to
 achieve reproducibility of the bootstrap confidence intervals.}
 
 \item{handler}{parallel handler for bootstrap. Either "mclapply" or
-"foreach". If "foreach" use \code{doParallel} to create a cluster.}
+"foreach". If "foreach" use \code{doParallel} to create a
+cluster.}
 
 \item{mc.cores}{Passed to \code{parallel::mclapply} or
-\code{doParallel::registerDoParallel}. The number of cores to use, i.e. at
-most how many child processes will be run simultaneously.  The
-option is initialized from environment variable MC_CORES if
-set.}
+\code{doParallel::registerDoParallel}. The number of cores to
+use, i.e. at most how many child processes will be run
+simultaneously.  The option is initialized from environment
+variable MC_CORES if set.}
 
 \item{verbose}{Logical. If \code{TRUE} inform about estimated run
 time.}
 
-\item{logTransform}{Should the confidence interval for the ratio be computed using a log-tranformation. Only active if Wald-type confidence intervals are computed.}
+\item{logTransform}{Should the confidence interval for the ratio be
+computed using a log-tranformation. Only active if Wald-type
+confidence intervals are computed.}
 
-\item{store.iid}{Implementation used to estimate the standard error. Can be \code{"full"} or \code{"minimal"}.
-\code{"minimal"} requires less memory but can only estimate the standard for the difference between treatment effects (and not for the ratio).}
+\item{store.iid}{Implementation used to estimate the standard
+error. Can be \code{"full"} or \code{"minimal"}.
+\code{"minimal"} requires less memory but can only estimate the
+standard for the difference between treatment effects (and not
+for the ratio).}
 
 \item{...}{passed to predictRisk}
 }
@@ -63,7 +83,8 @@ A list with: point estimates, bootstrap quantile confidence
     intervals model: the CSC model (optional)
 }
 \description{
-Use the g-formula to estimate the average treatment effect
+Use the g-formula to estimate the average treatment
+    effect based on Cox regression with or without competing risks
 }
 \details{
 WARNING: the p.value and the confidence intervals for the ratio using Wald-type approximations are still experimental.
@@ -114,8 +135,44 @@ atefit=ate(fitCR, data = dt, treatment = "X1", contrasts = NULL,
  ate(fitCR, data = dt, treatment = "X1", contrasts = NULL,
         times = 5:7, cause = 1, B = 0, se = TRUE, band = TRUE, mc.cores=1)
 }
-
+## time-dependent covariates
+\dontrun{
+library(survival)
+fit <- coxph(Surv(time, status) ~ celltype+karno + age + trt, veteran)
+vet2 <- survSplit(Surv(time, status) ~., veteran,
+                       cut=c(60, 120), episode ="timegroup")
+fitTD <- coxph(Surv(tstart, time, status) ~ celltype+karno + age + trt,
+               data= vet2,x=1)
+set.seed(16)
+resVet <- ate(fitTD,formula=Hist(entry=tstart,time=time,event=status)~1, data = vet2, treatment = "celltype", contrasts = NULL,
+        times=5,verbose=1,
+        landmark = c(0,30,60,90), cause = 1, B = 20, se = 1,
+        band = FALSE, mc.cores=1)
+resVet
+}
+\dontrun{
+set.seed(137)
+d=sampleDataTD(127)
+library(survival)
+d[,status:=1*(event==1)]
+## ignore competing risks
+cox1TD <- coxph(Surv(start,time, status,type="counting") ~ X3+X5+X6+X8, data=d)
+resTD1 <- ate(cox1TD,formula=Hist(entry=start,time=time,event=status)~1, data = d, treatment = "X3", contrasts = NULL,
+        times=.5,verbose=1,
+        landmark = c(0,0.5,1), B = 20, se = 1,
+        band = FALSE, mc.cores=1)
+resTD1
+## adjust for competing risks
+cscTD <- CSC(Hist(time=time, event=event,entry=start) ~ X3+X5+X6+X8, data=d)
+set.seed(16)
+resTD <- ate(cscTD,formula=Hist(entry=start,time=time,event=event)~1, data = d, treatment = "X3", contrasts = NULL,
+        times=.5,verbose=1,
+        landmark = c(0,0.5,1), cause = 1, B = 20, se = 1,
+        band = FALSE, mc.cores=1)
+resTD
+}
 }
 \author{
-Brice Ozenne \email{broz@sund.ku.dk} and Thomas Alexander Gerds \email{tag@biostat.ku.dk}
+Brice Ozenne \email{broz@sund.ku.dk} and Thomas Alexander
+    Gerds \email{tag@biostat.ku.dk}
 }

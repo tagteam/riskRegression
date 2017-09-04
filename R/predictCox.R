@@ -194,9 +194,9 @@ predictCox <- function(object,
     if(any(type %in% c("hazard","cumhazard","survival") == FALSE)){
         stop("type can only be \"hazard\", \"cumhazard\" or/and \"survival\" \n") 
     }
-    if(any(object.design[,"start"]!=0)){
-        stop("do not handle left censoring \n") 
-    }      
+    ## if(any(object.design[,"start"]!=0)){
+        ## stop("do not handle left censoring \n") 
+    ## }      
     # }}}
     # {{{ computation of the baseline hazard
     if(!is.null(newdata)){

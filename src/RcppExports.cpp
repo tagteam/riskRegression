@@ -8,7 +8,7 @@ using namespace Rcpp;
 
 // baseHaz_cpp
 List baseHaz_cpp(const NumericVector& alltimes, const IntegerVector& status, const NumericVector& eXb, const IntegerVector& strata, const std::vector<double>& predtimes, const NumericVector& emaxtimes, int nPatients, int nStrata, int cause, bool Efron);
-RcppExport SEXP riskRegression_baseHaz_cpp(SEXP alltimesSEXP, SEXP statusSEXP, SEXP eXbSEXP, SEXP strataSEXP, SEXP predtimesSEXP, SEXP emaxtimesSEXP, SEXP nPatientsSEXP, SEXP nStrataSEXP, SEXP causeSEXP, SEXP EfronSEXP) {
+RcppExport SEXP _riskRegression_baseHaz_cpp(SEXP alltimesSEXP, SEXP statusSEXP, SEXP eXbSEXP, SEXP strataSEXP, SEXP predtimesSEXP, SEXP emaxtimesSEXP, SEXP nPatientsSEXP, SEXP nStrataSEXP, SEXP causeSEXP, SEXP EfronSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -28,7 +28,7 @@ END_RCPP
 }
 // calcSeHazard_cpp
 List calcSeHazard_cpp(const NumericVector& seqTau, const IntegerVector& indexTau, const IntegerVector& indexJump, const arma::mat& IFbeta, const arma::mat& cumEhazard0, const NumericVector& iS0, const NumericVector& cumhazard_iS0, const NumericVector& newEXb, const NumericVector& sampleEXb, const arma::mat& X, const LogicalVector& sameStrata, const NumericVector& sampleTime, const NumericVector& cumhazard0, const arma::mat& newHazard, const arma::mat& newSurvival, double firstJumpTime, double lastSampleTime, int nTau, int nNewObs, int nSample, int p, bool exportSE, bool exportIF, bool exportIFsum_cumhazard, bool exportIFsum_survival, bool logTransform);
-RcppExport SEXP riskRegression_calcSeHazard_cpp(SEXP seqTauSEXP, SEXP indexTauSEXP, SEXP indexJumpSEXP, SEXP IFbetaSEXP, SEXP cumEhazard0SEXP, SEXP iS0SEXP, SEXP cumhazard_iS0SEXP, SEXP newEXbSEXP, SEXP sampleEXbSEXP, SEXP XSEXP, SEXP sameStrataSEXP, SEXP sampleTimeSEXP, SEXP cumhazard0SEXP, SEXP newHazardSEXP, SEXP newSurvivalSEXP, SEXP firstJumpTimeSEXP, SEXP lastSampleTimeSEXP, SEXP nTauSEXP, SEXP nNewObsSEXP, SEXP nSampleSEXP, SEXP pSEXP, SEXP exportSESEXP, SEXP exportIFSEXP, SEXP exportIFsum_cumhazardSEXP, SEXP exportIFsum_survivalSEXP, SEXP logTransformSEXP) {
+RcppExport SEXP _riskRegression_calcSeHazard_cpp(SEXP seqTauSEXP, SEXP indexTauSEXP, SEXP indexJumpSEXP, SEXP IFbetaSEXP, SEXP cumEhazard0SEXP, SEXP iS0SEXP, SEXP cumhazard_iS0SEXP, SEXP newEXbSEXP, SEXP sampleEXbSEXP, SEXP XSEXP, SEXP sameStrataSEXP, SEXP sampleTimeSEXP, SEXP cumhazard0SEXP, SEXP newHazardSEXP, SEXP newSurvivalSEXP, SEXP firstJumpTimeSEXP, SEXP lastSampleTimeSEXP, SEXP nTauSEXP, SEXP nNewObsSEXP, SEXP nSampleSEXP, SEXP pSEXP, SEXP exportSESEXP, SEXP exportIFSEXP, SEXP exportIFsum_cumhazardSEXP, SEXP exportIFsum_survivalSEXP, SEXP logTransformSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -64,7 +64,7 @@ END_RCPP
 }
 // calcSeCif_cpp
 List calcSeCif_cpp(const NumericVector& seqTau, const NumericVector& jumpTime, const LogicalVector& jumpTheCause, const arma::mat& indexJump, const arma::mat& indexSample, const std::vector< arma::mat >& IFbeta, const arma::mat& cif, const std::vector< arma::mat >& Ehazard0, const std::vector< arma::mat >& cumEhazard0, const arma::mat& iS0, const std::vector< NumericVector >& cumhazard_iS0, const std::vector< NumericVector >& hazard_iS0, const arma::mat& newEXb, const arma::mat& sampleEXb, const std::vector< arma::mat >& X, const arma::mat sameStrata, const NumericVector& sampleTime, const std::vector< NumericVector>& hazard0, const std::vector< NumericVector>& cumhazard0, int theCause, double firstJumpTime, double lastSampleTime, int nTau, int nJump, int nNewObs, int nSample, int nCause, const IntegerVector& p, bool survtype, bool exportSE, bool exportIF, bool exportIFsum, bool logTransform);
-RcppExport SEXP riskRegression_calcSeCif_cpp(SEXP seqTauSEXP, SEXP jumpTimeSEXP, SEXP jumpTheCauseSEXP, SEXP indexJumpSEXP, SEXP indexSampleSEXP, SEXP IFbetaSEXP, SEXP cifSEXP, SEXP Ehazard0SEXP, SEXP cumEhazard0SEXP, SEXP iS0SEXP, SEXP cumhazard_iS0SEXP, SEXP hazard_iS0SEXP, SEXP newEXbSEXP, SEXP sampleEXbSEXP, SEXP XSEXP, SEXP sameStrataSEXP, SEXP sampleTimeSEXP, SEXP hazard0SEXP, SEXP cumhazard0SEXP, SEXP theCauseSEXP, SEXP firstJumpTimeSEXP, SEXP lastSampleTimeSEXP, SEXP nTauSEXP, SEXP nJumpSEXP, SEXP nNewObsSEXP, SEXP nSampleSEXP, SEXP nCauseSEXP, SEXP pSEXP, SEXP survtypeSEXP, SEXP exportSESEXP, SEXP exportIFSEXP, SEXP exportIFsumSEXP, SEXP logTransformSEXP) {
+RcppExport SEXP _riskRegression_calcSeCif_cpp(SEXP seqTauSEXP, SEXP jumpTimeSEXP, SEXP jumpTheCauseSEXP, SEXP indexJumpSEXP, SEXP indexSampleSEXP, SEXP IFbetaSEXP, SEXP cifSEXP, SEXP Ehazard0SEXP, SEXP cumEhazard0SEXP, SEXP iS0SEXP, SEXP cumhazard_iS0SEXP, SEXP hazard_iS0SEXP, SEXP newEXbSEXP, SEXP sampleEXbSEXP, SEXP XSEXP, SEXP sameStrataSEXP, SEXP sampleTimeSEXP, SEXP hazard0SEXP, SEXP cumhazard0SEXP, SEXP theCauseSEXP, SEXP firstJumpTimeSEXP, SEXP lastSampleTimeSEXP, SEXP nTauSEXP, SEXP nJumpSEXP, SEXP nNewObsSEXP, SEXP nSampleSEXP, SEXP nCauseSEXP, SEXP pSEXP, SEXP survtypeSEXP, SEXP exportSESEXP, SEXP exportIFSEXP, SEXP exportIFsumSEXP, SEXP logTransformSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -107,7 +107,7 @@ END_RCPP
 }
 // colCumSum
 NumericMatrix colCumSum(NumericMatrix x);
-RcppExport SEXP riskRegression_colCumSum(SEXP xSEXP) {
+RcppExport SEXP _riskRegression_colCumSum(SEXP xSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -118,7 +118,7 @@ END_RCPP
 }
 // colSumsCrossprod
 NumericMatrix colSumsCrossprod(NumericMatrix X, NumericMatrix Y, bool transposeY);
-RcppExport SEXP riskRegression_colSumsCrossprod(SEXP XSEXP, SEXP YSEXP, SEXP transposeYSEXP) {
+RcppExport SEXP _riskRegression_colSumsCrossprod(SEXP XSEXP, SEXP YSEXP, SEXP transposeYSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -131,7 +131,7 @@ END_RCPP
 }
 // quantileProcess_cpp
 NumericVector quantileProcess_cpp(int nObject, int nNew, int nSim, arma::cube iid, arma::mat se, double confLevel);
-RcppExport SEXP riskRegression_quantileProcess_cpp(SEXP nObjectSEXP, SEXP nNewSEXP, SEXP nSimSEXP, SEXP iidSEXP, SEXP seSEXP, SEXP confLevelSEXP) {
+RcppExport SEXP _riskRegression_quantileProcess_cpp(SEXP nObjectSEXP, SEXP nNewSEXP, SEXP nSimSEXP, SEXP iidSEXP, SEXP seSEXP, SEXP confLevelSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -147,7 +147,7 @@ END_RCPP
 }
 // sampleMaxProcess_cpp
 arma::mat sampleMaxProcess_cpp(int nObject, int nNew, int nSim, const arma::cube& iid, const arma::mat& se);
-RcppExport SEXP riskRegression_sampleMaxProcess_cpp(SEXP nObjectSEXP, SEXP nNewSEXP, SEXP nSimSEXP, SEXP iidSEXP, SEXP seSEXP) {
+RcppExport SEXP _riskRegression_sampleMaxProcess_cpp(SEXP nObjectSEXP, SEXP nNewSEXP, SEXP nSimSEXP, SEXP iidSEXP, SEXP seSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -162,7 +162,7 @@ END_RCPP
 }
 // calcE_cpp
 List calcE_cpp(const NumericVector& eventtime, const NumericVector& status, const NumericVector& eXb, const arma::mat& X, int p, bool add0);
-RcppExport SEXP riskRegression_calcE_cpp(SEXP eventtimeSEXP, SEXP statusSEXP, SEXP eXbSEXP, SEXP XSEXP, SEXP pSEXP, SEXP add0SEXP) {
+RcppExport SEXP _riskRegression_calcE_cpp(SEXP eventtimeSEXP, SEXP statusSEXP, SEXP eXbSEXP, SEXP XSEXP, SEXP pSEXP, SEXP add0SEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -178,7 +178,7 @@ END_RCPP
 }
 // IFbeta_cpp
 arma::mat IFbeta_cpp(const NumericVector& newT, const NumericVector& neweXb, const arma::mat& newX, const NumericVector& newStatus, const IntegerVector& newIndexJump, const NumericVector& S01, const arma::mat& E1, const NumericVector& time1, const arma::mat& iInfo, int p);
-RcppExport SEXP riskRegression_IFbeta_cpp(SEXP newTSEXP, SEXP neweXbSEXP, SEXP newXSEXP, SEXP newStatusSEXP, SEXP newIndexJumpSEXP, SEXP S01SEXP, SEXP E1SEXP, SEXP time1SEXP, SEXP iInfoSEXP, SEXP pSEXP) {
+RcppExport SEXP _riskRegression_IFbeta_cpp(SEXP newTSEXP, SEXP neweXbSEXP, SEXP newXSEXP, SEXP newStatusSEXP, SEXP newIndexJumpSEXP, SEXP S01SEXP, SEXP E1SEXP, SEXP time1SEXP, SEXP iInfoSEXP, SEXP pSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -198,7 +198,7 @@ END_RCPP
 }
 // IFbetaApprox_cpp
 arma::mat IFbetaApprox_cpp(const arma::mat& newX, const NumericVector& newStatus, const IntegerVector& newIndexJump, const arma::mat& E1, const arma::mat& iInfo, int p);
-RcppExport SEXP riskRegression_IFbetaApprox_cpp(SEXP newXSEXP, SEXP newStatusSEXP, SEXP newIndexJumpSEXP, SEXP E1SEXP, SEXP iInfoSEXP, SEXP pSEXP) {
+RcppExport SEXP _riskRegression_IFbetaApprox_cpp(SEXP newXSEXP, SEXP newStatusSEXP, SEXP newIndexJumpSEXP, SEXP E1SEXP, SEXP iInfoSEXP, SEXP pSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -214,7 +214,7 @@ END_RCPP
 }
 // IFlambda0_cpp
 List IFlambda0_cpp(const NumericVector& tau, const arma::mat& IFbeta, const NumericVector& newT, const NumericVector& neweXb, const NumericVector& newStatus, const IntegerVector& newStrata, const IntegerVector& newIndexJump, const NumericVector& S01, const arma::mat& E1, const NumericVector& time1, double lastTime1, const NumericVector& lambda0, int p, int strata, bool exact, bool minimalExport);
-RcppExport SEXP riskRegression_IFlambda0_cpp(SEXP tauSEXP, SEXP IFbetaSEXP, SEXP newTSEXP, SEXP neweXbSEXP, SEXP newStatusSEXP, SEXP newStrataSEXP, SEXP newIndexJumpSEXP, SEXP S01SEXP, SEXP E1SEXP, SEXP time1SEXP, SEXP lastTime1SEXP, SEXP lambda0SEXP, SEXP pSEXP, SEXP strataSEXP, SEXP exactSEXP, SEXP minimalExportSEXP) {
+RcppExport SEXP _riskRegression_IFlambda0_cpp(SEXP tauSEXP, SEXP IFbetaSEXP, SEXP newTSEXP, SEXP neweXbSEXP, SEXP newStatusSEXP, SEXP newStrataSEXP, SEXP newIndexJumpSEXP, SEXP S01SEXP, SEXP E1SEXP, SEXP time1SEXP, SEXP lastTime1SEXP, SEXP lambda0SEXP, SEXP pSEXP, SEXP strataSEXP, SEXP exactSEXP, SEXP minimalExportSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -240,7 +240,7 @@ END_RCPP
 }
 // predictCIF_cpp
 arma::mat predictCIF_cpp(const std::vector<arma::mat>& hazard, const std::vector<arma::mat>& cumhazard, const arma::mat& eXb, const arma::mat& strata, const std::vector<double>& newtimes, const std::vector<double>& etimes, const std::vector<double>& etimeMax, double t0, int nEventTimes, int nNewTimes, int nData, int cause, int nCause, bool survtype, bool productLimit);
-RcppExport SEXP riskRegression_predictCIF_cpp(SEXP hazardSEXP, SEXP cumhazardSEXP, SEXP eXbSEXP, SEXP strataSEXP, SEXP newtimesSEXP, SEXP etimesSEXP, SEXP etimeMaxSEXP, SEXP t0SEXP, SEXP nEventTimesSEXP, SEXP nNewTimesSEXP, SEXP nDataSEXP, SEXP causeSEXP, SEXP nCauseSEXP, SEXP survtypeSEXP, SEXP productLimitSEXP) {
+RcppExport SEXP _riskRegression_predictCIF_cpp(SEXP hazardSEXP, SEXP cumhazardSEXP, SEXP eXbSEXP, SEXP strataSEXP, SEXP newtimesSEXP, SEXP etimesSEXP, SEXP etimeMaxSEXP, SEXP t0SEXP, SEXP nEventTimesSEXP, SEXP nNewTimesSEXP, SEXP nDataSEXP, SEXP causeSEXP, SEXP nCauseSEXP, SEXP survtypeSEXP, SEXP productLimitSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -265,7 +265,7 @@ END_RCPP
 }
 // rowCumSum
 NumericMatrix rowCumSum(NumericMatrix x);
-RcppExport SEXP riskRegression_rowCumSum(SEXP xSEXP) {
+RcppExport SEXP _riskRegression_rowCumSum(SEXP xSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -276,7 +276,7 @@ END_RCPP
 }
 // rowSumsCrossprod
 NumericMatrix rowSumsCrossprod(NumericMatrix X, NumericMatrix Y, bool transposeY);
-RcppExport SEXP riskRegression_rowSumsCrossprod(SEXP XSEXP, SEXP YSEXP, SEXP transposeYSEXP) {
+RcppExport SEXP _riskRegression_rowSumsCrossprod(SEXP XSEXP, SEXP YSEXP, SEXP transposeYSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -289,7 +289,7 @@ END_RCPP
 }
 // colCenter_cpp
 arma::mat colCenter_cpp(arma::mat X, const arma::colvec& center);
-RcppExport SEXP riskRegression_colCenter_cpp(SEXP XSEXP, SEXP centerSEXP) {
+RcppExport SEXP _riskRegression_colCenter_cpp(SEXP XSEXP, SEXP centerSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -301,7 +301,7 @@ END_RCPP
 }
 // rowCenter_cpp
 arma::mat rowCenter_cpp(arma::mat X, const arma::rowvec& center);
-RcppExport SEXP riskRegression_rowCenter_cpp(SEXP XSEXP, SEXP centerSEXP) {
+RcppExport SEXP _riskRegression_rowCenter_cpp(SEXP XSEXP, SEXP centerSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -313,7 +313,7 @@ END_RCPP
 }
 // colScale_cpp
 arma::mat colScale_cpp(arma::mat X, const arma::colvec& scale);
-RcppExport SEXP riskRegression_colScale_cpp(SEXP XSEXP, SEXP scaleSEXP) {
+RcppExport SEXP _riskRegression_colScale_cpp(SEXP XSEXP, SEXP scaleSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -325,7 +325,7 @@ END_RCPP
 }
 // rowScale_cpp
 arma::mat rowScale_cpp(arma::mat X, const arma::rowvec& scale);
-RcppExport SEXP riskRegression_rowScale_cpp(SEXP XSEXP, SEXP scaleSEXP) {
+RcppExport SEXP _riskRegression_rowScale_cpp(SEXP XSEXP, SEXP scaleSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -337,7 +337,7 @@ END_RCPP
 }
 // colMultiply_cpp
 arma::mat colMultiply_cpp(arma::mat X, const arma::colvec& scale);
-RcppExport SEXP riskRegression_colMultiply_cpp(SEXP XSEXP, SEXP scaleSEXP) {
+RcppExport SEXP _riskRegression_colMultiply_cpp(SEXP XSEXP, SEXP scaleSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -349,7 +349,7 @@ END_RCPP
 }
 // rowMultiply_cpp
 arma::mat rowMultiply_cpp(arma::mat X, const arma::rowvec& scale);
-RcppExport SEXP riskRegression_rowMultiply_cpp(SEXP XSEXP, SEXP scaleSEXP) {
+RcppExport SEXP _riskRegression_rowMultiply_cpp(SEXP XSEXP, SEXP scaleSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -361,7 +361,7 @@ END_RCPP
 }
 // sliceMultiply_cpp
 arma::cube sliceMultiply_cpp(arma::cube X, const arma::mat& M);
-RcppExport SEXP riskRegression_sliceMultiply_cpp(SEXP XSEXP, SEXP MSEXP) {
+RcppExport SEXP _riskRegression_sliceMultiply_cpp(SEXP XSEXP, SEXP MSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -373,7 +373,7 @@ END_RCPP
 }
 // sliceScale_cpp
 arma::cube sliceScale_cpp(arma::cube X, const arma::mat& M);
-RcppExport SEXP riskRegression_sliceScale_cpp(SEXP XSEXP, SEXP MSEXP) {
+RcppExport SEXP _riskRegression_sliceScale_cpp(SEXP XSEXP, SEXP MSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -382,4 +382,38 @@ BEGIN_RCPP
     rcpp_result_gen = Rcpp::wrap(sliceScale_cpp(X, M));
     return rcpp_result_gen;
 END_RCPP
+}
+
+RcppExport void itfit(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *);
+
+static const R_CallMethodDef CallEntries[] = {
+    {"_riskRegression_baseHaz_cpp", (DL_FUNC) &_riskRegression_baseHaz_cpp, 10},
+    {"_riskRegression_calcSeHazard_cpp", (DL_FUNC) &_riskRegression_calcSeHazard_cpp, 26},
+    {"_riskRegression_calcSeCif_cpp", (DL_FUNC) &_riskRegression_calcSeCif_cpp, 33},
+    {"_riskRegression_colCumSum", (DL_FUNC) &_riskRegression_colCumSum, 1},
+    {"_riskRegression_colSumsCrossprod", (DL_FUNC) &_riskRegression_colSumsCrossprod, 3},
+    {"_riskRegression_quantileProcess_cpp", (DL_FUNC) &_riskRegression_quantileProcess_cpp, 6},
+    {"_riskRegression_sampleMaxProcess_cpp", (DL_FUNC) &_riskRegression_sampleMaxProcess_cpp, 5},
+    {"_riskRegression_calcE_cpp", (DL_FUNC) &_riskRegression_calcE_cpp, 6},
+    {"_riskRegression_IFbeta_cpp", (DL_FUNC) &_riskRegression_IFbeta_cpp, 10},
+    {"_riskRegression_IFbetaApprox_cpp", (DL_FUNC) &_riskRegression_IFbetaApprox_cpp, 6},
+    {"_riskRegression_IFlambda0_cpp", (DL_FUNC) &_riskRegression_IFlambda0_cpp, 16},
+    {"_riskRegression_predictCIF_cpp", (DL_FUNC) &_riskRegression_predictCIF_cpp, 15},
+    {"_riskRegression_rowCumSum", (DL_FUNC) &_riskRegression_rowCumSum, 1},
+    {"_riskRegression_rowSumsCrossprod", (DL_FUNC) &_riskRegression_rowSumsCrossprod, 3},
+    {"_riskRegression_colCenter_cpp", (DL_FUNC) &_riskRegression_colCenter_cpp, 2},
+    {"_riskRegression_rowCenter_cpp", (DL_FUNC) &_riskRegression_rowCenter_cpp, 2},
+    {"_riskRegression_colScale_cpp", (DL_FUNC) &_riskRegression_colScale_cpp, 2},
+    {"_riskRegression_rowScale_cpp", (DL_FUNC) &_riskRegression_rowScale_cpp, 2},
+    {"_riskRegression_colMultiply_cpp", (DL_FUNC) &_riskRegression_colMultiply_cpp, 2},
+    {"_riskRegression_rowMultiply_cpp", (DL_FUNC) &_riskRegression_rowMultiply_cpp, 2},
+    {"_riskRegression_sliceMultiply_cpp", (DL_FUNC) &_riskRegression_sliceMultiply_cpp, 2},
+    {"_riskRegression_sliceScale_cpp", (DL_FUNC) &_riskRegression_sliceScale_cpp, 2},
+    {"itfit", (DL_FUNC) &itfit, 50},
+    {NULL, NULL, 0}
+};
+
+RcppExport void R_init_riskRegression(DllInfo *dll) {
+    R_registerRoutines(dll, NULL, CallEntries, NULL, NULL);
+    R_useDynamicSymbols(dll, FALSE);
 }

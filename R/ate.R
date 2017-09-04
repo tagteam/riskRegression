@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Oct 23 2016 (08:53) 
 ## Version: 
-## last-updated: jul 18 2017 (15:48) 
-##           By: Brice Ozenne
-##     Update #: 239
+## last-updated: Sep  4 2017 (11:44) 
+##           By: Thomas Alexander Gerds
+##     Update #: 315
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -14,40 +14,59 @@
 #----------------------------------------------------------------------
 ## 
 ### Code:
-#' @title Compute the average treatment effect using CSC.
+#' @title Compute the average treatment effects via the g-formula
 #'
-#' @description Use the g-formula to estimate the average treatment effect
-#' @param object outcome model which describes how event risk depends on treatment and covariates.
-#' The object carry its own call and have a \code{predictRisk} method. See examples.
-#' @param data data set in which to evaluate risk predictions based on the outcome model
+#' @description Use the g-formula to estimate the average treatment
+#'     effect based on Cox regression with or without competing risks
+#' @param object outcome model which describes how event risk depends
+#'     on treatment and covariates.  The object carry its own call and
+#'     have a \code{predictRisk} method. See examples.
+#' @param data data set in which to evaluate risk predictions based on
+#'     the outcome model
+#' @param formula For analyses with time-dependent covariates, the response formula. See examples.
 #' @param treatment name of the treatment variable
-#' @param contrasts the levels of treatment variable to be compared
+#' @param contrasts the levels of the treatment variable to be
+#'     compared
 #' @param times time points at which to evaluate risks
 #' @param cause the cause of interest
-#' @param conf.level Numeric. Confidence level of the confidence intervals.
-#' @param se Logical. If \code{TRUE} add the standard errors and confidence intervals
-#' to the output.
+#' @param landmark for models with time-dependent covariates the landmark time(s) of evaluation.
+#'        In this case, argument \code{time} may only be one value and for the prediction of risks
+#'        it is assumed that that the covariates do not change between landmark and landmark+time.
+#' @param conf.level Numeric. Confidence level of the confidence
+#'     intervals.
+#' @param se Logical. If \code{TRUE} add the standard errors and
+#'     confidence intervals to the output.
+#' @param band Logical. If \code{TRUE} add the confidence bands to the
+#'     output.
 #' @param B the number of bootstrap replications used to compute the
-#' confidence intervals. If it equals 0, then Wald-type confidence intervals are computed.
-#' They rely on the standard error estimated using the influence function of the estimator.
-#' @param band Logical. If \code{TRUE} add the confidence bands to the output.
-#' @param nSim.band the number of simulations used to compute the quantiles for the confidence bands.
+#'     confidence intervals. If it equals 0, then Wald-type confidence
+#'     intervals are computed.  They rely on the standard error
+#'     estimated using the influence function of the estimator.
+#' @param nSim.band the number of simulations used to compute the
+#'     quantiles for the confidence bands.
 #' @param seed An integer used to generate seeds for bootstrap and to
 #'     achieve reproducibility of the bootstrap confidence intervals.
 #' @param handler parallel handler for bootstrap. Either "mclapply" or
-#'     "foreach". If "foreach" use \code{doParallel} to create a cluster.
+#'     "foreach". If "foreach" use \code{doParallel} to create a
+#'     cluster.
 #' @param mc.cores Passed to \code{parallel::mclapply} or
-#'     \code{doParallel::registerDoParallel}. The number of cores to use, i.e. at
-#'     most how many child processes will be run simultaneously.  The
-#'     option is initialized from environment variable MC_CORES if
-#'     set.
+#'     \code{doParallel::registerDoParallel}. The number of cores to
+#'     use, i.e. at most how many child processes will be run
+#'     simultaneously.  The option is initialized from environment
+#'     variable MC_CORES if set.
 #' @param verbose Logical. If \code{TRUE} inform about estimated run
 #'     time.
-#' @param logTransform Should the confidence interval for the ratio be computed using a log-tranformation. Only active if Wald-type confidence intervals are computed.
-#' @param store.iid Implementation used to estimate the standard error. Can be \code{"full"} or \code{"minimal"}.
-#' \code{"minimal"} requires less memory but can only estimate the standard for the difference between treatment effects (and not for the ratio).
+#' @param logTransform Should the confidence interval for the ratio be
+#'     computed using a log-tranformation. Only active if Wald-type
+#'     confidence intervals are computed.
+#' @param store.iid Implementation used to estimate the standard
+#'     error. Can be \code{"full"} or \code{"minimal"}.
+#'     \code{"minimal"} requires less memory but can only estimate the
+#'     standard for the difference between treatment effects (and not
+#'     for the ratio).
 #' @param ... passed to predictRisk
-#' @author Brice Ozenne \email{broz@@sund.ku.dk} and Thomas Alexander Gerds \email{tag@@biostat.ku.dk}
+#' @author Brice Ozenne \email{broz@@sund.ku.dk} and Thomas Alexander
+#'     Gerds \email{tag@@biostat.ku.dk}
 #' @return A list with: point estimates, bootstrap quantile confidence
 #'     intervals model: the CSC model (optional)
 #' 
@@ -99,19 +118,56 @@
 #'  ate(fitCR, data = dt, treatment = "X1", contrasts = NULL,
 #'         times = 5:7, cause = 1, B = 0, se = TRUE, band = TRUE, mc.cores=1)
 #' }
-#' 
+#' ## time-dependent covariates
+#' \dontrun{
+#' library(survival)
+#' fit <- coxph(Surv(time, status) ~ celltype+karno + age + trt, veteran)
+#' vet2 <- survSplit(Surv(time, status) ~., veteran,
+#'                        cut=c(60, 120), episode ="timegroup")
+#' fitTD <- coxph(Surv(tstart, time, status) ~ celltype+karno + age + trt,
+#'                data= vet2,x=1)
+#' set.seed(16)
+#' resVet <- ate(fitTD,formula=Hist(entry=tstart,time=time,event=status)~1, data = vet2, treatment = "celltype", contrasts = NULL,
+#'         times=5,verbose=1,
+#'         landmark = c(0,30,60,90), cause = 1, B = 20, se = 1,
+#'         band = FALSE, mc.cores=1)
+#' resVet
+#' }
+#' \dontrun{
+#' set.seed(137)
+#' d=sampleDataTD(127)
+#' library(survival)
+#' d[,status:=1*(event==1)]
+#' ## ignore competing risks
+#' cox1TD <- coxph(Surv(start,time, status,type="counting") ~ X3+X5+X6+X8, data=d)
+#' resTD1 <- ate(cox1TD,formula=Hist(entry=start,time=time,event=status)~1, data = d, treatment = "X3", contrasts = NULL,
+#'         times=.5,verbose=1,
+#'         landmark = c(0,0.5,1), B = 20, se = 1,
+#'         band = FALSE, mc.cores=1)
+#' resTD1
+#' ## adjust for competing risks
+#' cscTD <- CSC(Hist(time=time, event=event,entry=start) ~ X3+X5+X6+X8, data=d)
+#' set.seed(16)
+#' resTD <- ate(cscTD,formula=Hist(entry=start,time=time,event=event)~1, data = d, treatment = "X3", contrasts = NULL,
+#'         times=.5,verbose=1,
+#'         landmark = c(0,0.5,1), cause = 1, B = 20, se = 1,
+#'         band = FALSE, mc.cores=1)
+#' resTD
+#' }
 #' @export
 ate <- function(object,
                 data,
+                formula,
                 treatment,
                 contrasts = NULL,
                 times,
                 cause,
+                landmark,
                 conf.level = 0.95,
                 se = TRUE,
                 band = FALSE,
                 B = 0,
-                nSim.band = 1e3,
+                nSim.band = ifelse(band,1e3,0),
                 seed,
                 handler=c("mclapply","foreach"),
                 mc.cores = 1,
@@ -124,8 +180,20 @@ ate <- function(object,
     .=.I <- NULL
     diff.se=ratio.se=.GRP=lower=upper=diff.lower=diff.upper=diff.p.value=ratio.lower=ratio.upper=ratio.p.value <- NULL
     lowerBand=upperBand=diffBand.lower=diffBand.upper=ratioBand.lower=ratioBand.upper <- NULL
-    
-    
+    # {{{ checking for time-dependent covariates (left-truncation)
+    TD <- FALSE
+    TD <- switch(class(object)[[1]],"coxph"=(attr(object$y,"type")=="counting"),
+                 "CauseSpecificCox"=(attr(object$models[[1]]$y,"type")=="counting"))
+    if (TD){
+        if (missing(formula))
+            stop("Need formula to do landmark analysis.")
+        if (missing(landmark))
+            stop("Need landmark time(s) to do landmark analysis.")
+        if(length(times)!=1){
+            stop("In settings with time-dependent covariates argument 'time' must be a single value, argument 'landmark' may be a vector of time points.")
+        }
+    }
+    # }}}
     # {{{ Prepare
     dots <- list(...)
     
@@ -163,7 +231,7 @@ ate <- function(object,
     # }}}
     
     # {{{ Checking the model
-
+    
     # for predictRisk S3-method
     allmethods <- utils::methods(predictRisk)
     candidateMethods <- paste("predictRisk",class(object),sep=".")
@@ -172,31 +240,72 @@ ate <- function(object,
     # for compatibility with resampling
     if(is.null(object$call))
         stop(paste("The object does not contain its own call, which is needed to refit the model in the bootstrap loop."))
-
-  # }}}
-  
+    # }}}
     # {{{ calc G formula
-  Gformula <- function(object, data, treatment, contrasts, times, cause, ...){
-      meanRisk <- lapply(1:n.contrasts,function(i){
-          ## prediction for the hypothetical worlds in which every subject is treated with the same treatment
-          data.i <- data
-          data.i[[treatment]] <- factor(contrasts[i], levels = levels)
-          risk.i <- colMeans(do.call("predictRisk",args = list(object, newdata = data.i, times = times, cause = cause, ...)))
-      })
-      riskComparison <- data.table::rbindlist(lapply(1:(n.contrasts-1),function(i){
-          data.table::rbindlist(lapply(((i+1):n.contrasts),function(j){
-              ## compute differences between all pairs of treatments
-              data.table(Treatment.A=contrasts[[i]],
-                         Treatment.B=contrasts[[j]],
-                         time = times,
-                         diff=meanRisk[[i]]-meanRisk[[j]],
-                         ratio=meanRisk[[i]]/meanRisk[[j]])
-          }))}))
-      name.Treatment <- unlist(lapply(1:n.contrasts, function(c){rep(contrasts[c],length(meanRisk[[c]]))}))
-      out <- list(meanRisk = data.table(Treatment=name.Treatment, time = times, meanRisk=unlist(meanRisk)),
-                  riskComparison = riskComparison)
-      out
-  }
+    if (TD){
+        Gformula <- function(object, data, treatment, contrasts, times, landmark, cause, ...){
+            response <- eval(formula[[2]],envir=data)
+            time <- response[,"time"]
+            entry <- response[,"entry"]
+            if(class(object)[[1]]=="coxph"){
+                riskhandler <- "predictRisk.coxphTD"
+            }else{
+                riskhandler <- "predictRisk.CSCTD"
+            }
+            ## prediction for the hypothetical worlds in which every subject is treated with the same treatment
+            dt.meanRisk <- data.table::rbindlist(lapply(1:n.contrasts,function(i){
+                data.i <- data
+                data.i[[treatment]] <- factor(contrasts[i], levels = levels)
+                data.table::rbindlist(lapply(landmark,function(lm){
+                    atrisk <- (entry <= lm & time >= lm)
+                    risk.i <- colMeans(do.call(riskhandler,
+                                               args = list(object,
+                                                           newdata = data.i[atrisk,],
+                                                           times = times,
+                                                           cause = cause,
+                                                           landmark=lm,
+                                                           ...)))
+                    data.table::data.table(Treatment=contrasts[[i]],time=times,landmark=lm,meanRisk=risk.i)
+                }))
+            }))
+            riskComparison <- data.table::rbindlist(lapply(1:(n.contrasts-1),function(i){
+                data.table::rbindlist(lapply(((i+1):n.contrasts),function(j){
+                    ## compute differences between all pairs of treatments
+                    RC <- dt.meanRisk[Treatment==contrasts[[i]]]
+                    setnames(RC,"Treatment","Treatment.A")
+                    RC[,Treatment.B:=contrasts[[j]]]
+                    RC[,diff:=meanRisk-dt.meanRisk[Treatment==contrasts[[j]],meanRisk]]
+                    RC[,ratio:=meanRisk/dt.meanRisk[Treatment==contrasts[[j]],meanRisk]]
+                    RC[,meanRisk:=NULL]
+                    RC[]
+                }))}))
+            out <- list(meanRisk = dt.meanRisk, riskComparison = riskComparison)
+            out
+        }
+    }else{
+        Gformula <- function(object, data, treatment, contrasts, times, landmark, cause, ...){
+            meanRisk <- lapply(1:n.contrasts,function(i){
+                ## prediction for the hypothetical worlds in which every subject is treated with the same treatment
+                data.i <- data
+                data.i[[treatment]] <- factor(contrasts[i], levels = levels)
+                risk.i <- colMeans(do.call("predictRisk",args = list(object,newdata = data.i,times = times,cause = cause,...)))
+                risk.i
+            })
+            riskComparison <- data.table::rbindlist(lapply(1:(n.contrasts-1),function(i){
+                data.table::rbindlist(lapply(((i+1):n.contrasts),function(j){
+                    ## compute differences between all pairs of treatments
+                    data.table(Treatment.A=contrasts[[i]],
+                               Treatment.B=contrasts[[j]],
+                               time = times,
+                               diff=meanRisk[[i]]-meanRisk[[j]],
+                               ratio=meanRisk[[i]]/meanRisk[[j]])
+                }))}))
+            name.Treatment <- unlist(lapply(1:n.contrasts, function(c){rep(contrasts[c],length(meanRisk[[c]]))}))
+            out <- list(meanRisk = data.table(Treatment=name.Treatment, time = times, meanRisk=unlist(meanRisk)),
+                        riskComparison = riskComparison)
+            out            
+        }
+    }
     # }}}
     
     # {{{ point estimate
@@ -207,6 +316,7 @@ ate <- function(object,
                                   contrasts=contrasts,
                                   times=times,
                                   cause=cause,
+                                  landmark=landmark,
                                   dots))
     # }}}
     
@@ -214,9 +324,15 @@ ate <- function(object,
 
     ##### Confidence interval
     if(se || band){
-    
-    alpha <- 1-conf.level
-    
+        if (TD){
+            key1 <- c("Treatment","landmark")
+            key2 <- c("Treatment.A","Treatment.B","landmark")
+        }
+        else{
+            key1 <- c("Treatment","time")
+            key2 <- c("Treatment.A","Treatment.B","time")
+        }
+        alpha <- 1-conf.level
         if(B>0){
             # {{{ Bootstrap
             if (verbose==TRUE)
@@ -237,7 +353,6 @@ ate <- function(object,
             if (!missing(seed)) set.seed(seed)
             bootseeds <- sample(1:1000000,size=B,replace=FALSE)
             if (handler[[1]]=="foreach"){
-        
                 cl <- parallel::makeCluster(mc.cores)
                 doParallel::registerDoParallel(cl)
                 pp <- find(as.character(object$call[[1]]))
@@ -256,19 +371,17 @@ ate <- function(object,
                                       contrasts=contrasts,
                                       times=times,
                                       cause=cause,
+                                      landmark=landmark,
                                       dots),
                              error = function(x){return(NULL)})
                 })
-        
                 parallel::stopCluster(cl)
-        
             } else {
                 if(Sys.info()["sysname"] == "Windows" && mc.cores>1){
                     message("mclapply cannot perform parallel computations on Windows \n",
                             "consider setting argument handler to \"foreach\" \n")
                     mc.cores <- 1
                 }
-        
                 boots <- parallel::mclapply(1:B, function(b){
                     set.seed(bootseeds[[b]])
                     dataBoot <- data[sample(1:n.obs, size = n.obs, replace = TRUE),]
@@ -283,11 +396,11 @@ ate <- function(object,
                                       contrasts=contrasts,
                                       times=times,
                                       cause=cause,
+                                      landmark=landmark,
                                       dots),
                              error = function(x){return(NULL)})
                 }, mc.cores = mc.cores)
             }
-      
             ## gc()
             meanRisksBoot <- data.table::rbindlist(lapply(boots,function(x)x$meanRisk))
             riskComparisonsBoot <- data.table::rbindlist(lapply(boots,function(x)x$riskComparison))
@@ -295,13 +408,11 @@ ate <- function(object,
             if(NROW(meanRisksBoot)==0){
                 stop("no successful bootstrap \n")
             }
-
             mrisks <- meanRisksBoot[,data.table::data.table(meanRiskBoot=mean(meanRisk, na.rm = TRUE),
                                                             lower=quantile(meanRisk,alpha/2, na.rm = TRUE),
                                                             upper=quantile(meanRisk,1-(alpha/2), na.rm = TRUE),
                                                             n.boot=sum(!is.na(meanRisk))),
-                                    keyby=c("Treatment","time")]
-      
+                                    keyby=key1]
             crisks <- riskComparisonsBoot[,data.table::data.table(diffMeanBoot=mean(diff, na.rm = TRUE),
                                                                   diff.lower=quantile(diff,alpha/2, na.rm = TRUE),
                                                                   diff.upper=quantile(diff,1-(alpha/2), na.rm = TRUE),
@@ -311,7 +422,10 @@ ate <- function(object,
                                                                   ratio.upper=quantile(ratio,1-(alpha/2), na.rm = TRUE),
                                                                   ratio.p.value=findP1(ratio-1, alternative = "two.sided"),
                                                                   n.boot=sum(!is.na(diff))),
-                                          keyby=c("Treatment.A","Treatment.B","time")]
+                                          keyby=key2]
+            ## merge with pointEstimate
+            mrisks <- merge(pointEstimate$meanRisk,mrisks,by=key1)
+            crisks <- merge(pointEstimate$riskComparison,crisks,by=key2)
             # }}}
         } else {
             
@@ -434,10 +548,8 @@ ate <- function(object,
                 }
             }            
             # }}}
-
             # {{{ confidence bands
             if(band){ # nSim.band <- 500
-
                 quantileIF <- confBandCox(iid = abind::abind(iid.treatment, iid_diff.contrasts, iid_ratio.contrasts, along = 1),
                                           se = rbind(sdIF.treatment, sdIF_diff.contrasts, sdIF_ratio.contrasts),
                                           n.sim = nSim.band,
@@ -491,23 +603,17 @@ ate <- function(object,
             mrisks[, meanRisk := NULL]
 
             # }}}
-            
             bootseeds <- NULL
-        }} else{
-      
-             mrisks <- data.table::data.table(Treatment = pointEstimate$meanRisk$Treatment,
-                                              time = times)
-             crisks <- data.table::data.table(Treatment.A = pointEstimate$riskComparison$Treatment.A,
-                                              Treatment.B = pointEstimate$riskComparison$Treatment.B,
-                                              time = times)
-             bootseeds <- NULL
-
-             # }}}
-         }
-
-    ## merge with pointEstimate
-    mrisks <- merge(pointEstimate$meanRisk,mrisks,by=c("Treatment","time"))
-    crisks <- merge(pointEstimate$riskComparison,crisks,by=c("Treatment.A","Treatment.B","time"))
+            ## merge with pointEstimate
+            mrisks <- merge(pointEstimate$meanRisk,mrisks,by=key1)
+            crisks <- merge(pointEstimate$riskComparison,crisks,by=key2)            
+        }
+    } else{
+        mrisks <- pointEstimate$meanRisk$Treatment
+        crisks <- pointEstimate$riskComparison
+        bootseeds <- NULL
+        # }}}
+    }
     out <- list(meanRisk=mrisks,
                 riskComparison=crisks,
                 treatment=treatment,

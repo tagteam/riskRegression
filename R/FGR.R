@@ -102,14 +102,11 @@ FGR <- function(formula,data,cause=1,y=TRUE,...){
     # {{{ cause of interest
     states <- prodlim::getStates(response)
     if (missing(cause)){
-        cause <- 1
+        cause <- states[1]
         message("Argument cause missing. Analyse cause: ",states[1])
     }
     else{
-        if ((foundCause <- match(as.character(cause),states,nomatch=0))==0)
-            stop(paste("\nRequested cause: ",cause,"\nAvailable causes: ", states))
-        else
-            cause <- foundCause
+        cause <- checkCauses(cause,response)
     }  
     # }}}
     # {{{ covariate design matrices

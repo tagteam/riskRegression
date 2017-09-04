@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun  6 2016 (06:48) 
 ## Version: 
-## last-updated: apr 28 2017 (16:12) 
-##           By: Brice Ozenne
-##     Update #: 16
+## last-updated: Aug 29 2017 (07:10) 
+##           By: Thomas Alexander Gerds
+##     Update #: 17
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -31,8 +31,7 @@ print.ate <- function(x,digits=3,...){
     cat("\nComparison of risks on probability scale [0,1] between\nhypothetical worlds are interpretated as if the treatment was randomized:\n\n")    
     print(x$riskComparison,digits=digits,...)
     ##
-    if( (x$conf.level > 0 && (x$conf.level < 1)) ){
-
+    if(x$se && (x$conf.level > 0 && (x$conf.level < 1))){
         if(x$n.bootstrap==0){
             cat("\n",100*x$conf.level,"% Wald confidence intervals.",sep="")
         }else {
