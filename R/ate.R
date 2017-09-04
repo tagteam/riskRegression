@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Oct 23 2016 (08:53) 
 ## Version: 
-## last-updated: Sep  4 2017 (11:44) 
+## last-updated: Sep  4 2017 (11:49) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 315
+##     Update #: 316
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -181,9 +181,8 @@ ate <- function(object,
     diff.se=ratio.se=.GRP=lower=upper=diff.lower=diff.upper=diff.p.value=ratio.lower=ratio.upper=ratio.p.value <- NULL
     lowerBand=upperBand=diffBand.lower=diffBand.upper=ratioBand.lower=ratioBand.upper <- NULL
     # {{{ checking for time-dependent covariates (left-truncation)
-    TD <- FALSE
     TD <- switch(class(object)[[1]],"coxph"=(attr(object$y,"type")=="counting"),
-                 "CauseSpecificCox"=(attr(object$models[[1]]$y,"type")=="counting"))
+                 "CauseSpecificCox"=(attr(object$models[[1]]$y,"type")=="counting"),FALSE)
     if (TD){
         if (missing(formula))
             stop("Need formula to do landmark analysis.")
