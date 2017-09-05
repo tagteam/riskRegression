@@ -106,7 +106,7 @@ FGR <- function(formula,data,cause=1,y=TRUE,...){
         message("Argument cause missing. Analyse cause: ",states[1])
     }
     else{
-        cause <- checkCauses(cause,response)
+        cause <- prodlim::checkCauses(cause,response)
     }  
     # }}}
     # {{{ covariate design matrices

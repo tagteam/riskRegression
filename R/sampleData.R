@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jan  4 2016 (09:43) 
 ## Version: 
-## last-updated: Sep  4 2017 (11:12) 
+## last-updated: Sep  5 2017 (08:49) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 32
+##     Update #: 39
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -26,6 +26,11 @@
 ##' \code{"survival"} = survival response, \code{"competing.risks"} =
 ##' competing risks response
 ##' @param formula Specify regression coefficients
+##' @usage
+##' sampleData(n,outcome="competing.risks",
+##' formula= ~ f(X1,2)+f(X2,-0.033)+f(X3,0.4)+f(X6,.1)+f(X7,-.1)+f(X8,.5)+f(X9,-1))
+##' sampleDataTD(n,n.intervals=5,outcome="competing.risks",
+##' formula= ~ f(X1,2)+f(X2,-0.033)+f(X3,0.4)+f(X6,.1)+f(X7,-.1)+f(X8,.5)+f(X9,-1))
 ##' @return Simulated data as data.table with n rows and the following columns:
 ##' Y (binary outcome), time (non-binary outcome), event (non-binary outcome), X1-X5 (binary predictors), X6-X10 (continous predictors)
 ##' @seealso lvm
@@ -70,6 +75,7 @@ sampleData <- function(n,outcome="competing.risks",formula= ~ f(X1,2) + f(X2,-0.
 
 ##' @export 
 sampleDataTD <- function(n,n.intervals=5,outcome="competing.risks",formula= ~ f(X1,2) + f(X2,-0.033) + f(X3,0.4) + f(X6,.1) + f(X7,-.1) + f(X8,.5) + f(X9,-1)){
+    start=NULL
     m <- lava::lvm()
     lava::distribution(m,~X6) <- lava::normal.lvm(mean=60,sd=15)
     lava::distribution(m,~X7) <- lava::normal.lvm(mean=60,sd=5)
@@ -87,6 +93,7 @@ sampleDataTD <- function(n,n.intervals=5,outcome="competing.risks",formula= ~ f(
     m <- lava::eventTime(m, time ~ min(eventtime1 = 1, eventtime2 = 2, censtime = 0), "event")
     lava::regression(m) <- stats::update(formula,"eventtime1~.")
     update.mydata <- function(m,data){
+        start=time=NULL
         is.censored <- data$event==0
         d <- lava::sim(m,sum(is.censored))
         data.table::setDT(d)

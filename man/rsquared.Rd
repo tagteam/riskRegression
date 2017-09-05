@@ -2,9 +2,17 @@
 % Please edit documentation in R/rsquared.R
 \name{rsquared}
 \alias{rsquared}
+\alias{rsquared.default}
+\alias{rsquared.glm}
+\alias{rsquared.coxphh}
+\alias{rsquared.CauseSpecificCox}
 \title{Explained variation for settings with binary, survival and competing risk outcome}
 \usage{
-rsquared(object, ...)
+rsquared(object,...)
+\method{rsquared}{default}(object,...)
+\method{rsquared}{glm}(object,...)
+\method{rsquared}{coxph}(object,times,...)
+\method{rsquared}{CauseSpecificCox}(object,times,cause,...)
 }
 \arguments{
 \item{object}{Model for which we want R^2}
@@ -12,6 +20,8 @@ rsquared(object, ...)
 \item{...}{passed to \code{riskRegression::Score}}
 
 \item{cause}{For competing risk models the event of interest}
+
+\item{times}{Vector of time points used as prediction horizon for the computation of Brier scores.}
 }
 \value{
 Data frame with explained variation values for the full model.

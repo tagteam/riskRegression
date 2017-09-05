@@ -27,6 +27,7 @@ pred.CSC
 print(pred.CSC, ci = TRUE)
 
 ## strata
+library(survival)
 m.SCSC <- CSC(Hist(time,event)~ strata(X1) + strata(X2) + X6,
               data = d)
 pred.SCSC <- predict(m.SCSC, time = 1:5, cause = 1,

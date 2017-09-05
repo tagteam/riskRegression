@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Aug  9 2017 (10:36) 
 ## Version: 
-## Last-Updated: Aug 24 2017 (07:47) 
+## Last-Updated: Sep  5 2017 (08:56) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 91
+##     Update #: 95
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -18,9 +18,18 @@
 ##'
 ##' R^2 is calculated based on the model's predicted risks. The Brier score of the model is compared to the Brier score of the null model.
 ##' @title Explained variation for settings with binary, survival and competing risk outcome
+##' @aliases rsquared rsquared.default rsquared.glm rsquared.coxph rsquared.CauseSpecificCox
 ##' @param object Model for which we want R^2
 ##' @param cause For competing risk models the event of interest
+##' @param times Vector of time points used as prediction horizon for the computation of Brier scores. 
 ##' @param ... passed to \code{riskRegression::Score}
+##' @usage
+##' rsquared(object,...)
+##' \method{rsquared}{default}(object,...)
+##' \method{rsquared}{glm}(object,...)
+##' \method{rsquared}{coxph}(object,times,...)
+##' \method{rsquared}{CauseSpecificCox}(object,times,cause,...)
+##' 
 ##' @return Data frame with explained variation values for the full model.
 ##' @seealso Score
 ##' @examples
@@ -45,7 +54,7 @@ rsquared <- function(object,...){
 }
 
 ##' @export
-rsquared.default <- function(object,times,...){
+rsquared.default <- function(object,...){
   stop("No method available for calculating R^2 for objects in class: ",class(object),call.=FALSE)
 }
 

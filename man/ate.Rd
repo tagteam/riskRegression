@@ -135,7 +135,8 @@ vet2 <- survSplit(Surv(time, status) ~., veteran,
 fitTD <- coxph(Surv(tstart, time, status) ~ celltype+karno + age + trt,
                data= vet2,x=1)
 set.seed(16)
-resVet <- ate(fitTD,formula=Hist(entry=tstart,time=time,event=status)~1, data = vet2, treatment = "celltype", contrasts = NULL,
+resVet <- ate(fitTD,formula=Hist(entry=tstart,time=time,event=status)~1,
+          data = vet2, treatment = "celltype", contrasts = NULL,
         times=5,verbose=1,
         landmark = c(0,30,60,90), cause = 1, B = 20, se = 1,
         band = FALSE, mc.cores=1)
@@ -148,7 +149,8 @@ library(survival)
 d[,status:=1*(event==1)]
 ## ignore competing risks
 cox1TD <- coxph(Surv(start,time, status,type="counting") ~ X3+X5+X6+X8, data=d)
-resTD1 <- ate(cox1TD,formula=Hist(entry=start,time=time,event=status)~1, data = d, treatment = "X3", contrasts = NULL,
+resTD1 <- ate(cox1TD,formula=Hist(entry=start,time=time,event=status)~1,
+        data = d, treatment = "X3", contrasts = NULL,
         times=.5,verbose=1,
         landmark = c(0,0.5,1), B = 20, se = 1,
         band = FALSE, mc.cores=1)
@@ -156,7 +158,8 @@ resTD1
 ## adjust for competing risks
 cscTD <- CSC(Hist(time=time, event=event,entry=start) ~ X3+X5+X6+X8, data=d)
 set.seed(16)
-resTD <- ate(cscTD,formula=Hist(entry=start,time=time,event=event)~1, data = d, treatment = "X3", contrasts = NULL,
+resTD <- ate(cscTD,formula=Hist(entry=start,time=time,event=event)~1,
+        data = d, treatment = "X3", contrasts = NULL,
         times=.5,verbose=1,
         landmark = c(0,0.5,1), cause = 1, B = 20, se = 1,
         band = FALSE, mc.cores=1)
