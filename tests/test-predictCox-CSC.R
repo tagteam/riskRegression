@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun  6 2016 (09:35) 
 ## Version: 
-## last-updated: sep  4 2017 (16:40) 
+## last-updated: sep  5 2017 (11:01) 
 ##           By: Brice Ozenne
-##     Update #: 116
+##     Update #: 125
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -396,51 +396,44 @@ res <- predictCox(f1,newdata=Melanoma[c(17,101,123),],
 # }}}
 
 # {{{ 7- absolute risk over 1
-# this section does not perform any test
+# this section does not perform any tests
 # but show an example where the estimated absolute risk
 # is over 1, probably because of the small sample size.
 # I don't know if this is an issue.
 if(FALSE){
-set.seed(5)
-d <- sampleData(80,outcome="comp")
-nd <- sampleData(4,outcome="comp")
-d$time <- round(d$time,1)
-ttt <- sort(sample(x = unique(d$time), size = 10))
+    set.seed(5)
+    d <- sampleData(80,outcome="comp")
+    d[event==0,event:=1] # remove censoring
+    ttt <- sort(unique(d[X1==1,time]))
 
-CSC.fit.s <- CSC(list(Hist(time,event)~ strata(X1)+X2+X9,
-                      Hist(time,event)~ X2+strata(X4)+X8+X7),data=d)
-predict(CSC.fit.s,cause=1,times=ttt,se=1L)
+    CSC.fit.s <- CSC(list(Hist(time,event)~ strata(X1)+X2+X9,
+                          Hist(time,event)~ X2+strata(X4)+X8+X7),data=d)
+    predict(CSC.fit.s,newdata=d[X1==1][1],cause=1,times=ttt,se=1L) # NA values due to absolute risk over 1
+    predict(CSC.fit.s,newdata=d[X1==1][1],productLimit = FALSE,cause=1,times=ttt,se=1L) # NA values due to absolute risk over 1
 
-all.times <- CSC.fit.s$eventTimes
-n.times <- length(CSC.fit.s$eventTimes)
+    #### investigate how come we get absRisk > 1
+    # since absRisk = int hazard1 * survival
+    # it is possible if survival > 1
+    #                or hazard(1) > 1
+    
+    ## restrict to the first strata and simplify the model
+    ## to see if we can get an hazard > 1
+    dt <- d[X1==1]
+    setkeyv(dt, "time")
+    m.coxph <- coxph(Surv(time,event>=1)~X2, data = dt, x = TRUE, ties = "breslow")
 
-haz1 <- predictCox(CSC.fit.s$models[[1]], newdata = d[52],
-                   type = c("hazard","cumhazard"),
-                   times=all.times)
-haz2 <- predictCox(CSC.fit.s$models[[2]], newdata = d[52],
-                   type = c("hazard","cumhazard"),
-                   times=all.times)
+    # compute baseline hazard
+    as.data.table(predictCox(m.coxph, centered = TRUE, type = "hazard")) # automatic
+    rev(1/cumsum(rev(eXB))) # manual
 
-haz1.0 <- setNames(as.numeric(haz1$hazard),haz1$times)
-haz2.0 <- setNames(as.numeric(haz2$hazard),haz2$times)
-cumhaz1.0 <- c(0,setNames(as.numeric(haz1$cumhazard),haz1$times)[-n.times])
-cumhaz2.0 <- c(0,setNames(as.numeric(haz2$cumhazard),haz1$times)[-n.times])
+    # normally they are normalized such that they are at most one:
+    rev(rev(eXB)/cumsum(rev(eXB)))
 
+    # but this does not work for new observations
+    rev(unique(eXB)[1]/cumsum(rev(eXB))) # ok
+    rev(unique(eXB)[2]/cumsum(rev(eXB))) # no hazard over 1
 
-cumsum(haz1.0*cumprod(1-haz1.0-haz2.0))[c("1.1","1.3","1.4")]
-predict(CSC.fit.s,newdata = d[52],cause=1,times=CSC.fit.s$eventTimes,
-        productLimit = TRUE)
-##  6:           1  1  1 -0.845  1 -0.446 62.8   1.0 X1=1 X4=1   0.000
-##  7:           1  1  1 -0.845  1 -0.446 62.8   1.1 X1=1 X4=1   0.651
-##  8:           1  1  1 -0.845  1 -0.446 62.8   1.3 X1=1 X4=1   0.808
-##  9:           1  1  1 -0.845  1 -0.446 62.8   1.4 X1=1 X4=1   1.084
-
-cumsum(haz1.0*exp(-cumhaz1.0-cumhaz2.0))[c("1.1","1.3","1.4")]
-predict(CSC.fit.s,newdata = d[52],cause=1,times=CSC.fit.s$eventTimes,
-        productLimit = FALSE)
-## 7:           1  1  1 -0.845  1 -0.446 62.8   1.1 X1=1 X4=1   0.651
-## 8:           1  1  1 -0.845  1 -0.446 62.8   1.3 X1=1 X4=1   0.886
-## 9:           1  1  1 -0.845  1 -0.446 62.8   1.4 X1=1 X4=1   1.363
+    # this also creates a problem when computing the suvival using the product limit estimator 
 }
 # }}}
 
