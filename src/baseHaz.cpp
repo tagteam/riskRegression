@@ -252,11 +252,9 @@ structExport baseHazStrata_cpp(const vector<double>& starttimes,
       ncv = true;
       while(indexTime < nEvents && ncv){
 	if(starttimes[iterPat] >= time[indexTime]){
-	  //Rcout << "time=" << time[indexTime] << ": " << eXb[iterPat] << endl;
 	  //remove the contribution of the patient if not included at the time of event
 	  sumEXb[indexTime] -= eXb[iterPat];	 
 	}else{
-	  // Rcout << "time=" << time[indexTime] << ": " << starttimes[iterPat] << endl;
 	  ncv = false;
 	}
 	indexTime ++;	 
