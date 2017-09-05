@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Oct 23 2016 (08:53) 
 ## Version: 
-## last-updated: jul 18 2017 (15:48) 
+## last-updated: sep  5 2017 (17:41) 
 ##           By: Brice Ozenne
-##     Update #: 239
+##     Update #: 240
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -374,7 +374,7 @@ ate <- function(object,
                 term2 <- rowCenter_cpp(IFrisk[[iTreat]], center = pointEstimate$meanRisk[Treatment==contrasts[iTreat],meanRisk])
 
                 # we get n * IF instead of IF for the absolute risk. This is why the second term need to be rescaled
-                iid.treatment[iTreat,,] <- term1 + t(term2)/sqrt(n.obs)
+                iid.treatment[iTreat,,] <- term1 + t(term2)/n.obs
                 sdIF.treatment[iTreat,] <- apply(iid.treatment[iTreat,,,drop=FALSE],2, ## MARGIN=2 and drop=FALSE to deal with the case of one timepoint
                                                  function(x){sqrt(sum(x^2))}
                                                  )
@@ -409,7 +409,7 @@ ate <- function(object,
                     }
                     term2 <- rowCenter_cpp(IFrisk[[iCon]]-IFrisk[[iCon2]],
                                            center = pointEstimate$riskComparison[Treatment.A==contrasts[iCon] & Treatment.B==contrasts[iCon2],diff])
-                    iid_diff.contrasts[iiCon,,] <- term1 + t(term2)/sqrt(n.obs)
+                    iid_diff.contrasts[iiCon,,] <- term1 + t(term2)/n.obs
                     sdIF_diff.contrasts[iiCon,] <- apply(iid_diff.contrasts[iiCon,,,drop=FALSE],2,
                                                          function(x){sqrt(sum(x^2))}
                                                          )
@@ -427,7 +427,7 @@ ate <- function(object,
                     term3 <- rowCenter_cpp(IFrisk[[iCon]]/IFrisk[[iCon2]],
                                            center = pointEstimate$riskComparison[Treatment.A==contrasts[iCon] & Treatment.B==contrasts[iCon2],ratio])
                     
-                    iid_ratio.contrasts[iiCon,,] <- apply(term1 - term2, 2:3, mean) + t(term3)/sqrt(n.obs)
+                    iid_ratio.contrasts[iiCon,,] <- apply(term1 - term2, 2:3, mean) + t(term3)/n.obs
                     sdIF_ratio.contrasts[iiCon,] <- apply(iid_ratio.contrasts[iiCon,,,drop=FALSE],2,
                                                           function(x){sqrt(sum(x^2))}
                                                           )
