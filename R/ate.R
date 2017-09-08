@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Oct 23 2016 (08:53) 
 ## Version: 
-## last-updated: Sep  5 2017 (08:48) 
+## last-updated: Sep  8 2017 (20:45) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 319
+##     Update #: 321
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -124,7 +124,7 @@
 #'           data = vet2, treatment = "celltype", contrasts = NULL,
 #'         times=5,verbose=1,
 #'         landmark = c(0,30,60,90), cause = 1, B = 20, se = 1,
-#'         band = FALSE, mc.cores=1)
+Hist#'         band = FALSE, mc.cores=1)
 #' resVet
 #' }
 #' \dontrun{
@@ -360,7 +360,7 @@ ate <- function(object,
                 pp <- find(as.character(object$call[[1]]))
                 addPackage <- if(grep("package:",pp)){gsub("package:","",pp[grep("package:",pp)])}else{NULL}
                 
-                boots <- foreach::`%dopar%`(foreach::foreach(b=1:B,.packages=c("riskRegression",addPackage),.options.snow=opts,.export=NULL), {
+                boots <- foreach::`%dopar%`(foreach::foreach(b=1:B,.packages=unique(c("riskRegression","survival",addPackage)),.options.snow=opts,.export=NULL), {
                     set.seed(bootseeds[[b]])
                     dataBoot <- data[sample(1:n.obs, size = n.obs, replace = TRUE),]
                     object$call$data <- dataBoot
