@@ -17,6 +17,7 @@ Imports:
     survival (>= 2.40.1),
     lava (>= 1.4.7),
     cmprsk,
+    timereg (>= 1.9.1),
     doSNOW,
     foreach,
     parallel,
@@ -37,8 +38,7 @@ Suggests:
     randomForestSRC,
     rbenchmark,
     rpart,
-    testthat,
-    timereg (>= 1.9.1)
+    testthat
 Maintainer: Thomas Alexander Gerds <tag@biostat.ku.dk>
 Description: Implementation of the following methods for event history analysis.
     Risk regression models for survival endpoints also in the presence of competing

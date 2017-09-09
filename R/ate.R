@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Oct 23 2016 (08:53) 
 ## Version: 
-## last-updated: Sep  8 2017 (20:45) 
+## last-updated: Sep  9 2017 (14:37) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 321
+##     Update #: 325
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -124,7 +124,7 @@
 #'           data = vet2, treatment = "celltype", contrasts = NULL,
 #'         times=5,verbose=1,
 #'         landmark = c(0,30,60,90), cause = 1, B = 20, se = 1,
-Hist#'         band = FALSE, mc.cores=1)
+#'         band = FALSE, mc.cores=1)
 #' resVet
 #' }
 #' \dontrun{
@@ -186,6 +186,8 @@ ate <- function(object,
         if(length(times)!=1){
             stop("In settings with time-dependent covariates argument 'time' must be a single value, argument 'landmark' may be a vector of time points.")
         }
+    }else{
+        landmark=NULL
     }
     # }}}
     # {{{ Prepare
@@ -237,7 +239,14 @@ ate <- function(object,
     # }}}
     # {{{ calc G formula
     if (TD){
-        Gformula <- function(object, data, treatment, contrasts, times, landmark, cause, ...){
+        Gformula <- function(object,
+                             data,
+                             treatment,
+                             contrasts,
+                             times,
+                             landmark,
+                             cause,
+                             ...){
             response <- eval(formula[[2]],envir=data)
             time <- response[,"time"]
             entry <- response[,"entry"]
@@ -277,7 +286,14 @@ ate <- function(object,
             out
         }
     }else{
-        Gformula <- function(object, data, treatment, contrasts, times, landmark, cause, ...){
+        Gformula <- function(object,
+                             data,
+                             treatment,
+                             contrasts,
+                             times,
+                             landmark,
+                             cause,
+                             ...){
             meanRisk <- lapply(1:n.contrasts,function(i){
                 ## prediction for the hypothetical worlds in which every subject is treated with the same treatment
                 data.i <- data

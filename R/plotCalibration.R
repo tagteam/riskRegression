@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Feb 23 2017 (11:15) 
 ## Version: 
-## last-updated: Aug 18 2017 (11:22) 
+## last-updated: Sep  9 2017 (14:29) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 175
+##     Update #: 176
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -74,6 +74,7 @@
 ##'     barplot, legend, points (pseudo values), rug. See
 ##'     \code{\link{SmartControl}}.
 ##' @examples
+##' library(survival)
 ##' db=sampleData(100,outcome="binary")
 ##' fb1=glm(Y~X1+X5+X7,data=db,family="binomial")
 ##' fb2=glm(Y~X1+X3+X6+X7,data=db,family="binomial")

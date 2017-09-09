@@ -185,10 +185,10 @@ riskRegression <- function(formula,
     # trans=3 P_1=exp(-exp(x a(t)+ z` b )
     ##   trans <- switch(link,"log"=
     trans <- switch(link,
-                    "additive"=1, # 
-                    "prop"=2,     # Proportional hazards (Cox, FG)
-                    "logistic"=3, # Logistic absolute risks 
-                    "relative"=4) # Relative absolute risks
+                    "additive"="additive", # 
+                    "prop"="prop",     # Proportional hazards (Cox, FG)
+                    "logistic"="logistic", # Logistic absolute risks 
+                    "relative"="rcif") # Relative absolute risks
     if (numSimu==0) sim <- 0 else sim <- 1
     # }}}
     # {{{ read the data and the design
@@ -327,101 +327,73 @@ riskRegression <- function(formula,
     if (ntimes>1) silent <- c(silent,rep(0,ntimes-1))
     # }}}
     # {{{ estimate ipcw
-    if (missing(cens.formula)){
-        cterms <- prodlim::strip.terms(terms(update(formula,NULL~.),specials=c("tp","timevar","strata")),
-                                       specials=c("tp","timevar","strata"),
-                                       arguments=list("tp"="power","timevar"="test","strata"="test"))
-        cens.formula <- formula(cterms)
-    }
-    else
-        cens.formula <- update(cens.formula,NULL~.)
-    if (missing(cens.model)) cens.model <- "KM"
-    imodel <- switch(tolower(cens.model),"km"="marginal","cox"="cox","forest"="forest","aalen"="aalen","uncensored"="none")
-    if (imodel == "cox")
-        iFormula <- update(cens.formula,"survival::Surv(time,status)~.")
-    else
-        iFormula <- update(cens.formula,"Surv(time,status)~.")
-    if (imodel=="marginal")
-        iData <- data.frame(event.history)
-    else{
-        iData <- cbind(event.history,get_all_vars(cens.formula,
-                                                  data)[neworder,,drop=FALSE])
-    }
-    stopifnot(NROW(iData)==NROW(event.history))
-    Gcx <- subjectWeights(formula=iFormula,
-                          data=iData,
-                          method=cens.model,
-                          lag=1)$weights
+    ## if (missing(cens.formula)){
+    ## cterms <- prodlim::strip.terms(terms(update(formula,NULL~.),specials=c("tp","timevar","strata")),
+    ## specials=c("tp","timevar","strata"),
+    ## arguments=list("tp"="power","timevar"="test","strata"="test"))
+    ## cens.formula <- formula(cterms)
     ## }
+    ## else
+    ## cens.formula <- update(cens.formula,NULL~.)
+    if (missing(cens.model)) cens.model <- "KM"
+    ## imodel <- switch(tolower(cens.model),"km"="marginal","cox"="cox","forest"="forest","aalen"="aalen","uncensored"="none")
+    ## if (imodel == "cox")
+    ## iFormula <- update(cens.formula,"survival::Surv(time,status)~.")
+    ## else
+    ## iFormula <- update(cens.formula,"Surv(time,status)~.")
+    ## if (imodel=="marginal")
+    ## iData <- data.frame(event.history)
+    ## else{
+    ## iData <- cbind(event.history,get_all_vars(cens.formula,
+    ## data)[neworder,,drop=FALSE])
+    ## }
+    ## stopifnot(NROW(iData)==NROW(event.history))
+    ## Gcx <- subjectWeights(formula=iFormula,data=iData,method=cens.model,lag=1)$weights
+    if (length(grep("^km|^kaplan|^marg",cens.model,ignore.case=TRUE))>0)
+        cens.model <- "KM"
+    else cens.model <- "cox"
+    ## ipcw.fit <- ipcw(formula=iFormula,
+    ## data=iData,
+    ## times=times,
+    ## keep=NULL,
+    ## method=cens.model)
+    ## Gcx <- ipcw.fit$IPCW.subjectTimes
+    ## Gctimes <- ipcw.fit$IPCW.times
     # }}}
-    # {{{ prepare fitting
-    if (confint == TRUE){
-        biid  <-  double(ntimes* antclust * dimX)
-        gamiid <-  double(antclust *dimZ)
-    } else {
-        gamiid  <-  biid  <-  NULL
+    enames <- colnames(event.history)
+    if ("event"%in%enames){# competing risks
+        event.history[event.history[,"status"]==0,"event"] <- 0
+        event.history <- event.history[,-match("status",enames)]
+    }else{
+        colnames(event.history) <- sub("status","event",colnames(event.history))
     }
-    # }}}
-    # {{{ C does the hard work
-
-    line <- ifelse(trans==1,1,0)
-    # if line=1 then test "b(t) = gamma t"
-    # if line=0 then test "b(t) = gamma "
-    ordertime <- order(eventtime,-delta)
-    out <- .C("itfit",
-              times=as.double(times),
-              ntimes=as.integer(ntimes),
-              eventtime=as.double(eventtime),
-              cens.code=as.integer(cens.code),
-              event=as.integer(event),
-              Gcx=as.double(Gcx),
-              X=as.double(X),
-              n=as.integer(n),
-              dimX=as.integer(dimX),
-              maxiter=as.integer(maxiter),
-              betas=double(dimX),
-              score=double(ntimes*(dimX+1)),
-              double(dimX*dimX),
-              est=double(ntimes*(dimX+1)),
-              var=double(ntimes*(dimX+1)),
-              sim=as.integer(sim),
-              numSimu=as.integer(numSimu),
-              test=double(numSimu*3*dimX),
-              testOBS=double(3*dimX),
-              Ut=double(ntimes*(dimX+1)),
-              simUt=double(ntimes*50*dimX),
-              weighted=as.integer(weighted),
-              gamma=double(dimZ),
-              var.gamma=double(dimZ*dimZ),
-              fixed=as.integer(fixed),
-              Z=as.double(Z),
-              dimZ=as.integer(dimZ),
-              trans=as.integer(trans),
-              gamma2=double(dimX),
-              cause=as.integer(1),
-              line=as.integer(line),
-              detail=as.integer(detail),
-              biid=as.double(biid),
-              gamiid=as.double(gamiid),
-              resample.iid=as.integer(as.numeric(confint)),
-              timeconst.power=as.double(timeconst.power),
-              clusters=as.integer(clusters),
-              antclust=as.integer(antclust),
-              timevar.test=as.double(timevar.test),
-              silent=as.integer(silent),
-              conv=as.double(conv),
-              # new since 10 Sep 2014 (07:07)
-              weights=as.double(rep(1,n)),
-              entry=as.double(rep(0,length(eventtime))),
-              trunkp=as.double(rep(1,n)),
-              estimator=as.integer(1),
-              fixgamma=as.integer(0),
-              stratum=as.integer(0),
-              ordertime=as.integer(ordertime-1),
-              ssf=double(0),
-              conservative=as.integer(conservative),
-              PACKAGE="riskRegression")
-
+    if ("entry"%in%enames){ # delayed entry
+        timeregformula <- "timereg::Event(entry,time,event)"
+    }else{
+        timeregformula <- "timereg::Event(time,event)"
+    }
+    if ((ipos <- match("Intercept",colnamesX,nomatch=0))>0)
+        timeregformula <- paste0(timeregformula,"~+1")
+    else
+        timeregformula <- paste0(timeregformula,"~-1")
+    if (length(colnamesZ)>0){
+        const <- timereg::const
+        timeregformula <- paste0(timeregformula,
+                                 "+",
+                                 paste0(sapply(colnames(Z),function(z){paste0("const(",z,")")}),collapse="+"))
+    }
+    if (length(colnamesX[-ipos])>0){
+        trdat <- data.frame(event.history,Z,X[,-ipos,drop=FALSE])
+        timeregformula <- paste0(timeregformula,"+",paste0(colnamesX[-ipos],collapse="+"))
+    }else{
+        trdat <- data.frame(event.history,Z)
+    }
+    Surv <- survival::Surv
+    out <- timereg::comp.risk(as.formula(timeregformula),
+                              data=trdat,
+                              model=trans,
+                              times=times,
+                              cause=cause)
     # }}}
     # {{{ prepare the output
 
@@ -435,20 +407,20 @@ riskRegression <- function(formula,
         timeConstantVar <- NULL
     }
     ## FIXME out$est should not include time
-    timeVaryingCoef <- matrix(out$est,ntimes,dimX+1,dimnames=list(NULL,c("time",colnamesX)))
-    timeVaryingVar <- matrix(out$var,ntimes,dimX+1,dimnames=list(NULL,c("time",colnamesX)))
-    score <- matrix(out$score,ntimes,dimX+1,dimnames=list(NULL,c("time",colnamesX)))
-    if (is.na(sum(score[,-1])))
-        score <- NA
-    else 
-        if (sum(score[,-1])<0.00001)
-            score <- sum(score[,-1])
+    timeVaryingCoef <- out$cum
+    timeVaryingVar <- out$var.cum
+    score <- out$score
+    ## if (is.na(sum(score[,-1])))
+    ## score <- NA
+    ## else 
+    ## if (sum(score[,-1])<0.00001)
+    ## score <- sum(score[,-1])
     ## time power test
     testedSlope <- out$gamma2
     names(testedSlope) <- colnamesX
     if (confint==1)  {
-        biid <- matrix(out$biid,ntimes,antclust*dimX)
-        if (fixed==1) gamiid <- matrix(out$gamiid,antclust,dimZ) else gamiid <- NULL
+        biid <- matrix(out$B.iid,ntimes,antclust*dimX)
+        if (fixed==1) gamiid <- matrix(out$gamma.iid,antclust,dimZ) else gamiid <- NULL
         B.iid <- list()
         for (i in (0:(antclust-1))*dimX) {
             B.iid[[i/dimX+1]] <- matrix(biid[,i+(1:dimX)],ncol=dimX)

@@ -157,7 +157,7 @@ CSC <- function(formula,
     }
     if (any(entry>time)) stop("entry > time detected. Entry into the study must come first.")
     ## remove event history variables from data
-    if(any(this <- match(names(data),all.vars(Rform),nomatch=0)>0)){
+    if(any((this <- match(all.vars(Rform),names(data),nomatch=0))>0)){
         if (is.data.table(data))
             data <- data[,-this,with=FALSE]
         else

@@ -44,11 +44,9 @@
 ##' @examples
 ##' 
 ##' library(survival)
-##' library(prodlim)
 ##' data(Melanoma)
-##' 
 ##' fit.arr <- ARR(Hist(time,status)~invasion+age+strata(sex),data=Melanoma,cause=1)
-##' plot(fit.arr,xlim=c(500,3000))
+##' # plot(fit.arr,xlim=c(500,3000))
 ##' 
 ##' 
 #' @export 
@@ -88,10 +86,7 @@ plot.riskRegression <- function(x,
             }
             else{
                 if ("CauseSpecificCox"%in%class(x)){
-                    P1 <- predictRisk(x,
-                                           newdata=eval(x$call$data),
-                                           times=plot.times,
-                                           cause=cause)
+                    P1 <- predictRisk(x,newdata=eval(x$call$data),times=plot.times,cause=cause)
                 }
                 else{
                     P1 <- stats::predict(x,

@@ -104,6 +104,7 @@ barplot, legend, points (pseudo values), rug. See
 Plot Calibration curve
 }
 \examples{
+library(survival)
 db=sampleData(100,outcome="binary")
 fb1=glm(Y~X1+X5+X7,data=db,family="binomial")
 fb2=glm(Y~X1+X3+X6+X7,data=db,family="binomial")
