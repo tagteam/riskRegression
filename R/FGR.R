@@ -106,7 +106,17 @@ FGR <- function(formula,data,cause=1,y=TRUE,...){
         message("Argument cause missing. Analyse cause: ",states[1])
     }
     else{
-        cause <- prodlim::checkCauses(cause,response)
+        ## cause <- prodlim::checkCauses(cause,response)
+        cause <- unique(cause)
+        if (!is.character(cause)) cause <- as.character(cause)
+        fitted.causes <- prodlim::getStates(response)
+        if (!(all(cause %in% fitted.causes))){
+            stop(paste0("Cannot find requested cause(s) in object\n\n",
+                        "Requested cause(s): ",
+                        paste0(cause,collapse=", "),
+                        "\n Available causes: ",
+                        paste(fitted.causes,collapse=", "),"\n"))
+        }
     }  
     # }}}
     # {{{ covariate design matrices

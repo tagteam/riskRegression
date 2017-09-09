@@ -4,7 +4,7 @@
 \alias{rsquared}
 \alias{rsquared.default}
 \alias{rsquared.glm}
-\alias{rsquared.coxphh}
+\alias{rsquared.coxph}
 \alias{rsquared.CauseSpecificCox}
 \title{Explained variation for settings with binary, survival and competing risk outcome}
 \usage{

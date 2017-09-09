@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun  6 2016 (09:02) 
 ## Version: 
-## last-updated: Sep  4 2017 (11:38) 
+## last-updated: Sep  5 2017 (15:16) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 96
+##     Update #: 99
 #----------------------------------------------------------------------
 ## 
 ### Commentary:
@@ -340,7 +340,19 @@ predictRisk.coxphTD <- function(object,newdata,times,landmark,...){
 predictRisk.CSCTD <- function(object,newdata,times,cause,landmark,...){
     stopifnot(attr(object$models[[1]]$y,"type")=="counting")
     if (missing(cause)) cause <- object$theCause
-    else cause <- prodlim::checkCauses(cause,object$response)
+    else{
+        ## cause <- prodlim::checkCauses(cause,object$response)
+        cause <- unique(cause)
+        if (!is.character(cause)) cause <- as.character(cause)
+        fitted.causes <- prodlim::getStates(object$response)
+        if (!(all(cause %in% fitted.causes))){
+            stop(paste0("Cannot find requested cause(s) in object\n\n",
+                        "Requested cause(s): ",
+                        paste0(cause,collapse=", "),
+                        "\n Available causes: ",
+                        paste(fitted.causes,collapse=", "),"\n"))
+        }
+    }
     causes <- object$causes
     index.cause <- which(causes == cause)
     bh <- lapply(1:length(object$models),function(m){

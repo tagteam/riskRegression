@@ -13,7 +13,7 @@ plotROC(x, models, times, xlab = "1-Specificity", ylab = "Sensitivity", col,
 
 \item{models}{Choice of models to plot}
 
-\item{times}{A single time point specifying the prediction horizon}
+\item{times}{Time point(s) specifying the prediction horizon}
 
 \item{xlab}{Label for x-axis}
 

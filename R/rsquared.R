@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Aug  9 2017 (10:36) 
 ## Version: 
-## Last-Updated: Sep  5 2017 (08:56) 
+## Last-Updated: Sep  5 2017 (15:17) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 95
+##     Update #: 96
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -86,7 +86,19 @@ rsquared.CauseSpecificCox <- function(object,times,cause,...){
     names(leaveOneOut) <- scope
     ## fixme: could constract a formula with all variables from all causes
     if (missing(cause)) cause <- attr(object$response,"states")[[1]]
-    else cause <- prodlim::checkCauses(cause,object$response)
+    else{
+        ## cause <- prodlim::checkCauses(cause,object$response)
+        cause <- unique(cause)
+        if (!is.character(cause)) cause <- as.character(cause)
+        fitted.causes <- prodlim::getStates(object$response)
+        if (!(all(cause %in% fitted.causes))){
+            stop(paste0("Cannot find requested cause(s) in object\n\n",
+                        "Requested cause(s): ",
+                        paste0(cause,collapse=", "),
+                        "\n Available causes: ",
+                        paste(fitted.causes,collapse=", "),"\n"))
+        }
+    }
     r2 <- Score(c("Full model"=list(object),leaveOneOut),
                 formula=eval(object$call$formula)[[1]],
                 data=eval(object$call$data),

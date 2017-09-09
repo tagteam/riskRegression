@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun 23 2016 (10:27) 
 ## Version: 
-## last-updated: Aug 15 2017 (13:37) 
+## last-updated: Sep  9 2017 (07:58) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 65
+##     Update #: 72
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -19,7 +19,7 @@
 ##' @title Plot ROC curves
 #' @param x Object obtained with function \code{Score}
 #' @param models  Choice of models to plot
-#' @param times A single time point specifying the prediction horizon
+#' @param times Time point(s) specifying the prediction horizon
 #' @param xlab Label for x-axis
 #' @param ylab Label for y-axis
 #' @param col line color
@@ -77,8 +77,12 @@ plotROC <- function(x,
                     ...){
     if (is.null(x$ROC))
         stop("Object has no information for ROC curves.\nYou should call the function \"riskRegression::Score\" with plots=\"ROC\".")
-    model=FPR=TPR=times=NULL
+    model=FPR=TPR=NULL
     cbbPalette <- c("#000000", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
+    if (x$responseType!="binary" & !missing(times))
+        etimes <- times
+    else
+        etimes <- NULL
     pframe <- x$ROC$plotframe
     if (!missing(models)){
         pframe <- pframe[model%in%models]
@@ -114,9 +118,9 @@ plotROC <- function(x,
                 }
             }else{
                 if (!missing(models)){
-                    auc <- x$AUC$score[(times==times) & (model%in%models)]
+                    auc <- x$AUC$score[(times==etimes) & (model%in%models)]
                 } else{
-                    auc <- x$AUC$score[(times==times)]
+                    auc <- x$AUC$score[(times==etimes)]
                     if (length(x$nullModel)>0){
                         auc <- auc[model!=x$nullModel]
                     }
@@ -157,7 +161,7 @@ plotROC <- function(x,
             times <- max(pframe[["times"]])
         else ## can only do one times
             times <- times[[1]]
-        pframe <- pframe[times==times]
+        pframe <- pframe[times==etimes]
     }
     if (add==0L) do.call("plot",control$plot)
     ## plot(0,0,type="n",ylim = 0:1,xlim = 0:1,axes=FALSE,xlab = xlab,ylab = ylab)
