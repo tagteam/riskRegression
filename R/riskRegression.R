@@ -2,8 +2,10 @@
 #' Fits a regression model for the risk of an event -- allowing for competing
 #' risks.
 #' 
-#' This is the twin-sister of the function \code{comp.risk} from the timereg package.
-#' 
+#' This is a wrapper for the function \code{comp.risk} from the timereg package.
+#' The main difference is one marks variables in the formula that should have a
+#' time-dependent effect whereas in \code{comp.risk} one marks variables that
+#' should have a time constant (proportional) effect.
 #' @aliases riskRegression ARR LRR
 #' @param formula Formula where the left hand side specifies the event
 #' history event.history and the right hand side the linear predictor.  See
@@ -34,9 +36,8 @@
 #' \code{10^{-convLevel}}.
 #' @param conservative If \code{TRUE} use variance formula that ignores the contribution
 #' by the estimate of the inverse of the probability of censoring weights 
-#' @param ... Not used.
-#' @author Thomas H. Scheike \email{ts@@biostat.ku.dk}
-#' Thomas A. Gerds \email{tag@@biostat.ku.dk}
+#' @param ... Further arguments passed to \code{comp.risk}
+#' @author Thomas A. Gerds \email{tag@@biostat.ku.dk}, Thomas H. Scheike \email{ts@@biostat.ku.dk}
 #' @references Gerds, TA and Scheike, T and Andersen, PK (2011) Absolute risk
 #' regression for competing risks: interpretation, link functions and
 #' prediction Research report 11/8. Department of Biostatistics, University of
@@ -317,8 +318,7 @@ riskRegression <- function(formula,
     # }}}
     # {{{ time points for timevarametric components
     if (missing(times) || length(times)==0) {
-        times <- sort(unique(eventtime[event]))
-        ## times <- times[-c(1:5)] 
+        times <- NULL
     }
     else{
         times <- sort(unique(times))
@@ -326,39 +326,11 @@ riskRegression <- function(formula,
     ntimes <- length(times)
     if (ntimes>1) silent <- c(silent,rep(0,ntimes-1))
     # }}}
-    # {{{ estimate ipcw
-    ## if (missing(cens.formula)){
-    ## cterms <- prodlim::strip.terms(terms(update(formula,NULL~.),specials=c("tp","timevar","strata")),
-    ## specials=c("tp","timevar","strata"),
-    ## arguments=list("tp"="power","timevar"="test","strata"="test"))
-    ## cens.formula <- formula(cterms)
-    ## }
-    ## else
-    ## cens.formula <- update(cens.formula,NULL~.)
+    # {{{ ipcw model
     if (missing(cens.model)) cens.model <- "KM"
-    ## imodel <- switch(tolower(cens.model),"km"="marginal","cox"="cox","forest"="forest","aalen"="aalen","uncensored"="none")
-    ## if (imodel == "cox")
-    ## iFormula <- update(cens.formula,"survival::Surv(time,status)~.")
-    ## else
-    ## iFormula <- update(cens.formula,"Surv(time,status)~.")
-    ## if (imodel=="marginal")
-    ## iData <- data.frame(event.history)
-    ## else{
-    ## iData <- cbind(event.history,get_all_vars(cens.formula,
-    ## data)[neworder,,drop=FALSE])
-    ## }
-    ## stopifnot(NROW(iData)==NROW(event.history))
-    ## Gcx <- subjectWeights(formula=iFormula,data=iData,method=cens.model,lag=1)$weights
     if (length(grep("^km|^kaplan|^marg",cens.model,ignore.case=TRUE))>0)
         cens.model <- "KM"
     else cens.model <- "cox"
-    ## ipcw.fit <- ipcw(formula=iFormula,
-    ## data=iData,
-    ## times=times,
-    ## keep=NULL,
-    ## method=cens.model)
-    ## Gcx <- ipcw.fit$IPCW.subjectTimes
-    ## Gctimes <- ipcw.fit$IPCW.times
     # }}}
     enames <- colnames(event.history)
     if ("event"%in%enames){# competing risks
@@ -380,7 +352,7 @@ riskRegression <- function(formula,
         const <- timereg::const
         timeregformula <- paste0(timeregformula,
                                  "+",
-                                 paste0(sapply(colnames(Z),function(z){paste0("const(",z,")")}),collapse="+"))
+                                 paste0(sapply(colnamesZ,function(z){paste0("const(",z,")")}),collapse="+"))
     }
     if (length(colnamesX[-ipos])>0){
         trdat <- data.frame(event.history,Z,X[,-ipos,drop=FALSE])
@@ -393,12 +365,12 @@ riskRegression <- function(formula,
                               data=trdat,
                               model=trans,
                               times=times,
-                              cause=cause)
+                              cause=cause,...)
     # }}}
     # {{{ prepare the output
 
     if (fixed==1){
-        timeConstantCoef <- out$gamma
+        timeConstantCoef <- c(out$gamma)
         names(timeConstantCoef) <- colnamesZ
         timeConstantVar <- matrix(out$var.gamma,dimZ,dimZ,dimnames=list(colnamesZ,colnamesZ))
     }
@@ -406,93 +378,22 @@ riskRegression <- function(formula,
         timeConstantCoef <- NULL
         timeConstantVar <- NULL
     }
-    ## FIXME out$est should not include time
     timeVaryingCoef <- out$cum
     timeVaryingVar <- out$var.cum
     score <- out$score
-    ## if (is.na(sum(score[,-1])))
-    ## score <- NA
-    ## else 
-    ## if (sum(score[,-1])<0.00001)
-    ## score <- sum(score[,-1])
-    ## time power test
-    testedSlope <- out$gamma2
-    names(testedSlope) <- colnamesX
-    if (confint==1)  {
-        biid <- matrix(out$B.iid,ntimes,antclust*dimX)
-        if (fixed==1) gamiid <- matrix(out$gamma.iid,antclust,dimZ) else gamiid <- NULL
-        B.iid <- list()
-        for (i in (0:(antclust-1))*dimX) {
-            B.iid[[i/dimX+1]] <- matrix(biid[,i+(1:dimX)],ncol=dimX)
-            colnames(B.iid[[i/dimX+1]]) <- colnamesX
-        }
-        if (fixed==1) colnames(gamiid) <- colnamesZ
-    } else B.iid <- gamiid <- NULL
-    if (sim==1) {
-        simUt <- matrix(out$simUt,ntimes,50*dimX)
-        UIt <- list()
-        for (i in (0:49)*dimX) UIt[[i/dimX+1]] <- as.matrix(simUt[,i+(1:dimX)])
-        Ut <- matrix(out$Ut,ntimes,dimX+1)
-        colnames(Ut) <-  c("time",colnamesX)
-        test <- matrix(out$test,numSimu,3*dimX)
-        testOBS <- out$testOBS
-        supUtOBS <- apply(abs(Ut[,-1,drop=FALSE]),2,max)
-        # {{{ confidence bands
-    
-        percen<-function(x,per){
-            n<-length(x)
-            tag<-round(n*per)+1
-            out<-sort(x)[tag]
-            return(out)
-        }
-        unifCI <- do.call("cbind",lapply(1:dimX,function(i)percen(test[,i],0.95)))
-        colnames(unifCI) <- colnamesX
-        # }}}
-        # {{{ Significance test
-        posSig <- 1:dimX
-        sTestSig <- testOBS[posSig]
-        names(sTestSig) <- colnamesX
-        pval<-function(simt,Otest)
-            {
-                simt<-sort(simt)
-                p<-sum(Otest<simt)/length(simt)
-                return(p)
-            }
-    
-        pTestSig <- sapply(posSig,function(i){pval(test[,i],testOBS[i])})
-        names(pTestSig) <- colnamesX
-        timeVarSignifTest <- list(Z=sTestSig,pValue=pTestSig)
-        # }}}
-        # {{{ Kolmogoroff-Smirnoff test
-        posKS <- (dimX+1):(2*dimX)
-        sTestKS <- testOBS[posKS]
-        names(sTestKS) <- colnamesX
-        pTestKS <- sapply(posKS,function(i){pval(test[,i],testOBS[i])})
-        names(pTestKS) <- colnamesX
-        timeVarKolmSmirTest <- list(Z=sTestKS,pValue=pTestKS)
-        # }}}
-        # {{{ Kramer-von-Mises test
-        posKvM <- (2*dimX+1):(3*dimX)
-        sTestKvM <- testOBS[posKvM]
-        names(sTestKvM) <- colnamesX
-        pTestKvM <- sapply(posKvM,function(i){pval(test[,i],testOBS[i])})
-        names(pTestKvM) <- colnamesX
-        timeVarKramvMisTest <- list(Z=sTestKvM,pValue=pTestKvM)
-        # }}}
-    }
-    # }}}
-    # {{{ return results
     timeConstantEffects <- list(coef=timeConstantCoef,var=timeConstantVar)
     class(timeConstantEffects) <- "timeConstantEffects"
     timeVaryingEffects <- list(coef=timeVaryingCoef,
                                var=timeVaryingVar)
+    attr(timeConstantEffects,"variables") <- names(factorLevelsZ)
+    attr(timeVaryingEffects,"variables") <- names(factorLevelsX)
     class(timeVaryingEffects) <- "timeVaryingEffects"
     out <- list(call=call,
                 response=event.history,
                 design=list(Terms=Terms,
-                    const=colnamesZ,
-                    timevar=colnamesX,
-                    timepower=timeconst.power),
+                            const=colnamesZ,
+                            timevar=colnamesX,
+                            timepower=timeconst.power),
                 link=link,
                 time=times,
                 timeConstantEffects=timeConstantEffects,
@@ -503,16 +404,16 @@ riskRegression <- function(formula,
                 factorLevels=c(factorLevelsX,factorLevelsZ),
                 refLevels=c(refLevelsX,refLevelsZ),
                 "na.action"=attr(EHF,"na.action"))
-    if (confint && sim==1)
-        out <- c(out,list(resampleResults=list(conf.band=unifCI,
-                              B.iid=B.iid,
-                              gamma.iid=gamiid,
-                              test.procBeqC=Ut,
-                              sim.test.procBeqC=UIt)))
-    if (sim==1)
-        out <- c(out,list(timeVarSigTest=timeVarSignifTest,
-                          timeVarKolmSmirTest=timeVarKolmSmirTest,
-                          timeVarKramvMisTest=timeVarKramvMisTest))
+    ## if (confint && sim==1)
+    ## out <- c(out,list(resampleResults=list(conf.band=unifCI,
+    ## B.iid=B.iid,
+    ## gamma.iid=gamiid,
+    ## test.procBeqC=Ut,
+    ## sim.test.procBeqC=UIt)))
+    ## if (sim==1)
+    ## out <- c(out,list(timeVarSigTest=timeVarSignifTest,
+    ## timeVarKolmSmirTest=timeVarKolmSmirTest,
+    ## timeVarKramvMisTest=timeVarKramvMisTest))
     if (is.null(out$call$cause))
         out$call$cause <- cause
     class(out) <- "riskRegression"

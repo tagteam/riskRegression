@@ -5,18 +5,21 @@
 \title{Print function for riskRegression models}
 \usage{
 \method{print}{riskRegression}(x, times, digits = 3, eps = 10^-4,
-  verbose = TRUE, ...)
+  verbose = TRUE, conf.int = 0.95, ...)
 }
 \arguments{
 \item{x}{Object obtained with ARR, LRR or riskRegression}
 
-\item{times}{Time points at which to show time-dependent coefficients}
+\item{times}{Time points at which to show time-dependent
+coefficients}
 
 \item{digits}{Number of digits for all numbers but p-values}
 
 \item{eps}{p-values smaller than this number are shown as such}
 
 \item{verbose}{Level of verbosity}
+
+\item{conf.int}{level of confidence. default is 0.95}
 
 \item{...}{not used}
 }

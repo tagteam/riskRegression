@@ -87,7 +87,7 @@ plotEffects <- function(x,
         thisvar <- timevars[1]
     else 
         thisvar <- all.vars(formula)[1]
-    time <- x$time
+    time <- x$timeVaryingEffects$coef[,"time"]
     matchVar <- grep(thisvar,colnames(x$timeVaryingEffects$coef))
     matchVarnames <- grep(thisvar,colnames(x$timeVaryingEffects$coef),value=TRUE)
     coef <- x$timeVaryingEffects$coef[,matchVar,drop=FALSE]
@@ -95,7 +95,6 @@ plotEffects <- function(x,
     zval <- qnorm(1- (1-confint)/2, 0,1)
     lower <- coef-zval*se
     upper <- coef + zval*se
-  
     # select levels for categorical variables
     levs <- colnames(coef)
     if (!missing(level)) {
@@ -106,7 +105,7 @@ plotEffects <- function(x,
     # }}}
     # {{{  plotting limits, colors, etc
     if (missing(ylim))
-        ylim <- c(floor(min(lower)),ceiling(max(upper)))
+        ylim <- c(floor(min(lower,na.rm=1L)),ceiling(max(upper,na.rm=1L)))
     if (missing(xlim))
         xlim=c(min(time),max(time))
     if (missing(col))

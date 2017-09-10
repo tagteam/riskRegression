@@ -46,7 +46,7 @@
 ##' library(survival)
 ##' data(Melanoma)
 ##' fit.arr <- ARR(Hist(time,status)~invasion+age+strata(sex),data=Melanoma,cause=1)
-##' # plot(fit.arr,xlim=c(500,3000))
+##' plot(fit.arr,xlim=c(500,3000))
 ##' 
 ##' 
 #' @export 
@@ -69,7 +69,7 @@ plot.riskRegression <- function(x,
     if ("CauseSpecificCox"%in%class(x))
         plot.times <- x$eventTimes
     else
-        plot.times <- x$time
+        plot.times <- x$timeVaryingEffects$coef[,"time"]
     if (class(x)=="predictedRisk")
         Y <- split(x$risk,1:NROW(x$risk))
     else{
@@ -90,8 +90,8 @@ plot.riskRegression <- function(x,
                 }
                 else{
                     P1 <- stats::predict(x,
-                                  newdata=eval(x$call$data),
-                                  times=plot.times)$risk
+                                         newdata=eval(x$call$data),
+                                         times=plot.times)$risk
                 }
                 medianP1 <- P1[,prodlim::sindex(plot.times,median(plot.times))]
                 P1 <- P1[order(medianP1),]
@@ -139,18 +139,18 @@ plot.riskRegression <- function(x,
                                trimnames=TRUE)
     # }}}
     # {{{ smart control
-  smartA <- prodlim::SmartControl(call=  list(...),
-                                  keys=c("plot","lines","legend","confint","marktime","axis1","axis2"),
-                                  ignore=c("x","type","cause","newdata","add","col","lty","lwd","ylim","xlim","xlab","ylab","legend","marktime","confint","automar","atrisk","timeOrigin","percent","axes","atrisk.args","confint.args","legend.args"),
-                                  ignore.case=TRUE,
-                                  defaults=list("plot"=plot.DefaultArgs,
-                                      "axis1"=axis1.DefaultArgs,
-                                      "axis2"=axis2.DefaultArgs,
-                                      "legend"=legend.DefaultArgs,
-                                      "lines"=lines.DefaultArgs),
-                                  forced=list("plot"=list(axes=FALSE),
-                                      "axis1"=list(side=1)),
-                                  verbose=TRUE)
+    smartA <- prodlim::SmartControl(call=  list(...),
+                                    keys=c("plot","lines","legend","confint","marktime","axis1","axis2"),
+                                    ignore=c("x","type","cause","newdata","add","col","lty","lwd","ylim","xlim","xlab","ylab","legend","marktime","confint","automar","atrisk","timeOrigin","percent","axes","atrisk.args","confint.args","legend.args"),
+                                    ignore.case=TRUE,
+                                    defaults=list("plot"=plot.DefaultArgs,
+                                                  "axis1"=axis1.DefaultArgs,
+                                                  "axis2"=axis2.DefaultArgs,
+                                                  "legend"=legend.DefaultArgs,
+                                                  "lines"=lines.DefaultArgs),
+                                    forced=list("plot"=list(axes=FALSE),
+                                                "axis1"=list(side=1)),
+                                    verbose=TRUE)
 
   # }}}
   # {{{ empty plot

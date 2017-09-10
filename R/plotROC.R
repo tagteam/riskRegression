@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun 23 2016 (10:27) 
 ## Version: 
-## last-updated: Sep  9 2017 (07:58) 
+## last-updated: Sep 10 2017 (12:02) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 72
+##     Update #: 75
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -35,7 +35,6 @@
 ##' ## binary
 ##' set.seed(18)
 ##' library(randomForest)
-##' library(survival)
 ##' bdl <- sampleData(40,outcome="binary")
 ##' bdt <- sampleData(58,outcome="binary")
 ##' bdl[,y:=factor(Y)]
@@ -47,6 +46,7 @@
 ##' plotROC(xb)
 ##' ## survival
 ##' set.seed(18)
+##' library(survival)
 ##' sdl <- sampleData(40,outcome="survival")
 ##' sdt <- sampleData(58,outcome="survival")
 ##' fs1 <- coxph(Surv(time,event)~X3+X5+X6+X7+X8+X10,data=sdl,x=TRUE)
@@ -79,11 +79,13 @@ plotROC <- function(x,
         stop("Object has no information for ROC curves.\nYou should call the function \"riskRegression::Score\" with plots=\"ROC\".")
     model=FPR=TPR=NULL
     cbbPalette <- c("#000000", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
-    if (x$responseType!="binary" & !missing(times))
-        etimes <- times
-    else
-        etimes <- NULL
     pframe <- x$ROC$plotframe
+    if (x$responseType!="binary"){
+        if (missing(times))
+            pframe[times==max(times)]
+        else ## can only do one time at at time
+            pframe[times==times[[1]]]
+    }
     if (!missing(models)){
         pframe <- pframe[model%in%models]
     }else{
@@ -118,9 +120,9 @@ plotROC <- function(x,
                 }
             }else{
                 if (!missing(models)){
-                    auc <- x$AUC$score[(times==etimes) & (model%in%models)]
+                    auc <- x$AUC$score[(model%in%models)]
                 } else{
-                    auc <- x$AUC$score[(times==etimes)]
+                    auc <- x$AUC$score
                     if (length(x$nullModel)>0){
                         auc <- auc[model!=x$nullModel]
                     }
@@ -156,13 +158,6 @@ plotROC <- function(x,
                                      forced=list("plot"=list(axes=FALSE),
                                                  "axis1"=list(side=1),"axis2"=list(side=2)),
                                      verbose=TRUE)
-    if (x$responseType!="binary"){
-        if (missing(times))
-            times <- max(pframe[["times"]])
-        else ## can only do one times
-            times <- times[[1]]
-        pframe <- pframe[times==etimes]
-    }
     if (add==0L) do.call("plot",control$plot)
     ## plot(0,0,type="n",ylim = 0:1,xlim = 0:1,axes=FALSE,xlab = xlab,ylab = ylab)
     control$axis1$labels <- paste(100*control$axis1$at,"%")
