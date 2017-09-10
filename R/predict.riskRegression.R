@@ -67,7 +67,7 @@ predict.riskRegression <- function(object,
     ## remove the time column 
     Xcoef  <-  object$timeVaryingEffects$coef[,-1,drop=FALSE]
     # {{{ compute the linear predictor
-    fittime  <-  objecttimeVaryingEffects$coef[,"time"]
+    fittime  <-  object$timeVaryingEffects$coef[,"time"]
     ntime  <-  NROW(fittime)
     ## intercept
     if (NROW(X)==0){
