@@ -364,6 +364,8 @@ riskRegression <- function(formula,
     out <- timereg::comp.risk(as.formula(timeregformula),
                               data=trdat,
                               model=trans,
+                              time.pow=timeconst.power,
+                              time.pow.test=timevar.test,
                               times=times,
                               cause=cause,...)
     # }}}

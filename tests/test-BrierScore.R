@@ -11,7 +11,6 @@ test_that("predictions",{
     p2 <- stats::predict(f2,newdata=Melanoma,times=c(0,1,100,1000))
 })
 
-if (FALSE){
 test_that("Brier score",{
     library(riskRegression)
     library(survival)
@@ -34,7 +33,6 @@ test_that("Brier score",{
                              formula=Hist(time,status)~1,
                              cause=1, B=10,splitMethod="none"))
     nix <- lapply(1:4,function(m){
-        expect_equal(new$Brier$score[model==names(new$models)[m]][["Brier"]],old$AppErr[[names(old$AppErr)[[m]]]])})
-
+        expect_equal(new$Brier$score[model==names(new$models)[m]][["Brier"]],
+                     old$AppErr[[names(old$AppErr)[[m]]]])})
 })
-}
