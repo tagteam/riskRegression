@@ -1,0 +1,14 @@
+Version: 1.4.9 (Brice - 2017-09-13)
+- predictCox can now compute baseline hazards for left and right censored data
+- fix the influence function for the ate
+- re-organize the test battery: check the baseline hazard in a separate file.
+
+Version: 1.4.8 (Brice - 2017-09-04)
+- re-organize the test battery
+- fix the sign of the influence function for the survival
+
+Version: 1.4.7 (Brice - 2017-08-10)
+- add progress bar to ate when using foreach
+
+Version: 1.4.6 (Brice - 2017-07-20)
+- add the function InfluenceCoxTest comparing survival/risk obtained by two different models
