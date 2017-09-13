@@ -17,6 +17,22 @@
 
 #' @title Computation of survival probabilities from Cox regression models using the product limit estimator.
 #' @description Same as predictCox except that the survival is estimated using the product limit estimator.
+#' 
+#' @param object The fitted Cox regression model object either
+#'     obtained with \code{coxph} (survival package) or \code{cph}
+#'     (rms package).
+#' @param newdata A \code{data.frame} or \code{data.table} containing
+#'     the values of the predictor variables defining subject specific
+#'     predictions. Should have the same structure as the data set
+#'     used to fit the \code{object}.
+#' @param times Time points at which to evaluate the predictions.
+#' @param type  the type of predicted value. Choices are \itemize{
+#'     \item \code{"hazard"}, \code{"cumhazard"}, and \code{"survival"}. 
+#'     See \code{\link{predictCox}} for more details.
+#' @param se Logical. If \code{TRUE} add the standard error to the output.
+#' @param band Logical. If \code{TRUE} add the confidence band to the output.
+#' @param ... additional arguments to be passed to \code{\link{predictCox}}.
+#' 
 #' @examples 
 #' library(survival)
 #' 

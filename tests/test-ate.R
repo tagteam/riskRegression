@@ -101,10 +101,10 @@ ateFit <- ate(fit, data = dtS, treatment = "X1", contrasts = NULL,
 ateFit
 
 expect_equal(ateFit$meanRisk[ateFit$meanRisk$Treatment == "T0",lower],
-             c(0.2005312, 0.2467174, 0.2739946),
+             c(0.2756147, 0.3220124, 0.3492926),
              tol = 1e-6)
 expect_equal(ateFit$meanRisk[ateFit$meanRisk$Treatment == "T0",upper],
-             c(0.7264070, 0.7764495, 0.8029922),
+             c(0.6513235, 0.7011545, 0.7276942),
              tol = 1e-6)
 
 ## manually
@@ -118,7 +118,7 @@ for(iT in c("T0","T1","T2")){ # iT <- "T0"
   ATE[[iT]] <- colMeans(1-resPred$survival)
   
   ATE.iid_term1 <- apply(-resPred$survival.iid,3,colMeans)
-  ATE.iid_term2 <- apply(1-resPred$survival, 1, function(x){x-ATE[[iT]]})/sqrt(n)
+  ATE.iid_term2 <- apply(1-resPred$survival, 1, function(x){x-ATE[[iT]]})/n
   ATE.iid[[iT]] <- t(ATE.iid_term1) + t(ATE.iid_term2)
   
   ATE.se <- sqrt(apply(ATE.iid[[iT]]^2, 2, sum))
