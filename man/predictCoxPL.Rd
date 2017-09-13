@@ -7,6 +7,28 @@
 predictCoxPL(object, newdata, times, type = c("cumhazard", "survival"),
   se = FALSE, band = FALSE, ...)
 }
+\arguments{
+\item{object}{The fitted Cox regression model object either
+obtained with \code{coxph} (survival package) or \code{cph}
+(rms package).}
+
+\item{newdata}{A \code{data.frame} or \code{data.table} containing
+the values of the predictor variables defining subject specific
+predictions. Should have the same structure as the data set
+used to fit the \code{object}.}
+
+\item{times}{Time points at which to evaluate the predictions.}
+
+\item{type}{the type of predicted value. 
+Choices are \code{"hazard"}, \code{"cumhazard"}, and \code{"survival"}. 
+See \code{\link{predictCox}} for more details.}
+
+\item{se}{Logical. If \code{TRUE} add the standard error to the output.}
+
+\item{band}{Logical. If \code{TRUE} add the confidence band to the output.}
+
+\item{...}{additional arguments to be passed to \code{\link{predictCox}}.}
+}
 \description{
 Same as predictCox except that the survival is estimated using the product limit estimator.
 }
