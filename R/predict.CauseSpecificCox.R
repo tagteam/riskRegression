@@ -75,6 +75,7 @@
 #' # predCSC.se$absRisk.se
 #' # sqrt(apply(predCSC.iid$absRisk.iid[,1,]^2,1,function(x){sum(x)}))
 #' ## strata
+#' library(survival)
 #' CSC.fit.s <- CSC(list(Hist(time,event)~ strata(X1)+X2+X9,
 #'  Hist(time,event)~ X2+strata(X4)+X8+X7),data=d, method = "breslow")
 #' predict(CSC.fit.s,cause=1,times=ttt,se=1L) ## not absRisk>1 due to small number of observations
@@ -121,7 +122,7 @@ predict.CauseSpecificCox <- function(object,
     if (missing(cause)) {
         cause <- object$theCause
     }
-
+    
     ## causes
     # NOTE: cannot use only eventtimes of cause 1 otherwise wrong estimation of the survival in the absolute risk
     causes <- object$causes

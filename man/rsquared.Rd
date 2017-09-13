@@ -2,14 +2,30 @@
 % Please edit documentation in R/rsquared.R
 \name{rsquared}
 \alias{rsquared}
+\alias{rsquared.default}
+\alias{rsquared.glm}
+\alias{rsquared.coxph}
+\alias{rsquared.CauseSpecificCox}
 \title{Explained variation for settings with binary, survival and competing risk outcome}
 \usage{
-rsquared(object, ...)
+rsquared(object,...)
+\method{rsquared}{default}(object,formula,newdata,times,cause,...)
+\method{rsquared}{glm}(object,formula,newdata,...)
+\method{rsquared}{coxph}(object,formula,newdata,times,...)
+\method{rsquared}{CauseSpecificCox}(object,formula,newdata,times,cause,...)
 }
 \arguments{
 \item{object}{Model for which we want R^2}
 
 \item{...}{passed to \code{riskRegression::Score}}
+
+\item{newdata}{Optional validation data set in which to compute R^2}
+
+\item{formula}{Formula passed to \code{Score}. If not provided, try to use the formula of the call of \code{object}, if any.}
+
+\item{cause}{For competing risk models the event of interest}
+
+\item{times}{Vector of time points used as prediction horizon for the computation of Brier scores.}
 }
 \value{
 Data frame with explained variation values for the full model.
@@ -29,12 +45,51 @@ learndat <- sampleData(48,outcome="binary")
 lr1 = glm(Y~X1+X2+X7+X9,data=learndat,family=binomial)
 rsquared(lr1)
 
+## validation data
+valdat=sampleData(94,outcome="binary")
+rsquared(lr1,newdata=valdat)
+
+## predicted risks externally given
+p1=predictRisk(lr1,newdata=valdat)
+rsquared(p1,formula=Y~1,valdat)
+
+# survival
 library(survival)
 data(pbc)
+pbc=na.omit(pbc)
+pbctest=(1:NROW(pbc)) \%in\% sample(1:NROW(pbc),size=.632*NROW(pbc))
+pbclearn=pbc[pbctest,]
 cox1= coxph(Surv(time,status!=0)~age+sex+log(bili)+log(albumin)+log(protime),
-data=na.omit(pbc),x=TRUE)
-rsquared(cox1,times=1000)
+      data=pbclearn,x=TRUE)
 
+## same data
+rsquared(cox1,formula=Surv(time,status!=0)~1,times=1000)
+
+## validation data
+pbcval=pbc[!pbctest,]
+rsquared(cox1,formula=Surv(time,status!=0)~1,newdata=pbcval,times=1000)
+
+## predicted risks externally given
+p2=predictRisk(cox1,newdata=pbcval,times=1000)
+rsquared(cox1,formula=Surv(time,status!=0)~1,newdata=pbcval,times=1000)
+ 
+# competing risks
+data(Melanoma)
+Melanomatest=(1:NROW(Melanoma)) \%in\% sample(1:NROW(Melanoma),size=.632*NROW(Melanoma))
+Melanomalearn=Melanoma[Melanomatest,]
+fit1 <- CSC(list(Hist(time,status)~sex,
+                 Hist(time,status)~invasion+epicel+age),
+                 data=Melanoma)
+rsquared(fit1,times=1000,cause=2)
+
+## validation data
+Melanomaval=Melanoma[!Melanomatest,]
+rsquared(fit1,formula=Hist(time,status)~1,newdata=Melanomaval,times=1000)
+
+## predicted risks externally given
+p3= predictRisk(fit1,cause=1,newdata=Melanomaval,times=1000)
+rsquared(p3,formula=Hist(time,status)~1,cause=1,newdata=Melanomaval,times=1000)
+ 
 }
 \seealso{
 Score

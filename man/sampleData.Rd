@@ -2,10 +2,13 @@
 % Please edit documentation in R/sampleData.R
 \name{sampleData}
 \alias{sampleData}
+\alias{sampleDataTD}
 \title{Simulate data with binary or time-to-event outcome}
 \usage{
-sampleData(n, outcome = "competing.risks", formula = ~f(X1, 2) + f(X2,
-  -0.033) + f(X3, 0.4) + f(X6, 0.1) + f(X7, -0.1) + f(X8, 0.5) + f(X9, -1))
+sampleData(n,outcome="competing.risks",
+formula= ~ f(X1,2)+f(X2,-0.033)+f(X3,0.4)+f(X6,.1)+f(X7,-.1)+f(X8,.5)+f(X9,-1))
+sampleDataTD(n,n.intervals=5,outcome="competing.risks",
+formula= ~ f(X1,2)+f(X2,-0.033)+f(X3,0.4)+f(X6,.1)+f(X7,-.1)+f(X8,.5)+f(X9,-1))
 }
 \arguments{
 \item{n}{Sample size}
@@ -16,6 +19,8 @@ according to keywords: \code{"binary"} = binary response,
 competing risks response}
 
 \item{formula}{Specify regression coefficients}
+
+\item{n.intervals}{\code{sampleDataTD} only: the maximum number of episodes in which the covariates are updated.}
 }
 \value{
 Simulated data as data.table with n rows and the following columns:

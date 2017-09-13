@@ -133,22 +133,38 @@ CSC <- function(formula,
     # {{{ type
     survtype <- match.arg(survtype,c("hazard","survival"))
     # }}}
-    # {{{ formulae
+    # {{{ formulae & response
     if (class(formula)=="formula") formula <- list(formula)
-    else if (!length(formula)<=4) stop("Formula can either be a single formula (to be used for both cause specific hazards) or a list of formulae, one for each cause.")
-    responseFormula <- reformulate("1", formula[[1]][[2]])
-    # }}}
-    # {{{ response
-    ## require(survival)
     call <- match.call()
-    # get information from formula
-    mf <- stats::model.frame(update(responseFormula,".~1"), data = data, na.action = na.omit)
-    response <- stats::model.response(mf)
+    # get outcome information from formula
+    Rform <- update(formula[[1]],".~1")
+    ## mf <- stats::model.frame(Rform, data = data, na.action = na.omit)
+    ## response <- stats::model.response(mf)
+    response <- eval(Rform[[2]],envir=data)
+    if (any(is.na(response))) 
+        stop("Event history response may not contain missing values")
     time <- response[, "time"]
     status <- response[, "status"]
     event <- prodlim::getEvent(response)
+    if ("entry" %in% colnames(response))
+        entry <- response[, "entry"]
+    else{
+        if(fitter=="phreg"){
+            entry <- 0
+        }else{
+            entry <- NULL
+        }
+    }
+    if (any(entry>time)) stop("entry > time detected. Entry into the study must come first.")
+    ## remove event history variables from data
+    if(any((this <- match(all.vars(Rform),names(data),nomatch=0))>0)){
+        if (is.data.table(data))
+            data <- data[,-this,with=FALSE]
+        else
+            data <- data[,-this]
+    }
     # }}}
-    # {{{ event times
+    # {{{ sorted unique event times
     eventTimes <- unique(sort(as.numeric(time[status != 0])))
     # }}}
     # {{{ causes
@@ -157,7 +173,7 @@ CSC <- function(formula,
         NC <- length(causes)
     else
         NC <- 2 # cause of interest and overall survival
-    if (length(formula)!=NC && length(formula)>1) stop("Wrong number of formulae. Should be ",NC,".")
+    if (length(formula)!=NC && length(formula)>1) stop("Wrong number of formulae. Should be one for each cause ",NC,".")
     if (length(formula)==1) {
         ## warning("The same formula used for all causes")
         formula <- lapply(1:NC,function(x)formula[[1]])
@@ -189,26 +205,17 @@ CSC <- function(formula,
             if (x==1)
                 causeX <- theCause
             else
-                causeX <- otherCauses[x-1]}
-        else{
-                    causeX <- theCause
-                }
-        EHF <- prodlim::EventHistory.frame(formula=formula[[x]],
-                                           data=data,
-                                           unspecialsDesign=FALSE,
-                                           specialsFactor=FALSE,
-                                           specials="strata",
-                                           stripSpecials="strata",
-                                           stripArguments=list("strata"=NULL),
-                                           specialsDesign=FALSE)
-        formulaX <- formula[[x]]
-        if (is.null(EHF$strata))
-            covData <- cbind(EHF$design)
-        else
-            covData <- cbind(EHF$design,EHF$strata)
-        ## response <- stats::model.response(covData)
-        time <- as.numeric(EHF$event.history[, "time",drop=TRUE])
-        event <- prodlim::getEvent(EHF$event.history)
+                causeX <- otherCauses[x-1]
+        } else{
+            causeX <- theCause
+        }
+        ## EHF <- prodlim::EventHistory.frame(formula=formula[[x]],data=data,unspecialsDesign=FALSE,specialsFactor=FALSE,specials="strata",stripSpecials="strata",stripArguments=list("strata"=NULL),specialsDesign=FALSE)
+        ## if (is.null(EHF$strata))
+        ## covData <- cbind(EHF$design)
+        ## else
+        ## covData <- cbind(EHF$design,EHF$strata)
+        ## time <- as.numeric(EHF$event.history[, "time",drop=TRUE])
+        ## event <- prodlim::getEvent(EHF$event.history)
         if (survtype=="hazard"){
             statusX <- as.numeric(event==causeX)
         }else{
@@ -219,24 +226,26 @@ CSC <- function(formula,
                 statusX <- response[,"status"]
             }
         }
-        
-        workData <- data.frame(time=time,status=statusX)
-        if(fitter=="phreg"){
-            if("entry" %in% names(data)){
-                stop("data may not contain a column named \"entry\" when using fitter=\"phreg\"")
-            }
-            workData$entry <- 0
+        if (is.null(entry))
+            workData <- data.frame(time=time,status=statusX)
+        else
+            workData <- data.frame(time=time,status=statusX,entry=entry)
+        if(any(this <- match(names(data),names(workData),nomatch=0)>0)){
+            warning(paste("Variables named",paste(names(data)[this],collapse=", "),"in data will be ignored."))
+            if (is.data.table(data))
+                data <- data[,-this,with=FALSE]
+            else
+                data <- data[,-this]
         }
-        ## to interprete formula
-        ## we need the variables. in case of log(age) terms
-        ## covData has wrong names 
-        ## workData <- cbind(workData,covData)
         workData <- cbind(workData,data)
-        
-        response <- paste0("survival::Surv(",if(fitter=="phreg"){"entry,"},"time, status)")
-        formulaXX <- as.formula(paste(response,
-                                      as.character(delete.response(terms.formula(formulaX)))[[2]],
-                                      sep="~"))
+        if (is.null(entry))
+            survresponse <- "survival::Surv(time, status)"
+        else
+            survresponse <- "survival::Surv(entry, time, status)"
+        formulaXX <- update(formula[[x]],paste0(survresponse,"~."))
+        ## as.formula(paste(survresponse,
+        ## as.character(delete.response(terms.formula(formulaX)))[[2]],
+        ## sep="~"))
         if (fitter=="coxph"){
             fit <- survival::coxph(formulaXX, data = workData,x=TRUE,y=TRUE,...)
         } else if(fitter=="cph") {

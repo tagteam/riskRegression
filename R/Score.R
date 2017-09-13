@@ -272,7 +272,7 @@ Score.list <- function(object,
     metrics[grep("^brier$",metrics,ignore.case=TRUE)] <- "Brier"
     plots[grep("^roc$",plots,ignore.case=TRUE)] <- "ROC"
     plots[grep("^cal",plots,ignore.case=TRUE)] <- "Calibration"
-    if (length(posRR <- grep("^rr$|^r2|rsquared",summary,ignore.case=TRUE))>0){
+    if (length(posRR <- grep("^rr$|^r2|rsq",summary,ignore.case=TRUE))>0){
         if (!nullModel) stop("Need the null model to compute R^2 but argument 'nullModel' is FALSE.")
         summary <- summary[-posRR]
         if (!("Brier" %in% metrics)) metrics <- c(metrics,"Brier")
@@ -487,7 +487,7 @@ Score.list <- function(object,
             stop("Landmark updating not yet implemented.")
         }
     } else{
-        if (!missing(times)) warning("Function 'Score': Response type is not time-to-event: argument 'times' will be ignored.",call.=FALSE)
+        if (!missing(times) && (!is.null(times)) && (times!=FALSE)) warning("Function 'Score': Response type is not time-to-event: argument 'times' will be ignored.",call.=FALSE)
         times <- NULL
         NT <- 1
     }
@@ -531,7 +531,7 @@ Score.list <- function(object,
     # {{{ 
     trainModel <- function(model,data){
         model$call$data <- data
-        try(eval(model$call),silent=TRUE)
+        try(eval(model$call),silent=FALSE)
     }
     computePerformance <- function(object,
                                    nullobject,

@@ -53,6 +53,7 @@
 #' @importFrom prodlim Hist dimColor prodlim
 #' @importFrom foreach "%dopar%" foreach
 #' @importFrom cmprsk predict.crr
+#' @importFrom timereg comp.risk Event 
 #' @importFrom prodlim Hist jackknife prodlim sindex
 #' @importFrom grDevices col2rgb gray
 #' @importFrom graphics bxp  abline axis box legend lines mtext par plot points segments text title polygon par boxplot

@@ -12,7 +12,6 @@ test_that("Formula interface",{
     class(b) <- "crr"
     expect_equal(a$crrFit,b)
 })
-
 if (FALSE){
     test_that("Functions of time",{
         qFun <- function(x){x^2}
@@ -22,12 +21,12 @@ if (FALSE){
         a <- FGR(Hist(time,event)~cov2(X1,tf=qFun)+cov2(X2),data=d)
         b <- with(d,cmprsk::crr(ftime=time,
                                 fstatus=cause,
-                                cov2=d[,c("X1","X2")],
+                                cov2=cbind(X1,X2),
                                 tf=function(time){cbind(qFun(time),time)}))
         e <- with(d,
                   cmprsk::crr(ftime=time,
                               fstatus=cause,
-                              cov2=d[,c("X1","X2")],
+                              cov2=cbind(X1,X2),
                               tf=function(x){do.call("cbind",
                                                      lapply(list("qFun", "id"), function(f) {do.call(f,list(x))}))}))
         ## remove call
@@ -39,7 +38,6 @@ if (FALSE){
         expect_equivalent(a$crrFit,e)
     })
 }
-
 ## expect_true(length(coef(ee))==4)
 
 

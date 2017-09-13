@@ -13,7 +13,7 @@ plotROC(x, models, times, xlab = "1-Specificity", ylab = "Sensitivity", col,
 
 \item{models}{Choice of models to plot}
 
-\item{times}{A single time point specifying the prediction horizon}
+\item{times}{Time point(s) specifying the prediction horizon}
 
 \item{xlab}{Label for x-axis}
 
@@ -43,7 +43,6 @@ Plot ROC curve
 ## binary
 set.seed(18)
 library(randomForest)
-library(survival)
 bdl <- sampleData(40,outcome="binary")
 bdt <- sampleData(58,outcome="binary")
 bdl[,y:=factor(Y)]
@@ -55,6 +54,7 @@ xb <- Score(list("glm"=fb1,"rf"=fb2),y~1,data=bdt,
 plotROC(xb)
 ## survival
 set.seed(18)
+library(survival)
 sdl <- sampleData(40,outcome="survival")
 sdt <- sampleData(58,outcome="survival")
 fs1 <- coxph(Surv(time,event)~X3+X5+X6+X7+X8+X10,data=sdl,x=TRUE)

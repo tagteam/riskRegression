@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun  6 2016 (09:02) 
 ## Version: 
-## last-updated: Aug  9 2017 (10:58) 
+## last-updated: Sep  5 2017 (15:16) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 48
+##     Update #: 99
 #----------------------------------------------------------------------
 ## 
 ### Commentary:
@@ -317,6 +317,68 @@ predictRisk.coxph <- function(object,newdata,times,...){
     }
     return(1-p)
 }
+
+##' @export
+predictRisk.coxphTD <- function(object,newdata,times,landmark,...){
+    stopifnot(attr(object$y,"type")=="counting")
+    bh <- survival::basehaz(object,centered=TRUE)
+    Lambda0 <- bh[,1]
+    etimes <- bh[,2]
+    lp <- predict(object,newdata=newdata,type="lp")
+    p <- do.call("cbind",lapply(times,function(ttt){
+        index <- prodlim::sindex(eval.times=c(landmark,landmark+ttt),jump.times=etimes)
+        Lambda0.diff <- c(0,Lambda0)[1+index[2]] - c(0,Lambda0)[1+index[1]]
+        1-exp(-Lambda0.diff * exp(lp))
+    }))
+    if (NROW(p) != NROW(newdata) || NCOL(p) != length(times)){
+        stop(paste("\nPrediction matrix has wrong dimensions:\nRequested newdata x times: ",NROW(newdata)," x ",length(times),"\nProvided prediction matrix: ",NROW(p)," x ",NCOL(p),"\n\n",sep=""))
+    }
+    return(p)
+}
+
+##' @export
+predictRisk.CSCTD <- function(object,newdata,times,cause,landmark,...){
+    stopifnot(attr(object$models[[1]]$y,"type")=="counting")
+    if (missing(cause)) cause <- object$theCause
+    else{
+        ## cause <- prodlim::checkCauses(cause,object$response)
+        cause <- unique(cause)
+        if (!is.character(cause)) cause <- as.character(cause)
+        fitted.causes <- prodlim::getStates(object$response)
+        if (!(all(cause %in% fitted.causes))){
+            stop(paste0("Cannot find requested cause(s) in object\n\n",
+                        "Requested cause(s): ",
+                        paste0(cause,collapse=", "),
+                        "\n Available causes: ",
+                        paste(fitted.causes,collapse=", "),"\n"))
+        }
+    }
+    causes <- object$causes
+    index.cause <- which(causes == cause)
+    bh <- lapply(1:length(object$models),function(m){
+        survival::basehaz(object$models[[m]],centered=TRUE)
+    })
+    lp <- lapply(1:length(object$models),function(m){
+        predict(object$models[[m]],
+                newdata=newdata,
+                type="lp")
+    })
+    p <- do.call("cbind",lapply(times,function(ttt){
+        hazard <- lapply(1:length(object$models),function(m){
+            index <- sindex(eval.times=c(landmark,landmark+ttt),jump.times=bh[[m]][,2])
+            bh.m <- bh[[m]][,1]
+            exp(lp[[m]])*(c(0,bh.m)[1+index[2]] - c(0,bh.m)[1+index[1]])
+        })
+        surv <- exp(- Reduce("+",hazard))
+        surv*hazard[[index.cause]]
+    }))
+    if (NROW(p) != NROW(newdata) || NCOL(p) != length(times)){
+        stop(paste("\nPrediction matrix has wrong dimensions:\nRequested newdata x times: ",NROW(newdata)," x ",length(times),"\nProvided prediction matrix: ",NROW(p)," x ",NCOL(p),"\n\n",sep=""))
+    }
+    return(p)
+}
+
+
 ## predictRisk.coxph <- function(object,newdata,times,...){
 ## baselineHazard.coxph(object,times)
 ## require(survival)

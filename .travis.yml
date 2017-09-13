@@ -2,8 +2,10 @@
 
 language: R
 sudo: required
-r_check_args: --as-cran
+r_check_args: "--as-cran"
 cache: packages
+warnings_are_errors: false
 
 r_github_packages:
-- cran/survival
+ - cran/survival
+ 

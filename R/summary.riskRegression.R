@@ -69,8 +69,9 @@ summary.riskRegression <- function(object,
         cat("The column 'Intercept' is the baseline risk")
         cat(" where all the covariates have value zero\n\n")
     }
-    if (missing(times)) times <- quantile(object$time)
-    showTimes <- prodlim::sindex(eval.times=times,jump.times=object$time)
+    fittedtimes <- object$timeVaryingEffects$coef[,"time"]
+    if (missing(times)) times <- quantile(fittedtimes)
+    showTimes <- prodlim::sindex(eval.times=times,jump.times=fittedtimes)
     showMat <- format(exp(object$timeVaryingEffects$coef[showTimes,-1,drop=FALSE]),digits=digits,nsmall=digits)
     rownames(showMat) <- signif(object$timeVaryingEffects$coef[showTimes,1],2)
     if (verbose){

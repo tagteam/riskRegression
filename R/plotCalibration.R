@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Feb 23 2017 (11:15) 
 ## Version: 
-## last-updated: Aug 15 2017 (13:36) 
+## last-updated: Sep  9 2017 (14:29) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 174
+##     Update #: 176
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -74,12 +74,20 @@
 ##'     barplot, legend, points (pseudo values), rug. See
 ##'     \code{\link{SmartControl}}.
 ##' @examples
+##' library(survival)
 ##' db=sampleData(100,outcome="binary")
 ##' fb1=glm(Y~X1+X5+X7,data=db,family="binomial")
 ##' fb2=glm(Y~X1+X3+X6+X7,data=db,family="binomial")
 ##' xb=Score(list(model1=fb1,model2=fb2),Y~1,data=db,
 ##'           plots="cal",metrics=NULL)
 ##' plotCalibration(xb)
+##'
+##' ds=sampleData(100,outcome="survival")
+##' fs1=coxph(Surv(time,event)~X1+X5+X7,data=ds,x=1)
+##' fs2=coxph(Surv(time,event)~X1+X3+X6+X7,data=ds,x=1)
+##' xs=Score(list(Cox1=fs1,Cox2=fs2),Surv(time,event)~1,data=ds,
+##'           plots="cal",metrics=NULL)
+##' plotCalibration(xs)
 ##' 
 ##' data(Melanoma)
 ##' f1 <- CSC(Hist(time,status)~age+sex+epicel+ulcer,data=Melanoma)

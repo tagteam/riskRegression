@@ -55,10 +55,13 @@ convergence criterion for the fitting algorithm as
 \item{conservative}{If \code{TRUE} use variance formula that ignores the contribution
 by the estimate of the inverse of the probability of censoring weights}
 
-\item{...}{Not used.}
+\item{...}{Further arguments passed to \code{comp.risk}}
 }
 \description{
-This is the twin-sister of the function \code{comp.risk} from the timereg package.
+This is a wrapper for the function \code{comp.risk} from the timereg package.
+The main difference is one marks variables in the formula that should have a
+time-dependent effect whereas in \code{comp.risk} one marks variables that
+should have a time constant (proportional) effect.
 }
 \examples{
 
@@ -183,7 +186,6 @@ Martinussen and Scheike (2006), Dynamic regression models for survival data,
 Springer.
 }
 \author{
-Thomas H. Scheike \email{ts@biostat.ku.dk}
-Thomas A. Gerds \email{tag@biostat.ku.dk}
+Thomas A. Gerds \email{tag@biostat.ku.dk}, Thomas H. Scheike \email{ts@biostat.ku.dk}
 }
 \keyword{survival}
