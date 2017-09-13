@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Oct 23 2016 (08:53) 
 ## Version: 
-## last-updated: sep  5 2017 (17:41) 
+## last-updated: sep  6 2017 (11:03) 
 ##           By: Brice Ozenne
-##     Update #: 240
+##     Update #: 255
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -122,8 +122,7 @@ ate <- function(object,
     .=.I <- NULL
     diff.se=ratio.se=.GRP=lower=upper=diff.lower=diff.upper=diff.p.value=ratio.lower=ratio.upper=ratio.p.value <- NULL
     lowerBand=upperBand=diffBand.lower=diffBand.upper=ratioBand.lower=ratioBand.upper <- NULL
-    
-    
+        
     # {{{ Prepare
     dots <- list(...)
     
@@ -174,27 +173,27 @@ ate <- function(object,
   # }}}
   
     # {{{ calc G formula
-  Gformula <- function(object, data, treatment, contrasts, times, cause, ...){
-      meanRisk <- lapply(1:n.contrasts,function(i){
-          ## prediction for the hypothetical worlds in which every subject is treated with the same treatment
-          data.i <- data
-          data.i[[treatment]] <- factor(contrasts[i], levels = levels)
-          risk.i <- colMeans(do.call("predictRisk",args = list(object, newdata = data.i, times = times, cause = cause, ...)))
-      })
-      riskComparison <- data.table::rbindlist(lapply(1:(n.contrasts-1),function(i){
-          data.table::rbindlist(lapply(((i+1):n.contrasts),function(j){
-              ## compute differences between all pairs of treatments
-              data.table(Treatment.A=contrasts[[i]],
-                         Treatment.B=contrasts[[j]],
-                         time = times,
-                         diff=meanRisk[[i]]-meanRisk[[j]],
-                         ratio=meanRisk[[i]]/meanRisk[[j]])
-          }))}))
-      name.Treatment <- unlist(lapply(1:n.contrasts, function(c){rep(contrasts[c],length(meanRisk[[c]]))}))
-      out <- list(meanRisk = data.table(Treatment=name.Treatment, time = times, meanRisk=unlist(meanRisk)),
-                  riskComparison = riskComparison)
-      out
-  }
+    Gformula <- function(object, data, treatment, contrasts, times, cause, ...){
+        meanRisk <- lapply(1:n.contrasts,function(i){
+            ## prediction for the hypothetical worlds in which every subject is treated with the same treatment
+            data.i <- data
+            data.i[[treatment]] <- factor(contrasts[i], levels = levels)
+            risk.i <- colMeans(do.call("predictRisk",args = list(object, newdata = data.i, times = times, cause = cause, ...)))
+        })
+        riskComparison <- data.table::rbindlist(lapply(1:(n.contrasts-1),function(i){
+            data.table::rbindlist(lapply(((i+1):n.contrasts),function(j){
+                ## compute differences between all pairs of treatments
+                data.table(Treatment.A=contrasts[[i]],
+                           Treatment.B=contrasts[[j]],
+                           time = times,
+                           diff=meanRisk[[i]]-meanRisk[[j]],
+                           ratio=meanRisk[[i]]/meanRisk[[j]])
+            }))}))
+        name.Treatment <- unlist(lapply(1:n.contrasts, function(c){rep(contrasts[c],length(meanRisk[[c]]))}))
+        out <- list(meanRisk = data.table(Treatment=name.Treatment, time = times, meanRisk=unlist(meanRisk)),
+                    riskComparison = riskComparison)
+        out
+    }
     # }}}
     
     # {{{ point estimate
@@ -208,12 +207,10 @@ ate <- function(object,
                                   dots))
     # }}}
     
-    # {{{ Confidence interval
-
-    ##### Confidence interval
+    # {{{ Confidence interval    
     if(se || band){
     
-    alpha <- 1-conf.level
+        alpha <- 1-conf.level
     
         if(B>0){
             # {{{ Bootstrap
@@ -370,7 +367,7 @@ ate <- function(object,
                 }else{
                     term1 <- apply(attr(IFrisk[[iTreat]],"iid"),2:3,mean)
                 }
-
+                # note: here IFrisk[[iTreat]] is the risk (the influence function is in the attribute "iid")
                 term2 <- rowCenter_cpp(IFrisk[[iTreat]], center = pointEstimate$meanRisk[Treatment==contrasts[iTreat],meanRisk])
 
                 # we get n * IF instead of IF for the absolute risk. This is why the second term need to be rescaled
@@ -407,6 +404,7 @@ ate <- function(object,
                     }else{
                         term1 <- apply(attr(IFrisk[[iCon]],"iid")-attr(IFrisk[[iCon2]],"iid"), 2:3, mean)
                     }
+                    # note: here IFrisk[[iCon]] is the risk (the influence function is in the attribute "iid")
                     term2 <- rowCenter_cpp(IFrisk[[iCon]]-IFrisk[[iCon2]],
                                            center = pointEstimate$riskComparison[Treatment.A==contrasts[iCon] & Treatment.B==contrasts[iCon2],diff])
                     iid_diff.contrasts[iiCon,,] <- term1 + t(term2)/n.obs
@@ -424,8 +422,9 @@ ate <- function(object,
                     iidTempo2 <- aperm(attr(IFrisk[[iCon2]],"iid"), c(3,2,1))
                     term2 <- aperm(sliceMultiply_cpp(iidTempo2, IFrisk[[iCon]]/IFrisk[[iCon2]]^2), c(3,2,1))
 
-                    term3 <- rowCenter_cpp(IFrisk[[iCon]]/IFrisk[[iCon2]],
-                                           center = pointEstimate$riskComparison[Treatment.A==contrasts[iCon] & Treatment.B==contrasts[iCon2],ratio])
+                    # note: here IFrisk[[iCon]] is the risk (the influence function is in the attribute "iid")
+                     term3 <- rowCenter_cpp(IFrisk[[iCon]]/IFrisk[[iCon2]],
+                                            center = pointEstimate$riskComparison[Treatment.A==contrasts[iCon] & Treatment.B==contrasts[iCon2],ratio])
                     
                     iid_ratio.contrasts[iiCon,,] <- apply(term1 - term2, 2:3, mean) + t(term3)/n.obs
                     sdIF_ratio.contrasts[iiCon,] <- apply(iid_ratio.contrasts[iiCon,,,drop=FALSE],2,
@@ -465,7 +464,6 @@ ate <- function(object,
                                              time = times)
             
             mrisks[, meanRisk := pointEstimate$meanRisk$meanRisk]
-            
             if(se){                    
               mrisks[, lower := meanRisk + qnorm(alpha/2) * sdIF.treatment[.GRP,], by = "Treatment"]
               mrisks[, upper := meanRisk + qnorm(1-alpha/2) * sdIF.treatment[.GRP,], by = "Treatment"]
