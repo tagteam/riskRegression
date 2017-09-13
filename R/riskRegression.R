@@ -188,8 +188,8 @@ riskRegression <- function(formula,
     trans <- switch(link,
                     "additive"="additive", # 
                     "prop"="prop",     # Proportional hazards (Cox, FG)
-                    "logistic"="logistic", # Logistic absolute risks 
-                    "relative"="rcif") # Relative absolute risks
+                    "logistic"="logistic2", # Logistic absolute risks
+                    "relative"="rcif2") # Relative absolute risks
     if (numSimu==0) sim <- 0 else sim <- 1
     # }}}
     # {{{ read the data and the design

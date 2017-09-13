@@ -17,7 +17,11 @@ rsquared(object,...)
 \arguments{
 \item{object}{Model for which we want R^2}
 
+\item{newdata}{Optional validation data set in which to compute R^2}
+
 \item{...}{passed to \code{riskRegression::Score}}
+
+\item{formula}{Formula passed to \code{Score}. If not provided, try to use the formula of the call of \code{object}, if any.}
 
 \item{cause}{For competing risk models the event of interest}
 
@@ -41,12 +45,50 @@ learndat <- sampleData(48,outcome="binary")
 lr1 = glm(Y~X1+X2+X7+X9,data=learndat,family=binomial)
 rsquared(lr1)
 
+## validation data
+valdat=sampleData(94,outcome="binary")
+rsquared(lr1,newdata=valdat)
+
+## predicted risks externally given
+p1=predictRisk(lr1,newdata=valdat)
+rsquared(p1,formula=Y~1,valdat)
+
+# survival
 library(survival)
 data(pbc)
+pbc=na.omit(pbc)
+pbctest=(1:NROW(pbc)) \%in\% sample(1:NROW(pbc),size=.632*NROW(pbc))
+pbclearn=pbc[pbctest,]
 cox1= coxph(Surv(time,status!=0)~age+sex+log(bili)+log(albumin)+log(protime),
-data=na.omit(pbc),x=TRUE)
-rsquared(cox1,times=1000)
+      data=pbclearn,x=TRUE)
 
+## same data
+rsquared(cox1,formula=Surv(time,status!=0)~1,times=1000)
+
+## validation data
+pbcval=pbc[!pbctest,]
+rsquared(cox1,formula=Surv(time,status!=0)~1,newdata=pbcval,times=1000)
+
+## predicted risks externally given
+p2=predictRisk(cox1,newdata=valdat,times=1000)
+rsquared(cox1,formula=Surv(time,status!=0)~1,newdata=valdat,times=1000)
+ 
+# competing risks
+data(Melanoma)
+Melanomatest=(1:NROW(Melanoma)) \%in\% sample(1:NROW(Melanoma),size=.632*NROW(Melanoma))
+Melanomalearn=Melanoma[Melanomatest,]
+fit1 <- CSC(list(Hist(time,status)~sex,
+                 Hist(time,status)~invasion+epicel+age),
+                 data=Melanoma)
+rsquared(fit1,times=1000,cause=2)
+
+## validation data
+Melanomaval=Melanoma[!Melanomatest,]
+rsquared(fit1,formula=Hist(time,status)~1,newdata=Melanomatest,times=1000)
+
+## predicted risks externally given
+p3= predictRisk(fit1,newdata=Melanomatest,times=1000)
+ 
 }
 \seealso{
 Score

@@ -487,7 +487,7 @@ Score.list <- function(object,
             stop("Landmark updating not yet implemented.")
         }
     } else{
-        if (!missing(times)) warning("Function 'Score': Response type is not time-to-event: argument 'times' will be ignored.",call.=FALSE)
+        if (!missing(times) && (!is.null(times)) && (times!=FALSE)) warning("Function 'Score': Response type is not time-to-event: argument 'times' will be ignored.",call.=FALSE)
         times <- NULL
         NT <- 1
     }
