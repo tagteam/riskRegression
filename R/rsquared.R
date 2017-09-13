@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Aug  9 2017 (10:36) 
 ## Version: 
-## Last-Updated: Sep 13 2017 (09:19) 
+## Last-Updated: Sep 13 2017 (12:11) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 128
+##     Update #: 135
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -27,10 +27,10 @@
 ##' @param ... passed to \code{riskRegression::Score}
 ##' @usage
 ##' rsquared(object,...)
-##' \method{rsquared}{default}(object,...)
-##' \method{rsquared}{glm}(object,...)
-##' \method{rsquared}{coxph}(object,times,...)
-##' \method{rsquared}{CauseSpecificCox}(object,times,cause,...)
+##' \method{rsquared}{default}(object,formula,newdata,times,cause,...)
+##' \method{rsquared}{glm}(object,formula,newdata,...)
+##' \method{rsquared}{coxph}(object,formula,newdata,times,...)
+##' \method{rsquared}{CauseSpecificCox}(object,formula,newdata,times,cause,...)
 ##' 
 ##' @return Data frame with explained variation values for the full model.
 ##' @seealso Score
@@ -68,8 +68,8 @@
 ##' rsquared(cox1,formula=Surv(time,status!=0)~1,newdata=pbcval,times=1000)
 ##'
 ##' ## predicted risks externally given
-##' p2=predictRisk(cox1,newdata=valdat,times=1000)
-##' rsquared(cox1,formula=Surv(time,status!=0)~1,newdata=valdat,times=1000)
+##' p2=predictRisk(cox1,newdata=pbcval,times=1000)
+##' rsquared(cox1,formula=Surv(time,status!=0)~1,newdata=pbcval,times=1000)
 ##'  
 ##' # competing risks
 ##' data(Melanoma)
@@ -82,15 +82,16 @@
 ##'
 ##' ## validation data
 ##' Melanomaval=Melanoma[!Melanomatest,]
-##' rsquared(fit1,formula=Hist(time,status)~1,newdata=Melanomatest,times=1000)
+##' rsquared(fit1,formula=Hist(time,status)~1,newdata=Melanomaval,times=1000)
 ##'
 ##' ## predicted risks externally given
-##' p3= predictRisk(fit1,newdata=Melanomatest,times=1000)
+##' p3= predictRisk(fit1,cause=1,newdata=Melanomaval,times=1000)
+##' rsquared(p3,formula=Hist(time,status)~1,cause=1,newdata=Melanomaval,times=1000)
 ##'  
 ##' @export 
 ##' @author Thomas A. Gerds <tag@@biostat.ku.dk>
-rsquared <- function(object,newdata,...){
-    UseMethod("rsquared",object)
+rsquared <- function(object,...){
+    UseMethod("rsquared")
 }
 
 ##' @export
