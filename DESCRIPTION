@@ -2,7 +2,7 @@ Package: riskRegression
 Type: Package
 Title: Risk Regression Models and Prediction Scores for Survival Analysis with
     Competing Risks
-Version: 1.4.9
+Version: 2013.09.13
 Author: Thomas Alexander Gerds, Thomas Harder Scheike, Paul Blanche, Brice
     Ozenne
 Depends:
