@@ -203,7 +203,9 @@ calcSeCSC <- function(object, cif, hazard, cumhazard, object.time, object.maxtim
 
         ##
         first.event <- sapply(1:nStrata, function(strat){ # strat <- 1
-            min(design[(design$status==1)*(design$strata==strat)==1,"stop"])
+          stratTime <- design[(design$status==1)*(design$strata==strat)==1,"stop"]
+          if(length(stratTime)==0){stratTime <- Inf}
+          return(min(stratTime))
         })
          
         for(iObs in 1:new.n){

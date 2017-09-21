@@ -437,5 +437,20 @@ if(FALSE){
 }
 # }}}
 
+# {{{ Bug report
+## calcSeCox
+set.seed(10)
+d <- sampleData(1e2)
+d[X1 == 1, event := 2]
+
+m.CSC <- CSC(Hist(time,event)~strata(X1)+X2, data = d)
+expect_warning(predict(m.CSC, newdata = data.frame(X1=1,X2=0), se = TRUE, cause = 1, times = 2),
+               regexp = NA)
+# Warning message:
+#   In min(design[(design$status == 1) * (design$strata == strat) ==  :
+#                   no non-missing arguments to min; returning Inf
+
+# }}}
+
 #----------------------------------------------------------------------
 ### test-predictCox-CSC.R ends here
