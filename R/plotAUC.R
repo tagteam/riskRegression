@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun 23 2016 (09:19) 
 ## Version: 
-## last-updated: Jun 29 2017 (16:26) 
+## last-updated: Sep 16 2017 (08:18) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 53
+##     Update #: 54
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -14,9 +14,9 @@
 #----------------------------------------------------------------------
 ## 
 ### Code:
-##' Plot AUC curve
+##' ggplot AUC curves
 ##'
-##' @title Plot AUC curve
+##' @title ggplot AUC curve
 ##' @param x Object obtained with \code{Score.list}
 ##' @param models Choice of models to plot
 ##' @param type Character. Either \code{"score"} to show AUC or \code{"contrasts"} to show differences between AUC.

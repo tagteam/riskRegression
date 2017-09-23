@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun 23 2016 (10:27) 
 ## Version: 
-## last-updated: Sep 10 2017 (12:02) 
+## last-updated: Sep 17 2017 (18:11) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 75
+##     Update #: 84
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -87,6 +87,9 @@ plotROC <- function(x,
             pframe[times==times[[1]]]
     }
     if (!missing(models)){
+        if (!all(models%in% pframe[,unique(model)]))
+            stop(paste0("Cannot identify model names.\nRequested models: ",paste(models,collapse=", "),"\n",
+                        "Available models: ",paste(pframe[,unique(model)],collapse=", ")))
         pframe <- pframe[model%in%models]
     }else{
         if (length(x$nullModel)>0){
@@ -142,7 +145,10 @@ plotROC <- function(x,
                                   round(100*auc$upper.AUC,digits=1))
         }
     }else auc.legend <- FALSE
-    legend.DefaultArgs <- list(legend=auc.legend,lwd=ifelse(length(auc$model)>1,lwd,-1),col=col,lty=lty,cex=cex,bty="n",y.intersp=1.3,x="bottomright",title="AUC")
+    if (length(auc.legend)>0)
+        legend.DefaultArgs <- list(legend=auc.legend,lwd=ifelse(length(auc$model)>1,lwd,-1),col=col,lty=lty,cex=cex,bty="n",y.intersp=1.3,x="bottomright",title="AUC")
+    else
+        legend.DefaultArgs <- list(legend=auc.legend,lwd=lwd,col=col,lty=lty,cex=cex,bty="n",y.intersp=1.3,x="bottomright",title="AUC")
     plot.DefaultArgs <- list(x=0,y=0,type = "n",ylim = c(0,1),xlim = c(0,1),ylab=ylab,xlab=xlab)
     axis1.DefaultArgs <- list(side=1,las=1,at=seq(0,1,.25))
     axis2.DefaultArgs <- list(side=2,las=1,at=seq(0,1,.25))

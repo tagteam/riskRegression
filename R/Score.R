@@ -88,7 +88,9 @@
 ##' @param seed Super seed for setting training data seeds when
 ##'     randomly splitting (bootstrapping) the data during cross-validation.
 ##' @param trainseeds Seeds for training models during cross-validation.
-##' @param keep provide about additional output
+##' @param keep list of characters (not case sensitive) which determines additional output.
+##' \code{"residuals"} provides Brier score residuals and
+##' \code{"splitindex"} provides sampling index used to split the data into training and validation sets.  
 ##' @param predictRisk.args
 ##'  A list of argument-lists to control how risks are predicted. 
 ##'  The names of the lists should be the S3-classes of the \code{object}.
@@ -409,6 +411,15 @@ Score.list <- function(object,
         })
     }
     # }}}
+    # {{{ resolve keep statements
+    if (!missing(keep) && is.character(keep)){
+        if("residuals" %in% tolower(keep)) keep.residuals=TRUE else keep.residuals = FALSE
+        if ("splitindex" %in% tolower(keep)) keep.splitindex=TRUE else keep.splitindex = FALSE
+    }else{
+        keep.residuals=FALSE
+        keep.splitindex=FALSE
+    }
+    # }}}
     # {{{ resolve se.fit and contrasts
     if (is.logical(conf.int) && conf.int==FALSE
         || conf.int<=0
@@ -424,7 +435,6 @@ Score.list <- function(object,
     }else{
         alpha <- NA
     }
-    if (!missing(keep) && is.character(keep) && "residuals" %in% tolower(keep)) keep.residuals=TRUE else keep.residuals = FALSE
     if ((NF+length(nullobject))<=1) dolist <- NULL 
     else{
         if (se.fit==FALSE || (is.logical(contrasts) && contrasts==FALSE)){
@@ -568,7 +578,6 @@ Score.list <- function(object,
                                                    times=times,
                                                    censModel=censModel,
                                                    responseType=responseType)
-
                 } else{
                     if ("outside.ipcw" %in% censMethod){
                         Weights <- testweights
@@ -578,7 +587,8 @@ Score.list <- function(object,
                     }
                 }
                 ## for both inside and outside IPCW we
-                ## add subject specific weights here, and time specific weights later
+                ## add subject specific weights here
+                ## and time specific weights later
                 response[,WTi:=Weights$IPCW.subjectTimes]
             } else {
                 if (censType=="uncensored"){
@@ -625,7 +635,6 @@ Score.list <- function(object,
                     else
                         trained.model <- trainModel(model=object[[f]],data=traindata[,-c(1:nResp),with=FALSE])
                     if ("try-error" %in% class(trained.model)){
-                        ## browser(skipCalls=TRUE)
                         stop(paste0("Failed to fit model ",f,ifelse(try(b>0,silent=TRUE),paste0(" in cross-validation step ",b,"."))))
                     }
                 }
@@ -660,8 +669,7 @@ Score.list <- function(object,
         }
         if (!is.null(Weights)){
             if (Weights$method=="marginal"){
-                Wt <- data.table(times=times,
-                                 Wt=Weights$IPCW.times)
+                Wt <- data.table(times=times,Wt=Weights$IPCW.times)
                 ## FIXME: many digits in times may cause merge problems
                 ## Wt$times <- factor(Wt$times)
                 ## pred$times <- factor(pred$times)
@@ -786,9 +794,11 @@ Score.list <- function(object,
                 &&
                 ("outside.ipcw" %in% censMethod)){
                 testweights <- Weights
+                ## browser(skipCalls=1L)
                 testweights$IPCW.subjectTimes <- subset(testweights$IPCW.subjectTimes,testids,drop=FALSE)
-                if (Weights$dim>0)
-                    testweights$"IPCW.times" <- subset(testweights$IPCW.subjectTimes,testids,drop=FALSE)
+                if (Weights$dim>0){
+                    testweights$IPCW.times <- subset(testweights$IPCW.times,testids,drop=FALSE)
+                }
             } else {
                 testweights <- NULL
             }
@@ -812,8 +822,6 @@ Score.list <- function(object,
                                      NT=NT)
             cb
         }
-        ## browser(skipCalls=1)
-        ## names(crossval[[1]])
         ##  # ------ Leave-one-out bootstrap censMethod
         if (splitMethod$name=="LeaveOneOutBoot"){  
             crossvalPerf <- lapply(metrics,function(m){
@@ -893,6 +901,7 @@ Score.list <- function(object,
     models <- mlevs
     names(models) <- mlabels
     if (nullModel==TRUE) nm <- names(models)[1] else nm <- NULL
+    if (!keep.splitindex) splitMethod$index <- "split index was not saved"
     output <- c(output,list(responseType=responseType,
                             dolist=dolist,
                             cause=cause,
@@ -995,7 +1004,6 @@ Brier.competing.risks <- function(DT,MC,se.fit,alpha,N,NT,NF,dolist,keep.residua
     DT[,Residuals:=(Yt-risk)^2]
     ## apply weights 
     DT[,ipcwResiduals:=Residuals/WTi]
-    ## browser()
     DT[time>times,ipcwResiduals:=Residuals/Wt]
     ## deal with censored observations before t
     DT[time<=times & status==0,ipcwResiduals:=0]
@@ -1252,7 +1260,6 @@ AUC.competing.risks <- function(DT,MC,se.fit,alpha,N,NT,NF,dolist,cause,states,R
     }else{
         output <- c(list(score=score),output)
     }
-    ## browser(skipCalls=1)
     output
 }
 

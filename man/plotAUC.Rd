@@ -2,7 +2,7 @@
 % Please edit documentation in R/plotAUC.R
 \name{plotAUC}
 \alias{plotAUC}
-\title{Plot AUC curve}
+\title{ggplot AUC curve}
 \usage{
 plotAUC(x, models, type = "score", lwd = 2, xlim, ylim, axes = TRUE,
   confint = FALSE, ...)
@@ -27,7 +27,7 @@ plotAUC(x, models, type = "score", lwd = 2, xlim, ylim, axes = TRUE,
 \item{...}{Not yet used}
 }
 \description{
-Plot AUC curve
+ggplot AUC curves
 }
 \examples{
 library(survival)
