@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: maj 18 2017 (09:23) 
 ## Version: 
-## last-updated: jun  8 2017 (20:32) 
-##           By: Brice Ozenne
-##     Update #: 137
+## last-updated: Sep 30 2017 (17:26) 
+##           By: Thomas Alexander Gerds
+##     Update #: 140
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -50,15 +50,15 @@ df2$event2 <- as.numeric(df2$event == 2)
 
 test_that("predict.CSC/predictCox (1a,df1) - compare to manual estimation",{
     CSC.exp <- CSC(Hist(time,event) ~ 1, data = df1)
-    pred.exp <- predict(CSC.exp, times = 1:10, newdata = data.frame(NA), cause = 1, productLimit = FALSE)  
-    pred.exp2 <- predict(CSC.exp, times = 1:10, newdata = data.frame(NA), cause = 1, productLimit = TRUE) 
+    pred.exp <- predict(CSC.exp, times = 1:10, newdata = data.frame(NA), cause = 1, product.limit = FALSE)  
+    pred.exp2 <- predict(CSC.exp, times = 1:10, newdata = data.frame(NA), cause = 1, product.limit = TRUE) 
  
-    CSC.prodlim <- CSC(Hist(time,event) ~ 1, data = df1, survtype = "survival", method = "breslow")
-    pred.prodlim <- predict(CSC.prodlim, times = 1:10, newdata = data.frame(NA), cause = 1, productLimit = TRUE)  
+    CSC.prodlim <- CSC(Hist(time,event) ~ 1, data = df1, surv.type = "survival", method = "breslow")
+    pred.prodlim <- predict(CSC.prodlim, times = 1:10, newdata = data.frame(NA), cause = 1, product.limit = TRUE)  
     expect_equal(pred.prodlim,pred.exp2)
     
-    CSC.prodlimE <- CSC(Hist(time,event) ~ 1, data = df1, survtype = "survival", method = "efron")
-    pred.prodlimE <- predict(CSC.prodlimE, times = 1:10, newdata = data.frame(NA), cause = 1, productLimit = TRUE)  
+    CSC.prodlimE <- CSC(Hist(time,event) ~ 1, data = df1, surv.type = "survival", method = "efron")
+    pred.prodlimE <- predict(CSC.prodlimE, times = 1:10, newdata = data.frame(NA), cause = 1, product.limit = TRUE)  
 
     ## test baseline hazard
     lambda1 <- lambda2 <- 1/seq(20,2,by = -2)
@@ -92,15 +92,15 @@ test_that("predict.CSC/predictCox (1a,df1) - compare to manual estimation",{
 
 test_that("predict.CSC/predictCox (1a,df2) - compare to manual estimation",{
     CSC.exp <- CSC(Hist(time,event) ~ 1, data = df2)
-    pred.exp <- predict(CSC.exp, times = 1:10, newdata = data.frame(NA), cause = 1, productLimit = FALSE)  
-    pred.exp2 <- predict(CSC.exp, times = 1:10, newdata = data.frame(NA), cause = 1, productLimit = TRUE)  
+    pred.exp <- predict(CSC.exp, times = 1:10, newdata = data.frame(NA), cause = 1, product.limit = FALSE)  
+    pred.exp2 <- predict(CSC.exp, times = 1:10, newdata = data.frame(NA), cause = 1, product.limit = TRUE)  
 
-    CSC.prodlim <- CSC(Hist(time,event) ~ 1, data = df2, survtype = "survival", method = "breslow")
-    pred.prodlim <- predict(CSC.prodlim, times = 1:10, newdata = data.frame(NA), cause = 1, productLimit = TRUE)  
+    CSC.prodlim <- CSC(Hist(time,event) ~ 1, data = df2, surv.type = "survival", method = "breslow")
+    pred.prodlim <- predict(CSC.prodlim, times = 1:10, newdata = data.frame(NA), cause = 1, product.limit = TRUE)  
     expect_equal(pred.exp2, pred.prodlim)
 
-    CSC.prodlimE <- CSC(Hist(time,event) ~ 1, data = df2, survtype = "survival", method = "efron")
-    pred.prodlimE <- predict(CSC.prodlimE, times = 1:10, newdata = data.frame(NA), cause = 1, productLimit = TRUE)  
+    CSC.prodlimE <- CSC(Hist(time,event) ~ 1, data = df2, surv.type = "survival", method = "efron")
+    pred.prodlimE <- predict(CSC.prodlimE, times = 1:10, newdata = data.frame(NA), cause = 1, product.limit = TRUE)  
 
     ## test baseline hazard
     lambda1 <- 1/seq(19,1,by = -2)
@@ -168,7 +168,7 @@ test_that("predict.CSC (1a) - compare to mstate",{
                            newdata = newdata,
                            cause = 1,
                            se = FALSE,
-                           productLimit = TRUE)
+                           product.limit = TRUE)
         
         expect_equal(pred.probtrans[,"pstate2"],
                      as.double(pred.RR$absRisk)
@@ -193,8 +193,8 @@ test_that("predict.CSC(1a) - add up to one",{
 
         hazAll <- predictCox(CSC.exp$models[[1]], times = seqTimes, newdata = newdata, type = "hazard")$hazard+predictCox(CSC.exp$models[[2]], times = seqTimes, newdata = newdata, type = "hazard")$hazard
         surv.prodlim <- cumprod(1-as.double(hazAll))
-        haz1.prodlim <- predict(CSC.exp, times = seqTimes, newdata = newdata, cause = 1, productLimit = TRUE)  
-        haz2.prodlim <- predict(CSC.exp, times = seqTimes, newdata = newdata, cause = 2, productLimit = TRUE)  
+        haz1.prodlim <- predict(CSC.exp, times = seqTimes, newdata = newdata, cause = 1, product.limit = TRUE)  
+        haz2.prodlim <- predict(CSC.exp, times = seqTimes, newdata = newdata, cause = 2, product.limit = TRUE)  
 
         expect_equal(surv.prodlim+as.double(haz1.prodlim$absRisk)+as.double(haz2.prodlim$absRisk),rep(1,nTimes))
     }
@@ -208,15 +208,15 @@ test_that("predict.CSC(1b) - compare to manual estimation",{
     # CSC.exp <- CSC(Hist(time,event) ~ strata(grp), data = dfS)
     # X2 factive variable
     CSC.exp <- CSC(Hist(time,event) ~ strata(grp) + X2, data = dfS, method = "breslow")
-    pred.exp <- predict(CSC.exp, times = 1:10, newdata = data.frame(grp = 1:3, X2 = 0), cause = 1, productLimit = FALSE)  
-    pred.exp2 <- predict(CSC.exp, times = 1:10, newdata = data.frame(grp = 1:3, X2 = 0), cause = 1, productLimit = TRUE)  
+    pred.exp <- predict(CSC.exp, times = 1:10, newdata = data.frame(grp = 1:3, X2 = 0), cause = 1, product.limit = FALSE)  
+    pred.exp2 <- predict(CSC.exp, times = 1:10, newdata = data.frame(grp = 1:3, X2 = 0), cause = 1, product.limit = TRUE)  
 
-    CSC.prodlim <- CSC(Hist(time,event) ~ strata(grp) + X2, data = dfS, survtype = "survival", method = "breslow")
-    pred.prodlim <- predict(CSC.prodlim, times = 1:10, newdata = data.frame(grp = 1:3, X2 = 0), cause = 1, productLimit = TRUE)  
+    CSC.prodlim <- CSC(Hist(time,event) ~ strata(grp) + X2, data = dfS, surv.type = "survival", method = "breslow")
+    pred.prodlim <- predict(CSC.prodlim, times = 1:10, newdata = data.frame(grp = 1:3, X2 = 0), cause = 1, product.limit = TRUE)  
     expect_equal(pred.exp2,pred.prodlim)
     
-    CSC.prodlimE <- CSC(Hist(time,event) ~ strata(grp) + X2, data = dfS, survtype = "survival", method = "efron")
-    pred.prodlimE <- predict(CSC.prodlimE, times = 1:10, newdata = data.frame(grp = 1:3, X2 = 0), cause = 1, productLimit = TRUE)  
+    CSC.prodlimE <- CSC(Hist(time,event) ~ strata(grp) + X2, data = dfS, surv.type = "survival", method = "efron")
+    pred.prodlimE <- predict(CSC.prodlimE, times = 1:10, newdata = data.frame(grp = 1:3, X2 = 0), cause = 1, product.limit = TRUE)  
 
     ## baseline
     lambda1 <- lambda2 <- 1/seq(20,2,by = -2)
@@ -255,9 +255,9 @@ test_that("predict.CSC(1b) - compare to manual estimation",{
 test_that("predict.CSC(1c,df1) - compare to manual estimation",{
     CSC.exp <- CSC(Hist(time,event) ~ X1, data = df1)
 
-    CSC.prodlim <- CSC(Hist(time,event) ~ X1, data = df1, survtype = "survival", method = "breslow")
+    CSC.prodlim <- CSC(Hist(time,event) ~ X1, data = df1, surv.type = "survival", method = "breslow")
     
-    CSC.prodlimE <- CSC(Hist(time,event) ~ X1, data = df1, survtype = "survival", method = "efron")
+    CSC.prodlimE <- CSC(Hist(time,event) ~ X1, data = df1, surv.type = "survival", method = "efron")
 
 
     calcCIF <- function(CSC, X){
@@ -267,7 +267,7 @@ test_that("predict.CSC(1c,df1) - compare to manual estimation",{
         eXb.1 <- as.double(exp(X%*%coef(CSC)[[1]]))
         eXb.2 <- as.double(exp(X%*%coef(CSC)[[2]]))
 
-        if(CSC$survtype == "survival"){
+        if(CSC$surv.type == "survival"){
             survival <- cumprod(1-eXb.2*lambda02$hazard)
         }else{           
             Lambda01 <- cumsum(lambda01$hazard)
@@ -283,17 +283,17 @@ test_that("predict.CSC(1c,df1) - compare to manual estimation",{
 
     for(iX1 in 0:1){
         newdata <- data.frame(X1=iX1)
-        pred.exp <- predict(CSC.exp, times = 1:10, newdata = newdata, cause = 1, productLimit = FALSE)  
+        pred.exp <- predict(CSC.exp, times = 1:10, newdata = newdata, cause = 1, product.limit = FALSE)  
         expect_equal(as.double(pred.exp$absRisk),
                      calcCIF(CSC.exp, X = as.matrix(newdata))
                      )
     
-        pred.prodlim <- predict(CSC.prodlim, times = 1:10, newdata = newdata, cause = 1, productLimit = TRUE)
+        pred.prodlim <- predict(CSC.prodlim, times = 1:10, newdata = newdata, cause = 1, product.limit = TRUE)
         expect_equal(as.double(pred.prodlim$absRisk),
                      calcCIF(CSC.prodlim, X = as.matrix(newdata))
                      )
 
-        pred.prodlimE <- predict(CSC.prodlimE, times = 1:10, newdata = newdata, cause = 1, productLimit = TRUE)  
+        pred.prodlimE <- predict(CSC.prodlimE, times = 1:10, newdata = newdata, cause = 1, product.limit = TRUE)  
         expect_equal(as.double(pred.prodlimE$absRisk),
                      calcCIF(CSC.prodlimE, X = as.matrix(newdata))
                      )
@@ -303,9 +303,9 @@ test_that("predict.CSC(1c,df1) - compare to manual estimation",{
 test_that("predict.CSC(1c,df2) - compare to manual estimation",{
     CSC.exp <- CSC(Hist(time,event) ~ X1, data = df2, method = "breslow")
 
-    CSC.prodlim <- CSC(Hist(time,event) ~ X1, data = df2, survtype = "survival", method = "breslow")
+    CSC.prodlim <- CSC(Hist(time,event) ~ X1, data = df2, surv.type = "survival", method = "breslow")
     
-    CSC.prodlimE <- CSC(Hist(time,event) ~ X1, data = df2, survtype = "survival", method = "efron")
+    CSC.prodlimE <- CSC(Hist(time,event) ~ X1, data = df2, surv.type = "survival", method = "efron")
 
     calcCIF <- function(CSC, X){
 
@@ -314,7 +314,7 @@ test_that("predict.CSC(1c,df2) - compare to manual estimation",{
         eXb.1 <- as.double(exp(X%*%coef(CSC)[[1]]))
         eXb.2 <- as.double(exp(X%*%coef(CSC)[[2]]))
 
-        if(CSC$survtype == "survival"){
+        if(CSC$surv.type == "survival"){
             survival <- cumprod(1-eXb.2*lambda02$hazard)
         }else{           
             Lambda01 <- cumsum(lambda01$hazard)
@@ -330,17 +330,17 @@ test_that("predict.CSC(1c,df2) - compare to manual estimation",{
  
     for(iX1 in 0:1){ # iX1 <- 0
         newdata <- data.frame(X1=iX1)
-        pred.exp <- predict(CSC.exp, times = sort(unique(df2$time)), newdata = newdata, cause = 1, productLimit = FALSE)  
+        pred.exp <- predict(CSC.exp, times = sort(unique(df2$time)), newdata = newdata, cause = 1, product.limit = FALSE)  
         expect_equal(as.double(pred.exp$absRisk),
                      calcCIF(CSC.exp, X = as.matrix(newdata))
                      )
     
-        pred.prodlim <- predict(CSC.prodlim, times = sort(unique(df2$time)), newdata = newdata, cause = 1, productLimit = TRUE)  
+        pred.prodlim <- predict(CSC.prodlim, times = sort(unique(df2$time)), newdata = newdata, cause = 1, product.limit = TRUE)  
         expect_equal(as.double(pred.prodlim$absRisk),
                      calcCIF(CSC.prodlim, X = as.matrix(newdata))
                      )
 
-        pred.prodlimE <- predict(CSC.prodlimE, times = sort(unique(df2$time)), newdata = newdata, cause = 1, productLimit = TRUE)  
+        pred.prodlimE <- predict(CSC.prodlimE, times = sort(unique(df2$time)), newdata = newdata, cause = 1, product.limit = TRUE)  
         expect_equal(as.double(pred.prodlimE$absRisk),
                      calcCIF(CSC.prodlimE, X = as.matrix(newdata))
                      )
@@ -379,7 +379,7 @@ test_that("predict.CSC(1c) - compare to mstate",{
                 pred.probtrans <- probtrans(pred.msfit,0)[[1]]
             )
             
-            pred.RR <- predict(CSC.exp, times = pred.probtrans[,"time"], newdata = newdata, cause = 1, productLimit = TRUE)
+            pred.RR <- predict(CSC.exp, times = pred.probtrans[,"time"], newdata = newdata, cause = 1, product.limit = TRUE)
             
             expect_equal(pred.probtrans[,"pstate2"],
                          as.double(pred.RR$absRisk)
@@ -407,8 +407,8 @@ test_that("predict.CSC(1c) - add up to one",{
 
             hazAll <- predictCox(CSC.exp$models[[1]], times = seqTimes, newdata = newdata, type = "hazard")$hazard+predictCox(CSC.exp$models[[2]], times = seqTimes, newdata = newdata, type = "hazard")$hazard
             surv.prodlim <- cumprod(1-as.double(hazAll))
-            haz1.prodlim <- predict(CSC.exp, times = seqTimes, newdata = newdata, cause = 1, productLimit = TRUE)  
-            haz2.prodlim <- predict(CSC.exp, times = seqTimes, newdata = newdata, cause = 2, productLimit = TRUE)  
+            haz1.prodlim <- predict(CSC.exp, times = seqTimes, newdata = newdata, cause = 1, product.limit = TRUE)  
+            haz2.prodlim <- predict(CSC.exp, times = seqTimes, newdata = newdata, cause = 2, product.limit = TRUE)  
 
             expect_equal(surv.prodlim+as.double(haz1.prodlim$absRisk)+as.double(haz2.prodlim$absRisk),rep(1,nTimes))
         }
@@ -458,23 +458,23 @@ test_that("predict.CSC(2a) - compare to mstate",{
     ## riskRegression
     CSC.RR1 <- CSC(Hist(time,event)~1, data = d, method = "breslow")
     pred.RR1a <- predict(CSC.RR1, newdata, cause = 1, time = pred.probtrans[,"time"],
-                         keep.newdata = FALSE, se = TRUE, productLimit = TRUE, logTransform = FALSE)
+                         keep.newdata = FALSE, se = TRUE, product.limit = TRUE, log.transform = FALSE)
 
     pred.RR1b <- predict(CSC.RR1, newdata, cause = 1, time = pred.probtrans[,"time"],
-                         keep.newdata = FALSE, se = TRUE, productLimit = FALSE, logTransform = FALSE)
+                         keep.newdata = FALSE, se = TRUE, product.limit = FALSE, log.transform = FALSE)
 
     pred.RR1c <- predict(CSC.RR1, newdata, cause = 2, time = pred.probtrans[,"time"],
-                         keep.newdata = FALSE, se = TRUE, productLimit = TRUE, logTransform = FALSE)
+                         keep.newdata = FALSE, se = TRUE, product.limit = TRUE, log.transform = FALSE)
 
     pred.RR1d <- predict(CSC.RR1, newdata, cause = 2, time = pred.probtrans[,"time"],
-                         keep.newdata = FALSE, se = TRUE, productLimit = FALSE, logTransform = FALSE)
+                         keep.newdata = FALSE, se = TRUE, product.limit = FALSE, log.transform = FALSE)
     
-    CSC.RR2 <- CSC(Hist(time,event)~1, data = d, survtype = "survival", method = "breslow")
+    CSC.RR2 <- CSC(Hist(time,event)~1, data = d, surv.type = "survival", method = "breslow")
     pred.RR2a <- predict(CSC.RR2, newdata, cause = 1, time = pred.probtrans[,"time"],
-                        keep.newdata = FALSE, se = TRUE, productLimit = TRUE, logTransform = FALSE)
+                        keep.newdata = FALSE, se = TRUE, product.limit = TRUE, log.transform = FALSE)
 
     pred.RR2b <- predict(CSC.RR2, newdata, cause = 1, time = pred.probtrans[,"time"],
-                        keep.newdata = FALSE, se = TRUE, productLimit = FALSE, logTransform = FALSE)
+                        keep.newdata = FALSE, se = TRUE, product.limit = FALSE, log.transform = FALSE)
 
 
     expect_equal(as.double(pred.RR1a$absRisk),pred.probtrans[,"pstate2"])
@@ -515,22 +515,22 @@ test_that("predict.CSC(2b) - compare to mstate",{
         ## riskRegression
         CSC.RR1 <- CSC(Hist(time,event)~X1+X2+X16, data = d, method = "breslow")
         pred.RR1a <- predict(CSC.RR1, newdata, cause = 1, time = pred.probtrans[,"time"],
-                             keep.newdata = FALSE, se = TRUE, productLimit = TRUE, logTransform = FALSE)
+                             keep.newdata = FALSE, se = TRUE, product.limit = TRUE, log.transform = FALSE)
 
         pred.RR1b <- predict(CSC.RR1, newdata, cause = 1, time = pred.probtrans[,"time"],
-                             keep.newdata = FALSE, se = TRUE, productLimit = FALSE, logTransform = FALSE)
+                             keep.newdata = FALSE, se = TRUE, product.limit = FALSE, log.transform = FALSE)
     
         pred.RR1c <- predict(CSC.RR1, newdata, cause = 2, time = pred.probtrans[,"time"],
-                             keep.newdata = FALSE, se = TRUE, productLimit = TRUE, logTransform = FALSE)
+                             keep.newdata = FALSE, se = TRUE, product.limit = TRUE, log.transform = FALSE)
 
         pred.RR1d <- predict(CSC.RR1, newdata, cause = 2, time = pred.probtrans[,"time"],
-                             keep.newdata = FALSE, se = TRUE, productLimit = FALSE, logTransform = FALSE)
+                             keep.newdata = FALSE, se = TRUE, product.limit = FALSE, log.transform = FALSE)
     
-        CSC.RR2 <- CSC(Hist(time,event)~X1+X2+X16, data = d, survtype = "survival", method = "breslow")
+        CSC.RR2 <- CSC(Hist(time,event)~X1+X2+X16, data = d, surv.type = "survival", method = "breslow")
         pred.RR2a <- predict(CSC.RR2, newdata, cause = 1, time = pred.probtrans[,"time"],
-                             keep.newdata = FALSE, se = TRUE, productLimit = TRUE, logTransform = FALSE)
+                             keep.newdata = FALSE, se = TRUE, product.limit = TRUE, log.transform = FALSE)
         pred.RR2b <- predict(CSC.RR2, newdata, cause = 1, time = pred.probtrans[,"time"],
-                             keep.newdata = FALSE, se = TRUE, productLimit = FALSE, logTransform = FALSE)
+                             keep.newdata = FALSE, se = TRUE, product.limit = FALSE, log.transform = FALSE)
 
 
         expect_equal(as.double(pred.RR1a$absRisk),pred.probtrans[,"pstate2"])
@@ -585,48 +585,48 @@ test_that("predict.CSC(2a) - compare to mstate",{
     ## riskRegression no strata
     CSC.RR1 <- CSC(Hist(time,event)~X1+X2+X16, data = d, method = "breslow")
     pred.RR1a <- predict(CSC.RR1, newdata, cause = 1, time = pred.probtrans[,"time"],
-                         keep.newdata = FALSE, se = TRUE, productLimit = TRUE, logTransform = FALSE)
+                         keep.newdata = FALSE, se = TRUE, product.limit = TRUE, log.transform = FALSE)
 
     pred.RR1b <- predict(CSC.RR1, newdata, cause = 1, time = pred.probtrans[,"time"],
-                         keep.newdata = FALSE, se = TRUE, productLimit = FALSE, logTransform = FALSE)
+                         keep.newdata = FALSE, se = TRUE, product.limit = FALSE, log.transform = FALSE)
     
     pred.RR1c <- predict(CSC.RR1, newdata, cause = 2, time = pred.probtrans[,"time"],
-                         keep.newdata = FALSE, se = TRUE, productLimit = TRUE, logTransform = FALSE)
+                         keep.newdata = FALSE, se = TRUE, product.limit = TRUE, log.transform = FALSE)
 
     pred.RR1d <- predict(CSC.RR1, newdata, cause = 2, time = pred.probtrans[,"time"],
-                         keep.newdata = FALSE, se = TRUE, productLimit = FALSE, logTransform = FALSE)
+                         keep.newdata = FALSE, se = TRUE, product.limit = FALSE, log.transform = FALSE)
     
-    CSC.RR2 <- CSC(Hist(time,event)~X1+X2+X16, data = d, survtype = "survival", method = "breslow")
+    CSC.RR2 <- CSC(Hist(time,event)~X1+X2+X16, data = d, surv.type = "survival", method = "breslow")
     pred.RR2a <- predict(CSC.RR2, newdata, cause = 1, time = pred.probtrans[,"time"],
-                         keep.newdata = FALSE, se = TRUE, productLimit = TRUE, logTransform = FALSE)
+                         keep.newdata = FALSE, se = TRUE, product.limit = TRUE, log.transform = FALSE)
     pred.RR2b <- predict(CSC.RR2, newdata, cause = 1, time = pred.probtrans[,"time"],
-                         keep.newdata = FALSE, se = TRUE, productLimit = FALSE, logTransform = FALSE)
+                         keep.newdata = FALSE, se = TRUE, product.limit = FALSE, log.transform = FALSE)
 
     ## riskRegression strata
     d2 <- rbind(cbind(d,grp=1),cbind(d,grp=2))
     CSC.RR1_strata <- CSC(Hist(time,event)~X1+X2+X16+strata(grp), data = d2, method = "breslow")
     pred.RR1a_strata <- predict(CSC.RR1_strata, cbind(newdata,grp=1), cause = 1, time = pred.probtrans[,"time"],
-                         keep.newdata = FALSE, se = TRUE, productLimit = TRUE, logTransform = FALSE)
+                         keep.newdata = FALSE, se = TRUE, product.limit = TRUE, log.transform = FALSE)
 
     pred.RR1b_strata <- predict(CSC.RR1_strata, cbind(newdata,grp=1), cause = 1, time = pred.probtrans[,"time"],
-                         keep.newdata = FALSE, se = TRUE, productLimit = FALSE, logTransform = FALSE)
+                         keep.newdata = FALSE, se = TRUE, product.limit = FALSE, log.transform = FALSE)
     
     pred.RR1c_strata <- predict(CSC.RR1_strata, cbind(newdata,grp=1), cause = 2, time = pred.probtrans[,"time"],
-                         keep.newdata = FALSE, se = TRUE, productLimit = TRUE, logTransform = FALSE)
+                         keep.newdata = FALSE, se = TRUE, product.limit = TRUE, log.transform = FALSE)
 
     pred.RR1d_strata <- predict(CSC.RR1_strata, cbind(newdata,grp=1), cause = 2, time = pred.probtrans[,"time"],
-                         keep.newdata = FALSE, se = TRUE, productLimit = FALSE, logTransform = FALSE)
+                         keep.newdata = FALSE, se = TRUE, product.limit = FALSE, log.transform = FALSE)
 
     expect_equal(pred.RR1a_strata$absRisk,pred.RR1a$absRisk)
     expect_equal(pred.RR1b_strata$absRisk,pred.RR1b$absRisk)
     expect_equal(pred.RR1c_strata$absRisk,pred.RR1c$absRisk)
     expect_equal(pred.RR1d_strata$absRisk,pred.RR1d$absRisk)
 
-    CSC.RR2_strata<- CSC(Hist(time,event)~X1+X2+X16+strata(grp), data = d2, survtype = "survival", method = "breslow")
+    CSC.RR2_strata<- CSC(Hist(time,event)~X1+X2+X16+strata(grp), data = d2, surv.type = "survival", method = "breslow")
     pred.RR2a_strata <- predict(CSC.RR2_strata, cbind(newdata,grp=1), cause = 1, time = pred.probtrans[,"time"],
-                         keep.newdata = FALSE, se = TRUE, productLimit = TRUE, logTransform = FALSE)
+                         keep.newdata = FALSE, se = TRUE, product.limit = TRUE, log.transform = FALSE)
     pred.RR2b_strata <- predict(CSC.RR2_strata, cbind(newdata,grp=1), cause = 1, time = pred.probtrans[,"time"],
-                                keep.newdata = FALSE, se = TRUE, productLimit = FALSE, logTransform = FALSE)
+                                keep.newdata = FALSE, se = TRUE, product.limit = FALSE, log.transform = FALSE)
 
     expect_equal(pred.RR2a_strata$absRisk,pred.RR2a$absRisk)
     expect_equal(pred.RR2b_strata$absRisk,pred.RR2b$absRisk)
@@ -647,7 +647,7 @@ cfit1 <- CSC(formula=list(Hist(time,status)~age+logthick+epicel+sex,
              data=Melanoma)
 cfit2 <- CSC(formula=list(Hist(time,status)~age+logthick+epicel+sex,
                           Hist(time,status)~age+sex),
-             data=Melanoma, survtype = "survival")
+             data=Melanoma, surv.type = "survival")
 
 
 Melanoma$event1 <- as.numeric(Melanoma$event == "death.malignant.melanoma")
@@ -671,13 +671,13 @@ suppressWarnings(
     pred.probtrans <- probtrans(pred.msfit,0,variance = FALSE)[[1]]
 )
 
-pred.RR1 <- predict(cfit1, newdata = newdata, time = pred.probtrans[,"time"], cause = 1, productLimit = TRUE) 
+pred.RR1 <- predict(cfit1, newdata = newdata, time = pred.probtrans[,"time"], cause = 1, product.limit = TRUE) 
 expect_equal(as.double(pred.probtrans[,"pstate2"]),as.double(pred.RR1$absRisk))
 
-pred.RR2 <- predict(cfit1, newdata = newdata, time = pred.probtrans[,"time"], cause = 1, productLimit = FALSE) 
+pred.RR2 <- predict(cfit1, newdata = newdata, time = pred.probtrans[,"time"], cause = 1, product.limit = FALSE) 
 expect_equal(as.double(pred.probtrans[,"pstate2"]),as.double(pred.RR2$absRisk), tol = 5e-3)
 
-pred.RR3 <- predict(cfit2, newdata = newdata, time = pred.probtrans[,"time"], cause = 1, productLimit = FALSE) 
+pred.RR3 <- predict(cfit2, newdata = newdata, time = pred.probtrans[,"time"], cause = 1, product.limit = FALSE) 
 expect_equal(as.double(pred.probtrans[,"pstate2"]),as.double(pred.RR3$absRisk), tol = 1e-1)
 
 # }}}
@@ -706,7 +706,7 @@ test_that("predictCSC with strata",{
     CSC.S <- CSC(Hist(time,event) ~ strata(X1) + strata(X3) + X2, data = df.S, ties = "efron", fitter = "coxph")
 
     ## cause 1
-    Event0.S <- predict(CSC.S, newdata = df.S[1:10,], times = seqTime, cause = 1, se = TRUE, logTransform = FALSE)
+    Event0.S <- predict(CSC.S, newdata = df.S[1:10,], times = seqTime, cause = 1, se = TRUE, log.transform = FALSE)
     # exportRes(Event0.S$absRisk)
     EventTest.S <- rbind(c(0, 0, 0.0106144145911254, 0.0106144145911254, 0.187045453946268, 0.285231447678766, 0.532564003644496, 0.592725502528842, NA, NA),
                          c(0, 0, 0.00832104772556249, 0.00832104772556249, 0.149947950248539, 0.232051997221862, 0.455475368419988, 0.516242447145683, NA, NA),
@@ -736,7 +736,7 @@ test_that("predictCSC with strata",{
     expect_equal(as.double(Event0.S$absRisk.se),as.double(EventTest.Sse), tolerance = 1e-8)
 
     ## cause 2
-    Event0.S <- predict(CSC.S, newdata = df.S[1:10,], times = seqTime, cause = 2, se = TRUE, logTransform = FALSE)
+    Event0.S <- predict(CSC.S, newdata = df.S[1:10,], times = seqTime, cause = 2, se = TRUE, log.transform = FALSE)
     # exportRes(Event0.S$absRisk)
     EventTest.S <- rbind(c(0, 0, 0, 0.0155103901004989, 0.114819674310264, 0.133554023880907, 0.258482028753579, 0.30121775499437, NA, NA),
                          c(0, 0, 0, 0.0153421834906167, 0.115596334553523, 0.135235912444512, 0.280051350712365, 0.336702700208684, NA, NA),
@@ -778,7 +778,7 @@ times <- sort(c(0,d$time))
 seqTime <- c(unique(sort(df.S$time)), max(df.S$time) + 1)[c(1,2,5,12,90,125,200,241,267,268)]
 
 test_that("conditional predictCSC with strata",{
-  CSC.fitS <- CSC(Hist(time,event)~ strata(X1) + X5 + strata(X3) + X7 +X2,data=d, method = "breslow", survtype = "survival")
+  CSC.fitS <- CSC(Hist(time,event)~ strata(X1) + X5 + strata(X3) + X7 +X2,data=d, method = "breslow", surv.type = "survival")
 
   p1 <- predict(CSC.fitS, newdata = d2[1:10,], times = seqTime, landmark = 1, cause = 1, se = FALSE)
   #exportRes(p1$absRisk) 
@@ -813,22 +813,22 @@ newdata <- d
 
 test_that("iid minimal - no strata", {
     res1 <- predict(m.CSC, times = seqTime, newdata = newdata,
-                    logTransform = TRUE, cause = 1,
+                    log.transform = TRUE, cause = 1,
                     store.iid = "minimal", se = TRUE, iid = TRUE)
     res3 <- predict(m.CSC, times = seqTime, newdata = newdata,
-                    logTransform = TRUE, cause = 1,
+                    log.transform = TRUE, cause = 1,
                     store.iid = "full", se = TRUE, iid = TRUE)
     expect_equal(res1$absRisk.se,res3$absRisk.se)
     expect_equal(res1$absRisk.iid,res3$absRisk.iid)
     
     res1 <- predict(m.CSC, times = seqTime, newdata = newdata,
-                    logTransform = FALSE, cause = 1,
+                    log.transform = FALSE, cause = 1,
                     store.iid = "minimal", se = TRUE, iid = TRUE)
     res2 <- predict(m.CSC, times = seqTime, newdata = newdata,
-                    logTransform = FALSE, cause = 1,
+                    log.transform = FALSE, cause = 1,
                     store.iid = "minimal", average.iid = TRUE)
     res3 <- predict(m.CSC, times = seqTime, newdata = newdata,
-                    logTransform = FALSE, cause = 1,
+                    log.transform = FALSE, cause = 1,
                     store.iid = "full", se = TRUE, iid = TRUE)
     expect_equal(res1$absRisk.se,res3$absRisk.se)
     expect_equal(res1$absRisk.iid,res3$absRisk.iid)
@@ -841,22 +841,22 @@ newdata <- d
 
 test_that("iid minimal - strata", {
     res1 <- predict(m.CSC, times = seqTime, newdata = newdata,
-                    logTransform = TRUE, cause = 1,
+                    log.transform = TRUE, cause = 1,
                     store.iid = "minimal", se = TRUE, iid = TRUE)
     res3 <- predict(m.CSC, times = seqTime, newdata = newdata,
-                    logTransform = TRUE, cause = 1,
+                    log.transform = TRUE, cause = 1,
                     store.iid = "full", se = TRUE, iid = TRUE)
     expect_equal(res1$absRisk.se,res3$absRisk.se)    
     expect_equal(res1$absRisk.iid,res3$absRisk.iid)
     
     res1 <- predict(m.CSC, times = seqTime, newdata = newdata,
-                    logTransform = FALSE, cause = 1,
+                    log.transform = FALSE, cause = 1,
                     store.iid = "minimal", se = TRUE, iid = TRUE)
     res2 <- predict(m.CSC, times = seqTime, newdata = newdata,
-                    logTransform = FALSE, cause = 1,
+                    log.transform = FALSE, cause = 1,
                     store.iid = "minimal", average.iid = TRUE)
     res3 <- predict(m.CSC, times = seqTime, newdata = newdata,
-                    logTransform = FALSE, cause = 1,
+                    log.transform = FALSE, cause = 1,
                     store.iid = "full", se = TRUE, iid = TRUE)
     expect_equal(res1$absRisk.se,res3$absRisk.se)
     expect_equal(res1$absRisk.iid,res3$absRisk.iid)

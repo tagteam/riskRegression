@@ -6,7 +6,7 @@
 \usage{
 plotBrier(x, models, which = "score", xlim, ylim, xlab, ylab, col, lwd,
   lty = 1, cex = 1, pch = 1, type = "l", axes = 1L, percent = 1L,
-  confint = 0L, legend = 1L, ...)
+  conf.int = 0L, legend = 1L, ...)
 }
 \arguments{
 \item{x}{Object obtained with \code{Score}}
@@ -40,7 +40,7 @@ plotBrier(x, models, which = "score", xlim, ylim, xlab, ylab, col, lwd,
 
 \item{percent}{Logical. If \code{TRUE} scale y-axis in percent.}
 
-\item{confint}{Logical. If \code{TRUE} draw confidence shadows.}
+\item{conf.int}{Logical. If \code{TRUE} draw confidence shadows.}
 
 \item{legend}{Logical. If \code{TRUE} draw legend.}
 

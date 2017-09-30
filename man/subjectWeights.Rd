@@ -30,12 +30,12 @@ of the formula.}
 
 \item{lag}{If equal to \code{1} then obtain \code{G(T_i-|X_i)}, if
 equal to \code{0} estimate the conditional censoring distribution
-at the subjectTimes, i.e. (\code{G(T_i|X_i)}).}
+at the subject.times, i.e. (\code{G(T_i|X_i)}).}
 }
 \value{
 \item{times}{The times at which weights are estimated}
 \item{weights}{Estimated weights at individual time values
-\code{subjectTimes}} \item{lag}{The time lag.} \item{fit}{The fitted
+\code{subject.times}} \item{lag}{The time lag.} \item{fit}{The fitted
 censoring model} \item{method}{The method for modelling the censoring
 distribution} \item{call}{The call}
 }

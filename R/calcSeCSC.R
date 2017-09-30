@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: maj 27 2017 (21:23) 
 ## Version: 
-## last-updated: jun  8 2017 (20:31) 
-##           By: Brice Ozenne
-##     Update #: 157
+## last-updated: Sep 30 2017 (18:14) 
+##           By: Thomas Alexander Gerds
+##     Update #: 167
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -31,12 +31,12 @@
 #' @param new.LPdata a list of design matrices for the new observations for each cause.
 #' @param new.strata a matrix containing the strata indicator for each observation and each cause.
 #' @param times the time points at which to evaluate the predictions.  
-#' @param survtype see the survtype argument of \code{\link{CSC}}.
+#' @param surv.type see the surv.type argument of \code{\link{CSC}}.
 #' @param new.n the number of new observations.
 #' @param cause the cause of interest.
 #' @param nCause the number of causes.
 #' @param nVar the number of variables that form the linear predictor in each Cox model
-#' @param logTransform Should the variance/influence function be computed on the log(-log) scale
+#' @param log.transform Should the variance/influence function be computed on the log(-log) scale
 #' @param export can be "iid" to return the value of the influence function for each observation
 #'                      "se" to return the standard error for a given timepoint
 #' 
@@ -53,14 +53,14 @@
 #' This solution is therefore efficient more efficient in memory usage but may not be in term of computation time.
 #' 
 calcSeCSC <- function(object, cif, hazard, cumhazard, object.time, object.maxtime,
-                      eXb, new.LPdata, new.strata, times, survtype,
-                      new.n, cause, nCause, nVar, logTransform, export, store.iid){
+                      eXb, new.LPdata, new.strata, times, surv.type,
+                      new.n, cause, nCause, nVar, log.transform, export, store.iid){
 
     # {{{ influence function for each Cox model
     if(is.null(object$iid)){
         object$iid <- list()
         for(iModel in 1:nCause){ # iModel <- 1
-            object$iid[[iModel]] <- iidCox(object$models[[iModel]], tauHazard = object.time, store.iid = store.iid)
+            object$iid[[iModel]] <- iidCox(object$models[[iModel]], tau.hazard = object.time, store.iid = store.iid)
         }
     }else{
         store.iid <- object$iid[[1]]$store.iid
@@ -80,7 +80,7 @@ calcSeCSC <- function(object, cif, hazard, cumhazard, object.time, object.maxtim
     }
 
     ## extract event times
-    design <- CoxDesign(object$models[[cause]])
+    design <- coxDesign(object$models[[cause]])
     if("strata" %in% names(design) == FALSE){
         design$strata <- 1
     }
@@ -133,7 +133,7 @@ calcSeCSC <- function(object, cif, hazard, cumhazard, object.time, object.maxtim
             ls.args$cumhazard_iS0 <- vector(mode = "list", length = nCause)
             ls.args$hazard_iS0 <- vector(mode = "list", length = nCause)
             ls.args$newEXb <- eXb[indexStrata,,drop=FALSE]            
-            ls.args$sampleEXb <- exp(do.call(cbind,lapply(object$models, CoxLP, data = NULL, center = FALSE)))
+            ls.args$sampleEXb <- exp(do.call(cbind,lapply(object$models, coxLP, data = NULL, center = FALSE)))
             ls.args$X <- vector(mode = "list", length = nCause)
             ls.args$sameStrata <- matrix(NA,nrow = object.n, ncol = nCause)
             ls.args$sampleTime <- sample.time
@@ -144,9 +144,9 @@ calcSeCSC <- function(object, cif, hazard, cumhazard, object.time, object.maxtim
                 iStrataCause <- unique.strata[iStrata,iterC]
                 iStrataCause2 <- iStrataCause + 1
                 
-                infoVar <- CoxVariableName(object$models[[iterC]])
-                object.strata <- as.numeric(CoxStrata(object$models[[iterC]], data = NULL,
-                                                      stratavars = infoVar$stratavars))-1
+                infoVar <- coxVariableName(object$models[[iterC]])
+                object.strata <- as.numeric(coxStrata(object$models[[iterC]], data = NULL,
+                                                      strata.vars = infoVar$strata.vars))-1
                 ls.args$indexJump[,iterC] <- prodlim::sindex(object$iid[[iterC]]$calcIFhazard$time1[[iStrataCause2]],
                                                          eval.times = object.time)
                 ls.args$indexSample[,iterC] <- prodlim::sindex(object$iid[[iterC]]$calcIFhazard$time1[[iStrataCause2]],
@@ -172,11 +172,11 @@ calcSeCSC <- function(object, cif, hazard, cumhazard, object.time, object.maxtim
             ls.args$nSample <- object.n
             ls.args$nCause <- nCause
             ls.args$p <- nVar
-            ls.args$survtype <- survtype=="survival"
+            ls.args$survtype <- surv.type=="survival"
             ls.args$exportSE<- ("se" %in% export)
             ls.args$exportIF <- ("iid" %in% export)
             ls.args$exportIFsum <- ("average.iid" %in% export)
-            ls.args$logTransform <- logTransform
+            ls.args$logTransform <- log.transform
 
             resCpp <- do.call(calcSeCif_cpp, args = ls.args)
             
@@ -216,7 +216,7 @@ calcSeCSC <- function(object, cif, hazard, cumhazard, object.time, object.maxtim
         for(iCause in 1:nCause){
             X_IFbeta <- object$iid[[iCause]]$IFbeta %*% t(new.LPdata[[iCause]][iObs,,drop=FALSE])
 
-            if(survtype == "hazard" || cause != iCause){
+            if(surv.type == "hazard" || cause != iCause){
                 iCumHazard <- iCumHazard + cumhazard[[iCause]][,iStrata[iCause]+1]*eXb[iObs,iCause]
                 iIFcumhazard <- iIFcumhazard + IFlambda2hazard(eXb = eXb[iObs,iCause],
                                                                lambda0 = cumhazard[[iCause]][,iStrata[iCause]+1],
@@ -255,7 +255,7 @@ calcSeCSC <- function(object, cif, hazard, cumhazard, object.time, object.maxtim
             
         }
 
-            if(logTransform){
+            if(log.transform){
                 IF_tempo <- rowScale_cpp(IF_tempo, scale = cif[iObs,,drop=FALSE]*log(cif[iObs,,drop=FALSE]))
                 if(any(times<first.event[new.strata[iObs,cause]+1])){ # any(times<[iObs.strata])
                     IF_tempo[,times<first.event[new.strata[iObs,cause]+1]] <- 0

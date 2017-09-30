@@ -19,17 +19,17 @@ d$entry <- 0
 
 ##
 library(survival)
-mCox <- coxph(Surv(time, event) ~ X1+X2, data = d)
-SurvResponseVar(mCox$formula)
+mcox <- coxph(Surv(time, event) ~ X1+X2, data = d)
+SurvResponseVar(mcox$formula)
 
-mCox <- coxph(Surv(entry, time, event) ~ X1+X2, data = d)
-SurvResponseVar(mCox$formula)
+mcox <- coxph(Surv(entry, time, event) ~ X1+X2, data = d)
+SurvResponseVar(mcox$formula)
 
-mCox <- coxph(Surv(event, time = entry, time2 = time) ~ X1+X2, data = d)
-SurvResponseVar(mCox$formula)
+mcox <- coxph(Surv(event, time = entry, time2 = time) ~ X1+X2, data = d)
+SurvResponseVar(mcox$formula)
 
-mCox <- coxph(Surv(time, event) ~ 1, data = d)
-SurvResponseVar(mCox$formula)
+mcox <- coxph(Surv(time, event) ~ 1, data = d)
+SurvResponseVar(mcox$formula)
 
 }
 }

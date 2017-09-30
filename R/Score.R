@@ -594,11 +594,11 @@ Score.list <- function(object,
                 ## for both inside and outside IPCW we
                 ## add subject specific weights here
                 ## and time specific weights later
-                response[,WTi:=Weights$IPCW.subjectTimes]
+                response[,WTi:=Weights$IPCW.subject.times]
             } else {
                 if (censType=="uncensored"){
                     Weights <- list(IPCW.times=rep(1,NT),
-                                    IPCW.subjectTimes=matrix(1,ncol=NT,nrow=N))
+                                    IPCW.subject.times=matrix(1,ncol=NT,nrow=N))
                     Weights$method <- "marginal"
                     response[,WTi:=1]
                 } else{
@@ -800,7 +800,7 @@ Score.list <- function(object,
                 ("outside.ipcw" %in% censMethod)){
                 testweights <- Weights
                 ## browser(skipCalls=1L)
-                testweights$IPCW.subjectTimes <- subset(testweights$IPCW.subjectTimes,testids,drop=FALSE)
+                testweights$IPCW.subject.times <- subset(testweights$IPCW.subject.times,testids,drop=FALSE)
                 if (Weights$dim>0){
                     testweights$IPCW.times <- subset(testweights$IPCW.times,testids,drop=FALSE)
                 }

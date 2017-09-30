@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Oct 23 2016 (08:53) 
 ## Version: 
-## last-updated: Sep 25 2017 (08:45) 
+## last-updated: Sep 30 2017 (16:13) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 327
+##     Update #: 329
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -39,7 +39,7 @@
 #'     confidence intervals. If it equals 0, then Wald-type confidence
 #'     intervals are computed.  They rely on the standard error
 #'     estimated using the influence function of the estimator.
-#' @param nSim.band the number of simulations used to compute the
+#' @param nsim.band the number of simulations used to compute the
 #'     quantiles for the confidence bands.
 #' @param seed An integer used to generate seeds for bootstrap and to
 #'     achieve reproducibility of the bootstrap confidence intervals.
@@ -160,7 +160,7 @@ ate <- function(object,
                 se = TRUE,
                 band = FALSE,
                 B = 0,
-                nSim.band = ifelse(band,1e3,0),
+                nsim.band = ifelse(band,1e3,0),
                 seed,
                 handler=c("foreach","mclapply"),
                 mc.cores = 1,
@@ -466,7 +466,7 @@ ate <- function(object,
                                                   se=FALSE,
                                                   iid=iid,
                                                   keep.times=FALSE,
-                                                  logTransform=FALSE,
+                                                  log.transform=FALSE,
                                                   store.iid=store.iid,
                                                   average.iid=average.iid))
           risk.i <- pred.i$absRisk
@@ -478,7 +478,7 @@ ate <- function(object,
                                                      se=FALSE,
                                                      iid=iid,
                                                      keep.times=FALSE,
-                                                     logTransform=FALSE,
+                                                     log.transform=FALSE,
                                                      type="survival",
                                                      store.iid=store.iid,
                                                      average.iid=average.iid))
@@ -571,10 +571,10 @@ ate <- function(object,
       }            
       # }}}
       # {{{ confidence bands
-      if(band){ # nSim.band <- 500
+      if(band){ # nsim.band <- 500
         quantileIF <- confBandCox(iid = abind::abind(iid.treatment, iid_diff.contrasts, iid_ratio.contrasts, along = 1),
                                   se = rbind(sdIF.treatment, sdIF_diff.contrasts, sdIF_ratio.contrasts),
-                                  n.sim = nSim.band,
+                                  n.sim = nsim.band,
                                   conf.level = conf.level)
         
         qIF.treatment <- quantileIF[1:n.contrasts]                
@@ -637,7 +637,7 @@ ate <- function(object,
               se = se,
               n.bootstrap=B,
               band = band,
-              nSim.band = nSim.band,
+              nsim.band = nsim.band,
               seeds=bootseeds,
               conf.level=conf.level)
   

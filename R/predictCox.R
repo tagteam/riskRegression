@@ -39,10 +39,10 @@
 #' @param band Logical. If \code{TRUE} add the confidence band to the output.
 #' @param iid Logical. If \code{TRUE} add the influence function to the output.
 #' @param average.iid Logical. If \code{TRUE} add the average of the influence function over \code{newdata} to the output.
-#' @param nSim.band the number of simulations used to compute the quantiles
+#' @param nsim.band the number of simulations used to compute the quantiles
 #' for the confidence bands.
 #' @param conf.level Level of confidence.
-#' @param logTransform Should the confidence intervals/bands be computed on the log (hazard) and
+#' @param log.transform Should the confidence intervals/bands be computed on the log (hazard) and
 #' log(-log) (survival) scale and be backtransformed.
 #' Otherwise they are computed on the original scale and truncated (if necessary).
 #' @param store.iid Implementation used to estimate the influence function and the standard error.
@@ -53,7 +53,7 @@
 #'     the results obtained with the \code{basehaz} function from the
 #'     survival package.
 #'     
-#' When setting \code{logTransform} to \code{TRUE}, the standard error that is returned is 
+#' When setting \code{log.transform} to \code{TRUE}, the standard error that is returned is 
 #' before back-transformation to the original scale.
 #' 
 #' @author Brice Ozenne broz@@sund.ku.dk, Thomas A. Gerds tag@@biostat.ku.dk
@@ -84,7 +84,7 @@
 #' predictCox(fit,centered=FALSE,type="hazard")
 #' predictCox(fit,centered=TRUE,type="hazard")
 #' predictCox(fit, newdata=nd, times=c(3,8),se=TRUE)
-#' predictCox(fit, newdata=nd, times=c(3,8),se=TRUE, logTransform = TRUE)
+#' predictCox(fit, newdata=nd, times=c(3,8),se=TRUE, log.transform = TRUE)
 #' predictCox(fit, newdata=nd, times=c(3,8),se=TRUE, store.iid = "minimal")
 #' predictCox(fit, newdata=nd, times = 5,iid=TRUE)
 #' 
@@ -135,9 +135,9 @@ predictCox <- function(object,
                        band = FALSE,
                        iid = FALSE,
                        average.iid = FALSE,
-                       nSim.band = 1e4,
+                       nsim.band = 1e4,
                        conf.level=0.95,
-                       logTransform = TRUE,
+                       log.transform = TRUE,
                        store.iid = "full"){
     status=statusM1=NULL
     
@@ -151,7 +151,7 @@ predictCox <- function(object,
     if (se==1L || iid==1L){
         if (missing(newdata)) stop("Argument 'newdata' is missing. Cannot compute standard errors in this case.")
     }
-    infoVar <- CoxVariableName(object)
+    infoVar <- coxVariableName(object)
     is.strata <- infoVar$is.strata
     if (missing(times)) {
         nTimes <- 0
@@ -169,16 +169,16 @@ predictCox <- function(object,
         else
             times.sorted <- times
     }
-    object.n <- CoxN(object)
-    object.design <- CoxDesign(object)
+    object.n <- coxN(object)
+    object.design <- coxDesign(object)
     object.status <- object.design[["status"]]
     object.start <- object.design[["start"]]
     object.stop <- object.design[["stop"]]
-    object.strata <- CoxStrata(object, data = NULL, stratavars = infoVar$stratavars)
+    object.strata <- coxStrata(object, data = NULL, strata.vars = infoVar$strata.vars)
     object.levelStrata <- levels(object.strata)
     # if we predict the hazard for newdata then there is no need to center the covariates
-    object.eXb <- exp(CoxLP(object, data = NULL, center = if(is.null(newdata)){centered}else{FALSE})) 
-    object.baseEstimator <- CoxBaseEstimator(object) 
+    object.eXb <- exp(coxLP(object, data = NULL, center = if(is.null(newdata)){centered}else{FALSE})) 
+    object.baseEstimator <- coxBaseEstimator(object) 
     nVar <- length(infoVar$lpvars)
 
     ## Confidence bands
@@ -213,13 +213,13 @@ predictCox <- function(object,
     if(!is.null(newdata)){
         new.n <- NROW(newdata)
         newdata <- as.data.table(newdata)
-        new.eXb <- exp(CoxLP(object, data = newdata, center = FALSE))
+        new.eXb <- exp(coxLP(object, data = newdata, center = FALSE))
         
-        new.strata <- CoxStrata(object, data = newdata, 
+        new.strata <- coxStrata(object, data = newdata, 
                                 sterms = infoVar$sterms, 
-                                stratavars = infoVar$stratavars, 
+                                strata.vars = infoVar$strata.vars, 
                                 levels = object.levelStrata, 
-                                stratalevels = infoVar$stratalevels)
+                                strata.levels = infoVar$strata.levels)
         
         new.levelStrata <- levels(new.strata)
     }
@@ -272,7 +272,7 @@ predictCox <- function(object,
         # }}}
     } else {
         if(iid || se || band || average.iid){
-            # cumhazard is needed to logTransform iid/se
+            # cumhazard is needed to log.transform iid/se
             type2 <- union(type,"cumhazard")
         }else{
             type2 <- type
@@ -359,16 +359,16 @@ predictCox <- function(object,
             if(band && "hazard" %in% type){
                 stop("confidence bands cannot be computed for the hazard \n")
             }
-            if(logTransform>0 && "hazard" %in% type){
+            if(log.transform>0 && "hazard" %in% type){
                 stop("log transformation cannot be applied to the hazard \n")
             }
             
             if(nVar > 0){
                 # remove response variable
-                f.object <- stats::reformulate(attr(stats::terms(CoxFormula(object)),"term.label"),
+                f.object <- stats::reformulate(attr(stats::terms(coxFormula(object)),"term.label"),
                                                response = NULL)
                 # use prodlim to get the design matrix
-                terms.newdata <- stats::terms(f.object, special = CoxSpecialStrata(object), data = newdata)
+                terms.newdata <- stats::terms(f.object, special = coxSpecialStrata(object), data = newdata)
                 new.LPdata <- prodlim::model.design(stats::terms(terms.newdata),
                                                     data = newdata,
                                                     specialsFactor = TRUE,
@@ -386,7 +386,7 @@ predictCox <- function(object,
                                Lambda0 = Lambda0, object.n = object.n, object.time = object.stop, object.eXb = object.eXb, object.strata = object.strata, nStrata = nStrata,
                                new.eXb = new.eXb, new.LPdata = new.LPdata, new.strata = new.strata,
                                new.cumhazard = out$cumhazard, new.survival = out$survival,
-                               nVar = nVar, logTransform = logTransform,
+                               nVar = nVar, log.transform = log.transform,
                                export = c("iid"[iid==TRUE],"se"[se==TRUE],"average.iid"[average.iid==TRUE]), store.iid = store.iid)
               
             if("cumhazard" %in% type == FALSE){
@@ -438,7 +438,7 @@ predictCox <- function(object,
                     else
                         out$cumhazard.se <- outSE$cumhazard.se
 
-                    if(logTransform){
+                    if(log.transform){
                         out$cumhazard.lower <- exp(log(out$cumhazard) - zval*out$cumhazard.se)
                         out$cumhazard.upper <- exp(log(out$cumhazard) + zval*out$cumhazard.se)
                     }else{
@@ -453,7 +453,7 @@ predictCox <- function(object,
                     else
                         out$survival.se <- outSE$survival.se
 
-                    if(logTransform){
+                    if(log.transform){
                         out$survival.lower <- exp(-exp(log(-log(out$survival)) + zval*out$survival.se))
                         out$survival.upper <- exp(-exp(log(-log(out$survival)) - zval*out$survival.se))                
                     }else{
@@ -472,7 +472,7 @@ predictCox <- function(object,
 
             out$quantile.band <- confBandCox(iid = out[[paste(type[1],"iid",sep=".")]],
                                              se = out[[paste(type[1],"se",sep=".")]],
-                                             n.sim = nSim.band,
+                                             n.sim = nsim.band,
                                              conf.level = conf.level)
             
             if(iid.save==FALSE){
@@ -483,7 +483,7 @@ predictCox <- function(object,
                 quantile95 <- colMultiply_cpp(out$cumhazard.se,out$quantile.band)
 
                
-                if(logTransform){
+                if(log.transform){
                     out$cumhazard.lowerBand <- exp(log(out$cumhazard) - zval*quantile95)
                     out$cumhazard.upperBand <- exp(log(out$cumhazard) + zval*quantile95)
                 }else{
@@ -496,7 +496,7 @@ predictCox <- function(object,
             if ("survival" %in% type){
                 quantile95 <- colMultiply_cpp(out$survival.se,out$quantile.band)
                 
-                if(logTransform){
+                if(log.transform){
                     out$survival.lowerBand <- exp(-exp(log(-log(out$survival)) + quantile95))
                     out$survival.upperBand <- exp(-exp(log(-log(out$survival)) - quantile95))
                 }else{
@@ -519,14 +519,14 @@ predictCox <- function(object,
         # {{{ export 
         if (keep.times==TRUE) out <- c(out,list(times=times))
         if (is.strata && keep.strata==TRUE) out <- c(out,list(strata=new.strata))
-        transformation.cumhazard <- if("cumhazard" %in% type && logTransform){log}else{NA}
-        transformation.survival <- if("survival" %in% type && logTransform){function(x){log(-log(1-x))}}else{NA}
+        transformation.cumhazard <- if("cumhazard" %in% type && log.transform){log}else{NA}
+        transformation.survival <- if("survival" %in% type && log.transform){function(x){log(-log(1-x))}}else{NA}
 
-        out <- c(out,list(lastEventTime=etimes.max, se=se.save, band = band, nSim.band = nSim.band, type=type, conf.level = conf.level, 
+        out <- c(out,list(lastEventTime=etimes.max, se=se.save, band = band, nsim.band = nsim.band, type=type, conf.level = conf.level, 
                           transformation.cumhazard = transformation.cumhazard,
                           transformation.survival = transformation.survival))
         if( keep.newdata==TRUE){
-            out$newdata <- newdata[, CoxCovars(object), with = FALSE]
+            out$newdata <- newdata[, coxCovars(object), with = FALSE]
         }
         class(out) <- "predictCox"
         return(out)

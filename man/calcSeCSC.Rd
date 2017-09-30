@@ -5,8 +5,8 @@
 \title{Standard error of the absolute risk predicted from cause-specific Cox models}
 \usage{
 calcSeCSC(object, cif, hazard, cumhazard, object.time, object.maxtime, eXb,
-  new.LPdata, new.strata, times, survtype, new.n, cause, nCause, nVar,
-  logTransform, export, store.iid)
+  new.LPdata, new.strata, times, surv.type, new.n, cause, nCause, nVar,
+  log.transform, export, store.iid)
 }
 \arguments{
 \item{object}{The fitted cause specific Cox model}
@@ -29,7 +29,7 @@ calcSeCSC(object, cif, hazard, cumhazard, object.time, object.maxtime, eXb,
 
 \item{times}{the time points at which to evaluate the predictions.}
 
-\item{survtype}{see the survtype argument of \code{\link{CSC}}.}
+\item{surv.type}{see the surv.type argument of \code{\link{CSC}}.}
 
 \item{new.n}{the number of new observations.}
 
@@ -39,7 +39,7 @@ calcSeCSC(object, cif, hazard, cumhazard, object.time, object.maxtime, eXb,
 
 \item{nVar}{the number of variables that form the linear predictor in each Cox model}
 
-\item{logTransform}{Should the variance/influence function be computed on the log(-log) scale}
+\item{log.transform}{Should the variance/influence function be computed on the log(-log) scale}
 
 \item{export}{can be "iid" to return the value of the influence function for each observation
 "se" to return the standard error for a given timepoint}

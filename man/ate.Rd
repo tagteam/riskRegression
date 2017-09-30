@@ -6,7 +6,7 @@
 \usage{
 ate(object, data, formula, treatment, contrasts = NULL, times, cause,
   landmark, conf.level = 0.95, se = TRUE, band = FALSE, B = 0,
-  nSim.band = ifelse(band, 1000, 0), seed, handler = c("foreach",
+  nsim.band = ifelse(band, 1000, 0), seed, handler = c("foreach",
   "mclapply"), mc.cores = 1, verbose = TRUE, store.iid = "full", ...)
 }
 \arguments{
@@ -32,21 +32,18 @@ compared}
 In this case, argument \code{time} may only be one value and for the prediction of risks
 it is assumed that that the covariates do not change between landmark and landmark+time.}
 
-\item{conf.level}{Numeric. Confidence level of the confidence
-intervals.}
+\item{conf.level}{Numeric value between 0 and 1 (default is 0.05). Confidence level of the confidence intervals.}
 
-\item{se}{Logical. If \code{TRUE} add the standard errors and
-confidence intervals to the output.}
+\item{se}{Logical. If \code{TRUE} compute standard errors and confidence intervals}
 
-\item{band}{Logical. If \code{TRUE} add the confidence bands to the
-output.}
+\item{band}{Logical. If \code{TRUE} compute the confidence bands}
 
 \item{B}{the number of bootstrap replications used to compute the
 confidence intervals. If it equals 0, then Wald-type confidence
 intervals are computed.  They rely on the standard error
 estimated using the influence function of the estimator.}
 
-\item{nSim.band}{the number of simulations used to compute the
+\item{nsim.band}{the number of simulations used to compute the
 quantiles for the confidence bands.}
 
 \item{seed}{An integer used to generate seeds for bootstrap and to

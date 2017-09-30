@@ -7,7 +7,7 @@
 \method{predict}{CauseSpecificCox}(object, newdata, times, cause,
   landmark = NA, keep.times = 1L, keep.newdata = 1L, keep.strata = 1L,
   se = FALSE, band = FALSE, iid = FALSE, average.iid = FALSE,
-  nSim.band = 10000, logTransform = TRUE, productLimit = TRUE,
+  nsim.band = 10000, log.transform = TRUE, product.limit = TRUE,
   conf.level = 0.95, store.iid = "full", ...)
 }
 \arguments{
@@ -39,14 +39,14 @@ to the output.}
 
 \item{average.iid}{Logical. If \code{TRUE} add the average of the influence function over \code{newdata} to the output.}
 
-\item{nSim.band}{the number of simulations used to compute the quantiles
+\item{nsim.band}{the number of simulations used to compute the quantiles
 for the confidence bands.}
 
-\item{logTransform}{Should the confidence intervals/bands be computed on the
+\item{log.transform}{Should the confidence intervals/bands be computed on the
 log(-log) scale and be backtransformed.
 Otherwise they are computed on the original scale and truncated (if necessary).}
 
-\item{productLimit}{Logical. If true the survival is computed using the product limit estimator.
+\item{product.limit}{Logical. If true the survival is computed using the product limit estimator.
 Otherwise the exponential approximation is used (i.e. exp(-cumulative hazard)).}
 
 \item{conf.level}{Level of confidence.}
@@ -75,7 +75,7 @@ Note: for Cox regression models with time varying
     the predicted risk has to be a measurable function of the data
     available at the time origin.
 
-When setting \code{logTransform} to \code{TRUE}, the standard error that is returned is 
+When setting \code{log.transform} to \code{TRUE}, the standard error that is returned is 
 before back-transformation to the original scale.
 }
 \examples{
@@ -91,7 +91,7 @@ x= predict(CSC.fit,newdata=nd,times=1:10,cause=1,se=1L)
 px=print(x)
 px
 x2 = predict(CSC.fit,newdata=nd,times=1:10,cause=1,se=1L,
-           logTransform = TRUE)
+           log.transform = TRUE)
 
 predCSC <- predict(CSC.fit, newdata = d, cause = 2, times = ttt)
 predCSC.se <- predict(CSC.fit, newdata = d[1:5,], cause = 2, times = ttt,

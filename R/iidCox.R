@@ -6,7 +6,7 @@
 #'     obtained with \code{coxph} (survival package) or \code{cph}
 #'     (rms package).
 #' @param newdata Optional new data at which to do i.i.d. decomposition 
-#' @param tauHazard the vector of times at which the i.i.d decomposition of the baseline hazard will be computed
+#' @param tau.hazard the vector of times at which the i.i.d decomposition of the baseline hazard will be computed
 #' @param keep.times Logical. If \code{TRUE} add the evaluation times to the output.
 #' @param store.iid the method used to compute the influence function and the standard error.
 #' Can be \code{"full"}, \code{"approx"} or \code{"minimal"}. See the details section.
@@ -44,25 +44,25 @@
 #' system.time(IF.cox_approx <- iidCox(m.cox, store.iid = "approx"))
 #'
 #' 
-#' IF.cox <- iidCox(m.cox, tauHazard = sort(unique(c(7,d$eventtime))))
+#' IF.cox <- iidCox(m.cox, tau.hazard = sort(unique(c(7,d$eventtime))))
 #'  
 #' 
 
 #' @rdname iid
 #' @export
-iidCox <- function(object, newdata = NULL, tauHazard = NULL, 
+iidCox <- function(object, newdata = NULL, tau.hazard = NULL, 
                    keep.times = TRUE, store.iid = "full"){
   
   #### extract elements from object ####
-  infoVar <- CoxVariableName(object)
-  iInfo <- CoxVarCov(object)
-  object.design <- CoxDesign(object)
+  infoVar <- coxVariableName(object)
+  iInfo <- coxVarCov(object)
+  object.design <- coxDesign(object)
   
   object.status <- object.design[,"status"]
   object.time <- object.design[,"stop"]
-  object.strata <- CoxStrata(object, data = NULL, stratavars = infoVar$stratavars)
+  object.strata <- coxStrata(object, data = NULL, strata.vars = infoVar$strata.vars)
   object.levelStrata <- levels(object.strata)
-  object.eXb <- exp(CoxLP(object, data = NULL, center = FALSE))
+  object.eXb <- exp(coxLP(object, data = NULL, center = FALSE))
   object.LPdata <- as.matrix(object.design[,infoVar$lpvars,drop = FALSE])
   nStrata <- length(levels(object.strata))
   
@@ -74,7 +74,7 @@ iidCox <- function(object, newdata = NULL, tauHazard = NULL,
     }
     
     # if(infoVar$status %in% names(newdata)){ # call Cox model with with event==1
-    tempo <- with(newdata, eval(CoxFormula(object)[[2]]))
+    tempo <- with(newdata, eval(coxFormula(object)[[2]]))
     new.status <- tempo[,2]
     new.time <- tempo[,1]
     # }else{ # Cox model from CSC 
@@ -82,9 +82,9 @@ iidCox <- function(object, newdata = NULL, tauHazard = NULL,
     #    new.time <- newdata[[infoVar$time]]
     # }
     
-    new.strata <- CoxStrata(object, data = newdata, 
-                            sterms = infoVar$sterms, stratavars = infoVar$stratavars, levels = object.levelStrata, stratalevels = infoVar$stratalevels)
-    new.eXb <- exp(CoxLP(object, data = newdata, center = FALSE))
+    new.strata <- coxStrata(object, data = newdata, 
+                            sterms = infoVar$sterms, strata.vars = infoVar$strata.vars, levels = object.levelStrata, strata.levels = infoVar$strata.levels)
+    new.eXb <- exp(coxLP(object, data = newdata, center = FALSE))
     new.LPdata <- model.matrix(object, newdata)
     
   }else{
@@ -99,8 +99,8 @@ iidCox <- function(object, newdata = NULL, tauHazard = NULL,
   
   #### tests ####
   ## time at which the influence function is evaluated
-  if(is.list(tauHazard) && length(tauHazard)!=nStrata){
-    stop("argument \"tauHazard\" must be a list with ",nStrata," elements \n",
+  if(is.list(tau.hazard) && length(tau.hazard)!=nStrata){
+    stop("argument \"tau.hazard\" must be a list with ",nStrata," elements \n",
          "each element being the vector of times for each strata \n")
   }
   
@@ -262,13 +262,13 @@ iidCox <- function(object, newdata = NULL, tauHazard = NULL,
     
     etime1.min[iStrata] <- timeStrata[1]
     
-    ## tauHazard
-    if(is.null(tauHazard)){
-      tauHazard_strata <- object.time_strata[[iStrata]][object.status_strata[[iStrata]] == 1]
-    }else if(is.list(tauHazard)){
-      tauHazard_strata <- tauHazard[[nStrata]]
+    ## tau.hazard
+    if(is.null(tau.hazard)){
+      tau.hazard_strata <- object.time_strata[[iStrata]][object.status_strata[[iStrata]] == 1]
+    }else if(is.list(tau.hazard)){
+      tau.hazard_strata <- tau.hazard[[nStrata]]
     }else{
-      tauHazard_strata <- tauHazard
+      tau.hazard_strata <- tau.hazard
     }
     
     ## E
@@ -281,7 +281,7 @@ iidCox <- function(object, newdata = NULL, tauHazard = NULL,
     
     ## IF
     if(any(new.status_strata[[iStrata]]>0)){
-      IFlambda_res <- IFlambda0_cpp(tau = tauHazard_strata,
+      IFlambda_res <- IFlambda0_cpp(tau = tau.hazard_strata,
                                     IFbeta = IFbeta,
                                     newT = new.time, neweXb = new.eXb, newStatus = new.status, newIndexJump = new.indexJump[[iStrata]], newStrata = as.numeric(new.strata),
                                     S01 = Ecpp[[iStrata]]$S0,
@@ -292,15 +292,15 @@ iidCox <- function(object, newdata = NULL, tauHazard = NULL,
                                     exact = (store.iid!="approx"), minimalExport = (store.iid=="minimal")
       )      
     }else{
-      if(length(tauHazard_strata)==0){tauHazard_strata <- max(object.time_strata[[iStrata]])}
-      IFlambda_res <- list(hazard = matrix(0, ncol = length(tauHazard_strata), nrow = NROW(IFbeta)),
-                           cumhazard = matrix(0, ncol = length(tauHazard_strata), nrow = NROW(IFbeta))
+      if(length(tau.hazard_strata)==0){tau.hazard_strata <- max(object.time_strata[[iStrata]])}
+      IFlambda_res <- list(hazard = matrix(0, ncol = length(tau.hazard_strata), nrow = NROW(IFbeta)),
+                           cumhazard = matrix(0, ncol = length(tau.hazard_strata), nrow = NROW(IFbeta))
       )
-      if(length(tauHazard_strata)==0){tauHazard_strata <- NA}
+      if(length(tau.hazard_strata)==0){tau.hazard_strata <- NA}
     }
     
     # output 
-    ls.Utime1 <- c(ls.Utime1, list(tauHazard_strata))
+    ls.Utime1 <- c(ls.Utime1, list(tau.hazard_strata))
     if(store.iid=="minimal"){
       calcIFhazard$delta_iS0 <- c(calcIFhazard$delta_iS0, list(IFlambda_res$delta_iS0))
       calcIFhazard$Elambda0 <- c(calcIFhazard$Elambda0, list(IFlambda_res$Elambda0))
@@ -310,8 +310,8 @@ iidCox <- function(object, newdata = NULL, tauHazard = NULL,
       calcIFhazard$time1 <- c(calcIFhazard$time1, list(timeStrata)) # event time by strata
     }else{
       if(keep.times){
-        colnames(IFlambda_res$hazard) <- tauHazard_strata
-        colnames(IFlambda_res$cumhazard) <- tauHazard_strata
+        colnames(IFlambda_res$hazard) <- tau.hazard_strata
+        colnames(IFlambda_res$cumhazard) <- tau.hazard_strata
       }
       IFhazard <- c(IFhazard, list(IFlambda_res$hazard))
       IFcumhazard <- c(IFcumhazard, list(IFlambda_res$cumhazard))

@@ -6,7 +6,7 @@
 \title{Score risk predictions}
 \usage{
 \method{Score}{list}(object, formula, data, metrics = c("auc", "brier"),
-  summary = NULL, plots = NULL, cause = 1, times, landmarks,
+  summary = NULL, plots = NULL, cause, times, landmarks,
   useEventTimes = FALSE, nullModel = TRUE, conf.int = 0.95,
   contrasts = TRUE, probs = c(0, 0.25, 0.5, 0.75, 1),
   censMethod = "outside.ipcw", censModel = "cox", splitMethod, B, M, seed,
@@ -105,7 +105,9 @@ randomly splitting (bootstrapping) the data during cross-validation.}
 
 \item{trainseeds}{Seeds for training models during cross-validation.}
 
-\item{keep}{provide about additional output}
+\item{keep}{list of characters (not case sensitive) which determines additional output.
+\code{"residuals"} provides Brier score residuals and
+\code{"splitindex"} provides sampling index used to split the data into training and validation sets.}
 
 \item{predictRisk.args}{A list of argument-lists to control how risks are predicted. 
  The names of the lists should be the S3-classes of the \code{object}.

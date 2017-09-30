@@ -36,11 +36,11 @@ test_that("cumsum(iid hazard) = iid cumhazard",{
 
 test_that("iid equivalent parametrisation",{
   expect_equal(iidTEST,
-               iidCox(coxph.fit, newdata = d, tauHazard = iidTEST$time[[1]])
+               iidCox(coxph.fit, newdata = d, tau.hazard = iidTEST$time[[1]])
   )
 })
 
-iidTEST2 <- iidCox(coxph.fit, tauHazard = sort(c(iidTEST$time[[1]],c(0.1,1,5,8,12,25))))
+iidTEST2 <- iidCox(coxph.fit, tau.hazard = sort(c(iidTEST$time[[1]],c(0.1,1,5,8,12,25))))
 test_that("iid hazard = 0 at non event times",{
 
   expect_equal(iidTEST2$IFhazard[[1]][,as.character(iidTEST$time[[1]])],
@@ -58,7 +58,7 @@ test_that("iid hazard = 0 at non event times",{
 })
 
 
-iidTEST3 <- iidCox(coxph.fit, tauHazard = iidTEST$time[[1]][2:3])
+iidTEST3 <- iidCox(coxph.fit, tau.hazard = iidTEST$time[[1]][2:3])
 test_that("iid hazard = 0 at non event times",{
   
   expect_equal(iidTEST3$IFhazard[[1]],
@@ -72,7 +72,7 @@ test_that("iid hazard = 0 at non event times",{
 m.CSC <- CSC(Hist(time,event)~ X1+X2,data=d)
 test_that("iid ok when the last event is other cause",{
   d$status <- d$event==1
-  IF1 <- iidCox(m.CSC$models$`Cause 1`, newdata = d[1:2,], tauHazard = m.CSC$eventTimes)
+  IF1 <- iidCox(m.CSC$models$`Cause 1`, newdata = d[1:2,], tau.hazard = m.CSC$eventTimes)
   
   lastEvent <- m.CSC$models$`Cause 1`$y[tail(which(m.CSC$models$`Cause 1`$y[,2]==1),1),1]
   postLastEvent <- m.CSC$eventTimes[m.CSC$eventTimes>lastEvent]

@@ -23,21 +23,21 @@ d$entry <- 0
 
 ##
 library(survival)
-mCox <- coxph(Surv(time, event) ~ X1+X2, data = d)
-extractStrata(delete.response(mCox$terms), special = CoxSpecialStrata(mCox))
+mcox <- coxph(Surv(time, event) ~ X1+X2, data = d)
+extractStrata(delete.response(mcox$terms), special = coxSpecialStrata(mcox))
 
-mCox <- coxph(Surv(event, time = entry, time2 = time) ~ strata(X1)+strata(X2), data = d)
-extractStrata(delete.response(mCox$terms),
-              xlevels =  mCox$xlevels, special = CoxSpecialStrata(mCox))
+mcox <- coxph(Surv(event, time = entry, time2 = time) ~ strata(X1)+strata(X2), data = d)
+extractStrata(delete.response(mcox$terms),
+              xlevels =  mcox$xlevels, special = coxSpecialStrata(mcox))
 
 ##
 library(rms)
-mCox <- cph(Surv(time, event) ~ X1+X2, data = d)
-extractStrata(delete.response(mCox$terms), special = CoxSpecialStrata(mCox))
+mcox <- cph(Surv(time, event) ~ X1+X2, data = d)
+extractStrata(delete.response(mcox$terms), special = coxSpecialStrata(mcox))
 
-mCox <- cph(Surv(event, time = entry, time2 = time) ~ strat(X1)+strat(X2), data = d)
-extractStrata(delete.response(mCox$terms),
-              xlevels =  mCox$xlevels, special = CoxSpecialStrata(mCox))
+mcox <- cph(Surv(event, time = entry, time2 = time) ~ strat(X1)+strat(X2), data = d)
+extractStrata(delete.response(mcox$terms),
+              xlevels =  mcox$xlevels, special = coxSpecialStrata(mcox))
 
 }
 }

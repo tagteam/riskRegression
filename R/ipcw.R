@@ -12,7 +12,7 @@
 #' weights.
 #' 
 #' IMPORTANT: the data set should be ordered, \code{order(time,-status)} in
-#' order to get the values \code{IPCW.subjectTimes} in the right order for some
+#' order to get the values \code{IPCW.subject.times} in the right order for some
 #' choices of \code{method}.
 #' 
 #' @aliases ipcw ipcw.none ipcw.marginal ipcw.nonpar ipcw.cox ipcw.aalen
@@ -28,23 +28,23 @@
 #' @param args A list of arguments which is passed to method
 #' @param times For \code{what="IPCW.times"} a vector of times at
 #' which to compute the probabilities of not being censored.
-#' @param subjectTimes For \code{what="IPCW.subjectTimes"} a vector of
+#' @param subject.times For \code{what="IPCW.subject.times"} a vector of
 #' individual times at which the probabilities of not being censored
 #' are computed.
-#' @param subjectTimesLag If equal to \code{1} then obtain
+#' @param lag If equal to \code{1} then obtain
 #' \code{G(T_i-|X_i)}, if equal to \code{0} estimate the conditional
-#' censoring distribution at the subjectTimes,
+#' censoring distribution at the subject.times,
 #' i.e. (\code{G(T_i|X_i)}).
 #' @param what Decide about what to do: If equal to
 #' \code{"IPCW.times"} then weights are estimated at given
-#' \code{times}.  If equal to \code{"IPCW.subjectTimes"} then weights
-#' are estimated at individual \code{subjectTimes}.  If missing then
+#' \code{times}.  If equal to \code{"IPCW.subject.times"} then weights
+#' are estimated at individual \code{subject.times}.  If missing then
 #' produce both.
 #' @param keep Which elements to add to the output. Any subset of the vector \code{c("times","fit","call")}.
 #' @return A list with elements depending on argument \code{keep}. \item{times}{The times at which weights are estimated}
 #' \item{IPCW.times}{Estimated weights at \code{times}}
-#' \item{IPCW.subjectTimes}{Estimated weights at individual time values
-#' \code{subjectTimes}} \item{fit}{The fitted censoring model}
+#' \item{IPCW.subject.times}{Estimated weights at individual time values
+#' \code{subject.times}} \item{fit}{The fitted censoring model}
 #' \item{method}{The method for modelling the censoring distribution}
 #' \item{call}{The call}
 #' @author Thomas A. Gerds \email{tag@@biostat.ku.dk}
@@ -63,7 +63,7 @@
 #'   data=dat,
 #'   method="marginal",
 #'   times=sort(unique(dat$time)),
-#'   subjectTimes=dat$time,keep=c("fit"))
+#'   subject.times=dat$time,keep=c("fit"))
 #' plot(WKM$fit)
 #' WKM$fit
 #' 
@@ -73,7 +73,7 @@
 #'   data=dat,
 #'   method="cox",
 #'   times=sort(unique(dat$time)),
-#'   subjectTimes=dat$time,keep=c("fit"))
+#'   subject.times=dat$time,keep=c("fit"))
 #' WCox$fit
 #' 
 #' plot(WKM$fit)
@@ -97,7 +97,7 @@
 #'   data=dat,
 #'   method="nonpar",
 #'   times=sort(unique(dat$time)),
-#'   subjectTimes=dat$time,keep=c("fit"))
+#'   subject.times=dat$time,keep=c("fit"))
 #' plot(WKM2$fit,add=FALSE)
 #' 
 #'
@@ -109,12 +109,12 @@ ipcw <- function(formula,
                  method,
                  args,
                  times,
-                 subjectTimes,
-                 subjectTimesLag=1,
+                 subject.times,
+                 lag=1,
                  what,
                  keep=NULL){
     if (!missing(what))
-        stopifnot(all(match(what,c("IPCW.times","IPCW.subjectTimes"))))
+        stopifnot(all(match(what,c("IPCW.times","IPCW.subject.times"))))
     if (missing(what) || match("IPCW.times",what,nomatch=FALSE)){
         stopifnot(length(times)>0)
     }
@@ -125,9 +125,9 @@ ipcw <- function(formula,
 # {{{ uncensored data: return just 1
 
 ##' @export
-ipcw.none <- function(formula,data,method,args,times,subjectTimes,subjectTimesLag,what,keep){
-    if (missing(subjectTimesLag)) subjectTimesLag=1
-    if (missing(what)) what=c("IPCW.times","IPCW.subjectTimes")
+ipcw.none <- function(formula,data,method,args,times,subject.times,lag,what,keep){
+    if (missing(lag)) lag=1
+    if (missing(what)) what=c("IPCW.times","IPCW.subject.times")
     call <- match.call()
     #  weigths at requested times
     if (match("IPCW.times",what,nomatch=FALSE)){
@@ -136,13 +136,13 @@ ipcw.none <- function(formula,data,method,args,times,subjectTimes,subjectTimesLa
     else
         IPCW.times <- NULL
     #  weigths at subject specific event times
-    if (match("IPCW.subjectTimes",what,nomatch=FALSE)){
-        IPCW.subjectTimes <- rep(1,length(subjectTimes))
+    if (match("IPCW.subject.times",what,nomatch=FALSE)){
+        IPCW.subject.times <- rep(1,length(subject.times))
     }
     else
-        IPCW.subjectTimes <- NULL
+        IPCW.subject.times <- NULL
     out <- list(IPCW.times=IPCW.times,
-                IPCW.subjectTimes=IPCW.subjectTimes,
+                IPCW.subject.times=IPCW.subject.times,
                 method=method)
     if ("call" %in% keep) out <- c(out,list(call=call))
     if ("times" %in% keep) out <- c(out,list(times=times))
@@ -154,9 +154,9 @@ ipcw.none <- function(formula,data,method,args,times,subjectTimes,subjectTimesLa
 # }}}
 # {{{ reverse Random Survival Forests
 ##' @export
-ipcw.rfsrc <- function(formula,data,method,args,times,subjectTimes,subjectTimesLag,what,keep){
-    if (missing(subjectTimesLag)) subjectTimesLag=1
-    if (missing(what)) what=c("IPCW.times","IPCW.subjectTimes")
+ipcw.rfsrc <- function(formula,data,method,args,times,subject.times,lag,what,keep){
+    if (missing(lag)) lag=1
+    if (missing(what)) what=c("IPCW.times","IPCW.subject.times")
     call <- match.call() ## needed for refit in crossvalidation loop
     EHF <- prodlim::EventHistory.frame(formula,
                                        data,
@@ -185,31 +185,31 @@ ipcw.rfsrc <- function(formula,data,method,args,times,subjectTimes,subjectTimesL
     else
         IPCW.times <- NULL
     #  weigths at subject specific event times
-    if (match("IPCW.subjectTimes",what,nomatch=FALSE)){
+    if (match("IPCW.subject.times",what,nomatch=FALSE)){
         pmat <- fit$survival
         jtimes <- fit$time.interest
-        IPCW.subjectTimes <- sapply(1:length(subjectTimes),function(i){
-            Ci <- subjectTimes[i]
-            pos <- prodlim::sindex(jump.times=jtimes,eval.times=Ci,comp="smaller",strict=(subjectTimesLag==1))
+        IPCW.subject.times <- sapply(1:length(subject.times),function(i){
+            Ci <- subject.times[i]
+            pos <- prodlim::sindex(jump.times=jtimes,eval.times=Ci,comp="smaller",strict=(lag==1))
             c(1,pmat[i,])[1+pos]
         })
     }
     else
-        IPCW.subjectTimes <- NULL
+        IPCW.subject.times <- NULL
     out <- list(IPCW.times=IPCW.times,
-                IPCW.subjectTimes=IPCW.subjectTimes,
+                IPCW.subject.times=IPCW.subject.times,
                 method=method)
     if ("call" %in% keep) out <- c(out,list(call=call))
     if ("times" %in% keep) out <- c(out,list(times=times))
     if ("fit" %in% keep) out <- c(out,list(fit=fit))
-    ## print(head(IPCW.subjectTimes))
+    ## print(head(IPCW.subject.times))
     class(out) <- "IPCW"
     out
 }
 ##' @export
-ipcw.forest <- function(formula,data,method,args,times,subjectTimes,subjectTimesLag,what,keep){
-    if (missing(subjectTimesLag)) subjectTimesLag=1
-    if (missing(what)) what=c("IPCW.times","IPCW.subjectTimes")
+ipcw.forest <- function(formula,data,method,args,times,subject.times,lag,what,keep){
+    if (missing(lag)) lag=1
+    if (missing(what)) what=c("IPCW.times","IPCW.subject.times")
     call <- match.call() ## needed for refit in crossvalidation loop
     EHF <- prodlim::EventHistory.frame(formula,
                                        data,
@@ -240,16 +240,16 @@ ipcw.forest <- function(formula,data,method,args,times,subjectTimes,subjectTimes
     else
         IPCW.times <- NULL
     #  weigths at subject specific event times
-    if (match("IPCW.subjectTimes",what,nomatch=FALSE)){
-        IPCW.subjectTimes <- sapply(1:length(subjectTimes),function(i){
+    if (match("IPCW.subject.times",what,nomatch=FALSE)){
+        IPCW.subject.times <- sapply(1:length(subject.times),function(i){
             ## browser()
             prodlim::predictSurvIndividual(prodlim::prodlim(Hist(time,status)~1,data=wdata,reverse=TRUE,caseweights=FW[i,]),lag=1)[i]
         })
     }
     else
-        IPCW.subjectTimes <- NULL
+        IPCW.subject.times <- NULL
     out <- list(IPCW.times=IPCW.times,
-                IPCW.subjectTimes=IPCW.subjectTimes,
+                IPCW.subject.times=IPCW.subject.times,
                 method=method)
     if ("call" %in% keep) out <- c(out,list(call=call))
     if ("times" %in% keep) out <- c(out,list(times=times))
@@ -260,9 +260,9 @@ ipcw.forest <- function(formula,data,method,args,times,subjectTimes,subjectTimes
 # }}}
 # {{{ reverse Kaplan-Meier
 ##' @export
-ipcw.marginal <- function(formula,data,method,args,times,subjectTimes,subjectTimesLag,what,keep){
-    if (missing(subjectTimesLag)) subjectTimesLag=1
-    if (missing(what)) what=c("IPCW.times","IPCW.subjectTimes")
+ipcw.marginal <- function(formula,data,method,args,times,subject.times,lag,what,keep){
+    if (missing(lag)) lag=1
+    if (missing(what)) what=c("IPCW.times","IPCW.subject.times")
     call <- match.call()
     formula <- update.formula(formula,"~1")
     fit <- prodlim::prodlim(formula,data=data,reverse=TRUE)
@@ -273,30 +273,30 @@ ipcw.marginal <- function(formula,data,method,args,times,subjectTimes,subjectTim
     else
         IPCW.times <- NULL
     #  weigths at subject specific event times
-    if (match("IPCW.subjectTimes",what,nomatch=FALSE)){
-        IPCW.subjectTimes <- prodlim::predictSurvIndividual(fit,lag=subjectTimesLag)
+    if (match("IPCW.subject.times",what,nomatch=FALSE)){
+        IPCW.subject.times <- prodlim::predictSurvIndividual(fit,lag=lag)
     }
     else
-        IPCW.subjectTimes <- NULL
+        IPCW.subject.times <- NULL
     out <- list(IPCW.times=IPCW.times,
-                IPCW.subjectTimes=IPCW.subjectTimes,
+                IPCW.subject.times=IPCW.subject.times,
                 method=method)
     if ("call" %in% keep) out <- c(out,list(call=call))
     if ("times" %in% keep) out <- c(out,list(times=times))
     if ("fit" %in% keep) out <- c(out,list(fit=fit))
     class(out) <- "IPCW"
     out
-    ##   locsubjectTimes <- match(subjectTimes,fit$time,nomatch=NA)
-    ##   if (any(is.na(locsubjectTimes))) stop("Can not locate all individual observation times" )
-    ##   IPCW.subjectTimes <- c(1,fit$surv)[locsubjectTimes] ## at (subjectTimes_i-)
+    ##   locsubject.times <- match(subject.times,fit$time,nomatch=NA)
+    ##   if (any(is.na(locsubject.times))) stop("Can not locate all individual observation times" )
+    ##   IPCW.subject.times <- c(1,fit$surv)[locsubject.times] ## at (subject.times_i-)
     ##   IPCW.times <- c(1,fit$surv)[prodlim::sindex(jump.times=fit$time,eval.times=times) +1] ## at all requested times
 }
 # }}}
 # {{{ reverse Stone-Beran 
 ##' @export
-ipcw.nonpar <- function(formula,data,method,args,times,subjectTimes,subjectTimesLag,what,keep){
-    if (missing(subjectTimesLag)) subjectTimesLag=1
-    if (missing(what)) what=c("IPCW.times","IPCW.subjectTimes")
+ipcw.nonpar <- function(formula,data,method,args,times,subject.times,lag,what,keep){
+    if (missing(lag)) lag=1
+    if (missing(what)) what=c("IPCW.times","IPCW.subject.times")
     call <- match.call()
     fit <- prodlim::prodlim(formula,data=data,reverse=TRUE,bandwidth="smooth")
     #  weigths at requested times
@@ -306,13 +306,13 @@ ipcw.nonpar <- function(formula,data,method,args,times,subjectTimes,subjectTimes
     else
         IPCW.times <- NULL
     #  weigths at subject specific event times
-    if (match("IPCW.subjectTimes",what,nomatch=FALSE)){
-        IPCW.subjectTimes <- prodlim::predictSurvIndividual(fit,lag=subjectTimesLag)
+    if (match("IPCW.subject.times",what,nomatch=FALSE)){
+        IPCW.subject.times <- prodlim::predictSurvIndividual(fit,lag=lag)
     }
     else
-        IPCW.subjectTimes <- NULL
+        IPCW.subject.times <- NULL
         out <- list(IPCW.times=IPCW.times,
-                IPCW.subjectTimes=IPCW.subjectTimes,
+                IPCW.subject.times=IPCW.subject.times,
                 method=method)
     if ("call" %in% keep) out <- c(out,list(call=call))
     if ("times" %in% keep) out <- c(out,list(times=times))
@@ -323,10 +323,10 @@ ipcw.nonpar <- function(formula,data,method,args,times,subjectTimes,subjectTimes
 # }}}
 # {{{ reverse Cox via Harrel's package
 ##' @export
-ipcw.cox <- function(formula,data,method,args,times,subjectTimes,subjectTimesLag,what,keep){
+ipcw.cox <- function(formula,data,method,args,times,subject.times,lag,what,keep){
     ## require(rms)
-    if (missing(subjectTimesLag)) subjectTimesLag=1
-    if (missing(what)) what=c("IPCW.times","IPCW.subjectTimes")
+    if (missing(lag)) lag=1
+    if (missing(what)) what=c("IPCW.times","IPCW.subject.times")
     call <- match.call()
     EHF <- prodlim::EventHistory.frame(formula,
                                        data,
@@ -354,18 +354,18 @@ ipcw.cox <- function(formula,data,method,args,times,subjectTimes,subjectTimesLag
     else
         IPCW.times <- NULL
     #  weigths at subject specific event times
-    if (match("IPCW.subjectTimes",what,nomatch=FALSE)){
-        if (subjectTimesLag==1)
-            IPCW.subjectTimes <- rms::survest(fit,times=subjectTimes-min(diff(c(0,unique(subjectTimes))))/2,what='parallel')
-        else if (subjectTimesLag==0){
-            IPCW.subjectTimes <- rms::survest(fit,times=subjectTimes,what='parallel')
+    if (match("IPCW.subject.times",what,nomatch=FALSE)){
+        if (lag==1)
+            IPCW.subject.times <- rms::survest(fit,times=subject.times-min(diff(c(0,unique(subject.times))))/2,what='parallel')
+        else if (lag==0){
+            IPCW.subject.times <- rms::survest(fit,times=subject.times,what='parallel')
         }
         else stop("SubjectTimesLag must be 0 or 1")
     }
     else
-        IPCW.subjectTimes <- NULL
+        IPCW.subject.times <- NULL
     out <- list(IPCW.times=IPCW.times,
-                IPCW.subjectTimes=IPCW.subjectTimes,
+                IPCW.subject.times=IPCW.subject.times,
                 method=method)
     if ("call" %in% keep) out <- c(out,list(call=call))
     if ("times" %in% keep) out <- c(out,list(times=times))
@@ -376,9 +376,9 @@ ipcw.cox <- function(formula,data,method,args,times,subjectTimes,subjectTimesLag
 # }}}
 # {{{ reverse Aalen method via the timereg package
 ## ##' @export
-## ipcw.aalen <- function(formula,data,method,args,times,subjectTimes,subjectTimesLag,what,keep){
-## if (missing(subjectTimesLag)) subjectTimesLag=1
-## if (missing(what)) what=c("IPCW.times","IPCW.subjectTimes")
+## ipcw.aalen <- function(formula,data,method,args,times,subject.times,lag,what,keep){
+## if (missing(lag)) lag=1
+## if (missing(what)) what=c("IPCW.times","IPCW.subject.times")
 ## call <- match.call()
 ## EHF <- prodlim::EventHistory.frame(formula,
 ## data,
@@ -397,16 +397,16 @@ ipcw.cox <- function(formula,data,method,args,times,subjectTimes,subjectTimesLag
 ## }  else {
 ## IPCW.times <- NULL
 ## }
-## if (match("IPCW.subjectTimes",what,nomatch=FALSE)){
-## if (subjectTimesLag==1) 
-## IPCW.subjectTimes <- diag(predictRisk(fit,newdata=data,times=pmax(0,subjectTimes-min(diff(unique(subjectTimes)))/2)))
-## else if (subjectTimesLag==0)
-## IPCW.subjectTimes <- diag(predictRisk(fit,newdata=data,times=subjectTimes))
+## if (match("IPCW.subject.times",what,nomatch=FALSE)){
+## if (lag==1) 
+## IPCW.subject.times <- diag(predictRisk(fit,newdata=data,times=pmax(0,subject.times-min(diff(unique(subject.times)))/2)))
+## else if (lag==0)
+## IPCW.subject.times <- diag(predictRisk(fit,newdata=data,times=subject.times))
 ## else stop("SubjectTimesLag must be 0 or 1")
 ## }
 ## else
-## IPCW.subjectTimes <- NULL
-## out <- list(times=times,IPCW.times=IPCW.times,IPCW.subjectTimes=IPCW.subjectTimes,fit=fit,call=call,method=method)
+## IPCW.subject.times <- NULL
+## out <- list(times=times,IPCW.times=IPCW.times,IPCW.subject.times=IPCW.subject.times,fit=fit,call=call,method=method)
 ## class(out) <- "IPCW"
 ## out
 ## }

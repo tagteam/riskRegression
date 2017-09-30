@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Aug 10 2017 (08:56) 
 ## Version: 
-## Last-Updated: sep  4 2017 (10:52) 
-##           By: Brice Ozenne
-##     Update #: 7
+## Last-Updated: Sep 30 2017 (18:32) 
+##           By: Thomas Alexander Gerds
+##     Update #: 8
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -18,11 +18,10 @@ library(riskRegression)
 library(testthat)
 library(rms)
 library(survival)
+library(randomForestSRC)
 
 # {{{ missing data
 test_that("Additional arguments: example with imputation of missing data", {
-    library(randomForestSRC)
-    library(survival)
     data(pbc,package="survival")
     set.seed(10)
     forest <- rfsrc(Surv(time,status)~chol+age+sex,data=pbc,ntree=10,nsplit=10)

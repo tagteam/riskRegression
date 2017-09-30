@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: feb 27 2017 (10:47) 
 ## Version: 
-## last-updated: Sep  4 2017 (17:31) 
+## last-updated: Sep 30 2017 (16:06) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 63
+##     Update #: 64
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -80,7 +80,7 @@ autoplot.predictCSC <- function(object,
     }
     if(band && object$band == FALSE){
         stop("argument \'band\' cannot be TRUE when the quantiles for the confidence bands have not been computed \n",
-             "set argment \'nSim.band\' to a positive integer when calling predict.CauseSpecificCox \n")
+             "set argment \'nsim.band\' to a positive integer when calling predict.CauseSpecificCox \n")
     }
     
   ## display

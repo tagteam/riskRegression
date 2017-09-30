@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun  6 2016 (09:02) 
 ## Version: 
-## last-updated: Sep  5 2017 (15:16) 
+## last-updated: Sep 30 2017 (18:31) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 99
+##     Update #: 100
 #----------------------------------------------------------------------
 ## 
 ### Commentary:
@@ -569,6 +569,7 @@ predictRisk.rfsrc <- function(object, newdata, times, cause, ...){
                 stop(paste("\nPrediction matrix has wrong dimensions:\nRequested newdata x times: ",NROW(newdata)," x ",length(times),"\nProvided prediction matrix: ",NROW(p)," x ",NCOL(p),"\n\n",sep=""))
             p
         }else{
+            if (is.character(cause)) cause <- as.numeric(cause)
             if (!is.numeric(cause)) stop("cause is not numeric")
             cif <- predict(object,newdata=newdata,importance="none",...)$cif[,,cause,drop=TRUE]
             pos <- prodlim::sindex(jump.times=object$time.interest,eval.times=times)

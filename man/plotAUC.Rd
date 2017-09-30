@@ -5,7 +5,7 @@
 \title{ggplot AUC curve}
 \usage{
 plotAUC(x, models, type = "score", lwd = 2, xlim, ylim, axes = TRUE,
-  confint = FALSE, ...)
+  conf.int = FALSE, ...)
 }
 \arguments{
 \item{x}{Object obtained with \code{Score.list}}
@@ -22,7 +22,7 @@ plotAUC(x, models, type = "score", lwd = 2, xlim, ylim, axes = TRUE,
 
 \item{axes}{Logical. If \code{TRUE} draw axes.}
 
-\item{confint}{Logical. If \code{TRUE} draw confidence shadows.}
+\item{conf.int}{Logical. If \code{TRUE} draw confidence shadows.}
 
 \item{...}{Not yet used}
 }
@@ -38,9 +38,9 @@ f2=coxph(Surv(time,event)~X2+X5+X9,data=d,x=TRUE,y=TRUE)
 xx=Score(list(f1,f2), formula=Surv(time,event)~1,
 data=nd, metrics="auc", nullModel=FALSE, times=seq(3:10))
 aucgraph <- plotAUC(xx)
-plotAUC(xx,confint=TRUE)+ggtitle("AUC")+theme_classic()
+plotAUC(xx,conf.int=TRUE)+ggtitle("AUC")+theme_classic()
 plotAUC(xx,type="contrasts")
-a=plotAUC(xx,type="contrasts",confint=TRUE)
+a=plotAUC(xx,type="contrasts",conf.int=TRUE)
 a+theme_bw()
 
 

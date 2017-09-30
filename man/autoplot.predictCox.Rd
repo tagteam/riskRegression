@@ -72,7 +72,7 @@ autoplot(pred.cox, ci = TRUE)
 
 ## predictions with confidence bands
 pred.cox <- predictCox(m.cox, newdata = d[1,,drop=FALSE],
-  times = 1:5, type = "survival", nSim.band = 500,  band = TRUE, keep.newdata = TRUE)
+  times = 1:5, type = "survival", nsim.band = 500,  band = TRUE, keep.newdata = TRUE)
 autoplot(pred.cox, band = TRUE)
 
 

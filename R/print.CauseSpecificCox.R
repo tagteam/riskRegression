@@ -9,7 +9,7 @@
 print.CauseSpecificCox <- function(x,...){
     print(x$call)
     print(x$response)
-    if (x$survtype=="hazard"){
+    if (x$surv.type=="hazard"){
         nix <- lapply(1:length(x$causes),function(c){
             cat("\n\n----------> Cause: ",x$causes[c],"\n\n")
             xc <- x$models[[c]]
@@ -20,7 +20,7 @@ print.CauseSpecificCox <- function(x,...){
                 print(xc,...)
         })
     }
-    else{ # survtype=="survival"
+    else{ # surv.type=="survival"
         cat("\n\n----------> Cause: ",x$theCause,"\n\n")
         x1 <- x$models[[1]]
         x1$call$data <- NULL

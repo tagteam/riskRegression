@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Feb 23 2017 (11:07) 
 ## Version: 
-## last-updated: Jul  7 2017 (09:14) 
+## last-updated: Sep 30 2017 (16:04) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 36
+##     Update #: 37
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -32,7 +32,7 @@
 #' @param type line type
 #' @param axes Logical. If \code{TRUE} draw axes.
 #' @param percent Logical. If \code{TRUE} scale y-axis in percent.
-#' @param confint Logical. If \code{TRUE} draw confidence shadows.
+#' @param conf.int Logical. If \code{TRUE} draw confidence shadows.
 #' @param legend Logical. If \code{TRUE} draw legend.
 #' @param ... Used for additional control of the subroutines: plot,
 #'     axis, lines, legend. See \code{\link{SmartControl}}.
@@ -63,7 +63,7 @@ plotBrier <- function(x,
                       type="l",
                       axes=1L,
                       percent=1L,
-                      confint=0L,
+                      conf.int=0L,
                       legend=1L,
                       ...){
     times=contrast=model=se.Brier=se.delta=Brier=lower.Brier=upper.Brier=lower=upper=delta=reference=NULL
@@ -166,7 +166,7 @@ plotBrier <- function(x,
         do.call("legend",control$legend)
     }
     ## x-axis
-    if (confint==TRUE){
+    if (conf.int==TRUE){
         dimcol <- sapply(col,function(cc){prodlim::dimColor(cc)})
         names(dimcol) <- names(col)
         if (which=="score"){
