@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Oct 23 2016 (08:53) 
 ## Version: 
-## last-updated: Sep  9 2017 (14:37) 
+## last-updated: Sep 25 2017 (08:45) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 325
+##     Update #: 327
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -32,12 +32,9 @@
 #' @param landmark for models with time-dependent covariates the landmark time(s) of evaluation.
 #'        In this case, argument \code{time} may only be one value and for the prediction of risks
 #'        it is assumed that that the covariates do not change between landmark and landmark+time.
-#' @param conf.level Numeric. Confidence level of the confidence
-#'     intervals.
-#' @param se Logical. If \code{TRUE} add the standard errors and
-#'     confidence intervals to the output.
-#' @param band Logical. If \code{TRUE} add the confidence bands to the
-#'     output.
+#' @param conf.level Numeric value between 0 and 1 (default is 0.05). Confidence level of the confidence intervals.
+#' @param se Logical. If \code{TRUE} compute standard errors and confidence intervals
+#' @param band Logical. If \code{TRUE} compute the confidence bands
 #' @param B the number of bootstrap replications used to compute the
 #'     confidence intervals. If it equals 0, then Wald-type confidence
 #'     intervals are computed.  They rely on the standard error
@@ -192,19 +189,22 @@ ate <- function(object,
   }
   # }}}
   
-  # {{{ Prepare
-  dots <- list(...)
-  
-  if(band && B>0){
-    stop("the confidence bands cannot be computed when using the bootstrap approach \n",
-         "set argument \'band\' to FALSE to not compute the confidence bands \n",
-         "or set argument \'B\' to 0 to use the influence function instead of the bootstrap\n")
-  }
-  if(treatment %in% names(data) == FALSE){
-    stop("The data set does not seem to have a variable ",treatment," (argument: treatment). \n")
-  }
-  test.CR <- !missing(cause) # test whether the argument cause has been specified, i.e. it is a competing risk model
-  if(test.CR==FALSE){cause <- NA}
+    # {{{ Prepare
+    dots <- list(...)
+
+    if(se==0 && B>0){
+        warning("argument 'se=0' means 'no standard errors' so number of bootstrap repetitions is forced to B=0.")
+    }
+    if(band && B>0){
+        stop("the confidence bands cannot be computed when using the bootstrap approach \n",
+             "set argument \'band\' to FALSE to not compute the confidence bands \n",
+             "or set argument \'B\' to 0 to use the influence function instead of the bootstrap\n")
+    }
+    if(treatment %in% names(data) == FALSE){
+        stop("The data set does not seem to have a variable ",treatment," (argument: treatment). \n")
+    }
+    test.CR <- !missing(cause) # test whether the argument cause has been specified, i.e. it is a competing risk model
+    if(test.CR==FALSE){cause <- NA}
   
   if(B==0 && (se || band)){
     validClass <- c("CauseSpecificCox","coxph","cph","phreg")
@@ -332,17 +332,17 @@ ate <- function(object,
                               dots))
   # }}}
   
-  # {{{ Confidence interval    
-  if(se || band){
-    if (TD){
-      key1 <- c("Treatment","landmark")
-      key2 <- c("Treatment.A","Treatment.B","landmark")
-    }
-    else{
-      key1 <- c("Treatment","time")
-      key2 <- c("Treatment.A","Treatment.B","time")
-    }
-    alpha <- 1-conf.level
+    # {{{ Confidence interval    
+    if(se || band){
+        if (TD){
+            key1 <- c("Treatment","landmark")
+            key2 <- c("Treatment.A","Treatment.B","landmark")
+        }
+        else{
+            key1 <- c("Treatment","time")
+            key2 <- c("Treatment.A","Treatment.B","time")
+        }
+        alpha <- 1-conf.level
     
     if(B>0){
       # {{{ Bootstrap
@@ -624,7 +624,7 @@ ate <- function(object,
       crisks <- merge(pointEstimate$riskComparison,crisks,by=key2)            
     }
   } else{
-    mrisks <- pointEstimate$meanRisk$Treatment
+    mrisks <- pointEstimate$meanRisk
     crisks <- pointEstimate$riskComparison
     bootseeds <- NULL
     # }}}

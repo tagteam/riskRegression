@@ -244,7 +244,7 @@ Score.list <- function(object,
                        metrics=c("auc","brier"),
                        summary=NULL, # riskQuantile, risk
                        plots= NULL, # c("roc","calibration","boxplot","p-values"),
-                       cause=1,
+                       cause,
                        times,
                        landmarks,
                        useEventTimes=FALSE,
@@ -320,9 +320,14 @@ Score.list <- function(object,
                             data=data,
                             cause=cause,
                             vars=responsevars)
-    states <- attr(response,"states")
     response.dim <- NCOL(response)
     responseType <- attr(response,"model")
+    states <- attr(response,"states")
+    if (missing(cause)) 
+        if (responseType=="binary")
+            cause <- attr(response,"event")
+        else
+            cause <- states[[1]]
     # add null model and find names for the object
     if (nullModel==TRUE){
         nullobject <- getNullModel(formula=formula,data=data,responseType=responseType)
@@ -1111,7 +1116,7 @@ delongtest <-  function(risk, score, dolist, response, cause, alpha) {
 }
 
 auRoc.numeric <- function(X,D,breaks,ROC){
-    if (is.null(breaks)) breaks <- rev(sort(unique(X))) ## need to reverse when high X is concordant with {response=1}  
+    if (is.null(breaks)) breaks <- rev(sort(unique(X))) ## need to reverse when high X is concordant with {response=1}
     TPR <- c(prodlim::sindex(jump.times=X[D==1],eval.times=breaks,comp="greater",strict=FALSE)/sum(D==1))
     FPR <- c(prodlim::sindex(jump.times=X[D==0],eval.times=breaks,comp="greater",strict=FALSE)/sum(D==0))
     if (ROC==TRUE)
