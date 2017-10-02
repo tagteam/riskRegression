@@ -162,7 +162,7 @@ ate <- function(object,
                 B = 0,
                 nsim.band = ifelse(band,1e3,0),
                 seed,
-                handler=c("foreach","mclapply"),
+                handler="foreach",
                 mc.cores = 1,
                 verbose=TRUE,
                 store.iid="full",
@@ -173,6 +173,7 @@ ate <- function(object,
   diff.se=ratio.se=.GRP=lower=upper=diff.lower=diff.upper=diff.p.value=ratio.lower=ratio.upper=ratio.p.value <- NULL
   lowerBand=upperBand=diffBand.lower=diffBand.upper=ratioBand.lower=ratioBand.upper <- NULL
   
+  handler <- match.arg(handler, c("foreach","mclapply"))
   # {{{ checking for time-dependent covariates (left-truncation)
   TD <- switch(class(object)[[1]],"coxph"=(attr(object$y,"type")=="counting"),
                "CauseSpecificCox"=(attr(object$models[[1]]$y,"type")=="counting"),FALSE)

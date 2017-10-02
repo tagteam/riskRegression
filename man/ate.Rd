@@ -6,8 +6,8 @@
 \usage{
 ate(object, data, formula, treatment, contrasts = NULL, times, cause,
   landmark, conf.level = 0.95, se = TRUE, band = FALSE, B = 0,
-  nsim.band = ifelse(band, 1000, 0), seed, handler = c("foreach",
-  "mclapply"), mc.cores = 1, verbose = TRUE, store.iid = "full", ...)
+  nsim.band = ifelse(band, 1000, 0), seed, handler = "foreach",
+  mc.cores = 1, verbose = TRUE, store.iid = "full", ...)
 }
 \arguments{
 \item{object}{outcome model which describes how event risk depends

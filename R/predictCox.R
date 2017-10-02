@@ -208,7 +208,7 @@ predictCox <- function(object,
         warning("The current version of predictCox was not designed to handle left censoring \n",
                 "The function may be used on own risks \n") 
     }      
-    # }}}
+	# }}}
     # {{{ computation of the baseline hazard
     if(!is.null(newdata)){
         new.n <- NROW(newdata)

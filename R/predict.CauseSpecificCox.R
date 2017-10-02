@@ -122,7 +122,7 @@ predict.CauseSpecificCox <- function(object,
     if (missing(cause)) {
         cause <- object$theCause
     }
-    
+	
     ## causes
     # NOTE: cannot use only eventtimes of cause 1 otherwise wrong estimation of the survival in the absolute risk
     causes <- object$causes

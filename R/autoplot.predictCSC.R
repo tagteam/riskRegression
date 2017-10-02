@@ -60,10 +60,7 @@ autoplot.predictCSC <- function(object,
                             digits = 2, alpha = NA, ...){
   
     ## initialize and check        
-    possibleGroupBy <- c("row","covariates","strata")
-    if(groupBy %in% possibleGroupBy == FALSE){
-        stop("argument \"groupBy\" must be in \"",paste(possibleGroupBy, collapse = "\" \""),"\"\n")
-    }
+	groupBy <- match.arg(groupBy, c("row","covariates","strata"))
   
     if(groupBy == "covariates" && ("newdata" %in% names(object) == FALSE)){
         stop("argument \'groupBy\' cannot be \"covariates\" when newdata is missing in the object \n",

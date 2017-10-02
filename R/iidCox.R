@@ -65,7 +65,7 @@ iidCox <- function(object, newdata = NULL, tau.hazard = NULL,
   object.eXb <- exp(coxLP(object, data = NULL, center = FALSE))
   object.LPdata <- as.matrix(object.design[,infoVar$lpvars,drop = FALSE])
   nStrata <- length(levels(object.strata))
-  
+    
   #### Extract new observations ####
   if(!is.null(newdata)){
     
@@ -104,11 +104,7 @@ iidCox <- function(object, newdata = NULL, tau.hazard = NULL,
          "each element being the vector of times for each strata \n")
   }
   
-  if(store.iid %in% c("full","approx","minimal") == FALSE){
-    stop("store.iid can only be \"full\", or \"approx\" or \"minimal\"\n")
-  }
-  
-  
+  store.iid <- match.arg(store.iid, c("minimal","approx","full"))
   #### Compute quantities of interest ####
   p <- NCOL(object.LPdata)
   

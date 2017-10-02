@@ -310,7 +310,7 @@ coxDesign.phreg <- function(object, center = FALSE){
    colnames(M.outcome) <- name.default
    
    # get covariates
-  M.X <- model.matrix(CoxFormula(object), data = object$model.frame)[,names(coef(object)),drop=FALSE]
+  M.X <- model.matrix(coxFormula(object), data = object$model.frame)[,names(coef(object)),drop=FALSE]
 
   if(center){
     M.X <- rowCenter_cpp(M.X, center = coxCenter(object))

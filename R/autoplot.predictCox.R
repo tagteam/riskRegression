@@ -88,27 +88,23 @@ autoplot.predictCox <- function(object,
   ## initialize and check    
   possibleType <- c("hazard","cumhazard","survival")
   possibleType <- possibleType[possibleType %in% names(object)]
-  
+
   if(is.null(type)){
     if(length(possibleType) == 1){
       type <- possibleType
     }else{
       stop("argument \'type\' must be specified to choose between ",paste(possibleType, collapse = " "),"\n")
     }
-  }else if(length(type)>1){
-    stop("argument \'type\' must have length 1 \n")        
-  }else if(type %in% possibleType == FALSE){
-    stop("argument \'type\' can only be ",paste(possibleType, collapse = " or ")," \n")        
-  }
+  }else{
+    type <- match.arg(type, possibleType)  
+  } 
   typename <- switch(type,
                      hazard = "hazard",
                      cumhazard = "cumulative hazard",
                      survival = "survival")
   
-  possibleGroupBy <- c("row","covariates","strata")
-  if(groupBy %in% possibleGroupBy == FALSE){
-    stop("argument \"groupBy\" must be in \"",paste(possibleGroupBy, collapse = "\" \""),"\"\n")
-  }
+  groupBy <- match.arg(groupBy, c("row","covariates","strata"))
+ 
   
   if(groupBy == "covariates" && ("newdata" %in% names(object) == FALSE)){
     stop("argument \'groupBy\' cannot be \"covariates\" when newdata is missing in the object \n",
