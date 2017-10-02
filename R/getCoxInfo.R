@@ -299,9 +299,17 @@ CoxDesign.coxph <- function(object, center = FALSE){
 #' @method CoxDesign phreg
 #' @export
 CoxDesign.phreg <- function(object, center = FALSE){
-  
-  M.outcome <- as.matrix(object$model.frame[,1])
-  
+   M.outcome <- as.matrix(object$model.frame[,1])
+   if("entry" %in% names(M.outcome) == FALSE){
+     M.outcome <- cbind(entry = 0, M.outcome)
+   }
+     
+   # normalize names
+   name.default <- colnames(M.outcome)
+   name.default<- gsub("entry","start",gsub("time","stop",name.default))
+   colnames(M.outcome) <- name.default
+   
+   # get covariates
   M.X <- model.matrix(CoxFormula(object), data = object$model.frame)[,names(coef(object)),drop=FALSE]
   if(center){
     M.X <- rowCenter_cpp(M.X, center = CoxCenter(object))
