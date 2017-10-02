@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun  6 2016 (06:48) 
 ## Version: 
-## last-updated: Aug 29 2017 (07:10) 
+## last-updated: Sep 30 2017 (16:06) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 17
+##     Update #: 18
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -37,8 +37,8 @@ print.ate <- function(x,digits=3,...){
         }else {
             cat("\n",100*x$conf.level,"% bootstrap confidence intervals are based on ",x$n.bootstrap," bootstrap samples\nthat were drawn with replacement from the original data.",sep="")
         }
-        if(x$nSim.band>0){
-            cat("\n",100*x$conf.level,"% confidence bands are based on ",x$nSim.band," simulations",sep="")
+        if(x$nsim.band>0){
+            cat("\n",100*x$conf.level,"% confidence bands are based on ",x$nsim.band," simulations",sep="")
         }
 
         cat("\n")

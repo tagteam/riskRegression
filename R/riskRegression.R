@@ -18,7 +18,7 @@
 #' model.  \code{"logistic"} for the logistic risk regression model.
 #' \code{"prop"} for the Fine-Gray regression model.
 #' @param cause The cause of interest.
-#' @param confint If \code{TRUE} return the iid decomposition, that
+#' @param conf.int If \code{TRUE} return the iid decomposition, that
 #' can be used to construct confidence bands for predictions.
 #' @param cens.model Specified the model for the (conditional)
 #' censoring distribution used for deriving weights (IFPW). Defaults
@@ -27,13 +27,7 @@
 #' @param cens.formula Right hand side of the formula used for fitting
 #' the censoring model.  If not specified the right hand side of
 #' \code{formula} is used.
-#' @param numSimu Number of simulations in resampling.
-#' @param maxiter Maximal number of iterations.
-#' @param silent Set this to \code{0} to see some system messages
-#' during fitting.
-#' @param convLevel Integer between 1 and 10, specifying the
-#' convergence criterion for the fitting algorithm as
-#' \code{10^{-convLevel}}.
+#' @param max.iter Maximal number of iterations.
 #' @param conservative If \code{TRUE} use variance formula that ignores the contribution
 #' by the estimate of the inverse of the probability of censoring weights 
 #' @param ... Further arguments passed to \code{comp.risk}
@@ -71,7 +65,7 @@
 ##' ## compare with non-parametric Aalen-Johansen estimate
 ##' library(prodlim)
 ##' fit.aj <- prodlim(Hist(time,status)~sex,data=Melanoma)
-##' plot(fit.aj,confint=FALSE)
+##' plot(fit.aj,conf.int=FALSE)
 ##' plot(fit.arr,add=TRUE,col=3:4,newdata=data.frame(sex=c("Female","Male")))
 ##' 
 ##' ## with time-dependent effect
@@ -97,7 +91,7 @@
 ##' ## comparison with nearest neighbor non-parametric Aalen-Johansen estimate
 ##' library(prodlim)
 ##' fit2.aj <- prodlim(Hist(time,status)~logthick,data=Melanoma)
-##' plot(fit2.aj,confint=FALSE,newdata=data.frame(logthick=quantile(Melanoma$logthick)))
+##' plot(fit2.aj,conf.int=FALSE,newdata=data.frame(logthick=quantile(Melanoma$logthick)))
 ##' plot(fit2.arr,add=TRUE,col=1:5,lty=3,newdata=data.frame(logthick=quantile(Melanoma$logthick)))
 ##' 
 ##' ## logistic risk regression
@@ -147,7 +141,7 @@
 ##' ## nearest neighbor non-parametric Aalen-Johansen estimate
 ##' library(prodlim)
 ##' fit.aj <- prodlim(Hist(time,status)~thick,data=Melanoma)
-##' plot(fit.aj,confint=FALSE)
+##' plot(fit.aj,conf.int=FALSE)
 ##' 
 ##' # prediction performance
 ##' x <- Score(list(fit.arr2a,fit.arr2b,fit.lrr),
@@ -164,22 +158,16 @@ riskRegression <- function(formula,
                            times,
                            link="relative",
                            cause,
-                           confint=TRUE,
+                           conf.int=TRUE,
                            cens.model,
                            cens.formula,
-                           numSimu=0,
-                           maxiter=50,
-                           silent=1,
-                           convLevel=6,
+                           max.iter=50,
                            conservative=TRUE,
                            ...){
     # {{{ preliminaries
     weighted=0
     detail=0
-    stopifnot(is.numeric(maxiter)&&maxiter>0&&(round(maxiter)==maxiter))
-    stopifnot(silent %in% c(0,1))
-    stopifnot(convLevel %in% 1:10)
-    conv <- 10^{-convLevel}
+    stopifnot(is.numeric(max.iter)&&max.iter>0&&(round(max.iter)==max.iter))
     # trans=1 P_1=1-exp(- ( x' b(b)+ z' gam t^time.pow) ), 
     # trans=2 P_1=1-exp(-exp(x a(t)+ z` b )
     # trans=not done P_1=1-exp(-x a(t) exp(z` b )) is not good numerically
@@ -190,7 +178,6 @@ riskRegression <- function(formula,
                     "prop"="prop",     # Proportional hazards (Cox, FG)
                     "logistic"="logistic2", # Logistic absolute risks
                     "relative"="rcif2") # Relative absolute risks
-    if (numSimu==0) sim <- 0 else sim <- 1
     # }}}
     # {{{ read the data and the design
     call <- match.call()
@@ -324,7 +311,6 @@ riskRegression <- function(formula,
         times <- sort(unique(times))
     }
     ntimes <- length(times)
-    if (ntimes>1) silent <- c(silent,rep(0,ntimes-1))
     # }}}
     # {{{ ipcw model
     if (missing(cens.model)) cens.model <- "KM"
@@ -406,16 +392,6 @@ riskRegression <- function(formula,
                 factorLevels=c(factorLevelsX,factorLevelsZ),
                 refLevels=c(refLevelsX,refLevelsZ),
                 "na.action"=attr(EHF,"na.action"))
-    ## if (confint && sim==1)
-    ## out <- c(out,list(resampleResults=list(conf.band=unifCI,
-    ## B.iid=B.iid,
-    ## gamma.iid=gamiid,
-    ## test.procBeqC=Ut,
-    ## sim.test.procBeqC=UIt)))
-    ## if (sim==1)
-    ## out <- c(out,list(timeVarSigTest=timeVarSignifTest,
-    ## timeVarKolmSmirTest=timeVarKolmSmirTest,
-    ## timeVarKramvMisTest=timeVarKramvMisTest))
     if (is.null(out$call$cause))
         out$call$cause <- cause
     class(out) <- "riskRegression"

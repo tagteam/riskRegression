@@ -12,7 +12,7 @@ getResponse <- function(formula,cause,data,vars){
         if (is.factor(response) || length(unique(response))==2){
             if (!is.factor(response)) response <- factor(response)
             if (length(levels(response))==2) {
-                if (is.null(cause)||missing(cause)) cause <- levels(response)[2]
+                if (missing(cause)||is.null(cause)) cause <- levels(response)[2]
                 response <- as.numeric(response==cause)
                 response <- data.table(response)
                 ## data.table::setnames(response,vars)
@@ -27,6 +27,7 @@ getResponse <- function(formula,cause,data,vars){
         }
         else{
             attr(response,"model") <- "continuous"
+            attr(response,"event") <- NULL
         }
     }
     else{

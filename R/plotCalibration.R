@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Feb 23 2017 (11:15) 
 ## Version: 
-## last-updated: Sep  9 2017 (14:29) 
+## last-updated: Sep 30 2017 (16:13) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 176
+##     Update #: 178
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -42,7 +42,7 @@
 ##'     \code{names.arg} of \code{barplot}.
 ##' @param pseudo If \code{TRUE} show pseudo values (only for right censored data).
 ##' @param rug If \code{TRUE} show rug plot at the predictions
-##' @param showFrequencies Barplots only. If \code{TRUE}, show
+##' @param show.frequencies Barplots only. If \code{TRUE}, show
 ##'     frequencies above the bars.
 ##' @param plot If \code{FALSE}, do not plot the results, just return
 ##'     a plottable object.
@@ -107,7 +107,7 @@ plotCalibration <- function(x,
                             names="quantiles",
                             pseudo,
                             rug,
-                            showFrequencies=FALSE,
+                            show.frequencies=FALSE,
                             plot=TRUE,
                             add=FALSE,
                             diag=!add,
@@ -365,7 +365,7 @@ plotCalibration <- function(x,
                 axes=axes,
                 percent=percent,
                 hanging=hanging,
-                showFrequencies=showFrequencies,
+                show.frequencies=show.frequencies,
                 col=col,
                 ylim=ylim,
                 xlim=xlim,
@@ -440,7 +440,7 @@ plotCalibration <- function(x,
             if (out$hanging){
                 do.call("abline",control$abline)
             }
-            if (out$showFrequencies){
+            if (out$show.frequencies){
                 if(out$hanging){
                     text(x=coord,
                          cex=control$frequencies$cex,

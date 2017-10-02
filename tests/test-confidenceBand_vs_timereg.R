@@ -13,7 +13,7 @@ newdata <- d[1:10,]
 fit <- cox.aalen(Surv(time, event) ~ prop(X1) + prop(X2), data = d, max.timepoint.sim=NULL)
 fit.coxph <- coxph(Surv(time, event) ~ X1 + X2, data = d, x = TRUE, y = TRUE)
 
-object.design <- riskRegression:::CoxDesign.coxph(fit.coxph)
+object.design <- riskRegression:::coxDesign.coxph(fit.coxph)
 times <- unique(sort(object.design[object.design$status==1,"stop"]))
 # }}}
 
@@ -51,7 +51,7 @@ test_that("computation of the quantile for the confidence band of the cumhazard"
                          times = times,
                          se = TRUE,
                          band = TRUE,
-                         nSim.band = n.sim,
+                         nsim.band = n.sim,
                          type = c("cumhazard")
                          )
     expect_equal(predRR$quantile.band,ref)
@@ -67,7 +67,7 @@ predRR <- predictCox(fit.coxph,
                      times = times,
                      se = TRUE,
                      band = TRUE,
-                     nSim.band = 500,
+                     nsim.band = 500,
                      type = c("cumhazard","survival")
                      )
 
@@ -111,13 +111,13 @@ res <- predict(fit.CSC,
                newdata = newdata,
                times = seqTimes-1e-5,
                band = TRUE,
-               nSim.band = 500,
+               nsim.band = 500,
                cause = 1)
 
 res <- predict(fit.CSC,
                newdata = newdata[1,,],
                times = seqTimes-1e-5,
-               nSim.band = 500,
+               nsim.band = 500,
                band = TRUE, se = TRUE,
                cause = 1)
 autoplot(res, band = TRUE, ci = TRUE)

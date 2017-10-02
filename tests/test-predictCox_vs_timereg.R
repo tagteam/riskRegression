@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: maj 18 2017 (09:23) 
 ## Version: 
-## last-updated: sep  4 2017 (14:30) 
-##           By: Brice Ozenne
-##     Update #: 54
+## last-updated: Sep 30 2017 (16:40) 
+##           By: Thomas Alexander Gerds
+##     Update #: 55
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -225,8 +225,8 @@ test_that("iid lambda0 - start with censoring",{
 test_that("predictionsSE",{
     ## at fix time
     predGS <- predict(m.cox_GS, newdata = d, times = 10)
-    predRR1 <- predictCox(m.coxph, newdata = d, times = 10, se = TRUE, logTransform = FALSE)
-    predRR2 <- predictCox(m.coxph_d2, newdata = d, times = 10, se = TRUE, logTransform = FALSE)
+    predRR1 <- predictCox(m.coxph, newdata = d, times = 10, se = TRUE, log.transform = FALSE)
+    predRR2 <- predictCox(m.coxph_d2, newdata = d, times = 10, se = TRUE, log.transform = FALSE)
 
     expect_equal(as.double(predRR1$survival), as.double(predGS$S0))
     expect_equal(as.double(predRR2$survival), as.double(predGS$S0))
@@ -236,8 +236,8 @@ test_that("predictionsSE",{
 
     # at event time
     predGS <- predict(m.cox_GS, newdata = d, times = d$eventtime)
-    predRR1 <- predictCox(m.coxph, newdata = d, times = d$eventtime, se = TRUE, logTransform = FALSE)
-    predRR2 <- predictCox(m.coxph_d2, newdata = d, times = d$eventtime, se = TRUE, logTransform = FALSE)
+    predRR1 <- predictCox(m.coxph, newdata = d, times = d$eventtime, se = TRUE, log.transform = FALSE)
+    predRR2 <- predictCox(m.coxph_d2, newdata = d, times = d$eventtime, se = TRUE, log.transform = FALSE)
 
     expect_equal(as.double(predRR1$survival), as.double(predGS$S0))
     expect_equal(as.double(predRR2$survival), as.double(predGS$S0))
@@ -268,12 +268,12 @@ test_that("predictionsSE",{
 # {{{ 2b- no strata, interactions, continous  
 test_that("predictionsSE - interaction",{
     predGS <- predict(mI.cox_GS, newdata = d, times = 10)
-    predRR1 <- predictCox(mI.coxph, newdata = d, times = 10, se = TRUE, logTransform = FALSE)
+    predRR1 <- predictCox(mI.coxph, newdata = d, times = 10, se = TRUE, log.transform = FALSE)
     expect_equal(as.double(predRR1$survival), as.double(predGS$S0))
     expect_equal(as.double(predRR1$survival.se), as.double(predGS$se.S0))
 
     predGS <- predict(mI.cox_GS, newdata = d, times = d$eventtime)
-    predRR1 <- predictCox(mI.coxph, newdata = d, times = d$eventtime, se = TRUE, logTransform = FALSE)
+    predRR1 <- predictCox(mI.coxph, newdata = d, times = d$eventtime, se = TRUE, log.transform = FALSE)
     expect_equal(as.double(predRR1$survival), as.double(predGS$S0))
     expect_equal(as.double(predRR1$survival.se), as.double(predGS$se.S0))
 })
@@ -283,12 +283,12 @@ test_that("predictionsSE - interaction",{
 # {{{ 2c- no strata, no interaction, with a categorical variable
 test_that("predictionsSE - categorical",{
     predGS <- predict(mCAT.cox_GS, newdata = d, times = 10)
-    predRR1 <- predictCox(mCAT.coxph, newdata = d, times = 10, se = TRUE, logTransform = FALSE)
+    predRR1 <- predictCox(mCAT.coxph, newdata = d, times = 10, se = TRUE, log.transform = FALSE)
     expect_equal(as.double(predRR1$survival), as.double(predGS$S0))
     expect_equal(as.double(predRR1$survival.se), as.double(predGS$se.S0))
 
     predGS <- predict(mCAT.cox_GS, newdata = d, times = d$eventtime)
-    predRR1 <- predictCox(mCAT.coxph, newdata = d, times = d$eventtime, se = TRUE, logTransform = FALSE)
+    predRR1 <- predictCox(mCAT.coxph, newdata = d, times = d$eventtime, se = TRUE, log.transform = FALSE)
     expect_equal(as.double(predRR1$survival), as.double(predGS$S0))
     expect_equal(as.double(predRR1$survival.se), as.double(predGS$se.S0))
 })
@@ -299,19 +299,19 @@ test_that("predictionsSE - categorical",{
 
 test_that("predictionsSE - strata",{
     predGS <- predict(mStrata.cox_GS, newdata = dStrata, times = 2)
-    predRR1 <- predictCox(mStrata.coxph, newdata = dStrata, times = 2, se = TRUE, logTransform = FALSE)
+    predRR1 <- predictCox(mStrata.coxph, newdata = dStrata, times = 2, se = TRUE, log.transform = FALSE)
     
     expect_equal(as.double(predRR1$survival), as.double(predGS$S0))
     expect_equal(as.double(predRR1$survival.se), as.double(predGS$se.S0))
     
     predGS <- predict(mStrata.cox_GS, newdata = dStrata, times = 1:3)
-    predRR1 <- predictCox(mStrata.coxph, newdata = dStrata, times = 1:3, se = TRUE, logTransform = FALSE)
+    predRR1 <- predictCox(mStrata.coxph, newdata = dStrata, times = 1:3, se = TRUE, log.transform = FALSE)
     
     expect_equal(as.double(predRR1$survival), as.double(predGS$S0))
     expect_equal(as.double(predRR1$survival.se), as.double(predGS$se.S0))
 
     predGS <- predict(mStrata.cox_GS, newdata = dStrata, times = d$eventtime[1:10])
-    predRR1 <- predictCox(mStrata.coxph, newdata = dStrata, times = d$eventtime[1:10], se = TRUE, logTransform = FALSE)
+    predRR1 <- predictCox(mStrata.coxph, newdata = dStrata, times = d$eventtime[1:10], se = TRUE, log.transform = FALSE)
     
     expect_equal(as.double(predRR1$survival), as.double(predGS$S0))
     expect_equal(as.double(predRR1$survival.se), as.double(predGS$se.S0))
@@ -349,10 +349,10 @@ newdata <- d
 
 test_that("iid minimal - no strata", {
     res1 <- predictCox(m.coxph, times = seqTime, newdata = newdata,
-                       logTransform = TRUE, type = c("cumhazard", "survival"),
+                       log.transform = TRUE, type = c("cumhazard", "survival"),
                        store.iid = "minimal", se = TRUE, iid = TRUE)
     res3 <- predictCox(m.coxph, times = seqTime, newdata = newdata,
-                       logTransform = TRUE, type = c("cumhazard", "survival"),
+                       log.transform = TRUE, type = c("cumhazard", "survival"),
                        store.iid = "full", se = TRUE, iid = TRUE)
     expect_equal(res1$cumhazard.se,res3$cumhazard.se)
     expect_equal(res1$survival.se,res3$survival.se)
@@ -360,13 +360,13 @@ test_that("iid minimal - no strata", {
     expect_equal(res1$survival.iid,res3$survival.iid)
 
     res1 <- predictCox(m.coxph, times = seqTime, newdata = newdata,
-                       logTransform = FALSE, type = c("cumhazard", "survival"),
+                       log.transform = FALSE, type = c("cumhazard", "survival"),
                        store.iid = "minimal", se = TRUE, iid = TRUE) 
     res2 <- predictCox(m.coxph, times = seqTime, newdata = newdata,
-                       logTransform = FALSE, type = c("cumhazard", "survival"),
+                       log.transform = FALSE, type = c("cumhazard", "survival"),
                        store.iid = "minimal", average.iid = TRUE) 
     res3 <- predictCox(m.coxph, times = seqTime, newdata = newdata,
-                       logTransform = FALSE, type = c("cumhazard", "survival"),
+                       log.transform = FALSE, type = c("cumhazard", "survival"),
                        store.iid = "full", se = TRUE, iid = TRUE)
     expect_equal(res1$cumhazard.se,res3$cumhazard.se)
     expect_equal(res1$survival.se,res3$survival.se)
@@ -384,10 +384,10 @@ newdata <- d
 
 test_that("iid minimal - strata", {
     res1 <- predictCox(m.coxph, times = seqTime, newdata = newdata,
-                       logTransform = TRUE, type = c("cumhazard", "survival"),
+                       log.transform = TRUE, type = c("cumhazard", "survival"),
                        store.iid = "minimal", se = TRUE, iid = TRUE)
     res3 <- predictCox(m.coxph, times = seqTime, newdata = newdata,
-                       logTransform = TRUE, type = c("cumhazard", "survival"),
+                       log.transform = TRUE, type = c("cumhazard", "survival"),
                        store.iid = "full", se = TRUE, iid = TRUE)
     expect_equal(res1$cumhazard.se,res3$cumhazard.se)
     expect_equal(res1$survival.se,res3$survival.se)
@@ -396,13 +396,13 @@ test_that("iid minimal - strata", {
 
     newdata <- rbind(d[1],d[1])
     res1 <- predictCox(m.coxph, times = seqTime, newdata = newdata,
-                       logTransform = FALSE, type = c("cumhazard", "survival"),
+                       log.transform = FALSE, type = c("cumhazard", "survival"),
                        store.iid = "minimal", se = TRUE, iid = TRUE) 
     res2 <- predictCox(m.coxph, times = seqTime, newdata = newdata,
-                       logTransform = FALSE, type = c("cumhazard", "survival"),
+                       log.transform = FALSE, type = c("cumhazard", "survival"),
                        store.iid = "minimal", average.iid = TRUE) 
     res3 <- predictCox(m.coxph, times = seqTime, newdata = newdata,
-                       logTransform = FALSE, type = c("cumhazard", "survival"),
+                       log.transform = FALSE, type = c("cumhazard", "survival"),
                        store.iid = "full", se = TRUE, iid = TRUE)
     expect_equal(res1$cumhazard.se,res3$cumhazard.se)
     expect_equal(res1$survival.se,res3$survival.se)

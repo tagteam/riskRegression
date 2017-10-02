@@ -4,12 +4,12 @@
 \alias{CSC}
 \title{Cause-specific Cox proportional hazard regression}
 \usage{
-CSC(formula, data, cause, survtype = "hazard", fitter = "coxph", ...)
+CSC(formula, data, cause, surv.type = "hazard", fitter = "coxph", ...)
 }
 \arguments{
 \item{formula}{Either a single \code{Hist} formula or a list of formulas. 
 If it is a list it must contain as many \code{Hist} formulas as there are
-causes when \code{survtype="hazard"} and exactly two formulas when \code{survtype="survival"}.
+causes when \code{surv.type="hazard"} and exactly two formulas when \code{surv.type="survival"}.
 If it is a list the first formula is used for the cause of interest specific Cox regression
 and the other formula(s) either for the other cause specific Cox regression(s) or for the
 Cox regression of the combined event where each cause counts as event. Note that when only one
@@ -19,7 +19,7 @@ formula is given the covariates enter in exactly the same way into all Cox regre
 
 \item{cause}{The cause of interest. Defaults to the first cause (see Details).}
 
-\item{survtype}{Either \code{"hazard"} (the default) or
+\item{surv.type}{Either \code{"hazard"} (the default) or
 \code{"survival"}.  If \code{"hazard"} fit cause-specific Cox
 regression models for all causes.  If \code{"survival"} fit one
 cause-specific Cox regression model for the cause of interest and
@@ -33,8 +33,8 @@ If \code{coxph} use \code{survival::coxph} else use \code{rms::cph}.}
 \value{
 \item{models }{a list with the fitted (cause-specific) Cox
 regression objects} \item{response }{the event history response }
-\item{eventTimes }{the sorted (unique) event times } \item{survtype }{the
-value of \code{survtype}} \item{theCause }{the cause of interest. see
+\item{eventTimes }{the sorted (unique) event times } \item{surv.type }{the
+value of \code{surv.type}} \item{theCause }{the cause of interest. see
 \code{cause}} \item{causes }{the other causes} %% ...
 }
 \description{
@@ -61,7 +61,7 @@ print(fit1)
 ## model hazard of all cause mortality instead of hazard of type 2 
 fit1a <- CSC(list(Hist(time,status)~sex+age,Hist(time,status)~invasion+epicel+log(thick)),
              data=Melanoma,
-             survtype="surv")
+             surv.type="surv")
 print(fit1a)
 
 ## special case where cause 2 has no covariates
@@ -81,20 +81,20 @@ print(fit2)
 ## different formula for cause 2 and event-free survival
 fit3 <- CSC(list(Hist(time,status)~sex+invasion+epicel+age,
                  Hist(time,status)~invasion+epicel+age),
-            survtype="surv",
+            surv.type="surv",
             data=Melanoma)
 print(fit3)
 
 ## same formula for both causes
 fit4 <- CSC(Hist(time,status)~invasion+epicel+age,
             data=Melanoma,
-            survtype="surv")
+            surv.type="surv")
 print(fit4)
 
 ## strata
 fit5 <- CSC(Hist(time,status)~invasion+epicel+age+strata(sex),
             data=Melanoma,
-            survtype="surv")
+            surv.type="surv")
 print(fit5)
 
 ## sanity checks
@@ -106,7 +106,7 @@ all.equal(cox2,fit5$models[[2]])
 
 ## predictions
 ##
-## survtype = "hazard": predictions for both causes can be extracted
+## surv.type = "hazard": predictions for both causes can be extracted
 ## from the same fit
 fit2 <- CSC(Hist(time,status)~invasion+epicel+age, data=Melanoma)
 predict(fit2,cause=1,newdata=Melanoma[c(17,99,108),],times=c(100,1000,10000))
@@ -115,11 +115,11 @@ predictRisk(fit2,cause=2,newdata=Melanoma[c(17,99,108),],times=c(100,1000,10000)
 predict(fit2,cause=1,newdata=Melanoma[c(17,99,108),],times=c(100,1000,10000))
 predict(fit2,cause=2,newdata=Melanoma[c(17,99,108),],times=c(100,1000,10000))
 
-## survtype = "surv" we need to change the cause of interest 
+## surv.type = "surv" we need to change the cause of interest 
 library(survival)
 fit5.2 <- CSC(Hist(time,status)~invasion+epicel+age+strata(sex),
             data=Melanoma,
-            survtype="surv",cause=2)
+            surv.type="surv",cause=2)
 ## now this does not work
 try(predictRisk(fit5.2,cause=1,newdata=Melanoma,times=4))
 

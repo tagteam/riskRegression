@@ -23,16 +23,16 @@ getCensoringWeights <- function(formula,
                         data=iData,
                         method=censModel,
                         times=times,
-                        subjectTimes=iData$itime,
-                        subjectTimesLag=1,keep=NULL)
+                        subject.times=iData$itime,
+                        lag=1,keep=NULL)
     }
     else{
         weights <- ipcw(formula=formula,
                         data=data,
                         method=censModel,
                         times=times,
-                        subjectTimes=data[["time"]],
-                        subjectTimesLag=1,keep=NULL)
+                        subject.times=data[["time"]],
+                        lag=1,keep=NULL)
     }
     weights$dim <- if (censModel %in% c("marginal","none")) 0 else 1
     weights

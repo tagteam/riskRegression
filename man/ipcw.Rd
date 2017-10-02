@@ -9,8 +9,8 @@
 \alias{ipcw.aalen}
 \title{Estimation of censoring probabilities}
 \usage{
-ipcw(formula, data, method, args, times, subjectTimes, subjectTimesLag = 1,
-  what, keep = NULL)
+ipcw(formula, data, method, args, times, subject.times, lag = 1, what,
+  keep = NULL)
 }
 \arguments{
 \item{formula}{A survival formula like, \code{Surv(time,status)~1}, where
@@ -30,19 +30,19 @@ formula.}
 \item{times}{For \code{what="IPCW.times"} a vector of times at
 which to compute the probabilities of not being censored.}
 
-\item{subjectTimes}{For \code{what="IPCW.subjectTimes"} a vector of
+\item{subject.times}{For \code{what="IPCW.subject.times"} a vector of
 individual times at which the probabilities of not being censored
 are computed.}
 
-\item{subjectTimesLag}{If equal to \code{1} then obtain
+\item{lag}{If equal to \code{1} then obtain
 \code{G(T_i-|X_i)}, if equal to \code{0} estimate the conditional
-censoring distribution at the subjectTimes,
+censoring distribution at the subject.times,
 i.e. (\code{G(T_i|X_i)}).}
 
 \item{what}{Decide about what to do: If equal to
 \code{"IPCW.times"} then weights are estimated at given
-\code{times}.  If equal to \code{"IPCW.subjectTimes"} then weights
-are estimated at individual \code{subjectTimes}.  If missing then
+\code{times}.  If equal to \code{"IPCW.subject.times"} then weights
+are estimated at individual \code{subject.times}.  If missing then
 produce both.}
 
 \item{keep}{Which elements to add to the output. Any subset of the vector \code{c("times","fit","call")}.}
@@ -50,8 +50,8 @@ produce both.}
 \value{
 A list with elements depending on argument \code{keep}. \item{times}{The times at which weights are estimated}
 \item{IPCW.times}{Estimated weights at \code{times}}
-\item{IPCW.subjectTimes}{Estimated weights at individual time values
-\code{subjectTimes}} \item{fit}{The fitted censoring model}
+\item{IPCW.subject.times}{Estimated weights at individual time values
+\code{subject.times}} \item{fit}{The fitted censoring model}
 \item{method}{The method for modelling the censoring distribution}
 \item{call}{The call}
 }
@@ -68,7 +68,7 @@ conditional survival function of the censoring times and derives the
 weights.
 
 IMPORTANT: the data set should be ordered, \code{order(time,-status)} in
-order to get the values \code{IPCW.subjectTimes} in the right order for some
+order to get the values \code{IPCW.subject.times} in the right order for some
 choices of \code{method}.
 }
 \examples{
@@ -85,7 +85,7 @@ WKM=ipcw(Hist(time,status)~X2,
   data=dat,
   method="marginal",
   times=sort(unique(dat$time)),
-  subjectTimes=dat$time,keep=c("fit"))
+  subject.times=dat$time,keep=c("fit"))
 plot(WKM$fit)
 WKM$fit
 
@@ -95,7 +95,7 @@ WCox=ipcw(Hist(time=time,event=status)~X2,
   data=dat,
   method="cox",
   times=sort(unique(dat$time)),
-  subjectTimes=dat$time,keep=c("fit"))
+  subject.times=dat$time,keep=c("fit"))
 WCox$fit
 
 plot(WKM$fit)
@@ -119,7 +119,7 @@ WKM2=ipcw(Hist(time,status)~X2,
   data=dat,
   method="nonpar",
   times=sort(unique(dat$time)),
-  subjectTimes=dat$time,keep=c("fit"))
+  subject.times=dat$time,keep=c("fit"))
 plot(WKM2$fit,add=FALSE)
 
 

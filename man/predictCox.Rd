@@ -7,8 +7,8 @@
 predictCox(object, newdata = NULL, times, centered = TRUE,
   type = c("cumhazard", "survival"), keep.strata = TRUE,
   keep.times = TRUE, keep.newdata = FALSE, se = FALSE, band = FALSE,
-  iid = FALSE, average.iid = FALSE, nSim.band = 10000,
-  conf.level = 0.95, logTransform = TRUE, store.iid = "full")
+  iid = FALSE, average.iid = FALSE, nsim.band = 10000,
+  conf.level = 0.95, log.transform = TRUE, store.iid = "full")
 }
 \arguments{
 \item{object}{The fitted Cox regression model object either
@@ -58,12 +58,12 @@ covariates used to make the prediction in the output list.}
 
 \item{average.iid}{Logical. If \code{TRUE} add the average of the influence function over \code{newdata} to the output.}
 
-\item{nSim.band}{the number of simulations used to compute the quantiles
+\item{nsim.band}{the number of simulations used to compute the quantiles
 for the confidence bands.}
 
 \item{conf.level}{Level of confidence.}
 
-\item{logTransform}{Should the confidence intervals/bands be computed on the log (hazard) and
+\item{log.transform}{Should the confidence intervals/bands be computed on the log (hazard) and
 log(-log) (survival) scale and be backtransformed.
 Otherwise they are computed on the original scale and truncated (if necessary).}
 
@@ -94,7 +94,7 @@ Not working with time varying predictor variables or
     the results obtained with the \code{basehaz} function from the
     survival package.
     
-When setting \code{logTransform} to \code{TRUE}, the standard error that is returned is 
+When setting \code{log.transform} to \code{TRUE}, the standard error that is returned is 
 before back-transformation to the original scale.
 }
 \examples{
@@ -113,7 +113,7 @@ riskRegression:::predictCox(fit)$cumhazard
 predictCox(fit,centered=FALSE,type="hazard")
 predictCox(fit,centered=TRUE,type="hazard")
 predictCox(fit, newdata=nd, times=c(3,8),se=TRUE)
-predictCox(fit, newdata=nd, times=c(3,8),se=TRUE, logTransform = TRUE)
+predictCox(fit, newdata=nd, times=c(3,8),se=TRUE, log.transform = TRUE)
 predictCox(fit, newdata=nd, times=c(3,8),se=TRUE, store.iid = "minimal")
 predictCox(fit, newdata=nd, times = 5,iid=TRUE)
 

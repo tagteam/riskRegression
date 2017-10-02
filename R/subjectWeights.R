@@ -31,10 +31,10 @@
 #' @param args Arguments passed to the fitter of the method.
 #' @param lag If equal to \code{1} then obtain \code{G(T_i-|X_i)}, if
 #' equal to \code{0} estimate the conditional censoring distribution
-#' at the subjectTimes, i.e. (\code{G(T_i|X_i)}).
+#' at the subject.times, i.e. (\code{G(T_i|X_i)}).
 #' @return \item{times}{The times at which weights are estimated}
 #' \item{weights}{Estimated weights at individual time values
-#' \code{subjectTimes}} \item{lag}{The time lag.} \item{fit}{The fitted
+#' \code{subject.times}} \item{lag}{The time lag.} \item{fit}{The fitted
 #' censoring model} \item{method}{The method for modelling the censoring
 #' distribution} \item{call}{The call}
 #' @author Thomas A. Gerds \email{tag@@biostat.ku.dk}
@@ -169,8 +169,8 @@ subjectWeights.forest <- function(formula,data,method,args,lag=1){
     #  predicted survival probabilities for all training subjects are in object$survival
     #  out-of-bag prediction in object$survival.oob
     #  weigths at subject specific event times
-    subjectTimes <- wdata[,"time"]
-    weights <- sapply(1:length(subjectTimes),function(i){
+    subject.times <- wdata[,"time"]
+    weights <- sapply(1:length(subject.times),function(i){
         ## browser()
         prodlim::predictSurvIndividual(prodlim::prodlim(Hist(time,status)~1,data=wdata,reverse=TRUE,caseweights=FW[i,]),lag=1)[i]
     })

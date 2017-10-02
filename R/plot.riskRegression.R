@@ -140,8 +140,8 @@ plot.riskRegression <- function(x,
     # }}}
     # {{{ smart control
     smartA <- prodlim::SmartControl(call=  list(...),
-                                    keys=c("plot","lines","legend","confint","marktime","axis1","axis2"),
-                                    ignore=c("x","type","cause","newdata","add","col","lty","lwd","ylim","xlim","xlab","ylab","legend","marktime","confint","automar","atrisk","timeOrigin","percent","axes","atrisk.args","confint.args","legend.args"),
+                                    keys=c("plot","lines","legend","conf.int","marktime","axis1","axis2"),
+                                    ignore=c("x","type","cause","newdata","add","col","lty","lwd","ylim","xlim","xlab","ylab","legend","marktime","conf.int","automar","atrisk","timeOrigin","percent","axes","atrisk.args","conf.int.args","legend.args"),
                                     ignore.case=TRUE,
                                     defaults=list("plot"=plot.DefaultArgs,
                                                   "axis1"=axis1.DefaultArgs,

@@ -7,8 +7,8 @@
 #' coefficients should be plotted.
 #' @param level For categorical variables the level (group) whose contrast to
 #' the reference level (group) should be plotted.
-#' @param refLine Logical. If \code{TRUE} then add a horizontal line at zero.
-#' @param confint Logical. If \code{TRUE} then add confidence limits.  Can be
+#' @param ref.line Logical. If \code{TRUE} then add a horizontal line at zero.
+#' @param conf.int Logical. If \code{TRUE} then add confidence limits.  Can be
 #'                controlled using smart arguments. See examples
 #' @param xlim See \code{plot}
 #' @param ylim See \code{plot}
@@ -66,8 +66,8 @@
 plotEffects <- function(x,
                         formula,
                         level,
-                        refLine=TRUE,
-                        confint=.95,
+                        ref.line=TRUE,
+                        conf.int=.95,
                         xlim,
                         ylim,
                         xlab="Time",
@@ -92,7 +92,7 @@ plotEffects <- function(x,
     matchVarnames <- grep(thisvar,colnames(x$timeVaryingEffects$coef),value=TRUE)
     coef <- x$timeVaryingEffects$coef[,matchVar,drop=FALSE]
     se <- sqrt(x$timeVaryingEffects$var[,matchVar,drop=FALSE])
-    zval <- qnorm(1- (1-confint)/2, 0,1)
+    zval <- qnorm(1- (1-conf.int)/2, 0,1)
     lower <- coef-zval*se
     upper <- coef + zval*se
     # select levels for categorical variables
@@ -136,17 +136,17 @@ plotEffects <- function(x,
                              bty="n",
                              y.intersp=1.3,
                              x="topright")
-  ## confint.DefaultArgs <- list(x=x,newdata=newdata,type=type,citype="shadow",times=plot.times,cause=cause,density=55,col=col[1:nlines],lwd=rep(2,nlines),lty=rep(3,nlines))
+  ## conf.int.DefaultArgs <- list(x=x,newdata=newdata,type=type,citype="shadow",times=plot.times,cause=cause,density=55,col=col[1:nlines],lwd=rep(2,nlines),lty=rep(3,nlines))
   # }}}
   # {{{ smart control
 
   smartA <- prodlim::SmartControl(call=  list(...),
-                         keys=c("plot","legend","confint","axis1","axis2"),
-                         ignore=c("x","formula","refLine","add","col","lty","lwd","ylim","xlim","xlab","ylab","legend","confint","axes"),
+                         keys=c("plot","legend","conf.int","axis1","axis2"),
+                         ignore=c("x","formula","ref.line","add","col","lty","lwd","ylim","xlim","xlab","ylab","legend","conf.int","axes"),
                          defaults=list("plot"=plot.DefaultArgs,
                            ## "lines"=lines.DefaultArgs,
                            "legend"=legend.DefaultArgs,
-                           ## "confint"=confint.DefaultArgs,
+                           ## "conf.int"=conf.int.DefaultArgs,
                            ## "background"=background.DefaultArgs,
                            "axis1"=axis1.DefaultArgs,
                            "axis2"=axis2.DefaultArgs),
@@ -175,7 +175,7 @@ plotEffects <- function(x,
 
   if (length(matchVar)>1){
     ref <- x$refLevels[thisvar]
-    if (refLine==TRUE)
+    if (ref.line==TRUE)
       abline(h=0,col="gray55",lwd=2)
     nix <- lapply(1:length(levs),function(l){
       i <- match(levs[l],colnames(coef),nomatch=0)
@@ -189,7 +189,7 @@ plotEffects <- function(x,
     })
   }
   else{
-    if (refLine==TRUE)
+    if (ref.line==TRUE)
       abline(h=0,col="gray55",lwd=2)
     lines(time,coef,lwd=lwd[1],lty=lty[1],col=col[1],type="s")
     ## confidence shadows

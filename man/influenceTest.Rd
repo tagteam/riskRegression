@@ -12,7 +12,7 @@ influenceCoxTest(object, ...)
 \method{influenceCoxTest}{list}(object, newdata, times, type, cause, ...)
 
 \method{influenceCoxTest}{default}(object, object2, tanhTransform = FALSE,
-  conf.level = 0.95, nSim.band = 10000, ...)
+  conf.level = 0.95, nsim.band = 10000, ...)
 }
 \arguments{
 \item{object}{either a list of models or an object of class predictCox or predictCSC.}
@@ -36,7 +36,7 @@ events.}
 
 \item{conf.level}{Level of confidence.}
 
-\item{nSim.band}{the number of simulations used to compute the quantiles
+\item{nsim.band}{the number of simulations used to compute the quantiles
 for the confidence bands.}
 }
 \description{

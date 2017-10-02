@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: maj 19 2017 (16:01) 
 ## Version: 
-## last-updated: aug 10 2017 (09:24) 
-##           By: Brice Ozenne
-##     Update #: 115
+## last-updated: Sep 30 2017 (16:13) 
+##           By: Thomas Alexander Gerds
+##     Update #: 117
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -23,7 +23,7 @@
 #' @param object either a list of models or an object of class predictCox or predictCSC.
 #' @param object2 same as predict1 but for another model.
 #' @param type the type of predicted value. 
-#' @param nSim.band the number of simulations used to compute the quantiles
+#' @param nsim.band the number of simulations used to compute the quantiles
 #' for the confidence bands.
 #' @param newdata A \code{data.frame} or \code{data.table} containing
 #'     the values of the predictor variables defining subject specific
@@ -147,7 +147,7 @@ influenceCoxTest.list <- function(object, newdata, times, type, cause, ...){
                          iid = TRUE,
                          band = FALSE,
                          se = TRUE,
-                         logTransform = FALSE)
+                         log.transform = FALSE)
     }else if("CauseSpecificCox" %in% class(x)){ # CSC
       pred <- predict(x,
                       cause = cause,
@@ -156,7 +156,7 @@ influenceCoxTest.list <- function(object, newdata, times, type, cause, ...){
                       iid = TRUE,
                       band = FALSE,
                       se = TRUE,
-                      logTransform = FALSE)
+                      log.transform = FALSE)
     }else{
       stop("can only handle Cox and Cause specific Cox models \n")
     }
@@ -171,7 +171,7 @@ influenceCoxTest.list <- function(object, newdata, times, type, cause, ...){
 # {{{ influenceCoxTest.default
 #' @rdname influenceTest
 #' @export
-influenceCoxTest.default <- function(object, object2, tanhTransform = FALSE, conf.level = 0.95, nSim.band = 1e4, ...){
+influenceCoxTest.default <- function(object, object2, tanhTransform = FALSE, conf.level = 0.95, nsim.band = 1e4, ...){
   
   ## type
   if(class(object)=="predictCox"){
@@ -270,7 +270,7 @@ influenceCoxTest.default <- function(object, object2, tanhTransform = FALSE, con
     
     sample.max <- sampleMaxProcess_cpp(nObject = n,
                                        nNew = 1,
-                                       nSim = nSim.band,
+                                       nSim = nsim.band,
                                        iid = A.iid,
                                        se = M.se)
     

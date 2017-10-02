@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: feb 17 2017 (10:06) 
 ## Version: 
-## last-updated: Jun 29 2017 (16:56) 
+## last-updated: Sep 30 2017 (16:06) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 330
+##     Update #: 331
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -70,7 +70,7 @@
 #'
 #' ## predictions with confidence bands
 #' pred.cox <- predictCox(m.cox, newdata = d[1,,drop=FALSE],
-#'   times = 1:5, type = "survival", nSim.band = 500,  band = TRUE, keep.newdata = TRUE)
+#'   times = 1:5, type = "survival", nsim.band = 500,  band = TRUE, keep.newdata = TRUE)
 #' autoplot(pred.cox, band = TRUE)
 #'
 #' 
@@ -131,7 +131,7 @@ autoplot.predictCox <- function(object,
 
     if(band && object$band == FALSE){
         stop("argument \'band\' cannot be TRUE when no quantiles for the confidence bands have not been computed \n",
-             "set argment \'nSim.band\' to a positive integer when calling predictCox \n")
+             "set argment \'nsim.band\' to a positive integer when calling predictCox \n")
     }
     
     ## display

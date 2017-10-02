@@ -6,7 +6,7 @@
 \usage{
 plotCalibration(x, models, times, method = "nne", round = TRUE,
   bandwidth = NULL, q = 10, bars = FALSE, hanging = FALSE,
-  names = "quantiles", pseudo, rug, showFrequencies = FALSE, plot = TRUE,
+  names = "quantiles", pseudo, rug, show.frequencies = FALSE, plot = TRUE,
   add = FALSE, diag = !add, legend = !add, axes = !add, xlim = c(0,
   1), ylim = c(0, 1), xlab = ifelse(bars, "Risk groups", "Predicted risk"),
   ylab = "Observed frequency", col, lwd, lty, pch, type, cause = 1,
@@ -49,7 +49,7 @@ corresponding prediction.}
 
 \item{rug}{If \code{TRUE} show rug plot at the predictions}
 
-\item{showFrequencies}{Barplots only. If \code{TRUE}, show
+\item{show.frequencies}{Barplots only. If \code{TRUE}, show
 frequencies above the bars.}
 
 \item{plot}{If \code{FALSE}, do not plot the results, just return

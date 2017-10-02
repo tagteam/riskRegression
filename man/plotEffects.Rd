@@ -4,7 +4,7 @@
 \alias{plotEffects}
 \title{Plotting time-varying effects from a risk regression model.}
 \usage{
-plotEffects(x, formula, level, refLine = TRUE, confint = 0.95, xlim, ylim,
+plotEffects(x, formula, level, ref.line = TRUE, conf.int = 0.95, xlim, ylim,
   xlab = "Time", ylab = "Cumulative coefficient", col, lty, lwd,
   add = FALSE, legend, axes = TRUE, ...)
 }
@@ -18,9 +18,9 @@ coefficients should be plotted.}
 \item{level}{For categorical variables the level (group) whose contrast to
 the reference level (group) should be plotted.}
 
-\item{refLine}{Logical. If \code{TRUE} then add a horizontal line at zero.}
+\item{ref.line}{Logical. If \code{TRUE} then add a horizontal line at zero.}
 
-\item{confint}{Logical. If \code{TRUE} then add confidence limits.  Can be
+\item{conf.int}{Logical. If \code{TRUE} then add confidence limits.  Can be
 controlled using smart arguments. See examples}
 
 \item{xlim}{See \code{plot}}

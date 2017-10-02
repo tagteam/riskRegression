@@ -40,7 +40,7 @@ fit=cph(formula = Surv(time,event)~ X1+X2,data=dtS,y=TRUE,x=TRUE)
 seqTimes <- sort(unique(fit$y[,1]))
 seqTimes5 <-seqTimes[seqTimes>5 & seqTimes<10]
 ateFit <- ate(fit, data = dtS, treatment = "X1", contrasts = NULL,
-              times = seqTimes, B = 0, band = TRUE, nSim.band = 500, y = TRUE, mc.cores=1)
+              times = seqTimes, B = 0, band = TRUE, nsim.band = 500, y = TRUE, mc.cores=1)
 autoplot(ateFit, band = TRUE, ci = TRUE)
 
 }

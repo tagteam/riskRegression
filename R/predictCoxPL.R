@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: sep  4 2017 (16:43) 
 ## Version: 
-## last-updated: sep  5 2017 (11:02) 
-##           By: Brice Ozenne
-##     Update #: 57
+## last-updated: Sep 30 2017 (18:07) 
+##           By: Thomas Alexander Gerds
+##     Update #: 63
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -50,9 +50,9 @@
 #'
 #' #### Compare exp to product limit
 #' set.seed(10)
-#' A <- predictCoxPL(fit, newdata = d[1:5], times = 1:5, se = TRUE, band = TRUE, logTransform = FALSE)
+#' A <- predictCoxPL(fit, newdata = d[1:5], times = 1:5, se = TRUE, band = TRUE, log.transform = FALSE)
 #' set.seed(10)
-#' B <- predictCox(fit, newdata = d[1:5], times = 1:5, se = TRUE, band = TRUE, logTransform = FALSE)
+#' B <- predictCox(fit, newdata = d[1:5], times = 1:5, se = TRUE, band = TRUE, log.transform = FALSE)
 #'
 #' A$survival - B$survival
 #' A$survival.lower - B$survival.lower
@@ -89,21 +89,21 @@ predictCoxPL <- function(object,
                                se = se,
                                band = band,
                                ...)
-    logTransform <- class(original.res$transformation.survival)=="function"
-    infoVar <- CoxVariableName(object)
-    X.design <- as.data.table(CoxDesign(object))
+    log.transform <- class(original.res$transformation.survival)=="function"
+    infoVar <- coxVariableName(object)
+    X.design <- as.data.table(coxDesign(object))
     # }}}
     
     # {{{ compute survival
     if(infoVar$is.strata){
 
-        object.strata <- CoxStrata(object, data = NULL, stratavars = infoVar$stratavars)
+        object.strata <- coxStrata(object, data = NULL, strata.vars = infoVar$strata.vars)
         object.levelStrata <- levels(object.strata)
-        new.strata <- CoxStrata(object, data = newdata, 
+        new.strata <- coxStrata(object, data = newdata, 
                                 sterms = infoVar$sterms, 
-                                stratavars = infoVar$stratavars, 
+                                strata.vars = infoVar$strata.vars, 
                                 levels = object.levelStrata, 
-                                stratalevels = infoVar$stratalevels)
+                                strata.levels = infoVar$strata.levels)
 
         Ustrata <- unique(new.strata)
         n.Ustrata <- length(Ustrata)
@@ -142,7 +142,7 @@ predictCoxPL <- function(object,
     # {{{ update confidence intervals
     if(se){
         zval <- qnorm(1- (1-original.res$conf.level)/2, 0,1)
-        if(logTransform){
+        if(log.transform){
             original.res$survival.lower <- exp(-exp(log(-log(original.res$survival)) + zval*original.res$survival.se))
             original.res$survival.upper <- exp(-exp(log(-log(original.res$survival)) - zval*original.res$survival.se))                
         }else{
@@ -160,7 +160,7 @@ predictCoxPL <- function(object,
     if(band){
         quantile95 <- colMultiply_cpp(original.res$survival.se,original.res$quantile.band)
 
-        if(logTransform){
+        if(log.transform){
             original.res$survival.lowerBand <- exp(-exp(log(-log(original.res$survival)) + quantile95))
             original.res$survival.upperBand <- exp(-exp(log(-log(original.res$survival)) - quantile95))
         }else{

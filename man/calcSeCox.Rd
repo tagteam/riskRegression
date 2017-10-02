@@ -6,7 +6,7 @@
 \usage{
 calcSeCox(object, times, nTimes, type, Lambda0, object.n, object.time,
   object.eXb, object.strata, nStrata, new.eXb, new.LPdata, new.strata,
-  new.survival, new.cumhazard, nVar, logTransform, export, store.iid)
+  new.survival, new.cumhazard, nVar, log.transform, export, store.iid)
 }
 \arguments{
 \item{object}{The fitted Cox regression model object either
@@ -45,7 +45,7 @@ or several of the strings \code{"hazard"},\code{"cumhazard"}, \code{"survival"}.
 
 \item{nVar}{the number of variables that form the linear predictor}
 
-\item{logTransform}{Should the variance/influence function be computed on the log or log(-log) scale}
+\item{log.transform}{Should the variance/influence function be computed on the log or log(-log) scale}
 
 \item{export}{can be "iid" to return the value of the influence function for each observation
 "se" to return the standard error for a given timepoint}

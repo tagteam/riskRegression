@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun  6 2016 (09:35) 
 ## Version: 
-## last-updated: sep  5 2017 (11:01) 
-##           By: Brice Ozenne
-##     Update #: 125
+## last-updated: Sep 30 2017 (17:26) 
+##           By: Thomas Alexander Gerds
+##     Update #: 126
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -329,11 +329,11 @@ test_that("Conditional CIF is NA after the last event", {
 test_that("Value of the conditional CIF | at the last event", {
     tau <-  max(d[cause==2,time])
     
-    predC_auto <- predict(CSC.fit, newdata = d2[1:5], cause = 2, times = tau, landmark = tau, productLimit = FALSE)
+    predC_auto <- predict(CSC.fit, newdata = d2[1:5], cause = 2, times = tau, landmark = tau, product.limit = FALSE)
     pred <- as.data.table(predictCox(CSC.fit$models[[2]], times = tau, newdata = d2[1:5], type = "hazard"))
     expect_equal(as.double(predC_auto$absRisk),pred$hazard)
 
-    predC_auto <- predict(CSC.fit, newdata = d2[1:5], cause = 2, times = tau, landmark = tau, productLimit = TRUE)
+    predC_auto <- predict(CSC.fit, newdata = d2[1:5], cause = 2, times = tau, landmark = tau, product.limit = TRUE)
     pred <- as.data.table(predictCox(CSC.fit$models[[2]], times = tau, newdata = d2[1:5], type = "hazard"))
     expect_equal(as.double(predC_auto$absRisk),pred$hazard)
 })
@@ -342,34 +342,34 @@ test_that("Value of the conditional CIF", {
   sttt <- sort(c(0,ttt))
   indexT0 <- 5
     
-  # productLimit = FALSE
+  # product.limit = FALSE
   cumH1 <- predictCox(CSC.fit$models$`Cause 1`, newdata = d2, times = sttt[indexT0]-1e-6)[["cumhazard"]]
   cumH2 <- predictCox(CSC.fit$models$`Cause 2`, newdata = d2, times = sttt[indexT0]-1e-6)[["cumhazard"]]
   Sall <- exp(-cumH1-cumH2)
   
-  predRef <- predict(CSC.fit, newdata = d2, cause = 2, times = sttt[indexT0]-1e-6, productLimit = FALSE)
+  predRef <- predict(CSC.fit, newdata = d2, cause = 2, times = sttt[indexT0]-1e-6, product.limit = FALSE)
   
-  pred <- predict(CSC.fit, newdata = d2, cause = 2, times = sttt, productLimit = FALSE)
+  pred <- predict(CSC.fit, newdata = d2, cause = 2, times = sttt, product.limit = FALSE)
   predC_manuel <- (pred$absRisk-as.double(predRef$absRisk))/as.double(Sall)
   predC_manuel[,seq(1,indexT0-1)] <- NA
   
-  predC_auto <- predict(CSC.fit, newdata = d2, cause = 2, times = sttt, landmark = sttt[indexT0], productLimit = FALSE)
+  predC_auto <- predict(CSC.fit, newdata = d2, cause = 2, times = sttt, landmark = sttt[indexT0], product.limit = FALSE)
   expect_equal(predC_auto$absRisk,predC_manuel)
   # predC_auto$absRisk - predC_manuel
 
-  # productLimit = TRUE
+  # product.limit = TRUE
   h1 <- predictCox(CSC.fit$models$`Cause 1`, newdata = d2, times = CSC.fit$eventTimes, type = "hazard")[["hazard"]]
   h2 <- predictCox(CSC.fit$models$`Cause 2`, newdata = d2, times = CSC.fit$eventTimes, type = "hazard")[["hazard"]]
   Sall <- apply(1-h1-h2,1, function(x){
       c(1,cumprod(x))[sindex(jump.times = CSC.fit$eventTimes, eval.times = sttt[indexT0]-1e-6)+1]
   })
-  predRef <- predict(CSC.fit, newdata = d2, cause = 2, times = sttt[indexT0]-1e-6, productLimit = TRUE)
+  predRef <- predict(CSC.fit, newdata = d2, cause = 2, times = sttt[indexT0]-1e-6, product.limit = TRUE)
   
-  pred <- predict(CSC.fit, newdata = d2, cause = 2, times = sttt, productLimit = TRUE)
+  pred <- predict(CSC.fit, newdata = d2, cause = 2, times = sttt, product.limit = TRUE)
   predC_manuel <- sweep(pred$absRisk-as.double(predRef$absRisk), MARGIN = 1, FUN ="/", STATS = as.double(Sall))
   predC_manuel[,seq(1,indexT0-1)] <- NA
   
-  predC_auto <- predict(CSC.fit, newdata = d2, cause = 2, times = sttt, landmark = sttt[indexT0], productLimit = TRUE)
+  predC_auto <- predict(CSC.fit, newdata = d2, cause = 2, times = sttt, landmark = sttt[indexT0], product.limit = TRUE)
   expect_equal(predC_auto$absRisk,predC_manuel)
   # predC_auto$absRisk-predC_manuel
 })
@@ -409,7 +409,7 @@ if(FALSE){
     CSC.fit.s <- CSC(list(Hist(time,event)~ strata(X1)+X2+X9,
                           Hist(time,event)~ X2+strata(X4)+X8+X7),data=d)
     predict(CSC.fit.s,newdata=d[X1==1][1],cause=1,times=ttt,se=1L) # NA values due to absolute risk over 1
-    predict(CSC.fit.s,newdata=d[X1==1][1],productLimit = FALSE,cause=1,times=ttt,se=1L) # NA values due to absolute risk over 1
+    predict(CSC.fit.s,newdata=d[X1==1][1],product.limit = FALSE,cause=1,times=ttt,se=1L) # NA values due to absolute risk over 1
 
     #### investigate how come we get absRisk > 1
     # since absRisk = int hazard1 * survival

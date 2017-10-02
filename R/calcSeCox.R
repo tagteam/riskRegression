@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: maj 27 2017 (11:46) 
 ## Version: 
-## last-updated: Sep 10 2017 (12:14) 
+## last-updated: Sep 30 2017 (16:56) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 233
+##     Update #: 236
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -42,7 +42,7 @@
 #' @param new.survival the survival evaluated for the new observations
 #' @param new.cumhazard the cumulative hazard evaluated for the new observations
 #' @param nVar the number of variables that form the linear predictor
-#' @param logTransform Should the variance/influence function be computed on the log or log(-log) scale
+#' @param log.transform Should the variance/influence function be computed on the log or log(-log) scale
 #' @param export can be "iid" to return the value of the influence function for each observation
 #'                      "se" to return the standard error for a given timepoint
 #'                      
@@ -66,12 +66,12 @@
 calcSeCox <- function(object, times, nTimes, type, 
                       Lambda0, object.n, object.time, object.eXb, object.strata, nStrata,
                       new.eXb, new.LPdata, new.strata, new.survival, new.cumhazard,
-                      nVar, logTransform, export, store.iid){
+                      nVar, log.transform, export, store.iid){
 
     # {{{ computation of the influence function
     iid.object <- object$iid            
     if(is.null(iid.object)){
-        iid.object <- iidCox(object, tauHazard = times, store.iid = store.iid)
+        iid.object <- iidCox(object, tau.hazard = times, store.iid = store.iid)
     }else{
         store.iid <- iid.object$store.iid
         iid.object <- selectJump(iid.object, times = times, type = type)        
@@ -117,8 +117,8 @@ calcSeCox <- function(object, times, nTimes, type,
         if(all(c("iid","average.iid") %in% export)){
             stop("Cannot export both average.iid and iid \n")
         }
-        if("average.iid" %in% export && logTransform){
-            stop("Cannot compute average.iid when logTransform equals to TRUE \n")
+        if("average.iid" %in% export && log.transform){
+            stop("Cannot compute average.iid when log.transform equals to TRUE \n")
         }
         
         
@@ -151,9 +151,9 @@ calcSeCox <- function(object, times, nTimes, type,
                                            exportIF = ("iid" %in% export),
                                            exportIFsum_cumhazard = ("average.iid" %in% export && "cumhazard" %in% type),
                                            exportIFsum_survival = ("average.iid" %in% export && "survival" %in% type),
-                                           logTransform = logTransform
+                                           logTransform = log.transform
                                            )
-            if(logTransform){
+            if(log.transform){
                 if("iid" %in% export){
                     if("cumhazard" %in% type){out$cumhazard.iid[indexStrata,,] <- resCpp$iid}
                     if("survival" %in% type){out$survival.iid[indexStrata,,] <- -resCpp$iid}
@@ -211,7 +211,7 @@ calcSeCox <- function(object, times, nTimes, type,
                                             IFlambda0 = iid.object$IFcumhazard[[iObs.strata]],
                                             nVar = nVar)
                 
-                if(logTransform){
+                if(log.transform){
                     IF_tempo <- rowScale_cpp(IF_tempo, scale = new.cumhazard[iObs,,drop=FALSE])
                     if(any(times<iid.object$etime1.min[iObs.strata])){
                         IF_tempo[,times<iid.object$etime1.min[iObs.strata]] <- 0

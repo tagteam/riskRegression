@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Oct 23 2016 (08:53) 
 ## Version: 
-## last-updated: Sep  9 2017 (14:37) 
+## last-updated: Sep 30 2017 (16:13) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 325
+##     Update #: 329
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -32,17 +32,14 @@
 #' @param landmark for models with time-dependent covariates the landmark time(s) of evaluation.
 #'        In this case, argument \code{time} may only be one value and for the prediction of risks
 #'        it is assumed that that the covariates do not change between landmark and landmark+time.
-#' @param conf.level Numeric. Confidence level of the confidence
-#'     intervals.
-#' @param se Logical. If \code{TRUE} add the standard errors and
-#'     confidence intervals to the output.
-#' @param band Logical. If \code{TRUE} add the confidence bands to the
-#'     output.
+#' @param conf.level Numeric value between 0 and 1 (default is 0.05). Confidence level of the confidence intervals.
+#' @param se Logical. If \code{TRUE} compute standard errors and confidence intervals
+#' @param band Logical. If \code{TRUE} compute the confidence bands
 #' @param B the number of bootstrap replications used to compute the
 #'     confidence intervals. If it equals 0, then Wald-type confidence
 #'     intervals are computed.  They rely on the standard error
 #'     estimated using the influence function of the estimator.
-#' @param nSim.band the number of simulations used to compute the
+#' @param nsim.band the number of simulations used to compute the
 #'     quantiles for the confidence bands.
 #' @param seed An integer used to generate seeds for bootstrap and to
 #'     achieve reproducibility of the bootstrap confidence intervals.
@@ -163,7 +160,7 @@ ate <- function(object,
                 se = TRUE,
                 band = FALSE,
                 B = 0,
-                nSim.band = ifelse(band,1e3,0),
+                nsim.band = ifelse(band,1e3,0),
                 seed,
                 handler=c("foreach","mclapply"),
                 mc.cores = 1,
@@ -192,19 +189,22 @@ ate <- function(object,
   }
   # }}}
   
-  # {{{ Prepare
-  dots <- list(...)
-  
-  if(band && B>0){
-    stop("the confidence bands cannot be computed when using the bootstrap approach \n",
-         "set argument \'band\' to FALSE to not compute the confidence bands \n",
-         "or set argument \'B\' to 0 to use the influence function instead of the bootstrap\n")
-  }
-  if(treatment %in% names(data) == FALSE){
-    stop("The data set does not seem to have a variable ",treatment," (argument: treatment). \n")
-  }
-  test.CR <- !missing(cause) # test whether the argument cause has been specified, i.e. it is a competing risk model
-  if(test.CR==FALSE){cause <- NA}
+    # {{{ Prepare
+    dots <- list(...)
+
+    if(se==0 && B>0){
+        warning("argument 'se=0' means 'no standard errors' so number of bootstrap repetitions is forced to B=0.")
+    }
+    if(band && B>0){
+        stop("the confidence bands cannot be computed when using the bootstrap approach \n",
+             "set argument \'band\' to FALSE to not compute the confidence bands \n",
+             "or set argument \'B\' to 0 to use the influence function instead of the bootstrap\n")
+    }
+    if(treatment %in% names(data) == FALSE){
+        stop("The data set does not seem to have a variable ",treatment," (argument: treatment). \n")
+    }
+    test.CR <- !missing(cause) # test whether the argument cause has been specified, i.e. it is a competing risk model
+    if(test.CR==FALSE){cause <- NA}
   
   if(B==0 && (se || band)){
     validClass <- c("CauseSpecificCox","coxph","cph","phreg")
@@ -332,17 +332,17 @@ ate <- function(object,
                               dots))
   # }}}
   
-  # {{{ Confidence interval    
-  if(se || band){
-    if (TD){
-      key1 <- c("Treatment","landmark")
-      key2 <- c("Treatment.A","Treatment.B","landmark")
-    }
-    else{
-      key1 <- c("Treatment","time")
-      key2 <- c("Treatment.A","Treatment.B","time")
-    }
-    alpha <- 1-conf.level
+    # {{{ Confidence interval    
+    if(se || band){
+        if (TD){
+            key1 <- c("Treatment","landmark")
+            key2 <- c("Treatment.A","Treatment.B","landmark")
+        }
+        else{
+            key1 <- c("Treatment","time")
+            key2 <- c("Treatment.A","Treatment.B","time")
+        }
+        alpha <- 1-conf.level
     
     if(B>0){
       # {{{ Bootstrap
@@ -466,7 +466,7 @@ ate <- function(object,
                                                   se=FALSE,
                                                   iid=iid,
                                                   keep.times=FALSE,
-                                                  logTransform=FALSE,
+                                                  log.transform=FALSE,
                                                   store.iid=store.iid,
                                                   average.iid=average.iid))
           risk.i <- pred.i$absRisk
@@ -478,7 +478,7 @@ ate <- function(object,
                                                      se=FALSE,
                                                      iid=iid,
                                                      keep.times=FALSE,
-                                                     logTransform=FALSE,
+                                                     log.transform=FALSE,
                                                      type="survival",
                                                      store.iid=store.iid,
                                                      average.iid=average.iid))
@@ -571,10 +571,10 @@ ate <- function(object,
       }            
       # }}}
       # {{{ confidence bands
-      if(band){ # nSim.band <- 500
+      if(band){ # nsim.band <- 500
         quantileIF <- confBandCox(iid = abind::abind(iid.treatment, iid_diff.contrasts, iid_ratio.contrasts, along = 1),
                                   se = rbind(sdIF.treatment, sdIF_diff.contrasts, sdIF_ratio.contrasts),
-                                  n.sim = nSim.band,
+                                  n.sim = nsim.band,
                                   conf.level = conf.level)
         
         qIF.treatment <- quantileIF[1:n.contrasts]                
@@ -624,7 +624,7 @@ ate <- function(object,
       crisks <- merge(pointEstimate$riskComparison,crisks,by=key2)            
     }
   } else{
-    mrisks <- pointEstimate$meanRisk$Treatment
+    mrisks <- pointEstimate$meanRisk
     crisks <- pointEstimate$riskComparison
     bootseeds <- NULL
     # }}}
@@ -637,7 +637,7 @@ ate <- function(object,
               se = se,
               n.bootstrap=B,
               band = band,
-              nSim.band = nSim.band,
+              nsim.band = nsim.band,
               seeds=bootseeds,
               conf.level=conf.level)
   

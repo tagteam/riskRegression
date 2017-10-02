@@ -114,7 +114,7 @@ ATE.iid <- list()
 for(iT in c("T0","T1","T2")){ # iT <- "T0"
   newdata0 <- copy(dtS)
   newdata0$X1 <- iT
-  resPred <- predictCox(fit, newdata = newdata0, time = 5:7, iid = TRUE, logTransform = FALSE)
+  resPred <- predictCox(fit, newdata = newdata0, time = 5:7, iid = TRUE, log.transform = FALSE)
   ATE[[iT]] <- colMeans(1-resPred$survival)
   
   ATE.iid_term1 <- apply(-resPred$survival.iid,3,colMeans)

@@ -109,13 +109,12 @@ FGR <- function(formula,data,cause=1,y=TRUE,...){
         ## cause <- prodlim::checkCauses(cause,response)
         cause <- unique(cause)
         if (!is.character(cause)) cause <- as.character(cause)
-        fitted.causes <- prodlim::getStates(response)
-        if (!(all(cause %in% fitted.causes))){
+        if (!(all(cause %in% states))){
             stop(paste0("Cannot find requested cause(s) in object\n\n",
                         "Requested cause(s): ",
                         paste0(cause,collapse=", "),
                         "\n Available causes: ",
-                        paste(fitted.causes,collapse=", "),"\n"))
+                        states,"\n"))
         }
     }  
     # }}}
@@ -128,7 +127,7 @@ FGR <- function(formula,data,cause=1,y=TRUE,...){
                  fstatus=event,
                  cov1=cov1,
                  cov2=cov2,
-                 failcode=cause,
+                 failcode=match(cause,states,nomatch=NA),
                  cencode=length(states)+1,...)
     
     if (!is.null(cov2) && NCOL(cov2)>0){
