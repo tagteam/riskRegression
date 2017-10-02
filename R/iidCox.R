@@ -1,6 +1,6 @@
 #' @title Extract i.i.d. decomposition from a Cox model
 #' @description Compute the influence function for each observation used to estimate the model
-#' @name iid
+#' @name iidCox
 #' 
 #' @param object object The fitted Cox regression model object either
 #'     obtained with \code{coxph} (survival package) or \code{cph}
@@ -50,7 +50,7 @@
 #' 
 #'
 
-#' @rdname iid
+#' @rdname iidCox
 #' @export
 iidCox <- function(object, newdata = NULL,
                    baseline.iid = TRUE, tau.hazard = NULL, store.iid = "full", 
