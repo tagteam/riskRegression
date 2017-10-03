@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: apr 28 2017 (14:19) 
 ## Version: 
-## last-updated: Sep 30 2017 (16:06) 
-##           By: Thomas Alexander Gerds
-##     Update #: 28
+## last-updated: okt  3 2017 (17:21) 
+##           By: Brice Ozenne
+##     Update #: 29
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -74,7 +74,7 @@ autoplot.ate <- function(object,
     gg.res <- predict2plot(dataL = dataL,
                            name.outcome = "meanRisk", # must not contain space to avoid error in ggplot2
                            ci = ci, band = band,
-                           groupBy = "Treatment",
+                           group.by = "Treatment",
                            conf.level = object$conf.level,
                            alpha = alpha,
                            origin = min(object$time))

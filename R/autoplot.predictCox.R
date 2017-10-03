@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: feb 17 2017 (10:06) 
 ## Version: 
-## last-updated: Sep 30 2017 (16:06) 
-##           By: Thomas Alexander Gerds
-##     Update #: 331
+## last-updated: okt  3 2017 (17:21) 
+##           By: Brice Ozenne
+##     Update #: 332
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -26,7 +26,7 @@
 #' or \code{"survival"} the survival function.
 #' @param ci Logical. If \code{TRUE} display the confidence intervals for the predictions.
 #' @param band Logical. If \code{TRUE} display the confidence bands for the predictions.
-#' @param groupBy The grouping factor used to color the prediction curves. Can be \code{"row"}, \code{"strata"}, or \code{"covariates"}.
+#' @param group.by The grouping factor used to color the prediction curves. Can be \code{"row"}, \code{"strata"}, or \code{"covariates"}.
 #' @param reduce.data Logical. If \code{TRUE} only the covariates that does take indentical values for all observations are displayed.
 #' @param plot Logical. Should the graphic be plotted.
 #' @param digits integer indicating the number of decimal places
@@ -47,8 +47,8 @@
 #' pred.cox <- predictCox(m.cox, newdata = d[1:4,],
 #'   times = 1:5, type = "survival", keep.newdata = TRUE)
 #' autoplot(pred.cox)
-#' autoplot(pred.cox, groupBy = "covariates")
-#' autoplot(pred.cox, groupBy = "covariates", reduce.data = TRUE)
+#' autoplot(pred.cox, group.by = "covariates")
+#' autoplot(pred.cox, group.by = "covariates", reduce.data = TRUE)
 #' 
 #' 
 #' m.cox.strata <- coxph(Surv(time,event)~ strata(X1) + strata(X2) + X3 + X6,
@@ -56,9 +56,9 @@
 #' pred.cox.strata <- predictCox(m.cox.strata, newdata = d[1,,drop=FALSE],
 #' time = 1:5, keep.newdata = TRUE)
 #' autoplot(pred.cox.strata, type = "survival")
-#' autoplot(pred.cox.strata, type = "survival", groupBy = "strata")
+#' autoplot(pred.cox.strata, type = "survival", group.by = "strata")
 #' res <- autoplot(pred.cox.strata, type = "survival",
-#'             groupBy = "covariates")
+#'             group.by = "covariates")
 #'
 #' # customize display
 #' res$plot + geom_point(data = res$data, size = 5)
@@ -80,7 +80,7 @@ autoplot.predictCox <- function(object,
                             type = NULL,
                             ci = FALSE,
                             band = FALSE,
-                            groupBy = "row",
+                            group.by = "row",
                             reduce.data = FALSE,
                             plot = TRUE,
                             digits = 2, alpha = NA, ...){
@@ -103,15 +103,15 @@ autoplot.predictCox <- function(object,
                      cumhazard = "cumulative hazard",
                      survival = "survival")
   
-  groupBy <- match.arg(groupBy, c("row","covariates","strata"))
+  group.by <- match.arg(group.by, c("row","covariates","strata"))
  
   
-  if(groupBy == "covariates" && ("newdata" %in% names(object) == FALSE)){
-    stop("argument \'groupBy\' cannot be \"covariates\" when newdata is missing in the object \n",
+  if(group.by == "covariates" && ("newdata" %in% names(object) == FALSE)){
+    stop("argument \'group.by\' cannot be \"covariates\" when newdata is missing in the object \n",
          "set argment \'keep.newdata\' to TRUE when calling predictCox \n")
   }
-  if(groupBy == "strata" && ("strata" %in% names(object) == FALSE)){
-    stop("argument \'groupBy\' cannot be \"strata\" when strata is missing in the object \n",
+  if(group.by == "strata" && ("strata" %in% names(object) == FALSE)){
+    stop("argument \'group.by\' cannot be \"strata\" when strata is missing in the object \n",
          "set argment \'keep.strata\' to TRUE when calling predictCox \n")
   }
   
@@ -148,7 +148,7 @@ autoplot.predictCox <- function(object,
                           strata = object$strata,
                           times = object$times,
                           name.outcome = typename,
-                          groupBy = groupBy,
+                          group.by = group.by,
                           digits = digits
                           )
 
@@ -156,7 +156,7 @@ autoplot.predictCox <- function(object,
                            name.outcome = typename,
                            ci = ci,
                            band = band,
-                           groupBy = groupBy,
+                           group.by = group.by,
                            conf.level = object$conf.level,
                            alpha = alpha,
                            origin = min(object$times)
@@ -174,7 +174,7 @@ autoplot.predictCox <- function(object,
 predict2melt <- function(outcome, name.outcome,
                          ci, outcome.lower, outcome.upper,
                          band, outcome.lowerBand, outcome.upperBand,
-                         newdata, strata, times, groupBy, digits){
+                         newdata, strata, times, group.by, digits){
 
     ## for CRAN tests
     patterns <- function(){}
@@ -186,7 +186,7 @@ predict2melt <- function(outcome, name.outcome,
         time.names <- 1:n.time
     }    
     colnames(outcome) <- paste0(name.outcome,"_",time.names)
-    keep.cols <- unique(c("time",name.outcome,"row",groupBy))
+    keep.cols <- unique(c("time",name.outcome,"row",group.by))
     
     #### merge outcome with CI and band ####
     pattern <- paste0(name.outcome,"_")
@@ -212,16 +212,16 @@ predict2melt <- function(outcome, name.outcome,
 
     #### merge with convariates ####
     outcome[, row := 1:.N]
-    if(groupBy == "covariates"){
+    if(group.by == "covariates"){
         cov.names <- names(newdata)
         newdata <- newdata[, (cov.names) := lapply(cov.names, function(col){paste0(col,"=",round(.SD[[col]],digits))})]
         outcome[, ("covariates") := interaction(newdata,sep = " ")]
-    }else if(groupBy == "strata"){
+    }else if(group.by == "strata"){
         outcome[, strata := strata]
     }
     
     #### reshape to long format ####
-    dataL <- melt(outcome, id.vars = union("row",groupBy),
+    dataL <- melt(outcome, id.vars = union("row",group.by),
                    measure= patterns(pattern),
                    variable.name = "time", value.name = gsub("_","",pattern))
     dataL[, time := as.numeric(as.character(factor(time, labels = time.names)))]
@@ -232,13 +232,13 @@ predict2melt <- function(outcome, name.outcome,
 # }}}
 # {{{ predict2plot
 predict2plot <- function(dataL, name.outcome,
-                         ci, band, groupBy,                         
+                         ci, band, group.by,                         
                          conf.level, alpha, origin){
 
     # for CRAN tests
     original <- lowerCI <- upperCI <- lowerBand <- upperBand <- NULL
     #### duplicate observations to obtain step curves ####
-    keep.cols <- unique(c("time",name.outcome,"row",groupBy,"original"))
+    keep.cols <- unique(c("time",name.outcome,"row",group.by,"original"))
     if(ci){
         keep.cols <- c(keep.cols,"lowerCI","upperCI")
     }
@@ -259,9 +259,9 @@ predict2plot <- function(dataL, name.outcome,
     labelCI <- paste0(conf.level*100,"% confidence \n interval")
     labelBand <- paste0(conf.level*100,"% confidence \n band")
 
-    gg.base <- ggplot(mapping = aes_string(x = "time", y = name.outcome, group = "row", color = groupBy))
+    gg.base <- ggplot(mapping = aes_string(x = "time", y = name.outcome, group = "row", color = group.by))
     gg.base <- gg.base + geom_line(data = dataL, size = 2)
-    if(groupBy=="row"){
+    if(group.by=="row"){
         gg.base <- gg.base + ggplot2::labs(color="observation") + theme(legend.key.height=unit(0.1,"npc"),
                                                                         legend.key.width=unit(0.08,"npc"))
         

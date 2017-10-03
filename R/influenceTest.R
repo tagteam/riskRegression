@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: maj 19 2017 (16:01) 
 ## Version: 
-## last-updated: okt  2 2017 (15:02) 
+## last-updated: okt  3 2017 (17:20) 
 ##           By: Brice Ozenne
-##     Update #: 119
+##     Update #: 120
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -32,7 +32,7 @@
 #' @param cause Identifies the cause of interest among the competing
 #'     events.
 #' @param conf.level Level of confidence.
-#' @param tanhTransform Should the comparison be made on the arc-tangent scale or on the original scale ?
+#' @param tanh.transform Should the comparison be made on the arc-tangent scale or on the original scale ?
 #' @param ... additional arguments to be passed to lower level functions.
 #' 
 #' @examples
@@ -64,15 +64,15 @@
 #'
 #' ## compare models
 #' # one time point
-#' influenceCoxTest(list(m.cox, mStrata.cox), tanhTransform = FALSE,
+#' influenceCoxTest(list(m.cox, mStrata.cox), tanh.transform = FALSE,
 #'                  type = "survival", newdata = newdata, times = 0.5)
-#' influenceCoxTest(list(m.cox, mStrata.cox), tanhTransform = TRUE,
+#' influenceCoxTest(list(m.cox, mStrata.cox), tanh.transform = TRUE,
 #'                  type = "survival", newdata = newdata, times = 0.5)
 #'                                  
 #' # several timepoints
-#' influenceCoxTest(list(m.cox, mStrata.cox), tanhTransform = TRUE,
+#' influenceCoxTest(list(m.cox, mStrata.cox), tanh.transform = TRUE,
 #'                  type = "survival", newdata = newdata, times = seq(0.1,1,by=0.1))
-#' influenceCoxTest(list(m.cox, mStrata.cox), tanhTransform = FALSE,
+#' influenceCoxTest(list(m.cox, mStrata.cox), tanh.transform = FALSE,
 #'                  type = "survival", newdata = newdata, times = seq(0.1,1,by=0.1))
 #'
 #' #### Under H0 (Cox) ####
@@ -101,9 +101,9 @@
 #' autoplot(p.coxStrata)
 #'  
 #' ## compare models
-#' influenceCoxTest(list(m.cox, mStrata.cox), tanhTransform = TRUE,
+#' influenceCoxTest(list(m.cox, mStrata.cox), tanh.transform = TRUE,
 #'                  type = "survival", newdata = newdata, times = Utime[1:(n-10)])
-#' influenceCoxTest(list(m.cox, mStrata.cox), tanhTransform = FALSE,
+#' influenceCoxTest(list(m.cox, mStrata.cox), tanh.transform = FALSE,
 #'                  type = "survival", newdata = newdata, times = Utime[1:(n-10)])
 #'
 #' #### Under H0 (CSC) ####
@@ -121,9 +121,9 @@
 #' mStrata.CSC <- CSC(Hist(time, event) ~ strata(X1) + X2 + X3, data = d)
 #'
 #' ## compare models
-#' influenceCoxTest(list(m.CSC, mStrata.CSC), tanhTransform = TRUE,
+#' influenceCoxTest(list(m.CSC, mStrata.CSC), tanh.transform = TRUE,
 #'                  cause = 1, newdata = data.frame(X1=1,X2=1,X3=1), times = Utime[1:20])
-#' influenceCoxTest(list(m.CSC, mStrata.CSC), tanhTransform = FALSE,
+#' influenceCoxTest(list(m.CSC, mStrata.CSC), tanh.transform = FALSE,
 #'                  cause = 1, newdata = data.frame(X1=1,X2=1,X3=1), times = Utime[1:20]) 
 #' 
 #' @export
@@ -171,7 +171,7 @@ influenceCoxTest.list <- function(object, newdata, times, type, cause, ...){
 # {{{ influenceCoxTest.default
 #' @rdname influenceCoxTest
 #' @export
-influenceCoxTest.default <- function(object, object2, tanhTransform = FALSE, conf.level = 0.95, nsim.band = 1e4, ...){
+influenceCoxTest.default <- function(object, object2, tanh.transform = FALSE, conf.level = 0.95, nsim.band = 1e4, ...){
   
   ## type
   if(class(object)=="predictCox"){
@@ -195,9 +195,9 @@ influenceCoxTest.default <- function(object, object2, tanhTransform = FALSE, con
   }
   
   # transformation
-  if(tanhTransform){
+  if(tanh.transform){
     if(type=="cumhazard"){
-      stop("tanhTransform cannot be used when the argument \'type\' is set to \"cumhazard\"\n")
+      stop("tanh.transform cannot be used when the argument \'type\' is set to \"cumhazard\"\n")
     }
   }
   
@@ -228,7 +228,7 @@ influenceCoxTest.default <- function(object, object2, tanhTransform = FALSE, con
   delta <- as.numeric(estimator1-estimator2)
   delta.iid <- matrix((estimator1.iid-estimator2.iid)[1,,], nrow = n, ncol = n.time, byrow = TRUE)
   
-  if(tanhTransform){
+  if(tanh.transform){
     delta.iid <- rowMultiply_cpp(delta.iid, scale = 1/(1+delta^2))
     delta <- atanh(delta)
   }
@@ -243,7 +243,7 @@ influenceCoxTest.default <- function(object, object2, tanhTransform = FALSE, con
                                inf = delta - zval*delta.se,
                                sup = delta + zval*delta.se,
                                z = delta/delta.se))
-  if(tanhTransform){
+  if(tanh.transform){
     tableRes$delta <- tanh(tableRes$delta)
     tableRes$inf <- tanh(tableRes$inf)
     tableRes$sup <- tanh(tableRes$sup)
@@ -278,7 +278,7 @@ influenceCoxTest.default <- function(object, object2, tanhTransform = FALSE, con
     tableRes$infBand <- delta - quantile.band*delta.se
     tableRes$supBand <- delta + quantile.band*delta.se
     
-    if(tanhTransform){
+    if(tanh.transform){
       tableRes$infBand <- tanh(tableRes$infBand)
       tableRes$supBand <- tanh(tableRes$supBand)
     }else{
