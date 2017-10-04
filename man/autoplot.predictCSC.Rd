@@ -5,7 +5,7 @@
 \title{Plot predictions from a Cause-specific Cox proportional hazard regression}
 \usage{
 \method{autoplot}{predictCSC}(object, ci = FALSE, band = FALSE,
-  groupBy = "row", reduce.data = FALSE, plot = TRUE, digits = 2,
+  group.by = "row", reduce.data = FALSE, plot = TRUE, digits = 2,
   alpha = NA, ...)
 }
 \arguments{
@@ -15,7 +15,7 @@
 
 \item{band}{Logical. If \code{TRUE} display the confidence bands for the predictions.}
 
-\item{groupBy}{The grouping factor used to color the prediction curves. Can be \code{"row"}, \code{"strata"}, or \code{"covariates"}.}
+\item{group.by}{The grouping factor used to color the prediction curves. Can be \code{"row"}, \code{"strata"}, or \code{"covariates"}.}
 
 \item{reduce.data}{Logical. If \code{TRUE} only the covariates that does take indentical values for all observations are displayed.}
 
@@ -48,6 +48,6 @@ m.SCSC <- CSC(Hist(time,event)~ strata(X1) + strata(X2) + X6,
 data = d)
 pred.SCSC <- predict(m.SCSC, time = 1:3, newdata = d[1:4,],
 cause = 1, se = TRUE, keep.newdata = TRUE, keep.strata = TRUE)
-autoplot(pred.SCSC, groupBy = "strata")
+autoplot(pred.SCSC, group.by = "strata")
 
 }
