@@ -1,48 +1,48 @@
-getSplitMethod <- function(splitMethod,B,N,M){
-    if (missing(splitMethod))
-        splitMethod <- ""
-    splitMethodName <- NULL
-    k <- as.numeric(substring(grep("^cv[0-9]+$",splitMethod,value=TRUE,ignore.case=TRUE),3))
+getSplitMethod <- function(split.method,B,N,M){
+    if (missing(split.method))
+        split.method <- ""
+    split.methodName <- NULL
+    k <- as.numeric(substring(grep("^cv[0-9]+$",split.method,value=TRUE,ignore.case=TRUE),3))
     if (length(k)==0) k <- NULL
     if (!is.null(k)){ ## classical cross-validation
-        splitMethod <- "crossval"
-        splitMethodName <- paste(k,"fold cross-validation",sep="-")
+        split.method <- "crossval"
+        split.methodName <- paste(k,"fold cross-validation",sep="-")
     }
     else{
-        if (length(grep("loocv",splitMethod,ignore.case=TRUE))>0){
-            splitMethodName <- "LeaveOneOutCV"
+        if (length(grep("loocv",split.method,ignore.case=TRUE))>0){
+            split.methodName <- "LeaveOneOutCV"
             k <- N-1
             B <- 1
         }
         else{
             ## some form of bootstrap
-            match.BootCv <- length(grep("boot|outofbag",splitMethod,value=FALSE,ignore.case=TRUE))>0
+            match.BootCv <- length(grep("boot|outofbag",split.method,value=FALSE,ignore.case=TRUE))>0
             if (match.BootCv==FALSE){
-                splitMethod <- "noPlan"
-                splitMethodName <- "no data splitting"
+                split.method <- "noPlan"
+                split.methodName <- "no data splitting"
             }
             else{
-                match.632 <- length(grep("632",splitMethod,value=FALSE,ignore.case=TRUE))>0
-                match.plus <- length(grep("plus|\\+",splitMethod,value=FALSE,ignore.case=TRUE))>0
-                match.bootloo <- length(grep("looboot",splitMethod,value=FALSE,ignore.case=TRUE))>0
+                match.632 <- length(grep("632",split.method,value=FALSE,ignore.case=TRUE))>0
+                match.plus <- length(grep("plus|\\+",split.method,value=FALSE,ignore.case=TRUE))>0
+                match.bootloo <- length(grep("looboot",split.method,value=FALSE,ignore.case=TRUE))>0
                 if (match.632==TRUE){
                     if (match.plus==TRUE){
-                        splitMethod <- "Boot632plus"
-                        splitMethodName <- ".632+"
+                        split.method <- "Boot632plus"
+                        split.methodName <- ".632+"
                     }
                     else{
-                        splitMethod <- "Boot632"
-                        splitMethodName <- ".632"
+                        split.method <- "Boot632"
+                        split.methodName <- ".632"
                     }
                 }
                 else{
                     if (match.bootloo==TRUE){  
-                        splitMethod <- "LeaveOneOutBoot"
-                        splitMethodName <- "LeaveOneOutBoot"
+                        split.method <- "LeaveOneOutBoot"
+                        split.methodName <- "LeaveOneOutBoot"
                     }
                     else {
-                        splitMethod <- "BootCv"
-                        splitMethodName <- "BootCv"
+                        split.method <- "BootCv"
+                        split.methodName <- "BootCv"
                     }
                 }
             }
@@ -52,7 +52,7 @@ getSplitMethod <- function(splitMethod,B,N,M){
         subsampling <- M!=N
         ##   if (!subsampling && resampleTraining)
         ##     stop("Resampling the training data is only available for subsampling")
-        if (splitMethod %in% c("","noPlan","none")) {
+        if (split.method %in% c("","noPlan","none")) {
             B <- 0
             ##     resampleTraining <- FALSE
         }
@@ -64,13 +64,13 @@ getSplitMethod <- function(splitMethod,B,N,M){
             else if (B==0) stop("No. of resamples must be a positive integer.")
         }
         if (length(k)>0){
-            if (splitMethod=="loocv")
+            if (split.method=="loocv")
                 ResampleIndex <- data.frame(id=1:N)
             else
                 ResampleIndex <- do.call("cbind",lapply(1:B,function(b){sample(rep(1:k,length.out=N))}))
         }
         else{
-            if (splitMethod %in% c("Boot632plus","BootCv","Boot632","LeaveOneOutBoot")){
+            if (split.method %in% c("Boot632plus","BootCv","Boot632","LeaveOneOutBoot")){
                 ResampleIndex <- do.call("cbind",lapply(1:B,function(b){
                     sort(sample(1:N,size=M,replace=!subsampling))
                 }))
@@ -99,15 +99,15 @@ getSplitMethod <- function(splitMethod,B,N,M){
     ##       sort(c(x,sample(x,replace=TRUE,size=resampleTrainingSize-M)))
     ##     })
     ##   }
-    out <- list(name=splitMethodName,
-                internal.name=splitMethod,
+    out <- list(name=split.methodName,
+                internal.name=split.method,
                 index=ResampleIndex,
                 k=k,
                 B=B,
                 M=M,
                 N=N)
     ##               resampleTraining=resampleTraining)
-    class(out) <- "splitMethod"
+    class(out) <- "split.method"
     out
 }
 

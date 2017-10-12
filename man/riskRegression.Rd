@@ -157,7 +157,7 @@ x <- Score(list(fit.arr2a,fit.arr2b,fit.lrr),
              data=Melanoma,
              formula=Hist(time,status)~1,
              cause=1,
-             splitMethod="none")
+             split.method="none")
 
 
 }

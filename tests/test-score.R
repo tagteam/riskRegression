@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jan  4 2016 (14:30) 
 ## Version: 
-## last-updated: Aug 10 2017 (10:49) 
+## last-updated: Oct 12 2017 (16:54) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 37
+##     Update #: 38
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -118,7 +118,7 @@ test_that("survival outcome: matrix input",{
     dtest <- sampleData(4,outcome="survival")
     f1 <- coxph(Surv(time,event)~X1+X5+X8,data=dtrain, x = TRUE, y = TRUE)
     f2 <- predictRisk(f1,newdata=dtest,times=c(3,5,10))
-    s1 <- Score(list(f1,f2),formula=Surv(time,event)~1,data=dtest,times=c(3,5,10),conf.int=FALSE,nullModel=0L,metrics="brier")
+    s1 <- Score(list(f1,f2),formula=Surv(time,event)~1,data=dtest,times=c(3,5,10),conf.int=FALSE,null.model=0L,metrics="brier")
     expect_equal(s1$Brier$score[model=="coxph",Brier],s1$Brier$score[model=="matrix",Brier])
 })
 
@@ -144,13 +144,13 @@ test_that("survival outcome,Brier Score, external prediction",{
 test_that("binary outcome: Brier",{
     set.seed(47)
     D <- sampleData(n=47,outcome="binary")
-    s1 <- Score(list(X6=glm(Y~X6,data=D,family='binomial'),X9=glm(Y~X9,data=D,family='binomial'),X10=glm(Y~X10,data=D,family='binomial')),formula=Y~1,data=D,nullModel=FALSE,metrics="brier",cause="1")
-    s2 <- Score(list(X6=glm(Y~X6,data=D,family='binomial'),X9=glm(Y~X9,data=D,family='binomial'),X10=glm(Y~X10,data=D,family='binomial')),formula=Y~1,data=D,nullModel=FALSE,metrics=c("auc","brier"),cause="1")
-    s3 <- Score(list(X6=glm(Y~X6,data=D,family='binomial'),X9=glm(Y~X9,data=D,family='binomial'),X10=glm(Y~X10,data=D,family='binomial')),formula=Y~1,data=D,nullModel=FALSE,metrics=c("auc","brier"),se.fit=FALSE,cause="1")
+    s1 <- Score(list(X6=glm(Y~X6,data=D,family='binomial'),X9=glm(Y~X9,data=D,family='binomial'),X10=glm(Y~X10,data=D,family='binomial')),formula=Y~1,data=D,null.model=FALSE,metrics="brier",cause="1")
+    s2 <- Score(list(X6=glm(Y~X6,data=D,family='binomial'),X9=glm(Y~X9,data=D,family='binomial'),X10=glm(Y~X10,data=D,family='binomial')),formula=Y~1,data=D,null.model=FALSE,metrics=c("auc","brier"),cause="1")
+    s3 <- Score(list(X6=glm(Y~X6,data=D,family='binomial'),X9=glm(Y~X9,data=D,family='binomial'),X10=glm(Y~X10,data=D,family='binomial')),formula=Y~1,data=D,null.model=FALSE,metrics=c("auc","brier"),se.fit=FALSE,cause="1")
     setkey(D,Y)
-    S1 <- Score(list(X6=glm(Y~X6,data=D,family='binomial'),X9=glm(Y~X9,data=D,family='binomial'),X10=glm(Y~X10,data=D,family='binomial')),formula=Y~1,data=D,nullModel=FALSE,metrics="brier",cause="1")
-    S2 <- Score(list(X6=glm(Y~X6,data=D,family='binomial'),X9=glm(Y~X9,data=D,family='binomial'),X10=glm(Y~X10,data=D,family='binomial')),formula=Y~1,data=D,nullModel=FALSE,metrics=c("auc","brier"),cause="1")
-    S3 <- Score(list(X6=glm(Y~X6,data=D,family='binomial'),X9=glm(Y~X9,data=D,family='binomial'),X10=glm(Y~X10,data=D,family='binomial')),formula=Y~1,data=D,nullModel=FALSE,metrics=c("auc","brier"),se.fit=FALSE,cause="1")
+    S1 <- Score(list(X6=glm(Y~X6,data=D,family='binomial'),X9=glm(Y~X9,data=D,family='binomial'),X10=glm(Y~X10,data=D,family='binomial')),formula=Y~1,data=D,null.model=FALSE,metrics="brier",cause="1")
+    S2 <- Score(list(X6=glm(Y~X6,data=D,family='binomial'),X9=glm(Y~X9,data=D,family='binomial'),X10=glm(Y~X10,data=D,family='binomial')),formula=Y~1,data=D,null.model=FALSE,metrics=c("auc","brier"),cause="1")
+    S3 <- Score(list(X6=glm(Y~X6,data=D,family='binomial'),X9=glm(Y~X9,data=D,family='binomial'),X10=glm(Y~X10,data=D,family='binomial')),formula=Y~1,data=D,null.model=FALSE,metrics=c("auc","brier"),se.fit=FALSE,cause="1")
     expect_equal(s1,S1)
     expect_equal(s2,S2)
     expect_equal(s3,S3)
@@ -177,12 +177,12 @@ test_that("binary outcome: AUC", {
     procres <- pROC::roc.test(r1,r2)
     d <- data.frame(x1,x2,x3,y)
     ## Source(riskRegression)
-    scoreres <- Score(list(X1=~x1,X2=~x2,X3=~x3),formula=y~1,data=d,nullModel=FALSE,cause="1")
+    scoreres <- Score(list(X1=~x1,X2=~x2,X3=~x3),formula=y~1,data=d,null.model=FALSE,cause="1")
     ## Roc(list(X1=glm(y~x1,data=d,family='binomial'),X2=glm(y~x2,data=d,family='binomial'),X3=glm(y~x3,data=d,family='binomial')),formula=y~1,data=d)
-    scoreres <- Score(list(X1=glm(y~x1,data=d,family='binomial'),X2=glm(y~x2,data=d,family='binomial'),X3=glm(y~x3,data=d,family='binomial')),formula=y~1,data=d,nullModel=FALSE,cause="1")
+    scoreres <- Score(list(X1=glm(y~x1,data=d,family='binomial'),X2=glm(y~x2,data=d,family='binomial'),X3=glm(y~x3,data=d,family='binomial')),formula=y~1,data=d,null.model=FALSE,cause="1")
     ## to avoid side effects of data.table features we check the following 
-    scoreres1 <- Score(list(X1=glm(y~x1,data=d,family='binomial'),X2=glm(y~x2,data=d,family='binomial'),X3=glm(y~x3,data=d,family='binomial')),formula=y~1,data=d,nullModel=FALSE,metrics="auc",cause="1")
-    scoreres1a <- Score(list(X1=glm(y~x1,data=d,family='binomial'),X2=glm(y~x2,data=d,family='binomial'),X3=glm(y~x3,data=d,family='binomial')),formula=y~1,data=d,nullModel=FALSE,metrics="auc",se.fit=0L,cause="1")
+    scoreres1 <- Score(list(X1=glm(y~x1,data=d,family='binomial'),X2=glm(y~x2,data=d,family='binomial'),X3=glm(y~x3,data=d,family='binomial')),formula=y~1,data=d,null.model=FALSE,metrics="auc",cause="1")
+    scoreres1a <- Score(list(X1=glm(y~x1,data=d,family='binomial'),X2=glm(y~x2,data=d,family='binomial'),X3=glm(y~x3,data=d,family='binomial')),formula=y~1,data=d,null.model=FALSE,metrics="auc",se.fit=0L,cause="1")
     expect_equal(scoreres$AUC,scoreres1$AUC)
     daim.auc <- daimres$AUC[,c("AUC","SD(DeLong)")]
     score.auc <- as.data.frame(scoreres$AUC$score[,c("AUC","se.AUC"),with=FALSE])

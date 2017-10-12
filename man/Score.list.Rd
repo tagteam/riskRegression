@@ -7,10 +7,10 @@
 \usage{
 \method{Score}{list}(object, formula, data, metrics = c("auc", "brier"),
   summary = NULL, plots = NULL, cause, times, landmarks,
-  useEventTimes = FALSE, nullModel = TRUE, conf.int = 0.95,
+  use.event.times = FALSE, null.model = TRUE, conf.int = 0.95,
   contrasts = TRUE, probs = c(0, 0.25, 0.5, 0.75, 1),
-  censMethod = "outside.ipcw", censModel = "cox", splitMethod, B, M, seed,
-  trainseeds, keep, predictRisk.args, ...)
+  cens.method = "outside.ipcw", cens.model = "cox", split.method, B, M,
+  seed, trainseeds, keep, predictRisk.args, ...)
 }
 \arguments{
 \item{object}{List of risk predictions (see details and examples).}
@@ -47,10 +47,10 @@ the prediction performance is estimated at many prediction horizons.}
 
 \item{landmarks}{Not yet implemented.}
 
-\item{useEventTimes}{If \code{TRUE} merge all unique event times with 
+\item{use.event.times}{If \code{TRUE} merge all unique event times with 
 the vector given by argument \code{times}.}
 
-\item{nullModel}{If \code{TRUE} fit a risk prediction model which ignores
+\item{null.model}{If \code{TRUE} fit a risk prediction model which ignores
     the covariates and predicts the same value for all subjects. The model is fitted using \code{data}
 and the left hand side of \code{formula}. For binary outcome this is just the empirical prevalence. For (right censored) time to event outcome, the null models are
 equal to the Kaplan-Meier estimator (no competing risks) and the Aalen-Johansen estimator (with competing risks).}
@@ -65,7 +65,7 @@ level of significance is 13 percent. So, do not set it to 0.87.}
  should be contrasted with respect to their prediction performance.
 If \code{TRUE} do all possible comparisons. For
   example, when \code{object} is a list with two risk prediction models and
-  \code{nullModel=TRUE} setting \code{TRUE} is equivalent to
+  \code{null.model=TRUE} setting \code{TRUE} is equivalent to
   \code{list(c(0,1,2),c(1,2))} where \code{c(0,1,2)} codes for the
   two comparisons: 1 vs 0 and 2 vs 0 (positive integers refer to
   elements of \code{object}, 0 refers to the benchmark null
@@ -78,20 +78,20 @@ If \code{TRUE} do all possible comparisons. For
 \item{probs}{Quantiles for retrospective summary statistics of the
 predicted risks. This affects the result of the function \code{boxplot.Score}.}
 
-\item{censMethod}{Method for dealing with right censored
+\item{cens.method}{Method for dealing with right censored
     data. Either \code{"outside.ipcw"} or \code{"inside.ipcw"}. \code{"outside.ipcw"} 
     Here IPCW refers to inverse probability of censoring weights. The attributes inside and outside are
-     only relevant for cross-validation (\code{splitMethod}) where the inside method computes the IPCW model
+     only relevant for cross-validation (\code{split.method}) where the inside method computes the IPCW model
 in the the loop in each of the current test data sets whereas the outside method computes the IPCW model only once in the full data.
     Also, jackknife pseudo-values may become another option for all statistics. Right now
     they are only used for calibration curves.}
 
-\item{censModel}{Model for estimating inverse probability of
+\item{cens.model}{Model for estimating inverse probability of
     censored weights. Implemented are the Kaplan-Meier method (\code{"km"}) and
 Cox regression (\code{"cox"}) both applied to the censored times. If the right hand side of \code{formula} does not specify covariates,
 the Kaplan-Meier method is used even if this argument is set to \code{"cox"}.}
 
-\item{splitMethod}{Method for cross-validation. Right now the only choice is \code{bootcv} in which case bootstrap learning sets
+\item{split.method}{Method for cross-validation. Right now the only choice is \code{bootcv} in which case bootstrap learning sets
 are drawn with our without replacement (argument \code{M}) from \code{data}. The data not included in the current bootstrap learning
 set are used as validation set to compute the prediction performance.}
 
@@ -176,7 +176,7 @@ u=Score(markers,formula=Y~1,data=testdat,metrics=c("auc"))
 \dontrun{
 lr1a = glm(Y~X6,data=learndat,family=binomial)
 lr2a = glm(Y~X7+X8+X9,data=learndat,family=binomial)
-Score(list("LR1"=lr1a,"LR2"=lr2a),formula=Y~1,data=learndat,splitMethod="bootcv",B=3)
+Score(list("LR1"=lr1a,"LR2"=lr2a),formula=Y~1,data=learndat,split.method="bootcv",B=3)
 }
 # survival outcome
 
@@ -207,14 +207,14 @@ Score(list("Cox(X1+X2+X7+X9)"=cox1,"Cox(X3+X5+X6)"=cox2),
 \dontrun{
 Score(list("Cox(X1+X2+X7+X9)"=cox1,"Cox(X3+X5+X6)"=cox2),
       formula=Surv(time,event)~1,data=trainSurv,conf.int=TRUE,times=c(5,8),
-      splitMethod="bootcv",B=3)
+      split.method="bootcv",B=3)
 }
 
 # restrict number of comparisons
 \dontrun{
 Score(list("Cox(X1+X2+X7+X9)"=cox1,"Cox(X3+X5+X6)"=cox2),
       formula=Surv(time,event)~1,data=trainSurv,contrasts=TRUE,
-nullModel=FALSE,conf.int=TRUE,times=c(5,8),splitMethod="bootcv",B=3)
+null.model=FALSE,conf.int=TRUE,times=c(5,8),split.method="bootcv",B=3)
 }
 # competing risks outcome
 set.seed(18)

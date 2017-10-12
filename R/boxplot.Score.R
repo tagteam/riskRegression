@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Aug 15 2016 (09:45) 
 ## Version: 
-## last-updated: Jul 14 2017 (12:09) 
+## last-updated: Oct 12 2017 (16:54) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 99
+##     Update #: 115
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -28,10 +28,10 @@
 #' @param xlim x-axis limits
 #' @param xlab x-axis label
 #' @param main title of plot
-#' @param outcomeLabel Title label for column which shows the outcome
+#' @param outcome.label Title label for column which shows the outcome
 #'     status
-#' @param outcomeLabel.offset Vertical offset for outcomeLabel 
-#' @param eventLabels Labels for the different events (causes).
+#' @param outcome.label.offset Vertical offset for outcome.label 
+#' @param event.labels Labels for the different events (causes).
 #' @param refline Logical, for \code{type="diff"} only. If \code{TRUE}
 #'     draw a red vertical line at \code{0}.
 #' @param overall Logical. Tag to be documented.
@@ -44,7 +44,7 @@
 ##' fitnew=glm(Y~X1+X3+X5+X6+X7,data=db,family=binomial)
 ##' scoreobj=Score(list(new=fitnew,conv=fitconv),
 ##'         formula=Y~1,contrasts=list(c(2,1)),
-##'                data=db,summary="riskQuantile",nullModel=FALSE)
+##'                data=db,summary="riskQuantile",null.model=FALSE)
 ##' boxplot(scoreobj)
 ##'
 ##' # survival outcome
@@ -57,13 +57,13 @@
 ##'                 formula=Hist(time,event)~1, data=ds,
 ##'                 summary="riskQuantile",metrics=NULL, plots=NULL,
 ##'                 c(0,0.25,0.5,0.75,1),
-##'                 times=5,nullModel=FALSE)
+##'                 times=5,null.model=FALSE)
 ##' boxplot(scoreobj)
 ##' 
 ##' scoreobj1=Score(list("conventional model"=fitconv,"new model"=fitnew),
 ##'                 formula=Hist(time,event)~1, data=ds,
 ##'                 summary="riskQuantile",metrics=NULL, plots=NULL,
-##'                 times=5,nullModel=FALSE,compare=list(c(2,1)))
+##'                 times=5,null.model=FALSE,compare=list(c(2,1)))
 ##' boxplot(scoreobj1)
 ##' }
 ##' 
@@ -74,7 +74,7 @@
 ##' fitnew = CSC(Hist(time,status)~invasion+age+sex+logthick,data=Melanoma)
 ##' scoreobj=Score(list("Conventional model"=fitconv,"New model"=fitnew),
 ##'                formula=Hist(time,status)~1,
-##'                data=Melanoma,metrics=NULL,summary="riskQuantile",times=5*365.25,nullModel=FALSE)
+##'                data=Melanoma,metrics=NULL,summary="riskQuantile",times=5*365.25,null.model=FALSE)
 ##' boxplot(scoreobj)
 ##'
 ##' # more than 2 competing risks
@@ -92,7 +92,7 @@
 ##' fitNew = CSC(Hist(time,event)~X1+X2+X3,data=dcr)
 ##' scoreobj=Score(list("Conventional model"=fitOld,"New model"=fitNew),
 ##'                formula=Hist(time,event)~1,
-##'                data=dcr,summary="riskQuantile",times=5,nullModel=FALSE)
+##'                data=dcr,summary="riskQuantile",times=5,null.model=FALSE)
 ##' boxplot(scoreobj)
 ##' 
 ##' 
@@ -107,9 +107,9 @@ boxplot.Score <- function(x,
                           xlim,
                           xlab="",
                           main,
-                          outcomeLabel,
-                          outcomeLabel.offset=0,
-                          eventLabels,
+                          outcome.label,
+                          outcome.label.offset=0,
+                          event.labels,
                           refline=(type=="diff"),
                           add=FALSE,
                           ...){
@@ -158,7 +158,7 @@ boxplot.Score <- function(x,
                                                     "competing.risks"={paste("Difference in predicted risks\nof an event of type",x$cause,"\nbefore time",timepoint)},
                                                     "survival"={paste("Difference in predicted risks\nof an event before time",timepoint)},
                                                     "binary"={"Difference in predicted risks"})
-    if (missing(outcomeLabel)) outcomeLabel <- switch(x$responseType,
+    if (missing(outcome.label)) outcome.label <- switch(x$responseType,
                                                       "competing.risks"={paste("Event status\nat time",timepoint)},
                                                       "survival"={paste("Event status\nat time",timepoint)},
                                                       "binary"={"Event status"})
@@ -184,11 +184,13 @@ boxplot.Score <- function(x,
     if (missing(xlab))
         if (type=="risk") xlab="Predicted risk" else xlab=""
     if (add==0L) do.call("plot",control$plot)
-    if (missing(eventLabels)) eventLabels <- causes
+    if (missing(event.labels)) event.labels <- causes
+    else if (length(event.labels)!=length(causes))
+        stop(paste0("Argument event.labels has wrong length: ",length(event.labels),"\nShould be a character vector of length: ",length(causes),"\none for each cause: ",paste(causes,collapse=",")))
     ypos <- c((1:(length(causes)))-0.5,length(causes))
     text(x=xlim[1],
-         y=ypos + c(rep(0,length(eventLabels)),outcomeLabel.offset),
-         labels=c(eventLabels,outcomeLabel),
+         y=ypos + c(rep(0,length(event.labels)),outcome.label.offset),
+         labels=c(event.labels,outcome.label),
          pos=2,
          xpd=NA)
     if (type=="diff"){

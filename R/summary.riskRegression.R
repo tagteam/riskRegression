@@ -22,7 +22,7 @@ summary.riskRegression <- function(object,
     if (verbose){
         cat("\nriskRegression: Competing risks regression model \n")
         cat("\nIPCW estimation. The weights are based on\n",
-            switch(object$censModel,
+            switch(object$cens.model,
                    "KM"={"the Kaplan-Meier estimate" },
                    "cox"={"a Cox model" },
                    "aalen"={"a non-parametric additive Aalen model"}),

@@ -23,7 +23,7 @@ print.riskRegression <- function(x,
     # {{{ echo model type, IPCW and link function
     cat("Competing risks regression model \n")
     cat("\nIPCW weights: ",
-        switch(tolower(x$censModel),
+        switch(tolower(x$cens.model),
                "km"={"marginal Kaplan-Meier" },
                "cox"={"Cox regression model" },                             
                "aalen"={"non-parametric additive Aalen model"}),

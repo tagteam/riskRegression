@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Aug 23 2016 (17:07) 
 ## Version: 
-## last-updated: maj 19 2017 (16:52) 
-##           By: Brice Ozenne
-##     Update #: 11
+## last-updated: Oct 12 2017 (16:54) 
+##           By: Thomas Alexander Gerds
+##     Update #: 12
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -29,8 +29,8 @@ test_that("boxplot.Score",{
     Qef <- d[time>=5.1,quantile(diffba,probs=c(0.05,0.25,0.5,0.75,0.95),type=1)]
 
     ## [ERROR: * cannot open the connection]
-    ## binCase <- Score(list(a=d$a,b=d$b),formula=Y~1,data=d,summary="riskQuantile",nullModel=FALSE,plots=NULL,metrics=NULL)
-    ## survCase <- Score(list(a=d$a,b=d$b),formula=Surv(time,status)~1,times=5.1,data=d,summary="riskQuantile",probs=c(0.05,0.25,0.5,0.75,0.95),nullModel=FALSE,plots=NULL,metrics=NULL)
+    ## binCase <- Score(list(a=d$a,b=d$b),formula=Y~1,data=d,summary="riskQuantile",null.model=FALSE,plots=NULL,metrics=NULL)
+    ## survCase <- Score(list(a=d$a,b=d$b),formula=Surv(time,status)~1,times=5.1,data=d,summary="riskQuantile",probs=c(0.05,0.25,0.5,0.75,0.95),null.model=FALSE,plots=NULL,metrics=NULL)
     ## expect_equal(as.numeric(unlist(survCase$riskQuantile$contrasts[cause=="event",5:9,with=FALSE])),as.numeric(Qe))
     ## expect_equal(as.numeric(unlist(survCase$riskQuantile$contrasts[cause=="event-free",5:9,with=FALSE])),as.numeric(Qef))    
 })

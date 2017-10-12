@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Aug  9 2017 (10:36) 
 ## Version: 
-## Last-Updated: Sep 13 2017 (12:11) 
+## Last-Updated: Oct 12 2017 (16:32) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 135
+##     Update #: 136
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -109,7 +109,7 @@ rsquared.default <- function(object,formula,newdata,times,cause,...){
                  contrasts=FALSE,
                  conf.int=FALSE,
                  metrics="brier",
-                 censModel="km",
+                 cens.model="km",
                  summary="rsquared",
                  ...)$Brier$score
     class(out) <- c("rsquared",class(out))
@@ -167,7 +167,7 @@ rsquared.CauseSpecificCox <- function(object,formula,newdata,times,cause,...){
                 contrasts=FALSE,
                 conf.int=FALSE,
                 metrics="brier",
-                censModel="km",
+                cens.model="km",
                 summary="rsquared",
                 ...)$Brier$score
     ## r2[,Rsquared:=100*Rsquared]
@@ -209,7 +209,7 @@ rsquared.coxph <- function(object,formula,newdata,times,...){
                 contrasts=FALSE,
                 conf.int=FALSE,
                 metrics="brier",
-                censModel="km",
+                cens.model="km",
                 summary="rsquared",
                 ...)$Brier$score
     ## r2[,Rsquared:=100*Rsquared]

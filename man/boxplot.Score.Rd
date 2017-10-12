@@ -5,8 +5,8 @@
 \title{Boxplot risk quantiles}
 \usage{
 \method{boxplot}{Score}(x, model, reference, type, timepoint, overall = 1L,
-  lwd = 3, xlim, xlab = "", main, outcomeLabel, outcomeLabel.offset = 0,
-  eventLabels, refline = (type == "diff"), add = FALSE, ...)
+  lwd = 3, xlim, xlab = "", main, outcome.label, outcome.label.offset = 0,
+  event.labels, refline = (type == "diff"), add = FALSE, ...)
 }
 \arguments{
 \item{x}{Score object obtained by calling function \code{Score}.}
@@ -31,12 +31,12 @@ calculation of risk differences.}
 
 \item{main}{title of plot}
 
-\item{outcomeLabel}{Title label for column which shows the outcome
+\item{outcome.label}{Title label for column which shows the outcome
 status}
 
-\item{outcomeLabel.offset}{Vertical offset for outcomeLabel}
+\item{outcome.label.offset}{Vertical offset for outcome.label}
 
-\item{eventLabels}{Labels for the different events (causes).}
+\item{event.labels}{Labels for the different events (causes).}
 
 \item{refline}{Logical, for \code{type="diff"} only. If \code{TRUE}
 draw a red vertical line at \code{0}.}
@@ -55,7 +55,7 @@ fitconv=glm(Y~X3+X5,data=db,family=binomial)
 fitnew=glm(Y~X1+X3+X5+X6+X7,data=db,family=binomial)
 scoreobj=Score(list(new=fitnew,conv=fitconv),
         formula=Y~1,contrasts=list(c(2,1)),
-               data=db,summary="riskQuantile",nullModel=FALSE)
+               data=db,summary="riskQuantile",null.model=FALSE)
 boxplot(scoreobj)
 
 # survival outcome
@@ -68,13 +68,13 @@ scoreobj=Score(list("conventional model"=fitconv,"new model"=fitnew),
                 formula=Hist(time,event)~1, data=ds,
                 summary="riskQuantile",metrics=NULL, plots=NULL,
                 c(0,0.25,0.5,0.75,1),
-                times=5,nullModel=FALSE)
+                times=5,null.model=FALSE)
 boxplot(scoreobj)
 
 scoreobj1=Score(list("conventional model"=fitconv,"new model"=fitnew),
                 formula=Hist(time,event)~1, data=ds,
                 summary="riskQuantile",metrics=NULL, plots=NULL,
-                times=5,nullModel=FALSE,compare=list(c(2,1)))
+                times=5,null.model=FALSE,compare=list(c(2,1)))
 boxplot(scoreobj1)
 }
 
@@ -85,7 +85,7 @@ fitconv = CSC(Hist(time,status)~invasion+age+sex,data=Melanoma)
 fitnew = CSC(Hist(time,status)~invasion+age+sex+logthick,data=Melanoma)
 scoreobj=Score(list("Conventional model"=fitconv,"New model"=fitnew),
                formula=Hist(time,status)~1,
-               data=Melanoma,metrics=NULL,summary="riskQuantile",times=5*365.25,nullModel=FALSE)
+               data=Melanoma,metrics=NULL,summary="riskQuantile",times=5*365.25,null.model=FALSE)
 boxplot(scoreobj)
 
 # more than 2 competing risks
@@ -103,7 +103,7 @@ fitOld = CSC(Hist(time,event)~X1+X2,data=dcr)
 fitNew = CSC(Hist(time,event)~X1+X2+X3,data=dcr)
 scoreobj=Score(list("Conventional model"=fitOld,"New model"=fitNew),
                formula=Hist(time,event)~1,
-               data=dcr,summary="riskQuantile",times=5,nullModel=FALSE)
+               data=dcr,summary="riskQuantile",times=5,null.model=FALSE)
 boxplot(scoreobj)
 
 

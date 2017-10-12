@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun  6 2016 (09:02) 
 ## Version: 
-## last-updated: Sep 30 2017 (18:31) 
+## last-updated: Oct 12 2017 (16:31) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 100
+##     Update #: 101
 #----------------------------------------------------------------------
 ## 
 ### Commentary:
@@ -657,7 +657,7 @@ predictRisk.CauseSpecificCox <- function (object, newdata, times, cause, ...) {
 ##' predictRisk(fitlasso,newdata=newd)
 ##' # predictRisk(fitnet,newdata=newd)
 ##' Score(list(fitridge),data=newd,formula=Y~1)
-##' Score(list(fitridge),data=newd,formula=Y~1,splitMethod="bootcv",B=2)
+##' Score(list(fitridge),data=newd,formula=Y~1,split.method="bootcv",B=2)
 ##' }
 ##'\dontrun{ data(nki70) ## S4 fit pen <- penalized(Surv(time, event),
 ##' penalized = nki70[,8:77], unpenalized = ~ER+Age+Diam+N+Grade, data

@@ -148,7 +148,7 @@
 ##'              data=Melanoma,
 ##'              formula=Hist(time,status)~1,
 ##'              cause=1,
-##'              splitMethod="none")
+##'              split.method="none")
 ##'
 ##' 
 #' @keywords survival
@@ -388,7 +388,7 @@ riskRegression <- function(formula,
                 timeconst.power=timeconst.power,
                 timeVaryingEffects=timeVaryingEffects,
                 score=score,
-                censModel= cens.model,
+                cens.model= cens.model,
                 factorLevels=c(factorLevelsX,factorLevelsZ),
                 refLevels=c(refLevelsX,refLevelsZ),
                 "na.action"=attr(EHF,"na.action"))

@@ -36,7 +36,7 @@ predictRisk(fitridge,newdata=newd)
 predictRisk(fitlasso,newdata=newd)
 # predictRisk(fitnet,newdata=newd)
 Score(list(fitridge),data=newd,formula=Y~1)
-Score(list(fitridge),data=newd,formula=Y~1,splitMethod="bootcv",B=2)
+Score(list(fitridge),data=newd,formula=Y~1,split.method="bootcv",B=2)
 }
 \dontrun{ data(nki70) ## S4 fit pen <- penalized(Surv(time, event),
 penalized = nki70[,8:77], unpenalized = ~ER+Age+Diam+N+Grade, data

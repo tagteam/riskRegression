@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun 23 2016 (10:27) 
 ## Version: 
-## last-updated: Sep 17 2017 (18:11) 
+## last-updated: Oct 12 2017 (16:54) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 84
+##     Update #: 85
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -92,8 +92,8 @@ plotROC <- function(x,
                         "Available models: ",paste(pframe[,unique(model)],collapse=", ")))
         pframe <- pframe[model%in%models]
     }else{
-        if (length(x$nullModel)>0){
-            pframe <- pframe[model!=x$nullModel]
+        if (length(x$null.model)>0){
+            pframe <- pframe[model!=x$null.model]
         }
     }
     setkey(pframe,model)
@@ -117,8 +117,8 @@ plotROC <- function(x,
                     auc <- x$AUC$score[(model%in%models)]
                 } else{
                     auc <- x$AUC$score
-                    if (length(x$nullModel)>0){
-                        auc <- auc[model!=x$nullModel]
+                    if (length(x$null.model)>0){
+                        auc <- auc[model!=x$null.model]
                     }
                 }
             }else{
@@ -126,8 +126,8 @@ plotROC <- function(x,
                     auc <- x$AUC$score[(model%in%models)]
                 } else{
                     auc <- x$AUC$score
-                    if (length(x$nullModel)>0){
-                        auc <- auc[model!=x$nullModel]
+                    if (length(x$null.model)>0){
+                        auc <- auc[model!=x$null.model]
                     }
                 }
             }

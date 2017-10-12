@@ -122,7 +122,7 @@ plot(perr.link)
 cv.perr.link <- pec(list(AbsRisk=arr.fit,CauseSpecCox=cox.fit,FineGray=fg.fit,LogisticRisk=lrr.fit),
                   formula=Hist(time,status)~sex+epicel+ulcer+age+logthick,
                   cens.model="cox",
-                   splitMethod="bootcv",
+                   split.method="bootcv",
                     B=10,
                   data=Melanoma,
                   maxtime=2500)
@@ -131,7 +131,7 @@ cv.perr.link <- pec(list(AbsRisk=arr.fit,CauseSpecCox=cox.fit,FineGray=fg.fit,Lo
 cv.cindex <- cindex(list(AbsRisk=arr.fit,CauseSpecCox=cox.fit,FineGray=fg.fit,LogisticRisk=lrr.fit),
                   formula=Hist(time,status)~sex+epicel+ulcer+age+logthick,
                   cens.model="cox",
-                   splitMethod="bootcv",
+                   split.method="bootcv",
                     B=10,
                   data=Melanoma,
                   maxtime=2500)
