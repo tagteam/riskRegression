@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: feb 27 2017 (10:47) 
 ## Version: 
-## last-updated: Sep 30 2017 (16:06) 
-##           By: Thomas Alexander Gerds
-##     Update #: 64
+## last-updated: okt  3 2017 (17:19) 
+##           By: Brice Ozenne
+##     Update #: 65
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -21,7 +21,7 @@
 #' @param object object obtained with the function \code{predictCox}.
 #' @param ci Logical. If \code{TRUE} display the confidence intervals for the predictions.
 #' @param band Logical. If \code{TRUE} display the confidence bands for the predictions.
-#' @param groupBy The grouping factor used to color the prediction curves. Can be \code{"row"}, \code{"strata"}, or \code{"covariates"}. 
+#' @param group.by The grouping factor used to color the prediction curves. Can be \code{"row"}, \code{"strata"}, or \code{"covariates"}. 
 #' @param reduce.data Logical. If \code{TRUE} only the covariates that does take indentical values for all observations are displayed.
 #' @param plot Logical. Should the graphic be plotted.
 #' @param digits integer indicating the number of decimal places
@@ -46,7 +46,7 @@
 #' data = d)
 #' pred.SCSC <- predict(m.SCSC, time = 1:3, newdata = d[1:4,],
 #' cause = 1, se = TRUE, keep.newdata = TRUE, keep.strata = TRUE)
-#' autoplot(pred.SCSC, groupBy = "strata")
+#' autoplot(pred.SCSC, group.by = "strata")
 #'
 #' @method autoplot predictCSC
 #' 
@@ -54,23 +54,20 @@
 autoplot.predictCSC <- function(object,
                             ci = FALSE,
                             band = FALSE,
-                            groupBy = "row",
+                            group.by = "row",
                             reduce.data = FALSE,
                             plot = TRUE,
                             digits = 2, alpha = NA, ...){
   
     ## initialize and check        
-    possibleGroupBy <- c("row","covariates","strata")
-    if(groupBy %in% possibleGroupBy == FALSE){
-        stop("argument \"groupBy\" must be in \"",paste(possibleGroupBy, collapse = "\" \""),"\"\n")
-    }
+	group.by <- match.arg(group.by, c("row","covariates","strata"))
   
-    if(groupBy == "covariates" && ("newdata" %in% names(object) == FALSE)){
-        stop("argument \'groupBy\' cannot be \"covariates\" when newdata is missing in the object \n",
+    if(group.by == "covariates" && ("newdata" %in% names(object) == FALSE)){
+        stop("argument \'group.by\' cannot be \"covariates\" when newdata is missing in the object \n",
              "set argment \'keep.newdata\' to TRUE when calling predictCox \n")
     }
-    if(groupBy == "strata" && ("strata" %in% names(object) == FALSE)){
-        stop("argument \'groupBy\' cannot be \"strata\" when strata is missing in the object \n",
+    if(group.by == "strata" && ("strata" %in% names(object) == FALSE)){
+        stop("argument \'group.by\' cannot be \"strata\" when strata is missing in the object \n",
              "set argment \'keep.strata\' to TRUE when calling predictCox \n")
     }
   
@@ -101,7 +98,7 @@ autoplot.predictCSC <- function(object,
                           strata = object$strata,
                           times = object$times,
                           name.outcome = "absoluteRisk",
-                          groupBy = groupBy,
+                          group.by = group.by,
                           digits = digits
                           )
 
@@ -109,7 +106,7 @@ autoplot.predictCSC <- function(object,
                            name.outcome = "absoluteRisk", # must not contain space to avoid error in ggplot2
                            ci = ci,
                            band = band,
-                           groupBy = groupBy,
+                           group.by = group.by,
                            conf.level = object$conf.level,
                            alpha = alpha,
                            origin = min(object$time)

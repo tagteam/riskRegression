@@ -5,7 +5,7 @@
 \title{Plot predictions from a Cox model}
 \usage{
 \method{autoplot}{predictCox}(object, type = NULL, ci = FALSE,
-  band = FALSE, groupBy = "row", reduce.data = FALSE, plot = TRUE,
+  band = FALSE, group.by = "row", reduce.data = FALSE, plot = TRUE,
   digits = 2, alpha = NA, ...)
 }
 \arguments{
@@ -20,7 +20,7 @@ or \code{"survival"} the survival function.}
 
 \item{band}{Logical. If \code{TRUE} display the confidence bands for the predictions.}
 
-\item{groupBy}{The grouping factor used to color the prediction curves. Can be \code{"row"}, \code{"strata"}, or \code{"covariates"}.}
+\item{group.by}{The grouping factor used to color the prediction curves. Can be \code{"row"}, \code{"strata"}, or \code{"covariates"}.}
 
 \item{reduce.data}{Logical. If \code{TRUE} only the covariates that does take indentical values for all observations are displayed.}
 
@@ -49,8 +49,8 @@ ggplot(as.data.table(dt.basehaz), aes(x = time, y = survival)) + geom_point() + 
 pred.cox <- predictCox(m.cox, newdata = d[1:4,],
   times = 1:5, type = "survival", keep.newdata = TRUE)
 autoplot(pred.cox)
-autoplot(pred.cox, groupBy = "covariates")
-autoplot(pred.cox, groupBy = "covariates", reduce.data = TRUE)
+autoplot(pred.cox, group.by = "covariates")
+autoplot(pred.cox, group.by = "covariates", reduce.data = TRUE)
 
 
 m.cox.strata <- coxph(Surv(time,event)~ strata(X1) + strata(X2) + X3 + X6,
@@ -58,9 +58,9 @@ data = d, x = TRUE, y = TRUE)
 pred.cox.strata <- predictCox(m.cox.strata, newdata = d[1,,drop=FALSE],
 time = 1:5, keep.newdata = TRUE)
 autoplot(pred.cox.strata, type = "survival")
-autoplot(pred.cox.strata, type = "survival", groupBy = "strata")
+autoplot(pred.cox.strata, type = "survival", group.by = "strata")
 res <- autoplot(pred.cox.strata, type = "survival",
-            groupBy = "covariates")
+            group.by = "covariates")
 
 # customize display
 res$plot + geom_point(data = res$data, size = 5)

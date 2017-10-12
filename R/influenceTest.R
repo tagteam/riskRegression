@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: maj 19 2017 (16:01) 
 ## Version: 
-## last-updated: Oct 12 2017 (16:24) 
+## last-updated: Oct 12 2017 (17:02) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 118
+##     Update #: 119
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -18,7 +18,7 @@
 # {{{ doc
 #' @title Influence test [Experimental!!]
 #' @description Compare two estimates using their influence function
-#' @name influenceTest
+#' @name influenceCoxTest
 #' 
 #' @param object either a list of models or an object of class predictCox or predictCSC.
 #' @param object2 same as predict1 but for another model.
@@ -132,7 +132,7 @@
 # }}}
 
 # {{{ influenceCoxTest.list
-#' @rdname influenceTest
+#' @rdname influenceCoxTest
 #' @export
 influenceCoxTest.list <- function(object, newdata, times, type, cause, ...){
   
@@ -169,7 +169,7 @@ influenceCoxTest.list <- function(object, newdata, times, type, cause, ...){
 # }}}
 
 # {{{ influenceCoxTest.default
-#' @rdname influenceTest
+#' @rdname influenceCoxTest
 #' @export
 influenceCoxTest.default <- function(object, object2, tanh.transform = FALSE, conf.level = 0.95, nsim.band = 1e4, ...){
   
