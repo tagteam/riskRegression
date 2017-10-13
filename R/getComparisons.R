@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jan  3 2016 (13:30) 
 ## Version: 
-## last-updated: Aug 26 2016 (14:58) 
+## last-updated: Oct 13 2017 (10:54) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 36
+##     Update #: 37
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -27,7 +27,13 @@ getComparisons <- function(dt,NF,N,alpha,dolist=NF:1){
             lower <- delta - Qnorm * se.delta
             upper <- delta + Qnorm * se.delta
             p <-2*pnorm(abs(delta)/se.delta,lower.tail=FALSE)
-            data.table(model=theta[model%in%g[-1]][["model"]],reference=g[1],delta=delta,se.delta=se.delta,lower=lower,upper=upper,p=p)
+            data.table(model=theta[model%in%g[-1]][["model"]],
+                       reference=g[1],
+                       delta=delta,
+                       se=se.delta,
+                       lower=lower,
+                       upper=upper,
+                       p=p)
         }))
     }else {NULL}
 }

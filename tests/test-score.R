@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jan  4 2016 (14:30) 
 ## Version: 
-## last-updated: Oct 12 2017 (16:54) 
+## last-updated: Oct 13 2017 (12:59) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 38
+##     Update #: 41
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -185,14 +185,14 @@ test_that("binary outcome: AUC", {
     scoreres1a <- Score(list(X1=glm(y~x1,data=d,family='binomial'),X2=glm(y~x2,data=d,family='binomial'),X3=glm(y~x3,data=d,family='binomial')),formula=y~1,data=d,null.model=FALSE,metrics="auc",se.fit=0L,cause="1")
     expect_equal(scoreres$AUC,scoreres1$AUC)
     daim.auc <- daimres$AUC[,c("AUC","SD(DeLong)")]
-    score.auc <- as.data.frame(scoreres$AUC$score[,c("AUC","se.AUC"),with=FALSE])
+    score.auc <- as.data.frame(scoreres$AUC$score[,c("AUC","se"),with=FALSE])
     rownames(score.auc) <- rownames(daim.auc)
     colnames(score.auc) <- colnames(daim.auc)
     expect_equal(daim.auc,score.auc)
     expect_equal(scoreres$AUC$score[["AUC"]],c(r1$auc,r2$auc,r3$auc))
-    score.diff <- scoreres$AUC$contrasts[,c("delta.auc","se.auc","lower","upper","p"),with=FALSE]
+    score.diff <- scoreres$AUC$contrasts[,c("delta.AUC","se","lower","upper","p"),with=FALSE]
     daim.diff <- daimres$difference
-    expect_equal(daim.diff$"AUC Difference",-score.diff$delta.auc)
+    expect_equal(daim.diff$"AUC Difference",-score.diff$delta.AUC)
     expect_equal(daim.diff$"CI(lower)",-score.diff$upper)
     expect_equal(daim.diff$"CI(upper)",-score.diff$lower)
     expect_equal(daim.diff$"P.Value",score.diff$p)

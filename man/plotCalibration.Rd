@@ -7,8 +7,9 @@
 plotCalibration(x, models, times, method = "nne", round = TRUE,
   bandwidth = NULL, q = 10, bars = FALSE, hanging = FALSE,
   names = "quantiles", pseudo, rug, show.frequencies = FALSE, plot = TRUE,
-  add = FALSE, diag = !add, legend = !add, axes = !add, xlim = c(0,
-  1), ylim = c(0, 1), xlab = ifelse(bars, "Risk groups", "Predicted risk"),
+  add = FALSE, diag = !add, legend = !add, auc.in.legend = TRUE,
+  brier.in.legend = TRUE, axes = !add, xlim = c(0, 1), ylim = c(0, 1),
+  xlab = ifelse(bars, "Risk groups", "Predicted risk"),
   ylab = "Observed frequency", col, lwd, lty, pch, type, cause = 1,
   percent = TRUE, na.action = na.fail, cex = 1, ...)
 }
@@ -45,7 +46,8 @@ corresponding prediction.}
 \item{names}{Barplots only. Names argument passed to
 \code{names.arg} of \code{barplot}.}
 
-\item{pseudo}{If \code{TRUE} show pseudo values (only for right censored data).}
+\item{pseudo}{If \code{TRUE} show pseudo values (only for right
+censored data).}
 
 \item{rug}{If \code{TRUE} show rug plot at the predictions}
 
@@ -61,6 +63,11 @@ plot.}
 \item{diag}{If \code{FALSE} no diagonal line is drawn.}
 
 \item{legend}{Logical. If \code{TRUE} draw legend.}
+
+\item{auc.in.legend}{Logical. If \code{TRUE} add AUC to legend.}
+
+\item{brier.in.legend}{Logical. If \code{TRUE} add Brier score to
+legend.}
 
 \item{axes}{If \code{FALSE} no axes are drawn.}
 
@@ -109,7 +116,7 @@ db=sampleData(100,outcome="binary")
 fb1=glm(Y~X1+X5+X7,data=db,family="binomial")
 fb2=glm(Y~X1+X3+X6+X7,data=db,family="binomial")
 xb=Score(list(model1=fb1,model2=fb2),Y~1,data=db,
-          plots="cal",metrics=NULL)
+          plots="cal")
 plotCalibration(xb)
 
 ds=sampleData(100,outcome="survival")

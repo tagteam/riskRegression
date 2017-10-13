@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Feb 23 2017 (11:15) 
 ## Version: 
-## last-updated: Sep 30 2017 (16:13) 
+## last-updated: Oct 13 2017 (12:48) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 178
+##     Update #: 198
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -40,7 +40,8 @@
 ##'     corresponding prediction.
 ##' @param names Barplots only. Names argument passed to
 ##'     \code{names.arg} of \code{barplot}.
-##' @param pseudo If \code{TRUE} show pseudo values (only for right censored data).
+##' @param pseudo If \code{TRUE} show pseudo values (only for right
+##'     censored data).
 ##' @param rug If \code{TRUE} show rug plot at the predictions
 ##' @param show.frequencies Barplots only. If \code{TRUE}, show
 ##'     frequencies above the bars.
@@ -50,6 +51,9 @@
 ##'     plot.
 ##' @param diag If \code{FALSE} no diagonal line is drawn.
 ##' @param legend Logical. If \code{TRUE} draw legend.
+##' @param auc.in.legend Logical. If \code{TRUE} add AUC to legend.
+##' @param brier.in.legend Logical. If \code{TRUE} add Brier score to
+##'     legend.
 ##' @param axes If \code{FALSE} no axes are drawn.
 ##' @param xlim Limits of x-axis.
 ##' @param ylim Limits of y-axis.
@@ -79,7 +83,7 @@
 ##' fb1=glm(Y~X1+X5+X7,data=db,family="binomial")
 ##' fb2=glm(Y~X1+X3+X6+X7,data=db,family="binomial")
 ##' xb=Score(list(model1=fb1,model2=fb2),Y~1,data=db,
-##'           plots="cal",metrics=NULL)
+##'           plots="cal")
 ##' plotCalibration(xb)
 ##'
 ##' ds=sampleData(100,outcome="survival")
@@ -112,6 +116,8 @@ plotCalibration <- function(x,
                             add=FALSE,
                             diag=!add,
                             legend=!add,
+                            auc.in.legend=TRUE,
+                            brier.in.legend=TRUE,
                             axes=!add,
                             xlim=c(0,1),
                             ylim=c(0,1),
@@ -193,20 +199,36 @@ plotCalibration <- function(x,
     modelnames <- pframe[,unique(model)]
     axis1.DefaultArgs <- list(side=1,las=1,at=seq(0,xlim[2],xlim[2]/4))
     axis2.DefaultArgs <- list(side=2,las=2,at=seq(0,ylim[2],ylim[2]/4),mgp=c(4,1,0))
+    if (legend!=FALSE){
+        if (is.character(legend)){
+            legend.DefaultArgs <- list(legend=legend,col=col,cex=cex,bty="n",x="topleft")
+        }else{
+            legend.data <- getLegendData(object=x,
+                                         models=models,
+                                         auc.in.legend=auc.in.legend,
+                                         brier.in.legend=brier.in.legend,
+                                         drop.null.model=TRUE)
+            legend.text <- apply(legend.data,1,paste,collapse="\t")
+            title.text <- paste(attr(legend.data,"format.names"),collapse="\t")
+            legend.DefaultArgs <- list(legend=legend.text,
+                                       lwd=lwd,
+                                       col=col,
+                                       lty=lty,
+                                       cex=cex,
+                                       bty="n",
+                                       y.intersp=1.3,
+                                       x="topleft",
+                                       title=title.text)
+        }
+    }
     if (bars){
         legend.DefaultArgs <- list(legend=modelnames,col=col,cex=cex,bty="n",x="topleft")
         names.DefaultArgs <- list(cex=.7*par()$cex,y=c(-abs(diff(ylim))/15,-abs(diff(ylim))/25))
         frequencies.DefaultArgs <- list(cex=.7*par()$cex,percent=FALSE,offset=0)
     } else{
-        if (length(modelnames)<=1){legend=FALSE}
-        legend.DefaultArgs <- list(legend=modelnames,
-                                   lwd=lwd,
-                                   col=col,
-                                   lty=lty,
-                                   cex=cex,
-                                   bty="n",
-                                   y.intersp=1.3,
-                                   x="topleft")
+        if (length(modelnames)<=1){
+            legend=FALSE
+        }
     }
     if(bars){
         legend.DefaultArgs$legend <- c("Predicted risks","Observed frequencies")

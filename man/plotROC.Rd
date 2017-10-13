@@ -5,8 +5,8 @@
 \title{Plot ROC curves}
 \usage{
 plotROC(x, models, times, xlab = "1-Specificity", ylab = "Sensitivity", col,
-  lwd = 3, lty = 1, cex = 1, pch = 1, legend = TRUE, add = FALSE,
-  ...)
+  lwd = 3, lty = 1, cex = 1, pch = 1, legend = TRUE,
+  auc.in.legend = TRUE, brier.in.legend = FALSE, add = FALSE, ...)
 }
 \arguments{
 \item{x}{Object obtained with function \code{Score}}
@@ -29,7 +29,13 @@ plotROC(x, models, times, xlab = "1-Specificity", ylab = "Sensitivity", col,
 
 \item{pch}{point style}
 
-\item{legend}{logical. If \code{1L} draw a legend with the values of AUC.}
+\item{legend}{logical. If \code{1L} draw a legend with the values
+of AUC.}
+
+\item{auc.in.legend}{Logical. If \code{TRUE} add AUC to legend.}
+
+\item{brier.in.legend}{Logical. If \code{TRUE} add Brier score to
+legend.}
 
 \item{add}{logical. If \code{1L} add lines to an existing plot.}
 

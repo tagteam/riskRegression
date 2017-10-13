@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun 23 2016 (10:27) 
 ## Version: 
-## last-updated: Oct 12 2017 (16:54) 
+## last-updated: Oct 13 2017 (12:48) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 85
+##     Update #: 107
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -18,7 +18,7 @@
 ##'
 ##' @title Plot ROC curves
 #' @param x Object obtained with function \code{Score}
-#' @param models  Choice of models to plot
+#' @param models Choice of models to plot
 #' @param times Time point(s) specifying the prediction horizon
 #' @param xlab Label for x-axis
 #' @param ylab Label for y-axis
@@ -27,7 +27,11 @@
 #' @param lty line style
 #' @param cex point size
 #' @param pch point style
-#' @param legend logical. If \code{1L} draw a legend with the values of AUC.
+#' @param legend logical. If \code{1L} draw a legend with the values
+#'     of AUC.
+#' @param auc.in.legend Logical. If \code{TRUE} add AUC to legend.
+#' @param brier.in.legend Logical. If \code{TRUE} add Brier score to
+#'     legend.
 #' @param add logical. If \code{1L} add lines to an existing plot.
 #' @param ... Used for additional control of the subroutines: plot,
 #'     axis, lines, legend. See \code{\link{SmartControl}}.
@@ -73,6 +77,8 @@ plotROC <- function(x,
                     cex=1,
                     pch=1,
                     legend=TRUE,
+                    auc.in.legend=TRUE,
+                    brier.in.legend=FALSE,
                     add=FALSE,
                     ...){
     if (is.null(x$ROC))
@@ -91,6 +97,8 @@ plotROC <- function(x,
             stop(paste0("Cannot identify model names.\nRequested models: ",paste(models,collapse=", "),"\n",
                         "Available models: ",paste(pframe[,unique(model)],collapse=", ")))
         pframe <- pframe[model%in%models]
+        ## user's order
+        pframe[,model:=factor(model,levels=models)]
     }else{
         if (length(x$null.model)>0){
             pframe <- pframe[model!=x$null.model]
@@ -110,45 +118,30 @@ plotROC <- function(x,
     lty <- rep(lty,length.out=lenmm)
     names(lty) <- mm
     lines.DefaultArgs <- list(pch=pch,cex=cex,lwd=lwd,type="l",col=col,lty=lty)
+    # {{{ legend
     if (legend!=FALSE){
-        if (!is.character(legend)){
-            if (x$responseType=="binary"){
-                if (!missing(models)){
-                    auc <- x$AUC$score[(model%in%models)]
-                } else{
-                    auc <- x$AUC$score
-                    if (length(x$null.model)>0){
-                        auc <- auc[model!=x$null.model]
-                    }
-                }
-            }else{
-                if (!missing(models)){
-                    auc <- x$AUC$score[(model%in%models)]
-                } else{
-                    auc <- x$AUC$score
-                    if (length(x$null.model)>0){
-                        auc <- auc[model!=x$null.model]
-                    }
-                }
-            }
-            setkey(auc,model)
-        }
-        if (length(auc$model)>1){
-            auc.legend <- paste0(auc$model,": ",sprintf(fmt="%s [%s;%s]",
-                                                        round(100*auc$AUC,digits=1),
-                                                        round(100*auc$lower.AUC,digits=1),
-                                                        round(100*auc$upper.AUC,digits=1)))
+        if (is.character(legend)){
+            legend.DefaultArgs <- list(legend=legend,lwd=lwd,col=col,lty=lty,cex=cex,bty="n",y.intersp=1.3,x="bottomright",title="")
         }else{
-            auc.legend <- sprintf(fmt="%s [%s;%s]",
-                                  round(100*auc$AUC,digits=1),
-                                  round(100*auc$lower.AUC,digits=1),
-                                  round(100*auc$upper.AUC,digits=1))
+            legend.data <- getLegendData(object=x,
+                                         models=models,
+                                         auc.in.legend=auc.in.legend,
+                                         brier.in.legend=brier.in.legend,
+                                         drop.null.model=TRUE)
+            legend.text <- apply(legend.data,1,paste,collapse="")
+            title.text <- paste(attr(legend.data,"format.names"),collapse="\t")
+            legend.DefaultArgs <- list(legend=legend.text,
+                                       lwd=ifelse(NROW(legend.text)>1,lwd,-1),
+                                       col=col,
+                                       lty=lty,
+                                       cex=cex,
+                                       bty="n",
+                                       y.intersp=1.3,
+                                       x="bottomright",
+                                       title=title.text)
         }
-    }else auc.legend <- FALSE
-    if (length(auc.legend)>0)
-        legend.DefaultArgs <- list(legend=auc.legend,lwd=ifelse(length(auc$model)>1,lwd,-1),col=col,lty=lty,cex=cex,bty="n",y.intersp=1.3,x="bottomright",title="AUC")
-    else
-        legend.DefaultArgs <- list(legend=auc.legend,lwd=lwd,col=col,lty=lty,cex=cex,bty="n",y.intersp=1.3,x="bottomright",title="AUC")
+    }
+    # }}}
     plot.DefaultArgs <- list(x=0,y=0,type = "n",ylim = c(0,1),xlim = c(0,1),ylab=ylab,xlab=xlab)
     axis1.DefaultArgs <- list(side=1,las=1,at=seq(0,1,.25))
     axis2.DefaultArgs <- list(side=2,las=1,at=seq(0,1,.25))

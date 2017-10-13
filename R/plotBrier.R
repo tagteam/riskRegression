@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Feb 23 2017 (11:07) 
 ## Version: 
-## last-updated: Sep 30 2017 (16:04) 
+## last-updated: Oct 13 2017 (13:08) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 37
+##     Update #: 43
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -66,7 +66,7 @@ plotBrier <- function(x,
                       conf.int=0L,
                       legend=1L,
                       ...){
-    times=contrast=model=se.Brier=se.delta=Brier=lower.Brier=upper.Brier=lower=upper=delta=reference=NULL
+    times=contrast=model=se=Brier=lower=upper=delta.Brier=reference=NULL
     ## cbPalette <- c("#999999", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
     cbbPalette <- c("#000000", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
     pframe <- switch(which,"score"={copy(x$Brier$score)},"contrasts"={copy(x$Brier$contrasts)},{stop("argument 'which' has to be either 'score' for Brier or 'contrasts' for differences in Brier.")})
@@ -74,13 +74,13 @@ plotBrier <- function(x,
     if (!missing(models)) pframe <- pframe[model %in% models]
     if (which=="score"){
         mm <- unique(pframe$model)
-        pframe[is.na(se.Brier)&times==0,lower.Brier:=0]
-        pframe[is.na(se.Brier)&times==0,upper.Brier:=0]
+        pframe[is.na(se)&times==0,lower:=0]
+        pframe[is.na(se)&times==0,upper:=0]
     }else{
         pframe[,contrast:=factor(paste(model,reference,sep=" - "))]
         mm <- unique(pframe$contrast)
-        pframe[is.na(se.delta)&times==0,lower:=0]
-        pframe[is.na(se.delta)&times==0,upper:=0]
+        pframe[is.na(se)&times==0,lower:=0]
+        pframe[is.na(se)&times==0,upper:=0]
     }
     lenmm <- length(mm)
     if(missing(xlab)) xlab <- "Time"
@@ -158,7 +158,7 @@ plotBrier <- function(x,
             thisline$pch=thisline$pch[[as.character(contrast[1])]];
             thisline$type=thisline$type[[as.character(contrast[1])]];
             thisline$x=times;
-            thisline$y=delta;
+            thisline$y=delta.Brier;
             do.call("lines",thisline)},by=contrast]
     }
     ## legend
@@ -170,7 +170,7 @@ plotBrier <- function(x,
         dimcol <- sapply(col,function(cc){prodlim::dimColor(cc)})
         names(dimcol) <- names(col)
         if (which=="score"){
-            pframe[,polygon(x=c(times,rev(times)),y=c(lower.Brier,rev(upper.Brier)),col=dimcol[[as.character(model)]],border=NA),by=model]
+            pframe[,polygon(x=c(times,rev(times)),y=c(lower,rev(upper)),col=dimcol[[as.character(model)]],border=NA),by=model]
         }else{
             pframe[,polygon(x=c(times,rev(times)),y=c(lower,rev(upper)),col=dimcol[[as.character(contrast)]],border=NA),by=contrast]
         }

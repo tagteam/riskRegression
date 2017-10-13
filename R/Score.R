@@ -31,7 +31,8 @@
 ##'     \code{"riskQuantile"} which enables (time-point specific) boxplots of
 ##'     predicted risks conditional on the outcome (at the time-point).
 ##'     Set to \code{NULL} to avoid estimation of retrospective risk quantiles.
-##' @param plots Character vector specifying which plots to prepare. Choices
+##' @param plots Character vector specifying which plots to prepare.
+##'     Currently implemented are \code{"ROC"}, \code{"Calibration"} and \code{"boxplot"}
 ##' @param cause Event of interest. Used for binary outcome \code{Y}
 ##'     to specify that risks are risks of the event \code{Y=event}
 ##'     and for competing risks outcome to specify the cause of
@@ -120,8 +121,8 @@
 ##'
 ##' # score logistic regression models
 ##' lr1 = glm(Y~X1+X2+X7+X9,data=learndat,family=binomial)
-##' lr2 = glm(Y~X3+X5+X6,data=learndat,family=binomial)
-##' Score(list("LR(X1+X2+X7+X9)"=lr1,"LR(X3+X5+X6)"=lr2),formula=Y~1,data=testdat)
+##' lr2 = glm(Y~X3+X5,data=learndat,family=binomial)
+##' Score(list("LR(X1+X2+X7+X9)"=lr1,"LR(X3+X5)"=lr2),formula=Y~1,data=testdat)
 ##'
 ##' xb=Score(list("LR(X1+X2+X7+X9)"=lr1,"LR(X3+X5+X6)"=lr2),formula=Y~1,
 ##'         data=testdat,plots=c("calibration","ROC"))
@@ -268,7 +269,11 @@ Score.list <- function(object,
     # ----------------------------find metrics and plots ----------------------
     # {{{
     ## Metrics <- lapply(metrics,grep,c("AUC","Brier"),ignore.case=TRUE,value=TRUE)
+    plots[grep("^box",plots,ignore.case=TRUE)] <- "boxplot"
     summary[grep("^riskQuantile",summary,ignore.case=TRUE)] <- "riskQuantile"
+    # force riskQuantile to make boxplots
+    if (("boxplot"%in% plots) && !("riskQuantile" %in% summary))
+        summary <- c(summary,"riskQuantile")
     summary[grep("^risk$|^risks$",summary,ignore.case=TRUE)] <- "risks"
     metrics[grep("^auc$",metrics,ignore.case=TRUE)] <- "AUC"
     metrics[grep("^brier$",metrics,ignore.case=TRUE)] <- "Brier"
@@ -942,19 +947,20 @@ Score <- function(object,...){
 # {{{ Brier score
 
 Brier.binary <- function(DT,se.fit,alpha,N,NT,NF,dolist,keep.residuals=FALSE,DT.residuals,DT.bootcount,...){
-    residuals=Brier=risk=model=ReSpOnSe=lower.Brier=upper.Brier=se.Brier=ID=NULL
+    residuals=Brier=risk=model=ReSpOnSe=lower=upper=se=ID=NULL
     DT[,residuals:=(ReSpOnSe-risk)^2,by=model]
     if (se.fit==TRUE){
         ## data.table::setorder(DT,model,ReSpOnSe)
         data.table::setkey(DT,model,ID)
-        score <- DT[,data.table::data.table(Brier=sum(residuals)/N,se.Brier=sd(residuals)/sqrt(N)),by=list(model)]
-        score[,lower.Brier:=pmax(0,Brier-qnorm(1-alpha/2)*se.Brier)]
-        score[,upper.Brier:=Brier + qnorm(1-alpha/2)*se.Brier]
+        score <- DT[,data.table::data.table(Brier=sum(residuals)/N,se=sd(residuals)/sqrt(N)),by=list(model)]
+        score[,lower:=pmax(0,Brier-qnorm(1-alpha/2)*se)]
+        score[,upper:=Brier + qnorm(1-alpha/2)*se]
         data.table::setkey(score,model)
         data.table::setkey(DT,model)
         DT <- DT[score]
         if (length(dolist)>0){
             contrasts.Brier <- DT[,getComparisons(data.table(x=Brier,IF=residuals,model=model),NF=NF,N=N,alpha=alpha,dolist=dolist)]
+            setnames(contrasts.Brier,"delta","delta.Brier")
             output <- list(score=score,contrasts=contrasts.Brier)
         }else{
             output <- list(score=score)
@@ -967,7 +973,7 @@ Brier.binary <- function(DT,se.fit,alpha,N,NT,NF,dolist,keep.residuals=FALSE,DT.
 }
 
 Brier.survival <- function(DT,MC,se.fit,alpha,N,NT,NF,dolist,keep.residuals=FALSE,DT.residuals,DT.bootcount,...){
-    Yt=time=times=Residuals=risk=Brier=ipcwResiduals=WTi=Wt=status=setorder=model=IF.Brier=data.table=sd=lower.Brier=qnorm=se.Brier=upper.Brier=NULL
+    Yt=time=times=Residuals=risk=Brier=ipcwResiduals=WTi=Wt=status=setorder=model=IF.Brier=data.table=sd=lower=qnorm=se=upper=NULL
     ## compute 0/1 outcome:
     DT[,Yt:=1*(time<=times)]
     ## compute residuals
@@ -981,14 +987,15 @@ Brier.survival <- function(DT,MC,se.fit,alpha,N,NT,NF,dolist,keep.residuals=FALS
     if (se.fit==TRUE){
         data.table::setorder(DT,model,times,time,-status)
         DT[,IF.Brier:=getInfluenceCurve.Brier(t=times[1],time=time,Yt=Yt,ipcwResiduals=ipcwResiduals,MC=MC),by=list(model,times)]
-        score <- DT[,data.table(Brier=sum(ipcwResiduals)/N,se.Brier=sd(IF.Brier)/sqrt(N)),by=list(model,times)]
-        score[,lower.Brier:=pmax(0,Brier-qnorm(1-alpha/2)*se.Brier)]
-        score[,upper.Brier:=Brier + qnorm(1-alpha/2)*se.Brier]
+        score <- DT[,data.table(Brier=sum(ipcwResiduals)/N,se=sd(IF.Brier)/sqrt(N)),by=list(model,times)]
+        score[,lower:=pmax(0,Brier-qnorm(1-alpha/2)*se)]
+        score[,upper:=Brier + qnorm(1-alpha/2)*se]
         data.table::setkey(score,model,times)
         data.table::setkey(DT,model,times)
         DT <- DT[score]
         if (length(dolist)>0){
             contrasts.Brier <- DT[,getComparisons(data.table(x=Brier,IF=IF.Brier,model=model),NF=NF,N=N,alpha=alpha,dolist=dolist),by=list(times)]
+            setnames(contrasts.Brier,"delta","delta.Brier")
             output <- list(score=score,contrasts=contrasts.Brier)
         }
         else{
@@ -1002,7 +1009,7 @@ Brier.survival <- function(DT,MC,se.fit,alpha,N,NT,NF,dolist,keep.residuals=FALS
 }
 
 Brier.competing.risks <- function(DT,MC,se.fit,alpha,N,NT,NF,dolist,keep.residuals=FALSE,DT.residuals,DT.bootcount,cause,states,...){
-    Yt=time=times=event=Brier=Residuals=risk=ipcwResiduals=WTi=Wt=status=setorder=model=IF.Brier=data.table=sd=lower.Brier=qnorm=se.Brier=upper.Brier=NULL
+    Yt=time=times=event=Brier=Residuals=risk=ipcwResiduals=WTi=Wt=status=setorder=model=IF.Brier=data.table=sd=lower=qnorm=se=upper=NULL
     ## compute 0/1 outcome:
     DT[,Yt:=1*(time<=times & event==cause)]
     ## compute residuals
@@ -1016,14 +1023,15 @@ Brier.competing.risks <- function(DT,MC,se.fit,alpha,N,NT,NF,dolist,keep.residua
     if (se.fit==TRUE){
         data.table::setorder(DT,model,times,time,-status)
         DT[,IF.Brier:=getInfluenceCurve.Brier(t=times[1],time=time,Yt=Yt,ipcwResiduals=ipcwResiduals,MC=MC),by=list(model,times)]
-        score <- DT[,data.table(Brier=sum(ipcwResiduals)/N,se.Brier=sd(IF.Brier)/sqrt(N)),by=list(model,times)]
-        score[,lower.Brier:=pmax(0,Brier-qnorm(1-alpha/2)*se.Brier)]
-        score[,upper.Brier:=Brier + qnorm(1-alpha/2)*se.Brier]
+        score <- DT[,data.table(Brier=sum(ipcwResiduals)/N,se=sd(IF.Brier)/sqrt(N)),by=list(model,times)]
+        score[,lower:=pmax(0,Brier-qnorm(1-alpha/2)*se)]
+        score[,upper:=Brier + qnorm(1-alpha/2)*se]
         data.table::setkey(score,model,times)
         data.table::setkey(DT,model,times)
         DT <- DT[score]
         if (length(dolist)>0){
             contrasts.Brier <- DT[,getComparisons(data.table(x=Brier,IF=IF.Brier,model=model),NF=NF,N=N,alpha=alpha,dolist=dolist),by=list(times)]
+            setnames(contrasts.Brier,"delta","delta.Brier")
             output <- list(score=score,contrasts=contrasts.Brier)
         } else{
             output <- list(score=score)
@@ -1047,7 +1055,7 @@ AireTrap <- function(FP,TP,N){
 
 ## do not want to depend on Daim as they turn marker to ensure auc > 0.5
 delongtest <-  function(risk, score, dolist, response, cause, alpha) {
-    cov=lower=upper=p=AUC=se.AUC=lower.AUC=upper.AUC=NULL
+    cov=lower=upper=p=AUC=se=lower=upper=NULL
     Cases <- response == cause
     Controls <- response != cause
     nControls <- sum(!Cases)
@@ -1074,41 +1082,41 @@ delongtest <-  function(risk, score, dolist, response, cause, alpha) {
     W01 <- cov(V01)
     S <- W10/nCases + W01/nControls
     score <- data.table(auc, sqrt(diag(S)))
-    setnames(score,c("AUC","se.AUC"))
+    setnames(score,c("AUC","se"))
     score[,model:=colnames(risk)]
-    score[,lower.AUC:=pmax(0,AUC-qnorm(1-alpha/2)*se.AUC)]
-    score[,upper.AUC:=pmin(1,AUC+qnorm(1-alpha/2)*se.AUC)]
-    setcolorder(score,c("model","AUC","se.AUC","lower.AUC","upper.AUC"))
+    score[,lower:=pmax(0,AUC-qnorm(1-alpha/2)*se)]
+    score[,upper:=pmin(1,AUC+qnorm(1-alpha/2)*se)]
+    setcolorder(score,c("model","AUC","se","lower","upper"))
     names(auc) <- 1:nauc
     ## q1 <- auc/(2 - auc)
     ## q2 <- 2 * auc^2/(1 + auc)
     ## aucvar <- (auc * (1 - auc) + (nCases - 1) * (q1 - auc^2) + (nControls - 1) * (q2 - auc^2))/(nCases * nControls)
     if (length(dolist)>0){
         ncomp <- nauc * (nauc - 1)/2
-        delta.auc <- numeric(ncomp) 
-        se.auc <- numeric(ncomp)
+        delta.AUC <- numeric(ncomp) 
+        se <- numeric(ncomp)
         model <- numeric(ncomp)
         reference <- numeric(ncomp)
         ctr <- 1
         Qnorm <- qnorm(1 - alpha/2)
         for (i in 1:(nauc - 1)) {
             for (j in (i + 1):nauc) {
-                delta.auc[ctr] <- auc[j]-auc[i]
+                delta.AUC[ctr] <- auc[j]-auc[i]
                 ## cor.auc[ctr] <- S[i, j]/sqrt(S[i, i] * S[j, j])
                 LSL <- t(c(1, -1)) %*% S[c(j, i), c(j, i)] %*% c(1, -1)
                 ## print(c(1/LSL,rms::matinv(LSL)))
-                se.auc[ctr] <- sqrt(LSL)
-                ## tmpz <- (delta.auc[ctr]) %*% rms::matinv(LSL) %*% delta.auc[ctr]
-                ## tmpz <- (delta.auc[ctr]) %*% (1/LSL) %*% delta.auc[ctr]
+                se[ctr] <- sqrt(LSL)
+                ## tmpz <- (delta.AUC[ctr]) %*% rms::matinv(LSL) %*% delta.AUC[ctr]
+                ## tmpz <- (delta.AUC[ctr]) %*% (1/LSL) %*% delta.AUC[ctr]
                 model[ctr] <- modelnames[j]
                 reference[ctr] <- modelnames[i]
                 ctr <- ctr + 1
             }
         }
-        deltaAUC <- data.table(model,reference,delta.auc=as.vector(delta.auc),se.auc)
-        deltaAUC[,lower:=delta.auc-Qnorm*se.auc]
-        deltaAUC[,upper:=delta.auc+Qnorm*se.auc]
-        deltaAUC[,p:=2*pnorm(abs(delta.auc)/se.auc,lower.tail=FALSE)]
+        deltaAUC <- data.table(model,reference,delta.AUC=as.vector(delta.AUC),se)
+        deltaAUC[,lower:=delta.AUC-Qnorm*se]
+        deltaAUC[,upper:=delta.AUC+Qnorm*se]
+        deltaAUC[,p:=2*pnorm(abs(delta.AUC)/se,lower.tail=FALSE)]
         list(score = score, contrasts = deltaAUC)
     }else{
         list(score = score, contrasts = NULL)
@@ -1168,7 +1176,7 @@ AUC.binary <- function(DT,breaks=NULL,se.fit,alpha,N,NT,NF,dolist,ROC,...){
 
 
 AUC.survival <- function(DT,MC,se.fit,alpha,N,NT,NF,dolist,ROC,...){
-    model=times=risk=Cases=time=status=Controls=TPR=FPR=WTi=Wt=ipcwControls=ipcwCases=IF.AUC=lower.AUC=se.AUC=upper.AUC=AUC=NULL
+    model=times=risk=Cases=time=status=Controls=TPR=FPR=WTi=Wt=ipcwControls=ipcwCases=IF.AUC=lower=se=upper=AUC=NULL
     cause <- 1
     ## assign Weights before ordering
     DT[,ipcwControls:=1/(Wt*N)]
@@ -1196,15 +1204,16 @@ AUC.survival <- function(DT,MC,se.fit,alpha,N,NT,NF,dolist,ROC,...){
         ## compute influence function
         data.table::setorder(DT,model,times,time,-status)
         DT[,IF.AUC:=getInfluenceCurve.AUC.survival(t=times[1],n=N,time=time,risk=risk,Cases=Cases,Controls=Controls,ipcwControls=ipcwControls,ipcwCases=ipcwCases,MC=MC), by=list(model,times)]
-        se.score <- DT[,list(se.AUC=sd(IF.AUC)/sqrt(N)),by=list(model,times)]
+        se.score <- DT[,list(se=sd(IF.AUC)/sqrt(N)),by=list(model,times)]
         data.table::setkey(se.score,model,times)
         score <- score[se.score]
-        score[,lower.AUC:=pmax(0,AUC-qnorm(1-alpha/2)*se.AUC)]
-        score[,upper.AUC:=pmin(1,AUC+qnorm(1-alpha/2)*se.AUC)]
+        score[,lower:=pmax(0,AUC-qnorm(1-alpha/2)*se)]
+        score[,upper:=pmin(1,AUC+qnorm(1-alpha/2)*se)]
         data.table::setkey(DT,model,times)
         DT <- DT[score]
         if (length(dolist)>0){
             contrasts.AUC <- DT[,getComparisons(data.table(x=AUC,IF=IF.AUC,model=model),NF=NF,N=N,alpha=alpha,dolist=dolist),by=list(times)]
+            setnames(contrasts.AUC,"delta","delta.AUC")
             output <- c(list(score=score,contrasts=contrasts.AUC),output)
         }else{
             output <- c(list(score=score),output)
@@ -1217,7 +1226,7 @@ AUC.survival <- function(DT,MC,se.fit,alpha,N,NT,NF,dolist,ROC,...){
 
 
 AUC.competing.risks <- function(DT,MC,se.fit,alpha,N,NT,NF,dolist,cause,states,ROC,...){
-    model=times=risk=Cases=time=status=event=Controls1=Controls2=TPR=FPR=WTi=Wt=ipcwControls1=ipcwControls2=ipcwCases=IF.AUC=lower.AUC=se.AUC=upper.AUC=AUC=NULL
+    model=times=risk=Cases=time=status=event=Controls1=Controls2=TPR=FPR=WTi=Wt=ipcwControls1=ipcwControls2=ipcwCases=IF.AUC=lower=se=upper=AUC=NULL
     ## assign Weights before ordering
     DT[,ipcwControls1:=1/(Wt*N)]
     DT[,ipcwControls2:=1/(WTi*N)]
@@ -1249,15 +1258,16 @@ AUC.competing.risks <- function(DT,MC,se.fit,alpha,N,NT,NF,dolist,cause,states,R
         ## compute influence function
         data.table::setorder(DT,model,times,time,-status)
         DT[,IF.AUC:=getInfluenceCurve.AUC.competing.risks(t=times[1],n=N,time=time,risk=risk,ipcwControls1=ipcwControls1,ipcwControls2=ipcwControls2,ipcwCases=ipcwCases,Cases=Cases,Controls1=Controls1,Controls2=Controls2,MC=MC), by=list(model,times)]
-        se.score <- DT[,list(se.AUC=sd(IF.AUC)/sqrt(N)),by=list(model,times)]
+        se.score <- DT[,list(se=sd(IF.AUC)/sqrt(N)),by=list(model,times)]
         data.table::setkey(se.score,model,times)
         score <- score[se.score]
-        score[,lower.AUC:=pmax(0,AUC-qnorm(1-alpha/2)*se.AUC)]
-        score[,upper.AUC:=pmin(1,AUC+qnorm(1-alpha/2)*se.AUC)]
+        score[,lower:=pmax(0,AUC-qnorm(1-alpha/2)*se)]
+        score[,upper:=pmin(1,AUC+qnorm(1-alpha/2)*se)]
         data.table::setkey(DT,model,times)
         DT <- DT[score]
         if (length(dolist)>0){
             contrasts.AUC <- DT[,getComparisons(data.table(x=AUC,IF=IF.AUC,model=model),NF=NF,N=N,alpha=alpha,dolist=dolist),by=list(times)]
+            setnames(contrasts.AUC,"delta","delta.AUC")
             output <- c(list(score=score,contrasts=contrasts.AUC),output)
         }else{
             output <- c(list(score=score),output)

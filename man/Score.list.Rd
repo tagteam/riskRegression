@@ -32,7 +32,8 @@ statistics to apply to the predicted risks. The only choice is
 predicted risks conditional on the outcome (at the time-point).
 Set to \code{NULL} to avoid estimation of retrospective risk quantiles.}
 
-\item{plots}{Character vector specifying which plots to prepare. Choices}
+\item{plots}{Character vector specifying which plots to prepare.
+Currently implemented are \code{"ROC"}, \code{"Calibration"} and \code{"boxplot"}}
 
 \item{cause}{Event of interest. Used for binary outcome \code{Y}
 to specify that risks are risks of the event \code{Y=event}
@@ -160,8 +161,8 @@ testdat <- sampleData(40,outcome="binary")
 
 # score logistic regression models
 lr1 = glm(Y~X1+X2+X7+X9,data=learndat,family=binomial)
-lr2 = glm(Y~X3+X5+X6,data=learndat,family=binomial)
-Score(list("LR(X1+X2+X7+X9)"=lr1,"LR(X3+X5+X6)"=lr2),formula=Y~1,data=testdat)
+lr2 = glm(Y~X3+X5,data=learndat,family=binomial)
+Score(list("LR(X1+X2+X7+X9)"=lr1,"LR(X3+X5)"=lr2),formula=Y~1,data=testdat)
 
 xb=Score(list("LR(X1+X2+X7+X9)"=lr1,"LR(X3+X5+X6)"=lr2),formula=Y~1,
         data=testdat,plots=c("calibration","ROC"))

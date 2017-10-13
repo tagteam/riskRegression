@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun 23 2016 (09:19) 
 ## Version: 
-## last-updated: Oct 12 2017 (16:54) 
+## last-updated: Oct 13 2017 (13:07) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 56
+##     Update #: 61
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -43,7 +43,7 @@
 #'
 #' @export
 plotAUC <- function(x,models,type="score",lwd=2,xlim,ylim,axes=TRUE,conf.int=FALSE,...){
-    times=contrast=model=AUC=lower.AUC=upper.AUC=lower=upper=delta=reference=NULL
+    times=contrast=model=AUC=lower=upper=lower=upper=delta.AUC=reference=NULL
     ## cbPalette <- c("#999999", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
     cbbPalette <- c("#000000", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
     pframe <- switch(type,"score"={x$AUC$score},"contrasts"={x$AUC$contrasts},{stop("Type has to be either 'score' for AUC or 'contrasts' for differences in AUC.")})
@@ -66,7 +66,9 @@ plotAUC <- function(x,models,type="score",lwd=2,xlim,ylim,axes=TRUE,conf.int=FAL
         if (missing(ylim)) ylim <- c(min(pframe$lower),max(pframe$upper))
         yticks <- seq(-1,1,0.05)
         yticks <- yticks[yticks>=ylim[1] & yticks<=ylim[2]]
-        pp <- ggplot(data=pframe,aes(times,delta,fill=contrast,colour=contrast)) 
+        browser()
+        pp <- ggplot(data=pframe,
+                     aes(times,delta.AUC,fill=contrast,colour=contrast)) 
     }
     ## x-axis
     ## pp <- pp+ geom_segment(aes(x=xlim[1],xend=xlim[2],y=ylim[1],yend=ylim[1]))
@@ -86,8 +88,8 @@ plotAUC <- function(x,models,type="score",lwd=2,xlim,ylim,axes=TRUE,conf.int=FAL
                                   labels=paste(round(100*yticks,1),"%"))
     if (conf.int==TRUE){
         if (type=="score"){
-            ## pframe[,polygon(x=c(times,rev(times)),y=c(lower.AUC,rev(upper.AUC)),col=dimcol,border=NA),by=model]
-            pp <- pp + geom_ribbon(aes(ymin=lower.AUC,ymax=upper.AUC,fill=model,linetype=NA),alpha=0.2)
+            ## pframe[,polygon(x=c(times,rev(times)),y=c(lower,rev(upper)),col=dimcol,border=NA),by=model]
+            pp <- pp + geom_ribbon(aes(ymin=lower,ymax=upper,fill=model,linetype=NA),alpha=0.2)
         }else{
             pp <- pp + geom_ribbon(aes(ymin=lower,ymax=upper,fill=contrast,linetype=NA),alpha=0.2)
         }
