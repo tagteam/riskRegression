@@ -17,6 +17,7 @@ Imports:
     survival (>= 2.40.1),
     lava (>= 1.4.7),
     cmprsk,
+    plotrix,
     timereg (>= 1.9.1),
     doSNOW,
     foreach,

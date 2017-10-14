@@ -5,8 +5,8 @@
 \title{Plot ROC curves}
 \usage{
 plotROC(x, models, times, xlab = "1-Specificity", ylab = "Sensitivity", col,
-  lwd = 3, lty = 1, cex = 1, pch = 1, legend = TRUE,
-  auc.in.legend = TRUE, brier.in.legend = FALSE, add = FALSE, ...)
+  lwd, lty = 1, cex = 1, pch = 1, legend = TRUE, auc.in.legend = TRUE,
+  brier.in.legend = FALSE, add = FALSE, ...)
 }
 \arguments{
 \item{x}{Object obtained with function \code{Score}}
@@ -40,7 +40,7 @@ legend.}
 \item{add}{logical. If \code{1L} add lines to an existing plot.}
 
 \item{...}{Used for additional control of the subroutines: plot,
-axis, lines, legend. See \code{\link{SmartControl}}.}
+axis, lines, legend, addtable2plot. See \code{\link{SmartControl}}.}
 }
 \description{
 Plot ROC curve
@@ -56,8 +56,8 @@ bdt[,y:=factor(Y)]
 fb1 <- glm(y~X1+X2+X3+X4+X5+X6+X7+X8+X9+X10,data=bdl,family="binomial")
 fb2 <- randomForest(y~X1+X2+X3+X4+X5+X6+X7+X8+X9+X10,data=bdl)
 xb <- Score(list("glm"=fb1,"rf"=fb2),y~1,data=bdt,
-            plots="roc",metrics="auc")
-plotROC(xb)
+            plots="roc",metrics=c("auc","brier"))
+plotROC(xb,brier.in.legend=1L)
 ## survival
 set.seed(18)
 library(survival)

@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun 23 2016 (10:27) 
 ## Version: 
-## last-updated: Oct 13 2017 (12:48) 
+## last-updated: Oct 14 2017 (09:20) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 107
+##     Update #: 151
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -34,7 +34,7 @@
 #'     legend.
 #' @param add logical. If \code{1L} add lines to an existing plot.
 #' @param ... Used for additional control of the subroutines: plot,
-#'     axis, lines, legend. See \code{\link{SmartControl}}.
+#'     axis, lines, legend, addtable2plot. See \code{\link{SmartControl}}.
 ##' @examples
 ##' ## binary
 ##' set.seed(18)
@@ -46,8 +46,8 @@
 ##' fb1 <- glm(y~X1+X2+X3+X4+X5+X6+X7+X8+X9+X10,data=bdl,family="binomial")
 ##' fb2 <- randomForest(y~X1+X2+X3+X4+X5+X6+X7+X8+X9+X10,data=bdl)
 ##' xb <- Score(list("glm"=fb1,"rf"=fb2),y~1,data=bdt,
-##'             plots="roc",metrics="auc")
-##' plotROC(xb)
+##'             plots="roc",metrics=c("auc","brier"))
+##' plotROC(xb,brier.in.legend=1L)
 ##' ## survival
 ##' set.seed(18)
 ##' library(survival)
@@ -72,7 +72,7 @@ plotROC <- function(x,
                     xlab="1-Specificity",
                     ylab="Sensitivity",
                     col,
-                    lwd=3,
+                    lwd,
                     lty=1,
                     cex=1,
                     pch=1,
@@ -109,7 +109,7 @@ plotROC <- function(x,
     lenmm <- length(mm)
     if(missing(col)) col <- rep(cbbPalette,length.out=lenmm)
     names(col) <- mm
-    if(missing(lwd)) lwd <- 2
+    if(missing(lwd)) lwd <- 3
     lwd <- rep(lwd,length.out=lenmm)
     names(lwd) <- mm
     pch <- rep(pch,length.out=lenmm)
@@ -119,63 +119,80 @@ plotROC <- function(x,
     names(lty) <- mm
     lines.DefaultArgs <- list(pch=pch,cex=cex,lwd=lwd,type="l",col=col,lty=lty)
     # {{{ legend
-    if (legend!=FALSE){
-        if (is.character(legend)){
-            legend.DefaultArgs <- list(legend=legend,lwd=lwd,col=col,lty=lty,cex=cex,bty="n",y.intersp=1.3,x="bottomright",title="")
+    if (is.character(legend[1])|| legend[1]==TRUE){
+        legend.data <- getLegendData(object=x,
+                                     models=models,
+                                     auc.in.legend=auc.in.legend,
+                                     brier.in.legend=brier.in.legend,
+                                     drop.null.model=TRUE)
+        if (is.character(legend))
+            legend.text <- legend
+        else
+            legend.text <- unlist(legend.data[,1])
+        nrows.legend <- NROW(legend.data)
+        if (nrows.legend==1){
+            legend.lwd <- NA
         }else{
-            legend.data <- getLegendData(object=x,
-                                         models=models,
-                                         auc.in.legend=auc.in.legend,
-                                         brier.in.legend=brier.in.legend,
-                                         drop.null.model=TRUE)
-            legend.text <- apply(legend.data,1,paste,collapse="")
-            title.text <- paste(attr(legend.data,"format.names"),collapse="\t")
-            legend.DefaultArgs <- list(legend=legend.text,
-                                       lwd=ifelse(NROW(legend.text)>1,lwd,-1),
-                                       col=col,
-                                       lty=lty,
-                                       cex=cex,
-                                       bty="n",
-                                       y.intersp=1.3,
-                                       x="bottomright",
-                                       title=title.text)
+            legend.lwd <- lwd
         }
+        legend.DefaultArgs <- list(legend=legend.text,
+                                   lwd=legend.lwd,
+                                   col=col,
+                                   ncol=1,
+                                   lty=lty,
+                                   cex=cex,
+                                   bty="n",
+                                   y.intersp=1,
+                                   x="bottom",
+                                   title="")
+        if (NCOL(legend.data)>1){
+            addtable2plot.DefaultArgs <- list(yjust=1.18, cex=cex, table=legend.data[,-1,drop=FALSE])
+        }else{
+            addtable2plot.DefaultArgs <- NULL
+        }
+    }else{
+        legend.DefaultArgs <- NULL
+        addtable2plot.DefaultArgs <- NULL
     }
     # }}}
     plot.DefaultArgs <- list(x=0,y=0,type = "n",ylim = c(0,1),xlim = c(0,1),ylab=ylab,xlab=xlab)
     axis1.DefaultArgs <- list(side=1,las=1,at=seq(0,1,.25))
     axis2.DefaultArgs <- list(side=2,las=1,at=seq(0,1,.25))
     control <- prodlim::SmartControl(call= list(...),
-                                     keys=c("plot","lines","legend","axis1","axis2"),
+                                     keys=c("plot","lines","legend","addtable2plot","axis1","axis2"),
                                      ignore=NULL,
                                      ignore.case=TRUE,
                                      defaults=list("plot"=plot.DefaultArgs,
                                                    "lines"=lines.DefaultArgs,
                                                    "legend"=legend.DefaultArgs,
+                                                   "addtable2plot"=addtable2plot.DefaultArgs,
                                                    "axis1"=axis1.DefaultArgs,
                                                    "axis2"=axis2.DefaultArgs),
                                      forced=list("plot"=list(axes=FALSE),
                                                  "axis1"=list(side=1),"axis2"=list(side=2)),
                                      verbose=TRUE)
     if (add==0L) do.call("plot",control$plot)
-    ## plot(0,0,type="n",ylim = 0:1,xlim = 0:1,axes=FALSE,xlab = xlab,ylab = ylab)
     control$axis1$labels <- paste(100*control$axis1$at,"%")
     control$axis2$labels <- paste(100*control$axis2$at,"%")
     do.call("axis",control$axis1)
     do.call("axis",control$axis2)
-    if (!(is.logical(legend[1]) && legend[1]==FALSE)){
-        do.call("legend",control$legend)
+    if (is.character(legend[1]) || legend[1]==TRUE){
+        legend.coords <- do.call("legend",control$legend)
+        if (!is.null(addtable2plot.DefaultArgs)){
+            if (is.null(control$addtable2plot[["x"]]))
+                control$addtable2plot[["x"]] <- legend.coords$rect$left+legend.coords$rect$w
+            ## strange error: $y does not work as yjust is matched, thus use [["y"]]
+            if (is.null(control$addtable2plot[["y"]]))
+                control$addtable2plot[["y"]] <- legend.coords$rect$top-legend.coords$rect$h
+            do.call(plotrix::addtable2plot,control$addtable2plot)
+        }
     }
-    ## pframe[,col:=as.numeric(as.factor(model))]
-    ## pframe[,lwd:=lwd]
-    ## pframe[,lines(c(0,FPR,1),c(0,TPR,1),type="l",lwd=lwd,col=col),by=model]
     abline(a=0,b=1,col="gray77",lwd=3)
     pframe[,{thisline <- control$line;
         thisline$col=thisline$col[[as.character(model[1])]];
         thisline$lwd=thisline$lwd[[as.character(model[1])]];
         thisline$lty=thisline$lty[[as.character(model[1])]];
         thisline$pch=thisline$pch[[as.character(model[1])]];
-        ## thisline$type=thisline$type[[as.character(model[1])]];
         thisline$x=c(0,FPR,1);
         thisline$y=c(0,TPR,1);
         do.call("lines",thisline)},by=model]

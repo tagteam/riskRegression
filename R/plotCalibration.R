@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Feb 23 2017 (11:15) 
 ## Version: 
-## last-updated: Oct 13 2017 (12:48) 
+## last-updated: Oct 14 2017 (09:20) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 198
+##     Update #: 245
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -75,7 +75,7 @@
 ##'     \code{\link{model.frame}}
 ##' @param cex Default cex used for legend and labels.
 ##' @param ... Used to control the subroutines: plot, axis, lines,
-##'     barplot, legend, points (pseudo values), rug. See
+##'     barplot, legend, addtable2plot, points (pseudo values), rug. See
 ##'     \code{\link{SmartControl}}.
 ##' @examples
 ##' library(survival)
@@ -181,45 +181,49 @@ plotCalibration <- function(x,
     }
     if (missing(type)){
         if (method=="quantile"){
-            type <- rep("b",NF)
+            type <- rep("b",length.out=NF)
         } else{
-            type <- rep("l",NF)
+            type <- rep("l",length.out=NF)
         }
     }
-    if (missing(lty)) lty <- rep(1, NF)
-    if (missing(pch)) pch <- rep(1, NF)
-    if (length(lwd) < NF) lwd <- rep(lwd, NF)
-    if (length(type) < NF) type <- rep(type, NF)
-    if (length(lty) < NF) lty <- rep(lty, NF)
-    if (length(col) < NF) col <- rep(col, NF)
-    if (length(pch) < NF) pch <- rep(pch, NF)
+    if (missing(lty)) lty <- rep(1, length.out=NF)
+    if (missing(pch)) pch <- rep(1, length.out=NF)
+    if (length(lwd) < NF) lwd <- rep(lwd, length.out=NF)
+    if (length(type) < NF) type <- rep(type,length.out=NF)
+    if (length(lty) < NF) lty <- rep(lty,length.out=NF)
+    if (length(col) < NF) col <- rep(col,length.out=NF)
+    if (length(pch) < NF) pch <- rep(pch,length.out=NF)
 
     # }}}
     # {{{ SmartControl
     modelnames <- pframe[,unique(model)]
     axis1.DefaultArgs <- list(side=1,las=1,at=seq(0,xlim[2],xlim[2]/4))
     axis2.DefaultArgs <- list(side=2,las=2,at=seq(0,ylim[2],ylim[2]/4),mgp=c(4,1,0))
-    if (legend!=FALSE){
-        if (is.character(legend)){
-            legend.DefaultArgs <- list(legend=legend,col=col,cex=cex,bty="n",x="topleft")
-        }else{
-            legend.data <- getLegendData(object=x,
-                                         models=models,
-                                         auc.in.legend=auc.in.legend,
-                                         brier.in.legend=brier.in.legend,
-                                         drop.null.model=TRUE)
-            legend.text <- apply(legend.data,1,paste,collapse="\t")
-            title.text <- paste(attr(legend.data,"format.names"),collapse="\t")
-            legend.DefaultArgs <- list(legend=legend.text,
-                                       lwd=lwd,
-                                       col=col,
-                                       lty=lty,
-                                       cex=cex,
-                                       bty="n",
-                                       y.intersp=1.3,
-                                       x="topleft",
-                                       title=title.text)
+    if (is.character(legend[1])|| legend[1]==TRUE){
+        legend.data <- getLegendData(object=x,
+                                     models=models,
+                                     auc.in.legend=auc.in.legend,
+                                     brier.in.legend=brier.in.legend,
+                                     drop.null.model=TRUE)
+        if (is.character(legend))
+            legend.text <- legend
+        else
+            legend.text <- unlist(legend.data[,1])
+        nrows.legend <- NROW(legend.data)
+        if (nrows.legend==1){
+            legend.lwd <- NA
+        } else{ 
+            legend.lwd <- lwd
         }
+        legend.DefaultArgs <- list(legend=legend.text,lwd=legend.lwd,col=col,ncol=1,lty=lty,cex=cex,bty="n",y.intersp=1,x="topleft",title="")
+        if (NCOL(legend.data)>1){
+            addtable2plot.DefaultArgs <- list(yjust=1.18,cex=cex, table=legend.data[,-1,drop=FALSE])
+        }else{
+            addtable2plot.DefaultArgs <- NULL
+        }
+    }else{
+        legend.DefaultArgs <- NULL
+        addtable2plot.DefaultArgs <- NULL
     }
     if (bars){
         legend.DefaultArgs <- list(legend=modelnames,col=col,cex=cex,bty="n",x="topleft")
@@ -266,10 +270,11 @@ plotCalibration <- function(x,
                                 cex.names=cex)
     if (bars){
         control <- prodlim::SmartControl(call= list(...),
-                                         keys=c("barplot","legend","axis2","abline","names","frequencies"),
+                                         keys=c("barplot","legend","addtable2plot","axis2","abline","names","frequencies"),
                                          ignore=NULL,
                                          ignore.case=TRUE,
                                          defaults=list("barplot"=barplot.DefaultArgs,
+                                                       "addtable2plot"=addtable2plot.DefaultArgs,
                                                        "abline"=abline.DefaultArgs,
                                                        "legend"=legend.DefaultArgs,
                                                        "names"=names.DefaultArgs,
@@ -279,10 +284,11 @@ plotCalibration <- function(x,
                                          verbose=TRUE)
     }else{
         control <- prodlim::SmartControl(call= list(...),
-                                         keys=c("plot","rug","pseudo","lines","legend","axis1","axis2"),
+                                         keys=c("plot","rug","pseudo","lines","legend","addtable2plot","axis1","axis2"),
                                          ignore=NULL,
                                          ignore.case=TRUE,
                                          defaults=list("plot"=plot.DefaultArgs,"pseudo"=pseudo.DefaultArgs,"rug"=rug.DefaultArgs,
+                                                       "addtable2plot"=addtable2plot.DefaultArgs,
                                                        "lines"=lines.DefaultArgs,
                                                        "legend"=legend.DefaultArgs,
                                                        "axis1"=axis1.DefaultArgs,
@@ -343,7 +349,6 @@ plotCalibration <- function(x,
                            ## calibration in the large
                            plotFrame <- data.frame(Pred=mean(p),Obs=mean(jackF))
                        } else{
-                           ## browser()
                            ## nn <- prodlim::neighborhood(x=p,bandwidth=bw)
                            nbh <- prodlim::meanNeighbors(x=p,y=jackF,bandwidth=bw)
                            plotFrame <- data.frame(Pred=nbh$uniqueX,Obs=nbh$averageY)
@@ -420,7 +425,7 @@ plotCalibration <- function(x,
             pf <- na.omit(plotFrames[[1]])
             Pred <- pf$Pred
             Obs <- pf$Obs
-            if(is.logical(out$legend[1]) && out$legend[1]==FALSE){
+            if (is.character(legend[1]) || legend[1]==TRUE){
                 control$barplot$legend.text <- NULL
             }else{
                 if (is.null(control$barplot$legend.text)){
@@ -504,8 +509,16 @@ plotCalibration <- function(x,
                 lineF$y <- pf$Obs
                 do.call("lines",lineF)
             })
-            if (!(is.logical(out$legend[1]) && out$legend[1]==FALSE)){
-                do.call("legend",control$legend)
+            if (is.character(out$legend[1]) || out$legend[1]==TRUE){
+                legend.coords <- do.call("legend",control$legend)
+                if (!is.null(addtable2plot.DefaultArgs)){
+                    if (is.null(control$addtable2plot[["x"]]))
+                        control$addtable2plot[["x"]] <- legend.coords$rect$left+legend.coords$rect$w
+                    ## strange error: $y does not work as yjust is matched, thus use [["y"]]
+                    if (is.null(control$addtable2plot[["y"]]))
+                        control$addtable2plot[["y"]] <- legend.coords$rect$top-legend.coords$rect$h
+                    do.call(plotrix::addtable2plot,control$addtable2plot)
+                }
             }
         }
         if (out$axes){

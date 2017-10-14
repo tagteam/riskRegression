@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Oct 13 2017 (10:50) 
 ## Version: 
-## Last-Updated: Oct 13 2017 (13:04) 
+## Last-Updated: Oct 13 2017 (19:24) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 19
+##     Update #: 25
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -77,12 +77,23 @@ getLegendData <- function(object,
     }else{
         legend.text.brier <- NULL
     }
-    out <- data.table(cbind(model=legend.text.models,AUC=legend.text.auc,Brier=legend.text.brier))
-    cnames <- names(out)
-    cnames[1] <- ""
-    clen <- lapply(out[1,],nchar)
-    fnames <- sprintf(paste0("%",clen,"s"),cnames)
-    attr(out,"format.names") <- fnames
+    ## legend.text.models <- c(sprintf(paste0("%",max(nchar(legend.text.models)),"s"),""),
+                            ## legend.text.models)
+    ## if (!is.null(legend.text.auc)){
+        ## legend.text.auc <- c(sprintf(paste0("%",max(nchar(legend.text.auc)),"s"),"AUC"),
+        ## legend.text.auc)
+        ## legend.text.auc <- c("AUC",
+                             ## legend.text.auc)
+    ## }
+    ## if (!is.null(legend.text.brier)){
+        ## legend.text.brier <- c(sprintf(paste0("%",max(nchar(legend.text.auc)),"s"),"Brier score"),
+        ## legend.text.brier)
+        ## legend.text.brier <- c("Brier score",
+                               ## legend.text.brier)
+    ## }
+    out <- cbind(legend.text.models,
+                 AUC=legend.text.auc,
+                 Brier=legend.text.brier)
     out
 }
 

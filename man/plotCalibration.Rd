@@ -104,7 +104,7 @@ interpretable on a percent scale.}
 \item{cex}{Default cex used for legend and labels.}
 
 \item{...}{Used to control the subroutines: plot, axis, lines,
-barplot, legend, points (pseudo values), rug. See
+barplot, legend, addtable2plot, points (pseudo values), rug. See
 \code{\link{SmartControl}}.}
 }
 \description{
