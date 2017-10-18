@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Oct 23 2016 (08:53) 
 ## Version: 
-## last-updated: Sep 30 2017 (16:13) 
-##           By: Thomas Alexander Gerds
-##     Update #: 329
+## last-updated: okt 18 2017 (13:47) 
+##           By: Brice Ozenne
+##     Update #: 331
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -44,9 +44,9 @@
 #' @param seed An integer used to generate seeds for bootstrap and to
 #'     achieve reproducibility of the bootstrap confidence intervals.
 #' @param handler parallel handler for bootstrap. Either "mclapply" or
-#'     "foreach". If "foreach" use \code{doSNOW} to create a cluster.
+#'     "foreach". If "foreach" use \code{doParallel} to create a cluster.
 #' @param mc.cores Passed to \code{parallel::mclapply} or
-#'     \code{doSNOW::registerDoSNOW}. The number of cores to use, i.e. at
+#'     \code{doParallel::registerDoParallel}. The number of cores to use, i.e. at
 #'     most how many child processes will be run simultaneously.  The
 #'     option is initialized from environment variable MC_CORES if
 #'     set.
@@ -366,7 +366,7 @@ ate <- function(object,
       bootseeds <- sample(1:1000000,size=B,replace=FALSE)
       if (handler[[1]]=="foreach"){
         cl <- parallel::makeCluster(mc.cores)
-        doSNOW::registerDoSNOW(cl)
+        doParallel::registerDoParallel(cl)
         
         if(verbose){
           pb <- txtProgressBar(max = B, style = 3)

@@ -50,10 +50,10 @@ quantiles for the confidence bands.}
 achieve reproducibility of the bootstrap confidence intervals.}
 
 \item{handler}{parallel handler for bootstrap. Either "mclapply" or
-"foreach". If "foreach" use \code{doSNOW} to create a cluster.}
+"foreach". If "foreach" use \code{doParallel} to create a cluster.}
 
 \item{mc.cores}{Passed to \code{parallel::mclapply} or
-\code{doSNOW::registerDoSNOW}. The number of cores to use, i.e. at
+\code{doParallel::registerDoParallel}. The number of cores to use, i.e. at
 most how many child processes will be run simultaneously.  The
 option is initialized from environment variable MC_CORES if
 set.}
