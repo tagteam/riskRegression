@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun 23 2016 (10:27) 
 ## Version: 
-## last-updated: Oct 14 2017 (09:20) 
+## last-updated: Oct 18 2017 (20:11) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 151
+##     Update #: 154
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -92,6 +92,7 @@ plotROC <- function(x,
         else ## can only do one time at at time
             pframe[times==times[[1]]]
     }
+    ## browser()
     if (!missing(models)){
         if (!all(models%in% pframe[,unique(model)]))
             stop(paste0("Cannot identify model names.\nRequested models: ",paste(models,collapse=", "),"\n",
