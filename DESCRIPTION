@@ -12,6 +12,7 @@ Depends:
     prodlim (>= 1.6.1)
 Imports:
     abind,
+    doParallel,
     stats,
     graphics,
     survival (>= 2.40.1),
@@ -19,7 +20,6 @@ Imports:
     cmprsk,
     plotrix,
     timereg (>= 1.9.1),
-    doSNOW,
     foreach,
     parallel,
     Rcpp,
