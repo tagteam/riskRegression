@@ -861,6 +861,8 @@ Score.list <- function(object,
             crossvalPerf <- lapply(metrics,function(m){
                 if (length(crossval[[1]][[m]]$score)>0){
                     bootcv <- data.table::rbindlist(lapply(crossval,function(x){x[[m]]$score}))
+                    ## if (m=="AUC"|| m=="auc") browser()
+                    ## multi-split test
                     if (length(crossval[[1]][[m]]$contrasts)>0){
                         if (responseType %in% c("survival","competing.risks")){
                             multisplit.test <- data.table::rbindlist(lapply(crossval,function(x){x[[m]]$contrasts[,data.table(times,model,reference,p)]}))
@@ -875,27 +877,23 @@ Score.list <- function(object,
                     bootcv <- data.table::rbindlist(lapply(crossval,function(x){x[[m]]}))
                 }
                 if (responseType %in% c("survival","competing.risks")){
-                    bootcv <- bootcv[,data.table::data.table(mean(eval(as.name(m))),lower=quantile(eval(as.name(m)),alpha/2),upper=quantile(eval(as.name(m)),(1-alpha/2))),by=list(model,times)]
-                    data.table::setnames(bootcv,c("model","times",m,paste0(m,c(".lower",".upper"))))
-                } else{
-                    bootcv <- bootcv[,data.table::data.table(mean(eval(as.name(m))),
-                                                             lower=quantile(eval(as.name(m)),alpha/2),
-                                                             upper=quantile(eval(as.name(m)),(1-alpha/2))),by=list(model)]
-                    data.table::setnames(bootcv,c("model",m,paste0(m,c(".lower",".upper"))))
+                    byvars <- c("model","times")
                 }
+                else{
+                    byvars <- c("model")
+                }
+                bootcv <- bootcv[,data.table::data.table(mean(.SD[[m]],na.rm=TRUE),
+                                                         lower=quantile(.SD[[m]],alpha/2,na.rm=TRUE),
+                                                         upper=quantile(.SD[[m]],(1-alpha/2),na.rm=TRUE)),by=byvars,.SDcols=m]
+                data.table::setnames(bootcv,c(byvars,m,paste0(m,c(".lower",".upper"))))
                 out <- list(bootcv)
                 names(out) <- "score"
-                ## names(out) <- paste0("Cross-validation (average of ",B," steps)")
                 if (!is.null(multisplit.test)){
-                    if (match("times",colnames(multisplit.test),nomatch=0))
-                        ms <- list(contrasts=multisplit.test[,data.table(p=median(p)),by=list(model,reference,times)])
-                    else
-                        ms <- list(contrasts=multisplit.test[,data.table(p=median(p)),by=list(model,reference)])
+                    ms <- list(contrasts=multisplit.test[,data.table(p=median(p,na.rm=TRUE)),by=byvars])
                     out <- c(out,ms)
                 }
                 out
             })
-            ## names(crossvalPerf) <- names(crossval[[1]])
             names(crossvalPerf) <- metrics
         }
     }
