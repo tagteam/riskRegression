@@ -107,10 +107,32 @@
 ##'     tests and confidence limits for performance and difference in performance (AUC and Brier),
 ##'     summaries and plots. Most elements are in\code{data.table} format.
 ##' @details
+##' This function works with one or multiple models that predict the risk of an event R(t|X) for a subject
+##' characterized by predictors X at time t.
+##' With binary endpoints (outcome 0/1 without time component) the risk is simply R(X).
+##' In case of a survival object
+##' without competing risks the function still works with predicted event probabilities, i.e., R(t|X)=1-S(t|X) where
+##' S(t|X) is the predicted survival chance for subject X at time t.
+##'
 ##' The already existing predictRisk methods (see methods(predictRisk)) may not cover all models and methods
 ##' for predicting risks. But users can quickly extend the package as explained in detail in Mogensen et al. (2012) for
 ##' the predecessors \code{pec::predictSurvProb} and \code{pec::predictEventProb} which have been unified as
 ##' \code{riskRegression::predictRisk}.
+##'
+##' Bootstrap Crossvalidation (see also Gerds & Schumacher 2007 and Mogensen et al 2012)
+##'
+##' B=10, M (not specified or M=NROW(data))
+##' Training of each of the models in each of 10 bootstrap data sets (learning data sets).
+##' Learning data sets are obtained by sampling \code{NROW(data)} subjects of the data set
+##' with replacement. There are roughly \code{.368*NROW(data)} subjects not in the learning data sets.
+##' These are used to estimate the scores: AUC, Brier, etc. Reported are averages across the 10 splits.
+##'
+##' B=10, M= .8 
+##' Training of each of the models in each of 10 bootstrap data sets (learning data sets).
+##' Learning data sets are obtained by sampling \code{round(.8*NROW(data))} subjects of the data set
+##' without replacement. There are \code{NROW(data)-round(.8*NROW(data))} subjects not in the learning data sets.
+##' These are used to estimate the scores: AUC, Brier, etc. Reported are averages across the 10 splits.
+##'
 ##' 
 ##' @examples
 ##' # binary outcome
