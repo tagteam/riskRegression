@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Oct 13 2017 (10:50) 
 ## Version: 
-## Last-Updated: Oct 20 2017 (10:07) 
+## Last-Updated: Oct 21 2017 (09:02) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 28
+##     Update #: 29
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -102,20 +102,6 @@ getLegendData <- function(object,
     }else{
         legend.text.brier <- NULL
     }
-    ## legend.text.models <- c(sprintf(paste0("%",max(nchar(legend.text.models)),"s"),""),
-    ## legend.text.models)
-    ## if (!is.null(legend.text.auc)){
-    ## legend.text.auc <- c(sprintf(paste0("%",max(nchar(legend.text.auc)),"s"),"AUC"),
-    ## legend.text.auc)
-    ## legend.text.auc <- c("AUC",
-    ## legend.text.auc)
-    ## }
-    ## if (!is.null(legend.text.brier)){
-    ## legend.text.brier <- c(sprintf(paste0("%",max(nchar(legend.text.auc)),"s"),"Brier score"),
-    ## legend.text.brier)
-    ## legend.text.brier <- c("Brier score",
-    ## legend.text.brier)
-    ## }
     out <- cbind(legend.text.models,
                  AUC=legend.text.auc,
                  Brier=legend.text.brier)

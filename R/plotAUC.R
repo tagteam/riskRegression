@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun 23 2016 (09:19) 
 ## Version: 
-## last-updated: Oct 13 2017 (13:07) 
+## last-updated: Oct 21 2017 (10:11) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 61
+##     Update #: 68
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -42,7 +42,15 @@
 ##' 
 #'
 #' @export
-plotAUC <- function(x,models,type="score",lwd=2,xlim,ylim,axes=TRUE,conf.int=FALSE,...){
+plotAUC <- function(x,
+                    models,
+                    type="score",
+                    lwd=2,
+                    xlim,
+                    ylim,
+                    axes=TRUE,
+                    conf.int=FALSE,
+                    ...){
     times=contrast=model=AUC=lower=upper=lower=upper=delta.AUC=reference=NULL
     ## cbPalette <- c("#999999", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
     cbbPalette <- c("#000000", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
@@ -66,7 +74,6 @@ plotAUC <- function(x,models,type="score",lwd=2,xlim,ylim,axes=TRUE,conf.int=FAL
         if (missing(ylim)) ylim <- c(min(pframe$lower),max(pframe$upper))
         yticks <- seq(-1,1,0.05)
         yticks <- yticks[yticks>=ylim[1] & yticks<=ylim[2]]
-        browser()
         pp <- ggplot(data=pframe,
                      aes(times,delta.AUC,fill=contrast,colour=contrast)) 
     }

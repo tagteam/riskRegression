@@ -58,6 +58,13 @@ fb2 <- randomForest(y~X1+X2+X3+X4+X5+X6+X7+X8+X9+X10,data=bdl)
 xb <- Score(list("glm"=fb1,"rf"=fb2),y~1,data=bdt,
             plots="roc",metrics=c("auc","brier"))
 plotROC(xb,brier.in.legend=1L)
+
+# with cross-validation
+\dontrun{
+xb3 <- Score(list("glm"=fb1,"rf"=fb2),y~1,data=bdl,
+            plots="roc",B=3,split.method="bootcv",
+            metrics=c("auc"))
+}
 ## survival
 set.seed(18)
 library(survival)

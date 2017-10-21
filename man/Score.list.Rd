@@ -231,7 +231,7 @@ fgr1 = FGR(Hist(time,event)~X1+X2+X7+X9,data=trainCR,cause=1)
 fgr2 = FGR(Hist(time,event)~X3+X5+X6,data=trainCR,cause=1)
 Score(list("CSC(X1+X2+X7+X9)"=csc1,"CSC(X3+X5+X6)"=csc2,
            "FGR(X1+X2+X7+X9)"=fgr1,"FGR(X3+X5+X6)"=fgr2),
-      formula=Hist(time,event)~1,data=testCR,se.fit=TRUE,times=c(5,8))
+      formula=Hist(time,event)~1,data=testCR,se.fit=1L,times=c(5,8))
 
 }
 \references{
