@@ -1108,7 +1108,6 @@ delongtest <-  function(risk, score, dolist, response, cause, alpha, se.fit) {
     ## q1 <- auc/(2 - auc)
     ## q2 <- 2 * auc^2/(1 + auc)
     ## aucvar <- (auc * (1 - auc) + (nCases - 1) * (q1 - auc^2) + (nControls - 1) * (q2 - auc^2))/(nCases * nControls)
-    dolist <- dolist[sapply(dolist,function(do){match("0",do,nomatch=0L)})==0]
     if (length(dolist)>0){
         ncomp <- nauc * (nauc - 1)/2
         delta.AUC <- numeric(ncomp) 
@@ -1164,7 +1163,7 @@ auRoc.factor <- function(X,D,ROC){
 AUC.binary <- function(DT,breaks=NULL,se.fit,alpha,N,NT,NF,dolist,ROC,...){
     model=risk=ReSpOnSe=FPR=TPR=ID=NULL
     aucDT <- DT[model>0]
-    dolist <- dolist[sapply(dolist,function(do){match("0",do,nomatch=0L)})!=0]
+    dolist <- dolist[sapply(dolist,function(do){match("0",do,nomatch=0L)})==0]
     data.table::setkey(aucDT,model,ID)
     if (is.factor(DT[["risk"]])){
         score <- aucDT[,auRoc.factor(risk,ReSpOnSe,ROC=ROC),by=list(model)]
@@ -1182,7 +1181,7 @@ AUC.binary <- function(DT,breaks=NULL,se.fit,alpha,N,NT,NF,dolist,ROC,...){
     }
     if (se.fit>0L){
         xRisk <- data.table::dcast.data.table(aucDT[],ID~model,value.var="risk")[,-1,with=FALSE]
-        output <- delongtest(risk=xRisk,
+        delong.res <- delongtest(risk=xRisk,
                                  score=output$score,
                                  dolist=dolist,
                                  response=aucDT[model==model[1],ReSpOnSe],
@@ -1190,8 +1189,8 @@ AUC.binary <- function(DT,breaks=NULL,se.fit,alpha,N,NT,NF,dolist,ROC,...){
                                  se.fit=se.fit,
                                  alpha=alpha)
         output$score <- delong.res$score
-        ## contrasts.AUC <- delong.res$contrasts
-        output <- c(output,list(contrasts=delong.res$contrasts))
+        output$contrasts <- delong.res$contrasts
+        output
     }else{
         output
     }
