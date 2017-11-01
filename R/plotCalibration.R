@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Feb 23 2017 (11:15) 
 ## Version: 
-## last-updated: Oct 14 2017 (09:20) 
+## last-updated: Oct 20 2017 (10:08) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 245
+##     Update #: 247
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -156,10 +156,15 @@ plotCalibration <- function(x,
     }
     data.table::setkey(pframe,model)
     if (x$responseType!="binary"){
-        if (missing(times))
+        if (missing(times)){
             tp <- max(pframe[["times"]])
-        else ## can only do one time point
+            if (length(unique(pframe$times))>1)
+                warning("Time point not specified, use max of the available times: ",tp)
+        } else{ ## can only do one time point
             tp <- times[[1]]
+            if (!(tp%in%unique(pframe$times)))
+                stop(paste0("Requested time ",times[[1]]," is not in object"))
+        }
         pframe <- pframe[times==tp]
     }else tp <- NULL
     ## plot(0,0,type="n",ylim = 0:1,xlim = 0:1,axes=FALSE,xlab = xlab,ylab = ylab)
@@ -202,6 +207,7 @@ plotCalibration <- function(x,
     if (is.character(legend[1])|| legend[1]==TRUE){
         legend.data <- getLegendData(object=x,
                                      models=models,
+                                     times=tp,
                                      auc.in.legend=auc.in.legend,
                                      brier.in.legend=brier.in.legend,
                                      drop.null.model=TRUE)

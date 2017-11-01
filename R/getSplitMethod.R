@@ -50,6 +50,7 @@ getSplitMethod <- function(split.method,B,N,M){
         if (missing(M)) M <- N
         stopifnot(M>0 && M<=N) 
         subsampling <- M!=N
+        if (M<1) M <- round(M*N)
         ##   if (!subsampling && resampleTraining)
         ##     stop("Resampling the training data is only available for subsampling")
         if (split.method %in% c("","noPlan","none")) {

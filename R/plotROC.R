@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun 23 2016 (10:27) 
 ## Version: 
-## last-updated: Oct 14 2017 (09:20) 
+## last-updated: Oct 20 2017 (10:07) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 151
+##     Update #: 161
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -48,6 +48,13 @@
 ##' xb <- Score(list("glm"=fb1,"rf"=fb2),y~1,data=bdt,
 ##'             plots="roc",metrics=c("auc","brier"))
 ##' plotROC(xb,brier.in.legend=1L)
+##'
+##' # with cross-validation
+##' \dontrun{
+##' xb3 <- Score(list("glm"=fb1,"rf"=fb2),y~1,data=bdl,
+##'             plots="roc",B=3,split.method="bootcv",
+##'             metrics=c("auc"))
+##' }
 ##' ## survival
 ##' set.seed(18)
 ##' library(survival)
@@ -87,11 +94,17 @@ plotROC <- function(x,
     cbbPalette <- c("#000000", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
     pframe <- x$ROC$plotframe
     if (x$responseType!="binary"){
-        if (missing(times))
-            pframe[times==max(times)]
-        else ## can only do one time at at time
-            pframe[times==times[[1]]]
-    }
+        if (missing(times)){
+            tp <- max(pframe[["times"]])
+            if (length(unique(pframe$times))>1)
+                warning("Time point not specified, use max of the available times: ",tp)
+        } else{ ## can only do one time point
+            tp <- times[[1]]
+            if (!(tp%in%unique(pframe$times)))
+                stop(paste0("Requested time ",times[[1]]," is not in object"))
+        }
+        pframe <- pframe[times==tp]
+    }else tp <- NULL
     if (!missing(models)){
         if (!all(models%in% pframe[,unique(model)]))
             stop(paste0("Cannot identify model names.\nRequested models: ",paste(models,collapse=", "),"\n",
@@ -122,6 +135,7 @@ plotROC <- function(x,
     if (is.character(legend[1])|| legend[1]==TRUE){
         legend.data <- getLegendData(object=x,
                                      models=models,
+                                     times=tp,
                                      auc.in.legend=auc.in.legend,
                                      brier.in.legend=brier.in.legend,
                                      drop.null.model=TRUE)

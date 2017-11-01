@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jan  3 2016 (13:30) 
 ## Version: 
-## last-updated: Oct 13 2017 (10:54) 
+## last-updated: Oct 21 2017 (10:09) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 37
+##     Update #: 42
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -14,7 +14,7 @@
 #----------------------------------------------------------------------
 ## 
 ### Code:
-getComparisons <- function(dt,NF,N,alpha,dolist=NF:1){
+getComparisons <- function(dt,NF,N,alpha,dolist=NF:1,se.fit){
     ## IMPORTANT: this function assumes that the
     ##            data are ordered according to model,times
     x=model=IF=NULL
@@ -24,18 +24,27 @@ getComparisons <- function(dt,NF,N,alpha,dolist=NF:1){
             theta <- dt[,list(x=x[1]),by=model]
             delta <- theta[model%in%g[-1]][["x"]]-theta[model==g[1]][["x"]]
             se.delta <- dt[model%in%g[-1],list(se=sd(dt[model==g[1]][["IF"]]-IF)/sqrt(N)),by=model][["se"]]
-            lower <- delta - Qnorm * se.delta
-            upper <- delta + Qnorm * se.delta
             p <-2*pnorm(abs(delta)/se.delta,lower.tail=FALSE)
-            data.table(model=theta[model%in%g[-1]][["model"]],
-                       reference=g[1],
-                       delta=delta,
-                       se=se.delta,
-                       lower=lower,
-                       upper=upper,
-                       p=p)
+            if (se.fit==1L){
+                lower <- delta - Qnorm * se.delta
+                upper <- delta + Qnorm * se.delta
+                data.table(model=theta[model%in%g[-1]][["model"]],
+                           reference=g[1],
+                           delta=delta,
+                           se=se.delta,
+                           lower=lower,
+                           upper=upper,
+                           p=p)
+            }else{ ## only multisplit test
+                data.table(model=theta[model%in%g[-1]][["model"]],
+                           reference=g[1],
+                           delta=delta,
+                           p=p)
+            }
         }))
-    }else {NULL}
+    } else {
+        NULL
+    }
 }
 #----------------------------------------------------------------------
 ### getComparisons.R ends here

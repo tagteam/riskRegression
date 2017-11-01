@@ -68,6 +68,22 @@ specifically designed functions depending on the 'class' of the first
 argument.
 
 See \code{\link{predictRisk}}.
+
+
+In uncensored binary outcome data there is no need to choose a time point.
+
+When operating on models for survival analysis (without competing risks) the function still
+predicts the risk, as 1 - S(t|X) where S(t|X) is survival chance of a subject characterized
+by X.
+
+When there are competing risks (and the data are right censored) one needs
+to specify both the time horizon for prediction (can be a vector) and the
+cause of the event. The function then extracts the absolute risks F_c(t|X)
+aka the cumulative incidence of an event of type/cause c until time t for a
+subject characterized by X. Depending on the model it may or not be possible
+to predict the risk of all causes in a competing risks setting. For example. a
+cause-specific Cox (CSC) object allows to predict both cases whereas a Fine-Gray regression
+model (FGR) is specific to one of the causes.
 }
 \examples{
 ## binary outcome
