@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: maj 18 2017 (09:23) 
 ## Version: 
-## last-updated: Sep 30 2017 (17:26) 
-##           By: Thomas Alexander Gerds
-##     Update #: 140
+## last-updated: nov 14 2017 (19:44) 
+##           By: Brice Ozenne
+##     Update #: 142
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -832,7 +832,7 @@ test_that("iid minimal - no strata", {
                     store.iid = "full", se = TRUE, iid = TRUE)
     expect_equal(res1$absRisk.se,res3$absRisk.se)
     expect_equal(res1$absRisk.iid,res3$absRisk.iid)
-    expect_equal(res2$absRisk.iid, t(apply(res3$absRisk.iid,2:3,mean)))
+    expect_equal(res2$absRisk.average.iid, t(apply(res3$absRisk.iid,2:3,mean)))
 })
 
 m.CSC <- CSC(Hist(time, event) ~ strata(X1)+X6, data = d)
@@ -860,7 +860,7 @@ test_that("iid minimal - strata", {
                     store.iid = "full", se = TRUE, iid = TRUE)
     expect_equal(res1$absRisk.se,res3$absRisk.se)
     expect_equal(res1$absRisk.iid,res3$absRisk.iid)
-    expect_equal(res2$absRisk.iid, t(apply(res3$absRisk.iid,2:3,mean)))
+    expect_equal(res2$absRisk.average.iid, t(apply(res3$absRisk.iid,2:3,mean)))
 })
 
 

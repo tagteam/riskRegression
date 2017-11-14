@@ -63,9 +63,12 @@
 #' \item{times}: the time points at which the other elements are evaluated.
 #' \item{hazard}: When argument \code{newdata} is not used the baseline hazard function, otherwise the predicted hazard function. 
 #' \item{cumhazard}: When argument \code{newdata} is not used the cumulative baseline hazard function, otherwise the predicted cumulative hazard function. 
-#' \item{cumhazard.se}: The standard errors of the predicted cumulative hazard function.
 #' \item{survival}: When argument \code{newdata} is not used the survival probabilities corresponding to the baseline hazard, otherwise the predicted survival probabilities.
-#' \item{survival.se}: The standard errors of the predicted survival.
+#' \item{cumhazard.se/survival.se}: The standard errors of the predicted cumulative hazard function/survival.
+#' \item(hazard.iid/cumhazard.iid/survival.iid): (array) the value of the influence of each subject used to fit the object (dim 3)
+#' for each subject in newdata (dim 1) and each time (dim 2).
+#' \item(cumhazard.average.iid/survival.average.iid): (array) the average value of the influence over the subsjects in newdata,
+#' for each subject used to fit the model (dim 1) and each time (dim 2).
 #' \item{strata}: The strata variable.
 #' }
 #' @examples 
@@ -87,6 +90,7 @@
 #' predictCox(fit, newdata=nd, times=c(3,8),se=TRUE, log.transform = TRUE)
 #' predictCox(fit, newdata=nd, times=c(3,8),se=TRUE, store.iid = "minimal")
 #' predictCox(fit, newdata=nd, times = 5,iid=TRUE)
+#' predictCox(fit, newdata=nd, times = 5, average.iid=TRUE, log.transform = FALSE)$survival.average.iid 
 #' 
 #' cbind(survival::basehaz(fit),predictCox(fit,type="cumhazard")$cumhazard)
 #' 
@@ -180,7 +184,7 @@ predictCox <- function(object,
     object.eXb <- exp(coxLP(object, data = NULL, center = if(is.null(newdata)){centered}else{FALSE})) 
     object.baseEstimator <- coxBaseEstimator(object) 
     nVar <- length(infoVar$lpvars)
-
+                
     ## Confidence bands
     if(band>0){ # used to force the computation of the influence function + standard error to get the confidence bands
         iid <- TRUE
@@ -248,7 +252,7 @@ predictCox <- function(object,
                            predtimes = times.sorted,
                            cause = 1,
                            Efron = (object.baseEstimator == "efron"))
-    
+
     # }}}
     
     #### compute hazard and survival ####        
@@ -419,15 +423,15 @@ predictCox <- function(object,
             if(average.iid == TRUE){
                 if ("cumhazard" %in% type){
                     if (needOrder)
-                        out$cumhazard.iid <- outSE$cumhazard.iid[,oorder.times,drop=0L]
+                        out$cumhazard.average.iid <- outSE$cumhazard.average.iid[,oorder.times,drop=0L]
                     else
-                        out$cumhazard.iid <- outSE$cumhazard.iid
+                        out$cumhazard.average.iid <- outSE$cumhazard.average.iid
                 }
                 if ("survival" %in% type){
                     if (needOrder)
-                        out$survival.iid <- outSE$survival.iid[,oorder.times,drop=0L]
+                        out$survival.average.iid <- outSE$survival.average.iid[,oorder.times,drop=0L]
                     else
-                        out$survival.iid <- outSE$survival.iid
+                        out$survival.average.iid <- outSE$survival.average.iid
                 }
             }
             if(se == TRUE){

@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: maj 18 2017 (09:23) 
 ## Version: 
-## last-updated: Sep 30 2017 (16:40) 
-##           By: Thomas Alexander Gerds
-##     Update #: 55
+## last-updated: nov 14 2017 (19:50) 
+##           By: Brice Ozenne
+##     Update #: 57
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -373,8 +373,8 @@ test_that("iid minimal - no strata", {
     expect_equal(res1$cumhazard.iid,res3$cumhazard.iid)
     expect_equal(res1$survival.iid,res3$survival.iid)
 
-    expect_equal(res2$cumhazard.iid, t(apply(res3$cumhazard.iid,2:3,mean)))
-    expect_equal(res2$survival.iid, t(apply(res3$survival.iid,2:3,mean)))
+    expect_equal(res2$cumhazard.average.iid, t(apply(res3$cumhazard.iid,2:3,mean)))
+    expect_equal(res2$survival.average.iid, t(apply(res3$survival.iid,2:3,mean)))
 })
 
 m.coxph <- coxph(Surv(time, event) ~ strata(X1)+X6, data = d, y = TRUE, x = TRUE)
@@ -409,8 +409,8 @@ test_that("iid minimal - strata", {
     expect_equal(res1$cumhazard.iid,res3$cumhazard.iid)
     expect_equal(res1$survival.iid,res3$survival.iid)
 
-    expect_equal(res2$cumhazard.iid, t(apply(res3$cumhazard.iid,2:3,mean)))
-    expect_equal(res2$survival.iid, t(apply(res3$survival.iid,2:3,mean)))
+    expect_equal(res2$cumhazard.average.iid, t(apply(res3$cumhazard.iid,2:3,mean)))
+    expect_equal(res2$survival.average.iid, t(apply(res3$survival.iid,2:3,mean)))
 })
 
 # }}}

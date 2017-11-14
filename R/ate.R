@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Oct 23 2016 (08:53) 
 ## Version: 
-## last-updated: nov  1 2017 (20:18) 
+## last-updated: nov 14 2017 (19:34) 
 ##           By: Brice Ozenne
-##     Update #: 353
+##     Update #: 379
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -452,9 +452,6 @@ ate <- function(object,
     } else {
       
       # {{{ Influence function and variance
-      average.iid <- store.iid=="minimal"
-      iid <- store.iid!="minimal"
-      
       IFrisk <- lapply(1:n.contrasts,function(i){
         #### influence function for the hypothetical worlds in which every subject is treated with the same treatment
         data.i <- data
@@ -466,40 +463,37 @@ ate <- function(object,
                                                   times = times,
                                                   cause=cause,
                                                   se=FALSE,
-                                                  iid=iid,
+                                                  iid=FALSE,
                                                   keep.times=FALSE,
                                                   log.transform=FALSE,
                                                   store.iid=store.iid,
-                                                  average.iid=average.iid))
+                                                  average.iid=TRUE))
           risk.i <- pred.i$absRisk
-          attr(risk.i,"iid") <- pred.i$absRisk.iid
+          attr(risk.i,"iid") <- pred.i$absRisk.average.iid
         } else{
           pred.i <- do.call("predictCox",args = list(object,
                                                      newdata = data.i,
                                                      times = times,
                                                      se=FALSE,
-                                                     iid=iid,
+                                                     iid=FALSE,
                                                      keep.times=FALSE,
                                                      log.transform=FALSE,
                                                      type="survival",
                                                      store.iid=store.iid,
-                                                     average.iid=average.iid))
+                                                     average.iid=TRUE))
           risk.i <- 1-pred.i$survival
-          attr(risk.i,"iid") <- -pred.i$survival.iid
+          attr(risk.i,"iid") <- -pred.i$survival.average.iid
         }
         return(risk.i)
       })
       
         ## influence function for the average treatment effect
+        ## IF had dimension n.predictions (row), n.times (columns), n.dataTrain (length)
         iid.treatment <- array(NA, dim = c(n.contrasts, n.times, n.obs))
         sdIF.treatment <- matrix(NA, nrow = n.contrasts, ncol = n.times)
         for(iTreat in 1:n.contrasts){ # iTreat <- 1
-            if(average.iid){
-                term1 <- t(attr(IFrisk[[iTreat]],"iid"))
-            }else{
-                term1 <- apply(attr(IFrisk[[iTreat]],"iid"),2:3,mean)
-            }
-                                        # note: here IFrisk[[iTreat]] is the risk (the influence function is in the attribute "iid")
+            term1 <- t(attr(IFrisk[[iTreat]],"iid"))
+            ## note: here IFrisk[[iTreat]] is the risk (the influence function is in the attribute "iid")
             term2 <- rowCenter_cpp(IFrisk[[iTreat]], center = pointEstimate$meanRisk[Treatment==contrasts[iTreat],meanRisk])
         
         # we get n * IF instead of IF for the absolute risk. This is why the second term need to be rescaled
@@ -523,49 +517,29 @@ ate <- function(object,
         if(band){
             sdIF.fct[,c("diffBand.quantile","ratioBand.quantile") := as.double(NA)]
         }
+
         for(iCon in 1:((n.contrasts-1))){ # iCon <- 1
             for(iCon2 in (iCon+1):n.contrasts){ # iCon2 <- 2
-                ## compute differences between all pairs of treatments
-                                        # IF had dimension n.predictions (row), n.times (columns), n.dataTrain (length)
-                                        # apply 2 do for each time: extract the value of IF with n.predictions (row) and n.dataTrain (length)
-                                        # colSums: compute the IF for the G formula for each observation in the training data set
-                                        # sqrt(sum 2)) compute the variance of the estimator over the observations in the training data set
-                iiCon <- iiCon + 1
-                if(average.iid){
-                    term1 <- t(attr(IFrisk[[iCon]],"iid")-attr(IFrisk[[iCon2]],"iid"))
-                }else{
-                    term1 <- apply(attr(IFrisk[[iCon]],"iid")-attr(IFrisk[[iCon2]],"iid"), 2:3, mean)
-                }
-                                        # note: here IFrisk[[iCon]] is the risk (the influence function is in the attribute "iid")
-                term2 <- rowCenter_cpp(IFrisk[[iCon]]-IFrisk[[iCon2]],
-                                       center = pointEstimate$riskComparison[Treatment.A==contrasts[iCon] & Treatment.B==contrasts[iCon2],diff])
-                iid_diff.contrasts[iiCon,,] <- term1 + t(term2)/n.obs
+                iiCon <- iiCon + 1 ## index of which comparison is performed - used to store the results
+
+                ## Compute the iid function of the average treatment effect (difference)
+                iid_diff.contrasts[iiCon,,] <- iid.treatment[iCon,,] - iid.treatment[iCon2,,]
                 sdIF_diff.contrasts[iiCon,] <- apply(iid_diff.contrasts[iiCon,,,drop=FALSE],2,
                                                      function(x){sqrt(sum(x^2))}
                                                      )
           
-            ## IF(A/B) = IF(A)/B-IF(B)A/B^2
-            if(average.iid){
-                sdIF_ratio.contrasts[iiCon,] <- as.numeric(NA)
-            }else{
-                ateT1.tempo <- pointEstimate$meanRisk[Treatment==contrasts[iCon], meanRisk]
-                ateT2.tempo <- pointEstimate$meanRisk[Treatment==contrasts[iCon2], meanRisk]
-                
-                term1 <- sweep(attr(IFrisk[[iCon]],"iid"), MARGIN = c(2),
-                                   FUN = "*", STATS = ateT2.tempo)
+                ## IF(A/B) = IF(A)/B-IF(B)A/B^2
+                ate.iCon <- pointEstimate$meanRisk[Treatment == contrasts[iCon],meanRisk]
+                ate.iCon2 <- pointEstimate$meanRisk[Treatment == contrasts[iCon2],meanRisk]
 
-                term2 <- sweep(attr(IFrisk[[iCon2]],"iid"), MARGIN = c(2),
-                                   FUN = "*", STATS = ateT1.tempo/ateT2.tempo^2)
-            
-                ## note: here IFrisk[[iCon]] is the risk (the influence function is in the attribute "iid")
-                term3 <- rowCenter_cpp(IFrisk[[iCon]]/IFrisk[[iCon2]],
-                                       center = ateT1.tempo/ateT2.tempo)
-            
-                iid_ratio.contrasts[iiCon,,] <- apply(term1 - term2, 2:3, mean) + t(term3)/n.obs
+                term1 <- sweep(iid.treatment[iCon,,,drop=FALSE], MARGIN = 2:3, STATS = ate.iCon2, FUN = "/")
+                term2 <- sweep(iid.treatment[iCon2,,,drop=FALSE], MARGIN = 2:3, STATS = ate.iCon / ate.iCon2^2, FUN = "*")
+                    
+                iid_ratio.contrasts[iiCon,,] <- term1 - term2
                 sdIF_ratio.contrasts[iiCon,] <- apply(iid_ratio.contrasts[iiCon,,,drop=FALSE],2,
                                                       function(x){sqrt(sum(x^2))}
                                                       )
-            }
+                
                 ## store the result
                 index.contrasts <- sdIF.fct[, .I[Treatment.A==contrasts[[iCon]] & Treatment.B==contrasts[[iCon2]]]]
                 if(se){
@@ -582,10 +556,10 @@ ate <- function(object,
                                       n.sim = nsim.band,
                                       conf.level = conf.level)
         
-        qIF.treatment <- quantileIF[1:n.contrasts]                
-        sdIF.fct[,c("diffBand.quantile","ratioBand.quantile") := .(quantileIF[n.contrasts+.GRP],
-                                                                   quantileIF[n.contrasts+nall.contrasts+.GRP]),
-                 by = c("Treatment.A","Treatment.B")]
+            qIF.treatment <- quantileIF[1:n.contrasts]                
+            sdIF.fct[,c("diffBand.quantile","ratioBand.quantile") := .(quantileIF[n.contrasts+.GRP],
+                                                                       quantileIF[n.contrasts+nall.contrasts+.GRP]),
+                     by = c("Treatment.A","Treatment.B")]
         
         
       }
@@ -600,18 +574,18 @@ ate <- function(object,
       if(se){                    
         mrisks[, lower := meanRisk + qnorm(alpha/2) * sdIF.treatment[.GRP,], by = "Treatment"]
         mrisks[, upper := meanRisk + qnorm(1-alpha/2) * sdIF.treatment[.GRP,], by = "Treatment"]
-        
+
         crisks[, diff.lower := pointEstimate$riskComparison$diff - qnorm(1-alpha/2) * sdIF.fct$diff.se]
         crisks[, diff.upper := pointEstimate$riskComparison$diff + qnorm(1-alpha/2) * sdIF.fct$diff.se]
         crisks[, diff.p.value := 2*(1-pnorm(abs(pointEstimate$riskComparison$diff), sd = sdIF.fct$diff.se))]
-        
+
         crisks[, ratio.lower := pointEstimate$riskComparison$ratio - qnorm(1-alpha/2) * sdIF.fct$ratio.se]
         crisks[, ratio.upper := pointEstimate$riskComparison$ratio + qnorm(1-alpha/2) * sdIF.fct$ratio.se]
         crisks[, ratio.p.value := 2*(1-pnorm(abs(pointEstimate$riskComparison$ratio-1), sd = sdIF.fct$ratio.se))]                    
       }
-      if(band){
-        mrisks[, lowerBand := meanRisk - qIF.treatment[.GRP] * sdIF.treatment[.GRP,], by = "Treatment"]
-        mrisks[, upperBand := meanRisk + qIF.treatment[.GRP] * sdIF.treatment[.GRP,], by = "Treatment"]
+        if(band){
+            mrisks[, lowerBand := meanRisk - qIF.treatment[.GRP] * sdIF.treatment[.GRP,], by = "Treatment"]
+            mrisks[, upperBand := meanRisk + qIF.treatment[.GRP] * sdIF.treatment[.GRP,], by = "Treatment"]
         
         crisks[, diffBand.lower := pointEstimate$riskComparison$diff - sdIF.fct$diffBand.quantile * sdIF.fct$diff.se]
         crisks[, diffBand.upper := pointEstimate$riskComparison$diff + sdIF.fct$diffBand.quantile * sdIF.fct$diff.se]
