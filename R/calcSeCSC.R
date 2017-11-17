@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: maj 27 2017 (21:23) 
 ## Version: 
-## last-updated: Sep 30 2017 (18:14) 
-##           By: Thomas Alexander Gerds
-##     Update #: 167
+## last-updated: nov 14 2017 (15:10) 
+##           By: Brice Ozenne
+##     Update #: 174
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -75,10 +75,6 @@ calcSeCSC <- function(object, cif, hazard, cumhazard, object.time, object.maxtim
     nEtimes <- length(object.time)
     object.n <- NROW(object$iid[[1]]$IFbeta)
 
-    if(all(c("iid","average.iid") %in% export)){
-        stop("Cannot export both average.iid and iid \n")
-    }
-
     ## extract event times
     design <- coxDesign(object$models[[cause]])
     if("strata" %in% names(design) == FALSE){
@@ -93,7 +89,7 @@ calcSeCSC <- function(object, cif, hazard, cumhazard, object.time, object.maxtim
         out$iid <- array(NA, dim = c(new.n, length(times), object.n))
     }
     if("average.iid" %in% export){
-        out$iid <- matrix(0, nrow = object.n, ncol = length(times))
+        out$average.iid <- matrix(0, nrow = object.n, ncol = length(times))
     }
     # }}}
  
@@ -186,8 +182,8 @@ calcSeCSC <- function(object, cif, hazard, cumhazard, object.time, object.maxtim
             if("iid" %in% export){
                 out$iid[indexStrata,,] <- resCpp$iid
             }
-            if("average.iid" %in% export){
-                out$iid <- out$iid + resCpp$iidsum/new.n
+            if("average.iid" %in% export){                
+                out$average.iid <- out$average.iid + resCpp$iidsum/new.n
             }
             
         }
@@ -264,12 +260,15 @@ calcSeCSC <- function(object, cif, hazard, cumhazard, object.time, object.maxtim
                 }
             }
         
-        if("se" %in% export){
-            out$se[iObs,] <- sqrt(apply(IF_tempo^2,2,sum))
-        }
-        if("iid" %in% export){
-            out$iid[iObs,,] <- t(IF_tempo)
-        }
+            if("se" %in% export){
+                out$se[iObs,] <- sqrt(apply(IF_tempo^2,2,sum))
+            }
+            if("iid" %in% export){
+                out$iid[iObs,,] <- t(IF_tempo)
+            }
+            if("average.iid" %in% export){
+                out$average.iid <- out$average.iid + IF_tempo/new.n
+            }
 
     }
         # }}}

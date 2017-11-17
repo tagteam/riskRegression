@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun  6 2016 (09:35) 
 ## Version: 
-## last-updated: Sep 30 2017 (17:26) 
-##           By: Thomas Alexander Gerds
-##     Update #: 126
+## last-updated: nov 14 2017 (15:10) 
+##           By: Brice Ozenne
+##     Update #: 136
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -375,24 +375,63 @@ test_that("Value of the conditional CIF", {
 })
 # }}}
 
-# {{{ 5- Delayed entry 
-cat("Delayed entry \n")
-d <- SimSurv(1e2)
-d$entry <- d$eventtime - abs(rnorm(NROW(d)))
-
-m.cox <- coxph(Surv(entry,eventtime,status)~X1+X2,data=d, x = TRUE)
-## test_that("Prediction with Cox model - delayed entry",{
-##   expect_error(predictCox(m.cox))
-## })
-# }}}
-
-# {{{ 6- Strata
+# {{{ 5- Strata
 cat("strata \n")
 # check previous issue with strata
 f1 <- coxph(Surv(time,status==1) ~ age+logthick+epicel+strata(sex),data=Melanoma,
             x=TRUE,y=TRUE)
 res <- predictCox(f1,newdata=Melanoma[c(17,101,123),],
                   times=c(7,3,5)*365.25)
+# }}}
+
+# {{{ 6- Average influence function
+cat("Average influence function \n")
+
+## predictCox
+set.seed(10)
+d <- sampleData(80,outcome="competing.risks")
+nd <- sampleData(4,outcome="competing.risks")
+
+test_that("average.iid - predictCox", {
+
+    ls.ff <- list(Surv(time,event>0)~X1 + X2 + X6,
+                  Surv(time,event>0)~X1 + strata(X2) + X6)
+
+    for(iF in ls.ff){
+        fit <- coxph(iF, data=d, x = TRUE, y = TRUE)
+    
+        resGS <- predictCox(fit, newdata=nd, times = 2:7, iid = TRUE, log.transform = FALSE)
+        res1 <- predictCox(fit, newdata=nd, times = 2:7, average.iid = TRUE, store.iid = "full", log.transform = FALSE)
+        res2 <- predictCox(fit, newdata=nd, times = 2:7, average.iid = TRUE, store.iid = "minimal", log.transform = FALSE)
+
+        expect_equal(res1$survival.average.iid,res2$survival.average.iid)
+        expect_equal(res1$survival.average.iid,t(apply(resGS$survival.iid,2:3,mean)))
+    }
+
+})
+
+test_that("average.iid - predict.CSC", {
+
+    ls.ff <- list(Hist(time,event)~X1 + X2 + X6,
+                  Hist(time,event)~X1 + strata(X2) + X6)
+
+    for(iF in ls.ff){ # iF <- ls.ff[[1]] 
+        fit <- CSC(iF, data=d)
+        
+        resGS <- predict(fit, newdata=nd, times = 2:7, iid = TRUE, log.transform = FALSE, cause = 1)
+        res1 <- predict(fit, newdata=nd, times = 2:7, average.iid = TRUE, store.iid = "full", log.transform = FALSE, cause = 1)
+        res2 <- predict(fit, newdata=nd, times = 2:7, average.iid = TRUE, store.iid = "minimal", log.transform = FALSE, cause = 1)
+
+        expect_equal(res1$absRisk.average.iid,res2$absRisk.average.iid)
+        expect_equal(res2$absRisk.average.iid,t(apply(resGS$absRisk.iid,2:3,mean)))
+    }
+
+})
+
+
+
+## predictCSC
+ 
 # }}}
 
 # {{{ 7- absolute risk over 1

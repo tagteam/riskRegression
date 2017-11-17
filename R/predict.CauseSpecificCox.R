@@ -48,6 +48,8 @@
 #' \item{absRisk.se}: (data table) the standard errors of the predictions.
 #' \item(absRisk.iid): (array) the value of the influence of each subject used to fit the object (dim 3)
 #' for each subject in newdata (dim 1) and each time (dim 2).
+#' \item(absRisk.average.iid): (matrix) the average value of the influence over the subjects in newdata,
+#' for each subject used to fit the object (dim 1) and each time (dim 2).
 #' \item{times}: (vector) the evaluation times.
 #' }
 #'  
@@ -356,7 +358,7 @@ predict.CauseSpecificCox <- function(object,
         out$absRisk.iid <- out.seCSC$iid[,ootimes,,drop=FALSE]
     }
     if(average.iid){
-        out$absRisk.iid <- out.seCSC$iid[,ootimes,drop=FALSE]
+        out$absRisk.average.iid <- out.seCSC$average.iid[,ootimes,drop=FALSE]
     }
     if(band>0){
         
