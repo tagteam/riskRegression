@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Mar 13 2017 (16:53) 
 ## Version: 
-## Last-Updated: Oct 12 2017 (16:54) 
+## Last-Updated: Nov  9 2017 (06:53) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 34
+##     Update #: 35
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -75,7 +75,7 @@ plotRisk <- function(x,
     if (is.na(models[2])) stop("Need two models to scatterplot risks")
     pframe <- pframe[model%in%models]
     modelnames <- pframe[,unique(model)]
-    if (x$responseType=="binary")
+    if (x$response.type=="binary")
         R <- pframe[model==modelnames[1],ReSpOnSe]
     else{
         warning("Under construction")

@@ -1,6 +1,6 @@
-getNullModel <- function(formula,data,responseType){
+getNullModel <- function(formula,data,response.type){
     nullform <- stats::reformulate("1",response=formula[[2]])
-    nullfit <- switch(responseType,
+    nullfit <- switch(response.type,
                       "binary"={
                           list("Null model"=stats::glm(nullform,data,family="binomial"))
                       },

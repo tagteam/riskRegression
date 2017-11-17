@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun 23 2016 (10:27) 
 ## Version: 
-## last-updated: Oct 20 2017 (10:07) 
+## last-updated: Nov  9 2017 (06:53) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 161
+##     Update #: 162
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -93,7 +93,7 @@ plotROC <- function(x,
     model=FPR=TPR=NULL
     cbbPalette <- c("#000000", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
     pframe <- x$ROC$plotframe
-    if (x$responseType!="binary"){
+    if (x$response.type!="binary"){
         if (missing(times)){
             tp <- max(pframe[["times"]])
             if (length(unique(pframe$times))>1)

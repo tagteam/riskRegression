@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Aug 15 2016 (09:45) 
 ## Version: 
-## last-updated: Oct 12 2017 (16:54) 
+## last-updated: Nov  9 2017 (06:53) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 115
+##     Update #: 116
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -130,7 +130,7 @@ boxplot.Score <- function(x,
     } else{
         pframe <- x$riskQuantile$score
     }
-    if (x$responseType!='binary'){
+    if (x$response.type!='binary'){
         if (missing(timepoint))
             timepoint <- max(pframe[["times"]])
         else ## can only do one timepoint
@@ -154,11 +154,11 @@ boxplot.Score <- function(x,
             xlim=c(-max,max)
         }
     if (missing(main))
-        if (type=="risk") main=mod else main=switch(x$responseType,
+        if (type=="risk") main=mod else main=switch(x$response.type,
                                                     "competing.risks"={paste("Difference in predicted risks\nof an event of type",x$cause,"\nbefore time",timepoint)},
                                                     "survival"={paste("Difference in predicted risks\nof an event before time",timepoint)},
                                                     "binary"={"Difference in predicted risks"})
-    if (missing(outcome.label)) outcome.label <- switch(x$responseType,
+    if (missing(outcome.label)) outcome.label <- switch(x$response.type,
                                                       "competing.risks"={paste("Event status\nat time",timepoint)},
                                                       "survival"={paste("Event status\nat time",timepoint)},
                                                       "binary"={"Event status"})

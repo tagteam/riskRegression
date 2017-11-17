@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Oct 13 2017 (10:50) 
 ## Version: 
-## Last-Updated: Oct 21 2017 (09:02) 
+## Last-Updated: Nov  9 2017 (06:53) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 29
+##     Update #: 30
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -51,7 +51,7 @@ getLegendData <- function(object,
             legend.text.auc <- NULL
         }else{
             auc.data <- object$AUC$score[(model%in%models)]
-            if (object$responseType!="binary"){
+            if (object$response.type!="binary"){
                 if (missing(times)){
                     tp <- max(auc.data[["times"]])
                     if (length(unique(auc.data$times))>1)
@@ -80,7 +80,7 @@ getLegendData <- function(object,
             legend.text.brier <- NULL
         }else{
             brier.data <- object$Brier$score[(model%in%models)]
-            if (object$responseType!="binary"){
+            if (object$response.type!="binary"){
                 if (missing(times)){
                     tp <- max(brier.data[["times"]])
                     if (length(unique(brier.data$times))>1)

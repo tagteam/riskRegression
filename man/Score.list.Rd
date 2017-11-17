@@ -7,10 +7,11 @@
 \usage{
 \method{Score}{list}(object, formula, data, metrics = c("auc", "brier"),
   summary = NULL, plots = NULL, cause, times, landmarks,
-  use.event.times = FALSE, null.model = TRUE, conf.int = 0.95,
-  contrasts = TRUE, probs = c(0, 0.25, 0.5, 0.75, 1),
-  cens.method = "outside.ipcw", cens.model = "cox", split.method, B, M,
-  seed, trainseeds, keep, predictRisk.args, ...)
+  use.event.times = FALSE, null.model = TRUE, se.fit = TRUE,
+  multi.split.test = FALSE, conf.int = 0.95, contrasts = TRUE,
+  probs = c(0, 0.25, 0.5, 0.75, 1), cens.method = "outside.ipcw",
+  cens.model = "cox", split.method, B, M, seed, trainseeds, keep,
+  predictRisk.args, ...)
 }
 \arguments{
 \item{object}{List of risk predictions (see details and examples).}
@@ -55,6 +56,10 @@ the vector given by argument \code{times}.}
     the covariates and predicts the same value for all subjects. The model is fitted using \code{data}
 and the left hand side of \code{formula}. For binary outcome this is just the empirical prevalence. For (right censored) time to event outcome, the null models are
 equal to the Kaplan-Meier estimator (no competing risks) and the Aalen-Johansen estimator (with competing risks).}
+
+\item{se.fit}{Logical or \code{0} or \code{1}. If \code{FALSE} or \code{0} do not calculate standard errors.}
+
+\item{multi.split.test}{Logical or \code{0} or \code{1}. If \code{FALSE} or \code{0} do not calculate multi-split tests. This argument is ignored when \code{split.method} is "none".}
 
 \item{conf.int}{Either logical or a numeric value between 0 and 1. In right censored data,
 confidence intervals are based on Blanche et al (see references). Setting \code{FALSE} prevents the 
@@ -142,9 +147,10 @@ external validation data or in the learning data using bootstrap
 cross-validation. The function optionally provides results for plotting (time-point specific)
 ROC curves, for (time-point specific) calibration curves and for (time-point specific) retrospective boxplots.
 
-For uncensored binary outcome the Delong-Delong test is used to contrast AUC of rival models in all other cases
+For uncensored binary outcome the Delong-Delong test is used to contrast AUC of rival models.
+In right censored survival data (with and without competing risks) 
 the p-values correspond to Wald tests based on standard errors obtained with an estimate of the influence function
-as described in detain in the appendix of Blanche et al. (2015).
+as described in detail in the appendix of Blanche et al. (2015).
 
 
 This function works with one or multiple models that predict the risk of an event R(t|X) for a subject
@@ -159,19 +165,59 @@ for predicting risks. But users can quickly extend the package as explained in d
 the predecessors \code{pec::predictSurvProb} and \code{pec::predictEventProb} which have been unified as
 \code{riskRegression::predictRisk}.
 
-Bootstrap Crossvalidation (see also Gerds & Schumacher 2007 and Mogensen et al 2012)
+Bootstrap Crossvalidation (see also Gerds & Schumacher 2007 and Mogensen et al. 2012)
 
 B=10, M (not specified or M=NROW(data))
 Training of each of the models in each of 10 bootstrap data sets (learning data sets).
 Learning data sets are obtained by sampling \code{NROW(data)} subjects of the data set
-with replacement. There are roughly \code{.368*NROW(data)} subjects not in the learning data sets.
+with replacement. There are roughly \code{.632*NROW(data)} subjects in the learning data (inbag)
+and \code{.368*NROW(data)} subjects not in the validation data sets (out-of-bag).
+
 These are used to estimate the scores: AUC, Brier, etc. Reported are averages across the 10 splits.
 
-B=10, M= .8 
+## Bootstrap with replacement
+\code{
+set.seed(13)
+N=17
+data = data.frame(id=1:N, y=rbinom(N,1,.3),x=rnorm(N))
+boot.index = sample(1:N,size=N,replace=TRUE)
+boot.index
+inbag = 1:N %in% boot.index
+outofbag = !inbag 
+learn.data = data[inbag]
+val.data = data[outofbag]
+riskRegression:::getSplitMethod("bootcv",B=10,N=17)$index
+}
+NOTE: the number .632 is the expected probability to draw one subject (for example subject 1) with
+   replacement from the data, which does not depend on the sample size:
+\code{B=10000}
+\code{N=137}
+\code{mean(sapply(1:B, function(b){match(1,sample(1:N,size=N,replace=TRUE),nomatch=0)}))}
+\code{N=30}
+\code{mean(sapply(1:B, function(b){match(1,sample(1:N,size=N,replace=TRUE),nomatch=0)}))}
+\code{N=300}
+\code{mean(sapply(1:B, function(b){match(1,sample(1:N,size=N,replace=TRUE),nomatch=0)}))}
+
+
+## Bootstrap without replacement (training size set to be 70 percent of data)
+B=10, M=.7
+
 Training of each of the models in each of 10 bootstrap data sets (learning data sets).
 Learning data sets are obtained by sampling \code{round(.8*NROW(data))} subjects of the data set
 without replacement. There are \code{NROW(data)-round(.8*NROW(data))} subjects not in the learning data sets.
 These are used to estimate the scores: AUC, Brier, etc. Reported are averages across the 10 splits.
+\code{
+set.seed(13)
+N=17
+data = data.frame(id=1:N, y=rbinom(N,1,.3),x=rnorm(N))
+boot.index = sample(1:N,size=M,replace=FALSE)
+boot.index
+inbag = 1:N %in% boot.index
+outofbag = !inbag 
+learn.data = data[inbag]
+val.data = data[outofbag]
+riskRegression:::getSplitMethod("bootcv",B=10,N=17,M=.7)$index
+}
 }
 \examples{
 # binary outcome
@@ -296,6 +342,4 @@ the prediction error difference between 2 predictors Biostatistics (2009)
 }
 \author{
 Thomas A Gerds \email{tag@biostat.ku.dk} and Paul Blanche \email{paul.blanche@univ-ubs.fr}
-
-Thomas A. Gerds <tag@biostat.ku.dk>
 }

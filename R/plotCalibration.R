@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Feb 23 2017 (11:15) 
 ## Version: 
-## last-updated: Oct 20 2017 (10:08) 
+## last-updated: Nov  9 2017 (07:17) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 247
+##     Update #: 249
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -136,7 +136,7 @@ plotCalibration <- function(x,
     # {{{ plot frame
     model=risk=NULL
     if (missing(pseudo) & missing(rug))
-        if (x$censType=="rightCensored"){
+        if (x$cens.type=="rightCensored"){
             showPseudo <- TRUE
             showRug <- FALSE
         } else{
@@ -155,7 +155,7 @@ plotCalibration <- function(x,
         pframe <- pframe[model%in%models]
     }
     data.table::setkey(pframe,model)
-    if (x$responseType!="binary"){
+    if (x$response.type!="binary"){
         if (missing(times)){
             tp <- max(pframe[["times"]])
             if (length(unique(pframe$times))>1)
@@ -319,7 +319,7 @@ plotCalibration <- function(x,
                    }
                    xgroups <- (groups[-(length(groups))]+groups[-1])/2
                    pcut <- cut(p,groups,include.lowest=TRUE)
-                   ## if (x$censType=="rightCensored"){
+                   ## if (x$cens.type=="rightCensored"){
                    plotFrame=data.frame(Pred=tapply(p,pcut,mean),Obs=pmin(1,pmax(0,tapply(jackF,pcut,mean))))
                    attr(plotFrame,"quantiles") <- groups
                    plotFrame

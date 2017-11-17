@@ -1,14 +1,22 @@
 library(testthat)
 context("Prediction error")
 
-test_that("predictions",{
+test_that("Brier score censored data order",{
     library(riskRegression)
     library(survival)
     library(prodlim)
     data(Melanoma)
-    p1 <- stats::predict(ARR(Hist(time,status)~strata(sex),data=Melanoma,cause=1),newdata=Melanoma,times=c(0,1,100,1000))
-    f2 <- ARR(Hist(time,status)~timevar(sex),data=Melanoma,cause=1)
-    p2 <- stats::predict(f2,newdata=Melanoma,times=c(0,1,100,1000))
+    setDT(Melanoma)
+    fit <- coxph(Surv(time,status!=0)~invasion+epicel+logthick,data=Melanoma,x=TRUE)
+    setkey(Melanoma,age)
+    a <- Score(list(fit),data=Melanoma,Surv(time,status!=0)~invasion+epicel+logthick,cens.model="marginal",metric="Brier")
+    A <- Score(list(fit),data=Melanoma,Surv(time,status!=0)~invasion+epicel+logthick,cens.model="cox",metric="Brier")
+    setkey(Melanoma,logthick)
+    b <- Score(list(fit),data=Melanoma,Surv(time,status!=0)~invasion+epicel+logthick,cens.model="marginal",metric="Brier")
+    B <- Score(list(fit),data=Melanoma,Surv(time,status!=0)~invasion+epicel+logthick,cens.model="cox",metric="Brier")
+    a$call <- b$call <- A$call <- B$call <- NULL
+    expect_equal(a,b)
+    expect_equal(A,B)
 })
 
 test_that("Brier score",{

@@ -72,6 +72,34 @@ IFlambda0_cpp <- function(tau, IFbeta, newT, neweXb, newStatus, newStrata, newIn
     .Call(`_riskRegression_IFlambda0_cpp`, tau, IFbeta, newT, neweXb, newStatus, newStrata, newIndexJump, S01, E1, time1, lastTime1, lambda0, p, strata, exact, minimalExport)
 }
 
+AUCijFun <- function(riskCase, riskControl) {
+    .Call(`_riskRegression_AUCijFun`, riskCase, riskControl)
+}
+
+icWeightSubjectTimesFun <- function(icCensSubjectTimes, icWeightSubjectTimes) {
+    .Call(`_riskRegression_icWeightSubjectTimesFun`, icCensSubjectTimes, icWeightSubjectTimes)
+}
+
+icWeightTimesFun <- function(icCensTimes, icWeightTimes) {
+    .Call(`_riskRegression_icWeightTimesFun`, icCensTimes, icWeightTimes)
+}
+
+icTauSubjectTimesFun <- function(icCensSubjectTimes, whichCaseWeights, weightsCase) {
+    .Call(`_riskRegression_icTauSubjectTimesFun`, icCensSubjectTimes, whichCaseWeights, weightsCase)
+}
+
+icTauTimesFun <- function(icCensTimes, whichControlWeights, weightsControl) {
+    .Call(`_riskRegression_icTauTimesFun`, icCensTimes, whichControlWeights, weightsControl)
+}
+
+icBrierWeightsSubjectTimesFun <- function(residuals, icCensSubjectTimes, weightsSubjectTimes) {
+    .Call(`_riskRegression_icBrierWeightsSubjectTimesFun`, residuals, icCensSubjectTimes, weightsSubjectTimes)
+}
+
+icBrierWeightsTimesFun <- function(residuals, icCensTimes, weightsTimes) {
+    .Call(`_riskRegression_icBrierWeightsTimesFun`, residuals, icCensTimes, weightsTimes)
+}
+
 predictCIF_cpp <- function(hazard, cumhazard, eXb, strata, newtimes, etimes, etimeMax, t0, nEventTimes, nNewTimes, nData, cause, nCause, survtype, productLimit) {
     .Call(`_riskRegression_predictCIF_cpp`, hazard, cumhazard, eXb, strata, newtimes, etimes, etimeMax, t0, nEventTimes, nNewTimes, nData, cause, nCause, survtype, productLimit)
 }

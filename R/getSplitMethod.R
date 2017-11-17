@@ -1,105 +1,119 @@
-getSplitMethod <- function(split.method,B,N,M){
-    if (missing(split.method))
-        split.method <- ""
+##' Parse hyperparameters for data splitting algorithm
+##'
+##' @title Input for data splitting algorithms
+##' @param split.method A character string specifying the algorithm for data splitting:
+##' \itemize{
+##' \item{"loob"} leave one out bootstrap
+##' \item{"bootcv"} bootstrap cross validation
+##' \item{"cv5"} 5-fold cross validation
+##' \item{"loocv"} leave one out cross validation aka N-1 fold cross validation 
+##' \item{"632plus"} Efron's .632+ bootstrap
+##' }
+##' @param B Number of repetitions of bootstrap or k-fold cross-validation
+##' @param N Sample size
+##' @param M Subsample size. Default is N (no subsampling).
+##' @param seed Integer passed to set.seed. If not given or NA no seed is set. 
+##' @return A list with the following elements:
+##' \itemize{
+##' \item{split.methodName}: the print name of the algorithm
+##' \item{split.method}: the internal name of the algorithm
+##' \item{index}: the index for data splitting. For bootstrap splitting this
+##' is a matrix with B columns and M rows identifying the in-bag subjects. For k-fold
+##' cross-validation this is a matrix with B columns identifying the membership to the k groups.
+##' \item{k}: the k of k-fold cross-validation
+##' \item{N}: the sample size
+##' \item{M}: the subsample size
+##' }
+##' @seealso Score
+##' @examples
+##' # 3-fold crossvalidation
+##' getSplitMethod("cv3",B=4,N=37)
+##'
+##' # bootstrap with replacement
+##' getSplitMethod("loob",B=4,N=37)
+##'
+##' # bootstrap without replacement
+##' getSplitMethod("loob",B=4,N=37,M=20)
+##' 
+##' @export 
+##' @author Thomas A. Gerds <tag@@biostat.ku.dk>
+getSplitMethod <- function(split.method,B,N,M,seed){
+    if (!missing(seed) && !is.null(seed) && !is.na(seed)) set.seed(seed)
+    if (missing(split.method)) split.method <- ""
     split.methodName <- NULL
+    split.method <- tolower(split.method)
     k <- as.numeric(substring(grep("^cv[0-9]+$",split.method,value=TRUE,ignore.case=TRUE),3))
     if (length(k)==0) k <- NULL
+    ## none
+    if (split.method %in% c("","noplan","none","no data",NA,FALSE,0L)) {
+        B <- 0
+        split.method <- "noplan"
+        split.methodName <- "no data splitting"
+    }
+    ## classical cross-validation
     if (!is.null(k)){ ## classical cross-validation
         split.method <- "crossval"
         split.methodName <- paste(k,"fold cross-validation",sep="-")
+        if (missing(B)) B <- 1 # repeat k-fold CrossVal one time
     }
     else{
         if (length(grep("loocv",split.method,ignore.case=TRUE))>0){
+            split.method <- "loocv"
             split.methodName <- "LeaveOneOutCV"
             k <- N-1
             B <- 1
         }
-        else{
-            ## some form of bootstrap
-            match.BootCv <- length(grep("boot|outofbag",split.method,value=FALSE,ignore.case=TRUE))>0
-            if (match.BootCv==FALSE){
-                split.method <- "noPlan"
-                split.methodName <- "no data splitting"
-            }
-            else{
-                match.632 <- length(grep("632",split.method,value=FALSE,ignore.case=TRUE))>0
-                match.plus <- length(grep("plus|\\+",split.method,value=FALSE,ignore.case=TRUE))>0
-                match.bootloo <- length(grep("looboot",split.method,value=FALSE,ignore.case=TRUE))>0
-                if (match.632==TRUE){
-                    if (match.plus==TRUE){
-                        split.method <- "Boot632plus"
-                        split.methodName <- ".632+"
-                    }
-                    else{
-                        split.method <- "Boot632"
-                        split.methodName <- ".632"
-                    }
-                }
-                else{
-                    if (match.bootloo==TRUE){  
-                        split.method <- "LeaveOneOutBoot"
-                        split.methodName <- "LeaveOneOutBoot"
-                    }
-                    else {
-                        split.method <- "BootCv"
-                        split.methodName <- "BootCv"
-                    }
-                }
-            }
-        }
-        if (missing(M)) M <- N
-        stopifnot(M>0 && M<=N) 
-        subsampling <- M!=N
-        if (M<1) M <- round(M*N)
-        ##   if (!subsampling && resampleTraining)
-        ##     stop("Resampling the training data is only available for subsampling")
-        if (split.method %in% c("","noPlan","none")) {
-            B <- 0
-            ##     resampleTraining <- FALSE
+    }  
+    ## resample or subsample bootstrap
+    if(length(grep("boot|outofbag",split.method,value=FALSE,ignore.case=TRUE))>0){
+        split.method <- "BootCv"
+        split.methodName <- "BootCv"
+        if (missing(B)) B <- 100
+    }
+    if (length(grep("632",split.method,value=FALSE,ignore.case=TRUE))>0){
+        if (length(grep("plus|\\+",split.method,value=FALSE,ignore.case=TRUE))>0){
+            split.method <- "Boot632plus"
+            split.methodName <- ".632+"
+            if (missing(B)) B <- 100
         }
         else{
-            if (missing(B)){
-                if (length(k)>0) B <- 1 # repeat k-fold CrossVal ones
-                else B <- 100 # 
-            }
-            else if (B==0) stop("No. of resamples must be a positive integer.")
-        }
-        if (length(k)>0){
-            if (split.method=="loocv")
-                ResampleIndex <- data.frame(id=1:N)
-            else
-                ResampleIndex <- do.call("cbind",lapply(1:B,function(b){sample(rep(1:k,length.out=N))}))
-        }
-        else{
-            if (split.method %in% c("Boot632plus","BootCv","Boot632","LeaveOneOutBoot")){
-                ResampleIndex <- do.call("cbind",lapply(1:B,function(b){
-                    sort(sample(1:N,size=M,replace=!subsampling))
-                }))
-                colnames(ResampleIndex) <- paste("Train",1:B,sep=".")
-            }
-            else{
-                ResampleIndex <- NULL
-            }
+            split.method <- "Boot632"
+            split.methodName <- ".632"
+            if (missing(B)) B <- 100
         }
     }
-    ##   if (is.logical(resampleTraining)){
-    ##     if (resampleTraining==TRUE)
-    ##       resampleTrainingSize <- N
-    ##   }
-    ##   else{
-    ##     stopifnot(resampleTraining>0 &&resampleTraining==round(resampleTraining))
-    ##     resampleTrainingSize <- resampleTraining
-    ##     resampleTraining <- TRUE
-    ##   }
-    ##   if (resampleTraining==TRUE){
-    ##     if (subsampling==TRUE && resampleTrainingSize<=M)
-    ##       stop("Size for resampling the training indices should exceed ",M)
-    ##     ##     if (subsampling==FALSE)
-    ##     ##       stop("Resampling the training indices is only allowed for subsampling")
-    ##     ResampleIndex <- apply(ResampleIndex,2,function(x){
-    ##       sort(c(x,sample(x,replace=TRUE,size=resampleTrainingSize-M)))
-    ##     })
-    ##   }
+    ## default is leave one out bootstrap
+    ## if ((length(grep("looboot|loob|leaveoneoutb",split.method,value=FALSE,ignore.case=TRUE))>0) || 
+    if (split.method=="" || split.method %in% c(TRUE,1L)) {
+        split.method <- "LeaveOneOutBoot"
+        split.methodName <- "LeaveOneOutBoot"
+        if (missing(B)) B <- 100
+    }
+    if (missing(M)) M <- N
+    stopifnot(M>0 && M<=N) 
+    subsampling <- M!=N
+    if (M<1) M <- round(M*N)
+    ResampleIndex <- switch(split.method,
+                            "loocv"={
+                                matrix(1:N,ncol=1)
+                            },
+                            "noplan"={
+                                NULL
+                            },
+                            "crossval"={ 
+                                do.call("cbind",lapply(1:B,function(b){sample(rep(1:k,length.out=N))}))
+                            },
+                            { 
+                                ResampleIndex <- do.call("cbind",lapply(1:B,function(b){
+                                    sort(sample(1:N,size=M,replace=!subsampling))
+                                }))
+                            })
+    if (missing(B)) {
+        B <- switch(split.method,"loocv"={1},"noplan"={0},{100})
+    }
+    else{
+        stopifnot(B<0 || B==round(B))
+    }
     out <- list(name=split.methodName,
                 internal.name=split.method,
                 index=ResampleIndex,
@@ -107,7 +121,6 @@ getSplitMethod <- function(split.method,B,N,M){
                 B=B,
                 M=M,
                 N=N)
-    ##               resampleTraining=resampleTraining)
     class(out) <- "split.method"
     out
 }
