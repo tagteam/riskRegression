@@ -103,7 +103,9 @@ getSplitMethod <- function(split.method,B,N,M,seed){
                             "crossval"={ 
                                 do.call("cbind",lapply(1:B,function(b){sample(rep(1:k,length.out=N))}))
                             },
-                            { 
+                            { ## default
+                                split.method <- "LeaveOneOutBoot"
+                                split.methodName <- "LeaveOneOutBoot"
                                 ResampleIndex <- do.call("cbind",lapply(1:B,function(b){
                                     sort(sample(1:N,size=M,replace=!subsampling))
                                 }))

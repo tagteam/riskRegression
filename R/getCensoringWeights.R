@@ -13,35 +13,45 @@ getCensoringWeights <- function(formula,
     else{
         cens.model <- "marginal"
     }
-    sFormula <- update(formula,"Surv(time,status)~.")
-    if (influence.curve==TRUE && cens.model=="cox")
-        keep <- "fit"
-    else keep <- NULL
-    weights <- ipcw(formula=sFormula,
-                    data=data,
-                    method=cens.model,
-                    times=times,
-                    subject.times=data[["time"]],
-                    lag=1,
-                    keep=keep)
-    ## browser(skipCalls=1L)
-    if (influence.curve==TRUE){
-        switch(cens.model,
-               "marginal"={
-                   IC <- data[,getInfluenceCurve.KM(time=time,
-                                                    status=status)]
-               },
-               "cox"={
-                   ## array: nlearn x times x newdata
-                   IC <- predictCox(weights$fit,
-                                    iid=TRUE,
-                                    newdata=data,
-                                    times=data[["time"]],
-                                    log.transform=FALSE,
-                                    type="survival")$survival.iid
-               })
-        weights <- c(weights,list(influence.curve=IC))
-    }
-    weights$dim <- if (cens.model %in% c("marginal","none")) 0 else 1
-    weights
+    switch(cens.model,
+           "marginal"={
+               sFormula <- update(formula,"Surv(time,status)~1")
+               fit <- prodlim::prodlim(sFormula,data=data,reverse=TRUE)
+               IPCW.times <- predict(fit,newdata=data,times=times,level.chaos=1,mode="matrix",type="surv")
+               IPCW.subject.times <- prodlim::predictSurvIndividual(fit,lag=1)
+               out <- list(IPCW.times=IPCW.times,IPCW.subject.times=IPCW.subject.times,method=cens.model)
+               if (influence.curve==TRUE){
+                   out <- c(out,list(IC=data[,getInfluenceCurve.KM(time=time,status=status)]))
+               }
+               out
+           },"cox"={
+               sFormula <- update(formula,"Surv(time,status)~.")
+               wdata <- copy(data)
+               wdata[,status:=1-status]
+               Y <- data[["time"]]
+               status <- data[["status"]]
+               ## fit Cox model for censoring times 
+               args <- list(x=TRUE,y=TRUE,eps=0.000001)
+               args$surv <- TRUE
+               fit <- do.call(rms::cph,c(list(sFormula,data=wdata),args))
+               ## need G(Ti-|Xi) only for i where status=1 && Ti < max(times)
+               subject.position <- (((Y<=max(times))*status)==1)
+               subject.times <- Y[subject.position]
+               IPCW.times <- rms::survest(fit,newdata=wdata,times=times,se.fit=FALSE)$surv
+               IPCW.subject.times <- rms::survest(fit,times=subject.times-min(diff(c(0,unique(subject.times))))/2,what='parallel')
+               out <- list(IPCW.times=IPCW.times,IPCW.subject.times=IPCW.subject.times,method=cens.model)
+               ## array: nlearn x times x newdata
+               if (influence.curve==TRUE){
+                   IC <- predictCox(fit, iid = TRUE,
+                                    newdata = wdata,
+                                    times = c(subject.times,times),
+                                    log.transform = FALSE,
+                                    type = "survival")$survival.iid
+                   out <- c(out,list(IC=IC))
+               }
+           },{
+               stop("IPCW works only for nuisance model obtained with Kaplan-Meier (marginal) or Cox regression (cox).")
+           })
+    out$dim <- ifelse(cens.model=="cox",0,1)
+    out
 }

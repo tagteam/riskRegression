@@ -327,7 +327,7 @@ Score.list <- function(object,
                        keep,
                        predictRisk.args,
                        ...){
-    id=time=status=id=WTi=b=time=status=model=reference=p=model=pseudovalue=ReSpOnSe=event=NULL
+    id=time=status=id=WTi=b=time=status=model=reference=p=model=pseudovalue=ReSpOnSe=ipcwResiduals=residuals=event=NULL
     # }}}
     theCall <- match.call()
     # ----------------------------find metrics and plots ----------------------
@@ -423,6 +423,11 @@ Score.list <- function(object,
     B <- split.method$B
     splitIndex <- split.method$index
     do.resample <- !(is.null(splitIndex))
+    if (split.method$internal.name=="LeaveOneOutBoot"){
+        if (se.fit==TRUE){
+            warning("Under construction. Check devtools::install_github('tagteam/riskRegression') for progress.")
+        }
+    }
     # }}}
     # {{{ Checking the ability of the elements of object to predict risks
     # {{{ number of models and their labels
@@ -589,7 +594,11 @@ Score.list <- function(object,
         if (cens.type=="rightCensored"){
             if ("outside.ipcw" %in% cens.method){
                 ## browser(skipCalls=1L)
-                 Weights <- getCensoringWeights(formula=formula,
+                if (se.fit>0L && cens.model=="cox"){
+                    warning("Cannot (not yet) estimate standard error with Cox IPCW.\nForced cens.model to marginal.")
+                    cens.model <- "marginal"
+                }
+                Weights <- getCensoringWeights(formula=formula,
                                                data=data,
                                                times=times,
                                                cens.model=cens.model,
@@ -775,7 +784,7 @@ Score.list <- function(object,
                       se.fit=se.fit,
                       multi.split.test=multi.split.test,
                       keep.residuals=keep.residuals,
-                      dolist=dolist,Q=probs,ROC=FALSE,MC=testweights$influence.curve)
+                      dolist=dolist,Q=probs,ROC=FALSE,MC=Weights$IC)
         if (response.type=="competing.risks") {
             input <- c(input,list(cause=cause,states=states))
         }
@@ -907,36 +916,64 @@ Score.list <- function(object,
         if (split.method$name=="LeaveOneOutBoot"){  
             crossvalPerf <- lapply(metrics,function(m){
                 if (m=="Brier"){
+                    ## get denominator
                     Ib <- split.method$B-tabulate(unlist(apply(split.method$index,2,unique)))
                     if (any(Ib==0)) {
                         warning("Some subjects are never out of bag. Set number of bootstrap replications up to avoid this.")
                         Ib.delete <- Ib!=0
                         Ib <- Ib[Ib!=0]
-                    }else Ib.delete <- NULL
-                    residuals.i <- rbindlist(lapply(crossval,function(cv){cv[[m]]$residuals[,.(ID,ipcwResiduals)]}))[,.(residuals=sum(ipcwResiduals)),by=ID]
+                    } else Ib.delete <- NULL
+                    ## sum across bootstrap samples where subject i is out of bag
+                    residuals.i <- rbindlist(lapply(crossval,function(cv){
+                        cv[[m]]$residuals[,data.table::data.table(ID,ipcwResiduals)]
+                    }))[,data.table::data.table(residuals=sum(ipcwResiduals)),by=ID]
                     setkey(residuals.i,ID)
+                    ## weight with how many times subject i is out of bag
                     residuals.i[,residuals:=residuals/Ib]
+                    ## leave-one-out bootstrap estimate 
                     brierLOO <- residuals.i[,sum(residuals)/N]
-                    ic0 <- residuals.i[["residuals"]]-brierLOO
-                    censIC <- Weights$IC
-                    weightsSubjectTimes <- (1/Weights$IPCW.subject.times) *((Y<=times)*status)
-                    weightsTimes <- (1/Weights$IPCW.times)*(Y>times)
-                    icWeightsSubjectTimes <- icBrierWeightsSubjectTimesFun(residuals = residuals.i[["residuals"]],
-                                                                           icCensSubjectTimes = censIC[,-(1:length(times)),with=FALSE],
-                                                                           weightsSubjectTimes = weightsSubjectTimes)
-                    icWeightsTimes <- icBrierWeightsTimesFun(residuals = residuals.i[["residuals"]],
-                                                             icCensTimes = censIC[,1:length(times),with=FALSE],
-                                                             weightsTimes = weightsTimes)
-
-                    icWeights <- (1/N)*(icWeightsSubjectTimes+icWeightsTimes)
-
-                    ## ## Combine the two parts of influence function
-                    if (is.null(Ib.delete))
-                        ic <- ic0 - icWeights
-                    else
-                        ic <- ic0 - icWeights[Ib.delete]
-                    se <- sd(ic, na.rm=TRUE)/sqrt(N)
-                    loob.score <- data.table(brier=brierLOO,se=se)
+                    ## standard error via influence function
+                    if (se.fit>0L){
+                        ## FIXME
+                        stopifnot(length(times)==1)
+                        ## influence function when censoring model is known 
+                        ic0 <- residuals.i[["residuals"]]-brierLOO
+                        IC.G <- Weights$IC
+                        ## for each time t the influence function is a  
+                        ## NxN matrix filled with 0's 
+                        Y <- data[["time"]]
+                        status <- data[["status"]]
+                        icWeights <- matrix(0,nrow=N,ncol=N)
+                        subject.position <- (((Y<=times)*status)==1)
+                        N1 <- sum(subject.position)
+                        t.position <- (Y>times)
+                        subject.at <- (1:N)[subject.position]
+                        ## Y <= times & status ==1 
+                        G.Ti <- ipcw$IPCW.subject.times[subject.position]
+                        IC.G.subjectTimes <- do.call("rbind",lapply(1:N1,function(i){
+                            IC.G[,i,subject.at[i]]/G.Ti[i]
+                        }))
+                        icWeights[subject.position,] <- IC.G.subjectTimes
+                        ## Y>times
+                        IC.G.times <- IC.G[,N1+t,t.position]
+                        Gt <- ipcw$IPCW.times[t.position]
+                        icWeights[Y>times,] <- t(IC.G.times %*% diag(1/Gt))
+                        ##
+                        ## multiply with residuals before aggregation
+                        ## 
+                        browser()
+                        icWeights*residuals.i
+                        icWeights <- colMeans(icWeights)
+                        ##
+                        ## Combine the two parts of the influence function
+                        ##
+                        if (is.null(Ib.delete))
+                            ic <- ic0 - icWeights
+                        else
+                            ic <- ic0 - icWeights[Ib.delete]
+                        se <- sd(ic, na.rm=TRUE)/sqrt(N)
+                        loob.score <- data.table(brier=brierLOO,se=se)
+                    }
                     out <- list(score=loob.score,contrasts=NULL)
                     out
                 }

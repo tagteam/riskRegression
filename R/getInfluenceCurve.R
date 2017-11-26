@@ -142,3 +142,59 @@ getInfluenceCurve.KM <- function(time,status){
     do.call("cbind",out)
 }
 
+getInfluenceCurve.cox <- function(ipcw, times, residuals.i, Y, status, N){
+    ## compute influence function for reverse Cox model
+    #####################################################################################################################################################################
+    ## This function evaluates the part of influence function related to the IPCW weights:                                                                             ##
+    ##                                                                                                                                                                 ##
+    ## \frac{1}{n}\sum_{i=1}^n m_{t,n}^{(1)}(X_i) [\frac{I_{T_i\leq t}\Delta_i}{G^2(T_i\vert Z_i)}IF_G(T_i,X_k; X_i)+\frac{I_{T_i>t}}{G^2(t|Z_i)}IF_G(t,X_k; X_i)]     ##
+    ##                                                                                                                                                                 ##
+    ## with                                                                                                                                                            ##
+    ##                                                                                                                                                                 ##
+    ## IF_G(t,X_k; X_i)=-\exp(-\Lambda(t\vert Z_i))IF_{\Lambda}(t,X_k; X_i)                                                                                            ##
+    #####################################################################################################################################################################
+    ## ##   icCens <- lapply(1:N, function(i){
+    ## ##       if (((Y[i]<=times)*status[i])==1){
+    ## ##           icSurv.i <- riskRegression:: predictCox(ipcw$fit, iid = TRUE,
+    ## ##                                                   newdata = ipcw$fit$call$data,
+    ## ##                                                   times = Y[i],
+    ## ##                                                   log.transform = FALSE,
+    ## ##                                                   type = "survival")$survival.iid[,,i]
+    ## ##           survProb.i <- ipcw$IPCW.subject.times[i]
+    ## ##           icCens.i <- icSurv.i*(residuals.i[i]/(survProb.i))
+    ## ##       }
+    ## ##       else if (Y[i]>times){
+    ## ##           icSurv.i <- riskRegression:: predictCox(ipcw$fit, iid = TRUE,
+    ## ##                                                   newdata = ipcw$fit$call$data,
+    ## ##                                                   times = times,
+    ## ##                                                   log.transform = FALSE,
+    ## ##                                                   type = "survival")$survival.iid[,,i]
+    ## ##           survProb.i <- ipcw$IPCW.times[i]
+    ## ##           icCens.i <- icSurv.i*(residuals.i[i]/(survProb.i))
+    ## ##       }
+    ## ##       else icCens.i <- rep(0,N)
+    ## ##   })
+    ## ## (1/N)*apply(do.call("rbind", icCens),2,sum)
+    subjectTimes <- Y[((Y<=times)*status)==1]
+    N1 <- length(subjectTimes)
+    Nt <- length(times) ## length is one 
+    IC.G <- riskRegression::predictCox(ipcw$fit, iid = TRUE,
+                                       newdata = ipcw$fit$call$data,
+                                       times = c(subjectTimes,times),
+                                       log.transform = FALSE,
+                                       type = "survival")$survival.iid
+    subject.position <- (1:N)[Y[((Y<=times)*status)==1]]
+    icCens <- lapply(1:N1, function(i){
+        pos.i <- subject.position[i]
+        if (((Y[i]<=times)*status[i])==1){
+            survProb.i <- ipcw$IPCW.subject.times[pos.i]
+            icCens.i <- IC.G[,i,pos.i]*(residuals.i[pos.i]/(survProb.i))
+        }
+        else if (Y[i]>times){
+            survProb.i <- ipcw$IPCW.times[pos.i]
+            icCens.i <- IC.G[,N1+Nt,pos.i]*(residuals.i[pos.i]/survProb.i)
+        }
+        else icCens.i <- rep(0,N)
+    })
+    colMeans(do.call("rbind", icCens))
+}

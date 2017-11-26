@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jan  4 2016 (14:30) 
 ## Version: 
-## last-updated: Oct 21 2017 (10:34) 
+## last-updated: Nov 26 2017 (10:11) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 44
+##     Update #: 46
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -137,7 +137,7 @@ test_that("survival outcome,Brier Score, external prediction",{
     ## training error
     a <- pec(Models,formula = Surv(time,status)~X1+X2,data=dat,times= c(5),exact=FALSE,start=NULL,verbose=TRUE)
     ## compare models
-    b <- Score(ModelsR,formula = Surv(time,status)~X1+X2,data=dat,times= c(5))
+    b <- Score(ModelsR,formula = Surv(time,status)~X1+X2,data=dat,times= c(5),se.fit=FALSE)
     cbind(b$Brier$score[,Brier],as.vector(unlist(a$AppErr)))
     expect_equal(b$Brier$score[,Brier],as.vector(unlist(a$AppErr)))
 })
@@ -155,11 +155,11 @@ test_that("binary outcome: Brier",{
     expect_equal(s2,S2)
     expect_equal(s3,S3)
     expect_equal(s1$Brier,s2$Brier)
-    expect_equal(s1$Brier,s3$Brier)
-    expect_equal(s2$Brier,s3$Brier)
+    expect_equal(s1$Brier$score$Brier,s3$Brier$score$Brier)
+    expect_equal(s2$Brier$score$Brier,s3$Brier$score$Brier)
     expect_equal(S1$Brier,S2$Brier)
-    expect_equal(S1$Brier,S3$Brier)
-    expect_equal(S2$Brier,S3$Brier)
+    expect_equal(S1$Brier$score$Brier,S3$Brier$score$Brier)
+    expect_equal(S2$Brier$score$Brier,S3$Brier$score$Brier)
 })
 
 test_that("binary outcome: AUC", {   

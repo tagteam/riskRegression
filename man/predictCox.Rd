@@ -119,7 +119,8 @@ predictCox(fit, newdata=nd, times=c(3,8),se=TRUE)
 predictCox(fit, newdata=nd, times=c(3,8),se=TRUE, log.transform = TRUE)
 predictCox(fit, newdata=nd, times=c(3,8),se=TRUE, store.iid = "minimal")
 predictCox(fit, newdata=nd, times = 5,iid=TRUE)
-predictCox(fit, newdata=nd, times = 5, average.iid=TRUE, log.transform = FALSE)$survival.average.iid 
+predictCox(fit, newdata=nd, times = 5,
+average.iid=TRUE, log.transform = FALSE)$survival.average.iid 
 
 cbind(survival::basehaz(fit),predictCox(fit,type="cumhazard")$cumhazard)
 
