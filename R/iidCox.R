@@ -12,7 +12,11 @@
 #' Can be \code{"full"}, \code{"approx"} or \code{"minimal"}. See the details section.
 #' @param keep.times Logical. If \code{TRUE} add the evaluation times to the output.
 
-#' @details If there is no event in a strata, the influence function for the baseline hazard is set to 0.
+#' @details
+#' This function implements the first three formula (no number,10,11) of the subsection
+#' "Empirical estimates" in (Ozenne et al., 2017).
+#' 
+#' If there is no event in a strata, the influence function for the baseline hazard is set to 0.
 #'
 #' \code{store.iid} equal to \code{"full"} exports the influence function for the coefficients
 #' and the baseline hazard at each event time.
@@ -20,6 +24,11 @@
 #' to the variance are not ignored (i.e. set to 0)
 #' \code{store.iid} equal to \code{"minimal"} exports the influence function for the coefficients. For the
 #' baseline hazard it only computes the quantities necessary to compute the influence function in order to save memory.
+#'
+#' @references
+#' Brice Ozenne, Anne Lyngholm S\o{}rensen, Thomas Scheike, Christian Torp-Pedersen and Thomas Alexander Gerds.
+#' riskRegression: Predicting the Risk of an Event using Cox Regression Models.
+#' The R Journal (2017) 9:2, pages 440-460.
 #' 
 #' @return A list containing:
 #'  \itemize{
