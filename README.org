@@ -40,10 +40,10 @@ features of riskRegression.
     (1):102--113, 2015.
 
 Functions =predict.CauseSpecificCox=, =predictCox= and =iid=:
-7. Brice Ozenne, Anne Lyngholm S\o{}rensen, Thomas Scheike, Christian
-   Torp-Pedersen and Thomas Alexander Gerds. riskRegression:
-   Predicting the Risk of an Event using Cox Regression Models. The R
-   Journal (2017) 9:2, pages 440-460.
+- Brice Ozenne, Anne Lyngholm Sorensen, Thomas Scheike, Christian
+  Torp-Pedersen and Thomas Alexander Gerds. riskRegression: Predicting
+  the Risk of an Event using Cox Regression Models. The R Journal
+  (2017) 9:2, pages 440-460.
 
 #+BEGIN_LaTeX
 @article{gerds2006consistent,
