@@ -67,63 +67,112 @@ time.}
 \item{...}{passed to predictRisk}
 }
 \value{
-A list with: point estimates, bootstrap quantile confidence
-    intervals model: the CSC model (optional)
+An object of class \code{ate} containing:
+\itemize{
+\item meanRisk: a \code{data.table} object containing the ATE at each time and for each treatment level.
+\item riskComparison: a \code{data.table} object comparing the ATE between two treatment levels.
+\item treatment: the name of the treatment variable.
+\item contrasts: the levels of the treatment variable that were compared.
+\item times: the time points at which the ATE was computed.
+\item se: whether the standard errors and confidence intervals of the ATE where computed.
+\item n.bootstrap: the number of bootstrap samples.
+\item band: whether confidence bands where computed.
+\item nsim.band: the number of simulations used to compute the quantiles for the confidence bands.
+\item seeds: the seed used to gnerate the boostrap sample. Not used when the
+influence function is used to compute the standard errors of the ATE.
+\item conf.level: the confidence level of the confidence intervals.
+}
 }
 \description{
 Use the g-formula to estimate the average treatment
     effect based on Cox regression with or without competing risks
-}
-\details{
-WARNING: the p.value and the confidence intervals for the ratio using Wald-type approximations are still experimental.
 }
 \examples{
 library(survival)
 library(rms)
 
 set.seed(10)
-n <- 100
 
-## Cox model
-dtS <- sampleData(n,outcome="survival")
+#### Survival settings  ####
+#### ATE with Cox model ####
+
+## generate data
+n <- 100
+dtS <- sampleData(n, outcome="survival")
 dtS$time <- round(dtS$time,1)
 dtS$X1 <- factor(rbinom(n, prob = c(0.3,0.4) , size = 2), labels = paste0("T",0:2))
 
+## estimate the Cox model
 fit <- cph(formula = Surv(time,event)~ X1+X2,data=dtS,y=TRUE,x=TRUE)
 
+## compute the ATE at times 5, 6, 7, and 8 using X1 as the treatment variable
 \dontrun{
-ateFit1 <- ate(fit, data = dtS, treatment = "X1", contrasts = NULL,
-        times = 5:8, B = 1e3, y = TRUE,  mc.cores=1)
+## only punctual estimate (argument se = FALSE)
+ateFit1a <- ate(fit, data = dtS, treatment = "X1", times = 5:8,
+               se = FALSE)
 
-ateFit1 <- ate(fit, data = dtS, treatment = "X1", contrasts = NULL,
-        times = 5:8, B = 1e1, y = TRUE,  mc.cores=1)
-ateFit2 <- ate(fit, data = dtS, treatment = "X1", contrasts = NULL,
-        times = 5:8, B = 0, y = TRUE, band = TRUE, mc.cores=1)
+## standard error / confidence intervals computed using the influence function
+## (argument se = TRUE and B = 0)
+ateFit1b <- ate(fit, data = dtS, treatment = "X1", times = 5:8,
+               se = TRUE, B = 0)
 
-ateFit3 <- ate(fit, data = dtS, treatment = "X1", contrasts = NULL,
-           times = 5:8, B = 0, y = TRUE, band = TRUE, mc.cores=1,
-           store.iid = "minimal")
+## same as before with in addition the confidence bands for the ATE
+## (argument band = TRUE)
+ateFit1c <- ate(fit, data = dtS, treatment = "X1", times = 5:8,
+               se = TRUE, band = TRUE, B = 0)
+
+## standard error / confidence intervals computed using 100 boostrap samples
+## (argument se = TRUE and B = 100) 
+ateFit1d <- ate(fit, data = dtS, treatment = "X1",
+                times = 5:8, se = TRUE, B = 100)
+## NOTE: for real applications 100 bootstrap samples is not enougth 
+
+## same but using 2 cpus for generating and analyzing the boostrap samples
+## (parallel computation, argument mc.cores = 2) 
+ateFit1e <- ate(fit, data = dtS, treatment = "X1",
+                times = 5:8, se = TRUE, B = 100, mc.cores = 2)
 }
 
-## Competing risks: Cause specific Cox regression
+#### Competing risks settings               ####
+#### ATE with cause specific Cox regression ####
+
 \dontrun{
-set.seed(17)
-n=100
-dt <- sampleData(n,outcome="competing.risks")
+## generate data
+n <- 500
+dt <- sampleData(n, outcome="competing.risks")
 dt$time <- round(dt$time,1)
 dt$X1 <- factor(rbinom(n, prob = c(0.2,0.3,0.2) , size = 3), labels = paste0("T",0:3))
-fitCR= CSC(Hist(time,event)~ X1+X8,data=dt,cause=1)
-ate(fitCR, data = dt, treatment = "X1", contrasts = NULL,
-        times = 7, cause = 1, B = 2, mc.cores=1)
 
-atefit=ate(fitCR, data = dt, treatment = "X1", contrasts = NULL,
-        times = 1:7, cause = 1, mc.cores=1, se = FALSE, band = FALSE)
+## estimate cause specific Cox model
+fitCR <-  CSC(Hist(time,event)~ X1+X8,data=dt,cause=1)
 
+## compute the ATE at times 5, 6, 7, and 8 using X1 as the treatment variable
+ateFit2a <- ate(fitCR, data = dt, treatment = "X1", times = 5:8, cause = 1,
+               se = FALSE)
 
- ate(fitCR, data = dt, treatment = "X1", contrasts = NULL,
-        times = 5:7, cause = 1, B = 0, se = TRUE, band = TRUE, mc.cores=1)
+## standard error / confidence intervals computed using the influence function
+## (argument se = TRUE and B = 0)
+ateFit2b <- ate(fitCR, data = dt, treatment = "X1", times = 5:8, cause = 1,
+               se = TRUE, B = 0)
+
+## same as before with in addition the confidence bands for the ATE
+## (argument band = TRUE)
+ateFit2c <- ate(fitCR, data = dt, treatment = "X1", times = 5:8, cause = 1,
+               se = TRUE, band = TRUE, B = 0)
+
+## standard error / confidence intervals computed using 100 boostrap samples
+## (argument se = TRUE and B = 100) 
+ateFit2d <- ate(fitCR, data = dt, treatment = "X1", times = 5:8, cause = 1,
+                se = TRUE, B = 100)
+## NOTE: for real applications 100 bootstrap samples is not enougth 
+
+## same but using 2 cpus for generating and analyzing the boostrap samples
+## (parallel computation, argument mc.cores = 2) 
+ateFit2e <- ate(fitCR, data = dt, treatment = "X1", times = 5:8, cause = 1,
+                se = TRUE, B = 100, mc.cores = 2)
 }
-## time-dependent covariates
+
+#### time-dependent covariates ###
 \dontrun{
 library(survival)
 fit <- coxph(Surv(time, status) ~ celltype+karno + age + trt, veteran)
@@ -139,6 +188,7 @@ resVet <- ate(fitTD,formula=Hist(entry=tstart,time=time,event=status)~1,
         band = FALSE, mc.cores=1)
 resVet
 }
+
 \dontrun{
 set.seed(137)
 d=sampleDataTD(127)

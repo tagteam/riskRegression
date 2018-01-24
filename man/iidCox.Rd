@@ -40,6 +40,9 @@ A list containing:
 Compute the influence function for each observation used to estimate the model
 }
 \details{
+This function implements the first three formula (no number,10,11) of the subsection
+"Empirical estimates" in (Ozenne et al., 2017).
+
 If there is no event in a strata, the influence function for the baseline hazard is set to 0.
 
 \code{store.iid} equal to \code{"full"} exports the influence function for the coefficients
@@ -65,4 +68,9 @@ IF.cox.all <- iidCox(m.cox, tau.hazard = sort(unique(c(7,d$eventtime))))
 IF.cox.beta <- iidCox(m.cox, baseline.iid = FALSE)
 
 
+}
+\references{
+Brice Ozenne, Anne Lyngholm Sorensen, Thomas Scheike, Christian Torp-Pedersen and Thomas Alexander Gerds.
+riskRegression: Predicting the Risk of an Event using Cox Regression Models.
+The R Journal (2017) 9:2, pages 440-460.
 }

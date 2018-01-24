@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Oct 23 2016 (08:53) 
 ## Version: 
-## last-updated: jan 24 2018 (15:43) 
+## last-updated: jan 24 2018 (17:07) 
 ##           By: Brice Ozenne
-##     Update #: 442
+##     Update #: 444
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -134,7 +134,6 @@
 #' ## estimate cause specific Cox model
 #' fitCR <-  CSC(Hist(time,event)~ X1+X8,data=dt,cause=1)
 #' 
-#' \dontrun{
 #' ## compute the ATE at times 5, 6, 7, and 8 using X1 as the treatment variable
 #' ateFit2a <- ate(fitCR, data = dt, treatment = "X1", times = 5:8, cause = 1,
 #'                se = FALSE)
@@ -177,6 +176,7 @@
 #'         band = FALSE, mc.cores=1)
 #' resVet
 #' }
+#' 
 #' \dontrun{
 #' set.seed(137)
 #' d=sampleDataTD(127)

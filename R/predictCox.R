@@ -86,7 +86,7 @@
 #' }
 #'
 #' @references
-#' Brice Ozenne, Anne Lyngholm S\o{}rensen, Thomas Scheike, Christian Torp-Pedersen and Thomas Alexander Gerds.
+#' Brice Ozenne, Anne Lyngholm Sorensen, Thomas Scheike, Christian Torp-Pedersen and Thomas Alexander Gerds.
 #' riskRegression: Predicting the Risk of an Event using Cox Regression Models.
 #' The R Journal (2017) 9:2, pages 440-460.
 #' 
@@ -128,7 +128,7 @@
 #'                       log.transform = FALSE)
 #' as.data.table(CI.iid)[1:5]
 #' rowMeans(CI.iid$survival.iid[,1,]) ## the iid decomposition has 0 expectation
-#' sqrt(rowSums(iid.all$survival.iid[1:5,1,]^2))
+#' sqrt(rowSums(CI.iid$survival.iid[1:5,1,]^2))
 #' 
 #' ## same but the iid decomposition is averaged over the patients
 #' CI.aviid <- predictCox(fit, newdata = d, times = 5, 

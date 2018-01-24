@@ -26,7 +26,7 @@
 #' baseline hazard it only computes the quantities necessary to compute the influence function in order to save memory.
 #'
 #' @references
-#' Brice Ozenne, Anne Lyngholm S\o{}rensen, Thomas Scheike, Christian Torp-Pedersen and Thomas Alexander Gerds.
+#' Brice Ozenne, Anne Lyngholm Sorensen, Thomas Scheike, Christian Torp-Pedersen and Thomas Alexander Gerds.
 #' riskRegression: Predicting the Risk of an Event using Cox Regression Models.
 #' The R Journal (2017) 9:2, pages 440-460.
 #' 

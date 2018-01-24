@@ -62,7 +62,7 @@
 #' }
 #'
 #' @references
-#' Brice Ozenne, Anne Lyngholm S\o{}rensen, Thomas Scheike, Christian Torp-Pedersen and Thomas Alexander Gerds.
+#' Brice Ozenne, Anne Lyngholm Sorensen, Thomas Scheike, Christian Torp-Pedersen and Thomas Alexander Gerds.
 #' riskRegression: Predicting the Risk of an Event using Cox Regression Models.
 #' The R Journal (2017) 9:2, pages 440-460.
 #' 
@@ -85,7 +85,7 @@
 #' CSC.risk
 #'
 #' ## add the standard error/confidence intervals
-#' (computed on the log log scale and backtransformed)
+#' ## (computed on the log log scale and backtransformed)
 #' CSC.riskSE <-  predict(CSC.fit,newdata=nd,times=1:10,cause=1,se=TRUE,
 #'                         log.transform = TRUE)
 #' as.data.table(CSC.riskSE)[1:5]
