@@ -186,7 +186,8 @@ List IFlambda0_cpp(const NumericVector& tau, const arma::mat& IFbeta,
   IFlambda0.fill(NA_REAL);
   IFLambda0.fill(NA_REAL);
 
-  // Find early times
+  // Find early prediction times
+  // if iTau0 = 5 this means that the first five prediction times are before the first event, i.e IF = 0
   int iTau0 = 0;
   while(iTau0 < nTau && time1[0]>tau[iTau0]){
         iTau0++;
@@ -268,7 +269,9 @@ List IFlambda0_cpp(const NumericVector& tau, const arma::mat& IFbeta,
   
   for(int iObs=0; iObs<nObs ; iObs++){ //  first event and after
     
-    index_newT_time1 = sum(time1<=newT[iObs])-1;
+    // index_newT_time1 can value -1 when newT is before the first event 
+    // in this case cumLambda0 is 0 so the second term can be skipped
+    index_newT_time1 = sum(time1<=newT[iObs])-1; 
     
     for(int iiTau = iTau0 ; iiTau<nTau_beforeLast ; iiTau++){
       
@@ -285,10 +288,10 @@ List IFlambda0_cpp(const NumericVector& tau, const arma::mat& IFbeta,
       
       if(strata == newStrata[iObs]){
         // second term
-        if(exact){
+        if(exact && index_newT_time1>=0){
           if(tau[iiTau]==time1[Vindex_tau_time1[iiTau]] && time1[Vindex_tau_time1[iiTau]] <= newT[iObs]){
-	    IFlambda0(iObs,iiTau) -= neweXb[iObs] * lambda0_iS0[Vindex_tau_time1[iiTau]];
-	  }
+            IFlambda0(iObs,iiTau) -= neweXb[iObs] * lambda0_iS0[Vindex_tau_time1[iiTau]];
+          }
           IFLambda0(iObs,iiTau) -= neweXb[iObs] * cumLambda0_iS0[min(Vindex_tau_time1[iiTau],index_newT_time1)];
         }
 

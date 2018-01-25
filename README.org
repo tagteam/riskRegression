@@ -39,7 +39,7 @@ features of riskRegression.
     time-to-event in presence of censoring and competing risks. Biometrics, 71
     (1):102--113, 2015.
 
-Functions =predict.CauseSpecificCox=, =predictCox= and =iid=:
+Functions =predict.CauseSpecificCox=, =predictCox= and =iidCox=:
 - Brice Ozenne, Anne Lyngholm Sorensen, Thomas Scheike, Christian
   Torp-Pedersen and Thomas Alexander Gerds. riskRegression: Predicting
   the Risk of an Event using Cox Regression Models. The R Journal
