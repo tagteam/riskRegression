@@ -1096,7 +1096,7 @@ splitStrataVar <- function(object){
 # {{{ 
 #' @title Reconstruct the original dataset
 #' @description Reconstruct the original dataset from the elements stored in the coxph object
-#' @rdname splitStrataVar
+#' @rdname reconstructData
 #' 
 #' @param object a coxph object.
 #'

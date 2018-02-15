@@ -2,22 +2,15 @@
 % Please edit documentation in R/getCoxInfo.R
 \name{splitStrataVar}
 \alias{splitStrataVar}
-\alias{reconstructData}
 \title{Reconstruct each of the strata variables}
 \usage{
 splitStrataVar(object)
-
-reconstructData(object)
 }
 \arguments{
-\item{object}{a coxph object.}
-
 \item{object}{a coxph object.}
 }
 \description{
 Reconstruct each of the strata variables from the strata variable stored in the coxph object.
-
-Reconstruct the original dataset from the elements stored in the coxph object
 }
 \examples{
 d <- sampleData(1e2, outcome = "survival")
@@ -25,14 +18,7 @@ d <- sampleData(1e2, outcome = "survival")
 library(survival)
 mcox <- coxph(Surv(time, event) ~ strata(X1)+strata(X2)+X3, data = d, x = TRUE, y = TRUE)
 splitStrataVar(mcox)
-d <- sampleData(1e2, outcome = "survival")
-
-library(survival)
-mcox <- coxph(Surv(time, event) ~ strata(X1)+strata(X2)+X3, data = d, x = TRUE, y = TRUE)
-reconstructData(mcox)
 }
 \author{
-Brice Ozenne broz@sund.ku.dk and Thomas A. Gerds tag@biostat.ku.dk
-
 Brice Ozenne broz@sund.ku.dk and Thomas A. Gerds tag@biostat.ku.dk
 }
