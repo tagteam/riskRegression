@@ -220,8 +220,6 @@ predictCox <- function(object,
       times.sorted <- times
   }
   
-  eval(object$call$data)
-  
   object.n <- coxN(object)
   object.design <- coxDesign(object)
   object.status <- object.design[["status"]]

@@ -1059,11 +1059,13 @@ extractStrata <- function(xterms, xlevels = NULL, special){
 #' @author Brice Ozenne broz@@sund.ku.dk and Thomas A. Gerds tag@@biostat.ku.dk
 #'
 #' @examples
+#' \dontrun{
 #' d <- sampleData(1e2, outcome = "survival")
 #' 
 #' library(survival)
 #' mcox <- coxph(Surv(time, event) ~ strata(X1)+strata(X2)+X3, data = d, x = TRUE, y = TRUE)
 #' splitStrataVar(mcox)
+#' }
 splitStrataVar <- function(object){
   
   grid.levels <- expand.grid(object$xlevels)
@@ -1103,11 +1105,13 @@ splitStrataVar <- function(object){
 #' @author Brice Ozenne broz@@sund.ku.dk and Thomas A. Gerds tag@@biostat.ku.dk
 #'
 #' @examples
+#' \dontrun{
 #' d <- sampleData(1e2, outcome = "survival")
 #' 
 #' library(survival)
 #' mcox <- coxph(Surv(time, event) ~ strata(X1)+strata(X2)+X3, data = d, x = TRUE, y = TRUE)
 #' reconstructData(mcox)
+#' }
 reconstructData <- function(object){
   
   
