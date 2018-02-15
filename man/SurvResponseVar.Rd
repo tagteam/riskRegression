@@ -31,6 +31,9 @@ SurvResponseVar(mcox$formula)
 mcox <- coxph(Surv(time, event) ~ 1, data = d)
 SurvResponseVar(mcox$formula)
 
+mcox <- coxph(Surv(time, event>0) ~ 1, data = d)
+SurvResponseVar(mcox$formula)
+
 }
 }
 \author{

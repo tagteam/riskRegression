@@ -125,7 +125,7 @@ Functions =predict.CauseSpecificCox=, =predictCox= and =iidCox=:
 @article{ozenne2017,
   title =	 {riskRegression: Predicting the Risk of an Event
                 using Cox Regression Modelss},
-  author =	 {Ozenne, Brice and S\o{}rensen, Anne Lyngholm 
+  author =	 {Ozenne, Brice and Sørensen, Anne Lyngholm 
                 and Scheike, Thomas and Torp-Pedersen, Christian
                 and Gerds, Thomas Alexander},
   journal =	 {The R Journal},
