@@ -39,6 +39,12 @@ features of riskRegression.
     time-to-event in presence of censoring and competing risks. Biometrics, 71
     (1):102--113, 2015.
 
+Functions =predict.CauseSpecificCox=, =predictCox= and =iidCox=:
+- Brice Ozenne, Anne Lyngholm Sorensen, Thomas Scheike, Christian
+  Torp-Pedersen and Thomas Alexander Gerds. riskRegression: Predicting
+  the Risk of an Event using Cox Regression Models. The R Journal
+  (2017) 9:2, pages 440-460.
+
 #+BEGIN_LaTeX
 @article{gerds2006consistent,
   title =	 {Consistent Estimation of the Expected {B}rier Score
@@ -116,6 +122,17 @@ features of riskRegression.
   publisher =	 {Wiley Online Library}
 }
 
-
+@article{ozenne2017,
+  title =	 {riskRegression: Predicting the Risk of an Event
+                using Cox Regression Modelss},
+  author =	 {Ozenne, Brice and Sørensen, Anne Lyngholm 
+                and Scheike, Thomas and Torp-Pedersen, Christian
+                and Gerds, Thomas Alexander},
+  journal =	 {The R Journal},
+  volume =	 9,
+  number =	 2,
+  pages =	 {440--460},
+  year =	 2017
+}
 #+END_LaTeX
 

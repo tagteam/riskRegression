@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Oct 23 2016 (08:53) 
 ## Version: 
-## last-updated: nov 14 2017 (19:34) 
+## last-updated: jan 24 2018 (17:07) 
 ##           By: Brice Ozenne
-##     Update #: 379
+##     Update #: 444
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -55,60 +55,112 @@
 #' @param store.iid Implementation used to estimate the standard error. Can be \code{"full"} or \code{"minimal"}.
 #' \code{"minimal"} requires less memory but can only estimate the standard for the difference between treatment effects (and not for the ratio).
 #' @param ... passed to predictRisk
+#'
 #' @author Brice Ozenne \email{broz@@sund.ku.dk} and Thomas Alexander
 #'     Gerds \email{tag@@biostat.ku.dk}
-#' @return A list with: point estimates, bootstrap quantile confidence
-#'     intervals model: the CSC model (optional)
 #' 
-#' @details WARNING: the p.value and the confidence intervals for the ratio using Wald-type approximations are still experimental.
+#' @return An object of class \code{ate} containing:
+#' \itemize{
+#' \item meanRisk: a \code{data.table} object containing the ATE at each time and for each treatment level.
+#' \item riskComparison: a \code{data.table} object comparing the ATE between two treatment levels.
+#' \item treatment: the name of the treatment variable.
+#' \item contrasts: the levels of the treatment variable that were compared.
+#' \item times: the time points at which the ATE was computed.
+#' \item se: whether the standard errors and confidence intervals of the ATE where computed.
+#' \item n.bootstrap: the number of bootstrap samples.
+#' \item band: whether confidence bands where computed.
+#' \item nsim.band: the number of simulations used to compute the quantiles for the confidence bands.
+#' \item seeds: the seed used to gnerate the boostrap sample. Not used when the
+#' influence function is used to compute the standard errors of the ATE.
+#' \item conf.level: the confidence level of the confidence intervals.
+#' }
 #' 
 #' @examples 
 #' library(survival)
 #' library(rms)
 #' 
 #' set.seed(10)
-#' n <- 100
 #' 
-#' ## Cox model
-#' dtS <- sampleData(n,outcome="survival")
+#' #### Survival settings  ####
+#' #### ATE with Cox model ####
+#'
+#' ## generate data
+#' n <- 100
+#' dtS <- sampleData(n, outcome="survival")
 #' dtS$time <- round(dtS$time,1)
 #' dtS$X1 <- factor(rbinom(n, prob = c(0.3,0.4) , size = 2), labels = paste0("T",0:2))
 #'
+#' ## estimate the Cox model
 #' fit <- cph(formula = Surv(time,event)~ X1+X2,data=dtS,y=TRUE,x=TRUE)
 #'
+#' ## compute the ATE at times 5, 6, 7, and 8 using X1 as the treatment variable
 #' \dontrun{
-#' ateFit1 <- ate(fit, data = dtS, treatment = "X1", contrasts = NULL,
-#'         times = 5:8, B = 1e3, y = TRUE,  mc.cores=1)
-#' 
-#' ateFit1 <- ate(fit, data = dtS, treatment = "X1", contrasts = NULL,
-#'         times = 5:8, B = 1e1, y = TRUE,  mc.cores=1)
-#' ateFit2 <- ate(fit, data = dtS, treatment = "X1", contrasts = NULL,
-#'         times = 5:8, B = 0, y = TRUE, band = TRUE, mc.cores=1)
+#' ## only punctual estimate (argument se = FALSE)
+#' ateFit1a <- ate(fit, data = dtS, treatment = "X1", times = 5:8,
+#'                se = FALSE)
 #'
-#' ateFit3 <- ate(fit, data = dtS, treatment = "X1", contrasts = NULL,
-#'            times = 5:8, B = 0, y = TRUE, band = TRUE, mc.cores=1,
-#'            store.iid = "minimal")
-#' }
+#' ## standard error / confidence intervals computed using the influence function
+#' ## (argument se = TRUE and B = 0)
+#' ateFit1b <- ate(fit, data = dtS, treatment = "X1", times = 5:8,
+#'                se = TRUE, B = 0)
+#'
+#' ## same as before with in addition the confidence bands for the ATE
+#' ## (argument band = TRUE)
+#' ateFit1c <- ate(fit, data = dtS, treatment = "X1", times = 5:8,
+#'                se = TRUE, band = TRUE, B = 0)
 #' 
-#' ## Competing risks: Cause specific Cox regression
+#' ## standard error / confidence intervals computed using 100 boostrap samples
+#' ## (argument se = TRUE and B = 100) 
+#' ateFit1d <- ate(fit, data = dtS, treatment = "X1",
+#'                 times = 5:8, se = TRUE, B = 100)
+#' ## NOTE: for real applications 100 bootstrap samples is not enougth 
+#'
+#' ## same but using 2 cpus for generating and analyzing the boostrap samples
+#' ## (parallel computation, argument mc.cores = 2) 
+#' ateFit1e <- ate(fit, data = dtS, treatment = "X1",
+#'                 times = 5:8, se = TRUE, B = 100, mc.cores = 2)
+#' }
+#'
+#' #### Competing risks settings               ####
+#' #### ATE with cause specific Cox regression ####
+#'
 #' \dontrun{
-#' set.seed(17)
-#' n=100
-#' dt <- sampleData(n,outcome="competing.risks")
+#' ## generate data
+#' n <- 500
+#' dt <- sampleData(n, outcome="competing.risks")
 #' dt$time <- round(dt$time,1)
 #' dt$X1 <- factor(rbinom(n, prob = c(0.2,0.3,0.2) , size = 3), labels = paste0("T",0:3))
-#' fitCR= CSC(Hist(time,event)~ X1+X8,data=dt,cause=1)
-#' ate(fitCR, data = dt, treatment = "X1", contrasts = NULL,
-#'         times = 7, cause = 1, B = 2, mc.cores=1)
 #'
-#' atefit=ate(fitCR, data = dt, treatment = "X1", contrasts = NULL,
-#'         times = 1:7, cause = 1, mc.cores=1, se = FALSE, band = FALSE)
-#'
+#' ## estimate cause specific Cox model
+#' fitCR <-  CSC(Hist(time,event)~ X1+X8,data=dt,cause=1)
 #' 
-#'  ate(fitCR, data = dt, treatment = "X1", contrasts = NULL,
-#'         times = 5:7, cause = 1, B = 0, se = TRUE, band = TRUE, mc.cores=1)
+#' ## compute the ATE at times 5, 6, 7, and 8 using X1 as the treatment variable
+#' ateFit2a <- ate(fitCR, data = dt, treatment = "X1", times = 5:8, cause = 1,
+#'                se = FALSE)
+#'
+#' ## standard error / confidence intervals computed using the influence function
+#' ## (argument se = TRUE and B = 0)
+#' ateFit2b <- ate(fitCR, data = dt, treatment = "X1", times = 5:8, cause = 1,
+#'                se = TRUE, B = 0)
+#'
+#' ## same as before with in addition the confidence bands for the ATE
+#' ## (argument band = TRUE)
+#' ateFit2c <- ate(fitCR, data = dt, treatment = "X1", times = 5:8, cause = 1,
+#'                se = TRUE, band = TRUE, B = 0)
+#' 
+#' ## standard error / confidence intervals computed using 100 boostrap samples
+#' ## (argument se = TRUE and B = 100) 
+#' ateFit2d <- ate(fitCR, data = dt, treatment = "X1", times = 5:8, cause = 1,
+#'                 se = TRUE, B = 100)
+#' ## NOTE: for real applications 100 bootstrap samples is not enougth 
+#'
+#' ## same but using 2 cpus for generating and analyzing the boostrap samples
+#' ## (parallel computation, argument mc.cores = 2) 
+#' ateFit2e <- ate(fitCR, data = dt, treatment = "X1", times = 5:8, cause = 1,
+#'                 se = TRUE, B = 100, mc.cores = 2)
 #' }
-#' ## time-dependent covariates
+#' 
+#' #### time-dependent covariates ###
 #' \dontrun{
 #' library(survival)
 #' fit <- coxph(Surv(time, status) ~ celltype+karno + age + trt, veteran)
@@ -124,6 +176,7 @@
 #'         band = FALSE, mc.cores=1)
 #' resVet
 #' }
+#' 
 #' \dontrun{
 #' set.seed(137)
 #' d=sampleDataTD(127)
@@ -231,95 +284,95 @@ ate <- function(object,
   
   # {{{ Checking the model
   
-  # for predictRisk S3-method
-  allmethods <- utils::methods(predictRisk)
-  candidateMethods <- paste("predictRisk",class(object),sep=".")
-  if (all(match(candidateMethods,allmethods,nomatch=0)==0))
-    stop(paste("Could not find predictRisk S3-method for ",class(object),collapse=" ,"),sep="")
-  # for compatibility with resampling
-  if(is.null(object$call))
-    stop(paste("The object does not contain its own call, which is needed to refit the model in the bootstrap loop."))
-  # }}}
-  # {{{ calc G formula
-  if (TD){
-    Gformula <- function(object,
-                         data,
-                         treatment,
-                         contrasts,
-                         times,
-                         landmark,
-                         cause,
-                         ...){
-      response <- eval(formula[[2]],envir=data)
-      time <- response[,"time"]
-      entry <- response[,"entry"]
-      if(class(object)[[1]]=="coxph"){
-        riskhandler <- "predictRisk.coxphTD"
-      }else{
-        riskhandler <- "predictRisk.CSCTD"
-      }
-      ## prediction for the hypothetical worlds in which every subject is treated with the same treatment
-      dt.meanRisk <- data.table::rbindlist(lapply(1:n.contrasts,function(i){
-        data.i <- data
-        data.i[[treatment]] <- factor(contrasts[i], levels = levels)
-        data.table::rbindlist(lapply(landmark,function(lm){
-          atrisk <- (entry <= lm & time >= lm)
-          risk.i <- colMeans(do.call(riskhandler,
-                                     args = list(object,
-                                                 newdata = data.i[atrisk,],
-                                                 times = times,
-                                                 cause = cause,
-                                                 landmark=lm,
-                                                 ...)))
-          data.table::data.table(Treatment=contrasts[[i]],time=times,landmark=lm,meanRisk=risk.i)
-        }))
-      }))
-      riskComparison <- data.table::rbindlist(lapply(1:(n.contrasts-1),function(i){
-        data.table::rbindlist(lapply(((i+1):n.contrasts),function(j){
-          ## compute differences between all pairs of treatments
-          RC <- dt.meanRisk[Treatment==contrasts[[i]]]
-          setnames(RC,"Treatment","Treatment.A")
-          RC[,Treatment.B:=contrasts[[j]]]
-          RC[,diff:=meanRisk-dt.meanRisk[Treatment==contrasts[[j]],meanRisk]]
-          RC[,ratio:=meanRisk/dt.meanRisk[Treatment==contrasts[[j]],meanRisk]]
-          RC[,meanRisk:=NULL]
-          RC[]
-        }))}))
-      out <- list(meanRisk = dt.meanRisk, riskComparison = riskComparison)
-      out
+    # for predictRisk S3-method
+    allmethods <- utils::methods(predictRisk)
+    candidateMethods <- paste("predictRisk",class(object),sep=".")
+    if (all(match(candidateMethods,allmethods,nomatch=0)==0))
+        stop(paste("Could not find predictRisk S3-method for ",class(object),collapse=" ,"),sep="")
+    # for compatibility with resampling
+    if(is.null(object$call))
+        stop(paste("The object does not contain its own call, which is needed to refit the model in the bootstrap loop."))
+    # }}}
+    # {{{ calc G formula
+    if (TD){
+        Gformula <- function(object,
+                             data,
+                             treatment,
+                             contrasts,
+                             times,
+                             landmark,
+                             cause,
+                             ...){
+            response <- eval(formula[[2]],envir=data)
+            time <- response[,"time"]
+            entry <- response[,"entry"]
+            if(class(object)[[1]]=="coxph"){
+                riskhandler <- "predictRisk.coxphTD"
+            }else{
+                riskhandler <- "predictRisk.CSCTD"
+            }
+            ## prediction for the hypothetical worlds in which every subject is treated with the same treatment
+            dt.meanRisk <- data.table::rbindlist(lapply(1:n.contrasts,function(i){
+                data.i <- data
+                data.i[[treatment]] <- factor(contrasts[i], levels = levels)
+                data.table::rbindlist(lapply(landmark,function(lm){
+                    atrisk <- (entry <= lm & time >= lm)
+                    risk.i <- colMeans(do.call(riskhandler,
+                                               args = list(object,
+                                                           newdata = data.i[atrisk,],
+                                                           times = times,
+                                                           cause = cause,
+                                                           landmark=lm,
+                                                           ...)))
+                    data.table::data.table(Treatment=contrasts[[i]],time=times,landmark=lm,meanRisk=risk.i)
+                }))
+            }))
+            riskComparison <- data.table::rbindlist(lapply(1:(n.contrasts-1),function(i){
+                data.table::rbindlist(lapply(((i+1):n.contrasts),function(j){
+                    ## compute differences between all pairs of treatments
+                    RC <- dt.meanRisk[Treatment==contrasts[[i]]]
+                    setnames(RC,"Treatment","Treatment.A")
+                    RC[,Treatment.B:=contrasts[[j]]]
+                    RC[,diff:=meanRisk-dt.meanRisk[Treatment==contrasts[[j]],meanRisk]]
+                    RC[,ratio:=meanRisk/dt.meanRisk[Treatment==contrasts[[j]],meanRisk]]
+                    RC[,meanRisk:=NULL]
+                    RC[]
+                }))}))
+            out <- list(meanRisk = dt.meanRisk, riskComparison = riskComparison)
+            out
+        }
+    }else{
+        Gformula <- function(object,
+                             data,
+                             treatment,
+                             contrasts,
+                             times,
+                             landmark,
+                             cause,
+                             ...){
+            meanRisk <- lapply(1:n.contrasts,function(i){
+                ## prediction for the hypothetical worlds in which every subject is treated with the same treatment
+                data.i <- data
+                data.i[[treatment]] <- factor(contrasts[i], levels = levels)
+                risk.i <- colMeans(do.call("predictRisk",args = list(object,newdata = data.i,times = times,cause = cause,...)))
+                risk.i
+            })
+            riskComparison <- data.table::rbindlist(lapply(1:(n.contrasts-1),function(i){
+                data.table::rbindlist(lapply(((i+1):n.contrasts),function(j){
+                    ## compute differences between all pairs of treatments
+                    data.table(Treatment.A=contrasts[[i]],
+                               Treatment.B=contrasts[[j]],
+                               time = times,
+                               diff=meanRisk[[i]]-meanRisk[[j]],
+                               ratio=meanRisk[[i]]/meanRisk[[j]])
+                }))}))
+            name.Treatment <- unlist(lapply(1:n.contrasts, function(c){rep(contrasts[c],length(meanRisk[[c]]))}))
+            out <- list(meanRisk = data.table(Treatment=name.Treatment, time = times, meanRisk=unlist(meanRisk)),
+                        riskComparison = riskComparison)
+            out            
+        }
     }
-  }else{
-    Gformula <- function(object,
-                         data,
-                         treatment,
-                         contrasts,
-                         times,
-                         landmark,
-                         cause,
-                         ...){
-      meanRisk <- lapply(1:n.contrasts,function(i){
-        ## prediction for the hypothetical worlds in which every subject is treated with the same treatment
-        data.i <- data
-        data.i[[treatment]] <- factor(contrasts[i], levels = levels)
-        risk.i <- colMeans(do.call("predictRisk",args = list(object,newdata = data.i,times = times,cause = cause,...)))
-        risk.i
-      })
-      riskComparison <- data.table::rbindlist(lapply(1:(n.contrasts-1),function(i){
-        data.table::rbindlist(lapply(((i+1):n.contrasts),function(j){
-          ## compute differences between all pairs of treatments
-          data.table(Treatment.A=contrasts[[i]],
-                     Treatment.B=contrasts[[j]],
-                     time = times,
-                     diff=meanRisk[[i]]-meanRisk[[j]],
-                     ratio=meanRisk[[i]]/meanRisk[[j]])
-        }))}))
-      name.Treatment <- unlist(lapply(1:n.contrasts, function(c){rep(contrasts[c],length(meanRisk[[c]]))}))
-      out <- list(meanRisk = data.table(Treatment=name.Treatment, time = times, meanRisk=unlist(meanRisk)),
-                  riskComparison = riskComparison)
-      out            
-    }
-  }
-  # }}}
+    # }}}
   
   # {{{ point estimate
   estimateTime <- system.time(

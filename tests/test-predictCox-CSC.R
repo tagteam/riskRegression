@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun  6 2016 (09:35) 
 ## Version: 
-## last-updated: Feb 19 2018 (18:38) 
+## last-updated: Feb 20 2018 (16:19) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 137
+##     Update #: 141
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -105,25 +105,26 @@ test_that("Prediction - last event censored",{
   expect_equal(unname(survLast-survLastM1==0), rep(TRUE, 5)) # check that survival decrease at the last time
 })
 
+nData <- length(Melanoma$event)
+Melanoma2 <- Melanoma
+Melanoma2$status[nData] <- 1
+
 test_that("Prediction - last event is a death",{
-  nData <- length(Melanoma$event)
-  Melanoma2 <- Melanoma
-  Melanoma2$status[nData] <- 1
-  fit.coxph <- coxph(Surv(time,status == 1) ~ thick*age, data = Melanoma2, y = TRUE, x = TRUE)
-  fit.cph <- cph(Surv(time,status == 1) ~ thick*age, data = Melanoma2, y = TRUE, x = TRUE)
-  fit.CSC <- CSC(Hist(time,status) ~ thick*age, data = Melanoma2, fitter = "cph")
+    fit.coxph <- coxph(Surv(time,status == 1) ~ thick*age, data = Melanoma2, y = TRUE, x = TRUE)
+    fit.cph <- cph(Surv(time,status == 1) ~ thick*age, data = Melanoma2, y = TRUE, x = TRUE)
+    fit.CSC <- CSC(Hist(time,status) ~ thick*age, data = Melanoma2, fitter = "cph")
   
-  vec.times <- sort(c(Melanoma$time, Melanoma$time+1/2))[c(1,10,50,80,125,400,409,410)]
-  p1 <- predictCox(fit.coxph, times = vec.times, newdata = Melanoma[1:5,])
-  p2 <- predictCox(fit.cph, times = vec.times, newdata = Melanoma[1:5,])
-  p3 <-  rbind(c(1, 0.9901893, 0.8210527, 0.6850110, 0.5877866, 0.3577521, 0.020881916, NA),
-               c(1, 0.9969463, 0.9406704, 0.8892678, 0.8480293, 0.7269743, 0.301151229, NA),
-               c(1, 0.9973169, 0.9476885, 0.9020417, 0.8651891, 0.7556985, 0.348439663, NA),
-               c(1, 0.9946451, 0.8981872, 0.8138074, 0.7487177, 0.5713246, 0.121605930, NA),
-               c(1, 0.9830808, 0.7108797, 0.5195539, 0.3986327, 0.1687930, 0.001235699, NA)
-               )
-  #pec::predictSurvProb(fit.coxph, times = vec.times, newdata = Melanoma[1:5,])
-  # predictSurvProb automatically sort the results
+    vec.times <- sort(c(Melanoma$time, Melanoma$time+1/2))[c(1,10,50,80,125,400,409,410)]
+    p1 <- predictCox(fit.coxph, times = vec.times, newdata = Melanoma[1:5,])
+    p2 <- predictCox(fit.cph, times = vec.times, newdata = Melanoma[1:5,])
+    p3 <-  rbind(c(1, 0.9901893, 0.8210527, 0.6850110, 0.5877866, 0.3577521, 0.020881916, NA),
+                 c(1, 0.9969463, 0.9406704, 0.8892678, 0.8480293, 0.7269743, 0.301151229, NA),
+                 c(1, 0.9973169, 0.9476885, 0.9020417, 0.8651891, 0.7556985, 0.348439663, NA),
+                 c(1, 0.9946451, 0.8981872, 0.8138074, 0.7487177, 0.5713246, 0.121605930, NA),
+                 c(1, 0.9830808, 0.7108797, 0.5195539, 0.3986327, 0.1687930, 0.001235699, NA)
+                 )
+    #pec::predictSurvProb(fit.coxph, times = vec.times, newdata = Melanoma[1:5,])
+    # predictSurvProb automatically sort the results
   
   expect_equal(p1,p2, tolerance = 1e-4)
   expect_equal(p1$survival, unname(p3), tolerance = 1e-7)

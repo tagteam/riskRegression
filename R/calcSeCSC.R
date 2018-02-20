@@ -57,7 +57,7 @@ calcSeCSC <- function(object, cif, hazard, cumhazard, object.time, object.maxtim
                       new.n, cause, nCause, nVar, log.transform, export, store.iid){
 
     # {{{ influence function for each Cox model
-    if(is.null(object$iid)){
+  if(is.null(object$iid)){
         object$iid <- list()
         for(iModel in 1:nCause){ # iModel <- 1
             object$iid[[iModel]] <- iidCox(object$models[[iModel]], tau.hazard = object.time, store.iid = store.iid)
@@ -236,6 +236,7 @@ calcSeCSC <- function(object, cif, hazard, cumhazard, object.time, object.maxtim
          
         }
         
+            
         # set to s-
         if(nEtimes>1){
             iIFcumhazard <- cbind(0,iIFcumhazard[,1:(nEtimes-1),drop=FALSE])
@@ -244,15 +245,15 @@ calcSeCSC <- function(object, cif, hazard, cumhazard, object.time, object.maxtim
             iIFcumhazard[] <- 0
             iCumHazard <- 0
         }
-
+            
             IF_tempo <- rowCumSum(rowMultiply_cpp(iIFhazard1 - rowMultiply_cpp(iIFcumhazard, scale = iHazard1),
                                                   scale = exp(-iCumHazard)))    
             IF_tempo <- cbind(0,IF_tempo)[,prodlim::sindex(object.time, eval.times = times)+1,drop=FALSE]
             if(any(times > object.maxtime[iObs])){ # add NA after the last event in the strata
                 IF_tempo[,times > object.maxtime[iObs]] <- NA
             
-        }
-
+            }
+            
             if(log.transform){
                 IF_tempo <- rowScale_cpp(IF_tempo, scale = cif[iObs,,drop=FALSE]*log(cif[iObs,,drop=FALSE]))
                 if(any(times<first.event[new.strata[iObs,cause]+1])){ # any(times<[iObs.strata])
@@ -269,10 +270,11 @@ calcSeCSC <- function(object, cif, hazard, cumhazard, object.time, object.maxtim
             if("average.iid" %in% export){
                 out$average.iid <- out$average.iid + IF_tempo/new.n
             }
-
+            
     }
         # }}}
     }   
+    
     return(out)
 }
 
