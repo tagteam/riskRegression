@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jan  4 2016 (14:30) 
 ## Version: 
-## last-updated: Feb 20 2018 (13:04) 
+## last-updated: Feb 20 2018 (14:08) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 76
+##     Update #: 82
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -24,12 +24,25 @@ library(data.table)
 library(Daim)
 context("riskRegression")
 
-test_that("R squared", { 
+test_that("R squared/IPA", { 
     set.seed(112)
     d <- sampleData(112,outcome="binary")
     f1 <- glm(Y~X1+X5+X8,data=d, family="binomial")
     f2 <- glm(Y~X2+X6+X9+X10,data=d, family="binomial")
-    full <- Score(list(f1,f2),formula=Y~1,data=d,conf.int=TRUE,summary=c("RR"),plots="ROC")
+    r1 <- rsquared(f1,newdata=d)
+    r2 <- ipa(f2,newdata=d)
+    full <- Score(list(f1=f1,f2=f2),formula=Y~1,data=d,conf.int=TRUE,summary=c("RR"),plots="ROC")
+    expect_equal(r1$IPA.gain[1],full$Brier$score[model=="f1",IPA])
+    expect_equal(r2$IPA[2],full$Brier$score[model=="f2",IPA])
+})
+
+test_that("vcov",{
+    set.seed(112)
+    d <- sampleData(112,outcome="binary")
+    f1 <- glm(Y~X1+X5+X8,data=d, family="binomial")
+    f2 <- glm(Y~X2+X6+X9+X10,data=d, family="binomial")
+    test <- Score(list(f1,f2),keep="vcov",formula=Y~1,data=d,conf.int=TRUE,summary=c("RR"),plots="ROC")
+    expect_equal(dim(test$AUC$vcov),c(2,2))
 })
 
 test_that("binary outcome: robustness against order of data set",{
@@ -229,7 +242,6 @@ test_that("Number of models and time points", {
     expect_equal(r1$Brier$score[model=="a"],r2$Brier$score[model=="a" & times==1000])
     expect_equal(r1$AUC$score[model=="a"],r2$AUC$score[model=="a" & times==1000])
 })
-
 
 test_that("LOOB: Number of models and time points", {   
     library(testthat)

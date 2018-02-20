@@ -354,7 +354,7 @@ Score.list <- function(object,
     metrics[grep("^brier$",metrics,ignore.case=TRUE)] <- "Brier"
     plots[grep("^roc$",plots,ignore.case=TRUE)] <- "ROC"
     plots[grep("^cal",plots,ignore.case=TRUE)] <- "Calibration"
-    if (length(posRR <- grep("^rr$|^r2|rsq",summary,ignore.case=TRUE))>0){
+    if (length(posRR <- grep("^ipa$|^rr$|^r2|rsq",summary,ignore.case=TRUE))>0){
         if (!null.model) stop("Need the null model to compute R^2 but argument 'null.model' is FALSE.")
         summary <- summary[-posRR]
         if (!("Brier" %in% metrics)) metrics <- c(metrics,"Brier")
@@ -362,9 +362,9 @@ Score.list <- function(object,
             null.model <- TRUE 
             warning("Value of argument 'null.model' ignored as the null model is needed to compute R^2.")
         }
-        rsquared <- TRUE
+        ipa <- TRUE
     }else{
-        rsquared <- FALSE
+        ipa <- FALSE
     }
     ## Plots <- lapply(plots,grep,c("Roc","Cal"),ignore.case=TRUE,value=TRUE)
     if ("ROC" %in% plots) {
@@ -674,7 +674,7 @@ Score.list <- function(object,
                                    trainseed=NULL){
         ID=NULL
         # inherit everything else from parent frame: object, nullobject, NF, NT, times, cause, response.type, etc.
-        Brier=Rsquared=NULL
+        Brier=IPA=NULL
         looping <- !is.null(traindata)
         ## if (!looping) b=0
         N <- NROW(testdata)
@@ -812,7 +812,7 @@ Score.list <- function(object,
                                    cens.model,
                                    multi.split.test,
                                    keep.residuals,keep.vcov){
-        Rsquared=Brier=NULL
+        IPA=Brier=NULL
         # inherit everything else from parent frame: summary, metrics, plots, alpha, probs, dolist, et
         out <- vector(mode="list",
                       length=length(c(summary,metrics,plots)))
@@ -867,11 +867,11 @@ Score.list <- function(object,
             }
         }
         ## summary should be after metrics because R^2 depends on Brier score
-        if (rsquared){
+        if (ipa){
             if (response.type=="binary")
-                out[["Brier"]][["score"]][,Rsquared:=1-Brier/Brier[model=="Null model"]]
+                out[["Brier"]][["score"]][,IPA:=1-Brier/Brier[model=="Null model"]]
             else
-                out[["Brier"]][["score"]][,Rsquared:=1-Brier/Brier[model=="Null model"],by=times]
+                out[["Brier"]][["score"]][,IPA:=1-Brier/Brier[model=="Null model"],by=times]
         }
         
         for (s in summary){

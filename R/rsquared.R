@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Aug  9 2017 (10:36) 
 ## Version: 
-## Last-Updated: Oct 12 2017 (16:32) 
+## Last-Updated: Feb 20 2018 (13:55) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 136
+##     Update #: 139
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -18,7 +18,7 @@
 ##'
 ##' R^2 is calculated based on the model's predicted risks. The Brier score of the model is compared to the Brier score of the null model.
 ##' @title Explained variation for settings with binary, survival and competing risk outcome
-##' @aliases rsquared rsquared.default rsquared.glm rsquared.coxph rsquared.CauseSpecificCox
+##' @aliases rsquared rsquared.default rsquared.glm rsquared.coxph rsquared.CauseSpecificCox ipa ipa.default ipa.glm ipa.coxph ipa.CauseSpecificCox
 ##' @param object Model for which we want R^2
 ##' @param newdata Optional validation data set in which to compute R^2
 ##' @param formula Formula passed to \code{Score}. If not provided, try to use the formula of the call of \code{object}, if any.
@@ -27,10 +27,15 @@
 ##' @param ... passed to \code{riskRegression::Score}
 ##' @usage
 ##' rsquared(object,...)
+##' ipa(object,...)
 ##' \method{rsquared}{default}(object,formula,newdata,times,cause,...)
 ##' \method{rsquared}{glm}(object,formula,newdata,...)
 ##' \method{rsquared}{coxph}(object,formula,newdata,times,...)
 ##' \method{rsquared}{CauseSpecificCox}(object,formula,newdata,times,cause,...)
+##' \method{ipa}{default}(object,formula,newdata,times,cause,...)
+##' \method{ipa}{glm}(object,formula,newdata,...)
+##' \method{ipa}{coxph}(object,formula,newdata,times,...)
+##' \method{ipa}{CauseSpecificCox}(object,formula,newdata,times,cause,...)
 ##' 
 ##' @return Data frame with explained variation values for the full model.
 ##' @seealso Score
@@ -112,13 +117,13 @@ rsquared.default <- function(object,formula,newdata,times,cause,...){
                  cens.model="km",
                  summary="rsquared",
                  ...)$Brier$score
-    class(out) <- c("rsquared",class(out))
+    class(out) <- c("ipa",class(out))
     out
 }
 
 ##' @export
 rsquared.CauseSpecificCox <- function(object,formula,newdata,times,cause,...){
-    Rsquared=model=Variable=Rsquared.gain=Brier=NULL
+    IPA=model=Variable=IPA.gain=Brier=NULL
     ## this is a modification of drop1
     models <- object$models
     Terms <- lapply(models,stats::terms)
@@ -170,19 +175,19 @@ rsquared.CauseSpecificCox <- function(object,formula,newdata,times,cause,...){
                 cens.model="km",
                 summary="rsquared",
                 ...)$Brier$score
-    ## r2[,Rsquared:=100*Rsquared]
+    ## r2[,IPA:=100*IPA]
     ## r2 <- r2[model!="Null model"]
     data.table::setnames(r2,"model","Variable")
-    r2[,Rsquared.gain:=Rsquared[Variable=="Full model"]-Rsquared,by=times]
+    r2[,IPA.gain:=IPA[Variable=="Full model"]-IPA,by=times]
     ## r2 <- r2[Variable!="Full model"]
-    out <- as.data.frame(r2[,data.table::data.table(Variable,times,Brier,Rsquared,Rsquared.gain)])
-    class(out) <- c("rsquared",class(out))
+    out <- as.data.frame(r2[,data.table::data.table(Variable,times,Brier,IPA,IPA.gain)])
+    class(out) <- c("ipa",class(out))
     out
 }
 
 ##' @export
 rsquared.coxph <- function(object,formula,newdata,times,...){
-    Rsquared=model=Variable=Rsquared.gain=Brier=NULL
+    IPA=model=Variable=IPA.gain=Brier=NULL
     ## this is a modification of drop1
     Terms <- stats::terms(object)
     ## tl <- attr(Terms, "term.labels")
@@ -212,19 +217,19 @@ rsquared.coxph <- function(object,formula,newdata,times,...){
                 cens.model="km",
                 summary="rsquared",
                 ...)$Brier$score
-    ## r2[,Rsquared:=100*Rsquared]
+    ## r2[,IPA:=100*IPA]
     ## r2 <- r2[model!="Null model"]
     data.table::setnames(r2,"model","Variable")
-    r2[,Rsquared.gain:=Rsquared[Variable=="Full model"]-Rsquared,by=times]
+    r2[,IPA.gain:=IPA[Variable=="Full model"]-IPA,by=times]
     ## r2 <- r2[Variable!="Full model"]
-    out <- as.data.frame(r2[,data.table::data.table(Variable,times,Brier,Rsquared,Rsquared.gain)])
-    class(out) <- c("rsquared",class(out))
+    out <- as.data.frame(r2[,data.table::data.table(Variable,times,Brier,IPA,IPA.gain)])
+    class(out) <- c("ipa",class(out))
     out
 }
 
 ##' @export
 rsquared.glm <- function(object,formula,newdata,...){
-    Rsquared=model=Variable=Rsquared.gain=Brier=NULL
+    IPA=model=Variable=IPA.gain=Brier=NULL
     ## this is a modification of drop1
     stopifnot(family(object)$family=="binomial")
     Terms <- stats::terms(object)
@@ -253,15 +258,26 @@ rsquared.glm <- function(object,formula,newdata,...){
                 metrics="brier",
                 summary="rsquared",
                 ...)$Brier$score
-    ## r2[,Rsquared:=100*Rsquared]
+    ## r2[,IPA:=100*IPA]
     ## r2 <- r2[model!="Null model"]
     data.table::setnames(r2,"model","Variable")
-    r2[,Rsquared.gain:=Rsquared[Variable=="Full model"]-Rsquared]
+    r2[,IPA.gain:=IPA[Variable=="Full model"]-IPA]
     ## r2 <- r2[Variable!="Full model"]
-    out <- as.data.frame(r2[,data.table::data.table(Variable,Brier,Rsquared,Rsquared.gain)])
-    class(out) <- c("rsquared",class(out))
+    out <- as.data.frame(r2[,data.table::data.table(Variable,Brier,IPA,IPA.gain)])
+    class(out) <- c("ipa",class(out))
     out
-}
+} 
+
+#' @export
+ipa <- rsquared
+#' @export
+ipa.default <- rsquared.default
+#' @export
+ipa.CauseSpecificCox <- rsquared.CauseSpecificCox
+#' @export
+ipa.coxph <- rsquared.coxph
+#' @export
+ipa.glm <- rsquared.glm
 
 
 ######################################################################
