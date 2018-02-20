@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: maj 18 2017 (09:23) 
 ## Version: 
-## last-updated: nov 14 2017 (19:44) 
-##           By: Brice Ozenne
-##     Update #: 142
+## last-updated: Feb 19 2018 (18:22) 
+##           By: Thomas Alexander Gerds
+##     Update #: 143
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -20,8 +20,6 @@ library(testthat)
 library(mstate)
 tmat <- trans.comprisk(2, names = c("0", "1", "2"))
 library(survival)
-
-
 
 # {{{ 1- compare predict.CSC and mstate on small examples
 
@@ -425,6 +423,8 @@ test_that("predict.CSC(1c) - add up to one",{
 # {{{ data
 set.seed(10)
 d <- sampleData(1e2, outcome = "competing.risks")[,.(time,event,X1,X2,X6)]
+d[,X1:=as.numeric(as.character(X1))]
+d[,X2:=as.numeric(as.character(X2))]
 d[ , X16 := X1*X6]
 d[ , Xcat2 := as.factor(paste0(X1,X2))]
 
@@ -496,7 +496,6 @@ test_that("predict.CSC(2a) - compare to mstate",{
 
 # {{{ 2b - with covariates
 test_that("predict.CSC(2b) - compare to mstate",{
-
     for(iX in 0:1){
         newdata <- data.frame(X1 = iX, X2 = 0, X16 = 0)
         newdata.L <- data.frame(X1.1 = c(iX, 0), X1.2 = c(0, iX),
@@ -506,40 +505,31 @@ test_that("predict.CSC(2b) - compare to mstate",{
         # mstate
         e.coxph <- coxph(Surv(time, status) ~ X1.1 + X1.2 + X2.1 + X2.2 + X16.1 + X16.2 + strata(trans),
                          data = dL.exp)
-    
         pred.msfit <- msfit(e.coxph, newdata = newdata.L, trans = tmat)
         suppressWarnings(
             pred.probtrans <- probtrans(pred.msfit,0)[[1]]
         )
-    
         ## riskRegression
         CSC.RR1 <- CSC(Hist(time,event)~X1+X2+X16, data = d, method = "breslow")
         pred.RR1a <- predict(CSC.RR1, newdata, cause = 1, time = pred.probtrans[,"time"],
                              keep.newdata = FALSE, se = TRUE, product.limit = TRUE, log.transform = FALSE)
-
         pred.RR1b <- predict(CSC.RR1, newdata, cause = 1, time = pred.probtrans[,"time"],
                              keep.newdata = FALSE, se = TRUE, product.limit = FALSE, log.transform = FALSE)
-    
         pred.RR1c <- predict(CSC.RR1, newdata, cause = 2, time = pred.probtrans[,"time"],
                              keep.newdata = FALSE, se = TRUE, product.limit = TRUE, log.transform = FALSE)
-
         pred.RR1d <- predict(CSC.RR1, newdata, cause = 2, time = pred.probtrans[,"time"],
                              keep.newdata = FALSE, se = TRUE, product.limit = FALSE, log.transform = FALSE)
-    
         CSC.RR2 <- CSC(Hist(time,event)~X1+X2+X16, data = d, surv.type = "survival", method = "breslow")
         pred.RR2a <- predict(CSC.RR2, newdata, cause = 1, time = pred.probtrans[,"time"],
                              keep.newdata = FALSE, se = TRUE, product.limit = TRUE, log.transform = FALSE)
         pred.RR2b <- predict(CSC.RR2, newdata, cause = 1, time = pred.probtrans[,"time"],
                              keep.newdata = FALSE, se = TRUE, product.limit = FALSE, log.transform = FALSE)
-
-
         expect_equal(as.double(pred.RR1a$absRisk),pred.probtrans[,"pstate2"])
         expect_equal(as.double(pred.RR1b$absRisk),pred.probtrans[,"pstate2"], tol = 5e-3)
         expect_equal(as.double(pred.RR1c$absRisk),pred.probtrans[,"pstate3"])
         expect_equal(as.double(pred.RR1d$absRisk),pred.probtrans[,"pstate3"], tol = 1e-2)
         expect_equal(as.double(pred.RR2a$absRisk),pred.probtrans[,"pstate2"], tol = 1e-2)
         expect_equal(as.double(pred.RR2b$absRisk),pred.probtrans[,"pstate2"], tol = 1e-1)
-
         #if(iX==0){
         # quantile(as.double(pred.RR1a$absRisk.se) - pred.probtrans[,"se2"])
         # quantile(as.double(pred.RR1c$absRisk.se) - pred.probtrans[,"se3"])

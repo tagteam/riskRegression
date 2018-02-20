@@ -100,6 +100,8 @@ predictRisk(fit,newdata=nd)
 library(prodlim)
 set.seed(100)
 d <- sampleData(100,outcome="survival")
+d[,X1:=as.numeric(as.character(X1))]
+d[,X2:=as.numeric(as.character(X2))]
 # then fit a Cox model
 library(rms)
 cphmodel <- cph(Surv(time,event)~X1+X2,data=d,surv=TRUE,x=TRUE,y=TRUE)
@@ -135,9 +137,9 @@ psurv <- predictRisk(fitCox,newdata=valdat,times=seq(0,60,12))
 ## one row for each validation set individual
 
 # Do the same for a randomSurvivalForest model
-library(randomForestSRC)
-rsfmodel <- rfsrc(Surv(time,event)~X1+X2,data=learndat)
-prsfsurv=predictRisk(rsfmodel,newdata=valdat,times=seq(0,60,12))
+# library(randomForestSRC)
+# rsfmodel <- rfsrc(Surv(time,event)~X1+X2,data=learndat)
+# prsfsurv=predictRisk(rsfmodel,newdata=valdat,times=seq(0,60,12))
 # plot(psurv,prsfsurv)
 
 ## Cox with ridge option

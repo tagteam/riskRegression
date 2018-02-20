@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun  6 2016 (09:35) 
 ## Version: 
-## last-updated: nov 14 2017 (15:10) 
-##           By: Brice Ozenne
-##     Update #: 136
+## last-updated: Feb 19 2018 (18:38) 
+##           By: Thomas Alexander Gerds
+##     Update #: 137
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -483,8 +483,9 @@ d <- sampleData(1e2)
 d[X1 == 1, event := 2]
 
 m.CSC <- CSC(Hist(time,event)~strata(X1)+X2, data = d)
-expect_warning(predict(m.CSC, newdata = data.frame(X1=1,X2=0), se = TRUE, cause = 1, times = 2),
-               regexp = NA)
+## expect_warning(predict(m.CSC, newdata = data.frame(X1=1,X2=0), se = TRUE, cause = 1, times = 2),
+             ## regexp = NA)
+expect_error(predict(m.CSC, newdata = data.frame(X1=1,X2=0), se = TRUE, cause = 1, times = 2))
 # Warning message:
 #   In min(design[(design$status == 1) * (design$strata == strat) ==  :
 #                   no non-missing arguments to min; returning Inf

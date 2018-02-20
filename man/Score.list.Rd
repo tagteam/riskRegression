@@ -8,10 +8,10 @@
 \method{Score}{list}(object, formula, data, metrics = c("auc", "brier"),
   summary = NULL, plots = NULL, cause, times, landmarks,
   use.event.times = FALSE, null.model = TRUE, se.fit = TRUE,
-  multi.split.test = FALSE, conf.int = 0.95, contrasts = TRUE,
-  probs = c(0, 0.25, 0.5, 0.75, 1), cens.method = "outside.ipcw",
-  cens.model = "cox", split.method, B, M, seed, trainseeds, keep,
-  predictRisk.args, ...)
+  conservative = FALSE, multi.split.test = FALSE, conf.int = 0.95,
+  contrasts = TRUE, probs = c(0, 0.25, 0.5, 0.75, 1),
+  cens.method = "outside.ipcw", cens.model = "cox", split.method, B, M,
+  seed, trainseeds, keep, predictRisk.args, debug = 0L, ...)
 }
 \arguments{
 \item{object}{List of risk predictions (see details and examples).}
@@ -33,8 +33,10 @@ statistics to apply to the predicted risks. The only choice is
 predicted risks conditional on the outcome (at the time-point).
 Set to \code{NULL} to avoid estimation of retrospective risk quantiles.}
 
-\item{plots}{Character vector specifying which plots to prepare.
-Currently implemented are \code{"ROC"}, \code{"Calibration"} and \code{"boxplot"}}
+\item{plots}{Character vector specifying for which plots to put data into the result.
+Currently implemented are \code{"ROC"}, \code{"Calibration"} and \code{"boxplot"}.
+In addition, one can plot AUC and Brier score as function of time as soon as
+\code{times} has at least two different values.}
 
 \item{cause}{Event of interest. Used for binary outcome \code{Y}
 to specify that risks are risks of the event \code{Y=event}
@@ -58,6 +60,11 @@ and the left hand side of \code{formula}. For binary outcome this is just the em
 equal to the Kaplan-Meier estimator (no competing risks) and the Aalen-Johansen estimator (with competing risks).}
 
 \item{se.fit}{Logical or \code{0} or \code{1}. If \code{FALSE} or \code{0} do not calculate standard errors.}
+
+\item{conservative}{Logical, only relevant in right censored data. If \code{TRUE} ignore
+variability of the estimate of the inverse probability of censoring weights when calculating standard
+errors for prediction performance parameters. This can potentially reduce computation time and memory usage
+at a usually very small expense of a slightly higher standard error.}
 
 \item{multi.split.test}{Logical or \code{0} or \code{1}. If \code{FALSE} or \code{0} do not calculate multi-split tests. This argument is ignored when \code{split.method} is "none".}
 
@@ -124,6 +131,8 @@ randomly splitting (bootstrapping) the data during cross-validation.}
  \code{list(rfsrc=list(na.action="na.impute"))}.
 
  A more flexible approach is to write a new predictRisk S3-method. See Details.}
+
+\item{debug}{Logical. If \code{TRUE} indicate landmark in progress of the program.}
 
 \item{...}{Named list containging additional arguments that are passed on to the \code{predictRisk} methods corresponding to object. See examples.}
 }
@@ -238,7 +247,7 @@ plotCalibration(xb)
 
 # compute AUC for a list of continuous markers
 markers = as.list(testdat[,.(X6,X7,X8,X9,X10)])
-u=Score(markers,formula=Y~1,data=testdat,metrics=c("auc"))
+Score(markers,formula=Y~1,data=testdat,metrics=c("auc"))
 
 # cross-validation
 \dontrun{

@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun  6 2016 (09:02) 
 ## Version: 
-## last-updated: Oct 18 2017 (20:10) 
+## last-updated: Feb 19 2018 (19:55) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 103
+##     Update #: 106
 #----------------------------------------------------------------------
 ## 
 ### Commentary:
@@ -98,6 +98,8 @@
 ##' library(prodlim)
 ##' set.seed(100)
 ##' d <- sampleData(100,outcome="survival")
+##' d[,X1:=as.numeric(as.character(X1))]
+##' d[,X2:=as.numeric(as.character(X2))]
 ##' # then fit a Cox model
 ##' library(rms)
 ##' cphmodel <- cph(Surv(time,event)~X1+X2,data=d,surv=TRUE,x=TRUE,y=TRUE)
@@ -133,9 +135,9 @@
 ##' ## one row for each validation set individual
 ##' 
 ##' # Do the same for a randomSurvivalForest model
-##' library(randomForestSRC)
-##' rsfmodel <- rfsrc(Surv(time,event)~X1+X2,data=learndat)
-##' prsfsurv=predictRisk(rsfmodel,newdata=valdat,times=seq(0,60,12))
+##' # library(randomForestSRC)
+##' # rsfmodel <- rfsrc(Surv(time,event)~X1+X2,data=learndat)
+##' # prsfsurv=predictRisk(rsfmodel,newdata=valdat,times=seq(0,60,12))
 ##' # plot(psurv,prsfsurv)
 ##' 
 ##' ## Cox with ridge option
@@ -321,12 +323,12 @@ predictRisk.cox.aalen <- function(object,newdata,times,...){
 ##' @export
 predictRisk.coxph <- function(object,newdata,times,...){
     p <- predictCox(object=object,
-                      newdata=newdata,
-                      times=times,
-                      se = FALSE,
-                      iid = FALSE,
-                      keep.times=FALSE,
-                      type="survival")$survival
+                    newdata=newdata,
+                    times=times,
+                    se = FALSE,
+                    iid = FALSE,
+                    keep.times=FALSE,
+                    type="survival")$survival
 
     if (NROW(p) != NROW(newdata) || NCOL(p) != length(times)){
         stop(paste("\nPrediction matrix has wrong dimensions:\nRequested newdata x times: ",NROW(newdata)," x ",length(times),"\nProvided prediction matrix: ",NROW(p)," x ",NCOL(p),"\n\n",sep=""))

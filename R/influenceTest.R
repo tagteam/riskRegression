@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: maj 19 2017 (16:01) 
 ## Version: 
-## last-updated: Oct 12 2017 (17:02) 
+## last-updated: Feb 19 2018 (18:23) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 119
+##     Update #: 120
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -112,6 +112,11 @@
 #' ff <- update(ff, ~ .+ f(X3,0) + f(X4,0) + f(X5,0))
 #' ff <- update(ff, ~ .+ f(X6,0) + f(X7,0) + f(X8,0) + f(X9,0))
 #' d <- sampleData(n, outcome = "competing.risk", formula = ff)
+#' d[,X1:=as.numeric(as.character(X1))]
+#' d[,X2:=as.numeric(as.character(X2))]
+#' d[,X3:=as.numeric(as.character(X3))]
+#' d[,X4:=as.numeric(as.character(X4))]
+#' d[,X5:=as.numeric(as.character(X5))]
 #' setkey(d, time)
 #'
 #' Utime <- sort(unique(d$time))

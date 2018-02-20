@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jan  4 2016 (09:43) 
 ## Version: 
-## last-updated: Sep  5 2017 (08:49) 
+## last-updated: Feb 19 2018 (13:15) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 39
+##     Update #: 43
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -41,6 +41,7 @@
 ##' @export 
 ##' @author Thomas A. Gerds <tag@@biostat.ku.dk>
 sampleData <- function(n,outcome="competing.risks",formula= ~ f(X1,2) + f(X2,-0.033) + f(X3,0.4) + f(X6,.1) + f(X7,-.1) + f(X8,.5) + f(X9,-1)){
+    X1=X2=X3=X4=X5=NULL
     outcome <- match.arg(outcome,c("survival","competing.risks","binary"))
     m <- lava::lvm()
     lava::distribution(m,~X6) <- lava::normal.lvm(mean=60,sd=15)
@@ -70,7 +71,13 @@ sampleData <- function(n,outcome="competing.risks",formula= ~ f(X1,2) + f(X2,-0.
         m <- lava::eventTime(m, time ~ min(eventtime1 = 1, eventtime2 = 2, censtime = 0), "event")
         lava::regression(m) <- stats::update(formula,"eventtime1~.")
     }
-    data.table::as.data.table(lava::sim(m,n))
+    out <- data.table::as.data.table(lava::sim(m,n))
+    out[,X1:=factor(X1,levels=c("0","1"),labels=c("0","1"))]
+    out[,X2:=factor(X2,levels=c("0","1"),labels=c("0","1"))]
+    out[,X3:=factor(X3,levels=c("0","1"),labels=c("0","1"))]
+    out[,X4:=factor(X4,levels=c("0","1"),labels=c("0","1"))]
+    out[,X5:=factor(X5,levels=c("0","1"),labels=c("0","1"))]
+    out[]
 }
 
 ##' @export 

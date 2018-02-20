@@ -118,6 +118,11 @@ ff <- ~ f(X1,2) + f(X2,-0.033)
 ff <- update(ff, ~ .+ f(X3,0) + f(X4,0) + f(X5,0))
 ff <- update(ff, ~ .+ f(X6,0) + f(X7,0) + f(X8,0) + f(X9,0))
 d <- sampleData(n, outcome = "competing.risk", formula = ff)
+d[,X1:=as.numeric(as.character(X1))]
+d[,X2:=as.numeric(as.character(X2))]
+d[,X3:=as.numeric(as.character(X3))]
+d[,X4:=as.numeric(as.character(X4))]
+d[,X5:=as.numeric(as.character(X5))]
 setkey(d, time)
 
 Utime <- sort(unique(d$time))

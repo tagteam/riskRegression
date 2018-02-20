@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun 23 2016 (10:27) 
 ## Version: 
-## last-updated: Nov  9 2017 (06:53) 
+## last-updated: Feb  6 2018 (15:57) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 162
+##     Update #: 167
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -185,11 +185,16 @@ plotROC <- function(x,
                                      forced=list("plot"=list(axes=FALSE),
                                                  "axis1"=list(side=1),"axis2"=list(side=2)),
                                      verbose=TRUE)
-    if (add==0L) do.call("plot",control$plot)
-    control$axis1$labels <- paste(100*control$axis1$at,"%")
-    control$axis2$labels <- paste(100*control$axis2$at,"%")
-    do.call("axis",control$axis1)
-    do.call("axis",control$axis2)
+    if (add==0L) {do.call("plot",control$plot)
+        if (is.null(control$axis1$labels)){
+            control$axis1$labels <- paste(100*control$axis1$at,"%")
+        }
+        if (is.null(control$axis2$labels)){
+            control$axis2$labels <- paste(100*control$axis2$at,"%")
+        }
+        do.call("axis",control$axis1)
+        do.call("axis",control$axis2)
+    }
     if (is.character(legend[1]) || legend[1]==TRUE){
         legend.coords <- do.call("legend",control$legend)
         if (!is.null(addtable2plot.DefaultArgs)){

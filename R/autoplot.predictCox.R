@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: feb 17 2017 (10:06) 
 ## Version: 
-## last-updated: okt  3 2017 (17:21) 
-##           By: Brice Ozenne
-##     Update #: 332
+## last-updated: Feb 19 2018 (17:58) 
+##           By: Thomas Alexander Gerds
+##     Update #: 333
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -214,7 +214,9 @@ predict2melt <- function(outcome, name.outcome,
     outcome[, row := 1:.N]
     if(group.by == "covariates"){
         cov.names <- names(newdata)
-        newdata <- newdata[, (cov.names) := lapply(cov.names, function(col){paste0(col,"=",round(.SD[[col]],digits))})]
+        newdata <- newdata[, (cov.names) := lapply(cov.names,function(col){
+            if (is.numeric(.SD[[col]]))
+                paste0(col,"=",round(.SD[[col]],digits)) else paste0(col,"=",.SD[[col]])})]
         outcome[, ("covariates") := interaction(newdata,sep = " ")]
     }else if(group.by == "strata"){
         outcome[, strata := strata]

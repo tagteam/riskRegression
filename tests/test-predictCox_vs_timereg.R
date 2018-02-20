@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: maj 18 2017 (09:23) 
 ## Version: 
-## last-updated: nov 14 2017 (19:50) 
-##           By: Brice Ozenne
-##     Update #: 57
+## last-updated: Feb 19 2018 (19:01) 
+##           By: Thomas Alexander Gerds
+##     Update #: 60
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -28,8 +28,12 @@ context("Compare predictCox to timereg")
 # {{{ data
 set.seed(10)
 d <- sampleData(5e1, outcome = "survival")[,.(eventtime,event,X1,X2,X6)]
+d[,X1:=as.numeric(as.character(X1))]
+d[,X2:=as.numeric(as.character(X2))]
 d[ , X16 := X1*X6]
 d[ , Xcat2 := as.factor(paste0(X1,X2))]
+
+
 d2 <- copy(d)
 
 setkey(d,eventtime) # only d is sorted

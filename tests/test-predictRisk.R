@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Aug 10 2017 (08:56) 
 ## Version: 
-## Last-Updated: Oct 12 2017 (16:31) 
+## Last-Updated: Dec 27 2017 (10:17) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 9
+##     Update #: 13
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -19,6 +19,7 @@ library(testthat)
 library(rms)
 library(survival)
 library(randomForestSRC)
+library(ggplot2)
 
 # {{{ missing data
 test_that("Additional arguments: example with imputation of missing data", {
@@ -83,6 +84,18 @@ predictRisk(CSC.s$models[[1]], newdata = dn, times = c(5,10,15,20), cause = caus
 predictRisk(CSC.h$models[[2]], newdata = dn, times = c(5,10,15,20), cause = cause)
 predictRisk(CSC.s$models[[2]], newdata = dn, times = c(5,10,15,20), cause = cause)
 # }}}
+
+
+learn <- sampleData(307,outcome="binary")
+model <- glm(Y~X1+X5+X6+X7,data=learn,family=binomial)
+test <- learn[,expand.grid(X1=levels(X1),X5=levels(X5),X6=seq(20,100,5),X7=seq(40,75,5))]
+setDT(test)
+test[,risk:=predictRisk(model,newdata=test)]
+colors <- colorRampPalette(c("green", "yellow", "red"))(100)
+p1 <- ggplot(test, aes(X6, X7)) +  geom_tile(aes(fill = risk)) 
+p1 <- p1+scale_fill_gradientn(colours = colors)
+p1+facet_grid(X1~X5)
+
 
 ######################################################################
 ### test-predictRisk.R ends here

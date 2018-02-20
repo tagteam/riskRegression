@@ -19,9 +19,12 @@ getCensoringWeights <- function(formula,
                fit <- prodlim::prodlim(sFormula,data=data,reverse=TRUE)
                IPCW.times <- predict(fit,newdata=data,times=times,level.chaos=1,mode="matrix",type="surv")
                IPCW.subject.times <- prodlim::predictSurvIndividual(fit,lag=1)
-               out <- list(IPCW.times=IPCW.times,IPCW.subject.times=IPCW.subject.times,method=cens.model)
+               out <- list(IPCW.times=IPCW.times,
+                           IPCW.subject.times=IPCW.subject.times,
+                           method=cens.model)
                if (influence.curve==TRUE){
-                   out <- c(out,list(IC=data[,getInfluenceCurve.KM(time=time,status=status)]))
+                   out <- c(out,
+                            list(IC=data[,getInfluenceCurve.KM(time=time,status=status)]))
                }
                out
            },"cox"={
@@ -35,23 +38,35 @@ getCensoringWeights <- function(formula,
                args$surv <- TRUE
                fit <- do.call(rms::cph,c(list(sFormula,data=wdata),args))
                ## need G(Ti-|Xi) only for i where status=1 && Ti < max(times)
-               subject.position <- (((Y<=max(times))*status)==1)
-               subject.times <- Y[subject.position]
-               IPCW.times <- rms::survest(fit,newdata=wdata,times=times,se.fit=FALSE)$surv
-               IPCW.subject.times <- rms::survest(fit,times=subject.times-min(diff(c(0,unique(subject.times))))/2,what='parallel')
+               subject.times <- Y[(((Y<=max(times))*status)==1)]
+               if (length(times)==1){
+                   IPCW.times <- matrix(rms::survest(fit,newdata=wdata,times=times,se.fit=FALSE)$surv,ncol=1)
+               } else{ 
+                   IPCW.times <- rms::survest(fit,newdata=wdata,times=times,se.fit=FALSE)$surv
+               }
+               ## only one per subject, so must be a flat vector
+               ## FIXME: really need subject.times only where events occur before times
+               IPCW.subject.times <- as.numeric(rms::survest(fit,times=Y-min(diff(c(0,unique(Y))))/2,what='parallel'))
                out <- list(IPCW.times=IPCW.times,IPCW.subject.times=IPCW.subject.times,method=cens.model)
-               ## array: nlearn x times x newdata
                if (influence.curve==TRUE){
-                   IC <- predictCox(fit, iid = TRUE,
-                                    newdata = wdata,
-                                    times = c(subject.times,times),
-                                    log.transform = FALSE,
-                                    type = "survival")$survival.iid
+                   ## IC is an array with dimension (nlearn, times, newdata)
+                   ##                           IC_G(t,z;x_k)
+                   IC <- list(IC.subject=predictCox(fit, iid = TRUE,
+                                                    newdata = wdata,
+                                                    times = subject.times,
+                                                    log.transform = FALSE,
+                                                    type = "survival")$survival.iid,
+                              IC.times=predictCox(fit, iid = TRUE,
+                                                  newdata = wdata,
+                                                  times = times,
+                                                  log.transform = FALSE,
+                                                  type = "survival")$survival.iid)
+                   ## IC <- predictCox(fit, iid = TRUE,newdata = wdata,times = c(subject.times,times),log.transform = FALSE,type = "survival")$survival.iid
                    out <- c(out,list(IC=IC))
                }
            },{
                stop("IPCW works only for nuisance model obtained with Kaplan-Meier (marginal) or Cox regression (cox).")
            })
-    out$dim <- ifelse(cens.model=="cox",0,1)
+    out$dim <- ifelse(cens.model=="cox",1,0)
     out
 }
