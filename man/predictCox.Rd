@@ -120,24 +120,9 @@ nd <- sampleData(4,outcome="survival") ## validation dataset
 d$time <- round(d$time,1) ## create tied events
 # table(duplicated(d$time))
 
-<<<<<<< HEAD
-predictCox(fit)$cumhazard
-riskRegression:::predictCox(fit)$cumhazard
-predictCox(fit,centered=FALSE,type="hazard")
-predictCox(fit,centered=TRUE,type="hazard")
-predictCox(fit, newdata=nd, times=c(3,8),se=TRUE)
-predictCox(fit, newdata=nd, times=c(3,8),se=TRUE, log.transform = TRUE)
-predictCox(fit, newdata=nd, times=c(3,8),se=TRUE, store.iid = "minimal")
-predictCox(fit, newdata=nd, times = 5,iid=TRUE)
-predictCox(fit, newdata=nd, times = 5,
-average.iid=TRUE, log.transform = FALSE)$survival.average.iid 
-
-cbind(survival::basehaz(fit),predictCox(fit,type="cumhazard")$cumhazard)
-=======
 ## estimate a stratified Cox model
 fit <- coxph(Surv(time,event)~X1 + strata(X2) + X6,
              data=d, ties="breslow", x = TRUE, y = TRUE)
->>>>>>> 77399531e627d936eb2bb769bb99db67d62387ea
 
 ## compute the baseline cumulative hazard
 fit.haz <- predictCox(fit)
