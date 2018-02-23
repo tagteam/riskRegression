@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jan  4 2016 (14:30) 
 ## Version: 
-## last-updated: Feb 20 2018 (14:08) 
+## last-updated: Feb 23 2018 (14:52) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 82
+##     Update #: 85
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -36,12 +36,19 @@ test_that("R squared/IPA", {
     expect_equal(r2$IPA[2],full$Brier$score[model=="f2",IPA])
 })
 
-test_that("vcov",{
+test_that("vcov AUC",{
     set.seed(112)
     d <- sampleData(112,outcome="binary")
     f1 <- glm(Y~X1+X5+X8,data=d, family="binomial")
     f2 <- glm(Y~X2+X6+X9+X10,data=d, family="binomial")
     test <- Score(list(f1,f2),keep="vcov",formula=Y~1,data=d,conf.int=TRUE,summary=c("RR"),plots="ROC")
+    expect_equal(dim(test$AUC$vcov),c(2,2))
+    ## survival
+    set.seed(112)
+    d <- sampleData(112,outcome="survival")
+    f1 <- coxph(Surv(time,event)~X1+X5+X8,data=d, x=TRUE,y=TRUE)
+    f2 <- coxph(Surv(time,event)~X2+X6+X9+X10,data=d, x=TRUE,y=TRUE)
+    test <- Score(list(a=f1,f2),times=5,keep="vcov",formula=Surv(time,event)~1,data=d,conf.int=TRUE,metrics=c("brier","auc"))
     expect_equal(dim(test$AUC$vcov),c(2,2))
 })
 
