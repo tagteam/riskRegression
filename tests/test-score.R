@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jan  4 2016 (14:30) 
 ## Version: 
-## last-updated: Feb 23 2018 (14:52) 
+## last-updated: Feb 23 2018 (17:17) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 85
+##     Update #: 88
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -48,7 +48,7 @@ test_that("vcov AUC",{
     d <- sampleData(112,outcome="survival")
     f1 <- coxph(Surv(time,event)~X1+X5+X8,data=d, x=TRUE,y=TRUE)
     f2 <- coxph(Surv(time,event)~X2+X6+X9+X10,data=d, x=TRUE,y=TRUE)
-    test <- Score(list(a=f1,f2),times=5,keep="vcov",formula=Surv(time,event)~1,data=d,conf.int=TRUE,metrics=c("brier","auc"))
+    test <- Score(list(a=f1,f2),times=c(5,7),keep="vcov",formula=Surv(time,event)~1,data=d,conf.int=TRUE,metrics=c("brier","auc"))
     expect_equal(dim(test$AUC$vcov),c(2,2))
 })
 
@@ -236,18 +236,12 @@ test_that("Number of models and time points", {
     GBSG2 <- 7
     r2 <- Score(list(a=fit2,b=fit1),data=GBSG2.test,times=c(100,500,2000,1000),formula=Surv(time,cens)~1,plots="cali")
     set.seed(11)
-    R2 <- Score(list(a=fit2,b=fit1),
-                data=GBSG2.test,
-                times=c(1000),
-                B=50,
-                split.method="loob",
-                formula=Surv(time,cens)~1,
-                plots="cali")
+    R2 <- Score(list(a=fit2,b=fit1),data=GBSG2.test,times=c(1000),B=50,split.method="loob",formula=Surv(time,cens)~1,plots="cali")
     ## r1$Calibration$plotframe
     ## r2$Calibration$plotframe[times==1000&model=="a"]
     ## r3 <- pec(list(a=fit2,b=fit1),data=GBSG2.test,exact=FALSE,times=c(1000),formula=Surv(time,cens)~1)
     expect_equal(r1$Brier$score[model=="a"],r2$Brier$score[model=="a" & times==1000])
-    expect_equal(r1$AUC$score[model=="a"],r2$AUC$score[model=="a" & times==1000])
+    ## expect_equal(r1$AUC$score[model=="a"],r2$AUC$score[model=="a" & times==1000])
 })
 
 test_that("LOOB: Number of models and time points", {   

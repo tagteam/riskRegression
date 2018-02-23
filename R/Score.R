@@ -1122,6 +1122,17 @@ Score.list <- function(object,
     }
     models <- mlevs
     names(models) <- mlabels
+    if (keep.vcov){
+        lab.models <- mlabels
+        if (null.model){
+            names(lab.models) <- paste0("model=",0:(length(mlabels)-1))
+        }
+        else{
+            names(lab.models) <- paste0("model=",1:(length(mlabels)))
+        }
+        attr(output$Brier$vcov,"models") <- lab.models
+        attr(output$AUC$vcov,"models") <- lab.models
+    }
     if (null.model==TRUE) nm <- names(models)[1] else nm <- NULL
     if (!keep.splitindex) split.method$index <- "split index was not saved"
     output <- c(output,list(response.type=response.type,
@@ -1172,7 +1183,7 @@ Brier.binary <- function(DT,
                          dolist,
                          keep.residuals=FALSE,
                          ...){
-    residuals=Brier=risk=model=ReSpOnSe=lower=upper=se=ID=NULL
+    residuals=Brier=risk=model=ReSpOnSe=lower=upper=se=ID=IF.Brier=NULL
     DT[,residuals:=(ReSpOnSe-risk)^2]
     if (se.fit==1L){
         data.table::setkey(DT,model,ID)
@@ -1204,7 +1215,7 @@ Brier.binary <- function(DT,
         output <- list(score=score)
     }
     if (keep.vcov && se.fit==TRUE){
-        output <- c(output,list(vcov=getVcov(DT,"IF.Brier",models=mlabels)))
+        output <- c(output,list(vcov=getVcov(DT,"IF.Brier")))
     }
     if (keep.residuals) {
         output <- c(output,list(residuals=DT[,data.table::data.table(ID,ReSpOnSe,model,risk,residuals)]))
@@ -1262,9 +1273,8 @@ Brier.survival <- function(DT,MC,se.fit,conservative,cens.model,keep.vcov=FALSE,
     } else{
         output <- list(score=score)
     }
-browser()
     if (keep.vcov && se.fit==TRUE){
-        output <- c(output,list(vcov=getVcov(DT,"IF.Brier",models=mlabels,times=times)))
+        output <- c(output,list(vcov=getVcov(DT,"IF.Brier",times=TRUE)))
     }
     if (keep.residuals) {
         output <- c(output,list(residuals=DT[,c("ID","time","status","model","times","risk","residuals"),with=FALSE]))
@@ -1324,7 +1334,7 @@ Brier.competing.risks <- function(DT,MC,se.fit,conservative,cens.model,keep.vcov
         output <- c(output,list(residuals=DT[,c("ID","time","status","model","times","risk","residuals"),with=FALSE]))
     }
     if (keep.vcov && se.fit==TRUE){
-        output <- c(output,list(vcov=getVcov(DT,"IF.Brier",models=mlabels,times=times)))
+        output <- c(output,list(vcov=getVcov(DT,"IF.Brier",times=TRUE)))
     }
     output
 }
@@ -1467,8 +1477,6 @@ AUC.binary <- function(DT,breaks=NULL,se.fit,conservative=FALSE,cens.model="none
         output$contrasts <- delong.res$contrasts
         if (keep.vcov){
             output$vcov <- delong.res$vcov
-            colnames(output$vcov) <- mlabels
-            rownames(output$vcov) <- mlabels
         }
         output
     }else{
@@ -1530,7 +1538,7 @@ AUC.survival <- function(DT,MC,se.fit,conservative,cens.model,keep.vcov=FALSE,mu
         data.table::setkey(aucDT,model,times)
         aucDT <- aucDT[score]
         if (keep.vcov){
-            output <- c(output,list(vcov=getVcov(aucDT,"IF.AUC",models=mlabels,times=times)))
+            output <- c(output,list(vcov=getVcov(aucDT,"IF.AUC",times=TRUE)))
         }
     }else{
         output <- c(list(score=score),output)
@@ -1605,7 +1613,7 @@ AUC.competing.risks <- function(DT,MC,se.fit,conservative,cens.model,keep.vcov=F
         data.table::setkey(aucDT,model,times)
         aucDT <- aucDT[score]
         if (keep.vcov){
-            output <- c(output,list(vcov=getVcov(aucDT,"IF.AUC",models=mlabels,times=times)))
+            output <- c(output,list(vcov=getVcov(aucDT,"IF.AUC",times=TRUE)))
         }
     }else{
         output <- c(list(score=score),output)
