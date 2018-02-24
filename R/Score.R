@@ -1285,8 +1285,10 @@ Brier.survival <- function(DT,MC,se.fit,conservative,cens.model,keep.vcov=FALSE,
 Brier.competing.risks <- function(DT,MC,se.fit,conservative,cens.model,keep.vcov=FALSE,multi.split.test,alpha,N,NT,NF,dolist,keep.residuals=FALSE,cause,states,...){
     IC0=nth.times=ID=time=times=event=Brier=raw.Residuals=risk=residuals=WTi=Wt=status=setorder=model=IF.Brier=data.table=sd=lower=qnorm=se=upper=NULL
     ## compute 0/1 outcome:
-    DT[time<=times & status==1 & event==cause,residuals:=(1-risk)^2/WTi]
-    DT[time<=times & status==1 & event!=cause,residuals:=(risk)^2/WTi]
+    thecause <- match(cause,states,nomatch=0)
+    if (length(thecause)==0) stop("Cannot identify cause of interest")
+    DT[time<=times & status==1 & event==thecause,residuals:=(1-risk)^2/WTi]
+    DT[time<=times & status==1 & event!=thecause,residuals:=(risk)^2/WTi]
     DT[time<=times & status==0,residuals:=0]
     DT[time>times,residuals:=(risk)^2/Wt]
     ## deal with censored observations before t
@@ -1567,9 +1569,11 @@ AUC.competing.risks <- function(DT,MC,se.fit,conservative,cens.model,keep.vcov=F
     ## order data
     data.table::setorder(aucDT,model,times,-risk)
     ## identify cases and controls
-    aucDT[,Cases:=(time <=times &  event==cause)]
+    thecause <- match(cause,states,nomatch=0)
+    if (length(thecause)==0) stop("Cannot identify cause of interest")
+    aucDT[,Cases:=(time <=times &  event==thecause)]
     aucDT[,Controls1:=(time > times)] 
-    aucDT[,Controls2:=(time <=times &  event!=cause & status !=0)]
+    aucDT[,Controls2:=(time <=times &  event!=thecause & status !=0)]
     ## prepare Weights
     aucDT[Cases==0,ipcwCases:=0]
     aucDT[Controls1==0,ipcwControls1:=0]
