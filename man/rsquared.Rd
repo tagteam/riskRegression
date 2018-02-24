@@ -6,23 +6,23 @@
 \alias{rsquared.glm}
 \alias{rsquared.coxph}
 \alias{rsquared.CauseSpecificCox}
-\alias{ipa}
-\alias{ipa.default}
-\alias{ipa.glm}
-\alias{ipa.coxph}
-\alias{ipa.CauseSpecificCox}
+\alias{IPA}
+\alias{IPA.default}
+\alias{IPA.glm}
+\alias{IPA.coxph}
+\alias{IPA.CauseSpecificCox}
 \title{Explained variation for settings with binary, survival and competing risk outcome}
 \usage{
 rsquared(object,...)
-ipa(object,...)
+IPA(object,...)
 \method{rsquared}{default}(object,formula,newdata,times,cause,...)
 \method{rsquared}{glm}(object,formula,newdata,...)
 \method{rsquared}{coxph}(object,formula,newdata,times,...)
 \method{rsquared}{CauseSpecificCox}(object,formula,newdata,times,cause,...)
-\method{ipa}{default}(object,formula,newdata,times,cause,...)
-\method{ipa}{glm}(object,formula,newdata,...)
-\method{ipa}{coxph}(object,formula,newdata,times,...)
-\method{ipa}{CauseSpecificCox}(object,formula,newdata,times,cause,...)
+\method{IPA}{default}(object,formula,newdata,times,cause,...)
+\method{IPA}{glm}(object,formula,newdata,...)
+\method{IPA}{coxph}(object,formula,newdata,times,...)
+\method{IPA}{CauseSpecificCox}(object,formula,newdata,times,cause,...)
 }
 \arguments{
 \item{object}{Model for which we want R^2}

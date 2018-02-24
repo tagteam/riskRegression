@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Aug  9 2017 (10:36) 
 ## Version: 
-## Last-Updated: Feb 24 2018 (12:38) 
+## Last-Updated: Feb 24 2018 (13:45) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 140
+##     Update #: 141
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -18,7 +18,7 @@
 ##'
 ##' R^2 is calculated based on the model's predicted risks. The Brier score of the model is compared to the Brier score of the null model.
 ##' @title Explained variation for settings with binary, survival and competing risk outcome
-##' @aliases rsquared rsquared.default rsquared.glm rsquared.coxph rsquared.CauseSpecificCox ipa ipa.default ipa.glm ipa.coxph ipa.CauseSpecificCox
+##' @aliases rsquared rsquared.default rsquared.glm rsquared.coxph rsquared.CauseSpecificCox IPA IPA.default IPA.glm IPA.coxph IPA.CauseSpecificCox
 ##' @param object Model for which we want R^2
 ##' @param newdata Optional validation data set in which to compute R^2
 ##' @param formula Formula passed to \code{Score}. If not provided, try to use the formula of the call of \code{object}, if any.
@@ -27,15 +27,15 @@
 ##' @param ... passed to \code{riskRegression::Score}
 ##' @usage
 ##' rsquared(object,...)
-##' ipa(object,...)
+##' IPA(object,...)
 ##' \method{rsquared}{default}(object,formula,newdata,times,cause,...)
 ##' \method{rsquared}{glm}(object,formula,newdata,...)
 ##' \method{rsquared}{coxph}(object,formula,newdata,times,...)
 ##' \method{rsquared}{CauseSpecificCox}(object,formula,newdata,times,cause,...)
-##' \method{ipa}{default}(object,formula,newdata,times,cause,...)
-##' \method{ipa}{glm}(object,formula,newdata,...)
-##' \method{ipa}{coxph}(object,formula,newdata,times,...)
-##' \method{ipa}{CauseSpecificCox}(object,formula,newdata,times,cause,...)
+##' \method{IPA}{default}(object,formula,newdata,times,cause,...)
+##' \method{IPA}{glm}(object,formula,newdata,...)
+##' \method{IPA}{coxph}(object,formula,newdata,times,...)
+##' \method{IPA}{CauseSpecificCox}(object,formula,newdata,times,cause,...)
 ##' 
 ##' @return Data frame with explained variation values for the full model.
 ##' @seealso Score
