@@ -1148,9 +1148,15 @@ Score.list <- function(object,
         if (!is.null(output$Brier$vcov))
             attr(output$Brier$vcov,"models") <- lab.models
         if (!is.null(output$AUC$vcov))
-        if (response.type=="binary"){
-            colnames(output$AUC$vcov) <- rownames(output$AUC$vcov) <- mlabels
-        }
+            if (response.type=="binary"){
+                if (NCOL(output$AUC$vcov)==length(mlabels)){
+                    colnames(output$AUC$vcov) <- mlabels
+                    rownames(output$AUC$vcov) <- mlabels
+                }else{
+                    colnames(output$AUC$vcov) <- mlabels[-1]
+                    rownames(output$AUC$vcov) <- mlabels[-1]
+                }
+            }
         attr(output$AUC$vcov,"models") <- lab.models
     }
     if (null.model==TRUE) nm <- names(models)[1] else nm <- NULL
