@@ -899,6 +899,7 @@ Score.list <- function(object,
     # }}}
     # -----------------apparent nosplit performance---------------------
     # {{{
+    missing.predictions <- "Don't know yet"
     if (split.method$internal.name %in% c("noplan",".632+")){
         DT <- getPerformanceData(testdata=data,
                                  testweights=Weights,
@@ -948,6 +949,10 @@ Score.list <- function(object,
                                        trainseed=trainseeds[[b]])
             DT.b
         }))
+        if (any(is.na(DT.B[["risk"]]))){
+            missing.predictions <- DT.B[,list("Missing.values"=sum(is.na(risk))),by=byvars]
+            warning("Missing values in the predicted risk. See `missing.predictions' in output list.")
+        }
         ## FIXME: subset influence curves
         ## case se.fit=1 we need only p-values for multi-split tests
         ## se.fit.cv <- se.fit*2
@@ -1143,7 +1148,10 @@ Score.list <- function(object,
         if (!is.null(output$Brier$vcov))
             attr(output$Brier$vcov,"models") <- lab.models
         if (!is.null(output$AUC$vcov))
-            attr(output$AUC$vcov,"models") <- lab.models
+        if (response.type=="binary"){
+            colnames(output$AUC$vcov) <- rownames(output$AUC$vcov) <- mlabels
+        }
+        attr(output$AUC$vcov,"models") <- lab.models
     }
     if (null.model==TRUE) nm <- names(models)[1] else nm <- NULL
     if (!keep.splitindex) split.method$index <- "split index was not saved"
@@ -1438,7 +1446,9 @@ delongtest <-  function(risk, score, dolist, response, cause, alpha, se.fit, kee
     }else{
         out <- list(score = score, contrasts = NULL)
     }
-    if (keep.vcov) out <- c(out,list(vcov=S))
+    if (keep.vcov) {
+        out <- c(out,list(vcov=S))
+    }
     out
 }
 
