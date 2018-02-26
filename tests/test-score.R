@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jan  4 2016 (14:30) 
 ## Version: 
-## last-updated: Feb 25 2018 (08:59) 
+## last-updated: Feb 25 2018 (10:34) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 89
+##     Update #: 90
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -98,6 +98,18 @@ test_that("survival outcome: robustness against order of data set",{
     expect_equal(s1$AUC,s1b$AUC)
     expect_equal(s2$AUC,s2b$AUC)
     expect_equal(s3$AUC,s3b$AUC)
+})
+
+test_that("competing risks outcome: check against pec",{
+    set.seed(112)
+    d <- sampleData(112,outcome="competing.risks")
+    nd <- sampleData(112,outcome="competing.risks")
+    library(pec)
+    f <- FGR(Hist(time,event)~X1+X6,data=d,cause=1)
+    a <- pec::pec(list(f),data=nd,times=c(2,5),formula=Hist(time,event)~1,cens.model="marginal",exact=FALSE)
+    b <- Score(list(FGR=f),data=nd,formula=Hist(time,event)~1,cens.model="km",se.fit=FALSE,times=c(2,5),metrics="brier")
+    expect_equal(a$AppErr$Reference[-1],b$Brier$score[model=="Null model",Brier])
+    expect_equal(a$AppErr$FGR[-1],b$Brier$score[model=="FGR",Brier])
 })
 test_that("competing risks outcome: robustness against order of data set",{
     set.seed(112)

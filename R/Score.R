@@ -356,12 +356,12 @@ Score.list <- function(object,
     plots[grep("^roc$",plots,ignore.case=TRUE)] <- "ROC"
     plots[grep("^cal",plots,ignore.case=TRUE)] <- "Calibration"
     if (length(posRR <- grep("^ipa$|^rr$|^r2|rsq",summary,ignore.case=TRUE))>0){
-        if (!null.model) stop("Need the null model to compute R^2 but argument 'null.model' is FALSE.")
+        if (!null.model) stop("Need the null model to compute IPA/R^2 but argument 'null.model' is FALSE.")
         summary <- summary[-posRR]
         if (!("Brier" %in% metrics)) metrics <- c(metrics,"Brier")
         if (!null.model) {
             null.model <- TRUE 
-            warning("Value of argument 'null.model' ignored as the null model is needed to compute R^2.")
+            warning("Value of argument 'null.model' ignored as the null model is needed to compute IPA/R^2.")
         }
         ipa <- TRUE
     }else{
@@ -409,6 +409,11 @@ Score.list <- function(object,
                             vars=responsevars)
     response.dim <- NCOL(response)
     response.type <- attr(response,"model")
+    if (response.type %in% c("survival","competing.risks")){
+        byvars <- c("model","times")
+    } else{
+        byvars <- c("model")
+    }
     states <- attr(response,"states")
     if (missing(cause)) 
         if (response.type=="binary")
@@ -867,7 +872,7 @@ Score.list <- function(object,
                 out[[m]]$contrasts[,reference:=factor(reference,levels=mlevs,mlabels)]
             }
         }
-        ## summary should be after metrics because R^2 depends on Brier score
+        ## summary should be after metrics because IPA/R^2 depends on Brier score
         if (ipa){
             if (response.type=="binary")
                 out[["Brier"]][["score"]][,IPA:=1-Brier/Brier[model=="Null model"]]
@@ -899,6 +904,12 @@ Score.list <- function(object,
                                  testweights=Weights,
                                  traindata=NULL,
                                  trainseed=NULL)
+        if (any(is.na(DT[["risk"]]))){
+            missing.predictions <- DT[,list("Missing.values"=sum(is.na(risk))),by=byvars]
+            warning("Missing values in the predicted risk. See `missing.predictions' in output list.")
+        }else{
+            missing.predictions <- "None"
+        }
         noSplit <- computePerformance(DT,
                                       se.fit=se.fit,
                                       conservative=conservative,
@@ -914,11 +925,6 @@ Score.list <- function(object,
         if (missing(trainseeds)||is.null(trainseeds)){
             if (!missing(seed)) set.seed(seed)
             trainseeds <- sample(1:1000000,size=B,replace=FALSE)
-        }
-        if (response.type %in% c("survival","competing.risks")){
-            byvars <- c("model","times")
-        } else{
-            byvars <- c("model")
         }
         DT.B <- rbindlist(lapply(1:B,function(b){
             ## foreach (b=1:B) %dopar%{
@@ -1058,6 +1064,7 @@ Score.list <- function(object,
                         output <- list(score=score.loob)
                     }
                     if (keep.residuals) {
+                        DT.B[,model:=factor(model,levels=mlevs,mlabels)]
                         output <- c(output,list(residuals=DT.B[,c("ID",names(response),"model","times","risk","residuals"),with=FALSE]))
                     }
                     if (!is.null(output$score)){
@@ -1116,6 +1123,9 @@ Score.list <- function(object,
     # {{{ enrich the output object
 
     if (split.method$internal.name=="noplan"){
+        if (keep.residuals==TRUE){
+            noSplit$Brier$residuals[,model:=factor(model,levels=mlevs,mlabels)]
+        }
         output <- noSplit
     } else{
         output <- crossvalPerf
@@ -1130,8 +1140,10 @@ Score.list <- function(object,
         else{
             names(lab.models) <- paste0("model=",1:(length(mlabels)))
         }
-        attr(output$Brier$vcov,"models") <- lab.models
-        attr(output$AUC$vcov,"models") <- lab.models
+        if (!is.null(output$Brier$vcov))
+            attr(output$Brier$vcov,"models") <- lab.models
+        if (!is.null(output$AUC$vcov))
+            attr(output$AUC$vcov,"models") <- lab.models
     }
     if (null.model==TRUE) nm <- names(models)[1] else nm <- NULL
     if (!keep.splitindex) split.method$index <- "split index was not saved"
@@ -1147,6 +1159,7 @@ Score.list <- function(object,
                             metrics=metrics,
                             plots=plots,
                             summary=summary,
+                            missing.predictions=missing.predictions,
                             call=theCall))
     
     for (p in c(plots)){

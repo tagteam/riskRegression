@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Feb 23 2018 (14:03) 
 ## Version: 
-## Last-Updated: Feb 23 2018 (17:08) 
+## Last-Updated: Feb 26 2018 (12:33) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 19
+##     Update #: 23
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -15,7 +15,7 @@
 ## 
 ### Code:
 getVcov <- function(data,IF.name,times=NULL){
-    model=models=n=times=NULL
+    model=models=n
     models <- data[,unique(model)]
     if (!is.null(times)){
         times <- data[,unique(times)]
