@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jan  4 2016 (14:30) 
 ## Version: 
-## last-updated: Feb 25 2018 (10:34) 
+## last-updated: Feb 26 2018 (13:01) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 90
+##     Update #: 91
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -49,7 +49,7 @@ test_that("vcov AUC",{
     f1 <- coxph(Surv(time,event)~X1+X5+X8,data=d, x=TRUE,y=TRUE)
     f2 <- coxph(Surv(time,event)~X2+X6+X9+X10,data=d, x=TRUE,y=TRUE)
     test <- Score(list(a=f1,f2),times=c(5,7),keep="vcov",formula=Surv(time,event)~1,data=d,conf.int=TRUE,metrics=c("brier","auc"))
-    expect_equal(dim(test$AUC$vcov),c(2,2))
+    expect_equal(dim(test$AUC$vcov),c(4,4))
 })
 
 test_that("binary outcome: robustness against order of data set",{
