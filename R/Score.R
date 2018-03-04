@@ -339,7 +339,7 @@ Score.list <- function(object,
                        predictRisk.args,
                        debug=0L,
                        ...){
-    IC0=Brier=se=nth.times=time=status=ID=WTi=ID=risk=IF.Brier=lower=upper=crossval=b=time=status=model=reference=p=model=pseudovalue=ReSpOnSe=residuals=event=NULL
+    IC0=Brier=AUC=casecontrol=se=nth.times=time=status=ID=WTi=ID=risk=IF.Brier=lower=upper=crossval=b=time=status=model=reference=p=model=pseudovalue=ReSpOnSe=residuals=event=NULL
     # }}}
     theCall <- match.call()
     # ----------------------------find metrics and plots ----------------------
@@ -632,8 +632,10 @@ Score.list <- function(object,
         if (cens.type=="rightCensored"){
             if ("outside.ipcw" %in% cens.method){
                 if (se.fit>0L && "AUC" %in% metrics && cens.model=="cox"){
-                    warning("Cannot (not yet) estimate standard errors for AUC with Cox IPCW.\nTherefore, force cens.model to be marginal.")
-                    cens.model <- "KaplanMeier"
+                    if (split.method$internal.name!="LeaveOneOutBoot"){
+                        warning("Cannot (not yet) estimate standard errors for AUC with Cox IPCW.\nTherefore, force cens.model to be marginal.")
+                        cens.model <- "KaplanMeier"
+                    }
                 }
                 Weights <- getCensoringWeights(formula=formula,
                                                data=data,
@@ -673,7 +675,6 @@ Score.list <- function(object,
     # -----------------performance program----------------------
     # {{{ define getPerformanceData, setup data in long-format, response, pred, weights, model, times, loop
     # {{{ header
-
     getPerformanceData <- function(testdata,
                                    testweights,
                                    traindata=NULL,
@@ -947,6 +948,7 @@ Score.list <- function(object,
                                        testweights=testweights,
                                        traindata=traindata,
                                        trainseed=trainseeds[[b]])
+            DT.b[,b:=b]
             DT.b
         }))
         if (any(is.na(DT.B[["risk"]]))){
@@ -965,6 +967,112 @@ Score.list <- function(object,
         ##  Leave-one-out bootstrap
         if (split.method$name=="LeaveOneOutBoot"){  
             crossvalPerf <- lapply(metrics,function(m){
+                if (m=="AUC"){
+                    auc.loob <- data.table(expand.grid(times=times,model=mlevs))
+                    auc.loob[,AUC:=as.numeric(NA)]
+                    ## for each pair of individuals sum the concordance of the bootstraps where *both* individuals are out-of-bag 
+                    ## divide by number of times the pair is out-of-bag later
+                    Response <- data[,c(1:response.dim),with=FALSE]
+                    for (s in 1:length(times)){
+                        t <- times[s]
+                        if (cens.type=="rightCensored"){
+                            if (response.type=="survival"){
+                                ## event of interest before times
+                                ## the following indices have to be logical!!!
+                                cases.index <- Response[,time<=t & status==1]
+                                controls.index <- Response[,time>t]
+                                cc.status <- factor(rep("censored",N),levels=c("censored","case","control"))
+                                cc.status[cases.index] <- "case"
+                                cc.status[controls.index] <- "control"
+                            }
+                            else{ ## competing risks
+                                ## event of interest before times
+                                ## the following indices have to be logical!!!
+                                cases.index <- Response[,time<=t & status==1]
+                                controls.index <- Response[,time>t | status==2]
+                                cc.status <- factor(rep("censored",N),levels=c("censored","case","control"))
+                                cc.status[cases.index] <- "case"
+                                cc.status[controls.index] <- "control"
+                            }
+                            ## IPCW
+                            weights.cases <- cases.index/Weights$IPCW.subject.times
+                            if (Weights$method=="marginal"){
+                                weights.controls <- controls.index/Weights$IPCW.times[s]
+                            }else{
+                                weights.controls <- controls.index/Weights$IPCW.times[,s]
+                            }
+                            weightMatrix <- outer(weights.cases[cases.index], weights.controls[controls.index], "*")
+                            Phi <- (1/N^2)*sum(weights.cases[cases.index])*sum(weights.controls[controls.index])
+                            for (mod in mlevs){
+                                Ib <- matrix(0, sum(cases.index), sum(controls.index))
+                                auc <- matrix(0, sum(cases.index), sum(controls.index))
+                                which.cases <- (1:N)[cases.index]
+                                which.controls <- (1:N)[controls.index]
+                                for (u in 1:B){## cannot use b as running index because b==b does not work in data.table
+                                    ## test <- DT.B[model==mod&times==t&b==u]
+                                    oob <- match(1:N,unique(split.method$index[,u]),nomatch=0)==0
+                                    ## to use the cpp function AUCijFun we
+                                    ## need a vector of length equal to the number of cases (which.cases) for the current time point
+                                    ## which has arbitrary values in places where subjects are inbag and the predicted risks
+                                    ## for those out-of-bag. need another vector for controls.
+                                    riskset <- data.table(ID=1:N,casecontrol=cc.status,oob=oob)
+                                    setkey(riskset,ID)
+                                    oob.risk <- DT.B[model==mod&times==t&b==u,data.table::data.table(ID,risk)]
+                                    setkey(oob.risk,ID)
+                                    riskset <- oob.risk[riskset]
+                                    riskset[is.na(risk),risk:=-9]
+                                    Ib.ij <- outer((cases.index*oob)[which.cases],(controls.index*oob)[which.controls],"*")
+                                    auc.ij <- AUCijFun(riskset[casecontrol=="case",risk],riskset[casecontrol=="control",risk])*Ib.ij
+                                    ## Ib.ij is 1 when the pair out of bag
+                                    ## print(head(oob))
+                                    ## print(auc.ij[1:5,1:5])
+                                    auc <- auc+auc.ij
+                                    Ib <- Ib + Ib.ij
+                                }
+                                auc <- (auc*weightMatrix)/Ib
+                                # FIXME: why are there NA's?
+                                auc[is.na(auc)] <- 0
+                                ## print(auc[1:5,1:5])
+                                ## browser()
+                                ## Leave-one-pair-out bootstrap estimate of AUC
+                                aucLPO <- (1/N^2)*sum(colSums(auc))*(1/Phi)
+                                auc.loob[times==t&model==mod,AUC:=aucLPO]
+                                ## if (se.fit==1L){
+                                if (FALSE){
+                                    ## ## First part of influence function
+                                    ic0Case <- rowSums(auc)
+                                    ic0Control <- colSums(auc)
+                                    ic0 <- (1/(Phi*N))*c(ic0Case, ic0Control)-2*aucLPO
+                                    whichIdNone <- which(!(1:N) %in% names(ic0))
+                                    ic0 <- data.table(id = as.numeric(c(names(ic0), whichIdNone)), ic0 = c(ic0, rep(-2*aucLPO,length(whichIdNone))))
+                                    weightsCase <- weights*case
+                                    weightsControl <- weights*control
+                                }
+                            }
+                        }
+                    }
+                    output <- list(score=auc.loob)
+                    if (length(dolist)>0L){
+                        auc.loob.contrasts <- data.table::rbindlist(lapply(times,function(t){
+                            data.table::rbindlist(lapply(dolist,function(g){
+                                theta <- auc.loob[times==t,list(AUC=AUC[1]),by=model]
+                                delta <- theta[model%in%g[-1]][["AUC"]]-theta[model==g[1]][["AUC"]]
+                                data.table(time=t,model=theta[model%in%g[-1]][["model"]],
+                                           reference=g[1],
+                                           delta=delta)
+                            }))}))
+                        output <- c(output,list(contrasts=auc.loob.contrasts))
+                    }
+                    if (!is.null(output$score)){
+                        output$score[,model:=factor(model,levels=mlevs,mlabels)]
+                    }
+                    ## set model and reference in model comparison results
+                    if (!is.null(output$contrasts)>0){
+                        output$contrasts[,model:=factor(model,levels=mlevs,mlabels)]
+                        output$contrasts[,reference:=factor(reference,levels=mlevs,mlabels)]
+                    }
+                    return(output)
+                }
                 if (m=="Brier"){
                     ## sum across bootstrap samples where subject i is out of bag
                     if (cens.type=="rightCensored"){
@@ -1080,7 +1188,7 @@ Score.list <- function(object,
                         output$contrasts[,model:=factor(model,levels=mlevs,mlabels)]
                         output$contrasts[,reference:=factor(reference,levels=mlevs,mlabels)]
                     }
-                    output
+                    return(output)
                 }
             })
             names(crossvalPerf) <- metrics

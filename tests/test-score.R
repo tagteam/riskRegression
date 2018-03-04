@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jan  4 2016 (14:30) 
 ## Version: 
-## last-updated: Feb 26 2018 (13:01) 
+## last-updated: Mar  4 2018 (10:35) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 91
+##     Update #: 92
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -230,7 +230,8 @@ test_that("binary outcome: AUC", {
     expect_equal(daim.diff$"P.Value",score.diff$p)
 })
 
-test_that("Number of models and time points", {   
+test_that("Number of models and time points", {
+    library(pec)
     data(GBSG2)
     setDT(GBSG2)
     ## fit1 <- coxph(Surv(time, cens)~horTh+age+menostat+tsize+pnodes+progrec+estrec, data = GBSG2, x = TRUE)
