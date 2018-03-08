@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun  6 2016 (09:02) 
 ## Version: 
-## last-updated: Feb 19 2018 (19:55) 
+## last-updated: Mar  1 2018 (11:48) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 106
+##     Update #: 108
 #----------------------------------------------------------------------
 ## 
 ### Commentary:
@@ -648,6 +648,9 @@ predictRisk.CauseSpecificCox <- function (object, newdata, times, cause, ...) {
         stop(paste("\nPrediction matrix has wrong dimension:\nRequested newdata x times: ",NROW(newdata)," x ",length(times),"\nProvided prediction matrix: ",NROW(p)," x ",NCOL(p),"\n\n",sep=""))
     p
 }
+
+
+
 
 ##' S3-wrapper for S4 function penalized
 ##'

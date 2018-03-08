@@ -6,6 +6,6 @@ r_check_args: "--as-cran"
 cache: packages
 warnings_are_errors: true
 
-r_github_packages:
- - cran/survival
+# r_github_packages:
+# - cran/survival
  

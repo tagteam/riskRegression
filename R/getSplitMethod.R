@@ -65,7 +65,7 @@ getSplitMethod <- function(split.method,B,N,M,seed){
         }
     }  
     ## resample or subsample bootstrap
-    if(length(grep("boot|outofbag",split.method,value=FALSE,ignore.case=TRUE))>0){
+    if(length(grep("^boot",split.method,value=FALSE,ignore.case=TRUE))>0){
         split.method <- "BootCv"
         split.methodName <- "BootCv"
         if (missing(B)) B <- 100
@@ -84,7 +84,7 @@ getSplitMethod <- function(split.method,B,N,M,seed){
     }
     ## default is leave one out bootstrap
     ## if ((length(grep("looboot|loob|leaveoneoutb",split.method,value=FALSE,ignore.case=TRUE))>0) || 
-    if (split.method=="" || split.method %in% c(TRUE,1L)) {
+    if (!(split.method %in% c("noplan","crossval","loocv","BootCv","Boot632","Boot632plus"))){
         split.method <- "LeaveOneOutBoot"
         split.methodName <- "LeaveOneOutBoot"
         if (missing(B)) B <- 100
@@ -103,9 +103,9 @@ getSplitMethod <- function(split.method,B,N,M,seed){
                             "crossval"={ 
                                 do.call("cbind",lapply(1:B,function(b){sample(rep(1:k,length.out=N))}))
                             },
-                            { ## default
-                                split.method <- "LeaveOneOutBoot"
-                                split.methodName <- "LeaveOneOutBoot"
+                            { ## default is bootstrap
+                                ## split.method <- "LeaveOneOutBoot"
+                                ## split.methodName <- "LeaveOneOutBoot"
                                 ResampleIndex <- do.call("cbind",lapply(1:B,function(b){
                                     sort(sample(1:N,size=M,replace=!subsampling))
                                 }))
@@ -125,5 +125,5 @@ getSplitMethod <- function(split.method,B,N,M,seed){
                 N=N)
     class(out) <- "split.method"
     out
-}
+    }
 

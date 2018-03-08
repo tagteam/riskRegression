@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jan  4 2016 (14:30) 
 ## Version: 
-## last-updated: Feb 20 2018 (14:08) 
+## last-updated: Mar  4 2018 (10:35) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 82
+##     Update #: 92
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -30,19 +30,26 @@ test_that("R squared/IPA", {
     f1 <- glm(Y~X1+X5+X8,data=d, family="binomial")
     f2 <- glm(Y~X2+X6+X9+X10,data=d, family="binomial")
     r1 <- rsquared(f1,newdata=d)
-    r2 <- ipa(f2,newdata=d)
+    r2 <- IPA(f2,newdata=d)
     full <- Score(list(f1=f1,f2=f2),formula=Y~1,data=d,conf.int=TRUE,summary=c("RR"),plots="ROC")
     expect_equal(r1$IPA.gain[1],full$Brier$score[model=="f1",IPA])
     expect_equal(r2$IPA[2],full$Brier$score[model=="f2",IPA])
 })
 
-test_that("vcov",{
+test_that("vcov AUC",{
     set.seed(112)
     d <- sampleData(112,outcome="binary")
     f1 <- glm(Y~X1+X5+X8,data=d, family="binomial")
     f2 <- glm(Y~X2+X6+X9+X10,data=d, family="binomial")
     test <- Score(list(f1,f2),keep="vcov",formula=Y~1,data=d,conf.int=TRUE,summary=c("RR"),plots="ROC")
     expect_equal(dim(test$AUC$vcov),c(2,2))
+    ## survival
+    set.seed(112)
+    d <- sampleData(112,outcome="survival")
+    f1 <- coxph(Surv(time,event)~X1+X5+X8,data=d, x=TRUE,y=TRUE)
+    f2 <- coxph(Surv(time,event)~X2+X6+X9+X10,data=d, x=TRUE,y=TRUE)
+    test <- Score(list(a=f1,f2),times=c(5,7),keep="vcov",formula=Surv(time,event)~1,data=d,conf.int=TRUE,metrics=c("brier","auc"))
+    expect_equal(dim(test$AUC$vcov),c(4,4))
 })
 
 test_that("binary outcome: robustness against order of data set",{
@@ -91,6 +98,18 @@ test_that("survival outcome: robustness against order of data set",{
     expect_equal(s1$AUC,s1b$AUC)
     expect_equal(s2$AUC,s2b$AUC)
     expect_equal(s3$AUC,s3b$AUC)
+})
+
+test_that("competing risks outcome: check against pec",{
+    set.seed(112)
+    d <- sampleData(112,outcome="competing.risks")
+    nd <- sampleData(112,outcome="competing.risks")
+    library(pec)
+    f <- FGR(Hist(time,event)~X1+X6,data=d,cause=1)
+    a <- pec::pec(list(f),data=nd,times=c(2,5),formula=Hist(time,event)~1,cens.model="marginal",exact=FALSE)
+    b <- Score(list(FGR=f),data=nd,formula=Hist(time,event)~1,cens.model="km",se.fit=FALSE,times=c(2,5),metrics="brier")
+    expect_equal(a$AppErr$Reference[-1],b$Brier$score[model=="Null model",Brier])
+    expect_equal(a$AppErr$FGR[-1],b$Brier$score[model=="FGR",Brier])
 })
 test_that("competing risks outcome: robustness against order of data set",{
     set.seed(112)
@@ -211,7 +230,8 @@ test_that("binary outcome: AUC", {
     expect_equal(daim.diff$"P.Value",score.diff$p)
 })
 
-test_that("Number of models and time points", {   
+test_that("Number of models and time points", {
+    library(pec)
     data(GBSG2)
     setDT(GBSG2)
     ## fit1 <- coxph(Surv(time, cens)~horTh+age+menostat+tsize+pnodes+progrec+estrec, data = GBSG2, x = TRUE)
@@ -229,18 +249,12 @@ test_that("Number of models and time points", {
     GBSG2 <- 7
     r2 <- Score(list(a=fit2,b=fit1),data=GBSG2.test,times=c(100,500,2000,1000),formula=Surv(time,cens)~1,plots="cali")
     set.seed(11)
-    R2 <- Score(list(a=fit2,b=fit1),
-                data=GBSG2.test,
-                times=c(1000),
-                B=50,
-                split.method="loob",
-                formula=Surv(time,cens)~1,
-                plots="cali")
+    R2 <- Score(list(a=fit2,b=fit1),data=GBSG2.test,times=c(1000),B=50,split.method="loob",formula=Surv(time,cens)~1,plots="cali")
     ## r1$Calibration$plotframe
     ## r2$Calibration$plotframe[times==1000&model=="a"]
     ## r3 <- pec(list(a=fit2,b=fit1),data=GBSG2.test,exact=FALSE,times=c(1000),formula=Surv(time,cens)~1)
     expect_equal(r1$Brier$score[model=="a"],r2$Brier$score[model=="a" & times==1000])
-    expect_equal(r1$AUC$score[model=="a"],r2$AUC$score[model=="a" & times==1000])
+    ## expect_equal(r1$AUC$score[model=="a"],r2$AUC$score[model=="a" & times==1000])
 })
 
 test_that("LOOB: Number of models and time points", {   

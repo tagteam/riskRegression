@@ -120,7 +120,8 @@ randomly splitting (bootstrapping) the data during cross-validation.}
 
 \item{keep}{list of characters (not case sensitive) which determines additional output.
 \code{"residuals"} provides Brier score residuals and
-\code{"splitindex"} provides sampling index used to split the data into training and validation sets.}
+\code{"splitindex"} provides sampling index used to split the data into training and validation sets.
+\code{"vcov"} provides the variance-covariance matrix of the estimated parameters.}
 
 \item{predictRisk.args}{A list of argument-lists to control how risks are predicted. 
  The names of the lists should be the S3-classes of the \code{object}.
