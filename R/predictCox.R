@@ -258,7 +258,10 @@ predictCox <- function(object,
   if(any(object.design[,"start"]!=0)){
     warning("The current version of predictCox was not designed to handle left censoring \n",
             "The function may be used on own risks \n") 
-  }      
+  }    
+  if(!is.null(object$naive.var)){
+    stop("predictCox does not know how to handle fraitly \n") 
+  }    
   # }}}
   # {{{ computation of the baseline hazard
   if(!is.null(newdata)){
