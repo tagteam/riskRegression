@@ -76,6 +76,14 @@ AUCijFun <- function(riskCase, riskControl) {
     .Call(`_riskRegression_AUCijFun`, riskCase, riskControl)
 }
 
+icCensCC <- function(icCensC, aucIJ) {
+    .Call(`_riskRegression_icCensCC`, icCensC, aucIJ)
+}
+
+icPhi <- function(icCensC, weights) {
+    .Call(`_riskRegression_icPhi`, icCensC, weights)
+}
+
 icWeightSubjectTimesFun <- function(icCensSubjectTimes, icWeightSubjectTimes) {
     .Call(`_riskRegression_icWeightSubjectTimesFun`, icCensSubjectTimes, icWeightSubjectTimes)
 }

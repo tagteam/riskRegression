@@ -973,6 +973,9 @@ Score.list <- function(object,
                     ## for each pair of individuals sum the concordance of the bootstraps where *both* individuals are out-of-bag 
                     ## divide by number of times the pair is out-of-bag later
                     Response <- data[,c(1:response.dim),with=FALSE]
+                    if (se.fit==TRUE){
+                        aucDT <- NULL
+                    }
                     for (s in 1:length(times)){
                         t <- times[s]
                         if (cens.type=="rightCensored"){
@@ -1003,11 +1006,11 @@ Score.list <- function(object,
                             }
                             weightMatrix <- outer(weights.cases[cases.index], weights.controls[controls.index], "*")
                             Phi <- (1/N^2)*sum(weights.cases[cases.index])*sum(weights.controls[controls.index])
+                            which.cases <- (1:N)[cases.index]
+                            which.controls <- (1:N)[controls.index]
                             for (mod in mlevs){
                                 Ib <- matrix(0, sum(cases.index), sum(controls.index))
                                 auc <- matrix(0, sum(cases.index), sum(controls.index))
-                                which.cases <- (1:N)[cases.index]
-                                which.controls <- (1:N)[controls.index]
                                 for (u in 1:B){## cannot use b as running index because b==b does not work in data.table
                                     ## test <- DT.B[model==mod&times==t&b==u]
                                     oob <- match(1:N,unique(split.method$index[,u]),nomatch=0)==0
@@ -1032,36 +1035,97 @@ Score.list <- function(object,
                                 auc <- (auc*weightMatrix)/Ib
                                 # FIXME: why are there NA's?
                                 auc[is.na(auc)] <- 0
-                                ## print(auc[1:5,1:5])
-                                ## browser()
                                 ## Leave-one-pair-out bootstrap estimate of AUC
                                 aucLPO <- (1/N^2)*sum(colSums(auc))*(1/Phi)
                                 auc.loob[times==t&model==mod,AUC:=aucLPO]
-                                ## if (se.fit==1L){
-                                if (FALSE){
+                                if (se.fit==1L){
                                     ## ## First part of influence function
                                     ic0Case <- rowSums(auc)
                                     ic0Control <- colSums(auc)
                                     ic0 <- (1/(Phi*N))*c(ic0Case, ic0Control)-2*aucLPO
-                                    whichIdNone <- which(!(1:N) %in% names(ic0))
-                                    ic0 <- data.table(id = as.numeric(c(names(ic0), whichIdNone)), ic0 = c(ic0, rep(-2*aucLPO,length(whichIdNone))))
-                                    weightsCase <- weights*case
-                                    weightsControl <- weights*control
+                                    id.cases <- data[["ID"]][cc.status=="case"]
+                                    id.controls <- data[["ID"]][cc.status=="control"]
+                                    id.censored <- data[["ID"]][cc.status=="censored"]
+                                    this.aucDT <- data.table(model=mod,times=t,ID = c(id.cases,id.controls,id.censored), IF.AUC0 = c(ic0, rep(-2*aucLPO,length(id.censored))))
+                                    aucDT <- rbindlist(list(aucDT,this.aucDT),use.names=TRUE,fill=TRUE)
+                                    if (conservative==TRUE) {
+                                        icPhi <- (aucLPO/Phi)*((weights.cases-(1/N)*sum(weights.cases))*(1/N)*sum(weights.controls)+(weights.controls-(1/N)*sum(weights.controls))*(1/N)*sum(weights.controls))-2*aucLPO
+                                        setkey(aucDT,model,times,ID)
+                                        aucDT[times==t&model==mod,IF.AUC:=IF.AUC0-icPhi]
+                                        auc.loob[times==t&model==mod,se:=sd(aucDT[["IF.AUC"]])/sqrt(N)]
+                                    }else{
+                                        ## ## Influence function for G - i.e. censoring survival distribution 
+                                        ic.weights <- matrix(0,N,N)
+                                        if  (cens.model=="cox"){
+                                            k=0 ## counts subject-times with event before t
+                                            for (i in 1:N){
+                                                if (i %in% id.cases){
+                                                    k=k+1
+                                                    ic.weights[i,] <- Weights$IC$IC.subject[i,k,]/(Weights$IPCW.subject.times[i])
+                                                }else{
+                                                    if (i %in% id.controls){ ## min(T,C)>t
+                                                        ic.weights[i,] <- Weights$IC$IC.times[i,s,]/(Weights$IPCW.times[i,s])
+                                                    }
+                                                }
+                                            }
+                                        }else{
+                                            k=0 ## counts subject-times with event before t
+                                            for (i in 1:N){
+                                                if (i %in% id.cases){
+                                                    ## FIXME: need to check IC
+                                                    pos.i <- sindex(jump.times=unique(data[["time"]]),eval.times=data[["time"]][i])
+                                                    ic.weights[i,] <- Weights$IC[pos.i,]/(Weights$IPCW.subject.times[i])
+                                                }else{
+                                                    if (i %in% id.controls){ ## min(T,C)>t
+                                                        ic.weights[i,] <- Weights$IC[s,]/(Weights$IPCW.times[s])
+                                                    }
+                                                }
+                                            }
+                                        }
+                                        ## ## Part of influence function related to Weights          
+                                        ic.weightsCase <- icCensCC(icCensC = ic.weights[which.cases,], aucIJ = rowSums(auc))
+                                        ic.weightsControl <- icCensCC(icCensC = ic.weights[which.controls,], aucIJ = colSums(auc))
+                                        ic.weightsCC <- (1/(Phi*N^2))*(ic.weightsCase+ic.weightsControl)
+                                        ## ## Part of influence function related to Phi
+                                        icPhiCase <- apply(ic.weights[which.cases,], 2, mean)            
+                                        icPhiCase <- icPhi(icCensC = ic.weights[which.cases,], weights = weights.cases[which.cases])
+                                        icPhiControl <- icPhi(icCensC = ic.weights[which.controls,], weights = weights.controls[which.controls])          
+                                        icPhi <- (aucLPO/Phi)*((weights.cases-(1/N)*icPhiCase)*(1/N)*sum(weights.controls)+(weights.controls-(1/N)*icPhiControl)*(1/N)*sum(weights.cases)) - 2*aucLPO    
+                                        ## ## Combine all part of influence function
+                                        ## ic1 <- data.table(ID=data[["ID"]], "ic.weightsCC" = ic.weightsCC, "icPhi" = icPhi)
+                                        setkey(aucDT,model,times,ID)
+                                        aucDT[model==mod&times==t, IF.AUC:=IF.AUC0-ic.weightsCC-icPhi]
+                                        aucDT[model==mod&times==t, IF.AUC.conservative:=IF.AUC0-icPhi]
+                                        aucDT[,IF.AUC0:=NULL]
+                                        auc.loob[model==mod&times==t,se:= sd(aucDT[model==mod&times==t,IF.AUC])/sqrt(N)]
+                                        auc.loob[model==mod&times==t,se.conservative:=sd(aucDT[model==mod&times==t,IF.AUC])/sqrt(N)]
+                                        ## testSE <- sqrt(sum(ic[["ic"]]^2))/N
+                                    }
                                 }
                             }
                         }
                     }
+                    if (se.fit==1L){
+                        auc.loob[,lower:=pmax(0,AUC-qnorm(1-alpha/2)*se)]
+                        auc.loob[,upper:=pmin(1,AUC + qnorm(1-alpha/2)*se)]
+                    }
                     output <- list(score=auc.loob)
                     if (length(dolist)>0L){
-                        auc.loob.contrasts <- data.table::rbindlist(lapply(times,function(t){
-                            data.table::rbindlist(lapply(dolist,function(g){
-                                theta <- auc.loob[times==t,list(AUC=AUC[1]),by=model]
-                                delta <- theta[model%in%g[-1]][["AUC"]]-theta[model==g[1]][["AUC"]]
-                                data.table(time=t,model=theta[model%in%g[-1]][["model"]],
-                                           reference=g[1],
-                                           delta=delta)
-                            }))}))
-                        output <- c(output,list(contrasts=auc.loob.contrasts))
+                        aucDT <- merge(aucDT,auc.loob,by=byvars)
+                        if (match("times",byvars,nomatch=0)){
+                            contrasts.AUC <- aucDT[,getComparisons(data.table(x=AUC,IF=IF.AUC,model=model),NF=NF,N=N,alpha=alpha,dolist=dolist,se.fit=se.fit),by=list(times)]
+                        } else{
+                            contrasts.AUC <- aucDT[,getComparisons(data.table(x=AUC,IF=IF.AUC,model=model),NF=NF,N=N,alpha=alpha,dolist=dolist,se.fit=se.fit)]
+                        }
+                        ## auc.loob.contrasts <- data.table::rbindlist(lapply(times,function(t){
+                        ## data.table::rbindlist(lapply(dolist,function(g){
+                        ## theta <- auc.loob[times==t,list(AUC=AUC[1]),by=model]
+                        ## delta <- theta[model%in%g[-1]][["AUC"]]-theta[model==g[1]][["AUC"]]
+                        ## data.table(time=t,model=theta[model%in%g[-1]][["model"]],
+                        ## reference=g[1],
+                        ## delta=delta)
+                        ## }))}))
+                        output <- c(output,list(contrasts=contrasts.AUC))
                     }
                     if (!is.null(output$score)){
                         output$score[,model:=factor(model,levels=mlevs,mlabels)]

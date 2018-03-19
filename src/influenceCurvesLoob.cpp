@@ -22,6 +22,38 @@ NumericMatrix AUCijFun(NumericVector riskCase, NumericVector riskControl){
 }
 
 // [[Rcpp::export]]
+DoubleVector icCensCC(NumericMatrix icCensC, NumericVector aucIJ){
+
+  int Nc = icCensC.nrow(), N = icCensC.ncol();
+  NumericVector aucij(Nc);
+  DoubleVector out(N);
+
+  for(int k = 0; k<N; k++){
+    for (int i = 0; i<Nc; i++){
+      aucij(i) = icCensC(i,k)*aucIJ(i);
+    }
+    out(k) = sum(aucij);
+  }
+  
+  return out;
+}
+
+// [[Rcpp::export]]
+DoubleVector icPhi(NumericMatrix icCensC, NumericVector weights){
+
+  int Nc = icCensC.nrow(), N = icCensC.ncol();
+  DoubleVector Weight(N), out(N);
+
+    for (int k = 0; k<N; k++){
+      for (int i = 0; i<Nc;i++){
+	Weight[i] = icCensC(i,k)*weights[i];
+      }
+      out[k] = sum(Weight);
+    }  
+  return out;  
+}
+
+// [[Rcpp::export]]
 NumericVector icWeightSubjectTimesFun(NumericMatrix icCensSubjectTimes, NumericVector icWeightSubjectTimes){
 
   int N = icCensSubjectTimes.nrow();
