@@ -265,6 +265,20 @@
 ##'            "FGR(X1+X2+X7+X9)"=fgr1,"FGR(X3+X5+X6)"=fgr2),
 ##'       formula=Hist(time,event)~1,data=testCR,se.fit=1L,times=c(5,8))
 ##' 
+##' # reproduce some results of Table IV of Blanche et al. Stat Med 2013
+##' data(Paquid)
+##' ResPaquid <- Score(list("DSST"=-Paquid$DSST,"MMSE"=-Paquid$MMSE),
+##'                    formula=Hist(time,status)~1,
+##'                    data=Paquid,
+##'                    null.model = FALSE,
+##'                    conf.int=TRUE,
+##'                    metrics=c("auc"),
+##'                    times=c(3,5,10),
+##'                    plots="ROC")
+##' ResPaquid
+##' plotROC(ResPaquid,time=5)
+##'
+##' 
 ##' @author Thomas A Gerds \email{tag@@biostat.ku.dk} and Paul Blanche \email{paul.blanche@@univ-ubs.fr}
 ##' @references
 ##'
@@ -274,14 +288,14 @@
 ##' http://www.jstatsoft.org/v50/i11/.
 ##'
 ##' Paul Blanche, Cecile Proust-Lima, Lucie Loubere, Claudine Berr, Jean- Francois Dartigues, and
-##' Helene Jacqmin-Gadda. Quantifying and comparing
-##' dynamic predictive accuracy of joint models for longitudinal marker and
-##' time-to-event in presence of censoring and competing risks. Biometrics, 71
-##' (1):102--113, 2015.
+##' Helene Jacqmin-Gadda. Quantifying and comparing dynamic predictive accuracy of joint models
+##' for longitudinal marker and time-to-event in presence of censoring and competing risks.
+##' Biometrics, 71 (1):102--113, 2015.
+##' 
 ##' P. Blanche, J-F Dartigues, and H. Jacqmin-Gadda. Estimating and comparing
-##'     time-dependent areas under receiver operating characteristic curves for
-##'     censored event times with competing risks. Statistics in Medicine, 32(30):
-##'     5381--5397, 2013.
+##' time-dependent areas under receiver operating characteristic curves for
+##' censored event times with competing risks. Statistics in Medicine,
+##' 32(30):5381--5397, 2013.
 ##' 
 #' E. Graf et al.  (1999), Assessment and comparison of prognostic
 #' classification schemes for survival data. Statistics in Medicine, vol 18,
