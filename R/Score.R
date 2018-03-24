@@ -1091,7 +1091,7 @@ Score.list <- function(object,
                                         icPhiCase <- icPhi(icCensC = ic.weights[which.cases,], weights = weights.cases[which.cases])
                                         icPhiControl <- icPhi(icCensC = ic.weights[which.controls,], weights = weights.controls[which.controls])          
                                         icPhi <- (aucLPO/Phi)*((weights.cases-(1/N)*icPhiCase)*(1/N)*sum(weights.controls)+(weights.controls-(1/N)*icPhiControl)*(1/N)*sum(weights.cases)) - 2*aucLPO    
-                                        ## ## Combine all part of influence function
+                                        ## ## Combine all parts of influence function
                                         ## ic1 <- data.table(ID=data[["ID"]], "ic.weightsCC" = ic.weightsCC, "icPhi" = icPhi)
                                         setkey(aucDT,model,times,ID)
                                         aucDT[model==mod&times==t, IF.AUC:=IF.AUC0-ic.weightsCC-icPhi]
