@@ -1,3 +1,39 @@
+#' Paquid sample
+#'
+#' PAQUID is a prospective cohort study initiated in 1988 in South Western
+#' France to explore functional and cerebral ageing. This sample includes
+#' n=2561 subjects. Data contains a time-to-event, a type of event and 
+#' two cognitive scores measured at baseline.
+#' 
+#' 
+#' @name Paquid
+#' @docType data
+#' @format A data frame with 2561 observations on the following 4 variables.
+#' \describe{
+#' \item{\code{time}}{the time-to-event (in years).}
+#' \item{\code{status}}{the type of event \code{0} = censored, \code{1} = dementia onset and \code{2} = death without dementia.}
+#' \item{\code{DSST}}{score at the Digit Symbol Substitution Score Test. This test explores attention and psychomotor speed.}
+#' \item{\code{MMSE}}{score at the Mini Mental State Examination. This test is often used as an index of global cognitive performance.}
+#' }
+#' @references
+#'
+#' Dartigues, J., Gagnon, M., Barberger-Gateau, P., Letenneur, L., Commenges, D.,
+#' Sauvel, C., Michel, P., and Salamon, R. (1992). The paquid epidemiological program
+#' on brain ageing. Neuroepidemiology, 11(1):14--18.
+#'
+#' 
+#' Blanche, P., Dartigues, J. F., & Jacqmin-Gadda, H. (2013). Estimating and
+#' comparing time-dependent areas under receiver operating characteristic curves
+#' for censored event times with competing risks. Statistics in Medicine, 32(30),
+#' 5381-5397.
+#'
+#' @source
+#' The data have been first made publicly available via the package timeROC.
+#' @keywords datasets
+#' @examples
+#' data(Paquid)
+NULL
+
 #' Malignant melanoma data
 #' 
 #' In the period 1962-77, 205 patients with malignant melanoma (cancer of the
@@ -11,6 +47,7 @@
 #' the histological variables tumor thickness and ulceration (absent vs.
 #' present).
 #' 
+#
 #' 
 #' @name Melanoma
 #' @docType data

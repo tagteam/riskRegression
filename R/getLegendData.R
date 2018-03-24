@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Oct 13 2017 (10:50) 
 ## Version: 
-## Last-Updated: Nov  9 2017 (06:53) 
-##           By: Thomas Alexander Gerds
-##     Update #: 30
+## Last-Updated: Mar 23 2018 (14:14) 
+##           By: Paul Blanche
+##     Update #: 47
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -29,8 +29,10 @@ getLegendData <- function(object,
     if (missing(models)) {
         models <- names(object$models)
     }
-    if (drop.null.model==TRUE) models <- models[models!=object$null.model]
-    maxlen <- max(nchar(models))
+    if(!is.null(object$null.model)){
+        if (drop.null.model==TRUE) models <- models[models!=object$null.model]
+    }
+    maxlen <- max(nchar(as.character(models)))
     legend.text.models <- sprintf(paste0("%",maxlen,"s"),models)
     if (missing(format.auc))
         format.auc <- paste0("%1.",digits,"f [%1.",digits,"f;%1.",digits,"f]")
@@ -58,13 +60,16 @@ getLegendData <- function(object,
                         warning("Time point not specified, use max of the available times: ",tp)
                 } else{ ## can only do one time point
                     tp <- times[[1]]
+                    ## browser()                    
                     if (!(tp%in%unique(auc.data$times)))
                         stop(paste0("Requested time ",times[[1]]," is not in object"))
                 }
                 auc.data <- auc.data[times==tp]
             }else tp <- NULL
             if (keep.null.model==FALSE){
-                auc.data <- auc.data[model!=object$null.model]
+                if(!is.null(object$null.model)){
+                    auc.data <- auc.data[model!=object$null.model]
+                }
             }
             ## user's order
             auc.data[,model:=factor(model,levels=models)]
