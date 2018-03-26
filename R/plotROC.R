@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun 23 2016 (10:27) 
 ## Version: 
-## last-updated: Feb  6 2018 (15:57) 
-##           By: Thomas Alexander Gerds
-##     Update #: 167
+## last-updated: Mar 23 2018 (14:09) 
+##           By: Paul Blanche
+##     Update #: 175
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -116,6 +116,7 @@ plotROC <- function(x,
         if (length(x$null.model)>0){
             pframe <- pframe[model!=x$null.model]
         }
+        models=unique(pframe$model)
     }
     setkey(pframe,model)
     mm <- unique(pframe$model)

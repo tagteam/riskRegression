@@ -1,6 +1,6 @@
 library(testthat)
 context("Prediction error")
-
+# {{{ "Brier score censored data order"
 test_that("Brier score censored data order",{
     library(riskRegression)
     library(survival)
@@ -21,6 +21,8 @@ test_that("Brier score censored data order",{
     expect_equal(A,B,tolerance=.02)
 })
 
+# }}}
+# {{{ "Brier score"
 test_that("Brier score",{
     library(riskRegression)
     library(survival)
@@ -46,3 +48,4 @@ test_that("Brier score",{
         expect_equal(new$Brier$score[model==names(new$models)[m]][["Brier"]],
                      old$AppErr[[names(old$AppErr)[[m]]]])})
 })
+# }}}

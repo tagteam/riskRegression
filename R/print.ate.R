@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun  6 2016 (06:48) 
 ## Version: 
-## last-updated: Sep 30 2017 (16:06) 
+## last-updated: Mar 26 2018 (08:42) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 18
+##     Update #: 22
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -33,18 +33,17 @@ print.ate <- function(x,digits=3,...){
     ##
     if(x$se && (x$conf.level > 0 && (x$conf.level < 1))){
         if(x$n.bootstrap==0){
-            cat("\n",100*x$conf.level,"% Wald confidence intervals.",sep="")
+            cat("\nWald confidence intervals are based on asymptotic standard errors.",sep="")
         }else {
-            cat("\n",100*x$conf.level,"% bootstrap confidence intervals are based on ",x$n.bootstrap," bootstrap samples\nthat were drawn with replacement from the original data.",sep="")
+            cat("\nBootstrap confidence intervals are based on ",x$n.bootstrap," bootstrap samples\nthat were drawn with replacement from the original data.",sep="")
         }
         if(x$nsim.band>0){
-            cat("\n",100*x$conf.level,"% confidence bands are based on ",x$nsim.band," simulations",sep="")
+            cat("\nConfidence bands are based on ",x$nsim.band," simulations",sep="")
         }
-
-        cat("\n")
+        cat("\nConfidence level:",x$conf.level,"\n")
     }
     invisible(x)
-    }
+}
 
 
 #----------------------------------------------------------------------

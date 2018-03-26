@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Aug 23 2016 (17:07) 
 ## Version: 
-## last-updated: Oct 12 2017 (16:54) 
+## last-updated: Mar 26 2018 (07:50) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 12
+##     Update #: 13
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -17,6 +17,7 @@
 library(testthat)
 library(riskRegression)
 context("Retrospective boxplots of predicted risks")
+# {{{ "boxplot.Score"
 test_that("boxplot.Score",{
     d <- data.table(time=1:10,
                     Y=c(rep(1,5),rep(0,5)),
@@ -35,6 +36,8 @@ test_that("boxplot.Score",{
     ## expect_equal(as.numeric(unlist(survCase$riskQuantile$contrasts[cause=="event-free",5:9,with=FALSE])),as.numeric(Qef))    
 })
 
+# }}}
+# {{{ "getQuantile"
 test_that("getQuantile",{
     x <- 0:5
     Fx <- cumsum(rep(1,length(x)))/length(x)
@@ -44,5 +47,6 @@ test_that("getQuantile",{
     expect_equal(riskRegression:::getQuantile(x=x,Fx=Fx,Q=qseq),
                  as.numeric(quantile(0:5,type=1,probs=qseq)))
 })
+# }}}
 #----------------------------------------------------------------------
 ### test-boxplotScore.R ends here

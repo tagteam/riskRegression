@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jan  4 2016 (14:30) 
 ## Version: 
-## last-updated: Mar  4 2018 (10:35) 
+## last-updated: Mar 26 2018 (08:04) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 92
+##     Update #: 95
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -24,6 +24,7 @@ library(data.table)
 library(Daim)
 context("riskRegression")
 
+# {{{ "R squared/IPA"
 test_that("R squared/IPA", { 
     set.seed(112)
     d <- sampleData(112,outcome="binary")
@@ -36,6 +37,8 @@ test_that("R squared/IPA", {
     expect_equal(r2$IPA[2],full$Brier$score[model=="f2",IPA])
 })
 
+# }}}
+# {{{ "vcov AUC"
 test_that("vcov AUC",{
     set.seed(112)
     d <- sampleData(112,outcome="binary")
@@ -52,6 +55,8 @@ test_that("vcov AUC",{
     expect_equal(dim(test$AUC$vcov),c(4,4))
 })
 
+# }}}
+# {{{ "binary outcome: robustness against order of data set"
 test_that("binary outcome: robustness against order of data set",{
     set.seed(112)
     d <- sampleData(112,outcome="binary")
@@ -76,6 +81,8 @@ test_that("binary outcome: robustness against order of data set",{
     expect_equal(s2$AUC,s2b$AUC)
     expect_equal(s3$AUC,s3b$AUC)
 })
+# }}}
+# {{{ "survival outcome: robustness against order of data set"
 test_that("survival outcome: robustness against order of data set",{
     set.seed(112)
     d <- sampleData(112,outcome="survival")
@@ -100,6 +107,8 @@ test_that("survival outcome: robustness against order of data set",{
     expect_equal(s3$AUC,s3b$AUC)
 })
 
+# }}}
+# {{{ "competing risks outcome: check against pec"
 test_that("competing risks outcome: check against pec",{
     set.seed(112)
     d <- sampleData(112,outcome="competing.risks")
@@ -111,6 +120,8 @@ test_that("competing risks outcome: check against pec",{
     expect_equal(a$AppErr$Reference[-1],b$Brier$score[model=="Null model",Brier])
     expect_equal(a$AppErr$FGR[-1],b$Brier$score[model=="FGR",Brier])
 })
+# }}}
+# {{{ "competing risks outcome: robustness against order of data set"
 test_that("competing risks outcome: robustness against order of data set",{
     set.seed(112)
     d <- sampleData(112,outcome="competing.risks")
@@ -134,6 +145,7 @@ test_that("competing risks outcome: robustness against order of data set",{
     expect_equal(s2$AUC,s2b$AUC)
     expect_equal(s3$AUC,s3b$AUC)
 })
+# }}}# {{{ "survival outcome: Brier Score pec vs Score"
 test_that("survival outcome: Brier Score pec vs Score",{
     set.seed(112)
     d <- sampleData(112,outcome="survival")
@@ -145,6 +157,7 @@ test_that("survival outcome: Brier Score pec vs Score",{
     expect_equal(p1$AppErr$coxph.1,s1$Brier$score[model=="coxph.1",Brier])
     expect_equal(p1$AppErr$Reference,s1$Brier$score[model=="Null model",Brier])
 })
+# }}}# {{{ "survival outcome: matrix input"
 test_that("survival outcome: matrix input",{
     set.seed(112)
     dtrain <- sampleData(112,outcome="survival")
@@ -155,6 +168,8 @@ test_that("survival outcome: matrix input",{
     expect_equal(s1$Brier$score[model=="coxph",Brier],s1$Brier$score[model=="matrix",Brier])
 })
 
+# }}}
+# {{{ "survival outcome,Brier Score, external prediction"
 test_that("survival outcome,Brier Score, external prediction",{
     ## generate simulated data
     set.seed(130971)
@@ -174,6 +189,8 @@ test_that("survival outcome,Brier Score, external prediction",{
     cbind(b$Brier$score[,Brier],as.vector(unlist(a$AppErr)))
     expect_equal(b$Brier$score[,Brier],as.vector(unlist(a$AppErr)))
 })
+# }}}
+# {{{ "binary outcome: Brier"
 test_that("binary outcome: Brier",{
     set.seed(47)
     D <- sampleData(n=47,outcome="binary")
@@ -194,6 +211,8 @@ test_that("binary outcome: Brier",{
     expect_equal(S1$Brier$score$Brier,S3$Brier$score$Brier)
     expect_equal(S2$Brier$score$Brier,S3$Brier$score$Brier)
 })
+# }}}
+# {{{ "binary outcome: AUC"
 test_that("binary outcome: AUC", {   
     set.seed(17)
     y <- rbinom(100, 1, .5)
@@ -230,6 +249,8 @@ test_that("binary outcome: AUC", {
     expect_equal(daim.diff$"P.Value",score.diff$p)
 })
 
+# }}}
+# {{{ "Number of models and time points"
 test_that("Number of models and time points", {
     library(pec)
     data(GBSG2)
@@ -257,6 +278,8 @@ test_that("Number of models and time points", {
     ## expect_equal(r1$AUC$score[model=="a"],r2$AUC$score[model=="a" & times==1000])
 })
 
+# }}}
+# {{{ "LOOB: Number of models and time points"
 test_that("LOOB: Number of models and time points", {   
     library(testthat)
     library(survival)
@@ -307,5 +330,6 @@ test_that("LOOB: Number of models and time points", {
     expect_equal(A1$Brier$score[model=="fit1"&times==365.25*4],
                  A$Brier$score[model=="fit1"&times==365.25*4])
 })
+# }}}
 #----------------------------------------------------------------------
 ### test-Score.R ends here

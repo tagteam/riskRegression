@@ -236,17 +236,18 @@ set.seed(18)
 learndat <- sampleData(48,outcome="binary")
 testdat <- sampleData(40,outcome="binary")
 
-# score logistic regression models
+## score logistic regression models
 lr1 = glm(Y~X1+X2+X7+X9,data=learndat,family=binomial)
 lr2 = glm(Y~X3+X5,data=learndat,family=binomial)
 Score(list("LR(X1+X2+X7+X9)"=lr1,"LR(X3+X5)"=lr2),formula=Y~1,data=testdat)
 
+## ROC curve and calibration plot 
 xb=Score(list("LR(X1+X2+X7+X9)"=lr1,"LR(X3+X5+X6)"=lr2),formula=Y~1,
         data=testdat,plots=c("calibration","ROC"))
 plotROC(xb)
 plotCalibration(xb)
 
-# compute AUC for a list of continuous markers
+## compute AUC for a list of continuous markers
 markers = as.list(testdat[,.(X6,X7,X8,X9,X10)])
 Score(markers,formula=Y~1,data=testdat,metrics=c("auc"))
 
@@ -255,6 +256,7 @@ Score(markers,formula=Y~1,data=testdat,metrics=c("auc"))
 lr1a = glm(Y~X6,data=learndat,family=binomial)
 lr2a = glm(Y~X7+X8+X9,data=learndat,family=binomial)
 Score(list("LR1"=lr1a,"LR2"=lr2a),formula=Y~1,data=learndat,split.method="bootcv",B=3)
+Score(list("LR1"=lr1a,"LR2"=lr2a),formula=Y~1,data=learndat,split.method="loob",B=100)
 }
 # survival outcome
 
@@ -310,6 +312,20 @@ Score(list("CSC(X1+X2+X7+X9)"=csc1,"CSC(X3+X5+X6)"=csc2,
            "FGR(X1+X2+X7+X9)"=fgr1,"FGR(X3+X5+X6)"=fgr2),
       formula=Hist(time,event)~1,data=testCR,se.fit=1L,times=c(5,8))
 
+# reproduce some results of Table IV of Blanche et al. Stat Med 2013
+data(Paquid)
+ResPaquid <- Score(list("DSST"=-Paquid$DSST,"MMSE"=-Paquid$MMSE),
+                   formula=Hist(time,status)~1,
+                   data=Paquid,
+                   null.model = FALSE,
+                   conf.int=TRUE,
+                   metrics=c("auc"),
+                   times=c(3,5,10),
+                   plots="ROC")
+ResPaquid
+plotROC(ResPaquid,time=5)
+
+
 }
 \references{
 Ulla B. Mogensen, Hemant Ishwaran, Thomas A. Gerds (2012).
@@ -318,14 +334,14 @@ Curves. Journal of Statistical Software, 50(11), 1-23. URL
 http://www.jstatsoft.org/v50/i11/.
 
 Paul Blanche, Cecile Proust-Lima, Lucie Loubere, Claudine Berr, Jean- Francois Dartigues, and
-Helene Jacqmin-Gadda. Quantifying and comparing
-dynamic predictive accuracy of joint models for longitudinal marker and
-time-to-event in presence of censoring and competing risks. Biometrics, 71
-(1):102--113, 2015.
+Helene Jacqmin-Gadda. Quantifying and comparing dynamic predictive accuracy of joint models
+for longitudinal marker and time-to-event in presence of censoring and competing risks.
+Biometrics, 71 (1):102--113, 2015.
+
 P. Blanche, J-F Dartigues, and H. Jacqmin-Gadda. Estimating and comparing
-    time-dependent areas under receiver operating characteristic curves for
-    censored event times with competing risks. Statistics in Medicine, 32(30):
-    5381--5397, 2013.
+time-dependent areas under receiver operating characteristic curves for
+censored event times with competing risks. Statistics in Medicine,
+32(30):5381--5397, 2013.
 
 E. Graf et al.  (1999), Assessment and comparison of prognostic
 classification schemes for survival data. Statistics in Medicine, vol 18,

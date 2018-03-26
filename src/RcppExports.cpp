@@ -251,6 +251,30 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// icCensCC
+DoubleVector icCensCC(NumericMatrix icCensC, NumericVector aucIJ);
+RcppExport SEXP _riskRegression_icCensCC(SEXP icCensCSEXP, SEXP aucIJSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< NumericMatrix >::type icCensC(icCensCSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type aucIJ(aucIJSEXP);
+    rcpp_result_gen = Rcpp::wrap(icCensCC(icCensC, aucIJ));
+    return rcpp_result_gen;
+END_RCPP
+}
+// icPhi
+DoubleVector icPhi(NumericMatrix icCensC, NumericVector weights);
+RcppExport SEXP _riskRegression_icPhi(SEXP icCensCSEXP, SEXP weightsSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< NumericMatrix >::type icCensC(icCensCSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type weights(weightsSEXP);
+    rcpp_result_gen = Rcpp::wrap(icPhi(icCensC, weights));
+    return rcpp_result_gen;
+END_RCPP
+}
 // icWeightSubjectTimesFun
 NumericVector icWeightSubjectTimesFun(NumericMatrix icCensSubjectTimes, NumericVector icWeightSubjectTimes);
 RcppExport SEXP _riskRegression_icWeightSubjectTimesFun(SEXP icCensSubjectTimesSEXP, SEXP icWeightSubjectTimesSEXP) {
@@ -486,6 +510,8 @@ static const R_CallMethodDef CallEntries[] = {
     {"_riskRegression_IFbetaApprox_cpp", (DL_FUNC) &_riskRegression_IFbetaApprox_cpp, 6},
     {"_riskRegression_IFlambda0_cpp", (DL_FUNC) &_riskRegression_IFlambda0_cpp, 16},
     {"_riskRegression_AUCijFun", (DL_FUNC) &_riskRegression_AUCijFun, 2},
+    {"_riskRegression_icCensCC", (DL_FUNC) &_riskRegression_icCensCC, 2},
+    {"_riskRegression_icPhi", (DL_FUNC) &_riskRegression_icPhi, 2},
     {"_riskRegression_icWeightSubjectTimesFun", (DL_FUNC) &_riskRegression_icWeightSubjectTimesFun, 2},
     {"_riskRegression_icWeightTimesFun", (DL_FUNC) &_riskRegression_icWeightTimesFun, 2},
     {"_riskRegression_icTauSubjectTimesFun", (DL_FUNC) &_riskRegression_icTauSubjectTimesFun, 3},
