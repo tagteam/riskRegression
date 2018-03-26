@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Oct 23 2016 (08:53) 
 ## Version: 
-## last-updated: jan 24 2018 (17:07) 
+## last-updated: mar 26 2018 (16:14) 
 ##           By: Brice Ozenne
-##     Update #: 444
+##     Update #: 513
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -121,6 +121,45 @@
 #'                 times = 5:8, se = TRUE, B = 100, mc.cores = 2)
 #' }
 #'
+#' #### Survival settings without censoring ####
+#' #### ATE with glm                        ####
+#' 
+#' ## generate data
+#' n <- 100
+#' dtS <- sampleData(n, outcome="survival")
+#' dtS[, event5 := eventtime<=5]
+#' dtS[, X2 := as.numeric(X2)]
+#' 
+#' ## estimate the Cox model
+#' fit <- glm(formula = event5 ~ X1+X2, data=dtS, family = "binomial")
+#' 
+#' ## compute the ATE at times 5 using X1 as the treatment variable
+#' \dontrun{
+#' ## only punctual estimate (argument se = FALSE)
+#' ateFit1a <- ate(fit, data = dtS, treatment = "X1", times = 5,
+#'                se = FALSE)
+#' ateFit1a
+#' 
+#' ## standard error / confidence intervals computed using the influence function
+#' ateFit1b <- ate(fit, data = dtS, treatment = "X1", times = 5,
+#'                se = TRUE, B = 0)
+#' ateFit1b
+#'
+#' ## standard error / confidence intervals computed using 100 boostrap samples
+#' ateFit1d <- ate(fit, data = dtS, treatment = "X1",
+#'                 times = 5, se = TRUE, B = 100)
+#' ateFit1d
+#' 
+#' ## using lava
+#' ateLava <- estimate(fit, function(p, data){
+#' a <- p["(Intercept)"] ; b <- p["X11"] ; c <- p["X2"] ;
+#' R.X11 <- expit(a + b + c * data[["X2"]])
+#' R.X10 <- expit(a + c * data[["X2"]])
+#' list(risk0=R.X10,risk1=R.X11,riskdiff=R.X10-R.X11)},
+#' average=TRUE)
+#' ateLava
+#' }
+#' 
 #' #### Competing risks settings               ####
 #' #### ATE with cause specific Cox regression ####
 #'
@@ -261,7 +300,7 @@ ate <- function(object,
     if(test.CR==FALSE){cause <- NA}
   
   if(B==0 && (se || band)){
-    validClass <- c("CauseSpecificCox","coxph","cph","phreg")
+    validClass <- c("CauseSpecificCox","coxph","cph","phreg","glm")
     if(all(validClass %in% class(object) == FALSE)){
       stop("Standard error based on the influence function only implemented for \n",
            paste(validClass, collapse = " ")," objects \n",
@@ -284,16 +323,16 @@ ate <- function(object,
   
   # {{{ Checking the model
   
-    # for predictRisk S3-method
+                                        # for predictRisk S3-method
     allmethods <- utils::methods(predictRisk)
     candidateMethods <- paste("predictRisk",class(object),sep=".")
     if (all(match(candidateMethods,allmethods,nomatch=0)==0))
         stop(paste("Could not find predictRisk S3-method for ",class(object),collapse=" ,"),sep="")
-    # for compatibility with resampling
+                                        # for compatibility with resampling
     if(is.null(object$call))
         stop(paste("The object does not contain its own call, which is needed to refit the model in the bootstrap loop."))
-    # }}}
-    # {{{ calc G formula
+                                        # }}}
+                                        # {{{ calc G formula
     if (TD){
         Gformula <- function(object,
                              data,
@@ -354,11 +393,14 @@ ate <- function(object,
                 ## prediction for the hypothetical worlds in which every subject is treated with the same treatment
                 data.i <- data
                 data.i[[treatment]] <- factor(contrasts[i], levels = levels)
-                risk.i <- colMeans(do.call("predictRisk",args = list(object,newdata = data.i,times = times,cause = cause,...)))
+                allrisks <- do.call("predictRisk",
+                                    args = list(object, newdata = data.i, times = times, cause = cause,...))
+                if(!is.matrix(allrisks)){allrisks <- cbind(allrisks)}
+                risk.i <- colMeans(allrisks)
                 risk.i
             })
-            riskComparison <- data.table::rbindlist(lapply(1:(n.contrasts-1),function(i){
-                data.table::rbindlist(lapply(((i+1):n.contrasts),function(j){
+            riskComparison <- data.table::rbindlist(lapply(1:(n.contrasts-1),function(i){ ## i <- 1
+                data.table::rbindlist(lapply(((i+1):n.contrasts),function(j){ ## j <- 2
                     ## compute differences between all pairs of treatments
                     data.table(Treatment.A=contrasts[[i]],
                                Treatment.B=contrasts[[j]],
@@ -372,19 +414,19 @@ ate <- function(object,
             out            
         }
     }
+                                        # }}}
+
+    # {{{ point estimate
+    estimateTime <- system.time(
+        pointEstimate <- Gformula(object=object,
+                                  data=data,
+                                  treatment=treatment,
+                                  contrasts=contrasts,
+                                  times=times,
+                                  cause=cause,
+                                  landmark=landmark,
+                                  dots))
     # }}}
-  
-  # {{{ point estimate
-  estimateTime <- system.time(
-    pointEstimate <- Gformula(object=object,
-                              data=data,
-                              treatment=treatment,
-                              contrasts=contrasts,
-                              times=times,
-                              cause=cause,
-                              landmark=landmark,
-                              dots))
-  # }}}
   
     # {{{ Confidence interval    
     if(se || band){
@@ -480,65 +522,89 @@ ate <- function(object,
       meanRisksBoot <- data.table::rbindlist(lapply(boots,function(x)x$meanRisk))
       riskComparisonsBoot <- data.table::rbindlist(lapply(boots,function(x)x$riskComparison))
       
-      if(NROW(meanRisksBoot)==0){
-        stop("no successful bootstrap \n")
-      }
-      mrisks <- meanRisksBoot[,data.table::data.table(meanRiskBoot=mean(meanRisk, na.rm = TRUE),
-                                                      lower=quantile(meanRisk,alpha/2, na.rm = TRUE),
-                                                      upper=quantile(meanRisk,1-(alpha/2), na.rm = TRUE),
-                                                      n.boot=sum(!is.na(meanRisk))),
-                              keyby=key1]
-      crisks <- riskComparisonsBoot[,data.table::data.table(diffMeanBoot=mean(diff, na.rm = TRUE),
-                                                            diff.lower=quantile(diff,alpha/2, na.rm = TRUE),
-                                                            diff.upper=quantile(diff,1-(alpha/2), na.rm = TRUE),
-                                                            diff.p.value=findP1(diff, alternative = "two.sided"),
-                                                            ratioMeanBoot=mean(ratio, na.rm = TRUE),
-                                                            ratio.lower=quantile(ratio,alpha/2, na.rm = TRUE),
-                                                            ratio.upper=quantile(ratio,1-(alpha/2), na.rm = TRUE),
-                                                            ratio.p.value=findP1(ratio-1, alternative = "two.sided"),
-                                                            n.boot=sum(!is.na(diff))),
-                                    keyby=key2]
-      ## merge with pointEstimate
-      mrisks <- merge(pointEstimate$meanRisk,mrisks,by=key1)
-      crisks <- merge(pointEstimate$riskComparison,crisks,by=key2)
-      # }}}
+        if(NROW(meanRisksBoot)==0){
+            stop("no successful bootstrap \n")
+        }
+        mrisks <- meanRisksBoot[,data.table::data.table(meanRiskBoot=mean(meanRisk, na.rm = TRUE),
+                                                        lower=quantile(meanRisk,alpha/2, na.rm = TRUE),
+                                                        upper=quantile(meanRisk,1-(alpha/2), na.rm = TRUE),
+                                                        n.boot=sum(!is.na(meanRisk))),
+                                keyby=key1]
+
+        crisks <- riskComparisonsBoot[,data.table::data.table(diffMeanBoot=mean(diff, na.rm = TRUE),
+                                                              diff.lower=quantile(diff,alpha/2, na.rm = TRUE),
+                                                              diff.upper=quantile(diff,1-(alpha/2), na.rm = TRUE),
+                                                              diff.p.value=boot2pvalue(diff, alternative = "two.sided"),
+                                                              ratioMeanBoot=mean(ratio, na.rm = TRUE),
+                                                              ratio.lower=quantile(ratio,alpha/2, na.rm = TRUE),
+                                                              ratio.upper=quantile(ratio,1-(alpha/2), na.rm = TRUE),
+                                                              ratio.p.value=boot2pvalue(ratio-1, alternative = "two.sided"),
+                                                              n.boot=sum(!is.na(diff))),
+                                      keyby=key2]
+        ## merge with pointEstimate
+        mrisks <- merge(pointEstimate$meanRisk,mrisks,by=key1)
+        crisks <- merge(pointEstimate$riskComparison,crisks,by=key2)
+                                        # }}}
     } else {
       
-      # {{{ Influence function and variance
-      IFrisk <- lapply(1:n.contrasts,function(i){
-        #### influence function for the hypothetical worlds in which every subject is treated with the same treatment
-        data.i <- data
-        data.i[[treatment]] <- factor(contrasts[i], levels = levels)
-        ## influence function for the absolute risk
-        if ("CauseSpecificCox" %in% class(object)){
-          pred.i <- do.call("predict",args = list(object,
-                                                  newdata = data.i,
-                                                  times = times,
-                                                  cause=cause,
-                                                  se=FALSE,
-                                                  iid=FALSE,
-                                                  keep.times=FALSE,
-                                                  log.transform=FALSE,
-                                                  store.iid=store.iid,
-                                                  average.iid=TRUE))
-          risk.i <- pred.i$absRisk
-          attr(risk.i,"iid") <- pred.i$absRisk.average.iid
-        } else{
-          pred.i <- do.call("predictCox",args = list(object,
-                                                     newdata = data.i,
-                                                     times = times,
-                                                     se=FALSE,
-                                                     iid=FALSE,
-                                                     keep.times=FALSE,
-                                                     log.transform=FALSE,
-                                                     type="survival",
-                                                     store.iid=store.iid,
-                                                     average.iid=TRUE))
-          risk.i <- 1-pred.i$survival
-          attr(risk.i,"iid") <- -pred.i$survival.average.iid
-        }
-        return(risk.i)
-      })
+                                        # {{{ Influence function and variance
+        IFrisk <- lapply(1:n.contrasts,function(i){
+#### influence function for the hypothetical worlds in which every subject is treated with the same treatment
+            data.i <- data
+            data.i[[treatment]] <- factor(contrasts[i], levels = levels)
+            ## influence function for the absolute risk
+            if ("CauseSpecificCox" %in% class(object)){
+                pred.i <- do.call("predict",args = list(object,
+                                                        newdata = data.i,
+                                                        times = times,
+                                                        cause=cause,
+                                                        se=FALSE,
+                                                        iid=FALSE,
+                                                        keep.times=FALSE,
+                                                        log.transform=FALSE,
+                                                        store.iid=store.iid,
+                                                        average.iid=TRUE))
+                risk.i <- pred.i$absRisk
+                attr(risk.i,"iid") <- pred.i$absRisk.average.iid
+            } else if(any(c("coxph","cph") %in% class(object))){
+                pred.i <- do.call("predictCox",args = list(object,
+                                                           newdata = data.i,
+                                                           times = times,
+                                                           se=FALSE,
+                                                           iid=FALSE,
+                                                           keep.times=FALSE,
+                                                           log.transform=FALSE,
+                                                           type="survival",
+                                                           store.iid=store.iid,
+                                                           average.iid=TRUE))
+                risk.i <- 1-pred.i$survival
+                attr(risk.i,"iid") <- -pred.i$survival.average.iid
+            }else if("glm" %in% class(object)){
+                risk.i <- cbind(predict(object, type = "response", newdata = data.i, se=FALSE))
+                
+## compute influence function
+                iid.beta <- lava::iid(object)
+                newX <- model.matrix(object$formula, data.i)
+                if(object$family$link=="logit"){
+                    ## 1/(1+exp(-Xbeta)) - risk.i
+                    ## newX %*% coef(object) - Xbeta
+                    Xbeta <- predict(object, type = "link", newdata = data.i, se=FALSE)
+                    iid.pred <- sapply(1:n.obs, function(iObs){ ## iObs <- 1
+                        iid.beta %*% cbind(newX[iObs,]) * exp(-Xbeta[iObs])/(1+exp(-Xbeta[iObs]))^2
+                    })                    
+                }else if(object$family$link=="identity"){
+                    iid.pred <- apply(newX, 1, function(iRow){ ## iRow <- newX[1,]
+                        iid.beta %*% cbind(iRow)
+                    })
+                }else {
+                    stop("Cannot handle ",object$family$link," \n",
+                         "Only handle the following link function: identity, logit \n")
+                }
+                attr(risk.i,"iid") <- rowMeans(iid.pred)
+                ## se.pred sqrt(colSums(iid.pred^2))
+            }
+            return(risk.i)
+        })
       
         ## influence function for the average treatment effect
         ## IF had dimension n.predictions (row), n.times (columns), n.dataTrain (length)
@@ -549,12 +615,12 @@ ate <- function(object,
             ## note: here IFrisk[[iTreat]] is the risk (the influence function is in the attribute "iid")
             term2 <- rowCenter_cpp(IFrisk[[iTreat]], center = pointEstimate$meanRisk[Treatment==contrasts[iTreat],meanRisk])
         
-        # we get n * IF instead of IF for the absolute risk. This is why the second term need to be rescaled
-        iid.treatment[iTreat,,] <- term1 + t(term2)/n.obs
-        sdIF.treatment[iTreat,] <- apply(iid.treatment[iTreat,,,drop=FALSE],2, ## MARGIN=2 and drop=FALSE to deal with the case of one timepoint
-                                         function(x){sqrt(sum(x^2))}
-        )
-      }
+                                        # we get n * IF instead of IF for the absolute risk. This is why the second term need to be rescaled
+            iid.treatment[iTreat,,] <- term1 + t(term2)/n.obs
+            sdIF.treatment[iTreat,] <- apply(iid.treatment[iTreat,,,drop=FALSE],2, ## MARGIN=2 and drop=FALSE to deal with the case of one timepoint
+                                             function(x){sqrt(sum(x^2))}
+                                             )
+        }
       
         ## influence function for the difference/ratio in average treatment effect
         nall.contrasts <- n.contrasts*(n.contrasts-1)/2
@@ -580,7 +646,6 @@ ate <- function(object,
                 sdIF_diff.contrasts[iiCon,] <- apply(iid_diff.contrasts[iiCon,,,drop=FALSE],2,
                                                      function(x){sqrt(sum(x^2))}
                                                      )
-          
                 ## IF(A/B) = IF(A)/B-IF(B)A/B^2
                 ate.iCon <- pointEstimate$meanRisk[Treatment == contrasts[iCon],meanRisk]
                 ate.iCon2 <- pointEstimate$meanRisk[Treatment == contrasts[iCon2],meanRisk]
@@ -594,11 +659,10 @@ ate <- function(object,
                                                       )
                 
                 ## store the result
-                index.contrasts <- sdIF.fct[, .I[Treatment.A==contrasts[[iCon]] & Treatment.B==contrasts[[iCon2]]]]
                 if(se){
-                    sdIF.fct[index.contrasts,diff.se := sdIF_diff.contrasts[iiCon,]]  
-                    sdIF.fct[index.contrasts,ratio.se := sdIF_ratio.contrasts[iiCon,]]  
-                }                   
+                    sdIF.fct[Treatment.A==contrasts[[iCon]] & Treatment.B==contrasts[[iCon2]],
+                             c("diff.se","ratio.se") := .(sdIF_diff.contrasts[iiCon,],sdIF_ratio.contrasts[iiCon,])]
+                }
             }
         }            
                                         # }}}
@@ -623,29 +687,29 @@ ate <- function(object,
       mrisks <- data.table::data.table(Treatment = pointEstimate$meanRisk$Treatment,
                                        time = times)
       
-      mrisks[, meanRisk := pointEstimate$meanRisk$meanRisk]
-      if(se){                    
-        mrisks[, lower := meanRisk + qnorm(alpha/2) * sdIF.treatment[.GRP,], by = "Treatment"]
-        mrisks[, upper := meanRisk + qnorm(1-alpha/2) * sdIF.treatment[.GRP,], by = "Treatment"]
+        mrisks[, meanRisk := pointEstimate$meanRisk$meanRisk]
+        if(se){
+            mrisks[, lower := meanRisk + qnorm(alpha/2) * sdIF.treatment[.GRP,], by = "Treatment"]
+            mrisks[, upper := meanRisk + qnorm(1-alpha/2) * sdIF.treatment[.GRP,], by = "Treatment"]
 
-        crisks[, diff.lower := pointEstimate$riskComparison$diff - qnorm(1-alpha/2) * sdIF.fct$diff.se]
-        crisks[, diff.upper := pointEstimate$riskComparison$diff + qnorm(1-alpha/2) * sdIF.fct$diff.se]
-        crisks[, diff.p.value := 2*(1-pnorm(abs(pointEstimate$riskComparison$diff), sd = sdIF.fct$diff.se))]
+            crisks[, diff.lower := pointEstimate$riskComparison$diff - qnorm(1-alpha/2) * sdIF.fct$diff.se]
+            crisks[, diff.upper := pointEstimate$riskComparison$diff + qnorm(1-alpha/2) * sdIF.fct$diff.se]
+            crisks[, diff.p.value := 2*(1-pnorm(abs(pointEstimate$riskComparison$diff), sd = sdIF.fct$diff.se))]
 
-        crisks[, ratio.lower := pointEstimate$riskComparison$ratio - qnorm(1-alpha/2) * sdIF.fct$ratio.se]
-        crisks[, ratio.upper := pointEstimate$riskComparison$ratio + qnorm(1-alpha/2) * sdIF.fct$ratio.se]
-        crisks[, ratio.p.value := 2*(1-pnorm(abs(pointEstimate$riskComparison$ratio-1), sd = sdIF.fct$ratio.se))]                    
-      }
+            crisks[, ratio.lower := pointEstimate$riskComparison$ratio - qnorm(1-alpha/2) * sdIF.fct$ratio.se]
+            crisks[, ratio.upper := pointEstimate$riskComparison$ratio + qnorm(1-alpha/2) * sdIF.fct$ratio.se]
+            crisks[, ratio.p.value := 2*(1-pnorm(abs(pointEstimate$riskComparison$ratio-1), sd = sdIF.fct$ratio.se))]                    
+        }
         if(band){
             mrisks[, lowerBand := meanRisk - qIF.treatment[.GRP] * sdIF.treatment[.GRP,], by = "Treatment"]
             mrisks[, upperBand := meanRisk + qIF.treatment[.GRP] * sdIF.treatment[.GRP,], by = "Treatment"]
         
-        crisks[, diffBand.lower := pointEstimate$riskComparison$diff - sdIF.fct$diffBand.quantile * sdIF.fct$diff.se]
-        crisks[, diffBand.upper := pointEstimate$riskComparison$diff + sdIF.fct$diffBand.quantile * sdIF.fct$diff.se]
+            crisks[, diffBand.lower := pointEstimate$riskComparison$diff - sdIF.fct$diffBand.quantile * sdIF.fct$diff.se]
+            crisks[, diffBand.upper := pointEstimate$riskComparison$diff + sdIF.fct$diffBand.quantile * sdIF.fct$diff.se]
         
-        crisks[, ratioBand.lower := pointEstimate$riskComparison$ratio - sdIF.fct$ratioBand.quantile * sdIF.fct$ratio.se]
-        crisks[, ratioBand.upper := pointEstimate$riskComparison$ratio + sdIF.fct$ratioBand.quantile * sdIF.fct$ratio.se]
-      }
+            crisks[, ratioBand.lower := pointEstimate$riskComparison$ratio - sdIF.fct$ratioBand.quantile * sdIF.fct$ratio.se]
+            crisks[, ratioBand.upper := pointEstimate$riskComparison$ratio + sdIF.fct$ratioBand.quantile * sdIF.fct$ratio.se]
+        }
       
       mrisks[, meanRisk := NULL]
       
@@ -675,69 +739,6 @@ ate <- function(object,
   
   class(out) <- c("ate",class(object))
   out
-}
-
-
-#' @title Compute the p.value from the distribution under H1
-#' @description Compute the p.value from the distribution under H1
-#' 
-#' @param x the sample
-#' @param alternative a character string specifying the alternative hypothesis, must be one of "two.sided" (default), "greater" or "less"
-#' 
-#' @examples 
-#' set.seed(10)
-#' 
-#' # no effect
-#' x <- rnorm(1e3) 
-#' riskRegression:::findP1(x, alternative = "two.sided")
-#' riskRegression:::findP1(x, alternative = "greater")
-#' riskRegression:::findP1(x, alternative = "less")
-#' 
-#' # effect
-#' x <- rnorm(1e3, mean = 1) 
-#' riskRegression:::findP1(x, alternative = "two.sided")
-#' riskRegression:::findP1(x, alternative = "greater") # pnorm(q = 0, mean = 1)
-#' riskRegression:::findP1(x, alternative = "less")
-#' 
-#' x <- rnorm(1e3, mean = -1) 
-#' riskRegression:::findP1(x, alternative = "two.sided") 
-#' riskRegression:::findP1(x, alternative = "greater")
-#' riskRegression:::findP1(x, alternative = "less") # pnorm(q = 0, mean = -1)
-#' 
-findP1 <- function(x, alternative = "two.sided"){ 
-  
-  x <- na.omit(x)
-  if(length(x)==0 || length(x) < 10){
-    return(as.numeric(NA))
-  }else if(all(x>0)){
-    p.value <- switch(alternative,
-                      "two.sided" = 0,
-                      "less" = 1,
-                      "greater" = 1)
-  } else if(all(x<0)){
-    p.value <- switch(alternative,
-                      "two.sided" = 0,
-                      "less" = 0,
-                      "greater" = 1)
-  }else if(all(x==0)){
-    p.value <- switch(alternative,
-                      "two.sided" = 0,
-                      "less" = 0,
-                      "greater" = 0)
-  }else{
-    fn <- function(p){abs(quantile(x, probs = p))}
-    
-    optimum <- optim(fn = fn, par = 0.5, lower = 0, upper = 1, method = "L-BFGS-B")
-    
-    
-    p.value <- switch(alternative,
-                      "two.sided" = if(optimum$par < 0.5){2*optimum$par}else{2*(1-optimum$par)},
-                      "less" = 1-optimum$par,
-                      "greater" = optimum$par)
-    
-  }
-  
-  return(p.value)
 }
 
 
