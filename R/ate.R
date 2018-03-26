@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Oct 23 2016 (08:53) 
 ## Version: 
-## last-updated: jan 24 2018 (17:07) 
-##           By: Brice Ozenne
-##     Update #: 444
+## last-updated: Mar 26 2018 (08:46) 
+##           By: Thomas Alexander Gerds
+##     Update #: 463
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -66,9 +66,10 @@
 #' \item treatment: the name of the treatment variable.
 #' \item contrasts: the levels of the treatment variable that were compared.
 #' \item times: the time points at which the ATE was computed.
-#' \item se: whether the standard errors and confidence intervals of the ATE where computed.
+#' \item se: Logical. if \code{TRUE} compute the standard errors and confidence intervals of the ATE
 #' \item n.bootstrap: the number of bootstrap samples.
-#' \item band: whether confidence bands where computed.
+#' \item{bootci.method} Character. How to construct confidence intervals based on bootstrap results: Either "Wald" (the default) or "quantile"
+#' \item band: Logical. If \code{TRUE} confidence bands are computed.
 #' \item nsim.band: the number of simulations used to compute the quantiles for the confidence bands.
 #' \item seeds: the seed used to gnerate the boostrap sample. Not used when the
 #' influence function is used to compute the standard errors of the ATE.
@@ -103,6 +104,13 @@
 #' ## (argument se = TRUE and B = 0)
 #' ateFit1b <- ate(fit, data = dtS, treatment = "X1", times = 5:8,
 #'                se = TRUE, B = 0)
+#'
+#' ## bootstrap confidence intervals: studentized Wald type 
+#' ateFit1c <- ate(fit, data = dtS, treatment = "X1", times = 5,
+#'                seed=3,se = TRUE, B = 100)
+#' ## bootstrap confidence intervals: studentized Wald type 
+#' ateFit1d <- ate(fit, data = dtS, treatment = "X1", times = 5,
+#'                 seed=3,bootci.method="quantile",se = TRUE, B = 100)
 #'
 #' ## same as before with in addition the confidence bands for the ATE
 #' ## (argument band = TRUE)
@@ -211,6 +219,7 @@ ate <- function(object,
                 landmark,
                 conf.level = 0.95,
                 se = TRUE,
+                bootci.method="Wald",
                 band = FALSE,
                 B = 0,
                 nsim.band = ifelse(band,1e3,0),
@@ -226,33 +235,31 @@ ate <- function(object,
   diff.se=ratio.se=.GRP=lower=upper=diff.lower=diff.upper=diff.p.value=ratio.lower=ratio.upper=ratio.p.value <- NULL
   lowerBand=upperBand=diffBand.lower=diffBand.upper=ratioBand.lower=ratioBand.upper <- NULL
   
-  handler <- match.arg(handler, c("foreach","mclapply"))
-  # {{{ checking for time-dependent covariates (left-truncation)
-  TD <- switch(class(object)[[1]],"coxph"=(attr(object$y,"type")=="counting"),
-               "CauseSpecificCox"=(attr(object$models[[1]]$y,"type")=="counting"),FALSE)
-  if (TD){
-    if (missing(formula))
-      stop("Need formula to do landmark analysis.")
-    if (missing(landmark))
-      stop("Need landmark time(s) to do landmark analysis.")
-    if(length(times)!=1){
-      stop("In settings with time-dependent covariates argument 'time' must be a single value, argument 'landmark' may be a vector of time points.")
+    handler <- match.arg(handler, c("foreach","mclapply"))
+    # {{{ checking for time-dependent covariates (left-truncation)
+    TD <- switch(class(object)[[1]],"coxph"=(attr(object$y,"type")=="counting"),
+                 "CauseSpecificCox"=(attr(object$models[[1]]$y,"type")=="counting"),FALSE)
+    if (TD){
+        if (missing(formula))
+            stop("Need formula to do landmark analysis.")
+        if (missing(landmark))
+            stop("Need landmark time(s) to do landmark analysis.")
+        if(length(times)!=1){
+            stop("In settings with time-dependent covariates argument 'time' must be a single value, argument 'landmark' may be a vector of time points.")
+        }
+    }else{
+        landmark=NULL
     }
-  }else{
-    landmark=NULL
-  }
-  # }}}
-  
+    # }}}
     # {{{ Prepare
     dots <- list(...)
-
     if(se==0 && B>0){
         warning("argument 'se=0' means 'no standard errors' so number of bootstrap repetitions is forced to B=0.")
     }
     if(band && B>0){
-        stop("the confidence bands cannot be computed when using the bootstrap approach \n",
-             "set argument \'band\' to FALSE to not compute the confidence bands \n",
-             "or set argument \'B\' to 0 to use the influence function instead of the bootstrap\n")
+        stop("Confidence bands cannot be computed when using the bootstrap approach \n",
+             "Either set argument \'band\' to FALSE to not compute the confidence bands \n",
+             "or set argument \'B\' to 0 to use the estimate of the asymptotic distribution instead of the bootstrap\n")
     }
     if(treatment %in% names(data) == FALSE){
         stop("The data set does not seem to have a variable ",treatment," (argument: treatment). \n")
@@ -260,15 +267,15 @@ ate <- function(object,
     test.CR <- !missing(cause) # test whether the argument cause has been specified, i.e. it is a competing risk model
     if(test.CR==FALSE){cause <- NA}
   
-  if(B==0 && (se || band)){
-    validClass <- c("CauseSpecificCox","coxph","cph","phreg")
-    if(all(validClass %in% class(object) == FALSE)){
-      stop("Standard error based on the influence function only implemented for \n",
-           paste(validClass, collapse = " ")," objects \n",
-           "set argument \'B\' to a positive integer to use a boostrap instead \n")
+    if(B==0 && (se || band)){
+        validClass <- c("CauseSpecificCox","coxph","cph","phreg")
+        if(all(validClass %in% class(object) == FALSE)){
+            stop("Standard error based on the influence function only implemented for \n",
+                 paste(validClass, collapse = " ")," objects \n",
+                 "set argument \'B\' to a positive integer to use a boostrap instead \n")
+        }
     }
-  }
-  data[[treatment]] <- factor(data[[treatment]])
+    data[[treatment]] <- factor(data[[treatment]])
   
   if(is.null(contrasts)){
     levels <- levels(data[[treatment]])
@@ -282,7 +289,7 @@ ate <- function(object,
   
   # }}}
   
-  # {{{ Checking the model
+    # {{{ Checking the model
   
     # for predictRisk S3-method
     allmethods <- utils::methods(predictRisk)
@@ -294,6 +301,7 @@ ate <- function(object,
         stop(paste("The object does not contain its own call, which is needed to refit the model in the bootstrap loop."))
     # }}}
     # {{{ calc G formula
+
     if (TD){
         Gformula <- function(object,
                              data,
@@ -338,7 +346,8 @@ ate <- function(object,
                     RC[,meanRisk:=NULL]
                     RC[]
                 }))}))
-            out <- list(meanRisk = dt.meanRisk, riskComparison = riskComparison)
+            out <- list(meanRisk = dt.meanRisk,
+                        riskComparison = riskComparison)
             out
         }
     }else{
@@ -372,19 +381,30 @@ ate <- function(object,
             out            
         }
     }
+
     # }}}
-  
-  # {{{ point estimate
-  estimateTime <- system.time(
-    pointEstimate <- Gformula(object=object,
-                              data=data,
-                              treatment=treatment,
-                              contrasts=contrasts,
-                              times=times,
-                              cause=cause,
-                              landmark=landmark,
-                              dots))
-  # }}}
+    
+    # {{{ point estimate
+    estimateTime <- system.time(
+        pointEstimate <- Gformula(object=object,
+                                  data=data,
+                                  treatment=treatment,
+                                  contrasts=contrasts,
+                                  times=times,
+                                  cause=cause,
+                                  landmark=landmark,
+                                  dots)
+    )
+    uu <- function(data){
+        Gformula(object=object,
+                 data=data,
+                 treatment=treatment,
+                 contrasts=contrasts,
+                 times=times,
+                 cause=cause,
+                 landmark=landmark,
+                 dots=dots)}
+    # }}}
   
     # {{{ Confidence interval    
     if(se || band){
@@ -398,113 +418,142 @@ ate <- function(object,
         }
         alpha <- 1-conf.level
     
-    if(B>0){
-      # {{{ Bootstrap
-      if (verbose==TRUE)
-        message(paste0("Approximated bootstrap netto run time (without time for copying data to cores):\n",
-                       round(estimateTime["user.self"],2),
-                       " seconds times ",
-                       B,
-                       " bootstraps / ",
-                       mc.cores,
-                       " cores = ",
-                       round(estimateTime["user.self"]*B/mc.cores,2)," seconds.\n"))
-      x.cores <- parallel::detectCores()
-      if(mc.cores > x.cores){
-        warning("Not enough available cores \n",
-                "available: ",parallel::detectCores()," | requested: ",mc.cores,"\n")
-        mc.cores=x.cores
-      }
-      if (!missing(seed)) set.seed(seed)
-      bootseeds <- sample(1:1000000,size=B,replace=FALSE)
-        if (handler[[1]]=="foreach"){
-        
-            if(verbose){
-                cl <- parallel::makeCluster(mc.cores, outfile = "")
-                pb <- txtProgressBar(max = B, style = 3)          
-            }else{
-                cl <- parallel::makeCluster(mc.cores)
+        if(B>0){
+            # {{{ Bootstrap
+            if (verbose==TRUE)
+                message(paste0("Approximated bootstrap netto run time (without time for copying data to cores):\n",
+                               round(estimateTime["user.self"],2),
+                               " seconds times ",
+                               B,
+                               " bootstraps / ",
+                               mc.cores,
+                               " cores = ",
+                               round(estimateTime["user.self"]*B/mc.cores,2)," seconds.\n"))
+            x.cores <- parallel::detectCores()
+            if(mc.cores > x.cores){
+                warning("Not enough available cores \n","available: ",parallel::detectCores()," | requested: ",mc.cores,"\n")
+                mc.cores=x.cores
             }
-            doParallel::registerDoParallel(cl)
-            pp <- find(as.character(object$call[[1]]))
-            addPackage <- if(grep("package:",pp)){gsub("package:","",pp[grep("package:",pp)])}else{NULL}
-        
-        boots <- foreach::`%dopar%`(foreach::foreach(b=1:B,.packages=unique(c("riskRegression","survival",addPackage)),
-                                                     .export=NULL), {
-          set.seed(bootseeds[[b]])
-          if(verbose){setTxtProgressBar(pb, b)}
-          dataBoot <- data[sample(1:n.obs, size = n.obs, replace = TRUE),]
-          object$call$data <- dataBoot
-          objectBoot <- try(eval(object$call),silent=TRUE)
-          if ("try-error" %in% class(objectBoot)){
-            stop(paste0("Failed to fit model ",class(object),ifelse(try(b>0,silent=TRUE),paste0(" in bootstrap step ",b,"."))))
-          }
-          tryCatch(Gformula(object=objectBoot,
-                            data=dataBoot,
-                            treatment=treatment,
-                            contrasts=contrasts,
-                            times=times,
-                            cause=cause,
-                            landmark=landmark,
-                            dots),
-                   error = function(x){return(NULL)})
-        })
-        if(verbose){close(pb)}
-        parallel::stopCluster(cl)
-      } else {
-        if(Sys.info()["sysname"] == "Windows" && mc.cores>1){
-          message("mclapply cannot perform parallel computations on Windows \n",
-                  "consider setting argument handler to \"foreach\" \n")
-          mc.cores <- 1
-        }
-        boots <- parallel::mclapply(1:B, function(b){
-          set.seed(bootseeds[[b]])
-          dataBoot <- data[sample(1:n.obs, size = n.obs, replace = TRUE),]
-          object$call$data <- dataBoot
-          objectBoot <- try(eval(object$call),silent=TRUE)
-          if ("try-error" %in% class(objectBoot)){
-            stop(paste0("Failed to fit model",ifelse(try(b>0,silent=TRUE),paste0(" in bootstrap step ",b,"."))))
-          }
-          tryCatch(Gformula(object=objectBoot,
-                            data=dataBoot,
-                            treatment=treatment,
-                            contrasts=contrasts,
-                            times=times,
-                            cause=cause,
-                            landmark=landmark,
-                            dots),
-                   error = function(x){return(NULL)})
-        }, mc.cores = mc.cores)
-      }
-      ## gc()
-      meanRisksBoot <- data.table::rbindlist(lapply(boots,function(x)x$meanRisk))
-      riskComparisonsBoot <- data.table::rbindlist(lapply(boots,function(x)x$riskComparison))
+            if (!missing(seed)) set.seed(seed)
+            bootseeds <- sample(1:1000000,size=B,replace=FALSE)
+            if (handler[[1]]=="foreach" && mc.cores>1){
+                if(verbose){
+                    cl <- parallel::makeCluster(mc.cores, outfile = "")
+                    pb <- txtProgressBar(max = B, style = 3)          
+                }else{
+                    cl <- parallel::makeCluster(mc.cores)
+                }
+                doParallel::registerDoParallel(cl)
+                pp <- find(as.character(object$call[[1]]))
+                addPackage <- if(grep("package:",pp)){gsub("package:","",pp[grep("package:",pp)])}else{NULL}
+                boots <- foreach::`%dopar%`(foreach::foreach(b=1:B,.packages=unique(c("riskRegression","survival",addPackage)),
+                                                             .export=NULL), {
+                                                                 set.seed(bootseeds[[b]])
+                                                                 if(verbose){setTxtProgressBar(pb, b)}
+                                                                 dataBoot <- data[sample(1:n.obs, size = n.obs, replace = TRUE),]
+                                                                 object$call$data <- dataBoot
+                                                                 objectBoot <- try(eval(object$call),silent=TRUE)
+                                                                 if ("try-error" %in% class(objectBoot)){
+                                                                     stop(paste0("Failed to fit model ",class(object),ifelse(try(b>0,silent=TRUE),paste0(" in bootstrap step ",b,"."))))
+                                                                 }
+                                                                 tryCatch(Gformula(object=objectBoot,
+                                                                                   data=dataBoot,
+                                                                                   treatment=treatment,
+                                                                                   contrasts=contrasts,
+                                                                                   times=times,
+                                                                                   cause=cause,
+                                                                                   landmark=landmark,
+                                                                                   dots),
+                                                                          error = function(x){return(NULL)})
+                                                             })
+                if(verbose){close(pb)}
+                parallel::stopCluster(cl)
+            } else {
+                if(Sys.info()["sysname"] == "Windows" && mc.cores>1){
+                    message("mclapply cannot perform parallel computations on Windows \n",
+                            "consider setting argument handler to \"foreach\" \n")
+                    mc.cores <- 1
+                }
+                boots <- parallel::mclapply(1:B, function(b){
+                    set.seed(bootseeds[[b]])
+                    dataBoot <- data[sample(1:n.obs, size = n.obs, replace = TRUE),]
+                    object$call$data <- dataBoot
+                    objectBoot <- try(eval(object$call),silent=TRUE)
+                    if ("try-error" %in% class(objectBoot)){
+                        stop(paste0("Failed to fit model",ifelse(try(b>0,silent=TRUE),paste0(" in bootstrap step ",b,"."))))
+                    }
+                    tryCatch(Gformula(object=objectBoot,
+                                      data=dataBoot,
+                                      treatment=treatment,
+                                      contrasts=contrasts,
+                                      times=times,
+                                      cause=cause,
+                                      landmark=landmark,
+                                      dots),
+                             error = function(x){return(NULL)})
+                }, mc.cores = mc.cores)
+            }
+            ## gc()
+            meanRisksBoot <- data.table::rbindlist(lapply(boots,function(x)x$meanRisk))
+            riskComparisonsBoot <- data.table::rbindlist(lapply(boots,function(x)x$riskComparison))
       
-      if(NROW(meanRisksBoot)==0){
-        stop("no successful bootstrap \n")
-      }
-      mrisks <- meanRisksBoot[,data.table::data.table(meanRiskBoot=mean(meanRisk, na.rm = TRUE),
-                                                      lower=quantile(meanRisk,alpha/2, na.rm = TRUE),
-                                                      upper=quantile(meanRisk,1-(alpha/2), na.rm = TRUE),
-                                                      n.boot=sum(!is.na(meanRisk))),
-                              keyby=key1]
-      crisks <- riskComparisonsBoot[,data.table::data.table(diffMeanBoot=mean(diff, na.rm = TRUE),
-                                                            diff.lower=quantile(diff,alpha/2, na.rm = TRUE),
-                                                            diff.upper=quantile(diff,1-(alpha/2), na.rm = TRUE),
-                                                            diff.p.value=findP1(diff, alternative = "two.sided"),
-                                                            ratioMeanBoot=mean(ratio, na.rm = TRUE),
-                                                            ratio.lower=quantile(ratio,alpha/2, na.rm = TRUE),
-                                                            ratio.upper=quantile(ratio,1-(alpha/2), na.rm = TRUE),
-                                                            ratio.p.value=findP1(ratio-1, alternative = "two.sided"),
-                                                            n.boot=sum(!is.na(diff))),
-                                    keyby=key2]
-      ## merge with pointEstimate
-      mrisks <- merge(pointEstimate$meanRisk,mrisks,by=key1)
-      crisks <- merge(pointEstimate$riskComparison,crisks,by=key2)
-      # }}}
-    } else {
-      
-      # {{{ Influence function and variance
+            if(NROW(meanRisksBoot)==0){
+                stop("Error in all bootstrap samples.")
+            }
+            if (tolower(bootci.method)=="wald"){
+                mrisks <- meanRisksBoot[,{
+                    m=mean(meanRisk, na.rm = TRUE)
+                    se=sd(meanRisk,na.rm=TRUE)
+                    data.table::data.table(meanRiskBoot=m,
+                                           se=se,
+                                           lower=m+qnorm(alpha/2)*se,
+                                           upper=m+qnorm(1-alpha/2)*se,
+                                           n.boot=sum(!is.na(meanRisk)))
+                }, keyby=key1]
+                crisks <- riskComparisonsBoot[,
+                {
+                    d <- mean(diff, na.rm = TRUE)
+                    d.se <- sd(diff, na.rm = TRUE)
+                    r <- mean(ratio, na.rm = TRUE)
+                    r.se <- sd(ratio, na.rm = TRUE)
+                    data.table::data.table(diffMeanBoot=d,
+                                           diff.se=d.se,
+                                           diff.lower=d+qnorm(alpha/2)*d.se,
+                                           diff.upper=d+qnorm(1-alpha/2)*d.se,
+                                           diff.p.value=2*pnorm(abs(d)/d.se,lower.tail=FALSE),
+                                           ratioMeanBoot=r,
+                                           ratio.se=r.se,
+                                           ratio.lower=r+qnorm(alpha/2)*r.se,
+                                           ratio.upper=r+qnorm(1-alpha/2)*r.se,
+                                           ratio.p.value=2*pnorm(abs(r)/r.se,lower.tail=FALSE),
+                                           n.boot=sum(!is.na(diff)))
+                },keyby=key2]
+            }else{
+                mrisks <- meanRisksBoot[,data.table::data.table(meanRiskBoot=mean(meanRisk, na.rm = TRUE),
+                                                                se=sd(meanRisk,na.rm=TRUE),
+                                                                lower=quantile(meanRisk,alpha/2, na.rm = TRUE),
+                                                                upper=quantile(meanRisk,1-(alpha/2), na.rm = TRUE),
+                                                                n.boot=sum(!is.na(meanRisk))),
+                                        keyby=key1]
+                crisks <- riskComparisonsBoot[,data.table::data.table(diffMeanBoot=mean(diff, na.rm = TRUE),
+                                                                      diff.se=sd(diff, na.rm = TRUE),
+                                                                      diff.lower=quantile(diff,alpha/2, na.rm = TRUE),
+                                                                      diff.upper=quantile(diff,1-(alpha/2), na.rm = TRUE),
+                                                                      diff.p.value=findP1(diff, alternative = "two.sided"),
+                                                                      ratioMeanBoot=mean(ratio, na.rm = TRUE),
+                                                                      ratio.se=sd(ratio, na.rm = TRUE),
+                                                                      ratio.lower=quantile(ratio,alpha/2, na.rm = TRUE),
+                                                                      ratio.upper=quantile(ratio,1-(alpha/2), na.rm = TRUE),
+                                                                      ratio.p.value=findP1(ratio-1, alternative = "two.sided"),
+                                                                      n.boot=sum(!is.na(diff))),
+                                              keyby=key2]
+            }
+            ## merge with pointEstimate
+            mrisks <- merge(pointEstimate$meanRisk,mrisks,by=key1)
+            crisks <- merge(pointEstimate$riskComparison,crisks,by=key2)
+            # }}}
+        } else {
+            # {{{ Influence function and variance
       IFrisk <- lapply(1:n.contrasts,function(i){
         #### influence function for the hypothetical worlds in which every subject is treated with the same treatment
         data.i <- data
@@ -601,8 +650,8 @@ ate <- function(object,
                 }                   
             }
         }            
-                                        # }}}
-                                        # {{{ confidence bands
+        # }}}
+            # {{{ confidence bands
         if(band){ # nsim.band <- 500
             quantileIF <- confBandCox(iid = abind::abind(iid.treatment, iid_diff.contrasts, iid_ratio.contrasts, along = 1),
                                       se = rbind(sdIF.treatment, sdIF_diff.contrasts, sdIF_ratio.contrasts),
@@ -623,15 +672,18 @@ ate <- function(object,
       mrisks <- data.table::data.table(Treatment = pointEstimate$meanRisk$Treatment,
                                        time = times)
       
-      mrisks[, meanRisk := pointEstimate$meanRisk$meanRisk]
-      if(se){                    
+        mrisks[, meanRisk := pointEstimate$meanRisk$meanRisk]
+        if(se){
+        mrisks[, se := sdIF.treatment[.GRP,], by = "Treatment"]            
         mrisks[, lower := meanRisk + qnorm(alpha/2) * sdIF.treatment[.GRP,], by = "Treatment"]
         mrisks[, upper := meanRisk + qnorm(1-alpha/2) * sdIF.treatment[.GRP,], by = "Treatment"]
 
+        crisks[, diff.se := sdIF.fct$diff.se]
         crisks[, diff.lower := pointEstimate$riskComparison$diff - qnorm(1-alpha/2) * sdIF.fct$diff.se]
         crisks[, diff.upper := pointEstimate$riskComparison$diff + qnorm(1-alpha/2) * sdIF.fct$diff.se]
         crisks[, diff.p.value := 2*(1-pnorm(abs(pointEstimate$riskComparison$diff), sd = sdIF.fct$diff.se))]
 
+        crisks[, ratio.se := sdIF.fct$ratio.se]
         crisks[, ratio.lower := pointEstimate$riskComparison$ratio - qnorm(1-alpha/2) * sdIF.fct$ratio.se]
         crisks[, ratio.upper := pointEstimate$riskComparison$ratio + qnorm(1-alpha/2) * sdIF.fct$ratio.se]
         crisks[, ratio.p.value := 2*(1-pnorm(abs(pointEstimate$riskComparison$ratio-1), sd = sdIF.fct$ratio.se))]                    
@@ -660,7 +712,9 @@ ate <- function(object,
     crisks <- pointEstimate$riskComparison
     bootseeds <- NULL
     # }}}
-  }
+}
+# {{{ output object
+
   out <- list(meanRisk=mrisks,
               riskComparison=crisks,
               treatment=treatment,
@@ -673,8 +727,10 @@ ate <- function(object,
               seeds=bootseeds,
               conf.level=conf.level)
   
-  class(out) <- c("ate",class(object))
-  out
+class(out) <- c("ate",class(object))
+out
+# }}}
+
 }
 
 
@@ -705,7 +761,6 @@ ate <- function(object,
 #' riskRegression:::findP1(x, alternative = "less") # pnorm(q = 0, mean = -1)
 #' 
 findP1 <- function(x, alternative = "two.sided"){ 
-  
   x <- na.omit(x)
   if(length(x)==0 || length(x) < 10){
     return(as.numeric(NA))
@@ -726,10 +781,7 @@ findP1 <- function(x, alternative = "two.sided"){
                       "greater" = 0)
   }else{
     fn <- function(p){abs(quantile(x, probs = p))}
-    
     optimum <- optim(fn = fn, par = 0.5, lower = 0, upper = 1, method = "L-BFGS-B")
-    
-    
     p.value <- switch(alternative,
                       "two.sided" = if(optimum$par < 0.5){2*optimum$par}else{2*(1-optimum$par)},
                       "less" = 1-optimum$par,

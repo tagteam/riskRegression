@@ -5,9 +5,10 @@
 \title{Compute the average treatment effects via the g-formula}
 \usage{
 ate(object, data, formula, treatment, contrasts = NULL, times, cause,
-  landmark, conf.level = 0.95, se = TRUE, band = FALSE, B = 0,
-  nsim.band = ifelse(band, 1000, 0), seed, handler = "foreach",
-  mc.cores = 1, verbose = TRUE, store.iid = "full", ...)
+  landmark, conf.level = 0.95, se = TRUE, bootci.method = "Wald",
+  band = FALSE, B = 0, nsim.band = ifelse(band, 1000, 0), seed,
+  handler = "foreach", mc.cores = 1, verbose = TRUE, store.iid = "full",
+  ...)
 }
 \arguments{
 \item{object}{outcome model which describes how event risk depends
@@ -74,9 +75,10 @@ An object of class \code{ate} containing:
 \item treatment: the name of the treatment variable.
 \item contrasts: the levels of the treatment variable that were compared.
 \item times: the time points at which the ATE was computed.
-\item se: whether the standard errors and confidence intervals of the ATE where computed.
+\item se: Logical. if \code{TRUE} compute the standard errors and confidence intervals of the ATE
 \item n.bootstrap: the number of bootstrap samples.
-\item band: whether confidence bands where computed.
+\item{bootci.method} Character. How to construct confidence intervals based on bootstrap results: Either "Wald" (the default) or "quantile"
+\item band: Logical. If \code{TRUE} confidence bands are computed.
 \item nsim.band: the number of simulations used to compute the quantiles for the confidence bands.
 \item seeds: the seed used to gnerate the boostrap sample. Not used when the
 influence function is used to compute the standard errors of the ATE.
@@ -115,6 +117,13 @@ ateFit1a <- ate(fit, data = dtS, treatment = "X1", times = 5:8,
 ## (argument se = TRUE and B = 0)
 ateFit1b <- ate(fit, data = dtS, treatment = "X1", times = 5:8,
                se = TRUE, B = 0)
+
+## bootstrap confidence intervals: studentized Wald type 
+ateFit1c <- ate(fit, data = dtS, treatment = "X1", times = 5,
+               seed=3,se = TRUE, B = 100)
+## bootstrap confidence intervals: studentized Wald type 
+ateFit1d <- ate(fit, data = dtS, treatment = "X1", times = 5,
+                seed=3,bootci.method="quantile",se = TRUE, B = 100)
 
 ## same as before with in addition the confidence bands for the ATE
 ## (argument band = TRUE)

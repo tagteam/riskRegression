@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: sep  4 2017 (10:38) 
 ## Version: 
-## last-updated: sep  4 2017 (14:29) 
-##           By: Brice Ozenne
-##     Update #: 20
+## last-updated: Mar 26 2018 (07:57) 
+##           By: Thomas Alexander Gerds
+##     Update #: 22
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -23,11 +23,10 @@ library(riskRegression)
 library(testthat)
 library(rms)
 library(survival)
-
 # {{{ 1- [predictCox] Check baseline hazard 
 cat("Estimation of the baseline hazard \n")
 data(Melanoma)
-
+# {{{ "baseline hazard - match basehaz results"
 test_that("baseline hazard - match basehaz results",{
   fit.coxph <- coxph(Surv(time,status == 1) ~ thick + invasion + ici, data = Melanoma, y = TRUE, x = TRUE)
   fit.cph <- cph(Surv(time,status == 1) ~ thick + invasion + ici, data = Melanoma, y = TRUE, x = TRUE)
@@ -46,6 +45,9 @@ test_that("baseline hazard - match basehaz results",{
 })
 
 #### strata
+
+# }}}
+# {{{ "baseline hazard (strata) - order of the results"
 test_that("baseline hazard (strata) - order of the results",{
   fit.coxph <- coxph(Surv(time,status == 1) ~ thick + strata(invasion) + strata(ici), data = Melanoma, y = TRUE, x = TRUE)
   fit.cph <- cph(Surv(time,status == 1) ~ thick + strat(invasion) + strat(ici), data = Melanoma, y = TRUE, x = TRUE)
@@ -58,6 +60,8 @@ test_that("baseline hazard (strata) - order of the results",{
   #              as.numeric(predictCox(fit.cph, keep.strata = TRUE)$strata))
 })
 
+# }}}
+# {{{ "baseline hazard (strata) - match basehaz results"
 test_that("baseline hazard (strata) - match basehaz results",{
   fit.coxph <- coxph(Surv(time,status == 1) ~ thick + strata(invasion) + strata(ici), data = Melanoma, y = TRUE, x = TRUE)
   fit.cph <- cph(Surv(time,status == 1) ~ thick + strat(invasion) + strat(ici), data = Melanoma, y = TRUE, x = TRUE)
@@ -70,7 +74,7 @@ test_that("baseline hazard (strata) - match basehaz results",{
 })
 
 # }}}
-
+# }}}
 # {{{ 2- [predictCox] Check baseline hazard with time varying variables
 ## example from help(coxph)
 
@@ -79,6 +83,7 @@ test2 <- list(start=c(1,2,5,2,1,7,3,4,8,8),
               event=c(1,1,1,1,1,1,1,0,0,0), 
               x=c(1,0,0,1,0,1,1,1,0,0)) 
 
+# {{{ "baseline hazard (time varying) - match basehaz results"
 test_that("baseline hazard (time varying) - match basehaz results",{
     fit.coxph <- coxph(Surv(start, stop, event) ~ x, data = test2, x = TRUE, y = TRUE)
     fit.cph <- cph(Surv(start, stop, event) ~ x, data = test2, x = TRUE, y = TRUE)
@@ -96,6 +101,8 @@ test2.strata <- rbind(cbind(as.data.table(test2),S = 1),
                       cbind(as.data.table(test2),S = 2))
 test2.strata$randomS <- rbinom(NROW(test2.strata),size = 1, prob = 1/2)
 
+# }}}
+# {{{ "baseline hazard (strata, time varying) - match basehaz results"
 test_that("baseline hazard (strata, time varying) - match basehaz results",{
     fit.coxph <- coxph(Surv(start, stop, event) ~ strata(S) + x, data = test2.strata, x = TRUE, y = TRUE)
     fit.cph <- cph(Surv(start, stop, event) ~ strat(S) + x, data = test2.strata, x = TRUE, y = TRUE)
@@ -118,7 +125,7 @@ test_that("baseline hazard (strata, time varying) - match basehaz results",{
                  basehaz(fit.cph)$hazard, tolerance = 1e-8)
 
 })
-
+# }}}
 # }}}
 
 

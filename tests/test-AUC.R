@@ -1,5 +1,6 @@
 library(testthat)
 context("Prediction error")
+# {{{ "AUC censored data: order"
 test_that("AUC censored data: order",{
     library(riskRegression)
     library(survival)
@@ -17,6 +18,5 @@ test_that("AUC censored data: order",{
     expect_equal(A,B)
     expect_equal(a,b)
 })
-
-
+# }}}
 

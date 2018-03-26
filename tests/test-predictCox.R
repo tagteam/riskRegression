@@ -12,9 +12,7 @@ dataset1 <- Melanoma[sample.int(n = nrow(Melanoma), size = 12),]
 fit.coxph <- coxph(Surv(time,status == 1) ~ thick*age, data = Melanoma, y = TRUE, x = TRUE)
 fit.cph <- cph(Surv(time,status == 1) ~ thick*age, data = Melanoma, y = TRUE, x = TRUE)
 
-# {{{ 1- Check format of the output
-cat("Format of the output \n")
-
+# {{{ "baseline hazard - correct number of events"
 test_that("baseline hazard - correct number of events",{
   # c("time","hazard","cumhazard","survival") remove lastEventTime from pfit
   # time hazard cumhazard survival should have length equals to the number of eventtimes (including censored events)
@@ -31,6 +29,9 @@ test_that("baseline hazard - correct number of events",{
 fit.coxph <- coxph(Surv(time,status == 1) ~ thick + strata(invasion) + strata(ici), data = Melanoma, y = TRUE, x = TRUE)
 fit.cph <- cph(Surv(time,status == 1) ~ thick + strat(invasion) + strat(ici), data = Melanoma, y = TRUE, x = TRUE)
 
+# }}}
+
+# {{{ "baseline hazard (strata) - order of the results"
 test_that("baseline hazard (strata) - order of the results",{
   expect_equal(as.numeric(predictCox(fit.coxph, keep.strata = TRUE)$strata),
                as.numeric(basehaz(fit.coxph)$strata))
@@ -38,6 +39,9 @@ test_that("baseline hazard (strata) - order of the results",{
                as.numeric(basehaz(fit.cph)$strata))
 })
 
+# }}}
+
+# {{{ "Prediction with Cox model (strata) - export of strata and times"
 test_that("Prediction with Cox model (strata) - export of strata and times",{
   fit.coxph <- coxph(Surv(time,status == 1) ~ thick + strata(invasion) + strata(ici), data = Melanoma, y = TRUE, x = TRUE)
   fit.cph <- cph(Surv(time,status == 1) ~ thick + strat(invasion) + strat(ici), data = Melanoma, y = TRUE, x = TRUE)
@@ -63,7 +67,10 @@ test_that("Prediction with Cox model (strata) - export of strata and times",{
 })
 # }}}
 
-# {{{ 2- Check internal consistency
+# {{{ 2- 
+# }}}
+Check internal consistency
+# {{{ "baseline hazard (strata) - correct number of events"
 test_that("baseline hazard (strata) - correct number of events",{
   # c("time","hazard","cumhazard","survival", "strata") remove lastEventTime from pfit
   # time hazard cumhazard survival and strata should have length equals to the number of eventtimes (including censored events)
@@ -80,6 +87,9 @@ test_that("baseline hazard (strata) - correct number of events",{
   expect_equal(unname(lengthRes), rep(sum(timePerStrata), 5))
 })
 
+# }}}
+
+# {{{ "Prediction with Cox model (strata) - consistency of hazard/cumhazard/survival"
 test_that("Prediction with Cox model (strata) - consistency of hazard/cumhazard/survival",{
   predictTempo <- predictCox(fit.coxph, type = c("hazard","cumhazard","survival"), times = times1, newdata = dataset1)
   expect_equal(predictTempo$hazard[,-1], t(apply(predictTempo$cumhazard,1,diff)), tolerance = 1e-8)
@@ -91,6 +101,9 @@ expect_equal(predictTempo$hazard[,-1], t(apply(predictTempo$cumhazard,1,diff)), 
 expect_equal(predictTempo$survival, exp(-predictTempo$cumhazard), tolerance = 1e-8)
 
 
+# }}}
+
+# {{{ "Prediction with Cox model (strata) - incorrect strata"
 test_that("Prediction with Cox model (strata) - incorrect strata",{
   fit.coxph <- coxph(Surv(time,status == 1) ~ thick + strata(invasion) + strata(ici), data = Melanoma, y = TRUE, x = TRUE)
   dataset1$invasion <- "5616"
@@ -98,7 +111,8 @@ test_that("Prediction with Cox model (strata) - incorrect strata",{
 })
 # }}}
 
-# {{{ 2- Check dependence on data
+Check dependence on data
+# {{{ "Dependence on data"
 test_that("Dependence on data", {   
   Melanoma$entry <- -abs(rnorm(NROW(Melanoma), mean = 1, sd = 1))
   Melanoma2 <- Melanoma

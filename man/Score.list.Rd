@@ -236,17 +236,18 @@ set.seed(18)
 learndat <- sampleData(48,outcome="binary")
 testdat <- sampleData(40,outcome="binary")
 
-# score logistic regression models
+## score logistic regression models
 lr1 = glm(Y~X1+X2+X7+X9,data=learndat,family=binomial)
 lr2 = glm(Y~X3+X5,data=learndat,family=binomial)
 Score(list("LR(X1+X2+X7+X9)"=lr1,"LR(X3+X5)"=lr2),formula=Y~1,data=testdat)
 
+## ROC curve and calibration plot 
 xb=Score(list("LR(X1+X2+X7+X9)"=lr1,"LR(X3+X5+X6)"=lr2),formula=Y~1,
         data=testdat,plots=c("calibration","ROC"))
 plotROC(xb)
 plotCalibration(xb)
 
-# compute AUC for a list of continuous markers
+## compute AUC for a list of continuous markers
 markers = as.list(testdat[,.(X6,X7,X8,X9,X10)])
 Score(markers,formula=Y~1,data=testdat,metrics=c("auc"))
 
@@ -255,6 +256,7 @@ Score(markers,formula=Y~1,data=testdat,metrics=c("auc"))
 lr1a = glm(Y~X6,data=learndat,family=binomial)
 lr2a = glm(Y~X7+X8+X9,data=learndat,family=binomial)
 Score(list("LR1"=lr1a,"LR2"=lr2a),formula=Y~1,data=learndat,split.method="bootcv",B=3)
+Score(list("LR1"=lr1a,"LR2"=lr2a),formula=Y~1,data=learndat,split.method="loob",B=3)
 }
 # survival outcome
 

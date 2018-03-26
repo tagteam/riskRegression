@@ -21,6 +21,7 @@ coxph.fit <- coxph(Surv(time,event==1)~ X1+X2,data=d, method = "breslow", x = TR
 resSE <- predictCox(coxph.fit, newdata = newdata, times = times, se = TRUE, type = type)
 resIID <- predictCox(coxph.fit, newdata = newdata, times = times, iid = TRUE, type = type)
 
+# {{{ "Export IID for survival"
 test_that("Export IID for survival",
 expect_equal(apply(resIID$survival.iid, 1:2, function(x){sqrt(sum(x^2))}),
              resSE$survival.se)
@@ -29,11 +30,17 @@ expect_equal(apply(resIID$survival.iid, 1:2, function(x){sqrt(sum(x^2))}),
 #### Cox model ####
 iidTEST <-  iidCox(coxph.fit)
 
+# }}}
+
+# {{{ "cumsum(iid hazard) = iid cumhazard"
 test_that("cumsum(iid hazard) = iid cumhazard",{
   Mcs <- t(apply(iidTEST$IFhazard[[1]], 1, cumsum))
   expect_equal(Mcs, iidTEST$IFcumhazard[[1]])
 })
 
+# }}}
+
+# {{{ "iid equivalent parametrisation"
 test_that("iid equivalent parametrisation",{
   expect_equal(iidTEST,
                iidCox(coxph.fit, newdata = d, tau.hazard = iidTEST$time[[1]])
@@ -41,6 +48,9 @@ test_that("iid equivalent parametrisation",{
 })
 
 iidTEST2 <- iidCox(coxph.fit, tau.hazard = sort(c(iidTEST$time[[1]],c(0.1,1,5,8,12,25))))
+
+# }}}
+# {{{ "iid hazard = 0 at non event times"
 test_that("iid hazard = 0 at non event times",{
 
   expect_equal(iidTEST2$IFhazard[[1]][,as.character(iidTEST$time[[1]])],
@@ -59,6 +69,9 @@ test_that("iid hazard = 0 at non event times",{
 
 
 iidTEST3 <- iidCox(coxph.fit, tau.hazard = iidTEST$time[[1]][2:3])
+
+# }}}
+# {{{ "iid hazard = 0 at non event times"
 test_that("iid hazard = 0 at non event times",{
   
   expect_equal(iidTEST3$IFhazard[[1]],
@@ -70,6 +83,9 @@ test_that("iid hazard = 0 at non event times",{
 })
 
 m.CSC <- CSC(Hist(time,event)~ X1+X2,data=d)
+
+# }}}
+# {{{ "iid ok when the last event is other cause"
 test_that("iid ok when the last event is other cause",{
   d$status <- d$event==1
   IF1 <- iidCox(m.CSC$models$`Cause 1`, newdata = d[1:2,], tau.hazard = m.CSC$eventTimes)
@@ -84,18 +100,14 @@ test_that("iid ok when the last event is other cause",{
   
 })
 
+# }}}
+
+# {{{ "iid with newdata with an operator in status (here event==1 in Surv)"
 test_that("iid with newdata with an operator in status (here event==1 in Surv)",{
-  iidCox(coxph.fit, newdata = d)
+    iidCox(coxph.fit, newdata = d)
 })
 
-
-#### CSC model ####
-m.CSC <- CSC(Hist(time,event)~ X1+X2,data=d)
-
-res <- predict(m.CSC, newdata = d, cause = 1, time = 1:7, se = TRUE)
-print(res, ci = TRUE)
-
-
+# }}}
 
 
 

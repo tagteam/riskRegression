@@ -5,7 +5,7 @@ library(prodlim)
 library(survival)
 context("Binomial regression")
 data(Melanoma)
-
+# {{{ "Absolute risk regression"
 test_that("Absolute risk regression",{
     set.seed(17)
     d <- sampleData(300,outcome="competing.risks")
@@ -26,6 +26,8 @@ test_that("Absolute risk regression",{
     expect_equal(as.numeric(A$timeConstantEffects$coef),c(B$gamma))    
 })
 
+# }}}
+# {{{ "Logistic risk regression"
 test_that("Logistic risk regression",{
     set.seed(17)
     d <- prodlim::SimCompRisk(100)
@@ -39,9 +41,11 @@ test_that("Logistic risk regression",{
     expect_equal(as.numeric(A$timeConstantEffects$coef),c(B$gamma))    
 })
 
+# }}}
+# {{{ "Censoring model"
 test_that("Censoring model",{
     f1 <- ARR(Hist(time,status)~thick+strata(invasion)+epicel,data=Melanoma,cens.model="cox",cause=1)
     f1a <- ARR(Hist(time,status)~thick+strata(invasion)+epicel,data=Melanoma,cens.model="cox",cens.formula=~thick+strat(invasion)+epicel,cause=1)
     f2 <- ARR(Hist(time,status)~sex+strata(invasion)+epicel,data=Melanoma,cens.model="cox",cens.formula=~logthick+age,cause=1)
 })
-
+# }}}

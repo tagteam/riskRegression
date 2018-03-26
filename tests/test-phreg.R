@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: feb 28 2017 (09:52) 
 ## Version: 
-## last-updated: feb 28 2017 (15:03) 
-##           By: Brice Ozenne
-##     Update #: 6
+## last-updated: Mar 26 2018 (08:04) 
+##           By: Thomas Alexander Gerds
+##     Update #: 7
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -18,15 +18,14 @@
 test <- FALSE
 
 if(test){
-library(testthat)
-context("Compatibility with the phreg function from the mets package")
-library(riskRegression)
-library(pec)
-library(rms)
-library(survival)
-library(prodlim)
-
-# {{{ survival
+    library(testthat)
+    context("Compatibility with the phreg function from the mets package")
+    library(riskRegression)
+    library(pec)
+    library(rms)
+    library(survival)
+    library(prodlim)
+    # {{{ survival
 
 set.seed(10)
 d <- sampleData(5e1, outcome = "survival")[,.(eventtime,event,X1,X2,X3,X4,X6)]
@@ -60,8 +59,7 @@ expect_equal(predictCox(mS.phreg)[c("hazard","cumhazard","survival")],
              predictCox(mS.coxph)[c("hazard","cumhazard","survival")],
              tol = 1e-3)
 # }}}
-
-# {{{ Competing risks
+    # {{{ Competing risks
 set.seed(10)
 d <- sampleData(5e1, outcome = "competing.risks")[,.(time,event,X1,X2,X3,X4,X6)]
 d[ , X16 := X1*X6]
