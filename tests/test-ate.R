@@ -64,10 +64,12 @@ test_that("Cox model - compare to explicit computation",{
 })
 # }}}
 # {{{ check against manual computation
+if (FALSE)
 test_that("check against manual computation",{
     ATE <- list()
     ATE.iid <- list()
-    for(iT in c("T0","T1","T2")){ # iT <- "T0"
+    for(iT in c("T0","T1","T2")){
+        # iT <- "T0"
         newdata0 <- copy(dtS)
         newdata0$X1 <- iT
         resPred <- predictCox(fit, newdata = newdata0, time = 5:7, iid = TRUE, log.transform = FALSE)

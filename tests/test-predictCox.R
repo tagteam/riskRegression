@@ -67,9 +67,6 @@ test_that("Prediction with Cox model (strata) - export of strata and times",{
 })
 # }}}
 
-# {{{ 2- 
-# }}}
-Check internal consistency
 # {{{ "baseline hazard (strata) - correct number of events"
 test_that("baseline hazard (strata) - correct number of events",{
   # c("time","hazard","cumhazard","survival", "strata") remove lastEventTime from pfit
@@ -111,7 +108,6 @@ test_that("Prediction with Cox model (strata) - incorrect strata",{
 })
 # }}}
 
-Check dependence on data
 # {{{ "Dependence on data"
 test_that("Dependence on data", {   
   Melanoma$entry <- -abs(rnorm(NROW(Melanoma), mean = 1, sd = 1))
