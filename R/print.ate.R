@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun  6 2016 (06:48) 
 ## Version: 
-## last-updated: Mar 26 2018 (08:42) 
+## last-updated: Mar 28 2018 (11:06) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 22
+##     Update #: 23
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -32,10 +32,10 @@ print.ate <- function(x,digits=3,...){
     print(x$riskComparison,digits=digits,...)
     ##
     if(x$se && (x$conf.level > 0 && (x$conf.level < 1))){
-        if(x$n.bootstrap==0){
+        if(x$B==0){
             cat("\nWald confidence intervals are based on asymptotic standard errors.",sep="")
         }else {
-            cat("\nBootstrap confidence intervals are based on ",x$n.bootstrap," bootstrap samples\nthat were drawn with replacement from the original data.",sep="")
+            cat("\nBootstrap confidence intervals are based on ",x$B," bootstrap samples\nthat were drawn with replacement from the original data.",sep="")
         }
         if(x$nsim.band>0){
             cat("\nConfidence bands are based on ",x$nsim.band," simulations",sep="")

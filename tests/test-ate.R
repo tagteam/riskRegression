@@ -65,30 +65,31 @@ test_that("Cox model - compare to explicit computation",{
 # }}}
 # {{{ check against manual computation
 if (FALSE)
-test_that("check against manual computation",{
-    ATE <- list()
-    ATE.iid <- list()
-    for(iT in c("T0","T1","T2")){
-        # iT <- "T0"
-        newdata0 <- copy(dtS)
-        newdata0$X1 <- iT
-        resPred <- predictCox(fit, newdata = newdata0, time = 5:7, iid = TRUE, log.transform = FALSE)
-        ATE[[iT]] <- colMeans(1-resPred$survival)
-        ATE.iid_term1 <- apply(-resPred$survival.iid,3,colMeans)
-        ATE.iid_term2 <- apply(1-resPred$survival, 1, function(x){x-ATE[[iT]]})/n
-        ATE.iid[[iT]] <- t(ATE.iid_term1) + t(ATE.iid_term2)
-        ATE.se <- sqrt(apply(ATE.iid[[iT]]^2, 2, sum))
-        ATE.lower <- ATE[[iT]]+ qnorm(0.025) * ATE.se
-        ATE.upper <- ATE[[iT]] + qnorm(0.975) * ATE.se
-        expect_equal(ATE.lower, ateFit$meanRisk[Treatment == iT,lower])
-        expect_equal(ATE.upper, ateFit$meanRisk[Treatment == iT,upper])
-    }
+    test_that("check against manual computation",{
+        ATE <- list()
+        ATE.iid <- list()
+        for(iT in c("T0","T1","T2")){
+            # iT <- "T0"
+            newdata0 <- copy(dtS)
+            newdata0$X1 <- iT
+            fit <- cph(formula = Surv(time,event)~ X1+X2,data=dtS,y=TRUE,x=TRUE)
+            resPred <- predictCox(fit, newdata = newdata0, time = 5:7, iid = TRUE, log.transform = FALSE)
+            ATE[[iT]] <- colMeans(1-resPred$survival)
+            ATE.iid_term1 <- apply(-resPred$survival.iid,3,colMeans)
+            ATE.iid_term2 <- apply(1-resPred$survival, 1, function(x){x-ATE[[iT]]})/n
+            ATE.iid[[iT]] <- t(ATE.iid_term1) + t(ATE.iid_term2)
+            ATE.se <- sqrt(apply(ATE.iid[[iT]]^2, 2, sum))
+            ATE.lower <- ATE[[iT]]+ qnorm(0.025) * ATE.se
+            ATE.upper <- ATE[[iT]] + qnorm(0.975) * ATE.se
+            expect_equal(ATE.lower, ateFit$meanRisk[Treatment == iT,lower])
+            expect_equal(ATE.upper, ateFit$meanRisk[Treatment == iT,upper])
+        }
 
-diffATE <- ATE[["T0"]]-ATE[["T1"]]
-diffATE.iid <- ATE.iid[["T0"]]-ATE.iid[["T1"]]
-diffATE.se <- sqrt(apply(diffATE.iid^2, 2, sum))
-diffATE.lower <- diffATE + qnorm(0.025) * diffATE.se
-diffATE.upper <- diffATE + qnorm(0.975) * diffATE.se
+        diffATE <- ATE[["T0"]]-ATE[["T1"]]
+        diffATE.iid <- ATE.iid[["T0"]]-ATE.iid[["T1"]]
+        diffATE.se <- sqrt(apply(diffATE.iid^2, 2, sum))
+        diffATE.lower <- diffATE + qnorm(0.025) * diffATE.se
+        diffATE.upper <- diffATE + qnorm(0.975) * diffATE.se
 
 expect_equal(diffATE.lower, ateFit$riskComparison[Treatment.A == "T0" & Treatment.B == "T1",diff.lower])
 expect_equal(diffATE.upper, ateFit$riskComparison[Treatment.A == "T0" & Treatment.B == "T1",diff.upper])

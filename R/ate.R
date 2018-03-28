@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Oct 23 2016 (08:53) 
 ## Version: 
-## last-updated: Mar 26 2018 (08:46) 
+## last-updated: Mar 28 2018 (11:06) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 463
+##     Update #: 467
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -34,7 +34,8 @@
 #'        it is assumed that that the covariates do not change between landmark and landmark+time.
 #' @param conf.level Numeric value between 0 and 1 (default is 0.05). Confidence level of the confidence intervals.
 #' @param se Logical. If \code{TRUE} compute standard errors and confidence intervals
-#' @param band Logical. If \code{TRUE} compute the confidence bands
+#' @param band Logical. If \code{TRUE} compute confidence bands across time points.
+#' @param bootci.method Character. Method for constructing bootstrap confidence intervals. Either "Wald" (the default) or "quantile".
 #' @param B the number of bootstrap replications used to compute the
 #'     confidence intervals. If it equals 0, then Wald-type confidence
 #'     intervals are computed.  They rely on the standard error
@@ -42,7 +43,7 @@
 #' @param nsim.band the number of simulations used to compute the
 #'     quantiles for the confidence bands.
 #' @param seed An integer used to generate seeds for bootstrap and to
-#'     achieve reproducibility of the bootstrap confidence intervals.
+#'     achieve reproducible results.
 #' @param handler parallel handler for bootstrap. Either "mclapply" or
 #'     "foreach". If "foreach" use \code{doParallel} to create a cluster.
 #' @param mc.cores Passed to \code{parallel::mclapply} or
@@ -67,11 +68,10 @@
 #' \item contrasts: the levels of the treatment variable that were compared.
 #' \item times: the time points at which the ATE was computed.
 #' \item se: Logical. if \code{TRUE} compute the standard errors and confidence intervals of the ATE
-#' \item n.bootstrap: the number of bootstrap samples.
-#' \item{bootci.method} Character. How to construct confidence intervals based on bootstrap results: Either "Wald" (the default) or "quantile"
+#' \item B: the number of bootstrap samples.
 #' \item band: Logical. If \code{TRUE} confidence bands are computed.
 #' \item nsim.band: the number of simulations used to compute the quantiles for the confidence bands.
-#' \item seeds: the seed used to gnerate the boostrap sample. Not used when the
+#' \item seeds: the seed used to generate the boostrap sample. Not used when the
 #' influence function is used to compute the standard errors of the ATE.
 #' \item conf.level: the confidence level of the confidence intervals.
 #' }
@@ -219,8 +219,8 @@ ate <- function(object,
                 landmark,
                 conf.level = 0.95,
                 se = TRUE,
-                bootci.method="Wald",
                 band = FALSE,
+                bootci.method="Wald",
                 B = 0,
                 nsim.band = ifelse(band,1e3,0),
                 seed,
@@ -721,7 +721,7 @@ ate <- function(object,
               contrasts=contrasts,
               times=times,
               se = se,
-              n.bootstrap=B,
+              B=B,
               band = band,
               nsim.band = nsim.band,
               seeds=bootseeds,

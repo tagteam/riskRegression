@@ -1148,7 +1148,7 @@ Score.list <- function(object,
                                         ic.weightsCC <- (1/(Phi*N^2))*(ic.weightsCase+ic.weightsControl)
                                     }
                                     ## ## Part of influence function related to Phi
-                                    icPhiCase <- apply(ic.weights[which.cases,], 2, mean)            
+                                    icPhiCase <- colMeans(ic.weights[which.cases,])
                                     icPhiCase <- icPhi(icCensC = ic.weights[which.cases,], weights = weights.cases[which.cases])
                                     icPhiControl <- icPhi(icCensC = ic.weights[which.controls,], weights = weights.controls[which.controls])          
                                     icPhi <- (aucLPO/Phi)*((weights.cases-(1/N)*icPhiCase)*(1/N)*sum(weights.controls)+(weights.controls-(1/N)*icPhiControl)*(1/N)*sum(weights.cases)) - 2*aucLPO    
