@@ -6,6 +6,18 @@
 
 using namespace Rcpp;
 
+// AUCijFun
+NumericMatrix AUCijFun(NumericVector riskCase, NumericVector riskControl);
+RcppExport SEXP _riskRegression_AUCijFun(SEXP riskCaseSEXP, SEXP riskControlSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< NumericVector >::type riskCase(riskCaseSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type riskControl(riskControlSEXP);
+    rcpp_result_gen = Rcpp::wrap(AUCijFun(riskCase, riskControl));
+    return rcpp_result_gen;
+END_RCPP
+}
 // baseHaz_cpp
 List baseHaz_cpp(const NumericVector& starttimes, const NumericVector& stoptimes, const IntegerVector& status, const NumericVector& eXb, const IntegerVector& strata, const std::vector<double>& predtimes, const NumericVector& emaxtimes, int nPatients, int nStrata, int cause, bool Efron);
 RcppExport SEXP _riskRegression_baseHaz_cpp(SEXP starttimesSEXP, SEXP stoptimesSEXP, SEXP statusSEXP, SEXP eXbSEXP, SEXP strataSEXP, SEXP predtimesSEXP, SEXP emaxtimesSEXP, SEXP nPatientsSEXP, SEXP nStrataSEXP, SEXP causeSEXP, SEXP EfronSEXP) {
@@ -239,118 +251,6 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// AUCijFun
-NumericMatrix AUCijFun(NumericVector riskCase, NumericVector riskControl);
-RcppExport SEXP _riskRegression_AUCijFun(SEXP riskCaseSEXP, SEXP riskControlSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< NumericVector >::type riskCase(riskCaseSEXP);
-    Rcpp::traits::input_parameter< NumericVector >::type riskControl(riskControlSEXP);
-    rcpp_result_gen = Rcpp::wrap(AUCijFun(riskCase, riskControl));
-    return rcpp_result_gen;
-END_RCPP
-}
-// icCensCC
-DoubleVector icCensCC(NumericMatrix icCensC, NumericVector aucIJ);
-RcppExport SEXP _riskRegression_icCensCC(SEXP icCensCSEXP, SEXP aucIJSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< NumericMatrix >::type icCensC(icCensCSEXP);
-    Rcpp::traits::input_parameter< NumericVector >::type aucIJ(aucIJSEXP);
-    rcpp_result_gen = Rcpp::wrap(icCensCC(icCensC, aucIJ));
-    return rcpp_result_gen;
-END_RCPP
-}
-// icPhi
-DoubleVector icPhi(NumericMatrix icCensC, NumericVector weights);
-RcppExport SEXP _riskRegression_icPhi(SEXP icCensCSEXP, SEXP weightsSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< NumericMatrix >::type icCensC(icCensCSEXP);
-    Rcpp::traits::input_parameter< NumericVector >::type weights(weightsSEXP);
-    rcpp_result_gen = Rcpp::wrap(icPhi(icCensC, weights));
-    return rcpp_result_gen;
-END_RCPP
-}
-// icWeightSubjectTimesFun
-NumericVector icWeightSubjectTimesFun(NumericMatrix icCensSubjectTimes, NumericVector icWeightSubjectTimes);
-RcppExport SEXP _riskRegression_icWeightSubjectTimesFun(SEXP icCensSubjectTimesSEXP, SEXP icWeightSubjectTimesSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< NumericMatrix >::type icCensSubjectTimes(icCensSubjectTimesSEXP);
-    Rcpp::traits::input_parameter< NumericVector >::type icWeightSubjectTimes(icWeightSubjectTimesSEXP);
-    rcpp_result_gen = Rcpp::wrap(icWeightSubjectTimesFun(icCensSubjectTimes, icWeightSubjectTimes));
-    return rcpp_result_gen;
-END_RCPP
-}
-// icWeightTimesFun
-DoubleVector icWeightTimesFun(NumericVector icCensTimes, NumericVector icWeightTimes);
-RcppExport SEXP _riskRegression_icWeightTimesFun(SEXP icCensTimesSEXP, SEXP icWeightTimesSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< NumericVector >::type icCensTimes(icCensTimesSEXP);
-    Rcpp::traits::input_parameter< NumericVector >::type icWeightTimes(icWeightTimesSEXP);
-    rcpp_result_gen = Rcpp::wrap(icWeightTimesFun(icCensTimes, icWeightTimes));
-    return rcpp_result_gen;
-END_RCPP
-}
-// icTauSubjectTimesFun
-DoubleVector icTauSubjectTimesFun(NumericMatrix icCensSubjectTimes, NumericVector whichCaseWeights, NumericVector weightsCase);
-RcppExport SEXP _riskRegression_icTauSubjectTimesFun(SEXP icCensSubjectTimesSEXP, SEXP whichCaseWeightsSEXP, SEXP weightsCaseSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< NumericMatrix >::type icCensSubjectTimes(icCensSubjectTimesSEXP);
-    Rcpp::traits::input_parameter< NumericVector >::type whichCaseWeights(whichCaseWeightsSEXP);
-    Rcpp::traits::input_parameter< NumericVector >::type weightsCase(weightsCaseSEXP);
-    rcpp_result_gen = Rcpp::wrap(icTauSubjectTimesFun(icCensSubjectTimes, whichCaseWeights, weightsCase));
-    return rcpp_result_gen;
-END_RCPP
-}
-// icTauTimesFun
-DoubleVector icTauTimesFun(NumericVector icCensTimes, NumericVector whichControlWeights, NumericVector weightsControl);
-RcppExport SEXP _riskRegression_icTauTimesFun(SEXP icCensTimesSEXP, SEXP whichControlWeightsSEXP, SEXP weightsControlSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< NumericVector >::type icCensTimes(icCensTimesSEXP);
-    Rcpp::traits::input_parameter< NumericVector >::type whichControlWeights(whichControlWeightsSEXP);
-    Rcpp::traits::input_parameter< NumericVector >::type weightsControl(weightsControlSEXP);
-    rcpp_result_gen = Rcpp::wrap(icTauTimesFun(icCensTimes, whichControlWeights, weightsControl));
-    return rcpp_result_gen;
-END_RCPP
-}
-// icBrierWeightsSubjectTimesFun
-DoubleVector icBrierWeightsSubjectTimesFun(NumericVector residuals, NumericMatrix icCensSubjectTimes, NumericVector weightsSubjectTimes);
-RcppExport SEXP _riskRegression_icBrierWeightsSubjectTimesFun(SEXP residualsSEXP, SEXP icCensSubjectTimesSEXP, SEXP weightsSubjectTimesSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< NumericVector >::type residuals(residualsSEXP);
-    Rcpp::traits::input_parameter< NumericMatrix >::type icCensSubjectTimes(icCensSubjectTimesSEXP);
-    Rcpp::traits::input_parameter< NumericVector >::type weightsSubjectTimes(weightsSubjectTimesSEXP);
-    rcpp_result_gen = Rcpp::wrap(icBrierWeightsSubjectTimesFun(residuals, icCensSubjectTimes, weightsSubjectTimes));
-    return rcpp_result_gen;
-END_RCPP
-}
-// icBrierWeightsTimesFun
-DoubleVector icBrierWeightsTimesFun(NumericVector residuals, NumericVector icCensTimes, NumericVector weightsTimes);
-RcppExport SEXP _riskRegression_icBrierWeightsTimesFun(SEXP residualsSEXP, SEXP icCensTimesSEXP, SEXP weightsTimesSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< NumericVector >::type residuals(residualsSEXP);
-    Rcpp::traits::input_parameter< NumericVector >::type icCensTimes(icCensTimesSEXP);
-    Rcpp::traits::input_parameter< NumericVector >::type weightsTimes(weightsTimesSEXP);
-    rcpp_result_gen = Rcpp::wrap(icBrierWeightsTimesFun(residuals, icCensTimes, weightsTimes));
-    return rcpp_result_gen;
-END_RCPP
-}
 // predictCIF_cpp
 arma::mat predictCIF_cpp(const std::vector<arma::mat>& hazard, const std::vector<arma::mat>& cumhazard, const arma::mat& eXb, const arma::mat& strata, const std::vector<double>& newtimes, const std::vector<double>& etimes, const std::vector<double>& etimeMax, double t0, int nEventTimes, int nNewTimes, int nData, int cause, int nCause, bool survtype, bool productLimit);
 RcppExport SEXP _riskRegression_predictCIF_cpp(SEXP hazardSEXP, SEXP cumhazardSEXP, SEXP eXbSEXP, SEXP strataSEXP, SEXP newtimesSEXP, SEXP etimesSEXP, SEXP etimeMaxSEXP, SEXP t0SEXP, SEXP nEventTimesSEXP, SEXP nNewTimesSEXP, SEXP nDataSEXP, SEXP causeSEXP, SEXP nCauseSEXP, SEXP survtypeSEXP, SEXP productLimitSEXP) {
@@ -498,6 +398,7 @@ END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
+    {"_riskRegression_AUCijFun", (DL_FUNC) &_riskRegression_AUCijFun, 2},
     {"_riskRegression_baseHaz_cpp", (DL_FUNC) &_riskRegression_baseHaz_cpp, 11},
     {"_riskRegression_calcSeHazard_cpp", (DL_FUNC) &_riskRegression_calcSeHazard_cpp, 26},
     {"_riskRegression_calcSeCif_cpp", (DL_FUNC) &_riskRegression_calcSeCif_cpp, 33},
@@ -509,15 +410,6 @@ static const R_CallMethodDef CallEntries[] = {
     {"_riskRegression_IFbeta_cpp", (DL_FUNC) &_riskRegression_IFbeta_cpp, 10},
     {"_riskRegression_IFbetaApprox_cpp", (DL_FUNC) &_riskRegression_IFbetaApprox_cpp, 6},
     {"_riskRegression_IFlambda0_cpp", (DL_FUNC) &_riskRegression_IFlambda0_cpp, 16},
-    {"_riskRegression_AUCijFun", (DL_FUNC) &_riskRegression_AUCijFun, 2},
-    {"_riskRegression_icCensCC", (DL_FUNC) &_riskRegression_icCensCC, 2},
-    {"_riskRegression_icPhi", (DL_FUNC) &_riskRegression_icPhi, 2},
-    {"_riskRegression_icWeightSubjectTimesFun", (DL_FUNC) &_riskRegression_icWeightSubjectTimesFun, 2},
-    {"_riskRegression_icWeightTimesFun", (DL_FUNC) &_riskRegression_icWeightTimesFun, 2},
-    {"_riskRegression_icTauSubjectTimesFun", (DL_FUNC) &_riskRegression_icTauSubjectTimesFun, 3},
-    {"_riskRegression_icTauTimesFun", (DL_FUNC) &_riskRegression_icTauTimesFun, 3},
-    {"_riskRegression_icBrierWeightsSubjectTimesFun", (DL_FUNC) &_riskRegression_icBrierWeightsSubjectTimesFun, 3},
-    {"_riskRegression_icBrierWeightsTimesFun", (DL_FUNC) &_riskRegression_icBrierWeightsTimesFun, 3},
     {"_riskRegression_predictCIF_cpp", (DL_FUNC) &_riskRegression_predictCIF_cpp, 15},
     {"_riskRegression_rowCumSum", (DL_FUNC) &_riskRegression_rowCumSum, 1},
     {"_riskRegression_rowSumsCrossprod", (DL_FUNC) &_riskRegression_rowSumsCrossprod, 3},
