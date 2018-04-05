@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: maj 27 2017 (21:23) 
 ## Version: 
-## last-updated: nov 14 2017 (15:10) 
-##           By: Brice Ozenne
-##     Update #: 174
+## last-updated: Mar 28 2018 (12:07) 
+##           By: Thomas Alexander Gerds
+##     Update #: 178
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -209,32 +209,29 @@ calcSeCSC <- function(object, cif, hazard, cumhazard, object.time, object.maxtim
             iCumHazard <- rep(0, nEtimes)
             iIFhazard1 <- NULL
             iIFcumhazard <- matrix(0, nrow = object.n, ncol = nEtimes)
-            
-        
-        for(iCause in 1:nCause){
-            X_IFbeta <- object$iid[[iCause]]$IFbeta %*% t(new.LPdata[[iCause]][iObs,,drop=FALSE])
-
-            if(surv.type == "hazard" || cause != iCause){
-                iCumHazard <- iCumHazard + cumhazard[[iCause]][,iStrata[iCause]+1]*eXb[iObs,iCause]
-                iIFcumhazard <- iIFcumhazard + IFlambda2hazard(eXb = eXb[iObs,iCause],
-                                                               lambda0 = cumhazard[[iCause]][,iStrata[iCause]+1],
-                                                               X_IFbeta = X_IFbeta,
-                                                               IFlambda0 = object$iid[[iCause]]$IFcumhazard[[iStrata[iCause]+1]],
-                                                               nVar = nVar[iCause])
+            for(iCause in 1:nCause){
+                X_IFbeta <- tcrossprod(object$iid[[iCause]]$IFbeta,new.LPdata[[iCause]][iObs,,drop=FALSE])
+                if(surv.type == "hazard" || cause != iCause){
+                    iCumHazard <- iCumHazard + cumhazard[[iCause]][,iStrata[iCause]+1]*eXb[iObs,iCause]
+                    # Evaluate the influence function for the
+                    # cumulative hazard based on the one of the cumulative baseline hazard
+                    if(nVar[iCause] == 0){
+                        iIFcumhazard <- iIFcumhazard + object$iid[[iCause]]$IFcumhazard[[iStrata[iCause]+1]]
+                    }else{
+                        iIFcumhazard <- iIFcumhazard + eXb[iObs,iCause]*(object$iid[[iCause]]$IFcumhazard[[iStrata[iCause]+1]] + crossprod(t(X_IFbeta),cumhazard[[iCause]][,iStrata[iCause]+1]))
+                    }
+                }
+                if(cause == iCause){
+                    iHazard1 <- hazard[[cause]][,iStrata[cause]+1]*eXb[iObs,iCause]
+                    # Evaluate the influence function for the
+                    # hazard based on the one of the baseline hazard
+                    if(nVar[iCause] == 0){
+                        iIFhazard1 <- object$iid[[iCause]]$IFhazard[[iStrata[iCause]+1]]
+                    } else{
+                        iIFhazard1 <- eXb[iObs,iCause]*(object$iid[[iCause]]$IFhazard[[iStrata[iCause]+1]] + crossprod(t(X_IFbeta),hazard[[iCause]][,iStrata[iCause]+1]))
+                    }
+                }
             }
-            
-            if(cause == iCause){
-                iHazard1 <- hazard[[cause]][,iStrata[cause]+1]*eXb[iObs,iCause]
-
-                iIFhazard1 <- IFlambda2hazard(eXb = eXb[iObs,iCause],
-                                              lambda0 = hazard[[iCause]][,iStrata[iCause]+1],
-                                              X_IFbeta = X_IFbeta,
-                                              IFlambda0 = object$iid[[iCause]]$IFhazard[[iStrata[iCause]+1]],
-                                              nVar = nVar[iCause])
-              
-            }
-         
-        }
         
             
         # set to s-
@@ -262,7 +259,7 @@ calcSeCSC <- function(object, cif, hazard, cumhazard, object.time, object.maxtim
             }
         
             if("se" %in% export){
-                out$se[iObs,] <- sqrt(apply(IF_tempo^2,2,sum))
+                out$se[iObs,] <- sqrt(colSums(IF_tempo^2))
             }
             if("iid" %in% export){
                 out$iid[iObs,,] <- t(IF_tempo)

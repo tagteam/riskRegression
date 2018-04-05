@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: maj 27 2017 (11:46) 
 ## Version: 
-## last-updated: nov 14 2017 (14:25) 
-##           By: Brice Ozenne
-##     Update #: 245
+## last-updated: Mar 28 2018 (12:01) 
+##           By: Thomas Alexander Gerds
+##     Update #: 257
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -74,7 +74,7 @@ calcSeCox <- function(object, times, nTimes, type,
     }
     
     # {{{ computation of the influence function
-    iid.object <- object$iid            
+    iid.object <- object$iid
     if(is.null(iid.object)){
         iid.object <- iidCox(object, tau.hazard = times, store.iid = store.iid)
     }else{
@@ -178,42 +178,47 @@ calcSeCox <- function(object, times, nTimes, type,
         # }}}
     }else{
         # {{{ other 
+        X_IFbeta_mat <- tcrossprod(iid.object$IFbeta, new.LPdata)
         for(iObs in 1:n.new){
+            ## print(iObs)
             #NOTE: cannot perfom log transformation if hazard %in% type (error in predictCox)
             iObs.strata <- new.strata[iObs]
-            X_IFbeta <- iid.object$IFbeta %*% t(new.LPdata[iObs,,drop=FALSE])
-        
-            if("hazard" %in% type){      
-                IF_tempo <- IFlambda2hazard(eXb = new.eXb[iObs],
-                                            lambda0 = Lambda0$hazard[[iObs.strata]],
-                                            X_IFbeta = X_IFbeta,
-                                            IFlambda0 = iid.object$IFhazard[[iObs.strata]],
-                                            nVar = nVar)
+            X_IFbeta <- X_IFbeta_mat[,iObs,drop=FALSE]
+            if("hazard" %in% type){
+                # Evaluate the influence function for the
+                # hazard based on the one of the baseline hazard
+                if (nVar == 0) {
+                    IF_tempo= iid.object$IFhazard[[iObs.strata]]
+                }
+                else {
+                    IF_tempo= (new.eXb[iObs] * (iid.object$IFhazard[[iObs.strata]] + crossprod(t(X_IFbeta),Lambda0$hazard[[iObs.strata]])))
+                }
                 if("iid" %in% export){
                     out$hazard.iid[iObs,,] <- t(IF_tempo) 
                 }    
             }
     
             if("cumhazard" %in% type || "survival" %in% type){
-                IF_tempo <- IFlambda2hazard(eXb = new.eXb[iObs],
-                                            lambda0 = Lambda0$cumhazard[[iObs.strata]],
-                                            X_IFbeta = X_IFbeta,
-                                            IFlambda0 = iid.object$IFcumhazard[[iObs.strata]],
-                                            nVar = nVar)
-                
+                # Evaluate the influence function for the
+                # cumulative hazard based on the one of the cumulative baseline hazard
+                if(nVar == 0){
+                    IF_tempo <- iid.object$IFcumhazard[[iObs.strata]]
+                }else{
+                    IF_tempo <- new.eXb[iObs]*(iid.object$IFcumhazard[[iObs.strata]] + crossprod(t(X_IFbeta), Lambda0$cumhazard[[iObs.strata]]))
+                }
                 if(log.transform){
                     IF_tempo <- rowScale_cpp(IF_tempo, scale = new.cumhazard[iObs,,drop=FALSE])
                     if(any(times<iid.object$etime1.min[iObs.strata])){
                         IF_tempo[,times<iid.object$etime1.min[iObs.strata]] <- 0
                     }
-                                        #factorTempo <- new.survival[iObs,,drop=FALSE]/(new.survival[iObs,,drop=FALSE]*log(new.survival[iObs,,drop=FALSE]))
-                                        #IF_tempo.survival <- rowMultiply_cpp(IF_tempo, scale = factorTempo)
+                    #factorTempo <- new.survival[iObs,,drop=FALSE]/(new.survival[iObs,,drop=FALSE]*log(new.survival[iObs,,drop=FALSE]))
+                    #IF_tempo.survival <- rowMultiply_cpp(IF_tempo, scale = factorTempo)
                     if("iid" %in% export){
                         if("cumhazard" %in% type){out$cumhazard.iid[iObs,,] <-  t(IF_tempo)}
                         if("survival" %in% type){out$survival.iid[iObs,,] <- t(-IF_tempo)}
                     }                    
                     if("se" %in% export){
-                        se_tempo <- sqrt(apply(IF_tempo^2,2,sum))
+                        se_tempo <- sqrt(colSums(IF_tempo^2))
                         if("cumhazard" %in% type){out$cumhazard.se[iObs,] <- se_tempo}
                         if("survival" %in% type){out$survival.se[iObs,] <- se_tempo}
                     }
@@ -223,13 +228,13 @@ calcSeCox <- function(object, times, nTimes, type,
                         if("survival" %in% type){out$survival.iid[iObs,,] <- t(rowMultiply_cpp(-IF_tempo, scale = new.survival[iObs,,drop=FALSE]))}
                     }
                     if("se" %in% export){
-                        se_tempo <- sqrt(apply(IF_tempo^2,2,sum))
+                        se_tempo <- sqrt(colSums(IF_tempo^2))
                         if("cumhazard" %in% type){out$cumhazard.se[iObs,] <- se_tempo}
                         if("survival" %in% type){out$survival.se[iObs,] <- se_tempo * new.survival[iObs,,drop=FALSE]}
                     }  
                     if("average.iid" %in% export){ ## average over observations
-                      if("cumhazard" %in% type){out$cumhazard.average.iid <- out$cumhazard.average.iid + IF_tempo/n.new}
-                      if("survival" %in% type){out$survival.average.iid <- out$survival.average.iid + rowMultiply_cpp(-IF_tempo, scale = new.survival[iObs,,drop=FALSE])/n.new}
+                        if("cumhazard" %in% type){out$cumhazard.average.iid <- out$cumhazard.average.iid + IF_tempo/n.new}
+                        if("survival" %in% type){out$survival.average.iid <- out$survival.average.iid + rowMultiply_cpp(-IF_tempo, scale = new.survival[iObs,,drop=FALSE])/n.new}
                     }
                 }
             }
@@ -242,28 +247,6 @@ calcSeCox <- function(object, times, nTimes, type,
     ## export
     return(out)
     
-}
-
-# }}}
-
-# {{{ lambda2hazard
-
-##' @title Evaluate the influence function for the hazard based on the one of the baseline hazard##' 
-##' @description Evaluate the influence function for the hazard based on the one of the baseline hazard
-##'
-##' @param eXb the linear predictor
-##' @param X_IFbeta the design matrix times the influence function of beta
-##' @param lambda0 the baseline hazard
-##' @param IFlambda0 the influence function of the baseline hazard 
-##' @param nVar the number of variables that form the linear predictor
-##' 
-##' 
-IFlambda2hazard <- function(eXb, X_IFbeta, lambda0, IFlambda0, nVar){
-    if(nVar == 0){
-        return(IFlambda0)
-    }else{
-        return(eXb*(IFlambda0 + X_IFbeta %*% lambda0))
-    }
 }
 
 # }}}

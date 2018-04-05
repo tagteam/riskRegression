@@ -1,5 +1,4 @@
 # {{{ roxy header
-
 ##' Methods to score the predictive performance of risk markers and risk prediction models
 ##'
 ##' The function implements a toolbox for the risk prediction modeller:
@@ -1142,21 +1141,25 @@ Score.list <- function(object,
                                                 }
                                             }
                                         }
-                                        ## ## Part of influence function related to Weights          
-                                        ic.weightsCase <- icCensCC(icCensC = ic.weights[which.cases,], aucIJ = rowSums(auc))
-                                        ic.weightsControl <- icCensCC(icCensC = ic.weights[which.controls,], aucIJ = colSums(auc))
+                                        ## ## Part of influence function related to Weights
+                                        ic.weightsCase <- as.numeric(rowSumsCrossprod(as.matrix(rowSums(auc)), ic.weights[which.cases,], 0))  
+                                        ic.weightsControl <- as.numeric(rowSumsCrossprod(as.matrix(colSums(auc)), ic.weights[which.controls,], 0)) 
                                         ic.weightsCC <- (1/(Phi*N^2))*(ic.weightsCase+ic.weightsControl)
                                     }
                                     ## ## Part of influence function related to Phi
-                                    icPhiCase <- apply(ic.weights[which.cases,], 2, mean)            
-                                    icPhiCase <- icPhi(icCensC = ic.weights[which.cases,], weights = weights.cases[which.cases])
-                                    icPhiControl <- icPhi(icCensC = ic.weights[which.controls,], weights = weights.controls[which.controls])          
-                                    icPhi <- (aucLPO/Phi)*((weights.cases-(1/N)*icPhiCase)*(1/N)*sum(weights.controls)+(weights.controls-(1/N)*icPhiControl)*(1/N)*sum(weights.cases)) - 2*aucLPO    
+                                    ## icPhiCase <- colMeans(ic.weights[which.cases,])
+                                    icPhiCase <- as.numeric(rowSumsCrossprod(as.matrix(weights[which.cases]),ic.weights[which.cases,],0))
+                                    icPhiControl <- as.numeric(rowSumsCrossprod(as.matrix(weights[which.controls]),ic.weights[which.controls,],0))
+                                    icPhi <- (aucLPO/Phi)*((weights.cases-(1/N)*sum(weights.cases))*(1/N)*sum(weights.controls)+(weights.controls-(1/N)*sum(weights.controls))*(1/N)*sum(weights.cases)) - 2*aucLPO    
                                     ## ## Combine all parts of influence function
                                     ## ic1 <- data.table(ID=data[["ID"]], "ic.weightsCC" = ic.weightsCC, "icPhi" = icPhi)
                                     setkey(aucDT,model,times,ID)
-                                    aucDT[model==mod&times==t, IF.AUC:=IF.AUC0-ic.weightsCC-icPhi]
-                                    aucDT[model==mod&times==t, IF.AUC.conservative:=IF.AUC0-icPhi]
+                                    if(conservative==TRUE){
+                                        aucDT[model==mod&times==t, IF.AUC:=IF.AUC0-icPhi]
+                                    }else{
+                                        aucDT[model==mod&times==t, IF.AUC:=IF.AUC0-ic.weightsCC-icPhi]
+                                        aucDT[model==mod&times==t, IF.AUC.conservative:=IF.AUC0-icPhi]
+                                    }
                                     aucDT[,IF.AUC0:=NULL]
                                     auc.loob[model==mod&times==t,se:= sd(aucDT[model==mod&times==t,IF.AUC])/sqrt(N)]
                                     auc.loob[model==mod&times==t,se.conservative:=sd(aucDT[model==mod&times==t,IF.AUC.conservative])/sqrt(N)]
