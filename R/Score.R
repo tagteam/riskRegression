@@ -1148,8 +1148,8 @@ Score.list <- function(object,
                                     }
                                     ## ## Part of influence function related to Phi
                                     ## icPhiCase <- colMeans(ic.weights[which.cases,])
-                                    icPhiCase <- as.numeric(rowSumsCrossprod(as.matrix(weights[which.cases]),ic.weights[which.cases,],0))
-                                    icPhiControl <- as.numeric(rowSumsCrossprod(as.matrix(weights[which.controls]),ic.weights[which.controls,],0))
+                                    icPhiCase <- as.numeric(rowSumsCrossprod(as.matrix(weights.cases[which.cases]),ic.weights[which.cases,],0))
+                                    icPhiControl <- as.numeric(rowSumsCrossprod(as.matrix(weights.controls[which.controls]),ic.weights[which.controls,],0))
                                     icPhi <- (aucLPO/Phi)*((weights.cases-(1/N)*sum(weights.cases))*(1/N)*sum(weights.controls)+(weights.controls-(1/N)*sum(weights.controls))*(1/N)*sum(weights.cases)) - 2*aucLPO    
                                     ## ## Combine all parts of influence function
                                     ## ic1 <- data.table(ID=data[["ID"]], "ic.weightsCC" = ic.weightsCC, "icPhi" = icPhi)
