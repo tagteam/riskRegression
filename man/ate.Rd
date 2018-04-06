@@ -143,6 +143,45 @@ ateFit1e <- ate(fit, data = dtS, treatment = "X1",
                 times = 5:8, se = TRUE, B = 100, mc.cores = 2)
 }
 
+#### Survival settings without censoring ####
+#### ATE with glm                        ####
+
+## generate data
+n <- 100
+dtS <- sampleData(n, outcome="survival")
+dtS[, event5 := eventtime<=5]
+dtS[, X2 := as.numeric(X2)]
+
+## estimate the Cox model
+fit <- glm(formula = event5 ~ X1+X2, data=dtS, family = "binomial")
+
+## compute the ATE at times 5 using X1 as the treatment variable
+\dontrun{
+## only punctual estimate (argument se = FALSE)
+ateFit1a <- ate(fit, data = dtS, treatment = "X1", times = 5,
+               se = FALSE)
+ateFit1a
+
+## standard error / confidence intervals computed using the influence function
+ateFit1b <- ate(fit, data = dtS, treatment = "X1", times = 5,
+               se = TRUE, B = 0)
+ateFit1b
+
+## standard error / confidence intervals computed using 100 boostrap samples
+ateFit1d <- ate(fit, data = dtS, treatment = "X1",
+                times = 5, se = TRUE, B = 100)
+ateFit1d
+
+## using lava
+ateLava <- estimate(fit, function(p, data){
+a <- p["(Intercept)"] ; b <- p["X11"] ; c <- p["X2"] ;
+R.X11 <- expit(a + b + c * data[["X2"]])
+R.X10 <- expit(a + c * data[["X2"]])
+list(risk0=R.X10,risk1=R.X11,riskdiff=R.X10-R.X11)},
+average=TRUE)
+ateLava
+}
+
 #### Competing risks settings               ####
 #### ATE with cause specific Cox regression ####
 

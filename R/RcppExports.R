@@ -2,15 +2,15 @@
 # Generator token: 10BE3573-1514-4C36-9D1C-5A225CD40393
 
 baseHaz_cpp <- function(starttimes, stoptimes, status, eXb, strata, predtimes, emaxtimes, nPatients, nStrata, cause, Efron) {
-    .Call(`_riskRegression_baseHaz_cpp`, starttimes, stoptimes, status, eXb, strata, predtimes, emaxtimes, nPatients, nStrata, cause, Efron)
+    .Call(riskRegression_baseHaz_cpp, starttimes, stoptimes, status, eXb, strata, predtimes, emaxtimes, nPatients, nStrata, cause, Efron)
 }
 
 calcSeHazard_cpp <- function(seqTau, indexTau, indexJump, IFbeta, cumEhazard0, iS0, cumhazard_iS0, newEXb, sampleEXb, X, sameStrata, sampleTime, cumhazard0, newHazard, newSurvival, firstJumpTime, lastSampleTime, nTau, nNewObs, nSample, p, exportSE, exportIF, exportIFsum_cumhazard, exportIFsum_survival, logTransform) {
-    .Call(`_riskRegression_calcSeHazard_cpp`, seqTau, indexTau, indexJump, IFbeta, cumEhazard0, iS0, cumhazard_iS0, newEXb, sampleEXb, X, sameStrata, sampleTime, cumhazard0, newHazard, newSurvival, firstJumpTime, lastSampleTime, nTau, nNewObs, nSample, p, exportSE, exportIF, exportIFsum_cumhazard, exportIFsum_survival, logTransform)
+    .Call(riskRegression_calcSeHazard_cpp, seqTau, indexTau, indexJump, IFbeta, cumEhazard0, iS0, cumhazard_iS0, newEXb, sampleEXb, X, sameStrata, sampleTime, cumhazard0, newHazard, newSurvival, firstJumpTime, lastSampleTime, nTau, nNewObs, nSample, p, exportSE, exportIF, exportIFsum_cumhazard, exportIFsum_survival, logTransform)
 }
 
 calcSeCif_cpp <- function(seqTau, jumpTime, jumpTheCause, indexJump, indexSample, IFbeta, cif, Ehazard0, cumEhazard0, iS0, cumhazard_iS0, hazard_iS0, newEXb, sampleEXb, X, sameStrata, sampleTime, hazard0, cumhazard0, theCause, firstJumpTime, lastSampleTime, nTau, nJump, nNewObs, nSample, nCause, p, survtype, exportSE, exportIF, exportIFsum, logTransform) {
-    .Call(`_riskRegression_calcSeCif_cpp`, seqTau, jumpTime, jumpTheCause, indexJump, indexSample, IFbeta, cif, Ehazard0, cumEhazard0, iS0, cumhazard_iS0, hazard_iS0, newEXb, sampleEXb, X, sameStrata, sampleTime, hazard0, cumhazard0, theCause, firstJumpTime, lastSampleTime, nTau, nJump, nNewObs, nSample, nCause, p, survtype, exportSE, exportIF, exportIFsum, logTransform)
+    .Call(riskRegression_calcSeCif_cpp, seqTau, jumpTime, jumpTheCause, indexJump, indexSample, IFbeta, cif, Ehazard0, cumEhazard0, iS0, cumhazard_iS0, hazard_iS0, newEXb, sampleEXb, X, sameStrata, sampleTime, hazard0, cumhazard0, theCause, firstJumpTime, lastSampleTime, nTau, nJump, nNewObs, nSample, nCause, p, survtype, exportSE, exportIF, exportIFsum, logTransform)
 }
 
 #' Apply cumsum in each column 
@@ -24,7 +24,7 @@ calcSeCif_cpp <- function(seqTau, jumpTime, jumpTheCause, indexJump, indexSample
 #' colCumSum(x)
 #' @export
 colCumSum <- function(x) {
-    .Call(`_riskRegression_colCumSum`, x)
+    .Call(riskRegression_colCumSum, x)
 }
 
 #' Apply crossprod and colSums 
@@ -45,71 +45,35 @@ colCumSum <- function(x) {
 #' colSumsCrossprod(x,y,1)
 #' @export
 colSumsCrossprod <- function(X, Y, transposeY) {
-    .Call(`_riskRegression_colSumsCrossprod`, X, Y, transposeY)
+    .Call(riskRegression_colSumsCrossprod, X, Y, transposeY)
 }
 
 quantileProcess_cpp <- function(nObject, nNew, nSim, iid, se, confLevel) {
-    .Call(`_riskRegression_quantileProcess_cpp`, nObject, nNew, nSim, iid, se, confLevel)
+    .Call(riskRegression_quantileProcess_cpp, nObject, nNew, nSim, iid, se, confLevel)
 }
 
 sampleMaxProcess_cpp <- function(nObject, nNew, nSim, iid, se) {
-    .Call(`_riskRegression_sampleMaxProcess_cpp`, nObject, nNew, nSim, iid, se)
+    .Call(riskRegression_sampleMaxProcess_cpp, nObject, nNew, nSim, iid, se)
 }
 
 calcE_cpp <- function(eventtime, status, eXb, X, p, add0) {
-    .Call(`_riskRegression_calcE_cpp`, eventtime, status, eXb, X, p, add0)
+    .Call(riskRegression_calcE_cpp, eventtime, status, eXb, X, p, add0)
 }
 
 IFbeta_cpp <- function(newT, neweXb, newX, newStatus, newIndexJump, S01, E1, time1, iInfo, p) {
-    .Call(`_riskRegression_IFbeta_cpp`, newT, neweXb, newX, newStatus, newIndexJump, S01, E1, time1, iInfo, p)
+    .Call(riskRegression_IFbeta_cpp, newT, neweXb, newX, newStatus, newIndexJump, S01, E1, time1, iInfo, p)
 }
 
 IFbetaApprox_cpp <- function(newX, newStatus, newIndexJump, E1, iInfo, p) {
-    .Call(`_riskRegression_IFbetaApprox_cpp`, newX, newStatus, newIndexJump, E1, iInfo, p)
+    .Call(riskRegression_IFbetaApprox_cpp, newX, newStatus, newIndexJump, E1, iInfo, p)
 }
 
 IFlambda0_cpp <- function(tau, IFbeta, newT, neweXb, newStatus, newStrata, newIndexJump, S01, E1, time1, lastTime1, lambda0, p, strata, exact, minimalExport) {
-    .Call(`_riskRegression_IFlambda0_cpp`, tau, IFbeta, newT, neweXb, newStatus, newStrata, newIndexJump, S01, E1, time1, lastTime1, lambda0, p, strata, exact, minimalExport)
-}
-
-AUCijFun <- function(riskCase, riskControl) {
-    .Call(`_riskRegression_AUCijFun`, riskCase, riskControl)
-}
-
-icCensCC <- function(icCensC, aucIJ) {
-    .Call(`_riskRegression_icCensCC`, icCensC, aucIJ)
-}
-
-icPhi <- function(icCensC, weights) {
-    .Call(`_riskRegression_icPhi`, icCensC, weights)
-}
-
-icWeightSubjectTimesFun <- function(icCensSubjectTimes, icWeightSubjectTimes) {
-    .Call(`_riskRegression_icWeightSubjectTimesFun`, icCensSubjectTimes, icWeightSubjectTimes)
-}
-
-icWeightTimesFun <- function(icCensTimes, icWeightTimes) {
-    .Call(`_riskRegression_icWeightTimesFun`, icCensTimes, icWeightTimes)
-}
-
-icTauSubjectTimesFun <- function(icCensSubjectTimes, whichCaseWeights, weightsCase) {
-    .Call(`_riskRegression_icTauSubjectTimesFun`, icCensSubjectTimes, whichCaseWeights, weightsCase)
-}
-
-icTauTimesFun <- function(icCensTimes, whichControlWeights, weightsControl) {
-    .Call(`_riskRegression_icTauTimesFun`, icCensTimes, whichControlWeights, weightsControl)
-}
-
-icBrierWeightsSubjectTimesFun <- function(residuals, icCensSubjectTimes, weightsSubjectTimes) {
-    .Call(`_riskRegression_icBrierWeightsSubjectTimesFun`, residuals, icCensSubjectTimes, weightsSubjectTimes)
-}
-
-icBrierWeightsTimesFun <- function(residuals, icCensTimes, weightsTimes) {
-    .Call(`_riskRegression_icBrierWeightsTimesFun`, residuals, icCensTimes, weightsTimes)
+    .Call(riskRegression_IFlambda0_cpp, tau, IFbeta, newT, neweXb, newStatus, newStrata, newIndexJump, S01, E1, time1, lastTime1, lambda0, p, strata, exact, minimalExport)
 }
 
 predictCIF_cpp <- function(hazard, cumhazard, eXb, strata, newtimes, etimes, etimeMax, t0, nEventTimes, nNewTimes, nData, cause, nCause, survtype, productLimit) {
-    .Call(`_riskRegression_predictCIF_cpp`, hazard, cumhazard, eXb, strata, newtimes, etimes, etimeMax, t0, nEventTimes, nNewTimes, nData, cause, nCause, survtype, productLimit)
+    .Call(riskRegression_predictCIF_cpp, hazard, cumhazard, eXb, strata, newtimes, etimes, etimeMax, t0, nEventTimes, nNewTimes, nData, cause, nCause, survtype, productLimit)
 }
 
 #' Apply cumsum in each row 
@@ -123,7 +87,7 @@ predictCIF_cpp <- function(hazard, cumhazard, eXb, strata, newtimes, etimes, eti
 #' rowCumSum(x)
 #' @export
 rowCumSum <- function(x) {
-    .Call(`_riskRegression_rowCumSum`, x)
+    .Call(riskRegression_rowCumSum, x)
 }
 
 #' Apply crossprod and rowSums
@@ -144,7 +108,7 @@ rowCumSum <- function(x) {
 #' rowSumsCrossprod(x,y,1)
 #' @export
 rowSumsCrossprod <- function(X, Y, transposeY) {
-    .Call(`_riskRegression_rowSumsCrossprod`, X, Y, transposeY)
+    .Call(riskRegression_rowSumsCrossprod, X, Y, transposeY)
 }
 
 #' @title Apply - by column
@@ -163,7 +127,7 @@ rowSumsCrossprod <- function(X, Y, transposeY) {
 #' 
 #' @export
 colCenter_cpp <- function(X, center) {
-    .Call(`_riskRegression_colCenter_cpp`, X, center)
+    .Call(riskRegression_colCenter_cpp, X, center)
 }
 
 #' @title Apply - by row
@@ -184,7 +148,7 @@ colCenter_cpp <- function(X, center) {
 #' 
 #' @export
 rowCenter_cpp <- function(X, center) {
-    .Call(`_riskRegression_rowCenter_cpp`, X, center)
+    .Call(riskRegression_rowCenter_cpp, X, center)
 }
 
 #' @title Apply / by column
@@ -203,7 +167,7 @@ rowCenter_cpp <- function(X, center) {
 #' 
 #' @export
 colScale_cpp <- function(X, scale) {
-    .Call(`_riskRegression_colScale_cpp`, X, scale)
+    .Call(riskRegression_colScale_cpp, X, scale)
 }
 
 #' @title Apply / by row
@@ -224,7 +188,7 @@ colScale_cpp <- function(X, scale) {
 #' 
 #' @export
 rowScale_cpp <- function(X, scale) {
-    .Call(`_riskRegression_rowScale_cpp`, X, scale)
+    .Call(riskRegression_rowScale_cpp, X, scale)
 }
 
 #' @title Apply * by column
@@ -243,7 +207,7 @@ rowScale_cpp <- function(X, scale) {
 #' 
 #' @export
 colMultiply_cpp <- function(X, scale) {
-    .Call(`_riskRegression_colMultiply_cpp`, X, scale)
+    .Call(riskRegression_colMultiply_cpp, X, scale)
 }
 
 #' @title Apply * by row
@@ -264,7 +228,7 @@ colMultiply_cpp <- function(X, scale) {
 #' 
 #' @export
 rowMultiply_cpp <- function(X, scale) {
-    .Call(`_riskRegression_rowMultiply_cpp`, X, scale)
+    .Call(riskRegression_rowMultiply_cpp, X, scale)
 }
 
 #' @title Apply * by slice
@@ -285,7 +249,7 @@ rowMultiply_cpp <- function(X, scale) {
 #' 
 #' @export
 sliceMultiply_cpp <- function(X, M) {
-    .Call(`_riskRegression_sliceMultiply_cpp`, X, M)
+    .Call(riskRegression_sliceMultiply_cpp, X, M)
 }
 
 #' @title Apply / by slice
@@ -306,6 +270,6 @@ sliceMultiply_cpp <- function(X, M) {
 #' 
 #' @export
 sliceScale_cpp <- function(X, M) {
-    .Call(`_riskRegression_sliceScale_cpp`, X, M)
+    .Call(riskRegression_sliceScale_cpp, X, M)
 }
 
