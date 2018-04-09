@@ -62,10 +62,31 @@ test_that("Cox model - compare to explicit computation",{
                  c(0.6513235, 0.7011545, 0.7276942),
                  tol = 1e-6)
 })
+                                        # }}}
+                                        # {{{ agreement one timepoint with several timepoints
+
+test_that("Cox model - check internal consistency (one or several timepoints)",{
+    ## (previously reported bug)
+    d <- sampleData(1000,outcome="survival")
+    fit <- coxph(Surv(time,event)~X1+X4+X7+X8,data=d,x=TRUE,y=TRUE)
+    a1 <- ate(fit,data=d,treatment="X1",time=5,bootci.method="wald")
+    a2 <- ate(fit,data=d,treatment="X1",time=5:7,bootci.method="wald")
+    expect_equal(a2$riskComparison[time==5,],
+                 a1$riskComparison)
+    expect_equal(a2$meanRisk[time==5,],
+                 a1$meanRisk)
+})
+
 # }}}
-# {{{ check against manual computation
+                                        # {{{ check against manual computation
 if (FALSE)
     test_that("check against manual computation",{
+        ## automatically
+        fit <- cph(formula = Surv(time,event)~ X1+X2,data=dtS,y=TRUE,x=TRUE)
+        ateFit <- ate(fit, data = dtS, treatment = "X1", contrasts = NULL,
+                      times = 5:7, B = 0, se = TRUE, mc.cores=1,handler=handler,
+                      verbose=verbose)
+
         ATE <- list()
         ATE.iid <- list()
         for(iT in c("T0","T1","T2")){
@@ -91,8 +112,10 @@ if (FALSE)
         diffATE.lower <- diffATE + qnorm(0.025) * diffATE.se
         diffATE.upper <- diffATE + qnorm(0.975) * diffATE.se
 
-expect_equal(diffATE.lower, ateFit$riskComparison[Treatment.A == "T0" & Treatment.B == "T1",diff.lower])
-expect_equal(diffATE.upper, ateFit$riskComparison[Treatment.A == "T0" & Treatment.B == "T1",diff.upper])
+        expect_equal(diffATE.lower,
+                     ateFit$riskComparison[Treatment.A == "T0" & Treatment.B == "T1",diff.lower])
+        expect_equal(diffATE.upper,
+                     ateFit$riskComparison[Treatment.A == "T0" & Treatment.B == "T1",diff.upper])
 
 ratioATE <- ATE[["T0"]]/ATE[["T1"]]
 
@@ -101,8 +124,10 @@ ratioATE.se <- sqrt(apply(ratioATE.iid^2, 2, sum))
 ratioATE.lower <- ratioATE + qnorm(0.025) * ratioATE.se
 ratioATE.upper <- ratioATE + qnorm(0.975) * ratioATE.se
 
-expect_equal(ratioATE.lower, ateFit$riskComparison[Treatment.A == "T0" & Treatment.B == "T1",ratio.lower])
-expect_equal(ratioATE.upper, ateFit$riskComparison[Treatment.A == "T0" & Treatment.B == "T1",ratio.upper])
+        expect_equal(ratioATE.lower,
+                     ateFit$riskComparison[Treatment.A == "T0" & Treatment.B == "T1",ratio.lower])
+        expect_equal(ratioATE.upper,
+                     ateFit$riskComparison[Treatment.A == "T0" & Treatment.B == "T1",ratio.upper])
 })
 # }}}
 # {{{ CSC model bootstrap

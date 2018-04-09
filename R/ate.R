@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Oct 23 2016 (08:53) 
 ## Version: 
-## last-updated: apr  5 2018 (18:16) 
+## last-updated: apr  9 2018 (10:16) 
 ##           By: Brice Ozenne
-##     Update #: 539
+##     Update #: 542
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -416,6 +416,8 @@ ate <- function(object,
                                                                                    times=times,
                                                                                    cause=cause,
                                                                                    landmark=landmark,
+                                                                                   n.contrasts = n.contrasts,
+                                                                                   levels = levels,
                                                                                    dots),
                                                                           error = function(x){return(NULL)})
                                                              })
@@ -442,6 +444,8 @@ ate <- function(object,
                                       times=times,
                                       cause=cause,
                                       landmark=landmark,
+                                      n.contrasts = n.contrasts,
+                                      levels = levels,
                                       dots),
                              error = function(x){return(NULL)})
                 }, mc.cores = mc.cores)
