@@ -2,7 +2,7 @@ Package: riskRegression
 Type: Package
 Title: Risk Regression Models and Prediction Scores for Survival Analysis with
     Competing Risks
-Version: 2018.03.19
+Version: 2018.04.05
 Author: Thomas Alexander Gerds, Thomas Harder Scheike, Paul Blanche, Brice
     Ozenne
 Depends:
@@ -39,7 +39,10 @@ Suggests:
     randomForestSRC,
     rbenchmark,
     rpart,
-    testthat
+    testthat,
+    knitr,
+    rmarkdown
+VignetteBuilder: knitr
 Maintainer: Thomas Alexander Gerds <tag@biostat.ku.dk>
 Description: Implementation of the following methods for event history analysis.
     Risk regression models for survival endpoints also in the presence of competing

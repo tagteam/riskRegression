@@ -113,6 +113,11 @@
 ##'
 ##'  A more flexible approach is to write a new predictRisk S3-method. See Details.
 ##' @param debug Logical. If \code{TRUE} indicate landmark in progress of the program.
+##' @param useEventTimes obsolete. 
+##' @param nullModel obsolete.
+##' @param censMethod obsolete.
+##' @param censModel obsolete.
+##' @param splitMethod obsolete.
 ##' @param ... Named list containging additional arguments that are passed on to the \code{predictRisk} methods corresponding to object. See examples.
 ##' @return List with scores and assessments of contrasts, i.e.,
 ##'     tests and confidence limits for performance and difference in performance (AUC and Brier),
@@ -279,7 +284,6 @@
 ##'                    plots="ROC")
 ##' ResPaquid
 ##' plotROC(ResPaquid,time=5)
-##'
 ##' 
 ##' @author Thomas A Gerds \email{tag@@biostat.ku.dk} and Paul Blanche \email{paul.blanche@@univ-ubs.fr}
 ##' @references
@@ -324,11 +328,8 @@
 ##'
 ##' @export
 ##'
-
 # }}}
-
 # {{{ Score.list
-
 Score.list <- function(object,
                        formula,
                        data,
@@ -356,7 +357,33 @@ Score.list <- function(object,
                        keep,
                        predictRisk.args,
                        debug=0L,
+                       useEventTimes,
+                       nullModel,
+                       censMethod,
+                       censModel,
+                       splitMethod,
                        ...){
+    if (!missing(useEventTimes)) {
+        warning("(Spelling of) argument 'useEventTimes' is obsolete and will be disabled in future versions of this function.\nUse 'use.event.times' instead.")
+        use.event.times <- useEventTimes
+    }
+    if (!missing(nullModel)) {
+        warning("(Spelling of) argument 'nullModel' is obsolete and will be disabled in future versions of this function.\nUse 'null.model' instead.")
+        null.model <- nullModel
+    }
+    if (!missing(splitMethod)) {
+        warning("(Spelling of) argument 'splitMethod' is obsolete and will be disabled in future versions of this function.\nUse 'split.method' instead.")
+        split.method <- splitMethod
+    }
+    if (!missing(censMethod)) {
+        warning("(Spelling of) argument 'censMethod' is obsolete and will be disabled in future versions of this function.\nUse 'cens.method' instead.")
+        cens.method <- censMethod
+    }
+    if (!missing(censModel)) {
+        warning("(Spelling of) argument 'censModel' is obsolete and will be disabled in future versions of this function.\nUse 'cens.model' instead.")
+        cens.model <- censModel
+    }
+
     se.conservative=IF.AUC.conservative=IF.AUC0=IF.AUC=IC0=Brier=AUC=casecontrol=se=nth.times=time=status=ID=WTi=ID=risk=IF.Brier=lower=upper=crossval=b=time=status=model=reference=p=model=pseudovalue=ReSpOnSe=residuals=event=NULL
 
     # }}}
@@ -1148,8 +1175,8 @@ Score.list <- function(object,
                                     }
                                     ## ## Part of influence function related to Phi
                                     ## icPhiCase <- colMeans(ic.weights[which.cases,])
-                                    icPhiCase <- as.numeric(rowSumsCrossprod(as.matrix(weights[which.cases]),ic.weights[which.cases,],0))
-                                    icPhiControl <- as.numeric(rowSumsCrossprod(as.matrix(weights[which.controls]),ic.weights[which.controls,],0))
+                                    icPhiCase <- as.numeric(rowSumsCrossprod(as.matrix(weights.cases[which.cases]),ic.weights[which.cases,],0))
+                                    icPhiControl <- as.numeric(rowSumsCrossprod(as.matrix(weights.controls[which.controls]),ic.weights[which.controls,],0))
                                     icPhi <- (aucLPO/Phi)*((weights.cases-(1/N)*sum(weights.cases))*(1/N)*sum(weights.controls)+(weights.controls-(1/N)*sum(weights.controls))*(1/N)*sum(weights.cases)) - 2*aucLPO    
                                     ## ## Combine all parts of influence function
                                     ## ic1 <- data.table(ID=data[["ID"]], "ic.weightsCC" = ic.weightsCC, "icPhi" = icPhi)
@@ -1281,8 +1308,8 @@ Score.list <- function(object,
                                                                     cens.model=cens.model,
                                                                     nth.times=nth.times[1]),by=byvars]
                             score.loob <- DT.B[,data.table(Brier=sum(residuals)/N,
-                                                           se.conservative=sd(IC0)/sqrt(N),
-                                                           se=sd(IF.Brier)/sqrt(N)),by=byvars]
+                                                           se=sd(IF.Brier)/sqrt(N),
+                                                           se.conservative=sd(IC0)/sqrt(N)),by=byvars]
                         }else{
                             if (response.type=="binary" || cens.type=="uncensored"){
                                 DT.B[,IF.Brier:=residuals-mean(residuals),by=byvars]
@@ -1524,8 +1551,8 @@ Brier.survival <- function(DT,MC,se.fit,conservative,cens.model,keep.vcov=FALSE,
                                                   cens.model=cens.model,
                                                   nth.times=nth.times[1]),by=list(model,times)]
             score <- DT[,data.table(Brier=sum(residuals)/N,
-                                    se.conservative=sd(IC0)/sqrt(N),
-                                    se=sd(IF.Brier)/sqrt(N)),by=list(model,times)]
+                                    se=sd(IF.Brier)/sqrt(N),
+                                    se.conservative=sd(IC0)/sqrt(N)),by=list(model,times)]
         }
         score[,lower:=pmax(0,Brier-qnorm(1-alpha/2)*se)]
         score[,upper:=pmin(1,Brier + qnorm(1-alpha/2)*se)]
@@ -1588,8 +1615,8 @@ Brier.competing.risks <- function(DT,MC,se.fit,conservative,cens.model,keep.vcov
                                                   cens.model=cens.model,
                                                   nth.times=nth.times[1]),by=list(model,times)]
             score <- DT[,data.table(Brier=sum(residuals)/N,
-                                    se.conservative=sd(IC0)/sqrt(N),
-                                    se=sd(IF.Brier)/sqrt(N)),by=list(model,times)]
+                                    se=sd(IF.Brier)/sqrt(N),
+                                    se.conservative=sd(IC0)/sqrt(N)),by=list(model,times)]
         }
         score[,lower:=pmax(0,Brier-qnorm(1-alpha/2)*se)]
         score[,upper:=pmin(1,Brier + qnorm(1-alpha/2)*se)]

@@ -97,3 +97,4 @@ NULL
 #' @importFrom utils capture.output find head select.list setTxtProgressBar tail txtProgressBar
 #' @importFrom stats cov as.formula coef delete.response drop.terms family formula get_all_vars glm median model.frame model.matrix model.response na.fail na.omit optim pnorm predict qnorm quantile rbinom reformulate rexp runif sd setNames smooth terms terms.formula time uniroot update update.formula var wilcox.test
 NULL
+
