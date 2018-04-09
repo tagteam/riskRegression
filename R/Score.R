@@ -113,6 +113,11 @@
 ##'
 ##'  A more flexible approach is to write a new predictRisk S3-method. See Details.
 ##' @param debug Logical. If \code{TRUE} indicate landmark in progress of the program.
+##' @param useEventTimes obsolete. 
+##' @param nullModel obsolete.
+##' @param censMethod obsolete.
+##' @param censModel obsolete.
+##' @param splitMethod obsolete.
 ##' @param ... Named list containging additional arguments that are passed on to the \code{predictRisk} methods corresponding to object. See examples.
 ##' @return List with scores and assessments of contrasts, i.e.,
 ##'     tests and confidence limits for performance and difference in performance (AUC and Brier),
@@ -279,7 +284,6 @@
 ##'                    plots="ROC")
 ##' ResPaquid
 ##' plotROC(ResPaquid,time=5)
-##'
 ##' 
 ##' @author Thomas A Gerds \email{tag@@biostat.ku.dk} and Paul Blanche \email{paul.blanche@@univ-ubs.fr}
 ##' @references
@@ -324,11 +328,8 @@
 ##'
 ##' @export
 ##'
-
 # }}}
-
 # {{{ Score.list
-
 Score.list <- function(object,
                        formula,
                        data,
@@ -356,7 +357,33 @@ Score.list <- function(object,
                        keep,
                        predictRisk.args,
                        debug=0L,
+                       useEventTimes,
+                       nullModel,
+                       censMethod,
+                       censModel,
+                       splitMethod,
                        ...){
+    if (!missing(useEventTimes)) {
+        warning("(Spelling of) argument 'useEventTimes' is obsolete and will be disabled in future versions of this function.\nUse 'use.event.times' instead.")
+        use.event.times <- useEventTimes
+    }
+    if (!missing(nullModel)) {
+        warning("(Spelling of) argument 'nullModel' is obsolete and will be disabled in future versions of this function.\nUse 'null.model' instead.")
+        null.model <- nullModel
+    }
+    if (!missing(splitMethod)) {
+        warning("(Spelling of) argument 'splitMethod' is obsolete and will be disabled in future versions of this function.\nUse 'split.method' instead.")
+        split.method <- splitMethod
+    }
+    if (!missing(censMethod)) {
+        warning("(Spelling of) argument 'censMethod' is obsolete and will be disabled in future versions of this function.\nUse 'cens.method' instead.")
+        cens.method <- censMethod
+    }
+    if (!missing(censModel)) {
+        warning("(Spelling of) argument 'censModel' is obsolete and will be disabled in future versions of this function.\nUse 'cens.model' instead.")
+        cens.model <- censModel
+    }
+
     se.conservative=IF.AUC.conservative=IF.AUC0=IF.AUC=IC0=Brier=AUC=casecontrol=se=nth.times=time=status=ID=WTi=ID=risk=IF.Brier=lower=upper=crossval=b=time=status=model=reference=p=model=pseudovalue=ReSpOnSe=residuals=event=NULL
 
     # }}}

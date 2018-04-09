@@ -11,7 +11,8 @@
   conservative = FALSE, multi.split.test = FALSE, conf.int = 0.95,
   contrasts = TRUE, probs = c(0, 0.25, 0.5, 0.75, 1),
   cens.method = "outside.ipcw", cens.model = "cox", split.method, B, M,
-  seed, trainseeds, keep, predictRisk.args, debug = 0L, ...)
+  seed, trainseeds, keep, predictRisk.args, debug = 0L, useEventTimes,
+  nullModel, censMethod, censModel, splitMethod, ...)
 }
 \arguments{
 \item{object}{List of risk predictions (see details and examples).}
@@ -134,6 +135,16 @@ randomly splitting (bootstrapping) the data during cross-validation.}
  A more flexible approach is to write a new predictRisk S3-method. See Details.}
 
 \item{debug}{Logical. If \code{TRUE} indicate landmark in progress of the program.}
+
+\item{useEventTimes}{obsolete.}
+
+\item{nullModel}{obsolete.}
+
+\item{censMethod}{obsolete.}
+
+\item{censModel}{obsolete.}
+
+\item{splitMethod}{obsolete.}
 
 \item{...}{Named list containging additional arguments that are passed on to the \code{predictRisk} methods corresponding to object. See examples.}
 }
@@ -324,7 +335,6 @@ ResPaquid <- Score(list("DSST"=-Paquid$DSST,"MMSE"=-Paquid$MMSE),
                    plots="ROC")
 ResPaquid
 plotROC(ResPaquid,time=5)
-
 
 }
 \references{
