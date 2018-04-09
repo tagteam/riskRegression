@@ -1308,9 +1308,8 @@ Score.list <- function(object,
                                                                     cens.model=cens.model,
                                                                     nth.times=nth.times[1]),by=byvars]
                             score.loob <- DT.B[,data.table(Brier=sum(residuals)/N,
-                                                           se=sd(IF.Brier)/sqrt(N)
-                                                           se.conservative=sd(IC0)/sqrt(N),
-                                                           ),by=byvars]
+                                                           se=sd(IF.Brier)/sqrt(N),
+                                                           se.conservative=sd(IC0)/sqrt(N)),by=byvars]
                         }else{
                             if (response.type=="binary" || cens.type=="uncensored"){
                                 DT.B[,IF.Brier:=residuals-mean(residuals),by=byvars]
@@ -1552,8 +1551,8 @@ Brier.survival <- function(DT,MC,se.fit,conservative,cens.model,keep.vcov=FALSE,
                                                   cens.model=cens.model,
                                                   nth.times=nth.times[1]),by=list(model,times)]
             score <- DT[,data.table(Brier=sum(residuals)/N,
-                                    se.conservative=sd(IC0)/sqrt(N),
-                                    se=sd(IF.Brier)/sqrt(N)),by=list(model,times)]
+                                    se=sd(IF.Brier)/sqrt(N),
+                                    se.conservative=sd(IC0)/sqrt(N)),by=list(model,times)]
         }
         score[,lower:=pmax(0,Brier-qnorm(1-alpha/2)*se)]
         score[,upper:=pmin(1,Brier + qnorm(1-alpha/2)*se)]
@@ -1616,8 +1615,8 @@ Brier.competing.risks <- function(DT,MC,se.fit,conservative,cens.model,keep.vcov
                                                   cens.model=cens.model,
                                                   nth.times=nth.times[1]),by=list(model,times)]
             score <- DT[,data.table(Brier=sum(residuals)/N,
-                                    se.conservative=sd(IC0)/sqrt(N),
-                                    se=sd(IF.Brier)/sqrt(N)),by=list(model,times)]
+                                    se=sd(IF.Brier)/sqrt(N),
+                                    se.conservative=sd(IC0)/sqrt(N)),by=list(model,times)]
         }
         score[,lower:=pmax(0,Brier-qnorm(1-alpha/2)*se)]
         score[,upper:=pmin(1,Brier + qnorm(1-alpha/2)*se)]
