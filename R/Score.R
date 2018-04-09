@@ -1308,8 +1308,9 @@ Score.list <- function(object,
                                                                     cens.model=cens.model,
                                                                     nth.times=nth.times[1]),by=byvars]
                             score.loob <- DT.B[,data.table(Brier=sum(residuals)/N,
+                                                           se=sd(IF.Brier)/sqrt(N)
                                                            se.conservative=sd(IC0)/sqrt(N),
-                                                           se=sd(IF.Brier)/sqrt(N)),by=byvars]
+                                                           ),by=byvars]
                         }else{
                             if (response.type=="binary" || cens.type=="uncensored"){
                                 DT.B[,IF.Brier:=residuals-mean(residuals),by=byvars]
