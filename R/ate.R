@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Oct 23 2016 (08:53) 
 ## Version: 
-## last-updated: apr  9 2018 (10:16) 
-##           By: Brice Ozenne
-##     Update #: 542
+## last-updated: Apr 10 2018 (19:32) 
+##           By: Thomas Alexander Gerds
+##     Update #: 546
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -472,17 +472,17 @@ ate <- function(object,
                     d <- mean(diff, na.rm = TRUE)
                     d.se <- sd(diff, na.rm = TRUE)
                     r <- mean(ratio, na.rm = TRUE)
-                    r.se <- sd(ratio, na.rm = TRUE)
+                    log.r.se <- sd(log(ratio), na.rm = TRUE)
                     data.table::data.table(diffMeanBoot=d,
                                            diff.se=d.se,
                                            diff.lower=d+qnorm(alpha/2)*d.se,
                                            diff.upper=d+qnorm(1-alpha/2)*d.se,
                                            diff.p.value=2*pnorm(abs(d)/d.se,lower.tail=FALSE),
                                            ratioMeanBoot=r,
-                                           ratio.se=r.se,
-                                           ratio.lower=r+qnorm(alpha/2)*r.se,
-                                           ratio.upper=r+qnorm(1-alpha/2)*r.se,
-                                           ratio.p.value=2*pnorm(abs(r)/r.se,lower.tail=FALSE),
+                                           log.ratio.se=log.r.se,
+                                           ratio.lower=exp(log(r)+qnorm(alpha/2)*log.r.se),
+                                           ratio.upper=exp(log(r)+qnorm(1-alpha/2)*log.r.se),
+                                           ratio.p.value=2*pnorm(abs(log(r))/log.r.se,lower.tail=FALSE),
                                            n.boot=sum(!is.na(diff)))
                 },keyby=key2]
             }else{

@@ -434,9 +434,6 @@ theCall <- match.call()
     if ("ROC" %in% plots) {
         ## add AUC if needed
         if (!("AUC" %in% metrics)) metrics <- c(metrics,"AUC")
-        if (split.method$internal.name!="none"){
-            warning("Cannot (not yet) do ROC analysis in combination with internal validation\n. Check devtools::install_github('tagteam/riskRegression') for progress.")
-        }
     }
     if ("Calibration" %in% plots) {
         ## add pseudo if needed
@@ -444,8 +441,8 @@ theCall <- match.call()
     }
 
     # }}}
-# -----------------parse other arguments and prepare data---------
-# {{{ censoring model arguments
+    # -----------------parse other arguments and prepare data---------
+    # {{{ censoring model arguments
     if (length(grep("^km|^kaplan|^marg",cens.model,ignore.case=TRUE))>0){
         cens.model <- "KaplanMeier"
     } else{
@@ -456,7 +453,7 @@ theCall <- match.call()
         }
     }
     # }}}
-# {{{ Response
+    # {{{ Response
     if (missing(formula)){stop("Argument formula is missing.")}    
     formula.names <- try(all.names(formula),silent=TRUE)
     if (!(formula.names[1]=="~")
@@ -517,7 +514,7 @@ theCall <- match.call()
     if (is.null(cens.type)) cens.type <- "uncensoredData"
     rm(response)
     # }}}
-# {{{ SplitMethod
+    # {{{ SplitMethod
 
     if (!missing(seed)) set.seed(seed)
     split.method <- getSplitMethod(split.method=split.method,B=B,N=N,M=M)
@@ -528,6 +525,9 @@ theCall <- match.call()
         if (se.fit==TRUE){
             if (response.type=="competing.risks")
                 warning("Under construction. Check devtools::install_github('tagteam/riskRegression') for progress.")
+        }
+        if ("ROC" %in% plots){
+            warning("Cannot (not yet) do ROC analysis in combination with internal validation\n. Check devtools::install_github('tagteam/riskRegression') for progress.")
         }
     }
     # }}}

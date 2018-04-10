@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jan  4 2016 (14:30) 
 ## Version: 
-## last-updated: Mar 26 2018 (08:04) 
+## last-updated: Apr 10 2018 (19:41) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 95
+##     Update #: 97
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -109,6 +109,7 @@ test_that("survival outcome: robustness against order of data set",{
 
 # }}}
 # {{{ "competing risks outcome: check against pec"
+
 test_that("competing risks outcome: check against pec",{
     set.seed(112)
     d <- sampleData(112,outcome="competing.risks")
@@ -120,6 +121,7 @@ test_that("competing risks outcome: check against pec",{
     expect_equal(a$AppErr$Reference[-1],b$Brier$score[model=="Null model",Brier])
     expect_equal(a$AppErr$FGR[-1],b$Brier$score[model=="FGR",Brier])
 })
+
 # }}}
 # {{{ "competing risks outcome: robustness against order of data set"
 test_that("competing risks outcome: robustness against order of data set",{
@@ -145,7 +147,8 @@ test_that("competing risks outcome: robustness against order of data set",{
     expect_equal(s2$AUC,s2b$AUC)
     expect_equal(s3$AUC,s3b$AUC)
 })
-# }}}# {{{ "survival outcome: Brier Score pec vs Score"
+# }}}
+# {{{ "survival outcome: Brier Score pec vs Score"
 test_that("survival outcome: Brier Score pec vs Score",{
     set.seed(112)
     d <- sampleData(112,outcome="survival")
@@ -157,7 +160,8 @@ test_that("survival outcome: Brier Score pec vs Score",{
     expect_equal(p1$AppErr$coxph.1,s1$Brier$score[model=="coxph.1",Brier])
     expect_equal(p1$AppErr$Reference,s1$Brier$score[model=="Null model",Brier])
 })
-# }}}# {{{ "survival outcome: matrix input"
+# }}}
+# {{{ "survival outcome: matrix input"
 test_that("survival outcome: matrix input",{
     set.seed(112)
     dtrain <- sampleData(112,outcome="survival")
@@ -250,7 +254,7 @@ test_that("binary outcome: AUC", {
 })
 
 # }}}
-# {{{ "Number of models and time points"
+# {{{ "Leave one out bootstrap: Number of models and time points"
 test_that("Number of models and time points", {
     library(pec)
     data(GBSG2)
@@ -277,7 +281,33 @@ test_that("Number of models and time points", {
     expect_equal(r1$Brier$score[model=="a"],r2$Brier$score[model=="a" & times==1000])
     ## expect_equal(r1$AUC$score[model=="a"],r2$AUC$score[model=="a" & times==1000])
 })
-
+# {{{ "Bootstrap cross validation
+test_that("Number of models and time points", {
+    library(pec)
+    data(GBSG2)
+    setDT(GBSG2)
+    ## fit1 <- coxph(Surv(time, cens)~horTh+age+menostat+tsize+pnodes+progrec+estrec, data = GBSG2, x = TRUE)
+    ## fit2 <- coxph(Surv(time, cens)~strata(horTh)+age+menostat+tsize+pnodes+progrec+estrec, data = GBSG2, x = TRUE)
+    fit1 <- cph(Surv(time, cens)~horTh+age+menostat+tsize+pnodes+progrec+estrec, data = GBSG2, x = TRUE,y=TRUE,surv=TRUE)
+    fit2 <- cph(Surv(time, cens)~strat(horTh)+age+menostat+tsize+pnodes+progrec+estrec, data = GBSG2, x = TRUE,y=TRUE,surv=TRUE)
+    GBSG2.test <- GBSG2
+    setorder(GBSG2.test,time,-cens)
+    ## predictCox(fit1,newdata=GBSG2.test,times=1000)
+    r1 <- Score(list(a=fit2),data=GBSG2.test,times=1000,formula=Surv(time,cens)~1,plots="cali")
+    set.seed(11)
+    R1 <- Score(list(a=fit2),data=GBSG2.test,times=1000,B=50,split.method="bootcv",formula=Surv(time,cens)~1,plots="cali")
+    setorder(GBSG2,time,cens)
+    ## setorder(GBSG2.test,age)
+    GBSG2 <- 7
+    r2 <- Score(list(a=fit2,b=fit1),data=GBSG2.test,times=c(100,500,2000,1000),formula=Surv(time,cens)~1,plots="cali")
+    set.seed(11)
+    R2 <- Score(list(a=fit2,b=fit1),data=GBSG2.test,times=c(1000),B=50,split.method="bootcv",formula=Surv(time,cens)~1,plots="cali")
+    ## r1$Calibration$plotframe
+    ## r2$Calibration$plotframe[times==1000&model=="a"]
+    ## r3 <- pec(list(a=fit2,b=fit1),data=GBSG2.test,exact=FALSE,times=c(1000),formula=Surv(time,cens)~1)
+    expect_equal(r1$Brier$score[model=="a"],r2$Brier$score[model=="a" & times==1000])
+    ## expect_equal(r1$AUC$score[model=="a"],r2$AUC$score[model=="a" & times==1000])
+})
 # }}}
 # {{{ "LOOB: Number of models and time points"
 test_that("LOOB: Number of models and time points", {   
