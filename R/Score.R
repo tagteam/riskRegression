@@ -1381,7 +1381,13 @@ computePerformance <- function(DT,
         }else{ ## split.method bootcv
             # {{{ bootcv
             crossval <- lapply(1:B,function(j){
-                computePerformance(DT.B[b==j],se.fit=FALSE,conservative=FALSE,cens.model=cens.model,multi.split.test=FALSE,keep.residuals=FALSE,keep.vcov=FALSE)
+                computePerformance(DT.B[b==j],
+                                   se.fit=FALSE,
+                                   conservative=FALSE,
+                                   cens.model=cens.model,
+                                   multi.split.test=FALSE,
+                                   keep.residuals=FALSE,
+                                   keep.vcov=FALSE)
             })
             crossvalPerf <- lapply(metrics,function(m){
                 if (response.type %in% c("survival","competing.risks")){
@@ -1556,12 +1562,23 @@ Brier.binary <- function(DT,
         data.table::setkey(DT,model)
         data.table::setkey(score,model)
         DT <- DT[score]
-        contrasts.Brier <- DT[,getComparisons(data.table(x=Brier,IF=residuals,model=model),
-                                              NF=NF,
-                                              N=N,
-                                              alpha=alpha,
-                                              dolist=dolist,
-                                              se.fit=se.fit)]
+        if (se.fit==TRUE){
+            contrasts.Brier <- DT[,getComparisons(data.table(x=Brier,
+                                                             IF=residuals,
+                                                             model=model),
+                                                  NF=NF,
+                                                  N=N,
+                                                  alpha=alpha,
+                                                  dolist=dolist,
+                                                  se.fit=TRUE)]
+        }else{
+            contrasts.Brier <- DT[,getComparisons(data.table(x=Brier,model=model),
+                                                  NF=NF,
+                                                  N=N,
+                                                  alpha=alpha,
+                                                  dolist=dolist,
+                                                  se.fit=TRUE)]
+        }
         setnames(contrasts.Brier,"delta","delta.Brier")
         output <- list(score=score,contrasts=contrasts.Brier)
     }else{
@@ -1616,12 +1633,21 @@ Brier.survival <- function(DT,MC,se.fit,conservative,cens.model,keep.vcov=FALSE,
         data.table::setkey(DT,model,times)
         data.table::setkey(score,model,times)
         DT <- DT[score]
-        contrasts.Brier <- DT[,getComparisons(data.table(x=Brier,IF=IF.Brier,model=model),
-                                              NF=NF,
-                                              N=N,
-                                              alpha=alpha,
-                                              dolist=dolist,
-                                              se.fit=se.fit),by=list(times)]
+        if (se.fit==TRUE){
+            contrasts.Brier <- DT[,getComparisons(data.table(x=Brier,IF=IF.Brier,model=model),
+                                                  NF=NF,
+                                                  N=N,
+                                                  alpha=alpha,
+                                                  dolist=dolist,
+                                                  se.fit=TRUE),by=list(times)]
+        }else{
+            contrasts.Brier <- DT[,getComparisons(data.table(x=Brier,model=model),
+                                                  NF=NF,
+                                                  N=N,
+                                                  alpha=alpha,
+                                                  dolist=dolist,
+                                                  se.fit=FALSE),by=list(times)]
+        }
         setnames(contrasts.Brier,"delta","delta.Brier")
         output <- list(score=score,contrasts=contrasts.Brier)
     } else{
@@ -1681,7 +1707,11 @@ Brier.competing.risks <- function(DT,MC,se.fit,conservative,cens.model,keep.vcov
         ## merge with Brier score
         DT <- DT[score]
         data.table::setkey(score,model,times)
-        contrasts.Brier <- DT[,getComparisons(data.table(x=Brier,IF=IF.Brier,model=model),NF=NF,N=N,alpha=alpha,dolist=dolist,se.fit=se.fit),by=list(times)]
+        if (se.fit==TRUE){
+            contrasts.Brier <- DT[,getComparisons(data.table(x=Brier,IF=IF.Brier,model=model),NF=NF,N=N,alpha=alpha,dolist=dolist,se.fit=TRUE),by=list(times)]
+        }else{
+            contrasts.Brier <- DT[,getComparisons(data.table(x=Brier,model=model),NF=NF,N=N,alpha=alpha,dolist=dolist,se.fit=FALSE),by=list(times)]
+        }
         setnames(contrasts.Brier,"delta","delta.Brier")
         output <- list(score=score,contrasts=contrasts.Brier)
     } else{
@@ -1903,11 +1933,19 @@ AUC.survival <- function(DT,MC,se.fit,conservative,cens.model,keep.vcov=FALSE,mu
         output <- c(list(score=score),output)
     }
     if (length(dolist)>0){
-        contrasts.AUC <- aucDT[,getComparisons(data.table(x=AUC,IF=IF.AUC,model=model),
-                                               NF=NF,
-                                               N=N,
-                                               alpha=alpha,
-                                               dolist=dolist,se.fit=se.fit),by=list(times)]
+        if (se.fit==TRUE){
+            contrasts.AUC <- aucDT[,getComparisons(data.table(x=AUC,IF=IF.AUC,model=model),
+                                                   NF=NF,
+                                                   N=N,
+                                                   alpha=alpha,
+                                                   dolist=dolist,se.fit=TRUE),by=list(times)]
+        }else{
+            contrasts.AUC <- score[,getComparisons(data.table(x=AUC,model=model),
+                                                   NF=NF,
+                                                   N=N,
+                                                   alpha=alpha,
+                                                   dolist=dolist,se.fit=FALSE),by=list(times)]
+        }
         setnames(contrasts.AUC,"delta","delta.AUC")
         output <- c(list(score=score,contrasts=contrasts.AUC),output)
     }
@@ -1980,12 +2018,21 @@ AUC.competing.risks <- function(DT,MC,se.fit,conservative,cens.model,keep.vcov=F
         output <- c(list(score=score),output)
     }
     if (length(dolist)>0){
-        contrasts.AUC <- aucDT[,getComparisons(data.table(x=AUC,IF=IF.AUC,model=model),
-                                               NF=NF,
-                                               N=N,
-                                               alpha=alpha,
-                                               dolist=dolist,
-                                               se.fit=se.fit),by=list(times)]
+        if (se.fit==TRUE){
+            contrasts.AUC <- aucDT[,getComparisons(data.table(x=AUC,IF=IF.AUC,model=model),
+                                                   NF=NF,
+                                                   N=N,
+                                                   alpha=alpha,
+                                                   dolist=dolist,
+                                                   se.fit=TRUE),by=list(times)]
+        }else{
+            contrasts.AUC <- score[,getComparisons(data.table(x=AUC,model=model),
+                                                   NF=NF,
+                                                   N=N,
+                                                   alpha=alpha,
+                                                   dolist=dolist,
+                                                   se.fit=FALSE),by=list(times)]
+        }
         setnames(contrasts.AUC,"delta","delta.AUC")
         output <- c(list(score=score,contrasts=contrasts.AUC),output)
     }
