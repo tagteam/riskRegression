@@ -434,6 +434,9 @@ theCall <- match.call()
     if ("ROC" %in% plots) {
         ## add AUC if needed
         if (!("AUC" %in% metrics)) metrics <- c(metrics,"AUC")
+        if (split.method$internal.name!="none"){
+            warning("Cannot (not yet) do ROC analysis in combination with internal validation\n. Check devtools::install_github('tagteam/riskRegression') for progress.")
+        }
     }
     if ("Calibration" %in% plots) {
         ## add pseudo if needed
@@ -521,17 +524,14 @@ theCall <- match.call()
     B <- split.method$B
     splitIndex <- split.method$index
     do.resample <- !(is.null(splitIndex))
-    if (split.method$internal.name=="LeaveOneOutBoot"){
+    if (split.method$internal.name!="none"){
         if (se.fit==TRUE){
             if (response.type=="competing.risks")
                 warning("Under construction. Check devtools::install_github('tagteam/riskRegression') for progress.")
         }
     }
-    ## if (split.method$internal.name!="none"){
-        ## browser()
-    ## }
     # }}}
-# {{{ Checking the ability of the elements of object to predict risks
+    # {{{ Checking the ability of the elements of object to predict risks
     # {{{ number of models and their labels
     NF <- length(object)
     # }}}
@@ -563,7 +563,7 @@ theCall <- match.call()
         }
     })
     # }}}
-# {{{ additional arguments for predictRisk methods
+    # {{{ additional arguments for predictRisk methods
 
     if (!missing(predictRisk.args)){
         if (!(all(names(predictRisk.args) %in% unlist(object.classes))))
