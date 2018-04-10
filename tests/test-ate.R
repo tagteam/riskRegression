@@ -13,6 +13,7 @@ dtS$X1 <- factor(rbinom(n, prob = c(0.3,0.4) , size = 2), labels = paste0("T",0:
 handler <- if (Sys.info()["sysname"] == "Windows") "foreach" else "mclapply"
 verbose=FALSE
 # }}}
+
 # {{{ G formula: coxph, cph, sequential, one and several time points
 test_that("G formula: coxph, cph, bootstrap sequential, one and several time points",{
     fit.cph <- cph(Surv(time,event)~ X1+X2,data=dtS,y=TRUE,x=TRUE)

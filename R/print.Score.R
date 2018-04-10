@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: May 31 2016 (11:32) 
 ## Version: 
-## last-updated: Aug  7 2017 (09:12) 
+## last-updated: Apr 10 2018 (08:32) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 22
+##     Update #: 26
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -37,6 +37,31 @@ print.Score <- function(x,digits=3,...){
         cat(paste0("\nData for ",p," plot are stored in the object as x[[\"",p,"\"]].\n"))
         ## print(x[[m]],digits=digits, ...)
     }
+    switch(x$split.method$name,"BootCv"={
+        cat("\nBootstrap cross-validation based on ",
+            x$split.method$B,
+            " ",
+            ifelse(x$split.method$N==x$split.method$M,
+                   "bootstrap samples (drawn with replacement)",
+                   "bootstrap subsamples (drawn without replacement)"),
+            " each of size ",
+            x$split.method$M,
+            ".\n",
+            "The 'confidence intervals' are bootstrap quantiles, the 'p-values' are median p-values.\n",
+            sep="")
+    },"LeaveOneOutBoot"={
+        cat("\nEfron's leave-one-out-bootstrap based on ",
+            x$split.method$B,
+            " ",
+            ifelse(x$split.method$N==x$split.method$M,
+                   "bootstrap samples (drawn with replacement)",
+                   "bootstrap subsamples (drawn without replacement)"),
+            " each of size ",
+            x$split.method$M,
+            ".\n",
+            "The 'confidence intervals' and 'p-values' are obtained with the delta method after bootstrap.\n",
+            sep="")
+    })
 }
 
 #' @method print scoreAUC
