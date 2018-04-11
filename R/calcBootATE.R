@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: apr 11 2018 (17:05) 
 ## Version: 
-## Last-Updated: apr 11 2018 (17:12) 
+## Last-Updated: apr 11 2018 (21:22) 
 ##           By: Brice Ozenne
-##     Update #: 6
+##     Update #: 12
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -49,7 +49,7 @@ calcBootATE <- function(object, pointEstimate, Gformula, data,
 
         if(handler=="snow"){
             ## initialize CPU
-            cl <- parallel::makeCluster(ncpus)
+            cl <- parallel::makeCluster(mc.cores)
             ## load packages
             parallel::clusterCall(cl, function(x){sapply(x, library, character.only = TRUE)}, addPackage)
             ## set seeds
@@ -70,7 +70,7 @@ calcBootATE <- function(object, pointEstimate, Gformula, data,
             object$call$data <- dataBoot
             objectBoot <- try(eval(object$call),silent=TRUE)
             if ("try-error" %in% class(objectBoot)){
-                stop(paste0("Failed to fit model ",class(object),ifelse(try(b>0,silent=TRUE),paste0(" in bootstrap step ",b,"."))))
+                stop(paste0("Failed to fit model ",class(object)))
             }
             iBoot <- tryCatch(Gformula(object=objectBoot,
                                        data=dataBoot,
@@ -93,7 +93,7 @@ calcBootATE <- function(object, pointEstimate, Gformula, data,
                 }
                 return(out)
             }, sim = "ordinary", stpe = "indices", strata = rep(1, n.obs),
-            parallel = parallel, ncpus = ncpus, cl = cl)
+            parallel = handler[[1]], ncpus = ncpus, cl = cl)
 
                                         # }}}
     }else {
@@ -106,6 +106,7 @@ calcBootATE <- function(object, pointEstimate, Gformula, data,
                 cl <- parallel::makeCluster(mc.cores)
             }
             doParallel::registerDoParallel(cl)
+            b <- NULL ## [:forCRANcheck:] foreach
             boots <- foreach::`%dopar%`(foreach::foreach(b = 1:B, .packages = addPackage, .export = NULL), {
                 set.seed(bootseeds[[b]])
                 if(verbose){setTxtProgressBar(pb, b)}
