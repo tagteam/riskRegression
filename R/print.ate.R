@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun  6 2016 (06:48) 
 ## Version: 
-## last-updated: apr 11 2018 (21:22) 
+## last-updated: apr 11 2018 (21:26) 
 ##           By: Brice Ozenne
-##     Update #: 94
+##     Update #: 95
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -107,7 +107,7 @@ print.ate <- function(x, type = "perc", digits = 3, print = TRUE, ...){
         })
         
         ## export
-        Treatment <- Treatment.A <- Treatment.B <- meanRisk <- ratio <- NULL ## [:forCRANtest:] data.table
+        . <- Treatment <- Treatment.A <- Treatment.B <- meanRisk <- ratio <- NULL ## [:forCRANtest:] data.table
         
         index.mrisk <- grep("^meanRisk:",name.estimate)
         boot.mrisks <- cbind(x$meanRisk[,.(Treatment,time)],

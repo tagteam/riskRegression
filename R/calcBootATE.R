@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: apr 11 2018 (17:05) 
 ## Version: 
-## Last-Updated: apr 11 2018 (21:22) 
+## Last-Updated: apr 11 2018 (21:26) 
 ##           By: Brice Ozenne
-##     Update #: 12
+##     Update #: 13
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -93,7 +93,7 @@ calcBootATE <- function(object, pointEstimate, Gformula, data,
                 }
                 return(out)
             }, sim = "ordinary", stpe = "indices", strata = rep(1, n.obs),
-            parallel = handler[[1]], ncpus = ncpus, cl = cl)
+            parallel = handler[[1]], ncpus = mc.cores, cl = cl)
 
                                         # }}}
     }else {
