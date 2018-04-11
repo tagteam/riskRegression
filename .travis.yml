@@ -3,7 +3,7 @@
 language: R
 sudo: required
 r_check_args: "--as-cran"
-# cache: packages
+cache: packages
 warnings_are_errors: true
 
 # r_github_packages:
