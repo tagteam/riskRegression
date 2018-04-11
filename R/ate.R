@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Oct 23 2016 (08:53) 
 ## Version: 
-## last-updated: apr  9 2018 (10:16) 
+## last-updated: apr 11 2018 (19:44) 
 ##           By: Brice Ozenne
-##     Update #: 542
+##     Update #: 641
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -35,7 +35,6 @@
 #' @param conf.level Numeric value between 0 and 1 (default is 0.05). Confidence level of the confidence intervals.
 #' @param se Logical. If \code{TRUE} compute standard errors and confidence intervals
 #' @param band Logical. If \code{TRUE} compute confidence bands across time points.
-#' @param bootci.method Character. Method for constructing bootstrap confidence intervals. Either "Wald" (the default) or "quantile".
 #' @param B the number of bootstrap replications used to compute the
 #'     confidence intervals. If it equals 0, then Wald-type confidence
 #'     intervals are computed.  They rely on the standard error
@@ -259,14 +258,13 @@ ate <- function(object,
                 conf.level = 0.95,
                 se = TRUE,
                 band = FALSE,
-                bootci.method="Wald",
                 B = 0,
                 nsim.band = ifelse(band,1e3,0),
                 seed,
-                handler="foreach",
+                handler = "foreach",
                 mc.cores = 1,
-                verbose=TRUE,
-                store.iid="full",
+                verbose = TRUE,
+                store.iid = "full",
                 ...){
   
   meanRisk=Treatment=ratio=Treatment.A=Treatment.B=b <- NULL
@@ -274,7 +272,7 @@ ate <- function(object,
   diff.se=ratio.se=.GRP=lower=upper=diff.lower=diff.upper=diff.p.value=ratio.lower=ratio.upper=ratio.p.value <- NULL
    
     handler <- match.arg(handler, c("foreach","mclapply"))
-    # {{{ checking for time-dependent covariates (left-truncation)
+                                        # {{{ checking for time-dependent covariates (left-truncation)
     TD <- switch(class(object)[[1]],"coxph"=(attr(object$y,"type")=="counting"),
                  "CauseSpecificCox"=(attr(object$models[[1]]$y,"type")=="counting"),FALSE)
     if (TD){
@@ -290,8 +288,8 @@ ate <- function(object,
         landmark <- NULL
         Gformula <- Gformula_TI
     }
-    # }}}
-    # {{{ Prepare
+                                        # }}}
+                                        # {{{ Prepare
     dots <- list(...)
     if(se==0 && B>0){
         warning("argument 'se=0' means 'no standard errors' so number of bootstrap repetitions is forced to B=0.")
@@ -371,8 +369,7 @@ ate <- function(object,
     
         if(B>0){
                                         # {{{ Bootstrap
-
-            if (verbose==TRUE)
+            if (verbose==TRUE){ ## display
                 message(paste0("Approximated bootstrap netto run time (without time for copying data to cores):\n",
                                round(estimateTime["user.self"],2),
                                " seconds times ",
@@ -381,134 +378,39 @@ ate <- function(object,
                                mc.cores,
                                " cores = ",
                                round(estimateTime["user.self"]*B/mc.cores,2)," seconds.\n"))
-            x.cores <- parallel::detectCores()
-            if(mc.cores > x.cores){
-                warning("Not enough available cores \n","available: ",parallel::detectCores()," | requested: ",mc.cores,"\n")
-                mc.cores=x.cores
             }
 
-            if (!missing(seed)) set.seed(seed)
-            bootseeds <- sample(1:1000000,size=B,replace=FALSE)
-            if (handler[[1]]=="foreach" && mc.cores>1){
-                if(verbose){
-                    cl <- parallel::makeCluster(mc.cores, outfile = "")
-                    pb <- txtProgressBar(max = B, style = 3)          
-                }else{
-                    cl <- parallel::makeCluster(mc.cores)
-                }
-                doParallel::registerDoParallel(cl)
-                pp <- find(as.character(object$call[[1]]))
-                addPackage <- if(grep("package:",pp)){gsub("package:","",pp[grep("package:",pp)])}else{NULL}
-                boots <- foreach::`%dopar%`(foreach::foreach(b=1:B,.packages=unique(c("riskRegression","survival",addPackage)),
-                                                             .export=NULL), {
-                                                                 set.seed(bootseeds[[b]])
-                                                                 if(verbose){setTxtProgressBar(pb, b)}
-                                                                 dataBoot <- data[sample(1:n.obs, size = n.obs, replace = TRUE),]
-                                                                 object$call$data <- dataBoot
-                                                                 objectBoot <- try(eval(object$call),silent=TRUE)
-                                                                 if ("try-error" %in% class(objectBoot)){
-                                                                     stop(paste0("Failed to fit model ",class(object),ifelse(try(b>0,silent=TRUE),paste0(" in bootstrap step ",b,"."))))
-                                                                 }
-                                                                 tryCatch(Gformula(object=objectBoot,
-                                                                                   data=dataBoot,
-                                                                                   treatment=treatment,
-                                                                                   contrasts=contrasts,
-                                                                                   times=times,
-                                                                                   cause=cause,
-                                                                                   landmark=landmark,
-                                                                                   n.contrasts = n.contrasts,
-                                                                                   levels = levels,
-                                                                                   dots),
-                                                                          error = function(x){return(NULL)})
-                                                             })
-                if(verbose){close(pb)}
-                parallel::stopCluster(cl)
-            } else {
-                if(Sys.info()["sysname"] == "Windows" && mc.cores>1){
-                    message("mclapply cannot perform parallel computations on Windows \n",
-                            "consider setting argument handler to \"foreach\" \n")
-                    mc.cores <- 1
-                }
-                boots <- parallel::mclapply(1:B, function(b){
-                    set.seed(bootseeds[[b]])
-                    dataBoot <- data[sample(1:n.obs, size = n.obs, replace = TRUE),]
-                    object$call$data <- dataBoot
-                    objectBoot <- try(eval(object$call),silent=TRUE)
-                    if ("try-error" %in% class(objectBoot)){
-                        stop(paste0("Failed to fit model",ifelse(try(b>0,silent=TRUE),paste0(" in bootstrap step ",b,"."))))
-                    }
-                    tryCatch(Gformula(object=objectBoot,
-                                      data=dataBoot,
-                                      treatment=treatment,
-                                      contrasts=contrasts,
-                                      times=times,
-                                      cause=cause,
-                                      landmark=landmark,
-                                      n.contrasts = n.contrasts,
-                                      levels = levels,
-                                      dots),
-                             error = function(x){return(NULL)})
-                }, mc.cores = mc.cores)
-            }
-            ## gc()
-            meanRisksBoot <- data.table::rbindlist(lapply(boots,function(x)x$meanRisk))
-            riskComparisonsBoot <- data.table::rbindlist(lapply(boots,function(x)x$riskComparison))
-      
-            if(NROW(meanRisksBoot)==0){
-                stop("Error in all bootstrap samples.")
-            }
-            if (tolower(bootci.method)=="wald"){
-                mrisks <- meanRisksBoot[,{
-                    m=mean(meanRisk, na.rm = TRUE)
-                    se=sd(meanRisk,na.rm=TRUE)
-                    data.table::data.table(meanRiskBoot=m,
-                                           se=se,
-                                           lower=m+qnorm(alpha/2)*se,
-                                           upper=m+qnorm(1-alpha/2)*se,
-                                           n.boot=sum(!is.na(meanRisk)))
-                }, keyby=key1]
-                crisks <- riskComparisonsBoot[,
-                {
-                    d <- mean(diff, na.rm = TRUE)
-                    d.se <- sd(diff, na.rm = TRUE)
-                    r <- mean(ratio, na.rm = TRUE)
-                    r.se <- sd(ratio, na.rm = TRUE)
-                    data.table::data.table(diffMeanBoot=d,
-                                           diff.se=d.se,
-                                           diff.lower=d+qnorm(alpha/2)*d.se,
-                                           diff.upper=d+qnorm(1-alpha/2)*d.se,
-                                           diff.p.value=2*pnorm(abs(d)/d.se,lower.tail=FALSE),
-                                           ratioMeanBoot=r,
-                                           ratio.se=r.se,
-                                           ratio.lower=r+qnorm(alpha/2)*r.se,
-                                           ratio.upper=r+qnorm(1-alpha/2)*r.se,
-                                           ratio.p.value=2*pnorm(abs(r)/r.se,lower.tail=FALSE),
-                                           n.boot=sum(!is.na(diff)))
-                },keyby=key2]
-            }else{
-                mrisks <- meanRisksBoot[,data.table::data.table(meanRiskBoot=mean(meanRisk, na.rm = TRUE),
-                                                                se=sd(meanRisk,na.rm=TRUE),
-                                                                lower=quantile(meanRisk,alpha/2, na.rm = TRUE),
-                                                                upper=quantile(meanRisk,1-(alpha/2), na.rm = TRUE),
-                                                                n.boot=sum(!is.na(meanRisk))),
-                                        keyby=key1]
-                crisks <- riskComparisonsBoot[,data.table::data.table(diffMeanBoot=mean(diff, na.rm = TRUE),
-                                                                      diff.se=sd(diff, na.rm = TRUE),
-                                                                      diff.lower=quantile(diff,alpha/2, na.rm = TRUE),
-                                                                      diff.upper=quantile(diff,1-(alpha/2), na.rm = TRUE),
-                                                                      diff.p.value=boot2pvalue(diff, alternative = "two.sided"),
-                                                                      ratioMeanBoot=mean(ratio, na.rm = TRUE),
-                                                                      ratio.se=sd(ratio, na.rm = TRUE),
-                                                                      ratio.lower=quantile(ratio,alpha/2, na.rm = TRUE),
-                                                                      ratio.upper=quantile(ratio,1-(alpha/2), na.rm = TRUE),
-                                                                      ratio.p.value=boot2pvalue(ratio-1, alternative = "two.sided"),
-                                                                      n.boot=sum(!is.na(diff))),
-                                              keyby=key2]
-            }
-            ## merge with pointEstimate
-            mrisks <- merge(pointEstimate$meanRisk,mrisks,by=key1)
-            crisks <- merge(pointEstimate$riskComparison,crisks,by=key2)
+            vec.pointEstimate <- c(pointEstimate$meanRisk$meanRisk,
+                                   pointEstimate$riskComparison$diff,
+                                   pointEstimate$riskComparison$ratio)
+            names(vec.pointEstimate) <- c(pointEstimate$meanRisk[,paste0("meanRisk:",Treatment,":",time)],
+                                          pointEstimate$riskComparison[,paste0("compRisk:diff:",Treatment.A,":",Treatment.B,":",time)],
+                                          pointEstimate$riskComparison[,paste0("compRisk:ratio:",Treatment.A,":",Treatment.B,":",time)]
+                                          )
 
+            resBoot <- calcBootATE(object,
+                                   pointEstimate = vec.pointEstimate,
+                                   Gformula = Gformula,
+                                   data = data,
+                                   treatment = treatment,
+                                   contrasts = contrasts,
+                                   times = times,
+                                   cause = cause,
+                                   landmark = landmark,
+                                   n.contrasts = n.contrasts,
+                                   levels = levels,
+                                   dots = dots,
+                                   n.obs = n.obs,
+                                   handler = handler,
+                                   B = B,
+                                   seed = seed,
+                                   mc.cores = mc.cores,
+                                   verbose = verbose)
+
+            mrisks <- pointEstimate$meanRisk
+            crisks <- pointEstimate$riskComparison
+            bootseeds <- resBoot$bootseeds
+            resBoot <- resBoot$boot
                                         # }}}
         } else {
                                         # {{{ compute standard error and quantiles via the influence function
@@ -536,6 +438,7 @@ ate <- function(object,
             mrisks <- merge(pointEstimate$meanRisk,resSE$mrisks,by=key1)
             crisks <- merge(pointEstimate$riskComparison,resSE$crisks,by=key2)            
             bootseeds <- NULL
+            resBoot <- NULL
 
                                         # }}}
         }
@@ -548,17 +451,19 @@ ate <- function(object,
     }
                                         # {{{ output object
 
-        out <- list(meanRisk=mrisks,
-                    riskComparison=crisks,
-                    treatment=treatment,
-                    contrasts=contrasts,
-                    times=times,
-                    se = se,
-                    B=B,
-                    band = band,
-                    nsim.band = nsim.band,
-                    seeds=bootseeds,
-                    conf.level=conf.level)
+    out <- list(meanRisk=mrisks,
+                riskComparison=crisks,
+                treatment=treatment,
+                contrasts=contrasts,
+                times=times,
+                se = se,
+                TD = TD,
+                B = B,
+                band = band,
+                nsim.band = nsim.band,
+                boot = resBoot,
+                seeds=bootseeds,
+                conf.level=conf.level)
   
         class(out) <- c("ate",class(object))
         return(out)
@@ -655,10 +560,12 @@ Gformula_TI <- function(object,
         }))}))
     name.Treatment <- unlist(lapply(1:n.contrasts, function(c){rep(contrasts[c],length(meanRisk[[c]]))}))
     out <- list(meanRisk = data.table(Treatment=name.Treatment, time = times, meanRisk=unlist(meanRisk)),
-                riskComparison = riskComparison)
+                riskComparison = riskComparison)    
     return(out)            
 }
 # }}}
+
+            
 
 #----------------------------------------------------------------------
 ### ate.R ends here

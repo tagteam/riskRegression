@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: apr  5 2018 (17:01) 
 ## Version: 
-## Last-Updated: apr  5 2018 (18:07) 
+## Last-Updated: apr 11 2018 (17:07) 
 ##           By: Brice Ozenne
-##     Update #: 16
+##     Update #: 106
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -205,6 +205,6 @@ calcSeATE <- function(object, data, times, cause,
                 crisks = crisks))
     
 }
-
+     
 ######################################################################
 ### calcSeATE.R ends here

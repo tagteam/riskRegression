@@ -4,15 +4,26 @@
 \alias{print.ate}
 \title{Print average treatment effects}
 \usage{
-\method{print}{ate}(x, digits = 3, ...)
+\method{print}{ate}(x, type = "perc", digits = 3, print = TRUE, ...)
 }
 \arguments{
 \item{x}{object obtained with function \code{ate}}
 
+\item{type}{Character. Method for constructing bootstrap confidence intervals.
+Either "perc" (the default), "norm", "basic", "stud", or "bca".
+Argument passed to \code{boot::boot.ci}.}
+
 \item{digits}{Number of digits}
+
+\item{print}{should something be displayed in the console?}
 
 \item{...}{passed to print}
 }
 \description{
 Print average treatment effects
+}
+\details{
+When using bootstrap resampling the p-values are computing using a test-inversion method,
+i.e. find the critical confidence level such that one side of the confidence interval overlap the null hypothesis.
+The p-value is 1 minus the critical confidence level.
 }

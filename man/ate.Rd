@@ -5,10 +5,9 @@
 \title{Compute the average treatment effects via the g-formula}
 \usage{
 ate(object, data, formula, treatment, contrasts = NULL, times, cause,
-  landmark, conf.level = 0.95, se = TRUE, band = FALSE,
-  bootci.method = "Wald", B = 0, nsim.band = ifelse(band, 1000, 0), seed,
-  handler = "foreach", mc.cores = 1, verbose = TRUE, store.iid = "full",
-  ...)
+  landmark, conf.level = 0.95, se = TRUE, band = FALSE, B = 0,
+  nsim.band = ifelse(band, 1000, 0), seed, handler = "foreach",
+  mc.cores = 1, verbose = TRUE, store.iid = "full", ...)
 }
 \arguments{
 \item{object}{outcome model which describes how event risk depends
@@ -38,8 +37,6 @@ it is assumed that that the covariates do not change between landmark and landma
 \item{se}{Logical. If \code{TRUE} compute standard errors and confidence intervals}
 
 \item{band}{Logical. If \code{TRUE} compute confidence bands across time points.}
-
-\item{bootci.method}{Character. Method for constructing bootstrap confidence intervals. Either "Wald" (the default) or "quantile".}
 
 \item{B}{the number of bootstrap replications used to compute the
 confidence intervals. If it equals 0, then Wald-type confidence

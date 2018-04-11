@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: nov 22 2017 (13:39) 
 ## Version: 
-## Last-Updated: apr  5 2018 (18:08) 
+## Last-Updated: apr 11 2018 (20:30) 
 ##           By: Brice Ozenne
-##     Update #: 170
+##     Update #: 225
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -32,6 +32,34 @@
 #' f <- function(x){abs(vec[x]-1)}
 #' discreteRoot(function(x){x},grid = seq(-20,10,1))
 #' 
+#' ### find level of the confidence interval
+#' library(nlme)
+#' fm1 <- gls(follicles ~ sin(2*pi*Time) + cos(2*pi*Time), data = Ovary,
+#'                correlation = corAR1(form = ~ 1 | Mare))
+#'
+#' fctIC1 <- function(x){    
+#'    IC.tempo <- intervals(fm1, level = 1-x)
+#'    return( IC.tempo[["coef"]][1,"upper"])
+#' }
+#' fctIC2 <- function(x){    
+#'    IC.tempo <- intervals(fm1, level = 1-x)
+#'    return( IC.tempo[["coef"]][2,"upper"])
+#' }
+#' fctIC3 <- function(x){    
+#'    IC.tempo <- intervals(fm1, level = 1-x)
+#'    return( IC.tempo[["coef"]][3,"upper"])
+#' }
+#'
+#' summary(fm1)$tTable
+#' discreteRoot(fctIC2,grid = seq(1/1000,1,0.001), increasing = FALSE)$par
+#' discreteRoot(fctIC3,grid = seq(1/1000,1,0.001), increasing = FALSE)$par
+#'
+#' ## negative coefficient
+#' fctIC <- function(x){    
+#'    IC.tempo <- intervals(fm1, level = x)
+#'    return( IC.tempo[["coef"]][3,"upper"])
+#' }
+#' discreteRoot(fctIC,grid = seq(0,1-1/1000,0.001))$par
 
 ## * discreteRoot
 #' @rdname dicreteRoot
@@ -45,17 +73,31 @@ discreteRoot <- function(fn, grid, increasing = TRUE, check = TRUE,
     ncv <- TRUE
     iSet <- 1:n.grid
     factor <- c(-1,1)[increasing+1]
-    
+
 ### ** Check
     if(check){
         value.grid[1] <- fn(grid[1])
         value.grid[n.grid] <- fn(grid[n.grid])
         if(sign(value.grid[1])==value.grid[n.grid]){
-            list(par = NA,
-                 value = NA,
-                 counts = 2,
-                 cv = 1,
-                 message = "Cannot find a solution because the function does not change sign \n")
+            return(list(par = NA,
+                        value = NA,
+                        counts = 0,
+                        cv = 1,
+                        message = "Cannot find a solution because the function does not change sign \n"))
+        }
+        if(increasing && value.grid[1] > value.grid[n.grid]){
+            return(list(par = NA,
+                        value = NA,
+                        counts = 0,
+                        cv = 1,
+                        message = "Cannot find a solution - argument \'increasing\' does not match the variations of the functions \n"))
+        }
+        if(!increasing && value.grid[1] < value.grid[n.grid]){
+            return(list(par = NA,
+                        value = NA,
+                        counts = 0,
+                        cv = 1,
+                        message = "Cannot find a solution - argument \'increasing\' does not match the variations of the functions \n"))
         }
     }
 
@@ -105,7 +147,7 @@ discreteRoot <- function(fn, grid, increasing = TRUE, check = TRUE,
                 value = value,
                 ## grid = setNames(value.grid,grid),
                 counts = iter,
-                cv = ncv,
+                cv = !ncv,
                 message = NULL))
 }
 
@@ -115,6 +157,7 @@ discreteRoot <- function(fn, grid, increasing = TRUE, check = TRUE,
 #' using a bootstrap sample of its distribution under H1.
 #' 
 #' @param x [numeric vector] a vector of bootstrap estimates of the statistic.
+#' @param null [numeric] value of the statistic under the null hypothesis.
 #' @param estimate [numeric] the estimated statistic.
 #' @param FUN.ci [function] the function used to compute the confidence interval.
 #' Must take \code{x}, \code{alternative}, \code{conf.level} and \code{sign.estimate} as arguments
@@ -143,91 +186,98 @@ discreteRoot <- function(fn, grid, increasing = TRUE, check = TRUE,
 #' 
 #' #### no effect ####
 #' x <- rnorm(1e3) 
-#' boot2pvalue(x, estimate = mean(x), alternative = "two.sided")
+#' boot2pvalue(x, null = 0, estimate = mean(x), alternative = "two.sided")
 #' ## expected value of 1
-#' boot2pvalue(x, estimate = mean(x), alternative = "greater")
+#' boot2pvalue(x, null = 0, estimate = mean(x), alternative = "greater")
 #' ## expected value of 0.5
-#' boot2pvalue(x, estimate = mean(x), alternative = "less")
+#' boot2pvalue(x, null = 0, estimate = mean(x), alternative = "less")
 #' ## expected value of 0.5
 #' 
 #' #### positive effect ####
 #' x <- rnorm(1e3, mean = 1) 
-#' boot2pvalue(x, estimate = 1, alternative = "two.sided")
+#' boot2pvalue(x, null = 0, estimate = 1, alternative = "two.sided")
 #' ## expected value of 0.32 = 2*pnorm(q = 0, mean = -1) = 2*mean(x<=0)
-#' boot2pvalue(x, estimate = 1, alternative = "greater")  
+#' boot2pvalue(x, null = 0, estimate = 1, alternative = "greater")  
 #' ## expected value of 0.16 = pnorm(q = 0, mean = 1) = mean(x<=0)
-#' boot2pvalue(x, estimate = 1, alternative = "less")
+#' boot2pvalue(x, null = 0, estimate = 1, alternative = "less")
 #' ## expected value of 0.84 = 1-pnorm(q = 0, mean = 1) = mean(x>=0)
 #'
 #' #### negative effect ####
 #' x <- rnorm(1e3, mean = -1) 
-#' boot2pvalue(x, estimate = -1, alternative = "two.sided") 
+#' boot2pvalue(x, null = 0, estimate = -1, alternative = "two.sided") 
 #' ## expected value of 0.32 = 2*(1-pnorm(q = 0, mean = -1)) = 2*mean(x>=0)
-#' boot2pvalue(x, estimate = -1, alternative = "greater")
+#' boot2pvalue(x, null = 0, estimate = -1, alternative = "greater")
 #' ## expected value of 0.84 = pnorm(q = 0, mean = -1) = mean(x<=0)
-#' boot2pvalue(x, estimate = -1, alternative = "less") # pnorm(q = 0, mean = -1)
+#' boot2pvalue(x, null = 0, estimate = -1, alternative = "less") # pnorm(q = 0, mean = -1)
 #' ## expected value of 0.16 = 1-pnorm(q = 0, mean = -1) = mean(x>=0)
 
 ## * boot2pvalue
 #' @rdname boot2pvalue
 #' @export
-boot2pvalue <- function(x, estimate = NULL, alternative = "two.sided",
+boot2pvalue <- function(x, null, estimate = NULL, alternative = "two.sided",
                         FUN.ci = quantileCI,
                         tol = .Machine$double.eps ^ 0.5){ 
   
-    x <- na.omit(x)
-    n.x <- length(x)
+    x.boot <- na.omit(x)
+    n.boot <- length(x.boot)
+    statistic.boot <- mean(x.boot) - null
     if(is.null(estimate)){
-        estimate <- mean(x)
-    }        
-    sign.estimate <- estimate>=0
-    if(sign(mean(x))!=sign(estimate)){
-        warning("the estimate and the average bootstrap estimate do not have same sign \n")
+        statistic <- statistic.boot
+    }else{
+        statistic <- estimate - null
+        if(sign(statistic.boot)!=sign(statistic)){
+            warning("the estimate and the average bootstrap estimate do not have same sign \n")
+        }
     }
+    sign.statistic <- statistic>=0
 
-    if(abs(estimate) < tol){ ## too small test statistic
-        p.value <- 0
-    }else if(n.x < 10){ ## too few bootstrap samples
+    if(abs(statistic) < tol){ ## too small test statistic
+        p.value <- 1
+    }else if(n.boot < 10){ ## too few bootstrap samples
         p.value <- as.numeric(NA)
-    }else if(all(x>0)){ ## clear p.value
+    }else if(all(x.boot>null)){ ## clear p.value
         p.value <- switch(alternative,
                           "two.sided" = 0,
                           "less" = 1,
                           "greater" = 0)
-    } else if(all(x<0)){ ## clear p.value 
+    } else if(all(x.boot<null)){ ## clear p.value 
         p.value <- switch(alternative,
                           "two.sided" = 0,
                           "less" = 0,
                           "greater" = 1)
-    }else if(all(x==0)){ ## cannot compute quantiles 
-        p.value <- switch(alternative,
-                          "two.sided" = 0,
-                          "less" = 0,
-                          "greater" = 0)
     }else{ ## need search to obtain p.value
         ## when the p.value=1-coverage increases, does the quantile increases?
-        monotone <- switch(alternative,
-                           "two.sided" = sign.estimate,
-                           "less" = FALSE,
-                           "greater" = TRUE)
+        increasing <- switch(alternative,
+                             "two.sided" = sign.statistic,
+                             "less" = FALSE,
+                             "greater" = TRUE)
         ## grid of confidence level
-        grid <- seq(0,by=1/n.x,length.out=n.x)
-        ## search for critical confidence level
+        grid <- seq(0,by=1/n.boot,length.out=n.boot)
         
+        ## search for critical confidence level
         resSearch <- discreteRoot(fn = function(p.value){
-            CI <- do.call(FUN.ci, list(x,
-                                       p.value = p.value,
-                                       alternative = alternative,
-                                       sign.estimate = sign.estimate))
-            return(CI[1])
+            CI <- FUN.ci(x = x.boot,
+                         p.value = p.value,
+                         alternative = alternative,
+                         sign.estimate = sign.statistic)
+            return(CI[1]-null)
         },
         grid = grid,
-        increasing = monotone,
+        increasing = increasing,
         check = FALSE)
 
-        if(is.na(resSearch$value) || length(resSearch$value)==0 || abs(resSearch$value)>10/n.x){
+        ##
+        if(resSearch$cv == FALSE || is.na(resSearch$value) || length(resSearch$value)==0 || abs(resSearch$value)>10/n.boot){
+
             warning("incorrect convergence of the algorithm finding the critical quantile \n",
                     "p-value may not be reliable \n")
+
+            ## allCI <- lapply(grid, FUN.ci, x = x.boot,
+            ##                 alternative = alternative,
+            ##                 sign.estimate = sign.statistic)
+            ## M.allCI <- do.call(rbind,allCI)
+            ## colnames(M.allCI) <- c("lower","upper")
+            ## matplot(M.allCI)
         }
         p.value <- resSearch$par
     }
