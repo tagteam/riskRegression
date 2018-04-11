@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Oct 23 2016 (08:53) 
 ## Version: 
-## last-updated: apr 11 2018 (19:44) 
+## last-updated: apr 11 2018 (21:39) 
 ##           By: Brice Ozenne
-##     Update #: 641
+##     Update #: 642
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -271,7 +271,7 @@ ate <- function(object,
   .=.I <- NULL
   diff.se=ratio.se=.GRP=lower=upper=diff.lower=diff.upper=diff.p.value=ratio.lower=ratio.upper=ratio.p.value <- NULL
    
-    handler <- match.arg(handler, c("foreach","mclapply"))
+    handler <- match.arg(handler, c("foreach","mclapply","snow","parallel"))
                                         # {{{ checking for time-dependent covariates (left-truncation)
     TD <- switch(class(object)[[1]],"coxph"=(attr(object$y,"type")=="counting"),
                  "CauseSpecificCox"=(attr(object$models[[1]]$y,"type")=="counting"),FALSE)
