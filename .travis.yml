@@ -1,11 +1,12 @@
 # R for travis: see documentation at https://docs.travis-ci.com/user/languages/r
 
 language: R
+r:
+ - release 
+ - devel
 sudo: required
 r_check_args: "--as-cran"
 cache: packages
 warnings_are_errors: true
 
-# r_github_packages:
-# - cran/survival
  
