@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Oct 23 2016 (08:53) 
 ## Version: 
-## last-updated: apr 12 2018 (12:28) 
+## last-updated: apr 12 2018 (13:13) 
 ##           By: Brice Ozenne
-##     Update #: 662
+##     Update #: 664
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -413,7 +413,7 @@ ate <- function(object,
 
             bootseeds <- resBoot$bootseeds
             resBoot <- resBoot$boot
-
+            
             suppressWarnings(
                 res.CIboot <- calcCIboot(boot = resBoot,
                                          meanRisk = pointEstimate$meanRisk,

@@ -264,10 +264,15 @@ Score(markers,formula=Y~1,data=testdat,metrics=c("auc"))
 
 # cross-validation
 \dontrun{
+learndat=sampleData(400,outcome="binary")
 lr1a = glm(Y~X6,data=learndat,family=binomial)
 lr2a = glm(Y~X7+X8+X9,data=learndat,family=binomial)
-Score(list("LR1"=lr1a,"LR2"=lr2a),formula=Y~1,data=learndat,split.method="bootcv",B=3)
-Score(list("LR1"=lr1a,"LR2"=lr2a),formula=Y~1,data=learndat,split.method="loob",B=100)
+## bootstrap cross-validation
+x1=Score(list("LR1"=lr1a,"LR2"=lr2a),formula=Y~1,data=learndat,split.method="bootcv",B=100)
+x1
+## leave-one-out and leave-pair-out bootstrap
+x2=Score(list("LR1"=lr1a,"LR2"=lr2a),formula=Y~1,data=learndat,split.method="loob",B=100,plots="calibration")
+x2
 }
 # survival outcome
 
@@ -296,9 +301,18 @@ Score(list("Cox(X1+X2+X7+X9)"=cox1,"Cox(X3+X5+X6)"=cox2),
 
 # crossvalidation models in traindata
 \dontrun{
-Score(list("Cox(X1+X2+X7+X9)"=cox1,"Cox(X3+X5+X6)"=cox2),
+library(survival)
+set.seed(18)
+trainSurv <- sampleData(400,outcome="survival")
+cox1 = coxph(Surv(time,event)~X1+X2+X7+X9,data=trainSurv, y=TRUE, x = TRUE)
+cox2 = coxph(Surv(time,event)~X3+X5+X6,data=trainSurv, y=TRUE, x = TRUE)
+x1 = Score(list("Cox(X1+X2+X7+X9)"=cox1,"Cox(X3+X5+X6)"=cox2),
       formula=Surv(time,event)~1,data=trainSurv,conf.int=TRUE,times=c(5,8),
-      split.method="bootcv",B=3)
+      split.method="loob",B=100,plots="calibration")
+
+x2= Score(list("Cox(X1+X2+X7+X9)"=cox1,"Cox(X3+X5+X6)"=cox2),
+      formula=Surv(time,event)~1,data=trainSurv,conf.int=TRUE,times=c(5,8),
+      split.method="bootcv",B=100)
 }
 
 # restrict number of comparisons
