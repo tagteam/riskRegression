@@ -221,7 +221,9 @@
 ##' x1=Score(list("LR1"=lr1a,"LR2"=lr2a),formula=Y~1,data=learndat,split.method="bootcv",B=100)
 ##' x1
 ##' ## leave-one-out and leave-pair-out bootstrap
-##' x2=Score(list("LR1"=lr1a,"LR2"=lr2a),formula=Y~1,data=learndat,split.method="loob",B=100,plots="calibration")
+##' x2=Score(list("LR1"=lr1a,"LR2"=lr2a),formula=Y~1,data=learndat,
+##'               split.method="loob",
+##'               B=100,plots="calibration")
 ##' x2
 ##'}
 ##' # survival outcome
@@ -1927,11 +1929,11 @@ AUC.survival <- function(DT,MC,se.fit,conservative,cens.model,keep.vcov=FALSE,mu
         data.table::setkey(aucDT,model,times)
         aucDT <- aucDT[score]
         if (keep.vcov){
-            output <- c(output,list(vcov=getVcov(aucDT,"IF.AUC",times=TRUE)))
+            output <- c(output,vcov=getVcov(aucDT,"IF.AUC",times=TRUE))
         }
-    }else{
-        output <- c(list(score=score),output)
     }
+    ## add score to object
+    output <- c(list(score=score),output)
     if (length(dolist)>0){
         if (se.fit==TRUE){
             contrasts.AUC <- aucDT[,getComparisons(data.table(x=AUC,IF=IF.AUC,model=model),
@@ -2014,9 +2016,9 @@ AUC.competing.risks <- function(DT,MC,se.fit,conservative,cens.model,keep.vcov=F
         if (keep.vcov){
             output <- c(output,list(vcov=getVcov(aucDT,"IF.AUC",times=TRUE)))
         }
-    }else{
-        output <- c(list(score=score),output)
     }
+    ## add score to object
+    output <- c(list(score=score),output)
     if (length(dolist)>0){
         if (se.fit==TRUE){
             contrasts.AUC <- aucDT[,getComparisons(data.table(x=AUC,IF=IF.AUC,model=model),

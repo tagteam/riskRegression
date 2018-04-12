@@ -271,7 +271,9 @@ lr2a = glm(Y~X7+X8+X9,data=learndat,family=binomial)
 x1=Score(list("LR1"=lr1a,"LR2"=lr2a),formula=Y~1,data=learndat,split.method="bootcv",B=100)
 x1
 ## leave-one-out and leave-pair-out bootstrap
-x2=Score(list("LR1"=lr1a,"LR2"=lr2a),formula=Y~1,data=learndat,split.method="loob",B=100,plots="calibration")
+x2=Score(list("LR1"=lr1a,"LR2"=lr2a),formula=Y~1,data=learndat,
+              split.method="loob",
+              B=100,plots="calibration")
 x2
 }
 # survival outcome
