@@ -4,44 +4,77 @@ library(survival)
 require(rms)
 require(survival)
 context("Ate checks")
-# {{{ header with data  
+                                        # {{{ header with data  
 set.seed(10)
 n <- 5e1
 dtS <- sampleData(n,outcome="survival")
 dtS$time <- round(dtS$time,1)
 dtS$X1 <- factor(rbinom(n, prob = c(0.3,0.4) , size = 2), labels = paste0("T",0:2))
 handler <- if (Sys.info()["sysname"] == "Windows") "foreach" else "mclapply"
-verbose=FALSE
-# }}}
-
-# {{{ G formula: coxph, cph, sequential, one and several time points
+verbose <- FALSE
+                                        # }}}
+                                        # {{{ G formula: coxph, cph, sequential, one and several time points
 test_that("G formula: coxph, cph, bootstrap sequential, one and several time points",{
     fit.cph <- cph(Surv(time,event)~ X1+X2,data=dtS,y=TRUE,x=TRUE)
-    ate.1a <- ate(fit.cph,data = dtS, treatment = "X1", contrasts = NULL,seed=3,
-                  times = 1,handler=handler, B = 2, y = TRUE, mc.cores=1,verbose=verbose)
-    ate.1b <- ate(fit.cph, data = dtS, treatment = "X1", contrasts = NULL,seed=3,
+    ate.1a <- ate(fit.cph,data = dtS, treatment = "X1", contrasts = NULL,seed=3, bootci.method = "quantile",
+                  times = 1, handler=handler, B = 2, y = TRUE, mc.cores=1,verbose=verbose)
+    ate.1b <- ate(fit.cph, data = dtS, treatment = "X1", contrasts = NULL,seed=3, bootci.method = "quantile",
                   times = 1:2, B = 2, y = TRUE, mc.cores=1,handler=handler,verbose=verbose)
     fit.coxph <- coxph(Surv(time,event)~ X1+X2,data=dtS,y=TRUE,x=TRUE)
-    ate.2a <- ate(fit.coxph,data = dtS, treatment = "X1", contrasts = NULL,seed=3,
+    ate.2a <- ate(fit.coxph,data = dtS, treatment = "X1", contrasts = NULL,seed=3, bootci.method = "quantile",
                   times = 1, B = 2, y = TRUE, mc.cores=1,handler=handler,verbose=verbose)
-    ate.2b <- ate(fit.coxph, data = dtS, treatment = "X1", contrasts = NULL,seed=3,
+    ate.2b <- ate(fit.coxph, data = dtS, treatment = "X1", contrasts = NULL,seed=3, bootci.method = "quantile",
                   times = 1:2, B = 2, y = TRUE, mc.cores=1,handler=handler,verbose=verbose)
+
     attr(ate.2a,"class") <- "NULL"
     attr(ate.2b,"class") <- "NULL"
     attr(ate.1a,"class") <- "NULL"
     attr(ate.1b,"class") <- "NULL"
     expect_equal(ate.1a,ate.2a,tolerance = .00001)
     expect_equal(ate.1b,ate.2b,tolerance = .00001)
+
+    ## quantile(ate.1a$boot$t[,1], 0.025) 
+    expect_equal(ate.1a$meanRisk$meanRiskBoot,
+                 c(0.04778180, 0.03383714, 0.03132013), tol = 1e-6)
+    expect_equal(ate.1a$meanRisk$se,
+                 c(0.02308268, 0.03008728, 0.02586185), tol = 1e-6)
+    expect_equal(ate.1a$meanRisk$lower,
+                 c(0.03227598, 0.01362597, 0.01394739), tol = 1e-6)
+    expect_equal(ate.1a$meanRisk$upper,
+                 c(0.06328763, 0.05404831, 0.04869286), tol = 1e-6)
+    
+    expect_equal(ate.1a$riskComparison$diffMeanBoot,
+                 c(0.013944664, 0.016461677, 0.002517013), tol = 1e-6)
+    expect_equal(ate.1a$riskComparison$diff.se,
+                 c(0.007004595, 0.002779170, 0.004225425), tol = 1e-6)
+    expect_equal(ate.1a$riskComparison$diff.lower,
+                 c(0.0092393173, 0.0145947658, -0.0003214227), tol = 1e-6)
+    expect_equal(ate.1a$riskComparison$diff.upper,
+                 c(0.018650011, 0.018328589, 0.005355449), tol = 1e-6)
+    ## expect_equal(ate.1a$riskComparison$diff.p.value,
+    ## c(4.650420e-02, 3.156692e-09, 5.513872e-01), tol = 1e-6)
+  
+    expect_equal(ate.1a$riskComparison$ratioMeanBoot,
+                 c(1.833739, 1.853041, 1.037422), tol = 1e-6)
+    expect_equal(ate.1a$riskComparison$ratio.se,
+                 c(0.9483519, 0.7931128, 0.1040106), tol = 1e-6)
+    expect_equal(ate.1a$riskComparison$ratio.lower,
+                 c(1.1966818, 1.3202665, 0.9675527), tol = 1e-6)
+    expect_equal(ate.1a$riskComparison$ratio.upper,
+                 c(2.470795, 2.385816, 1.107291), tol = 1e-6)
+    ## expect_equal(ate.1a$riskComparison$ratio.p.value,
+                 ## c(5.316164e-02, 1.946959e-02, 1.976976e-23), tol = 1e-6)
+
 })
-# }}}
-# {{{ Cox model - fully stratified
+                                        # }}}
+                                        # {{{ Cox model - fully stratified
 test_that("G formula: coxph, cph, fully stratified",{
     fit <- cph(formula = Surv(time,event)~ strat(X1),data=dtS,y=TRUE,x=TRUE)
-    ate(fit, data = dtS, treatment = "X1", contrasts = NULL,
-        times = 1:2, B = 2, y = TRUE, mc.cores=1,handler=handler,verbose=verbose)
-    # one time point
+    ate2 <- ate(fit, data = dtS, treatment = "X1", contrasts = NULL, seed = 3,
+                times = 1:2, B = 2, y = TRUE, mc.cores=1,handler=handler,verbose=verbose)
+    ## one time point
     fit <- coxph(Surv(time,event)~ strata(X1),data=dtS,y=TRUE,x=TRUE)
-    ate(fit,data = dtS, treatment = "X1", contrasts = NULL,
+    ate1 <- ate(fit,data = dtS, treatment = "X1", contrasts = NULL, seed = 3,
         times = 1, B = 2, y = TRUE, mc.cores=1,handler=handler,verbose=verbose)
 })
 # }}}
@@ -118,12 +151,12 @@ if (FALSE)
         expect_equal(diffATE.upper,
                      ateFit$riskComparison[Treatment.A == "T0" & Treatment.B == "T1",diff.upper])
 
-ratioATE <- ATE[["T0"]]/ATE[["T1"]]
+        ratioATE <- ATE[["T0"]]/ATE[["T1"]]
 
-ratioATE.iid <- rowScale_cpp(ATE.iid[["T0"]],ATE[["T1"]])-rowMultiply_cpp(ATE.iid[["T1"]], ATE[["T0"]]/ATE[["T1"]]^2)
-ratioATE.se <- sqrt(apply(ratioATE.iid^2, 2, sum))
-ratioATE.lower <- ratioATE + qnorm(0.025) * ratioATE.se
-ratioATE.upper <- ratioATE + qnorm(0.975) * ratioATE.se
+        ratioATE.iid <- rowScale_cpp(ATE.iid[["T0"]],ATE[["T1"]])-rowMultiply_cpp(ATE.iid[["T1"]], ATE[["T0"]]/ATE[["T1"]]^2)
+        ratioATE.se <- sqrt(apply(ratioATE.iid^2, 2, sum))
+        ratioATE.lower <- ratioATE + qnorm(0.025) * ratioATE.se
+        ratioATE.upper <- ratioATE + qnorm(0.975) * ratioATE.se
 
         expect_equal(ratioATE.lower,
                      ateFit$riskComparison[Treatment.A == "T0" & Treatment.B == "T1",ratio.lower])
@@ -139,9 +172,11 @@ test_that("CSC model bootstrap",{
     fit=CSC(formula = Hist(time,event)~ X1+X2, data = df,cause=1)
     res <- ate(fit, data = df, treatment = "X1", contrasts = NULL,
                times = 7, cause = 1, B = 0, mc.cores=1,handler=handler,verbose=verbose)
+    Sres <- print(res, trace = FALSE)
     fit=CSC(formula = Hist(time,event)~ X1+X2, data = df,cause=1)
     res <- ate(fit,data = df,  treatment = "X1", contrasts = NULL,
-               times = 7, cause = 1, B = 1, mc.cores=1,handler=handler,verbose=verbose)
+               times = 7, cause = 1, B = 2, mc.cores=1,handler=handler,verbose=verbose)
+    Sres <- print(res, trace = FALSE)
 })
 # }}}
 # {{{ parallel computation
