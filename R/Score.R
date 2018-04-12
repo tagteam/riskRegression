@@ -1929,7 +1929,7 @@ AUC.survival <- function(DT,MC,se.fit,conservative,cens.model,keep.vcov=FALSE,mu
         data.table::setkey(aucDT,model,times)
         aucDT <- aucDT[score]
         if (keep.vcov){
-            output <- c(output,vcov=getVcov(aucDT,"IF.AUC",times=TRUE))
+            output <- c(output,list(vcov=getVcov(aucDT,"IF.AUC",times=TRUE)))
         }
     }
     ## add score to object

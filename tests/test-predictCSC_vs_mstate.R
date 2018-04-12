@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: maj 18 2017 (09:23) 
 ## Version: 
-## last-updated: Feb 19 2018 (18:22) 
+## last-updated: Apr 12 2018 (20:46) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 143
+##     Update #: 144
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -14,7 +14,7 @@
 #----------------------------------------------------------------------
 ## 
 ### Code:
-
+if{FALSE}{
 library(riskRegression)
 library(testthat)
 library(mstate)
@@ -869,6 +869,6 @@ res <- predict(cfit1,newdata=Melanoma[1,,drop=FALSE],cause=1,
                times=4,se=TRUE,band=TRUE)
 
 # }}}
-
+}
 #----------------------------------------------------------------------
 ### test-predictCSC_vs_mstate.R ends here
