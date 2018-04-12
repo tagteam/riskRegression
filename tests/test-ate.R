@@ -14,7 +14,6 @@ handler <- if (Sys.info()["sysname"] == "Windows") "foreach" else "mclapply"
 verbose <- FALSE
                                         # }}}
                                         # {{{ G formula: coxph, cph, sequential, one and several time points
->>>>>>> 5f9a9c815a8f17604c7f041eaceb6b1ec8e2475a
 test_that("G formula: coxph, cph, bootstrap sequential, one and several time points",{
     fit.cph <- cph(Surv(time,event)~ X1+X2,data=dtS,y=TRUE,x=TRUE)
     ate.1a <- ate(fit.cph,data = dtS, treatment = "X1", contrasts = NULL,seed=3, bootci.method = "quantile",
