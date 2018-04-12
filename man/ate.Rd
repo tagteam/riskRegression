@@ -6,8 +6,9 @@
 \usage{
 ate(object, data, formula, treatment, contrasts = NULL, times, cause,
   landmark, conf.level = 0.95, se = TRUE, band = FALSE, B = 0,
-  nsim.band = ifelse(band, 1000, 0), seed, handler = "foreach",
-  mc.cores = 1, verbose = TRUE, store.iid = "full", ...)
+  bootci.method = "perc", nsim.band = ifelse(band, 1000, 0), seed,
+  handler = "foreach", mc.cores = 1, verbose = TRUE, store.iid = "full",
+  ...)
 }
 \arguments{
 \item{object}{outcome model which describes how event risk depends
@@ -42,6 +43,10 @@ it is assumed that that the covariates do not change between landmark and landma
 confidence intervals. If it equals 0, then Wald-type confidence
 intervals are computed.  They rely on the standard error
 estimated using the influence function of the estimator.}
+
+\item{bootci.method}{Character. Method for constructing bootstrap confidence intervals.
+Either "perc" (the default), "norm", "basic", "stud", or "bca".
+Argument passed to \code{boot::boot.ci}.}
 
 \item{nsim.band}{the number of simulations used to compute the
 quantiles for the confidence bands.}
@@ -153,12 +158,12 @@ dtS[, X2 := as.numeric(X2)]
 fit <- glm(formula = event5 ~ X1+X2, data=dtS, family = "binomial")
 
 ## compute the ATE at times 5 using X1 as the treatment variable
-\dontrun{
 ## only punctual estimate (argument se = FALSE)
 ateFit1a <- ate(fit, data = dtS, treatment = "X1", times = 5,
                se = FALSE)
 ateFit1a
 
+\dontrun{
 ## standard error / confidence intervals computed using the influence function
 ateFit1b <- ate(fit, data = dtS, treatment = "X1", times = 5,
                se = TRUE, B = 0)

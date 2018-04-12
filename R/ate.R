@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Oct 23 2016 (08:53) 
 ## Version: 
-## last-updated: apr 11 2018 (21:39) 
+## last-updated: apr 12 2018 (12:28) 
 ##           By: Brice Ozenne
-##     Update #: 642
+##     Update #: 662
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -39,6 +39,9 @@
 #'     confidence intervals. If it equals 0, then Wald-type confidence
 #'     intervals are computed.  They rely on the standard error
 #'     estimated using the influence function of the estimator.
+#' @param bootci.method Character. Method for constructing bootstrap confidence intervals.
+#' Either "perc" (the default), "norm", "basic", "stud", or "bca".
+#' Argument passed to \code{boot::boot.ci}.
 #' @param nsim.band the number of simulations used to compute the
 #'     quantiles for the confidence bands.
 #' @param seed An integer used to generate seeds for bootstrap and to
@@ -141,12 +144,12 @@
 #' fit <- glm(formula = event5 ~ X1+X2, data=dtS, family = "binomial")
 #' 
 #' ## compute the ATE at times 5 using X1 as the treatment variable
-#' \dontrun{
 #' ## only punctual estimate (argument se = FALSE)
 #' ateFit1a <- ate(fit, data = dtS, treatment = "X1", times = 5,
 #'                se = FALSE)
 #' ateFit1a
-#' 
+#'
+#' \dontrun{
 #' ## standard error / confidence intervals computed using the influence function
 #' ateFit1b <- ate(fit, data = dtS, treatment = "X1", times = 5,
 #'                se = TRUE, B = 0)
@@ -259,6 +262,7 @@ ate <- function(object,
                 se = TRUE,
                 band = FALSE,
                 B = 0,
+                bootci.method = "perc",
                 nsim.band = ifelse(band,1e3,0),
                 seed,
                 handler = "foreach",
@@ -407,10 +411,20 @@ ate <- function(object,
                                    mc.cores = mc.cores,
                                    verbose = verbose)
 
-            mrisks <- pointEstimate$meanRisk
-            crisks <- pointEstimate$riskComparison
             bootseeds <- resBoot$bootseeds
             resBoot <- resBoot$boot
+
+            suppressWarnings(
+                res.CIboot <- calcCIboot(boot = resBoot,
+                                         meanRisk = pointEstimate$meanRisk,
+                                         riskComparison = pointEstimate$riskComparison,
+                                         type = bootci.method,
+                                         conf = conf.level,
+                                         TD = TD)
+            )
+            mrisks <- res.CIboot$meanRisk
+            crisks <- res.CIboot$riskComparison
+            
                                         # }}}
         } else {
                                         # {{{ compute standard error and quantiles via the influence function
@@ -444,13 +458,13 @@ ate <- function(object,
         }
     } else{
         mrisks <- pointEstimate$meanRisk
-        crisks <- pointEstimate$riskComparison
+        crisks <- pointEstimate$riskComparison        
         bootseeds <- NULL
+        resBoot <- NULL
 
                                         # }}}
     }
                                         # {{{ output object
-
     out <- list(meanRisk=mrisks,
                 riskComparison=crisks,
                 treatment=treatment,
@@ -462,11 +476,12 @@ ate <- function(object,
                 band = band,
                 nsim.band = nsim.band,
                 boot = resBoot,
+                bootci.method = bootci.method,
                 seeds=bootseeds,
                 conf.level=conf.level)
   
-        class(out) <- c("ate",class(object))
-        return(out)
+    class(out) <- c("ate",class(object))
+    return(out)
                                         # }}}
 
 }

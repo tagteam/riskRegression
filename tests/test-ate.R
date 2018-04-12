@@ -16,48 +16,52 @@ verbose <- FALSE
                                         # {{{ G formula: coxph, cph, sequential, one and several time points
 test_that("G formula: coxph, cph, bootstrap sequential, one and several time points",{
     fit.cph <- cph(Surv(time,event)~ X1+X2,data=dtS,y=TRUE,x=TRUE)
-    ate.1a <- ate(fit.cph,data = dtS, treatment = "X1", contrasts = NULL,seed=3,
+    ate.1a <- ate(fit.cph,data = dtS, treatment = "X1", contrasts = NULL,seed=3, bootci.method = "quantile",
                   times = 1, handler=handler, B = 2, y = TRUE, mc.cores=1,verbose=verbose)
-    ate.1b <- ate(fit.cph, data = dtS, treatment = "X1", contrasts = NULL,seed=3,
+    ate.1b <- ate(fit.cph, data = dtS, treatment = "X1", contrasts = NULL,seed=3, bootci.method = "quantile",
                   times = 1:2, B = 2, y = TRUE, mc.cores=1,handler=handler,verbose=verbose)
     fit.coxph <- coxph(Surv(time,event)~ X1+X2,data=dtS,y=TRUE,x=TRUE)
-    ate.2a <- ate(fit.coxph,data = dtS, treatment = "X1", contrasts = NULL,seed=3,
+    ate.2a <- ate(fit.coxph,data = dtS, treatment = "X1", contrasts = NULL,seed=3, bootci.method = "quantile",
                   times = 1, B = 2, y = TRUE, mc.cores=1,handler=handler,verbose=verbose)
-    ate.2b <- ate(fit.coxph, data = dtS, treatment = "X1", contrasts = NULL,seed=3,
+    ate.2b <- ate(fit.coxph, data = dtS, treatment = "X1", contrasts = NULL,seed=3, bootci.method = "quantile",
                   times = 1:2, B = 2, y = TRUE, mc.cores=1,handler=handler,verbose=verbose)
 
-    ateS.1a <- print(ate.1a, print = FALSE)
-    ateS.2a <- print(ate.2a, print = FALSE)
-    ateS.1b <- print(ate.1b, print = FALSE)
-    ateS.2b <- print(ate.2b, print = FALSE)
+    attr(ate.2a,"class") <- "NULL"
+    attr(ate.2b,"class") <- "NULL"
+    attr(ate.1a,"class") <- "NULL"
+    attr(ate.1b,"class") <- "NULL"
+    expect_equal(ate.1a,ate.2a,tolerance = .00001)
+    expect_equal(ate.1b,ate.2b,tolerance = .00001)
 
-    attr(ateS.2a,"class") <- "NULL"
-    attr(ateS.2b,"class") <- "NULL"
-    attr(ateS.1a,"class") <- "NULL"
-    attr(ateS.1b,"class") <- "NULL"
-    expect_equal(ateS.1a,ateS.2a,tolerance = .00001)
-    expect_equal(ateS.1b,ateS.2b,tolerance = .00001)
-
+    ## quantile(ate.1a$boot$t[,1], 0.025) 
+    expect_equal(ate.1a$meanRisk$meanRiskBoot,
+                 c(0.04778180, 0.03383714, 0.03132013), tol = 1e-6)
+    expect_equal(ate.1a$meanRisk$se,
+                 c(0.02308268, 0.03008728, 0.02586185), tol = 1e-6)
+    expect_equal(ate.1a$meanRisk$lower,
+                 c(0.03227598, 0.01362597, 0.01394739), tol = 1e-6)
+    expect_equal(ate.1a$meanRisk$upper,
+                 c(0.06328763, 0.05404831, 0.04869286), tol = 1e-6)
     
-    expect_equal(ateS.1a$riskComparison$diffMeanBoot,
+    expect_equal(ate.1a$riskComparison$diffMeanBoot,
                  c(0.013944664, 0.016461677, 0.002517013), tol = 1e-6)
-    expect_equal(ateS.1a$riskComparison$diff.se,
+    expect_equal(ate.1a$riskComparison$diff.se,
                  c(0.007004595, 0.002779170, 0.004225425), tol = 1e-6)
-    ## expect_equal(ateS.1a$riskComparison$diff.lower,
-                 ## c(0.0002159096, 0.0110146041, -0.0057646687), tol = 1e-6)
-    ## expect_equal(ateS.1a$riskComparison$diff.upper,
-                 ## c(0.02767342, 0.02190875, 0.01079869), tol = 1e-6)
-    ## expect_equal(ateS.1a$riskComparison$diff.p.value,
-                 ## c(4.650420e-02, 3.156692e-09, 5.513872e-01), tol = 1e-6)
+    expect_equal(ate.1a$riskComparison$diff.lower,
+                 c(0.0092393173, 0.0145947658, -0.0003214227), tol = 1e-6)
+    expect_equal(ate.1a$riskComparison$diff.upper,
+                 c(0.018650011, 0.018328589, 0.005355449), tol = 1e-6)
+    ## expect_equal(ate.1a$riskComparison$diff.p.value,
+    ## c(4.650420e-02, 3.156692e-09, 5.513872e-01), tol = 1e-6)
   
-    expect_equal(ateS.1a$riskComparison$ratioMeanBoot,
+    expect_equal(ate.1a$riskComparison$ratioMeanBoot,
                  c(1.833739, 1.853041, 1.037422), tol = 1e-6)
-    expect_equal(ateS.1a$riskComparison$ratio.se,
+    expect_equal(ate.1a$riskComparison$ratio.se,
                  c(0.9483519, 0.7931128, 0.1040106), tol = 1e-6)
-    ## expect_equal(ate.1a$riskComparison$ratio.lower,
-                 ## c(-0.02499706, 0.29856864, 0.83356492), tol = 1e-6)
-    ## expect_equal(ate.1a$riskComparison$ratio.upper,
-                 ## c(3.692474, 3.407514, 1.241279), tol = 1e-6)
+    expect_equal(ate.1a$riskComparison$ratio.lower,
+                 c(1.1966818, 1.3202665, 0.9675527), tol = 1e-6)
+    expect_equal(ate.1a$riskComparison$ratio.upper,
+                 c(2.470795, 2.385816, 1.107291), tol = 1e-6)
     ## expect_equal(ate.1a$riskComparison$ratio.p.value,
                  ## c(5.316164e-02, 1.946959e-02, 1.976976e-23), tol = 1e-6)
 

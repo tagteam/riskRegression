@@ -4,18 +4,16 @@
 \alias{print.ate}
 \title{Print average treatment effects}
 \usage{
-\method{print}{ate}(x, type = "perc", digits = 3, print = TRUE, ...)
+\method{print}{ate}(x, bootci.method = x$bootci.method, digits = 3, ...)
 }
 \arguments{
 \item{x}{object obtained with function \code{ate}}
 
-\item{type}{Character. Method for constructing bootstrap confidence intervals.
+\item{bootci.method}{Character. Method for constructing bootstrap confidence intervals.
 Either "perc" (the default), "norm", "basic", "stud", or "bca".
 Argument passed to \code{boot::boot.ci}.}
 
 \item{digits}{Number of digits}
-
-\item{print}{should something be displayed in the console?}
 
 \item{...}{passed to print}
 }
