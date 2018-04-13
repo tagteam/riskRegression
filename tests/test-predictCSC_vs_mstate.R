@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: maj 18 2017 (09:23) 
 ## Version: 
-## last-updated: Apr 12 2018 (20:46) 
+## last-updated: Apr 13 2018 (10:03) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 144
+##     Update #: 145
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -14,7 +14,7 @@
 #----------------------------------------------------------------------
 ## 
 ### Code:
-if{FALSE}{
+if(FALSE){
 library(riskRegression)
 library(testthat)
 library(mstate)
