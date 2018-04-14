@@ -443,8 +443,8 @@ theCall <- match.call()
     }
 
     # }}}
-    # -----------------parse other arguments and prepare data---------
-    # {{{ censoring model arguments
+# -----------------parse other arguments and prepare data---------
+# {{{ censoring model arguments
     if (length(grep("^km|^kaplan|^marg",cens.model,ignore.case=TRUE))>0){
         cens.model <- "KaplanMeier"
     } else{
@@ -455,7 +455,7 @@ theCall <- match.call()
         }
     }
     # }}}
-    # {{{ Response
+# {{{ Response
     if (missing(formula)){stop("Argument formula is missing.")}    
     formula.names <- try(all.names(formula),silent=TRUE)
     if (!(formula.names[1]=="~")
@@ -516,7 +516,7 @@ theCall <- match.call()
     if (is.null(cens.type)) cens.type <- "uncensoredData"
     rm(response)
     # }}}
-    # {{{ SplitMethod
+# {{{ SplitMethod
 
     if (!missing(seed)) set.seed(seed)
     split.method <- getSplitMethod(split.method=split.method,B=B,N=N,M=M)
@@ -533,7 +533,7 @@ theCall <- match.call()
         }
     }
     # }}}
-    # {{{ Checking the ability of the elements of object to predict risks
+# {{{ Checking the ability of the elements of object to predict risks
     # {{{ number of models and their labels
     NF <- length(object)
     # }}}
@@ -565,7 +565,7 @@ theCall <- match.call()
         }
     })
     # }}}
-    # {{{ additional arguments for predictRisk methods
+# {{{ additional arguments for predictRisk methods
 
     if (!missing(predictRisk.args)){
         if (!(all(names(predictRisk.args) %in% unlist(object.classes))))
@@ -711,7 +711,7 @@ theCall <- match.call()
                                                times=times,
                                                cens.model=cens.model,
                                                response.type=response.type,
-                                               influence.curve=(se.fit==1L & conservative==0L))
+                                               influence.curve=(se.fit==1L & conservative==0L & split.method$internal.name!="BootCv"))
                 ## if cens.model is marginal then IC is a matrix (ntimes,newdata) 
                 ## if cens.model is Cox then IC is an array (nlearn, ntimes, newdata)
                 ## IC is an array with dimension (nlearn, times, newdata)
@@ -837,7 +837,7 @@ theCall <- match.call()
                                                    times=times,
                                                    cens.model=cens.model,
                                                    response.type=response.type,
-                                                   influence.curve=(se.fit==1L || (se.fit==2L && multi.split.test==1L)))
+                                                   influence.curve=(se.fit==1L & conservative==0L & split.method$internal.name!="BootCv"))
                 } else{
                     if ("outside.ipcw" %in% cens.method){
                         Weights <- testweights
@@ -881,33 +881,35 @@ theCall <- match.call()
         DT
     }
     # }}}
-# }}} 
-# {{{ define function to test performance
-computePerformance <- function(DT,
-                               se.fit,
-                               conservative,
-                               cens.model,
-                               multi.split.test,
-                               keep.residuals,keep.vcov){
-    IPA=Brier=NULL
-    # inherit everything else from parent frame: summary, metrics, plots, alpha, probs, dolist, et
-    out <- vector(mode="list",
-                  length=length(c(summary,metrics,plots)))
-    names(out) <- c(summary,metrics,plots)
-    input <- list(DT=DT,
-                  N=N,
-                  NT=NT,
-                  NF=NF,
-                  alpha=alpha,
-                  se.fit=se.fit,
-                  conservative=conservative,
-                  cens.model=cens.model,
-                  multi.split.test=multi.split.test,
-                  keep.residuals=keep.residuals,
-                  keep.vcov=keep.vcov,
-                  ## DT.residuals=DT.residuals,
-                  dolist=dolist,Q=probs,ROC=FALSE,MC=Weights$IC)
-    # {{{ collect data for calibration plots
+    # }}} 
+    # {{{ define function to test performance
+    computePerformance <- function(DT,
+                                   N,
+                                   se.fit,
+                                   conservative,
+                                   cens.model,
+                                   multi.split.test,
+                                   keep.residuals,
+                                   keep.vcov){
+        IPA=Brier=NULL
+        # inherit everything else from parent frame: summary, metrics, plots, alpha, probs, dolist, et
+        out <- vector(mode="list",
+                      length=length(c(summary,metrics,plots)))
+        names(out) <- c(summary,metrics,plots)
+        input <- list(DT=DT,
+                      N=N,
+                      NT=NT,
+                      NF=NF,
+                      alpha=alpha,
+                      se.fit=se.fit,
+                      conservative=conservative,
+                      cens.model=cens.model,
+                      multi.split.test=multi.split.test,
+                      keep.residuals=keep.residuals,
+                      keep.vcov=keep.vcov,
+                      ## DT.residuals=DT.residuals,
+                      dolist=dolist,Q=probs,ROC=FALSE,MC=Weights$IC)
+        # {{{ collect data for calibration plots
         if ("Calibration" %in% plots){
             if (response.type=="binary" || cens.type=="uncensored")
                 out[["Calibration"]]$plotframe <- DT[model!=0]
@@ -917,55 +919,55 @@ computePerformance <- function(DT,
             out[["Calibration"]]$plotframe[,model:=factor(model,levels=mlevs,mlabels)]
         }
         # }}}
-    if (response.type=="competing.risks") {
-        input <- c(input,list(cause=cause,states=states))
+        if (response.type=="competing.risks") {
+            input <- c(input,list(cause=cause,states=states))
+        }
+        ## make sure that Brier score comes first, so that we can remove the null.model afterwards
+        for (m in sort(metrics,decreasing=TRUE)){
+            if (m=="AUC" && ("ROC" %in% plots)){
+                input <- replace(input, "ROC",TRUE)
+                ## call AUC method
+                out[[m]] <- do.call(paste(m,response.type,sep="."),input)
+                out[["ROC"]]$plotframe <- out[[m]]$ROC
+                out[["ROC"]]$plotframe[,model:=factor(model,levels=mlevs,mlabels)]
+                out[[m]]$ROC <- NULL
+            }else{                
+                input <- replace(input, "ROC",FALSE)
+                ## call Brier or AUC method
+                out[[m]] <- do.call(paste(m,response.type,sep="."),input)
+            }
+            if (!is.null(out[[m]]$score)){
+                out[[m]]$score[,model:=factor(model,levels=mlevs,mlabels)]
+            }
+            ## set model and reference in model comparison results
+            if (!is.null(out[[m]]$contrasts)>0){
+                out[[m]]$contrasts[,model:=factor(model,levels=mlevs,mlabels)]
+                out[[m]]$contrasts[,reference:=factor(reference,levels=mlevs,mlabels)]
+            }
+        }
+        ## summary should be after metrics because IPA/R^2 depends on Brier score
+        if (ipa){
+            if (response.type=="binary")
+                out[["Brier"]][["score"]][,IPA:=1-Brier/Brier[model=="Null model"]]
+            else
+                out[["Brier"]][["score"]][,IPA:=1-Brier/Brier[model=="Null model"],by=times]
+        }
+        for (s in summary){
+            if (s=="risks") {
+                out[[s]] <- list(score=copy(input$DT),contrasts=NULL)
+            } else{
+                out[[s]] <- do.call(paste(s,response.type,sep="."),input)
+            }
+            if (NROW(out[[s]]$contrasts)>0){
+                out[[s]]$score[,model:=factor(model,levels=mlevs,mlabels)]
+            }
+            if (NROW(out[[s]]$contrasts)>0){
+                out[[s]]$contrasts[,model:=factor(model,levels=mlevs,mlabels)]
+                out[[s]]$contrasts[,reference:=factor(reference,levels=mlevs,mlabels)]
+            }
+        }
+        out
     }
-    ## make sure that Brier score comes first, so that we can remove the null.model afterwards
-    for (m in sort(metrics,decreasing=TRUE)){
-        if (m=="AUC" && ("ROC" %in% plots)){
-            input <- replace(input, "ROC",TRUE)
-            ## call AUC method
-            out[[m]] <- do.call(paste(m,response.type,sep="."),input)
-            out[["ROC"]]$plotframe <- out[[m]]$ROC
-            out[["ROC"]]$plotframe[,model:=factor(model,levels=mlevs,mlabels)]
-            out[[m]]$ROC <- NULL
-        }else{                
-            input <- replace(input, "ROC",FALSE)
-            ## call Brier or AUC method
-            out[[m]] <- do.call(paste(m,response.type,sep="."),input)
-        }
-        if (!is.null(out[[m]]$score)){
-            out[[m]]$score[,model:=factor(model,levels=mlevs,mlabels)]
-        }
-        ## set model and reference in model comparison results
-        if (!is.null(out[[m]]$contrasts)>0){
-            out[[m]]$contrasts[,model:=factor(model,levels=mlevs,mlabels)]
-            out[[m]]$contrasts[,reference:=factor(reference,levels=mlevs,mlabels)]
-        }
-    }
-    ## summary should be after metrics because IPA/R^2 depends on Brier score
-    if (ipa){
-        if (response.type=="binary")
-            out[["Brier"]][["score"]][,IPA:=1-Brier/Brier[model=="Null model"]]
-        else
-            out[["Brier"]][["score"]][,IPA:=1-Brier/Brier[model=="Null model"],by=times]
-    }
-    for (s in summary){
-        if (s=="risks") {
-            out[[s]] <- list(score=copy(input$DT),contrasts=NULL)
-        } else{
-            out[[s]] <- do.call(paste(s,response.type,sep="."),input)
-        }
-        if (NROW(out[[s]]$contrasts)>0){
-            out[[s]]$score[,model:=factor(model,levels=mlevs,mlabels)]
-        }
-        if (NROW(out[[s]]$contrasts)>0){
-            out[[s]]$contrasts[,model:=factor(model,levels=mlevs,mlabels)]
-            out[[s]]$contrasts[,reference:=factor(reference,levels=mlevs,mlabels)]
-        }
-    }
-    out
-}
 
     # }}}
 # -----------------apparent nosplit performance---------------------
@@ -984,65 +986,69 @@ computePerformance <- function(DT,
             missing.predictions <- "None"
         }
         noSplit <- computePerformance(DT,
+                                      N=N,
                                       se.fit=se.fit,
                                       conservative=conservative,
                                       cens.model,
                                       multi.split.test=multi.split.test,
-                                      keep.residuals=keep.residuals,keep.vcov=keep.vcov)
+                                      keep.residuals=keep.residuals,
+                                      keep.vcov=keep.vcov)
         if (debug) message("computed apparent performance")
     }
 
     # }}}
-    # -----------------crossvalidation performance---------------------
-    # {{{ 
-    if (split.method$name%in%c("BootCv","LeaveOneOutBoot")){
-        if (missing(trainseeds)||is.null(trainseeds)){
-            if (!missing(seed)) set.seed(seed)
-            trainseeds <- sample(1:1000000,size=B,replace=FALSE)
-        }
-        DT.B <- rbindlist(lapply(1:B,function(b){
-            ## foreach (b=1:B) %dopar%{
-            traindata=data[split.method$index[,b]]
-            ## setkey(traindata,ID)
-            testids <- (match(1:N,unique(split.method$index[,b]),nomatch=0)==0)
-            ## NOTE: subset.data.table preserves order
-            testdata <- subset(data,testids)
-            if (cens.type=="rightCensored"){
-                testweights <- Weights
-                testweights$IPCW.subject.times <- subset(testweights$IPCW.subject.times,testids)
-                if (Weights$dim>0){
-                    testweights$IPCW.times <- subset(testweights$IPCW.times,testids)
-                }
-            } else {
-                testweights <- NULL
+# -----------------crossvalidation performance---------------------
+# {{{
+# {{{ bootstrap re-fitting
+if (split.method$name%in%c("BootCv","LeaveOneOutBoot")){
+    if (missing(trainseeds)||is.null(trainseeds)){
+        if (!missing(seed)) set.seed(seed)
+        trainseeds <- sample(1:1000000,size=B,replace=FALSE)
+    }
+    DT.B <- rbindlist(lapply(1:B,function(b){
+        ## foreach (b=1:B) %dopar%{
+        traindata=data[split.method$index[,b]]
+        ## setkey(traindata,ID)
+        testids <- (match(1:N,unique(split.method$index[,b]),nomatch=0)==0)
+        ## NOTE: subset.data.table preserves order
+        testdata <- subset(data,testids)
+        if (cens.type=="rightCensored"){
+            testweights <- Weights
+            testweights$IPCW.subject.times <- subset(testweights$IPCW.subject.times,testids)
+            if (Weights$dim>0){
+                testweights$IPCW.times <- subset(testweights$IPCW.times,testids)
             }
-            DT.b <- getPerformanceData(testdata=testdata,
-                                       testweights=testweights,
-                                       traindata=traindata,
-                                       trainseed=trainseeds[[b]])
-            DT.b[,b:=b]
-            DT.b
-        }))
-        if (any(is.na(DT.B[["risk"]]))){
-            missing.predictions <- DT.B[,list("Missing.values"=sum(is.na(risk))),by=byvars]
-            warning("Missing values in the predicted risk. See `missing.predictions' in output list.")
+        } else {
+            testweights <- NULL
         }
-        ## FIXME: subset influence curves
-        ## case se.fit=1 we need only p-values for multi-split tests
-        ## se.fit.cv <- se.fit*2
-        ## cb <- computePerformance(DT.b,
-        ## se.fit=se.fit.cv,
-        ## multi.split.test=multi.split.test,
-        ## keep.residuals=keep.residuals)
-        ## cb
-        if (debug) message("setup data for cross-validation performance")
-        Response <- data[,c(1:response.dim),with=FALSE]
-        Response[,ID:=data[["ID"]]]
-        setkey(Response,ID)
-        ##  Leave-one-out bootstrap
-        if (split.method$name=="LeaveOneOutBoot"){
-            crossvalPerf <- lapply(metrics,function(m){
-                # {{{ AUC LOOB
+        DT.b <- getPerformanceData(testdata=testdata,
+                                   testweights=testweights,
+                                   traindata=traindata,
+                                   trainseed=trainseeds[[b]])
+        DT.b[,b:=b]
+        DT.b
+    }))
+    if (any(is.na(DT.B[["risk"]]))){
+        missing.predictions <- DT.B[,list("Missing.values"=sum(is.na(risk))),by=byvars]
+        warning("Missing values in the predicted risk. See `missing.predictions' in output list.")
+    }
+    ## FIXME: subset influence curves
+    ## case se.fit=1 we need only p-values for multi-split tests
+    ## se.fit.cv <- se.fit*2
+    ## cb <- computePerformance(DT.b,
+    ## se.fit=se.fit.cv,
+    ## multi.split.test=multi.split.test,
+    ## keep.residuals=keep.residuals)
+    ## cb
+    if (debug) message("setup data for cross-validation performance")
+    Response <- data[,c(1:response.dim),with=FALSE]
+    Response[,ID:=data[["ID"]]]
+    setkey(Response,ID)
+    # }}}
+# {{{ Leave-one-out bootstrap
+    if (split.method$name=="LeaveOneOutBoot"){
+        crossvalPerf <- lapply(metrics,function(m){
+            # {{{ AUC LOOB
                 if (m=="AUC"){
                     if (response.type=="binary")
                         auc.loob <- data.table(model=mlevs)
@@ -1255,7 +1261,7 @@ computePerformance <- function(DT,
                 }
 
                 # }}}
-                # {{{ Brier LOOB
+            # {{{ Brier LOOB
                 if (m=="Brier"){
                     ## sum across bootstrap samples where subject i is out of bag
                     if (cens.type=="rightCensored"){
@@ -1298,7 +1304,7 @@ computePerformance <- function(DT,
                     data.table::setkeyv(DT.B,c(byvars,"ID"))
                     DT.B[,residuals:=residuals/Ib]
                     ## leave-one-out bootstrap estimate 
-                    DT.B[,Brier:=sum(residuals)/N,by=byvars]
+                    DT.B[,Brier:=mean(residuals),by=byvars]
                     ## standard error via influence function
                     if (se.fit==1L){
                         ## influence function when censoring model is known or data are uncensored
@@ -1378,58 +1384,62 @@ computePerformance <- function(DT,
                 }
 
                 # }}}
-            })
-            names(crossvalPerf) <- metrics
-        }else{ ## split.method bootcv
-            # {{{ bootcv
-            crossval <- lapply(1:B,function(j){
-                computePerformance(DT.B[b==j],
-                                   se.fit=FALSE,
-                                   conservative=FALSE,
-                                   cens.model=cens.model,
-                                   multi.split.test=FALSE,
-                                   keep.residuals=FALSE,
-                                   keep.vcov=FALSE)
-            })
-            crossvalPerf <- lapply(metrics,function(m){
-                if (response.type %in% c("survival","competing.risks")){
-                    byvars <- c("model","times")
-                } else{
-                    byvars <- c("model")
-                }
-                ## score
-                if (length(crossval[[1]][[m]]$score)>0){
-                    cv.score <- data.table::rbindlist(lapply(crossval,function(x){x[[m]]$score}))
-                    bootcv.score <- cv.score[,data.table::data.table(mean(.SD[[m]],na.rm=TRUE),
-                                                                     lower=quantile(.SD[[m]],alpha/2,na.rm=TRUE),
-                                                                     upper=quantile(.SD[[m]],(1-alpha/2),na.rm=TRUE)),by=byvars,.SDcols=m]
-                    data.table::setnames(bootcv.score,c(byvars,m,"lower","upper"))
-                }else{
-                    cv.score <- NULL
-                    bootcv.score <- NULL
-                }
-                ## contrasts and multi-split test
-                if (length(crossval[[1]][[m]]$contrasts)>0){
-                    cv.contrasts <- data.table::rbindlist(lapply(crossval,function(x){x[[m]]$contrasts}))
-                    delta.m <- paste0("delta.",m)
-                    bootcv.contrasts <- cv.contrasts[,data.table::data.table(mean(.SD[[delta.m]],na.rm=TRUE),
-                                                                             lower=quantile(.SD[[delta.m]],alpha/2,na.rm=TRUE),
-                                                                             upper=quantile(.SD[[delta.m]],(1-alpha/2),na.rm=TRUE),
-                                                                             p=median(p,na.rm=TRUE)),by=c(byvars,"reference"),.SDcols=delta.m]
-                    data.table::setnames(bootcv.contrasts,"V1",delta.m)
-                }else{ 
-                    cv.contrasts <- NULL
-                    bootcv.contrasts <- NULL
-                }
-                out <- list(score=bootcv.score,contrasts=bootcv.contrasts)
-                if (keep.cv)
-                    out <- c(out,list(cv.score=cv.score,cv.contrasts=cv.contrasts))
-                out
-            })
-            names(crossvalPerf) <- metrics
-        }
+        })
+        names(crossvalPerf) <- metrics
         # }}}
-        # {{{ collect data for calibration plots
+}else{ ## split.method bootcv
+    # {{{ bootcv
+    crossval <- lapply(1:B,function(j){
+        DT.b <- DT.B[b==j]
+        N.b <- length(unique(DT.b[["ID"]]))
+        computePerformance(DT.b,
+                           N=N.b,
+                           se.fit=FALSE,
+                           conservative=FALSE,
+                           cens.model=cens.model,
+                           multi.split.test=FALSE,
+                           keep.residuals=FALSE,
+                           keep.vcov=FALSE)
+    })
+    crossvalPerf <- lapply(metrics,function(m){
+        if (response.type %in% c("survival","competing.risks")){
+            byvars <- c("model","times")
+        } else{
+            byvars <- c("model")
+        }
+        ## score
+        if (length(crossval[[1]][[m]]$score)>0){
+            cv.score <- data.table::rbindlist(lapply(crossval,function(x){x[[m]]$score}))
+            bootcv.score <- cv.score[,data.table::data.table(mean(.SD[[m]],na.rm=TRUE),
+                                                             lower=quantile(.SD[[m]],alpha/2,na.rm=TRUE),
+                                                             upper=quantile(.SD[[m]],(1-alpha/2),na.rm=TRUE)),by=byvars,.SDcols=m]
+            data.table::setnames(bootcv.score,c(byvars,m,"lower","upper"))
+        }else{
+            cv.score <- NULL
+            bootcv.score <- NULL
+        }
+        ## contrasts and multi-split test
+        if (length(crossval[[1]][[m]]$contrasts)>0){
+            cv.contrasts <- data.table::rbindlist(lapply(crossval,function(x){x[[m]]$contrasts}))
+            delta.m <- paste0("delta.",m)
+            bootcv.contrasts <- cv.contrasts[,data.table::data.table(mean(.SD[[delta.m]],na.rm=TRUE),
+                                                                     lower=quantile(.SD[[delta.m]],alpha/2,na.rm=TRUE),
+                                                                     upper=quantile(.SD[[delta.m]],(1-alpha/2),na.rm=TRUE),
+                                                                     p=median(p,na.rm=TRUE)),by=c(byvars,"reference"),.SDcols=delta.m]
+            data.table::setnames(bootcv.contrasts,"V1",delta.m)
+        }else{ 
+            cv.contrasts <- NULL
+            bootcv.contrasts <- NULL
+        }
+        out <- list(score=bootcv.score,contrasts=bootcv.contrasts)
+        if (keep.cv)
+            out <- c(out,list(cv.score=cv.score,cv.contrasts=cv.contrasts))
+        out
+    })
+    names(crossvalPerf) <- metrics
+}
+# }}}
+# {{{ collect data for calibration plots
         if ("Calibration" %in% plots){
             if (keep.residuals && split.method$name=="LeaveOneOutBoot"){
                 crossvalPerf[["Calibration"]]$plotframe <- crossvalPerf$Brier$Residuals[model!=0,]
@@ -1454,10 +1464,10 @@ computePerformance <- function(DT,
                 crossvalPerf[["Calibration"]]$plotframe <- merge(jack,crossvalPerf[["Calibration"]]$plotframe,by=c("ID","times"))
         }
         # }}}
-    }
-    # }}}
-    #------------------output-----------------------------------
-    # {{{ enrich the output object
+}
+# }}}
+#------------------output-----------------------------------
+# {{{ enrich the output object
     
     if (split.method$internal.name=="noplan"){
         if (keep.residuals==TRUE){
