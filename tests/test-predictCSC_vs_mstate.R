@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: maj 18 2017 (09:23) 
 ## Version: 
-## last-updated: Apr 13 2018 (10:03) 
+## last-updated: Apr 16 2018 (07:51) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 145
+##     Update #: 148
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -14,7 +14,6 @@
 #----------------------------------------------------------------------
 ## 
 ### Code:
-if(FALSE){
 library(riskRegression)
 library(testthat)
 library(mstate)
@@ -31,9 +30,10 @@ df1 <- data.frame(time = rep(1:10,2),
 df1$event1 <- as.numeric(df1$event == 1)
 df1$event2 <- as.numeric(df1$event == 2)
 
-dfS <- rbind(cbind(df1, grp = 1, X2 = 0),
-             cbind(rbind(df1,df1),grp = 2, X2 = 0),
-             cbind(df1, grp = 3, X2 = 0)
+set.seed(11)
+dfS <- rbind(cbind(df1, grp = 1, X2 = rbinom(20,1,.4)),
+             cbind(rbind(df1,df1),grp = 2, X2 = rbinom(20,1,.4)),
+             cbind(df1, grp = 3, X2 = rbinom(20,1,.4))
              )
 
 ## distinct events
@@ -869,6 +869,5 @@ res <- predict(cfit1,newdata=Melanoma[1,,drop=FALSE],cause=1,
                times=4,se=TRUE,band=TRUE)
 
 # }}}
-}
 #----------------------------------------------------------------------
 ### test-predictCSC_vs_mstate.R ends here
