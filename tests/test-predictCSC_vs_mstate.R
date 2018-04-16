@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: maj 18 2017 (09:23) 
 ## Version: 
-## last-updated: Apr 16 2018 (09:00) 
-##           By: Thomas Alexander Gerds
-##     Update #: 149
+## last-updated: apr 16 2018 (17:32) 
+##           By: Brice Ozenne
+##     Update #: 157
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -32,7 +32,7 @@ df1$event2 <- as.numeric(df1$event == 2)
 
 set.seed(11)
 dfS <- rbind(cbind(df1, grp = 1, X2 = rbinom(20,1,.4)),
-             cbind(rbind(df1,df1),grp = 2, X2 = rbinom(20,1,.4)),
+             cbind(rbind(df1,df1), grp = 2, X2 = rbinom(20,1,.4)),
              cbind(df1, grp = 3, X2 = rbinom(20,1,.4))
              )
 
@@ -199,28 +199,38 @@ test_that("predict.CSC(1a) - add up to one",{
 })
 # }}}
 
-# {{{ 1b- no risk factor strata
-
-if (FALSE){
+                                        # {{{ 1b- no risk factor strata
 test_that("predict.CSC(1b) - compare to manual estimation",{
-    # don't work:
-    # CSC.exp <- CSC(Hist(time,event) ~ strata(grp), data = dfS)
-    # X2 factive variable
-    CSC.exp <- CSC(Hist(time,event) ~ strata(grp) + X2, data = dfS, method = "breslow")
-    pred.exp <- predict(CSC.exp, times = 1:10, newdata = data.frame(grp = 1:3, X2 = 0), cause = 1, product.limit = FALSE)  
-    pred.exp2 <- predict(CSC.exp, times = 1:10, newdata = data.frame(grp = 1:3, X2 = 0), cause = 1, product.limit = TRUE)  
 
-    CSC.prodlim <- CSC(Hist(time,event) ~ strata(grp) + X2, data = dfS, surv.type = "survival", method = "breslow")
-    pred.prodlim <- predict(CSC.prodlim, times = 1:10, newdata = data.frame(grp = 1:3, X2 = 0), cause = 1, product.limit = TRUE)  
+    CSC.exp <- CSC(Hist(time,event) ~ strata(grp), data = dfS, method = "breslow")
+    pred.exp <- predict(CSC.exp, times = 1:10, newdata = data.frame(grp = 1:3), cause = 1, product.limit = FALSE)
+    pred.exp2 <- predict(CSC.exp, times = 1:10, newdata = data.frame(grp = 1:3), cause = 1, product.limit = TRUE)  
+
+    CSC.prodlim <- CSC(Hist(time,event) ~ strata(grp), data = dfS, surv.type = "survival", method = "breslow")
+    pred.prodlim <- predict(CSC.prodlim, times = 1:10, newdata = data.frame(grp = 1:3), cause = 1, product.limit = TRUE)  
     expect_equal(pred.exp2,pred.prodlim)
     
-    CSC.prodlimE <- CSC(Hist(time,event) ~ strata(grp) + X2, data = dfS, surv.type = "survival", method = "efron")
-    pred.prodlimE <- predict(CSC.prodlimE, times = 1:10, newdata = data.frame(grp = 1:3, X2 = 0), cause = 1, product.limit = TRUE)  
+    CSC.prodlimE <- CSC(Hist(time,event) ~ strata(grp), data = dfS, surv.type = "survival", method = "efron")
+    pred.prodlimE <- predict(CSC.prodlimE, times = 1:10, newdata = data.frame(grp = 1:3), cause = 1, product.limit = TRUE)  
 
     ## baseline
-    lambda1 <- lambda2 <- 1/seq(20,2,by = -2)
-    lambda2E.1 <- as.data.table(predictCox(CSC.prodlimE$models[[1]], type = "hazard"))
-    lambda2E.2 <- as.data.table(predictCox(CSC.prodlimE$models[[2]], type = "hazard"))
+    baseline1 <- as.data.table(predictCox(CSC.exp$models[[1]], type = "hazard"))
+    lambda1 <- baseline1[strata=="grp=1",hazard]
+    expect_equal(lambda1, 1/seq(20,2,by = -2))
+
+    baseline2 <- as.data.table(predictCox(CSC.exp$models[[1]], type = "hazard"))
+    lambda2 <- baseline2[strata=="grp=1",hazard]
+    expect_equal(lambda2, 1/seq(20,2,by = -2))
+        
+    baseline1E <- as.data.table(predictCox(CSC.prodlimE$models[[1]], type = "hazard"))
+    lambda1E.1 <- baseline1E[strata=="grp=1",hazard]
+    lambda1E.2 <- baseline1E[strata=="grp=2",hazard]
+    expect_equal(lambda1E.1, 1/seq(20,2,by = -2))
+
+    baseline2E <- as.data.table(predictCox(CSC.prodlimE$models[[2]], type = "hazard"))
+    lambda2E.1 <- baseline2E[strata=="grp=1",hazard]
+    lambda2E.2 <- baseline2E[strata=="grp=2",hazard]
+    ## 
         
     ## test absolute risk
     survival <- c(1,exp(cumsum(-lambda1-lambda2)))[1:10]
@@ -239,18 +249,18 @@ test_that("predict.CSC(1b) - compare to manual estimation",{
     expect_equal(as.double(pred.prodlim$absRisk[1,]),
                  as.double(pred.prodlim$absRisk[3,]))
 
-    survival <- c(1,cumprod(1-lambda2E.2[strata=="grp=1"][["hazard"]]))[1:10]
+    survival <- c(1,cumprod(1-lambda2E.1))[1:10]
     expect_equal(as.double(pred.prodlimE$absRisk[pred.prodlimE$strata=="grp=1"]),
-                 cumsum(lambda1*survival))
-    survival <- c(1,cumprod(1-lambda2E.2[strata=="grp=2"][["hazard"]]))[1:10]
+                 cumsum(lambda1E.1*survival))
+    survival <- c(1,cumprod(1-lambda2E.2))[1:10]
     expect_equal(as.double(pred.prodlimE$absRisk[pred.prodlimE$strata=="grp=2"]),
-                 cumsum(lambda2E.1[strata=="grp=2"][["hazard"]]*survival))    
+                 cumsum(lambda1E.2*survival))    
     expect_equal(as.double(pred.prodlimE$absRisk[1,]),
                  as.double(pred.prodlimE$absRisk[3,]))
 })
-# }}}
-}
-# {{{ 1c- risk factor no strata
+                                        # }}}
+
+                                       # {{{ 1c- risk factor no strata
 test_that("predict.CSC(1c,df1) - compare to manual estimation",{
     CSC.exp <- CSC(Hist(time,event) ~ X1, data = df1)
 
