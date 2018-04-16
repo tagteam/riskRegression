@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: maj 18 2017 (09:23) 
 ## Version: 
-## last-updated: Feb 19 2018 (19:01) 
+## last-updated: Apr 16 2018 (08:27) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 60
+##     Update #: 62
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -53,29 +53,29 @@ setkeyv(dStrata, c("St", "eventtime"))
 # }}}
 
 # {{{ models - Gold standard
-  # {{{ no strata, no interaction, continous
-    m.coxph <- coxph(Surv(eventtime, event) ~ X1+X6, data = d, y = TRUE, x = TRUE)
-    m.coxph_d2 <- coxph(Surv(eventtime, event) ~ X1+X6, data = d2, y = TRUE, x = TRUE)
-    m.cph <- cph(Surv(eventtime, event) ~ X1+X6, data = d, y = TRUE, x = TRUE)
+# {{{ no strata, no interaction, continous
+m.coxph <- coxph(Surv(eventtime, event) ~ X1+X6, data = d, y = TRUE, x = TRUE)
+m.coxph_d2 <- coxph(Surv(eventtime, event) ~ X1+X6, data = d2, y = TRUE, x = TRUE)
+m.cph <- cph(Surv(eventtime, event) ~ X1+X6, data = d, y = TRUE, x = TRUE)
     
-    m.cox_GS <- cox.aalen(Surv(eventtime, event) ~ prop(X1)+prop(X6), data = d, resample.iid = TRUE, max.timepoint.sim=NULL)
-    IFlambda_GS <- t(as.data.table(m.cox_GS$B.iid))
-    m.cox_GSapprox <- cox.aalen(Surv(eventtime, event) ~ prop(X1)+prop(X6), data = d, resample.iid = TRUE, rate.sim = 0, clusters = 1:NROW(d), max.timepoint.sim=NULL)
-    IFlambda_GSapprox <- t(as.data.table(m.cox_GSapprox$B.iid))
-  # }}}
-  # {{{ no strata, interactions, continous
+m.cox_GS <- cox.aalen(Surv(eventtime, event) ~ prop(X1)+prop(X6), data = d, resample.iid = TRUE, max.timepoint.sim=NULL)
+IFlambda_GS <- t(as.data.table(m.cox_GS$B.iid))
+m.cox_GSapprox <- cox.aalen(Surv(eventtime, event) ~ prop(X1)+prop(X6), data = d, resample.iid = TRUE, rate.sim = 0, clusters = 1:NROW(d), max.timepoint.sim=NULL)
+IFlambda_GSapprox <- t(as.data.table(m.cox_GSapprox$B.iid))
+# }}}
+# {{{ no strata, interactions, continous
 mI.coxph <- coxph(Surv(eventtime, event) ~ X1*X6, data = d, y = TRUE, x = TRUE)
-
 mI.cox_GS <- cox.aalen(Surv(eventtime, event) ~ prop(X1) + prop(X6) + prop(X1*X6), data = d, resample.iid = TRUE, max.timepoint.sim=NULL)
 IFlambdaI_GS <- t(as.data.table(mI.cox_GS$B.iid))
-  # }}}
-  # {{{ no covariate
+# }}}
+
+# {{{ no covariate
 # cox.aalen do not work without covariable
 # m0.cox_GS <- cox.aalen(Surv(eventtime, event) ~ 1, data = d, resample.iid = TRUE, max.timepoint.sim=NULL)
 # IFlambda0_GS <- t(as.data.table(m0.cox_GS$B.iid))
-  m0.coxph <- coxph(Surv(eventtime, event) ~ 1, data = d, y = TRUE, x = TRUE)
-  # }}}
-  # {{{ no strata, no interaction, with a categorical variable
+m0.coxph <- coxph(Surv(eventtime, event) ~ 1, data = d, y = TRUE, x = TRUE)
+# }}}
+# {{{ no strata, no interaction, with a categorical variable
 mCAT.coxph <- coxph(Surv(eventtime, event) ~ Xcat2 + X6, data = d, y = TRUE, x = TRUE)
 
 mCAT.cox_GS <- cox.aalen(Surv(eventtime, event) ~ prop(Xcat2) + prop(X6), data = d, resample.iid = TRUE, max.timepoint.sim=NULL)
@@ -103,16 +103,12 @@ IFlambdaCAT_GS <- t(as.data.table(mCAT.cox_GS$B.iid))
 IF.coxph <- iidCox(m.coxph, keep.times = FALSE)
 IFapprox.coxph <- iidCox(m.coxph, keep.times = FALSE, store.iid = "approx")
 IFminimal.coxph <- iidCox(m.coxph, keep.times = FALSE, store.iid = "minimal")
-    
 IF.coxph_d2 <- iidCox(m.coxph_d2, keep.times = FALSE)
-  
 IF.cph <- iidCox(m.cph, keep.times = FALSE)
-  
 test_that("iid beta",{
     expect_equal(unname(IF.coxph$IFbeta),m.cox_GS$gamma.iid)
     expect_equal(unname(IF.coxph$IFbeta),unname(IF.coxph_d2$IFbeta[order(d2$eventtime),]))
     expect_equal(unname(IF.cph$IFbeta),m.cox_GS$gamma.iid, tol = 1e-2)
-
     expect_equal(unname(IFapprox.coxph$IFbeta),m.cox_GSapprox$gamma.iid)
     expect_equal(unname(IFminimal.coxph$IFbeta),m.cox_GS$gamma.iid)
 })
@@ -121,7 +117,6 @@ test_that("iid lambda0",{
     expect_equal(as.double(IF.coxph$IFcumhazard[[1]]), as.double(IFlambda_GS[,-1]))
     expect_equal(as.double(IF.coxph$IFcumhazard[[1]]), as.double(IF.coxph_d2$IFcumhazard[[1]][order(d2$eventtime),]))
     expect_equal(as.double(IF.cph$IFcumhazard[[1]]), as.double(IFlambda_GS[,-1]), tol = 1e-4)
-
     expect_equal(as.double(IFapprox.coxph$IFcumhazard[[1]]), as.double(IFlambda_GSapprox[,-1]))
 })
 # }}}
@@ -131,14 +126,11 @@ data(Melanoma)
 # Melanoma$status[order(Melanoma$time)]
 fitGS <- cox.aalen(Surv(time,status==1)~prop(sex), data=Melanoma)
 IFGS_lambda0 <- t(as.data.table(fitGS$B.iid))
-  
 fit1 <- coxph(Surv(time,status==1)~sex, data=Melanoma, x=TRUE, y=TRUE)
 iid1 <- iidCox(fit1)
-  
 test_that("iid beta - start with censoring",{
     expect_equal(unname(iid1$IFbeta),fitGS$gamma.iid)
 })
-  
 test_that("iid lambda0 - start with censoring",{
     expect_equal(as.double(iid1$IFcumhazard[[1]]), as.double(IFGS_lambda0[,-1]))
 })
@@ -146,32 +138,28 @@ test_that("iid lambda0 - start with censoring",{
 
   # {{{ 1c- no strata, interactions, continous  
   IFI.coxph <- iidCox(mI.coxph, keep.times = FALSE)
-  
   test_that("iid beta - interaction",{
     expect_equal(unname(IFI.coxph$IFbeta),mI.cox_GS$gamma.iid)
   })
-  
   test_that("iid lambda0 - interaction",{
     expect_equal(as.double(IFI.coxph$IFcumhazard[[1]]), as.double(IFlambdaI_GS[,-1]))
   })
-  
     # }}}
 
-  # {{{ 1d- no covariate
-    IF0.coxph <- iidCox(m0.coxph, keep.times = FALSE) # how to test the result
-    # }}}
+# {{{ 1d- no covariate
+IF0.coxph <- iidCox(m0.coxph, keep.times = FALSE) # how to test the result
+# }}}
     
-  # {{{ 1e- no strata, no interaction, with a categorical variable
-  IFCAT.coxph <- iidCox(mCAT.coxph, keep.times = FALSE)
-  
-  test_that("iid beta - categorical",{
+# {{{ 1e- no strata, no interaction, with a categorical variable
+IFCAT.coxph <- iidCox(mCAT.coxph, keep.times = FALSE)
+test_that("iid beta - categorical",{
     expect_equal(unname(IFCAT.coxph$IFbeta),mCAT.cox_GS$gamma.iid)
-  })
+})
   
-  test_that("iid lambda0 - categorical",{
-      expect_equal(as.double(IFCAT.coxph$IFcumhazard[[1]]),
-                   as.double(IFlambdaCAT_GS[,-1]))
-  })
+test_that("iid lambda0 - categorical",{
+    expect_equal(as.double(IFCAT.coxph$IFcumhazard[[1]]),
+                 as.double(IFlambdaCAT_GS[,-1]))
+})
 
     # }}}
 
@@ -179,11 +167,11 @@ test_that("iid lambda0 - start with censoring",{
   
   IFTies.coxph <- iidCox(mTies.coxph, keep.times = FALSE)
   
-  # test_that("iid beta - categorical",{
-  #   expect_equal(unname(IFTies.coxph$IFbeta),mTies.cox_GS$gamma.iid)
-  # })
-    data.frame(GS = m.cox_GS$gamma.iid, GSTies = mTies.cox_GS$gamma.iid,
-               RR = IF.coxph$IFbeta, RRTies = IFTies.coxph$IFbeta)[1:10,]
+# test_that("iid beta - categorical",{
+#   expect_equal(unname(IFTies.coxph$IFbeta),mTies.cox_GS$gamma.iid)
+# })
+## data.frame(GS = m.cox_GS$gamma.iid, GSTies = mTies.cox_GS$gamma.iid,
+## RR = IF.coxph$IFbeta, RRTies = IFTies.coxph$IFbeta)[1:10,]
   
     # test_that("iid lambda0 - categorical",{
     #   expect_equal(as.double(IF.RR$IFcumhazard[[1]]), as.double(IFlambda.timereg[,-1]))
@@ -422,19 +410,17 @@ test_that("iid minimal - strata", {
 # {{{ 5- Time varying variables
 # NOTE: I am not sure what timereg is exactly doing in this case
 
-d <- sampleData(1e2, outcome = "survival")
-d$start <- runif(NROW(d),min=0,max=(d$eventtime-0.1) )
+## d <- sampleData(1e2, outcome = "survival")
+## d$start <- runif(NROW(d),min=0,max=(d$eventtime-0.1) )
 
-test_that("predicted survival with time varying variables",{
-
-    fit.coxph <- coxph(Surv(start, eventtime, event) ~ X1, data = d, x = TRUE, y = TRUE)
-    fit.timereg <- cox.aalen(Surv(start, eventtime, event) ~ prop(X1), data = d)
-
-    predTimes <- sort(unique(d$eventtime))
-    M1 <- predictCox(fit.coxph, newdata = d, time = predTimes)$survival
-    M2 <- predict(fit.timereg, newdata = d, time = predTimes)$S0
-    expect_equal(M1,M2)
-})
+## test_that("predicted survival with time varying variables",{
+    ## fit.coxph <- coxph(Surv(start, eventtime, event) ~ X1, data = d, x = TRUE, y = TRUE)
+    ## fit.timereg <- cox.aalen(Surv(start, eventtime, event) ~ prop(X1), data = d)
+    ## predTimes <- sort(unique(d$eventtime))
+    ## M1 <- predictCox(fit.coxph, newdata = d, time = predTimes)$survival
+    ## M2 <- predict(fit.timereg, newdata = d, time = predTimes)$S0
+    ## expect_equal(M1,M2)
+## })
 # }}}
 #----------------------------------------------------------------------
 ### test-predictCox_vs_timereg.R ends here
