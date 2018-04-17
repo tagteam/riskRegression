@@ -1,5 +1,7 @@
 #+BEGIN_HTML
 <a href="https://travis-ci.org/tagteam/riskRegression"><img src="https://travis-ci.org/tagteam/riskRegression.svg?branch=master"></a>
+<a href="http://cran.rstudio.com/web/packages/riskRegression/index.html"><img src="http://www.r-pkg.org/badges/version/riskRegression"></a>
+<a href="http://cranlogs.r-pkg.org/downloads/total/last-month/riskRegression"><img src="http://cranlogs.r-pkg.org/badges/riskRegression"></a>
 #+END_HTML
 
 * Install
