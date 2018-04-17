@@ -598,7 +598,7 @@ theCall <- match.call()
     }
 
     # }}}
-# {{{ resolve keep statements
+    # {{{ resolve keep statements
     if (!missing(keep) && is.character(keep)){
         if("residuals" %in% tolower(keep)) keep.residuals=TRUE else keep.residuals = FALSE
         if("vcov" %in% tolower(keep)) keep.vcov=TRUE else keep.vcov = FALSE
@@ -611,7 +611,7 @@ theCall <- match.call()
         keep.splitindex=FALSE
     }
     # }}}
-# {{{ resolve se.fit and contrasts
+    # {{{ resolve se.fit and contrasts
     if (missing(se.fit)){
         if (is.logical(conf.int) && conf.int==FALSE
             || conf.int<=0
@@ -651,7 +651,7 @@ theCall <- match.call()
         }
     }
     # }}}
-# {{{ Evaluation landmarks and horizons (times)
+    # {{{ Evaluation landmarks and horizons (times)
     if (response.type %in% c("survival","competing.risks")){
         ## in case of a tie, events are earlier than right censored
         eventTimes <- unique(data[,time])
@@ -695,13 +695,13 @@ theCall <- match.call()
         NT <- 1
     }
     # }}}
-# -----------------Dealing with censored data outside the loop -----------------------
-# {{{
+    # -----------------Dealing with censored data outside the loop -----------------------
+    # {{{
     if (response.type %in% c("survival","competing.risks")){
         if (cens.type=="rightCensored"){
             if ("outside.ipcw" %in% cens.method){
                 if (se.fit>0L && "AUC" %in% metrics && cens.model=="cox"){
-                    if (split.method$internal.name!="LeaveOneOutBoot"){
+                    if (!(split.method$name %in% c("LeaveOneOutBoot","BootCv"))){
                         warning("Cannot (not yet) estimate standard errors for AUC with Cox IPCW.\nTherefore, force cens.model to be marginal.")
                         cens.model <- "KaplanMeier"
                     }
