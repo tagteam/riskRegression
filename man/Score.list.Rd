@@ -339,6 +339,7 @@ Score(list("CSC(X1+X2+X7+X9)"=csc1,"CSC(X3+X5+X6)"=csc2,
            "FGR(X1+X2+X7+X9)"=fgr1,"FGR(X3+X5+X6)"=fgr2),
       formula=Hist(time,event)~1,data=testCR,se.fit=1L,times=c(5,8))
 
+\dontrun{
 # reproduce some results of Table IV of Blanche et al. Stat Med 2013
 data(Paquid)
 ResPaquid <- Score(list("DSST"=-Paquid$DSST,"MMSE"=-Paquid$MMSE),
@@ -351,7 +352,7 @@ ResPaquid <- Score(list("DSST"=-Paquid$DSST,"MMSE"=-Paquid$MMSE),
                    plots="ROC")
 ResPaquid
 plotROC(ResPaquid,time=5)
-
+}
 }
 \references{
 Ulla B. Mogensen, Hemant Ishwaran, Thomas A. Gerds (2012).

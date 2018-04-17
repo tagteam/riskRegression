@@ -207,7 +207,7 @@
 ##'         data=testdat,plots=c("calibration","ROC"))
 ##' plotROC(xb)
 ##' plotCalibration(xb)
-##' 
+##'
 ##' ## compute AUC for a list of continuous markers
 ##' markers = as.list(testdat[,.(X6,X7,X8,X9,X10)])
 ##' Score(markers,formula=Y~1,data=testdat,metrics=c("auc"))
@@ -288,7 +288,8 @@
 ##' Score(list("CSC(X1+X2+X7+X9)"=csc1,"CSC(X3+X5+X6)"=csc2,
 ##'            "FGR(X1+X2+X7+X9)"=fgr1,"FGR(X3+X5+X6)"=fgr2),
 ##'       formula=Hist(time,event)~1,data=testCR,se.fit=1L,times=c(5,8))
-##' 
+##'
+##'\dontrun{
 ##' # reproduce some results of Table IV of Blanche et al. Stat Med 2013
 ##' data(Paquid)
 ##' ResPaquid <- Score(list("DSST"=-Paquid$DSST,"MMSE"=-Paquid$MMSE),
@@ -301,7 +302,7 @@
 ##'                    plots="ROC")
 ##' ResPaquid
 ##' plotROC(ResPaquid,time=5)
-##' 
+##' }
 ##' @author Thomas A Gerds \email{tag@@biostat.ku.dk} and Paul Blanche \email{paul.blanche@@univ-ubs.fr}
 ##' @references
 ##'
