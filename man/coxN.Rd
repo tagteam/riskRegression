@@ -23,27 +23,6 @@ obtained with \code{coxph} (survival package), \code{cph}
 \description{
 Extract the number of observations from a Cox model
 }
-\examples{
-\dontrun{
-d <- sampleData(1e2, outcome = "survival")
-d$entry <- 0
-
-##
-library(survival)
-mcox <- coxph(Surv(time, event) ~ X1+X2, data = d)
-coxN(mcox)
-
-##
-library(rms)
-mcox <- cph(Surv(time, event) ~ X1+X2, data = d, y = TRUE)
-coxN(mcox)
-
-##
-library(mets)
-mcox <- phreg(Surv(entry, time, event) ~ X1+X2, data = d)
-coxN(mcox)
-}
-}
 \author{
 Brice Ozenne broz@sund.ku.dk
 }

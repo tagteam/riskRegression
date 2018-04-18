@@ -38,11 +38,12 @@ predictRisk(fitlasso,newdata=newd)
 Score(list(fitridge),data=newd,formula=Y~1)
 Score(list(fitridge),data=newd,formula=Y~1,split.method="bootcv",B=2)
 }
-\dontrun{ data(nki70) ## S4 fit pen <- penalized(Surv(time, event),
-penalized = nki70[,8:77], unpenalized = ~ER+Age+Diam+N+Grade, data
-= nki70, lambda1 = 1) penS3 <-
-penalizedS3(Surv(time,event)~ER+Age+Diam+pen(8:77)+N+Grade,
-data=nki70, lambda1=1)
+\dontrun{ data(nki70) ## S4 fit
+pen <- penalized(Surv(time, event), penalized = nki70[,8:77],
+                 unpenalized = ~ER+Age+Diam+N+Grade, data = nki70,
+lambda1 = 1)
+penS3 <- penalizedS3(Surv(time,event)~ER+Age+Diam+pen(8:77)+N+Grade,
+                     data=nki70, lambda1=1)
 ## or
 penS3 <- penalizedS3(Surv(time,event)~ER+pen(TSPYL5,Contig63649_RC)+pen(10:77)+N+Grade,
                      data=nki70, lambda1=1)

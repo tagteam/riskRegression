@@ -14,45 +14,6 @@ obtained with \code{coxph} (survival package) or \code{cph}
 \description{
 Extract the name of the variables belonging to the linear predictor or used to form the strata
 }
-\examples{
-\dontrun{
-d <- sampleData(1e2, outcome = "survival")
-d$entry <- 0
-d$id <- 1:NROW(d)
-
-##
-library(survival)
-d$X1=factor(d$X1)
-mcox <- coxph(Surv(time, event) ~ X1+X2, data = d, x = TRUE, y = TRUE)
-coxVariableName(mcox)
-mcoxS <- coxph(Surv(time, event) ~ strata(X1)+X2, data = d, x = TRUE, y = TRUE)
-coxVariableName(mcoxS)
-mcoxS2 <- coxph(Surv(time, event) ~ strata(X1)+strata(X2), data = d, x = TRUE, y = TRUE)
-coxVariableName(mcoxS2)
-mcoxI <- coxph(Surv(time, event) ~ X1*X2, data = d, x = TRUE, y = TRUE)
-coxVariableName(mcoxI)
-
-##
-library(rms)
-mcox <- cph(Surv(time, event) ~ X1+X2, data = d, x = TRUE, y = TRUE)
-coxVariableName(mcox) 
-mcoxS <- cph(Surv(time, event) ~ strat(X1)+X2, data = d, x = TRUE, y = TRUE)
-coxVariableName(mcoxS) 
-mcoxS2 <- cph(Surv(time, event) ~ strat(X1)+strat(X2), data = d, x = TRUE, y = TRUE)
-coxVariableName(mcoxS2) 
-mcoxI <- cph(Surv(time, event) ~ X1*X2, data = d, x = TRUE, y = TRUE)
-coxVariableName(mcoxI)
-
-##
-library(mets)
-mcox <- phreg(Surv(entry, time, event) ~ X1+X2, data = d)
-coxVariableName(mcox) 
-mcoxS <- phreg(Surv(entry, time, event) ~ strata(X1)+cluster(id)+X2, data = d)
-coxVariableName(mcoxS) 
-mcoxI <- phreg(Surv(entry, time, event) ~ X1*X2, data = d)
-coxVariableName(mcoxI)
-}
-}
 \author{
 Brice Ozenne broz@sund.ku.dk
 }

@@ -17,13 +17,3 @@ Extract design matrix for phreg objects
 \details{
 mainly a copy paste of the begining of the \code{phreg} function.
 }
-\examples{
-\dontrun{
-library(mets)
-
-n <- 10;
-d <- mets:::simCox(n); d$id <- seq(nrow(d)); d$group <- factor(rbinom(nrow(d),1,0.5))
-m1 <- phreg(Surv(entry, time,status)~X1+X2+cluster(id)+strata(group),data=d)
-riskRegression:::model.matrix(m1, d) 
-}
-}

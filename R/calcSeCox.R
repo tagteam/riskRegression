@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: maj 27 2017 (11:46) 
 ## Version: 
-## last-updated: Mar 28 2018 (12:01) 
+## last-updated: Apr 18 2018 (15:13) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 257
+##     Update #: 258
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -266,18 +266,6 @@ calcSeCox <- function(object, times, nTimes, type,
 #' 
 #' @return An object with the same dimensions as IF
 #' 
-#' @examples 
-#' \dontrun{
-#' library(survival)
-#' 
-#' set.seed(10)
-#' d <- SimSurv(1e2)
-#' fit <- coxph(Surv(time,status)~X1 * X2,data=d, ties="breslow", x = TRUE, y = TRUE)
-#' 
-#' IFall <- iidCox(fit)
-#' selectJump(IFall, times = 1:2, type = "cumhazard") 
-#'  
-#' }
 selectJump <- function(IF, times, type){
   
   nStrata <- length(IF$time)

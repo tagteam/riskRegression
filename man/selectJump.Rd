@@ -19,19 +19,6 @@ An object with the same dimensions as IF
 \description{
 Evaluate the influence function at selected times
 }
-\examples{
-\dontrun{
-library(survival)
-
-set.seed(10)
-d <- SimSurv(1e2)
-fit <- coxph(Surv(time,status)~X1 * X2,data=d, ties="breslow", x = TRUE, y = TRUE)
-
-IFall <- iidCox(fit)
-selectJump(IFall, times = 1:2, type = "cumhazard") 
- 
-}
-}
 \author{
 Brice Ozenne broz@sund.ku.dk
 }

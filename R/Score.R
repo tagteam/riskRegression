@@ -524,7 +524,7 @@ theCall <- match.call()
     B <- split.method$B
     splitIndex <- split.method$index
     do.resample <- !(is.null(splitIndex))
-    if (split.method$internal.name!="none"){
+    if (split.method$internal.name!="noplan"){
         if (se.fit==TRUE){
             if (response.type=="competing.risks")
                 warning("Under construction. Check devtools::install_github('tagteam/riskRegression') for progress.")

@@ -63,7 +63,7 @@ library(survival)
 ds=sampleData(40,outcome="survival")
 fitconv=coxph(Surv(time,event)~X6,data=ds,x=TRUE,y=TRUE)
 fitnew=coxph(Surv(time,event)~X6+X9,data=ds,x=TRUE,y=TRUE)
-\dontrun{ # [ERROR: Error in gzfile(file, "wb") : cannot open the connection]
+\dontrun{ 
 scoreobj=Score(list("conventional model"=fitconv,"new model"=fitnew),
                 formula=Hist(time,event)~1, data=ds,
                 summary="riskQuantile",metrics=NULL, plots=NULL,

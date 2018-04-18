@@ -23,22 +23,6 @@ obtained with \code{coxph} (survival package), \code{cph}
 \description{
 Extract the formula from a Cox model
 }
-\examples{
-\dontrun{
-d <- sampleData(1e2, outcome = "survival")
-
-##
-library(survival)
-mcox <- coxph(Surv(time, event) ~ X1+X2, data = d)
-coxFormula(mcox)
-
-##
-library(rms)
-f <- Surv(time, event) ~ X1+X2
-mcox <- cph(f, data = d, y = TRUE)
-coxFormula(mcox)
-}
-}
 \author{
 Brice Ozenne broz@sund.ku.dk
 }

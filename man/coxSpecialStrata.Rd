@@ -23,27 +23,6 @@ obtained with \code{coxph} (survival package), \code{cph}
 \description{
 Return the special character used to indicate the strata variables of the Cox model
 }
-\examples{
-\dontrun{
-d <- sampleData(1e2, outcome = "survival")
-d$entry <- 0
-
-##
-library(survival)
-mcoxS <- coxph(Surv(time, event) ~ strata(X1)+strata(X2), data = d)
-coxSpecialStrata(mcoxS)
-
-##
-library(rms)
-mcoxS <- cph(Surv(time, event) ~ strat(X1)+strat(X2), data = d, y = TRUE)
-coxSpecialStrata(mcoxS)
-
-##
-library(mets)
-mcoxS <- phreg(Surv(entry, time, event) ~ strat(X1)+strat(X2), data = d)
-coxSpecialStrata(mcoxS)
-}
-}
 \author{
 Brice Ozenne broz@sund.ku.dk
 }

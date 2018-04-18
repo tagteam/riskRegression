@@ -39,37 +39,6 @@ Define the strata in a dataset to match those of a stratified Cox model
 \details{
 if no strata variables returns a vector of \code{"1"} (factor).
 }
-\examples{
-\dontrun{
-d <- sampleData(1e2, outcome = "survival")
-d$entry <- 0
-d$id <- 1:NROW(d)
-
-##
-library(survival)
-mcoxS <- coxph(Surv(time, event) ~ strata(X1)+strata(X2), data = d, x = TRUE, y = TRUE)
-resInfo <- coxVariableName(mcoxS)
-Ostrata <- coxStrata(mcoxS, strata.vars = resInfo$strata.vars)
-coxStrata(mcoxS, data = d, sterms = resInfo$sterms, strata.vars = resInfo$strata.vars, 
-          levels = levels(Ostrata), strata.levels = resInfo$strata.levels)
-
-##
-library(rms)
-mcoxS <- cph(Surv(time, event) ~ strat(X1)+strat(X2), data = d, y = TRUE)
-resInfo <- coxVariableName(mcoxS)
-Ostrata <- coxStrata(mcoxS, strata.vars = resInfo$strata.vars)
-coxStrata(mcoxS, data = d, sterms = resInfo$sterms, strata.vars = resInfo$strata.vars, 
-          levels = levels(Ostrata), strata.levels = resInfo$strata.levels)
-          
-##
-library(mets)
-mcoxS <- phreg(Surv(entry, time, event) ~ strata(X1)+X2+cluster(id), data = d)
-resInfo <- coxVariableName(mcoxS)
-Ostrata <- coxStrata(mcoxS, strata.vars = resInfo$strata.vars)
-coxStrata(mcoxS, data = d, sterms = resInfo$sterms, strata.vars = resInfo$strata.vars, 
-          levels = levels(Ostrata), strata.levels = resInfo$strata.levels)
-}
-}
 \author{
 Brice Ozenne broz@sund.ku.dk
 }

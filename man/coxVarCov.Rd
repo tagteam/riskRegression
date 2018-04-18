@@ -27,33 +27,6 @@ Extract the variance covariance matrix of the beta from a Cox model
 Should return \code{NULL} if the Cox model has no covariate. 
 The rows and columns of the variance covariance matrix must be named with the names used in the design matrix.
 }
-\examples{
-\dontrun{
-d <- sampleData(1e2, outcome = "survival")
-d$entry <- 0
-
-##
-library(survival)
-mcox <- coxph(Surv(time, event) ~ X1+X2, data = d)
-coxVarCov(mcox)
-mcox <- coxph(Surv(time, event) ~ 1, data = d, y = TRUE)
-coxVarCov(mcox)
-
-##
-library(rms)
-mcox <- cph(Surv(time, event) ~ X1+X2, data = d, y = TRUE)
-coxVarCov(mcox)
-mcox <- cph(Surv(time, event) ~ 1, data = d, y = TRUE)
-coxVarCov(mcox)
-
-##
-library(mets)
-mcox <- phreg(Surv(entry, time, event) ~ X1+X2, data = d)
-coxVarCov(mcox)
-mcox <- cph(Surv(time, event) ~ 1, data = d, y = TRUE)
-coxVarCov(mcox)
-}
-}
 \author{
 Brice Ozenne broz@sund.ku.dk
 }

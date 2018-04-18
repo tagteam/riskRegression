@@ -12,15 +12,6 @@ splitStrataVar(object)
 \description{
 Reconstruct each of the strata variables from the strata variable stored in the coxph object.
 }
-\examples{
-\dontrun{
-d <- sampleData(1e2, outcome = "survival")
-
-library(survival)
-mcox <- coxph(Surv(time, event) ~ strata(X1)+strata(X2)+X3, data = d, x = TRUE, y = TRUE)
-splitStrataVar(mcox)
-}
-}
 \author{
 Brice Ozenne broz@sund.ku.dk and Thomas A. Gerds tag@biostat.ku.dk
 }

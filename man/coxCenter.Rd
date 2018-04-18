@@ -23,34 +23,6 @@ obtained with \code{coxph} (survival package), \code{cph}
 \description{
 Extract the mean value of the covariates
 }
-\examples{
-\dontrun{
-d <- sampleData(1e2, outcome = "survival")
-d$Xcat <- paste0(d$X3,d$X4)
-d$entry <- 0
-
-##
-library(survival)
-mcox <- coxph(Surv(time, event) ~ X1+X2, data = d)
-coxCenter(mcox)
-mcox <- coxph(Surv(time, event) ~ X1+X2+Xcat, data = d)
-coxCenter(mcox)
-
-##
-library(rms)
-mcox <- cph(Surv(time, event) ~ X1+X2, data = d, y = TRUE)
-coxCenter(mcox)
-mcox <- cph(Surv(time, event) ~ X1+X2+Xcat, data = d)
-coxCenter(mcox)
-
-##
-library(mets)
-mcox <- phreg(Surv(entry, time, event) ~ X1+X2, data = d)
-coxCenter(mcox)
-mcox <- cph(Surv(time, event) ~ X1+X2+Xcat, data = d)
-coxCenter(mcox)
-}
-}
 \author{
 Brice Ozenne broz@sund.ku.dk
 }

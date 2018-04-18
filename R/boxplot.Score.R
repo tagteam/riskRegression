@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Aug 15 2016 (09:45) 
 ## Version: 
-## last-updated: Nov  9 2017 (06:53) 
+## last-updated: Apr 18 2018 (15:13) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 116
+##     Update #: 117
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -52,7 +52,7 @@
 ##' ds=sampleData(40,outcome="survival")
 ##' fitconv=coxph(Surv(time,event)~X6,data=ds,x=TRUE,y=TRUE)
 ##' fitnew=coxph(Surv(time,event)~X6+X9,data=ds,x=TRUE,y=TRUE)
-##' \dontrun{ # [ERROR: Error in gzfile(file, "wb") : cannot open the connection]
+##' \dontrun{ 
 ##' scoreobj=Score(list("conventional model"=fitconv,"new model"=fitnew),
 ##'                 formula=Hist(time,event)~1, data=ds,
 ##'                 summary="riskQuantile",metrics=NULL, plots=NULL,

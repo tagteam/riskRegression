@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jan  9 2016 (19:31) 
 ## Version: 
-## last-updated: Jul 14 2017 (12:27) 
+## last-updated: Apr 18 2018 (15:09) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 284
+##     Update #: 285
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -130,8 +130,8 @@ riskQuantile.survival <- function(DT,N,NT,NF,dolist,Q,...){
     ## system.time(a[,getQ.eventFree(Q=Q,tp=times[1],X=risk,time=time,Wt=Wt,surv=surv)])
     score.eventfree <- DT[,getQ.eventFree(Q=Q,tp=times,X=risk,time=time,Wt=Wt,surv=surv),by=list(model,times)]
     ## setkey(DT,model,times)
-    save(surv,file="~/tmp/surv.rda")
-    save(DT,file="~/tmp/DT.rda")
+    ## save(surv,file="~/tmp/surv.rda")
+    ## save(DT,file="~/tmp/DT.rda")
     score.event <- DT[,getQ.event(Q=Q,tp=times,X=risk,time=time,status=status,WTi=WTi,surv=surv),by=list(model,times)]
     score.overall <- DT[,data.table(t(quantile(risk,probs=Q))),by=list(model,times)]
     score.overall[,cause:="overall"]

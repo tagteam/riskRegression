@@ -12,30 +12,6 @@ SurvResponseVar(formula)
 \description{
 Extract the time and event variable from a Cox model
 }
-\examples{
-\dontrun{
-d <- sampleData(1e2, outcome = "survival")
-d$entry <- 0
-
-##
-library(survival)
-mcox <- coxph(Surv(time, event) ~ X1+X2, data = d)
-SurvResponseVar(mcox$formula)
-
-mcox <- coxph(Surv(entry, time, event) ~ X1+X2, data = d)
-SurvResponseVar(mcox$formula)
-
-mcox <- coxph(Surv(event, time = entry, time2 = time) ~ X1+X2, data = d)
-SurvResponseVar(mcox$formula)
-
-mcox <- coxph(Surv(time, event) ~ 1, data = d)
-SurvResponseVar(mcox$formula)
-
-mcox <- coxph(Surv(time, event>0) ~ 1, data = d)
-SurvResponseVar(mcox$formula)
-
-}
-}
 \author{
 Brice Ozenne broz@sund.ku.dk
 }

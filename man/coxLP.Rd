@@ -30,51 +30,6 @@ Compute the linear predictor of a Cox model
 \details{
 In case of empty linear predictor returns a vector of 0 with the same length as the number of rows of the dataset
 }
-\examples{
-\dontrun{
-d <- sampleData(1e2, outcome = "survival")
-d$entry <- 0
-d$id <- 1:NROW(d)
-
-##
-library(survival)
-mcox <- coxph(Surv(time, event) ~ X1+X2, data = d)
-coxLP(mcox, data = d, center = FALSE)
-coxLP(mcox, data = d, center = TRUE)  
-
-mcoxS <- coxph(Surv(time, event) ~ strata(X1)+X2, data = d)
-coxLP(mcoxS, data = d, center = FALSE) 
-
-mcoxS2 <- coxph(Surv(time, event) ~ strata(X1)+strata(X2), data = d)
-coxLP(mcoxS2, data = d, center = FALSE) 
-
-##
-library(rms)
-mcox <- cph(Surv(time, event) ~ X1+X2, data = d, y = TRUE)
-coxLP(mcox, data = d, center = FALSE) 
-coxLP(mcox, data = d, center = TRUE) 
-coxLP(mcox, data = NULL, center = FALSE) 
-coxLP(mcox, data = NULL, center = TRUE) 
-
-mcoxS <- cph(Surv(time, event) ~ strat(X1)+X2, data = d)
-coxLP(mcoxS, data = d, center = FALSE) 
-
-mcoxS2 <- cph(Surv(time, event) ~ strat(X1)+strat(X2), data = d, y = TRUE)
-coxLP(mcoxS2, data = d, center = FALSE) 
-
-##
-library(mets)
-mcox <- phreg(Surv(entry, time, event) ~ X1+X2, data = d)
-coxLP(mcox, data = NULL, center = FALSE) 
-coxLP(mcox, data = d, center = TRUE) 
-
-mcoxS <- phreg(Surv(entry, time, event) ~ strata(X1)+X2+cluster(id), data = d)
-coxLP(mcoxS, data = d, center = FALSE) 
-
-mcoxS2 <- phreg(Surv(entry, time, event) ~ X1*X2, data = d)
-coxLP(mcoxS2, data = d, center = FALSE) 
-}
-}
 \author{
 Brice Ozenne broz@sund.ku.dk
 }

@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun  6 2016 (09:02) 
 ## Version: 
-## last-updated: Mar  1 2018 (11:48) 
+## last-updated: Apr 18 2018 (15:08) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 108
+##     Update #: 110
 #----------------------------------------------------------------------
 ## 
 ### Commentary:
@@ -476,7 +476,13 @@ predictRisk.prodlim <- function(object,newdata,times,cause,...){
     ## require(prodlim)
     if (object$model=="competing.risks" && missing(cause))
         stop(paste0("Cause is missing. Should be one of the following values: ",paste(attr(object$model.response,"states"),collapse=", ")))
-    p <- predict(object=object,cause=cause,type="cuminc",newdata=newdata,times=times,mode="matrix",level.chaos=1)
+    p <- predict(object=object,
+                 cause=cause,
+                 type="cuminc",
+                 newdata=newdata,
+                 times=times,
+                 mode="matrix",
+                 level.chaos=1)
     ## if the model has no covariates
     ## then all cases get the same prediction
     ## in this exceptional case we return a vector
@@ -680,11 +686,12 @@ predictRisk.CauseSpecificCox <- function (object, newdata, times, cause, ...) {
 ##' Score(list(fitridge),data=newd,formula=Y~1)
 ##' Score(list(fitridge),data=newd,formula=Y~1,split.method="bootcv",B=2)
 ##' }
-##'\dontrun{ data(nki70) ## S4 fit pen <- penalized(Surv(time, event),
-##' penalized = nki70[,8:77], unpenalized = ~ER+Age+Diam+N+Grade, data
-##' = nki70, lambda1 = 1) penS3 <-
-##' penalizedS3(Surv(time,event)~ER+Age+Diam+pen(8:77)+N+Grade,
-##' data=nki70, lambda1=1)
+##'\dontrun{ data(nki70) ## S4 fit
+##' pen <- penalized(Surv(time, event), penalized = nki70[,8:77],
+##'                  unpenalized = ~ER+Age+Diam+N+Grade, data = nki70,
+##' lambda1 = 1)
+##' penS3 <- penalizedS3(Surv(time,event)~ER+Age+Diam+pen(8:77)+N+Grade,
+##'                      data=nki70, lambda1=1)
 ##' ## or
 ##' penS3 <- penalizedS3(Surv(time,event)~ER+pen(TSPYL5,Contig63649_RC)+pen(10:77)+N+Grade,
 ##'                      data=nki70, lambda1=1)

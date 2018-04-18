@@ -20,27 +20,6 @@ obtained with \code{coxph} (survival package), \code{cph}
 \description{
 Extract the type of estimator for the baseline hazard
 }
-\examples{
-\dontrun{
-d <- sampleData(1e2, outcome = "survival")
-d$entry <- 0
-
-##
-library(survival)
-mcox <- coxph(Surv(time, event) ~ X1+X2, data = d)
-coxBaseEstimator(mcox)
-
-##
-library(rms)
-mcox <- cph(Surv(time, event) ~ X1+X2, data = d, y = TRUE)
-coxBaseEstimator(mcox)
-
-##
-library(mets)
-mcox <- phreg(Surv(entry, time, event) ~ X1+X2, data = d)
-coxBaseEstimator(mcox)
-}
-}
 \author{
 Brice Ozenne broz@sund.ku.dk
 }

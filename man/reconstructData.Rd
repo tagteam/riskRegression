@@ -12,15 +12,6 @@ reconstructData(object)
 \description{
 Reconstruct the original dataset from the elements stored in the coxph object
 }
-\examples{
-\dontrun{
-d <- sampleData(1e2, outcome = "survival")
-
-library(survival)
-mcox <- coxph(Surv(time, event) ~ strata(X1)+strata(X2)+X3, data = d, x = TRUE, y = TRUE)
-reconstructData(mcox)
-}
-}
 \author{
 Brice Ozenne broz@sund.ku.dk and Thomas A. Gerds tag@biostat.ku.dk
 }
