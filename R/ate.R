@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Oct 23 2016 (08:53) 
 ## Version: 
-## last-updated: apr 12 2018 (13:13) 
+## last-updated: apr 25 2018 (19:17) 
 ##           By: Brice Ozenne
-##     Update #: 664
+##     Update #: 724
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -27,6 +27,7 @@
 #' @param treatment name of the treatment variable
 #' @param contrasts the levels of the treatment variable to be
 #'     compared
+#' @param strata Strata variable on which to compute the average risk. Incompatible with treatment. Experimental.
 #' @param times time points at which to evaluate risks
 #' @param cause the cause of interest
 #' @param landmark for models with time-dependent covariates the landmark time(s) of evaluation.
@@ -254,6 +255,7 @@ ate <- function(object,
                 data,
                 formula,
                 treatment,
+                strata = NULL,
                 contrasts = NULL,
                 times,
                 cause,
@@ -303,8 +305,34 @@ ate <- function(object,
              "Either set argument \'band\' to FALSE to not compute the confidence bands \n",
              "or set argument \'B\' to 0 to use the estimate of the asymptotic distribution instead of the bootstrap\n")
     }
-    if(treatment %in% names(data) == FALSE){
-        stop("The data set does not seem to have a variable ",treatment," (argument: treatment). \n")
+    if(!is.null(treatment)){
+        if(length(treatment) != 1){
+            stop("Argument treatment should have length 1. \n")
+        }
+        if(treatment %in% names(data) == FALSE){
+            stop("The data set does not seem to have a variable ",treatment," (argument: treatment). \n")
+        }
+        if(!is.null(strata) ){
+            stop("Argument strata must be NULL when argument treatment is specified. \n")
+        }
+        strata <- treatment
+    }else{
+        if(is.null(strata) ){
+            stop("Argument strata must refer to a variable in the data when argument treatment is NULL. \n")
+
+        }
+        if(length(strata) != 1){
+            stop("Argument strata should have length 1. \n")
+        }
+        if(strata %in% names(data) == FALSE){
+            stop("The data set does not seem to have a variable ",strata," (argument: strata). \n")
+        }
+        if(B > 0){
+            stop("Boostrap resampling is not available when argument strata is specified. \n")
+        }
+        if(TD){
+            stop("Landmark analysis is not available when argument strata is specified. \n")
+        }
     }
     test.CR <- !missing(cause) # test whether the argument cause has been specified, i.e. it is a competing risk model
     if(test.CR==FALSE){cause <- NA}
@@ -317,17 +345,23 @@ ate <- function(object,
                  "set argument \'B\' to a positive integer to use a boostrap instead \n")
         }
     }
-    data[[treatment]] <- factor(data[[treatment]])
-  
-  if(is.null(contrasts)){
-    levels <- levels(data[[treatment]])
-    contrasts <- levels(data[[treatment]])
-    ## if (length(contrasts)>50) warning("Treatment variable has more than 50 levels.\nIf this is not a mistake,
-    ## you should use the argument `contrasts'.")
-  }else{levels <- contrasts}
-  n.contrasts <- length(contrasts)
-  n.times <- length(times)
-  n.obs <- NROW(data)
+    if(!is.null(treatment)){
+        data[[treatment]] <- factor(data[[treatment]])
+    
+        if(is.null(contrasts)){
+            levels <- levels(data[[treatment]])
+            contrasts <- levels(data[[treatment]])
+            ## if (length(contrasts)>50) warning("Treatment variable has more than 50 levels.\nIf this is not a mistake,
+            ## you should use the argument `contrasts'.")
+        }else{levels <- contrasts}
+    }else{
+        data[[strata]] <- factor(data[[strata]])        
+        levels <- levels(data[[strata]])
+        contrasts <- levels(data[[strata]])
+    }
+    n.contrasts <- length(contrasts)
+    n.times <- length(times)
+    n.obs <- NROW(data)
   
   # }}}
   
@@ -348,6 +382,7 @@ ate <- function(object,
         pointEstimate <- Gformula(object=object,
                                   data=data,
                                   treatment=treatment,
+                                  strata=strata,
                                   contrasts=contrasts,
                                   times=times,
                                   cause=cause,
@@ -357,7 +392,7 @@ ate <- function(object,
                                   dots)
     )
     # }}}
-  
+
     # {{{ Confidence interval    
 
     if(se || band){
@@ -438,6 +473,7 @@ ate <- function(object,
                                cause = cause,
                                treatment = treatment,
                                contrasts = contrasts,
+                               strata = strata,
                                n.contrasts = n.contrasts,
                                levels = levels,
                                n.times = n.times,
@@ -452,8 +488,8 @@ ate <- function(object,
             mrisks <- merge(pointEstimate$meanRisk,resSE$mrisks,by=key1)
             crisks <- merge(pointEstimate$riskComparison,resSE$crisks,by=key2)            
             bootseeds <- NULL
-            resBoot <- NULL
-
+            resBoot <- NULL          
+   
                                         # }}}
         }
     } else{
@@ -465,6 +501,11 @@ ate <- function(object,
                                         # }}}
     }
                                         # {{{ output object
+    if(is.null(treatment)){
+        setnames(mrisks, old = "Treatment", new = strata)
+        setnames(crisks, old = c("Treatment.A","Treatment.B"), new = paste0(strata,c(".A",".B")))
+    }
+    
     out <- list(meanRisk=mrisks,
                 riskComparison=crisks,
                 treatment=treatment,
@@ -546,6 +587,7 @@ Gformula_TD <- function(object,
 Gformula_TI <- function(object,
                         data,
                         treatment,
+                        strata,
                         contrasts,
                         times,
                         landmark,
@@ -556,26 +598,36 @@ Gformula_TI <- function(object,
 
     meanRisk <- lapply(1:n.contrasts,function(i){ ## i <- 1
         ## prediction for the hypothetical worlds in which every subject is treated with the same treatment
-        data.i <- data
-        data.i[[treatment]] <- factor(contrasts[i], levels = levels)
+        if(!is.null(treatment)){
+            data.i <- data
+            data.i[[treatment]] <- factor(contrasts[i], levels = levels)
+        }else{
+            data.i <- data[data[[strata]]==contrasts[i]]
+        }
         allrisks <- do.call("predictRisk",
                             args = list(object, newdata = data.i, times = times, cause = cause,...))
         if(!is.matrix(allrisks)){allrisks <- cbind(allrisks)} 
         risk.i <- colMeans(allrisks)
         risk.i
     })
-    riskComparison <- data.table::rbindlist(lapply(1:(n.contrasts-1),function(i){ ## i <- 1
-        data.table::rbindlist(lapply(((i+1):n.contrasts),function(j){ ## j <- 2
-            ## compute differences between all pairs of treatments
-            data.table(Treatment.A=contrasts[[i]],
-                       Treatment.B=contrasts[[j]],
-                       time = times,
-                       diff=meanRisk[[i]]-meanRisk[[j]],
-                       ratio=meanRisk[[i]]/meanRisk[[j]])
-        }))}))
-    name.Treatment <- unlist(lapply(1:n.contrasts, function(c){rep(contrasts[c],length(meanRisk[[c]]))}))
-    out <- list(meanRisk = data.table(Treatment=name.Treatment, time = times, meanRisk=unlist(meanRisk)),
-                riskComparison = riskComparison)    
+
+        riskComparison <- data.table::rbindlist(lapply(1:(n.contrasts-1),function(i){ ## i <- 1
+            data.table::rbindlist(lapply(((i+1):n.contrasts),function(j){ ## j <- 2
+                ## compute differences between all pairs of treatments
+                data.table(Treatment.A=contrasts[[i]],
+                           Treatment.B=contrasts[[j]],
+                           time = times,
+                           diff=meanRisk[[i]]-meanRisk[[j]],
+                           ratio=meanRisk[[i]]/meanRisk[[j]])
+            }))}))
+
+    ## reshape for export
+    name.strata <- unlist(lapply(1:n.contrasts, function(c){rep(contrasts[c],length(meanRisk[[c]]))}))
+
+    out <- list(meanRisk = data.table(Treatment=name.strata,
+                                      time = times,
+                                      meanRisk=unlist(meanRisk)),
+                riskComparison = riskComparison)
     return(out)            
 }
 # }}}

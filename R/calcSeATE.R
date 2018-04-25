@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: apr  5 2018 (17:01) 
 ## Version: 
-## Last-Updated: apr 11 2018 (17:07) 
+## Last-Updated: apr 25 2018 (19:15) 
 ##           By: Brice Ozenne
-##     Update #: 106
+##     Update #: 172
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -16,7 +16,7 @@
 ### Code:
 
 calcSeATE <- function(object, data, times, cause,
-                      treatment, contrasts, n.contrasts, levels, n.times, n.obs,
+                      treatment, contrasts, strata, n.contrasts, levels, n.times, n.obs,
                       pointEstimate,
                       alpha, conf.level,
                       se, band, nsim.band, store.iid){
@@ -26,39 +26,58 @@ calcSeATE <- function(object, data, times, cause,
     lower <- upper <- diff.se <- diff.lower <- diff.upper <- diff.p.value <- ratio.se <- ratio.lower <- ratio.upper <- ratio.p.value <- NULL ## [:forCRANcheck:]
     
                                         # {{{ 1- influence function for the individual predictions
-        ## in hypothetical worlds in which every subject is treated with the same treatment
-        IFrisk <- lapply(1:n.contrasts,function(i){
-            data.i <- data
+    ## in hypothetical worlds in which every subject is treated with the same treatment
+    if(!is.null(treatment)){
+        n.iid <- n.contrasts
+        average.iid <- TRUE
+        iid <- FALSE
+    }else{
+        n.iid <- 1
+        average.iid <- FALSE
+        iid <- TRUE
+    }
+    IFrisk <- lapply(1:n.iid,function(i){
+        data.i <- data
+        if(!is.null(treatment)){
             data.i[[treatment]] <- factor(contrasts[i], levels = levels)
-            ## influence function for the absolute risk
-            if ("CauseSpecificCox" %in% class(object)){
-                pred.i <- do.call("predict",args = list(object,
-                                                        newdata = data.i,
-                                                        times = times,
-                                                        cause=cause,
-                                                        se=FALSE,
-                                                        iid=FALSE,
-                                                        keep.times=FALSE,
-                                                        log.transform=FALSE,
-                                                        store.iid=store.iid,
-                                                        average.iid=TRUE))
-                risk.i <- pred.i$absRisk
-                attr(risk.i,"iid") <- pred.i$absRisk.average.iid
-            } else if(any(c("coxph","cph") %in% class(object))){
-                pred.i <- do.call("predictCox",args = list(object,
-                                                           newdata = data.i,
-                                                           times = times,
-                                                           se=FALSE,
-                                                           iid=FALSE,
-                                                           keep.times=FALSE,
-                                                           log.transform=FALSE,
-                                                           type="survival",
-                                                           store.iid=store.iid,
-                                                           average.iid=TRUE))
-                risk.i <- 1-pred.i$survival
-                attr(risk.i,"iid") <- -pred.i$survival.average.iid
-            }else if("glm" %in% class(object)){
-                risk.i <- cbind(predict(object, type = "response", newdata = data.i, se=FALSE))
+        }
+        ## influence function for the absolute risk
+        if ("CauseSpecificCox" %in% class(object)){
+            pred.i <- do.call("predict",args = list(object,
+                                                    newdata = data.i,
+                                                    times = times,
+                                                    cause=cause,
+                                                    se = FALSE,
+                                                    iid = iid,
+                                                    keep.times = FALSE,
+                                                    log.transform = FALSE,
+                                                    store.iid = store.iid,
+                                                    average.iid = average.iid))
+            risk.i <- pred.i$absRisk
+            if(!is.null(treatment)){
+                attr(risk.i,"iid") <- pred.i[["absRisk.average.iid"]]
+            }else{
+                attr(risk.i,"iid") <- pred.i[["absRisk.iid"]]
+            }
+        } else if(any(c("coxph","cph") %in% class(object))){
+            pred.i <- do.call("predictCox",args = list(object,
+                                                       newdata = data.i,
+                                                       times = times,
+                                                       se = FALSE,
+                                                       iid = iid,
+                                                       keep.times = FALSE,
+                                                       log.transform = FALSE,
+                                                       type = "survival",
+                                                       store.iid = store.iid,
+                                                       average.iid = average.iid))
+            risk.i <- 1-pred.i$survival
+            if(!is.null(treatment)){
+                attr(risk.i,"iid") <- -pred.i[["survival.average.iid"]]
+            }else{
+                attr(risk.i,"iid") <- -pred.i[["survival.iid"]]
+            }
+        }else if("glm" %in% class(object)){
+            risk.i <- cbind(predict(object, type = "response", newdata = data.i, se=FALSE))
                 
             ## compute influence function of the coefficients using lava
             iid.beta <- lava::iid(object)
@@ -78,13 +97,28 @@ calcSeATE <- function(object, data, times, cause,
                 stop("Cannot handle ",object$family$link," \n",
                      "Only handle the following link function: identity, logit \n")
             }
-            attr(risk.i,"iid") <- rowMeans(iid.pred)
+            if(average.iid){
+                attr(risk.i,"iid") <- rowMeans(iid.pred)
+            }else{
+                attr(risk.i,"iid") <- array(iid.pred, dim = c(NROW(iid.pred),1,NCOL(iid.pred)))
+            }
             ## se.pred sqrt(colSums(iid.pred^2))
         }
         return(risk.i)
-    })            
-                                        # }}}
+    })
 
+    if(is.null(treatment)){
+        IFrisk <- lapply(1:n.contrasts, function(iC){
+            ## iid [pred,time,train]
+            indexC <- which(data[[strata]]==contrasts[iC])
+            iOut <- IFrisk[[1]][indexC,,drop=FALSE]
+            ## for each time and initial sample average over the levels of the covariates
+            attr(iOut,"iid") <- apply(attr(IFrisk[[1]],"iid")[indexC,,,drop=FALSE], MARGIN = 2:3, FUN = mean)
+            return(iOut)
+        })
+        names(IFrisk) <- contrasts
+    }
+                                        # }}}
                                         # {{{ 2- influence function for the average treatment effect
     ## IF had dimension n.predictions (row), n.times (columns), n.dataTrain (length)
     iid.treatment <- array(NA, dim = c(n.contrasts, n.times, n.obs))
@@ -95,13 +129,20 @@ calcSeATE <- function(object, data, times, cause,
         term2 <- rowCenter_cpp(IFrisk[[iTreat]], center = pointEstimate$meanRisk[Treatment==contrasts[iTreat],meanRisk])
         
         ## we get n * IF instead of IF for the absolute risk. This is why the second term need to be rescaled
-        iid.treatment[iTreat,,] <- term1 + t(term2)/n.obs
+        if(is.null(treatment)){
+            indexC <- which(data[[strata]]==contrasts[iTreat])
+            term2full <- matrix(0, ncol = n.times, nrow = n.obs) 
+            term2full[indexC,] <- term2/length(indexC) 
+            iid.treatment[iTreat,,] <- term1 + term2full
+        }else{
+            iid.treatment[iTreat,,] <- term1 + t(term2)/n.obs
+        }
         sdIF.treatment[iTreat,] <- apply(iid.treatment[iTreat,,,drop=FALSE],2, ## MARGIN=2 and drop=FALSE to deal with the case of one timepoint
                                          function(x){sqrt(sum(x^2))}
                                          )
     }
                                         # }}}
-    
+
                                         # {{{ 3- influence function for the difference/ratio in average treatment effect
     nall.contrasts <- n.contrasts*(n.contrasts-1)/2
     iid_diff.contrasts <- array(NA, dim = c(nall.contrasts, n.times, n.obs))
@@ -147,7 +188,7 @@ calcSeATE <- function(object, data, times, cause,
         }
     }
                                         # }}}
-    
+
                                         # {{{ 4- compute quantiles for the confidence bands
     if(band){ # nsim.band <- 500
             quantileIF <- confBandCox(iid = abind::abind(iid.treatment, iid_diff.contrasts, iid_ratio.contrasts, along = 1),
@@ -163,7 +204,7 @@ calcSeATE <- function(object, data, times, cause,
         
     }
                                         # }}}
-
+    
                                         # {{{ 5- compute confidence intervals and confidence bands
     crisks <- sdIF.fct[,.(Treatment.A,Treatment.B,time)]
     mrisks <- data.table::data.table(Treatment = pointEstimate$meanRisk$Treatment,
@@ -197,7 +238,6 @@ calcSeATE <- function(object, data, times, cause,
         }
       
     mrisks[, meanRisk := NULL]
-      
                                         # }}}
 
     ## export
