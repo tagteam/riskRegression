@@ -4,9 +4,9 @@
 \alias{ate}
 \title{Compute the average treatment effects via the g-formula}
 \usage{
-ate(object, data, formula, treatment, contrasts = NULL, times, cause,
-  landmark, conf.level = 0.95, se = TRUE, band = FALSE, B = 0,
-  bootci.method = "perc", nsim.band = ifelse(band, 1000, 0), seed,
+ate(object, data, formula, treatment, strata = NULL, contrasts = NULL,
+  times, cause, landmark, conf.level = 0.95, se = TRUE, band = FALSE,
+  B = 0, bootci.method = "perc", nsim.band = ifelse(band, 1000, 0), seed,
   handler = "foreach", mc.cores = 1, verbose = TRUE, store.iid = "full",
   ...)
 }
@@ -21,6 +21,8 @@ the outcome model}
 \item{formula}{For analyses with time-dependent covariates, the response formula. See examples.}
 
 \item{treatment}{name of the treatment variable}
+
+\item{strata}{Strata variable on which to compute the average risk. Incompatible with treatment. Experimental.}
 
 \item{contrasts}{the levels of the treatment variable to be
 compared}
