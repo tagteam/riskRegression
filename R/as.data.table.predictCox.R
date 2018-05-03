@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Mar  3 2017 (09:28) 
 ## Version: 
-## Last-Updated: jul 18 2017 (14:45) 
+## Last-Updated: maj  3 2018 (18:01) 
 ##           By: Brice Ozenne
-##     Update #: 16
+##     Update #: 23
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -28,12 +28,16 @@ as.data.table.predictCox <- function(x,keep.rownames=FALSE,...){
   if (!is.null(x$newdata)){
       nd <- cbind(nd, x$newdata)
   }
-  out <- data.table::rbindlist(lapply(1:length(x$times),function(tt){
+  if(is.null(x$times)){
+      stop("Cannot convert to a data.table object when times is missing in object \n",
+           "set the argument \'keep.time\' to TRUE when calling the predict method \n")
+  }
+  out <- data.table::rbindlist(lapply(1:length(x$times),function(tt){      
       ndtt=copy(nd)
       nd[,times:=x$times[[tt]]]
       if (!is.null(x$strata))
           nd[,strata:=x$strata]
-      for (name in x$type){
+      for (name in x$type){          
           tyc <- cbind(x[[name]][,tt])
           colnames(tyc) <- name
           vec.names <- c("")
@@ -45,10 +49,10 @@ as.data.table.predictCox <- function(x,keep.rownames=FALSE,...){
               vec.names <- c(vec.names,".se",".lower",".upper")
           }
           if (x$band==1L){
-            tyc <- cbind(tyc,
-                         x[[paste0(name,".lowerBand")]][,tt],
-                         x[[paste0(name,".upperBand")]][,tt])
-            vec.names <- c(vec.names,".lowerBand",".upperBand")
+              tyc <- cbind(tyc,
+                           x[[paste0(name,".lowerBand")]][,tt],
+                           x[[paste0(name,".upperBand")]][,tt])
+              vec.names <- c(vec.names,".lowerBand",".upperBand")
           }
 
           colnames(tyc) <- paste0(name,vec.names)

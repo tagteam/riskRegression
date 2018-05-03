@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: apr  5 2018 (17:01) 
 ## Version: 
-## Last-Updated: apr 25 2018 (19:15) 
+## Last-Updated: maj  3 2018 (18:12) 
 ##           By: Brice Ozenne
-##     Update #: 172
+##     Update #: 190
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -43,16 +43,16 @@ calcSeATE <- function(object, data, times, cause,
         }
         ## influence function for the absolute risk
         if ("CauseSpecificCox" %in% class(object)){
-            pred.i <- do.call("predict",args = list(object,
-                                                    newdata = data.i,
-                                                    times = times,
-                                                    cause=cause,
-                                                    se = FALSE,
-                                                    iid = iid,
-                                                    keep.times = FALSE,
-                                                    log.transform = FALSE,
-                                                    store.iid = store.iid,
-                                                    average.iid = average.iid))
+            pred.i <- predict(object,
+                              newdata = data.i,
+                              times = times,
+                              cause=cause,
+                              se = FALSE,
+                              iid = iid,
+                              keep.times = FALSE,
+                              log.transform = FALSE,
+                              store.iid = store.iid,
+                              average.iid = average.iid)
             risk.i <- pred.i$absRisk
             if(!is.null(treatment)){
                 attr(risk.i,"iid") <- pred.i[["absRisk.average.iid"]]
@@ -60,16 +60,16 @@ calcSeATE <- function(object, data, times, cause,
                 attr(risk.i,"iid") <- pred.i[["absRisk.iid"]]
             }
         } else if(any(c("coxph","cph") %in% class(object))){
-            pred.i <- do.call("predictCox",args = list(object,
-                                                       newdata = data.i,
-                                                       times = times,
-                                                       se = FALSE,
-                                                       iid = iid,
-                                                       keep.times = FALSE,
-                                                       log.transform = FALSE,
-                                                       type = "survival",
-                                                       store.iid = store.iid,
-                                                       average.iid = average.iid))
+            pred.i <- predictCox(object,
+                                 newdata = data.i,
+                                 times = times,
+                                 se = FALSE,
+                                 iid = iid,
+                                 keep.times = FALSE,
+                                 log.transform = FALSE,
+                                 type = "survival",
+                                 store.iid = store.iid,
+                                 average.iid = average.iid)
             risk.i <- 1-pred.i$survival
             if(!is.null(treatment)){
                 attr(risk.i,"iid") <- -pred.i[["survival.average.iid"]]
@@ -115,9 +115,9 @@ calcSeATE <- function(object, data, times, cause,
             ## for each time and initial sample average over the levels of the covariates
             attr(iOut,"iid") <- apply(attr(IFrisk[[1]],"iid")[indexC,,,drop=FALSE], MARGIN = 2:3, FUN = mean)
             return(iOut)
-        })
-        names(IFrisk) <- contrasts
+        })        
     }
+    
                                         # }}}
                                         # {{{ 2- influence function for the average treatment effect
     ## IF had dimension n.predictions (row), n.times (columns), n.dataTrain (length)

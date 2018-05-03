@@ -111,60 +111,59 @@ test_that("Cox model - check internal consistency (one or several timepoints)",{
                  a1$meanRisk)
 })
 
-# }}}
+                                        # }}}
                                         # {{{ check against manual computation
-if (FALSE)
-    test_that("check against manual computation",{
-        ## automatically
+test_that("check against manual computation",{
+    ## automatically
+    fit <- cph(formula = Surv(time,event)~ X1+X2,data=dtS,y=TRUE,x=TRUE)
+    ateFit <- ate(fit, data = dtS, treatment = "X1", contrasts = NULL,
+                  times = 5:7, B = 0, se = TRUE, mc.cores=1,handler=handler,
+                  verbose=verbose)
+
+    ATE <- list()
+    ATE.iid <- list()
+    for(iT in c("T0","T1","T2")){
+                                        # iT <- "T0"
+        newdata0 <- copy(dtS)
+        newdata0$X1 <- iT
         fit <- cph(formula = Surv(time,event)~ X1+X2,data=dtS,y=TRUE,x=TRUE)
-        ateFit <- ate(fit, data = dtS, treatment = "X1", contrasts = NULL,
-                      times = 5:7, B = 0, se = TRUE, mc.cores=1,handler=handler,
-                      verbose=verbose)
+        resPred <- predictCox(fit, newdata = newdata0, time = 5:7, iid = TRUE, log.transform = FALSE)
+        ATE[[iT]] <- colMeans(1-resPred$survival)
+        ATE.iid_term1 <- apply(-resPred$survival.iid,3,colMeans)
+        ATE.iid_term2 <- apply(1-resPred$survival, 1, function(x){x-ATE[[iT]]})/n
+        ATE.iid[[iT]] <- t(ATE.iid_term1) + t(ATE.iid_term2)
+        ATE.se <- sqrt(apply(ATE.iid[[iT]]^2, 2, sum))
+        ATE.lower <- ATE[[iT]]+ qnorm(0.025) * ATE.se
+        ATE.upper <- ATE[[iT]] + qnorm(0.975) * ATE.se
+        expect_equal(ATE.lower, ateFit$meanRisk[Treatment == iT,lower])
+        expect_equal(ATE.upper, ateFit$meanRisk[Treatment == iT,upper])
+    }
 
-        ATE <- list()
-        ATE.iid <- list()
-        for(iT in c("T0","T1","T2")){
-            # iT <- "T0"
-            newdata0 <- copy(dtS)
-            newdata0$X1 <- iT
-            fit <- cph(formula = Surv(time,event)~ X1+X2,data=dtS,y=TRUE,x=TRUE)
-            resPred <- predictCox(fit, newdata = newdata0, time = 5:7, iid = TRUE, log.transform = FALSE)
-            ATE[[iT]] <- colMeans(1-resPred$survival)
-            ATE.iid_term1 <- apply(-resPred$survival.iid,3,colMeans)
-            ATE.iid_term2 <- apply(1-resPred$survival, 1, function(x){x-ATE[[iT]]})/n
-            ATE.iid[[iT]] <- t(ATE.iid_term1) + t(ATE.iid_term2)
-            ATE.se <- sqrt(apply(ATE.iid[[iT]]^2, 2, sum))
-            ATE.lower <- ATE[[iT]]+ qnorm(0.025) * ATE.se
-            ATE.upper <- ATE[[iT]] + qnorm(0.975) * ATE.se
-            expect_equal(ATE.lower, ateFit$meanRisk[Treatment == iT,lower])
-            expect_equal(ATE.upper, ateFit$meanRisk[Treatment == iT,upper])
-        }
+    diffATE <- ATE[["T0"]]-ATE[["T1"]]
+    diffATE.iid <- ATE.iid[["T0"]]-ATE.iid[["T1"]]
+    diffATE.se <- sqrt(apply(diffATE.iid^2, 2, sum))
+    diffATE.lower <- diffATE + qnorm(0.025) * diffATE.se
+    diffATE.upper <- diffATE + qnorm(0.975) * diffATE.se
 
-        diffATE <- ATE[["T0"]]-ATE[["T1"]]
-        diffATE.iid <- ATE.iid[["T0"]]-ATE.iid[["T1"]]
-        diffATE.se <- sqrt(apply(diffATE.iid^2, 2, sum))
-        diffATE.lower <- diffATE + qnorm(0.025) * diffATE.se
-        diffATE.upper <- diffATE + qnorm(0.975) * diffATE.se
+    expect_equal(diffATE.lower,
+                 ateFit$riskComparison[Treatment.A == "T0" & Treatment.B == "T1",diff.lower])
+    expect_equal(diffATE.upper,
+                 ateFit$riskComparison[Treatment.A == "T0" & Treatment.B == "T1",diff.upper])
 
-        expect_equal(diffATE.lower,
-                     ateFit$riskComparison[Treatment.A == "T0" & Treatment.B == "T1",diff.lower])
-        expect_equal(diffATE.upper,
-                     ateFit$riskComparison[Treatment.A == "T0" & Treatment.B == "T1",diff.upper])
+    ratioATE <- ATE[["T0"]]/ATE[["T1"]]
 
-        ratioATE <- ATE[["T0"]]/ATE[["T1"]]
+    ratioATE.iid <- rowScale_cpp(ATE.iid[["T0"]],ATE[["T1"]])-rowMultiply_cpp(ATE.iid[["T1"]], ATE[["T0"]]/ATE[["T1"]]^2)
+    ratioATE.se <- sqrt(apply(ratioATE.iid^2, 2, sum))
+    ratioATE.lower <- ratioATE + qnorm(0.025) * ratioATE.se
+    ratioATE.upper <- ratioATE + qnorm(0.975) * ratioATE.se
 
-        ratioATE.iid <- rowScale_cpp(ATE.iid[["T0"]],ATE[["T1"]])-rowMultiply_cpp(ATE.iid[["T1"]], ATE[["T0"]]/ATE[["T1"]]^2)
-        ratioATE.se <- sqrt(apply(ratioATE.iid^2, 2, sum))
-        ratioATE.lower <- ratioATE + qnorm(0.025) * ratioATE.se
-        ratioATE.upper <- ratioATE + qnorm(0.975) * ratioATE.se
-
-        expect_equal(ratioATE.lower,
-                     ateFit$riskComparison[Treatment.A == "T0" & Treatment.B == "T1",ratio.lower])
-        expect_equal(ratioATE.upper,
-                     ateFit$riskComparison[Treatment.A == "T0" & Treatment.B == "T1",ratio.upper])
+    expect_equal(ratioATE.lower,
+                 ateFit$riskComparison[Treatment.A == "T0" & Treatment.B == "T1",ratio.lower])
+    expect_equal(ratioATE.upper,
+                 ateFit$riskComparison[Treatment.A == "T0" & Treatment.B == "T1",ratio.upper])
 })
-# }}}
-# {{{ CSC model bootstrap
+                                        # }}}
+                                        # {{{ CSC model bootstrap
 test_that("CSC model bootstrap",{
     df <- sampleData(1e2,outcome="competing.risks")
     df$time <- round(df$time,1)
@@ -178,6 +177,34 @@ test_that("CSC model bootstrap",{
                times = 7, cause = 1, B = 2, mc.cores=1,handler=handler,verbose=verbose)
     Sres <- print(res, trace = FALSE)
 })
+                                        # }}}
+
+                                        # {{{
+
+test_that("stratified ATE",{
+    set.seed(10)
+    d <- sampleData(n=100)
+
+    e.coxph <- coxph(Surv(time, event == 1) ~ X1, data = d,
+                     x = TRUE, y = TRUE)
+
+    outATE <- ate(e.coxph, data = d, treatment = NULL, strata = "X1", time = 1)
+
+    outPred <- predictCox(e.coxph,
+                          newdata = d,
+                          times = 1,
+                          se = TRUE,
+                          log.transform = FALSE,
+                          keep.newdata = TRUE,
+                          type = "survival")
+    GS.se <- as.data.table(outPred)[,.SD[1],by = "X1"]
+    setkeyv(GS.se, cols = "X1")
+    test.se <- outATE$meanRisk
+    expect_equal(1-GS.se$survival,test.se$meanRisk)
+    expect_equal(GS.se$survival.se,GS.se$survival.se)
+})    
+
+
 # }}}
 # {{{ parallel computation
   
