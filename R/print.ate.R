@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun  6 2016 (06:48) 
 ## Version: 
-## last-updated: apr 12 2018 (12:18) 
+## last-updated: maj  4 2018 (13:15) 
 ##           By: Brice Ozenne
-##     Update #: 111
+##     Update #: 115
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -48,12 +48,22 @@ print.ate <- function(x, bootci.method = x$bootci.method, digits = 3, ...){
                                         # }}}
 
                                         # {{{ display
-    cat("The treatment variable ",x$treatment," has the following options:\n",sep="")
-    cat(paste(x$contrasts,collapse=", "),"\n")
-    cat("\nMean risks on probability scale [0,1] in hypothetical worlds\nin which all subjects are treated with one of the treatment options:\n\n")
+    if(!is.null(x$treatment)){
+        cat("The treatment variable ",x$treatment," has the following options:\n",sep="")
+        cat(paste(x$contrasts,collapse=", "),"\n")
+    }
+
+
+    if(!is.null(x$treatment)){
+        cat("\nMean risks on probability scale [0,1] in hypothetical worlds\nin which all subjects are treated with one of the treatment options:\n\n")
+    }else{
+        cat("Average risks within strata on probability scale [0,1]:\n\n")
+    }
     print(x$meanRisk,digits=digits,...)
-    cat("\nComparison of risks on probability scale [0,1] between\nhypothetical worlds are interpretated as if the treatment was randomized:\n\n")    
-    print(x$riskComparison,digits=digits,...)
+    if(!is.null(x$treatment)){
+        cat("\nComparison of risks on probability scale [0,1] between\nhypothetical worlds are interpretated as if the treatment was randomized:\n\n")    
+        print(x$riskComparison,digits=digits,...)
+    }
     ##
     if(x$se && (x$conf.level > 0 && (x$conf.level < 1))){
         if(x$B==0){

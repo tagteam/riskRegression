@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Oct 23 2016 (08:53) 
 ## Version: 
-## last-updated: apr 25 2018 (19:17) 
+## last-updated: maj  4 2018 (13:08) 
 ##           By: Brice Ozenne
-##     Update #: 724
+##     Update #: 726
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -577,7 +577,9 @@ Gformula_TD <- function(object,
             RC[]
         }))}))
     out <- list(meanRisk = dt.meanRisk,
-                riskComparison = riskComparison)
+                riskComparison = riskComparison,
+                treatment = treatment,
+                strata = strata)
     return(out)
 }
 
