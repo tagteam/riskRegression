@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: maj 18 2017 (09:23) 
 ## Version: 
-## last-updated: Apr 16 2018 (08:27) 
-##           By: Thomas Alexander Gerds
-##     Update #: 62
+## last-updated: maj 24 2018 (17:23) 
+##           By: Brice Ozenne
+##     Update #: 73
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -215,72 +215,204 @@ test_that("iid lambda0 - categorical",{
 # {{{ 2a- no strata, no interaction, continous    
    
 test_that("predictionsSE",{
-    ## at fix time
+
+#### at fix time
     predGS <- predict(m.cox_GS, newdata = d, times = 10)
-    predRR1 <- predictCox(m.coxph, newdata = d, times = 10, se = TRUE, log.transform = FALSE)
-    predRR2 <- predictCox(m.coxph_d2, newdata = d, times = 10, se = TRUE, log.transform = FALSE)
+    predRR1 <- predictCox(m.coxph, newdata = d, times = 10, se = TRUE, band = TRUE)
+    predRR2 <- predictCox(m.coxph_d2, newdata = d, times = 10, se = TRUE, band = TRUE)
 
+    predRR1.none <- confint(predRR1, transform.survival = "none", seed = 10)
+    predRR1.loglog <- confint(predRR1, transform.survival = "loglog", seed = 10)
+    
+    ## punctual estimate
     expect_equal(as.double(predRR1$survival), as.double(predGS$S0))
     expect_equal(as.double(predRR2$survival), as.double(predGS$S0))
-    
+
+    ## standard error
     expect_equal(as.double(predRR1$survival.se), as.double(predGS$se.S0))
     expect_equal(as.double(predRR2$survival.se), as.double(predGS$se.S0))
 
-    # at event time
+    ## confidence intervals/band
+    GS <- data.table("observation" = c(6, 7), 
+                     "times" = c(10, 10), 
+                     "survival" = c(0.101588, 0.070717), 
+                     "survival.se" = c(0.086529, 0.057379), 
+                     "survival.lower" = c(0, 0), 
+                     "survival.upper" = c(0.271182, 0.183179),                     
+                     "survival.quantileBand" = c(1.963483, 1.982114),
+                     "survival.lowerBand" = c(0, 0), 
+                     "survival.upperBand" = c(0.271486, 0.18445))
+    ## butils::object2script(as.data.table(predRR1.none)[6:7,names(GS),with=FALSE], digit = 6)
+    expect_equal(as.data.table(predRR1.none)[6:7,names(GS),with=FALSE], GS, tol = 1e-4, scale = 1)
+
+    GS <- data.table("observation" = c(6, 7), 
+                     "times" = c(10, 10), 
+                     "survival" = c(0.10159, 0.07072), 
+                     "survival.se" = c(-0.37246, -0.30629), 
+                     "survival.lower" = c(0.00869, 0.008), 
+                     "survival.upper" = c(0.3322, 0.23378),
+                     "survival.quantileBand" = c(1.96348, 1.98211),
+                     "survival.lowerBand" = c(0.00864, 0.00774), 
+                     "survival.upperBand" = c(0.33268, 0.23609))
+    ## butils::object2script(as.data.table(predRR1.loglog)[6:7,names(GS),with=FALSE], digit = 5)
+    expect_equal(as.data.table(predRR1.loglog)[6:7,names(GS),with=FALSE], GS, tol = 1e-4, scale = 1)
+
+    
+#### at event time
     predGS <- predict(m.cox_GS, newdata = d, times = d$eventtime)
-    predRR1 <- predictCox(m.coxph, newdata = d, times = d$eventtime, se = TRUE, log.transform = FALSE)
-    predRR2 <- predictCox(m.coxph_d2, newdata = d, times = d$eventtime, se = TRUE, log.transform = FALSE)
+    predRR1 <- predictCox(m.coxph, newdata = d, times = d$eventtime, se = TRUE, band = TRUE)
+    predRR2 <- predictCox(m.coxph_d2, newdata = d, times = d$eventtime, se = TRUE, band = TRUE)
 
+    predRR1.none <- confint(predRR1, transform.survival = "none", seed = 10)
+    predRR1.loglog <- confint(predRR1, transform.survival = "loglog", seed = 10)
+
+    ## punctual estimate
     expect_equal(as.double(predRR1$survival), as.double(predGS$S0))
     expect_equal(as.double(predRR2$survival), as.double(predGS$S0))
-    
+
+    ## standard error
     expect_equal(as.double(predRR1$survival.se), as.double(predGS$se.S0))
     expect_equal(as.double(predRR2$survival.se), as.double(predGS$se.S0))
 
-    # after last event
-    predRR1 <- predictCox(m.coxph, newdata = d, times = 1e8, se = TRUE)
+    ## confidence intervals/band
+    GS <- data.table("observation" = c(6, 7), 
+                     "times" = c(0.170031, 0.170031), 
+                     "survival" = c(0.983427, 0.980827), 
+                     "survival.se" = c(0.016414, 0.020011), 
+                     "survival.lower" = c(0.951257, 0.941606), 
+                     "survival.upper" = c(1, 1), 
+                     "survival.quantileBand" = c(2.70855, 2.896028), 
+                     "survival.lowerBand" = c(0.93897, 0.922875), 
+                     "survival.upperBand" = c(1, 1))
+    ## butils::object2script(as.data.table(predRR1.none)[6:7,names(GS),with=FALSE], digit = 6)
+    expect_equal(as.data.table(predRR1.none)[6:7,names(GS),with=FALSE], GS, tol = 1e-4, scale = 1)
+
+    GS <- data.table("observation" = c(6, 7), 
+                     "times" = c(0.17003, 0.17003), 
+                     "survival" = c(0.98343, 0.98083), 
+                     "survival.se" = c(-0.99872, -1.0539), 
+                     "survival.lower" = c(0.88839, 0.85835), 
+                     "survival.upper" = c(0.99764, 0.99755), 
+                     "survival.quantileBand" = c(2.70855, 2.89603), 
+                     "survival.lowerBand" = c(0.77885, 0.66389), 
+                     "survival.upperBand" = c(0.99888, 0.99909))
+    ## butils::object2script(as.data.table(predRR1.loglog)[6:7,names(GS),with=FALSE], digit = 5)
+    expect_equal(as.data.table(predRR1.loglog)[6:7,names(GS),with=FALSE], GS, tol = 1e-4, scale = 1)
+
+#### after last event
+    predRR1 <- predictCox(m.coxph, newdata = d, times = 1e8, se = TRUE, band = TRUE)
     expect_true(all(is.na(predRR1$survival)))
     expect_true(all(is.na(predRR1$survival.se)))
-
-    # before first event
+    
+#### before first event
     predRR1 <- predictCox(m.coxph, newdata = d, times = 1e-8, se = TRUE)
     expect_true(all(predRR1$survival==1))
     expect_true(all(predRR1$survival.se==0))
 
-    # both
+#### both
     predRR1 <- predictCox(m.coxph, newdata = d, times = c(1e-8,10,1e8), se = TRUE)
     expect_true(all(is.na(predRR1$survival[,3])))
     expect_true(all(predRR1$survival[,1]==1))
     expect_true(all(is.na(predRR1$survival.se[,3])))
     expect_true(all(predRR1$survival.se[,1]==0))
 })
-# }}}
+                                        # }}}
   
 
 # {{{ 2b- no strata, interactions, continous  
 test_that("predictionsSE - interaction",{
+
+#### at fix time
     predGS <- predict(mI.cox_GS, newdata = d, times = 10)
-    predRR1 <- predictCox(mI.coxph, newdata = d, times = 10, se = TRUE, log.transform = FALSE)
+    predRR1 <- predictCox(mI.coxph, newdata = d, times = 10, se = TRUE, band = TRUE)
+
+    predRR1.none <- confint(predRR1, transform.survival = "none", seed = 10)
+    predRR1.loglog <- confint(predRR1, transform.survival = "loglog", seed = 10)
+
+    ## punctial estimate
     expect_equal(as.double(predRR1$survival), as.double(predGS$S0))
+    
+    ## standard error
     expect_equal(as.double(predRR1$survival.se), as.double(predGS$se.S0))
 
+    ## confidence intervals/band
+    GS <- data.table("observation" = c(6, 7), 
+                     "times" = c(10, 10), 
+                     "survival" = c(0.113587, 0.075708), 
+                     "survival.se" = c(0.102236, 0.061297), 
+                     "survival.lower" = c(0, 0), 
+                     "survival.upper" = c(0.313966, 0.195847), 
+                     "survival.quantileBand" = c(1.950346, 1.960436), 
+                     "survival.lowerBand" = c(0, 0), 
+                     "survival.upperBand" = c(0.312983, 0.195876))
+    ## butils::object2script(as.data.table(predRR1.none)[6:7,names(GS),with=FALSE], digit = 6)
+    expect_equal(as.data.table(predRR1.none)[6:7,names(GS),with=FALSE], GS, tol = 1e-4, scale = 1)
+
+    GS <- data.table("observation" = c(6, 7), 
+                     "times" = c(10, 10), 
+                     "survival" = c(0.11359, 0.07571), 
+                     "survival.se" = c(-0.41379, -0.31371), 
+                     "survival.lower" = c(0.00749, 0.00845), 
+                     "survival.upper" = c(0.38035, 0.2477), 
+                     "survival.quantileBand" = c(1.95035, 1.96044), 
+                     "survival.lowerBand" = c(0.00763, 0.00845), 
+                     "survival.upperBand" = c(0.37888, 0.24776))
+    ## butils::object2script(as.data.table(predRR1.loglog)[6:7,names(GS),with=FALSE], digit = 5)
+    expect_equal(as.data.table(predRR1.loglog)[6:7,names(GS),with=FALSE], GS, tol = 1e-4, scale = 1)
+
+#### at event time
     predGS <- predict(mI.cox_GS, newdata = d, times = d$eventtime)
-    predRR1 <- predictCox(mI.coxph, newdata = d, times = d$eventtime, se = TRUE, log.transform = FALSE)
+    predRR1 <- predictCox(mI.coxph, newdata = d, times = d$eventtime, se = TRUE, band = TRUE)
+
+    predRR1.none <- confint(predRR1, transform.survival = "none", seed = 10)
+    predRR1.loglog <- confint(predRR1, transform.survival = "loglog", seed = 10)
+
+    ## punctial estimate
     expect_equal(as.double(predRR1$survival), as.double(predGS$S0))
+    
+    ## standard error
     expect_equal(as.double(predRR1$survival.se), as.double(predGS$se.S0))
+
+    ## confidence intervals/band
+    GS <- data.table("observation" = c(6, 7), 
+                     "times" = c(0.170031, 0.170031), 
+                     "survival" = c(0.985361, 0.982654), 
+                     "survival.se" = c(0.016408, 0.019694), 
+                     "survival.lower" = c(0.953201, 0.944054), 
+                     "survival.upper" = c(1, 1), 
+                     "survival.quantileBand" = c(2.655669, 2.846195), 
+                     "survival.lowerBand" = c(0.941785, 0.926601), 
+                     "survival.upperBand" = c(1, 1))
+    ## butils::object2script(as.data.table(predRR1.none)[6:7,names(GS),with=FALSE], digit = 6)
+    expect_equal(as.data.table(predRR1.none)[6:7,names(GS),with=FALSE], GS, tol = 1e-4, scale = 1)
+
+    GS <- data.table("observation" = c(6, 7), 
+                     "times" = c(0.17003, 0.17003), 
+                     "survival" = c(0.98536, 0.98265), 
+                     "survival.se" = c(-1.12917, -1.14539), 
+                     "survival.lower" = c(0.87384, 0.84775), 
+                     "survival.upper" = c(0.99839, 0.99815), 
+                     "survival.quantileBand" = c(2.65567, 2.84619), 
+                     "survival.lowerBand" = c(0.74392, 0.63393), 
+                     "survival.upperBand" = c(0.99927, 0.99933))
+    ## butils::object2script(as.data.table(predRR1.loglog)[6:7,names(GS),with=FALSE], digit = 5)
+    expect_equal(as.data.table(predRR1.loglog)[6:7,names(GS),with=FALSE], GS, tol = 1e-4, scale = 1)
 })
   
 # }}}
     
 # {{{ 2c- no strata, no interaction, with a categorical variable
 test_that("predictionsSE - categorical",{
+
+#### at fix time
     predGS <- predict(mCAT.cox_GS, newdata = d, times = 10)
-    predRR1 <- predictCox(mCAT.coxph, newdata = d, times = 10, se = TRUE, log.transform = FALSE)
+    predRR1 <- predictCox(mCAT.coxph, newdata = d, times = 10, se = TRUE)
     expect_equal(as.double(predRR1$survival), as.double(predGS$S0))
     expect_equal(as.double(predRR1$survival.se), as.double(predGS$se.S0))
 
+#### at event time
     predGS <- predict(mCAT.cox_GS, newdata = d, times = d$eventtime)
-    predRR1 <- predictCox(mCAT.coxph, newdata = d, times = d$eventtime, se = TRUE, log.transform = FALSE)
+    predRR1 <- predictCox(mCAT.coxph, newdata = d, times = d$eventtime, se = TRUE)
     expect_equal(as.double(predRR1$survival), as.double(predGS$S0))
     expect_equal(as.double(predRR1$survival.se), as.double(predGS$se.S0))
 })
@@ -290,20 +422,23 @@ test_that("predictionsSE - categorical",{
 # {{{ 3d- strata, no interaction, continuous
 
 test_that("predictionsSE - strata",{
+
+#### at fix time
     predGS <- predict(mStrata.cox_GS, newdata = dStrata, times = 2)
-    predRR1 <- predictCox(mStrata.coxph, newdata = dStrata, times = 2, se = TRUE, log.transform = FALSE)
+    predRR1 <- predictCox(mStrata.coxph, newdata = dStrata, times = 2, se = TRUE)
     
     expect_equal(as.double(predRR1$survival), as.double(predGS$S0))
     expect_equal(as.double(predRR1$survival.se), as.double(predGS$se.S0))
     
     predGS <- predict(mStrata.cox_GS, newdata = dStrata, times = 1:3)
-    predRR1 <- predictCox(mStrata.coxph, newdata = dStrata, times = 1:3, se = TRUE, log.transform = FALSE)
+    predRR1 <- predictCox(mStrata.coxph, newdata = dStrata, times = 1:3, se = TRUE)
     
     expect_equal(as.double(predRR1$survival), as.double(predGS$S0))
     expect_equal(as.double(predRR1$survival.se), as.double(predGS$se.S0))
 
+#### at event time
     predGS <- predict(mStrata.cox_GS, newdata = dStrata, times = d$eventtime[1:10])
-    predRR1 <- predictCox(mStrata.coxph, newdata = dStrata, times = d$eventtime[1:10], se = TRUE, log.transform = FALSE)
+    predRR1 <- predictCox(mStrata.coxph, newdata = dStrata, times = d$eventtime[1:10], se = TRUE)
     
     expect_equal(as.double(predRR1$survival), as.double(predGS$S0))
     expect_equal(as.double(predRR1$survival.se), as.double(predGS$se.S0))
@@ -341,24 +476,13 @@ newdata <- d
 
 test_that("iid minimal - no strata", {
     res1 <- predictCox(m.coxph, times = seqTime, newdata = newdata,
-                       log.transform = TRUE, type = c("cumhazard", "survival"),
-                       store.iid = "minimal", se = TRUE, iid = TRUE)
-    res3 <- predictCox(m.coxph, times = seqTime, newdata = newdata,
-                       log.transform = TRUE, type = c("cumhazard", "survival"),
-                       store.iid = "full", se = TRUE, iid = TRUE)
-    expect_equal(res1$cumhazard.se,res3$cumhazard.se)
-    expect_equal(res1$survival.se,res3$survival.se)
-    expect_equal(res1$cumhazard.iid,res3$cumhazard.iid)
-    expect_equal(res1$survival.iid,res3$survival.iid)
-
-    res1 <- predictCox(m.coxph, times = seqTime, newdata = newdata,
-                       log.transform = FALSE, type = c("cumhazard", "survival"),
+                       type = c("cumhazard", "survival"),
                        store.iid = "minimal", se = TRUE, iid = TRUE) 
     res2 <- predictCox(m.coxph, times = seqTime, newdata = newdata,
-                       log.transform = FALSE, type = c("cumhazard", "survival"),
+                       type = c("cumhazard", "survival"),
                        store.iid = "minimal", average.iid = TRUE) 
     res3 <- predictCox(m.coxph, times = seqTime, newdata = newdata,
-                       log.transform = FALSE, type = c("cumhazard", "survival"),
+                       type = c("cumhazard", "survival"),
                        store.iid = "full", se = TRUE, iid = TRUE)
     expect_equal(res1$cumhazard.se,res3$cumhazard.se)
     expect_equal(res1$survival.se,res3$survival.se)
@@ -375,26 +499,15 @@ seqTime <- c(1e-16,4:10,d$time[1:10],1e6)
 newdata <- d
 
 test_that("iid minimal - strata", {
-    res1 <- predictCox(m.coxph, times = seqTime, newdata = newdata,
-                       log.transform = TRUE, type = c("cumhazard", "survival"),
-                       store.iid = "minimal", se = TRUE, iid = TRUE)
-    res3 <- predictCox(m.coxph, times = seqTime, newdata = newdata,
-                       log.transform = TRUE, type = c("cumhazard", "survival"),
-                       store.iid = "full", se = TRUE, iid = TRUE)
-    expect_equal(res1$cumhazard.se,res3$cumhazard.se)
-    expect_equal(res1$survival.se,res3$survival.se)
-    expect_equal(res1$cumhazard.iid,res3$cumhazard.iid)
-    expect_equal(res1$survival.iid,res3$survival.iid)
-
     newdata <- rbind(d[1],d[1])
     res1 <- predictCox(m.coxph, times = seqTime, newdata = newdata,
-                       log.transform = FALSE, type = c("cumhazard", "survival"),
+                       type = c("cumhazard", "survival"),
                        store.iid = "minimal", se = TRUE, iid = TRUE) 
     res2 <- predictCox(m.coxph, times = seqTime, newdata = newdata,
-                       log.transform = FALSE, type = c("cumhazard", "survival"),
+                       type = c("cumhazard", "survival"),
                        store.iid = "minimal", average.iid = TRUE) 
     res3 <- predictCox(m.coxph, times = seqTime, newdata = newdata,
-                       log.transform = FALSE, type = c("cumhazard", "survival"),
+                       type = c("cumhazard", "survival"),
                        store.iid = "full", se = TRUE, iid = TRUE)
     expect_equal(res1$cumhazard.se,res3$cumhazard.se)
     expect_equal(res1$survival.se,res3$survival.se)

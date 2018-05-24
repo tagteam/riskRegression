@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Oct 23 2016 (08:53) 
 ## Version: 
-## last-updated: maj  4 2018 (13:08) 
+## last-updated: maj 23 2018 (14:07) 
 ##           By: Brice Ozenne
-##     Update #: 726
+##     Update #: 727
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -450,7 +450,7 @@ ate <- function(object,
             resBoot <- resBoot$boot
             
             suppressWarnings(
-                res.CIboot <- calcCIboot(boot = resBoot,
+                res.CIboot <- calcCIbootATE(boot = resBoot,
                                          meanRisk = pointEstimate$meanRisk,
                                          riskComparison = pointEstimate$riskComparison,
                                          type = bootci.method,

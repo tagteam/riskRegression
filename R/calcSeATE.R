@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: apr  5 2018 (17:01) 
 ## Version: 
-## Last-Updated: maj  3 2018 (18:12) 
+## Last-Updated: maj 18 2018 (11:55) 
 ##           By: Brice Ozenne
-##     Update #: 190
+##     Update #: 198
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -126,15 +126,16 @@ calcSeATE <- function(object, data, times, cause,
     for(iTreat in 1:n.contrasts){ # iTreat <- 1
         term1 <- t(attr(IFrisk[[iTreat]],"iid"))
         ## note: here IFrisk[[iTreat]] is the risk (the influence function is in the attribute "iid")
-        term2 <- rowCenter_cpp(IFrisk[[iTreat]], center = pointEstimate$meanRisk[Treatment==contrasts[iTreat],meanRisk])
         
-        ## we get n * IF instead of IF for the absolute risk. This is why the second term need to be rescaled
         if(is.null(treatment)){
             indexC <- which(data[[strata]]==contrasts[iTreat])
-            term2full <- matrix(0, ncol = n.times, nrow = n.obs) 
-            term2full[indexC,] <- term2/length(indexC) 
-            iid.treatment[iTreat,,] <- term1 + term2full
+            term2full <- matrix(-pointEstimate$meanRisk[Treatment==contrasts[iTreat],meanRisk], ncol = n.times, nrow = n.obs,
+                                byrow = TRUE)
+            term2full[indexC,] <- term2full[indexC,] + IFrisk[[iTreat]] * n.obs/length(indexC)
+            iid.treatment[iTreat,,] <- term1 + term2full/n.obs
         }else{
+            term2 <- rowCenter_cpp(IFrisk[[iTreat]], center = pointEstimate$meanRisk[Treatment==contrasts[iTreat],meanRisk])
+            ## we get n * IF instead of IF for the absolute risk. This is why the second term need to be rescaled
             iid.treatment[iTreat,,] <- term1 + t(term2)/n.obs
         }
         sdIF.treatment[iTreat,] <- apply(iid.treatment[iTreat,,,drop=FALSE],2, ## MARGIN=2 and drop=FALSE to deal with the case of one timepoint

@@ -21,14 +21,8 @@
 #' @param band Logical. If \code{TRUE} add the confidence band to the output.
 #' @param iid Logical. If \code{TRUE} add the influence function to the output.
 #' @param average.iid Logical. If \code{TRUE} add the average of the influence function over \code{newdata} to the output.
-#' @param nsim.band the number of simulations used to compute the quantiles
-#' for the confidence bands.
-#' @param log.transform Should the confidence intervals/bands be computed on the
-#' log(-log) scale and be backtransformed.
-#' Otherwise they are computed on the original scale and truncated (if necessary).
 #' @param product.limit Logical. If true the survival is computed using the product limit estimator.
 #' Otherwise the exponential approximation is used (i.e. exp(-cumulative hazard)).
-#' @param conf.level Level of confidence.
 #' @param store.iid Implementation used to estimate the influence function and the standard error.
 #' Can be \code{"full"} or \code{"minimal"}. 
 #' @param ... not used
@@ -39,9 +33,6 @@
 #' Confidence intervals and confidence bands can be computed using a first order von Mises expansion.
 #' See the section "Construction of the confidence intervals" in (Ozenne et al., 2017).
 #' 
-#' When setting \code{log.transform} to \code{TRUE}, the standard error that is returned is 
-#' before back-transformation to the original scale.
-#'
 #' A detailed explanation about the meaning of the argument \code{store.iid} can be found
 #' in (Ozenne et al., 2017) Appendix B "Saving the influence functions".
 #' 
@@ -143,10 +134,7 @@ predict.CauseSpecificCox <- function(object,
                                      band = FALSE,
                                      iid = FALSE,
                                      average.iid = FALSE,
-                                     nsim.band = 1e4,
-                                     log.transform = TRUE,
                                      product.limit = TRUE,
-                                     conf.level=0.95,
                                      store.iid="full",
                                      ...){
     if(object$fitter=="phreg"){newdata$entry <- 0} 
@@ -190,13 +178,11 @@ predict.CauseSpecificCox <- function(object,
     }
   
     ## Confidence bands
+    se.save <- se
     if(band>0){ # used to force the computation of the influence function + standard error to get the confidence bands
         iid <- TRUE
         se <- TRUE
     }
-    # original arguments to make this operation invisible for the user
-    iid.save <- iid
-    se.save <- se
         
     # relevant event times to use  
     eventTimes <- eTimes[which(eTimes <= max(times))] 
@@ -369,7 +355,6 @@ predict.CauseSpecificCox <- function(object,
                                nCause = nCause,
                                nVar = nVar,
                                surv.type = surv.type,
-                               log.transform = log.transform,
                                export = c("iid"[iid==TRUE],"se"[se==TRUE],"average.iid"[average.iid==TRUE]),
                                store.iid = store.iid)
     }
@@ -379,17 +364,6 @@ predict.CauseSpecificCox <- function(object,
 
     if(se){
         out$absRisk.se <- out.seCSC$se[,ootimes,drop=FALSE]
-        zval <- qnorm(1-(1-conf.level)/2, 0,1)
-
-        if(log.transform){
-            out$absRisk.lower <- exp(-exp(log(-log(out$absRisk)) + zval*out$absRisk.se))
-            out$absRisk.upper <- exp(-exp(log(-log(out$absRisk)) - zval*out$absRisk.se))
-        }else{            
-            # to keep matrix format even when out$absRisk contains only one line
-            out$absRisk.lower <- out$absRisk.upper <- matrix(NA, nrow = NROW(out$absRisk.se), ncol = NCOL(out$absRisk.se))
-            out$absRisk.lower[] <- apply(out$absRisk - zval*out$absRisk.se,2,pmax,0)
-            out$absRisk.upper[] <- apply(out$absRisk + zval*out$absRisk.se,2,pmin,1)
-        }
     }
     if(iid){
         out$absRisk.iid <- out.seCSC$iid[,ootimes,,drop=FALSE]
@@ -397,34 +371,6 @@ predict.CauseSpecificCox <- function(object,
     if(average.iid){
         out$absRisk.average.iid <- out.seCSC$average.iid[,ootimes,drop=FALSE]
     }
-    if(band>0){
-        
-        out$quantile.band <- confBandCox(iid = out$absRisk.iid,
-                                         se = out$absRisk.se,
-                                         n.sim = nsim.band,
-                                         conf.level = conf.level)
-            
-        if(iid.save==FALSE){
-            out$absRisk.iid <- NULL
-        }
-
-        quantile95 <- colMultiply_cpp(out$absRisk.se,out$quantile.band)
-                
-        if(log.transform){
-            out$absRisk.lowerBand <- exp(-exp(log(-log(out$absRisk)) + quantile95))
-            out$absRisk.upperBand <- exp(-exp(log(-log(out$absRisk)) - quantile95))
-        }else{            
-            out$absRisk.lowerBand <- matrix(NA, nrow = NROW(out$absRisk.se), ncol = NCOL(out$absRisk.se))
-            out$absRisk.lowerBand[] <- apply(out$absRisk - quantile95,2,pmax,0)
-            out$absRisk.upperBand <- out$absRisk + quantile95
-        }
-        
-        if(se.save==FALSE){
-            out$absRisk.se <- NULL
-            out$absRisk.lower <- NULL
-            out$absRisk.upper <- NULL
-        }
-    }    
     if(keep.times){out$times <- times}
     if(keep.newdata==TRUE){
         allVars <- unique(unlist(lapply(object$models, function(m){coxCovars(m)})))
@@ -440,9 +386,8 @@ predict.CauseSpecificCox <- function(object,
             out$strata <- newdata[, interaction(.SD, sep = " "), .SDcols = allStrata]
         }
     }
-    out$conf.level <- conf.level
-    transformation.absRisk <- if(log.transform){function(x){log(-log(1-x))}}else{NA}
-    out <- c(out,list(se = se.save, band = band, nsim.band = nsim.band, transformation.absRisk = transformation.absRisk))
+    out <- c(out,list(se = se.save,
+                      band = band))
     class(out) <- "predictCSC"
     return(out)
 }

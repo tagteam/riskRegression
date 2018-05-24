@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: sep  4 2017 (16:43) 
 ## Version: 
-## last-updated: Sep 30 2017 (18:07) 
-##           By: Thomas Alexander Gerds
-##     Update #: 63
+## last-updated: maj 23 2018 (16:59) 
+##           By: Brice Ozenne
+##     Update #: 64
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -136,39 +136,6 @@ predictCoxPL <- function(object,
             index.jump <- prodlim::sindex(eval.times = times, jump.times = all.times)
             original.res$survival <-  survival.PL[,index.jump,drop=FALSE]
         }
-    }
-    # }}}
-    
-    # {{{ update confidence intervals
-    if(se){
-        zval <- qnorm(1- (1-original.res$conf.level)/2, 0,1)
-        if(log.transform){
-            original.res$survival.lower <- exp(-exp(log(-log(original.res$survival)) + zval*original.res$survival.se))
-            original.res$survival.upper <- exp(-exp(log(-log(original.res$survival)) - zval*original.res$survival.se))                
-        }else{
-            # to keep matrix format even when out$survival contains only one line
-            original.res$survival.lower <- original.res$survival.upper <- matrix(NA,
-                                                                                 nrow = NROW(original.res$survival.se),
-                                                                                 ncol = NCOL(original.res$survival.se)) 
-            original.res$survival.lower[] <- apply(original.res$survival - zval*original.res$survival.se,2,pmax,0)
-            original.res$survival.upper[] <- apply(original.res$survival + zval*original.res$survival.se,2,pmin,1)                        
-        }
-    }
-    # }}}
-
-    # {{{ update confidence bands
-    if(band){
-        quantile95 <- colMultiply_cpp(original.res$survival.se,original.res$quantile.band)
-
-        if(log.transform){
-            original.res$survival.lowerBand <- exp(-exp(log(-log(original.res$survival)) + quantile95))
-            original.res$survival.upperBand <- exp(-exp(log(-log(original.res$survival)) - quantile95))
-        }else{
-            original.res$survival.lowerBand <- original.res$survival.upperBand <- matrix(NA, nrow = NROW(original.res$survival.se), ncol = NCOL(original.res$survival.se)) 
-            original.res$survival.lowerBand[] <- apply(original.res$survival - quantile95,2,pmax,0)
-            original.res$survival.upperBand[] <- apply(original.res$survival + quantile95,2,pmin,1)
-        }
-        
     }
     # }}}
     

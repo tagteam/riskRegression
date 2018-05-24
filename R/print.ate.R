@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun  6 2016 (06:48) 
 ## Version: 
-## last-updated: maj  4 2018 (13:15) 
+## last-updated: maj 23 2018 (14:07) 
 ##           By: Brice Ozenne
-##     Update #: 115
+##     Update #: 116
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -34,7 +34,7 @@ print.ate <- function(x, bootci.method = x$bootci.method, digits = 3, ...){
 
                                         # {{{ compute confidence intervals and p-values when using the bootstrap
     if(!is.null(x$boot) && bootci.method != x$bootci.method){
-        out <- calcCIboot(boot = x$boot,
+        out <- calcCIbootATE(boot = x$boot,
                           meanRisk = x$meanRisk,
                           riskComparison = x$riskComparison,
                           type = bootci.method,

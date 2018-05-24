@@ -14,6 +14,7 @@ handler <- if (Sys.info()["sysname"] == "Windows") "foreach" else "mclapply"
 verbose <- FALSE
                                         # }}}
                                         # {{{ G formula: coxph, cph, sequential, one and several time points
+
 test_that("G formula: coxph, cph, bootstrap sequential, one and several time points",{
     fit.cph <- cph(Surv(time,event)~ X1+X2,data=dtS,y=TRUE,x=TRUE)
     ate.1a <- ate(fit.cph,data = dtS, treatment = "X1", contrasts = NULL,seed=3, bootci.method = "quantile",
@@ -66,8 +67,10 @@ test_that("G formula: coxph, cph, bootstrap sequential, one and several time poi
                  ## c(5.316164e-02, 1.946959e-02, 1.976976e-23), tol = 1e-6)
 
 })
+
                                         # }}}
                                         # {{{ Cox model - fully stratified
+
 test_that("G formula: coxph, cph, fully stratified",{
     fit <- cph(formula = Surv(time,event)~ strat(X1),data=dtS,y=TRUE,x=TRUE)
     ate2 <- ate(fit, data = dtS, treatment = "X1", contrasts = NULL, seed = 3,
@@ -77,8 +80,9 @@ test_that("G formula: coxph, cph, fully stratified",{
     ate1 <- ate(fit,data = dtS, treatment = "X1", contrasts = NULL, seed = 3,
         times = 1, B = 2, y = TRUE, mc.cores=1,handler=handler,verbose=verbose)
 })
+
 # }}}
-# {{{ Cox model - compare to explicit computation
+                                        # {{{ Cox model - compare to explicit computation
 test_that("Cox model - compare to explicit computation",{
     set.seed(10)
     n <- 5e1
@@ -179,7 +183,7 @@ test_that("CSC model bootstrap",{
 })
                                         # }}}
 
-                                        # {{{
+                                        # {{{ average risk
 
 test_that("stratified ATE",{
     set.seed(10)
