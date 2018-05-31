@@ -1,4 +1,6 @@
-# {{{ header
+
+                                        # {{{ header
+## * predictCox (documentation)
 #' @title Fast computation of survival probabilities, hazards and cumulative hazards from Cox regression models 
 #' @name predictCox
 #' 
@@ -7,17 +9,17 @@
 #' @param object The fitted Cox regression model object either
 #'     obtained with \code{coxph} (survival package) or \code{cph}
 #'     (rms package).
-#' @param newdata A \code{data.frame} or \code{data.table} containing
-#'     the values of the predictor variables defining subject specific
-#'     predictions. Should have the same structure as the data set
-#'     used to fit the \code{object}.
-#' @param times Time points at which to evaluate the predictions.
-#' @param centered Logical. If \code{TRUE} return prediction at the
+#' @param newdata [data.frame or data.table]  Contain the values of the predictor variables
+#' defining subject specific predictions.
+#' Should have the same structure as the data set used to fit the \code{object}.
+#' @param times [numeric vector] Time points at which to return
+#' the estimated hazard/cumulative hazard/survival.
+#' @param centered [logical] If \code{TRUE} return prediction at the
 #'     mean values of the covariates \code{fit$mean}, if \code{FALSE}
 #'     return a prediction for all covariates equal to zero.  in the
 #'     linear predictor. Will be ignored if argument \code{newdata} is
 #'     used. For internal use.
-#' @param type the type of predicted value. Choices are \itemize{
+#' @param type [character vector] the type of predicted value. Choices are \itemize{
 #'     \item \code{"hazard"} the baseline hazard function when
 #'     argument \code{newdata} is not used and the hazard function
 #'     when argument \code{newdata} is used.  \item \code{"cumhazard"}
@@ -29,20 +31,21 @@
 #'     when argument \code{newdata} is used.  } Several choices can be
 #'     combined in a vector of strings that match (no matter the case)
 #'     strings \code{"hazard"},\code{"cumhazard"}, \code{"survival"}.
-#' @param keep.strata Logical. If \code{TRUE} add the (newdata) strata
+#' @param keep.strata [logical] If \code{TRUE} add the (newdata) strata
 #'     to the output. Only if there any.
-#' @param keep.times Logical. If \code{TRUE} add the evaluation times
+#' @param keep.times [logical] If \code{TRUE} add the evaluation times
 #'     to the output.
-#' @param keep.newdata Logical. If \code{TRUE} add the value of the
+#' @param keep.newdata [logical] If \code{TRUE} add the value of the
 #'     covariates used to make the prediction in the output list.
-#' @param se Logical. If \code{TRUE} add the standard error to the output.
-#' @param band Logical. If \code{TRUE} add the standard error and the influence function to the output
+#' @param se [logical] If \code{TRUE} add the standard error to the output.
+#' @param band [logical] If \code{TRUE} add the standard error and the influence function to the output
 #' such that \code{confint} will be able to compute the confidence bands. 
-#' @param iid Logical. If \code{TRUE} add the influence function to the output.
-#' @param average.iid Logical. If \code{TRUE} add the average of the influence function over \code{newdata} to the output.
-#' @param store.iid Implementation used to estimate the influence function and the standard error.
+#' @param iid [logical] If \code{TRUE} add the influence function to the output.
+#' @param average.iid [logical] If \code{TRUE} add the average of the influence function over \code{newdata} to the output.
+#' @param store.iid [character] Implementation used to estimate the influence function and the standard error.
 #' Can be \code{"full"} or \code{"minimal"}.
-#' @param ... arguments to be passed to the function \code{iidCox}.
+#' @param ... not used.
+#' 
 #' @details
 #' When the argument \code{newdata} is not specified, the function computes the baseline hazard estimate.
 #' See (Ozenne et al., 2017) section "Handling of tied event times".
@@ -58,41 +61,36 @@
 #' 
 #' The centered argument enables us to reproduce the results obtained with the \code{basehaz}
 #' function from the survival package but should not be modified by the user.
-#'     
+#'
+#' The iid decomposition is output using an array containing the value of the influence
+#' of each subject used to fit the object (dim 3),
+#' for each subject in newdata (dim 1),
+#' and each time (dim 2).
 #' 
 #' @author Brice Ozenne broz@@sund.ku.dk, Thomas A. Gerds tag@@biostat.ku.dk
-#'
-#' @return 
-#' A list with some or all of the following elements:
-#' \itemize{
-#' \item{times}: the time points at which the other elements are evaluated.
-#' \item{hazard}: When argument \code{newdata} is not used the baseline hazard function, otherwise the predicted hazard function. 
-#' \item{cumhazard}: When argument \code{newdata} is not used the cumulative baseline hazard function, otherwise the predicted cumulative hazard function. 
-#' \item{survival}: When argument \code{newdata} is not used the survival probabilities corresponding to the baseline hazard, otherwise the predicted survival probabilities.
-#' \item{cumhazard.se/survival.se}: The standard errors of the predicted cumulative hazard function/survival.
-#' \item(hazard.iid/cumhazard.iid/survival.iid): (array) the value of the influence of each subject used to fit the object (dim 3)
-#' for each subject in newdata (dim 1) and each time (dim 2).
-#' \item(cumhazard.average.iid/survival.average.iid): (array) the average value of the influence over the subsjects in newdata,
-#' for each subject used to fit the model (dim 1) and each time (dim 2).
-#' \item{strata}: The strata variable.
-#' }
 #'
 #' @references
 #' Brice Ozenne, Anne Lyngholm Sorensen, Thomas Scheike, Christian Torp-Pedersen and Thomas Alexander Gerds.
 #' riskRegression: Predicting the Risk of an Event using Cox Regression Models.
 #' The R Journal (2017) 9:2, pages 440-460.
 #' 
+#' @seealso
+#' \code{\link{confint.predictCox}} to compute confidence intervals/bands.
+#' \code{\link{autoplot.predictCox}} to display the predictions.
+
+## * predictCox (examples)
+#' @rdname predictCox
 #' @examples 
 #' library(survival)
 #'
-#' ## generate data
+#' #### generate data ####
 #' set.seed(10)
 #' d <- sampleData(40,outcome="survival") ## training dataset
 #' nd <- sampleData(4,outcome="survival") ## validation dataset
 #' d$time <- round(d$time,1) ## create tied events
 #' # table(duplicated(d$time))
 #' 
-#' ## estimate a stratified Cox model
+#' #### stratified Cox model ####
 #' fit <- coxph(Surv(time,event)~X1 + strata(X2) + X6,
 #'              data=d, ties="breslow", x = TRUE, y = TRUE)
 #' 
@@ -105,20 +103,10 @@
 #' fit.pred
 #'
 #' ## add confidence intervals/bands (survival.se is on the cloglog scale)
-#' confint(fit.pred)
+#' fit.pred <- confint(fit.pred)
+#' fit.pred
 #'
-#' ## export iid decomposition relative to the survival probabilities
-#' CI.iid <- predictCox(fit, newdata = d, times = 5, iid = TRUE, se = TRUE)
-#' as.data.table(CI.iid)[1:5]
-#' rowMeans(CI.iid$survival.iid[,1,]) ## the iid decomposition has 0 expectation
-#' sqrt(rowSums(CI.iid$survival.iid[1:5,1,]^2))
-#' 
-#' ## same but the iid decomposition is averaged over the patients
-#' CI.aviid <- predictCox(fit, newdata = d, times = 5, average.iid = TRUE)
-#' CI.aviid$survival.average.iid[1:5,]
-#' colMeans(CI.iid$survival.iid[,1,1:5])
-#'
-#' ## other examples
+#' ####  other examples ####
 #' # one strata variable
 #' fitS <- coxph(Surv(time,event)~strata(X1)+X2,
 #'               data=d, ties="breslow", x = TRUE, y = TRUE)
@@ -150,6 +138,7 @@
 #' basehaz(m.cph)
 # }}}
 
+## * predictCox (code)
 #' @rdname predictCox
 #' @export
 predictCox <- function(object,

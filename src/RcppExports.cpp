@@ -284,99 +284,16 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// colCenter_cpp
-arma::mat colCenter_cpp(arma::mat X, const arma::colvec& center);
-RcppExport SEXP _riskRegression_colCenter_cpp(SEXP XSEXP, SEXP centerSEXP) {
+// rowSumsCrossprod
+NumericMatrix rowSumsCrossprod(NumericMatrix X, NumericMatrix Y, bool transposeY);
+RcppExport SEXP _riskRegression_rowSumsCrossprod(SEXP XSEXP, SEXP YSEXP, SEXP transposeYSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< arma::mat >::type X(XSEXP);
-    Rcpp::traits::input_parameter< const arma::colvec& >::type center(centerSEXP);
-    rcpp_result_gen = Rcpp::wrap(colCenter_cpp(X, center));
-    return rcpp_result_gen;
-END_RCPP
-}
-// rowCenter_cpp
-arma::mat rowCenter_cpp(arma::mat X, const arma::rowvec& center);
-RcppExport SEXP _riskRegression_rowCenter_cpp(SEXP XSEXP, SEXP centerSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< arma::mat >::type X(XSEXP);
-    Rcpp::traits::input_parameter< const arma::rowvec& >::type center(centerSEXP);
-    rcpp_result_gen = Rcpp::wrap(rowCenter_cpp(X, center));
-    return rcpp_result_gen;
-END_RCPP
-}
-// colScale_cpp
-arma::mat colScale_cpp(arma::mat X, const arma::colvec& scale);
-RcppExport SEXP _riskRegression_colScale_cpp(SEXP XSEXP, SEXP scaleSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< arma::mat >::type X(XSEXP);
-    Rcpp::traits::input_parameter< const arma::colvec& >::type scale(scaleSEXP);
-    rcpp_result_gen = Rcpp::wrap(colScale_cpp(X, scale));
-    return rcpp_result_gen;
-END_RCPP
-}
-// rowScale_cpp
-arma::mat rowScale_cpp(arma::mat X, const arma::rowvec& scale);
-RcppExport SEXP _riskRegression_rowScale_cpp(SEXP XSEXP, SEXP scaleSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< arma::mat >::type X(XSEXP);
-    Rcpp::traits::input_parameter< const arma::rowvec& >::type scale(scaleSEXP);
-    rcpp_result_gen = Rcpp::wrap(rowScale_cpp(X, scale));
-    return rcpp_result_gen;
-END_RCPP
-}
-// colMultiply_cpp
-arma::mat colMultiply_cpp(arma::mat X, const arma::colvec& scale);
-RcppExport SEXP _riskRegression_colMultiply_cpp(SEXP XSEXP, SEXP scaleSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< arma::mat >::type X(XSEXP);
-    Rcpp::traits::input_parameter< const arma::colvec& >::type scale(scaleSEXP);
-    rcpp_result_gen = Rcpp::wrap(colMultiply_cpp(X, scale));
-    return rcpp_result_gen;
-END_RCPP
-}
-// rowMultiply_cpp
-arma::mat rowMultiply_cpp(arma::mat X, const arma::rowvec& scale);
-RcppExport SEXP _riskRegression_rowMultiply_cpp(SEXP XSEXP, SEXP scaleSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< arma::mat >::type X(XSEXP);
-    Rcpp::traits::input_parameter< const arma::rowvec& >::type scale(scaleSEXP);
-    rcpp_result_gen = Rcpp::wrap(rowMultiply_cpp(X, scale));
-    return rcpp_result_gen;
-END_RCPP
-}
-// sliceMultiply_cpp
-arma::cube sliceMultiply_cpp(arma::cube X, const arma::mat& M);
-RcppExport SEXP _riskRegression_sliceMultiply_cpp(SEXP XSEXP, SEXP MSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< arma::cube >::type X(XSEXP);
-    Rcpp::traits::input_parameter< const arma::mat& >::type M(MSEXP);
-    rcpp_result_gen = Rcpp::wrap(sliceMultiply_cpp(X, M));
-    return rcpp_result_gen;
-END_RCPP
-}
-// sliceScale_cpp
-arma::cube sliceScale_cpp(arma::cube X, const arma::mat& M);
-RcppExport SEXP _riskRegression_sliceScale_cpp(SEXP XSEXP, SEXP MSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< arma::cube >::type X(XSEXP);
-    Rcpp::traits::input_parameter< const arma::mat& >::type M(MSEXP);
-    rcpp_result_gen = Rcpp::wrap(sliceScale_cpp(X, M));
+    Rcpp::traits::input_parameter< NumericMatrix >::type X(XSEXP);
+    Rcpp::traits::input_parameter< NumericMatrix >::type Y(YSEXP);
+    Rcpp::traits::input_parameter< bool >::type transposeY(transposeYSEXP);
+    rcpp_result_gen = Rcpp::wrap(rowSumsCrossprod(X, Y, transposeY));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -476,8 +393,6 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-
-RcppExport SEXP _riskRegression_rowSumsCrossprod(SEXP, SEXP, SEXP);
 
 static const R_CallMethodDef CallEntries[] = {
     {"_riskRegression_AUCijFun", (DL_FUNC) &_riskRegression_AUCijFun, 2},
@@ -494,6 +409,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_riskRegression_IFlambda0_cpp", (DL_FUNC) &_riskRegression_IFlambda0_cpp, 16},
     {"_riskRegression_predictCIF_cpp", (DL_FUNC) &_riskRegression_predictCIF_cpp, 15},
     {"_riskRegression_rowCumSum", (DL_FUNC) &_riskRegression_rowCumSum, 1},
+    {"_riskRegression_rowSumsCrossprod", (DL_FUNC) &_riskRegression_rowSumsCrossprod, 3},
     {"_riskRegression_colCenter_cpp", (DL_FUNC) &_riskRegression_colCenter_cpp, 2},
     {"_riskRegression_rowCenter_cpp", (DL_FUNC) &_riskRegression_rowCenter_cpp, 2},
     {"_riskRegression_colScale_cpp", (DL_FUNC) &_riskRegression_colScale_cpp, 2},
@@ -502,15 +418,6 @@ static const R_CallMethodDef CallEntries[] = {
     {"_riskRegression_rowMultiply_cpp", (DL_FUNC) &_riskRegression_rowMultiply_cpp, 2},
     {"_riskRegression_sliceMultiply_cpp", (DL_FUNC) &_riskRegression_sliceMultiply_cpp, 2},
     {"_riskRegression_sliceScale_cpp", (DL_FUNC) &_riskRegression_sliceScale_cpp, 2},
-    {"_riskRegression_colCenter_cpp", (DL_FUNC) &_riskRegression_colCenter_cpp, 2},
-    {"_riskRegression_rowCenter_cpp", (DL_FUNC) &_riskRegression_rowCenter_cpp, 2},
-    {"_riskRegression_colScale_cpp", (DL_FUNC) &_riskRegression_colScale_cpp, 2},
-    {"_riskRegression_rowScale_cpp", (DL_FUNC) &_riskRegression_rowScale_cpp, 2},
-    {"_riskRegression_colMultiply_cpp", (DL_FUNC) &_riskRegression_colMultiply_cpp, 2},
-    {"_riskRegression_rowMultiply_cpp", (DL_FUNC) &_riskRegression_rowMultiply_cpp, 2},
-    {"_riskRegression_sliceMultiply_cpp", (DL_FUNC) &_riskRegression_sliceMultiply_cpp, 2},
-    {"_riskRegression_sliceScale_cpp", (DL_FUNC) &_riskRegression_sliceScale_cpp, 2},
-    {"_riskRegression_rowSumsCrossprod",     (DL_FUNC) &_riskRegression_rowSumsCrossprod,      3},
     {NULL, NULL, 0}
 };
 

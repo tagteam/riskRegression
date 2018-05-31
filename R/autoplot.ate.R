@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: apr 28 2017 (14:19) 
 ## Version: 
-## last-updated: maj 31 2018 (11:57) 
+## last-updated: maj 31 2018 (18:10) 
 ##           By: Brice Ozenne
-##     Update #: 33
+##     Update #: 50
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -15,44 +15,62 @@
 ## 
 ### Code:
 
-#' @title Plot predictions from a Cause-specific Cox proportional hazard regression
-#' @description Plot predictions from a Cause-specific Cox proportional hazard regression
+## * autoplot.ate (documentation)
+#' @title Plot Average Risks
+#' @description Plot average risks.
+#' @name autoplot.ate
 #' 
-#' @param object object obtained with the function \code{predictCox}.
-#' @param ci Logical. If \code{TRUE} display the confidence intervals for the predictions.
-#' @param band Logical. If \code{TRUE} display the confidence bands for the predictions.
-#' @param plot Logical. Should the graphic be plotted.
-#' @param digits integer indicating the number of decimal places
-#' @param alpha transparency of the confidence bands. Argument passed to \code{ggplot2::geom_ribbon}.
+#' @param object Object obtained with the function \code{ate}.
+#' @param ci [logical] If \code{TRUE} display the confidence intervals for the average risks.
+#' @param band [logical] If \code{TRUE} display the confidence bands for the average risks.
+#' @param plot [logical] Should the graphic be plotted.
+#' @param digits [integer, >0] Number of decimal places.
+#' @param alpha [numeric, 0-1] Transparency of the confidence bands. Argument passed to \code{ggplot2::geom_ribbon}.
 #' @param ... not used. Only for compatibility with the plot method.
 #' 
+#' @seealso
+#' \code{\link{ate}} to compute average risks.
+
+## * autoplot.ate (examples)
+#' @rdname autoplot.ate
 #' @examples
 #' library(survival)
 #' library(rms)
-#' 
-#' set.seed(10)
-#' n <- 1e2
-#' 
-#' ## Cox model
-#' dtS <- sampleData(n,outcome="survival")
 #'
+#' #### simulate data ####
+#' n <- 1e2
+#' set.seed(10)
+#' dtS <- sampleData(n,outcome="survival")
+#' 
+#' 
+#' #### Cox model ####
 #' fit <- cph(formula = Surv(time,event)~ X1+X2,data=dtS,y=TRUE,x=TRUE)
 #'
+#' #### Average treatment effect ####
 #' seqTimes <- sort(unique(fit$y[,1]))
 #' seqTimes5 <- seqTimes[seqTimes>5 & seqTimes<10]
 #' ateFit <- ate(fit, data = dtS, treatment = "X1", contrasts = NULL,
 #'               times = seqTimes, B = 0, band = TRUE, nsim.band = 500, y = TRUE,
 #'               mc.cores=1)
-#' autoplot(ateFit, band = TRUE, ci = TRUE)
+#'
+#' #### display #### 
+#' autoplot(ateFit)
 #' 
+#' outGG <- autoplot(ateFit, band = TRUE, ci = TRUE, alpha = 0.1)
+#' dd <- as.data.frame(outGG$data[Treatment == 0])
+#' outGG$plot + facet_wrap(~Treatment, labeller = label_both)
+#' 
+
+## * autoplot.ate (code)
+#' @rdname autoplot.ate
 #' @method autoplot ate
-#' 
 #' @export
 autoplot.ate <- function(object,
                          ci = FALSE,
                          band = FALSE,
                          plot = TRUE,
-                         digits = 2, alpha = 0.1, ...){
+                         digits = 2,
+                         alpha = NA, ...){
 
     ## for CRAN check
     Treatment <- NULL
@@ -68,13 +86,22 @@ autoplot.ate <- function(object,
     }
 
     if( (ci||band) && is.null(object$conf.level) ){
-        object <- confint(object, ...)
+        object <- stats::confint(object, ...)
+    }else{
+        dots <- list(...)
+        if(length(dots)>0){
+            txt <- names(dots)
+            txt.s <- if(length(txt)>1){"s"}else{""}
+            stop("unknown argument",txt.s,": \"",paste0(txt,collapse="\" \""),"\" \n")
+        }
     }
 
     ## display
     dataL <- copy(object$meanRisk)
     dataL[,row := as.numeric(as.factor(Treatment))]
-    setnames(dataL, old = c("lower","upper"), new = c("lowerCI","upperCI"))
+    if(ci){
+        setnames(dataL, old = c("lower","upper"), new = c("lowerCI","upperCI"))
+    }
     
     gg.res <- predict2plot(dataL = dataL,
                            name.outcome = "meanRisk", # must not contain space to avoid error in ggplot2
@@ -82,10 +109,8 @@ autoplot.ate <- function(object,
                            group.by = "Treatment",
                            conf.level = object$conf.level,
                            alpha = alpha,
-                           origin = min(object$time))
+                           ylab = "Average absolute risk")
   
-    gg.res$plot <- gg.res$plot + ggplot2::ylab("Average absolute risk")
-    
     if(plot){
         print(gg.res$plot)
     }

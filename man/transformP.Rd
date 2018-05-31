@@ -4,12 +4,14 @@
 \alias{transformP}
 \title{Compute the p.value after a transformation}
 \usage{
-transformP(estimate, se, type)
+transformP(estimate, se, null, type)
 }
 \arguments{
-\item{estimate}{[numeric vector/matrix] the estimate value before transformation.}
+\item{estimate}{[numeric vector] the estimate value before transformation.}
 
-\item{se}{[numeric matrix/array] the standard error after transformation.}
+\item{se}{[numeric vector] the standard error after transformation.}
+
+\item{null}{[numeric vector] the value of the estimate (before transformation) under the null hypothesis.}
 
 \item{type}{[character] the transforamtion.
 Can be \code{"log"}, \code{"loglog"}, \code{"cloglog"}, or \code{"atanh"} (Fisher transform).}

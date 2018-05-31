@@ -2,52 +2,53 @@
 % Please edit documentation in R/autoplot.predictCSC.R
 \name{autoplot.predictCSC}
 \alias{autoplot.predictCSC}
-\title{Plot predictions from a Cause-specific Cox proportional hazard regression}
+\title{Plot Predictions From a Cause-specific Cox Proportional Hazard Regression}
 \usage{
 \method{autoplot}{predictCSC}(object, ci = FALSE, band = FALSE,
   group.by = "row", reduce.data = FALSE, plot = TRUE, digits = 2,
   alpha = NA, ...)
 }
 \arguments{
-\item{object}{object obtained with the function \code{predictCox}.}
+\item{object}{Object obtained with the function \code{predictCox}.}
 
-\item{ci}{Logical. If \code{TRUE} display the confidence intervals for the predictions.}
+\item{ci}{[logical] If \code{TRUE} display the confidence intervals for the predictions.}
 
-\item{band}{Logical. If \code{TRUE} display the confidence bands for the predictions.}
+\item{band}{[logical] If \code{TRUE} display the confidence bands for the predictions.}
 
-\item{group.by}{The grouping factor used to color the prediction curves. Can be \code{"row"}, \code{"strata"}, or \code{"covariates"}.}
+\item{group.by}{[character] The grouping factor used to color the prediction curves. Can be \code{"row"}, \code{"strata"}, or \code{"covariates"}.}
 
-\item{reduce.data}{Logical. If \code{TRUE} only the covariates that does take indentical values for all observations are displayed.}
+\item{reduce.data}{[logical] If \code{TRUE} only the covariates that does take indentical values for all observations are displayed.}
 
-\item{plot}{Logical. Should the graphic be plotted.}
+\item{plot}{[logical] Should the graphic be plotted.}
 
-\item{digits}{integer indicating the number of decimal places}
+\item{digits}{[integer] Number of decimal places.}
 
-\item{alpha}{transparency of the confidence bands. Argument passed to \code{ggplot2::geom_ribbon}.}
+\item{alpha}{[numeric, 0-1] Transparency of the confidence bands. Argument passed to \code{ggplot2::geom_ribbon}.}
 
-\item{...}{not used. Only for compatibility with the plot method.}
+\item{...}{Not used. Only for compatibility with the plot method.}
 }
 \description{
-Plot predictions from a Cause-specific Cox proportional hazard regression
+Plot predictions from a Cause-specific Cox proportional hazard regression.
 }
 \examples{
-## no strata
+library(survival)
+library(rms)
+
+#### simulate data ####
+set.seed(10)
 d <- sampleData(1e2, outcome = "competing.risks")
+
+#### CSC model ####
 m.CSC <- CSC(Hist(time,event)~ X1 + X2 + X6, data = d)
 
-pred.CSC <- predict(m.CSC, newdata = d[1:2,], time = 1:5, cause = 1)
+pred.CSC <- predict(m.CSC, newdata = d[1:2,], time = 1:5, cause = 1)#'
 autoplot(pred.CSC)
 
-pred.CSC <- predict(m.CSC, newdata = d[1:3,],
-                    time = 1:5, cause = 1, se = TRUE, keep.newdata = TRUE)
 
-
-## strata
-library(survival)
+#### stratified CSC model ####
 m.SCSC <- CSC(Hist(time,event)~ strata(X1) + strata(X2) + X6,
-data = d)
+              data = d)
 pred.SCSC <- predict(m.SCSC, time = 1:3, newdata = d[1:4,],
-cause = 1, se = TRUE, keep.newdata = TRUE, keep.strata = TRUE)
+                     cause = 1, keep.newdata = TRUE, keep.strata = TRUE)
 autoplot(pred.SCSC, group.by = "strata")
-
 }

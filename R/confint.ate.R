@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: maj 23 2018 (14:08) 
 ## Version: 
-## Last-Updated: maj 31 2018 (11:49) 
+## Last-Updated: maj 31 2018 (18:06) 
 ##           By: Brice Ozenne
-##     Update #: 298
+##     Update #: 328
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -21,57 +21,92 @@
 ##' @name confint.ate
 ##' 
 ##' @param object A \code{ate} object, i.e. output of the \code{ate} function.
-##' @param conf.level Level of confidence.
-##' @param transform.absRisk the transformation used to improve coverage
-##' of the confidence intervals for the predicted absolute risk in small samples.
-##' @param nsim.band the number of simulations used to compute the quantiles for the confidence bands.
-##' @param seed Integer passed to set.seed when performing simulation for the confidence bands.
-##' If not given or NA no seed is set. 
+##' @param parm not used. For compatibility with the generic method.
+##' @param level [numeric, 0-1] Level of confidence.
+##' @param nsim.band [integer, >0]the number of simulations used to compute the quantiles for the confidence bands.
+##' @param meanRisk.transform [character] the transformation used to improve coverage
+##' of the confidence intervals for the mean risk in small samples.
+##' Can be \code{"none"}, \code{"log"}, \code{"loglog"}, \code{"cloglog"}.
+##' @param diffRisk.transform [character] the transformation used to improve coverage
+##' of the confidence intervals for the risk difference in small samples.
+##' Can be \code{"none"}, \code{"atanh"}.
+##' @param ratioRisk.transform [character] the transformation used to improve coverage
+##' of the confidence intervals for the risk ratio in small samples.
+##' Can be \code{"none"}, \code{"log"}.
+##' @param seed [integer, >0] seed number set when performing simulation for the confidence bands.
+##' If not given or NA no seed is set.
+##' @param type.boot [character] Method for constructing bootstrap confidence intervals.
+##' Either "perc" (the default), "norm", "basic", "stud", or "bca".
 ##' @param ... not used.
 ##'
-##' @details The confidence bands and confidence intervals are automatically restricted to the interval [0;1].
+##' @details
+##' Confidence bands and confidence intervals computed via the influence function
+##' are automatically restricted to the interval [0;1]. \cr \cr
+##'
+##' Confidence intervals obtained via bootstrap are computed
+##' using the \code{boot.ci} function of the \code{boot} package.
+##' p-value are obtained using test inversion method
+##' (finding the smallest confidence level such that the interval contain the null hypothesis).
 ##' 
 ##' @author Brice Ozenne
-##'
+
+## * confint.ate (examples)
+##' @rdname confint.ate
 ##' @examples
 ##' library(survival)
 ##'
-##' ## generate data
+##' ## ## generate data ####
 ##' set.seed(10)
-##' d <- sampleData(40,outcome="survival") ## training dataset
-##' nd <- sampleData(4,outcome="survival") ## validation dataset
-##' d$time <- round(d$time,1) ## create tied events
-##' # table(duplicated(d$time))
+##' d <- sampleData(40,outcome="survival")
 ##' 
-##' ## estimate a stratified Cox model
+##' #### stratified Cox model ####
 ##' fit <- coxph(Surv(time,event)~X1 + strata(X2) + X6,
 ##'              data=d, ties="breslow", x = TRUE, y = TRUE)
 ##'
-##' 
-##' ## compute individual specific cumulative hazard and survival probabilities 
-##' fit.pred <- predictCox(fit, newdata=nd, times=c(3,8), se = TRUE)
-##' fit.pred
+##' #### average treatment effect ####
+##' fit.pred <- ate(fit, treatment = "X1", times = 1:3, data = d)
 ##'
+##' ## manual calculation of se
+##' dd <- copy(d)
+##' dd$X1 <- factor(0, levels = 0:1)
+##' out <- predictCox(fit, newdata = dd, se = TRUE, times = 1:3, average.iid = TRUE)
+##' term1 <- -out$survival.average.iid
+##' term2 <- sweep(1-out$survival, MARGIN = 2, FUN = "-", STATS = colMeans(1-out$survival))
+##' sqrt(colSums((term1 + term2/NROW(d))^2)) 
+##'
+##' ## note
+##' out2 <- predictCox(fit, newdata = dd, se = TRUE, times = 1:3, iid = TRUE)
+##' mean(out2$survival.iid[,1,1])
+##' out$survival.average.iid[1,1]
+##' 
 ##' ## add confidence intervals computed on the original scale
-##' confint(fit.pred, transform.survival = "none")
-##' fit.pred$survival + 1.96 * fit.pred$survival.se  ## survival.upper
+##' confint(fit.pred,
+##' meanRisk.transform = "none", diffRisk.transform = "none", ratioRisk.transform = "none"
+##' )
+##' 
+##' fit.pred$meanRisk[, .(lower = meanRisk - 1.96 * se,
+##'                       upper = meanRisk + 1.96 * se)]
 ##'
 ##' ## add confidence intervals computed on the log-log scale
 ##' ## and backtransformed
-##' confint(fit.pred, transform.survival = "loglog")
-##' newse <- fit.pred$survival.se/(fit.pred$survival*log(fit.pred$survival))
-##' exp(-exp(log(-log(fit.pred$survival)) - 1.96 * newse)) ## survival.lower
-##' exp(-exp(log(-log(fit.pred$survival)) + 1.96 * newse)) ## survival.upper
+##' confint(fit.pred,
+##' meanRisk.transform = "loglog", diffRisk.transform = "atanh", ratioRisk.transform = "log"
+##' )
+##' 
+##' newse <- fit.pred$meanRisk[, se/(meanRisk*log(meanRisk))]
+##' fit.pred$meanRisk[, .(lower = exp(-exp(log(-log(meanRisk)) - 1.96 * newse)),
+##'                       upper = exp(-exp(log(-log(meanRisk)) + 1.96 * newse)))]
 
 ## * confint.ate (code)
 ##' @rdname confint.ate
 ##' @export
 confint.ate <- function(object,
-                        conf.level = 0.95,
+                        parm = NULL,
+                        level = 0.95,
                         nsim.band = 1e4,
-                        ate.transform = "none",
-                        diffAte.transform = "none",
-                        ratioAte.transform = "none",
+                        meanRisk.transform = "none",
+                        diffRisk.transform = "none",
+                        ratioRisk.transform = "none",
                         seed = NA,
                         type.boot = "perc",
                         ...){
@@ -86,16 +121,18 @@ confint.ate <- function(object,
         if(!is.null(object$boot)){
             object <- confintBoot.ate(object,
                                       type.boot = type.boot,
-                                      conf.level = conf.level)
+                                      conf.level = level,
+                                      ...)
 
         }else{
             object <- confintIID.ate(object,
                                      nsim.band = nsim.band,
-                                     ate.transform = ate.transform,
-                                     diffAte.transform = diffAte.transform,
-                                     ratioAte.transform = ratioAte.transform,
+                                     meanRisk.transform = meanRisk.transform,
+                                     diffRisk.transform = diffRisk.transform,
+                                     ratioRisk.transform = ratioRisk.transform,
                                      seed = seed,
-                                     conf.level = conf.level)
+                                     conf.level = level,
+                                     ...)
         }
     }else{
         message("No confidence interval is computed \n",
@@ -218,24 +255,26 @@ confintBoot.ate <- function(object,
 confintIID.ate <- function(object,
                            conf.level,
                            nsim.band,
-                           ate.transform,
-                           diffAte.transform,
-                           ratioAte.transform,
+                           meanRisk.transform,
+                           diffRisk.transform,
+                           ratioRisk.transform,
                            seed){
+
+    .I <- NULL ## [:CRANcheck:] data.table
     
     ## ** check arguments
-    if(!is.null(object$ate.transform) && object$ate.transform != "none"){
+    if(!is.null(object$meanRisk.transform) && object$meanRisk.transform != "none"){
         stop("Cannot work with standard errors that have already been transformed \n")
     }
-    if(!is.null(object$diffAte.transform) && object$diffAte.transform != "none"){
+    if(!is.null(object$diffRisk.transform) && object$diffRisk.transform != "none"){
         stop("Cannot work with standard errors that have already been transformed \n")
     }
     if(!is.null(object$diffRatio.transform) && object$diffRatio.transform != "none"){
         stop("Cannot work with standard errors that have already been transformed \n")
     }
-    object$ate.transform <- match.arg(ate.transform, c("none","log","loglog","cloglog"))
-    object$diffAte.transform <- match.arg(diffAte.transform, c("none","atanh"))
-    object$ratioAte.transform <- match.arg(ratioAte.transform, c("none","log"))
+    object$meanRisk.transform <- match.arg(meanRisk.transform, c("none","log","loglog","cloglog"))
+    object$diffRisk.transform <- match.arg(diffRisk.transform, c("none","atanh"))
+    object$ratioRisk.transform <- match.arg(ratioRisk.transform, c("none","log"))
 
     if(object$band){
         n.times <- length(object$times)
@@ -251,30 +290,27 @@ confintIID.ate <- function(object,
     zval <- stats::qnorm(1 - (1-conf.level)/2, mean = 0, sd = 1)
 
     ## ** ate
-    if(object$ate.transform != "none"){
+    if(object$meanRisk.transform != "none"){
         ## transform standard error
         object$meanRisk[,c("se") := transformSE(estimate = object$meanRisk[["meanRisk"]],
-                                                se = object$ate.se,
-                                                type = object$ate.transform)[,1]]
+                                                se = object$meanRisk[["se"]],
+                                                type = object$meanRisk.transform)]
 
         if(object$band){
             object$ate.iid <- transformIID(estimate = object$meanRisk[["meanRisk"]],
                                            iid = object$ate.iid,
-                                           type = object$ate.transform,
+                                           type = object$meanRisk.transform,
                                            format = "matrix")
         }
 
-    }else{
-        object$meanRisk[,c("se") := object$ate.se]
-    } 
-    object$ate.se <- NULL ## remove untransformed se to avoid confusion
+    }
     
-    ate.min.value <- switch(object$ate.transform,
+    ate.min.value <- switch(object$meanRisk.transform,
                             "none" = 0,
                             "log" = NULL,
                             "loglog" = NULL,
                             "cloglog" = NULL)
-    ate.max.value <- switch(object$ate.transform,
+    ate.max.value <- switch(object$meanRisk.transform,
                             "none" = 1,
                             "log" = 1,
                             "loglog" = NULL,
@@ -284,7 +320,7 @@ confintIID.ate <- function(object,
         object$meanRisk[,c("lower","upper") := transformCI(estimate = object$meanRisk[["meanRisk"]],
                                                            se = object$meanRisk[["se"]],
                                                            quantile = zval,
-                                                           type = object$ate.transform,
+                                                           type = object$meanRisk.transform,
                                                            format = "vector",
                                                            min.value = ate.min.value,
                                                            max.value = ate.max.value)]
@@ -318,7 +354,7 @@ confintIID.ate <- function(object,
         object$meanRisk[,c("lowerBand","upperBand") := transformCI(estimate = object$meanRisk[["meanRisk"]],
                                                                    se = object$meanRisk[["se"]],
                                                                    quantile = object$meanRisk[["quantileBand"]],
-                                                                   type = object$ate.transform,
+                                                                   type = object$meanRisk.transform,
                                                                    format = "vector",
                                                                    min.value = ate.min.value,
                                                                    max.value = ate.max.value)]
@@ -332,20 +368,17 @@ confintIID.ate <- function(object,
     }
  
     ## ** diff treatment
-    if(object$diffAte.transform != "none"){
+    if(object$diffRisk.transform != "none"){
         ## transform standard error
         object$riskComparison[,c("diff.se") := transformSE(estimate = object$riskComparison[["diff"]],
-                                                           se = object$diffAte.se,
-                                                           type = object$diffAte.transform)[,1]]
+                                                           se = object$riskComparison[["diff.se"]],
+                                                           type = object$diffRisk.transform)]
 
-    }else{
-        object$riskComparison[,c("diff.se") := object$diffAte.se]
     }
-    object$diffAte.se <- NULL ## remove untransformed se to avoid confusion
-    diffAte.min.value <- switch(object$diffAte.transform,
+    diffAte.min.value <- switch(object$diffRisk.transform,
                                 "none" = -1,
                                 "atanh" = NULL)
-    diffAte.max.value <- switch(object$diffAte.transform,
+    diffAte.max.value <- switch(object$diffRisk.transform,
                                 "none" = 1,
                                 "atanh" = NULL)
     ## confidence intervals
@@ -353,14 +386,15 @@ confintIID.ate <- function(object,
         object$riskComparison[,c("diff.lower","diff.upper") := transformCI(estimate = object$riskComparison[["diff"]],
                                                                            se = object$riskComparison[["diff.se"]],
                                                                            quantile = zval,
-                                                                           type = object$diffAte.transform,
+                                                                           type = object$diffRisk.transform,
                                                                            format = "vector",
                                                                            min.value = diffAte.min.value,
                                                                            max.value = diffAte.max.value)]
         ## p.value
         object$riskComparison[,c("diff.p.value") := transformP(estimate = object$riskComparison[["diff"]],
                                                                se = object$riskComparison[["diff.se"]],
-                                                               type = object$diffAte.transform)]
+                                                               null = 0,
+                                                               type = object$diffRisk.transform)]
 
         ## NA
         indexNA <- object$riskComparison[,.I[is.na(.SD$diff)+is.na(.SD$diff.se)+is.nan(.SD$diff)+is.nan(.SD$diff.se)>0]]
@@ -391,7 +425,7 @@ confintIID.ate <- function(object,
         object$riskComparison[,c("diff.lowerBand","diff.upperBand") := transformCI(estimate = object$riskComparison[["diff"]],
                                                                                    se = object$riskComparison[["diff.se"]],
                                                                                    quantile = object$riskComparison[["diff.quantileBand"]],
-                                                                                   type = object$diffAte.transform,
+                                                                                   type = object$diffRisk.transform,
                                                                                    format = "vector",
                                                                                    min.value = diffAte.min.value,
                                                                                    max.value = diffAte.max.value)]
@@ -405,17 +439,14 @@ confintIID.ate <- function(object,
     }
     
     ## ** ratio treatment
-    if(object$ratioAte.transform != "none"){
+    if(object$ratioRisk.transform != "none"){
         ## transform standard error
         object$riskComparison[,c("ratio.se") := transformSE(estimate = object$riskComparison[["ratio"]],
-                                                           se = object$ratioAte.se,
-                                                           type = object$ratioAte.transform)[,1]]
+                                                           se = object$riskComparison[["ratio.se"]],
+                                                           type = object$ratioRisk.transform)]
 
-    }else{
-        object$riskComparison[,c("ratio.se") := object$ratioAte.se]
     }
-    object$ratioAte.se <- NULL ## remove untransformed se to avoid confusion
-    ratioAte.min.value <- switch(object$ratioAte.transform,
+    ratioAte.min.value <- switch(object$ratioRisk.transform,
                                  "none" = 0,
                                  "log" = NULL)
     ratioAte.max.value <- NULL
@@ -425,14 +456,15 @@ confintIID.ate <- function(object,
         object$riskComparison[,c("ratio.lower","ratio.upper") := transformCI(estimate = object$riskComparison[["ratio"]],
                                                                              se = object$riskComparison[["ratio.se"]],
                                                                              quantile = zval,
-                                                                             type = object$ratioAte.transform,
+                                                                             type = object$ratioRisk.transform,
                                                                              format = "vector",
                                                                              min.value = ratioAte.min.value,
                                                                              max.value = ratioAte.max.value)]
         ## p.value
         object$riskComparison[,c("ratio.p.value") := transformP(estimate = object$riskComparison[["ratio"]],
                                                                 se = object$riskComparison[["ratio.se"]],
-                                                                type = object$ratioAte.transform)]
+                                                                null = 1,
+                                                                type = object$ratioRisk.transform)]
 
         ## NA
         indexNA <- object$riskComparison[,.I[is.na(.SD$ratio)+is.na(.SD$ratio.se)+is.nan(.SD$ratio)+is.nan(.SD$ratio.se)>0]]
@@ -462,7 +494,7 @@ confintIID.ate <- function(object,
         object$riskComparison[,c("ratio.lowerBand","ratio.upperBand") := transformCI(estimate = object$riskComparison[["ratio"]],
                                                                                      se = object$riskComparison[["ratio.se"]],
                                                                                      quantile = object$riskComparison[["ratio.quantileBand"]],
-                                                                                     type = object$ratioAte.transform,
+                                                                                     type = object$ratioRisk.transform,
                                                                                      format = "vector",
                                                                                      min.value = ratioAte.min.value,
                                                                                      max.value = ratioAte.max.value)]

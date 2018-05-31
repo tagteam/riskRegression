@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: sep  4 2017 (16:43) 
 ## Version: 
-## last-updated: maj 28 2018 (17:56) 
+## last-updated: maj 31 2018 (18:02) 
 ##           By: Brice Ozenne
-##     Update #: 66
+##     Update #: 74
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -15,57 +15,51 @@
 ## 
 ### Code:
 
+## * predictCoxPL (documentation)
 #' @title Computation of survival probabilities from Cox regression models using the product limit estimator.
 #' @description Same as predictCox except that the survival is estimated using the product limit estimator.
-#' 
-#' @param object The fitted Cox regression model object either
-#'     obtained with \code{coxph} (survival package) or \code{cph}
-#'     (rms package).
-#' @param newdata A \code{data.frame} or \code{data.table} containing
-#'     the values of the predictor variables defining subject specific
-#'     predictions. Should have the same structure as the data set
-#'     used to fit the \code{object}.
-#' @param times Time points at which to evaluate the predictions.
-#' @param type the type of predicted value. 
-#'     Choices are \code{"hazard"}, \code{"cumhazard"}, and \code{"survival"}. 
-#'     See \code{\link{predictCox}} for more details.
-#' @param se Logical. If \code{TRUE} add the standard error to the output.
-#' @param band Logical. If \code{TRUE} add the confidence band to the output.
+#' @name predictCoxPL
+#'
+#' @inheritParams predictCox
 #' @param ... additional arguments to be passed to \code{\link{predictCox}}.
 #' 
 #' @examples 
 #' library(survival)
-#' 
+#'
+#' #### generate data ####
 #' set.seed(10)
 #' d <- sampleData(40,outcome="survival")
 #' nd <- sampleData(4,outcome="survival")
 #' d$time <- round(d$time,1)
-#' fit <- coxph(Surv(time,event)~X1 + strata(X2) + X6,
+#'
+#' #### Cox model ####
+#' fit <- coxph(Surv(time,event)~ X1 + X2 + X6,
 #'              data=d, ties="breslow", x = TRUE, y = TRUE)
-#' predictCoxPL(fit, newdata = d, times = 1:5)
-#' fit <- coxph(Surv(time,event)~X1 + X2 + X6,
-#'              data=d, ties="breslow", x = TRUE, y = TRUE)
-#' predictCoxPL(fit, newdata = d, times = 1:5)
+#'
+#' ## exponential approximation
+#' predictCox(fit, newdata = d, times = 1:5)
 #' 
+#' ## product limit
+#' predictCoxPL(fit, newdata = d, times = 1:5)
 #'
-#' #### Compare exp to product limit
-#' set.seed(10)
-#' A <- predictCoxPL(fit, newdata = d[1:5], times = 1:5, se = TRUE, band = TRUE)
-#' set.seed(10)
-#' B <- predictCox(fit, newdata = d[1:5], times = 1:5, se = TRUE, band = TRUE)
+#' #### stratified Cox model ####
+#' fitS <- coxph(Surv(time,event)~ X1 + strata(X2) + X6,
+#'              data=d, ties="breslow", x = TRUE, y = TRUE)
 #'
-#' A$survival - B$survival
-#' A$survival.lower - B$survival.lower
-#' A$survival.upper - B$survival.upper
-#' A$survival.lowerBand - B$survival.lowerBand
-#' A$survival.upperBand - B$survival.upperBand
+#' ## exponential approximation
+#' predictCox(fitS, newdata = d, times = 1:5)
+#' 
+#' ## product limit
+#' predictCoxPL(fitS, newdata = d, times = 1:5)
+#'
+
+## * predictCoxPL (code)
+#' @rdname predictCoxPL 
 #' @export
 predictCoxPL <- function(object,
                          newdata,
                          times,
                          type = c("cumhazard","survival"),
-                         se = FALSE,
-                         band = FALSE,
                          ...){
 
     # {{{ normalize arguments
@@ -86,8 +80,6 @@ predictCoxPL <- function(object,
                                newdata = newdata,
                                times = times,
                                type = type,
-                               se = se,
-                               band = band,
                                ...)
     infoVar <- coxVariableName(object)
     X.design <- as.data.table(coxDesign(object))

@@ -1,33 +1,36 @@
-#' @title Predicting absolute risk from cause-specific Cox models
-#' @rdname predict.CauseSpecificCox
+## * predict.CauseSpecificCox (documentation)
+#' @title Predicting Absolute Risk from Cause-Specific Cox Models
+#' @description  Apply formula to combine two or more Cox models into absolute risk (cumulative incidence function).
+#' @name predict.CauseSpecificCox
 #' @aliases predict.CauseSpecificCox
 #' @aliases predictBig.CauseSpecificCox
-#'
-#' @description  Apply formula to combine two or more Cox models into absolute risk (cumulative incidence function)
 #' 
 #' @param object The fitted cause specific Cox model
-#' @param newdata A data frame containing the values of the variables
-#'     in the right hand side of 'coxph' for each subject.
-#' @param times Vector of times at which to return the estimated
-#'     absolute risk.
-#' @param cause Identifies the cause of interest among the competing
+#' @param newdata [data.frame or data.table]  Contain the values of the predictor variables
+#' defining subject specific predictions relative to each cause.
+#' Should have the same structure as the data set used to fit the \code{object}.
+#' @param times [numeric vector] Time points at which to return
+#' the estimated absolute risk.
+#' @param cause [integer/character] Identifies the cause of interest among the competing
 #'     events.
-#' @param landmark the starting time for the computation of the cumulative risk
-#' @param keep.times Logical. If \code{TRUE} add the evaluation times
-#'     to the output.
-#' @param keep.newdata Logical. If \code{TRUE} add the value of the covariates used to make the prediction in the output list. 
-#' @param keep.strata Logical. If \code{TRUE} add the value of the strata used to make the prediction in the output list. 
-#' @param se Logical. If \code{TRUE} add the standard errors to the output.
-#' @param band Logical. If \code{TRUE} add the confidence band to the output.
-#' @param iid Logical. If \code{TRUE} add the influence function to the output.
-#' @param average.iid Logical. If \code{TRUE} add the average of the influence function over \code{newdata} to the output.
-#' @param product.limit Logical. If true the survival is computed using the product limit estimator.
+#' @param landmark [integer] The starting time for the computation of the cumulative risk.,
+#' @param keep.times [logical] If \code{TRUE} add the evaluation times to the output.
+#' @param keep.newdata [logical] If \code{TRUE} add the value of the covariates used to make the prediction in the output list. 
+#' @param keep.strata [logical] If \code{TRUE} add the value of the strata used to make the prediction in the output list. 
+#' @param se [logical] If \code{TRUE} add the standard errors to the output.
+#' @param band [logical] If \code{TRUE} add the standard error and the influence function to the output
+#' such that \code{confint} will be able to compute the confidence bands. 
+#' @param iid [logical] If \code{TRUE} add the influence function to the output.
+#' @param average.iid [logical]. If \code{TRUE} add the average of the influence function over \code{newdata} to the output.
+#' @param product.limit [logical]. If true the survival is computed using the product limit estimator.
 #' Otherwise the exponential approximation is used (i.e. exp(-cumulative hazard)).
-#' @param store.iid Implementation used to estimate the influence function and the standard error.
+#' @param store.iid [character] Implementation used to estimate the influence function and the standard error.
 #' Can be \code{"full"} or \code{"minimal"}. 
-#' @param ... not used
+#' @param ... not used.
+#' 
 #' @author Brice Ozenne broz@@sund.ku.dk, Thomas A. Gerds
 #'     tag@@biostat.ku.dk
+#' 
 #' @details
 #' This function computes the absolute risk as given by formula 2 of (Ozenne et al., 2017).
 #' Confidence intervals and confidence bands can be computed using a first order von Mises expansion.
@@ -41,26 +44,27 @@
 #'     the predicted risk has to be a measurable function of the data
 #'     available at the time origin.
 #' 
-#' @return A list containing:
-#' \itemize{
-#' \item{absRisk}: (data table) the predictions for each subject (in rows) and each time (in columns).
-#' \item{absRisk.se}: (data table) the standard errors of the predictions.
-#' \item(absRisk.iid): (array) the value of the influence of each subject used to fit the object (dim 3)
-#' for each subject in newdata (dim 1) and each time (dim 2).
-#' \item(absRisk.average.iid): (matrix) the average value of the influence over the subjects in newdata,
-#' for each subject used to fit the object (dim 1) and each time (dim 2).
-#' \item{times}: (vector) the evaluation times.
-#' }
-#'
+#' The iid decomposition is output using an array containing the value of the influence
+#' of each subject used to fit the object (dim 3),
+#' for each subject in newdata (dim 1),
+#' and each time (dim 2).
+#' 
+#' @seealso
+#' \code{\link{confint.predictCSC}} to compute confidence intervals/bands.
+#' \code{\link{autoplot.predictCSC}} to display the predictions.
+#' 
 #' @references
 #' Brice Ozenne, Anne Lyngholm Sorensen, Thomas Scheike, Christian Torp-Pedersen and Thomas Alexander Gerds.
 #' riskRegression: Predicting the Risk of an Event using Cox Regression Models.
 #' The R Journal (2017) 9:2, pages 440-460.
-#' 
+#'
+
+## * predict.CauseSpecificCox (examples)
+#' @rdname predict.CauseSpecificCox
 #' @examples
 #' library(survival)
 #' 
-#' ## generate data
+#' #### generate data ####
 #' set.seed(5)
 #' d <- sampleData(80,outcome="comp") ## training dataset
 #' nd <- sampleData(4,outcome="comp") ## validation dataset
@@ -78,24 +82,7 @@
 #' ## add the standard error/confidence intervals
 #' ## (computed on the log log scale and backtransformed)
 #' CSC.riskSE <-  predict(CSC.fit,newdata=nd,times=1:10,cause=1,se=TRUE)
-#' as.data.table(CSC.riskSE)[1:5]
-#' exp(-exp(
-#'  log(-log(CSC.riskSE$absRisk)) - 1.96 * CSC.riskSE$absRisk.se
-#' ))
-#'
-#' ## extract the iid for the absolute risk
-#' CSC.iid <- predict(CSC.fit, newdata = d, se = TRUE,
-#'                    cause = 1, times = ttt[1], iid = TRUE)
-#' rowMeans(CSC.iid$absRisk.iid[,1,]) ## the iid decomposition has 0 expectation
-#' sqrt(rowSums(CSC.iid$absRisk.iid[,1,]^2))[1:5]
-#' as.data.table(CSC.iid)[1:5]
-#'
-#' ## same but the iid decomposition is averaged over the patients
-#' CSC.aviid <- predict(CSC.fit, newdata = d,
-#'                    cause = 1, times = ttt[1],
-#'                    average.iid = TRUE)
-#' CSC.aviid$absRisk.average.iid[1:5,]
-#' colMeans(CSC.iid$absRisk.iid[,1,1:5])
+#' confint(CSC.riskSE)
 #' 
 #' ## compute absolute risks with CI for cause 2
 #' ## (without displaying the value of the covariates)
@@ -116,7 +103,9 @@
 #' T0 <- 1
 #' predCSC_afterT0 <- predict(CSC.fit, newdata = d, cause = 2, times = ttt[ttt>T0], landmark = T0)
 #' predCSC_afterT0
-#'
+
+## * predict.CauseSpecificCox (code)
+#' @rdname predict.CauseSpecificCox
 #' @method predict CauseSpecificCox
 #' @export
 predict.CauseSpecificCox <- function(object,

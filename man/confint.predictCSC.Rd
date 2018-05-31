@@ -4,20 +4,23 @@
 \alias{confint.predictCSC}
 \title{Confidence Intervals and Confidence Bands for the Predicted Absolute Risk (Cumulative Incidence Function)}
 \usage{
-\method{confint}{predictCSC}(object, conf.level = 0.95, nsim.band = 10000,
-  absRisk.transform = "cloglog", seed = NA, ...)
+\method{confint}{predictCSC}(object, parm = NULL, level = 0.95,
+  nsim.band = 10000, absRisk.transform = "cloglog", seed = NA, ...)
 }
 \arguments{
 \item{object}{A \code{predictCSC} object, i.e. output of the \code{predictCSC} function.}
 
-\item{conf.level}{Level of confidence.}
+\item{parm}{not used. For compatibility with the generic method.}
 
-\item{nsim.band}{the number of simulations used to compute the quantiles for the confidence bands.}
+\item{level}{[numeric, 0-1] Level of confidence.}
 
-\item{absRisk.transform}{the transformation used to improve coverage
-of the confidence intervals for the predicted absolute risk in small samples.}
+\item{nsim.band}{[integer, >0] the number of simulations used to compute the quantiles for the confidence bands.}
 
-\item{seed}{Integer passed to set.seed when performing simulation for the confidence bands.
+\item{absRisk.transform}{[character] the transformation used to improve coverage
+of the confidence intervals for the predicted absolute risk in small samples.
+Can be \code{"none"}, \code{"log"}, \code{"loglog"}, \code{"cloglog"}.}
+
+\item{seed}{[integer, >0] seed number set when performing simulation for the confidence bands.
 If not given or NA no seed is set.}
 
 \item{...}{not used.}
@@ -31,32 +34,29 @@ The confidence bands and confidence intervals are automatically restricted to th
 \examples{
 library(survival)
 
-## generate data
+#### generate data ####
 set.seed(10)
-d <- sampleData(40,outcome="survival") ## training dataset
-nd <- sampleData(4,outcome="survival") ## validation dataset
-d$time <- round(d$time,1) ## create tied events
-# table(duplicated(d$time))
+d <- sampleData(100) 
 
-## estimate a stratified Cox model
-fit <- coxph(Surv(time,event)~X1 + strata(X2) + X6,
-             data=d, ties="breslow", x = TRUE, y = TRUE)
+#### estimate a stratified CSC model ###
+fit <- CSC(Hist(time,event)~ X1 + strata(X2) + X6, data=d)
 
-
-## compute individual specific cumulative hazard and survival probabilities 
-fit.pred <- predictCox(fit, newdata=nd, times=c(3,8), se = TRUE)
+#### compute individual specific risks
+fit.pred <- predict(fit, newdata=d[1:3], times=c(3,8), cause = 1,
+                    se = TRUE, band = TRUE)
 fit.pred
 
 ## add confidence intervals computed on the original scale
-confint(fit.pred, transform.survival = "none")
-fit.pred$survival + 1.96 * fit.pred$survival.se  ## survival.upper
+confint(fit.pred, absRisk.transform = "none")
+fit.pred$absRisk - 1.96 * fit.pred$absRisk.se  ## survival.lower
+fit.pred$absRisk + 1.96 * fit.pred$absRisk.se  ## survival.upper
 
 ## add confidence intervals computed on the log-log scale
 ## and backtransformed
-confint(fit.pred, transform.survival = "loglog")
-newse <- fit.pred$survival.se/(fit.pred$survival*log(fit.pred$survival))
-exp(-exp(log(-log(fit.pred$survival)) - 1.96 * newse)) ## survival.lower
-exp(-exp(log(-log(fit.pred$survival)) + 1.96 * newse)) ## survival.upper
+confint(fit.pred, absRisk.transform = "loglog")
+newse <- fit.pred$absRisk.se/(-fit.pred$absRisk*log(fit.pred$absRisk))
+exp(-exp(log(-log(fit.pred$absRisk)) + 1.96 * newse)) ## survival.lower
+exp(-exp(log(-log(fit.pred$absRisk)) - 1.96 * newse)) ## survival.upper
 }
 \author{
 Brice Ozenne

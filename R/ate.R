@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Oct 23 2016 (08:53) 
 ## Version: 
-## last-updated: maj 31 2018 (09:50) 
+## last-updated: maj 31 2018 (18:22) 
 ##           By: Brice Ozenne
-##     Update #: 745
+##     Update #: 770
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -14,49 +14,59 @@
 #----------------------------------------------------------------------
 ## 
 ### Code:
-#' @title Compute the average treatment effects via the g-formula
-#'
+
+## * ate (documentation)
+#' @title Compute the Average Treatment Effects Via the G-formula
 #' @description Use the g-formula to estimate the average treatment
-#'     effect based on Cox regression with or without competing risks
-#' @param object outcome model which describes how event risk depends
+#'     effect based on Cox regression with or without competing risks.
+#' @name ate
+#' 
+#' @param object Outcome model which describes how event risk depends
 #'     on treatment and covariates.  The object carry its own call and
 #'     have a \code{predictRisk} method. See examples.
-#' @param data data set in which to evaluate risk predictions based on
-#'     the outcome model
+#' @param data [data.frame or data.table] Data set in which to evaluate risk predictions
+#' based on the outcome model
+#' 
 #' @param formula For analyses with time-dependent covariates, the response formula. See examples.
-#' @param treatment name of the treatment variable
-#' @param contrasts the levels of the treatment variable to be
-#'     compared
-#' @param strata Strata variable on which to compute the average risk. Incompatible with treatment. Experimental.
-#' @param times time points at which to evaluate risks
-#' @param cause the cause of interest
+#' @param treatment [character] Name of the treatment variable.
+#' @param contrasts [character] The levels of the treatment variable to be compared.
+#' @param strata [character] Strata variable on which to compute the average risk.
+#' Incompatible with treatment. Experimental.
+#' 
+#' @param times [numeric vector] Time points at which to evaluate average treatment effects.
+#' @param cause [integer/character] the cause of interest.
 #' @param landmark for models with time-dependent covariates the landmark time(s) of evaluation.
 #'        In this case, argument \code{time} may only be one value and for the prediction of risks
 #'        it is assumed that that the covariates do not change between landmark and landmark+time.
-#' @param se Logical. If \code{TRUE} compute standard errors and confidence intervals
-#' @param band Logical. If \code{TRUE} compute confidence bands across time points.
-#' @param B the number of bootstrap replications used to compute the
-#'     confidence intervals. If it equals 0, then Wald-type confidence
-#'     intervals are computed.  They rely on the standard error
-#'     estimated using the influence function of the estimator.
-#' @param seed An integer used to generate seeds for bootstrap and to
-#'     achieve reproducible results.
-#' @param handler parallel handler for bootstrap. Either "mclapply" or
-#'     "foreach". If "foreach" use \code{doParallel} to create a cluster.
-#' @param mc.cores Passed to \code{parallel::mclapply} or
-#'     \code{doParallel::registerDoParallel}. The number of cores to use, i.e. at
-#'     most how many child processes will be run simultaneously.  The
-#'     option is initialized from environment variable MC_CORES if
-#'     set.
-#' @param verbose Logical. If \code{TRUE} inform about estimated run
-#'     time.
-#' @param store.iid Implementation used to estimate the standard error. Can be \code{"full"} or \code{"minimal"}.
+#' @param se [logical] If \code{TRUE} compute standard errors and confidence intervals
+#' @param band [logical]. If \code{TRUE} compute confidence bands across time points.
+#' @param B [integer, >0] the number of bootstrap replications used to compute the confidence intervals.
+#' If it equals 0, then the influence function is used to compute Wald-type confidence intervals/bands.
+#' @param seed [integer, >0] sed number used to generate seeds for bootstrap
+#' and to achieve reproducible results.
+#' @param handler [character] Parallel handler for bootstrap.
+#' either \code{"mclapply"} or \code{"foreach"}.
+#' if "foreach" use \code{doparallel} to create a cluster.
+#' @param mc.cores [integer, >0] The number of cores to use,
+#' i.e. at most how many child processes will be run simultaneously.
+#' Passed to \code{parallel::mclapply} or \code{doparallel::registerdoparallel}.
+#' The option is initialized from environment variable mc_cores if set.
+#' @param verbose [logical] If \code{TRUE} inform about estimated run time.
+#' @param store.iid [character] Implementation used to estimate the standard error.
+#' Can be \code{"full"} or \code{"minimal"}.
 #' \code{"minimal"} requires less memory but can only estimate the standard for the difference between treatment effects (and not for the ratio).
 #' @param ... passed to predictRisk
 #'
-#' @author Brice Ozenne \email{broz@@sund.ku.dk} and Thomas Alexander
-#'     Gerds \email{tag@@biostat.ku.dk}
-#' 
+#' @author Brice Ozenne \email{broz@@sund.ku.dk}
+#' and Thomas Alexander Gerds \email{tag@@biostat.ku.dk}
+#'
+#' @seealso
+#' \code{\link{confint.ate}} to compute confidence intervals/bands.
+#' \code{\link{autoplot.ate}} to display the average risk.
+
+
+## * ate (examples)
+#' @rdname ate
 #' @examples 
 #' library(survival)
 #' library(rms)
@@ -228,6 +238,9 @@
 #'         band = FALSE, mc.cores=1)
 #' resTD
 #' }
+
+## * ate (code)
+#' @rdname ate
 #' @export
 ate <- function(object,
                 data,
@@ -447,6 +460,11 @@ ate <- function(object,
                                iid = (band+iid)>0, 
                                store.iid = store.iid)
 
+            pointEstimate$meanRisk[["se"]] <- outSE$meanRisk.se[,1]
+            pointEstimate$riskComparison[["diff.se"]] <- outSE$diffRisk.se[,1]
+            pointEstimate$riskComparison[["ratio.se"]] <- outSE$ratioRisk.se[,1]
+            data.table::setcolorder(pointEstimate$riskComparison, neworder = c(names(pointEstimate$riskComparison)[1:3],
+                                                                               "diff","diff.se","ratio","ratio.se"))
             bootseeds <- NULL
             resBoot <- NULL          
    
@@ -469,19 +487,21 @@ ate <- function(object,
                  new = paste0(strata,c(".A",".B")))
     }
     
-    out <- c(list(meanRisk = pointEstimate$meanRisk,
-                  riskComparison = pointEstimate$riskComparison),
-             outSE,
-             list(treatment = treatment,
-                  contrasts = contrasts,
-                  times = times,
-                  se = se,
-                  TD = TD,
-                  B = B,
-                  band = band,
-                  boot = resBoot,
-                  seeds = bootseeds)
-             )
+    out <- list(meanRisk = pointEstimate$meanRisk,
+                riskComparison = pointEstimate$riskComparison,
+                meanRisk.iid = outSE$meanRisk.iid,
+                diffRisk.iid = outSE$diffRisk.iid,
+                ratioRisk.iid = outSE$ratioRisk.iid,
+                treatment = treatment,
+                contrasts = contrasts,
+                times = times,
+                se = se,
+                TD = TD,
+                B = B,
+                band = band,
+                boot = resBoot,
+                seeds = bootseeds)
+
   
     class(out) <- c("ate",class(object))
     return(out)

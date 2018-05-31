@@ -2,7 +2,7 @@
 % Please edit documentation in R/as.data.table.predictCSC.R
 \name{as.data.table.predictCSC}
 \alias{as.data.table.predictCSC}
-\title{Turn predictCSC object into a \code{data.table}}
+\title{Turn predictCSC Object Into a \code{data.table}}
 \usage{
 \method{as.data.table}{predictCSC}(x, keep.rownames = FALSE, se = TRUE, ...)
 }
@@ -16,5 +16,5 @@
 \item{...}{not used}
 }
 \description{
-Turn predictCSC object into a \code{data.table}
+Turn predictCSC object into a \code{data.table}.
 }

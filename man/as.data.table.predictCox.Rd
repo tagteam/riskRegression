@@ -2,23 +2,19 @@
 % Please edit documentation in R/as.data.table.predictCox.R
 \name{as.data.table.predictCox}
 \alias{as.data.table.predictCox}
-\title{Turn predictCox object into a \code{data.table}}
+\title{Turn predictCox Object Into a \code{data.table}}
 \usage{
 \method{as.data.table}{predictCox}(x, keep.rownames = FALSE, se = TRUE, ...)
 }
 \arguments{
 \item{x}{object obtained with function \code{predictCox}}
 
-\item{keep.rownames}{not used.}
+\item{keep.rownames}{Not used.}
 
-\item{se}{should standard errors/quantile for confidence bands be displayed?}
+\item{se}{[logical] Should standard errors/quantile for confidence bands be displayed?}
 
-\item{...}{not used.}
+\item{...}{Not used.}
 }
 \description{
-Turn predictCox object into a \code{data.table}
-}
-\details{
-The columns \code{.seBand} corresponds to the column \code{.se} inflated
-by the ratio between the quantile for the confidence bands and the quantile for the confidence interval.#'
+Turn predictCox object into a \code{data.table}.
 }

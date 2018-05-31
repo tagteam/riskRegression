@@ -2,52 +2,25 @@
 % Please edit documentation in R/print.predictCox.R
 \name{print.predictCox}
 \alias{print.predictCox}
-\title{Print predictions from a Cox model}
+\title{Print Predictions From a Cox Model}
 \usage{
 \method{print}{predictCox}(x, digits = 3, ...)
 }
 \arguments{
 \item{x}{object obtained with the function \code{predictCox}.}
 
-\item{digits}{integer indicating the number of decimal places.}
+\item{digits}{[integer, >0] indicating the number of decimal places.}
 
 \item{...}{Passed to print.}
 }
 \description{
-Print predictions from a Cox model
+Print predictions from a Cox model.
 }
-\examples{
-library(survival)
-library(rms)
-
-set.seed(10)
-d <- sampleData(1e2, outcome = "survival")
-m.cox <- coxph(Surv(time,event)~ X1 + X2 + X3,
-               data = d, x = TRUE, y = TRUE)
-predictCox(m.cox)
-
-pred <- predictCox(m.cox, newdata = d[1:5,],
-                   times = 1:5, type = "survival")
-pred
-
-pred.data <- predictCox(m.cox, newdata = d[1:4,],se=1L,
-             times = 1:5, type = "survival", keep.newdata = TRUE)
-pred.data
-
-m.cox <- coxph(Surv(time,event)~ strata(X1) + strata(X2) + X3 + X6,
-               data = d, x = TRUE, y = TRUE)
-pred.cox <- predictCox(m.cox, newdata = d[c(1:5,10,50),],
-                       time = 1:5)
-pred.cox
-
-m.cox <- cph(Surv(time,event)~ strat(X1) + strat(X2) + X3 + X6,
-             data = d, x = TRUE, y = TRUE)
-pred.cox <- predictCox(m.cox, newdata = d[c(1:5,10,50),],
-                       time = 1:5)
-pred.cox
-
-pred.dataci <- predictCox(m.cox, newdata = d[1:5,],
-                       times = 1:5, keep.newdata = TRUE, se = TRUE)
-pred.dataci
-
+\details{
+to display confidence intervals/bands,
+the \code{confint} method needs to be applied on the object.
+}
+\seealso{
+\code{\link{confint.predictCox}} to compute confidence intervals/bands.
+\code{\link{predictCox}} to compute the predicted cumulative hazard/survival.
 }

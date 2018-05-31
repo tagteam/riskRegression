@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: maj 27 2017 (11:46) 
 ## Version: 
-## last-updated: maj 24 2018 (15:11) 
+## last-updated: maj 31 2018 (16:06) 
 ##           By: Brice Ozenne
-##     Update #: 269
+##     Update #: 270
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -17,7 +17,7 @@
 
 
 # {{{ calcSeCox
-
+## * calcSeCox
 #' Computation of standard errors for predictions
 #'
 #' Compute the standard error associated to the predictions from Cox regression model
@@ -219,6 +219,7 @@ calcSeCox <- function(object, times, nTimes, type,
 
 # {{{ selectJump
 
+## * selectJump
 #' @title Evaluate the influence function at selected times
 #'
 #' @description Evaluate the influence function at selected times

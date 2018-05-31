@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: maj 30 2018 (15:58) 
 ## Version: 
-## Last-Updated: maj 31 2018 (11:49) 
+## Last-Updated: maj 31 2018 (18:19) 
 ##           By: Brice Ozenne
-##     Update #: 70
+##     Update #: 79
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -146,8 +146,8 @@ transformCI <- function(estimate, se, quantile, type, format, min.value, max.val
     }else if(type == "loglog"){
         ## exp(-exp(log(-log(a)) +/- b)) = exp(-exp(log(-log(a)))exp(+/- b)) = exp(-(-log(a))exp(+/- b)) = exp(log(a)exp(+/- b)) = a ^ exp(+/- b)
         ## formula 4.16 p 59 (Beyersmann et al. 2012)
-        out$lower <- estimate ^ exp(- quantileSe)
-        out$upper <- estimate ^ exp(+ quantileSe)
+        out$lower <- estimate ^ exp(+ quantileSe)
+        out$upper <- estimate ^ exp(- quantileSe)
     }else if(type == "cloglog"){
         ## formula 4.21 p 62 (Beyersmann et al. 2012)
         out$lower <- 1 - (1-estimate) ^ exp(- quantileSe)
@@ -185,24 +185,24 @@ transformCI <- function(estimate, se, quantile, type, format, min.value, max.val
 ##' @title Compute the p.value after a transformation
 ##' @description Compute the p.value after a transformation.
 ##'
-##' @param estimate [numeric vector/matrix] the estimate value before transformation.
-##' @param se [numeric matrix/array] the standard error after transformation.
+##' @param estimate [numeric vector] the estimate value before transformation.
+##' @param se [numeric vector] the standard error after transformation.
+##' @param null [numeric vector] the value of the estimate (before transformation) under the null hypothesis.
 ##' @param type [character] the transforamtion.
 ##' Can be \code{"log"}, \code{"loglog"}, \code{"cloglog"}, or \code{"atanh"} (Fisher transform).
-##'
 ##' @export
-transformP <- function(estimate, se, type){
+transformP <- function(estimate, se, null, type){
     ## compute confidence intervals
     if(type == "none"){
-        statistic <- estimate/se
+        statistic <- ( estimate-null )/se
     }else if(type == "log"){
-        statistic <- log(estimate)/se
+        statistic <- ( log(estimate) - log(null) )/se
     }else if(type == "loglog"){
-        statistic <- log(-log(estimate))/se
+        statistic <- ( log(-log(estimate)) - log(-log(null)) )/se
     }else if(type == "cloglog"){
-        statistic <- log(-log(1-estimate))/se
+        statistic <- ( log(-log(1-estimate)) - log(-log(1-null)) )/se
     }else if(type == "atanh"){
-        statistic <- atanh(estimate)/se
+        statistic <- ( atanh(estimate) - atanh(null) )/se
     }
 
     return(2*(1-pnorm(abs(statistic))))

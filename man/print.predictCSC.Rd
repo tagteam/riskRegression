@@ -2,37 +2,25 @@
 % Please edit documentation in R/print.predictCSC.R
 \name{print.predictCSC}
 \alias{print.predictCSC}
-\title{Print predictions from a Cause-specific Cox proportional hazard regression}
+\title{Print Predictions From a Cause-specific Cox Proportional Hazard Regression}
 \usage{
 \method{print}{predictCSC}(x, digits = 3, ...)
 }
 \arguments{
 \item{x}{object obtained with the function \code{predictCox}.}
 
-\item{digits}{integer indicating the number of decimal places.}
+\item{digits}{[integer, >0] indicating the number of decimal places.}
 
 \item{...}{Passed to print.}
 }
 \description{
-Print predictions from a Cause-specific Cox proportional hazard regression
+Print predictions from a Cause-specific Cox proportional hazard regression.
 }
-\examples{
-## no strata
-d <- sampleData(1e2, outcome = "competing.risks")
-m.CSC <- CSC(Hist(time,event)~ X1 + X2 + X6, data = d)
-pred.CSC <- predict(m.CSC, time = 1:5, cause = 1,
-                      se = TRUE, keep.newdata = TRUE)
-
-pred.CSC
-print(pred.CSC, ci = TRUE)
-
-## strata
-library(survival)
-m.SCSC <- CSC(Hist(time,event)~ strata(X1) + strata(X2) + X6,
-              data = d)
-pred.SCSC <- predict(m.SCSC, time = 1:5, cause = 1,
-               se = TRUE, keep.newdata = TRUE, keep.strata = TRUE)
-pred.SCSC
-print(pred.SCSC, ci = TRUE)
-
+\details{
+to display confidence intervals/bands,
+the \code{confint} method needs to be applied on the object.
+}
+\seealso{
+\code{\link{confint.predictCSC}} to compute confidence intervals/bands.
+\code{\link{predict.CauseSpecificCox}} to compute the predicted risks.
 }

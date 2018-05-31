@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Mar  3 2017 (09:28) 
 ## Version: 
-## Last-Updated: maj 31 2018 (11:55) 
+## Last-Updated: maj 31 2018 (16:11) 
 ##           By: Brice Ozenne
-##     Update #: 31
+##     Update #: 32
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -14,12 +14,18 @@
 #----------------------------------------------------------------------
 ## 
 ### Code:
-#' @title Turn predictCSC object into a \code{data.table}
-#' @description Turn predictCSC object into a \code{data.table}
+
+## * as.data.table.predictCSC (documentation)
+#' @title Turn predictCSC Object Into a \code{data.table}
+#' @description Turn predictCSC object into a \code{data.table}.
+#' 
 #' @param x object obtained with function \code{predictCSC}
 #' @param keep.rownames not used
 #' @param se should standard errors/quantile for confidence bands be displayed?
 #' @param ... not used
+
+## * as.data.table.predictCSC (code)
+#' @rdname as.data.table.predictCSC
 #' @export
 as.data.table.predictCSC <- function(x, keep.rownames = FALSE, se = TRUE, ...){
     times=NULL

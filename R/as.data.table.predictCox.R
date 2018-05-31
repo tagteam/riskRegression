@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Mar  3 2017 (09:28) 
 ## Version: 
-## Last-Updated: maj 31 2018 (11:54) 
+## Last-Updated: maj 31 2018 (17:58) 
 ##           By: Brice Ozenne
-##     Update #: 82
+##     Update #: 95
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -16,18 +16,14 @@
 ### Code:
 
 ## * as.data.table.predictCox (documentation)
-#' @title Turn predictCox object into a \code{data.table}
-#' @description Turn predictCox object into a \code{data.table}
+#' @title Turn predictCox Object Into a \code{data.table}
+#' @description Turn predictCox object into a \code{data.table}.
 #' @name as.data.table.predictCox
 #' 
 #' @param x object obtained with function \code{predictCox}
-#' @param keep.rownames not used.
-#' @param se should standard errors/quantile for confidence bands be displayed?
-#' @param ... not used.
-#'
-#' @details
-#' The columns \code{.seBand} corresponds to the column \code{.se} inflated
-#' by the ratio between the quantile for the confidence bands and the quantile for the confidence interval.#' 
+#' @param keep.rownames Not used.
+#' @param se [logical] Should standard errors/quantile for confidence bands be displayed?
+#' @param ... Not used.
 
 
 ## * as.data.table.predictCox (code)
@@ -49,7 +45,7 @@ as.data.table.predictCox <- function(x, keep.rownames = FALSE, se = TRUE,...){
     if(!is.matrix(x[[x$type[1]]])){ ## baseline hazard
         out <- as.data.table(x[c("times","strata",x$type)])    
     }else{
-        out <- data.table::rbindlist(lapply(1:length(x$times),function(tt){      
+        out <- data.table::rbindlist(lapply(1:length(x$times),function(tt){
             ndtt=copy(nd)
             nd[,times:=x$times[[tt]]]
             if (!is.null(x$strata))
@@ -65,7 +61,7 @@ as.data.table.predictCox <- function(x, keep.rownames = FALSE, se = TRUE,...){
                                      )
                         vec.names <- c(vec.names,".se")
                     }
-                    if(!is.null(x$conf.level)){
+                    if(!is.null(x[[paste0(name,".transform")]])){
                         tyc <- cbind(tyc,
                                      x[[paste0(name,".lower")]][,tt],
                                      x[[paste0(name,".upper")]][,tt])
@@ -73,20 +69,19 @@ as.data.table.predictCox <- function(x, keep.rownames = FALSE, se = TRUE,...){
                     }
                 }
                 if (x$band==1L){
-                    if(se && !is.null(x$conf.level)){
+                    if(se && !is.null(x[[paste0(name,".transform")]])){
                         tyc <- cbind(tyc,
                                      x[[paste0(name,".quantileBand")]]
                                      )
                         vec.names <- c(vec.names,".quantileBand")                    
                     }
-                    if(!is.null(x$conf.level)){
+                    if(!is.null(x[[paste0(name,".transform")]])){
                         tyc <- cbind(tyc,
                                      x[[paste0(name,".lowerBand")]][,tt],
                                      x[[paste0(name,".upperBand")]][,tt])
                         vec.names <- c(vec.names,".lowerBand",".upperBand")
                     }
                 }
-
                 colnames(tyc) <- paste0(name,vec.names)
           
                 ## setDT(tyc)

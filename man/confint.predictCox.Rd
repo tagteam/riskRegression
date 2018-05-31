@@ -4,27 +4,29 @@
 \alias{confint.predictCox}
 \title{Confidence Intervals and Confidence Bands for the predicted Survival/Cumulative Hazard}
 \usage{
-\method{confint}{predictCox}(object, conf.level = 0.95, type = NULL,
+\method{confint}{predictCox}(object, level = 0.95, parm = NULL,
   nsim.band = 10000, cumhazard.transform = "log",
   survival.transform = "cloglog", seed = NA, ...)
 }
 \arguments{
 \item{object}{A \code{predictCox} object, i.e. output of the \code{predictCox} function.}
 
-\item{conf.level}{Level of confidence.}
+\item{level}{[numeric, 0-1] Level of confidence.}
 
-\item{type}{the type of predicted value for which the confidence intervals should be output.
+\item{parm}{[character] the type of predicted value for which the confidence intervals should be output.
 Can be \code{"survival"} or \code{"cumhazard"}.}
 
-\item{nsim.band}{the number of simulations used to compute the quantiles for the confidence bands.}
+\item{nsim.band}{[integer, >0] the number of simulations used to compute the quantiles for the confidence bands.}
 
-\item{cumhazard.transform}{the transformation used to improve coverage
-of the confidence intervals for the cumlative hazard in small samples.}
+\item{cumhazard.transform}{[character] the transformation used to improve coverage
+of the confidence intervals for the cumlative hazard in small samples.
+Can be \code{"none"}, \code{"log"}.}
 
-\item{survival.transform}{the transformation used to improve coverage
-of the confidence intervals for the survival in small samples.}
+\item{survival.transform}{[character] the transformation used to improve coverage
+of the confidence intervals for the survival in small samples.
+Can be \code{"none"}, \code{"log"}, \code{"loglog"}, \code{"cloglog"}.}
 
-\item{seed}{Integer passed to set.seed when performing simulation for the confidence bands.
+\item{seed}{[integer, >0] seed number set when performing simulation for the confidence bands.
 If not given or NA no seed is set.}
 
 \item{...}{not used.}
@@ -39,32 +41,32 @@ i.e. a confidence interval for the survival of [0.5;1.2] will become [0.5;1].
 \examples{
 library(survival)
 
-## generate data
+#### generate data ####
 set.seed(10)
-d <- sampleData(40,outcome="survival") ## training dataset
-nd <- sampleData(4,outcome="survival") ## validation dataset
-d$time <- round(d$time,1) ## create tied events
-# table(duplicated(d$time))
+d <- sampleData(40,outcome="survival") 
 
-## estimate a stratified Cox model
+#### estimate a stratified Cox model ####
 fit <- coxph(Surv(time,event)~X1 + strata(X2) + X6,
              data=d, ties="breslow", x = TRUE, y = TRUE)
 
-
-## compute individual specific cumulative hazard and survival probabilities 
-fit.pred <- predictCox(fit, newdata=nd, times=c(3,8), se = TRUE)
+#### compute individual specific survival probabilities  
+fit.pred <- predictCox(fit, newdata=d[1:3], times=c(3,8), type = "survival",
+                       se = TRUE, band = TRUE)
 fit.pred
+sqrt(rowSums(fit.pred$survival.iid[1,,]^2)) ## se for individual 1
 
-## add confidence intervals computed on the original scale
-confint(fit.pred, transform.survival = "none")
+#### add confidence intervals / bands computed on the original scale
+confint(fit.pred, survival.transform = "none")
+fit.pred$survival - 1.96 * fit.pred$survival.se  ## survival.lower
 fit.pred$survival + 1.96 * fit.pred$survival.se  ## survival.upper
 
 ## add confidence intervals computed on the log-log scale
 ## and backtransformed
-confint(fit.pred, transform.survival = "loglog")
-newse <- fit.pred$survival.se/(fit.pred$survival*log(fit.pred$survival))
-exp(-exp(log(-log(fit.pred$survival)) - 1.96 * newse)) ## survival.lower
-exp(-exp(log(-log(fit.pred$survival)) + 1.96 * newse)) ## survival.upper
+confint(fit.pred, survival.transform = "loglog")
+newse <- fit.pred$survival.se/(-fit.pred$survival*log(fit.pred$survival))
+exp(-exp(log(-log(fit.pred$survival)) + 1.96 * newse)) ## survival.lower
+exp(-exp(log(-log(fit.pred$survival)) - 1.96 * newse)) ## survival.upper
+
 }
 \author{
 Brice Ozenne

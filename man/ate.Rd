@@ -2,7 +2,7 @@
 % Please edit documentation in R/ate.R
 \name{ate}
 \alias{ate}
-\title{Compute the average treatment effects via the g-formula}
+\title{Compute the Average Treatment Effects Via the G-formula}
 \usage{
 ate(object, data, formula, treatment, strata = NULL, contrasts = NULL,
   times, cause, landmark, se = TRUE, iid = FALSE, band = FALSE, B = 0,
@@ -10,62 +10,60 @@ ate(object, data, formula, treatment, strata = NULL, contrasts = NULL,
   store.iid = "full", ...)
 }
 \arguments{
-\item{object}{outcome model which describes how event risk depends
+\item{object}{Outcome model which describes how event risk depends
 on treatment and covariates.  The object carry its own call and
 have a \code{predictRisk} method. See examples.}
 
-\item{data}{data set in which to evaluate risk predictions based on
-the outcome model}
+\item{data}{[data.frame or data.table] Data set in which to evaluate risk predictions
+based on the outcome model}
 
 \item{formula}{For analyses with time-dependent covariates, the response formula. See examples.}
 
-\item{treatment}{name of the treatment variable}
+\item{treatment}{[character] Name of the treatment variable.}
 
-\item{strata}{Strata variable on which to compute the average risk. Incompatible with treatment. Experimental.}
+\item{strata}{[character] Strata variable on which to compute the average risk.
+Incompatible with treatment. Experimental.}
 
-\item{contrasts}{the levels of the treatment variable to be
-compared}
+\item{contrasts}{[character] The levels of the treatment variable to be compared.}
 
-\item{times}{time points at which to evaluate risks}
+\item{times}{[numeric vector] Time points at which to evaluate average treatment effects.}
 
-\item{cause}{the cause of interest}
+\item{cause}{[integer/character] the cause of interest.}
 
 \item{landmark}{for models with time-dependent covariates the landmark time(s) of evaluation.
 In this case, argument \code{time} may only be one value and for the prediction of risks
 it is assumed that that the covariates do not change between landmark and landmark+time.}
 
-\item{se}{Logical. If \code{TRUE} compute standard errors and confidence intervals}
+\item{se}{[logical] If \code{TRUE} compute standard errors and confidence intervals}
 
-\item{band}{Logical. If \code{TRUE} compute confidence bands across time points.}
+\item{band}{[logical]. If \code{TRUE} compute confidence bands across time points.}
 
-\item{B}{the number of bootstrap replications used to compute the
-confidence intervals. If it equals 0, then Wald-type confidence
-intervals are computed.  They rely on the standard error
-estimated using the influence function of the estimator.}
+\item{B}{[integer, >0] the number of bootstrap replications used to compute the confidence intervals.
+If it equals 0, then the influence function is used to compute Wald-type confidence intervals/bands.}
 
-\item{seed}{An integer used to generate seeds for bootstrap and to
-achieve reproducible results.}
+\item{seed}{[integer, >0] sed number used to generate seeds for bootstrap
+and to achieve reproducible results.}
 
-\item{handler}{parallel handler for bootstrap. Either "mclapply" or
-"foreach". If "foreach" use \code{doParallel} to create a cluster.}
+\item{handler}{[character] Parallel handler for bootstrap.
+either \code{"mclapply"} or \code{"foreach"}.
+if "foreach" use \code{doparallel} to create a cluster.}
 
-\item{mc.cores}{Passed to \code{parallel::mclapply} or
-\code{doParallel::registerDoParallel}. The number of cores to use, i.e. at
-most how many child processes will be run simultaneously.  The
-option is initialized from environment variable MC_CORES if
-set.}
+\item{mc.cores}{[integer, >0] The number of cores to use,
+i.e. at most how many child processes will be run simultaneously.
+Passed to \code{parallel::mclapply} or \code{doparallel::registerdoparallel}.
+The option is initialized from environment variable mc_cores if set.}
 
-\item{verbose}{Logical. If \code{TRUE} inform about estimated run
-time.}
+\item{verbose}{[logical] If \code{TRUE} inform about estimated run time.}
 
-\item{store.iid}{Implementation used to estimate the standard error. Can be \code{"full"} or \code{"minimal"}.
+\item{store.iid}{[character] Implementation used to estimate the standard error.
+Can be \code{"full"} or \code{"minimal"}.
 \code{"minimal"} requires less memory but can only estimate the standard for the difference between treatment effects (and not for the ratio).}
 
 \item{...}{passed to predictRisk}
 }
 \description{
 Use the g-formula to estimate the average treatment
-    effect based on Cox regression with or without competing risks
+    effect based on Cox regression with or without competing risks.
 }
 \examples{
 library(survival)
@@ -239,7 +237,11 @@ resTD <- ate(cscTD,formula=Hist(entry=start,time=time,event=event)~1,
 resTD
 }
 }
+\seealso{
+\code{\link{confint.ate}} to compute confidence intervals/bands.
+\code{\link{autoplot.ate}} to display the average risk.
+}
 \author{
-Brice Ozenne \email{broz@sund.ku.dk} and Thomas Alexander
-    Gerds \email{tag@biostat.ku.dk}
+Brice Ozenne \email{broz@sund.ku.dk}
+and Thomas Alexander Gerds \email{tag@biostat.ku.dk}
 }

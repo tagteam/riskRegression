@@ -4,60 +4,96 @@
 \alias{confint.ate}
 \title{Confidence Intervals and Confidence Bands for the Predicted Absolute Risk (Cumulative Incidence Function)}
 \usage{
-\method{confint}{ate}(object, conf.level = 0.95, nsim.band = 10000,
-  ate.transform = "none", diffAte.transform = "none",
-  ratioAte.transform = "none", seed = NA, type.boot = "perc", ...)
+\method{confint}{ate}(object, parm = NULL, level = 0.95,
+  nsim.band = 10000, meanRisk.transform = "none",
+  diffRisk.transform = "none", ratioRisk.transform = "none", seed = NA,
+  type.boot = "perc", ...)
 }
 \arguments{
 \item{object}{A \code{ate} object, i.e. output of the \code{ate} function.}
 
-\item{conf.level}{Level of confidence.}
+\item{parm}{not used. For compatibility with the generic method.}
 
-\item{nsim.band}{the number of simulations used to compute the quantiles for the confidence bands.}
+\item{level}{[numeric, 0-1] Level of confidence.}
 
-\item{seed}{Integer passed to set.seed when performing simulation for the confidence bands.
+\item{nsim.band}{[integer, >0]the number of simulations used to compute the quantiles for the confidence bands.}
+
+\item{meanRisk.transform}{[character] the transformation used to improve coverage
+of the confidence intervals for the mean risk in small samples.
+Can be \code{"none"}, \code{"log"}, \code{"loglog"}, \code{"cloglog"}.}
+
+\item{diffRisk.transform}{[character] the transformation used to improve coverage
+of the confidence intervals for the risk difference in small samples.
+Can be \code{"none"}, \code{"atanh"}.}
+
+\item{ratioRisk.transform}{[character] the transformation used to improve coverage
+of the confidence intervals for the risk ratio in small samples.
+Can be \code{"none"}, \code{"log"}.}
+
+\item{seed}{[integer, >0] seed number set when performing simulation for the confidence bands.
 If not given or NA no seed is set.}
 
-\item{...}{not used.}
+\item{type.boot}{[character] Method for constructing bootstrap confidence intervals.
+Either "perc" (the default), "norm", "basic", "stud", or "bca".}
 
-\item{transform.absRisk}{the transformation used to improve coverage
-of the confidence intervals for the predicted absolute risk in small samples.}
+\item{...}{not used.}
 }
 \description{
 Confidence intervals and confidence Bands for the predicted absolute risk (cumulative incidence function).
 }
 \details{
-The confidence bands and confidence intervals are automatically restricted to the interval [0;1].
+Confidence bands and confidence intervals computed via the influence function
+are automatically restricted to the interval [0;1]. \cr \cr
+
+Confidence intervals obtained via bootstrap are computed
+using the \code{boot.ci} function of the \code{boot} package.
+p-value are obtained using test inversion method
+(finding the smallest confidence level such that the interval contain the null hypothesis).
 }
 \examples{
 library(survival)
 
-## generate data
+## ## generate data ####
 set.seed(10)
-d <- sampleData(40,outcome="survival") ## training dataset
-nd <- sampleData(4,outcome="survival") ## validation dataset
-d$time <- round(d$time,1) ## create tied events
-# table(duplicated(d$time))
+d <- sampleData(40,outcome="survival")
 
-## estimate a stratified Cox model
+#### stratified Cox model ####
 fit <- coxph(Surv(time,event)~X1 + strata(X2) + X6,
              data=d, ties="breslow", x = TRUE, y = TRUE)
 
+#### average treatment effect ####
+fit.pred <- ate(fit, treatment = "X1", times = 1:3, data = d)
 
-## compute individual specific cumulative hazard and survival probabilities 
-fit.pred <- predictCox(fit, newdata=nd, times=c(3,8), se = TRUE)
-fit.pred
+## manual calculation of se
+dd <- copy(d)
+dd$X1 <- factor(0, levels = 0:1)
+out <- predictCox(fit, newdata = dd, se = TRUE, times = 1:3, average.iid = TRUE)
+term1 <- -out$survival.average.iid
+term2 <- sweep(1-out$survival, MARGIN = 2, FUN = "-", STATS = colMeans(1-out$survival))
+sqrt(colSums((term1 + term2/NROW(d))^2)) 
+
+## note
+out2 <- predictCox(fit, newdata = dd, se = TRUE, times = 1:3, iid = TRUE)
+mean(out2$survival.iid[,1,1])
+out$survival.average.iid[1,1]
 
 ## add confidence intervals computed on the original scale
-confint(fit.pred, transform.survival = "none")
-fit.pred$survival + 1.96 * fit.pred$survival.se  ## survival.upper
+confint(fit.pred,
+meanRisk.transform = "none", diffRisk.transform = "none", ratioRisk.transform = "none"
+)
+
+fit.pred$meanRisk[, .(lower = meanRisk - 1.96 * se,
+                      upper = meanRisk + 1.96 * se)]
 
 ## add confidence intervals computed on the log-log scale
 ## and backtransformed
-confint(fit.pred, transform.survival = "loglog")
-newse <- fit.pred$survival.se/(fit.pred$survival*log(fit.pred$survival))
-exp(-exp(log(-log(fit.pred$survival)) - 1.96 * newse)) ## survival.lower
-exp(-exp(log(-log(fit.pred$survival)) + 1.96 * newse)) ## survival.upper
+confint(fit.pred,
+meanRisk.transform = "loglog", diffRisk.transform = "atanh", ratioRisk.transform = "log"
+)
+
+newse <- fit.pred$meanRisk[, se/(meanRisk*log(meanRisk))]
+fit.pred$meanRisk[, .(lower = exp(-exp(log(-log(meanRisk)) - 1.96 * newse)),
+                      upper = exp(-exp(log(-log(meanRisk)) + 1.96 * newse)))]
 }
 \author{
 Brice Ozenne

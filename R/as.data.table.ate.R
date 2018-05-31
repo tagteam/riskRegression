@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Mar  3 2017 (09:28) 
 ## Version: 
-## Last-Updated: maj 31 2018 (11:53) 
+## Last-Updated: maj 31 2018 (17:06) 
 ##           By: Brice Ozenne
-##     Update #: 47
+##     Update #: 56
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -14,12 +14,20 @@
 ##----------------------------------------------------------------------
 ## 
 ### Code:
-#' @title Turn ate object into a \code{data.table}
-#' @description Turn ate object into a \code{data.table}
+
+## * as.data.table.ate (documentation)
+#' @title Turn ate Object Into a \code{data.table}
+#' @description Turn ate object into a \code{data.table}.
+#' @name as.data.table.ate
+#' 
 #' @param x object obtained with function \code{ate}
-#' @param keep.rownames not used
-#' @param se should standard errors/quantile for confidence bands be displayed?
-#' @param ... not used
+#' @param keep.rownames Not used.
+#' @param se [logical] Should standard errors/quantile for confidence bands be displayed?
+#' @param ... Not used.
+#'
+
+## * as.data.table.ate (code)
+#' @rdname as.data.table.ate
 #' @export
 as.data.table.ate <- function(x, keep.rownames = FALSE, se = TRUE, ...){
 
@@ -48,7 +56,7 @@ as.data.table.ate <- function(x, keep.rownames = FALSE, se = TRUE, ...){
         out2$lower <- x$riskComparison[["diff.lower"]]
         out2$upper <- x$riskComparison[["diff.upper"]]
     }
-    if(x$band && !is.null(x$diffAte.transform)){
+    if(x$band && !is.null(x$conf.level)){
         if(se){out2$lowerBand <- x$riskComparison[["diff.lowerBand"]]}
         out2$upperBand <- x$riskComparison[["diff.upperBand"]]
     }
@@ -59,12 +67,12 @@ as.data.table.ate <- function(x, keep.rownames = FALSE, se = TRUE, ...){
                        time = x$riskComparison[["time"]],
                        value = x$riskComparison[["ratio"]])
     
-    if(x$se && !is.null(x$ratioAte.transform)){
+    if(x$se && !is.null(x$conf.level)){
         if(se){out3$se <- x$riskComparison[["ratio.se"]]}
         out3$lower <- x$riskComparison[["ratio.lower"]]
         out3$upper <- x$riskComparison[["ratio.upper"]]
     }
-    if(x$band && !is.null(x$ratioAte.transform)){
+    if(x$band && !is.null(x$conf.level)){
         if(se){out3$lowerBand <- x$riskComparison[["ratio.lowerBand"]]}
         out3$upperBand <- x$riskComparison[["ratio.upperBand"]]
     }

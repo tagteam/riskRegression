@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: apr  5 2018 (17:01) 
 ## Version: 
-## Last-Updated: maj 31 2018 (10:07) 
+## Last-Updated: maj 31 2018 (17:37) 
 ##           By: Brice Ozenne
-##     Update #: 255
+##     Update #: 263
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -124,15 +124,14 @@ calcSeATE <- function(object, data, times, cause,
     name.treatmentTime <- paste0(pointEstimate$meanRisk[[1]],".",pointEstimate$meanRisk[[2]])
     n.treatmentTime <- length(name.treatmentTime)
 
-    out$ate.iid <- matrix(NA, nrow = n.treatmentTime, ncol = n.obs,
+    out$meanRisk.iid <- matrix(NA, nrow = n.treatmentTime, ncol = n.obs,
                           dimnames = list(name.treatmentTime, NULL))
-    out$ate.se <- matrix(NA, nrow = n.treatmentTime, ncol = 1,
+    out$meanRisk.se <- matrix(NA, nrow = n.treatmentTime, ncol = 1,
                          dimnames = list(name.treatmentTime, NULL))
     
     for(iTreat in 1:n.contrasts){ # iTreat <- 1
         term1 <- t(attr(IFrisk[[iTreat]],"iid"))
         ## note: here IFrisk[[iTreat]] is the risk (the influence function is in the attribute "iid")
-        
         if(is.null(treatment)){
             indexC <- which(data[[strata]]==contrasts[iTreat])
             term2full <- matrix(-pointEstimate$meanRisk[Treatment==contrasts[iTreat],meanRisk], ncol = n.times, nrow = n.obs,
@@ -142,24 +141,24 @@ calcSeATE <- function(object, data, times, cause,
         }else{
             term2 <- rowCenter_cpp(IFrisk[[iTreat]], center = pointEstimate$meanRisk[Treatment==contrasts[iTreat],meanRisk])
             ## we get n * IF instead of IF for the absolute risk. This is why the second term need to be rescaled
-            iid.tempo <- term1 + term1 + t(term2)/n.obs
+            iid.tempo <- term1 + t(term2)/n.obs
         }
-        out$ate.iid[(iTreat-1)*n.times + 1:n.times,] <- iid.tempo        
+        out$meanRisk.iid[(iTreat-1)*n.times + 1:n.times,] <- iid.tempo        
     }
-    out$ate.se[] <- sqrt(rowSums(out$ate.iid^2))
+    out$meanRisk.se[] <- sqrt(rowSums(out$meanRisk.iid^2))
                                         # }}}
 
                                         # {{{ 3- influence function for the difference/ratio in average treatment effect
     name.T2Time <- paste0(pointEstimate$riskComparison[[1]],".",pointEstimate$riskComparison[[2]],".",pointEstimate$riskComparison[[3]])
     n.T2Time <- length(name.T2Time)
 
-    out$diffAte.iid <- matrix(NA, nrow = n.T2Time, ncol = n.obs,
+    out$diffRisk.iid <- matrix(NA, nrow = n.T2Time, ncol = n.obs,
                                    dimnames = list(name.T2Time, NULL))
-    out$diffAte.se <- matrix(NA, nrow = n.T2Time, ncol = 1,
+    out$diffRisk.se <- matrix(NA, nrow = n.T2Time, ncol = 1,
                                    dimnames = list(name.T2Time, NULL))
-    out$ratioAte.iid <- matrix(NA, nrow = n.T2Time, ncol = n.obs,
+    out$ratioRisk.iid <- matrix(NA, nrow = n.T2Time, ncol = n.obs,
                                    dimnames = list(name.T2Time, NULL))
-    out$ratioAte.se <- matrix(NA, nrow = n.T2Time, ncol = 1,
+    out$ratioRisk.se <- matrix(NA, nrow = n.T2Time, ncol = 1,
                                    dimnames = list(name.T2Time, NULL))
     
     for(iContrast in 1:n.T2Time){ ## iContrast <- 1
@@ -174,23 +173,23 @@ calcSeATE <- function(object, data, times, cause,
                              which(pointEstimate$meanRisk[[2]]==iTime))
 
         ## Compute the iid function of the average treatment effect (difference)
-        out$diffAte.iid[iContrast,] <- out$ate.iid[iIndexA,] - out$ate.iid[iIndexB,]
+        out$diffRisk.iid[iContrast,] <- out$meanRisk.iid[iIndexA,] - out$meanRisk.iid[iIndexB,]
           
         ## Compute the iid function of the average treatment effect (ratio)
         ## IF(A/B) = IF(A)/B-IF(B)A/B^2
-        term1 <- out$ate.iid[iIndexA,] / pointEstimate$meanRisk[["meanRisk"]][iIndexB]
-        term2 <- out$ate.iid[iIndexA,] * pointEstimate$meanRisk[["meanRisk"]][iIndexA] / pointEstimate$meanRisk[["meanRisk"]][iIndexB]^2
-        out$ratioAte.iid[iContrast,] <- term1 - term2
+        term1 <- out$meanRisk.iid[iIndexA,] / pointEstimate$meanRisk[["meanRisk"]][iIndexB]
+        term2 <- out$meanRisk.iid[iIndexA,] * pointEstimate$meanRisk[["meanRisk"]][iIndexA] / pointEstimate$meanRisk[["meanRisk"]][iIndexB]^2
+        out$ratioRisk.iid[iContrast,] <- term1 - term2
         
     }
 
-    out$diffAte.se[] <- sqrt(rowSums(out$diffAte.iid^2))
-    out$ratioAte.se[] <- sqrt(rowSums(out$ratioAte.iid^2))
+    out$diffRisk.se[] <- sqrt(rowSums(out$diffRisk.iid^2))
+    out$ratioRisk.se[] <- sqrt(rowSums(out$ratioRisk.iid^2))
                                         # }}}
     ## export
     if(iid==FALSE){
-        out$ate.iid <- NULL
-        out$diffAte.iid <- NULL
+        out$meanRisk.iid <- NULL
+        out$diffRisk.iid <- NULL
         out$ratiAte.iid <- NULL
     }
     return(out)

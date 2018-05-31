@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: feb 17 2017 (10:06) 
 ## Version: 
-## last-updated: maj 31 2018 (11:56) 
+## last-updated: maj 31 2018 (16:40) 
 ##           By: Brice Ozenne
-##     Update #: 423
+##     Update #: 437
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -17,12 +17,12 @@
 
                                         # {{{ autoplot.predictCox
 ## * autoplot.predictCox (documentation)
-#' @title Plot predictions from a Cox model
-#' @description Plot predictions from a Cox model
+#' @title Plot Predictions From a Cox Model
+#' @description Plot predictions from a Cox model.
 #' @name autoplot.predictCox
 #'  
-#' @param object object obtained with the function \code{predictCox}.
-#' @param type [character] the type of predicted value to display.
+#' @param object Object obtained with the function \code{predictCox}.
+#' @param type [character] The type of predicted value to display.
 #' Choices are:
 #' \code{"hazard"} the hazard function,
 #' \code{"cumhazard"} the cumulative hazard function, 
@@ -32,51 +32,54 @@
 #' @param group.by [character] The grouping factor used to color the prediction curves. Can be \code{"row"}, \code{"strata"}, or \code{"covariates"}.
 #' @param reduce.data [logical] If \code{TRUE} only the covariates that does take indentical values for all observations are displayed.
 #' @param plot [logical] Should the graphic be plotted.
-#' @param digits [integer] Indicating the number of decimal places.
-#' @param title [character] Label for the y axis.
-#' @param alpha [numeric] transparency of the confidence bands. Argument passed to \code{ggplot2::geom_ribbon}.
-#' @param ... additional arguments passed to \code{confint}.
-#' 
+#' @param digits [integer] Number of decimal places.
+#' @param ylab [character] Label for the y axis.
+#' @param alpha [numeric, 0-1] Transparency of the confidence bands. Argument passed to \code{ggplot2::geom_ribbon}.
+#' @param ... additional Arguments passed to \code{confint}.
+
+## * autoplot.predictCox (examples)
+#' @rdname autoplot.predictCox
 #' @examples
 #' library(survival)
 #' library(ggplot2)
 #'
-#' ## predictions ##
+#' #### simulate data ####
 #' set.seed(10)
 #' d <- sampleData(1e2, outcome = "survival")
+#' 
+#' #### Cox model ####
 #' m.cox <- coxph(Surv(time,event)~ X1 + X2 + X3,
 #'                 data = d, x = TRUE, y = TRUE)
-#' e.basehaz <- predictCox(m.cox)
-#' autoplot(e.basehaz, type = "cumhazard")
-#' autoplot(e.basehaz, type = "survival")
 #'
+#' ## display baseline hazard
+#' e.basehaz <- predictCox(m.cox)
+#'
+#' autoplot(e.basehaz, type = "cumhazard")
+#'
+#' ## display predicted survival
 #' pred.cox <- predictCox(m.cox, newdata = d[1:4,],
 #'   times = 1:5, type = "survival", keep.newdata = TRUE)
 #' autoplot(pred.cox)
 #' autoplot(pred.cox, group.by = "covariates")
 #' autoplot(pred.cox, group.by = "covariates", reduce.data = TRUE)
 #' 
-#' 
-#' m.cox.strata <- coxph(Surv(time,event)~ strata(X1) + strata(X2) + X3 + X6,
-#' data = d, x = TRUE, y = TRUE)
-#' pred.cox.strata <- predictCox(m.cox.strata, newdata = d[1,,drop=FALSE],
-#' time = 1:5, keep.newdata = TRUE)
-#' autoplot(pred.cox.strata, type = "survival")
-#' autoplot(pred.cox.strata, type = "survival", group.by = "strata")
-#' res <- autoplot(pred.cox.strata, type = "survival",
-#'             group.by = "covariates")
-#'
-#' # customize display
-#' res$plot + geom_point(data = res$data, size = 5)
-#'
-#' ## predictions with confidence interval
+#' ## predictions with confidence interval/bands
 #' pred.cox <- predictCox(m.cox, newdata = d[1,,drop=FALSE],
 #'   times = 1:5, type = "survival", band = TRUE, se = TRUE, keep.newdata = TRUE)
-#' autoplot(pred.cox, ci = TRUE)
+#' res <- autoplot(pred.cox, ci = TRUE, band = TRUE, alpha = 0.1)
 #'
-#' ## predictions with confidence bands
-#' autoplot(pred.cox, band = TRUE)
+#' ## customize display
+#' res$plot + geom_point(data = res$data, size = 5)
 #'
+#' #### Stratified Cox model ####
+#' m.cox.strata <- coxph(Surv(time,event)~ strata(X1) + strata(X2) + X3 + X6,
+#'                       data = d, x = TRUE, y = TRUE)
+#' 
+#' pred.cox.strata <- predictCox(m.cox.strata, newdata = d[1:5,,drop=FALSE],
+#'                               time = 1:5, keep.newdata = TRUE)
+#'
+#' ## display
+#' autoplot(pred.cox.strata, type = "survival", group.by = "strata")
 
 ## * autoplot.predictCox (code)
 #' @rdname autoplot.predictCox
@@ -132,9 +135,16 @@ autoplot.predictCox <- function(object,
         stop("argument \'band\' cannot be TRUE when no quantiles for the confidence bands have not been computed \n",
              "set argment \'nsim.band\' to a positive integer when calling predictCox \n")
     }
-    
+
     if( (ci||band) && is.null(object$conf.level) ){
-       object <- confint(object, type = type, ...)
+        object <- stats::confint(object, parm = type, ...)
+    }else{
+        dots <- list(...)
+        if(length(dots)>0){
+            txt <- names(dots)
+            txt.s <- if(length(txt)>1){"s"}else{""}
+            stop("unknown argument",txt.s,": \"",paste0(txt,collapse="\" \""),"\" \n")
+        }
     }
 
     ## reshape data
@@ -157,12 +167,12 @@ autoplot.predictCox <- function(object,
 
 
 
-                type.tempo[iStrata,]  <- approx(x = object[["times"]][index.strata],
-                                                y = object[[type]][index.strata],
-                                                yleft = init,
-                                                yright = NA,
-                                                xout = time,
-                                                method = "constant")$y
+                type.tempo[iStrata,]  <- stats::approx(x = object[["times"]][index.strata],
+                                                       y = object[[type]][index.strata],
+                                                       yleft = init,
+                                                       yright = NA,
+                                                       xout = time,
+                                                       method = "constant")$y
                 
             }
             object[[type]] <- type.tempo
@@ -245,8 +255,8 @@ predict2melt <- function(outcome, name.outcome,
     
         colnames(outcome.lower) <- paste0("lowerCI_",time.names)
         colnames(outcome.upper) <- paste0("upperCI_",time.names)
-        first.dt[, lowerCI := .SD[[1]], .SDcols = name.outcome]
-        first.dt[, upperCI := .SD[[1]], .SDcols = name.outcome]
+        first.dt[, c("lowerCI") := .SD[[1]], .SDcols = name.outcome]
+        first.dt[, c("upperCI") := .SD[[1]], .SDcols = name.outcome]
     }
     if(band){
         pattern <- c(pattern,"lowerBand_","upperBand_")
@@ -255,8 +265,8 @@ predict2melt <- function(outcome, name.outcome,
         colnames(outcome.lowerBand) <- paste0("lowerBand_",time.names)
         colnames(outcome.upperBand) <- paste0("upperBand_",time.names)
 
-        first.dt[, lowerBand :=  .SD[[1]], .SDcols = name.outcome]
-        first.dt[, upperBand :=  .SD[[1]], .SDcols = name.outcome]
+        first.dt[, c("lowerBand") :=  .SD[[1]], .SDcols = name.outcome]
+        first.dt[, c("upperBand") :=  .SD[[1]], .SDcols = name.outcome]
     }
 
     outcome <- data.table::as.data.table(
@@ -315,7 +325,7 @@ predict2plot <- function(dataL, name.outcome,
 
     dataL <- rbind(dataL[,unique(keep.cols), with = FALSE],
                    dtTempo[,unique(keep.cols), with = FALSE])
-    setkeyv(dataL, c("row","time"))
+    data.table::setkeyv(dataL, c("row","time"))
     
 ## display ####
     labelCI <- paste0(conf.level*100,"% confidence \n interval")

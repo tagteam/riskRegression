@@ -2,22 +2,29 @@
 % Please edit documentation in R/print.ate.R
 \name{print.ate}
 \alias{print.ate}
-\title{Print average treatment effects}
+\title{Print Average Treatment Effects}
 \usage{
-\method{print}{ate}(x, bootci.method = x$bootci.method, digits = 3, ...)
+\method{print}{ate}(x, digits = 3, type = c("meanRisk", "diffRisk",
+  "ratioRisk"), ...)
 }
 \arguments{
 \item{x}{object obtained with function \code{ate}}
 
-\item{digits}{Number of digits}
+\item{digits}{[integer, >0] Number of digits.}
+
+\item{type}{[character vector] what to displayed.
+Can be any combination of \code{"meanRisk"}, \code{"diffRisk"}, and \code{"ratioRisk"}.}
 
 \item{...}{passed to print}
 }
 \description{
-Print average treatment effects
+Print average treatment effects.
 }
 \details{
-When using bootstrap resampling the p-values are computing using a test-inversion method,
-i.e. find the critical confidence level such that one side of the confidence interval overlap the null hypothesis.
-The p-value is 1 minus the critical confidence level.
+to display confidence intervals/bands and p.value,
+the \code{confint} method needs to be applied on the object.
+}
+\seealso{
+\code{\link{confint.ate}} to compute confidence intervals/bands.
+\code{\link{ate}} to compute the average treatment effects.
 }

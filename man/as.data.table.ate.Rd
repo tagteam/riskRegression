@@ -2,19 +2,19 @@
 % Please edit documentation in R/as.data.table.ate.R
 \name{as.data.table.ate}
 \alias{as.data.table.ate}
-\title{Turn ate object into a \code{data.table}}
+\title{Turn ate Object Into a \code{data.table}}
 \usage{
 \method{as.data.table}{ate}(x, keep.rownames = FALSE, se = TRUE, ...)
 }
 \arguments{
 \item{x}{object obtained with function \code{ate}}
 
-\item{keep.rownames}{not used}
+\item{keep.rownames}{Not used.}
 
-\item{se}{should standard errors/quantile for confidence bands be displayed?}
+\item{se}{[logical] Should standard errors/quantile for confidence bands be displayed?}
 
-\item{...}{not used}
+\item{...}{Not used.}
 }
 \description{
-Turn ate object into a \code{data.table}
+Turn ate object into a \code{data.table}.
 }
