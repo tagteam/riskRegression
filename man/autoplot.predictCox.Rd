@@ -6,31 +6,34 @@
 \usage{
 \method{autoplot}{predictCox}(object, type = NULL, ci = FALSE,
   band = FALSE, group.by = "row", reduce.data = FALSE, plot = TRUE,
-  digits = 2, alpha = NA, ...)
+  ylab = NULL, digits = 2, alpha = NA, ...)
 }
 \arguments{
 \item{object}{object obtained with the function \code{predictCox}.}
 
-\item{type}{the type of predicted value to display. Choices are 
+\item{type}{[character] the type of predicted value to display.
+Choices are:
 \code{"hazard"} the hazard function,
 \code{"cumhazard"} the cumulative hazard function, 
 or \code{"survival"} the survival function.}
 
-\item{ci}{Logical. If \code{TRUE} display the confidence intervals for the predictions.}
+\item{ci}{[logical] If \code{TRUE} display the confidence intervals for the predictions.}
 
-\item{band}{Logical. If \code{TRUE} display the confidence bands for the predictions.}
+\item{band}{[logical] If \code{TRUE} display the confidence bands for the predictions.}
 
-\item{group.by}{The grouping factor used to color the prediction curves. Can be \code{"row"}, \code{"strata"}, or \code{"covariates"}.}
+\item{group.by}{[character] The grouping factor used to color the prediction curves. Can be \code{"row"}, \code{"strata"}, or \code{"covariates"}.}
 
-\item{reduce.data}{Logical. If \code{TRUE} only the covariates that does take indentical values for all observations are displayed.}
+\item{reduce.data}{[logical] If \code{TRUE} only the covariates that does take indentical values for all observations are displayed.}
 
-\item{plot}{Logical. Should the graphic be plotted.}
+\item{plot}{[logical] Should the graphic be plotted.}
 
-\item{digits}{integer indicating the number of decimal places}
+\item{digits}{[integer] Indicating the number of decimal places.}
 
-\item{alpha}{transparency of the confidence bands. Argument passed to \code{ggplot2::geom_ribbon}.}
+\item{alpha}{[numeric] transparency of the confidence bands. Argument passed to \code{ggplot2::geom_ribbon}.}
 
-\item{...}{not used. Only for compatibility with the plot method.}
+\item{...}{additional arguments passed to \code{confint}.}
+
+\item{title}{[character] Label for the y axis.}
 }
 \description{
 Plot predictions from a Cox model
@@ -40,11 +43,13 @@ library(survival)
 library(ggplot2)
 
 ## predictions ##
+set.seed(10)
 d <- sampleData(1e2, outcome = "survival")
 m.cox <- coxph(Surv(time,event)~ X1 + X2 + X3,
                 data = d, x = TRUE, y = TRUE)
-dt.basehaz <- predictCox(m.cox)
-ggplot(as.data.table(dt.basehaz), aes(x = time, y = survival)) + geom_point() + geom_line()
+e.basehaz <- predictCox(m.cox)
+autoplot(e.basehaz, type = "cumhazard")
+autoplot(e.basehaz, type = "survival")
 
 pred.cox <- predictCox(m.cox, newdata = d[1:4,],
   times = 1:5, type = "survival", keep.newdata = TRUE)
@@ -67,13 +72,10 @@ res$plot + geom_point(data = res$data, size = 5)
 
 ## predictions with confidence interval
 pred.cox <- predictCox(m.cox, newdata = d[1,,drop=FALSE],
-  times = 1:5, type = "survival", se = TRUE, keep.newdata = TRUE)
+  times = 1:5, type = "survival", band = TRUE, se = TRUE, keep.newdata = TRUE)
 autoplot(pred.cox, ci = TRUE)
 
 ## predictions with confidence bands
-pred.cox <- predictCox(m.cox, newdata = d[1,,drop=FALSE],
-  times = 1:5, type = "survival", nsim.band = 500,  band = TRUE, keep.newdata = TRUE)
 autoplot(pred.cox, band = TRUE)
-
 
 }

@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: maj 18 2017 (09:23) 
 ## Version: 
-## last-updated: maj 24 2018 (17:23) 
+## last-updated: maj 28 2018 (17:24) 
 ##           By: Brice Ozenne
-##     Update #: 73
+##     Update #: 74
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -248,14 +248,15 @@ test_that("predictionsSE",{
     GS <- data.table("observation" = c(6, 7), 
                      "times" = c(10, 10), 
                      "survival" = c(0.10159, 0.07072), 
-                     "survival.se" = c(-0.37246, -0.30629), 
+                     "survival.se" = c(0.37246, 0.30629), 
                      "survival.lower" = c(0.00869, 0.008), 
                      "survival.upper" = c(0.3322, 0.23378),
                      "survival.quantileBand" = c(1.96348, 1.98211),
                      "survival.lowerBand" = c(0.00864, 0.00774), 
                      "survival.upperBand" = c(0.33268, 0.23609))
     ## butils::object2script(as.data.table(predRR1.loglog)[6:7,names(GS),with=FALSE], digit = 5)
-    expect_equal(as.data.table(predRR1.loglog)[6:7,names(GS),with=FALSE], GS, tol = 1e-4, scale = 1)
+    expect_equal(as.data.table(predRR1.loglog)[6:7,names(GS),with=FALSE],
+                 GS, tol = 1e-4, scale = 1)
 
     
 #### at event time
@@ -290,7 +291,7 @@ test_that("predictionsSE",{
     GS <- data.table("observation" = c(6, 7), 
                      "times" = c(0.17003, 0.17003), 
                      "survival" = c(0.98343, 0.98083), 
-                     "survival.se" = c(-0.99872, -1.0539), 
+                     "survival.se" = c(0.99872, 1.0539), 
                      "survival.lower" = c(0.88839, 0.85835), 
                      "survival.upper" = c(0.99764, 0.99755), 
                      "survival.quantileBand" = c(2.70855, 2.89603), 
@@ -351,7 +352,7 @@ test_that("predictionsSE - interaction",{
     GS <- data.table("observation" = c(6, 7), 
                      "times" = c(10, 10), 
                      "survival" = c(0.11359, 0.07571), 
-                     "survival.se" = c(-0.41379, -0.31371), 
+                     "survival.se" = c(0.41379, 0.31371), 
                      "survival.lower" = c(0.00749, 0.00845), 
                      "survival.upper" = c(0.38035, 0.2477), 
                      "survival.quantileBand" = c(1.95035, 1.96044), 
@@ -389,7 +390,7 @@ test_that("predictionsSE - interaction",{
     GS <- data.table("observation" = c(6, 7), 
                      "times" = c(0.17003, 0.17003), 
                      "survival" = c(0.98536, 0.98265), 
-                     "survival.se" = c(-1.12917, -1.14539), 
+                     "survival.se" = c(1.12917, 1.14539), 
                      "survival.lower" = c(0.87384, 0.84775), 
                      "survival.upper" = c(0.99839, 0.99815), 
                      "survival.quantileBand" = c(2.65567, 2.84619), 

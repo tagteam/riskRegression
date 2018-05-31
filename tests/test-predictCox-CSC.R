@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun  6 2016 (09:35) 
 ## Version: 
-## last-updated: Mar 26 2018 (07:53) 
-##           By: Thomas Alexander Gerds
-##     Update #: 142
+## last-updated: maj 28 2018 (17:20) 
+##           By: Brice Ozenne
+##     Update #: 146
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -160,8 +160,11 @@ setkeyv(data.test, c("invasion","ici"))
 # identify the last event time for each strata
 epsilon <- min(diff(unique(fit.coxph$y[,"time"])))/10
 pred.coxph <- predictCox(fit.coxph, keep.strata = TRUE, keep.times = TRUE)
-baseHazStrata <- as.data.table(pred.coxph[c("time","hazard","cumhazard","strata","survival")])
-dt.times <- baseHazStrata[, .(beforeLastTime = time[.N]-epsilon, LastTime = time[.N], afterLastTime = time[.N]+epsilon), by = strata]
+baseHazStrata <- as.data.table(pred.coxph[c("times","hazard","cumhazard","strata","survival")])
+dt.times <- baseHazStrata[, .(beforeLastTime = times[.N]-epsilon,
+                              LastTime = times[.N],
+                              afterLastTime = times[.N]+epsilon),
+                          by = strata]
 
 # }}}
 
@@ -446,9 +449,9 @@ test_that("average.iid - predictCox", {
     for(iF in ls.ff){
         fit <- coxph(iF, data=d, x = TRUE, y = TRUE)
     
-        resGS <- predictCox(fit, newdata=nd, times = 2:7, iid = TRUE, log.transform = FALSE)
-        res1 <- predictCox(fit, newdata=nd, times = 2:7, average.iid = TRUE, store.iid = "full", log.transform = FALSE)
-        res2 <- predictCox(fit, newdata=nd, times = 2:7, average.iid = TRUE, store.iid = "minimal", log.transform = FALSE)
+        resGS <- predictCox(fit, newdata=nd, times = 2:7, iid = TRUE)
+        res1 <- predictCox(fit, newdata=nd, times = 2:7, average.iid = TRUE, store.iid = "full")
+        res2 <- predictCox(fit, newdata=nd, times = 2:7, average.iid = TRUE, store.iid = "minimal")
 
         expect_equal(res1$survival.average.iid,res2$survival.average.iid)
         expect_equal(res1$survival.average.iid,t(apply(resGS$survival.iid,2:3,mean)))
@@ -467,9 +470,9 @@ test_that("average.iid - predict.CSC", {
     for(iF in ls.ff){ # iF <- ls.ff[[1]] 
         fit <- CSC(iF, data=d)
         
-        resGS <- predict(fit, newdata=nd, times = 2:7, iid = TRUE, log.transform = FALSE, cause = 1)
-        res1 <- predict(fit, newdata=nd, times = 2:7, average.iid = TRUE, store.iid = "full", log.transform = FALSE, cause = 1)
-        res2 <- predict(fit, newdata=nd, times = 2:7, average.iid = TRUE, store.iid = "minimal", log.transform = FALSE, cause = 1)
+        resGS <- predict(fit, newdata=nd, times = 2:7, iid = TRUE, cause = 1)
+        res1 <- predict(fit, newdata=nd, times = 2:7, average.iid = TRUE, store.iid = "full", cause = 1)
+        res2 <- predict(fit, newdata=nd, times = 2:7, average.iid = TRUE, store.iid = "minimal", cause = 1)
 
         expect_equal(res1$absRisk.average.iid,res2$absRisk.average.iid)
         expect_equal(res2$absRisk.average.iid,t(apply(resGS$absRisk.iid,2:3,mean)))
@@ -532,10 +535,15 @@ d[X1 == 1, event := 2]
 m.CSC <- CSC(Hist(time,event)~strata(X1)+X2, data = d)
 ## expect_warning(predict(m.CSC, newdata = data.frame(X1=1,X2=0), se = TRUE, cause = 1, times = 2),
              ## regexp = NA)
-expect_error(predict(m.CSC, newdata = data.frame(X1=1,X2=0), se = TRUE, cause = 1, times = 2))
-# Warning message:
-#   In min(design[(design$status == 1) * (design$strata == strat) ==  :
-#                   no non-missing arguments to min; returning Inf
+expect_error(predict(m.CSC,
+                     newdata = data.frame(X1=1,X2=0),
+                     se = TRUE,
+                     cause = 1,
+                     times = 2))
+
+## Warning message:
+##   In min(design[(design$status == 1) * (design$strata == strat) ==  :
+##                   no non-missing arguments to min; returning Inf
 
 # }}}
 

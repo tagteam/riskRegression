@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: maj 19 2017 (16:01) 
 ## Version: 
-## last-updated: Feb 19 2018 (18:23) 
-##           By: Thomas Alexander Gerds
-##     Update #: 120
+## last-updated: maj 28 2018 (17:55) 
+##           By: Brice Ozenne
+##     Update #: 121
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -151,8 +151,7 @@ influenceCoxTest.list <- function(object, newdata, times, type, cause, ...){
                          times = times,
                          iid = TRUE,
                          band = FALSE,
-                         se = TRUE,
-                         log.transform = FALSE)
+                         se = TRUE)
     }else if("CauseSpecificCox" %in% class(x)){ # CSC
       pred <- predict(x,
                       cause = cause,
@@ -160,8 +159,7 @@ influenceCoxTest.list <- function(object, newdata, times, type, cause, ...){
                       times = times,
                       iid = TRUE,
                       band = FALSE,
-                      se = TRUE,
-                      log.transform = FALSE)
+                      se = TRUE)
     }else{
       stop("can only handle Cox and Cause specific Cox models \n")
     }

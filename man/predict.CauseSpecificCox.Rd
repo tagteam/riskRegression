@@ -7,8 +7,7 @@
 \method{predict}{CauseSpecificCox}(object, newdata, times, cause,
   landmark = NA, keep.times = 1L, keep.newdata = 1L, keep.strata = 1L,
   se = FALSE, band = FALSE, iid = FALSE, average.iid = FALSE,
-  nsim.band = 10000, log.transform = TRUE, product.limit = TRUE,
-  conf.level = 0.95, store.iid = "full", ...)
+  product.limit = TRUE, store.iid = "full", ...)
 }
 \arguments{
 \item{object}{The fitted cause specific Cox model}
@@ -39,17 +38,8 @@ to the output.}
 
 \item{average.iid}{Logical. If \code{TRUE} add the average of the influence function over \code{newdata} to the output.}
 
-\item{nsim.band}{the number of simulations used to compute the quantiles
-for the confidence bands.}
-
-\item{log.transform}{Should the confidence intervals/bands be computed on the
-log(-log) scale and be backtransformed.
-Otherwise they are computed on the original scale and truncated (if necessary).}
-
 \item{product.limit}{Logical. If true the survival is computed using the product limit estimator.
 Otherwise the exponential approximation is used (i.e. exp(-cumulative hazard)).}
-
-\item{conf.level}{Level of confidence.}
 
 \item{store.iid}{Implementation used to estimate the influence function and the standard error.
 Can be \code{"full"} or \code{"minimal"}.}
@@ -75,9 +65,6 @@ Apply formula to combine two or more Cox models into absolute risk (cumulative i
 This function computes the absolute risk as given by formula 2 of (Ozenne et al., 2017).
 Confidence intervals and confidence bands can be computed using a first order von Mises expansion.
 See the section "Construction of the confidence intervals" in (Ozenne et al., 2017).
-
-When setting \code{log.transform} to \code{TRUE}, the standard error that is returned is 
-before back-transformation to the original scale.
 
 A detailed explanation about the meaning of the argument \code{store.iid} can be found
 in (Ozenne et al., 2017) Appendix B "Saving the influence functions".
@@ -107,8 +94,7 @@ CSC.risk
 
 ## add the standard error/confidence intervals
 ## (computed on the log log scale and backtransformed)
-CSC.riskSE <-  predict(CSC.fit,newdata=nd,times=1:10,cause=1,se=TRUE,
-                        log.transform = TRUE)
+CSC.riskSE <-  predict(CSC.fit,newdata=nd,times=1:10,cause=1,se=TRUE)
 as.data.table(CSC.riskSE)[1:5]
 exp(-exp(
  log(-log(CSC.riskSE$absRisk)) - 1.96 * CSC.riskSE$absRisk.se
@@ -116,8 +102,7 @@ exp(-exp(
 
 ## extract the iid for the absolute risk
 CSC.iid <- predict(CSC.fit, newdata = d, se = TRUE,
-                   cause = 1, times = ttt[1], iid = TRUE,
-                   log.transform = FALSE)
+                   cause = 1, times = ttt[1], iid = TRUE)
 rowMeans(CSC.iid$absRisk.iid[,1,]) ## the iid decomposition has 0 expectation
 sqrt(rowSums(CSC.iid$absRisk.iid[,1,]^2))[1:5]
 as.data.table(CSC.iid)[1:5]
@@ -125,15 +110,14 @@ as.data.table(CSC.iid)[1:5]
 ## same but the iid decomposition is averaged over the patients
 CSC.aviid <- predict(CSC.fit, newdata = d,
                    cause = 1, times = ttt[1],
-                   average.iid = TRUE,
-                   log.transform = FALSE)
+                   average.iid = TRUE)
 CSC.aviid$absRisk.average.iid[1:5,]
 colMeans(CSC.iid$absRisk.iid[,1,1:5])
 
 ## compute absolute risks with CI for cause 2
 ## (without displaying the value of the covariates)
 predict(CSC.fit,newdata=nd,times=1:10,cause=2,se=TRUE,
-        log.transform = TRUE, keep.newdata = FALSE)
+        keep.newdata = FALSE)
 
 ## other example
 library(survival)

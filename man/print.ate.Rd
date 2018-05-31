@@ -9,10 +9,6 @@
 \arguments{
 \item{x}{object obtained with function \code{ate}}
 
-\item{bootci.method}{Character. Method for constructing bootstrap confidence intervals.
-Either "perc" (the default), "norm", "basic", "stud", or "bca".
-Argument passed to \code{boot::boot.ci}.}
-
 \item{digits}{Number of digits}
 
 \item{...}{passed to print}

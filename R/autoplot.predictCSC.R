@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: feb 27 2017 (10:47) 
 ## Version: 
-## last-updated: okt  3 2017 (17:19) 
+## last-updated: maj 31 2018 (11:56) 
 ##           By: Brice Ozenne
-##     Update #: 65
+##     Update #: 70
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -60,7 +60,7 @@ autoplot.predictCSC <- function(object,
                             digits = 2, alpha = NA, ...){
   
     ## initialize and check        
-	group.by <- match.arg(group.by, c("row","covariates","strata"))
+    group.by <- match.arg(group.by, c("row","covariates","strata"))
   
     if(group.by == "covariates" && ("newdata" %in% names(object) == FALSE)){
         stop("argument \'group.by\' cannot be \"covariates\" when newdata is missing in the object \n",
@@ -79,15 +79,19 @@ autoplot.predictCSC <- function(object,
         stop("argument \'band\' cannot be TRUE when the quantiles for the confidence bands have not been computed \n",
              "set argment \'nsim.band\' to a positive integer when calling predict.CauseSpecificCox \n")
     }
-    
-  ## display
-  newdata <- copy(object$newdata)
-  if(!is.null(newdata) && reduce.data){
-    test <- unlist(newdata[,lapply(.SD, function(col){length(unique(col))==1})])
-    if(any(test)){
-      newdata[, (names(test)[test]):=NULL]
-    }        
-  }
+
+    if( (ci||band) && is.null(object$conf.level) ){
+        object <- confint(object, ...)
+    }
+
+    ## display
+    newdata <- copy(object$newdata)
+    if(!is.null(newdata) && reduce.data){
+        test <- unlist(newdata[,lapply(.SD, function(col){length(unique(col))==1})])
+        if(any(test)){
+            newdata[, (names(test)[test]):=NULL]
+        }        
+    }
 
     dataL <- predict2melt(outcome = object$absRisk, ci = ci, band = band, 
                           outcome.lower = if(ci){object$absRisk.lower}else{NULL},
@@ -97,23 +101,21 @@ autoplot.predictCSC <- function(object,
                           newdata = newdata,
                           strata = object$strata,
                           times = object$times,
-                          name.outcome = "absoluteRisk",
+                          name.outcome = "absRisk",
                           group.by = group.by,
                           digits = digits
                           )
 
     gg.res <- predict2plot(dataL = dataL,
-                           name.outcome = "absoluteRisk", # must not contain space to avoid error in ggplot2
+                           name.outcome = "absRisk", # must not contain space to avoid error in ggplot2
                            ci = ci,
                            band = band,
                            group.by = group.by,
                            conf.level = object$conf.level,
                            alpha = alpha,
-                           origin = min(object$time)
+                           ylab = "absolute risk"
                            )
-    
-  gg.res$plot <- gg.res$plot + ggplot2::ylab("absolute risk")
-  
+      
   if(plot){
     print(gg.res$plot)
   }

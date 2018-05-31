@@ -2,19 +2,30 @@
 % Please edit documentation in R/RcppExports.R
 \name{sliceScale_cpp}
 \alias{sliceScale_cpp}
+\alias{sliceScale_cpp}
 \title{Apply / by slice}
 \usage{
+sliceScale_cpp(X, M)
+
 sliceScale_cpp(X, M)
 }
 \arguments{
 \item{X}{An array.}
 
 \item{M}{A matrix with the same number of row and columns as X.}
+
+\item{X}{An array.}
+
+\item{M}{A matrix with the same number of row and columns as X.}
 }
 \value{
 An array of same size as X.
+
+An array of same size as X.
 }
 \description{
+Fast computation of sweep(X, MARGIN = 1:2, FUN = "/", STATS = scale)
+
 Fast computation of sweep(X, MARGIN = 1:2, FUN = "/", STATS = scale)
 }
 \examples{
@@ -24,7 +35,15 @@ sweep(x, MARGIN = 1:2, FUN = "/", STATS = M)
 sliceScale_cpp(x, M) 
 
 
+x <- array(1, dim = c(2,6,5))
+M <- matrix(1:12,2,6)
+sweep(x, MARGIN = 1:2, FUN = "/", STATS = M)
+sliceScale_cpp(x, M) 
+
+
 }
 \author{
+Brice Ozenne <broz@sund.ku.dk>
+
 Brice Ozenne <broz@sund.ku.dk>
 }

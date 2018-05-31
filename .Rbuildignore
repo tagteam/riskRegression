@@ -6,3 +6,4 @@ prepareData/
 ^\.travis\.yml$
 ^.*\.Rproj$
 ^\.Rproj\.user$
+^appveyor\.yml$

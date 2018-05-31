@@ -5,6 +5,7 @@ using namespace Rcpp;
 using namespace arma;
 using namespace std;
 
+//' * colCenter
 //' @title Apply - by column
 //'
 //' @description Fast computation of sweep(X, MARGIN = 1, FUN = "-", STATS = center)
@@ -26,7 +27,7 @@ arma::mat colCenter_cpp(arma::mat X, const arma::colvec& center){
   return(X);
 }
 
-
+//' * rowCenter
 //' @title Apply - by row
 //'
 //' @description Fast computation of sweep(X, MARGIN = 2, FUN = "-", STATS = center)

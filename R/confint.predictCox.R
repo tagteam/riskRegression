@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: maj 23 2018 (14:08) 
 ## Version: 
-## Last-Updated: maj 24 2018 (17:53) 
+## Last-Updated: maj 31 2018 (09:40) 
 ##           By: Brice Ozenne
-##     Update #: 145
+##     Update #: 177
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -15,6 +15,7 @@
 ## 
 ### Code:
 
+## * confint.predictCox (documentation)
 ##' @title Confidence Intervals and Confidence Bands for the predicted Survival/Cumulative Hazard
 ##' @description Confidence intervals and confidence Bands for the predicted survival/cumulative Hazard.
 ##' @name confint.predictCox
@@ -23,8 +24,10 @@
 ##' @param conf.level Level of confidence.
 ##' @param type the type of predicted value for which the confidence intervals should be output.
 ##' Can be \code{"survival"} or \code{"cumhazard"}.
-##' @param transform.cumhazard the transformation used to improve coverage of the confidence intervals for the cumlative hazard in small samples.
-##' @param transform.survival the transformation used to improve coverage of the confidence intervals for the survival in small samples.
+##' @param cumhazard.transform the transformation used to improve coverage
+##' of the confidence intervals for the cumlative hazard in small samples.
+##' @param survival.transform the transformation used to improve coverage
+##' of the confidence intervals for the survival in small samples.
 ##' @param nsim.band the number of simulations used to compute the quantiles for the confidence bands.
 ##' @param seed Integer passed to set.seed when performing simulation for the confidence bands.
 ##' If not given or NA no seed is set. 
@@ -66,17 +69,20 @@
 ##' exp(-exp(log(-log(fit.pred$survival)) - 1.96 * newse)) ## survival.lower
 ##' exp(-exp(log(-log(fit.pred$survival)) + 1.96 * newse)) ## survival.upper
 ##
+
+## * confint.predictCox (code)
+##' @rdname confint.predictCox
 ##' @export
 confint.predictCox <- function(object,
                                conf.level = 0.95,
                                type = NULL,
                                nsim.band = 1e4,
-                               transform.cumhazard = "log",
-                               transform.survival = "cloglog",
+                               cumhazard.transform = "log",
+                               survival.transform = "cloglog",
                                seed = NA,
                                ...){
 
-    ## check arguments
+    ## ** check arguments
     dots <- list(...)
     if(length(dots)>0){
         txt <- names(dots)
@@ -98,175 +104,97 @@ confint.predictCox <- function(object,
              "set argument \'type\' to ",type," when calling predictCox \n")
     }
     if("cumhazard" %in% type){
-        if(!is.null(object$transform.cumhazard) && object$transform.cumhazard != "none"){
+        if(!is.null(object$cumhazard.transform) && object$cumhazard.transform != "none"){
             stop("Cannot work with standard errors that have already been transformed \n")
         }
-        object$transform.cumhazard <- match.arg(transform.cumhazard, c("none","log"))
+        object$cumhazard.transform <- match.arg(cumhazard.transform, c("none","log"))
+        min.value <- switch(object$cumhazard.transform,
+                            "none" = 0,
+                            "log" = NULL)
+        max.value <- NULL
     }
     if("survival" %in% type){
-        if(!is.null(object$transform.survival) && object$transform.survival != "none"){
+        if(!is.null(object$survival.transform) && object$survival.transform != "none"){
             stop("Cannot work with standard errors that have already been transformed \n")
         }
-        object$transform.survival <- match.arg(transform.survival, c("none","log","loglog","cloglog"))
+        object$survival.transform <- match.arg(survival.transform, c("none","log","loglog","cloglog"))
+        min.value <- switch(object$survival.transform,
+                            "none" = 0,
+                            "log" = NULL,
+                            "loglog" = NULL,
+                            "cloglog" = NULL)
+        max.value <- switch(object$survival.transform,
+                            "none" = 1,
+                            "log" = 1,
+                            "loglog" = NULL,
+                            "cloglog" = NULL)
     }
-    ## extract information
-    se <- object$se
-    band <- object$band
 
-    ## quantile
+    ## ** quantile
     zval <- stats::qnorm(1 - (1-conf.level)/2, mean = 0, sd = 1)
 
-    ## standard error and influence function
-    if("cumhazard" %in% type){
-        if(object$transform.cumhazard == "none"){
-            ## no change
-        }else if(object$transform.cumhazard == "log"){
-            ## formula 4.10 p 58 (Beyersmann et al. 2012)
-            object$cumhazard.se <- object$cumhazard.se/object$cumhazard
-            if(band){
-                object$cumhazard.iid <- sweep(object$cumhazard.iid, MARGIN = 1:2, FUN = "/", STATS = object$cumhazard)
-            }
-        }
-    }
-        
-    if("survival" %in% type){
-        if(object$transform.survival == "none"){
-            ## no change
-        }else if(object$transform.survival == "log"){
-            ## formula 4.10 p 58 (Beyersmann et al. 2012)
-            object$survival.se <- object$survival.se / object$survival
-            if(band){
-                object$survival.iid <- sweep(object$survival.iid, MARGIN = 1:2, FUN = "/", STATS = object$survival)
-            }
-        }else if(object$transform.survival == "loglog"){
-            ## formula 4.16 p 59 (Beyersmann et al. 2012)
-            object$survival.se <- object$survival.se / (object$survival * (-log(object$survival)))
-            if(band){
-                object$survival.iid <- sweep(object$survival.iid, MARGIN = 1:2, FUN = "/", STATS = object$survival * log(object$survival))
-            }
-        }else if(object$transform.survival == "cloglog"){
-            ## formula 4.21 p 62 (Beyersmann et al. 2012)
-            object$survival.se <- object$survival.se / ((1-object$survival) * (-log(1-object$survival)))
-            if(band){
-                object$survival.iid <- sweep(object$survival.iid, MARGIN = 1:2, FUN = "/", STATS = (1-object$survival) * log(1-object$survival))
-            }
-        }
-    }
+    ## ** transformation
+    if(object[[paste0(type,".transform")]] != "none"){
+        ## transform standard error
+        object[[paste0(type,".se")]] <- transformSE(estimate = object[[type]],
+                                                    se = object[[paste0(type,".se")]],
+                                                    type = object[[paste0(type,".transform")]])
 
+        ## transform influence function
+        if(object$band){
+            object[[paste0(type,".iid")]] <- transformIID(estimate = object[[type]],
+                                                          iid = object[[paste0(type,".iid")]],
+                                                          type = object[[paste0(type,".transform")]],
+                                                          format = "array")
+        }
+    }
     
-    ## confidence intervals
+    ## ** confidence intervals
     if(object$se){
-        if("cumhazard" %in% type){
-            if(object$transform.cumhazard == "none"){
-                object$cumhazard.lower <- matrix(NA, nrow = NROW(object$cumhazard), ncol = NCOL(object$cumhazard)) # to keep matrix format even when object$cumhazard contains only one line
-                object$cumhazard.lower[] <- apply(object$cumhazard - zval * object$cumhazard.se,2,pmax,0) # to keep matrix format even when object$cumhazard contains only one line
-                object$cumhazard.upper <- object$cumhazard + zval * object$cumhazard.se
-            }else if(object$transform.cumhazard == "log"){
-                ## a * exp +/-b = exp(log(a) +/- b)
-                ## formula 4.10 p 58 (Beyersmann et al. 2012)
-                object$cumhazard.lower <- object$cumhazard * exp(-zval * object$cumhazard.se)
-                object$cumhazard.upper <- object$cumhazard * exp(+zval * object$cumhazard.se)
-            }
-        }
 
-        if("survival" %in% type){
-            if(object$transform.survival == "none"){
-                object$survival.lower <- object$survival.upper <- matrix(NA, nrow = NROW(object$survival), ncol = NCOL(object$survival)) 
-                object$survival.lower[] <- apply(object$survival - zval * object$survival.se,2,pmax,0) # to keep matrix format even when object$survival contains only one line
-                object$survival.upper[] <- apply(object$survival + zval * object$survival.se,2,pmin,1) # to keep matrix format even when object$survival contains only one line
-            }else if(object$transform.survival == "log"){
-                ## a * exp +/-b = exp(log(a) +/- b)
-                ## formula 4.10 p 58 (Beyersmann et al. 2012)
-                object$survival.lower <- object$survival.upper <- matrix(NA, nrow = NROW(object$survival), ncol = NCOL(object$survival)) 
-                object$survival.lower[] <- apply(object$survival * exp(-zval * object$survival.se),2,pmax,0) # to keep matrix format even when object$survival contains only one line
-                object$survival.upper[] <- object$survival * exp(+zval * object$survival.se) # to keep matrix format even when object$survival contains only one line
-            }else if(object$transform.survival == "loglog"){
-                ## exp(-exp(log(-log(a)) +/- b)) = exp(-exp(log(-log(a)))exp(+/- b)) = exp(-(-log(a))exp(+/- b)) = exp(log(a)exp(+/- b)) = a ^ exp(+/- b)
-                ## formula 4.16 p 59 (Beyersmann et al. 2012)
-                object$survival.lower <- object$survival^(exp( + zval * object$survival.se ))
-                object$survival.upper <- object$survival^(exp( - zval * object$survival.se ))                
-            }else if(object$transform.survival == "cloglog"){
-                ## formula 4.21 p 62 (Beyersmann et al. 2012)
-                object$survival.lower <- 1 - (1-object$survival)^(exp( - zval * object$survival.se ))
-                object$survival.upper <- 1 - (1-object$survival)^(exp( + zval * object$survival.se ))                
+        object[paste0(type,c(".lower",".upper"))] <- transformCI(estimate = object[[type]],
+                                                                 se = object[[paste0(type,".se")]],
+                                                                 quantile = zval,
+                                                                 type = object[[paste0(type,".transform")]],
+                                                                 format = "matrix",
+                                                                 min.value = min.value,
+                                                                 max.value = max.value)
 
-            }
-        }
-        
     }
 
-    ## confidence bands
+    ## ** confidence bands
     if(object$band && nsim.band > 0){
-        if ("cumhazard" %in% type){
-            if(!is.na(seed)){set.seed(seed)}
-            object$quantile.band <- confBandCox(iid = object$cumhazard.iid,
-                                                se = object$cumhazard.se,
-                                                n.sim = nsim.band,
-                                                conf.level = conf.level)
-            
-            seBand_tempo <- colMultiply_cpp(object$cumhazard.se,object$quantile.band)
 
-            if("cumhazard" %in% type){
-                if(object$transform.cumhazard == "none"){
-                    object$cumhazard.lowerBand <- matrix(NA, nrow = NROW(object$cumhazard), ncol = NCOL(object$cumhazard)) # to keep matrix format even when object$cumhazard contains only one line
-                    object$cumhazard.lowerBand[] <- apply(object$cumhazard - zval * seBand_tempo,2,pmax,0) # to keep matrix format even when object$cumhazard contains only one line
-                    object$cumhazard.upperBand <- object$cumhazard + zval * seBand_tempo
-                }else if(object$transform.cumhazard == "log"){
-                    ## a * exp +/-b = exp(log(a) +/- b)
-                    ## formula 4.10 p 58 (Beyersmann et al. 2012)
-                    object$cumhazard.lowerBand <- object$cumhazard * exp(-zval * seBand_tempo)
-                    object$cumhazard.upperBand <- object$cumhazard * exp(+zval * seBand_tempo)
-                }
-            } 
-        }
+        ## find quantiles for the bands
+        if(!is.na(seed)){set.seed(seed)}        
+        object[[paste0(type,".quantileBand")]] <- confBandCox(iid = object[[paste0(type,".iid")]],
+                                                              se = object[[paste0(type,".se")]],
+                                                              n.sim = nsim.band,
+                                                              conf.level = conf.level)
 
-        if("survival" %in% type){
-            if(!is.na(seed)){set.seed(seed)}
-            object$quantile.band <- confBandCox(iid = object$survival.iid,
-                                                se = object$survival.se,
-                                                n.sim = nsim.band,
-                                                conf.level = conf.level)
-            
-            seBand_tempo <- colMultiply_cpp(object$survival.se,object$quantile.band)/zval
-
-            if(object$transform.survival == "none"){
-                object$survival.lowerBand <- object$survival.upperBand <- matrix(NA, nrow = NROW(object$survival), ncol = NCOL(object$survival)) 
-                object$survival.lowerBand[] <- apply(object$survival - zval * seBand_tempo,2,pmax,0) # to keep matrix format even when object$survival contains only one line
-                object$survival.upperBand[] <- apply(object$survival + zval * seBand_tempo,2,pmin,1) # to keep matrix format even when object$survival contains only one line
-            }else if(object$transform.survival == "log"){
-                ## a * exp +/-b = exp(log(a) +/- b)
-                ## formula 4.10 p 58 (Beyersmann et al. 2012)
-                object$survival.lowerBand <- object$survival.upperBand <- matrix(NA, nrow = NROW(object$survival), ncol = NCOL(object$survival)) 
-                object$survival.lowerBand[] <- apply(object$survival * exp(-zval * seBand_tempo),2,pmax,0) # to keep matrix format even when object$survival contains only one line
-                object$survival.upperBand[] <- object$survival * exp(+zval * seBand_tempo) # to keep matrix format even when object$survival contains only one line
-            }else if(object$transform.survival == "loglog"){
-                ## exp(-exp(log(-log(a)) +/- b)) = exp(-exp(log(-log(a)))exp(+/- b)) = exp(-(-log(a))exp(+/- b)) = exp(log(a)exp(+/- b)) = a ^ exp(+/- b)
-                ## formula 4.16 p 59 (Beyersmann et al. 2012)
-                object$survival.lowerBand <- object$survival^(exp( + zval * seBand_tempo ))
-                object$survival.upperBand <- object$survival^(exp( - zval * seBand_tempo ))                
-            }else if(object$transform.survival == "cloglog"){
-                ## formula 4.21 p 62 (Beyersmann et al. 2012)
-                object$survival.lowerBand <- 1 - (1-object$survival)^(exp( - zval * seBand_tempo ))
-                object$survival.upperBand <- 1 - (1-object$survival)^(exp( + zval * seBand_tempo ))                
-
-            }
-        }
+        object[paste0(type,c(".lowerBand",".upperBand"))] <- transformCI(estimate = object[[type]],
+                                                                         se = object[[paste0(type,".se")]],
+                                                                         quantile = object[[paste0(type,".quantileBand")]],
+                                                                         type = object[[paste0(type,".transform")]],
+                                                                         format = "matrix",
+                                                                         min.value = min.value,
+                                                                         max.value = max.value)
 
     }
 
-    ## check NA
+    ## ** check NA
     indexNA <- union(which(is.na(object[[paste0(type,".se")]])),
                      which(is.nan(object[[paste0(type,".se")]])))
     if(length(indexNA)>0){
 
-        if(se){
+        if(object$se){
             object[[paste0(type,".lower")]][indexNA] <- NA
             object[[paste0(type,".upper")]][indexNA] <- NA
         }
-        if(band){
+        if(object$band){ ## if cannot compute se at one time then remove confidence band at all times
             indexNA2 <- union(which(rowSums(is.na(object[[paste0(type,".se")]]))>0),
                               which(rowSums(is.nan(object[[paste0(type,".se")]]))>0))
-            object[["quantile.band"]][indexNA2] <- NA
+            object[[paste0(type,".quantileBand")]][indexNA2] <- NA
             object[[paste0(type,".lowerBand")]][indexNA2,] <- NA
             object[[paste0(type,".upperBand")]][indexNA2,] <- NA
         }
@@ -274,7 +202,8 @@ confint.predictCox <- function(object,
     }
 
     
-    ## export
+    ## ** export
+    object$conf.level <- conf.level
     return(object)
 }
 

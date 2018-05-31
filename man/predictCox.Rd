@@ -7,8 +7,7 @@
 predictCox(object, newdata = NULL, times, centered = TRUE,
   type = c("cumhazard", "survival"), keep.strata = TRUE,
   keep.times = TRUE, keep.newdata = FALSE, se = FALSE, band = FALSE,
-  iid = FALSE, average.iid = FALSE, nsim.band = 10000,
-  conf.level = 0.95, log.transform = TRUE, store.iid = "full")
+  iid = FALSE, average.iid = FALSE, store.iid = "full")
 }
 \arguments{
 \item{object}{The fitted Cox regression model object either
@@ -52,20 +51,12 @@ covariates used to make the prediction in the output list.}
 
 \item{se}{Logical. If \code{TRUE} add the standard error to the output.}
 
-\item{band}{Logical. If \code{TRUE} add the confidence band to the output.}
+\item{band}{Logical. If \code{TRUE} add the standard error and the influence function to the output
+such that \code{confint} will be able to compute the confidence bands.}
 
 \item{iid}{Logical. If \code{TRUE} add the influence function to the output.}
 
 \item{average.iid}{Logical. If \code{TRUE} add the average of the influence function over \code{newdata} to the output.}
-
-\item{nsim.band}{the number of simulations used to compute the quantiles
-for the confidence bands.}
-
-\item{conf.level}{Level of confidence.}
-
-\item{log.transform}{Should the confidence intervals/bands be computed on the log (hazard) and
-log(-log) (survival) scale and be backtransformed.
-Otherwise they are computed on the original scale and truncated (if necessary).}
 
 \item{store.iid}{Implementation used to estimate the influence function and the standard error.
 Can be \code{"full"} or \code{"minimal"}.}
@@ -99,9 +90,6 @@ Otherwise the function computes survival probabilities with confidence intervals
 See (Ozenne et al., 2017) section "Confidence intervals and confidence bands for survival probabilities".
 The survival is computed using the exponential approximation (equation 3).
 
-When setting \code{log.transform} to \code{TRUE}, the standard error that is returned is 
-before back-transformation to the original scale.
-
 A detailed explanation about the meaning of the argument \code{store.iid} can be found
 in (Ozenne et al., 2017) Appendix B "Saving the influence functions".
 
@@ -129,35 +117,22 @@ fit.haz <- predictCox(fit)
 cbind(survival::basehaz(fit), fit.haz$cumhazard)
 
 ## compute individual specific cumulative hazard and survival probabilities 
-predictCox(fit, newdata=nd, times=c(3,8))
+fit.pred <- predictCox(fit, newdata=nd, times=c(3,8), se = TRUE, band = TRUE)
+fit.pred
 
-## add confidence intervals computed on the original scale
-CI.original <- predictCox(fit, newdata=nd, times=c(3,8), se = TRUE, log.transform = FALSE)
-as.data.table(CI.original)
-CI.original$cumhazard + 1.96 * CI.original$cumhazard.se 
-
-## add confidence intervals computed on the log (or log-log) scale
-## and backtransformed
-CI.log <- predictCox(fit, newdata=nd, times=c(3,8), se = TRUE, log.transform = TRUE)
-as.data.table(CI.log)
-exp(log(CI.log$cumhazard) + 1.96 * CI.original$cumhazard.se/CI.log$cumhazard)
-exp(log(CI.log$cumhazard) + 1.96 * CI.log$cumhazard.se)
+## add confidence intervals/bands (survival.se is on the cloglog scale)
+confint(fit.pred)
 
 ## export iid decomposition relative to the survival probabilities
-CI.iid <- predictCox(fit, newdata = d, times = 5, iid = TRUE, se = TRUE,
-                      log.transform = FALSE)
+CI.iid <- predictCox(fit, newdata = d, times = 5, iid = TRUE, se = TRUE)
 as.data.table(CI.iid)[1:5]
 rowMeans(CI.iid$survival.iid[,1,]) ## the iid decomposition has 0 expectation
 sqrt(rowSums(CI.iid$survival.iid[1:5,1,]^2))
 
 ## same but the iid decomposition is averaged over the patients
-CI.aviid <- predictCox(fit, newdata = d, times = 5, 
-                       average.iid = TRUE, log.transform = FALSE)
+CI.aviid <- predictCox(fit, newdata = d, times = 5, average.iid = TRUE)
 CI.aviid$survival.average.iid[1:5,]
 colMeans(CI.iid$survival.iid[,1,1:5])
-
-## export confidence bands (by default computed on the log scale and backtransformed)
-predictCox(fit, newdata=nd, times=c(3,8), se = TRUE, band = TRUE)
 
 ## other examples
 # one strata variable

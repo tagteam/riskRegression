@@ -77,8 +77,7 @@
 #'
 #' ## add the standard error/confidence intervals
 #' ## (computed on the log log scale and backtransformed)
-#' CSC.riskSE <-  predict(CSC.fit,newdata=nd,times=1:10,cause=1,se=TRUE,
-#'                         log.transform = TRUE)
+#' CSC.riskSE <-  predict(CSC.fit,newdata=nd,times=1:10,cause=1,se=TRUE)
 #' as.data.table(CSC.riskSE)[1:5]
 #' exp(-exp(
 #'  log(-log(CSC.riskSE$absRisk)) - 1.96 * CSC.riskSE$absRisk.se
@@ -86,8 +85,7 @@
 #'
 #' ## extract the iid for the absolute risk
 #' CSC.iid <- predict(CSC.fit, newdata = d, se = TRUE,
-#'                    cause = 1, times = ttt[1], iid = TRUE,
-#'                    log.transform = FALSE)
+#'                    cause = 1, times = ttt[1], iid = TRUE)
 #' rowMeans(CSC.iid$absRisk.iid[,1,]) ## the iid decomposition has 0 expectation
 #' sqrt(rowSums(CSC.iid$absRisk.iid[,1,]^2))[1:5]
 #' as.data.table(CSC.iid)[1:5]
@@ -95,15 +93,14 @@
 #' ## same but the iid decomposition is averaged over the patients
 #' CSC.aviid <- predict(CSC.fit, newdata = d,
 #'                    cause = 1, times = ttt[1],
-#'                    average.iid = TRUE,
-#'                    log.transform = FALSE)
+#'                    average.iid = TRUE)
 #' CSC.aviid$absRisk.average.iid[1:5,]
 #' colMeans(CSC.iid$absRisk.iid[,1,1:5])
 #' 
 #' ## compute absolute risks with CI for cause 2
 #' ## (without displaying the value of the covariates)
 #' predict(CSC.fit,newdata=nd,times=1:10,cause=2,se=TRUE,
-#'         log.transform = TRUE, keep.newdata = FALSE)
+#'         keep.newdata = FALSE)
 #'
 #' ## other example
 #' library(survival)
@@ -130,12 +127,12 @@ predict.CauseSpecificCox <- function(object,
                                      keep.times = 1L,
                                      keep.newdata = 1L,
                                      keep.strata = 1L,
-                                     se  = FALSE,
+                                     se = FALSE,
                                      band = FALSE,
                                      iid = FALSE,
                                      average.iid = FALSE,
                                      product.limit = TRUE,
-                                     store.iid="full",
+                                     store.iid = "full",
                                      ...){
     if(object$fitter=="phreg"){newdata$entry <- 0} 
     if(missing(newdata)){newdata <- eval(object$call$data)}

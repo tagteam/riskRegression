@@ -49,9 +49,9 @@ predictCoxPL(fit, newdata = d, times = 1:5)
 
 #### Compare exp to product limit
 set.seed(10)
-A <- predictCoxPL(fit, newdata = d[1:5], times = 1:5, se = TRUE, band = TRUE, log.transform = FALSE)
+A <- predictCoxPL(fit, newdata = d[1:5], times = 1:5, se = TRUE, band = TRUE)
 set.seed(10)
-B <- predictCox(fit, newdata = d[1:5], times = 1:5, se = TRUE, band = TRUE, log.transform = FALSE)
+B <- predictCox(fit, newdata = d[1:5], times = 1:5, se = TRUE, band = TRUE)
 
 A$survival - B$survival
 A$survival.lower - B$survival.lower

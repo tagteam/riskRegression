@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: apr 28 2017 (14:19) 
 ## Version: 
-## last-updated: feb 15 2018 (16:29) 
+## last-updated: maj 31 2018 (11:57) 
 ##           By: Brice Ozenne
-##     Update #: 32
+##     Update #: 33
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -49,10 +49,10 @@
 #' 
 #' @export
 autoplot.ate <- function(object,
-                     ci = FALSE,
-                     band = FALSE,
-                     plot = TRUE,
-                     digits = 2, alpha = 0.1, ...){
+                         ci = FALSE,
+                         band = FALSE,
+                         plot = TRUE,
+                         digits = 2, alpha = 0.1, ...){
 
     ## for CRAN check
     Treatment <- NULL
@@ -66,7 +66,11 @@ autoplot.ate <- function(object,
         stop("argument \'band\' cannot be TRUE when the quantiles for the confidence bands have not been computed \n",
              "set argment \'nsim.band\' to a positive integer when calling ate \n")
     }
-  
+
+    if( (ci||band) && is.null(object$conf.level) ){
+        object <- confint(object, ...)
+    }
+
     ## display
     dataL <- copy(object$meanRisk)
     dataL[,row := as.numeric(as.factor(Treatment))]

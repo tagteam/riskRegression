@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun  6 2016 (06:48) 
 ## Version: 
-## last-updated: maj 23 2018 (14:07) 
+## last-updated: maj 31 2018 (11:53) 
 ##           By: Brice Ozenne
-##     Update #: 116
+##     Update #: 133
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -18,9 +18,6 @@
 #'
 #' Print average treatment effects
 #' @param x object obtained with function \code{ate}
-#' @param bootci.method Character. Method for constructing bootstrap confidence intervals.
-#' Either "perc" (the default), "norm", "basic", "stud", or "bca".
-#' Argument passed to \code{boot::boot.ci}.
 #' @param digits Number of digits
 #' @param ... passed to print
 #'
@@ -31,21 +28,6 @@
 #' @method print ate
 #' @export
 print.ate <- function(x, bootci.method = x$bootci.method, digits = 3, ...){
-
-                                        # {{{ compute confidence intervals and p-values when using the bootstrap
-    if(!is.null(x$boot) && bootci.method != x$bootci.method){
-        out <- calcCIbootATE(boot = x$boot,
-                          meanRisk = x$meanRisk,
-                          riskComparison = x$riskComparison,
-                          type = bootci.method,
-                          conf = x$conf.level,
-                          TD = x$TD)
-        x$bootci.method <- bootci.method
-        x$meanRisk <- out$meanRisk
-        x$riskComparison <- out$riskComparison
-
-    }
-                                        # }}}
 
                                         # {{{ display
     if(!is.null(x$treatment)){
@@ -61,24 +43,43 @@ print.ate <- function(x, bootci.method = x$bootci.method, digits = 3, ...){
     }
     print(x$meanRisk,digits=digits,...)
     if(!is.null(x$treatment)){
-        cat("\nComparison of risks on probability scale [0,1] between\nhypothetical worlds are interpretated as if the treatment was randomized:\n\n")    
-        print(x$riskComparison,digits=digits,...)
+        id.name <- names(x$riskComparison)[1:3]
+
+        cat("\nComparison of risks on probability scale [0,1] between\nhypothetical worlds are interpretated as if the treatment was randomized:\n\n")
+
+        cat("     > risk difference \n\n")
+        ## simplify names
+        name.diff <- grep("^diff",names(x$riskComparison),value = TRUE)
+        dt.tempo <- x$riskComparison[,.SD,.SDcols = c(id.name,name.diff)]
+        names(dt.tempo) <- gsub("diff.","",names(dt.tempo),fixed = TRUE)
+        ## print
+        print(dt.tempo,digits=digits,...)
+        
+        cat("\n     > risk ratio \n\n")
+        ## simplify names
+        name.ratio <- grep("^ratio",names(x$riskComparison),value = TRUE)
+        dt.tempo <- x$riskComparison[,.SD,.SDcols = c(id.name,name.ratio)]
+        names(dt.tempo) <- gsub("ratio.","",names(dt.tempo),fixed = TRUE)
+        ## print
+        print(dt.tempo,digits=digits,...)
     }
     ##
-    if(x$se && (x$conf.level > 0 && (x$conf.level < 1))){
-        if(x$B==0){
-            cat("\nWald confidence intervals are based on asymptotic standard errors.",sep="")
+    if(x$se && !is.null(x$conf.level)){
+        if(!is.null(x$boot)){            
+            type.boot <- switch(x$type.boot,
+                                "norm" = "Normal",
+                                "basic" = "Basic",
+                                "stud" = "Studentized",
+                                "perc" = "Percentile",
+                                "bca" = "BCa")
+            cat("\n",type.boot," bootstrap confidence intervals based on ",x$B," bootstrap samples\nthat were drawn with replacement from the original data.",sep="")
         }else {
-            bootci.method <- switch(bootci.method,
-                                    "norm" = "Normal",
-                                    "basic" = "Basic",
-                                    "stud" = "Studentized",
-                                    "perc" = "Percentile",
-                                    "bca" = "BCa")
-            cat("\n",bootci.method," bootstrap confidence intervals based on ",x$B," bootstrap samples\nthat were drawn with replacement from the original data.",sep="")
-        }
-        if(x$nsim.band>0){
+            cat("\nWald confidence intervals and p-values are based on asymptotic standard errors.",sep="")
             cat("\nConfidence bands are based on ",x$nsim.band," simulations",sep="")
+            cat("\nTransformation used to compute the confidence intervals/bands/p-values:",sep="")
+            cat("\nmean risk      : ",object$ate.transform)
+            cat("\nrisk difference: ",object$diffAte.transform)
+            cat("\nrisk ratio     : ",object$ratioAte.transform)
         }
         cat("\nConfidence level:",x$conf.level,"\n")
     }

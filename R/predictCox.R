@@ -283,28 +283,33 @@ predictCox <- function(object,
                          predtimes = times.sorted,
                          cause = 1,
                          Efron = (object.baseEstimator == "efron"))
-  
   # }}}
   
-  #### compute hazard and survival ####        
+#### compute hazard and survival ####        
   if (is.null(newdata)){  
-    # {{{ results from the training dataset
-    if (!("hazard" %in% type)){ Lambda0$hazard <- NULL } 
-    if ("survival" %in% type){  # must be before cumhazard
-      Lambda0$survival = exp(-Lambda0$cumhazard)
-    }
-    if (!("cumhazard" %in% type)){ Lambda0$cumhazard <- NULL } 
-    if (keep.times==FALSE){
-      Lambda0$time <- NULL
-    } 
-    if (is.strata == TRUE && keep.strata==1L){ ## rename the strata value with the correct levels
-      Lambda0$strata <- factor(Lambda0$strata, levels = 0:(nStrata-1), labels = object.levelStrata)
-    }else{
-      Lambda0$strata <- NULL
-    }
-    Lambda0$lastEventTime <- etimes.max
-    return(Lambda0)
-    # }}}
+                                        # {{{ results from the training dataset
+      if (!("hazard" %in% type)){ Lambda0$hazard <- NULL } 
+      if ("survival" %in% type){  # must be before cumhazard
+          Lambda0$survival = exp(-Lambda0$cumhazard)
+      }
+      if (!("cumhazard" %in% type)){ Lambda0$cumhazard <- NULL } 
+      if (keep.times==FALSE){
+          Lambda0$times <- NULL
+      } 
+      if (is.strata == TRUE && keep.strata==1L){ ## rename the strata value with the correct levels
+          Lambda0$strata <- factor(Lambda0$strata, levels = 0:(nStrata-1), labels = object.levelStrata)
+      }else{
+          Lambda0$strata <- NULL
+      }
+      Lambda0$lastEventTime <- etimes.max
+      Lambda0$se <- FALSE
+      Lambda0$band <- FALSE
+      Lambda0$type <- type
+
+      ## Lambda0$time instead of Lambda0$times for compatibility with survival::basehaz
+      class(Lambda0) <- "predictCox"
+      return(Lambda0)
+                                        # }}}
   } else {
     
     # {{{ predictions in new dataset

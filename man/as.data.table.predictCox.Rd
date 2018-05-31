@@ -4,15 +4,21 @@
 \alias{as.data.table.predictCox}
 \title{Turn predictCox object into a \code{data.table}}
 \usage{
-\method{as.data.table}{predictCox}(x, keep.rownames = FALSE, ...)
+\method{as.data.table}{predictCox}(x, keep.rownames = FALSE, se = TRUE, ...)
 }
 \arguments{
 \item{x}{object obtained with function \code{predictCox}}
 
-\item{keep.rownames}{not used}
+\item{keep.rownames}{not used.}
 
-\item{...}{not used}
+\item{se}{should standard errors/quantile for confidence bands be displayed?}
+
+\item{...}{not used.}
 }
 \description{
 Turn predictCox object into a \code{data.table}
+}
+\details{
+The columns \code{.seBand} corresponds to the column \code{.se} inflated
+by the ratio between the quantile for the confidence bands and the quantile for the confidence interval.#'
 }

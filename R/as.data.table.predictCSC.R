@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Mar  3 2017 (09:28) 
 ## Version: 
-## Last-Updated: apr 12 2017 (16:06) 
+## Last-Updated: maj 31 2018 (11:55) 
 ##           By: Brice Ozenne
-##     Update #: 15
+##     Update #: 31
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -18,10 +18,12 @@
 #' @description Turn predictCSC object into a \code{data.table}
 #' @param x object obtained with function \code{predictCSC}
 #' @param keep.rownames not used
+#' @param se should standard errors/quantile for confidence bands be displayed?
 #' @param ... not used
 #' @export
-as.data.table.predictCSC <- function(x,keep.rownames=FALSE,...){
-  times=NULL
+as.data.table.predictCSC <- function(x, keep.rownames = FALSE, se = TRUE, ...){
+    times=NULL
+    
   n.obs <- NROW(x[["absRisk"]])
   nd <- data.table(observation = 1:n.obs)
   if (!is.null(x$newdata)){
@@ -37,15 +39,25 @@ as.data.table.predictCSC <- function(x,keep.rownames=FALSE,...){
     
     vec.names <- c("absRisk")
     if (x$se==1L){
-      ar <- cbind(ar,
-                  absRisk.se=x[["absRisk.se"]][,tt],
-                  absRisk.lower=x[["absRisk.lower"]][,tt],
-                  absRisk.upper=x[["absRisk.upper"]][,tt])
+        if(se){
+            ar <- cbind(ar,
+                        absRisk.se=x[["absRisk.se"]][,tt])
+            
+        }
+        if(!is.null(x$conf.level)){
+            ar <- cbind(ar,
+                        absRisk.lower=x[["absRisk.lower"]][,tt],
+                        absRisk.upper=x[["absRisk.upper"]][,tt]
+                        )
+        }
     }
     if (x$band==1L){
-      ar <- cbind(ar,
-                  absRisk.lowerBand=x[["absRisk.lowerBand"]][,tt],
-                  absRisk.upperBand=x[["absRisk.upperBand"]][,tt])
+        if(!is.null(x$conf.level)){
+            ar <- cbind(ar,
+                        absRisk.quantileBand=x[["absRisk.quantileBand"]],
+                        absRisk.lowerBand=x[["absRisk.lowerBand"]][,tt],
+                        absRisk.upperBand=x[["absRisk.upperBand"]][,tt])
+        }
     }
     
     ## setDT(tyc)

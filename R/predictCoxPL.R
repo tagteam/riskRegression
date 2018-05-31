@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: sep  4 2017 (16:43) 
 ## Version: 
-## last-updated: maj 23 2018 (16:59) 
+## last-updated: maj 28 2018 (17:56) 
 ##           By: Brice Ozenne
-##     Update #: 64
+##     Update #: 66
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -50,9 +50,9 @@
 #'
 #' #### Compare exp to product limit
 #' set.seed(10)
-#' A <- predictCoxPL(fit, newdata = d[1:5], times = 1:5, se = TRUE, band = TRUE, log.transform = FALSE)
+#' A <- predictCoxPL(fit, newdata = d[1:5], times = 1:5, se = TRUE, band = TRUE)
 #' set.seed(10)
-#' B <- predictCox(fit, newdata = d[1:5], times = 1:5, se = TRUE, band = TRUE, log.transform = FALSE)
+#' B <- predictCox(fit, newdata = d[1:5], times = 1:5, se = TRUE, band = TRUE)
 #'
 #' A$survival - B$survival
 #' A$survival.lower - B$survival.lower
@@ -89,7 +89,6 @@ predictCoxPL <- function(object,
                                se = se,
                                band = band,
                                ...)
-    log.transform <- class(original.res$transformation.survival)=="function"
     infoVar <- coxVariableName(object)
     X.design <- as.data.table(coxDesign(object))
     # }}}

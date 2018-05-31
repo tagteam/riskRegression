@@ -124,6 +124,17 @@ test_that("check against manual computation",{
                   times = 5:7, B = 0, se = TRUE, mc.cores=1,handler=handler,
                   verbose=verbose)
 
+    confint(ateFit)
+    ateFit <- ate(fit, data = dtS, treatment = "X1", contrasts = NULL,
+                  times = 5:7, B = 0, band = TRUE, se = TRUE, mc.cores=1,handler=handler,
+                  verbose=verbose)
+    names(ateFit)
+    ateFitBoot <- ate(fit, data = dtS, treatment = "X1", contrasts = NULL,
+                      times = 5:7, B = 1e2, se = TRUE, mc.cores=1,handler=handler,
+                      verbose=TRUE)
+    res <- confint(ateFitBoot)  
+    as.data.table(res)
+    
     ATE <- list()
     ATE.iid <- list()
     for(iT in c("T0","T1","T2")){

@@ -4,12 +4,14 @@
 \alias{as.data.table.predictCSC}
 \title{Turn predictCSC object into a \code{data.table}}
 \usage{
-\method{as.data.table}{predictCSC}(x, keep.rownames = FALSE, ...)
+\method{as.data.table}{predictCSC}(x, keep.rownames = FALSE, se = TRUE, ...)
 }
 \arguments{
 \item{x}{object obtained with function \code{predictCSC}}
 
 \item{keep.rownames}{not used}
+
+\item{se}{should standard errors/quantile for confidence bands be displayed?}
 
 \item{...}{not used}
 }

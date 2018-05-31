@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Oct 23 2016 (08:53) 
 ## Version: 
-## last-updated: maj 23 2018 (14:07) 
+## last-updated: maj 31 2018 (09:50) 
 ##           By: Brice Ozenne
-##     Update #: 727
+##     Update #: 745
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -33,18 +33,12 @@
 #' @param landmark for models with time-dependent covariates the landmark time(s) of evaluation.
 #'        In this case, argument \code{time} may only be one value and for the prediction of risks
 #'        it is assumed that that the covariates do not change between landmark and landmark+time.
-#' @param conf.level Numeric value between 0 and 1 (default is 0.05). Confidence level of the confidence intervals.
 #' @param se Logical. If \code{TRUE} compute standard errors and confidence intervals
 #' @param band Logical. If \code{TRUE} compute confidence bands across time points.
 #' @param B the number of bootstrap replications used to compute the
 #'     confidence intervals. If it equals 0, then Wald-type confidence
 #'     intervals are computed.  They rely on the standard error
 #'     estimated using the influence function of the estimator.
-#' @param bootci.method Character. Method for constructing bootstrap confidence intervals.
-#' Either "perc" (the default), "norm", "basic", "stud", or "bca".
-#' Argument passed to \code{boot::boot.ci}.
-#' @param nsim.band the number of simulations used to compute the
-#'     quantiles for the confidence bands.
 #' @param seed An integer used to generate seeds for bootstrap and to
 #'     achieve reproducible results.
 #' @param handler parallel handler for bootstrap. Either "mclapply" or
@@ -62,22 +56,6 @@
 #'
 #' @author Brice Ozenne \email{broz@@sund.ku.dk} and Thomas Alexander
 #'     Gerds \email{tag@@biostat.ku.dk}
-#' 
-#' @return An object of class \code{ate} containing:
-#' \itemize{
-#' \item meanRisk: a \code{data.table} object containing the ATE at each time and for each treatment level.
-#' \item riskComparison: a \code{data.table} object comparing the ATE between two treatment levels.
-#' \item treatment: the name of the treatment variable.
-#' \item contrasts: the levels of the treatment variable that were compared.
-#' \item times: the time points at which the ATE was computed.
-#' \item se: Logical. if \code{TRUE} compute the standard errors and confidence intervals of the ATE
-#' \item B: the number of bootstrap samples.
-#' \item band: Logical. If \code{TRUE} confidence bands are computed.
-#' \item nsim.band: the number of simulations used to compute the quantiles for the confidence bands.
-#' \item seeds: the seed used to generate the boostrap sample. Not used when the
-#' influence function is used to compute the standard errors of the ATE.
-#' \item conf.level: the confidence level of the confidence intervals.
-#' }
 #' 
 #' @examples 
 #' library(survival)
@@ -260,12 +238,10 @@ ate <- function(object,
                 times,
                 cause,
                 landmark,
-                conf.level = 0.95,
                 se = TRUE,
+                iid = FALSE,
                 band = FALSE,
                 B = 0,
-                bootci.method = "perc",
-                nsim.band = ifelse(band,1e3,0),
                 seed,
                 handler = "foreach",
                 mc.cores = 1,
@@ -404,7 +380,6 @@ ate <- function(object,
             key1 <- c("Treatment","time")
             key2 <- c("Treatment.A","Treatment.B","time")
         }
-        alpha <- 1-conf.level
     
         if(B>0){
                                         # {{{ Bootstrap
@@ -448,18 +423,7 @@ ate <- function(object,
 
             bootseeds <- resBoot$bootseeds
             resBoot <- resBoot$boot
-            
-            suppressWarnings(
-                res.CIboot <- calcCIbootATE(boot = resBoot,
-                                         meanRisk = pointEstimate$meanRisk,
-                                         riskComparison = pointEstimate$riskComparison,
-                                         type = bootci.method,
-                                         conf = conf.level,
-                                         TD = TD)
-            )
-            mrisks <- res.CIboot$meanRisk
-            crisks <- res.CIboot$riskComparison
-            
+            outSE <- NULL   
                                         # }}}
         } else {
                                         # {{{ compute standard error and quantiles via the influence function
@@ -467,7 +431,7 @@ ate <- function(object,
             if(!is.null(landmark)){
                 stop("Calculation of the standard errors via the influence function not implemented for time dependent covariates \n")
             }
-            resSE <- calcSeATE(object,
+            outSE <- calcSeATE(object,
                                data = data,
                                times = times,
                                cause = cause,
@@ -479,47 +443,45 @@ ate <- function(object,
                                n.times = n.times,
                                n.obs = n.obs,
                                pointEstimate = pointEstimate,
-                               alpha = alpha, conf.level = conf.level,
                                se = se,
-                               band = band, nsim.band = nsim.band,
+                               iid = (band+iid)>0, 
                                store.iid = store.iid)
-            
-            ## merge with pointEstimate
-            mrisks <- merge(pointEstimate$meanRisk,resSE$mrisks,by=key1)
-            crisks <- merge(pointEstimate$riskComparison,resSE$crisks,by=key2)            
+
             bootseeds <- NULL
             resBoot <- NULL          
    
                                         # }}}
         }
     } else{
-        mrisks <- pointEstimate$meanRisk
-        crisks <- pointEstimate$riskComparison        
         bootseeds <- NULL
         resBoot <- NULL
+        outSE <- NULL
 
                                         # }}}
     }
                                         # {{{ output object
     if(is.null(treatment)){
-        setnames(mrisks, old = "Treatment", new = strata)
-        setnames(crisks, old = c("Treatment.A","Treatment.B"), new = paste0(strata,c(".A",".B")))
+        setnames(pointEstimate$meanRisk,
+                 old = "Treatment",
+                 new = strata)
+        setnames(pointEstimate$riskComparison,
+                 old = c("Treatment.A","Treatment.B"),
+                 new = paste0(strata,c(".A",".B")))
     }
     
-    out <- list(meanRisk=mrisks,
-                riskComparison=crisks,
-                treatment=treatment,
-                contrasts=contrasts,
-                times=times,
-                se = se,
-                TD = TD,
-                B = B,
-                band = band,
-                nsim.band = nsim.band,
-                boot = resBoot,
-                bootci.method = bootci.method,
-                seeds=bootseeds,
-                conf.level=conf.level)
+    out <- c(list(meanRisk = pointEstimate$meanRisk,
+                  riskComparison = pointEstimate$riskComparison),
+             outSE,
+             list(treatment = treatment,
+                  contrasts = contrasts,
+                  times = times,
+                  se = se,
+                  TD = TD,
+                  B = B,
+                  band = band,
+                  boot = resBoot,
+                  seeds = bootseeds)
+             )
   
     class(out) <- c("ate",class(object))
     return(out)

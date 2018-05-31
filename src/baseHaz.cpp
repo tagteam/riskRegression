@@ -153,7 +153,7 @@ List baseHaz_cpp(const NumericVector& starttimes,
   
   
   //// 3- export
-  List res = List::create(Named("time")  = timeRes,
+  List res = List::create(Named("times")  = timeRes,
                           Named("hazard")  = hazardRes,
                           Named("cumhazard")  = cumhazardRes,
                           Named("strata")  = strataRes);

@@ -5,10 +5,9 @@
 \title{Compute the average treatment effects via the g-formula}
 \usage{
 ate(object, data, formula, treatment, strata = NULL, contrasts = NULL,
-  times, cause, landmark, conf.level = 0.95, se = TRUE, band = FALSE,
-  B = 0, bootci.method = "perc", nsim.band = ifelse(band, 1000, 0), seed,
-  handler = "foreach", mc.cores = 1, verbose = TRUE, store.iid = "full",
-  ...)
+  times, cause, landmark, se = TRUE, iid = FALSE, band = FALSE, B = 0,
+  seed, handler = "foreach", mc.cores = 1, verbose = TRUE,
+  store.iid = "full", ...)
 }
 \arguments{
 \item{object}{outcome model which describes how event risk depends
@@ -35,8 +34,6 @@ compared}
 In this case, argument \code{time} may only be one value and for the prediction of risks
 it is assumed that that the covariates do not change between landmark and landmark+time.}
 
-\item{conf.level}{Numeric value between 0 and 1 (default is 0.05). Confidence level of the confidence intervals.}
-
 \item{se}{Logical. If \code{TRUE} compute standard errors and confidence intervals}
 
 \item{band}{Logical. If \code{TRUE} compute confidence bands across time points.}
@@ -45,13 +42,6 @@ it is assumed that that the covariates do not change between landmark and landma
 confidence intervals. If it equals 0, then Wald-type confidence
 intervals are computed.  They rely on the standard error
 estimated using the influence function of the estimator.}
-
-\item{bootci.method}{Character. Method for constructing bootstrap confidence intervals.
-Either "perc" (the default), "norm", "basic", "stud", or "bca".
-Argument passed to \code{boot::boot.ci}.}
-
-\item{nsim.band}{the number of simulations used to compute the
-quantiles for the confidence bands.}
 
 \item{seed}{An integer used to generate seeds for bootstrap and to
 achieve reproducible results.}
@@ -72,23 +62,6 @@ time.}
 \code{"minimal"} requires less memory but can only estimate the standard for the difference between treatment effects (and not for the ratio).}
 
 \item{...}{passed to predictRisk}
-}
-\value{
-An object of class \code{ate} containing:
-\itemize{
-\item meanRisk: a \code{data.table} object containing the ATE at each time and for each treatment level.
-\item riskComparison: a \code{data.table} object comparing the ATE between two treatment levels.
-\item treatment: the name of the treatment variable.
-\item contrasts: the levels of the treatment variable that were compared.
-\item times: the time points at which the ATE was computed.
-\item se: Logical. if \code{TRUE} compute the standard errors and confidence intervals of the ATE
-\item B: the number of bootstrap samples.
-\item band: Logical. If \code{TRUE} confidence bands are computed.
-\item nsim.band: the number of simulations used to compute the quantiles for the confidence bands.
-\item seeds: the seed used to generate the boostrap sample. Not used when the
-influence function is used to compute the standard errors of the ATE.
-\item conf.level: the confidence level of the confidence intervals.
-}
 }
 \description{
 Use the g-formula to estimate the average treatment

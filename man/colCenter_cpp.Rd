@@ -2,27 +2,47 @@
 % Please edit documentation in R/RcppExports.R
 \name{colCenter_cpp}
 \alias{colCenter_cpp}
+\alias{colCenter_cpp}
 \title{Apply - by column}
 \usage{
+colCenter_cpp(X, center)
+
 colCenter_cpp(X, center)
 }
 \arguments{
 \item{X}{A matrix.}
 
 \item{center}{a numeric vector of length equal to the number of rows of \code{x}}
+
+\item{X}{A matrix.}
+
+\item{center}{a numeric vector of length equal to the number of rows of \code{x}}
 }
 \value{
+A matrix of same size as X.
+
 A matrix of same size as X.
 }
 \description{
 Fast computation of sweep(X, MARGIN = 1, FUN = "-", STATS = center)
+
+Fast computation of sweep(X, MARGIN = 1, FUN = "-", STATS = center)
+}
+\details{
+* colCenter
 }
 \examples{
 x <- matrix(1,6,5)
 sweep(x, MARGIN = 1, FUN = "-", STATS = 1:6)
 colCenter_cpp(x, 1:6 )
 
+x <- matrix(1,6,5)
+sweep(x, MARGIN = 1, FUN = "-", STATS = 1:6)
+colCenter_cpp(x, 1:6 )
+
 }
 \author{
+Brice Ozenne <broz@sund.ku.dk>
+
 Brice Ozenne <broz@sund.ku.dk>
 }

@@ -2,19 +2,30 @@
 % Please edit documentation in R/RcppExports.R
 \name{colMultiply_cpp}
 \alias{colMultiply_cpp}
+\alias{colMultiply_cpp}
 \title{Apply * by column}
 \usage{
+colMultiply_cpp(X, scale)
+
 colMultiply_cpp(X, scale)
 }
 \arguments{
 \item{X}{A matrix.}
 
 \item{scale}{a numeric vector of length equal to the number of rows of \code{x}}
+
+\item{X}{A matrix.}
+
+\item{scale}{a numeric vector of length equal to the number of rows of \code{x}}
 }
 \value{
 A matrix of same size as X.
+
+A matrix of same size as X.
 }
 \description{
+Fast computation of sweep(X, MARGIN = 1, FUN = "*", STATS = scale)
+
 Fast computation of sweep(X, MARGIN = 1, FUN = "*", STATS = scale)
 }
 \examples{
@@ -22,7 +33,13 @@ x <- matrix(1,6,5)
 sweep(x, MARGIN = 1, FUN = "*", STATS = 1:6)
 colMultiply_cpp(x, 1:6 )
 
+x <- matrix(1,6,5)
+sweep(x, MARGIN = 1, FUN = "*", STATS = 1:6)
+colMultiply_cpp(x, 1:6 )
+
 }
 \author{
+Brice Ozenne <broz@sund.ku.dk>
+
 Brice Ozenne <broz@sund.ku.dk>
 }
