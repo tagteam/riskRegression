@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: maj 23 2018 (14:08) 
 ## Version: 
-## Last-Updated: jun  1 2018 (17:10) 
+## Last-Updated: jun  1 2018 (18:15) 
 ##           By: Brice Ozenne
-##     Update #: 416
+##     Update #: 426
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -122,7 +122,13 @@ confint.ate <- function(object,
                 "Set argument \'se\' to TRUE when calling ate \n")
         return(object)
     }
-    
+
+    ## ** hard copy
+    ## needed otherwise meanRisk and riskComparison are modified in the original object
+    object$meanRisk <- data.table::copy(object$meanRisk)
+    object$riskComparison <- data.table::copy(object$riskComparison)
+
+    ## ** compute CI
     if(!is.null(object$boot)){
         object <- confintBoot.ate(object,
                                   bootci.method = bootci.method,
@@ -142,7 +148,7 @@ confint.ate <- function(object,
     object$meanRisk[] ## ensure direct print
     object$riskComparison[] ## ensure direct print
 
-    ## export
+    ## ** export
     class(object) <- "ate"
     return(object)
 }
@@ -152,6 +158,8 @@ confintBoot.ate <- function(object,
                             bootci.method,
                             conf.level){
 
+    valid.boot <- c("norm","basic","stud","perc","wald","quantile")
+    bootci.method <- match.arg(bootci.method, valid.boot)
     ## normalize arguments
     bootci.method <- tolower(bootci.method) ## convert to lower case
     name.estimate <- names(object$boot$t0)
@@ -262,7 +270,7 @@ confintBoot.ate <- function(object,
     return(object)    
 }
 
-## * confintIId.ate 
+## * confintIID.ate 
 confintIID.ate <- function(object,
                            conf.level,
                            nsim.band,

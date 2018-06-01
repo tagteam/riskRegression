@@ -131,7 +131,7 @@ test_that("check against manual computation",{
                   times = 5:7, B = 0, se = TRUE, mc.cores=1,handler=handler,
                   verbose=verbose)
     ateFit <- confint(ateFit)
-    
+
     ATE <- list()
     ATE.iid <- list()
     for(iT in c("T0","T1","T2")){
