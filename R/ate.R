@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Oct 23 2016 (08:53) 
 ## Version: 
-## last-updated: maj 31 2018 (18:22) 
+## last-updated: jun  1 2018 (17:39) 
 ##           By: Brice Ozenne
-##     Update #: 770
+##     Update #: 771
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -39,6 +39,7 @@
 #'        In this case, argument \code{time} may only be one value and for the prediction of risks
 #'        it is assumed that that the covariates do not change between landmark and landmark+time.
 #' @param se [logical] If \code{TRUE} compute standard errors and confidence intervals
+#' @param iid [logical] If \code{TRUE} add the influence function to the output.
 #' @param band [logical]. If \code{TRUE} compute confidence bands across time points.
 #' @param B [integer, >0] the number of bootstrap replications used to compute the confidence intervals.
 #' If it equals 0, then the influence function is used to compute Wald-type confidence intervals/bands.

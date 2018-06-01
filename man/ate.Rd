@@ -36,6 +36,8 @@ it is assumed that that the covariates do not change between landmark and landma
 
 \item{se}{[logical] If \code{TRUE} compute standard errors and confidence intervals}
 
+\item{iid}{[logical] If \code{TRUE} add the influence function to the output.}
+
 \item{band}{[logical]. If \code{TRUE} compute confidence bands across time points.}
 
 \item{B}{[integer, >0] the number of bootstrap replications used to compute the confidence intervals.

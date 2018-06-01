@@ -28,6 +28,10 @@ resTimereg <- list()
                                            n.sim = n.sim)
     }
 test_that("computation of the quantile for the confidence band of the cumhazard", {
+
+    set.seed(10)
+    ref <- unlist(lapply(resTimereg,"[[", "unif.band"))
+    
     pred <- predictCox(fit.coxph,
                        newdata = newdata,
                        times = times,
@@ -45,9 +49,6 @@ test_that("computation of the quantile for the confidence band of the cumhazard"
                                                n.sim = n.sim, 
                                                conf.level = 0.95)
 
-
-    
-    ref <- unlist(lapply(resTimereg,"[[", "unif.band"))
     expect_equal(pred.band2,ref)
 })
 # }}}

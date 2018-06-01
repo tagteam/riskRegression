@@ -4,17 +4,17 @@
 \alias{confint.predictCox}
 \title{Confidence Intervals and Confidence Bands for the predicted Survival/Cumulative Hazard}
 \usage{
-\method{confint}{predictCox}(object, level = 0.95, parm = NULL,
+\method{confint}{predictCox}(object, parm = NULL, level = 0.95,
   nsim.band = 10000, cumhazard.transform = "log",
   survival.transform = "cloglog", seed = NA, ...)
 }
 \arguments{
 \item{object}{A \code{predictCox} object, i.e. output of the \code{predictCox} function.}
 
-\item{level}{[numeric, 0-1] Level of confidence.}
-
 \item{parm}{[character] the type of predicted value for which the confidence intervals should be output.
 Can be \code{"survival"} or \code{"cumhazard"}.}
+
+\item{level}{[numeric, 0-1] Level of confidence.}
 
 \item{nsim.band}{[integer, >0] the number of simulations used to compute the quantiles for the confidence bands.}
 

@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun  6 2016 (06:48) 
 ## Version: 
-## last-updated: jun  1 2018 (17:16) 
+## last-updated: jun  1 2018 (17:38) 
 ##           By: Brice Ozenne
-##     Update #: 199
+##     Update #: 200
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -39,6 +39,8 @@
 #' @export
 print.ate <- function(x, digits = 3, type = c("meanRisk","diffRisk","ratioRisk"), ...){
 
+    lower <- upper <- lowerBand <- upperBand <- NULL ## [:CRANcheck:] data.table
+    
     ## check arguments
     type <- match.arg(type,c("meanRisk","diffRisk","ratioRisk"), several.ok = TRUE)
     

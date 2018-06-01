@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: maj 23 2018 (14:08) 
 ## Version: 
-## Last-Updated: jun  1 2018 (17:24) 
+## Last-Updated: jun  1 2018 (17:37) 
 ##           By: Brice Ozenne
-##     Update #: 249
+##     Update #: 250
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -79,8 +79,8 @@
 ##' @rdname confint.predictCox
 ##' @export
 confint.predictCox <- function(object,
-                               level = 0.95,
                                parm = NULL,
+                               level = 0.95,
                                nsim.band = 1e4,
                                cumhazard.transform = "log",
                                survival.transform = "cloglog",

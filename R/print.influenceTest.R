@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: jun  1 2018 (13:35) 
 ## Version: 
-## Last-Updated: jun  1 2018 (14:40) 
+## Last-Updated: jun  1 2018 (17:38) 
 ##           By: Brice Ozenne
-##     Update #: 37
+##     Update #: 38
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -36,6 +36,9 @@
 #' @method print influenceTest
 #' @export
 print.influenceTest <- function(x, digits = 3, ...){
+
+    lower <- upper <- lowerBand <- upperBand <- NULL ## [:CRANcheck:] data.table
+    
     cat("        Comparison of two estimates of the ",x$type," at time ",paste0(round(x$time, digits), collapse = " "),"\n\n", sep = "")
 
     cat(x$name[1],":\n",sep="")
