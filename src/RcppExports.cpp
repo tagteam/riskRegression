@@ -381,6 +381,17 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// sliceMultiplyPointer_cpp
+void sliceMultiplyPointer_cpp(arma::cube X, const arma::mat& M);
+RcppExport SEXP _riskRegression_sliceMultiplyPointer_cpp(SEXP XSEXP, SEXP MSEXP) {
+BEGIN_RCPP
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::cube >::type X(XSEXP);
+    Rcpp::traits::input_parameter< const arma::mat& >::type M(MSEXP);
+    sliceMultiplyPointer_cpp(X, M);
+    return R_NilValue;
+END_RCPP
+}
 // sliceScale_cpp
 arma::cube sliceScale_cpp(arma::cube X, const arma::mat& M);
 RcppExport SEXP _riskRegression_sliceScale_cpp(SEXP XSEXP, SEXP MSEXP) {
@@ -391,6 +402,17 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< const arma::mat& >::type M(MSEXP);
     rcpp_result_gen = Rcpp::wrap(sliceScale_cpp(X, M));
     return rcpp_result_gen;
+END_RCPP
+}
+// sliceScalePointer_cpp
+void sliceScalePointer_cpp(arma::cube X, const arma::mat& M);
+RcppExport SEXP _riskRegression_sliceScalePointer_cpp(SEXP XSEXP, SEXP MSEXP) {
+BEGIN_RCPP
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::cube >::type X(XSEXP);
+    Rcpp::traits::input_parameter< const arma::mat& >::type M(MSEXP);
+    sliceScalePointer_cpp(X, M);
+    return R_NilValue;
 END_RCPP
 }
 
@@ -417,7 +439,9 @@ static const R_CallMethodDef CallEntries[] = {
     {"_riskRegression_colMultiply_cpp", (DL_FUNC) &_riskRegression_colMultiply_cpp, 2},
     {"_riskRegression_rowMultiply_cpp", (DL_FUNC) &_riskRegression_rowMultiply_cpp, 2},
     {"_riskRegression_sliceMultiply_cpp", (DL_FUNC) &_riskRegression_sliceMultiply_cpp, 2},
+    {"_riskRegression_sliceMultiplyPointer_cpp", (DL_FUNC) &_riskRegression_sliceMultiplyPointer_cpp, 2},
     {"_riskRegression_sliceScale_cpp", (DL_FUNC) &_riskRegression_sliceScale_cpp, 2},
+    {"_riskRegression_sliceScalePointer_cpp", (DL_FUNC) &_riskRegression_sliceScalePointer_cpp, 2},
     {NULL, NULL, 0}
 };
 

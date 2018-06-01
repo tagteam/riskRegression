@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Mar  3 2017 (09:28) 
 ## Version: 
-## Last-Updated: maj 31 2018 (17:06) 
+## Last-Updated: jun  1 2018 (16:31) 
 ##           By: Brice Ozenne
-##     Update #: 56
+##     Update #: 62
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -31,13 +31,19 @@
 #' @export
 as.data.table.ate <- function(x, keep.rownames = FALSE, se = TRUE, ...){
 
+    browser()
     ## ** ate
     out1 <- data.table(type = "ate",
                        level = x$meanRisk[[1]],
                        time = x$meanRisk[["time"]],
-                       value = x$meanRisk[["meanRisk"]])
+                       value = x$meanRisk[["meanRisk"]],
+                       value.boot = as.numeric(NA))
+
     if(x$se && !is.null(x$conf.level)){
-        out1$se <- x$meanRisk[["se"]]
+        if(!is.null(x$boot)){
+            out1$value.boot <- x$meanRisk[["meanRiskBoot"]]
+        }
+        if(se){out1$se <- x$meanRisk[["se"]]}
         out1$lower <- x$meanRisk[["lower"]]
         out1$upper <- x$meanRisk[["upper"]]
     }
@@ -50,8 +56,13 @@ as.data.table.ate <- function(x, keep.rownames = FALSE, se = TRUE, ...){
     out2 <- data.table(type = "diffAte",
                        level = paste0(x$riskComparison[[1]],".",x$riskComparison[[2]]),
                        time = x$riskComparison[["time"]],
-                       value = x$riskComparison[["diff"]])
+                       value = x$riskComparison[["diff"]],
+                       value.boot = as.numeric(NA))
+    browser()
     if(x$se && !is.null(x$conf.level)){
+        if(!is.null(x$boot)){
+            out2$value.boot <- x$riskComparison[["meanRiskBoot"]]
+        }
         if(se){out2$se <- x$riskComparison[["diff.se"]]}
         out2$lower <- x$riskComparison[["diff.lower"]]
         out2$upper <- x$riskComparison[["diff.upper"]]
@@ -65,7 +76,8 @@ as.data.table.ate <- function(x, keep.rownames = FALSE, se = TRUE, ...){
     out3 <- data.table(type = "ratioAte",
                        level = paste0(x$riskComparison[[1]],".",x$riskComparison[[2]]),
                        time = x$riskComparison[["time"]],
-                       value = x$riskComparison[["ratio"]])
+                       value = x$riskComparison[["ratio"]],
+                       value.boot = as.numeric(NA))
     
     if(x$se && !is.null(x$conf.level)){
         if(se){out3$se <- x$riskComparison[["ratio.se"]]}

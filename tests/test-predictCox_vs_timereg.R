@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: maj 18 2017 (09:23) 
 ## Version: 
-## last-updated: maj 28 2018 (17:24) 
+## last-updated: jun  1 2018 (14:42) 
 ##           By: Brice Ozenne
-##     Update #: 74
+##     Update #: 75
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -221,8 +221,8 @@ test_that("predictionsSE",{
     predRR1 <- predictCox(m.coxph, newdata = d, times = 10, se = TRUE, band = TRUE)
     predRR2 <- predictCox(m.coxph_d2, newdata = d, times = 10, se = TRUE, band = TRUE)
 
-    predRR1.none <- confint(predRR1, transform.survival = "none", seed = 10)
-    predRR1.loglog <- confint(predRR1, transform.survival = "loglog", seed = 10)
+    predRR1.none <- confint(predRR1, survival.transform = "none", seed = 10)
+    predRR1.loglog <- confint(predRR1, survival.transform = "loglog", seed = 10)
     
     ## punctual estimate
     expect_equal(as.double(predRR1$survival), as.double(predGS$S0))
@@ -264,8 +264,8 @@ test_that("predictionsSE",{
     predRR1 <- predictCox(m.coxph, newdata = d, times = d$eventtime, se = TRUE, band = TRUE)
     predRR2 <- predictCox(m.coxph_d2, newdata = d, times = d$eventtime, se = TRUE, band = TRUE)
 
-    predRR1.none <- confint(predRR1, transform.survival = "none", seed = 10)
-    predRR1.loglog <- confint(predRR1, transform.survival = "loglog", seed = 10)
+    predRR1.none <- confint(predRR1, survival.transform = "none", seed = 10)
+    predRR1.loglog <- confint(predRR1, survival.transform = "loglog", seed = 10)
 
     ## punctual estimate
     expect_equal(as.double(predRR1$survival), as.double(predGS$S0))
@@ -327,8 +327,8 @@ test_that("predictionsSE - interaction",{
     predGS <- predict(mI.cox_GS, newdata = d, times = 10)
     predRR1 <- predictCox(mI.coxph, newdata = d, times = 10, se = TRUE, band = TRUE)
 
-    predRR1.none <- confint(predRR1, transform.survival = "none", seed = 10)
-    predRR1.loglog <- confint(predRR1, transform.survival = "loglog", seed = 10)
+    predRR1.none <- confint(predRR1, survival.transform = "none", seed = 10)
+    predRR1.loglog <- confint(predRR1, survival.transform = "loglog", seed = 10)
 
     ## punctial estimate
     expect_equal(as.double(predRR1$survival), as.double(predGS$S0))
@@ -365,8 +365,8 @@ test_that("predictionsSE - interaction",{
     predGS <- predict(mI.cox_GS, newdata = d, times = d$eventtime)
     predRR1 <- predictCox(mI.coxph, newdata = d, times = d$eventtime, se = TRUE, band = TRUE)
 
-    predRR1.none <- confint(predRR1, transform.survival = "none", seed = 10)
-    predRR1.loglog <- confint(predRR1, transform.survival = "loglog", seed = 10)
+    predRR1.none <- confint(predRR1, survival.transform = "none", seed = 10)
+    predRR1.loglog <- confint(predRR1, survival.transform = "loglog", seed = 10)
 
     ## punctial estimate
     expect_equal(as.double(predRR1$survival), as.double(predGS$S0))

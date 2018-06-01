@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: apr  5 2018 (17:01) 
 ## Version: 
-## Last-Updated: maj 31 2018 (17:37) 
+## Last-Updated: jun  1 2018 (11:31) 
 ##           By: Brice Ozenne
-##     Update #: 263
+##     Update #: 267
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -178,11 +178,10 @@ calcSeATE <- function(object, data, times, cause,
         ## Compute the iid function of the average treatment effect (ratio)
         ## IF(A/B) = IF(A)/B-IF(B)A/B^2
         term1 <- out$meanRisk.iid[iIndexA,] / pointEstimate$meanRisk[["meanRisk"]][iIndexB]
-        term2 <- out$meanRisk.iid[iIndexA,] * pointEstimate$meanRisk[["meanRisk"]][iIndexA] / pointEstimate$meanRisk[["meanRisk"]][iIndexB]^2
+        term2 <- out$meanRisk.iid[iIndexB,] * pointEstimate$meanRisk[["meanRisk"]][iIndexA] / pointEstimate$meanRisk[["meanRisk"]][iIndexB]^2
         out$ratioRisk.iid[iContrast,] <- term1 - term2
         
     }
-
     out$diffRisk.se[] <- sqrt(rowSums(out$diffRisk.iid^2))
     out$ratioRisk.se[] <- sqrt(rowSums(out$ratioRisk.iid^2))
                                         # }}}

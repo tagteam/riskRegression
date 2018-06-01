@@ -115,30 +115,26 @@ rowSumsCrossprod <- function(X, Y, transposeY) {
     .Call(`_riskRegression_rowSumsCrossprod`, X, Y, transposeY)
 }
 
-#' * colCenter
 #' @title Apply - by column
-#'
 #' @description Fast computation of sweep(X, MARGIN = 1, FUN = "-", STATS = center)
+#' @name colCenter_cpp
+#' 
 #' 
 #' @param X A matrix.
 #' @param center a numeric vector of length equal to the number of rows of \code{x}
 #' 
 #' @return A matrix of same size as X.
+#' 
 #' @author Brice Ozenne <broz@@sund.ku.dk>
 #' @examples
 #' x <- matrix(1,6,5)
 #' sweep(x, MARGIN = 1, FUN = "-", STATS = 1:6)
 #' colCenter_cpp(x, 1:6 )
-#' 
-#' @export
-colCenter_cpp <- function(X, center) {
-    .Call(`_riskRegression_colCenter_cpp`, X, center)
-}
+NULL
 
-#' * rowCenter
 #' @title Apply - by row
-#'
 #' @description Fast computation of sweep(X, MARGIN = 2, FUN = "-", STATS = center)
+#' @name rowCenter_cpp
 #' 
 #' @param X A matrix.
 #' @param center a numeric vector of length equal to the number of rows of \code{x}
@@ -151,16 +147,12 @@ colCenter_cpp <- function(X, center) {
 #' rowCenter_cpp(x, 1:5 )
 #' 
 #' rowCenter_cpp(x, colMeans(x) )
-#' 
-#' @export
-rowCenter_cpp <- function(X, center) {
-    .Call(`_riskRegression_rowCenter_cpp`, X, center)
-}
+NULL
 
 #' @title Apply / by column
-#'
 #' @description Fast computation of sweep(X, MARGIN = 1, FUN = "/", STATS = scale)
-#' 
+#' @name colScale_cpp
+#'
 #' @param X A matrix.
 #' @param scale a numeric vector of length equal to the number of rows of \code{x}
 #' 
@@ -170,15 +162,11 @@ rowCenter_cpp <- function(X, center) {
 #' x <- matrix(1,6,5)
 #' sweep(x, MARGIN = 1, FUN = "/", STATS = 1:6)
 #' colScale_cpp(x, 1:6 )
-#' 
-#' @export
-colScale_cpp <- function(X, scale) {
-    .Call(`_riskRegression_colScale_cpp`, X, scale)
-}
+NULL
 
 #' @title Apply / by row
-#'
 #' @description Fast computation of sweep(X, MARGIN = 2, FUN = "/", STATS = scale)
+#' @name rowScale_cpp
 #' 
 #' @param X A matrix.
 #' @param scale a numeric vector of length equal to the number of rows of \code{x}
@@ -191,15 +179,11 @@ colScale_cpp <- function(X, scale) {
 #' rowScale_cpp(x, 1:5 )
 #' 
 #' rowScale_cpp(x, colMeans(x) )
-#' 
-#' @export
-rowScale_cpp <- function(X, scale) {
-    .Call(`_riskRegression_rowScale_cpp`, X, scale)
-}
+NULL
 
 #' @title Apply * by column
-#'
 #' @description Fast computation of sweep(X, MARGIN = 1, FUN = "*", STATS = scale)
+#' @name colMultiply_cpp
 #' 
 #' @param X A matrix.
 #' @param scale a numeric vector of length equal to the number of rows of \code{x}
@@ -210,15 +194,11 @@ rowScale_cpp <- function(X, scale) {
 #' x <- matrix(1,6,5)
 #' sweep(x, MARGIN = 1, FUN = "*", STATS = 1:6)
 #' colMultiply_cpp(x, 1:6 )
-#' 
-#' @export
-colMultiply_cpp <- function(X, scale) {
-    .Call(`_riskRegression_colMultiply_cpp`, X, scale)
-}
+NULL
 
 #' @title Apply * by row
-#'
 #' @description Fast computation of sweep(X, MARGIN = 2, FUN = "*", STATS = scale)
+#' @name rowMultiply_cpp
 #' 
 #' @param X A matrix.
 #' @param scale a numeric vector of length equal to the number of rows of \code{x}
@@ -232,14 +212,11 @@ colMultiply_cpp <- function(X, scale) {
 #' 
 #' rowMultiply_cpp(x, 1/colMeans(x) )
 #' 
-#' @export
-rowMultiply_cpp <- function(X, scale) {
-    .Call(`_riskRegression_rowMultiply_cpp`, X, scale)
-}
+NULL
 
 #' @title Apply * by slice
-#'
 #' @description Fast computation of sweep(X, MARGIN = 1:2, FUN = "*", STATS = scale)
+#' @name sliceMultiply_cpp
 #' 
 #' @param X An array.
 #' @param M A matrix with the same number of row and columns as X.
@@ -252,15 +229,11 @@ rowMultiply_cpp <- function(X, scale) {
 #' sweep(x, MARGIN = 1:2, FUN = "*", STATS = M)
 #' sliceMultiply_cpp(x, M) 
 #' 
-#' 
-#' @export
-sliceMultiply_cpp <- function(X, M) {
-    .Call(`_riskRegression_sliceMultiply_cpp`, X, M)
-}
+NULL
 
 #' @title Apply / by slice
-#'
 #' @description Fast computation of sweep(X, MARGIN = 1:2, FUN = "/", STATS = scale)
+#' @name sliceScale_cpp
 #' 
 #' @param X An array.
 #' @param M A matrix with the same number of row and columns as X.
@@ -273,9 +246,65 @@ sliceMultiply_cpp <- function(X, M) {
 #' sweep(x, MARGIN = 1:2, FUN = "/", STATS = M)
 #' sliceScale_cpp(x, M) 
 #' 
-#' 
+NULL
+
+#' @rdname colCenter_cpp
+#' @export
+colCenter_cpp <- function(X, center) {
+    .Call(`_riskRegression_colCenter_cpp`, X, center)
+}
+
+#' @rdname rowCenter_cpp
+#' @export
+rowCenter_cpp <- function(X, center) {
+    .Call(`_riskRegression_rowCenter_cpp`, X, center)
+}
+
+#' @rdname colScale_cpp
+#' @export
+colScale_cpp <- function(X, scale) {
+    .Call(`_riskRegression_colScale_cpp`, X, scale)
+}
+
+#' @rdname rowScale_cpp
+#' @export
+rowScale_cpp <- function(X, scale) {
+    .Call(`_riskRegression_rowScale_cpp`, X, scale)
+}
+
+#' @name colMultiply_cpp
+#' @export
+colMultiply_cpp <- function(X, scale) {
+    .Call(`_riskRegression_colMultiply_cpp`, X, scale)
+}
+
+#' @name rowMultiply_cpp
+#' @export
+rowMultiply_cpp <- function(X, scale) {
+    .Call(`_riskRegression_rowMultiply_cpp`, X, scale)
+}
+
+#' @rdname sliceMultiply_cpp
+#' @export
+sliceMultiply_cpp <- function(X, M) {
+    .Call(`_riskRegression_sliceMultiply_cpp`, X, M)
+}
+
+#' @rdname sliceMultiply_cpp
+#' @export
+sliceMultiplyPointer_cpp <- function(X, M) {
+    invisible(.Call(`_riskRegression_sliceMultiplyPointer_cpp`, X, M))
+}
+
+#' @rdname sliceScale_cpp
 #' @export
 sliceScale_cpp <- function(X, M) {
     .Call(`_riskRegression_sliceScale_cpp`, X, M)
+}
+
+#' @rdname sliceScale_cpp
+#' @export
+sliceScalePointer_cpp <- function(X, M) {
+    invisible(.Call(`_riskRegression_sliceScalePointer_cpp`, X, M))
 }
 

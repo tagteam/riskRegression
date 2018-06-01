@@ -7,7 +7,7 @@
 \method{confint}{ate}(object, parm = NULL, level = 0.95,
   nsim.band = 10000, meanRisk.transform = "none",
   diffRisk.transform = "none", ratioRisk.transform = "none", seed = NA,
-  type.boot = "perc", ...)
+  bootci.method = "perc", ...)
 }
 \arguments{
 \item{object}{A \code{ate} object, i.e. output of the \code{ate} function.}
@@ -33,7 +33,7 @@ Can be \code{"none"}, \code{"log"}.}
 \item{seed}{[integer, >0] seed number set when performing simulation for the confidence bands.
 If not given or NA no seed is set.}
 
-\item{type.boot}{[character] Method for constructing bootstrap confidence intervals.
+\item{bootci.method}{[character] Method for constructing bootstrap confidence intervals.
 Either "perc" (the default), "norm", "basic", "stud", or "bca".}
 
 \item{...}{not used.}
@@ -55,18 +55,22 @@ library(survival)
 
 ## ## generate data ####
 set.seed(10)
-d <- sampleData(40,outcome="survival")
+d <- sampleData(70,outcome="survival")
+d[, X1 := paste0("T",rbinom(.N, size = 2, prob = c(0.51)))]
+## table(d$X1)
 
 #### stratified Cox model ####
 fit <- coxph(Surv(time,event)~X1 + strata(X2) + X6,
              data=d, ties="breslow", x = TRUE, y = TRUE)
 
 #### average treatment effect ####
-fit.pred <- ate(fit, treatment = "X1", times = 1:3, data = d)
+fit.pred <- ate(fit, treatment = "X1", times = 1:3, data = d,
+                se = TRUE, band = TRUE)
+print(fit.pred, type = "meanRisk")
 
 ## manual calculation of se
 dd <- copy(d)
-dd$X1 <- factor(0, levels = 0:1)
+dd$X1 <- rep(factor("T0", levels = paste0("T",0:2)), NROW(dd))
 out <- predictCox(fit, newdata = dd, se = TRUE, times = 1:3, average.iid = TRUE)
 term1 <- -out$survival.average.iid
 term2 <- sweep(1-out$survival, MARGIN = 2, FUN = "-", STATS = colMeans(1-out$survival))
@@ -78,18 +82,20 @@ mean(out2$survival.iid[,1,1])
 out$survival.average.iid[1,1]
 
 ## add confidence intervals computed on the original scale
-confint(fit.pred,
+outCI <- confint(fit.pred,
 meanRisk.transform = "none", diffRisk.transform = "none", ratioRisk.transform = "none"
 )
+print(outCI, type = "meanRisk")
 
 fit.pred$meanRisk[, .(lower = meanRisk - 1.96 * se,
                       upper = meanRisk + 1.96 * se)]
 
 ## add confidence intervals computed on the log-log scale
 ## and backtransformed
-confint(fit.pred,
+outCI <- confint(fit.pred,
 meanRisk.transform = "loglog", diffRisk.transform = "atanh", ratioRisk.transform = "log"
 )
+print(outCI, type = "meanRisk")
 
 newse <- fit.pred$meanRisk[, se/(meanRisk*log(meanRisk))]
 fit.pred$meanRisk[, .(lower = exp(-exp(log(-log(meanRisk)) - 1.96 * newse)),

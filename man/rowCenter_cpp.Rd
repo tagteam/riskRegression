@@ -2,6 +2,7 @@
 % Please edit documentation in R/RcppExports.R
 \name{rowCenter_cpp}
 \alias{rowCenter_cpp}
+\alias{rowCenter_cpp}
 \title{Apply - by row}
 \usage{
 rowCenter_cpp(X, center)
@@ -17,16 +18,12 @@ A matrix of same size as X.
 \description{
 Fast computation of sweep(X, MARGIN = 2, FUN = "-", STATS = center)
 }
-\details{
-* rowCenter
-}
 \examples{
 x <- matrix(1,6,5)
 sweep(x, MARGIN = 2, FUN = "-", STATS = 1:5)
 rowCenter_cpp(x, 1:5 )
 
 rowCenter_cpp(x, colMeans(x) )
-
 }
 \author{
 Brice Ozenne <broz@sund.ku.dk>

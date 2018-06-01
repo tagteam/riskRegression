@@ -2,22 +2,24 @@
 % Please edit documentation in R/transform.R
 \name{transformSE}
 \alias{transformSE}
-\title{Compute the Standard Error after Transformation}
+\title{Compute Standard Errors after Transformation}
 \usage{
 transformSE(estimate, se, type)
 }
 \arguments{
-\item{estimate}{[numeric vector/matrix] the estimate value before transformation.}
+\item{estimate}{[numeric matrix] the estimate value before transformation.}
 
-\item{se}{[numeric vector/matrix] the standard error before transformation.}
+\item{se}{[numeric matrix] the standard error before transformation.}
 
 \item{type}{[character] the transforamtion.
 Can be \code{"log"}, \code{"loglog"}, \code{"cloglog"}, or \code{"atanh"} (Fisher transform).}
 }
 \description{
-Compute the standard error after transformation
+Compute standard errors after transformation
 based on the standard error before transformation.
 }
 \details{
 Use a delta method to find the standard error after transformation.
+
+\code{se} and \code{estimate} must have same dimensions.
 }

@@ -2,20 +2,23 @@
 % Please edit documentation in R/transform.R
 \name{transformP}
 \alias{transformP}
-\title{Compute the p.value after a transformation}
+\title{Compute P-values After a Transformation}
 \usage{
 transformP(estimate, se, null, type)
 }
 \arguments{
-\item{estimate}{[numeric vector] the estimate value before transformation.}
+\item{estimate}{[numeric matrix] the estimate value before transformation.}
 
-\item{se}{[numeric vector] the standard error after transformation.}
+\item{se}{[numeric matrix] the standard error after transformation.}
 
-\item{null}{[numeric vector] the value of the estimate (before transformation) under the null hypothesis.}
+\item{null}{[numeric] the value of the estimate (before transformation) under the null hypothesis.}
 
 \item{type}{[character] the transforamtion.
 Can be \code{"log"}, \code{"loglog"}, \code{"cloglog"}, or \code{"atanh"} (Fisher transform).}
 }
 \description{
-Compute the p.value after a transformation.
+Compute the p-values after a transformation.
+}
+\details{
+\code{se} and \code{estimate} must have same dimensions.
 }

@@ -2,27 +2,24 @@
 % Please edit documentation in R/transform.R
 \name{transformIID}
 \alias{transformIID}
-\title{Compute the Influence Function after Transformation}
+\title{Compute Influence Functions after Transformation}
 \usage{
-transformIID(estimate, iid, type, format)
+transformIID(estimate, iid, type)
 }
 \arguments{
-\item{estimate}{[numeric vector/matrix] the estimate value before transformation.}
+\item{estimate}{[numeric matrix] the estimate value before transformation.}
 
-\item{iid}{[numeric matrix/array] the standard error before transformation.}
+\item{iid}{[numeric array] the standard error before transformation.}
 
 \item{type}{[character] the transforamtion.
 Can be \code{"log"}, \code{"loglog"}, \code{"cloglog"}, or \code{"atanh"} (Fisher transform).}
-
-\item{format}{[character] the class of iid, either \code{"matrix"} or \code{"array"}.}
 }
 \description{
-Compute the influence function after transformation
+Compute influence functions after transformation
 based on the influence function before transformation.
 }
 \details{
 Use a delta method to find the standard error after transformation. \cr \cr
 
-Matrix case: the iid decomposition must contain have dimension [n.prediction,n.obs] and estimate [n.prediction]. \cr
-Array case: the iid decomposition must contain have dimension [n.prediction,time,n.obs] and estimate [n.prediction,time].
+The iid decomposition must contain have dimension [n.prediction,time,n.obs] and estimate [n.prediction,time].
 }

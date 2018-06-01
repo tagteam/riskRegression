@@ -2,6 +2,7 @@
 % Please edit documentation in R/RcppExports.R
 \name{colMultiply_cpp}
 \alias{colMultiply_cpp}
+\alias{colMultiply_cpp}
 \title{Apply * by column}
 \usage{
 colMultiply_cpp(X, scale)
@@ -21,7 +22,6 @@ Fast computation of sweep(X, MARGIN = 1, FUN = "*", STATS = scale)
 x <- matrix(1,6,5)
 sweep(x, MARGIN = 1, FUN = "*", STATS = 1:6)
 colMultiply_cpp(x, 1:6 )
-
 }
 \author{
 Brice Ozenne <broz@sund.ku.dk>

@@ -17,16 +17,21 @@ verbose <- FALSE
 
 test_that("G formula: coxph, cph, bootstrap sequential, one and several time points",{
     fit.cph <- cph(Surv(time,event)~ X1+X2,data=dtS,y=TRUE,x=TRUE)
-    ate.1a <- ate(fit.cph,data = dtS, treatment = "X1", contrasts = NULL,seed=3, bootci.method = "quantile",
+    ate.1a <- ate(fit.cph,data = dtS, treatment = "X1", contrasts = NULL,seed=3, 
                   times = 1, handler=handler, B = 2, y = TRUE, mc.cores=1,verbose=verbose)
-    ate.1b <- ate(fit.cph, data = dtS, treatment = "X1", contrasts = NULL,seed=3, bootci.method = "quantile",
+    ate.1a <- confint(ate.1a, bootci.method = "quantile")
+    ate.1b <- ate(fit.cph, data = dtS, treatment = "X1", contrasts = NULL,seed=3, 
                   times = 1:2, B = 2, y = TRUE, mc.cores=1,handler=handler,verbose=verbose)
-    fit.coxph <- coxph(Surv(time,event)~ X1+X2,data=dtS,y=TRUE,x=TRUE)
-    ate.2a <- ate(fit.coxph,data = dtS, treatment = "X1", contrasts = NULL,seed=3, bootci.method = "quantile",
-                  times = 1, B = 2, y = TRUE, mc.cores=1,handler=handler,verbose=verbose)
-    ate.2b <- ate(fit.coxph, data = dtS, treatment = "X1", contrasts = NULL,seed=3, bootci.method = "quantile",
-                  times = 1:2, B = 2, y = TRUE, mc.cores=1,handler=handler,verbose=verbose)
+    ate.1b <- confint(ate.1b, bootci.method = "quantile")
 
+    fit.coxph <- coxph(Surv(time,event)~ X1+X2,data=dtS,y=TRUE,x=TRUE)
+    ate.2a <- ate(fit.coxph,data = dtS, treatment = "X1", contrasts = NULL,seed=3,
+                  times = 1, B = 2, y = TRUE, mc.cores=1,handler=handler,verbose=verbose)
+    ate.2a <- confint(ate.2a, bootci.method = "quantile")
+    ate.2b <- ate(fit.coxph, data = dtS, treatment = "X1", contrasts = NULL,seed=3,
+                  times = 1:2, B = 2, y = TRUE, mc.cores=1,handler=handler,verbose=verbose)
+    ate.2b <- confint(ate.2b, bootci.method = "quantile")
+    
     attr(ate.2a,"class") <- "NULL"
     attr(ate.2b,"class") <- "NULL"
     attr(ate.1a,"class") <- "NULL"
@@ -93,6 +98,7 @@ test_that("Cox model - compare to explicit computation",{
     ## automatically
     ateFit <- ate(fit, data = dtS, treatment = "X1", contrasts = NULL,
                   times = 5:7, B = 0, se = TRUE, mc.cores=1,handler=handler,verbose=verbose)
+    ateFit <- confint(ateFit)
     expect_equal(ateFit$meanRisk[ateFit$meanRisk$Treatment == "T0",lower],
                  c(0.2756147, 0.3220124, 0.3492926),
                  tol = 1e-6)
@@ -109,10 +115,11 @@ test_that("Cox model - check internal consistency (one or several timepoints)",{
     fit <- coxph(Surv(time,event)~X1+X4+X7+X8,data=d,x=TRUE,y=TRUE)
     a1 <- ate(fit,data=d,treatment="X1",time=5,bootci.method="wald")
     a2 <- ate(fit,data=d,treatment="X1",time=5:7,bootci.method="wald")
+
     expect_equal(a2$riskComparison[time==5,],
                  a1$riskComparison)
     expect_equal(a2$meanRisk[time==5,],
-                 a1$meanRisk)
+                 a1$meanRisk[time==5,])
 })
 
                                         # }}}
@@ -123,17 +130,7 @@ test_that("check against manual computation",{
     ateFit <- ate(fit, data = dtS, treatment = "X1", contrasts = NULL,
                   times = 5:7, B = 0, se = TRUE, mc.cores=1,handler=handler,
                   verbose=verbose)
-
-    confint(ateFit)
-    ateFit <- ate(fit, data = dtS, treatment = "X1", contrasts = NULL,
-                  times = 5:7, B = 0, band = TRUE, se = TRUE, mc.cores=1,handler=handler,
-                  verbose=verbose)
-    names(ateFit)
-    ateFitBoot <- ate(fit, data = dtS, treatment = "X1", contrasts = NULL,
-                      times = 5:7, B = 1e2, se = TRUE, mc.cores=1,handler=handler,
-                      verbose=TRUE)
-    res <- confint(ateFitBoot)  
-    as.data.table(res)
+    ateFit <- confint(ateFit)
     
     ATE <- list()
     ATE.iid <- list()
@@ -142,7 +139,7 @@ test_that("check against manual computation",{
         newdata0 <- copy(dtS)
         newdata0$X1 <- iT
         fit <- cph(formula = Surv(time,event)~ X1+X2,data=dtS,y=TRUE,x=TRUE)
-        resPred <- predictCox(fit, newdata = newdata0, time = 5:7, iid = TRUE, log.transform = FALSE)
+        resPred <- predictCox(fit, newdata = newdata0, time = 5:7, iid = TRUE)
         ATE[[iT]] <- colMeans(1-resPred$survival)
         ATE.iid_term1 <- apply(-resPred$survival.iid,3,colMeans)
         ATE.iid_term2 <- apply(1-resPred$survival, 1, function(x){x-ATE[[iT]]})/n
@@ -209,7 +206,6 @@ test_that("stratified ATE",{
                           newdata = d,
                           times = 1,
                           se = TRUE,
-                          log.transform = FALSE,
                           keep.newdata = TRUE,
                           type = "survival")
     GS.se <- as.data.table(outPred)[,.SD[1],by = "X1"]

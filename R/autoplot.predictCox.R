@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: feb 17 2017 (10:06) 
 ## Version: 
-## last-updated: maj 31 2018 (16:40) 
+## last-updated: jun  1 2018 (16:08) 
 ##           By: Brice Ozenne
-##     Update #: 437
+##     Update #: 445
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -320,14 +320,22 @@ predict2plot <- function(dataL, name.outcome,
     ## set at t- the value of t-1
     dtTempo <- copy(dataL)
     dtTempo[, original := FALSE]
-    dtTempo[, c(name.outcome) := .SD[[1]][c(1,1:(.N-1))], .SDcols = name.outcome, by = "row"]
+
+    vec.outcome <- name.outcome
+    if(ci){
+        vec.outcome <- c(vec.outcome,"lowerCI","upperCI")
+    }
+    if(band){
+        vec.outcome <- c(vec.outcome,"lowerBand","upperBand")
+    }
+    dtTempo[, c(vec.outcome) := .SD[c(1,1:(.N-1))], .SDcols = vec.outcome, by = "row"]
     dtTempo[, c("time") := time - .Machine$double.eps*100]
 
     dataL <- rbind(dataL[,unique(keep.cols), with = FALSE],
                    dtTempo[,unique(keep.cols), with = FALSE])
     data.table::setkeyv(dataL, c("row","time"))
     
-## display ####
+    ## display ####
     labelCI <- paste0(conf.level*100,"% confidence \n interval")
     labelBand <- paste0(conf.level*100,"% confidence \n band")
 

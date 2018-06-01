@@ -35,29 +35,20 @@ test_that("computation of the quantile for the confidence band of the cumhazard"
                        iid = TRUE,
                        band = TRUE,
                        type = "cumhazard")
+
+    pred.confint <- confint(pred, nsim.band = n.sim, seed = 10)
+    expect_equal(pred.confint$cumhazard.quantileBand,ref)
+
     set.seed(10)
-    resRR <- riskRegression:::confBandCox(iid = pred$cumhazard.iid,
-                                          se = pred$cumhazard.se,
-                                          n.sim = n.sim, 
-                                          conf.level = 0.95)
+    pred.band2 <- riskRegression:::confBandCox(iid = pred$cumhazard.iid,
+                                               se = pred$cumhazard.se,
+                                               n.sim = n.sim, 
+                                               conf.level = 0.95)
 
 
     
     ref <- unlist(lapply(resTimereg,"[[", "unif.band"))
-
-    set.seed(10)
-    predRR <- predictCox(fit.coxph,
-                         newdata = newdata,
-                         times = times,
-                         se = TRUE,
-                         band = TRUE,
-                         nsim.band = n.sim,
-                         type = c("cumhazard")
-                         )
-    expect_equal(predRR$quantile.band,ref)
-    expect_equal(resRR,ref)
-    #expect_equal(resRR,c(2.850666, 2.562949, 2.992631, 2.992631, 2.850666, 2.992631, 2.850666, 2.992631, 2.992631, 2.562949), tol = 1e-6)
-    #expect_equal(predRR$quantile.band,c(2.850666, 2.562949, 2.992631, 2.992631, 2.850666, 2.992631, 2.850666, 2.992631, 2.992631, 2.562949), tol = 1e-6)
+    expect_equal(pred.band2,ref)
 })
 # }}}
 
@@ -67,17 +58,15 @@ predRR <- predictCox(fit.coxph,
                      times = times,
                      se = TRUE,
                      band = TRUE,
-                     nsim.band = 500,
                      type = c("cumhazard","survival")
                      )
 
-dev.new()
+
 plotRR <- autoplot(predRR, type = "survival", band = TRUE, ci = TRUE, plot = FALSE)
 dev.new()
 plotTR <- plot.predict.timereg(resTimereg[[1]])
 dev.new()
 plotRR$plot + coord_cartesian(ylim = c(0,1))
-
 # }}}
 
 # {{{ example

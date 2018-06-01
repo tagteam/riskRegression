@@ -2,21 +2,19 @@
 % Please edit documentation in R/transform.R
 \name{transformCI}
 \alias{transformCI}
-\title{Compute the Confidence Interval using a transformation}
+\title{Compute Confidence Intervals using a transformation}
 \usage{
-transformCI(estimate, se, quantile, type, format, min.value, max.value)
+transformCI(estimate, se, quantile, type, min.value, max.value)
 }
 \arguments{
-\item{estimate}{[numeric vector/matrix] the estimate value before transformation.}
+\item{estimate}{[numeric matrix] the estimate value before transformation.}
 
-\item{se}{[numeric matrix/array] the standard error after transformation.}
+\item{se}{[numeric matrix] the standard error after transformation.}
 
-\item{quantile}{[numeric] quantile that will be multiplied to the standard error.}
+\item{quantile}{[numeric vector] quantile that will be multiplied to each column of \code{se}.}
 
 \item{type}{[character] the transforamtion.
 Can be \code{"log"}, \code{"loglog"}, \code{"cloglog"}, or \code{"atanh"} (Fisher transform).}
-
-\item{format}{[character] the class of iid, either \code{"matrix"} or \code{"array"}.}
 
 \item{min.value}{[numeric] if not \code{NULL} and the lower bound of the confidence interval is below \code{min},
 it will be set at \code{min}.}
@@ -25,10 +23,9 @@ it will be set at \code{min}.}
 it will be set at \code{max}.}
 }
 \description{
-Compute the confidence interval using a transformation.
+Compute confidence intervals using a transformation.
 The resulting confidence interval is returned on the original case (i.e. back-transformed).
 }
 \details{
-Argument \code{quantile} can either be a numeric value or a vector of numeric values.
-In the latter case, if \code{se} is a matrix, \code{se} will be multiplied by \code{quantile} by column.
+\code{se} and \code{estimate} must have same dimensions.
 }

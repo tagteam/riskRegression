@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Feb 11 2017 (10:01) 
 ## Version: 
-## last-updated: maj 31 2018 (18:09) 
+## last-updated: jun  1 2018 (13:37) 
 ##           By: Brice Ozenne
-##     Update #: 74
+##     Update #: 75
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -18,6 +18,7 @@
 ## * print.predictCSC (documentation)
 #' @title Print Predictions From a Cause-specific Cox Proportional Hazard Regression
 #' @description Print predictions from a Cause-specific Cox proportional hazard regression.
+#' @name print.predictCSC
 #' 
 #' @param x object obtained with the function \code{predictCox}.
 #' @param digits [integer, >0] indicating the number of decimal places.

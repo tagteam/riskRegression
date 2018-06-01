@@ -2,6 +2,7 @@
 % Please edit documentation in R/RcppExports.R
 \name{rowMultiply_cpp}
 \alias{rowMultiply_cpp}
+\alias{rowMultiply_cpp}
 \title{Apply * by row}
 \usage{
 rowMultiply_cpp(X, scale)

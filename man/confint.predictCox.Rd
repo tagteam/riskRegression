@@ -26,7 +26,7 @@ Can be \code{"none"}, \code{"log"}.}
 of the confidence intervals for the survival in small samples.
 Can be \code{"none"}, \code{"log"}, \code{"loglog"}, \code{"cloglog"}.}
 
-\item{seed}{[integer, >0] seed number set when performing simulation for the confidence bands.
+\item{seed}{[integer, >0] seed number set before performing simulations for the confidence bands.
 If not given or NA no seed is set.}
 
 \item{...}{not used.}
@@ -57,15 +57,17 @@ sqrt(rowSums(fit.pred$survival.iid[1,,]^2)) ## se for individual 1
 
 #### add confidence intervals / bands computed on the original scale
 confint(fit.pred, survival.transform = "none")
-fit.pred$survival - 1.96 * fit.pred$survival.se  ## survival.lower
-fit.pred$survival + 1.96 * fit.pred$survival.se  ## survival.upper
+cbind(lower = as.double(fit.pred$survival - 1.96 * fit.pred$survival.se),
+      upper = as.double(fit.pred$survival + 1.96 * fit.pred$survival.se)
+)
 
 ## add confidence intervals computed on the log-log scale
 ## and backtransformed
 confint(fit.pred, survival.transform = "loglog")
 newse <- fit.pred$survival.se/(-fit.pred$survival*log(fit.pred$survival))
-exp(-exp(log(-log(fit.pred$survival)) + 1.96 * newse)) ## survival.lower
-exp(-exp(log(-log(fit.pred$survival)) - 1.96 * newse)) ## survival.upper
+cbind(lower = as.double(exp(-exp(log(-log(fit.pred$survival)) + 1.96 * newse))),
+      upper = as.double(exp(-exp(log(-log(fit.pred$survival)) - 1.96 * newse)))
+)
 
 }
 \author{

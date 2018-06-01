@@ -20,7 +20,7 @@
 of the confidence intervals for the predicted absolute risk in small samples.
 Can be \code{"none"}, \code{"log"}, \code{"loglog"}, \code{"cloglog"}.}
 
-\item{seed}{[integer, >0] seed number set when performing simulation for the confidence bands.
+\item{seed}{[integer, >0] seed number set before performing simulations for the confidence bands.
 If not given or NA no seed is set.}
 
 \item{...}{not used.}
@@ -48,15 +48,17 @@ fit.pred
 
 ## add confidence intervals computed on the original scale
 confint(fit.pred, absRisk.transform = "none")
-fit.pred$absRisk - 1.96 * fit.pred$absRisk.se  ## survival.lower
-fit.pred$absRisk + 1.96 * fit.pred$absRisk.se  ## survival.upper
+cbind(lower = as.double(fit.pred$absRisk - 1.96 * fit.pred$absRisk.se),
+      upper = as.double(fit.pred$absRisk + 1.96 * fit.pred$absRisk.se)
+)
 
 ## add confidence intervals computed on the log-log scale
 ## and backtransformed
 confint(fit.pred, absRisk.transform = "loglog")
 newse <- fit.pred$absRisk.se/(-fit.pred$absRisk*log(fit.pred$absRisk))
-exp(-exp(log(-log(fit.pred$absRisk)) + 1.96 * newse)) ## survival.lower
-exp(-exp(log(-log(fit.pred$absRisk)) - 1.96 * newse)) ## survival.upper
+cbind(lower = as.double(exp(-exp(log(-log(fit.pred$absRisk)) + 1.96 * newse))),
+      upper = as.double(exp(-exp(log(-log(fit.pred$absRisk)) - 1.96 * newse)))
+)
 }
 \author{
 Brice Ozenne
