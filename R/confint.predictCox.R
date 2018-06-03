@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: maj 23 2018 (14:08) 
 ## Version: 
-## Last-Updated: jun  1 2018 (17:37) 
+## Last-Updated: jun  3 2018 (20:08) 
 ##           By: Brice Ozenne
-##     Update #: 250
+##     Update #: 251
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -77,6 +77,7 @@
 
 ## * confint.predictCox (code)
 ##' @rdname confint.predictCox
+##' @method confint predictCox
 ##' @export
 confint.predictCox <- function(object,
                                parm = NULL,

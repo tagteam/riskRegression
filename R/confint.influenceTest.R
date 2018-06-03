@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: jun  1 2018 (12:15) 
 ## Version: 
-## Last-Updated: jun  1 2018 (15:46) 
+## Last-Updated: jun  3 2018 (20:09) 
 ##           By: Brice Ozenne
-##     Update #: 28
+##     Update #: 29
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -38,6 +38,7 @@
 
 ## * confint.influenceTest (code)
 ##' @rdname confint.influenceTest
+##' @method confint influenceTest
 ##' @export
 confint.influenceTest <- function(object,
                                   parm = NULL,

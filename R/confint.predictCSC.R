@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: maj 23 2018 (14:08) 
 ## Version: 
-## Last-Updated: jun  1 2018 (15:46) 
+## Last-Updated: jun  3 2018 (20:09) 
 ##           By: Brice Ozenne
-##     Update #: 143
+##     Update #: 144
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -69,6 +69,7 @@
 
 ## * confint.predictCSC (code)
 ##' @rdname confint.predictCSC
+##' @method confint predictCSC
 ##' @export
 confint.predictCSC <- function(object,
                                parm = NULL,

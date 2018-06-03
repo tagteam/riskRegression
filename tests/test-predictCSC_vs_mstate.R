@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: maj 18 2017 (09:23) 
 ## Version: 
-## last-updated: maj 28 2018 (17:43) 
+## last-updated: jun  3 2018 (14:04) 
 ##           By: Brice Ozenne
-##     Update #: 166
+##     Update #: 167
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -14,13 +14,15 @@
 #----------------------------------------------------------------------
 ## 
 ### Code:
+
+## * Settings
 library(riskRegression)
 library(testthat)
 library(mstate)
 tmat <- trans.comprisk(2, names = c("0", "1", "2"))
 library(survival)
 
-# {{{ 1- compare predict.CSC and mstate on small examples
+## * Compare predict.CSC and mstate on small examples
 
 ## simulatenous events
 df1 <- data.frame(time = rep(1:10,2),

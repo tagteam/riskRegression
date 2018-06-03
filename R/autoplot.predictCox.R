@@ -1,17 +1,17 @@
 ### autoplot.predictCox.R --- 
-#----------------------------------------------------------------------
+##----------------------------------------------------------------------
 ## author: Brice Ozenne
 ## created: feb 17 2017 (10:06) 
 ## Version: 
-## last-updated: jun  1 2018 (16:08) 
+## last-updated: jun  3 2018 (20:07) 
 ##           By: Brice Ozenne
-##     Update #: 445
-#----------------------------------------------------------------------
+##     Update #: 476
+##----------------------------------------------------------------------
 ## 
 ### Commentary: 
 ## 
 ### Change Log:
-#----------------------------------------------------------------------
+##----------------------------------------------------------------------
 ## 
 ### Code:
 
@@ -66,10 +66,8 @@
 #' ## predictions with confidence interval/bands
 #' pred.cox <- predictCox(m.cox, newdata = d[1,,drop=FALSE],
 #'   times = 1:5, type = "survival", band = TRUE, se = TRUE, keep.newdata = TRUE)
-#' res <- autoplot(pred.cox, ci = TRUE, band = TRUE, alpha = 0.1)
-#'
-#' ## customize display
-#' res$plot + geom_point(data = res$data, size = 5)
+#' autoplot(pred.cox, ci = TRUE, band = TRUE)
+#' autoplot(pred.cox, ci = TRUE, band = TRUE, alpha = 0.1)
 #'
 #' #### Stratified Cox model ####
 #' m.cox.strata <- coxph(Surv(time,event)~ strata(X1) + strata(X2) + X3 + X6,
@@ -79,7 +77,11 @@
 #'                               time = 1:5, keep.newdata = TRUE)
 #'
 #' ## display
-#' autoplot(pred.cox.strata, type = "survival", group.by = "strata")
+#' res <- autoplot(pred.cox.strata, type = "survival", group.by = "strata")
+#'
+#' ## customize display
+#' res$plot + facet_wrap(~strata, labeller = label_both)
+#' res$plot %+% res$data[strata == "0, 1"]
 
 ## * autoplot.predictCox (code)
 #' @rdname autoplot.predictCox
@@ -306,7 +308,7 @@ predict2plot <- function(dataL, name.outcome,
                          conf.level, alpha, ylab){
 
     # for CRAN tests
-    original <- lowerCI <- upperCI <- lowerBand <- upperBand <- NULL
+    original <- lowerCI <- upperCI <- lowerBand <- upperBand <- timeLeft <- NULL
     #### duplicate observations to obtain step curves ####
     keep.cols <- unique(c("time",name.outcome,"row",group.by,"original"))
     if(ci){
@@ -315,11 +317,9 @@ predict2plot <- function(dataL, name.outcome,
     if(band){
         keep.cols <- c(keep.cols,"lowerBand","upperBand")
     }
-    dataL[, original := TRUE]
 
     ## set at t- the value of t-1
     dtTempo <- copy(dataL)
-    dtTempo[, original := FALSE]
 
     vec.outcome <- name.outcome
     if(ci){
@@ -328,19 +328,16 @@ predict2plot <- function(dataL, name.outcome,
     if(band){
         vec.outcome <- c(vec.outcome,"lowerBand","upperBand")
     }
-    dtTempo[, c(vec.outcome) := .SD[c(1,1:(.N-1))], .SDcols = vec.outcome, by = "row"]
-    dtTempo[, c("time") := time - .Machine$double.eps*100]
-
-    dataL <- rbind(dataL[,unique(keep.cols), with = FALSE],
-                   dtTempo[,unique(keep.cols), with = FALSE])
-    data.table::setkeyv(dataL, c("row","time"))
+    dataL[,c("timeLeft") := .SD[c(1,1:(.N-1))], .SDcols = "time", by = "row"] 
     
     ## display ####
     labelCI <- paste0(conf.level*100,"% confidence \n interval")
     labelBand <- paste0(conf.level*100,"% confidence \n band")
 
-    gg.base <- ggplot(mapping = aes_string(x = "time", y = name.outcome, group = "row", color = group.by))
-    gg.base <- gg.base + geom_line(data = dataL, size = 2)
+    gg.base <- ggplot(data = dataL, mapping = aes_string(group = "row", color = group.by))
+    gg.base <- gg.base + ggplot2::geom_segment(aes_string(x = "timeLeft", y = name.outcome, xend = "time", yend = name.outcome), size = 1.5)
+    gg.base <- gg.base + ggplot2::geom_point(aes_string(x = "timeLeft", y = name.outcome), size = 2)
+
     if(group.by=="row"){
         gg.base <- gg.base + ggplot2::labs(color="observation") + theme(legend.key.height=unit(0.1,"npc"),
                                                                         legend.key.width=unit(0.08,"npc"))
@@ -357,25 +354,26 @@ predict2plot <- function(dataL, name.outcome,
     }
     if(ci){
         if(!is.na(alpha)){
-            gg.base <- gg.base + geom_errorbar(data = dataL[original==TRUE],
-                                               aes(ymin = lowerCI, ymax = upperCI, linetype = labelCI))
+            gg.base <- gg.base + ggplot2::geom_errorbar(aes(x = time, ymin = lowerCI, ymax = upperCI, linetype = labelCI))
             gg.base <- gg.base + scale_linetype_manual("",values=setNames(1,labelCI))
 
         }else{
-            gg.base <- gg.base + geom_line(data = dataL, aes(y = lowerCI, linetype = "ci"), size = 1.2, color = "black")
-            gg.base <- gg.base + geom_line(data = dataL, aes(y = upperCI, linetype = "ci"), size = 1.2, color = "black")
-                                        #            gg.base <- gg.base + geom_ribbon(data = dataL, aes(ymin = lowerCI, ymax = upperCI, linetype = "ci") , fill = NA, color = "black")
+            gg.base <- gg.base + ggplot2::geom_segment(aes(x = timeLeft, y = lowerCI, xend = time, yend = lowerCI, linetype = "ci"),
+                                                       size = 1.2, color = "black")
+            gg.base <- gg.base + ggplot2::geom_segment(aes(x = timeLeft, y = upperCI, xend = time, yend = upperCI, linetype = "ci"),
+                                                       size = 1.2, color = "black")
         }
     }
     if(band){
         if(!is.na(alpha)){
-            gg.base <- gg.base + geom_ribbon(data = dataL,
-                                             aes(ymin = lowerBand, ymax = upperBand, fill = labelBand),
-                                             alpha = alpha)
+            gg.base <- gg.base + ggplot2::geom_rect(aes(xmin = timeLeft, xmax = time, ymin = lowerBand, ymax = upperBand,
+                                                        fill = labelBand), linetype = 0, alpha = alpha)
             gg.base <- gg.base + scale_fill_manual("", values="grey12")        
         }else{
-            gg.base <- gg.base + geom_line(data = dataL, aes(y = lowerBand, linetype = "band"), size = 1.2, color = "black")
-            gg.base <- gg.base + geom_line(data = dataL, aes(y = upperBand, linetype = "band"), size = 1.2, color = "black")
+            gg.base <- gg.base + ggplot2::geom_segment(aes(x = timeLeft, y = lowerBand, xend = time, yend = lowerBand, linetype = "band"),
+                                                       size = 1.2, color = "black")
+            gg.base <- gg.base + ggplot2::geom_segment(aes(x = timeLeft, y = upperBand, xend = time, yend = upperBand, linetype = "band"),
+                                                       size = 1.2, color = "black")
         }
     }
 

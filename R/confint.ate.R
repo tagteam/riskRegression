@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: maj 23 2018 (14:08) 
 ## Version: 
-## Last-Updated: jun  1 2018 (18:15) 
+## Last-Updated: jun  3 2018 (20:09) 
 ##           By: Brice Ozenne
-##     Update #: 426
+##     Update #: 427
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -105,6 +105,7 @@
 
 ## * confint.ate (code)
 ##' @rdname confint.ate
+##' @method confint ate
 ##' @export
 confint.ate <- function(object,
                         parm = NULL,
