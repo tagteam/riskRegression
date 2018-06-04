@@ -10,9 +10,9 @@
   use.event.times = FALSE, null.model = TRUE, se.fit = TRUE,
   conservative = FALSE, multi.split.test = FALSE, conf.int = 0.95,
   contrasts = TRUE, probs = c(0, 0.25, 0.5, 0.75, 1),
-  cens.method = "outside.ipcw", cens.model = "cox", split.method, B, M,
-  seed, trainseeds, keep, predictRisk.args, debug = 0L, useEventTimes,
-  nullModel, censMethod, censModel, splitMethod, ...)
+  cens.method = "ipcw", cens.model = "cox", split.method, B, M, seed,
+  trainseeds, keep, predictRisk.args, debug = 0L, useEventTimes, nullModel,
+  censMethod, censModel, splitMethod, ...)
 }
 \arguments{
 \item{object}{List of risk predictions (see details and examples).}
@@ -93,12 +93,9 @@ If \code{TRUE} do all possible comparisons. For
 predicted risks. This affects the result of the function \code{boxplot.Score}.}
 
 \item{cens.method}{Method for dealing with right censored
-    data. Either \code{"outside.ipcw"} or \code{"inside.ipcw"}. \code{"outside.ipcw"} 
-    Here IPCW refers to inverse probability of censoring weights. The attributes inside and outside are
-     only relevant for cross-validation (\code{split.method}) where the inside method computes the IPCW model
-in the the loop in each of the current test data sets whereas the outside method computes the IPCW model only once in the full data.
-    Also, jackknife pseudo-values may become another option for all statistics. Right now
-    they are only used for calibration curves.}
+data. Either \code{"ipcw"} or \code{"pseudo"}.
+Here IPCW refers to inverse probability of censoring weights and \code{pseudo} for jackknife pseudo values.
+Right now pseudo values  are only used for calibration curves.}
 
 \item{cens.model}{Model for estimating inverse probability of
     censored weights. Implemented are the Kaplan-Meier method (\code{"km"}) and

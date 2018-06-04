@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun 23 2016 (09:19) 
 ## Version: 
-## last-updated: Oct 21 2017 (10:11) 
+## last-updated: Apr 27 2018 (13:51) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 68
+##     Update #: 76
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -14,18 +14,28 @@
 #----------------------------------------------------------------------
 ## 
 ### Code:
-##' ggplot AUC curves
+##' Plot of time-dependent AUC curves
 ##'
-##' @title ggplot AUC curve
+##' @title Plot of time-dependent AUC curves
 ##' @param x Object obtained with \code{Score.list}
 ##' @param models Choice of models to plot
-##' @param type Character. Either \code{"score"} to show AUC or \code{"contrasts"} to show differences between AUC.
-##' @param lwd Line width
-##' @param xlim Limits for x-axis
-##' @param ylim Limits for y-axis
-##' @param axes Logical. If \code{TRUE} draw axes.
-##' @param conf.int Logical. If \code{TRUE} draw confidence shadows.
-##' @param ... Not yet used
+#' @param which Character. Either \code{"score"} to show AUC or
+#'     \code{"contrasts"} to show differences between AUC.
+#' @param xlim Limits for x-axis
+#' @param ylim Limits for y-axis
+#' @param xlab Label for x-axis
+#' @param ylab Label for y-axis
+#' @param col line color
+#' @param lwd line width
+#' @param lty line style
+#' @param cex point size
+#' @param pch point style
+#' @param type line type
+#' @param axes Logical. If \code{TRUE} draw axes.
+#' @param percent Logical. If \code{TRUE} scale y-axis in percent.
+#' @param conf.int Logical. If \code{TRUE} draw confidence shadows.
+#' @param legend Logical. If \code{TRUE} draw legend.
+#' @param ... Used for additional control of the subroutines: plot,
 ##' @examples
 ##' library(survival)
 ##' d=sampleData(100,outcome="survival")
@@ -38,70 +48,143 @@
 ##' plotAUC(xx,conf.int=TRUE)+ggtitle("AUC")+theme_classic()
 ##' plotAUC(xx,type="contrasts")
 ##' a=plotAUC(xx,type="contrasts",conf.int=TRUE)
-##' a+theme_bw()
 ##' 
 #'
 #' @export
 plotAUC <- function(x,
                     models,
-                    type="score",
-                    lwd=2,
+                    which="score",
                     xlim,
                     ylim,
-                    axes=TRUE,
-                    conf.int=FALSE,
+                    xlab,
+                    ylab,
+                    col,
+                    lwd,
+                    lty=1,
+                    cex=1,
+                    pch=1,
+                    type="l",
+                    axes=1L,
+                    percent=1L,
+                    conf.int=0L,
+                    legend=1L,
                     ...){
     times=contrast=model=AUC=lower=upper=lower=upper=delta.AUC=reference=NULL
     ## cbPalette <- c("#999999", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
     cbbPalette <- c("#000000", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
-    pframe <- switch(type,"score"={x$AUC$score},"contrasts"={x$AUC$contrasts},{stop("Type has to be either 'score' for AUC or 'contrasts' for differences in AUC.")})
+    pframe <- switch(which,"score"={copy(x$AUC$score)},"contrasts"={copy(x$AUC$contrasts)},{stop("argument 'which' has to be either 'score' for AUC or 'contrasts' for differences in AUC.")})
     if (length(pframe$times)<2) stop(paste("Need at least two time points for plotting time-dependent AUC. Object has only ",length(pframe$times),"times"))
-    if (type=="score"){
+    if (!missing(models)) pframe <- pframe[model %in% models]
+    
+    if (which=="score"){
+        mm <- unique(pframe$model)
+        pframe[is.na(se)&times==0,lower:=0]
+        pframe[is.na(se)&times==0,upper:=0]
+    }else{
+        pframe[,contrast:=factor(paste(model,reference,sep=" - "))]
+        mm <- unique(pframe$contrast)
+        pframe[is.na(se)&times==0,lower:=0]
+        pframe[is.na(se)&times==0,upper:=0]
+    }
+    lenmm <- length(mm)
+    if(missing(xlab)) xlab <- "Time"
+    if(missing(ylab)) if (which=="score") ylab <- "AUC" else ylab <- expression(paste(Delta, " AUC"))
+    if(missing(col)) col <- rep(cbbPalette,length.out=lenmm)
+    names(col) <- mm
+    if(missing(lwd)) lwd <- 2
+    lwd <- rep(lwd,length.out=lenmm)
+    names(lwd) <- mm
+    pch <- rep(pch,length.out=lenmm)
+    names(pch) <- mm
+    type <- rep(type,length.out=lenmm)
+    names(type) <- mm
+    if(missing(lwd)) lty <- 1
+    lty <- rep(lty,length.out=lenmm)
+    names(lty) <- mm
+    if (missing(xlim)) xlim <- pframe[,range(times)]
+    if (missing(ylim)){
+        if (which=="score") {
+            ylim <- c(0.5,1)
+            axis2.DefaultArgs <- list(side=2,las=2,at=seq(0,ylim[2],ylim[2]/4),mgp=c(4,1,0))
+        } else{
+            ylim <- c(floor(10*min(pframe$lower))/10,ceiling(10*max(pframe$upper))/10)
+            yat <- seq(ylim[1],ylim[2],0.05)
+            ## this is a strange behaviour of R: seq(-0.6,.1,0.05)
+            ## [1] -6.000000e-01 -5.500000e-01 -5.000000e-01 -4.500000e-01 -4.000000e-01 -3.500000e-01 -3.000000e-01 -2.500000e-01
+            ## [9] -2.000000e-01 -1.500000e-01 -1.000000e-01 -5.000000e-02  1.110223e-16  5.000000e-02  1.000000e-01
+            yat <- round(100*yat)/100
+            ## axis2.DefaultArgs <- list(side=2,las=2,at=seq(ylim[1],ylim[2],abs(ylim[2]-ylim[1])/4),mgp=c(4,1,0))
+            axis2.DefaultArgs <- list(side=2,las=2,at=yat,mgp=c(4,1,0))
+        }
+    }else{
+        axis2.DefaultArgs <- list(side=2,las=2,at=seq(ylim[1],ylim[2],abs(ylim[2]-ylim[1])/4),mgp=c(4,1,0))
+    }
+    lines.DefaultArgs <- list(pch=pch,type=type,cex=cex,lwd=lwd,col=col,lty=lty)
+    axis1.DefaultArgs <- list(side=1,las=1,at=seq(0,xlim[2],xlim[2]/4))
+    if (which=="score"){
+        legend.DefaultArgs <- list(legend=mm,lwd=lwd,col=col,lty=lty,cex=cex,bty="n",y.intersp=1.3,x="topleft")
+    } else{
+        legend.DefaultArgs <- list(legend=as.character(unique(pframe$contrast)),lwd=lwd,col=col,lty=lty,cex=cex,bty="n",y.intersp=1.3,x="topleft")
+    }
+    plot.DefaultArgs <- list(x=0,y=0,type = "n",ylim = ylim,xlim = xlim,ylab=ylab,xlab=xlab)
+    control <- prodlim::SmartControl(call= list(...),
+                                     keys=c("plot","lines","legend","axis1","axis2"),
+                                     ignore=NULL,
+                                     ignore.case=TRUE,
+                                     defaults=list("plot"=plot.DefaultArgs,
+                                                   "lines"=lines.DefaultArgs,
+                                                   "legend"=legend.DefaultArgs,
+                                                   "axis1"=axis1.DefaultArgs,
+                                                   "axis2"=axis2.DefaultArgs),
+                                     forced=list("plot"=list(axes=FALSE),
+                                                 "axis1"=list(side=1)),
+                                     verbose=TRUE)
+    
+    if (which=="score"){
         ## AUC
-        if (!missing(models)) pframe <- pframe[model %in% models]
-        pframe[,lwd:=lwd]
-        if (missing(xlim)) xlim <- pframe[,range(times)]
-        if (missing(ylim)) ylim <- c(0.5,1)
-        yticks <- seq(0,1,0.05)
-        yticks <- yticks[yticks>=ylim[1] & yticks<=ylim[2]]
-        pp <- ggplot2::ggplot(data=pframe,aes(times,AUC,fill=model,colour=model))
-        pp + geom_line(size=lwd)
+        do.call("plot",control$plot)
+        pframe[,{thisline <- control$line
+            thisline$col=thisline$col[[as.character(model[1])]]
+            thisline$lwd=thisline$lwd[[as.character(model[1])]]
+            thisline$lty=thisline$lty[[as.character(model[1])]]
+            thisline$pch=thisline$pch[[as.character(model[1])]]
+            thisline$type=thisline$type[[as.character(model[1])]]
+            thisline$x=times
+            thisline$y=AUC
+            do.call("lines",thisline)},by=model]
     }else{
         ## delta AUC
-        pframe[,contrast:=paste(model,reference,sep=" - ")]
-        pframe[,lwd:=lwd]
-        if (missing(xlim)) xlim <- pframe[,range(times)]
-        if (missing(ylim)) ylim <- c(min(pframe$lower),max(pframe$upper))
-        yticks <- seq(-1,1,0.05)
-        yticks <- yticks[yticks>=ylim[1] & yticks<=ylim[2]]
-        pp <- ggplot(data=pframe,
-                     aes(times,delta.AUC,fill=contrast,colour=contrast)) 
+        do.call("plot",control$plot)
+        pframe[,{thisline <- control$line;
+            thisline$col=thisline$col[[as.character(contrast[1])]];
+            thisline$lwd=thisline$lwd[[as.character(contrast[1])]];
+            thisline$lty=thisline$lty[[as.character(contrast[1])]];
+            thisline$pch=thisline$pch[[as.character(contrast[1])]];
+            thisline$type=thisline$type[[as.character(contrast[1])]];
+            thisline$x=times;
+            thisline$y=delta.AUC;
+            do.call("lines",thisline)},by=contrast]
+    }
+    ## legend
+    if (!(is.logical(legend[1]) && legend[1]==FALSE)){
+        do.call("legend",control$legend)
     }
     ## x-axis
-    ## pp <- pp+ geom_segment(aes(x=xlim[1],xend=xlim[2],y=ylim[1],yend=ylim[1]))
-    pp <- pp+theme_bw() %+replace% theme(axis.line = element_line(colour = "black"), 
-                                         panel.grid.major = element_line(), panel.grid.major.x = element_blank(), 
-                                         panel.grid.major.y = element_blank(), panel.grid.minor = element_line(), 
-                                         panel.grid.minor.x = element_blank(), panel.grid.minor.y = element_blank(), 
-                                         strip.background = element_rect(colour = "black", 
-                                                                         size = 0.5), legend.key = element_blank())
-    pp <- pp+ scale_fill_manual(values=cbbPalette)+ scale_colour_manual(values=cbbPalette)
-    ## add the lines
-    pp <- pp + geom_line(size=lwd) + xlim(xlim) + theme(legend.key = element_blank())
-    ## y-axis
-    pp <- pp + scale_y_continuous(expand=c(0,0),
-                                  limits=ylim,
-                                  breaks=yticks,
-                                  labels=paste(round(100*yticks,1),"%"))
     if (conf.int==TRUE){
-        if (type=="score"){
-            ## pframe[,polygon(x=c(times,rev(times)),y=c(lower,rev(upper)),col=dimcol,border=NA),by=model]
-            pp <- pp + geom_ribbon(aes(ymin=lower,ymax=upper,fill=model,linetype=NA),alpha=0.2)
+        dimcol <- sapply(col,function(cc){prodlim::dimColor(cc)})
+        names(dimcol) <- names(col)
+        if (which=="score"){
+            pframe[,polygon(x=c(times,rev(times)),y=c(lower,rev(upper)),col=dimcol[[as.character(model)]],border=NA),by=model]
         }else{
-            pp <- pp + geom_ribbon(aes(ymin=lower,ymax=upper,fill=contrast,linetype=NA),alpha=0.2)
+            pframe[,polygon(x=c(times,rev(times)),y=c(lower,rev(upper)),col=dimcol[[as.character(contrast)]],border=NA),by=contrast]
         }
     }
-    pp
+    if (axes){
+        control$axis2$labels <- paste(100*control$axis2$at,"%")
+        do.call("axis",control$axis1)
+        do.call("axis",control$axis2)
+    }
+    invisible(pframe)
 }
 
 #----------------------------------------------------------------------

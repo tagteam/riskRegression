@@ -2,32 +2,52 @@
 % Please edit documentation in R/plotAUC.R
 \name{plotAUC}
 \alias{plotAUC}
-\title{ggplot AUC curve}
+\title{Plot of time-dependent AUC curves}
 \usage{
-plotAUC(x, models, type = "score", lwd = 2, xlim, ylim, axes = TRUE,
-  conf.int = FALSE, ...)
+plotAUC(x, models, which = "score", xlim, ylim, xlab, ylab, col, lwd,
+  lty = 1, cex = 1, pch = 1, type = "l", axes = 1L, percent = 1L,
+  conf.int = 0L, legend = 1L, ...)
 }
 \arguments{
 \item{x}{Object obtained with \code{Score.list}}
 
 \item{models}{Choice of models to plot}
 
-\item{type}{Character. Either \code{"score"} to show AUC or \code{"contrasts"} to show differences between AUC.}
-
-\item{lwd}{Line width}
+\item{which}{Character. Either \code{"score"} to show AUC or
+\code{"contrasts"} to show differences between AUC.}
 
 \item{xlim}{Limits for x-axis}
 
 \item{ylim}{Limits for y-axis}
 
+\item{xlab}{Label for x-axis}
+
+\item{ylab}{Label for y-axis}
+
+\item{col}{line color}
+
+\item{lwd}{line width}
+
+\item{lty}{line style}
+
+\item{cex}{point size}
+
+\item{pch}{point style}
+
+\item{type}{line type}
+
 \item{axes}{Logical. If \code{TRUE} draw axes.}
+
+\item{percent}{Logical. If \code{TRUE} scale y-axis in percent.}
 
 \item{conf.int}{Logical. If \code{TRUE} draw confidence shadows.}
 
-\item{...}{Not yet used}
+\item{legend}{Logical. If \code{TRUE} draw legend.}
+
+\item{...}{Used for additional control of the subroutines: plot,}
 }
 \description{
-ggplot AUC curves
+Plot of time-dependent AUC curves
 }
 \examples{
 library(survival)
@@ -41,7 +61,6 @@ aucgraph <- plotAUC(xx)
 plotAUC(xx,conf.int=TRUE)+ggtitle("AUC")+theme_classic()
 plotAUC(xx,type="contrasts")
 a=plotAUC(xx,type="contrasts",conf.int=TRUE)
-a+theme_bw()
 
 
 }

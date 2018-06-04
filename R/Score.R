@@ -80,12 +80,9 @@
 ##' @param probs Quantiles for retrospective summary statistics of the
 ##'     predicted risks. This affects the result of the function \code{boxplot.Score}.
 ##' @param cens.method Method for dealing with right censored
-##'     data. Either \code{"outside.ipcw"} or \code{"inside.ipcw"}. \code{"outside.ipcw"} 
-##'     Here IPCW refers to inverse probability of censoring weights. The attributes inside and outside are
-##'      only relevant for cross-validation (\code{split.method}) where the inside method computes the IPCW model
-##' in the the loop in each of the current test data sets whereas the outside method computes the IPCW model only once in the full data.
-##'     Also, jackknife pseudo-values may become another option for all statistics. Right now
-##'     they are only used for calibration curves.
+##'     data. Either \code{"ipcw"} or \code{"pseudo"}.
+##'     Here IPCW refers to inverse probability of censoring weights and \code{pseudo} for jackknife pseudo values.
+##'     Right now pseudo values  are only used for calibration curves.
 ##' @param cens.model Model for estimating inverse probability of
 ##'     censored weights. Implemented are the Kaplan-Meier method (\code{"km"}) and
 ##' Cox regression (\code{"cox"}) both applied to the censored times. If the right hand side of \code{formula} does not specify covariates,
@@ -366,7 +363,7 @@ Score.list <- function(object,
                        conf.int=.95,
                        contrasts=TRUE,
                        probs=c(0,0.25,0.5,0.75,1),
-                       cens.method="outside.ipcw",
+                       cens.method="ipcw",
                        cens.model="cox",
                        split.method,
                        B,
@@ -406,9 +403,9 @@ Score.list <- function(object,
     se.conservative=IF.AUC.conservative=IF.AUC0=IF.AUC=IC0=Brier=AUC=casecontrol=se=nth.times=time=status=ID=WTi=ID=risk=IF.Brier=lower=upper=crossval=b=time=status=model=reference=p=model=pseudovalue=ReSpOnSe=residuals=event=NULL
 
     # }}}
-theCall <- match.call()
-# ----------------------------find metrics and plots ----------------------
-# {{{
+    theCall <- match.call()
+    # ----------------------------find metrics and plots ----------------------
+    # {{{
 
     ## Metrics <- lapply(metrics,grep,c("AUC","Brier"),ignore.case=TRUE,value=TRUE)
     plots[grep("^box",plots,ignore.case=TRUE)] <- "boxplot"
@@ -444,8 +441,8 @@ theCall <- match.call()
     }
 
     # }}}
-# -----------------parse other arguments and prepare data---------
-# {{{ censoring model arguments
+    # -----------------parse other arguments and prepare data---------
+    # {{{ censoring model arguments
     if (length(grep("^km|^kaplan|^marg",cens.model,ignore.case=TRUE))>0){
         cens.model <- "KaplanMeier"
     } else{
@@ -456,7 +453,7 @@ theCall <- match.call()
         }
     }
     # }}}
-# {{{ Response
+    # {{{ Response
     if (missing(formula)){stop("Argument formula is missing.")}    
     formula.names <- try(all.names(formula),silent=TRUE)
     if (!(formula.names[1]=="~")
@@ -481,12 +478,17 @@ theCall <- match.call()
     } else{
         byvars <- c("model")
     }
-    states <- attr(response,"states")
     if (missing(cause)) 
-        if (response.type=="binary")
+        if (response.type=="binary"){
+            states <- response[,unique(ReSpOnSe)]
             cause <- attr(response,"event")
-        else
+        }
+        else{
+            states <- attr(response,"states")
             cause <- states[[1]]
+        }
+    position.cause <- match(cause,states,nomatch=0)
+    if (position.cause==0) stop(paste0("Requested cause: ",cause,". Available causes: ", paste(states,collapse=",")))
     # add null model and find names for the object
     if (null.model==TRUE){
         nullobject <- getNullModel(formula=formula,data=data,response.type=response.type)
@@ -517,7 +519,7 @@ theCall <- match.call()
     if (is.null(cens.type)) cens.type <- "uncensoredData"
     rm(response)
     # }}}
-# {{{ SplitMethod
+    # {{{ SplitMethod
 
     if (!missing(seed)) set.seed(seed)
     split.method <- getSplitMethod(split.method=split.method,B=B,N=N,M=M)
@@ -700,55 +702,55 @@ theCall <- match.call()
     # {{{
     if (response.type %in% c("survival","competing.risks")){
         if (cens.type=="rightCensored"){
-            if ("outside.ipcw" %in% cens.method){
-                if (se.fit>0L && "AUC" %in% metrics && cens.model=="cox"){
-                    if (!(split.method$name %in% c("LeaveOneOutBoot","BootCv"))){
-                        warning("Cannot (not yet) estimate standard errors for AUC with Cox IPCW.\nTherefore, force cens.model to be marginal.")
-                        cens.model <- "KaplanMeier"
-                    }
+            if (se.fit>0L && "AUC" %in% metrics && cens.model=="cox"){
+                if (!(split.method$name %in% c("LeaveOneOutBoot","BootCv"))){
+                    warning("Cannot (not yet) estimate standard errors for AUC with Cox IPCW.\nTherefore, force cens.model to be marginal.")
+                    cens.model <- "KaplanMeier"
                 }
-                Weights <- getCensoringWeights(formula=formula,
-                                               data=data,
-                                               times=times,
-                                               cens.model=cens.model,
-                                               response.type=response.type,
-                                               influence.curve=(se.fit==1L & conservative==0L & split.method$internal.name!="BootCv"))
-                ## if cens.model is marginal then IC is a matrix (ntimes,newdata) 
-                ## if cens.model is Cox then IC is an array (nlearn, ntimes, newdata)
-                ## IC is an array with dimension (nlearn, times, newdata)
-                ## IC_G(t,z;x_k)
-
             }
-        } else { if (cens.type=="uncensored"){
-                     cens.method <- c("none","inside")
-                     Weights <- NULL
-                 }
-                 else{
-                     stop("Cannot handle this type of censoring.")
-                 }
+            Weights <- getCensoringWeights(formula=formula,
+                                           data=data,
+                                           times=times,
+                                           cens.model=cens.model,
+                                           response.type=response.type,
+                                           influence.curve=(se.fit==1L & conservative==0L & split.method$internal.name!="BootCv"))
+            ## if cens.model is marginal then IC is a matrix (ntimes,newdata) 
+            ## if cens.model is Cox then IC is an array (nlearn, ntimes, newdata)
+            ## IC is an array with dimension (nlearn, times, newdata)
+            ## IC_G(t,z;x_k)
+        }else { 
+            if (cens.type=="uncensored"){
+                cens.method <- c("none")
+                Weights <- NULL
+            }
+            else{
+                stop("Cannot handle this type of censoring.")
+            }
         }
         if ("pseudo" %in% cens.method){
             if (cens.type=="rightCensored"
                 && (response.type %in% c("survival","competing.risks"))){        
                 margForm <- update(formula,paste(".~1"))
                 margFit <- prodlim::prodlim(margForm,data=data)
+                ## position.cause is the result of match(cause, states)
                 jack <- data.table(ID=data[["ID"]],
                                    times=rep(times,rep(N,NT)),
-                                   pseudovalue=c(prodlim::jackknife(margFit,cause=cause,times=times)))
+                                   pseudovalue=c(prodlim::jackknife(margFit,cause=position.cause,times=times)))
                 if (response.type=="survival") jack[,pseudovalue:=1-pseudovalue]
             }
         }
-    }else{ 
+    } else{ 
         Weights <- NULL
     }
     # }}}
-# -----------------performance program----------------------
-# {{{ define getPerformanceData, setup data in long-format, response, pred, weights, model, times, loop
-# {{{ header
+    # -----------------performance program----------------------
+    # {{{ define getPerformanceData, setup data in long-format, response, pred, weights, model, times, loop
+    # {{{ header
     getPerformanceData <- function(testdata,
                                    testweights,
                                    traindata=NULL,
                                    trainseed=NULL){
+
         ID=NULL
         # inherit everything else from parent frame: object, nullobject, NF, NT, times, cause, response.type, etc.
         Brier=IPA=NULL
@@ -762,7 +764,6 @@ theCall <- match.call()
         X <- testdata[,-c(1:response.dim),with=FALSE]
         if (debug) if (looping) message(paste0("Loop round: ",b)) 
         if (debug) message("extracted test set and prepared output object")
-
         # }}}
 # {{{ collect pred as long format data.table
 
@@ -774,6 +775,7 @@ theCall <- match.call()
         ## where status has 0,1,2 but now event history response has status=0,1
         ## the original response is still there
         trainX <- traindata[,-c(1:response.dim),with=FALSE]
+        trainX[,ID:=NULL]
         pred <- data.table::rbindlist(lapply(mlevs, function(f){
             if (f>0 && (length(extra.args <- unlist(lapply(object.classes[[f]],function(cc){predictRisk.args[[cc]]})))>0)){
                 args <- c(args,extra.args)
@@ -831,22 +833,7 @@ theCall <- match.call()
 
         if (response.type %in% c("survival","competing.risks")){
             if (cens.type=="rightCensored"){
-                if ("inside.ipcw" %in% cens.method){
-                    Weights <- getCensoringWeights(formula=formula,
-                                                   data=testdata,
-                                                   response=response,
-                                                   times=times,
-                                                   cens.model=cens.model,
-                                                   response.type=response.type,
-                                                   influence.curve=(se.fit==1L & conservative==0L & split.method$internal.name!="BootCv"))
-                } else{
-                    if ("outside.ipcw" %in% cens.method){
-                        Weights <- testweights
-                    }else{
-                        stop("don't know how to refit pseudo values in crossvalidation")
-                        cens.method <- "jackknife.pseudo.values"
-                    }
-                }
+                Weights <- testweights
                 ## add subject specific weights 
                 response[,WTi:=Weights$IPCW.subject.times]
             } else {
