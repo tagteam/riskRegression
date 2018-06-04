@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: sep  4 2017 (16:43) 
 ## Version: 
-## last-updated: Sep 30 2017 (18:07) 
-##           By: Thomas Alexander Gerds
-##     Update #: 63
+## last-updated: maj 31 2018 (18:02) 
+##           By: Brice Ozenne
+##     Update #: 74
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -15,57 +15,51 @@
 ## 
 ### Code:
 
+## * predictCoxPL (documentation)
 #' @title Computation of survival probabilities from Cox regression models using the product limit estimator.
 #' @description Same as predictCox except that the survival is estimated using the product limit estimator.
-#' 
-#' @param object The fitted Cox regression model object either
-#'     obtained with \code{coxph} (survival package) or \code{cph}
-#'     (rms package).
-#' @param newdata A \code{data.frame} or \code{data.table} containing
-#'     the values of the predictor variables defining subject specific
-#'     predictions. Should have the same structure as the data set
-#'     used to fit the \code{object}.
-#' @param times Time points at which to evaluate the predictions.
-#' @param type the type of predicted value. 
-#'     Choices are \code{"hazard"}, \code{"cumhazard"}, and \code{"survival"}. 
-#'     See \code{\link{predictCox}} for more details.
-#' @param se Logical. If \code{TRUE} add the standard error to the output.
-#' @param band Logical. If \code{TRUE} add the confidence band to the output.
+#' @name predictCoxPL
+#'
+#' @inheritParams predictCox
 #' @param ... additional arguments to be passed to \code{\link{predictCox}}.
 #' 
 #' @examples 
 #' library(survival)
-#' 
+#'
+#' #### generate data ####
 #' set.seed(10)
 #' d <- sampleData(40,outcome="survival")
 #' nd <- sampleData(4,outcome="survival")
 #' d$time <- round(d$time,1)
-#' fit <- coxph(Surv(time,event)~X1 + strata(X2) + X6,
+#'
+#' #### Cox model ####
+#' fit <- coxph(Surv(time,event)~ X1 + X2 + X6,
 #'              data=d, ties="breslow", x = TRUE, y = TRUE)
-#' predictCoxPL(fit, newdata = d, times = 1:5)
-#' fit <- coxph(Surv(time,event)~X1 + X2 + X6,
-#'              data=d, ties="breslow", x = TRUE, y = TRUE)
-#' predictCoxPL(fit, newdata = d, times = 1:5)
+#'
+#' ## exponential approximation
+#' predictCox(fit, newdata = d, times = 1:5)
 #' 
+#' ## product limit
+#' predictCoxPL(fit, newdata = d, times = 1:5)
 #'
-#' #### Compare exp to product limit
-#' set.seed(10)
-#' A <- predictCoxPL(fit, newdata = d[1:5], times = 1:5, se = TRUE, band = TRUE, log.transform = FALSE)
-#' set.seed(10)
-#' B <- predictCox(fit, newdata = d[1:5], times = 1:5, se = TRUE, band = TRUE, log.transform = FALSE)
+#' #### stratified Cox model ####
+#' fitS <- coxph(Surv(time,event)~ X1 + strata(X2) + X6,
+#'              data=d, ties="breslow", x = TRUE, y = TRUE)
 #'
-#' A$survival - B$survival
-#' A$survival.lower - B$survival.lower
-#' A$survival.upper - B$survival.upper
-#' A$survival.lowerBand - B$survival.lowerBand
-#' A$survival.upperBand - B$survival.upperBand
+#' ## exponential approximation
+#' predictCox(fitS, newdata = d, times = 1:5)
+#' 
+#' ## product limit
+#' predictCoxPL(fitS, newdata = d, times = 1:5)
+#'
+
+## * predictCoxPL (code)
+#' @rdname predictCoxPL 
 #' @export
 predictCoxPL <- function(object,
                          newdata,
                          times,
                          type = c("cumhazard","survival"),
-                         se = FALSE,
-                         band = FALSE,
                          ...){
 
     # {{{ normalize arguments
@@ -86,10 +80,7 @@ predictCoxPL <- function(object,
                                newdata = newdata,
                                times = times,
                                type = type,
-                               se = se,
-                               band = band,
                                ...)
-    log.transform <- class(original.res$transformation.survival)=="function"
     infoVar <- coxVariableName(object)
     X.design <- as.data.table(coxDesign(object))
     # }}}
@@ -136,39 +127,6 @@ predictCoxPL <- function(object,
             index.jump <- prodlim::sindex(eval.times = times, jump.times = all.times)
             original.res$survival <-  survival.PL[,index.jump,drop=FALSE]
         }
-    }
-    # }}}
-    
-    # {{{ update confidence intervals
-    if(se){
-        zval <- qnorm(1- (1-original.res$conf.level)/2, 0,1)
-        if(log.transform){
-            original.res$survival.lower <- exp(-exp(log(-log(original.res$survival)) + zval*original.res$survival.se))
-            original.res$survival.upper <- exp(-exp(log(-log(original.res$survival)) - zval*original.res$survival.se))                
-        }else{
-            # to keep matrix format even when out$survival contains only one line
-            original.res$survival.lower <- original.res$survival.upper <- matrix(NA,
-                                                                                 nrow = NROW(original.res$survival.se),
-                                                                                 ncol = NCOL(original.res$survival.se)) 
-            original.res$survival.lower[] <- apply(original.res$survival - zval*original.res$survival.se,2,pmax,0)
-            original.res$survival.upper[] <- apply(original.res$survival + zval*original.res$survival.se,2,pmin,1)                        
-        }
-    }
-    # }}}
-
-    # {{{ update confidence bands
-    if(band){
-        quantile95 <- colMultiply_cpp(original.res$survival.se,original.res$quantile.band)
-
-        if(log.transform){
-            original.res$survival.lowerBand <- exp(-exp(log(-log(original.res$survival)) + quantile95))
-            original.res$survival.upperBand <- exp(-exp(log(-log(original.res$survival)) - quantile95))
-        }else{
-            original.res$survival.lowerBand <- original.res$survival.upperBand <- matrix(NA, nrow = NROW(original.res$survival.se), ncol = NCOL(original.res$survival.se)) 
-            original.res$survival.lowerBand[] <- apply(original.res$survival - quantile95,2,pmax,0)
-            original.res$survival.upperBand[] <- apply(original.res$survival + quantile95,2,pmin,1)
-        }
-        
     }
     # }}}
     

@@ -2,46 +2,57 @@
 % Please edit documentation in R/autoplot.ate.R
 \name{autoplot.ate}
 \alias{autoplot.ate}
-\title{Plot predictions from a Cause-specific Cox proportional hazard regression}
+\title{Plot Average Risks}
 \usage{
 \method{autoplot}{ate}(object, ci = FALSE, band = FALSE, plot = TRUE,
-  digits = 2, alpha = 0.1, ...)
+  digits = 2, alpha = NA, ...)
 }
 \arguments{
-\item{object}{object obtained with the function \code{predictCox}.}
+\item{object}{Object obtained with the function \code{ate}.}
 
-\item{ci}{Logical. If \code{TRUE} display the confidence intervals for the predictions.}
+\item{ci}{[logical] If \code{TRUE} display the confidence intervals for the average risks.}
 
-\item{band}{Logical. If \code{TRUE} display the confidence bands for the predictions.}
+\item{band}{[logical] If \code{TRUE} display the confidence bands for the average risks.}
 
-\item{plot}{Logical. Should the graphic be plotted.}
+\item{plot}{[logical] Should the graphic be plotted.}
 
-\item{digits}{integer indicating the number of decimal places}
+\item{digits}{[integer, >0] Number of decimal places.}
 
-\item{alpha}{transparency of the confidence bands. Argument passed to \code{ggplot2::geom_ribbon}.}
+\item{alpha}{[numeric, 0-1] Transparency of the confidence bands. Argument passed to \code{ggplot2::geom_ribbon}.}
 
 \item{...}{not used. Only for compatibility with the plot method.}
 }
 \description{
-Plot predictions from a Cause-specific Cox proportional hazard regression
+Plot average risks.
 }
 \examples{
 library(survival)
 library(rms)
 
-set.seed(10)
+#### simulate data ####
 n <- 1e2
-
-## Cox model
+set.seed(10)
 dtS <- sampleData(n,outcome="survival")
 
+
+#### Cox model ####
 fit <- cph(formula = Surv(time,event)~ X1+X2,data=dtS,y=TRUE,x=TRUE)
 
+#### Average treatment effect ####
 seqTimes <- sort(unique(fit$y[,1]))
 seqTimes5 <- seqTimes[seqTimes>5 & seqTimes<10]
 ateFit <- ate(fit, data = dtS, treatment = "X1", contrasts = NULL,
               times = seqTimes, B = 0, band = TRUE, nsim.band = 500, y = TRUE,
               mc.cores=1)
-autoplot(ateFit, band = TRUE, ci = TRUE)
 
+#### display #### 
+autoplot(ateFit)
+
+outGG <- autoplot(ateFit, band = TRUE, ci = TRUE, alpha = 0.1)
+dd <- as.data.frame(outGG$data[Treatment == 0])
+outGG$plot + facet_wrap(~Treatment, labeller = label_both)
+
+}
+\seealso{
+\code{\link{ate}} to compute average risks.
 }

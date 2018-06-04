@@ -2,9 +2,13 @@
 % Please edit documentation in R/RcppExports.R
 \name{sliceMultiply_cpp}
 \alias{sliceMultiply_cpp}
+\alias{sliceMultiply_cpp}
+\alias{sliceMultiplyPointer_cpp}
 \title{Apply * by slice}
 \usage{
 sliceMultiply_cpp(X, M)
+
+sliceMultiplyPointer_cpp(X, M)
 }
 \arguments{
 \item{X}{An array.}
@@ -22,7 +26,6 @@ x <- array(1, dim = c(2,6,5))
 M <- matrix(1:12,2,6)
 sweep(x, MARGIN = 1:2, FUN = "*", STATS = M)
 sliceMultiply_cpp(x, M) 
-
 
 }
 \author{

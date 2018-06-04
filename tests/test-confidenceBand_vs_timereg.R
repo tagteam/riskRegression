@@ -1,138 +1,155 @@
+### test-confidenceBand_vs_timereg.R --- 
+#----------------------------------------------------------------------
+## author: Brice Ozenne
+## created: maj 18 2017 (09:23) 
+## Version: 
+## last-updated: jun  3 2018 (22:33) 
+##           By: Brice Ozenne
+##     Update #: 103
+#----------------------------------------------------------------------
+## 
+### Commentary: 
+## Compare the confidence bands returned by predictCox to the one of timereg
+##
+## TO BE DONE in competing risk setting.
+## PB don't know how to use comp.risk to get a CSC.
+##
+### Change Log:
+#----------------------------------------------------------------------
+## 
+### Code:
+
 library(timereg)
 library(testthat)
 library(riskRegression)
 
 n.sim <- 500
-# {{{ survival
+context("[predictCox] confidence band")
 
-# {{{ simulation
+## * Survival case
+
+## ** Data
 set.seed(10)
-d <- sampleData(1e2, outcome = "survival")
-newdata <- d[1:10,]
+dt <- sampleData(1e2, outcome = "survival")
+newdata <- dt[1:10,]
 
-fit <- cox.aalen(Surv(time, event) ~ prop(X1) + prop(X2), data = d, max.timepoint.sim=NULL)
-fit.coxph <- coxph(Surv(time, event) ~ X1 + X2, data = d, x = TRUE, y = TRUE)
+dtStrata <- data.frame(time=c(4,3,1,1,2,2,3), 
+                       status=c(1,1,1,0,1,1,0), 
+                       x=c(0,2,1,1,1,0,0), 
+                       sex=c(0,0,0,0,1,1,1)) 
 
-object.design <- riskRegression:::coxDesign.coxph(fit.coxph)
-times <- unique(sort(object.design[object.design$status==1,"stop"]))
-# }}}
+## ** Model
+e.timereg <- cox.aalen(Surv(time, event) ~ prop(X1) + prop(X2), data = dt, max.timepoint.sim=NULL)
+e.coxph <- coxph(Surv(time, event) ~ X1 + X2, data = dt, x = TRUE, y = TRUE)
 
-# {{{ compute quantile for confidence bands
+vec.times <- e.timereg$time.sim.resolution
+
+## ** Compute quantile for confidence bands
 resTimereg <- list()
-    for(i in 1:NROW(newdata)){ # i <- 1
-        set.seed(10)
-        resTimereg[[i]] <- predict.timereg(fit,
-                                           newdata = newdata[i,,drop=FALSE],
-                                           times = fit$time.sim.resolution,
-                                           resample.iid = 1,
-                                           n.sim = n.sim)
-    }
-test_that("computation of the quantile for the confidence band of the cumhazard", {
-    pred <- predictCox(fit.coxph,
+for(i in 1:NROW(newdata)){ # i <- 1
+    set.seed(10)
+    resTimereg[[i]] <- predict.timereg(e.timereg,
+                                       newdata = newdata[i,,drop=FALSE],
+                                       times = vec.times,
+                                       resample.iid = 1,
+                                       n.sim = n.sim)
+}
+
+## ** Tests
+test_that("[predictCox] Quantile for the confidence band of the cumhazard", {
+
+    ref <- unlist(lapply(resTimereg,"[[", "unif.band"))
+    
+    predRR <- predictCox(e.coxph,
                        newdata = newdata,
-                       times = times,
+                       times = vec.times,
                        se = TRUE,
                        iid = TRUE,
                        band = TRUE,
                        type = "cumhazard")
-    set.seed(10)
-    resRR <- riskRegression:::confBandCox(iid = pred$cumhazard.iid,
-                                          se = pred$cumhazard.se,
-                                          n.sim = n.sim, 
-                                          conf.level = 0.95)
 
-
-    
-    ref <- unlist(lapply(resTimereg,"[[", "unif.band"))
+    ## should not set transform to NA because at time 0 se=0 so the log-transform fails
+    pred.confint <- confint(predRR, nsim.band = n.sim, seed = 10,
+                            cumhazard.transform = "none")
+    expect_equal(pred.confint$cumhazard.quantileBand,ref)
 
     set.seed(10)
-    predRR <- predictCox(fit.coxph,
-                         newdata = newdata,
-                         times = times,
-                         se = TRUE,
-                         band = TRUE,
-                         nsim.band = n.sim,
-                         type = c("cumhazard")
-                         )
-    expect_equal(predRR$quantile.band,ref)
-    expect_equal(resRR,ref)
-    #expect_equal(resRR,c(2.850666, 2.562949, 2.992631, 2.992631, 2.850666, 2.992631, 2.850666, 2.992631, 2.992631, 2.562949), tol = 1e-6)
-    #expect_equal(predRR$quantile.band,c(2.850666, 2.562949, 2.992631, 2.992631, 2.850666, 2.992631, 2.850666, 2.992631, 2.992631, 2.562949), tol = 1e-6)
+    pred.band2 <- riskRegression:::confBandCox(iid = predRR$cumhazard.iid,
+                                               se = predRR$cumhazard.se,
+                                               n.sim = n.sim, 
+                                               conf.level = 0.95)
+
+    expect_equal(pred.band2,ref)
 })
-# }}}
 
-# {{{ display
-predRR <- predictCox(fit.coxph,
-                     newdata = newdata[1,],
-                     times = times,
+## ** Display
+predRR <- predictCox(e.coxph,
+                     newdata = newdata[1],
+                     times = vec.times,
                      se = TRUE,
                      band = TRUE,
-                     nsim.band = 500,
                      type = c("cumhazard","survival")
                      )
 
-dev.new()
+
 plotRR <- autoplot(predRR, type = "survival", band = TRUE, ci = TRUE, plot = FALSE)
 dev.new()
 plotTR <- plot.predict.timereg(resTimereg[[1]])
 dev.new()
 plotRR$plot + coord_cartesian(ylim = c(0,1))
+graphics.off()
 
-# }}}
+## ** With strata                                        
+## Fit a stratified model 
+eS.coxph <- coxph(Surv(time, status) ~ x + strata(sex), 
+                  data = dtStrata, x = TRUE, y = TRUE) 
 
-# {{{ example
-test1 <- data.frame(time=c(4,3,1,1,2,2,3), 
-                    status=c(1,1,1,0,1,1,0), 
-                    x=c(0,2,1,1,1,0,0), 
-                    sex=c(0,0,0,0,1,1,1)) 
-# Fit a stratified model 
-m <- coxph(Surv(time, status) ~ x + strata(sex), 
-           data = test1, x = TRUE, y = TRUE) 
+eS.pred  <- predictCox(eS.coxph, newdata = dtStrata, times = 1:4, band = TRUE)
+eS.confint <- confint(eS.pred, seed = 10)
+eS.confint$survival.quantileBand
 
-set.seed(1)
-res <- predictCox(m, newdata = test1, times = 1:4, band = TRUE)
-# res$quantile.band
-# [1] 2.148709 2.288384 2.327076 2.327076 1.955180 1.951997 1.951997
-# }}}
 
-# }}}
+## * Competing risk setting
 
-# {{{ absolute risk
-
-# {{{ simulation
+## ** Data
 set.seed(10)
-d <- sampleData(1e2, outcome = "competing.risks")
-newdata <- d[1:10,]
+dt <- sampleData(1e2, outcome = "competing.risks")
+newdata <- dt[1:10,]
 
-fit.CSC <- CSC(Hist(time, event) ~ X1 + X2, data = d)
-seqTimes <- fit.CSC$eventTimes
+## ** Model
+e.CSC <- CSC(Hist(time, event) ~ X1 + X2, data = dt)
+vec.times <- e.CSC$eventTimes
 
-res <- predict(fit.CSC,
-               newdata = newdata,
-               times = seqTimes-1e-5,
-               band = TRUE,
-               nsim.band = 500,
-               cause = 1)
+e.timereg <- comp.risk(Event(time, event) ~ const(X1) + const(X2),
+                       model = "rcif",
+                       data = dt, cause = 1)
+coef(e.timereg)
+coef(e.CSC)
 
-res <- predict(fit.CSC,
-               newdata = newdata[1,,],
-               times = seqTimes-1e-5,
-               nsim.band = 500,
-               band = TRUE, se = TRUE,
-               cause = 1)
-autoplot(res, band = TRUE, ci = TRUE)
+## ** Compute confidence bands
+if(FALSE){
+    resTimereg <- predict.timereg(e.timereg,
+                                  newdata = newdata[1,,drop=FALSE],
+                                  times = vec.times,
+                                  resample.iid = 1,
+                                  n.sim = n.sim)
+    resTimereg$P1
+}
+predRR <- predict(e.CSC,
+                  newdata = newdata,
+                  times = vec.times-1e-5,
+                  se = TRUE,
+                  band = TRUE,
+                  nsim.band = 500,
+                  cause = 1)
 
+predRR$absRisk[1,]
 
-setkey(d,time)
-res$times - d$time[d$event>0]
-d$event[d$event>0]
+## ** Display
+autoplot(predRR, band = TRUE, ci = TRUE)
+graphics.off()
 
-# }}}
-
-# }}}
-
-
-## for debuging
+## * for debuging
 
 ## cumHazard.coxph <- predictCox(fit.coxph)$cumhazard
 ## iid.coxph <- iidCox(fit.coxph)
@@ -159,3 +176,5 @@ d$event[d$event>0]
 ##           PACKAGE = "timereg")$mpt
 
 
+#----------------------------------------------------------------------
+### test-confidenceBand_vs_timereg.R ends here

@@ -2,6 +2,7 @@
 % Please edit documentation in R/RcppExports.R
 \name{rowCenter_cpp}
 \alias{rowCenter_cpp}
+\alias{rowCenter_cpp}
 \title{Apply - by row}
 \usage{
 rowCenter_cpp(X, center)
@@ -23,7 +24,6 @@ sweep(x, MARGIN = 2, FUN = "-", STATS = 1:5)
 rowCenter_cpp(x, 1:5 )
 
 rowCenter_cpp(x, colMeans(x) )
-
 }
 \author{
 Brice Ozenne <broz@sund.ku.dk>

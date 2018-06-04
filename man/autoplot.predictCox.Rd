@@ -2,78 +2,83 @@
 % Please edit documentation in R/autoplot.predictCox.R
 \name{autoplot.predictCox}
 \alias{autoplot.predictCox}
-\title{Plot predictions from a Cox model}
+\title{Plot Predictions From a Cox Model}
 \usage{
 \method{autoplot}{predictCox}(object, type = NULL, ci = FALSE,
   band = FALSE, group.by = "row", reduce.data = FALSE, plot = TRUE,
-  digits = 2, alpha = NA, ...)
+  ylab = NULL, digits = 2, alpha = NA, ...)
 }
 \arguments{
-\item{object}{object obtained with the function \code{predictCox}.}
+\item{object}{Object obtained with the function \code{predictCox}.}
 
-\item{type}{the type of predicted value to display. Choices are 
+\item{type}{[character] The type of predicted value to display.
+Choices are:
 \code{"hazard"} the hazard function,
 \code{"cumhazard"} the cumulative hazard function, 
 or \code{"survival"} the survival function.}
 
-\item{ci}{Logical. If \code{TRUE} display the confidence intervals for the predictions.}
+\item{ci}{[logical] If \code{TRUE} display the confidence intervals for the predictions.}
 
-\item{band}{Logical. If \code{TRUE} display the confidence bands for the predictions.}
+\item{band}{[logical] If \code{TRUE} display the confidence bands for the predictions.}
 
-\item{group.by}{The grouping factor used to color the prediction curves. Can be \code{"row"}, \code{"strata"}, or \code{"covariates"}.}
+\item{group.by}{[character] The grouping factor used to color the prediction curves. Can be \code{"row"}, \code{"strata"}, or \code{"covariates"}.}
 
-\item{reduce.data}{Logical. If \code{TRUE} only the covariates that does take indentical values for all observations are displayed.}
+\item{reduce.data}{[logical] If \code{TRUE} only the covariates that does take indentical values for all observations are displayed.}
 
-\item{plot}{Logical. Should the graphic be plotted.}
+\item{plot}{[logical] Should the graphic be plotted.}
 
-\item{digits}{integer indicating the number of decimal places}
+\item{ylab}{[character] Label for the y axis.}
 
-\item{alpha}{transparency of the confidence bands. Argument passed to \code{ggplot2::geom_ribbon}.}
+\item{digits}{[integer] Number of decimal places.}
 
-\item{...}{not used. Only for compatibility with the plot method.}
+\item{alpha}{[numeric, 0-1] Transparency of the confidence bands. Argument passed to \code{ggplot2::geom_ribbon}.}
+
+\item{...}{additional Arguments passed to \code{confint}.}
 }
 \description{
-Plot predictions from a Cox model
+Plot predictions from a Cox model.
 }
 \examples{
 library(survival)
 library(ggplot2)
 
-## predictions ##
+#### simulate data ####
+set.seed(10)
 d <- sampleData(1e2, outcome = "survival")
+
+#### Cox model ####
 m.cox <- coxph(Surv(time,event)~ X1 + X2 + X3,
                 data = d, x = TRUE, y = TRUE)
-dt.basehaz <- predictCox(m.cox)
-ggplot(as.data.table(dt.basehaz), aes(x = time, y = survival)) + geom_point() + geom_line()
 
+## display baseline hazard
+e.basehaz <- predictCox(m.cox)
+
+autoplot(e.basehaz, type = "cumhazard")
+
+## display predicted survival
 pred.cox <- predictCox(m.cox, newdata = d[1:4,],
   times = 1:5, type = "survival", keep.newdata = TRUE)
 autoplot(pred.cox)
 autoplot(pred.cox, group.by = "covariates")
 autoplot(pred.cox, group.by = "covariates", reduce.data = TRUE)
 
+## predictions with confidence interval/bands
+pred.cox <- predictCox(m.cox, newdata = d[1,,drop=FALSE],
+  times = 1:5, type = "survival", band = TRUE, se = TRUE, keep.newdata = TRUE)
+autoplot(pred.cox, ci = TRUE, band = TRUE)
+autoplot(pred.cox, ci = TRUE, band = TRUE, alpha = 0.1)
 
+#### Stratified Cox model ####
 m.cox.strata <- coxph(Surv(time,event)~ strata(X1) + strata(X2) + X3 + X6,
-data = d, x = TRUE, y = TRUE)
-pred.cox.strata <- predictCox(m.cox.strata, newdata = d[1,,drop=FALSE],
-time = 1:5, keep.newdata = TRUE)
-autoplot(pred.cox.strata, type = "survival")
-autoplot(pred.cox.strata, type = "survival", group.by = "strata")
-res <- autoplot(pred.cox.strata, type = "survival",
-            group.by = "covariates")
+                      data = d, x = TRUE, y = TRUE)
 
-# customize display
-res$plot + geom_point(data = res$data, size = 5)
+pred.cox.strata <- predictCox(m.cox.strata, newdata = d[1:5,,drop=FALSE],
+                              time = 1:5, keep.newdata = TRUE)
 
-## predictions with confidence interval
-pred.cox <- predictCox(m.cox, newdata = d[1,,drop=FALSE],
-  times = 1:5, type = "survival", se = TRUE, keep.newdata = TRUE)
-autoplot(pred.cox, ci = TRUE)
+## display
+res <- autoplot(pred.cox.strata, type = "survival", group.by = "strata")
 
-## predictions with confidence bands
-pred.cox <- predictCox(m.cox, newdata = d[1,,drop=FALSE],
-  times = 1:5, type = "survival", nsim.band = 500,  band = TRUE, keep.newdata = TRUE)
-autoplot(pred.cox, band = TRUE)
-
-
+## customize display
+res$plot + facet_wrap(~strata, labeller = label_both)
+res$plot \%+\% res$data[strata == "0, 1"]
 }

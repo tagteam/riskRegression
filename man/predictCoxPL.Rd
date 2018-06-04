@@ -4,28 +4,32 @@
 \alias{predictCoxPL}
 \title{Computation of survival probabilities from Cox regression models using the product limit estimator.}
 \usage{
-predictCoxPL(object, newdata, times, type = c("cumhazard", "survival"),
-  se = FALSE, band = FALSE, ...)
+predictCoxPL(object, newdata, times, type = c("cumhazard", "survival"), ...)
 }
 \arguments{
 \item{object}{The fitted Cox regression model object either
 obtained with \code{coxph} (survival package) or \code{cph}
 (rms package).}
 
-\item{newdata}{A \code{data.frame} or \code{data.table} containing
-the values of the predictor variables defining subject specific
-predictions. Should have the same structure as the data set
-used to fit the \code{object}.}
+\item{newdata}{[data.frame or data.table]  Contain the values of the predictor variables
+defining subject specific predictions.
+Should have the same structure as the data set used to fit the \code{object}.}
 
-\item{times}{Time points at which to evaluate the predictions.}
+\item{times}{[numeric vector] Time points at which to return
+the estimated hazard/cumulative hazard/survival.}
 
-\item{type}{the type of predicted value. 
-Choices are \code{"hazard"}, \code{"cumhazard"}, and \code{"survival"}. 
-See \code{\link{predictCox}} for more details.}
-
-\item{se}{Logical. If \code{TRUE} add the standard error to the output.}
-
-\item{band}{Logical. If \code{TRUE} add the confidence band to the output.}
+\item{type}{[character vector] the type of predicted value. Choices are \itemize{
+\item \code{"hazard"} the baseline hazard function when
+argument \code{newdata} is not used and the hazard function
+when argument \code{newdata} is used.  \item \code{"cumhazard"}
+the cumulative baseline hazard function when argument
+\code{newdata} is not used and the cumulative hazard function
+when argument \code{newdata} is used.  \item \code{"survival"}
+the survival baseline hazard function when argument
+\code{newdata} is not used and the cumulative hazard function
+when argument \code{newdata} is used.  } Several choices can be
+combined in a vector of strings that match (no matter the case)
+strings \code{"hazard"},\code{"cumhazard"}, \code{"survival"}.}
 
 \item{...}{additional arguments to be passed to \code{\link{predictCox}}.}
 }
@@ -35,27 +39,30 @@ Same as predictCox except that the survival is estimated using the product limit
 \examples{
 library(survival)
 
+#### generate data ####
 set.seed(10)
 d <- sampleData(40,outcome="survival")
 nd <- sampleData(4,outcome="survival")
 d$time <- round(d$time,1)
-fit <- coxph(Surv(time,event)~X1 + strata(X2) + X6,
+
+#### Cox model ####
+fit <- coxph(Surv(time,event)~ X1 + X2 + X6,
              data=d, ties="breslow", x = TRUE, y = TRUE)
+
+## exponential approximation
+predictCox(fit, newdata = d, times = 1:5)
+
+## product limit
 predictCoxPL(fit, newdata = d, times = 1:5)
-fit <- coxph(Surv(time,event)~X1 + X2 + X6,
+
+#### stratified Cox model ####
+fitS <- coxph(Surv(time,event)~ X1 + strata(X2) + X6,
              data=d, ties="breslow", x = TRUE, y = TRUE)
-predictCoxPL(fit, newdata = d, times = 1:5)
 
+## exponential approximation
+predictCox(fitS, newdata = d, times = 1:5)
 
-#### Compare exp to product limit
-set.seed(10)
-A <- predictCoxPL(fit, newdata = d[1:5], times = 1:5, se = TRUE, band = TRUE, log.transform = FALSE)
-set.seed(10)
-B <- predictCox(fit, newdata = d[1:5], times = 1:5, se = TRUE, band = TRUE, log.transform = FALSE)
+## product limit
+predictCoxPL(fitS, newdata = d, times = 1:5)
 
-A$survival - B$survival
-A$survival.lower - B$survival.lower
-A$survival.upper - B$survival.upper
-A$survival.lowerBand - B$survival.lowerBand
-A$survival.upperBand - B$survival.upperBand
 }

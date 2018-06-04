@@ -2,9 +2,13 @@
 % Please edit documentation in R/RcppExports.R
 \name{sliceScale_cpp}
 \alias{sliceScale_cpp}
+\alias{sliceScale_cpp}
+\alias{sliceScalePointer_cpp}
 \title{Apply / by slice}
 \usage{
 sliceScale_cpp(X, M)
+
+sliceScalePointer_cpp(X, M)
 }
 \arguments{
 \item{X}{An array.}
@@ -22,7 +26,6 @@ x <- array(1, dim = c(2,6,5))
 M <- matrix(1:12,2,6)
 sweep(x, MARGIN = 1:2, FUN = "/", STATS = M)
 sliceScale_cpp(x, M) 
-
 
 }
 \author{

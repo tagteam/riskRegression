@@ -12,7 +12,7 @@ test_that("Formula interface",{
     class(b) <- "crr"
     expect_equal(a$crrFit,b)
 })
-if (FALSE){
+if(FALSE){
     test_that("Functions of time",{
         qFun <- function(x){x^2}
         id <- function(x){x}

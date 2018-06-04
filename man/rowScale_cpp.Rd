@@ -2,6 +2,7 @@
 % Please edit documentation in R/RcppExports.R
 \name{rowScale_cpp}
 \alias{rowScale_cpp}
+\alias{rowScale_cpp}
 \title{Apply / by row}
 \usage{
 rowScale_cpp(X, scale)
@@ -23,7 +24,6 @@ sweep(x, MARGIN = 2, FUN = "/", STATS = 1:5)
 rowScale_cpp(x, 1:5 )
 
 rowScale_cpp(x, colMeans(x) )
-
 }
 \author{
 Brice Ozenne <broz@sund.ku.dk>

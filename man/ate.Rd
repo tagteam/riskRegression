@@ -2,95 +2,70 @@
 % Please edit documentation in R/ate.R
 \name{ate}
 \alias{ate}
-\title{Compute the average treatment effects via the g-formula}
+\title{Compute the Average Treatment Effects Via the G-formula}
 \usage{
-ate(object, data, formula, treatment, contrasts = NULL, times, cause,
-  landmark, conf.level = 0.95, se = TRUE, band = FALSE, B = 0,
-  bootci.method = "perc", nsim.band = ifelse(band, 1000, 0), seed,
-  handler = "foreach", mc.cores = 1, verbose = TRUE, store.iid = "full",
-  ...)
+ate(object, data, formula, treatment, strata = NULL, contrasts = NULL,
+  times, cause, landmark, se = TRUE, iid = FALSE, band = FALSE, B = 0,
+  seed, handler = "foreach", mc.cores = 1, verbose = TRUE,
+  store.iid = "full", ...)
 }
 \arguments{
-\item{object}{outcome model which describes how event risk depends
+\item{object}{Outcome model which describes how event risk depends
 on treatment and covariates.  The object carry its own call and
 have a \code{predictRisk} method. See examples.}
 
-\item{data}{data set in which to evaluate risk predictions based on
-the outcome model}
+\item{data}{[data.frame or data.table] Data set in which to evaluate risk predictions
+based on the outcome model}
 
 \item{formula}{For analyses with time-dependent covariates, the response formula. See examples.}
 
-\item{treatment}{name of the treatment variable}
+\item{treatment}{[character] Name of the treatment variable.}
 
-\item{contrasts}{the levels of the treatment variable to be
-compared}
+\item{strata}{[character] Strata variable on which to compute the average risk.
+Incompatible with treatment. Experimental.}
 
-\item{times}{time points at which to evaluate risks}
+\item{contrasts}{[character] The levels of the treatment variable to be compared.}
 
-\item{cause}{the cause of interest}
+\item{times}{[numeric vector] Time points at which to evaluate average treatment effects.}
+
+\item{cause}{[integer/character] the cause of interest.}
 
 \item{landmark}{for models with time-dependent covariates the landmark time(s) of evaluation.
 In this case, argument \code{time} may only be one value and for the prediction of risks
 it is assumed that that the covariates do not change between landmark and landmark+time.}
 
-\item{conf.level}{Numeric value between 0 and 1 (default is 0.05). Confidence level of the confidence intervals.}
+\item{se}{[logical] If \code{TRUE} compute standard errors and confidence intervals}
 
-\item{se}{Logical. If \code{TRUE} compute standard errors and confidence intervals}
+\item{iid}{[logical] If \code{TRUE} add the influence function to the output.}
 
-\item{band}{Logical. If \code{TRUE} compute confidence bands across time points.}
+\item{band}{[logical]. If \code{TRUE} compute confidence bands across time points.}
 
-\item{B}{the number of bootstrap replications used to compute the
-confidence intervals. If it equals 0, then Wald-type confidence
-intervals are computed.  They rely on the standard error
-estimated using the influence function of the estimator.}
+\item{B}{[integer, >0] the number of bootstrap replications used to compute the confidence intervals.
+If it equals 0, then the influence function is used to compute Wald-type confidence intervals/bands.}
 
-\item{bootci.method}{Character. Method for constructing bootstrap confidence intervals.
-Either "perc" (the default), "norm", "basic", "stud", or "bca".
-Argument passed to \code{boot::boot.ci}.}
+\item{seed}{[integer, >0] sed number used to generate seeds for bootstrap
+and to achieve reproducible results.}
 
-\item{nsim.band}{the number of simulations used to compute the
-quantiles for the confidence bands.}
+\item{handler}{[character] Parallel handler for bootstrap.
+either \code{"mclapply"} or \code{"foreach"}.
+if "foreach" use \code{doparallel} to create a cluster.}
 
-\item{seed}{An integer used to generate seeds for bootstrap and to
-achieve reproducible results.}
+\item{mc.cores}{[integer, >0] The number of cores to use,
+i.e. at most how many child processes will be run simultaneously.
+Passed to \code{parallel::mclapply} or \code{doparallel::registerdoparallel}.
+The option is initialized from environment variable mc_cores if set.}
 
-\item{handler}{parallel handler for bootstrap. Either "mclapply" or
-"foreach". If "foreach" use \code{doParallel} to create a cluster.}
+\item{verbose}{[logical] If \code{TRUE} inform about estimated run time.}
 
-\item{mc.cores}{Passed to \code{parallel::mclapply} or
-\code{doParallel::registerDoParallel}. The number of cores to use, i.e. at
-most how many child processes will be run simultaneously.  The
-option is initialized from environment variable MC_CORES if
-set.}
-
-\item{verbose}{Logical. If \code{TRUE} inform about estimated run
-time.}
-
-\item{store.iid}{Implementation used to estimate the standard error. Can be \code{"full"} or \code{"minimal"}.
+\item{store.iid}{[character] Implementation used to estimate the standard error.
+Can be \code{"full"} or \code{"minimal"}.
 \code{"minimal"} requires less memory but can only estimate the standard for the difference between treatment effects (and not for the ratio).}
 
 \item{...}{passed to predictRisk}
 }
-\value{
-An object of class \code{ate} containing:
-\itemize{
-\item meanRisk: a \code{data.table} object containing the ATE at each time and for each treatment level.
-\item riskComparison: a \code{data.table} object comparing the ATE between two treatment levels.
-\item treatment: the name of the treatment variable.
-\item contrasts: the levels of the treatment variable that were compared.
-\item times: the time points at which the ATE was computed.
-\item se: Logical. if \code{TRUE} compute the standard errors and confidence intervals of the ATE
-\item B: the number of bootstrap samples.
-\item band: Logical. If \code{TRUE} confidence bands are computed.
-\item nsim.band: the number of simulations used to compute the quantiles for the confidence bands.
-\item seeds: the seed used to generate the boostrap sample. Not used when the
-influence function is used to compute the standard errors of the ATE.
-\item conf.level: the confidence level of the confidence intervals.
-}
-}
 \description{
 Use the g-formula to estimate the average treatment
-    effect based on Cox regression with or without competing risks
+    effect based on Cox regression with or without competing risks.
 }
 \examples{
 library(survival)
@@ -264,7 +239,11 @@ resTD <- ate(cscTD,formula=Hist(entry=start,time=time,event=event)~1,
 resTD
 }
 }
+\seealso{
+\code{\link{confint.ate}} to compute confidence intervals/bands.
+\code{\link{autoplot.ate}} to display the average risk.
+}
 \author{
-Brice Ozenne \email{broz@sund.ku.dk} and Thomas Alexander
-    Gerds \email{tag@biostat.ku.dk}
+Brice Ozenne \email{broz@sund.ku.dk}
+and Thomas Alexander Gerds \email{tag@biostat.ku.dk}
 }

@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: feb 15 2017 (17:36) 
 ## Version: 
-## last-updated: Oct 12 2017 (16:22) 
-##           By: Thomas Alexander Gerds
-##     Update #: 144
+## last-updated: maj 31 2018 (18:09) 
+##           By: Brice Ozenne
+##     Update #: 155
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -14,51 +14,29 @@
 #----------------------------------------------------------------------
 ## 
 ### Code:
-#' @title Print predictions from a Cox model
-#' @description Print predictions from a Cox model
+
+## * print.predictCox (documentation)
+#' @title Print Predictions From a Cox Model
+#' @description Print predictions from a Cox model.
+#' @name print.predictCox
 #' 
 #' @param x object obtained with the function \code{predictCox}.
-#' @inheritParams predictCox
-#' @param digits integer indicating the number of decimal places.
+#' @param digits [integer, >0] indicating the number of decimal places.
 #' @param ... Passed to print.
 #' 
-#' @examples
-#' library(survival)
-#' library(rms)
-#' 
-#' set.seed(10)
-#' d <- sampleData(1e2, outcome = "survival")
-#' m.cox <- coxph(Surv(time,event)~ X1 + X2 + X3,
-#'                data = d, x = TRUE, y = TRUE)
-#' predictCox(m.cox)
+#' @details to display confidence intervals/bands,
+#' the \code{confint} method needs to be applied on the object.
 #'
-#' pred <- predictCox(m.cox, newdata = d[1:5,],
-#'                    times = 1:5, type = "survival")
-#' pred
-#' 
-#' pred.data <- predictCox(m.cox, newdata = d[1:4,],se=1L,
-#'              times = 1:5, type = "survival", keep.newdata = TRUE)
-#' pred.data
-#'
-#' m.cox <- coxph(Surv(time,event)~ strata(X1) + strata(X2) + X3 + X6,
-#'                data = d, x = TRUE, y = TRUE)
-#' pred.cox <- predictCox(m.cox, newdata = d[c(1:5,10,50),],
-#'                        time = 1:5)
-#' pred.cox
-#' 
-#' m.cox <- cph(Surv(time,event)~ strat(X1) + strat(X2) + X3 + X6,
-#'              data = d, x = TRUE, y = TRUE)
-#' pred.cox <- predictCox(m.cox, newdata = d[c(1:5,10,50),],
-#'                        time = 1:5)
-#' pred.cox
-#' 
-#' pred.dataci <- predictCox(m.cox, newdata = d[1:5,],
-#'                        times = 1:5, keep.newdata = TRUE, se = TRUE)
-#' pred.dataci
-#'
+#' @seealso
+#' \code{\link{confint.predictCox}} to compute confidence intervals/bands.
+#' \code{\link{predictCox}} to compute the predicted cumulative hazard/survival.
+
+
+## * print.predictCox (code)
+#' @rdname print.predictCox
 #' @method print predictCox
 #' @export
-print.predictCox <- function(x,digits = 3,...){
+print.predictCox <- function(x, digits = 3,...){
     out <- as.data.table(x)
     print(out,digits=digits,...)
     invisible(out)

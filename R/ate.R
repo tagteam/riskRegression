@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Oct 23 2016 (08:53) 
 ## Version: 
-## last-updated: apr 12 2018 (13:13) 
+## last-updated: jun  1 2018 (17:39) 
 ##           By: Brice Ozenne
-##     Update #: 664
+##     Update #: 771
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -14,70 +14,60 @@
 #----------------------------------------------------------------------
 ## 
 ### Code:
-#' @title Compute the average treatment effects via the g-formula
-#'
+
+## * ate (documentation)
+#' @title Compute the Average Treatment Effects Via the G-formula
 #' @description Use the g-formula to estimate the average treatment
-#'     effect based on Cox regression with or without competing risks
-#' @param object outcome model which describes how event risk depends
+#'     effect based on Cox regression with or without competing risks.
+#' @name ate
+#' 
+#' @param object Outcome model which describes how event risk depends
 #'     on treatment and covariates.  The object carry its own call and
 #'     have a \code{predictRisk} method. See examples.
-#' @param data data set in which to evaluate risk predictions based on
-#'     the outcome model
+#' @param data [data.frame or data.table] Data set in which to evaluate risk predictions
+#' based on the outcome model
+#' 
 #' @param formula For analyses with time-dependent covariates, the response formula. See examples.
-#' @param treatment name of the treatment variable
-#' @param contrasts the levels of the treatment variable to be
-#'     compared
-#' @param times time points at which to evaluate risks
-#' @param cause the cause of interest
+#' @param treatment [character] Name of the treatment variable.
+#' @param contrasts [character] The levels of the treatment variable to be compared.
+#' @param strata [character] Strata variable on which to compute the average risk.
+#' Incompatible with treatment. Experimental.
+#' 
+#' @param times [numeric vector] Time points at which to evaluate average treatment effects.
+#' @param cause [integer/character] the cause of interest.
 #' @param landmark for models with time-dependent covariates the landmark time(s) of evaluation.
 #'        In this case, argument \code{time} may only be one value and for the prediction of risks
 #'        it is assumed that that the covariates do not change between landmark and landmark+time.
-#' @param conf.level Numeric value between 0 and 1 (default is 0.05). Confidence level of the confidence intervals.
-#' @param se Logical. If \code{TRUE} compute standard errors and confidence intervals
-#' @param band Logical. If \code{TRUE} compute confidence bands across time points.
-#' @param B the number of bootstrap replications used to compute the
-#'     confidence intervals. If it equals 0, then Wald-type confidence
-#'     intervals are computed.  They rely on the standard error
-#'     estimated using the influence function of the estimator.
-#' @param bootci.method Character. Method for constructing bootstrap confidence intervals.
-#' Either "perc" (the default), "norm", "basic", "stud", or "bca".
-#' Argument passed to \code{boot::boot.ci}.
-#' @param nsim.band the number of simulations used to compute the
-#'     quantiles for the confidence bands.
-#' @param seed An integer used to generate seeds for bootstrap and to
-#'     achieve reproducible results.
-#' @param handler parallel handler for bootstrap. Either "mclapply" or
-#'     "foreach". If "foreach" use \code{doParallel} to create a cluster.
-#' @param mc.cores Passed to \code{parallel::mclapply} or
-#'     \code{doParallel::registerDoParallel}. The number of cores to use, i.e. at
-#'     most how many child processes will be run simultaneously.  The
-#'     option is initialized from environment variable MC_CORES if
-#'     set.
-#' @param verbose Logical. If \code{TRUE} inform about estimated run
-#'     time.
-#' @param store.iid Implementation used to estimate the standard error. Can be \code{"full"} or \code{"minimal"}.
+#' @param se [logical] If \code{TRUE} compute standard errors and confidence intervals
+#' @param iid [logical] If \code{TRUE} add the influence function to the output.
+#' @param band [logical]. If \code{TRUE} compute confidence bands across time points.
+#' @param B [integer, >0] the number of bootstrap replications used to compute the confidence intervals.
+#' If it equals 0, then the influence function is used to compute Wald-type confidence intervals/bands.
+#' @param seed [integer, >0] sed number used to generate seeds for bootstrap
+#' and to achieve reproducible results.
+#' @param handler [character] Parallel handler for bootstrap.
+#' either \code{"mclapply"} or \code{"foreach"}.
+#' if "foreach" use \code{doparallel} to create a cluster.
+#' @param mc.cores [integer, >0] The number of cores to use,
+#' i.e. at most how many child processes will be run simultaneously.
+#' Passed to \code{parallel::mclapply} or \code{doparallel::registerdoparallel}.
+#' The option is initialized from environment variable mc_cores if set.
+#' @param verbose [logical] If \code{TRUE} inform about estimated run time.
+#' @param store.iid [character] Implementation used to estimate the standard error.
+#' Can be \code{"full"} or \code{"minimal"}.
 #' \code{"minimal"} requires less memory but can only estimate the standard for the difference between treatment effects (and not for the ratio).
 #' @param ... passed to predictRisk
 #'
-#' @author Brice Ozenne \email{broz@@sund.ku.dk} and Thomas Alexander
-#'     Gerds \email{tag@@biostat.ku.dk}
-#' 
-#' @return An object of class \code{ate} containing:
-#' \itemize{
-#' \item meanRisk: a \code{data.table} object containing the ATE at each time and for each treatment level.
-#' \item riskComparison: a \code{data.table} object comparing the ATE between two treatment levels.
-#' \item treatment: the name of the treatment variable.
-#' \item contrasts: the levels of the treatment variable that were compared.
-#' \item times: the time points at which the ATE was computed.
-#' \item se: Logical. if \code{TRUE} compute the standard errors and confidence intervals of the ATE
-#' \item B: the number of bootstrap samples.
-#' \item band: Logical. If \code{TRUE} confidence bands are computed.
-#' \item nsim.band: the number of simulations used to compute the quantiles for the confidence bands.
-#' \item seeds: the seed used to generate the boostrap sample. Not used when the
-#' influence function is used to compute the standard errors of the ATE.
-#' \item conf.level: the confidence level of the confidence intervals.
-#' }
-#' 
+#' @author Brice Ozenne \email{broz@@sund.ku.dk}
+#' and Thomas Alexander Gerds \email{tag@@biostat.ku.dk}
+#'
+#' @seealso
+#' \code{\link{confint.ate}} to compute confidence intervals/bands.
+#' \code{\link{autoplot.ate}} to display the average risk.
+
+
+## * ate (examples)
+#' @rdname ate
 #' @examples 
 #' library(survival)
 #' library(rms)
@@ -249,21 +239,23 @@
 #'         band = FALSE, mc.cores=1)
 #' resTD
 #' }
+
+## * ate (code)
+#' @rdname ate
 #' @export
 ate <- function(object,
                 data,
                 formula,
                 treatment,
+                strata = NULL,
                 contrasts = NULL,
                 times,
                 cause,
                 landmark,
-                conf.level = 0.95,
                 se = TRUE,
+                iid = FALSE,
                 band = FALSE,
                 B = 0,
-                bootci.method = "perc",
-                nsim.band = ifelse(band,1e3,0),
                 seed,
                 handler = "foreach",
                 mc.cores = 1,
@@ -303,8 +295,34 @@ ate <- function(object,
              "Either set argument \'band\' to FALSE to not compute the confidence bands \n",
              "or set argument \'B\' to 0 to use the estimate of the asymptotic distribution instead of the bootstrap\n")
     }
-    if(treatment %in% names(data) == FALSE){
-        stop("The data set does not seem to have a variable ",treatment," (argument: treatment). \n")
+    if(!is.null(treatment)){
+        if(length(treatment) != 1){
+            stop("Argument treatment should have length 1. \n")
+        }
+        if(treatment %in% names(data) == FALSE){
+            stop("The data set does not seem to have a variable ",treatment," (argument: treatment). \n")
+        }
+        if(!is.null(strata) ){
+            stop("Argument strata must be NULL when argument treatment is specified. \n")
+        }
+        strata <- treatment
+    }else{
+        if(is.null(strata) ){
+            stop("Argument strata must refer to a variable in the data when argument treatment is NULL. \n")
+
+        }
+        if(length(strata) != 1){
+            stop("Argument strata should have length 1. \n")
+        }
+        if(strata %in% names(data) == FALSE){
+            stop("The data set does not seem to have a variable ",strata," (argument: strata). \n")
+        }
+        if(B > 0){
+            stop("Boostrap resampling is not available when argument strata is specified. \n")
+        }
+        if(TD){
+            stop("Landmark analysis is not available when argument strata is specified. \n")
+        }
     }
     test.CR <- !missing(cause) # test whether the argument cause has been specified, i.e. it is a competing risk model
     if(test.CR==FALSE){cause <- NA}
@@ -317,17 +335,23 @@ ate <- function(object,
                  "set argument \'B\' to a positive integer to use a boostrap instead \n")
         }
     }
-    data[[treatment]] <- factor(data[[treatment]])
-  
-  if(is.null(contrasts)){
-    levels <- levels(data[[treatment]])
-    contrasts <- levels(data[[treatment]])
-    ## if (length(contrasts)>50) warning("Treatment variable has more than 50 levels.\nIf this is not a mistake,
-    ## you should use the argument `contrasts'.")
-  }else{levels <- contrasts}
-  n.contrasts <- length(contrasts)
-  n.times <- length(times)
-  n.obs <- NROW(data)
+    if(!is.null(treatment)){
+        data[[treatment]] <- factor(data[[treatment]])
+    
+        if(is.null(contrasts)){
+            levels <- levels(data[[treatment]])
+            contrasts <- levels(data[[treatment]])
+            ## if (length(contrasts)>50) warning("Treatment variable has more than 50 levels.\nIf this is not a mistake,
+            ## you should use the argument `contrasts'.")
+        }else{levels <- contrasts}
+    }else{
+        data[[strata]] <- factor(data[[strata]])        
+        levels <- levels(data[[strata]])
+        contrasts <- levels(data[[strata]])
+    }
+    n.contrasts <- length(contrasts)
+    n.times <- length(times)
+    n.obs <- NROW(data)
   
   # }}}
   
@@ -348,6 +372,7 @@ ate <- function(object,
         pointEstimate <- Gformula(object=object,
                                   data=data,
                                   treatment=treatment,
+                                  strata=strata,
                                   contrasts=contrasts,
                                   times=times,
                                   cause=cause,
@@ -357,7 +382,7 @@ ate <- function(object,
                                   dots)
     )
     # }}}
-  
+
     # {{{ Confidence interval    
 
     if(se || band){
@@ -369,7 +394,6 @@ ate <- function(object,
             key1 <- c("Treatment","time")
             key2 <- c("Treatment.A","Treatment.B","time")
         }
-        alpha <- 1-conf.level
     
         if(B>0){
                                         # {{{ Bootstrap
@@ -413,18 +437,7 @@ ate <- function(object,
 
             bootseeds <- resBoot$bootseeds
             resBoot <- resBoot$boot
-            
-            suppressWarnings(
-                res.CIboot <- calcCIboot(boot = resBoot,
-                                         meanRisk = pointEstimate$meanRisk,
-                                         riskComparison = pointEstimate$riskComparison,
-                                         type = bootci.method,
-                                         conf = conf.level,
-                                         TD = TD)
-            )
-            mrisks <- res.CIboot$meanRisk
-            crisks <- res.CIboot$riskComparison
-            
+            outSE <- NULL   
                                         # }}}
         } else {
                                         # {{{ compute standard error and quantiles via the influence function
@@ -432,53 +445,64 @@ ate <- function(object,
             if(!is.null(landmark)){
                 stop("Calculation of the standard errors via the influence function not implemented for time dependent covariates \n")
             }
-            resSE <- calcSeATE(object,
+            outSE <- calcSeATE(object,
                                data = data,
                                times = times,
                                cause = cause,
                                treatment = treatment,
                                contrasts = contrasts,
+                               strata = strata,
                                n.contrasts = n.contrasts,
                                levels = levels,
                                n.times = n.times,
                                n.obs = n.obs,
                                pointEstimate = pointEstimate,
-                               alpha = alpha, conf.level = conf.level,
                                se = se,
-                               band = band, nsim.band = nsim.band,
+                               iid = (band+iid)>0, 
                                store.iid = store.iid)
-            
-            ## merge with pointEstimate
-            mrisks <- merge(pointEstimate$meanRisk,resSE$mrisks,by=key1)
-            crisks <- merge(pointEstimate$riskComparison,resSE$crisks,by=key2)            
-            bootseeds <- NULL
-            resBoot <- NULL
 
+            pointEstimate$meanRisk[["se"]] <- outSE$meanRisk.se[,1]
+            pointEstimate$riskComparison[["diff.se"]] <- outSE$diffRisk.se[,1]
+            pointEstimate$riskComparison[["ratio.se"]] <- outSE$ratioRisk.se[,1]
+            data.table::setcolorder(pointEstimate$riskComparison, neworder = c(names(pointEstimate$riskComparison)[1:3],
+                                                                               "diff","diff.se","ratio","ratio.se"))
+            bootseeds <- NULL
+            resBoot <- NULL          
+   
                                         # }}}
         }
     } else{
-        mrisks <- pointEstimate$meanRisk
-        crisks <- pointEstimate$riskComparison        
         bootseeds <- NULL
         resBoot <- NULL
+        outSE <- NULL
 
                                         # }}}
     }
                                         # {{{ output object
-    out <- list(meanRisk=mrisks,
-                riskComparison=crisks,
-                treatment=treatment,
-                contrasts=contrasts,
-                times=times,
+    if(is.null(treatment)){
+        setnames(pointEstimate$meanRisk,
+                 old = "Treatment",
+                 new = strata)
+        setnames(pointEstimate$riskComparison,
+                 old = c("Treatment.A","Treatment.B"),
+                 new = paste0(strata,c(".A",".B")))
+    }
+    
+    out <- list(meanRisk = pointEstimate$meanRisk,
+                riskComparison = pointEstimate$riskComparison,
+                meanRisk.iid = outSE$meanRisk.iid,
+                diffRisk.iid = outSE$diffRisk.iid,
+                ratioRisk.iid = outSE$ratioRisk.iid,
+                treatment = treatment,
+                contrasts = contrasts,
+                times = times,
                 se = se,
                 TD = TD,
                 B = B,
                 band = band,
-                nsim.band = nsim.band,
                 boot = resBoot,
-                bootci.method = bootci.method,
-                seeds=bootseeds,
-                conf.level=conf.level)
+                seeds = bootseeds)
+
   
     class(out) <- c("ate",class(object))
     return(out)
@@ -536,7 +560,9 @@ Gformula_TD <- function(object,
             RC[]
         }))}))
     out <- list(meanRisk = dt.meanRisk,
-                riskComparison = riskComparison)
+                riskComparison = riskComparison,
+                treatment = treatment,
+                strata = strata)
     return(out)
 }
 
@@ -546,6 +572,7 @@ Gformula_TD <- function(object,
 Gformula_TI <- function(object,
                         data,
                         treatment,
+                        strata,
                         contrasts,
                         times,
                         landmark,
@@ -556,26 +583,36 @@ Gformula_TI <- function(object,
 
     meanRisk <- lapply(1:n.contrasts,function(i){ ## i <- 1
         ## prediction for the hypothetical worlds in which every subject is treated with the same treatment
-        data.i <- data
-        data.i[[treatment]] <- factor(contrasts[i], levels = levels)
+        if(!is.null(treatment)){
+            data.i <- data
+            data.i[[treatment]] <- factor(contrasts[i], levels = levels)
+        }else{
+            data.i <- data[data[[strata]]==contrasts[i]]
+        }
         allrisks <- do.call("predictRisk",
                             args = list(object, newdata = data.i, times = times, cause = cause,...))
         if(!is.matrix(allrisks)){allrisks <- cbind(allrisks)} 
         risk.i <- colMeans(allrisks)
         risk.i
     })
-    riskComparison <- data.table::rbindlist(lapply(1:(n.contrasts-1),function(i){ ## i <- 1
-        data.table::rbindlist(lapply(((i+1):n.contrasts),function(j){ ## j <- 2
-            ## compute differences between all pairs of treatments
-            data.table(Treatment.A=contrasts[[i]],
-                       Treatment.B=contrasts[[j]],
-                       time = times,
-                       diff=meanRisk[[i]]-meanRisk[[j]],
-                       ratio=meanRisk[[i]]/meanRisk[[j]])
-        }))}))
-    name.Treatment <- unlist(lapply(1:n.contrasts, function(c){rep(contrasts[c],length(meanRisk[[c]]))}))
-    out <- list(meanRisk = data.table(Treatment=name.Treatment, time = times, meanRisk=unlist(meanRisk)),
-                riskComparison = riskComparison)    
+
+        riskComparison <- data.table::rbindlist(lapply(1:(n.contrasts-1),function(i){ ## i <- 1
+            data.table::rbindlist(lapply(((i+1):n.contrasts),function(j){ ## j <- 2
+                ## compute differences between all pairs of treatments
+                data.table(Treatment.A=contrasts[[i]],
+                           Treatment.B=contrasts[[j]],
+                           time = times,
+                           diff=meanRisk[[i]]-meanRisk[[j]],
+                           ratio=meanRisk[[i]]/meanRisk[[j]])
+            }))}))
+
+    ## reshape for export
+    name.strata <- unlist(lapply(1:n.contrasts, function(c){rep(contrasts[c],length(meanRisk[[c]]))}))
+
+    out <- list(meanRisk = data.table(Treatment=name.strata,
+                                      time = times,
+                                      meanRisk=unlist(meanRisk)),
+                riskComparison = riskComparison)
     return(out)            
 }
 # }}}

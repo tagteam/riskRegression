@@ -36,12 +36,10 @@ List calcSeHazard_cpp(const NumericVector& seqTau, // horizon time for the predi
 		      const LogicalVector& sameStrata, // strata of observations used to fit the Cox model
 		      const NumericVector& sampleTime, // event times relative to the observations used to fit the Cox model
 		      const NumericVector& cumhazard0, // baseline cumulative hazard
-		      const arma::mat& newHazard, // predicted hazard
 		      const arma::mat& newSurvival, //
 		      double firstJumpTime, double lastSampleTime,
 		      int nTau, int nNewObs, int nSample, int p,
-		      bool exportSE, bool exportIF, bool exportIFsum_cumhazard, bool exportIFsum_survival,
-		      bool logTransform){
+		      bool exportSE, bool exportIF, bool exportIFsum_cumhazard, bool exportIFsum_survival){
 
   // define objects
   double IF_cumhazard;
@@ -100,10 +98,6 @@ List calcSeHazard_cpp(const NumericVector& seqTau, // horizon time for the predi
 				      sameStrata[iSample],
 				      false, // wrong value but not used when computing the cumulative hazard
 				      p, false);
-	  // log transform
-	  if(logTransform){
-	    IF_cumhazard /= newHazard(iNewObs,iTime);
-	  }
 	  if(exportSE){
 	    SEcumhazard(iNewObs,iTime) += pow(IF_cumhazard,2);
 	  }
@@ -180,7 +174,7 @@ List calcSeCif_cpp(const NumericVector& seqTau, // horizon time for the predicti
 		   int theCause, double firstJumpTime, double lastSampleTime,
  		   int nTau, int nJump, int nNewObs, int nSample, int nCause, const IntegerVector& p,
 		   bool survtype,
- 		   bool exportSE, bool exportIF, bool exportIFsum, bool logTransform){
+ 		   bool exportSE, bool exportIF, bool exportIFsum){
 
   // // define objects
   NumericVector veci_IF_risk(nSample);
@@ -305,12 +299,7 @@ List calcSeCif_cpp(const NumericVector& seqTau, // horizon time for the predicti
 	while((iTau <= iTauMax) && ( (((iJump+1)<nJump) && (seqTau[iTau] < jumpTime[iJump+1])) || (iJump+1==nJump))){
 
 	  for(int iSample=0; iSample<nSample ; iSample++){
-	    // log transform
-	    if(logTransform){
-	      IF_risk_tempo = veci_IF_risk[iSample] / (cif(iNewObs,iTau)*log(cif(iNewObs,iTau)));
-	    }else{
-	      IF_risk_tempo = veci_IF_risk[iSample];
-	    }
+            IF_risk_tempo = veci_IF_risk[iSample];
 	    
 	    if(exportSE){
 	      SErisk(iNewObs,iTau) += pow(IF_risk_tempo,2);

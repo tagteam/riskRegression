@@ -1,65 +1,97 @@
 ### as.data.table.predictCox.R --- 
-#----------------------------------------------------------------------
+##----------------------------------------------------------------------
 ## Author: Thomas Alexander Gerds
 ## Created: Mar  3 2017 (09:28) 
 ## Version: 
-## Last-Updated: jul 18 2017 (14:45) 
+## Last-Updated: maj 31 2018 (17:58) 
 ##           By: Brice Ozenne
-##     Update #: 16
-#----------------------------------------------------------------------
+##     Update #: 95
+##----------------------------------------------------------------------
 ## 
 ### Commentary: 
 ## 
 ### Change Log:
-#----------------------------------------------------------------------
+##----------------------------------------------------------------------
 ## 
 ### Code:
-#' @title Turn predictCox object into a \code{data.table}
-#' @description Turn predictCox object into a \code{data.table}
+
+## * as.data.table.predictCox (documentation)
+#' @title Turn predictCox Object Into a \code{data.table}
+#' @description Turn predictCox object into a \code{data.table}.
+#' @name as.data.table.predictCox
+#' 
 #' @param x object obtained with function \code{predictCox}
-#' @param keep.rownames not used
-#' @param ... not used
+#' @param keep.rownames Not used.
+#' @param se [logical] Should standard errors/quantile for confidence bands be displayed?
+#' @param ... Not used.
+
+
+## * as.data.table.predictCox (code)
+#' @rdname as.data.table.predictCox
 #' @export
-as.data.table.predictCox <- function(x,keep.rownames=FALSE,...){
-  times=NULL
+as.data.table.predictCox <- function(x, keep.rownames = FALSE, se = TRUE,...){
+    times=NULL
 
-  n.obs <- NROW(x[[x$type[1]]])
-  nd <- data.table(observation = 1:n.obs)
-  if (!is.null(x$newdata)){
-      nd <- cbind(nd, x$newdata)
-  }
-  out <- data.table::rbindlist(lapply(1:length(x$times),function(tt){
-      ndtt=copy(nd)
-      nd[,times:=x$times[[tt]]]
-      if (!is.null(x$strata))
-          nd[,strata:=x$strata]
-      for (name in x$type){
-          tyc <- cbind(x[[name]][,tt])
-          colnames(tyc) <- name
-          vec.names <- c("")
-          if (x$se==1L){
-              tyc <- cbind(tyc,
-                           x[[paste0(name,".se")]][,tt],
-                           x[[paste0(name,".lower")]][,tt],
-                           x[[paste0(name,".upper")]][,tt])
-              vec.names <- c(vec.names,".se",".lower",".upper")
-          }
-          if (x$band==1L){
-            tyc <- cbind(tyc,
-                         x[[paste0(name,".lowerBand")]][,tt],
-                         x[[paste0(name,".upperBand")]][,tt])
-            vec.names <- c(vec.names,".lowerBand",".upperBand")
-          }
+    n.obs <- NROW(x[[x$type[1]]])
+    nd <- data.table(observation = 1:n.obs)
+    if (!is.null(x$newdata)){
+        nd <- cbind(nd, x$newdata)
+    }
+    if(is.null(x$times)){
+        stop("Cannot convert to a data.table object when times is missing in object \n",
+             "set the argument \'keep.time\' to TRUE when calling the predict method \n")
+    }
 
-          colnames(tyc) <- paste0(name,vec.names)
+    if(!is.matrix(x[[x$type[1]]])){ ## baseline hazard
+        out <- as.data.table(x[c("times","strata",x$type)])    
+    }else{
+        out <- data.table::rbindlist(lapply(1:length(x$times),function(tt){
+            ndtt=copy(nd)
+            nd[,times:=x$times[[tt]]]
+            if (!is.null(x$strata))
+                nd[,strata:=x$strata]
+            for (name in x$type){
+                tyc <- cbind(x[[name]][,tt])
+                colnames(tyc) <- name
+                vec.names <- c("")
+                if (x$se==1L){
+                    if(se){
+                        tyc <- cbind(tyc,
+                                     x[[paste0(name,".se")]][,tt]
+                                     )
+                        vec.names <- c(vec.names,".se")
+                    }
+                    if(!is.null(x[[paste0(name,".transform")]])){
+                        tyc <- cbind(tyc,
+                                     x[[paste0(name,".lower")]][,tt],
+                                     x[[paste0(name,".upper")]][,tt])
+                        vec.names <- c(vec.names,".lower",".upper")
+                    }
+                }
+                if (x$band==1L){
+                    if(se && !is.null(x[[paste0(name,".transform")]])){
+                        tyc <- cbind(tyc,
+                                     x[[paste0(name,".quantileBand")]]
+                                     )
+                        vec.names <- c(vec.names,".quantileBand")                    
+                    }
+                    if(!is.null(x[[paste0(name,".transform")]])){
+                        tyc <- cbind(tyc,
+                                     x[[paste0(name,".lowerBand")]][,tt],
+                                     x[[paste0(name,".upperBand")]][,tt])
+                        vec.names <- c(vec.names,".lowerBand",".upperBand")
+                    }
+                }
+                colnames(tyc) <- paste0(name,vec.names)
           
-          ## setDT(tyc)
-          nd <- cbind(nd,tyc)
-      }
-      nd   
-  }))    
- 
-  return(out)
+                ## setDT(tyc)
+                nd <- cbind(nd,tyc)
+            }
+            nd   
+        }))    
+    }
+    
+    return(out)
   
 }
 

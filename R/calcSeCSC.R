@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: maj 27 2017 (21:23) 
 ## Version: 
-## last-updated: Mar 28 2018 (12:07) 
-##           By: Thomas Alexander Gerds
-##     Update #: 178
+## last-updated: maj 24 2018 (17:28) 
+##           By: Brice Ozenne
+##     Update #: 182
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -36,7 +36,6 @@
 #' @param cause the cause of interest.
 #' @param nCause the number of causes.
 #' @param nVar the number of variables that form the linear predictor in each Cox model
-#' @param log.transform Should the variance/influence function be computed on the log(-log) scale
 #' @param export can be "iid" to return the value of the influence function for each observation
 #'                      "se" to return the standard error for a given timepoint
 #' 
@@ -54,7 +53,7 @@
 #' 
 calcSeCSC <- function(object, cif, hazard, cumhazard, object.time, object.maxtime,
                       eXb, new.LPdata, new.strata, times, surv.type,
-                      new.n, cause, nCause, nVar, log.transform, export, store.iid){
+                      new.n, cause, nCause, nVar, export, store.iid){
 
     # {{{ influence function for each Cox model
   if(is.null(object$iid)){
@@ -172,7 +171,6 @@ calcSeCSC <- function(object, cif, hazard, cumhazard, object.time, object.maxtim
             ls.args$exportSE<- ("se" %in% export)
             ls.args$exportIF <- ("iid" %in% export)
             ls.args$exportIFsum <- ("average.iid" %in% export)
-            ls.args$logTransform <- log.transform
 
             resCpp <- do.call(calcSeCif_cpp, args = ls.args)
             
@@ -251,13 +249,6 @@ calcSeCSC <- function(object, cif, hazard, cumhazard, object.time, object.maxtim
             
             }
             
-            if(log.transform){
-                IF_tempo <- rowScale_cpp(IF_tempo, scale = cif[iObs,,drop=FALSE]*log(cif[iObs,,drop=FALSE]))
-                if(any(times<first.event[new.strata[iObs,cause]+1])){ # any(times<[iObs.strata])
-                    IF_tempo[,times<first.event[new.strata[iObs,cause]+1]] <- 0
-                }
-            }
-        
             if("se" %in% export){
                 out$se[iObs,] <- sqrt(colSums(IF_tempo^2))
             }

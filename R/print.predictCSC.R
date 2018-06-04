@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Feb 11 2017 (10:01) 
 ## Version: 
-## last-updated: Sep  4 2017 (17:31) 
-##           By: Thomas Alexander Gerds
-##     Update #: 61
+## last-updated: jun  1 2018 (13:37) 
+##           By: Brice Ozenne
+##     Update #: 75
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -14,53 +14,32 @@
 #----------------------------------------------------------------------
 ## 
 ### Code:
-#' @title Print predictions from a Cause-specific Cox proportional hazard regression
-#' @description Print predictions from a Cause-specific Cox proportional hazard regression
+
+## * print.predictCSC (documentation)
+#' @title Print Predictions From a Cause-specific Cox Proportional Hazard Regression
+#' @description Print predictions from a Cause-specific Cox proportional hazard regression.
+#' @name print.predictCSC
 #' 
 #' @param x object obtained with the function \code{predictCox}.
-#' @param digits integer indicating the number of decimal places.
+#' @param digits [integer, >0] indicating the number of decimal places.
 #' @param ... Passed to print.
 #' 
-#' @examples
-#' ## no strata
-#' d <- sampleData(1e2, outcome = "competing.risks")
-#' m.CSC <- CSC(Hist(time,event)~ X1 + X2 + X6, data = d)
-#' pred.CSC <- predict(m.CSC, time = 1:5, cause = 1,
-#'                       se = TRUE, keep.newdata = TRUE)
+#' @details to display confidence intervals/bands,
+#' the \code{confint} method needs to be applied on the object.
 #'
-#' pred.CSC
-#' print(pred.CSC, ci = TRUE)
-#'
-#' ## strata
-#' library(survival)
-#' m.SCSC <- CSC(Hist(time,event)~ strata(X1) + strata(X2) + X6,
-#'               data = d)
-#' pred.SCSC <- predict(m.SCSC, time = 1:5, cause = 1,
-#'                se = TRUE, keep.newdata = TRUE, keep.strata = TRUE)
-#' pred.SCSC
-#' print(pred.SCSC, ci = TRUE)
-#' 
+#' @seealso
+#' \code{\link{confint.predictCSC}} to compute confidence intervals/bands.
+#' \code{\link{predict.CauseSpecificCox}} to compute the predicted risks.
+
+## * print.predictCSC (code)
+#' @rdname print.predictCSC
 #' @method print predictCSC
 #' @export
-print.predictCSC <- function(x,
-                             digits = 3, ...){
+print.predictCSC <- function(x, digits = 3, ...){
         out <- as.data.table(x)
         print(out,digits=digits,...)
         invisible(out)
 }
-
-
-## `[.predictCSC` <- function(x, i, j, drop = FALSE){
-
-##     if(missing(i)){
-##         i <- 1:NROW(x$absRisk)
-##     }
-##     if(missing(j)){
-##         j <- 1:NCOL(x$absRisk)
-##     }
-
-##     return(x$absRisk[i,j,drop = drop])
-## }
 
 #----------------------------------------------------------------------
 ### print.predictCSC.R ends here
