@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: May 31 2016 (11:32) 
 ## Version: 
-## last-updated: Apr 10 2018 (08:32) 
+## last-updated: Jun  4 2018 (15:28) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 26
+##     Update #: 31
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -47,7 +47,9 @@ print.Score <- function(x,digits=3,...){
             " each of size ",
             x$split.method$M,
             ".\n",
-            "The 'confidence intervals' are bootstrap quantiles, the 'p-values' are median p-values.\n",
+            ifelse(x$call$se.fit,"The 'confidence intervals' are bootstrap quantiles",""),
+            ifelse(x$call$multi.split.test,"The 'p-values' are median p-values across the splits",""),
+            "\n",
             sep="")
     },"LeaveOneOutBoot"={
         cat("\nEfron's leave-one-out-bootstrap based on ",

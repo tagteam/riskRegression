@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jan  3 2016 (13:30) 
 ## Version: 
-## last-updated: Apr 10 2018 (16:30) 
+## last-updated: Jun  4 2018 (16:40) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 46
+##     Update #: 49
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -14,7 +14,7 @@
 #----------------------------------------------------------------------
 ## 
 ### Code:
-getComparisons <- function(dt,NF,N,alpha,dolist=NF:1,se.fit){
+getComparisons <- function(dt,NF,N,alpha,dolist=NF:1,multi.split.test=FALSE,se.fit){
     ## IMPORTANT: this function assumes that the
     ##            data are ordered according to model,times
     x=model=IF=NULL
@@ -40,10 +40,11 @@ getComparisons <- function(dt,NF,N,alpha,dolist=NF:1,se.fit){
                            upper=upper,
                            p=p)
             }else{ ## only multisplit test
-                data.table(model=theta[model%in%g[-1]][["model"]],
-                           reference=g[1],
-                           delta=delta,
-                           p=p)
+                out <- data.table(model=theta[model%in%g[-1]][["model"]],
+                                  reference=g[1],
+                                  delta=delta)
+                if (multi.split.test==TRUE) out[,p:=p]
+                out
             }
         }))
     } else {
