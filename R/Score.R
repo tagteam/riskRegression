@@ -526,6 +526,15 @@ Score.list <- function(object,
     splitIndex <- split.method$index
     do.resample <- !(is.null(splitIndex))
     if (split.method$internal.name!="noplan"){
+        if (split.method$name=="BootCv" && multi.split.test==TRUE && conservative==FALSE){
+            if ("AUC" %in% metrics) {
+                warning("Cannot do multi-split test with AUC yet. Forced multi.split.test=FALSE")
+                multi.split.test=FALSE
+            }else{
+                warning("Cannot do deal with conservative=FALSE when also multi.split.test=TRUE. Forced conservative=TRUE.")
+                conservative=TRUE
+            }
+        }
         if (se.fit==TRUE){
             if (response.type=="competing.risks")
                 warning("Under construction. Check devtools::install_github('tagteam/riskRegression') for progress.")
@@ -535,7 +544,7 @@ Score.list <- function(object,
         }
     }
     # }}}
-# {{{ Checking the ability of the elements of object to predict risks
+    # {{{ Checking the ability of the elements of object to predict risks
     # {{{ number of models and their labels
     NF <- length(object)
     # }}}
@@ -567,7 +576,7 @@ Score.list <- function(object,
         }
     })
     # }}}
-# {{{ additional arguments for predictRisk methods
+    # {{{ additional arguments for predictRisk methods
 
     if (!missing(predictRisk.args)){
         if (!(all(names(predictRisk.args) %in% unlist(object.classes))))
@@ -701,6 +710,10 @@ Score.list <- function(object,
     # {{{
     if (response.type %in% c("survival","competing.risks")){
         if (cens.type=="rightCensored"){
+            if (se.fit>0L && "AUC" %in% metrics && conservative==TRUE) {
+                ## FIXME: need conservative formula for AUC 
+                warning("Cannot do conservative==TRUE with AUC yet.")
+            }
             if (se.fit>0L && "AUC" %in% metrics && cens.model=="cox"){
                 if (!(split.method$name %in% c("LeaveOneOutBoot","BootCv"))){
                     warning("Cannot (not yet) estimate standard errors for AUC with Cox IPCW.\nTherefore, force cens.model to be marginal.")
@@ -712,7 +725,9 @@ Score.list <- function(object,
                                            times=times,
                                            cens.model=cens.model,
                                            response.type=response.type,
-                                           influence.curve=(se.fit==1L & conservative==0L & split.method$internal.name!="BootCv"))
+                                           ## FIXME: need conservative formula for AUC
+                                           influence.curve=(se.fit==TRUE && (conservative==0L || "AUC" %in% metrics)))
+            ## 
             ## if cens.model is marginal then IC is a matrix (ntimes,newdata) 
             ## if cens.model is Cox then IC is an array (nlearn, ntimes, newdata)
             ## IC is an array with dimension (nlearn, times, newdata)
@@ -773,8 +788,10 @@ Score.list <- function(object,
         ## remove our cbinded response (see above) from traindata to avoid clash when model uses Hist(time,status)
         ## where status has 0,1,2 but now event history response has status=0,1
         ## the original response is still there
-        trainX <- traindata[,-c(1:response.dim),with=FALSE]
-        trainX[,ID:=NULL]
+        if(!is.null(traindata)){
+            trainX <- traindata[,-c(1:response.dim),with=FALSE]
+            trainX[,ID:=NULL]
+        }
         pred <- data.table::rbindlist(lapply(mlevs, function(f){
             if (f>0 && (length(extra.args <- unlist(lapply(object.classes[[f]],function(cc){predictRisk.args[[cc]]})))>0)){
                 args <- c(args,extra.args)
@@ -1346,16 +1363,10 @@ Score.list <- function(object,
                                                            se=sd(IF.Brier)/sqrt(N),
                                                            se.conservative=sd(IC0)/sqrt(N)),by=byvars]
                         }else{
-                            if (response.type=="binary" || cens.type=="uncensored"){
-                                DT.B[,IF.Brier:=residuals-mean(residuals),by=byvars]
-                                score.loob <- DT.B[,data.table(Brier=sum(residuals)/N,
-                                                               se=sd(IC0)/sqrt(N)),
-                                                   by=byvars]
-                            }else{
-                                ## conservative == TRUE
-                                score.loob <- DT.B[,data.table(Brier=sum(residuals)/N,
-                                                               se=sd(IC0)/sqrt(N)),by=byvars]
-                            }
+                            ## either conservative == TRUE or binary or uncensored
+                            score.loob <- DT.B[,data.table(Brier=sum(residuals)/N,se=sd(IC0)/sqrt(N)),
+                                               by=byvars]
+                            setnames(DT.B,"IF.Brier","IC0")
                         }
                         score.loob[,lower:=pmax(0,Brier-qnorm(1-alpha/2)*se)]
                         score.loob[,upper:=pmin(1,Brier + qnorm(1-alpha/2)*se)]
@@ -1429,7 +1440,7 @@ Score.list <- function(object,
             computePerformance(DT.b,
                                N=N.b,
                                se.fit=FALSE,
-                               conservative=FALSE,
+                               conservative=TRUE, ## cannot subset IC yet
                                cens.model=cens.model,
                                multi.split.test=multi.split.test,
                                keep.residuals=FALSE,
@@ -1674,6 +1685,7 @@ Brier.survival <- function(DT,MC,se.fit,conservative,cens.model,keep.vcov=FALSE,
         if (conservative==TRUE){
             score <- DT[,data.table(Brier=sum(residuals)/N,
                                     se=sd(IC0)/sqrt(N)),by=list(model,times)]
+            setnames(DT,"IC0","IF.Brier")
         }else{
             DT[,IF.Brier:=getInfluenceCurve.Brier(t=times[1],
                                                   time=time,
@@ -1700,7 +1712,7 @@ Brier.survival <- function(DT,MC,se.fit,conservative,cens.model,keep.vcov=FALSE,
     if (length(dolist)>0L){
         ## merge with Brier score
         data.table::setkey(DT,model,times)
-        data.table::setkey(score,model,times)
+        ## data.table::setkey(score,model,times)
         DT <- DT[score]
         if (se.fit==TRUE || multi.split.test==TRUE){
             contrasts.Brier <- DT[,getComparisons(data.table(x=Brier,IF=IF.Brier,model=model),
@@ -2019,7 +2031,7 @@ AUC.survival <- function(DT,MC,se.fit,conservative,cens.model,keep.vcov=FALSE,mu
         se.score <- aucDT[,list(se=sd(IF.AUC)/sqrt(N)),by=list(model,times)]
         data.table::setkey(se.score,model,times)
         score <- score[se.score]
-        if (se.fit==1L){   
+        if (se.fit==1L){
             score[,lower:=pmax(0,AUC-qnorm(1-alpha/2)*se)]
             score[,upper:=pmin(1,AUC+qnorm(1-alpha/2)*se)]
         }else{
