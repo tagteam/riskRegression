@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun 23 2016 (09:19) 
 ## Version: 
-## last-updated: Apr 27 2018 (13:51) 
+## last-updated: Jun 10 2018 (10:14) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 76
+##     Update #: 78
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -42,12 +42,12 @@
 ##' nd=sampleData(100,outcome="survival")
 ##' f1=coxph(Surv(time,event)~X1+X6+X8,data=d,x=TRUE,y=TRUE)
 ##' f2=coxph(Surv(time,event)~X2+X5+X9,data=d,x=TRUE,y=TRUE)
-##' xx=Score(list(f1,f2), formula=Surv(time,event)~1,
+##' xx=Score(list("X1+X6+X8"=f1,"X2+X5+X9"=f2), formula=Surv(time,event)~1,
 ##' data=nd, metrics="auc", null.model=FALSE, times=seq(3:10))
 ##' aucgraph <- plotAUC(xx)
-##' plotAUC(xx,conf.int=TRUE)+ggtitle("AUC")+theme_classic()
-##' plotAUC(xx,type="contrasts")
-##' a=plotAUC(xx,type="contrasts",conf.int=TRUE)
+##' plotAUC(xx,conf.int=TRUE)
+##' ## difference between 
+##' plotAUC(xx,which="contrasts",conf.int=TRUE)
 ##' 
 #'
 #' @export
@@ -69,7 +69,7 @@ plotAUC <- function(x,
                     conf.int=0L,
                     legend=1L,
                     ...){
-    times=contrast=model=AUC=lower=upper=lower=upper=delta.AUC=reference=NULL
+    times=contrast=model=AUC=lower=upper=lower=upper=delta.AUC=reference=se=NULL
     ## cbPalette <- c("#999999", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
     cbbPalette <- c("#000000", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
     pframe <- switch(which,"score"={copy(x$AUC$score)},"contrasts"={copy(x$AUC$contrasts)},{stop("argument 'which' has to be either 'score' for AUC or 'contrasts' for differences in AUC.")})

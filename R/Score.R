@@ -477,15 +477,15 @@ Score.list <- function(object,
     } else{
         byvars <- c("model")
     }
-    if (missing(cause)) 
+    states <- attr(response,"states")
+    if (missing(cause)||is.null(cause)){
         if (response.type=="binary"){
-            states <- response[,unique(ReSpOnSe)]
             cause <- attr(response,"event")
         }
         else{
-            states <- attr(response,"states")
             cause <- states[[1]]
         }
+    }
     position.cause <- match(cause,states,nomatch=0)
     if (position.cause==0) stop(paste0("Requested cause: ",cause,". Available causes: ", paste(states,collapse=",")))
     # add null model and find names for the object
@@ -526,7 +526,7 @@ Score.list <- function(object,
     splitIndex <- split.method$index
     do.resample <- !(is.null(splitIndex))
     if (split.method$internal.name!="noplan"){
-        if (split.method$name=="BootCv" && multi.split.test==TRUE && conservative==FALSE){
+        if (split.method$name=="BootCv" && multi.split.test==TRUE){
             if ("AUC" %in% metrics) {
                 warning("Cannot do multi-split test with AUC yet. Forced multi.split.test=FALSE")
                 multi.split.test=FALSE
@@ -1366,7 +1366,7 @@ Score.list <- function(object,
                             ## either conservative == TRUE or binary or uncensored
                             score.loob <- DT.B[,data.table(Brier=sum(residuals)/N,se=sd(IC0)/sqrt(N)),
                                                by=byvars]
-                            setnames(DT.B,"IF.Brier","IC0")
+                            setnames(DT.B,"IC0","IF.Brier")
                         }
                         score.loob[,lower:=pmax(0,Brier-qnorm(1-alpha/2)*se)]
                         score.loob[,upper:=pmin(1,Brier + qnorm(1-alpha/2)*se)]
