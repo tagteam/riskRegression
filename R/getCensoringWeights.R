@@ -55,6 +55,7 @@ getCensoringWeights <- function(formula,
                                                     newdata = wdata,
                                                     times = subject.times,
                                                     type = "survival")$survival.iid,
+
                               IC.times=predictCox(fit, iid = TRUE,
                                                   newdata = wdata,
                                                   times = times,

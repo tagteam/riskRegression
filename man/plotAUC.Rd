@@ -2,32 +2,52 @@
 % Please edit documentation in R/plotAUC.R
 \name{plotAUC}
 \alias{plotAUC}
-\title{ggplot AUC curve}
+\title{Plot of time-dependent AUC curves}
 \usage{
-plotAUC(x, models, type = "score", lwd = 2, xlim, ylim, axes = TRUE,
-  conf.int = FALSE, ...)
+plotAUC(x, models, which = "score", xlim, ylim, xlab, ylab, col, lwd,
+  lty = 1, cex = 1, pch = 1, type = "l", axes = 1L, percent = 1L,
+  conf.int = 0L, legend = 1L, ...)
 }
 \arguments{
 \item{x}{Object obtained with \code{Score.list}}
 
 \item{models}{Choice of models to plot}
 
-\item{type}{Character. Either \code{"score"} to show AUC or \code{"contrasts"} to show differences between AUC.}
-
-\item{lwd}{Line width}
+\item{which}{Character. Either \code{"score"} to show AUC or
+\code{"contrasts"} to show differences between AUC.}
 
 \item{xlim}{Limits for x-axis}
 
 \item{ylim}{Limits for y-axis}
 
+\item{xlab}{Label for x-axis}
+
+\item{ylab}{Label for y-axis}
+
+\item{col}{line color}
+
+\item{lwd}{line width}
+
+\item{lty}{line style}
+
+\item{cex}{point size}
+
+\item{pch}{point style}
+
+\item{type}{line type}
+
 \item{axes}{Logical. If \code{TRUE} draw axes.}
+
+\item{percent}{Logical. If \code{TRUE} scale y-axis in percent.}
 
 \item{conf.int}{Logical. If \code{TRUE} draw confidence shadows.}
 
-\item{...}{Not yet used}
+\item{legend}{Logical. If \code{TRUE} draw legend.}
+
+\item{...}{Used for additional control of the subroutines: plot,}
 }
 \description{
-ggplot AUC curves
+Plot of time-dependent AUC curves
 }
 \examples{
 library(survival)
@@ -35,13 +55,12 @@ d=sampleData(100,outcome="survival")
 nd=sampleData(100,outcome="survival")
 f1=coxph(Surv(time,event)~X1+X6+X8,data=d,x=TRUE,y=TRUE)
 f2=coxph(Surv(time,event)~X2+X5+X9,data=d,x=TRUE,y=TRUE)
-xx=Score(list(f1,f2), formula=Surv(time,event)~1,
+xx=Score(list("X1+X6+X8"=f1,"X2+X5+X9"=f2), formula=Surv(time,event)~1,
 data=nd, metrics="auc", null.model=FALSE, times=seq(3:10))
 aucgraph <- plotAUC(xx)
-plotAUC(xx,conf.int=TRUE)+ggtitle("AUC")+theme_classic()
-plotAUC(xx,type="contrasts")
-a=plotAUC(xx,type="contrasts",conf.int=TRUE)
-a+theme_bw()
+plotAUC(xx,conf.int=TRUE)
+## difference between 
+plotAUC(xx,which="contrasts",conf.int=TRUE)
 
 
 }

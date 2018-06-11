@@ -9,24 +9,36 @@ getResponse <- function(formula,cause,data,vars){
         ## case 1,2,3
         m <- stats::model.frame(formula=formula,data=data,na.action=na.fail)
         response <- stats::model.response(m)
-        if (is.factor(response) || length(unique(response))==2){
-            if (!is.factor(response)) response <- factor(response)
-            if (length(levels(response))==2) {
-                if (missing(cause)||is.null(cause)) cause <- levels(response)[2]
-                response <- as.numeric(response==cause)
-                response <- data.table(response)
-                ## data.table::setnames(response,vars)
-                data.table::setnames(response,"ReSpOnSe")
-                attr(response,"event") <- cause
-                attr(response,"model") <- "binary"
+        rlevs <- unique(response)
+        if (is.factor(response) || length(rlevs)==2){
+            if (is.factor(response)) rlevs <- levels(response)
+            if (length(rlevs)==2) {
+                if (missing(cause)||is.null(cause)){
+                    if (is.factor(response)){
+                        cause <- levels(response)[2]
+                    } else{
+                        cause <- NULL
+                        if (all(rlevs %in% c("0","1"))) cause=1
+                        if (all(rlevs %in% c("1","2"))) cause=2
+                        if (is.null(cause)){
+                            warning("Outcome cause of interest not specified. Using first occuring value for now.")
+                            cause <- rlevs[1]
+                        }
+                    }
+                }
+                ## coercing to 0/1 variable
+                response <- data.table(ReSpOnSe=as.numeric(response==cause))
+                data.table::setattr(response,"states",c("0","1"))
+                data.table::setattr(response,"event","1")
+                data.table::setattr(response,"model","binary")
             }
             else{
-                attr(response,"model") <- "multi.level"
+                data.table::setattr(response,"model","multi.level")
                 stop("Methods for factors with more than two classes are not\n (not yet) implemented.")
             }
         }
         else{
-            attr(response,"model") <- "continuous"
+            data.table::setattr(response,"model","continuous")
             attr(response,"event") <- NULL
         }
     }

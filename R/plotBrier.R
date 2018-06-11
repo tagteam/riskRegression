@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Feb 23 2017 (11:07) 
 ## Version: 
-## last-updated: Oct 13 2017 (13:08) 
+## last-updated: Apr 27 2018 (11:45) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 43
+##     Update #: 44
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -84,7 +84,7 @@ plotBrier <- function(x,
     }
     lenmm <- length(mm)
     if(missing(xlab)) xlab <- "Time"
-    if(missing(ylab)) if (which=="score") ylab <- "Brier" else ylab <- expression(paste(Delta, " Brier"))
+    if(missing(ylab)) if (which=="score") ylab <- "Brier score" else ylab <- expression(paste(Delta, " Brier score"))
     if(missing(col)) col <- rep(cbbPalette,length.out=lenmm)
     names(col) <- mm
     if(missing(lwd)) lwd <- 2
