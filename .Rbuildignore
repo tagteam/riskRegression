@@ -3,6 +3,8 @@ prepareData/
 ^.*\.o$
 ^.*\.so$
 ^README.org$
+^vignettes/.*\.org$
+^vignettes/.*\.bbl$
 ^\.travis\.yml$
 ^.*\.Rproj$
 ^\.Rproj\.user$

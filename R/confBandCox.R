@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: apr 21 2017 (17:40) 
 ## Version: 
-## last-updated: maj 24 2018 (17:49) 
+## last-updated: jun  6 2018 (15:48) 
 ##           By: Brice Ozenne
-##     Update #: 26
+##     Update #: 28
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -23,7 +23,7 @@
 #' @param n.sim The number of simulations used to compute the quantiles.
 #' @param conf.level Level of confidence.
 #' 
-confBandCox <- function(iid, se, n.sim, conf.level){  
+confBandCox <- function(iid, se, n.sim, conf.level){    
     # NOTE
     # iid must be (n.new,n.times,n.object)
     #  se must be (n.new,n.times)

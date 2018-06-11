@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: maj 18 2017 (09:23) 
 ## Version: 
-## last-updated: jun  3 2018 (22:31) 
+## last-updated: jun 11 2018 (16:19) 
 ##           By: Brice Ozenne
-##     Update #: 142
+##     Update #: 145
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -228,11 +228,11 @@ test_that("[predictCox] before the first event",{
     
     expect_true(all(predRR1$survival==1))
     expect_true(all(predRR1$cumhazard==0))
-    expect_true(all(is.na(predRR1$survival.se)+is.nan(predRR1$survival.se)>1))
-    expect_true(all(is.na(predRR1$survival.lower)))
-    expect_true(all(is.na(predRR1$survival.upper)))
-    expect_true(all(is.na(predRR1$survival.lowerBand)))
-    expect_true(all(is.na(predRR1$survival.upperBand)))
+    expect_true(all(predRR1$survival.se==0))
+    expect_true(all(predRR1$survival.lower==1))
+    expect_true(all(predRR1$survival.upper==1))
+    expect_true(all(predRR1$survival.lowerBand==1))
+    expect_true(all(predRR1$survival.upperBand==1))
 
 })    
 
@@ -401,9 +401,9 @@ test_that("[confint.predictCox] compare to known values (eventtimes, log log tra
                      "survival.se" = c(0.7159, 1.37651), 
                      "survival.lower" = c(0.97914, 0.89511), 
                      "survival.upper" = c(0.99873, 0.9995), 
-                     "survival.quantileBand" = c(2.27614, NA), 
-                     "survival.lowerBand" = c(0.97391, NA), 
-                     "survival.upperBand" = c(0.99898, NA))
+                     "survival.quantileBand" = c(2.27614, 2.33186), 
+                     "survival.lowerBand" = c(0.97391, 0.83119), 
+                     "survival.upperBand" = c(0.99898, 0.9997))
     ## butils::object2script(as.data.table(predRR1.loglog)[135:136,names(GS),with=FALSE], digit = 5)
     expect_equal(as.data.table(predRR1.loglog)[135:136,names(GS),with=FALSE],
                  GS, tol = 1e-4, scale = 1)

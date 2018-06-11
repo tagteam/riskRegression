@@ -162,6 +162,10 @@ predict.CauseSpecificCox <- function(object,
     if(length(landmark)!=1){
         stop("\'t0\' must have length one \n")
     }
+    if(any(is.na(unlist(coef(object))))){
+        stop("Incorrect object",
+             "One or several model parameters have been estimated to be NA \n")
+    }
   
     ## Confidence bands
     se.save <- se

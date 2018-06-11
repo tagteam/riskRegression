@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: maj 27 2017 (21:23) 
 ## Version: 
-## last-updated: maj 24 2018 (17:28) 
+## last-updated: jun  6 2018 (15:43) 
 ##           By: Brice Ozenne
-##     Update #: 182
+##     Update #: 184
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -261,7 +261,7 @@ calcSeCSC <- function(object, cif, hazard, cumhazard, object.time, object.maxtim
             
     }
         # }}}
-    }   
+    }
     
     return(out)
 }

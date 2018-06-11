@@ -6,7 +6,7 @@
 \usage{
 \method{confint}{predictCox}(object, parm = NULL, level = 0.95,
   nsim.band = 10000, cumhazard.transform = "log",
-  survival.transform = "cloglog", seed = NA, ...)
+  survival.transform = "loglog", seed = NA, ...)
 }
 \arguments{
 \item{object}{A \code{predictCox} object, i.e. output of the \code{predictCox} function.}

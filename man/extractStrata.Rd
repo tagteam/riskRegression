@@ -4,12 +4,10 @@
 \alias{extractStrata}
 \title{Extract the information about the strata}
 \usage{
-extractStrata(xterms, xlevels = NULL, special)
+extractStrata(xterms, special)
 }
 \arguments{
 \item{xterms}{...}
-
-\item{xlevels}{...}
 
 \item{special}{the special character indicating the strata variables}
 }

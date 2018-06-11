@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: maj 30 2018 (15:58) 
 ## Version: 
-## Last-Updated: jun  1 2018 (15:59) 
+## Last-Updated: jun 11 2018 (16:16) 
 ##           By: Brice Ozenne
-##     Update #: 146
+##     Update #: 168
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -40,20 +40,26 @@ transformSE <- function(estimate, se, type){
         return(se)
     }else if(type == "log"){
         ## formula 4.10 p 58 (Beyersmann et al. 2012)
-        return(se/estimate)
+        newse <- se/estimate
     }else if(type == "loglog"){
         ## formula 4.16 p 59 (Beyersmann et al. 2012)
-        return(se / ( - estimate * log(estimate) ))
+        newse <- se / ( - estimate * log(estimate) )
     }else if(type == "cloglog"){
         ## formula 4.21 p 62 (Beyersmann et al. 2012)
-        return(se / ( - (1-estimate) * log(1-estimate) ))
+        newse <- se / ( - (1-estimate) * log(1-estimate) )
     }else if(type == "atanh"){
         ## fisher transform: f(x) = 1/2 log(1+x) - 1/2 log(1-x)
         ##                   df(x) = dx/(2+2x) + dx/(2-2x) = dx(1/(1+x)+1/(1-x))/2
         ##                         = dx/(1+x^2)
         ##               Var(f(x)) = Var(x)/(1+x^2)
-        return(se / (1+estimate^2) )
+        newse <- se / (1+estimate^2)
     }
+
+    index0 <- which(se==0)
+    if(length(index0)>0){
+        newse[index0] <- 0
+    }
+    return(newse)
 }
 
 ## * transformIID
@@ -80,20 +86,25 @@ transformIID <- function(estimate, iid, type){
         return(iid)
     }else if(type == "log"){
         ## formula 4.10 p 58 (Beyersmann et al. 2012)
-        return(sliceScale_cpp(iid, M = estimate))
+        newiid <- sliceScale_cpp(iid, M = estimate)
     }else if(type == "loglog"){
         ## formula 4.16 p 59 (Beyersmann et al. 2012)
-        return(sliceScale_cpp(iid, M = - estimate * log(estimate) ))
+        newiid <- sliceScale_cpp(iid, M = - estimate * log(estimate) )
     }else if(type == "cloglog"){
+        newiid <- sliceScale_cpp(iid, M = - (1 - estimate) * log(1-estimate) )
         ## formula 4.21 p 62 (Beyersmann et al. 2012)
-        return(sliceScale_cpp(iid, M = - (1 - estimate) * log(1-estimate) ))
     }else if(type == "atanh"){
         ## fisher transform: f(x) = 1/2 log(1+x) - 1/2 log(1-x)
         ##                   df(x) = dx/(2+2x) + dx/(2-2x) = dx(1/(1+x)+1/(1-x))/2
         ##                         = dx/(1+x^2)
         ##               Var(f(x)) = Var(x)/(1+x^2)
-        return(sliceScale_cpp(iid, M = 1 + estimate^2 ))
+        newiid <- sliceScale_cpp(iid, M = 1 + estimate^2 )
     }
+    index0 <- which(iid==0)
+    if(length(index0)>0){
+        newiid[index0] <- 0
+    }
+    return(newiid)
 }
 
 ## * transformCI
@@ -256,12 +267,22 @@ transformCIBP <- function(estimate, se, iid, null,
         ## find quantiles for the bands
         if(!is.na(seed)){set.seed(seed)}
         ## sqrt(rowSums(iid[1,,]^2))
-        ## se[1,]        
-        out$quantileBand <- confBandCox(iid = iid,
-                                        se = se,
-                                        n.sim = nsim.band,
-                                        conf.level = conf.level)
-
+        ## se[1,]
+        index.firstSE <- which(colSums(se!=0)>0)[1]
+        if(all(is.na(index.firstSE))){
+            out$quantileBand <- rep(NA, NROW(se))
+        }else if(index.firstSE!=1){
+            ## sqrt(apply(iid[,index.firstSE:NCOL(se),,drop=FALSE]^2,1:2,sum))
+            out$quantileBand <- confBandCox(iid = iid[,index.firstSE:NCOL(se),,drop=FALSE],
+                                            se = se[,index.firstSE:NCOL(se),drop=FALSE],
+                                            n.sim = nsim.band,
+                                            conf.level = conf.level)
+        }else{
+            out$quantileBand <- confBandCox(iid = iid,
+                                            se = se,
+                                            n.sim = nsim.band,
+                                            conf.level = conf.level)
+        }
         out[c("lowerBand","upperBand")] <- transformCI(estimate = estimate,
                                                        se = se,
                                                        quantile = out$quantileBand,

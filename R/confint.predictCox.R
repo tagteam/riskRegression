@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: maj 23 2018 (14:08) 
 ## Version: 
-## Last-Updated: jun  3 2018 (20:08) 
+## Last-Updated: jun  6 2018 (16:04) 
 ##           By: Brice Ozenne
-##     Update #: 251
+##     Update #: 252
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -84,7 +84,7 @@ confint.predictCox <- function(object,
                                level = 0.95,
                                nsim.band = 1e4,
                                cumhazard.transform = "log",
-                               survival.transform = "cloglog",
+                               survival.transform = "loglog",
                                seed = NA,
                                ...){
     

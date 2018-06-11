@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: maj 23 2018 (14:08) 
 ## Version: 
-## Last-Updated: jun  3 2018 (20:09) 
+## Last-Updated: jun 11 2018 (15:41) 
 ##           By: Brice Ozenne
-##     Update #: 144
+##     Update #: 147
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -75,7 +75,7 @@ confint.predictCSC <- function(object,
                                parm = NULL,
                                level = 0.95,
                                nsim.band = 1e4,
-                               absRisk.transform = "cloglog",
+                               absRisk.transform = "loglog",
                                seed = NA,
                                ...){
 
@@ -97,7 +97,7 @@ confint.predictCSC <- function(object,
         stop("Cannot work with standard errors that have already been transformed \n")
     }
     object$absRisk.transform <- match.arg(absRisk.transform, c("none","log","loglog","cloglog"))
-
+    
     ## ** compute se, CI/CB
     outCIBP <- transformCIBP(estimate = object$absRisk,
                              se = object$absRisk.se,

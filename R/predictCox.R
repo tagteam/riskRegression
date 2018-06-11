@@ -158,42 +158,46 @@ predictCox <- function(object,
   
   # {{{ treatment of times and stopping rules
   
-  #### Extract elements from object ####
-  # we need:          - the total number of observations, the status and eventtime for each observation
-  #                   - the strata corresponding to each observation in the training set
-  #                   - the name of each strata
-  #                   - the value of the linear predictor for each observation in the training set
+#### Extract elements from object ####
+                                        # we need:          - the total number of observations, the status and eventtime for each observation
+                                        #                   - the strata corresponding to each observation in the training set
+                                        #                   - the name of each strata
+                                        #                   - the value of the linear predictor for each observation in the training set
   if (se==1L || iid==1L){
-    if (missing(newdata)) stop("Argument 'newdata' is missing. Cannot compute standard errors in this case.")
+      if (missing(newdata)) stop("Argument 'newdata' is missing. Cannot compute standard errors in this case.")
   }
   infoVar <- coxVariableName(object)
   is.strata <- infoVar$is.strata
   if (missing(times)) {
-    nTimes <- 0
-    times <- numeric(0)
+      nTimes <- 0
+      times <- numeric(0)
   }else{
-    nTimes <- length(times)
+      nTimes <- length(times)
   }
   needOrder <- (nTimes>0 && is.unsorted(times))
   if (needOrder) {
-    oorder.times <- order(order(times))
-    times.sorted <- sort(times)
+      oorder.times <- order(order(times))
+      times.sorted <- sort(times)
   }else{
-    if (nTimes==0)
-      times.sorted <- numeric(0)
-    else
-      times.sorted <- times
+      if (nTimes==0)
+          times.sorted <- numeric(0)
+      else
+          times.sorted <- times
   }
-  
+
   object.n <- coxN(object)
   object.design <- coxDesign(object)
   object.status <- object.design[["status"]]
   object.start <- object.design[["start"]]
   object.stop <- object.design[["stop"]]
-  object.strata <- coxStrata(object, data = NULL, strata.vars = infoVar$strata.vars)
+  object.strata <- coxStrata(object,
+                             data = NULL,
+                             strata.vars = infoVar$strata.vars, 
+                             strata.levels = infoVar$strata.levels)
   object.levelStrata <- levels(object.strata)
-  # if we predict the hazard for newdata then there is no need to center the covariates
-  object.eXb <- exp(coxLP(object, data = NULL, center = if(is.null(newdata)){centered}else{FALSE})) 
+                                        # if we predict the hazard for newdata then there is no need to center the covariates
+  object.eXb <- exp(coxLP(object, data = NULL, center = if(is.null(newdata)){centered}else{FALSE}))
+
   object.baseEstimator <- coxBaseEstimator(object) 
   nVar <- length(infoVar$lpvars)
   
@@ -204,7 +208,7 @@ predictCox <- function(object,
     se <- TRUE
   }
 
-  #### checks ####
+#### checks ####
   if(object.baseEstimator == "exact"){
       stop("Prediction with exact handling of ties is not implemented.\n")
   }
@@ -212,7 +216,7 @@ predictCox <- function(object,
       stop("Missing (NA) values in argument \'times\' are not allowed.\n")
   }
   type <- tolower(type)
-  if(!is.null(object$weights)){
+  if(!is.null(object$weights) && !all(object$weights==1)){
       stop("predictCox does not know how to handle Cox models fitted with weights \n")
   }
   if(any(type %in% c("hazard","cumhazard","survival") == FALSE)){
@@ -225,6 +229,10 @@ predictCox <- function(object,
   if(!is.null(object$naive.var)){
       stop("predictCox does not know how to handle fraitly \n") 
   }
+  if(any(is.na(coef(object)))){
+      stop("Incorrect object",
+           "One or several model parameters have been estimated to be NA \n")
+  }
                                         # }}}
                                         # {{{ computation of the baseline hazard
   if(!is.null(newdata)){
@@ -235,15 +243,15 @@ predictCox <- function(object,
                "\"\n")
       }
     
-    new.n <- NROW(newdata)
-    newdata <- as.data.table(newdata)
-    new.eXb <- exp(coxLP(object, data = newdata, center = FALSE))
-    
-    new.strata <- coxStrata(object, data = newdata, 
-                            sterms = infoVar$sterms, 
-                            strata.vars = infoVar$strata.vars, 
-                            levels = object.levelStrata, 
-                            strata.levels = infoVar$strata.levels)
+      new.n <- NROW(newdata)
+      newdata <- as.data.table(newdata)
+      new.eXb <- exp(coxLP(object, data = newdata, center = FALSE))
+      
+      new.strata <- coxStrata(object, data = newdata, 
+                              sterms = infoVar$sterms, 
+                              strata.vars = infoVar$strata.vars, 
+                              levels = object.levelStrata, 
+                              strata.levels = infoVar$strata.levels)
     
     new.levelStrata <- levels(new.strata)
   }
@@ -252,15 +260,16 @@ predictCox <- function(object,
   nStrata <- length(object.levelStrata)
   if(is.strata){etimes.max <- tapply(object.stop, object.strata, max) }else{ etimes.max <- max(object.stop) } # last event time
   
-  # sort the data
-  dt.prepare <- data.table(start = object.start,
-                           stop = object.stop,
-                           status = object.status,
-                           eXb = object.eXb,
-                           strata = as.numeric(object.strata) - 1)
+  ## sort the data
+  dt.prepare <- data.table::data.table(start = object.start,
+                                       stop = object.stop,
+                                       status = object.status,
+                                       eXb = object.eXb,
+                                       strata = as.numeric(object.strata) - 1)
   dt.prepare[, statusM1 := 1-status] # sort by statusM1 such that deaths appear first and then censored events
   data.table::setkeyv(dt.prepare, c("strata","stop","start","statusM1"))
-  # compute the baseline hazard
+  
+  ## compute the baseline hazard
   Lambda0 <- baseHaz_cpp(starttimes = dt.prepare$start,
                          stoptimes = dt.prepare$stop,
                          status = dt.prepare$status,
@@ -272,7 +281,7 @@ predictCox <- function(object,
                          predtimes = times.sorted,
                          cause = 1,
                          Efron = (object.baseEstimator == "efron"))
-  # }}}
+                                        # }}}
   
 #### compute hazard and survival ####        
   if (is.null(newdata)){  
@@ -307,7 +316,7 @@ predictCox <- function(object,
       stop("Time points at which to evaluate the predictions are missing \n")
     }
     
-    ## subject specific hazard
+      ## subject specific hazard
     if (is.strata==FALSE){
       if ("hazard" %in% type){
         out$hazard <- (new.eXb %o% Lambda0$hazard)
@@ -343,11 +352,12 @@ predictCox <- function(object,
       if (is.strata == TRUE){ ## rename the strata value with the correct levels
         Lambda0$strata <- factor(Lambda0$strata, levels = 0:(nStrata-1), labels = object.levelStrata)
       }
-      
+
       ## loop across strata
       for(S in new.levelStrata){
         id.S <- Lambda0$strata==S
         newid.S <- new.strata==S
+
         if ("hazard" %in% type){
           out$hazard[newid.S,] <- new.eXb[newid.S] %o% Lambda0$hazard[id.S]
           if (needOrder)

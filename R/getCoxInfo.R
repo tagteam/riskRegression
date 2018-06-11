@@ -1,34 +1,37 @@
 #### functions ####
 
-# {{{ coxVariableName
+                                        # {{{ coxVariableName
+## * coxVariableName
 #' @title Extract variable names from a model
 #' @description Extract the name of the variables belonging to the linear predictor or used to form the strata
-#' @rdname coxVariableName 
+#' @name coxVariableName
+#' 
 #' @param object The fitted Cox regression model object either
 #'     obtained with \code{coxph} (survival package) or \code{cph}
 #'     (rms package).
 #' 
 #' @author Brice Ozenne broz@@sund.ku.dk
-#' 
+
 #' @rdname coxVariableName
 #' @export
 coxVariableName <- function(object){
+    ff <- coxFormula(object)
+    special.object <- coxSpecialStrata(object)
   
-  f <- coxFormula(object)
-  special.object <- coxSpecialStrata(object)
+    ## response
+    ls.SurvVar <- SurvResponseVar(ff)
   
-  ## response
-  ls.SurvVar <- SurvResponseVar(f)
-  
-  ## strata
-  xterms <- delete.response(terms(f,
-                                  special = special.object,
-                                  data = coxDesign(object)))
-  ls.StrataInfo <- extractStrata(xterms,
-                                 special = coxSpecialStrata(object))
-  
-  ## regressor
-  lpvars.original <- setdiff(all.vars(f),c(unlist(ls.SurvVar), ls.StrataInfo$strata.vars.original))
+    ## strata
+    xterms <- delete.response(terms(ff,
+                                    special = special.object,
+                                    data = coxDesign(object)))
+    ls.StrataInfo <- extractStrata(xterms,
+                                   special = coxSpecialStrata(object))
+
+    ls.StrataInfo$strata.levels <- coxStrataLevel(object)
+    
+    ## regressor
+    lpvars.original <- setdiff(all.vars(ff),c(unlist(ls.SurvVar), ls.StrataInfo$strata.vars.original))
   
   ## export
   return(c(list(entry = ls.SurvVar$entry),
@@ -41,6 +44,7 @@ coxVariableName <- function(object){
 } 
 # }}}
 
+## * coxCovars
 coxCovars <- function(object){
   ttobj <- stats::terms(object)
   ## colnames(attr(ttobj,"factors"))
@@ -49,16 +53,17 @@ coxCovars <- function(object){
 
 #### methods #####
 
-# {{{ coxBaseEstimator
+                                        # {{{ coxBaseEstimator
+## * coxBaseEstimator
 #' @title Extract the type of estimator for the baseline hazard
 #' @description Extract the type of estimator for the baseline hazard
-#' @rdname coxBaseEstimator 
+#' @name coxBaseEstimator 
 #' @param object The fitted Cox regression model object either
 #'     obtained with \code{coxph} (survival package), \code{cph}
 #'     (rms package), or \code{phreg} (mets package).
 #' 
 #' @author Brice Ozenne broz@@sund.ku.dk
-#' 
+
 #' @rdname coxBaseEstimator
 #' @export
 coxBaseEstimator <- function(object){
@@ -80,16 +85,17 @@ coxBaseEstimator.phreg <- function(object){
 }
 # }}}
 
-# {{{ coxCenter
+                                        # {{{ coxCenter
+## * coxCenter
 #' @title Extract the mean value of the covariates
 #' @description Extract the mean value of the covariates
-#' @rdname coxCenter 
+#' @name coxCenter 
 #' @param object The fitted Cox regression model object either
 #'     obtained with \code{coxph} (survival package), \code{cph}
 #'     (rms package), or \code{phreg} (mets package).
 #' 
 #' @author Brice Ozenne broz@@sund.ku.dk
-#' 
+
 #' @rdname coxCenter
 #' @export
 coxCenter <- function(object){
@@ -119,18 +125,19 @@ coxCenter.phreg <- function(object){
 }
 # }}}
 
-# {{{ coxDesign
+                                        # {{{ coxDesign
+## * coxDesign
 #' @title Extract the design matrix used to train a Cox model
 #' @description Extract the design matrix used to train a Cox model. Should contain the time of event, the type of event, 
 #' the variable for the linear predictor, the strata variables and the date of entry (in case of delayed entry).
-#' @rdname coxDesign 
+#' @name coxDesign 
 #' @param object The fitted Cox regression model object either
 #'     obtained with \code{coxph} (survival package), \code{cph}
 #'     (rms package), or \code{phreg} (mets package).
 #' @param center logical. Should the variable of the linear predictor be centered ?
 #' 
 #' @author Brice Ozenne broz@@sund.ku.dk
-#' 
+
 #' @rdname coxDesign
 #' @export
 coxDesign <- function(object, center){
@@ -182,41 +189,45 @@ coxDesign.coxph <- function(object, center = FALSE){
 #' @method coxDesign phreg
 #' @export
 coxDesign.phreg <- function(object, center = FALSE){
-  M.outcome <- as.matrix(object$model.frame[,1])
-  if("entry" %in% names(M.outcome) == FALSE){
-    M.outcome <- cbind(entry = 0, M.outcome)
-  }
+
+    M.outcome <- as.matrix(object$model.frame[,1])
+    if("entry" %in% names(M.outcome) == FALSE){
+        M.outcome <- cbind(entry = 0, M.outcome)
+    }
   
-  # normalize names
-  name.default <- colnames(M.outcome)
-  name.default<- gsub("entry","start",gsub("time","stop",name.default))
-  colnames(M.outcome) <- name.default
+8                                        # normalize names
+    name.default <- colnames(M.outcome)
+    name.default<- gsub("entry","start",gsub("time","stop",name.default))
+    colnames(M.outcome) <- name.default
   
-  # get covariates
-  M.X <- model.matrix(coxFormula(object), data = object$model.frame)[,names(coef(object)),drop=FALSE]
+                                        # get covariates
+    M.X <- model.matrix(coxFormula(object), data = object$model.frame)[,names(coef(object)),drop=FALSE]
   
-  if(center){
-    M.X <- rowCenter_cpp(M.X, center = coxCenter(object))
-  }
+    if(center){
+        M.X <- rowCenter_cpp(M.X, center = coxCenter(object))
+    }
+
+    if("strata" %in% names(object) == FALSE){
+        return(as.data.frame(cbind(M.outcome, M.X, strata = object[["strata"]])))
+    }else{
+        return(as.data.frame(cbind(M.outcome, M.X)))        
+    }
   
-  if("strata" %in% names(object) == FALSE){
-    object[["strata"]] <- NULL
-  }
-  
-  return(as.data.frame(cbind(M.outcome, M.X, strata = object[["strata"]])))
+
 }
 # }}}
 
-# {{{ coxFormula
+                                        # {{{ coxFormula
+## * coxFormula
 #' @title Extract the formula from a Cox model
 #' @description Extract the formula from a Cox model
-#' @rdname coxFormula 
+#' @name coxFormula 
 #' @param object The fitted Cox regression model object either
 #'     obtained with \code{coxph} (survival package), \code{cph}
 #'     (rms package), or \code{phreg} (mets package).
 #' 
 #' @author Brice Ozenne broz@@sund.ku.dk
-#' 
+
 #' @rdname coxFormula
 #' @export
 coxFormula <- function(object){
@@ -241,15 +252,15 @@ coxFormula.coxph <- function(object){
 #' @method coxFormula phreg
 #' @export
 coxFormula.phreg <- function(object){
-  return(eval(object$call$formula))
+  return(object$formula)
 }
 # }}}
 
 # {{{ coxLP
-
+## * coxLP
 #' @title Compute the linear predictor of a Cox model
 #' @description Compute the linear predictor of a Cox model
-#' @rdname coxLP 
+#' @name coxLP 
 #' @param object The fitted Cox regression model object either
 #'     obtained with \code{coxph} (survival package), \code{cph}
 #'     (rms package), or \code{phreg} (mets package).
@@ -259,6 +270,7 @@ coxFormula.phreg <- function(object){
 #' @author Brice Ozenne broz@@sund.ku.dk
 #' 
 #' @details In case of empty linear predictor returns a vector of 0 with the same length as the number of rows of the dataset
+
 #' @rdname coxLP
 #' @export
 coxLP <- function(object, data, center){
@@ -390,15 +402,18 @@ coxLP.phreg <- function(object, data, center){
 
 # }}}
 
-# {{{ coxN
+                                        # {{{ coxN
+## * coxN
 #' @title Extract the number of observations from a Cox model
 #' @description Extract the number of observations from a Cox model
-#' @rdname coxN 
+#' @name coxN 
 #' @param object The fitted Cox regression model object either
 #'     obtained with \code{coxph} (survival package), \code{cph}
 #'     (rms package), or \code{phreg} (mets package).
 #' 
 #' @author Brice Ozenne broz@@sund.ku.dk
+#'
+
 #' @rdname coxN
 #' @export
 coxN <- function(object){
@@ -427,7 +442,8 @@ coxN.phreg <- function(object){
 }
 # }}}
 
-# {{{ coxSpecialStrata
+                                        # {{{ coxSpecialStrata
+## * coxSpecialStrata
 #' @title Special character for strata in Cox model
 #' @description Return the special character used to indicate the strata variables of the Cox model
 #' @name coxSpecialStrata
@@ -436,7 +452,7 @@ coxN.phreg <- function(object){
 #'     (rms package), or \code{phreg} (mets package).
 #'
 #' @author Brice Ozenne broz@@sund.ku.dk
-#' 
+
 #' @rdname coxSpecialStrata
 #' @export
 coxSpecialStrata <- function(object) UseMethod("coxSpecialStrata")
@@ -463,7 +479,52 @@ coxSpecialStrata.phreg <- function(object){
 }
 # }}}
 
-# {{{ coxStrata
+## * coxStrataLevel
+#' @title Returns the name of the strata in Cox model
+#' @description Return the name of the strata in Cox model
+#' @name coxStrataLevel
+#' @param object The fitted Cox regression model object either
+#'     obtained with \code{coxph} (survival package), \code{cph}
+#'     (rms package), or \code{phreg} (mets package).
+#'
+#' @author Brice Ozenne broz@@sund.ku.dk
+
+#' @rdname coxStrataLevel
+#' @export
+coxStrataLevel <- function(object) UseMethod("coxStrataLevel")
+
+#' @rdname coxStrataLevel
+#' @method coxStrataLevel coxph
+#' @export
+coxStrataLevel.coxph <- function(object){
+    if(!is.null(object$strata)){
+        return(levels(object$strata))
+    }else{
+        return(NULL)
+    }
+}
+
+#' @rdname coxStrataLevel
+#' @method coxStrataLevel cph
+#' @export
+coxStrataLevel.cph <- function(object){
+    if(!is.null(object$strata)){
+        return(levels(object$strata))
+    }else{
+        return(NULL)
+    }
+}
+
+#' @rdname coxStrataLevel
+#' @method coxStrataLevel phreg
+#' @export
+coxStrataLevel.phreg <- function(object){
+  return(object$strata.level)
+}
+                                        # }}}
+
+                                        # {{{ coxStrata
+## * coxStrata
 #' @title Define the strata for a new dataset
 #' @description Define the strata in a dataset to match those of a stratified Cox model
 #' @name coxStrata
@@ -479,7 +540,7 @@ coxSpecialStrata.phreg <- function(object){
 #' @author Brice Ozenne broz@@sund.ku.dk
 #' 
 #' @details if no strata variables returns a vector of \code{"1"} (factor).
-#' 
+
 #' @rdname coxStrata
 #' @export
 coxStrata <- function(object, data, sterms, strata.vars, levels, strata.levels) UseMethod("coxStrata")
@@ -495,19 +556,19 @@ coxStrata.cph <- function(object, data, sterms, strata.vars, levels, strata.leve
     strata <- as.factor(rep("1", n))
     
   }else{  ## strata variables
-    
-    if(is.null(data)){ ## training dataset
-      strata <- object$strata
-    }else { ## new dataset
-      tmp <- model.frame(sterms,data)
-      colnames(tmp) <- names(prodlim::parseSpecialNames(names(tmp),"strat"))
-      tmp <- data.frame(lapply(1:NCOL(tmp),function(j){factor(paste0(names(tmp)[j],"=",tmp[,j,drop=TRUE]))}))
-      strata <- apply(tmp,1,paste,collapse=".")
-      if (any(unique(strata) %in% levels == FALSE)){
-        stop("unknown strata: ",paste(unique(strata[strata %in% levels == FALSE]), collapse = " | "),"\n")
+
+      if(is.null(data)){ ## training dataset
+          strata <- object$strata
+      }else { ## new dataset
+          tmp <- model.frame(sterms,data)
+          colnames(tmp) <- names(prodlim::parseSpecialNames(names(tmp),"strat"))
+          tmp <- data.frame(lapply(1:NCOL(tmp),function(j){factor(paste0(names(tmp)[j],"=",tmp[,j,drop=TRUE]))}))
+          strata <- apply(tmp,1,paste,collapse=".")
+          if (any(unique(strata) %in% levels == FALSE)){
+              stop("unknown strata: ",paste(unique(strata[strata %in% levels == FALSE]), collapse = " | "),"\n")
+          }
+          strata <- factor(strata, levels = levels) # add all levels - necessary for predict.CauseSpecificCox to able to correctly convert strata to numeric
       }
-      strata <- factor(strata, levels = levels) # add all levels - necessary for predict.CauseSpecificCox to able to correctly convert strata to numeric
-    }
     
   }
   
@@ -544,13 +605,33 @@ coxStrata.coxph <- function(object, data, sterms, strata.vars, levels, strata.le
 #' @rdname coxStrata
 #' @method coxStrata phreg
 # '@export
-coxStrata.phreg <- coxStrata.coxph
+coxStrata.phreg <- function(object, data, sterms, strata.vars, levels, strata.levels){
+  
+  if(length(strata.vars)==0){ ## no strata variables
+    
+    n <- if(is.null(data)) coxN(object) else NROW(data)
+    strata <- as.factor(rep("1", n))
+    
+  }else{  ## strata variables
+      if(is.null(data)){ ## training dataset
+          strata <- factor(object$strata[order(object$ord[,1]),1], levels = 0:(length(strata.levels)-1), labels = strata.levels)
+      }else { ## new dataset
+          strata <- prodlim::model.design(sterms,data=data,xlev=strata.levels,specialsFactor=TRUE)$strata[[1]]
+          if (any(unique(strata) %in% strata.levels == FALSE)){
+              stop("unknown strata: ",paste(unique(strata[strata %in% strata.levels == FALSE]), collapse = " | "),"\n")
+          }
+      }
+    
+  }
+  return(strata)
+}
 # }}}
 
-# {{{ coxVarCov
+                                        # {{{ coxVarCov
+## * coxVarCov
 #' @title Extract the variance covariance matrix of the beta from a Cox model
 #' @description Extract the variance covariance matrix of the beta from a Cox model
-#' @rdname coxVarCov 
+#' @name coxVarCov 
 #' @param object The fitted Cox regression model object either
 #'     obtained with \code{coxph} (survival package), \code{cph}
 #'     (rms package), or \code{phreg} (mets package).
@@ -559,7 +640,7 @@ coxStrata.phreg <- coxStrata.coxph
 #' 
 #' @details Should return \code{NULL} if the Cox model has no covariate. 
 #' The rows and columns of the variance covariance matrix must be named with the names used in the design matrix.
-#' 
+
 #' @rdname coxVarCov
 #' @export
 coxVarCov <- function(object){
@@ -612,10 +693,12 @@ coxVarCov.phreg <- function(object){
 
 #### Auxiliary function #### 
 
-# {{{ SurvResponseVar
+                                        # {{{ SurvResponseVar
+## * SurvResponseVar
 #' @title Extract the time and event variable from a Cox model
 #' @description Extract the time and event variable from a Cox model
-#' @rdname SurvResponseVar
+#' @name SurvResponseVar
+#' 
 #' @param formula a formula
 #'
 #' @author Brice Ozenne broz@@sund.ku.dk
@@ -663,18 +746,18 @@ SurvResponseVar <- function(formula){
 }
 # }}}
 
-# {{{ extractStrata
+                                        # {{{ extractStrata
+## * extractStrata
 #' @title Extract the information about the strata
 #' @description Extract the information about the strata stored in a Cox model
-#' @rdname extractStrata
+#' @name extractStrata
 #' 
 #' @param xterms ...
-#' @param xlevels ...
 #' @param special the special character indicating the strata variables
 #'
 #' @author Brice Ozenne broz@@sund.ku.dk and Thomas A. Gerds tag@@biostat.ku.dk
 #'
-extractStrata <- function(xterms, xlevels = NULL, special){
+extractStrata <- function(xterms, special){
   
   # renamed variables (e.g. strata(X1))
   xvars <- attr(xterms,"term.labels")
@@ -698,26 +781,19 @@ extractStrata <- function(xterms, xlevels = NULL, special){
     sterms <- NULL
   }
   
-  # levels of the strata variables [only useful for coxph]
-  if(!is.null(xlevels)){
-    strata.levels <- xlevels[strata.vars]
-  }else{
-    strata.levels <- NULL
-  }
-  
   return(list(strata.vars = strata.vars,
               strata.vars.original = strata.vars.original,
               strataspecials = strataspecials,
-              strata.levels = strata.levels,
               is.strata = is.strata,
               sterms = sterms))
 }
 # }}}
 
-# {{{ splitStrataVar
+                                        # {{{ splitStrataVar
+## * splitStrataVar
 #' @title Reconstruct each of the strata variables
 #' @description Reconstruct each of the strata variables from the strata variable stored in the coxph object.
-#' @rdname splitStrataVar
+#' @name splitStrataVar
 #' 
 #' @param object a coxph object.
 #'
@@ -752,10 +828,11 @@ splitStrataVar <- function(object){
 }
 # }}}
 
-# {{{ 
+                                        # {{{
+## * reconstructData
 #' @title Reconstruct the original dataset
 #' @description Reconstruct the original dataset from the elements stored in the coxph object
-#' @rdname reconstructData
+#' @name reconstructData
 #' 
 #' @param object a coxph object.
 #'
@@ -795,7 +872,9 @@ reconstructData <- function(object){
 
 # }}}
 
-# {{{ model.matrix.phreg
+                                        # {{{ model.matrix.phreg
+
+## * model.matrix.phreg
 #' @title Extract design matrix for phreg objects
 #' @description Extract design matrix for phreg objects
 #' @param object a phreg object.
@@ -823,3 +902,15 @@ model.matrix.phreg <- function(object, data){
 }
 
 # }}}
+
+## * terms.phreg
+#' @title Extract terms for phreg objects
+#' @description Extract terms for phreg objects
+#' @param x a phreg object.
+#' @param ... not used.
+#' 
+#' @method terms phreg
+terms.phreg <- function(x, ...){
+    stats::terms(x$formula)
+}
+
