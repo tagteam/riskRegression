@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: apr 28 2017 (14:19) 
 ## Version: 
-## last-updated: maj 31 2018 (18:10) 
+## last-updated: jun 13 2018 (15:48) 
 ##           By: Brice Ozenne
-##     Update #: 50
+##     Update #: 55
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -76,33 +76,36 @@ autoplot.ate <- function(object,
     Treatment <- NULL
     
     ## initialize and check          
-    if(ci && object$se==FALSE){
+    if(ci && (object$se==FALSE || is.null(object$conf.level))){
         stop("argument \'ci\' cannot be TRUE when no standard error have been computed \n",
-             "set argment \'se\' to TRUE when calling predictCox \n")
+             "set arguments \'se\' and \'confint\' to TRUE when calling ate \n")
     }
-    if(band && object$band==FALSE){
+    if(band && (object$band==FALSE  || is.null(object$conf.level))){
         stop("argument \'band\' cannot be TRUE when the quantiles for the confidence bands have not been computed \n",
-             "set argment \'nsim.band\' to a positive integer when calling ate \n")
+             "set arguments \'band\' and \'confint\' to TRUE when calling ate \n")
     }
-
-    if( (ci||band) && is.null(object$conf.level) ){
-        object <- stats::confint(object, ...)
-    }else{
-        dots <- list(...)
-        if(length(dots)>0){
-            txt <- names(dots)
-            txt.s <- if(length(txt)>1){"s"}else{""}
-            stop("unknown argument",txt.s,": \"",paste0(txt,collapse="\" \""),"\" \n")
-        }
+    
+    dots <- list(...)
+    if(length(dots)>0){
+        txt <- names(dots)
+        txt.s <- if(length(txt)>1){"s"}else{""}
+        stop("unknown argument",txt.s,": \"",paste0(txt,collapse="\" \""),"\" \n")
     }
 
     ## display
     dataL <- copy(object$meanRisk)
     dataL[,row := as.numeric(as.factor(Treatment))]
     if(ci){
-        setnames(dataL, old = c("lower","upper"), new = c("lowerCI","upperCI"))
+        data.table::setnames(dataL,
+                             old = c("meanRisk.lower","meanRisk.upper"),
+                             new = c("lowerCI","upperCI"))
     }
-    
+    if(band){
+        data.table::setnames(dataL,
+                             old = c("meanRisk.lowerBand","meanRisk.upperBand"),
+                             new = c("lowerBand","upperBand"))
+    }
+
     gg.res <- predict2plot(dataL = dataL,
                            name.outcome = "meanRisk", # must not contain space to avoid error in ggplot2
                            ci = ci, band = band,

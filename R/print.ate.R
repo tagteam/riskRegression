@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun  6 2016 (06:48) 
 ## Version: 
-## last-updated: jun  1 2018 (17:38) 
+## last-updated: jun 13 2018 (14:58) 
 ##           By: Brice Ozenne
-##     Update #: 200
+##     Update #: 226
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -59,25 +59,34 @@ print.ate <- function(x, digits = 3, type = c("meanRisk","diffRisk","ratioRisk")
         dt.tempo <- data.table::copy(x$meanRisk)
         order.col <- c(names(dt.tempo)[1:2],"meanRisk")
         if(!is.null(x$boot) && !is.null(x$conf.level)){
-            order.col <- c(order.col,"meanRiskBoot")
+            order.col <- c(order.col,"bootstrap")
         }
 
-        ## round and merge column containing CI and CB
+        ## round values
         numeric.col <- names(dt.tempo)[-(1:2)]
-        dt.tempo[, c(numeric.col) := round(.SD, digits = digits) , .SDcols = numeric.col]        
-        if(x$se && !is.null(x$conf.level)){
-            dt.tempo[, c("conf.interval") := paste0("[",lower," ; ",upper,"]")]
-            dt.tempo[,c("lower","upper") := NULL]
-            order.col <- c(order.col,"se","conf.interval")
-        }else if(x$se && is.null(x$boot)){
-            order.col <- c(order.col,"se")
+        dt.tempo[, c(numeric.col) := round(.SD, digits = digits) , .SDcols = numeric.col]
+
+        ## simplify names
+        names(dt.tempo)[-(1:2)] <- gsub("meanRisk\\.","",numeric.col)
+
+        ## merge into CI and CB
+        if(!is.null(x$conf.level)){
+            if(x$se){
+                dt.tempo[, c("conf.interval") := paste0("[",lower," ; ",upper,"]")]
+                dt.tempo[,c("lower","upper") := NULL]
+                order.col <- c(order.col,"se","conf.interval")
+            }
+            if(x$band){
+                dt.tempo[, c("conf.band") := paste0("[",lowerBand," ; ",upperBand,"]")]
+                dt.tempo[,c("lowerBand","upperBand") := NULL]
+                order.col <- c(order.col,"quantileBand","conf.band")
+            }
+        }else if(is.null(x$boot)){
+            if(x$se){
+                order.col <- c(order.col,"se")
+            }
         }
-        if(x$band && !is.null(x$conf.level)){
-            dt.tempo[, c("conf.band") := paste0("[",lowerBand," ; ",upperBand,"]")]
-            dt.tempo[,c("lowerBand","upperBand") := NULL]
-            order.col <- c(order.col,"quantileBand","conf.band")
-        }
-        
+
         ## print
         data.table::setcolorder(dt.tempo, neworder = order.col)
         print(dt.tempo,...)
@@ -85,7 +94,7 @@ print.ate <- function(x, digits = 3, type = c("meanRisk","diffRisk","ratioRisk")
 
     if(!is.null(x$treatment) && ("diffRisk" %in% type || "ratioRisk" %in% type)){
         id.name <- names(x$riskComparison)[1:3]
-
+        
         cat("\nComparison of risks on probability scale [0,1] between\nhypothetical worlds are interpretated as if the treatment was randomized:\n\n")
 
         if("diffRisk" %in% type){
@@ -93,28 +102,87 @@ print.ate <- function(x, digits = 3, type = c("meanRisk","diffRisk","ratioRisk")
             ## only pick diff
             name.diff <- grep("^diff",names(x$riskComparison),value = TRUE)
             dt.tempo <- x$riskComparison[,.SD,.SDcols = c(id.name,name.diff)]
-
-            ## simplify names
-            names(dt.tempo) <- gsub("diff.","",names(dt.tempo),fixed = TRUE)
             order.col <- c(names(dt.tempo)[1:3],"diff")
             if(!is.null(x$boot) && !is.null(x$conf.level)){
-                order.col <- c(order.col,"diffMeanBoot")
+                order.col <- c(order.col,"bootstrap")
             }
-             
-            ## round and merge column containing CI and CB
-            numeric.col <- setdiff(names(dt.tempo)[-(1:2)],"p.value")
+
+            ## round values
+            numeric.col <- names(dt.tempo)[-(1:3)]
             dt.tempo[, c(numeric.col) := round(.SD, digits = digits) , .SDcols = numeric.col]
-            if(x$se && !is.null(x$conf.level)){
-                dt.tempo[, c("conf.interval") := paste0("[",lower," ; ",upper,"]")]
-                dt.tempo[,c("lower","upper") := NULL]
-                order.col <- c(order.col,"se","conf.interval","p.value")
-            }else if(x$se && is.null(x$boot)){
-                order.col <- c(order.col,"se")
+
+            ## simplify names
+            names(dt.tempo)[-(1:3)] <- gsub("diff\\.","",numeric.col)
+
+            ## merge into CI and CB
+            if(!is.null(x$conf.level)){
+                if(x$se){
+                    dt.tempo[, c("conf.interval") := paste0("[",lower," ; ",upper,"]")]
+                    dt.tempo[,c("lower","upper") := NULL]
+                    order.col <- c(order.col,"se","conf.interval","p.value")
+                }
+                if(x$band){
+                    dt.tempo[, c("conf.band") := paste0("[",lowerBand," ; ",upperBand,"]")]
+                    dt.tempo[,c("lowerBand","upperBand") := NULL]
+                    order.col <- c(order.col,"quantileBand","conf.band")
+                }
+            }else if(is.null(x$boot)){
+                if(x$se){
+                    order.col <- c(order.col,"se")
+                }
             }
-            if(x$band && !is.null(x$conf.level)){
-                dt.tempo[, c("conf.band") := paste0("[",lowerBand," ; ",upperBand,"]")]
-                dt.tempo[,c("lowerBand","upperBand") := NULL]
-                order.col <- c(order.col,"quantileBand","conf.band")
+
+            ## round p.value
+            if(x$se && !is.null(x$conf.level)){
+                dt.tempo$p.value <- sapply(dt.tempo$p.value, function(iP){
+                    if(is.na(iP)){
+                        as.numeric(NA)
+                    }else if(iP<10^(-digits)){
+                        return(paste0("<",10^(-digits)))
+                    }else{
+                        round(iP, digits = digits)
+                    }
+                })
+            }
+
+            ## print
+            data.table::setcolorder(dt.tempo, neworder = order.col)
+            print(dt.tempo,...)
+        }
+
+        if("ratioRisk" %in% type){
+            cat("\n     > risk ratio \n\n")
+            ## only pick ratio
+            name.ratio <- grep("^ratio",names(x$riskComparison),value = TRUE)
+            dt.tempo <- x$riskComparison[,.SD,.SDcols = c(id.name,name.ratio)]
+            order.col <- c(names(dt.tempo)[1:3],"ratio")
+            if(!is.null(x$boot) && !is.null(x$conf.level)){
+                order.col <- c(order.col,"bootstrap")
+            }
+            
+            ## round values
+            numeric.col <- names(dt.tempo)[-(1:3)]
+            dt.tempo[, c(numeric.col) := round(.SD, digits = digits) , .SDcols = numeric.col]
+
+            ## simplify names
+            names(dt.tempo)[-(1:3)] <- gsub("ratio\\.","",numeric.col)
+
+            ## merge into CI and CB
+            if(!is.null(x$conf.level)){
+                if(x$se){
+                    dt.tempo[, c("conf.interval") := paste0("[",lower," ; ",upper,"]")]
+                    dt.tempo[,c("lower","upper") := NULL]
+                    order.col <- c(order.col,"se","conf.interval","p.value")
+                }
+                if(x$band){
+                    dt.tempo[, c("conf.band") := paste0("[",lowerBand," ; ",upperBand,"]")]
+                    dt.tempo[,c("lowerBand","upperBand") := NULL]
+                    order.col <- c(order.col,"quantileBand","conf.band")
+                }
+            }else if(is.null(x$boot)){
+                if(x$se){
+                    order.col <- c(order.col,"se")
+                }
             }
 
             ## round p.value
@@ -135,47 +203,8 @@ print.ate <- function(x, digits = 3, type = c("meanRisk","diffRisk","ratioRisk")
             print(dt.tempo,...)
         }
 
-        if("ratioRisk" %in% type){
-            cat("\n     > risk ratio \n\n")
-            ## only pick ratio
-            name.ratio <- grep("^ratio",names(x$riskComparison),value = TRUE)
-            dt.tempo <- x$riskComparison[,.SD,.SDcols = c(id.name,name.ratio)]
-
-            ## simplify names
-            names(dt.tempo) <- gsub("ratio.","",names(dt.tempo),fixed = TRUE)
-            order.col <- c(names(dt.tempo)[1:3],"ratio")
-            if(!is.null(x$boot) && !is.null(x$conf.level)){
-                order.col <- c(order.col,"ratioMeanBoot")
-            }
-            
-            ## round and merge column containing CI and CB
-            numeric.col <- setdiff(names(dt.tempo)[-(1:2)],"p.value")
-            dt.tempo[, c(numeric.col) := round(.SD, digits = digits) , .SDcols = numeric.col]
-            if(x$se && !is.null(x$conf.level)){
-                dt.tempo[, c("conf.interval") := paste0("[",lower," ; ",upper,"]")]
-                dt.tempo[,c("lower","upper") := NULL]
-                order.col <- c(order.col,"se","conf.interval","p.value")
-            }else if(x$se && is.null(x$boot)){
-                order.col <- c(order.col,"se")
-            }
-            if(x$band && !is.null(x$conf.level)){
-                dt.tempo[, c("conf.band") := paste0("[",lowerBand," ; ",upperBand,"]")]
-                dt.tempo[,c("lowerBand","upperBand") := NULL]
-                order.col <- c(order.col,"quantileBand","conf.band")
-            }
-
-            ## round p.value
-            if(x$se && !is.null(x$conf.level)){
-                dt.tempo$p.value <- sapply(dt.tempo$p.value, function(iP){
-                    if(iP<10^(-digits)){return(paste0("<",10^(-digits)))}else{round(iP, digits = digits)}
-                })
-            }
-            
-            ## print
-            data.table::setcolorder(dt.tempo, neworder = order.col)
-            print(dt.tempo,...)
-        }
     }
+    
     ##
     if(x$se && !is.null(x$conf.level)){
         if(!is.null(x$boot)){

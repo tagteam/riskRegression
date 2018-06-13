@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: apr  5 2018 (17:01) 
 ## Version: 
-## Last-Updated: jun  1 2018 (11:31) 
+## Last-Updated: jun 13 2018 (13:46) 
 ##           By: Brice Ozenne
-##     Update #: 267
+##     Update #: 270
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -17,8 +17,7 @@
 
 calcSeATE <- function(object, data, times, cause,
                       treatment, contrasts, strata, n.contrasts, levels, n.times, n.obs,
-                      pointEstimate,
-                      se, iid, store.iid){
+                      pointEstimate, export, store.iid){
 
     lowerBand <- upperBand <- diffBand.lower <- diffBand.upper <- ratioBand.lower <- ratioBand.upper <- NULL ## [:forCRANcheck:]
     Treatment <- meanRisk <- . <- Treatment.A <- Treatment.B <- .GRP <- NULL ## [:forCRANcheck:]
@@ -125,9 +124,11 @@ calcSeATE <- function(object, data, times, cause,
     n.treatmentTime <- length(name.treatmentTime)
 
     out$meanRisk.iid <- matrix(NA, nrow = n.treatmentTime, ncol = n.obs,
-                          dimnames = list(name.treatmentTime, NULL))
-    out$meanRisk.se <- matrix(NA, nrow = n.treatmentTime, ncol = 1,
-                         dimnames = list(name.treatmentTime, NULL))
+                               dimnames = list(name.treatmentTime, NULL))
+    if("se" %in% export){
+        out$meanRisk.se <- matrix(NA, nrow = n.treatmentTime, ncol = 1,
+                                  dimnames = list(name.treatmentTime, NULL))
+    }
     
     for(iTreat in 1:n.contrasts){ # iTreat <- 1
         term1 <- t(attr(IFrisk[[iTreat]],"iid"))
@@ -145,7 +146,9 @@ calcSeATE <- function(object, data, times, cause,
         }
         out$meanRisk.iid[(iTreat-1)*n.times + 1:n.times,] <- iid.tempo        
     }
-    out$meanRisk.se[] <- sqrt(rowSums(out$meanRisk.iid^2))
+    if("se" %in% export){
+        out$meanRisk.se[] <- sqrt(rowSums(out$meanRisk.iid^2))
+    }
                                         # }}}
 
                                         # {{{ 3- influence function for the difference/ratio in average treatment effect
@@ -153,13 +156,15 @@ calcSeATE <- function(object, data, times, cause,
     n.T2Time <- length(name.T2Time)
 
     out$diffRisk.iid <- matrix(NA, nrow = n.T2Time, ncol = n.obs,
-                                   dimnames = list(name.T2Time, NULL))
-    out$diffRisk.se <- matrix(NA, nrow = n.T2Time, ncol = 1,
-                                   dimnames = list(name.T2Time, NULL))
+                               dimnames = list(name.T2Time, NULL))
     out$ratioRisk.iid <- matrix(NA, nrow = n.T2Time, ncol = n.obs,
+                                dimnames = list(name.T2Time, NULL))
+    if("se" %in% export){
+        out$diffRisk.se <- matrix(NA, nrow = n.T2Time, ncol = 1,
+                                  dimnames = list(name.T2Time, NULL))
+        out$ratioRisk.se <- matrix(NA, nrow = n.T2Time, ncol = 1,
                                    dimnames = list(name.T2Time, NULL))
-    out$ratioRisk.se <- matrix(NA, nrow = n.T2Time, ncol = 1,
-                                   dimnames = list(name.T2Time, NULL))
+    }
     
     for(iContrast in 1:n.T2Time){ ## iContrast <- 1
 
@@ -182,11 +187,13 @@ calcSeATE <- function(object, data, times, cause,
         out$ratioRisk.iid[iContrast,] <- term1 - term2
         
     }
-    out$diffRisk.se[] <- sqrt(rowSums(out$diffRisk.iid^2))
-    out$ratioRisk.se[] <- sqrt(rowSums(out$ratioRisk.iid^2))
+    if("se" %in% export){
+        out$diffRisk.se[] <- sqrt(rowSums(out$diffRisk.iid^2))
+        out$ratioRisk.se[] <- sqrt(rowSums(out$ratioRisk.iid^2))
+    }
                                         # }}}
     ## export
-    if(iid==FALSE){
+    if("iid" %in% export == FALSE){
         out$meanRisk.iid <- NULL
         out$diffRisk.iid <- NULL
         out$ratiAte.iid <- NULL

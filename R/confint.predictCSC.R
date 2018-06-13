@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: maj 23 2018 (14:08) 
 ## Version: 
-## Last-Updated: jun 11 2018 (15:41) 
+## Last-Updated: jun 13 2018 (16:03) 
 ##           By: Brice Ozenne
-##     Update #: 147
+##     Update #: 156
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -50,22 +50,22 @@
 ##' 
 ##' #### compute individual specific risks
 ##' fit.pred <- predict(fit, newdata=d[1:3], times=c(3,8), cause = 1,
-##'                     se = TRUE, band = TRUE)
+##'                     se = TRUE, iid = TRUE, band = TRUE)
 ##' fit.pred
 ##'
-##' ## add confidence intervals computed on the original scale
+##' ## check confidence intervals
+##' newse <- fit.pred$absRisk.se/(-fit.pred$absRisk*log(fit.pred$absRisk))
+##' cbind(lower = as.double(exp(-exp(log(-log(fit.pred$absRisk)) + 1.96 * newse))),
+##'       upper = as.double(exp(-exp(log(-log(fit.pred$absRisk)) - 1.96 * newse)))
+##' )
+##'
+##' #### compute confidence intervals without transformation
 ##' confint(fit.pred, absRisk.transform = "none")
 ##' cbind(lower = as.double(fit.pred$absRisk - 1.96 * fit.pred$absRisk.se),
 ##'       upper = as.double(fit.pred$absRisk + 1.96 * fit.pred$absRisk.se)
 ##' )
 ##' 
-##' ## add confidence intervals computed on the log-log scale
-##' ## and backtransformed
-##' confint(fit.pred, absRisk.transform = "loglog")
-##' newse <- fit.pred$absRisk.se/(-fit.pred$absRisk*log(fit.pred$absRisk))
-##' cbind(lower = as.double(exp(-exp(log(-log(fit.pred$absRisk)) + 1.96 * newse))),
-##'       upper = as.double(exp(-exp(log(-log(fit.pred$absRisk)) - 1.96 * newse)))
-##' )
+##' 
 
 ## * confint.predictCSC (code)
 ##' @rdname confint.predictCSC
@@ -80,11 +80,11 @@ confint.predictCSC <- function(object,
                                ...){
 
     if(object$se == FALSE && object$band == FALSE){
-        message("No confidence interval is computed \n",
-                "Set argument \'se\' to TRUE when calling predictCSC \n")
+        message("No confidence interval/band computed \n",
+                "Set argument \'se\' or argument \'band\' to TRUE when calling predictCSC \n")
         return(object)
     }
-    
+
     ## ** check arguments
     dots <- list(...)
     if(length(dots)>0){
@@ -93,10 +93,18 @@ confint.predictCSC <- function(object,
         stop("unknown argument",txt.s,": \"",paste0(txt,collapse="\" \""),"\" \n")
     }
 
-    if(!is.null(object$absRisk.transform) && object$absRisk.transform != "none"){
-        stop("Cannot work with standard errors that have already been transformed \n")
-    }
     object$absRisk.transform <- match.arg(absRisk.transform, c("none","log","loglog","cloglog"))
+
+    if(object$band){
+        if(is.null(object$absRisk.se)){
+            stop("Cannot compute confidence bands \n",
+                 "Set argument \'se\' to TRUE when calling predictCSC \n")
+        }
+        if(is.null(object$absRisk.iid)){
+            stop("Cannot compute confidence bands \n",
+                 "Set argument \'iid\' to TRUE when calling predictCSC \n")
+        }
+    }
     
     ## ** compute se, CI/CB
     outCIBP <- transformCIBP(estimate = object$absRisk,

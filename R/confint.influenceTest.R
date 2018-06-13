@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: jun  1 2018 (12:15) 
 ## Version: 
-## Last-Updated: jun  3 2018 (20:09) 
+## Last-Updated: jun 13 2018 (11:41) 
 ##           By: Brice Ozenne
-##     Update #: 29
+##     Update #: 30
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -56,9 +56,6 @@ confint.influenceTest <- function(object,
         stop("unknown argument",txt.s,": \"",paste0(txt,collapse="\" \""),"\" \n")
     }
 
-    if(!is.null(object$transform) && object$transform != "none"){
-        stop("Cannot work with standard errors that have already been transformed \n")
-    }
     if(object$type == "cumhazard"){
         object$transform <- match.arg(transform, c("none"))
     }else{

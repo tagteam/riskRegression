@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: feb 27 2017 (10:47) 
 ## Version: 
-## last-updated: maj 31 2018 (16:40) 
+## last-updated: jun 13 2018 (14:16) 
 ##           By: Brice Ozenne
-##     Update #: 76
+##     Update #: 80
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -78,25 +78,22 @@ autoplot.predictCSC <- function(object,
              "set argment \'keep.strata\' to TRUE when calling predictCox \n")
     }
   
-    if(ci && object$se == FALSE){
+    if(ci && (object$se==FALSE || is.null(object$conf.level))){
         stop("argument \'ci\' cannot be TRUE when no standard error have been computed \n",
-             "set argment \'se\' to TRUE when calling predictCox \n")
+             "set arguments \'se\' and \'confint\' to TRUE when calling predict.CauseSpecificCox \n")
     }
-    if(band && object$band == FALSE){
+    if(band && (object$band==FALSE  || is.null(object$conf.level))){
         stop("argument \'band\' cannot be TRUE when the quantiles for the confidence bands have not been computed \n",
-             "set argment \'nsim.band\' to a positive integer when calling predict.CauseSpecificCox \n")
+             "set arguments \'band\' and \'confint\' to TRUE when calling predict.CauseSpecificCox \n")
     }
-
-    if( (ci||band) && is.null(object$conf.level) ){
-        object <- stats::confint(object, ...)
-    }else{
-        dots <- list(...)
-        if(length(dots)>0){
-            txt <- names(dots)
-            txt.s <- if(length(txt)>1){"s"}else{""}
-            stop("unknown argument",txt.s,": \"",paste0(txt,collapse="\" \""),"\" \n")
-        }
+    
+    dots <- list(...)
+    if(length(dots)>0){
+        txt <- names(dots)
+        txt.s <- if(length(txt)>1){"s"}else{""}
+        stop("unknown argument",txt.s,": \"",paste0(txt,collapse="\" \""),"\" \n")
     }
+    
 
     ## display
     newdata <- copy(object$newdata)

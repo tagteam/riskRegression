@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: maj 23 2018 (14:08) 
 ## Version: 
-## Last-Updated: jun  3 2018 (20:09) 
+## Last-Updated: jun 13 2018 (16:02) 
 ##           By: Brice Ozenne
-##     Update #: 427
+##     Update #: 457
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -67,7 +67,7 @@
 ##'
 ##' #### average treatment effect ####
 ##' fit.pred <- ate(fit, treatment = "X1", times = 1:3, data = d,
-##'                 se = TRUE, band = TRUE)
+##'                 se = TRUE, iid = TRUE, band = TRUE)
 ##' print(fit.pred, type = "meanRisk")
 ##'
 ##' ## manual calculation of se
@@ -83,14 +83,9 @@
 ##' mean(out2$survival.iid[,1,1])
 ##' out$survival.average.iid[1,1]
 ##' 
-##' ## add confidence intervals computed on the original scale
-##' outCI <- confint(fit.pred,
-##' meanRisk.transform = "none", diffRisk.transform = "none", ratioRisk.transform = "none"
-##' )
-##' print(outCI, type = "meanRisk")
-##' 
-##' fit.pred$meanRisk[, .(lower = meanRisk - 1.96 * se,
-##'                       upper = meanRisk + 1.96 * se)]
+##' ## check confidence intervals (no transformation)
+##' fit.pred$meanRisk[, .(lower = meanRisk - 1.96 * meanRisk.se,
+##'                       upper = meanRisk + 1.96 * meanRisk.se)]
 ##'
 ##' ## add confidence intervals computed on the log-log scale
 ##' ## and backtransformed
@@ -99,7 +94,7 @@
 ##' )
 ##' print(outCI, type = "meanRisk")
 ##' 
-##' newse <- fit.pred$meanRisk[, se/(meanRisk*log(meanRisk))]
+##' newse <- fit.pred$meanRisk[, meanRisk.se/(meanRisk*log(meanRisk))]
 ##' fit.pred$meanRisk[, .(lower = exp(-exp(log(-log(meanRisk)) - 1.96 * newse)),
 ##'                       upper = exp(-exp(log(-log(meanRisk)) + 1.96 * newse)))]
 
@@ -265,9 +260,16 @@ confintBoot.ate <- function(object,
     ## group
     dt.tempo <- data.table(name = name.estimate, mean = boot.mean, se = boot.se, boot.CI, p.value = boot.p)
     keep.col <- setdiff(names(dt.tempo),"name")
-    object$meanRisk[,c("meanRiskBoot","se","lower","upper") := dt.tempo[grep("^meanRisk",dt.tempo$name),.SD,.SDcols = setdiff(keep.col,"p.value")]] 
-    object$riskComparison[,c("diffMeanBoot","diff.se","diff.lower","diff.upper","diff.p.value") := dt.tempo[grep("^compRisk:diff",dt.tempo$name),.SD,.SDcols = keep.col]] 
-    object$riskComparison[,c("ratioMeanBoot","ratio.se","ratio.lower","ratio.upper","ratio.p.value") := dt.tempo[grep("^compRisk:ratio",dt.tempo$name),.SD,.SDcols = keep.col]] 
+    
+    vecNames.meanRisk <- paste0("meanRisk",c(".bootstrap",".se",".lower",".upper"))
+    object$meanRisk[,c(vecNames.meanRisk) := dt.tempo[grep("^meanRisk",dt.tempo$name),.SD,.SDcols = setdiff(keep.col,"p.value")]]
+    
+    vecNames.diffRisk <- paste0("diff",c(".bootstrap",".se",".lower",".upper",".p.value"))
+    object$riskComparison[,c(vecNames.diffRisk) := dt.tempo[grep("^compRisk:diff",dt.tempo$name),.SD,.SDcols = keep.col]]
+
+    vecNames.ratioRisk <- paste0("ratio",c(".bootstrap",".se",".lower",".upper",".p.value"))
+    object$riskComparison[,c(vecNames.ratioRisk) := dt.tempo[grep("^compRisk:ratio",dt.tempo$name),.SD,.SDcols = keep.col]]
+    
     return(object)    
 }
 
@@ -280,15 +282,21 @@ confintIID.ate <- function(object,
                            ratioRisk.transform,
                            seed){
 
+
+    if(object$se == FALSE && object$band == FALSE){
+        message("No confidence interval/band computed \n",
+                "Set argument \'se\' or argument \'band\' to TRUE when calling predictCSC \n")
+        return(object)
+    }
+
     ## ** check arguments
-    if(!is.null(object$meanRisk.transform) && object$meanRisk.transform != "none"){
-        stop("Cannot work with standard errors that have already been transformed \n")
+    if(object$band && (is.null(object$meanRisk$meanRisk.se) || is.null(object$riskComparison$diff.se) || is.null(object$riskComparison$ratio.se)) ){
+        stop("Cannot compute confidence bands \n",
+             "Set argument \'se\' to TRUE when calling ate \n")
     }
-    if(!is.null(object$diffRisk.transform) && object$diffRisk.transform != "none"){
-        stop("Cannot work with standard errors that have already been transformed \n")
-    }
-    if(!is.null(object$diffRatio.transform) && object$diffRatio.transform != "none"){
-        stop("Cannot work with standard errors that have already been transformed \n")
+    if(object$band && (is.null(object$meanRisk.iid) || is.null(object$diffRisk.iid) || is.null(object$ratioRisk.iid))){
+        stop("Cannot compute confidence bands \n",
+             "Set argument \'iid\' to TRUE when calling ate \n")
     }
     object$meanRisk.transform <- match.arg(meanRisk.transform, c("none","log","loglog","cloglog"))
     object$diffRisk.transform <- match.arg(diffRisk.transform, c("none","atanh"))
@@ -317,7 +325,7 @@ confintIID.ate <- function(object,
         ls.index.tempo[[iT]] <- which(object$meanRisk[[1]]==object$contrasts[iT])
 
         estimate.tempo[iT,] <- object$meanRisk[["meanRisk"]][ls.index.tempo[[iT]]]
-        se.tempo[iT,] <- object$meanRisk[["se"]][ls.index.tempo[[iT]]]
+        se.tempo[iT,] <- object$meanRisk[["meanRisk.se"]][ls.index.tempo[[iT]]]
         if(object$band){
             iid.tempo[iT,,] <- object$meanRisk.iid[ls.index.tempo[[iT]],]
         }        
@@ -349,16 +357,15 @@ confintIID.ate <- function(object,
     ## store
     vec.index.tempo <- unlist(ls.index.tempo)
     if(object$se){
-        object$meanRisk[,c("se","lower","upper")] <- as.numeric(NA)
-        object$meanRisk[vec.index.tempo, c("se") := as.double(t(outCIBP.meanRisk$se))]
-        object$meanRisk[vec.index.tempo, c("lower") := as.double(t(outCIBP.meanRisk$lower))]
-        object$meanRisk[vec.index.tempo, c("upper") := as.double(t(outCIBP.meanRisk$upper))]
+        object$meanRisk[,c("meanRisk.lower","meanRisk.upper")] <- as.numeric(NA)
+        object$meanRisk[vec.index.tempo, c("meanRisk.lower") := as.double(t(outCIBP.meanRisk$lower))]
+        object$meanRisk[vec.index.tempo, c("meanRisk.upper") := as.double(t(outCIBP.meanRisk$upper))]
     }
     if(object$band){
-        object$meanRisk[,c("quantileBand","lowerBand","upperBand")] <- as.numeric(NA)
-        object$meanRisk[vec.index.tempo, c("quantileBand") := as.double(t(outCIBP.meanRisk$quantileBand))]
-        object$meanRisk[vec.index.tempo, c("lowerBand") := as.double(t(outCIBP.meanRisk$lowerBand))]
-        object$meanRisk[vec.index.tempo, c("upperBand") := as.double(t(outCIBP.meanRisk$upperBand))]
+        object$meanRisk[,c("meanRisk.quantileBand","meanRisk.lowerBand","meanRisk.upperBand")] <- as.numeric(NA)
+        object$meanRisk[vec.index.tempo, c("meanRisk.quantileBand") := as.double(t(outCIBP.meanRisk$quantileBand))]
+        object$meanRisk[vec.index.tempo, c("meanRisk.lowerBand") := as.double(t(outCIBP.meanRisk$lowerBand))]
+        object$meanRisk[vec.index.tempo, c("meanRisk.upperBand") := as.double(t(outCIBP.meanRisk$upperBand))]
     }
     ## ** diffRisk: se, CI/CB
 
@@ -405,8 +412,7 @@ confintIID.ate <- function(object,
     ## store
     vec.index.tempo <- unlist(ls.index.tempo)
     if(object$se){
-        object$riskComparison[,c("diff.se","diff.lower","diff.upper","diff.p.value")] <- as.numeric(NA)
-        object$riskComparison[vec.index.tempo, c("diff.se") := as.double(t(outCIBP.diffRisk$se))]
+        object$riskComparison[,c("diff.lower","diff.upper","diff.p.value")] <- as.numeric(NA)
         object$riskComparison[vec.index.tempo, c("diff.lower") := as.double(t(outCIBP.diffRisk$lower))]
         object$riskComparison[vec.index.tempo, c("diff.upper") := as.double(t(outCIBP.diffRisk$upper))]
         object$riskComparison[vec.index.tempo, c("diff.p.value") := as.double(t(outCIBP.diffRisk$p.value))]
@@ -460,8 +466,7 @@ confintIID.ate <- function(object,
     ## store
     vec.index.tempo <- unlist(ls.index.tempo)
     if(object$se){
-        object$riskComparison[,c("ratio.se","ratio.lower","ratio.upper","ratio.p.value")] <- as.numeric(NA)
-        object$riskComparison[vec.index.tempo, c("ratio.se") := as.double(t(outCIBP.ratioRisk$se))]
+        object$riskComparison[,c("ratio.lower","ratio.upper","ratio.p.value")] <- as.numeric(NA)
         object$riskComparison[vec.index.tempo, c("ratio.lower") := as.double(t(outCIBP.ratioRisk$lower))]
         object$riskComparison[vec.index.tempo, c("ratio.upper") := as.double(t(outCIBP.ratioRisk$upper))]
         object$riskComparison[vec.index.tempo, c("ratio.p.value") := as.double(t(outCIBP.ratioRisk$p.value))]

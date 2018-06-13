@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: feb 17 2017 (10:06) 
 ## Version: 
-## last-updated: jun  3 2018 (20:07) 
+## last-updated: jun 13 2018 (13:17) 
 ##           By: Brice Ozenne
-##     Update #: 476
+##     Update #: 481
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -35,7 +35,7 @@
 #' @param digits [integer] Number of decimal places.
 #' @param ylab [character] Label for the y axis.
 #' @param alpha [numeric, 0-1] Transparency of the confidence bands. Argument passed to \code{ggplot2::geom_ribbon}.
-#' @param ... additional Arguments passed to \code{confint}.
+#' @param ... Not used. Only for compatibility with the plot method.
 
 ## * autoplot.predictCox (examples)
 #' @rdname autoplot.predictCox
@@ -128,25 +128,20 @@ autoplot.predictCox <- function(object,
              "set argment \'keep.strata\' to TRUE when calling predictCox \n")
     }
   
-    if(ci && object$se == FALSE){
+    if(ci && (object$se==FALSE || is.null(object$conf.level))){
         stop("argument \'ci\' cannot be TRUE when no standard error have been computed \n",
-             "set argment \'se\' to TRUE when calling predictCox \n")
+             "set arguments \'se\' and \'confint\' to TRUE when calling predictCox \n")
+    }
+    if(band && (object$band==FALSE  || is.null(object$conf.level))){
+        stop("argument \'band\' cannot be TRUE when the quantiles for the confidence bands have not been computed \n",
+             "set arguments \'band\' and \'confint\' to TRUE when calling predictCox \n")
     }
 
-    if(band && object$band == FALSE){
-        stop("argument \'band\' cannot be TRUE when no quantiles for the confidence bands have not been computed \n",
-             "set argment \'nsim.band\' to a positive integer when calling predictCox \n")
-    }
-
-    if( (ci||band) && is.null(object$conf.level) ){
-        object <- stats::confint(object, parm = type, ...)
-    }else{
-        dots <- list(...)
-        if(length(dots)>0){
-            txt <- names(dots)
-            txt.s <- if(length(txt)>1){"s"}else{""}
-            stop("unknown argument",txt.s,": \"",paste0(txt,collapse="\" \""),"\" \n")
-        }
+    dots <- list(...)
+    if(length(dots)>0){
+        txt <- names(dots)
+        txt.s <- if(length(txt)>1){"s"}else{""}
+        stop("unknown argument",txt.s,": \"",paste0(txt,collapse="\" \""),"\" \n")
     }
 
     ## reshape data

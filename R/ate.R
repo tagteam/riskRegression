@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Oct 23 2016 (08:53) 
 ## Version: 
-## last-updated: jun  1 2018 (17:39) 
+## last-updated: jun 13 2018 (15:52) 
 ##           By: Brice Ozenne
-##     Update #: 771
+##     Update #: 806
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -38,9 +38,11 @@
 #' @param landmark for models with time-dependent covariates the landmark time(s) of evaluation.
 #'        In this case, argument \code{time} may only be one value and for the prediction of risks
 #'        it is assumed that that the covariates do not change between landmark and landmark+time.
-#' @param se [logical] If \code{TRUE} compute standard errors and confidence intervals
-#' @param iid [logical] If \code{TRUE} add the influence function to the output.
-#' @param band [logical]. If \code{TRUE} compute confidence bands across time points.
+#' @param se [logical] If \code{TRUE} compute and add the standard errors to the output.
+#' @param band [logical] If \code{TRUE} compute and add the quantiles for the confidence bands to the output.
+#' @param iid [logical] If \code{TRUE} compute and add the influence function to the output.
+#' @param confint [logical] If \code{TRUE} compute and add the confidence intervals/bands to the output.
+#' They are computed applying the \code{confint} function to the output.
 #' @param B [integer, >0] the number of bootstrap replications used to compute the confidence intervals.
 #' If it equals 0, then the influence function is used to compute Wald-type confidence intervals/bands.
 #' @param seed [integer, >0] sed number used to generate seeds for bootstrap
@@ -96,19 +98,16 @@
 #' ## (argument se = TRUE and B = 0)
 #' ateFit1b <- ate(fit, data = dtS, treatment = "X1", times = 5:8,
 #'                se = TRUE, B = 0)
-#'
-#' ## bootstrap confidence intervals: studentized Wald type 
-#' ateFit1c <- ate(fit, data = dtS, treatment = "X1", times = 5,
-#'                seed=3,se = TRUE, B = 100)
-#' ## bootstrap confidence intervals: studentized Wald type 
-#' ateFit1d <- ate(fit, data = dtS, treatment = "X1", times = 5,
-#'                 seed=3,bootci.method="quantile",se = TRUE, B = 100)
-#'
+#' 
 #' ## same as before with in addition the confidence bands for the ATE
 #' ## (argument band = TRUE)
 #' ateFit1c <- ate(fit, data = dtS, treatment = "X1", times = 5:8,
 #'                se = TRUE, band = TRUE, B = 0)
-#' 
+#'
+#' ## bootstrap confidence intervals
+#' ateFit1c <- ate(fit, data = dtS, treatment = "X1", times = 5,
+#'                seed = 3, se = TRUE, B = 100)
+#'
 #' ## standard error / confidence intervals computed using 100 boostrap samples
 #' ## (argument se = TRUE and B = 100) 
 #' ateFit1d <- ate(fit, data = dtS, treatment = "X1",
@@ -256,6 +255,7 @@ ate <- function(object,
                 iid = FALSE,
                 band = FALSE,
                 B = 0,
+                confint = (se+band)>0,
                 seed,
                 handler = "foreach",
                 mc.cores = 1,
@@ -289,6 +289,11 @@ ate <- function(object,
     dots <- list(...)
     if(se==0 && B>0){
         warning("argument 'se=0' means 'no standard errors' so number of bootstrap repetitions is forced to B=0.")
+    }
+    if(iid && B>0){
+        stop("Influence function cannot be computed when using the bootstrap approach \n",
+             "Either set argument \'iid\' to FALSE to not compute the influence function \n",
+             "or set argument \'B\' to 0 \n")
     }
     if(band && B>0){
         stop("Confidence bands cannot be computed when using the bootstrap approach \n",
@@ -327,7 +332,7 @@ ate <- function(object,
     test.CR <- !missing(cause) # test whether the argument cause has been specified, i.e. it is a competing risk model
     if(test.CR==FALSE){cause <- NA}
   
-    if(B==0 && (se || band)){
+    if(B==0 && (se || band || iid)){
         validClass <- c("CauseSpecificCox","coxph","cph","phreg","glm")
         if(all(validClass %in% class(object) == FALSE)){
             stop("Standard error based on the influence function only implemented for \n",
@@ -384,8 +389,7 @@ ate <- function(object,
     # }}}
 
     # {{{ Confidence interval    
-
-    if(se || band){
+    if(se || band || iid){
         if (TD){
             key1 <- c("Treatment","landmark")
             key2 <- c("Treatment.A","Treatment.B","landmark")
@@ -457,13 +461,12 @@ ate <- function(object,
                                n.times = n.times,
                                n.obs = n.obs,
                                pointEstimate = pointEstimate,
-                               se = se,
-                               iid = (band+iid)>0, 
+                               export = c("iid"[(iid+band)>0],"se"[(se+band)>0]),
                                store.iid = store.iid)
 
-            pointEstimate$meanRisk[["se"]] <- outSE$meanRisk.se[,1]
+            pointEstimate$meanRisk[["meanRisk.se"]] <- outSE$meanRisk.se[,1]
             pointEstimate$riskComparison[["diff.se"]] <- outSE$diffRisk.se[,1]
-            pointEstimate$riskComparison[["ratio.se"]] <- outSE$ratioRisk.se[,1]
+            pointEstimate$riskComparison[["ratio.se"]] <- outSE$ratioRisk.se[,1]            
             data.table::setcolorder(pointEstimate$riskComparison, neworder = c(names(pointEstimate$riskComparison)[1:3],
                                                                                "diff","diff.se","ratio","ratio.se"))
             bootseeds <- NULL
@@ -505,12 +508,25 @@ ate <- function(object,
 
   
     class(out) <- c("ate",class(object))
+    if(confint){
+        out <- stats::confint(out)
+    }
+    if(band && se==FALSE){
+        out$meanRisk[["meanRisk.se"]] <- NULL
+        out$riskComparison[["diff.se"]] <- NULL
+        out$riskComparison[["ratio.se"]] <- NULL
+    }
+    if(band && iid==FALSE){
+        out[paste0(c("mean","diff","ratio"),"Risk.iid")] <- NULL
+    }
+
     return(out)
                                         # }}}
 
 }
 
 # {{{ Gformula: time dependent covariates
+## * Gformula_TD
 Gformula_TD <- function(object,
                         data,
                         treatment,
@@ -568,7 +584,8 @@ Gformula_TD <- function(object,
 
 # }}}
 
-# {{{ Gformula: time independent covariates
+                                        # {{{ Gformula: time independent covariates
+## * Gformula_TI
 Gformula_TI <- function(object,
                         data,
                         treatment,

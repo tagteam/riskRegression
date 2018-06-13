@@ -33,7 +33,7 @@ or \code{"survival"} the survival function.}
 
 \item{alpha}{[numeric, 0-1] Transparency of the confidence bands. Argument passed to \code{ggplot2::geom_ribbon}.}
 
-\item{...}{additional Arguments passed to \code{confint}.}
+\item{...}{Not used. Only for compatibility with the plot method.}
 }
 \description{
 Plot predictions from a Cox model.

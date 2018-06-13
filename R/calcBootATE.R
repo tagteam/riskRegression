@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: apr 11 2018 (17:05) 
 ## Version: 
-## Last-Updated: maj 23 2018 (14:08) 
+## Last-Updated: jun 13 2018 (16:09) 
 ##           By: Brice Ozenne
-##     Update #: 46
+##     Update #: 49
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -108,7 +108,7 @@ calcBootATE <- function(object, pointEstimate, Gformula, data,
             }
             doParallel::registerDoParallel(cl)
             b <- NULL ## [:forCRANcheck:] foreach
-            boots <- foreach::`%dopar%`(foreach::foreach(b = 1:B, .packages = addPackage, .export = NULL), {
+            boots <- foreach::`%dopar%`(foreach::foreach(b = 1:B, .packages = addPackage, .export = NULL), { ## b <- 1
                 set.seed(bootseeds[[b]])
                 if(verbose){setTxtProgressBar(pb, b)}
                 dataBoot <- data[sample(1:n.obs, size = n.obs, replace = TRUE),]
@@ -127,7 +127,8 @@ calcBootATE <- function(object, pointEstimate, Gformula, data,
                                   n.contrasts = n.contrasts,
                                   levels = levels,
                                   dots),
-                         error = function(x){return(NULL)})
+                        error = function(x){return(NULL)})
+                         ## error = function(x){return(x)})
             })
             if(verbose){close(pb)}
             parallel::stopCluster(cl)

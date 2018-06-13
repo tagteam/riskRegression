@@ -6,8 +6,8 @@
 \usage{
 \method{predict}{CauseSpecificCox}(object, newdata, times, cause,
   landmark = NA, keep.times = 1L, keep.newdata = 1L, keep.strata = 1L,
-  se = FALSE, band = FALSE, iid = FALSE, average.iid = FALSE,
-  product.limit = TRUE, store.iid = "full", ...)
+  se = FALSE, band = FALSE, iid = FALSE, confint = (se + band) > 0,
+  average.iid = FALSE, product.limit = TRUE, store.iid = "full", ...)
 }
 \arguments{
 \item{object}{The fitted cause specific Cox model}
@@ -30,12 +30,14 @@ events.}
 
 \item{keep.strata}{[logical] If \code{TRUE} add the value of the strata used to make the prediction in the output list.}
 
-\item{se}{[logical] If \code{TRUE} add the standard errors to the output.}
+\item{se}{[logical] If \code{TRUE} compute and add the standard errors to the output.}
 
-\item{band}{[logical] If \code{TRUE} add the standard error and the influence function to the output
-such that \code{confint} will be able to compute the confidence bands.}
+\item{band}{[logical] If \code{TRUE} compute and add the quantiles for the confidence bands to the output.}
 
-\item{iid}{[logical] If \code{TRUE} add the influence function to the output.}
+\item{iid}{[logical] If \code{TRUE} compute and add the influence function to the output.}
+
+\item{confint}{[logical] If \code{TRUE} compute and add the confidence intervals/bands to the output.
+They are computed applying the \code{confint} function to the output.}
 
 \item{average.iid}{[logical]. If \code{TRUE} add the average of the influence function over \code{newdata} to the output.}
 
@@ -85,11 +87,6 @@ CSC.fit <- CSC(Hist(time,event)~ X3+X8, data=d, method = "breslow")
 ## at time 1:10
 CSC.risk <-  predict(CSC.fit, newdata=nd, times=1:10, cause=1)
 CSC.risk
-
-## add the standard error/confidence intervals
-## (computed on the log log scale and backtransformed)
-CSC.riskSE <-  predict(CSC.fit,newdata=nd,times=1:10,cause=1,se=TRUE)
-confint(CSC.riskSE)
 
 ## compute absolute risks with CI for cause 2
 ## (without displaying the value of the covariates)

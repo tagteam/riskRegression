@@ -37,10 +37,11 @@
 #'     to the output.
 #' @param keep.newdata [logical] If \code{TRUE} add the value of the
 #'     covariates used to make the prediction in the output list.
-#' @param se [logical] If \code{TRUE} add the standard error to the output.
-#' @param band [logical] If \code{TRUE} add the standard error and the influence function to the output
-#' such that \code{confint} will be able to compute the confidence bands. 
-#' @param iid [logical] If \code{TRUE} add the influence function to the output.
+#' @param se [logical] If \code{TRUE} compute and add the standard errors to the output.
+#' @param band [logical] If \code{TRUE} compute and add the quantiles for the confidence bands to the output.
+#' @param iid [logical] If \code{TRUE} compute and add the influence function to the output.
+#' @param confint [logical] If \code{TRUE} compute and add the confidence intervals/bands to the output.
+#' They are computed applying the \code{confint} function to the output.
 #' @param average.iid [logical] If \code{TRUE} add the average of the influence function over \code{newdata} to the output.
 #' @param store.iid [character] Implementation used to estimate the influence function and the standard error.
 #' Can be \code{"full"} or \code{"minimal"}.
@@ -102,10 +103,6 @@
 #' fit.pred <- predictCox(fit, newdata=nd, times=c(3,8), se = TRUE, band = TRUE)
 #' fit.pred
 #'
-#' ## add confidence intervals/bands (survival.se is on the cloglog scale)
-#' fit.pred <- confint(fit.pred)
-#' fit.pred
-#'
 #' ####  other examples ####
 #' # one strata variable
 #' fitS <- coxph(Surv(time,event)~strata(X1)+X2,
@@ -152,6 +149,7 @@ predictCox <- function(object,
                        se = FALSE,
                        band = FALSE,
                        iid = FALSE,
+                       confint = (se+band)>0,
                        average.iid = FALSE,
                        store.iid = "full"){
   status=statusM1=NULL
@@ -201,14 +199,7 @@ predictCox <- function(object,
   object.baseEstimator <- coxBaseEstimator(object) 
   nVar <- length(infoVar$lpvars)
   
-  ## Confidence bands
-  se.save <- se
-  if(band>0){ # used to force the computation of the influence function + standard error to get the confidence bands
-    iid <- TRUE
-    se <- TRUE
-  }
-
-#### checks ####
+  #### checks ####
   if(object.baseEstimator == "exact"){
       stop("Prediction with exact handling of ties is not implemented.\n")
   }
@@ -385,7 +376,7 @@ predictCox <- function(object,
     # }}}
     # {{{ standard error
     
-    if(se==1L || iid==1L || average.iid==1L){
+    if(se || band || iid || average.iid){
       if(se && "hazard" %in% type){
         stop("confidence intervals cannot be computed for the hazard \n")
       }
@@ -417,10 +408,10 @@ predictCox <- function(object,
                          new.eXb = new.eXb, new.LPdata = new.LPdata, new.strata = new.strata,
                          new.survival = out$survival,
                          nVar = nVar, 
-                         export = c("iid"[iid==TRUE],"se"[se==TRUE],"average.iid"[average.iid==TRUE]), store.iid = store.iid)
+                         export = c("iid"[(iid+band)>0],"se"[(se+band)>0],"average.iid"[average.iid==TRUE]), store.iid = store.iid)
 
       ## restaure orginal time ordering
-      if(iid == TRUE){
+      if((iid+band)>0){
         if ("hazard" %in% type){
           if (needOrder)
             out$hazard.iid <- outSE$hazard.iid[,oorder.times,,drop=0L]
@@ -454,7 +445,7 @@ predictCox <- function(object,
             out$survival.average.iid <- outSE$survival.average.iid
         }
       }
-      if(se == TRUE){
+      if((se+band)>0){
         if ("cumhazard" %in% type){
           if (needOrder){
             out$cumhazard.se <- outSE$cumhazard.se[,oorder.times,drop=0L]
@@ -469,7 +460,7 @@ predictCox <- function(object,
                 out$survival.se <- outSE$survival.se
             }          
         }
-      }
+      }      
     }    
     # }}}
                                         # {{{ export 
@@ -477,13 +468,24 @@ predictCox <- function(object,
       if (is.strata && keep.strata==TRUE) out <- c(out,list(strata=new.strata))
     
       out <- c(out,list(lastEventTime = etimes.max,
-                        se = se.save,
+                        se = se,
                         band = band,
                         type = type))
       if( keep.newdata==TRUE){
           out$newdata <- newdata[, coxCovars(object), with = FALSE]
       }
       class(out) <- "predictCox"
+
+
+      if(confint){
+          out <- stats::confint(out)
+      }
+      if(band && se==FALSE){
+          out[paste0(type,".se")] <- NULL
+      }
+      if(band && iid==FALSE){
+          out[paste0(type,".iid")] <- NULL
+      }
       return(out)
                                         # }}}
   }

@@ -7,7 +7,8 @@
 predictCox(object, newdata = NULL, times, centered = TRUE,
   type = c("cumhazard", "survival"), keep.strata = TRUE,
   keep.times = TRUE, keep.newdata = FALSE, se = FALSE, band = FALSE,
-  iid = FALSE, average.iid = FALSE, store.iid = "full")
+  iid = FALSE, confint = (se + band) > 0, average.iid = FALSE,
+  store.iid = "full")
 }
 \arguments{
 \item{object}{The fitted Cox regression model object either
@@ -49,12 +50,14 @@ to the output.}
 \item{keep.newdata}{[logical] If \code{TRUE} add the value of the
 covariates used to make the prediction in the output list.}
 
-\item{se}{[logical] If \code{TRUE} add the standard error to the output.}
+\item{se}{[logical] If \code{TRUE} compute and add the standard errors to the output.}
 
-\item{band}{[logical] If \code{TRUE} add the standard error and the influence function to the output
-such that \code{confint} will be able to compute the confidence bands.}
+\item{band}{[logical] If \code{TRUE} compute and add the quantiles for the confidence bands to the output.}
 
-\item{iid}{[logical] If \code{TRUE} add the influence function to the output.}
+\item{iid}{[logical] If \code{TRUE} compute and add the influence function to the output.}
+
+\item{confint}{[logical] If \code{TRUE} compute and add the confidence intervals/bands to the output.
+They are computed applying the \code{confint} function to the output.}
 
 \item{average.iid}{[logical] If \code{TRUE} add the average of the influence function over \code{newdata} to the output.}
 
@@ -108,10 +111,6 @@ cbind(survival::basehaz(fit), fit.haz$cumhazard)
 
 ## compute individual specific cumulative hazard and survival probabilities 
 fit.pred <- predictCox(fit, newdata=nd, times=c(3,8), se = TRUE, band = TRUE)
-fit.pred
-
-## add confidence intervals/bands (survival.se is on the cloglog scale)
-fit.pred <- confint(fit.pred)
 fit.pred
 
 ####  other examples ####

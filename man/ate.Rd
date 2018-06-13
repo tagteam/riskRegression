@@ -6,8 +6,8 @@
 \usage{
 ate(object, data, formula, treatment, strata = NULL, contrasts = NULL,
   times, cause, landmark, se = TRUE, iid = FALSE, band = FALSE, B = 0,
-  seed, handler = "foreach", mc.cores = 1, verbose = TRUE,
-  store.iid = "full", ...)
+  confint = (se + band) > 0, seed, handler = "foreach", mc.cores = 1,
+  verbose = TRUE, store.iid = "full", ...)
 }
 \arguments{
 \item{object}{Outcome model which describes how event risk depends
@@ -34,14 +34,17 @@ Incompatible with treatment. Experimental.}
 In this case, argument \code{time} may only be one value and for the prediction of risks
 it is assumed that that the covariates do not change between landmark and landmark+time.}
 
-\item{se}{[logical] If \code{TRUE} compute standard errors and confidence intervals}
+\item{se}{[logical] If \code{TRUE} compute and add the standard errors to the output.}
 
-\item{iid}{[logical] If \code{TRUE} add the influence function to the output.}
+\item{iid}{[logical] If \code{TRUE} compute and add the influence function to the output.}
 
-\item{band}{[logical]. If \code{TRUE} compute confidence bands across time points.}
+\item{band}{[logical] If \code{TRUE} compute and add the quantiles for the confidence bands to the output.}
 
 \item{B}{[integer, >0] the number of bootstrap replications used to compute the confidence intervals.
 If it equals 0, then the influence function is used to compute Wald-type confidence intervals/bands.}
+
+\item{confint}{[logical] If \code{TRUE} compute and add the confidence intervals/bands to the output.
+They are computed applying the \code{confint} function to the output.}
 
 \item{seed}{[integer, >0] sed number used to generate seeds for bootstrap
 and to achieve reproducible results.}
@@ -96,17 +99,14 @@ ateFit1a <- ate(fit, data = dtS, treatment = "X1", times = 5:8,
 ateFit1b <- ate(fit, data = dtS, treatment = "X1", times = 5:8,
                se = TRUE, B = 0)
 
-## bootstrap confidence intervals: studentized Wald type 
-ateFit1c <- ate(fit, data = dtS, treatment = "X1", times = 5,
-               seed=3,se = TRUE, B = 100)
-## bootstrap confidence intervals: studentized Wald type 
-ateFit1d <- ate(fit, data = dtS, treatment = "X1", times = 5,
-                seed=3,bootci.method="quantile",se = TRUE, B = 100)
-
 ## same as before with in addition the confidence bands for the ATE
 ## (argument band = TRUE)
 ateFit1c <- ate(fit, data = dtS, treatment = "X1", times = 5:8,
                se = TRUE, band = TRUE, B = 0)
+
+## bootstrap confidence intervals
+ateFit1c <- ate(fit, data = dtS, treatment = "X1", times = 5,
+               seed = 3, se = TRUE, B = 100)
 
 ## standard error / confidence intervals computed using 100 boostrap samples
 ## (argument se = TRUE and B = 100) 

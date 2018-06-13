@@ -17,10 +17,11 @@
 #' @param keep.times [logical] If \code{TRUE} add the evaluation times to the output.
 #' @param keep.newdata [logical] If \code{TRUE} add the value of the covariates used to make the prediction in the output list. 
 #' @param keep.strata [logical] If \code{TRUE} add the value of the strata used to make the prediction in the output list. 
-#' @param se [logical] If \code{TRUE} add the standard errors to the output.
-#' @param band [logical] If \code{TRUE} add the standard error and the influence function to the output
-#' such that \code{confint} will be able to compute the confidence bands. 
-#' @param iid [logical] If \code{TRUE} add the influence function to the output.
+#' @param se [logical] If \code{TRUE} compute and add the standard errors to the output.
+#' @param band [logical] If \code{TRUE} compute and add the quantiles for the confidence bands to the output.
+#' @param iid [logical] If \code{TRUE} compute and add the influence function to the output.
+#' @param confint [logical] If \code{TRUE} compute and add the confidence intervals/bands to the output.
+#' They are computed applying the \code{confint} function to the output.
 #' @param average.iid [logical]. If \code{TRUE} add the average of the influence function over \code{newdata} to the output.
 #' @param product.limit [logical]. If true the survival is computed using the product limit estimator.
 #' Otherwise the exponential approximation is used (i.e. exp(-cumulative hazard)).
@@ -79,11 +80,6 @@
 #' CSC.risk <-  predict(CSC.fit, newdata=nd, times=1:10, cause=1)
 #' CSC.risk
 #'
-#' ## add the standard error/confidence intervals
-#' ## (computed on the log log scale and backtransformed)
-#' CSC.riskSE <-  predict(CSC.fit,newdata=nd,times=1:10,cause=1,se=TRUE)
-#' confint(CSC.riskSE)
-#' 
 #' ## compute absolute risks with CI for cause 2
 #' ## (without displaying the value of the covariates)
 #' predict(CSC.fit,newdata=nd,times=1:10,cause=2,se=TRUE,
@@ -119,6 +115,7 @@ predict.CauseSpecificCox <- function(object,
                                      se = FALSE,
                                      band = FALSE,
                                      iid = FALSE,
+                                     confint = (se+band)>0,
                                      average.iid = FALSE,
                                      product.limit = TRUE,
                                      store.iid = "full",
@@ -167,13 +164,6 @@ predict.CauseSpecificCox <- function(object,
              "One or several model parameters have been estimated to be NA \n")
     }
   
-    ## Confidence bands
-    se.save <- se
-    if(band>0){ # used to force the computation of the influence function + standard error to get the confidence bands
-        iid <- TRUE
-        se <- TRUE
-    }
-        
     # relevant event times to use  
     eventTimes <- eTimes[which(eTimes <= max(times))] 
     if(length(eventTimes) == 0){eventTimes <- min(times)} # at least the first event
@@ -308,7 +298,7 @@ predict.CauseSpecificCox <- function(object,
                           productLimit = product.limit)
     
     #### standard error ####
-    if(se || iid || average.iid){
+    if(se || band || iid || average.iid){
         if(!is.na(landmark)){
             stop("standard error for the conditional survival not implemented \n")
         }
@@ -345,17 +335,17 @@ predict.CauseSpecificCox <- function(object,
                                nCause = nCause,
                                nVar = nVar,
                                surv.type = surv.type,
-                               export = c("iid"[iid==TRUE],"se"[se==TRUE],"average.iid"[average.iid==TRUE]),
+                               export = c("iid"[(iid+band)>0],"se"[(se+band)>0],"average.iid"[average.iid==TRUE]),
                                store.iid = store.iid)
     }
     
     #### export ####
     out <- list(absRisk = CIF[,ootimes,drop=FALSE]) # reorder prediction times
 
-    if(se){
+    if(se+band){
         out$absRisk.se <- out.seCSC$se[,ootimes,drop=FALSE]
     }
-    if(iid){
+    if(iid+band){
         out$absRisk.iid <- out.seCSC$iid[,ootimes,,drop=FALSE]
     }
     if(average.iid){
@@ -376,9 +366,20 @@ predict.CauseSpecificCox <- function(object,
             out$strata <- newdata[, interaction(.SD, sep = " "), .SDcols = allStrata]
         }
     }
-    out <- c(out,list(se = se.save,
-                      band = band))
+    out <- c(out,
+             list(se = se,
+                  band = band))
     class(out) <- "predictCSC"
+    if(confint){
+        out <- stats::confint(out)
+    }
+    if(band && se==FALSE){
+        out["absRisk.se"] <- NULL
+    }
+    if(band && iid==FALSE){
+        out["absRisk.iid"] <- NULL
+    }
+    
     return(out)
 }
 

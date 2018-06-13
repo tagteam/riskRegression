@@ -65,7 +65,7 @@ fit <- coxph(Surv(time,event)~X1 + strata(X2) + X6,
 
 #### average treatment effect ####
 fit.pred <- ate(fit, treatment = "X1", times = 1:3, data = d,
-                se = TRUE, band = TRUE)
+                se = TRUE, iid = TRUE, band = TRUE)
 print(fit.pred, type = "meanRisk")
 
 ## manual calculation of se
@@ -81,14 +81,9 @@ out2 <- predictCox(fit, newdata = dd, se = TRUE, times = 1:3, iid = TRUE)
 mean(out2$survival.iid[,1,1])
 out$survival.average.iid[1,1]
 
-## add confidence intervals computed on the original scale
-outCI <- confint(fit.pred,
-meanRisk.transform = "none", diffRisk.transform = "none", ratioRisk.transform = "none"
-)
-print(outCI, type = "meanRisk")
-
-fit.pred$meanRisk[, .(lower = meanRisk - 1.96 * se,
-                      upper = meanRisk + 1.96 * se)]
+## check confidence intervals (no transformation)
+fit.pred$meanRisk[, .(lower = meanRisk - 1.96 * meanRisk.se,
+                      upper = meanRisk + 1.96 * meanRisk.se)]
 
 ## add confidence intervals computed on the log-log scale
 ## and backtransformed
@@ -97,7 +92,7 @@ meanRisk.transform = "loglog", diffRisk.transform = "atanh", ratioRisk.transform
 )
 print(outCI, type = "meanRisk")
 
-newse <- fit.pred$meanRisk[, se/(meanRisk*log(meanRisk))]
+newse <- fit.pred$meanRisk[, meanRisk.se/(meanRisk*log(meanRisk))]
 fit.pred$meanRisk[, .(lower = exp(-exp(log(-log(meanRisk)) - 1.96 * newse)),
                       upper = exp(-exp(log(-log(meanRisk)) + 1.96 * newse)))]
 }

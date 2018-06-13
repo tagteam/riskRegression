@@ -51,22 +51,22 @@ fit <- coxph(Surv(time,event)~X1 + strata(X2) + X6,
 
 #### compute individual specific survival probabilities  
 fit.pred <- predictCox(fit, newdata=d[1:3], times=c(3,8), type = "survival",
-                       se = TRUE, band = TRUE)
+                       se = TRUE, iid = TRUE, band = TRUE)
 fit.pred
+
+## check standard error
 sqrt(rowSums(fit.pred$survival.iid[1,,]^2)) ## se for individual 1
 
-#### add confidence intervals / bands computed on the original scale
-confint(fit.pred, survival.transform = "none")
-cbind(lower = as.double(fit.pred$survival - 1.96 * fit.pred$survival.se),
-      upper = as.double(fit.pred$survival + 1.96 * fit.pred$survival.se)
-)
-
-## add confidence intervals computed on the log-log scale
-## and backtransformed
-confint(fit.pred, survival.transform = "loglog")
+## check confidence interval
 newse <- fit.pred$survival.se/(-fit.pred$survival*log(fit.pred$survival))
 cbind(lower = as.double(exp(-exp(log(-log(fit.pred$survival)) + 1.96 * newse))),
       upper = as.double(exp(-exp(log(-log(fit.pred$survival)) - 1.96 * newse)))
+)
+
+#### compute confidence intervals without transformation
+confint(fit.pred, survival.transform = "none")
+cbind(lower = as.double(fit.pred$survival - 1.96 * fit.pred$survival.se),
+      upper = as.double(fit.pred$survival + 1.96 * fit.pred$survival.se)
 )
 
 }

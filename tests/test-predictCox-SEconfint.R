@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: maj 18 2017 (09:23) 
 ## Version: 
-## last-updated: jun 11 2018 (16:19) 
+## last-updated: jun 13 2018 (16:33) 
 ##           By: Brice Ozenne
-##     Update #: 145
+##     Update #: 154
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -54,13 +54,16 @@ test_that("[predictCox] - consistency of hazard/cumhazard/survival",{
 
 ## ** 1 fixed time
 ## *** Extract information
-set.seed(10)
 predGS <- predict(e.timereg, newdata = dt, times = 10)
-predRR1 <- predictCox(e.coxph, newdata = dt, times = 10, se = TRUE, band = TRUE)
-predRR2 <- predictCox(e.coxph_sort, newdata = dt, times = 10, se = TRUE, band = TRUE)
+predRR1 <- predictCox(e.coxph, newdata = dt, times = 10,
+                      se = TRUE, iid = TRUE, band = TRUE, confint = FALSE)
+predRR2 <- predictCox(e.coxph_sort, newdata = dt, times = 10,
+                      se = TRUE, iid = TRUE, band = TRUE, confint = FALSE)
 
-predRR1.none <- confint(predRR1, survival.transform = "none", seed = 10, nsim.band = nsim.band)
-predRR1.loglog <- confint(predRR1, survival.transform = "loglog", seed = 10, nsim.band = nsim.band)
+predRR1.none <- confint(predRR1, survival.transform = "none", seed = 10,
+                        nsim.band = nsim.band)
+predRR1.loglog <- confint(predRR1, survival.transform = "loglog", seed = 10,
+                          nsim.band = nsim.band)
 
 ## *** Test vs. timereg
 test_that("[predictCox] compare survival and survival.se to timereg (1 fixed time)",{
@@ -95,7 +98,7 @@ test_that("[confint.predictCox] compare to known values (1 fixed time, log log t
     GS <- data.table("observation" = c(6, 7), 
                      "times" = c(10, 10), 
                      "survival" = c(0.19073, 0.01615), 
-                     "survival.se" = c(0.28103, 0.3491), 
+                     "survival.se" = c(0.088812, 0.023259), 
                      "survival.lower" = c(0.05646, 0.00028), 
                      "survival.upper" = c(0.38475, 0.12474), 
                      "survival.quantileBand" = c(2.02196, 2.03706), 
@@ -113,8 +116,10 @@ test_that("[confint.predictCox] compare to known values (1 fixed time, log log t
 vec.time <- sort(dt$time[1:10])
 set.seed(10)
 predGS <- predict(e.timereg, newdata = dt, times = vec.time)
-predRR1 <- predictCox(e.coxph, newdata = dt, times = vec.time, se = TRUE, band = TRUE)
-predRR2 <- predictCox(e.coxph_sort, newdata = dt, times = vec.time, se = TRUE, band = TRUE)
+predRR1 <- predictCox(e.coxph, newdata = dt, times = vec.time,
+                      se = TRUE, iid = TRUE, band = TRUE, confint = FALSE)
+predRR2 <- predictCox(e.coxph_sort, newdata = dt, times = vec.time,
+                      se = TRUE, iid = TRUE, band = TRUE, confint = FALSE)
 
 predRR1.none <- confint(predRR1, survival.transform = "none", seed = 10, nsim.band = nsim.band)
 predRR1.loglog <- confint(predRR1, survival.transform = "loglog", seed = 10, nsim.band = nsim.band)
@@ -153,7 +158,7 @@ test_that("[confint.predictCox] compare to known values (eventtimes, log log tra
     GS <- data.table("observation" = c(6, 7), 
                      "times" = c(0.17003, 0.17003), 
                      "survival" = c(0.9931, 0.98291), 
-                     "survival.se" = c(1.0817, 1.11401), 
+                     "survival.se" = c(0.007437, 0.018876), 
                      "survival.lower" = c(0.94395, 0.85811), 
                      "survival.upper" = c(0.99917, 0.99806), 
                      "survival.quantileBand" = c(2.66624, 2.66367), 
@@ -167,7 +172,8 @@ test_that("[confint.predictCox] compare to known values (eventtimes, log log tra
 ## ** after last event
 test_that("[predictCox] after the last event",{
 
-    predRR1 <- predictCox(e.coxph, newdata = dt, times = 1e8, se = TRUE, band = TRUE)
+    predRR1 <- predictCox(e.coxph, newdata = dt, times = 1e8,
+                          se = TRUE, iid = TRUE, band = TRUE, confint = FALSE)
     predRR1 <- confint(predRR1, nsim.band = nsim.band)
     
     expect_true(all(is.na(predRR1$survival)))
@@ -223,7 +229,8 @@ test_that("Prediction - last event death",{
 ## ** before first event
 test_that("[predictCox] before the first event",{
 
-    predRR1 <- predictCox(e.coxph, newdata = dt, times = 1e-8, se = TRUE, band = TRUE)
+    predRR1 <- predictCox(e.coxph, newdata = dt, times = 1e-8,
+                          se = TRUE, iid = TRUE, band = TRUE, confint = FALSE)
     predRR1 <- confint(predRR1, nsim.band = nsim.band)
     
     expect_true(all(predRR1$survival==1))
@@ -306,10 +313,13 @@ test_that("[predictCox] - incorrect strata",{
 ## *** Extract information
 set.seed(10)
 predGS <- predict(eS.timereg, newdata = dtStrata, times = 4)
-predRR1 <- predictCox(eS.coxph, newdata = dtStrata, times = 4, se = TRUE, band = TRUE)
+predRR1 <- predictCox(eS.coxph, newdata = dtStrata, times = 4,
+                      se = TRUE, iid = TRUE, band = TRUE, confint = FALSE)
 
-predRR1.none <- confint(predRR1, survival.transform = "none", seed = 10, nsim.band = nsim.band)
-predRR1.loglog <- confint(predRR1, survival.transform = "loglog", seed = 10, nsim.band = nsim.band)
+predRR1.none <- confint(predRR1, survival.transform = "none", seed = 10,
+                        nsim.band = nsim.band)
+predRR1.loglog <- confint(predRR1, survival.transform = "loglog", seed = 10,
+                          nsim.band = nsim.band)
 
 ## *** Test vs. timereg
 test_that("[predictCox] compare survival and survival.se to timereg (1 fixed time, strata)",{
@@ -343,7 +353,7 @@ test_that("[confint.predictCox] compare to known values (1 fixed time, log log t
     GS <- data.table("observation" = c(6, 7), 
                      "times" = c(4, 4), 
                      "survival" = c(0.78071, 0.51977), 
-                     "survival.se" = c(0.42769, 0.37531), 
+                     "survival.se" = c(0.082657, 0.12765), 
                      "survival.lower" = c(0.56416, 0.25526), 
                      "survival.upper" = c(0.89848, 0.73082), 
                      "survival.quantileBand" = c(1.85525, 1.94499), 
@@ -361,10 +371,13 @@ test_that("[confint.predictCox] compare to known values (1 fixed time, log log t
 vec.time <- sort(dtStrata$time)[1:10]
 set.seed(10)
 predGS <- predict(eS.timereg, newdata = dtStrata, times = vec.time)
-predRR1 <- predictCox(eS.coxph, newdata = dtStrata, times = vec.time, se = TRUE, band = TRUE)
+predRR1 <- predictCox(eS.coxph, newdata = dtStrata, times = vec.time,
+                      se = TRUE, iid = TRUE, band = TRUE, confint = FALSE)
 
-predRR1.none <- confint(predRR1, survival.transform = "none", seed = 10, nsim.band = nsim.band)
-predRR1.loglog <- confint(predRR1, survival.transform = "loglog", seed = 10, nsim.band = nsim.band)
+predRR1.none <- confint(predRR1, survival.transform = "none", seed = 10,
+                        nsim.band = nsim.band)
+predRR1.loglog <- confint(predRR1, survival.transform = "loglog", seed = 10,
+                          nsim.band = nsim.band)
 
 
 ## *** Test vs. timereg
@@ -398,7 +411,7 @@ test_that("[confint.predictCox] compare to known values (eventtimes, log log tra
     GS <- data.table("observation" = c(35, 36), 
                      "times" = c(0.87708, 0.87708), 
                      "survival" = c(0.99483, 0.99256), 
-                     "survival.se" = c(0.7159, 1.37651), 
+                     "survival.se" = c(0.00369, 0.010196), 
                      "survival.lower" = c(0.97914, 0.89511), 
                      "survival.upper" = c(0.99873, 0.9995), 
                      "survival.quantileBand" = c(2.27614, 2.33186), 
@@ -415,7 +428,8 @@ test_that("[predictCox] after the last event (strata)",{
     lastevent <- dtStrata[, max(time), by = "strata"]
     laststrata <- lastevent[V1==max(V1),strata]
     
-    predRR1 <- predictCox(eS.coxph, newdata = dtStrata, times = max(lastevent[["V1"]]), se = TRUE, band = TRUE)
+    predRR1 <- predictCox(eS.coxph, newdata = dtStrata, times = max(lastevent[["V1"]]),
+                          se = TRUE, iid = TRUE, band = TRUE, confint = FALSE)
     predRR1 <- confint(predRR1, nsim.band = nsim.band)
     
     expect_true(all(is.na(predRR1$survival[dtStrata$strata!=laststrata,])))
@@ -460,7 +474,7 @@ fit <- coxph(Surv(time,event)~X1 + strata(X2) + X6,
              data=dt, ties="breslow", x = TRUE, y = TRUE)
 
 fit.pred <- predictCox(fit, newdata=dt[1:3], times=c(3,8), type = "survival",
-                       se = TRUE, band = TRUE)
+                       se = TRUE, iid = TRUE, band = TRUE, confint = FALSE)
 confint.pred1 <- confint(fit.pred, survival.transform = "none", nsim.band = nsim.band)
 confint.pred2 <- confint(fit.pred, survival.transform = "loglog", nsim.band = nsim.band)
 
@@ -653,9 +667,6 @@ expect_error(resW <- predictCox(fitW.cph, times = Melanoma$time, newdata = Melan
     ## expect_equal(M1,M2)
 ## })
 # }}}
-#----------------------------------------------------------------------
-### test-predictCox-SEconfint.R ends here
-
 
 ## * Previous Bug
 ## ** ???
@@ -663,4 +674,9 @@ f1 <- coxph(Surv(time,status==1) ~ age+logthick+epicel+strata(sex),
             data=Melanoma, x=TRUE,y=TRUE)
 res <- predictCox(f1,newdata=Melanoma[c(17,101,123),],
                   times=c(7,3,5)*365.25)
+
+##----------------------------------------------------------------------
+### test-predictCox-SEconfint.R ends here
+
+
 

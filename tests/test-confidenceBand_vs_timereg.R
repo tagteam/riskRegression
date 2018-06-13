@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: maj 18 2017 (09:23) 
 ## Version: 
-## last-updated: jun  6 2018 (18:34) 
+## last-updated: jun 13 2018 (16:21) 
 ##           By: Brice Ozenne
-##     Update #: 105
+##     Update #: 107
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -64,6 +64,7 @@ test_that("[predictCox] Quantile for the confidence band of the cumhazard", {
                          se = TRUE,
                          iid = TRUE,
                          band = TRUE,
+                         confint = FALSE,
                          type = "cumhazard")
 
     ## compatibility with timereg
@@ -115,7 +116,8 @@ graphics.off()
 eS.coxph <- coxph(Surv(time, status) ~ x + strata(sex), 
                   data = dtStrata, x = TRUE, y = TRUE) 
 
-eS.pred  <- predictCox(eS.coxph, newdata = dtStrata, times = 1:4, band = TRUE)
+eS.pred  <- predictCox(eS.coxph, newdata = dtStrata, times = 1:4,
+                       se = TRUE, iid = TRUE, band = TRUE)
 eS.confint <- confint(eS.pred, seed = 10)
 eS.confint$survival.quantileBand
 

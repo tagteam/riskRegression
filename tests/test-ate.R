@@ -19,18 +19,22 @@ verbose <- FALSE
 test_that("G formula: coxph, cph, bootstrap sequential, one and several time points",{
     fit.cph <- cph(Surv(time,event)~ X1+X2,data=dtS,y=TRUE,x=TRUE)
     ate.1a <- ate(fit.cph,data = dtS, treatment = "X1", contrasts = NULL,seed=3, 
-                  times = 1, handler=handler, B = 2, y = TRUE, mc.cores=1,verbose=verbose)
+                  times = 1, handler=handler, B = 2, y = TRUE, mc.cores=1,verbose=verbose,
+                  se = TRUE, confint = FALSE)
     ate.1a <- confint(ate.1a, bootci.method = "quantile")
     ate.1b <- ate(fit.cph, data = dtS, treatment = "X1", contrasts = NULL,seed=3, 
-                  times = 1:2, B = 2, y = TRUE, mc.cores=1,handler=handler,verbose=verbose)
+                  times = 1:2, B = 2, y = TRUE, mc.cores=1,handler=handler,verbose=verbose,
+                  se = TRUE, confint = FALSE)
     ate.1b <- confint(ate.1b, bootci.method = "quantile")
 
     fit.coxph <- coxph(Surv(time,event)~ X1+X2,data=dtS,y=TRUE,x=TRUE)
     ate.2a <- ate(fit.coxph,data = dtS, treatment = "X1", contrasts = NULL,seed=3,
-                  times = 1, B = 2, y = TRUE, mc.cores=1,handler=handler,verbose=verbose)
+                  times = 1, B = 2, y = TRUE, mc.cores=1,handler=handler,verbose=verbose,
+                  se = TRUE, confint = FALSE)
     ate.2a <- confint(ate.2a, bootci.method = "quantile")
     ate.2b <- ate(fit.coxph, data = dtS, treatment = "X1", contrasts = NULL,seed=3,
-                  times = 1:2, B = 2, y = TRUE, mc.cores=1,handler=handler,verbose=verbose)
+                  times = 1:2, B = 2, y = TRUE, mc.cores=1,handler=handler,verbose=verbose,
+                  se = TRUE, confint = FALSE)
     ate.2b <- confint(ate.2b, bootci.method = "quantile")
     
     attr(ate.2a,"class") <- "NULL"
@@ -41,16 +45,16 @@ test_that("G formula: coxph, cph, bootstrap sequential, one and several time poi
     expect_equal(ate.1b,ate.2b,tolerance = .00001)
 
     ## quantile(ate.1a$boot$t[,1], 0.025) 
-    expect_equal(ate.1a$meanRisk$meanRiskBoot,
+    expect_equal(ate.1a$meanRisk$meanRisk.bootstrap,
                  c(0.04778180, 0.03383714, 0.03132013), tol = 1e-6)
-    expect_equal(ate.1a$meanRisk$se,
+    expect_equal(ate.1a$meanRisk$meanRisk.se,
                  c(0.02308268, 0.03008728, 0.02586185), tol = 1e-6)
-    expect_equal(ate.1a$meanRisk$lower,
+    expect_equal(ate.1a$meanRisk$meanRisk.lower,
                  c(0.03227598, 0.01362597, 0.01394739), tol = 1e-6)
-    expect_equal(ate.1a$meanRisk$upper,
+    expect_equal(ate.1a$meanRisk$meanRisk.upper,
                  c(0.06328763, 0.05404831, 0.04869286), tol = 1e-6)
     
-    expect_equal(ate.1a$riskComparison$diffMeanBoot,
+    expect_equal(ate.1a$riskComparison$diff.bootstrap,
                  c(0.013944664, 0.016461677, 0.002517013), tol = 1e-6)
     expect_equal(ate.1a$riskComparison$diff.se,
                  c(0.007004595, 0.002779170, 0.004225425), tol = 1e-6)
@@ -61,7 +65,7 @@ test_that("G formula: coxph, cph, bootstrap sequential, one and several time poi
     ## expect_equal(ate.1a$riskComparison$diff.p.value,
     ## c(4.650420e-02, 3.156692e-09, 5.513872e-01), tol = 1e-6)
   
-    expect_equal(ate.1a$riskComparison$ratioMeanBoot,
+    expect_equal(ate.1a$riskComparison$ratio.bootstrap,
                  c(1.833739, 1.853041, 1.037422), tol = 1e-6)
     expect_equal(ate.1a$riskComparison$ratio.se,
                  c(0.9483519, 0.7931128, 0.1040106), tol = 1e-6)
@@ -99,11 +103,10 @@ test_that("Cox model - compare to explicit computation",{
     ## automatically
     ateFit <- ate(fit, data = dtS, treatment = "X1", contrasts = NULL,
                   times = 5:7, B = 0, se = TRUE, mc.cores=1,handler=handler,verbose=verbose)
-    ateFit <- confint(ateFit)
-    expect_equal(ateFit$meanRisk[ateFit$meanRisk$Treatment == "T0",lower],
+    expect_equal(ateFit$meanRisk[ateFit$meanRisk$Treatment == "T0",meanRisk.lower],
                  c(0.2756147, 0.3220124, 0.3492926),
                  tol = 1e-6)
-    expect_equal(ateFit$meanRisk[ateFit$meanRisk$Treatment == "T0",upper],
+    expect_equal(ateFit$meanRisk[ateFit$meanRisk$Treatment == "T0",meanRisk.upper],
                  c(0.6513235, 0.7011545, 0.7276942),
                  tol = 1e-6)
 })
@@ -131,7 +134,6 @@ test_that("check against manual computation",{
     ateFit <- ate(fit, data = dtS, treatment = "X1", contrasts = NULL,
                   times = 5:7, B = 0, se = TRUE, mc.cores=1,handler=handler,
                   verbose=verbose)
-    ateFit <- confint(ateFit)
 
     ATE <- list()
     ATE.iid <- list()
@@ -148,8 +150,8 @@ test_that("check against manual computation",{
         ATE.se <- sqrt(apply(ATE.iid[[iT]]^2, 2, sum))
         ATE.lower <- ATE[[iT]]+ qnorm(0.025) * ATE.se
         ATE.upper <- ATE[[iT]] + qnorm(0.975) * ATE.se
-        expect_equal(ATE.lower, ateFit$meanRisk[Treatment == iT,lower])
-        expect_equal(ATE.upper, ateFit$meanRisk[Treatment == iT,upper])
+        expect_equal(ATE.lower, ateFit$meanRisk[Treatment == iT,meanRisk.lower])
+        expect_equal(ATE.upper, ateFit$meanRisk[Treatment == iT,meanRisk.upper])
     }
 
     diffATE <- ATE[["T0"]]-ATE[["T1"]]
@@ -184,11 +186,11 @@ test_that("CSC model bootstrap",{
     fit=CSC(formula = Hist(time,event)~ X1+X2, data = df,cause=1)
     res <- ate(fit, data = df, treatment = "X1", contrasts = NULL,
                times = 7, cause = 1, B = 0, mc.cores=1,handler=handler,verbose=verbose)
-    Sres <- print(res, trace = FALSE)
+    Sres <- capture.output(print(res))
     fit=CSC(formula = Hist(time,event)~ X1+X2, data = df,cause=1)
     res <- ate(fit,data = df,  treatment = "X1", contrasts = NULL,
                times = 7, cause = 1, B = 2, mc.cores=1,handler=handler,verbose=verbose)
-    Sres <- print(res, trace = FALSE)
+    Sres <- capture.output(print(res))
 })
                                         # }}}
 
@@ -237,11 +239,13 @@ test_that("mcapply vs. foreach",{
         fit = CSC(formula = Hist(time,event)~ X1+X2, data = df, cause=1)
         time2.mc <- system.time(
             res2.mc <- ate(fit,data = df, treatment = "X1", contrasts = NULL,
-                           times = 7, cause = 1, B = 2, mc.cores=2, handler = "mclapply", seed = 10, verbose = FALSE)
+                           times = 7, cause = 1, B = 2, mc.cores=2, handler = "mclapply", seed = 10,
+                           verbose = FALSE, confint = FALSE)
         )
         time2.for <- system.time(
             res2.for <- ate(fit,data = df, treatment = "X1", contrasts = NULL,
-                            times = 7, cause = 1, B = 2, mc.cores=2, handler = "foreach", seed = 10, verbose = FALSE)
+                            times = 7, cause = 1, B = 2, mc.cores=2, handler = "foreach", seed = 10,
+                            verbose = FALSE, confint = FALSE)
         )
         expect_equal(res2.mc, res2.for)
     }})

@@ -1,3 +1,11 @@
+Version: 2018.06.13 (Brice - 06/13/18 3:30)
+- confint is now called by predictCox/predictCSC/ate by default.
+  If the user wants to apply confint on the output of predictCox/predictCSC/ate,
+  he should make sure that se or iid are exported.
+
+Version: 2018.06.01 (Brice - 01/06/18)
+- NEW FEATURE: confint function computing confidence interval/bands, possibly using a transformation.
+
 Version: 2018.04.05 (Brice - 04/11/18 9:28)
 - ate nows uses the boot package to compute p-values with bootstrap resampling
 

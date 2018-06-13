@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: maj 23 2018 (14:08) 
 ## Version: 
-## Last-Updated: jun  6 2018 (16:04) 
+## Last-Updated: jun 13 2018 (16:19) 
 ##           By: Brice Ozenne
-##     Update #: 252
+##     Update #: 261
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -56,22 +56,22 @@
 ##' 
 ##' #### compute individual specific survival probabilities  
 ##' fit.pred <- predictCox(fit, newdata=d[1:3], times=c(3,8), type = "survival",
-##'                        se = TRUE, band = TRUE)
+##'                        se = TRUE, iid = TRUE, band = TRUE)
 ##' fit.pred
+##'
+##' ## check standard error
 ##' sqrt(rowSums(fit.pred$survival.iid[1,,]^2)) ## se for individual 1
 ##'
-##' #### add confidence intervals / bands computed on the original scale
-##' confint(fit.pred, survival.transform = "none")
-##' cbind(lower = as.double(fit.pred$survival - 1.96 * fit.pred$survival.se),
-##'       upper = as.double(fit.pred$survival + 1.96 * fit.pred$survival.se)
-##' )
-##'
-##' ## add confidence intervals computed on the log-log scale
-##' ## and backtransformed
-##' confint(fit.pred, survival.transform = "loglog")
+##' ## check confidence interval
 ##' newse <- fit.pred$survival.se/(-fit.pred$survival*log(fit.pred$survival))
 ##' cbind(lower = as.double(exp(-exp(log(-log(fit.pred$survival)) + 1.96 * newse))),
 ##'       upper = as.double(exp(-exp(log(-log(fit.pred$survival)) - 1.96 * newse)))
+##' )
+##'
+##' #### compute confidence intervals without transformation
+##' confint(fit.pred, survival.transform = "none")
+##' cbind(lower = as.double(fit.pred$survival - 1.96 * fit.pred$survival.se),
+##'       upper = as.double(fit.pred$survival + 1.96 * fit.pred$survival.se)
 ##' )
 ##'
 
@@ -89,8 +89,8 @@ confint.predictCox <- function(object,
                                ...){
     
     if(object$se == FALSE && object$band == FALSE){
-        message("No confidence interval is computed \n",
-                "Set argument \'se\' to TRUE when calling predictCox \n")
+        message("No confidence interval/band computed \n",
+                "Set argument \'se\' or argument \'band\' to TRUE when calling predictCox \n")
         return(object)
     }
 
@@ -117,18 +117,30 @@ confint.predictCox <- function(object,
         stop(txt2," has/have not been stored in the object \n",
              "set argument \'parm\' to ",txt2," when calling predictCox \n")
     }
-    
+
     if("cumhazard" %in% parm){
-        if(!is.null(object$cumhazard.transform) && object$cumhazard.transform != "none"){
-            stop("Cannot work with standard errors that have already been transformed \n")
-        }
         object$cumhazard.transform <- match.arg(cumhazard.transform, c("none","log"))
-    }
-    if("survival" %in% parm){
-        if(!is.null(object$survival.transform) && object$survival.transform != "none"){
-            stop("Cannot work with standard errors that have already been transformed \n")
+        if(object$band && is.null(object$cumhazard.se)){
+            stop("Cannot compute confidence bands \n",
+                 "Set argument \'se\' to TRUE when calling predictCox \n")
         }
+        if(object$band && is.null(object$cumhazard.iid)){
+            stop("Cannot compute confidence bands \n",
+                 "Set argument \'iid\' to TRUE when calling predictCox \n")
+        }
+
+    }
+    
+    if("survival" %in% parm){
         object$survival.transform <- match.arg(survival.transform, c("none","log","loglog","cloglog"))
+        if(object$band && is.null(object$survival.se)){
+            stop("Cannot compute confidence bands \n",
+                 "Set argument \'se\' to TRUE when calling predictCox \n")
+        }
+        if(object$band && is.null(object$survival.iid)){
+            stop("Cannot compute confidence bands \n",
+                 "Set argument \'iid\' to TRUE when calling predictCox \n")
+        }
     }
 
     ## ** compute se, CI/CB

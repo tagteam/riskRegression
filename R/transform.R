@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: maj 30 2018 (15:58) 
 ## Version: 
-## Last-Updated: jun 11 2018 (16:16) 
+## Last-Updated: jun 13 2018 (11:42) 
 ##           By: Brice Ozenne
-##     Update #: 168
+##     Update #: 170
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -246,7 +246,7 @@ transformCIBP <- function(estimate, se, iid, null,
                                 type = type)
         }
     }
-    out$se <- se
+    ## out$se <- se
 
     ## ** confidence intervals
     if(ci){
