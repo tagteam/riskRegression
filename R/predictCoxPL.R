@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: sep  4 2017 (16:43) 
 ## Version: 
-## last-updated: maj 31 2018 (18:02) 
+## last-updated: jun 14 2018 (16:16) 
 ##           By: Brice Ozenne
-##     Update #: 74
+##     Update #: 79
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -61,7 +61,8 @@ predictCoxPL <- function(object,
                          times,
                          type = c("cumhazard","survival"),
                          ...){
-
+    stop <- NULL ## [:CRANcheck:] data.table
+    
     # {{{ normalize arguments
     if(is.data.table(newdata)){
         newdata <- copy(newdata)
@@ -81,8 +82,8 @@ predictCoxPL <- function(object,
                                times = times,
                                type = type,
                                ...)
-    infoVar <- coxVariableName(object)
-    X.design <- as.data.table(coxDesign(object))
+    object.design <- coxDesign(object)
+    infoVar <- coxVariableName(object, df.design = object.design)
     # }}}
     
     # {{{ compute survival
@@ -103,7 +104,7 @@ predictCoxPL <- function(object,
             indexStrata.object <- which(object.strata==Ustrata[iStrata])
             indexStrata.newdata <- which(new.strata==Ustrata[iStrata])
                 
-            all.times <- X.design[indexStrata.object,.SD$stop]
+            all.times <- object.design[indexStrata.object,.SD$stop]
             all.times <- sort(unique(all.times[all.times <= max(times)]))
             if(length(all.times)>0){
                 res.tempo <- predictCox(object,
@@ -117,7 +118,7 @@ predictCoxPL <- function(object,
         }
         
     }else{
-        all.times <- unique(sort(X.design$stop[X.design$stop <= max(times)]))
+        all.times <- unique(sort(object.design[stop <= max(times), stop]))
         if(length(all.times)>0){
             res.tempo <- predictCox(object,
                                     newdata = newdata,

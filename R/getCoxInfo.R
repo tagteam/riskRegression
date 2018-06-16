@@ -9,29 +9,40 @@
 #' @param object The fitted Cox regression model object either
 #'     obtained with \code{coxph} (survival package) or \code{cph}
 #'     (rms package).
+#' @param df.design [data.frame] dataset containing all the relevant variables.
+#' Output from \code{coxDesign}.
 #' 
 #' @author Brice Ozenne broz@@sund.ku.dk
 
 #' @rdname coxVariableName
 #' @export
-coxVariableName <- function(object){
+coxVariableName <- function(object, df.design){
     ff <- coxFormula(object)
     special.object <- coxSpecialStrata(object)
   
     ## response
     ls.SurvVar <- SurvResponseVar(ff)
   
-    ## strata
+    ## specials
     xterms <- delete.response(terms(ff,
-                                    special = special.object,
-                                    data = coxDesign(object)))
+                                    special = c(special.object,"cluster"), ## cluster for phreg objects
+                                    data = df.design))
+
+    ## strata
     ls.StrataInfo <- extractStrata(xterms,
                                    special = coxSpecialStrata(object))
 
     ls.StrataInfo$strata.levels <- coxStrataLevel(object)
+
     
     ## regressor
-    lpvars.original <- setdiff(all.vars(ff),c(unlist(ls.SurvVar), ls.StrataInfo$strata.vars.original))
+    all.cov <- all.vars(xterms)
+    index.keep <- setdiff(1:length(all.cov),unlist(attr(xterms,"specials")))
+    if(length(index.keep)>0){
+        lpvars.original <- all.vars(xterms)[index.keep]
+    }else{
+        lpvars.original <- NULL
+    }
   
   ## export
   return(c(list(entry = ls.SurvVar$entry),
@@ -44,12 +55,6 @@ coxVariableName <- function(object){
 } 
 # }}}
 
-## * coxCovars
-coxCovars <- function(object){
-  ttobj <- stats::terms(object)
-  ## colnames(attr(ttobj,"factors"))
-  all.vars(attr(delete.response(ttobj),"variables"))
-}
 
 #### methods #####
 
@@ -120,7 +125,8 @@ coxCenter.coxph <- function(object){
 #' @method coxCenter phreg
 #' @export
 coxCenter.phreg <- function(object){
-  data <- model.matrix(object = eval(object$call$formula),  object$model.frame)[,names(coef(object)), drop = FALSE]
+    data <- model.matrix(object = eval(object$call$formula),
+                         object$model.frame)[,names(coef(object)), drop = FALSE]
   return(apply(data,2,mean))
 }
 # }}}
@@ -134,7 +140,7 @@ coxCenter.phreg <- function(object){
 #' @param object The fitted Cox regression model object either
 #'     obtained with \code{coxph} (survival package), \code{cph}
 #'     (rms package), or \code{phreg} (mets package).
-#' @param center logical. Should the variable of the linear predictor be centered ?
+#' @param center [logical] Should the variables of the linear predictor be added ?
 #' 
 #' @author Brice Ozenne broz@@sund.ku.dk
 
@@ -149,71 +155,100 @@ coxDesign <- function(object, center){
 #' @export
 coxDesign.coxph <- function(object, center = FALSE){
   
-  default.start <- 0
+    default.start <- 0
   
+    if("x" %in% names(object) == FALSE){
+        stop("invalid object \n",
+             "set x=TRUE in the call to ",class(object)[1]," \n")
+    }
   
-  if("x" %in% names(object) == FALSE){
-    stop("invalid object \n",
-         "set x=TRUE in the call to ",class(object)[1]," \n")
-  }
+    if("y" %in% names(object) == FALSE){
+        stop("invalid object \n",
+             "set y=TRUE in the call to ",class(object)[1]," \n")
+    }
+
+    ## ** add x
+    if(NCOL(object[["x"]])!=0){
+        if(center){
+            dt <- as.data.table(rowCenter_cpp(object[["x"]], center = coxCenter(object)))
+        }else{
+            dt <- as.data.table(object[["x"]])
+        }        
+    }else{
+        dt <- NULL
+    }
+
+    ## ** add y
+    if(is.null(dt)){
+        dt <- data.table(stop = object[["y"]][,"time"],
+                         status = object[["y"]][,"status"])
+    }else{
+        dt[,c("stop") := object[["y"]][,"time"]]
+        dt[,c("status") := object[["y"]][,"status"]]
+    }
+    if("start" %in% colnames(object$y) == FALSE){
+        dt[,c("start") := default.start]
+    }else{
+        dt[,c("start") := object[["y"]][,"start"]]
+    }
   
-  if("y" %in% names(object) == FALSE){
-    stop("invalid object \n",
-         "set y=TRUE in the call to ",class(object)[1]," \n")
-  }
-  
-  ## set to null to be able to use cbind after 
-  # (otherwise $x may have dimension <0,0> that cannot be bind with $y)
-  if(NCOL(object[["x"]])==0){
-    object[["x"]] <- NULL
-  }else if(center){
-    object[["x"]][] <- rowCenter_cpp(object[["x"]], center = coxCenter(object))
-  }
-  
-  if("strata" %in% names(object) == FALSE){
-    object[["strata"]] <- NULL
-  }
-  if("start" %in% colnames(object$y) == FALSE){
-    object[["y"]] <- cbind(start = default.start, 
-                           stop = object[["y"]][,"time"],
-                           status = object[["y"]][,"status"])
-  }
-  
-  return(as.data.frame(cbind(object[["y"]],
-                             object[["x"]],
-                             strata=object[["strata"]])))
-  
+    ## ** add strata
+    if("strata" %in% names(object)){
+        dt[,c("strata") := object[["strata"]]]
+    }else{
+        dt[,c("strata") := factor(1)]
+    }
+    
+    ## ** export
+    first.col <- c("start","stop","status")
+    data.table::setcolorder(dt, c(first.col,setdiff(names(dt),first.col)))
+    return(dt)
 }
+
+#' @rdname coxDesign
+#' @method coxDesign cph
+#' @export
+coxDesign.cph <- coxDesign.coxph
 
 #' @rdname coxDesign
 #' @method coxDesign phreg
 #' @export
 coxDesign.phreg <- function(object, center = FALSE){
 
-    M.outcome <- as.matrix(object$model.frame[,1])
-    if("entry" %in% names(M.outcome) == FALSE){
-        M.outcome <- cbind(entry = 0, M.outcome)
+    default.start <- 0
+
+    ## ** add y
+    dt <- as.data.table(unclass(object$model.frame[,1]))
+    if("start" %in% names(dt) == FALSE){
+        dt[, start := default.start]
     }
   
-8                                        # normalize names
-    name.default <- colnames(M.outcome)
-    name.default<- gsub("entry","start",gsub("time","stop",name.default))
-    colnames(M.outcome) <- name.default
+    ## normalize names
+    name.old <- names(dt)
+    name.new <- gsub("entry","start",gsub("time","stop",name.old))
+    setnames(dt, old = name.old, new = name.new)
   
-                                        # get covariates
-    M.X <- model.matrix(coxFormula(object), data = object$model.frame)[,names(coef(object)),drop=FALSE]
-  
+    ## ** add x
     if(center){
-        M.X <- rowCenter_cpp(M.X, center = coxCenter(object))
-    }
-
-    if("strata" %in% names(object) == FALSE){
-        return(as.data.frame(cbind(M.outcome, M.X, strata = object[["strata"]])))
+        M.X <- rowCenter_cpp(object$X, center = coxCenter(object))
+        colnames(M.X) <- name.coef
+        dt <- cbind(dt, as.data.table(M.X))
     }else{
-        return(as.data.frame(cbind(M.outcome, M.X)))        
+        dt <- cbind(dt, as.data.table(object$X))
     }
-  
 
+    ## ** add strata
+    if(!is.null(object$strata.name)){
+        dt[,c("strata") := as.factor(object$model.frame[[object$strata.name]])]
+    }else{
+        dt[,c("strata") := factor(1)]
+    }
+
+    ## ** export
+    first.col <- c("start","stop","status")
+    data.table::setcolorder(dt, c(first.col,setdiff(names(dt),first.col)))
+    return(dt)
+    
 }
 # }}}
 
@@ -328,7 +363,7 @@ coxLP.coxph <- function(object, data, center){
     }
     
   }else{ ## new dataset
-    if(n.varLP>0){
+      if(n.varLP>0){
       is.strata <- attr(object$terms, "special")$strata
       
       
@@ -357,7 +392,6 @@ coxLP.coxph <- function(object, data, center){
       }else{ 
         Xb <- stats::predict(object, newdata = as.data.frame(data), type = "lp")
       }
-      
       if(center == FALSE){
         Xb <- Xb + sum(coxCenter(object)*coef)
       }
@@ -614,7 +648,7 @@ coxStrata.phreg <- function(object, data, sterms, strata.vars, levels, strata.le
     
   }else{  ## strata variables
       if(is.null(data)){ ## training dataset
-          strata <- factor(object$strata[order(object$ord[,1]),1], levels = 0:(length(strata.levels)-1), labels = strata.levels)
+          strata <- object$model.frame[[object$strata.name]]
       }else { ## new dataset
           strata <- prodlim::model.design(sterms,data=data,xlev=strata.levels,specialsFactor=TRUE)$strata[[1]]
           if (any(unique(strata) %in% strata.levels == FALSE)){
@@ -759,28 +793,30 @@ SurvResponseVar <- function(formula){
 #'
 extractStrata <- function(xterms, special){
   
-  # renamed variables (e.g. strata(X1))
-  xvars <- attr(xterms,"term.labels")
-  strataspecials <- attr(xterms,"specials")[[special]]
-  strata.vars <- xvars[strataspecials]
+    ## renamed variables (e.g. strata(X1))
+    xvars <- attr(xterms,"term.labels")
+    strataspecials <- attr(xterms,"specials")[[special]]
+    strata.vars <- xvars[strataspecials]
+
+    is.strata <- length(strataspecials)>0
+    
+    ## original variables (e.g. X1)
+    stats::drop.terms(xterms,(1:length(xvars))[-strataspecials])
+    allVars.X <- all.vars(xterms)
+    strata.vars.original <- allVars.X[strataspecials]
   
-  # original variables (e.g. X1)
-  allVars.X <- all.vars(xterms)
-  strata.vars.original <- allVars.X[strataspecials]
-  
-  is.strata <- length(strataspecials)>0
-  
-  if(is.strata){
-    if (length(xvars)>length(strataspecials)){
-      sterms <- stats::drop.terms(xterms,(1:length(xvars))[-strataspecials])
-    } else {
-      sterms <- xterms
-    }
+    if(is.strata){
+        if (length(xvars)>length(strataspecials)){
+            sterms <- stats::drop.terms(xterms,(1:length(xvars))[-strataspecials])
+        } else {
+            sterms <- xterms
+        }
     
   }else{
     sterms <- NULL
   }
-  
+    
+  browser()
   return(list(strata.vars = strata.vars,
               strata.vars.original = strata.vars.original,
               strataspecials = strataspecials,
@@ -845,7 +881,7 @@ reconstructData <- function(object){
   newdata <- as.data.frame(cbind(coxDesign(object),splitStrataVar(object)))
   
   ## set response variable to their original names
-  infoVar <- coxVariableName(object)
+  infoVar <- coxVariableName(object, df.design = newdata)
   if(!is.null(infoVar$entry)){
     names(newdata)[names(newdata) == "start"] <- infoVar$entry
   }
@@ -874,6 +910,21 @@ reconstructData <- function(object){
 
                                         # {{{ model.matrix.phreg
 
+## * model.matrix.cph
+#' @title Extract design matrix for cph objects
+#' @description Extract design matrix for cph objects
+#' @param object a cph object.
+#' @param data a dataset.
+#' 
+#' @method model.matrix cph
+model.matrix.cph <- function(object, data){
+
+    M <- survival_model.matrix(object, data)[,object$mmcolnames,drop=FALSE]
+    colnames(M) <- colnames(object[["x"]])
+    return(M)
+    
+}
+
 ## * model.matrix.phreg
 #' @title Extract design matrix for phreg objects
 #' @description Extract design matrix for phreg objects
@@ -884,21 +935,26 @@ reconstructData <- function(object){
 #' 
 #' @method model.matrix phreg
 model.matrix.phreg <- function(object, data){
-  special <- c("strata", "cluster")
-  Terms <- terms(coxFormula(object), special, data = data)
+    special <- c("strata", "cluster")
+    Terms <- terms(coxFormula(object), special, data = data)
   
-  ## remove specials
-  if (!is.null(attributes(Terms)$specials$cluster)) {
-    ts <- survival::untangle.specials(Terms, "cluster")
-    Terms <- Terms[-ts$terms]
-  }
-  if (!is.null(stratapos <- attributes(Terms)$specials$strata)) {
-    ts <- survival::untangle.specials(Terms, "strata")
-    Terms <- Terms[-ts$terms]
-  }
-  attr(Terms,"intercept") <- 0
-  
-  return(model.matrix(Terms, data))
+    ## remove specials
+    if (!is.null(attributes(Terms)$specials$cluster)) {
+        ts <- survival::untangle.specials(Terms, "cluster")
+        Terms <- Terms[-ts$terms]
+    }
+    if (!is.null(stratapos <- attributes(Terms)$specials$strata)) {
+        ts <- survival::untangle.specials(Terms, "strata")
+        Terms <- Terms[-ts$terms]
+    }
+    attr(Terms,"intercept") <- 1 ## keep intercept to have the same behavior with and without categorical variables 
+
+    missing.var <- setdiff(all.vars(update(object$formula,".~1")), names(data))
+    if(length(missing.var)>0){
+        data[, c(missing.var) := as.list(object$model.frame[1,1][,missing.var])]
+    }
+    X <- model.matrix(Terms, data)
+    return(X[,setdiff(colnames(X),"(Intercept)"),drop=FALSE])
 }
 
 # }}}

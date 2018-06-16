@@ -64,52 +64,50 @@
 iidCox <- function(object, newdata = NULL,
                    baseline.iid = TRUE, tau.hazard = NULL, store.iid = "full", 
                    keep.times = TRUE){
+
+                                        # {{{ extract elements from object
+    iInfo <- coxVarCov(object)
+    object.design <- coxDesign(object)
+    infoVar <- coxVariableName(object, df.design = object.design)
   
-    # {{{ extract elements from object
-  infoVar <- coxVariableName(object)
-  iInfo <- coxVarCov(object)
-  object.design <- coxDesign(object)
-  
-  object.status <- object.design[,"status"]
-  object.time <- object.design[,"stop"]
-  object.strata <- coxStrata(object, data = NULL, strata.vars = infoVar$strata.vars)
-  object.levelStrata <- levels(object.strata)
-  object.eXb <- exp(coxLP(object, data = NULL, center = FALSE))
-  object.LPdata <- as.matrix(object.design[,infoVar$lpvars,drop = FALSE])
-  nStrata <- length(levels(object.strata))
-  # }}}
+    object.strata <- coxStrata(object, data = NULL, strata.vars = infoVar$strata.vars)
+    object.levelStrata <- levels(object.strata)
+    object.eXb <- exp(coxLP(object, data = NULL, center = FALSE))
+    object.LPdata <- as.matrix(object.design[,.SD,.SDcols = infoVar$lpvars])
+    nStrata <- length(levels(object.strata))
+                                        # }}}
     
-    # {{{ Extract new observations
+                                        # {{{ Extract new observations
     if(!is.null(newdata)){
     
-      if("data.frame" %in% class(newdata) == FALSE){
-          stop("class of \'newdata\' must inherit from data.frame \n")
-      }
+        if("data.frame" %in% class(newdata) == FALSE){
+            stop("class of \'newdata\' must inherit from data.frame \n")
+        }
     
-    # if(infoVar$status %in% names(newdata)){ # call Cox model with with event==1
-    tempo <- with(newdata, eval(coxFormula(object)[[2]]))
-    new.status <- tempo[,2]
-    new.time <- tempo[,1]
-    # }else{ # Cox model from CSC 
-    #    new.status <- newdata[[infoVar$status]]
-    #    new.time <- newdata[[infoVar$time]]
-    # }
+                                        # if(infoVar$status %in% names(newdata)){ # call Cox model with with event==1
+        tempo <- with(newdata, eval(coxFormula(object)[[2]]))
+        new.status <- tempo[,2]
+        new.time <- tempo[,1]
+                                        # }else{ # Cox model from CSC 
+                                        #    new.status <- newdata[[infoVar$status]]
+                                        #    new.time <- newdata[[infoVar$time]]
+                                        # }
     
-    new.strata <- coxStrata(object, data = newdata, 
-                            sterms = infoVar$sterms, strata.vars = infoVar$strata.vars, levels = object.levelStrata, strata.levels = infoVar$strata.levels)
-    new.eXb <- exp(coxLP(object, data = newdata, center = FALSE))
-    new.LPdata <- model.matrix(object, newdata)
+        new.strata <- coxStrata(object, data = newdata, 
+                                sterms = infoVar$sterms, strata.vars = infoVar$strata.vars, levels = object.levelStrata, strata.levels = infoVar$strata.levels)
+        new.eXb <- exp(coxLP(object, data = newdata, center = FALSE))
+        new.LPdata <- model.matrix(object, data = newdata)
     
-  }else{
+    }else{
     
-    new.status <-  object.status
-    new.time <-  object.time
-    new.strata <-  object.strata
-    new.eXb <- object.eXb
-    new.LPdata <- object.LPdata
+      new.status <-  object.design[["status"]]
+      new.time <-  object.design[["stop"]]
+      new.strata <-  object.strata
+      new.eXb <- object.eXb
+      new.LPdata <- object.LPdata
     
   }
-    # }}}
+                                        # }}}
     
     # {{{ tests 
     ## time at which the influence function is evaluated
@@ -130,7 +128,7 @@ iidCox <- function(object, newdata = NULL,
                           centered = FALSE,
                           keep.strata = TRUE)
     etime1.min <- rep(NA, nStrata)
-  
+    
     ## S0, E, jump times
     object.index_strata <- list() 
     object.order_strata <- list()
@@ -153,15 +151,16 @@ iidCox <- function(object, newdata = NULL,
     new.order <- NULL
   
     for(iStrata in 1:nStrata){
-    
+
         ## reorder object data
         object.index_strata[[iStrata]] <- which(object.strata == object.levelStrata[iStrata])
-        object.order_strata[[iStrata]] <- order(object.time[object.index_strata[[iStrata]]])
-    
-        object.eXb_strata[[iStrata]] <- object.eXb[object.index_strata[[iStrata]][object.order_strata[[iStrata]]]]
-        object.LPdata_strata[[iStrata]] <- object.LPdata[object.index_strata[[iStrata]][object.order_strata[[iStrata]]],,drop = FALSE]
-        object.status_strata[[iStrata]] <- object.status[object.index_strata[[iStrata]][object.order_strata[[iStrata]]]]
-        object.time_strata[[iStrata]] <- object.time[object.index_strata[[iStrata]][object.order_strata[[iStrata]]]]
+        object.order_strata[[iStrata]] <- order(object.design[object.index_strata[[iStrata]], .SD$stop])
+
+        indexTempo <- object.index_strata[[iStrata]][object.order_strata[[iStrata]]]
+        object.eXb_strata[[iStrata]] <- object.eXb[indexTempo]
+        object.LPdata_strata[[iStrata]] <- object.LPdata[indexTempo,,drop = FALSE]
+        object.status_strata[[iStrata]] <- object.design[indexTempo, .SD$status]
+        object.time_strata[[iStrata]] <- object.design[indexTempo, .SD$stop]
     
         ## reorder new data
         if(!is.null(newdata)){

@@ -37,6 +37,7 @@
 #'     to the output.
 #' @param keep.newdata [logical] If \code{TRUE} add the value of the
 #'     covariates used to make the prediction in the output list.
+#' @param keep.infoVar [logical] For internal use.
 #' @param se [logical] If \code{TRUE} compute and add the standard errors to the output.
 #' @param band [logical] If \code{TRUE} compute and add the quantiles for the confidence bands to the output.
 #' @param iid [logical] If \code{TRUE} compute and add the influence function to the output.
@@ -146,6 +147,7 @@ predictCox <- function(object,
                        keep.strata = TRUE,
                        keep.times = TRUE,
                        keep.newdata = FALSE,
+                       keep.infoVar = FALSE,
                        se = FALSE,
                        band = FALSE,
                        iid = FALSE,
@@ -157,15 +159,14 @@ predictCox <- function(object,
   # {{{ treatment of times and stopping rules
   
 #### Extract elements from object ####
-                                        # we need:          - the total number of observations, the status and eventtime for each observation
-                                        #                   - the strata corresponding to each observation in the training set
-                                        #                   - the name of each strata
-                                        #                   - the value of the linear predictor for each observation in the training set
+  ## we need:          - the total number of observations, the status and eventtime for each observation
+  ##                   - the strata corresponding to each observation in the training set
+  ##                   - the name of each strata
+  ##                   - the value of the linear predictor for each observation in the training set
+  
   if (se==1L || iid==1L){
       if (missing(newdata)) stop("Argument 'newdata' is missing. Cannot compute standard errors in this case.")
   }
-  infoVar <- coxVariableName(object)
-  is.strata <- infoVar$is.strata
   if (missing(times)) {
       nTimes <- 0
       times <- numeric(0)
@@ -183,17 +184,19 @@ predictCox <- function(object,
           times.sorted <- times
   }
 
-  object.n <- coxN(object)
+  object.n <- coxN(object)  
   object.design <- coxDesign(object)
-  object.status <- object.design[["status"]]
-  object.start <- object.design[["start"]]
-  object.stop <- object.design[["stop"]]
-  object.strata <- coxStrata(object,
-                             data = NULL,
-                             strata.vars = infoVar$strata.vars, 
-                             strata.levels = infoVar$strata.levels)
-  object.levelStrata <- levels(object.strata)
-                                        # if we predict the hazard for newdata then there is no need to center the covariates
+  
+  object.strata <- object.design[["strata"]] ## avoid to be sorted by the following code
+  object.stop <- data.table::copy(object.design$stop) ## avoid to be sorted by the following code
+  
+  object.levelStrata <- levels(object.strata) ## keep levels before convertion to numeric
+  
+  object.design[,c("strata") := as.numeric(.SD$strata) - 1]
+  
+  infoVar <- coxVariableName(object, df.design = object.design)
+  is.strata <- infoVar$is.strata
+  ## if we predict the hazard for newdata then there is no need to center the covariates
   object.eXb <- exp(coxLP(object, data = NULL, center = if(is.null(newdata)){centered}else{FALSE}))
 
   object.baseEstimator <- coxBaseEstimator(object) 
@@ -213,7 +216,7 @@ predictCox <- function(object,
   if(any(type %in% c("hazard","cumhazard","survival") == FALSE)){
       stop("type can only be \"hazard\", \"cumhazard\" or/and \"survival\" \n") 
   }
-  if(any(object.design[,"start"]!=0)){
+  if(any(object.design[["start"]]!=0)){
       warning("The current version of predictCox was not designed to handle left censoring \n",
               "The function may be used on own risks \n") 
   }    
@@ -249,23 +252,27 @@ predictCox <- function(object,
   
   #### baseline hazard ####
   nStrata <- length(object.levelStrata)
-  if(is.strata){etimes.max <- tapply(object.stop, object.strata, max) }else{ etimes.max <- max(object.stop) } # last event time
+  if(is.strata){
+      etimes.max <- object.design[, max(.SD$stop), by = "strata"][[2]]
+  }else{
+      etimes.max <- max(object.design[["stop"]])
+  } # last event time
   
   ## sort the data
-  dt.prepare <- data.table::data.table(start = object.start,
-                                       stop = object.stop,
-                                       status = object.status,
-                                       eXb = object.eXb,
-                                       strata = as.numeric(object.strata) - 1)
-  dt.prepare[, statusM1 := 1-status] # sort by statusM1 such that deaths appear first and then censored events
-  data.table::setkeyv(dt.prepare, c("strata","stop","start","statusM1"))
-  
+  object.design[,c("eXb") := object.eXb]
+  rm.name <- setdiff(names(object.design),c("start","stop","status","eXb","strata"))
+  if(length(rm.name)>0){
+      object.design[,c(rm.name) := NULL]
+  }
+  object.design[, statusM1 := 1-status] # sort by statusM1 such that deaths appear first and then censored events
+  data.table::setkeyv(object.design, c("strata","stop","start","statusM1"))
+
   ## compute the baseline hazard
-  Lambda0 <- baseHaz_cpp(starttimes = dt.prepare$start,
-                         stoptimes = dt.prepare$stop,
-                         status = dt.prepare$status,
-                         eXb = dt.prepare$eXb,
-                         strata = dt.prepare$strata,
+  Lambda0 <- baseHaz_cpp(starttimes = object.design$start,
+                         stoptimes = object.design$stop,
+                         status = object.design$status,
+                         eXb = object.design$eXb,
+                         strata = object.design$strata,
                          nPatients = object.n,
                          nStrata = nStrata,
                          emaxtimes = etimes.max,
@@ -294,7 +301,10 @@ predictCox <- function(object,
       Lambda0$se <- FALSE
       Lambda0$band <- FALSE
       Lambda0$type <- type
-
+      if(keep.infoVar){
+          Lambda0$infoVar <- infoVar
+      }
+      
       ## Lambda0$time instead of Lambda0$times for compatibility with survival::basehaz
       class(Lambda0) <- "predictCox"
       return(Lambda0)
@@ -403,13 +413,24 @@ predictCox <- function(object,
       }
       
       ## Computation of the influence function and/or the standard error
-      outSE <- calcSeCox(object, times = times.sorted, nTimes = nTimes, type = type,
-                         Lambda0 = Lambda0, object.n = object.n, object.time = object.stop, object.eXb = object.eXb, object.strata = object.strata, nStrata = nStrata,
-                         new.eXb = new.eXb, new.LPdata = new.LPdata, new.strata = new.strata,
+      outSE <- calcSeCox(object,
+                         times = times.sorted,
+                         nTimes = nTimes,
+                         type = type,
+                         Lambda0 = Lambda0,
+                         object.n = object.n,
+                         object.time = object.stop,
+                         object.eXb = object.eXb,
+                         object.strata = object.strata,
+                         nStrata = nStrata,
+                         new.eXb = new.eXb,
+                         new.LPdata = new.LPdata,
+                         new.strata = new.strata,
                          new.survival = out$survival,
                          nVar = nVar, 
-                         export = c("iid"[(iid+band)>0],"se"[(se+band)>0],"average.iid"[average.iid==TRUE]), store.iid = store.iid)
-
+                         export = c("iid"[(iid+band)>0],"se"[(se+band)>0],"average.iid"[average.iid==TRUE]),
+                         store.iid = store.iid)
+      
       ## restaure orginal time ordering
       if((iid+band)>0){
         if ("hazard" %in% type){
@@ -471,8 +492,13 @@ predictCox <- function(object,
                         se = se,
                         band = band,
                         type = type))
-      if( keep.newdata==TRUE){
-          out$newdata <- newdata[, coxCovars(object), with = FALSE]
+      if( keep.infoVar){
+          out$infoVar <- infoVar
+      }
+
+      all.covars <- c(infoVar$strata.vars.original,infoVar$lpvars.original)
+      if( keep.newdata==TRUE && length(all.covars)>0){
+          out$newdata <- newdata[, all.covars, with = FALSE]
       }
       class(out) <- "predictCox"
 

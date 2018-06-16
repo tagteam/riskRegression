@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: maj 27 2017 (11:46) 
 ## Version: 
-## last-updated: Jun  4 2018 (14:02) 
-##           By: Thomas Alexander Gerds
-##     Update #: 271
+## last-updated: jun 14 2018 (15:47) 
+##           By: Brice Ozenne
+##     Update #: 277
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -67,8 +67,7 @@ calcSeCox <- function(object, times, nTimes, type,
                       nVar, export, store.iid){
 
     # {{{ computation of the influence function
-    iid.object <- object$iid
-    if(is.null(iid.object)){
+    if(is.null(object$iid)){
         iid.object <- iidCox(object, tau.hazard = times, store.iid = store.iid)
     }else{
         store.iid <- iid.object$store.iid
@@ -141,7 +140,7 @@ calcSeCox <- function(object, times, nTimes, type,
                                        exportIFsum_cumhazard = ("average.iid" %in% export && "cumhazard" %in% type),
                                        exportIFsum_survival = ("average.iid" %in% export && "survival" %in% type)
                                        )
-            
+
             if("iid" %in% export){
                 if("cumhazard" %in% type){out$cumhazard.iid[indexStrata,,] <-  resCpp$iid}
                 if("survival" %in% type){out$survival.iid[indexStrata,,] <- sliceMultiply_cpp(-resCpp$iid, M = new.survival[indexStrata,,drop=FALSE])}
