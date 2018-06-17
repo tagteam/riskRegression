@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: sep  4 2017 (16:43) 
 ## Version: 
-## last-updated: jun 14 2018 (16:16) 
+## last-updated: jun 17 2018 (11:17) 
 ##           By: Brice Ozenne
-##     Update #: 79
+##     Update #: 92
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -60,10 +60,13 @@ predictCoxPL <- function(object,
                          newdata,
                          times,
                          type = c("cumhazard","survival"),
+                         keep.strata = TRUE,
+                         keep.infoVar = FALSE,
                          ...){
     stop <- NULL ## [:CRANcheck:] data.table
     
-    # {{{ normalize arguments
+    ## ** normalize arguments
+    object.modelFrame <- coxModelFrame(object)
     if(is.data.table(newdata)){
         newdata <- copy(newdata)
     }else{
@@ -74,29 +77,28 @@ predictCoxPL <- function(object,
         stop("The argument \'type\' must contain \"survival\" \n",
              "use the function predictCox otherwise \n")
     }
-    # }}}
 
-    # {{{ run original prediction
+    ## ** run original prediction
     original.res <- predictCox(object = object,
                                newdata = newdata,
                                times = times,
                                type = type,
+                               keep.strata = TRUE,
+                               keep.infoVar = TRUE,
                                ...)
-    object.design <- coxDesign(object)
-    infoVar <- coxVariableName(object, df.design = object.design)
-    # }}}
+    infoVar <- original.res$infoVar
+    if(keep.infoVar==FALSE){
+        original.res$infoVar <- NULL
+    }
     
-    # {{{ compute survival
+    ## ** compute survival
     if(infoVar$is.strata){
 
-        object.strata <- coxStrata(object, data = NULL, strata.vars = infoVar$strata.vars)
-        object.levelStrata <- levels(object.strata)
-        new.strata <- coxStrata(object, data = newdata, 
-                                sterms = infoVar$sterms, 
-                                strata.vars = infoVar$strata.vars, 
-                                levels = object.levelStrata, 
-                                strata.levels = infoVar$strata.levels)
-
+        object.strata <- coxStrata(object, data = NULL, strata.vars = infoVar$stratavars)
+        new.strata <- original.res$strata
+        if(keep.strata == FALSE){
+            original.res$strata <- NULL
+        }
         Ustrata <- unique(new.strata)
         n.Ustrata <- length(Ustrata)
 
@@ -104,21 +106,21 @@ predictCoxPL <- function(object,
             indexStrata.object <- which(object.strata==Ustrata[iStrata])
             indexStrata.newdata <- which(new.strata==Ustrata[iStrata])
                 
-            all.times <- object.design[indexStrata.object,.SD$stop]
+            all.times <- object.modelFrame[indexStrata.object,.SD$stop]
             all.times <- sort(unique(all.times[all.times <= max(times)]))
             if(length(all.times)>0){
                 res.tempo <- predictCox(object,
                                         newdata = newdata[indexStrata.newdata,],
                                         times = all.times,
                                         type = "hazard")$hazard
-                survival.PL <- t(apply(res.tempo, 1, function(x){cumprod(1-x)}))
-                index.jump <- prodlim::sindex(eval.times = times, jump.times = all.times)
+                survival.PL <- cbind(1,t(apply(res.tempo, 1, function(x){cumprod(1-x)})))
+                index.jump <- prodlim::sindex(eval.times = times, jump.times = all.times)+1
                 original.res$survival[indexStrata.newdata,] <-  survival.PL[,index.jump,drop=FALSE]
             }
         }
         
     }else{
-        all.times <- unique(sort(object.design[stop <= max(times), stop]))
+        all.times <- unique(sort(object.modelFrame[stop <= max(times), stop]))
         if(length(all.times)>0){
             res.tempo <- predictCox(object,
                                     newdata = newdata,
@@ -129,8 +131,8 @@ predictCoxPL <- function(object,
             original.res$survival <-  survival.PL[,index.jump,drop=FALSE]
         }
     }
-    # }}}
-    
+
+    ## ** export
     return(original.res)
     
     

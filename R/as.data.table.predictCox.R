@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Mar  3 2017 (09:28) 
 ## Version: 
-## Last-Updated: maj 31 2018 (17:58) 
+## Last-Updated: jun 17 2018 (19:33) 
 ##           By: Brice Ozenne
-##     Update #: 95
+##     Update #: 97
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -43,7 +43,11 @@ as.data.table.predictCox <- function(x, keep.rownames = FALSE, se = TRUE,...){
     }
 
     if(!is.matrix(x[[x$type[1]]])){ ## baseline hazard
-        out <- as.data.table(x[c("times","strata",x$type)])    
+        if(!is.null(x$strata)){
+            out <- as.data.table(x[c("times","strata",x$type)])
+        }else{
+            out <- as.data.table(x[c("times",x$type)])
+        }
     }else{
         out <- data.table::rbindlist(lapply(1:length(x$times),function(tt){
             ndtt=copy(nd)

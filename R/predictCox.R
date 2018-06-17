@@ -154,19 +154,10 @@ predictCox <- function(object,
                        confint = (se+band)>0,
                        average.iid = FALSE,
                        store.iid = "full"){
-  status=statusM1=NULL
   
   # {{{ treatment of times and stopping rules
   
-#### Extract elements from object ####
-  ## we need:          - the total number of observations, the status and eventtime for each observation
-  ##                   - the strata corresponding to each observation in the training set
-  ##                   - the name of each strata
-  ##                   - the value of the linear predictor for each observation in the training set
-  
-  if (se==1L || iid==1L){
-      if (missing(newdata)) stop("Argument 'newdata' is missing. Cannot compute standard errors in this case.")
-  }
+  ## ** Extract elements from object
   if (missing(times)) {
       nTimes <- 0
       times <- numeric(0)
@@ -185,24 +176,24 @@ predictCox <- function(object,
   }
 
   object.n <- coxN(object)  
-  object.design <- coxDesign(object)
-  
-  object.strata <- object.design[["strata"]] ## avoid to be sorted by the following code
-  object.stop <- data.table::copy(object.design$stop) ## avoid to be sorted by the following code
-  
-  object.levelStrata <- levels(object.strata) ## keep levels before convertion to numeric
-  
-  object.design[,c("strata") := as.numeric(.SD$strata) - 1]
-  
-  infoVar <- coxVariableName(object, df.design = object.design)
-  is.strata <- infoVar$is.strata
-  ## if we predict the hazard for newdata then there is no need to center the covariates
-  object.eXb <- exp(coxLP(object, data = NULL, center = if(is.null(newdata)){centered}else{FALSE}))
+  object.modelFrame <- coxModelFrame(object)
+  infoVar <- coxVariableName(object, model.frame = object.modelFrame)
+  object.baseEstimator <- coxBaseEstimator(object)
 
-  object.baseEstimator <- coxBaseEstimator(object) 
-  nVar <- length(infoVar$lpvars)
+  ## ease access
+  is.strata <- infoVar$is.strata
+  object.levelStrata <- levels(object.modelFrame$strata) ## levels of the strata variable
+  nStrata <- length(object.levelStrata) ## number of strata
+  nVar <- length(infoVar$lpvars) ## number of variables in the linear predictor
   
-  #### checks ####
+  ## convert strata to numeric
+  object.modelFrame[,c("strata.num") := as.numeric(.SD$strata) - 1]
+
+  ## linear predictor
+  ## if we predict the hazard for newdata then there is no need to center the covariates
+  object.modelFrame[,c("eXb") := exp(coxLP(object, data = NULL, center = if(is.null(newdata)){centered}else{FALSE}))]
+
+  ## ** checks 
   if(object.baseEstimator == "exact"){
       stop("Prediction with exact handling of ties is not implemented.\n")
   }
@@ -216,127 +207,156 @@ predictCox <- function(object,
   if(any(type %in% c("hazard","cumhazard","survival") == FALSE)){
       stop("type can only be \"hazard\", \"cumhazard\" or/and \"survival\" \n") 
   }
-  if(any(object.design[["start"]]!=0)){
+  if(any(object.modelFrame[["start"]]!=0)){
       warning("The current version of predictCox was not designed to handle left censoring \n",
               "The function may be used on own risks \n") 
   }    
   if(!is.null(object$naive.var)){
       stop("predictCox does not know how to handle fraitly \n") 
   }
-  if(any(is.na(coef(object)))){
+  if(!is.null(coef(object)) && any(is.na(coef(object)))){
       stop("Incorrect object",
            "One or several model parameters have been estimated to be NA \n")
   }
-                                        # }}}
-                                        # {{{ computation of the baseline hazard
+
+  if (se==1L || iid==1L){
+      if (missing(newdata)) stop("Argument 'newdata' is missing. Cannot compute standard errors in this case.")
+  }
+  if("XXXindexXXX" %in% names(object.modelFrame)){
+      stop("XXXindexXXX is a reserved name. No variable should have this name. \n")
+  }
+  
   if(!is.null(newdata)){
-      name.regressor <- c(infoVar$lpvars.original, infoVar$strata.vars.original)
+      if(missing(times) || nTimes==0){
+          stop("Time points at which to evaluate the predictions are missing \n")
+      }
+
+      name.regressor <- c(infoVar$lpvars.original, infoVar$stratavars.original)
       if(length(name.regressor) > 0 && any(name.regressor %in% names(newdata) == FALSE)){
           stop("Missing variables in argument \'newdata\': \"",
                paste0(setdiff(name.regressor,names(newdata)), collapse = "\" \""),
                "\"\n")
       }
-    
-      new.n <- NROW(newdata)
-      newdata <- as.data.table(newdata)
-      new.eXb <- exp(coxLP(object, data = newdata, center = FALSE))
-      
-      new.strata <- coxStrata(object, data = newdata, 
-                              sterms = infoVar$sterms, 
-                              strata.vars = infoVar$strata.vars, 
-                              levels = object.levelStrata, 
-                              strata.levels = infoVar$strata.levels)
-    
-    new.levelStrata <- levels(new.strata)
+      if(se && "hazard" %in% type){
+          stop("confidence intervals cannot be computed for the hazard \n")
+      }
+      if(band && "hazard" %in% type){
+          stop("confidence bands cannot be computed for the hazard \n")
+      }
+
   }
+
+                                        # }}}  
+                                        # {{{ computation of the baseline hazard
   
-  #### baseline hazard ####
-  nStrata <- length(object.levelStrata)
-  if(is.strata){
-      etimes.max <- object.design[, max(.SD$stop), by = "strata"][[2]]
-  }else{
-      etimes.max <- max(object.design[["stop"]])
-  } # last event time
+  ## ** baseline hazard
+  ## add linear predictor and remove useless columns
+  rm.name <- setdiff(names(object.modelFrame),c("start","stop","status","eXb","strata","strata.num"))
+  if(length(rm.name)>0){
+      object.modelFrame[,c(rm.name) := NULL]
+  }
   
   ## sort the data
-  object.design[,c("eXb") := object.eXb]
-  rm.name <- setdiff(names(object.design),c("start","stop","status","eXb","strata"))
-  if(length(rm.name)>0){
-      object.design[,c(rm.name) := NULL]
+  object.modelFrame[, c("statusM1") := 1-.SD$status] ## sort by statusM1 such that deaths appear first and then censored events
+  object.modelFrame[, c("XXXindexXXX") := 1:.N] ## keep track of the initial positions (useful when calling calcSeCox)
+  data.table::setkeyv(object.modelFrame, c("strata.num","stop","start","statusM1"))
+
+  ## last event time in each strata
+  if(is.strata){
+      etimes.max <- object.modelFrame[, max(.SD$stop), by = "strata.num"][[2]]
+  }else{
+      etimes.max <- max(object.modelFrame[["stop"]])
   }
-  object.design[, statusM1 := 1-status] # sort by statusM1 such that deaths appear first and then censored events
-  data.table::setkeyv(object.design, c("strata","stop","start","statusM1"))
 
   ## compute the baseline hazard
-  Lambda0 <- baseHaz_cpp(starttimes = object.design$start,
-                         stoptimes = object.design$stop,
-                         status = object.design$status,
-                         eXb = object.design$eXb,
-                         strata = object.design$strata,
+  Lambda0 <- baseHaz_cpp(starttimes = object.modelFrame$start,
+                         stoptimes = object.modelFrame$stop,
+                         status = object.modelFrame$status,
+                         eXb = object.modelFrame$eXb,
+                         strata = object.modelFrame$strata.num,
                          nPatients = object.n,
                          nStrata = nStrata,
                          emaxtimes = etimes.max,
                          predtimes = times.sorted,
                          cause = 1,
                          Efron = (object.baseEstimator == "efron"))
-                                        # }}}
   
-#### compute hazard and survival ####        
+  ## restaure strata levels
+  if (is.strata == TRUE){
+      Lambda0$strata <- factor(Lambda0$strata, levels = 0:(nStrata-1), labels = object.levelStrata)
+  }
+
+                                        # }}}
+
+  
+  ## ** compute cumlative hazard and survival
   if (is.null(newdata)){  
                                         # {{{ results from the training dataset
-      if (!("hazard" %in% type)){ Lambda0$hazard <- NULL } 
-      if ("survival" %in% type){  # must be before cumhazard
+      if (!("hazard" %in% type)){
+          Lambda0$hazard <- NULL
+      } 
+      if ("survival" %in% type){  ## must be before cumhazard
           Lambda0$survival = exp(-Lambda0$cumhazard)
       }
-      if (!("cumhazard" %in% type)){ Lambda0$cumhazard <- NULL } 
+      if (!("cumhazard" %in% type)){
+          Lambda0$cumhazard <- NULL
+      } 
       if (keep.times==FALSE){
           Lambda0$times <- NULL
-      } 
-      if (is.strata == TRUE && keep.strata==1L){ ## rename the strata value with the correct levels
-          Lambda0$strata <- factor(Lambda0$strata, levels = 0:(nStrata-1), labels = object.levelStrata)
-      }else{
+      }
+      if (keep.strata==FALSE || is.strata == FALSE){
           Lambda0$strata <- NULL
       }
-      Lambda0$lastEventTime <- etimes.max
-      Lambda0$se <- FALSE
-      Lambda0$band <- FALSE
-      Lambda0$type <- type
+
+      add.list <- list(lastEventTime = etimes.max,
+                       se = FALSE,
+                       band = FALSE,
+                       type = type)
       if(keep.infoVar){
-          Lambda0$infoVar <- infoVar
+          add.list$infoVar <- infoVar
       }
-      
-      ## Lambda0$time instead of Lambda0$times for compatibility with survival::basehaz
+      Lambda0[names(add.list)] <- add.list
       class(Lambda0) <- "predictCox"
       return(Lambda0)
                                         # }}}
   } else {
     
-    # {{{ predictions in new dataset
-    out <- list()
-    if(missing(times) || nTimes==0){
-      stop("Time points at which to evaluate the predictions are missing \n")
-    }
+                                        # {{{ predictions in new dataset
+      out <- list()
+
+      ## *** reformat newdata (compute linear predictor and)
+      new.n <- NROW(newdata)
+      newdata <- as.data.table(newdata)
+      new.eXb <- exp(coxLP(object, data = newdata, center = FALSE))
+
+      new.strata <- coxStrata(object, data = newdata, 
+                              sterms = infoVar$strata.sterms, 
+                              strata.vars = infoVar$stratavars, 
+                              levels = object.levelStrata, 
+                              strata.levels = infoVar$strata.levels)
     
-      ## subject specific hazard
-    if (is.strata==FALSE){
-      if ("hazard" %in% type){
-        out$hazard <- (new.eXb %o% Lambda0$hazard)
-        if (needOrder) out$hazard <- out$hazard[,oorder.times,drop=0L]
-      }
-      if ("cumhazard" %in% type || "survival" %in% type){
-        cumhazard <- new.eXb %o% Lambda0$cumhazard
-        if ("cumhazard" %in% type){
-          if (needOrder)
-            out$cumhazard <- cumhazard[,oorder.times,drop=0L]
-          else
-            out$cumhazard <- cumhazard
-        }
-        if ("survival" %in% type){
-          out$survival <- exp(-cumhazard)
-          if (needOrder)
-            out$survival <- out$survival[,oorder.times,drop=0L]
-        }
-      }
+      new.levelStrata <- levels(new.strata)
+      
+      ## *** subject specific hazard
+      if (is.strata==FALSE){
+          if ("hazard" %in% type){
+              out$hazard <- (new.eXb %o% Lambda0$hazard)
+              if (needOrder) out$hazard <- out$hazard[,oorder.times,drop=0L]
+          }
+          if ("cumhazard" %in% type || "survival" %in% type){
+              cumhazard <- new.eXb %o% Lambda0$cumhazard
+              if ("cumhazard" %in% type){
+                  if (needOrder)
+                      out$cumhazard <- cumhazard[,oorder.times,drop=0L]
+                  else
+                      out$cumhazard <- cumhazard
+              }
+              if ("survival" %in% type){
+                  out$survival <- exp(-cumhazard)
+                  if (needOrder)
+                      out$survival <- out$survival[,oorder.times,drop=0L]
+              }
+          }
       
     }else{ 
       
@@ -350,159 +370,155 @@ predictCox <- function(object,
       if ("survival" %in% type){
         out$survival <- matrix(NA, nrow = new.n, ncol = nTimes)               
       }
-      if (is.strata == TRUE){ ## rename the strata value with the correct levels
-        Lambda0$strata <- factor(Lambda0$strata, levels = 0:(nStrata-1), labels = object.levelStrata)
-      }
 
       ## loop across strata
       for(S in new.levelStrata){
-        id.S <- Lambda0$strata==S
-        newid.S <- new.strata==S
+        id.S <- which(Lambda0$strata==S)
+        newid.S <- which(new.strata==S)
 
         if ("hazard" %in% type){
-          out$hazard[newid.S,] <- new.eXb[newid.S] %o% Lambda0$hazard[id.S]
-          if (needOrder)
-            out$hazard[newid.S,] <- out$hazard[newid.S,oorder.times,drop=0L]
+            out$hazard[newid.S,] <- new.eXb[newid.S] %o% Lambda0$hazard[id.S]
+            if (needOrder)
+                out$hazard[newid.S,] <- out$hazard[newid.S,oorder.times,drop=0L]
         }
         if ("cumhazard" %in% type || "survival" %in% type){
-          cumhazard.S <-  new.eXb[newid.S] %o% Lambda0$cumhazard[id.S]
-          if ("cumhazard" %in% type){
-            if (needOrder){
-              out$cumhazard[newid.S,] <- cumhazard.S[,oorder.times,drop=0L]
-            } else{
-              out$cumhazard[newid.S,] <- cumhazard.S
+            cumhazard.S <-  new.eXb[newid.S] %o% Lambda0$cumhazard[id.S]
+            if ("cumhazard" %in% type){
+                if (needOrder){
+                    out$cumhazard[newid.S,] <- cumhazard.S[,oorder.times,drop=0L]
+                } else{
+                    out$cumhazard[newid.S,] <- cumhazard.S
+                }
             }
-          }
-          if ("survival" %in% type){
-            if (needOrder){
-              out$survival[newid.S,] <- exp(-cumhazard.S)[,oorder.times,drop=0L]
-            }else{
-              out$survival[newid.S,] <- exp(-cumhazard.S)
+            if ("survival" %in% type){
+                if (needOrder){
+                    out$survival[newid.S,] <- exp(-cumhazard.S)[,oorder.times,drop=0L]
+                }else{
+                    out$survival[newid.S,] <- exp(-cumhazard.S)
+                }
             }
-          }
         }
       }
     }
-    # }}}
-    # {{{ standard error
+                                        # }}}
+                                        # {{{ standard error
     
     if(se || band || iid || average.iid){
-      if(se && "hazard" %in% type){
-        stop("confidence intervals cannot be computed for the hazard \n")
-      }
-      if(band && "hazard" %in% type){
-        stop("confidence bands cannot be computed for the hazard \n")
-      }
       
-      if(nVar > 0){
-        # remove response variable
-        f.object <- stats::reformulate(attr(stats::terms(coxFormula(object)),"term.label"),
-                                       response = NULL)
-        # use prodlim to get the design matrix
-        terms.newdata <- stats::terms(f.object, special = coxSpecialStrata(object), data = newdata)
-        new.LPdata <- prodlim::model.design(stats::terms(terms.newdata),
-                                            data = newdata,
-                                            specialsFactor = TRUE,
-                                            dropIntercept = TRUE)$design
-        if(NROW(new.LPdata)!=NROW(newdata)){
-          stop("NROW of the design matrix and newdata differ \n",
-               "maybe because newdata contains NA values \n")
+        if(nVar > 0){
+            ## use prodlim to get the design matrix
+            new.LPdata <- prodlim::model.design(infoVar$lp.sterms,
+                                                data = newdata,
+                                                specialsFactor = TRUE,
+                                                dropIntercept = TRUE)$design
+            if(NROW(new.LPdata)!=NROW(newdata)){
+                stop("NROW of the design matrix and newdata differ \n",
+                     "maybe because newdata contains NA values \n")
+            }
+        }else{
+            new.LPdata <- matrix(0, ncol = 1, nrow = new.n)
         }
-      }else{
-        new.LPdata <- matrix(0, ncol = 1, nrow = new.n)
-      }
-      
-      ## Computation of the influence function and/or the standard error
-      outSE <- calcSeCox(object,
-                         times = times.sorted,
-                         nTimes = nTimes,
-                         type = type,
-                         Lambda0 = Lambda0,
-                         object.n = object.n,
-                         object.time = object.stop,
-                         object.eXb = object.eXb,
-                         object.strata = object.strata,
-                         nStrata = nStrata,
-                         new.eXb = new.eXb,
-                         new.LPdata = new.LPdata,
-                         new.strata = new.strata,
-                         new.survival = out$survival,
-                         nVar = nVar, 
-                         export = c("iid"[(iid+band)>0],"se"[(se+band)>0],"average.iid"[average.iid==TRUE]),
-                         store.iid = store.iid)
-      
-      ## restaure orginal time ordering
-      if((iid+band)>0){
-        if ("hazard" %in% type){
-          if (needOrder)
-            out$hazard.iid <- outSE$hazard.iid[,oorder.times,,drop=0L]
-          else
-            out$hazard.iid <- outSE$hazard.iid
-        }
-        if ("cumhazard" %in% type){
-          if (needOrder)
-            out$cumhazard.iid <- outSE$cumhazard.iid[,oorder.times,,drop=0L]
-          else
-            out$cumhazard.iid <- outSE$cumhazard.iid
-        }
-        if ("survival" %in% type){
-          if (needOrder)
-            out$survival.iid <- outSE$survival.iid[,oorder.times,,drop=0L]
-          else
-            out$survival.iid <- outSE$survival.iid
-        }
-      }
-      if(average.iid == TRUE){
-        if ("cumhazard" %in% type){
-          if (needOrder)
-            out$cumhazard.average.iid <- outSE$cumhazard.average.iid[,oorder.times,drop=0L]
-          else
-            out$cumhazard.average.iid <- outSE$cumhazard.average.iid
-        }
-        if ("survival" %in% type){
-          if (needOrder)
-            out$survival.average.iid <- outSE$survival.average.iid[,oorder.times,drop=0L]
-          else
-            out$survival.average.iid <- outSE$survival.average.iid
-        }
-      }
-      if((se+band)>0){
-        if ("cumhazard" %in% type){
-          if (needOrder){
-            out$cumhazard.se <- outSE$cumhazard.se[,oorder.times,drop=0L]
-          }else{
-            out$cumhazard.se <- outSE$cumhazard.se
-          }          
-        }
-        if ("survival" %in% type){
-            if (needOrder){
-                out$survival.se <- outSE$survival.se[,oorder.times,drop=0L]
-            } else{
-                out$survival.se <- outSE$survival.se
-            }          
-        }
-      }      
-    }    
-    # }}}
-                                        # {{{ export 
-      if (keep.times==TRUE) out <- c(out,list(times=times))
-      if (is.strata && keep.strata==TRUE) out <- c(out,list(strata=new.strata))
-    
-      out <- c(out,list(lastEventTime = etimes.max,
-                        se = se,
-                        band = band,
-                        type = type))
-      if( keep.infoVar){
-          out$infoVar <- infoVar
-      }
 
-      all.covars <- c(infoVar$strata.vars.original,infoVar$lpvars.original)
-      if( keep.newdata==TRUE && length(all.covars)>0){
-          out$newdata <- newdata[, all.covars, with = FALSE]
+        ## restaure original ordering
+        data.table::setkeyv(object.modelFrame,"XXXindexXXX")
+
+        ## Computation of the influence function and/or the standard error
+        outSE <- calcSeCox(object,
+                           times = times.sorted,
+                           nTimes = nTimes,
+                           type = type,
+                           Lambda0 = Lambda0,
+                           object.n = object.n,
+                           object.time = object.modelFrame$stop,
+                           object.eXb = object.modelFrame$eXb,
+                           object.strata =  object.modelFrame$strata, 
+                           nStrata = nStrata,
+                           new.eXb = new.eXb,
+                           new.LPdata = new.LPdata,
+                           new.strata = new.strata,
+                           new.survival = out$survival,
+                           nVar = nVar, 
+                           export = c("iid"[(iid+band)>0],"se"[(se+band)>0],"average.iid"[average.iid==TRUE]),
+                           store.iid = store.iid)
+      
+        ## restaure orginal time ordering
+        if((iid+band)>0){
+            if ("hazard" %in% type){
+                if (needOrder)
+                    out$hazard.iid <- outSE$hazard.iid[,oorder.times,,drop=0L]
+                else
+                    out$hazard.iid <- outSE$hazard.iid
+            }
+            if ("cumhazard" %in% type){
+                if (needOrder)
+                    out$cumhazard.iid <- outSE$cumhazard.iid[,oorder.times,,drop=0L]
+                else
+                    out$cumhazard.iid <- outSE$cumhazard.iid
+            }
+            if ("survival" %in% type){
+                if (needOrder)
+                    out$survival.iid <- outSE$survival.iid[,oorder.times,,drop=0L]
+                else
+                    out$survival.iid <- outSE$survival.iid
+            }
+        }
+        if(average.iid == TRUE){
+            if ("cumhazard" %in% type){
+                if (needOrder)
+                    out$cumhazard.average.iid <- outSE$cumhazard.average.iid[,oorder.times,drop=0L]
+                else
+                    out$cumhazard.average.iid <- outSE$cumhazard.average.iid
+            }
+            if ("survival" %in% type){
+                if (needOrder)
+                    out$survival.average.iid <- outSE$survival.average.iid[,oorder.times,drop=0L]
+                else
+                    out$survival.average.iid <- outSE$survival.average.iid
+            }
+        }
+        if((se+band)>0){
+            if ("cumhazard" %in% type){
+                if (needOrder){
+                    out$cumhazard.se <- outSE$cumhazard.se[,oorder.times,drop=0L]
+                }else{
+                    out$cumhazard.se <- outSE$cumhazard.se
+                }          
+            }
+            if ("survival" %in% type){
+                if (needOrder){
+                    out$survival.se <- outSE$survival.se[,oorder.times,drop=0L]
+                } else{
+                    out$survival.se <- outSE$survival.se
+                }          
+            }
+        }      
+    }    
+                                        # }}}
+                                        # {{{ export 
+
+      ## ** add information to the predictions
+      add.list <- list(lastEventTime = etimes.max,
+                       se = se,
+                       band = band,
+                       type = type)
+      if (keep.times==TRUE){
+          add.list$times <- times
       }
+      if (is.strata && keep.strata==TRUE){
+          add.list$strata <- new.strata
+      }
+      
+      if( keep.infoVar){
+          add.list$infoVar <- infoVar
+      }
+      all.covars <- c(infoVar$stratavars.original,infoVar$lpvars.original)
+      if( keep.newdata==TRUE && length(all.covars)>0){
+          add.list$newdata <- newdata[, all.covars, with = FALSE]
+      }
+      out[names(add.list)] <- add.list
       class(out) <- "predictCox"
 
-
+      ## ** confidence intervals/bands
       if(confint){
           out <- stats::confint(out)
       }
@@ -512,6 +528,7 @@ predictCox <- function(object,
       if(band && iid==FALSE){
           out[paste0(type,".iid")] <- NULL
       }
+      
       return(out)
                                         # }}}
   }

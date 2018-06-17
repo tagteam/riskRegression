@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: maj 18 2017 (09:23) 
 ## Version: 
-## last-updated: jun  3 2018 (14:04) 
+## last-updated: jun 17 2018 (19:22) 
 ##           By: Brice Ozenne
-##     Update #: 167
+##     Update #: 177
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -22,8 +22,9 @@ library(mstate)
 tmat <- trans.comprisk(2, names = c("0", "1", "2"))
 library(survival)
 
-## * Compare predict.CSC and mstate on small examples
-
+## * 1- Compare predict.CSC and mstate on small examples
+cat("[predictCSS] - small example \n")
+## ** data
 ## simulatenous events
 df1 <- data.frame(time = rep(1:10,2),
                  event = c(rep(1,10),rep(2,10)),
@@ -46,8 +47,7 @@ df2 <- data.frame(time = c(1:10,-0.1+1:10),
 df2$event1 <- as.numeric(df2$event == 1)
 df2$event2 <- as.numeric(df2$event == 2)
 
-# {{{ 1a- no risk factor no strata
-
+## ** 1a- no risk factor no strata
 test_that("predict.CSC/predictCox (1a,df1) - compare to manual estimation",{
     CSC.exp <- CSC(Hist(time,event) ~ 1, data = df1)
     pred.exp <- predict(CSC.exp, times = 1:10, newdata = data.frame(NA), cause = 1, product.limit = FALSE)  
@@ -176,6 +176,7 @@ test_that("predict.CSC (1a) - compare to mstate",{
     }
 })
 
+
 test_that("predict.CSC(1a) - add up to one",{
     for(iData in 1:2){
         df <- switch(as.character(iData),
@@ -201,10 +202,11 @@ test_that("predict.CSC(1a) - add up to one",{
 })
 # }}}
 
-                                        # {{{ 1b- no risk factor strata
+## ** 1b- no risk factor strata
 test_that("predict.CSC(1b) - compare to manual estimation",{
 
-    CSC.exp <- CSC(Hist(time,event) ~ strata(grp), data = dfS, method = "breslow")
+    ## as.data.table(dfS)[,.N, by = "grp"]
+    CSC.exp <- CSC(Hist(time,event) ~ strata(grp), data = dfS, method = "breslow")    
     pred.exp <- predict(CSC.exp, times = 1:10, newdata = data.frame(grp = 1:3), cause = 1, product.limit = FALSE)
     pred.exp2 <- predict(CSC.exp, times = 1:10, newdata = data.frame(grp = 1:3), cause = 1, product.limit = TRUE)  
 
@@ -260,9 +262,8 @@ test_that("predict.CSC(1b) - compare to manual estimation",{
     expect_equal(as.double(pred.prodlimE$absRisk[1,]),
                  as.double(pred.prodlimE$absRisk[3,]))
 })
-                                        # }}}
 
-                                       # {{{ 1c- risk factor no strata
+## ** 1c- risk factor no strata
 test_that("predict.CSC(1c,df1) - compare to manual estimation",{
     CSC.exp <- CSC(Hist(time,event) ~ X1, data = df1)
 
@@ -426,14 +427,9 @@ test_that("predict.CSC(1c) - add up to one",{
     }
 })
 
-# }}}
-
-# }}}
-
-# {{{ 2- compare predict.CSC and mstate on simulated data
-
-
-# {{{ data
+## * 2- compare predict.CSC and mstate on simulated data
+cat("[predictCSS] - simulated data \n")
+## ** data
 set.seed(10)
 d <- sampleData(1e2, outcome = "competing.risks")[,.(time,event,X1,X2,X6)]
 d[,X1:=as.numeric(as.character(X1))]
@@ -445,9 +441,8 @@ d <- d[event!=0]
 
 d[, event1 := as.numeric(event == 1)]
 d[, event2 := as.numeric(event == 2)]
-# }}}
 
-# {{{ prepare mstrate
+## ** prepare mstrate
 tmat <- trans.comprisk(2, names = c("0", "1", "2"))
 
 dL <- msprep(time = c(NA, "time", "time"),
@@ -455,9 +450,8 @@ dL <- msprep(time = c(NA, "time", "time"),
              data = d, keep = c("X1","X2","X16","Xcat2"),
              trans = tmat)
 dL.exp <- expand.covs(dL,  c("X1","X2","X16","Xcat2"))
-# }}}
 
-# {{{ 2a - no covariates
+## ** 2a - no covariates
 test_that("predict.CSC(2a) - compare to mstate",{
     newdata <- data.frame(NA)
     newdata.L <- data.frame(trans = c(1, 2), strata = c(1, 2))
@@ -470,6 +464,7 @@ test_that("predict.CSC(2a) - compare to mstate",{
 
     ## riskRegression
     CSC.RR1 <- CSC(Hist(time,event)~1, data = d, method = "breslow")
+
     pred.RR1a <- predict(CSC.RR1, newdata, cause = 1, time = pred.probtrans[,"time"],
                          keep.newdata = FALSE, se = TRUE, product.limit = TRUE)
 
@@ -505,9 +500,8 @@ test_that("predict.CSC(2a) - compare to mstate",{
     expect_equal(as.double(pred.RR2a$absRisk.se),pred.probtrans[,"se2"], tol = 5e-3)    
     expect_equal(as.double(pred.RR2b$absRisk.se),pred.probtrans[,"se2"], tol = 5e-3)    
 })
-# }}}
 
-# {{{ 2b - with covariates
+## ** 2b - with covariates
 test_that("predict.CSC(2b) - compare to mstate",{
     for(iX in 0:1){
         newdata <- data.frame(X1 = iX, X2 = 0, X16 = 0)
@@ -565,10 +559,7 @@ test_that("predict.CSC(2b) - compare to mstate",{
     }
 })
 
-# }}}
-
-
-# {{{ 2c - strata 
+## ** 2c - strata 
 test_that("predict.CSC(2a) - compare to mstate",{
 
     newdata <- data.frame(X1 = 0, X2 = 0, X16 = 0)
@@ -637,10 +628,9 @@ test_that("predict.CSC(2a) - compare to mstate",{
 
 })
 
-# }}}
-# }}}
-
-# {{{ 3- compare predict.CSC and mstate on Melanoma
+## * 3- compare predict.CSC and mstate on Melanoma
+cat("[predictCSS] - Melanoma \n")
+## ** Data
 data(Melanoma)
 # sum(is.na(Melanoma))
 Melanoma$index <- 1:NROW(Melanoma)
@@ -683,11 +673,9 @@ expect_equal(as.double(pred.probtrans[,"pstate2"]),as.double(pred.RR2$absRisk), 
 pred.RR3 <- predict(cfit2, newdata = newdata, time = pred.probtrans[,"time"], cause = 1, product.limit = FALSE) 
 expect_equal(as.double(pred.probtrans[,"pstate2"]),as.double(pred.RR3$absRisk), tol = 1e-1)
 
-# }}}
-
-# {{{ 4- test predict.CSC with strata
-
-# {{{ CIF
+## * 4- test predict.CSC with strata
+cat("[predictCSS] - strata \n")
+## ** CIF
 set.seed(10)
 n <- 300
 df.S <- SimCompRisk(n)
@@ -726,10 +714,8 @@ test_that("predictCSC with strata",{
     expect_equal(as.data.table(Event2.S)$absRisk.se, GS$absRisk.se, tolerance = 1e-5)
 
 })
-# }}}
 
-# {{{ conditional CIF
-
+## ** conditional CIF
 set.seed(10)
 d <- sampleData(3e2, outcome = "competing.risks")
 d$time <- round(d$time,2)
@@ -761,11 +747,9 @@ test_that("conditional predictCSC with strata",{
   ## standard error for the conditional survival not implemented 
 })
 
-# }}}
 
-# }}}
-
-# {{{ 5- Fast SE
+## * 5- Fast SE
+cat("[predictCSS] - fast SE \n")
 set.seed(10)
 d <- sampleData(1e2, outcome = "competing.risks")
 setkey(d,time)
@@ -790,10 +774,6 @@ test_that("iid minimal - no strata", {
     expect_equal(res2$absRisk.average.iid, t(apply(res3$absRisk.iid,2:3,mean)))
 })
 
-m.CSC <- CSC(Hist(time, event) ~ strata(X1)+X6, data = d)
-seqTime <- c(1e-16,4:10,d$time[1:10],1e6)
-newdata <- d
-
 test_that("iid minimal - strata", {
     res1 <- predict(m.CSC, times = seqTime, newdata = newdata,
                     cause = 1,
@@ -809,11 +789,8 @@ test_that("iid minimal - strata", {
     expect_equal(res2$absRisk.average.iid, t(apply(res3$absRisk.iid,2:3,mean)))
 })
 
-
-    
-# }}}
-
-# {{{ 6- Prediction when iid is stored
+## * 6- Prediction when iid is stored
+cat("[predictCSS] - iid \n")
 data(Melanoma, package = "riskRegression")
 cfit1 <- CSC(formula=list(Hist(time,status)~age+logthick+epicel+strata(sex),
                           Hist(time,status)~age+strata(sex)),
@@ -824,6 +801,5 @@ cfit1$iid <- lapply(cfit1$model,iidCox)
 res <- predict(cfit1,newdata=Melanoma[1,,drop=FALSE],cause=1,
                times=4,se=TRUE,band=TRUE)
 
-# }}}
 #----------------------------------------------------------------------
 ### test-predictCSC_vs_mstate.R ends here

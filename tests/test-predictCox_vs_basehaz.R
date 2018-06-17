@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: sep  4 2017 (10:38) 
 ## Version: 
-## last-updated: jun  3 2018 (22:32) 
+## last-updated: jun 16 2018 (11:30) 
 ##           By: Brice Ozenne
-##     Update #: 47
+##     Update #: 49
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -66,7 +66,7 @@ test_that("baseline hazard (no strata): number of events",{
     expect_equal(RR.cph$times, GS.alltime)
 })
 
-## * [predictCox] baseline hazard (no strata)
+## * [predictCox] baseline hazard (strata)
 cat("[predictCox] Estimation of the baseline hazard (strata) \n")
 
 ## ** Data
@@ -120,7 +120,7 @@ test_that("baseline hazard (strata): number of events",{
     expect_equal(unname(GS.alltime),unname(test.alltime))
 })
 
-## * [predictCox] baseline hazard with time varying covariates (no strata
+## * [predictCox] baseline hazard with time varying covariates (no strata)
 cat("[predictCox] Estimation of the baseline hazard (time varying cov, no strata) \n")
 ## ** Data
 ## example from help(coxph)
@@ -134,7 +134,7 @@ fit.coxphTV <- coxph(Surv(start, stop, event) ~ x, data = dt.TV, x = TRUE, y = T
 fit.cphTV <- cph(Surv(start, stop, event) ~ x, data = dt.TV, x = TRUE, y = TRUE)
 
 
-## **  Compare to survival::basehaz
+## ** Compare to survival::basehaz
 test_that("baseline hazard (no strata, time varying): compare to survival::basehaz",{
 
     expect_equal(suppressWarnings(predictCox(fit.coxphTV, centered = FALSE)$cumhazard), 

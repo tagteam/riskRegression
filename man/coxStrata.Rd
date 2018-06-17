@@ -9,7 +9,7 @@
 \usage{
 coxStrata(object, data, sterms, strata.vars, levels, strata.levels)
 
-\method{coxStrata}{coxph}(object, data, sterms, strata.vars, levels,
+\method{coxStrata}{cph}(object, data, sterms, strata.vars, levels,
   strata.levels)
 
 \method{coxStrata}{coxph}(object, data, sterms, strata.vars, levels,

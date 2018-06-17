@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: maj 27 2017 (11:46) 
 ## Version: 
-## last-updated: jun 14 2018 (15:47) 
+## last-updated: jun 17 2018 (15:47) 
 ##           By: Brice Ozenne
-##     Update #: 277
+##     Update #: 287
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -17,11 +17,12 @@
 
 
 # {{{ calcSeCox
-## * calcSeCox
-#' Computation of standard errors for predictions
-#'
-#' Compute the standard error associated to the predictions from Cox regression model
+## * calcSeCox (documentation)
+#' @title Computation of standard errors for predictions
+#' @description Compute the standard error associated to the predictions from Cox regression model
 #' using a first order von Mises expansion of the functional (cumulative hazard or survival).
+#' @name calcSeCox
+#' 
 #' @param object The fitted Cox regression model object either
 #'     obtained with \code{coxph} (survival package) or \code{cph}
 #'     (rms package).
@@ -61,24 +62,28 @@
 #' @author Brice Ozenne broz@@sund.ku.dk, Thomas A. Gerds tag@@biostat.ku.dk
 #' 
 #' @return A list optionally containing the standard error for the survival, cumulative hazard and hazard.
+#'
+
+## * calcSeCox (code)
+#' @rdname calcSeCox
 calcSeCox <- function(object, times, nTimes, type, 
                       Lambda0, object.n, object.time, object.eXb, object.strata, nStrata,
                       new.eXb, new.LPdata, new.strata, new.survival, 
                       nVar, export, store.iid){
 
-    # {{{ computation of the influence function
+                                        # {{{ computation of the influence function
     if(is.null(object$iid)){
         iid.object <- iidCox(object, tau.hazard = times, store.iid = store.iid)
     }else{
         store.iid <- iid.object$store.iid
         iid.object <- selectJump(iid.object, times = times, type = type)        
     }
-    # }}}
+                                        # }}}
 
-    # {{{ prepare arguments
+                                        # {{{ prepare arguments
     n.new <- length(new.eXb)
     new.strata <- as.numeric(new.strata)
-  
+    
     if(length(Lambda0$strata)==0){
         Lambda0$strata <- rep(1, length(Lambda0$time))
     }else{
@@ -158,7 +163,7 @@ calcSeCox <- function(object, times, nTimes, type,
 
         # }}}
     }else{
-        # {{{ other 
+                                        # {{{ other
         X_IFbeta_mat <- tcrossprod(iid.object$IFbeta, new.LPdata)
         for(iObs in 1:n.new){
             ## print(iObs)

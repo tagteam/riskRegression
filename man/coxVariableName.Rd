@@ -4,12 +4,15 @@
 \alias{coxVariableName}
 \title{Extract variable names from a model}
 \usage{
-coxVariableName(object)
+coxVariableName(object, model.frame)
 }
 \arguments{
 \item{object}{The fitted Cox regression model object either
 obtained with \code{coxph} (survival package) or \code{cph}
 (rms package).}
+
+\item{model.frame}{[data.frame] dataset containing all the relevant variables (entry, time to event, type of event, variables in the linear predictor, strata).
+Output from \code{coxModelFrame}.}
 }
 \description{
 Extract the name of the variables belonging to the linear predictor or used to form the strata

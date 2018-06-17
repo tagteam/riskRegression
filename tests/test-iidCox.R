@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: maj 18 2017 (09:23) 
 ## Version: 
-## last-updated: jun  3 2018 (20:13) 
+## last-updated: jun 16 2018 (11:50) 
 ##           By: Brice Ozenne
-##     Update #: 102
+##     Update #: 103
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -25,7 +25,7 @@ library(rms)
 library(timereg)
 
 ## * Internal tests
-
+cat("[iidCox] internal test \n")
 ## ** Data
 set.seed(10)
 dt <- sampleData(20, outcome = "survival")[,.(time,event,X1,X2)]
@@ -115,6 +115,7 @@ dtStrata.sort <- copy(dtStrata)
 setkeyv(dtStrata.sort, c("strata", "time"))
 
 ## ** No strata, no interaction, continous
+cat("[iidCox] compare to timereg - no strata, no interaction, continuous \n")
 ## *** Models
 e.coxph <- coxph(Surv(time, event) ~ X1+X6, data = dt, y = TRUE, x = TRUE)
 e.coxph_sort <- coxph(Surv(time, event) ~ X1+X6, data = dt.sort, y = TRUE, x = TRUE)
@@ -156,6 +157,7 @@ test_that("[iidCox] lambda - no strata, no interaction, continuous",{
   
 
 ## ** no strata, interactions, continous
+cat("[iidCox] compare to timereg - no strata, interaction, continuous \n")
 
 ## *** Models
 e.coxph <- coxph(Surv(time, event) ~ X1*X6, data = dt, y = TRUE, x = TRUE)
@@ -174,7 +176,9 @@ test_that("[iidCox] lambda - no strata, interactions, continuous",{
     expect_equal(as.double(IF.coxph$IFcumhazard[[1]]), as.double(IFlambda_GS[,-1]))
 })
 
+
 ## ** no covariate
+cat("[iidCox] compare to timereg - no covariate \n")
 ## cox.aalen do not work without covariable
 ## cox.aalen(Surv(eventtime, event) ~ 1, data = dt, resample.iid = TRUE, max.timepoint.sim=NULL)
 ## Error in model.frame.default(formula = Surv(survs$stop, survs$status) ~  : 
@@ -187,6 +191,7 @@ test_that("[iidCox] beta - no covariate",{
 })
 
 ## ** no strata, no interaction, with a categorical variable
+cat("[iidCox] compare to timereg - no strata, no interaction, categorical \n")
 
 ## *** Models
 e.coxph <- coxph(Surv(time, event) ~ Xcat2 + X6, data = dt, y = TRUE, x = TRUE)
@@ -209,7 +214,11 @@ test_that("[iidCox] lambda - no strata, interactions, categorical",{
                  as.double(IFlambda_GS[,-1]))
 })
 
+
+
 ## ** Ties
+cat("[iidCox] compare to timereg - ties \n")
+
 e.coxph_Efron <- coxph(Surv(timeTies, event) ~ X1+X6, data = dtTies, y = TRUE, x = TRUE,
                  ties = "efron")
 e.coxph_Breslow <- coxph(Surv(timeTies, event) ~ X1+X6, data = dtTies, y = TRUE, x = TRUE,
@@ -228,7 +237,9 @@ IF.coxph_Breslow <- iidCox(e.coxph_Breslow, keep.times = FALSE)
 ## *** Tests
 ## ??? Gold standard
 
+
 ## ** Strata, no interaction, continuous
+cat("[iidCox] compare to timereg - strata \n")
 ## *** Model
 e.timereg <- cox.aalen(Surv(time, event) ~ strata(strata)-1 + prop(X1) + prop(X6), data = dtStrata, 
                        resample.iid = TRUE, max.timepoint.sim=NULL)
@@ -265,7 +276,10 @@ test_that("[iidCox] lambda - strata",{
   })
 
 
+
 ## ** Melanoma data
+cat("[iidCox] compare to timereg - Melanoma \n")
+
 test_that("[iidCox] Compare to timereg on Melanoma dta",{
     e.timereg <- cox.aalen(Surv(time,status==1)~prop(sex), data = Melanoma)
     e.coxph <- coxph(Surv(time,status==1)~sex, data=Melanoma, x=TRUE, y=TRUE)

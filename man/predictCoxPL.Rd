@@ -4,7 +4,8 @@
 \alias{predictCoxPL}
 \title{Computation of survival probabilities from Cox regression models using the product limit estimator.}
 \usage{
-predictCoxPL(object, newdata, times, type = c("cumhazard", "survival"), ...)
+predictCoxPL(object, newdata, times, type = c("cumhazard", "survival"),
+  keep.strata = TRUE, keep.infoVar = FALSE, ...)
 }
 \arguments{
 \item{object}{The fitted Cox regression model object either
@@ -30,6 +31,11 @@ the survival baseline hazard function when argument
 when argument \code{newdata} is used.  } Several choices can be
 combined in a vector of strings that match (no matter the case)
 strings \code{"hazard"},\code{"cumhazard"}, \code{"survival"}.}
+
+\item{keep.strata}{[logical] If \code{TRUE} add the (newdata) strata
+to the output. Only if there any.}
+
+\item{keep.infoVar}{[logical] For internal use.}
 
 \item{...}{additional arguments to be passed to \code{\link{predictCox}}.}
 }

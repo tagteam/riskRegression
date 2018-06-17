@@ -6,9 +6,9 @@
 \usage{
 predictCox(object, newdata = NULL, times, centered = TRUE,
   type = c("cumhazard", "survival"), keep.strata = TRUE,
-  keep.times = TRUE, keep.newdata = FALSE, se = FALSE, band = FALSE,
-  iid = FALSE, confint = (se + band) > 0, average.iid = FALSE,
-  store.iid = "full")
+  keep.times = TRUE, keep.newdata = FALSE, keep.infoVar = FALSE,
+  se = FALSE, band = FALSE, iid = FALSE, confint = (se + band) > 0,
+  average.iid = FALSE, store.iid = "full")
 }
 \arguments{
 \item{object}{The fitted Cox regression model object either
@@ -49,6 +49,8 @@ to the output.}
 
 \item{keep.newdata}{[logical] If \code{TRUE} add the value of the
 covariates used to make the prediction in the output list.}
+
+\item{keep.infoVar}{[logical] For internal use.}
 
 \item{se}{[logical] If \code{TRUE} compute and add the standard errors to the output.}
 

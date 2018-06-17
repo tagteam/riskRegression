@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: maj 18 2017 (09:23) 
 ## Version: 
-## last-updated: jun 13 2018 (16:33) 
+## last-updated: jun 17 2018 (12:43) 
 ##           By: Brice Ozenne
-##     Update #: 154
+##     Update #: 169
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -26,6 +26,8 @@ context("[predictCox] Computation of iid,SE,CI,CB, comparison to timereg")
 nsim.band <- 500
 
 ## * predictions: no strata
+cat("[predictCox] Predictions (no strata, continuous) \n")
+
 ## ** Data
 set.seed(10)
 dt <- sampleData(5e1, outcome = "survival")[,.(time,event,X1,X2,X6)]
@@ -40,6 +42,7 @@ setkeyv(dt.sort,c("time"))
 
 ## ** Model
 e.coxph <- coxph(Surv(time, event) ~ X1*X6, data = dt, y = TRUE, x = TRUE)
+e.cph <- cph(Surv(time, event) ~ X1*X6, data = dt, y = TRUE, x = TRUE)
 e.coxph_sort <- coxph(Surv(time, event) ~ X1*X6, data = dt.sort, y = TRUE, x = TRUE)
 e.timereg <- cox.aalen(Surv(time, event) ~ prop(X1) + prop(X6) + prop(X1*X6),
                        data = dt, resample.iid = TRUE, max.timepoint.sim=NULL)
@@ -64,6 +67,16 @@ predRR1.none <- confint(predRR1, survival.transform = "none", seed = 10,
                         nsim.band = nsim.band)
 predRR1.loglog <- confint(predRR1, survival.transform = "loglog", seed = 10,
                           nsim.band = nsim.band)
+
+## *** Test vs. cph
+test_that("[predictCox] compare survival and survival.se coxph/cph (1 fixed time)",{
+    res.cph <- predictCox(e.cph, newdata = dt, times = 10,
+                          se = TRUE, iid = TRUE, band = TRUE, confint = FALSE)
+    expect_equal(as.data.table(predRR1),
+                 as.data.table(res.cph),
+                 tol = 1e-3)
+
+})
 
 ## *** Test vs. timereg
 test_that("[predictCox] compare survival and survival.se to timereg (1 fixed time)",{
@@ -125,6 +138,15 @@ predRR1.none <- confint(predRR1, survival.transform = "none", seed = 10, nsim.ba
 predRR1.loglog <- confint(predRR1, survival.transform = "loglog", seed = 10, nsim.band = nsim.band)
 
 
+## *** Test vs. cph
+test_that("[predictCox] compare survival and survival.se coxph/cph (eventtimes)",{
+    res.cph <- predictCox(e.cph, newdata = dt, times = vec.time,
+                          se = TRUE, iid = TRUE, band = TRUE, confint = FALSE)
+    expect_equal(as.data.table(predRR1),
+                 as.data.table(res.cph),
+                 tol = 1e-3)
+
+})
 ## *** Test vs. timereg
 test_that("[predictCox] compare survival and survival.se to timereg (eventtimes)",{
     ## punctual estimate
@@ -262,15 +284,19 @@ test_that("[predictCox] - sorted vs. unsorted times (no strata)",{
 })
 
 ## * predictions: no strata with a categorical variable
+cat("[predictCox] Predictions (no strata, categorical) \n")
 ## ** Data
 ## see no strata
 ## ** Model
 e.coxph <- coxph(Surv(time, event) ~ Xcat2 + X6 , data = dt, y = TRUE, x = TRUE)
+e.cph <- cph(Surv(time, event) ~ Xcat2 + X6 , data = dt, y = TRUE, x = TRUE)
 e.timereg <- cox.aalen(Surv(time, event) ~ prop(Xcat2) + prop(X6),
                        data = dt, resample.iid = TRUE, max.timepoint.sim=NULL)
 
 ## ** test
-test_that("[predictCox] compare survival and survival.se to timereg (categorical variable)",{
+
+
+test_that("[predictCox] compare survival and survival.se to timereg/cph (categorical variable)",{
 
     ## fixed time
     predGS <- predict(e.timereg, newdata = dt, times = 10)
@@ -278,14 +304,23 @@ test_that("[predictCox] compare survival and survival.se to timereg (categorical
     expect_equal(as.double(predRR1$survival), as.double(predGS$S0))
     expect_equal(as.double(predRR1$survival.se), as.double(predGS$se.S0))
 
+    predCPH <- predictCox(e.cph, newdata = dt, times = 10, se = TRUE)
+    expect_equal(as.double(predRR1$survival), as.double(predCPH$survival), tol = 1e-3)
+    expect_equal(as.double(predRR1$survival.se), as.double(predCPH$survival.se), tol = 1e-3)
+
     ## event time
     predGS <- predict(e.timereg, newdata = dt, times = sort(dt$time))
     predRR1 <- predictCox(e.coxph, newdata = dt, times = sort(dt$time), se = TRUE)
     expect_equal(as.double(predRR1$survival), as.double(predGS$S0))
     expect_equal(as.double(predRR1$survival.se), as.double(predGS$se.S0))
+
+    predCPH <- predictCox(e.cph, newdata = dt, times = sort(dt$time), se = TRUE)
+    expect_equal(as.double(predRR1$survival), as.double(predCPH$survival), tol = 1e-3)
+    expect_equal(as.double(predRR1$survival.se), as.double(predCPH$survival.se), tol = 1e-3)
 })
 
 ## * predictions: strata
+cat("[predictCox] Predictions (strata) \n")
 ## ** Data
 set.seed(10)
 dtStrata <- copy(dt)
@@ -297,7 +332,10 @@ setkeyv(dtStrata.sort, c("strata", "time"))
 eS.timereg <- cox.aalen(Surv(time, event) ~ strata(strata)-1 + prop(X1) + prop(X6),
                        data = dtStrata, 
                        resample.iid = TRUE, max.timepoint.sim=NULL)
-  
+
+eS.cph <- cph(Surv(time, event) ~ strat(strata) + X1 + X6,
+              data = dtStrata, y = TRUE, x = TRUE)
+
 eS.coxph <- coxph(Surv(time, event) ~ strata(strata) + X1 + X6,
                  data = dtStrata, y = TRUE, x = TRUE)
 
@@ -320,6 +358,18 @@ predRR1.none <- confint(predRR1, survival.transform = "none", seed = 10,
                         nsim.band = nsim.band)
 predRR1.loglog <- confint(predRR1, survival.transform = "loglog", seed = 10,
                           nsim.band = nsim.band)
+
+## *** Test vs. cph
+test_that("[predictCox] compare survival and survival.se coxph/cph (1 fixed time, strata)",{
+    set.seed(10)
+    res.cph <- predictCox(eS.cph, newdata = dtStrata, times = 4,
+                          se = TRUE, iid = TRUE, band = TRUE, confint = FALSE)
+    expect_equal(as.data.table(predRR1),
+                 as.data.table(res.cph),
+                 tol = 1e-3)
+
+})
+
 
 ## *** Test vs. timereg
 test_that("[predictCox] compare survival and survival.se to timereg (1 fixed time, strata)",{
@@ -379,6 +429,16 @@ predRR1.none <- confint(predRR1, survival.transform = "none", seed = 10,
 predRR1.loglog <- confint(predRR1, survival.transform = "loglog", seed = 10,
                           nsim.band = nsim.band)
 
+## *** Test vs. cph
+test_that("[predictCox] compare survival and survival.se coxph/cph (eventtime, strata)",{
+    set.seed(10)
+    res.cph <- predictCox(eS.cph, newdata = dtStrata, times = vec.time,
+                          se = TRUE, iid = TRUE, band = TRUE, confint = FALSE)
+    expect_equal(as.data.table(predRR1),
+                 as.data.table(res.cph),
+                 tol = 1e-3)
+
+})
 
 ## *** Test vs. timereg
 test_that("[predictCox] compare survival and survival.se to timereg (eventtimes, strata)",{
@@ -462,7 +522,8 @@ test_that("[predictCox] before the first event (strata)",{
 
 })
 
-## * predictions: check specific cases
+## * predictions: SE/CI check against manual computation
+cat("[predictCox] SE/CI check against manual computation \n")
 ## from confint.predictCox
 
 ## ** Data
@@ -502,13 +563,15 @@ test_that("[confint.predictCox] manual computation on ci", {
 })
 
 ## * iid vs. average.iid
+cat("[predictCox] iid vs. average.iid \n")
 ## ** data
 data(Melanoma)
 
 ## ** test
 test_that("[predictCox] average.iid vs. iid (no strata)", {
 
-    vec.time <- sort(unique(Melanoma$time))
+    all.times <- sort(unique(Melanoma$time))
+    vec.time <- all.times[round(seq(1,length(all.times), length.out = 15))]
     
     fit <- coxph(Surv(time,status>0) ~ age + sex + ici,
                  data = Melanoma, x = TRUE, y = TRUE)
@@ -524,7 +587,8 @@ test_that("[predictCox] average.iid vs. iid (no strata)", {
 
 test_that("[predictCox] average.iid vs. iid (strata)", {
 
-    vec.time <- sort(unique(Melanoma$time))
+    all.times <- sort(unique(Melanoma$time))
+    vec.time <- all.times[round(seq(1,length(all.times), length.out = 15))]
     
     fit <- coxph(Surv(time,status>0) ~ age + sex + strata(ici),
                  data = Melanoma, x = TRUE, y = TRUE)
@@ -539,6 +603,7 @@ test_that("[predictCox] average.iid vs. iid (strata)", {
 })
 
 ## * Dependence on data
+cat("[predictCox] Dependence on data \n")
 data(Melanoma)
 
 test_that("[predictCox] Dependence on data", {   
@@ -569,6 +634,7 @@ test_that("[predictCox] Dependence on data", {
 })
 
 ## * Store.iid argument
+cat("[predictCox] Check same result store.iid=minimal vs. full \n")
 
 ## ** Data
 set.seed(10)
@@ -635,6 +701,7 @@ test_that("[predictCox] store.iid = minimal vs. full - strata", {
 # }}}
 
 ## * Weigthed cox
+cat("[predictCox] does not handle weights \n")
 ## ** Data
 set.seed(10)
 data(Melanoma)
@@ -669,6 +736,16 @@ expect_error(resW <- predictCox(fitW.cph, times = Melanoma$time, newdata = Melan
 # }}}
 
 ## * Previous Bug
+cat("[predictCox] Previous bug \n")
+## ** Some coef are NA
+dt <- sampleData(5e2, outcome = "survival")
+e.coxph <- coxph(Surv(time, event) ~ X1+ X6 , data = dt, y = TRUE, x = TRUE)
+e.coxph$coefficients[] <- as.numeric(NA)
+
+test_that("Return error when coef contains NA", {
+    expect_error(predictCox(e.coxph, newdata = dt, times = 1))
+})
+
 ## ** ???
 f1 <- coxph(Surv(time,status==1) ~ age+logthick+epicel+strata(sex),
             data=Melanoma, x=TRUE,y=TRUE)
@@ -680,3 +757,65 @@ res <- predictCox(f1,newdata=Melanoma[c(17,101,123),],
 
 
 
+
+## * Timing
+if(FALSE){
+
+    ## library(microbenchmark)
+    ## library(survival)
+    ## library(rms)
+    ## library(mets)
+    ## library(profvis)
+    
+    ## set.seed(10)
+    ## d <- sampleData(1e3)
+    ## m.coxph <- coxph(Surv(time, event>0) ~ X1 + X2 + X3, data = d, x = TRUE, y = TRUE)
+    ## m.cph <- cph(Surv(time, event>0) ~ X1 + X2 + X3, data = d, x = TRUE, y = TRUE)
+    ## m.phreg <- phreg(Surv(time, event>0) ~ X1 + X2 + X3, data = d)
+
+
+    ## ## baseline hazard
+    ## runBenchmark <- function(n) {
+    ##     microbenchmark(times = 20,  
+    ##                    coxph = {predictCox(m.coxph)},
+    ##                    cph = {predictCox(m.cph)},
+    ##                    phreg = {predictCox(m.phreg)},
+    ##                    basehaz = {basehaz(m.coxph)}
+    ##                    )
+    ## }
+    ## res <- runBenchmark()
+
+    ## profvis(
+    ##     predictCox(m.coxph)
+    ## )
+
+    ## ## predictions
+    ## runBenchmark <- function(n) {
+    ##     microbenchmark(times = 20,  
+    ##                    coxph = {predictCox(m.coxph, newdata = d, times = 1:5)},
+    ##                    cph = {predictCox(m.cph, newdata = d, times = 1:5)},
+    ##                    phreg = {predictCox(m.phreg, newdata = d, times = 1:5)}
+    ##                    )
+    ## }
+    ## res <- runBenchmark()
+    ## res
+
+    ## profvis(
+    ##     predictCox(m.coxph, newdata = d, times = 1:5)
+    ## )
+
+    ## ## predictions with SE
+    ## runBenchmark <- function(n) {
+    ##     microbenchmark(times = 20,  
+    ##                    coxph = {predictCox(m.coxph, newdata = d, times = 1:5, se = TRUE)},
+    ##                    cph = {predictCox(m.cph, newdata = d, times = 1:5, se = TRUE)},
+    ##                    phreg = {predictCox(m.phreg, newdata = d, times = 1:5, se = TRUE)}
+    ##                    )
+    ## }
+    ## res <- runBenchmark()
+    ## res
+
+    ## profvis(
+    ##     predictCox(m.coxph, newdata = d, times = 1:5, se = TRUE)
+    ## )
+}
