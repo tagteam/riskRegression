@@ -81,6 +81,8 @@ coxVariableName <- function(object, model.frame){
 #### methods #####
 
                                         # {{{ coxBaseEstimator
+
+
 ## * coxBaseEstimator
 #' @title Extract the type of estimator for the baseline hazard
 #' @description Extract the type of estimator for the baseline hazard
@@ -635,13 +637,13 @@ coxStrataLevel.phreg <- function(object){
 
 #' @rdname coxStrata
 #' @export
-coxStrata <- function(object, data, sterms, strata.vars, levels, strata.levels) UseMethod("coxStrata")
+coxStrata <- function(object, data, sterms, strata.vars, strata.levels) UseMethod("coxStrata")
 
 ## ** coxStrata.cph
 #' @rdname coxStrata
 #' @method coxStrata cph
 #' @export
-coxStrata.cph <- function(object, data, sterms, strata.vars, levels, strata.levels){
+coxStrata.cph <- function(object, data, sterms, strata.vars, strata.levels){
   
   if(length(strata.vars)==0){ ## no strata variables
     
@@ -657,10 +659,10 @@ coxStrata.cph <- function(object, data, sterms, strata.vars, levels, strata.leve
           colnames(tmp) <- names(prodlim::parseSpecialNames(names(tmp),"strat"))
           tmp <- data.frame(lapply(1:NCOL(tmp),function(j){factor(paste0(names(tmp)[j],"=",tmp[,j,drop=TRUE]))}))
           strata <- apply(tmp,1,paste,collapse=".")
-          if (any(unique(strata) %in% levels == FALSE)){
-              stop("unknown strata: ",paste(unique(strata[strata %in% levels == FALSE]), collapse = " | "),"\n")
+          if (any(unique(strata) %in% strata.levels == FALSE)){
+              stop("unknown strata: ",paste(unique(strata[strata %in% strata.levels == FALSE]), collapse = " | "),"\n")
           }
-          strata <- factor(strata, levels = levels) # add all levels - necessary for predict.CauseSpecificCox to able to correctly convert strata to numeric
+          strata <- factor(strata, levels = strata.levels) # add all levels - necessary for predict.CauseSpecificCox to able to correctly convert strata to numeric
       }
     
   }
@@ -672,7 +674,7 @@ coxStrata.cph <- function(object, data, sterms, strata.vars, levels, strata.leve
 #' @rdname coxStrata
 #' @method coxStrata coxph
 #' @export
-coxStrata.coxph <- function(object, data, sterms, strata.vars, levels, strata.levels){
+coxStrata.coxph <- function(object, data, sterms, strata.vars, strata.levels){
   
   if(length(strata.vars)==0){ ## no strata variables
     
@@ -685,10 +687,10 @@ coxStrata.coxph <- function(object, data, sterms, strata.vars, levels, strata.le
       strata <- object$strata
     }else { ## new dataset
       strata <- prodlim::model.design(sterms,data=data,xlev=strata.levels,specialsFactor=TRUE)$strata[[1]]
-      if (any(unique(strata) %in% levels == FALSE)){
-        stop("unknown strata: ",paste(unique(strata[strata %in% levels == FALSE]), collapse = " | "),"\n")
+      if (any(unique(strata) %in% strata.levels == FALSE)){
+        stop("unknown strata: ",paste(unique(strata[strata %in% strata.levels == FALSE]), collapse = " | "),"\n")
       }
-      strata <- factor(strata, levels = levels) # add all levels - necessary for predict.CauseSpecificCox to able to correctly convert strata to numeric
+      strata <- factor(strata, levels = strata.levels) # add all levels - necessary for predict.CauseSpecificCox to able to correctly convert strata to numeric
     }
     
   }
@@ -699,7 +701,7 @@ coxStrata.coxph <- function(object, data, sterms, strata.vars, levels, strata.le
 #' @rdname coxStrata
 #' @method coxStrata phreg
 # '@export
-coxStrata.phreg <- function(object, data, sterms, strata.vars, levels, strata.levels){
+coxStrata.phreg <- function(object, data, sterms, strata.vars, strata.levels){
   
   if(length(strata.vars)==0){ ## no strata variables
     
@@ -791,6 +793,7 @@ coxVarCov.phreg <- function(object){
 #### Auxiliary function #### 
 
                                         # {{{ SurvResponseVar
+
 ## * SurvResponseVar
 #' @title Extract the time and event variable from a Cox model
 #' @description Extract the time and event variable from a Cox model

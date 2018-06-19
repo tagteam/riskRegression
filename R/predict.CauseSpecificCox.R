@@ -209,7 +209,6 @@ predict.CauseSpecificCox <- function(object,
         strataTempo <- coxStrata(object$models[[iterC]], data = newdata, 
                                  sterms = ls.infoVar[[iterC]]$strata.sterms, 
                                  strata.vars = ls.infoVar[[iterC]]$stratavars, 
-                                 levels = levels(baseline$strata), 
                                  strata.levels = ls.infoVar[[iterC]]$strata.levels)
         M.strata.num[,iterC] <- as.numeric(strataTempo) - 1
         ## last time by strata

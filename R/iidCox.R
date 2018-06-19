@@ -98,8 +98,11 @@ iidCox <- function(object, newdata = NULL,
                                         #    new.time <- newdata[[infoVar$time]]
                                         # }
     
-        new.strata <- coxStrata(object, data = newdata, 
-                                sterms = infoVar$strata.sterms, strata.vars = infoVar$stratavars, levels = object.levelStrata, strata.levels = infoVar$strata.levels)
+        new.strata <- coxStrata(object,
+                                data = newdata, 
+                                sterms = infoVar$strata.sterms,
+                                strata.vars = infoVar$stratavars,
+                                strata.levels = infoVar$strata.levels)
         new.eXb <- exp(coxLP(object, data = newdata, center = FALSE))
         new.LPdata <- model.matrix(object, data = newdata)
     

@@ -7,16 +7,13 @@
 \alias{coxStrata.phreg}
 \title{Define the strata for a new dataset}
 \usage{
-coxStrata(object, data, sterms, strata.vars, levels, strata.levels)
+coxStrata(object, data, sterms, strata.vars, strata.levels)
 
-\method{coxStrata}{cph}(object, data, sterms, strata.vars, levels,
-  strata.levels)
+\method{coxStrata}{cph}(object, data, sterms, strata.vars, strata.levels)
 
-\method{coxStrata}{coxph}(object, data, sterms, strata.vars, levels,
-  strata.levels)
+\method{coxStrata}{coxph}(object, data, sterms, strata.vars, strata.levels)
 
-\method{coxStrata}{phreg}(object, data, sterms, strata.vars, levels,
-  strata.levels)
+\method{coxStrata}{phreg}(object, data, sterms, strata.vars, strata.levels)
 }
 \arguments{
 \item{object}{The fitted Cox regression model object either
@@ -29,9 +26,9 @@ obtained with \code{coxph} (survival package), \code{cph}
 
 \item{strata.vars}{the name of the variables used to define the strata}
 
-\item{levels}{the strata levels that have been used to fit the Cox model}
-
 \item{strata.levels}{a named list containing for each variable used to form the strata all its possible levels}
+
+\item{levels}{the strata levels that have been used to fit the Cox model}
 }
 \description{
 Define the strata in a dataset to match those of a stratified Cox model
