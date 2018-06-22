@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun  6 2016 (09:02) 
 ## Version: 
-## last-updated: Apr 18 2018 (15:08) 
+## last-updated: Jun 18 2018 (14:06) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 110
+##     Update #: 111
 #----------------------------------------------------------------------
 ## 
 ### Commentary:
@@ -586,7 +586,7 @@ predictRisk.rfsrc <- function(object, newdata, times, cause, ...){
         p
     }else{
         if (object$family=="surv") {
-            ptemp <- 1-predict(object,newdata=newdata,importance="none",...)$survival
+            ptemp <- 1-stats::predict(object,newdata=newdata,importance="none",...)$survival
             pos <- prodlim::sindex(jump.times=object$time.interest,eval.times=times)
             p <- cbind(1,ptemp)[,pos+1,drop=FALSE]
             if (NROW(p) != NROW(newdata) || NCOL(p) != length(times))
@@ -595,7 +595,7 @@ predictRisk.rfsrc <- function(object, newdata, times, cause, ...){
         }else{
             if (is.character(cause)) cause <- as.numeric(cause)
             if (!is.numeric(cause)) stop("cause is not numeric")
-            cif <- predict(object,newdata=newdata,importance="none",...)$cif[,,cause,drop=TRUE]
+            cif <- stats::predict(object,newdata=newdata,importance="none",...)$cif[,,cause,drop=TRUE]
             pos <- prodlim::sindex(jump.times=object$time.interest,eval.times=times)
             p <- cbind(0,cif)[,pos+1,drop=FALSE]
             if (NROW(p) != NROW(newdata) || NCOL(p) != length(times))
