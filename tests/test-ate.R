@@ -144,6 +144,7 @@ test_that("check against manual computation",{
         fit <- cph(formula = Surv(time,event)~ X1+X2,data=dtS,y=TRUE,x=TRUE)
         resPred <- predictCox(fit, newdata = newdata0, time = 5:7, iid = TRUE)
         ATE[[iT]] <- colMeans(1-resPred$survival)
+        ## colMeans(resPred$survival.iid[,1,]) ## rowSums(resPred$survival.iid[,1,])
         ATE.iid_term1 <- apply(-resPred$survival.iid,3,colMeans)
         ATE.iid_term2 <- apply(1-resPred$survival, 1, function(x){x-ATE[[iT]]})/n
         ATE.iid[[iT]] <- t(ATE.iid_term1) + t(ATE.iid_term2)

@@ -94,9 +94,9 @@
 ##' 
 ##' cox1 <- coxph(Surv(time,status==1)~invasion+epicel+age+strata(sex),data=Melanoma)
 ##' cox2 <- coxph(Surv(time,status!=0)~invasion+epicel+age+strata(sex),data=Melanoma)
-##' all.equal(cox1,fit5$models[[1]])
-##' all.equal(cox2,fit5$models[[2]])
-##'
+##' all.equal(coef(cox1),coef(fit5$models[[1]]))
+##' all.equal(coef(cox2),coef(fit5$models[[2]]))
+##' 
 ##' ## predictions
 ##' ##
 ##' ## surv.type = "hazard": predictions for both causes can be extracted

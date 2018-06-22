@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: sep  4 2017 (16:43) 
 ## Version: 
-## last-updated: jun 17 2018 (11:17) 
+## last-updated: jun 19 2018 (10:52) 
 ##           By: Brice Ozenne
-##     Update #: 92
+##     Update #: 93
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -94,7 +94,9 @@ predictCoxPL <- function(object,
     ## ** compute survival
     if(infoVar$is.strata){
 
-        object.strata <- coxStrata(object, data = NULL, strata.vars = infoVar$stratavars)
+        object.strata <- coxStrata(object,
+                                   data = NULL,
+                                   strata.vars = infoVar$stratavars)
         new.strata <- original.res$strata
         if(keep.strata == FALSE){
             original.res$strata <- NULL

@@ -332,7 +332,6 @@ predictCox <- function(object,
       new.strata <- coxStrata(object, data = newdata, 
                               sterms = infoVar$strata.sterms, 
                               strata.vars = infoVar$stratavars, 
-                              levels = object.levelStrata, 
                               strata.levels = infoVar$strata.levels)
     
       new.levelStrata <- levels(new.strata)
