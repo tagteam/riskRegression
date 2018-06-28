@@ -65,13 +65,17 @@ coxVariableName <- function(object, model.frame){
         out$stratavars <- attr(out$strata.sterms, "term.labels")
         out$stratavars.original <- all.vars(out$strata.sterms)
         out$strata.levels <- coxStrataLevel(object)
+
+        if(length(out$strata.levels)==1){
+            out$is.strata <- FALSE
+        }
     }else{
         out["stratavars"] <- list(NULL)
         out["stratavars.original"] <- list(NULL)
         out["strata.sterms"] <- list(NULL)
         out$strata.levels <- factor("1") ## not NULL - coherent with coxStrata
     }
-
+    
     ## ** export
     return(out)
 } 
@@ -154,11 +158,9 @@ coxCenter.coxph <- function(object){
 #' @method coxCenter phreg
 #' @export
 coxCenter.phreg <- function(object){
-    data <- model.matrix(object = eval(object$call$formula),
-                         object$model.frame)[,names(coef(object)), drop = FALSE]
-  return(apply(data,2,mean))
+    return(apply(object$X,2,mean))
 }
-# }}}
+                                        # }}}
 
                                         # {{{ coxModelFrame
 ## * coxModelFrame
@@ -450,27 +452,31 @@ coxLP.coxph <- function(object, data, center){
 #' @method coxLP phreg
 #' @export
 coxLP.phreg <- function(object, data, center){
-  coef <- stats::coef(object)
-  n.varLP <- length(coef)
+
+    coef <- stats::coef(object)
+    n.varLP <- length(coef)
+
+    if(n.varLP>0){
+
+        if(is.null(data)){ ## training dataset
+            X <- object$X
+        }else{
+            X <- model.matrix(object, data = data)
+        }
   
-  if(is.null(data)){ ## training dataset
-    data <- object$model.frame
-  }
-  
-  f.term <- delete.response(terms(eval(object$call$formula)))
-  attr(f.term,"intercept") <- 0
-  data <- model.matrix(object = f.term,  data)[,names(coef), drop = FALSE]
-  
-  if(n.varLP>0){
-    Xb <- as.vector(as.matrix(data) %*% coef)
+        Xb <- as.vector(X[,names(coef), drop = FALSE] %*% coef)
     
-    if(center){
-      Xb <- Xb - sum(coxCenter(object)*coef)
-    }
+        if(center){
+            Xb <- Xb - sum(coxCenter(object)*coef)
+        }
     
-  }else{ 
-    Xb <- rep(0, NROW(data)) 
-  } 
+    }else{
+        if(is.null(data)){
+            Xb <- rep(0, coxN(object))
+        }else{
+            Xb <- rep(0, NROW(data))
+        }
+    } 
   
   
   return(Xb)
@@ -959,7 +965,7 @@ model.matrix.cph <- function(object, data){
 model.matrix.phreg <- function(object, data){
     special <- c("strata", "cluster")
     Terms <- terms(coxFormula(object), special, data = data)
-  
+    
     ## remove specials
     if (!is.null(attributes(Terms)$specials$cluster)) {
         ts <- survival::untangle.specials(Terms, "cluster")

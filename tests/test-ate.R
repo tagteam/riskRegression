@@ -1,9 +1,7 @@
 library(riskRegression)
 library(rms)
-library(testthat)
 library(survival)
-require(rms)
-require(survival)
+library(testthat)
 context("Ate checks")
                                         # {{{ header with data  
 set.seed(10)

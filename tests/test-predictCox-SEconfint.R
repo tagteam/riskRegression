@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: maj 18 2017 (09:23) 
 ## Version: 
-## last-updated: jun 17 2018 (12:43) 
+## last-updated: jun 27 2018 (15:36) 
 ##           By: Brice Ozenne
-##     Update #: 169
+##     Update #: 172
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -734,6 +734,32 @@ expect_error(resW <- predictCox(fitW.cph, times = Melanoma$time, newdata = Melan
     ## expect_equal(M1,M2)
 ## })
 # }}}
+
+## * Diag argument
+cat("[predictCox] diag argument \n")
+set.seed(10)
+dt <- sampleData(5e1, outcome = "survival")[,.(time,event,X1,X2,X6)]
+
+test_that("[predictCox] diag no strata", {
+    e.coxph <- coxph(Surv(time, event) ~ X1*X6, data = dt, y = TRUE, x = TRUE)
+
+    GS <- predictCox(e.coxph, newdata = dt, times = dt$time, se = FALSE)
+    test <- predictCox(e.coxph, newdata = dt, times = dt$time, se = FALSE, diag = TRUE)
+    expect_equal(dt$time, as.double(test$time))
+    expect_equal(diag(GS$cumhazard), as.double(test$cumhazard))
+    expect_equal(diag(GS$survival), as.double(test$survival))
+})
+
+test_that("[predictCox] diag strata", {
+    eS.coxph <- coxph(Surv(time, event) ~ strata(X1) + X6, data = dt, y = TRUE, x = TRUE)
+
+    GS <- predictCox(eS.coxph, newdata = dt, times = dt$time, se = FALSE)
+    test <- predictCox(eS.coxph, newdata = dt, times = dt$time, se = FALSE, diag = TRUE)
+
+    expect_equal(dt$time, as.double(test$time))
+    expect_equal(diag(GS$cumhazard), as.double(test$cumhazard))
+    expect_equal(diag(GS$survival), as.double(test$survival))
+})
 
 ## * Previous Bug
 cat("[predictCox] Previous bug \n")

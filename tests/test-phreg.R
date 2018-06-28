@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: feb 28 2017 (09:52) 
 ## Version: 
-## last-updated: jun 17 2018 (19:26) 
+## last-updated: jun 21 2018 (15:58) 
 ##           By: Brice Ozenne
-##     Update #: 15
+##     Update #: 18
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -57,6 +57,11 @@ test_that("survival - one strata variable", {
     predS.coxph <- predictCox(mS.coxph, newdata = d, time = 1:5, se = TRUE)
     expect_equal(predS.phreg$survival, predS.coxph$survival, tol = 1e-8)
 
+    ## bug in previous version, could not create design matrix when group had only one value
+    predS.phreg <- predictCox(mS.phreg, newdata = d[group==0], time = 1:5, se = TRUE)
+    predS.coxph <- predictCox(mS.coxph, newdata = d[group==0], time = 1:5, se = TRUE)
+    expect_equal(predS.phreg$survival, predS.coxph$survival, tol = 1e-8)
+
 })
 
 
@@ -71,6 +76,7 @@ test_that("survival - several strata variables", {
     predS.phreg <- predictCox(mS.phreg, newdata = d, time = 1:5, se = TRUE)
     predS.coxph <- predictCox(mS.coxph, newdata = d, time = 1:5, se = TRUE)
     expect_equal(predS.phreg$survival, predS.coxph$survival, tol = 1e-8)
+
 
 })
 

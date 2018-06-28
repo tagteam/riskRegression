@@ -41,7 +41,7 @@ They are computed applying the \code{confint} function to the output.}
 
 \item{average.iid}{[logical]. If \code{TRUE} add the average of the influence function over \code{newdata} to the output.}
 
-\item{product.limit}{[logical]. If true the survival is computed using the product limit estimator.
+\item{product.limit}{[logical]. If \code{TRUE} the survival is computed using the product limit estimator.
 Otherwise the exponential approximation is used (i.e. exp(-cumulative hazard)).}
 
 \item{store.iid}{[character] Implementation used to estimate the influence function and the standard error.
