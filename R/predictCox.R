@@ -43,6 +43,7 @@
 #' @param iid [logical] If \code{TRUE} compute and add the influence function to the output.
 #' @param confint [logical] If \code{TRUE} compute and add the confidence intervals/bands to the output.
 #' They are computed applying the \code{confint} function to the output.
+#' @param diag [logical] If \code{TRUE} only compute the hazard/cumlative hazard/survival for the i-th row in dataset at the i-th time.
 #' @param average.iid [logical] If \code{TRUE} add the average of the influence function over \code{newdata} to the output.
 #' @param store.iid [character] Implementation used to estimate the influence function and the standard error.
 #' Can be \code{"full"} or \code{"minimal"}.
@@ -140,8 +141,8 @@
 #' @rdname predictCox
 #' @export
 predictCox <- function(object,
-                       newdata=NULL,
                        times,
+                       newdata=NULL,
                        centered = TRUE,
                        type=c("cumhazard","survival"),
                        keep.strata = TRUE,
@@ -152,6 +153,7 @@ predictCox <- function(object,
                        band = FALSE,
                        iid = FALSE,
                        confint = (se+band)>0,
+                       diag = FALSE,
                        average.iid = FALSE,
                        store.iid = "full"){
   
@@ -219,13 +221,22 @@ predictCox <- function(object,
            "One or several model parameters have been estimated to be NA \n")
   }
 
-  if (se==1L || iid==1L){
-      if (missing(newdata)) stop("Argument 'newdata' is missing. Cannot compute standard errors in this case.")
-  }
-  if("XXXindexXXX" %in% names(object.modelFrame)){
-      stop("XXXindexXXX is a reserved name. No variable should have this name. \n")
-  }
-  
+    if (se==1L || iid==1L){
+        if (missing(newdata)) stop("Argument 'newdata' is missing. Cannot compute standard errors in this case.")
+    }
+    if("XXXindexXXX" %in% names(object.modelFrame)){
+        stop("XXXindexXXX is a reserved name. No variable should have this name. \n")
+    }
+    if(!is.logical(diag)){
+        stop("Argument \'diag\' must be logical \n")
+    }
+    if(diag==TRUE && NROW(newdata)!=length(times)){
+        stop("When argument \'diag\' is TRUE, the number of rows in \'newdata\' must equal the length of \'times\' \n")
+    }
+    if(diag==TRUE && (se||iid||band)){
+        stop("Arguments \'se\', \'iid\', \'band\' must be FALSE when \'diag\' is TRUE \n")
+    }
+    
   if(!is.null(newdata)){
       if(missing(times) || nTimes==0){
           stop("Time points at which to evaluate the predictions are missing \n")
@@ -268,24 +279,23 @@ predictCox <- function(object,
       etimes.max <- max(object.modelFrame[["stop"]])
   }
 
-  ## compute the baseline hazard
-  Lambda0 <- baseHaz_cpp(starttimes = object.modelFrame$start,
-                         stoptimes = object.modelFrame$stop,
-                         status = object.modelFrame$status,
-                         eXb = object.modelFrame$eXb,
-                         strata = object.modelFrame$strata.num,
-                         nPatients = object.n,
-                         nStrata = nStrata,
-                         emaxtimes = etimes.max,
-                         predtimes = times.sorted,
-                         cause = 1,
-                         Efron = (object.baseEstimator == "efron"))
-  
+    ## compute the baseline hazard
+    Lambda0 <- baseHaz_cpp(starttimes = object.modelFrame$start,
+                           stoptimes = object.modelFrame$stop,
+                           status = object.modelFrame$status,
+                           eXb = object.modelFrame$eXb,
+                           strata = object.modelFrame$strata.num,
+                           nPatients = object.n,
+                           nStrata = nStrata,
+                           emaxtimes = etimes.max,
+                           predtimes = times.sorted,
+                           cause = 1,
+                           Efron = (object.baseEstimator == "efron"))
+
   ## restaure strata levels
   if (is.strata == TRUE){
       Lambda0$strata <- factor(Lambda0$strata, levels = 0:(nStrata-1), labels = object.levelStrata)
   }
-
                                         # }}}
 
   
@@ -323,8 +333,7 @@ predictCox <- function(object,
     
                                         # {{{ predictions in new dataset
       out <- list()
-
-      ## *** reformat newdata (compute linear predictor and)
+      ## *** reformat newdata (compute linear predictor and strata)
       new.n <- NROW(newdata)
       newdata <- as.data.table(newdata)
       new.eXb <- exp(coxLP(object, data = newdata, center = FALSE))
@@ -339,58 +348,77 @@ predictCox <- function(object,
       ## *** subject specific hazard
       if (is.strata==FALSE){
           if ("hazard" %in% type){
-              out$hazard <- (new.eXb %o% Lambda0$hazard)
-              if (needOrder) out$hazard <- out$hazard[,oorder.times,drop=0L]
+              if(diag){
+                  out$hazard <- cbind(new.eXb * Lambda0$hazard[oorder.times])
+              }else{
+                  out$hazard <- (new.eXb %o% Lambda0$hazard)
+                  if (needOrder) out$hazard <- out$hazard[,oorder.times,drop=0L]
+              }
           }
           if ("cumhazard" %in% type || "survival" %in% type){
-              cumhazard <- new.eXb %o% Lambda0$cumhazard
-              if ("cumhazard" %in% type){
-                  if (needOrder)
-                      out$cumhazard <- cumhazard[,oorder.times,drop=0L]
-                  else
-                      out$cumhazard <- cumhazard
+              if(diag){
+                  cumhazard <- cbind(new.eXb * Lambda0$cumhazard[oorder.times])
+              }else{
+                  cumhazard <- new.eXb %o% Lambda0$cumhazard
               }
+              if ("cumhazard" %in% type){
+                  if (needOrder && (diag == FALSE)){
+                      out$cumhazard <- cumhazard[,oorder.times,drop=0L]
+                  }else {
+                      out$cumhazard <- cumhazard
+                  }
+              }
+              
               if ("survival" %in% type){
                   out$survival <- exp(-cumhazard)
-                  if (needOrder)
+                  if (needOrder && (diag == FALSE)){
                       out$survival <- out$survival[,oorder.times,drop=0L]
+                  }
               }
           }
       
     }else{ 
-      
       ## initialization
       if ("hazard" %in% type){
-        out$hazard <- matrix(0, nrow = new.n, ncol = nTimes)
+        out$hazard <- matrix(0, nrow = new.n, ncol = nTimes*(1-diag)+diag)
       }
       if ("cumhazard" %in% type){
-        out$cumhazard <- matrix(NA, nrow = new.n, ncol = nTimes)                
+        out$cumhazard <- matrix(NA, nrow = new.n, ncol = nTimes*(1-diag)+diag)                
       }
       if ("survival" %in% type){
-        out$survival <- matrix(NA, nrow = new.n, ncol = nTimes)               
+        out$survival <- matrix(NA, nrow = new.n, ncol = nTimes*(1-diag)+diag)               
       }
 
       ## loop across strata
-      for(S in new.levelStrata){
+      for(S in new.levelStrata){ ## S <- 1
         id.S <- which(Lambda0$strata==S)
         newid.S <- which(new.strata==S)
 
         if ("hazard" %in% type){
-            out$hazard[newid.S,] <- new.eXb[newid.S] %o% Lambda0$hazard[id.S]
-            if (needOrder)
-                out$hazard[newid.S,] <- out$hazard[newid.S,oorder.times,drop=0L]
+            if(diag){
+                out$hazard[newid.S] <- new.eXb[newid.S] * Lambda0$hazard[id.S][oorder.times[newid.S]]
+            }else{
+                out$hazard[newid.S,] <- new.eXb[newid.S] %o% Lambda0$hazard[id.S]
+                if (needOrder)
+                    out$hazard[newid.S,] <- out$hazard[newid.S,oorder.times,drop=0L]
+            }
         }
         if ("cumhazard" %in% type || "survival" %in% type){
-            cumhazard.S <-  new.eXb[newid.S] %o% Lambda0$cumhazard[id.S]
+            if(diag){
+                cumhazard.S <-  cbind(new.eXb[newid.S] * Lambda0$cumhazard[id.S][oorder.times[newid.S]])
+            }else{
+                cumhazard.S <-  new.eXb[newid.S] %o% Lambda0$cumhazard[id.S]
+            }
+
             if ("cumhazard" %in% type){
-                if (needOrder){
+                if (needOrder && (diag==FALSE)){
                     out$cumhazard[newid.S,] <- cumhazard.S[,oorder.times,drop=0L]
                 } else{
                     out$cumhazard[newid.S,] <- cumhazard.S
                 }
             }
             if ("survival" %in% type){
-                if (needOrder){
+                if (needOrder && (diag==FALSE)){
                     out$survival[newid.S,] <- exp(-cumhazard.S)[,oorder.times,drop=0L]
                 }else{
                     out$survival[newid.S,] <- exp(-cumhazard.S)
@@ -491,7 +519,7 @@ predictCox <- function(object,
                 }          
             }
         }      
-    }    
+    }
                                         # }}}
                                         # {{{ export 
 
@@ -499,7 +527,8 @@ predictCox <- function(object,
       add.list <- list(lastEventTime = etimes.max,
                        se = se,
                        band = band,
-                       type = type)
+                       type = type,
+                       diag = diag)
       if (keep.times==TRUE){
           add.list$times <- times
       }

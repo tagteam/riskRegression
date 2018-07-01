@@ -4,20 +4,20 @@
 \alias{predictCoxPL}
 \title{Computation of survival probabilities from Cox regression models using the product limit estimator.}
 \usage{
-predictCoxPL(object, newdata, times, type = c("cumhazard", "survival"),
-  keep.strata = TRUE, keep.infoVar = FALSE, ...)
+predictCoxPL(object, times, newdata = NULL, type = c("cumhazard",
+  "survival"), keep.strata = TRUE, keep.infoVar = FALSE, ...)
 }
 \arguments{
 \item{object}{The fitted Cox regression model object either
 obtained with \code{coxph} (survival package) or \code{cph}
 (rms package).}
 
+\item{times}{[numeric vector] Time points at which to return
+the estimated hazard/cumulative hazard/survival.}
+
 \item{newdata}{[data.frame or data.table]  Contain the values of the predictor variables
 defining subject specific predictions.
 Should have the same structure as the data set used to fit the \code{object}.}
-
-\item{times}{[numeric vector] Time points at which to return
-the estimated hazard/cumulative hazard/survival.}
 
 \item{type}{[character vector] the type of predicted value. Choices are \itemize{
 \item \code{"hazard"} the baseline hazard function when
@@ -70,5 +70,20 @@ predictCox(fitS, newdata = d, times = 1:5)
 
 ## product limit
 predictCoxPL(fitS, newdata = d, times = 1:5)
+
+#### fully stratified Cox model ####
+fitS <- coxph(Surv(time,event)~ 1,
+             data=d, ties="breslow", x = TRUE, y = TRUE)
+
+## product limit
+GS <- survfit(Surv(time,event)~1, data = d)
+range(predictCoxPL(fitS)$survival - GS$surv)
+
+fitS <- coxph(Surv(time,event)~ strata(X2),
+             data=d, ties="breslow", x = TRUE, y = TRUE)
+
+## product limit
+GS <- survfit(Surv(time,event)~X2, data = d)
+range(predictCoxPL(fitS)$survival - GS$surv)
 
 }

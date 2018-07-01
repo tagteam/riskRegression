@@ -23,7 +23,7 @@
 #' @param confint [logical] If \code{TRUE} compute and add the confidence intervals/bands to the output.
 #' They are computed applying the \code{confint} function to the output.
 #' @param average.iid [logical]. If \code{TRUE} add the average of the influence function over \code{newdata} to the output.
-#' @param product.limit [logical]. If true the survival is computed using the product limit estimator.
+#' @param product.limit [logical]. If \code{TRUE} the survival is computed using the product limit estimator.
 #' Otherwise the exponential approximation is used (i.e. exp(-cumulative hazard)).
 #' @param store.iid [character] Implementation used to estimate the influence function and the standard error.
 #' Can be \code{"full"} or \code{"minimal"}. 

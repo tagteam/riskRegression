@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Mar  3 2017 (09:28) 
 ## Version: 
-## Last-Updated: jun 17 2018 (19:33) 
+## Last-Updated: jun 27 2018 (15:27) 
 ##           By: Brice Ozenne
-##     Update #: 97
+##     Update #: 102
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -49,9 +49,19 @@ as.data.table.predictCox <- function(x, keep.rownames = FALSE, se = TRUE,...){
             out <- as.data.table(x[c("times",x$type)])
         }
     }else{
-        out <- data.table::rbindlist(lapply(1:length(x$times),function(tt){
+
+        if(x$diag){
+            n.times <- 1
+        }else{
+            n.times <- length(x$times)
+        }
+        out <- data.table::rbindlist(lapply(1:n.times,function(tt){
             ndtt=copy(nd)
-            nd[,times:=x$times[[tt]]]
+            if(x$diag){
+                nd[,times:=x$times]
+            }else{
+                nd[,times:=x$times[[tt]]]
+            }
             if (!is.null(x$strata))
                 nd[,strata:=x$strata]
             for (name in x$type){

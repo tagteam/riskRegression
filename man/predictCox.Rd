@@ -4,23 +4,23 @@
 \alias{predictCox}
 \title{Fast computation of survival probabilities, hazards and cumulative hazards from Cox regression models}
 \usage{
-predictCox(object, newdata = NULL, times, centered = TRUE,
+predictCox(object, times, newdata = NULL, centered = TRUE,
   type = c("cumhazard", "survival"), keep.strata = TRUE,
   keep.times = TRUE, keep.newdata = FALSE, keep.infoVar = FALSE,
   se = FALSE, band = FALSE, iid = FALSE, confint = (se + band) > 0,
-  average.iid = FALSE, store.iid = "full")
+  diag = FALSE, average.iid = FALSE, store.iid = "full")
 }
 \arguments{
 \item{object}{The fitted Cox regression model object either
 obtained with \code{coxph} (survival package) or \code{cph}
 (rms package).}
 
+\item{times}{[numeric vector] Time points at which to return
+the estimated hazard/cumulative hazard/survival.}
+
 \item{newdata}{[data.frame or data.table]  Contain the values of the predictor variables
 defining subject specific predictions.
 Should have the same structure as the data set used to fit the \code{object}.}
-
-\item{times}{[numeric vector] Time points at which to return
-the estimated hazard/cumulative hazard/survival.}
 
 \item{centered}{[logical] If \code{TRUE} return prediction at the
 mean values of the covariates \code{fit$mean}, if \code{FALSE}
@@ -60,6 +60,8 @@ covariates used to make the prediction in the output list.}
 
 \item{confint}{[logical] If \code{TRUE} compute and add the confidence intervals/bands to the output.
 They are computed applying the \code{confint} function to the output.}
+
+\item{diag}{[logical] If \code{TRUE} only compute the hazard/cumlative hazard/survival for the i-th row in dataset at the i-th time.}
 
 \item{average.iid}{[logical] If \code{TRUE} add the average of the influence function over \code{newdata} to the output.}
 
