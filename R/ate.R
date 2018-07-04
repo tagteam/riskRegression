@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Oct 23 2016 (08:53) 
 ## Version: 
-## last-updated: jun 13 2018 (15:52) 
+## last-updated: jul  4 2018 (13:21) 
 ##           By: Brice Ozenne
-##     Update #: 806
+##     Update #: 808
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -339,6 +339,17 @@ ate <- function(object,
                  paste(validClass, collapse = " ")," objects \n",
                  "set argument \'B\' to a positive integer to use a boostrap instead \n")
         }
+        if("CauseSpecificCox" %in% class(object)){
+            n.train <- coxN(object$models[[1]])
+        }else if("glm" %in% class(object)){
+            n.train <- stats::nobs(object)
+        }else{
+            n.train <- coxN(object)
+        }
+        if(n.train!=NROW(data)){
+            stop("Argument \'data\' must contain the dataset used to fit the object (when \'se\', \'band\', or \'iid\' is TRUE)\n")
+        }
+        
     }
     if(!is.null(treatment)){
         data[[treatment]] <- factor(data[[treatment]])
