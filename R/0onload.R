@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: jun 14 2018 (17:36) 
 ## Version: 
-## Last-Updated: jul  4 2018 (14:29) 
+## Last-Updated: jul  5 2018 (15:57) 
 ##           By: Brice Ozenne
-##     Update #: 8
+##     Update #: 10
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -35,13 +35,13 @@ survival_model.matrix <- function (object, data = NULL, contrast.arg = object$co
     }
     cluster <- attr(Terms, "specials")$cluster
     if (length(cluster)) {
-        temp <- untangle.specials(Terms, "cluster")
+        temp <- survival::untangle.specials(Terms, "cluster")
         dropterms <- temp$terms
     }
     else dropterms <- NULL
     attr(Terms, "intercept") <- 1
     adrop <- 0
-    stemp <- untangle.specials(Terms, "strata", 1)
+    stemp <- survival::untangle.specials(Terms, "strata", 1)
     if (length(stemp$vars) > 0) {
         hasinteractions <- FALSE
         for (i in stemp$vars) {

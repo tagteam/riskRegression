@@ -4,28 +4,29 @@
 \alias{ateRobust}
 \title{Compute the Average Treatment Effects using Double Robust Approach}
 \usage{
-ateRobust(data, formula.time, formula.censor, formula.treatment, times,
-  treatment, fitter.cox = "coxph", efficient = TRUE,
-  product.limit = FALSE, iid = FALSE)
+ateRobust(data, times, treatment, cause, type, formula.event, formula.censor,
+  formula.treatment, fitter = "coxph", product.limit = FALSE, iid = TRUE)
 }
 \arguments{
 \item{data}{[data.frame or data.table] Data set in which to evaluate the ATE.}
-
-\item{formula.time}{[formula] The Cox model for the event of interest. Typically \code{Surv(time,event)~treatment}.}
-
-\item{formula.censor}{[formula] The Cox model for the censoring. Typically \code{Surv(time,event==0)~treatment}.}
-
-\item{formula.treatment}{[formula] The logistic model for the treatment. Typically \code{treatment~1}.}
 
 \item{times}{[numeric] Time point at which to evaluate average treatment effects.}
 
 \item{treatment}{[character] Name of the treatment variable. Must be binary.}
 
-\item{fitter.cox}{[character] Routine to fit the Cox regression models.
-If \code{coxph} use \code{survival::coxph} else use \code{rms::cph}.}
+\item{cause}{[numeric/character] The cause of interest. Defaults to the first cause.}
 
-\item{efficient}{[logical] should the efficient estimates of IPW and AIPW be computed.
-Can be time consuming for large dataset.}
+\item{type}{[character] When set to \code{"survival"} uses a cox model for modeling the survival,
+otherwise when set to \code{"competing.risks"} uses a Cause Specific Cox model for modeling the absolute risk of the event.}
+
+\item{formula.event}{[formula] The Cox model for the event of interest. Typically \code{Surv(time,event)~treatment}.}
+
+\item{formula.censor}{[formula] The Cox model for the censoring. Typically \code{Surv(time,event==0)~treatment}.}
+
+\item{formula.treatment}{[formula] The logistic model for the treatment. Typically \code{treatment~1}.}
+
+\item{fitter}{[character] Routine to fit the Cox regression models.
+If \code{coxph} use \code{survival::coxph} else use \code{rms::cph}.}
 
 \item{product.limit}{[logical] If \code{TRUE} the survival is computed using the product limit estimator.
 Otherwise the exponential approximation is used (i.e. exp(-cumulative hazard)).}
@@ -60,7 +61,7 @@ beta <- 0.4
 
 ## check bias 
 set.seed(10)
-dt <- as.data.table(sim(mSimSurv, n = 1e4, p = c(alpha = alpha, beta = beta)))
+dt <- as.data.table(sim(mSimSurv, n = 1e3, p = c(alpha = alpha, beta = beta)))
 setkeyv(dt, c("a","w"))
 
 ## True value
@@ -69,33 +70,37 @@ psi.TRUE <- c("surv.0" = exp(-1*exp(alpha*0+beta*0))*0.5 + exp(-1*exp(alpha*0+be
 psi.TRUE
 
 ## Approximate true value
-dt[,.(surv = mean(eventtime>=1)),by = c("a")]
+dt[,.(surv = mean(eventtime>1)),by = c("a")]
 
-## Estimated value
-res <- ateRobust(data = dt,
-            formula.time = Surv(time, event) ~ strata(a,w),
+## Estimated using stratified Cox model
+res1 <- ateRobust(data = dt, type = "survival",
+            formula.event = Surv(time, event) ~ strata(a,w),
             formula.censor = Surv(time, event==0) ~ strata(a,w),
             formula.treatment = a ~ w,
             times = 1,
             treatment = "a",
-            efficient = FALSE,
-            product.limit = FALSE)
-res
+            product.limit = FALSE,
+            iid = TRUE)
+print(res1, efficient = TRUE, iid.full = TRUE)
+print(res1, efficient = TRUE, iid.full = FALSE)
+print(res1, efficient = FALSE, iid.full = TRUE)
+print(res1, efficient = FALSE, iid.full = FALSE)
 
-## check efficient estimator
-set.seed(10)
-dtRed <- dt[sample.int(n = .N, size = 1e3, replace = FALSE)]
-setkeyv(dtRed, c("a","w","time"))
-dtRed[,max(time), by = c("a","w")]
+if(FALSE){
+  e.cox <- coxph(Surv(time, event) ~ strata(a,w), data = dt, x = TRUE, y = TRUE)
+  ate(e.cox, data = dt, treatment = "a", times = 1)
+rbind(estimate = res1$ate.value[,"Gformula2"],
+      se = res1$ate.se[,"Gformula2"])
+}
 
-res <- ateRobust(data = dtRed,
-            formula.time = Surv(time, event) ~ strata(a,w), ## ~ a + w,##
-            formula.censor = Surv(time, event==0) ~ strata(a,w), ## ~ a + w,##
+## Estimate using Cox model
+res2 <- ateRobust(data = dt, type = "survival",
+            formula.event = Surv(time, event) ~ a + w,
+            formula.censor = Surv(time, event==0) ~ a + w,
             formula.treatment = a ~ w,
             times = 1,
             treatment = "a",
-            efficient = TRUE,
-            product.limit = TRUE)
-res
-
+            product.limit = FALSE,
+            iid = TRUE)
+res2
 }

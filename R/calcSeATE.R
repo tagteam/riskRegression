@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: apr  5 2018 (17:01) 
 ## Version: 
-## Last-Updated: jun 13 2018 (13:46) 
+## Last-Updated: jul  5 2018 (15:00) 
 ##           By: Brice Ozenne
-##     Update #: 270
+##     Update #: 275
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -75,30 +75,11 @@ calcSeATE <- function(object, data, times, cause,
                 attr(risk.i,"iid") <- -pred.i[["survival.iid"]]
             }
         }else if("glm" %in% class(object)){
-            risk.i <- cbind(predict(object, type = "response", newdata = data.i, se=FALSE))
-                
-            ## compute influence function of the coefficients using lava
-            iid.beta <- lava::iid(object)
-            newX <- model.matrix(object$formula, data.i)
-            if(object$family$link=="logit"){
-                ## 1/(1+exp(-Xbeta)) - risk.i
-                ## newX %*% coef(object) - Xbeta
-                Xbeta <- predict(object, type = "link", newdata = data.i, se=FALSE)
-                iid.pred <- sapply(1:n.obs, function(iObs){ ## iObs <- 1
-                    iid.beta %*% cbind(newX[iObs,]) * exp(-Xbeta[iObs])/(1+exp(-Xbeta[iObs]))^2
-                })                    
-            }else if(object$family$link=="identity"){
-                iid.pred <- apply(newX, 1, function(iRow){ ## iRow <- newX[1,]
-                    iid.beta %*% cbind(iRow)
-                })
-            }else {
-                stop("Cannot handle ",object$family$link," \n",
-                     "Only handle the following link function: identity, logit \n")
-            }
+            risk.i <- .predictGLM(object, newdata = data.i)
             if(average.iid){
-                attr(risk.i,"iid") <- rowMeans(iid.pred)
+                attr(risk.i,"iid") <- colMeans(attr(risk.i,"iid"))
             }else{
-                attr(risk.i,"iid") <- array(iid.pred, dim = c(NROW(iid.pred),1,NCOL(iid.pred)))
+                attr(risk.i,"iid") <- array(attr(risk.i,"iid"), dim = c(NROW(attr(risk.i,"iid")),1,NCOL(attr(risk.i,"iid"))))
             }
             ## se.pred sqrt(colSums(iid.pred^2))
         }
