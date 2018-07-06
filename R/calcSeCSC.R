@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: maj 27 2017 (21:23) 
 ## Version: 
-## last-updated: jul  6 2018 (14:21) 
+## last-updated: jul  6 2018 (17:06) 
 ##           By: Brice Ozenne
-##     Update #: 296
+##     Update #: 317
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -76,22 +76,21 @@ calcSeCSC <- function(object, cif, hazard, cumhazard, object.time, object.maxtim
                                         # {{{ prepare arguments
     nEtimes <- length(object.time)
     object.n <- NROW(object$iid[[1]]$IFbeta)
-        
-    out <- list()
-    if("se" %in% export){  
-        out$se <- matrix(NA, nrow = new.n, ncol = length(times))
-    }    
-    if("iid" %in% export){
-        out$iid <- array(NA, dim = c(new.n, length(times), object.n))
-    }
-    if("average.iid" %in% export){
-        out$average.iid <- matrix(0, nrow = object.n, ncol = length(times))
-    }
-                                        # }}}
- 
-  
+      
     if(store.iid == "minimal"){
         ## {{{ method = "minimal"
+        out <- list()
+        if("se" %in% export){  
+            out$se <- matrix(NA, nrow = new.n, ncol = length(times))
+        }    
+        if("iid" %in% export){
+            out$iid <- array(NA, dim = c(new.n, length(times), object.n))
+        }
+        if("average.iid" %in% export){
+            out$average.iid <- matrix(0, nrow = object.n, ncol = length(times))
+        }
+
+        
         object.modelFrame <- coxModelFrame(object$models[[cause]])
         object.modelFrame[, c("strata.num") := as.numeric(.SD$strata)-1]
         
@@ -193,67 +192,28 @@ calcSeCSC <- function(object, cif, hazard, cumhazard, object.time, object.maxtim
                                         # {{{ other method
         n.times <- length(times)
         sindex.times <- prodlim::sindex(object.time, eval.times = times)-1 ## i.e. -1 is before the first jump
-        
-        for(iObs in 1:new.n){
 
-            ## compute the individual specific influence function for the cumlative hazard and d(cumulative hazard)
-            iStrata <- new.strata[iObs,]        
-            iCumHazard <- rep(0, nEtimes)
-            iIFhazard1 <- NULL
-            iIFcumhazard <- matrix(0, nrow = object.n, ncol = nEtimes)
-            
-            for(iCause in 1:nCause){
+        for(iCause in 1:nCause){ ## remove attributes to have a list of matrices
+            attr(new.LPdata[[iCause]],"assign") <- NULL
+            attr(new.LPdata[[iCause]],"contrasts") <- NULL
+        }
 
-                if(nVar[iCause] > 0){
-                X_IFbeta <- tcrossprod(object$iid[[iCause]]$IFbeta,
-                                       new.LPdata[[iCause]][iObs,,drop=FALSE])
-                }
-                
-                if(surv.type == "hazard" || cause != iCause){                    
-                    ## Evaluate the influence function for the cumulative hazard based on the one of the cumulative baseline hazard
-                    if(nVar[iCause] == 0){
-                        iCumHazard <- iCumHazard + cumhazard[[iCause]][,iStrata[iCause]+1]
-                        iIFcumhazard <- iIFcumhazard + object$iid[[iCause]]$IFcumhazard[[iStrata[iCause]+1]]
-                    }else{
-                        iCumHazard <- iCumHazard + eXb[iObs,iCause] * cumhazard[[iCause]][,iStrata[iCause]+1]
-                        iIFcumhazard <- iIFcumhazard + eXb[iObs,iCause] * (object$iid[[iCause]]$IFcumhazard[[iStrata[iCause]+1]] + crossprod(t(X_IFbeta),cumhazard[[iCause]][,iStrata[iCause]+1]))
-
-                    }
-                }
-                
-                if(cause == iCause){
-                    ## Evaluate the influence function for the hazard based on the one of the baseline hazard
-                    if(nVar[iCause] == 0){
-                        iHazard1 <- hazard[[cause]][,iStrata[cause]+1]
-                        iIFhazard1 <- object$iid[[iCause]]$IFhazard[[iStrata[iCause]+1]]
-                    } else{
-                        iHazard1 <- eXb[iObs,iCause] * hazard[[cause]][,iStrata[cause]+1]
-                        iIFhazard1 <- eXb[iObs,iCause] * (object$iid[[iCause]]$IFhazard[[iStrata[iCause]+1]] + crossprod(t(X_IFbeta),hazard[[iCause]][,iStrata[iCause]+1]))
-                    }
-                }
-            }
-            
-            ## set to s-
-            nEtimes2 <- max(sindex.times)+1
-            resIF <- calcSeCif2_cpp(IFhazard = iIFhazard1, IFcumhazard = iIFcumhazard, 
-                                    hazard = iHazard1, cumHazard = iCumHazard,
-                                    timeIndex = sindex.times, nIndex = n.times, time = times, 
-                                    nObs = object.n, nJumpTime = nEtimes2, maxJumpTime = object.maxtime[iObs],
-                                    exportSE = "se" %in% export, exportIF = any(c("iid","average.iid") %in% export))
-            
-            ## export quantities of interest           
-            if("se" %in% export){
-                out$se[iObs,] <- resIF$se
-            }
-            if("iid" %in% export){
-                out$iid[iObs,,] <- t(resIF$iid)
-            }
-            if("average.iid" %in% export){
-                out$average.iid <- out$average.iid + resIF$iid/new.n
-            }
-            
-    }
-        # }}}
+        out <- calcSeCif2_cpp(ls_IFbeta = lapply(object$iid,"[[","IFbeta"),
+                              ls_X = new.LPdata,
+                              ls_cumhazard = cumhazard,
+                              ls_hazard = hazard,
+                              ls_IFcumhazard = lapply(object$iid,"[[","IFcumhazard"),
+                              ls_IFhazard = lapply(object$iid,"[[","IFhazard"),
+                              eXb = eXb,
+                              timeIndex = sindex.times, nIndex = n.times, time = times, 
+                              nObs = object.n, nJumpTime = nEtimes, maxJumpTime = object.maxtime,
+                              theCause = (cause-1), nCause = nCause, hazardType = (surv.type=="hazard"), nVar = nVar,
+                              nNewObs = new.n, strata = new.strata,
+                              exportSE = "se" %in% export, exportIF = "iid" %in% export, exportIFsum = "average.iid" %in% export)
+        if("iid" %in% export){
+            out$iid <- aperm(out$iid, c(1,3,2))
+        }
+                                        # }}}
     }
 
     return(out)
