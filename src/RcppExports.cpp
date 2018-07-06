@@ -115,6 +115,28 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// calcSeCif2_cpp
+List calcSeCif2_cpp(arma::mat IFhazard, arma::mat IFcumhazard, arma::vec hazard, arma::vec cumHazard, arma::vec timeIndex, int nIndex, arma::vec time, int nObs, int nJumpTime, double maxJumpTime, bool exportSE, bool exportIF);
+RcppExport SEXP _riskRegression_calcSeCif2_cpp(SEXP IFhazardSEXP, SEXP IFcumhazardSEXP, SEXP hazardSEXP, SEXP cumHazardSEXP, SEXP timeIndexSEXP, SEXP nIndexSEXP, SEXP timeSEXP, SEXP nObsSEXP, SEXP nJumpTimeSEXP, SEXP maxJumpTimeSEXP, SEXP exportSESEXP, SEXP exportIFSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::mat >::type IFhazard(IFhazardSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type IFcumhazard(IFcumhazardSEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type hazard(hazardSEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type cumHazard(cumHazardSEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type timeIndex(timeIndexSEXP);
+    Rcpp::traits::input_parameter< int >::type nIndex(nIndexSEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type time(timeSEXP);
+    Rcpp::traits::input_parameter< int >::type nObs(nObsSEXP);
+    Rcpp::traits::input_parameter< int >::type nJumpTime(nJumpTimeSEXP);
+    Rcpp::traits::input_parameter< double >::type maxJumpTime(maxJumpTimeSEXP);
+    Rcpp::traits::input_parameter< bool >::type exportSE(exportSESEXP);
+    Rcpp::traits::input_parameter< bool >::type exportIF(exportIFSEXP);
+    rcpp_result_gen = Rcpp::wrap(calcSeCif2_cpp(IFhazard, IFcumhazard, hazard, cumHazard, timeIndex, nIndex, time, nObs, nJumpTime, maxJumpTime, exportSE, exportIF));
+    return rcpp_result_gen;
+END_RCPP
+}
 // colCumSum
 NumericMatrix colCumSum(NumericMatrix x);
 RcppExport SEXP _riskRegression_colCumSum(SEXP xSEXP) {
@@ -421,6 +443,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_riskRegression_baseHaz_cpp", (DL_FUNC) &_riskRegression_baseHaz_cpp, 11},
     {"_riskRegression_calcSeHazard_cpp", (DL_FUNC) &_riskRegression_calcSeHazard_cpp, 24},
     {"_riskRegression_calcSeCif_cpp", (DL_FUNC) &_riskRegression_calcSeCif_cpp, 32},
+    {"_riskRegression_calcSeCif2_cpp", (DL_FUNC) &_riskRegression_calcSeCif2_cpp, 12},
     {"_riskRegression_colCumSum", (DL_FUNC) &_riskRegression_colCumSum, 1},
     {"_riskRegression_colSumsCrossprod", (DL_FUNC) &_riskRegression_colSumsCrossprod, 3},
     {"_riskRegression_quantileProcess_cpp", (DL_FUNC) &_riskRegression_quantileProcess_cpp, 6},

@@ -21,7 +21,7 @@ inline double calcIFhazard(double time,
 			   int p,
 			   bool hazard);
   
-// {{{ calcSeHazard_cpp : on the log scale
+// * calcSeHazard_cpp : on the log scale
 // [[Rcpp::export]]
 List calcSeHazard_cpp(const NumericVector& seqTau, // horizon time for the predictions
 		      const IntegerVector& indexTau, // position of the prediction times relatively to the event times in the strata
@@ -148,9 +148,8 @@ List calcSeHazard_cpp(const NumericVector& seqTau, // horizon time for the predi
 		      Named("iidsum_survival") = IFsum_survival,
                       Named("se") = SEcumhazard));
 }
-// }}}
 
-// {{{ calcSeCif_cpp
+// * calcSeCif_cpp
 // [[Rcpp::export]]
 List calcSeCif_cpp(const NumericVector& seqTau, // horizon time for the predictions
 		   const NumericVector& jumpTime, 
@@ -360,9 +359,8 @@ List calcSeCif_cpp(const NumericVector& seqTau, // horizon time for the predicti
 		      Named("iidsum") = IFsumrisk,
 		      Named("se") = SErisk));
 }
-// }}}
 
-// {{{ calcIFhazard
+// * calcIFhazard
 inline double calcIFhazard(double time,
 			   double sampleTime,			   
 			   const rowvec& IFbeta,
@@ -417,4 +415,79 @@ inline double calcIFhazard(double time,
 
   return(IF_hazard);    
 }
-// }}}
+
+// * calcSeCif2_cpp
+// [[Rcpp::export]]
+List calcSeCif2_cpp(arma::mat IFhazard, arma::mat IFcumhazard, 
+			 arma::vec hazard, arma::vec cumHazard,
+		         arma::vec timeIndex, int nIndex, arma::vec time,
+			 int nObs, int nJumpTime, double maxJumpTime,
+			 bool exportSE, bool exportIF){
+
+
+  double tempo;
+  
+   // initialize for export
+   arma::vec outSE;
+   if(exportSE){
+     outSE.resize(nIndex);
+     outSE.fill(NA_REAL);
+   }
+   arma::mat outIF;
+   if(exportIF){
+   	 outIF.resize(nObs,nIndex);
+         outIF.fill(NA_REAL);
+   }
+
+   // take care of the prediction times before the first jump
+   int iTau = 0;
+   while( (timeIndex[iTau] < 0) && (iTau < nIndex) ){
+     if(exportSE){
+       outSE[iTau] = 0;
+     }
+     if(exportIF){
+       outIF.col(iTau) = zeros<colvec>(nObs);
+     }
+     iTau++;
+   }
+   
+   // loop over time
+   arma::colvec IF_tempo;
+   arma::colvec cumIF_tempo = zeros<colvec>(nObs);
+   
+   for(int iTime=0; iTime<nJumpTime; iTime++){
+
+   // prepare IF
+     if(iTime==0){
+       IF_tempo = IFhazard.col(iTime);
+     }else{
+       // cumhazard is evaluated just before the jump
+       IF_tempo = (IFhazard.col(iTime) - IFcumhazard.col(iTime-1) * hazard[iTime]) * exp(-cumHazard[iTime-1]);
+     }
+      cumIF_tempo = cumIF_tempo + IF_tempo;
+
+   // store
+   while((iTime == timeIndex[iTau]) && (time[iTau] <= maxJumpTime)){
+     if(exportSE){
+       tempo = 0;
+       for(int iObs=0; iObs<nObs; iObs++){
+   	 tempo += pow(cumIF_tempo[iObs],2);
+       }
+       outSE[iTau] = sqrt(tempo);
+     }
+     if(exportIF){
+       outIF.col(iTau) = cumIF_tempo;
+     }
+     iTau++;
+     if(iTau == nIndex){break;}
+   }
+   if(iTau == nIndex){break;} // not necessary because nJumpTime should ensure that it is never triggered - so just for safety
+	
+   }
+
+   // export
+  return(List::create(Named("se") = outSE,
+		      Named("iid") = outIF));
+
+}
+

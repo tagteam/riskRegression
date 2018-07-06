@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Mar  3 2017 (09:28) 
 ## Version: 
-## Last-Updated: maj 31 2018 (16:11) 
+## Last-Updated: jul  6 2018 (13:59) 
 ##           By: Brice Ozenne
-##     Update #: 32
+##     Update #: 47
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -30,20 +30,25 @@
 as.data.table.predictCSC <- function(x, keep.rownames = FALSE, se = TRUE, ...){
     times=NULL
     
-  n.obs <- NROW(x[["absRisk"]])
-  nd <- data.table(observation = 1:n.obs)
-  if (!is.null(x$newdata)){
-    nd <- cbind(nd, x$newdata)
-  }
+    n.obs <- NROW(x[["absRisk"]])
+    nd <- data.table(observation = 1:n.obs)
+    if (!is.null(x$newdata)){
+        nd <- cbind(nd, x$newdata)
+    }
+    n.times <- NCOL(x$absRisk) 
         
-  out <- data.table::rbindlist(lapply(1:length(x$times),function(tt){
-    ndtt=copy(nd)
-    nd[,times:=x$times[[tt]]]
-    if (!is.null(x$strata))
-      nd[,strata:=x$strata]
-    ar <- cbind(absRisk= x[["absRisk"]][,tt])
+    out <- data.table::rbindlist(lapply(1:n.times,function(tt){
+        ndtt=copy(nd)
+        if(x$keep.times){
+            nd[,times:=x$times[tt]]
+        }
+        if (!is.null(x$strata)){
+            nd[,strata:=x$strata]
+        }
+        ar <- cbind(absRisk = x[["absRisk"]][,tt])
     
     vec.names <- c("absRisk")
+
     if (x$se==1L){
         if(se){
             ar <- cbind(ar,
@@ -57,19 +62,19 @@ as.data.table.predictCSC <- function(x, keep.rownames = FALSE, se = TRUE, ...){
                         )
         }
     }
-    if (x$band==1L){
-        if(!is.null(x$conf.level)){
-            ar <- cbind(ar,
-                        absRisk.quantileBand=x[["absRisk.quantileBand"]],
-                        absRisk.lowerBand=x[["absRisk.lowerBand"]][,tt],
-                        absRisk.upperBand=x[["absRisk.upperBand"]][,tt])
+
+        if (x$band==1L){
+            if(!is.null(x$conf.level)){
+                ar <- cbind(ar,
+                            absRisk.quantileBand=x[["absRisk.quantileBand"]],
+                            absRisk.lowerBand=x[["absRisk.lowerBand"]][,tt],
+                            absRisk.upperBand=x[["absRisk.upperBand"]][,tt])
+            }
         }
-    }
-    
-    ## setDT(tyc)
-    nd <- cbind(nd,ar)
-    nd   
-  }))    
+        ## setDT(tyc)
+        nd <- cbind(nd,ar)
+        nd   
+    }))    
   
   return(out)
   
