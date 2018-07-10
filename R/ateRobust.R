@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: jun 27 2018 (17:47) 
 ## Version: 
-## Last-Updated: jul  5 2018 (16:03) 
+## Last-Updated: jul 10 2018 (12:05) 
 ##           By: Brice Ozenne
-##     Update #: 383
+##     Update #: 394
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -23,9 +23,12 @@
 #' @name ateRobust
 #'
 #' @param data [data.frame or data.table] Data set in which to evaluate the ATE.
-#' @param formula.event [formula] The Cox model for the event of interest. Typically \code{Surv(time,event)~treatment}.
-#' @param formula.censor [formula] The Cox model for the censoring. Typically \code{Surv(time,event==0)~treatment}.
-#' @param formula.treatment [formula] The logistic model for the treatment. Typically \code{treatment~1}.
+#' @param formula.event [formula] Cox model for the event of interest (outcome model).
+#' Typically \code{Surv(time,event)~treatment}.
+#' @param formula.censor [formula] Cox model for the censoring (censoring model).
+#' Typically \code{Surv(time,event==0)~treatment}.
+#' @param formula.treatment [formula] Logistic regression for the treatment (propensity score model).
+#' Typically \code{treatment~1}.
 #' @param times [numeric] Time point at which to evaluate average treatment effects.
 #' @param treatment [character] Name of the treatment variable. Must be binary.
 #' @param fitter [character] Routine to fit the Cox regression models.
@@ -35,9 +38,15 @@
 #' @param cause [numeric/character] The cause of interest. Defaults to the first cause.
 #' @param type [character] When set to \code{"survival"} uses a cox model for modeling the survival,
 #' otherwise when set to \code{"competing.risks"} uses a Cause Specific Cox model for modeling the absolute risk of the event.
-#' @param iid [logical] If \code{TRUE} add the influence function to the output.
-#' For now the influence function is computed treating the survival probability, censoring probability,
-#' and probability of being treated as known.
+#' @param nuisance.iid [logical] If \code{TRUE} take into accound the uncertainty related to
+#' the estimation of outcome model and the propensity score model.
+#' The uncertainty related to the estimation of the censoring model is never accounted for.
+#'
+#' @details Argument \code{nuisance.iid}: the asymptotic distribution of the ATE
+#' when we estimate the nuisance parameters
+#' (parameters from the outcome/propensity score/censoring model)
+#' equals the one if we would know the nuisance parameters. Therefore in large sample size,
+#' the value of the argument \code{nuisance.iid} should not matter. Setting it to \code{FALSE} will save some computation time.
 #' 
 
 ## * ateRobust (example)
@@ -81,12 +90,11 @@
 #'             formula.treatment = a ~ w,
 #'             times = 1,
 #'             treatment = "a",
-#'             product.limit = FALSE,
-#'             iid = TRUE)
-#' print(res1, efficient = TRUE, iid.full = TRUE)
-#' print(res1, efficient = TRUE, iid.full = FALSE)
-#' print(res1, efficient = FALSE, iid.full = TRUE)
-#' print(res1, efficient = FALSE, iid.full = FALSE)
+#'             product.limit = FALSE)
+#' print(res1, efficient = TRUE, nuisance.iid = TRUE)
+#' print(res1, efficient = TRUE, nuisance.iid = FALSE)
+#' print(res1, efficient = FALSE, nuisance.iid = TRUE)
+#' print(res1, efficient = FALSE, nuisance.iid = FALSE)
 #'
 #' if(FALSE){
 #'   e.cox <- coxph(Surv(time, event) ~ strata(a,w), data = dt, x = TRUE, y = TRUE)
@@ -103,8 +111,13 @@
 #'             times = 1,
 #'             treatment = "a",
 #'             product.limit = FALSE,
-#'             iid = TRUE)
-#' res2
+#'             nuisance.iid = TRUE)
+#' 
+#' print(res2, efficient = TRUE, nuisance.iid = TRUE)
+#' print(res2, efficient = TRUE, nuisance.iid = FALSE)
+#' print(res2, efficient = FALSE, nuisance.iid = TRUE)
+#' print(res2, efficient = FALSE, nuisance.iid = FALSE)
+
 
 
 ## * ateRobust (code)
@@ -112,7 +125,7 @@
 #' @export
 ateRobust <- function(data, times, treatment, cause, type,
                       formula.event, formula.censor, formula.treatment, 
-                      fitter = "coxph", product.limit = FALSE, iid = TRUE){
+                      fitter = "coxph", product.limit = FALSE, nuisance.iid = TRUE){
 
     
     ## ** normalize arguments
@@ -167,15 +180,15 @@ ateRobust <- function(data, times, treatment, cause, type,
         coxMF <- coxModelFrame(model.event)
 
         ## [:change outcome:]
-        prediction.event <- do.call(predictor.cox, args = list(model.event, newdata = data, times = times, iid = iid))
-        prediction.event0 <- do.call(predictor.cox, args = list(model.event, newdata = data0, times = times, iid = iid))
-        prediction.event1 <- do.call(predictor.cox, args = list(model.event, newdata = data1, times = times, iid = iid))
+        prediction.event <- do.call(predictor.cox, args = list(model.event, newdata = data, times = times, iid = nuisance.iid))
+        prediction.event0 <- do.call(predictor.cox, args = list(model.event, newdata = data0, times = times, iid = nuisance.iid))
+        prediction.event1 <- do.call(predictor.cox, args = list(model.event, newdata = data1, times = times, iid = nuisance.iid))
 
         data[, c("prob.event") := prediction.event$survival[,1]]
         data[, c("prob.event0") := prediction.event0$survival[,1]]
         data[, c("prob.event1") := prediction.event1$survival[,1]]
 
-        if(iid){
+        if(nuisance.iid){
             iid.event0 <- prediction.event0$survival.iid[,1,]
             iid.event1 <- prediction.event1$survival.iid[,1,]
         }
@@ -186,9 +199,9 @@ ateRobust <- function(data, times, treatment, cause, type,
         coxMF <- coxModelFrame(model.event$models[[paste0("Cause ",model.event$theCause)]])
 
         ## [:change outcome:]
-        prediction.event <- predict(model.event, newdata = data, times = times, cause = cause, product.limit = product.limit, iid = iid)
-        prediction.event0 <- predict(model.event, newdata = data0, times = times, cause = cause, product.limit = product.limit, iid = iid)
-        prediction.event1 <- predict(model.event, newdata = data1, times = times, cause = cause, product.limit = product.limit, iid = iid)
+        prediction.event <- predict(model.event, newdata = data, times = times, cause = cause, product.limit = product.limit, iid = nuisance.iid)
+        prediction.event0 <- predict(model.event, newdata = data0, times = times, cause = cause, product.limit = product.limit, iid = nuisance.iid)
+        prediction.event1 <- predict(model.event, newdata = data1, times = times, cause = cause, product.limit = product.limit, iid = nuisance.iid)
 
         data[, c("prob.event") := 1-prediction.event$absRisk[,1]]
         data[, c("prob.event0") := 1-prediction.event0$absRisk[,1]]
@@ -202,7 +215,7 @@ ateRobust <- function(data, times, treatment, cause, type,
 
     ## ** Propensity score model: weights
     model.treatment <- do.call(glm, args = list(formula = formula.treatment, data = data, family = stats::binomial(link = "logit")))
-    if(iid){
+    if(nuisance.iid){
         prediction.treatment <- .predictGLM(model.treatment, newdata = data[1:10])
         iid.treatment <- attr(prediction.treatment, "iid")
         attr(prediction.treatment, "iid") <- NULL
@@ -242,7 +255,7 @@ ateRobust <- function(data, times, treatment, cause, type,
         .SD$prob.event1
     )] / n.obs
     ## 1-colSums(IF$Gformula)
-    if(iid){
+    if(nuisance.iid){
         IF$Gformula2 <- IF$Gformula + cbind(colMeans(iid.event0),
                                             colMeans(iid.event1))
     }
@@ -259,12 +272,14 @@ ateRobust <- function(data, times, treatment, cause, type,
                                          .SD$prob.event * .SD$Lterm * (.SD$treatment.bin) / (.SD$prob.treatment)
                                      )]/ sumW
 
-    if(iid){
+    if(nuisance.iid){
         weight.tempo0 <- data[,  .SD$treatment.bin * (.SD$status.tau==0) / .SD$prob.treatment^2]
         weight.tempo1 <- data[, (1-.SD$treatment.bin) * (.SD$status.tau==0) / (1-.SD$prob.treatment)^2]
         IPWadd <- - t(apply(iid.treatment,2,function(iCol){
             c(mean(weight.tempo0*iCol),mean(weight.tempo1*iCol))
         }))
+        ## colSums(IPWadd * data$weights * n.obs / sumW)
+        ## colSums(IPWadd)
         IF$IPWnaive2 <- IF$IPWnaive + IPWadd * data$weights * n.obs / sumW
         IF$IPWefficient2 <- IF$IPWefficient + IPWadd * data$weights * n.obs / sumW
     }
@@ -279,7 +294,7 @@ ateRobust <- function(data, times, treatment, cause, type,
                                               .SD$weights * .SD$prob.event1 * (1-.SD$treatment.bin/(.SD$prob.treatment))
                                           )]/ sumW
 
-    if(iid){
+    if(nuisance.iid){
         weightY.tempo0 <- data[, 1 - .SD$treatment.bin / .SD$prob.treatment]
         weightY.tempo1 <- data[, 1 - (1-.SD$treatment.bin) / (1-.SD$prob.treatment)]
 
@@ -322,14 +337,8 @@ ateRobust <- function(data, times, treatment, cause, type,
     }))
     rownames(out$ate.se) <- rownames(out$ate.value)
 
-    ## center influence function
-    ## if(iid){
-    ##     out$iid <- do.call(cbind, IF)
-    ##     colnames(out$iid) <- unlist(lapply(paste0(names(IF),"_"),paste0,paste0("surv.",level.treatment)))
-    ## }
-
     class(out) <- "ateRobust"
-    out$iid <- iid
+    out$nuisance.iid <- nuisance.iid
     return(out)
     
 

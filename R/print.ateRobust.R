@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: jul  5 2018 (15:28) 
 ## Version: 
-## Last-Updated: jul  5 2018 (16:03) 
+## Last-Updated: jul 10 2018 (12:02) 
 ##           By: Brice Ozenne
-##     Update #: 11
+##     Update #: 14
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -24,7 +24,7 @@
 #' @param digits [integer, >0] indicating the number of decimal places.
 #' @param efficient [logical] should the standard errors be corrected to improve efficiency
 #' in presence of censoring.
-#' @param iid.full [logical] should the standard errors
+#' @param nuisance.iid [logical] should the standard errors
 #' accounting for the uncertainty in the outcome and propensity score models be output?
 #' @param ... Passed to print.
 #' 
@@ -34,18 +34,18 @@
 #' @rdname print.ateRobust
 #' @method print ateRobust
 #' @export
-print.ateRobust <- function(x, digits = 3, efficient = TRUE, iid.full = x$iid,...){
+print.ateRobust <- function(x, digits = 3, efficient = TRUE, nuisance.iid = x$nuisance.iid,...){
 
-    if(iid.full && (x$iid == FALSE)){
-        stop("Argument \'iid.full\' must be FALSE when ateRobust has been called using \'iid\'=FALSE \n")
+    if(nuisance.iid && (x$nuisance.iid == FALSE)){
+        stop("Argument \'nuisance.iid\' must be FALSE when ateRobust has been called using \'iid\'=FALSE \n")
     }
 
     ## columns to keep
-    if(efficient && iid.full){
+    if(efficient && nuisance.iid){
         keep.cols <- c("Gformula2","IPWefficient2","AIPWefficient2")
     }else if(efficient){
         keep.cols <- c("Gformula","IPWefficient","AIPWefficient")
-    }else if(iid.full){
+    }else if(nuisance.iid){
         keep.cols <- c("Gformula2","IPWnaive2","AIPWnaive2")
     }else{
         keep.cols <- c("Gformula","IPWnaive","AIPWnaive")

@@ -5,7 +5,8 @@
 \title{Compute the Average Treatment Effects using Double Robust Approach}
 \usage{
 ateRobust(data, times, treatment, cause, type, formula.event, formula.censor,
-  formula.treatment, fitter = "coxph", product.limit = FALSE, iid = TRUE)
+  formula.treatment, fitter = "coxph", product.limit = FALSE,
+  nuisance.iid = TRUE)
 }
 \arguments{
 \item{data}{[data.frame or data.table] Data set in which to evaluate the ATE.}
@@ -19,11 +20,14 @@ ateRobust(data, times, treatment, cause, type, formula.event, formula.censor,
 \item{type}{[character] When set to \code{"survival"} uses a cox model for modeling the survival,
 otherwise when set to \code{"competing.risks"} uses a Cause Specific Cox model for modeling the absolute risk of the event.}
 
-\item{formula.event}{[formula] The Cox model for the event of interest. Typically \code{Surv(time,event)~treatment}.}
+\item{formula.event}{[formula] Cox model for the event of interest (outcome model).
+Typically \code{Surv(time,event)~treatment}.}
 
-\item{formula.censor}{[formula] The Cox model for the censoring. Typically \code{Surv(time,event==0)~treatment}.}
+\item{formula.censor}{[formula] Cox model for the censoring (censoring model).
+Typically \code{Surv(time,event==0)~treatment}.}
 
-\item{formula.treatment}{[formula] The logistic model for the treatment. Typically \code{treatment~1}.}
+\item{formula.treatment}{[formula] Logistic regression for the treatment (propensity score model).
+Typically \code{treatment~1}.}
 
 \item{fitter}{[character] Routine to fit the Cox regression models.
 If \code{coxph} use \code{survival::coxph} else use \code{rms::cph}.}
@@ -31,14 +35,21 @@ If \code{coxph} use \code{survival::coxph} else use \code{rms::cph}.}
 \item{product.limit}{[logical] If \code{TRUE} the survival is computed using the product limit estimator.
 Otherwise the exponential approximation is used (i.e. exp(-cumulative hazard)).}
 
-\item{iid}{[logical] If \code{TRUE} add the influence function to the output.
-For now the influence function is computed treating the survival probability, censoring probability,
-and probability of being treated as known.}
+\item{nuisance.iid}{[logical] If \code{TRUE} take into accound the uncertainty related to
+the estimation of outcome model and the propensity score model.
+The uncertainty related to the estimation of the censoring model is never accounted for.}
 }
 \description{
 Compute the average treatment effect (ATE) for a Cox regression model using five different approaches:
 G-formula, inverse probability weighting (IPW), augmented inverse probability weighting (AIPW).
 For IPW and AIPW both the non-efficient and efficient estimates are output. Experimental!
+}
+\details{
+Argument \code{nuisance.iid}: the asymptotic distribution of the ATE
+when we estimate the nuisance parameters
+(parameters from the outcome/propensity score/censoring model)
+equals the one if we would know the nuisance parameters. Therefore in large sample size,
+the value of the argument \code{nuisance.iid} should not matter. Setting it to \code{FALSE} will save some computation time.
 }
 \examples{
 
@@ -79,12 +90,11 @@ res1 <- ateRobust(data = dt, type = "survival",
             formula.treatment = a ~ w,
             times = 1,
             treatment = "a",
-            product.limit = FALSE,
-            iid = TRUE)
-print(res1, efficient = TRUE, iid.full = TRUE)
-print(res1, efficient = TRUE, iid.full = FALSE)
-print(res1, efficient = FALSE, iid.full = TRUE)
-print(res1, efficient = FALSE, iid.full = FALSE)
+            product.limit = FALSE)
+print(res1, efficient = TRUE, nuisance.iid = TRUE)
+print(res1, efficient = TRUE, nuisance.iid = FALSE)
+print(res1, efficient = FALSE, nuisance.iid = TRUE)
+print(res1, efficient = FALSE, nuisance.iid = FALSE)
 
 if(FALSE){
   e.cox <- coxph(Surv(time, event) ~ strata(a,w), data = dt, x = TRUE, y = TRUE)
@@ -101,6 +111,10 @@ res2 <- ateRobust(data = dt, type = "survival",
             times = 1,
             treatment = "a",
             product.limit = FALSE,
-            iid = TRUE)
-res2
+            nuisance.iid = TRUE)
+
+print(res2, efficient = TRUE, nuisance.iid = TRUE)
+print(res2, efficient = TRUE, nuisance.iid = FALSE)
+print(res2, efficient = FALSE, nuisance.iid = TRUE)
+print(res2, efficient = FALSE, nuisance.iid = FALSE)
 }

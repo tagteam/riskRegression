@@ -5,7 +5,7 @@
 \title{Print Average Treatment Effect}
 \usage{
 \method{print}{ateRobust}(x, digits = 3, efficient = TRUE,
-  iid.full = x$iid, ...)
+  nuisance.iid = x$nuisance.iid, ...)
 }
 \arguments{
 \item{x}{object obtained with the function \code{ateRobust}.}
@@ -15,7 +15,7 @@
 \item{efficient}{[logical] should the standard errors be corrected to improve efficiency
 in presence of censoring.}
 
-\item{iid.full}{[logical] should the standard errors
+\item{nuisance.iid}{[logical] should the standard errors
 accounting for the uncertainty in the outcome and propensity score models be output?}
 
 \item{...}{Passed to print.}
