@@ -458,6 +458,16 @@ List calcSeCif2_cpp(std::vector<arma::mat> ls_IFbeta, std::vector<arma::mat> ls_
      outIFsum.fill(NA_REAL);
    }
 
+   // ** prepare arguments
+   std::vector<arma::mat> ls_tcumhazard(nCause);
+   std::vector<arma::mat> ls_thazard(nCause);
+   for(int iCause=0; iCause<nCause; iCause ++){
+           if(nVar[iCause] > 0){
+	     ls_thazard[iCause] = ls_hazard[iCause].t();
+             ls_tcumhazard[iCause] = ls_cumhazard[iCause].t();
+	   }
+   }
+   
    // ** take care of the prediction times before the first jump
    int iTau = 0;
    // Rcout << "1";
@@ -498,7 +508,8 @@ List calcSeCif2_cpp(std::vector<arma::mat> ls_IFbeta, std::vector<arma::mat> ls_
        if(hazardType || (iCause != theCause)){
 	   if(nVar[iCause]>0){
 	        cumhazard += ieXb * ls_cumhazard[iCause].col(iStrataCause);
-	        IFcumhazard += ieXb * (ls_IFcumhazard[iCause][iStrataCause] + X_IFbeta * (ls_cumhazard[iCause].col(iStrataCause)).t());
+	        // IFcumhazard += ieXb * (ls_IFcumhazard[iCause][iStrataCause] + X_IFbeta * ls_cumhazard[iCause].col(iStrataCause).t());
+	        IFcumhazard += ieXb * (ls_IFcumhazard[iCause][iStrataCause] + X_IFbeta * ls_tcumhazard[iCause].row(iStrataCause));
 	   }else{
 		  cumhazard += ls_cumhazard[iCause].col(iStrataCause);
 		  IFcumhazard += ls_IFcumhazard[iCause][iStrataCause];
@@ -509,7 +520,8 @@ List calcSeCif2_cpp(std::vector<arma::mat> ls_IFbeta, std::vector<arma::mat> ls_
        if(iCause == theCause){
            if(nVar[iCause] > 0){
                hazard = ieXb * ls_hazard[iCause].col(iStrataCause);
-	       IFhazard = ieXb * (ls_IFhazard[iCause][iStrataCause] + X_IFbeta * (ls_hazard[iCause].col(iStrataCause)).t());
+	       // IFhazard = ieXb * (ls_IFhazard[iCause][iStrataCause] + X_IFbeta * ls_hazard[iCause].col(iStrataCause).t());
+	       IFhazard = ieXb * (ls_IFhazard[iCause][iStrataCause] + X_IFbeta * ls_thazard[iCause].row(iStrataCause));
            } else{
 	       hazard = ls_hazard[iCause].col(iStrataCause);
 	       IFhazard = ls_IFhazard[iCause][iStrataCause];
@@ -518,7 +530,7 @@ List calcSeCif2_cpp(std::vector<arma::mat> ls_IFbeta, std::vector<arma::mat> ls_
    }
      
    // ** loop over time
-   cumIF_tempo = zeros<colvec>(nObs);
+   cumIF_tempo = zeros<colvec>(nObs);   
 
    for(int iTime=0; iTime<nJumpTime; iTime++){
                // Rcout << "5 " ;
@@ -555,7 +567,7 @@ List calcSeCif2_cpp(std::vector<arma::mat> ls_IFbeta, std::vector<arma::mat> ls_
      if(iiTau == nIndex){break;}
    }
    // Rcout << "-end " << endl;
- if(iiTau == nIndex){break;} // not necessary because nJumpTime should ensure that it is never triggered - so just for safety
+   if(iiTau == nIndex){break;} // not necessary because nJumpTime should ensure that it is never triggered - so just for safety
 
    }
    // Rcout << "endend" << endl;	
