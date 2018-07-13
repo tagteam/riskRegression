@@ -349,9 +349,9 @@ predictCox <- function(object,
       if (is.strata==FALSE){
           if(diag){
               if(needOrder){
-                  iTimes <- prodlim::sindex(jump.times = Lambda0$times, eval.times = times[oorder.times])
+                  iTimes <- prodlim::sindex(jump.times = Lambda0$times, eval.times = times.sorted[oorder.times])
               }else{
-                  iTimes <- prodlim::sindex(jump.times = Lambda0$times, eval.times = times)
+                  iTimes <- prodlim::sindex(jump.times = Lambda0$times, eval.times = times.sorted)
               }                  
           }
           
@@ -395,9 +395,9 @@ predictCox <- function(object,
               newid.S <- which(new.strata==S)
               if(diag){
                   if(needOrder){
-                      iSTimes <- prodlim::sindex(jump.times = Lambda0$times[id.S], eval.times = times[oorder.times[newid.S]])
+                      iSTimes <- prodlim::sindex(jump.times = Lambda0$times[id.S], eval.times = times.sorted[oorder.times[newid.S]])
                   }else{
-                      iSTimes <- prodlim::sindex(jump.times = Lambda0$times[id.S], eval.times = times[newid.S])
+                      iSTimes <- prodlim::sindex(jump.times = Lambda0$times[id.S], eval.times = times.sorted[newid.S])
                   }                  
               }
         

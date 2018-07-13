@@ -4,16 +4,14 @@
 \alias{ateRobust}
 \title{Compute the Average Treatment Effects using Double Robust Approach}
 \usage{
-ateRobust(data, times, treatment, cause, type, formula.event, formula.censor,
+ateRobust(data, times, cause, type, formula.event, formula.censor,
   formula.treatment, fitter = "coxph", product.limit = FALSE,
-  nuisance.iid = TRUE)
+  nuisance.iid = TRUE, na.rm = FALSE)
 }
 \arguments{
 \item{data}{[data.frame or data.table] Data set in which to evaluate the ATE.}
 
 \item{times}{[numeric] Time point at which to evaluate average treatment effects.}
-
-\item{treatment}{[character] Name of the treatment variable. Must be binary.}
 
 \item{cause}{[numeric/character] The cause of interest. Defaults to the first cause.}
 
@@ -38,6 +36,8 @@ Otherwise the exponential approximation is used (i.e. exp(-cumulative hazard)).}
 \item{nuisance.iid}{[logical] If \code{TRUE} take into accound the uncertainty related to
 the estimation of outcome model and the propensity score model.
 The uncertainty related to the estimation of the censoring model is never accounted for.}
+
+\item{na.rm}{[logical] If \code{TRUE} ignore observations whose influence function is NA.}
 }
 \description{
 Compute the average treatment effect (ATE) for a Cox regression model using five different approaches:
@@ -56,6 +56,8 @@ the value of the argument \code{nuisance.iid} should not matter. Setting it to \
 library(survival)
 library(lava)
 library(data.table)
+
+#### Survival ####
 
 ## generative model
 mSimSurv <- lava::lvm()
@@ -89,7 +91,6 @@ res1 <- ateRobust(data = dt, type = "survival",
             formula.censor = Surv(time, event==0) ~ strata(a,w),
             formula.treatment = a ~ w,
             times = 1,
-            treatment = "a",
             product.limit = FALSE)
 print(res1, efficient = TRUE, nuisance.iid = TRUE)
 print(res1, efficient = TRUE, nuisance.iid = FALSE)
@@ -109,7 +110,6 @@ res2 <- ateRobust(data = dt, type = "survival",
             formula.censor = Surv(time, event==0) ~ a + w,
             formula.treatment = a ~ w,
             times = 1,
-            treatment = "a",
             product.limit = FALSE,
             nuisance.iid = TRUE)
 
@@ -117,4 +117,54 @@ print(res2, efficient = TRUE, nuisance.iid = TRUE)
 print(res2, efficient = TRUE, nuisance.iid = FALSE)
 print(res2, efficient = FALSE, nuisance.iid = TRUE)
 print(res2, efficient = FALSE, nuisance.iid = FALSE)
+
+#### Competing risks ####
+set.seed(10)
+n <- 1e3
+
+## simulate data
+alphaE.X <- 2
+alphaCR.X <- 1
+alphaE.Y <- 3
+alphaCR.Y <- 2
+
+set.seed(10)
+df <- rbind(data.frame(time1 = rexp(n, rate = alphaE.X), time2 = rexp(n, rate = alphaCR.X), group = "1"),
+            data.frame(time1 = rexp(n, rate = alphaE.Y), time2 = rexp(n, rate = alphaCR.Y), group = "2"))
+df$time <- pmin(df$time1,df$time2) ## first event
+df$event <- (df$time2<df$time1)+1 ## type of event
+df$eventC <- df$event
+df$eventC[rbinom(n, size = 1, prob = 0.2)==1] <- 0
+
+## true value
+tau <- 2
+c(CIF.X = alphaE.X/(alphaE.X+alphaCR.X)*(1-exp(-(alphaE.X+alphaCR.X)*(tau))),
+  CIF.Y = alphaE.Y/(alphaE.Y+alphaCR.Y)*(1-exp(-(alphaE.Y+alphaCR.Y)*(tau))))
+
+## estimating using a CSC (no censoring)
+tapply(df$time,df$group,max)
+
+resCR <- ateRobust(data = df, type = "competing.risks",
+            formula.event = Hist(time, event) ~ group, ## strata(group),
+            formula.censor = Surv(time, event==0) ~ group,## strata(group),
+            formula.treatment = group ~ 1,
+            times = tau,
+            nuisance.iid = FALSE,
+            product.limit = FALSE,
+            cause = 1)
+resCR
+
+
+## estimating using a CSC (censoring)
+resCRC <- ateRobust(data = df, type = "competing.risks",
+            formula.event = Hist(time, eventC) ~ group, ## strata(group),
+            formula.censor = Surv(time, eventC==0) ~ group,## strata(group),
+            formula.treatment = group ~ 1,
+            times = tau,
+            nuisance.iid = FALSE,
+            product.limit = FALSE,
+            cause = 1)
+resCRC
+
+
 }

@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: jun 27 2018 (17:47) 
 ## Version: 
-## Last-Updated: jul 10 2018 (12:05) 
+## Last-Updated: jul 13 2018 (17:35) 
 ##           By: Brice Ozenne
-##     Update #: 394
+##     Update #: 478
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -30,7 +30,6 @@
 #' @param formula.treatment [formula] Logistic regression for the treatment (propensity score model).
 #' Typically \code{treatment~1}.
 #' @param times [numeric] Time point at which to evaluate average treatment effects.
-#' @param treatment [character] Name of the treatment variable. Must be binary.
 #' @param fitter [character] Routine to fit the Cox regression models.
 #' If \code{coxph} use \code{survival::coxph} else use \code{rms::cph}.
 #' @param product.limit [logical] If \code{TRUE} the survival is computed using the product limit estimator.
@@ -41,6 +40,7 @@
 #' @param nuisance.iid [logical] If \code{TRUE} take into accound the uncertainty related to
 #' the estimation of outcome model and the propensity score model.
 #' The uncertainty related to the estimation of the censoring model is never accounted for.
+#' @param na.rm [logical] If \code{TRUE} ignore observations whose influence function is NA.
 #'
 #' @details Argument \code{nuisance.iid}: the asymptotic distribution of the ATE
 #' when we estimate the nuisance parameters
@@ -56,6 +56,8 @@
 #' library(survival)
 #' library(lava)
 #' library(data.table)
+#'
+#' #### Survival ####
 #' 
 #' ## generative model
 #' mSimSurv <- lava::lvm()
@@ -89,7 +91,6 @@
 #'             formula.censor = Surv(time, event==0) ~ strata(a,w),
 #'             formula.treatment = a ~ w,
 #'             times = 1,
-#'             treatment = "a",
 #'             product.limit = FALSE)
 #' print(res1, efficient = TRUE, nuisance.iid = TRUE)
 #' print(res1, efficient = TRUE, nuisance.iid = FALSE)
@@ -109,7 +110,6 @@
 #'             formula.censor = Surv(time, event==0) ~ a + w,
 #'             formula.treatment = a ~ w,
 #'             times = 1,
-#'             treatment = "a",
 #'             product.limit = FALSE,
 #'             nuisance.iid = TRUE)
 #' 
@@ -117,15 +117,65 @@
 #' print(res2, efficient = TRUE, nuisance.iid = FALSE)
 #' print(res2, efficient = FALSE, nuisance.iid = TRUE)
 #' print(res2, efficient = FALSE, nuisance.iid = FALSE)
+#'
+#' #### Competing risks ####
+#' set.seed(10)
+#' n <- 1e3
+#' 
+#' ## simulate data
+#' alphaE.X <- 2
+#' alphaCR.X <- 1
+#' alphaE.Y <- 3
+#' alphaCR.Y <- 2
+#'
+#' set.seed(10)
+#' df <- rbind(data.frame(time1 = rexp(n, rate = alphaE.X), time2 = rexp(n, rate = alphaCR.X), group = "1"),
+#'             data.frame(time1 = rexp(n, rate = alphaE.Y), time2 = rexp(n, rate = alphaCR.Y), group = "2"))
+#' df$time <- pmin(df$time1,df$time2) ## first event
+#' df$event <- (df$time2<df$time1)+1 ## type of event
+#' df$eventC <- df$event
+#' df$eventC[rbinom(n, size = 1, prob = 0.2)==1] <- 0
+#' 
+#' ## true value
+#' tau <- 2
+#' c(CIF.X = alphaE.X/(alphaE.X+alphaCR.X)*(1-exp(-(alphaE.X+alphaCR.X)*(tau))),
+#'   CIF.Y = alphaE.Y/(alphaE.Y+alphaCR.Y)*(1-exp(-(alphaE.Y+alphaCR.Y)*(tau))))
+#'
+#' ## estimating using a CSC (no censoring)
+#' tapply(df$time,df$group,max)
+#' 
+#' resCR <- ateRobust(data = df, type = "competing.risks",
+#'             formula.event = Hist(time, event) ~ group, ## strata(group),
+#'             formula.censor = Surv(time, event==0) ~ group,## strata(group),
+#'             formula.treatment = group ~ 1,
+#'             times = tau,
+#'             nuisance.iid = FALSE,
+#'             product.limit = FALSE,
+#'             cause = 1)
+#' resCR
+#'
+#'
+#' ## estimating using a CSC (censoring)
+#' resCRC <- ateRobust(data = df, type = "competing.risks",
+#'             formula.event = Hist(time, eventC) ~ group, ## strata(group),
+#'             formula.censor = Surv(time, eventC==0) ~ group,## strata(group),
+#'             formula.treatment = group ~ 1,
+#'             times = tau,
+#'             nuisance.iid = FALSE,
+#'             product.limit = FALSE,
+#'             cause = 1)
+#' resCRC
+#'
+#'
 
 
 
 ## * ateRobust (code)
 #' @rdname ateRobust
 #' @export
-ateRobust <- function(data, times, treatment, cause, type,
+ateRobust <- function(data, times, cause, type,
                       formula.event, formula.censor, formula.treatment, 
-                      fitter = "coxph", product.limit = FALSE, nuisance.iid = TRUE){
+                      fitter = "coxph", product.limit = FALSE, nuisance.iid = TRUE, na.rm = FALSE){
 
     
     ## ** normalize arguments
@@ -138,6 +188,7 @@ ateRobust <- function(data, times, treatment, cause, type,
     if(length(times)!=1){
         stop("Argument \'times\' must have length 1 \n")
     }
+    treatment <- all.vars(formula.treatment)[1]
     if(treatment %in% names(data) == FALSE){
         stop("Variable \"",treatment,"\" not found in data \n")
     }
@@ -195,23 +246,30 @@ ateRobust <- function(data, times, treatment, cause, type,
         
 
     }else if(type=="competing.risks"){
-        model.event <- CSC(formula.event, data = data, fitter = fitter, cause = cause)
-        coxMF <- coxModelFrame(model.event$models[[paste0("Cause ",model.event$theCause)]])
+        model.event <- CSC(formula.event, data = data, fitter = fitter, cause = cause, surv.type = "survival")
+        coxMF <- unclass(model.event$response)
 
         ## [:change outcome:]
         prediction.event <- predict(model.event, newdata = data, times = times, cause = cause, product.limit = product.limit, iid = nuisance.iid)
         prediction.event0 <- predict(model.event, newdata = data0, times = times, cause = cause, product.limit = product.limit, iid = nuisance.iid)
         prediction.event1 <- predict(model.event, newdata = data1, times = times, cause = cause, product.limit = product.limit, iid = nuisance.iid)
 
-        data[, c("prob.event") := 1-prediction.event$absRisk[,1]]
-        data[, c("prob.event0") := 1-prediction.event0$absRisk[,1]]
-        data[, c("prob.event1") := 1-prediction.event1$absRisk[,1]]
+        data[, c("prob.event") := prediction.event$absRisk[,1]]
+        data[, c("prob.event0") := prediction.event0$absRisk[,1]]
+        data[, c("prob.event1") := prediction.event1$absRisk[,1]]
     }
 
     ## truncate at times
-    data[,c("time.tau") := pmin(coxMF$stop,times)]
-    data[,c("status.tau") := (coxMF$status==1)*(coxMF$stop<=times) - (coxMF$status==0)*(coxMF$stop<times)]    
-    ## -1 censored, 0 at risk, 1 event
+    if(type == "survival"){
+        data[,c("time.tau") := pmin(coxMF$stop,times)]
+        data[,c("status.tau") := (coxMF$stop>times) - (coxMF$status==0)*(coxMF$stop<times)]        
+        ## -1 censored, 0 event, 1 survival
+    }else if(type=="competing.risks"){
+        data[,c("time.tau") := pmin(coxMF[,"time"],times)]
+        data[,c("status.tau") := (coxMF[,"event"]==1)*(coxMF[,"time"]<=times) - (coxMF[,"status"]==0)*(coxMF[,"time"]<times)]
+        ## -1 censored, 0 survival or death (i.e. no event), 1 event
+    }
+    ## table(data$status.tau)
 
     ## ** Propensity score model: weights
     model.treatment <- do.call(glm, args = list(formula = formula.treatment, data = data, family = stats::binomial(link = "logit")))
@@ -225,13 +283,12 @@ ateRobust <- function(data, times, treatment, cause, type,
     data[, c("prob.treatment") := prediction.treatment[,1]]
 
     ## ** Censoring model: weights
-    if(all(coxMF$status==1)){
+    ## fit model
+    model.censor <- suppressWarnings(do.call(fitter, args = list(formula = formula.censor, data = data, x = TRUE, y = TRUE))) ## , no.opt = TRUE
+    if(model.censor$nevent==0){
         message("no censoring")
-        model.censor <- NULL
         data[,c("prob.censoring") := 1]
     }else{
-        ## fit model
-        model.censor <- do.call(fitter, args = list(formula = formula.censor, data = data, x = TRUE, y = TRUE)) ## , no.opt = TRUE
         ## survival = P[C>min(T,tau)] = P[Delta(min(T,tau))==1] - ok
         data[,c("prob.censoring") := do.call(predictor.cox, args = list(model.censor, newdata = data, times = data$time.tau-(1e-10), diag = TRUE))$survival[,1]]
     }
@@ -241,10 +298,14 @@ ateRobust <- function(data, times, treatment, cause, type,
 
     ## ** correction for efficiency
     ## data is updated within the function .calcLterm
-    .calcLterm(data = data, data0 = data0, data1 = data1,
-               n.obs = n.obs, times = times, type = type, cause = cause,
-               model.censor = model.censor, model.event = model.event,
-               predictor.cox = predictor.cox, product.limit = product.limit)
+    if(model.censor$nevent==0){
+        data[,c("Lterm") := 0]
+    }else{
+        .calcLterm(data = data, data0 = data0, data1 = data1,
+                   n.obs = n.obs, times = times, type = type, cause = cause,
+                   model.censor = model.censor, model.event = model.event,
+                   predictor.cox = predictor.cox, product.limit = product.limit)
+    }
     
     ## ** Compute parameter of interest
     IF <- list()
@@ -260,21 +321,24 @@ ateRobust <- function(data, times, treatment, cause, type,
                                             colMeans(iid.event1))
     }
     ## *** IPW
-    ## (status.tau==0) : still at risk
-    ## [:change outcome:]
     IF$IPWnaive <- data[,cbind(
-        .SD$weights * (.SD$status.tau == 0) * (1-.SD$treatment.bin) / (1-.SD$prob.treatment),
-        .SD$weights * (.SD$status.tau == 0) * (.SD$treatment.bin) / (.SD$prob.treatment)
+        .SD$weights * (.SD$status.tau == 1) * (1-.SD$treatment.bin) / (1-.SD$prob.treatment),
+        .SD$weights * (.SD$status.tau == 1) * (.SD$treatment.bin) / (.SD$prob.treatment)
     )]/ sumW
 
+    ## colSums(IF$IPWnaive)
+    ## table(data$prob.event)
+    ## table(data$prob.treatment)
+    ## data[,mean(Lterm)]
+    
     IF$IPWefficient <- IF$IPWnaive + data[,cbind(
                                          .SD$prob.event * .SD$Lterm * (1-.SD$treatment.bin) / (1-.SD$prob.treatment),
                                          .SD$prob.event * .SD$Lterm * (.SD$treatment.bin) / (.SD$prob.treatment)
                                      )]/ sumW
 
     if(nuisance.iid){
-        weight.tempo0 <- data[,  .SD$treatment.bin * (.SD$status.tau==0) / .SD$prob.treatment^2]
-        weight.tempo1 <- data[, (1-.SD$treatment.bin) * (.SD$status.tau==0) / (1-.SD$prob.treatment)^2]
+        weight.tempo0 <- data[,  .SD$treatment.bin * (.SD$status.tau==1) / .SD$prob.treatment^2]
+        weight.tempo1 <- data[, (1-.SD$treatment.bin) * (.SD$status.tau==1) / (1-.SD$prob.treatment)^2]
         IPWadd <- - t(apply(iid.treatment,2,function(iCol){
             c(mean(weight.tempo0*iCol),mean(weight.tempo1*iCol))
         }))
@@ -283,6 +347,7 @@ ateRobust <- function(data, times, treatment, cause, type,
         IF$IPWnaive2 <- IF$IPWnaive + IPWadd * data$weights * n.obs / sumW
         IF$IPWefficient2 <- IF$IPWefficient + IPWadd * data$weights * n.obs / sumW
     }
+
     ## *** AIPW
     IF$AIPWnaive <- IF$IPWnaive + data[,cbind(
                                       .SD$weights * .SD$prob.event0 * (1-(1-.SD$treatment.bin)/(1-.SD$prob.treatment)),
@@ -324,12 +389,15 @@ ateRobust <- function(data, times, treatment, cause, type,
                                               names(IF)))
 
     for(iL in 1:n.estimator){ ## iL <- 1
+        if(na.rm){
+            IF[[iL]] <- IF[[iL]][which(rowSums(is.na(IF[[iL]]))==0),,drop=FALSE]
+        }
+        
         out$ate.value[name.surv,iL] <- colSums(IF[[iL]])
         IF[[iL]] <- rowCenter_cpp(IF[[iL]], center = out$ate.value[paste0("surv.",level.treatment),iL]/n.obs)
     }
     out$ate.value["ate.diff",] <- out$ate.value[name.surv[2],] - out$ate.value[name.surv[1],]
     ##    out$ate.value["ate.ratio",] <- out$ate.value[name.surv[2],] / out$ate.value[name.surv[1],]
-
 
     ## standard error
     out$ate.se <- do.call(cbind,lapply(IF, function(iIF){ ## iIF <- IF[[1]]
@@ -351,7 +419,7 @@ ateRobust <- function(data, times, treatment, cause, type,
                        predictor.cox, product.limit, cause){
 
     status <- stop <- NULL ## [:CRANtest:] data.table
-    
+
     eXb.censor <- exp(coxLP(model.censor, data = NULL, center = FALSE))
     MF.censor <- coxModelFrame(model.censor)
 
@@ -395,13 +463,14 @@ ateRobust <- function(data, times, treatment, cause, type,
         }else if(type == "competing.risks"){
             pred.event <- predict(model.event, newdata = data, times = all.times,
                                   product.limit = product.limit, cause = cause)$absRisk
-            pred.surv <- do.call(predictor.cox,
-                                 args = list(model.event$models[[paste0("Cause ",cause)]], newdata = data, times = all.times, type = "survival"))$survival
 
-            pred.eventC <- -colCenter_cpp(pred.event, center = data[["prob.event"]])/pred.surv
+            pred.survival <- do.call(predictor.cox,
+                                     args = list(model.event$models[["OverallSurvival"]], newdata = data, times = all.times, type = "survival"))$survival
+            
+            pred.eventC <- -colCenter_cpp(pred.event, center = data[["prob.event"]]) / pred.survival
 
         }
-        
+
         data[,"Lterm" := sapply(1:n.obs, function(iObs){ ## iObs <- 1
 
                 calcLterm(status = MF.censor$status[iObs],
@@ -443,22 +512,26 @@ ateRobust <- function(data, times, treatment, cause, type,
             }else if(type == "competing.risks"){
                 iPred.event <- predict(model.event, newdata = data[iIndex.strata], times = iAll.times,
                                        product.limit = product.limit, cause = cause)$absRisk
-                iPred.surv <- do.call(predictor.cox,
-                                      args = list(model.event$models[[paste0("Cause ",cause)]], newdata = data[iIndex.strata], times = iAll.times, type = "survival"))$survival
 
-                iPred.eventC <- -colCenter_cpp(iPred.event, center = data[iIndex.strata,.SD$prob.event])/iPred.surv
+                iPred.survival <- do.call(predictor.cox,
+                                          args = list(model.event$models[["OverallSurvival"]], newdata = data[iIndex.strata], times = all.times, type = "survival"))$survival
+            
+
+                iPred.eventC <- -colCenter_cpp(iPred.event, center = data[iIndex.strata,.SD$prob.event]) / iPred.survival
 
             }
-
+            ## table(is.na(iPred.eventC))
+            ## table(is.na(iPred.censor))
             data[iIndex.strata, c("Lterm") := sapply(1:iN.strata, function(iObs){ ## iObs <- 10
 
-                calcLterm(status = MF.censor$status[iIndex.strata[iObs]],
-                          time = MF.censor$stop[iIndex.strata[iObs]],
-                          jump.time = iAll.times,
-                          hazard0 = iHazard0,
-                          eXb = eXb.censor[iIndex.strata[iObs]],
-                          surv.event = iPred.eventC[iObs,],
-                          surv.censor = iPred.censor[iObs,])
+                iOut <- calcLterm(status = MF.censor$status[iIndex.strata[iObs]],
+                                  time = MF.censor$stop[iIndex.strata[iObs]],
+                                  jump.time = iAll.times,
+                                  hazard0 = iHazard0,
+                                  eXb = eXb.censor[iIndex.strata[iObs]],
+                                  surv.event = iPred.eventC[iObs,],
+                                  surv.censor = iPred.censor[iObs,])
+                return(iOut)
             
             })]
 
