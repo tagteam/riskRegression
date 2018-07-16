@@ -335,7 +335,12 @@ predictCox <- function(object,
       out <- list()
       ## *** reformat newdata (compute linear predictor and strata)
       new.n <- NROW(newdata)
-      newdata <- as.data.table(newdata)
+      if(data.table::is.data.table(newdata)){
+          newdata <- data.table::copy(newdata)
+      }else{
+          newdata <- data.table::as.data.table(newdata)
+      }
+
       new.eXb <- exp(coxLP(object, data = newdata, center = FALSE))
 
       new.strata <- coxStrata(object, data = newdata, 

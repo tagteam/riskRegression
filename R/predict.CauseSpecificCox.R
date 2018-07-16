@@ -124,7 +124,11 @@ predict.CauseSpecificCox <- function(object,
     ## ** prepare
     if(object$fitter=="phreg"){newdata$entry <- 0} 
     if(missing(newdata)){newdata <- eval(object$call$data)}
-    data.table::setDT(newdata)
+    if(data.table::is.data.table(newdata)){
+        newdata <- data.table::copy(newdata)
+    }else{
+        newdata <- data.table::as.data.table(newdata)
+    }
     
     surv.type <- object$surv.type
     if (length(cause) > 1){
@@ -222,7 +226,7 @@ predict.CauseSpecificCox <- function(object,
 
     ## ** compute CIF
     vec.etimes.max <- apply(M.etimes.max,1,min)
-    
+
     CIF <- predictCIF_cpp(hazard = ls.hazard, 
                           cumhazard = ls.cumhazard, 
                           eXb = M.eXb, 
