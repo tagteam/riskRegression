@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun  6 2016 (09:35) 
 ## Version: 
-## last-updated: jun  3 2018 (23:09) 
+## last-updated: jul 16 2018 (11:39) 
 ##           By: Brice Ozenne
-##     Update #: 151
+##     Update #: 153
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -212,14 +212,14 @@ test_that("Conditional CIF is NA after the last event", {
 
 # {{{ "Value of the conditional CIF | at the last event"
 test_that("Value of the conditional CIF | at the last event", {
-    tau <-  max(d[cause==2,time])
+    tau <-  max(d[d$cause==2,"time"])
     
-    predC_auto <- predict(CSC.fit, newdata = d2[1:5], cause = 2, times = tau, landmark = tau, product.limit = FALSE)
-    pred <- as.data.table(predictCox(CSC.fit$models[[2]], times = tau, newdata = d2[1:5], type = "hazard"))
+    predC_auto <- predict(CSC.fit, newdata = d2[1:5,], cause = 2, times = tau, landmark = tau, product.limit = FALSE)
+    pred <- as.data.table(predictCox(CSC.fit$models[[2]], times = tau, newdata = d2[1:5,], type = "hazard"))
     expect_equal(as.double(predC_auto$absRisk),pred$hazard)
 
-    predC_auto <- predict(CSC.fit, newdata = d2[1:5], cause = 2, times = tau, landmark = tau, product.limit = TRUE)
-    pred <- as.data.table(predictCox(CSC.fit$models[[2]], times = tau, newdata = d2[1:5], type = "hazard"))
+    predC_auto <- predict(CSC.fit, newdata = d2[1:5,], cause = 2, times = tau, landmark = tau, product.limit = TRUE)
+    pred <- as.data.table(predictCox(CSC.fit$models[[2]], times = tau, newdata = d2[1:5,], type = "hazard"))
     expect_equal(as.double(predC_auto$absRisk),pred$hazard)
 })
 

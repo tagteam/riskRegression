@@ -137,7 +137,7 @@ df$eventC <- df$event
 df$eventC[rbinom(n, size = 1, prob = 0.2)==1] <- 0
 
 ## true value
-tau <- 2
+tau <- 1
 c(CIF.X = alphaE.X/(alphaE.X+alphaCR.X)*(1-exp(-(alphaE.X+alphaCR.X)*(tau))),
   CIF.Y = alphaE.Y/(alphaE.Y+alphaCR.Y)*(1-exp(-(alphaE.Y+alphaCR.Y)*(tau))))
 
@@ -157,14 +157,15 @@ resCR
 
 ## estimating using a CSC (censoring)
 resCRC <- ateRobust(data = df, type = "competing.risks",
-            formula.event = Hist(time, eventC) ~ group, ## strata(group),
-            formula.censor = Surv(time, eventC==0) ~ group,## strata(group),
+            formula.event = Hist(time, eventC) ~  strata(group), ## group, ##
+            formula.censor = Surv(time, eventC==0) ~  strata(group), ## group,##
             formula.treatment = group ~ 1,
             times = tau,
             nuisance.iid = FALSE,
             product.limit = FALSE,
             cause = 1)
-resCRC
+print(resCRC, efficient = TRUE)
+print(resCRC, efficient = FALSE)
 
 
 }
