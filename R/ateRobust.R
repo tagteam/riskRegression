@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: jun 27 2018 (17:47) 
 ## Version: 
-## Last-Updated: jul 16 2018 (11:06) 
+## Last-Updated: jul 17 2018 (15:35) 
 ##           By: Brice Ozenne
-##     Update #: 504
+##     Update #: 511
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -274,13 +274,15 @@ ateRobust <- function(data, times, cause, type,
 
     ## ** Propensity score model: weights
     model.treatment <- do.call(glm, args = list(formula = formula.treatment, data = data, family = stats::binomial(link = "logit")))
+    
     if(nuisance.iid){
-        prediction.treatment <- .predictGLM(model.treatment, newdata = data[1:10])
+        prediction.treatment <- .predictGLM(model.treatment, newdata = data)
         iid.treatment <- attr(prediction.treatment, "iid")
         attr(prediction.treatment, "iid") <- NULL
     }else{
         prediction.treatment <- cbind(predict(model.treatment, newdata = data, type = "response", se = FALSE))
     }
+
     data[, c("prob.treatment") := prediction.treatment[,1]]
 
     ## ** Censoring model: weights
@@ -381,7 +383,7 @@ ateRobust <- function(data, times, cause, type,
     }
     ## ** export
     out <- list()
-    
+
     ## value
     n.estimator <- length(IF)
     name.surv <- paste0("surv.",level.treatment)
