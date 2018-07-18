@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: jun 27 2018 (17:47) 
 ## Version: 
-## Last-Updated: jul 17 2018 (15:35) 
+## Last-Updated: jul 18 2018 (15:55) 
 ##           By: Brice Ozenne
-##     Update #: 511
+##     Update #: 533
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -40,6 +40,7 @@
 #' @param nuisance.iid [logical] If \code{TRUE} take into accound the uncertainty related to
 #' the estimation of outcome model and the propensity score model.
 #' The uncertainty related to the estimation of the censoring model is never accounted for.
+#' @param efficient [logical] Should the efficient IPW and AIPW estimator be used?
 #' @param na.rm [logical] If \code{TRUE} ignore observations whose influence function is NA.
 #'
 #' @details Argument \code{nuisance.iid}: the asymptotic distribution of the ATE
@@ -176,7 +177,7 @@
 #' @export
 ateRobust <- function(data, times, cause, type,
                       formula.event, formula.censor, formula.treatment, 
-                      fitter = "coxph", product.limit = FALSE, nuisance.iid = TRUE, na.rm = FALSE){
+                      fitter = "coxph", product.limit = FALSE, efficient = TRUE, nuisance.iid = TRUE, na.rm = FALSE){
 
     
     ## ** normalize arguments
@@ -247,7 +248,7 @@ ateRobust <- function(data, times, cause, type,
         
 
     }else if(type=="competing.risks"){
-        model.event <- CSC(formula.event, data = data, fitter = fitter, cause = cause, surv.type = "survival")
+        model.event <- CSC(formula.event, data = data, fitter = fitter, cause = cause, surv.type = "hazard")
         coxMF <- unclass(model.event$response)
 
         ## [:change outcome:]
@@ -258,6 +259,12 @@ ateRobust <- function(data, times, cause, type,
         data[, c("prob.event") := prediction.event$absRisk[,1]]
         data[, c("prob.event0") := prediction.event0$absRisk[,1]]
         data[, c("prob.event1") := prediction.event1$absRisk[,1]]
+
+        if(nuisance.iid){
+            iid.event0 <- prediction.event0$absRisk.iid[,1,]
+            iid.event1 <- prediction.event1$absRisk.iid[,1,]
+        }
+
     }
 
     ## truncate at times
@@ -301,13 +308,15 @@ ateRobust <- function(data, times, cause, type,
 
     ## ** correction for efficiency
     ## data is updated within the function .calcLterm
-    if(model.censor$nevent==0){
-        data[,c("Lterm") := 0]
-    }else{
-        .calcLterm(data = data, data0 = data0, data1 = data1, coxMF = coxMF,
-                   n.obs = n.obs, times = times, type = type, cause = cause,
-                   model.censor = model.censor, model.event = model.event,
-                   predictor.cox = predictor.cox, product.limit = product.limit)
+    if(efficient){
+        if(model.censor$nevent==0){
+            data[,c("Lterm") := 0]
+        }else{
+            .calcLterm(data = data, data0 = data0, data1 = data1, coxMF = coxMF,
+                       n.obs = n.obs, times = times, type = type, cause = cause,
+                       model.censor = model.censor, model.event = model.event,
+                       predictor.cox = predictor.cox, product.limit = product.limit)
+        }
     }
     
     ## ** Compute parameter of interest
@@ -333,12 +342,14 @@ ateRobust <- function(data, times, cause, type,
     ## table(data$prob.event)
     ## table(data$prob.treatment)
     ## data[,mean(Lterm)]
-    
-    IF$IPWefficient <- IF$IPWnaive + data[,cbind(
-                                         .SD$prob.event * .SD$Lterm * (1-.SD$treatment.bin) / (1-.SD$prob.treatment),
-                                         .SD$prob.event * .SD$Lterm * (.SD$treatment.bin) / (.SD$prob.treatment)
-                                     )]/ sumW
 
+    if(efficient){
+        IF$IPWefficient <- IF$IPWnaive + data[,cbind(
+                                             .SD$prob.event * .SD$Lterm * (1-.SD$treatment.bin) / (1-.SD$prob.treatment),
+                                             .SD$prob.event * .SD$Lterm * (.SD$treatment.bin) / (.SD$prob.treatment)
+                                         )]/ sumW
+    }
+    
     if(nuisance.iid){
         weight.tempo0 <- data[,  .SD$treatment.bin * (.SD$status.tau==1) / .SD$prob.treatment^2]
         weight.tempo1 <- data[, (1-.SD$treatment.bin) * (.SD$status.tau==1) / (1-.SD$prob.treatment)^2]
@@ -348,7 +359,9 @@ ateRobust <- function(data, times, cause, type,
         ## colSums(IPWadd * data$weights * n.obs / sumW)
         ## colSums(IPWadd)
         IF$IPWnaive2 <- IF$IPWnaive + IPWadd * data$weights * n.obs / sumW
-        IF$IPWefficient2 <- IF$IPWefficient + IPWadd * data$weights * n.obs / sumW
+        if(efficient){
+            IF$IPWefficient2 <- IF$IPWefficient + IPWadd * data$weights * n.obs / sumW
+        }
     }
 
     ## *** AIPW
@@ -357,11 +370,13 @@ ateRobust <- function(data, times, cause, type,
                                       .SD$weights * .SD$prob.event1 * (1-.SD$treatment.bin/(.SD$prob.treatment))
                                   )]/ sumW
 
-    IF$AIPWefficient <- IF$IPWefficient + data[,cbind(
-                                              .SD$weights * .SD$prob.event0 * (1-(1-.SD$treatment.bin)/(1-.SD$prob.treatment)),
-                                              .SD$weights * .SD$prob.event1 * (1-.SD$treatment.bin/(.SD$prob.treatment))
-                                          )]/ sumW
-
+    if(efficient){
+        IF$AIPWefficient <- IF$IPWefficient + data[,cbind(
+                                                  .SD$weights * .SD$prob.event0 * (1-(1-.SD$treatment.bin)/(1-.SD$prob.treatment)),
+                                                  .SD$weights * .SD$prob.event1 * (1-.SD$treatment.bin/(.SD$prob.treatment))
+                                              )]/ sumW
+    }
+    
     if(nuisance.iid){
         weightY.tempo0 <- data[, 1 - .SD$treatment.bin / .SD$prob.treatment]
         weightY.tempo1 <- data[, 1 - (1-.SD$treatment.bin) / (1-.SD$prob.treatment)]
@@ -379,7 +394,9 @@ ateRobust <- function(data, times, cause, type,
         }))
 
         IF$AIPWnaive2 <- IF$AIPWnaive + (IPWadd + AIPWaddY + AIPWaddE) * data$weights * n.obs / sumW
-        IF$AIPWefficient2 <- IF$AIPWefficient + (IPWadd + AIPWaddY + AIPWaddE) * data$weights * n.obs / sumW
+        if(efficient){
+            IF$AIPWefficient2 <- IF$AIPWefficient + (IPWadd + AIPWaddY + AIPWaddE) * data$weights * n.obs / sumW
+        }
     }
     ## ** export
     out <- list()
@@ -410,6 +427,7 @@ ateRobust <- function(data, times, cause, type,
 
     class(out) <- "ateRobust"
     out$nuisance.iid <- nuisance.iid
+    out$efficient <- efficient
     return(out)
     
 
@@ -467,10 +485,13 @@ ateRobust <- function(data, times, cause, type,
             pred.event <- predict(model.event, newdata = data, times = all.times,
                                   product.limit = product.limit, cause = cause)$absRisk
 
-            pred.survival <- do.call(predictor.cox,
-                                     args = list(model.event$models[["OverallSurvival"]], newdata = data, times = all.times-(1e-10), type = "survival"))$survival
+            pred.cumhazard <- matrix(0, nrow = n.obs, ncol = length(all.times))
+            for(iC in 1:length(model.event$models)){
+                pred.cumhazard <- pred.cumhazard + do.call(predictor.cox,
+                                                           args = list(model.event$models[[iC]], newdata = data, times = all.times-(1e-10), type = "cumhazard"))$cumhazard
+            }
             
-            pred.eventC <- -colCenter_cpp(pred.event, center = data[["prob.event"]]) / pred.survival
+            pred.eventC <- -colCenter_cpp(pred.event, center = data[["prob.event"]]) * exp(pred.cumhazard) ## i.e. /survival
 
             ## same as using option landmark but can be done in one go
             ## iIndex <- 15
@@ -523,11 +544,20 @@ ateRobust <- function(data, times, cause, type,
                 iPred.event <- predict(model.event, newdata = data[iIndex.strata], times = iAll.times,
                                        product.limit = product.limit, cause = cause)$absRisk
 
-                iPred.survival <- do.call(predictor.cox,
-                                          args = list(model.event$models[["OverallSurvival"]], newdata = data[iIndex.strata], times = iAll.times - (1e-10), type = "survival"))$survival
-            
+                iPred.cumhazard <- matrix(0, nrow = length(iIndex.strata), ncol = length(iAll.times))
+                for(iC in 1:length(model.event$models)){
+                    iPred.cumhazard <- iPred.cumhazard + do.call(predictor.cox,
+                                                               args = list(model.event$models[[iC]], newdata = data[iIndex.strata],
+                                                                           times = iAll.times-(1e-10), type = "cumhazard"))$cumhazard
+                }
 
-                iPred.eventC <- -colCenter_cpp(iPred.event, center = data[iIndex.strata,.SD$prob.event]) / iPred.survival
+                iPred.eventC <- -colCenter_cpp(iPred.event, center = data[iIndex.strata,.SD$prob.event]) * exp(iPred.cumhazard) ## i.e. /survival
+
+                ## same as using option landmark but can be done in one go
+                ## iIndex <- 15
+                ## iPred.eventC2 <- predict(model.event, newdata = data[iIndex.strata], times = times, landmark = iAll.times[iIndex],
+                                        ## product.limit = product.limit, cause = cause)$absRisk
+                ## range(iPred.eventC[,iIndex]-iPred.eventC2[,1])
 
             }
             ## table(is.na(iPred.eventC))
