@@ -6,7 +6,7 @@
 \usage{
 ateRobust(data, times, cause, type, formula.event, formula.censor,
   formula.treatment, fitter = "coxph", product.limit = FALSE,
-  nuisance.iid = TRUE, na.rm = FALSE)
+  efficient = TRUE, nuisance.iid = TRUE, na.rm = FALSE)
 }
 \arguments{
 \item{data}{[data.frame or data.table] Data set in which to evaluate the ATE.}
@@ -32,6 +32,8 @@ If \code{coxph} use \code{survival::coxph} else use \code{rms::cph}.}
 
 \item{product.limit}{[logical] If \code{TRUE} the survival is computed using the product limit estimator.
 Otherwise the exponential approximation is used (i.e. exp(-cumulative hazard)).}
+
+\item{efficient}{[logical] Should the efficient IPW and AIPW estimator be used?}
 
 \item{nuisance.iid}{[logical] If \code{TRUE} take into accound the uncertainty related to
 the estimation of outcome model and the propensity score model.

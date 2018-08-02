@@ -4,7 +4,7 @@
 \alias{print.ateRobust}
 \title{Print Average Treatment Effect}
 \usage{
-\method{print}{ateRobust}(x, digits = 3, efficient = TRUE,
+\method{print}{ateRobust}(x, digits = 3, efficient = x$efficient,
   nuisance.iid = x$nuisance.iid, ...)
 }
 \arguments{

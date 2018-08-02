@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: jul  5 2018 (15:28) 
 ## Version: 
-## Last-Updated: jul 10 2018 (12:02) 
+## Last-Updated: jul 18 2018 (13:50) 
 ##           By: Brice Ozenne
-##     Update #: 14
+##     Update #: 15
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -34,7 +34,7 @@
 #' @rdname print.ateRobust
 #' @method print ateRobust
 #' @export
-print.ateRobust <- function(x, digits = 3, efficient = TRUE, nuisance.iid = x$nuisance.iid,...){
+print.ateRobust <- function(x, digits = 3, efficient = x$efficient, nuisance.iid = x$nuisance.iid,...){
 
     if(nuisance.iid && (x$nuisance.iid == FALSE)){
         stop("Argument \'nuisance.iid\' must be FALSE when ateRobust has been called using \'iid\'=FALSE \n")
