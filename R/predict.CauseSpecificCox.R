@@ -124,7 +124,11 @@ predict.CauseSpecificCox <- function(object,
     ## ** prepare
     if(object$fitter=="phreg"){newdata$entry <- 0} 
     if(missing(newdata)){newdata <- eval(object$call$data)}
-    data.table::setDT(newdata)
+    if(data.table::is.data.table(newdata)){
+        newdata <- data.table::copy(newdata)
+    }else{
+        newdata <- data.table::as.data.table(newdata)
+    }
     
     surv.type <- object$surv.type
     if (length(cause) > 1){
@@ -162,11 +166,16 @@ predict.CauseSpecificCox <- function(object,
     if(length(landmark)!=1){
         stop("\'t0\' must have length one \n")
     }
-  
-    ## relevant event times to use  
-    eventTimes <- eTimes[which(eTimes <= max(times))] 
-    if(length(eventTimes) == 0){eventTimes <- min(times)} # at least the first event
 
+    ## relevant event times to use
+    valid.times <- times[times<=max(eTimes)] ## prediction times before the last jump
+    if(length(valid.times) == 0){
+        eventTimes <- eTimes[1] ## at least the first event
+    }else{
+        eventTimes <- eTimes[eTimes <= max(valid.times)] ## jump times before the last prediction time (that is before the last jump)
+        if(length(eventTimes) == 0){eventTimes <- eTimes[1]} # at least the first event
+    }
+    
     ## order prediction times
     ootimes <- order(order(times))
 
@@ -216,13 +225,15 @@ predict.CauseSpecificCox <- function(object,
     }
 
     ## ** compute CIF
+    vec.etimes.max <- apply(M.etimes.max,1,min)
+
     CIF <- predictCIF_cpp(hazard = ls.hazard, 
                           cumhazard = ls.cumhazard, 
                           eXb = M.eXb, 
                           strata = M.strata.num,
                           newtimes = sort(times), 
                           etimes = eventTimes, 
-                          etimeMax = apply(M.etimes.max,1,min), 
+                          etimeMax = vec.etimes.max, 
                           t0 = landmark,
                           nEventTimes = nEventTimes,
                           nNewTimes = length(times), 
@@ -254,16 +265,18 @@ predict.CauseSpecificCox <- function(object,
             length(m$lpvars)
         }))
 
+        Utimes <- sort(unique(times))
+
         out.seCSC <- calcSeCSC(object,
                                cif = CIF,
                                hazard = ls.hazard,
                                cumhazard = ls.cumhazard,
                                object.time = eventTimes,
-                               object.maxtime = apply(M.etimes.max,1,min), 
+                               object.maxtime = vec.etimes.max, 
                                eXb = M.eXb,
                                new.LPdata = new.LPdata,
                                new.strata = M.strata.num,                               
-                               times = sort(times),
+                               times = Utimes,
                                ls.infoVar = ls.infoVar,
                                new.n = new.n,
                                cause = index.cause,
@@ -272,6 +285,8 @@ predict.CauseSpecificCox <- function(object,
                                surv.type = surv.type,
                                export = c("iid"[(iid+band)>0],"se"[(se+band)>0],"average.iid"[average.iid==TRUE]),
                                store.iid = store.iid)
+
+        ootimes2 <- prodlim::sindex(jump.times = Utimes, eval.times = times)
     }
     
     ## ** export
@@ -279,13 +294,13 @@ predict.CauseSpecificCox <- function(object,
     out <- list(absRisk = CIF[,ootimes,drop=FALSE]) # reorder prediction times
 
     if(se+band){
-        out$absRisk.se <- out.seCSC$se[,ootimes,drop=FALSE]
+        out$absRisk.se <- out.seCSC$se[,ootimes2,drop=FALSE]
     }
     if(iid+band){
-        out$absRisk.iid <- out.seCSC$iid[,ootimes,,drop=FALSE]
+        out$absRisk.iid <- out.seCSC$iid[,ootimes2,,drop=FALSE]
     }
     if(average.iid){
-        out$absRisk.average.iid <- out.seCSC$average.iid[,ootimes,drop=FALSE]
+        out$absRisk.average.iid <- out.seCSC$average.iid[,ootimes2,drop=FALSE]
     }
     if(keep.times){out$times <- times}
 
@@ -304,6 +319,7 @@ predict.CauseSpecificCox <- function(object,
         }
     }
     out$se <- se
+    out$keep.times <- keep.times
     out$band <- band
     
     class(out) <- "predictCSC"

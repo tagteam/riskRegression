@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: maj 18 2017 (09:23) 
 ## Version: 
-## last-updated: jun 17 2018 (19:22) 
+## last-updated: jul  6 2018 (14:22) 
 ##           By: Brice Ozenne
-##     Update #: 177
+##     Update #: 181
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -631,7 +631,7 @@ test_that("predict.CSC(2a) - compare to mstate",{
 ## * 3- compare predict.CSC and mstate on Melanoma
 cat("[predictCSS] - Melanoma \n")
 ## ** Data
-data(Melanoma)
+data(Melanoma, package = "riskRegression")
 # sum(is.na(Melanoma))
 Melanoma$index <- 1:NROW(Melanoma)
 

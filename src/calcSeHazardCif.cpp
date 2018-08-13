@@ -21,7 +21,7 @@ inline double calcIFhazard(double time,
 			   int p,
 			   bool hazard);
   
-// {{{ calcSeHazard_cpp : on the log scale
+// * calcSeHazard_cpp : on the log scale
 // [[Rcpp::export]]
 List calcSeHazard_cpp(const NumericVector& seqTau, // horizon time for the predictions
 		      const IntegerVector& indexTau, // position of the prediction times relatively to the event times in the strata
@@ -148,9 +148,8 @@ List calcSeHazard_cpp(const NumericVector& seqTau, // horizon time for the predi
 		      Named("iidsum_survival") = IFsum_survival,
                       Named("se") = SEcumhazard));
 }
-// }}}
 
-// {{{ calcSeCif_cpp
+// * calcSeCif_cpp
 // [[Rcpp::export]]
 List calcSeCif_cpp(const NumericVector& seqTau, // horizon time for the predictions
 		   const NumericVector& jumpTime, 
@@ -360,9 +359,8 @@ List calcSeCif_cpp(const NumericVector& seqTau, // horizon time for the predicti
 		      Named("iidsum") = IFsumrisk,
 		      Named("se") = SErisk));
 }
-// }}}
 
-// {{{ calcIFhazard
+// * calcIFhazard
 inline double calcIFhazard(double time,
 			   double sampleTime,			   
 			   const rowvec& IFbeta,
@@ -417,4 +415,168 @@ inline double calcIFhazard(double time,
 
   return(IF_hazard);    
 }
-// }}}
+
+// * calcSeCif2_cpp
+// [[Rcpp::export]]
+List calcSeCif2_cpp(std::vector<arma::mat> ls_IFbeta, std::vector<arma::mat> ls_X,
+		    std::vector<arma::mat> ls_cumhazard, std::vector<arma::mat> ls_hazard,
+		    std::vector< std::vector<arma::mat> > ls_IFcumhazard, std::vector< std::vector<arma::mat> > ls_IFhazard,
+		    NumericMatrix eXb,
+		    arma::vec timeIndex, int nIndex, arma::vec time,
+		    int nObs, int nJumpTime, arma::vec maxJumpTime,
+		    int theCause, int nCause, bool hazardType, arma::vec nVar,
+		    int nNewObs, NumericMatrix strata,
+		    bool exportSE, bool exportIF, bool exportIFsum){
+
+   arma::mat X_IFbeta;
+
+   arma::mat IFhazard;
+   arma::mat IFcumhazard;
+   arma::colvec hazard;
+   arma::colvec cumhazard;
+
+   double ieXb;
+   int iStrataCause;
+
+   arma::colvec IF_tempo;
+   arma::colvec cumIF_tempo;
+
+   // ** initialize for export
+   arma::mat outSE;
+   if(exportSE){
+     outSE.resize(nNewObs,nIndex);
+     outSE.fill(NA_REAL);
+   }
+   arma::cube outIF;
+   if(exportIF){
+     outIF.resize(nNewObs,nObs,nIndex);
+     outIF.fill(NA_REAL);
+   }
+   arma::mat outIFsum;
+   if(exportIFsum){
+     outIFsum.resize(nObs,nIndex);
+     outIFsum.fill(NA_REAL);
+   }
+
+   // ** prepare arguments
+   std::vector<arma::mat> ls_tcumhazard(nCause);
+   std::vector<arma::mat> ls_thazard(nCause);
+   for(int iCause=0; iCause<nCause; iCause ++){
+           if(nVar[iCause] > 0){
+	     ls_thazard[iCause] = ls_hazard[iCause].t();
+             ls_tcumhazard[iCause] = ls_cumhazard[iCause].t();
+	   }
+   }
+   
+   // ** take care of the prediction times before the first jump
+   int iTau = 0;
+   // Rcout << "1";
+   while( (timeIndex[iTau] < 0) && (iTau < nIndex) ){
+     if(exportSE){
+       outSE.col(iTau) = zeros<colvec>(nNewObs);
+     }
+     if(exportIF){
+       outIF.slice(iTau) = zeros<mat>(nNewObs,nObs);
+     }
+     if(exportIFsum){
+       outIFsum.col(iTau) = zeros<colvec>(nNewObs);
+     }
+     iTau++;
+   }
+   // Rcout << "-end ";
+   
+   // ** prepare the influence function
+   int iiTau;
+   
+   for(int iNewObs=0; iNewObs<nNewObs; iNewObs++){
+     iiTau = iTau;
+     IFcumhazard = zeros<mat>(nObs,nJumpTime);
+     cumhazard = zeros<colvec>(nJumpTime);
+     ieXb = NA_REAL;
+   
+   for(int iCause=0; iCause<nCause; iCause ++){
+
+     iStrataCause = strata(iNewObs,iCause);
+
+        // Rcout << "2 ";
+       if(nVar[iCause]>0){
+	 X_IFbeta = ls_IFbeta[iCause] * (ls_X[iCause].row(iNewObs)).t();
+         ieXb = eXb(iNewObs,iCause);
+       }
+
+               // Rcout << "3 ";
+       if(hazardType || (iCause != theCause)){
+	   if(nVar[iCause]>0){
+	        cumhazard += ieXb * ls_cumhazard[iCause].col(iStrataCause);
+	        // IFcumhazard += ieXb * (ls_IFcumhazard[iCause][iStrataCause] + X_IFbeta * ls_cumhazard[iCause].col(iStrataCause).t());
+	        IFcumhazard += ieXb * (ls_IFcumhazard[iCause][iStrataCause] + X_IFbeta * ls_tcumhazard[iCause].row(iStrataCause));
+	   }else{
+		  cumhazard += ls_cumhazard[iCause].col(iStrataCause);
+		  IFcumhazard += ls_IFcumhazard[iCause][iStrataCause];
+	   }
+       }
+
+               // Rcout << "4 ";
+       if(iCause == theCause){
+           if(nVar[iCause] > 0){
+               hazard = ieXb * ls_hazard[iCause].col(iStrataCause);
+	       // IFhazard = ieXb * (ls_IFhazard[iCause][iStrataCause] + X_IFbeta * ls_hazard[iCause].col(iStrataCause).t());
+	       IFhazard = ieXb * (ls_IFhazard[iCause][iStrataCause] + X_IFbeta * ls_thazard[iCause].row(iStrataCause));
+           } else{
+	       hazard = ls_hazard[iCause].col(iStrataCause);
+	       IFhazard = ls_IFhazard[iCause][iStrataCause];
+           }
+       }
+   }
+     
+   // ** loop over time
+   cumIF_tempo = zeros<colvec>(nObs);   
+
+   for(int iTime=0; iTime<nJumpTime; iTime++){
+               // Rcout << "5 " ;
+     // prepare IF
+     if(iTime==0){
+       IF_tempo = IFhazard.col(iTime);
+     }else{
+       // cumhazard is evaluated just before the jump
+       IF_tempo = (IFhazard.col(iTime) - IFcumhazard.col(iTime-1) * hazard[iTime]) * exp(-cumhazard[iTime-1]);
+     }
+      cumIF_tempo = cumIF_tempo + IF_tempo;
+
+                     // Rcout << "6";
+      // store
+   while((iTime == timeIndex[iiTau]) && (time[iiTau] <= maxJumpTime[iNewObs])){
+                          // Rcout << "*";
+     if(exportSE){
+       // Rcout << "a";
+       outSE.row(iNewObs).col(iiTau) = sqrt(accu(pow(cumIF_tempo,2)));
+     }
+     if(exportIF){
+       // Rcout << "b";
+       outIF.slice(iiTau).row(iNewObs) = cumIF_tempo.t();
+     }
+     if(exportIFsum){
+       // Rcout << "c";
+       if(iNewObs==0){
+         outIFsum.col(iiTau) = cumIF_tempo/nNewObs; // necessary because outIFsum is initialized as NA
+       }else{
+	 outIFsum.col(iiTau) += cumIF_tempo/nNewObs;
+       }
+     }
+     iiTau++;
+     if(iiTau == nIndex){break;}
+   }
+   // Rcout << "-end " << endl;
+   if(iiTau == nIndex){break;} // not necessary because nJumpTime should ensure that it is never triggered - so just for safety
+
+   }
+   // Rcout << "endend" << endl;	
+   }
+   
+   // ** export
+  return(List::create(Named("se") = outSE,
+		      Named("iid") = outIF,
+		      Named("average.iid") = outIFsum));
+
+}
+

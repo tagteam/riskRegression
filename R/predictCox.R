@@ -335,7 +335,12 @@ predictCox <- function(object,
       out <- list()
       ## *** reformat newdata (compute linear predictor and strata)
       new.n <- NROW(newdata)
-      newdata <- as.data.table(newdata)
+      if(data.table::is.data.table(newdata)){
+          newdata <- data.table::copy(newdata)
+      }else{
+          newdata <- data.table::as.data.table(newdata)
+      }
+
       new.eXb <- exp(coxLP(object, data = newdata, center = FALSE))
 
       new.strata <- coxStrata(object, data = newdata, 
@@ -347,9 +352,17 @@ predictCox <- function(object,
       
       ## *** subject specific hazard
       if (is.strata==FALSE){
+          if(diag){
+              if(needOrder){
+                  iTimes <- prodlim::sindex(jump.times = Lambda0$times, eval.times = times.sorted[oorder.times])
+              }else{
+                  iTimes <- prodlim::sindex(jump.times = Lambda0$times, eval.times = times.sorted)
+              }                  
+          }
+          
           if ("hazard" %in% type){
               if(diag){
-                  out$hazard <- cbind(new.eXb * Lambda0$hazard[oorder.times])
+                  out$hazard <- cbind(new.eXb * Lambda0$hazard[iTimes])
               }else{
                   out$hazard <- (new.eXb %o% Lambda0$hazard)
                   if (needOrder) out$hazard <- out$hazard[,oorder.times,drop=0L]
@@ -357,76 +370,71 @@ predictCox <- function(object,
           }
           if ("cumhazard" %in% type || "survival" %in% type){
               if(diag){
-                  cumhazard <- cbind(new.eXb * Lambda0$cumhazard[oorder.times])
+                  cumhazard <- cbind(new.eXb * Lambda0$cumhazard[iTimes])
               }else{
                   cumhazard <- new.eXb %o% Lambda0$cumhazard
+                  if (needOrder){cumhazard <- cumhazard[,oorder.times,drop=0L]}
               }
               if ("cumhazard" %in% type){
-                  if (needOrder && (diag == FALSE)){
-                      out$cumhazard <- cumhazard[,oorder.times,drop=0L]
-                  }else {
-                      out$cumhazard <- cumhazard
-                  }
+                  out$cumhazard <- cumhazard
               }
-              
               if ("survival" %in% type){
                   out$survival <- exp(-cumhazard)
-                  if (needOrder && (diag == FALSE)){
-                      out$survival <- out$survival[,oorder.times,drop=0L]
-                  }
               }
+          }              
+           
+      }else{ 
+          ## initialization
+          if ("hazard" %in% type){
+              out$hazard <- matrix(0, nrow = new.n, ncol = nTimes*(1-diag)+diag)
           }
-      
-    }else{ 
-      ## initialization
-      if ("hazard" %in% type){
-        out$hazard <- matrix(0, nrow = new.n, ncol = nTimes*(1-diag)+diag)
-      }
-      if ("cumhazard" %in% type){
-        out$cumhazard <- matrix(NA, nrow = new.n, ncol = nTimes*(1-diag)+diag)                
-      }
-      if ("survival" %in% type){
-        out$survival <- matrix(NA, nrow = new.n, ncol = nTimes*(1-diag)+diag)               
-      }
+          if ("cumhazard" %in% type){
+              out$cumhazard <- matrix(NA, nrow = new.n, ncol = nTimes*(1-diag)+diag)                
+          }
+          if ("survival" %in% type){
+              out$survival <- matrix(NA, nrow = new.n, ncol = nTimes*(1-diag)+diag)                   }
 
-      ## loop across strata
-      for(S in new.levelStrata){ ## S <- 1
-        id.S <- which(Lambda0$strata==S)
-        newid.S <- which(new.strata==S)
-
+          ## loop across strata
+          for(S in new.levelStrata){ ## S <- 1
+              id.S <- which(Lambda0$strata==S)
+              newid.S <- which(new.strata==S)
+              if(diag){
+                  if(needOrder){
+                      iSTimes <- prodlim::sindex(jump.times = Lambda0$times[id.S], eval.times = times.sorted[oorder.times[newid.S]])
+                  }else{
+                      iSTimes <- prodlim::sindex(jump.times = Lambda0$times[id.S], eval.times = times.sorted[newid.S])
+                  }                  
+              }
+        
         if ("hazard" %in% type){
             if(diag){
-                out$hazard[newid.S] <- new.eXb[newid.S] * Lambda0$hazard[id.S][oorder.times[newid.S]]
+                out$hazard[newid.S] <- new.eXb[newid.S] * Lambda0$hazard[id.S][iSTimes]
             }else{
                 out$hazard[newid.S,] <- new.eXb[newid.S] %o% Lambda0$hazard[id.S]
-                if (needOrder)
+                if (needOrder){
                     out$hazard[newid.S,] <- out$hazard[newid.S,oorder.times,drop=0L]
+                }
             }
         }
         if ("cumhazard" %in% type || "survival" %in% type){
             if(diag){
-                cumhazard.S <-  cbind(new.eXb[newid.S] * Lambda0$cumhazard[id.S][oorder.times[newid.S]])
+                cumhazard.S <-  cbind(new.eXb[newid.S] * Lambda0$cumhazard[id.S][iSTimes])
             }else{
                 cumhazard.S <-  new.eXb[newid.S] %o% Lambda0$cumhazard[id.S]
+                if (needOrder){
+                    cumhazard.S <- cumhazard.S[,oorder.times,drop=0L]
+                }
             }
 
             if ("cumhazard" %in% type){
-                if (needOrder && (diag==FALSE)){
-                    out$cumhazard[newid.S,] <- cumhazard.S[,oorder.times,drop=0L]
-                } else{
-                    out$cumhazard[newid.S,] <- cumhazard.S
-                }
+                out$cumhazard[newid.S,] <- cumhazard.S
             }
             if ("survival" %in% type){
-                if (needOrder && (diag==FALSE)){
-                    out$survival[newid.S,] <- exp(-cumhazard.S)[,oorder.times,drop=0L]
-                }else{
-                    out$survival[newid.S,] <- exp(-cumhazard.S)
-                }
+                out$survival[newid.S,] <- exp(-cumhazard.S)
             }
         }
       }
-    }
+      }
                                         # }}}
                                         # {{{ standard error
     

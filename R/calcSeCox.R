@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: maj 27 2017 (11:46) 
 ## Version: 
-## last-updated: jun 17 2018 (15:47) 
+## last-updated: jul  5 2018 (18:36) 
 ##           By: Brice Ozenne
-##     Update #: 287
+##     Update #: 288
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -174,10 +174,10 @@ calcSeCox <- function(object, times, nTimes, type,
                 # Evaluate the influence function for the
                 # hazard based on the one of the baseline hazard
                 if (nVar == 0) {
-                    IF_tempo= iid.object$IFhazard[[iObs.strata]]
+                    IF_tempo = iid.object$IFhazard[[iObs.strata]]
                 }
                 else {
-                    IF_tempo= (new.eXb[iObs] * (iid.object$IFhazard[[iObs.strata]] + crossprod(t(X_IFbeta),Lambda0$hazard[[iObs.strata]])))
+                    IF_tempo = (new.eXb[iObs] * (iid.object$IFhazard[[iObs.strata]] + crossprod(t(X_IFbeta),Lambda0$hazard[[iObs.strata]])))
                 }
                 if("iid" %in% export){
                     out$hazard.iid[iObs,,] <- t(IF_tempo) 

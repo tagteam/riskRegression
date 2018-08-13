@@ -17,6 +17,10 @@ calcSeCif_cpp <- function(seqTau, jumpTime, jumpTheCause, indexJump, indexSample
     .Call(`_riskRegression_calcSeCif_cpp`, seqTau, jumpTime, jumpTheCause, indexJump, indexSample, IFbeta, cif, Ehazard0, cumEhazard0, iS0, cumhazard_iS0, hazard_iS0, newEXb, sampleEXb, X, sameStrata, sampleTime, hazard0, cumhazard0, theCause, firstJumpTime, lastSampleTime, nTau, nJump, nNewObs, nSample, nCause, p, survtype, exportSE, exportIF, exportIFsum)
 }
 
+calcSeCif2_cpp <- function(ls_IFbeta, ls_X, ls_cumhazard, ls_hazard, ls_IFcumhazard, ls_IFhazard, eXb, timeIndex, nIndex, time, nObs, nJumpTime, maxJumpTime, theCause, nCause, hazardType, nVar, nNewObs, strata, exportSE, exportIF, exportIFsum) {
+    .Call(`_riskRegression_calcSeCif2_cpp`, ls_IFbeta, ls_X, ls_cumhazard, ls_hazard, ls_IFcumhazard, ls_IFhazard, eXb, timeIndex, nIndex, time, nObs, nJumpTime, maxJumpTime, theCause, nCause, hazardType, nVar, nNewObs, strata, exportSE, exportIF, exportIFsum)
+}
+
 #' Apply cumsum in each column 
 #'
 #' @description Fast computation of apply(x,2,cumsum)

@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun  6 2016 (09:02) 
 ## Version: 
-## last-updated: Jun 18 2018 (14:06) 
+## last-updated: Jul  6 2018 (11:08) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 111
+##     Update #: 113
 #----------------------------------------------------------------------
 ## 
 ### Commentary:
@@ -130,7 +130,7 @@
 ##' ## in the validation data at the following time points:
 ##' ## 0, 12, 24, 36, 48, 60
 ##' psurv <- predictRisk(fitCox,newdata=valdat,times=seq(0,60,12))
-##' ## This is a matrix with survival probabilities
+##' ## This is a matrix with event probabilities (1-survival)
 ##' ## one column for each of the 5 time points
 ##' ## one row for each validation set individual
 ##' 
