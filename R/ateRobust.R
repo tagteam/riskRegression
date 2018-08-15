@@ -1,11 +1,11 @@
-### ateRobust.R --- 
+## ateRobust.R --- 
 ##----------------------------------------------------------------------
 ## Author: Brice Ozenne
 ## Created: jun 27 2018 (17:47) 
 ## Version: 
-## Last-Updated: jul 18 2018 (15:55) 
+## Last-Updated: aug 15 2018 (14:27) 
 ##           By: Brice Ozenne
-##     Update #: 533
+##     Update #: 583
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -177,7 +177,8 @@
 #' @export
 ateRobust <- function(data, times, cause, type,
                       formula.event, formula.censor, formula.treatment, 
-                      fitter = "coxph", product.limit = FALSE, efficient = TRUE, nuisance.iid = TRUE, na.rm = FALSE){
+                      fitter = "coxph", product.limit = FALSE, efficient = TRUE,
+                      nuisance.iid = TRUE, na.rm = FALSE){
 
     
     ## ** normalize arguments
@@ -296,7 +297,6 @@ ateRobust <- function(data, times, cause, type,
     ## fit model
     model.censor <- suppressWarnings(do.call(fitter, args = list(formula = formula.censor, data = data, x = TRUE, y = TRUE))) ## , no.opt = TRUE
     if(model.censor$nevent==0){
-        message("no censoring")
         data[,c("prob.censoring") := 1]
     }else{
         ## survival = P[C>min(T,tau)] = P[Delta(min(T,tau))==1] - ok
@@ -309,7 +309,8 @@ ateRobust <- function(data, times, cause, type,
     ## ** correction for efficiency
     ## data is updated within the function .calcLterm
     if(efficient){
-        if(model.censor$nevent==0){
+        n.censor <- sum(model.event$response[model.event$response[,"time"]<=times,"status"]>0)
+        if(n.censor==0){
             data[,c("Lterm") := 0]
         }else{
             .calcLterm(data = data, data0 = data0, data1 = data1, coxMF = coxMF,
@@ -444,11 +445,12 @@ ateRobust <- function(data, times, cause, type,
     eXb.censor <- exp(coxLP(model.censor, data = NULL, center = FALSE))
     MF.censor <- coxModelFrame(model.censor)
 
-    jump.times <- sort(MF.censor[status==1&stop<=times,stop]) ## only look at jump times before the prediction time    
+    jump.times <- sort(MF.censor[status==1&stop<=times,stop]) ## only look at jump times before the prediction time
     resBaseline.censor <- predictCox(model.censor,
                                      times = jump.times,
                                      type = "hazard",
                                      keep.infoVar = TRUE)
+    
     is.strata <- resBaseline.censor$infoVar$is.strata
 
     calcLterm <- function(status, time, jump.time, hazard0, eXb, Esp.event, surv.censor){
@@ -485,13 +487,43 @@ ateRobust <- function(data, times, cause, type,
             pred.event <- predict(model.event, newdata = data, times = all.times,
                                   product.limit = product.limit, cause = cause)$absRisk
 
-            pred.cumhazard <- matrix(0, nrow = n.obs, ncol = length(all.times))
-            for(iC in 1:length(model.event$models)){
-                pred.cumhazard <- pred.cumhazard + do.call(predictor.cox,
-                                                           args = list(model.event$models[[iC]], newdata = data, times = all.times-(1e-10), type = "cumhazard"))$cumhazard
+            ## all cause survival
+            if(predictor.cox=="predictCox"){
+                pred.cumhazard <- matrix(0, nrow = n.obs, ncol = length(all.times))
+                for(iC in 1:length(model.event$models)){
+                    pred.cumhazard <- pred.cumhazard + predictCox(model.event$models[[iC]], newdata = data, times = all.times-(1e-10), type = "cumhazard")$cumhazard
+                }
+                pred.surv <- exp(-pred.cumhazard)
+
+                ## check computation of the survival
+                ## data[["status"]] <- unclass(model.event$response)[,"status"]                
+                ## eval(parse(text = paste0("coxAll <- coxph(",deparse(formula(model.event$models[[1]])),", data = data, x = TRUE)")))               
+                ## pred.surv - predictCox(coxAll, newdata = data, times = all.times, type = "survival")$survival
+
+            }else if(predictor.cox=="predictCoxPL"){
+                all.jump.times <- model.event$eventTimes[model.event$eventTimes<=times]
+                pred.allHazard <- matrix(0, nrow = n.obs, ncol = length(all.jump.times))
+                for(iC in 1:length(model.event$models)){
+                    pred.allHazard <- pred.allHazard + predictCox(model.event$models[[iC]],
+                                                                  newdata = data,
+                                                                  times = all.jump.times,
+                                                                  type = "hazard")$hazard
+                }
+                ## check computation of the survival
+                ## data[["status"]] <- unclass(model.event$response)[,"status"]                
+                ## eval(parse(text = paste0("coxAll <- coxph(",deparse(formula(model.event$models[[1]])),", data = data, x = TRUE)")))               
+                ## hazAll <- predictCox(coxAll, newdata = data, times = all.jump.times, type = "hazard")$hazard
+                ## hazAll - pred.hazard
+                index.jump <- prodlim::sindex(eval.times = all.times,
+                                              jump.times = c(0,all.jump.times))
+                pred.allSurv <- t(apply(1-pred.allHazard,1,cumprod))
+                pred.surv <- cbind(0,pred.allSurv)[,index.jump,drop=FALSE]
+                
+                ## pred.surv - predictCoxPL(coxAll, newdata = data, times = all.times, type = "survival")$survival
             }
             
-            pred.eventC <- -colCenter_cpp(pred.event, center = data[["prob.event"]]) * exp(pred.cumhazard) ## i.e. /survival
+            ## conditional risk
+            pred.eventC <- -colCenter_cpp(pred.event, center = data[["prob.event"]]) / pred.surv ## i.e. /survival
 
             ## same as using option landmark but can be done in one go
             ## iIndex <- 15
