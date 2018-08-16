@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun  6 2016 (09:02) 
 ## Version: 
-## last-updated: Jul  6 2018 (11:08) 
+## last-updated: Aug 16 2018 (16:28) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 113
+##     Update #: 115
 #----------------------------------------------------------------------
 ## 
 ### Commentary:
@@ -576,6 +576,25 @@ predictRisk.psm <- function(object,newdata,times,...){
     if (NROW(p) != NROW(newdata) || NCOL(p) != length(times))
         stop(paste("\nPrediction matrix has wrong dimensions:\nRequested newdata x times: ",NROW(newdata)," x ",length(times),"\nProvided prediction matrix: ",NROW(p)," x ",NCOL(p),"\n\n",sep=""))
     1-p
+}
+
+##' @export 
+predictRisk.ranger <- function(object, newdata, times, cause, ...){
+    if (missing(times)||is.null(times)){
+        p <- stats::predict(object,data=newdata,importance="none",...)$predictions
+        p
+    }else{
+        if (object$treetype=="Survival") {
+            ptemp <- 1-stats::predict(object,data=newdata,...)$survival
+            pos <- prodlim::sindex(jump.times=timepoints(object),eval.times=times)
+            p <- cbind(1,ptemp)[,pos+1,drop=FALSE]
+            if (NROW(p) != NROW(newdata) || NCOL(p) != length(times))
+                stop(paste("\nPrediction matrix has wrong dimensions:\nRequested newdata x times: ",NROW(newdata)," x ",length(times),"\nProvided prediction matrix: ",NROW(p)," x ",NCOL(p),"\n\n",sep=""))
+            p
+        }else{
+            message("Sorry. Hope Marvin does this soon.")
+        }
+    }
 }
 
 ##' @export 
