@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Oct 23 2016 (08:53) 
 ## Version: 
-## last-updated: Aug 17 2018 (08:23) 
+## last-updated: Aug 17 2018 (09:26) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 810
+##     Update #: 812
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -384,19 +384,19 @@ ate <- function(object,
     # }}}
 
     # {{{ Point estimate
-    pointEstimate <- Gformula(object=object,
-                              data=data,
-                              treatment=treatment,
-                              strata=strata,
-                              contrasts=contrasts,
-                              times=times,
-                              cause=cause,
-                              landmark=landmark,
-                              n.contrasts = n.contrasts,
-                              levels = levels,
-                              dots)
+    Gargs <- list(object=object,
+                  data=data,
+                  treatment=treatment,
+                  strata=strata,
+                  contrasts=contrasts,
+                  times=times,
+                  cause=cause,
+                  landmark=landmark,
+                  n.contrasts = n.contrasts,
+                  levels = levels,
+                  dots)
     if (TD) Gargs <- c(Gargs,list(formula=formula))
-    estimateTime <- system.time(pointEstimate <- do.call(Gformula.function, Gargs))
+    estimateTime <- system.time(pointEstimate <- do.call(Gformula, Gargs))
     # }}}
 
     # {{{ Confidence interval    
