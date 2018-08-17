@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Oct 23 2016 (08:53) 
 ## Version: 
-## last-updated: Aug 13 2018 (18:10) 
+## last-updated: Aug 17 2018 (08:23) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 809
+##     Update #: 810
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -263,11 +263,12 @@ ate <- function(object,
                 store.iid = "full",
                 ...){
   
-    meanRisk=Treatment=ratio=Treatment.A=Treatment.B=b <- NULL
-    ## .=.I <- NULL
-    diff.se=ratio.se=lower=upper=diff.lower=diff.upper=diff.p.value=ratio.lower=ratio.upper=ratio.p.value <- NULL
+  meanRisk=Treatment=ratio=Treatment.A=Treatment.B=b <- NULL
+  .=.I <- NULL
+  diff.se=ratio.se=.GRP=lower=upper=diff.lower=diff.upper=diff.p.value=ratio.lower=ratio.upper=ratio.p.value <- NULL
+   
     handler <- match.arg(handler, c("foreach","mclapply","snow","parallel"))
-    # {{{ checking for time-dependent covariates (left-truncation)
+                                        # {{{ checking for time-dependent covariates (left-truncation)
     TD <- switch(class(object)[[1]],"coxph"=(attr(object$y,"type")=="counting"),
                  "CauseSpecificCox"=(attr(object$models[[1]]$y,"type")=="counting"),FALSE)
     if (TD){
@@ -278,13 +279,13 @@ ate <- function(object,
         if(length(times)!=1){
             stop("In settings with time-dependent covariates argument 'time' must be a single value, argument 'landmark' may be a vector of time points.")
         }
-        Gformula.function <- "GformulaTD"
+        Gformula <- Gformula_TD
     }else{
-        Gformula.function <- "Gformula"
         landmark <- NULL
+        Gformula <- Gformula_TI
     }
-    # }}}
-    # {{{ Prepare
+                                        # }}}
+                                        # {{{ Prepare
     dots <- list(...)
     if(se==0 && B>0){
         warning("argument 'se=0' means 'no standard errors' so number of bootstrap repetitions is forced to B=0.")
@@ -313,6 +314,7 @@ ate <- function(object,
     }else{
         if(is.null(strata) ){
             stop("Argument strata must refer to a variable in the data when argument treatment is NULL. \n")
+
         }
         if(length(strata) != 1){
             stop("Argument strata should have length 1. \n")
@@ -329,6 +331,7 @@ ate <- function(object,
     }
     test.CR <- !missing(cause) # test whether the argument cause has been specified, i.e. it is a competing risk model
     if(test.CR==FALSE){cause <- NA}
+  
     if(B==0 && (se || band || iid)){
         validClass <- c("CauseSpecificCox","coxph","cph","phreg","glm")
         if(all(validClass %in% class(object) == FALSE)){
@@ -350,6 +353,7 @@ ate <- function(object,
     }
     if(!is.null(treatment)){
         data[[treatment]] <- factor(data[[treatment]])
+    
         if(is.null(contrasts)){
             levels <- levels(data[[treatment]])
             contrasts <- levels(data[[treatment]])
@@ -364,8 +368,11 @@ ate <- function(object,
     n.contrasts <- length(contrasts)
     n.times <- length(times)
     n.obs <- NROW(data)
-    # }}}
+  
+  # }}}
+  
     # {{{ Checking the model
+  
     ## for predictRisk S3-method
     allmethods <- utils::methods(predictRisk)
     candidateMethods <- paste("predictRisk",class(object),sep=".")
@@ -375,21 +382,23 @@ ate <- function(object,
     if(is.null(object$call))
         stop(paste("The object does not contain its own call, which is needed to refit the model in the bootstrap loop."))
     # }}}
+
     # {{{ Point estimate
-        Gargs <- list(object=object,
-                      data=data,
-                      treatment=treatment,
-                      strata=strata,
-                      contrasts=contrasts,
-                      times=times,
-                      cause=cause,
-                      landmark=landmark,
-                      n.contrasts = n.contrasts,
-                      levels = levels,
-                      dots)
-        if (TD) Gargs <- c(Gargs,list(formula=formula))
+    pointEstimate <- Gformula(object=object,
+                              data=data,
+                              treatment=treatment,
+                              strata=strata,
+                              contrasts=contrasts,
+                              times=times,
+                              cause=cause,
+                              landmark=landmark,
+                              n.contrasts = n.contrasts,
+                              levels = levels,
+                              dots)
+    if (TD) Gargs <- c(Gargs,list(formula=formula))
     estimateTime <- system.time(pointEstimate <- do.call(Gformula.function, Gargs))
     # }}}
+
     # {{{ Confidence interval    
     if(se || band || iid){
         if (TD){
@@ -400,8 +409,9 @@ ate <- function(object,
             key1 <- c("Treatment","time")
             key2 <- c("Treatment.A","Treatment.B","time")
         }
+    
         if(B>0){
-            # {{{ Bootstrap
+                                        # {{{ Bootstrap
             if (verbose==TRUE){ ## display
                 message(paste0("Approximated bootstrap netto run time (without time for copying data to cores):\n",
                                round(estimateTime["user.self"],2),
@@ -412,6 +422,7 @@ ate <- function(object,
                                " cores = ",
                                round(estimateTime["user.self"]*B/mc.cores,2)," seconds.\n"))
             }
+
             vec.pointEstimate <- c(pointEstimate$meanRisk$meanRisk,
                                    pointEstimate$riskComparison$diff,
                                    pointEstimate$riskComparison$ratio)
@@ -419,178 +430,35 @@ ate <- function(object,
                                           pointEstimate$riskComparison[,paste0("compRisk:diff:",Treatment.A,":",Treatment.B,":",time)],
                                           pointEstimate$riskComparison[,paste0("compRisk:ratio:",Treatment.A,":",Treatment.B,":",time)]
                                           )
-            ## calculate standard errors after bootstrap
 
-            name.estimate <- names(pointEstimate)
-            ## cores
-            x.cores <- parallel::detectCores()
-            if(mc.cores > x.cores){
-                warning("Not enough available cores \n","available: ",parallel::detectCores()," | requested: ",mc.cores,"\n")
-                mc.cores <- x.cores
-            }
-            ## package to be exported to cluster
-            if(handler %in% c("snow","foreach") ){
-                pp <- find(as.character(object$call[[1]]))
-                index.package <- grep("package:",pp)
-                addPackage <- if(length(index.package)>0){gsub("package:","",pp[index.package])}else{NULL}
-                addPackage <- unique(c("riskRegression","parallel","survival",addPackage))
-            }
-            ## seed
-            if (!missing(seed)) set.seed(seed)
-            bootseeds <- sample(1:1000000,size=B,replace=FALSE)
-            ## bootstrap
-            if(handler[[1]] %in% c("snow","parallel")) {
-                # {{{ use boot package
-                if(handler=="snow"){
-                    ## initialize CPU
-                    cl <- parallel::makeCluster(mc.cores)
-                    ## load packages
-                    parallel::clusterCall(cl, function(x){sapply(x, library, character.only = TRUE)}, addPackage)
-                    ## set seeds
-                    parallel::clusterApply(cl, bootseeds, function(x){set.seed(x)})
-                    ## check
-                    ## clusterCall(cl, function(x){rnorm(5)})
-                }else{
-                    ## set seeds
-                    bootseeds <- sum(bootseeds)
-                    set.seed(bootseeds)
-                    ##
-                    cl <- NULL
-                }
-                ## run bootstrap
-                boot.object <- boot::boot(data = data, R = B, statistic = function(data, index, ...){
-                    dataBoot <- data[index]
-                    object$call$data <- dataBoot
-                    objectBoot <- try(eval(object$call),silent=TRUE)
-                    if ("try-error" %in% class(objectBoot)){
-                        stop(paste0("Failed to fit model ",class(object)))
-                    }
-                    Gargs <- list(object=objectBoot,
-                                  data=dataBoot,
-                                  treatment=treatment,
-                                  contrasts=contrasts,
-                                  times=times,
-                                  cause=cause,
-                                  landmark=landmark,
-                                  n.contrasts = n.contrasts,
-                                  levels = levels,
-                                  dots)
-                    if (TD) Gargs <- c(Gargs,list(formula=formula))
-                    iBoot <- tryCatch(do.call(Gformula.function, Gargs),error = function(x){return(NULL)})
-                    if(is.null(iBoot)){ ## error handling
-                        out <- setNames(rep(NA, length(name.estimate), name.estimate))
-                    }else{
-                        out <- setNames(c(iBoot$meanRisk$meanRisk,
-                                          iBoot$riskComparison$diff,
-                                          iBoot$riskComparison$ratio), name.estimate)
-                    }
-                    return(out)
-                }, sim = "ordinary", stpe = "indices", strata = rep(1, n.obs),
-                parallel = handler[[1]], ncpus = mc.cores, cl = cl)
-                # }}}
-            }else {
-                if (handler[[1]]=="foreach" && mc.cores>1){
-                    # {{{ foreach
-                    if(verbose){
-                        cl <- parallel::makeCluster(mc.cores, outfile = "")
-                        pb <- txtProgressBar(max = B, style = 3)          
-                    }else{
-                        cl <- parallel::makeCluster(mc.cores)
-                    }
-                    doParallel::registerDoParallel(cl)
-                    b <- NULL ## [:forCRANcheck:] foreach
-                    boots <- foreach::`%dopar%`(foreach::foreach(b = 1:B, .packages = addPackage, .export = NULL), { ## b <- 1
-                        set.seed(bootseeds[[b]])
-                        if(verbose){setTxtProgressBar(pb, b)}
-                        dataBoot <- data[sample(1:n.obs, size = n.obs, replace = TRUE),]
-                        object$call$data <- dataBoot
-                        objectBoot <- try(eval(object$call),silent=TRUE)
-                        if ("try-error" %in% class(objectBoot)){
-                            stop(paste0("Failed to fit model ",class(object),ifelse(try(b>0,silent=TRUE),paste0(" in bootstrap step ",b,"."))))
-                        }
-                        Gargs <- list(object=objectBoot,
-                                      data=dataBoot,
-                                      treatment=treatment,
-                                      contrasts=contrasts,
-                                      times=times,
-                                      cause=cause,
-                                      landmark=landmark,
-                                      n.contrasts = n.contrasts,
-                                      levels = levels,
-                                      dots)
-                        if (TD) Gargs <- c(Gargs,list(formula=formula))
-                        iBoot <- tryCatch(
-                            do.call(Gformula.function, Gargs),
-                            error = function(x){return(NULL)})
-                    })
-                    if(verbose){close(pb)}
-                    parallel::stopCluster(cl)
-                    # }}}
-                }else{
-                    # {{{ mcapply
-                    if(Sys.info()["sysname"] == "Windows" && mc.cores>1){
-                        message("mclapply cannot perform parallel computations on Windows \n",
-                                "consider setting argument handler to \"foreach\" \n")
-                        mc.cores <- 1
-                    }
-                    boots <- parallel::mclapply(1:B, function(b){
-                        set.seed(bootseeds[[b]])
-                        dataBoot <- data[sample(1:n.obs, size = n.obs, replace = TRUE),]
-                        object$call$data <- dataBoot
-                        objectBoot <- try(eval(object$call),silent=TRUE)
-                        if ("try-error" %in% class(objectBoot)){
-                            stop(paste0("Failed to fit model",ifelse(try(b>0,silent=TRUE),paste0(" in bootstrap step ",b,"."))))
-                        }
-                        Gargs <- list(object=objectBoot,
-                                      data=dataBoot,
-                                      treatment=treatment,
-                                      contrasts=contrasts,
-                                      times=times,
-                                      cause=cause,
-                                      landmark=landmark,
-                                      n.contrasts = n.contrasts,
-                                      levels = levels,
-                                      dots)
-                        if (TD) Gargs <- c(Gargs,list(formula=formula))
-                        iBoot <- tryCatch(
-                            do.call(Gformula.function, Gargs),
-                            error = function(x){return(NULL)})
-                    }, mc.cores = mc.cores)
-                    # }}}
-                }
-                # {{{ convert to boot object
-                M.bootEstimate <- do.call(cbind,lapply(boots,function(iBoot){
-                    c(iBoot$meanRisk$meanRisk, iBoot$riskComparison$diff, iBoot$riskComparison$ratio)
-                }))
-                if(NROW(M.bootEstimate)==0){
-                    stop("Error in all bootstrap samples.")
-                }
-                colnames(M.bootEstimate) <- name.estimate
-                resBoot <- list(t0 = pointEstimate,
-                                t = M.bootEstimate,
-                                R = B,
-                                data = data,
-                                seed = bootseeds,
-                                statistic = NULL,
-                                sim = "ordinary",
-                                call = quote(boot(data = XX, statistic = XX, R = XX)),
-                                stype = "i",
-                                strata = rep(1,n.obs),
-                                weights = rep(1/n.obs,n.obs),
-                                pred.i = NULL,  ## Omitted if m is 0 or sim is not "ordinary" (from doc of boot::boot)
-                                L = NULL, ## only used when sim is "antithetic" (from doc of boot::boot)
-                                ran.gen = NULL, ## only used when sim is "parametric" (from doc of boot::boot)
-                                mle = NULL ## only used when sim is "parametric" (from doc of boot::boot)
-                                )
-                class(resBoot) <- "boot"
-                # }}}
-            }
+            resBoot <- calcBootATE(object,
+                                   pointEstimate = vec.pointEstimate,
+                                   Gformula = Gformula,
+                                   data = data,
+                                   treatment = treatment,
+                                   contrasts = contrasts,
+                                   times = times,
+                                   cause = cause,
+                                   landmark = landmark,
+                                   n.contrasts = n.contrasts,
+                                   levels = levels,
+                                   dots = dots,
+                                   n.obs = n.obs,
+                                   handler = handler,
+                                   B = B,
+                                   seed = seed,
+                                   mc.cores = mc.cores,
+                                   verbose = verbose)
+
+            bootseeds <- resBoot$bootseeds
+            resBoot <- resBoot$boot
             outSE <- NULL   
-            # }}}
+                                        # }}}
         } else {
-            # {{{ compute standard error and quantiles via the influence function
+                                        # {{{ compute standard error and quantiles via the influence function
+
             if(!is.null(landmark)){
-                stop("Calculation of the standard errors via the influence function is not implemented for time dependent covariates \n")
+                stop("Calculation of the standard errors via the influence function not implemented for time dependent covariates \n")
             }
             outSE <- calcSeATE(object,
                                data = data,
@@ -606,6 +474,7 @@ ate <- function(object,
                                pointEstimate = pointEstimate,
                                export = c("iid"[(iid+band)>0],"se"[(se+band)>0]),
                                store.iid = store.iid)
+
             pointEstimate$meanRisk[["meanRisk.se"]] <- outSE$meanRisk.se[,1]
             pointEstimate$riskComparison[["diff.se"]] <- outSE$diffRisk.se[,1]
             pointEstimate$riskComparison[["ratio.se"]] <- outSE$ratioRisk.se[,1]            
@@ -613,15 +482,17 @@ ate <- function(object,
                                                                                "diff","diff.se","ratio","ratio.se"))
             bootseeds <- NULL
             resBoot <- NULL          
-            # }}}
+   
+                                        # }}}
         }
     } else{
         bootseeds <- NULL
         resBoot <- NULL
         outSE <- NULL
-        # }}}
+
+                                        # }}}
     }
-    # {{{ output object
+                                        # {{{ output object
     if(is.null(treatment)){
         setnames(pointEstimate$meanRisk,
                  old = "Treatment",
@@ -630,6 +501,7 @@ ate <- function(object,
                  old = c("Treatment.A","Treatment.B"),
                  new = paste0(strata,c(".A",".B")))
     }
+    
     out <- list(meanRisk = pointEstimate$meanRisk,
                 riskComparison = pointEstimate$riskComparison,
                 meanRisk.iid = outSE$meanRisk.iid,
@@ -644,6 +516,8 @@ ate <- function(object,
                 band = band,
                 boot = resBoot,
                 seeds = bootseeds)
+
+  
     class(out) <- c("ate",class(object))
     if(confint){
         out <- stats::confint(out)
@@ -663,18 +537,21 @@ ate <- function(object,
 }
 
 # {{{ Gformula: time dependent covariates
-## * GformulaTD
-GformulaTD <- function(object,
-                       data,
-                       treatment,
-                       contrasts,
-                       times,
-                       landmark,
-                       cause,
-                       n.contrasts,
-                       levels,
-                       ...){
+## * Gformula_TD
+Gformula_TD <- function(object,
+                        data,
+                        formula,
+                        treatment,
+                        contrasts,
+                        times,
+                        landmark,
+                        cause,
+                        n.contrasts,
+                        levels,
+                        ...){
+
     Treatment <- Treatment.B <- meanRisk <- ratio <- NULL ## [:forCRANcheck:]
+    
     response <- eval(formula[[2]],envir=data)
     time <- response[,"time"]
     entry <- response[,"entry"]
@@ -719,19 +596,20 @@ GformulaTD <- function(object,
 
 # }}}
 
-# {{{ Gformula: time independent covariates
-## * Gformula
-Gformula <- function(object,
-                     data,
-                     treatment,
-                     strata,
-                     contrasts,
-                     times,
-                     landmark,
-                     cause,
-                     n.contrasts,
-                     levels,
-                     ...){
+                                        # {{{ Gformula: time independent covariates
+## * Gformula_TI
+Gformula_TI <- function(object,
+                        data,
+                        treatment,
+                        strata,
+                        contrasts,
+                        times,
+                        landmark,
+                        cause,
+                        n.contrasts,
+                        levels,
+                        ...){
+
     meanRisk <- lapply(1:n.contrasts,function(i){ ## i <- 1
         ## prediction for the hypothetical worlds in which every subject is treated with the same treatment
         if(!is.null(treatment)){
@@ -746,15 +624,17 @@ Gformula <- function(object,
         risk.i <- colMeans(allrisks)
         risk.i
     })
-    riskComparison <- data.table::rbindlist(lapply(1:(n.contrasts-1),function(i){ ## i <- 1
-        data.table::rbindlist(lapply(((i+1):n.contrasts),function(j){ ## j <- 2
-            ## compute differences between all pairs of treatments
-            data.table(Treatment.A=contrasts[[i]],
-                       Treatment.B=contrasts[[j]],
-                       time = times,
-                       diff=meanRisk[[i]]-meanRisk[[j]],
-                       ratio=meanRisk[[i]]/meanRisk[[j]])
-        }))}))
+
+        riskComparison <- data.table::rbindlist(lapply(1:(n.contrasts-1),function(i){ ## i <- 1
+            data.table::rbindlist(lapply(((i+1):n.contrasts),function(j){ ## j <- 2
+                ## compute differences between all pairs of treatments
+                data.table(Treatment.A=contrasts[[i]],
+                           Treatment.B=contrasts[[j]],
+                           time = times,
+                           diff=meanRisk[[i]]-meanRisk[[j]],
+                           ratio=meanRisk[[i]]/meanRisk[[j]])
+            }))}))
+
     ## reshape for export
     name.strata <- unlist(lapply(1:n.contrasts, function(c){rep(contrasts[c],length(meanRisk[[c]]))}))
 
@@ -765,6 +645,7 @@ Gformula <- function(object,
     return(out)            
 }
 # }}}
+
             
 
 #----------------------------------------------------------------------
