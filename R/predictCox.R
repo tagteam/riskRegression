@@ -1,4 +1,3 @@
-
                                         # {{{ header
 ## * predictCox (documentation)
 #' @title Fast computation of survival probabilities, hazards and cumulative hazards from Cox regression models 
@@ -468,6 +467,7 @@ predictCox <- function(object,
                            object.eXb = object.modelFrame$eXb,
                            object.strata =  object.modelFrame$strata, 
                            nStrata = nStrata,
+                           new.n = new.n,
                            new.eXb = new.eXb,
                            new.LPdata = new.LPdata,
                            new.strata = new.strata,
