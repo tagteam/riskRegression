@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: maj 27 2017 (11:46) 
 ## Version: 
-## last-updated: aug 19 2018 (12:17) 
+## last-updated: aug 19 2018 (22:52) 
 ##           By: Brice Ozenne
-##     Update #: 448
+##     Update #: 449
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -264,54 +264,7 @@ calcSeCox <- function(object, times, nTimes, type,
                     out$survival.average.iid <- lapply(outRcpp[[2]], function(iMat){matrix(iMat, nrow = n.new, ncol = nTimes)})
                 }
             }
-      
             
-            ## average            
-                ## <IF>(cumhazard) = E[eXb] IF_cumhazard0 + E[eXb * cumhazard0 * X] IF_beta
-                ## <IF>(Surv) = E[Surv * eXb] IF_cumhazard0 + E[Surv * eXb * cumhazard0 * X] IF_beta
-
-                ## index.strata <- lapply(1:nStrata, function(iStrata){
-                ##     which(new.strata==iStrata)
-                ## })
-                ## vec.n.strata <- unlist(lapply(index.strata,length))
-                
-                ## if("cumhazard" %in% type){
-                    
-                ##     out$cumhazard.average.iid2 <- Reduce("+",lapply(1:nStrata, function(iStrata){ ## iStrata <- 1
-                ##         E.eXb <- rep(0, nTimes)
-                ##         E.eXb_cumhazard0_X <- matrix(0, nrow = nVar, ncol = nTimes)
-
-                ##         for(iObs in index.strata[[iStrata]]){ ## iObs <- 1
-                ##             E.eXb <- E.eXb + new.eXb[iObs]
-                ##             E.eXb_cumhazard0_X <- E.eXb_cumhazard0_X + new.eXb[iObs] * cbind(new.LPdata[iObs,]) %*% rbind(Lambda0$cumhazard[[iStrata]])
-                ##         }
-                ##         E.eXb <- E.eXb / vec.n.strata[iStrata]
-                ##         E.eXb_cumhazard0_X <- E.eXb_cumhazard0_X / vec.n.strata[iStrata]
-                        
-                ##         iid.strata <- rowMultiply_cpp(iid.object$IFcumhazard[[iStrata]], scale = E.eXb) + iid.object$IFbeta %*% E.eXb_cumhazard0_X
-                ##         return(iid.strata * prev.strata[iStrata])
-                ##     }))
-                ##     }
-                
-                ## if("survival" %in% type){
-
-                ##     out$survival.average.iid <- - Reduce("+",lapply(1:nStrata, function(iStrata){ ## iStrata <- 1
-                ##         E.S_eXb <- rep(0, nTimes)
-                ##         E.S_eXb_cumhazard0_X <- matrix(0, nrow = nVar, ncol = nTimes)
-
-                ##         for(iObs in index.strata[[iStrata]]){ ## iObs <- 1
-                ##             E.S_eXb <- E.S_eXb + new.survival[iObs,] * new.eXb[iObs]
-                ##             E.S_eXb_cumhazard0_X <- E.S_eXb_cumhazard0_X + new.eXb[iObs] * cbind(new.LPdata[iObs,]) %*% rbind(new.survival[iObs,] * Lambda0$cumhazard[[iStrata]])
-                ##         }
-
-                ##         E.S_eXb <- E.S_eXb / vec.n.strata[iStrata]
-                ##         E.S_eXb_cumhazard0_X <- E.S_eXb_cumhazard0_X / vec.n.strata[iStrata]
-
-                ##         iid.strata <- rowMultiply_cpp(iid.object$IFcumhazard[[iStrata]], scale = E.S_eXb) + iid.object$IFbeta %*% E.S_eXb_cumhazard0_X
-                ##         return(iid.strata * prev.strata[iStrata])
-                ##     }))
-                    
-                ## }                
             }
         
         
