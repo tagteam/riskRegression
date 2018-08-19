@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun  6 2016 (06:48) 
 ## Version: 
-## last-updated: jun 13 2018 (14:58) 
-##           By: Brice Ozenne
-##     Update #: 226
+## last-updated: Aug 15 2018 (09:54) 
+##           By: Thomas Alexander Gerds
+##     Update #: 228
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -95,7 +95,7 @@ print.ate <- function(x, digits = 3, type = c("meanRisk","diffRisk","ratioRisk")
     if(!is.null(x$treatment) && ("diffRisk" %in% type || "ratioRisk" %in% type)){
         id.name <- names(x$riskComparison)[1:3]
         
-        cat("\nComparison of risks on probability scale [0,1] between\nhypothetical worlds are interpretated as if the treatment was randomized:\n\n")
+        cat("\nComparison of risks on probability scale [0,1] between\nhypothetical worlds are interpreted as if the treatment was randomized:\n\n")
 
         if("diffRisk" %in% type){
             cat("     > risk difference \n\n")

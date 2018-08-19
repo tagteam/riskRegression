@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun  6 2016 (09:02) 
 ## Version: 
-## last-updated: Apr 18 2018 (15:08) 
+## last-updated: Aug 16 2018 (16:28) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 110
+##     Update #: 115
 #----------------------------------------------------------------------
 ## 
 ### Commentary:
@@ -130,7 +130,7 @@
 ##' ## in the validation data at the following time points:
 ##' ## 0, 12, 24, 36, 48, 60
 ##' psurv <- predictRisk(fitCox,newdata=valdat,times=seq(0,60,12))
-##' ## This is a matrix with survival probabilities
+##' ## This is a matrix with event probabilities (1-survival)
 ##' ## one column for each of the 5 time points
 ##' ## one row for each validation set individual
 ##' 
@@ -579,6 +579,25 @@ predictRisk.psm <- function(object,newdata,times,...){
 }
 
 ##' @export 
+predictRisk.ranger <- function(object, newdata, times, cause, ...){
+    if (missing(times)||is.null(times)){
+        p <- stats::predict(object,data=newdata,importance="none",...)$predictions
+        p
+    }else{
+        if (object$treetype=="Survival") {
+            ptemp <- 1-stats::predict(object,data=newdata,...)$survival
+            pos <- prodlim::sindex(jump.times=timepoints(object),eval.times=times)
+            p <- cbind(1,ptemp)[,pos+1,drop=FALSE]
+            if (NROW(p) != NROW(newdata) || NCOL(p) != length(times))
+                stop(paste("\nPrediction matrix has wrong dimensions:\nRequested newdata x times: ",NROW(newdata)," x ",length(times),"\nProvided prediction matrix: ",NROW(p)," x ",NCOL(p),"\n\n",sep=""))
+            p
+        }else{
+            message("Sorry. Hope Marvin does this soon.")
+        }
+    }
+}
+
+##' @export 
 predictRisk.rfsrc <- function(object, newdata, times, cause, ...){
     if (missing(times)||is.null(times)){
         p <- as.numeric(stats::predict(object,newdata=newdata,importance="none",...)$predicted[,2])
@@ -586,7 +605,7 @@ predictRisk.rfsrc <- function(object, newdata, times, cause, ...){
         p
     }else{
         if (object$family=="surv") {
-            ptemp <- 1-predict(object,newdata=newdata,importance="none",...)$survival
+            ptemp <- 1-stats::predict(object,newdata=newdata,importance="none",...)$survival
             pos <- prodlim::sindex(jump.times=object$time.interest,eval.times=times)
             p <- cbind(1,ptemp)[,pos+1,drop=FALSE]
             if (NROW(p) != NROW(newdata) || NCOL(p) != length(times))
@@ -595,7 +614,7 @@ predictRisk.rfsrc <- function(object, newdata, times, cause, ...){
         }else{
             if (is.character(cause)) cause <- as.numeric(cause)
             if (!is.numeric(cause)) stop("cause is not numeric")
-            cif <- predict(object,newdata=newdata,importance="none",...)$cif[,,cause,drop=TRUE]
+            cif <- stats::predict(object,newdata=newdata,importance="none",...)$cif[,,cause,drop=TRUE]
             pos <- prodlim::sindex(jump.times=object$time.interest,eval.times=times)
             p <- cbind(0,cif)[,pos+1,drop=FALSE]
             if (NROW(p) != NROW(newdata) || NCOL(p) != length(times))

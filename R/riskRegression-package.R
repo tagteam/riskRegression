@@ -71,7 +71,7 @@ NULL
 #' 
 #' Springer Verlag
 #' @source
-#' \url{http://192.38.117.59/~linearpredictors/?page=datasets&dataset=Melanoma}
+#' \url{https://publicifsv.sund.ku.dk/~linearpredictors/?page=datasets&dataset=Melanoma}
 #' @keywords datasets
 ##' @examples
 ##' 

@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: apr 11 2018 (17:05) 
 ## Version: 
-## Last-Updated: jun 28 2018 (11:13) 
-##           By: Brice Ozenne
-##     Update #: 51
+## Last-Updated: Jul  1 2018 (08:17) 
+##           By: Thomas Alexander Gerds
+##     Update #: 52
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -22,16 +22,13 @@ calcBootATE <- function(object, pointEstimate, Gformula, data,
                         dots, n.obs,
                         handler, B, seed, mc.cores,
                         verbose){
-
     name.estimate <- names(pointEstimate)
-    
     ## cores
     x.cores <- parallel::detectCores()
     if(mc.cores > x.cores){
         warning("Not enough available cores \n","available: ",parallel::detectCores()," | requested: ",mc.cores,"\n")
         mc.cores <- x.cores
     }
-
     ## package to be exported to cluster
     if(handler %in% c("snow","foreach") ){
         pp <- find(as.character(object$call[[1]]))
@@ -39,15 +36,12 @@ calcBootATE <- function(object, pointEstimate, Gformula, data,
         addPackage <- if(length(index.package)>0){gsub("package:","",pp[index.package])}else{NULL}
         addPackage <- unique(c("riskRegression","parallel","survival",addPackage))
     }
-    
     ## seed
     if (!missing(seed)) set.seed(seed)
     bootseeds <- sample(1:1000000,size=B,replace=FALSE)
-
     ## bootstrap
     if(handler[[1]] %in% c("snow","parallel")) {
                                         # {{{ use boot package
-
         if(handler=="snow"){
             ## initialize CPU
             cl <- parallel::makeCluster(mc.cores)
@@ -64,7 +58,6 @@ calcBootATE <- function(object, pointEstimate, Gformula, data,
             ##
             cl <- NULL
         }
-
         ## run bootstrap
         boot.object <- boot::boot(data = data, R = B, statistic = function(data, index, ...){
             dataBoot <- data[index]
@@ -84,7 +77,6 @@ calcBootATE <- function(object, pointEstimate, Gformula, data,
                                        levels = levels,
                                        dots),
                               error = function(x){return(NULL)})
-
                 if(is.null(iBoot)){ ## error handling
                     out <- setNames(rep(NA, length(name.estimate), name.estimate))
                 }else{
@@ -95,7 +87,6 @@ calcBootATE <- function(object, pointEstimate, Gformula, data,
                 return(out)
             }, sim = "ordinary", stpe = "indices", strata = rep(1, n.obs),
             parallel = handler[[1]], ncpus = mc.cores, cl = cl)
-
                                         # }}}
     }else {
         if (handler[[1]]=="foreach" && mc.cores>1){
@@ -162,7 +153,6 @@ calcBootATE <- function(object, pointEstimate, Gformula, data,
             }, mc.cores = mc.cores)
                                         # }}}
         }
-    
                                         # {{{ convert to boot object
         M.bootEstimate <- do.call(rbind,lapply(boots,function(iBoot){
             c(iBoot$meanRisk$meanRisk, iBoot$riskComparison$diff, iBoot$riskComparison$ratio)
@@ -171,7 +161,6 @@ calcBootATE <- function(object, pointEstimate, Gformula, data,
             stop("Error in all bootstrap samples.")
         }
         colnames(M.bootEstimate) <- name.estimate
-
         boot.object <- list(t0 = pointEstimate,
                             t = M.bootEstimate,
                             R = B,
@@ -191,7 +180,6 @@ calcBootATE <- function(object, pointEstimate, Gformula, data,
         class(boot.object) <- "boot"
                                         # }}}
     }
-
     return(list(boot = boot.object,
                 bootseeds = bootseeds))
     

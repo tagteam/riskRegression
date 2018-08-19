@@ -51,6 +51,7 @@ test_that("loob survival",{
     loob.se0 <- Score(list("COX1"=cox1a,"COX2"=cox2a),formula=Surv(time,event)~1,data=learndat,times=5,split.method="loob",B=100,se.fit=FALSE)
     set.seed(5)
     loob.se1 <- Score(list("COX1"=cox1a,"COX2"=cox2a),formula=Surv(time,event)~1,data=learndat,times=5,split.method="loob",B=100,se.fit=TRUE)
+    loob.se1 <- Score(list("COX1"=cox1a,"COX2"=cox2a),formula=Surv(time,event)~1,data=learndat,times=5,split.method="loob",B=100,se.fit=TRUE,metrics="brier",conservative=TRUE)
     expect_equal(loob.se0$AUC$contrasts$delta,loob.se1$AUC$contrasts$delta)
     expect_equal(loob.se0$Brier$contrasts$delta,loob.se1$Brier$contrasts$delta)
 })
@@ -58,13 +59,17 @@ test_that("loob survival",{
 
 test_that("bootcv survival (multi.state.test)",{
     learndat=sampleData(200,outcome="survival")
+    learndat[,eventtime:=NULL]
+    learndat[,censtime:=NULL]
     cox1a = coxph(Surv(time,event)~X6,data=learndat,x=TRUE,y=TRUE)
     cox2a = coxph(Surv(time,event)~X7+X8+X9,data=learndat,x=TRUE,y=TRUE)
+    ## rf1 = rfsrc(Surv(time,event)~X1+X2+X3+X4+X5+X6+X7+X8+X9+X10,data=learndat,ntree=500)
+    ## rf1 = rfsrc(Surv(time,event)~.,data=learndat,ntree=500)
     ## leave-one-out bootstrap
     set.seed(5)
     bootcv.se0 <- Score(list("COX1"=cox1a,"COX2"=cox2a),formula=Surv(time,event)~1,data=learndat,times=5,split.method="bootcv",B=10,se.fit=FALSE,multi.split.test=FALSE)
     set.seed(5)
-    bootcv.se1 <- Score(list("COX1"=cox1a,"COX2"=cox2a),formula=Surv(time,event)~1,data=learndat,times=5,split.method="bootcv",B=10,se.fit=TRUE,multi.split.test=FALSE)
+    bootcv.se1 <- Score(list("COX1"=cox1a,"COX2"=cox2a,"RF"=rf1),formula=Surv(time,event)~1,data=learndat,times=5,split.method="bootcv",B=10,se.fit=TRUE,multi.split.test=FALSE)
     set.seed(5)
     bootcv.se2 <- Score(list("COX1"=cox1a,"COX2"=cox2a),formula=Surv(time,event)~1,data=learndat,times=5,split.method="bootcv",B=10,se.fit=FALSE,multi.split.test=TRUE,conservative=TRUE)
     set.seed(5)

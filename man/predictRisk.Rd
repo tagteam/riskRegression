@@ -132,7 +132,7 @@ fitCox <- coxph(Surv(time,event)~X1+X2,data=learndat,x=TRUE,y=TRUE)
 ## in the validation data at the following time points:
 ## 0, 12, 24, 36, 48, 60
 psurv <- predictRisk(fitCox,newdata=valdat,times=seq(0,60,12))
-## This is a matrix with survival probabilities
+## This is a matrix with event probabilities (1-survival)
 ## one column for each of the 5 time points
 ## one row for each validation set individual
 
