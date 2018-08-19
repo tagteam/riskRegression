@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: jun 27 2018 (17:47) 
 ## Version: 
-## Last-Updated: aug 17 2018 (13:31) 
+## Last-Updated: aug 19 2018 (22:59) 
 ##           By: Brice Ozenne
-##     Update #: 710
+##     Update #: 711
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -180,7 +180,7 @@ ateRobust <- function(data, times, cause, type,
                       fitter = "coxph", product.limit = FALSE, efficient = TRUE,
                       nuisance.iid = TRUE, na.rm = FALSE){
 
-    modeSurvival <- "survival"
+    modeSurvival <- "risk"
     
     ## ** normalize arguments
     if(!is.data.table(data)){
