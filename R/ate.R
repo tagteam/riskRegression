@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Oct 23 2016 (08:53) 
 ## Version: 
-## last-updated: Aug 17 2018 (08:23) 
-##           By: Thomas Alexander Gerds
-##     Update #: 810
+## last-updated: aug 20 2018 (19:26) 
+##           By: Brice Ozenne
+##     Update #: 811
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -395,8 +395,6 @@ ate <- function(object,
                               n.contrasts = n.contrasts,
                               levels = levels,
                               dots)
-    if (TD) Gargs <- c(Gargs,list(formula=formula))
-    estimateTime <- system.time(pointEstimate <- do.call(Gformula.function, Gargs))
     # }}}
 
     # {{{ Confidence interval    

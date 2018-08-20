@@ -5,7 +5,7 @@
 \title{Computation of standard errors for predictions}
 \usage{
 calcSeCox(object, times, nTimes, type, Lambda0, object.n, object.time,
-  object.eXb, object.strata, nStrata, new.eXb, new.LPdata, new.strata,
+  object.eXb, object.strata, nStrata, new.n, new.eXb, new.LPdata, new.strata,
   new.survival, nVar, export, store.iid)
 }
 \arguments{
@@ -33,21 +33,23 @@ or several of the strings \code{"hazard"},\code{"cumhazard"}, \code{"survival"}.
 
 \item{nStrata}{the number of strata.}
 
-\item{new.eXb}{the linear predictor evaluated for the new observations}
+\item{new.eXb}{the number of observations for which the prediction was performed.}
 
-\item{new.LPdata}{the variables involved in the linear predictor for the new observations}
+\item{new.LPdata}{the variables involved in the linear predictor for the new observations.}
 
-\item{new.strata}{the strata indicator for the new observations}
+\item{new.strata}{the strata indicator for the new observations.}
 
-\item{new.survival}{the survival evaluated for the new observations}
+\item{new.survival}{the survival evaluated for the new observations.}
 
-\item{nVar}{the number of variables that form the linear predictor}
+\item{nVar}{the number of variables that form the linear predictor.}
 
-\item{export}{can be "iid" to return the value of the influence function for each observation
-"se" to return the standard error for a given timepoint}
+\item{export}{can be "iid" to return the value of the influence function for each observation.
+"se" to return the standard error for a given timepoint.}
 
 \item{store.iid}{Implementation used to estimate the influence function and the standard error.
 Can be \code{"full"} or \code{"minimal"}. See the details section.}
+
+\item{new.eXb}{the linear predictor evaluated for the new observations.}
 }
 \value{
 A list optionally containing the standard error for the survival, cumulative hazard and hazard.

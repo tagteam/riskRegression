@@ -153,12 +153,12 @@ List calcSeHazard_cpp(const NumericVector& seqTau, // horizon time for the predi
 // [[Rcpp::export]]
 std::vector< std::vector<arma::mat> > calcAIFsurv_cpp(const std::vector<arma::mat>& ls_IFcumhazard,
 				       const arma::mat& IFbeta,
-				       const std::vector<rowvec>& cumhazard0,
+						      const std::vector<arma::rowvec>& cumhazard0,
 				       const arma::mat& survival,
 				       const arma::colvec& eXb,
 				       const arma::mat& X,
 				       const NumericVector& prevStrata,
-				       const std::vector<uvec>& ls_indexStrata,
+						      const std::vector<arma::uvec>& ls_indexStrata,
  				       const std::vector<arma::mat>& factor,
 				       int nTimes,
 				       int nObs,
@@ -186,7 +186,7 @@ std::vector< std::vector<arma::mat> > calcAIFsurv_cpp(const std::vector<arma::ma
   }
 
   // ** initialize
-  rowvec rowvec_tempo;
+  arma::rowvec rowvec_tempo;
   arma::mat IFtempo1;
   arma::mat IFtempo2;
   int nObs_strata;

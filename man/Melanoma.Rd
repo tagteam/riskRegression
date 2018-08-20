@@ -19,7 +19,7 @@
 \item{logthick}{tumour thickness on log-scale}
 }}
 \source{
-\url{http://192.38.117.59/~linearpredictors/?page=datasets&dataset=Melanoma}
+\url{https://publicifsv.sund.ku.dk/~linearpredictors/?page=datasets&dataset=Melanoma}
 }
 \description{
 In the period 1962-77, 205 patients with malignant melanoma (cancer of the
