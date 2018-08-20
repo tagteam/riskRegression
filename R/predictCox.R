@@ -457,6 +457,9 @@ predictCox <- function(object,
         data.table::setkeyv(object.modelFrame,"XXXindexXXX")
 
         ## Computation of the influence function and/or the standard error
+        export <- c("iid"[(iid+band)>0],"se"[(se+band)>0],"average.iid"[average.iid==TRUE])
+        attributes(export) <- attributes(average.iid)
+        
         outSE <- calcSeCox(object,
                            times = times.sorted,
                            nTimes = nTimes,
@@ -473,7 +476,7 @@ predictCox <- function(object,
                            new.strata = new.strata,
                            new.survival = out$survival,
                            nVar = nVar, 
-                           export = c("iid"[(iid+band)>0],"se"[(se+band)>0],"average.iid"[average.iid==TRUE]),
+                           export = export,
                            store.iid = store.iid)
       
         ## restaure orginal time ordering
