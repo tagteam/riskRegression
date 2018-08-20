@@ -24,6 +24,7 @@ Imports:
     plotrix,
     timereg (>= 1.9.1),
     foreach,
+    ranger,
     parallel,
     Rcpp,
     rms (>= 5.0-0)

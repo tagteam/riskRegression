@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun  6 2016 (09:02) 
 ## Version: 
-## last-updated: Aug 16 2018 (16:28) 
+## last-updated: Aug 17 2018 (12:26) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 115
+##     Update #: 116
 #----------------------------------------------------------------------
 ## 
 ### Commentary:
@@ -586,7 +586,7 @@ predictRisk.ranger <- function(object, newdata, times, cause, ...){
     }else{
         if (object$treetype=="Survival") {
             ptemp <- 1-stats::predict(object,data=newdata,...)$survival
-            pos <- prodlim::sindex(jump.times=timepoints(object),eval.times=times)
+            pos <- prodlim::sindex(jump.times=ranger::timepoints(object),eval.times=times)
             p <- cbind(1,ptemp)[,pos+1,drop=FALSE]
             if (NROW(p) != NROW(newdata) || NCOL(p) != length(times))
                 stop(paste("\nPrediction matrix has wrong dimensions:\nRequested newdata x times: ",NROW(newdata)," x ",length(times),"\nProvided prediction matrix: ",NROW(p)," x ",NCOL(p),"\n\n",sep=""))
