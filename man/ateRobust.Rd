@@ -76,16 +76,16 @@ beta <- 0.4
 
 ## check bias 
 set.seed(10)
-dt <- as.data.table(sim(mSimSurv, n = 1e3, p = c(alpha = alpha, beta = beta)))
+dt <- as.data.table(lava::sim(mSimSurv, n = 1e3, p = c(alpha = alpha, beta = beta)))
 setkeyv(dt, c("a","w"))
 
 ## True value
-psi.TRUE <- c("surv.0" = exp(-1*exp(alpha*0+beta*0))*0.5 + exp(-1*exp(alpha*0+beta*1))*0.5,
-              "surv.1" = exp(-1*exp(alpha*1+beta*0))*0.5 + exp(-1*exp(alpha*1+beta*1))*0.5)
+psi.TRUE <- c("risk.0" = (1-exp(-1*exp(alpha*0+beta*0)))*0.5 + (1-exp(-1*exp(alpha*0+beta*1)))*0.5,
+              "risk.1" = (1-exp(-1*exp(alpha*1+beta*0)))*0.5 + (1-exp(-1*exp(alpha*1+beta*1)))*0.5)
 psi.TRUE
 
 ## Approximate true value
-dt[,.(surv = mean(eventtime>1)),by = c("a")]
+dt[,.(risk = mean(eventtime<1)),by = c("a")]
 
 ## Estimated using stratified Cox model
 res1 <- ateRobust(data = dt, type = "survival",
