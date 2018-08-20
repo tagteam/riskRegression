@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: jun 27 2018 (17:47) 
 ## Version: 
-## Last-Updated: aug 19 2018 (22:59) 
+## Last-Updated: aug 20 2018 (22:00) 
 ##           By: Brice Ozenne
-##     Update #: 711
+##     Update #: 759
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -71,11 +71,12 @@
 #'
 #' ## settings
 #' alpha <- 0.3 
-#' beta <- 0.4 
+#' beta <- 0.4
+#' n <- 1e3
 #'
 #' ## check bias 
 #' set.seed(10)
-#' dt <- as.data.table(lava::sim(mSimSurv, n = 1e3, p = c(alpha = alpha, beta = beta)))
+#' dt <- as.data.table(lava::sim(mSimSurv, n = n, p = c(alpha = alpha, beta = beta)))
 #' setkeyv(dt, c("a","w"))
 #'
 #' ## True value
@@ -218,6 +219,22 @@ ateRobust <- function(data, times, cause, type,
         stop("Argument \'data\' should not contain column(s) named \"",paste0(txt, collapse = "\" \""),"\"\n")
     }
 
+    ## ** fit models
+    ## event
+    if(type == "survival"){
+        model.event <- do.call(fitter, args = list(formula = formula.event, data = data, x = TRUE, y = TRUE))
+        coxMF <- coxModelFrame(model.event)
+    }else{
+        model.event <- CSC(formula.event, data = data, fitter = fitter, cause = cause, surv.type = "hazard")
+        coxMF <- unclass(model.event$response)
+    }
+
+    ## treatment
+    model.treatment <- do.call(glm, args = list(formula = formula.treatment, data = data, family = stats::binomial(link = "logit")))
+
+    ## censoring
+    model.censor <- suppressWarnings(do.call(fitter, args = list(formula = formula.censor, data = data, x = TRUE, y = TRUE))) ## , no.opt = TRUE
+    
     ## ** prepare dataset
     ## convert to binary
     data[, c("treatment.bin") := as.numeric(as.factor(.SD[[treatment]]))-1]
@@ -229,55 +246,7 @@ ateRobust <- function(data, times, cause, type,
     data1 <- copy(data)
     data1[,c(treatment) := factor(level.treatment[2], level.treatment)]
 
-    ## ** outcome model: conditional expectation
-    if(type == "survival"){
-        model.event <- do.call(fitter, args = list(formula = formula.event, data = data, x = TRUE, y = TRUE))
-        coxMF <- coxModelFrame(model.event)
-
-        prediction.event <- do.call(predictor.cox, args = list(model.event, newdata = data, times = times, iid = nuisance.iid))
-        prediction.event0 <- do.call(predictor.cox, args = list(model.event, newdata = data0, times = times, iid = nuisance.iid))
-        prediction.event1 <- do.call(predictor.cox, args = list(model.event, newdata = data1, times = times, iid = nuisance.iid))
-
-        if(modeSurvival == "survival"){
-            data[, c("prob.event") := prediction.event$survival[,1]]
-            data[, c("prob.event0") := prediction.event0$survival[,1]]
-            data[, c("prob.event1") := prediction.event1$survival[,1]]
-
-            if(nuisance.iid){
-                iid.event0 <- prediction.event0$survival.iid[,1,]
-                iid.event1 <- prediction.event1$survival.iid[,1,]
-            }
-        }else{
-            data[, c("prob.event") := 1 - prediction.event$survival[,1]]
-            data[, c("prob.event0") := 1 - prediction.event0$survival[,1]]
-            data[, c("prob.event1") := 1 - prediction.event1$survival[,1]]
-
-            if(nuisance.iid){
-                iid.event0 <- - prediction.event0$survival.iid[,1,]
-                iid.event1 <- - prediction.event1$survival.iid[,1,]
-            }
-        }
-
-    }else if(type=="competing.risks"){
-        model.event <- CSC(formula.event, data = data, fitter = fitter, cause = cause, surv.type = "hazard")
-        coxMF <- unclass(model.event$response)
-
-        prediction.event <- predict(model.event, newdata = data, times = times, cause = cause, product.limit = product.limit, iid = FALSE)
-        prediction.event0 <- predict(model.event, newdata = data0, times = times, cause = cause, product.limit = product.limit, iid = nuisance.iid)
-        prediction.event1 <- predict(model.event, newdata = data1, times = times, cause = cause, product.limit = product.limit, iid = nuisance.iid)
-
-        data[, c("prob.event") := prediction.event$absRisk[,1]]
-        data[, c("prob.event0") := prediction.event0$absRisk[,1]]
-        data[, c("prob.event1") := prediction.event1$absRisk[,1]]
-
-        if(nuisance.iid){
-            iid.event0 <- prediction.event0$absRisk.iid[,1,]
-            iid.event1 <- prediction.event1$absRisk.iid[,1,]
-        }
-
-    }
-
-    ## truncate at times
+    ## random variables stopped at times
     if(type == "survival"){
         data[,c("time.tau") := pmin(coxMF$stop,times)]
         if(modeSurvival == "survival"){
@@ -297,8 +266,7 @@ ateRobust <- function(data, times, cause, type,
     ## table(data$status.tau)
 
     ## ** Propensity score model: weights
-    model.treatment <- do.call(glm, args = list(formula = formula.treatment, data = data, family = stats::binomial(link = "logit")))
-    
+    ## must be before the outcome model (for the computation of the IF)
     if(nuisance.iid){
         prediction.treatment <- .predictGLM(model.treatment, newdata = data)
         iid.treatment <- attr(prediction.treatment, "iid")
@@ -309,9 +277,101 @@ ateRobust <- function(data, times, cause, type,
 
     data[, c("prob.treatment") := prediction.treatment[,1]]
 
+    
+    ## ** outcome model: conditional expectation
+    if(type == "survival"){
+        ## Computation of the influence function (Gformula, AIPW)
+        ## additional term: eq:IF-AIPWfull (green terms)
+        ## this is sent to predictCox to multiply each individual IF before averaging
+        if(nuisance.iid){
+            
+            nuisance.iid0 <- TRUE
+            attr(nuisance.iid0, "factor") <- list("Gformula" = matrix(1, nrow = n.obs, ncol = 1),
+                                                  "AIPW" = cbind(data[, 1 - (1-.SD$treatment.bin) / (1-.SD$prob.treatment)])
+                                                  )
+            nuisance.iid1 <- TRUE
+            attr(nuisance.iid1, "factor") <- list("Gformula" = matrix(1, nrow = n.obs, ncol = 1),
+                                                  "AIPW" = cbind(data[, 1 - .SD$treatment.bin / .SD$prob.treatment])
+                                                  )
+        }else{
+            nuisance.iid0 <- FALSE
+            nuisance.iid1 <- FALSE
+        }
+        
+        ## Estimation of the survival + IF
+        prediction.event <- do.call(predictor.cox, args = list(model.event, newdata = data, times = times, type = "survival"))
+        prediction.event0 <- do.call(predictor.cox, args = list(model.event, newdata = data0, times = times, type = "survival", average.iid = nuisance.iid0))
+        prediction.event1 <- do.call(predictor.cox, args = list(model.event, newdata = data1, times = times, type = "survival", average.iid = nuisance.iid1))
+
+        ## store results
+        if(modeSurvival == "survival"){
+            data[, c("prob.event") := prediction.event$survival[,1]]
+            data[, c("prob.event0") := prediction.event0$survival[,1]]
+            data[, c("prob.event1") := prediction.event1$survival[,1]]
+
+            if(nuisance.iid){
+                data[,iidG.event0 := prediction.event0$survival.average.iid[[1]][,1]]
+                data[,iidAIPW.event0 := prediction.event0$survival.average.iid[[2]][,1]]
+                data[,iidG.event1 := prediction.event1$survival.average.iid[[1]][,1]]
+                data[,iidAIPW.event1 := prediction.event1$survival.average.iid[[2]][,1]]
+            }
+            
+        }else{
+            data[, c("prob.event") := 1 - prediction.event$survival[,1]]
+            data[, c("prob.event0") := 1 - prediction.event0$survival[,1]]
+            data[, c("prob.event1") := 1 - prediction.event1$survival[,1]]
+
+            if(nuisance.iid){
+                data[,iidG.event0 := -prediction.event0$survival.average.iid[[1]][,1]]
+                data[,iidAIPW.event0 := -prediction.event0$survival.average.iid[[2]][,1]]
+                data[,iidG.event1 := -prediction.event1$survival.average.iid[[1]][,1]]
+                data[,iidAIPW.event1 := -prediction.event1$survival.average.iid[[2]][,1]]
+            }
+            
+        }
+
+    }else if(type=="competing.risks"){
+        ## Computation of the influence function (Gformula, AIPW)
+        ## additional term: eq:IF-AIPWfull (green terms)
+        ## this is sent to predictCox to multiply each individual IF before averaging
+        if(nuisance.iid){
+            nuisance.iid0 <- TRUE
+            attr(nuisance.iid0, "factor") <- list("Gformula" = matrix(1, nrow = n.obs, ncol = 1),
+                                                  "AIPW" = cbind(data[, 1 - (1-.SD$treatment.bin) / (1-.SD$prob.treatment)])
+                                                  )
+            nuisance.iid1 <- TRUE
+            attr(nuisance.iid1, "factor") <- list("Gformula" = matrix(1, nrow = n.obs, ncol = 1),
+                                                  "AIPW" = cbind(data[, 1 - .SD$treatment.bin / .SD$prob.treatment])
+                                                  )
+        }else{
+            nuisance.iid0 <- FALSE
+            nuisance.iid1 <- FALSE
+        }
+
+        ## Estimation of the survival + IF
+        prediction.event <- predict(model.event, newdata = data, times = times, cause = cause, product.limit = product.limit)
+        prediction.event0 <- predict(model.event, newdata = data0, times = times, cause = cause, product.limit = product.limit, iid = nuisance.iid)
+        prediction.event1 <- predict(model.event, newdata = data1, times = times, cause = cause, product.limit = product.limit, iid = nuisance.iid)
+
+        data[, c("prob.event") := prediction.event$absRisk[,1]]
+        data[, c("prob.event0") := prediction.event0$absRisk[,1]]
+        data[, c("prob.event1") := prediction.event1$absRisk[,1]]
+
+        ## store results
+        if(nuisance.iid){
+            weight0 <- attr(nuisance.iid0, "factor")[["AIPW"]][,1]
+            data[,iidG.event0 := colMeans(prediction.event0$absRisk.iid[,1,])]
+            data[,iidAIPW.event0 := apply(prediction.event0$absRisk.iid[,1,],2,function(iCol){mean(weight0*iCol)})]
+
+            weight1 <- attr(nuisance.iid1, "factor")[["AIPW"]][,1]
+            data[,iidG.event1 := colMeans(prediction.event1$absRisk.iid[,1,])]
+            data[,iidAIPW.event1 := apply(prediction.event1$absRisk.iid[,1,],2,function(iCol){mean(weight1*iCol)})]
+        }
+
+    }
+
     ## ** Censoring model: weights
     ## fit model
-    model.censor <- suppressWarnings(do.call(fitter, args = list(formula = formula.censor, data = data, x = TRUE, y = TRUE))) ## , no.opt = TRUE
     if(model.censor$nevent==0){
         data[,c("prob.censoring") := 1]
     }else{
@@ -333,9 +393,10 @@ ateRobust <- function(data, times, cause, type,
                        model.censor = model.censor, model.event = model.event,
                        predictor.cox = predictor.cox, product.limit = product.limit,
                        modeSurvival = modeSurvival)
+            ## data$Lterm
         }
     }
-    
+
     ## ** Compute parameter of interest
     IF <- list()
 
@@ -347,10 +408,9 @@ ateRobust <- function(data, times, cause, type,
     )] / n.obs
 
     if(nuisance.iid){
-        ## additional term: eq:IF-Gformula-full (green term)
-        IF$Gformula2 <- IF$Gformula + cbind(colMeans(iid.event0),
-                                            colMeans(iid.event1))
+        IF$Gformula2 <- IF$Gformula + cbind(data$iidG.event0, data$iidG.event1)
     }
+    
     ## *** IPW
     ## eq:IF-IPWc (blue term)
     IF$IPWnaive <- data[,cbind(
@@ -396,14 +456,7 @@ ateRobust <- function(data, times, cause, type,
     }
     
     if(nuisance.iid){
-        ## additional term: eq:IF-AIPWfull (green terms)
-        weightY.tempo0 <- data[, 1 - (1-.SD$treatment.bin) / (1-.SD$prob.treatment)]
-        weightY.tempo1 <- data[, 1 - .SD$treatment.bin / .SD$prob.treatment]
-
-        AIPWaddY <- cbind(
-            apply(iid.event0,2,function(iCol){mean(weightY.tempo0*iCol)}),
-            apply(iid.event1,2,function(iCol){mean(weightY.tempo1*iCol)})
-        )
+        AIPWaddY <- cbind(data$iidAIPW.event0, data$iidAIPW.event1)
 
         weightE.tempo0 <- data[,(1-.SD$treatment.bin) * .SD$prob.event0 / (1-.SD$prob.treatment)^2]
         weightE.tempo1 <- data[,.SD$treatment.bin * .SD$prob.event1 / .SD$prob.treatment^2]

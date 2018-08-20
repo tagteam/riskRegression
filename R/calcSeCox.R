@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: maj 27 2017 (11:46) 
 ## Version: 
-## last-updated: aug 19 2018 (22:52) 
+## last-updated: aug 20 2018 (21:15) 
 ##           By: Brice Ozenne
-##     Update #: 449
+##     Update #: 468
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -82,7 +82,6 @@ calcSeCox <- function(object, times, nTimes, type,
                                         # }}}
 
                                         # {{{ prepare arguments
-    n.new <- length(new.eXb)
     new.strata <- as.numeric(new.strata)
     
     if(length(Lambda0$strata)==0){
@@ -96,13 +95,13 @@ calcSeCox <- function(object, times, nTimes, type,
     
     out <- list()
     if("se" %in% export){
-        if("cumhazard" %in% type){out$cumhazard.se <- matrix(NA, nrow = n.new, ncol = nTimes)}
-        if("survival" %in% type){out$survival.se <- matrix(NA, nrow = n.new, ncol = nTimes)}
+        if("cumhazard" %in% type){out$cumhazard.se <- matrix(NA, nrow = new.n, ncol = nTimes)}
+        if("survival" %in% type){out$survival.se <- matrix(NA, nrow = new.n, ncol = nTimes)}
     }
     if("iid" %in% export){
-        if("hazard" %in% type){out$hazard.iid <- array(NA, dim = c(n.new, nTimes, object.n))}
-        if("cumhazard" %in% type){out$cumhazard.iid <- array(NA, dim = c(n.new, nTimes, object.n))}
-        if("survival" %in% type){out$survival.iid <- array(NA, dim = c(n.new, nTimes, object.n))}
+        if("hazard" %in% type){out$hazard.iid <- array(NA, dim = c(new.n, nTimes, object.n))}
+        if("cumhazard" %in% type){out$cumhazard.iid <- array(NA, dim = c(new.n, nTimes, object.n))}
+        if("survival" %in% type){out$survival.iid <- array(NA, dim = c(new.n, nTimes, object.n))}
     }
     if("average.iid" %in% export){
         if("cumhazard" %in% type){out$cumhazard.average.iid <- matrix(0, nrow = object.n, ncol = nTimes)}
@@ -156,8 +155,8 @@ calcSeCox <- function(object, times, nTimes, type,
                 if("survival" %in% type){out$survival.se[indexStrata,] <- resCpp$se * new.survival[indexStrata,,drop=FALSE]}
             }                
             if("average.iid" %in% export){ ## average over strata
-                if("cumhazard" %in% type){out$cumhazard.average.iid <- out$cumhazard.average.iid + resCpp$iidsum_cumhazard/n.new}
-                if("survival" %in% type){out$survival.average.iid <- out$survival.average.iid + resCpp$iidsum_survival/n.new}
+                if("cumhazard" %in% type){out$cumhazard.average.iid <- out$cumhazard.average.iid + resCpp$iidsum_cumhazard/new.n}
+                if("survival" %in% type){out$survival.average.iid <- out$survival.average.iid + resCpp$iidsum_survival/new.n}
             }                
             
         }        
@@ -170,7 +169,7 @@ calcSeCox <- function(object, times, nTimes, type,
                 X_IFbeta_mat <- tcrossprod(iid.object$IFbeta, new.LPdata)
             }
             
-            for(iObs in 1:n.new){
+            for(iObs in 1:new.n){
                 ## print(iObs)
                 ## NOTE: cannot perfom log transformation if hazard %in% type (error in predictCox)
                 iObs.strata <- new.strata[iObs]
@@ -207,8 +206,8 @@ calcSeCox <- function(object, times, nTimes, type,
                         if("survival" %in% type){out$survival.se[iObs,] <- se_tempo * new.survival[iObs,,drop=FALSE]}
                     }
                     if("iid" %in% export){  ## average over observations
-                        if("cumhazard" %in% type){out$cumhazard.average.iid <- out$cumhazard.average.iid + IF_tempo/n.new}
-                        if("survival" %in% type){out$survival.average.iid <- out$survival.average.iid + rowMultiply_cpp(-IF_tempo, scale = new.survival[iObs,,drop=FALSE])/n.new}
+                        if("cumhazard" %in% type){out$cumhazard.average.iid <- out$cumhazard.average.iid + IF_tempo/new.n}
+                        if("survival" %in% type){out$survival.average.iid <- out$survival.average.iid + rowMultiply_cpp(-IF_tempo, scale = new.survival[iObs,,drop=FALSE])/new.n}
                     }
          
                 }
@@ -216,8 +215,11 @@ calcSeCox <- function(object, times, nTimes, type,
 
         }else if("average.iid" %in% export){ ## fast average over observations
 
-            prev.strata <- table(new.strata)/n.new           
-            index.strata <- lapply(1:nStrata, function(iStrata){
+            new.Ustrata <- sort(unique(new.strata))
+            new.nStrata <- length(new.Ustrata)
+            
+            new.prevStrata <- table(new.strata)/new.n           
+            new.indexStrata <- lapply(new.Ustrata, function(iStrata){
                 which(new.strata==iStrata) - 1
             })
 
@@ -228,40 +230,39 @@ calcSeCox <- function(object, times, nTimes, type,
 
             if(is.null(attr(export,"factor"))){
                 rm.list <- TRUE
-                factor <- list(matrix(1, nrow = n.new, ncol = nTimes))
+                factor <- list(matrix(1, nrow = new.n, ncol = nTimes))
             }else{
                 rm.list <- FALSE
                 factor <- attr(export, "factor")
             }
-
-            outRcpp <- calcAIFsurv_cpp(ls_IFcumhazard = iid.object$IFcumhazard, 
+            outRcpp <- calcAIFsurv_cpp(ls_IFcumhazard = iid.object$IFcumhazard[new.Ustrata], 
                                        IFbeta = iid.object$IFbeta,
-                                       cumhazard0 = Lambda0$cumhazard,
+                                       cumhazard0 = Lambda0$cumhazard[new.Ustrata],
                                        survival = new.survival,
                                        eXb = new.eXb,
                                        X = new.LPdata,
-                                       prevStrata = prev.strata,
-                                       ls_indexStrata = index.strata,
+                                       prevStrata = new.prevStrata,
+                                       ls_indexStrata = new.indexStrata,
                                        factor = factor,
                                        nTimes = nTimes,
-                                       nObs = n.new,
-                                       nStrata = nStrata,
+                                       nObs = object.n,
+                                       nStrata = new.nStrata,
                                        nVar = nVar,
                                        exportCumHazard = ("cumhazard" %in% type),
                                        exportSurvival = ("survival" %in% type))
-
+            
             if("cumhazard" %in% type){
                 if(rm.list){
-                    out$cumhazard.average.iid <- matrix(outRcpp[[1]][[1]], nrow = n.new, ncol = nTimes)
+                    out$cumhazard.average.iid <- matrix(outRcpp[[1]][[1]], nrow = object.n, ncol = nTimes)
                 }else{
-                    out$cumhazard.average.iid <- lapply(outRcpp[[1]], function(iMat){matrix(iMat, nrow = n.new, ncol = nTimes)})
+                    out$cumhazard.average.iid <- lapply(outRcpp[[1]], function(iMat){matrix(iMat, nrow = object.n, ncol = nTimes)})
                 }
             }
             if("survival" %in% type){
                 if(rm.list){
-                    out$survival.average.iid <- matrix(outRcpp[[2]][[1]], nrow = n.new, ncol = nTimes)
+                    out$survival.average.iid <- matrix(outRcpp[[2]][[1]], nrow = object.n, ncol = nTimes)
                 }else{
-                    out$survival.average.iid <- lapply(outRcpp[[2]], function(iMat){matrix(iMat, nrow = n.new, ncol = nTimes)})
+                    out$survival.average.iid <- lapply(outRcpp[[2]], function(iMat){matrix(iMat, nrow = object.n, ncol = nTimes)})
                 }
             }
             

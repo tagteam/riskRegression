@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: aug 15 2018 (11:42) 
 ## Version: 
-## Last-Updated: aug 17 2018 (18:05) 
+## Last-Updated: aug 20 2018 (22:01) 
 ##           By: Brice Ozenne
-##     Update #: 23
+##     Update #: 24
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -48,70 +48,39 @@ test_that("Agreement ate-ateRobust (survival)",{
                  c(e.ate$meanRisk[,meanRisk.se],e.ate$riskComparison[,diff.se]))
 
 
-    ## check values
-    test <- e.ateRobust$ate.value
-    rownames(test) <- NULL
-    M.GS <- cbind("Gformula" = c(0.19447, 0.54518, 0.35071), 
-                  "Gformula2" = c(0.19447, 0.54518, 0.35071), 
-                  "IPWnaive" = c(0.15098, 0.71242, 0.56145), 
-                  "IPWefficient" = c(0.15061, 0.70431, 0.5537), 
-                  "IPWnaive2" = c(0.15215, 0.69063, 0.53848), 
-                  "IPWefficient2" = c(0.15178, 0.68252, 0.53074), 
-                  "AIPWnaive" = c(0.14726, 0.73904, 0.59178), 
-                  "AIPWefficient" = c(0.14689, 0.73092, 0.58403), 
-                  "AIPWnaive2" = c(0.14686, 0.73285, 0.58599), 
-                  "AIPWefficient2" = c(0.14649, 0.72473, 0.57824)
-                  )
-    expect_equal(test, M.GS, tol = 1e-4)
-    ## butils::object2script(test, digit = 5)
+    ## ## check values
+    ## test <- e.ateRobust$ate.value
+    ## rownames(test) <- NULL
+    ## M.GS <- cbind("Gformula" = c(0.19447, 0.54518, 0.35071), 
+    ##               "Gformula2" = c(0.19447, 0.54518, 0.35071), 
+    ##               "IPWnaive" = c(0.15098, 0.71242, 0.56145), 
+    ##               "IPWefficient" = c(0.15061, 0.70431, 0.5537), 
+    ##               "IPWnaive2" = c(0.15215, 0.69063, 0.53848), 
+    ##               "IPWefficient2" = c(0.15178, 0.68252, 0.53074), 
+    ##               "AIPWnaive" = c(0.14726, 0.73904, 0.59178), 
+    ##               "AIPWefficient" = c(0.14689, 0.73092, 0.58403), 
+    ##               "AIPWnaive2" = c(0.14686, 0.73285, 0.58599), 
+    ##               "AIPWefficient2" = c(0.14649, 0.72473, 0.57824)
+    ##               )
+    ## expect_equal(test, M.GS, tol = 1e-4)
+    ## ## butils::object2script(test, digit = 5)
 
-    test <- e.ateRobust$ate.se
-    rownames(test) <- NULL
-    M.GS <- cbind("Gformula" = c(0.01086, 0.0194, 0.00877), 
-                  "Gformula2" = c(0.04724, 0.13442, 0.12753), 
-                  "IPWnaive" = c(0.05782, 0.24982, 0.26468), 
-                  "IPWefficient" = c(0.05781, 0.24876, 0.26357), 
-                  "IPWnaive2" = c(0.05681, 0.15178, 0.16212), 
-                  "IPWefficient2" = c(0.05682, 0.15319, 0.16357), 
-                  "AIPWnaive" = c(0.05661, 0.1523, 0.16035), 
-                  "AIPWefficient" = c(0.05663, 0.15274, 0.16089), 
-                  "AIPWnaive2" = c(0.05569, 0.14401, 0.15266), 
-                  "AIPWefficient2" = c(0.0557, 0.14534, 0.15403)
-                  )
-    expect_equal(test, M.GS, tol = 1e-4)
-    ## butils::object2script(test, digit = 5)
+    ## test <- e.ateRobust$ate.se
+    ## rownames(test) <- NULL
+    ## M.GS <- cbind("Gformula" = c(0.01086, 0.0194, 0.00877), 
+    ##               "Gformula2" = c(0.04724, 0.13442, 0.12753), 
+    ##               "IPWnaive" = c(0.05782, 0.24982, 0.26468), 
+    ##               "IPWefficient" = c(0.05781, 0.24876, 0.26357), 
+    ##               "IPWnaive2" = c(0.05681, 0.15178, 0.16212), 
+    ##               "IPWefficient2" = c(0.05682, 0.15319, 0.16357), 
+    ##               "AIPWnaive" = c(0.05661, 0.1523, 0.16035), 
+    ##               "AIPWefficient" = c(0.05663, 0.15274, 0.16089), 
+    ##               "AIPWnaive2" = c(0.05569, 0.14401, 0.15266), 
+    ##               "AIPWefficient2" = c(0.0557, 0.14534, 0.15403)
+    ##               )
+    ## expect_equal(test, M.GS, tol = 1e-4)
+    ## ## butils::object2script(test, digit = 5)
 })
-
-## ** other setting
-mSimSurv <- lava::lvm()
-lava::distribution(mSimSurv, ~a) <- lava::binomial.lvm(p = c(0.5))
-lava::distribution(mSimSurv, ~w1) <- lava::binomial.lvm(p = c(0.5))
-
-lava::distribution(mSimSurv, "eventtime") <- lava::coxExponential.lvm(scale = 1)
-lava::distribution(mSimSurv, "censtime") <- lava::coxExponential.lvm(scale = 0.00000000001)
-mSimSurv <- lava::eventTime(mSimSurv, time ~ min(eventtime = 1, censtime = 0), "event")
-lava::regression(mSimSurv) <- eventtime ~ alpha * a + beta * w1
-lava::regression(mSimSurv) <- a ~ gamma * w1
-lava::regression(mSimSurv) <- censtime ~ delta * w1
-
-psi.TRUE <- c("risk.0" = (1-exp(-1*exp(alpha*0+beta*0)))*0.5 + (1-exp(-1*exp(alpha*0+beta*1)))*0.5,
-              "risk.1" = (1-exp(-1*exp(alpha*1+beta*0)))*0.5 + (1-exp(-1*exp(alpha*1+beta*1)))*0.5)
-ate.TRUE <- as.double(diff(psi.TRUE))
-
-set.seed(10)
-dt <- as.data.table(lava::sim(mSimSurv, n = 1e3,
-                              p = c(alpha = 0.5, beta  = 1, gamma = 0.5, delta = 0)))
-## dt$event
-
-## ** correct model
-iRes.T <- ateRobust(data = dt, type = "survival",
-                    formula.event = Surv(time, event) ~ a + w1,
-                    formula.treatment = a ~ w1,
-                    formula.censor = Surv(time, event==0) ~ strata(w1),
-                    times = 1,
-                    product.limit = FALSE,
-                    nuisance.iid = FALSE)
-iRes.T$ate.value
 
 
 ## * competing risk case

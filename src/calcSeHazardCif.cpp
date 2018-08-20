@@ -206,7 +206,7 @@ std::vector< std::vector<arma::mat> > calcAIFsurv_cpp(const std::vector<arma::ma
 	 factor_tempo = factor[iFactor].rows(ls_indexStrata[iStrata]);
 	 
          if(exportCumHazard){
-   	   IFtempo1 = ls_IFcumhazard[iStrata];	      
+   	   IFtempo1 = ls_IFcumhazard[iStrata];
 	   // compute average factor (=1 by default)
 	   rowvec_tempo = sum(factor_tempo, 0)/nObs_strata; // colSums
            // multiply by prevalence
@@ -280,7 +280,7 @@ std::vector< std::vector<arma::mat> > calcAIFsurv_cpp(const std::vector<arma::ma
 	// update first term
 	IFtempo1 = ls_IFcumhazard[iStrata];
 	IFtempo1.each_row() %= E_eXb;
-
+	
 	// export
 	out[0][iFactor] += IFtempo1 + IFbeta * E_eXb_cumhazard0_X;		  
       }
