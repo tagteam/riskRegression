@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: jun 27 2018 (17:47) 
 ## Version: 
-## Last-Updated: aug 27 2018 (17:01) 
+## Last-Updated: aug 28 2018 (11:07) 
 ##           By: Brice Ozenne
-##     Update #: 856
+##     Update #: 917
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -261,8 +261,8 @@ ateRobust <- function(data, times, cause, type,
         data[,c("status.tau") := (coxMF$stop<=times)*(coxMF$status==1) - (coxMF$stop<times)*(coxMF$status==0)]
         ## -1 censored, 0 survival, 1 event, 
     }else if(type=="competing.risks"){
-        data[,c("time.tau") := pmin(coxMF[,"time"],times)]
-        data[,c("status.tau") := (coxMF[,"event"]==1)*(coxMF[,"time"]<=times) - (coxMF[,"status"]==0)*(coxMF[,"time"]<times)]
+        data[,c("time.tau") := pmin(coxMF$stop,times)]
+        data[,c("status.tau") := (coxMF$event==cause)*(coxMF$stop<=times) - (coxMF$status==0)*(coxMF$stop<times)]
         ## -1 censored, 0 survival or death (i.e. no event), 1 event
     }
     ## table(data$status.tau)
@@ -370,17 +370,15 @@ ateRobust <- function(data, times, cause, type,
         if(n.censor==0){
             data[,c("Lterm") := 0]
         }else{
-            .calcLterm(data = data,
-                       coxMF = coxMF,
-                       n.obs = n.obs,
-                       times = times,
-                       type = type,
-                       cause = cause,
-                       model.censor = model.censor,
-                       model.event = model.event,
-                       predictor.cox = predictor.cox,
-                       product.limit = product.limit)
-            ## data$Lterm
+            data[Lterm := .calcLterm(data = data,
+                                     n.obs = n.obs,
+                                     times = times,
+                                     model.censor = model.censor,
+                                     model.event = model.event,
+                                     type = type,
+                                     predictor.cox = predictor.cox,
+                                     product.limit = product.limit,
+                                     cause = cause)]
         }
     }
 
@@ -490,209 +488,74 @@ ateRobust <- function(data, times, cause, type,
 }
 
 ## * .calcLterm
-.calcLterm <- function(data, coxMF,
-                       n.obs, times, type,
-                       model.censor, model.event,
-                       predictor.cox, product.limit, cause){
+.calcLterm2 <- function(data, n.obs, times,
+                        model.censor,
+                        model.event, type, predictor.cox, product.limit, cause){
 
-    status <- stop <- NULL ## [:CRANtest:] data.table
-
-    eXb.censor <- exp(coxLP(model.censor, data = NULL, center = FALSE))
-    MF.censor <- coxModelFrame(model.censor)
-
-    jump.times <- sort(MF.censor[status==1&stop<=times,stop]) ## only look at jump times before the prediction time
-    resBaseline.censor <- predictCox(model.censor,
-                                     times = jump.times,
-                                     type = "hazard",
-                                     keep.infoVar = TRUE,
-                                     centered = FALSE)
+    info.censor <- coxVariableName(model.censor, data)
+    timeVar.censor <- info.censor$time
+    statusVar.censor <- info.censor$status
     
-    is.strata <- resBaseline.censor$infoVar$is.strata
-
-    calcLterm <- function(status, time, jump.time, hazard0, eXb, Esp.event, surv.censor){
-        ## jump times are before the prediction time
-        index.beforeJump <- which(jump.time<=time)
-        if(length(index.beforeJump)==0){
-            return(0)
-        }else{
-            dN <- (jump.time[index.beforeJump]==time)*status
-            dLambda <- hazard0[index.beforeJump]*eXb
-            return(sum(Esp.event[index.beforeJump]*(dN-dLambda)/surv.censor[index.beforeJump]))
-        }
-    }
-
-    data[,c("Lterm") := as.numeric(NA)]
+    X.censor <- coxModelFrame(model.censor)
+    new.time <- X.censor$stop
+    new.status <- X.censor$status
     
-    ## note
-    if(!is.strata){
-        hazard0 <- resBaseline.censor$hazard
-        all.times <- resBaseline.censor$times ## same as jump.times
+    jump.time <- sort(X.censor$stop[X.censor$status == 1]) ##  only select jumps
+    jump.time <- jump.time[jump.time <= times] ## before time horizon
+    njump <- length(jump.time)
+  
+    ## ** compute conditional risk
+    riskTau <- matrix(data$prob.event, nrow = n.obs, ncol = njump, byrow = FALSE)
+    if(type == "survival"){
+        riskTime <- 1 - predictCox(model.event, newdata = data, times = jump.time, type = "survival")$survival
+  
+        riskConditional <- (riskTau - riskTime)/(1-riskTime)
+    }else if(type == "competing.risk"){
+        riskTime <- predict(model.event, newdata = data, times = jump.time,
+                            cause = cause, product.limit = product.limit)$absRisk
 
-        ## survival = P[C>t] = P[Delta(t)==1] - ok
-        pred.censor <- do.call(predictor.cox,
-                               args = list(model.censor, newdata = data, times = all.times-(1e-10), type = "survival"))$survival
-
-        if(type=="survival"){
-            
-            pred.surv <- do.call(predictor.cox,
-                                 args = list(model.event, newdata = data, times = all.times, type = "survival"))$survival
-
-            pred.event <- 1 - pred.surv
-            pred.eventC <- - colCenter_cpp(pred.event, center = data[["prob.event"]]) / pred.surv
-            ## print(all.times)
-            ## print(data$prob.event[1:5])
-            ## print(pred.event[1:5,1:5])
-
-        }else if(type == "competing.risks"){
-            pred.event <- predict(model.event, newdata = data, times = all.times,
-                                  product.limit = product.limit, cause = cause)$absRisk
-
-            ## all cause survival
-            if(predictor.cox=="predictCox"){
-                pred.cumhazard <- matrix(0, nrow = n.obs, ncol = length(all.times))
-                for(iC in 1:length(model.event$models)){
-                    pred.cumhazard <- pred.cumhazard + predictCox(model.event$models[[iC]], newdata = data, times = all.times-(1e-10), type = "cumhazard")$cumhazard
-                }
-                pred.surv <- exp(-pred.cumhazard)
-
-                ## check computation of the survival
-                ## data[["status"]] <- unclass(model.event$response)[,"status"]                
-                ## eval(parse(text = paste0("coxAll <- coxph(",deparse(formula(model.event$models[[1]])),", data = data, x = TRUE)")))               
-                ## pred.surv - predictCox(coxAll, newdata = data, times = all.times, type = "survival")$survival
-
-            }else if(predictor.cox=="predictCoxPL"){
-                all.jump.times <- model.event$eventTimes[model.event$eventTimes<=times]
-                pred.allHazard <- matrix(0, nrow = n.obs, ncol = length(all.jump.times))
-                for(iC in 1:length(model.event$models)){
-                    pred.allHazard <- pred.allHazard + predictCox(model.event$models[[iC]],
-                                                                  newdata = data,
-                                                                  times = all.jump.times,
-                                                                  type = "hazard")$hazard
-                }
-                ## check computation of the survival
-                ## data[["status"]] <- unclass(model.event$response)[,"status"]                
-                ## eval(parse(text = paste0("coxAll <- coxph(",deparse(formula(model.event$models[[1]])),", data = data, x = TRUE)")))               
-                ## hazAll <- predictCox(coxAll, newdata = data, times = all.jump.times, type = "hazard")$hazard
-                ## hazAll - pred.hazard
-                index.jump <- prodlim::sindex(eval.times = all.times,
-                                              jump.times = c(0,all.jump.times))
-                pred.allSurv <- t(apply(1-pred.allHazard,1,cumprod))
-                pred.surv <- cbind(0,pred.allSurv)[,index.jump,drop=FALSE]
-                
-                ## pred.surv - predictCoxPL(coxAll, newdata = data, times = all.times, type = "survival")$survival
-            }
-            ## conditional risk
-            pred.eventC <- -colCenter_cpp(pred.event, center = data[["prob.event"]]) / pred.surv
-            ## same as using option landmark but can be done in one go
-            ## iIndex <- 15
-            ## pred.eventC2 <- predict(model.event, newdata = data, times = times, landmark = all.times[iIndex],
-            ## product.limit = product.limit, cause = cause)$absRisk
-            ## pred.eventC[,iIndex]-pred.eventC2[,1]
-
-        }
-
-        data[,"Lterm" := sapply(1:n.obs, function(iObs){ ## iObs <- 1
-
-            calcLterm(status = MF.censor$status[iObs],
-                      time = MF.censor$stop[iObs],
-                      jump.time = all.times,
-                      hazard0 = hazard0,
-                      eXb = eXb.censor[iObs],
-                      Esp.event = pred.eventC[iObs,],
-                      surv.censor = pred.censor[iObs,])
-            
-        })]
-        ## data[,mean(Lterm)]
+        survTime <- predictSurv(model.event, newdata = data, times = jump.time, product.limit = product.limit)
         
+        riskConditional <- (riskTau - riskTime)/(survTime)
+
+        ## check        
+        ## index.test <- 5
+        ## GS <- predict(model.event, newdata = data, times = times, landmark = jump.time[index.test],
+        ## cause = cause, product.limit = product.limit)$absRisk
+        ## range(GS-riskConditional[,index.test])
+        
+    }
+    
+    ## ** at risk indicator
+    atRisk <- do.call(rbind,
+                      lapply(1:n.obs, function(iTime){
+                          as.numeric(jump.time <= new.time[iTime])
+                      }))
+  
+    ## ** counting process for the censoring 
+    dN <- do.call(rbind,
+                  lapply(1:n.obs, function(iTime){
+                      (jump.time == new.time[iTime]) * new.status[iTime]
+                  }))
+  
+    ## ** compensator for the censoring
+    dLambda <- predictCox(model.censor, newdata = data, times = jump.time, type = "hazard")$hazard
+
+    ## ** survival for censoring at t-
+    if(njump>1){
+        survCensoring <- do.call(predictor.cox,
+                                 args = list(model.censor, newdata = data, times = jump.time, type = "survival")
+                                 )$survival
+        survCensoring <- cbind(1,survCensoring[,1:(njump-1)])
     }else{
-
-        strata.levels.censor <- resBaseline.censor$infoVar$strata.levels
-        n.strata.censor <- length(strata.levels.censor)
-            
-        for(iStrata in 1:n.strata.censor){ ## iStrata <- 2
-            iIndex.strata <- which(MF.censor$strata == strata.levels.censor[iStrata])
-            iN.strata <- length(iIndex.strata)
-
-            iIndex.baseline <- intersect(which(resBaseline.censor$strata==strata.levels.censor[iStrata]),
-                                         which(resBaseline.censor$times<=times))
-            iHazard0 <- resBaseline.censor$hazard[iIndex.baseline]
-            iAll.times <- resBaseline.censor$times[iIndex.baseline]
-
-            ## survival = P[C>t] = P[Delta(t)==1] - ok
-            iPred.censor <- do.call(predictor.cox,
-                                    args = list(model.censor, newdata = data[iIndex.strata], times = iAll.times-(1e-10), type = "survival"))$survival
-
-            if(type == "survival"){
-
-                iPred.surv <- do.call(predictor.cox,
-                                      args = list(model.event, newdata = data[iIndex.strata], times = iAll.times, type = "survival"))$survival
-
-                iPred.event <- 1 - iPred.surv                
-                iPred.eventC <- -colCenter_cpp(iPred.event, center = data[iIndex.strata,.SD$prob.event]) / iPred.surv 
-                
-            }else if(type == "competing.risks"){
-                iPred.event <- predict(model.event, newdata = data[iIndex.strata], times = iAll.times,
-                                       product.limit = product.limit, cause = cause)$absRisk
-
-                ## all cause survival
-                if(predictor.cox=="predictCox"){
-                    iPred.cumhazard <- matrix(0, nrow = length(iIndex.strata), ncol = length(iAll.times))
-                    for(iC in 1:length(model.event$models)){
-                        iPred.cumhazard <- iPred.cumhazard + do.call(predictor.cox,
-                                                                     args = list(model.event$models[[iC]], newdata = data[iIndex.strata],
-                                                                                 times = iAll.times-(1e-10), type = "cumhazard"))$cumhazard
-                    }
-                    iPred.surv <- exp(-iPred.cumhazard)
-                }else if(predictor.cox=="predictCoxPL"){
-                     iAll.jump.times <- model.event$eventTimes[model.event$eventTimes<=times]
-                     iPred.allHazard <- matrix(0, nrow = length(iIndex.strata), ncol = length(all.jump.times))
-                     for(iC in 1:length(model.event$models)){
-                         iPred.allHazard <- iPred.allHazard + predictCox(model.event$models[[iC]],
-                                                                         newdata = data[iIndex.strata],
-                                                                         times = iAll.jump.times,
-                                                                         type = "hazard")$hazard
-                     }
-                     iIndex.jump <- prodlim::sindex(eval.times = iAll.times,
-                                                    jump.times = c(0,iAll.jump.times))
-                     iPred.allSurv <- t(apply(1-iPred.allHazard,1,cumprod))
-                     iPred.surv <- cbind(0,iPred.allSurv)[,iIndex.jump,drop=FALSE]
-                
-                     ## pred.surv - predictCoxPL(coxAll, newdata = data, times = all.times, type = "survival")$survival
-                }
-
-                iPred.eventC <- -colCenter_cpp(iPred.event, center = data[iIndex.strata,.SD$prob.event]) / iPred.surv
-                ## same as using option landmark but can be done in one go
-                ## iIndex <- 15
-                ## iPred.eventC2 <- predict(model.event, newdata = data[iIndex.strata], times = times, landmark = iAll.times[iIndex],
-                ## product.limit = product.limit, cause = cause)$absRisk
-                ## range(iPred.eventC[,iIndex]-iPred.eventC2[,1])
-
-            }
-
-            ## table(is.na(iPred.eventC))
-            ## table(is.na(iPred.censor))
-
-            data[iIndex.strata, c("Lterm") := sapply(1:iN.strata, function(iObs){ ## iObs <- 10
-
-                iOut <- calcLterm(status = MF.censor$status[iIndex.strata[iObs]],
-                                  time = MF.censor$stop[iIndex.strata[iObs]],
-                                  jump.time = iAll.times,
-                                  hazard0 = iHazard0,
-                                  eXb = eXb.censor[iIndex.strata[iObs]],
-                                  Esp.event = iPred.eventC[iObs,],
-                                  surv.censor = iPred.censor[iObs,])
-                return(iOut)
-            
-            })]
-
-        ##        data[iIndex.strata, mean(Lterm)]
-        }
-        
-            
+        survCensoring <- matrix(1, nrow = n.obs, ncol = 1)
     }
 
-    return(NULL)
+    ## ** integral
+    out <- rowSums(atRisk * riskConditional/survCensoring * (dN-dLambda))
+
+    ## ** export
+    return(out)
 }
 
-######################################################################
-### ateRobust.R ends here
+

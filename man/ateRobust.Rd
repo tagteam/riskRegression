@@ -72,11 +72,12 @@ lava::regression(mSimSurv) <- eventtime ~ alpha*a + beta*w
 
 ## settings
 alpha <- 0.3 
-beta <- 0.4 
+beta <- 0.4
+n <- 1e3
 
 ## check bias 
 set.seed(10)
-dt <- as.data.table(lava::sim(mSimSurv, n = 1e3, p = c(alpha = alpha, beta = beta)))
+dt <- as.data.table(lava::sim(mSimSurv, n = n, p = c(alpha = alpha, beta = beta)))
 setkeyv(dt, c("a","w"))
 
 ## True value
