@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: maj 27 2017 (11:46) 
 ## Version: 
-## last-updated: aug 20 2018 (21:15) 
+## last-updated: aug 28 2018 (11:26) 
 ##           By: Brice Ozenne
-##     Update #: 468
+##     Update #: 469
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -37,7 +37,7 @@
 #' @param object.eXb the exponential of the linear predictor relative to the observations used to estimate the object. 
 #' @param object.strata the strata index of the observations used to estimate the object.
 #' @param nStrata the number of strata.
-#' @param new.eXb the number of observations for which the prediction was performed.
+#' @param new.n the number of observations for which the prediction was performed.
 #' @param new.eXb the linear predictor evaluated for the new observations.
 #' @param new.LPdata the variables involved in the linear predictor for the new observations.
 #' @param new.strata the strata indicator for the new observations.

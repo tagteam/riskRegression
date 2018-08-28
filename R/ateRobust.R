@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: jun 27 2018 (17:47) 
 ## Version: 
-## Last-Updated: aug 28 2018 (11:07) 
+## Last-Updated: aug 28 2018 (11:59) 
 ##           By: Brice Ozenne
-##     Update #: 917
+##     Update #: 948
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -213,8 +213,8 @@ ateRobust <- function(data, times, cause, type,
     reserved.name <- c("times","time.tau","status.tau","treatment.bin",
                        "prob.event","prob.event0","prob.event1",
                        "prob.treatment",
-                       "weights","prob.censoring",
-                       "Lterm0","Lterm1")
+                       "weights","prob.censoring","prob.indiv.censoring",
+                       "Lterm")
     if(any(reserved.name %in% names(data))){
         txt <- reserved.name[reserved.name %in% names(data)]
         stop("Argument \'data\' should not contain column(s) named \"",paste0(txt, collapse = "\" \""),"\"\n")
@@ -298,10 +298,10 @@ ateRobust <- function(data, times, cause, type,
         data[, c("prob.event1") := 1 - prediction.event1$survival[,1]]
 
         if(nuisance.iid){
-            data[,iidG.event0 := -prediction.event0$survival.average.iid[[1]][,1]]
-            data[,iidAIPW.event0 := -prediction.event0$survival.average.iid[[2]][,1]]
-            data[,iidG.event1 := -prediction.event1$survival.average.iid[[1]][,1]]
-            data[,iidAIPW.event1 := -prediction.event1$survival.average.iid[[2]][,1]]
+            data[,c("iidG.event0") := -prediction.event0$survival.average.iid[[1]][,1]]
+            data[,c("iidAIPW.event0") := -prediction.event0$survival.average.iid[[2]][,1]]
+            data[,c("iidG.event1") := -prediction.event1$survival.average.iid[[1]][,1]]
+            data[,c("iidAIPW.event1") := -prediction.event1$survival.average.iid[[2]][,1]]
         }
 
     }else if(type=="competing.risks"){
@@ -318,12 +318,12 @@ ateRobust <- function(data, times, cause, type,
         ## store results
         if(nuisance.iid){
             weight0 <- attr(nuisance.iid0, "factor")[["AIPW"]][,1]
-            data[,iidG.event0 := colMeans(prediction.event0$absRisk.iid[,1,])]
-            data[,iidAIPW.event0 := apply(prediction.event0$absRisk.iid[,1,],2,function(iCol){mean(weight0*iCol)})]
+            data[,c("iidG.event0") := colMeans(prediction.event0$absRisk.iid[,1,])]
+            data[,c("iidAIPW.event0") := apply(prediction.event0$absRisk.iid[,1,],2,function(iCol){mean(weight0*iCol)})]
 
             weight1 <- attr(nuisance.iid1, "factor")[["AIPW"]][,1]
-            data[,iidG.event1 := colMeans(prediction.event1$absRisk.iid[,1,])]
-            data[,iidAIPW.event1 := apply(prediction.event1$absRisk.iid[,1,],2,function(iCol){mean(weight1*iCol)})]
+            data[,c("iidG.event1") := colMeans(prediction.event1$absRisk.iid[,1,])]
+            data[,c("iidAIPW.event1") := apply(prediction.event1$absRisk.iid[,1,],2,function(iCol){mean(weight1*iCol)})]
         }
 
     }
@@ -340,10 +340,10 @@ ateRobust <- function(data, times, cause, type,
         attr(average.iid, "factor") <- factor
         
         prediction.treatment.iid <- attr(.predictGLM(model.treatment, newdata = data, average.iid = average.iid), "iid")
-        data[,iidIPW.treatment0 := prediction.treatment.iid[,1]]
-        data[,iidIPW.treatment1 := -prediction.treatment.iid[,2]]
-        data[,iidAIPW.treatment0 := -prediction.treatment.iid[,3]]
-        data[,iidAIPW.treatment1 := prediction.treatment.iid[,4]]
+        data[,c("iidIPW.treatment0") := prediction.treatment.iid[,1]]
+        data[,c("iidIPW.treatment1") := -prediction.treatment.iid[,2]]
+        data[,c("iidAIPW.treatment0") := -prediction.treatment.iid[,3]]
+        data[,c("iidAIPW.treatment1") := prediction.treatment.iid[,4]]
         
     }
     
@@ -352,14 +352,25 @@ ateRobust <- function(data, times, cause, type,
     if(n.censor==0){
         data[,c("prob.censoring") := 1]
         data[,c("prob.indiv.censoring") := 1]
+        ## if(nuisance.iid){
+        ##     data[,c("iidIPW.censoring") := 0]
+        ##     data[,c("iidIPW.indiv.censoring") := 0]
+        ## }
     }else{
         ## survival = P[C>min(T,tau)] = P[Delta(min(T,tau))==1] - ok
 
         ## stopped at tau
-        data[,c("prob.censoring") := do.call(predictor.cox, args = list(model.censor, newdata = data, times = times))$survival[,1]]
+        predTau.censor <- do.call(predictor.cox, args = list(model.censor, newdata = data, times = times))
+        data[,c("prob.censoring") := predTau.censor$survival[,1]]
 
         ## at each time
-        data[,c("prob.indiv.censoring") := do.call(predictor.cox, args = list(model.censor, newdata = data, times = data$time.tau-(1e-10), diag = TRUE))$survival[,1]]
+        predIndiv.censor <- do.call(predictor.cox, args = list(model.censor, newdata = data, times = data$time.tau-(1e-10), diag = TRUE))
+        data[,c("prob.indiv.censoring") := predIndiv.censor$survival[,1]]
+
+        ## if(nuisance.iid){
+        ##     data[,c("iidIPW.censoring") := 0]
+        ##     data[,c("iidIPW.indiv.censoring") := 0]
+        ## }
     }
     data[coxMF$stop<=times,c("weights") := (.SD$status.tau >= 0) / .SD$prob.indiv.censoring]
     data[coxMF$stop>times,c("weights") := (.SD$status.tau >= 0) / .SD$prob.censoring]
@@ -370,7 +381,7 @@ ateRobust <- function(data, times, cause, type,
         if(n.censor==0){
             data[,c("Lterm") := 0]
         }else{
-            data[Lterm := .calcLterm(data = data,
+            data[,c("Lterm") := .calcLterm(data = data,
                                      n.obs = n.obs,
                                      times = times,
                                      model.censor = model.censor,
@@ -488,11 +499,11 @@ ateRobust <- function(data, times, cause, type,
 }
 
 ## * .calcLterm
-.calcLterm2 <- function(data, n.obs, times,
-                        model.censor,
-                        model.event, type, predictor.cox, product.limit, cause){
+.calcLterm <- function(data, n.obs, times,
+                       model.censor,
+                       model.event, type, predictor.cox, product.limit, cause){
 
-    info.censor <- coxVariableName(model.censor, data)
+    info.censor <- SurvResponseVar(coxFormula(model.censor))
     timeVar.censor <- info.censor$time
     statusVar.censor <- info.censor$status
     
@@ -503,14 +514,14 @@ ateRobust <- function(data, times, cause, type,
     jump.time <- sort(X.censor$stop[X.censor$status == 1]) ##  only select jumps
     jump.time <- jump.time[jump.time <= times] ## before time horizon
     njump <- length(jump.time)
-  
+
     ## ** compute conditional risk
     riskTau <- matrix(data$prob.event, nrow = n.obs, ncol = njump, byrow = FALSE)
     if(type == "survival"){
         riskTime <- 1 - predictCox(model.event, newdata = data, times = jump.time, type = "survival")$survival
   
         riskConditional <- (riskTau - riskTime)/(1-riskTime)
-    }else if(type == "competing.risk"){
+    }else if(type == "competing.risks"){
         riskTime <- predict(model.event, newdata = data, times = jump.time,
                             cause = cause, product.limit = product.limit)$absRisk
 
@@ -526,17 +537,14 @@ ateRobust <- function(data, times, cause, type,
         
     }
     
-    ## ** at risk indicator
-    atRisk <- do.call(rbind,
-                      lapply(1:n.obs, function(iTime){
-                          as.numeric(jump.time <= new.time[iTime])
-                      }))
-  
-    ## ** counting process for the censoring 
-    dN <- do.call(rbind,
-                  lapply(1:n.obs, function(iTime){
-                      (jump.time == new.time[iTime]) * new.status[iTime]
-                  }))
+    ## ** at risk indicator and counting process for the censoring 
+   atRisk <- matrix(NA, nrow = n.obs, ncol = njump)
+    dN <- matrix(NA, nrow = n.obs, ncol = njump)
+
+    for(iN in 1:n.obs){
+        atRisk[iN,] <- as.numeric(jump.time <= new.time[iN])
+        dN[iN,] <- (jump.time == new.time[iN]) * new.status[iN]
+    }
   
     ## ** compensator for the censoring
     dLambda <- predictCox(model.censor, newdata = data, times = jump.time, type = "hazard")$hazard
@@ -552,6 +560,7 @@ ateRobust <- function(data, times, cause, type,
     }
 
     ## ** integral
+    
     out <- rowSums(atRisk * riskConditional/survCensoring * (dN-dLambda))
 
     ## ** export

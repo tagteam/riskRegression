@@ -33,7 +33,9 @@ or several of the strings \code{"hazard"},\code{"cumhazard"}, \code{"survival"}.
 
 \item{nStrata}{the number of strata.}
 
-\item{new.eXb}{the number of observations for which the prediction was performed.}
+\item{new.n}{the number of observations for which the prediction was performed.}
+
+\item{new.eXb}{the linear predictor evaluated for the new observations.}
 
 \item{new.LPdata}{the variables involved in the linear predictor for the new observations.}
 
@@ -48,8 +50,6 @@ or several of the strings \code{"hazard"},\code{"cumhazard"}, \code{"survival"}.
 
 \item{store.iid}{Implementation used to estimate the influence function and the standard error.
 Can be \code{"full"} or \code{"minimal"}. See the details section.}
-
-\item{new.eXb}{the linear predictor evaluated for the new observations.}
 }
 \value{
 A list optionally containing the standard error for the survival, cumulative hazard and hazard.

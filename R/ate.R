@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Oct 23 2016 (08:53) 
 ## Version: 
-## last-updated: aug 20 2018 (19:26) 
+## last-updated: aug 28 2018 (11:22) 
 ##           By: Brice Ozenne
-##     Update #: 811
+##     Update #: 812
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -384,6 +384,7 @@ ate <- function(object,
     # }}}
 
     # {{{ Point estimate
+    estimateTime <- system.time({
     pointEstimate <- Gformula(object=object,
                               data=data,
                               treatment=treatment,
@@ -395,6 +396,7 @@ ate <- function(object,
                               n.contrasts = n.contrasts,
                               levels = levels,
                               dots)
+    })
     # }}}
 
     # {{{ Confidence interval    
