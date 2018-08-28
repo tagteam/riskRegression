@@ -232,11 +232,13 @@ predictCox <- function(object,
     if(diag==TRUE && NROW(newdata)!=length(times)){
         stop("When argument \'diag\' is TRUE, the number of rows in \'newdata\' must equal the length of \'times\' \n")
     }
-    if(diag==TRUE && (se||iid||band)){
-        stop("Arguments \'se\', \'iid\', \'band\' must be FALSE when \'diag\' is TRUE \n")
+    if(diag==TRUE && (se||band||average.iid)){
+        stop("Arguments \'se\', \'band\', and \'average.iid\' must be FALSE when \'diag\' is TRUE \n")
     }
-    
-  if(!is.null(newdata)){
+    if(diag==TRUE && iid==TRUE && store.iid == "minimal"){
+        stop("Arguments \'store.iid\' must equal \"full\" when \'diag\' is TRUE \n")
+    }
+    if(!is.null(newdata)){
       if(missing(times) || nTimes==0){
           stop("Time points at which to evaluate the predictions are missing \n")
       }
@@ -464,6 +466,7 @@ predictCox <- function(object,
                            times = times.sorted,
                            nTimes = nTimes,
                            type = type,
+                           diag = diag,
                            Lambda0 = Lambda0,
                            object.n = object.n,
                            object.time = object.modelFrame$stop,
@@ -482,19 +485,19 @@ predictCox <- function(object,
         ## restaure orginal time ordering
         if((iid+band)>0){
             if ("hazard" %in% type){
-                if (needOrder)
+                if (needOrder && diag == FALSE)
                     out$hazard.iid <- outSE$hazard.iid[,oorder.times,,drop=0L]
                 else
                     out$hazard.iid <- outSE$hazard.iid
             }
             if ("cumhazard" %in% type){
-                if (needOrder)
+                if (needOrder && diag == FALSE)
                     out$cumhazard.iid <- outSE$cumhazard.iid[,oorder.times,,drop=0L]
                 else
                     out$cumhazard.iid <- outSE$cumhazard.iid
             }
             if ("survival" %in% type){
-                if (needOrder)
+                if (needOrder && diag == FALSE)
                     out$survival.iid <- outSE$survival.iid[,oorder.times,,drop=0L]
                 else
                     out$survival.iid <- outSE$survival.iid

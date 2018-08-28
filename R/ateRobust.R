@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: jun 27 2018 (17:47) 
 ## Version: 
-## Last-Updated: aug 28 2018 (11:59) 
+## Last-Updated: aug 28 2018 (16:51) 
 ##           By: Brice Ozenne
-##     Update #: 948
+##     Update #: 976
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -298,10 +298,10 @@ ateRobust <- function(data, times, cause, type,
         data[, c("prob.event1") := 1 - prediction.event1$survival[,1]]
 
         if(nuisance.iid){
-            data[,c("iidG.event0") := -prediction.event0$survival.average.iid[[1]][,1]]
-            data[,c("iidAIPW.event0") := -prediction.event0$survival.average.iid[[2]][,1]]
-            data[,c("iidG.event1") := -prediction.event1$survival.average.iid[[1]][,1]]
-            data[,c("iidAIPW.event1") := -prediction.event1$survival.average.iid[[2]][,1]]
+            iidG.event0 <- -prediction.event0$survival.average.iid[[1]][,1]
+            iidAIPW.event0 <- -prediction.event0$survival.average.iid[[2]][,1]
+            iidG.event1 <- -prediction.event1$survival.average.iid[[1]][,1]
+            iidAIPW.event1 <- -prediction.event1$survival.average.iid[[2]][,1]
         }
 
     }else if(type=="competing.risks"){
@@ -318,12 +318,12 @@ ateRobust <- function(data, times, cause, type,
         ## store results
         if(nuisance.iid){
             weight0 <- attr(nuisance.iid0, "factor")[["AIPW"]][,1]
-            data[,c("iidG.event0") := colMeans(prediction.event0$absRisk.iid[,1,])]
-            data[,c("iidAIPW.event0") := apply(prediction.event0$absRisk.iid[,1,],2,function(iCol){mean(weight0*iCol)})]
+            iidG.event0 <- colMeans(prediction.event0$absRisk.iid[,1,])
+            iidAIPW.event0 <- apply(prediction.event0$absRisk.iid[,1,],2,function(iCol){mean(weight0*iCol)})
 
             weight1 <- attr(nuisance.iid1, "factor")[["AIPW"]][,1]
-            data[,c("iidG.event1") := colMeans(prediction.event1$absRisk.iid[,1,])]
-            data[,c("iidAIPW.event1") := apply(prediction.event1$absRisk.iid[,1,],2,function(iCol){mean(weight1*iCol)})]
+            iidG.event1 <- colMeans(prediction.event1$absRisk.iid[,1,])
+            iidAIPW.event1 <- apply(prediction.event1$absRisk.iid[,1,],2,function(iCol){mean(weight1*iCol)})
         }
 
     }
@@ -340,40 +340,60 @@ ateRobust <- function(data, times, cause, type,
         attr(average.iid, "factor") <- factor
         
         prediction.treatment.iid <- attr(.predictGLM(model.treatment, newdata = data, average.iid = average.iid), "iid")
-        data[,c("iidIPW.treatment0") := prediction.treatment.iid[,1]]
-        data[,c("iidIPW.treatment1") := -prediction.treatment.iid[,2]]
-        data[,c("iidAIPW.treatment0") := -prediction.treatment.iid[,3]]
-        data[,c("iidAIPW.treatment1") := prediction.treatment.iid[,4]]
+        iidIPW.treatment0 <-  prediction.treatment.iid[,1]
+        iidIPW.treatment1 <- -prediction.treatment.iid[,2]
+        iidAIPW.treatment0 <- -prediction.treatment.iid[,3]
+        iidAIPW.treatment1 <- prediction.treatment.iid[,4]
         
     }
     
     ## ** Censoring model: weights
     ## fit model
     if(n.censor==0){
+        
         data[,c("prob.censoring") := 1]
         data[,c("prob.indiv.censoring") := 1]
-        ## if(nuisance.iid){
-        ##     data[,c("iidIPW.censoring") := 0]
-        ##     data[,c("iidIPW.indiv.censoring") := 0]
-        ## }
+        data[,c("weights") := 1]
+        
+        if(nuisance.iid){
+            iidIPW.censoring0 <- rep(0,n.obs)
+            iidIPW.censoring1 <- rep(0,n.obs)
+        }
+        
     }else{
+        
         ## survival = P[C>min(T,tau)] = P[Delta(min(T,tau))==1] - ok
 
         ## stopped at tau
-        predTau.censor <- do.call(predictor.cox, args = list(model.censor, newdata = data, times = times))
+        predTau.censor <- do.call(predictor.cox, args = list(model.censor, newdata = data, times = times, type = "survival"))
+        ## predTau.censor <- do.call(predictor.cox, args = list(model.censor, newdata = data, times = times, type = "survival", iid = nuisance.iid))
         data[,c("prob.censoring") := predTau.censor$survival[,1]]
-
+        
         ## at each time
-        predIndiv.censor <- do.call(predictor.cox, args = list(model.censor, newdata = data, times = data$time.tau-(1e-10), diag = TRUE))
+        predIndiv.censor <- do.call(predictor.cox, args = list(model.censor, newdata = data, times = data$time.tau-(1e-10), type = "survival", diag = TRUE))
+        ## predIndiv.censor <- do.call(predictor.cox, args = list(model.censor, newdata = data, times = data$time.tau-(1e-10), type = "survival", diag = TRUE, iid = nuisance.iid))
         data[,c("prob.indiv.censoring") := predIndiv.censor$survival[,1]]
+        
+        ## store
+        data[,c("weights") := as.numeric(NA)]
+        data[coxMF$stop<=times, c("weights") := (.SD$status.tau >= 0) / .SD$prob.indiv.censoring]
+        data[coxMF$stop>times, c("weights") := (.SD$status.tau >= 0) / .SD$prob.censoring]
 
-        ## if(nuisance.iid){
-        ##     data[,c("iidIPW.censoring") := 0]
-        ##     data[,c("iidIPW.indiv.censoring") := 0]
-        ## }
+        if(nuisance.iid){
+            ## iid.tempo <- matrix(NA, nrow = n.obs, ncol = n.obs)
+            ## iid.tempo[coxMF$stop<=times,] <- predIndiv.censor$survival.iid[coxMF$stop<=times,1,]
+            ## iid.tempo[coxMF$stop>times,] <- predTau.censor$survival.iid[coxMF$stop>times,1,]
+
+            ## weight0 <- data[, .SD$weights^2 * (.SD$status.tau == 1) * (1-.SD$treatment.bin) / (1-.SD$prob.treatment)]
+            ## weight1 <- data[, .SD$weights^2 * (.SD$status.tau == 1) * (.SD$treatment.bin) / (.SD$prob.treatment)]
+            
+            ## iidIPW.censoring0 <- -apply(iid.tempo,2,function(iCol){mean(weight0*iCol)})
+            ## iidIPW.censoring1 <- -apply(iid.tempo,2,function(iCol){mean(weight1*iCol)})
+
+            iidIPW.censoring0 <- rep(0,n.obs)
+            iidIPW.censoring1 <- rep(0,n.obs)
+        }
     }
-    data[coxMF$stop<=times,c("weights") := (.SD$status.tau >= 0) / .SD$prob.indiv.censoring]
-    data[coxMF$stop>times,c("weights") := (.SD$status.tau >= 0) / .SD$prob.censoring]
 
     ## ** correction for efficiency
     ## data is updated within the function .calcLterm
@@ -404,7 +424,7 @@ ateRobust <- function(data, times, cause, type,
     )] / n.obs
 
     if(nuisance.iid){
-        nuisanceEvent.Gformula <- cbind(data$iidG.event0, data$iidG.event1)
+        nuisanceEvent.Gformula <- cbind(iidG.event0, iidG.event1)
         IF$Gformula2 <- IF$Gformula + nuisanceEvent.Gformula
     }
 
@@ -431,13 +451,15 @@ ateRobust <- function(data, times, cause, type,
     
     if(nuisance.iid){
         ## additional term: eq:IF-IPWfull (green term)
-        nuisanceTreatment.IPW <- colMultiply_cpp(cbind(data$iidIPW.treatment0, data$iidIPW.treatment1),
+        nuisanceTreatment.IPW <- colMultiply_cpp(cbind(iidIPW.treatment0, iidIPW.treatment1),
                                                  scale = data$weights)
-        
+        nuisanceCensoring.IPW <- cbind(iidIPW.censoring0, iidIPW.censoring1)
         ## colMeans(IPWadd)
-        IF$IPWnaive2 <- IF$IPWnaive + nuisanceTreatment.IPW
+        ## apply(IF$IPWnaive + nuisanceTreatment.IPW, 2, sd)
+        ## apply(IF$IPWnaive + nuisanceTreatment.IPW + nuisanceCensoring.IPW, 2, sd)
+        IF$IPWnaive2 <- IF$IPWnaive + nuisanceTreatment.IPW + nuisanceCensoring.IPW
         if(efficient){
-            IF$IPWefficient2 <- IF$IPWefficient + nuisanceTreatment.IPW
+            IF$IPWefficient2 <- IF$IPWefficient + nuisanceTreatment.IPW + nuisanceCensoring.IPW
         }
     }
 
@@ -455,12 +477,12 @@ ateRobust <- function(data, times, cause, type,
     }
     
     if(nuisance.iid){
-        nuisanceEvent.AIPW <- cbind(data$iidAIPW.event0, data$iidAIPW.event1) ## no outcome here so no censoring
-        nuisanceTreatment.AIPW <- cbind(data$iidAIPW.treatment0, data$iidAIPW.treatment1) ## no outcome here so no censoring
+        nuisanceEvent.AIPW <- cbind(iidAIPW.event0, iidAIPW.event1) ## no outcome here so no censoring
+        nuisanceTreatment.AIPW <- cbind(iidAIPW.treatment0, iidAIPW.treatment1) ## no outcome here so no censoring
         
-        IF$AIPWnaive2 <- IF$AIPWnaive + (nuisanceTreatment.IPW + nuisanceEvent.AIPW + nuisanceTreatment.AIPW)
+        IF$AIPWnaive2 <- IF$IPWnaive2 + (AIPWadd + nuisanceEvent.AIPW + nuisanceTreatment.AIPW)
         if(efficient){
-            IF$AIPWefficient2 <- IF$AIPWefficient + (nuisanceTreatment.IPW + nuisanceEvent.AIPW + nuisanceTreatment.AIPW)
+            IF$AIPWefficient2 <- IF$IPWefficient2 + (AIPWadd + nuisanceEvent.AIPW + nuisanceTreatment.AIPW)
         }
     }
 

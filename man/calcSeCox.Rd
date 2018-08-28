@@ -4,7 +4,7 @@
 \alias{calcSeCox}
 \title{Computation of standard errors for predictions}
 \usage{
-calcSeCox(object, times, nTimes, type, Lambda0, object.n, object.time,
+calcSeCox(object, times, nTimes, type, diag, Lambda0, object.n, object.time,
   object.eXb, object.strata, nStrata, new.n, new.eXb, new.LPdata, new.strata,
   new.survival, nVar, export, store.iid)
 }
@@ -20,6 +20,8 @@ hazard/survival.}
 
 \item{type}{One or several strings that match (either in lower or upper case or mixtures) one
 or several of the strings \code{"hazard"},\code{"cumhazard"}, \code{"survival"}.}
+
+\item{diag}{[logical] If \code{TRUE} only compute the hazard/cumlative hazard/survival for the i-th row in dataset at the i-th time.}
 
 \item{Lambda0}{the baseline hazard estimate returned by \code{BaseHazStrata_cpp}.}
 

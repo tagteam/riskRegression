@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: maj 27 2017 (11:46) 
 ## Version: 
-## last-updated: aug 28 2018 (11:26) 
+## last-updated: aug 28 2018 (13:45) 
 ##           By: Brice Ozenne
-##     Update #: 469
+##     Update #: 486
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -31,6 +31,7 @@
 #' @param nTimes the length of the argument \code{times}. 
 #' @param type One or several strings that match (either in lower or upper case or mixtures) one
 #' or several of the strings \code{"hazard"},\code{"cumhazard"}, \code{"survival"}.
+#' @param diag [logical] If \code{TRUE} only compute the hazard/cumlative hazard/survival for the i-th row in dataset at the i-th time.
 #' @param Lambda0 the baseline hazard estimate returned by \code{BaseHazStrata_cpp}.
 #' @param object.n the number of observations in the dataset used to estimate the object. 
 #' @param object.time the time to event of the observations used to estimate the object.
@@ -67,7 +68,7 @@
 
 ## * calcSeCox (code)
 #' @rdname calcSeCox
-calcSeCox <- function(object, times, nTimes, type, 
+calcSeCox <- function(object, times, nTimes, type, diag,
                       Lambda0, object.n, object.time, object.eXb, object.strata, nStrata,
                       new.n, new.eXb, new.LPdata, new.strata, new.survival, 
                       nVar, export, store.iid){
@@ -82,6 +83,9 @@ calcSeCox <- function(object, times, nTimes, type,
                                         # }}}
 
                                         # {{{ prepare arguments
+    if(diag){
+        nTimes <- 1
+    }
     new.strata <- as.numeric(new.strata)
     
     if(length(Lambda0$strata)==0){
@@ -110,12 +114,12 @@ calcSeCox <- function(object, times, nTimes, type,
     # }}}
 
     if(store.iid == "minimal"){
-        # {{{ method = minimal
+                                        # {{{ method = minimal
         object.strata <- as.numeric(object.strata)
         if("hazard" %in% type){
             stop("store.iid=\"minimal\" cannot be used to extract the influence function of the hazard \n")
         }
-        
+       
         for(iStrata in 1:nStrata){ # iStrata <- 1
             indexStrata <- which(new.strata==iStrata)
             if(length(indexStrata)==0){next}
@@ -173,28 +177,44 @@ calcSeCox <- function(object, times, nTimes, type,
                 ## print(iObs)
                 ## NOTE: cannot perfom log transformation if hazard %in% type (error in predictCox)
                 iObs.strata <- new.strata[iObs]
-
+                
                 if("hazard" %in% type){
-                                        # Evaluate the influence function for the
-                                        # hazard based on the one of the baseline hazard
+                    ## Evaluate the influence function for the
+                    ## hazard based on the one of the baseline hazard
                     if (nVar == 0) {
-                        IF_tempo = iid.object$IFhazard[[iObs.strata]]
+                        if(diag){
+                            IF_tempo = iid.object$IFhazard[[iObs.strata]][,iObs,drop=FALSE]
+                        }else{
+                            IF_tempo = iid.object$IFhazard[[iObs.strata]]
+                        }
                     }
                     else {
-                        IF_tempo = (new.eXb[iObs] * (iid.object$IFhazard[[iObs.strata]] + crossprod(t(X_IFbeta_mat[,iObs,drop=FALSE]),Lambda0$hazard[[iObs.strata]])))
+                        if(diag){
+                            IF_tempo = (new.eXb[iObs] * (iid.object$IFhazard[[iObs.strata]][,iObs,drop=FALSE] + X_IFbeta_mat[,iObs,drop=FALSE] * Lambda0$hazard[[iObs.strata]][iObs]))
+                        }else{
+                            IF_tempo = (new.eXb[iObs] * (iid.object$IFhazard[[iObs.strata]] + crossprod(t(X_IFbeta_mat[,iObs,drop=FALSE]),Lambda0$hazard[[iObs.strata]])))
+                        }
                     }
                     if("iid" %in% export){
                         out$hazard.iid[iObs,,] <- t(IF_tempo) 
                     }    
                 }
-    
-                if("cumhazard" %in% type || "survival" %in% type){
+
+                 if("cumhazard" %in% type || "survival" %in% type){
                     ## Evaluate the influence function for the
                     ## cumulative hazard based on the one of the cumulative baseline hazard
                     if(nVar == 0){
-                        IF_tempo <- iid.object$IFcumhazard[[iObs.strata]]
+                        if(diag){
+                            IF_tempo <- iid.object$IFcumhazard[[iObs.strata]][,iObs,drop=FALSE]
+                        }else{
+                            IF_tempo <- iid.object$IFcumhazard[[iObs.strata]]
+                        }
                     }else{
-                        IF_tempo <- new.eXb[iObs]*(iid.object$IFcumhazard[[iObs.strata]] + crossprod(t(X_IFbeta_mat[,iObs,drop=FALSE]), Lambda0$cumhazard[[iObs.strata]]))
+                        if(diag){
+                            IF_tempo <- new.eXb[iObs]*(iid.object$IFcumhazard[[iObs.strata]][,iObs,drop=FALSE] + X_IFbeta_mat[,iObs,drop=FALSE] * Lambda0$cumhazard[[iObs.strata]][iObs])
+                        }else{
+                            IF_tempo <- new.eXb[iObs]*(iid.object$IFcumhazard[[iObs.strata]] + crossprod(t(X_IFbeta_mat[,iObs,drop=FALSE]), Lambda0$cumhazard[[iObs.strata]]))
+                        }
                     }
                     if("iid" %in% export){
                         if("cumhazard" %in% type){out$cumhazard.iid[iObs,,] <-  t(IF_tempo)}
