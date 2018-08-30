@@ -141,7 +141,7 @@ BEGIN_RCPP
 END_RCPP
 }
 // calcSeCif2_cpp
-List calcSeCif2_cpp(std::vector<arma::mat> ls_IFbeta, std::vector<arma::mat> ls_X, std::vector<arma::mat> ls_cumhazard, std::vector<arma::mat> ls_hazard, std::vector< std::vector<arma::mat> > ls_IFcumhazard, std::vector< std::vector<arma::mat> > ls_IFhazard, NumericMatrix eXb, arma::vec timeIndex, int nIndex, arma::vec time, int nObs, int nJumpTime, arma::vec maxJumpTime, int theCause, int nCause, bool hazardType, arma::vec nVar, int nNewObs, NumericMatrix strata, bool exportSE, bool exportIF, bool exportIFsum);
+List calcSeCif2_cpp(std::vector<arma::mat> ls_IFbeta, std::vector<arma::mat> ls_X, std::vector<arma::mat> ls_cumhazard, arma::mat ls_hazard, std::vector< std::vector<arma::mat> > ls_IFcumhazard, std::vector<arma::mat> ls_IFhazard, NumericMatrix eXb, arma::vec timeIndex, int nIndex, arma::vec time, int nObs, int nJumpTime, arma::vec maxJumpTime, int theCause, int nCause, bool hazardType, arma::vec nVar, int nNewObs, NumericMatrix strata, bool exportSE, bool exportIF, bool exportIFsum);
 RcppExport SEXP _riskRegression_calcSeCif2_cpp(SEXP ls_IFbetaSEXP, SEXP ls_XSEXP, SEXP ls_cumhazardSEXP, SEXP ls_hazardSEXP, SEXP ls_IFcumhazardSEXP, SEXP ls_IFhazardSEXP, SEXP eXbSEXP, SEXP timeIndexSEXP, SEXP nIndexSEXP, SEXP timeSEXP, SEXP nObsSEXP, SEXP nJumpTimeSEXP, SEXP maxJumpTimeSEXP, SEXP theCauseSEXP, SEXP nCauseSEXP, SEXP hazardTypeSEXP, SEXP nVarSEXP, SEXP nNewObsSEXP, SEXP strataSEXP, SEXP exportSESEXP, SEXP exportIFSEXP, SEXP exportIFsumSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
@@ -149,9 +149,9 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< std::vector<arma::mat> >::type ls_IFbeta(ls_IFbetaSEXP);
     Rcpp::traits::input_parameter< std::vector<arma::mat> >::type ls_X(ls_XSEXP);
     Rcpp::traits::input_parameter< std::vector<arma::mat> >::type ls_cumhazard(ls_cumhazardSEXP);
-    Rcpp::traits::input_parameter< std::vector<arma::mat> >::type ls_hazard(ls_hazardSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type ls_hazard(ls_hazardSEXP);
     Rcpp::traits::input_parameter< std::vector< std::vector<arma::mat> > >::type ls_IFcumhazard(ls_IFcumhazardSEXP);
-    Rcpp::traits::input_parameter< std::vector< std::vector<arma::mat> > >::type ls_IFhazard(ls_IFhazardSEXP);
+    Rcpp::traits::input_parameter< std::vector<arma::mat> >::type ls_IFhazard(ls_IFhazardSEXP);
     Rcpp::traits::input_parameter< NumericMatrix >::type eXb(eXbSEXP);
     Rcpp::traits::input_parameter< arma::vec >::type timeIndex(timeIndexSEXP);
     Rcpp::traits::input_parameter< int >::type nIndex(nIndexSEXP);
@@ -169,6 +169,40 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< bool >::type exportIF(exportIFSEXP);
     Rcpp::traits::input_parameter< bool >::type exportIFsum(exportIFsumSEXP);
     rcpp_result_gen = Rcpp::wrap(calcSeCif2_cpp(ls_IFbeta, ls_X, ls_cumhazard, ls_hazard, ls_IFcumhazard, ls_IFhazard, eXb, timeIndex, nIndex, time, nObs, nJumpTime, maxJumpTime, theCause, nCause, hazardType, nVar, nNewObs, strata, exportSE, exportIF, exportIFsum));
+    return rcpp_result_gen;
+END_RCPP
+}
+// calcAIFcif_cpp
+std::vector<arma::mat> calcAIFcif_cpp(arma::mat hazard1, std::vector<arma::mat> ls_cumhazard, std::vector<arma::mat> ls_X, arma::mat eXb, std::vector<arma::mat> IFhazard1, std::vector<arma::mat> ls_IFbeta, std::vector< std::vector<arma::mat> > ls_IFhazard, std::vector< std::vector<arma::mat> > ls_IFcumhazard, int nCause, int theCause, bool hazardType, arma::vec time, int nTimes, arma::vec timeIndex, arma::vec jumpTime, int nJumpTime, arma::vec maxJumpTime, int nObs, arma::mat strata, int nStrata, const NumericVector& prevStrata, const std::vector<arma::uvec>& ls_indexStrata, IntegerVector nVar, const std::vector<arma::mat>& factor);
+RcppExport SEXP _riskRegression_calcAIFcif_cpp(SEXP hazard1SEXP, SEXP ls_cumhazardSEXP, SEXP ls_XSEXP, SEXP eXbSEXP, SEXP IFhazard1SEXP, SEXP ls_IFbetaSEXP, SEXP ls_IFhazardSEXP, SEXP ls_IFcumhazardSEXP, SEXP nCauseSEXP, SEXP theCauseSEXP, SEXP hazardTypeSEXP, SEXP timeSEXP, SEXP nTimesSEXP, SEXP timeIndexSEXP, SEXP jumpTimeSEXP, SEXP nJumpTimeSEXP, SEXP maxJumpTimeSEXP, SEXP nObsSEXP, SEXP strataSEXP, SEXP nStrataSEXP, SEXP prevStrataSEXP, SEXP ls_indexStrataSEXP, SEXP nVarSEXP, SEXP factorSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::mat >::type hazard1(hazard1SEXP);
+    Rcpp::traits::input_parameter< std::vector<arma::mat> >::type ls_cumhazard(ls_cumhazardSEXP);
+    Rcpp::traits::input_parameter< std::vector<arma::mat> >::type ls_X(ls_XSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type eXb(eXbSEXP);
+    Rcpp::traits::input_parameter< std::vector<arma::mat> >::type IFhazard1(IFhazard1SEXP);
+    Rcpp::traits::input_parameter< std::vector<arma::mat> >::type ls_IFbeta(ls_IFbetaSEXP);
+    Rcpp::traits::input_parameter< std::vector< std::vector<arma::mat> > >::type ls_IFhazard(ls_IFhazardSEXP);
+    Rcpp::traits::input_parameter< std::vector< std::vector<arma::mat> > >::type ls_IFcumhazard(ls_IFcumhazardSEXP);
+    Rcpp::traits::input_parameter< int >::type nCause(nCauseSEXP);
+    Rcpp::traits::input_parameter< int >::type theCause(theCauseSEXP);
+    Rcpp::traits::input_parameter< bool >::type hazardType(hazardTypeSEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type time(timeSEXP);
+    Rcpp::traits::input_parameter< int >::type nTimes(nTimesSEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type timeIndex(timeIndexSEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type jumpTime(jumpTimeSEXP);
+    Rcpp::traits::input_parameter< int >::type nJumpTime(nJumpTimeSEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type maxJumpTime(maxJumpTimeSEXP);
+    Rcpp::traits::input_parameter< int >::type nObs(nObsSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type strata(strataSEXP);
+    Rcpp::traits::input_parameter< int >::type nStrata(nStrataSEXP);
+    Rcpp::traits::input_parameter< const NumericVector& >::type prevStrata(prevStrataSEXP);
+    Rcpp::traits::input_parameter< const std::vector<arma::uvec>& >::type ls_indexStrata(ls_indexStrataSEXP);
+    Rcpp::traits::input_parameter< IntegerVector >::type nVar(nVarSEXP);
+    Rcpp::traits::input_parameter< const std::vector<arma::mat>& >::type factor(factorSEXP);
+    rcpp_result_gen = Rcpp::wrap(calcAIFcif_cpp(hazard1, ls_cumhazard, ls_X, eXb, IFhazard1, ls_IFbeta, ls_IFhazard, ls_IFcumhazard, nCause, theCause, hazardType, time, nTimes, timeIndex, jumpTime, nJumpTime, maxJumpTime, nObs, strata, nStrata, prevStrata, ls_indexStrata, nVar, factor));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -480,6 +514,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_riskRegression_calcAIFsurv_cpp", (DL_FUNC) &_riskRegression_calcAIFsurv_cpp, 15},
     {"_riskRegression_calcSeCif_cpp", (DL_FUNC) &_riskRegression_calcSeCif_cpp, 32},
     {"_riskRegression_calcSeCif2_cpp", (DL_FUNC) &_riskRegression_calcSeCif2_cpp, 22},
+    {"_riskRegression_calcAIFcif_cpp", (DL_FUNC) &_riskRegression_calcAIFcif_cpp, 24},
     {"_riskRegression_colCumSum", (DL_FUNC) &_riskRegression_colCumSum, 1},
     {"_riskRegression_colSumsCrossprod", (DL_FUNC) &_riskRegression_colSumsCrossprod, 3},
     {"_riskRegression_quantileProcess_cpp", (DL_FUNC) &_riskRegression_quantileProcess_cpp, 6},

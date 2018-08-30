@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: maj 27 2017 (11:46) 
 ## Version: 
-## last-updated: aug 28 2018 (13:45) 
+## last-updated: aug 30 2018 (09:02) 
 ##           By: Brice Ozenne
-##     Update #: 486
+##     Update #: 487
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -238,11 +238,11 @@ calcSeCox <- function(object, times, nTimes, type, diag,
             new.Ustrata <- sort(unique(new.strata))
             new.nStrata <- length(new.Ustrata)
             
-            new.prevStrata <- table(new.strata)/new.n           
             new.indexStrata <- lapply(new.Ustrata, function(iStrata){
                 which(new.strata==iStrata) - 1
             })
-
+            new.prevStrata <- sapply(new.indexStrata, length)/new.n           
+            
             attr(new.LPdata,"levels") <- NULL
             if(is.null(new.survival)){
                 new.survival <- matrix()

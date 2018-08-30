@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: maj 27 2017 (21:23) 
 ## Version: 
-## last-updated: aug 19 2018 (22:56) 
+## last-updated: aug 30 2018 (14:28) 
 ##           By: Brice Ozenne
-##     Update #: 393
+##     Update #: 400
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -201,23 +201,65 @@ calcSeCSC <- function(object, cif, hazard, cumhazard, object.time, object.maxtim
                 attr(new.LPdata[[iCause]],"contrasts") <- NULL
             }
 
-            out <- calcSeCif2_cpp(ls_IFbeta = lapply(object$iid,"[[","IFbeta"),
-                                  ls_X = new.LPdata,
-                                  ls_cumhazard = cumhazard,
-                                  ls_hazard = hazard,
-                                  ls_IFcumhazard = lapply(object$iid,"[[","IFcumhazard"),
-                                  ls_IFhazard = lapply(object$iid,"[[","IFhazard"),
-                                  eXb = eXb,
-                                  timeIndex = sindex.times, nIndex = n.times, time = times, 
-                                  nObs = object.n, nJumpTime = nEtimes, maxJumpTime = object.maxtime,
-                                  theCause = (cause-1), nCause = nCause, hazardType = (surv.type=="hazard"), nVar = nVar,
-                                  nNewObs = new.n, strata = new.strata,
-                                  exportSE = "se" %in% export, exportIF = "iid" %in% export, exportIFsum = "average.iid" %in% export)
-            if("iid" %in% export){
-                out$iid <- aperm(out$iid, c(1,3,2))
-            }
+        out <- calcSeCif2_cpp(ls_IFbeta = lapply(object$iid,"[[","IFbeta"),
+                              ls_X = new.LPdata,
+                              ls_cumhazard = cumhazard,
+                              ls_hazard = hazard[[cause]],
+                              ls_IFcumhazard = lapply(object$iid,"[[","IFcumhazard"),
+                              ls_IFhazard = object$iid[[cause]]$IFhazard,
+                              eXb = eXb,
+                              timeIndex = sindex.times, nIndex = n.times, time = times, 
+                              nObs = object.n, nJumpTime = nEtimes, maxJumpTime = object.maxtime,
+                              theCause = (cause-1), nCause = nCause, hazardType = (surv.type=="hazard"), nVar = nVar,
+                              nNewObs = new.n, strata = new.strata,
+                              exportSE = "se" %in% export, exportIF = "iid" %in% export, exportIFsum = "average.iid" %in% export)
+
+        if("iid" %in% export){
+            out$iid <- aperm(out$iid, c(1,3,2))
+        }
         ## } else if("average.iid" %in% export){
 
+        ## new.level.strata <- unique(new.strata)
+        ## new.level.Ustrata <- apply(new.level.strata,1,paste0,collapse="")
+        ## new.n.strata <- length(new.level.Ustrata)
+                
+        ## new.indexStrata <- lapply(new.level.Ustrata, function(iStrata){
+        ## which(new.Ustrata==iStrata) - 1
+        ## })
+        ## new.prevStrata <- sapply(new.indexStrata, length)/new.n           
+ 
+        ##     if(nCause != 2){
+        ##         stop("Argument \'average.iid\' (fast computation) only available when there are exactly two causes.")
+        ##     }
+        ##     out <- list(average.iid = matrix(NA, nrow = new.n, ncol = n.times))
+        ## if(is.null(attr(export,"factor"))){
+        ## rm.list <- TRUE
+        ## factor <- list(matrix(1, nrow = new.n, ncol = n.times))
+        ## }else{
+        ## rm.list <- FALSE
+        ## factor <- attr(export, "factor")
+        ## }
+
+        ## browser()
+        ## calcAIFcif_cpp(hazard1 = hazard[[cause]],
+        ## ls_cumhazard = cumhazard,
+        ## ls_X = new.LPdata,
+        ## eXb = eXb,
+        ## IFhazard1 = object$iid[[cause]]$IFhazard,
+        ## ls_IFbeta = lapply(object$iid,"[[","IFbeta"),
+        ## ls_IFcumhazard = lapply(object$iid,"[[","IFcumhazard"),
+        ## nCause = nCause, theCause = cause - 1, hazardType = (surv.type=="hazard"),
+        ## time = times, nTime = n.times, timeIndex = sindex.times, 
+        ## jumpTime = object.time, nJumpTime = nEtimes, maxJumpTime = object.maxtime,
+        ## nObs = object.n,
+        ## strata = new.strata, nStrata = new.n.strata, prevStrata = new.prevStrata, ls_indexStrata = new.indexStrata,
+        ## nVar = nVar,
+        ## factor = factor)
+        ##     if(nCause != 2){
+        ##         stop("Argument \'average.iid\' (fast computation) only available when there are exactly two causes.")
+        ##     }
+        ##     out <- list(average.iid = matrix(NA, nrow = new.n, ncol = n.times))
+   
         ##     if(nCause != 2){
         ##         stop("Argument \'average.iid\' (fast computation) only available when there are exactly two causes.")
         ##     }
