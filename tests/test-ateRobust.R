@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: aug 15 2018 (11:42) 
 ## Version: 
-## Last-Updated: aug 28 2018 (16:52) 
+## Last-Updated: aug 31 2018 (17:12) 
 ##           By: Brice Ozenne
-##     Update #: 30
+##     Update #: 34
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -68,19 +68,19 @@ test_that("Agreement ate-ateRobust (survival)",{
 
     test <- e.ateRobust$ate.se
     rownames(test) <- NULL
-    ## M.GS <- cbind("Gformula" = c(0.01086, 0.0194, 0.00877), 
-                  ## "Gformula2" = c(0.04724, 0.13442, 0.12753), 
-                  ## "IPWnaive" = c(0.05782, 0.24982, 0.26468), 
-                  ## "IPWefficient" = c(0.0578, 0.24897, 0.2638), 
-                  ## "IPWnaive2" = c(0.0568, 0.15604, 0.16613), 
-                  ## "IPWefficient2" = c(0.05685, 0.15724, 0.16709), 
-                  ## "AIPWnaive" = c(0.05662, 0.15129, 0.15937), 
-                  ## "AIPWefficient" = c(0.05661, 0.15154, 0.15965), 
-                  ## "AIPWnaive2" = c(0.05569, 0.14839, 0.15678), 
-                  ## "AIPWefficient2" = c(0.05574, 0.14954, 0.15769)
-                  ## )
-    ## expect_equal(test, M.GS, tol = 1e-4)
-    ## ## butils::object2script(test, digit = 5)
+    M.GS <- cbind("Gformula" = c(0.01086, 0.0194, 0.00877), 
+                  "Gformula2" = c(0.04724, 0.13442, 0.12753), 
+                  "IPWnaive" = c(0.05782, 0.24982, 0.26468), 
+                  "IPWefficient" = c(0.0578, 0.24897, 0.2638), 
+                  "IPWnaive2" = c(0.05681, 0.15178, 0.16212), 
+                  "IPWefficient2" = c(0.05681, 0.1529, 0.16329), 
+                  "AIPWnaive" = c(0.05662, 0.15129, 0.15937), 
+                  "AIPWefficient" = c(0.05661, 0.15154, 0.15965), 
+                  "AIPWnaive2" = c(0.05567, 0.14455, 0.15325), 
+                  "AIPWefficient2" = c(0.05568, 0.14561, 0.15437)
+                  )
+    expect_equal(test, M.GS, tol = 1e-4)
+    ## butils::object2script(test, digit = 5)
 })
 
 
@@ -94,7 +94,7 @@ dtS <- sampleData(n,outcome="competing.risks")
 e.CSC <- CSC(Hist(time, event) ~ X1 + X2 + X3,
              data = dtS, surv.type = "hazard")
 
-test_that("Agreement ate-ateRobust (survival)",{
+test_that("Agreement ate-ateRobust (competing.risks)",{
     ## NOT POSSIBLE: predictRisk does not recognise the argument product.limit
     ## e.ate <- ate(e.CSC, treatment = "X1", times = 3, data = dtS, cause = 1,
                  ## se = TRUE, product.limit = FALSE) 
@@ -153,18 +153,18 @@ test_that("Agreement ate-ateRobust (survival)",{
    test <- e.ateRobust$ate.se
    rownames(test) <- NULL
     
-   ## M.GS <- cbind("Gformula" = c(0.01006, 0.01065, 6e-04), 
-                 ## "Gformula2" = c(0.04577, 0.15642, 0.15524), 
-                 ## "IPWnaive" = c(0.04731, 0.22229, 0.233), 
-                 ## "IPWefficient" = c(0.04727, 0.22165, 0.23231), 
-                 ## "IPWnaive2" = c(0.04651, 0.16451, 0.17097), 
-                 ## "IPWefficient2" = c(0.04665, 0.16515, 0.17158), 
-                 ## "AIPWnaive" = c(0.04636, 0.16792, 0.17302), 
-                 ## "AIPWefficient" = c(0.04632, 0.16799, 0.1731), 
-                 ## "AIPWnaive2" = c(0.04643, 0.1619, 0.16802), 
-                 ## "AIPWefficient2" = c(0.04657, 0.16259, 0.1687)
-                 ## )
-   ## expect_equal(test, M.GS, tol = 1e-4)
+   M.GS <- cbind("Gformula" = c(0.01006, 0.01065, 6e-04), 
+                 "Gformula2" = c(0.04577, 0.15642, 0.15524), 
+                 "IPWnaive" = c(0.04731, 0.22229, 0.233), 
+                 "IPWefficient" = c(0.04727, 0.22165, 0.23231), 
+                 "IPWnaive2" = c(0.0465, 0.16437, 0.17088), 
+                 "IPWefficient2" = c(0.04647, 0.16499, 0.17157), 
+                 "AIPWnaive" = c(0.04636, 0.16792, 0.17302), 
+                 "AIPWefficient" = c(0.04632, 0.16799, 0.1731), 
+                 "AIPWnaive2" = c(0.04641, 0.16192, 0.16808), 
+                 "AIPWefficient2" = c(0.0464, 0.1626, 0.16885)
+                 )
+   expect_equal(test, M.GS, tol = 1e-4)
    ## butils::object2script(test, digit = 5)
     
     test <- e.ateRobustPL$ate.value
@@ -187,18 +187,18 @@ test_that("Agreement ate-ateRobust (survival)",{
     test <- e.ateRobustPL$ate.se
     rownames(test) <- NULL
     
-    ## M.GS <- cbind("Gformula" = c(0.01001, 0.01058, 0.00058), 
-                  ## "Gformula2" = c(0.04576, 0.15641, 0.15524), 
-                  ## "IPWnaive" = c(0.04732, 0.22233, 0.23304), 
-                  ## "IPWefficient" = c(0.04727, 0.22169, 0.23236), 
-                  ## "IPWnaive2" = c(0.04652, 0.16458, 0.17104), 
-                  ## "IPWefficient2" = c(0.04665, 0.16521, 0.17164), 
-                  ## "AIPWnaive" = c(0.04636, 0.16804, 0.17314), 
-                  ## "AIPWefficient" = c(0.04632, 0.1681, 0.17322), 
-                  ## "AIPWnaive2" = c(0.04643, 0.16198, 0.1681), 
-                  ## "AIPWefficient2" = c(0.04658, 0.16266, 0.16878)
-                  ## )
-    ## expect_equal(test, M.GS, tol = 1e-4)
+    M.GS <- cbind("Gformula" = c(0.01001, 0.01058, 0.00058), 
+                  "Gformula2" = c(0.04576, 0.15641, 0.15524), 
+                  "IPWnaive" = c(0.04732, 0.22233, 0.23304), 
+                  "IPWefficient" = c(0.04727, 0.22169, 0.23236), 
+                  "IPWnaive2" = c(0.0465, 0.16443, 0.17094), 
+                  "IPWefficient2" = c(0.04648, 0.16505, 0.17163), 
+                  "AIPWnaive" = c(0.04636, 0.16804, 0.17314), 
+                  "AIPWefficient" = c(0.04632, 0.1681, 0.17322), 
+                  "AIPWnaive2" = c(0.04642, 0.16199, 0.16816), 
+                  "AIPWefficient2" = c(0.0464, 0.16267, 0.16893)
+                  )
+    expect_equal(test, M.GS, tol = 1e-4)
     ## butils::object2script(test, digit = 5)
    
 })

@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: maj 27 2017 (21:23) 
 ## Version: 
-## last-updated: aug 31 2018 (14:25) 
+## last-updated: aug 31 2018 (16:54) 
 ##           By: Brice Ozenne
-##     Update #: 477
+##     Update #: 501
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -193,12 +193,13 @@ calcSeCSC <- function(object, cif, hazard, cumhazard, object.time, object.maxtim
                                         # {{{ other method
         nTimes <- length(times)
         sindex.times <- prodlim::sindex(object.time, eval.times = times)-1 ## i.e. -1 is before the first jump
-        if("iid" %in% export || "se" %in% export){            
 
-            for(iCause in 1:nCause){ ## remove attributes to have a list of matrices
-                attr(new.LPdata[[iCause]],"assign") <- NULL
-                attr(new.LPdata[[iCause]],"contrasts") <- NULL
-            }
+        for(iCause in 1:nCause){ ## remove attributes to have a list of matrices
+            attr(new.LPdata[[iCause]],"assign") <- NULL
+            attr(new.LPdata[[iCause]],"contrasts") <- NULL
+        }
+
+        if("iid" %in% export || "se" %in% export){            
 
             out <- calcSeCif2_cpp(ls_IFbeta = lapply(object$iid,"[[","IFbeta"),
                                   ls_X = new.LPdata,
@@ -217,6 +218,7 @@ calcSeCSC <- function(object, cif, hazard, cumhazard, object.time, object.maxtim
             if("iid" %in% export){
                 out$iid <- aperm(out$iid, c(1,3,2))
             }
+            
         } else if("average.iid" %in% export){
 
             new.level.strata <- unique(new.strata)
@@ -235,8 +237,7 @@ calcSeCSC <- function(object, cif, hazard, cumhazard, object.time, object.maxtim
                 rm.list <- FALSE
                 factor <- attr(export, "factor")
             }
-            ## exp(-rowSums(cumhazard[[2]]))
-            ## dim(cumhazard[[2]])
+
             outRcpp <- calcAIFcif_cpp(hazard1 = hazard[[cause]],
                                       ls_cumhazard = cumhazard,
                                       ls_tX = lapply(new.LPdata,t),
@@ -251,12 +252,11 @@ calcSeCSC <- function(object, cif, hazard, cumhazard, object.time, object.maxtim
                                       levelStrata = new.level.strata, nStrata = new.n.strata, ls_indexStrata = new.indexStrata,
                                       nVar = nVar,
                                       factor = factor)
-            
-            ## browser()
+
             if(rm.list){
                 out <- list(average.iid = matrix(outRcpp[[1]], nrow = object.n, ncol = nTimes))
             }else{
-                out <- list(average.iid <- lapply(outRcpp, function(iMat){matrix(iMat, nrow = object.n, ncol = nTimes)}))
+                out <- list(average.iid = lapply(outRcpp, function(iMat){matrix(iMat, nrow = object.n, ncol = nTimes)}))
             }
 
         

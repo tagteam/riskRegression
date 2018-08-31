@@ -718,7 +718,8 @@ std::vector<arma::mat> calcAIFcif_cpp(const arma::mat& hazard1,
 		    const arma::mat& factor){
   // note: tauIndex must be -1 before the first event and greater than nTau after the last event
   //       ls_tX must be a list of design matrix where the observations are in columns
-  
+  // Rcout << "Start!" << endl;
+	
   // ** prepare output
   int nFactor = factor.n_cols;
 
@@ -794,22 +795,29 @@ std::vector<arma::mat> calcAIFcif_cpp(const arma::mat& hazard1,
 		 iObs = ls_indexStrata[iStrata][iObsStrata];
 
 		 if(hazard1(iJump,levelStrata(iStrata,theCause))>0){
-		 hazard1Tempo = hazard1(iJump,levelStrata(iStrata,theCause)) * eXb(iObs,theCause);
-		 survivalTempo = 0.0;
+           // Rcout << iJump << " " << levelStrata(iStrata,theCause) << " " << iObs << " " << theCause;	   
 
+		   hazard1Tempo = hazard1(iJump,levelStrata(iStrata,theCause)) * eXb(iObs,theCause);
+		   survivalTempo = 0.0;
+		   
 		 if(iJump>0){
-		   if(hazardType){
+		   if(hazardType){			 
    		   for(int iCause=0; iCause<nCause; iCause++){
-		      cumhazardTempo[iCause] = ls_cumhazard[iCause](iJump-1,levelStrata(iStrata,iCause)) * eXb(iObs,iCause);
-    	      survivalTempo += cumhazardTempo[iCause];
+			 cumhazardTempo[iCause] = ls_cumhazard[iCause](iJump-1,levelStrata(iStrata,iCause)) * eXb(iObs,iCause);
+			 survivalTempo += cumhazardTempo[iCause];
             }
 		   }else{
-		     cumhazardTempo[1] = ls_cumhazard[1](iJump-1,levelStrata(iStrata,1)) * eXb(iObs,1);
-     	     survivalTempo += cumhazardTempo[1];
+			  cumhazardTempo[1] = ls_cumhazard[1](iJump-1,levelStrata(iStrata,1)) * eXb(iObs,1);
+			  survivalTempo += cumhazardTempo[1];
 		   }
-   		 }
+   		 }else{
+		   for(int iCause=0; iCause<nCause; iCause++){
+			 cumhazardTempo[iCause] = 0.0; // used instead of .fill(0.0) because it was not doing the job
+ 		   }
+		 }
+		 
 		 survivalTempo = exp(-survivalTempo);
-		 // Rcout << "survival: " << survivalTempo << endl;;	   
+		 // Rcout << " | survival: " << survivalTempo;	
 		  for(int iFactor=0; iFactor<nFactor; iFactor++){
 			factorTempo = factor(iObs,iFactor);
 
@@ -820,16 +828,20 @@ std::vector<arma::mat> calcAIFcif_cpp(const arma::mat& hazard1,
 			  Esurv_hazard1_eXb(iCause,iFactor) += survivalTempo * hazard1Tempo * eXb(iObs,iCause) * factorTempo;
 			  if(nVar[theCause]>0){
 			   if(iCause==theCause){
-				 Esurv_hazard1_X_cumhazard[iCause].col(iFactor) += survivalTempo * hazard1Tempo * ls_tX[iCause].col(iObs) * (cumhazardTempo[iCause] - 1) * factorTempo;
+           		 Esurv_hazard1_X_cumhazard[iCause].col(iFactor) += survivalTempo * hazard1Tempo * ls_tX[iCause].col(iObs) * (cumhazardTempo[iCause] - 1) * factorTempo;
 				 }else{
 				 Esurv_hazard1_X_cumhazard[iCause].col(iFactor) += survivalTempo * hazard1Tempo * ls_tX[iCause].col(iObs) * cumhazardTempo[iCause] * factorTempo;
 				 }
 			  }
 			}						   
 		   }else{
-		     Esurv_hazard1_eXb(1,iFactor) += survivalTempo * hazard1Tempo * eXb(iObs,1) * factorTempo;
+			 Esurv_hazard1_eXb(1,iFactor) += survivalTempo * hazard1Tempo * eXb(iObs,1) * factorTempo;
+			 if(nVar[0]>0){
 			 Esurv_hazard1_X_cumhazard[0].col(iFactor) -= survivalTempo * hazard1Tempo * ls_tX[0].col(iObs) * factorTempo;
-			 Esurv_hazard1_X_cumhazard[1].col(iFactor) += survivalTempo * hazard1Tempo * ls_tX[1].col(iObs) * cumhazardTempo[1] * factorTempo;
+			 }
+			 if(nVar[1]>0){
+			   Esurv_hazard1_X_cumhazard[1].col(iFactor) += survivalTempo * hazard1Tempo * ls_tX[1].col(iObs) * cumhazardTempo[1] * factorTempo;
+			 }
 		   }
 		  }
 		 }
@@ -848,31 +860,34 @@ std::vector<arma::mat> calcAIFcif_cpp(const arma::mat& hazard1,
 		  }
 	   }	 
    	   // Rcout << " done) ";
-	  	   
+	  	 
    	 // *** export
 	   // Rcout << "(update ";
 	   if(iiTau < nTau && tauIndex[iiTau]==iJump && tau[iiTau] <= JumpMax[iStrata]){
 	     int_b.fill(0.0);
 		 for(int iCause=0; iCause<nCause; iCause++){
 		   if(nVar[iCause]>0){
+			 // Rcout << int_bmissingIF[iCause](0,0) << " ";
 			 int_b += ls_IFbeta[iCause] * int_bmissingIF[iCause];
 		   }
 		 }
 
 		 int_total = (int_hazard1 - int_cumhazard - int_b);
+		 // Rcout << int_hazard1(0,0) << "/" <<  int_cumhazard(0,0) << "/" << int_b(0,0) << ":" << int_total(0,0) << endl;
+
  	     // int should be multiplied by the prevalence (n.strata/n.total) and divided by n.strata to change the sum in average for the Eterms
 		 // so in total we just divide by n.total
 		 int_total /= nNewObs;
-	   }
-	   	   
+
        while(iiTau < nTau && tauIndex[iiTau]==iJump && tau[iiTau] <= JumpMax[iStrata]){
-	   // Rcout << "*" ;
+	    
+	  // Rcout << "*" ;
        	 for(int iFactor=0; iFactor<nFactor; iFactor++){
 			   out[iFactor].col(iiTau) += int_total.col(iFactor);
 		 }
 		 iiTau ++;
  	   }
-
+	   }
 	   
 	   	   // Rcout << "done) " << endl;		   
 	  }

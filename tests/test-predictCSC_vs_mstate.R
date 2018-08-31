@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: maj 18 2017 (09:23) 
 ## Version: 
-## last-updated: jul  6 2018 (14:22) 
+## last-updated: aug 31 2018 (17:24) 
 ##           By: Brice Ozenne
-##     Update #: 181
+##     Update #: 188
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -749,7 +749,7 @@ test_that("conditional predictCSC with strata",{
 
 
 ## * 5- Fast SE
-cat("[predictCSS] - fast SE \n")
+cat("[predictCSC] - fast SE \n")
 set.seed(10)
 d <- sampleData(1e2, outcome = "competing.risks")
 setkey(d,time)
@@ -789,7 +789,60 @@ test_that("iid minimal - strata", {
     expect_equal(res2$absRisk.average.iid, t(apply(res3$absRisk.iid,2:3,mean)))
 })
 
-## * 6- Prediction when iid is stored
+## * 6- Average iid
+cat("[predictCSC] - average iid \n")
+set.seed(10)
+d <- sampleData(100, outcome = "competing.risks")
+
+seqTime <- c(0,d$time,1e8)
+
+## ** non parametric
+test_that("iid average - non parametric", {
+    for(iType in c("hazard","survival")){
+        m.CSC <- CSC(Hist(time, event) ~ strata(X1) + strata(X2), data = d, surv.type = iType)
+    
+        res1 <- predict(m.CSC, times = seqTime, newdata = d,
+                        cause = 1, iid = TRUE, average.iid = TRUE)
+        res2 <- predict(m.CSC, times = seqTime, newdata = d,
+                        cause = 1, average.iid = TRUE)
+
+        expect_equal(res1$absRisk.average.iid,res2$absRisk.average.iid)
+        expect_true(all(res1$absRisk.average.iid[,1]==0))
+        expect_true(all(is.na(res1$absRisk.average.iid[,length(seqTime)])))
+
+        ## compare to fixed value    
+        ## d[time==min(time),]
+        ## levels(predictCox(m.CSC$models[[1]])$strata)
+        index.firstEvent <- which.min(d$time)
+        strata.firstEvent <- 3
+        expect_equal(res1$absRisk.iid[index.firstEvent, index.firstEvent+1,],
+                     iidCox(m.CSC$models[[1]])$IFhazard[[strata.firstEvent]][,1])
+    }
+
+})
+
+## ** semi parametric
+test_that("iid average - semi parametric", {
+    for(iType in c("hazard","survival")){ ## iType <- "hazard"
+        m.CSC <- CSC(Hist(time, event) ~ X1*X6 + strata(X2), data = d, surv.type = iType)
+        
+        res1 <- predict(m.CSC, times = seqTime, newdata = d,
+                        cause = 1, iid = TRUE, average.iid = TRUE)
+        res2 <- predict(m.CSC, times = seqTime, newdata = d,
+                        cause = 1, average.iid = TRUE)
+        GS3 <- res1$absRisk.average.iid
+        GS23 <- res1$absRisk.average.iid
+        
+        expect_equal(res1$absRisk.average.iid,res2$absRisk.average.iid)
+        expect_true(all(res1$absRisk.average.iid[,1]==0))
+        expect_true(all(is.na(res1$absRisk.average.iid[,length(seqTime)])))
+    }
+
+})
+
+
+
+## * 7- Prediction when iid is stored
 cat("[predictCSS] - iid \n")
 data(Melanoma, package = "riskRegression")
 cfit1 <- CSC(formula=list(Hist(time,status)~age+logthick+epicel+strata(sex),

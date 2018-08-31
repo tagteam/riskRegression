@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: jun 27 2018 (17:47) 
 ## Version: 
-## Last-Updated: aug 31 2018 (14:35) 
+## Last-Updated: aug 31 2018 (17:13) 
 ##           By: Brice Ozenne
-##     Update #: 977
+##     Update #: 991
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -283,6 +283,10 @@ ateRobust <- function(data, times, cause, type,
         attr(nuisance.iid1, "factor") <- list("Gformula" = matrix(1, nrow = n.obs, ncol = 1),
                                               "AIPW" = cbind(data[, 1 - .SD$treatment.bin / .SD$prob.treatment])
                                               )
+        if(type == "competing.risks"){
+            attr(nuisance.iid0, "factor") <- do.call(cbind,attr(nuisance.iid0, "factor"))
+            attr(nuisance.iid1, "factor") <- do.call(cbind,attr(nuisance.iid1, "factor"))
+        }
     }else{
         nuisance.iid0 <- FALSE
         nuisance.iid1 <- FALSE
@@ -307,11 +311,13 @@ ateRobust <- function(data, times, cause, type,
         }
 
     }else if(type=="competing.risks"){
-        
+
         ## Estimation of the survival + IF
         prediction.event <- predict(model.event, newdata = data, times = times, cause = cause, product.limit = product.limit)
         prediction.event0 <- predict(model.event, newdata = data0, times = times, cause = cause, product.limit = product.limit, iid = nuisance.iid)
+        ## prediction.event0 <- predict(model.event, newdata = data0, times = times, cause = cause, product.limit = product.limit, average.iid = nuisance.iid0)
         prediction.event1 <- predict(model.event, newdata = data1, times = times, cause = cause, product.limit = product.limit, iid = nuisance.iid)
+        ## prediction.event1 <- predict(model.event, newdata = data1, times = times, cause = cause, product.limit = product.limit, average.iid = nuisance.iid1)
 
         data[, c("prob.event") := prediction.event$absRisk[,1]]
         data[, c("prob.event0") := prediction.event0$absRisk[,1]]
@@ -319,12 +325,16 @@ ateRobust <- function(data, times, cause, type,
 
         ## store results
         if(nuisance.iid){
-            weight0 <- attr(nuisance.iid0, "factor")[["AIPW"]][,1]
+            weight0 <- attr(nuisance.iid0,"factor")[,2]
+            ## iidG.event0 <- prediction.event0$absRisk.average.iid[[1]]
             iidG.event0 <- colMeans(prediction.event0$absRisk.iid[,1,])
+            ## iidAIPW.event0 <- prediction.event0$absRisk.average.iid[[2]]
             iidAIPW.event0 <- apply(prediction.event0$absRisk.iid[,1,],2,function(iCol){mean(weight0*iCol)})
 
-            weight1 <- attr(nuisance.iid1, "factor")[["AIPW"]][,1]
+            weight1 <- attr(nuisance.iid1, "factor")[,2]
+            ## iidG.event1 <- prediction.event1$absRisk.average.iid[[1]]
             iidG.event1 <- colMeans(prediction.event1$absRisk.iid[,1,])
+            ## iidAIPW.event1 <- prediction.event0$absRisk.average.iid[[2]]
             iidAIPW.event1 <- apply(prediction.event1$absRisk.iid[,1,],2,function(iCol){mean(weight1*iCol)})
         }
 
