@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: maj 27 2017 (21:23) 
 ## Version: 
-## last-updated: aug 31 2018 (14:09) 
+## last-updated: aug 31 2018 (14:25) 
 ##           By: Brice Ozenne
-##     Update #: 476
+##     Update #: 477
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -267,144 +267,6 @@ calcSeCSC <- function(object, cif, hazard, cumhazard, object.time, object.maxtim
     return(out)
 }
 
-## * old
-        ## new.level.strata <- unique(new.strata)
-        ## new.level.Ustrata <- apply(new.level.strata,1,paste0,collapse="")
-        ## new.n.strata <- length(new.level.Ustrata)
-                
-        ## new.indexStrata <- lapply(new.level.Ustrata, function(iStrata){
-        ## which(new.Ustrata==iStrata) - 1
-        ## })
-        ## new.prevStrata <- sapply(new.indexStrata, length)/new.n           
- 
-        ##     if(nCause != 2){
-        ##         stop("Argument \'average.iid\' (fast computation) only available when there are exactly two causes.")
-        ##     }
-        ##     out <- list(average.iid = matrix(NA, nrow = new.n, ncol = nTimes))
-        ## if(is.null(attr(export,"factor"))){
-        ## rm.list <- TRUE
-        ## factor <- list(matrix(1, nrow = new.n, ncol = nTimes))
-        ## }else{
-        ## rm.list <- FALSE
-        ## factor <- attr(export, "factor")
-        ## }
-
-        ## browser()
-        ## calcAIFcif_cpp(hazard1 = hazard[[cause]],
-        ## ls_cumhazard = cumhazard,
-        ## ls_X = new.LPdata,
-        ## eXb = eXb,
-        ## IFhazard1 = object$iid[[cause]]$IFhazard,
-        ## ls_IFbeta = lapply(object$iid,"[[","IFbeta"),
-        ## ls_IFcumhazard = lapply(object$iid,"[[","IFcumhazard"),
-        ## nCause = nCause, theCause = cause - 1, hazardType = (surv.type=="hazard"),
-        ## time = times, nTime = nTimes, timeIndex = sindex.times, 
-        ## jumpTime = object.time, nJumpTime = nEtimes, maxJumpTime = object.maxtime,
-        ## nObs = object.n,
-        ## strata = new.strata, nStrata = new.n.strata, prevStrata = new.prevStrata, ls_indexStrata = new.indexStrata,
-        ## nVar = nVar,
-        ## factor = factor)
-        ##     if(nCause != 2){
-        ##         stop("Argument \'average.iid\' (fast computation) only available when there are exactly two causes.")
-        ##     }
-        ##     out <- list(average.iid = matrix(NA, nrow = new.n, ncol = nTimes))
-   
-        ##     if(nCause != 2){
-        ##         stop("Argument \'average.iid\' (fast computation) only available when there are exactly two causes.")
-        ##     }
-        ##     out <- list(average.iid = matrix(NA, nrow = new.n, ncol = nTimes))
-            
-        ##     vec.strata <- apply(new.strata,1,paste0,collapse="")
-        ##     level.strata <- unique(new.strata)
-        ##     level.vec.strata <- apply(level.strata,1,paste0,collapse="")
-        ##     n.strata <- length(level.vec.strata)
-
-        ##     n.object.times <- length(object.time)
-
-        ##     for(iStrata in 1:n.strata){ ## iStrata <- 1
-        ##         iStrata1 <- level.strata[iStrata,cause] + 1
-        ##         iStrata2 <- level.strata[iStrata,-cause] + 1
-        ##         iIndex.strata <- which(vec.strata==level.vec.strata[iStrata])
-        ##         iN.strata <- length(iIndex.strata)
-        ##         iTime.store <- 1
-        ##         iPrev.strata <- iN.strata/new.n
-                
-        ##         int.hazard1 <- 0
-        ##         int.b1 <- rep(0, nVar[cause])
-        ##         int.b1full <- 0
-        ##         int.cumhazard1 <- 0
-        ##         int.cumhazard2 <- 0
-        ##         int.b2 <- rep(0, nVar[-cause])
-        ##         int.b2full <- 0
-                
-        ##             ## compute integral
-        ##             for(iTime in 1:n.object.times){ ## iTime <- 1
-
-        ##                 if(hazard[[cause]][iTime]>0){
-        ##                     ## compute expectations at each time
-        ##                     E.surv_eXb1 <- 0
-        ##                     E.surv_hazard1_X1_1_cumhazard1 <- rep(0, times = nVar[1])
-        ##                     E.surv_hazard1_eXb1 <- 0
-        ##                     E.surv_hazard1_eXb2 <- 0
-        ##                     E.surv_hazard1_X2_cumhazard2 <- rep(0, times = nVar[2])
-
-        ##                     for(iObs in iIndex.strata){ ##  iObs <- 1
-        ##                         ## iSurvival <- exp(-sum(sapply(1:nCause, function(iCause){
-        ##                             ## cumhazard[[iCause]][iTime]*eXb[iObs,iCause]
-        ##                         ## })))
-        ##                         iSurvival <- exp(-cumhazard[[1]][iTime]*eXb[iObs,1]-cumhazard[[2]][iTime]*eXb[iObs,2])
-        ##                         iHazard1  <- hazard[[cause]][iTime]*eXb[iObs,cause]
-        ##                         iCumHazard1  <- cumhazard[[cause]][iTime]*eXb[iObs,cause]
-        ##                         iCumHazard2  <- cumhazard[[-cause]][iTime]*eXb[iObs,-cause]
-                            
-        ##                         E.surv_eXb1 <- E.surv_eXb1 + iSurvival * eXb[iObs,cause]
-        ##                         if(nVar[cause]>0){
-        ##                             E.surv_hazard1_X1_1_cumhazard1 <- E.surv_hazard1_X1_1_cumhazard1 + iSurvival * iHazard1 * eXb[iObs,cause] * new.LPdata[[cause]][iObs,] * (1 - iCumHazard1)
-        ##                         }
-        ##                         E.surv_hazard1_eXb1 <- E.surv_hazard1_eXb1 + iSurvival * iHazard1 * eXb[iObs,cause]
-        ##                         E.surv_hazard1_eXb2 <- E.surv_hazard1_eXb2 + iSurvival * iHazard1 * eXb[iObs,-cause]
-        ##                         if(nVar[-cause]>0){
-        ##                             E.surv_hazard1_X2_cumhazard2 <- E.surv_hazard1_X2_cumhazard2 + iSurvival * iHazard1 * new.LPdata[[-cause]][iObs,] * iCumHazard2
-        ##                         }
-        ##                     }
-
-        ##                     ## update integral
-        ##                     int.hazard1 <- int.hazard1 + E.surv_eXb1 * object$iid[[cause]]$IFhazard[[iStrata1]][,iTime]
-        ##                     if(nVar[cause]>0){
-        ##                         int.b1 <- int.b1 + E.surv_hazard1_X1_1_cumhazard1
-        ##                     }
-        ##                     int.cumhazard1 <- int.cumhazard1 + E.surv_hazard1_eXb1 * object$iid[[cause]]$IFcumhazard[[iStrata1]][,iTime]
-        ##                     int.cumhazard2 <- int.cumhazard2 + E.surv_hazard1_eXb2 * object$iid[[-cause]]$IFcumhazard[[iStrata2]][,iTime]
-        ##                     if(nVar[-cause]>0){
-        ##                         int.b2 <- int.b2 + E.surv_hazard1_X2_cumhazard2
-        ##                     }
-        ##                 }
-                        
-        ##                 ## export
-        ##                 if(iTime.store <= nTimes && sindex.times[iTime.store]==iTime){
-        ##                     if(nVar[cause]>0){
-        ##                         int.b1full <- as.double(object$iid[[cause]]$IFbeta %*% int.b1)
-        ##                     }
-        ##                     if(nVar[-cause]>0){
-        ##                         int.b2full <- as.double(object$iid[[-cause]]$IFbeta %*% int.b2)
-        ##                     }
-        ##                     ## note: iN.strata corresponds to the 1/n from the expectation of the E. terms
-        ##                     int.total <- (int.hazard1 + int.b1full - int.cumhazard1 - int.cumhazard2 - int.b2full) * iPrev.strata / iN.strata
-        ##                     out$average.iid[,iTime.store] <- int.total 
-        ##                     iTime.store <- iTime.store + 1
-
-
-        ##                     while(iTime.store <= nTimes && sindex.times[iTime.store]==iTime){
-        ##     out$average.iid[,iTime.store] <- int.total
-        ##     iTime.store <- iTime.store + 1
-        ## }
-        ##                 }
-                        
-        ##             }
-
-                    
-        ##     }
-                
   
 #----------------------------------------------------------------------
 ### calcSeCSC.R ends here

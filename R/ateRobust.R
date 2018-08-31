@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: jun 27 2018 (17:47) 
 ## Version: 
-## Last-Updated: aug 28 2018 (16:51) 
+## Last-Updated: aug 31 2018 (14:35) 
 ##           By: Brice Ozenne
-##     Update #: 976
+##     Update #: 977
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -131,8 +131,10 @@
 #' alphaCR.Y <- 2
 #'
 #' set.seed(10)
-#' df <- rbind(data.frame(time1 = rexp(n, rate = alphaE.X), time2 = rexp(n, rate = alphaCR.X), group = "1"),
-#'             data.frame(time1 = rexp(n, rate = alphaE.Y), time2 = rexp(n, rate = alphaCR.Y), group = "2"))
+#' df <- rbind(data.frame(time1 = rexp(n, rate = alphaE.X),
+#'                        time2 = rexp(n, rate = alphaCR.X), group = "1"),
+#'             data.frame(time1 = rexp(n, rate = alphaE.Y),
+#'                        time2 = rexp(n, rate = alphaCR.Y), group = "2"))
 #' df$time <- pmin(df$time1,df$time2) ## first event
 #' df$event <- (df$time2<df$time1)+1 ## type of event
 #' df$eventC <- df$event
