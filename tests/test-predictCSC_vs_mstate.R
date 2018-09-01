@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: maj 18 2017 (09:23) 
 ## Version: 
-## last-updated: sep  1 2018 (11:24) 
+## last-updated: sep  1 2018 (11:33) 
 ##           By: Brice Ozenne
-##     Update #: 193
+##     Update #: 195
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -801,51 +801,28 @@ seqTime <- unique(c(0,min(d$time),d$time[sample.int(n = 100, size = 10)],1e8))
 index.firstEvent <- 2
 
 ## ** non parametric
-m.CSC <- CSC(Hist(time, event) ~ strata(X1) + strata(X2),
-             data = d, surv.type = "hazard")
-
-res2 <- predict(m.CSC, times = seqTime, newdata = d,
-                cause = 1, average.iid = TRUE)
 
 test_that("iid average - non parametric (hazard)", {
-    
-    res1 <- predict(m.CSC, times = seqTime, newdata = d,
-                    cause = 1, iid = TRUE, average.iid = TRUE)
+    for(iType in c("hazard","survival")){ ## iType <- "hazard"
+        m.CSC <- CSC(Hist(time, event) ~ strata(X1) + strata(X2),
+                     data = d, surv.type = iType)
 
-    expect_equal(res1$absRisk.average.iid,res2$absRisk.average.iid)
-    expect_true(all(res1$absRisk.average.iid[,1]==0))
-    expect_true(all(is.na(res1$absRisk.average.iid[,length(seqTime)])))
+        res2 <- predict(m.CSC, times = seqTime, newdata = d,
+                        cause = 1, average.iid = TRUE)
 
-    ## compare to fixed value    
-    ## d[time==min(time),]
-    ## levels(predictCox(m.CSC$models[[1]])$strata)
-    expect_equal(res1$absRisk.iid[obs.firstEvent, index.firstEvent,],
-                 iidCox(m.CSC$models[[1]])$IFhazard[[strata.firstEvent]][,1])
+        res1 <- predict(m.CSC, times = seqTime, newdata = d,
+                        cause = 1, iid = TRUE, average.iid = TRUE)
 
-})
+        expect_equal(res1$absRisk.average.iid,res2$absRisk.average.iid)
+        expect_true(all(res1$absRisk.average.iid[,1]==0))
+        expect_true(all(is.na(res1$absRisk.average.iid[,length(seqTime)])))
 
-m.CSC <- CSC(Hist(time, event) ~ strata(X1) + strata(X2),
-             data = d, surv.type = "survival")
-
-res2 <- predict(m.CSC, times = seqTime, newdata = d,
-                cause = 1, average.iid = TRUE)
-
-test_that("iid average - non parametric (survival)", {
-
-    res1 <- predict(m.CSC, times = seqTime, newdata = d,
-                    cause = 1, iid = TRUE, average.iid = TRUE)
-
-
-    expect_equal(res1$absRisk.average.iid,res2$absRisk.average.iid)
-    expect_true(all(res1$absRisk.average.iid[,1]==0))
-    expect_true(all(is.na(res1$absRisk.average.iid[,length(seqTime)])))
-
-    ## compare to fixed value    
-    ## d[time==min(time),]
-    ## levels(predictCox(m.CSC$models[[1]])$strata)
-    expect_equal(res1$absRisk.iid[obs.firstEvent, index.firstEvent,],
-                 iidCox(m.CSC$models[[1]])$IFhazard[[strata.firstEvent]][,1])
-
+        ## compare to fixed value    
+        ## d[time==min(time),]
+        ## levels(predictCox(m.CSC$models[[1]])$strata)
+        expect_equal(res1$absRisk.iid[obs.firstEvent, index.firstEvent,],
+                     iidCox(m.CSC$models[[1]])$IFhazard[[strata.firstEvent]][,1])
+    }
 })
 
 ## ** semi parametric
