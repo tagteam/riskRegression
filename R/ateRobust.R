@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: jun 27 2018 (17:47) 
 ## Version: 
-## Last-Updated: aug 31 2018 (17:13) 
+## Last-Updated: sep  1 2018 (17:56) 
 ##           By: Brice Ozenne
-##     Update #: 991
+##     Update #: 993
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -314,10 +314,10 @@ ateRobust <- function(data, times, cause, type,
 
         ## Estimation of the survival + IF
         prediction.event <- predict(model.event, newdata = data, times = times, cause = cause, product.limit = product.limit)
-        prediction.event0 <- predict(model.event, newdata = data0, times = times, cause = cause, product.limit = product.limit, iid = nuisance.iid)
-        ## prediction.event0 <- predict(model.event, newdata = data0, times = times, cause = cause, product.limit = product.limit, average.iid = nuisance.iid0)
-        prediction.event1 <- predict(model.event, newdata = data1, times = times, cause = cause, product.limit = product.limit, iid = nuisance.iid)
-        ## prediction.event1 <- predict(model.event, newdata = data1, times = times, cause = cause, product.limit = product.limit, average.iid = nuisance.iid1)
+        ## prediction.event0 <- predict(model.event, newdata = data0, times = times, cause = cause, product.limit = product.limit, iid = nuisance.iid)
+        prediction.event0 <- predict(model.event, newdata = data0, times = times, cause = cause, product.limit = product.limit, average.iid = nuisance.iid0)
+        ## prediction.event1 <- predict(model.event, newdata = data1, times = times, cause = cause, product.limit = product.limit, iid = nuisance.iid)
+        prediction.event1 <- predict(model.event, newdata = data1, times = times, cause = cause, product.limit = product.limit, average.iid = nuisance.iid1)
 
         data[, c("prob.event") := prediction.event$absRisk[,1]]
         data[, c("prob.event0") := prediction.event0$absRisk[,1]]
@@ -325,17 +325,21 @@ ateRobust <- function(data, times, cause, type,
 
         ## store results
         if(nuisance.iid){
-            weight0 <- attr(nuisance.iid0,"factor")[,2]
-            ## iidG.event0 <- prediction.event0$absRisk.average.iid[[1]]
-            iidG.event0 <- colMeans(prediction.event0$absRisk.iid[,1,])
-            ## iidAIPW.event0 <- prediction.event0$absRisk.average.iid[[2]]
-            iidAIPW.event0 <- apply(prediction.event0$absRisk.iid[,1,],2,function(iCol){mean(weight0*iCol)})
+            ## weight0 <- attr(nuisance.iid0,"factor")[,2]
+            iidG.event0 <- prediction.event0$absRisk.average.iid[[1]]
+            ## range(iidG.event0 - prediction.event0$absRisk.average.iid[[1]])
+            ## iidG.event0 <- colMeans(prediction.event0$absRisk.iid[,1,])
+            iidAIPW.event0 <- prediction.event0$absRisk.average.iid[[2]]
+            ## range(iidAIPW.event0 - prediction.event0$absRisk.average.iid[[2]])
+            ## iidAIPW.event0 <- apply(prediction.event0$absRisk.iid[,1,],2,function(iCol){mean(weight0*iCol)})
 
-            weight1 <- attr(nuisance.iid1, "factor")[,2]
-            ## iidG.event1 <- prediction.event1$absRisk.average.iid[[1]]
-            iidG.event1 <- colMeans(prediction.event1$absRisk.iid[,1,])
-            ## iidAIPW.event1 <- prediction.event0$absRisk.average.iid[[2]]
-            iidAIPW.event1 <- apply(prediction.event1$absRisk.iid[,1,],2,function(iCol){mean(weight1*iCol)})
+            ## weight1 <- attr(nuisance.iid1, "factor")[,2]
+            iidG.event1 <- prediction.event1$absRisk.average.iid[[1]]
+            ## range(iidG.event1 - prediction.event1$absRisk.average.iid[[1]])
+            ## iidG.event1 <- colMeans(prediction.event1$absRisk.iid[,1,])
+            iidAIPW.event1 <- prediction.event1$absRisk.average.iid[[2]]
+            ## range(iidAIPW.event1 - prediction.event1$absRisk.average.iid[[2]])
+            ## iidAIPW.event1 <- apply(prediction.event1$absRisk.iid[,1,],2,function(iCol){mean(weight1*iCol)})
         }
 
     }
