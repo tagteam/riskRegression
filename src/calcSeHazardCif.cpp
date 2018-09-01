@@ -268,7 +268,7 @@ std::vector< std::vector<arma::mat> > calcAIFsurv_cpp(const std::vector<arma::ma
 
 	// compute n*expectation
 	for(int iObs=0; iObs<nObs_strata; iObs++){
-	  iObsStrata = ls_indexStrata[iStrata][iObs];
+          iObsStrata = ls_indexStrata[iStrata][iObs];
 		    
 	  E_eXb += factor_tempo.row(iObs); // note: it is iObs and not iObs_strata
 
@@ -595,6 +595,9 @@ List calcSeCif2_cpp(std::vector<arma::mat> ls_IFbeta, std::vector<arma::mat> ls_
 
    // ** prepare the influence function
    for(int iNewObs=0; iNewObs<nNewObs; iNewObs++){
+
+     R_CheckUserInterrupt();
+     
      iiTau = iTau;
      IFcumhazard = zeros<mat>(nObs,nJumpTime);
      cumhazard = zeros<colvec>(nJumpTime);
@@ -639,7 +642,8 @@ List calcSeCif2_cpp(std::vector<arma::mat> ls_IFbeta, std::vector<arma::mat> ls_
    cumIF_tempo = zeros<colvec>(nObs);   
 
    for(int iJump=0; iJump<nJumpTime; iJump++){
-               // Rcout << "5 " ;
+
+     // Rcout << "5 " ;
      // prepare IF
      if(hazard[iJump]>0){
      if(iJump==0){
@@ -779,6 +783,8 @@ std::vector<arma::mat> calcAIFcif_cpp(const arma::mat& hazard1,
      for(int iJump=0; iJump<nJumpTime; iJump++){
 	   // Rcout << "Jump " << iJump << ": ";
 
+       R_CheckUserInterrupt();
+       
 	   // after last jump or last prediciton time stop computing the integral
 	   if(iiTau == nTau || tau[iiTau] > JumpMax[iStrata]){break;}
 	   
