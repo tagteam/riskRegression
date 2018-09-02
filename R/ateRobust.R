@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: jun 27 2018 (17:47) 
 ## Version: 
-## Last-Updated: aug 31 2018 (17:13) 
+## Last-Updated: sep  2 2018 (10:33) 
 ##           By: Brice Ozenne
-##     Update #: 991
+##     Update #: 997
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -234,7 +234,7 @@ ateRobust <- function(data, times, cause, type,
         names(coxMF)[names(coxMF)=="time"] <- "stop"
         ## stop status event ...
     }
-    n.censor <- sum(coxMF$status==0)
+    n.censor <- sum( (coxMF$status==0) * (coxMF$stop <= times) )
 
     
     ## treatment
