@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: jun 27 2018 (17:47) 
 ## Version: 
-## Last-Updated: sep  2 2018 (10:50) 
+## Last-Updated: sep  2 2018 (11:49) 
 ##           By: Brice Ozenne
-##     Update #: 998
+##     Update #: 1010
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -221,7 +221,13 @@ ateRobust <- function(data, times, cause, type,
         txt <- reserved.name[reserved.name %in% names(data)]
         stop("Argument \'data\' should not contain column(s) named \"",paste0(txt, collapse = "\" \""),"\"\n")
     }
-
+    if(type == "survival"){
+        varTempo <- SurvResponseVar(formula.event)$status
+        if(length(unique(data[[varTempo]]))>2){
+            stop("type=\"survival\" can handle at most 2 types of events")
+        }
+    }
+    
     ## ** fit models
     ## event
     if(type == "survival"){
@@ -343,25 +349,6 @@ ateRobust <- function(data, times, cause, type,
         }
 
     }
-
-    ## ** Propensity score model: weights
-    if(nuisance.iid){
-
-        factor <- cbind("IPW0" = data[,  (1-.SD$treatment.bin) * (.SD$status.tau==1) / (1-.SD$prob.treatment)^2],
-                        "IPW1" = data[, .SD$treatment.bin * (.SD$status.tau==1) / (.SD$prob.treatment)^2],
-                        "AIPW0" = data[, (1-.SD$treatment.bin) * .SD$prob.event0 / (1-.SD$prob.treatment)^2],
-                        "AIPW1" = data[, .SD$treatment.bin * .SD$prob.event1 / .SD$prob.treatment^2])
-
-        average.iid <- TRUE
-        attr(average.iid, "factor") <- factor
-        
-        prediction.treatment.iid <- attr(.predictGLM(model.treatment, newdata = data, average.iid = average.iid), "iid")
-        iidIPW.treatment0 <-  prediction.treatment.iid[,1]
-        iidIPW.treatment1 <- -prediction.treatment.iid[,2]
-        iidAIPW.treatment0 <- -prediction.treatment.iid[,3]
-        iidAIPW.treatment1 <- prediction.treatment.iid[,4]
-        
-    }
     
     ## ** Censoring model: weights
     ## fit model
@@ -409,6 +396,26 @@ ateRobust <- function(data, times, cause, type,
             iidIPW.censoring0 <- rep(0,n.obs)
             iidIPW.censoring1 <- rep(0,n.obs)
         }
+    }
+
+    ## ** Propensity score model: weights
+    ## needs to be after censoring to get the weights
+    if(nuisance.iid){
+
+        factor <- cbind("IPW0" = data[,  .SD$weights * (1-.SD$treatment.bin) * (.SD$status.tau==1) / (1-.SD$prob.treatment)^2],
+                        "IPW1" = data[, .SD$weights * .SD$treatment.bin * (.SD$status.tau==1) / (.SD$prob.treatment)^2],
+                        "AIPW0" = data[, (1-.SD$treatment.bin) * .SD$prob.event0 / (1-.SD$prob.treatment)^2],
+                        "AIPW1" = data[, .SD$treatment.bin * .SD$prob.event1 / .SD$prob.treatment^2])
+
+        average.iid <- TRUE
+        attr(average.iid, "factor") <- factor
+        
+        prediction.treatment.iid <- attr(.predictGLM(model.treatment, newdata = data, average.iid = average.iid), "iid")
+        iidIPW.treatment0 <-  prediction.treatment.iid[,1]
+        iidIPW.treatment1 <- -prediction.treatment.iid[,2]
+        iidAIPW.treatment0 <- -prediction.treatment.iid[,3]
+        iidAIPW.treatment1 <- prediction.treatment.iid[,4]
+        
     }
 
     ## ** correction for efficiency
@@ -467,12 +474,15 @@ ateRobust <- function(data, times, cause, type,
     
     if(nuisance.iid){
         ## additional term: eq:IF-IPWfull (green term)
-        nuisanceTreatment.IPW <- colMultiply_cpp(cbind(iidIPW.treatment0, iidIPW.treatment1),
-                                                 scale = data$weights)
+        nuisanceTreatment.IPW <- cbind(iidIPW.treatment0, iidIPW.treatment1)
         nuisanceCensoring.IPW <- cbind(iidIPW.censoring0, iidIPW.censoring1)
         ## colMeans(IPWadd)
         ## apply(IF$IPWnaive + nuisanceTreatment.IPW, 2, sd)
         ## apply(IF$IPWnaive + nuisanceTreatment.IPW + nuisanceCensoring.IPW, 2, sd)
+
+        ## mean(IF$IPWnaive)
+        ## mean(nuisanceTreatment.IPW)
+        ## mean(nuisanceCensoring.IPW)
         IF$IPWnaive2 <- IF$IPWnaive + nuisanceTreatment.IPW + nuisanceCensoring.IPW
         if(efficient){
             IF$IPWefficient2 <- IF$IPWefficient + nuisanceTreatment.IPW + nuisanceCensoring.IPW
