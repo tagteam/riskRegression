@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: aug 15 2018 (11:42) 
 ## Version: 
-## Last-Updated: sep  3 2018 (09:09) 
+## Last-Updated: sep  3 2018 (09:35) 
 ##           By: Brice Ozenne
-##     Update #: 37
+##     Update #: 39
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -140,12 +140,12 @@ test_that("Agreement ate-ateRobust (competing.risks)",{
                   "Gformula2" = c(0.28427, 0.30878, 0.02452), 
                   "IPWnaive" = c(0.25855, 0.5098, 0.25125), 
                   "IPWefficient" = c(0.25835, 0.50462, 0.24627), 
-                  "IPWnaive2" = c(0.2597, 0.48944, 0.22974), 
-                  "IPWefficient2" = c(0.2595, 0.48426, 0.22476), 
+                  "IPWnaive2" = c(0.25855, 0.5098, 0.25125), 
+                  "IPWefficient2" = c(0.25835, 0.50462, 0.24627), 
                   "AIPWnaive" = c(0.25868, 0.50849, 0.24981), 
                   "AIPWefficient" = c(0.25848, 0.50331, 0.24483), 
-                  "AIPWnaive2" = c(0.25983, 0.48813, 0.2283), 
-                  "AIPWefficient2" = c(0.25963, 0.48295, 0.22332)
+                  "AIPWnaive2" = c(0.25868, 0.50849, 0.24981), 
+                  "AIPWefficient2" = c(0.25848, 0.50331, 0.24483)
                   )
     
     expect_equal(test, M.GS, tol = 1e-4)
@@ -157,12 +157,12 @@ test_that("Agreement ate-ateRobust (competing.risks)",{
                  "Gformula2" = c(0.04577, 0.15642, 0.15524), 
                  "IPWnaive" = c(0.04731, 0.22229, 0.233), 
                  "IPWefficient" = c(0.04727, 0.22165, 0.23231), 
-                 "IPWnaive2" = c(0.0465, 0.1645, 0.17101), 
-                 "IPWefficient2" = c(0.04648, 0.16516, 0.17174), 
+                 "IPWnaive2" = c(0.04652, 0.16131, 0.16789), 
+                 "IPWefficient2" = c(0.04648, 0.1619, 0.16844), 
                  "AIPWnaive" = c(0.04636, 0.16792, 0.17302), 
                  "AIPWefficient" = c(0.04632, 0.16799, 0.1731), 
-                 "AIPWnaive2" = c(0.04641, 0.16202, 0.16819), 
-                 "AIPWefficient2" = c(0.0464, 0.16273, 0.16899)
+                 "AIPWnaive2" = c(0.04644, 0.15882, 0.16504), 
+                 "AIPWefficient2" = c(0.0464, 0.15946, 0.16567)
                  )
    expect_equal(test, M.GS, tol = 1e-4)
    ## butils::object2script(test, digit = 5)
@@ -174,12 +174,12 @@ test_that("Agreement ate-ateRobust (competing.risks)",{
                   "Gformula2" = c(0.28382, 0.3082, 0.02438), 
                   "IPWnaive" = c(0.25857, 0.5099, 0.25133), 
                   "IPWefficient" = c(0.25837, 0.50473, 0.24636), 
-                  "IPWnaive2" = c(0.25972, 0.48943, 0.22971), 
-                  "IPWefficient2" = c(0.25952, 0.48426, 0.22474), 
+                  "IPWnaive2" = c(0.25857, 0.5099, 0.25133), 
+                  "IPWefficient2" = c(0.25837, 0.50473, 0.24636), 
                   "AIPWnaive" = c(0.2587, 0.50859, 0.24988), 
                   "AIPWefficient" = c(0.2585, 0.50341, 0.24491), 
-                  "AIPWnaive2" = c(0.25986, 0.48812, 0.22826), 
-                  "AIPWefficient2" = c(0.25966, 0.48294, 0.22329)
+                  "AIPWnaive2" = c(0.2587, 0.50859, 0.24988), 
+                  "AIPWefficient2" = c(0.2585, 0.50341, 0.24491)
                   )
     expect_equal(test, M.GS, tol = 1e-4)
     ## butils::object2script(test, digit = 5)
@@ -191,12 +191,12 @@ test_that("Agreement ate-ateRobust (competing.risks)",{
                   "Gformula2" = c(0.04576, 0.15641, 0.15524), 
                   "IPWnaive" = c(0.04732, 0.22233, 0.23304), 
                   "IPWefficient" = c(0.04727, 0.22169, 0.23236), 
-                  "IPWnaive2" = c(0.0465, 0.16457, 0.17108), 
-                  "IPWefficient2" = c(0.04648, 0.16522, 0.1718), 
+                  "IPWnaive2" = c(0.04653, 0.16134, 0.16792), 
+                  "IPWefficient2" = c(0.04648, 0.16193, 0.16847), 
                   "AIPWnaive" = c(0.04636, 0.16804, 0.17314), 
                   "AIPWefficient" = c(0.04632, 0.1681, 0.17322), 
-                  "AIPWnaive2" = c(0.04642, 0.1621, 0.16827), 
-                  "AIPWefficient2" = c(0.0464, 0.16281, 0.16907)
+                  "AIPWnaive2" = c(0.04644, 0.15886, 0.16509), 
+                  "AIPWefficient2" = c(0.0464, 0.15951, 0.16572)
                   )
     expect_equal(test, M.GS, tol = 1e-4)
     ## butils::object2script(test, digit = 5)
