@@ -178,6 +178,7 @@ predict.CauseSpecificCox <- function(object,
     
     ## order prediction times
     ootimes <- order(order(times))
+    needOrder <- !identical(1:length(ootimes),ootimes)
 
     ## ** extract baseline hazard, linear predictor and strata from Cox models
     new.n <- NROW(newdata)
@@ -267,6 +268,10 @@ predict.CauseSpecificCox <- function(object,
 
         Utimes <- sort(unique(times))
 
+        ## Computation of the influence function and/or the standard error
+        export <- c("iid"[(iid+band)>0],"se"[(se+band)>0],"average.iid"[average.iid==TRUE])
+        attributes(export) <- attributes(average.iid)
+     
         out.seCSC <- calcSeCSC(object,
                                cif = CIF,
                                hazard = ls.hazard,
@@ -283,24 +288,41 @@ predict.CauseSpecificCox <- function(object,
                                nCause = nCause,
                                nVar = nVar,
                                surv.type = surv.type,
-                               export = c("iid"[(iid+band)>0],"se"[(se+band)>0],"average.iid"[average.iid==TRUE]),
+                               export = export,
                                store.iid = store.iid)
 
         ootimes2 <- prodlim::sindex(jump.times = Utimes, eval.times = times)
+        needOrder2 <- !identical(1:length(ootimes2),ootimes2)
     }
     
     ## ** export
     ## gather all outputs
-    out <- list(absRisk = CIF[,ootimes,drop=FALSE]) # reorder prediction times
-
+    if(needOrder){
+        out <- list(absRisk = CIF[,ootimes,drop=FALSE]) # reorder prediction times
+    }else{
+        out <- list(absRisk = CIF) # reorder prediction times
+    }
+    
     if(se+band){
-        out$absRisk.se <- out.seCSC$se[,ootimes2,drop=FALSE]
+        if(needOrder2){
+            out$absRisk.se <- out.seCSC$se[,ootimes2,drop=FALSE]
+        }else{
+            out$absRisk.se <- out.seCSC$se
+        }
     }
     if(iid+band){
-        out$absRisk.iid <- out.seCSC$iid[,ootimes2,,drop=FALSE]
+        if(needOrder2){
+            out$absRisk.iid <- out.seCSC$iid[,ootimes2,,drop=FALSE]
+        }else{
+            out$absRisk.iid <- out.seCSC$iid
+        }
     }
     if(average.iid){
-        out$absRisk.average.iid <- out.seCSC$average.iid[,ootimes2,drop=FALSE]
+        if(needOrder2){
+            out$absRisk.average.iid <- out.seCSC$average.iid[,ootimes2,drop=FALSE]
+        }else{
+            out$absRisk.average.iid <- out.seCSC$average.iid
+        }
     }
     if(keep.times){out$times <- times}
 

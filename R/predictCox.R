@@ -232,11 +232,13 @@ predictCox <- function(object,
     if(diag==TRUE && NROW(newdata)!=length(times)){
         stop("When argument \'diag\' is TRUE, the number of rows in \'newdata\' must equal the length of \'times\' \n")
     }
-    if(diag==TRUE && (se||iid||band)){
-        stop("Arguments \'se\', \'iid\', \'band\' must be FALSE when \'diag\' is TRUE \n")
+    if(diag==TRUE && (se||band||average.iid)){
+        stop("Arguments \'se\', \'band\', and \'average.iid\' must be FALSE when \'diag\' is TRUE \n")
     }
-    
-  if(!is.null(newdata)){
+    if(diag==TRUE && iid==TRUE && store.iid == "minimal"){
+        stop("Arguments \'store.iid\' must equal \"full\" when \'diag\' is TRUE \n")
+    }
+    if(!is.null(newdata)){
       if(missing(times) || nTimes==0){
           stop("Time points at which to evaluate the predictions are missing \n")
       }
@@ -457,10 +459,14 @@ predictCox <- function(object,
         data.table::setkeyv(object.modelFrame,"XXXindexXXX")
 
         ## Computation of the influence function and/or the standard error
+        export <- c("iid"[(iid+band)>0],"se"[(se+band)>0],"average.iid"[average.iid==TRUE])
+        attributes(export) <- attributes(average.iid)
+        
         outSE <- calcSeCox(object,
                            times = times.sorted,
                            nTimes = nTimes,
                            type = type,
+                           diag = diag,
                            Lambda0 = Lambda0,
                            object.n = object.n,
                            object.time = object.modelFrame$stop,
@@ -473,25 +479,25 @@ predictCox <- function(object,
                            new.strata = new.strata,
                            new.survival = out$survival,
                            nVar = nVar, 
-                           export = c("iid"[(iid+band)>0],"se"[(se+band)>0],"average.iid"[average.iid==TRUE]),
+                           export = export,
                            store.iid = store.iid)
       
         ## restaure orginal time ordering
         if((iid+band)>0){
             if ("hazard" %in% type){
-                if (needOrder)
+                if (needOrder && diag == FALSE)
                     out$hazard.iid <- outSE$hazard.iid[,oorder.times,,drop=0L]
                 else
                     out$hazard.iid <- outSE$hazard.iid
             }
             if ("cumhazard" %in% type){
-                if (needOrder)
+                if (needOrder && diag == FALSE)
                     out$cumhazard.iid <- outSE$cumhazard.iid[,oorder.times,,drop=0L]
                 else
                     out$cumhazard.iid <- outSE$cumhazard.iid
             }
             if ("survival" %in% type){
-                if (needOrder)
+                if (needOrder && diag == FALSE)
                     out$survival.iid <- outSE$survival.iid[,oorder.times,,drop=0L]
                 else
                     out$survival.iid <- outSE$survival.iid
@@ -571,3 +577,83 @@ predictCox <- function(object,
   
 }
 
+
+
+## * predictSurv (documentation)
+#' @title Compute Event-Free Survival From a CSC Object
+#' @name predictSurv
+#' 
+#' @description Compute event-free survival from a CSC object.
+#' @param object The fitted CSC object.
+#' @param newdata [data.frame or data.table]  Contain the values of the predictor variables
+#' defining subject specific predictions.
+#' Should have the same structure as the data set used to fit the \code{object}.
+#' @param times [numeric vector] Time points at which to return
+#' the estimated survival.
+#' @param product.limit [logical] If \code{TRUE} the survival is computed using the product limit estimator.
+#' @param ... not used.
+
+## * predictSurv (code)
+#' @name predictSurv
+#' @export
+predictSurv <- function(object, newdata, times, product.limit){
+
+    ## ** check args
+    if(inherits(object,"CauseSpecificCox")==FALSE){
+        stop("predictSurv only compatible with CauseSpecificCox objects \n")
+    }
+
+
+    ## ** compute survival
+    if(object$surv.type=="survival"){
+        ## names(object$models)
+        predictor.cox <- if(product.limit){"predictCoxPL"}else{"predictCox"}
+        
+        out <- do.call(predictor.cox,
+                       args = list(object$models[["OverallSurvival"]], newdata = newdata, times = times, type = "survival")
+                       )$survival
+        
+    }else if(object$surv.type=="hazard"){
+        n.obs <- NROW(newdata)
+        n.times <- length(times)
+        n.cause <- length(object$cause)
+
+        if(product.limit){
+            jump.time <- object$eventTime[object$eventTime <= max(times)]
+            if(0 %in% jump.time){
+                jumpA.time <- c(jump.time,max(object$eventTime)+1e-10)
+            }else{
+                jumpA.time <- c(0,jump.time,max(object$eventTime)+1e-10)
+            }
+            n.jumpA <- length(jumpA.time)
+
+            predAll.hazard <- matrix(0, nrow = n.obs, ncol = n.jumpA)
+            for(iC in 1:n.cause){
+                outHazard <- predictCox(object$models[[iC]],
+                                        newdata = newdata,
+                                        times = jump.time,
+                                        type = "hazard")
+                
+                if(0 %in% jump.time){
+                    predAll.hazard <- predAll.hazard + cbind(outHazard$hazard,NA)
+                }else{
+                    predAll.hazard <- predAll.hazard + cbind(0,outHazard$hazard,NA)
+                }
+            }
+            index.jump <- prodlim::sindex(eval.times = times,
+                                          jump.times = jumpA.time)
+            predAll.survival <- t(apply(1-predAll.hazard,1,cumprod))
+            out <- predAll.survival[,index.jump,drop=FALSE]
+        }else{
+            pred.cumhazard <- matrix(0, nrow = n.obs, ncol = n.times)
+            for(iC in 1:n.cause){
+                pred.cumhazard <- pred.cumhazard + predictCox(object$models[[iC]], newdata = newdata, times = times, type = "cumhazard")$cumhazard
+            }
+            out <- exp(-pred.cumhazard)
+        }
+        
+    }
+
+    ## ** export
+    return(out)
+}

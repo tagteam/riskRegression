@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: sep  4 2017 (16:43) 
 ## Version: 
-## last-updated: jun 27 2018 (15:52) 
+## last-updated: aug 28 2018 (10:42) 
 ##           By: Brice Ozenne
-##     Update #: 132
+##     Update #: 151
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -173,16 +173,26 @@ predictCoxPL <- function(object,
                 res.tempo <- predictCox(object,
                                         newdata = newdata[indexStrata.newdata,],
                                         times = all.times,
-                                        type = "hazard")$hazard
+                                        type = "hazard")
+
+                lastEventTime.tempo <- res.tempo$lastEventTime[which(infoVar$strata.levels==Ustrata[iStrata])]
+                
+                if(0 %in% all.times){                    
+                    hazard.tempo <- cbind(res.tempo$hazard,NA)
+                    all.timesA <- c(all.times,lastEventTime.tempo + 1e-10)
+                }else{
+                    hazard.tempo <- cbind(0,res.tempo$hazard,NA)
+                    all.timesA <- c(0,all.times,lastEventTime.tempo + 1e-10)
+                }
 
                 if(original.res$diag){
-                    index.jump <- prodlim::sindex(eval.times = times[indexStrata.newdata], jump.times = all.times)+1
+                    index.jump <- prodlim::sindex(eval.times = times[indexStrata.newdata], jump.times = all.timesA)
                     original.res$survival[indexStrata.newdata,] <- cbind(sapply(1:length(indexStrata.newdata), function(iP){ # iP <- 16
-                        prod(1-c(0,res.tempo[iP,])[1:index.jump[iP]])
+                        prod(1-hazard.tempo[iP,1:index.jump[iP]])
                     }))
                 }else{
-                    index.jump <- prodlim::sindex(eval.times = times, jump.times = all.times)+1
-                    survival.PL <- cbind(1,t(apply(res.tempo, 1, function(x){cumprod(1-x)})))
+                    index.jump <- prodlim::sindex(eval.times = times, jump.times = all.timesA)
+                    survival.PL <- t(apply(hazard.tempo, 1, function(x){cumprod(1-x)}))
                     original.res$survival[indexStrata.newdata,] <-  survival.PL[,index.jump,drop=FALSE]
                 }
             }
@@ -194,16 +204,22 @@ predictCoxPL <- function(object,
             res.tempo <- predictCox(object,
                                     newdata = newdata,
                                     times = all.times,
-                                    type = "hazard")$hazard
+                                    type = "hazard")
+            if(0 %in% all.times){
+                hazard.tempo <- cbind(res.tempo$hazard,NA)
+                all.timesA <- c(all.times,res.tempo$lastEventTime+1e-10)
+            }else{
+                hazard.tempo <- cbind(0,res.tempo$hazard,NA)
+                all.timesA <- c(0,all.times,res.tempo$lastEventTime+1e-10)
+            }
 
-            index.jump <- prodlim::sindex(eval.times = times, jump.times = all.times)+1
+            index.jump <- prodlim::sindex(eval.times = times, jump.times = all.timesA)
             if(original.res$diag){
                 original.res$survival <- cbind(sapply(1:NROW(newdata), function(iP){ # iP <- 16
-                    prod(1-c(0,res.tempo[iP,])[1:index.jump[iP]])
+                    prod(1-hazard.tempo[iP,1:index.jump[iP]])
                 }))
             }else{
-                survival.PL <- cbind(1,t(apply(res.tempo, 1, function(x){cumprod(1-x)})))
-
+                survival.PL <- t(apply(hazard.tempo, 1, function(x){cumprod(1-x)}))
                 original.res$survival <-  survival.PL[,index.jump,drop=FALSE]
             }
         }

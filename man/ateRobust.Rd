@@ -72,11 +72,12 @@ lava::regression(mSimSurv) <- eventtime ~ alpha*a + beta*w
 
 ## settings
 alpha <- 0.3 
-beta <- 0.4 
+beta <- 0.4
+n <- 1e3
 
 ## check bias 
 set.seed(10)
-dt <- as.data.table(lava::sim(mSimSurv, n = 1e3, p = c(alpha = alpha, beta = beta)))
+dt <- as.data.table(lava::sim(mSimSurv, n = n, p = c(alpha = alpha, beta = beta)))
 setkeyv(dt, c("a","w"))
 
 ## True value
@@ -131,8 +132,10 @@ alphaE.Y <- 3
 alphaCR.Y <- 2
 
 set.seed(10)
-df <- rbind(data.frame(time1 = rexp(n, rate = alphaE.X), time2 = rexp(n, rate = alphaCR.X), group = "1"),
-            data.frame(time1 = rexp(n, rate = alphaE.Y), time2 = rexp(n, rate = alphaCR.Y), group = "2"))
+df <- rbind(data.frame(time1 = rexp(n, rate = alphaE.X),
+                       time2 = rexp(n, rate = alphaCR.X), group = "1"),
+            data.frame(time1 = rexp(n, rate = alphaE.Y),
+                       time2 = rexp(n, rate = alphaCR.Y), group = "2"))
 df$time <- pmin(df$time1,df$time2) ## first event
 df$event <- (df$time2<df$time1)+1 ## type of event
 df$eventC <- df$event
