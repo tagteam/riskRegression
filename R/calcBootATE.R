@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: apr 11 2018 (17:05) 
 ## Version: 
-## Last-Updated: Jul  1 2018 (08:17) 
-##           By: Thomas Alexander Gerds
-##     Update #: 52
+## Last-Updated: sep  5 2018 (09:31) 
+##           By: Brice Ozenne
+##     Update #: 63
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -20,9 +20,13 @@
 calcBootATE <- function(object, pointEstimate, Gformula, data, 
                         treatment, contrasts, times, cause, landmark, n.contrasts, levels,
                         dots, n.obs,
-                        handler, B, seed, mc.cores,
+                        handler, B, seed, mc.cores, cl,
                         verbose){
     name.estimate <- names(pointEstimate)
+    no.cl <- is.null(cl)
+    if( (no.cl == FALSE) && (mc.cores == 1) ){ ## i.e. the user has not initialized the number of cores
+        mc.cores <- length(cl)
+    }
     ## cores
     x.cores <- parallel::detectCores()
     if(mc.cores > x.cores){
@@ -42,7 +46,8 @@ calcBootATE <- function(object, pointEstimate, Gformula, data,
     ## bootstrap
     if(handler[[1]] %in% c("snow","parallel")) {
                                         # {{{ use boot package
-        if(handler=="snow"){
+
+        if(handler=="snow" && no.cl){
             ## initialize CPU
             cl <- parallel::makeCluster(mc.cores)
             ## load packages
@@ -55,8 +60,6 @@ calcBootATE <- function(object, pointEstimate, Gformula, data,
             ## set seeds
             bootseeds <- sum(bootseeds)
             set.seed(bootseeds)
-            ##
-            cl <- NULL
         }
         ## run bootstrap
         boot.object <- boot::boot(data = data, R = B, statistic = function(data, index, ...){
@@ -77,27 +80,31 @@ calcBootATE <- function(object, pointEstimate, Gformula, data,
                                        levels = levels,
                                        dots),
                               error = function(x){return(NULL)})
-                if(is.null(iBoot)){ ## error handling
-                    out <- setNames(rep(NA, length(name.estimate), name.estimate))
-                }else{
-                    out <- setNames(c(iBoot$meanRisk$meanRisk,
-                                      iBoot$riskComparison$diff,
-                                      iBoot$riskComparison$ratio), name.estimate)
-                }
-                return(out)
-            }, sim = "ordinary", stpe = "indices", strata = rep(1, n.obs),
-            parallel = handler[[1]], ncpus = mc.cores, cl = cl)
+            if(is.null(iBoot)){ ## error handling
+                out <- setNames(rep(NA, length(name.estimate), name.estimate))
+            }else{
+                out <- setNames(c(iBoot$meanRisk$meanRisk,
+                                  iBoot$riskComparison$diff,
+                                  iBoot$riskComparison$ratio), name.estimate)
+            }
+            return(out)
+        }, sim = "ordinary", stpe = "indices", strata = rep(1, n.obs),
+        parallel = handler[[1]], ncpus = mc.cores, cl = cl)
                                         # }}}
     }else {
         if (handler[[1]]=="foreach" && mc.cores>1){
                                         # {{{ foreach
-            if(verbose){
-                cl <- parallel::makeCluster(mc.cores, outfile = "")
-                pb <- txtProgressBar(max = B, style = 3)          
-            }else{
-                cl <- parallel::makeCluster(mc.cores)
-            }
+            if(no.cl){
+                if(verbose){
+                    cl <- parallel::makeCluster(mc.cores, outfile = "")
+                }else{
+                    cl <- parallel::makeCluster(mc.cores)
+                }                
+            }           
             doParallel::registerDoParallel(cl)
+            
+            if(verbose){pb <- txtProgressBar(max = B, style = 3)}
+
             b <- NULL ## [:forCRANcheck:] foreach
             boots <- foreach::`%dopar%`(foreach::foreach(b = 1:B, .packages = addPackage, .export = NULL), { ## b <- 1
                 set.seed(bootseeds[[b]])
@@ -118,11 +125,11 @@ calcBootATE <- function(object, pointEstimate, Gformula, data,
                                   n.contrasts = n.contrasts,
                                   levels = levels,
                                   dots),
-                        error = function(x){return(NULL)})
-                         ## error = function(x){return(x)})
+                         error = function(x){return(NULL)})
+                ## error = function(x){return(x)})
             })
             if(verbose){close(pb)}
-            parallel::stopCluster(cl)
+            if(no.cl){parallel::stopCluster(cl)}
                                         # }}}
         }else{
                                         # {{{ mcapply
