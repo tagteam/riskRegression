@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Oct 23 2016 (08:53) 
 ## Version: 
-## last-updated: Sep  5 2018 (10:59) 
+## last-updated: Sep  5 2018 (11:01) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 813
+##     Update #: 818
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -54,6 +54,9 @@
 #' i.e. at most how many child processes will be run simultaneously.
 #' Passed to \code{parallel::mclapply} or \code{doparallel::registerdoparallel}.
 #' The option is initialized from environment variable mc_cores if set.
+#' @param cl A parallel socket cluster used to perform cluster calculation in parallel.
+#' Output by \code{parallel::makeCluster}.
+#' The packages necessary to run the computations (e.g. riskRegression) must already be loaded on each worker.
 #' @param verbose [logical] If \code{TRUE} inform about estimated run time.
 #' @param store.iid [character] Implementation used to estimate the standard error.
 #' Can be \code{"full"} or \code{"minimal"}.
@@ -259,6 +262,7 @@ ate <- function(object,
                 seed,
                 handler = "foreach",
                 mc.cores = 1,
+                cl = NULL,
                 verbose = TRUE,
                 store.iid = "full",
                 ...){
@@ -448,6 +452,7 @@ ate <- function(object,
                                    B = B,
                                    seed = seed,
                                    mc.cores = mc.cores,
+                                   cl = cl,
                                    verbose = verbose)
 
             bootseeds <- resBoot$bootseeds

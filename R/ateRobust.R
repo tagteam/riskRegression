@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: jun 27 2018 (17:47) 
 ## Version: 
-## Last-Updated: aug 19 2018 (22:59) 
-##           By: Brice Ozenne
-##     Update #: 711
+## Last-Updated: Sep  5 2018 (11:04) 
+##           By: Thomas Alexander Gerds
+##     Update #: 1025
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -211,8 +211,19 @@ ateRobust <- function(data, times, cause, type,
     }
     
     ## times since it is an argument that will be used in the data table
-    reserved.name <- c("times","time.tau","status.tau","weights","prob.event","prob.event0","prob.event1","prob.censoring","prob.treatment","treatment.bin",
-                       "Lterm0","Lterm1")
+    reserved.name <- c("times",
+                       "time.tau",
+                       "status.tau",
+                       "censoring.tau",
+                       "treatment.bin",
+                       "prob.event",
+                       "prob.event0",
+                       "prob.event1",
+                       "prob.treatment",
+                       "weights",
+                       "prob.censoring",
+                       "prob.indiv.censoring",
+                       "Lterm")
     if(any(reserved.name %in% names(data))){
         txt <- reserved.name[reserved.name %in% names(data)]
         stop("Argument \'data\' should not contain column(s) named \"",paste0(txt, collapse = "\" \""),"\"\n")
@@ -229,6 +240,23 @@ ateRobust <- function(data, times, cause, type,
     data1 <- copy(data)
     data1[,c(treatment) := factor(level.treatment[2], level.treatment)]
 
+    ## random variables stopped at times
+    if(type == "survival"){
+        ## coxMF contains three columns: start, stop, status (0 censored, 1 event), + strata?
+        data[,c("time.tau") := pmin(coxMF$stop,times)]
+        data[,c("status.tau") := (coxMF$stop<=times)*(coxMF$status==1)]
+        ## 0 survival or censored, 1 event
+        data[,c("Ncensoring.tau") := as.numeric(((coxMF$stop>=times) + (coxMF$status!=0)) > 0)]
+        ## 0 censored, 1 survival or event
+    }else if(type=="competing.risks"){
+        ## coxMF contains three columns: stop, status (0 censored, 1 any event), event (1 event of interest, 2 competing event, 3 censoring)
+        data[,c("time.tau") := pmin(coxMF$stop,times)]
+        data[,c("status.tau") := (coxMF$stop<=times)*(coxMF$event==cause)]
+        ## 0 survival competing event or censored, 1 event of interest
+        data[,c("Ncensoring.tau") := as.numeric(((coxMF$stop>=times) + (coxMF$status!=0)) > 0)]
+        ## 0 censored, 1 survival or event (of interest or comepting)
+    }
+    
     ## ** outcome model: conditional expectation
     if(type == "survival"){
         model.event <- do.call(fitter, args = list(formula = formula.event, data = data, x = TRUE, y = TRUE))
@@ -276,16 +304,51 @@ ateRobust <- function(data, times, cause, type,
         }
 
     }
+    ## ** Censoring model: weights
+    ## fit model
+    if(n.censor==0){
+        
+        data[,c("prob.censoring") := 1]
+        data[,c("prob.indiv.censoring") := 1]
+        data[,c("weights") := 1]
+        
+        if(nuisance.iid){
+            iidIPW.censoring0 <- rep(0,n.obs)
+            iidIPW.censoring1 <- rep(0,n.obs)
+        }
+        
+    }else{
+        
+        ## survival = P[C>min(T,tau)] = P[Delta(min(T,tau))==1] - ok
 
-    ## truncate at times
-    if(type == "survival"){
-        data[,c("time.tau") := pmin(coxMF$stop,times)]
-        if(modeSurvival == "survival"){
-            data[,c("status.tau") := (coxMF$stop>times) - (coxMF$stop<times)*(coxMF$status==0)]
-            ## -1 censored, 0 event, 1 survival, 
-        }else{
-            data[,c("status.tau") := (coxMF$stop<=times)*(coxMF$status==1) - (coxMF$stop<times)*(coxMF$status==0)]
-            ## -1 censored, 0 survival, 1 event, 
+        ## stopped at tau
+        predTau.censor <- do.call(predictor.cox, args = list(model.censor, newdata = data, times = times, type = "survival"))
+        ## predTau.censor <- do.call(predictor.cox, args = list(model.censor, newdata = data, times = times, type = "survival", iid = nuisance.iid))
+        data[,c("prob.censoring") := predTau.censor$survival[,1]]
+        
+        ## at each time
+        predIndiv.censor <- do.call(predictor.cox, args = list(model.censor, newdata = data, times = data$time.tau-(1e-10), type = "survival", diag = TRUE))
+        ## predIndiv.censor <- do.call(predictor.cox, args = list(model.censor, newdata = data, times = data$time.tau-(1e-10), type = "survival", diag = TRUE, iid = nuisance.iid))
+        data[,c("prob.indiv.censoring") := predIndiv.censor$survival[,1]]
+        
+        ## store
+        data[,c("weights") := as.numeric(NA)]
+        data[coxMF$stop<=times, c("weights") := .SD$Ncensoring.tau / .SD$prob.indiv.censoring]
+        data[coxMF$stop>times, c("weights") := .SD$Ncensoring.tau / .SD$prob.censoring]
+
+        if(nuisance.iid){
+            ## iid.tempo <- matrix(NA, nrow = n.obs, ncol = n.obs)
+            ## iid.tempo[coxMF$stop<=times,] <- predIndiv.censor$survival.iid[coxMF$stop<=times,1,]
+            ## iid.tempo[coxMF$stop>times,] <- predTau.censor$survival.iid[coxMF$stop>times,1,]
+
+            ## weight0 <- data[, .SD$weights^2 * .SD$status.tau * (1-.SD$treatment.bin) / (1-.SD$prob.treatment)]
+            ## weight1 <- data[, .SD$weights^2 * .SD$status.tau * (.SD$treatment.bin) / (.SD$prob.treatment)]
+            
+            ## iidIPW.censoring0 <- -apply(iid.tempo,2,function(iCol){mean(weight0*iCol)})
+            ## iidIPW.censoring1 <- -apply(iid.tempo,2,function(iCol){mean(weight1*iCol)})
+
+            iidIPW.censoring0 <- rep(0,n.obs)
+            iidIPW.censoring1 <- rep(0,n.obs)
         }
 
     }else if(type=="competing.risks"){
@@ -306,8 +369,6 @@ ateRobust <- function(data, times, cause, type,
     }else{
         prediction.treatment <- cbind(predict(model.treatment, newdata = data, type = "response", se = FALSE))
     }
-
-    data[, c("prob.treatment") := prediction.treatment[,1]]
 
     ## ** Censoring model: weights
     ## fit model
@@ -354,10 +415,12 @@ ateRobust <- function(data, times, cause, type,
     ## *** IPW
     ## eq:IF-IPWc (blue term)
     IF$IPWnaive <- data[,cbind(
-        .SD$weights * (.SD$status.tau == 1) * (1-.SD$treatment.bin) / (1-.SD$prob.treatment),
-        .SD$weights * (.SD$status.tau == 1) * (.SD$treatment.bin) / (.SD$prob.treatment)
-    )]/ sumW ## n.obs
-
+        .SD$weights * .SD$status.tau * (1-.SD$treatment.bin) / (1-.SD$prob.treatment),
+        .SD$weights * .SD$status.tau * (.SD$treatment.bin) / (.SD$prob.treatment)
+    )]/ n.obs
+    ## colSums(IF$IPWnaive)
+    ## colSums(IF$Gformula)
+    
     if(efficient){
         ## additional term: eq:IF-IPWeff (red term)
         IF$IPWefficient <- IF$IPWnaive + data[,cbind(

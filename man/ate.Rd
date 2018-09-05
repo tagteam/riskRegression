@@ -7,7 +7,7 @@
 ate(object, data, formula, treatment, strata = NULL, contrasts = NULL,
   times, cause, landmark, se = TRUE, iid = FALSE, band = FALSE, B = 0,
   confint = (se + band) > 0, seed, handler = "foreach", mc.cores = 1,
-  verbose = TRUE, store.iid = "full", ...)
+  cl = NULL, verbose = TRUE, store.iid = "full", ...)
 }
 \arguments{
 \item{object}{Outcome model which describes how event risk depends
@@ -57,6 +57,10 @@ if "foreach" use \code{doparallel} to create a cluster.}
 i.e. at most how many child processes will be run simultaneously.
 Passed to \code{parallel::mclapply} or \code{doparallel::registerdoparallel}.
 The option is initialized from environment variable mc_cores if set.}
+
+\item{cl}{A parallel socket cluster used to perform cluster calculation in parallel.
+Output by \code{parallel::makeCluster}.
+The packages necessary to run the computations (e.g. riskRegression) must already be loaded on each worker.}
 
 \item{verbose}{[logical] If \code{TRUE} inform about estimated run time.}
 
