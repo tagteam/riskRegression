@@ -18,9 +18,6 @@
 \item{age}{age at operation (years)} 
 \item{logthick}{tumour thickness on log-scale}
 }}
-\source{
-\url{https://publicifsv.sund.ku.dk/~linearpredictors/?page=datasets&dataset=Melanoma}
-}
 \description{
 In the period 1962-77, 205 patients with malignant melanoma (cancer of the
 skin) had a radical operation performed at Odense University Hospital,

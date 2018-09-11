@@ -2,11 +2,11 @@
 % Please edit documentation in R/ateRobust.R
 \name{ateRobust}
 \alias{ateRobust}
-\title{Compute the Average Treatment Effects using Double Robust Approach}
+\title{Average Treatment Effects (ATE) for survival outcome (with competing risks) using doubly robust estimating equations}
 \usage{
 ateRobust(data, times, cause, type, formula.event, formula.censor,
   formula.treatment, fitter = "coxph", product.limit = FALSE,
-  efficient = TRUE, nuisance.iid = TRUE, na.rm = FALSE)
+  augment.cens = TRUE, na.rm = FALSE)
 }
 \arguments{
 \item{data}{[data.frame or data.table] Data set in which to evaluate the ATE.}
@@ -33,144 +33,36 @@ If \code{coxph} use \code{survival::coxph} else use \code{rms::cph}.}
 \item{product.limit}{[logical] If \code{TRUE} the survival is computed using the product limit estimator.
 Otherwise the exponential approximation is used (i.e. exp(-cumulative hazard)).}
 
-\item{efficient}{[logical] Should the efficient IPW and AIPW estimator be used?}
-
-\item{nuisance.iid}{[logical] If \code{TRUE} take into accound the uncertainty related to
-the estimation of outcome model and the propensity score model.
-The uncertainty related to the estimation of the censoring model is never accounted for.}
+\item{augment.cens}{[logical] If \code{TRUE} add an censoring model augmentation term to the estimating equation}
 
 \item{na.rm}{[logical] If \code{TRUE} ignore observations whose influence function is NA.}
 }
 \description{
-Compute the average treatment effect (ATE) for a Cox regression model using five different approaches:
-G-formula, inverse probability weighting (IPW), augmented inverse probability weighting (AIPW).
-For IPW and AIPW both the non-efficient and efficient estimates are output. Experimental!
-}
-\details{
-Argument \code{nuisance.iid}: the asymptotic distribution of the ATE
-when we estimate the nuisance parameters
-(parameters from the outcome/propensity score/censoring model)
-equals the one if we would know the nuisance parameters. Therefore in large sample size,
-the value of the argument \code{nuisance.iid} should not matter. Setting it to \code{FALSE} will save some computation time.
+Compute the average treatment effect using different estimators:
+G-formula based on Cox regression, inverse probability of treatment weighting (IPTW)
+combined with inverse probability of censoring weighting (IPCW), augmented inverse probability weighting (AIPTW, AIPCW).
 }
 \examples{
-
+# survival outcome, binary treatment X1 
 library(survival)
 library(lava)
 library(data.table)
-
-#### Survival ####
-
-## generative model
-mSimSurv <- lava::lvm()
-lava::distribution(mSimSurv, ~a) <- lava::binomial.lvm(p = c(0.5))
-lava::distribution(mSimSurv, ~w) <- lava::binomial.lvm(p = c(0.5))
-lava::distribution(mSimSurv, "eventtime") <- lava::coxExponential.lvm(scale = 1)
-lava::distribution(mSimSurv, "censtime") <- lava::coxExponential.lvm(scale = 1)
-mSimSurv <- lava::eventTime(mSimSurv, time ~ min(eventtime = 1, censtime = 0), "event")
-lava::regression(mSimSurv) <- eventtime ~ alpha*a + beta*w
-
-## settings
-alpha <- 0.3 
-beta <- 0.4
-n <- 1e3
-
-## check bias 
-set.seed(10)
-dt <- as.data.table(lava::sim(mSimSurv, n = n, p = c(alpha = alpha, beta = beta)))
-setkeyv(dt, c("a","w"))
-
-## True value
-psi.TRUE <- c("risk.0" = (1-exp(-1*exp(alpha*0+beta*0)))*0.5 + (1-exp(-1*exp(alpha*0+beta*1)))*0.5,
-              "risk.1" = (1-exp(-1*exp(alpha*1+beta*0)))*0.5 + (1-exp(-1*exp(alpha*1+beta*1)))*0.5)
-psi.TRUE
-
-## Approximate true value
-dt[,.(risk = mean(eventtime<1)),by = c("a")]
-
-## Estimated using stratified Cox model
-res1 <- ateRobust(data = dt, type = "survival",
-            formula.event = Surv(time, event) ~ strata(a,w),
-            formula.censor = Surv(time, event==0) ~ strata(a,w),
-            formula.treatment = a ~ w,
-            times = 1,
-            product.limit = FALSE)
-print(res1, efficient = TRUE, nuisance.iid = TRUE)
-print(res1, efficient = TRUE, nuisance.iid = FALSE)
-print(res1, efficient = FALSE, nuisance.iid = TRUE)
-print(res1, efficient = FALSE, nuisance.iid = FALSE)
-
-if(FALSE){
-  e.cox <- coxph(Surv(time, event) ~ strata(a,w), data = dt, x = TRUE, y = TRUE)
-  ate(e.cox, data = dt, treatment = "a", times = 1)
-rbind(estimate = res1$ate.value[,"Gformula2"],
-      se = res1$ate.se[,"Gformula2"])
-}
-
-## Estimate using Cox model
-res2 <- ateRobust(data = dt, type = "survival",
-            formula.event = Surv(time, event) ~ a + w,
-            formula.censor = Surv(time, event==0) ~ a + w,
-            formula.treatment = a ~ w,
-            times = 1,
-            product.limit = FALSE,
-            nuisance.iid = TRUE)
-
-print(res2, efficient = TRUE, nuisance.iid = TRUE)
-print(res2, efficient = TRUE, nuisance.iid = FALSE)
-print(res2, efficient = FALSE, nuisance.iid = TRUE)
-print(res2, efficient = FALSE, nuisance.iid = FALSE)
-
-#### Competing risks ####
-set.seed(10)
-n <- 1e3
-
-## simulate data
-alphaE.X <- 2
-alphaCR.X <- 1
-alphaE.Y <- 3
-alphaCR.Y <- 2
-
-set.seed(10)
-df <- rbind(data.frame(time1 = rexp(n, rate = alphaE.X),
-                       time2 = rexp(n, rate = alphaCR.X), group = "1"),
-            data.frame(time1 = rexp(n, rate = alphaE.Y),
-                       time2 = rexp(n, rate = alphaCR.Y), group = "2"))
-df$time <- pmin(df$time1,df$time2) ## first event
-df$event <- (df$time2<df$time1)+1 ## type of event
-df$eventC <- df$event
-df$eventC[rbinom(n, size = 1, prob = 0.2)==1] <- 0
-
-## true value
-tau <- 1
-c(CIF.X = alphaE.X/(alphaE.X+alphaCR.X)*(1-exp(-(alphaE.X+alphaCR.X)*(tau))),
-  CIF.Y = alphaE.Y/(alphaE.Y+alphaCR.Y)*(1-exp(-(alphaE.Y+alphaCR.Y)*(tau))))
-
-## estimating using a CSC (no censoring)
-tapply(df$time,df$group,max)
-
-resCR <- ateRobust(data = df, type = "competing.risks",
-            formula.event = Hist(time, event) ~ group, ## strata(group),
-            formula.censor = Surv(time, event==0) ~ group,## strata(group),
-            formula.treatment = group ~ 1,
-            times = tau,
-            nuisance.iid = FALSE,
-            product.limit = FALSE,
-            cause = 1)
-resCR
-
-
-## estimating using a CSC (censoring)
-resCRC <- ateRobust(data = df, type = "competing.risks",
-            formula.event = Hist(time, eventC) ~  strata(group), ## group, ##
-            formula.censor = Surv(time, eventC==0) ~  strata(group), ## group,##
-            formula.treatment = group ~ 1,
-            times = tau,
-            nuisance.iid = FALSE,
-            product.limit = FALSE,
-            cause = 1)
-print(resCRC, efficient = TRUE)
-print(resCRC, efficient = FALSE)
+ds=sampleData(101,outcome="survival")
+ateRobust(data = ds, type = "survival",
+          formula.event = Surv(time, event) ~ X1+X6,
+         formula.censor = Surv(time, event==0) ~ X6,
+         formula.treatment = X1 ~ X6+X2+X7, times = 1,
+                     product.limit = FALSE)
+# competing risk outcome, binary treatment X1 
+library(survival)
+library(lava)
+library(data.table)
+dc=sampleData(101,outcome="competing.risks")
+ateRobust(data = dc, type = "competing.risks",
+          formula.event = list(Hist(time, event) ~ X1+X6,Hist(time, event) ~ X6),
+         formula.censor = Surv(time, event==0) ~ X6,
+         formula.treatment = X1 ~ X6+X2+X7, times = 1,cause=1,
+                     product.limit = FALSE)
 
 
 }

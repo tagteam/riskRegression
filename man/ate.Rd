@@ -214,7 +214,7 @@ set.seed(16)
 resVet <- ate(fitTD,formula=Hist(entry=tstart,time=time,event=status)~1,
           data = vet2, treatment = "celltype", contrasts = NULL,
         times=5,verbose=1,
-        landmark = c(0,30,60,90), cause = 1, B = 20, se = 1,
+        landmark = c(0,30,60,90), cause = 1, B = 4, se = 1,
         band = FALSE, mc.cores=1)
 resVet
 }

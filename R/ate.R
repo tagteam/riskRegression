@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Oct 23 2016 (08:53) 
 ## Version: 
-## last-updated: sep  5 2018 (09:24) 
-##           By: Brice Ozenne
-##     Update #: 817
+## last-updated: Sep 11 2018 (12:22) 
+##           By: Thomas Alexander Gerds
+##     Update #: 823
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -213,7 +213,7 @@
 #' resVet <- ate(fitTD,formula=Hist(entry=tstart,time=time,event=status)~1,
 #'           data = vet2, treatment = "celltype", contrasts = NULL,
 #'         times=5,verbose=1,
-#'         landmark = c(0,30,60,90), cause = 1, B = 20, se = 1,
+#'         landmark = c(0,30,60,90), cause = 1, B = 4, se = 1,
 #'         band = FALSE, mc.cores=1)
 #' resVet
 #' }
@@ -287,6 +287,7 @@ ate <- function(object,
     }else{
         landmark <- NULL
         Gformula <- Gformula_TI
+        if (missing(formula)) formula=NULL
     }
                                         # }}}
                                         # {{{ Prepare
@@ -388,19 +389,19 @@ ate <- function(object,
     # }}}
 
     # {{{ Point estimate
-    estimateTime <- system.time({
-    pointEstimate <- Gformula(object=object,
-                              data=data,
-                              treatment=treatment,
-                              strata=strata,
-                              contrasts=contrasts,
-                              times=times,
-                              cause=cause,
-                              landmark=landmark,
-                              n.contrasts = n.contrasts,
-                              levels = levels,
-                              dots)
-    })
+    Gargs <- list(object=object,
+                  data=data,
+                  treatment=treatment,
+                  strata=strata,
+                  contrasts=contrasts,
+                  times=times,
+                  cause=cause,
+                  landmark=landmark,
+                  n.contrasts = n.contrasts,
+                  levels = levels,
+                  dots)
+    if (TD) Gargs <- c(Gargs,list(formula=formula))
+    estimateTime <- system.time(pointEstimate <- do.call(Gformula, Gargs))
     # }}}
 
     # {{{ Confidence interval    
@@ -439,6 +440,8 @@ ate <- function(object,
                                    pointEstimate = vec.pointEstimate,
                                    Gformula = Gformula,
                                    data = data,
+                                   formula=formula,
+                                   TD=TD,
                                    treatment = treatment,
                                    contrasts = contrasts,
                                    times = times,

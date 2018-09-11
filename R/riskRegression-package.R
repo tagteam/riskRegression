@@ -70,8 +70,7 @@ NULL
 #' Andersen, P.K. and Skovgaard, L.T.
 #' 
 #' Springer Verlag
-#' @source
-#' \url{https://publicifsv.sund.ku.dk/~linearpredictors/?page=datasets&dataset=Melanoma}
+#'
 #' @keywords datasets
 ##' @examples
 ##' 

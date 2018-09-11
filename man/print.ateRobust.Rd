@@ -4,19 +4,16 @@
 \alias{print.ateRobust}
 \title{Print Average Treatment Effect}
 \usage{
-\method{print}{ateRobust}(x, digits = 3, efficient = x$efficient,
-  nuisance.iid = x$nuisance.iid, ...)
+\method{print}{ateRobust}(x, digits = 3, augment.cens = x$augment.cens, ...)
 }
 \arguments{
 \item{x}{object obtained with the function \code{ateRobust}.}
 
 \item{digits}{[integer, >0] indicating the number of decimal places.}
 
-\item{efficient}{[logical] should the standard errors be corrected to improve efficiency
-in presence of censoring.}
-
-\item{nuisance.iid}{[logical] should the standard errors
-accounting for the uncertainty in the outcome and propensity score models be output?}
+\item{augment.cens}{[logical] should the standard errors account for the augmentation term
+in direction of the model for the censoring mechanism.
+accounting for the uncertainty in the outcome and propensity score models be output}
 
 \item{...}{Passed to print.}
 }
