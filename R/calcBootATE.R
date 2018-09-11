@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: apr 11 2018 (17:05) 
 ## Version: 
-## Last-Updated: sep  5 2018 (09:31) 
-##           By: Brice Ozenne
-##     Update #: 63
+## Last-Updated: Sep 11 2018 (12:26) 
+##           By: Thomas Alexander Gerds
+##     Update #: 69
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -17,7 +17,7 @@
 
 # {{{ calcBootATE
 ## generate a boot object for the ate function that will be used to compute CI and p.values
-calcBootATE <- function(object, pointEstimate, Gformula, data, 
+calcBootATE <- function(object, pointEstimate, Gformula, data, formula, TD,
                         treatment, contrasts, times, cause, landmark, n.contrasts, levels,
                         dots, n.obs,
                         handler, B, seed, mc.cores, cl,
@@ -69,16 +69,18 @@ calcBootATE <- function(object, pointEstimate, Gformula, data,
             if ("try-error" %in% class(objectBoot)){
                 stop(paste0("Failed to fit model ",class(object)))
             }
-            iBoot <- tryCatch(Gformula(object=objectBoot,
-                                       data=dataBoot,
-                                       treatment=treatment,
-                                       contrasts=contrasts,
-                                       times=times,
-                                       cause=cause,
-                                       landmark=landmark,
-                                       n.contrasts = n.contrasts,
-                                       levels = levels,
-                                       dots),
+            Gargs <- list(object=objectBoot,
+                          data=dataBoot,
+                          treatment=treatment,
+                          contrasts=contrasts,
+                          times=times,
+                          cause=cause,
+                          landmark=landmark,
+                          n.contrasts = n.contrasts,
+                          levels = levels,
+                          dots)
+            if (TD) Gargs <- c(Gargs,list(formula=formula))
+            iBoot <- tryCatch(do.call(Gformula, Gargs),
                               error = function(x){return(NULL)})
             if(is.null(iBoot)){ ## error handling
                 out <- setNames(rep(NA, length(name.estimate), name.estimate))
@@ -90,10 +92,10 @@ calcBootATE <- function(object, pointEstimate, Gformula, data,
             return(out)
         }, sim = "ordinary", stpe = "indices", strata = rep(1, n.obs),
         parallel = handler[[1]], ncpus = mc.cores, cl = cl)
-                                        # }}}
+        # }}}
     }else {
         if (handler[[1]]=="foreach" && mc.cores>1){
-                                        # {{{ foreach
+            # {{{ foreach
             if(no.cl){
                 if(verbose){
                     cl <- parallel::makeCluster(mc.cores, outfile = "")
@@ -106,7 +108,7 @@ calcBootATE <- function(object, pointEstimate, Gformula, data,
             if(verbose){pb <- txtProgressBar(max = B, style = 3)}
 
             b <- NULL ## [:forCRANcheck:] foreach
-            boots <- foreach::`%dopar%`(foreach::foreach(b = 1:B, .packages = addPackage, .export = NULL), { ## b <- 1
+            boots <- foreach::`%dopar%`(foreach::foreach(b = 1:B, .packages = addPackage, .export = c("formula")), { ## b <- 1
                 set.seed(bootseeds[[b]])
                 if(verbose){setTxtProgressBar(pb, b)}
                 dataBoot <- data[sample(1:n.obs, size = n.obs, replace = TRUE),]
@@ -115,17 +117,19 @@ calcBootATE <- function(object, pointEstimate, Gformula, data,
                 if ("try-error" %in% class(objectBoot)){
                     stop(paste0("Failed to fit model ",class(object),ifelse(try(b>0,silent=TRUE),paste0(" in bootstrap step ",b,"."))))
                 }
-                tryCatch(Gformula(object=objectBoot,
-                                  data=dataBoot,
-                                  treatment=treatment,
-                                  contrasts=contrasts,
-                                  times=times,
-                                  cause=cause,
-                                  landmark=landmark,
-                                  n.contrasts = n.contrasts,
-                                  levels = levels,
-                                  dots),
-                         error = function(x){return(NULL)})
+                Gargs <- list(object=objectBoot,
+                              data=dataBoot,
+                              treatment=treatment,
+                              contrasts=contrasts,
+                              times=times,
+                              cause=cause,
+                              landmark=landmark,
+                              n.contrasts = n.contrasts,
+                              levels = levels,
+                              dots)
+                if (TD) Gargs <- c(Gargs,list(formula=formula))
+                iBoot <- tryCatch(do.call(Gformula, Gargs),
+                                  error = function(x){return(NULL)})
                 ## error = function(x){return(x)})
             })
             if(verbose){close(pb)}
@@ -146,21 +150,24 @@ calcBootATE <- function(object, pointEstimate, Gformula, data,
                 if ("try-error" %in% class(objectBoot)){
                     stop(paste0("Failed to fit model",ifelse(try(b>0,silent=TRUE),paste0(" in bootstrap step ",b,"."))))
                 }
-                tryCatch(Gformula(object=objectBoot,
-                                  data=dataBoot,
-                                  treatment=treatment,
-                                  contrasts=contrasts,
-                                  times=times,
-                                  cause=cause,
-                                  landmark=landmark,
-                                  n.contrasts = n.contrasts,
-                                  levels = levels,
-                                  dots),
-                         error = function(x){return(NULL)})
+
+                Gargs <- list(object=objectBoot,
+                              data=dataBoot,
+                              treatment=treatment,
+                              contrasts=contrasts,
+                              times=times,
+                              cause=cause,
+                              landmark=landmark,
+                              n.contrasts = n.contrasts,
+                              levels = levels,
+                              dots)
+                if (TD) Gargs <- c(Gargs,list(formula=formula))
+                iBoot <- tryCatch(do.call(Gformula, Gargs),
+                                  error = function(x){return(NULL)})
             }, mc.cores = mc.cores)
-                                        # }}}
+            # }}}
         }
-                                        # {{{ convert to boot object
+        # {{{ convert to boot object
         M.bootEstimate <- do.call(rbind,lapply(boots,function(iBoot){
             c(iBoot$meanRisk$meanRisk, iBoot$riskComparison$diff, iBoot$riskComparison$ratio)
         }))
@@ -185,7 +192,7 @@ calcBootATE <- function(object, pointEstimate, Gformula, data,
                             mle = NULL ## only used when sim is "parametric" (from doc of boot::boot)
                             )
         class(boot.object) <- "boot"
-                                        # }}}
+        # }}}
     }
     return(list(boot = boot.object,
                 bootseeds = bootseeds))
