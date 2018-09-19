@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun  6 2016 (06:48) 
 ## Version: 
-## last-updated: Aug 15 2018 (09:54) 
-##           By: Thomas Alexander Gerds
-##     Update #: 228
+## last-updated: sep 18 2018 (22:03) 
+##           By: Brice Ozenne
+##     Update #: 231
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -98,7 +98,7 @@ print.ate <- function(x, digits = 3, type = c("meanRisk","diffRisk","ratioRisk")
         cat("\nComparison of risks on probability scale [0,1] between\nhypothetical worlds are interpreted as if the treatment was randomized:\n\n")
 
         if("diffRisk" %in% type){
-            cat("     > risk difference \n\n")
+            cat("     * risk difference \n\n")
             ## only pick diff
             name.diff <- grep("^diff",names(x$riskComparison),value = TRUE)
             dt.tempo <- x$riskComparison[,.SD,.SDcols = c(id.name,name.diff)]
@@ -151,7 +151,7 @@ print.ate <- function(x, digits = 3, type = c("meanRisk","diffRisk","ratioRisk")
         }
 
         if("ratioRisk" %in% type){
-            cat("\n     > risk ratio \n\n")
+            cat("\n     * risk ratio \n\n")
             ## only pick ratio
             name.ratio <- grep("^ratio",names(x$riskComparison),value = TRUE)
             dt.tempo <- x$riskComparison[,.SD,.SDcols = c(id.name,name.ratio)]
