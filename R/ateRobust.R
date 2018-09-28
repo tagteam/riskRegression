@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: jun 27 2018 (17:47) 
 ## Version: 
-## Last-Updated: Sep 15 2018 (07:07) 
-##           By: Thomas Alexander Gerds
-##     Update #: 1054
+## Last-Updated: sep 28 2018 (10:09) 
+##           By: Brice Ozenne
+##     Update #: 1055
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -159,17 +159,18 @@ ateRobust <- function(data, times, cause, type,
         data[,c("time.tau") := pmin(coxMF$stop,times)]
         data[,c("status.tau") := (coxMF$stop<=times)*(coxMF$status==1)]
         ## 0 survival or censored, 1 event
-        data[,c("Ncensoring.tau") := as.numeric(((coxMF$stop>=times) + (coxMF$status!=0)) > 0)]
+        data[,c("Ncensoring.tau") := (coxMF$stop>=times) + (coxMF$stop<times)*(coxMF$status!=0)]
         ## 0 censored, 1 survival or event
     }else if(type=="competing.risks"){
         ## coxMF contains three columns: stop, status (0 censored, 1 any event), event (1 event of interest, 2 competing event, 3 censoring)
         data[,c("time.tau") := pmin(coxMF$stop,times)]
         data[,c("status.tau") := (coxMF$stop<=times)*(coxMF$event==cause)]
         ## 0 survival competing event or censored, 1 event of interest
-        data[,c("Ncensoring.tau") := as.numeric(((coxMF$stop>=times) + (coxMF$status!=0)) > 0)]
+        data[,c("Ncensoring.tau") := (coxMF$stop>=times) + (coxMF$stop<times)*(coxMF$status!=0)]
         ## 0 censored, 1 survival or event (of interest or comepting)
     }
-    
+    ## print(data$Ncensoring.tau)
+
     ## ** outcome model: conditional expectation
     ## if(nuisance.iid){
         ## Computation of the influence function (Gformula, AIPW)

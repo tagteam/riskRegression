@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun 23 2016 (09:19) 
 ## Version: 
-## last-updated: Sep 15 2018 (11:50) 
-##           By: Thomas Alexander Gerds
-##     Update #: 74
+## last-updated: sep 28 2018 (10:57) 
+##           By: Brice Ozenne
+##     Update #: 75
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -95,7 +95,7 @@ autoplot.Score <- function(object,
     if (conf.int==TRUE){
         if (type=="score"){
             ## pframe[,polygon(x=c(times,rev(times)),y=c(lower,rev(upper)),col=dimcol,border=NA),by=model]
-            pp <- pp + geome_ribbon(aes(ymin=lower,ymax=upper,fill=model,linetype=NA),alpha=0.2)
+            pp <- pp + geom_ribbon(aes(ymin=lower,ymax=upper,fill=model,linetype=NA),alpha=0.2)
         }else{
             pp <- pp + geom_ribbon(aes(ymin=lower,ymax=upper,fill=contrast,linetype=NA),alpha=0.2)
         }

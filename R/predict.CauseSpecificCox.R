@@ -168,7 +168,7 @@ predict.CauseSpecificCox <- function(object,
     }
 
     ## relevant event times to use
-    valid.times <- times[times<=max(eTimes)] ## prediction times before the last jump
+    valid.times <- times[times<=max(object$response[,"time"])] ## prediction times before the event 
     if(length(valid.times) == 0){
         eventTimes <- eTimes[1] ## at least the first event
     }else{
@@ -192,7 +192,7 @@ predict.CauseSpecificCox <- function(object,
     M.etimes.max <- matrix(NA, nrow = new.n, ncol = nCause)
     ls.infoVar <- setNames(vector(mode = "list", length = nCause), name.model)
      
-    for(iterC in 1:nCause){
+    for(iterC in 1:nCause){ ## iterC <- 1
 
         ## when surv.type = "hazard" and iterC corresponds to the cause and no se/iid
         ## we could only compute cumhazard (i.e. not compute hazard).
