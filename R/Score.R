@@ -1562,6 +1562,10 @@ Score.list <- function(object,
                     colnames(output$AUC$vcov) <- mlabels[-1]
                     rownames(output$AUC$vcov) <- mlabels[-1]
                 }
+            }else{
+                for (ml in 1:length(mlabels)){
+                    colnames(output$AUC$vcov) <- gsub(paste0("model=",ml),paste0("model=",mlabels[ml]),colnames(output$AUC$vcov))
+                    rownames(output$AUC$vcov) <- gsub(paste0("model=",ml),paste0("model=",mlabels[ml]),rownames(output$AUC$vcov))}
             }
         attr(output$AUC$vcov,"models") <- lab.models
     }

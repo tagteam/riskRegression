@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun  6 2016 (09:35) 
 ## Version: 
-## last-updated: Sep 26 2018 (20:04) 
+## last-updated: Sep 26 2018 (20:14) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 156
+##     Update #: 157
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -58,11 +58,13 @@ test_that("Prediction with CSC - no event before prediction time",{
 # {{{ "Prediction with CSC - robustness of value beyond last event time"
 test_that("Prediction with CSC - robustness of value beyond last event time",{
     test.times.1 <- c(10,3000,5000)
-    pcox1 <- predictCox(fit.coxph,times=test.times.1,newdata=Melanoma)
-    prediction.1 <- predict(fit.CSC, times = test.times.1, newdata = Melanoma, cause = 1)
+    newd <- Melanoma
+    newd <- Melanoma[1,,drop=FALSE]
+    pcox1 <- predictCox(fit.coxph,times=test.times.1,newdata=newd)
+    prediction.1 <- predict(fit.CSC, times = test.times.1, newdata = newd, cause = 1)
     test.times.2 <- c(10,300,5000)
-    prediction.2 <- predict(fit.CSC, times = test.times.2, newdata = Melanoma, cause = 1)
-    pcox2 <- predictCox(fit.coxph,times=test.times.2,newdata=Melanoma)
+    prediction.2 <- predict(fit.CSC, times = test.times.2, newdata = newd, cause = 1)
+    pcox2 <- predictCox(fit.coxph,times=test.times.2,newdata=newd)
     expect_equal(pcox1$survival[,3],pcox2$survival[,3])
     expect_equal(prediction.1$absRisk[,3],prediction.2$absRisk[,3])
   
