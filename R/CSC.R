@@ -47,9 +47,6 @@
 ##' ## different formula for the two causes
 ##' fit1 <- CSC(list(Hist(time,status)~sex,Hist(time,status)~invasion+epicel+age),
 ##'             data=Melanoma)
-##' print(fit1)
-##'
-##' 
 ##' 
 ##' ## model hazard of all cause mortality instead of hazard of type 2 
 ##' fit1a <- CSC(list(Hist(time,status)~sex+age,Hist(time,status)~invasion+epicel+log(thick)),

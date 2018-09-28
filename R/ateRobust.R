@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: jun 27 2018 (17:47) 
 ## Version: 
-## Last-Updated: sep 11 2018 (15:43) 
+## Last-Updated: sep 28 2018 (10:09) 
 ##           By: Brice Ozenne
-##     Update #: 1054
+##     Update #: 1055
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -47,7 +47,7 @@
 #' library(lava)
 #' library(data.table)
 #' ds=sampleData(101,outcome="survival")
-#' ateRobust(data = ds, type = "survival",
+#' res=ateRobust(data = ds, type = "survival",
 #'           formula.event = Surv(time, event) ~ X1+X6,
 #'          formula.censor = Surv(time, event==0) ~ X6,
 #'          formula.treatment = X1 ~ X6+X2+X7, times = 1,

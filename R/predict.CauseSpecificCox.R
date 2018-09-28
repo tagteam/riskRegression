@@ -243,7 +243,6 @@ predict.CauseSpecificCox <- function(object,
                           nCause = nCause,
                           survtype = (surv.type=="survival"),
                           productLimit = product.limit)
-    
     ## ** compute standard error for CIF
     if(se || band || iid || average.iid){
         if(!is.na(landmark)){
