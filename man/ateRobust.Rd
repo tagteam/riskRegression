@@ -5,7 +5,7 @@
 \title{Average Treatment Effects (ATE) for survival outcome (with competing risks) using doubly robust estimating equations}
 \usage{
 ateRobust(data, times, cause, type, formula.event, formula.censor,
-  formula.treatment, fitter = "coxph", product.limit = FALSE,
+  formula.treatment, fitter = "coxph", product.limit = NULL, se = TRUE,
   augment.cens = TRUE, na.rm = FALSE)
 }
 \arguments{
@@ -33,6 +33,8 @@ If \code{coxph} use \code{survival::coxph} else use \code{rms::cph}.}
 \item{product.limit}{[logical] If \code{TRUE} the survival is computed using the product limit estimator.
 Otherwise the exponential approximation is used (i.e. exp(-cumulative hazard)).}
 
+\item{se}{[logical] If \code{TRUE} compute and add the standard errors relative to the G-formula and IPTW estimator to the output.}
+
 \item{augment.cens}{[logical] If \code{TRUE} add an censoring model augmentation term to the estimating equation}
 
 \item{na.rm}{[logical] If \code{TRUE} ignore observations whose influence function is NA.}
@@ -43,20 +45,22 @@ G-formula based on Cox regression, inverse probability of treatment weighting (I
 combined with inverse probability of censoring weighting (IPCW), augmented inverse probability weighting (AIPTW, AIPCW).
 }
 \examples{
-# survival outcome, binary treatment X1 
 library(survival)
 library(lava)
 library(data.table)
-ds=sampleData(101,outcome="survival")
-res=ateRobust(data = ds, type = "survival",
+
+# survival outcome, binary treatment X1 
+
+ds <- sampleData(101,outcome="survival")
+out <- ateRobust(data = ds, type = "survival",
           formula.event = Surv(time, event) ~ X1+X6,
          formula.censor = Surv(time, event==0) ~ X6,
-         formula.treatment = X1 ~ X6+X2+X7, times = 1,
-                     product.limit = FALSE)
+         formula.treatment = X1 ~ X6+X2+X7, times = 1)
+out
+out <- confint(out)
+out
+
 # competing risk outcome, binary treatment X1 
-library(survival)
-library(lava)
-library(data.table)
 dc=sampleData(101,outcome="competing.risks")
 ateRobust(data = dc, type = "competing.risks",
           formula.event = list(Hist(time, event) ~ X1+X6,Hist(time, event) ~ X6),
