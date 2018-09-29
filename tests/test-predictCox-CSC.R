@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun  6 2016 (09:35) 
 ## Version: 
-## last-updated: jul 16 2018 (11:39) 
-##           By: Brice Ozenne
-##     Update #: 153
+## last-updated: Sep 26 2018 (20:14) 
+##           By: Thomas Alexander Gerds
+##     Update #: 158
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -44,7 +44,6 @@ test_that("Prediction with CSC - NA after last event",{
   prediction <- predict(fit.CSC, times = test.times, newdata = Melanoma[1,,drop = FALSE], cause = 1)
   expect_equal(as.vector(is.na(prediction$absRisk)), c(FALSE, FALSE, TRUE))
 })
-
 # }}}
 
 # {{{ "Prediction with CSC - no event before prediction time"
@@ -54,8 +53,24 @@ test_that("Prediction with CSC - no event before prediction time",{
   prediction <- predict(fit.CSC, times = test.times, newdata = Melanoma[1,,drop = FALSE], cause = 1)
   expect_equal(as.double(prediction$absRisk), 0)
 })
-
 # }}}
+
+# {{{ "Prediction with CSC - robustness of value beyond last event time"
+test_that("Prediction with CSC - robustness of value beyond last event time",{
+    test.times.1 <- c(10,3000,5000)
+    newd <- Melanoma
+    newd <- Melanoma[1,,drop=FALSE]
+    pcox1 <- predictCox(fit.coxph,times=test.times.1,newdata=newd)
+    prediction.1 <- predict(fit.CSC, times = test.times.1, newdata = newd, cause = 1)
+    test.times.2 <- c(10,300,5000)
+    prediction.2 <- predict(fit.CSC, times = test.times.2, newdata = newd, cause = 1)
+    pcox2 <- predictCox(fit.coxph,times=test.times.2,newdata=newd)
+    expect_equal(pcox1$survival[,3],pcox2$survival[,3])
+    expect_equal(prediction.1$absRisk[,3],prediction.2$absRisk[,3])
+})
+# }}}
+
+
 
 
 #### strata

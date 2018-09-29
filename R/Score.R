@@ -1562,6 +1562,10 @@ Score.list <- function(object,
                     colnames(output$AUC$vcov) <- mlabels[-1]
                     rownames(output$AUC$vcov) <- mlabels[-1]
                 }
+            }else{
+                for (ml in 1:length(mlabels)){
+                    colnames(output$AUC$vcov) <- gsub(paste0("model=",ml),paste0("model=",mlabels[ml]),colnames(output$AUC$vcov))
+                    rownames(output$AUC$vcov) <- gsub(paste0("model=",ml),paste0("model=",mlabels[ml]),rownames(output$AUC$vcov))}
             }
         attr(output$AUC$vcov,"models") <- lab.models
     }
@@ -1965,7 +1969,7 @@ AUC.binary <- function(DT,breaks=NULL,se.fit,conservative=FALSE,cens.model="none
         output <- list(score=AUC,ROC=ROC)
     }
     if (length(dolist)>0 || (se.fit==1L)){
-        xRisk <- data.table::dcast.data.table(aucDT[],ID~model,value.var="risk")[,-1,with=FALSE]
+        xRisk <- data.table::dcast(aucDT[],ID~model,value.var="risk")[,-1,with=FALSE]
         delong.res <- delongtest(risk=xRisk,
                                  score=output$score,
                                  dolist=dolist,

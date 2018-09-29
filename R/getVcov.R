@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Feb 23 2018 (14:03) 
 ## Version: 
-## Last-Updated: Feb 26 2018 (15:32) 
+## Last-Updated: Sep 28 2018 (09:55) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 27
+##     Update #: 34
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -20,8 +20,10 @@ getVcov <- function(data,IF.name,times=NULL){
     if (!is.null(times)){
         times <- data[,unique(times)]
         N <- data[model==model[[1]] & times==times[[1]],.N]
-        AllComb <- expand.grid(model=models,times=times)
-        allnames <- apply(AllComb,1,function(x){paste0("model=",x[1],"times=",x[2],sep="")})
+        AllComb <- expand.grid(times=times,model=models)
+        allnames <- apply(AllComb,
+                          1,
+                          function(x){paste0("model=",x[2],", times=",x[1],sep="")})
         matVoCov <- matrix(0,length(allnames),length(allnames))
         rownames(matVoCov) <- allnames
         colnames(matVoCov) <- allnames    
