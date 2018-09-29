@@ -1969,7 +1969,7 @@ AUC.binary <- function(DT,breaks=NULL,se.fit,conservative=FALSE,cens.model="none
         output <- list(score=AUC,ROC=ROC)
     }
     if (length(dolist)>0 || (se.fit==1L)){
-        xRisk <- data.table::dcast.data.table(aucDT[],ID~model,value.var="risk")[,-1,with=FALSE]
+        xRisk <- data.table::dcast(aucDT[],ID~model,value.var="risk")[,-1,with=FALSE]
         delong.res <- delongtest(risk=xRisk,
                                  score=output$score,
                                  dolist=dolist,

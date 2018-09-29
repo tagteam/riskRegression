@@ -5,7 +5,7 @@
 ## Version: 
 ## last-updated: Sep 26 2018 (20:14) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 157
+##     Update #: 158
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -67,7 +67,6 @@ test_that("Prediction with CSC - robustness of value beyond last event time",{
     pcox2 <- predictCox(fit.coxph,times=test.times.2,newdata=newd)
     expect_equal(pcox1$survival[,3],pcox2$survival[,3])
     expect_equal(prediction.1$absRisk[,3],prediction.2$absRisk[,3])
-  
 })
 # }}}
 
