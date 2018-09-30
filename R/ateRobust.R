@@ -1,11 +1,11 @@
 ## ateRobust.R --- 
 ##----------------------------------------------------------------------
-## Author: Brice Ozenne
+## Author: Brice Ozenne, Thomas A. Gerds
 ## Created: jun 27 2018 (17:47) 
 ## Version: 
-## Last-Updated: sep 28 2018 (10:09) 
+## Last-Updated: sep 29 2018 (13:20) 
 ##           By: Brice Ozenne
-##     Update #: 1055
+##     Update #: 1101
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -29,6 +29,7 @@
 #' Typically \code{Surv(time,event==0)~treatment}.
 #' @param formula.treatment [formula] Logistic regression for the treatment (propensity score model).
 #' Typically \code{treatment~1}.
+#' @param se [logical] If \code{TRUE} compute and add the standard errors relative to the G-formula and IPTW estimator to the output.
 #' @param times [numeric] Time point at which to evaluate average treatment effects.
 #' @param fitter [character] Routine to fit the Cox regression models.
 #' If \code{coxph} use \code{survival::coxph} else use \code{rms::cph}.
@@ -42,20 +43,23 @@
 #'
 #' @rdname ateRobust
 #' @examples
-#' # survival outcome, binary treatment X1 
 #' library(survival)
 #' library(lava)
 #' library(data.table)
-#' ds=sampleData(101,outcome="survival")
-#' res=ateRobust(data = ds, type = "survival",
+#'
+#' set.seed(10)
+#' # survival outcome, binary treatment X1 
+#'
+#' ds <- sampleData(101,outcome="survival")
+#' out <- ateRobust(data = ds, type = "survival",
 #'           formula.event = Surv(time, event) ~ X1+X6,
 #'          formula.censor = Surv(time, event==0) ~ X6,
-#'          formula.treatment = X1 ~ X6+X2+X7, times = 1,
-#'                      product.limit = FALSE)
+#'          formula.treatment = X1 ~ X6+X2+X7, times = 1)
+#' out
+#' out <- confint(out)
+#' out
+#' 
 #' # competing risk outcome, binary treatment X1 
-#' library(survival)
-#' library(lava)
-#' library(data.table)
 #' dc=sampleData(101,outcome="competing.risks")
 #' ateRobust(data = dc, type = "competing.risks",
 #'           formula.event = list(Hist(time, event) ~ X1+X6,Hist(time, event) ~ X6),
@@ -69,7 +73,7 @@
 #' @export
 ateRobust <- function(data, times, cause, type,
                       formula.event, formula.censor, formula.treatment, 
-                      fitter = "coxph", product.limit = FALSE,
+                      fitter = "coxph", product.limit = NULL, se = TRUE,
                       augment.cens=TRUE,
                       na.rm = FALSE){
 
@@ -80,6 +84,7 @@ ateRobust <- function(data, times, cause, type,
         data <- data.table::copy(data)
     }
     n.obs <- NROW(data)
+
     if(length(times)!=1){
         stop("Argument \'times\' must have length 1 \n")
     }
@@ -95,6 +100,11 @@ ateRobust <- function(data, times, cause, type,
         stop("only implemented for binary treatment variables \n")
     }
     type <- match.arg(type, c("survival","competing.risks"))
+    if(is.null(product.limit)){
+        product.limit <- switch(type,
+                                "survival" = FALSE,
+                                "competing.risks" = TRUE)
+    }
     if(product.limit){
         predictor.cox <- "predictCoxPL"
     }else{
@@ -131,7 +141,6 @@ ateRobust <- function(data, times, cause, type,
         ## stop status event ...
     }
     n.censor <- sum( (coxMF$status==0) * (coxMF$stop <= times) )
-
     
     ## treatment
     model.treatment <- do.call(glm, args = list(formula = formula.treatment, data = data, family = stats::binomial(link = "logit")))       
@@ -172,27 +181,26 @@ ateRobust <- function(data, times, cause, type,
     ## print(data$Ncensoring.tau)
 
     ## ** outcome model: conditional expectation
-    ## if(nuisance.iid){
+    if(se){
         ## Computation of the influence function (Gformula, AIPW)
-        ## additional term: eq:IF-AIPWfull (green terms)
         ## this is sent to predictCox to multiply each individual IF before averaging
 
         nuisance.iid0 <- TRUE
-        attr(nuisance.iid0, "factor") <- list("Gformula" = matrix(1, nrow = n.obs, ncol = 1)
-                                              ## "AIPW" = cbind(data[, 1 - (1-.SD$treatment.bin) / (1-.SD$prob.treatment)])
+        attr(nuisance.iid0, "factor") <- list("Gformula" = matrix(1, nrow = n.obs, ncol = 1),
+                                              "AIPW" = cbind(data[, 1 - (1-.SD$treatment.bin) / (1-.SD$prob.treatment)])
                                               )
         nuisance.iid1 <- TRUE
-        attr(nuisance.iid1, "factor") <- list("Gformula" = matrix(1, nrow = n.obs, ncol = 1)
-                                              ## "AIPW" = cbind(data[, 1 - .SD$treatment.bin / .SD$prob.treatment])
+        attr(nuisance.iid1, "factor") <- list("Gformula" = matrix(1, nrow = n.obs, ncol = 1),
+                                              "AIPW" = cbind(data[, 1 - .SD$treatment.bin / .SD$prob.treatment])
                                               )
         if(type == "competing.risks"){
             attr(nuisance.iid0, "factor") <- do.call(cbind,attr(nuisance.iid0, "factor"))
             attr(nuisance.iid1, "factor") <- do.call(cbind,attr(nuisance.iid1, "factor"))
         }
-    ## }else{
-        ## nuisance.iid0 <- FALSE
-        ## nuisance.iid1 <- FALSE
-    ## }
+    }else{
+        nuisance.iid0 <- FALSE
+        nuisance.iid1 <- FALSE
+    }
     
     if(type == "survival"){
         ## Estimation of the survival + IF
@@ -205,12 +213,13 @@ ateRobust <- function(data, times, cause, type,
         data[, c("prob.event0") := 1 - prediction.event0$survival[,1]]
         data[, c("prob.event1") := 1 - prediction.event1$survival[,1]]
 
-        ## if(nuisance.iid){
+        if(se){
             iidG.event0 <- -prediction.event0$survival.average.iid[[1]][,1]
-            ## iidAIPW.event0 <- -prediction.event0$survival.average.iid[[2]][,1]
+            iidAIPW.event0 <- -prediction.event0$survival.average.iid[[2]][,1]
+
             iidG.event1 <- -prediction.event1$survival.average.iid[[1]][,1]
-            ## iidAIPW.event1 <- -prediction.event1$survival.average.iid[[2]][,1]
-        ## }
+            iidAIPW.event1 <- -prediction.event1$survival.average.iid[[2]][,1]
+        }
 
     }else if(type=="competing.risks"){
 
@@ -226,12 +235,12 @@ ateRobust <- function(data, times, cause, type,
         data[, c("prob.event1") := prediction.event1$absRisk[,1]]
 
         ## store results
-        ## if(nuisance.iid){
+        if(se){
             ## weight0 <- attr(nuisance.iid0,"factor")[,2]
             iidG.event0 <- prediction.event0$absRisk.average.iid[[1]]
             ## range(iidG.event0 - prediction.event0$absRisk.average.iid[[1]])
             ## iidG.event0 <- colMeans(prediction.event0$absRisk.iid[,1,])
-            ## iidAIPW.event0 <- prediction.event0$absRisk.average.iid[[2]]
+            iidAIPW.event0 <- prediction.event0$absRisk.average.iid[[2]]
             ## range(iidAIPW.event0 - prediction.event0$absRisk.average.iid[[2]])
             ## iidAIPW.event0 <- apply(prediction.event0$absRisk.iid[,1,],2,function(iCol){mean(weight0*iCol)})
 
@@ -239,10 +248,10 @@ ateRobust <- function(data, times, cause, type,
             iidG.event1 <- prediction.event1$absRisk.average.iid[[1]]
             ## range(iidG.event1 - prediction.event1$absRisk.average.iid[[1]])
             ## iidG.event1 <- colMeans(prediction.event1$absRisk.iid[,1,])
-            ## iidAIPW.event1 <- prediction.event1$absRisk.average.iid[[2]]
+            iidAIPW.event1 <- prediction.event1$absRisk.average.iid[[2]]
             ## range(iidAIPW.event1 - prediction.event1$absRisk.average.iid[[2]])
             ## iidAIPW.event1 <- apply(prediction.event1$absRisk.iid[,1,],2,function(iCol){mean(weight1*iCol)})
-        ## }
+        }
 
     }
     
@@ -276,20 +285,24 @@ ateRobust <- function(data, times, cause, type,
         }
     ## ** Propensity score model: weights
     ## needs to be after censoring to get the weights
-    ## if(nuisance.iid){
+    if(se){
 
-        factor <- cbind("IPW0" = data[,  .SD$weights  * .SD$status.tau * (1-.SD$treatment.bin) / (1-.SD$prob.treatment)^2],
-                        "IPW1" = data[, .SD$weights * .SD$status.tau * .SD$treatment.bin / (.SD$prob.treatment)^2])
-
+        factor <- cbind("IPW0" = data[,  .SD$weights * (1-.SD$treatment.bin) * (.SD$status.tau==1) / (1-.SD$prob.treatment)^2],
+                        "IPW1" = data[, .SD$weights * .SD$treatment.bin * (.SD$status.tau==1) / (.SD$prob.treatment)^2],
+                        "AIPW0" = data[, (1-.SD$treatment.bin) * .SD$prob.event0 / (1-.SD$prob.treatment)^2],
+                        "AIPW1" = data[, .SD$treatment.bin * .SD$prob.event1 / .SD$prob.treatment^2])
+        
         average.iid <- TRUE
         attr(average.iid, "factor") <- factor
         
         prediction.treatment.iid <- attr(.predictGLM(model.treatment, newdata = data, average.iid = average.iid), "iid")
         iidIPW.treatment0 <-  prediction.treatment.iid[,1]
         iidIPW.treatment1 <- -prediction.treatment.iid[,2]
-        ## iidAIPW.treatment0 <- -prediction.treatment.iid[,3]
-        ## iidAIPW.treatment1 <- prediction.treatment.iid[,4]
-
+        iidAIPW.treatment0 <- -prediction.treatment.iid[,3]
+        iidAIPW.treatment1 <- prediction.treatment.iid[,4]
+        
+    }
+    
     ## ** correction for efficiency
     ## data is updated within the function .calcLterm
     if(augment.cens){
@@ -297,14 +310,14 @@ ateRobust <- function(data, times, cause, type,
             data[,c("Lterm") := 0]
         }else{
             data[,c("Lterm") := .calcLterm(data = data,
-                                     n.obs = n.obs,
-                                     times = times,
-                                     model.censor = model.censor,
-                                     model.event = model.event,
-                                     type = type,
-                                     predictor.cox = predictor.cox,
-                                     product.limit = product.limit,
-                                     cause = cause)]
+                                           n.obs = n.obs,
+                                           times = times,
+                                           model.censor = model.censor,
+                                           model.event = model.event,
+                                           type = type,
+                                           predictor.cox = predictor.cox,
+                                           product.limit = product.limit,
+                                           cause = cause)]
         }
     }
 
@@ -312,73 +325,65 @@ ateRobust <- function(data, times, cause, type,
     IF <- list()
 
     ## *** Gformula
-    ## eq:IF-Gformula (blue term)
     IF$Gformula <- data[,cbind(
         .SD$prob.event0,
         .SD$prob.event1
     )] / n.obs
-    ## if (nuisance.iid){
-    nuisanceEvent.Gformula <- cbind(iidG.event0, iidG.event1)
-    IF$Gformula <- IF$Gformula + nuisanceEvent.Gformula
-    ## }
-
+    
     ## *** IPW
-    ## eq:IF-IPWc (blue term)
     IF$IPTW.IPCW <- data[,cbind(
         .SD$weights * .SD$status.tau * (1-.SD$treatment.bin) / (1-.SD$prob.treatment),
         .SD$weights * .SD$status.tau * (.SD$treatment.bin) / (.SD$prob.treatment)
     )]/ n.obs
-    ## colSums(IF$IPTW.IPCW)
-    ## colSums(IF$Gformula)
-    
-    if(augment.cens){
-        ## additional term: eq:IF-IPWeff (red term)
-        augment.cens.IPW <- data[,cbind(
-            .SD$Lterm * (1-.SD$treatment.bin) / (1-.SD$prob.treatment), ## .SD$prob.event
-            .SD$Lterm * (.SD$treatment.bin) / (.SD$prob.treatment) ## .SD$prob.event
-        )]/ n.obs
-        IF$IPTW.AIPCW <- IF$IPTW.IPCW + augment.cens.IPW
-        ## colSums(augment.cens.IPW)
-        ## sum(data$Lterm)/n.obs
-        ## data$prob.treatment
-    }
-    
-    ## additional term: eq:IF-IPWfull (green term)
-    nuisanceTreatment.IPW <- cbind(iidIPW.treatment0, iidIPW.treatment1)
-    ## nuisanceCensoring.IPW <- cbind(iidIPW.censoring0, iidIPW.censoring1)
-    ## colMeans(IPWadd)
-    ## apply(IF$IPTW.IPCW + nuisanceTreatment.IPW, 2, sd)
-    ## apply(IF$IPTW.IPCW + nuisanceTreatment.IPW + nuisanceCensoring.IPW, 2, sd)
-
-    ## mean(IF$IPTW.IPCW)
-    ## mean(nuisanceTreatment.IPW)
-    ## mean(nuisanceCensoring.IPW)
-    ## IF$IPTW.IPCW <- IF$IPTW.IPCW + nuisanceTreatment.IPW
-    ## if(augment.cens){
-        ## IF$IPTW.AIPCW.mod <- IF$IPTW.AIPCW + nuisanceTreatment.IPW
-    ## }
 
     ## *** AIPW
-    ## additional term:
     AIPWadd <- data[,cbind(
         .SD$prob.event0 * (1-(1-.SD$treatment.bin)/(1-.SD$prob.treatment)),
         .SD$prob.event1 * (1-.SD$treatment.bin/(.SD$prob.treatment))
     )]/ n.obs
+    
     IF$AIPTW.IPCW <- IF$IPTW.IPCW + AIPWadd
+
+    ## *** iid for the nuisance parameters
+    if (se){
+        nuisanceEvent.Gformula <- cbind(iidG.event0, iidG.event1)
+        IF$Gformula <- IF$Gformula + nuisanceEvent.Gformula
+
+        nuisanceTreatment.IPW <- cbind(iidIPW.treatment0, iidIPW.treatment1)
+        IF$IPTW.IPCW <- IF$IPTW.IPCW + nuisanceTreatment.IPW
+
+        ## hidden feature: accounting for the estimation of the nuisance parameters in AIPTW
+        if(se>100){ ## only for simulation study - not meant to be used in practice
+            nuisanceEvent.AIPW <- cbind(iidAIPW.event0, iidAIPW.event1) ## no outcome here so no censoring
+            nuisanceTreatment.AIPW <- cbind(iidAIPW.treatment0, iidAIPW.treatment1) ## no outcome here so no censoring
+
+            IF$AIPTW.IPCW <- IF$AIPTW.IPCW + (nuisanceEvent.AIPW + nuisanceTreatment.IPW + nuisanceTreatment.AIPW)
+            ## (nuisanceTreatment.IPW + nuisanceEvent.AIPW + nuisanceTreatment.AIPW)
+        }
+    }
+
+    ## *** augmentation for censoring
     if(augment.cens){
-        IF$AIPTW.AIPCW <- IF$IPTW.AIPCW + AIPWadd
+       
+        AUGMENTadd <- data[,cbind(
+            .SD$Lterm * (1-.SD$treatment.bin) / (1-.SD$prob.treatment), ## .SD$prob.event
+            .SD$Lterm * (.SD$treatment.bin) / (.SD$prob.treatment) ## .SD$prob.event
+        )]/ n.obs
+        
+        IF$IPTW.AIPCW <- IF$IPTW.IPCW + AUGMENTadd
+        IF$AIPTW.AIPCW <- IF$AIPTW.IPCW + AUGMENTadd
+
     }
     
-
     ## ** export
     out <- list()
 
     ## value
     n.estimator <- length(IF)
-    name.risk <- paste0("risk.",level.treatment)
+    name.risk <- paste0("risk.",c(0,1))
     out$ate.value <- matrix(NA, nrow = 3, ncol = n.estimator,
                             dimnames = list(c(name.risk,"ate.diff"),
-                                              names(IF)))
+                                            names(IF)))
     for(iL in 1:n.estimator){ ## iL <- 1
         if(na.rm){
             IF[[iL]] <- IF[[iL]][which(rowSums(is.na(IF[[iL]]))==0),,drop=FALSE]
@@ -386,6 +391,7 @@ ateRobust <- function(data, times, cause, type,
         out$ate.value[name.risk,iL] <- colSums(IF[[iL]])
         IF[[iL]] <- rowCenter_cpp(IF[[iL]], center = out$ate.value[paste0("risk.",level.treatment),iL]/n.obs)
     }
+   
     out$ate.value["ate.diff",] <- out$ate.value[name.risk[2],] - out$ate.value[name.risk[1],]
     ##    out$ate.value["ate.ratio",] <- out$ate.value[name.risk[2],] / out$ate.value[name.risk[1],]
 
@@ -394,7 +400,11 @@ ateRobust <- function(data, times, cause, type,
         sqrt(c(colSums(iIF^2), sum((iIF[,2]-iIF[,1])^2)))
     }))
     rownames(out$ate.se) <- rownames(out$ate.value)
-
+    out$level.treatment <- level.treatment
+    out$se <- se
+    out$augment.cens <- augment.cens
+    out$product.limit <- product.limit
+    
     class(out) <- "ateRobust"
     out$augment.cens <- augment.cens
     return(out)
@@ -422,7 +432,8 @@ ateRobust <- function(data, times, cause, type,
     ## ** compute conditional risk
     riskTau <- matrix(data$prob.event, nrow = n.obs, ncol = njump, byrow = FALSE)
     if(type == "survival"){
-        riskTime <- 1 - predictCox(model.event, newdata = data, times = jump.time, type = "survival")$survival
+        riskTime <- 1 - do.call(predictor.cox,
+                                args = list(model.event, newdata = data, times = jump.time, type = "survival"))$survival
         riskConditional <- (riskTau - riskTime)/(1-riskTime)
     }else if(type == "competing.risks"){
         riskTime <- predict(model.event, newdata = data, times = jump.time,

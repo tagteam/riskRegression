@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: jun  1 2018 (12:15) 
 ## Version: 
-## Last-Updated: jun 13 2018 (11:41) 
+## Last-Updated: sep 17 2018 (22:28) 
 ##           By: Brice Ozenne
-##     Update #: 30
+##     Update #: 31
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -76,7 +76,7 @@ confint.influenceTest <- function(object,
                                                 "atanh" = NULL),
                              max.value = switch(object$transform,
                                                 "none" = 1,
-                                                "atanh" = 1),
+                                                "atanh" = NULL),
                              ci = TRUE,
                              band = object$band,
                              p.value = TRUE)
