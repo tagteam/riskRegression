@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun  6 2016 (06:48) 
 ## Version: 
-## last-updated: sep 18 2018 (22:03) 
-##           By: Brice Ozenne
-##     Update #: 231
+## last-updated: Oct  2 2018 (14:58) 
+##           By: Thomas Alexander Gerds
+##     Update #: 239
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -91,14 +91,12 @@ print.ate <- function(x, digits = 3, type = c("meanRisk","diffRisk","ratioRisk")
         data.table::setcolorder(dt.tempo, neworder = order.col)
         print(dt.tempo,...)
     }
-
+    cat("Average risks of the event between time zero and 'time'")
+    cat("are standardized to covariate distribution of all subjects\nare given on probability scale [0,1] in hypothetical worlds\nin which all subjects are treated with one of the treatment options\nstandardized to all subjects.\n\n")
     if(!is.null(x$treatment) && ("diffRisk" %in% type || "ratioRisk" %in% type)){
         id.name <- names(x$riskComparison)[1:3]
-        
-        cat("\nComparison of risks on probability scale [0,1] between\nhypothetical worlds are interpreted as if the treatment was randomized:\n\n")
-
         if("diffRisk" %in% type){
-            cat("     * risk difference \n\n")
+            cat("\nRisk difference: \n\n")
             ## only pick diff
             name.diff <- grep("^diff",names(x$riskComparison),value = TRUE)
             dt.tempo <- x$riskComparison[,.SD,.SDcols = c(id.name,name.diff)]
@@ -106,14 +104,11 @@ print.ate <- function(x, digits = 3, type = c("meanRisk","diffRisk","ratioRisk")
             if(!is.null(x$boot) && !is.null(x$conf.level)){
                 order.col <- c(order.col,"bootstrap")
             }
-
             ## round values
             numeric.col <- names(dt.tempo)[-(1:3)]
             dt.tempo[, c(numeric.col) := round(.SD, digits = digits) , .SDcols = numeric.col]
-
             ## simplify names
             names(dt.tempo)[-(1:3)] <- gsub("diff\\.","",numeric.col)
-
             ## merge into CI and CB
             if(!is.null(x$conf.level)){
                 if(x$se){
@@ -149,9 +144,11 @@ print.ate <- function(x, digits = 3, type = c("meanRisk","diffRisk","ratioRisk")
             data.table::setcolorder(dt.tempo, neworder = order.col)
             print(dt.tempo,...)
         }
-
+        cat("\nDifferences of risks on probability scale [0,1] between\nhypothetical worlds are given as 
+ treatment.B  minus treatment.A \nand are
+ interpreted as what would have been observed had treatment been randomized.\n\n")
         if("ratioRisk" %in% type){
-            cat("\n     * risk ratio \n\n")
+            cat("\n\nRisk ratio: \n\n")
             ## only pick ratio
             name.ratio <- grep("^ratio",names(x$riskComparison),value = TRUE)
             dt.tempo <- x$riskComparison[,.SD,.SDcols = c(id.name,name.ratio)]
@@ -204,7 +201,9 @@ print.ate <- function(x, digits = 3, type = c("meanRisk","diffRisk","ratioRisk")
         }
 
     }
-    
+    cat("\nRatios of risks on probability scale [0,1] between\nhypothetical worlds are given as 
+ treatment.B  divided by treatment.A \nand are
+ interpreted as what would have been observed had treatment been randomized.\n\n")
     ##
     if(x$se && !is.null(x$conf.level)){
         if(!is.null(x$boot)){
@@ -236,8 +235,7 @@ print.ate <- function(x, digits = 3, type = c("meanRisk","diffRisk","ratioRisk")
         }
     }
     cat("\n\n")
-                                        # }}}
-    
+    # }}}
     ## export
     return(invisible(x))
 }

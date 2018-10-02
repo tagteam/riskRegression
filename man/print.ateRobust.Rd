@@ -4,7 +4,8 @@
 \alias{print.ateRobust}
 \title{Print Average Treatment Effect}
 \usage{
-\method{print}{ateRobust}(x, digits = 3, augment.cens = x$augment.cens, ...)
+\method{print}{ateRobust}(x, digits = 3, augment.cens = x$augment.cens,
+  ...)
 }
 \arguments{
 \item{x}{object obtained with the function \code{ateRobust}.}

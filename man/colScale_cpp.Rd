@@ -2,7 +2,6 @@
 % Please edit documentation in R/RcppExports.R
 \name{colScale_cpp}
 \alias{colScale_cpp}
-\alias{colScale_cpp}
 \title{Apply / by column}
 \usage{
 colScale_cpp(X, scale)

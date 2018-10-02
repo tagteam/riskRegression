@@ -1,18 +1,19 @@
 library(riskRegression)
 library(survival)
 library(testthat)
-test_that("loob binary",{
-    learndat=sampleData(200,outcome="binary")
-    lr1a = glm(Y~X6,data=learndat,family=binomial)
-    lr2a = glm(Y~X7+X8+X9,data=learndat,family=binomial)
-    ## leave-one-out bootstrap
-    set.seed(5)
-    loob.se0 <- Score(list("LR1"=lr1a,"LR2"=lr2a),formula=Y~1,data=learndat,split.method="loob",B=100,se.fit=FALSE)
-    set.seed(5)
-    loob.se1 <- Score(list("LR1"=lr1a,"LR2"=lr2a),formula=Y~1,data=learndat,split.method="loob",B=100,se.fit=TRUE)
-    expect_equal(loob.se0$AUC$contrasts$delta,loob.se1$AUC$contrasts$delta)
-    expect_equal(loob.se0$Brier$contrasts$delta,loob.se1$Brier$contrasts$delta)
-})
+if (class(try(riskRegression.test,silent=TRUE))[1]!="try-error"){
+    test_that("loob binary",{
+        learndat=sampleData(200,outcome="binary")
+        lr1a = glm(Y~X6,data=learndat,family=binomial)
+        lr2a = glm(Y~X7+X8+X9,data=learndat,family=binomial)
+        ## leave-one-out bootstrap
+        set.seed(5)
+        loob.se0 <- Score(list("LR1"=lr1a,"LR2"=lr2a),formula=Y~1,data=learndat,split.method="loob",B=100,se.fit=FALSE)
+        set.seed(5)
+        loob.se1 <- Score(list("LR1"=lr1a,"LR2"=lr2a),formula=Y~1,data=learndat,split.method="loob",B=100,se.fit=TRUE)
+        expect_equal(loob.se0$AUC$contrasts$delta,loob.se1$AUC$contrasts$delta)
+        expect_equal(loob.se0$Brier$contrasts$delta,loob.se1$Brier$contrasts$delta)
+    })
 
 test_that("bootcv binary (multi.state.test)",{
     learndat=sampleData(200,outcome="binary")
@@ -38,9 +39,10 @@ test_that("bootcv binary (multi.state.test)",{
         expect_equal(bootcv[[2]][[m]]$contrasts[,.(lower,upper)],bootcv[[4]][[m]]$contrasts[,.(lower,upper)])
     ## p-value (does not work yet)
     ## for (m in c("AUC","Brier")){
-        ## expect_equal(bootcv[[3]][[m]]$contrasts[,.(p)],bootcv[[4]][[m]]$contrasts[,.(p)])
+    ## expect_equal(bootcv[[3]][[m]]$contrasts[,.(p)],bootcv[[4]][[m]]$contrasts[,.(p)])
     ## }
 })
+}
 
 if(FALSE){ ## [:failed test:]
     test_that("loob survival",{

@@ -2,7 +2,6 @@
 % Please edit documentation in R/RcppExports.R
 \name{rowCenter_cpp}
 \alias{rowCenter_cpp}
-\alias{rowCenter_cpp}
 \title{Apply - by row}
 \usage{
 rowCenter_cpp(X, center)

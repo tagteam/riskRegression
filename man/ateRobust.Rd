@@ -5,8 +5,8 @@
 \title{Average Treatment Effects (ATE) for survival outcome (with competing risks) using doubly robust estimating equations}
 \usage{
 ateRobust(data, times, cause, type, formula.event, formula.censor,
-  formula.treatment, fitter = "coxph", product.limit = NULL, se = TRUE,
-  augment.cens = TRUE, na.rm = FALSE)
+  formula.treatment, fitter = "coxph", product.limit = NULL,
+  se = TRUE, augment.cens = TRUE, na.rm = FALSE)
 }
 \arguments{
 \item{data}{[data.frame or data.table] Data set in which to evaluate the ATE.}
@@ -30,18 +30,18 @@ Typically \code{treatment~1}.}
 \item{fitter}{[character] Routine to fit the Cox regression models.
 If \code{coxph} use \code{survival::coxph} else use \code{rms::cph}.}
 
-\item{product.limit}{[logical] If \code{TRUE} the survival is computed using the product limit estimator.
+\item{product.limit}{[logical] If \code{TRUE} the survival is computed using the product limit method.
 Otherwise the exponential approximation is used (i.e. exp(-cumulative hazard)).}
 
-\item{se}{[logical] If \code{TRUE} compute and add the standard errors relative to the G-formula and IPTW estimator to the output.}
+\item{se}{[logical] If \code{TRUE} compute and add the standard errors relative to the G-formula and IPTW method to the output.}
 
 \item{augment.cens}{[logical] If \code{TRUE} add an censoring model augmentation term to the estimating equation}
 
 \item{na.rm}{[logical] If \code{TRUE} ignore observations whose influence function is NA.}
 }
 \description{
-Compute the average treatment effect using different estimators:
-G-formula based on Cox regression, inverse probability of treatment weighting (IPTW)
+Compute the average treatment effect using different methods:
+G-formula based on (cause-specific) Cox regression, inverse probability of treatment weighting (IPTW)
 combined with inverse probability of censoring weighting (IPCW), augmented inverse probability weighting (AIPTW, AIPCW).
 }
 \examples{
@@ -49,6 +49,7 @@ library(survival)
 library(lava)
 library(data.table)
 
+set.seed(10)
 # survival outcome, binary treatment X1 
 
 ds <- sampleData(101,outcome="survival")
@@ -57,16 +58,22 @@ out <- ateRobust(data = ds, type = "survival",
          formula.censor = Surv(time, event==0) ~ X6,
          formula.treatment = X1 ~ X6+X2+X7, times = 1)
 out
-out <- confint(out)
-out
+dt.out=as.data.table(out)
+dt.out
 
 # competing risk outcome, binary treatment X1 
 dc=sampleData(101,outcome="competing.risks")
-ateRobust(data = dc, type = "competing.risks",
+x=ateRobust(data = dc, type = "competing.risks",
           formula.event = list(Hist(time, event) ~ X1+X6,Hist(time, event) ~ X6),
          formula.censor = Surv(time, event==0) ~ X6,
          formula.treatment = X1 ~ X6+X2+X7, times = 1,cause=1,
                      product.limit = FALSE)
-
-
+## compare with g-formula 
+fit= CSC(list(Hist(time, event) ~ X1+X6,Hist(time, event) ~ X6),data=dc)
+ate(fit,data = dc,treatment="X1",times=1,cause=1)
+x
+as.data.table(x)
+}
+\seealso{
+\code{\link{ate}} for the g-formula result in case of more than 2 treatments
 }

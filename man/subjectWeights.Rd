@@ -10,8 +10,8 @@
 \alias{subjectWeights.aalen}
 \title{Estimation of censoring probabilities at subject specific times}
 \usage{
-subjectWeights(formula, data, method = c("cox", "marginal", "km", "nonpar",
-  "forest", "none"), args, lag = 1)
+subjectWeights(formula, data, method = c("cox", "marginal", "km",
+  "nonpar", "forest", "none"), args, lag = 1)
 }
 \arguments{
 \item{formula}{A survival formula like, Surv(time,status)~1 or

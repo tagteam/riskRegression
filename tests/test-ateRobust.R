@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: aug 15 2018 (11:42) 
 ## Version: 
-## Last-Updated: sep 29 2018 (13:12) 
-##           By: Brice Ozenne
-##     Update #: 70
+## Last-Updated: Oct  2 2018 (15:33) 
+##           By: Thomas Alexander Gerds
+##     Update #: 73
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -47,7 +47,7 @@ e.ateRobust <- ateRobust(data = dtS, times = tau,
 ## predict
 dtS1 <- data.table(X1 = 1, X2 = dtS$X2, X3 = dtS$X3)
 
-pred.logit <- riskRegression:::.predictGLM(e.T, newdata = dtS1, average.iid = FALSE)
+pred.logit <- riskRegression:::predictGLM(e.T, newdata = dtS1, average.iid = FALSE)
 iid.logit <- attr(pred.logit, "iid")
 attr(pred.logit, "iid") <- NULL
 
@@ -120,7 +120,7 @@ test_that("Agreement ate-ateRobust (survival)",{
     
     ## ateRobust with product.limit = FALSE agree with ate
     expect_equal(as.double(e.ateRobust$ate.value[,"Gformula"]),
-                 c(e.ate$meanRisk[,meanRisk],-e.ate$riskComparison[,diff]))
+                 c(e.ate$meanRisk[,meanRisk],e.ate$riskComparison[,diff]))
     expect_equal(as.double(e.ateRobust$ate.se[,"Gformula"]),
                  c(e.ate$meanRisk[,meanRisk.se],e.ate$riskComparison[,diff.se]))
 
@@ -182,7 +182,7 @@ e.ateRobust <- ateRobust(data = dtS, times = tau,
 ## predict
 dtS1 <- data.table(X1 = 1, X2 = dtS$X2, X3 = dtS$X3)
 
-pred.logit <- riskRegression:::.predictGLM(e.T, newdata = dtS1, average.iid = FALSE)
+pred.logit <- riskRegression:::predictGLM(e.T, newdata = dtS1, average.iid = FALSE)
 iid.logit <- attr(pred.logit, "iid")
 attr(pred.logit, "iid") <- NULL
 
@@ -262,7 +262,7 @@ test_that("Agreement ate-ateRobust (competing.risks)",{
                              product.limit = TRUE)
 
     expect_equal(as.double(e.ateRobustPL$ate.value[,"Gformula"]),
-                 c(e.atePL$meanRisk[,meanRisk],-e.atePL$riskComparison[,diff]))
+                 c(e.atePL$meanRisk[,meanRisk],e.atePL$riskComparison[,diff]))
     expect_equal(as.double(e.ateRobustPL$ate.se[,"Gformula"]),
                  c(e.atePL$meanRisk[,meanRisk.se],e.atePL$riskComparison[,diff.se]))
 

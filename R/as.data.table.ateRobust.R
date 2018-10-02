@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Mar  3 2017 (09:28) 
 ## Version: 
-## Last-Updated: sep 19 2018 (08:17) 
-##           By: Brice Ozenne
-##     Update #: 88
+## Last-Updated: Oct  2 2018 (08:58) 
+##           By: Thomas Alexander Gerds
+##     Update #: 91
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -31,14 +31,14 @@
 #' @export
 as.data.table.ateRobust <- function(x, keep.rownames = FALSE, se = TRUE, ...){
 
-    name.estimator <- colnames(x$ate.value)
+    name.method <- colnames(x$ate.value)
     if(x$se==FALSE){
-        x$ate.se[,grep("Gformula|^IPTW",name.estimator)] <- NA
+        x$ate.se[,grep("Gformula|^IPTW",name.method)] <- NA
     }
 
-    iDT.risk.0 <- data.table(estimator = name.estimator,  estimand = "risk.0", value = x$ate.value["risk.0",])
-    iDT.risk.1 <- data.table(estimator = name.estimator,  estimand = "risk.1", value = x$ate.value["risk.1",])
-    iDT.ate.diff <- data.table(estimator = name.estimator,  estimand = "ate.diff", value = x$ate.value["ate.diff",])
+    iDT.risk.0 <- data.table(method = name.method,  estimand = "risk.0", value = x$ate.value["risk.0",])
+    iDT.risk.1 <- data.table(method = name.method,  estimand = "risk.1", value = x$ate.value["risk.1",])
+    iDT.ate.diff <- data.table(method = name.method,  estimand = "ate.diff", value = x$ate.value["ate.diff",])
 
     if(se){
         iDT.risk.0[, c("se") := x$ate.se["risk.0",]]
@@ -56,12 +56,12 @@ as.data.table.ateRobust <- function(x, keep.rownames = FALSE, se = TRUE, ...){
         iDT.ate.diff[, c("p.value") := x$ate.p.value["ate.diff",]]
     }
 
-    ## ** reorder estimator
+    ## ** reorder method
     out <- rbind(iDT.risk.0, iDT.risk.1, iDT.ate.diff)
-    out[, c("estimator") := factor(.SD$estimator, levels = name.estimator)]
+    out[, c("method") := factor(.SD$method, levels = name.method)]
 
     ## ** export
-    return(out)
+    return(out[])
   
 }
 

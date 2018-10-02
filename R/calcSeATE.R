@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: apr  5 2018 (17:01) 
 ## Version: 
-## Last-Updated: jul  6 2018 (09:23) 
-##           By: Brice Ozenne
-##     Update #: 277
+## Last-Updated: Oct  2 2018 (15:03) 
+##           By: Thomas Alexander Gerds
+##     Update #: 278
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -75,7 +75,7 @@ calcSeATE <- function(object, data, times, cause,
                 attr(risk.i,"iid") <- -pred.i[["survival.iid"]]
             }
         }else if("glm" %in% class(object)){
-            risk.i <- .predictGLM(object, newdata = data.i)
+            risk.i <- predictGLM(object, newdata = data.i)
             if(average.iid){
                 attr(risk.i,"iid") <- colMeans(attr(risk.i,"iid"))
             }else{

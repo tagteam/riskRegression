@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Oct 23 2016 (08:53) 
 ## Version: 
-## last-updated: Sep 11 2018 (12:22) 
+## last-updated: Oct  2 2018 (14:40) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 823
+##     Update #: 826
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -69,8 +69,7 @@
 #' @seealso
 #' \code{\link{confint.ate}} to compute confidence intervals/bands.
 #' \code{\link{autoplot.ate}} to display the average risk.
-
-
+#' \code{\link{ateRobust}} to make the estimator doubly robust 
 ## * ate (examples)
 #' @rdname ate
 #' @examples 
@@ -590,8 +589,8 @@ Gformula_TD <- function(object,
             RC <- dt.meanRisk[Treatment==contrasts[[i]]]
             setnames(RC,"Treatment","Treatment.A")
             RC[,Treatment.B:=contrasts[[j]]]
-            RC[,diff:=meanRisk-dt.meanRisk[Treatment==contrasts[[j]],meanRisk]]
-            RC[,ratio:=meanRisk/dt.meanRisk[Treatment==contrasts[[j]],meanRisk]]
+            RC[,diff:=dt.meanRisk[Treatment==contrasts[[j]],meanRisk]-meanRisk]
+            RC[,ratio:=dt.meanRisk[Treatment==contrasts[[j]],meanRisk]/meanRisk]
             RC[,meanRisk:=NULL]
             RC[]
         }))}))
@@ -639,8 +638,8 @@ Gformula_TI <- function(object,
                 data.table(Treatment.A=contrasts[[i]],
                            Treatment.B=contrasts[[j]],
                            time = times,
-                           diff=meanRisk[[i]]-meanRisk[[j]],
-                           ratio=meanRisk[[i]]/meanRisk[[j]])
+                           diff=meanRisk[[j]]-meanRisk[[i]],
+                           ratio=meanRisk[[j]]/meanRisk[[i]])
             }))}))
 
     ## reshape for export

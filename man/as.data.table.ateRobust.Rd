@@ -4,7 +4,8 @@
 \alias{as.data.table.ateRobust}
 \title{Turn ate Object Into a \code{data.table}}
 \usage{
-\method{as.data.table}{ateRobust}(x, keep.rownames = FALSE, se = TRUE, ...)
+\method{as.data.table}{ateRobust}(x, keep.rownames = FALSE, se = TRUE,
+  ...)
 }
 \arguments{
 \item{x}{object obtained with function \code{ate}}

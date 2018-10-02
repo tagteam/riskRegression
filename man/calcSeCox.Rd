@@ -4,9 +4,9 @@
 \alias{calcSeCox}
 \title{Computation of standard errors for predictions}
 \usage{
-calcSeCox(object, times, nTimes, type, diag, Lambda0, object.n, object.time,
-  object.eXb, object.strata, nStrata, new.n, new.eXb, new.LPdata, new.strata,
-  new.survival, nVar, export, store.iid)
+calcSeCox(object, times, nTimes, type, diag, Lambda0, object.n,
+  object.time, object.eXb, object.strata, nStrata, new.n, new.eXb,
+  new.LPdata, new.strata, new.survival, nVar, export, store.iid)
 }
 \arguments{
 \item{object}{The fitted Cox regression model object either

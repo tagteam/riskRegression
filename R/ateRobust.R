@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne, Thomas A. Gerds
 ## Created: jun 27 2018 (17:47) 
 ## Version: 
-## Last-Updated: sep 29 2018 (13:20) 
-##           By: Brice Ozenne
-##     Update #: 1101
+## Last-Updated: Oct  2 2018 (15:03) 
+##           By: Thomas Alexander Gerds
+##     Update #: 1117
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -17,8 +17,8 @@
 
 ## * ateRobust (documentation)
 #' @title Average Treatment Effects (ATE) for survival outcome (with competing risks) using doubly robust estimating equations 
-#' @description Compute the average treatment effect using different estimators:
-#' G-formula based on Cox regression, inverse probability of treatment weighting (IPTW)
+#' @description Compute the average treatment effect using different methods:
+#' G-formula based on (cause-specific) Cox regression, inverse probability of treatment weighting (IPTW)
 #' combined with inverse probability of censoring weighting (IPCW), augmented inverse probability weighting (AIPTW, AIPCW).
 #' @name ateRobust
 #'
@@ -29,11 +29,11 @@
 #' Typically \code{Surv(time,event==0)~treatment}.
 #' @param formula.treatment [formula] Logistic regression for the treatment (propensity score model).
 #' Typically \code{treatment~1}.
-#' @param se [logical] If \code{TRUE} compute and add the standard errors relative to the G-formula and IPTW estimator to the output.
+#' @param se [logical] If \code{TRUE} compute and add the standard errors relative to the G-formula and IPTW method to the output.
 #' @param times [numeric] Time point at which to evaluate average treatment effects.
 #' @param fitter [character] Routine to fit the Cox regression models.
 #' If \code{coxph} use \code{survival::coxph} else use \code{rms::cph}.
-#' @param product.limit [logical] If \code{TRUE} the survival is computed using the product limit estimator.
+#' @param product.limit [logical] If \code{TRUE} the survival is computed using the product limit method.
 #' Otherwise the exponential approximation is used (i.e. exp(-cumulative hazard)).
 #' @param cause [numeric/character] The cause of interest. Defaults to the first cause.
 #' @param type [character] When set to \code{"survival"} uses a cox model for modeling the survival,
@@ -56,18 +56,22 @@
 #'          formula.censor = Surv(time, event==0) ~ X6,
 #'          formula.treatment = X1 ~ X6+X2+X7, times = 1)
 #' out
-#' out <- confint(out)
-#' out
+#' dt.out=as.data.table(out)
+#' dt.out
 #' 
 #' # competing risk outcome, binary treatment X1 
 #' dc=sampleData(101,outcome="competing.risks")
-#' ateRobust(data = dc, type = "competing.risks",
+#' x=ateRobust(data = dc, type = "competing.risks",
 #'           formula.event = list(Hist(time, event) ~ X1+X6,Hist(time, event) ~ X6),
 #'          formula.censor = Surv(time, event==0) ~ X6,
 #'          formula.treatment = X1 ~ X6+X2+X7, times = 1,cause=1,
 #'                      product.limit = FALSE)
-#'
-#'
+#' ## compare with g-formula 
+#' fit= CSC(list(Hist(time, event) ~ X1+X6,Hist(time, event) ~ X6),data=dc)
+#' ate(fit,data = dc,treatment="X1",times=1,cause=1)
+#' x
+#' as.data.table(x)
+#' @seealso \code{\link{ate}} for the g-formula result in case of more than 2 treatments 
 ## * ateRobust (code)
 #' @rdname ateRobust
 #' @export
@@ -295,7 +299,7 @@ ateRobust <- function(data, times, cause, type,
         average.iid <- TRUE
         attr(average.iid, "factor") <- factor
         
-        prediction.treatment.iid <- attr(.predictGLM(model.treatment, newdata = data, average.iid = average.iid), "iid")
+        prediction.treatment.iid <- attr(predictGLM(model.treatment, newdata = data, average.iid = average.iid), "iid")
         iidIPW.treatment0 <-  prediction.treatment.iid[,1]
         iidIPW.treatment1 <- -prediction.treatment.iid[,2]
         iidAIPW.treatment0 <- -prediction.treatment.iid[,3]
@@ -379,12 +383,12 @@ ateRobust <- function(data, times, cause, type,
     out <- list()
 
     ## value
-    n.estimator <- length(IF)
+    n.method <- length(IF)
     name.risk <- paste0("risk.",c(0,1))
-    out$ate.value <- matrix(NA, nrow = 3, ncol = n.estimator,
+    out$ate.value <- matrix(NA, nrow = 3, ncol = n.method,
                             dimnames = list(c(name.risk,"ate.diff"),
                                             names(IF)))
-    for(iL in 1:n.estimator){ ## iL <- 1
+    for(iL in 1:n.method){ ## iL <- 1
         if(na.rm){
             IF[[iL]] <- IF[[iL]][which(rowSums(is.na(IF[[iL]]))==0),,drop=FALSE]
         }
@@ -407,6 +411,10 @@ ateRobust <- function(data, times, cause, type,
     
     class(out) <- "ateRobust"
     out$augment.cens <- augment.cens
+
+    ## confidence intervals
+    if (se){out <- confint(out)}
+
     return(out)
     
 
@@ -472,7 +480,6 @@ ateRobust <- function(data, times, cause, type,
         survCensoring <- matrix(1, nrow = n.obs, ncol = 1)
     }
     ## ** integral
-    
     out <- rowSums(atRisk * riskConditional/survCensoring * (dN-dLambda))
     ## ** export
     return(out)

@@ -1,11 +1,11 @@
-### confint.influenceTest.R --- 
+### confint.ateRobust.R --- 
 ##----------------------------------------------------------------------
 ## Author: Brice Ozenne
 ## Created: jun  1 2018 (12:15) 
 ## Version: 
-## Last-Updated: sep 19 2018 (08:08) 
-##           By: Brice Ozenne
-##     Update #: 57
+## Last-Updated: Oct  2 2018 (08:51) 
+##           By: Thomas Alexander Gerds
+##     Update #: 58
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -108,4 +108,4 @@ confint.ateRobust <- function(object,
 
 
 ######################################################################
-### confint.influenceTest.R ends here
+### confint.ateRobust.R ends here

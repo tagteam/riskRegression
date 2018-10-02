@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: maj 18 2017 (09:23) 
 ## Version: 
-## last-updated: sep  1 2018 (11:33) 
-##           By: Brice Ozenne
-##     Update #: 195
+## last-updated: Oct  2 2018 (14:33) 
+##           By: Thomas Alexander Gerds
+##     Update #: 199
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -52,14 +52,11 @@ test_that("predict.CSC/predictCox (1a,df1) - compare to manual estimation",{
     CSC.exp <- CSC(Hist(time,event) ~ 1, data = df1)
     pred.exp <- predict(CSC.exp, times = 1:10, newdata = data.frame(NA), cause = 1, product.limit = FALSE)  
     pred.exp2 <- predict(CSC.exp, times = 1:10, newdata = data.frame(NA), cause = 1, product.limit = TRUE) 
- 
     CSC.prodlim <- CSC(Hist(time,event) ~ 1, data = df1, surv.type = "survival", method = "breslow")
     pred.prodlim <- predict(CSC.prodlim, times = 1:10, newdata = data.frame(NA), cause = 1, product.limit = TRUE)  
     expect_equal(pred.prodlim,pred.exp2)
-    
     CSC.prodlimE <- CSC(Hist(time,event) ~ 1, data = df1, surv.type = "survival", method = "efron")
     pred.prodlimE <- predict(CSC.prodlimE, times = 1:10, newdata = data.frame(NA), cause = 1, product.limit = TRUE)  
-
     ## test baseline hazard
     lambda1 <- lambda2 <- 1/seq(20,2,by = -2)
     lambda2E <- predictCox(CSC.prodlimE$models[[2]], type = "hazard")$hazard
@@ -74,39 +71,31 @@ test_that("predict.CSC/predictCox (1a,df1) - compare to manual estimation",{
     expect_equal(basehaz(CSC.prodlimE$models[[2]])$hazard,
                  cumsum(lambda2E)
                  )
-
     ## test absolute risk
     survival <- c(1,exp(cumsum(-lambda1-lambda2)))[1:10]
     expect_equal(as.double(pred.exp$absRisk),
                  cumsum(lambda1*survival))
-
     survival <- c(1,cumprod(1-(lambda1+lambda2)))[1:10]
     expect_equal(as.double(pred.prodlim$absRisk),
                  cumsum(lambda1*survival))
-
     survival <- c(1,cumprod(1-lambda2E))[1:10]
     expect_equal(as.double(pred.prodlimE$absRisk),
                  cumsum(lambda1*survival))
-
 })
 
 test_that("predict.CSC/predictCox (1a,df2) - compare to manual estimation",{
     CSC.exp <- CSC(Hist(time,event) ~ 1, data = df2)
     pred.exp <- predict(CSC.exp, times = 1:10, newdata = data.frame(NA), cause = 1, product.limit = FALSE)  
     pred.exp2 <- predict(CSC.exp, times = 1:10, newdata = data.frame(NA), cause = 1, product.limit = TRUE)  
-
     CSC.prodlim <- CSC(Hist(time,event) ~ 1, data = df2, surv.type = "survival", method = "breslow")
     pred.prodlim <- predict(CSC.prodlim, times = 1:10, newdata = data.frame(NA), cause = 1, product.limit = TRUE)  
     expect_equal(pred.exp2, pred.prodlim)
-
     CSC.prodlimE <- CSC(Hist(time,event) ~ 1, data = df2, surv.type = "survival", method = "efron")
     pred.prodlimE <- predict(CSC.prodlimE, times = 1:10, newdata = data.frame(NA), cause = 1, product.limit = TRUE)  
-
     ## test baseline hazard
     lambda1 <- 1/seq(19,1,by = -2)
     lambda2 <- 1/seq(20,2,by = -2)
     lambda2E <- as.data.table(predictCox(CSC.prodlimE$models[[2]], type = "hazard"))
-
     expect_equal(predictCox(CSC.exp$models[[1]], times = 1:10, type = "hazard")$hazard,
                  lambda1)
     expect_equal(predictCox(CSC.exp$models[[2]], times = -0.1 + 1:10, type = "hazard")$hazard,
@@ -118,18 +107,15 @@ test_that("predict.CSC/predictCox (1a,df2) - compare to manual estimation",{
     expect_equal(basehaz(CSC.prodlimE$models[[2]])$hazard,
                  cumsum(lambda2E$hazard)
                  )
-
     ## test absolute risk
     vec.lambda <- cumsum(as.double(rbind(lambda2,lambda1)))
     survival <- exp(-matrix(vec.lambda, ncol = 2, byrow = TRUE)[,1])
     expect_equal(as.double(pred.exp$absRisk),
                  cumsum(lambda1*survival))
-
     vec.lambda <- as.double(rbind(lambda2,lambda1))
     survival <- matrix(cumprod(1-vec.lambda), ncol = 2, byrow = TRUE)[,1]
     expect_equal(as.double(pred.prodlim$absRisk),
                  cumsum(lambda1*survival))
-
     vec.lambda <-lambda2E$hazard
     survival <- matrix(cumprod(1-vec.lambda), ncol = 2, byrow = TRUE)[,1]
     expect_equal(as.double(pred.prodlimE$absRisk),
@@ -141,10 +127,8 @@ test_that("predict.CSC (1a) - compare to mstate",{
         df <- switch(as.character(iData),
                      "1"=df1,
                      "2"=df2)
-
         ## fit CSC
         CSC.exp <- CSC(Hist(time,event) ~ 1, data = df)
-
         ## fit mstate
         dL <- msprep(time = c(NA, "time", "time"),
                      status = c(NA,"event1", "event2"),
@@ -153,23 +137,19 @@ test_that("predict.CSC (1a) - compare to mstate",{
         dL.exp <- expand.covs(dL,  c("X1"))
         e.coxph <- coxph(Surv(time, status) ~ strata(trans),
                          data = dL.exp)
-        
         ## compare
         newdata.L <- data.frame(trans = c(1, 2), strata = c(1, 2))
         newdata <- data.frame(NA)
-
         pred.msfit <- msfit(e.coxph, newdata = newdata.L, trans = tmat)
         suppressWarnings(
             pred.probtrans <- probtrans(pred.msfit,0)[[1]]
         )
-
         pred.RR <- predict(CSC.exp,
                            times = pred.probtrans[,"time"],
                            newdata = newdata,
                            cause = 1,
                            se = FALSE,
                            product.limit = TRUE)
-        
         expect_equal(pred.probtrans[,"pstate2"],
                      as.double(pred.RR$absRisk)
                      )
@@ -182,21 +162,16 @@ test_that("predict.CSC(1a) - add up to one",{
         df <- switch(as.character(iData),
                      "1"=df1,
                      "2"=df2)
-
         ## fit CSC
         CSC.exp <- CSC(Hist(time,event) ~ 1, data = df, method = "breslow")
-
         ## compute all transition probabilites
         seqTimes <- sort(unique(df$time))
         nTimes <- length(seqTimes)
-
         newdata <- data.frame(NA)
-
         hazAll <- predictCox(CSC.exp$models[[1]], times = seqTimes, newdata = newdata, type = "hazard")$hazard+predictCox(CSC.exp$models[[2]], times = seqTimes, newdata = newdata, type = "hazard")$hazard
         surv.prodlim <- cumprod(1-as.double(hazAll))
         haz1.prodlim <- predict(CSC.exp, times = seqTimes, newdata = newdata, cause = 1, product.limit = TRUE)  
         haz2.prodlim <- predict(CSC.exp, times = seqTimes, newdata = newdata, cause = 2, product.limit = TRUE)  
-
         expect_equal(surv.prodlim+as.double(haz1.prodlim$absRisk)+as.double(haz2.prodlim$absRisk),rep(1,nTimes))
     }
 })
@@ -204,7 +179,6 @@ test_that("predict.CSC(1a) - add up to one",{
 
 ## ** 1b- no risk factor strata
 test_that("predict.CSC(1b) - compare to manual estimation",{
-
     ## as.data.table(dfS)[,.N, by = "grp"]
     CSC.exp <- CSC(Hist(time,event) ~ strata(grp), data = dfS, method = "breslow")    
     pred.exp <- predict(CSC.exp, times = 1:10, newdata = data.frame(grp = 1:3), cause = 1, product.limit = FALSE)
@@ -266,19 +240,13 @@ test_that("predict.CSC(1b) - compare to manual estimation",{
 ## ** 1c- risk factor no strata
 test_that("predict.CSC(1c,df1) - compare to manual estimation",{
     CSC.exp <- CSC(Hist(time,event) ~ X1, data = df1)
-
     CSC.prodlim <- CSC(Hist(time,event) ~ X1, data = df1, surv.type = "survival", method = "breslow")
-    
     CSC.prodlimE <- CSC(Hist(time,event) ~ X1, data = df1, surv.type = "survival", method = "efron")
-
-
     calcCIF <- function(CSC, X){
-
         lambda01 <- as.data.table(predictCox(CSC$models[[1]], centered = FALSE, type = "hazard"))
         lambda02 <- as.data.table(predictCox(CSC$models[[2]], centered = FALSE, type = "hazard"))
         eXb.1 <- as.double(exp(X%*%coef(CSC)[[1]]))
         eXb.2 <- as.double(exp(X%*%coef(CSC)[[2]]))
-
         if(CSC$surv.type == "survival"){
             survival <- cumprod(1-eXb.2*lambda02$hazard)
         }else{           
@@ -286,25 +254,20 @@ test_that("predict.CSC(1c,df1) - compare to manual estimation",{
             Lambda02 <- cumsum(lambda02$hazard)
             survival <- exp(-eXb.1*Lambda01-eXb.2*Lambda02)
         }
-
         survival <- c(1,survival[-length(survival)])
         absRisk <- cumsum(eXb.1*lambda01$hazard*survival)
         return(absRisk)
-        
     }
-
     for(iX1 in 0:1){
         newdata <- data.frame(X1=iX1)
         pred.exp <- predict(CSC.exp, times = 1:10, newdata = newdata, cause = 1, product.limit = FALSE)  
         expect_equal(as.double(pred.exp$absRisk),
                      calcCIF(CSC.exp, X = as.matrix(newdata))
                      )
-    
         pred.prodlim <- predict(CSC.prodlim, times = 1:10, newdata = newdata, cause = 1, product.limit = TRUE)
         expect_equal(as.double(pred.prodlim$absRisk),
                      calcCIF(CSC.prodlim, X = as.matrix(newdata))
                      )
-
         pred.prodlimE <- predict(CSC.prodlimE, times = 1:10, newdata = newdata, cause = 1, product.limit = TRUE)  
         expect_equal(as.double(pred.prodlimE$absRisk),
                      calcCIF(CSC.prodlimE, X = as.matrix(newdata))
@@ -365,14 +328,11 @@ test_that("predict.CSC(1c) - compare to mstate",{
         df <- switch(as.character(iData),
                      "1"=df1,
                      "2"=df2)
-
         ## fit CSC
         CSC.exp <- CSC(Hist(time,event) ~ X1, data = df, method = "breslow")
-    
         ## fit mstate
         df$event1 <- as.numeric(df$event == 1)
         df$event2 <- as.numeric(df$event == 2)
-
         dL <- msprep(time = c(NA, "time", "time"),
                      status = c(NA,"event1", "event2"),
                      data = df, keep = c("X1"),
@@ -380,25 +340,20 @@ test_that("predict.CSC(1c) - compare to mstate",{
         dL.exp <- expand.covs(dL,  c("X1"))
         e.coxph <- coxph(Surv(time, status) ~ X1.1 + X1.2 + strata(trans),
                          data = dL.exp)
-        
         ## compare
         for(iX1 in 0:1){ # iX1 <- 0
             newdata.L <- data.frame(X1.1 = c(iX1,0), X1.2 = c(0,iX1), trans = c(1, 2), strata = c(1, 2))    
             newdata <- data.frame(X1 = iX1)
-            
             pred.msfit <- msfit(e.coxph, newdata = newdata.L, trans = tmat)
             suppressWarnings(
                 pred.probtrans <- probtrans(pred.msfit,0)[[1]]
             )
-            
             pred.RR <- predict(CSC.exp, times = pred.probtrans[,"time"], newdata = newdata, cause = 1, product.limit = TRUE)
-            
             expect_equal(pred.probtrans[,"pstate2"],
                          as.double(pred.RR$absRisk)
                          )
         }
     }
-       
 })
 
 test_that("predict.CSC(1c) - add up to one",{

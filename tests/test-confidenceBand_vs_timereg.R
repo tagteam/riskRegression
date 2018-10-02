@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: maj 18 2017 (09:23) 
 ## Version: 
-## last-updated: jun 13 2018 (16:21) 
-##           By: Brice Ozenne
-##     Update #: 107
+## last-updated: Oct  1 2018 (08:24) 
+##           By: Thomas Alexander Gerds
+##     Update #: 108
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -104,12 +104,12 @@ predRR <- predictCox(e.coxph,
                      )
 
 
-plotRR <- autoplot(predRR, type = "survival", band = TRUE, ci = TRUE, plot = FALSE)
-dev.new()
-plotTR <- plot.predict.timereg(resTimereg[[1]])
-dev.new()
-plotRR$plot + coord_cartesian(ylim = c(0,1))
-graphics.off()
+## plotRR <- autoplot(predRR, type = "survival", band = TRUE, ci = TRUE, plot = FALSE)
+## dev.new()
+## plotTR <- plot.predict.timereg(resTimereg[[1]])
+## dev.new()
+## plotRR$plot + coord_cartesian(ylim = c(0,1))
+## graphics.off()
 
 ## ** With strata                                        
 ## Fit a stratified model 
@@ -159,8 +159,8 @@ predRR <- predict(e.CSC,
 predRR$absRisk[1,]
 
 ## ** Display
-autoplot(predRR, band = TRUE, ci = TRUE)
-graphics.off()
+## autoplot(predRR, band = TRUE, ci = TRUE)
+## graphics.off()
 
 ## * for debuging
 
