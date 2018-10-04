@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: apr  5 2018 (17:01) 
 ## Version: 
-## Last-Updated: Oct  2 2018 (15:03) 
-##           By: Thomas Alexander Gerds
-##     Update #: 278
+## Last-Updated: okt  4 2018 (13:19) 
+##           By: Brice Ozenne
+##     Update #: 280
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -159,12 +159,12 @@ calcSeATE <- function(object, data, times, cause,
                              which(pointEstimate$meanRisk[[2]]==iTime))
 
         ## Compute the iid function of the average treatment effect (difference)
-        out$diffRisk.iid[iContrast,] <- out$meanRisk.iid[iIndexA,] - out$meanRisk.iid[iIndexB,]
+        out$diffRisk.iid[iContrast,] <- out$meanRisk.iid[iIndexB,] - out$meanRisk.iid[iIndexA,]
           
         ## Compute the iid function of the average treatment effect (ratio)
         ## IF(A/B) = IF(A)/B-IF(B)A/B^2
-        term1 <- out$meanRisk.iid[iIndexA,] / pointEstimate$meanRisk[["meanRisk"]][iIndexB]
-        term2 <- out$meanRisk.iid[iIndexB,] * pointEstimate$meanRisk[["meanRisk"]][iIndexA] / pointEstimate$meanRisk[["meanRisk"]][iIndexB]^2
+        term1 <- out$meanRisk.iid[iIndexB,] / pointEstimate$meanRisk[["meanRisk"]][iIndexA]
+        term2 <- out$meanRisk.iid[iIndexA,] * pointEstimate$meanRisk[["meanRisk"]][iIndexB] / pointEstimate$meanRisk[["meanRisk"]][iIndexA]^2
         out$ratioRisk.iid[iContrast,] <- term1 - term2
         
     }
