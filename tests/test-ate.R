@@ -153,7 +153,12 @@ if (class(try(riskRegression.test,silent=TRUE))[1]!="try-error"){
                      ateFit$riskComparison[Treatment.A == "T0" & Treatment.B == "T1",diff.upper])
         ratioATE <- ATE[["T1"]]/ATE[["T0"]]
         ratioATE.iid <- rowScale_cpp(ATE.iid[["T1"]],ATE[["T0"]])-rowMultiply_cpp(ATE.iid[["T0"]], ATE[["T1"]]/ATE[["T0"]]^2)
+        ## Brice: I think that this here is how you do it in calcSeATE.R lines 166-168
         ## ratioATE.iid <- ATE.iid[["T1"]]/ATE[["T0"]] -  ATE.iid[["T0"]] * ATE[["T1"]]/ATE[["T0"]]^2
+        a <- ATE.iid[["T1"]][,1]
+        b <- t(ateFit$meanRisk.iid)[,"T1.5"]
+        all.equal(a,b)
+        # 
         ratioATE.se <- sqrt(rowSums(ratioATE.iid^2))
         ratioATE.se <- sqrt(colSums(ratioATE.iid^2))
         ratioATE.lower <- ratioATE + qnorm(0.025) * ratioATE.se
