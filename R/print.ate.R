@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun  6 2016 (06:48) 
 ## Version: 
-## last-updated: Oct  2 2018 (14:58) 
+## last-updated: Oct  3 2018 (15:31) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 239
+##     Update #: 243
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -91,8 +91,10 @@ print.ate <- function(x, digits = 3, type = c("meanRisk","diffRisk","ratioRisk")
         data.table::setcolorder(dt.tempo, neworder = order.col)
         print(dt.tempo,...)
     }
-    cat("Average risks of the event between time zero and 'time'")
-    cat("are standardized to covariate distribution of all subjects\nare given on probability scale [0,1] in hypothetical worlds\nin which all subjects are treated with one of the treatment options\nstandardized to all subjects.\n\n")
+    cat("\nAverage risks of the event between time zero and 'time' 
+    are standardized to the covariate distribution of all subjects
+    and given on the probability scale [0,1]. They are interpreded in hypothetical worlds
+    where all subjects are treated with one of the treatment options.\n\n")
     if(!is.null(x$treatment) && ("diffRisk" %in% type || "ratioRisk" %in% type)){
         id.name <- names(x$riskComparison)[1:3]
         if("diffRisk" %in% type){
@@ -144,9 +146,9 @@ print.ate <- function(x, digits = 3, type = c("meanRisk","diffRisk","ratioRisk")
             data.table::setcolorder(dt.tempo, neworder = order.col)
             print(dt.tempo,...)
         }
-        cat("\nDifferences of risks on probability scale [0,1] between\nhypothetical worlds are given as 
- treatment.B  minus treatment.A \nand are
- interpreted as what would have been observed had treatment been randomized.\n\n")
+        cat("\nDifferences of risks on probability scale [0,1] between hypothetical worlds are given as 
+ treatment.B  minus treatment.A
+and are interpreted as what would have been observed had treatment been randomized.\n\n")
         if("ratioRisk" %in% type){
             cat("\n\nRisk ratio: \n\n")
             ## only pick ratio
@@ -201,9 +203,9 @@ print.ate <- function(x, digits = 3, type = c("meanRisk","diffRisk","ratioRisk")
         }
 
     }
-    cat("\nRatios of risks on probability scale [0,1] between\nhypothetical worlds are given as 
- treatment.B  divided by treatment.A \nand are
- interpreted as what would have been observed had treatment been randomized.\n\n")
+    cat("\nRatios of risks on probability scale [0,1] between hypothetical worlds are given as 
+ treatment.B divided by treatment.A
+and are interpreted as what would have been observed had treatment been randomized.\n\n")
     ##
     if(x$se && !is.null(x$conf.level)){
         if(!is.null(x$boot)){

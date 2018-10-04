@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: aug 15 2018 (11:42) 
 ## Version: 
-## Last-Updated: Oct  2 2018 (15:33) 
+## Last-Updated: Oct  3 2018 (16:59) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 73
+##     Update #: 78
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -100,11 +100,13 @@ e.cox <- coxph(Surv(time, event) ~ X1 + X2 + X3,
 
 test_that("Agreement ate-ateRobust (survival)",{
     e.ate <- ate(e.cox, treatment = "X1", times = 3, data = dtS, se = TRUE)
+    e.ate
     e.ateRobust0 <- ateRobust(data = dtS, times = 3,
                               formula.event = Surv(time,event) ~ X1 + X2 + X3,
                               formula.censor = Surv(time,event==0) ~ X1,
                               formula.treatment = X1 ~ 1, se = FALSE,
                               type = "survival")
+    e.ateRobust0
     e.ateRobust <- ateRobust(data = dtS, times = 3,
                              formula.event = Surv(time,event) ~ X1 + X2 + X3,
                              formula.censor = Surv(time,event==0) ~ X1,

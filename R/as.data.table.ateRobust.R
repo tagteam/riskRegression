@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Mar  3 2017 (09:28) 
 ## Version: 
-## Last-Updated: Oct  2 2018 (08:58) 
+## Last-Updated: Oct  3 2018 (16:23) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 91
+##     Update #: 93
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -22,25 +22,22 @@
 #' 
 #' @param x object obtained with function \code{ate}
 #' @param keep.rownames Not used.
-#' @param se [logical] Should standard errors be displayed?
 #' @param ... Not used.
 #'
 
 ## * as.data.table.ateRobust (code)
 #' @rdname as.data.table.ateRobust
 #' @export
-as.data.table.ateRobust <- function(x, keep.rownames = FALSE, se = TRUE, ...){
-
+as.data.table.ateRobust <- function(x, keep.rownames = FALSE, ...){
     name.method <- colnames(x$ate.value)
-    if(x$se==FALSE){
-        x$ate.se[,grep("Gformula|^IPTW",name.method)] <- NA
-    }
-
+    ## if(x$se==FALSE){
+    ## x$ate.se[,grep("Gformula|^IPTW",name.method)] <- NA
+    ## }
     iDT.risk.0 <- data.table(method = name.method,  estimand = "risk.0", value = x$ate.value["risk.0",])
     iDT.risk.1 <- data.table(method = name.method,  estimand = "risk.1", value = x$ate.value["risk.1",])
     iDT.ate.diff <- data.table(method = name.method,  estimand = "ate.diff", value = x$ate.value["ate.diff",])
 
-    if(se){
+    if(x$se){
         iDT.risk.0[, c("se") := x$ate.se["risk.0",]]
         iDT.risk.1[, c("se") := x$ate.se["risk.1",]]
         iDT.ate.diff[, c("se") := x$ate.se["ate.diff",]]

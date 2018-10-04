@@ -96,7 +96,7 @@ fit <- cph(formula = Surv(time,event)~ X1+X2,data=dtS,y=TRUE,x=TRUE)
 \dontrun{
 ## only punctual estimate (argument se = FALSE)
 ateFit1a <- ate(fit, data = dtS, treatment = "X1", times = 5:8,
-               se = FALSE)
+               se = TRUE)
 
 ## standard error / confidence intervals computed using the influence function
 ## (argument se = TRUE and B = 0)

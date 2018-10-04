@@ -4,15 +4,12 @@
 \alias{as.data.table.ateRobust}
 \title{Turn ate Object Into a \code{data.table}}
 \usage{
-\method{as.data.table}{ateRobust}(x, keep.rownames = FALSE, se = TRUE,
-  ...)
+\method{as.data.table}{ateRobust}(x, keep.rownames = FALSE, ...)
 }
 \arguments{
 \item{x}{object obtained with function \code{ate}}
 
 \item{keep.rownames}{Not used.}
-
-\item{se}{[logical] Should standard errors be displayed?}
 
 \item{...}{Not used.}
 }

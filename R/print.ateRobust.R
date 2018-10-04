@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: jul  5 2018 (15:28) 
 ## Version: 
-## Last-Updated: Oct  2 2018 (14:58) 
+## Last-Updated: Oct  3 2018 (16:26) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 96
+##     Update #: 102
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -45,11 +45,12 @@ print.ateRobust <- function(x,
     ## ** round
     dt.x[,c("ATE") := format(round(.SD$value, digits = digits), digits = 3, nsmall = 3)]
     ## ** add confidence interval and p.value
-    if(!is.null(x$se)){
+    if(!is.null(x$se)&& x$se==TRUE){
         ## dt.x[,c("lower") := format(round(.SD$lower, digits = digits), digits = 3, nsmall = 3)]
         ## dt.x[,c("upper") := format(round(.SD$upper, digits = digits), digits = 3, nsmall = 3)]
         indexNNA <- which(!is.na(dt.x$se))
         dt.x[,c("[lower ; upper]") := ""]
+        dt.x[indexNNA,sprintf(fmt=paste0("[%1.",digits,"f;%1.",digits,"f]"),lower,upper)]
         dt.x[indexNNA,c("[lower ; upper]") := sprintf(fmt=paste0("[%1.",digits,"f;%1.",digits,"f]"),lower,upper)]
         ## lowerValue <- 10^(-digits)
         dt.x[,p.value := format.pval(p.value,eps=10^{-digits},digits=digits,na.form="")]
@@ -77,9 +78,9 @@ print.ateRobust <- function(x,
 
     cat("Risk difference:\n\n")
     print(dt.printDiffRisk, row.names = FALSE)
-    cat("\nComparisons of risks on probability scale [0,1] between\nhypothetical worlds are given as 
- treatment value",x$level.treatment[2]," minus ",x$level.treatment[1],"\nand are
- interpreted as what would have been observed had treatment been randomized.\n\n")
+    cat("\nComparisons of risks on probability scale [0,1] between hypothetical worlds are given as 
+ treatment value ",x$level.treatment[2]," minus ",x$level.treatment[1],"
+and are interpreted as what would have been observed had treatment been randomized.\n\n",sep="")
     ## output
     return(invisible(x))
 }

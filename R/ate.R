@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Oct 23 2016 (08:53) 
 ## Version: 
-## last-updated: Oct  2 2018 (14:40) 
+## last-updated: Oct  3 2018 (15:33) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 826
+##     Update #: 827
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -94,7 +94,7 @@
 #' \dontrun{
 #' ## only punctual estimate (argument se = FALSE)
 #' ateFit1a <- ate(fit, data = dtS, treatment = "X1", times = 5:8,
-#'                se = FALSE)
+#'                se = TRUE)
 #'
 #' ## standard error / confidence intervals computed using the influence function
 #' ## (argument se = TRUE and B = 0)

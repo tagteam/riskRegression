@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Feb 23 2017 (11:15) 
 ## Version: 
-## last-updated: Feb  6 2018 (17:03) 
+## last-updated: Oct  3 2018 (16:50) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 251
+##     Update #: 261
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -85,6 +85,7 @@
 ##' xb=Score(list(model1=fb1,model2=fb2),Y~1,data=db,
 ##'           plots="cal")
 ##' plotCalibration(xb)
+##' plotCalibration(xb,models=1,bars=TRUE,names.cex=1.3)
 ##' 
 ##' # survival
 ##' library(survival)
@@ -156,7 +157,19 @@ plotCalibration <- function(x,
         stop("Object has no information for calibration plot.\nYou should call the function \"riskRegression::Score\" with plots=\"calibration\".")
     Rvar <- grep("^(ReSpOnSe|pseudovalue)$",names(pframe),value=TRUE)
     if (!missing(models)){
-        pframe <- pframe[model%in%models]
+        fitted.models <- pframe[,unique(model)]
+        if (all(models%in%fitted.models)){
+            pframe <- pframe[model%in%models]
+        } else{
+            if (all(is.numeric(models)) && (max(models)<=length(fitted.models))){
+                pframe <- pframe[model%in%fitted.models[models]]
+            }else{
+                stop(paste0("The requested models: ",
+                            models,
+                            "\ndo not match the fitted models: ",
+                            paste0(fitted.models,collapse=", ")))
+            }
+        }
     }
     data.table::setkey(pframe,model)
     if (x$response.type!="binary"){
@@ -205,6 +218,7 @@ plotCalibration <- function(x,
 
     # }}}
     # {{{ SmartControl
+
     modelnames <- pframe[,unique(model)]
     axis1.DefaultArgs <- list(side=1,las=1,at=seq(0,xlim[2],xlim[2]/4))
     axis2.DefaultArgs <- list(side=2,las=2,at=seq(0,ylim[2],ylim[2]/4),mgp=c(4,1,0))
@@ -307,6 +321,7 @@ plotCalibration <- function(x,
                                                      "axis1"=list(side=1)),
                                          verbose=TRUE)
     }
+
     # }}}
     # {{{ smoothing
     method <- match.arg(method,c("quantile","nne"))
@@ -420,6 +435,7 @@ plotCalibration <- function(x,
                                            function(x)attr(x,"bandwidth"))))
     # }}}
     # {{{ do the actual plot
+
     if (plot){
         if (out$add==FALSE && !out$bars){
             do.call("plot",control$plot)
@@ -545,6 +561,7 @@ plotCalibration <- function(x,
             do.call("axis",control$axis2)
         }
     }
+
     # }}}
     class(out) <- "calibrationPlot"
     invisible(out)

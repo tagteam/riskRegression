@@ -119,6 +119,7 @@ fb2=glm(Y~X1+X3+X6+X7,data=db,family="binomial")
 xb=Score(list(model1=fb1,model2=fb2),Y~1,data=db,
           plots="cal")
 plotCalibration(xb)
+plotCalibration(xb,models=1,bars=TRUE,names.cex=1.3)
 
 # survival
 library(survival)

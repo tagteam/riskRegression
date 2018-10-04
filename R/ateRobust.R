@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne, Thomas A. Gerds
 ## Created: jun 27 2018 (17:47) 
 ## Version: 
-## Last-Updated: Oct  2 2018 (15:03) 
+## Last-Updated: Oct  3 2018 (16:13) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 1117
+##     Update #: 1122
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -400,12 +400,14 @@ ateRobust <- function(data, times, cause, type,
     ##    out$ate.value["ate.ratio",] <- out$ate.value[name.risk[2],] / out$ate.value[name.risk[1],]
 
     ## standard error
-    out$ate.se <- do.call(cbind,lapply(IF, function(iIF){ ## iIF <- IF[[1]]
-        sqrt(c(colSums(iIF^2), sum((iIF[,2]-iIF[,1])^2)))
-    }))
-    rownames(out$ate.se) <- rownames(out$ate.value)
-    out$level.treatment <- level.treatment
+    if (se){
+        out$ate.se <- do.call(cbind,lapply(IF, function(iIF){ ## iIF <- IF[[1]]
+            sqrt(c(colSums(iIF^2), sum((iIF[,2]-iIF[,1])^2)))
+        }))
+        rownames(out$ate.se) <- rownames(out$ate.value)
+    }
     out$se <- se
+    out$level.treatment <- level.treatment
     out$augment.cens <- augment.cens
     out$product.limit <- product.limit
     
