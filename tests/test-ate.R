@@ -164,29 +164,29 @@ if (class(try(riskRegression.test,silent=TRUE))[1]!="try-error"){
         ratioATE.lower <- ratioATE + qnorm(0.025) * ratioATE.se
         ratioATE.upper <- ratioATE + qnorm(0.975) * ratioATE.se
         expect_equal(ratioATE.lower,
-                     ## ateFit$riskComparison[Treatment.A == "T0" & Treatment.B == "T1",ratio.lower])
-                     expect_equal(ratioATE.upper,
-                                  ## ateFit$riskComparison[Treatment.A == "T0" & Treatment.B == "T1",ratio.upper])
-                     })
-    }
-    # }}}
-    # {{{ CSC model bootstrap
-    if (class(try(riskRegression.test,silent=TRUE))[1]!="try-error"){
-        test_that("CSC model bootstrap",{
-            df <- sampleData(1e2,outcome="competing.risks")
-            df$time <- round(df$time,1)
-            df$X1 <- factor(rbinom(1e2, prob = c(0.4,0.3) , size = 2), labels = paste0("T",0:2))
-            fit=CSC(formula = Hist(time,event)~ X1+X2, data = df,cause=1)
-            res <- ate(fit, data = df, treatment = "X1", contrasts = NULL,
-                       times = 7, cause = 1, B = 0, mc.cores=1,handler=handler,verbose=verbose)
-            Sres <- capture.output(print(res))
-            fit=CSC(formula = Hist(time,event)~ X1+X2, data = df,cause=1)
-            res <- ate(fit,data = df,  treatment = "X1", contrasts = NULL,
-                       times = 7, cause = 1, B = 2, mc.cores=1,handler=handler,verbose=verbose)
-            Sres <- capture.output(print(res))
-        })}
-    # }}}
-    # {{{ average risk
+                     ateFit$riskComparison[Treatment.A == "T0" & Treatment.B == "T1",ratio.lower])
+        expect_equal(ratioATE.upper,
+                     ateFit$riskComparison[Treatment.A == "T0" & Treatment.B == "T1",ratio.upper])
+    })
+}
+# }}}
+# {{{ CSC model bootstrap
+if (class(try(riskRegression.test,silent=TRUE))[1]!="try-error"){
+    test_that("CSC model bootstrap",{
+        df <- sampleData(1e2,outcome="competing.risks")
+        df$time <- round(df$time,1)
+        df$X1 <- factor(rbinom(1e2, prob = c(0.4,0.3) , size = 2), labels = paste0("T",0:2))
+        fit=CSC(formula = Hist(time,event)~ X1+X2, data = df,cause=1)
+        res <- ate(fit, data = df, treatment = "X1", contrasts = NULL,
+                   times = 7, cause = 1, B = 0, mc.cores=1,handler=handler,verbose=verbose)
+        Sres <- capture.output(print(res))
+        fit=CSC(formula = Hist(time,event)~ X1+X2, data = df,cause=1)
+        res <- ate(fit,data = df,  treatment = "X1", contrasts = NULL,
+                   times = 7, cause = 1, B = 2, mc.cores=1,handler=handler,verbose=verbose)
+        Sres <- capture.output(print(res))
+    })}
+# }}}
+# {{{ average risk
 
 test_that("stratified ATE",{
     set.seed(10)
