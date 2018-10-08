@@ -2,6 +2,7 @@
 % Please edit documentation in R/RcppExports.R
 \name{sliceMultiply_cpp}
 \alias{sliceMultiply_cpp}
+\alias{sliceMultiply_cpp}
 \alias{sliceMultiplyPointer_cpp}
 \title{Apply * by slice}
 \usage{

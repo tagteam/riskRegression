@@ -2,6 +2,7 @@
 % Please edit documentation in R/RcppExports.R
 \name{colCenter_cpp}
 \alias{colCenter_cpp}
+\alias{colCenter_cpp}
 \title{Apply - by column}
 \usage{
 colCenter_cpp(X, center)

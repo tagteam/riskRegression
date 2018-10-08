@@ -2,6 +2,7 @@
 % Please edit documentation in R/RcppExports.R
 \name{sliceScale_cpp}
 \alias{sliceScale_cpp}
+\alias{sliceScale_cpp}
 \alias{sliceScalePointer_cpp}
 \title{Apply / by slice}
 \usage{

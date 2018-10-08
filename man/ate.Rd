@@ -5,9 +5,9 @@
 \title{Compute the Average Treatment Effects Via the G-formula}
 \usage{
 ate(object, data, formula, treatment, strata = NULL, contrasts = NULL,
-  times, cause, landmark, se = TRUE, iid = FALSE, band = FALSE,
-  B = 0, confint = (se + band) > 0, seed, handler = "foreach",
-  mc.cores = 1, cl = NULL, verbose = TRUE, store.iid = "full", ...)
+  times, cause, landmark, se = TRUE, iid = FALSE, band = FALSE, B = 0,
+  confint = (se + band) > 0, seed, handler = "foreach", mc.cores = 1,
+  cl = NULL, verbose = TRUE, store.iid = "full", ...)
 }
 \arguments{
 \item{object}{Outcome model which describes how event risk depends

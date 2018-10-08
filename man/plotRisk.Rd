@@ -4,8 +4,8 @@
 \alias{plotRisk}
 \title{plot predicted risks}
 \usage{
-plotRisk(x, models, times, xlim = c(0, 1), ylim = c(0, 1), xlab, ylab,
-  col, pch = 1, cex = 1, ...)
+plotRisk(x, models, times, xlim = c(0, 1), ylim = c(0, 1), xlab, ylab, col,
+  pch = 1, cex = 1, ...)
 }
 \arguments{
 \item{x}{Object obtained with function \code{Score}}

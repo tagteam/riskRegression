@@ -4,8 +4,8 @@
 \alias{iidCox}
 \title{Extract i.i.d. decomposition from a Cox model}
 \usage{
-iidCox(object, newdata = NULL, baseline.iid = TRUE,
-  tau.hazard = NULL, store.iid = "full", keep.times = TRUE)
+iidCox(object, newdata = NULL, baseline.iid = TRUE, tau.hazard = NULL,
+  store.iid = "full", keep.times = TRUE)
 }
 \arguments{
 \item{object}{object The fitted Cox regression model object either

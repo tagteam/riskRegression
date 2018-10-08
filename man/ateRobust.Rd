@@ -5,8 +5,8 @@
 \title{Average Treatment Effects (ATE) for survival outcome (with competing risks) using doubly robust estimating equations}
 \usage{
 ateRobust(data, times, cause, type, formula.event, formula.censor,
-  formula.treatment, fitter = "coxph", product.limit = NULL,
-  se = TRUE, augment.cens = TRUE, na.rm = FALSE)
+  formula.treatment, fitter = "coxph", product.limit = NULL, se = TRUE,
+  augment.cens = TRUE, na.rm = FALSE)
 }
 \arguments{
 \item{data}{[data.frame or data.table] Data set in which to evaluate the ATE.}

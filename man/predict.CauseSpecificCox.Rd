@@ -5,10 +5,9 @@
 \title{Predicting Absolute Risk from Cause-Specific Cox Models}
 \usage{
 \method{predict}{CauseSpecificCox}(object, newdata, times, cause,
-  landmark = NA, keep.times = 1L, keep.newdata = 1L,
-  keep.strata = 1L, se = FALSE, band = FALSE, iid = FALSE,
-  confint = (se + band) > 0, average.iid = FALSE,
-  product.limit = TRUE, store.iid = "full", ...)
+  landmark = NA, keep.times = 1L, keep.newdata = 1L, keep.strata = 1L,
+  se = FALSE, band = FALSE, iid = FALSE, confint = (se + band) > 0,
+  average.iid = FALSE, product.limit = TRUE, store.iid = "full", ...)
 }
 \arguments{
 \item{object}{The fitted cause specific Cox model}

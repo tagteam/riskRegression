@@ -1459,8 +1459,8 @@ Score.list <- function(object,
             # }}}
         }else{ ## split.method bootcv
             # {{{ bootcv
-            if (parallel=="snow") exports <- c("DT.b","N.b","cens.model","multi.split.test") else exports <- NULL
-            crossval <- foreach (j=1:B,.export=c("DT.b","N.b","cens.model","multi.split.test")) %dopar%{
+            if (parallel=="snow") exports <- c("DT.B","N.b","cens.model","multi.split.test") else exports <- NULL
+            crossval <- foreach (j=1:B,.export=exports) %dopar%{
                 ## crossval <- lapply(1:B,function(j){
                 DT.b <- DT.B[b==j]
                 N.b <- length(unique(DT.b[["ID"]]))
