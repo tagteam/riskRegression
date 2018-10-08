@@ -2,7 +2,6 @@
 % Please edit documentation in R/RcppExports.R
 \name{colMultiply_cpp}
 \alias{colMultiply_cpp}
-\alias{colMultiply_cpp}
 \title{Apply * by column}
 \usage{
 colMultiply_cpp(X, scale)

@@ -4,8 +4,8 @@
 \alias{as.data.table.influenceTest}
 \title{Turn influenceTest Object Into a \code{data.table}}
 \usage{
-\method{as.data.table}{influenceTest}(x, keep.rownames = FALSE, se = TRUE,
-  ...)
+\method{as.data.table}{influenceTest}(x, keep.rownames = FALSE,
+  se = TRUE, ...)
 }
 \arguments{
 \item{x}{object obtained with function \code{influenceTest}}

@@ -4,8 +4,8 @@
 \alias{plotEffects}
 \title{Plotting time-varying effects from a risk regression model.}
 \usage{
-plotEffects(x, formula, level, ref.line = TRUE, conf.int = 0.95, xlim, ylim,
-  xlab = "Time", ylab = "Cumulative coefficient", col, lty, lwd,
+plotEffects(x, formula, level, ref.line = TRUE, conf.int = 0.95, xlim,
+  ylim, xlab = "Time", ylab = "Cumulative coefficient", col, lty, lwd,
   add = FALSE, legend, axes = TRUE, ...)
 }
 \arguments{

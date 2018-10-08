@@ -5,8 +5,8 @@
 \title{Plot of time-dependent AUC curves}
 \usage{
 plotAUC(x, models, which = "score", xlim, ylim, xlab, ylab, col, lwd,
-  lty = 1, cex = 1, pch = 1, type = "l", axes = 1L, percent = 1L,
-  conf.int = 0L, legend = 1L, ...)
+  lty = 1, cex = 1, pch = 1, type = "l", axes = 1L,
+  percent = 1L, conf.int = 0L, legend = 1L, ...)
 }
 \arguments{
 \item{x}{Object obtained with \code{Score.list}}

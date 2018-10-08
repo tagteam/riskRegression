@@ -12,8 +12,8 @@
   contrasts = TRUE, probs = c(0, 0.25, 0.5, 0.75, 1),
   cens.method = "ipcw", cens.model = "cox", split.method, B, M, seed,
   trainseeds, parallel = c("no", "multicore", "snow"), ncpus = 1,
-  cl = NULL, keep, predictRisk.args, debug = 0L, useEventTimes, nullModel,
-  censMethod, censModel, splitMethod, ...)
+  cl = NULL, keep, predictRisk.args, debug = 0L, useEventTimes,
+  nullModel, censMethod, censModel, splitMethod, ...)
 }
 \arguments{
 \item{object}{List of risk predictions (see details and examples).}

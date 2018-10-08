@@ -7,14 +7,23 @@ if (class(try(riskRegression.test,silent=TRUE))[1]!="try-error"){
         lr1a = glm(Y~X6,data=learndat,family=binomial)
         lr2a = glm(Y~X7+X8+X9,data=learndat,family=binomial)
         ## leave-one-out bootstrap
+        ## in series
         set.seed(5)
         system.time(loob.se0 <- Score(list("LR1"=lr1a,"LR2"=lr2a),formula=Y~1,data=learndat,split.method="loob",B=100,se.fit=TRUE))
+        ## in multicore 3 cpu's 
         set.seed(5)
         system.time(loob.se0a <- Score(list("LR1"=lr1a,"LR2"=lr2a),formula=Y~1,data=learndat,split.method="loob",B=100,parallel="multicore",ncpus=3,se.fit=TRUE))
+        ## snow 3 cpu's 
+        library(parallel)
+        mycl <- parallel::makePSOCKcluster(rep("localhost", 3))
+        set.seed(5)
+        system.time(loob.se0b <- Score(list("LR1"=lr1a,"LR2"=lr2a),formula=Y~1,data=learndat,split.method="loob",B=100,parallel="snow",cl=mycl,se.fit=TRUE))
+        stopCluster(mycl)
         set.seed(5)
         loob.se1 <- Score(list("LR1"=lr1a,"LR2"=lr2a),formula=Y~1,data=learndat,split.method="loob",B=100,se.fit=FALSE)
-        expect_equal(loob.se0$AUC$contrasts$delta,loob.se1$AUC$contrasts$delta)
+        expect_equal(loob.se0$AUC$contrasts$delta,loob.se0b$AUC$contrasts$delta)
         expect_equal(loob.se0$AUC$contrasts$delta,loob.se0a$AUC$contrasts$delta)
+        expect_equal(loob.se0$AUC$contrasts$delta,loob.se1$AUC$contrasts$delta)
         expect_equal(loob.se0$Brier$contrasts$delta,loob.se1$Brier$contrasts$delta)
     })
 
