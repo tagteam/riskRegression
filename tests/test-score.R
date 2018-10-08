@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jan  4 2016 (14:30) 
 ## Version: 
-## last-updated: Oct  2 2018 (13:46) 
+## last-updated: Oct  4 2018 (10:14) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 109
+##     Update #: 112
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -23,11 +23,10 @@ library(pROC)
 library(data.table)
 library(Daim)
 context("riskRegression")
-
 # {{{ "R squared/IPA"
 test_that("R squared/IPA", { 
     set.seed(112)
-    d <- sampleData(112,outcome="binary")
+    d <- sampleData(43,outcome="binary")
     f1 <- glm(Y~X1+X5+X8,data=d, family="binomial")
     f2 <- glm(Y~X2+X6+X9+X10,data=d, family="binomial")
     r1 <- rsquared(f1,newdata=d)
@@ -39,22 +38,23 @@ test_that("R squared/IPA", {
 
 # }}}
 # {{{ "vcov AUC"
-test_that("vcov AUC",{
-    set.seed(112)
-    d <- sampleData(112,outcome="binary")
-    f1 <- glm(Y~X1+X5+X8,data=d, family="binomial")
-    f2 <- glm(Y~X2+X6+X9+X10,data=d, family="binomial")
-    test <- Score(list(f1,f2),keep="vcov",formula=Y~1,data=d,conf.int=TRUE,summary=c("RR"),plots="ROC")
-    expect_equal(dim(test$AUC$vcov),c(2,2))
-    ## survival
-    set.seed(112)
-    d <- sampleData(112,outcome="survival")
-    f1 <- coxph(Surv(time,event)~X1+X5+X8,data=d, x=TRUE,y=TRUE)
-    f2 <- coxph(Surv(time,event)~X2+X6+X9+X10,data=d, x=TRUE,y=TRUE)
-    test <- Score(list(a=f1,f2),times=c(5,7),keep="vcov",formula=Surv(time,event)~1,data=d,conf.int=TRUE,metrics=c("brier","auc"))
-    expect_equal(dim(test$AUC$vcov),c(4,4))
-})
-
+if (class(try(riskRegression.test,silent=TRUE))[1]!="try-error"){
+    test_that("vcov AUC",{
+        set.seed(112)
+        d <- sampleData(43,outcome="binary")
+        f1 <- glm(Y~X1+X5+X8,data=d, family="binomial")
+        f2 <- glm(Y~X2+X6+X9+X10,data=d, family="binomial")
+        test <- Score(list(f1,f2),keep="vcov",formula=Y~1,data=d,conf.int=TRUE,summary=c("RR"),plots="ROC")
+        expect_equal(dim(test$AUC$vcov),c(2,2))
+        ## survival
+        set.seed(112)
+        d <- sampleData(112,outcome="survival")
+        f1 <- coxph(Surv(time,event)~X1+X5+X8,data=d, x=TRUE,y=TRUE)
+        f2 <- coxph(Surv(time,event)~X2+X6+X9+X10,data=d, x=TRUE,y=TRUE)
+        test <- Score(list(a=f1,f2),times=c(5,7),keep="vcov",formula=Surv(time,event)~1,data=d,conf.int=TRUE,metrics=c("brier","auc"))
+        expect_equal(dim(test$AUC$vcov),c(4,4))
+    })
+}
 # }}}
 # {{{ "binary outcome: robustness against order of data set"
 test_that("binary outcome: robustness against order of data set",{
@@ -86,7 +86,7 @@ test_that("binary outcome: robustness against order of data set",{
 if (class(try(riskRegression.test,silent=TRUE))[1]!="try-error"){
     test_that("survival outcome: robustness against order of data set",{
         set.seed(112)
-        d <- sampleData(112,outcome="survival")
+        d <- sampleData(43,outcome="survival")
         f1 <- coxph(Surv(time,event)~X1+X5+X8,data=d, x = TRUE, y = TRUE)
         f2 <- coxph(Surv(time,event)~X2+X6+X9+X10,data=d, x = TRUE, y = TRUE)
         f3 <- cbind(d$X8,d$X8,d$X8)
@@ -152,7 +152,7 @@ test_that("competing risks outcome: robustness against order of data set",{
 # {{{ "survival outcome: Brier Score pec vs Score"
 test_that("survival outcome: Brier Score pec vs Score",{
     set.seed(112)
-    d <- sampleData(112,outcome="survival")
+    d <- sampleData(43,outcome="survival")
     f1 <- coxph(Surv(time,event)~X1+X5+X8,data=d, x = TRUE, y = TRUE)
     f2 <- coxph(Surv(time,event)~X2+X6+X9+X10,data=d, x = TRUE, y = TRUE)
     p1 <- pec(list(f1,f2),formula=Surv(time,event)~1,data=d,times=c(3,5,10),exact=FALSE,start=NULL)
@@ -165,7 +165,7 @@ test_that("survival outcome: Brier Score pec vs Score",{
 # {{{ "survival outcome: matrix input"
 test_that("survival outcome: matrix input",{
     set.seed(112)
-    dtrain <- sampleData(112,outcome="survival")
+    dtrain <- sampleData(43,outcome="survival")
     dtest <- sampleData(4,outcome="survival")
     f1 <- coxph(Surv(time,event)~X1+X5+X8,data=dtrain, x = TRUE, y = TRUE)
     f2 <- predictRisk(f1,newdata=dtest,times=c(3,5,10))

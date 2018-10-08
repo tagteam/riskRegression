@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Oct 23 2016 (08:53) 
 ## Version: 
-## last-updated: Oct  3 2018 (15:33) 
+## last-updated: Oct  7 2018 (14:59) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 827
+##     Update #: 828
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -51,7 +51,7 @@
 #' either \code{"mclapply"} or \code{"foreach"}.
 #' if "foreach" use \code{doparallel} to create a cluster.
 #' @param mc.cores [integer, >0] The number of cores to use,
-#' i.e. at most how many child processes will be run simultaneously.
+#' i.e., the upper limit for the number of child processes that run simultaneously.
 #' Passed to \code{parallel::mclapply} or \code{doparallel::registerdoparallel}.
 #' The option is initialized from environment variable mc_cores if set.
 #' @param cl A parallel socket cluster used to perform cluster calculation in parallel.

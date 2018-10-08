@@ -54,7 +54,7 @@ either \code{"mclapply"} or \code{"foreach"}.
 if "foreach" use \code{doparallel} to create a cluster.}
 
 \item{mc.cores}{[integer, >0] The number of cores to use,
-i.e. at most how many child processes will be run simultaneously.
+i.e., the upper limit for the number of child processes that run simultaneously.
 Passed to \code{parallel::mclapply} or \code{doparallel::registerdoparallel}.
 The option is initialized from environment variable mc_cores if set.}
 

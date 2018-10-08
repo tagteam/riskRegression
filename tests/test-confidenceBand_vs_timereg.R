@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: maj 18 2017 (09:23) 
 ## Version: 
-## last-updated: Oct  1 2018 (08:24) 
+## last-updated: Oct  4 2018 (10:11) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 108
+##     Update #: 109
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -18,7 +18,7 @@
 #----------------------------------------------------------------------
 ## 
 ### Code:
-
+if (class(try(riskRegression.test,silent=TRUE))[1]!="try-error"){
 library(timereg)
 library(testthat)
 library(riskRegression)
@@ -157,7 +157,7 @@ predRR <- predict(e.CSC,
                   cause = 1)
 
 predRR$absRisk[1,]
-
+}
 ## ** Display
 ## autoplot(predRR, band = TRUE, ci = TRUE)
 ## graphics.off()

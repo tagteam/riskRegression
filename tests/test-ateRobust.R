@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: aug 15 2018 (11:42) 
 ## Version: 
-## Last-Updated: Oct  3 2018 (16:59) 
+## Last-Updated: Oct  8 2018 (07:03) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 78
+##     Update #: 80
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -14,17 +14,17 @@
 ##----------------------------------------------------------------------
 ## 
 ### Code:
-library(riskRegression)
-library(survival)
-library(testthat)
-context("Ate robust checks")
+if (class(try(riskRegression.test,silent=TRUE))[1]!="try-error"){
+    library(riskRegression)
+    library(survival)
+    library(testthat)
+    context("Ate robust checks")
 
 ## * survival case
 
 ## ** no censoring - manual computation
 n <- 5e1
 tau <- 1.5
-
 ## simulate data
 set.seed(10)
 dtS <- sampleData(n,outcome="survival")
@@ -33,60 +33,46 @@ dtS$Y <- (dtS$time<=tau)*(dtS$event==1)
 dtS$X1 <- as.numeric(dtS$X1)-1
 
 ## fit
-e.S <- coxph(Surv(time, event) ~ X1 + X2 + X3,
-               data = dtS,
-               x = TRUE)
-e.T <- glm(X1 ~ 1, data = dtS, family = binomial(link = "logit")) ## dtS$X1
-
-e.ateRobust <- ateRobust(data = dtS, times = tau,
-                          formula.event = Surv(time,event) ~ X1 + X2 + X3,
-                          formula.censor = Surv(time,event==0) ~ X1,
-                          formula.treatment = X1 ~ 1, se = TRUE,
-                          type = "survival")
-
-## predict
-dtS1 <- data.table(X1 = 1, X2 = dtS$X2, X3 = dtS$X3)
-
-pred.logit <- riskRegression:::predictGLM(e.T, newdata = dtS1, average.iid = FALSE)
-iid.logit <- attr(pred.logit, "iid")
-attr(pred.logit, "iid") <- NULL
-
-pred.Surv <- predictCox(e.S, newdata = dtS1, times = tau, type = "survival", iid = TRUE)
-iid.Surv <- -pred.Surv$survival.iid[,1,]
-
-dtS[, pi := as.double(pred.logit)]
-dtS[, r := as.double(1-pred.Surv$survival)]
-
 test_that("check point estimate vs. manual calculations", {
+    e.S <- coxph(Surv(time, event) ~ X1 + X2 + X3,data = dtS,x = TRUE)
+    e.T <- glm(X1 ~ 1, data = dtS, family = binomial(link = "logit")) ## dtS$X1
+    e.ateRobust <- ateRobust(data = dtS, times = tau,
+                             formula.event = Surv(time,event) ~ X1 + X2 + X3,
+                             formula.censor = Surv(time,event==0) ~ X1,
+                             formula.treatment = X1 ~ 1, se = TRUE,
+                             type = "survival")
+    ## predict
+    dtS1 <- data.table(X1 = 1, X2 = dtS$X2, X3 = dtS$X3)
+    pred.logit <- riskRegression:::predictGLM(e.T, newdata = dtS1, average.iid = FALSE)
+    iid.logit <- attr(pred.logit, "iid")
+    attr(pred.logit, "iid") <- NULL
+    pred.Surv <- predictCox(e.S, newdata = dtS1, times = tau, type = "survival", iid = TRUE)
+    iid.Surv <- -pred.Surv$survival.iid[,1,]
+    dtS[, pi := as.double(pred.logit)]
+    dtS[, r := as.double(1-pred.Surv$survival)]
     expect_equal(dtS[,mean(r)],e.ateRobust$ate.value["risk.1","Gformula"])
-
     expect_equal(dtS[,mean(X1*Y/pi)],e.ateRobust$ate.value["risk.1","IPTW.IPCW"])
     expect_equal(dtS[,mean(X1*Y/pi)],e.ateRobust$ate.value["risk.1","IPTW.AIPCW"])
-
     expect_equal(dtS[,mean(X1*Y/pi + r*(1-X1/pi))],e.ateRobust$ate.value["risk.1","AIPTW.IPCW"])
     expect_equal(dtS[,mean(X1*Y/pi + r*(1-X1/pi))],e.ateRobust$ate.value["risk.1","AIPTW.AIPCW"])
-})
+## })
 
-test_that("check se vs. manual calculations", {
-
+## test_that("check se vs. manual calculations", {
     iid.Gformula1 <- (dtS$r - mean(dtS$r))/NROW(dtS)
     iid.Gformula2 <- colMeans(iid.Surv)
     iid.Gformula <- iid.Gformula1 + iid.Gformula2
     expect_equal(sqrt(sum(iid.Gformula^2)),e.ateRobust$ate.se["risk.1","Gformula"])
-
     iid.IPTW1 <- (dtS[,X1*Y/pi] - dtS[,mean(X1*Y/pi)])/NROW(dtS)
     iid.IPTW2 <- colMeans( riskRegression::colMultiply_cpp(iid.logit, scale = -dtS$X1*dtS$Y/dtS$pi^2) )
     iid.IPTW <- iid.IPTW1 + iid.IPTW2
     expect_equal(sqrt(sum(iid.IPTW^2)),e.ateRobust$ate.se["risk.1","IPTW.IPCW"])
     expect_equal(sqrt(sum(iid.IPTW^2)),e.ateRobust$ate.se["risk.1","IPTW.AIPCW"])
-
     iid.AIPTW1 <- (dtS[,X1*Y/pi + r*(1-X1/pi)] - dtS[,mean(X1*Y/pi + r*(1-X1/pi))])/NROW(dtS)
     iid.AIPTW2 <- colMeans( riskRegression::colMultiply_cpp(iid.logit, scale = -dtS$X1*(dtS$Y-dtS$r)/dtS$pi^2) )
     iid.AIPTW3 <- colMeans( riskRegression::colMultiply_cpp(iid.Surv, scale = (1-dtS$X1/dtS$pi)) )
     iid.AIPTW <- iid.AIPTW1 + iid.AIPTW2 + iid.AIPTW3
     expect_equal(sqrt(sum(iid.AIPTW1^2)),e.ateRobust$ate.se["risk.1","AIPTW.IPCW"])
     expect_equal(sqrt(sum(iid.AIPTW1^2)),e.ateRobust$ate.se["risk.1","AIPTW.AIPCW"])
-
     (sqrt(sum(iid.AIPTW^2)) - sqrt(sum(iid.AIPTW1^2))) / sqrt(sum(iid.AIPTW^2))
 })
 
@@ -316,6 +302,6 @@ test_that("Agreement ate-ateRobust (competing.risks)",{
     ## butils::object2script(test, digit = 5)
    
 })
-
+}
 ######################################################################
 ### test-ateRobust.R ends here

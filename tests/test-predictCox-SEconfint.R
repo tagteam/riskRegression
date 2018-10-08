@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: maj 18 2017 (09:23) 
 ## Version: 
-## last-updated: aug 20 2018 (21:16) 
-##           By: Brice Ozenne
-##     Update #: 182
+## last-updated: Oct  4 2018 (10:18) 
+##           By: Thomas Alexander Gerds
+##     Update #: 184
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -16,6 +16,7 @@
 ### Code:
 
 ## * Setting
+if (class(try(riskRegression.test,silent=TRUE))[1]!="try-error"){
 library(riskRegression)
 library(testthat)
 library(rms)
@@ -823,10 +824,10 @@ f1 <- coxph(Surv(time,status==1) ~ age+logthick+epicel+strata(sex),
             data=Melanoma, x=TRUE,y=TRUE)
 res <- predictCox(f1,newdata=Melanoma[c(17,101,123),],
                   times=c(7,3,5)*365.25)
+}
 
 ##----------------------------------------------------------------------
 ### test-predictCox-SEconfint.R ends here
-
 
 
 

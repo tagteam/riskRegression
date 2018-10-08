@@ -95,6 +95,9 @@
 ##' @param seed Super seed for setting training data seeds when
 ##'     randomly splitting (bootstrapping) the data during cross-validation.
 ##' @param trainseeds Seeds for training models during cross-validation.
+##' @param parallel The type of parallel operation to be used (if any). If missing, the default is \code{"no"}.
+##' @param ncpus integer: number of processes to be used in parallel operation.
+##' @param cl An optional \code{parallel} or \code{snow} cluster for use if \code{parallel = "snow"}. If not supplied, a cluster on the local machine is created for the duration of the \code{Score} call.
 ##' @param keep list of characters (not case sensitive) which determines additional output.
 ##' \code{"residuals"} provides Brier score residuals and
 ##' \code{"splitindex"} provides sampling index used to split the data into training and validation sets.
@@ -342,7 +345,6 @@
 ##'
 ##' @export
 ##'
-
 # }}}
 # {{{ Score.list
 Score.list <- function(object,
@@ -369,6 +371,9 @@ Score.list <- function(object,
                        M,
                        seed,
                        trainseeds,
+                       parallel=c("no","multicore","snow"),
+                       ncpus=1,
+                       cl=NULL,
                        keep,
                        predictRisk.args,
                        debug=0L,
@@ -399,7 +404,7 @@ Score.list <- function(object,
         cens.model <- censModel
     }
 
-    se.conservative=IF.AUC.conservative=IF.AUC0=IF.AUC=IC0=Brier=AUC=casecontrol=se=nth.times=time=status=ID=WTi=ID=risk=IF.Brier=lower=upper=crossval=b=time=status=model=reference=p=model=pseudovalue=ReSpOnSe=residuals=event=NULL
+    se.conservative=IF.AUC.conservative=IF.AUC0=IF.AUC=IC0=Brier=AUC=casecontrol=se=nth.times=time=status=ID=WTi=ID=risk=IF.Brier=lower=upper=crossval=b=time=status=model=reference=p=model=pseudovalue=ReSpOnSe=residuals=event=j=NULL
 
     # }}}
     theCall <- match.call()
@@ -518,14 +523,33 @@ Score.list <- function(object,
     if (is.null(cens.type)) cens.type <- "uncensoredData"
     rm(response)
     # }}}
-    # {{{ SplitMethod
-
+    # {{{ SplitMethod & parallel stuff
     if (!missing(seed)) set.seed(seed)
     split.method <- getSplitMethod(split.method=split.method,B=B,N=N,M=M)
     B <- split.method$B
     splitIndex <- split.method$index
     do.resample <- !(is.null(splitIndex))
     if (split.method$internal.name!="noplan"){
+        if (missing(parallel)) parallel <- "no"
+        parallel <- match.arg(parallel)
+        if (ncpus<=1) {
+            parallel <- "no"
+        } 
+        ## if (ncpus <- pmin(ncpus,parallel::detectCores()))
+        switch(parallel,"no"={
+            foreach::registerDoSEQ()
+        },"multicore"={
+            if(.Platform$OS.type == "windows"){stop("multicore does not work on windows. set argument parallel to 'snow'.")}
+            loadNamespace("parallel")
+            if (is.null(cl)) cl <- parallel::makeForkCluster(nnodes=ncpus)
+            doParallel::registerDoParallel(cl=cl,cores=ncpus)
+            on.exit(parallel::stopCluster(cl))
+        },"snow"={
+            loadNamespace("parallel")
+            if (is.null(cl)) cl <- parallel::makePSOCKcluster(rep("localhost", ncpus))
+            on.exit(parallel::stopCluster(cl))
+            doParallel::registerDoParallel(cl=cl,cores=ncpus)                
+        })
         if (split.method$name=="BootCv" && multi.split.test==TRUE){
             if ("AUC" %in% metrics) {
                 warning("Cannot do multi-split test with AUC yet. Forced multi.split.test=FALSE")
@@ -1009,8 +1033,9 @@ Score.list <- function(object,
             if (!missing(seed)) set.seed(seed)
             trainseeds <- sample(1:1000000,size=B,replace=FALSE)
         }
-        DT.B <- rbindlist(lapply(1:B,function(b){
-            ## foreach (b=1:B) %dopar%{
+        if (parallel=="snow") exports <- c("data","split.method","Weights","N","trainseeds") else exports <- NULL
+        DT.B <- rbindlist(foreach (b=1:B,.export=exports) %dopar%{
+            ## DT.B <- rbindlist(lapply(1:B,function(b){
             traindata=data[split.method$index[,b]]
             ## setkey(traindata,ID)
             testids <- (match(1:N,unique(split.method$index[,b]),nomatch=0)==0)
@@ -1031,7 +1056,7 @@ Score.list <- function(object,
                                        trainseed=trainseeds[[b]])
             DT.b[,b:=b]
             DT.b
-        }))
+        })
         if (any(is.na(DT.B[["risk"]]))){
             missing.predictions <- DT.B[,list("Missing.values"=sum(is.na(risk))),by=byvars]
             warning("Missing values in the predicted risk. See `missing.predictions' in output list.")
@@ -1428,79 +1453,81 @@ Score.list <- function(object,
                     return(output)
                 }
             
+                # }}}
+            })
+            names(crossvalPerf) <- metrics
             # }}}
-        })
-        names(crossvalPerf) <- metrics
-        # }}}
-    }else{ ## split.method bootcv
-        # {{{ bootcv
-        crossval <- lapply(1:B,function(j){
-            DT.b <- DT.B[b==j]
-            N.b <- length(unique(DT.b[["ID"]]))
-            computePerformance(DT.b,
-                               N=N.b,
-                               se.fit=FALSE,
-                               conservative=TRUE, ## cannot subset IC yet
-                               cens.model=cens.model,
-                               multi.split.test=multi.split.test,
-                               keep.residuals=FALSE,
-                               keep.vcov=FALSE)
-        })
-        crossvalPerf <- lapply(metrics,function(m){
-            if (response.type %in% c("survival","competing.risks")){
-                byvars <- c("model","times")
-            } else{
-                byvars <- c("model")
+        }else{ ## split.method bootcv
+            # {{{ bootcv
+            if (parallel=="snow") exports <- c("DT.b","N.b","cens.model","multi.split.test") else exports <- NULL
+            crossval <- foreach (j=1:B,.export=c("DT.b","N.b","cens.model","multi.split.test")) %dopar%{
+                ## crossval <- lapply(1:B,function(j){
+                DT.b <- DT.B[b==j]
+                N.b <- length(unique(DT.b[["ID"]]))
+                computePerformance(DT.b,
+                                   N=N.b,
+                                   se.fit=FALSE,
+                                   conservative=TRUE, ## cannot subset IC yet
+                                   cens.model=cens.model,
+                                   multi.split.test=multi.split.test,
+                                   keep.residuals=FALSE,
+                                   keep.vcov=FALSE)
             }
-            ## score
-            if (length(crossval[[1]][[m]]$score)>0){
-                cv.score <- data.table::rbindlist(lapply(crossval,function(x){x[[m]]$score}))
-                if (se.fit==TRUE){
-                    bootcv.score <- cv.score[,data.table::data.table(mean(.SD[[m]],na.rm=TRUE),
-                                                                     lower=quantile(.SD[[m]],alpha/2,na.rm=TRUE),
-                                                                     upper=quantile(.SD[[m]],(1-alpha/2),na.rm=TRUE)),by=byvars,.SDcols=m]
-                    data.table::setnames(bootcv.score,c(byvars,m,"lower","upper"))
+            crossvalPerf <- lapply(metrics,function(m){
+                if (response.type %in% c("survival","competing.risks")){
+                    byvars <- c("model","times")
                 } else{
-                    bootcv.score <- cv.score[,data.table::data.table(mean(.SD[[m]],na.rm=TRUE)),by=byvars,.SDcols=m]
-                    data.table::setnames(bootcv.score,c(byvars,m))
+                    byvars <- c("model")
                 }
-            }else{
-                cv.score <- NULL
-                bootcv.score <- NULL
-            }
-            ## contrasts and multi-split test
-            if (length(crossval[[1]][[m]]$contrasts)>0){
-                cv.contrasts <- data.table::rbindlist(lapply(crossval,function(x){x[[m]]$contrasts}))
-                delta.m <- paste0("delta.",m)
-                bootcv.contrasts <- switch(as.character(se.fit+3*multi.split.test),
-                                           "4"={
-                                               cv.contrasts[,data.table::data.table(mean(.SD[[delta.m]],na.rm=TRUE),
-                                                                                    lower=quantile(.SD[[delta.m]],alpha/2,na.rm=TRUE),
-                                                                                    upper=quantile(.SD[[delta.m]],(1-alpha/2),na.rm=TRUE),
-                                                                                    p=median(.SD[["p"]],na.rm=TRUE)),by=c(byvars,"reference"),.SDcols=c(delta.m,"p")]
-                                           },
-                                           "1"={cv.contrasts[,data.table::data.table(mean(.SD[[delta.m]],na.rm=TRUE),
-                                                                                     lower=quantile(.SD[[delta.m]],alpha/2,na.rm=TRUE),
-                                                                                     upper=quantile(.SD[[delta.m]],(1-alpha/2),na.rm=TRUE)),by=c(byvars,"reference"),.SDcols=c(delta.m)]
-                                           },
-                                           "3"={cv.contrasts[,data.table::data.table(mean(.SD[[delta.m]],na.rm=TRUE),
-                                                                                     p=median(.SD[["p"]],na.rm=TRUE)),by=c(byvars,"reference"),.SDcols=c(delta.m,"p")]
-                                           },
-                                           "0"={
-                                               bootcv.contrasts <- cv.contrasts[,data.table::data.table(mean(.SD[[delta.m]],na.rm=TRUE)),by=c(byvars,"reference"),.SDcols=delta.m]
-                                           })
-                data.table::setnames(bootcv.contrasts,"V1",delta.m)
-            }else{ 
-                cv.contrasts <- NULL
-                bootcv.contrasts <- NULL
-            }
-            out <- list(score=bootcv.score,contrasts=bootcv.contrasts)
-            if (keep.cv)
-                out <- c(out,list(cv.score=cv.score,cv.contrasts=cv.contrasts))
-            out
-        })
-        names(crossvalPerf) <- metrics
-    }
+                ## score
+                if (length(crossval[[1]][[m]]$score)>0){
+                    cv.score <- data.table::rbindlist(lapply(crossval,function(x){x[[m]]$score}))
+                    if (se.fit==TRUE){
+                        bootcv.score <- cv.score[,data.table::data.table(mean(.SD[[m]],na.rm=TRUE),
+                                                                         lower=quantile(.SD[[m]],alpha/2,na.rm=TRUE),
+                                                                         upper=quantile(.SD[[m]],(1-alpha/2),na.rm=TRUE)),by=byvars,.SDcols=m]
+                        data.table::setnames(bootcv.score,c(byvars,m,"lower","upper"))
+                    } else{
+                        bootcv.score <- cv.score[,data.table::data.table(mean(.SD[[m]],na.rm=TRUE)),by=byvars,.SDcols=m]
+                        data.table::setnames(bootcv.score,c(byvars,m))
+                    }
+                }else{
+                    cv.score <- NULL
+                    bootcv.score <- NULL
+                }
+                ## contrasts and multi-split test
+                if (length(crossval[[1]][[m]]$contrasts)>0){
+                    cv.contrasts <- data.table::rbindlist(lapply(crossval,function(x){x[[m]]$contrasts}))
+                    delta.m <- paste0("delta.",m)
+                    bootcv.contrasts <- switch(as.character(se.fit+3*multi.split.test),
+                                               "4"={
+                                                   cv.contrasts[,data.table::data.table(mean(.SD[[delta.m]],na.rm=TRUE),
+                                                                                        lower=quantile(.SD[[delta.m]],alpha/2,na.rm=TRUE),
+                                                                                        upper=quantile(.SD[[delta.m]],(1-alpha/2),na.rm=TRUE),
+                                                                                        p=median(.SD[["p"]],na.rm=TRUE)),by=c(byvars,"reference"),.SDcols=c(delta.m,"p")]
+                                               },
+                                               "1"={cv.contrasts[,data.table::data.table(mean(.SD[[delta.m]],na.rm=TRUE),
+                                                                                         lower=quantile(.SD[[delta.m]],alpha/2,na.rm=TRUE),
+                                                                                         upper=quantile(.SD[[delta.m]],(1-alpha/2),na.rm=TRUE)),by=c(byvars,"reference"),.SDcols=c(delta.m)]
+                                               },
+                                               "3"={cv.contrasts[,data.table::data.table(mean(.SD[[delta.m]],na.rm=TRUE),
+                                                                                         p=median(.SD[["p"]],na.rm=TRUE)),by=c(byvars,"reference"),.SDcols=c(delta.m,"p")]
+                                               },
+                                               "0"={
+                                                   bootcv.contrasts <- cv.contrasts[,data.table::data.table(mean(.SD[[delta.m]],na.rm=TRUE)),by=c(byvars,"reference"),.SDcols=delta.m]
+                                               })
+                    data.table::setnames(bootcv.contrasts,"V1",delta.m)
+                }else{ 
+                    cv.contrasts <- NULL
+                    bootcv.contrasts <- NULL
+                }
+                out <- list(score=bootcv.score,contrasts=bootcv.contrasts)
+                if (keep.cv)
+                    out <- c(out,list(cv.score=cv.score,cv.contrasts=cv.contrasts))
+                out
+            })
+            names(crossvalPerf) <- metrics
+        }
 
     # }}}
     # {{{ collect data for calibration plots

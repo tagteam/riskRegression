@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: apr 11 2018 (17:05) 
 ## Version: 
-## Last-Updated: Sep 11 2018 (12:26) 
+## Last-Updated: Oct  7 2018 (14:59) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 69
+##     Update #: 70
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -45,8 +45,7 @@ calcBootATE <- function(object, pointEstimate, Gformula, data, formula, TD,
     bootseeds <- sample(1:1000000,size=B,replace=FALSE)
     ## bootstrap
     if(handler[[1]] %in% c("snow","parallel")) {
-                                        # {{{ use boot package
-
+        # {{{ use boot package
         if(handler=="snow" && no.cl){
             ## initialize CPU
             cl <- parallel::makeCluster(mc.cores)
@@ -69,25 +68,14 @@ calcBootATE <- function(object, pointEstimate, Gformula, data, formula, TD,
             if ("try-error" %in% class(objectBoot)){
                 stop(paste0("Failed to fit model ",class(object)))
             }
-            Gargs <- list(object=objectBoot,
-                          data=dataBoot,
-                          treatment=treatment,
-                          contrasts=contrasts,
-                          times=times,
-                          cause=cause,
-                          landmark=landmark,
-                          n.contrasts = n.contrasts,
-                          levels = levels,
-                          dots)
+            Gargs <- list(object=objectBoot,data=dataBoot,treatment=treatment,contrasts=contrasts,times=times,cause=cause,landmark=landmark,n.contrasts = n.contrasts,levels = levels,dots)
             if (TD) Gargs <- c(Gargs,list(formula=formula))
             iBoot <- tryCatch(do.call(Gformula, Gargs),
                               error = function(x){return(NULL)})
             if(is.null(iBoot)){ ## error handling
                 out <- setNames(rep(NA, length(name.estimate), name.estimate))
             }else{
-                out <- setNames(c(iBoot$meanRisk$meanRisk,
-                                  iBoot$riskComparison$diff,
-                                  iBoot$riskComparison$ratio), name.estimate)
+                out <- setNames(c(iBoot$meanRisk$meanRisk,iBoot$riskComparison$diff,iBoot$riskComparison$ratio), name.estimate)
             }
             return(out)
         }, sim = "ordinary", stpe = "indices", strata = rep(1, n.obs),
@@ -104,9 +92,8 @@ calcBootATE <- function(object, pointEstimate, Gformula, data, formula, TD,
                 }                
             }           
             doParallel::registerDoParallel(cl)
-            
+            ## progress bar 
             if(verbose){pb <- txtProgressBar(max = B, style = 3)}
-
             b <- NULL ## [:forCRANcheck:] foreach
             boots <- foreach::`%dopar%`(foreach::foreach(b = 1:B, .packages = addPackage, .export = c("formula")), { ## b <- 1
                 set.seed(bootseeds[[b]])
@@ -117,16 +104,7 @@ calcBootATE <- function(object, pointEstimate, Gformula, data, formula, TD,
                 if ("try-error" %in% class(objectBoot)){
                     stop(paste0("Failed to fit model ",class(object),ifelse(try(b>0,silent=TRUE),paste0(" in bootstrap step ",b,"."))))
                 }
-                Gargs <- list(object=objectBoot,
-                              data=dataBoot,
-                              treatment=treatment,
-                              contrasts=contrasts,
-                              times=times,
-                              cause=cause,
-                              landmark=landmark,
-                              n.contrasts = n.contrasts,
-                              levels = levels,
-                              dots)
+                Gargs <- list(object=objectBoot,data=dataBoot,treatment=treatment,contrasts=contrasts,times=times,cause=cause,landmark=landmark,n.contrasts = n.contrasts,levels = levels,dots)
                 if (TD) Gargs <- c(Gargs,list(formula=formula))
                 iBoot <- tryCatch(do.call(Gformula, Gargs),
                                   error = function(x){return(NULL)})
@@ -134,9 +112,9 @@ calcBootATE <- function(object, pointEstimate, Gformula, data, formula, TD,
             })
             if(verbose){close(pb)}
             if(no.cl){parallel::stopCluster(cl)}
-                                        # }}}
+            # }}}
         }else{
-                                        # {{{ mcapply
+            # {{{ mcapply
             if(Sys.info()["sysname"] == "Windows" && mc.cores>1){
                 message("mclapply cannot perform parallel computations on Windows \n",
                         "consider setting argument handler to \"foreach\" \n")
@@ -151,16 +129,7 @@ calcBootATE <- function(object, pointEstimate, Gformula, data, formula, TD,
                     stop(paste0("Failed to fit model",ifelse(try(b>0,silent=TRUE),paste0(" in bootstrap step ",b,"."))))
                 }
 
-                Gargs <- list(object=objectBoot,
-                              data=dataBoot,
-                              treatment=treatment,
-                              contrasts=contrasts,
-                              times=times,
-                              cause=cause,
-                              landmark=landmark,
-                              n.contrasts = n.contrasts,
-                              levels = levels,
-                              dots)
+                Gargs <- list(object=objectBoot,data=dataBoot,treatment=treatment,contrasts=contrasts,times=times,cause=cause,landmark=landmark,n.contrasts = n.contrasts,levels = levels,dots)
                 if (TD) Gargs <- c(Gargs,list(formula=formula))
                 iBoot <- tryCatch(do.call(Gformula, Gargs),
                                   error = function(x){return(NULL)})

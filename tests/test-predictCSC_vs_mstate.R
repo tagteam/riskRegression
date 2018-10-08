@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: maj 18 2017 (09:23) 
 ## Version: 
-## last-updated: Oct  2 2018 (14:33) 
+## last-updated: Oct  4 2018 (10:05) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 199
+##     Update #: 200
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -16,6 +16,7 @@
 ### Code:
 
 ## * Settings
+if (class(try(riskRegression.test,silent=TRUE))[1]!="try-error"){
 library(riskRegression)
 library(testthat)
 library(mstate)
@@ -812,6 +813,6 @@ cfit1$iid <- lapply(cfit1$model,iidCox)
 
 res <- predict(cfit1,newdata=Melanoma[1,,drop=FALSE],cause=1,
                times=4,se=TRUE,band=TRUE)
-
+}
 #----------------------------------------------------------------------
 ### test-predictCSC_vs_mstate.R ends here

@@ -11,7 +11,8 @@
   conservative = FALSE, multi.split.test = FALSE, conf.int = 0.95,
   contrasts = TRUE, probs = c(0, 0.25, 0.5, 0.75, 1),
   cens.method = "ipcw", cens.model = "cox", split.method, B, M, seed,
-  trainseeds, keep, predictRisk.args, debug = 0L, useEventTimes,
+  trainseeds, parallel = c("no", "multicore", "snow"), ncpus = 1,
+  cl = NULL, keep, predictRisk.args, debug = 0L, useEventTimes,
   nullModel, censMethod, censModel, splitMethod, ...)
 }
 \arguments{
@@ -115,6 +116,12 @@ has to be an integer smaller than the size of \code{data}.}
 randomly splitting (bootstrapping) the data during cross-validation.}
 
 \item{trainseeds}{Seeds for training models during cross-validation.}
+
+\item{parallel}{The type of parallel operation to be used (if any). If missing, the default is \code{"no"}.}
+
+\item{ncpus}{integer: number of processes to be used in parallel operation.}
+
+\item{cl}{An optional \code{parallel} or \code{snow} cluster for use if ‘parallel = "snow"’. If not supplied, a cluster on the local machine is created for the duration of the \code{Score} call.}
 
 \item{keep}{list of characters (not case sensitive) which determines additional output.
 \code{"residuals"} provides Brier score residuals and
