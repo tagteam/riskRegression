@@ -775,8 +775,14 @@ Score.list <- function(object,
             ## IC_G(t,z;x_k)
         }else { 
             if (cens.type=="uncensored"){
-                cens.method <- c("none")
+                cens.method <- "none"
                 cens.model <- "none"
+                if ("auc" %in% metrics){
+                    if (se.fit==TRUE) {
+                        warning("Standard error for AUC with uncensored time-to-event outcome not yet implemented.")
+                        se.fit <- FALSE
+                    }
+                }
                 Weights <- NULL
             }
             else{
@@ -1421,6 +1427,7 @@ Score.list <- function(object,
                                 DT.B <- merge(DT.B,Wt,by=c("ID","times"))
                             }
                             if (cens.type=="uncensored"){
+                                DT.B[,IF.Brier:= residuals]
                                 score.loob <- DT.B[,data.table(Brier=sum(residuals)/N,
                                                                se=sd(residuals)/sqrt(N),
                                                                se.conservative=sd(residuals)/sqrt(N)),by=byvars]
@@ -1770,6 +1777,7 @@ Brier.survival <- function(DT,MC,se.fit,conservative,cens.model,keep.vcov=FALSE,
             setnames(DT,"IC0","IF.Brier")
         }else{
             if (cens.model=="none"){
+                DT[,IF.Brier:=residuals]
                 score <- DT[,data.table(Brier=sum(residuals)/N,
                                         se=sd(residuals)/sqrt(N),
                                         se.conservative=sd(residuals)),by=list(model,times)]
@@ -1854,6 +1862,7 @@ Brier.competing.risks <- function(DT,MC,se.fit,conservative,cens.model,keep.vcov
                                     se=sd(IC0)/sqrt(N)),by=list(model,times)]
         }else{
             if (cens.model=="none"){
+                DT[,IF.Brier:=residuals]
                 score <- DT[,data.table(Brier=sum(residuals)/N,
                                         se=sd(residuals)/sqrt(N),
                                         se.conservative=sd(residuals)),by=list(model,times)]

@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jan  4 2016 (14:30) 
 ## Version: 
-## last-updated: Jan 12 2019 (14:04) 
+## last-updated: Jan 12 2019 (14:53) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 119
+##     Update #: 121
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -218,17 +218,24 @@ test_that("integrated Brier score",{
 })
 # }}}
 # {{{ "survival outcome uncensored"
-## test_that("survival outcome uncensored",{
-## library(mlbench)
-## library(survival)
-## library(randomForestSRC)
-## data(BostonHousing)
-## d=BostonHousing
-## d$status=1
-## cx=coxph(Surv(medv,status)~.,d,x=TRUE)
-## rfx=rfsrc(Surv(medv,status)~.,d,ntree=10)
-## Score(list(Cox=cx,RF=rfx),data=d,formula=Hist(medv,status)~1,se.fit=TRUE)
-## })
+test_that("survival outcome uncensored",{
+    library(survival)
+    library(randomForestSRC)
+    library(riskRegression)
+    d <- sampleData(100,outcome="survival")
+    d$event=1
+    cx=coxph(Surv(time,event)~.,d,x=TRUE)
+    rfx=rfsrc(Surv(time,event)~.,d,ntree=10)
+    out <- Score(list(Cox=cx,RF=rfx),
+                 data=d,
+                 metrics="brier",
+                 summary="ibs",
+                 contrasts=FALSE,
+                 times=sort(unique(d$time)),
+                 formula=Hist(time,event)~1,
+                 se.fit=FALSE)
+    out
+})
 # }}}
 # {{{ "binary outcome: Brier"
 test_that("binary outcome: Brier",{
