@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jan  4 2016 (14:30) 
 ## Version: 
-## last-updated: Oct  4 2018 (10:14) 
+## last-updated: Dec 12 2018 (07:34) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 112
+##     Update #: 114
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -194,6 +194,18 @@ test_that("survival outcome,Brier Score, external prediction",{
     cbind(b$Brier$score[,Brier],as.vector(unlist(a$AppErr)))
     expect_equal(b$Brier$score[,Brier],as.vector(unlist(a$AppErr)))
 })
+# }}}
+# {{{ "survival outcome uncensored"
+test_that("survival outcome uncensored",{
+    library(mlbench)
+    library(survival)
+    library(randomForestSRC)
+    data(BostonHousing)
+    d=BostonHousing;d$status=1
+    cx=coxph(Surv(medv,status)~.,d,x=TRUE)
+    rfx=rfsrc(Surv(medv,status)~.,d,ntree=10)
+    Score(list(Cox=cx,forest=rfx),data=d,formula=Hist(medv,status)~1,se.fit=TRUE)
+}
 # }}}
 # {{{ "binary outcome: Brier"
 test_that("binary outcome: Brier",{

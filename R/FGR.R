@@ -177,6 +177,7 @@ FGR <- function(formula,data,cause=1,y=TRUE,...){
     out$call <- match.call()
     if (is.null(out$call$cause)) out$call$cause <- cause
     out$terms <- terms(formula)
+    
     class(out) <- "FGR"
     # }}}
     out

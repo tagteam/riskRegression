@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Oct 23 2016 (08:53) 
 ## Version: 
-## last-updated: Oct  7 2018 (14:59) 
+## last-updated: Oct 18 2018 (10:54) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 828
+##     Update #: 830
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -127,27 +127,26 @@
 #' 
 #' ## generate data
 #' n <- 100
-#' dtS <- sampleData(n, outcome="survival")
-#' dtS[, event5 := eventtime<=5]
-#' dtS[, X2 := as.numeric(X2)]
+#' dtB <- sampleData(n, outcome="binary")
+#' dtB[, X2 := as.numeric(X2)]
 #' 
-#' ## estimate the Cox model
-#' fit <- glm(formula = event5 ~ X1+X2, data=dtS, family = "binomial")
+#' ## estimate a logistic regression model
+#' fit <- glm(formula = Y ~ X1+X2, data=dtB, family = "binomial")
 #' 
-#' ## compute the ATE at times 5 using X1 as the treatment variable
-#' ## only punctual estimate (argument se = FALSE)
-#' ateFit1a <- ate(fit, data = dtS, treatment = "X1", times = 5,
+#' ## compute the ATE using X1 as the treatment variable
+#' ## only point estimate (argument se = FALSE)
+#' ateFit1a <- ate(fit, data = dtB, treatment = "X1", times = 5,
 #'                se = FALSE)
 #' ateFit1a
 #'
 #' \dontrun{
 #' ## standard error / confidence intervals computed using the influence function
-#' ateFit1b <- ate(fit, data = dtS, treatment = "X1", times = 5,
+#' ateFit1b <- ate(fit, data = dtB, treatment = "X1", times = 5,
 #'                se = TRUE, B = 0)
 #' ateFit1b
 #'
 #' ## standard error / confidence intervals computed using 100 boostrap samples
-#' ateFit1d <- ate(fit, data = dtS, treatment = "X1",
+#' ateFit1d <- ate(fit, data = dtB, treatment = "X1",
 #'                 times = 5, se = TRUE, B = 100)
 #' ateFit1d
 #' 

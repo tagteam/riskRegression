@@ -169,9 +169,6 @@ cox.fit2  <- CSC(list(Hist(time,cause)~strata(X1)+X2,Hist(time,cause)~X1+X2),dat
 predictRisk(cox.fit2,newdata=test,times=seq(1:10),cause=1)
 
 }
-\seealso{
-See \code{\link{predictRisk}}.
-}
 \author{
 Thomas A. Gerds \email{tag@biostat.ku.dk}
 }

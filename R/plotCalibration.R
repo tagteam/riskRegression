@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Feb 23 2017 (11:15) 
 ## Version: 
-## last-updated: Oct  3 2018 (16:50) 
+## last-updated: Jan  5 2019 (11:07) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 261
+##     Update #: 270
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -162,7 +162,8 @@ plotCalibration <- function(x,
             pframe <- pframe[model%in%models]
         } else{
             if (all(is.numeric(models)) && (max(models)<=length(fitted.models))){
-                pframe <- pframe[model%in%fitted.models[models]]
+                models <- fitted.models[models]
+                pframe <- pframe[model%in%models]
             }else{
                 stop(paste0("The requested models: ",
                             models,
@@ -229,6 +230,7 @@ plotCalibration <- function(x,
                                      auc.in.legend=auc.in.legend,
                                      brier.in.legend=brier.in.legend,
                                      drop.null.model=TRUE)
+
         if (is.character(legend))
             legend.text <- legend
         else
