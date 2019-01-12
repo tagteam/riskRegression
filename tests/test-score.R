@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jan  4 2016 (14:30) 
 ## Version: 
-## last-updated: Jan 12 2019 (09:14) 
+## last-updated: Jan 12 2019 (14:04) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 116
+##     Update #: 119
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -195,17 +195,39 @@ test_that("survival outcome,Brier Score, external prediction",{
     expect_equal(b$Brier$score[,Brier],as.vector(unlist(a$AppErr)))
 })
 # }}}
+# {{{integrated Brier score
+test_that("integrated Brier score",{
+    set.seed(18)
+    trainSurv <- sampleData(100,outcome="survival")
+    testSurv <- sampleData(40,outcome="survival")
+    library(pec)
+    cox1 = coxph(Surv(time,event)~X1+X2+X7+X9,data=trainSurv, y=TRUE, x = TRUE)
+    cox2 = coxph(Surv(time,event)~X3+X5+X6,data=trainSurv, y=TRUE, x = TRUE)
+    xs=Score(list("c1"=cox1,"c2"=cox2),
+             formula=Surv(time,event)~1,data=testSurv,conf.int=FALSE,
+             se.fit=FALSE,
+             summary="ibs",
+             times=sort(unique(testSurv$time)))
+    xp=pec(list("c1"=cox1,"c2"=cox2),
+           formula=Surv(time,event)~1,data=testSurv,
+           times=sort(unique(testSurv$time)))
+    a1 <- ibs(xp,times=sort(unique(testSurv$time)),models="c1")
+    b1 <- xs$Brier$score[model=="c1",IBS]
+    ## cbind(a1,b1)
+    expect_equal(as.numeric(c(a1,use.names=FALSE)),c(b1))
+})
+# }}}
 # {{{ "survival outcome uncensored"
 ## test_that("survival outcome uncensored",{
-    ## library(mlbench)
-    ## library(survival)
-    ## library(randomForestSRC)
-    ## data(BostonHousing)
-    ## d=BostonHousing
-    ## d$status=1
-    ## cx=coxph(Surv(medv,status)~.,d,x=TRUE)
-    ## rfx=rfsrc(Surv(medv,status)~.,d,ntree=10)
-    ## Score(list(Cox=cx,RF=rfx),data=d,formula=Hist(medv,status)~1,se.fit=TRUE)
+## library(mlbench)
+## library(survival)
+## library(randomForestSRC)
+## data(BostonHousing)
+## d=BostonHousing
+## d$status=1
+## cx=coxph(Surv(medv,status)~.,d,x=TRUE)
+## rfx=rfsrc(Surv(medv,status)~.,d,ntree=10)
+## Score(list(Cox=cx,RF=rfx),data=d,formula=Hist(medv,status)~1,se.fit=TRUE)
 ## })
 # }}}
 # {{{ "binary outcome: Brier"

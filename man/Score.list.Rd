@@ -296,6 +296,12 @@ xs=Score(list("Cox(X1+X2+X7+X9)"=cox1,"Cox(X3+X5+X6)"=cox2),
 xs
 
 
+# Integrated Brier score
+xs=Score(list("Cox(X1+X2+X7+X9)"=cox1,"Cox(X3+X5+X6)"=cox2),
+ formula=Surv(time,event)~1,data=testSurv,conf.int=FALSE,
+ summary="ibs",
+ times=sort(unique(testSurv$time)))
+
 # time-dependent AUC for list of markers
 survmarkers = as.list(testSurv[,.(X6,X7,X8,X9,X10)])
 Score(survmarkers,

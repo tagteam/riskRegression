@@ -240,6 +240,12 @@
 ##'       formula=Surv(time,event)~1,data=testSurv,conf.int=FALSE,times=c(5,8))
 ##' xs
 ##'
+##'
+##' # Integrated Brier score
+##' xs=Score(list("Cox(X1+X2+X7+X9)"=cox1,"Cox(X3+X5+X6)"=cox2),
+##'  formula=Surv(time,event)~1,data=testSurv,conf.int=FALSE,
+##'  summary="ibs",
+##'  times=sort(unique(testSurv$time)))
 ##' 
 ##' # time-dependent AUC for list of markers
 ##' survmarkers = as.list(testSurv[,.(X6,X7,X8,X9,X10)])
@@ -426,7 +432,14 @@ Score.list <- function(object,
     metrics[grep("^brier$",metrics,ignore.case=TRUE)] <- "Brier"
     plots[grep("^roc$",plots,ignore.case=TRUE)] <- "ROC"
     plots[grep("^cal",plots,ignore.case=TRUE)] <- "Calibration"
-    if (length(posRR <- grep("^ipa$|^rr$|^r2|rsq",summary,ignore.case=TRUE))>0){
+    if (length(posIBS <- grep("^ibs$|^crps$",summary,ignore.case=TRUE))>0){
+        summary <- summary[-posIBS]
+        if (!("Brier" %in% metrics)) metrics <- c(metrics,"Brier")
+        ibs <- TRUE
+    }else{
+        ibs <- FALSE
+    }
+    if (length(posRR <- grep("^ipa$|^rr$|^r2|rsquared$",summary,ignore.case=TRUE))>0){
         if (!null.model) stop("Need the null model to compute IPA/R^2 but argument 'null.model' is FALSE.")
         summary <- summary[-posRR]
         if (!("Brier" %in% metrics)) metrics <- c(metrics,"Brier")
@@ -796,7 +809,7 @@ Score.list <- function(object,
 
         ID=NULL
         # inherit everything else from parent frame: object, nullobject, NF, NT, times, cause, response.type, etc.
-        Brier=IPA=NULL
+        Brier=IPA=IBS=NULL
         looping <- !is.null(traindata)
         ## if (!looping) b=0
         N <- NROW(testdata)
@@ -924,7 +937,7 @@ Score.list <- function(object,
                                    multi.split.test,
                                    keep.residuals,
                                    keep.vcov){
-        IPA=Brier=NULL
+        IPA=IBS=Brier=NULL
         # inherit everything else from parent frame: summary, metrics, plots, alpha, probs, dolist, et
         out <- vector(mode="list",
                       length=length(c(summary,metrics,plots)))
@@ -978,7 +991,34 @@ Score.list <- function(object,
                 out[[m]]$contrasts[,reference:=factor(reference,levels=mlevs,mlabels)]
             }
         }
-        ## summary should be after metrics because IPA/R^2 depends on Brier score
+        ## summary should be after metrics because IBS and IPA/R^2 depends on Brier score
+        if (ibs){
+            Dint <- function(x,y,range,na.omit=FALSE){
+                if (is.null(range)) range=c(x[1],x[length(x)])
+                ##   integrate a step function f with
+                ##   values y=f(x) between range[1] and range[2]
+                start <- max(range[1],min(x))
+                Stop <- min(range[2],max(x))
+                if ((Stop-start)<=0)
+                    return(0)
+                else{
+                    Y=y[x>=start & x<Stop]
+                    X=x[x>=start & x<Stop]
+                    if (na.omit){
+                        X=X[!is.na(Y)]
+                        Y=Y[!is.na(Y)]
+                    } else if (any(is.na(Y))|| any(is.na(X))){
+                        return(NA)
+                    }
+                    return(1/(Stop-start) * sum(Y*diff(c(X,Stop))))
+                }
+            }
+            if (response.type!="binary"){
+                out[["Brier"]][["score"]][,IBS:=sapply(times,function(t){
+                    Dint(x=c(0,times),y=c(0,Brier),range=c(0,t))
+                }),by=c("model")]
+            }
+        }
         if (ipa){
             if (response.type=="binary")
                 out[["Brier"]][["score"]][,IPA:=1-Brier/Brier[model=="Null model"]]
