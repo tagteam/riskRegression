@@ -524,7 +524,7 @@ Score.list <- function(object,
         formula <- stats::update(formula,"Hist(time,event)~.")
     ## stop("Dont know how to predict response of type ",response.type))
     cens.type <- attr(response,"cens.type")
-    if (is.null(cens.type)) cens.type <- "uncensoredData"
+    if (is.null(cens.type)) cens.type <- "uncensored"
     rm(response)
     # }}}
     # {{{ SplitMethod & parallel stuff
@@ -763,6 +763,7 @@ Score.list <- function(object,
         }else { 
             if (cens.type=="uncensored"){
                 cens.method <- c("none")
+                cens.model <- "none"
                 Weights <- NULL
             }
             else{
@@ -1379,18 +1380,24 @@ Score.list <- function(object,
                                                  ID=data$ID)
                                 DT.B <- merge(DT.B,Wt,by=c("ID","times"))
                             }
-                            DT.B[,IF.Brier:=getInfluenceCurve.Brier(t=times[1],
-                                                                    time=time,
-                                                                    IC0,
-                                                                    residuals=residuals,
-                                                                    WTi=WTi,
-                                                                    Wt=Wt,
-                                                                    IC.G=Weights$IC,
-                                                                    cens.model=cens.model,
-                                                                    nth.times=nth.times[1]),by=byvars]
-                            score.loob <- DT.B[,data.table(Brier=sum(residuals)/N,
-                                                           se=sd(IF.Brier)/sqrt(N),
-                                                           se.conservative=sd(IC0)/sqrt(N)),by=byvars]
+                            if (cens.type=="uncensored"){
+                                score.loob <- DT.B[,data.table(Brier=sum(residuals)/N,
+                                                               se=sd(residuals)/sqrt(N),
+                                                               se.conservative=sd(residuals)/sqrt(N)),by=byvars]
+                            }else{
+                                DT.B[,IF.Brier:=getInfluenceCurve.Brier(t=times[1],
+                                                                        time=time,
+                                                                        IC0,
+                                                                        residuals=residuals,
+                                                                        WTi=WTi,
+                                                                        Wt=Wt,
+                                                                        IC.G=Weights$IC,
+                                                                        cens.model=cens.model,
+                                                                        nth.times=nth.times[1]),by=byvars]
+                                score.loob <- DT.B[,data.table(Brier=sum(residuals)/N,
+                                                               se=sd(IF.Brier)/sqrt(N),
+                                                               se.conservative=sd(IC0)/sqrt(N)),by=byvars]
+                            }
                         }else{
                             ## either conservative == TRUE or binary or uncensored
                             score.loob <- DT.B[,data.table(Brier=sum(residuals)/N,se=sd(IC0)/sqrt(N)),
@@ -1722,18 +1729,24 @@ Brier.survival <- function(DT,MC,se.fit,conservative,cens.model,keep.vcov=FALSE,
                                     se=sd(IC0)/sqrt(N)),by=list(model,times)]
             setnames(DT,"IC0","IF.Brier")
         }else{
-            DT[,IF.Brier:=getInfluenceCurve.Brier(t=times[1],
-                                                  time=time,
-                                                  IC0,
-                                                  residuals=residuals,
-                                                  WTi=WTi,
-                                                  Wt=Wt,
-                                                  IC.G=MC,
-                                                  cens.model=cens.model,
-                                                  nth.times=nth.times[1]),by=list(model,times)]
-            score <- DT[,data.table(Brier=sum(residuals)/N,
-                                    se=sd(IF.Brier)/sqrt(N),
-                                    se.conservative=sd(IC0)/sqrt(N)),by=list(model,times)]
+            if (cens.model=="none"){
+                score <- DT[,data.table(Brier=sum(residuals)/N,
+                                        se=sd(residuals)/sqrt(N),
+                                        se.conservative=sd(residuals)),by=list(model,times)]
+            }else{
+                DT[,IF.Brier:=getInfluenceCurve.Brier(t=times[1],
+                                                      time=time,
+                                                      IC0,
+                                                      residuals=residuals,
+                                                      WTi=WTi,
+                                                      Wt=Wt,
+                                                      IC.G=MC,
+                                                      cens.model=cens.model,
+                                                      nth.times=nth.times[1]),by=list(model,times)]
+                score <- DT[,data.table(Brier=sum(residuals)/N,
+                                        se=sd(IF.Brier)/sqrt(N),
+                                        se.conservative=sd(IC0)/sqrt(N)),by=list(model,times)]
+            }
         }
         if (se.fit==TRUE){
             score[,lower:=pmax(0,Brier-qnorm(1-alpha/2)*se)]
@@ -1800,22 +1813,28 @@ Brier.competing.risks <- function(DT,MC,se.fit,conservative,cens.model,keep.vcov
             score <- DT[,data.table(Brier=sum(residuals)/N,
                                     se=sd(IC0)/sqrt(N)),by=list(model,times)]
         }else{
-            DT[,IF.Brier:=getInfluenceCurve.Brier(t=times[1],
-                                                  time=time,
-                                                  IC0,
-                                                  residuals=residuals,
-                                                  WTi=WTi,
-                                                  Wt=Wt,
-                                                  IC.G=MC,
-                                                  cens.model=cens.model,
-                                                  nth.times=nth.times[1]),by=list(model,times)]
-            score <- DT[,data.table(Brier=sum(residuals)/N,
-                                    se=sd(IF.Brier)/sqrt(N),
-                                    se.conservative=sd(IC0)/sqrt(N)),by=list(model,times)]
+            if (cens.model=="none"){
+                score <- DT[,data.table(Brier=sum(residuals)/N,
+                                        se=sd(residuals)/sqrt(N),
+                                        se.conservative=sd(residuals)),by=list(model,times)]
+            }else{
+                DT[,IF.Brier:=getInfluenceCurve.Brier(t=times[1],
+                                                      time=time,
+                                                      IC0,
+                                                      residuals=residuals,
+                                                      WTi=WTi,
+                                                      Wt=Wt,
+                                                      IC.G=MC,
+                                                      cens.model=cens.model,
+                                                      nth.times=nth.times[1]),by=list(model,times)]
+                score <- DT[,data.table(Brier=sum(residuals)/N,
+                                        se=sd(IF.Brier)/sqrt(N),
+                                        se.conservative=sd(IC0)/sqrt(N)),by=list(model,times)]
+            }
         }
         if (se.fit==TRUE){
-        score[,lower:=pmax(0,Brier-qnorm(1-alpha/2)*se)]
-        score[,upper:=pmin(1,Brier + qnorm(1-alpha/2)*se)]
+            score[,lower:=pmax(0,Brier-qnorm(1-alpha/2)*se)]
+            score[,upper:=pmin(1,Brier + qnorm(1-alpha/2)*se)]
         }
     }else{
         ## no se.fit

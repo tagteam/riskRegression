@@ -6,6 +6,14 @@
 #' @param times Time points at which to evaluate the risks 
 #' @param ... passed to predict.crr
 #'
+#' @examples
+#' library(survival)
+#' set.seed(10)
+#' d <- sampleData(101, outcome = "competing.risk")
+#' tFun<-function(t) {t}
+#' fgr<-FGR(Hist(time, event)~X1+strata(X2)+X6+cov2(X7, tf=tFun),
+#'          data=d, cause=1)
+#' predictRisk(fgr,times=5,newdata=d[1:10])
 #' @method predict FGR
 #' @export
 predict.FGR <- function(object,newdata,times,...){

@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jan  4 2016 (14:30) 
 ## Version: 
-## last-updated: Dec 12 2018 (07:34) 
+## last-updated: Jan 12 2019 (09:14) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 114
+##     Update #: 116
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -196,16 +196,17 @@ test_that("survival outcome,Brier Score, external prediction",{
 })
 # }}}
 # {{{ "survival outcome uncensored"
-test_that("survival outcome uncensored",{
-    library(mlbench)
-    library(survival)
-    library(randomForestSRC)
-    data(BostonHousing)
-    d=BostonHousing;d$status=1
-    cx=coxph(Surv(medv,status)~.,d,x=TRUE)
-    rfx=rfsrc(Surv(medv,status)~.,d,ntree=10)
-    Score(list(Cox=cx,forest=rfx),data=d,formula=Hist(medv,status)~1,se.fit=TRUE)
-}
+## test_that("survival outcome uncensored",{
+    ## library(mlbench)
+    ## library(survival)
+    ## library(randomForestSRC)
+    ## data(BostonHousing)
+    ## d=BostonHousing
+    ## d$status=1
+    ## cx=coxph(Surv(medv,status)~.,d,x=TRUE)
+    ## rfx=rfsrc(Surv(medv,status)~.,d,ntree=10)
+    ## Score(list(Cox=cx,RF=rfx),data=d,formula=Hist(medv,status)~1,se.fit=TRUE)
+## })
 # }}}
 # {{{ "binary outcome: Brier"
 test_that("binary outcome: Brier",{
