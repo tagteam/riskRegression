@@ -21,10 +21,3 @@ discreteRoot(fn, grid, increasing = TRUE, check = TRUE,
 \description{
 Find the root of a monotone function on a discrete grid of value using dichotomic search
 }
-\examples{
-
-### find the position of a value in a vector
-f <- function(x){abs(vec[x]-1)}
-discreteRoot(function(x){x},grid = seq(-20,10,1))
-
-}

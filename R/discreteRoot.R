@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: nov 22 2017 (13:39) 
 ## Version: 
-## Last-Updated: okt 15 2018 (15:17) 
+## Last-Updated: jan 24 2019 (10:04) 
 ##           By: Brice Ozenne
-##     Update #: 239
+##     Update #: 240
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -25,41 +25,6 @@
 #' @param increasing [logical] is the function fn increasing?
 #' @param check [logical] should the program check that fn takes a different sign for the first vs. the last value of the grid?
 #' @param tol [numeric] the absolute convergence tolerance.
-#'
-#' @examples
-#'
-#' ### find the position of a value in a vector
-#' f <- function(x){abs(vec[x]-1)}
-#' discreteRoot(function(x){x},grid = seq(-20,10,1))
-#' 
-#' ### find level of the confidence interval
-#' library(nlme)
-#' fm1 <- gls(follicles ~ sin(2*pi*Time) + cos(2*pi*Time), data = Ovary,
-#'                correlation = corAR1(form = ~ 1 | Mare))
-#'
-#' fctIC1 <- function(x){    
-#'    IC.tempo <- intervals(fm1, level = 1-x)
-#'    return( IC.tempo[["coef"]][1,"upper"])
-#' }
-#' fctIC2 <- function(x){    
-#'    IC.tempo <- intervals(fm1, level = 1-x)
-#'    return( IC.tempo[["coef"]][2,"upper"])
-#' }
-#' fctIC3 <- function(x){    
-#'    IC.tempo <- intervals(fm1, level = 1-x)
-#'    return( IC.tempo[["coef"]][3,"upper"])
-#' }
-#'
-#' summary(fm1)$tTable
-#' discreteRoot(fctIC2,grid = seq(1/1000,1,0.001), increasing = FALSE)$par
-#' discreteRoot(fctIC3,grid = seq(1/1000,1,0.001), increasing = FALSE)$par
-#'
-#' ## negative coefficient
-#' fctIC <- function(x){    
-#'    IC.tempo <- intervals(fm1, level = x)
-#'    return( IC.tempo[["coef"]][3,"upper"])
-#' }
-#' discreteRoot(fctIC,grid = seq(0,1-1/1000,0.001))$par
 
 ## * discreteRoot
 #' @rdname dicreteRoot

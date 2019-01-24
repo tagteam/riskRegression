@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Oct 23 2016 (08:53) 
 ## Version: 
-## last-updated: Oct 18 2018 (10:54) 
-##           By: Thomas Alexander Gerds
-##     Update #: 830
+## last-updated: jan 24 2019 (10:22) 
+##           By: Brice Ozenne
+##     Update #: 850
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -135,13 +135,13 @@
 #' 
 #' ## compute the ATE using X1 as the treatment variable
 #' ## only point estimate (argument se = FALSE)
-#' ateFit1a <- ate(fit, data = dtB, treatment = "X1", times = 5,
-#'                se = FALSE)
+#' ateFit1a <- ate(fit, data = dtB, treatment = "X1", se = FALSE)
 #' ateFit1a
 #'
 #' \dontrun{
 #' ## standard error / confidence intervals computed using the influence function
-#' ateFit1b <- ate(fit, data = dtB, treatment = "X1", times = 5,
+#' ateFit1b <- ate(fit, data = dtB, treatment = "X1",
+#'                times = 5, ## just for having a nice output not used in computations
 #'                se = TRUE, B = 0)
 #' ateFit1b
 #'
@@ -270,6 +270,14 @@ ate <- function(object,
   diff.se=ratio.se=.GRP=lower=upper=diff.lower=diff.upper=diff.p.value=ratio.lower=ratio.upper=ratio.p.value <- NULL
    
     handler <- match.arg(handler, c("foreach","mclapply","snow","parallel"))
+    if(inherits(object,"glm")){
+        if(missing(times)){
+            times <- NA
+        }else if(length(times)!=1){
+            warning("Argument \'times\' has no effect when using a glm object \n",
+                    "It should be set to NA \n")
+        }
+    }
                                         # {{{ checking for time-dependent covariates (left-truncation)
     TD <- switch(class(object)[[1]],"coxph"=(attr(object$y,"type")=="counting"),
                  "CauseSpecificCox"=(attr(object$models[[1]]$y,"type")=="counting"),FALSE)
@@ -291,7 +299,7 @@ ate <- function(object,
                                         # {{{ Prepare
     dots <- list(...)
     if(se==0 && B>0){
-        warning("argument 'se=0' means 'no standard errors' so number of bootstrap repetitions is forced to B=0.")
+        warning("Argument 'se=0' means 'no standard errors' so number of bootstrap repetitions is forced to B=0.")
     }
     if(iid && B>0){
         stop("Influence function cannot be computed when using the bootstrap approach \n",
@@ -312,6 +320,10 @@ ate <- function(object,
         }
         if(!is.null(strata) ){
             stop("Argument strata must be NULL when argument treatment is specified. \n")
+        }
+        if(is.numeric(data[[treatment]])){ ## for now character variables are tolerated
+            stop("The treatment variable must be a factor variable. \n",
+                 "Convert treatment to factor, re-fit the object using this new variable and then call ate. \n")
         }
         strata <- treatment
     }else{
@@ -371,7 +383,7 @@ ate <- function(object,
     n.contrasts <- length(contrasts)
     n.times <- length(times)
     n.obs <- NROW(data)
-  
+    
   # }}}
   
     # {{{ Checking the model
@@ -615,7 +627,7 @@ Gformula_TI <- function(object,
                         n.contrasts,
                         levels,
                         ...){
-
+    
     meanRisk <- lapply(1:n.contrasts,function(i){ ## i <- 1
         ## prediction for the hypothetical worlds in which every subject is treated with the same treatment
         if(!is.null(treatment)){

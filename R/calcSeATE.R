@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: apr  5 2018 (17:01) 
 ## Version: 
-## Last-Updated: okt  4 2018 (13:19) 
+## Last-Updated: jan 24 2019 (09:52) 
 ##           By: Brice Ozenne
-##     Update #: 280
+##     Update #: 284
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -153,10 +153,10 @@ calcSeATE <- function(object, data, times, cause,
         iTreatmentB <- pointEstimate$riskComparison[[2]][iContrast]
         iTime <- pointEstimate$riskComparison[[3]][iContrast]
 
-        iIndexA <- intersect(which(pointEstimate$meanRisk[[1]]==iTreatmentA),
-                             which(pointEstimate$meanRisk[[2]]==iTime))
-        iIndexB <- intersect(which(pointEstimate$meanRisk[[1]]==iTreatmentB),
-                             which(pointEstimate$meanRisk[[2]]==iTime))
+        ## use identical instead of which to be compatible with NA
+        iIndexTime <- which(sapply(pointEstimate$meanRisk[[2]],identical,iTime))
+        iIndexA <- intersect(which(pointEstimate$meanRisk[[1]]==iTreatmentA), iIndexTime)
+        iIndexB <- intersect(which(pointEstimate$meanRisk[[1]]==iTreatmentB), iIndexTime)
 
         ## Compute the iid function of the average treatment effect (difference)
         out$diffRisk.iid[iContrast,] <- out$meanRisk.iid[iIndexB,] - out$meanRisk.iid[iIndexA,]
