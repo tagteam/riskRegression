@@ -6,6 +6,14 @@
 #' @param times Time points at which to evaluate the risks 
 #' @param ... passed to predict.crr
 #'
+#' @examples
+#' library(survival)
+#' set.seed(10)
+#' d <- sampleData(101, outcome = "competing.risk")
+#' tFun<-function(t) {t}
+#' fgr<-FGR(Hist(time, event)~X1+strata(X2)+X6+cov2(X7, tf=tFun),
+#'          data=d, cause=1)
+#' predictRisk(fgr,times=5,newdata=d[1:10])
 #' @method predict FGR
 #' @export
 predict.FGR <- function(object,newdata,times,...){
@@ -13,10 +21,17 @@ predict.FGR <- function(object,newdata,times,...){
     if (missing(newdata)) stop("Argument 'newdata' is missing")
     if (NROW(newdata) == 0) stop("No (non-missing) observations")
     rhs <- as.formula(delete.response(object$terms))
-    EHF <- prodlim::model.design(rhs,
-                                 newdata,
-                                 dropIntercept=TRUE,
-                                 specialsDesign=TRUE)
+    ## EHF <- prodlim::model.design(rhs,
+                                 ## newdata,
+                                 ## dropIntercept=TRUE,
+                                 ## specialsDesign=TRUE)
+    EHF <- prodlim::EventHistory.frame(formula(object$terms),
+                                       data=newdata,
+                                       specials=c("cov1","cov2"),
+                                       stripSpecials=c("cov1","cov2"),
+                                       stripArguments=list("cov1"=NULL,"cov2"=list("tf"=NULL)),
+                                       stripUnspecials="cov1",
+                                       specialsDesign=TRUE)
     # }}}
     # {{{ covariate design matrices
     cov1 <- cbind(EHF$cov1,EHF$design)

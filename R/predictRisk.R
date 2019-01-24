@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun  6 2016 (09:02) 
 ## Version: 
-## last-updated: Aug 17 2018 (12:26) 
+## last-updated: Jan  4 2019 (13:56) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 116
+##     Update #: 118
 #----------------------------------------------------------------------
 ## 
 ### Commentary:
@@ -65,7 +65,6 @@
 #' columns as \code{length(times)}. Each entry is a probability and in
 #' rows the values should be increasing.
 #' @author Thomas A. Gerds \email{tag@@biostat.ku.dk}
-#' @seealso See \code{\link{predictRisk}}.
 #' @details
 #' In uncensored binary outcome data there is no need to choose a time point.
 #'

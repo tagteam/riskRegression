@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jan  4 2016 (14:30) 
 ## Version: 
-## last-updated: Oct  4 2018 (10:14) 
+## last-updated: Jan 12 2019 (14:53) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 112
+##     Update #: 121
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -193,6 +193,48 @@ test_that("survival outcome,Brier Score, external prediction",{
     b <- Score(ModelsR,formula = Surv(time,status)~X1+X2,data=dat,times= c(5),se.fit=FALSE)
     cbind(b$Brier$score[,Brier],as.vector(unlist(a$AppErr)))
     expect_equal(b$Brier$score[,Brier],as.vector(unlist(a$AppErr)))
+})
+# }}}
+# {{{integrated Brier score
+test_that("integrated Brier score",{
+    set.seed(18)
+    trainSurv <- sampleData(100,outcome="survival")
+    testSurv <- sampleData(40,outcome="survival")
+    library(pec)
+    cox1 = coxph(Surv(time,event)~X1+X2+X7+X9,data=trainSurv, y=TRUE, x = TRUE)
+    cox2 = coxph(Surv(time,event)~X3+X5+X6,data=trainSurv, y=TRUE, x = TRUE)
+    xs=Score(list("c1"=cox1,"c2"=cox2),
+             formula=Surv(time,event)~1,data=testSurv,conf.int=FALSE,
+             se.fit=FALSE,
+             summary="ibs",
+             times=sort(unique(testSurv$time)))
+    xp=pec(list("c1"=cox1,"c2"=cox2),
+           formula=Surv(time,event)~1,data=testSurv,
+           times=sort(unique(testSurv$time)))
+    a1 <- ibs(xp,times=sort(unique(testSurv$time)),models="c1")
+    b1 <- xs$Brier$score[model=="c1",IBS]
+    ## cbind(a1,b1)
+    expect_equal(as.numeric(c(a1,use.names=FALSE)),c(b1))
+})
+# }}}
+# {{{ "survival outcome uncensored"
+test_that("survival outcome uncensored",{
+    library(survival)
+    library(randomForestSRC)
+    library(riskRegression)
+    d <- sampleData(100,outcome="survival")
+    d$event=1
+    cx=coxph(Surv(time,event)~.,d,x=TRUE)
+    rfx=rfsrc(Surv(time,event)~.,d,ntree=10)
+    out <- Score(list(Cox=cx,RF=rfx),
+                 data=d,
+                 metrics="brier",
+                 summary="ibs",
+                 contrasts=FALSE,
+                 times=sort(unique(d$time)),
+                 formula=Hist(time,event)~1,
+                 se.fit=FALSE)
+    out
 })
 # }}}
 # {{{ "binary outcome: Brier"
