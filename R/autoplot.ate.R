@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: apr 28 2017 (14:19) 
 ## Version: 
-## last-updated: jun 13 2018 (15:48) 
-##           By: Brice Ozenne
-##     Update #: 55
+## last-updated: Jan 28 2019 (16:43) 
+##           By: Thomas Alexander Gerds
+##     Update #: 56
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -34,6 +34,7 @@
 ## * autoplot.ate (examples)
 #' @rdname autoplot.ate
 #' @examples
+#' \dontrun{
 #' library(survival)
 #' library(rms)
 #'
@@ -59,7 +60,7 @@
 #' outGG <- autoplot(ateFit, band = TRUE, ci = TRUE, alpha = 0.1)
 #' dd <- as.data.frame(outGG$data[Treatment == 0])
 #' outGG$plot + facet_wrap(~Treatment, labeller = label_both)
-#' 
+#' }
 
 ## * autoplot.ate (code)
 #' @rdname autoplot.ate

@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne, Thomas A. Gerds
 ## Created: jun 27 2018 (17:47) 
 ## Version: 
-## Last-Updated: Oct  3 2018 (16:13) 
+## Last-Updated: Jan 28 2019 (14:54) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 1122
+##     Update #: 1123
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -468,7 +468,6 @@ ateRobust <- function(data, times, cause, type,
         atRisk[iN,] <- as.numeric(jump.time <= new.time[iN])
         dN[iN,] <- (jump.time == new.time[iN]) * new.status[iN]
     }
-    ## if (any(is.na(atRisk)))browser()
     ## ** compensator for the censoring
     dLambda <- predictCox(model.censor, newdata = data, times = jump.time, type = "hazard")$hazard
 

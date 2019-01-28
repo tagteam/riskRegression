@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jan  4 2016 (14:30) 
 ## Version: 
-## last-updated: Jan 12 2019 (14:53) 
+## last-updated: Jan 28 2019 (16:54) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 121
+##     Update #: 123
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -21,7 +21,6 @@ library(pec)
 library(riskRegression)
 library(pROC)
 library(data.table)
-library(Daim)
 context("riskRegression")
 # {{{ "R squared/IPA"
 test_that("R squared/IPA", { 
@@ -194,6 +193,7 @@ test_that("survival outcome,Brier Score, external prediction",{
     cbind(b$Brier$score[,Brier],as.vector(unlist(a$AppErr)))
     expect_equal(b$Brier$score[,Brier],as.vector(unlist(a$AppErr)))
 })
+
 # }}}
 # {{{integrated Brier score
 test_that("integrated Brier score",{
@@ -268,7 +268,6 @@ test_that("binary outcome: AUC", {
     x3 <- rnorm(100) + 2.5 * y
     x <- data.frame(x1,x2,x3)
     y <- as.factor(y)
-    daimres <- Daim::deLong.test(x, labels=y, labpos="1")
     r1 <- pROC::roc(y~x1)
     r2 <- pROC::roc(y~x2)
     r3 <- pROC::roc(y~x3)
@@ -282,18 +281,18 @@ test_that("binary outcome: AUC", {
     scoreres1 <- Score(list(X1=glm(y~x1,data=d,family='binomial'),X2=glm(y~x2,data=d,family='binomial'),X3=glm(y~x3,data=d,family='binomial')),formula=y~1,data=d,null.model=FALSE,metrics="auc",cause="1")
     scoreres1a <- Score(list(X1=glm(y~x1,data=d,family='binomial'),X2=glm(y~x2,data=d,family='binomial'),X3=glm(y~x3,data=d,family='binomial')),formula=y~1,data=d,null.model=FALSE,metrics="auc",se.fit=0L,cause="1")
     expect_equal(scoreres$AUC,scoreres1$AUC)
-    daim.auc <- daimres$AUC[,c("AUC","SD(DeLong)")]
+    ## daim.auc <- daimres$AUC[,c("AUC","SD(DeLong)")]
     score.auc <- as.data.frame(scoreres$AUC$score[,c("AUC","se"),with=FALSE])
-    rownames(score.auc) <- rownames(daim.auc)
-    colnames(score.auc) <- colnames(daim.auc)
-    expect_equal(daim.auc,score.auc)
+    ## rownames(score.auc) <- rownames(daim.auc)
+    ## colnames(score.auc) <- colnames(daim.auc)
+    ## expect_equal(daim.auc,score.auc)
     expect_equal(scoreres$AUC$score[["AUC"]],c(r1$auc,r2$auc,r3$auc))
     score.diff <- scoreres$AUC$contrasts[,c("delta.AUC","se","lower","upper","p"),with=FALSE]
-    daim.diff <- daimres$difference
-    expect_equal(daim.diff$"AUC Difference",-score.diff$delta.AUC)
-    expect_equal(daim.diff$"CI(lower)",-score.diff$upper)
-    expect_equal(daim.diff$"CI(upper)",-score.diff$lower)
-    expect_equal(daim.diff$"P.Value",score.diff$p)
+    ## daim.diff <- daimres$difference
+    ## expect_equal(daim.diff$"AUC Difference",-score.diff$delta.AUC)
+    ## expect_equal(daim.diff$"CI(lower)",-score.diff$upper)
+    ## expect_equal(daim.diff$"CI(upper)",-score.diff$lower)
+    ## expect_equal(daim.diff$"P.Value",score.diff$p)
 })
 # }}}
 # {{{ "Leave one out bootstrap: Number of models and time points"
@@ -362,7 +361,6 @@ if (class(try(riskRegression.test,silent=TRUE))[1]!="try-error"){
         library(pec)
         library(pROC)
         library(data.table)
-        library(Daim)
         data(GBSG2)
         setDT(GBSG2)
         setorder(GBSG2,time,-cens,age)

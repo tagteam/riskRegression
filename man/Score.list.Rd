@@ -258,9 +258,10 @@ Score(list("LR(X1+X2+X7+X9)"=lr1,"LR(X3+X5)"=lr2),formula=Y~1,data=testdat)
 
 ## ROC curve and calibration plot 
 xb=Score(list("LR(X1+X2+X7+X9)"=lr1,"LR(X3+X5+X6)"=lr2),formula=Y~1,
-        data=testdat,plots=c("calibration","ROC"))
-plotROC(xb)
+         data=testdat,plots=c("calibration","ROC"))
+\dontrun{plotROC(xb)
 plotCalibration(xb)
+}
 
 ## compute AUC for a list of continuous markers
 markers = as.list(testdat[,.(X6,X7,X8,X9,X10)])
@@ -268,22 +269,22 @@ Score(markers,formula=Y~1,data=testdat,metrics=c("auc"))
 
 # cross-validation
 \dontrun{
-learndat=sampleData(400,outcome="binary")
-lr1a = glm(Y~X6,data=learndat,family=binomial)
-lr2a = glm(Y~X7+X8+X9,data=learndat,family=binomial)
-## bootstrap cross-validation
-x1=Score(list("LR1"=lr1a,"LR2"=lr2a),formula=Y~1,data=learndat,split.method="bootcv",B=100)
-x1
-## leave-one-out and leave-pair-out bootstrap
-x2=Score(list("LR1"=lr1a,"LR2"=lr2a),formula=Y~1,data=learndat,
-              split.method="loob",
-              B=100,plots="calibration")
-x2
+    learndat=sampleData(400,outcome="binary")
+    lr1a = glm(Y~X6,data=learndat,family=binomial)
+    lr2a = glm(Y~X7+X8+X9,data=learndat,family=binomial)
+    ## bootstrap cross-validation
+    x1=Score(list("LR1"=lr1a,"LR2"=lr2a),formula=Y~1,data=learndat,split.method="bootcv",B=100)
+    x1
+    ## leave-one-out and leave-pair-out bootstrap
+    x2=Score(list("LR1"=lr1a,"LR2"=lr2a),formula=Y~1,data=learndat,
+             split.method="loob",
+             B=100,plots="calibration")
+    x2
 }
 # survival outcome
 
 # Score Cox regression models
-library(survival)
+\dontrun{library(survival)
 library(rms)
 library(prodlim)
 set.seed(18)
@@ -292,18 +293,20 @@ testSurv <- sampleData(40,outcome="survival")
 cox1 = coxph(Surv(time,event)~X1+X2+X7+X9,data=trainSurv, y=TRUE, x = TRUE)
 cox2 = coxph(Surv(time,event)~X3+X5+X6,data=trainSurv, y=TRUE, x = TRUE)
 xs=Score(list("Cox(X1+X2+X7+X9)"=cox1,"Cox(X3+X5+X6)"=cox2),
-      formula=Surv(time,event)~1,data=testSurv,conf.int=FALSE,times=c(5,8))
+         formula=Surv(time,event)~1,data=testSurv,conf.int=FALSE,times=c(5,8))
 xs
-
+}
 
 # Integrated Brier score
+\dontrun{
 xs=Score(list("Cox(X1+X2+X7+X9)"=cox1,"Cox(X3+X5+X6)"=cox2),
- formula=Surv(time,event)~1,data=testSurv,conf.int=FALSE,
- summary="ibs",
- times=sort(unique(testSurv$time)))
+         formula=Surv(time,event)~1,data=testSurv,conf.int=FALSE,
+         summary="ibs",
+         times=sort(unique(testSurv$time)))
+}
 
 # time-dependent AUC for list of markers
-survmarkers = as.list(testSurv[,.(X6,X7,X8,X9,X10)])
+\dontrun{survmarkers = as.list(testSurv[,.(X6,X7,X8,X9,X10)])
 Score(survmarkers,
       formula=Surv(time,event)~1,metrics="auc",data=testSurv,
       conf.int=TRUE,times=c(5,8))
@@ -311,61 +314,61 @@ Score(survmarkers,
 # compare models on test data
 Score(list("Cox(X1+X2+X7+X9)"=cox1,"Cox(X3+X5+X6)"=cox2),
       formula=Surv(time,event)~1,data=testSurv,conf.int=TRUE,times=c(5,8))
-
+}
 # crossvalidation models in traindata
 \dontrun{
-library(survival)
-set.seed(18)
-trainSurv <- sampleData(400,outcome="survival")
-cox1 = coxph(Surv(time,event)~X1+X2+X7+X9,data=trainSurv, y=TRUE, x = TRUE)
-cox2 = coxph(Surv(time,event)~X3+X5+X6,data=trainSurv, y=TRUE, x = TRUE)
-x1 = Score(list("Cox(X1+X2+X7+X9)"=cox1,"Cox(X3+X5+X6)"=cox2),
-      formula=Surv(time,event)~1,data=trainSurv,conf.int=TRUE,times=c(5,8),
-      split.method="loob",B=100,plots="calibration")
+    library(survival)
+    set.seed(18)
+    trainSurv <- sampleData(400,outcome="survival")
+    cox1 = coxph(Surv(time,event)~X1+X2+X7+X9,data=trainSurv, y=TRUE, x = TRUE)
+    cox2 = coxph(Surv(time,event)~X3+X5+X6,data=trainSurv, y=TRUE, x = TRUE)
+    x1 = Score(list("Cox(X1+X2+X7+X9)"=cox1,"Cox(X3+X5+X6)"=cox2),
+               formula=Surv(time,event)~1,data=trainSurv,conf.int=TRUE,times=c(5,8),
+               split.method="loob",B=100,plots="calibration")
 
-x2= Score(list("Cox(X1+X2+X7+X9)"=cox1,"Cox(X3+X5+X6)"=cox2),
-      formula=Surv(time,event)~1,data=trainSurv,conf.int=TRUE,times=c(5,8),
-      split.method="bootcv",B=100)
+    x2= Score(list("Cox(X1+X2+X7+X9)"=cox1,"Cox(X3+X5+X6)"=cox2),
+              formula=Surv(time,event)~1,data=trainSurv,conf.int=TRUE,times=c(5,8),
+              split.method="bootcv",B=100)
 }
 
 # restrict number of comparisons
 \dontrun{
-Score(list("Cox(X1+X2+X7+X9)"=cox1,"Cox(X3+X5+X6)"=cox2),
-      formula=Surv(time,event)~1,data=trainSurv,contrasts=TRUE,
-null.model=FALSE,conf.int=TRUE,times=c(5,8),split.method="bootcv",B=3)
-}
-# competing risks outcome
-set.seed(18)
-trainCR <- sampleData(40,outcome="competing.risks")
-testCR <- sampleData(40,outcome="competing.risks")
-library(riskRegression)
-library(cmprsk)
-# Cause-specific Cox regression
-csc1 = CSC(Hist(time,event)~X1+X2+X7+X9,data=trainCR)
-csc2 = CSC(Hist(time,event)~X3+X5+X6,data=trainCR)
-# Fine-Gray regression
-fgr1 = FGR(Hist(time,event)~X1+X2+X7+X9,data=trainCR,cause=1)
-fgr2 = FGR(Hist(time,event)~X3+X5+X6,data=trainCR,cause=1)
-Score(list("CSC(X1+X2+X7+X9)"=csc1,"CSC(X3+X5+X6)"=csc2,
-           "FGR(X1+X2+X7+X9)"=fgr1,"FGR(X3+X5+X6)"=fgr2),
-      formula=Hist(time,event)~1,data=testCR,se.fit=1L,times=c(5,8))
+    Score(list("Cox(X1+X2+X7+X9)"=cox1,"Cox(X3+X5+X6)"=cox2),
+          formula=Surv(time,event)~1,data=trainSurv,contrasts=TRUE,
+          null.model=FALSE,conf.int=TRUE,times=c(5,8),split.method="bootcv",B=3)
 
+    # competing risks outcome
+    set.seed(18)
+    trainCR <- sampleData(40,outcome="competing.risks")
+    testCR <- sampleData(40,outcome="competing.risks")
+    library(riskRegression)
+    library(cmprsk)
+    # Cause-specific Cox regression
+    csc1 = CSC(Hist(time,event)~X1+X2+X7+X9,data=trainCR)
+    csc2 = CSC(Hist(time,event)~X3+X5+X6,data=trainCR)
+    # Fine-Gray regression
+    fgr1 = FGR(Hist(time,event)~X1+X2+X7+X9,data=trainCR,cause=1)
+    fgr2 = FGR(Hist(time,event)~X3+X5+X6,data=trainCR,cause=1)
+    Score(list("CSC(X1+X2+X7+X9)"=csc1,"CSC(X3+X5+X6)"=csc2,
+               "FGR(X1+X2+X7+X9)"=fgr1,"FGR(X3+X5+X6)"=fgr2),
+          formula=Hist(time,event)~1,data=testCR,se.fit=1L,times=c(5,8))
+}
 
 
 
 \dontrun{
-# reproduce some results of Table IV of Blanche et al. Stat Med 2013
-data(Paquid)
-ResPaquid <- Score(list("DSST"=-Paquid$DSST,"MMSE"=-Paquid$MMSE),
-                   formula=Hist(time,status)~1,
-                   data=Paquid,
-                   null.model = FALSE,
-                   conf.int=TRUE,
-                   metrics=c("auc"),
-                   times=c(3,5,10),
-                   plots="ROC")
-ResPaquid
-plotROC(ResPaquid,time=5)
+    # reproduce some results of Table IV of Blanche et al. Stat Med 2013
+    data(Paquid)
+    ResPaquid <- Score(list("DSST"=-Paquid$DSST,"MMSE"=-Paquid$MMSE),
+                       formula=Hist(time,status)~1,
+                       data=Paquid,
+                       null.model = FALSE,
+                       conf.int=TRUE,
+                       metrics=c("auc"),
+                       times=c(3,5,10),
+                       plots="ROC")
+    ResPaquid
+    plotROC(ResPaquid,time=5)
 }
 }
 \references{

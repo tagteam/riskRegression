@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jan  9 2016 (19:31) 
 ## Version: 
-## last-updated: Apr 18 2018 (15:09) 
+## last-updated: Jan 28 2019 (14:55) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 285
+##     Update #: 287
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -20,7 +20,6 @@ getQuantile <- function(x,Fx,Q){
     q.index <- pmin(length(x),1+prodlim::sindex(jump.times=Fx,eval.times=Q,strict=TRUE))
     ## quantile type = 1 
     quant <- x[q.index]
-    ## if(min(x)<0) browser()
     quant
 }
 
@@ -110,7 +109,6 @@ riskQuantile.survival <- function(DT,N,NT,NF,dolist,Q,...){
     surv[,cuminc:=1-surv]
     getQ.event <- function(Q,tp,X,time,status,WTi,surv){
         uX <- sort(unique(X[time<=tp & status==1]))
-        ## browser(skipCalls=1L)
         Wx <- sapply(uX,function(x){sum((X<=x & time<=tp & status==1)/WTi)})/(N*surv[times==tp,cuminc])
         qRisk <- getQuantile(x=uX,Fx=Wx,Q=Q)
         qR <- data.table(t(qRisk))
@@ -125,7 +123,6 @@ riskQuantile.survival <- function(DT,N,NT,NF,dolist,Q,...){
         qR[,cause:="event-free"]
         qR
     }
-    ## browser(skipCalls=1L)
     ## a <- DT[model==1]
     ## system.time(a[,getQ.eventFree(Q=Q,tp=times[1],X=risk,time=time,Wt=Wt,surv=surv)])
     score.eventfree <- DT[,getQ.eventFree(Q=Q,tp=times,X=risk,time=time,Wt=Wt,surv=surv),by=list(model,times)]
@@ -235,7 +232,6 @@ riskQuantile.competing.risks <- function(DT,N,NT,NF,dolist,cause,states,Q,...){
         qR[,cause:="event-free"]
         qR
     }
-    ## browser(skipCalls=1)
     score.eventfree <- DT[,getQ.eventFree(Q=Q,tp=times,X=risk,time=time,Wt=Wt,surv=surv),by=list(model,times)]
     score.states <- DT[,getQ.states(Q=Q,tp=times,X=risk,time=time,event=event,WTi=WTi,cuminc=cuminc,states=states),by=list(model,times)]
     score.overall <- DT[,data.table(t(quantile(risk,probs=Q))),by=list(model,times)]

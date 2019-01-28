@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jan  4 2016 (09:43) 
 ## Version: 
-## last-updated: Feb 19 2018 (13:15) 
+## last-updated: Jan 28 2019 (14:54) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 43
+##     Update #: 44
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -105,7 +105,7 @@ sampleDataTD <- function(n,n.intervals=5,outcome="competing.risks",formula= ~ f(
         d <- lava::sim(m,sum(is.censored))
         data.table::setDT(d)
         d[,start:=data[is.censored,time]]
-        if (any(is.na(d$start))) browser()
+        ## if (any(is.na(d$start))) browser()
         d[,time:=time+data[is.censored,time]]
         d
     }

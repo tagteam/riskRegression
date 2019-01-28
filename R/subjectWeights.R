@@ -171,7 +171,6 @@ subjectWeights.forest <- function(formula,data,method,args,lag=1){
     #  weigths at subject specific event times
     subject.times <- wdata[,"time"]
     weights <- sapply(1:length(subject.times),function(i){
-        ## browser()
         prodlim::predictSurvIndividual(prodlim::prodlim(Hist(time,status)~1,data=wdata,reverse=TRUE,caseweights=FW[i,]),lag=1)[i]
     })
     out <- list(weights=weights,fit=fit,lag=lag,call=match.call(),method=method)

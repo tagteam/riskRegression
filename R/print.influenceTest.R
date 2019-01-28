@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: jun  1 2018 (13:35) 
 ## Version: 
-## Last-Updated: jun  1 2018 (17:38) 
-##           By: Brice Ozenne
-##     Update #: 38
+## Last-Updated: Jan 28 2019 (15:51) 
+##           By: Thomas Alexander Gerds
+##     Update #: 42
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -52,7 +52,7 @@ print.influenceTest <- function(x, digits = 3, ...){
     ## round and merge column containing CI and CB
     test.numeric <- unlist(lapply(dt.tempo, is.numeric))
     numeric.col <- setdiff(names(dt.tempo)[test.numeric],"p.value")
-    dt.tempo[, c(numeric.col) := round(.SD, digits = digits) , .SDcols = numeric.col]
+    ## dt.tempo[, c(numeric.col) := round(.SD, digits = digits) , .SDcols = numeric.col]
 
     ## x$se
     if(!is.null(x$conf.level)){
@@ -67,20 +67,12 @@ print.influenceTest <- function(x, digits = 3, ...){
     }
     ## round p.value
     if(!is.null(x$conf.level)){
-        dt.tempo$p.value <- sapply(dt.tempo$p.value, function(iP){
-            if(is.na(iP)){
-                as.numeric(NA)
-            }else if(iP<10^(-digits)){
-                return(paste0("<",10^(-digits)))
-            }else{
-                round(iP, digits = digits)
-            }
-        })
+        dt.tempo$p.value <- format.pval(dt.tempo$p.value,digits=digits,eps=10^{-digits})
     }
 
     ## print
     data.table::setcolorder(dt.tempo, neworder = order.col)
-    print(dt.tempo,...)
+    print(dt.tempo,digits=digits,...)
 
     ## export
     return(invisible(x))

@@ -242,7 +242,6 @@ ipcw.forest <- function(formula,data,method,args,times,subject.times,lag,what,ke
     #  weigths at subject specific event times
     if (match("IPCW.subject.times",what,nomatch=FALSE)){
         IPCW.subject.times <- sapply(1:length(subject.times),function(i){
-            ## browser()
             prodlim::predictSurvIndividual(prodlim::prodlim(Hist(time,status)~1,data=wdata,reverse=TRUE,caseweights=FW[i,]),lag=1)[i]
         })
     }

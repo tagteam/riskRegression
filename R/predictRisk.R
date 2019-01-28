@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun  6 2016 (09:02) 
 ## Version: 
-## last-updated: Jan  4 2019 (13:56) 
+## last-updated: Jan 28 2019 (14:54) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 118
+##     Update #: 119
 #----------------------------------------------------------------------
 ## 
 ### Commentary:
@@ -403,7 +403,6 @@ predictRisk.CSCTD <- function(object,newdata,times,cause,landmark,...){
 ## original data are included
 ## survival.survfit.coxph <- getFromNamespace("survfit.coxph",ns="survival")
 ## survival.summary.survfit <- getFromNamespace("summary.survfit",ns="survival")
-## browser(skipCalls=1)
 ## survfit.object <- survival::survfit(object,newdata=newdata,se.fit=FALSE,conf.int=FALSE)
 ## if (is.null(attr(object$terms,"specials")$strata)){
 ## ## case without strata 

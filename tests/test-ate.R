@@ -89,7 +89,6 @@ test_that("Cox model - compare to explicit computation",{
     dtS$time <- round(dtS$time,1)
     dtS$X1 <- factor(rbinom(n, prob = c(0.3,0.4) , size = 2), labels = paste0("T",0:2))
     fit <- cph(formula = Surv(time,event)~ X1+X2,data=dtS,y=TRUE,x=TRUE)
-    ## automatically
     ateFit <- ate(fit, data = dtS, treatment = "X1", contrasts = NULL,
                   times = 5:7, B = 0, se = TRUE, mc.cores=1,handler=handler,verbose=verbose)
     expect_equal(ateFit$meanRisk[ateFit$meanRisk$Treatment == "T0",meanRisk.lower],
@@ -213,10 +212,10 @@ test_that("stratified ATE",{
 
 # }}}
 # {{{ CSC model rcs via cph
-test_that("CSC model bootstrap",{
+test_that("CSC model bootstrap via cph",{
     df <- sampleData(101,outcome="competing.risks")
     df$time <- round(df$time,1)
-    df$X1 <- factor(rbinom(1e2, prob = c(0.4,0.3) , size = 2), labels = paste0("T",0:2))
+    df$X1 <- factor(rbinom(101, prob = c(0.4,0.3) , size = 2), labels = paste0("T",0:2))
     fit=CSC(formula = Hist(time,event)~ X1+X2+rcs(X6), data = df,cause=1,fitter="cph")
     res <- ate(fit, data = df, treatment = "X1", contrasts = NULL,
                times = 7, cause = 1, B = 0, mc.cores=1)

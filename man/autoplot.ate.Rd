@@ -26,6 +26,7 @@
 Plot average risks.
 }
 \examples{
+\dontrun{
 library(survival)
 library(rms)
 
@@ -51,7 +52,7 @@ autoplot(ateFit)
 outGG <- autoplot(ateFit, band = TRUE, ci = TRUE, alpha = 0.1)
 dd <- as.data.frame(outGG$data[Treatment == 0])
 outGG$plot + facet_wrap(~Treatment, labeller = label_both)
-
+}
 }
 \seealso{
 \code{\link{ate}} to compute average risks.

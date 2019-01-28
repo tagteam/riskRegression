@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: jul  5 2018 (15:28) 
 ## Version: 
-## Last-Updated: Oct  3 2018 (16:26) 
+## Last-Updated: Jan 28 2019 (14:51) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 102
+##     Update #: 103
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -42,8 +42,6 @@ print.ateRobust <- function(x,
     dt.x <- as.data.table(x)
     keep.col <- c("method","value")
 
-    ## ** round
-    dt.x[,c("ATE") := format(round(.SD$value, digits = digits), digits = 3, nsmall = 3)]
     ## ** add confidence interval and p.value
     if(!is.null(x$se)&& x$se==TRUE){
         ## dt.x[,c("lower") := format(round(.SD$lower, digits = digits), digits = 3, nsmall = 3)]
@@ -72,12 +70,12 @@ print.ateRobust <- function(x,
 
     ## ** display
     cat("\nAverage risk:\n")
-    print(dt.printMeanRisk, row.names = FALSE)
+    print(dt.printMeanRisk, row.names = FALSE,digits=digits)
     cat("Average risks of the event between time zero and 'time'")
     cat("are standardized to covariate distribution of all subjects\nare given on probability scale [0,1] in hypothetical worlds\nin which all subjects are treated with one of the treatment options\nstandardized to all subjects.\n\n")
 
     cat("Risk difference:\n\n")
-    print(dt.printDiffRisk, row.names = FALSE)
+    print(dt.printDiffRisk, row.names = FALSE,digits=digits)
     cat("\nComparisons of risks on probability scale [0,1] between hypothetical worlds are given as 
  treatment value ",x$level.treatment[2]," minus ",x$level.treatment[1],"
 and are interpreted as what would have been observed had treatment been randomized.\n\n",sep="")

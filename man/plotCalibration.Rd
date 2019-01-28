@@ -119,6 +119,7 @@ fb2=glm(Y~X1+X3+X6+X7,data=db,family="binomial")
 xb=Score(list(model1=fb1,model2=fb2),Y~1,data=db,
           plots="cal")
 plotCalibration(xb)
+plotCalibration(xb,bars=TRUE,model="model1")
 plotCalibration(xb,models=1,bars=TRUE,names.cex=1.3)
 
 # survival
@@ -132,10 +133,13 @@ plotCalibration(xs)
 
 
 # competing risks
+\dontrun{
 data(Melanoma)
 f1 <- CSC(Hist(time,status)~age+sex+epicel+ulcer,data=Melanoma)
 f2 <- CSC(Hist(time,status)~age+sex+logthick+epicel+ulcer,data=Melanoma)
 x <- Score(list(model1=f1,model2=f2),Hist(time,status)~1,data=Melanoma,
            cause= 2,times=5*365.25,plots="cal")
 plotCalibration(x)
+}
+
 }

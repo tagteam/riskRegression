@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Feb 23 2017 (11:15) 
 ## Version: 
-## last-updated: Jan  5 2019 (11:07) 
+## last-updated: Jan 28 2019 (16:43) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 270
+##     Update #: 275
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -85,6 +85,7 @@
 ##' xb=Score(list(model1=fb1,model2=fb2),Y~1,data=db,
 ##'           plots="cal")
 ##' plotCalibration(xb)
+##' plotCalibration(xb,bars=TRUE,model="model1")
 ##' plotCalibration(xb,models=1,bars=TRUE,names.cex=1.3)
 ##' 
 ##' # survival
@@ -98,12 +99,15 @@
 ##'
 ##'
 ##' # competing risks
+##' \dontrun{
 ##' data(Melanoma)
 ##' f1 <- CSC(Hist(time,status)~age+sex+epicel+ulcer,data=Melanoma)
 ##' f2 <- CSC(Hist(time,status)~age+sex+logthick+epicel+ulcer,data=Melanoma)
 ##' x <- Score(list(model1=f1,model2=f2),Hist(time,status)~1,data=Melanoma,
 ##'            cause= 2,times=5*365.25,plots="cal")
 ##' plotCalibration(x)
+##' }
+##' 
 plotCalibration <- function(x,
                             models,
                             times,
@@ -453,7 +457,7 @@ plotCalibration <- function(x,
             pf <- na.omit(plotFrames[[1]])
             Pred <- pf$Pred
             Obs <- pf$Obs
-            if (is.character(legend[1]) || legend[1]==TRUE){
+            if (is.character(legend[1]) || legend[1]==FALSE){
                 control$barplot$legend.text <- NULL
             }else{
                 if (is.null(control$barplot$legend.text)){

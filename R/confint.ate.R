@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: maj 23 2018 (14:08) 
 ## Version: 
-## Last-Updated: jun 13 2018 (16:02) 
-##           By: Brice Ozenne
-##     Update #: 457
+## Last-Updated: Jan 28 2019 (16:33) 
+##           By: Thomas Alexander Gerds
+##     Update #: 478
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -54,7 +54,7 @@
 ##' @rdname confint.ate
 ##' @examples
 ##' library(survival)
-##'
+##' 
 ##' ## ## generate data ####
 ##' set.seed(10)
 ##' d <- sampleData(70,outcome="survival")
@@ -64,12 +64,12 @@
 ##' #### stratified Cox model ####
 ##' fit <- coxph(Surv(time,event)~X1 + strata(X2) + X6,
 ##'              data=d, ties="breslow", x = TRUE, y = TRUE)
-##'
+##' 
 ##' #### average treatment effect ####
-##' fit.pred <- ate(fit, treatment = "X1", times = 1:3, data = d,
-##'                 se = TRUE, iid = TRUE, band = TRUE)
-##' print(fit.pred, type = "meanRisk")
-##'
+##' fit.ate <- ate(fit, treatment = "X1", times = 1:3, data = d,
+##'                se = TRUE, iid = TRUE, band = TRUE)
+##' print(fit.ate, type = "meanRisk")
+##' 
 ##' ## manual calculation of se
 ##' dd <- copy(d)
 ##' dd$X1 <- rep(factor("T0", levels = paste0("T",0:2)), NROW(dd))
@@ -77,27 +77,26 @@
 ##' term1 <- -out$survival.average.iid
 ##' term2 <- sweep(1-out$survival, MARGIN = 2, FUN = "-", STATS = colMeans(1-out$survival))
 ##' sqrt(colSums((term1 + term2/NROW(d))^2)) 
-##'
+##' 
 ##' ## note
 ##' out2 <- predictCox(fit, newdata = dd, se = TRUE, times = 1:3, iid = TRUE)
 ##' mean(out2$survival.iid[,1,1])
 ##' out$survival.average.iid[1,1]
 ##' 
 ##' ## check confidence intervals (no transformation)
-##' fit.pred$meanRisk[, .(lower = meanRisk - 1.96 * meanRisk.se,
-##'                       upper = meanRisk + 1.96 * meanRisk.se)]
-##'
+##' fit.ate$meanRisk[, .(lower = meanRisk + qnorm(0.025) * meanRisk.se,
+##'                      upper = meanRisk + qnorm(0.975) * meanRisk.se)]
+##' 
 ##' ## add confidence intervals computed on the log-log scale
 ##' ## and backtransformed
-##' outCI <- confint(fit.pred,
-##' meanRisk.transform = "loglog", diffRisk.transform = "atanh", ratioRisk.transform = "log"
-##' )
+##' outCI <- confint(fit.ate,
+##'                  meanRisk.transform = "loglog", diffRisk.transform = "atanh",
+##'                  ratioRisk.transform = "log")
 ##' print(outCI, type = "meanRisk")
 ##' 
-##' newse <- fit.pred$meanRisk[, meanRisk.se/(meanRisk*log(meanRisk))]
-##' fit.pred$meanRisk[, .(lower = exp(-exp(log(-log(meanRisk)) - 1.96 * newse)),
-##'                       upper = exp(-exp(log(-log(meanRisk)) + 1.96 * newse)))]
-
+##' newse <- fit.ate$meanRisk[, meanRisk.se/(meanRisk*log(meanRisk))]
+##' fit.ate$meanRisk[, .(lower = exp(-exp(log(-log(meanRisk)) - 1.96 * newse)),
+##'                      upper = exp(-exp(log(-log(meanRisk)) + 1.96 * newse)))]
 ## * confint.ate (code)
 ##' @rdname confint.ate
 ##' @method confint ate
@@ -357,15 +356,15 @@ confintIID.ate <- function(object,
     ## store
     vec.index.tempo <- unlist(ls.index.tempo)
     if(object$se){
-        object$meanRisk[,c("meanRisk.lower","meanRisk.upper")] <- as.numeric(NA)
-        object$meanRisk[vec.index.tempo, c("meanRisk.lower") := as.double(t(outCIBP.meanRisk$lower))]
-        object$meanRisk[vec.index.tempo, c("meanRisk.upper") := as.double(t(outCIBP.meanRisk$upper))]
+        object$meanRisk <- cbind(object$meanRisk[vec.index.tempo],
+                                 meanRisk.lower=as.double(t(outCIBP.meanRisk$lower)),
+                                 meanRisk.upper=as.double(t(outCIBP.meanRisk$upper)))
     }
     if(object$band){
-        object$meanRisk[,c("meanRisk.quantileBand","meanRisk.lowerBand","meanRisk.upperBand")] <- as.numeric(NA)
-        object$meanRisk[vec.index.tempo, c("meanRisk.quantileBand") := as.double(t(outCIBP.meanRisk$quantileBand))]
-        object$meanRisk[vec.index.tempo, c("meanRisk.lowerBand") := as.double(t(outCIBP.meanRisk$lowerBand))]
-        object$meanRisk[vec.index.tempo, c("meanRisk.upperBand") := as.double(t(outCIBP.meanRisk$upperBand))]
+        object$meanRisk <- cbind(object$meanRisk[vec.index.tempo],
+                                 meanRisk.quantileBand=rep(as.double(t(outCIBP.meanRisk$quantileBand)),length.out=length(vec.index.tempo)), 
+                                 meanRisk.lowerBand=as.double(t(outCIBP.meanRisk$lowerBand)),
+                                 meanRisk.upperBand=as.double(t(outCIBP.meanRisk$upperBand)))
     }
     ## ** diffRisk: se, CI/CB
 
@@ -419,7 +418,7 @@ confintIID.ate <- function(object,
     }
     if(object$band){
         object$riskComparison[,c("diff.quantileBand","diff.lowerBand","diff.upperBand")] <- as.numeric(NA)
-        object$riskComparison[vec.index.tempo, c("diff.quantileBand") := as.double(t(outCIBP.diffRisk$quantileBand))]
+        object$riskComparison[vec.index.tempo, c("diff.quantileBand") := rep(as.double(t(outCIBP.diffRisk$quantileBand)),length.out=length(vec.index.tempo))]
         object$riskComparison[vec.index.tempo, c("diff.lowerBand") := as.double(t(outCIBP.diffRisk$lowerBand))]
         object$riskComparison[vec.index.tempo, c("diff.upperBand") := as.double(t(outCIBP.diffRisk$upperBand))]
     }
@@ -473,7 +472,7 @@ confintIID.ate <- function(object,
     }
     if(object$band){
         object$riskComparison[,c("ratio.quantileBand","ratio.lowerBand","ratio.upperBand")] <- as.numeric(NA)
-        object$riskComparison[vec.index.tempo, c("ratio.quantileBand") := as.double(t(outCIBP.ratioRisk$quantileBand))]
+        object$riskComparison[vec.index.tempo, c("ratio.quantileBand") := rep(as.double(t(outCIBP.ratioRisk$quantileBand)),length.out=length(vec.index.tempo))]
         object$riskComparison[vec.index.tempo, c("ratio.lowerBand") := as.double(t(outCIBP.ratioRisk$lowerBand))]
         object$riskComparison[vec.index.tempo, c("ratio.upperBand") := as.double(t(outCIBP.ratioRisk$upperBand))]
 
