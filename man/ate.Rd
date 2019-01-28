@@ -137,13 +137,13 @@ fit <- glm(formula = Y ~ X1+X2, data=dtB, family = "binomial")
 
 ## compute the ATE using X1 as the treatment variable
 ## only point estimate (argument se = FALSE)
-ateFit1a <- ate(fit, data = dtB, treatment = "X1", times = 5,
-               se = FALSE)
+ateFit1a <- ate(fit, data = dtB, treatment = "X1", se = FALSE)
 ateFit1a
 
 \dontrun{
 ## standard error / confidence intervals computed using the influence function
-ateFit1b <- ate(fit, data = dtB, treatment = "X1", times = 5,
+ateFit1b <- ate(fit, data = dtB, treatment = "X1",
+               times = 5, ## just for having a nice output not used in computations
                se = TRUE, B = 0)
 ateFit1b
 
