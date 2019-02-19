@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun  6 2016 (06:48) 
 ## Version: 
-## last-updated: Jan 29 2019 (10:49) 
+## last-updated: Feb 19 2019 (15:05) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 261
+##     Update #: 262
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -93,7 +93,7 @@ print.ate <- function(x, digits = 3, type = c("meanRisk","diffRisk","ratioRisk")
         }
 
         ## print
-         ## data.table::setcolorder(dt.tempo, neworder = order.col)
+        ## data.table::setcolorder(dt.tempo, neworder = order.col)
         print(dt.tempo,digits=digits,...)
     }
     cat("\nAverage risks of the event between time zero and 'time' 
@@ -109,7 +109,7 @@ print.ate <- function(x, digits = 3, type = c("meanRisk","diffRisk","ratioRisk")
             dt.tempo <- x$riskComparison[,.SD,.SDcols = c(id.name,name.diff)]
             ## order.col <- c(names(dt.tempo)[1:3],"diff")
             ## if(!is.null(x$boot) && !is.null(x$conf.level)){
-                ## order.col <- c(order.col,"bootstrap")
+            ## order.col <- c(order.col,"bootstrap")
             ## }
             numeric.col <- names(dt.tempo)[-(1:3)]
             ## simplify names
@@ -117,12 +117,20 @@ print.ate <- function(x, digits = 3, type = c("meanRisk","diffRisk","ratioRisk")
             ## merge into CI and CB
             if(!is.null(x$conf.level)){
                 if(x$se){
-                    dt.tempo[, c("conf.interval") := paste0("[",lower," ; ",upper,"]")]
+                    dt.tempo[, c("conf.interval") := paste0("[",
+                                                            sprintf(paste0("%1.",digits,"f"),lower),
+                                                            " ; ",
+                                                            sprintf(paste0("%1.",digits,"f"),upper),
+                                                            "]")]
                     dt.tempo[,c("lower","upper") := NULL]
                     ## order.col <- c(order.col,"se","conf.interval","p.value")
                 }
                 if(x$band){
-                    dt.tempo[, c("conf.band") := paste0("[",lowerBand," ; ",upperBand,"]")]
+                    dt.tempo[, c("conf.band") := paste0("[",
+                                                        sprintf(paste0("%1.",digits,"f"),lowerBand),
+                                                        " ; ",
+                                                        sprintf(paste0("%1.",digits,"f"),upperBand),
+                                                        "]")]
                     dt.tempo[,c("lowerBand","upperBand") := NULL]
                     ## order.col <- c(order.col,"quantileBand","conf.band")
                 }

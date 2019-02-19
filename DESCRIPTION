@@ -7,7 +7,7 @@ Authors@R: c(person("Thomas Alexander", "Gerds", role = c("aut", "cre"),
                     email = "tag@biostat.ku.dk"),
              person("Paul", "Blanche", role = "ctb"),
              person("Ulla Brasch", "Mogensen", role = "ctb"),
-             person("Brice", "Ozenne", role = "aut", email = "broz@sund.ku.dk"))
+             person("Brice", "Ozenne", role = "aut", email = "broz@sund.ku.dk", comment = c(ORCID = "0000-0001-9694-2956")))
 Depends:
     R (>= 2.9.0),
     data.table (>= 1.10.4),
