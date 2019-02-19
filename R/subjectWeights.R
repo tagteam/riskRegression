@@ -68,7 +68,7 @@
 #'
 #' @export 
 subjectWeights <- function(formula,data,method=c("cox","marginal","km","nonpar","forest","none"),args,lag=1){
-    if (lag!=1 && lag!=0){ stop("lag must be either 0 or 1")}
+    if (lag[[1]]!=1 && lag[[1]]!=0){ stop("lag must be either 0 or 1")}
     method <- tolower(method)
     method <- match.arg(method,c("cox","marginal","km","nonpar","forest","none"))
     class(method) <- method

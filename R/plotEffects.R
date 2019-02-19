@@ -203,7 +203,7 @@ plotEffects <- function(x,
   # }}}
     # {{{  legend
 
-  if(legend==TRUE && !add && !is.null(matchVarnames)){
+  if(legend[[1]]==TRUE && !add[[1]] && !is.null(matchVarnames)){
 
     ## if (smartA$legend$trimnames==TRUE){
     ## smartA$legend$legend <- sapply(strsplit(names(Y),"="),function(x)x[[2]])

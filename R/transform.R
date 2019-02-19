@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: maj 30 2018 (15:58) 
 ## Version: 
-## Last-Updated: Jan 28 2019 (09:27) 
+## Last-Updated: Jan 29 2019 (10:49) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 172
+##     Update #: 173
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -262,7 +262,7 @@ transformCIBP <- function(estimate, se, iid, null,
     }
 
     ## ** confidence bands
-    if(band && nsim.band > 0){
+    if(band[[1]] && nsim.band[[1]] > 0){
 
         ## find quantiles for the bands
         if(!is.na(seed)){set.seed(seed)}

@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: maj 27 2017 (21:23) 
 ## Version: 
-## last-updated: aug 31 2018 (16:54) 
-##           By: Brice Ozenne
-##     Update #: 501
+## last-updated: Jan 29 2019 (16:02) 
+##           By: Thomas Alexander Gerds
+##     Update #: 502
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -199,7 +199,7 @@ calcSeCSC <- function(object, cif, hazard, cumhazard, object.time, object.maxtim
             attr(new.LPdata[[iCause]],"contrasts") <- NULL
         }
 
-        if("iid" %in% export || "se" %in% export){            
+        if("iid" %in% export || "se" %in% export){
 
             out <- calcSeCif2_cpp(ls_IFbeta = lapply(object$iid,"[[","IFbeta"),
                                   ls_X = new.LPdata,

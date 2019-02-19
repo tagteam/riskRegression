@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Aug  9 2017 (10:36) 
 ## Version: 
-## Last-Updated: Feb 24 2018 (13:45) 
+## Last-Updated: Jan 29 2019 (10:49) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 141
+##     Update #: 142
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -140,7 +140,7 @@ rsquared.CauseSpecificCox <- function(object,formula,newdata,times,cause,...){
             env <- environment(models[[m]]$formula)
             fit.m <- eval(fit.m, envir = env)
             nnew <- stats::nobs(models[[m]], use.fallback = TRUE)
-            if (all(is.finite(c(n0[[m]], nnew))) && nnew != n0[[m]])
+            if (all(is.finite(c(n0[[m]], nnew))) && nnew[[1]] != n0[[m]])
                 stop("number of rows in use has changed: remove missing values?")
             fit.m
         })
@@ -200,7 +200,7 @@ rsquared.coxph <- function(object,formula,newdata,times,...){
                          evaluate = FALSE)
         varfit <- eval(varfit, envir = env)
         nnew <- stats::nobs(varfit, use.fallback = TRUE)
-        if (all(is.finite(c(n0, nnew))) && nnew != n0)
+        if (all(is.finite(c(n0, nnew))) && nnew[[1]] != n0)
             stop("number of rows in use has changed: remove missing values?")
         varfit
     })
@@ -243,7 +243,7 @@ rsquared.glm <- function(object,formula,newdata,...){
                                 evaluate = FALSE)
         varfit <- eval(varfit, envir = env)
         nnew <- stats::nobs(varfit, use.fallback = TRUE)
-        if (all(is.finite(c(n0, nnew))) && nnew != n0)
+        if (all(is.finite(c(n0, nnew))) && nnew[[1]] != n0)
             stop("number of rows in use has changed: remove missing values?")
         varfit
     })

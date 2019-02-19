@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: nov 22 2017 (13:39) 
 ## Version: 
-## Last-Updated: jan 24 2019 (10:04) 
-##           By: Brice Ozenne
-##     Update #: 240
+## Last-Updated: Jan 29 2019 (11:13) 
+##           By: Thomas Alexander Gerds
+##     Update #: 242
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -50,14 +50,14 @@ discreteRoot <- function(fn, grid, increasing = TRUE, check = TRUE,
                         cv = 1,
                         message = "Cannot find a solution because the function does not change sign \n"))
         }
-        if(increasing && value.grid[1] > value.grid[n.grid]){
+        if(increasing[[1]] && value.grid[[1]] > value.grid[[n.grid]]){
             return(list(par = NA,
                         value = NA,
                         counts = 0,
                         cv = 1,
                         message = "Cannot find a solution - argument \'increasing\' does not match the variations of the functions \n"))
         }
-        if(!increasing && value.grid[1] < value.grid[n.grid]){
+        if(!increasing[[1]] && value.grid[[1]] < value.grid[[n.grid]]){
             return(list(par = NA,
                         value = NA,
                         counts = 0,
@@ -68,10 +68,10 @@ discreteRoot <- function(fn, grid, increasing = TRUE, check = TRUE,
 
     
 ### ** Expore the grid using dichotomic search
-    while(iter <= n.grid && ncv && length(iSet)>0){
+    while(iter[[1]] <= n.grid[[1]] && ncv[[1]]==TRUE && length(iSet)>0){
         iMiddle <- ceiling(length(iSet)/2)
         iIndexInSet <- iSet[iMiddle]
-        if(check==FALSE || iIndexInSet %in% c(1,n.grid) == FALSE){
+        if(check[[1]]==FALSE || iIndexInSet %in% c(1,n.grid) == FALSE){
             ## if the current index we are looking at has not already been computed,
             ## then evaluate the objective function.
             ## this is only the case when check is TRUE and we look at the borders
@@ -243,7 +243,7 @@ boot2pvalue <- function(x, null, estimate = NULL, alternative = "two.sided",
                                   sign.estimate = sign.statistic)-null)
 
         ##
-        if(is.na(resSearch$value) || length(resSearch$value)==0 || resSearch$par<0 || resSearch$par>1 || sign.before==sign.after){
+        if(is.na(resSearch$value[[1]]) || length(resSearch$value)==0 || resSearch$par[[1]]<0 || resSearch$par[[1]]>1 || sign.before[[1]]==sign.after[[1]]){
             warning("incorrect convergence of the algorithm finding the critical quantile \n",
                     "p-value may not be reliable \n")
 

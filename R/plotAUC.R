@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun 23 2016 (09:19) 
 ## Version: 
-## last-updated: Jun 19 2018 (11:57) 
+## last-updated: Jan 29 2019 (10:49) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 79
+##     Update #: 80
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -166,7 +166,7 @@ plotAUC <- function(x,
             do.call("lines",thisline)},by=contrast]
     }
     ## legend
-    if (!(is.logical(legend[1]) && legend[1]==FALSE)){
+    if (!(is.logical(legend[[1]]) && legend[[1]]==FALSE)){
         do.call("legend",control$legend)
     }
     ## x-axis

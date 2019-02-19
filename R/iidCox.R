@@ -119,7 +119,7 @@ iidCox <- function(object, newdata = NULL,
     
     # {{{ tests 
     ## time at which the influence function is evaluated
-    if(is.list(tau.hazard) && length(tau.hazard)!=nStrata){
+    if(is.list(tau.hazard) && (length(tau.hazard)!=nStrata)){
         stop("argument \"tau.hazard\" must be a list with ",nStrata," elements \n",
              "each element being the vector of times for each strata \n")
     }

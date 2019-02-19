@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Oct 23 2016 (08:53) 
 ## Version: 
-## last-updated: jan 24 2019 (10:22) 
-##           By: Brice Ozenne
-##     Update #: 850
+## last-updated: Jan 29 2019 (11:13) 
+##           By: Thomas Alexander Gerds
+##     Update #: 852
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -298,15 +298,15 @@ ate <- function(object,
                                         # }}}
                                         # {{{ Prepare
     dots <- list(...)
-    if(se==0 && B>0){
+    if(se[[1]]==0 && B[[1]]>0){
         warning("Argument 'se=0' means 'no standard errors' so number of bootstrap repetitions is forced to B=0.")
     }
-    if(iid && B>0){
+    if(iid[[1]] && B[[1]]>0){
         stop("Influence function cannot be computed when using the bootstrap approach \n",
              "Either set argument \'iid\' to FALSE to not compute the influence function \n",
              "or set argument \'B\' to 0 \n")
     }
-    if(band && B>0){
+    if(band[[1]] && B[[1]]>0){
         stop("Confidence bands cannot be computed when using the bootstrap approach \n",
              "Either set argument \'band\' to FALSE to not compute the confidence bands \n",
              "or set argument \'B\' to 0 to use the estimate of the asymptotic distribution instead of the bootstrap\n")
@@ -347,7 +347,7 @@ ate <- function(object,
     test.CR <- !missing(cause) # test whether the argument cause has been specified, i.e. it is a competing risk model
     if(test.CR==FALSE){cause <- NA}
   
-    if(B==0 && (se || band || iid)){
+    if(B[[1]]==0 && (se[[1]] || band[[1]] || iid[[1]])){
         validClass <- c("CauseSpecificCox","coxph","cph","phreg","glm")
         if(all(validClass %in% class(object) == FALSE)){
             stop("Standard error based on the influence function only implemented for \n",
@@ -415,7 +415,7 @@ ate <- function(object,
     # }}}
 
     # {{{ Confidence interval    
-    if(se || band || iid){
+    if(se[[1]] || band[[1]] || iid[[1]]){
         if (TD){
             key1 <- c("Treatment","landmark")
             key2 <- c("Treatment.A","Treatment.B","landmark")
@@ -540,12 +540,12 @@ ate <- function(object,
     if(confint){
         out <- stats::confint(out)
     }
-    if(band && se==FALSE){
+    if(band[[1]] && se[[1]]==FALSE){
         out$meanRisk[["meanRisk.se"]] <- NULL
         out$riskComparison[["diff.se"]] <- NULL
         out$riskComparison[["ratio.se"]] <- NULL
     }
-    if(band && iid==FALSE){
+    if(band[[1]] && iid[[1]]==FALSE){
         out[paste0(c("mean","diff","ratio"),"Risk.iid")] <- NULL
     }
 

@@ -167,7 +167,7 @@ riskRegression <- function(formula,
     # {{{ preliminaries
     weighted=0
     detail=0
-    stopifnot(is.numeric(max.iter)&&max.iter>0&&(round(max.iter)==max.iter))
+    stopifnot(is.numeric(max.iter)&&max.iter[[1]]>0&&(round(max.iter[[1]])==max.iter[[1]]))
     # trans=1 P_1=1-exp(- ( x' b(b)+ z' gam t^time.pow) ), 
     # trans=2 P_1=1-exp(-exp(x a(t)+ z` b )
     # trans=not done P_1=1-exp(-x a(t) exp(z` b )) is not good numerically
@@ -267,7 +267,7 @@ riskRegression <- function(formula,
     Z <- Z[neworder,,drop=FALSE]
     X <- X[neworder,,drop=FALSE]
     theData <- theData[neworder,]
-    if (model.type!="survival" && !("event" %in% colnames(event.history)))
+    if (model.type[[1]]!="survival" && !("event" %in% colnames(event.history)))
         warning("Only one cause of failure found in data.")
     eventtime <- as.vector(event.history[,"time"])
     time  <- numeric(length(eventtime))

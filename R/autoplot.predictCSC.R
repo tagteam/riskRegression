@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: feb 27 2017 (10:47) 
 ## Version: 
-## last-updated: jun 13 2018 (14:16) 
-##           By: Brice Ozenne
-##     Update #: 80
+## last-updated: Jan 29 2019 (10:49) 
+##           By: Thomas Alexander Gerds
+##     Update #: 81
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -69,20 +69,20 @@ autoplot.predictCSC <- function(object,
     ## initialize and check
     group.by <- match.arg(group.by, c("row","covariates","strata"))
   
-    if(group.by == "covariates" && ("newdata" %in% names(object) == FALSE)){
+    if(group.by[[1]] == "covariates" && ("newdata" %in% names(object) == FALSE)){
         stop("argument \'group.by\' cannot be \"covariates\" when newdata is missing in the object \n",
              "set argment \'keep.newdata\' to TRUE when calling predictCox \n")
     }
-    if(group.by == "strata" && ("strata" %in% names(object) == FALSE)){
+    if(group.by[[1]] == "strata" && ("strata" %in% names(object) == FALSE)){
         stop("argument \'group.by\' cannot be \"strata\" when strata is missing in the object \n",
              "set argment \'keep.strata\' to TRUE when calling predictCox \n")
     }
   
-    if(ci && (object$se==FALSE || is.null(object$conf.level))){
+    if(ci[[1]] && (object$se[[1]]==FALSE || is.null(object$conf.level))){
         stop("argument \'ci\' cannot be TRUE when no standard error have been computed \n",
              "set arguments \'se\' and \'confint\' to TRUE when calling predict.CauseSpecificCox \n")
     }
-    if(band && (object$band==FALSE  || is.null(object$conf.level))){
+    if(band[[1]] && (object$band[[1]]==FALSE  || is.null(object$conf.level))){
         stop("argument \'band\' cannot be TRUE when the quantiles for the confidence bands have not been computed \n",
              "set arguments \'band\' and \'confint\' to TRUE when calling predict.CauseSpecificCox \n")
     }
@@ -97,7 +97,7 @@ autoplot.predictCSC <- function(object,
 
     ## display
     newdata <- copy(object$newdata)
-    if(!is.null(newdata) && reduce.data){
+    if(!is.null(newdata) && reduce.data[[1]]){
         test <- unlist(newdata[,lapply(.SD, function(col){length(unique(col))==1})])
         if(any(test)){
             newdata[, (names(test)[test]):=NULL]

@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: jun  1 2018 (13:35) 
 ## Version: 
-## Last-Updated: Jan 28 2019 (15:51) 
+## Last-Updated: Jan 29 2019 (10:49) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 42
+##     Update #: 43
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -60,7 +60,7 @@ print.influenceTest <- function(x, digits = 3, ...){
         dt.tempo[,c("lower","upper") := NULL]
         order.col <- c(order.col,"conf.interval","p.value")
     }
-    if(x$band && !is.null(x$conf.level)){
+    if(x$band[[1]] && !is.null(x$conf.level)){
         dt.tempo[, c("conf.band") := paste0("[",lowerBand," ; ",upperBand,"]")]
         dt.tempo[,c("lowerBand","upperBand") := NULL]
         order.col <- c(order.col,"quantileBand","conf.band")

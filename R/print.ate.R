@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun  6 2016 (06:48) 
 ## Version: 
-## last-updated: Jan 28 2019 (15:58) 
+## last-updated: Jan 29 2019 (10:49) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 260
+##     Update #: 261
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -132,7 +132,7 @@ print.ate <- function(x, digits = 3, type = c("meanRisk","diffRisk","ratioRisk")
                 ## }
             }
 
-            if(x$se && !is.null(x$conf.level)){
+            if(x$se[[1]] && !is.null(x$conf.level)){
                 dt.tempo$p.value <- format.pval(dt.tempo$p.value,digits=digits,eps=10^{-digits})
             }
 
@@ -184,7 +184,7 @@ and are interpreted as what would have been observed had treatment been randomiz
                 ## }
             }
 
-            if(x$se && !is.null(x$conf.level)){
+            if(x$se[[1]] && !is.null(x$conf.level)){
                 dt.tempo$p.value <- format.pval(dt.tempo$p.value,digits=digits,eps=10^{-digits})
             }
             
@@ -198,7 +198,7 @@ and are interpreted as what would have been observed had treatment been randomiz
  treatment.B divided by treatment.A
 and are interpreted as what would have been observed had treatment been randomized.\n\n")
     ##
-    if(x$se && !is.null(x$conf.level)){
+    if(x$se[[1]] && !is.null(x$conf.level)){
         if(!is.null(x$boot)){
             bootci.method <- switch(x$bootci.method,
                                     "norm" = "Normal",

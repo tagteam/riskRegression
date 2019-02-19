@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: maj 23 2018 (14:08) 
 ## Version: 
-## Last-Updated: Jan 28 2019 (16:33) 
+## Last-Updated: Jan 29 2019 (10:49) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 478
+##     Update #: 479
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -112,7 +112,7 @@ confint.ate <- function(object,
                         bootci.method = "perc",
                         ...){
 
-    if(object$se == FALSE && object$band == FALSE){
+    if(object$se[[1]] == FALSE && object$band[[1]] == FALSE){
         message("No confidence interval is computed \n",
                 "Set argument \'se\' to TRUE when calling ate \n")
         return(object)
@@ -282,18 +282,18 @@ confintIID.ate <- function(object,
                            seed){
 
 
-    if(object$se == FALSE && object$band == FALSE){
+    if(object$se[[1]] == FALSE && object$band[[1]] == FALSE){
         message("No confidence interval/band computed \n",
                 "Set argument \'se\' or argument \'band\' to TRUE when calling predictCSC \n")
         return(object)
     }
 
     ## ** check arguments
-    if(object$band && (is.null(object$meanRisk$meanRisk.se) || is.null(object$riskComparison$diff.se) || is.null(object$riskComparison$ratio.se)) ){
+    if(object$band[[1]] && (is.null(object$meanRisk$meanRisk.se) || is.null(object$riskComparison$diff.se) || is.null(object$riskComparison$ratio.se)) ){
         stop("Cannot compute confidence bands \n",
              "Set argument \'se\' to TRUE when calling ate \n")
     }
-    if(object$band && (is.null(object$meanRisk.iid) || is.null(object$diffRisk.iid) || is.null(object$ratioRisk.iid))){
+    if(object$band[[1]] && (is.null(object$meanRisk.iid) || is.null(object$diffRisk.iid) || is.null(object$ratioRisk.iid))){
         stop("Cannot compute confidence bands \n",
              "Set argument \'iid\' to TRUE when calling ate \n")
     }

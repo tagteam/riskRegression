@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Feb 23 2017 (11:15) 
 ## Version: 
-## last-updated: Jan 28 2019 (16:43) 
+## last-updated: Jan 29 2019 (11:13) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 275
+##     Update #: 277
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -153,8 +153,8 @@ plotCalibration <- function(x,
             showRug <- TRUE
         }
     else{ 
-            if (missing(pseudo) || pseudo==FALSE) showPseudo <- FALSE else showPseudo <- TRUE
-            if (missing(rug) || rug==FALSE) showRug <- FALSE else showRug <- TRUE
+            if (missing(pseudo) || pseudo[[1]]==FALSE) showPseudo <- FALSE else showPseudo <- TRUE
+            if (missing(rug) || rug[[1]]==FALSE) showRug <- FALSE else showRug <- TRUE
         }
     pframe <- x$Calibration$plotframe
     if (is.null(pframe))
@@ -227,7 +227,7 @@ plotCalibration <- function(x,
     modelnames <- pframe[,unique(model)]
     axis1.DefaultArgs <- list(side=1,las=1,at=seq(0,xlim[2],xlim[2]/4))
     axis2.DefaultArgs <- list(side=2,las=2,at=seq(0,ylim[2],ylim[2]/4),mgp=c(4,1,0))
-    if (is.character(legend[1])|| legend[1]==TRUE){
+    if (is.character(legend[[1]])|| legend[[1]]==TRUE){
         legend.data <- getLegendData(object=x,
                                      models=models,
                                      times=tp,
@@ -270,7 +270,7 @@ plotCalibration <- function(x,
     lines.DefaultArgs <- list(pch=pch,type=type,cex=cex,lwd=lwd,col=col,lty=lty)
     abline.DefaultArgs <- list(lwd=1,col="red")
     if (missing(ylim)){
-        if (showPseudo && !bars){
+        if (showPseudo[1] && !bars[1]){
             ylim <- range(pframe[[Rvar]])
         }
         else
@@ -355,7 +355,7 @@ plotCalibration <- function(x,
                    ## a difference in the 3 digit should
                    ## not play a role for the single subject.
                    if (round==TRUE){
-                       if (!is.null(bandwidth) && bandwidth>=1){
+                       if (!is.null(bandwidth) && bandwidth[1]>=1){
                            ## message("No need to round predicted probabilities to calculate calibration in the large")
                        } else{
                            p <- round(p,2)
@@ -394,7 +394,7 @@ plotCalibration <- function(x,
     # {{{ plot and/or invisibly output the results
 
     if (bars){
-        if ((is.logical(names[1]) && names[1]==TRUE)|| names[1] %in% c("quantiles.labels","quantiles")){
+        if ((is.logical(names[[1]]) && names[[1]]==TRUE)|| names[[1]] %in% c("quantiles.labels","quantiles")){
             qq <- attr(plotFrames[[1]],"quantiles")
             if (names[1]=="quantiles.labels"){
                 pp <- seq(0,1,1/q)
@@ -443,21 +443,21 @@ plotCalibration <- function(x,
     # {{{ do the actual plot
 
     if (plot){
-        if (out$add==FALSE && !out$bars){
+        if (out$add[1]==FALSE && !out$bars[1]){
             do.call("plot",control$plot)
         }
-        if (out$diag && !out$bars){
+        if (out$diag[1] && !out$bars[1]){
             segments(x0=0,y0=0,x1=1,y1=1,col="gray77",lwd=2,xpd=FALSE)
         }
-        if (out$diag && !out$bars){
+        if (out$diag[1] && !out$bars[1]){
             segments(x0=0,y0=0,x1=1,y1=1,col="gray77",lwd=2,xpd=FALSE)
         }
-        if (out$bars) {
+        if (out$bars[1]) {
             stopifnot(NF==1)
             pf <- na.omit(plotFrames[[1]])
             Pred <- pf$Pred
             Obs <- pf$Obs
-            if (is.character(legend[1]) || legend[1]==FALSE){
+            if (is.character(legend[[1]]) || legend[[1]]==FALSE){
                 control$barplot$legend.text <- NULL
             }else{
                 if (is.null(control$barplot$legend.text)){
@@ -541,7 +541,7 @@ plotCalibration <- function(x,
                 lineF$y <- pf$Obs
                 do.call("lines",lineF)
             })
-            if (is.character(out$legend[1]) || out$legend[1]==TRUE){
+            if (is.character(out$legend[[1]]) || out$legend[[1]]==TRUE){
                 legend.coords <- do.call("legend",control$legend)
                 if (!is.null(addtable2plot.DefaultArgs)){
                     if (is.null(control$addtable2plot[["x"]]))

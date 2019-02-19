@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Mar  3 2017 (09:28) 
 ## Version: 
-## Last-Updated: jun 27 2018 (15:27) 
-##           By: Brice Ozenne
-##     Update #: 102
+## Last-Updated: Jan 29 2019 (10:49) 
+##           By: Thomas Alexander Gerds
+##     Update #: 103
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -83,7 +83,7 @@ as.data.table.predictCox <- function(x, keep.rownames = FALSE, se = TRUE,...){
                     }
                 }
                 if (x$band==1L){
-                    if(se && !is.null(x[[paste0(name,".transform")]])){
+                    if(se[[1]] && !is.null(x[[paste0(name,".transform")]])){
                         tyc <- cbind(tyc,
                                      x[[paste0(name,".quantileBand")]]
                                      )

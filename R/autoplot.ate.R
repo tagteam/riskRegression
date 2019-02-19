@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: apr 28 2017 (14:19) 
 ## Version: 
-## last-updated: Jan 28 2019 (16:43) 
+## last-updated: Jan 29 2019 (10:49) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 56
+##     Update #: 57
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -77,11 +77,11 @@ autoplot.ate <- function(object,
     Treatment <- NULL
     
     ## initialize and check          
-    if(ci && (object$se==FALSE || is.null(object$conf.level))){
+    if(ci[[1]]==TRUE && (object$se[[1]]==FALSE || is.null(object$conf.level))){
         stop("argument \'ci\' cannot be TRUE when no standard error have been computed \n",
              "set arguments \'se\' and \'confint\' to TRUE when calling ate \n")
     }
-    if(band && (object$band==FALSE  || is.null(object$conf.level))){
+    if(band[[1]] && (object$band[[1]]==FALSE  || is.null(object$conf.level))){
         stop("argument \'band\' cannot be TRUE when the quantiles for the confidence bands have not been computed \n",
              "set arguments \'band\' and \'confint\' to TRUE when calling ate \n")
     }

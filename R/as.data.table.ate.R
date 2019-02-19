@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Mar  3 2017 (09:28) 
 ## Version: 
-## Last-Updated: jun 13 2018 (14:57) 
-##           By: Brice Ozenne
-##     Update #: 73
+## Last-Updated: Jan 29 2019 (10:49) 
+##           By: Thomas Alexander Gerds
+##     Update #: 74
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -33,13 +33,13 @@ as.data.table.ate <- function(x, keep.rownames = FALSE, se = TRUE, ...){
 
     ## ** which columns to keep
     keep.col <- NULL
-    if(x$se && !is.null(x$conf.level)){
+    if(x$se[[1]] && !is.null(x$conf.level)){
         if(se){
             keep.col <- c(keep.col, "se")
         }
         keep.col <- c(keep.col, "lower", "upper")
     }
-    if(x$band && !is.null(x$conf.level)){
+    if(x$band[[1]] && !is.null(x$conf.level)){
         if(se){
             keep.col <- c(keep.col, "quantileBand")
         }

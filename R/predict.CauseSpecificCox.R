@@ -244,7 +244,7 @@ predict.CauseSpecificCox <- function(object,
                           survtype = (surv.type=="survival"),
                           productLimit = product.limit)
     ## ** compute standard error for CIF
-    if(se || band || iid || average.iid){
+    if(se[[1]] || band[[1]] || iid[[1]] || average.iid[[1]]){
         if(!is.na(landmark)){
             stop("standard error for the conditional survival not implemented \n")
         }
@@ -328,7 +328,7 @@ predict.CauseSpecificCox <- function(object,
     all.covars <- unique(unlist(lapply(ls.infoVar, function(iI){
         c(iI$lpvars.original, iI$strata.vars.original)
     })))
-    if(keep.newdata==TRUE && length(all.covars)>0){
+    if(keep.newdata[[1]]==TRUE && length(all.covars)>0){
         out$newdata <- newdata[, all.covars, with = FALSE]
     }
     if(keep.strata==TRUE){
@@ -349,10 +349,10 @@ predict.CauseSpecificCox <- function(object,
     if(confint){
         out <- stats::confint(out)
     }
-    if(band && se==FALSE){
+    if(band[[1]] && se[[1]]==FALSE){
         out["absRisk.se"] <- NULL
     }
-    if(band && iid==FALSE){
+    if(band[[1]] && iid[[1]]==FALSE){
         out["absRisk.iid"] <- NULL
     }
 

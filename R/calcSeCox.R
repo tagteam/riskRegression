@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: maj 27 2017 (11:46) 
 ## Version: 
-## last-updated: aug 30 2018 (09:02) 
-##           By: Brice Ozenne
-##     Update #: 487
+## last-updated: Jan 29 2019 (11:09) 
+##           By: Thomas Alexander Gerds
+##     Update #: 489
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -113,7 +113,7 @@ calcSeCox <- function(object, times, nTimes, type, diag,
     }
     # }}}
 
-    if(store.iid == "minimal"){
+    if(store.iid[[1]] == "minimal"){
                                         # {{{ method = minimal
         object.strata <- as.numeric(object.strata)
         if("hazard" %in% type){
@@ -146,8 +146,8 @@ calcSeCox <- function(object, times, nTimes, type, diag,
                                        p = nVar,
                                        exportSE = ("se" %in% export),
                                        exportIF = ("iid" %in% export),
-                                       exportIFsum_cumhazard = ("average.iid" %in% export && "cumhazard" %in% type),
-                                       exportIFsum_survival = ("average.iid" %in% export && "survival" %in% type)
+                                       exportIFsum_cumhazard = (all("average.iid" %in% export) && all("cumhazard" %in% type)),
+                                       exportIFsum_survival = (all("average.iid" %in% export) && all("survival" %in% type))
                                        )
 
             if("iid" %in% export){
