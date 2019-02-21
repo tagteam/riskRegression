@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Mar 13 2017 (16:53) 
 ## Version: 
-## Last-Updated: Nov  9 2017 (06:53) 
+## Last-Updated: Feb 21 2019 (07:35) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 35
+##     Update #: 36
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -113,6 +113,7 @@ plotRisk <- function(x,
     control$axis1$labels <- paste(100*control$axis1$at,"%")
     do.call("axis",control$axis1)
     do.call("axis",control$axis2)
+    do.call("legend",control$legend)
 }
 
 
