@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: apr 28 2017 (14:19) 
 ## Version: 
-## last-updated: Jan 29 2019 (10:49) 
+## last-updated: Mar  3 2019 (19:45) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 57
+##     Update #: 58
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -37,7 +37,7 @@
 #' \dontrun{
 #' library(survival)
 #' library(rms)
-#'
+#' library(ggplot2)
 #' #### simulate data ####
 #' n <- 1e2
 #' set.seed(10)

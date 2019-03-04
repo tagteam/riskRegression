@@ -47,7 +47,7 @@
 #' Springer.
 ##' @examples
 ##' 
-##' 
+##' library(prodlim)
 ##' data(Melanoma,package="riskRegression")
 ##' ## tumor thickness on the log-scale
 ##' Melanoma$logthick <- log(Melanoma$thick)

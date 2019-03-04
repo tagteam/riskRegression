@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun 23 2016 (09:19) 
 ## Version: 
-## last-updated: sep 28 2018 (10:57) 
-##           By: Brice Ozenne
-##     Update #: 75
+## last-updated: Mar  3 2019 (20:02) 
+##           By: Thomas Alexander Gerds
+##     Update #: 76
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 

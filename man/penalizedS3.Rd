@@ -20,6 +20,7 @@ penalizedS3(formula, data, type = "ridge", ...)
 S3-wrapper for S4 function penalized
 }
 \examples{
+library(prodlim)
 \dontrun{
 ## too slow
 library(penalized)

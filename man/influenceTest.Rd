@@ -47,6 +47,8 @@ Compare two estimates using their influence function
 \examples{
 library(lava)
 library(survival)
+library(prodlim)
+library(data.table)
 n <- 100
 
 #### Under H1
@@ -106,6 +108,7 @@ p.cox <- predictCox(m.cox, newdata = newdata, time = Utime, type = "survival")
 p.coxStrata <- predictCox(mStrata.cox, newdata = newdata, time = Utime, type = "survival")
 
 ## display
+library(ggplot2)
 autoplot(p.cox)
 autoplot(p.coxStrata)
  

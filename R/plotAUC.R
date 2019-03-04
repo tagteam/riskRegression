@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun 23 2016 (09:19) 
 ## Version: 
-## last-updated: Jan 29 2019 (10:49) 
+## last-updated: Mar  3 2019 (20:02) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 80
+##     Update #: 81
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -38,6 +38,7 @@
 #' @param ... Used for additional control of the subroutines: plot,
 ##' @examples
 ##' library(survival)
+##' library(prodlim)
 ##' d=sampleData(100,outcome="survival")
 ##' nd=sampleData(100,outcome="survival")
 ##' f1=coxph(Surv(time,event)~X1+X6+X8,data=d,x=TRUE,y=TRUE)

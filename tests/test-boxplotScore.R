@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Aug 23 2016 (17:07) 
 ## Version: 
-## last-updated: Mar 26 2018 (07:50) 
+## last-updated: Mar  3 2019 (17:14) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 13
+##     Update #: 14
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -16,6 +16,7 @@
 ### Code:
 library(testthat)
 library(riskRegression)
+library(data.table)
 context("Retrospective boxplots of predicted risks")
 # {{{ "boxplot.Score"
 test_that("boxplot.Score",{

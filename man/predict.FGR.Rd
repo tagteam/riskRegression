@@ -19,6 +19,7 @@
 Predict subject specific risks (cumulative incidence) based on Fine-Gray regression model
 }
 \examples{
+library(prodlim)
 library(survival)
 set.seed(10)
 d <- sampleData(101, outcome = "competing.risk")

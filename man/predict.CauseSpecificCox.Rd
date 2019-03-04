@@ -73,7 +73,7 @@ and each time (dim 2).
 }
 \examples{
 library(survival)
-
+library(prodlim)
 #### generate data ####
 set.seed(5)
 d <- sampleData(80,outcome="comp") ## training dataset

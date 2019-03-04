@@ -56,7 +56,7 @@ should have a time constant (proportional) effect.
 }
 \examples{
 
-
+library(prodlim)
 data(Melanoma,package="riskRegression")
 ## tumor thickness on the log-scale
 Melanoma$logthick <- log(Melanoma$thick)

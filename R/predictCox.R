@@ -82,8 +82,10 @@
 
 ## * predictCox (examples)
 #' @rdname predictCox
-#' @examples 
+#' @examples
+##' 
 #' library(survival)
+#' library(data.table)
 #'
 #' #### generate data ####
 #' set.seed(10)

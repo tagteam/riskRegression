@@ -47,7 +47,7 @@ General R^2 for binary outcome and right censored time to event (survival) outco
 R^2 is calculated based on the model's predicted risks. The Brier score of the model is compared to the Brier score of the null model.
 }
 \examples{
-
+library(prodlim)
 # binary outcome
 library(lava)
 set.seed(18)

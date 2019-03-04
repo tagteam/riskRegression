@@ -28,10 +28,18 @@
 ##' @param metrics Character vector specifying which metrics to
 ##'     apply. Case does not matter. Choices are \code{"AUC"} and \code{"Brier"}.
 ##' @param summary Character vector specifying which summary
-##'     statistics to apply to the predicted risks. The only choice is 
-##'     \code{"riskQuantile"} which enables (time-point specific) boxplots of
-##'     predicted risks conditional on the outcome (at the time-point).
-##'     Set to \code{NULL} to avoid estimation of retrospective risk quantiles.
+##'     statistics to apply to the predicted risks. Choices are \code{"risks"}, \code{"IPA"},
+##'     \code{"riskQuantile"} and \code{"ibs"}. Can be all \code{c("risks","IPA","riskQuantile","ibs")} or a subset thereof.
+##'     \itemize{
+##'     \item \code{"risks"} adds the predicted risks to the output.
+##'     \item \code{"ipa"} computes the index of prediction accuracy (AKA R-squared) based on Brier scores for model vs null model
+##'     \item \code{"riskQuantile"} calculates
+##'     time-point specific boxplots for the
+##'     predicted risks (or biomarker values) conditional on the outcome at the time-point.
+##'     \item \code{"ibs"} calculates integrated Brier scores across the time points at which the Brier score is computed. This works only with
+##'     time-to-event outcome and the results depend on the argument \code{times}.
+##'     } 
+##'     Set to \code{NULL} to avoid estimation of summary statistics.
 ##' @param plots Character vector specifying for which plots to put data into the result.
 ##'     Currently implemented are \code{"ROC"}, \code{"Calibration"} and \code{"boxplot"}.
 ##'     In addition, one can plot AUC and Brier score as function of time as soon as
@@ -98,6 +106,7 @@
 ##' @param parallel The type of parallel operation to be used (if any). If missing, the default is \code{"no"}.
 ##' @param ncpus integer: number of processes to be used in parallel operation.
 ##' @param cl An optional \code{parallel} or \code{snow} cluster for use if \code{parallel = "snow"}. If not supplied, a cluster on the local machine is created for the duration of the \code{Score} call.
+##' @param progress.bar Style for \code{txtProgressBar}. Can be 1,2,3 see \code{help(txtProgressBar)} or NULL to avoid the progress bar.
 ##' @param keep list of characters (not case sensitive) which determines additional output.
 ##' \code{"residuals"} provides Brier score residuals and
 ##' \code{"splitindex"} provides sampling index used to split the data into training and validation sets.
@@ -355,6 +364,10 @@
 #' Mark A. van de Wiel, Johannes Berkhof, and Wessel N. van Wieringen Testing
 #' the prediction error difference between 2 predictors Biostatistics (2009)
 #' 10(3): 550-560 doi:10.1093/biostatistics/kxp011
+#'
+#' Michael W Kattan and Thomas A Gerds. The index of prediction accuracy: an
+#' intuitive measure useful for evaluating risk prediction models. Diagnostic
+#' and Prognostic Research, 2(1):7, 2018.
 ##'
 ##' @export
 ##'
@@ -387,6 +400,7 @@ Score.list <- function(object,
                        parallel=c("no","multicore","snow"),
                        ncpus=1,
                        cl=NULL,
+                       progress.bar=3,
                        keep,
                        predictRisk.args,
                        debug=0L,
@@ -442,6 +456,7 @@ Score.list <- function(object,
     }else{
         ibs <- FALSE
     }
+    ## IPA 
     if (length(posRR <- grep("^ipa$|^rr$|^r2|rsquared$",summary,ignore.case=TRUE))>0){
         if (!null.model) stop("Need the null model to compute IPA/R^2 but argument 'null.model' is FALSE.")
         summary <- summary[-posRR]
@@ -816,21 +831,21 @@ Score.list <- function(object,
                                        traindata=NULL,
                                        trainseed=NULL){
 
-        ID=NULL
-        # inherit everything else from parent frame: object, nullobject, NF, NT, times, cause, response.type, etc.
-        Brier=IPA=IBS=NULL
-        looping <- !is.null(traindata)
-        ## if (!looping) b=0
-        N <- NROW(testdata)
-        # split data vertically into response and predictors X
-        response <- testdata[,1:response.dim,with=FALSE]
-        response[,ID:=testdata[["ID"]]]
-        setkey(response,ID)
-        X <- testdata[,-c(1:response.dim),with=FALSE]
-        if (debug) if (looping) message(paste0("Loop round: ",b)) 
-        if (debug) message("extracted test set and prepared output object")
-        # }}}
-# {{{ collect pred as long format data.table
+            ID=NULL
+            # inherit everything else from parent frame: object, nullobject, NF, NT, times, cause, response.type, etc.
+            Brier=IPA=IBS=NULL
+            looping <- !is.null(traindata)
+            ## if (!looping) b=0
+            N <- NROW(testdata)
+            # split data vertically into response and predictors X
+            response <- testdata[,1:response.dim,with=FALSE]
+            response[,ID:=testdata[["ID"]]]
+            setkey(response,ID)
+            X <- testdata[,-c(1:response.dim),with=FALSE]
+            if (debug) if (looping) message(paste0("Loop round: ",b)) 
+            if (debug) message("extracted test set and prepared output object")
+            # }}}
+            # {{{ collect pred as long format data.table
 
         args <- switch(response.type,"binary"={list(newdata=X)},
                        "survival"={list(newdata=X,times=times)},
@@ -930,11 +945,11 @@ Score.list <- function(object,
         }
         if (debug) message("added weights to predictions")
 
-        # }}}
-        # {{{ merge with response
-        DT=merge(response,pred,by="ID")
-        DT
-    }
+            # }}}
+            # {{{ merge with response
+            DT=merge(response,pred,by="ID")
+            DT
+        }
     # }}}
     # }}} 
     # {{{ define function to test performance
@@ -965,6 +980,7 @@ Score.list <- function(object,
                       ## DT.residuals=DT.residuals,
                       dolist=dolist,Q=probs,ROC=FALSE,MC=Weights$IC)
         # {{{ collect data for calibration plots
+
         if ("Calibration" %in% plots){
             if (response.type[[1]]=="binary" || cens.type[[1]]=="uncensored")
                 out[["Calibration"]]$plotframe <- DT[model!=0]
@@ -973,6 +989,7 @@ Score.list <- function(object,
             }
             out[["Calibration"]]$plotframe[,model:=factor(model,levels=mlevs,mlabels)]
         }
+
         # }}}
         if (response.type=="competing.risks") {
             input <- c(input,list(cause=cause,states=states))
@@ -1028,7 +1045,7 @@ Score.list <- function(object,
                 }),by=c("model")]
             }
         }
-        if (ipa){
+        if (ipa == TRUE){
             if (response.type=="binary")
                 out[["Brier"]][["score"]][,IPA:=1-Brier/Brier[model=="Null model"]]
             else
@@ -1088,7 +1105,13 @@ Score.list <- function(object,
             trainseeds <- sample(1:1000000,size=B,replace=FALSE)
         }
         if (parallel=="snow") exports <- c("data","split.method","Weights","N","trainseeds") else exports <- NULL
+        if (!is.null(progress.bar)){
+            message("Running crossvalidation ...")
+            if (!(progress.bar %in% c(1,2,3))) progress.bar <- 3
+            pb <- txtProgressBar(max = B, style = progress.bar)
+        }
         DT.B <- rbindlist(foreach (b=1:B,.export=exports) %dopar%{
+            if(!is.null(progress.bar)){setTxtProgressBar(pb, b)}
             ## DT.B <- rbindlist(lapply(1:B,function(b){
             traindata=data[split.method$index[,b]]
             ## setkey(traindata,ID)
@@ -1126,6 +1149,8 @@ Score.list <- function(object,
         if (debug) message("setup data for cross-validation performance")
         Response <- data[,c(1:response.dim),with=FALSE]
         Response[,ID:=data[["ID"]]]
+        Response.names <- names(Response)
+        Response.names <- Response.names[Response.names!="ID"]
         setkey(Response,ID)
         # }}}
         # {{{ Leave-one-out bootstrap
@@ -1362,9 +1387,9 @@ Score.list <- function(object,
                     }
                     return(output)
                 }
-
                 # }}}
                 # {{{ Brier LOOB
+
                 if (m=="Brier"){
                     ## sum across bootstrap samples where subject i is out of bag
                     if (cens.type=="rightCensored"){
@@ -1457,7 +1482,13 @@ Score.list <- function(object,
                         score.loob[,lower:=pmax(0,Brier-qnorm(1-alpha/2)*se)]
                         score.loob[,upper:=pmin(1,Brier + qnorm(1-alpha/2)*se)]
                     } else{
-                        score.loob <- DT.B[,data.table(Brier=sum(residuals)/N), by=byvars]
+                        score.loob <- DT.B[,list(Brier=sum(residuals)/N), by=byvars]
+                    }
+                    if (ipa==TRUE){
+                        if (response.type=="binary")
+                            score.loob[,IPA:=1-Brier/Brier[model==0]]
+                        else
+                            score.loob[,IPA:=1-Brier/Brier[model==0],by=times]
                     }
                     data.table::setkeyv(score.loob,byvars)
                     ## data.table::setkey(DT.B,model,times)
@@ -1513,7 +1544,7 @@ Score.list <- function(object,
                     }
                     return(output)
                 }
-            
+
                 # }}}
             })
             names(crossvalPerf) <- metrics
@@ -1521,10 +1552,18 @@ Score.list <- function(object,
         }else{ ## split.method bootcv
             # {{{ bootcv
             if (parallel=="snow") exports <- c("DT.B","N.b","cens.model","multi.split.test") else exports <- NULL
+            if (!is.null(progress.bar)){
+                if (!(progress.bar %in% c(1,2,3))) progress.bar <- 3
+                pb <- txtProgressBar(max = B, style = progress.bar)
+            }
             crossval <- foreach (j=1:B,.export=exports) %dopar%{
                 ## crossval <- lapply(1:B,function(j){
                 DT.b <- DT.B[b==j]
                 N.b <- length(unique(DT.b[["ID"]]))
+                if(!is.null(progress.bar)){
+                    message("Running crossvalidation ...")
+                    setTxtProgressBar(pb, b)
+                }
                 computePerformance(DT.b,
                                    N=N.b,
                                    se.fit=FALSE,
@@ -1535,11 +1574,6 @@ Score.list <- function(object,
                                    keep.vcov=FALSE)
             }
             crossvalPerf <- lapply(metrics,function(m){
-                if (response.type %in% c("survival","competing.risks")){
-                    byvars <- c("model","times")
-                } else{
-                    byvars <- c("model")
-                }
                 ## score
                 if (length(crossval[[1]][[m]]$score)>0){
                     cv.score <- data.table::rbindlist(lapply(crossval,function(x){x[[m]]$score}))
@@ -1548,7 +1582,7 @@ Score.list <- function(object,
                                                                          lower=quantile(.SD[[m]],alpha/2,na.rm=TRUE),
                                                                          upper=quantile(.SD[[m]],(1-alpha/2),na.rm=TRUE)),by=byvars,.SDcols=m]
                         data.table::setnames(bootcv.score,c(byvars,m,"lower","upper"))
-                    } else{
+                    }else{
                         bootcv.score <- cv.score[,data.table::data.table(mean(.SD[[m]],na.rm=TRUE)),by=byvars,.SDcols=m]
                         data.table::setnames(bootcv.score,c(byvars,m))
                     }
@@ -1588,35 +1622,48 @@ Score.list <- function(object,
                 out
             })
             names(crossvalPerf) <- metrics
-        }
-
-    # }}}
-    # {{{ collect data for calibration plots
-    if ("Calibration" %in% plots){
-        if (keep.residuals[1] && split.method$name[1]=="LeaveOneOutBoot"){
-            crossvalPerf[["Calibration"]]$plotframe <- crossvalPerf$Brier$Residuals[model!=0,]
-        } else{
-            ## there are no residuals in this case. residuals are only available for LOOB!
-            if (cens.type=="uncensored"){
-                crossvalPerf[["Calibration"]]$plotframe <- DT.B[model!=0,data.table::data.table(response=ReSpOnSe,risk=mean(risk)),by=c(byvars,"ID")]
-                setcolorder(crossvalPerf[["Calibration"]]$plotframe,c("ID","ReSpOnSe","model","risk"))
-            }else{
-                rnames <- names(Response)
-                rnames <- rnames[rnames!="ID"]
-                DT.mean <- DT.B[model!=0,data.table::data.table(risk=mean(risk)),by=c(byvars,"ID")]
-                crossvalPerf[["Calibration"]]$plotframe <- merge(DT.mean,Response,by="ID")
-                setcolorder(crossvalPerf[["Calibration"]]$plotframe,c("ID","model","times",rnames,"risk")) 
+            if (ipa==TRUE){
+                if (response.type=="binary")
+                    crossvalPerf[["Brier"]][["score"]][,IPA:=1-Brier/Brier[model==0]]
+                else
+                    crossvalPerf[["Brier"]][["score"]][,IPA:=1-Brier/Brier[model==0],by=times]
             }
         }
-        crossvalPerf[["Calibration"]]$plotframe[,model:=factor(model,levels=mlevs,mlabels)]
-        if (keep.residuals[1]==FALSE && split.method$name[1]=="LeaveOneOutBoot"){
-            crossvalPerf$Brier$Residuals <- NULL
+        # }}}
+
+        # {{{ collect data for plotRisk
+        if ("risks"%in% summary){
+            crossvalPerf[["risks"]]$score <- DT.B[,{
+                c(.SD[1,Response.names,with=FALSE],
+                  list(risk=mean(risk),
+                       sd.risk=sd(risk),
+                       oob=.N))},.SDcols=c(Response.names,"risk"),by=c(byvars,"ID")]
+            crossvalPerf[["risks"]]$score[,model:=factor(model,levels=mlevs,mlabels)]
+            setcolorder(crossvalPerf[["risks"]]$score,c("ID",byvars,Response.names,"risk","sd.risk"))
         }
-        if (cens.type=="rightCensored")
-            crossvalPerf[["Calibration"]]$plotframe <- merge(jack,crossvalPerf[["Calibration"]]$plotframe,by=c("ID","times"))
+        # }}}        
+        # {{{ collect data for calibration plots
+        if ("Calibration" %in% plots){
+            if (keep.residuals[1] && split.method$name[1]=="LeaveOneOutBoot"){
+                crossvalPerf[["Calibration"]]$plotframe <- crossvalPerf$Brier$Residuals[model!=0,]
+            } else{
+                ## there are no residuals in this case. residuals are only available for LOOB!
+                crossvalPerf[["Calibration"]]$plotframe <- DT.B[model!=0,{
+                    c(.SD[1,Response.names,with=FALSE],
+                      list(risk=mean(risk),
+                           oob=.N))},.SDcols=c(Response.names,"risk"),by=c(byvars,"ID")]
+                setcolorder(crossvalPerf[["Calibration"]]$plotframe,c("ID",byvars,Response.names,"risk"))
+            }
+            crossvalPerf[["Calibration"]]$plotframe[,model:=factor(model,levels=mlevs,mlabels)]
+            if (keep.residuals[1]==FALSE && split.method$name[1]=="LeaveOneOutBoot"){
+                crossvalPerf$Brier$Residuals <- NULL
+            }
+            if (cens.type=="rightCensored")
+                crossvalPerf[["Calibration"]]$plotframe <- merge(jack,crossvalPerf[["Calibration"]]$plotframe,by=c("ID","times"))
+        }
+
+        # }}}
     }
-    # }}}
-}
     # }}}
     #------------------output-----------------------------------
     # {{{ enrich the output object

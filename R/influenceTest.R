@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: maj 19 2017 (16:01) 
 ## Version: 
-## last-updated: jun  1 2018 (14:40) 
-##           By: Brice Ozenne
-##     Update #: 177
+## last-updated: Mar  3 2019 (19:46) 
+##           By: Thomas Alexander Gerds
+##     Update #: 180
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -47,6 +47,8 @@
 #' @examples
 #' library(lava)
 #' library(survival)
+#' library(prodlim)
+#' library(data.table)
 #' n <- 100
 #'
 #' #### Under H1
@@ -106,6 +108,7 @@
 #' p.coxStrata <- predictCox(mStrata.cox, newdata = newdata, time = Utime, type = "survival")
 #'
 #' ## display
+#' library(ggplot2)
 #' autoplot(p.cox)
 #' autoplot(p.coxStrata)
 #'  

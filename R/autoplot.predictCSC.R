@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: feb 27 2017 (10:47) 
 ## Version: 
-## last-updated: Jan 29 2019 (10:49) 
+## last-updated: Mar  3 2019 (20:02) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 81
+##     Update #: 83
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -35,7 +35,8 @@
 #' @examples
 #' library(survival)
 #' library(rms)
-#' 
+#' library(ggplot2)
+##' library(prodlim)
 #' #### simulate data ####
 #' set.seed(10)
 #' d <- sampleData(1e2, outcome = "competing.risks")

@@ -7,6 +7,7 @@
 #' @param ... passed to predict.crr
 #'
 #' @examples
+##' library(prodlim)
 #' library(survival)
 #' set.seed(10)
 #' d <- sampleData(101, outcome = "competing.risk")

@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Mar 13 2017 (16:53) 
 ## Version: 
-## Last-Updated: Feb 21 2019 (07:35) 
+## Last-Updated: Mar  4 2019 (11:49) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 36
+##     Update #: 43
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -33,6 +33,7 @@
 ##'     barplot, legend. See \code{\link{SmartControl}}.
 ##' @return a nice graph
 ##' @examples
+##' library(prodlim)
 ##' ## uncensored
 ##' learndat = sampleData(40,outcome="binary")
 ##' testdat = sampleData(40,outcome="binary")
@@ -65,6 +66,7 @@ plotRisk <- function(x,
                      cex=1,
                      ...){
     model=ReSpOnSe=risk=status=NULL
+    if (is.null(x$risks$score)) stop("No predicted risks in object. You should set summary='risks' when calling Score.")
     if (!is.null(x$null.model))
         pframe <- x$risks$score[model!=x$null.model]
     else
@@ -90,7 +92,7 @@ plotRisk <- function(x,
     plot.DefaultArgs <- list(x=0,y=0,type = "n",ylim = ylim,xlim = xlim,ylab=ylab,xlab=xlab)
     axis1.DefaultArgs <- list(side=1,las=1,at=seq(xlim[1],xlim[2],(xlim[2]-xlim[1])/4))
     axis2.DefaultArgs <- list(side=2,las=2,at=seq(xlim[1],xlim[2],(xlim[2]-xlim[1])/4),mgp=c(4,1,0))
-    legend.DefaultArgs <- list(legend=names(x$models),pch=pch,col=col,cex=cex,bty="n",y.intersp=1.3,x="topleft")
+    legend.DefaultArgs <- list(legend=modelnames,pch=pch,col=col,cex=cex,bty="n",y.intersp=1.3,x="topleft")
     points.DefaultArgs <- list(x=m1,y=m2,pch=pch,cex=cex,col=col)
     abline.DefaultArgs <- list(a=0,b=1,lwd=1,col="gray66")
     control <- prodlim::SmartControl(call= list(...),

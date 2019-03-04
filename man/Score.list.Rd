@@ -12,8 +12,8 @@
   contrasts = TRUE, probs = c(0, 0.25, 0.5, 0.75, 1),
   cens.method = "ipcw", cens.model = "cox", split.method, B, M, seed,
   trainseeds, parallel = c("no", "multicore", "snow"), ncpus = 1,
-  cl = NULL, keep, predictRisk.args, debug = 0L, useEventTimes,
-  nullModel, censMethod, censModel, splitMethod, ...)
+  cl = NULL, progress.bar = 3, keep, predictRisk.args, debug = 0L,
+  useEventTimes, nullModel, censMethod, censModel, splitMethod, ...)
 }
 \arguments{
 \item{object}{List of risk predictions (see details and examples).}
@@ -30,10 +30,18 @@ interpreted.}
 apply. Case does not matter. Choices are \code{"AUC"} and \code{"Brier"}.}
 
 \item{summary}{Character vector specifying which summary
-statistics to apply to the predicted risks. The only choice is 
-\code{"riskQuantile"} which enables (time-point specific) boxplots of
-predicted risks conditional on the outcome (at the time-point).
-Set to \code{NULL} to avoid estimation of retrospective risk quantiles.}
+statistics to apply to the predicted risks. Choices are \code{"risks"}, \code{"IPA"},
+\code{"riskQuantile"} and \code{"ibs"}. Can be all \code{c("risks","IPA","riskQuantile","ibs")} or a subset thereof.
+\itemize{
+\item \code{"risks"} adds the predicted risks to the output.
+\item \code{"ipa"} computes the index of prediction accuracy (AKA R-squared) based on Brier scores for model vs null model
+\item \code{"riskQuantile"} calculates
+time-point specific boxplots for the
+predicted risks (or biomarker values) conditional on the outcome at the time-point.
+\item \code{"ibs"} calculates integrated Brier scores across the time points at which the Brier score is computed. This works only with
+time-to-event outcome and the results depend on the argument \code{times}.
+} 
+Set to \code{NULL} to avoid estimation of summary statistics.}
 
 \item{plots}{Character vector specifying for which plots to put data into the result.
 Currently implemented are \code{"ROC"}, \code{"Calibration"} and \code{"boxplot"}.
@@ -122,6 +130,8 @@ randomly splitting (bootstrapping) the data during cross-validation.}
 \item{ncpus}{integer: number of processes to be used in parallel operation.}
 
 \item{cl}{An optional \code{parallel} or \code{snow} cluster for use if \code{parallel = "snow"}. If not supplied, a cluster on the local machine is created for the duration of the \code{Score} call.}
+
+\item{progress.bar}{Style for \code{txtProgressBar}. Can be 1,2,3 see \code{help(txtProgressBar)} or NULL to avoid the progress bar.}
 
 \item{keep}{list of characters (not case sensitive) which determines additional output.
 \code{"residuals"} provides Brier score residuals and
@@ -409,6 +419,10 @@ prediction models based on microarray data. Bioinformatics, 23(14):1768-74,
 Mark A. van de Wiel, Johannes Berkhof, and Wessel N. van Wieringen Testing
 the prediction error difference between 2 predictors Biostatistics (2009)
 10(3): 550-560 doi:10.1093/biostatistics/kxp011
+
+Michael W Kattan and Thomas A Gerds. The index of prediction accuracy: an
+intuitive measure useful for evaluating risk prediction models. Diagnostic
+and Prognostic Research, 2(1):7, 2018.
 }
 \author{
 Thomas A Gerds \email{tag@biostat.ku.dk} and Paul Blanche \email{paul.blanche@univ-ubs.fr}

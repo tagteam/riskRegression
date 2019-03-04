@@ -112,6 +112,7 @@ barplot, legend, addtable2plot, points (pseudo values), rug. See
 Plot Calibration curve
 }
 \examples{
+library(prodlim)
 # binary 
 db=sampleData(100,outcome="binary")
 fb1=glm(Y~X1+X5+X7,data=db,family="binomial")

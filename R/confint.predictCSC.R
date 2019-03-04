@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: maj 23 2018 (14:08) 
 ## Version: 
-## Last-Updated: Jan 29 2019 (10:49) 
+## Last-Updated: Mar  3 2019 (20:02) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 157
+##     Update #: 158
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -40,7 +40,7 @@
 ##' @rdname confint.predictCSC
 ##' @examples
 ##' library(survival)
-##'
+##' library(prodlim)
 ##' #### generate data ####
 ##' set.seed(10)
 ##' d <- sampleData(100) 

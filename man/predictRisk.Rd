@@ -89,11 +89,16 @@ model (FGR) is specific to one of the causes.
 ## binary outcome
 library(rms)
 set.seed(7)
-x <- abs(rnorm(20))
-d <- data.frame(y=rbinom(20,1,x/max(x)),x=x,z=rnorm(20))
-nd <- data.frame(y=rbinom(8,1,x/max(x)),x=abs(rnorm(8)),z=rnorm(8))
-fit <- lrm(y~x+z,d)
+d <- sampleData(80,outcome="binary")
+nd <- sampleData(80,outcome="binary")
+fit <- lrm(Y~X1+X8,data=d)
 predictRisk(fit,newdata=nd)
+\dontrun{
+library(SuperLearner)
+set.seed(1)
+sl = SuperLearner(Y = d$Y, X = d[,-1], family = binomial(),
+      SL.library = c("SL.mean", "SL.glmnet", "SL.randomForest"))
+}
 
 ## survival outcome
 # generate survival data
@@ -159,8 +164,8 @@ plot(predictRisk(f1,newdata=valdat,times=10),
 library(survival)
 library(riskRegression)
 library(prodlim)
-train <- SimCompRisk(100)
-test <- SimCompRisk(10)
+train <- prodlim::SimCompRisk(100)
+test <- prodlim::SimCompRisk(10)
 cox.fit  <- CSC(Hist(time,cause)~X1+X2,data=train)
 predictRisk(cox.fit,newdata=test,times=seq(1:10),cause=1)
 

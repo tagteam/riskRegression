@@ -96,7 +96,9 @@ for each subject in newdata (dim 1),
 and each time (dim 2).
 }
 \examples{
+
 library(survival)
+library(data.table)
 
 #### generate data ####
 set.seed(10)

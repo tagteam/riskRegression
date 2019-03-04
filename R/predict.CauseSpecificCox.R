@@ -64,7 +64,7 @@
 #' @rdname predict.CauseSpecificCox
 #' @examples
 #' library(survival)
-#' 
+##' library(prodlim)
 #' #### generate data ####
 #' set.seed(5)
 #' d <- sampleData(80,outcome="comp") ## training dataset

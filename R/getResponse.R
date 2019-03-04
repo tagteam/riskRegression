@@ -48,11 +48,15 @@ getResponse <- function(formula,cause,data,vars){
             ## case 4,5
             ## replace Surv by Hist to use the attributes of
             ## the Hist object
+            requireNamespace("prodlim")
             if (responseNames[2]=="Surv"){
                 formula[[2]][[1]] <- as.name("Hist")
             }
-            m <- stats::model.frame(formula=formula,data=data,na.action=na.fail)
-            response <- unclass(stats::model.response(m))
+            response <- unclass(eval(formula[[2]],data))
+            ## m <- stats::model.frame(formula=formula,
+            ## data=data,
+            ## na.action=na.fail)
+            ## response <- unclass(stats::model.response(m))
         }
         else{
             stop("Cannot assign response type.")

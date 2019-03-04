@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: maj 18 2017 (09:23) 
 ## Version: 
-## last-updated: jun 16 2018 (11:50) 
-##           By: Brice Ozenne
-##     Update #: 103
+## last-updated: Mar  3 2019 (17:13) 
+##           By: Thomas Alexander Gerds
+##     Update #: 104
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -23,7 +23,7 @@ library(riskRegression)
 library(survival)
 library(rms)
 library(timereg)
-
+library(data.table)
 ## * Internal tests
 cat("[iidCox] internal test \n")
 ## ** Data

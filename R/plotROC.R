@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun 23 2016 (10:27) 
 ## Version: 
-## last-updated: Jan 29 2019 (11:13) 
+## last-updated: Mar  3 2019 (20:02) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 176
+##     Update #: 177
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -39,6 +39,7 @@
 ##' ## binary
 ##' set.seed(18)
 ##' library(randomForest)
+##' library(prodlim)
 ##' bdl <- sampleData(40,outcome="binary")
 ##' bdt <- sampleData(58,outcome="binary")
 ##' bdl[,y:=factor(Y)]

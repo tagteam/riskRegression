@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun  6 2016 (09:02) 
 ## Version: 
-## last-updated: Jan 29 2019 (11:04) 
+## last-updated: Mar  4 2019 (14:37) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 121
+##     Update #: 129
 #----------------------------------------------------------------------
 ## 
 ### Commentary:
@@ -86,12 +86,17 @@
 #' ## binary outcome
 #' library(rms)
 #' set.seed(7)
-#' x <- abs(rnorm(20))
-#' d <- data.frame(y=rbinom(20,1,x/max(x)),x=x,z=rnorm(20))
-#' nd <- data.frame(y=rbinom(8,1,x/max(x)),x=abs(rnorm(8)),z=rnorm(8))
-#' fit <- lrm(y~x+z,d)
+#' d <- sampleData(80,outcome="binary")
+#' nd <- sampleData(80,outcome="binary")
+#' fit <- lrm(Y~X1+X8,data=d)
 #' predictRisk(fit,newdata=nd)
-#'
+#'\dontrun{
+#' library(SuperLearner)
+#' set.seed(1)
+#' sl = SuperLearner(Y = d$Y, X = d[,-1], family = binomial(),
+#'       SL.library = c("SL.mean", "SL.glmnet", "SL.randomForest"))
+#'}
+#' 
 #' ## survival outcome
 #' # generate survival data
 ##' library(prodlim)
@@ -156,8 +161,8 @@
 #' library(survival)
 #' library(riskRegression)
 #' library(prodlim)
-#' train <- SimCompRisk(100)
-#' test <- SimCompRisk(10)
+#' train <- prodlim::SimCompRisk(100)
+#' test <- prodlim::SimCompRisk(10)
 #' cox.fit  <- CSC(Hist(time,cause)~X1+X2,data=train)
 #' predictRisk(cox.fit,newdata=test,times=seq(1:10),cause=1)
 #'
@@ -685,6 +690,7 @@ predictRisk.CauseSpecificCox <- function (object, newdata, times, cause, ...) {
 ##' \code{"ridge"}, \code{"lasso"}, \code{"elastic.net"}.
 ##' @param ... Arguments passed to penalized
 ##' @examples
+##' library(prodlim)
 ##' \dontrun{
 ##' ## too slow
 ##' library(penalized)
@@ -818,6 +824,25 @@ predictRisk.penfitS3 <- function(object,
     p <- penalized::predict(penfit,penalized=newPen,data=newdata)
     p
 }
+
+## ##' @export 
+## SuperLearnerF <- function(formula,data,family="binomial",...){
+    ## vv <- all.vars(formula)
+    ## yy <- vv[[1]]
+    ## xx <- vv[-1]
+    ## fit <- SuperLearner::SuperLearner(Y=yy,X=xx,family=family,...)
+    ## class(fit) <- "SuperLearnerF"
+    ## predict(fit)
+## }
+## ##' @export 
+## predictRisk.SuperLearnerF  <- function(object,newdata,times, cause,...){
+    ## p <- predict(object=object,newdata=newdata,times=times)
+    ## if (NROW(p) != NROW(newdata) || NCOL(p) != length(times))
+                ## stop(paste("\nPrediction matrix has wrong dimension:\nRequested newdata x times: ",NROW(newdata)," x ",length(times),"\nProvided prediction matrix: ",NROW(p)," x ",NCOL(p),"\n\n",sep=""))
+    ## p
+## }
+
+
 
 #----------------------------------------------------------------------
 ### predictRisk.R ends here

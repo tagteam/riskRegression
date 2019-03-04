@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Aug 10 2017 (08:56) 
 ## Version: 
-## Last-Updated: Mar 26 2018 (08:04) 
+## Last-Updated: Mar  3 2019 (17:32) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 14
+##     Update #: 19
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -17,9 +17,20 @@
 library(riskRegression)
 library(testthat)
 library(rms)
+library(SuperLearner)
 library(survival)
 library(randomForestSRC)
 library(ggplot2)
+library(data.table)
+# {{{ SuperLearner
+test_that("wrap the SuperLearner", {
+    d <- sampleData(139,outcome="binary")
+    sl = SuperLearner(Y = d$Y,
+                      X = d[,c("X1","X2","X3","X4","X5","X6","X7","X8","X9","X10"),with=0L],
+                      family = binomial(),
+                      SL.library = "SL.glm")
+})
+# }}}
 
 # {{{ missing data
 test_that("Additional arguments: example with imputation of missing data", {
@@ -39,14 +50,14 @@ test_that("Additional arguments: example with imputation of missing data", {
 test_that("Prediction with CSC - categorical cause",{
     set.seed(10)
     n <- 300
-    df.S <- SimCompRisk(n)
+    df.S <- prodlim::SimCompRisk(n)
     df.S$time <- round(df.S$time,2)
     df.S$X3 <- rbinom(n, size = 4, prob = rep(0.25,4))
     method.ties <- "efron"
     cause <- 1
     n <- 3
     set.seed(3)
-    dn <- SimCompRisk(n)
+    dn <- prodlim::SimCompRisk(n)
     dn$time <- round(dn$time,2)
     dn$X3 <- rbinom(n, size = 4, prob = rep(0.25,4))
     CSC.h3 <- CSC(Hist(time,event) ~ X1 + strat(X3) + X2, data = df.S, ties = method.ties, fitter = "cph")

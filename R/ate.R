@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Oct 23 2016 (08:53) 
 ## Version: 
-## last-updated: Jan 29 2019 (11:13) 
+## last-updated: Mar  3 2019 (20:02) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 852
+##     Update #: 853
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -75,7 +75,7 @@
 #' @examples 
 #' library(survival)
 #' library(rms)
-#' 
+##' library(prodlim)
 #' set.seed(10)
 #' 
 #' #### Survival settings  ####

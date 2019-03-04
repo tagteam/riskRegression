@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Aug  9 2017 (10:36) 
 ## Version: 
-## Last-Updated: Jan 29 2019 (10:49) 
+## Last-Updated: Mar  3 2019 (20:02) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 142
+##     Update #: 143
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -40,7 +40,7 @@
 ##' @return Data frame with explained variation values for the full model.
 ##' @seealso Score
 ##' @examples
-##'
+##' library(prodlim)
 ##' # binary outcome
 ##' library(lava)
 ##' set.seed(18)

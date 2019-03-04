@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Feb 23 2017 (11:15) 
 ## Version: 
-## last-updated: Jan 29 2019 (11:13) 
+## last-updated: Mar  3 2019 (20:02) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 277
+##     Update #: 278
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -78,6 +78,7 @@
 ##'     barplot, legend, addtable2plot, points (pseudo values), rug. See
 ##'     \code{\link{SmartControl}}.
 ##' @examples
+##' library(prodlim)
 ##' # binary 
 ##' db=sampleData(100,outcome="binary")
 ##' fb1=glm(Y~X1+X5+X7,data=db,family="binomial")

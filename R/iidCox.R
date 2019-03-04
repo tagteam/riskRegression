@@ -45,6 +45,7 @@
 #' @examples
 #' library(survival)
 #' library(data.table)
+##' library(prodlim)
 #' set.seed(10)
 #' d <- sampleData(100, outcome = "survival")[,.(eventtime,event,X1,X6)]
 #' setkey(d, eventtime)
