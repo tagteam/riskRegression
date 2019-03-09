@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun  6 2016 (09:02) 
 ## Version: 
-## last-updated: Mar  4 2019 (14:37) 
+## last-updated: Mar  6 2019 (18:53) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 129
+##     Update #: 133
 #----------------------------------------------------------------------
 ## 
 ### Commentary:
@@ -825,22 +825,14 @@ predictRisk.penfitS3 <- function(object,
     p
 }
 
-## ##' @export 
-## SuperLearnerF <- function(formula,data,family="binomial",...){
-    ## vv <- all.vars(formula)
-    ## yy <- vv[[1]]
-    ## xx <- vv[-1]
-    ## fit <- SuperLearner::SuperLearner(Y=yy,X=xx,family=family,...)
-    ## class(fit) <- "SuperLearnerF"
-    ## predict(fit)
-## }
-## ##' @export 
-## predictRisk.SuperLearnerF  <- function(object,newdata,times, cause,...){
-    ## p <- predict(object=object,newdata=newdata,times=times)
+
+##' @export 
+predictRisk.SuperPredictor  <- function(object,newdata,...){
+    p <- SuperLearner::predict.SuperLearner(object=object,newdata=newdata)$pred
     ## if (NROW(p) != NROW(newdata) || NCOL(p) != length(times))
-                ## stop(paste("\nPrediction matrix has wrong dimension:\nRequested newdata x times: ",NROW(newdata)," x ",length(times),"\nProvided prediction matrix: ",NROW(p)," x ",NCOL(p),"\n\n",sep=""))
-    ## p
-## }
+        ## stop(paste("\nPrediction matrix has wrong dimension:\nRequested newdata x times: ",NROW(newdata)," x ",length(times),"\nProvided prediction matrix: ",NROW(p)," x ",NCOL(p),"\n\n",sep=""))
+    p
+}
 
 
 
