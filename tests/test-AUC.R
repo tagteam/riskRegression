@@ -1,4 +1,5 @@
 library(testthat)
+library(data.table)
 context("Prediction error")
 # {{{ "AUC censored data: order"
 test_that("AUC censored data: order",{

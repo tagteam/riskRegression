@@ -27,6 +27,7 @@ This function first calls \code{cph} then \code{fastbw} and finally
 \examples{
 
 library(pec)
+library(prodlim)
 data(GBSG2)
 library(survival)
 f <- selectCox(Surv(time,cens)~horTh+age+menostat+tsize+tgrade+pnodes+progrec+estrec ,

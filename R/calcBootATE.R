@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: apr 11 2018 (17:05) 
 ## Version: 
-## Last-Updated: Oct  7 2018 (14:59) 
+## Last-Updated: Jan 29 2019 (10:49) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 70
+##     Update #: 71
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -24,7 +24,7 @@ calcBootATE <- function(object, pointEstimate, Gformula, data, formula, TD,
                         verbose){
     name.estimate <- names(pointEstimate)
     no.cl <- is.null(cl)
-    if( (no.cl == FALSE) && (mc.cores == 1) ){ ## i.e. the user has not initialized the number of cores
+    if( (no.cl[[1]] == FALSE) && (mc.cores[[1]] == 1) ){ ## i.e. the user has not initialized the number of cores
         mc.cores <- length(cl)
     }
     ## cores
@@ -46,7 +46,7 @@ calcBootATE <- function(object, pointEstimate, Gformula, data, formula, TD,
     ## bootstrap
     if(handler[[1]] %in% c("snow","parallel")) {
         # {{{ use boot package
-        if(handler=="snow" && no.cl){
+        if(handler[[1]]=="snow" && no.cl[[1]]==TRUE){
             ## initialize CPU
             cl <- parallel::makeCluster(mc.cores)
             ## load packages
@@ -82,7 +82,7 @@ calcBootATE <- function(object, pointEstimate, Gformula, data, formula, TD,
         parallel = handler[[1]], ncpus = mc.cores, cl = cl)
         # }}}
     }else {
-        if (handler[[1]]=="foreach" && mc.cores>1){
+        if (handler[[1]]=="foreach" && mc.cores[[1]]>1){
             # {{{ foreach
             if(no.cl){
                 if(verbose){
@@ -115,7 +115,7 @@ calcBootATE <- function(object, pointEstimate, Gformula, data, formula, TD,
             # }}}
         }else{
             # {{{ mcapply
-            if(Sys.info()["sysname"] == "Windows" && mc.cores>1){
+            if(Sys.info()["sysname"] == "Windows" && mc.cores[[1]]>1){
                 message("mclapply cannot perform parallel computations on Windows \n",
                         "consider setting argument handler to \"foreach\" \n")
                 mc.cores <- 1

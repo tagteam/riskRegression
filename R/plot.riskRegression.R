@@ -44,6 +44,7 @@
 ##' @examples
 ##' 
 ##' library(survival)
+##' library(prodlim)
 ##' data(Melanoma)
 ##' fit.arr <- ARR(Hist(time,status)~invasion+age+strata(sex),data=Melanoma,cause=1)
 ##' plot(fit.arr,xlim=c(500,3000))
@@ -178,8 +179,8 @@ plot.riskRegression <- function(x,
   })
   # }}}
   # {{{ legend
-  if(legend==TRUE && !add && !is.null(names(Y))){
-    if (smartA$legend$trimnames==TRUE && sapply((nlist <- strsplit(names(Y),"=")),function(x)length(x))==2){
+  if(legend[[1]]==TRUE && !add[[1]] && !is.null(names(Y))){
+    if (all(smartA$legend$trimnames==TRUE) && all(sapply((nlist <- strsplit(names(Y),"=")),function(x)length(x))==2)){
       smartA$legend$legend <- sapply(nlist,function(x)x[[2]])
       smartA$legend$title <- unique(sapply(nlist,function(x)x[[1]]))
     }

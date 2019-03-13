@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Feb 23 2017 (11:07) 
 ## Version: 
-## last-updated: Oct 18 2018 (10:54) 
+## last-updated: Mar  3 2019 (20:02) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 46
+##     Update #: 48
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -39,6 +39,7 @@
 ##' @examples
 ##' # survival
 ##' library(survival)
+##' library(prodlim)
 ##' ds1=sampleData(40,outcome="survival")
 ##' ds2=sampleData(40,outcome="survival")
 ##' f1 <- coxph(Surv(time,event)~X1+X3+X5+X7+X9,data=ds1,x=TRUE)
@@ -162,7 +163,7 @@ plotBrier <- function(x,
             do.call("lines",thisline)},by=contrast]
     }
     ## legend
-    if (!(is.logical(legend[1]) && legend[1]==FALSE)){
+    if (!(is.logical(legend[[1]]) && legend[[1]]==FALSE)){
         do.call("legend",control$legend)
     }
     ## x-axis

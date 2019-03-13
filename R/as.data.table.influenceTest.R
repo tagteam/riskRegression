@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: jun  1 2018 (13:41) 
 ## Version: 
-## Last-Updated: jun  1 2018 (14:23) 
-##           By: Brice Ozenne
-##     Update #: 21
+## Last-Updated: Jan 29 2019 (10:49) 
+##           By: Thomas Alexander Gerds
+##     Update #: 22
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -57,7 +57,7 @@ as.data.table.influenceTest <- function(x, keep.rownames = FALSE, se = TRUE, ...
         out$upper <- as.numeric(t(x$delta.upper))
         out$p.value <- as.numeric(t(x$delta.p.value))
     }
-    if(x$band && !is.null(x$conf.level)){
+    if(x$band[[1]] && !is.null(x$conf.level[[1]])){
         if(se){
             out$quantileBand <- unlist(lapply(x$delta.quantileBand, rep, n.time))
         }

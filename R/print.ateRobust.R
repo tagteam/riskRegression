@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: jul  5 2018 (15:28) 
 ## Version: 
-## Last-Updated: Jan 28 2019 (14:51) 
+## Last-Updated: Jan 29 2019 (10:49) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 103
+##     Update #: 104
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -43,7 +43,7 @@ print.ateRobust <- function(x,
     keep.col <- c("method","value")
 
     ## ** add confidence interval and p.value
-    if(!is.null(x$se)&& x$se==TRUE){
+    if(!is.null(x$se[[1]])&& x$se[[1]]==TRUE){
         ## dt.x[,c("lower") := format(round(.SD$lower, digits = digits), digits = 3, nsmall = 3)]
         ## dt.x[,c("upper") := format(round(.SD$upper, digits = digits), digits = 3, nsmall = 3)]
         indexNNA <- which(!is.na(dt.x$se))

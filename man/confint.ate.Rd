@@ -52,6 +52,7 @@ p-value are obtained using test inversion method
 }
 \examples{
 library(survival)
+library(data.table)
 
 ## ## generate data ####
 set.seed(10)

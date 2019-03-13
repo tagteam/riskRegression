@@ -40,7 +40,7 @@ library(prodlim)
 library(survival)
 library(cmprsk)
 library(lava)
-d <- SimCompRisk(100)
+d <- prodlim::SimCompRisk(100)
 f1 <- FGR(Hist(time,cause)~X1+X2,data=d)
 print(f1)
 

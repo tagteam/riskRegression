@@ -2,6 +2,8 @@ library(testthat)
 context("Fine-Gray regression")
 library(cmprsk)
 library(riskRegression)
+library(data.table)
+library(prodlim)
 test_that("Formula interface",{
     set.seed(17)
     d <- prodlim::SimCompRisk(100)

@@ -82,8 +82,10 @@
 
 ## * predictCox (examples)
 #' @rdname predictCox
-#' @examples 
+#' @examples
+##' 
 #' library(survival)
+#' library(data.table)
 #'
 #' #### generate data ####
 #' set.seed(10)
@@ -165,7 +167,7 @@ predictCox <- function(object,
   }else{
       nTimes <- length(times)
   }
-  needOrder <- (nTimes>0 && is.unsorted(times))
+  needOrder <- (nTimes[1]>0 && is.unsorted(times))
   if (needOrder) {
       oorder.times <- order(order(times))
       times.sorted <- sort(times)
@@ -198,7 +200,7 @@ predictCox <- function(object,
   if(object.baseEstimator == "exact"){
       stop("Prediction with exact handling of ties is not implemented.\n")
   }
-  if(nTimes>0 && any(is.na(times))){
+  if(nTimes[1]>0 && any(is.na(times))){
       stop("Missing (NA) values in argument \'times\' are not allowed.\n")
   }
   type <- tolower(type)
@@ -220,7 +222,7 @@ predictCox <- function(object,
            "One or several model parameters have been estimated to be NA \n")
   }
 
-    if (se==1L || iid==1L){
+    if (se[[1]]==1L || iid[[1]]==1L){
         if (missing(newdata)) stop("Argument 'newdata' is missing. Cannot compute standard errors in this case.")
     }
     if("XXXindexXXX" %in% names(object.modelFrame)){
@@ -229,17 +231,17 @@ predictCox <- function(object,
     if(!is.logical(diag)){
         stop("Argument \'diag\' must be logical \n")
     }
-    if(diag==TRUE && NROW(newdata)!=length(times)){
+    if(diag[[1]]==TRUE && NROW(newdata)!=length(times)){
         stop("When argument \'diag\' is TRUE, the number of rows in \'newdata\' must equal the length of \'times\' \n")
     }
-    if(diag==TRUE && (se||band||average.iid)){
+    if(diag[[1]]==TRUE && (se[[1]]||band[[1]]||average.iid[[1]])){
         stop("Arguments \'se\', \'band\', and \'average.iid\' must be FALSE when \'diag\' is TRUE \n")
     }
-    if(diag==TRUE && iid==TRUE && store.iid == "minimal"){
+    if(diag[[1]]==TRUE && iid[[1]]==TRUE && store.iid[[1]] == "minimal"){
         stop("Arguments \'store.iid\' must equal \"full\" when \'diag\' is TRUE \n")
     }
     if(!is.null(newdata)){
-      if(missing(times) || nTimes==0){
+      if(missing(times) || nTimes[[1]]==0){
           stop("Time points at which to evaluate the predictions are missing \n")
       }
 
@@ -249,10 +251,10 @@ predictCox <- function(object,
                paste0(setdiff(name.regressor,names(newdata)), collapse = "\" \""),
                "\"\n")
       }
-      if(se && "hazard" %in% type){
+      if(se[1] && ("hazard" %in% type)){
           stop("confidence intervals cannot be computed for the hazard \n")
       }
-      if(band && "hazard" %in% type){
+      if(band[1] && ("hazard" %in% type)){
           stop("confidence bands cannot be computed for the hazard \n")
       }
 
@@ -315,7 +317,7 @@ predictCox <- function(object,
       if (keep.times==FALSE){
           Lambda0$times <- NULL
       }
-      if (keep.strata==FALSE || is.strata == FALSE){
+      if (keep.strata[[1]]==FALSE || is.strata[[1]] == FALSE){
           Lambda0$strata <- NULL
       }
 
@@ -439,7 +441,7 @@ predictCox <- function(object,
                                         # }}}
                                         # {{{ standard error
     
-    if(se || band || iid || average.iid){
+    if(se[[1]] || band[[1]] || iid[[1]] || average.iid[[1]]){
       
         if(nVar > 0){
             ## use prodlim to get the design matrix
@@ -485,19 +487,19 @@ predictCox <- function(object,
         ## restaure orginal time ordering
         if((iid+band)>0){
             if ("hazard" %in% type){
-                if (needOrder && diag == FALSE)
+                if (needOrder[1] && diag[1] == FALSE)
                     out$hazard.iid <- outSE$hazard.iid[,oorder.times,,drop=0L]
                 else
                     out$hazard.iid <- outSE$hazard.iid
             }
             if ("cumhazard" %in% type){
-                if (needOrder && diag == FALSE)
+                if (needOrder[1] && diag[1] == FALSE)
                     out$cumhazard.iid <- outSE$cumhazard.iid[,oorder.times,,drop=0L]
                 else
                     out$cumhazard.iid <- outSE$cumhazard.iid
             }
             if ("survival" %in% type){
-                if (needOrder && diag == FALSE)
+                if (needOrder[1] && diag[1] == FALSE)
                     out$survival.iid <- outSE$survival.iid[,oorder.times,,drop=0L]
                 else
                     out$survival.iid <- outSE$survival.iid
@@ -546,7 +548,7 @@ predictCox <- function(object,
       if (keep.times==TRUE){
           add.list$times <- times
       }
-      if (is.strata && keep.strata==TRUE){
+      if (is.strata[1] && keep.strata[1]==TRUE){
           add.list$strata <- new.strata
       }
       
@@ -554,7 +556,7 @@ predictCox <- function(object,
           add.list$infoVar <- infoVar
       }
       all.covars <- c(infoVar$stratavars.original,infoVar$lpvars.original)
-      if( keep.newdata==TRUE && length(all.covars)>0){
+      if( keep.newdata[1]==TRUE && length(all.covars)>0){
           add.list$newdata <- newdata[, all.covars, with = FALSE]
       }
       out[names(add.list)] <- add.list
@@ -564,10 +566,10 @@ predictCox <- function(object,
       if(confint){
           out <- stats::confint(out)
       }
-      if(band && se==FALSE){
+      if(band[1] && se[1]==FALSE){
           out[paste0(type,".se")] <- NULL
       }
-      if(band && iid==FALSE){
+      if(band[1] && iid[1]==FALSE){
           out[paste0(type,".iid")] <- NULL
       }
       

@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: sep  4 2017 (10:38) 
 ## Version: 
-## last-updated: jun 16 2018 (11:30) 
-##           By: Brice Ozenne
-##     Update #: 49
+## last-updated: Mar  3 2019 (17:14) 
+##           By: Thomas Alexander Gerds
+##     Update #: 50
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -24,7 +24,7 @@ library(riskRegression)
 library(testthat)
 library(rms)
 library(survival)
-
+library(data.table)
 context("[predictCox] baseline hazard")
 ## * [predictCox] baseline hazard (no strata)
 cat("[predictCox] Estimation of the baseline hazard (no strata) \n")

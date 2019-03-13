@@ -33,7 +33,8 @@ Plot predictions from a Cause-specific Cox proportional hazard regression.
 \examples{
 library(survival)
 library(rms)
-
+library(ggplot2)
+library(prodlim)
 #### simulate data ####
 set.seed(10)
 d <- sampleData(1e2, outcome = "competing.risks")

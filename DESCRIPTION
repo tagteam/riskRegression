@@ -2,18 +2,18 @@ Package: riskRegression
 Type: Package
 Title: Risk Regression Models and Prediction Scores for Survival Analysis with
     Competing Risks
-Version: 2019.01.28
+Version: 2019.03.03
 Authors@R: c(person("Thomas Alexander", "Gerds", role = c("aut", "cre"),
                     email = "tag@biostat.ku.dk"),
              person("Paul", "Blanche", role = "ctb"),
              person("Ulla Brasch", "Mogensen", role = "ctb"),
              person("Brice", "Ozenne", role = "aut", email = "broz@sund.ku.dk", comment = c(ORCID = "0000-0001-9694-2956")))
 Depends:
-    R (>= 2.9.0),
+    R (>= 3.5.0),
+Imports:
     data.table (>= 1.10.4),
     ggplot2 (>= 2.1.0),
-    prodlim (>= 1.6.1)
-Imports:
+    prodlim (>= 1.6.1),
     abind,
     doParallel,
     stats,
@@ -32,6 +32,7 @@ LinkingTo: Rcpp, RcppArmadillo
 Suggests:
     boot,
     CoxBoost,
+    SuperLearner,
     mets,
     mstate,
     party,
@@ -42,7 +43,7 @@ Suggests:
     randomForestSRC,
     rbenchmark,
     rpart,
-    testthat,
+    testthat
 Maintainer: Thomas Alexander Gerds <tag@biostat.ku.dk>
 Description: Implementation of the following methods for event history analysis.
     Risk regression models for survival endpoints also in the presence of competing

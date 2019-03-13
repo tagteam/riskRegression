@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: maj 23 2018 (14:08) 
 ## Version: 
-## Last-Updated: jun 13 2018 (16:03) 
-##           By: Brice Ozenne
-##     Update #: 156
+## Last-Updated: Mar  3 2019 (20:02) 
+##           By: Thomas Alexander Gerds
+##     Update #: 158
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -40,7 +40,7 @@
 ##' @rdname confint.predictCSC
 ##' @examples
 ##' library(survival)
-##'
+##' library(prodlim)
 ##' #### generate data ####
 ##' set.seed(10)
 ##' d <- sampleData(100) 
@@ -79,7 +79,7 @@ confint.predictCSC <- function(object,
                                seed = NA,
                                ...){
 
-    if(object$se == FALSE && object$band == FALSE){
+    if(object$se[[1]] == FALSE && object$band[[1]] == FALSE){
         message("No confidence interval/band computed \n",
                 "Set argument \'se\' or argument \'band\' to TRUE when calling predictCSC \n")
         return(object)

@@ -77,7 +77,7 @@ Use the g-formula to estimate the average treatment
 \examples{
 library(survival)
 library(rms)
-
+library(prodlim)
 set.seed(10)
 
 #### Survival settings  ####

@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun 23 2016 (10:27) 
 ## Version: 
-## last-updated: Mar 23 2018 (14:09) 
-##           By: Paul Blanche
-##     Update #: 175
+## last-updated: Mar  3 2019 (20:02) 
+##           By: Thomas Alexander Gerds
+##     Update #: 177
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -39,6 +39,7 @@
 ##' ## binary
 ##' set.seed(18)
 ##' library(randomForest)
+##' library(prodlim)
 ##' bdl <- sampleData(40,outcome="binary")
 ##' bdt <- sampleData(58,outcome="binary")
 ##' bdl[,y:=factor(Y)]
@@ -133,7 +134,7 @@ plotROC <- function(x,
     names(lty) <- mm
     lines.DefaultArgs <- list(pch=pch,cex=cex,lwd=lwd,type="l",col=col,lty=lty)
     # {{{ legend
-    if (is.character(legend[1])|| legend[1]==TRUE){
+    if (is.character(legend[[1]])|| legend[[1]]==TRUE){
         legend.data <- getLegendData(object=x,
                                      models=models,
                                      times=tp,
@@ -196,7 +197,7 @@ plotROC <- function(x,
         do.call("axis",control$axis1)
         do.call("axis",control$axis2)
     }
-    if (is.character(legend[1]) || legend[1]==TRUE){
+    if (is.character(legend[[1]]) || legend[[1]]==TRUE){
         legend.coords <- do.call("legend",control$legend)
         if (!is.null(addtable2plot.DefaultArgs)){
             if (is.null(control$addtable2plot[["x"]]))

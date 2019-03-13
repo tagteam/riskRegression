@@ -38,7 +38,7 @@
 ##' @export 
 ##' @author Thomas A. Gerds <tag@@biostat.ku.dk>
 getSplitMethod <- function(split.method,B,N,M,seed){
-    if (!missing(seed) && !is.null(seed) && !is.na(seed)) set.seed(seed)
+    if (!missing(seed) && !is.null(seed) && !is.na(seed[[1]])) set.seed(seed)
     if (missing(split.method)) split.method <- ""
     split.methodName <- NULL
     split.method <- tolower(split.method)
@@ -90,7 +90,7 @@ getSplitMethod <- function(split.method,B,N,M,seed){
         if (missing(B)) B <- 100
     }
     if (missing(M)) M <- N
-    stopifnot(M>0 && M<=N) 
+    stopifnot(M[[1]]>0 && M[[1]]<=N[[1]]) 
     subsampling <- M!=N
     if (M<1) M <- round(M*N)
     ResampleIndex <- switch(split.method,
@@ -114,7 +114,7 @@ getSplitMethod <- function(split.method,B,N,M,seed){
         B <- switch(split.method,"loocv"={1},"noplan"={0},{100})
     }
     else{
-        stopifnot(B<0 || B==round(B))
+        stopifnot(B[[1]]<0 || B[[1]]==round(B[[1]]))
     }
     out <- list(name=split.methodName,
                 internal.name=split.method,

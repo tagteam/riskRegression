@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: maj 27 2017 (11:46) 
 ## Version: 
-## last-updated: aug 30 2018 (09:02) 
-##           By: Brice Ozenne
-##     Update #: 487
+## last-updated: Mar  9 2019 (10:03) 
+##           By: Thomas Alexander Gerds
+##     Update #: 490
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -50,14 +50,14 @@
 #' @param store.iid Implementation used to estimate the influence function and the standard error.
 #' Can be \code{"full"} or \code{"minimal"}. See the details section.
 #' 
-#' @details Can also return the empirical influence function of the functionals cumulative hazard or survival
-#' or the sum over the observations of the empirical influence function.
+#' @details Can also return the estimated influence function for the cumulative hazard function and survival probabilities
+#'  the sum over the observations of the estimated influence function.
 #'
 #' \code{store.iid="full"} compute the influence function for each observation at each time in the argument \code{times}
 #' before computing the standard error / influence functions.
 #' \code{store.iid="minimal"} recompute for each subject specific prediction the influence function for the baseline hazard.
 #' This avoid to store all the influence functions but may lead to repeated evaluation of the influence function.
-#' This solution is therefore efficient more efficient in memory usage but may not be in term of computation time.
+#' This solution is therefore more efficient in memory usage but may not be in terms of computation time.
 #' 
 #' @inheritParams  predict.CauseSpecificCox
 #' 
@@ -113,7 +113,7 @@ calcSeCox <- function(object, times, nTimes, type, diag,
     }
     # }}}
 
-    if(store.iid == "minimal"){
+    if(store.iid[[1]] == "minimal"){
                                         # {{{ method = minimal
         object.strata <- as.numeric(object.strata)
         if("hazard" %in% type){
@@ -146,8 +146,8 @@ calcSeCox <- function(object, times, nTimes, type, diag,
                                        p = nVar,
                                        exportSE = ("se" %in% export),
                                        exportIF = ("iid" %in% export),
-                                       exportIFsum_cumhazard = ("average.iid" %in% export && "cumhazard" %in% type),
-                                       exportIFsum_survival = ("average.iid" %in% export && "survival" %in% type)
+                                       exportIFsum_cumhazard = (all("average.iid" %in% export) && all("cumhazard" %in% type)),
+                                       exportIFsum_survival = (all("average.iid" %in% export) && all("survival" %in% type))
                                        )
 
             if("iid" %in% export){

@@ -366,7 +366,7 @@ coxLP.cph <- function(object, data, center){
     
     Xb <- object$linear.predictors
     
-    if(center == FALSE && n.varLP != 0){
+    if(center[[1]] == FALSE && n.varLP != 0){
       Xb <- Xb + sum(coxCenter(object)*coef)
     }
     
@@ -401,7 +401,7 @@ coxLP.coxph <- function(object, data, center){
     
     Xb <- object$linear.predictors
     
-    if(center == FALSE && n.varLP != 0){
+    if(center[[1]] == FALSE && n.varLP != 0){
       Xb <- Xb + sum(coxCenter(object)*coef)
     }
     

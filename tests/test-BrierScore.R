@@ -1,4 +1,5 @@
 library(testthat)
+library(data.table)
 context("Prediction error")
 # {{{ "Brier score censored data order"
 test_that("Brier score censored data order",{

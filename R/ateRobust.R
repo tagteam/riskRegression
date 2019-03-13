@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne, Thomas A. Gerds
 ## Created: jun 27 2018 (17:47) 
 ## Version: 
-## Last-Updated: feb 13 2019 (10:51) 
+## Last-Updated: mar 13 2019 (15:47) 
 ##           By: Brice Ozenne
-##     Update #: 1139
+##     Update #: 1125
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -46,7 +46,7 @@
 #' library(survival)
 #' library(lava)
 #' library(data.table)
-#'
+#' library(prodlim)
 #' set.seed(10)
 #' # survival outcome, binary treatment X1 
 #'

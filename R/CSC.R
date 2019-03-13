@@ -170,7 +170,7 @@ CSC <- function(formula,
         NC <- length(causes)
     else
         NC <- 2 # cause of interest and overall survival
-    if (length(formula)!=NC && length(formula)>1) stop("Wrong number of formulae. Should be one for each cause ",NC,".")
+    if (length(formula)!=NC[1] && length(formula)>1) stop("Wrong number of formulae. Should be one for each cause ",NC,".")
     if (length(formula)==1) {
         ## warning("The same formula used for all causes")
         formula <- lapply(1:NC,function(x)formula[[1]])

@@ -42,6 +42,7 @@ plot predicted risks
 Two rival prediction models are applied to the same data.
 }
 \examples{
+library(prodlim)
 ## uncensored
 learndat = sampleData(40,outcome="binary")
 testdat = sampleData(40,outcome="binary")

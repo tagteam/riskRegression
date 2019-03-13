@@ -28,10 +28,18 @@
 ##' @param metrics Character vector specifying which metrics to
 ##'     apply. Case does not matter. Choices are \code{"AUC"} and \code{"Brier"}.
 ##' @param summary Character vector specifying which summary
-##'     statistics to apply to the predicted risks. The only choice is 
-##'     \code{"riskQuantile"} which enables (time-point specific) boxplots of
-##'     predicted risks conditional on the outcome (at the time-point).
-##'     Set to \code{NULL} to avoid estimation of retrospective risk quantiles.
+##'     statistics to apply to the predicted risks. Choices are \code{"risks"}, \code{"IPA"},
+##'     \code{"riskQuantile"} and \code{"ibs"}. Can be all \code{c("risks","IPA","riskQuantile","ibs")} or a subset thereof.
+##'     \itemize{
+##'     \item \code{"risks"} adds the predicted risks to the output.
+##'     \item \code{"ipa"} computes the index of prediction accuracy (AKA R-squared) based on Brier scores for model vs null model
+##'     \item \code{"riskQuantile"} calculates
+##'     time-point specific boxplots for the
+##'     predicted risks (or biomarker values) conditional on the outcome at the time-point.
+##'     \item \code{"ibs"} calculates integrated Brier scores across the time points at which the Brier score is computed. This works only with
+##'     time-to-event outcome and the results depend on the argument \code{times}.
+##'     } 
+##'     Set to \code{NULL} to avoid estimation of summary statistics.
 ##' @param plots Character vector specifying for which plots to put data into the result.
 ##'     Currently implemented are \code{"ROC"}, \code{"Calibration"} and \code{"boxplot"}.
 ##'     In addition, one can plot AUC and Brier score as function of time as soon as
@@ -98,6 +106,7 @@
 ##' @param parallel The type of parallel operation to be used (if any). If missing, the default is \code{"no"}.
 ##' @param ncpus integer: number of processes to be used in parallel operation.
 ##' @param cl An optional \code{parallel} or \code{snow} cluster for use if \code{parallel = "snow"}. If not supplied, a cluster on the local machine is created for the duration of the \code{Score} call.
+##' @param progress.bar Style for \code{txtProgressBar}. Can be 1,2,3 see \code{help(txtProgressBar)} or NULL to avoid the progress bar.
 ##' @param keep list of characters (not case sensitive) which determines additional output.
 ##' \code{"residuals"} provides Brier score residuals and
 ##' \code{"splitindex"} provides sampling index used to split the data into training and validation sets.
@@ -355,6 +364,10 @@
 #' Mark A. van de Wiel, Johannes Berkhof, and Wessel N. van Wieringen Testing
 #' the prediction error difference between 2 predictors Biostatistics (2009)
 #' 10(3): 550-560 doi:10.1093/biostatistics/kxp011
+#'
+#' Michael W Kattan and Thomas A Gerds. The index of prediction accuracy: an
+#' intuitive measure useful for evaluating risk prediction models. Diagnostic
+#' and Prognostic Research, 2(1):7, 2018.
 ##'
 ##' @export
 ##'
@@ -387,6 +400,7 @@ Score.list <- function(object,
                        parallel=c("no","multicore","snow"),
                        ncpus=1,
                        cl=NULL,
+                       progress.bar=3,
                        keep,
                        predictRisk.args,
                        debug=0L,
@@ -442,6 +456,7 @@ Score.list <- function(object,
     }else{
         ibs <- FALSE
     }
+    ## IPA 
     if (length(posRR <- grep("^ipa$|^rr$|^r2|rsquared$",summary,ignore.case=TRUE))>0){
         if (!null.model) stop("Need the null model to compute IPA/R^2 but argument 'null.model' is FALSE.")
         summary <- summary[-posRR]
@@ -570,7 +585,7 @@ Score.list <- function(object,
             on.exit(parallel::stopCluster(cl))
             doParallel::registerDoParallel(cl=cl,cores=ncpus)                
         })
-        if (split.method$name=="BootCv" && multi.split.test==TRUE){
+        if (split.method$name[1]=="BootCv" && multi.split.test[1]==TRUE){
             if ("AUC" %in% metrics) {
                 warning("Cannot do multi-split test with AUC yet. Forced multi.split.test=FALSE")
                 multi.split.test=FALSE
@@ -668,18 +683,18 @@ Score.list <- function(object,
     # }}}
     # {{{ resolve se.fit and contrasts
     if (missing(se.fit)){
-        if (is.logical(conf.int) && conf.int==FALSE
-            || conf.int<=0
-            || conf.int>1) 
+        if (is.logical(conf.int)[[1]] && conf.int[[1]]==FALSE
+            || conf.int[[1]]<=0
+            || conf.int[[1]]>1) 
             se.fit <- 0L
         else
             se.fit <- 1L
     }else{
-        stopifnot(is.logical(se.fit)||se.fit==0||se.fit==1)
+        stopifnot(is.logical(se.fit)||se.fit[[1]]==0||se.fit[[1]]==1)
     }
     if (split.method$internal.name=="noplan") multi.split.test <- FALSE
-    if (se.fit==1L) {
-        if (is.numeric(conf.int) && conf.int<1 && conf.int>0)
+    if (se.fit[1]==1L) {
+        if (is.numeric(conf.int) && conf.int[1]<1 && conf.int[1]>0)
             alpha <- 1-conf.int
         else
             alpha <- .05
@@ -688,10 +703,10 @@ Score.list <- function(object,
     }
     if ((NF+length(nullobject))<=1) dolist <- NULL 
     else{
-        if ((is.logical(contrasts) && contrasts==FALSE)){
+        if ((is.logical(contrasts) && contrasts[1]==FALSE)){
             dolist <- NULL
         } else{
-            if (is.logical(contrasts) && contrasts==TRUE){
+            if (is.logical(contrasts) && contrasts[1]==TRUE){
                 if (is.null(nullobject)){
                     dolist <- lapply(1:(NF-1),function(i){c(i,(i+1):NF)})
                 } else{
@@ -745,7 +760,7 @@ Score.list <- function(object,
             stop("Landmark updating not yet implemented.")
         }
     } else{
-        if (!missing(times) && (!is.null(times)) && (times!=FALSE)) warning("Function 'Score': Response type is not time-to-event: argument 'times' will be ignored.",call.=FALSE)
+        if (!missing(times) && (!is.null(times)) && (times[1]!=FALSE)) warning("Function 'Score': Response type is not time-to-event: argument 'times' will be ignored.",call.=FALSE)
         times <- NULL
         NT <- 1
     }
@@ -754,11 +769,11 @@ Score.list <- function(object,
     # {{{
     if (response.type %in% c("survival","competing.risks")){
         if (cens.type=="rightCensored"){
-            if (se.fit>0L && "AUC" %in% metrics && conservative==TRUE) {
+            if (se.fit[1]>0L && ("AUC" %in% metrics) && (conservative[1]==TRUE)) {
                 ## FIXME: need conservative formula for AUC 
                 warning("Cannot do conservative==TRUE with AUC yet.")
             }
-            if (se.fit>0L && "AUC" %in% metrics && cens.model=="cox"){
+            if ((se.fit[[1]]>0L) && ("AUC" %in% metrics) && (cens.model[[1]]=="cox")){
                 if (!(split.method$name %in% c("LeaveOneOutBoot","BootCv"))){
                     warning("Cannot (not yet) estimate standard errors for AUC with Cox IPCW.\nTherefore, force cens.model to be marginal.")
                     cens.model <- "KaplanMeier"
@@ -770,67 +785,67 @@ Score.list <- function(object,
                                            cens.model=cens.model,
                                            response.type=response.type,
                                            ## FIXME: need conservative formula for AUC
-                                           influence.curve=(se.fit==TRUE && (conservative==0L || "AUC" %in% metrics)))
+                                           influence.curve=(se.fit[[1]]==TRUE && (conservative[[1]]==0L || ("AUC" %in% metrics))))
             ## 
             ## if cens.model is marginal then IC is a matrix (ntimes,newdata) 
             ## if cens.model is Cox then IC is an array (nlearn, ntimes, newdata)
             ## IC is an array with dimension (nlearn, times, newdata)
             ## IC_G(t,z;x_k)
-        }else { 
-            if (cens.type=="uncensored"){
-                cens.method <- "none"
-                cens.model <- "none"
-                if ("auc" %in% metrics){
-                    if (se.fit==TRUE) {
-                        warning("Standard error for AUC with uncensored time-to-event outcome not yet implemented.")
-                        se.fit <- FALSE
+            }else { 
+                if (cens.type=="uncensored"){
+                    cens.method <- "none"
+                    cens.model <- "none"
+                    if ("auc" %in% metrics){
+                        if (se.fit==TRUE) {
+                            warning("Standard error for AUC with uncensored time-to-event outcome not yet implemented.")
+                            se.fit <- FALSE
+                        }
                     }
+                    Weights <- NULL
                 }
-                Weights <- NULL
+                else{
+                    stop("Cannot handle this type of censoring.")
+                }
             }
-            else{
-                stop("Cannot handle this type of censoring.")
+            if ("pseudo" %in% cens.method){
+                if (cens.type[1]=="rightCensored"
+                    && (response.type %in% c("survival","competing.risks"))){        
+                    margForm <- update(formula,paste(".~1"))
+                    margFit <- prodlim::prodlim(margForm,data=data)
+                    ## position.cause is the result of match(cause, states)
+                    jack <- data.table(ID=data[["ID"]],
+                                       times=rep(times,rep(N,NT)),
+                                       pseudovalue=c(prodlim::jackknife(margFit,cause=position.cause,times=times)))
+                    if (response.type=="survival") jack[,pseudovalue:=1-pseudovalue]
+                }
             }
+        } else{ 
+            Weights <- NULL
         }
-        if ("pseudo" %in% cens.method){
-            if (cens.type=="rightCensored"
-                && (response.type %in% c("survival","competing.risks"))){        
-                margForm <- update(formula,paste(".~1"))
-                margFit <- prodlim::prodlim(margForm,data=data)
-                ## position.cause is the result of match(cause, states)
-                jack <- data.table(ID=data[["ID"]],
-                                   times=rep(times,rep(N,NT)),
-                                   pseudovalue=c(prodlim::jackknife(margFit,cause=position.cause,times=times)))
-                if (response.type=="survival") jack[,pseudovalue:=1-pseudovalue]
-            }
-        }
-    } else{ 
-        Weights <- NULL
-    }
-    # }}}
-    # -----------------performance program----------------------
-    # {{{ define getPerformanceData, setup data in long-format, response, pred, weights, model, times, loop
-    # {{{ header
-    getPerformanceData <- function(testdata,
-                                   testweights,
-                                   traindata=NULL,
-                                   trainseed=NULL){
-
-        ID=NULL
-        # inherit everything else from parent frame: object, nullobject, NF, NT, times, cause, response.type, etc.
-        Brier=IPA=IBS=NULL
-        looping <- !is.null(traindata)
-        ## if (!looping) b=0
-        N <- NROW(testdata)
-        # split data vertically into response and predictors X
-        response <- testdata[,1:response.dim,with=FALSE]
-        response[,ID:=testdata[["ID"]]]
-        setkey(response,ID)
-        X <- testdata[,-c(1:response.dim),with=FALSE]
-        if (debug) if (looping) message(paste0("Loop round: ",b)) 
-        if (debug) message("extracted test set and prepared output object")
         # }}}
-# {{{ collect pred as long format data.table
+        # -----------------performance program----------------------
+        # {{{ define getPerformanceData, setup data in long-format, response, pred, weights, model, times, loop
+        # {{{ header
+        getPerformanceData <- function(testdata,
+                                       testweights,
+                                       traindata=NULL,
+                                       trainseed=NULL){
+
+            ID=NULL
+            # inherit everything else from parent frame: object, nullobject, NF, NT, times, cause, response.type, etc.
+            Brier=IPA=IBS=NULL
+            looping <- !is.null(traindata)
+            ## if (!looping) b=0
+            N <- NROW(testdata)
+            # split data vertically into response and predictors X
+            response <- testdata[,1:response.dim,with=FALSE]
+            response[,ID:=testdata[["ID"]]]
+            setkey(response,ID)
+            X <- testdata[,-c(1:response.dim),with=FALSE]
+            if (debug) if (looping) message(paste0("Loop round: ",b)) 
+            if (debug) message("extracted test set and prepared output object")
+            # }}}
+            # {{{ collect pred as long format data.table
 
         args <- switch(response.type,"binary"={list(newdata=X)},
                        "survival"={list(newdata=X,times=times)},
@@ -844,11 +859,11 @@ Score.list <- function(object,
             trainX[,ID:=NULL]
         }
         pred <- data.table::rbindlist(lapply(mlevs, function(f){
-            if (f>0 && (length(extra.args <- unlist(lapply(object.classes[[f]],function(cc){predictRisk.args[[cc]]})))>0)){
+            if (f[1]>0 && (length(extra.args <- unlist(lapply(object.classes[[f]],function(cc){predictRisk.args[[cc]]})))>0)){
                 args <- c(args,extra.args)
             }
             ## predictions given as numeric values
-            if (f!=0 && any(c("integer","factor","numeric","matrix") %in% object.classes[[f]])){
+            if (f[1]!=0 && any(c("integer","factor","numeric","matrix") %in% object.classes[[f]])){
                 ## sort predictions by ID
                 if (!is.null(dim(object[[f]]))) {## input matrix
                     if(!is.null(include.times)){ ## remove columns at times beyond max time
@@ -879,7 +894,7 @@ Score.list <- function(object,
                         trained.model <- object[[f]]
                 }
                 p <- c(do.call("predictRisk", c(list(object=trained.model),args)))
-                if (f==0 && response.type!="binary") {## glm predicts the same value for all subjects
+                if (f[1]==0 && (response.type[1]!="binary")) {## glm predicts the same value for all subjects
                     p <- rep(p,rep(N,NT))
                 }
             }
@@ -930,11 +945,11 @@ Score.list <- function(object,
         }
         if (debug) message("added weights to predictions")
 
-        # }}}
-        # {{{ merge with response
-        DT=merge(response,pred,by="ID")
-        DT
-    }
+            # }}}
+            # {{{ merge with response
+            DT=merge(response,pred,by="ID")
+            DT
+        }
     # }}}
     # }}} 
     # {{{ define function to test performance
@@ -965,14 +980,16 @@ Score.list <- function(object,
                       ## DT.residuals=DT.residuals,
                       dolist=dolist,Q=probs,ROC=FALSE,MC=Weights$IC)
         # {{{ collect data for calibration plots
+
         if ("Calibration" %in% plots){
-            if (response.type=="binary" || cens.type=="uncensored")
+            if (response.type[[1]]=="binary" || cens.type[[1]]=="uncensored")
                 out[["Calibration"]]$plotframe <- DT[model!=0]
             else{
                 out[["Calibration"]]$plotframe <- merge(jack,DT[model!=0],by=c("ID","times"))
             }
             out[["Calibration"]]$plotframe[,model:=factor(model,levels=mlevs,mlabels)]
         }
+
         # }}}
         if (response.type=="competing.risks") {
             input <- c(input,list(cause=cause,states=states))
@@ -1028,7 +1045,7 @@ Score.list <- function(object,
                 }),by=c("model")]
             }
         }
-        if (ipa){
+        if (ipa == TRUE){
             if (response.type=="binary")
                 out[["Brier"]][["score"]][,IPA:=1-Brier/Brier[model=="Null model"]]
             else
@@ -1088,7 +1105,13 @@ Score.list <- function(object,
             trainseeds <- sample(1:1000000,size=B,replace=FALSE)
         }
         if (parallel=="snow") exports <- c("data","split.method","Weights","N","trainseeds") else exports <- NULL
+        if (!is.null(progress.bar)){
+            message("Running crossvalidation ...")
+            if (!(progress.bar %in% c(1,2,3))) progress.bar <- 3
+            pb <- txtProgressBar(max = B, style = progress.bar)
+        }
         DT.B <- rbindlist(foreach (b=1:B,.export=exports) %dopar%{
+            if(!is.null(progress.bar)){setTxtProgressBar(pb, b)}
             ## DT.B <- rbindlist(lapply(1:B,function(b){
             traindata=data[split.method$index[,b]]
             ## setkey(traindata,ID)
@@ -1126,6 +1149,8 @@ Score.list <- function(object,
         if (debug) message("setup data for cross-validation performance")
         Response <- data[,c(1:response.dim),with=FALSE]
         Response[,ID:=data[["ID"]]]
+        Response.names <- names(Response)
+        Response.names <- Response.names[Response.names!="ID"]
         setkey(Response,ID)
         # }}}
         # {{{ Leave-one-out bootstrap
@@ -1242,7 +1267,7 @@ Score.list <- function(object,
                                     this.aucDT <- data.table(model=mod,times=t,ID = c(id.cases,id.controls,id.censored), IF.AUC0 = c(ic0, rep(-2*aucLPO,length(id.censored))))
                                 }
                                 aucDT <- rbindlist(list(aucDT,this.aucDT),use.names=TRUE,fill=TRUE)
-                                if (response.type=="binary" || cens.type=="uncensored"){
+                                if (response.type[[1]]=="binary" || cens.type[[1]]=="uncensored"){
                                     icPhi <- (aucLPO/Phi)*((weights.cases-(1/N)*sum(weights.cases))*(1/N)*sum(weights.controls)+(weights.controls-(1/N)*sum(weights.controls))*(1/N)*sum(weights.controls))-2*aucLPO
                                     if (is.null(t)){
                                         data.table::setkey(aucDT,model,ID)
@@ -1254,7 +1279,7 @@ Score.list <- function(object,
                                         auc.loob[times==t&model==mod,se:=sd(aucDT[["IF.AUC"]])/sqrt(N)]
                                     }
                                 }else{
-                                    if (cens.type=="rightCensored" && (conservative==FALSE)) {
+                                    if (cens.type[1]=="rightCensored" && (conservative[1]==FALSE)) {
                                         ## ## Influence function for G - i.e. censoring survival distribution 
                                         ic.weights <- matrix(0,N,N)
                                         if  (cens.model=="cox"){
@@ -1362,9 +1387,9 @@ Score.list <- function(object,
                     }
                     return(output)
                 }
-
                 # }}}
                 # {{{ Brier LOOB
+
                 if (m=="Brier"){
                     ## sum across bootstrap samples where subject i is out of bag
                     if (cens.type=="rightCensored"){
@@ -1414,7 +1439,7 @@ Score.list <- function(object,
                         DT.B[,IC0:=residuals-Brier]
                         ## se.brier <- DT.B[,list(se=sd(IC0, na.rm=TRUE)/sqrt(N)),by=byvars]
                         ## DT.B[,Brier:=NULL]
-                        if (cens.type=="rightCensored" && conservative!=TRUE){
+                        if (cens.type[1]=="rightCensored" && conservative[1]!=TRUE){
                             ## this is a new DT.B
                             DT.B <- cbind(data[,1:response.dim,with=FALSE],DT.B)
                             DT.B[,nth.times:=as.numeric(factor(times))]
@@ -1457,7 +1482,13 @@ Score.list <- function(object,
                         score.loob[,lower:=pmax(0,Brier-qnorm(1-alpha/2)*se)]
                         score.loob[,upper:=pmin(1,Brier + qnorm(1-alpha/2)*se)]
                     } else{
-                        score.loob <- DT.B[,data.table(Brier=sum(residuals)/N), by=byvars]
+                        score.loob <- DT.B[,list(Brier=sum(residuals)/N), by=byvars]
+                    }
+                    if (ipa==TRUE){
+                        if (response.type=="binary")
+                            score.loob[,IPA:=1-Brier/Brier[model==0]]
+                        else
+                            score.loob[,IPA:=1-Brier/Brier[model==0],by=times]
                     }
                     data.table::setkeyv(score.loob,byvars)
                     ## data.table::setkey(DT.B,model,times)
@@ -1513,7 +1544,7 @@ Score.list <- function(object,
                     }
                     return(output)
                 }
-            
+
                 # }}}
             })
             names(crossvalPerf) <- metrics
@@ -1521,10 +1552,18 @@ Score.list <- function(object,
         }else{ ## split.method bootcv
             # {{{ bootcv
             if (parallel=="snow") exports <- c("DT.B","N.b","cens.model","multi.split.test") else exports <- NULL
+            if (!is.null(progress.bar)){
+                if (!(progress.bar %in% c(1,2,3))) progress.bar <- 3
+                pb <- txtProgressBar(max = B, style = progress.bar)
+            }
             crossval <- foreach (j=1:B,.export=exports) %dopar%{
                 ## crossval <- lapply(1:B,function(j){
                 DT.b <- DT.B[b==j]
                 N.b <- length(unique(DT.b[["ID"]]))
+                if(!is.null(progress.bar)){
+                    message("Running crossvalidation ...")
+                    setTxtProgressBar(pb, b)
+                }
                 computePerformance(DT.b,
                                    N=N.b,
                                    se.fit=FALSE,
@@ -1535,11 +1574,6 @@ Score.list <- function(object,
                                    keep.vcov=FALSE)
             }
             crossvalPerf <- lapply(metrics,function(m){
-                if (response.type %in% c("survival","competing.risks")){
-                    byvars <- c("model","times")
-                } else{
-                    byvars <- c("model")
-                }
                 ## score
                 if (length(crossval[[1]][[m]]$score)>0){
                     cv.score <- data.table::rbindlist(lapply(crossval,function(x){x[[m]]$score}))
@@ -1548,7 +1582,7 @@ Score.list <- function(object,
                                                                          lower=quantile(.SD[[m]],alpha/2,na.rm=TRUE),
                                                                          upper=quantile(.SD[[m]],(1-alpha/2),na.rm=TRUE)),by=byvars,.SDcols=m]
                         data.table::setnames(bootcv.score,c(byvars,m,"lower","upper"))
-                    } else{
+                    }else{
                         bootcv.score <- cv.score[,data.table::data.table(mean(.SD[[m]],na.rm=TRUE)),by=byvars,.SDcols=m]
                         data.table::setnames(bootcv.score,c(byvars,m))
                     }
@@ -1588,35 +1622,48 @@ Score.list <- function(object,
                 out
             })
             names(crossvalPerf) <- metrics
-        }
-
-    # }}}
-    # {{{ collect data for calibration plots
-    if ("Calibration" %in% plots){
-        if (keep.residuals && split.method$name=="LeaveOneOutBoot"){
-            crossvalPerf[["Calibration"]]$plotframe <- crossvalPerf$Brier$Residuals[model!=0,]
-        } else{
-            ## there are no residuals in this case. residuals are only available for LOOB!
-            if (cens.type=="uncensored"){
-                crossvalPerf[["Calibration"]]$plotframe <- DT.B[model!=0,data.table::data.table(response=ReSpOnSe,risk=mean(risk)),by=c(byvars,"ID")]
-                setcolorder(crossvalPerf[["Calibration"]]$plotframe,c("ID","ReSpOnSe","model","risk"))
-            }else{
-                rnames <- names(Response)
-                rnames <- rnames[rnames!="ID"]
-                DT.mean <- DT.B[model!=0,data.table::data.table(risk=mean(risk)),by=c(byvars,"ID")]
-                crossvalPerf[["Calibration"]]$plotframe <- merge(DT.mean,Response,by="ID")
-                setcolorder(crossvalPerf[["Calibration"]]$plotframe,c("ID","model","times",rnames,"risk")) 
+            if (ipa==TRUE){
+                if (response.type=="binary")
+                    crossvalPerf[["Brier"]][["score"]][,IPA:=1-Brier/Brier[model==0]]
+                else
+                    crossvalPerf[["Brier"]][["score"]][,IPA:=1-Brier/Brier[model==0],by=times]
             }
         }
-        crossvalPerf[["Calibration"]]$plotframe[,model:=factor(model,levels=mlevs,mlabels)]
-        if (keep.residuals==FALSE && split.method$name=="LeaveOneOutBoot"){
-            crossvalPerf$Brier$Residuals <- NULL
+        # }}}
+
+        # {{{ collect data for plotRisk
+        if ("risks"%in% summary){
+            crossvalPerf[["risks"]]$score <- DT.B[,{
+                c(.SD[1,Response.names,with=FALSE],
+                  list(risk=mean(risk),
+                       sd.risk=sd(risk),
+                       oob=.N))},.SDcols=c(Response.names,"risk"),by=c(byvars,"ID")]
+            crossvalPerf[["risks"]]$score[,model:=factor(model,levels=mlevs,mlabels)]
+            setcolorder(crossvalPerf[["risks"]]$score,c("ID",byvars,Response.names,"risk","sd.risk"))
         }
-        if (cens.type=="rightCensored")
-            crossvalPerf[["Calibration"]]$plotframe <- merge(jack,crossvalPerf[["Calibration"]]$plotframe,by=c("ID","times"))
+        # }}}        
+        # {{{ collect data for calibration plots
+        if ("Calibration" %in% plots){
+            if (keep.residuals[1] && split.method$name[1]=="LeaveOneOutBoot"){
+                crossvalPerf[["Calibration"]]$plotframe <- crossvalPerf$Brier$Residuals[model!=0,]
+            } else{
+                ## there are no residuals in this case. residuals are only available for LOOB!
+                crossvalPerf[["Calibration"]]$plotframe <- DT.B[model!=0,{
+                    c(.SD[1,Response.names,with=FALSE],
+                      list(risk=mean(risk),
+                           oob=.N))},.SDcols=c(Response.names,"risk"),by=c(byvars,"ID")]
+                setcolorder(crossvalPerf[["Calibration"]]$plotframe,c("ID",byvars,Response.names,"risk"))
+            }
+            crossvalPerf[["Calibration"]]$plotframe[,model:=factor(model,levels=mlevs,mlabels)]
+            if (keep.residuals[1]==FALSE && split.method$name[1]=="LeaveOneOutBoot"){
+                crossvalPerf$Brier$Residuals <- NULL
+            }
+            if (cens.type=="rightCensored")
+                crossvalPerf[["Calibration"]]$plotframe <- merge(jack,crossvalPerf[["Calibration"]]$plotframe,by=c("ID","times"))
+        }
+
+        # }}}
     }
-    # }}}
-}
     # }}}
     #------------------output-----------------------------------
     # {{{ enrich the output object
@@ -1730,7 +1777,7 @@ Brier.binary <- function(DT,
         data.table::setkey(DT,model)
         data.table::setkey(score,model)
         DT <- DT[score]
-        if (se.fit==TRUE || multi.split.test==TRUE){
+        if (se.fit[[1]]==TRUE || multi.split.test[[1]]==TRUE){
             contrasts.Brier <- DT[,getComparisons(data.table(x=Brier,
                                                              IF=residuals,
                                                              model=model),
@@ -1754,7 +1801,7 @@ Brier.binary <- function(DT,
     }else{
         output <- list(score=score)
     }
-    if (keep.vcov && se.fit==TRUE){
+    if (keep.vcov[1] && se.fit[1]==TRUE){
         output <- c(output,list(vcov=getVcov(DT,"IF.Brier")))
     }
     if (keep.residuals) {
@@ -1769,7 +1816,7 @@ Brier.survival <- function(DT,MC,se.fit,conservative,cens.model,keep.vcov=FALSE,
     DT[time<=times & status==1,residuals:=(1-risk)^2/WTi]
     DT[time<=times & status==0,residuals:=0]
     DT[time>times,residuals:=(risk)^2/Wt]
-    if (se.fit==1L || multi.split.test==TRUE){
+    if (se.fit[[1]]==1L || multi.split.test[[1]]==TRUE){
         ## data.table::setorder(DT,model,times,time,-status)
         data.table::setorder(DT,model,times,ID)
         DT[,nth.times:=as.numeric(factor(times))]
@@ -1813,7 +1860,7 @@ Brier.survival <- function(DT,MC,se.fit,conservative,cens.model,keep.vcov=FALSE,
         data.table::setkey(DT,model,times)
         ## data.table::setkey(score,model,times)
         DT <- DT[score]
-        if (se.fit==TRUE || multi.split.test==TRUE){
+        if (se.fit[[1]]==TRUE || multi.split.test[[1]]==TRUE){
             contrasts.Brier <- DT[,getComparisons(data.table(x=Brier,IF=IF.Brier,model=model),
                                                   NF=NF,
                                                   N=N,
@@ -1835,7 +1882,7 @@ Brier.survival <- function(DT,MC,se.fit,conservative,cens.model,keep.vcov=FALSE,
     } else{
         output <- list(score=score)
     }
-    if (keep.vcov && se.fit==TRUE){
+    if (keep.vcov[1] && se.fit[1]==TRUE){
         output <- c(output,list(vcov=getVcov(DT,"IF.Brier",times=TRUE)))
     }
     if (keep.residuals) {
@@ -1855,7 +1902,7 @@ Brier.competing.risks <- function(DT,MC,se.fit,conservative,cens.model,keep.vcov
     DT[time>times,residuals:=(risk)^2/Wt]
     ## deal with censored observations before t
     DT[time<=times & status==0,residuals:=0]
-    if (se.fit==1L || multi.split.test==TRUE){
+    if (se.fit[[1]]==1L || multi.split.test[[1]]==TRUE){
         ## data.table::setorder(DT,model,times,time,-status)
         data.table::setorder(DT,model,times,ID)
         DT[,nth.times:=as.numeric(factor(times))]
@@ -1898,7 +1945,7 @@ Brier.competing.risks <- function(DT,MC,se.fit,conservative,cens.model,keep.vcov
         ## merge with Brier score
         DT <- DT[score]
         data.table::setkey(score,model,times)
-        if (se.fit==TRUE || multi.split.test==TRUE){
+        if (se.fit[[1]]==TRUE || multi.split.test[[1]]==TRUE){
             contrasts.Brier <- DT[,getComparisons(data.table(x=Brier,IF=IF.Brier,model=model),
                                                   NF=NF,
                                                   N=N,
@@ -1923,7 +1970,7 @@ Brier.competing.risks <- function(DT,MC,se.fit,conservative,cens.model,keep.vcov
     if (keep.residuals) {
         output <- c(output,list(residuals=DT[,c("ID","time","status","model","times","risk","residuals"),with=FALSE]))
     }
-    if (keep.vcov && se.fit==TRUE){
+    if (keep.vcov[1] && se.fit[1]==TRUE){
         output <- c(output,list(vcov=getVcov(DT,"IF.Brier",times=TRUE)))
     }
     output
@@ -2013,7 +2060,7 @@ delongtest <-  function(risk,
                 ctr <- ctr + 1
             }
         }
-        if (se.fit==TRUE||multi.split.test==TRUE){
+        if (se.fit[[1]]==TRUE||multi.split.test[[1]]==TRUE){
             deltaAUC <- data.table(model,reference,delta.AUC=as.vector(delta.AUC),se)
             deltaAUC[,p:=2*pnorm(abs(delta.AUC)/se,lower.tail=FALSE)]
         }else{
@@ -2070,7 +2117,7 @@ AUC.binary <- function(DT,breaks=NULL,se.fit,conservative=FALSE,cens.model="none
         ROC <- score
         output <- list(score=AUC,ROC=ROC)
     }
-    if (length(dolist)>0 || (se.fit==1L)){
+    if (length(dolist)>0 || (se.fit[[1]]==1L)){
         xRisk <- data.table::dcast(aucDT[],ID~model,value.var="risk")[,-1,with=FALSE]
         delong.res <- delongtest(risk=xRisk,
                                  score=output$score,
@@ -2121,7 +2168,7 @@ AUC.survival <- function(DT,MC,se.fit,conservative,cens.model,keep.vcov=FALSE,mu
     }
     score <- aucDT[nodups,list(AUC=AireTrap(FPR,TPR)),by=list(model,times)]
     data.table::setkey(score,model,times)
-    if (se.fit==1L || multi.split.test==TRUE){
+    if (se.fit[[1]]==1L || multi.split.test[[1]]==TRUE){
         ## compute influence function
         ## data.table::setorder(aucDT,model,times,time,-status)
         data.table::setorder(aucDT,model,times,ID)
@@ -2152,7 +2199,7 @@ AUC.survival <- function(DT,MC,se.fit,conservative,cens.model,keep.vcov=FALSE,mu
     ## add score to object
     output <- c(list(score=score),output)
     if (length(dolist)>0){
-        if (se.fit==TRUE || multi.split.test==TRUE){
+        if (se.fit[[1]]==TRUE || multi.split.test[[1]]==TRUE){
             contrasts.AUC <- aucDT[,getComparisons(data.table(x=AUC,IF=IF.AUC,model=model),
                                                    NF=NF,
                                                    N=N,
@@ -2206,7 +2253,7 @@ AUC.competing.risks <- function(DT,MC,se.fit,conservative,cens.model,keep.vcov=F
     }
     score <- aucDT[nodups,list(AUC=AireTrap(FPR,TPR)),by=list(model,times)]
     data.table::setkey(score,model,times)
-    if (se.fit==1L || multi.split.test==TRUE){
+    if (se.fit[[1]]==1L || multi.split.test[[1]]==TRUE){
         ## compute influence function
         ## data.table::setorder(aucDT,model,times,time,-status)
         data.table::setorder(aucDT,model,times,ID)
@@ -2239,7 +2286,7 @@ AUC.competing.risks <- function(DT,MC,se.fit,conservative,cens.model,keep.vcov=F
     ## add score to object
     output <- c(list(score=score),output)
     if (length(dolist)>0){
-        if (se.fit==TRUE || multi.split.test==TRUE){
+        if (se.fit[[1]]==TRUE || multi.split.test[[1]]==TRUE){
             contrasts.AUC <- aucDT[,getComparisons(data.table(x=AUC,IF=IF.AUC,model=model),
                                                    NF=NF,
                                                    N=N,

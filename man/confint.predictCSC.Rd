@@ -33,7 +33,7 @@ The confidence bands and confidence intervals are automatically restricted to th
 }
 \examples{
 library(survival)
-
+library(prodlim)
 #### generate data ####
 set.seed(10)
 d <- sampleData(100) 

@@ -45,6 +45,7 @@
 #' @examples
 #' library(survival)
 #' library(data.table)
+##' library(prodlim)
 #' set.seed(10)
 #' d <- sampleData(100, outcome = "survival")[,.(eventtime,event,X1,X6)]
 #' setkey(d, eventtime)
@@ -119,7 +120,7 @@ iidCox <- function(object, newdata = NULL,
     
     # {{{ tests 
     ## time at which the influence function is evaluated
-    if(is.list(tau.hazard) && length(tau.hazard)!=nStrata){
+    if(is.list(tau.hazard) && (length(tau.hazard)!=nStrata)){
         stop("argument \"tau.hazard\" must be a list with ",nStrata," elements \n",
              "each element being the vector of times for each strata \n")
     }

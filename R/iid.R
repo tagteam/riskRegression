@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: jul  5 2018 (13:29) 
 ## Version: 
-## Last-Updated: Oct  2 2018 (16:13) 
+## Last-Updated: Jan 29 2019 (11:13) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 31
+##     Update #: 32
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -79,7 +79,7 @@ predictGLM <- function(object, newdata, average.iid = FALSE){
     ## ** chain rule
     newX <- model.matrix(stats::formula(object), newdata)
 
-    if(identical(class(object),"lm") || object$family$link=="identity"){
+    if(identical(class(object)[1],"lm") || object$family$link[[1]]=="identity"){
         if(average.iid){
             E.X <- apply(factor, 2, function(iFactor){ ## iFactor <- factor[,1]
                 colMeans(colMultiply_cpp(newX, scale = iFactor))

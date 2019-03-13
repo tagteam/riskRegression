@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: maj 18 2017 (09:23) 
 ## Version: 
-## last-updated: Oct  4 2018 (10:05) 
+## last-updated: Mar  3 2019 (17:32) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 200
+##     Update #: 201
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -634,7 +634,7 @@ cat("[predictCSS] - strata \n")
 ## ** CIF
 set.seed(10)
 n <- 300
-df.S <- SimCompRisk(n)
+df.S <- prodlim::SimCompRisk(n)
 df.S$time <- round(df.S$time,2)
 df.S$X3 <- rbinom(n, size = 4, prob = rep(0.25,4))
 seqTime <- c(unique(sort(df.S$time)), max(df.S$time) + 1)[c(1,2,5,12,90,125,200,241,267,268)]

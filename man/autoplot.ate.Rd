@@ -29,7 +29,7 @@ Plot average risks.
 \dontrun{
 library(survival)
 library(rms)
-
+library(ggplot2)
 #### simulate data ####
 n <- 1e2
 set.seed(10)

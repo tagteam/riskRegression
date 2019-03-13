@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun  6 2016 (09:35) 
 ## Version: 
-## last-updated: Sep 26 2018 (20:14) 
+## last-updated: Mar  3 2019 (18:00) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 158
+##     Update #: 161
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -21,6 +21,8 @@ library(testthat)
 library(rms)
 library(survival)
 library(mstate)
+library(prodlim)
+library(data.table)
 tmat <- trans.comprisk(2, names = c("0", "1", "2"))
 
 context("Risk prediction")
@@ -185,10 +187,10 @@ test_that("Deal with NA in times",{
 cat("Conditional CIF \n")
 
 set.seed(10)
-d <- SimCompRisk(1e2)
+d <- prodlim::SimCompRisk(1e2)
 d$time <- round(d$time,1)
 ttt <- sample(x = unique(sort(d$time)), size = 10)
-d2 <- SimCompRisk(1e2)
+d2 <- prodlim::SimCompRisk(1e2)
 
 #### coxph function
 CSC.fit <- CSC(Hist(time,event)~ X1+X2,data=d, method = "breslow")

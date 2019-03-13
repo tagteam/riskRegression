@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: feb 17 2017 (10:06) 
 ## Version: 
-## last-updated: jun 13 2018 (13:17) 
-##           By: Brice Ozenne
-##     Update #: 481
+## last-updated: Jan 29 2019 (10:49) 
+##           By: Thomas Alexander Gerds
+##     Update #: 482
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -119,20 +119,20 @@ autoplot.predictCox <- function(object,
     group.by <- match.arg(group.by, c("row","covariates","strata"))
  
   
-    if(group.by == "covariates" && ("newdata" %in% names(object) == FALSE)){
+    if(group.by[[1]] == "covariates" && (("newdata" %in% names(object)) == FALSE)){
         stop("argument \'group.by\' cannot be \"covariates\" when newdata is missing in the object \n",
              "set argment \'keep.newdata\' to TRUE when calling predictCox \n")
     }
-    if(group.by == "strata" && ("strata" %in% names(object) == FALSE)){
+    if(group.by[[1]] == "strata" && ("strata" %in% names(object) == FALSE)){
         stop("argument \'group.by\' cannot be \"strata\" when strata is missing in the object \n",
              "set argment \'keep.strata\' to TRUE when calling predictCox \n")
     }
   
-    if(ci && (object$se==FALSE || is.null(object$conf.level))){
+    if(ci[[1]]==TRUE && (object$se[[1]]==FALSE || is.null(object$conf.level))){
         stop("argument \'ci\' cannot be TRUE when no standard error have been computed \n",
              "set arguments \'se\' and \'confint\' to TRUE when calling predictCox \n")
     }
-    if(band && (object$band==FALSE  || is.null(object$conf.level))){
+    if(band[[1]] && (object$band[[1]]==FALSE  || is.null(object$conf.level))){
         stop("argument \'band\' cannot be TRUE when the quantiles for the confidence bands have not been computed \n",
              "set arguments \'band\' and \'confint\' to TRUE when calling predictCox \n")
     }
@@ -181,7 +181,7 @@ autoplot.predictCox <- function(object,
         
     }else{
         newdata <- data.table::copy(object$newdata) ## can be NULL
-        if(!is.null(newdata) && reduce.data){
+        if(!is.null(newdata) && reduce.data[[1]]==TRUE){
             test <- unlist(newdata[,lapply(.SD, function(col){length(unique(col))==1})])
             if(any(test)){
                 newdata[, (names(test)[test]):=NULL]
@@ -372,7 +372,7 @@ predict2plot <- function(dataL, name.outcome,
         }
     }
 
-    if(is.na(alpha) && (band || ci)){
+    if(is.na(alpha)[[1]] && (band[[1]] || ci[[1]])){
         indexTempo <- which(c(ci,band)==1)
         if(band && ci){
             value <- c(1,2)
@@ -382,7 +382,7 @@ predict2plot <- function(dataL, name.outcome,
         gg.base <- gg.base + scale_linetype_manual("", breaks = c("ci","band")[indexTempo],
                                                    labels = c(labelCI,labelBand)[indexTempo],
                                                    values = value)
-    }else if(ci && band){
+    }else if(ci[[1]] && band[[1]]){
         gg.base <- gg.base + ggplot2::guides(linetype = ggplot2::guide_legend(order = 1),
                                              fill = ggplot2::guide_legend(order = 2),
                                              group = ggplot2::guide_legend(order = 3)

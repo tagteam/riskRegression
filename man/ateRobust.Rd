@@ -48,7 +48,7 @@ combined with inverse probability of censoring weighting (IPCW), augmented inver
 library(survival)
 library(lava)
 library(data.table)
-
+library(prodlim)
 set.seed(10)
 # survival outcome, binary treatment X1 
 

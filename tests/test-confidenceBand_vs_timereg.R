@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: maj 18 2017 (09:23) 
 ## Version: 
-## last-updated: Oct  4 2018 (10:11) 
+## last-updated: Mar  3 2019 (19:46) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 109
+##     Update #: 110
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -159,6 +159,7 @@ predRR <- predict(e.CSC,
 predRR$absRisk[1,]
 }
 ## ** Display
+## library(ggplot2)
 ## autoplot(predRR, band = TRUE, ci = TRUE)
 ## graphics.off()
 

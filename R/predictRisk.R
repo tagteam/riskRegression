@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun  6 2016 (09:02) 
 ## Version: 
-## last-updated: Jan 28 2019 (14:54) 
+## last-updated: Mar  6 2019 (18:53) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 119
+##     Update #: 133
 #----------------------------------------------------------------------
 ## 
 ### Commentary:
@@ -86,12 +86,17 @@
 #' ## binary outcome
 #' library(rms)
 #' set.seed(7)
-#' x <- abs(rnorm(20))
-#' d <- data.frame(y=rbinom(20,1,x/max(x)),x=x,z=rnorm(20))
-#' nd <- data.frame(y=rbinom(8,1,x/max(x)),x=abs(rnorm(8)),z=rnorm(8))
-#' fit <- lrm(y~x+z,d)
+#' d <- sampleData(80,outcome="binary")
+#' nd <- sampleData(80,outcome="binary")
+#' fit <- lrm(Y~X1+X8,data=d)
 #' predictRisk(fit,newdata=nd)
-#'
+#'\dontrun{
+#' library(SuperLearner)
+#' set.seed(1)
+#' sl = SuperLearner(Y = d$Y, X = d[,-1], family = binomial(),
+#'       SL.library = c("SL.mean", "SL.glmnet", "SL.randomForest"))
+#'}
+#' 
 #' ## survival outcome
 #' # generate survival data
 ##' library(prodlim)
@@ -156,8 +161,8 @@
 #' library(survival)
 #' library(riskRegression)
 #' library(prodlim)
-#' train <- SimCompRisk(100)
-#' test <- SimCompRisk(10)
+#' train <- prodlim::SimCompRisk(100)
+#' test <- prodlim::SimCompRisk(10)
 #' cox.fit  <- CSC(Hist(time,cause)~X1+X2,data=train)
 #' predictRisk(cox.fit,newdata=test,times=seq(1:10),cause=1)
 #'
@@ -472,7 +477,7 @@ predictRisk.selectCox <- function(object,newdata,times,...){
 ##' @export 
 predictRisk.prodlim <- function(object,newdata,times,cause,...){
     ## require(prodlim)
-    if (object$model=="competing.risks" && missing(cause))
+    if (object$model[[1]]=="competing.risks" && missing(cause))
         stop(paste0("Cause is missing. Should be one of the following values: ",paste(attr(object$model.response,"states"),collapse=", ")))
     p <- predict(object=object,
                  cause=cause,
@@ -499,7 +504,7 @@ predictRisk.prodlim <- function(object,newdata,times,cause,...){
 }
 
 predict.survfit <- function(object,newdata,times,bytimes=TRUE,type="cuminc",fill="last",...){
-    if (length(class(object))!=1 || class(object)!="survfit" || object$typ !="right")
+    if (length(class(object))!=1 || class(object)[[1]]!="survfit" || object$type[[1]] !="right")
         stop("Predictions only available \nfor class 'survfit', possibly stratified Kaplan-Meier fits.\n For class 'cph' Cox models see survest.cph.")
     if (missing(newdata))
         npat <- 1
@@ -685,6 +690,7 @@ predictRisk.CauseSpecificCox <- function (object, newdata, times, cause, ...) {
 ##' \code{"ridge"}, \code{"lasso"}, \code{"elastic.net"}.
 ##' @param ... Arguments passed to penalized
 ##' @examples
+##' library(prodlim)
 ##' \dontrun{
 ##' ## too slow
 ##' library(penalized)
@@ -818,6 +824,17 @@ predictRisk.penfitS3 <- function(object,
     p <- penalized::predict(penfit,penalized=newPen,data=newdata)
     p
 }
+
+
+##' @export 
+predictRisk.SuperPredictor  <- function(object,newdata,...){
+    p <- SuperLearner::predict.SuperLearner(object=object,newdata=newdata)$pred
+    ## if (NROW(p) != NROW(newdata) || NCOL(p) != length(times))
+        ## stop(paste("\nPrediction matrix has wrong dimension:\nRequested newdata x times: ",NROW(newdata)," x ",length(times),"\nProvided prediction matrix: ",NROW(p)," x ",NCOL(p),"\n\n",sep=""))
+    p
+}
+
+
 
 #----------------------------------------------------------------------
 ### predictRisk.R ends here

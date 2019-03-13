@@ -53,6 +53,7 @@ Plot Brier score curves
 \examples{
 # survival
 library(survival)
+library(prodlim)
 ds1=sampleData(40,outcome="survival")
 ds2=sampleData(40,outcome="survival")
 f1 <- coxph(Surv(time,event)~X1+X3+X5+X7+X9,data=ds1,x=TRUE)
