@@ -4,12 +4,15 @@
 \alias{as.data.table.ateRobust}
 \title{Turn ate Object Into a \code{data.table}}
 \usage{
-\method{as.data.table}{ateRobust}(x, keep.rownames = FALSE, ...)
+\method{as.data.table}{ateRobust}(x, keep.rownames = FALSE,
+  method.se.AIPTW = "orthogonality", ...)
 }
 \arguments{
 \item{x}{object obtained with function \code{ate}}
 
 \item{keep.rownames}{Not used.}
+
+\item{method.se.AIPTW}{[character] see the documentation of \code{print.ateRobust}.}
 
 \item{...}{Not used.}
 }

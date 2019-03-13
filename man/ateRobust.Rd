@@ -44,6 +44,11 @@ Compute the average treatment effect using different methods:
 G-formula based on (cause-specific) Cox regression, inverse probability of treatment weighting (IPTW)
 combined with inverse probability of censoring weighting (IPCW), augmented inverse probability weighting (AIPTW, AIPCW).
 }
+\details{
+The standard errors/confindence intervals/p-values output by ateRobust
+do not account for the uncertainty related to the estimation of the parameters of the censoring model (only relevant for IPCW/AIPCW estimators).
+Note that for the AIPTW, this uncertainty is neglectable (i.e. o_p(n^{-1/2})) in correctly specified models.
+}
 \examples{
 library(survival)
 library(lava)

@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: jun  1 2018 (12:15) 
 ## Version: 
-## Last-Updated: Oct  2 2018 (08:51) 
-##           By: Thomas Alexander Gerds
-##     Update #: 58
+## Last-Updated: mar 13 2019 (16:32) 
+##           By: Brice Ozenne
+##     Update #: 60
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -56,7 +56,7 @@ confint.ateRobust <- function(object,
 
     object$meanRisk.transform <- match.arg(meanRisk.transform, c("none","log","loglog","cloglog"))
     object$diffRisk.transform <- match.arg(diffRisk.transform, c("none","atanh"))
-
+   
     ## ** compute se, CI/CB
     ate.se <- object$ate.se
     if(object$se==FALSE){

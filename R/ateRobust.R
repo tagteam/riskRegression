@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne, Thomas A. Gerds
 ## Created: jun 27 2018 (17:47) 
 ## Version: 
-## Last-Updated: mar 13 2019 (15:47) 
+## Last-Updated: mar 13 2019 (17:14) 
 ##           By: Brice Ozenne
-##     Update #: 1125
+##     Update #: 1141
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -41,6 +41,11 @@
 #' @param augment.cens [logical] If \code{TRUE} add an censoring model augmentation term to the estimating equation 
 #' @param na.rm [logical] If \code{TRUE} ignore observations whose influence function is NA.
 #'
+#' @details The standard errors/confindence intervals/p-values output by ateRobust
+#' do not account for the uncertainty related to the estimation of the parameters of the censoring model (only relevant for IPCW/AIPCW estimators).
+#' Note that for the AIPTW, this uncertainty is neglectable (i.e. o_p(n^{-1/2})) in correctly specified models.
+#'
+#' 
 #' @rdname ateRobust
 #' @examples
 #' library(survival)
@@ -205,7 +210,7 @@ ateRobust <- function(data, times, cause, type,
     ## print(data$Ncensoring.tau)
 
     ## ** outcome model: conditional expectation
-    if(se){
+    if(se>0){
         ## Computation of the influence function (Gformula, AIPW)
         ## this is sent to predictCox to multiply each individual IF before averaging
 
@@ -237,7 +242,7 @@ ateRobust <- function(data, times, cause, type,
         data[, c("prob.event0") := 1 - prediction.event0$survival[,1]]
         data[, c("prob.event1") := 1 - prediction.event1$survival[,1]]
 
-        if(se){
+        if(se>0){
             iidG.event0 <- -prediction.event0$survival.average.iid[[1]][,1]
             iidAIPW.event0 <- -prediction.event0$survival.average.iid[[2]][,1]
 
@@ -259,7 +264,7 @@ ateRobust <- function(data, times, cause, type,
         data[, c("prob.event1") := prediction.event1$absRisk[,1]]
 
         ## store results
-        if(se){
+        if(se>0){
             ## weight0 <- attr(nuisance.iid0,"factor")[,2]
             iidG.event0 <- prediction.event0$absRisk.average.iid[[1]]
             ## range(iidG.event0 - prediction.event0$absRisk.average.iid[[1]])
@@ -309,7 +314,7 @@ ateRobust <- function(data, times, cause, type,
         }
     ## ** Propensity score model: weights
     ## needs to be after censoring to get the weights
-    if(se){
+    if(se>0){
 
         factor <- cbind("IPW0" = data[,  .SD$weights * (1-.SD$treatment.bin) * (.SD$status.tau==1) / (1-.SD$prob.treatment)^2],
                         "IPW1" = data[, .SD$weights * .SD$treatment.bin * (.SD$status.tau==1) / (.SD$prob.treatment)^2],
@@ -366,24 +371,21 @@ ateRobust <- function(data, times, cause, type,
         .SD$prob.event1 * (1-.SD$treatment.bin/(.SD$prob.treatment))
     )]/ n.obs
     
-    IF$AIPTW.IPCW <- IF$IPTW.IPCW + AIPWadd
+    IF$AIPTW.IPCW_knownNuisance <- IF$IPTW.IPCW + AIPWadd
 
     ## *** iid for the nuisance parameters
-    if (se){
+    if (se>0){
         nuisanceEvent.Gformula <- cbind(iidG.event0, iidG.event1)
         IF$Gformula <- IF$Gformula + nuisanceEvent.Gformula
 
         nuisanceTreatment.IPW <- cbind(iidIPW.treatment0, iidIPW.treatment1)
         IF$IPTW.IPCW <- IF$IPTW.IPCW + nuisanceTreatment.IPW
 
-        ## hidden feature: accounting for the estimation of the nuisance parameters in AIPTW
-        if(se>100){ ## only for simulation study - not meant to be used in practice
-            nuisanceEvent.AIPW <- cbind(iidAIPW.event0, iidAIPW.event1) ## no outcome here so no censoring
-            nuisanceTreatment.AIPW <- cbind(iidAIPW.treatment0, iidAIPW.treatment1) ## no outcome here so no censoring
+        nuisanceEvent.AIPW <- cbind(iidAIPW.event0, iidAIPW.event1) ## no outcome here so no censoring
+        nuisanceTreatment.AIPW <- cbind(iidAIPW.treatment0, iidAIPW.treatment1) ## no outcome here so no censoring
 
-            IF$AIPTW.IPCW <- IF$AIPTW.IPCW + (nuisanceEvent.AIPW + nuisanceTreatment.IPW + nuisanceTreatment.AIPW)
-            ## (nuisanceTreatment.IPW + nuisanceEvent.AIPW + nuisanceTreatment.AIPW)
-        }
+        IF$AIPTW.IPCW_estimatedNuisance <- IF$AIPTW.IPCW_knownNuisance + (nuisanceEvent.AIPW + nuisanceTreatment.IPW + nuisanceTreatment.AIPW)
+        ## (nuisanceTreatment.IPW + nuisanceEvent.AIPW + nuisanceTreatment.AIPW)
     }
 
     ## *** augmentation for censoring
@@ -395,7 +397,9 @@ ateRobust <- function(data, times, cause, type,
         )]/ n.obs
         
         IF$IPTW.AIPCW <- IF$IPTW.IPCW + AUGMENTadd
-        IF$AIPTW.AIPCW <- IF$AIPTW.IPCW + AUGMENTadd
+        
+        IF$AIPTW.AIPCW_knownNuisance <- IF$AIPTW.IPCW_knownNuisance + AUGMENTadd
+        IF$AIPTW.AIPCW_estimatedNuisance <- IF$AIPTW.IPCW_estimatedNuisance + AUGMENTadd
 
     }
     
@@ -415,18 +419,18 @@ ateRobust <- function(data, times, cause, type,
         out$ate.value[name.risk,iL] <- colSums(IF[[iL]])
         IF[[iL]] <- rowCenter_cpp(IF[[iL]], center = out$ate.value[paste0("risk.",level.treatment),iL]/n.obs)
     }
-   
+
     out$ate.value["ate.diff",] <- out$ate.value[name.risk[2],] - out$ate.value[name.risk[1],]
     ##    out$ate.value["ate.ratio",] <- out$ate.value[name.risk[2],] / out$ate.value[name.risk[1],]
 
     ## standard error
-    if (se){
+    if (se>0){
         out$ate.se <- do.call(cbind,lapply(IF, function(iIF){ ## iIF <- IF[[1]]
             sqrt(c(colSums(iIF^2), sum((iIF[,2]-iIF[,1])^2)))
         }))
         rownames(out$ate.se) <- rownames(out$ate.value)
     }
-    out$se <- se
+    out$se <- se>0
     out$level.treatment <- level.treatment
     out$augment.cens <- augment.cens
     out$product.limit <- product.limit
@@ -435,7 +439,7 @@ ateRobust <- function(data, times, cause, type,
     out$augment.cens <- augment.cens
 
     ## confidence intervals
-    if (se){out <- confint(out)}
+    if (se>0){out <- confint(out)}
 
     return(out)
     

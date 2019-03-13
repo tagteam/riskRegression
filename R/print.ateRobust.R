@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: jul  5 2018 (15:28) 
 ## Version: 
-## Last-Updated: Jan 29 2019 (10:49) 
-##           By: Thomas Alexander Gerds
-##     Update #: 104
+## Last-Updated: mar 13 2019 (17:15) 
+##           By: Brice Ozenne
+##     Update #: 127
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -25,6 +25,14 @@
 #' @param augment.cens [logical] should the standard errors account for the augmentation term
 #' in direction of the model for the censoring mechanism.
 #' accounting for the uncertainty in the outcome and propensity score models be output
+#' @param method.se.AIPTW [character] Which type of standard error should be used for the AIPTW estimator?
+#' Can be \code{"orthogonality"}: the incertainty related to the estimation of the nuisance parameters is ignored,
+#' or \code{"full"}: only the incertainty related to the estimation of the nuisance parameters for the censoring model is ignored.
+#' Can also be \code{"both"} to output the results relative to \code{"orthogonality"} and \code{"full"}.
+#'
+#' @details The standard errors obtained with \code{method.se.AIPTW="orthogonality"} and \code{method.se.AIPTW="orthogonality"}
+#' are asymptotically equal in correctly specified models. 
+#' 
 #' @param ... Passed to print.
 #' 
 
@@ -36,11 +44,14 @@
 print.ateRobust <- function(x,
                             digits = 3,
                             augment.cens = x$augment.cens,
+                            method.se.AIPTW = "orthogonality",
                             ...){
 
     p.value=estimand=treatment=lower=upper=NULL
-    dt.x <- as.data.table(x)
+
+    dt.x <- as.data.table(x, method.se.AIPTW = method.se.AIPTW)
     keep.col <- c("method","value")
+
 
     ## ** add confidence interval and p.value
     if(!is.null(x$se[[1]])&& x$se[[1]]==TRUE){
