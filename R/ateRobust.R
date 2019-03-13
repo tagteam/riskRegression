@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne, Thomas A. Gerds
 ## Created: jun 27 2018 (17:47) 
 ## Version: 
-## Last-Updated: Jan 28 2019 (14:54) 
-##           By: Thomas Alexander Gerds
-##     Update #: 1123
+## Last-Updated: feb 13 2019 (10:51) 
+##           By: Brice Ozenne
+##     Update #: 1139
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -52,7 +52,7 @@
 #'
 #' ds <- sampleData(101,outcome="survival")
 #' out <- ateRobust(data = ds, type = "survival",
-#'           formula.event = Surv(time, event) ~ X1+X6,
+#'          formula.event = Surv(time, event) ~ X1+X6,
 #'          formula.censor = Surv(time, event==0) ~ X6,
 #'          formula.treatment = X1 ~ X6+X2+X7, times = 1)
 #' out
@@ -125,12 +125,32 @@ ateRobust <- function(data, times, cause, type,
         txt <- reserved.name[reserved.name %in% names(data)]
         stop("Argument \'data\' should not contain column(s) named \"",paste0(txt, collapse = "\" \""),"\"\n")
     }
+
+    ## Extract the types of events: check only 2 for survival and output warning if NA
     if(type == "survival"){
-        varTempo <- SurvResponseVar(formula.event)$status
-        if(length(unique(data[[varTempo]]))>2){
-            stop("type=\"survival\" can handle at most 2 types of events")
+        if(!inherits(formula.event, "formula")){
+            stop("Argument \'formula.event\' must be a formula when argument \'type\' is set to \"survival\"")
+        }
+        Ustatus <- unique(data[[SurvResponseVar(formula.event)$status]])        
+        if(length(Ustatus)>2){
+            stop("The status variable in \'formula.event\' contains ",length(Ustatus)," distinct types of events: ",
+                 "\"",paste(Ustatus, collapse = "\" \""),"\"\n",
+                 "but ateRobust can handle at most 2 types of events when the argument \'type\' is set to \"survival\" \n")
+        }
+        if(any(is.na(Ustatus))){
+            warning("The status variable in \'formula.event\' contains NA \n")
+        }
+    }else{
+        if(inherits(formula.event, "formula")){
+            ls.Ustatus <- unique(data[[SurvResponseVar(formula.event)$status]])
+        }else{
+            ls.Ustatus <- lapply(formula.event, function(iE){unique(data[[SurvResponseVar(iE)$status]])})
+        }
+        if(any(is.na(unlist(ls.Ustatus)))){
+            warning("One of the status variables in \'formula.event\' contains NA \n")
         }
     }
+
     
     ## ** fit models
     ## event

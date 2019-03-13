@@ -54,7 +54,7 @@ set.seed(10)
 
 ds <- sampleData(101,outcome="survival")
 out <- ateRobust(data = ds, type = "survival",
-          formula.event = Surv(time, event) ~ X1+X6,
+         formula.event = Surv(time, event) ~ X1+X6,
          formula.censor = Surv(time, event==0) ~ X6,
          formula.treatment = X1 ~ X6+X2+X7, times = 1)
 out
