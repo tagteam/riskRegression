@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: jun  1 2018 (12:15) 
 ## Version: 
-## Last-Updated: mar 13 2019 (16:32) 
+## Last-Updated: mar 13 2019 (17:47) 
 ##           By: Brice Ozenne
-##     Update #: 60
+##     Update #: 64
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -29,8 +29,15 @@
 ##' @param diffRisk.transform [character] the transformation used to improve coverage
 ##' of the confidence intervals for the risk difference in small samples.
 ##' Can be \code{"none"}, \code{"atanh"}.
+##' @param method.se.AIPTW [character] Which type of standard error should be used for the AIPTW estimator?
+##' Can be \code{"orthogonality"}: the incertainty related to the estimation of the nuisance parameters is ignored,
+##' or \code{"full"}: only the incertainty related to the estimation of the nuisance parameters for the censoring model is ignored.
+##' Can also be \code{"both"} to output the results relative to \code{"orthogonality"} and \code{"full"}.
 ##' @param ... not used.
 ##'
+##' @details The standard errors obtained with \code{method.se.AIPTW="orthogonality"} and \code{method.se.AIPTW="orthogonality"}
+##' are asymptotically equal in correctly specified models.
+##' 
 ##' @author Brice Ozenne
 ##'
 
@@ -43,6 +50,7 @@ confint.ateRobust <- function(object,
                               level = 0.95,
                               meanRisk.transform = "none",
                               diffRisk.transform = "none",
+                              method.se.AIPTW = "orthogonality",
                               ...){
 
 
@@ -88,7 +96,7 @@ confint.ateRobust <- function(object,
                                  conf.level = level,
                                  type = diffRisk.transform,
                                  min.value = switch(diffRisk.transform,
-                                                    "none" = 0,
+                                                    "none" = -1,
                                                     "atanh" = NULL),
                                  max.value = switch(diffRisk.transform,
                                                     "none" = 1,
@@ -102,6 +110,7 @@ confint.ateRobust <- function(object,
     object$ate.upper <- rbind(outCIBP.risk$upper,outCIBP.ate$upper)
     object$ate.p.value <- rbind(risk.0 = NA, risk.1 = NA,outCIBP.ate$p.value)
     object$conf.level <- level
+    object$method.se.AIPTW <- method.se.AIPTW
     return(object)
 }
 
