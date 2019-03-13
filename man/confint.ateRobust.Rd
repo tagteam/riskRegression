@@ -5,7 +5,8 @@
 \title{Confidence Intervals for the Average Treatment Effect}
 \usage{
 \method{confint}{ateRobust}(object, parm = NULL, level = 0.95,
-  meanRisk.transform = "none", diffRisk.transform = "none", ...)
+  meanRisk.transform = "none", diffRisk.transform = "none",
+  method.se.AIPTW = "orthogonality", ...)
 }
 \arguments{
 \item{object}{A \code{ateRobust} object, i.e. output of the \code{ateRobust} function.}
@@ -22,10 +23,19 @@ Can be \code{"none"}, \code{"log"}, \code{"loglog"}, \code{"cloglog"}.}
 of the confidence intervals for the risk difference in small samples.
 Can be \code{"none"}, \code{"atanh"}.}
 
+\item{method.se.AIPTW}{[character] Which type of standard error should be used for the AIPTW estimator?
+Can be \code{"orthogonality"}: the incertainty related to the estimation of the nuisance parameters is ignored,
+or \code{"full"}: only the incertainty related to the estimation of the nuisance parameters for the censoring model is ignored.
+Can also be \code{"both"} to output the results relative to \code{"orthogonality"} and \code{"full"}.}
+
 \item{...}{not used.}
 }
 \description{
 Confidence intervals for the average treatment effect
+}
+\details{
+The standard errors obtained with \code{method.se.AIPTW="orthogonality"} and \code{method.se.AIPTW="orthogonality"}
+are asymptotically equal in correctly specified models.
 }
 \author{
 Brice Ozenne

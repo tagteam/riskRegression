@@ -5,7 +5,7 @@
 \title{Print Average Treatment Effect}
 \usage{
 \method{print}{ateRobust}(x, digits = 3, augment.cens = x$augment.cens,
-  method.se.AIPTW = "orthogonality", ...)
+  ...)
 }
 \arguments{
 \item{x}{object obtained with the function \code{ateRobust}.}
@@ -16,17 +16,8 @@
 in direction of the model for the censoring mechanism.
 accounting for the uncertainty in the outcome and propensity score models be output}
 
-\item{method.se.AIPTW}{[character] Which type of standard error should be used for the AIPTW estimator?
-Can be \code{"orthogonality"}: the incertainty related to the estimation of the nuisance parameters is ignored,
-or \code{"full"}: only the incertainty related to the estimation of the nuisance parameters for the censoring model is ignored.
-Can also be \code{"both"} to output the results relative to \code{"orthogonality"} and \code{"full"}.}
-
 \item{...}{Passed to print.}
 }
 \description{
 Print average treatment effect.
-}
-\details{
-The standard errors obtained with \code{method.se.AIPTW="orthogonality"} and \code{method.se.AIPTW="orthogonality"}
-are asymptotically equal in correctly specified models.
 }
