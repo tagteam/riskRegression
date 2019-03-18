@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: aug 15 2018 (11:42) 
 ## Version: 
-## Last-Updated: Oct  8 2018 (07:03) 
-##           By: Thomas Alexander Gerds
-##     Update #: 80
+## Last-Updated: mar 18 2019 (17:19) 
+##           By: Brice Ozenne
+##     Update #: 83
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -18,6 +18,7 @@ if (class(try(riskRegression.test,silent=TRUE))[1]!="try-error"){
     library(riskRegression)
     library(survival)
     library(testthat)
+    library(ipw)
     context("Ate robust checks")
 
 ## * survival case
@@ -33,7 +34,7 @@ dtS$Y <- (dtS$time<=tau)*(dtS$event==1)
 dtS$X1 <- as.numeric(dtS$X1)-1
 
 ## fit
-test_that("check point estimate vs. manual calculations", {
+test_that("check vs. manual calculations", {
     e.S <- coxph(Surv(time, event) ~ X1 + X2 + X3,data = dtS,x = TRUE)
     e.T <- glm(X1 ~ 1, data = dtS, family = binomial(link = "logit")) ## dtS$X1
     e.ateRobust <- ateRobust(data = dtS, times = tau,
@@ -41,7 +42,7 @@ test_that("check point estimate vs. manual calculations", {
                              formula.censor = Surv(time,event==0) ~ X1,
                              formula.treatment = X1 ~ 1, se = TRUE,
                              type = "survival")
-    ## predict
+    ## point estimate
     dtS1 <- data.table(X1 = 1, X2 = dtS$X2, X3 = dtS$X3)
     pred.logit <- riskRegression:::predictGLM(e.T, newdata = dtS1, average.iid = FALSE)
     iid.logit <- attr(pred.logit, "iid")
@@ -53,11 +54,11 @@ test_that("check point estimate vs. manual calculations", {
     expect_equal(dtS[,mean(r)],e.ateRobust$ate.value["risk.1","Gformula"])
     expect_equal(dtS[,mean(X1*Y/pi)],e.ateRobust$ate.value["risk.1","IPTW.IPCW"])
     expect_equal(dtS[,mean(X1*Y/pi)],e.ateRobust$ate.value["risk.1","IPTW.AIPCW"])
-    expect_equal(dtS[,mean(X1*Y/pi + r*(1-X1/pi))],e.ateRobust$ate.value["risk.1","AIPTW.IPCW"])
-    expect_equal(dtS[,mean(X1*Y/pi + r*(1-X1/pi))],e.ateRobust$ate.value["risk.1","AIPTW.AIPCW"])
-## })
+    expect_equal(dtS[,mean(X1*Y/pi + r*(1-X1/pi))],e.ateRobust$ate.value["risk.1","AIPTW.IPCW_knownNuisance"])
+    expect_equal(dtS[,mean(X1*Y/pi + r*(1-X1/pi))],e.ateRobust$ate.value["risk.1","AIPTW.AIPCW_knownNuisance"])
+  
 
-## test_that("check se vs. manual calculations", {
+    ## standard error
     iid.Gformula1 <- (dtS$r - mean(dtS$r))/NROW(dtS)
     iid.Gformula2 <- colMeans(iid.Surv)
     iid.Gformula <- iid.Gformula1 + iid.Gformula2
@@ -71,9 +72,22 @@ test_that("check point estimate vs. manual calculations", {
     iid.AIPTW2 <- colMeans( riskRegression::colMultiply_cpp(iid.logit, scale = -dtS$X1*(dtS$Y-dtS$r)/dtS$pi^2) )
     iid.AIPTW3 <- colMeans( riskRegression::colMultiply_cpp(iid.Surv, scale = (1-dtS$X1/dtS$pi)) )
     iid.AIPTW <- iid.AIPTW1 + iid.AIPTW2 + iid.AIPTW3
-    expect_equal(sqrt(sum(iid.AIPTW1^2)),e.ateRobust$ate.se["risk.1","AIPTW.IPCW"])
-    expect_equal(sqrt(sum(iid.AIPTW1^2)),e.ateRobust$ate.se["risk.1","AIPTW.AIPCW"])
-    (sqrt(sum(iid.AIPTW^2)) - sqrt(sum(iid.AIPTW1^2))) / sqrt(sum(iid.AIPTW^2))
+    expect_equal(sqrt(sum(iid.AIPTW1^2)),e.ateRobust$ate.se["risk.1","AIPTW.IPCW_knownNuisance"])
+    expect_equal(sqrt(sum(iid.AIPTW1^2)),e.ateRobust$ate.se["risk.1","AIPTW.AIPCW_knownNuisance"])
+    ## (sqrt(sum(iid.AIPTW^2)) - sqrt(sum(iid.AIPTW1^2))) / sqrt(sum(iid.AIPTW^2))
+
+    ## compare to ipw package
+    e.ateRobust <- ateRobust(data = dtS, times = tau,
+                             formula.event = Surv(time,event) ~ X1 + X2 + X3,
+                             formula.censor = Surv(time,event==0) ~ X1,
+                             formula.treatment = X1 ~ X2+X3, se = TRUE,
+                             type = "survival")
+    RR.weight <- as.matrix(1/e.ateRobust$weight.treatment)
+    
+    ww <- ipwpoint(exposure=X1,family="binomial",link="logit",
+                   denominator=~X2+X3,
+                   data=dtS)$ipw.weights
+    expect_equal(ww, RR.weight[1:NROW(RR.weight) + dtS$X1 * NROW(RR.weight)])
 })
 
 ## ** censoring - agreement with ate
@@ -86,24 +100,19 @@ e.cox <- coxph(Surv(time, event) ~ X1 + X2 + X3,
 
 test_that("Agreement ate-ateRobust (survival)",{
     e.ate <- ate(e.cox, treatment = "X1", times = 3, data = dtS, se = TRUE)
-    e.ate
-    e.ateRobust0 <- ateRobust(data = dtS, times = 3,
-                              formula.event = Surv(time,event) ~ X1 + X2 + X3,
-                              formula.censor = Surv(time,event==0) ~ X1,
-                              formula.treatment = X1 ~ 1, se = FALSE,
-                              type = "survival")
-    e.ateRobust0
+
     e.ateRobust <- ateRobust(data = dtS, times = 3,
                              formula.event = Surv(time,event) ~ X1 + X2 + X3,
                              formula.censor = Surv(time,event==0) ~ X1,
                              formula.treatment = X1 ~ 1,
-                             se = 101, product.limit = FALSE,
+                             se = TRUE, product.limit = FALSE,
                              type = "survival")
+
     e.ateRobustPL <- ateRobust(data = dtS, times = 3,
                                formula.event = Surv(time,event) ~ X1 + X2 + X3,
                                formula.censor = Surv(time,event==0) ~ X1,
                                formula.treatment = X1 ~ 1,
-                               se = 101, product.limit = TRUE,
+                               se = TRUE, product.limit = TRUE,
                                type = "survival")
     
     ## ateRobust with product.limit = FALSE agree with ate
@@ -112,21 +121,16 @@ test_that("Agreement ate-ateRobust (survival)",{
     expect_equal(as.double(e.ateRobust$ate.se[,"Gformula"]),
                  c(e.ate$meanRisk[,meanRisk.se],e.ate$riskComparison[,diff.se]))
 
-    ## default agree with ate
-    expect_equal(as.double(e.ateRobust$ate.value[,"Gformula"]),
-                 as.double(e.ateRobust0$ate.value[,"Gformula"]))
-
-    ## e.ateRobust0$ate.se
-    ## e.ateRobust$ate.se
-
     ## check values
     test <- e.ateRobust$ate.value
     rownames(test) <- NULL
     M.GS <- cbind("Gformula" = c(0.19447, 0.54518, 0.35071), 
                   "IPTW.IPCW" = c(0.15098, 0.71242, 0.56145), 
-                  "AIPTW.IPCW" = c(0.1463, 0.75177, 0.60547), 
+                  "AIPTW.IPCW_knownNuisance" = c(0.1463, 0.75177, 0.60547), 
+                  "AIPTW.IPCW_estimatedNuisance" = c(0.1463, 0.75177, 0.60547), 
                   "IPTW.AIPCW" = c(0.15097, 0.70596, 0.55499), 
-                  "AIPTW.AIPCW" = c(0.14629, 0.7453, 0.59901))
+                  "AIPTW.AIPCW_knownNuisance" = c(0.14629, 0.7453, 0.59901),
+                  "AIPTW.AIPCW_estimatedNuisance" = c(0.14629, 0.7453, 0.59901))
     expect_equal(test, M.GS, tol = 1e-4)
     ## butils::object2script(test, digit = 5)
 
@@ -134,9 +138,11 @@ test_that("Agreement ate-ateRobust (survival)",{
     rownames(test) <- NULL
     M.GS <- cbind("Gformula" = c(0.04724, 0.13442, 0.12753), 
                   "IPTW.IPCW" = c(0.05683, 0.14767, 0.15823), 
-                  "AIPTW.IPCW" = c(0.05571, 0.14053, 0.14949), 
+                  "AIPTW.IPCW_knownNuisance" = c(0.05662, 0.15129, 0.15937), 
+                  "AIPTW.IPCW_estimatedNuisance" = c(0.05571, 0.14053, 0.14949), 
                   "IPTW.AIPCW" = c(0.05681, 0.14873, 0.15921), 
-                  "AIPTW.AIPCW" = c(0.0557, 0.14153, 0.15041)
+                  "AIPTW.AIPCW_knownNuisance" = c(0.05661, 0.15154, 0.15965), 
+                  "AIPTW.AIPCW_estimatedNuisance" = c(0.0557, 0.14153, 0.15041)
                   )
     expect_equal(test, M.GS, tol = 1e-4)
     ## butils::object2script(test, digit = 5)
@@ -186,8 +192,8 @@ test_that("check point estimate vs. manual calculations", {
     expect_equal(dtS[,mean(X1*Y/pi)],e.ateRobust$ate.value["risk.1","IPTW.IPCW"])
     expect_equal(dtS[,mean(X1*Y/pi)],e.ateRobust$ate.value["risk.1","IPTW.AIPCW"])
 
-    expect_equal(dtS[,mean(X1*Y/pi + r*(1-X1/pi))],e.ateRobust$ate.value["risk.1","AIPTW.IPCW"])
-    expect_equal(dtS[,mean(X1*Y/pi + r*(1-X1/pi))],e.ateRobust$ate.value["risk.1","AIPTW.AIPCW"])
+    expect_equal(dtS[,mean(X1*Y/pi + r*(1-X1/pi))],e.ateRobust$ate.value["risk.1","AIPTW.IPCW_knownNuisance"])
+    expect_equal(dtS[,mean(X1*Y/pi + r*(1-X1/pi))],e.ateRobust$ate.value["risk.1","AIPTW.AIPCW_knownNuisance"])
 })
 
 test_that("check se vs. manual calculations", {
@@ -207,10 +213,8 @@ test_that("check se vs. manual calculations", {
     iid.AIPTW2 <- colMeans( riskRegression::colMultiply_cpp(iid.logit, scale = -dtS$X1*(dtS$Y-dtS$r)/dtS$pi^2) )
     iid.AIPTW3 <- colMeans( riskRegression::colMultiply_cpp(iid.risk, scale = (1-dtS$X1/dtS$pi)) )
     iid.AIPTW <- iid.AIPTW1 + iid.AIPTW2 + iid.AIPTW3
-    expect_equal(sqrt(sum(iid.AIPTW1^2)),e.ateRobust$ate.se["risk.1","AIPTW.IPCW"])
-    expect_equal(sqrt(sum(iid.AIPTW1^2)),e.ateRobust$ate.se["risk.1","AIPTW.AIPCW"])
-
-    (sqrt(sum(iid.AIPTW^2)) - sqrt(sum(iid.AIPTW1^2))) / sqrt(sum(iid.AIPTW^2))
+    expect_equal(sqrt(sum(iid.AIPTW1^2)),e.ateRobust$ate.se["risk.1","AIPTW.IPCW_knownNuisance"])
+    expect_equal(sqrt(sum(iid.AIPTW1^2)),e.ateRobust$ate.se["risk.1","AIPTW.AIPCW_knownNuisance"])
 })
 
 
@@ -260,9 +264,12 @@ test_that("Agreement ate-ateRobust (competing.risks)",{
     
     M.GS <- cbind("Gformula" = c(0.28427, 0.30878, 0.02452), 
                   "IPTW.IPCW" = c(0.25855, 0.5098, 0.25125), 
-                  "AIPTW.IPCW" = c(0.25868, 0.50849, 0.24981), 
+                  "AIPTW.IPCW_knownNuisance" = c(0.25868, 0.50849, 0.24981), 
+                  "AIPTW.IPCW_estimatedNuisance" = c(0.25868, 0.50849, 0.24981), 
                   "IPTW.AIPCW" = c(0.25835, 0.50462, 0.24627), 
-                  "AIPTW.AIPCW" = c(0.25848, 0.50331, 0.24483))
+                  "AIPTW.AIPCW_knownNuisance" = c(0.25848, 0.50331, 0.24483), 
+                  "AIPTW.AIPCW_estimatedNuisance" = c(0.25848, 0.50331, 0.24483)
+                  )
     
     expect_equal(test, M.GS, tol = 1e-4)
     ## butils::object2script(test, digit = 5) 
@@ -271,9 +278,11 @@ test_that("Agreement ate-ateRobust (competing.risks)",{
     
     M.GS <- cbind("Gformula" = c(0.04577, 0.15642, 0.15524), 
                   "IPTW.IPCW" = c(0.04652, 0.16131, 0.16789), 
-                  "AIPTW.IPCW" = c(0.04636, 0.16792, 0.17302), 
+                  "AIPTW.IPCW_knownNuisance" = c(0.04636, 0.16792, 0.17302), 
+                  "AIPTW.IPCW_estimatedNuisance" = c(0.04644, 0.15882, 0.16504), 
                   "IPTW.AIPCW" = c(0.04648, 0.1619, 0.16844), 
-                  "AIPTW.AIPCW" = c(0.04632, 0.16799, 0.1731)
+                  "AIPTW.AIPCW_knownNuisance" = c(0.04632, 0.16799, 0.1731), 
+                  "AIPTW.AIPCW_estimatedNuisance" = c(0.0464, 0.15946, 0.16567)
                   )
     expect_equal(test, M.GS, tol = 1e-4)
     ## butils::object2script(test, digit = 5)
@@ -283,9 +292,12 @@ test_that("Agreement ate-ateRobust (competing.risks)",{
     
     M.GS <- cbind("Gformula" = c(0.28382, 0.3082, 0.02438), 
                   "IPTW.IPCW" = c(0.25857, 0.5099, 0.25133), 
-                  "AIPTW.IPCW" = c(0.2587, 0.50859, 0.24988), 
+                  "AIPTW.IPCW_knownNuisance" = c(0.2587, 0.50859, 0.24988), 
+                  "AIPTW.IPCW_estimatedNuisance" = c(0.2587, 0.50859, 0.24988), 
                   "IPTW.AIPCW" = c(0.25837, 0.50473, 0.24636), 
-                  "AIPTW.AIPCW" = c(0.2585, 0.50341, 0.24491))
+                  "AIPTW.AIPCW_knownNuisance" = c(0.2585, 0.50341, 0.24491), 
+                  "AIPTW.AIPCW_estimatedNuisance" = c(0.2585, 0.50341, 0.24491)
+                  )
     expect_equal(test, M.GS, tol = 1e-4)
     ## butils::object2script(test, digit = 5)
     
@@ -294,9 +306,11 @@ test_that("Agreement ate-ateRobust (competing.risks)",{
     
     M.GS <- cbind("Gformula" = c(0.04576, 0.15641, 0.15524), 
                   "IPTW.IPCW" = c(0.04653, 0.16134, 0.16792), 
-                  "AIPTW.IPCW" = c(0.04636, 0.16804, 0.17314), 
+                  "AIPTW.IPCW_knownNuisance" = c(0.04636, 0.16804, 0.17314), 
+                  "AIPTW.IPCW_estimatedNuisance" = c(0.04644, 0.15886, 0.16509), 
                   "IPTW.AIPCW" = c(0.04648, 0.16193, 0.16847), 
-                  "AIPTW.AIPCW" = c(0.04632, 0.1681, 0.17322)
+                  "AIPTW.AIPCW_knownNuisance" = c(0.04632, 0.1681, 0.17322), 
+                  "AIPTW.AIPCW_estimatedNuisance" = c(0.0464, 0.15951, 0.16572)
                   )
     expect_equal(test, M.GS, tol = 1e-4)
     ## butils::object2script(test, digit = 5)

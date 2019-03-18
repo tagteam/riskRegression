@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne, Thomas A. Gerds
 ## Created: jun 27 2018 (17:47) 
 ## Version: 
-## Last-Updated: mar 13 2019 (17:14) 
+## Last-Updated: mar 18 2019 (17:11) 
 ##           By: Brice Ozenne
-##     Update #: 1141
+##     Update #: 1179
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -83,7 +83,7 @@
 ateRobust <- function(data, times, cause, type,
                       formula.event, formula.censor, formula.treatment, 
                       fitter = "coxph", product.limit = NULL, se = TRUE,
-                      augment.cens=TRUE,
+                      augment.cens = TRUE, 
                       na.rm = FALSE){
 
     ## ** normalize arguments
@@ -121,9 +121,9 @@ ateRobust <- function(data, times, cause, type,
     }
     
     ## times since it is an argument that will be used in the data table
-    reserved.name <- c("times","time.tau","status.tau","censoring.tau","treatment.bin",
+    reserved.name <- c("times","time.tau","status.tau","censoring.tau","treatment.bin0","treatment.bin1",
                        "prob.event","prob.event0","prob.event1",
-                       "prob.treatment",
+                       "prob.treatment0","prob.treatment1", ## "prob.stabilizing0","prob.stabilizing1",
                        "weights","prob.censoring","prob.indiv.censoring",
                        "Lterm")
     if(any(reserved.name %in% names(data))){
@@ -172,9 +172,18 @@ ateRobust <- function(data, times, cause, type,
     n.censor <- sum( (coxMF$status==0) * (coxMF$stop <= times) )
     
     ## treatment
-    model.treatment <- do.call(glm, args = list(formula = formula.treatment, data = data, family = stats::binomial(link = "logit")))       
-    data[, c("prob.treatment") := predict(model.treatment, newdata = data, type = "response", se = FALSE)]
-
+    model.treatment <- do.call(glm, args = list(formula = formula.treatment, data = data, family = stats::binomial(link = "logit")))    
+    data[, c("prob.treatment1") := predict(model.treatment, newdata = data, type = "response", se = FALSE)]
+    data[, c("prob.treatment0") := 1-.SD$prob.treatment1]
+    ## if(stabilizing.weight){
+        ## model.treatment0 <- do.call(glm, args = list(formula = update(formula.treatment,".~1"), data = data, family = stats::binomial(link = "logit")))
+        ## data[, c("stabilizing.treatment0") := predict(model.treatment0, newdata = data, type = "response", se = FALSE)]
+        ## data[, c("stabilizing.treatment1") := 1 - .SD$stabilizing.treatment0]
+    ## }else{
+        ## data[, c("stabilizing.treatment0") := 1]
+        ## data[, c("stabilizing.treatment1") := 1]
+    ## }
+    
     ## censoring
     if(n.censor>0){
         model.censor <- do.call(fitter, args = list(formula = formula.censor, data = data, x = TRUE, y = TRUE)) ## , no.opt = TRUE
@@ -182,7 +191,8 @@ ateRobust <- function(data, times, cause, type,
     
     ## ** prepare dataset
     ## convert to binary
-    data[, c("treatment.bin") := as.numeric(as.factor(.SD[[treatment]]))-1]
+    data[, c("treatment.bin1") := as.numeric(as.factor(.SD[[treatment]]))-1]
+    data[, c("treatment.bin0") := 1 - .SD$treatment.bin1]
 
     ## counterfactual
     data0 <- copy(data)
@@ -216,11 +226,11 @@ ateRobust <- function(data, times, cause, type,
 
         nuisance.iid0 <- TRUE
         attr(nuisance.iid0, "factor") <- list("Gformula" = matrix(1, nrow = n.obs, ncol = 1),
-                                              "AIPW" = cbind(data[, 1 - (1-.SD$treatment.bin) / (1-.SD$prob.treatment)])
+                                              "AIPW" = cbind(data[, 1 - .SD$treatment.bin0 / .SD$prob.treatment0])
                                               )
         nuisance.iid1 <- TRUE
         attr(nuisance.iid1, "factor") <- list("Gformula" = matrix(1, nrow = n.obs, ncol = 1),
-                                              "AIPW" = cbind(data[, 1 - .SD$treatment.bin / .SD$prob.treatment])
+                                              "AIPW" = cbind(data[, 1 - .SD$treatment.bin1 / .SD$prob.treatment1])
                                               )
         if(type == "competing.risks"){
             attr(nuisance.iid0, "factor") <- do.call(cbind,attr(nuisance.iid0, "factor"))
@@ -296,40 +306,39 @@ ateRobust <- function(data, times, cause, type,
         
             ## survival = P[C>min(T,tau)] = P[Delta(min(T,tau))==1] - ok
 
-        ## stopped at tau
-        predTau.censor <- do.call(predictor.cox, args = list(model.censor, newdata = data, times = times, type = "survival"))
-        ## predTau.censor <- do.call(predictor.cox, args = list(model.censor, newdata = data, times = times, type = "survival", iid = nuisance.iid))
-        data[,c("prob.censoring") := predTau.censor$survival[,1]]
+            ## stopped at tau
+            predTau.censor <- do.call(predictor.cox, args = list(model.censor, newdata = data, times = times, type = "survival"))
+            ## predTau.censor <- do.call(predictor.cox, args = list(model.censor, newdata = data, times = times, type = "survival", iid = nuisance.iid))
+            data[,c("prob.censoring") := predTau.censor$survival[,1]]
         
-        ## at each time
-        predIndiv.censor <- do.call(predictor.cox, args = list(model.censor, newdata = data, times = data$time.tau-(1e-10), type = "survival", diag = TRUE))
-        ## predIndiv.censor <- do.call(predictor.cox, args = list(model.censor, newdata = data, times = data$time.tau-(1e-10), type = "survival", diag = TRUE, iid = nuisance.iid))
-        data[,c("prob.indiv.censoring") := predIndiv.censor$survival[,1]]
+            ## at each time
+            predIndiv.censor <- do.call(predictor.cox, args = list(model.censor, newdata = data, times = data$time.tau-(1e-10), type = "survival", diag = TRUE))
+            ## predIndiv.censor <- do.call(predictor.cox, args = list(model.censor, newdata = data, times = data$time.tau-(1e-10), type = "survival", diag = TRUE, iid = nuisance.iid))
+            data[,c("prob.indiv.censoring") := predIndiv.censor$survival[,1]]
         
-        ## store
-        data[,c("weights") := as.numeric(NA)]
-        data[coxMF$stop<=times, c("weights") := .SD$Ncensoring.tau / .SD$prob.indiv.censoring]
-        data[coxMF$stop>times, c("weights") := .SD$Ncensoring.tau / .SD$prob.censoring]
-
+            ## store
+            data[,c("weights") := as.numeric(NA)]
+            data[coxMF$stop<=times, c("weights") := .SD$Ncensoring.tau / .SD$prob.indiv.censoring]
+            data[coxMF$stop>times, c("weights") := .SD$Ncensoring.tau / .SD$prob.censoring]
         }
+    
     ## ** Propensity score model: weights
     ## needs to be after censoring to get the weights
     if(se>0){
-
-        factor <- cbind("IPW0" = data[,  .SD$weights * (1-.SD$treatment.bin) * (.SD$status.tau==1) / (1-.SD$prob.treatment)^2],
-                        "IPW1" = data[, .SD$weights * .SD$treatment.bin * (.SD$status.tau==1) / (.SD$prob.treatment)^2],
-                        "AIPW0" = data[, (1-.SD$treatment.bin) * .SD$prob.event0 / (1-.SD$prob.treatment)^2],
-                        "AIPW1" = data[, .SD$treatment.bin * .SD$prob.event1 / .SD$prob.treatment^2])
         
-        average.iid <- TRUE
-        attr(average.iid, "factor") <- factor
+            factor <- cbind("IPW0" = data[,  .SD$weights * .SD$treatment.bin0 * (.SD$status.tau==1) / .SD$prob.treatment0^2],
+                            "IPW1" = data[, .SD$weights * .SD$treatment.bin1 * (.SD$status.tau==1) / .SD$prob.treatment1^2],
+                            "AIPW0" = data[, .SD$treatment.bin0 * .SD$prob.event0 / .SD$prob.treatment0^2],
+                            "AIPW1" = data[, .SD$treatment.bin1 * .SD$prob.event1 / .SD$prob.treatment1^2])
         
-        prediction.treatment.iid <- attr(predictGLM(model.treatment, newdata = data, average.iid = average.iid), "iid")
-        iidIPW.treatment0 <-  prediction.treatment.iid[,1]
-        iidIPW.treatment1 <- -prediction.treatment.iid[,2]
-        iidAIPW.treatment0 <- -prediction.treatment.iid[,3]
-        iidAIPW.treatment1 <- prediction.treatment.iid[,4]
+            average.iid <- TRUE
+            attr(average.iid, "factor") <- factor
         
+            prediction.treatment.iid <- attr(predictGLM(model.treatment, newdata = data, average.iid = average.iid), "iid")
+            iidIPW.treatment0 <-  prediction.treatment.iid[,1]
+            iidIPW.treatment1 <- -prediction.treatment.iid[,2]
+            iidAIPW.treatment0 <- -prediction.treatment.iid[,3]
+            iidAIPW.treatment1 <- prediction.treatment.iid[,4]
     }
     
     ## ** correction for efficiency
@@ -361,14 +370,14 @@ ateRobust <- function(data, times, cause, type,
     
     ## *** IPW
     IF$IPTW.IPCW <- data[,cbind(
-        .SD$weights * .SD$status.tau * (1-.SD$treatment.bin) / (1-.SD$prob.treatment),
-        .SD$weights * .SD$status.tau * (.SD$treatment.bin) / (.SD$prob.treatment)
+        .SD$weights * .SD$status.tau * .SD$treatment.bin0 / .SD$prob.treatment0,
+        .SD$weights * .SD$status.tau * .SD$treatment.bin1 / .SD$prob.treatment1
     )]/ n.obs
 
     ## *** AIPW
     AIPWadd <- data[,cbind(
-        .SD$prob.event0 * (1-(1-.SD$treatment.bin)/(1-.SD$prob.treatment)),
-        .SD$prob.event1 * (1-.SD$treatment.bin/(.SD$prob.treatment))
+        .SD$prob.event0 * (1 - .SD$treatment.bin0  /.SD$prob.treatment0),
+        .SD$prob.event1 * (1 - .SD$treatment.bin1  /.SD$prob.treatment1)
     )]/ n.obs
     
     IF$AIPTW.IPCW_knownNuisance <- IF$IPTW.IPCW + AIPWadd
@@ -389,18 +398,17 @@ ateRobust <- function(data, times, cause, type,
     }
 
     ## *** augmentation for censoring
-    if(augment.cens){
-       
+    if(augment.cens){       
         AUGMENTadd <- data[,cbind(
-            .SD$Lterm * (1-.SD$treatment.bin) / (1-.SD$prob.treatment), ## .SD$prob.event
-            .SD$Lterm * (.SD$treatment.bin) / (.SD$prob.treatment) ## .SD$prob.event
+            .SD$Lterm * .SD$treatment.bin0 / .SD$prob.treatment0, ## .SD$prob.event
+            .SD$Lterm * .SD$treatment.bin1 / .SD$prob.treatment1 ## .SD$prob.event
         )]/ n.obs
         
-        IF$IPTW.AIPCW <- IF$IPTW.IPCW + AUGMENTadd
-        
+        IF$IPTW.AIPCW <- IF$IPTW.IPCW + AUGMENTadd        
         IF$AIPTW.AIPCW_knownNuisance <- IF$AIPTW.IPCW_knownNuisance + AUGMENTadd
-        IF$AIPTW.AIPCW_estimatedNuisance <- IF$AIPTW.IPCW_estimatedNuisance + AUGMENTadd
-
+        if(se>0){
+            IF$AIPTW.AIPCW_estimatedNuisance <- IF$AIPTW.IPCW_estimatedNuisance + AUGMENTadd
+        }
     }
     
     ## ** export
@@ -430,13 +438,16 @@ ateRobust <- function(data, times, cause, type,
         }))
         rownames(out$ate.se) <- rownames(out$ate.value)
     }
+
     out$se <- se>0
     out$level.treatment <- level.treatment
     out$augment.cens <- augment.cens
     out$product.limit <- product.limit
+    out$augment.cens <- augment.cens
+
+    out$weight.treatment <- data[,.SD, .SDcols = c("prob.treatment0","prob.treatment1")]
     
     class(out) <- "ateRobust"
-    out$augment.cens <- augment.cens
 
     ## confidence intervals
     if (se>0){out <- confint(out)}
