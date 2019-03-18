@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jan  9 2016 (19:31) 
 ## Version: 
-## last-updated: Jan 28 2019 (14:55) 
+## last-updated: Mar 14 2019 (09:08) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 287
+##     Update #: 306
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -177,6 +177,7 @@ riskQuantile.competing.risks <- function(DT,N,NT,NF,dolist,cause,states,Q,...){
     ##
     ## if (missing(states))
     ## states <- DT[model==models[[1]] & status!=0,sort(unique(event))]
+    states.code <- 1:length(states)
     #######
     ## Let X denote the difference between two 10-year predictions for the same subjects.
     ## This function estimates quantiles of the conditional distibutions of X given
@@ -211,12 +212,13 @@ riskQuantile.competing.risks <- function(DT,N,NT,NF,dolist,cause,states,Q,...){
     ## For 'event-free analyses' P(X<=x|T>t) is estimated by P(T>t|X<=x) P(X<=x)/P(T>t)
     #######
     surv <- DT[model==models[[1]],data.table::data.table("surv"=(1/N*sum((time>times)/Wt))),by=times]
-    cuminc <- lapply(states,function(cc){DT[model==models[[1]],data.table::data.table("cuminc"=1/N*sum((event==cc & time<=times)/WTi)),by=times]})
+    cuminc <- lapply(states.code,function(cc){DT[model==models[[1]],data.table::data.table("cuminc"=1/N*sum((event==cc & time<=times)/WTi)),by=times]})
     names(cuminc) <- states
-    getQ.states <- function(Q,tp,X,time,event,WTi,cuminc,states){
+    getQ.states <- function(Q,tp,X,time,event,WTi,cuminc,states.code){
         uX <- sort(unique(X))
-        rbindlist(lapply(states,function(cause){
+        rbindlist(lapply(states.code,function(cause){
             # Note that event==cause implies status==1
+            ## the variable event has values 1,2,..,k,k+1 where k+1 is censored
             Wx <- sapply(uX,function(x){sum((X<=x & event==cause & time<=tp)/WTi)})/(N*cuminc[[cause]][times==tp,cuminc])
             qRisk <- getQuantile(x=uX,Fx=Wx,Q=Q)
             qR <- data.table(t(qRisk))
@@ -233,7 +235,7 @@ riskQuantile.competing.risks <- function(DT,N,NT,NF,dolist,cause,states,Q,...){
         qR
     }
     score.eventfree <- DT[,getQ.eventFree(Q=Q,tp=times,X=risk,time=time,Wt=Wt,surv=surv),by=list(model,times)]
-    score.states <- DT[,getQ.states(Q=Q,tp=times,X=risk,time=time,event=event,WTi=WTi,cuminc=cuminc,states=states),by=list(model,times)]
+    score.states <- DT[,getQ.states(Q=Q,tp=times,X=risk,time=time,event=event,WTi=WTi,cuminc=cuminc,states.code=states.code),by=list(model,times)]
     score.overall <- DT[,data.table(t(quantile(risk,probs=Q))),by=list(model,times)]
     score.overall[,cause:="overall"]
     colnames(score.overall) <- colnames(score.states)
@@ -252,7 +254,7 @@ riskQuantile.competing.risks <- function(DT,N,NT,NF,dolist,cause,states,Q,...){
             Xrange <- DTdiff[,range(X)]
             Xmed <- DTdiff[,median(X)]
             changedist.eventfree <- DTdiff[,getQ.eventFree(Q=Q,tp=times,X=X,time=time,Wt=Wt,surv=surv),by=list(model,times)]
-            changedist.states <- DTdiff[,getQ.states(Q=Q,tp=times,X=X,time=time,event=event,WTi=WTi,cuminc=cuminc,states=states),by=list(model,times)]
+            changedist.states <- DTdiff[,getQ.states(Q=Q,tp=times,X=X,time=time,event=event,WTi=WTi,cuminc=cuminc,states.code=states.code),by=list(model,times)]
             changedist.overall <- DTdiff[,data.table(t(quantile(X,probs=Q))),by=list(model,times)]
             changedist.overall[,cause:="overall"]
             colnames(changedist.overall) <- colnames(changedist.states)
@@ -264,6 +266,10 @@ riskQuantile.competing.risks <- function(DT,N,NT,NF,dolist,cause,states,Q,...){
             changedist
         }))
     }else contrasts <- NULL
+    if (!is.null(score))
+        score[,cause:=as.character(factor(cause,levels=c("overall",states.code,"event-free"),labels=c("overall",states,"event-free")))]
+    if (!is.null(contrasts))
+        contrasts[,cause:=as.character(factor(cause,levels=c("overall",states.code,"event-free"),labels=c("overall",states,"event-free")))]
     list(score=score,contrasts=contrasts)
 }
 

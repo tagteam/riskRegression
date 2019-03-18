@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Mar 13 2017 (16:53) 
 ## Version: 
-## Last-Updated: Mar  4 2019 (11:49) 
+## Last-Updated: Mar 18 2019 (07:05) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 43
+##     Update #: 55
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -74,16 +74,24 @@ plotRisk <- function(x,
     if (missing(models)){
         models <- pframe[,unique(model)[1:2]]
     }
-    if (is.na(models[2])) stop("Need two models to scatterplot risks")
+    if (is.na(models[2])) stop("Need two models for a scatterplot of predicted risks")
     pframe <- pframe[model%in%models]
     modelnames <- pframe[,unique(model)]
-    if (x$response.type=="binary")
+    if (x$response.type=="binary"){
         R <- pframe[model==modelnames[1],ReSpOnSe]
-    else{
-        warning("Under construction")
-        R <- pframe[model==modelnames[1],status]
+        if (missing(col)) col <- factor(R,levels=c(0,1),labels=c("green","red"))
     }
-    if (missing(col)) col <- R+1
+    else{
+        R <- pframe[model==modelnames[1],
+        {
+            r <- status # 0,1,2?
+            r[time>times] <- 2
+            r
+        }]
+        if (missing(col)) col <- as.character(factor(R,
+                                                     levels=c(0,1,2),
+                                                     labels=c("darkorange","red","green")))
+    }
     if (missing(xlab)) xlab <- paste0("Risk (%, ",modelnames[1],")")
     if (missing(ylab)) ylab <- paste0("Risk (%, ",modelnames[2],")")
     m1 <- pframe[model==modelnames[1],risk]
@@ -92,8 +100,12 @@ plotRisk <- function(x,
     plot.DefaultArgs <- list(x=0,y=0,type = "n",ylim = ylim,xlim = xlim,ylab=ylab,xlab=xlab)
     axis1.DefaultArgs <- list(side=1,las=1,at=seq(xlim[1],xlim[2],(xlim[2]-xlim[1])/4))
     axis2.DefaultArgs <- list(side=2,las=2,at=seq(xlim[1],xlim[2],(xlim[2]-xlim[1])/4),mgp=c(4,1,0))
-    legend.DefaultArgs <- list(legend=modelnames,pch=pch,col=col,cex=cex,bty="n",y.intersp=1.3,x="topleft")
-    points.DefaultArgs <- list(x=m1,y=m2,pch=pch,cex=cex,col=col)
+    legend.DefaultArgs <- list(legend=if(x$response.type=="binary") c("No event","Event") else c("Censored","Event","No event"),pch=pch,col=if(x$response.type=="binary") c("green","red") else c("darkorange","red","green"),cex=cex,bty="n",y.intersp=1.3,x="topleft")
+    points.DefaultArgs <- list(x=m1,
+                               y=m2,
+                               pch=pch,
+                               cex=cex,
+                               col=col)
     abline.DefaultArgs <- list(a=0,b=1,lwd=1,col="gray66")
     control <- prodlim::SmartControl(call= list(...),
                                      keys=c("plot","points","legend","axis1","axis2","abline"),
