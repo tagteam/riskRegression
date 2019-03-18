@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Aug 15 2016 (09:45) 
 ## Version: 
-## last-updated: Mar  3 2019 (20:02) 
+## last-updated: Mar 14 2019 (10:26) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 125
+##     Update #: 136
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -140,6 +140,8 @@ boxplot.Score <- function(x,
         pframe <- pframe[times==timepoint]
     }
     if(missing(model)) mod <- pframe[,model[1]] else mod <- model
+    if (!(mod %in% unique(pframe[["model"]])))
+        stop(paste("Requested model ",mod, "not fitted in object."))
     if (type=="diff"){
         if(missing(reference)) ref <- pframe[,reference[1]] else ref <- reference
         pframe <- pframe[model==mod & reference==ref]

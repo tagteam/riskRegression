@@ -547,8 +547,11 @@ Score.list <- function(object,
     }
     # add ID variable for merging purposes and because output has long format
     data[,ID:=1:N]
-    if (response.type=="binary")
-        data[,event:=factor(ReSpOnSe,levels=1:(length(states)+1),labels=c(states,"censored"))]
+    if (response.type=="binary"){
+        data[,event:=factor(ReSpOnSe,
+                            levels=1:(length(states)+1),
+                            labels=c(states,"event-free"))]
+    }
     if (response.type=="survival")
         formula <- stats::update(formula,"Hist(time,status)~.")
     if (response.type=="competing.risks")
@@ -979,6 +982,26 @@ Score.list <- function(object,
                       keep.vcov=keep.vcov,
                       ## DT.residuals=DT.residuals,
                       dolist=dolist,Q=probs,ROC=FALSE,MC=Weights$IC)
+        if (response.type=="competing.risks") {
+            input <- c(input,list(cause=cause,states=states))
+        }
+        # {{{ collect data for summary statistics
+        for (s in summary){
+            if (s=="risks") {
+                out[[s]] <- list(score=copy(input$DT)[,model:=factor(model,levels=mlevs,mlabels)],
+                                 contrasts=NULL)
+            } else{
+                out[[s]] <- do.call(paste(s,response.type,sep="."),input)
+                if (NROW(out[[s]]$score)>0){
+                    out[[s]]$score[,model:=factor(model,levels=mlevs,mlabels)]
+                }
+                if (NROW(out[[s]]$contrasts)>0){
+                    out[[s]]$contrasts[,model:=factor(model,levels=mlevs,mlabels)]
+                    out[[s]]$contrasts[,reference:=factor(reference,levels=mlevs,mlabels)]
+                }
+            }
+        }
+        # }}}
         # {{{ collect data for calibration plots
 
         if ("Calibration" %in% plots){
@@ -991,9 +1014,6 @@ Score.list <- function(object,
         }
 
         # }}}
-        if (response.type=="competing.risks") {
-            input <- c(input,list(cause=cause,states=states))
-        }
         ## make sure that Brier score comes first, so that we can remove the null.model afterwards
         for (m in sort(metrics,decreasing=TRUE)){
             if (m=="AUC" && ("ROC" %in% plots)){
@@ -1050,20 +1070,6 @@ Score.list <- function(object,
                 out[["Brier"]][["score"]][,IPA:=1-Brier/Brier[model=="Null model"]]
             else
                 out[["Brier"]][["score"]][,IPA:=1-Brier/Brier[model=="Null model"],by=times]
-        }
-        for (s in summary){
-            if (s=="risks") {
-                out[[s]] <- list(score=copy(input$DT),contrasts=NULL)
-            } else{
-                out[[s]] <- do.call(paste(s,response.type,sep="."),input)
-            }
-            if (NROW(out[[s]]$contrasts)>0){
-                out[[s]]$score[,model:=factor(model,levels=mlevs,mlabels)]
-            }
-            if (NROW(out[[s]]$contrasts)>0){
-                out[[s]]$contrasts[,model:=factor(model,levels=mlevs,mlabels)]
-                out[[s]]$contrasts[,reference:=factor(reference,levels=mlevs,mlabels)]
-            }
         }
         out
     }
