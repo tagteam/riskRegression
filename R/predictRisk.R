@@ -677,7 +677,172 @@ predictRisk.CauseSpecificCox <- function (object, newdata, times, cause, ...) {
     p
 }
 
+##' @export 
+predictRisk.BinaryTree<-function (object, newdata, times, ...) 
+{
+    learndat <- mod@data@get("input")
+    learnresponse <- mod@data@get("response")
+    resp <- as.data.frame(learnresponse)
+    browser()
+    nclass <- length(unique(object@where))
+    learndat$ctreeFactor <- factor(predict(object, newdata = learndat,type="node")) #was vector
+    newdata$ctreeFactor <- factor(predict(object, newdata = newdata,type="node")) #was vector
+    BinaryTree.form <- reformulate("ctreeFactor",object@data@formula$response[[2]])
+    fit.BinaryTree <- prodlim(BinaryTree.form, data = learndat)
+    p <- predictRisk(fit.BinaryTree, newdata = newdata, times = times) #input prodlim object
+    1 - p
+}
 
+
+##' @export 
+predict.smcure <- function(object, newdata, times,  ...) {
+    ##Wrapper for predictsmcure so the X's and Z's do not need to be prespecified.
+    require(dummies)
+    # pred <- predictsmcure(object, newX = dummy.data.frame(newdata)[,object$betanm], newZ = dummy.data.frame(newdata)[,object$bnm[-1]], model = "ph")$prediction  ##object$call$model -> werkt niet!!
+    pred <- predictsmcure(object, newX = dummy.data.frame(newdata)[,object$betanm[-1]], newZ = dummy.data.frame(newdata)[,object$bnm[-1]], model = "ph")$prediction  ##object$call$model -> werkt niet!!
+    pdsort <- pred[order(pred[, "Time"]), ]
+    pdsort <- rbind(c(array(1,ncol(pdsort)-1),0),pdsort) #rij met tijd=0 en surv = 1 toevoegen
+    orgTimes <- pdsort[,"Time"]
+    tim <- array(0,length(times))       #index of time-points
+    for (i in 1:length(times)){         #reproduce step function of S0 estimation sample
+        tim[i] <- max(which(orgTimes-times[i]<=0))}
+    p <- t(pdsort[tim,-ncol(pdsort)])   #leave out last column (time)
+    1 - p
+}
+
+##' @export 
+predictRisk.smcure <- function (object, newdata, times, ...) {
+  p <- predict.smcure(object, newdata = newdata, times = times )
+}
+
+##' @export 
+predictRisk.penfit <- function(object, newdata, times, ...){
+    ##only works with a optL1 or optL2 object. 
+    require(penalized)
+    pred1 <- predict(object, penalized=object@formula$penalized, data = newdata)
+    p <- matrix(0,nrow(newdata),length(times))
+    for (i in 1:length(times)){
+        p[,i] <- survival(pred1, time = times[i])
+    }
+    1 - p
+}
+
+##' @export 
+predictRisk.flexsurvreg <- function(object, newdata, times, ...) {
+    require(dummies)
+    require(flexsurv)
+    p <- matrix(0, NROW(newdata), length(times))
+    sm <- summary.flexsurvreg(object, X = as.matrix(dummy.data.frame(newdata)[,dimnames(object$data$X)[[2]]]), t = times, start = 0, B = 0) #no confidence interval simulations
+    for (i in 1:NROW(newdata)){
+        p[i,] <- sm[[i]][,2]
+    }
+    if (NROW(p) != NROW(newdata) || NCOL(p) != length(times)) 
+        stop("Prediction failed")
+    1 - p
+}
+
+scaleorg <- function(Xt, X){
+    ##scale new X matrix like training matrix.
+    ##Xt is X_train, X is new X
+    xtmean <- apply(Xt, MARGIN = 2, mean ) #mean of training matrix
+    Xscaled <- sweep(X, 2L, xtmean, check.margin = FALSE)
+    f <- function(v) {
+        v <- v[!is.na(v)]
+        sqrt(sum(v^2)/max(1, length(v) - 1L))
+    }
+    xtsd <- apply(Xt, 2L, f)             #sd of training matrix
+    Xscaled <- sweep(X, 2L, xtsd, "/", check.margin = FALSE)
+    return(Xscaled)
+}
+
+predict.coxpls2 <- function(object, newdata, traindata, ...){
+  require(dummies)
+  vars <- dimnames(object$pls2$pls_mod$coefficients)[[1]]
+  loading.weights <- object$pls2$pls_mod$loading.weights
+  if (identical(newdata, traindata)){
+    scores <- scale(data.matrix(dummy.data.frame(traindata))[, vars]) %*% loading.weights
+  }
+  else {
+    Xscaled <- scaleorg(data.matrix(dummy.data.frame(traindata))[, vars], data.matrix(dummy.data.frame(newdata))[, vars])
+    scores <- Xscaled %*% loading.weights
+  }
+  colnames(scores) <- paste("Comp",seq(1,object$pls2$pls_mod$ncomp,1),sep=".")
+  sf <- survfit(object$pls2$cox_pls, newdata = as.data.frame(scores))
+  ## sf <- survfit(object$cox_pls, newdata = scores)
+  sf <- cbind(sf$time,sf$surv)
+  return(sf)
+}
+
+plscox <- function (formula, data, ncomp = 3, cv = FALSE, ...) 
+{
+    ## formula interface to coxpls2
+    require(plsRcox)
+    call <- match.call(expand.dots = FALSE)
+    formula.names <- try(all.names(formula), silent = TRUE)
+    actual.terms <- terms(formula, data = data)
+    formula <- eval(call$formula)
+    response <- model.response(model.frame(formula, data))
+    Time <- as.numeric(response[, "time"])
+    Event <- as.numeric(response[, "status"])
+    X <- model.matrix(actual.terms, data = data)[, -c(1), drop = FALSE]
+    nc <<- ncomp                    #to prevent namespace problems
+    pl <- coxpls2(X, time = Time, time2 = Event, allres = TRUE, ncomp = nc)
+    out <- list(pls2 = pl, ncomp = ncomp, 
+                call = call, formula = formula, response = response, vars = attr(actual.terms,"term.labels"))
+    class(out) <- "coxpls2"
+    return(out)
+}
+
+##' @export 
+predictRisk.coxpls2 <- function(object, newdata, times, traindata = NULL){
+    require(plsRcox)
+    ## calculate componentscores on basis of newdata
+    ## apply survfit with newdata = Comp.1 t/m Comp.k
+    pdsort <- predict.coxpls2(object, newdata = newdata, traindata)
+    pdsort <- rbind(c(0,array(1,ncol(pdsort)-1)),pdsort) #add row with time =0 and surv = 1 
+    orgTimes <- pdsort[,1]                               #time in 1st column
+    tim <- array(0,length(times))       #index of time-points
+    for (i in 1:length(times)){         #reproduce step function of S0 of estimation sample 
+        tim[i] <- max(which(orgTimes-times[i]<=0))}
+    p <- t(pdsort[tim,-1])
+    1 - p
+}
+
+##' @export 
+predictRisk.gbm <- function(object, newdata, times, traindata, n.trees = NULL) {
+    ## n.trees passed via ...?
+    if (is.null(n.trees)) n.trees <- object$n.trees
+    p <- matrix(0, NROW(newdata), length(times))
+    xb.train <- predict(object ,newdata = traindata, n.trees = n.trees)
+    H2 <- basehaz.gbm(t = traindata[,object$response.name[2]],delta = traindata[,object$response.name[3]], f.x = xb.train, t.eval = times)
+    xb.test <- predict(object, newdata = newdata , n.trees = n.trees ) 
+    for (i in 1:length(times)) p[,i] <- exp(-H2[i] * exp(xb.test))
+    p[,times==0] <- 1                   #to prevent problems with prediction error curves 
+    1 - p
+}
+
+##' @export 
+predictRisk.phnnet <- function (object, newdata, times, traindata = NULL){
+    require(survnnet)
+    learndat <- object$traindata
+    seeds <- sample(1:1000, size = 3)
+    object$call$data <- learndat
+    re.fitter <- lapply(seeds, function(s) {
+        set.seed(s)
+        refit <- eval(object$call)
+        list(learn = predict(refit, learndat), val = predict(refit, 
+                                                             newdata))
+    })
+    learndat$nnetFactor <- rowMeans(do.call("cbind", lapply(re.fitter, 
+                                                            function(x) x[["learn"]])))
+    newdata$nnetFactor <- rowMeans(do.call("cbind", lapply(re.fitter, 
+                                                           function(x) x[["val"]])))
+    nnet.form <- reformulate("nnetFactor", object$call$formula[[2]])
+    fit.nnet <- cph(nnet.form, data = learndat, se.fit = FALSE, 
+                    surv = TRUE, x = TRUE, y = TRUE)
+    p <- predictRisk.cph(fit.nnet, newdata = newdata, times = times)
+    1 - p
+}
 
 
 ##' S3-wrapper for S4 function penalized
