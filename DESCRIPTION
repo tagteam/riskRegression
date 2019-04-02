@@ -32,7 +32,7 @@ LinkingTo: Rcpp, RcppArmadillo
 Suggests:
     boot,
     CoxBoost,
-	ipw,
+    ipw,
     SuperLearner,
     mets,
     mstate,
