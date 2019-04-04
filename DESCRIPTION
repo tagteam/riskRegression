@@ -32,6 +32,7 @@ Imports:
 LinkingTo: Rcpp, RcppArmadillo
 Suggests:
     boot,
+    smcfcs,
     CoxBoost,
     ipw,
     SuperLearner,
