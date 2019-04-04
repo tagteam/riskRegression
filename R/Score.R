@@ -1635,6 +1635,9 @@ Score.list <- function(object,
                     crossvalPerf[["Brier"]][["score"]][,IPA:=1-Brier/Brier[model==0],by=times]
             }
         }
+        if (!is.null(progress.bar)){
+            cat("\n")
+        }
         # }}}
 
         # {{{ collect data for plotRisk

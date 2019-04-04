@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun  6 2016 (09:02) 
 ## Version: 
-## last-updated: Apr  1 2019 (12:50) 
+## last-updated: Apr  3 2019 (15:23) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 139
+##     Update #: 149
 #----------------------------------------------------------------------
 ## 
 ### Commentary:
@@ -836,9 +836,12 @@ SmcFcs  <- function(formula,data,m=5,method,fitter="glm",fit.formula,...){
     sform <- paste0(Yname,"~",Xnames)
     if (length(unique(data[[Yname]]))!=2)
         stop("Outcome must be binary")
-    ## Xdata <- model.matrix(formula,data)
+    Xvars <- all.vars(formula)
+    if (missing(fit.formula)) fit.formula <- formula
+    Avars <- all.vars(fit.formula)
+    Xvars <- union(Xvars,Avars)
+    Xdata <- subset(data,select=Xvars)
     if (missing(method)){
-        Xdata <- subset(data,select=all.vars(formula))
         method <- sapply(Xdata,function(x){
             if (any(is.na(x))){
                 if(length(unique(x))==2){
@@ -855,15 +858,11 @@ SmcFcs  <- function(formula,data,m=5,method,fitter="glm",fit.formula,...){
             }
         })
     }
-    ## c("",rep("logreg",5),rep("norm",5))
-    print(method)
-    print(sform)
     idata.list <- smcfcs(smformula=sform,
                          originaldata=Xdata,
                          m=m,
                          smtype="logistic",...,
                          method=method)$impDatasets
-    if (missing(fit.formula)) fit.formula <- formula
     res <- lapply(idata.list,function(d){
         do.call(fitter,list(fit.formula,data=d,family="binomial"))
     })
