@@ -1449,7 +1449,9 @@ Score.list <- function(object,
                             ## this is a new DT.B
                             DT.B <- cbind(data[,1:response.dim,with=FALSE],DT.B)
                             DT.B[,nth.times:=as.numeric(factor(times))]
-                            DT.B[,WTi:=Weights$IPCW.subject.times]
+                            WW <- data.table(ID=1:N,WTi=Weights$IPCW.subject.times,key="ID")
+                            DT.B <- merge(WW,DT.B,by=ID)
+                            ## DT.B[,WTi:=rep(Weights$IPCW.subject.times,NF+length(nullobject))]
                             if (Weights$method=="marginal"){
                                 Wt <- data.table(times=times,Wt=Weights$IPCW.times)
                                 ## OBS: many digits in times may cause merge problems
