@@ -2,10 +2,11 @@ Package: riskRegression
 Type: Package
 Title: Risk Regression Models and Prediction Scores for Survival Analysis with
     Competing Risks
-Version: 2019.03.03
+Version: 2019.04.04
 Authors@R: c(person("Thomas Alexander", "Gerds", role = c("aut", "cre"),
                     email = "tag@biostat.ku.dk"),
              person("Paul", "Blanche", role = "ctb"),
+             person("Rikke", "Mortensen", role = "ctb"),
              person("Ulla Brasch", "Mogensen", role = "ctb"),
              person("Brice", "Ozenne", role = "aut", email = "broz@sund.ku.dk", comment = c(ORCID = "0000-0001-9694-2956")))
 Depends:
@@ -31,8 +32,9 @@ Imports:
 LinkingTo: Rcpp, RcppArmadillo
 Suggests:
     boot,
+    smcfcs,
     CoxBoost,
-	ipw,
+    ipw,
     SuperLearner,
     mets,
     mstate,

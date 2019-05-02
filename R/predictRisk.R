@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun  6 2016 (09:02) 
 ## Version: 
-## last-updated: Mar  6 2019 (18:53) 
+## last-updated: Apr  3 2019 (15:23) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 133
+##     Update #: 149
 #----------------------------------------------------------------------
 ## 
 ### Commentary:
@@ -583,6 +583,8 @@ predictRisk.psm <- function(object,newdata,times,...){
 
 ##' @export 
 predictRisk.ranger <- function(object, newdata, times, cause, ...){
+    xvars <- object$forest$independent.variable.names
+    newdata <- subset(newdata,select=xvars)
     if (missing(times)||is.null(times)){
         p <- stats::predict(object,data=newdata,importance="none",...)$predictions
         p
@@ -825,6 +827,56 @@ predictRisk.penfitS3 <- function(object,
     p
 }
 
+##' @export
+SmcFcs  <- function(formula,data,m=5,method,fitter="glm",fit.formula,...){
+    requireNamespace("smcfcs")
+    this <- as.character(formula)
+    Yname <- this[2]
+    Xnames <- this[3]
+    sform <- paste0(Yname,"~",Xnames)
+    if (length(unique(data[[Yname]]))!=2)
+        stop("Outcome must be binary")
+    Xvars <- all.vars(formula)
+    if (missing(fit.formula)) fit.formula <- formula
+    Avars <- all.vars(fit.formula)
+    Xvars <- union(Xvars,Avars)
+    Xdata <- subset(data,select=Xvars)
+    if (missing(method)){
+        method <- sapply(Xdata,function(x){
+            if (any(is.na(x))){
+                if(length(unique(x))==2){
+                    "logreg"
+                }else{
+                    if(is.factor(x)){
+                        "mlogit"
+                    } else{
+                        "norm"
+                    }
+                }
+            } else{
+                ""
+            }
+        })
+    }
+    idata.list <- smcfcs(smformula=sform,
+                         originaldata=Xdata,
+                         m=m,
+                         smtype="logistic",...,
+                         method=method)$impDatasets
+    res <- lapply(idata.list,function(d){
+        do.call(fitter,list(fit.formula,data=d,family="binomial"))
+    })
+    class(res) <- "SmcFcs"
+    res
+}
+
+##' @export
+predictRisk.SmcFcs <- function(object,newdata,...){
+    p <- Reduce("+",lapply(object,function(x){
+        predictRisk(x,newdata=newdata)
+    }))/length(object)
+    p
+}
 
 ##' @export 
 predictRisk.SuperPredictor  <- function(object,newdata,...){
