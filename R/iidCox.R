@@ -203,7 +203,7 @@ iidCox <- function(object, newdata = NULL,
                                       eXb = object.eXb_strata[[iStrata]],
                                       X = object.LPdata_strata[[iStrata]],
                                       p = nVar, add0 = TRUE)
-    
+
         new.indexJump[[iStrata]] <- prodlim::sindex(Ecpp[[iStrata]]$Utime1, new.time) - 1
         # if event/censoring is before the first event in the training dataset 
         # then sindex return 0 thus indexJump is -1

@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: jul  5 2018 (13:29) 
 ## Version: 
-## Last-Updated: Jan 29 2019 (11:13) 
-##           By: Thomas Alexander Gerds
-##     Update #: 32
+## Last-Updated: apr 15 2019 (18:28) 
+##           By: Brice Ozenne
+##     Update #: 33
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -15,45 +15,47 @@
 ## 
 ### Code:
 
-## predictGLM
-## @title Compute the influence function for the prediction.
-## @description Compute the influence function for the prediction from a linear or logistic model.
-## @name predictGLM
-## 
-##  @examples
-## \dontrun{
-## library(lava)
-## m <- lvm(Y~X1+X2+X3)
-##
-## set.seed(10)
-## d <- lava::sim(m, 1e2)
-##
-## ## check for lm
-## e.lm <- lm(Y~X1+X2+X3, data = d)
-## test <- predictGLM(e.lm, newdata = d)
-## test.av <- predictGLM(e.lm, newdata = d, average.iid = TRUE)
-##
-## GS <- lava::estimate(e.lm, f = function(p,data){
-##   p["(Intercept)"] + d[,"X1"] * p["X1"] + d[,"X2"] * p["X2"] + d[,"X3"] * p["X3"]
-## })
-## range(test[,1]-GS$coef)
-## range(attr(test,"iid")-t(GS$iid))
-## range(colMeans(attr(test,"iid"))-attr(test.av,"iid"))
-##
-## ## check for glm
-## e.glm <- glm(I(Y>0)~X1+X2+X3, data = d, family = binomial(link = "logit"))
-## test <- predictGLM(e.glm, newdata = d)
-## test.av <- predictGLM(e.glm, newdata = d, average.iid = TRUE)
-##
-## GS <- lava::estimate(e.glm, f = function(p,data){
-##   lava::expit(p["(Intercept)"] + d[,"X1"] * p["X1"] + d[,"X2"] * p["X2"] + d[,"X3"] * p["X3"])
-## })
-## range(test[,1]-GS$coef)
-## range(attr(test,"iid")-t(GS$iid))
-## range(colMeans(attr(test,"iid"))-attr(test.av,"iid"))
-## }
+## * predictGLM
+##' @title Compute the influence function for the prediction.
+##' @description Compute the influence function for the prediction from a linear or logistic model.
+##' @name predictGLM
+##' 
+##' @examples
+##' \dontrun{
+##' library(lava)
+##' m <- lvm(Y~X1+X2+X3)
+##'
+##' set.seed(10)
+##' d <- lava::sim(m, 1e2)
+##'
+##' ## check for lm
+##' e.lm <- lm(Y~X1+X2+X3, data = d)
+##' test <- predictGLM(e.lm, newdata = d)
+##' test.av <- predictGLM(e.lm, newdata = d, average.iid = TRUE)
+##'
+##' GS <- lava::estimate(e.lm, f = function(p,data){
+##'   p["(Intercept)"] + d[,"X1"] * p["X1"] + d[,"X2"] * p["X2"] + d[,"X3"] * p["X3"]
+##' })
+##' range(test[,1]-GS$coef)
+##' range(attr(test,"iid")-t(GS$iid))
+##' range(colMeans(attr(test,"iid"))-attr(test.av,"iid"))
+##'
+##' ## check for glm
+##' e.glm <- glm(I(Y>0)~X1+X2+X3, data = d, family = binomial(link = "logit"))
+##' test <- predictGLM(e.glm, newdata = d)
+##' test.av <- predictGLM(e.glm, newdata = d, average.iid = TRUE)
+##'
+##' GS <- lava::estimate(e.glm, f = function(p,data){
+##'   lava::expit(p["(Intercept)"] + d[,"X1"] * p["X1"] + d[,"X2"] * p["X2"] + d[,"X3"] * p["X3"])
+##' })
+##' range(test[,1]-GS$coef)
+##' range(attr(test,"iid")-t(GS$iid))
+##' range(colMeans(attr(test,"iid"))-attr(test.av,"iid"))
+##' }
+
+
 ## * predictGLM (code)
-## @rdname predictGLM
+##' @rdname predictGLM
 predictGLM <- function(object, newdata, average.iid = FALSE){
 
     if(any(class(object) %in% c("lm","glm") == FALSE)){
