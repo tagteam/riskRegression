@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: jul  5 2018 (13:29) 
 ## Version: 
-## Last-Updated: apr 15 2019 (18:28) 
+## Last-Updated: maj  6 2019 (14:42) 
 ##           By: Brice Ozenne
-##     Update #: 33
+##     Update #: 34
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -19,6 +19,10 @@
 ##' @title Compute the influence function for the prediction.
 ##' @description Compute the influence function for the prediction from a linear or logistic model.
 ##' @name predictGLM
+##'
+##' @param object glm model.
+##' @param newdata [data.frame] dataset containing the covariate to condition on.
+##' @param average.iid [logical] Should the influence function be averaged over the empirical distribution.
 ##' 
 ##' @examples
 ##' \dontrun{
