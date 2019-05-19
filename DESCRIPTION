@@ -15,7 +15,6 @@ Imports:
     data.table (>= 1.10.4),
     ggplot2 (>= 2.1.0),
     prodlim (>= 1.6.1),
-    abind,
     doParallel,
     stats,
     graphics,

@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: aug 15 2018 (11:42) 
 ## Version: 
-## Last-Updated: mar 18 2019 (17:19) 
+## Last-Updated: maj  6 2019 (14:43) 
 ##           By: Brice Ozenne
-##     Update #: 83
+##     Update #: 88
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -14,12 +14,12 @@
 ##----------------------------------------------------------------------
 ## 
 ### Code:
-if (class(try(riskRegression.test,silent=TRUE))[1]!="try-error"){
-    library(riskRegression)
-    library(survival)
-    library(testthat)
-    library(ipw)
-    context("Ate robust checks")
+library(riskRegression)
+library(survival)
+library(data.table)
+library(testthat)
+library(ipw)
+context("Ate robust checks")
 
 ## * survival case
 
@@ -168,22 +168,26 @@ e.S <- CSC(Hist(time, event) ~ X1 + X2 + X3,
 e.T <- glm(X1 ~ 1, data = dtS, family = binomial(link = "logit")) ## dtS$X1
 
 e.ateRobust <- ateRobust(data = dtS, times = tau,
-                          formula.event = Hist(time,event) ~ X1 + X2 + X3,
-                          formula.censor = Hist(time,event==0) ~ X1,
-                          formula.treatment = X1 ~ 1, se = TRUE, cause = 1,
-                          type = "competing.risks")
+                         formula.event = Hist(time,event) ~ X1 + X2 + X3,
+                         formula.censor = Hist(time,event==0) ~ X1,
+                         formula.treatment = X1 ~ 1, se = TRUE, cause = 1,
+                         type = "competing.risks")
 
 ## predict
 dtS1 <- data.table(X1 = 1, X2 = dtS$X2, X3 = dtS$X3)
+X <- as.double(model.matrix(formula(e.T), dtS1))
 
-pred.logit <- riskRegression:::predictGLM(e.T, newdata = dtS1, average.iid = FALSE)
-iid.logit <- attr(pred.logit, "iid")
-attr(pred.logit, "iid") <- NULL
+dprob.deta <- X * exp(-X*coef(e.T)) / (1+ exp(-X*coef(e.T)))^2
+pred.logit <- 1 / (1 + exp(-X*coef(e.T)))
+iid.logit <-  cbind(dprob.deta) %*% matrix(lava::iid(e.T), nrow = 1)
+
+## GS <- attr(riskRegression:::predictGLM(e.T, newdata = dtS1, average.iid = FALSE), "iid")
+## range(iid.logit - GS)
 
 pred.risk <- predict(e.S, newdata = dtS1, times = tau, cause = 1, iid = TRUE)
 iid.risk <- pred.risk$absRisk.iid[,1,]
 
-dtS[, pi := as.double(pred.logit)]
+dtS[, pi := pred.logit]
 dtS[, r := as.double(pred.risk$absRisk)]
 
 test_that("check point estimate vs. manual calculations", {
@@ -316,6 +320,5 @@ test_that("Agreement ate-ateRobust (competing.risks)",{
     ## butils::object2script(test, digit = 5)
    
 })
-}
 ######################################################################
 ### test-ateRobust.R ends here

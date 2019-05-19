@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun  6 2016 (09:02) 
 ## Version: 
-## last-updated: Apr  3 2019 (15:23) 
-##           By: Thomas Alexander Gerds
-##     Update #: 149
+## last-updated: maj  6 2019 (14:53) 
+##           By: Brice Ozenne
+##     Update #: 151
 #----------------------------------------------------------------------
 ## 
 ### Commentary:
@@ -827,6 +827,17 @@ predictRisk.penfitS3 <- function(object,
     p
 }
 
+##' @title TODO
+##' @description TODO
+##' 
+##' @param formula TODO
+##' @param data TODO
+##' @param m TODO
+##' @param method TODO
+##' @param fitter TODO
+##' @param fit.formula TODO
+##' @param ... TODO
+##' 
 ##' @export
 SmcFcs  <- function(formula,data,m=5,method,fitter="glm",fit.formula,...){
     requireNamespace("smcfcs")
@@ -858,11 +869,11 @@ SmcFcs  <- function(formula,data,m=5,method,fitter="glm",fit.formula,...){
             }
         })
     }
-    idata.list <- smcfcs(smformula=sform,
-                         originaldata=Xdata,
-                         m=m,
-                         smtype="logistic",...,
-                         method=method)$impDatasets
+    idata.list <- smcfcs::smcfcs(smformula=sform,
+                                 originaldata=Xdata,
+                                 m=m,
+                                 smtype="logistic",...,
+                                 method=method)$impDatasets
     res <- lapply(idata.list,function(d){
         do.call(fitter,list(fit.formula,data=d,family="binomial"))
     })
