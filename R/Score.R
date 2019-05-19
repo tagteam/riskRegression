@@ -639,7 +639,6 @@ Score.list <- function(object,
     })
     # }}}
     # {{{ additional arguments for predictRisk methods
-
     if (!missing(predictRisk.args)){
         if (!(all(names(predictRisk.args) %in% unlist(object.classes))))
             stop(paste0("Argument predictRisk.args should be a list whose names match the S3-classes of the argument object.
@@ -651,10 +650,8 @@ Score.list <- function(object,
     }else{
         predictRisk.args <- NULL
     }
-
     # }}}
-# {{{ add null model and check resampling ability
-
+    # {{{ add null model and check resampling ability
     if (!is.null(nullobject)) {
         mlevs <- 0:NF
         mlabels <- c(names(nullobject),names(object))
@@ -669,7 +666,6 @@ Score.list <- function(object,
                 stop(paste("model",names(object)[f],"does not have a call argument."))
         })
     }
-
     # }}}
     # {{{ resolve keep statements
     if (!missing(keep) && is.character(keep)){
@@ -794,62 +790,60 @@ Score.list <- function(object,
             ## if cens.model is Cox then IC is an array (nlearn, ntimes, newdata)
             ## IC is an array with dimension (nlearn, times, newdata)
             ## IC_G(t,z;x_k)
-            }else { 
-                if (cens.type=="uncensored"){
-                    cens.method <- "none"
-                    cens.model <- "none"
-                    if ("auc" %in% metrics){
-                        if (se.fit==TRUE) {
-                            warning("Standard error for AUC with uncensored time-to-event outcome not yet implemented.")
-                            se.fit <- FALSE
-                        }
+        }else { 
+            if (cens.type=="uncensored"){
+                cens.method <- "none"
+                cens.model <- "none"
+                if ("auc" %in% metrics){
+                    if (se.fit==TRUE) {
+                        warning("Standard error for AUC with uncensored time-to-event outcome not yet implemented.")
+                        se.fit <- FALSE
                     }
-                    Weights <- NULL
                 }
-                else{
-                    stop("Cannot handle this type of censoring.")
-                }
+                Weights <- NULL
             }
-            if ("pseudo" %in% cens.method){
-                if (cens.type[1]=="rightCensored"
-                    && (response.type %in% c("survival","competing.risks"))){        
-                    margForm <- update(formula,paste(".~1"))
-                    margFit <- prodlim::prodlim(margForm,data=data)
-                    ## position.cause is the result of match(cause, states)
-                    jack <- data.table(ID=data[["ID"]],
-                                       times=rep(times,rep(N,NT)),
-                                       pseudovalue=c(prodlim::jackknife(margFit,cause=position.cause,times=times)))
-                    if (response.type=="survival") jack[,pseudovalue:=1-pseudovalue]
-                }
+            else{
+                stop("Cannot handle this type of censoring.")
             }
-        } else{ 
-            Weights <- NULL
         }
+        if ("pseudo" %in% cens.method){
+            if (cens.type[1]=="rightCensored"
+                && (response.type %in% c("survival","competing.risks"))){        
+                margForm <- update(formula,paste(".~1"))
+                margFit <- prodlim::prodlim(margForm,data=data)
+                ## position.cause is the result of match(cause, states)
+                jack <- data.table(ID=data[["ID"]],
+                                   times=rep(times,rep(N,NT)),
+                                   pseudovalue=c(prodlim::jackknife(margFit,cause=position.cause,times=times)))
+                if (response.type=="survival") jack[,pseudovalue:=1-pseudovalue]
+            }
+        }
+    } else{ 
+        Weights <- NULL
+    }
+    # }}}
+    # -----------------performance program----------------------
+    # {{{ define getPerformanceData, setup data in long-format, response, pred, weights, model, times, loop
+    # {{{ header
+    getPerformanceData <- function(testdata,
+                                   testweights,
+                                   traindata=NULL,
+                                   trainseed=NULL){
+        ID=NULL
+        # inherit everything else from parent frame: object, nullobject, NF, NT, times, cause, response.type, etc.
+        Brier=IPA=IBS=NULL
+        looping <- !is.null(traindata)
+        ## if (!looping) b=0
+        N <- NROW(testdata)
+        # split data vertically into response and predictors X
+        response <- testdata[,1:response.dim,with=FALSE]
+        response[,ID:=testdata[["ID"]]]
+        setkey(response,ID)
+        X <- testdata[,-c(1:response.dim),with=FALSE]
+        if (debug) if (looping) message(paste0("Loop round: ",b)) 
+        if (debug) message("extracted test set and prepared output object")
         # }}}
-        # -----------------performance program----------------------
-        # {{{ define getPerformanceData, setup data in long-format, response, pred, weights, model, times, loop
-        # {{{ header
-        getPerformanceData <- function(testdata,
-                                       testweights,
-                                       traindata=NULL,
-                                       trainseed=NULL){
-
-            ID=NULL
-            # inherit everything else from parent frame: object, nullobject, NF, NT, times, cause, response.type, etc.
-            Brier=IPA=IBS=NULL
-            looping <- !is.null(traindata)
-            ## if (!looping) b=0
-            N <- NROW(testdata)
-            # split data vertically into response and predictors X
-            response <- testdata[,1:response.dim,with=FALSE]
-            response[,ID:=testdata[["ID"]]]
-            setkey(response,ID)
-            X <- testdata[,-c(1:response.dim),with=FALSE]
-            if (debug) if (looping) message(paste0("Loop round: ",b)) 
-            if (debug) message("extracted test set and prepared output object")
-            # }}}
-            # {{{ collect pred as long format data.table
-
+        # {{{ collect pred as long format data.table
         args <- switch(response.type,"binary"={list(newdata=X)},
                        "survival"={list(newdata=X,times=times)},
                        "competing.risks"={list(newdata=X,times=times,cause=cause)},
@@ -912,10 +906,8 @@ Score.list <- function(object,
             }
         }))
         if (debug) message("trained the model(s) and extracted the predictions")
-        
         # }}}
-# {{{ merge with Weights (IPCW inner loop)
-
+        # {{{ merge with Weights (IPCW inner loop)
         if (response.type %in% c("survival","competing.risks")){
             if (cens.type=="rightCensored"){
                 Weights <- testweights
@@ -947,12 +939,11 @@ Score.list <- function(object,
             Weights <- NULL
         }
         if (debug) message("added weights to predictions")
-
-            # }}}
-            # {{{ merge with response
-            DT=merge(response,pred,by="ID")
-            DT
-        }
+        # }}}
+        # {{{ merge with response
+        DT=merge(response,pred,by="ID")
+        DT
+    }
     # }}}
     # }}} 
     # {{{ define function to test performance
@@ -1003,7 +994,6 @@ Score.list <- function(object,
         }
         # }}}
         # {{{ collect data for calibration plots
-
         if ("Calibration" %in% plots){
             if (response.type[[1]]=="binary" || cens.type[[1]]=="uncensored")
                 out[["Calibration"]]$plotframe <- DT[model!=0]
@@ -1012,7 +1002,6 @@ Score.list <- function(object,
             }
             out[["Calibration"]]$plotframe[,model:=factor(model,levels=mlevs,mlabels)]
         }
-
         # }}}
         ## make sure that Brier score comes first, so that we can remove the null.model afterwards
         for (m in sort(metrics,decreasing=TRUE)){
@@ -1073,11 +1062,9 @@ Score.list <- function(object,
         }
         out
     }
-
     # }}}
-# -----------------apparent nosplit performance---------------------
-# {{{
-
+    # -----------------apparent nosplit performance---------------------
+    # {{{
     missing.predictions <- "Don't know yet"
     if (split.method$internal.name %in% c("noplan",".632+")){
         DT <- getPerformanceData(testdata=data,
@@ -1100,7 +1087,6 @@ Score.list <- function(object,
                                       keep.vcov=keep.vcov)
         if (debug) message("computed apparent performance")
     }
-
     # }}}
     # -----------------crossvalidation performance---------------------
     # {{{
@@ -1395,7 +1381,6 @@ Score.list <- function(object,
                 }
                 # }}}
                 # {{{ Brier LOOB
-
                 if (m=="Brier"){
                     ## sum across bootstrap samples where subject i is out of bag
                     if (cens.type=="rightCensored"){
@@ -1544,15 +1529,22 @@ Score.list <- function(object,
                     }
                     if (!is.null(output$score)){
                         output$score[,model:=factor(model,levels=mlevs,mlabels)]
+                        if (response.type%in%c("survival","competing.risks"))
+                            setkey(output$score,model,times)
+                        else
+                            setkey(output$score,model)
                     }
                     ## set model and reference in model comparison results
                     if (!is.null(output$contrasts)>0){
                         output$contrasts[,model:=factor(model,levels=mlevs,mlabels)]
                         output$contrasts[,reference:=factor(reference,levels=mlevs,mlabels)]
+                        if (response.type%in%c("survival","competing.risks"))
+                            setkey(output$score,model,times)
+                        else
+                            setkey(output$score,model)
                     }
                     return(output)
                 }
-
                 # }}}
             })
             names(crossvalPerf) <- metrics
@@ -1641,7 +1633,6 @@ Score.list <- function(object,
             cat("\n")
         }
         # }}}
-
         # {{{ collect data for plotRisk
         if ("risks"%in% summary){
             crossvalPerf[["risks"]]$score <- DT.B[,{
@@ -1672,13 +1663,11 @@ Score.list <- function(object,
             if (cens.type=="rightCensored")
                 crossvalPerf[["Calibration"]]$plotframe <- merge(jack,crossvalPerf[["Calibration"]]$plotframe,by=c("ID","times"))
         }
-
         # }}}
     }
     # }}}
     #------------------output-----------------------------------
     # {{{ enrich the output object
-    
     if (split.method$internal.name=="noplan"){
         if (keep.residuals==TRUE){
             noSplit$Brier$residuals[,model:=factor(model,levels=mlevs,mlabels)]
@@ -1732,7 +1721,6 @@ Score.list <- function(object,
                             summary=summary,
                             missing.predictions=missing.predictions,
                             call=theCall))
-    
     for (p in c(plots)){
         output[[p]]$plotmethod <- p
         class(output[[p]]) <- paste0("score",p)
@@ -1743,8 +1731,7 @@ Score.list <- function(object,
     }
     class(output) <- "Score"
     output
-
-# }}}
+    # }}}
 }
 
 ##' @export

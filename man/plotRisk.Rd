@@ -5,7 +5,7 @@
 \title{plot predicted risks}
 \usage{
 plotRisk(x, models, times, xlim = c(0, 1), ylim = c(0, 1), xlab, ylab,
-  col, pch = 1, cex = 1, ...)
+  col, pch = 3, cex = 1, preclipse = 0, ...)
 }
 \arguments{
 \item{x}{Object obtained with function \code{Score}}
@@ -28,6 +28,8 @@ the first (second) are shown along the x-axis (y-axis).}
 \item{pch}{point type}
 
 \item{cex}{point size}
+
+\item{preclipse}{Value between 0 and 1 defining the preclipse area}
 
 \item{...}{Used to control the subroutines: plot, axis, lines,
 barplot, legend. See \code{\link{SmartControl}}.}
