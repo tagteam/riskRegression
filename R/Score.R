@@ -545,8 +545,8 @@ Score.list <- function(object,
     }else{
         neworder <- 1:N
     }
-    # add ID variable for merging purposes and because output has long format
-    data[,ID:=1:N]
+    ## add ID variable for merging purposes and because output has long format
+    data[["ID"]]=1:N
     if (response.type=="binary"){
         data[,event:=factor(ReSpOnSe,
                             levels=1:(length(states)+1),
