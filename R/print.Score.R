@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: May 31 2016 (11:32) 
 ## Version: 
-## last-updated: Apr 15 2019 (07:26) 
+## last-updated: May 24 2019 (13:29) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 39
+##     Update #: 41
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -70,7 +70,7 @@ print.Score <- function(x,digits=3,...){
 #' @export
 print.scoreAUC <- function(x,B,digits=3,...){
     cat("\nResults by model:\n\n")
-    print(x$score,sortkey,digits=digits,...)
+    print(x$score,digits=digits,...)
     if (length(x$contrasts)>0){
         cat("\nResults of model comparisons:\n\n")
         print(x$contrasts,digits=digits,...)
@@ -90,12 +90,12 @@ print.scoreBrier <- function(x,B,digits=3,...){
 #' @method print scorerisks
 #' @export
 print.scorerisks <- function(x,B,digits=3,response.type,...){
-    setkeyv(x$score,c("times","risk"))
+    data.table::setkeyv(x$score,c("times","risk"))
     print(x$score,digits=digits)
     if ("times"%in%names(x$score))
-        print(dcast(x$score,times+ID~model,value.var="risk"))
+        print(data.table::dcast(x$score,times+ID~model,value.var="risk"))
     else
-        print(dcast(x$score,ID~model,value.var="risk"))
+        print(data.table::dcast(x$score,ID~model,value.var="risk"))
 }
 
 

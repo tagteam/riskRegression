@@ -25,8 +25,13 @@ predict.FGR <- function(object,newdata,times,...){
     ## EHF <- prodlim::model.design(rhs,
                                  ## newdata,
                                  ## dropIntercept=TRUE,
-                                 ## specialsDesign=TRUE)
-    EHF <- prodlim::EventHistory.frame(formula(object$terms),
+    ## specialsDesign=TRUE)
+    ## need "response" to make EventHistory.frame work
+    ## but Score removes response for prediction
+    newdata$dummy.time=1
+    newdata$dummy.event=1
+    dummy.formula=stats::update.formula(rhs,"Hist(dummy.time,dummy.event)~.")
+    EHF <- prodlim::EventHistory.frame(dummy.formula,
                                        data=newdata,
                                        specials=c("cov1","cov2"),
                                        stripSpecials=c("cov1","cov2"),

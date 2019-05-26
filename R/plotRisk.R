@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Mar 13 2017 (16:53) 
 ## Version: 
-## Last-Updated: Apr 17 2019 (17:56) 
+## Last-Updated: May 24 2019 (13:50) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 73
+##     Update #: 75
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -50,7 +50,7 @@
 ##' cox1 = coxph(Surv(time,event)~X1+X2+X7+X9,data=learndat,x=TRUE)
 ##' cox2 = coxph(Surv(time,event)~X3+X5+X6,data=learndat,x=TRUE)
 ##' xs=Score(list("Cox(X1+X2+X7+X9)"=cox1,"Cox(X3+X5+X6)"=cox2),formula=Surv(time,event)~1,
-##'          data=testdat,summary="risks",null.model=0L)
+##'          data=testdat,summary="risks",null.model=0L,times=c(3,5,6))
 ##' plotRisk(xs,times=5)
 ##' 
 ##' @export 
@@ -112,9 +112,9 @@ plotRisk <- function(x,
     if (missing(xlab)) xlab <- paste0("Risk (%, ",modelnames[1],")")
     if (missing(ylab)) ylab <- paste0("Risk (%, ",modelnames[2],")")
     if (x$response.type=="binary"){
-        ppframe <- dcast(pframe,ID~model,value.var="risk")
+        ppframe <- data.table::dcast(pframe,ID~model,value.var="risk")
     }else{
-        ppframe <- dcast(pframe,times+ID~model,value.var="risk")
+        ppframe <- data.table::dcast(pframe,times+ID~model,value.var="risk")
     }
     pred.m1 <- ppframe[[m1]]
     pred.m2 <- ppframe[[m2]]

@@ -431,7 +431,7 @@ Score.list <- function(object,
         cens.model <- censModel
     }
 
-    se.conservative=IF.AUC.conservative=IF.AUC0=IF.AUC=IC0=Brier=AUC=casecontrol=se=nth.times=time=status=ID=WTi=ID=risk=IF.Brier=lower=upper=crossval=b=time=status=model=reference=p=model=pseudovalue=ReSpOnSe=residuals=event=j=NULL
+    se.conservative=IF.AUC.conservative=IF.AUC0=IF.AUC=IC0=Brier=AUC=casecontrol=se=nth.times=time=status=ID=WTi=risk=IF.Brier=lower=upper=crossval=b=time=status=model=reference=p=model=pseudovalue=ReSpOnSe=residuals=event=j=NULL
 
     # }}}
     theCall <- match.call()
@@ -535,7 +535,8 @@ Score.list <- function(object,
         nullobject <- NULL
     }
     ## put ReSpOnSe for binary and (time, event, status) in the first column(s) 
-    ## data[,eval(responsevars):=NULL]
+    ## but first remove pre-existing variables with same name(s)
+    data[,eval(responsevars):=NULL]
     data <- cbind(response,data)
     N <- NROW(data)
     # data have to be ordered when ipcw is called

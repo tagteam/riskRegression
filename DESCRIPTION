@@ -2,7 +2,7 @@ Package: riskRegression
 Type: Package
 Title: Risk Regression Models and Prediction Scores for Survival Analysis with
     Competing Risks
-Version: 2019.05.21
+Version: 2019.05.26
 Authors@R: c(person("Thomas Alexander", "Gerds", role = c("aut", "cre"),
                     email = "tag@biostat.ku.dk"),
              person("Paul", "Blanche", role = "ctb"),
@@ -45,7 +45,8 @@ Suggests:
     randomForestSRC,
     rbenchmark,
     rpart,
-    testthat
+    testthat,
+    R.rsp
 Maintainer: Thomas Alexander Gerds <tag@biostat.ku.dk>
 Description: Implementation of the following methods for event history analysis.
     Risk regression models for survival endpoints also in the presence of competing
@@ -62,3 +63,4 @@ Description: Implementation of the following methods for event history analysis.
     compares the performance across splits.
 License: GPL (>= 2)
 RoxygenNote: 6.1.1
+VignetteBuilder: R.rsp
