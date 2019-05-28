@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne, Thomas A. Gerds
 ## Created: jun 27 2018 (17:47) 
 ## Version: 
-## Last-Updated: maj  6 2019 (14:08) 
-##           By: Brice Ozenne
-##     Update #: 1222
+## Last-Updated: May 28 2019 (17:37) 
+##           By: Thomas Alexander Gerds
+##     Update #: 1228
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -102,7 +102,7 @@ ateRobust <- function(data, times, cause, type,
         stop("Variable \"",treatment,"\" not found in data \n")
     }
     if(!is.factor(data[[treatment]])){
-        data[, c(treatment) := as.factor(.SD[[treatment]])]
+        data[, c(treatment) := as.factor(.SD[[1]]),.SDcols=treatment]
     }
     level.treatment <- levels(data[[treatment]])
     if(length(level.treatment)!=2){
@@ -179,8 +179,8 @@ ateRobust <- function(data, times, cause, type,
     
     ## ** prepare dataset
     ## convert to binary
-    data[, c("treatment.bin1") := as.numeric(as.factor(.SD[[treatment]]))-1]
-    data[, c("treatment.bin0") := 1 - .SD$treatment.bin1]
+    data[, c("treatment.bin1") := as.numeric(as.factor(.SD[[1]]))-1,.SDcols=treatment]
+    data[, c("treatment.bin0") := 1 - .SD[[1]],.SDcols="treatment.bin1"]
 
     ## counterfactual
     data0 <- copy(data)
@@ -236,7 +236,7 @@ ateRobust <- function(data, times, cause, type,
 
     ## *** treatment model: proba
     data[, c("prob.treatment1") := predict(model.treatment, newdata = data, type = "response", se = FALSE)]
-    data[, c("prob.treatment0") := 1-.SD$prob.treatment1]
+    data[, c("prob.treatment0") := 1-.SD[[1]],.SDcols="prob.treatment1"]
     ## if(stabilizing.weight){
     ## model.treatment0 <- do.call(glm, args = list(formula = update(formula.treatment,".~1"), data = data, family = stats::binomial(link = "logit")))
     ## data[, c("stabilizing.treatment0") := predict(model.treatment0, newdata = data, type = "response", se = FALSE)]

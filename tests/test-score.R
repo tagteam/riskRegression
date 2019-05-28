@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jan  4 2016 (14:30) 
 ## Version: 
-## last-updated: May 25 2019 (13:58) 
+## last-updated: May 27 2019 (07:58) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 128
+##     Update #: 129
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -31,7 +31,7 @@ test_that("R squared/IPA", {
     r1 <- rsquared(f1,newdata=d)
     r2 <- IPA(f2,newdata=d)
     full <- Score(list(f1=f1,f2=f2),formula=Y~1,data=d,conf.int=TRUE,summary=c("RR"),plots="ROC")
-    expect_equal(r1$IPA.gain[1],full$Brier$score[model=="f1",IPA])
+    expect_equal(r1$IPA.loss[1],full$Brier$score[model=="f1",IPA])
     expect_equal(r2$IPA[2],full$Brier$score[model=="f2",IPA])
 })
 

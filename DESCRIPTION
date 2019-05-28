@@ -2,7 +2,7 @@ Package: riskRegression
 Type: Package
 Title: Risk Regression Models and Prediction Scores for Survival Analysis with
     Competing Risks
-Version: 2019.05.26
+Version: 2019.05.28
 Authors@R: c(person("Thomas Alexander", "Gerds", role = c("aut", "cre"),
                     email = "tag@biostat.ku.dk"),
              person("Paul", "Blanche", role = "ctb"),
@@ -12,22 +12,22 @@ Authors@R: c(person("Thomas Alexander", "Gerds", role = c("aut", "cre"),
 Depends:
     R (>= 3.5.0),
 Imports:
-    data.table (>= 1.10.4),
-    ggplot2 (>= 2.1.0),
-    prodlim (>= 1.6.1),
+    data.table (>= 1.12.2),
+    ggplot2 (>= 3.1.0),
+    prodlim (>= 2018.4.18),
     doParallel,
     stats,
     graphics,
-    survival (>= 2.40.1),
-    lava (>= 1.4.7),
+    survival (>= 2.44.1),
+    lava (>= 1.6.5),
     cmprsk,
     plotrix,
-    timereg (>= 1.9.1),
+    timereg (>= 1.9.3),
     foreach,
     ranger,
     parallel,
     Rcpp,
-    rms (>= 5.0-0)
+    rms (>= 5.1.3)
 LinkingTo: Rcpp, RcppArmadillo
 Suggests:
     boot,
