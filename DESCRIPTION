@@ -31,6 +31,7 @@ Imports:
 LinkingTo: Rcpp, RcppArmadillo
 Suggests:
     boot,
+    Publish,
     smcfcs,
     CoxBoost,
     ipw,

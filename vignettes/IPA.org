@@ -182,7 +182,7 @@ IPA(lrfit.inc,newdata=astest)
 
 #+RESULTS[<2019-05-29 07:28:39> 0a14f54e5393497b5ed8baf2e0ffce5d57ed4e7f]:
 #+begin_example
-    Variable     Brier        IPA        IPA.loss
+    Variable     Brier        IPA        IPA.drop
 1 Null model 0.1523438 0.00000000  0.072907470973
 2 Full model 0.1412368 0.07290747  0.000000000000
 3        age 0.1410426 0.07418209 -0.001274618360
@@ -288,7 +288,7 @@ IPA(coxfit.inc,newdata=astest,times=3)
 
 #+RESULTS[<2019-05-29 07:35:20> f4b18b24db785e34b067d3c4ce6c02234098476e]:
 #+begin_example
-    Variable times     Brier       IPA      IPA.loss
+    Variable times     Brier       IPA      IPA.drop
 1 Null model     3 0.2395320 0.0000000  0.1708698205
 2 Full model     3 0.1986032 0.1708698  0.0000000000
 3        age     3 0.1972558 0.1764950 -0.0056252214
@@ -412,7 +412,7 @@ IPA(cscfit.inc,newdata=astest,times=3)
 
 #+RESULTS[<2019-05-29 07:28:40> 3c35cfc9e150c201ca36c34c13353d76b053d7ba]:
 #+begin_example
-    Variable times     Brier        IPA     IPA.loss
+    Variable times     Brier        IPA     IPA.drop
 1 Null model     3 0.2445718 0.00000000  0.175254870
 2 Full model     3 0.2017094 0.17525487  0.000000000
 3        age     3 0.2005925 0.17982131 -0.004566441
