@@ -31,13 +31,13 @@
 #' @references
 #' B. Ozenne, A. L. Soerensen, T.H. Scheike, C.T. Torp-Pedersen,
 #' and T.A. Gerds. riskregression: Predicting the risk
-#' of an event using cox regression models. R Journal, 9(2):440--460, 2017.
+#' of an event using Cox regression models. R Journal, 9(2):440--460, 2017.
 #' 
 #' J Benichou and Mitchell H Gail. Estimates of absolute cause-specific risk
 #' in cohort studies. Biometrics, pages 813--826, 1990.
 #'
 #' T.A. Gerds, T.H. Scheike, and P.K. Andersen. Absolute risk regression for
-#' competing risks: interpretation, link functions, and prediction. Statistics
+#' competing risks: Interpretation, link functions, and prediction. Statistics
 #' in Medicine, 31(29):3921--3930, 2012.
 #' 
 #' @seealso \code{\link{coxph}}
