@@ -36,7 +36,8 @@
 #' predictRisk.pecCforest predictRisk.prodlim predictRisk.psm
 #' predictRisk.selectCox predictRisk.survfit predictRisk.randomForest
 #' predictRisk.lrm predictRisk.glm
-#' predictRisk.rpart
+#' predictRisk.rpart predictRisk.gbm
+#' predictRisk.flexsurvreg
 #' @usage
 #' \method{predictRisk}{glm}(object,newdata,...)
 #' \method{predictRisk}{cox.aalen}(object,newdata,times,...)
@@ -51,6 +52,8 @@
 #' \method{predictRisk}{rfsrc}(object,newdata,times,cause,...)
 #' \method{predictRisk}{FGR}(object,newdata,times,cause,...)
 #' \method{predictRisk}{CauseSpecificCox}(object,newdata,times,cause,...)
+#' \method{predictRisk}{gbm}(object,newdata,times,n.trees,...)
+#' \method{predictRisk}{flexsurvreg}(object,newdata,times,...)
 #' @param object A fitted model from which to extract predicted event
 #' probabilities
 #' @param newdata A data frame containing predictor variable combinations for
@@ -899,7 +902,7 @@ predictRisk.SuperPredictor  <- function(object,newdata,...){
 
 ##' @export 
 predictRisk.gbm <- function(object, newdata, times, n.trees = NULL) {
- traindata <-  reconstructGBMdata(object)
+    traindata <-  reconstructGBMdata(object)
     if (is.null(n.trees)) n.trees <- object$n.trees
     p <- matrix(0, NROW(newdata), length(times))
     xb.train <- predict(object ,newdata = traindata, n.trees = n.trees)
@@ -913,8 +916,6 @@ predictRisk.gbm <- function(object, newdata, times, n.trees = NULL) {
 }
 ##' @export 
 predictRisk.flexsurvreg <- function(object, newdata, times, ...) {
-    require(dummies)
-    require(flexsurv)
     newdata <- data.frame(newdata)
     p <- matrix(0, NROW(newdata), length(times))
     term <- attr(terms(as.formula(object$call$formula)), "term.labels")
