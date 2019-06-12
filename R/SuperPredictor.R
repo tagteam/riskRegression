@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Mar  6 2019 (18:22) 
 ## Version: 
-## Last-Updated: Mar  9 2019 (09:59) 
+## Last-Updated: Jun 11 2019 (10:26) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 5
+##     Update #: 6
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -30,6 +30,7 @@
 ##' d = sampleData(338, outcome="binary")
 ##' spfit = SuperPredictor(Y~X1+X2+X3+X4+X5+X6+X7+X8+X9+X10,data=d)
 ##' predictRisk(spfit)
+##' x <- Score(sp)
 ##' @export 
 SuperPredictor <- function(formula,data,family="binomial",SL.library=c("SL.glm","SL.glm.interaction","SL.ranger"),...){
     vv <- all.vars(formula)

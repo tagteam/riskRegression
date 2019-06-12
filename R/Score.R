@@ -564,7 +564,10 @@ Score.list <- function(object,
     # }}}
     # {{{ SplitMethod & parallel stuff
     if (!missing(seed)) set.seed(seed)
-    split.method <- getSplitMethod(split.method=split.method,B=B,N=N,M=M)
+    split.method <- getSplitMethod(split.method=split.method,
+                                   B=B,
+                                   N=N,
+                                   M=M)
     B <- split.method$B
     splitIndex <- split.method$index
     do.resample <- !(is.null(splitIndex))
@@ -1562,7 +1565,7 @@ Score.list <- function(object,
                 DT.b <- DT.B[b==j]
                 N.b <- length(unique(DT.b[["ID"]]))
                 if(!is.null(progress.bar)){
-                    message("Running crossvalidation ...")
+                    ## message("Running crossvalidation ...")
                     setTxtProgressBar(pb, b)
                 }
                 computePerformance(DT.b,
