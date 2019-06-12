@@ -5,13 +5,12 @@
 ##' @param object risk prediction model object
 ##' @param formula formula 
 ##' @param data data
-##' @param horizon time point
-##' @param cause cause of interst
+##' @param times prediction horizon time point for survival models
+##' @param cause cause of interest for competing risk models
 ##' @param ... passed to lattice::levelplot
 ##' @examples
 ##' 
 ##' # ---------- logistic regression --------------------
-##' library(ModelGood)
 ##' expit <- function(x){exp(x)/(1+exp(x))}
 ##' partyData <- function(N){
 ##'   Age <- runif(N,.5,15)
@@ -21,7 +20,10 @@
 ##' }
 ##' d <- partyData(100)
 ##' f <- glm(Fever~Age+Parasites,data=d,family="binomial")
-##' riskLevelPlot(f,Fever~Age+Parasites,d)
+##' riskLevelPlot(f,Fever~Age+Parasites,data=d)
+##' library(party)
+##' ct <- ctree(Fever~Age+Parasites,data=d)
+##' riskLevelPlot(ct,Fever~Age+Parasites,d)
 ##' library(randomForest)
 ##' rf <- randomForest(Fever~Age+Parasites,data=d)
 ##' riskLevelPlot(f,Fever~Age+Parasites,d)
@@ -104,6 +106,7 @@ riskLevelPlot <- function(object,
         form[[2]][[1]] <- as.name("Hist")
     }
     m <- model.frame(form,data,na.action=na.fail)
+    
     response <- stats::model.response(m)
                                         # }}}
                                         # {{{ Risk factors and grid sides
@@ -124,10 +127,10 @@ riskLevelPlot <- function(object,
     names(newData) <- riskfactors
                                         # }}}
                                         # {{{ Predict grid probabilities z
-    z <- do.call(predictRisk,list(object=object,
-                                  newdata=newData,
-                                  times=horizon,
-                                  cause=cause))
+    pr.args <- list(object=object,newdata=newData)
+    if (horizon)
+times=horizon,cause=cause)
+    z <- do.call(predictRisk,pr.args)
                                         # }}}  
                                         # ----------------------------copy/pasted----------------------------
                                         # {{{ Find the limits of z
