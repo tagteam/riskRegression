@@ -856,7 +856,6 @@ Score.list <- function(object,
             trainX <- traindata[,-c(1:response.dim),with=FALSE]
             trainX[,ID:=NULL]
         }
-        print(mlevs)
         pred <- data.table::rbindlist(lapply(mlevs, function(f){
             if (f[1]>0 && (length(extra.args <- unlist(lapply(object.classes[[f]],function(cc){predictRisk.args[[cc]]})))>0)){
                 args <- c(args,extra.args)
@@ -877,7 +876,6 @@ Score.list <- function(object,
             }else{
                 # predictions given as model which needs training in crossvalidation loops
                 if (looping){
-                    # browser()
                     set.seed(trainseed)
                     if (f==0) model.f=nullobject[[1]] else model.f=object[[f]]
                     model.f$call$data <- trainX

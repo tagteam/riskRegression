@@ -43,7 +43,7 @@ Setup data
 :END:
 
 
-Does some weird thing with =split.method = "bootcv"=.
+Does some weird thing when simply putting =split.method = "bootcv"=:
 
 #+BEGIN_SRC R  :results verbatim output  :exports both  :session *R* :cache yes
   Score(list("Exclusive ERG"=lrfit.ex,"Inclusive ERG"=lrfit.inc),data=astest,
@@ -62,12 +62,15 @@ Does some weird thing with =split.method = "bootcv"=.
 : Error in eval(predvars, data, env) : object 'Y1' not found
 : Error in { : task 1 failed - ""
 
-
+Error seems to be caused by line 880:
+#+BEGIN_SRC R  :results silent  :exports code  :session *R* :cache yes
+if (f==0) model.f=nullobject[[1]] else model.f=object[[f]]
+#+END_SRC
+because it =Y= is not in the nullmodel. Not sure what /should/ happen here.
 
 
 #+BEGIN_SRC R  :results output raw drawer  :exports results  :session *R* :cache yes
   X1 <- Score(list("Exclusive ERG"=lrfit.ex,"Inclusive ERG"=lrfit.inc),data=astest,
-	      formula=Y1~1,summary="ipa",se.fit=0L,metrics="brier",contrasts=FALSE,
-	      split.method = "bootcv", B=3)
+	      formula=Y1~1,summary="ipa",se.fit=0L,metrics="brier",contrasts=FALSE)
 
 #+END_SRC
