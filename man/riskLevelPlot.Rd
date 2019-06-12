@@ -14,11 +14,11 @@ riskLevelPlot(object, formula, data = parent.frame(), horizon = NULL,
 
 \item{data}{data}
 
-\item{horizon}{time point}
-
-\item{cause}{cause of interst}
+\item{cause}{cause of interest for competing risk models}
 
 \item{...}{passed to lattice::levelplot}
+
+\item{times}{prediction horizon time point for survival models}
 }
 \description{
 Level plots for predicted risks
@@ -29,7 +29,6 @@ Level plots for predicted risks
 \examples{
 
 # ---------- logistic regression --------------------
-library(ModelGood)
 expit <- function(x){exp(x)/(1+exp(x))}
 partyData <- function(N){
   Age <- runif(N,.5,15)
@@ -39,7 +38,10 @@ partyData <- function(N){
 }
 d <- partyData(100)
 f <- glm(Fever~Age+Parasites,data=d,family="binomial")
-riskLevelPlot(f,Fever~Age+Parasites,d)
+riskLevelPlot(f,Fever~Age+Parasites,data=d)
+library(party)
+ct <- ctree(Fever~Age+Parasites,data=d)
+riskLevelPlot(ct,Fever~Age+Parasites,d)
 library(randomForest)
 rf <- randomForest(Fever~Age+Parasites,data=d)
 riskLevelPlot(f,Fever~Age+Parasites,d)

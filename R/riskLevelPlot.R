@@ -128,8 +128,7 @@ riskLevelPlot <- function(object,
                                         # }}}
                                         # {{{ Predict grid probabilities z
     pr.args <- list(object=object,newdata=newData)
-    if (horizon)
-times=horizon,cause=cause)
+    ## if (horizon) times=horizon,cause=cause)
     z <- do.call(predictRisk,pr.args)
                                         # }}}  
                                         # ----------------------------copy/pasted----------------------------
