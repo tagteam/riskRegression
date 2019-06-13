@@ -1,0 +1,76 @@
+#+TITLE: Testing k-fold CV
+#+OPTIONS: H:3 num:t toc:nil \n:nil @:t ::t |:t ^:t -:t f:t *:t <:t
+#+OPTIONS: TeX:t LaTeX:t skip:nil d:t todo:t pri:nil tags:not-in-toc author:nil
+#+LaTeX_CLASS: org-article
+#+LaTeX_HEADER:\usepackage{authblk}
+#+LaTeX_HEADER:\usepackage{natbib}
+#+LaTeX_HEADER:\author{Anders Munch}
+#+LaTeX_HEADER:\affil{University of Copenhagen, Department of Public Health, Section of Biostatistics, Copenhagen, Denmark}
+
+
+* Testing
+Copy/paste some functionality form other vignette.
+
+Packages and source for reloading after edits.
+#+BEGIN_SRC R  :results output raw drawer  :exports silent  :session *R* :cache yes
+  library(riskRegression)
+  library(data.table)
+  library(Publish)
+  source("./R/getNullModel.R")
+  source("./R/getResponse.R")
+  source("./R/Score.R")
+
+#+END_SRC
+
+#+RESULTS[<2019-06-11 17:11:09> 032a2ee58256c272904793dfebd5a32f82e88591]:
+:RESULTS:
+:END:
+
+
+Setup data
+#+BEGIN_SRC R  :results output raw drawer  :exports code  :session *R* :cache yes
+  set.seed(18)
+  astrain <- simActiveSurveillance(278)
+  astest <- simActiveSurveillance(208)
+  astrain[,Y1:=1*(event==1 & time<=1)]
+  astest[,Y1:=1*(event==1 & time<=1)]
+  lrfit.ex <- glm(Y1~age+lpsaden+ppb5+lmax+ct1+diaggs,data=astrain,family="binomial")
+  lrfit.inc <- glm(Y1~age+lpsaden+ppb5+lmax+ct1+diaggs+erg.status,data=astrain,family="binomial")
+#+END_SRC
+
+#+RESULTS[<2019-06-11 17:10:32> d42bd03051fd4b36155783dfceaa8621ff828894]:
+:RESULTS:
+:END:
+
+
+Does some weird thing when simply putting =split.method = "bootcv"=:
+
+#+BEGIN_SRC R  :results verbatim output  :exports both  :session *R* :cache yes
+  Score(list("Exclusive ERG"=lrfit.ex,"Inclusive ERG"=lrfit.inc),data=astest,
+	formula=Y1~1,summary="ipa",se.fit=0L,metrics="brier",contrasts=FALSE,
+	split.method = "bootcv",
+	B=3) # Setting B=3 only to make small output
+#+END_SRC
+
+#+RESULTS[<2019-06-11 17:17:25> c5d9338c8c6008d9f61a20be99afca2a6656f34d]:
+: Running crossvalidation ...
+:   |                                                                              |                                                                      |   0%  |                                                                              |=======================                                               |  33%Failed to fit model 0 in cross-validation step 1:
+: Error in eval(predvars, data, env) : object 'Y1' not found
+:   |                                                                              |===============================================                       |  67%Failed to fit model 0 in cross-validation step 2:
+: Error in eval(predvars, data, env) : object 'Y1' not found
+:   |                                                                              |======================================================================| 100%Failed to fit model 0 in cross-validation step 3:
+: Error in eval(predvars, data, env) : object 'Y1' not found
+: Error in { : task 1 failed - ""
+
+Error seems to be caused by line 880:
+#+BEGIN_SRC R  :results silent  :exports code  :session *R* :cache yes
+if (f==0) model.f=nullobject[[1]] else model.f=object[[f]]
+#+END_SRC
+because it =Y= is not in the nullmodel. Not sure what /should/ happen here.
+
+
+#+BEGIN_SRC R  :results output raw drawer  :exports results  :session *R* :cache yes
+  X1 <- Score(list("Exclusive ERG"=lrfit.ex,"Inclusive ERG"=lrfit.inc),data=astest,
+	      formula=Y1~1,summary="ipa",se.fit=0L,metrics="brier",contrasts=FALSE)
+
+#+END_SRC

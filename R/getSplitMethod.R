@@ -6,13 +6,13 @@
 ##' \item{"loob"} leave one out bootstrap
 ##' \item{"bootcv"} bootstrap cross validation
 ##' \item{"cv5"} 5-fold cross validation
-##' \item{"loocv"} leave one out cross validation aka N-1 fold cross validation 
+##' \item{"loocv"} leave one out cross validation aka N-1 fold cross validation
 ##' \item{"632plus"} Efron's .632+ bootstrap
 ##' }
 ##' @param B Number of repetitions of bootstrap or k-fold cross-validation
 ##' @param N Sample size
 ##' @param M Subsample size. Default is N (no subsampling).
-##' @param seed Integer passed to set.seed. If not given or NA no seed is set. 
+##' @param seed Integer passed to set.seed. If not given or NA no seed is set.
 ##' @return A list with the following elements:
 ##' \itemize{
 ##' \item{split.methodName}: the print name of the algorithm
@@ -34,8 +34,8 @@
 ##'
 ##' # bootstrap without replacement
 ##' getSplitMethod("loob",B=4,N=37,M=20)
-##' 
-##' @export 
+##'
+##' @export
 ##' @author Thomas A. Gerds <tag@@biostat.ku.dk>
 getSplitMethod <- function(split.method,B,N,M,seed){
     if (!missing(seed) && !is.null(seed) && !is.na(seed[[1]])) set.seed(seed)
@@ -63,7 +63,7 @@ getSplitMethod <- function(split.method,B,N,M,seed){
             k <- N-1
             B <- 1
         }
-    }  
+    }
     ## resample or subsample bootstrap
     if(length(grep("^boot",split.method,value=FALSE,ignore.case=TRUE))>0){
         split.method <- "BootCv"
@@ -83,14 +83,14 @@ getSplitMethod <- function(split.method,B,N,M,seed){
         }
     }
     ## default is leave one out bootstrap
-    ## if ((length(grep("looboot|loob|leaveoneoutb",split.method,value=FALSE,ignore.case=TRUE))>0) || 
+    ## if ((length(grep("looboot|loob|leaveoneoutb",split.method,value=FALSE,ignore.case=TRUE))>0) ||
     if (!(split.method %in% c("noplan","crossval","loocv","BootCv","Boot632","Boot632plus"))){
         split.method <- "LeaveOneOutBoot"
         split.methodName <- "LeaveOneOutBoot"
         if (missing(B)) B <- 100
     }
     if (missing(M)) M <- N
-    stopifnot(M[[1]]>0 && M[[1]]<=N[[1]]) 
+    stopifnot(M[[1]]>0 && M[[1]]<=N[[1]])
     subsampling <- M!=N
     if (M<1) M <- round(M*N)
     ResampleIndex <- switch(split.method,
@@ -100,7 +100,7 @@ getSplitMethod <- function(split.method,B,N,M,seed){
                             "noplan"={
                                 NULL
                             },
-                            "crossval"={ 
+                            "crossval"={
                                 do.call("cbind",lapply(1:B,function(b){sample(rep(1:k,length.out=N))}))
                             },
                             { ## default is bootstrap
