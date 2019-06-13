@@ -1575,7 +1575,6 @@ Score.list <- function(object,
                 DT.b <- DT.B[b==j]
                 N.b <- length(unique(DT.b[["ID"]]))
                 if(!is.null(progress.bar)){
-                    message("Running crossvalidation ...")
                     setTxtProgressBar(pb, b)
                 }
                 computePerformance(DT.b,

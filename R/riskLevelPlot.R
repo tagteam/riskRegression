@@ -70,7 +70,6 @@ riskLevelPlot <- function(object,
                           ## colorkey=TRUE, Add to option? default now =TRUE
                           ...){
                                         # {{{ Call
-    require(lattice)
     call <- match.call()
     formula.names <- try(all.names(formula),silent=TRUE)
                                         # }}}

@@ -48,7 +48,6 @@ Suggests:
     rbenchmark,
     rpart,
     testthat,
-    lattice,
     R.rsp
 Maintainer: Thomas Alexander Gerds <tag@biostat.ku.dk>
 Description: Implementation of the following methods for event history analysis.

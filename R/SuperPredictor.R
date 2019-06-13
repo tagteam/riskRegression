@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Mar  6 2019 (18:22) 
 ## Version: 
-## Last-Updated: Jun 11 2019 (10:26) 
+## Last-Updated: Jun 13 2019 (10:48) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 6
+##     Update #: 7
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -25,12 +25,14 @@
 ##' @param SL.library the SuperLearner libraries
 ##' @param ... passed to SuperLearner::SuperLearner
 ##' @examples
+##' \dontrun{
 ##' library(SuperLearner)
 ##' library(data.table)
 ##' d = sampleData(338, outcome="binary")
 ##' spfit = SuperPredictor(Y~X1+X2+X3+X4+X5+X6+X7+X8+X9+X10,data=d)
 ##' predictRisk(spfit)
-##' x <- Score(sp)
+##' x <- Score(list(spfit),data=d,formula=Y~1)
+##' }
 ##' @export 
 SuperPredictor <- function(formula,data,family="binomial",SL.library=c("SL.glm","SL.glm.interaction","SL.ranger"),...){
     vv <- all.vars(formula)

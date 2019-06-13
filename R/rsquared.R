@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Aug  9 2017 (10:36) 
 ## Version: 
-## Last-Updated: May 30 2019 (08:22) 
+## Last-Updated: Jun 13 2019 (11:01) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 149
+##     Update #: 152
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -164,6 +164,8 @@ rsquared.CauseSpecificCox <- function(object,formula,newdata,times,cause,...){
     }
     if (missing(newdata)) newdata=eval(object$call$data)
     if (missing(formula)) formula=eval(object$call$formula)
+    ## CSC may have two formulas
+    if (is.list(formula)) formula=formula[[1]]
     r2 <- Score(c("Full model"=list(object),leaveOneOut),
                 formula=formula,
                 data=newdata,
