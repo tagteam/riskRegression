@@ -14,11 +14,11 @@ riskLevelPlot(object, formula, data = parent.frame(), horizon = NULL,
 
 \item{data}{data}
 
-\item{cause}{cause of interest for competing risk models}
+\item{horizon}{time point}
+
+\item{cause}{cause of interst}
 
 \item{...}{passed to lattice::levelplot}
-
-\item{times}{prediction horizon time point for survival models}
 }
 \description{
 Level plots for predicted risks
@@ -38,10 +38,7 @@ partyData <- function(N){
 }
 d <- partyData(100)
 f <- glm(Fever~Age+Parasites,data=d,family="binomial")
-riskLevelPlot(f,Fever~Age+Parasites,data=d)
-library(party)
-ct <- ctree(Fever~Age+Parasites,data=d)
-riskLevelPlot(ct,Fever~Age+Parasites,d)
+riskLevelPlot(f,Fever~Age+Parasites,d)
 library(randomForest)
 rf <- randomForest(Fever~Age+Parasites,data=d)
 riskLevelPlot(f,Fever~Age+Parasites,d)
@@ -54,25 +51,15 @@ riskLevelPlot(rf,Fever~Age+Parasites,d)
 
 library(survival)
 library(prodlim)
-survData <- function( N ){
-  sdata <- SimSurv( N )
-  sdata$X3 <- rnorm(N)
-  sdata
-}
 set.seed(140515)
-sdat <- survData(100)
-sdat <- sampleData(100,outcome="survival")
+sdat <- sampleData(43,outcome="survival")
 # -- fit a Cox regression model 
-survForm = Surv(time,event) ~ X7 + X8
+survForm = Surv(time,event) ~ X8 + X9
 cox <- coxph(survForm, data = sdat,x=TRUE)
 
 # --choose a time horizon for the predictions and plot the risks
 timeHorizon <- floor(median(sdat$time))
 riskLevelPlot(cox, survForm, data = sdat, horizon = timeHorizon)
-
-survForm2 = Surv(time,status) ~ strata(X1) + X2 + X3
-cox2 <- coxph(survForm2, data = sdat)
-riskLevelPlot(cox2, survForm2, data = sdat, horizon = timeHorizon)
 
 # ---------- competing risks --------------------
 
@@ -80,16 +67,11 @@ riskLevelPlot(cox2, survForm2, data = sdat, horizon = timeHorizon)
 # with competing cause response and three predictors
 library(cmprsk)
 library(riskRegression)
-compRiskData <- function( N ){
-  crdata <- SimCompRisk( N )
-  crdata$X3 <- rnorm(N)
-  crdata
-}
 set.seed(140515)
-crdat <- compRiskData(1000)
+crdat <- sampleData(49)
 
 # -- fit a cause-specific Cox regression model
-crForm <- Hist(time,event)~X2+X3
+crForm <- Hist(time,event)~X8+X9
 csCox  <- CSC(crForm, data=crdat)
 
 # -- choose a time horizon and plot the risk for a given cause

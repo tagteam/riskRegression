@@ -479,9 +479,9 @@ Score.list <- function(object,
         if (!("pseudo" %in% cens.method)) cens.method <- c(cens.method,"pseudo")
     }
 
-    # }}}
-    # -----------------parse other arguments and prepare data---------
-    # {{{ censoring model arguments
+                                        # }}}
+                                        # -----------------parse other arguments and prepare data---------
+                                        # {{{ censoring model arguments
     if (length(grep("^km|^kaplan|^marg",cens.model,ignore.case=TRUE))>0){
         cens.model <- "KaplanMeier"
     } else{
@@ -491,8 +491,8 @@ Score.list <- function(object,
             cens.model <- "KaplanMeier"
         }
     }
-    # }}}
-    # {{{ Response
+                                        # }}}
+                                        # {{{ Response
     if (missing(formula)){stop("Argument formula is missing.")}
     formula.names <- try(all.names(formula),silent=TRUE)
     if (!(formula.names[1]=="~")
@@ -528,22 +528,29 @@ Score.list <- function(object,
     }
     position.cause <- match(cause,states,nomatch=0)
     if (position.cause==0) stop(paste0("Requested cause: ",cause,". Available causes: ", paste(states,collapse=",")))
-    # add null model and find names for the object
+                                        # add null model and find names for the object
     if (null.model==TRUE){
         nullobject <- getNullModel(formula=formula,data=data,response.type=response.type)
     } else{
         nullobject <- NULL
     }
     ## put ReSpOnSe for binary and (time, event, status) in the first column(s)
-    ## but first remove pre-existing variables with same name(s)
-    data[,eval(responsevars):=NULL]
-    data <- cbind(response,data)
-    N <- NROW(data)
-    # data have to be ordered when ipcw is called
+    ## but first rename to avoid problems with pre-existing variables with same name(s)
+    ## data[,eval(responsevars):=NULL]
+                                        # data have to be ordered when ipcw is called
     if (response.type %in% c("survival","competing.risks")){
+        test.names <- match(colnames(response),names(data),nomatch=0)
+        if (sum(test.names)>0){
+            protected.names <- names(data)[test.names]
+            setnames(data,protected.names,paste0("protectedName.",protected.names))
+        }
+        data <- cbind(response,data)
+        N <- NROW(data)
         neworder <- data[,order(time,-status)]
         data.table::setorder(data,time,-status)
     }else{
+        data <- cbind(response,data)
+        N <- NROW(data)
         neworder <- 1:N
     }
     ## add ID variable for merging purposes and because output has long format
@@ -561,13 +568,10 @@ Score.list <- function(object,
     cens.type <- attr(response,"cens.type")
     if (is.null(cens.type)) cens.type <- "uncensored"
     rm(response)
-    # }}}
-    # {{{ SplitMethod & parallel stuff
+                                        # }}}
+                                        # {{{ SplitMethod & parallel stuff
     if (!missing(seed)) set.seed(seed)
-    split.method <- getSplitMethod(split.method=split.method,
-                                   B=B,
-                                   N=N,
-                                   M=M)
+    split.method <- getSplitMethod(split.method=split.method,B=B,N=N,M=M)
     B <- split.method$B
     splitIndex <- split.method$index
     do.resample <- !(is.null(splitIndex))
@@ -609,11 +613,11 @@ Score.list <- function(object,
             warning("Cannot (not yet) do ROC analysis in combination with internal validation\n. Check devtools::install_github('tagteam/riskRegression') for progress.")
         }
     }
-    # }}}
-    # {{{ Checking the ability of the elements of object to predict risks
-    # {{{ number of models and their labels
+                                        # }}}
+                                        # {{{ Checking the ability of the elements of object to predict risks
+                                        # {{{ number of models and their labels
     NF <- length(object)
-    # }}}
+                                        # }}}
     allmethods <- utils::methods(predictRisk)
     if (is.null(names(object))){
         names(object) <- sapply(object,function(o)class(o)[1])}
@@ -641,8 +645,8 @@ Score.list <- function(object,
                        sep=""))
         }
     })
-    # }}}
-    # {{{ additional arguments for predictRisk methods
+                                        # }}}
+                                        # {{{ additional arguments for predictRisk methods
     if (!missing(predictRisk.args)){
         if (!(all(names(predictRisk.args) %in% unlist(object.classes))))
             stop(paste0("Argument predictRisk.args should be a list whose names match the S3-classes of the argument object.
@@ -654,8 +658,8 @@ Score.list <- function(object,
     }else{
         predictRisk.args <- NULL
     }
-    # }}}
-    # {{{ add null model and check resampling ability
+                                        # }}}
+                                        # {{{ add null model and check resampling ability
     if (!is.null(nullobject)) {
         mlevs <- 0:NF
         mlabels <- c(names(nullobject),names(object))
@@ -670,8 +674,8 @@ Score.list <- function(object,
                 stop(paste("model",names(object)[f],"does not have a call argument."))
         })
     }
-    # }}}
-    # {{{ resolve keep statements
+                                        # }}}
+                                        # {{{ resolve keep statements
     if (!missing(keep) && is.character(keep)){
         if("residuals" %in% tolower(keep)) keep.residuals=TRUE else keep.residuals = FALSE
         if("vcov" %in% tolower(keep)) keep.vcov=TRUE else keep.vcov = FALSE
@@ -683,8 +687,8 @@ Score.list <- function(object,
         keep.cv=FALSE
         keep.splitindex=FALSE
     }
-    # }}}
-    # {{{ resolve se.fit and contrasts
+                                        # }}}
+                                        # {{{ resolve se.fit and contrasts
     if (missing(se.fit)){
         if (is.logical(conf.int)[[1]] && conf.int[[1]]==FALSE
             || conf.int[[1]]<=0
@@ -723,8 +727,8 @@ Score.list <- function(object,
             }
         }
     }
-    # }}}
-    # {{{ Evaluation landmarks and horizons (times)
+                                        # }}}
+                                        # {{{ Evaluation landmarks and horizons (times)
     if (response.type %in% c("survival","competing.risks")){
         ## in case of a tie, events are earlier than right censored
         eventTimes <- unique(data[,time])
@@ -767,9 +771,9 @@ Score.list <- function(object,
         times <- NULL
         NT <- 1
     }
-    # }}}
-    # -----------------Dealing with censored data outside the loop -----------------------
-    # {{{
+                                        # }}}
+                                        # -----------------Dealing with censored data outside the loop -----------------------
+                                        # {{{
     if (response.type %in% c("survival","competing.risks")){
         if (cens.type=="rightCensored"){
             if (se.fit[1]>0L && ("AUC" %in% metrics) && (conservative[1]==TRUE)) {
@@ -825,29 +829,31 @@ Score.list <- function(object,
     } else{
         Weights <- NULL
     }
-    # }}}
-    # -----------------performance program----------------------
-    # {{{ define getPerformanceData, setup data in long-format, response, pred, weights, model, times, loop
-    # {{{ header
+                                        # }}}
+                                        # -----------------performance program----------------------
+                                        # {{{ define getPerformanceData, setup data in long-format, response, pred, weights, model, times, loop
+                                        # {{{ header
     getPerformanceData <- function(testdata,
                                    testweights,
                                    traindata=NULL,
                                    trainseed=NULL){
         ID=NULL
-        # inherit everything else from parent frame: object, nullobject, NF, NT, times, cause, response.type, etc.
+                                        # inherit everything else from parent frame: object, nullobject, NF, NT, times, cause, response.type, etc.
         Brier=IPA=IBS=NULL
         looping <- !is.null(traindata)
         ## if (!looping) b=0
         N <- NROW(testdata)
-        # split data vertically into response and predictors X
+                                        # split data vertically into response and predictors X
         response <- testdata[,1:response.dim,with=FALSE]
         response[,ID:=testdata[["ID"]]]
         setkey(response,ID)
         X <- testdata[,-c(1:response.dim),with=FALSE]
+        ## restore sanity
+        setnames(X,sub("^protectedName.","",names(X)))
         if (debug) if (looping) message(paste0("Loop round: ",b))
         if (debug) message("extracted test set and prepared output object")
-        # }}}
-        # {{{ collect pred as long format data.table
+                                        # }}}
+                                        # {{{ collect pred as long format data.table
         args <- switch(response.type,"binary"={list(newdata=X)},
                        "survival"={list(newdata=X,times=times)},
                        "competing.risks"={list(newdata=X,times=times,cause=cause)},
@@ -857,6 +863,9 @@ Score.list <- function(object,
         ## the original response is still there
         if(!is.null(traindata)){
             trainX <- traindata[,-c(1:response.dim),with=FALSE]
+            ## restore sanity
+            setnames(trainX,sub("^protectedName.","",names(trainX)))
+            ## trainX <- copy(traindata)
             trainX[,ID:=NULL]
         }
         pred <- data.table::rbindlist(lapply(mlevs, function(f){
@@ -877,7 +886,7 @@ Score.list <- function(object,
                     p <- do.call("predictRisk", c(list(object=object[[f]]),args))[neworder]
                 }
             }else{
-                # predictions given as model which needs training in crossvalidation loops
+                                        # predictions given as model which needs training in crossvalidation loops
                 if (looping){
                     set.seed(trainseed)
                     if (f==0) model.f=nullobject[[1]] else model.f=object[[f]]
@@ -910,8 +919,8 @@ Score.list <- function(object,
             }
         }))
         if (debug) message("trained the model(s) and extracted the predictions")
-        # }}}
-        # {{{ merge with Weights (IPCW inner loop)
+                                        # }}}
+                                        # {{{ merge with Weights (IPCW inner loop)
         if (response.type %in% c("survival","competing.risks")){
             if (cens.type=="rightCensored"){
                 Weights <- testweights
@@ -943,14 +952,14 @@ Score.list <- function(object,
             Weights <- NULL
         }
         if (debug) message("added weights to predictions")
-        # }}}
-        # {{{ merge with response
+                                        # }}}
+                                        # {{{ merge with response
         DT=merge(response,pred,by="ID")
         DT
     }
-    # }}}
-    # }}}
-    # {{{ define function to test performance
+                                        # }}}
+                                        # }}}
+                                        # {{{ define function to test performance
     computePerformance <- function(DT,
                                    N,
                                    se.fit,
@@ -960,7 +969,7 @@ Score.list <- function(object,
                                    keep.residuals,
                                    keep.vcov){
         IPA=IBS=Brier=NULL
-        # inherit everything else from parent frame: summary, metrics, plots, alpha, probs, dolist, et
+                                        # inherit everything else from parent frame: summary, metrics, plots, alpha, probs, dolist, et
         out <- vector(mode="list",
                       length=length(c(summary,metrics,plots)))
         names(out) <- c(summary,metrics,plots)
@@ -980,7 +989,7 @@ Score.list <- function(object,
         if (response.type=="competing.risks") {
             input <- c(input,list(cause=cause,states=states))
         }
-        # {{{ collect data for summary statistics
+                                        # {{{ collect data for summary statistics
         for (s in summary){
             if (s=="risks") {
                 out[[s]] <- list(score=copy(input$DT)[,model:=factor(model,levels=mlevs,mlabels)],
@@ -996,8 +1005,8 @@ Score.list <- function(object,
                 }
             }
         }
-        # }}}
-        # {{{ collect data for calibration plots
+                                        # }}}
+                                        # {{{ collect data for calibration plots
         if ("Calibration" %in% plots){
             if (response.type[[1]]=="binary" || cens.type[[1]]=="uncensored")
                 out[["Calibration"]]$plotframe <- DT[model!=0]
@@ -1006,7 +1015,7 @@ Score.list <- function(object,
             }
             out[["Calibration"]]$plotframe[,model:=factor(model,levels=mlevs,mlabels)]
         }
-        # }}}
+                                        # }}}
         ## make sure that Brier score comes first, so that we can remove the null.model afterwards
         for (m in sort(metrics,decreasing=TRUE)){
             if (m=="AUC" && ("ROC" %in% plots)){
@@ -1066,9 +1075,9 @@ Score.list <- function(object,
         }
         out
     }
-    # }}}
-    # -----------------apparent nosplit performance---------------------
-    # {{{
+                                        # }}}
+                                        # -----------------apparent nosplit performance---------------------
+                                        # {{{
     missing.predictions <- "Don't know yet"
     if (split.method$internal.name %in% c("noplan",".632+")){
         DT <- getPerformanceData(testdata=data,
@@ -1091,10 +1100,10 @@ Score.list <- function(object,
                                       keep.vcov=keep.vcov)
         if (debug) message("computed apparent performance")
     }
-    # }}}
-    # -----------------crossvalidation performance---------------------
-    # {{{
-    # {{{ bootstrap re-fitting
+                                        # }}}
+                                        # -----------------crossvalidation performance---------------------
+                                        # {{{
+                                        # {{{ bootstrap re-fitting
     if (split.method$name%in%c("BootCv","LeaveOneOutBoot")){
         if (missing(trainseeds)||is.null(trainseeds)){
             if (!missing(seed)) set.seed(seed)
@@ -1106,7 +1115,8 @@ Score.list <- function(object,
             if (!(progress.bar %in% c(1,2,3))) progress.bar <- 3
             pb <- txtProgressBar(max = B, style = progress.bar)
         }
-        DT.B <- rbindlist(foreach (b=1:B,.export=exports) %dopar%{
+        `%dopar%` <- foreach::`%dopar%`
+        DT.B <- rbindlist(foreach::foreach (b=1:B,.export=exports) %dopar%{
             if(!is.null(progress.bar)){setTxtProgressBar(pb, b)}
             ## DT.B <- rbindlist(lapply(1:B,function(b){
             traindata=data[split.method$index[,b]]
@@ -1148,11 +1158,11 @@ Score.list <- function(object,
         Response.names <- names(Response)
         Response.names <- Response.names[Response.names!="ID"]
         setkey(Response,ID)
-        # }}}
-        # {{{ Leave-one-out bootstrap
+                                        # }}}
+                                        # {{{ Leave-one-out bootstrap
         if (split.method$name=="LeaveOneOutBoot"){
             crossvalPerf <- lapply(metrics,function(m){
-                # {{{ AUC LOOB
+                                        # {{{ AUC LOOB
                 if (m=="AUC"){
                     if (response.type=="binary")
                         auc.loob <- data.table(model=mlevs)
@@ -1240,7 +1250,7 @@ Score.list <- function(object,
                                 Ib <- Ib + Ib.ij
                             }
                             auc <- (auc*weightMatrix)/Ib
-                            # FIXME: why are there NA's?
+                                        # FIXME: why are there NA's?
                             auc[is.na(auc)] <- 0
                             ## Leave-one-pair-out bootstrap estimate of AUC
                             aucLPO <- (1/N^2)*sum(colSums(auc))*(1/Phi)
@@ -1383,8 +1393,8 @@ Score.list <- function(object,
                     }
                     return(output)
                 }
-                # }}}
-                # {{{ Brier LOOB
+                                        # }}}
+                                        # {{{ Brier LOOB
                 if (m=="Brier"){
                     ## sum across bootstrap samples where subject i is out of bag
                     if (cens.type=="rightCensored"){
@@ -1549,12 +1559,12 @@ Score.list <- function(object,
                     }
                     return(output)
                 }
-                # }}}
+                                        # }}}
             })
             names(crossvalPerf) <- metrics
-            # }}}
+                                        # }}}
         }else{ ## split.method bootcv
-            # {{{ bootcv
+                                        # {{{ bootcv
             if (parallel=="snow") exports <- c("DT.B","N.b","cens.model","multi.split.test") else exports <- NULL
             if (!is.null(progress.bar)){
                 if (!(progress.bar %in% c(1,2,3))) progress.bar <- 3
@@ -1565,7 +1575,7 @@ Score.list <- function(object,
                 DT.b <- DT.B[b==j]
                 N.b <- length(unique(DT.b[["ID"]]))
                 if(!is.null(progress.bar)){
-                    ## message("Running crossvalidation ...")
+                    message("Running crossvalidation ...")
                     setTxtProgressBar(pb, b)
                 }
                 computePerformance(DT.b,
@@ -1636,8 +1646,8 @@ Score.list <- function(object,
         if (!is.null(progress.bar)){
             cat("\n")
         }
-        # }}}
-        # {{{ collect data for plotRisk
+                                        # }}}
+                                        # {{{ collect data for plotRisk
         if ("risks"%in% summary){
             crossvalPerf[["risks"]]$score <- DT.B[,{
                 c(.SD[1,Response.names,with=FALSE],
@@ -1647,8 +1657,8 @@ Score.list <- function(object,
             crossvalPerf[["risks"]]$score[,model:=factor(model,levels=mlevs,mlabels)]
             setcolorder(crossvalPerf[["risks"]]$score,c("ID",byvars,Response.names,"risk","sd.risk"))
         }
-        # }}}
-        # {{{ collect data for calibration plots
+                                        # }}}
+                                        # {{{ collect data for calibration plots
         if ("Calibration" %in% plots){
             if (keep.residuals[1] && split.method$name[1]=="LeaveOneOutBoot"){
                 crossvalPerf[["Calibration"]]$plotframe <- crossvalPerf$Brier$Residuals[model!=0,]
@@ -1667,11 +1677,11 @@ Score.list <- function(object,
             if (cens.type=="rightCensored")
                 crossvalPerf[["Calibration"]]$plotframe <- merge(jack,crossvalPerf[["Calibration"]]$plotframe,by=c("ID","times"))
         }
-        # }}}
+                                        # }}}
     }
-    # }}}
-    #------------------output-----------------------------------
-    # {{{ enrich the output object
+                                        # }}}
+                                        #------------------output-----------------------------------
+                                        # {{{ enrich the output object
     if (split.method$internal.name=="noplan"){
         if (keep.residuals==TRUE){
             noSplit$Brier$residuals[,model:=factor(model,levels=mlevs,mlabels)]
@@ -1735,7 +1745,7 @@ Score.list <- function(object,
     }
     class(output) <- "Score"
     output
-    # }}}
+                                        # }}}
 }
 
 ##' @export

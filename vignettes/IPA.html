@@ -3,7 +3,7 @@
 "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
 <head>
-<!-- 2019-05-29 Wed 07:39 -->
+<!-- 2019-06-13 Thu 10:29 -->
 <meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Index of Prediction Accuracy (IPA)</title>
@@ -266,8 +266,8 @@ for the JavaScript code in this tag.
 <div id="content">
 <h1 class="title">Index of Prediction Accuracy (IPA)</h1>
 
-<div id="outline-container-orga459256" class="outline-2">
-<h2 id="orga459256"><span class="section-number-2">1</span> Introduction</h2>
+<div id="outline-container-org8005c66" class="outline-2">
+<h2 id="org8005c66"><span class="section-number-2">1</span> Introduction</h2>
 <div class="outline-text-2" id="text-1">
 <p>
 This vignette demonstrates how our software calculates the index of
@@ -293,23 +293,23 @@ standard linear regression model:
 </div>
 </div>
 
-<div id="outline-container-orge580823" class="outline-2">
-<h2 id="orge580823"><span class="section-number-2">2</span> Package version</h2>
+<div id="outline-container-org511536d" class="outline-2">
+<h2 id="org511536d"><span class="section-number-2">2</span> Package version</h2>
 <div class="outline-text-2" id="text-2">
 <pre class="example">
 data.table:&gt; [1] ‘1.12.2’
 
 survival:&gt; [1] ‘2.44.1.1’
 
-riskRegression:&gt; [1] ‘2019.5.28’
+riskRegression:&gt; [1] ‘2019.6.13’
 
 Publish:&gt; [1] ‘2019.3.11’
 </pre>
 </div>
 </div>
 
-<div id="outline-container-org8c5e4ea" class="outline-2">
-<h2 id="org8c5e4ea"><span class="section-number-2">3</span> Data</h2>
+<div id="outline-container-orgb33ec2c" class="outline-2">
+<h2 id="orgb33ec2c"><span class="section-number-2">3</span> Data</h2>
 <div class="outline-text-2" id="text-3">
 <p>
 For the purpose of illustrating our software we simulate data alike
@@ -322,7 +322,7 @@ after one year is uncensored.
 </p>
 
 <div class="org-src-container">
-<pre class="src src-R" id="org673f21d">set.seed(18)
+<pre class="src src-R" id="org2b50319">set.seed(18)
 astrain <span style="color: #008b8b;">&lt;-</span> simActiveSurveillance(278)
 astest <span style="color: #008b8b;">&lt;-</span> simActiveSurveillance(208)
 astrain[,Y1:=1*(event==1 &amp; time&lt;=1)]
@@ -332,7 +332,7 @@ astest[,Y1:=1*(event==1 &amp; time&lt;=1)]
 </div>
 </div>
 
-<div id="outline-container-org418bbf9" class="outline-2">
+<div id="outline-container-orgaf65983" class="outline-2">
 <h2 id="sec:binary"><span class="section-number-2">4</span> IPA for a binary outcome</h2>
 <div class="outline-text-2" id="text-sec:binary">
 <p>
@@ -609,6 +609,8 @@ X1
 </div>
 
 <pre class="example">
+ [1] "ReSpOnSe"   "age"        "lpsaden"    "ppb5"       "lmax"       "ct1"        "diaggs"     "erg.status"
+ [9] "time"       "event"      "Y1"         "risk.ex"    "risk.inc"
 
 Metric Brier:
 
@@ -619,7 +621,6 @@ Results by model:
 2: Exclusive ERG 0.148 0.0268
 3: Inclusive ERG 0.141 0.0729
 </pre>
-
 
 <p>
 Both logistic regression models have a lower Brier score than the
@@ -645,6 +646,8 @@ model and IPA of the model where the variable is omitted.
 </div>
 
 <pre class="example">
+ [1] "ReSpOnSe"   "age"        "lpsaden"    "ppb5"       "lmax"       "ct1"        "diaggs"     "erg.status"
+ [9] "time"       "event"      "Y1"         "risk.ex"    "risk.inc"  
     Variable     Brier        IPA        IPA.drop
 1 Null model 0.1523438 0.00000000  0.072907470973
 2 Full model 0.1412368 0.07290747  0.000000000000
@@ -659,7 +662,7 @@ model and IPA of the model where the variable is omitted.
 </div>
 </div>
 
-<div id="outline-container-orgc418b18" class="outline-2">
+<div id="outline-container-org1b2f95c" class="outline-2">
 <h2 id="sec:survival"><span class="section-number-2">5</span> IPA for right censored survival outcome</h2>
 <div class="outline-text-2" id="text-sec:survival">
 <p>
@@ -935,6 +938,9 @@ X2
 </div>
 
 <pre class="example">
+ [1] "time"               "status"             "age"                "lpsaden"            "ppb5"              
+ [6] "lmax"               "ct1"                "diaggs"             "erg.status"         "protectedName.time"
+[11] "event"              "Y1"                 "risk.ex"            "risk.inc"
 
 Metric Brier:
 
@@ -945,7 +951,6 @@ Results by model:
 2: Exclusive ERG     3 0.224 0.0638
 3: Inclusive ERG     3 0.199 0.1709
 </pre>
-
 
 <p>
 It is sometimes interesting to compare the predictor variables
@@ -964,6 +969,9 @@ model and IPA of the model where the variable is omitted.
 </div>
 
 <pre class="example">
+ [1] "time"               "status"             "age"                "lpsaden"            "ppb5"              
+ [6] "lmax"               "ct1"                "diaggs"             "erg.status"         "protectedName.time"
+[11] "event"              "Y1"                 "risk.ex"            "risk.inc"          
     Variable times     Brier       IPA      IPA.drop
 1 Null model     3 0.2395320 0.0000000  0.1708698205
 2 Full model     3 0.1986032 0.1708698  0.0000000000
@@ -978,7 +986,7 @@ model and IPA of the model where the variable is omitted.
 </div>
 </div>
 
-<div id="outline-container-org769f67d" class="outline-2">
+<div id="outline-container-org6ac63a8" class="outline-2">
 <h2 id="sec:survival"><span class="section-number-2">6</span> IPA for right censored time to event outcome with competing risks</h2>
 <div class="outline-text-2" id="text-sec:survival">
 <p>
@@ -1173,6 +1181,9 @@ X3
 </div>
 
 <pre class="example">
+ [1] "time"                "status"              "event"               "age"                 "lpsaden"            
+ [6] "ppb5"                "lmax"                "ct1"                 "diaggs"              "erg.status"         
+[11] "protectedName.time"  "protectedName.event" "Y1"                  "risk.ex"             "risk.inc"
 
 Metric Brier:
 
@@ -1183,7 +1194,6 @@ Results by model:
 2: Exclusive ERG     3 0.232 0.0504
 3: Inclusive ERG     3 0.202 0.1753
 </pre>
-
 
 <p>
 It is sometimes interesting to compare the predictor variables
@@ -1203,6 +1213,9 @@ IPA of the model where the variable is omitted.
 </div>
 
 <pre class="example">
+ [1] "time"                "status"              "event"               "age"                 "lpsaden"            
+ [6] "ppb5"                "lmax"                "ct1"                 "diaggs"              "erg.status"         
+[11] "protectedName.time"  "protectedName.event" "Y1"                  "risk.ex"             "risk.inc"           
     Variable times     Brier        IPA     IPA.drop
 1 Null model     3 0.2445718 0.00000000  0.175254870
 2 Full model     3 0.2017094 0.17525487  0.000000000
@@ -1236,7 +1249,7 @@ Brice Ozenne, Anne Lyngholm S{\o }rensen, Thomas Scheike, Christian Torp-Pederse
 </div>
 </div></div>
 <div id="postamble" class="status">
-Last update: 29 May 2019 by Thomas Alexander Gerds.
+Last update: 13 Jun 2019 by Thomas Alexander Gerds.
 </div>
 </body>
 </html>

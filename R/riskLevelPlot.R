@@ -5,8 +5,8 @@
 ##' @param object risk prediction model object
 ##' @param formula formula 
 ##' @param data data
-##' @param times prediction horizon time point for survival models
-##' @param cause cause of interest for competing risk models
+##' @param horizon time point
+##' @param cause cause of interst
 ##' @param ... passed to lattice::levelplot
 ##' @examples
 ##' 
@@ -20,10 +20,7 @@
 ##' }
 ##' d <- partyData(100)
 ##' f <- glm(Fever~Age+Parasites,data=d,family="binomial")
-##' riskLevelPlot(f,Fever~Age+Parasites,data=d)
-##' library(party)
-##' ct <- ctree(Fever~Age+Parasites,data=d)
-##' riskLevelPlot(ct,Fever~Age+Parasites,d)
+##' riskLevelPlot(f,Fever~Age+Parasites,d)
 ##' library(randomForest)
 ##' rf <- randomForest(Fever~Age+Parasites,data=d)
 ##' riskLevelPlot(f,Fever~Age+Parasites,d)
@@ -36,25 +33,15 @@
 ##' 
 ##' library(survival)
 ##' library(prodlim)
-##' survData <- function( N ){
-##'   sdata <- SimSurv( N )
-##'   sdata$X3 <- rnorm(N)
-##'   sdata
-##' }
 ##' set.seed(140515)
-##' sdat <- survData(100)
-##' sdat <- sampleData(100,outcome="survival")
+##' sdat <- sampleData(43,outcome="survival")
 ##' # -- fit a Cox regression model 
-##' survForm = Surv(time,event) ~ X7 + X8
+##' survForm = Surv(time,event) ~ X8 + X9
 ##' cox <- coxph(survForm, data = sdat,x=TRUE)
 ##'
 ##' # --choose a time horizon for the predictions and plot the risks
 ##' timeHorizon <- floor(median(sdat$time))
 ##' riskLevelPlot(cox, survForm, data = sdat, horizon = timeHorizon)
-##'
-##' survForm2 = Surv(time,status) ~ strata(X1) + X2 + X3
-##' cox2 <- coxph(survForm2, data = sdat)
-##' riskLevelPlot(cox2, survForm2, data = sdat, horizon = timeHorizon)
 ##'
 ##' # ---------- competing risks --------------------
 ##'
@@ -62,16 +49,11 @@
 ##' # with competing cause response and three predictors
 ##' library(cmprsk)
 ##' library(riskRegression)
-##' compRiskData <- function( N ){
-##'   crdata <- SimCompRisk( N )
-##'   crdata$X3 <- rnorm(N)
-##'   crdata
-##' }
 ##' set.seed(140515)
-##' crdat <- compRiskData(1000)
+##' crdat <- sampleData(49)
 ##'
 ##' # -- fit a cause-specific Cox regression model
-##' crForm <- Hist(time,event)~X2+X3
+##' crForm <- Hist(time,event)~X8+X9
 ##' csCox  <- CSC(crForm, data=crdat)
 ##'
 ##' # -- choose a time horizon and plot the risk for a given cause
@@ -106,7 +88,6 @@ riskLevelPlot <- function(object,
         form[[2]][[1]] <- as.name("Hist")
     }
     m <- model.frame(form,data,na.action=na.fail)
-    
     response <- stats::model.response(m)
                                         # }}}
                                         # {{{ Risk factors and grid sides
@@ -127,9 +108,10 @@ riskLevelPlot <- function(object,
     names(newData) <- riskfactors
                                         # }}}
                                         # {{{ Predict grid probabilities z
-    pr.args <- list(object=object,newdata=newData)
-    ## if (horizon) times=horizon,cause=cause)
-    z <- do.call(predictRisk,pr.args)
+    z <- do.call(predictRisk,list(object=object,
+                                  newdata=newData,
+                                  times=horizon,
+                                  cause=cause))
                                         # }}}  
                                         # ----------------------------copy/pasted----------------------------
                                         # {{{ Find the limits of z
@@ -217,61 +199,3 @@ getSeqForGrid <- function(x,gridSize=25){
 # }}}
 
 
-# {{{ Not included yet-- need to be? : panelFunction
-
-panelFunction <- function(...){
-    ## browser()
-    panel.levelplot(...)
-    currentRow <- current.row()
-    currentColumn <- current.column()
-    if(list(...)$passMeToPanelFunction$plotObservations == TRUE){
-        ## browser()
-        data <- list(...)$passMeToPanelFunction$data
-        ## innerX <- list(...)$passMeToPanelFunction$innerX
-        ## innerY <- list(...)$passMeToPanelFunction$innerY
-        ## outerX <- list(...)$passMeToPanelFunction$outerX
-        ## outerY <- list(...)$passMeToPanelFunction$outerY
-        ## pchObs <- list(...)$passMeToPanelFunction$pchObs
-        ## pchCol <- list(...)$passMeToPanelFunction$pchCol
-        ## xLabels <- list(...)$passMeToPanelFunction$xLabels
-        ## yLabels <- list(...)$passMeToPanelFunction$yLabels
-        ## jitterAmounts <- list(...)$passMeToPanelFunction$jitterAmounts
-        ## jitterHow <- list(...)$passMeToPanelFunction$jitterHow
-        groups <- list(...)$groups
-        subscripts <- list(...)$subscripts
-
-    #
-    ## if(is.na(outerX) && is.na(outerY)){
-      ## whichValues <- 1:nrow(data)
-    ## } else if(!is.na(outerX) && is.na(outerY)){
-      ## whichValues <- which(data[[outerX]] == sapply(strsplit(as.character(groups[subscripts[1]]),' = '),function(x){x[2]}))
-    ## } else if(is.na(outerX) && !is.na(outerY)){
-      ## whichValues <- which(data[[outerY]] == sapply(strsplit(as.character(groups[subscripts[1]]),' = '),function(x){x[2]}))
-    ## } else {
-      ## whichValues <- which(as.character(data[[outerX]]) == sort(levels(data[[outerX]]))[currentColumn] &
-                           ## as.character(data[[outerY]]) == sort(levels(data[[outerY]]))[currentRow])
-    ## }
-    ## if(length(pchObs) > 1){
-      ## pchObs <- pchObs[whichValues]
-    ## } else if (length(pchObs) == 0){
-      ## pchObs <- 1
-    ## }
-#
-#    
-    ## if(jitterHow == ''){
-      ## lpoints(data[[innerX]][whichValues],data[[innerY]][whichValues],pch=pchObs,col=pchCol)
-    ## } else if(jitterHow == 'x') {
-      ## lpoints(jitter(match(as.character(data[[innerX]][whichValues]),xLabels),amount = jitterAmounts[1]),
-              ## data[[innerY]][whichValues],pch=pchObs,col=pchCol)
-    ## } else if(jitterHow == 'y') {
-      ## lpoints(data[[innerX]][whichValues],
-              ## jitter(match(as.character(data[[innerY]][whichValues]),yLabels),amount = jitterAmounts[2]),pch=pchObs,col=pchCol)
-    ## } else {
-      ## lpoints(jitter(match(as.character(data[[innerX]][whichValues]),xLabels),amount = jitterAmounts[1]),
-              ## jitter(match(as.character(data[[innerY]][whichValues]),yLabels),amount = jitterAmounts[2]),
-              ## pch=pchObs,col=pchCol)
-    ## }
-  }
-  
-}
-# }}}

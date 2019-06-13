@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jan  4 2016 (14:30) 
 ## Version: 
-## last-updated: May 30 2019 (08:22) 
+## last-updated: Jun 13 2019 (09:58) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 130
+##     Update #: 134
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -194,8 +194,8 @@ test_that("survival outcome,Brier Score, external prediction",{
     expect_equal(b$Brier$score[,Brier],as.vector(unlist(a$AppErr)))
 })
 
-# }}}
-# {{{integrated Brier score
+                                        # }}}
+                                        # {{{integrated Brier score
 test_that("integrated Brier score",{
     set.seed(18)
     trainSurv <- sampleData(100,outcome="survival")
@@ -216,16 +216,19 @@ test_that("integrated Brier score",{
     ## cbind(a1,b1)
     expect_equal(as.numeric(c(a1,use.names=FALSE)),c(b1))
 })
-# }}}
-# {{{ "survival outcome uncensored"
+                                        # }}}
+
+                                        # {{{ "survival outcome uncensored"
 test_that("survival outcome uncensored",{
     library(survival)
+    library(data.table)
     library(randomForestSRC)
     library(riskRegression)
+    library(prodlim)
     d <- sampleData(100,outcome="survival")
     d$event=1
-    cx=coxph(Surv(time,event)~.,d,x=TRUE)
-    rfx=rfsrc(Surv(time,event)~.,d,ntree=10)
+    cx=coxph(Surv(time,event)~X1+X2+X3+X4+X5+X6+X7+X8+X9+X10,d,x=TRUE)
+    rfx=rfsrc(Surv(time,event)~X1+X2+X3+X4+X5+X6+X7+X8+X9+X10,d,ntree=10)
     out <- Score(list(Cox=cx,RF=rfx),
                  data=d,
                  metrics="brier",
@@ -236,8 +239,9 @@ test_that("survival outcome uncensored",{
                  se.fit=FALSE)
     out
 })
-# }}}
-# {{{ "binary outcome: Brier"
+                                        # }}}
+
+                                        # {{{ "binary outcome: Brier"
 test_that("binary outcome: Brier",{
     set.seed(47)
     D <- sampleData(n=47,outcome="binary")
@@ -258,8 +262,8 @@ test_that("binary outcome: Brier",{
     expect_equal(S1$Brier$score$Brier,S3$Brier$score$Brier)
     expect_equal(S2$Brier$score$Brier,S3$Brier$score$Brier)
 })
-# }}}
-# {{{ "binary outcome: AUC"
+                                        # }}}
+                                        # {{{ "binary outcome: AUC"
 test_that("binary outcome: AUC", {   
     set.seed(17)
     y <- rbinom(100, 1, .5)
@@ -294,8 +298,8 @@ test_that("binary outcome: AUC", {
     ## expect_equal(daim.diff$"CI(upper)",-score.diff$lower)
     ## expect_equal(daim.diff$"P.Value",score.diff$p)
 })
-# }}}
-# {{{ "Leave one out bootstrap: Number of models and time points"
+                                        # }}}
+                                        # {{{ "Leave one out bootstrap: Number of models and time points"
 if (class(try(riskRegression.test,silent=TRUE))[1]!="try-error"){
     test_that("Number of models and time points", {
         library(pec)
@@ -323,7 +327,7 @@ if (class(try(riskRegression.test,silent=TRUE))[1]!="try-error"){
         expect_equal(r1$Brier$score[model=="a"],r2$Brier$score[model=="a" & times==1000])
         ## expect_equal(r1$AUC$score[model=="a"],r2$AUC$score[model=="a" & times==1000])
     })
-    # {{{ "Bootstrap cross validation
+                                        # {{{ "Bootstrap cross validation
     test_that("Number of models and time points", {
         library(pec)
         data(GBSG2)
@@ -350,8 +354,8 @@ if (class(try(riskRegression.test,silent=TRUE))[1]!="try-error"){
         expect_equal(r1$Brier$score[model=="a"],r2$Brier$score[model=="a" & times==1000])
         ## expect_equal(r1$AUC$score[model=="a"],r2$AUC$score[model=="a" & times==1000])
     })
-    # }}}
-    # {{{ "LOOB: Number of models and time points"
+                                        # }}}
+                                        # {{{ "LOOB: Number of models and time points"
     test_that("LOOB: Number of models and time points", {   
         library(testthat)
         library(survival)
@@ -402,7 +406,7 @@ if (class(try(riskRegression.test,silent=TRUE))[1]!="try-error"){
                      A$Brier$score[model=="fit1"&times==365.25*4])
     })
 }
-# }}}
-# }}}
-#----------------------------------------------------------------------
+                                        # }}}
+                                        # }}}
+                                        #----------------------------------------------------------------------
 ### test-Score.R ends here

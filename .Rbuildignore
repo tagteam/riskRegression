@@ -4,6 +4,8 @@ prepareData/
 ^.*\.so$
 ^README.org$
 ^vignettes/.*\.org$
+^vignettes/.*\.tex$
+^vignettes/.*\.pdf$
 ^vignettes/.*\.bbl$
 ^\.travis\.yml$
 ^.*\.Rproj$

@@ -12,7 +12,7 @@ getSplitMethod(split.method, B, N, M, seed)
 \item{"loob"} leave one out bootstrap
 \item{"bootcv"} bootstrap cross validation
 \item{"cv5"} 5-fold cross validation
-\item{"loocv"} leave one out cross validation aka N-1 fold cross validation 
+\item{"loocv"} leave one out cross validation aka N-1 fold cross validation
 \item{"632plus"} Efron's .632+ bootstrap
 }}
 
