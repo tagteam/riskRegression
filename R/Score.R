@@ -538,6 +538,11 @@ Score.list <- function(object,
     ## but first rename to avoid problems with pre-existing variables with same name(s)
     ## data[,eval(responsevars):=NULL]
                                         # data have to be ordered when ipcw is called
+        if (response.type=="binary"){
+        data[,event:=factor(ReSpOnSe,
+                            levels=1:(length(states)+1),
+                            labels=c(states,"event-free"))]
+    }
     if (response.type %in% c("survival","competing.risks")){
         test.names <- match(colnames(response),names(data),nomatch=0)
         if (sum(test.names)>0){
@@ -554,12 +559,13 @@ Score.list <- function(object,
         neworder <- 1:N
     }
     ## add ID variable for merging purposes and because output has long format
-    data[["ID"]]=1:N
     if (response.type=="binary"){
         data[,event:=factor(ReSpOnSe,
                             levels=1:(length(states)+1),
                             labels=c(states,"event-free"))]
     }
+    ## data[["ID"]]=1:N
+    data[,ID:=1:N]
     if (response.type=="survival")
         formula <- stats::update(formula,"Hist(time,status)~.")
     if (response.type=="competing.risks")
