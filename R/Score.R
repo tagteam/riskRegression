@@ -538,7 +538,10 @@ Score.list <- function(object,
     ## but first rename to avoid problems with pre-existing variables with same name(s)
     ## data[,eval(responsevars):=NULL]
                                         # data have to be ordered when ipcw is called
-        if (response.type=="binary"){
+    if (response.type=="binary"){
+        if ("event" %in% names(data)){
+            setnames(data,"event","protectedName.event")
+        }
         data[,event:=factor(ReSpOnSe,
                             levels=1:(length(states)+1),
                             labels=c(states,"event-free"))]
@@ -559,11 +562,6 @@ Score.list <- function(object,
         neworder <- 1:N
     }
     ## add ID variable for merging purposes and because output has long format
-    if (response.type=="binary"){
-        data[,event:=factor(ReSpOnSe,
-                            levels=1:(length(states)+1),
-                            labels=c(states,"event-free"))]
-    }
     ## data[["ID"]]=1:N
     data[,ID:=1:N]
     if (response.type=="survival")
@@ -1110,10 +1108,14 @@ Score.list <- function(object,
                                         # -----------------crossvalidation performance---------------------
                                         # {{{
                                         # {{{ bootstrap re-fitting
-    if (split.method$name%in%c("BootCv","LeaveOneOutBoot")){
+    if (split.method$internal.name%in%c("BootCv","LeaveOneOutBoot","crossval")){ 
         if (missing(trainseeds)||is.null(trainseeds)){
             if (!missing(seed)) set.seed(seed)
-            trainseeds <- sample(1:1000000,size=B,replace=FALSE)
+            if (split.method$internal.name == "crossval"){
+                trainseeds <- sample(1:1000000,size=B*split.method$k,replace=FALSE)
+            }else{
+                trainseeds <- sample(1:1000000,size=B,replace=FALSE)
+            }
         }
         if (parallel=="snow") exports <- c("data","split.method","Weights","N","trainseeds") else exports <- NULL
         if (!is.null(progress.bar)){
@@ -1122,30 +1124,61 @@ Score.list <- function(object,
             pb <- txtProgressBar(max = B, style = progress.bar)
         }
         `%dopar%` <- foreach::`%dopar%`
-        DT.B <- rbindlist(foreach::foreach (b=1:B,.export=exports) %dopar%{
-            if(!is.null(progress.bar)){setTxtProgressBar(pb, b)}
-            ## DT.B <- rbindlist(lapply(1:B,function(b){
-            traindata=data[split.method$index[,b]]
-            ## setkey(traindata,ID)
-            testids <- (match(1:N,unique(split.method$index[,b]),nomatch=0)==0)
-            ## NOTE: subset.data.table preserves order
-            testdata <- subset(data,testids)
-            if (cens.type=="rightCensored"){
-                testweights <- Weights
-                testweights$IPCW.subject.times <- subset(testweights$IPCW.subject.times,testids)
-                if (Weights$dim>0){
-                    testweights$IPCW.times <- subset(testweights$IPCW.times,testids)
+        ## k-fold-CV
+        if (split.method$internal.name == "crossval"){
+            DT.B <- rbindlist(foreach::foreach (b=1:B,.export=exports) %dopar%{ ## repetitions of k-fold to avoid Monte-Carlo error
+                index.b <- split.method$index[,b] ## contains a sample of the numbers 1:k with replacement 
+                if(!is.null(progress.bar)){setTxtProgressBar(pb, b)}
+                DT.b <- rbindlist(lapply(1:split.method$k,function(fold){
+                    traindata=data[index.b==fold]
+                    testids <- (1:N)[index.b!=fold]
+                    ## NOTE: subset.data.table preserves order
+                    testdata <- subset(data,testids)
+                    if (cens.type=="rightCensored"){
+                        testweights <- Weights
+                        testweights$IPCW.subject.times <- subset(testweights$IPCW.subject.times,testids)
+                        if (Weights$dim>0){
+                            testweights$IPCW.times <- subset(testweights$IPCW.times,testids)
+                        }
+                    } else {
+                        testweights <- NULL
+                    }
+                    ## predicted risks of model trained without this fold
+                    ## evaluated and added to this fold
+                    DT.fold <- getPerformanceData(testdata=testdata, 
+                                                  testweights=testweights,
+                                                  traindata=traindata,
+                                                  trainseed=trainseeds[[(b-1)*split.method$k+fold]])
+                }))
+                DT.b[,b:=b]
+                DT.b
+            })
+        }else{# either LeaveOneOutBoot or BootCv
+            DT.B <- rbindlist(foreach::foreach (b=1:B,.export=exports) %dopar%{
+                if(!is.null(progress.bar)){setTxtProgressBar(pb, b)}
+                ## DT.B <- rbindlist(lapply(1:B,function(b){
+                traindata=data[split.method$index[,b]]
+                ## setkey(traindata,ID)
+                testids <- (match(1:N,unique(split.method$index[,b]),nomatch=0)==0)
+                ## NOTE: subset.data.table preserves order
+                testdata <- subset(data,testids)
+                if (cens.type=="rightCensored"){
+                    testweights <- Weights
+                    testweights$IPCW.subject.times <- subset(testweights$IPCW.subject.times,testids)
+                    if (Weights$dim>0){
+                        testweights$IPCW.times <- subset(testweights$IPCW.times,testids)
+                    }
+                } else {
+                    testweights <- NULL
                 }
-            } else {
-                testweights <- NULL
-            }
-            DT.b <- getPerformanceData(testdata=testdata,
-                                       testweights=testweights,
-                                       traindata=traindata,
-                                       trainseed=trainseeds[[b]])
-            DT.b[,b:=b]
-            DT.b
-        })
+                DT.b <- getPerformanceData(testdata=testdata,
+                                           testweights=testweights,
+                                           traindata=traindata,
+                                           trainseed=trainseeds[[b]])
+                DT.b[,b:=b]
+                DT.b
+            })
+        }
         if (any(is.na(DT.B[["risk"]]))){
             missing.predictions <- DT.B[,list("Missing.values"=sum(is.na(risk))),by=byvars]
             warning("Missing values in the predicted risk. See `missing.predictions' in output list.")
@@ -1166,6 +1199,7 @@ Score.list <- function(object,
         setkey(Response,ID)
                                         # }}}
                                         # {{{ Leave-one-out bootstrap
+         ## start clause split.method$name=="LeaveOneOutBoot"
         if (split.method$name=="LeaveOneOutBoot"){
             crossvalPerf <- lapply(metrics,function(m){
                                         # {{{ AUC LOOB
@@ -1569,7 +1603,18 @@ Score.list <- function(object,
             })
             names(crossvalPerf) <- metrics
                                         # }}}
-        }else{ ## split.method bootcv
+        } ## end clause split.method$name=="LeaveOneOutBoot"
+        if (split.method$internal.name=="crossval"){
+            N <- splitMethod$N # sample size
+            k <- splitMethod$k # k-fold cross validation
+            B <- splitMethod$B # number of times we repeat k-fold
+            ## here we need a "copy" of the split.method$name=="LeaveOneOutBoot" clause (see above)
+            ## and then fix possible bugs/problems which could be related to ordering of data and similar
+            ## if it turns out that there are almost no bugs, then it may make sense to use the LeaveOneOutBoot clause
+            ## also for k-fold ... 
+            
+        }
+        if (split.method$name=="BootCv"){
                                         # {{{ bootcv
             if (parallel=="snow") exports <- c("DT.B","N.b","cens.model","multi.split.test") else exports <- NULL
             if (!is.null(progress.bar)){
