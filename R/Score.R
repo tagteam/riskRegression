@@ -1107,8 +1107,8 @@ Score.list <- function(object,
                                         # }}}
                                         # -----------------crossvalidation performance---------------------
                                         # {{{
-                                        # {{{ bootstrap re-fitting
-    if (split.method$internal.name%in%c("BootCv","LeaveOneOutBoot","crossval")){ 
+    # {{{ bootstrap re-fitting
+    if (split.method$internal.name%in%c("BootCv","LeaveOneOutBoot","crossval")){
         if (missing(trainseeds)||is.null(trainseeds)){
             if (!missing(seed)) set.seed(seed)
             if (split.method$internal.name == "crossval"){
@@ -1127,15 +1127,16 @@ Score.list <- function(object,
         ## k-fold-CV
         if (split.method$internal.name == "crossval"){
             DT.B <- rbindlist(foreach::foreach (b=1:B,.export=exports) %dopar%{ ## repetitions of k-fold to avoid Monte-Carlo error
-                index.b <- split.method$index[,b] ## contains a sample of the numbers 1:k with replacement 
+                index.b <- split.method$index[,b] ## contains a sample of the numbers 1:k with replacement
                 if(!is.null(progress.bar)){setTxtProgressBar(pb, b)}
                 DT.b <- rbindlist(lapply(1:split.method$k,function(fold){
-                    traindata=data[index.b==fold]
-                    testids <- (1:N)[index.b!=fold]
-                    ## NOTE: subset.data.table preserves order
+                    traindata=data[index.b!=fold]
+                    testids <- index.b==fold # (1:N)[index.b!=fold]
+                    ## NOTE: subset.data.table preserves order ## So we need to use subset??
                     testdata <- subset(data,testids)
                     if (cens.type=="rightCensored"){
                         testweights <- Weights
+                        # Need to check what's expected that testids is here and below:
                         testweights$IPCW.subject.times <- subset(testweights$IPCW.subject.times,testids)
                         if (Weights$dim>0){
                             testweights$IPCW.times <- subset(testweights$IPCW.times,testids)
@@ -1145,10 +1146,11 @@ Score.list <- function(object,
                     }
                     ## predicted risks of model trained without this fold
                     ## evaluated and added to this fold
-                    DT.fold <- getPerformanceData(testdata=testdata, 
+                    DT.fold <- getPerformanceData(testdata=testdata,
                                                   testweights=testweights,
                                                   traindata=traindata,
                                                   trainseed=trainseeds[[(b-1)*split.method$k+fold]])
+                    return(DT.fold)
                 }))
                 DT.b[,b:=b]
                 DT.b
@@ -1197,9 +1199,13 @@ Score.list <- function(object,
         Response.names <- names(Response)
         Response.names <- Response.names[Response.names!="ID"]
         setkey(Response,ID)
+        ## ## Show format for the data in DT.B
+        ## cat(paste("\nDT.B for method:", split.method$name, "\n"))
+        ## print(DT.B)
                                         # }}}
                                         # {{{ Leave-one-out bootstrap
-         ## start clause split.method$name=="LeaveOneOutBoot"
+        ## start clause split.method$name=="LeaveOneOutBoot"
+        ## if (split.method$name=="LeaveOneOutBoot" | split.method$internal.name =="crossval"){  ## Testing if the crossval works in this loop
         if (split.method$name=="LeaveOneOutBoot"){
             crossvalPerf <- lapply(metrics,function(m){
                                         # {{{ AUC LOOB
@@ -1604,17 +1610,18 @@ Score.list <- function(object,
             names(crossvalPerf) <- metrics
                                         # }}}
         } ## end clause split.method$name=="LeaveOneOutBoot"
-        if (split.method$internal.name=="crossval"){
-            N <- splitMethod$N # sample size
-            k <- splitMethod$k # k-fold cross validation
-            B <- splitMethod$B # number of times we repeat k-fold
-            ## here we need a "copy" of the split.method$name=="LeaveOneOutBoot" clause (see above)
-            ## and then fix possible bugs/problems which could be related to ordering of data and similar
-            ## if it turns out that there are almost no bugs, then it may make sense to use the LeaveOneOutBoot clause
-            ## also for k-fold ... 
-            
-        }
-        if (split.method$name=="BootCv"){
+        if (FALSE) {  ## Dropping this for now, trying BootCv method below
+            if (split.method$internal.name=="crossval"){
+                N <- splitMethod$N # sample size
+                k <- splitMethod$k # k-fold cross validation
+                B <- splitMethod$B # number of times we repeat k-fold
+                ## here we need a "copy" of the split.method$name=="LeaveOneOutBoot" clause (see above)
+                ## and then fix possible bugs/problems which could be related to ordering of data and similar
+                ## if it turns out that there are almost no bugs, then it may make sense to use the LeaveOneOutBoot clause
+                ## also for k-fold ...
+
+        }}
+        if (split.method$name=="BootCv" | split.method$internal.name=="crossval"){
                                         # {{{ bootcv
             if (parallel=="snow") exports <- c("DT.B","N.b","cens.model","multi.split.test") else exports <- NULL
             if (!is.null(progress.bar)){
@@ -1688,9 +1695,9 @@ Score.list <- function(object,
             names(crossvalPerf) <- metrics
             if (ipa==TRUE){
                 if (response.type=="binary")
-                    crossvalPerf[["Brier"]][["score"]][,IPA:=1-Brier/Brier[model==0]]
+                    crossvalPerf[["Brier"]][["score"]][,IPA:=1-Brier/Brier[model=="Null model"]]
                 else
-                    crossvalPerf[["Brier"]][["score"]][,IPA:=1-Brier/Brier[model==0],by=times]
+                    crossvalPerf[["Brier"]][["score"]][,IPA:=1-Brier/Brier[model=="Null model"],by=times]
             }
         }
         if (!is.null(progress.bar)){

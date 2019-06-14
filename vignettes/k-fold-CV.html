@@ -3,7 +3,7 @@
 "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
 <head>
-<!-- 2019-06-12 Wed 09:07 -->
+<!-- 2019-06-14 Fri 18:07 -->
 <meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Testing k-fold CV</title>
@@ -231,8 +231,8 @@ for the JavaScript code in this tag.
 <h1 class="title">Testing k-fold CV</h1>
 
 
-<div id="outline-container-org0dd48c3" class="outline-2">
-<h2 id="org0dd48c3"><span class="section-number-2">1</span> Testing</h2>
+<div id="outline-container-orgc915fdd" class="outline-2">
+<h2 id="orgc915fdd"><span class="section-number-2">1</span> Testing</h2>
 <div class="outline-text-2" id="text-1">
 <p>
 Copy/paste some functionality form other vignette.
@@ -242,70 +242,112 @@ Copy/paste some functionality form other vignette.
 Packages and source for reloading after edits.
 </p>
 <div class="org-src-container">
-<pre class="src src-R"><span style="color: #204a87; font-weight: bold;">library</span>(riskRegression)
-<span style="color: #204a87; font-weight: bold;">library</span>(data.table)
-<span style="color: #204a87; font-weight: bold;">library</span>(Publish)
-<span style="color: #204a87; font-weight: bold;">source</span>(<span style="color: #5c3566;">"./R/getNullModel.R"</span>)
-<span style="color: #204a87; font-weight: bold;">source</span>(<span style="color: #5c3566;">"./R/getResponse.R"</span>)
-<span style="color: #204a87; font-weight: bold;">source</span>(<span style="color: #5c3566;">"./R/Score.R"</span>)
-
+<pre class="src src-R"><span style="color: #268bd2;">library</span>(riskRegression)
+sessionInfo()
 </pre>
 </div>
+
+<pre class="example">
+Registered S3 methods overwritten by 'ggplot2':
+  method         from
+  [.quosures     rlang
+  c.quosures     rlang
+  print.quosures rlang
+riskRegression version 2019.06.13
+R version 3.6.0 (2019-04-26)
+Platform: x86_64-apple-darwin15.6.0 (64-bit)
+Running under: OS X El Capitan 10.11.6
+
+Matrix products: default
+BLAS:   /Library/Frameworks/R.framework/Versions/3.6/Resources/lib/libRblas.0.dylib
+LAPACK: /Library/Frameworks/R.framework/Versions/3.6/Resources/lib/libRlapack.dylib
+
+locale:
+[1] en_US.UTF-8/en_US.UTF-8/en_US.UTF-8/C/en_US.UTF-8/en_US.UTF-8
+
+attached base packages:
+[1] stats     graphics  grDevices utils     datasets  methods   base
+
+other attached packages:
+[1] riskRegression_2019.06.13
+
+loaded via a namespace (and not attached):
+ [1] Rcpp_1.0.1          mvtnorm_1.0-10      lattice_0.20-38
+ [4] zoo_1.8-6           assertthat_0.2.1    digest_0.6.19
+ [7] foreach_1.4.4       R6_2.4.0            plyr_1.8.4
+[10] backports_1.1.4     acepack_1.4.1       MatrixModels_0.4-1
+[13] ggplot2_3.1.1       pillar_1.4.1        rlang_0.3.4
+[16] lazyeval_0.2.2      multcomp_1.4-10     rstudioapi_0.10
+[19] data.table_1.12.2   SparseM_1.77        rpart_4.1-15
+[22] Matrix_1.2-17       checkmate_1.9.3     splines_3.6.0
+[25] stringr_1.4.0       foreign_0.8-71      htmlwidgets_1.3
+[28] munsell_0.5.0       numDeriv_2016.8-1.1 compiler_3.6.0
+[31] xfun_0.7            pkgconfig_2.0.2     base64enc_0.1-3
+[34] htmltools_0.3.6     nnet_7.3-12         tidyselect_0.2.5
+[37] tibble_2.1.3        gridExtra_2.3       htmlTable_1.13.1
+[40] prodlim_2018.04.18  Hmisc_4.2-0         rms_5.1-3.1
+[43] codetools_0.2-16    crayon_1.3.4        dplyr_0.8.1
+[46] MASS_7.3-51.4       timereg_1.9.3       grid_3.6.0
+[49] nlme_3.1-140        polspline_1.1.14    gtable_0.3.0
+[52] magrittr_1.5        scales_1.0.0        stringi_1.4.3
+[55] latticeExtra_0.6-28 sandwich_2.5-1      Formula_1.2-3
+[58] TH.data_1.0-10      lava_1.6.5          RColorBrewer_1.1-2
+[61] iterators_1.0.10    tools_3.6.0         cmprsk_2.2-8
+[64] glue_1.3.1          purrr_0.3.2         survival_2.44-1.1
+[67] colorspace_1.4-1    cluster_2.0.9       knitr_1.23
+[70] quantreg_5.40
+</pre>
+
 
 <p>
 Setup data
 </p>
 <div class="org-src-container">
 <pre class="src src-R">set.seed(18)
-astrain <span style="color: #204a87; font-weight: bold;">&lt;-</span> simActiveSurveillance(278)
-astest <span style="color: #204a87; font-weight: bold;">&lt;-</span> simActiveSurveillance(208)
+astrain <span style="color: #268bd2;">&lt;-</span> simActiveSurveillance(278)
+astest <span style="color: #268bd2;">&lt;-</span> simActiveSurveillance(208)
 astrain[,Y1:=1*(event==1 &amp; time&lt;=1)]
 astest[,Y1:=1*(event==1 &amp; time&lt;=1)]
-lrfit.ex <span style="color: #204a87; font-weight: bold;">&lt;-</span> glm(Y1~age+lpsaden+ppb5+lmax+ct1+diaggs,data=astrain,family=<span style="color: #5c3566;">"binomial"</span>)
-lrfit.inc <span style="color: #204a87; font-weight: bold;">&lt;-</span> glm(Y1~age+lpsaden+ppb5+lmax+ct1+diaggs+erg.status,data=astrain,family=<span style="color: #5c3566;">"binomial"</span>)
+lrfit.ex <span style="color: #268bd2;">&lt;-</span> glm(Y1~age+lpsaden+ppb5+lmax+ct1+diaggs,data=astrain,family=<span style="color: #2aa198;">"binomial"</span>)
+lrfit.inc <span style="color: #268bd2;">&lt;-</span> glm(Y1~age+lpsaden+ppb5+lmax+ct1+diaggs+erg.status,data=astrain,family=<span style="color: #2aa198;">"binomial"</span>)
+<span style="color: #586e75; font-style: italic;">## </span><span style="color: #586e75; font-style: italic;">Score(list("Exclusive ERG"=lrfit.ex,"Inclusive ERG"=lrfit.inc),data=astest,formula=Y1~1,se.fit=0L,metrics="brier",contrasts=FALSE)</span>
+</pre>
+</div>
+
+<p>
+Now also works with for <code>bootcv=</code> without errors, now also returning no-NA IPA. These are negativ, however, which I don't know if make sense.
+</p>
+<div class="org-src-container">
+<pre class="src src-R">X1 <span style="color: #268bd2;">&lt;-</span> Score(list(<span style="color: #2aa198;">"Exclusive ERG"</span>=lrfit.ex,<span style="color: #2aa198;">"Inclusive ERG"</span>=lrfit.inc),data=astest,
+            formula=Y1~1,summary=<span style="color: #2aa198;">"ipa"</span>,se.fit=0L,metrics=<span style="color: #2aa198;">"brier"</span>,contrasts=<span style="color: #268bd2;">FALSE</span>,
+            split.method = <span style="color: #2aa198;">"bootcv"</span>, B=100)
 </pre>
 </div>
 
 
-<p>
-Does some weird thing when simply putting <code>split.method = "bootcv"</code>:
-</p>
-
 <div class="org-src-container">
-<pre class="src src-R">Score(list(<span style="color: #5c3566;">"Exclusive ERG"</span>=lrfit.ex,<span style="color: #5c3566;">"Inclusive ERG"</span>=lrfit.inc),data=astest,
-      formula=Y1~1,summary=<span style="color: #5c3566;">"ipa"</span>,se.fit=0L,metrics=<span style="color: #5c3566;">"brier"</span>,contrasts=<span style="color: #204a87;">FALSE</span>,
-      split.method = <span style="color: #5c3566;">"bootcv"</span>,
-      B=3) <span style="color: #5f615c; font-style: italic;"># </span><span style="color: #5f615c; font-style: italic;">Setting B=3 only to make small output</span>
+<pre class="src src-R">X1
 </pre>
 </div>
 
 <pre class="example">
-Running crossvalidation ...
-  |                                                                              |                                                                      |   0%  |                                                                              |=======================                                               |  33%Failed to fit model 0 in cross-validation step 1:
-Error in eval(predvars, data, env) : object 'Y1' not found
-  |                                                                              |===============================================                       |  67%Failed to fit model 0 in cross-validation step 2:
-Error in eval(predvars, data, env) : object 'Y1' not found
-  |                                                                              |======================================================================| 100%Failed to fit model 0 in cross-validation step 3:
-Error in eval(predvars, data, env) : object 'Y1' not found
-Error in { : task 1 failed - ""
 
-</pre>
+Metric Brier:
 
-<p>
-Error seems to be caused by line 880
-</p>
-<div class="org-src-container">
-<pre class="src src-R"><span style="color: #346604;">if</span> (f==0) model.f=nullobject[[1]] <span style="color: #346604;">else</span> model.f=object[[f]]
+Results by model:
+
+           model Brier     IPA
+1:    Null model 0.157  0.0000
+2: Exclusive ERG 0.169 -0.0781
+3: Inclusive ERG 0.163 -0.0396
+
+Bootstrap cross-validation based on 100 bootstrap samples (drawn with replacement) each of size 208.
 </pre>
-</div>
-<p>
-because it <code>Y</code> is not in the nullmodel. Not sure what <i>should</i> happen here.
-</p>
 </div>
 </div>
 </div>
 <div id="postamble" class="status">
-<p class="date">Created: 2019-06-12 Wed 09:07</p>
+<p class="date">Created: 2019-06-14 Fri 18:07</p>
 <p class="validation"><a href="http://validator.w3.org/check?uri=referer">Validate</a></p>
 </div>
 </body>
