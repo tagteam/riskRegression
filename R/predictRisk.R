@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun  6 2016 (09:02) 
 ## Version: 
-## last-updated: Jun 13 2019 (10:17) 
+## last-updated: Jun 16 2019 (07:37) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 156
+##     Update #: 157
 #----------------------------------------------------------------------
 ## 
 ### Commentary:
@@ -36,7 +36,8 @@
 #' predictRisk.pecCforest predictRisk.prodlim predictRisk.psm
 #' predictRisk.selectCox predictRisk.survfit predictRisk.randomForest
 #' predictRisk.lrm predictRisk.glm
-#' predictRisk.rpart
+#' predictRisk.rpart predictRisk.gbm
+#' predictRisk.flexsurvreg
 #' @usage
 #' \method{predictRisk}{glm}(object,newdata,...)
 #' \method{predictRisk}{cox.aalen}(object,newdata,times,...)
@@ -51,6 +52,8 @@
 #' \method{predictRisk}{rfsrc}(object,newdata,times,cause,...)
 #' \method{predictRisk}{FGR}(object,newdata,times,cause,...)
 #' \method{predictRisk}{CauseSpecificCox}(object,newdata,times,cause,...)
+#' \method{predictRisk}{gbm}(object,newdata,times,n.trees,...)
+#' \method{predictRisk}{flexsurvreg}(object,newdata,times,...)
 #' @param object A fitted model from which to extract predicted event
 #' probabilities
 #' @param newdata A data frame containing predictor variable combinations for
@@ -897,7 +900,35 @@ predictRisk.SuperPredictor  <- function(object,newdata,...){
     p
 }
 
+##' @export 
+predictRisk.gbm <- function(object, newdata, times, n.trees = NULL) {
+    traindata <-  reconstructGBMdata(object)
+    if (is.null(n.trees)) n.trees <- object$n.trees
+    p <- matrix(0, NROW(newdata), length(times))
+    xb.train <- predict(object ,newdata = traindata, n.trees = n.trees)
+    H2 <- basehaz.gbm(t = traindata[, as.character(object$call$formula[[2]][[2]])], 
+                      delta = traindata[, as.character(object$call$formula[[2]][[3]])], 
+                      f.x = xb.train, t.eval = times)
+    xb.test <- predict(object, newdata = newdata , n.trees = n.trees ) 
+    for (i in 1:length(times)) p[,i] <- exp(-H2[i] * exp(xb.test))
+    p[,times==0] <- 1
+    1 - p
+}
+##' @export 
+predictRisk.flexsurvreg <- function(object, newdata, times, ...) {
+    newdata <- data.frame(newdata)
+    p <- matrix(0, NROW(newdata), length(times))
+    term <- attr(terms(as.formula(object$call$formula)), "term.labels")
+    sm <- summary(object, newdata = newdata[, term], t = times, start = 0, B = 0) #no confidence interval simulations
+    for (i in 1:NROW(newdata)){
+        p[i,] <- sm[[i]][,2]
+    }
+    if (NROW(p) != NROW(newdata) || NCOL(p) != length(times)) 
+        stop("Prediction failed")
+    1 - p
+}
 
 
 #----------------------------------------------------------------------
 ### predictRisk.R ends here
+
