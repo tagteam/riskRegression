@@ -1,18 +1,18 @@
-### print.Score.R --- 
+### print.Score.R ---
 #----------------------------------------------------------------------
 ## author: Thomas Alexander Gerds
-## created: May 31 2016 (11:32) 
-## Version: 
-## last-updated: May 24 2019 (13:29) 
+## created: May 31 2016 (11:32)
+## Version:
+## last-updated: May 24 2019 (13:29)
 ##           By: Thomas Alexander Gerds
 ##     Update #: 41
 #----------------------------------------------------------------------
-## 
-### Commentary: 
-## 
+##
+### Commentary:
+##
 ### Change Log:
 #----------------------------------------------------------------------
-## 
+##
 ### Code:
 
 ##' Print method for risk prediction scores
@@ -64,6 +64,12 @@ print.Score <- function(x,digits=3,...){
             "The 'confidence intervals' and 'p-values' are obtained with the delta method after bootstrap.\n",
             sep="")
     })
+    if (x$split.method$internal.name == "crossval"){
+        cat("\n",x$split.method$name, " repeated ",
+            x$split.method$B,
+            " times.\n",
+            sep="")
+    }
 }
 
 #' @method print scoreAUC
