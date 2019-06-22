@@ -1,20 +1,100 @@
-#+TITLE: Testing k-fold CV
+#+TITLE: k-fold cross-validation
 #+OPTIONS: H:3 num:t toc:nil \n:nil @:t ::t |:t ^:t -:t f:t *:t <:t
 #+OPTIONS: TeX:t LaTeX:t skip:nil d:t todo:t pri:nil tags:not-in-toc author:nil
 #+LaTeX_CLASS: org-article
 #+LaTeX_HEADER:\usepackage{authblk}
 #+LaTeX_HEADER:\usepackage{natbib}
-#+LaTeX_HEADER:\author{Anders Munch}
+#+LaTeX_HEADER:\author{Anders Munch and Thomas Alexander Gerds}
 #+LaTeX_HEADER:\affil{University of Copenhagen, Department of Public Health, Section of Biostatistics, Copenhagen, Denmark}
 
+* Introduction 
+
+This document discusses the different cross-validation options of the
+=Score= function.
+
+* Formula
+
+The observed outcome status at time \(t\) for subject \(i\) is
+\(\tilde Y_i=1_{\{\min(T_i,C_i)\le t\}}\) where \(T_i\) is the event
+time and \(C_i\) the right censoring time. A risk prediction is a
+value between 0 and 1. The risk prediction of a statistical model at
+time \(t\) for subject \(i\) is based on baseline predictor variables
+\(X_i\) and given by \(\hat R(t|X_i)\). The inverse probability of
+censoring weights (IPCW) are given by \(\hat W_i(t)\) based on a model for
+the conditional censoring survival distribution \(P(C> t|X)\).
+
+The data \(D_n=\{(\tilde T_i,\Delta_i,X_i)\}_{i=1}^n\), where also
+\(\tilde T_i=\min (T_i,C_i)\) and \(\Delta_i=1_{\{T_i\le C_i\}})\) are
+divided into disjoint sets:
+#+begin_export latex
+\begin{equation*}
+D_n = \underbrace{D_l}_{\text{Training set}} \cup \underbrace{D_v}_{\text{Validation set}}
+\end{equation*}
+#+end_export
+
+** =loob=
+
+- =B= number of bootstrap samples
+- \(D_l^b\) = b'th bootstrap sample
+- \(D_v^b=D_n \setminus D_l^b\)  = samples out-of-bag
+- \(\hat R_b\) the model fitted in \(D_l^b\)
+- \(0\le r_i \le B\) the number of bootstrap samples where subject \(i\) is out-of-bag
+#+begin_export latex
+\begin{equation*}
+\text{loob}=\frac 1 n \sum_{i=1}^n\frac{1}{r_i}
+\sum_{b: i\in D_n\setminus D_b}\hat W_i(t) \{\tilde Y_i(t)-\hat
+R_b(t|X_i)\}^2
+\end{equation*}
+#+end_export
+
+** =bootcv=
+
+- =B= number of bootstrap samples
+- \(D_l^b\) = b'th bootstrap sample
+- \(D_v^b=D_n \setminus D_l^b\)  = samples out-of-bag
+- \(\hat R_b\) the model fitted in \(D_l^b\)
+- \(0\le m_b \le n\) the size of \(D_v^b\)
+
+#+begin_export latex
+\begin{equation*}
+  \text{bootcv}= \frac 1 B \sum_{b=1}^B\frac{1}{m_b}
+  \sum_{i\in D_n\setminus D_b}\hat
+  W_i(t) \{\tilde Y_i(t)-\hat R_b(t|X_i)\}^2.
+\end{equation*}
+#+end_export
+   
+** =cv-K= once
+
+- =K= number of folds
+- \(D_l^k=D_n \setminus D_v^k\) = data without fold-k
+- \(D_v^k\)  = data in fold-k
+- \(\hat R_k\) the model fitted in \(D_l^k\)
+- \(\hat R_{k_i}\) the prediction of model fitted without the fold \(k_i\) where \(i\in D_v^k\)
+
+#+begin_export latex
+\begin{equation*}
+\text{cv-K}=  \frac{1}{n} \sum_{i\in D_n}
+  \hat W_i(t) \{\tilde Y_i(t)-\hat R_{k_i}(t|X_i)\}^2.
+\end{equation*}
+#+end_export
+
+** =cv-K= repeated B times
+
+Same as =cv-K= but now we repeat K-fold B times. Then, we have two
+possibilities:
+
+1. average the B values of =cv-K= (like =bootcv=)
+2. for each \(i\) collect the B predictions (like =loob=)
+
+TODO: formula
 
 * Testing
 Copy/paste some functionality form other vignette.
 
 Packages and source for reloading after edits.
 #+BEGIN_SRC R  :results output   :exports silent  :session *R* :cache yes
-  library(riskRegression)
-  sessionInfo()
+library(riskRegression)
+sessionInfo()
 #+END_SRC
 
 #+RESULTS[<2019-06-13 09:25:58> 89bbea24d7a593489c4d8d082db5a2eb5946e265]:
@@ -116,9 +196,9 @@ Bootstrap cross-validation based on 100 bootstrap samples (drawn with replacemen
 
 And gives some result for =cv= when just using the same method as for =bootcv=. Not sure these are correct however.
 #+BEGIN_SRC R  :results silent  :exports code  :session *R* :cache yes
-  X1 <- Score(list("Exclusive ERG"=lrfit.ex,"Inclusive ERG"=lrfit.inc),data=astest,
-	      formula=Y1~1,summary="ipa",se.fit=0L,metrics="brier",contrasts=FALSE,
-	      split.method = "cv5", B=100)
+X1 <- Score(list("Exclusive ERG"=lrfit.ex,"Inclusive ERG"=lrfit.inc),data=astest,
+            formula=Y1~1,summary="ipa",se.fit=0L,metrics="brier",contrasts=FALSE,
+            split.method = "cv5", B=100)
 #+END_SRC
 
 
