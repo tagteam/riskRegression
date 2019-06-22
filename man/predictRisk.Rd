@@ -22,6 +22,8 @@
 \alias{predictRisk.lrm}
 \alias{predictRisk.glm}
 \alias{predictRisk.rpart}
+\alias{predictRisk.gbm}
+\alias{predictRisk.flexsurvreg}
 \title{Extrating predicting risks from regression models}
 \usage{
 \method{predictRisk}{glm}(object,newdata,...)
@@ -37,6 +39,8 @@
 \method{predictRisk}{rfsrc}(object,newdata,times,cause,...)
 \method{predictRisk}{FGR}(object,newdata,times,cause,...)
 \method{predictRisk}{CauseSpecificCox}(object,newdata,times,cause,...)
+\method{predictRisk}{gbm}(object,newdata,times,n.trees,...)
+\method{predictRisk}{flexsurvreg}(object,newdata,times,...)
 }
 \arguments{
 \item{object}{A fitted model from which to extract predicted event

@@ -2,7 +2,7 @@
 % Please edit documentation in R/predictRisk.R
 \name{SmcFcs}
 \alias{SmcFcs}
-\title{TODO}
+\title{SmcFcs}
 \usage{
 SmcFcs(formula, data, m = 5, method, fitter = "glm", fit.formula, ...)
 }

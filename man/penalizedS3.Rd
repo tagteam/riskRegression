@@ -4,7 +4,8 @@
 \alias{penalizedS3}
 \title{S3-wrapper for S4 function penalized}
 \usage{
-penalizedS3(formula, data, type = "ridge", ...)
+penalizedS3(formula, data, type = "elastic.net", lambda1, lambda2, fold,
+  ...)
 }
 \arguments{
 \item{formula}{Communicated outcome and explanatory variables. See examples.}
@@ -13,6 +14,10 @@ penalizedS3(formula, data, type = "ridge", ...)
 
 \item{type}{String specifying the type of penalization. Should match one of the following values:
 \code{"ridge"}, \code{"lasso"}, \code{"elastic.net"}.}
+
+\item{lambda1}{Lasso penalty}
+
+\item{lambda2}{ridge penalty}
 
 \item{...}{Arguments passed to penalized}
 }
