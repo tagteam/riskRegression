@@ -7,6 +7,9 @@ prepareData/
 ^vignettes/.*\.tex$
 ^vignettes/.*\.pdf$
 ^vignettes/.*\.bbl$
+^vignettes/.*\.aux$
+^vignettes/.*\.log$
+^vignettes/.*\.out$
 ^\.travis\.yml$
 ^.*\.Rproj$
 ^\.Rproj\.user$

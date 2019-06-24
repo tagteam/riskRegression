@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Feb 23 2017 (11:15) 
 ## Version: 
-## last-updated: Mar  3 2019 (20:02) 
+## last-updated: Jun 23 2019 (15:29) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 278
+##     Update #: 292
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -144,7 +144,7 @@ plotCalibration <- function(x,
                             cex=1,
                             ...){
     # {{{ plot frame
-    model=risk=NULL
+    model=risk=event=status=NULL
     if (missing(pseudo) & missing(rug))
         if (x$cens.type=="rightCensored"){
             showPseudo <- TRUE
@@ -196,10 +196,8 @@ plotCalibration <- function(x,
         method="quantile"
         if (!(NF==1)) stop(paste0("Barplots work only for one risk prediction model at a time. Provided are ",NF, "models."))
     }
-
     # }}}
     # {{{ lines 
-
     if (missing(lwd)) lwd <- rep(3,NF)
     if (missing(col)) {
         if (bars)
@@ -221,10 +219,8 @@ plotCalibration <- function(x,
     if (length(lty) < NF) lty <- rep(lty,length.out=NF)
     if (length(col) < NF) col <- rep(col,length.out=NF)
     if (length(pch) < NF) pch <- rep(pch,length.out=NF)
-
     # }}}
     # {{{ SmartControl
-
     modelnames <- pframe[,unique(model)]
     axis1.DefaultArgs <- list(side=1,las=1,at=seq(0,xlim[2],xlim[2]/4))
     axis2.DefaultArgs <- list(side=2,las=2,at=seq(0,ylim[2],ylim[2]/4),mgp=c(4,1,0))
@@ -235,7 +231,6 @@ plotCalibration <- function(x,
                                      auc.in.legend=auc.in.legend,
                                      brier.in.legend=brier.in.legend,
                                      drop.null.model=TRUE)
-
         if (is.character(legend))
             legend.text <- legend
         else
@@ -328,9 +323,8 @@ plotCalibration <- function(x,
                                                      "axis1"=list(side=1)),
                                          verbose=TRUE)
     }
-
-    # }}}
-    # {{{ smoothing
+                                        # }}}
+                                        # {{{ smoothing
     method <- match.arg(method,c("quantile","nne"))
     getXY <- function(f){
         risk=NULL
@@ -346,7 +340,20 @@ plotCalibration <- function(x,
                    xgroups <- (groups[-(length(groups))]+groups[-1])/2
                    pcut <- cut(p,groups,include.lowest=TRUE)
                    ## if (x$cens.type=="rightCensored"){
-                   plotFrame=data.frame(Pred=tapply(p,pcut,mean),Obs=pmin(1,pmax(0,tapply(jackF,pcut,mean))))
+                   if (x$response.type=="binary"){
+                       plotFrame=data.frame(Pred=tapply(p,pcut,mean),
+                                            Obs=pmin(1,pmax(0,tapply(jackF,pcut,mean))))
+                   }else{
+                       censcode <- pframe[status==0,event[1]]
+                       qfit <- prodlim(Hist(time,event,cens.code=censcode)~pcut,data=pframe)
+                       cause <- x$call$cause
+                       plotFrame=data.frame(Pred=tapply(p,pcut,mean),
+                                            Obs=predict(qfit,
+                                                        newdata=data.frame(pcut=levels(pcut)),
+                                                        cause=cause,
+                                                        mode="matrix",
+                                                        times=tp,surv=FALSE))
+                   }
                    attr(plotFrame,"quantiles") <- groups
                    plotFrame
                },
@@ -391,9 +398,8 @@ plotCalibration <- function(x,
     }
     plotFrames <- lapply(modelnames,function(f){getXY(f)})
     names(plotFrames) <- modelnames
-    # }}}
-    # {{{ plot and/or invisibly output the results
-
+                                        # }}}
+                                        # {{{ plot and/or invisibly output the results
     if (bars){
         if ((is.logical(names[[1]]) && names[[1]]==TRUE)|| names[[1]] %in% c("quantiles.labels","quantiles")){
             qq <- attr(plotFrames[[1]],"quantiles")
@@ -436,13 +442,11 @@ plotCalibration <- function(x,
                 lty=lty,
                 type=type,
                 NF=NF)
-                
     if (method=="nne")
         out <- c(out,list(bandwidth=sapply(plotFrames,
                                            function(x)attr(x,"bandwidth"))))
     # }}}
     # {{{ do the actual plot
-
     if (plot){
         if (out$add[1]==FALSE && !out$bars[1]){
             do.call("plot",control$plot)
@@ -568,7 +572,6 @@ plotCalibration <- function(x,
             do.call("axis",control$axis2)
         }
     }
-
     # }}}
     class(out) <- "calibrationPlot"
     invisible(out)
