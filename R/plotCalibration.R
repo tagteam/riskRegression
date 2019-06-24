@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Feb 23 2017 (11:15) 
 ## Version: 
-## last-updated: Jun 23 2019 (09:34) 
+## last-updated: Jun 23 2019 (15:29) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 291
+##     Update #: 292
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -144,7 +144,7 @@ plotCalibration <- function(x,
                             cex=1,
                             ...){
     # {{{ plot frame
-    model=risk=NULL
+    model=risk=event=status=NULL
     if (missing(pseudo) & missing(rug))
         if (x$cens.type=="rightCensored"){
             showPseudo <- TRUE
