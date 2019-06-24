@@ -1,4 +1,4 @@
-% Created 2019-06-22 Sat 11:07
+% Created 2019-06-24 Mon 10:48
 % Intended LaTeX compiler: pdflatex
 \documentclass{article}
                \usepackage{listings}
@@ -54,13 +54,13 @@ basewidth={0.5em,0.4em},
 \maketitle
 
 \section{Introduction}
-\label{sec:orga4e7d65}
+\label{sec:orgc3bac13}
 
 This document discusses the different cross-validation options of the
 \texttt{Score} function.
 
 \section{Formula}
-\label{sec:org1e0d079}
+\label{sec:org2a05972}
 
 The observed outcome status at time \(t\) for subject \(i\) is
 \(\tilde Y_i=1_{\{\min(T_i,C_i)\le t\}}\) where \(T_i\) is the event
@@ -79,7 +79,7 @@ D_n = \underbrace{D_l}_{\text{Training set}} \cup \underbrace{D_v}_{\text{Valida
 \end{equation*}
 
 \subsection{\texttt{loob}}
-\label{sec:org3f74de5}
+\label{sec:org86449da}
 
 \begin{itemize}
 \item \texttt{B} number of bootstrap samples
@@ -90,12 +90,12 @@ D_n = \underbrace{D_l}_{\text{Training set}} \cup \underbrace{D_v}_{\text{Valida
 \end{itemize}
 \begin{equation*}
 \text{loob}=\frac 1 n \sum_{i=1}^n\frac{1}{r_i}
-\sum_{b: i\in D_n\setminus D_b}\hat W_i(t) \{\tilde Y_i(t)-\hat
+\sum_{b: i\in D_n\setminus D^b_l}\hat W_i(t) \{\tilde Y_i(t)-\hat
 R_b(t|X_i)\}^2
 \end{equation*}
 
 \subsection{\texttt{bootcv}}
-\label{sec:orgbd605e7}
+\label{sec:org43397b6}
 
 \begin{itemize}
 \item \texttt{B} number of bootstrap samples
@@ -107,12 +107,12 @@ R_b(t|X_i)\}^2
 
 \begin{equation*}
   \text{bootcv}= \frac 1 B \sum_{b=1}^B\frac{1}{m_b}
-  \sum_{i\in D_n\setminus D_b}\hat
+  \sum_{i\in D_n\setminus D^b_l}\hat
   W_i(t) \{\tilde Y_i(t)-\hat R_b(t|X_i)\}^2.
 \end{equation*}
 
 \subsection{\texttt{cv-K} once}
-\label{sec:orga6466c8}
+\label{sec:org93135a0}
 
 \begin{itemize}
 \item \texttt{K} number of folds
@@ -128,20 +128,55 @@ R_b(t|X_i)\}^2
 \end{equation*}
 
 \subsection{\texttt{cv-K} repeated B times}
-\label{sec:org342b9f1}
+\label{sec:org4c46ee2}
 
-Same as \texttt{cv-K} but now we repeat K-fold B times. Then, we have two
+Same as \texttt{cv-K} but now we repeat K-fold B times. In this case, the
+bootstrap samples are of the same size a the whole original
+dataset. We use the notation:
+
+\begin{itemize}
+\item \(D_n^b\) is the \(b\)'th bootstrap sample of size \(n\).
+\item \(D_v^{b,k}\) is the data in the fold-\(k\) of the \(b\)'th bootstrap sample.
+\item \(D_l^{b, k} = D^b_n \setminus D_v^{b,k}\)  is the bootstrap sample
+without the fold-\(k\).
+\item \(\hat{R}^b_k\) is a model trained on \(D_l^{b, k}\), i.e., on the
+\(b\)'th bootstrap sample without the fold-\(k\).
+\item For each \(i = 1, \dots, n\) and \(b = 1, \dots, B\), let \(k_i^b\) be
+defined by \(i \in D^{b, k_i^b}_v\), i.e., \(k_i^b\) denotes the fold in
+\(D_n^b\) that subject \(i\) is part of. Then \(\hat{R}^b_{k_i} :=
+  \hat{R}^b_{k^b_i}\) denotes the model trained on the all the folds of the
+\(b\)'th bootstrap sample, except the fold including subject \(i\).
+\item \(l_i\) is the number (between \(0\) and \(B\)) of times that subject \(i\) is sampled,
+i.e., the number of bootstrap samples in
+which subject \(i\) is \emph{included}.
+\end{itemize}
+
+Then, we have two
 possibilities:
 
 \begin{enumerate}
-\item average the B values of \texttt{cv-K} (like \texttt{bootcv})
-\item for each \(i\) collect the B predictions (like \texttt{loob})
+\item Average the B values of \texttt{cv-K} (like \texttt{bootcv}):
 \end{enumerate}
+\begin{equation*}
+  \frac{1}{B}\sum_{b=1}^{B}\frac{1}{n}\sum_{i \in D^b_n} \hat{W}_i(t)
+  \left ( \tilde{Y}_i(t) - \hat{R}_{k_i}^b(t \mid X_i)  \right)^2 .
+\end{equation*}
+\begin{enumerate}
+\item For each \(i\) collect the B predictions (like \texttt{loob}):
+\end{enumerate}
+\begin{equation*}
+  \frac{1}{n}\sum_{\substack{i = 1, \\ l_i \not = 0}}^n
+  \frac{1}{l_i} \sum_{b : i \in D^b_n} \hat{W}_i(t) \left(
+    \tilde{Y}_i(t) - \hat{R}_{k_i}^b(t \mid X_i) \right)^2.
+\end{equation*}
 
-TODO: formula
+If we do not use replacement in the bootstrap sampling (which then
+simply gives \(B\) different partitions of the same dataset) the two
+formulas are of course identical, because then every subject \(i\) is
+present in all \(B\) bootstrap samples and \(D_n^b = D_n\) for all \(b\).
 
 \section{Testing}
-\label{sec:orgf94a3e2}
+\label{sec:org3fe00db}
 Copy/paste some functionality form other vignette.
 
 Packages and source for reloading after edits.

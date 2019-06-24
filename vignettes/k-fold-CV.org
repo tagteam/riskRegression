@@ -7,7 +7,7 @@
 #+LaTeX_HEADER:\author{Anders Munch and Thomas Alexander Gerds}
 #+LaTeX_HEADER:\affil{University of Copenhagen, Department of Public Health, Section of Biostatistics, Copenhagen, Denmark}
 
-* Introduction 
+* Introduction
 
 This document discusses the different cross-validation options of the
 =Score= function.
@@ -42,7 +42,7 @@ D_n = \underbrace{D_l}_{\text{Training set}} \cup \underbrace{D_v}_{\text{Valida
 #+begin_export latex
 \begin{equation*}
 \text{loob}=\frac 1 n \sum_{i=1}^n\frac{1}{r_i}
-\sum_{b: i\in D_n\setminus D_b}\hat W_i(t) \{\tilde Y_i(t)-\hat
+\sum_{b: i\in D_n\setminus D^b_l}\hat W_i(t) \{\tilde Y_i(t)-\hat
 R_b(t|X_i)\}^2
 \end{equation*}
 #+end_export
@@ -58,11 +58,11 @@ R_b(t|X_i)\}^2
 #+begin_export latex
 \begin{equation*}
   \text{bootcv}= \frac 1 B \sum_{b=1}^B\frac{1}{m_b}
-  \sum_{i\in D_n\setminus D_b}\hat
+  \sum_{i\in D_n\setminus D^b_l}\hat
   W_i(t) \{\tilde Y_i(t)-\hat R_b(t|X_i)\}^2.
 \end{equation*}
 #+end_export
-   
+
 ** =cv-K= once
 
 - =K= number of folds
@@ -80,13 +80,48 @@ R_b(t|X_i)\}^2
 
 ** =cv-K= repeated B times
 
-Same as =cv-K= but now we repeat K-fold B times. Then, we have two
+Same as =cv-K= but now we repeat K-fold B times. In this case, the
+bootstrap samples are of the same size a the whole original
+dataset. We use the notation:
+
+- $D_n^b$ is the $b$'th bootstrap sample of size $n$.
+- $D_v^{b,k}$ is the data in the fold-$k$ of the $b$'th bootstrap sample.
+- $D_l^{b, k} = D^b_n \setminus D_v^{b,k}$  is the bootstrap sample
+  without the fold-$k$.
+- $\hat{R}^b_k$ is a model trained on $D_l^{b, k}$, i.e., on the
+  $b$'th bootstrap sample without the fold-$k$.
+- For each $i = 1, \dots, n$ and $b = 1, \dots, B$, let $k_i^b$ be
+  defined by $i \in D^{b, k_i^b}_v$, i.e., $k_i^b$ denotes the fold in
+  $D_n^b$ that subject $i$ is part of. Then $\hat{R}^b_{k_i} :=
+  \hat{R}^b_{k^b_i}$ denotes the model trained on the all the folds of the
+  $b$'th bootstrap sample, except the fold including subject $i$.
+- $l_i$ is the number (between $0$ and $B$) of times that subject $i$ is sampled,
+  i.e., the number of bootstrap samples in
+  which subject $i$ is /included/.
+
+Then, we have two
 possibilities:
 
-1. average the B values of =cv-K= (like =bootcv=)
-2. for each \(i\) collect the B predictions (like =loob=)
+1. Average the B values of =cv-K= (like =bootcv=):
+#+BEGIN_EXPORT latex
+\begin{equation*}
+  \frac{1}{B}\sum_{b=1}^{B}\frac{1}{n}\sum_{i \in D^b_n} \hat{W}_i(t)
+  \left ( \tilde{Y}_i(t) - \hat{R}_{k_i}^b(t \mid X_i)  \right)^2 .
+\end{equation*}
+#+END_EXPORT
+2. For each \(i\) collect the B predictions (like =loob=):
+#+BEGIN_EXPORT latex
+\begin{equation*}
+  \frac{1}{n}\sum_{\substack{i = 1, \\ l_i \not = 0}}^n
+  \frac{1}{l_i} \sum_{b : i \in D^b_n} \hat{W}_i(t) \left(
+    \tilde{Y}_i(t) - \hat{R}_{k_i}^b(t \mid X_i) \right)^2.
+\end{equation*}
+#+END_EXPORT
 
-TODO: formula
+If we do not use replacement in the bootstrap sampling (which then
+simply gives $B$ different partitions of the same dataset) the two
+formulas are of course identical, because then every subject $i$ is
+present in all $B$ bootstrap samples and $D_n^b = D_n$ for all $b$.
 
 * Testing
 Copy/paste some functionality form other vignette.
