@@ -1,4 +1,4 @@
-% Created 2019-06-22 Sat 11:07
+% Created 2019-06-24 Mon 17:59
 % Intended LaTeX compiler: pdflatex
 \documentclass{article}
                \usepackage{listings}
@@ -54,13 +54,13 @@ basewidth={0.5em,0.4em},
 \maketitle
 
 \section{Introduction}
-\label{sec:orga4e7d65}
+\label{sec:orgce8d327}
 
 This document discusses the different cross-validation options of the
 \texttt{Score} function.
 
 \section{Formula}
-\label{sec:org1e0d079}
+\label{sec:orgdd3b9ce}
 
 The observed outcome status at time \(t\) for subject \(i\) is
 \(\tilde Y_i=1_{\{\min(T_i,C_i)\le t\}}\) where \(T_i\) is the event
@@ -79,7 +79,7 @@ D_n = \underbrace{D_l}_{\text{Training set}} \cup \underbrace{D_v}_{\text{Valida
 \end{equation*}
 
 \subsection{\texttt{loob}}
-\label{sec:org3f74de5}
+\label{sec:orga7ecde7}
 
 \begin{itemize}
 \item \texttt{B} number of bootstrap samples
@@ -90,12 +90,12 @@ D_n = \underbrace{D_l}_{\text{Training set}} \cup \underbrace{D_v}_{\text{Valida
 \end{itemize}
 \begin{equation*}
 \text{loob}=\frac 1 n \sum_{i=1}^n\frac{1}{r_i}
-\sum_{b: i\in D_n\setminus D_b}\hat W_i(t) \{\tilde Y_i(t)-\hat
+\sum_{b: i\in D_n\setminus D^b_l}\hat W_i(t) \{\tilde Y_i(t)-\hat
 R_b(t|X_i)\}^2
 \end{equation*}
 
 \subsection{\texttt{bootcv}}
-\label{sec:orgbd605e7}
+\label{sec:org688d21f}
 
 \begin{itemize}
 \item \texttt{B} number of bootstrap samples
@@ -107,12 +107,12 @@ R_b(t|X_i)\}^2
 
 \begin{equation*}
   \text{bootcv}= \frac 1 B \sum_{b=1}^B\frac{1}{m_b}
-  \sum_{i\in D_n\setminus D_b}\hat
+  \sum_{i\in D_n\setminus D^b_l}\hat
   W_i(t) \{\tilde Y_i(t)-\hat R_b(t|X_i)\}^2.
 \end{equation*}
 
 \subsection{\texttt{cv-K} once}
-\label{sec:orga6466c8}
+\label{sec:org03587f7}
 
 \begin{itemize}
 \item \texttt{K} number of folds
@@ -128,20 +128,43 @@ R_b(t|X_i)\}^2
 \end{equation*}
 
 \subsection{\texttt{cv-K} repeated B times}
-\label{sec:org342b9f1}
+\label{sec:org790fb94}
 
-Same as \texttt{cv-K} but now we repeat K-fold B times. Then, we have two
+Same as \texttt{cv-K} but now we repeat K-fold B times. At each time we use a
+different seed to select the \(k\) folds of the data. We use the notation:
+
+\begin{itemize}
+\item \(D_v^{b,k}\) is the data in the fold-\(k\) at the \(b\)'th iteration.
+\item \(D_l^{b, k} = D^n \setminus D_v^{b,k}\)  is the data
+without the fold-\(k\) selected at iteration \(b\).
+\item \(\hat{R}^b_k\) is a model trained on \(D_l^{b, k}\), i.e., on whole
+data except fold-\(k\) from the \(b\)'th iteration.
+\item For each \(i = 1, \dots, n\) and \(b = 1, \dots, B\), let \(k_i^b\) be
+defined by \(i \in D^{b, k_i^b}_v\), i.e., \(k_i^b\) denotes the fold in
+the \(b\) iteration that subject \(i\) is part of. Then \(\hat{R}^b_{k_i} :=
+  \hat{R}^b_{k^b_i}\) denotes the model trained on the all the folds of the
+\(b\)'th iteration, except the fold including subject \(i\).
+\end{itemize}
+
+Then, we have two
 possibilities:
 
 \begin{enumerate}
-\item average the B values of \texttt{cv-K} (like \texttt{bootcv})
-\item for each \(i\) collect the B predictions (like \texttt{loob})
+\item Average the B values of \texttt{cv-K} (like \texttt{bootcv}).
+\item For each \(i\) collect the B predictions (like \texttt{loob}).
 \end{enumerate}
 
-TODO: formula
+Because we use the same data set in every iteration, each subject \(i\)
+is present in a validation set exactly \(B\) times. Therefore these two
+approaches give the same formula:
+\begin{equation*}
+  \frac{1}{B}\sum_{b=1}^{B}\frac{1}{n}\sum_{i \in D_n} \hat{W}_i(t)
+  \left ( \tilde{Y}_i(t) - \hat{R}_{k_i}^b(t \mid X_i)  \right)^2 .
+\end{equation*}
+
 
 \section{Testing}
-\label{sec:orgf94a3e2}
+\label{sec:orgee1284b}
 Copy/paste some functionality form other vignette.
 
 Packages and source for reloading after edits.
