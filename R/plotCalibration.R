@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Feb 23 2017 (11:15) 
 ## Version: 
-## last-updated: Jun 23 2019 (15:29) 
+## last-updated: Jun 25 2019 (07:03) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 292
+##     Update #: 300
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -113,6 +113,7 @@ plotCalibration <- function(x,
                             models,
                             times,
                             method="nne",
+                            cens.method="local",
                             round=TRUE,
                             bandwidth=NULL,
                             q=10,
@@ -143,7 +144,7 @@ plotCalibration <- function(x,
                             na.action=na.fail,
                             cex=1,
                             ...){
-    # {{{ plot frame
+                                        # {{{ plot frame
     model=risk=event=status=NULL
     if (missing(pseudo) & missing(rug))
         if (x$cens.type=="rightCensored"){
@@ -196,8 +197,8 @@ plotCalibration <- function(x,
         method="quantile"
         if (!(NF==1)) stop(paste0("Barplots work only for one risk prediction model at a time. Provided are ",NF, "models."))
     }
-    # }}}
-    # {{{ lines 
+                                        # }}}
+                                        # {{{ lines 
     if (missing(lwd)) lwd <- rep(3,NF)
     if (missing(col)) {
         if (bars)
@@ -219,8 +220,8 @@ plotCalibration <- function(x,
     if (length(lty) < NF) lty <- rep(lty,length.out=NF)
     if (length(col) < NF) col <- rep(col,length.out=NF)
     if (length(pch) < NF) pch <- rep(pch,length.out=NF)
-    # }}}
-    # {{{ SmartControl
+                                        # }}}
+                                        # {{{ SmartControl
     modelnames <- pframe[,unique(model)]
     axis1.DefaultArgs <- list(side=1,las=1,at=seq(0,xlim[2],xlim[2]/4))
     axis2.DefaultArgs <- list(side=2,las=2,at=seq(0,ylim[2],ylim[2]/4),mgp=c(4,1,0))
@@ -383,14 +384,32 @@ plotCalibration <- function(x,
                            ## }
                        } else{
                            bw <- bandwidth
-                       }                       
+                       }
                        if (bw>=1){
                            ## calibration in the large
                            plotFrame <- data.frame(Pred=mean(p),Obs=mean(jackF))
                        } else{
-                           ## nn <- prodlim::neighborhood(x=p,bandwidth=bw)
-                           nbh <- prodlim::meanNeighbors(x=p,y=jackF,bandwidth=bw)
-                           plotFrame <- data.frame(Pred=nbh$uniqueX,Obs=nbh$averageY)
+                           if (x$response.type=="binary"){
+                               plotFrame=data.frame(Pred=tapply(p,pcut,mean),
+                                                    Obs=pmin(1,pmax(0,tapply(jackF,pcut,mean))))
+                           }else{
+                               ## local Kaplan-Meier/Aalen-Johansen 
+                               if (cens.method=="local"){
+                                   censcode <- pframe[status==0,event[1]]
+                                   pfit <- prodlim(Hist(time,event,cens.code=censcode)~p,data=pframe)
+                                   cause <- x$call$cause
+                                   plotFrame=data.frame(Pred=sort(unique(p)),
+                                                        Obs=predict(pfit,
+                                                                    newdata=data.frame(p=sort(unique(p))),
+                                                                    cause=cause,
+                                                                    mode="matrix",
+                                                                    times=tp,surv=FALSE))
+                               } else{
+                                   ## jackknife pseudo values
+                                   nbh <- prodlim::meanNeighbors(x=p,y=jackF,bandwidth=bw)
+                                   plotFrame <- data.frame(Pred=nbh$uniqueX,Obs=nbh$averageY)
+                               }
+                           }
                        }
                        attr(plotFrame,"bandwidth") <- bw
                        plotFrame
@@ -445,8 +464,8 @@ plotCalibration <- function(x,
     if (method=="nne")
         out <- c(out,list(bandwidth=sapply(plotFrames,
                                            function(x)attr(x,"bandwidth"))))
-    # }}}
-    # {{{ do the actual plot
+                                        # }}}
+                                        # {{{ do the actual plot
     if (plot){
         if (out$add[1]==FALSE && !out$bars[1]){
             do.call("plot",control$plot)
@@ -572,7 +591,7 @@ plotCalibration <- function(x,
             do.call("axis",control$axis2)
         }
     }
-    # }}}
+                                        # }}}
     class(out) <- "calibrationPlot"
     invisible(out)
 }
