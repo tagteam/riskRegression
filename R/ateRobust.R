@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne, Thomas A. Gerds
 ## Created: jun 27 2018 (17:47) 
 ## Version: 
-## Last-Updated: maj  6 2019 (14:08) 
+## Last-Updated: maj 29 2019 (18:17) 
 ##           By: Brice Ozenne
-##     Update #: 1222
+##     Update #: 1230
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -305,7 +305,7 @@ ateRobust <- function(data, times, cause, type,
             prediction.event0 <- do.call(predictor.cox, args = list(model.event, newdata = data0, times = times, type = "survival", average.iid = nuisance.iid0))
             prediction.event1 <- do.call(predictor.cox, args = list(model.event, newdata = data1, times = times, type = "survival", average.iid = nuisance.iid1))
 
-            ## 
+            ## there is a minus because predictor.cox return iid(survival) = -iid(risk)
             iidG.event0 <- -prediction.event0$survival.average.iid[[1]][,1]
             iidAIPW.event0 <- -prediction.event0$survival.average.iid[[2]][,1]
 
@@ -352,8 +352,12 @@ ateRobust <- function(data, times, cause, type,
         iidAIPW.treatment1 <- prediction.treatment.iid[,4]
         
         ## *** censoring model
-        
-
+        ## difficult because we need the iid not for all combinaisons time x obs but only the "diagonal"
+        ## nuisance.iid <- TRUE
+        ## attr(nuisance.iid, "factor") <- list("IPCW" = data[,.SD$weights^2 * (.SD$status.tau==1) * (.SD$treatment.bin1/ .SD$prob.treatment1 - .SD$treatment.bin0/ .SD$prob.treatment0)])
+        ## predIndiv.censor <- do.call(predictor.cox, args = list(model.censor, newdata = data, times = data$time.tau-(1e-10), type = "survival", diag = TRUE, average.iid = nuisance.iid1))
+        ## Error in predictCox(list(coefficients = c(X6 = -0.00036957593518861),  : 
+        ##   Arguments 'se', 'band', and 'average.iid' must be FALSE when 'diag' is TRUE 
     }
     
     ## ** Compute the (non-centered) influence function
