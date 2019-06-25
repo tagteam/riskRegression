@@ -1,0 +1,451 @@
+#+TITLE: Index of Prediction Accuracy (IPA)
+#+OPTIONS: H:3 num:t toc:nil \n:nil @:t ::t |:t ^:t -:t f:t *:t <:t
+#+OPTIONS: TeX:t LaTeX:t skip:nil d:t todo:t pri:nil tags:not-in-toc author:nil
+#+LaTeX_CLASS: org-article
+#+LaTeX_HEADER:\usepackage{authblk}
+#+LaTeX_HEADER:\usepackage{natbib}
+#+LaTeX_HEADER:\author{Thomas A Gerds}
+#+LaTeX_HEADER:\affil{University of Copenhagen, Department of Public Health, Section of Biostatistics, Copenhagen, Denmark}
+#+LaTeX_HEADER:\author{Michael W Kattan}
+#+LaTeX_HEADER:\affil{Cleveland Clinic, Department of Quantitative Health Sciences, Cleveland, Ohio, USA}
+
+* Introduction
+
+This vignette demonstrates how our software calculates the index of
+prediction accuracy [fn:2]. We distinguish three settings:
+
+- uncensored binary outcome
+- right censored survival outcome (no competing risks)
+- right censored time to event outcome with competing risks 
+
+The Brier score is a loss type metric of prediction performance where
+lower values correspond to better prediction performance. The IPA
+formula for a model is very much the same as the formula for R^2 in a
+standard linear regression model:
+
+\begin{equation*}
+\operatorname{IPA} = 1-\frac{\text{BrierScore(Prediction model)}}{\text{BrierScore(Null model)}}
+\end{equation*}
+
+* Package version
+
+#+ATTR_LATEX: :options otherkeywords={}, deletekeywords={}
+#+BEGIN_SRC R  :results output  :exports results  :session *R* :cache yes  :eval always
+library(data.table)
+library(survival)
+library(riskRegression)
+library(Publish)
+cat("data.table:")
+packageVersion("data.table")
+cat("\nsurvival:")
+packageVersion("survival")
+cat("\nriskRegression:")
+packageVersion("riskRegression")
+cat("\nPublish:")
+packageVersion("Publish")
+#+END_SRC
+
+#+RESULTS[<2019-06-13 10:19:00> f47684812cfced1ee3e11c1d127ff83471a909ef]:
+: data.table:> [1] ‘1.12.2’
+: 
+: survival:> [1] ‘2.44.1.1’
+: 
+: riskRegression:> [1] ‘2019.6.13’
+: 
+: Publish:> [1] ‘2019.3.11’
+
+* Data
+
+For the purpose of illustrating our software we simulate data alike
+the data of an active surveillance prostate cancer
+study [fn:1]. Specifically, we generate a learning set (n=278) and a
+validation set (n=208). In both data sets we define a binary outcome
+variable for the progression status after one year. Note that smallest
+censored event time is larger than 1 year, and hence the event status
+after one year is uncensored. 
+
+#+name:loaddata
+#+ATTR_LATEX: :options otherkeywords={}, deletekeywords={library,data,table,set,time,*,&}
+#+BEGIN_SRC R  :results output raw drawer  :exports code  :session *R* :cache no  :eval always
+set.seed(18)
+astrain <- simActiveSurveillance(278)
+astest <- simActiveSurveillance(208)
+astrain[,Y1:=1*(event==1 & time<=1)]
+astest[,Y1:=1*(event==1 & time<=1)]
+#+END_SRC
+
+#+RESULTS: loaddata
+:results:
+:end:
+
+[fn:1] Berg KD, Vainer B, Thomsen FB, Roeder MA, Gerds TA, Toft BG, Brasso K, and Iversen P. Erg protein expression in diagnostic specimens is associated with increased risk of progression during active surveillance for prostate cancer. European urology, 66(5):851--860, 2014.
+
+* IPA for a binary outcome 
+:PROPERTIES:
+:CUSTOM_ID: sec:binary
+:END:
+
+To illustrate the binary outome setting we analyse the 1-year
+progression status. We have complete 1-year followup, i.e., no dropout
+or otherwise censored data before 1 year. We fit two logistic
+regression models, one including and one excluding the biomarker
+=erg.status=:
+
+#+ATTR_LATEX: :options otherkeywords={}, deletekeywords={glm,family,status,data}
+#+BEGIN_SRC R  :results output raw drawer :exports both  :session *R* :cache yes :var data=loaddata
+lrfit.ex <- glm(Y1~age+lpsaden+ppb5+lmax+ct1+diaggs,data=astrain,family="binomial")
+lrfit.inc <- glm(Y1~age+lpsaden+ppb5+lmax+ct1+diaggs+erg.status,data=astrain,family="binomial")
+publish(lrfit.inc,org=TRUE)
+#+END_SRC
+
+#+RESULTS[<2019-06-13 10:19:01> 4ad587463242261d838b316f44356bc6b6112649]:
+:results:
+| Variable   | Units | OddsRatio | CI.95       | p-value |
+|------------+-------+-----------+-------------+---------|
+| age        |       |      0.98 | [0.90;1.06] |  0.6459 |
+| lpsaden    |       |      0.95 | [0.66;1.36] |  0.7747 |
+| ppb5       |       |      1.09 | [0.92;1.28] |  0.3224 |
+| lmax       |       |      1.08 | [0.83;1.41] |  0.5566 |
+| ct1        | cT1   |       Ref |             |         |
+|            | cT2   |      1.00 | [0.29;3.41] |  0.9994 |
+| diaggs     | GNA   |       Ref |             |         |
+|            | 3/3   |      0.60 | [0.27;1.34] |  0.2091 |
+|            | 3/4   |      0.25 | [0.05;1.30] |  0.1006 |
+| erg.status | neg   |       Ref |             |         |
+|            | pos   |      3.66 | [1.90;7.02] | <0.0001 |
+:end:
+
+Based on these models we predict the risk of progression within one
+year in the validation set.
+
+#+ATTR_LATEX: :options otherkeywords={}, deletekeywords={c}
+#+BEGIN_SRC R  :results output raw drawer  :exports both  :session *R* :cache yes  :eval always
+astest[,risk.ex:=100*predictRisk(lrfit.ex,newdata=astest)]
+astest[,risk.inc:=100*predictRisk(lrfit.inc,newdata=astest)]
+publish(head(astest[,-c(8,9)]),digits=1,org=TRUE)
+#+END_SRC
+
+#+RESULTS[<2019-06-13 10:19:01> 1b832f895d12a85feea8e807fa4ca3edced723a1]:
+:results:
+|  age | lpsaden | ppb5 | lmax | ct1 | diaggs | erg.status |  Y1 | risk.ex | risk.inc |
+|------+---------+------+------+-----+--------+------------+-----+---------+----------|
+| 62.6 |    -3.2 |  4.9 |  4.6 | cT1 | 3/3    | pos        | 0.0 |    23.2 |     36.3 |
+| 66.9 |    -1.7 |  0.7 |  4.1 | cT1 | 3/3    | pos        | 1.0 |    14.0 |     24.7 |
+| 65.4 |    -1.5 |  4.0 |  3.9 | cT1 | 3/3    | neg        | 0.0 |    17.4 |     10.6 |
+| 59.0 |    -2.8 |  6.8 |  3.3 | cT2 | 3/4    | pos        | 1.0 |    10.7 |     21.1 |
+| 55.6 |    -3.5 |  2.8 |  3.0 | cT1 | 3/3    | neg        | 0.0 |    21.9 |     11.8 |
+| 71.1 |    -2.6 |  3.3 |  3.7 | cT1 | 3/3    | neg        | 0.0 |    15.0 |      9.5 |
+:end:
+
+To calculate the Index of Prediction Accuracy (IPA) we call the
+=Score= function as follows on a list which includes the two logistic
+regression models.
+
+#+ATTR_LATEX: :options otherkeywords={}, deletekeywords={list,time,summary,formula,se,contrasts,data}
+#+BEGIN_SRC R  :results output  :exports both  :session *R* :cache yes  :eval always
+X1 <- Score(list("Exclusive ERG"=lrfit.ex,"Inclusive ERG"=lrfit.inc),data=astest,
+            formula=Y1~1,summary="ipa",se.fit=0L,metrics="brier",contrasts=FALSE)
+X1
+#+END_SRC
+
+#+RESULTS[<2019-06-13 10:19:01> 2bcd79c4cca9a135621f7e88a43adbe243da55d5]:
+#+begin_example
+ [1] "ReSpOnSe"   "age"        "lpsaden"    "ppb5"       "lmax"       "ct1"        "diaggs"     "erg.status"
+ [9] "time"       "event"      "Y1"         "risk.ex"    "risk.inc"
+
+Metric Brier:
+
+Results by model:
+
+           model Brier    IPA
+1:    Null model 0.152 0.0000
+2: Exclusive ERG 0.148 0.0268
+3: Inclusive ERG 0.141 0.0729
+#+end_example
+
+Both logistic regression models have a lower Brier score than the
+=Null model= which ignores all predictor variables. Hence, both models
+have a positive IPA. The logistic regression model which excludes the
+ERG biomarker scores IPA=2.68% and the logistic regression model which
+includes the ERG biomarer scores IPA = 7.29%. The difference in IPA
+between the two models is 4.62%. This means that when we omit
+=erg.status= from the model, then we loose 4.62% in IPA compared to
+the full model. It is sometimes interesting to compare the predictor
+variables according to how much they contribute to the prediction
+performance. Generally, this is a non-trivial task which depends on
+the order in which the variables are entered into the model, the
+functional form and also on the type of model. However, we can drop
+one variable at a time from the full model and for each variable
+compute the loss in IPA as the difference between IPA of the full
+model and IPA of the model where the variable is omitted.
+
+#+ATTR_LATEX: :options otherkeywords={}, deletekeywords={}
+#+BEGIN_SRC R  :results output   :exports both  :session *R* :cache yes  :eval always
+IPA(lrfit.inc,newdata=astest)
+#+END_SRC
+
+#+RESULTS[<2019-06-13 10:19:01> 0a14f54e5393497b5ed8baf2e0ffce5d57ed4e7f]:
+#+begin_example
+ [1] "ReSpOnSe"   "age"        "lpsaden"    "ppb5"       "lmax"       "ct1"        "diaggs"     "erg.status"
+ [9] "time"       "event"      "Y1"         "risk.ex"    "risk.inc"  
+    Variable     Brier        IPA        IPA.drop
+1 Null model 0.1523438 0.00000000  0.072907470973
+2 Full model 0.1412368 0.07290747  0.000000000000
+3        age 0.1410426 0.07418209 -0.001274618360
+4    lpsaden 0.1407404 0.07616577 -0.003258303790
+5       ppb5 0.1418408 0.06894266  0.003964812591
+6       lmax 0.1414275 0.07165557  0.001251899862
+7        ct1 0.1412359 0.07291284 -0.000005370558
+8     diaggs 0.1456947 0.04364536  0.029262107389
+9 erg.status 0.1482680 0.02675349  0.046153981690
+#+end_example
+
+* IPA for right censored survival outcome 
+:PROPERTIES:
+:CUSTOM_ID: sec:survival
+:END:
+
+To illustrate the survival outome setting we analyse the 3-year
+progression-free survival probability. So, that the combined endpoint
+is progression or death.  We fit two Cox regression models, one
+including and one excluding the biomarker =erg.status=:
+
+#+ATTR_LATEX: :options otherkeywords={}, deletekeywords={glm,family,status,data}
+#+BEGIN_SRC R  :results output raw drawer :exports both  :session *R* :cache yes :var data=loaddata
+coxfit.ex <- coxph(Surv(time,event!=0)~age+lpsaden+ppb5+lmax+ct1+diaggs,data=astrain,x=TRUE)
+coxfit.inc <- coxph(Surv(time,event!=0)~age+lpsaden+ppb5+lmax+ct1+diaggs+erg.status,data=astrain,x=TRUE)
+publish(coxfit.inc,org=TRUE)
+#+END_SRC
+
+#+RESULTS[<2019-06-13 10:19:01> ab47285b61012d2bca8c73e0eb087b9e08233abe]:
+:results:
+| Variable   | Units | HazardRatio | CI.95       | p-value |
+|------------+-------+-------------+-------------+---------|
+| age        |       |        1.03 | [0.99;1.07] |   0.124 |
+| lpsaden    |       |        1.10 | [0.94;1.29] |   0.230 |
+| ppb5       |       |        1.21 | [1.12;1.30] |  <0.001 |
+| lmax       |       |        1.06 | [0.94;1.19] |   0.359 |
+| ct1        | cT1   |         Ref |             |         |
+|            | cT2   |        0.97 | [0.57;1.66] |   0.916 |
+| diaggs     | GNA   |         Ref |             |         |
+|            | 3/3   |        0.53 | [0.37;0.76] |  <0.001 |
+|            | 3/4   |        0.32 | [0.18;0.58] |  <0.001 |
+| erg.status | neg   |         Ref |             |         |
+|            | pos   |        1.80 | [1.35;2.38] |  <0.001 |
+:end:
+
+Based on these models we predict the risk of progression or death
+within 3 years in the validation set.
+
+#+ATTR_LATEX: :options otherkeywords={}, deletekeywords={c}
+#+BEGIN_SRC R  :results output raw drawer  :exports both  :session *R* :cache yes  
+astest[,risk.ex:=100*predictRisk(coxfit.ex,newdata=astest,times=3)]
+astest[,risk.inc:=100*predictRisk(coxfit.inc,newdata=astest,times=3)]
+publish(head(astest[,-c(8,9)]),digits=1,org=TRUE)
+#+END_SRC
+
+#+RESULTS[<2019-06-13 10:19:01> 5bcf6350ff6f463c8beb576216fb983d9574bfa1]:
+:results:
+|  age | lpsaden | ppb5 | lmax | ct1 | diaggs | erg.status |  Y1 | risk.ex | risk.inc |
+|------+---------+------+------+-----+--------+------------+-----+---------+----------|
+| 62.6 |    -3.2 |  4.9 |  4.6 | cT1 | 3/3    | pos        | 0.0 |    67.5 |     80.7 |
+| 66.9 |    -1.7 |  0.7 |  4.1 | cT1 | 3/3    | pos        | 1.0 |    48.5 |     60.3 |
+| 65.4 |    -1.5 |  4.0 |  3.9 | cT1 | 3/3    | neg        | 0.0 |    67.4 |     60.8 |
+| 59.0 |    -2.8 |  6.8 |  3.3 | cT2 | 3/4    | pos        | 1.0 |    51.1 |     70.1 |
+| 55.6 |    -3.5 |  2.8 |  3.0 | cT1 | 3/3    | neg        | 0.0 |    41.5 |     35.5 |
+| 71.1 |    -2.6 |  3.3 |  3.7 | cT1 | 3/3    | neg        | 0.0 |    65.5 |     57.5 |
+:end:
+
+To calculate the Index of Prediction Accuracy (IPA) we call the
+=Score= function as follows on a list which includes the two Cox 
+regression models.
+
+#+ATTR_LATEX: :options otherkeywords={}, deletekeywords={list,time,summary,formula,se,contrasts,data}
+#+BEGIN_SRC R  :results output  :exports both  :session *R* :cache yes  :eval always
+X2 <- Score(list("Exclusive ERG"=coxfit.ex,"Inclusive ERG"=coxfit.inc),data=astest,
+            formula=Surv(time,event!=0)~1,summary="ipa",se.fit=0L,metrics="brier",contrasts=FALSE,times=3)
+X2
+#+END_SRC
+
+#+RESULTS[<2019-06-13 10:19:01> 7d2e02fc1a5cd4dca72e69d8a94326dfcb717594]:
+#+begin_example
+ [1] "time"               "status"             "age"                "lpsaden"            "ppb5"              
+ [6] "lmax"               "ct1"                "diaggs"             "erg.status"         "protectedName.time"
+[11] "event"              "Y1"                 "risk.ex"            "risk.inc"
+
+Metric Brier:
+
+Results by model:
+
+           model times Brier    IPA
+1:    Null model     3 0.240 0.0000
+2: Exclusive ERG     3 0.224 0.0638
+3: Inclusive ERG     3 0.199 0.1709
+#+end_example
+
+It is sometimes interesting to compare the predictor variables
+according to how much they contribute to the prediction
+performance. Generally, this is a non-trivial task which depends on
+the order in which the variables are entered into the model, the
+functional form and also on the type of model. However, we can drop
+one variable at a time from the full model and for each variable
+compute the loss in IPA as the difference between IPA of the full
+model and IPA of the model where the variable is omitted.
+
+#+ATTR_LATEX: :options otherkeywords={}, deletekeywords={}
+#+BEGIN_SRC R  :results output   :exports both  :session *R* :cache yes  :eval always
+IPA(coxfit.inc,newdata=astest,times=3)
+#+END_SRC
+
+#+RESULTS[<2019-06-13 10:19:01> f4b18b24db785e34b067d3c4ce6c02234098476e]:
+#+begin_example
+ [1] "time"               "status"             "age"                "lpsaden"            "ppb5"              
+ [6] "lmax"               "ct1"                "diaggs"             "erg.status"         "protectedName.time"
+[11] "event"              "Y1"                 "risk.ex"            "risk.inc"          
+    Variable times     Brier       IPA      IPA.drop
+1 Null model     3 0.2395320 0.0000000  0.1708698205
+2 Full model     3 0.1986032 0.1708698  0.0000000000
+3        age     3 0.1972558 0.1764950 -0.0056252214
+4    lpsaden     3 0.2006389 0.1623713  0.0084985015
+5       ppb5     3 0.2127120 0.1119683  0.0589015652
+6       lmax     3 0.1994585 0.1672991  0.0035707639
+7        ct1     3 0.1988170 0.1699773  0.0008925619
+8     diaggs     3 0.2083219 0.1302960  0.0405737899
+9 erg.status     3 0.2242616 0.0637510  0.1071188254
+#+end_example
+
+* IPA for right censored time to event outcome with competing risks
+:PROPERTIES:
+:CUSTOM_ID: sec:survival
+:END:
+
+To illustrate the competing risk setting we analyse the 3-year risk of
+progression in presence of the competing risk of death without
+progression. We fit two sets of cause-specific Cox regression models [fn:3],
+one including and one excluding the biomarker =erg.status=:
+
+#+ATTR_LATEX: :options otherkeywords={}, deletekeywords={glm,family,status,data}
+#+BEGIN_SRC R  :results output :exports both  :session *R* :cache yes :var data=loaddata
+cscfit.ex <- CSC(Hist(time,event)~age+lpsaden+ppb5+lmax+ct1+diaggs,data=astrain)
+cscfit.inc <- CSC(Hist(time,event)~age+lpsaden+ppb5+lmax+ct1+diaggs+erg.status,data=astrain)
+publish(cscfit.inc)
+#+END_SRC
+
+#+RESULTS[<2019-06-13 10:19:02> b0817074933de144121448371b80edfbf281c9da]:
+#+begin_example
+Cause 1 :
+     Variable Units HazardRatio       CI.95   p-value
+1         age              1.04 [1.00;1.09]   0.07631
+2     lpsaden              1.13 [0.92;1.38]   0.23133
+3        ppb5              1.14 [1.04;1.24]   0.00589
+4        lmax              1.19 [1.03;1.39]   0.02208
+5         ct1   cT1         Ref                      
+6               cT2        1.31 [0.73;2.36]   0.36635
+7      diaggs   GNA         Ref                      
+8               3/3        0.54 [0.35;0.84]   0.00662
+9               3/4        0.44 [0.22;0.88]   0.02024
+10 erg.status   neg         Ref                      
+11              pos        2.20 [1.56;3.11]   < 0.001
+
+Cause 2 :
+     Variable Units HazardRatio       CI.95   p-value
+1         age              1.01 [0.95;1.07]   0.81571
+2     lpsaden              1.09 [0.83;1.42]   0.53701
+3        ppb5              1.39 [1.22;1.58]   < 0.001
+4        lmax              0.82 [0.67;1.00]   0.05458
+5         ct1   cT1         Ref                      
+6               cT2        0.31 [0.07;1.28]   0.10482
+7      diaggs   GNA         Ref                      
+8               3/3        0.56 [0.29;1.10]   0.09212
+9               3/4        0.19 [0.06;0.60]   0.00486
+10 erg.status   neg         Ref                      
+11              pos        1.20 [0.71;2.04]   0.49269
+#+end_example
+
+Based on these models we predict the risk of progression in presence
+of the competing risk of death within 3 years in the validation set.
+
+#+ATTR_LATEX: :options otherkeywords={}, deletekeywords={c}
+#+BEGIN_SRC R  :results output raw drawer  :exports both  :session *R* :cache yes  :eval always
+astest[,risk.ex:=100*predictRisk(cscfit.ex,newdata=astest,times=3,cause=1)]
+astest[,risk.inc:=100*predictRisk(cscfit.inc,newdata=astest,times=3,cause=1)]
+publish(head(astest[,-c(8,9)]),digits=1,org=TRUE)
+#+END_SRC
+
+#+RESULTS[<2019-06-13 10:19:02> 841985da41439efcbff01b0901042c38e91abda3]:
+:results:
+|  age | lpsaden | ppb5 | lmax | ct1 | diaggs | erg.status |  Y1 | risk.ex | risk.inc |
+|------+---------+------+------+-----+--------+------------+-----+---------+----------|
+| 62.6 |    -3.2 |  4.9 |  4.6 | cT1 | 3/3    | pos        | 0.0 |    49.7 |     65.5 |
+| 66.9 |    -1.7 |  0.7 |  4.1 | cT1 | 3/3    | pos        | 1.0 |    45.2 |     60.1 |
+| 65.4 |    -1.5 |  4.0 |  3.9 | cT1 | 3/3    | neg        | 0.0 |    50.6 |     42.3 |
+| 59.0 |    -2.8 |  6.8 |  3.3 | cT2 | 3/4    | pos        | 1.0 |    46.0 |     69.0 |
+| 55.6 |    -3.5 |  2.8 |  3.0 | cT1 | 3/3    | neg        | 0.0 |    26.3 |     19.9 |
+| 71.1 |    -2.6 |  3.3 |  3.7 | cT1 | 3/3    | neg        | 0.0 |    51.8 |     42.2 |
+:end:
+
+To calculate the Index of Prediction Accuracy (IPA) we call the
+=Score= function as follows on a list which includes the two sets of
+cause-specific Cox regression models.
+
+#+ATTR_LATEX: :options otherkeywords={}, deletekeywords={list,time,summary,formula,se,contrasts,data}
+#+BEGIN_SRC R  :results output  :exports both  :session *R* :cache yes  :eval always
+X3 <- Score(list("Exclusive ERG"=cscfit.ex,
+                 "Inclusive ERG"=cscfit.inc),
+            data=astest, formula=Hist(time,event)~1,
+            summary="ipa",se.fit=0L,metrics="brier",
+            contrasts=FALSE,times=3,cause=1)
+X3
+#+END_SRC
+
+#+RESULTS[<2019-06-13 10:19:02> 262eb718c337234dcf3f7891b3d3d55254f3b16c]:
+#+begin_example
+ [1] "time"                "status"              "event"               "age"                 "lpsaden"            
+ [6] "ppb5"                "lmax"                "ct1"                 "diaggs"              "erg.status"         
+[11] "protectedName.time"  "protectedName.event" "Y1"                  "risk.ex"             "risk.inc"
+
+Metric Brier:
+
+Results by model:
+
+           model times Brier    IPA
+1:    Null model     3 0.245 0.0000
+2: Exclusive ERG     3 0.232 0.0504
+3: Inclusive ERG     3 0.202 0.1753
+#+end_example
+
+It is sometimes interesting to compare the predictor variables
+according to how much they contribute to the prediction
+performance. Generally, this is a non-trivial task which depends on
+the order in which the variables are entered into the model, the
+functional form and also on the type of model. However, we can drop
+one variable at a time from the full model (here from both
+cause-specific Cox regression models) and for each variable compute
+the loss in IPA as the difference between IPA of the full model and
+IPA of the model where the variable is omitted.
+
+#+ATTR_LATEX: :options otherkeywords={}, deletekeywords={}
+#+BEGIN_SRC R  :results output   :exports both  :session *R* :cache yes  :eval always
+IPA(cscfit.inc,newdata=astest,times=3)
+#+END_SRC
+
+#+RESULTS[<2019-06-13 10:19:03> 3c35cfc9e150c201ca36c34c13353d76b053d7ba]:
+#+begin_example
+ [1] "time"                "status"              "event"               "age"                 "lpsaden"            
+ [6] "ppb5"                "lmax"                "ct1"                 "diaggs"              "erg.status"         
+[11] "protectedName.time"  "protectedName.event" "Y1"                  "risk.ex"             "risk.inc"           
+    Variable times     Brier        IPA     IPA.drop
+1 Null model     3 0.2445718 0.00000000  0.175254870
+2 Full model     3 0.2017094 0.17525487  0.000000000
+3        age     3 0.2005925 0.17982131 -0.004566441
+4    lpsaden     3 0.2035630 0.16767572  0.007579154
+5       ppb5     3 0.2042878 0.16471225  0.010542622
+6       lmax     3 0.2138127 0.12576703  0.049487841
+7        ct1     3 0.1983841 0.18885119 -0.013596322
+8     diaggs     3 0.2084584 0.14765950  0.027595368
+9 erg.status     3 0.2322497 0.05038206  0.124872813
+#+end_example
+
+[fn:2] Michael W Kattan and Thomas A Gerds. The index of prediction accuracy: An intuitive measure useful for evaluating risk prediction models. Diagnostic and Prognostic Research, 2(1):7, 2018.
+[fn:3] Brice Ozenne, Anne Lyngholm S{\o }rensen, Thomas Scheike, Christian Torp-Pedersen, and Thomas Alexander Gerds. riskregression: Predicting the risk of an event using Cox regression models. R Journal, 9(2):440--460, 2017.
+

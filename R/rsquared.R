@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Aug  9 2017 (10:36) 
 ## Version: 
-## Last-Updated: Mar  3 2019 (20:02) 
+## Last-Updated: Jun 13 2019 (11:01) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 143
+##     Update #: 152
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -123,7 +123,7 @@ rsquared.default <- function(object,formula,newdata,times,cause,...){
 
 ##' @export
 rsquared.CauseSpecificCox <- function(object,formula,newdata,times,cause,...){
-    IPA=model=Variable=IPA.gain=Brier=NULL
+    IPA=model=Variable=IPA.drop=Brier=NULL
     ## this is a modification of drop1
     models <- object$models
     Terms <- lapply(models,stats::terms)
@@ -163,7 +163,9 @@ rsquared.CauseSpecificCox <- function(object,formula,newdata,times,cause,...){
         }
     }
     if (missing(newdata)) newdata=eval(object$call$data)
-    if (missing(formula)) formula=eval(object$call$formula)[[1]]
+    if (missing(formula)) formula=eval(object$call$formula)
+    ## CSC may have two formulas
+    if (is.list(formula)) formula=formula[[1]]
     r2 <- Score(c("Full model"=list(object),leaveOneOut),
                 formula=formula,
                 data=newdata,
@@ -178,16 +180,16 @@ rsquared.CauseSpecificCox <- function(object,formula,newdata,times,cause,...){
     ## r2[,IPA:=100*IPA]
     ## r2 <- r2[model!="Null model"]
     data.table::setnames(r2,"model","Variable")
-    r2[,IPA.gain:=IPA[Variable=="Full model"]-IPA,by=times]
+    r2[,IPA.drop:=IPA[Variable=="Full model"]-IPA,by=times]
     ## r2 <- r2[Variable!="Full model"]
-    out <- as.data.frame(r2[,data.table::data.table(Variable,times,Brier,IPA,IPA.gain)])
+    out <- as.data.frame(r2[,data.table::data.table(Variable,times,Brier,IPA,IPA.drop)])
     class(out) <- c("IPA",class(out))
     out
 }
 
 ##' @export
 rsquared.coxph <- function(object,formula,newdata,times,...){
-    IPA=model=Variable=IPA.gain=Brier=NULL
+    IPA=model=Variable=IPA.drop=Brier=NULL
     ## this is a modification of drop1
     Terms <- stats::terms(object)
     ## tl <- attr(Terms, "term.labels")
@@ -220,16 +222,16 @@ rsquared.coxph <- function(object,formula,newdata,times,...){
     ## r2[,IPA:=100*IPA]
     ## r2 <- r2[model!="Null model"]
     data.table::setnames(r2,"model","Variable")
-    r2[,IPA.gain:=IPA[Variable=="Full model"]-IPA,by=times]
+    r2[,IPA.drop:=IPA[Variable=="Full model"]-IPA,by=times]
     ## r2 <- r2[Variable!="Full model"]
-    out <- as.data.frame(r2[,data.table::data.table(Variable,times,Brier,IPA,IPA.gain)])
+    out <- as.data.frame(r2[,data.table::data.table(Variable,times,Brier,IPA,IPA.drop)])
     class(out) <- c("IPA",class(out))
     out
 }
 
 ##' @export
 rsquared.glm <- function(object,formula,newdata,...){
-    IPA=model=Variable=IPA.gain=Brier=NULL
+    IPA=model=Variable=IPA.drop=Brier=NULL
     ## this is a modification of drop1
     stopifnot(family(object)$family=="binomial")
     Terms <- stats::terms(object)
@@ -261,9 +263,9 @@ rsquared.glm <- function(object,formula,newdata,...){
     ## r2[,IPA:=100*IPA]
     ## r2 <- r2[model!="Null model"]
     data.table::setnames(r2,"model","Variable")
-    r2[,IPA.gain:=IPA[Variable=="Full model"]-IPA]
+    r2[,IPA.drop:=IPA[Variable=="Full model"]-IPA]
     ## r2 <- r2[Variable!="Full model"]
-    out <- as.data.frame(r2[,data.table::data.table(Variable,Brier,IPA,IPA.gain)])
+    out <- as.data.frame(r2[,data.table::data.table(Variable,Brier,IPA,IPA.drop)])
     class(out) <- c("IPA",class(out))
     out
 } 

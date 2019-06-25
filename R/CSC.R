@@ -29,11 +29,15 @@
 #' \code{cause}} \item{causes }{the other causes} %% ...
 #' @author Thomas A. Gerds \email{tag@@biostat.ku.dk} and Ulla B. Mogensen
 #' @references
+#' B. Ozenne, A. L. Soerensen, T.H. Scheike, C.T. Torp-Pedersen,
+#' and T.A. Gerds. riskregression: Predicting the risk
+#' of an event using Cox regression models. R Journal, 9(2):440--460, 2017.
+#' 
 #' J Benichou and Mitchell H Gail. Estimates of absolute cause-specific risk
 #' in cohort studies. Biometrics, pages 813--826, 1990.
 #'
 #' T.A. Gerds, T.H. Scheike, and P.K. Andersen. Absolute risk regression for
-#' competing risks: interpretation, link functions, and prediction. Statistics
+#' competing risks: Interpretation, link functions, and prediction. Statistics
 #' in Medicine, 31(29):3921--3930, 2012.
 #' 
 #' @seealso \code{\link{coxph}}
@@ -45,14 +49,22 @@
 ##' data(Melanoma)
 ##' ## fit two cause-specific Cox models
 ##' ## different formula for the two causes
-##' fit1 <- CSC(list(Hist(time,status)~sex,Hist(time,status)~invasion+epicel+age),
+##' fit1 <- CSC(list(Hist(time,status)~sex+age,Hist(time,status)~invasion+epicel+log(thick)),
 ##'             data=Melanoma)
+##' print(fit1)
+##' \dontrun{
+##' library(Publish)
+##' publish(fit1)
+##' }
 ##' 
 ##' ## model hazard of all cause mortality instead of hazard of type 2 
 ##' fit1a <- CSC(list(Hist(time,status)~sex+age,Hist(time,status)~invasion+epicel+log(thick)),
 ##'              data=Melanoma,
 ##'              surv.type="surv")
-##' print(fit1a)
+##' 
+##' ## the predicted probabilities are similar 
+##' plot(predictRisk(fit1,times=500,cause=1,newdata=Melanoma),
+##'      predictRisk(fit1a,times=500,cause=1,newdata=Melanoma))
 ##'
 ##' ## special case where cause 2 has no covariates
 ##' fit1b <- CSC(list(Hist(time,status)~sex+age,Hist(time,status)~1),

@@ -40,7 +40,7 @@ time-point specific boxplots for the
 predicted risks (or biomarker values) conditional on the outcome at the time-point.
 \item \code{"ibs"} calculates integrated Brier scores across the time points at which the Brier score is computed. This works only with
 time-to-event outcome and the results depend on the argument \code{times}.
-} 
+}
 Set to \code{NULL} to avoid estimation of summary statistics.}
 
 \item{plots}{Character vector specifying for which plots to put data into the result.
@@ -61,7 +61,7 @@ the prediction performance is estimated at many prediction horizons.}
 
 \item{landmarks}{Not yet implemented.}
 
-\item{use.event.times}{If \code{TRUE} merge all unique event times with 
+\item{use.event.times}{If \code{TRUE} merge all unique event times with
 the vector given by argument \code{times}.}
 
 \item{null.model}{If \code{TRUE} fit a risk prediction model which ignores
@@ -79,9 +79,9 @@ at a usually very small expense of a slightly higher standard error.}
 \item{multi.split.test}{Logical or \code{0} or \code{1}. If \code{FALSE} or \code{0} do not calculate multi-split tests. This argument is ignored when \code{split.method} is "none".}
 
 \item{conf.int}{Either logical or a numeric value between 0 and 1. In right censored data,
-confidence intervals are based on Blanche et al (see references). Setting \code{FALSE} prevents the 
-computation confidence intervals. \code{TRUE} means compute 95 percent confidence 
-intervals and corresponding p-values for AUC and Brier score. If set to 0.87, the 
+confidence intervals are based on Blanche et al (see references). Setting \code{FALSE} prevents the
+computation confidence intervals. \code{TRUE} means compute 95 percent confidence
+intervals and corresponding p-values for AUC and Brier score. If set to 0.87, the
 level of significance is 13 percent. So, do not set it to 0.87.}
 
 \item{contrasts}{Either logical or a list of contrasts. A list of contrasts defines which risk prediction models (markers)
@@ -138,9 +138,9 @@ randomly splitting (bootstrapping) the data during cross-validation.}
 \code{"splitindex"} provides sampling index used to split the data into training and validation sets.
 \code{"vcov"} provides the variance-covariance matrix of the estimated parameters.}
 
-\item{predictRisk.args}{A list of argument-lists to control how risks are predicted. 
+\item{predictRisk.args}{A list of argument-lists to control how risks are predicted.
  The names of the lists should be the S3-classes of the \code{object}.
- The argument-lists are then passed on to the S3-class specific predictRisk method. 
+ The argument-lists are then passed on to the S3-class specific predictRisk method.
  For example, if your object contains one or several random forest model fitted with the function randomForestSRC::rfsrc then you can
  specify additional arguments for the function riskRegression::predictRisk.rfsrc which will pass
  these on to the function randomForestSRC::predict.rfsrc. A specific example in this case would be
@@ -183,7 +183,7 @@ cross-validation. The function optionally provides results for plotting (time-po
 ROC curves, for (time-point specific) calibration curves and for (time-point specific) retrospective boxplots.
 
 For uncensored binary outcome the Delong-Delong test is used to contrast AUC of rival models.
-In right censored survival data (with and without competing risks) 
+In right censored survival data (with and without competing risks)
 the p-values correspond to Wald tests based on standard errors obtained with an estimate of the influence function
 as described in detail in the appendix of Blanche et al. (2015).
 
@@ -218,7 +218,7 @@ data = data.frame(id=1:N, y=rbinom(N,1,.3),x=rnorm(N))
 boot.index = sample(1:N,size=N,replace=TRUE)
 boot.index
 inbag = 1:N %in% boot.index
-outofbag = !inbag 
+outofbag = !inbag
 learn.data = data[inbag]
 val.data = data[outofbag]
 riskRegression:::getSplitMethod("bootcv",B=10,N=17)$index
@@ -248,7 +248,7 @@ data = data.frame(id=1:N, y=rbinom(N,1,.3),x=rnorm(N))
 boot.index = sample(1:N,size=M,replace=FALSE)
 boot.index
 inbag = 1:N %in% boot.index
-outofbag = !inbag 
+outofbag = !inbag
 learn.data = data[inbag]
 val.data = data[outofbag]
 riskRegression:::getSplitMethod("bootcv",B=10,N=17,M=.7)$index
@@ -266,7 +266,7 @@ lr1 = glm(Y~X1+X2+X7+X9,data=learndat,family=binomial)
 lr2 = glm(Y~X3+X5,data=learndat,family=binomial)
 Score(list("LR(X1+X2+X7+X9)"=lr1,"LR(X3+X5)"=lr2),formula=Y~1,data=testdat)
 
-## ROC curve and calibration plot 
+## ROC curve and calibration plot
 xb=Score(list("LR(X1+X2+X7+X9)"=lr1,"LR(X3+X5+X6)"=lr2),formula=Y~1,
          data=testdat,plots=c("calibration","ROC"))
 \dontrun{plotROC(xb)

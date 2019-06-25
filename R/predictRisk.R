@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun  6 2016 (09:02) 
 ## Version: 
-## last-updated: maj  6 2019 (14:53) 
-##           By: Brice Ozenne
-##     Update #: 151
+## last-updated: Jun 17 2019 (12:23) 
+##           By: Thomas Alexander Gerds
+##     Update #: 185
 #----------------------------------------------------------------------
 ## 
 ### Commentary:
@@ -36,7 +36,8 @@
 #' predictRisk.pecCforest predictRisk.prodlim predictRisk.psm
 #' predictRisk.selectCox predictRisk.survfit predictRisk.randomForest
 #' predictRisk.lrm predictRisk.glm
-#' predictRisk.rpart
+#' predictRisk.rpart predictRisk.gbm
+#' predictRisk.flexsurvreg
 #' @usage
 #' \method{predictRisk}{glm}(object,newdata,...)
 #' \method{predictRisk}{cox.aalen}(object,newdata,times,...)
@@ -51,6 +52,8 @@
 #' \method{predictRisk}{rfsrc}(object,newdata,times,cause,...)
 #' \method{predictRisk}{FGR}(object,newdata,times,cause,...)
 #' \method{predictRisk}{CauseSpecificCox}(object,newdata,times,cause,...)
+#' \method{predictRisk}{gbm}(object,newdata,times,n.trees,...)
+#' \method{predictRisk}{flexsurvreg}(object,newdata,times,...)
 #' @param object A fitted model from which to extract predicted event
 #' probabilities
 #' @param newdata A data frame containing predictor variable combinations for
@@ -690,6 +693,8 @@ predictRisk.CauseSpecificCox <- function (object, newdata, times, cause, ...) {
 ##' @param data Data set in which formula is to be interpreted
 ##' @param type String specifying the type of penalization. Should match one of the following values:
 ##' \code{"ridge"}, \code{"lasso"}, \code{"elastic.net"}.
+##' @param lambda1 Lasso penalty
+##' @param lambda2 ridge penalty
 ##' @param ... Arguments passed to penalized
 ##' @examples
 ##' library(prodlim)
@@ -725,109 +730,94 @@ predictRisk.CauseSpecificCox <- function (object, newdata, times, cause, ...) {
 ##'                     data=nki70, lambda1=1)
 ##' }
 ##' @export
-penalizedS3 <- function(formula,data,type="ridge",...){
-    # {{{ distangle the formula
-    ff <- as.character(formula)
-    response <- formula(paste(ff[[2]],"~1",sep=""))
-    terms <- strsplit(ff[[3]],"\\+|\\-")[[1]]
-    terms <- sapply(terms,function(tt){## remove whitespace
-        gsub(" ","",tt)
-    })
-    strippedTerms <- strsplit(terms,"[()]")
-    # }}}
-    # {{{ extract the penalized and unpenalized parts
-    penalTerms <- sapply(strippedTerms,function(x){length(x)==2 && x[[1]]=="pen"})
-    unpenalVarnames <- unlist(strippedTerms[penalTerms==FALSE])
-    if (length(unpenalVarnames)>0){
-        unpenalized <- formula(paste("~",paste(unpenalVarnames,collapse="+")))
-        response <- update.formula(response,unpenalized)
+penalizedS3 <- function(formula,data,type="elastic.net",lambda1,lambda2,fold,...){
+                                        # {{{ distangle the formula
+    EHF <- prodlim::EventHistory.frame(formula,
+                                       data,
+                                       specials=c("pen","unpen"),
+                                       stripSpecials=c("pen","unpen"),
+                                       stripUnspecials="pen",
+                                       specialsDesign=TRUE)
+    response <- EHF$event.history
+    pen <- EHF$pen
+    unpen <- EHF$unpen
+    if (is.null(unpen))
+        args <- list(response=response,penalized=pen,data=data,...)
+    else
+        args <- list(response=response,penalized=pen,unpenalized=unpen,data=data,...)
+                                        # {{{ find optimal L1
+    if ((tolower(type) %in% c("lasso","elastic.net")) && missing(lambda1)){
+        if (missing(fold)) fold <- 1:NROW(data)
+        las1 <- do.call(penalized::profL1,c(args,list(fold=fold)))
+        lambda1 <- do.call(penalized::optL1,c(args,list(fold=las1$fold)))$lambda
     }
-    penalizedVarnames <- unlist(sapply(strippedTerms[penalTerms==TRUE],
-                                       function(x){strsplit(x[[2]],",")}),use.names=FALSE)
-    penalizedVarPositions <- unlist(lapply(penalizedVarnames,function(x){
-        if (length(splitter <- strsplit(x,":")[[1]])>1)
-            seq(as.numeric(splitter)[1],as.numeric(splitter)[2],1)
-        else
-            match(x,names(data),nomatch=0)
-    }),use.names=FALSE)
-    penalizedVarPositions <- unique(penalizedVarPositions)
-    ## print(penalizedVarPositions)
-    if (any(tested <- (penalizedVarPositions>NCOL(data))|penalizedVarPositions<0))
-        stop("Cannot find variable(s): ",names(data[tested]))
-    penalized <- data[,penalizedVarPositions]
-    # }}}
-    # {{{ global test
-    # }}}
-    type <- match.arg(tolower(type),choices=c("ridge","lasso","elastic.net"),several.ok=FALSE)
-    # {{{ find optimal L1
-    if (type!="ridge"){
-        las1=penalized::profL1(response=response,
-                    penalized=penalized,
-                    data=data,
-                    fold=1:nrow(data),
-                    ...)
-        L1=penalized::optL1(response=response,
-                 penalized=penalized,
-                 data=data,
-                 fold=las1$fold,
-                 ...)}
-    # }}}
-    # {{{ find optimal L2
-    if (type!="lasso"){
-        L2=penalized::optL2(response=response,
-                 penalized=penalized,
-                 data=data,
-                 fold=1:nrow(data),
-                 ...)}
-    # }}}
-    # {{{ call S4 method
+                                        # }}}
+                                        # {{{ find optimal L2
+    if ((tolower(type) %in% c("ridge","elastic.net")) && missing(lambda2)){
+        if (missing(fold)) fold <- 1:NROW(data)
+        lambda2 <- do.call(penalized::optL2,c(args,list(fold=fold)))$lambda
+    }
+                                        # }}}
+                                        # {{{ call S4 method
     ## unpenalized terms are communicated via
     ## the left hand side of response
     fitS4 <- switch(type,"ridge"={
-        penalized(response=response,
-                  penalized=penalized,
-                  data=data,
-                  lambda1=0,
-                  lambda2=L2$lambda,
-                  ...)}, 
-        "lasso"={
-            penalized(response=response,
-                      penalized=penalized,
-                      data=data,
-                      lambda1=L1$lambda,
-                      lambda2=0,
-                      ...)},
-        "elastic.net"={
-            penalized(response=response,
-                      penalized=penalized,
-                      data=data,
-                      lambda1=L1$lambda,
-                      lambda2=L2$lambda,
-                      ...)})
-
-    # }}}
-    # {{{ deliver S3 object
+        do.call(penalized,c(args,list(lambda1=0, lambda2=lambda2)))
+    }, 
+    "lasso"={
+        do.call(penalized,c(args,list(lambda1=lambda1, lambda2=0)))
+    },
+    "elastic.net"={
+        do.call(penalized,c(args,list(lambda1=lambda1, lambda2=lambda2)))
+    })
+    if (is.infinite(fitS4@loglik)){
+        print(fitS4)
+        stop()
+    }
+                                        # }}}
+                                        # {{{ deliver S3 object
     fit <- list(fitS4=fitS4,call=match.call())
+    fit$terms <- terms(formula)
     class(fit) <- "penfitS3"
     fit
-    # }}}
+                                        # }}}
 }
 
 ##' @export 
 predictRisk.penfitS3 <- function(object,
-                                       newdata,
-                                       ...){
+                                 newdata,
+                                 times,
+                                 ...){
     penfit <- object$fitS4
-    pCovaNames <- names(penfit@penalized)
-    if ("data.table" %in% class(newdata))
-        newPen <- newdata[,pCovaNames,with=FALSE]
-    else
-        newPen <- newdata[,pCovaNames]
-    p <- penalized::predict(penfit,penalized=newPen,data=newdata)
+    if (missing(newdata)) stop("Argument 'newdata' is missing")
+    if (NROW(newdata) == 0) stop("No (non-missing) observations")
+    rhs <- as.formula(delete.response(object$terms))
+    newdata$dummy.time=1
+    newdata$dummy.event=1
+    dummy.formula=stats::update.formula(rhs,"Hist(dummy.time,dummy.event)~.")
+    EHF <- prodlim::EventHistory.frame(dummy.formula,
+                                       data=newdata,
+                                       specials=c("pen","unpen"),
+                                       stripSpecials=c("pen","unpen"),
+                                       stripUnspecials="pen",
+                                       specialsDesign=TRUE)
+    pen <- EHF$pen
+    unpen <- EHF$unpen
+    args <- list(penfit,penalized=pen)
+    if (length(unpen)>0) args <- c(args,list(unpenalized=unpen))
+    p <- do.call(penalized::predict,args)
+    if (penfit@model=="cox"){
+        if (missing(times)) stop("Need time points for predicting risks from a penalized Cox regression model.")
+        ttt <- p@time
+        p <- cbind(0,1-p@curves)[,prodlim::sindex(jump.times=ttt,eval.times=times)+1,drop=FALSE]
+        if (NROW(p) != NROW(newdata) || NCOL(p) != length(times)){
+            stop(paste("\nPrediction matrix has wrong dimensions:\nRequested newdata x times: ",NROW(newdata)," x ",length(times),"\nProvided prediction matrix: ",NROW(p)," x ",NCOL(p),"\n\n",sep=""))
+        }
+    }
     p
 }
 
-##' @title TODO
+##' @title SmcFcs 
 ##' @description TODO
 ##' 
 ##' @param formula TODO
@@ -897,7 +887,35 @@ predictRisk.SuperPredictor  <- function(object,newdata,...){
     p
 }
 
+##' @export 
+predictRisk.gbm <- function(object, newdata, times, n.trees = NULL) {
+    traindata <-  reconstructGBMdata(object)
+    if (is.null(n.trees)) n.trees <- object$n.trees
+    p <- matrix(0, NROW(newdata), length(times))
+    xb.train <- predict(object ,newdata = traindata, n.trees = n.trees)
+    H2 <- basehaz.gbm(t = traindata[, as.character(object$call$formula[[2]][[2]])], 
+                      delta = traindata[, as.character(object$call$formula[[2]][[3]])], 
+                      f.x = xb.train, t.eval = times)
+    xb.test <- predict(object, newdata = newdata , n.trees = n.trees ) 
+    for (i in 1:length(times)) p[,i] <- exp(-H2[i] * exp(xb.test))
+    p[,times==0] <- 1
+    1 - p
+}
+##' @export 
+predictRisk.flexsurvreg <- function(object, newdata, times, ...) {
+    newdata <- data.frame(newdata)
+    p <- matrix(0, NROW(newdata), length(times))
+    term <- attr(terms(as.formula(object$call$formula)), "term.labels")
+    sm <- summary(object, newdata = newdata[, term], t = times, start = 0, B = 0) #no confidence interval simulations
+    for (i in 1:NROW(newdata)){
+        p[i,] <- sm[[i]][,2]
+    }
+    if (NROW(p) != NROW(newdata) || NCOL(p) != length(times)) 
+        stop("Prediction failed")
+    1 - p
+}
 
 
 #----------------------------------------------------------------------
 ### predictRisk.R ends here
+
