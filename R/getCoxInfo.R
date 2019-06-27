@@ -525,6 +525,23 @@ coxN.coxph <- function(object){
 coxN.phreg <- function(object){
   return(NROW(object$model.frame))
 }
+
+## ** coxN.CSC
+#' @rdname coxN
+#' @method coxN CauseSpecificCox
+#' @export
+coxN.CauseSpecificCox <- function(object){
+  return(sapply(object$models,coxN))
+}
+
+## ** coxN.CSC
+#' @rdname coxN
+#' @method coxN glm
+#' @export
+coxN.glm <- function(object){
+  return(stats::nobs(object))
+}
+
 # }}}
 
                                         # {{{ coxSpecialStrata

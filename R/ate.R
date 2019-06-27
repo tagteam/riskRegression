@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Oct 23 2016 (08:53) 
 ## Version: 
-## last-updated: Mar  3 2019 (20:02) 
-##           By: Thomas Alexander Gerds
-##     Update #: 853
+## last-updated: jun 27 2019 (13:49) 
+##           By: Brice Ozenne
+##     Update #: 945
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -21,9 +21,13 @@
 #'     effect based on Cox regression with or without competing risks.
 #' @name ate
 #' 
-#' @param object Outcome model which describes how event risk depends
-#'     on treatment and covariates.  The object carry its own call and
+#' @param object.event Outcome model which describes how event risk depends
+#'     on treatment and covariates. The object carry its own call and
 #'     have a \code{predictRisk} method. See examples.
+#' @param object.treatment Treatment model which describes how treatment depends
+#'     on covariates. The object must be a \code{glm} object (logistic regression). See examples.
+#' @param object.censor Censoring model which describes how censoring depends
+#'     on treatment and covariates. The object must be a \code{coxph} or \code{cph} object. See examples.
 #' @param data [data.frame or data.table] Data set in which to evaluate risk predictions
 #' based on the outcome model
 #' 
@@ -48,7 +52,7 @@
 #' @param seed [integer, >0] sed number used to generate seeds for bootstrap
 #' and to achieve reproducible results.
 #' @param handler [character] Parallel handler for bootstrap.
-#' either \code{"mclapply"} or \code{"foreach"}.
+#' either \code{"foreach"}, \code{"mclapply"}, \code{"snow"} or \code{"multicore"}.
 #' if "foreach" use \code{doparallel} to create a cluster.
 #' @param mc.cores [integer, >0] The number of cores to use,
 #' i.e., the upper limit for the number of child processes that run simultaneously.
@@ -75,7 +79,7 @@
 #' @examples 
 #' library(survival)
 #' library(rms)
-##' library(prodlim)
+#' library(prodlim)
 #' set.seed(10)
 #' 
 #' #### Survival settings  ####
@@ -92,7 +96,7 @@
 #'
 #' ## compute the ATE at times 5, 6, 7, and 8 using X1 as the treatment variable
 #' \dontrun{
-#' ## only punctual estimate (argument se = FALSE)
+#' ## only point estimate (argument se = FALSE)
 #' ateFit1a <- ate(fit, data = dtS, treatment = "X1", times = 5:8,
 #'                se = TRUE)
 #'
@@ -243,14 +247,16 @@
 ## * ate (code)
 #' @rdname ate
 #' @export
-ate <- function(object,
+ate <- function(object.event,
+                object.censor,
+                object.treatment,
                 data,
                 formula,
                 treatment,
                 strata = NULL,
                 contrasts = NULL,
                 times,
-                cause,
+                cause = NA,
                 landmark,
                 se = TRUE,
                 iid = FALSE,
@@ -264,108 +270,57 @@ ate <- function(object,
                 verbose = TRUE,
                 store.iid = "full",
                 ...){
-  
-  meanRisk=Treatment=ratio=Treatment.A=Treatment.B=b <- NULL
-  .=.I <- NULL
-  diff.se=ratio.se=.GRP=lower=upper=diff.lower=diff.upper=diff.p.value=ratio.lower=ratio.upper=ratio.p.value <- NULL
-   
-    handler <- match.arg(handler, c("foreach","mclapply","snow","parallel"))
-    if(inherits(object,"glm")){
-        if(missing(times)){
-            times <- NA
-        }else if(length(times)!=1){
-            warning("Argument \'times\' has no effect when using a glm object \n",
-                    "It should be set to NA \n")
-        }
-    }
-                                        # {{{ checking for time-dependent covariates (left-truncation)
-    TD <- switch(class(object)[[1]],"coxph"=(attr(object$y,"type")=="counting"),
-                 "CauseSpecificCox"=(attr(object$models[[1]]$y,"type")=="counting"),FALSE)
-    if (TD){
-        if (missing(formula))
-            stop("Need formula to do landmark analysis.")
-        if (missing(landmark))
-            stop("Need landmark time(s) to do landmark analysis.")
-        if(length(times)!=1){
-            stop("In settings with time-dependent covariates argument 'time' must be a single value, argument 'landmark' may be a vector of time points.")
-        }
-        Gformula <- Gformula_TD
-    }else{
-        landmark <- NULL
-        Gformula <- Gformula_TI
-        if (missing(formula)) formula=NULL
-    }
-                                        # }}}
-                                        # {{{ Prepare
-    dots <- list(...)
-    if(se[[1]]==0 && B[[1]]>0){
-        warning("Argument 'se=0' means 'no standard errors' so number of bootstrap repetitions is forced to B=0.")
-    }
-    if(iid[[1]] && B[[1]]>0){
-        stop("Influence function cannot be computed when using the bootstrap approach \n",
-             "Either set argument \'iid\' to FALSE to not compute the influence function \n",
-             "or set argument \'B\' to 0 \n")
-    }
-    if(band[[1]] && B[[1]]>0){
-        stop("Confidence bands cannot be computed when using the bootstrap approach \n",
-             "Either set argument \'band\' to FALSE to not compute the confidence bands \n",
-             "or set argument \'B\' to 0 to use the estimate of the asymptotic distribution instead of the bootstrap\n")
-    }
-    if(!is.null(treatment)){
-        if(length(treatment) != 1){
-            stop("Argument treatment should have length 1. \n")
-        }
-        if(treatment %in% names(data) == FALSE){
-            stop("The data set does not seem to have a variable ",treatment," (argument: treatment). \n")
-        }
-        if(!is.null(strata) ){
-            stop("Argument strata must be NULL when argument treatment is specified. \n")
-        }
-        if(is.numeric(data[[treatment]])){ ## for now character variables are tolerated
-            stop("The treatment variable must be a factor variable. \n",
-                 "Convert treatment to factor, re-fit the object using this new variable and then call ate. \n")
-        }
-        strata <- treatment
-    }else{
-        if(is.null(strata) ){
-            stop("Argument strata must refer to a variable in the data when argument treatment is NULL. \n")
 
-        }
-        if(length(strata) != 1){
-            stop("Argument strata should have length 1. \n")
-        }
-        if(strata %in% names(data) == FALSE){
-            stop("The data set does not seem to have a variable ",strata," (argument: strata). \n")
-        }
-        if(B > 0){
-            stop("Boostrap resampling is not available when argument strata is specified. \n")
-        }
-        if(TD){
-            stop("Landmark analysis is not available when argument strata is specified. \n")
-        }
-    }
-    test.CR <- !missing(cause) # test whether the argument cause has been specified, i.e. it is a competing risk model
-    if(test.CR==FALSE){cause <- NA}
-  
-    if(B[[1]]==0 && (se[[1]] || band[[1]] || iid[[1]])){
-        validClass <- c("CauseSpecificCox","coxph","cph","phreg","glm")
-        if(all(validClass %in% class(object) == FALSE)){
-            stop("Standard error based on the influence function only implemented for \n",
-                 paste(validClass, collapse = " ")," objects \n",
-                 "set argument \'B\' to a positive integer to use a boostrap instead \n")
-        }
-        if("CauseSpecificCox" %in% class(object)){
-            n.train <- coxN(object$models[[1]])
-        }else if("glm" %in% class(object)){
-            n.train <- stats::nobs(object)
-        }else{
-            n.train <- coxN(object)
-        }
-        if(n.train!=NROW(data)){
-            stop("Argument \'data\' must contain the dataset used to fit the object (when \'se\', \'band\', or \'iid\' is TRUE)\n")
-        }
-        
-    }
+    dots <- list(...)
+
+    ## for CRAN tests
+    meanRisk=Treatment=ratio=Treatment.A=Treatment.B=b <- NULL
+    .=.I <- NULL
+    diff.se=ratio.se=.GRP=lower=upper=diff.lower=diff.upper=diff.p.value=ratio.lower=ratio.upper=ratio.p.value <- NULL
+
+    ## ** initialize arguments
+    init <- ate_initArgs(object.event = object.event,
+                         treatment = treatment,
+                         strata = strata,
+                         times = times,
+                         handler = handler)
+    times <- init$times
+    handler <- init$handler
+    strata <- init$strata
+    formula <- init$formula
+    landmark <- init$landmark
+    TD <- init$TD
+    fct.pointEstimate <- init$fct.pointEstimate
+    n.train <- init$n.train
+    
+    ## ** check consistency of the user arguments
+    check <- ate_checkArgs(object.event = object.event,
+                           object.censor = object.censor,
+                           object.treatment = object.treatment,
+                           data = data,
+                           formula = formula,
+                           treatment = treatment,
+                           strata = strata,
+                           contrasts = contrasts,
+                           times = times,
+                           cause = cause,
+                           landmark = landmark,
+                           se = se,
+                           iid = iid,
+                           band = band,
+                           B = B,
+                           confint = confint,
+                           seed = seed,
+                           handler = handler,
+                           mc.cores = mc.cores,
+                           cl = cl,
+                           verbose = verbose,
+                           store.iid = store.iid,
+                           augment.cens = augment.cens,
+                           TD = TD,
+                           n.train = n.train)
+
+    ## ** Prepare
     if(!is.null(treatment)){
         data[[treatment]] <- factor(data[[treatment]])
     
@@ -383,39 +338,26 @@ ate <- function(object,
     n.contrasts <- length(contrasts)
     n.times <- length(times)
     n.obs <- NROW(data)
-    
-  # }}}
   
-    # {{{ Checking the model
-  
-    ## for predictRisk S3-method
-    allmethods <- utils::methods(predictRisk)
-    candidateMethods <- paste("predictRisk",class(object),sep=".")
-    if (all(match(candidateMethods,allmethods,nomatch=0)==0))
-        stop(paste("Could not find predictRisk S3-method for ",class(object),collapse=" ,"),sep="")
-    ## for compatibility with resampling
-    if(is.null(object$call))
-        stop(paste("The object does not contain its own call, which is needed to refit the model in the bootstrap loop."))
-    # }}}
+    ## ** Point estimate
+    args.pointEstimate <- list(object.event=object.event,
+                               data=data,
+                               treatment=treatment,
+                               strata=strata,
+                               contrasts=contrasts,
+                               times=times,
+                               cause=cause,
+                               landmark=landmark,
+                               n.contrasts = n.contrasts,
+                               levels = levels,
+                               dots)
+    if (TD){
+        args.pointEstimate <- c(args.pointEstimate,list(formula=formula))
+    }
+    estimateTime <- system.time(pointEstimate <- do.call(fct.pointEstimate, args.pointEstimate))
 
-    # {{{ Point estimate
-    Gargs <- list(object=object,
-                  data=data,
-                  treatment=treatment,
-                  strata=strata,
-                  contrasts=contrasts,
-                  times=times,
-                  cause=cause,
-                  landmark=landmark,
-                  n.contrasts = n.contrasts,
-                  levels = levels,
-                  dots)
-    if (TD) Gargs <- c(Gargs,list(formula=formula))
-    estimateTime <- system.time(pointEstimate <- do.call(Gformula, Gargs))
-    # }}}
-
-    # {{{ Confidence interval    
-    if(se[[1]] || band[[1]] || iid[[1]]){
+    ## ** Confidence intervals
+    if(se || band || iid){
         if (TD){
             key1 <- c("Treatment","landmark")
             key2 <- c("Treatment.A","Treatment.B","landmark")
@@ -427,6 +369,7 @@ ate <- function(object,
     
         if(B>0){
                                         # {{{ Bootstrap
+            ### *** Bootstrap
             if (verbose==TRUE){ ## display
                 message(paste0("Approximated bootstrap netto run time (without time for copying data to cores):\n",
                                round(estimateTime["user.self"],2),
@@ -446,9 +389,9 @@ ate <- function(object,
                                           pointEstimate$riskComparison[,paste0("compRisk:ratio:",Treatment.A,":",Treatment.B,":",time)]
                                           )
 
-            resBoot <- calcBootATE(object,
+            resBoot <- calcBootATE(object.event,
                                    pointEstimate = vec.pointEstimate,
-                                   Gformula = Gformula,
+                                   fct.pointEstimate = fct.pointEstimate,
                                    data = data,
                                    formula=formula,
                                    TD=TD,
@@ -474,11 +417,8 @@ ate <- function(object,
                                         # }}}
         } else {
                                         # {{{ compute standard error and quantiles via the influence function
-
-            if(!is.null(landmark)){
-                stop("Calculation of the standard errors via the influence function not implemented for time dependent covariates \n")
-            }
-            outSE <- calcSeATE(object,
+            ## *** Delta method
+            outSE <- calcSeATE(object.event,
                                data = data,
                                times = times,
                                cause = cause,
@@ -507,10 +447,10 @@ ate <- function(object,
         bootseeds <- NULL
         resBoot <- NULL
         outSE <- NULL
-
                                         # }}}
     }
                                         # {{{ output object
+    ## ** export
     if(is.null(treatment)){
         setnames(pointEstimate$meanRisk,
                  old = "Treatment",
@@ -536,7 +476,7 @@ ate <- function(object,
                 seeds = bootseeds)
 
   
-    class(out) <- c("ate",class(object))
+    class(out) <- c("ate",class(object.event))
     if(confint){
         out <- stats::confint(out)
     }
@@ -550,119 +490,197 @@ ate <- function(object,
     }
 
     return(out)
-                                        # }}}
 
 }
 
-# {{{ Gformula: time dependent covariates
-## * Gformula_TD
-Gformula_TD <- function(object,
-                        data,
-                        formula,
-                        treatment,
-                        contrasts,
-                        times,
-                        landmark,
-                        cause,
-                        n.contrasts,
-                        levels,
-                        ...){
+## * ate_initArgs
+ate_initArgs <- function(object.event,
+                         treatment,
+                         strata,
+                         times,
+                         handler){
 
-    Treatment <- Treatment.B <- meanRisk <- ratio <- NULL ## [:forCRANcheck:]
-    
-    response <- eval(formula[[2]],envir=data)
-    time <- response[,"time"]
-    entry <- response[,"entry"]
-    if(class(object)[[1]]=="coxph"){
-        riskhandler <- "predictRisk.coxphTD"
-    }else{
-        riskhandler <- "predictRisk.CSCTD"
+    ## ** user-defined arguments
+    ## times
+    if(inherits(object.event,"glm") && missing(times)){
+        times <- NA
     }
-    ## prediction for the hypothetical worlds in which every subject is treated with the same treatment
-    dt.meanRisk <- data.table::rbindlist(lapply(1:n.contrasts,function(i){
-        data.i <- data
-        data.i[[treatment]] <- factor(contrasts[i], levels = levels)
-        data.table::rbindlist(lapply(landmark,function(lm){
-            atrisk <- (entry <= lm & time >= lm)
-            risk.i <- colMeans(do.call(riskhandler,
-                                       args = list(object,
-                                                   newdata = data.i[atrisk,],
-                                                   times = times,
-                                                   cause = cause,
-                                                   landmark=lm,
-                                                   ...)))
-            data.table::data.table(Treatment=contrasts[[i]],time=times,landmark=lm,meanRisk=risk.i)
-        }))
-    }))
-    riskComparison <- data.table::rbindlist(lapply(1:(n.contrasts-1),function(i){
-        data.table::rbindlist(lapply(((i+1):n.contrasts),function(j){
-            ## compute differences between all pairs of treatments
-            RC <- dt.meanRisk[Treatment==contrasts[[i]]]
-            setnames(RC,"Treatment","Treatment.A")
-            RC[,Treatment.B:=contrasts[[j]]]
-            RC[,diff:=dt.meanRisk[Treatment==contrasts[[j]],meanRisk]-meanRisk]
-            RC[,ratio:=dt.meanRisk[Treatment==contrasts[[j]],meanRisk]/meanRisk]
-            RC[,meanRisk:=NULL]
-            RC[]
-        }))}))
-    out <- list(meanRisk = dt.meanRisk,
-                riskComparison = riskComparison,
-                treatment = treatment,
-                strata = strata)
-    return(out)
-}
 
-# }}}
+    ## handler
+    handler <- match.arg(handler, c("foreach","mclapply","snow","multicore"))
 
-                                        # {{{ Gformula: time independent covariates
-## * Gformula_TI
-Gformula_TI <- function(object,
-                        data,
-                        treatment,
-                        strata,
-                        contrasts,
-                        times,
-                        landmark,
-                        cause,
-                        n.contrasts,
-                        levels,
-                        ...){
+    ## strata
+    if(!is.null(treatment) & is.null(strata)){
+        strata <- treatment
+    }
+
+    ## ** deduced from user defined arguments
+    ## presence of time dependent covariates
+    TD <- switch(class(object.event)[[1]],
+                 "coxph"=(attr(object.event$y,"type")=="counting"),
+                 "CauseSpecificCox"=(attr(object.event$models[[1]]$y,"type")=="counting"),
+                 FALSE)
+    if(TD){
+        fct.pointEstimate <- Gformula_TD
+    }else{
+        landmark <- NULL
+        formula <- NULL
+        fct.pointEstimate <- Gformula_TI
+    }
+
+    n.train <- coxN(object.event)
     
-    meanRisk <- lapply(1:n.contrasts,function(i){ ## i <- 1
-        ## prediction for the hypothetical worlds in which every subject is treated with the same treatment
-        if(!is.null(treatment)){
-            data.i <- data
-            data.i[[treatment]] <- factor(contrasts[i], levels = levels)
-        }else{
-            data.i <- data[data[[strata]]==contrasts[i]]
-        }
-        allrisks <- do.call("predictRisk",
-                            args = list(object, newdata = data.i, times = times, cause = cause,...))
-        if(!is.matrix(allrisks)){allrisks <- cbind(allrisks)} 
-        risk.i <- colMeans(allrisks)
-        risk.i
-    })
-
-        riskComparison <- data.table::rbindlist(lapply(1:(n.contrasts-1),function(i){ ## i <- 1
-            data.table::rbindlist(lapply(((i+1):n.contrasts),function(j){ ## j <- 2
-                ## compute differences between all pairs of treatments
-                data.table(Treatment.A=contrasts[[i]],
-                           Treatment.B=contrasts[[j]],
-                           time = times,
-                           diff=meanRisk[[j]]-meanRisk[[i]],
-                           ratio=meanRisk[[j]]/meanRisk[[i]])
-            }))}))
-
-    ## reshape for export
-    name.strata <- unlist(lapply(1:n.contrasts, function(c){rep(contrasts[c],length(meanRisk[[c]]))}))
-
-    out <- list(meanRisk = data.table(Treatment=name.strata,
-                                      time = times,
-                                      meanRisk=unlist(meanRisk)),
-                riskComparison = riskComparison)
-    return(out)            
+    ## ** output
+    return(list(times = times,
+                handler = handler,
+                strata = strata,
+                formula = formula,
+                landmark = landmark,
+                TD = TD,
+                fct.pointEstimate = fct.pointEstimate,
+                n.train = n.train))
 }
-# }}}
+
+## * ate_checkArgs
+ate_checkArgs <- function(object.event,
+                          object.censor,
+                          object.treatment,
+                          data,
+                          formula,
+                          treatment,
+                          strata,
+                          contrasts,
+                          times,
+                          cause,
+                          landmark,
+                          se,
+                          iid,
+                          band,
+                          B,
+                          confint,
+                          seed,
+                          handler,
+                          mc.cores,
+                          cl,
+                          verbose,
+                          store.iid,
+                          augment.cens,
+                          TD,
+                          n.train){
+
+    ## ** times
+    if(inherits(object.event,"glm") && length(times)!=1){
+        warning("Argument \'times\' has no effect when using a glm object \n",
+                "It should be set to NA \n")        
+    }
+
+    ## ** object.event
+    ## is there a predict method?
+    allmethods <- utils::methods(predictRisk)
+    candidateMethods <- paste("predictRisk",class(object.event),sep=".")
+    if (all(match(candidateMethods,allmethods,nomatch=0)==0)){
+        stop(paste("Could not find predictRisk S3-method for ",class(object.event),collapse=" ,"),sep="")
+    }
+    
+    ## has the delta method been implemented?
+    if(B==0 && (se || band || iid)){
+        validClass <- c("CauseSpecificCox","coxph","cph","phreg","glm")
+        if(all(validClass %in% class(object.event) == FALSE)){
+            stop("Standard error based on the influence function only implemented for \n",
+                 paste(validClass, collapse = " ")," objects \n",
+                 "set argument \'B\' to a positive integer to use a boostrap instead \n")
+        }
+        if(n.train[1]!=NROW(data)){
+            stop("Argument \'data\' must contain the dataset used to fit the object (when \'se\', \'band\', or \'iid\' is TRUE)\n")
+        }
+    }
+   
+    ## ** bootstrap
+    if(B>0){
+        if(se==FALSE){
+            warning("Argument 'se=0' means 'no standard errors' so number of bootstrap repetitions is forced to B=0.")
+        }
+        if(iid==TRUE){
+            stop("Influence function cannot be computed when using the bootstrap approach \n",
+                 "Either set argument \'iid\' to FALSE to not compute the influence function \n",
+                 "or set argument \'B\' to 0 \n")
+        }
+        if(band==TRUE){
+            stop("Confidence bands cannot be computed when using the bootstrap approach \n",
+                 "Either set argument \'band\' to FALSE to not compute the confidence bands \n",
+                 "or set argument \'B\' to 0 to use the estimate of the asymptotic distribution instead of the bootstrap\n")
+        }
+        if(is.null(object.event$call)){
+            stop("The object does not contain its own call, which is needed to refit the model in the bootstrap loop.")
+        }
+        ## if((Sys.info()["sysname"] == "Windows") && (handler == "mclapply") && (mc.cores>1) ){
+            ## stop("mclapply cannot perform parallel computations on Windows \n",
+                 ## "consider setting argument handler to \"foreach\" \n")
+        ## }
+        max.cores <- parallel::detectCores()
+        if(mc.cores > max.cores){
+            stop("Not enough available cores \n","available: ",max.cores," | requested: ",mc.cores,"\n")
+        }
+    }
+
+    ## ** delta method
+    if(B==0 && (se|band|iid) && !is.null(landmark)){
+        stop("Calculation of the standard errors via the influence function not implemented for time dependent covariates \n")
+    }
+
+    
+    ## ** treatment & strata
+    if(identical(treatment,strata)){
+        if(length(treatment) != 1){
+            stop("Argument treatment should have length 1. \n")
+        }
+        if(treatment %in% names(data) == FALSE){
+            stop("The data set does not seem to have a variable ",treatment," (argument: treatment). \n")
+        }
+        if(is.numeric(data[[treatment]])){
+            stop("The treatment variable must be a factor variable. \n",
+                 "Convert treatment to factor, re-fit the object using this new variable and then call ate. \n")
+        }
+    }else{
+        if(!is.null(treatment)){
+            stop("Argument treatment must be NULL when strata is specified. \n") ## the case strata==treatment is hidden to the user
+        }
+        if(any(strata %in% names(data) == FALSE)){
+            stop("The data set does not seem to have a variable \"",paste0(strata, collapse = "\" \""),"\" (argument: strata). \n")
+        }
+        if(length(strata) != 1){
+            stop("Argument strata should have length 1. \n")
+        }
+        if(B > 0){
+            stop("Boostrap resampling is not available when argument strata is specified. \n")
+        }
+        if(TD == TRUE){
+            stop("Landmark analysis is not available when argument strata is specified. \n")
+        }
+    }
+    
+    ## ** time dependent covariances
+    if (TD){
+        if (missing(formula))
+            stop("Need formula to do landmark analysis.")
+        if (missing(landmark))
+            stop("Need landmark time(s) to do landmark analysis.")
+        if(length(times)!=1){
+            stop("In settings with time-dependent covariates argument 'time' must be a single value, argument 'landmark' may be a vector of time points.")
+        }
+    }
+
+    ## ** n.train
+    ## when using CSC model, check that the same dataset has been used to train each Cox model
+    ## in fact only check that via the size of the dataset
+    if(length(unique(n.train))>1){
+        stop("The same dataset must have been used to fit all models.")
+    }
+    
+    ## ** output
+    return(TRUE)
+}
+
 
             
 

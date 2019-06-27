@@ -5,6 +5,8 @@
 \alias{coxN.cph}
 \alias{coxN.coxph}
 \alias{coxN.phreg}
+\alias{coxN.CauseSpecificCox}
+\alias{coxN.glm}
 \title{Extract the number of observations from a Cox model}
 \usage{
 coxN(object)
@@ -14,6 +16,10 @@ coxN(object)
 \method{coxN}{coxph}(object)
 
 \method{coxN}{phreg}(object)
+
+\method{coxN}{CauseSpecificCox}(object)
+
+\method{coxN}{glm}(object)
 }
 \arguments{
 \item{object}{The fitted Cox regression model object either

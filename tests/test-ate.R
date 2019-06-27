@@ -4,7 +4,7 @@ library(survival)
 library(testthat)
 library(data.table)
 context("Ate checks")
-# {{{ header with data  
+                                        # {{{ header with data  
 set.seed(10)
 n <- 5e1
 dtS <- sampleData(n,outcome="survival")
@@ -12,8 +12,8 @@ dtS$time <- round(dtS$time,1)
 dtS$X1 <- factor(rbinom(n, prob = c(0.3,0.4) , size = 2), labels = paste0("T",0:2))
 handler <- if (Sys.info()["sysname"] == "Windows") "foreach" else "mclapply"
 verbose <- FALSE
-# }}}
-# {{{ G formula: coxph, cph, sequential, one and several time points
+                                        # }}}
+                                        # {{{ G formula: coxph, cph, sequential, one and several time points
 if (class(try(riskRegression.test,silent=TRUE))[1]!="try-error"){
     test_that("G formula: coxph, cph, bootstrap sequential, one and several time points",{
         fit.cph <- cph(Surv(time,event)~ X1+X2,data=dtS,y=TRUE,x=TRUE)
@@ -42,34 +42,34 @@ if (class(try(riskRegression.test,silent=TRUE))[1]!="try-error"){
         expect_equal(ate.1b,ate.2b,tolerance = .0001)
         ## quantile(ate.1a$boot$t[,1], 0.025) 
         ## expect_equal(ate.1a$meanRisk$meanRisk.bootstrap,
-                     ## c(0.04778180, 0.03383714, 0.03132013), tol = 1e-6)
+        ##              c(0.04778180, 0.03383714, 0.03132013), tol = 1e-6)
         ## expect_equal(ate.1a$meanRisk$meanRisk.se,
-                     ## c(0.02308268, 0.03008728, 0.02586185), tol = 1e-6)
+        ##              c(0.02308268, 0.03008728, 0.02586185), tol = 1e-6)
         ## expect_equal(ate.1a$meanRisk$meanRisk.lower,
-                     ## c(0.03227598, 0.01362597, 0.01394739), tol = 1e-6)
+        ##              c(0.03227598, 0.01362597, 0.01394739), tol = 1e-6)
         ## expect_equal(ate.1a$meanRisk$meanRisk.upper,
-                     ## c(0.06328763, 0.05404831, 0.04869286), tol = 1e-6)
+        ##              c(0.06328763, 0.05404831, 0.04869286), tol = 1e-6)
         ## expect_equal(ate.1a$riskComparison$diff.bootstrap,
-                     ## c(-0.013944664, -0.016461677, -0.002517013), tol = 1e-6)
+        ##              c(-0.013944664, -0.016461677, -0.002517013), tol = 1e-6)
         ## expect_equal(ate.1a$riskComparison$diff.se,
-                     ## c(0.007004595, 0.002779170, 0.004225425), tol = 1e-6)
+        ##              c(0.007004595, 0.002779170, 0.004225425), tol = 1e-6)
         ## expect_equal(ate.1a$riskComparison$diff.lower,
-                     ## c(-0.01865001,-0.01832859,-0.005355449), tol = 1e-6)
+        ##              c(-0.01865001,-0.01832859,-0.005355449), tol = 1e-6)
         ## expect_equal(ate.1a$riskComparison$diff.upper,
-                     ## c(-0.009239317,-0.01459477,0.0003214227),tol = 1e-6)
+        ##              c(-0.009239317,-0.01459477,0.0003214227),tol = 1e-6)
         ## expect_equal(ate.1a$riskComparison$ratio.bootstrap,
-                     ## c(0.6295209,0.5940667,0.968797), tol = 1e-6)
+        ##              c(0.6295209,0.5940667,0.968797), tol = 1e-6)
         ## expect_equal(ate.1a$riskComparison$ratio.se,
-                     ## c(0.3255684,0.2542641,0.09713035), tol = 1e-6)
+        ##              c(0.3255684,0.2542641,0.09713035), tol = 1e-6)
         ## expect_equal(ate.1a$riskComparison$ratio.lower,
-                     ## c(0.4108198,0.4232644,0.9035496), tol = 1e-6)
+        ##              c(0.4108198,0.4232644,0.9035496), tol = 1e-6)
         ## expect_equal(ate.1a$riskComparison$ratio.upper,
-                     ## c(0.8482219,0.764869,1.034044), tol = 1e-6)
+        ##              c(0.8482219,0.764869,1.034044), tol = 1e-6)
         ## expect_equal(ate.1a$riskComparison$ratio.p.value,
-        ## c(5.316164e-02, 1.946959e-02, 1.976976e-23), tol = 1e-6)
+        ##              c(5.316164e-02, 1.946959e-02, 1.976976e-23), tol = 1e-6)
     })}
-# }}}
-# {{{ Cox model - fully stratified
+                                        # }}}
+                                        # {{{ Cox model - fully stratified
 if (class(try(riskRegression.test,silent=TRUE))[1]!="try-error"){
     test_that("G formula: coxph, cph, fully stratified",{
         fit <- cph(formula = Surv(time,event)~ strat(X1),data=dtS,y=TRUE,x=TRUE)
@@ -81,8 +81,8 @@ if (class(try(riskRegression.test,silent=TRUE))[1]!="try-error"){
                     times = 1, B = 2, y = TRUE, mc.cores=1,handler=handler,verbose=verbose)
     })
 }
-# }}}
-# {{{ Cox model - compare to explicit computation
+                                        # }}}
+                                        # {{{ Cox model - compare to explicit computation
 test_that("Cox model - compare to explicit computation",{
     set.seed(10)
     n <- 5e1
@@ -99,8 +99,8 @@ test_that("Cox model - compare to explicit computation",{
                  c(0.6513235, 0.7011545, 0.7276942),
                  tol = 1e-6)
 })
-# }}}
-# {{{ agreement one timepoint with several timepoints
+                                        # }}}
+                                        # {{{ agreement one timepoint with several timepoints
 
 if (class(try(riskRegression.test,silent=TRUE))[1]!="try-error"){
     test_that("Cox model - check internal consistency (one or several timepoints)",{
@@ -227,7 +227,7 @@ if (class(try(riskRegression.test,silent=TRUE))[1]!="try-error"){
 test_that("mcapply vs. foreach",{
     set.seed(10)
     df <- sampleData(3e2,outcome="competing.risks")
-    if(parallel::detectCores()>1){
+    if( (parallel::detectCores()>1) && (Sys.info()["sysname"] != "Windows") ){
         fit = CSC(formula = Hist(time,event)~ X1+X2, data = df, cause=1)
         time2.mc <- system.time(
             res2.mc <- ate(fit,data = df, treatment = "X1", contrasts = NULL,

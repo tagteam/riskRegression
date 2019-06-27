@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun  6 2016 (09:02) 
 ## Version: 
-## last-updated: Jun 17 2019 (12:23) 
-##           By: Thomas Alexander Gerds
-##     Update #: 185
+## last-updated: jun 27 2019 (13:40) 
+##           By: Brice Ozenne
+##     Update #: 188
 #----------------------------------------------------------------------
 ## 
 ### Commentary:
@@ -762,13 +762,13 @@ penalizedS3 <- function(formula,data,type="elastic.net",lambda1,lambda2,fold,...
     ## unpenalized terms are communicated via
     ## the left hand side of response
     fitS4 <- switch(type,"ridge"={
-        do.call(penalized,c(args,list(lambda1=0, lambda2=lambda2)))
+        do.call(penalized::penalized,c(args,list(lambda1=0, lambda2=lambda2)))
     }, 
     "lasso"={
-        do.call(penalized,c(args,list(lambda1=lambda1, lambda2=0)))
+        do.call(penalized::penalized,c(args,list(lambda1=lambda1, lambda2=0)))
     },
     "elastic.net"={
-        do.call(penalized,c(args,list(lambda1=lambda1, lambda2=lambda2)))
+        do.call(penalized::penalized,c(args,list(lambda1=lambda1, lambda2=lambda2)))
     })
     if (is.infinite(fitS4@loglik)){
         print(fitS4)
@@ -888,7 +888,7 @@ predictRisk.SuperPredictor  <- function(object,newdata,...){
 }
 
 ##' @export 
-predictRisk.gbm <- function(object, newdata, times, n.trees = NULL) {
+predictRisk.gbm <- function(object, newdata, times, n.trees = NULL, ...) {
     traindata <-  reconstructGBMdata(object)
     if (is.null(n.trees)) n.trees <- object$n.trees
     p <- matrix(0, NROW(newdata), length(times))

@@ -4,15 +4,22 @@
 \alias{ate}
 \title{Compute the Average Treatment Effects Via the G-formula}
 \usage{
-ate(object, data, formula, treatment, strata = NULL, contrasts = NULL,
-  times, cause, landmark, se = TRUE, iid = FALSE, band = FALSE,
-  B = 0, confint = (se + band) > 0, seed, handler = "foreach",
-  mc.cores = 1, cl = NULL, verbose = TRUE, store.iid = "full", ...)
+ate(object.event, object.censor, object.treatment, data, formula,
+  treatment, strata = NULL, contrasts = NULL, times, cause = NA,
+  landmark, se = TRUE, iid = FALSE, band = FALSE, B = 0,
+  confint = (se + band) > 0, seed, handler = "foreach", mc.cores = 1,
+  cl = NULL, verbose = TRUE, store.iid = "full", ...)
 }
 \arguments{
-\item{object}{Outcome model which describes how event risk depends
-on treatment and covariates.  The object carry its own call and
+\item{object.event}{Outcome model which describes how event risk depends
+on treatment and covariates. The object carry its own call and
 have a \code{predictRisk} method. See examples.}
+
+\item{object.censor}{Censoring model which describes how censoring depends
+on treatment and covariates. The object must be a \code{coxph} or \code{cph} object. See examples.}
+
+\item{object.treatment}{Treatment model which describes how treatment depends
+on covariates. The object must be a \code{glm} object (logistic regression). See examples.}
 
 \item{data}{[data.frame or data.table] Data set in which to evaluate risk predictions
 based on the outcome model}
@@ -50,7 +57,7 @@ They are computed applying the \code{confint} function to the output.}
 and to achieve reproducible results.}
 
 \item{handler}{[character] Parallel handler for bootstrap.
-either \code{"mclapply"} or \code{"foreach"}.
+either \code{"foreach"}, \code{"mclapply"}, \code{"snow"} or \code{"multicore"}.
 if "foreach" use \code{doparallel} to create a cluster.}
 
 \item{mc.cores}{[integer, >0] The number of cores to use,
@@ -94,7 +101,7 @@ fit <- cph(formula = Surv(time,event)~ X1+X2,data=dtS,y=TRUE,x=TRUE)
 
 ## compute the ATE at times 5, 6, 7, and 8 using X1 as the treatment variable
 \dontrun{
-## only punctual estimate (argument se = FALSE)
+## only point estimate (argument se = FALSE)
 ateFit1a <- ate(fit, data = dtS, treatment = "X1", times = 5:8,
                se = TRUE)
 
