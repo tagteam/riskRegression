@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: apr  5 2018 (17:01) 
 ## Version: 
-## Last-Updated: jan 24 2019 (09:52) 
+## Last-Updated: jun 28 2019 (16:02) 
 ##           By: Brice Ozenne
-##     Update #: 284
+##     Update #: 325
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -15,8 +15,164 @@
 ## 
 ### Code:
 
-calcSeATE <- function(object, data, times, cause,
-                      treatment, contrasts, strata, n.contrasts, levels, n.times, n.obs,
+## * calcSeATE_TI
+calcSeATE_TI <- function(object.event,
+                         object.treatment,
+                         object.censor,
+                         data,
+                         treatment,
+                         contrasts,
+                         times,
+                         cause,
+                         level.censoring,
+                         n.contrasts,
+                         levels,
+                         n.censor,
+                         estimator,
+                         eventVar.time,
+                         eventVar.status,
+                         prob.event,
+                         prob.treatment,
+                         prob.censor,
+                         augTerm,
+                         iid,
+                         store.iid,
+                         export,
+                         ...){
+
+    names(list(...))
+    n.obs <- NROW(data)
+    n.contrasts <- length(contrasts)
+    n.times <- length(times)
+
+    ## ** Compute influence function for each modality
+    for(iC in 1:n.contrasts){
+        data.i <- data
+        data.i[[treatment]] <- factor(contrasts[iC], levels = levels)
+
+        if(estimator %in% c("IPTW","IPTW,IPCW","AIPTW","AIPTW,AIPCW")){
+            iW.IPTW <- sweep(1/prob.treatment[[iC]], FUN = "*", MARGIN = 1, STATS = (data[[treatment]] == contrasts[iC]))
+        }
+        
+        ## *** outcome model
+        if(estimator %in% c("Gformula","AIPTW","AIPTW,AIPCW")){
+            if(estimator %in% c("AIPTW","AIPTW,AIPCW")){
+                factor <- cbind(1, 1-iW.IPTW)
+            }else{
+                factor <- NULL
+            }
+
+            iid.outcome <- predictRiskIID(model.event,
+                                          newdata = data.i,
+                                          times = times,
+                                          iid = FALSE,
+                                          average.iid = TRUE,
+                                          factor = factor,
+                                          cause = cause)
+
+            if(estimator %in% c("AIPTW","AIPTW,AIPCW")){
+                iidG.event <- iid.outcome[[1]]
+                ls.iidAIPW.event <- iid.outcome[-1]
+            }else{
+                iidG.event <- iid.outcome$absRisk.average.iid
+            }
+        }
+
+        
+        ## *** Inverse probability weighting of treatment       
+        if(estimator %in% c("IPTW","IPTW,IPCW","AIPTW","AIPTW,AIPCW")){
+            browser()
+            
+            predictRiskIID(object, newdata, average.iid, factor)
+            factor <- cbind("IPW0" = data[, .SD$weights * .SD$treatment.bin0 * (.SD$status.tau==1) / .SD$prob.treatment0^2],
+                            "IPW1" = data[, .SD$weights * .SD$treatment.bin1 * (.SD$status.tau==1) / .SD$prob.treatment1^2],
+                            "AIPW0" = data[, .SD$treatment.bin0 * .SD$prob.event0 / .SD$prob.treatment0^2],
+                            "AIPW1" = data[, .SD$treatment.bin1 * .SD$prob.event1 / .SD$prob.treatment1^2])
+        
+        
+            prediction.treatment.iid <- predictRiskIID(object.treatment, newdata = data.i, average.iid = average.iid)
+            iidIPW.treatment0 <-  prediction.treatment.iid[,1]
+            iidIPW.treatment1 <- -prediction.treatment.iid[,2]
+            iidAIPW.treatment0 <- -prediction.treatment.iid[,3]
+            iidAIPW.treatment1 <- prediction.treatment.iid[,4]
+
+        }
+        for(iTau in 1:n.times){ ## iTau <- 1
+            ## random variables stopped at times
+            status.tau <- (data.i[[eventVar.time]] <= times[iTau]) * (data.i[[eventVar.time]] == cause)
+
+                ## ** IPTW,IPCW
+                ## compute IPTW
+                iProb.treatment <- predictRisk(object.treatment, newdata = data)
+                iW.IPTW <- (data[[treatment]] == contrasts[iC]) / iProb.treatment 
+                if(return.iid){
+                    ls.prob.treatment[[iC]][,iTau] <- iProb.treatment
+                }
+            
+                ## compute IPCW
+                if(n.censor[iTau]==0){
+                    iW.IPCW <- rep(1,NROW(data))
+                }else{
+                    Ncensoring.tau <- (data.i[[eventVar.time]] <= times[iTau]) * (data.i[[eventVar.time]] != level.censoring)
+                    time.tau <- pmin(data.i[[eventVar.time]], times[iTau])
+
+                    iProb.censor <- predictCox(object.censor, newdata = data, times = time.tau-(1e-10), type = "survival", diag = TRUE)$survival[,1]
+                    iW.IPCW <- Ncensoring.tau / iProb.censor
+                    if(return.iid){
+                        ls.prob.censor[[iC]][,iTau] <- iProb.event
+                    }
+                }
+
+                ## assemble
+                iIF[,iTau] <- iIF[,iTau] + status.tau * iW.IPCW * iW.IPTW ## IPCW,IPTW
+
+                ## ** AIPTW,AIPCW
+                ## assemble
+                if(estimator %in% c("AIPTW","AIPTW,AIPCW")){
+                    iIF[,iTau] <- iIF[,iTau] + iProb.event[,iTau] * iW.IPTW ## AIPTW
+                }
+                if(estimator %in% c("AIPTW,AIPCW")){
+                    iIF[,iTau] <- iIF[,iTau] + augTerm[,iTau] * iW.IPTW ## AIPCW
+                }
+            }
+        }
+
+            meanRisk[iC,] <- colMeans(iIF)
+            if(return.iid){
+                ls.iid[[iC]] <- iIF
+            }
+        }
+    riskComparison <- data.table::rbindlist(lapply(1:(n.contrasts-1),function(i){ ## i <- 1
+        data.table::rbindlist(lapply(((i+1):n.contrasts),function(j){ ## j <- 2
+            ## compute differences between all pairs of treatments
+            data.table(Treatment.A=contrasts[i],
+                       Treatment.B=contrasts[j],
+                       time = times,
+                       diff=meanRisk[j,]-meanRisk[i,],
+                       ratio=meanRisk[j,]/meanRisk[i,])
+        }))}))
+
+    ## reshape for export
+    name.strata <- unlist(lapply(1:n.contrasts, function(c){rep(contrasts[c],length(meanRisk[[c]]))}))
+
+    out <- list(meanRisk = data.table(Treatment=name.strata,
+                                      time = times,
+                                      meanRisk=as.double(meanRisk)),
+                riskComparison = riskComparison)
+    if(estimator %in% c("AIPTW","AIPTW,AIPCW")){    
+        attr(out,"iid") <- ls.iid
+        attr(out,"augTerm") <- ls.augTerm
+        attr(out,"augTerm") <- ls.augTerm
+        attr(out,"augTerm") <- ls.augTerm
+    }
+    return(out)            
+}
+
+
+## * calcSeATE
+calcSeATE <- function(object.event, object.treatment,
+                      iid, data, times, cause,
+                      treatment, contrasts, strata, levels, n.obs,
                       pointEstimate, export, store.iid){
 
     lowerBand <- upperBand <- diffBand.lower <- diffBand.upper <- ratioBand.lower <- ratioBand.upper <- NULL ## [:forCRANcheck:]
@@ -24,6 +180,9 @@ calcSeATE <- function(object, data, times, cause,
     lower <- upper <- diff.se <- diff.lower <- diff.upper <- diff.p.value <- ratio.se <- ratio.lower <- ratio.upper <- ratio.p.value <- NULL ## [:forCRANcheck:]
 
     out <- list()
+    n.contrasts <- length(contrasts)
+    n.times <- length(times)
+    browser()
     
                                         # {{{ 1- influence function for the individual predictions
     ## in hypothetical worlds in which every subject is treated with the same treatment

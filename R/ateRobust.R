@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne, Thomas A. Gerds
 ## Created: jun 27 2018 (17:47) 
 ## Version: 
-## Last-Updated: jun 27 2019 (14:22) 
+## Last-Updated: jun 28 2019 (18:15) 
 ##           By: Brice Ozenne
-##     Update #: 1231
+##     Update #: 1232
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -355,7 +355,7 @@ ateRobust <- function(data, times, cause, type,
         ## difficult because we need the iid not for all combinaisons time x obs but only the "diagonal"
         ## nuisance.iid <- TRUE
         ## attr(nuisance.iid, "factor") <- list("IPCW" = data[,.SD$weights^2 * (.SD$status.tau==1) * (.SD$treatment.bin1/ .SD$prob.treatment1 - .SD$treatment.bin0/ .SD$prob.treatment0)])
-        ## predIndiv.censor <- do.call(predictor.cox, args = list(model.censor, newdata = data, times = data$time.tau-(1e-10), type = "survival", diag = TRUE, average.iid = nuisance.iid1))
+        ## predIndiv.censor <- do.call(predictor.cox, args = list(model.censor, newdata = data, times = data$time.tau-(1e-10), type = "survival", diag = TRUE, average.iid = nuisance.iid1))g
         ## Error in predictCox(list(coefficients = c(X6 = -0.00036957593518861),  : 
         ##   Arguments 'se', 'band', and 'average.iid' must be FALSE when 'diag' is TRUE 
     }

@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: maj 23 2018 (14:08) 
 ## Version: 
-## Last-Updated: Jun 23 2019 (19:48) 
-##           By: Thomas Alexander Gerds
-##     Update #: 489
+## Last-Updated: jun 28 2019 (12:13) 
+##           By: Brice Ozenne
+##     Update #: 495
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -195,7 +195,7 @@ confintBoot.ate <- function(object,
     boot.se <- sqrt(apply(object$boot$t, 2, var, na.rm = TRUE))
     boot.mean <- colMeans(object$boot$t, na.rm = TRUE)
 
-    ## confidence interval
+    ## confidence interval    
     ls.CI <- lapply(index, function(iP){ # iP <- 1
         if(n.boot[iP]==0){
             return(c(lower = NA, upper = NA))

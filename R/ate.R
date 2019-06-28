@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Oct 23 2016 (08:53) 
 ## Version: 
-## last-updated: jun 27 2019 (13:49) 
+## last-updated: jun 28 2019 (14:30) 
 ##           By: Brice Ozenne
-##     Update #: 945
+##     Update #: 1140
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -25,14 +25,14 @@
 #'     on treatment and covariates. The object carry its own call and
 #'     have a \code{predictRisk} method. See examples.
 #' @param object.treatment Treatment model which describes how treatment depends
-#'     on covariates. The object must be a \code{glm} object (logistic regression). See examples.
+#'     on covariates. The object must be a \code{glm} object (logistic regression) or the name of the treatment variable.
+#'     See examples.
 #' @param object.censor Censoring model which describes how censoring depends
 #'     on treatment and covariates. The object must be a \code{coxph} or \code{cph} object. See examples.
 #' @param data [data.frame or data.table] Data set in which to evaluate risk predictions
 #' based on the outcome model
 #' 
 #' @param formula For analyses with time-dependent covariates, the response formula. See examples.
-#' @param treatment [character] Name of the treatment variable.
 #' @param contrasts [character] The levels of the treatment variable to be compared.
 #' @param strata [character] Strata variable on which to compute the average risk.
 #' Incompatible with treatment. Experimental.
@@ -74,6 +74,7 @@
 #' \code{\link{confint.ate}} to compute confidence intervals/bands.
 #' \code{\link{autoplot.ate}} to display the average risk.
 #' \code{\link{ateRobust}} to make the estimator doubly robust 
+
 ## * ate (examples)
 #' @rdname ate
 #' @examples 
@@ -248,11 +249,10 @@
 #' @rdname ate
 #' @export
 ate <- function(object.event,
-                object.censor,
                 object.treatment,
+                object.censor = NULL,
                 data,
                 formula,
-                treatment,
                 strata = NULL,
                 contrasts = NULL,
                 times,
@@ -267,7 +267,7 @@ ate <- function(object.event,
                 handler = "foreach",
                 mc.cores = 1,
                 cl = NULL,
-                verbose = TRUE,
+                verbose = 2,
                 store.iid = "full",
                 ...){
 
@@ -280,19 +280,35 @@ ate <- function(object.event,
 
     ## ** initialize arguments
     init <- ate_initArgs(object.event = object.event,
-                         treatment = treatment,
-                         strata = strata,
+                         object.treatment = object.treatment,
+                         object.censor = object.censor,
+                         data = data,
                          times = times,
+                         cause = cause,
                          handler = handler)
+
+    object.event <- init$object.event
+    object.treatment <- init$object.treatment
+    object.censor <- init$object.censor
     times <- init$times
     handler <- init$handler
-    strata <- init$strata
     formula <- init$formula
     landmark <- init$landmark
+    treatment <- init$treatment
+    cause <- init$cause
     TD <- init$TD
+    estimator <- init$estimator
     fct.pointEstimate <- init$fct.pointEstimate
     n.train <- init$n.train
-    
+    n.obs <- init$n.obs
+    n.censor <- init$n.censor
+    type.multistate <- init$type.multistate
+    eventVar.time <- init$eventVar.time
+    eventVar.status <- init$eventVar.status
+    level.censoring <- init$level.censoring
+    censorVar.time <- init$censorVar.time
+    censorVar.status <- init$censorVar.status
+
     ## ** check consistency of the user arguments
     check <- ate_checkArgs(object.event = object.event,
                            object.censor = object.censor,
@@ -318,44 +334,88 @@ ate <- function(object.event,
                            store.iid = store.iid,
                            augment.cens = augment.cens,
                            TD = TD,
-                           n.train = n.train)
+                           n.train = n.train,
+                           n.censor = n.censor,
+                           level.censoring = level.censoring,
+                           estimator = estimator,
+                           eventVar.time = eventVar.time,
+                           eventVar.status = eventVar.status,
+                           censorVar.time = censorVar.time,
+                           censorVar.status = censorVar.status
+                           )
 
     ## ** Prepare
-    if(!is.null(treatment)){
+    if(!is.null(strata)){
+        data[[strata]] <- factor(data[[strata]])        
+        if(is.null(contrasts)){
+            contrasts <- levels(data[[strata]])
+        }
+        levels <- levels(data[[strata]]) ## necessary to get the correct factor format in case that not all levels are in contrast
+    }else{
         data[[treatment]] <- factor(data[[treatment]])
     
         if(is.null(contrasts)){
-            levels <- levels(data[[treatment]])
             contrasts <- levels(data[[treatment]])
             ## if (length(contrasts)>50) warning("Treatment variable has more than 50 levels.\nIf this is not a mistake,
             ## you should use the argument `contrasts'.")
-        }else{levels <- contrasts}
-    }else{
-        data[[strata]] <- factor(data[[strata]])        
-        levels <- levels(data[[strata]])
-        contrasts <- levels(data[[strata]])
+        }
+        levels <- levels(data[[treatment]]) ## necessary to get the correct factor format in case that not all levels are in contrast
     }
-    n.contrasts <- length(contrasts)
-    n.times <- length(times)
-    n.obs <- NROW(data)
-  
+
+    ## ** Overview of the calculations
+    if(verbose>1){
+        name.estimator <- switch(estimator,
+                                 "Gformula" = "the G-formula",
+                                 "GformulaTD" = "the G-formula with time dependent covariates",
+                                 "IPTW" = "the IPTW estimator",
+                                 "IPTW,IPCW" = "the IPTW, IPCW estimator",
+                                 "AIPTW" = "the AIPTW estimator",
+                                 "AIPTW,AIPCW" = "the AIPTW, AIPCW estimator"
+                                 )
+
+        if(!is.null(strata)){
+            cat("Calculation of the average risk by strata \n", sep = "")
+            cat(" - Estimator      : ",estimator,"\n",sep="")
+            cat(" - Strata variable: ",strata,"\n",sep="")
+        }else{
+            cat("     Calculation of the average treatment effect \n\n", sep = "")
+            cat(" - Estimator         : ",estimator,"\n",sep="")
+            cat(" - Treatment variable: ",treatment," (",length(contrasts)," levels)\n",sep="")
+            cat(" - Event variable    : ",eventVar.status," (cause: ",cause,", censoring: ",level.censoring,")\n",sep="")
+            cat(" - Time variable     : ",eventVar.time,"\n",sep="")
+        }
+        cat("\n")
+        cat(" - Point estimation:")
+        
+    }
+
     ## ** Point estimate
-    args.pointEstimate <- list(object.event=object.event,
+    args.pointEstimate <- list(object.event = object.event,
+                               object.censor = object.censor,
+                               object.treatment = object.treatment,
                                data=data,
                                treatment=treatment,
                                strata=strata,
                                contrasts=contrasts,
+                               levels=levels,
                                times=times,
                                cause=cause,
                                landmark=landmark,
-                               n.contrasts = n.contrasts,
-                               levels = levels,
+                               n.censor = n.censor,
+                               level.censoring = level.censoring,
+                               estimator = estimator,
+                               eventVar.time = eventVar.time,
+                               eventVar.status = eventVar.status,
+                               type.multistate = type.multistate,
+                               return.iid = (se || band || iid) && (B==0),
                                dots)
-    if (TD){
+    if (TD){       
         args.pointEstimate <- c(args.pointEstimate,list(formula=formula))
     }
+    ## args.pointEstimate$estimator
     estimateTime <- system.time(pointEstimate <- do.call(fct.pointEstimate, args.pointEstimate))
-
+    if(verbose>1){cat(" done \n")}
+    2
     ## ** Confidence intervals
     if(se || band || iid){
         if (TD){
@@ -366,19 +426,13 @@ ate <- function(object.event,
             key1 <- c("Treatment","time")
             key2 <- c("Treatment.A","Treatment.B","time")
         }
-    
+
         if(B>0){
                                         # {{{ Bootstrap
-            ### *** Bootstrap
-            if (verbose==TRUE){ ## display
-                message(paste0("Approximated bootstrap netto run time (without time for copying data to cores):\n",
-                               round(estimateTime["user.self"],2),
-                               " seconds times ",
-                               B,
-                               " bootstraps / ",
-                               mc.cores,
-                               " cores = ",
-                               round(estimateTime["user.self"]*B/mc.cores,2)," seconds.\n"))
+### *** Bootstrap
+            if (verbose>1){ ## display
+                cat(" - Non-parametric bootstrap using ",B," samples and ",mc.cores," core",if(mc.cores>1){"s"},"\n", sep ="")
+                cat("                            (expected time: ",round(estimateTime["user.self"]*B/mc.cores,2)," seconds)\n", sep = "")
             }
 
             vec.pointEstimate <- c(pointEstimate$meanRisk$meanRisk,
@@ -388,22 +442,10 @@ ate <- function(object.event,
                                           pointEstimate$riskComparison[,paste0("compRisk:diff:",Treatment.A,":",Treatment.B,":",time)],
                                           pointEstimate$riskComparison[,paste0("compRisk:ratio:",Treatment.A,":",Treatment.B,":",time)]
                                           )
-
-            resBoot <- calcBootATE(object.event,
-                                   pointEstimate = vec.pointEstimate,
-                                   fct.pointEstimate = fct.pointEstimate,
-                                   data = data,
-                                   formula=formula,
-                                   TD=TD,
-                                   treatment = treatment,
-                                   contrasts = contrasts,
-                                   times = times,
-                                   cause = cause,
-                                   landmark = landmark,
-                                   n.contrasts = n.contrasts,
-                                   levels = levels,
-                                   dots = dots,
+            resBoot <- calcBootATE(args = args.pointEstimate,
+                                   name.estimate = names(vec.pointEstimate),
                                    n.obs = n.obs,
+                                   fct.pointEstimate = fct.pointEstimate,
                                    handler = handler,
                                    B = B,
                                    seed = seed,
@@ -411,47 +453,73 @@ ate <- function(object.event,
                                    cl = cl,
                                    verbose = verbose)
 
+            boot.object <- list(t0 = vec.pointEstimate,
+                                t = resBoot$boot,
+                                R = B,
+                                data = data,
+                                seed = resBoot$bootseeds,
+                                statistic = NULL,
+                                sim = "ordinary",
+                                call = quote(boot(data = XX, statistic = XX, R = XX)),
+                                stype = "i",
+                                strata = rep(1,n.obs),
+                                weights = rep(1/n.obs,n.obs),
+                                pred.i = NULL,  ## Omitted if m is 0 or sim is not "ordinary" (from doc of boot::boot)
+                                L = NULL, ## only used when sim is "antithetic" (from doc of boot::boot)
+                                ran.gen = NULL, ## only used when sim is "parametric" (from doc of boot::boot)
+                                mle = NULL ## only used when sim is "parametric" (from doc of boot::boot)
+                                )
+            class(boot.object) <- "boot"
+
             bootseeds <- resBoot$bootseeds
-            resBoot <- resBoot$boot
-            outSE <- NULL   
+            outSE <- NULL
+            if (verbose>1){ ## display
+                cat("\n")
+            }
+
                                         # }}}
         } else {
                                         # {{{ compute standard error and quantiles via the influence function
             ## *** Delta method
-            outSE <- calcSeATE(object.event,
-                               data = data,
-                               times = times,
-                               cause = cause,
-                               treatment = treatment,
-                               contrasts = contrasts,
-                               strata = strata,
-                               n.contrasts = n.contrasts,
-                               levels = levels,
-                               n.times = n.times,
-                               n.obs = n.obs,
-                               pointEstimate = pointEstimate,
-                               export = c("iid"[(iid+band)>0],"se"[(se+band)>0]),
-                               store.iid = store.iid)
+            if (verbose>1){ ## display
+                cat(" - Functional delta method: ")
+            }
 
+            args.pointEstimate$export <- c("iid"[(iid+band)>0],"se"[(se+band)>0]) 
+            args.pointEstimate$store.iid <- store.iid
+            args.pointEstimate$iid <- attr(pointEstimate, "iid")
+            args.pointEstimate$augTerm <- attr(pointEstimate, "augTerm")
+            args.pointEstimate$prob.event <- attr(pointEstimate, "prob.event")
+            args.pointEstimate$prob.treatment <- attr(pointEstimate, "prob.treatment")
+            args.pointEstimate$prob.censor <- attr(pointEstimate, "prob.censor")
+
+            ## pointEstimate
+            outSE <- do.call(calcSeATE_TI, args.pointEstimate)
+            
             pointEstimate$meanRisk[["meanRisk.se"]] <- outSE$meanRisk.se[,1]
             pointEstimate$riskComparison[["diff.se"]] <- outSE$diffRisk.se[,1]
             pointEstimate$riskComparison[["ratio.se"]] <- outSE$ratioRisk.se[,1]            
             data.table::setcolorder(pointEstimate$riskComparison, neworder = c(names(pointEstimate$riskComparison)[1:3],
                                                                                "diff","diff.se","ratio","ratio.se"))
             bootseeds <- NULL
-            resBoot <- NULL          
+            boot.object <- NULL
+
+            if (verbose>1){ ## display
+                cat("done\n")
+            }
+
    
                                         # }}}
         }
     } else{
         bootseeds <- NULL
-        resBoot <- NULL
+        boot.object <- NULL
         outSE <- NULL
                                         # }}}
     }
                                         # {{{ output object
     ## ** export
-    if(is.null(treatment)){
+    if(!is.null(strata)){ ## when computing the average risk over strata
         setnames(pointEstimate$meanRisk,
                  old = "Treatment",
                  new = strata)
@@ -472,13 +540,20 @@ ate <- function(object.event,
                 TD = TD,
                 B = B,
                 band = band,
-                boot = resBoot,
+                boot = boot.object,
                 seeds = bootseeds)
 
   
     class(out) <- c("ate",class(object.event))
     if(confint){
+        if (verbose>1){ ## display
+            cat(" - Confidence intervals: ")
+        }
         out <- stats::confint(out)
+        
+        if (verbose>1){ ## display
+            cat("done\n")
+        }
     }
     if(band[[1]] && se[[1]]==FALSE){
         out$meanRisk[["meanRisk.se"]] <- NULL
@@ -495,8 +570,10 @@ ate <- function(object.event,
 
 ## * ate_initArgs
 ate_initArgs <- function(object.event,
-                         treatment,
-                         strata,
+                         object.treatment,
+                         object.censor,
+                         data,
+                         cause,
                          times,
                          handler){
 
@@ -508,43 +585,141 @@ ate_initArgs <- function(object.event,
 
     ## handler
     handler <- match.arg(handler, c("foreach","mclapply","snow","multicore"))
-
-    ## strata
-    if(!is.null(treatment) & is.null(strata)){
-        strata <- treatment
+    
+    ## ** deduced from user defined arguments
+    ## event
+    if(inherits(object.event,"glm")){
+        eventVar.time <- as.character(NA)
+        eventVar.status <- all.vars(formula(object.event))[1]
+        type.multistate <- NA
+    }else if(inherits(object.event,"coxph") || inherits(object.event,"cph") || inherits(object.event,"phreg")){
+        responseVar <- SurvResponseVar(coxFormula(object.event))
+        eventVar.time <- responseVar$time
+        eventVar.status <- responseVar$status
+        type.multistate <- "survival"
+    }else if(inherits(object.event,"CauseSpecificCox")){
+        causeNNA <- na.omit(c(cause,1))[1]
+        responseVar <- SurvResponseVar(coxFormula(object.event$models[[causeNNA]]))
+        eventVar.time <- responseVar$time
+        eventVar.status <- responseVar$status
+        type.multistate <- "competing.risks"
+    }else{
+        eventVar.time <- object.event[1]
+        eventVar.status <- object.event[2]
+        type.multistate <- NA
+        object.event <- NULL
     }
 
-    ## ** deduced from user defined arguments
+    ## treatment
+    if(inherits(object.treatment,"glm")){
+        treatment <- all.vars(formula(object.treatment))[1]
+    }else{
+        treatment <- object.treatment
+        object.treatment <- NULL
+        object.censor <- NULL
+    }
+
+    ## cause
+    if(is.na(cause) && (eventVar.status %in% names(data))){
+        if(is.factor(data[[eventVar.status]]) && length(levels(data[[eventVar.status]]))==2){
+            cause <- levels(data[[eventVar.status]])[2]
+        }else if(all(data[[eventVar.status]] %in% c(0,1)) ){
+            cause <- 1
+        }
+    }
+
     ## presence of time dependent covariates
     TD <- switch(class(object.event)[[1]],
                  "coxph"=(attr(object.event$y,"type")=="counting"),
                  "CauseSpecificCox"=(attr(object.event$models[[1]]$y,"type")=="counting"),
                  FALSE)
     if(TD){
-        fct.pointEstimate <- Gformula_TD
+        fct.pointEstimate <- ATE_TD
     }else{
         landmark <- NULL
         formula <- NULL
-        fct.pointEstimate <- Gformula_TI
+        fct.pointEstimate <- ATE_TI
     }
 
     n.train <- coxN(object.event)
+
+    n.obs <- NROW(data)
+
+    if(inherits(object.censor,"coxph") || inherits(object.censor,"cph") || inherits(object.censor,"phreg")){
+        censoringMF <- coxModelFrame(object.censor)
+        n.censor <- sapply(times, function(t){sum((censoringMF$status == 1) * (censoringMF$stop <= t))})
+    }else{
+        n.censor <- NA
+    }
+    ## level.censoring
+    if(!is.null(object.censor) && (inherits(object.censor,"coxph") || inherits(object.censor,"cph") || inherits(object.censor,"phreg"))){
+        censorVar <- SurvResponseVar(formula(object.censor))
+        censorVar.status <- censorVar$status
+        censorVar.time <- censorVar$time
+        if(censorVar.status %in% names(data)){
+            iCandidates <- data[[censorVar.status]][coxModelFrame(object.censor)$status==1]
+            level.censoring <- unique(iCandidates)[1]            
+        }else{
+            level.censoring <- NA
+        }
+    }else{
+        level.censoring <- NA
+        censorVar.status <- NA
+        censorVar.time <- NA
+    }
+        
+    ## estimator
+    if(!is.null(object.event) && is.null(object.treatment)){
+        if(TD){
+            estimator <- "GformulaTD"
+        }else{
+            estimator <- "Gformula"
+        }
+    }else if(is.null(object.event) && !is.null(object.treatment)){
+        if(any(n.censor)>0){
+            estimator <- "IPTW,IPCW"
+        }else{
+            estimator <- "IPTW"
+        }
+    }else if(!is.null(object.event) && !is.null(object.treatment)){
+        if(any(n.censor)>0){
+            estimator <- "AIPTW,AIPCW"
+        }else{
+            estimator <- "AIPTW"
+        }
+    }else{
+        estimator <- NA
+    }
     
     ## ** output
-    return(list(times = times,
+    return(list(object.event = object.event,
+                object.treatment = object.treatment,
+                object.censor = object.censor,
+                times = times,
                 handler = handler,
-                strata = strata,
+                estimator = estimator,
                 formula = formula,
                 landmark = landmark,
                 TD = TD,
                 fct.pointEstimate = fct.pointEstimate,
-                n.train = n.train))
+                n.train = n.train,
+                n.obs = n.obs,
+                n.censor = n.censor,
+                treatment = treatment,
+                type.multistate = type.multistate,
+                cause = cause,
+                level.censoring = level.censoring,
+                eventVar.time = eventVar.time,
+                eventVar.status = eventVar.status,
+                censorVar.time = censorVar.time,
+                censorVar.status = censorVar.status
+                ))
 }
 
 ## * ate_checkArgs
 ate_checkArgs <- function(object.event,
-                          object.censor,
                           object.treatment,
+                          object.censor,
                           data,
                           formula,
                           treatment,
@@ -566,7 +741,14 @@ ate_checkArgs <- function(object.event,
                           store.iid,
                           augment.cens,
                           TD,
-                          n.train){
+                          n.train,
+                          n.censor,
+                          level.censoring,
+                          estimator,
+                          eventVar.time,
+                          eventVar.status,
+                          censorVar.time,
+                          censorVar.status){
 
     ## ** times
     if(inherits(object.event,"glm") && length(times)!=1){
@@ -628,35 +810,96 @@ ate_checkArgs <- function(object.event,
         stop("Calculation of the standard errors via the influence function not implemented for time dependent covariates \n")
     }
 
-    
-    ## ** treatment & strata
-    if(identical(treatment,strata)){
-        if(length(treatment) != 1){
-            stop("Argument treatment should have length 1. \n")
+    ## ** object.treatment    
+    ## treatment can be NULL, character, or glm
+    if(inherits(object.treatment,"glm")){
+        if(object.treatment$family$family!="binomial"){
+            stop("Argument \'object.treatment\' must be a logistic regression. \n")
         }
+        if(stats::nobs(object.treatment)!=n.train[1]){
+            stop("Argument \'object.event\' and \'object.train\' must be fitted on the same dataset \n")
+        }
+    }else if(is.character(object.treatment)){
+        if(length(object.treatment) != 1){
+            stop("Argument \'object.treatment\' should have length 1 when it is a character. \n")
+        }
+    }else if(!is.null(object.treatment)){
+        stop("Argument \'object.treatment\' must be NULL, a glm object, or a character. \n")     
+    }
+    
+    ## ** treatment
+    if(!is.null(treatment)){        
         if(treatment %in% names(data) == FALSE){
-            stop("The data set does not seem to have a variable ",treatment," (argument: treatment). \n")
+            stop("The data set does not seem to have a variable ",treatment," (argument: object.treatment). \n")
         }
         if(is.numeric(data[[treatment]])){
             stop("The treatment variable must be a factor variable. \n",
                  "Convert treatment to factor, re-fit the object using this new variable and then call ate. \n")
         }
-    }else{
-        if(!is.null(treatment)){
-            stop("Argument treatment must be NULL when strata is specified. \n") ## the case strata==treatment is hidden to the user
-        }
+    }
+
+    ## ** strata
+    if(!is.null(strata)){
         if(any(strata %in% names(data) == FALSE)){
             stop("The data set does not seem to have a variable \"",paste0(strata, collapse = "\" \""),"\" (argument: strata). \n")
         }
         if(length(strata) != 1){
             stop("Argument strata should have length 1. \n")
         }
-        if(B > 0){
-            stop("Boostrap resampling is not available when argument strata is specified. \n")
+        if((B == 0) && (se || band || iid)){
+            stop("Delta method not available when argument strata is specified. \n")
         }
         if(TD == TRUE){
             stop("Landmark analysis is not available when argument strata is specified. \n")
         }
+    }
+
+    ## ** object.censor
+    if(estimator %in% c("AIPTW,AIPCW","IPTW,IPCW") && any(n.censor > 0)){
+        ## require censoring model
+        if(is.null(object.censor)){
+            stop("Argument \'object.censor\' must not be NULL for ",estimator," estimators in presence of censoring")
+        }
+        if(!inherits(object.censor,"coxph") && !inherits(object.censor,"cph") && !inherits(object.censor,"phreg")){
+            stop("Argument \'object.censor\' must be a Cox model \n")
+        }
+        if(!identical(censorVar.status,eventVar.status)){
+            if(sum(diag(table(data[[censorVar.status]],data[[eventVar.status]])))!=NROW(data)){
+                stop("The status variables in object.event and object.censor are inconsistent \n")
+            }
+        }
+        causeANDcensor <- intersect(which(data[[censorVar.status]]==level.censoring),
+                                    which(data[[eventVar.status]]==cause))
+        if(length(causeANDcensor)>0){
+            stop("The status variables in object.event and object.censor are inconsistent \n",
+                 "Some observations are both censored and have the event of interest \n")        
+        }
+        
+        if(!identical(censorVar.time,eventVar.time)){
+            stop("The time variable should be the same in object.event and object.censor \n")
+        }
+
+    }
+    
+    ## ** event time
+    if(is.na(eventVar.time) || eventVar.time %in% names(data) == FALSE){
+        stop("The data set does not seem to have a variable ",eventVar.time," (argument: object.event[1]). \n")
+    }
+    ## ** eventVar.status
+    if(is.na(eventVar.status) || eventVar.status %in% names(data) == FALSE){
+        stop("The data set does not seem to have a variable ",eventVar.status," (argument: object.event[2]). \n")
+    }
+    if(is.na(cause)){
+        stop("Argument \'cause\' not specified\n")
+    }
+    if(cause %in% data[[eventVar.status]] == FALSE){
+        stop("Value of the argument \'cause\' not found in column \"",eventVar.status,"\" \n")
+    }
+
+    freq.event <- tapply(data[[eventVar.status]], data[[treatment]], function(x){mean(x==cause)})
+    count.event <- tapply(data[[eventVar.status]], data[[treatment]], function(x){sum(x==cause)})
+    if(any(freq.event < 0.01) || any(count.event < 5)  ){
+        warning("Rare event, possible violation of the positivity assumption \n")
     }
     
     ## ** time dependent covariances
