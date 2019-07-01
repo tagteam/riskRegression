@@ -4,15 +4,15 @@
 \alias{plotCalibration}
 \title{Plot Calibration curve}
 \usage{
-plotCalibration(x, models, times, method = "nne", round = TRUE,
-  bandwidth = NULL, q = 10, bars = FALSE, hanging = FALSE,
-  names = "quantiles", pseudo, rug, show.frequencies = FALSE,
-  plot = TRUE, add = FALSE, diag = !add, legend = !add,
-  auc.in.legend = TRUE, brier.in.legend = TRUE, axes = !add,
-  xlim = c(0, 1), ylim = c(0, 1), xlab = ifelse(bars, "Risk groups",
-  "Predicted risk"), ylab = "Observed frequency", col, lwd, lty, pch,
-  type, cause = 1, percent = TRUE, na.action = na.fail, cex = 1,
-  ...)
+plotCalibration(x, models, times, method = "nne",
+  cens.method = "jackknife", round = TRUE, bandwidth = NULL,
+  q = 10, bars = FALSE, hanging = FALSE, names = "quantiles",
+  pseudo, rug, show.frequencies = FALSE, plot = TRUE, add = FALSE,
+  diag = !add, legend = !add, auc.in.legend = TRUE,
+  brier.in.legend = TRUE, axes = !add, xlim = c(0, 1), ylim = c(0,
+  1), xlab = ifelse(bars, "Risk groups", "Predicted risk"),
+  ylab = "Observed frequency", col, lwd, lty, pch, type, cause = 1,
+  percent = TRUE, na.action = na.fail, cex = 1, ...)
 }
 \arguments{
 \item{x}{Object obtained with function \code{Score}}

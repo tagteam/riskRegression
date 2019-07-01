@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Feb 23 2017 (11:15) 
 ## Version: 
-## last-updated: Jun 25 2019 (07:03) 
+## last-updated: Jun 25 2019 (16:06) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 300
+##     Update #: 301
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -113,7 +113,7 @@ plotCalibration <- function(x,
                             models,
                             times,
                             method="nne",
-                            cens.method="local",
+                            cens.method="jackknife",
                             round=TRUE,
                             bandwidth=NULL,
                             q=10,
