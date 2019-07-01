@@ -7,6 +7,7 @@ context("Ate checks")
                                         # {{{ header with data  
 set.seed(10)
 n <- 5e1
+
 dtS <- sampleData(n,outcome="survival")
 dtS$time <- round(dtS$time,1)
 dtS$X1 <- factor(rbinom(n, prob = c(0.3,0.4) , size = 2), labels = paste0("T",0:2))
@@ -18,20 +19,20 @@ if (class(try(riskRegression.test,silent=TRUE))[1]!="try-error"){
     test_that("G formula: coxph, cph, bootstrap sequential, one and several time points",{
         fit.cph <- cph(Surv(time,event)~ X1+X2,data=dtS,y=TRUE,x=TRUE)
         ate.1a <- ate(fit.cph,data = dtS, treatment = "X1", contrasts = NULL,seed=3, 
-                      times = 1, handler=handler, B = 2, y = TRUE, mc.cores=1,verbose=verbose,
+                      times = 1, handler=handler, B = 5, y = TRUE, mc.cores=1,verbose=verbose,
                       se = TRUE, confint = FALSE)
         ate.1a <- confint(ate.1a, bootci.method = "quantile")
         ate.1b <- ate(fit.cph, data = dtS, treatment = "X1", contrasts = NULL,seed=3, 
-                      times = 1:2, B = 2, y = TRUE, mc.cores=1,handler=handler,verbose=verbose,
+                      times = 1:2, B = 5, y = TRUE, mc.cores=1,handler=handler,verbose=verbose,
                       se = TRUE, confint = FALSE)
         ate.1b <- confint(ate.1b, bootci.method = "quantile")
         fit.coxph <- coxph(Surv(time,event)~ X1+X2,data=dtS,y=TRUE,x=TRUE)
         ate.2a <- ate(fit.coxph,data = dtS, treatment = "X1", contrasts = NULL,seed=3,
-                      times = 1, B = 2, y = TRUE, mc.cores=1,handler=handler,verbose=verbose,
+                      times = 1, B = 5, y = TRUE, mc.cores=1,handler=handler,verbose=verbose,
                       se = TRUE, confint = FALSE)
         ate.2a <- confint(ate.2a, bootci.method = "quantile")
         ate.2b <- ate(fit.coxph, data = dtS, treatment = "X1", contrasts = NULL,seed=3,
-                      times = 1:2, B = 2, y = TRUE, mc.cores=1,handler=handler,verbose=verbose,
+                      times = 1:2, B = 5, y = TRUE, mc.cores=1,handler=handler,verbose=verbose,
                       se = TRUE, confint = FALSE)
         ate.2b <- confint(ate.2b, bootci.method = "quantile")
         attr(ate.2a,"class") <- "NULL"
@@ -74,11 +75,11 @@ if (class(try(riskRegression.test,silent=TRUE))[1]!="try-error"){
     test_that("G formula: coxph, cph, fully stratified",{
         fit <- cph(formula = Surv(time,event)~ strat(X1),data=dtS,y=TRUE,x=TRUE)
         ate2 <- ate(fit, data = dtS, treatment = "X1", contrasts = NULL, seed = 3,
-                    times = 1:2, B = 2, y = TRUE, mc.cores=1,handler=handler,verbose=verbose)
+                    times = 1:2, B = 5, y = TRUE, mc.cores=1,handler=handler,verbose=verbose)
         ## one time point
         fit <- coxph(Surv(time,event)~ strata(X1),data=dtS,y=TRUE,x=TRUE)
         ate1 <- ate(fit,data = dtS, treatment = "X1", contrasts = NULL, seed = 3,
-                    times = 1, B = 2, y = TRUE, mc.cores=1,handler=handler,verbose=verbose)
+                    times = 1, B = 5, y = TRUE, mc.cores=1,handler=handler,verbose=verbose)
     })
 }
                                         # }}}
@@ -182,7 +183,7 @@ if (class(try(riskRegression.test,silent=TRUE))[1]!="try-error"){
         Sres <- capture.output(print(res))
         fit=CSC(formula = Hist(time,event)~ X1+X2, data = df,cause=1)
         res <- ate(fit,data = df,  treatment = "X1", contrasts = NULL,
-                   times = 7, cause = 1, B = 2, mc.cores=1,handler=handler,verbose=verbose)
+                   times = 7, cause = 1, B = 5, mc.cores=1,handler=handler,verbose=verbose)
         Sres <- capture.output(print(res))
     })}
 # }}}
@@ -231,12 +232,12 @@ test_that("mcapply vs. foreach",{
         fit = CSC(formula = Hist(time,event)~ X1+X2, data = df, cause=1)
         time2.mc <- system.time(
             res2.mc <- ate(fit,data = df, treatment = "X1", contrasts = NULL,
-                           times = 7, cause = 1, B = 2, mc.cores=2, handler = "mclapply", seed = 10,
+                           times = 7, cause = 1, B = 5, mc.cores=2, handler = "mclapply", seed = 10,
                            verbose = FALSE, confint = FALSE)
         )
         time2.for <- system.time(
             res2.for <- ate(fit,data = df, treatment = "X1", contrasts = NULL,
-                            times = 7, cause = 1, B = 2, mc.cores=2, handler = "foreach", seed = 10,
+                            times = 7, cause = 1, B = 5, mc.cores=2, handler = "foreach", seed = 10,
                             verbose = FALSE, confint = FALSE)
         )
         expect_equal(res2.mc, res2.for)
@@ -269,7 +270,7 @@ test_that("mcapply vs. foreach",{
 ## if(require(randomForestSRC)){
 ## fitRF <- rfsrc(formula = Surv(time,event)~ X1+X2, data=dtS)
 ## ate(fitRF, data = dtS, treatment = "X1", contrasts = NULL,
-## times = 5:7, B = 2, mc.cores=1,handler=handler,verbose=verbose)
+## times = 5:7, B = 5, mc.cores=1,handler=handler,verbose=verbose)
 ## }
 # }}}
 
