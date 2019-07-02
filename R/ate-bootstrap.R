@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: apr 11 2018 (17:05) 
 ## Version: 
-## Last-Updated: jun 28 2019 (12:03) 
+## Last-Updated: jul  2 2019 (16:17) 
 ##           By: Brice Ozenne
-##     Update #: 176
+##     Update #: 181
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -53,10 +53,9 @@ calcBootATE <- function(args, name.estimate, n.obs, fct.pointEstimate,
         set.seed(seed)
     }
     bootseeds <- sample(1:1000000,size=B,replace=FALSE)
-
     ## allArgs <- c("warperBootATE","data","n.obs","fct.pointEstimate",
-                 ## "object","treatment","contrasts","times","cause","landmark",
-                 ## "n.contrasts","levels","TD","name.estimate","formula","dots")
+    ## "object","treatment","contrasts","times","cause","landmark",
+    ## "n.contrasts","levels","TD","name.estimate","formula","dots")
 
                                         # }}}
 
@@ -88,7 +87,6 @@ calcBootATE <- function(args, name.estimate, n.obs, fct.pointEstimate,
         }
     }
                                         # }}}
-    
     ## bootstrap
     if(handler %in% c("snow","multicore")) {
                                         # {{{ use boot package
@@ -172,7 +170,7 @@ calcBootATE <- function(args, name.estimate, n.obs, fct.pointEstimate,
         colnames(M.bootEstimate) <- name.estimate
                                         # }}}
     }
-                                        
+                                    
     ## output
     return(list(boot = M.bootEstimate,
                 bootseeds = bootseeds))

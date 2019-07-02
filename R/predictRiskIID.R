@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: jun 28 2019 (14:38) 
 ## Version: 
-## Last-Updated: jun 28 2019 (16:03) 
+## Last-Updated: jul  2 2019 (16:34) 
 ##           By: Brice Ozenne
-##     Update #: 28
+##     Update #: 29
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -33,7 +33,8 @@ predictRiskIID.default <- function(object,
 predictRiskIID.glm <- function(object,
                                newdata,
                                average.iid,
-                               factor){
+                               factor,
+                               ...){
     
     if (object$family$family=="binomial"){
 
@@ -48,6 +49,23 @@ predictRiskIID.glm <- function(object,
         resPred <- predictGLM(object,
                               newdata = newdata,
                               average.iid = average.iid)
+
+        ## hidden argument: enable to ask for the prediction of Y==1 or Y==0
+        level <- list(...)$level
+        if(!is.null(level)){
+            matching.Ylevel <- table(object$data[,all.vars(formula(object))[1]],
+                                     object$y)
+            all.levels <- rownames(matching.Ylevel)
+            level <- match.arg(level, all.levels)
+
+            index.level <- which(matching.Ylevel[level,]>0)
+            if(length(index.level)==2){
+                stop("Unknown value for the outcome variable \n")
+            }else if(index.level == 1){
+                attr(resPred,"iid") <- - attr(resPred,"iid")
+            }
+        }
+        
         return(attr(resPred,"iid"))
     }else{
         stop("Currently only the binomial family is implemented for extracting the iid decomposition of the predictions from a glm object.")
