@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: jun 27 2019 (10:43) 
 ## Version: 
-## Last-Updated: jul  2 2019 (15:49) 
+## Last-Updated: jul  3 2019 (11:05) 
 ##           By: Brice Ozenne
-##     Update #: 122
+##     Update #: 159
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -101,9 +101,65 @@ ATE_TI <- function(object.event,
     n.obs <- NROW(data)
     n.contrasts <- length(contrasts)
     n.times <- length(times)
+
+    ## ** prepare output
     out <- list()
+    ## point estimate
+    meanRisk <- matrix(NA, nrow = n.contrasts, ncol = n.times,
+                       dimnames = list(contrasts, times))
+    if(return.iid){ ## iid decomposition + useful quantities
+        attr(out,"iid") <- vector(mode = "list", length = n.contrasts)
+        if(estimator %in% c("Gformula","AIPTW","AIPTW,AIPCW")){
+            attr(out,"prob.event") <- vector(mode = "list", length = n.contrasts)
+        }
+        if(estimator %in% c("IPTW","IPTW,IPCW","AIPTW","AIPTW,AIPCW")){
+            attr(out,"prob.treatment") <- matrix(NA, nrow = n.obs, ncol = n.contrasts)
+        }
+    }
+
+    ## ** compute indicators
+    if(estimator %in% c("IPTW","IPTW,IPCW","AIPTW","AIPTW,AIPCW")){
+        ## indicator for the outcome of interest stopped at time tau
+        time.before.tau <- sapply(times, function(tau){data[[eventVar.time]] <= tau})
+        status.tau <- sweep(time.before.tau,
+                            FUN = "*", MARGIN = 1,
+                            STATS = (data[[eventVar.status]] == cause)
+                            )
+        if(return.iid){
+            attr(out,"status.tau") <- status.tau
+        }
+
+        if(estimator %in% c("IPTW,IPCW","AIPTW,AIPCW")){
+            ## indicator for no censoring stopped at time tau
+            Ncensoring.tau <- sweep(time.before.tau,
+                                    FUN = "*", MARGIN = 1,
+                                    STATS = (data[[eventVar.status]] != level.censoring)
+                                    )
+            if(return.iid){
+                attr(out,"Ncensoring.tau") <- Ncensoring.tau
+            }
+        }
+    }
+
+    ## ** IPCW                           
+    if(estimator %in% c("IPTW,IPCW","AIPTW,AIPCW")){
+        iProb.censor <- sapply(times, function(tau){ ## tau <- 1
+            predictCox(object.censor,
+                       newdata = data,
+                       times = pmin(tau,data[[eventVar.time]])-(1e-10),
+                       type = "survival",
+                       diag = TRUE)$survival[,1]
+        })
+        if(return.iid){
+            attr(out,"prob.censor") <- iProb.censor
+        }
+        iW.IPCW <- Ncensoring.tau / iProb.censor
+        
+    }else if(estimator %in% c("IPTW","AIPTW")){
+        iW.IPCW <- matrix(1, nrow = n.obs, ncol = n.times)
+    }
     
-    ## ** compute augmentation term (AIPCW)
+    ## ** compute augmentation term    
     if(estimator == "AIPTW,AIPCW"){
         augTerm <- matrix(0, nrow = n.obs, ncol = n.times)
         prob.event <- predictRisk(object.event, newdata = data, times = times, cause = cause,...)
@@ -121,27 +177,14 @@ ATE_TI <- function(object.event,
                                              cause = cause)
             }
         }
+        if(return.iid){
+            attr(out,"augTerm") <- augTerm
+        }
+    }else if(estimator %in% c("IPTW","IPTW,IPCW","AIPTW")){
+        augTerm <- matrix(0, nrow = n.obs, ncol = n.times)
     }
 
     ## ** estimator of the average risk
-    meanRisk <- matrix(NA, nrow = n.contrasts, ncol = n.times,
-                       dimnames = list(contrasts, times))
-    if(return.iid){
-        attr(out,"iid") <- lapply(1:n.contrasts, function(x){matrix(NA, nrow = n.obs, ncol = n.times)})
-        if(estimator %in% c("Gformula","AIPTW","AIPTW,AIPCW")){
-            attr(out,"prob.event") <- lapply(1:n.contrasts, function(x){matrix(NA, nrow = n.obs, ncol = n.times)})
-        }
-        if(estimator %in% c("IPTW","IPTW,IPCW","AIPTW","AIPTW,AIPCW")){
-            attr(out,"prob.treatment") <- matrix(NA, nrow = n.obs, ncol = n.contrasts)
-        }
-        if(estimator %in% c("IPTW,IPCW","AIPTW,AIPCW")){
-            attr(out,"prob.censor") <- lapply(1:n.contrasts, function(x){matrix(NA, nrow = n.obs, ncol = n.times)})
-        }
-        if(estimator == "AIPTW,AIPCW"){
-            attr(out,"augTerm") <- augTerm
-        }
-    }
-    
     for(iC in 1:n.contrasts){ ## iC <- 1
         iIF <- matrix(0, nrow = n.obs, ncol = n.times)
         
@@ -162,67 +205,58 @@ ATE_TI <- function(object.event,
         if(estimator %in% c("Gformula","AIPTW","AIPTW,AIPCW")){
             iProb.event <- predictRisk(object.event, newdata = data.i, times = times, cause = cause,...)
             if(!is.matrix(iProb.event)){iProb.event <- cbind(iProb.event)}
-            
-            if(return.iid){
-                if(!is.null(treatment)){
-                    attr(out,"prob.event")[[iC]] <- iProb.event
-                }else{
-                    attr(out,"prob.event")[[iC]][index.strata,] <- iProb.event
-                }
-            }
 
             if(!is.null(treatment)){
                 iIF <- iIF + iProb.event
             }else{
                 iIF[index.strata,] <- iIF[index.strata,] + iProb.event
             }
+        }else if(estimator %in% c("IPTW","IPTW,IPCW")){
+            iProb.event <- matrix(0, nrow = n.obs, ncol = n.times)
         }
         
         ## ** Inverse probability weighting        
         if(estimator %in% c("IPTW","IPTW,IPCW","AIPTW","AIPTW,AIPCW")){
-            ## ** IPTW
+
+            ## IPTW
             iProb.treatment <- predictRisk(object.treatment, newdata = data, level = contrasts[iC])
-            if(return.iid){attr(out,"prob.treatment")[,iC] <- iProb.treatment}
             iW.IPTW <- (data[[treatment]] == contrasts[iC]) / iProb.treatment 
 
-            for(iTau in 1:n.times){ ## iTau <- 1
+            ## assemble (also with augmentation terms)
+            iIF <- iIF + sweep(status.tau * iW.IPCW - iProb.event + augTerm, FUN = "*", MARGIN = 1, STATS = iW.IPTW)
 
-                ## random variables stopped at times
-                status.tau <- (data.i[[eventVar.time]] <= times[iTau]) * (data.i[[eventVar.time]] == cause)
-
-                ## ** IPCW                           
-                if(n.censor[iTau]==0){
-                    iW.IPCW <- rep(1,NROW(data))
-                }else{
-                    Ncensoring.tau <- (data.i[[eventVar.time]] <= times[iTau]) * (data.i[[eventVar.time]] != level.censoring)
-                    time.tau <- pmin(data.i[[eventVar.time]], times[iTau])
-
-                    iProb.censor <- predictCox(object.censor, newdata = data, times = time.tau-(1e-10), type = "survival", diag = TRUE)$survival[,1]
-                    if(return.iid){attr(out,"prob.censor")[[iC]][,iTau] <- iProb.censor}
-                    iW.IPCW <- Ncensoring.tau / iProb.censor
-                }
-                ## ** assemble IPTW,IPCW
-                iIF[,iTau] <- iIF[,iTau] + status.tau * iW.IPCW * iW.IPTW ## IPCW,IPTW
-
-
-                ## ** AIPTW,AIPCW
-                ## assemble
-                if(estimator %in% c("AIPTW","AIPTW,AIPCW")){
-                    iIF[,iTau] <- iIF[,iTau] + iProb.event[,iTau] * iW.IPTW ## AIPTW
-                }
-                if(estimator %in% c("AIPTW,AIPCW")){
-                    iIF[,iTau] <- iIF[,iTau] + augTerm[,iTau] * iW.IPTW ## AIPCW
-                }
-            }
         }
-        meanRisk[iC,] <- colSums(iIF)/n.strata 
-        if(return.iid){ ## center and scale iid decomposition for the functional delta method
+
+        ## ** estimate ATE
+        meanRisk[iC,] <- colSums(iIF)/n.strata
+
+        ## **  first term of the iid decomposition
+        if(return.iid){ 
+            ## center and scale iid decomposxition for the functional delta method
             attr(out,"iid")[[iC]] <- sweep(iIF * (n.obs/n.strata), MARGIN = 2, FUN = "-", STATS = meanRisk[iC,])/n.obs
             names(attr(out,"iid")) <- contrasts
+
+            ## save other useful quantities
+            if(estimator %in% c("Gformula","AIPTW","AIPTW,AIPCW")){
+                if(!is.null(treatment)){
+                    attr(out,"prob.event")[[iC]] <- iProb.event
+                }else{
+                    attr(out,"prob.event")[[iC]][index.strata,] <- iProb.event
+                }
+            }
+            if(estimator %in% c("IPTW","IPTW,IPCW","AIPTW","AIPTW,AIPCW")){
+                attr(out,"prob.treatment")[,iC] <- iProb.treatment
+            }
         }
     }
 
-    riskComparison <- data.table::rbindlist(lapply(1:(n.contrasts-1),function(i){ ## i <- 1
+    ## ** reshape results before exporting
+    out$meanRisk <- melt(data.table(Treatment = rownames(meanRisk),meanRisk),
+                         id.vars = "Treatment",
+                         value.name = "meanRisk",
+                         variable.name = "time")
+    
+    out$riskComparison <- data.table::rbindlist(lapply(1:(n.contrasts-1),function(i){ ## i <- 1
         data.table::rbindlist(lapply(((i+1):n.contrasts),function(j){ ## j <- 2
             ## compute differences between all pairs of treatments
             data.table(Treatment.A=contrasts[i],
@@ -231,13 +265,7 @@ ATE_TI <- function(object.event,
                        diff=meanRisk[j,]-meanRisk[i,],
                        ratio=meanRisk[j,]/meanRisk[i,])
         }))}))
-
-    ## reshape for export
-    out$meanRisk <- melt(data.table(Treatment = rownames(meanRisk),meanRisk),
-                         id.vars = "Treatment",
-                         value.name = "meanRisk",
-                         variable.name = "time")
-    out$riskComparison <- riskComparison
+    
     return(out)            
 }
                                         # }}}

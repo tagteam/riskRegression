@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Oct 23 2016 (08:53) 
 ## Version: 
-## last-updated: jul  2 2019 (15:57) 
+## last-updated: jul  3 2019 (11:59) 
 ##           By: Brice Ozenne
-##     Update #: 1191
+##     Update #: 1207
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -45,8 +45,6 @@
 #' @param se [logical] If \code{TRUE} compute and add the standard errors to the output.
 #' @param band [logical] If \code{TRUE} compute and add the quantiles for the confidence bands to the output.
 #' @param iid [logical] If \code{TRUE} compute and add the influence function to the output.
-#' @param confint [logical] If \code{TRUE} compute and add the confidence intervals/bands to the output.
-#' They are computed applying the \code{confint} function to the output.
 #' @param B [integer, >0] the number of bootstrap replications used to compute the confidence intervals.
 #' If it equals 0, then the influence function is used to compute Wald-type confidence intervals/bands.
 #' @param seed [integer, >0] sed number used to generate seeds for bootstrap
@@ -62,8 +60,6 @@
 #' Output by \code{parallel::makeCluster}.
 #' The packages necessary to run the computations (e.g. riskRegression) must already be loaded on each worker.
 #' @param verbose [logical] If \code{TRUE} inform about estimated run time.
-#' @param store.iid [character] Implementation used to estimate the standard error.
-#' Can be \code{"full"} or \code{"minimal"}.
 #' \code{"minimal"} requires less memory but can only estimate the standard for the difference between treatment effects (and not for the ratio).
 #' @param ... passed to predictRisk
 #'
@@ -98,32 +94,32 @@
 #' ## compute the ATE at times 5, 6, 7, and 8 using X1 as the treatment variable
 #' \dontrun{
 #' ## only point estimate (argument se = FALSE)
-#' ateFit1a <- ate(fit, data = dtS, treatment = "X1", times = 5:8,
-#'                se = TRUE)
+#' ateFit1a <- ate(fit, data = dtS, object.treatment = "X1", times = 5:8,
+#'                se = FALSE)
 #'
 #' ## standard error / confidence intervals computed using the influence function
 #' ## (argument se = TRUE and B = 0)
-#' ateFit1b <- ate(fit, data = dtS, treatment = "X1", times = 5:8,
+#' ateFit1b <- ate(fit, data = dtS, object.treatment = "X1", times = 5:8,
 #'                se = TRUE, B = 0)
 #' 
 #' ## same as before with in addition the confidence bands for the ATE
 #' ## (argument band = TRUE)
-#' ateFit1c <- ate(fit, data = dtS, treatment = "X1", times = 5:8,
+#' ateFit1c <- ate(fit, data = dtS, object.treatment = "X1", times = 5:8,
 #'                se = TRUE, band = TRUE, B = 0)
 #'
 #' ## bootstrap confidence intervals
-#' ateFit1c <- ate(fit, data = dtS, treatment = "X1", times = 5,
+#' ateFit1c <- ate(fit, data = dtS, object.treatment = "X1", times = 5,
 #'                seed = 3, se = TRUE, B = 100)
 #'
 #' ## standard error / confidence intervals computed using 100 boostrap samples
 #' ## (argument se = TRUE and B = 100) 
-#' ateFit1d <- ate(fit, data = dtS, treatment = "X1",
+#' ateFit1d <- ate(fit, data = dtS, object.treatment = "X1",
 #'                 times = 5:8, se = TRUE, B = 100)
 #' ## NOTE: for real applications 100 bootstrap samples is not enougth 
 #'
 #' ## same but using 2 cpus for generating and analyzing the boostrap samples
 #' ## (parallel computation, argument mc.cores = 2) 
-#' ateFit1e <- ate(fit, data = dtS, treatment = "X1",
+#' ateFit1e <- ate(fit, data = dtS, object.treatment = "X1",
 #'                 times = 5:8, se = TRUE, B = 100, mc.cores = 2)
 #' }
 #'
@@ -140,22 +136,19 @@
 #' 
 #' ## compute the ATE using X1 as the treatment variable
 #' ## only point estimate (argument se = FALSE)
-#' ateFit1a <- ate(fit, data = dtB, treatment = "X1", se = FALSE)
-#' ateFit1a
+#' ateFit1a <- ate(fit, data = dtB, object.treatment = "X1", se = FALSE)
 #'
 #' \dontrun{
 #' ## standard error / confidence intervals computed using the influence function
-#' ateFit1b <- ate(fit, data = dtB, treatment = "X1",
+#' ateFit1b <- ate(fit, data = dtB, object.treatment = "X1",
 #'                times = 5, ## just for having a nice output not used in computations
 #'                se = TRUE, B = 0)
-#' ateFit1b
 #'
 #' ## standard error / confidence intervals computed using 100 boostrap samples
-#' ateFit1d <- ate(fit, data = dtB, treatment = "X1",
+#' ateFit1d <- ate(fit, data = dtB, object.treatment = "X1",
 #'                 times = 5, se = TRUE, B = 100)
-#' ateFit1d
 #' 
-#' ## using lava
+#' ## using the lava package
 #' ateLava <- estimate(fit, function(p, data){
 #' a <- p["(Intercept)"] ; b <- p["X11"] ; c <- p["X2"] ;
 #' R.X11 <- expit(a + b + c * data[["X2"]])
@@ -179,7 +172,7 @@
 #' fitCR <-  CSC(Hist(time,event)~ X1+X8,data=dt,cause=1)
 #' 
 #' ## compute the ATE at times 5, 6, 7, and 8 using X1 as the treatment variable
-#' ateFit2a <- ate(fitCR, data = dt, treatment = "X1", times = 5:8, cause = 1,
+#' ateFit2a <- ate(fitCR, data = dt, object.treatment = "X1", times = 5:8, cause = 1,
 #'                se = FALSE)
 #'
 #' ## standard error / confidence intervals computed using the influence function
@@ -262,13 +255,11 @@ ate <- function(object.event,
                 iid = FALSE,
                 band = FALSE,
                 B = 0,
-                confint = (se+band)>0,
                 seed,
                 handler = "foreach",
                 mc.cores = 1,
                 cl = NULL,
                 verbose = 2,
-                store.iid = "full",
                 ...){
 
     dots <- list(...)
@@ -326,13 +317,11 @@ ate <- function(object.event,
                            iid = iid,
                            band = band,
                            B = B,
-                           confint = confint,
                            seed = seed,
                            handler = handler,
                            mc.cores = mc.cores,
                            cl = cl,
                            verbose = verbose,
-                           store.iid = store.iid,
                            augment.cens = augment.cens,
                            TD = TD,
                            n.censor = n.censor,
@@ -493,20 +482,24 @@ ate <- function(object.event,
                 cat(" - Functional delta method: ")
             }
 
-            ## prepare arguments
-            args.pointEstimate$meanRisk <- pointEstimate$meanRisk
-            args.pointEstimate$riskComparison <- pointEstimate$riskComparison
+            if(is.null(attr(iid,"nuisance")) || (attr(iid,"nuisance")==TRUE)){
+                ## compute iid decomposition relative to the nuisance parameters
+                args.pointEstimate$meanRisk <- pointEstimate$meanRisk
+                args.pointEstimate$riskComparison <- pointEstimate$riskComparison
 
-            args.pointEstimate$export <- c("iid"[iid>0],"se"[se>0],"band"[band>0]) 
-            args.pointEstimate$store.iid <- store.iid
-            args.pointEstimate$iid <- attr(pointEstimate, "iid")
-            args.pointEstimate$augTerm <- attr(pointEstimate, "augTerm")
-            args.pointEstimate$prob.event <- attr(pointEstimate, "prob.event")
-            args.pointEstimate$prob.treatment <- attr(pointEstimate, "prob.treatment")
-            args.pointEstimate$prob.censor <- attr(pointEstimate, "prob.censor")
+                args.pointEstimate$iid <- attr(pointEstimate, "iid")
+                args.pointEstimate$augTerm <- attr(pointEstimate, "augTerm")
+                args.pointEstimate$prob.event <- attr(pointEstimate, "prob.event")
+                args.pointEstimate$prob.treatment <- attr(pointEstimate, "prob.treatment")
+                args.pointEstimate$prob.censor <- attr(pointEstimate, "prob.censor")
+                args.pointEstimate$status.tau <- attr(pointEstimate, "status.tau")
+                args.pointEstimate$Ncensoring.tau <- attr(pointEstimate, "Ncensoring.tau")
 
-            ## run and store
-            outIID <- do.call(iidATE, args.pointEstimate)
+                outIID <- do.call(iidATE, args.pointEstimate)
+            }else{
+                ## ignore that the nuisance parameters have been estimated
+                outIID <- attr(pointEstimate, "iid")
+            }
             bootseeds <- NULL
             boot.object <- NULL
 
@@ -550,23 +543,18 @@ ate <- function(object.event,
 
   
     class(out) <- c("ate",class(object.event))
-    if(confint){
+    if(se || band){
         if (verbose>1){ ## display
             cat(" - Confidence intervals: ")
         }
         out <- stats::confint(out)
-        
+        if(iid == FALSE){
+            out$iid <- NULL
+        }
+
         if (verbose>1){ ## display
             cat("done\n")
         }
-    }
-    if(band[[1]] && se[[1]]==FALSE){
-        out$meanRisk[["meanRisk.se"]] <- NULL
-        out$riskComparison[["diff.se"]] <- NULL
-        out$riskComparison[["ratio.se"]] <- NULL
-    }
-    if(band[[1]] && iid[[1]]==FALSE){
-        out[paste0(c("mean","diff","ratio"),"Risk.iid")] <- NULL
     }
 
     return(out)
@@ -744,7 +732,6 @@ ate_checkArgs <- function(object.event,
                           mc.cores,
                           cl,
                           verbose,
-                          store.iid,
                           augment.cens,
                           TD,
                           n.censor,

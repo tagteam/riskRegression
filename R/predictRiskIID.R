@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: jun 28 2019 (14:38) 
 ## Version: 
-## Last-Updated: jul  2 2019 (16:34) 
+## Last-Updated: jul  3 2019 (11:56) 
 ##           By: Brice Ozenne
-##     Update #: 29
+##     Update #: 39
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -33,19 +33,22 @@ predictRiskIID.default <- function(object,
 predictRiskIID.glm <- function(object,
                                newdata,
                                average.iid,
-                               factor,
+                               factor = NULL,
                                ...){
     
     if (object$family$family=="binomial"){
-
-        if(!is.matrix(factor)){
-            stop("Argument \'factor\' must be a matrix. \n")
+        
+        if(!is.null(factor)){
+            n.obs <- stats::nobs(object)
+            if(!is.matrix(factor)){
+                stop("Argument \'factor\' must be a matrix. \n")
+            }
+            if(NROW(factor) != n.obs){
+                stop("Argument \'factor\' must have the same number of rows as the dataset used to fit the object. \n")
+            }
+            attr(average.iid, "factor") <- factor
         }
-        if(NROW(factor) != stats::nobs(object)){
-            stop("Argument \'factor\' must have the same number of rows as the dataset used to fit the object. \n")
-        }
-
-        attr(average.iid, "factor") <- factor
+        
         resPred <- predictGLM(object,
                               newdata = newdata,
                               average.iid = average.iid)
@@ -65,8 +68,13 @@ predictRiskIID.glm <- function(object,
                 attr(resPred,"iid") <- - attr(resPred,"iid")
             }
         }
+        ## convert to list format for compatibility with the other predictRiskIID
+        if(!is.null(factor) && NCOL(factor)>1){
+            return(apply(attr(resPred,"iid"),2,function(x){list(cbind(x))}))
+        }else{
+            return(list(attr(resPred,"iid")))
+        }
         
-        return(attr(resPred,"iid"))
     }else{
         stop("Currently only the binomial family is implemented for extracting the iid decomposition of the predictions from a glm object.")
     }
@@ -94,20 +102,18 @@ predictRiskIID.coxph <- function(object, newdata, times, average.iid, factor = N
                           times = times,
                           iid = !average.iid,
                           average.iid = average.iid,
-                          type = "survival",
-                          ...)
+                          type = "survival")
     ## there is a minus because predictor.cox return iid(survival) = -iid(risk)
 
     if(average.iid){
         if(!is.null(factor)){
             return(lapply(resPred$survival.average.iid, function(x){-x}))
         }else{
-            return(-resPred$survival.average.iid)
+            return(list(-resPred$survival.average.iid))
         }
     }else{
         return(-resPred$survival.iid)
-    }
-    
+    }    
 }
 
 predictRisk.cph <- predictRisk.coxph
@@ -140,7 +146,11 @@ predictRiskIID.CauseSpecificCox <- function(object,
                        average.iid = average.iid,
                        ...)
     if(average.iid){
-        return(resPred$absRisk.average.iid)
+        if(!is.null(factor)){
+            return(resPred$absRisk.average.iid)
+        }else{
+            return(list(resPred$absRisk.average.iid))
+        }
     }else{
         return(resPred$absRisk.iid)
     }
