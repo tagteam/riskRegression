@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: jun 27 2019 (10:43) 
 ## Version: 
-## Last-Updated: jul  3 2019 (11:05) 
+## Last-Updated: jul  3 2019 (18:58) 
 ##           By: Brice Ozenne
-##     Update #: 159
+##     Update #: 184
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -30,7 +30,8 @@ ATE_TD <- function(object.event,
                    ...){
 
     Treatment <- Treatment.B <- meanRisk <- ratio <- NULL ## [:forCRANcheck:]
-    
+    n.contrasts <- length(contrasts)
+
     response <- eval(formula[[2]],envir=data)
     time <- response[,"time"]
     entry <- response[,"entry"]
@@ -110,7 +111,7 @@ ATE_TI <- function(object.event,
     if(return.iid){ ## iid decomposition + useful quantities
         attr(out,"iid") <- vector(mode = "list", length = n.contrasts)
         if(estimator %in% c("Gformula","AIPTW","AIPTW,AIPCW")){
-            attr(out,"prob.event") <- vector(mode = "list", length = n.contrasts)
+            attr(out,"prob.event") <- lapply(1:n.contrasts, function(x){matrix(NA, nrow = n.obs, ncol = n.times)})
         }
         if(estimator %in% c("IPTW","IPTW,IPCW","AIPTW","AIPTW,AIPCW")){
             attr(out,"prob.treatment") <- matrix(NA, nrow = n.obs, ncol = n.contrasts)
@@ -121,20 +122,19 @@ ATE_TI <- function(object.event,
     if(estimator %in% c("IPTW","IPTW,IPCW","AIPTW","AIPTW,AIPCW")){
         ## indicator for the outcome of interest stopped at time tau
         time.before.tau <- sapply(times, function(tau){data[[eventVar.time]] <= tau})
-        status.tau <- sweep(time.before.tau,
-                            FUN = "*", MARGIN = 1,
-                            STATS = (data[[eventVar.status]] == cause)
-                            )
+        
+        status.tau <- colMultiply_cpp(time.before.tau,
+                                      scale = (data[[eventVar.status]] == cause)
+                                      )
         if(return.iid){
             attr(out,"status.tau") <- status.tau
         }
 
         if(estimator %in% c("IPTW,IPCW","AIPTW,AIPCW")){
             ## indicator for no censoring stopped at time tau
-            Ncensoring.tau <- sweep(time.before.tau,
-                                    FUN = "*", MARGIN = 1,
-                                    STATS = (data[[eventVar.status]] != level.censoring)
-                                    )
+            Ncensoring.tau <- colMultiply_cpp(time.before.tau,
+                                              scale = (data[[eventVar.status]] != level.censoring)
+                                              )
             if(return.iid){
                 attr(out,"Ncensoring.tau") <- Ncensoring.tau
             }
@@ -158,7 +158,7 @@ ATE_TI <- function(object.event,
     }else if(estimator %in% c("IPTW","AIPTW")){
         iW.IPCW <- matrix(1, nrow = n.obs, ncol = n.times)
     }
-    
+
     ## ** compute augmentation term    
     if(estimator == "AIPTW,AIPCW"){
         augTerm <- matrix(0, nrow = n.obs, ncol = n.times)
@@ -217,13 +217,13 @@ ATE_TI <- function(object.event,
         
         ## ** Inverse probability weighting        
         if(estimator %in% c("IPTW","IPTW,IPCW","AIPTW","AIPTW,AIPCW")){
-
             ## IPTW
             iProb.treatment <- predictRisk(object.treatment, newdata = data, level = contrasts[iC])
             iW.IPTW <- (data[[treatment]] == contrasts[iC]) / iProb.treatment 
 
             ## assemble (also with augmentation terms)
-            iIF <- iIF + sweep(status.tau * iW.IPCW - iProb.event + augTerm, FUN = "*", MARGIN = 1, STATS = iW.IPTW)
+            iIF <- iIF + colMultiply_cpp(status.tau * iW.IPCW - iProb.event + augTerm,
+                                         scale= iW.IPTW)
 
         }
 
@@ -231,9 +231,9 @@ ATE_TI <- function(object.event,
         meanRisk[iC,] <- colSums(iIF)/n.strata
 
         ## **  first term of the iid decomposition
-        if(return.iid){ 
+        if(return.iid){
             ## center and scale iid decomposxition for the functional delta method
-            attr(out,"iid")[[iC]] <- sweep(iIF * (n.obs/n.strata), MARGIN = 2, FUN = "-", STATS = meanRisk[iC,])/n.obs
+            attr(out,"iid")[[iC]] <- rowCenter_cpp(iIF * (n.obs/n.strata), center = meanRisk[iC,])/n.obs
             names(attr(out,"iid")) <- contrasts
 
             ## save other useful quantities
@@ -255,7 +255,7 @@ ATE_TI <- function(object.event,
                          id.vars = "Treatment",
                          value.name = "meanRisk",
                          variable.name = "time")
-    
+
     out$riskComparison <- data.table::rbindlist(lapply(1:(n.contrasts-1),function(i){ ## i <- 1
         data.table::rbindlist(lapply(((i+1):n.contrasts),function(j){ ## j <- 2
             ## compute differences between all pairs of treatments

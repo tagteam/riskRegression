@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: jun 28 2019 (14:38) 
 ## Version: 
-## Last-Updated: jul  3 2019 (11:56) 
+## Last-Updated: jul  3 2019 (18:26) 
 ##           By: Brice Ozenne
-##     Update #: 39
+##     Update #: 47
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -43,8 +43,8 @@ predictRiskIID.glm <- function(object,
             if(!is.matrix(factor)){
                 stop("Argument \'factor\' must be a matrix. \n")
             }
-            if(NROW(factor) != n.obs){
-                stop("Argument \'factor\' must have the same number of rows as the dataset used to fit the object. \n")
+            if(NROW(factor) != NROW(newdata)){
+                stop("Argument \'factor\' must have the same number of rows as argument \'newdata\'. \n")
             }
             attr(average.iid, "factor") <- factor
         }
@@ -56,7 +56,7 @@ predictRiskIID.glm <- function(object,
         ## hidden argument: enable to ask for the prediction of Y==1 or Y==0
         level <- list(...)$level
         if(!is.null(level)){
-            matching.Ylevel <- table(object$data[,all.vars(formula(object))[1]],
+            matching.Ylevel <- table(object$data[[all.vars(formula(object))[1]]],
                                      object$y)
             all.levels <- rownames(matching.Ylevel)
             level <- match.arg(level, all.levels)
@@ -89,8 +89,8 @@ predictRiskIID.coxph <- function(object, newdata, times, average.iid, factor = N
         if(!is.matrix(factor)){
             stop("Argument \'factor\' must be a matrix. \n")
         }
-        if(NROW(factor) != coxN(object)){
-            stop("Argument \'factor\' must have the same number of rows as the dataset used to fit the object. \n")
+        if(NROW(factor) != NROW(newdata)){
+            stop("Argument \'factor\' must have the same number of rows as argument \'newdata\'. \n")
         }
         attr(average.iid, "factor") <- sapply(1:NCOL(factor),function(iCol){
             list(matrix(factor[,iCol,drop=FALSE], nrow = n.obs, ncol = n.times, byrow = FALSE))
@@ -134,8 +134,8 @@ predictRiskIID.CauseSpecificCox <- function(object,
         if(!is.matrix(factor)){
             stop("Argument \'factor\' must be a matrix. \n")
         }
-        if(NROW(factor) != coxN(object)[1]){
-            stop("Argument \'factor\' must have the same number of rows as the dataset used to fit the object. \n")
+        if(NROW(factor) != NROW(newdata)){
+            stop("Argument \'factor\' must have the same number of rows as argument \'newdata\'. \n")
         }
         attr(average.iid, "factor") <- factor
     }

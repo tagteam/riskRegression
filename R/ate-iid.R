@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: apr  5 2018 (17:01) 
 ## Version: 
-## Last-Updated: jul  3 2019 (11:56) 
+## Last-Updated: jul  3 2019 (18:28) 
 ##           By: Brice Ozenne
-##     Update #: 414
+##     Update #: 422
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -78,7 +78,7 @@ iidATE <- function(meanRisk,
             if(estimator %in% c("AIPTW","AIPTW,AIPCW")){
                 factor <- cbind(1-iW.IPTW)
             }else if(estimator %in% "Gformula"){
-                factor <- matrix(1, nrow = n.obs, ncol = 1)
+                factor <- matrix(1, nrow = n.strata, ncol = 1)
             }
             iid.outcome <- predictRiskIID(object.event,
                                           newdata = data.i,
@@ -97,11 +97,11 @@ iidATE <- function(meanRisk,
         if(estimator %in% c("IPTW","IPTW,IPCW","AIPTW","AIPTW,AIPCW")){
 
             if(estimator %in% c("IPTW","IPTW,IPCW")){
-                factor <- sweep(status.tau * iW.IPCW, FUN = "*", MARGIN = 1, STATS = -iW.IPTW/prob.treatment[,iC])
+                factor <- colMultiply_cpp(status.tau * iW.IPCW, scale = -iW.IPTW/prob.treatment[,iC])
             }else if(estimator %in% c("AIPTW")){
-                factor <- sweep(status.tau * iW.IPCW - prob.event[[iC]], FUN = "*", MARGIN = 1, STATS = -iW.IPTW/prob.treatment[,iC])
+                factor <- colMultiply_cpp(status.tau * iW.IPCW - prob.event[[iC]], scale = -iW.IPTW/prob.treatment[,iC])
             }else if(estimator %in% c("AIPTW","AIPTW,AIPCW")){
-                factor <- sweep(status.tau * iW.IPCW - prob.event[[iC]] + augTerm, FUN = "*", MARGIN = 1, STATS = -iW.IPTW/prob.treatment[,iC])
+                factor <- colMultiply_cpp(status.tau * iW.IPCW - prob.event[[iC]] + augTerm, scale = -iW.IPTW/prob.treatment[,iC])
             }
             
             iid.treatment <- predictRiskIID(object.treatment,
@@ -111,7 +111,7 @@ iidATE <- function(meanRisk,
                                             level = contrasts[iC])
 
             
-            iidTotal[[contrasts[iC]]] <- iidTotal[[contrasts[iC]]] + iid.treatment
+            iidTotal[[contrasts[iC]]] <- iidTotal[[contrasts[iC]]] + iid.treatment[[1]]
         }
 
         ## *** censoring model

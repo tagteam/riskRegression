@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Oct 23 2016 (08:53) 
 ## Version: 
-## last-updated: jul  3 2019 (11:59) 
+## last-updated: jul  3 2019 (19:13) 
 ##           By: Brice Ozenne
-##     Update #: 1207
+##     Update #: 1261
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -107,10 +107,6 @@
 #' ateFit1c <- ate(fit, data = dtS, object.treatment = "X1", times = 5:8,
 #'                se = TRUE, band = TRUE, B = 0)
 #'
-#' ## bootstrap confidence intervals
-#' ateFit1c <- ate(fit, data = dtS, object.treatment = "X1", times = 5,
-#'                seed = 3, se = TRUE, B = 100)
-#'
 #' ## standard error / confidence intervals computed using 100 boostrap samples
 #' ## (argument se = TRUE and B = 100) 
 #' ateFit1d <- ate(fit, data = dtS, object.treatment = "X1",
@@ -177,23 +173,23 @@
 #'
 #' ## standard error / confidence intervals computed using the influence function
 #' ## (argument se = TRUE and B = 0)
-#' ateFit2b <- ate(fitCR, data = dt, treatment = "X1", times = 5:8, cause = 1,
+#' ateFit2b <- ate(fitCR, data = dt, object.treatment = "X1", times = 5:8, cause = 1,
 #'                se = TRUE, B = 0)
 #'
 #' ## same as before with in addition the confidence bands for the ATE
 #' ## (argument band = TRUE)
-#' ateFit2c <- ate(fitCR, data = dt, treatment = "X1", times = 5:8, cause = 1,
+#' ateFit2c <- ate(fitCR, data = dt, object.treatment = "X1", times = 5:8, cause = 1,
 #'                se = TRUE, band = TRUE, B = 0)
 #' 
 #' ## standard error / confidence intervals computed using 100 boostrap samples
 #' ## (argument se = TRUE and B = 100) 
-#' ateFit2d <- ate(fitCR, data = dt, treatment = "X1", times = 5:8, cause = 1,
+#' ateFit2d <- ate(fitCR, data = dt, object.treatment = "X1", times = 5:8, cause = 1,
 #'                 se = TRUE, B = 100)
 #' ## NOTE: for real applications 100 bootstrap samples is not enougth 
 #'
 #' ## same but using 2 cpus for generating and analyzing the boostrap samples
 #' ## (parallel computation, argument mc.cores = 2) 
-#' ateFit2e <- ate(fitCR, data = dt, treatment = "X1", times = 5:8, cause = 1,
+#' ateFit2e <- ate(fitCR, data = dt, object.treatment = "X1", times = 5:8, cause = 1,
 #'                 se = TRUE, B = 100, mc.cores = 2)
 #' }
 #' 
@@ -207,7 +203,7 @@
 #'                data= vet2,x=1)
 #' set.seed(16)
 #' resVet <- ate(fitTD,formula=Hist(entry=tstart,time=time,event=status)~1,
-#'           data = vet2, treatment = "celltype", contrasts = NULL,
+#'           data = vet2, object.treatment = "celltype", contrasts = NULL,
 #'         times=5,verbose=1,
 #'         landmark = c(0,30,60,90), cause = 1, B = 4, se = 1,
 #'         band = FALSE, mc.cores=1)
@@ -219,10 +215,11 @@
 #' d=sampleDataTD(127)
 #' library(survival)
 #' d[,status:=1*(event==1)]
+#' d[,X3:=as.factor(X3)]
 #' ## ignore competing risks
 #' cox1TD <- coxph(Surv(start,time, status,type="counting") ~ X3+X5+X6+X8, data=d)
 #' resTD1 <- ate(cox1TD,formula=Hist(entry=start,time=time,event=status)~1,
-#'         data = d, treatment = "X3", contrasts = NULL,
+#'         data = d, object.treatment = "X3", contrasts = NULL,
 #'         times=.5,verbose=1,
 #'         landmark = c(0,0.5,1), B = 20, se = 1,
 #'         band = FALSE, mc.cores=1)
@@ -231,7 +228,7 @@
 #' cscTD <- CSC(Hist(time=time, event=event,entry=start) ~ X3+X5+X6+X8, data=d)
 #' set.seed(16)
 #' resTD <- ate(cscTD,formula=Hist(entry=start,time=time,event=event)~1,
-#'         data = d, treatment = "X3", contrasts = NULL,
+#'         data = d, object.treatment = "X3", contrasts = NULL,
 #'         times=.5,verbose=1,
 #'         landmark = c(0,0.5,1), cause = 1, B = 20, se = 1,
 #'         band = FALSE, mc.cores=1)
@@ -271,10 +268,12 @@ ate <- function(object.event,
 
     ## ** initialize arguments
     data <- as.data.table(data)
-        
+
     init <- ate_initArgs(object.event = object.event,
                          object.treatment = object.treatment,
                          object.censor = object.censor,
+                         formula = formula,
+                         landmark = landmark,
                          data = data,
                          times = times,
                          cause = cause,
@@ -401,6 +400,7 @@ ate <- function(object.event,
     if (TD){       
         args.pointEstimate <- c(args.pointEstimate,list(formula=formula))
     }
+
     ## args.pointEstimate$estimator
     estimateTime <- system.time(pointEstimate <- do.call(fct.pointEstimate, args.pointEstimate))
     
@@ -565,6 +565,8 @@ ate <- function(object.event,
 ate_initArgs <- function(object.event,
                          object.treatment,
                          object.censor,
+                         landmark,
+                         formula,
                          data,
                          cause,
                          times,
@@ -575,7 +577,6 @@ ate_initArgs <- function(object.event,
     if(inherits(object.event,"glm") && missing(times)){
         times <- NA
     }
-
     ## handler
     handler <- match.arg(handler, c("foreach","mclapply","snow","multicore"))
     
@@ -583,7 +584,7 @@ ate_initArgs <- function(object.event,
     ## event
     if(inherits(object.event,"glm")){
         eventVar.time <- as.character(NA)
-        eventVar.status <- all.vars(formula(object.event))[1]
+        eventVar.status <- all.vars(stats::formula(object.event))[1]
         type.multistate <- NA
     }else if(inherits(object.event,"coxph") || inherits(object.event,"cph") || inherits(object.event,"phreg")){
         responseVar <- SurvResponseVar(coxFormula(object.event))
@@ -592,7 +593,7 @@ ate_initArgs <- function(object.event,
         type.multistate <- "survival"
     }else if(inherits(object.event,"CauseSpecificCox")){
         causeNNA <- na.omit(c(cause,1))[1]
-        responseVar <- SurvResponseVar(coxFormula(object.event$models[[causeNNA]]))
+        responseVar <- SurvResponseVar(stats::formula(object.event))
         eventVar.time <- responseVar$time
         eventVar.status <- responseVar$status
         type.multistate <- "competing.risks"
@@ -609,7 +610,7 @@ ate_initArgs <- function(object.event,
         object.treatment <- NULL
         object.censor <- NULL
     }else  if(inherits(object.treatment,"glm")){
-        treatment <- all.vars(formula(object.treatment))[1]
+        treatment <- all.vars(stats::formula(object.treatment))[1]
     }else{
         treatment <- object.treatment
         object.treatment <- NULL
@@ -618,7 +619,16 @@ ate_initArgs <- function(object.event,
 
     ## cause
     if(is.na(cause) && (eventVar.status %in% names(data))){
-        if(is.factor(data[[eventVar.status]]) && length(levels(data[[eventVar.status]]))==2){
+        if(!is.null(object.event)){
+            event.call <- attr(SurvResponseVar(coxFormula(object.event))$status,"call")
+        }else{
+            event.call <- NULL
+        }
+            
+        if(!is.null(event.call) && grepl("==",event.call)){
+            event.call.rhs <- trimws(gsub(")","",strsplit(event.call,"==")[[1]][2]), which = "both")
+            cause <- eval(parse(text = event.call.rhs))
+        }else if(is.factor(data[[eventVar.status]]) && length(levels(data[[eventVar.status]]))==2){
             cause <- levels(data[[eventVar.status]])[2]
         }else if(all(data[[eventVar.status]] %in% c(0,1)) ){
             cause <- 1
@@ -644,11 +654,11 @@ ate_initArgs <- function(object.event,
         censoringMF <- coxModelFrame(object.censor)
         n.censor <- sapply(times, function(t){sum((censoringMF$status == 1) * (censoringMF$stop <= t))})
     }else{
-        n.censor <- NA
+        n.censor <- 0
     }
     ## level.censoring
     if(!is.null(object.censor) && (inherits(object.censor,"coxph") || inherits(object.censor,"cph") || inherits(object.censor,"phreg"))){
-        censorVar <- SurvResponseVar(formula(object.censor))
+        censorVar <- SurvResponseVar(stats::formula(object.censor))
         censorVar.status <- censorVar$status
         censorVar.time <- censorVar$time
         if(censorVar.status %in% names(data)){
@@ -671,13 +681,13 @@ ate_initArgs <- function(object.event,
             estimator <- "Gformula"
         }
     }else if(is.null(object.event) && !is.null(object.treatment)){
-        if(any(n.censor)>0){
+        if(any(n.censor>0)){
             estimator <- "IPTW,IPCW"
         }else{
             estimator <- "IPTW"
         }
     }else if(!is.null(object.event) && !is.null(object.treatment)){
-        if(any(n.censor)>0){
+        if(any(n.censor>0)){
             estimator <- "AIPTW,AIPCW"
         }else{
             estimator <- "AIPTW"
@@ -747,8 +757,8 @@ ate_checkArgs <- function(object.event,
     
     ## ** times
     if(inherits(object.event,"glm") && length(times)!=1){
-        warning("Argument \'times\' has no effect when using a glm object \n",
-                "It should be set to NA \n")        
+        stop("Argument \'times\' has no effect when using a glm object \n",
+             "It should be set to NA \n")        
     }
 
     ## ** object.event
@@ -897,6 +907,10 @@ ate_checkArgs <- function(object.event,
     ## ** status
     if(eventVar.status %in% names(data) == FALSE){
         stop("The data set does not seem to have a variable ",eventVar.status," (argument: object.event[2]). \n")
+    }
+    if(is.na(cause)){
+        stop("Cannot guess which value of the variable \"",eventVar.status,"\" corresponds to the outcome of interest \n",
+             "Please specify the argument \'cause\'. \n")
     }
     if(cause %in% data[[eventVar.status]] == FALSE){
         stop("Value of the argument \'cause\' not found in column \"",eventVar.status,"\" \n")

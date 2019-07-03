@@ -17,20 +17,20 @@ verbose <- FALSE
 if (class(try(riskRegression.test,silent=TRUE))[1]!="try-error"){
     test_that("G formula: coxph, cph, bootstrap sequential, one and several time points",{
         fit.cph <- cph(Surv(time,event)~ X1+X2,data=dtS,y=TRUE,x=TRUE)
-        ate.1a <- ate(fit.cph,data = dtS, treatment = "X1", contrasts = NULL,seed=3, 
+        ate.1a <- ate(fit.cph,data = dtS, object.treatment = "X1", contrasts = NULL,seed=3, 
                       times = 1, handler=handler, B = 2, y = TRUE, mc.cores=1,verbose=verbose,
                       se = TRUE, confint = FALSE)
         ate.1a <- confint(ate.1a, bootci.method = "quantile")
-        ate.1b <- ate(fit.cph, data = dtS, treatment = "X1", contrasts = NULL,seed=3, 
+        ate.1b <- ate(fit.cph, data = dtS, object.treatment = "X1", contrasts = NULL,seed=3, 
                       times = 1:2, B = 2, y = TRUE, mc.cores=1,handler=handler,verbose=verbose,
                       se = TRUE, confint = FALSE)
         ate.1b <- confint(ate.1b, bootci.method = "quantile")
         fit.coxph <- coxph(Surv(time,event)~ X1+X2,data=dtS,y=TRUE,x=TRUE)
-        ate.2a <- ate(fit.coxph,data = dtS, treatment = "X1", contrasts = NULL,seed=3,
+        ate.2a <- ate(fit.coxph,data = dtS, object.treatment = "X1", contrasts = NULL,seed=3,
                       times = 1, B = 2, y = TRUE, mc.cores=1,handler=handler,verbose=verbose,
                       se = TRUE, confint = FALSE)
         ate.2a <- confint(ate.2a, bootci.method = "quantile")
-        ate.2b <- ate(fit.coxph, data = dtS, treatment = "X1", contrasts = NULL,seed=3,
+        ate.2b <- ate(fit.coxph, data = dtS, object.treatment = "X1", contrasts = NULL,seed=3,
                       times = 1:2, B = 2, y = TRUE, mc.cores=1,handler=handler,verbose=verbose,
                       se = TRUE, confint = FALSE)
         ate.2b <- confint(ate.2b, bootci.method = "quantile")
@@ -73,11 +73,11 @@ if (class(try(riskRegression.test,silent=TRUE))[1]!="try-error"){
 if (class(try(riskRegression.test,silent=TRUE))[1]!="try-error"){
     test_that("G formula: coxph, cph, fully stratified",{
         fit <- cph(formula = Surv(time,event)~ strat(X1),data=dtS,y=TRUE,x=TRUE)
-        ate2 <- ate(fit, data = dtS, treatment = "X1", contrasts = NULL, seed = 3,
+        ate2 <- ate(fit, data = dtS, object.treatment = "X1", contrasts = NULL, seed = 3,
                     times = 1:2, B = 2, y = TRUE, mc.cores=1,handler=handler,verbose=verbose)
         ## one time point
         fit <- coxph(Surv(time,event)~ strata(X1),data=dtS,y=TRUE,x=TRUE)
-        ate1 <- ate(fit,data = dtS, treatment = "X1", contrasts = NULL, seed = 3,
+        ate1 <- ate(fit,data = dtS, object.treatment = "X1", contrasts = NULL, seed = 3,
                     times = 1, B = 2, y = TRUE, mc.cores=1,handler=handler,verbose=verbose)
     })
 }
@@ -90,7 +90,7 @@ test_that("Cox model - compare to explicit computation",{
     dtS$time <- round(dtS$time,1)
     dtS$X1 <- factor(rbinom(n, prob = c(0.3,0.4) , size = 2), labels = paste0("T",0:2))
     fit <- cph(formula = Surv(time,event)~ X1+X2,data=dtS,y=TRUE,x=TRUE)
-    ateFit <- ate(fit, data = dtS, treatment = "X1", contrasts = NULL,
+    ateFit <- ate(fit, data = dtS, object.treatment = "X1", contrasts = NULL,
                   times = 5:7, B = 0, se = TRUE, mc.cores=1,handler=handler,verbose=verbose)
     expect_equal(ateFit$meanRisk[ateFit$meanRisk$Treatment == "T0",meanRisk.lower],
                  c(0.2756147, 0.3220124, 0.3492926),
@@ -107,8 +107,8 @@ if (class(try(riskRegression.test,silent=TRUE))[1]!="try-error"){
     ## (previously reported bug)
     d <- sampleData(1000,outcome="survival")
     fit <- coxph(Surv(time,event)~X1+X4+X7+X8,data=d,x=TRUE,y=TRUE)
-    a1 <- ate(fit,data=d,treatment="X1",time=5,bootci.method="wald")
-    a2 <- ate(fit,data=d,treatment="X1",time=5:7,bootci.method="wald")
+    a1 <- ate(fit,data=d,object.treatment="X1",time=5,bootci.method="wald")
+    a2 <- ate(fit,data=d,object.treatment="X1",time=5:7,bootci.method="wald")
 
     expect_equal(a2$riskComparison[time==5,],
                  a1$riskComparison)
@@ -122,7 +122,7 @@ if (class(try(riskRegression.test,silent=TRUE))[1]!="try-error"){
     test_that("check against manual computation",{
         ## automatically
         fit <- cph(formula = Surv(time,event)~ X1+X2,data=dtS,y=TRUE,x=TRUE)
-        ateFit <- ate(fit, data = dtS, treatment = "X1", contrasts = NULL,
+        ateFit <- ate(fit, data = dtS, object.treatment = "X1", contrasts = NULL,
                       times = 5:7,iid=TRUE, B = 0, se = TRUE, mc.cores=1,handler=handler,
                       verbose=verbose)
         ATE <- list()
@@ -177,11 +177,11 @@ if (class(try(riskRegression.test,silent=TRUE))[1]!="try-error"){
         df$time <- round(df$time,1)
         df$X1 <- factor(rbinom(1e2, prob = c(0.4,0.3) , size = 2), labels = paste0("T",0:2))
         fit=CSC(formula = Hist(time,event)~ X1+X2, data = df,cause=1)
-        res <- ate(fit, data = df, treatment = "X1", contrasts = NULL,
+        res <- ate(fit, data = df, object.treatment = "X1", contrasts = NULL,
                    times = 7, cause = 1, B = 0, mc.cores=1,handler=handler,verbose=verbose)
         Sres <- capture.output(print(res))
         fit=CSC(formula = Hist(time,event)~ X1+X2, data = df,cause=1)
-        res <- ate(fit,data = df,  treatment = "X1", contrasts = NULL,
+        res <- ate(fit,data = df,  object.treatment = "X1", contrasts = NULL,
                    times = 7, cause = 1, B = 2, mc.cores=1,handler=handler,verbose=verbose)
         Sres <- capture.output(print(res))
     })}
@@ -191,11 +191,9 @@ if (class(try(riskRegression.test,silent=TRUE))[1]!="try-error"){
 test_that("stratified ATE",{
     set.seed(10)
     d <- sampleData(n=100)
-
     e.coxph <- coxph(Surv(time, event == 1) ~ X1, data = d,
                      x = TRUE, y = TRUE)
-
-    outATE <- ate(e.coxph, data = d, treatment = NULL, strata = "X1", time = 1)
+    outATE <- ate(e.coxph, data = d, treatment = NULL, strata = "X1", times = 1)
 
     outPred <- predictCox(e.coxph,
                           newdata = d,
@@ -218,7 +216,7 @@ test_that("CSC model bootstrap via cph",{
     df$time <- round(df$time,1)
     df$X1 <- factor(rbinom(101, prob = c(0.4,0.3) , size = 2), labels = paste0("T",0:2))
     fit=CSC(formula = Hist(time,event)~ X1+X2+rcs(X6), data = df,cause=1,fitter="cph")
-    res <- ate(fit, data = df, treatment = "X1", contrasts = NULL,
+    res <- ate(fit, data = df, object.treatment = "X1", contrasts = NULL,
                times = 7, cause = 1, B = 0, mc.cores=1)
 })
 # }}}
@@ -230,12 +228,12 @@ test_that("mcapply vs. foreach",{
     if( (parallel::detectCores()>1) && (Sys.info()["sysname"] != "Windows") ){
         fit = CSC(formula = Hist(time,event)~ X1+X2, data = df, cause=1)
         time2.mc <- system.time(
-            res2.mc <- ate(fit,data = df, treatment = "X1", contrasts = NULL,
+            res2.mc <- ate(fit, data = df, object.treatment = "X1", contrasts = NULL,
                            times = 7, cause = 1, B = 2, mc.cores=2, handler = "mclapply", seed = 10,
                            verbose = FALSE, confint = FALSE)
         )
         time2.for <- system.time(
-            res2.for <- ate(fit,data = df, treatment = "X1", contrasts = NULL,
+            res2.for <- ate(fit,data = df, object.treatment = "X1", contrasts = NULL,
                             times = 7, cause = 1, B = 2, mc.cores=2, handler = "foreach", seed = 10,
                             verbose = FALSE, confint = FALSE)
         )

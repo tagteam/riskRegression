@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: aug 15 2018 (11:42) 
 ## Version: 
-## Last-Updated: maj  6 2019 (14:43) 
+## Last-Updated: jul  3 2019 (19:17) 
 ##           By: Brice Ozenne
-##     Update #: 88
+##     Update #: 92
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -39,9 +39,9 @@ test_that("check vs. manual calculations", {
     e.T <- glm(X1 ~ 1, data = dtS, family = binomial(link = "logit")) ## dtS$X1
     e.ateRobust <- ateRobust(data = dtS, times = tau,
                              formula.event = Surv(time,event) ~ X1 + X2 + X3,
-                             formula.censor = Surv(time,event==0) ~ X1,
                              formula.treatment = X1 ~ 1, se = TRUE,
                              type = "survival")
+
     ## point estimate
     dtS1 <- data.table(X1 = 1, X2 = dtS$X2, X3 = dtS$X3)
     pred.logit <- riskRegression:::predictGLM(e.T, newdata = dtS1, average.iid = FALSE)
@@ -77,38 +77,75 @@ test_that("check vs. manual calculations", {
     ## (sqrt(sum(iid.AIPTW^2)) - sqrt(sum(iid.AIPTW1^2))) / sqrt(sum(iid.AIPTW^2))
 
     ## compare to ipw package
-    e.ateRobust <- ateRobust(data = dtS, times = tau,
-                             formula.event = Surv(time,event) ~ X1 + X2 + X3,
-                             formula.censor = Surv(time,event==0) ~ X1,
-                             formula.treatment = X1 ~ X2+X3, se = TRUE,
-                             type = "survival")
-    RR.weight <- as.matrix(1/e.ateRobust$weight.treatment)
+    e2.ateRobust <- ateRobust(data = dtS, times = tau,
+                              formula.event = Surv(time,event) ~ X1 + X2 + X3,
+                              formula.treatment = X1 ~ X2+X3, se = TRUE,
+                              type = "survival")
+    RR.weight <- as.matrix(1/e2.ateRobust$weight.treatment)
     
     ww <- ipwpoint(exposure=X1,family="binomial",link="logit",
                    denominator=~X2+X3,
                    data=dtS)$ipw.weights
     expect_equal(ww, RR.weight[1:NROW(RR.weight) + dtS$X1 * NROW(RR.weight)])
+
+    ## compare with ate
+    dtS$X1f <- as.factor(dtS$X1)
+    e.ateRR <- ate(object.event = cph(Surv(time,event) ~ X1f + X2 + X3, data = dtS, x = TRUE, y = TRUE),
+                   object.treatment = glm(X1f ~ 1, data = dtS, family = binomial(link = "logit")),
+                   data = dtS, times = tau, verbose = 0,
+                   )
+    e.ateIP <- ate(object.event = c("time","event"),
+                   object.treatment = glm(X1f ~ 1, data = dtS, family = binomial(link = "logit")),
+                   data = dtS, times = tau, verbose = 0
+                   )
+
+    expect_equal(as.double(e.ateRobust$ate.value[,"AIPTW.AIPCW_estimatedNuisance"]),
+                 c(e.ateRR$meanRisk[,meanRisk],e.ateRR$riskComparison[,diff]),
+                 tol = 1e-4)
+    expect_equal(as.double(e.ateRobust$ate.se[,"AIPTW.AIPCW_estimatedNuisance"]),
+                 c(e.ateRR$meanRisk[,meanRisk.se],e.ateRR$riskComparison[,diff.se]),
+                 tol = 1e-4)
+
+    expect_equal(as.double(e.ateRobust$ate.value[,"IPTW.IPCW"]),
+                 c(e.ateIP$meanRisk[,meanRisk],e.ateIP$riskComparison[,diff]),
+                 tol = 1e-4)
+    expect_equal(as.double(e.ateRobust$ate.se[,"IPTW.IPCW"]),
+                 c(e.ateIP$meanRisk[,meanRisk.se],e.ateIP$riskComparison[,diff.se]),
+                 tol = 1e-4)
 })
 
 ## ** censoring - agreement with ate
 set.seed(10)
 n <- 5e1
+tau <- 3
 dtS <- sampleData(n,outcome="survival")
 e.cox <- coxph(Surv(time, event) ~ X1 + X2 + X3,
                data = dtS,
                x = TRUE)
 
 test_that("Agreement ate-ateRobust (survival)",{
-    e.ate <- ate(e.cox, treatment = "X1", times = 3, data = dtS, se = TRUE)
+    ## dtS[event == 0, min(time)]
+    
+    e.ateG <- ate(e.cox, object.treatment = "X1", times = tau, data = dtS, se = TRUE, verbose = 0)
+    e.ateRR <- ate(object.event = cph(Surv(time,event) ~ X1 + X2 + X3, data = dtS, x = TRUE, y = TRUE),
+                   object.treatment = glm(X1 ~ 1, data = dtS, family = binomial(link = "logit")),
+                   object.censor = cph(Surv(time,event==0) ~ X1, data = dtS, x = TRUE, y = TRUE),
+                   data = dtS, times = tau, verbose = 0
+                   )
+    e.ateIP <- ate(object.event = c("time","event"),
+                   object.treatment = glm(X1 ~ 1, data = dtS, family = binomial(link = "logit")),
+                   object.censor = cph(Surv(time,event==0) ~ X1, data = dtS, x = TRUE, y = TRUE),
+                   data = dtS, times = tau, verbose = 0
+                   )
 
-    e.ateRobust <- ateRobust(data = dtS, times = 3,
+    e.ateRobust <- ateRobust(data = dtS, times = tau,
                              formula.event = Surv(time,event) ~ X1 + X2 + X3,
                              formula.censor = Surv(time,event==0) ~ X1,
                              formula.treatment = X1 ~ 1,
                              se = TRUE, product.limit = FALSE,
                              type = "survival")
 
-    e.ateRobustPL <- ateRobust(data = dtS, times = 3,
+    e.ateRobustPL <- ateRobust(data = dtS, times = tau,
                                formula.event = Surv(time,event) ~ X1 + X2 + X3,
                                formula.censor = Surv(time,event==0) ~ X1,
                                formula.treatment = X1 ~ 1,
@@ -117,9 +154,25 @@ test_that("Agreement ate-ateRobust (survival)",{
     
     ## ateRobust with product.limit = FALSE agree with ate
     expect_equal(as.double(e.ateRobust$ate.value[,"Gformula"]),
-                 c(e.ate$meanRisk[,meanRisk],e.ate$riskComparison[,diff]))
+                 c(e.ateG$meanRisk[,meanRisk],e.ateG$riskComparison[,diff]),
+                 tol = 1e-4)
     expect_equal(as.double(e.ateRobust$ate.se[,"Gformula"]),
-                 c(e.ate$meanRisk[,meanRisk.se],e.ate$riskComparison[,diff.se]))
+                 c(e.ateG$meanRisk[,meanRisk.se],e.ateG$riskComparison[,diff.se]),
+                 tol = 1e-4)
+
+    expect_equal(as.double(e.ateRobust$ate.value[,"IPTW.IPCW"]),
+                 c(e.ateIP$meanRisk[,meanRisk],e.ateIP$riskComparison[,diff]),
+                 tol = 1e-4)
+    expect_equal(as.double(e.ateRobust$ate.se[,"IPTW.IPCW"]),
+                 c(e.ateIP$meanRisk[,meanRisk.se],e.ateIP$riskComparison[,diff.se]),
+                 tol = 1e-4)
+
+    expect_equal(as.double(e.ateRobust$ate.value[,"AIPTW.AIPCW_estimatedNuisance"]),
+                 c(e.ateRR$meanRisk[,meanRisk],e.ateRR$riskComparison[,diff]),
+                 tol = 1e-4)
+    expect_equal(as.double(e.ateRobust$ate.se[,"AIPTW.AIPCW_estimatedNuisance"]),
+                 c(e.ateRR$meanRisk[,meanRisk.se],e.ateRR$riskComparison[,diff.se]),
+                 tol = 1e-4)
 
     ## check values
     test <- e.ateRobust$ate.value
@@ -227,16 +280,26 @@ set.seed(10)
 n <- 1e2
 dtS <- sampleData(n,outcome="competing.risks")
 ## dtS[,min(time),by = event]
-
+tau <- 3
 e.CSC <- CSC(Hist(time, event) ~ X1 + X2 + X3,
              data = dtS, surv.type = "hazard")
 
 test_that("Agreement ate-ateRobust (competing.risks)",{
     ## NOT POSSIBLE: predictRisk does not recognise the argument product.limit
     ## e.ate <- ate(e.CSC, treatment = "X1", times = 3, data = dtS, cause = 1,
-                 ## se = TRUE, product.limit = FALSE) 
-    e.atePL <- ate(e.CSC, treatment = "X1", times = 3, data = dtS, cause = 1,
-                   se = TRUE)
+    ## se = TRUE, product.limit = FALSE) 
+    e.ateG <- ate(e.CSC, object.treatment = "X1", times = tau, data = dtS, cause = 1,
+                  se = TRUE, verbose = 0)
+    e.ateRR <- ate(object.event = CSC(Hist(time,event) ~ X1 + X2 + X3, data = dtS),
+                   object.treatment = glm(X1 ~ 1, data = dtS, family = binomial(link = "logit")),
+                   object.censor = cph(Surv(time,event==0) ~ X1, data = dtS, x = TRUE, y = TRUE),
+                   data = dtS, times = tau, verbose = 0, cause = 1
+                   )
+    e.ateIP <- ate(object.event = c("time","event"),
+                   object.treatment = glm(X1 ~ 1, data = dtS, family = binomial(link = "logit")),
+                   object.censor = cph(Surv(time,event==0) ~ X1, data = dtS, x = TRUE, y = TRUE),
+                   data = dtS, times = tau, verbose = 0, cause = 1
+                   )
 
     ## data0 <- copy(dtS)
     ## data0[, X1 := factor("0", level = levels(dtS$X1))]
@@ -244,24 +307,40 @@ test_that("Agreement ate-ateRobust (competing.risks)",{
     ## data1[, X1 := factor("1", level = levels(dtS$X1))]
     ## mean(predict(e.CSC, cause = 1, newdata = data0, times = 3, product.limit = TRUE)$absRisk)
     
-    e.ateRobust <- ateRobust(data = dtS, times = 3, cause = 1,
+    e.ateRobust <- ateRobust(data = dtS, times = tau, cause = 1,
                              formula.event = Hist(time,event) ~ X1 + X2 + X3,
                              formula.censor = Surv(time,event==0) ~ X1,
                              formula.treatment = X1 ~ 1,
                              type = "competing.risks",
                              product.limit = FALSE)
-    e.ateRobustPL <- ateRobust(data = dtS, times = 3, cause = 1,
+    e.ateRobustPL <- ateRobust(data = dtS, times = tau, cause = 1,
                              formula.event = Hist(time,event) ~ X1 + X2 + X3,
                              formula.censor = Surv(time,event==0) ~ X1,
                              formula.treatment = X1 ~ 1,
                              type = "competing.risks",
                              product.limit = TRUE)
 
+    ## 
     expect_equal(as.double(e.ateRobustPL$ate.value[,"Gformula"]),
-                 c(e.atePL$meanRisk[,meanRisk],e.atePL$riskComparison[,diff]))
+                 c(e.ateG$meanRisk[,meanRisk],e.ateG$riskComparison[,diff]),
+                 tol = 1e-4)
     expect_equal(as.double(e.ateRobustPL$ate.se[,"Gformula"]),
-                 c(e.atePL$meanRisk[,meanRisk.se],e.atePL$riskComparison[,diff.se]))
+                 c(e.ateG$meanRisk[,meanRisk.se],e.ateG$riskComparison[,diff.se]),
+                 tol = 1e-4)
 
+    expect_equal(as.double(e.ateRobustPL$ate.value[,"IPTW.IPCW"]),
+                 c(e.ateIP$meanRisk[,meanRisk],e.ateIP$riskComparison[,diff]),
+                 tol = 1e-4)
+    expect_equal(as.double(e.ateRobustPL$ate.se[,"IPTW.IPCW"]),
+                 c(e.ateIP$meanRisk[,meanRisk.se],e.ateIP$riskComparison[,diff.se]),
+                 tol = 1e-4)
+
+    expect_equal(as.double(e.ateRobustPL$ate.value[,"AIPTW.AIPCW_estimatedNuisance"]),
+                 c(e.ateRR$meanRisk[,meanRisk],e.ateRR$riskComparison[,diff]),
+                 tol = 1e-4)
+    expect_equal(as.double(e.ateRobustPL$ate.se[,"AIPTW.AIPCW_estimatedNuisance"]),
+                 c(e.ateRR$meanRisk[,meanRisk.se],e.ateRR$riskComparison[,diff.se]),
+                 tol = 1e-4)
     ## check values
     test <- e.ateRobust$ate.value
     rownames(test) <- NULL

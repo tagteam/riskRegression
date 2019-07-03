@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: apr 11 2018 (17:05) 
 ## Version: 
-## Last-Updated: jul  2 2019 (16:17) 
+## Last-Updated: jul  3 2019 (16:23) 
 ##           By: Brice Ozenne
-##     Update #: 181
+##     Update #: 191
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -40,8 +40,11 @@ calcBootATE <- function(args, name.estimate, n.obs, fct.pointEstimate,
         iSource <- utils::find(iFitter)
         if(grepl("package:",iSource)){gsub("package:","",iSource)}else{NULL}
     })
-    add.Package <- unique(c("riskRegression","data.table","parallel","survival",unlist(ls.package)))
 
+    ## packages and functions to be exported to the cluster
+    add.Package <- unique(c("riskRegression","prodlim","data.table","parallel","survival",unlist(ls.package)))
+    add.Fct <- c(".calcLterm","SurvResponseVar","predictRisk.coxphTD","predictRisk.CSCTD")
+    
     ## if cluster already defined by the user
     no.cl <- is.null(cl)
     if( (no.cl[[1]] == FALSE) && (mc.cores[[1]] == 1) ){ ## i.e. the user has not initialized the number of cores
@@ -136,7 +139,7 @@ calcBootATE <- function(args, name.estimate, n.obs, fct.pointEstimate,
             ## progress bar 
             if(verbose){pb <- txtProgressBar(max = B, style = 3)}
             b <- NULL ## [:forCRANcheck:] foreach
-            boots <- foreach::`%dopar%`(foreach::foreach(b = 1:B, .packages = add.Package, .export = c(".calcLterm","SurvResponseVar")), { ## b <- 1
+            boots <- foreach::`%dopar%`(foreach::foreach(b = 1:B, .packages = add.Package, .export = add.Fct), { ## b <- 1
                 if(verbose){setTxtProgressBar(pb, b)}
                 set.seed(bootseeds[[b]])
                 warperBootATE(index = sample(1:n.obs, size = n.obs, replace = TRUE),

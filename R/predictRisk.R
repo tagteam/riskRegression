@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun  6 2016 (09:02) 
 ## Version: 
-## last-updated: jul  2 2019 (10:01) 
+## last-updated: jul  3 2019 (18:25) 
 ##           By: Brice Ozenne
-##     Update #: 197
+##     Update #: 199
 #----------------------------------------------------------------------
 ## 
 ### Commentary:
@@ -216,7 +216,7 @@ predictRisk.glm <- function(object,newdata,...){
         ## hidden argument: enable to ask for the prediction of Y==1 or Y==0
         level <- list(...)$level
         if(!is.null(level)){
-            matching.Ylevel <- table(object$data[,all.vars(formula(object))[1]],
+            matching.Ylevel <- table(object$data[[all.vars(formula(object))[1]]],
                                      object$y)
             all.levels <- rownames(matching.Ylevel)
             level <- match.arg(level, all.levels)
