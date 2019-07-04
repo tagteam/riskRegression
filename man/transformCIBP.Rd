@@ -12,7 +12,7 @@ transformCIBP(estimate, se, iid, null, conf.level, nsim.band, seed, type,
 
 \item{se}{[numeric matrix] the standard error before transformation.}
 
-\item{iid}{[numeric array] the standard error before transformation.}
+\item{iid}{[numeric array] the iid decomposition before transformation.}
 
 \item{null}{[numeric] the value of the estimate (before transformation) under the null hypothesis.}
 

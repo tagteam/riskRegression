@@ -12,6 +12,17 @@ SurvResponseVar(formula)
 \description{
 Extract the time and event variable from a Cox model
 }
+\examples{
+SurvResponseVar(Surv(time,event)~X1+X2)
+SurvResponseVar(Hist(time,event==0)~X1+X2)
+SurvResponseVar(Surv(start,time, status,type="counting") ~ X3+X5)
+SurvResponseVar(Surv(start,event=status, time2=time,type="counting") ~ X3+X5)
+
+SurvResponseVar(survival::Surv(start,event=status, time2=time,type="counting") ~ X3+X5)
+SurvResponseVar(status ~ X3+X5)
+SurvResponseVar(I(status == 1) ~ X3+X5)
+
+}
 \author{
 Brice Ozenne broz@sund.ku.dk
 }
