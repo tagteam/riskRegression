@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: aug 15 2018 (11:42) 
 ## Version: 
-## Last-Updated: jul  3 2019 (19:17) 
+## Last-Updated: jul  4 2019 (10:03) 
 ##           By: Brice Ozenne
-##     Update #: 92
+##     Update #: 93
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -19,6 +19,7 @@ library(survival)
 library(data.table)
 library(testthat)
 library(ipw)
+library(rms)
 context("Ate robust checks")
 
 ## * survival case

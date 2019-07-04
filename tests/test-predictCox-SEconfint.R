@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: maj 18 2017 (09:23) 
 ## Version: 
-## last-updated: Oct  4 2018 (10:18) 
-##           By: Thomas Alexander Gerds
-##     Update #: 184
+## last-updated: jul  4 2019 (11:20) 
+##           By: Brice Ozenne
+##     Update #: 190
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -818,6 +818,39 @@ e.coxph$coefficients[] <- as.numeric(NA)
 test_that("Return error when coef contains NA", {
     expect_error(predictCox(e.coxph, newdata = dt, times = 1))
 })
+
+## ** 0 average.iid
+
+test_that("Cox - output of average.iid should not depend on other arguments", {
+    set.seed(10)
+    d <- sampleData(70,outcome="survival")
+    d[, X1 := paste0("T",rbinom(.N, size = 2, prob = c(0.51)))]
+
+    fit <- coxph(Surv(time,event)~X1 + strata(X2) + X6,
+                 data=d, ties="breslow", x = TRUE, y = TRUE)
+
+    out1 <- predictCox(fit, newdata = dd[1:5], times = 1:3, average.iid = TRUE)
+    out2 <- predictCox(fit, newdata = dd[1:5], times = 1:3, se = TRUE, average.iid = TRUE)
+
+    expect_equal(out1$survival.average.iid,out2$survival.average.iid, tol = 1e-8)
+})    
+
+test_that("CSC - output of average.iid should not depend on other arguments", {
+    set.seed(10)
+    d <- sampleData(70,outcome="competing.risks")
+    d[, X1 := paste0("T",rbinom(.N, size = 2, prob = c(0.51)))]
+
+    fit <- CSC(Hist(time,event)~X1 + strata(X2) + X6,
+               data=d)
+
+    out1 <- predict(fit, newdata = dd[1:5], times = 1:3, average.iid = TRUE, cause = 1)
+    out2 <- predict(fit, newdata = dd[1:5], times = 1:3, se = TRUE, average.iid = TRUE, cause = 1)
+
+    test_that("output of average.iid should not depend on other arguments", {
+        expect_equal(out1$survival.average.iid,out2$survival.average.iid, tol = 1e-8)
+    })    
+})
+
 
 ## ** ???
 f1 <- coxph(Surv(time,status==1) ~ age+logthick+epicel+strata(sex),

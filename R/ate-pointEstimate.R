@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: jun 27 2019 (10:43) 
 ## Version: 
-## Last-Updated: jul  3 2019 (18:58) 
+## Last-Updated: jul  4 2019 (11:03) 
 ##           By: Brice Ozenne
-##     Update #: 184
+##     Update #: 187
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -254,8 +254,11 @@ ATE_TI <- function(object.event,
     out$meanRisk <- melt(data.table(Treatment = rownames(meanRisk),meanRisk),
                          id.vars = "Treatment",
                          value.name = "meanRisk",
-                         variable.name = "time")
-
+                         variable.name = "timeChar")
+    out$meanRisk[,c("time") := times,by="Treatment"]
+    out$meanRisk[,c("timeChar") := NULL]
+    ## range(as.numeric(as.character(out$meanRisk$timeChar))-out$meanRisk$time)
+    
     out$riskComparison <- data.table::rbindlist(lapply(1:(n.contrasts-1),function(i){ ## i <- 1
         data.table::rbindlist(lapply(((i+1):n.contrasts),function(j){ ## j <- 2
             ## compute differences between all pairs of treatments

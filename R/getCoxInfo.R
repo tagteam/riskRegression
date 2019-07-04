@@ -835,6 +835,7 @@ coxVarCov.phreg <- function(object){
 #' @author Brice Ozenne broz@@sund.ku.dk
 #'
 #' @examples
+#' \dontrun{
 #' SurvResponseVar(Surv(time,event)~X1+X2)
 #' SurvResponseVar(Hist(time,event==0)~X1+X2)
 #' SurvResponseVar(Surv(start,time, status,type="counting") ~ X3+X5)
@@ -843,8 +844,35 @@ coxVarCov.phreg <- function(object){
 #' SurvResponseVar(survival::Surv(start,event=status, time2=time,type="counting") ~ X3+X5)
 #' SurvResponseVar(status ~ X3+X5)
 #' SurvResponseVar(I(status == 1) ~ X3+X5)
-#' 
+#' SurvResponseVar(list(Hist(time, event) ~ X1+X6,Hist(time, event) ~ X6))
+#' }
 SurvResponseVar <- function(formula){
+
+    if(class(formula)=="call"){
+        formula <- eval(formula)
+    }
+    
+    if(class(formula)=="list"){
+        if(any(unlist(lapply(formula,class))!="formula")){
+            stop("When a list, the elements of argument \'formula\' must all be a formula \n")
+        }
+        
+        ls.formula <- lapply(formula, SurvResponseVar)
+        if(length(ls.formula)>1){
+            test.identical <- sapply(ls.formula[-1], function(x){identical(ls.formula[[1]],x)})
+            if(test.identical){
+                return(ls.formula[[1]])
+            }else{
+                stop("Different left hand side in the formulae \n")
+            }
+        }else{
+            return(ls.formula[[1]])
+        }
+        
+    }else if(class(formula)!= "formula"){
+        stop("Argument \'formula\' can either be a formula or a list of formula \n")
+    }
+
     ls.formula <- as.list(formula[[2]])
     if(length(ls.formula)==1){ ## deal with the case of simple formula, e.g. Y~X
         return(list(status = all.vars(formula)[1]))

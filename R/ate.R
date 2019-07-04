@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Oct 23 2016 (08:53) 
 ## Version: 
-## last-updated: jul  3 2019 (19:13) 
+## last-updated: jul  4 2019 (08:54) 
 ##           By: Brice Ozenne
-##     Update #: 1261
+##     Update #: 1262
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -321,7 +321,6 @@ ate <- function(object.event,
                            mc.cores = mc.cores,
                            cl = cl,
                            verbose = verbose,
-                           augment.cens = augment.cens,
                            TD = TD,
                            n.censor = n.censor,
                            level.censoring = level.censoring,
@@ -742,7 +741,6 @@ ate_checkArgs <- function(object.event,
                           mc.cores,
                           cl,
                           verbose,
-                          augment.cens,
                           TD,
                           n.censor,
                           level.censoring,

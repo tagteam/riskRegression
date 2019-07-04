@@ -193,7 +193,7 @@ test_that("stratified ATE",{
     d <- sampleData(n=100)
     e.coxph <- coxph(Surv(time, event == 1) ~ X1, data = d,
                      x = TRUE, y = TRUE)
-    outATE <- ate(e.coxph, data = d, treatment = NULL, strata = "X1", times = 1)
+    outATE <- ate(e.coxph, data = d, treatment = NULL, strata = "X1", times = 1, verbose = FALSE)
 
     outPred <- predictCox(e.coxph,
                           newdata = d,
@@ -217,7 +217,7 @@ test_that("CSC model bootstrap via cph",{
     df$X1 <- factor(rbinom(101, prob = c(0.4,0.3) , size = 2), labels = paste0("T",0:2))
     fit=CSC(formula = Hist(time,event)~ X1+X2+rcs(X6), data = df,cause=1,fitter="cph")
     res <- ate(fit, data = df, object.treatment = "X1", contrasts = NULL,
-               times = 7, cause = 1, B = 0, mc.cores=1)
+               times = 7, cause = 1, B = 0, mc.cores=1, verbose = FALSE)
 })
 # }}}
 # {{{ parallel computation

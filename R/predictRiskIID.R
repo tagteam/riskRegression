@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: jun 28 2019 (14:38) 
 ## Version: 
-## Last-Updated: jul  3 2019 (18:26) 
+## Last-Updated: jul  4 2019 (10:02) 
 ##           By: Brice Ozenne
-##     Update #: 47
+##     Update #: 59
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -15,21 +15,51 @@
 ## 
 ### Code:
 
-## * predictRiskIID 
-predictRiskIID <- function(object, newdata, average.iid, ...){
+## * Documentation - predictRiskIID
+#' @title  Extract corrected i.i.d. decomposition
+#' @description  Extract corrected i.i.d. decomposition8 from a gaussian linear model.
+#' @name predictRiskIID
+#'
+#' @param object A fitted model from which to extract i.i.d. decomposition of the fitted values.
+#' @param newdata A data frame containing predictor variable combinations.
+#' @param times A vector of times in the range of the response variable,
+#' e.g. for which the cumulative incidences event probabilities are computed.
+#' Disregarded when argument \code{object} is a logistic regression.
+#' @param average.iid Should the i.i.d. decomposition be averaged over individual observations in argument \code{newdata}?
+#' @param factor  When \code{average.iid} is TRUE, enables to perform weighted averages instead of averages.
+#' @param ... for compatibility with the generic method.
+#'
+#' @details Argument \code{factor} must be a matrix with the same number of rows as argument \code{newdata}.
+#' For given column, the i.i.d. decomposition is multiplied by the column (i.e. each individual contribution is weighted) before taking the average.
+#' So the first element in the first column corresponds to the weight given to the first individual.
+#' Therefore for each column, an averaged i.i.d. decomposition is returned.
+#' Note that a one-column matrix with only 1 is equivalent to an average, i.e. not specifying the argument \code{factor}.
+#' 
+#' @seealso \code{\link{iidCox}} to obtain the iid decomposition for Cox models.
+#'
+#' @return \code{average.iid} is FALSE: an array containing
+#' the influence of each individual from the training dataset at each time on each prediction.
+#' \code{average.iid} is TRUE: a list where each element contains a "weighted" averaged i.i.d. decomposition.
+#' @export
+predictRiskIID <- function(object, newdata, average.iid, factor, ...){
   UseMethod("predictRiskIID",object)
 }
 
 ## * predictRiskIID.default
+#' @rdname predictRiskIID
+#' @export
 predictRiskIID.default <- function(object,
                                    newdata,
                                    average.iid,
+                                   factor,
                                    ...){
     stop(paste0("No method available for extracting the iid decomposition for the predictions from objects in class: ",class(object),".
                  But, you can write it yourself or ask the package manager."),call.=FALSE)
 }
 
 ## * predictRiskIID.glm
+#' @rdname predictRiskIID
+#' @export
 predictRiskIID.glm <- function(object,
                                newdata,
                                average.iid,
@@ -82,7 +112,9 @@ predictRiskIID.glm <- function(object,
 }
 
 ## * predictRiskIID."cox"
-predictRiskIID.coxph <- function(object, newdata, times, average.iid, factor = NULL, ...){
+#' @rdname predictRiskIID
+#' @export
+predictRiskIID.coxph <- function(object, newdata, average.iid, factor = NULL, times, ...){
     if(!is.null(factor)){
         n.times <- length(times)
         n.obs <- NROW(newdata)
@@ -116,15 +148,22 @@ predictRiskIID.coxph <- function(object, newdata, times, average.iid, factor = N
     }    
 }
 
-predictRisk.cph <- predictRisk.coxph
-predictRisk.phreg <- predictRisk.coxph
+#' @rdname predictRiskIID
+#' @export
+predictRiskIID.cph <- predictRiskIID.coxph
+
+#' @rdname predictRiskIID
+#' @export
+predictRiskIID.phreg <- predictRiskIID.coxph
 
 ## * predictRiskIID.CSC
+#' @rdname predictRiskIID
+#' @export
 predictRiskIID.CauseSpecificCox <- function(object,
                                             newdata,
-                                            times,
                                             average.iid,
                                             factor = NULL,
+                                            times,
                                             ...){
 
     if(!is.null(factor)){

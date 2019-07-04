@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: apr 11 2018 (17:05) 
 ## Version: 
-## Last-Updated: jul  3 2019 (16:23) 
+## Last-Updated: jul  4 2019 (10:03) 
 ##           By: Brice Ozenne
-##     Update #: 191
+##     Update #: 194
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -108,7 +108,7 @@ calcBootATE <- function(args, name.estimate, n.obs, fct.pointEstimate,
             set.seed(bootseeds)
         }
         ## run bootstrap
-        boot.object <- boot::boot(data = data,
+        boot.object <- boot::boot(data = args$data,
                                   R = B,
                                   sim = "ordinary",
                                   stpe = "indices",

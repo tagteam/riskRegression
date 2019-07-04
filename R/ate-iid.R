@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: apr  5 2018 (17:01) 
 ## Version: 
-## Last-Updated: jul  3 2019 (18:28) 
+## Last-Updated: jul  4 2019 (11:11) 
 ##           By: Brice Ozenne
-##     Update #: 422
+##     Update #: 425
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -47,7 +47,7 @@ iidATE <- function(meanRisk,
     n.contrasts <- length(contrasts)
     n.times <- length(times)
     iidTotal <- iid
-    
+
     ## ** Compute influence function relative to each model
     
     for(iC in 1:n.contrasts){
