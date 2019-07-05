@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun  6 2016 (09:02) 
 ## Version: 
-## last-updated: Jun  6 2019 (09:21) 
-##           By: Thomas Alexander Gerds
-##     Update #: 152
+## last-updated: July  7 2019 (09:21) 
+##           By: Nikolaj Tollenaar
+##     Update #: 153
 #----------------------------------------------------------------------
 ## 
 ### Commentary:
@@ -902,8 +902,8 @@ predictRisk.SuperPredictor  <- function(object,newdata,...){
 
 ##' @export 
 predictRisk.gbm <- function(object, newdata, times, n.trees = NULL) {
-    traindata <-  reconstructGBMdata(object)
     if (is.null(n.trees)) n.trees <- object$n.trees
+    traindata <-  reconstructGBMdata(object)
     p <- matrix(0, NROW(newdata), length(times))
     xb.train <- predict(object ,newdata = traindata, n.trees = n.trees)
     H2 <- basehaz.gbm(t = traindata[, as.character(object$call$formula[[2]][[2]])], 
@@ -928,6 +928,34 @@ predictRisk.flexsurvreg <- function(object, newdata, times, ...) {
     1 - p
 }
 
+##' @export 
+predictRisk.cv.glmnet.formula <- function(object, newdata, times) {
+    require(hdnom) 
+    p <- matrix(0, NROW(newdata), length(times))
+    time <- object$call$formula[[2]][[2]]
+    event <- object$call$formula[[2]][[3]]
+    d <- data.matrix(newdata)
+    xb.test <- glmnetUtils:::predict.cv.glmnet.formula(object, newdata = as.data.frame(newdata) , type = "link") 
+    H2 <- glmnet_basesurv(time = newdata[, time], event = newdata[,event], lp = xb.test, times.eval = times)$cumulative_base_hazard
+    for (i in 1:length(times)) p[,i] <- exp(-H2[i] * exp(xb.test))
+    p[,times==0] <- 1
+    return(1-p)
+}
+
+##' @export 
+predictRisk.glmnet.formula <- function(object, newdata, times) {
+    require(hdnom) 
+    if (length(object$lambda) > 1) stop("Supply only a single value of lambda in the glmnet fit") 
+    p <- matrix(0, NROW(newdata), length(times))
+    time <- object$call$formula[[2]][[2]]
+    event <- object$call$formula[[2]][[3]]
+    d <- data.matrix(newdata)
+    xb.test <- glmnetUtils:::predict.glmnet.formula(object, newdata = as.data.frame(newdata) , type = "link") 
+    H2 <- glmnet_basesurv(time = newdata[, time], event = newdata[,event], lp = xb.test, times.eval = times)$cumulative_base_hazard
+    for (i in 1:length(times)) p[,i] <- exp(-H2[i] * exp(xb.test))
+    p[,times==0] <- 1
+    return(1-p)
+}
 
 #----------------------------------------------------------------------
 ### predictRisk.R ends here
