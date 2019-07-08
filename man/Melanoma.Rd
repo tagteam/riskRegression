@@ -34,7 +34,6 @@ present).
 \examples{
 
 data(Melanoma)
-
 }
 \references{
 Regression with linear predictors (2010)

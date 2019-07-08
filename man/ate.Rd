@@ -4,29 +4,28 @@
 \alias{ate}
 \title{Compute the Average Treatment Effects Via the G-formula}
 \usage{
-ate(object.event, object.censor, object.treatment, data, formula,
-  treatment, strata = NULL, contrasts = NULL, times, cause = NA,
-  landmark, se = TRUE, iid = FALSE, band = FALSE, B = 0,
-  confint = (se + band) > 0, seed, handler = "foreach", mc.cores = 1,
-  cl = NULL, verbose = TRUE, store.iid = "full", ...)
+ate(object.event, object.treatment, object.censor = NULL, data, formula,
+  strata = NULL, contrasts = NULL, times, cause = NA, landmark,
+  se = TRUE, iid = FALSE, band = FALSE, B = 0, confint = (se +
+  band) > 0, seed, handler = "foreach", mc.cores = 1, cl = NULL,
+  verbose = 2, store.iid = "full", ...)
 }
 \arguments{
 \item{object.event}{Outcome model which describes how event risk depends
 on treatment and covariates. The object carry its own call and
 have a \code{predictRisk} method. See examples.}
 
+\item{object.treatment}{Treatment model which describes how treatment depends
+on covariates. The object must be a \code{glm} object (logistic regression) or the name of the treatment variable.
+See examples.}
+
 \item{object.censor}{Censoring model which describes how censoring depends
 on treatment and covariates. The object must be a \code{coxph} or \code{cph} object. See examples.}
-
-\item{object.treatment}{Treatment model which describes how treatment depends
-on covariates. The object must be a \code{glm} object (logistic regression). See examples.}
 
 \item{data}{[data.frame or data.table] Data set in which to evaluate risk predictions
 based on the outcome model}
 
 \item{formula}{For analyses with time-dependent covariates, the response formula. See examples.}
-
-\item{treatment}{[character] Name of the treatment variable.}
 
 \item{strata}{[character] Strata variable on which to compute the average risk.
 Incompatible with treatment. Experimental.}

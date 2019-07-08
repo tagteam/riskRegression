@@ -1107,7 +1107,7 @@ Score.list <- function(object,
                                         # }}}
                                         # -----------------crossvalidation performance---------------------
                                         # {{{
-    # {{{ bootstrap re-fitting
+                                        # {{{ bootstrap re-fitting
     if (split.method$internal.name%in%c("BootCv","LeaveOneOutBoot","crossval")){
         if (missing(trainseeds)||is.null(trainseeds)){
             if (!missing(seed)) set.seed(seed)
@@ -1136,7 +1136,7 @@ Score.list <- function(object,
                     testdata <- subset(data,testids)
                     if (cens.type=="rightCensored"){
                         testweights <- Weights
-                        # Need to check what's expected that testids is here and below:
+                                        # Need to check what's expected that testids is here and below:
                         testweights$IPCW.subject.times <- subset(testweights$IPCW.subject.times,testids)
                         if (Weights$dim>0){
                             testweights$IPCW.times <- subset(testweights$IPCW.times,testids)
@@ -1205,8 +1205,8 @@ Score.list <- function(object,
                                         # }}}
                                         # {{{ Leave-one-out bootstrap
         ## start clause split.method$name=="LeaveOneOutBoot"
-        ## if (split.method$name=="LeaveOneOutBoot" | split.method$internal.name =="crossval"){  ## Testing if the crossval works in this loop
-        if (split.method$name=="LeaveOneOutBoot"){
+        if (split.method$name=="LeaveOneOutBoot" | split.method$internal.name =="crossval"){  ## Testing if the crossval works in this loop
+            ## if (split.method$name=="LeaveOneOutBoot" ){
             crossvalPerf <- lapply(metrics,function(m){
                                         # {{{ AUC LOOB
                 if (m=="AUC"){
@@ -1466,17 +1466,21 @@ Score.list <- function(object,
                     ## DT.B <- DT.B[,data.table::data.table(residuals=sum(residuals)),by=c(byvars,"ID")]
                     DT.B <- DT.B[,data.table::data.table(risk=mean(risk),residuals=sum(residuals)),by=c(byvars,"ID")]
                     ## get denominator
-                    Ib <- split.method$B-tabulate(unlist(apply(split.method$index,2,unique)))
-                    ## REMOVE ME
-                    ## Ib <- Ib[order(data$ID)]
-                    if (any(Ib==0)) {
-                        warning("Some subjects are never out of bag.\nResults are unreliable until You increase the number of bootstrap replications (argument 'B').")
-                        Ib.include <- Ib!=0
-                        Ib <- Ib[Ib.include]
-                        ## don't subset residuals, they are only
-                        ## available for those with Ib.include==1
-                        ## DT.B <- DT.B[Ib.include]
-                    } else Ib.include <- NULL
+                    if (split.method$name=="LeaveOneOutBoot"){
+                        Ib <- split.method$B-tabulate(unlist(apply(split.method$index,2,unique)))
+                        ## REMOVE ME
+                        ## Ib <- Ib[order(data$ID)]
+                        if (any(Ib==0)) {
+                            warning("Some subjects are never out of bag.\nResults are unreliable until You increase the number of bootstrap replications (argument 'B').")
+                            Ib.include <- Ib!=0
+                            Ib <- Ib[Ib.include]
+                            ## don't subset residuals, they are only
+                            ## available for those with Ib.include==1
+                            ## DT.B <- DT.B[Ib.include]
+                        } else Ib.include <- NULL
+                    }else{## cv-k crossvalidation
+                        Ib <- rep(split.method$B,N)
+                    }
                     ## Ib is the count of how many times subject i is out of bag
                     ## the order of Ib matches the order of ID
                     ## within groups defined by times and model (byvars)
@@ -1621,7 +1625,8 @@ Score.list <- function(object,
                 ## also for k-fold ...
 
         }}
-        if (split.method$name=="BootCv" | split.method$internal.name=="crossval"){
+        if (split.method$name=="BootCv"){
+            ## | split.method$internal.name=="crossval"){
                                         # {{{ bootcv
             if (parallel=="snow") exports <- c("DT.B","N.b","cens.model","multi.split.test") else exports <- NULL
             if (!is.null(progress.bar)){
