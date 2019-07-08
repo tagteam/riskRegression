@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: maj 27 2017 (11:46) 
 ## Version: 
-## last-updated: Mar  9 2019 (10:03) 
-##           By: Thomas Alexander Gerds
-##     Update #: 490
+## last-updated: jul  4 2019 (11:18) 
+##           By: Brice Ozenne
+##     Update #: 492
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -200,7 +200,7 @@ calcSeCox <- function(object, times, nTimes, type, diag,
                     }    
                 }
 
-                 if("cumhazard" %in% type || "survival" %in% type){
+                if("cumhazard" %in% type || "survival" %in% type){
                     ## Evaluate the influence function for the
                     ## cumulative hazard based on the one of the cumulative baseline hazard
                     if(nVar == 0){
@@ -225,11 +225,10 @@ calcSeCox <- function(object, times, nTimes, type, diag,
                         if("cumhazard" %in% type){out$cumhazard.se[iObs,] <- se_tempo}
                         if("survival" %in% type){out$survival.se[iObs,] <- se_tempo * new.survival[iObs,,drop=FALSE]}
                     }
-                    if("iid" %in% export){  ## average over observations
+                    if("average.iid" %in% export){  ## average over observations
                         if("cumhazard" %in% type){out$cumhazard.average.iid <- out$cumhazard.average.iid + IF_tempo/new.n}
                         if("survival" %in% type){out$survival.average.iid <- out$survival.average.iid + rowMultiply_cpp(-IF_tempo, scale = new.survival[iObs,,drop=FALSE])/new.n}
                     }
-         
                 }
             }
 

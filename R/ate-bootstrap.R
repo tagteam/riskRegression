@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: apr 11 2018 (17:05) 
 ## Version: 
-## Last-Updated: jun 28 2019 (12:03) 
+## Last-Updated: jul  4 2019 (10:03) 
 ##           By: Brice Ozenne
-##     Update #: 176
+##     Update #: 194
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -40,8 +40,11 @@ calcBootATE <- function(args, name.estimate, n.obs, fct.pointEstimate,
         iSource <- utils::find(iFitter)
         if(grepl("package:",iSource)){gsub("package:","",iSource)}else{NULL}
     })
-    add.Package <- unique(c("riskRegression","data.table","parallel","survival",unlist(ls.package)))
 
+    ## packages and functions to be exported to the cluster
+    add.Package <- unique(c("riskRegression","prodlim","data.table","parallel","survival",unlist(ls.package)))
+    add.Fct <- c(".calcLterm","SurvResponseVar","predictRisk.coxphTD","predictRisk.CSCTD")
+    
     ## if cluster already defined by the user
     no.cl <- is.null(cl)
     if( (no.cl[[1]] == FALSE) && (mc.cores[[1]] == 1) ){ ## i.e. the user has not initialized the number of cores
@@ -53,10 +56,9 @@ calcBootATE <- function(args, name.estimate, n.obs, fct.pointEstimate,
         set.seed(seed)
     }
     bootseeds <- sample(1:1000000,size=B,replace=FALSE)
-
     ## allArgs <- c("warperBootATE","data","n.obs","fct.pointEstimate",
-                 ## "object","treatment","contrasts","times","cause","landmark",
-                 ## "n.contrasts","levels","TD","name.estimate","formula","dots")
+    ## "object","treatment","contrasts","times","cause","landmark",
+    ## "n.contrasts","levels","TD","name.estimate","formula","dots")
 
                                         # }}}
 
@@ -88,7 +90,6 @@ calcBootATE <- function(args, name.estimate, n.obs, fct.pointEstimate,
         }
     }
                                         # }}}
-    
     ## bootstrap
     if(handler %in% c("snow","multicore")) {
                                         # {{{ use boot package
@@ -107,7 +108,7 @@ calcBootATE <- function(args, name.estimate, n.obs, fct.pointEstimate,
             set.seed(bootseeds)
         }
         ## run bootstrap
-        boot.object <- boot::boot(data = data,
+        boot.object <- boot::boot(data = args$data,
                                   R = B,
                                   sim = "ordinary",
                                   stpe = "indices",
@@ -138,7 +139,7 @@ calcBootATE <- function(args, name.estimate, n.obs, fct.pointEstimate,
             ## progress bar 
             if(verbose){pb <- txtProgressBar(max = B, style = 3)}
             b <- NULL ## [:forCRANcheck:] foreach
-            boots <- foreach::`%dopar%`(foreach::foreach(b = 1:B, .packages = add.Package, .export = c(".calcLterm","SurvResponseVar")), { ## b <- 1
+            boots <- foreach::`%dopar%`(foreach::foreach(b = 1:B, .packages = add.Package, .export = add.Fct), { ## b <- 1
                 if(verbose){setTxtProgressBar(pb, b)}
                 set.seed(bootseeds[[b]])
                 warperBootATE(index = sample(1:n.obs, size = n.obs, replace = TRUE),
@@ -172,7 +173,7 @@ calcBootATE <- function(args, name.estimate, n.obs, fct.pointEstimate,
         colnames(M.bootEstimate) <- name.estimate
                                         # }}}
     }
-                                        
+                                    
     ## output
     return(list(boot = M.bootEstimate,
                 bootseeds = bootseeds))

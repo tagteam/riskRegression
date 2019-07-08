@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: maj 30 2018 (15:58) 
 ## Version: 
-## Last-Updated: Jan 29 2019 (10:49) 
-##           By: Thomas Alexander Gerds
-##     Update #: 173
+## Last-Updated: jul  2 2019 (11:05) 
+##           By: Brice Ozenne
+##     Update #: 176
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -207,7 +207,7 @@ transformP <- function(estimate, se, null, type){
 ##'
 ##' @param estimate [numeric matrix] the estimate value before transformation.
 ##' @param se [numeric matrix] the standard error before transformation.
-##' @param iid [numeric array] the standard error before transformation.
+##' @param iid [numeric array] the iid decomposition before transformation.
 ##' @param null [numeric] the value of the estimate (before transformation) under the null hypothesis.
 ##' @param type [character] the transforamtion.
 ##' Can be \code{"log"}, \code{"loglog"}, \code{"cloglog"}, or \code{"atanh"} (Fisher transform).
@@ -232,6 +232,7 @@ transformCIBP <- function(estimate, se, iid, null,
                           ci, band, p.value){
 
     out <- list()
+
     ## ** transformation
     if(type != "none"){
         ## standard error
