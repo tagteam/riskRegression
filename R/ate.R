@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Oct 23 2016 (08:53) 
 ## Version: 
-## last-updated: jul  4 2019 (08:54) 
+## last-updated: jul  9 2019 (17:16) 
 ##           By: Brice Ozenne
-##     Update #: 1262
+##     Update #: 1264
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -618,7 +618,8 @@ ate_initArgs <- function(object.event,
 
     ## cause
     if(is.na(cause) && (eventVar.status %in% names(data))){
-        if(!is.null(object.event)){
+
+        if(!is.null(object.event) && !inherits(object.event,"CauseSpecificCox")){
             event.call <- attr(SurvResponseVar(coxFormula(object.event))$status,"call")
         }else{
             event.call <- NULL

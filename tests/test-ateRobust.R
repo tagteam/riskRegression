@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: aug 15 2018 (11:42) 
 ## Version: 
-## Last-Updated: jul  9 2019 (09:44) 
+## Last-Updated: jul  9 2019 (17:16) 
 ##           By: Brice Ozenne
-##     Update #: 97
+##     Update #: 98
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -422,5 +422,10 @@ test_that("ate double robust estimator works with multiple timepoint",{
                    object.censor = cph(Surv(time,event==0) ~ X1, data = dtS, x = TRUE, y = TRUE),
                    data = dtS, times = 3:4, verbose = 0, cause = 1
                    )
-   
+
+    e.ateRR <- ate(object.event = CSC(Hist(time,event) ~ X1 + X2 + X3, data = dtS),
+                   object.treatment = "X1",
+                   data = dtS, times = 3:4, verbose = 0, cause = 1
+                   )
+
 })
