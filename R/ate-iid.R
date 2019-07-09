@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: apr  5 2018 (17:01) 
 ## Version: 
-## Last-Updated: jul  4 2019 (11:11) 
+## Last-Updated: jul  9 2019 (09:40) 
 ##           By: Brice Ozenne
-##     Update #: 425
+##     Update #: 430
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -109,9 +109,8 @@ iidATE <- function(meanRisk,
                                             average.iid = TRUE,
                                             factor = factor,
                                             level = contrasts[iC])
-
             
-            iidTotal[[contrasts[iC]]] <- iidTotal[[contrasts[iC]]] + iid.treatment[[1]]
+            iidTotal[[contrasts[iC]]] <- iidTotal[[contrasts[iC]]] + do.call(cbind,iid.treatment)
         }
 
         ## *** censoring model
