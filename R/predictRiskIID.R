@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: jun 28 2019 (14:38) 
 ## Version: 
-## Last-Updated: jul  4 2019 (10:02) 
+## Last-Updated: jul  9 2019 (09:39) 
 ##           By: Brice Ozenne
-##     Update #: 59
+##     Update #: 62
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -67,7 +67,7 @@ predictRiskIID.glm <- function(object,
                                ...){
     
     if (object$family$family=="binomial"){
-        
+
         if(!is.null(factor)){
             n.obs <- stats::nobs(object)
             if(!is.matrix(factor)){
@@ -100,7 +100,7 @@ predictRiskIID.glm <- function(object,
         }
         ## convert to list format for compatibility with the other predictRiskIID
         if(!is.null(factor) && NCOL(factor)>1){
-            return(apply(attr(resPred,"iid"),2,function(x){list(cbind(x))}))
+            return(lapply(1:NCOL(factor), function(iF){attr(resPred,"iid")[,iF,drop=FALSE]}))
         }else{
             return(list(attr(resPred,"iid")))
         }

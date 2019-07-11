@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: aug 15 2018 (11:42) 
 ## Version: 
-## Last-Updated: jul  4 2019 (10:03) 
+## Last-Updated: jul  9 2019 (17:16) 
 ##           By: Brice Ozenne
-##     Update #: 93
+##     Update #: 98
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -281,7 +281,7 @@ set.seed(10)
 n <- 1e2
 dtS <- sampleData(n,outcome="competing.risks")
 ## dtS[,min(time),by = event]
-tau <- 3
+tau <- 3 ## tau <- 3:4
 e.CSC <- CSC(Hist(time, event) ~ X1 + X2 + X3,
              data = dtS, surv.type = "hazard")
 
@@ -402,3 +402,30 @@ test_that("Agreement ate-ateRobust (competing.risks)",{
 })
 ######################################################################
 ### test-ateRobust.R ends here
+
+
+## * previous bugs
+
+
+## TAG: Monday, Jul 8, 2019 9:09:36 PM (email subject Re: Branche ate for riskRegression ready)
+set.seed(10)
+n <- 1e2
+dtS <- sampleData(n,outcome="competing.risks")
+e.CSC <- CSC(Hist(time, event) ~ X1 + X2 + X3,
+             data = dtS, surv.type = "hazard")
+
+test_that("ate double robust estimator works with multiple timepoint",{
+    ## previous error message
+    ## Error in iidTotal[[contrasts[iC]]] + iid.treatment[[1]] : non-numeric argument to binary operator
+    e.ateRR <- ate(object.event = CSC(Hist(time,event) ~ X1 + X2 + X3, data = dtS),
+                   object.treatment = glm(X1 ~ 1, data = dtS, family = binomial(link = "logit")),
+                   object.censor = cph(Surv(time,event==0) ~ X1, data = dtS, x = TRUE, y = TRUE),
+                   data = dtS, times = 3:4, verbose = 0, cause = 1
+                   )
+
+    e.ateRR <- ate(object.event = CSC(Hist(time,event) ~ X1 + X2 + X3, data = dtS),
+                   object.treatment = "X1",
+                   data = dtS, times = 3:4, verbose = 0, cause = 1
+                   )
+
+})
