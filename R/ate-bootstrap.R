@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: apr 11 2018 (17:05) 
 ## Version: 
-## Last-Updated: jul  4 2019 (10:03) 
-##           By: Brice Ozenne
-##     Update #: 194
+## Last-Updated: Jul 12 2019 (21:05) 
+##           By: Thomas Alexander Gerds
+##     Update #: 198
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -38,7 +38,11 @@ calcBootATE <- function(args, name.estimate, n.obs, fct.pointEstimate,
                            as.character(args$object.censor$call[[1]])))
     ls.package <- lapply(vec.fitter,function(iFitter){
         iSource <- utils::find(iFitter)
-        if(grepl("package:",iSource)){gsub("package:","",iSource)}else{NULL}
+        if(any(ifound <- grepl("package:",iSource))){
+            gsub("package:","",iSource[ifound])
+        }else{
+            NULL
+        }
     })
 
     ## packages and functions to be exported to the cluster

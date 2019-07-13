@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: feb 15 2017 (17:36) 
 ## Version: 
-## last-updated: jul  5 2018 (15:52) 
-##           By: Brice Ozenne
-##     Update #: 156
+## last-updated: Jul 13 2019 (10:54) 
+##           By: Thomas Alexander Gerds
+##     Update #: 158
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -37,9 +37,9 @@
 #' @method print predictCox
 #' @export
 print.predictCox <- function(x, digits = 3,...){
-    out <- as.data.table(x)
-    print(out,digits=digits,...)
-    invisible(out)
+    x <- as.data.table(x)
+    print(x,digits=digits,...)
+    invisible(x)
 }
 
 

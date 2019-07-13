@@ -244,7 +244,7 @@ CSC <- function(formula,
             if (is.data.table(data))
                 data <- data[,-this,with=FALSE]
             else
-                data <- data[,-this]
+                data <- data[,-this,drop=FALSE]
         }
         workData <- cbind(workData,data)
         if (is.null(entry))

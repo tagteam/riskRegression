@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Oct 23 2016 (08:53) 
 ## Version: 
-## last-updated: jul  9 2019 (17:16) 
-##           By: Brice Ozenne
-##     Update #: 1264
+## last-updated: Jul 12 2019 (21:00) 
+##           By: Thomas Alexander Gerds
+##     Update #: 1273
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -267,7 +267,7 @@ ate <- function(object.event,
     diff.se=ratio.se=.GRP=lower=upper=diff.lower=diff.upper=diff.p.value=ratio.lower=ratio.upper=ratio.p.value <- NULL
 
     ## ** initialize arguments
-    data <- as.data.table(data)
+    data.table::setDT(data)
 
     init <- ate_initArgs(object.event = object.event,
                          object.treatment = object.treatment,
@@ -546,11 +546,15 @@ ate <- function(object.event,
         if (verbose>1){ ## display
             cat(" - Confidence intervals: ")
         }
-        out <- stats::confint(out)
+        ## FIXME: odd to have confint read and return everything 
+        try.ci <- try(this <- stats::confint(out),silent=TRUE)
+        if (class(try.ci)[1]=="try-error"){
+        }else{
+            out <- this
+        }
         if(iid == FALSE){
             out$iid <- NULL
         }
-
         if (verbose>1){ ## display
             cat("done\n")
         }

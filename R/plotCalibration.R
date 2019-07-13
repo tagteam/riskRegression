@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Feb 23 2017 (11:15) 
 ## Version: 
-## last-updated: Jun 25 2019 (16:06) 
+## last-updated: Jul 13 2019 (12:01) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 301
+##     Update #: 303
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -28,6 +28,10 @@
 ##' 
 ##' \code{"quantile"}: The expected event status is obtained in groups
 ##' defined by quantiles of the predicted event probabilities.
+##' @param cens.method For right censored data only. How observed proportions are calculated. Either "jackknife" here relying on the
+##' pseudovalues which in turn rely on censoring being independent of the event time and the covariates,
+##' or "local" which means to estimate Kaplan-Meier (no competing risks) and Aalen-Johansen (with competing risks)
+##' locally in the neighborhood/category of the predicted risks.
 ##' @param round If \code{TRUE} predicted probabilities are rounded to
 ##'     two digits before smoothing. This may have a considerable
 ##'     effect on computing efficiency in large data sets.
@@ -390,8 +394,10 @@ plotCalibration <- function(x,
                            plotFrame <- data.frame(Pred=mean(p),Obs=mean(jackF))
                        } else{
                            if (x$response.type=="binary"){
-                               plotFrame=data.frame(Pred=tapply(p,pcut,mean),
-                                                    Obs=pmin(1,pmax(0,tapply(jackF,pcut,mean))))
+                               nbh <- prodlim::meanNeighbors(x=p,y=jackF,bandwidth=bw)
+                               plotFrame <- data.frame(Pred=nbh$uniqueX,Obs=nbh$averageY)
+                               ## plotFrame=data.frame(Pred=tapply(p,pcut,mean),
+                                                    ## Obs=pmin(1,pmax(0,tapply(jackF,pcut,mean))))
                            }else{
                                ## local Kaplan-Meier/Aalen-Johansen 
                                if (cens.method=="local"){
