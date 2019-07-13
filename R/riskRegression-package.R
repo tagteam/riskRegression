@@ -76,21 +76,6 @@ NULL
 ##' data(Melanoma)
 NULL
 
-#' The color blind people palette with grey
-#'
-#' This palette is directly taken from
-#'  http://www.cookbook-r.com/Graphs/Colors_(ggplot2)/
-#' @name cbbPalette
-#' @docType data
-#' @format{chr [1:8] "#999999" "#E69F00" "#56B4E9" "#009E73" "#F0E442" ...}
-#' @title Colour palettes for colour blind people
-#' @keywords datasets
-#' @examples 
-#' data(cbbPalette)
-NULL
-
-#' 
-#' 
 #' @docType package
 #' @name riskRegression
 #' @useDynLib riskRegression, .registration=TRUE
