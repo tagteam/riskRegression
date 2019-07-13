@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: nov 22 2017 (13:39) 
 ## Version: 
-## Last-Updated: Jan 29 2019 (11:13) 
+## Last-Updated: Jul 12 2019 (12:04) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 242
+##     Update #: 249
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -243,10 +243,10 @@ boot2pvalue <- function(x, null, estimate = NULL, alternative = "two.sided",
                                   sign.estimate = sign.statistic)-null)
 
         ##
-        if(is.na(resSearch$value[[1]]) || length(resSearch$value)==0 || resSearch$par[[1]]<0 || resSearch$par[[1]]>1 || sign.before[[1]]==sign.after[[1]]){
+        if (is.na(resSearch$value[[1]]) || is.na(sign.before[[1]])|| is.na(sign.after[[1]]) || length(resSearch$value)==0
+            || resSearch$par[[1]]<0 || resSearch$par[[1]]>1 || sign.before[[1]]==sign.after[[1]]){
             warning("incorrect convergence of the algorithm finding the critical quantile \n",
                     "p-value may not be reliable \n")
-
         }
         p.value <- resSearch$par
     }

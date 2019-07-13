@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: feb 17 2017 (10:06) 
 ## Version: 
-## last-updated: Jan 29 2019 (10:49) 
+## last-updated: Jul 12 2019 (20:53) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 482
+##     Update #: 487
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -266,7 +266,7 @@ predict2melt <- function(outcome, name.outcome,
         first.dt[, c("upperBand") :=  .SD[[1]], .SDcols = name.outcome]
     }
 
-    outcome <- data.table::as.data.table(
+    outcome <- data.table::data.table(
                                cbind(outcome,
                                      outcome.lower, outcome.upper,
                                      outcome.lowerBand,outcome.upperBand)

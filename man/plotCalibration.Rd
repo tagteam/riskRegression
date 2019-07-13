@@ -29,6 +29,11 @@ neighborhood around the predicted event probabilities.
 \code{"quantile"}: The expected event status is obtained in groups
 defined by quantiles of the predicted event probabilities.}
 
+\item{cens.method}{For right censored data only. How observed proportions are calculated. Either "jackknife" here relying on the
+pseudovalues which in turn rely on censoring being independent of the event time and the covariates,
+or "local" which means to estimate Kaplan-Meier (no competing risks) and Aalen-Johansen (with competing risks)
+locally in the neighborhood/category of the predicted risks.}
+
 \item{round}{If \code{TRUE} predicted probabilities are rounded to
 two digits before smoothing. This may have a considerable
 effect on computing efficiency in large data sets.}

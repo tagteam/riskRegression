@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Feb 11 2017 (10:01) 
 ## Version: 
-## last-updated: jun  1 2018 (13:37) 
-##           By: Brice Ozenne
-##     Update #: 75
+## last-updated: Jul 13 2019 (10:54) 
+##           By: Thomas Alexander Gerds
+##     Update #: 77
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -36,9 +36,9 @@
 #' @method print predictCSC
 #' @export
 print.predictCSC <- function(x, digits = 3, ...){
-        out <- as.data.table(x)
-        print(out,digits=digits,...)
-        invisible(out)
+        x <- as.data.table(x)
+        print(x,digits=digits,...)
+        invisible(x)
 }
 
 #----------------------------------------------------------------------

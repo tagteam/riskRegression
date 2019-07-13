@@ -6,9 +6,8 @@
 \usage{
 ate(object.event, object.treatment, object.censor = NULL, data, formula,
   strata = NULL, contrasts = NULL, times, cause = NA, landmark,
-  se = TRUE, iid = FALSE, band = FALSE, B = 0, confint = (se +
-  band) > 0, seed, handler = "foreach", mc.cores = 1, cl = NULL,
-  verbose = 2, store.iid = "full", ...)
+  se = TRUE, iid = FALSE, band = FALSE, B = 0, seed,
+  handler = "foreach", mc.cores = 1, cl = NULL, verbose = 2, ...)
 }
 \arguments{
 \item{object.event}{Outcome model which describes how event risk depends
@@ -49,9 +48,6 @@ it is assumed that that the covariates do not change between landmark and landma
 \item{B}{[integer, >0] the number of bootstrap replications used to compute the confidence intervals.
 If it equals 0, then the influence function is used to compute Wald-type confidence intervals/bands.}
 
-\item{confint}{[logical] If \code{TRUE} compute and add the confidence intervals/bands to the output.
-They are computed applying the \code{confint} function to the output.}
-
 \item{seed}{[integer, >0] sed number used to generate seeds for bootstrap
 and to achieve reproducible results.}
 
@@ -68,10 +64,7 @@ The option is initialized from environment variable mc_cores if set.}
 Output by \code{parallel::makeCluster}.
 The packages necessary to run the computations (e.g. riskRegression) must already be loaded on each worker.}
 
-\item{verbose}{[logical] If \code{TRUE} inform about estimated run time.}
-
-\item{store.iid}{[character] Implementation used to estimate the standard error.
-Can be \code{"full"} or \code{"minimal"}.
+\item{verbose}{[logical] If \code{TRUE} inform about estimated run time.
 \code{"minimal"} requires less memory but can only estimate the standard for the difference between treatment effects (and not for the ratio).}
 
 \item{...}{passed to predictRisk}
@@ -101,32 +94,28 @@ fit <- cph(formula = Surv(time,event)~ X1+X2,data=dtS,y=TRUE,x=TRUE)
 ## compute the ATE at times 5, 6, 7, and 8 using X1 as the treatment variable
 \dontrun{
 ## only point estimate (argument se = FALSE)
-ateFit1a <- ate(fit, data = dtS, treatment = "X1", times = 5:8,
-               se = TRUE)
+ateFit1a <- ate(fit, data = dtS, object.treatment = "X1", times = 5:8,
+               se = FALSE)
 
 ## standard error / confidence intervals computed using the influence function
 ## (argument se = TRUE and B = 0)
-ateFit1b <- ate(fit, data = dtS, treatment = "X1", times = 5:8,
+ateFit1b <- ate(fit, data = dtS, object.treatment = "X1", times = 5:8,
                se = TRUE, B = 0)
 
 ## same as before with in addition the confidence bands for the ATE
 ## (argument band = TRUE)
-ateFit1c <- ate(fit, data = dtS, treatment = "X1", times = 5:8,
+ateFit1c <- ate(fit, data = dtS, object.treatment = "X1", times = 5:8,
                se = TRUE, band = TRUE, B = 0)
-
-## bootstrap confidence intervals
-ateFit1c <- ate(fit, data = dtS, treatment = "X1", times = 5,
-               seed = 3, se = TRUE, B = 100)
 
 ## standard error / confidence intervals computed using 100 boostrap samples
 ## (argument se = TRUE and B = 100) 
-ateFit1d <- ate(fit, data = dtS, treatment = "X1",
+ateFit1d <- ate(fit, data = dtS, object.treatment = "X1",
                 times = 5:8, se = TRUE, B = 100)
 ## NOTE: for real applications 100 bootstrap samples is not enougth 
 
 ## same but using 2 cpus for generating and analyzing the boostrap samples
 ## (parallel computation, argument mc.cores = 2) 
-ateFit1e <- ate(fit, data = dtS, treatment = "X1",
+ateFit1e <- ate(fit, data = dtS, object.treatment = "X1",
                 times = 5:8, se = TRUE, B = 100, mc.cores = 2)
 }
 
@@ -143,22 +132,19 @@ fit <- glm(formula = Y ~ X1+X2, data=dtB, family = "binomial")
 
 ## compute the ATE using X1 as the treatment variable
 ## only point estimate (argument se = FALSE)
-ateFit1a <- ate(fit, data = dtB, treatment = "X1", se = FALSE)
-ateFit1a
+ateFit1a <- ate(fit, data = dtB, object.treatment = "X1", se = FALSE)
 
 \dontrun{
 ## standard error / confidence intervals computed using the influence function
-ateFit1b <- ate(fit, data = dtB, treatment = "X1",
+ateFit1b <- ate(fit, data = dtB, object.treatment = "X1",
                times = 5, ## just for having a nice output not used in computations
                se = TRUE, B = 0)
-ateFit1b
 
 ## standard error / confidence intervals computed using 100 boostrap samples
-ateFit1d <- ate(fit, data = dtB, treatment = "X1",
+ateFit1d <- ate(fit, data = dtB, object.treatment = "X1",
                 times = 5, se = TRUE, B = 100)
-ateFit1d
 
-## using lava
+## using the lava package
 ateLava <- estimate(fit, function(p, data){
 a <- p["(Intercept)"] ; b <- p["X11"] ; c <- p["X2"] ;
 R.X11 <- expit(a + b + c * data[["X2"]])
@@ -182,28 +168,28 @@ dt$X1 <- factor(rbinom(n, prob = c(0.2,0.3,0.2) , size = 3), labels = paste0("T"
 fitCR <-  CSC(Hist(time,event)~ X1+X8,data=dt,cause=1)
 
 ## compute the ATE at times 5, 6, 7, and 8 using X1 as the treatment variable
-ateFit2a <- ate(fitCR, data = dt, treatment = "X1", times = 5:8, cause = 1,
+ateFit2a <- ate(fitCR, data = dt, object.treatment = "X1", times = 5:8, cause = 1,
                se = FALSE)
 
 ## standard error / confidence intervals computed using the influence function
 ## (argument se = TRUE and B = 0)
-ateFit2b <- ate(fitCR, data = dt, treatment = "X1", times = 5:8, cause = 1,
+ateFit2b <- ate(fitCR, data = dt, object.treatment = "X1", times = 5:8, cause = 1,
                se = TRUE, B = 0)
 
 ## same as before with in addition the confidence bands for the ATE
 ## (argument band = TRUE)
-ateFit2c <- ate(fitCR, data = dt, treatment = "X1", times = 5:8, cause = 1,
+ateFit2c <- ate(fitCR, data = dt, object.treatment = "X1", times = 5:8, cause = 1,
                se = TRUE, band = TRUE, B = 0)
 
 ## standard error / confidence intervals computed using 100 boostrap samples
 ## (argument se = TRUE and B = 100) 
-ateFit2d <- ate(fitCR, data = dt, treatment = "X1", times = 5:8, cause = 1,
+ateFit2d <- ate(fitCR, data = dt, object.treatment = "X1", times = 5:8, cause = 1,
                 se = TRUE, B = 100)
 ## NOTE: for real applications 100 bootstrap samples is not enougth 
 
 ## same but using 2 cpus for generating and analyzing the boostrap samples
 ## (parallel computation, argument mc.cores = 2) 
-ateFit2e <- ate(fitCR, data = dt, treatment = "X1", times = 5:8, cause = 1,
+ateFit2e <- ate(fitCR, data = dt, object.treatment = "X1", times = 5:8, cause = 1,
                 se = TRUE, B = 100, mc.cores = 2)
 }
 
@@ -217,7 +203,7 @@ fitTD <- coxph(Surv(tstart, time, status) ~ celltype+karno + age + trt,
                data= vet2,x=1)
 set.seed(16)
 resVet <- ate(fitTD,formula=Hist(entry=tstart,time=time,event=status)~1,
-          data = vet2, treatment = "celltype", contrasts = NULL,
+          data = vet2, object.treatment = "celltype", contrasts = NULL,
         times=5,verbose=1,
         landmark = c(0,30,60,90), cause = 1, B = 4, se = 1,
         band = FALSE, mc.cores=1)
@@ -229,10 +215,11 @@ set.seed(137)
 d=sampleDataTD(127)
 library(survival)
 d[,status:=1*(event==1)]
+d[,X3:=as.factor(X3)]
 ## ignore competing risks
 cox1TD <- coxph(Surv(start,time, status,type="counting") ~ X3+X5+X6+X8, data=d)
 resTD1 <- ate(cox1TD,formula=Hist(entry=start,time=time,event=status)~1,
-        data = d, treatment = "X3", contrasts = NULL,
+        data = d, object.treatment = "X3", contrasts = NULL,
         times=.5,verbose=1,
         landmark = c(0,0.5,1), B = 20, se = 1,
         band = FALSE, mc.cores=1)
@@ -241,7 +228,7 @@ resTD1
 cscTD <- CSC(Hist(time=time, event=event,entry=start) ~ X3+X5+X6+X8, data=d)
 set.seed(16)
 resTD <- ate(cscTD,formula=Hist(entry=start,time=time,event=event)~1,
-        data = d, treatment = "X3", contrasts = NULL,
+        data = d, object.treatment = "X3", contrasts = NULL,
         times=.5,verbose=1,
         landmark = c(0,0.5,1), cause = 1, B = 20, se = 1,
         band = FALSE, mc.cores=1)

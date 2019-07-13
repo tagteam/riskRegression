@@ -5,6 +5,7 @@
 \alias{coxFormula.cph}
 \alias{coxFormula.coxph}
 \alias{coxFormula.phreg}
+\alias{coxFormula.glm}
 \title{Extract the formula from a Cox model}
 \usage{
 coxFormula(object)
@@ -14,6 +15,8 @@ coxFormula(object)
 \method{coxFormula}{coxph}(object)
 
 \method{coxFormula}{phreg}(object)
+
+\method{coxFormula}{glm}(object)
 }
 \arguments{
 \item{object}{The fitted Cox regression model object either

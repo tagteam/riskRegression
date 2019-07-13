@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun  6 2016 (09:02) 
 ## Version: 
-## last-updated: jun 27 2019 (13:40) 
-##           By: Brice Ozenne
-##     Update #: 188
+## last-updated: Jul 13 2019 (11:47) 
+##           By: Thomas Alexander Gerds
+##     Update #: 201
 #----------------------------------------------------------------------
 ## 
 ### Commentary:
@@ -209,10 +209,30 @@ predictRisk.numeric <- function(object,newdata,times,cause,...){
 
 ##' @export
 predictRisk.glm <- function(object,newdata,...){
-    if (object$family$family=="binomial")
-        return(as.numeric(stats::predict(object,newdata=newdata,type="response")))
-    else{ stop("Currently only the binomial family is implemented for predicting a status from a glm object.")
-      }
+
+    if (object$family$family=="binomial"){
+        out <- as.numeric(stats::predict(object,newdata=newdata,type="response"))
+
+        ## hidden argument: enable to ask for the prediction of Y==1 or Y==0
+        level <- list(...)$level
+        if(!is.null(level)){
+            matching.Ylevel <- table(object$data[[all.vars(formula(object))[1]]],
+                                     object$y)
+            all.levels <- rownames(matching.Ylevel)
+            level <- match.arg(level, all.levels)
+
+            index.level <- which(matching.Ylevel[level,]>0)
+            if(length(index.level)==2){
+                stop("Unknown value for the outcome variable \n")
+            }else if(index.level == 1){
+                out <- 1 - out
+            }
+        }
+        
+        return(out)
+    } else {
+        stop("Currently only the binomial family is implemented for predicting a status from a glm object.")
+    }
 }
 
 ##' @export
@@ -695,6 +715,7 @@ predictRisk.CauseSpecificCox <- function (object, newdata, times, cause, ...) {
 ##' \code{"ridge"}, \code{"lasso"}, \code{"elastic.net"}.
 ##' @param lambda1 Lasso penalty
 ##' @param lambda2 ridge penalty
+##' @param fold passed to \code{penalized::profL1}
 ##' @param ... Arguments passed to penalized
 ##' @examples
 ##' library(prodlim)
@@ -730,7 +751,13 @@ predictRisk.CauseSpecificCox <- function (object, newdata, times, cause, ...) {
 ##'                     data=nki70, lambda1=1)
 ##' }
 ##' @export
-penalizedS3 <- function(formula,data,type="elastic.net",lambda1,lambda2,fold,...){
+penalizedS3 <- function(formula,
+                        data,
+                        type="elastic.net",
+                        lambda1,
+                        lambda2,
+                        fold,
+                        ...){
                                         # {{{ distangle the formula
     EHF <- prodlim::EventHistory.frame(formula,
                                        data,

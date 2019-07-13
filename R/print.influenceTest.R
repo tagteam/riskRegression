@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: jun  1 2018 (13:35) 
 ## Version: 
-## Last-Updated: Jan 29 2019 (10:49) 
+## Last-Updated: Jul 13 2019 (11:39) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 43
+##     Update #: 45
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -46,7 +46,8 @@ print.influenceTest <- function(x, digits = 3, ...){
     cat(x$name[2],":\n",sep="")
     print(x$call[[2]])
 
-    dt.tempo <- as.data.table(x)
+    dt.tempo <- copy(x)
+    dt.tempo <- as.data.table(dt.tempo)
     order.col <- setdiff(names(dt.tempo),c("lower","upper","p.value","quantileBand","lowerBand","upperBand"))
 
     ## round and merge column containing CI and CB

@@ -73,12 +73,7 @@ x=ateRobust(data = dc, type = "competing.risks",
          formula.censor = Surv(time, event==0) ~ X6,
          formula.treatment = X1 ~ X6+X2+X7, times = 1,cause=1,
                      product.limit = FALSE)
-## compare with g-formula 
-fit= CSC(list(Hist(time, event) ~ X1+X6,Hist(time, event) ~ X6),data=dc)
-ate(fit,data = dc,treatment="X1",times=1,cause=1)
-x
-as.data.table(x)
 }
 \seealso{
-\code{\link{ate}} for the g-formula result in case of more than 2 treatments
+\code{\link{ate}} when considering more than 2 treatments or more than 1 timepoint.
 }
