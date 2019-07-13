@@ -5,7 +5,7 @@
 ## Version: 
 ## last-updated: Jul 13 2019 (11:47) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 203
+##     Update #: 204
 #----------------------------------------------------------------------
 ## 
 ### Commentary:
@@ -915,7 +915,7 @@ predictRisk.SuperPredictor  <- function(object,newdata,...){
 }
 
 ##' @export 
-predictRisk.gbm <- function(object, newdata, times,, ...) {
+predictRisk.gbm <- function(object, newdata, times, ...) {
     n.trees <- object$n.trees
     traindata <-  reconstructGBMdata(object)
     p <- matrix(0, NROW(newdata), length(times))
