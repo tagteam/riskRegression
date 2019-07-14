@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun  6 2016 (09:02) 
 ## Version: 
-## last-updated: Jul 13 2019 (11:47) 
+## last-updated: Jul 14 2019 (20:35) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 204
+##     Update #: 210
 #----------------------------------------------------------------------
 ## 
 ### Commentary:
@@ -52,7 +52,7 @@
 #' \method{predictRisk}{rfsrc}(object,newdata,times,cause,...)
 #' \method{predictRisk}{FGR}(object,newdata,times,cause,...)
 #' \method{predictRisk}{CauseSpecificCox}(object,newdata,times,cause,...)
-#' \method{predictRisk}{gbm}(object,newdata,times,n.trees,...)
+#' \method{predictRisk}{gbm}(object,newdata,times,...)
 #' \method{predictRisk}{flexsurvreg}(object,newdata,times,...)
 #' @param object A fitted model from which to extract predicted event
 #' probabilities
@@ -917,10 +917,10 @@ predictRisk.SuperPredictor  <- function(object,newdata,...){
 ##' @export 
 predictRisk.gbm <- function(object, newdata, times, ...) {
     n.trees <- object$n.trees
-    traindata <-  reconstructGBMdata(object)
+    traindata <-  gbm::reconstructGBMdata(object)
     p <- matrix(0, NROW(newdata), length(times))
     xb.train <- predict(object ,newdata = traindata, n.trees = n.trees)
-    H2 <- basehaz.gbm(t = traindata[, as.character(object$call$formula[[2]][[2]])], 
+    H2 <- gbm::basehaz.gbm(t = traindata[, as.character(object$call$formula[[2]][[2]])], 
                       delta = traindata[, as.character(object$call$formula[[2]][[3]])], 
                       f.x = xb.train, t.eval = times)
     xb.test <- predict(object, newdata = newdata , n.trees = n.trees ) 
@@ -943,29 +943,29 @@ predictRisk.flexsurvreg <- function(object, newdata, times, ...) {
 }
 
 ##' @export 
-predictRisk.cv.glmnet.formula <- function(object, newdata, times) {
-    require(hdnom) 
+predictRisk.cv.glmnet <- function(object, newdata, times,...) {
     p <- matrix(0, NROW(newdata), length(times))
     time <- object$call$formula[[2]][[2]]
     event <- object$call$formula[[2]][[3]]
     d <- data.matrix(newdata)
-    xb.test <- glmnetUtils:::predict.cv.glmnet.formula(object, newdata = as.data.frame(newdata) , type = "link") 
-    H2 <- glmnet_basesurv(time = newdata[, time], event = newdata[,event], lp = xb.test, times.eval = times)$cumulative_base_hazard
+    requireNamespace(glmnetUtils)
+    xb.test <- predict(object, newdata = as.data.frame(newdata) , type = "link") 
+    H2 <- hdnom::glmnet_basesurv(time = newdata[, time], event = newdata[,event], lp = xb.test, times.eval = times)$cumulative_base_hazard
     for (i in 1:length(times)) p[,i] <- exp(-H2[i] * exp(xb.test))
     p[,times==0] <- 1
     return(1-p)
 }
 
 ##' @export 
-predictRisk.glmnet.formula <- function(object, newdata, times) {
-    require(hdnom) 
+predictRisk.glmnet <- function(object, newdata, times,...) {
     if (length(object$lambda) > 1) stop("Supply only a single value of lambda in the glmnet fit") 
     p <- matrix(0, NROW(newdata), length(times))
     time <- object$call$formula[[2]][[2]]
     event <- object$call$formula[[2]][[3]]
     d <- data.matrix(newdata)
-    xb.test <- glmnetUtils:::predict.glmnet.formula(object, newdata = as.data.frame(newdata) , type = "link") 
-    H2 <- glmnet_basesurv(time = newdata[, time], event = newdata[,event], lp = xb.test, times.eval = times)$cumulative_base_hazard
+    requireNamespace(glmnetUtils)
+    xb.test <- predict(object, newdata = as.data.frame(newdata) , type = "link") 
+    H2 <- hdnom::glmnet_basesurv(time = newdata[, time], event = newdata[,event], lp = xb.test, times.eval = times)$cumulative_base_hazard
     for (i in 1:length(times)) p[,i] <- exp(-H2[i] * exp(xb.test))
     p[,times==0] <- 1
     return(1-p)

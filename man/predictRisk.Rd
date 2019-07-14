@@ -39,7 +39,7 @@
 \method{predictRisk}{rfsrc}(object,newdata,times,cause,...)
 \method{predictRisk}{FGR}(object,newdata,times,cause,...)
 \method{predictRisk}{CauseSpecificCox}(object,newdata,times,cause,...)
-\method{predictRisk}{gbm}(object,newdata,times,n.trees,...)
+\method{predictRisk}{gbm}(object,newdata,times,...)
 \method{predictRisk}{flexsurvreg}(object,newdata,times,...)
 }
 \arguments{
