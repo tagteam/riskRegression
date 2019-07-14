@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun  6 2016 (09:02) 
 ## Version: 
-## last-updated: Jul 14 2019 (20:35) 
+## last-updated: Jul 14 2019 (20:49) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 210
+##     Update #: 211
 #----------------------------------------------------------------------
 ## 
 ### Commentary:
@@ -948,7 +948,7 @@ predictRisk.cv.glmnet <- function(object, newdata, times,...) {
     time <- object$call$formula[[2]][[2]]
     event <- object$call$formula[[2]][[3]]
     d <- data.matrix(newdata)
-    requireNamespace(glmnetUtils)
+    requireNamespace("glmnetUtils")
     xb.test <- predict(object, newdata = as.data.frame(newdata) , type = "link") 
     H2 <- hdnom::glmnet_basesurv(time = newdata[, time], event = newdata[,event], lp = xb.test, times.eval = times)$cumulative_base_hazard
     for (i in 1:length(times)) p[,i] <- exp(-H2[i] * exp(xb.test))
@@ -963,7 +963,7 @@ predictRisk.glmnet <- function(object, newdata, times,...) {
     time <- object$call$formula[[2]][[2]]
     event <- object$call$formula[[2]][[3]]
     d <- data.matrix(newdata)
-    requireNamespace(glmnetUtils)
+    requireNamespace("glmnetUtils")
     xb.test <- predict(object, newdata = as.data.frame(newdata) , type = "link") 
     H2 <- hdnom::glmnet_basesurv(time = newdata[, time], event = newdata[,event], lp = xb.test, times.eval = times)$cumulative_base_hazard
     for (i in 1:length(times)) p[,i] <- exp(-H2[i] * exp(xb.test))
