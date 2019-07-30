@@ -50,9 +50,9 @@ transformSE <- function(estimate, se, type){
     }else if(type == "atanh"){
         ## fisher transform: f(x) = 1/2 log(1+x) - 1/2 log(1-x)
         ##                   df(x) = dx/(2+2x) + dx/(2-2x) = dx(1/(1+x)+1/(1-x))/2
-        ##                         = dx/(1+x^2)
-        ##               Var(f(x)) = Var(x)/(1+x^2)
-        newse <- se / (1+estimate^2)
+        ##                         = dx/(1-x^2)
+        ##               Var(f(x)) = Var(x)/(1-x^2)
+        newse <- se / (1-estimate^2)
     }
 
     index0 <- which(se==0)
@@ -96,9 +96,9 @@ transformIID <- function(estimate, iid, type){
     }else if(type == "atanh"){
         ## fisher transform: f(x) = 1/2 log(1+x) - 1/2 log(1-x)
         ##                   df(x) = dx/(2+2x) + dx/(2-2x) = dx(1/(1+x)+1/(1-x))/2
-        ##                         = dx/(1+x^2)
-        ##               Var(f(x)) = Var(x)/(1+x^2)
-        newiid <- sliceScale_cpp(iid, M = 1 + estimate^2 )
+        ##                         = dx/(1-x^2)
+        ##               Var(f(x)) = Var(x)/(1-x^2)
+        newiid <- sliceScale_cpp(iid, M = 1 - estimate^2 )
     }
     index0 <- which(iid==0)
     if(length(index0)>0){
