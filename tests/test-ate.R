@@ -107,8 +107,8 @@ if (class(try(riskRegression.test,silent=TRUE))[1]!="try-error"){
     ## (previously reported bug)
     d <- sampleData(1000,outcome="survival")
     fit <- coxph(Surv(time,event)~X1+X4+X7+X8,data=d,x=TRUE,y=TRUE)
-    a1 <- ate(fit,data=d,object.treatment="X1",time=5,bootci.method="wald")
-    a2 <- ate(fit,data=d,object.treatment="X1",time=5:7,bootci.method="wald")
+    a1 <- ate(fit,data=d,object.treatment="X1",time=5,bootci.method="wald", verbose = verbose)
+    a2 <- ate(fit,data=d,object.treatment="X1",time=5:7,bootci.method="wald", verbose = verbose)
 
     expect_equal(a2$riskComparison[time==5,],
                  a1$riskComparison)
@@ -121,7 +121,7 @@ if (class(try(riskRegression.test,silent=TRUE))[1]!="try-error"){
 if (class(try(riskRegression.test,silent=TRUE))[1]!="try-error"){
     test_that("check against manual computation",{
         ## automatically
-        fit <- cph(formula = Surv(time,event)~ X1+X2,data=dtS,y=TRUE,x=TRUE)
+        fit <- cph(formula = Surv(time,event)~ X1+X2,data= dtS,y=TRUE,x=TRUE)
         ateFit <- ate(fit, data = dtS, object.treatment = "X1", contrasts = NULL,
                       times = 5:7,iid=TRUE, B = 0, se = TRUE, mc.cores=1,handler=handler,
                       verbose=verbose)
@@ -156,7 +156,7 @@ if (class(try(riskRegression.test,silent=TRUE))[1]!="try-error"){
         ## Brice: I think that this here is how you do it in calcSeATE.R lines 166-168
         ## ratioATE.iid <- ATE.iid[["T1"]]/ATE[["T0"]] -  ATE.iid[["T0"]] * ATE[["T1"]]/ATE[["T0"]]^2
         a <- ATE.iid[["T1"]][,1]
-        b <- t(ateFit$meanRisk.iid)[,"T1.5"]
+        b <- ateFit$iid$T1[,"5"]
         all.equal(a,b)
         # 
         ratioATE.se <- sqrt(rowSums(ratioATE.iid^2))
@@ -178,7 +178,7 @@ if (class(try(riskRegression.test,silent=TRUE))[1]!="try-error"){
         df$X1 <- factor(rbinom(1e2, prob = c(0.4,0.3) , size = 2), labels = paste0("T",0:2))
         fit=CSC(formula = Hist(time,event)~ X1+X2, data = df,cause=1)
         res <- ate(fit, data = df, object.treatment = "X1", contrasts = NULL,
-                   times = 7, cause = 1, B = 0, mc.cores=1,handler=handler,verbose=verbose)
+                   times = 7, cause = 1, se = FALSE, verbose = verbose)
         Sres <- capture.output(print(res))
         fit=CSC(formula = Hist(time,event)~ X1+X2, data = df,cause=1)
         res <- ate(fit,data = df,  object.treatment = "X1", contrasts = NULL,
@@ -212,11 +212,11 @@ test_that("stratified ATE",{
 # }}}
 # {{{ CSC model rcs via cph
 test_that("CSC model bootstrap via cph",{
-    df <- sampleData(101,outcome="competing.risks")
-    df$time <- round(df$time,1)
-    df$X1 <- factor(rbinom(101, prob = c(0.4,0.3) , size = 2), labels = paste0("T",0:2))
-    fit=CSC(formula = Hist(time,event)~ X1+X2+rcs(X6), data = df,cause=1,fitter="cph")
-    res <- ate(fit, data = df, object.treatment = "X1", contrasts = NULL,
+    ddf <- sampleData(101,outcome="competing.risks")
+    ddf$time <- round(df$time,1)
+    ddf$X1 <- factor(rbinom(101, prob = c(0.4,0.3) , size = 2), labels = paste0("T",0:2))
+    fit=CSC(formula = Hist(time,event)~ X1+X2+rcs(X6), data = ddf,cause=1,fitter="cph")
+    res <- ate(fit, data = ddf, object.treatment = "X1", contrasts = NULL,
                times = 7, cause = 1, B = 0, mc.cores=1, verbose = FALSE)
 })
 # }}}
@@ -224,16 +224,16 @@ test_that("CSC model bootstrap via cph",{
 if (class(try(riskRegression.test,silent=TRUE))[1]!="try-error"){
 test_that("mcapply vs. foreach",{
     set.seed(10)
-    df <- sampleData(3e2,outcome="competing.risks")
+    ddf <- sampleData(3e2,outcome="competing.risks")
     if( (parallel::detectCores()>1) && (Sys.info()["sysname"] != "Windows") ){
-        fit = CSC(formula = Hist(time,event)~ X1+X2, data = df, cause=1)
+        fit = CSC(formula = Hist(time,event)~ X1+X2, data = ddf, cause=1)
         time2.mc <- system.time(
-            res2.mc <- ate(fit, data = df, object.treatment = "X1", contrasts = NULL,
+            res2.mc <- ate(fit, data = ddf, object.treatment = "X1", contrasts = NULL,
                            times = 7, cause = 1, B = 2, mc.cores=2, handler = "mclapply", seed = 10,
                            verbose = FALSE, confint = FALSE)
         )
         time2.for <- system.time(
-            res2.for <- ate(fit,data = df, object.treatment = "X1", contrasts = NULL,
+            res2.for <- ate(fit,data = ddf, object.treatment = "X1", contrasts = NULL,
                             times = 7, cause = 1, B = 2, mc.cores=2, handler = "foreach", seed = 10,
                             verbose = FALSE, confint = FALSE)
         )

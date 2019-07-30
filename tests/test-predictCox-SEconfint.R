@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: maj 18 2017 (09:23) 
 ## Version: 
-## last-updated: jul  4 2019 (11:20) 
+## last-updated: jul 30 2019 (13:55) 
 ##           By: Brice Ozenne
-##     Update #: 190
+##     Update #: 194
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -829,8 +829,8 @@ test_that("Cox - output of average.iid should not depend on other arguments", {
     fit <- coxph(Surv(time,event)~X1 + strata(X2) + X6,
                  data=d, ties="breslow", x = TRUE, y = TRUE)
 
-    out1 <- predictCox(fit, newdata = dd[1:5], times = 1:3, average.iid = TRUE)
-    out2 <- predictCox(fit, newdata = dd[1:5], times = 1:3, se = TRUE, average.iid = TRUE)
+    out1 <- predictCox(fit, newdata = d[1:5], times = 1:3, average.iid = TRUE)
+    out2 <- predictCox(fit, newdata = d[1:5], times = 1:3, se = TRUE, average.iid = TRUE)
 
     expect_equal(out1$survival.average.iid,out2$survival.average.iid, tol = 1e-8)
 })    
@@ -843,12 +843,30 @@ test_that("CSC - output of average.iid should not depend on other arguments", {
     fit <- CSC(Hist(time,event)~X1 + strata(X2) + X6,
                data=d)
 
-    out1 <- predict(fit, newdata = dd[1:5], times = 1:3, average.iid = TRUE, cause = 1)
-    out2 <- predict(fit, newdata = dd[1:5], times = 1:3, se = TRUE, average.iid = TRUE, cause = 1)
+    out1 <- predict(fit, newdata = d[1:5], times = 1:3, average.iid = TRUE, cause = 1)
+    out2 <- predict(fit, newdata = d[1:5], times = 1:3, se = TRUE, average.iid = TRUE, cause = 1)
 
     test_that("output of average.iid should not depend on other arguments", {
         expect_equal(out1$survival.average.iid,out2$survival.average.iid, tol = 1e-8)
     })    
+})
+
+## ** (Previously) incorrect calculation of the standard error with atanh  (i.e. se/(1+b^2) instead of se/(1-b^2))
+## from: Paul Blanche &lt;pabl@sund.ku.dk&gt;
+## subject: suspected error in riskRegression
+## date: Tue, 30 Jul 2019 11:42:14 +0200
+
+test_that("Standard error after atanh transformation", {
+    set.seed(10)
+    x <- rnorm(1e2)
+    y <- rnorm(1e2)
+
+    rho <- cor.test(x,y)$estimate
+    rho.se <- (1-rho^2)
+    
+    
+    expect_equal(1, as.double(transformSE(estimate = rho, se = rho.se, type = "atanh")),
+                 tol = 1e-5)
 })
 
 

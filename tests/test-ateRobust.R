@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: aug 15 2018 (11:42) 
 ## Version: 
-## Last-Updated: jul  9 2019 (17:16) 
+## Last-Updated: jul 30 2019 (13:53) 
 ##           By: Brice Ozenne
-##     Update #: 98
+##     Update #: 99
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -400,9 +400,6 @@ test_that("Agreement ate-ateRobust (competing.risks)",{
     ## butils::object2script(test, digit = 5)
    
 })
-######################################################################
-### test-ateRobust.R ends here
-
 
 ## * previous bugs
 
@@ -429,3 +426,6 @@ test_that("ate double robust estimator works with multiple timepoint",{
                    )
 
 })
+
+######################################################################
+### test-ateRobust.R ends here
