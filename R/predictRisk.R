@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun  6 2016 (09:02) 
 ## Version: 
-## last-updated: jul  3 2019 (18:25) 
-##           By: Brice Ozenne
-##     Update #: 199
+## last-updated: Jul 13 2019 (11:47) 
+##           By: Thomas Alexander Gerds
+##     Update #: 201
 #----------------------------------------------------------------------
 ## 
 ### Commentary:
@@ -715,6 +715,7 @@ predictRisk.CauseSpecificCox <- function (object, newdata, times, cause, ...) {
 ##' \code{"ridge"}, \code{"lasso"}, \code{"elastic.net"}.
 ##' @param lambda1 Lasso penalty
 ##' @param lambda2 ridge penalty
+##' @param fold passed to \code{penalized::profL1}
 ##' @param ... Arguments passed to penalized
 ##' @examples
 ##' library(prodlim)
@@ -750,7 +751,13 @@ predictRisk.CauseSpecificCox <- function (object, newdata, times, cause, ...) {
 ##'                     data=nki70, lambda1=1)
 ##' }
 ##' @export
-penalizedS3 <- function(formula,data,type="elastic.net",lambda1,lambda2,fold,...){
+penalizedS3 <- function(formula,
+                        data,
+                        type="elastic.net",
+                        lambda1,
+                        lambda2,
+                        fold,
+                        ...){
                                         # {{{ distangle the formula
     EHF <- prodlim::EventHistory.frame(formula,
                                        data,

@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne, Thomas A. Gerds
 ## Created: jun 27 2018 (17:47) 
 ## Version: 
-## Last-Updated: jul  4 2019 (10:00) 
-##           By: Brice Ozenne
-##     Update #: 1234
+## Last-Updated: Jul 12 2019 (20:26) 
+##           By: Thomas Alexander Gerds
+##     Update #: 1235
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -82,11 +82,8 @@ ateRobust <- function(data, times, cause, type,
                       na.rm = FALSE){
 
     ## ** normalize arguments
-    if(!is.data.table(data)){
-        data <- data.table::as.data.table(data)
-    }else{
-        data <- data.table::copy(data)
-    }
+    data <- data.table::copy(data)
+    setDT(data)
     n.obs <- NROW(data)
 
     if(length(times)!=1){

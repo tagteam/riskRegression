@@ -123,12 +123,16 @@ predict.CauseSpecificCox <- function(object,
 
     ## ** prepare
     if(object$fitter=="phreg"){newdata$entry <- 0} 
-    if(missing(newdata)){newdata <- eval(object$call$data)}
-    if(data.table::is.data.table(newdata)){
-        newdata <- data.table::copy(newdata)
+    if(missing(newdata)){
+        newdata <- eval(object$call$data)
     }else{
-        newdata <- data.table::as.data.table(newdata)
+        setDT(newdata)
     }
+    ## if(data.table::is.data.table(newdata)){
+        ## newdata <- data.table::copy(newdata)
+    ## }else{
+        ## newdata <- data.table::as.data.table(newdata)
+    ## }
     
     surv.type <- object$surv.type
     if (length(cause) > 1){
@@ -355,7 +359,6 @@ predict.CauseSpecificCox <- function(object,
     if(band[[1]] && iid[[1]]==FALSE){
         out["absRisk.iid"] <- NULL
     }
-
     ## export
     return(out)
 }

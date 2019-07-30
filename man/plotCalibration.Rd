@@ -4,15 +4,15 @@
 \alias{plotCalibration}
 \title{Plot Calibration curve}
 \usage{
-plotCalibration(x, models, times, method = "nne", round = TRUE,
-  bandwidth = NULL, q = 10, bars = FALSE, hanging = FALSE,
-  names = "quantiles", pseudo, rug, show.frequencies = FALSE,
-  plot = TRUE, add = FALSE, diag = !add, legend = !add,
-  auc.in.legend = TRUE, brier.in.legend = TRUE, axes = !add,
-  xlim = c(0, 1), ylim = c(0, 1), xlab = ifelse(bars, "Risk groups",
-  "Predicted risk"), ylab = "Observed frequency", col, lwd, lty, pch,
-  type, cause = 1, percent = TRUE, na.action = na.fail, cex = 1,
-  ...)
+plotCalibration(x, models, times, method = "nne",
+  cens.method = "jackknife", round = TRUE, bandwidth = NULL,
+  q = 10, bars = FALSE, hanging = FALSE, names = "quantiles",
+  pseudo, rug, show.frequencies = FALSE, plot = TRUE, add = FALSE,
+  diag = !add, legend = !add, auc.in.legend = TRUE,
+  brier.in.legend = TRUE, axes = !add, xlim = c(0, 1), ylim = c(0,
+  1), xlab = ifelse(bars, "Risk groups", "Predicted risk"),
+  ylab = "Observed frequency", col, lwd, lty, pch, type, cause = 1,
+  percent = TRUE, na.action = na.fail, cex = 1, ...)
 }
 \arguments{
 \item{x}{Object obtained with function \code{Score}}
@@ -28,6 +28,11 @@ neighborhood around the predicted event probabilities.
 
 \code{"quantile"}: The expected event status is obtained in groups
 defined by quantiles of the predicted event probabilities.}
+
+\item{cens.method}{For right censored data only. How observed proportions are calculated. Either "jackknife" here relying on the
+pseudovalues which in turn rely on censoring being independent of the event time and the covariates,
+or "local" which means to estimate Kaplan-Meier (no competing risks) and Aalen-Johansen (with competing risks)
+locally in the neighborhood/category of the predicted risks.}
 
 \item{round}{If \code{TRUE} predicted probabilities are rounded to
 two digits before smoothing. This may have a considerable

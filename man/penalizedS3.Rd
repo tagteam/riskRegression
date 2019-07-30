@@ -19,6 +19,8 @@ penalizedS3(formula, data, type = "elastic.net", lambda1, lambda2, fold,
 
 \item{lambda2}{ridge penalty}
 
+\item{fold}{passed to \code{penalized::profL1}}
+
 \item{...}{Arguments passed to penalized}
 }
 \description{

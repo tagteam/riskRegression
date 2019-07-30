@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: apr 11 2018 (17:05) 
 ## Version: 
-## Last-Updated: jul 30 2019 (15:04) 
+## Last-Updated: jul 30 2019 (15:25) 
 ##           By: Brice Ozenne
-##     Update #: 198
+##     Update #: 200
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -45,11 +45,10 @@ calcBootATE <- function(args, name.estimate, n.obs, fct.pointEstimate,
                            as.character(args$object.censor$call[[1]])))
     ls.package <- lapply(vec.fitter,function(iFitter){ ## iFitter <- "CSC"
         iSource <- utils::find(iFitter)
-        test <- grepl("package:",iSource)
-        if(any(test)){
-            return(gsub("package:","",iSource[test]))
+        if(any(ifound <- grepl("package:",iSource))){
+            gsub("package:","",iSource[ifound])
         }else{
-            return(NULL)
+            NULL
         }
     })
 

@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: maj 23 2018 (14:08) 
 ## Version: 
-## Last-Updated: jul  4 2019 (11:24) 
-##           By: Brice Ozenne
-##     Update #: 544
+## Last-Updated: Jul 12 2019 (11:55) 
+##           By: Thomas Alexander Gerds
+##     Update #: 552
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -199,8 +199,8 @@ confintBoot.ate <- function(object,
     boot.se <- sqrt(apply(object$boot$t, 2, var, na.rm = TRUE))
     boot.mean <- colMeans(object$boot$t, na.rm = TRUE)
 
-    ## confidence interval    
-    ls.CI <- lapply(index, function(iP){ # iP <- 1        
+    ## confidence interval
+    try.CI <- try(ls.CI <- lapply(index, function(iP){ # iP <- 1        
         if(n.boot[iP]==0){
             return(c(lower = NA, upper = NA))
         }else if(bootci.method == "wald"){
@@ -218,8 +218,13 @@ confintBoot.ate <- function(object,
                                  index = iP)[[slot.boot.ci]][index.lowerCI:index.upperCI]
             return(setNames(out,c("lower","upper")))
         }    
-    })
-    boot.CI <- do.call(rbind,ls.CI)
+    }),silent=TRUE)
+    if (class(try.CI)[1]=="try-error"){
+        warning("Could not construct bootstrap confidence limits")
+        boot.CI <- matrix(rep(NA,2*length(index)),ncol=2)
+    } else{
+        boot.CI <- do.call(rbind,ls.CI)
+    }
     
     ## pvalue
     null <- setNames(rep(NA,length(name.estimate)),name.estimate)
