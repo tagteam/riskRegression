@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Oct 23 2016 (08:53) 
 ## Version: 
-## last-updated: Jul 12 2019 (21:00) 
-##           By: Thomas Alexander Gerds
-##     Update #: 1273
+## last-updated: jul 31 2019 (11:14) 
+##           By: Brice Ozenne
+##     Update #: 1277
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -21,13 +21,13 @@
 #'     effect based on Cox regression with or without competing risks.
 #' @name ate
 #' 
-#' @param object.event Outcome model which describes how event risk depends
+#' @param event Outcome model which describes how event risk depends
 #'     on treatment and covariates. The object carry its own call and
 #'     have a \code{predictRisk} method. See examples.
-#' @param object.treatment Treatment model which describes how treatment depends
+#' @param treatment Treatment model which describes how treatment depends
 #'     on covariates. The object must be a \code{glm} object (logistic regression) or the name of the treatment variable.
 #'     See examples.
-#' @param object.censor Censoring model which describes how censoring depends
+#' @param censor Censoring model which describes how censoring depends
 #'     on treatment and covariates. The object must be a \code{coxph} or \code{cph} object. See examples.
 #' @param data [data.frame or data.table] Data set in which to evaluate risk predictions
 #' based on the outcome model
@@ -94,28 +94,28 @@
 #' ## compute the ATE at times 5, 6, 7, and 8 using X1 as the treatment variable
 #' \dontrun{
 #' ## only point estimate (argument se = FALSE)
-#' ateFit1a <- ate(fit, data = dtS, object.treatment = "X1", times = 5:8,
+#' ateFit1a <- ate(fit, data = dtS, treatment = "X1", times = 5:8,
 #'                se = FALSE)
 #'
 #' ## standard error / confidence intervals computed using the influence function
 #' ## (argument se = TRUE and B = 0)
-#' ateFit1b <- ate(fit, data = dtS, object.treatment = "X1", times = 5:8,
+#' ateFit1b <- ate(fit, data = dtS, treatment = "X1", times = 5:8,
 #'                se = TRUE, B = 0)
 #' 
 #' ## same as before with in addition the confidence bands for the ATE
 #' ## (argument band = TRUE)
-#' ateFit1c <- ate(fit, data = dtS, object.treatment = "X1", times = 5:8,
+#' ateFit1c <- ate(fit, data = dtS, treatment = "X1", times = 5:8,
 #'                se = TRUE, band = TRUE, B = 0)
 #'
 #' ## standard error / confidence intervals computed using 100 boostrap samples
 #' ## (argument se = TRUE and B = 100) 
-#' ateFit1d <- ate(fit, data = dtS, object.treatment = "X1",
+#' ateFit1d <- ate(fit, data = dtS, treatment = "X1",
 #'                 times = 5:8, se = TRUE, B = 100)
 #' ## NOTE: for real applications 100 bootstrap samples is not enougth 
 #'
 #' ## same but using 2 cpus for generating and analyzing the boostrap samples
 #' ## (parallel computation, argument mc.cores = 2) 
-#' ateFit1e <- ate(fit, data = dtS, object.treatment = "X1",
+#' ateFit1e <- ate(fit, data = dtS, treatment = "X1",
 #'                 times = 5:8, se = TRUE, B = 100, mc.cores = 2)
 #' }
 #'
@@ -132,16 +132,16 @@
 #' 
 #' ## compute the ATE using X1 as the treatment variable
 #' ## only point estimate (argument se = FALSE)
-#' ateFit1a <- ate(fit, data = dtB, object.treatment = "X1", se = FALSE)
+#' ateFit1a <- ate(fit, data = dtB, treatment = "X1", se = FALSE)
 #'
 #' \dontrun{
 #' ## standard error / confidence intervals computed using the influence function
-#' ateFit1b <- ate(fit, data = dtB, object.treatment = "X1",
+#' ateFit1b <- ate(fit, data = dtB, treatment = "X1",
 #'                times = 5, ## just for having a nice output not used in computations
 #'                se = TRUE, B = 0)
 #'
 #' ## standard error / confidence intervals computed using 100 boostrap samples
-#' ateFit1d <- ate(fit, data = dtB, object.treatment = "X1",
+#' ateFit1d <- ate(fit, data = dtB, treatment = "X1",
 #'                 times = 5, se = TRUE, B = 100)
 #' 
 #' ## using the lava package
@@ -168,28 +168,28 @@
 #' fitCR <-  CSC(Hist(time,event)~ X1+X8,data=dt,cause=1)
 #' 
 #' ## compute the ATE at times 5, 6, 7, and 8 using X1 as the treatment variable
-#' ateFit2a <- ate(fitCR, data = dt, object.treatment = "X1", times = 5:8, cause = 1,
+#' ateFit2a <- ate(fitCR, data = dt, treatment = "X1", times = 5:8, cause = 1,
 #'                se = FALSE)
 #'
 #' ## standard error / confidence intervals computed using the influence function
 #' ## (argument se = TRUE and B = 0)
-#' ateFit2b <- ate(fitCR, data = dt, object.treatment = "X1", times = 5:8, cause = 1,
+#' ateFit2b <- ate(fitCR, data = dt, treatment = "X1", times = 5:8, cause = 1,
 #'                se = TRUE, B = 0)
 #'
 #' ## same as before with in addition the confidence bands for the ATE
 #' ## (argument band = TRUE)
-#' ateFit2c <- ate(fitCR, data = dt, object.treatment = "X1", times = 5:8, cause = 1,
+#' ateFit2c <- ate(fitCR, data = dt, treatment = "X1", times = 5:8, cause = 1,
 #'                se = TRUE, band = TRUE, B = 0)
 #' 
 #' ## standard error / confidence intervals computed using 100 boostrap samples
 #' ## (argument se = TRUE and B = 100) 
-#' ateFit2d <- ate(fitCR, data = dt, object.treatment = "X1", times = 5:8, cause = 1,
+#' ateFit2d <- ate(fitCR, data = dt, treatment = "X1", times = 5:8, cause = 1,
 #'                 se = TRUE, B = 100)
 #' ## NOTE: for real applications 100 bootstrap samples is not enougth 
 #'
 #' ## same but using 2 cpus for generating and analyzing the boostrap samples
 #' ## (parallel computation, argument mc.cores = 2) 
-#' ateFit2e <- ate(fitCR, data = dt, object.treatment = "X1", times = 5:8, cause = 1,
+#' ateFit2e <- ate(fitCR, data = dt, treatment = "X1", times = 5:8, cause = 1,
 #'                 se = TRUE, B = 100, mc.cores = 2)
 #' }
 #' 
@@ -203,7 +203,7 @@
 #'                data= vet2,x=1)
 #' set.seed(16)
 #' resVet <- ate(fitTD,formula=Hist(entry=tstart,time=time,event=status)~1,
-#'           data = vet2, object.treatment = "celltype", contrasts = NULL,
+#'           data = vet2, treatment = "celltype", contrasts = NULL,
 #'         times=5,verbose=1,
 #'         landmark = c(0,30,60,90), cause = 1, B = 4, se = 1,
 #'         band = FALSE, mc.cores=1)
@@ -219,7 +219,7 @@
 #' ## ignore competing risks
 #' cox1TD <- coxph(Surv(start,time, status,type="counting") ~ X3+X5+X6+X8, data=d)
 #' resTD1 <- ate(cox1TD,formula=Hist(entry=start,time=time,event=status)~1,
-#'         data = d, object.treatment = "X3", contrasts = NULL,
+#'         data = d, treatment = "X3", contrasts = NULL,
 #'         times=.5,verbose=1,
 #'         landmark = c(0,0.5,1), B = 20, se = 1,
 #'         band = FALSE, mc.cores=1)
@@ -228,7 +228,7 @@
 #' cscTD <- CSC(Hist(time=time, event=event,entry=start) ~ X3+X5+X6+X8, data=d)
 #' set.seed(16)
 #' resTD <- ate(cscTD,formula=Hist(entry=start,time=time,event=event)~1,
-#'         data = d, object.treatment = "X3", contrasts = NULL,
+#'         data = d, treatment = "X3", contrasts = NULL,
 #'         times=.5,verbose=1,
 #'         landmark = c(0,0.5,1), cause = 1, B = 20, se = 1,
 #'         band = FALSE, mc.cores=1)
@@ -238,9 +238,9 @@
 ## * ate (code)
 #' @rdname ate
 #' @export
-ate <- function(object.event,
-                object.treatment,
-                object.censor = NULL,
+ate <- function(event,
+                treatment,
+                censor = NULL,
                 data,
                 formula,
                 strata = NULL,
@@ -269,9 +269,9 @@ ate <- function(object.event,
     ## ** initialize arguments
     data.table::setDT(data)
 
-    init <- ate_initArgs(object.event = object.event,
-                         object.treatment = object.treatment,
-                         object.censor = object.censor,
+    init <- ate_initArgs(object.event = event,
+                         object.treatment = treatment,
+                         object.censor = censor,
                          formula = formula,
                          landmark = landmark,
                          data = data,
@@ -779,7 +779,7 @@ ate_checkArgs <- function(object.event,
     ## ** object.treatment    
     if(!is.null(object.treatment)){
         if(!inherits(object.treatment,"glm") || object.treatment$family$family!="binomial"){
-            stop("Argument \'object.treatment\' must be a logistic regression\n",
+            stop("Argument \'treatment\' must be a logistic regression\n",
                  " or a character variable giving the name of the treatment variable. \n")
         }
     }
@@ -788,10 +788,10 @@ ate_checkArgs <- function(object.event,
     if(estimator %in% c("AIPTW,AIPCW","IPTW,IPCW")){
         ## require censoring model
         if(is.null(object.censor)){
-            stop("Argument \'object.censor\' must not be NULL for ",estimator," estimators in presence of censoring")
+            stop("Argument \'censor\' must not be NULL for ",estimator," estimators in presence of censoring")
         }
         if(!inherits(object.censor,"coxph") && !inherits(object.censor,"cph") && !inherits(object.censor,"phreg")){
-            stop("Argument \'object.censor\' must be a Cox model \n")
+            stop("Argument \'censor\' must be a Cox model \n")
         }
         if(!identical(censorVar.status,eventVar.status)){
             if(sum(diag(table(data[[censorVar.status]],data[[eventVar.status]])))!=NROW(data)){
@@ -827,13 +827,13 @@ ate_checkArgs <- function(object.event,
                  "or set argument \'B\' to 0 to use the estimate of the asymptotic distribution instead of the bootstrap\n")
         }
         if(!is.null(object.event) && is.null(object.event$call)){
-            stop("Argument \'object.event\' does not contain its own call, which is needed to refit the model in the bootstrap loop.")
+            stop("Argument \'event\' does not contain its own call, which is needed to refit the model in the bootstrap loop.")
         }
         if(!is.null(object.treatment) && is.null(object.treatment$call)){
-            stop("Argument \'object.treatment\' does not contain its own call, which is needed to refit the model in the bootstrap loop.")
+            stop("Argument \'treatment\' does not contain its own call, which is needed to refit the model in the bootstrap loop.")
         }
         if(!is.null(object.censor) && is.null(object.censor$call)){
-            stop("Argument \'object.censor\' does not contain its own call, which is needed to refit the model in the bootstrap loop.")
+            stop("Argument \'censor\' does not contain its own call, which is needed to refit the model in the bootstrap loop.")
         }
         ## if((Sys.info()["sysname"] == "Windows") && (handler == "mclapply") && (mc.cores>1) ){
         ## stop("mclapply cannot perform parallel computations on Windows \n",
@@ -860,18 +860,18 @@ ate_checkArgs <- function(object.event,
             }
 
             if(coxN(object.event)[1]!=NROW(data)){
-                stop("Argument \'object.event\' must be have been fitted using argument \'data\' for the functional delta method to work\n",
+                stop("Argument \'event\' must be have been fitted using argument \'data\' for the functional delta method to work\n",
                      "(discrepancy found in number of rows) \n")
             }
         }
 
         if(!is.null(object.treatment) && coxN(object.treatment)!=NROW(data)){ ## note: only check that the datasets have the same size
-            stop("Argument \'object.treatment\' must be have been fitted using argument \'data\' for the functional delta method to work\n",
+            stop("Argument \'treatment\' must be have been fitted using argument \'data\' for the functional delta method to work\n",
                  "(discrepancy found in number of rows) \n")
         }
 
         if(!is.null(object.censor) && coxN(object.censor)!=NROW(data)){ ## note: only check that the datasets have the same size
-                stop("Argument \'object.censor\' must be have been fitted using argument \'data\' for the functional delta method to work\n",
+                stop("Argument \'censor\' must be have been fitted using argument \'data\' for the functional delta method to work\n",
                      "(discrepancy found in number of rows) \n")
         }
 
@@ -888,7 +888,7 @@ ate_checkArgs <- function(object.event,
                  "Convert treatment to factor, re-fit the object using this new variable and then call ate. \n")
         }
     }else if(is.null(strata)){
-        stop("The treatment variable must be specified using the argument \'object.treatment\' \n")
+        stop("The treatment variable must be specified using the argument \'treatment\' \n")
     }
 
     ## ** strata

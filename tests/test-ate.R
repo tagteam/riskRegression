@@ -13,14 +13,15 @@ dt$X1 <- factor(rbinom(n, prob = c(0.3,0.4) , size = 2), labels = paste0("T",0:2
 handler <- if (Sys.info()["sysname"] == "Windows") "foreach" else "mclapply"
 verbose <- FALSE
 
+set.seed(10)
+n <- 5e1
+dtS <- sampleData(n,outcome="survival")
+dtS$time <- round(dtS$time,1)
+dtS$X1 <- factor(rbinom(n, prob = c(0.3,0.4) , size = 2), labels = paste0("T",0:2))
+
 test_that("Cox model - compare to explicit computation",{
-    set.seed(10)
-    n <- 5e1
-    dtS <- sampleData(n,outcome="survival")
-    dtS$time <- round(dtS$time,1)
-    dtS$X1 <- factor(rbinom(n, prob = c(0.3,0.4) , size = 2), labels = paste0("T",0:2))
     fit <- cph(formula = Surv(time,event)~ X1+X2,data=dtS,y=TRUE,x=TRUE)
-    ateFit <- ate(fit, data = dtS, object.treatment = "X1", contrasts = NULL,
+    ateFit <- ate(fit, data = dtS, treatment = "X1", contrasts = NULL,
                   times = 5:7, B = 0, se = TRUE, mc.cores=1,handler=handler,verbose=verbose)
     expect_equal(ateFit$meanRisk[ateFit$meanRisk$Treatment == "T0",meanRisk.lower],
                  c(0.2756147, 0.3220124, 0.3492926),
@@ -34,8 +35,8 @@ test_that("Cox model - check internal consistency (one or several timepoints)",{
     ## (previously reported bug)
     d <- sampleData(1000,outcome="survival")
     fit <- coxph(Surv(time,event)~X1+X4+X7+X8,data=d,x=TRUE,y=TRUE)
-    a1 <- ate(fit,data=d,object.treatment="X1",time=5,bootci.method="wald", verbose = verbose)
-    a2 <- ate(fit,data=d,object.treatment="X1",time=5:7,bootci.method="wald", verbose = verbose)
+    a1 <- ate(fit,data=d,treatment="X1",time=5,bootci.method="wald", verbose = verbose)
+    a2 <- ate(fit,data=d,treatment="X1",time=5:7,bootci.method="wald", verbose = verbose)
 
     expect_equal(a2$riskComparison[time==5,],
                  a1$riskComparison)
@@ -46,7 +47,7 @@ test_that("Cox model - check internal consistency (one or several timepoints)",{
 test_that("check against manual computation",{
     ## automatically
     fit <- cph(formula = Surv(time,event)~ X1+X2,data= dtS,y=TRUE,x=TRUE)
-    ateFit <- ate(fit, data = dtS, object.treatment = "X1", contrasts = NULL,
+    ateFit <- ate(fit, data = dtS, treatment = "X1", contrasts = NULL,
                   times = 5:7,iid=TRUE, B = 0, se = TRUE, mc.cores=1,handler=handler,
                   verbose=verbose)
     ATE <- list()

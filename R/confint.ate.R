@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: maj 23 2018 (14:08) 
 ## Version: 
-## Last-Updated: Jul 12 2019 (11:55) 
-##           By: Thomas Alexander Gerds
-##     Update #: 552
+## Last-Updated: jul 31 2019 (11:15) 
+##           By: Brice Ozenne
+##     Update #: 553
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -67,7 +67,7 @@
 ##'              data=d, ties="breslow", x = TRUE, y = TRUE)
 ##' 
 ##' #### average treatment effect ####
-##' fit.ate <- ate(fit, object.treatment = "X1", times = 1:3, data = d,
+##' fit.ate <- ate(fit, treatment = "X1", times = 1:3, data = d,
 ##'                se = TRUE, iid = TRUE, band = TRUE)
 ##' print(fit.ate, type = "meanRisk")
 ##' 

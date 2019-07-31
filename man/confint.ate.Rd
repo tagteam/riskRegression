@@ -65,7 +65,7 @@ fit <- coxph(Surv(time,event)~X1 + strata(X2) + X6,
              data=d, ties="breslow", x = TRUE, y = TRUE)
 
 #### average treatment effect ####
-fit.ate <- ate(fit, object.treatment = "X1", times = 1:3, data = d,
+fit.ate <- ate(fit, treatment = "X1", times = 1:3, data = d,
                se = TRUE, iid = TRUE, band = TRUE)
 print(fit.ate, type = "meanRisk")
 
