@@ -396,6 +396,8 @@ predict.CauseSpecificCox <- function(object,
         n.obs <- NROW(newdata)
         n.times <- length(times)
         n.cause <- length(object$cause)
+        n.data <- NROW(object$response)
+        
 
         if(product.limit){
             jump.time <- object$eventTime[object$eventTime <= max(times)]
@@ -408,7 +410,7 @@ predict.CauseSpecificCox <- function(object,
 
             predAll.hazard <- matrix(0, nrow = n.obs, ncol = n.jumpA)
             if(iid){
-                pred.cumhazard.iid <- array(0, dim = c(n.obs, n.times, n.obs))
+                pred.cumhazard.iid <- array(0, dim = c(n.obs, n.times, n.data))
             }
             for(iC in 1:n.cause){
                 outHazard <- predictCox(object$models[[iC]],
@@ -451,7 +453,7 @@ predict.CauseSpecificCox <- function(object,
         }else{
             pred.cumhazard <- matrix(0, nrow = n.obs, ncol = n.times)
             if(iid){
-                pred.cumhazard.iid <- array(0, dim = c(n.obs, n.times, n.obs))
+                pred.cumhazard.iid <- array(0, dim = c(n.obs, n.times, n.data))
             }
             for(iC in 1:n.cause){
                 outHazard <- predictCox(object$models[[iC]], newdata = newdata, times = times, iid = iid, type = "cumhazard")

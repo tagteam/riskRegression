@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: jun 27 2019 (10:43) 
 ## Version: 
-## Last-Updated: sep  6 2019 (17:20) 
+## Last-Updated: sep  6 2019 (18:32) 
 ##           By: Brice Ozenne
-##     Update #: 380
+##     Update #: 387
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -164,7 +164,7 @@ ATE_TI <- function(object.event,
                 ## hypothetical world: in which every subject is treated with the same treatment
                 data.i <- data.table::copy(data)
                 data.i[[treatment]] <- factor(contrasts[iC], levels = levels)
-                F1.ctf.tau[[iC]] <- predictRisk(object.event, newdata = data.i, times = times, cause = cause, product.limit = product.limit)
+                F1.ctf.tau[[iC]][] <- predictRisk(object.event, newdata = data.i, times = times, cause = cause, product.limit = product.limit)
             }else{
                 ## hypothetical world: only patients with the same strata variable exist
                 index.strata <- which(data[[strata]]==contrasts[iC])

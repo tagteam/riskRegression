@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Oct 23 2016 (08:53) 
 ## Version: 
-## last-updated: sep  6 2019 (17:50) 
+## last-updated: sep  6 2019 (18:31) 
 ##           By: Brice Ozenne
-##     Update #: 1341
+##     Update #: 1346
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -652,7 +652,7 @@ ate_initArgs <- function(object.event,
     if(inherits(object.event,"glm")){
         eventVar.time <- as.character(NA)
         eventVar.status <- all.vars(myformula.event)[1]
-        type.multistate <- NA
+        type.multistate <- "NA"
     }else if(inherits(object.event,"coxph") || inherits(object.event,"cph") || inherits(object.event,"phreg")){
         responseVar <- SurvResponseVar(myformula.event)
         eventVar.time <- responseVar$time
@@ -776,7 +776,8 @@ ate_initArgs <- function(object.event,
     if(is.null(product.limit)){
         product.limit <- switch(type.multistate,
                                 "survival" = FALSE,
-                                "competing.risks" = TRUE)
+                                "competing.risks" = TRUE,
+                                "NA" = NA)
     }
     
     ## ** output

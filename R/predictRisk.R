@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun  6 2016 (09:02) 
 ## Version: 
-## last-updated: sep  6 2019 (17:51) 
+## last-updated: sep  6 2019 (18:27) 
 ##           By: Brice Ozenne
-##     Update #: 216
+##     Update #: 217
 #----------------------------------------------------------------------
 ## 
 ### Commentary:
@@ -41,8 +41,8 @@
 #' @usage
 #' \method{predictRisk}{glm}(object,newdata,...)
 #' \method{predictRisk}{cox.aalen}(object,newdata,times,...)
-#' \method{predictRisk}{cph}(object,newdata,times,...)
-#' \method{predictRisk}{coxph}(object,newdata,times,...)
+#' \method{predictRisk}{cph}(object,newdata,times,product.limit,...)
+#' \method{predictRisk}{coxph}(object,newdata,times,product.limit,...)
 #' \method{predictRisk}{matrix}(object,newdata,times,cause,...)
 #' \method{predictRisk}{selectCox}(object,newdata,times,...)
 #' \method{predictRisk}{psm}(object,newdata,times,...)
@@ -51,7 +51,7 @@
 #' \method{predictRisk}{prodlim}(object,newdata,times,cause,...)
 #' \method{predictRisk}{rfsrc}(object,newdata,times,cause,...)
 #' \method{predictRisk}{FGR}(object,newdata,times,cause,...)
-#' \method{predictRisk}{CauseSpecificCox}(object,newdata,times,cause,...)
+#' \method{predictRisk}{CauseSpecificCox}(object,newdata,times,cause,product.limit,...)
 #' \method{predictRisk}{gbm}(object,newdata,times,n.trees,...)
 #' \method{predictRisk}{flexsurvreg}(object,newdata,times,...)
 #' @param object A fitted model from which to extract predicted event
