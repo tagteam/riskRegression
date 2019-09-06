@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun  6 2016 (09:02) 
 ## Version: 
-## last-updated: sep  6 2019 (16:57) 
+## last-updated: sep  6 2019 (17:51) 
 ##           By: Brice Ozenne
-##     Update #: 213
+##     Update #: 216
 #----------------------------------------------------------------------
 ## 
 ### Commentary:
@@ -61,6 +61,8 @@
 #' @param times A vector of times in the range of the response variable, for
 #' which the cumulative incidences event probabilities are computed.
 #' @param cause Identifies the cause of interest among the competing events.
+#' @param product.limit If \code{TRUE} the survival is computed using the product limit estimator.
+#' Otherwise the exponential approximation is used (i.e. exp(-cumulative hazard)).
 #' @param \dots Additional arguments that are passed on to the current method.
 #' @return For binary outcome a vector with predicted risks. For survival outcome with and without
 #' competing risks
@@ -947,9 +949,6 @@ predictRisk.flexsurvreg <- function(object, newdata, times, ...) {
         stop("Prediction failed")
     1 - p
 }
-
-## * add existing methods to riskRegression.options
-riskRegression.options(method.predictRisk = as.character(utils::methods("predictRisk")))
 
 #----------------------------------------------------------------------
 ### predictRisk.R ends here

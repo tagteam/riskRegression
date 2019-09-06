@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: apr  5 2018 (17:01) 
 ## Version: 
-## Last-Updated: sep  6 2019 (16:56) 
+## Last-Updated: sep  6 2019 (17:24) 
 ##           By: Brice Ozenne
-##     Update #: 517
+##     Update #: 520
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -95,11 +95,13 @@ iidATE <- function(estimator,
     if(attr(estimator,"IPTW")){
         for(iC in 1:n.contrasts){ ## iC <- 1
 
-            if(estimator %in% c("IPTW","IPTW,IPCW")){
+            if(estimator == "IPTW"){
+                factor <- colMultiply_cpp(Y.tau, scale = -iW.IPTW2[,iC])
+            }else if(estimator == "IPTW,IPCW"){
                 factor <- colMultiply_cpp(Y.tau * iW.IPCW, scale = -iW.IPTW2[,iC])
-            }else if(estimator %in% c("AIPTW")){
-                factor <- colMultiply_cpp(Y.tau * iW.IPCW - F1.ctf.tau[[iC]], scale = -iW.IPTW2[,iC])
-            }else if(estimator %in% c("AIPTW","AIPTW,AIPCW")){
+            }else if(estimator == "AIPTW"){
+                factor <- colMultiply_cpp(Y.tau - F1.ctf.tau[[iC]], scale = -iW.IPTW2[,iC])
+            }else if(estimator == "AIPTW,AIPCW"){
                 factor <- colMultiply_cpp(Y.tau * iW.IPCW - F1.ctf.tau[[iC]] + augTerm, scale = -iW.IPTW2[,iC])
             }
             

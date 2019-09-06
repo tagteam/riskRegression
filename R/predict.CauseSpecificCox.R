@@ -13,6 +13,7 @@
 #' the estimated absolute risk.
 #' @param cause [integer/character] Identifies the cause of interest among the competing
 #'     events.
+#' @param type [character] Can be changed to \code{"survival"} if the event free survival should be output instead of the absolute risk.
 #' @param landmark [integer] The starting time for the computation of the cumulative risk.,
 #' @param keep.times [logical] If \code{TRUE} add the evaluation times to the output.
 #' @param keep.newdata [logical] If \code{TRUE} add the value of the covariates used to make the prediction in the output list. 

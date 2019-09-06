@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: jun 27 2019 (10:43) 
 ## Version: 
-## Last-Updated: sep  6 2019 (16:53) 
+## Last-Updated: sep  6 2019 (17:20) 
 ##           By: Brice Ozenne
-##     Update #: 376
+##     Update #: 380
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -251,7 +251,6 @@ ATE_TI <- function(object.event,
     }
        
     ## cumsum( (F1.tau[1,1] - F1.jump[1,])/(S.jump[1,] * G.jump[1,1:index.lastjumpC]) * dM.jump[1,] )
-    
     ## ** Compute individual contribution to the ATE
     for(iC in 1:n.contrasts){ ## iC <- 1
         ## compute influence function
@@ -275,6 +274,7 @@ ATE_TI <- function(object.event,
         if(return.iid){
             ## center and scale iid decomposition for the functional delta method
             attr(out,"iid.ate")[[iC]] <- rowCenter_cpp(iid.ate * (n.obs/n.obs.contrasts), center = meanRisk[iC,])/n.obs
+            dimnames(attr(out,"iid.ate")[[iC]]) <- list(NULL, times)
         }        
     }
 

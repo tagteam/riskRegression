@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Oct 23 2016 (08:53) 
 ## Version: 
-## last-updated: sep  6 2019 (11:12) 
+## last-updated: sep  6 2019 (17:50) 
 ##           By: Brice Ozenne
-##     Update #: 1339
+##     Update #: 1341
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -595,20 +595,20 @@ ate_initArgs <- function(object.event,
         if(grep("Hist",object.event)){
             object.event <- CSC(myformula.event, data = data)
         }else{
-            object.event <- glm(myformula.event, data = data, family = binomial(link = "logit"))
+            object.event <- glm(myformula.event, data = data, family = stats::binomial(link = "logit"))
         }
     }else{
         if(inherits(object.event,"glm") || inherits(object.event,"CauseSpecificCox")){
             myformula.event <- stats::formula(object.event)
         }else if(inherits(object.event,"coxph") || inherits(object.event,"cph") ||inherits(object.event,"phreg")){
-            myformula.event <- coxFormula(object.even)
+            myformula.event <- coxFormula(object.event)
         }
 
     }
 
     if(!missing(object.treatment) && inherits(object.treatment,"formula")){
         myformula.treatment <- object.treatment
-        object.treatment <- glm(myformula.treatment, data = data, family = binomial(link = "logit"))        
+        object.treatment <- glm(myformula.treatment, data = data, family = stats::binomial(link = "logit"))        
     }else if(!missing(object.treatment) && inherits(object.treatment,"glm")){
         myformula.treatment <- stats::formula(object.treatment)
     }

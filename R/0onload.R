@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: jun 14 2018 (17:36) 
 ## Version: 
-## Last-Updated: sep  6 2019 (10:12) 
+## Last-Updated: sep  6 2019 (18:00) 
 ##           By: Brice Ozenne
-##     Update #: 24
+##     Update #: 35
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -24,6 +24,13 @@
 ## * riskRegression.options
 ## adapted from the lava package https://github.com/kkholst/lava
 riskRegression.env <- new.env()
+assign("options",
+       list(method.predictRisk = paste0("predictRisk.",c("ARR", "BinaryTree", "CauseSpecificCox", "Cforest", "coxph", "coxph.penal", "coxphTD", "cph", "CSCTD", "Ctree", "default", "double", "factor", "FGR", "flexsurvreg", "formula", "gbm", "glm", "integer", "lrm", "matrix", "numeric", "penfitS3", "prodlim", "psm", "randomForest", "ranger", "rfsrc", "riskRegression", "rpart", "selectCox", "SmcFcs", "SuperPredictor", "survfit")),
+            method.predictRiskIID = paste0("predictRiskIID.",c("CauseSpecificCox", "coxph", "cph", "default", "glm", "phreg"))),
+       envir = riskRegression.env)
+
+## cat(paste("c(\"",paste(gsub("predictRiskIID.","",as.character(utils::methods("predictRiskIID")), fixed=TRUE),collapse = "\", \""),"\")\n",sep=""))
+## cat(paste("c(\"",paste(gsub("predictRisk.","",as.character(utils::methods("predictRisk")), fixed=TRUE),collapse = "\", \""),"\")\n",sep=""))
 
 ##' @title Global options for \code{riskRegression}
 ##'
@@ -50,7 +57,15 @@ riskRegression.options <- function(...) {
         if(any(names(dots) == "")){
             stop("All element must be named \n")
         }
-        out[names(dots)] <- dots ## assign
+        dots.name <- names(dots)
+        dots.existing <- intersect(dots.name,names(out))
+        dots.new <- setdiff(dots.name,names(out))
+        if(length(dots.existing)>0){
+            out[dots.existing] <- dots[dots.existing] ## assign
+        }
+        if(length(dots.new)){
+            out <- c(out,dots[dots.new])
+        }
         out <- out[order(names(out))] ## reorder names
         assign("options", out, envir = riskRegression.env)
         invisible(out)
