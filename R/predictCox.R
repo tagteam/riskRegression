@@ -160,28 +160,29 @@ predictCox <- function(object,
   
   # {{{ treatment of times and stopping rules
   
-  ## ** Extract elements from object
-  if (missing(times)) {
-      nTimes <- 0
-      times <- numeric(0)
-  }else{
-      nTimes <- length(times)
-  }
-  needOrder <- (nTimes[1]>0 && is.unsorted(times))
-  if (needOrder) {
-      oorder.times <- order(order(times))
-      times.sorted <- sort(times)
-  }else{
-      if (nTimes==0)
-          times.sorted <- numeric(0)
-      else
-          times.sorted <- times
-  }
-
-  object.n <- coxN(object)  
-  object.modelFrame <- coxModelFrame(object)
-  infoVar <- coxVariableName(object, model.frame = object.modelFrame)
-  object.baseEstimator <- coxBaseEstimator(object)
+    ## ** Extract elements from object
+    if (missing(times)) {
+        nTimes <- 0
+        times <- numeric(0)
+    }else{
+        nTimes <- length(times)
+    }
+    needOrder <- (nTimes[1]>0 && is.unsorted(times))
+    if (needOrder) {
+        oorder.times <- order(order(times))
+        times.sorted <- sort(times)
+    }else{
+        if (nTimes==0){
+            times.sorted <- numeric(0)
+        } else{
+            times.sorted <- times
+            oorder.times <- 1:nTimes
+        }
+    }
+    object.n <- coxN(object)  
+    object.modelFrame <- coxModelFrame(object)
+    infoVar <- coxVariableName(object, model.frame = object.modelFrame)
+    object.baseEstimator <- coxBaseEstimator(object)
 
   ## ease access
   is.strata <- infoVar$is.strata
@@ -463,6 +464,7 @@ predictCox <- function(object,
         
         outSE <- calcSeCox(object,
                            times = times.sorted,
+                           oorder.times = oorder.times,
                            nTimes = nTimes,
                            type = type,
                            diag = diag,
@@ -578,81 +580,3 @@ predictCox <- function(object,
 
 
 
-## * predictSurv (documentation)
-#' @title Compute Event-Free Survival From a CSC Object
-#' @name predictSurv
-#' 
-#' @description Compute event-free survival from a CSC object.
-#' @param object The fitted CSC object.
-#' @param newdata [data.frame or data.table]  Contain the values of the predictor variables
-#' defining subject specific predictions.
-#' Should have the same structure as the data set used to fit the \code{object}.
-#' @param times [numeric vector] Time points at which to return
-#' the estimated survival.
-#' @param product.limit [logical] If \code{TRUE} the survival is computed using the product limit estimator.
-#' @param ... not used.
-
-## * predictSurv (code)
-#' @name predictSurv
-#' @export
-predictSurv <- function(object, newdata, times, product.limit){
-
-    ## ** check args
-    if(inherits(object,"CauseSpecificCox")==FALSE){
-        stop("predictSurv only compatible with CauseSpecificCox objects \n")
-    }
-
-
-    ## ** compute survival
-    if(object$surv.type=="survival"){
-        ## names(object$models)
-        predictor.cox <- if(product.limit){"predictCoxPL"}else{"predictCox"}
-        
-        out <- do.call(predictor.cox,
-                       args = list(object$models[["OverallSurvival"]], newdata = newdata, times = times, type = "survival")
-                       )$survival
-        
-    }else if(object$surv.type=="hazard"){
-        n.obs <- NROW(newdata)
-        n.times <- length(times)
-        n.cause <- length(object$cause)
-
-        if(product.limit){
-            jump.time <- object$eventTime[object$eventTime <= max(times)]
-            if(0 %in% jump.time){
-                jumpA.time <- c(jump.time,max(object$eventTime)+1e-10)
-            }else{
-                jumpA.time <- c(0,jump.time,max(object$eventTime)+1e-10)
-            }
-            n.jumpA <- length(jumpA.time)
-
-            predAll.hazard <- matrix(0, nrow = n.obs, ncol = n.jumpA)
-            for(iC in 1:n.cause){
-                outHazard <- predictCox(object$models[[iC]],
-                                        newdata = newdata,
-                                        times = jump.time,
-                                        type = "hazard")
-                
-                if(0 %in% jump.time){
-                    predAll.hazard <- predAll.hazard + cbind(outHazard$hazard,NA)
-                }else{
-                    predAll.hazard <- predAll.hazard + cbind(0,outHazard$hazard,NA)
-                }
-            }
-            index.jump <- prodlim::sindex(eval.times = times,
-                                          jump.times = jumpA.time)
-            predAll.survival <- t(apply(1-predAll.hazard,1,cumprod))
-            out <- predAll.survival[,index.jump,drop=FALSE]
-        }else{
-            pred.cumhazard <- matrix(0, nrow = n.obs, ncol = n.times)
-            for(iC in 1:n.cause){
-                pred.cumhazard <- pred.cumhazard + predictCox(object$models[[iC]], newdata = newdata, times = times, type = "cumhazard")$cumhazard
-            }
-            out <- exp(-pred.cumhazard)
-        }
-        
-    }
-
-    ## ** export
-    return(out)
-}

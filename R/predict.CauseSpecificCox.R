@@ -108,6 +108,7 @@ predict.CauseSpecificCox <- function(object,
                                      newdata,
                                      times,
                                      cause,
+                                     type = "absRisk",
                                      landmark = NA,
                                      keep.times = 1L,
                                      keep.newdata = 1L,
@@ -121,6 +122,12 @@ predict.CauseSpecificCox <- function(object,
                                      store.iid = "full",
                                      ...){
 
+    ## ** event-free survival instead of absolute risk
+    type <- match.arg(type, c("absRisk","survival"))
+    if(type=="survival"){
+        return(.predictSurv_CSC(object, newdata = newdata, times = times, product.limit = product.limit, iid = iid))
+    }
+        
     ## ** prepare
     if(object$fitter=="phreg"){newdata$entry <- 0} 
     if(missing(newdata)){
@@ -365,3 +372,105 @@ predict.CauseSpecificCox <- function(object,
 
 
 
+
+
+## * .predictSurv_CSC
+.predictSurv_CSC <- function(object, newdata, times, product.limit, iid){
+
+    ## ** compute survival
+    if(object$surv.type=="survival"){
+        ## names(object$models)
+        predictor.cox <- if(product.limit){"predictCoxPL"}else{"predictCox"}
+        
+        out <- do.call(predictor.cox,
+                       args = list(object$models[["OverallSurvival"]], newdata = newdata, times = times, iid = iid, type = "survival")
+                       )
+        
+    }else if(object$surv.type=="hazard"){
+        out <- list(survival = NULL, survival.iid = NULL,
+                    lastEventTime = NA,
+                    se = FALSE, band = FALSE, type = "survival", diag = FALSE, times = times)
+        class(out) <- "predictCox"
+        
+        n.obs <- NROW(newdata)
+        n.times <- length(times)
+        n.cause <- length(object$cause)
+
+        if(product.limit){
+            jump.time <- object$eventTime[object$eventTime <= max(times)]
+            if(0 %in% jump.time){
+                jumpA.time <- c(jump.time,max(object$eventTime)+1e-10)
+            }else{
+                jumpA.time <- c(0,jump.time,max(object$eventTime)+1e-10)
+            }
+            n.jumpA <- length(jumpA.time)
+
+            predAll.hazard <- matrix(0, nrow = n.obs, ncol = n.jumpA)
+            if(iid){
+                pred.cumhazard.iid <- array(0, dim = c(n.obs, n.times, n.obs))
+            }
+            for(iC in 1:n.cause){
+                outHazard <- predictCox(object$models[[iC]],
+                                        newdata = newdata,
+                                        times = jump.time,
+                                        type = "hazard",
+                                        iid = iid)
+                
+                if(0 %in% jump.time){
+                    predAll.hazard <- predAll.hazard + cbind(outHazard$hazard,NA)
+                }else{
+                    predAll.hazard <- predAll.hazard + cbind(0,outHazard$hazard,NA)
+                }
+
+                if(iid){
+                    ## cumulate hazard over time
+                    if(0 %in% jump.time){
+                        outHazard$cumhazard.iid <- base::aperm(apply(outHazard$hazard.iid,c(1,3),cumsum),
+                                                               perm = c(2,1,3))
+                    }else{
+                        outHazard$cumhazard.iid <- array(0, dim = c(n.obs,n.jumpA-1,n.obs))
+                        outHazard$cumhazard.iid[,-1,] <- base::aperm(apply(outHazard$hazard.iid,c(1,3),cumsum),
+                                                               perm = c(2,1,3))
+                    }
+                    ## check
+                    ## range(outHazard$cumhazard.iid - predictCox(object$models[[iC]], newdata = newdata, times = c(0,jump.time), type = "cumhazard", iid = iid)$cumhazard.iid)
+                    index.jump <- prodlim::sindex(jump.times = c(0,jump.time), eval.times = times)
+
+                    pred.cumhazard.iid <- pred.cumhazard.iid + outHazard$cumhazard.iid[,index.jump,,drop=FALSE]
+
+                    ## check
+                    ## range(pred.cumhazard.iid - predictCox(object$models[[iC]], newdata = newdata, times = times, iid = iid, type = "cumhazard")$cumhazard.iid)
+                }
+
+            }
+            index.jump <- prodlim::sindex(eval.times = times,
+                                          jump.times = jumpA.time)
+            predAll.survival <- t(apply(1-predAll.hazard,1,cumprod))
+            out$survival <- predAll.survival[,index.jump,drop=FALSE]
+        }else{
+            pred.cumhazard <- matrix(0, nrow = n.obs, ncol = n.times)
+            if(iid){
+                pred.cumhazard.iid <- array(0, dim = c(n.obs, n.times, n.obs))
+            }
+            for(iC in 1:n.cause){
+                outHazard <- predictCox(object$models[[iC]], newdata = newdata, times = times, iid = iid, type = "cumhazard")
+                pred.cumhazard <- pred.cumhazard + outHazard$cumhazard
+                if(iid){
+                    pred.cumhazard.iid <- pred.cumhazard.iid + outHazard$cumhazard.iid
+                }
+            }
+            out$survival <- exp(-pred.cumhazard)
+        }
+
+        if(iid){
+            out$survival.iid <- array(NA, dim = dim(pred.cumhazard.iid))
+            for(iTau in 1:n.times){
+                out$survival.iid[,iTau,] <- colMultiply_cpp(-pred.cumhazard.iid[,iTau,], scale = out$survival[,iTau])
+            }
+        }        
+        
+    }
+
+    ## ** export
+    return(out)
+}

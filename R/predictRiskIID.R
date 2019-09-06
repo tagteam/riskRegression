@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: jun 28 2019 (14:38) 
 ## Version: 
-## Last-Updated: jul  9 2019 (09:39) 
+## Last-Updated: sep  6 2019 (11:12) 
 ##           By: Brice Ozenne
-##     Update #: 62
+##     Update #: 64
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -194,6 +194,10 @@ predictRiskIID.CauseSpecificCox <- function(object,
         return(resPred$absRisk.iid)
     }
 }
+
+## * add existing methods to riskRegression.options
+riskRegression.options(method.predictRiskIID = as.character(utils::methods("predictRiskIID")))
+
 
 ######################################################################
 ### predictRiskIID.R ends here

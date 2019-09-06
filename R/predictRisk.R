@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun  6 2016 (09:02) 
 ## Version: 
-## last-updated: Jul 13 2019 (11:47) 
-##           By: Thomas Alexander Gerds
-##     Update #: 201
+## last-updated: sep  6 2019 (16:57) 
+##           By: Brice Ozenne
+##     Update #: 213
 #----------------------------------------------------------------------
 ## 
 ### Commentary:
@@ -348,18 +348,31 @@ predictRisk.cox.aalen <- function(object,newdata,times,...){
 
     
 ##' @export
-predictRisk.coxph <- function(object,newdata,times,...){
-    p <- predictCox(object=object,
-                    newdata=newdata,
-                    times=times,
-                    se = FALSE,
-                    iid = FALSE,
-                    keep.times=FALSE,
-                    type="survival")$survival
-
-    if (NROW(p) != NROW(newdata) || NCOL(p) != length(times)){
-        stop(paste("\nPrediction matrix has wrong dimensions:\nRequested newdata x times: ",NROW(newdata)," x ",length(times),"\nProvided prediction matrix: ",NROW(p)," x ",NCOL(p),"\n\n",sep=""))
+predictRisk.coxph <- function(object,newdata,times,product.limit=FALSE,...){
+    if(product.limit){
+        p <- predictCoxPL(object=object,
+                          newdata=newdata,
+                          times=times,
+                          se = FALSE,
+                          iid = FALSE,
+                          keep.times=FALSE,
+                          type="survival")$survival
+    }else{
+        p <- predictCox(object=object,
+                        newdata=newdata,
+                        times=times,
+                        se = FALSE,
+                        iid = FALSE,
+                        keep.times=FALSE,
+                        type="survival")$survival
     }
+
+    ## if (NROW(p) != NROW(newdata) || NCOL(p) != length(times)){
+    ##     stop("Prediction matrix has wrong dimensions:",
+    ##          "Requested newdata x times: ",NROW(newdata)," x ",length(times),
+    ##          "Provided prediction matrix: ",NROW(p)," x ",NCOL(p),"\n")
+    ## }
+    
     return(1-p)
 }
 
@@ -475,21 +488,7 @@ predictRisk.coxph.penal <- function(object,newdata,times,...){
 
 
 ##' @export 
-predictRisk.cph <- function(object,newdata,times,...){
-    ## if (!match("surv",names(object),nomatch=0)) stop("Argument missing: set surv=TRUE in the call to cph!")
-    ## p <- rms::survest(object,times=times,newdata=newdata,se.fit=FALSE,what="survival")$surv
-    ## if (is.null(dim(p))) p <- matrix(p,nrow=NROW(newdata))
-    p <- predictCox(object=object,
-                    newdata=newdata,
-                    times=times,
-                    se = FALSE,
-                    iid = FALSE,
-                    keep.times=FALSE,
-                    type="survival")$survival
-    if (NROW(p) != NROW(newdata) || NCOL(p) != length(times))
-        stop(paste("\nPrediction matrix has wrong dimensions:\nRequested newdata x times: ",NROW(newdata)," x ",length(times),"\nProvided prediction matrix: ",NROW(p)," x ",NCOL(p),"\n\n",sep=""))
-    return(1-p)
-}
+predictRisk.cph <- predictRisk.coxph
 
 ##' @export
 predictRisk.selectCox <- function(object,newdata,times,...){
@@ -689,17 +688,24 @@ predictRisk.ARR <- function(object,newdata,times,cause,...){
 
 
 ##' @export 
-predictRisk.CauseSpecificCox <- function (object, newdata, times, cause, ...) { 
+predictRisk.CauseSpecificCox <- function (object, newdata, times, cause, product.limit = TRUE, ...) { 
     p <- predict(object=object,
                  newdata=newdata,
                  times=times,
                  cause=cause,
                  keep.strata=FALSE,
                  se = FALSE,
-                 iid = FALSE)$absRisk
-    if (NROW(p) != NROW(newdata) || NCOL(p) != length(times))
-        stop(paste("\nPrediction matrix has wrong dimension:\nRequested newdata x times: ",NROW(newdata)," x ",length(times),"\nProvided prediction matrix: ",NROW(p)," x ",NCOL(p),"\n\n",sep=""))
-    p
+                 iid = FALSE,
+                 product.limit = product.limit)$absRisk
+    
+    
+    ## if (NROW(p) != NROW(newdata) || NCOL(p) != length(times)){
+    ##     stop("Prediction matrix has wrong dimension:\n",
+    ##          "Requested newdata x times: ",NROW(newdata)," x ",length(times),"\n",
+    ##          "Provided prediction matrix: ",NROW(p)," x ",NCOL(p),"\n")
+    ## }
+    
+    return(p)
 }
 
 
@@ -942,6 +948,8 @@ predictRisk.flexsurvreg <- function(object, newdata, times, ...) {
     1 - p
 }
 
+## * add existing methods to riskRegression.options
+riskRegression.options(method.predictRisk = as.character(utils::methods("predictRisk")))
 
 #----------------------------------------------------------------------
 ### predictRisk.R ends here

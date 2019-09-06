@@ -52,7 +52,7 @@ test_that("check against manual computation",{
                   verbose=verbose)
     ATE <- list()
     ATE.iid <- list()
-    for(iT in c("T0","T1","T2")){
+    for(iT in c("T0","T1","T2")){ ## iT <- "T0"
         newdata0 <- copy(dtS)
         newdata0$X1 <- iT
         fit <- cph(formula = Surv(time,event)~ X1+X2,data=dtS,y=TRUE,x=TRUE)

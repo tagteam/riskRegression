@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: maj 18 2017 (09:23) 
 ## Version: 
-## last-updated: jul 30 2019 (13:55) 
+## last-updated: sep  6 2019 (14:44) 
 ##           By: Brice Ozenne
-##     Update #: 194
+##     Update #: 196
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -790,11 +790,18 @@ dt <- sampleData(5e1, outcome = "survival")[,.(time,event,X1,X2,X6)]
 test_that("[predictCox] diag no strata", {
     e.coxph <- coxph(Surv(time, event) ~ X1*X6, data = dt, y = TRUE, x = TRUE)
 
-    GS <- predictCox(e.coxph, newdata = dt, times = dt$time, se = FALSE)
-    test <- predictCox(e.coxph, newdata = dt, times = dt$time, se = FALSE, diag = TRUE)
+    GS <- predictCox(e.coxph, newdata = dt, times = dt$time, se = FALSE, iid = TRUE)
+    test <- predictCox(e.coxph, newdata = dt, times = dt$time, se = FALSE, iid = TRUE, diag = TRUE)
     expect_equal(dt$time, as.double(test$time))
     expect_equal(diag(GS$cumhazard), as.double(test$cumhazard))
     expect_equal(diag(GS$survival), as.double(test$survival))
+
+    GS <- predictCox(e.coxph, newdata = dt, times = dt$time, se = FALSE, iid = TRUE)
+    test <- predictCox(e.coxph, newdata = dt, times = dt$time, se = FALSE, iid = TRUE, diag = TRUE)
+
+    GS.iid.diag <- do.call(rbind,lapply(1:NROW(dt),
+                                        function(iN){GS$cumhazard.iid[iN,iN,]}))
+    expect_equal(GS.iid.diag, test$cumhazard.iid[,1,])
 })
 
 test_that("[predictCox] diag strata", {
