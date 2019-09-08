@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: maj 27 2017 (11:46) 
 ## Version: 
-## last-updated: jul  4 2019 (11:18) 
+## last-updated: sep  6 2019 (14:41) 
 ##           By: Brice Ozenne
-##     Update #: 492
+##     Update #: 499
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -28,6 +28,7 @@
 #'     (rms package).
 #' @param times Vector of times at which to return the estimated
 #'      hazard/survival.
+#' @param oorder.times Restaure original times (only use when \code{diag = TRUE}).
 #' @param nTimes the length of the argument \code{times}. 
 #' @param type One or several strings that match (either in lower or upper case or mixtures) one
 #' or several of the strings \code{"hazard"},\code{"cumhazard"}, \code{"survival"}.
@@ -68,7 +69,7 @@
 
 ## * calcSeCox (code)
 #' @rdname calcSeCox
-calcSeCox <- function(object, times, nTimes, type, diag,
+calcSeCox <- function(object, times, oorder.times, nTimes, type, diag,
                       Lambda0, object.n, object.time, object.eXb, object.strata, nStrata,
                       new.n, new.eXb, new.LPdata, new.strata, new.survival, 
                       nVar, export, store.iid){
@@ -172,25 +173,23 @@ calcSeCox <- function(object, times, nTimes, type, diag,
             if(nVar>0){
                 X_IFbeta_mat <- tcrossprod(iid.object$IFbeta, new.LPdata)
             }
-            
             for(iObs in 1:new.n){
                 ## print(iObs)
                 ## NOTE: cannot perfom log transformation if hazard %in% type (error in predictCox)
                 iObs.strata <- new.strata[iObs]
-                
                 if("hazard" %in% type){
                     ## Evaluate the influence function for the
                     ## hazard based on the one of the baseline hazard
                     if (nVar == 0) {
                         if(diag){
-                            IF_tempo = iid.object$IFhazard[[iObs.strata]][,iObs,drop=FALSE]
+                            IF_tempo = iid.object$IFhazard[[iObs.strata]][,oorder.times[iObs],drop=FALSE]
                         }else{
                             IF_tempo = iid.object$IFhazard[[iObs.strata]]
                         }
                     }
                     else {
                         if(diag){
-                            IF_tempo = (new.eXb[iObs] * (iid.object$IFhazard[[iObs.strata]][,iObs,drop=FALSE] + X_IFbeta_mat[,iObs,drop=FALSE] * Lambda0$hazard[[iObs.strata]][iObs]))
+                            IF_tempo = (new.eXb[iObs] * (iid.object$IFhazard[[iObs.strata]][,oorder.times[iObs],drop=FALSE] + X_IFbeta_mat[,iObs,drop=FALSE] * Lambda0$hazard[[iObs.strata]][oorder.times[iObs]]))
                         }else{
                             IF_tempo = (new.eXb[iObs] * (iid.object$IFhazard[[iObs.strata]] + crossprod(t(X_IFbeta_mat[,iObs,drop=FALSE]),Lambda0$hazard[[iObs.strata]])))
                         }
@@ -205,13 +204,13 @@ calcSeCox <- function(object, times, nTimes, type, diag,
                     ## cumulative hazard based on the one of the cumulative baseline hazard
                     if(nVar == 0){
                         if(diag){
-                            IF_tempo <- iid.object$IFcumhazard[[iObs.strata]][,iObs,drop=FALSE]
+                            IF_tempo <- iid.object$IFcumhazard[[iObs.strata]][,oorder.times[iObs],drop=FALSE]
                         }else{
                             IF_tempo <- iid.object$IFcumhazard[[iObs.strata]]
                         }
                     }else{
                         if(diag){
-                            IF_tempo <- new.eXb[iObs]*(iid.object$IFcumhazard[[iObs.strata]][,iObs,drop=FALSE] + X_IFbeta_mat[,iObs,drop=FALSE] * Lambda0$cumhazard[[iObs.strata]][iObs])
+                            IF_tempo <- new.eXb[iObs]*(iid.object$IFcumhazard[[iObs.strata]][,oorder.times[iObs],drop=FALSE] + X_IFbeta_mat[,iObs,drop=FALSE] * Lambda0$cumhazard[[iObs.strata]][oorder.times[iObs]])
                         }else{
                             IF_tempo <- new.eXb[iObs]*(iid.object$IFcumhazard[[iObs.strata]] + crossprod(t(X_IFbeta_mat[,iObs,drop=FALSE]), Lambda0$cumhazard[[iObs.strata]]))
                         }

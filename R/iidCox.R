@@ -276,9 +276,10 @@ iidCox <- function(object, newdata = NULL,
     colnames(IFbeta) <- infoVar$lpvars
     # }}}
     
-    # {{{ Computation of the influence function (baseline hazard)
+                                        # {{{ Computation of the influence function (baseline hazard)
     if(baseline.iid){
         for(iStrata in 1:nStrata){
+
             ## hazard
             if(nStrata==1){ # select only the time,lambda corresponding to the events and not censored observations
                 timeStrata <- lambda0$time[lambda0$time %in% Ecpp[[1]]$Utime1]
@@ -301,7 +302,7 @@ iidCox <- function(object, newdata = NULL,
             }else{
                 tau.hazard_strata <- tau.hazard
             }
-    
+
             ## E
             nUtime1_strata <- length(Ecpp[[iStrata]]$Utime1)
             if(nVar > 0){

@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: apr 28 2017 (14:19) 
 ## Version: 
-## last-updated: jul  4 2019 (10:57) 
+## last-updated: jul 31 2019 (12:54) 
 ##           By: Brice Ozenne
-##     Update #: 66
+##     Update #: 67
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -50,7 +50,7 @@
 #' #### Average treatment effect ####
 #' seqTimes <- sort(unique(fit$y[,1]))
 #' seqTimes5 <- seqTimes[seqTimes>5 & seqTimes<10]
-#' ateFit <- ate(fit, data = dtS, object.treatment = "X1", contrasts = NULL,
+#' ateFit <- ate(fit, data = dtS, treatment = "X1", contrasts = NULL,
 #'               times = seqTimes, B = 0, band = TRUE, nsim.band = 500, y = TRUE,
 #'               mc.cores=1)
 #'

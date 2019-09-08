@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: jun 28 2019 (14:38) 
 ## Version: 
-## Last-Updated: jul  9 2019 (09:39) 
+## Last-Updated: sep  6 2019 (17:42) 
 ##           By: Brice Ozenne
-##     Update #: 62
+##     Update #: 65
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -194,6 +194,7 @@ predictRiskIID.CauseSpecificCox <- function(object,
         return(resPred$absRisk.iid)
     }
 }
+
 
 ######################################################################
 ### predictRiskIID.R ends here

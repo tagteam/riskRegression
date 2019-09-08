@@ -55,6 +55,9 @@ which to compute predicted event probabilities.}
 which the cumulative incidences event probabilities are computed.}
 
 \item{cause}{Identifies the cause of interest among the competing events.}
+
+\item{product.limit}{If \code{TRUE} the survival is computed using the product limit estimator.
+Otherwise the exponential approximation is used (i.e. exp(-cumulative hazard)).}
 }
 \value{
 For binary outcome a vector with predicted risks. For survival outcome with and without

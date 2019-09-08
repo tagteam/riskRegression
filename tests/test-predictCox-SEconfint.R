@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: maj 18 2017 (09:23) 
 ## Version: 
-## last-updated: jul  4 2019 (11:20) 
+## last-updated: sep  6 2019 (14:44) 
 ##           By: Brice Ozenne
-##     Update #: 190
+##     Update #: 196
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -790,11 +790,18 @@ dt <- sampleData(5e1, outcome = "survival")[,.(time,event,X1,X2,X6)]
 test_that("[predictCox] diag no strata", {
     e.coxph <- coxph(Surv(time, event) ~ X1*X6, data = dt, y = TRUE, x = TRUE)
 
-    GS <- predictCox(e.coxph, newdata = dt, times = dt$time, se = FALSE)
-    test <- predictCox(e.coxph, newdata = dt, times = dt$time, se = FALSE, diag = TRUE)
+    GS <- predictCox(e.coxph, newdata = dt, times = dt$time, se = FALSE, iid = TRUE)
+    test <- predictCox(e.coxph, newdata = dt, times = dt$time, se = FALSE, iid = TRUE, diag = TRUE)
     expect_equal(dt$time, as.double(test$time))
     expect_equal(diag(GS$cumhazard), as.double(test$cumhazard))
     expect_equal(diag(GS$survival), as.double(test$survival))
+
+    GS <- predictCox(e.coxph, newdata = dt, times = dt$time, se = FALSE, iid = TRUE)
+    test <- predictCox(e.coxph, newdata = dt, times = dt$time, se = FALSE, iid = TRUE, diag = TRUE)
+
+    GS.iid.diag <- do.call(rbind,lapply(1:NROW(dt),
+                                        function(iN){GS$cumhazard.iid[iN,iN,]}))
+    expect_equal(GS.iid.diag, test$cumhazard.iid[,1,])
 })
 
 test_that("[predictCox] diag strata", {
@@ -829,8 +836,8 @@ test_that("Cox - output of average.iid should not depend on other arguments", {
     fit <- coxph(Surv(time,event)~X1 + strata(X2) + X6,
                  data=d, ties="breslow", x = TRUE, y = TRUE)
 
-    out1 <- predictCox(fit, newdata = dd[1:5], times = 1:3, average.iid = TRUE)
-    out2 <- predictCox(fit, newdata = dd[1:5], times = 1:3, se = TRUE, average.iid = TRUE)
+    out1 <- predictCox(fit, newdata = d[1:5], times = 1:3, average.iid = TRUE)
+    out2 <- predictCox(fit, newdata = d[1:5], times = 1:3, se = TRUE, average.iid = TRUE)
 
     expect_equal(out1$survival.average.iid,out2$survival.average.iid, tol = 1e-8)
 })    
@@ -843,12 +850,30 @@ test_that("CSC - output of average.iid should not depend on other arguments", {
     fit <- CSC(Hist(time,event)~X1 + strata(X2) + X6,
                data=d)
 
-    out1 <- predict(fit, newdata = dd[1:5], times = 1:3, average.iid = TRUE, cause = 1)
-    out2 <- predict(fit, newdata = dd[1:5], times = 1:3, se = TRUE, average.iid = TRUE, cause = 1)
+    out1 <- predict(fit, newdata = d[1:5], times = 1:3, average.iid = TRUE, cause = 1)
+    out2 <- predict(fit, newdata = d[1:5], times = 1:3, se = TRUE, average.iid = TRUE, cause = 1)
 
     test_that("output of average.iid should not depend on other arguments", {
         expect_equal(out1$survival.average.iid,out2$survival.average.iid, tol = 1e-8)
     })    
+})
+
+## ** (Previously) incorrect calculation of the standard error with atanh  (i.e. se/(1+b^2) instead of se/(1-b^2))
+## from: Paul Blanche &lt;pabl@sund.ku.dk&gt;
+## subject: suspected error in riskRegression
+## date: Tue, 30 Jul 2019 11:42:14 +0200
+
+test_that("Standard error after atanh transformation", {
+    set.seed(10)
+    x <- rnorm(1e2)
+    y <- rnorm(1e2)
+
+    rho <- cor.test(x,y)$estimate
+    rho.se <- (1-rho^2)
+    
+    
+    expect_equal(1, as.double(transformSE(estimate = rho, se = rho.se, type = "atanh")),
+                 tol = 1e-5)
 })
 
 

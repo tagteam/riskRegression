@@ -5,9 +5,9 @@
 \title{Predicting Absolute Risk from Cause-Specific Cox Models}
 \usage{
 \method{predict}{CauseSpecificCox}(object, newdata, times, cause,
-  landmark = NA, keep.times = 1L, keep.newdata = 1L,
-  keep.strata = 1L, se = FALSE, band = FALSE, iid = FALSE,
-  confint = (se + band) > 0, average.iid = FALSE,
+  type = "absRisk", landmark = NA, keep.times = 1L,
+  keep.newdata = 1L, keep.strata = 1L, se = FALSE, band = FALSE,
+  iid = FALSE, confint = (se + band) > 0, average.iid = FALSE,
   product.limit = TRUE, store.iid = "full", ...)
 }
 \arguments{
@@ -22,6 +22,8 @@ the estimated absolute risk.}
 
 \item{cause}{[integer/character] Identifies the cause of interest among the competing
 events.}
+
+\item{type}{[character] Can be changed to \code{"survival"} if the event free survival should be output instead of the absolute risk.}
 
 \item{landmark}{[integer] The starting time for the computation of the cumulative risk.,}
 

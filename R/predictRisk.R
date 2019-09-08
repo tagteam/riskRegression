@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun  6 2016 (09:02) 
 ## Version: 
-## last-updated: Jul 14 2019 (20:49) 
-##           By: Thomas Alexander Gerds
-##     Update #: 211
+## last-updated: sep  8 2019 (12:49) 
+##           By: Brice Ozenne
+##     Update #: 219
 #----------------------------------------------------------------------
 ## 
 ### Commentary:
@@ -41,8 +41,8 @@
 #' @usage
 #' \method{predictRisk}{glm}(object,newdata,...)
 #' \method{predictRisk}{cox.aalen}(object,newdata,times,...)
-#' \method{predictRisk}{cph}(object,newdata,times,...)
-#' \method{predictRisk}{coxph}(object,newdata,times,...)
+#' \method{predictRisk}{cph}(object,newdata,times,product.limit,...)
+#' \method{predictRisk}{coxph}(object,newdata,times,product.limit,...)
 #' \method{predictRisk}{matrix}(object,newdata,times,cause,...)
 #' \method{predictRisk}{selectCox}(object,newdata,times,...)
 #' \method{predictRisk}{psm}(object,newdata,times,...)
@@ -51,8 +51,8 @@
 #' \method{predictRisk}{prodlim}(object,newdata,times,cause,...)
 #' \method{predictRisk}{rfsrc}(object,newdata,times,cause,...)
 #' \method{predictRisk}{FGR}(object,newdata,times,cause,...)
-#' \method{predictRisk}{CauseSpecificCox}(object,newdata,times,cause,...)
-#' \method{predictRisk}{gbm}(object,newdata,times,...)
+#' \method{predictRisk}{CauseSpecificCox}(object,newdata,times,cause,product.limit,...)
+#' \method{predictRisk}{gbm}(object,newdata,times,n.trees,...)
 #' \method{predictRisk}{flexsurvreg}(object,newdata,times,...)
 #' @param object A fitted model from which to extract predicted event
 #' probabilities
@@ -61,6 +61,8 @@
 #' @param times A vector of times in the range of the response variable, for
 #' which the cumulative incidences event probabilities are computed.
 #' @param cause Identifies the cause of interest among the competing events.
+#' @param product.limit If \code{TRUE} the survival is computed using the product limit estimator.
+#' Otherwise the exponential approximation is used (i.e. exp(-cumulative hazard)).
 #' @param \dots Additional arguments that are passed on to the current method.
 #' @return For binary outcome a vector with predicted risks. For survival outcome with and without
 #' competing risks
@@ -348,18 +350,31 @@ predictRisk.cox.aalen <- function(object,newdata,times,...){
 
     
 ##' @export
-predictRisk.coxph <- function(object,newdata,times,...){
-    p <- predictCox(object=object,
-                    newdata=newdata,
-                    times=times,
-                    se = FALSE,
-                    iid = FALSE,
-                    keep.times=FALSE,
-                    type="survival")$survival
-
-    if (NROW(p) != NROW(newdata) || NCOL(p) != length(times)){
-        stop(paste("\nPrediction matrix has wrong dimensions:\nRequested newdata x times: ",NROW(newdata)," x ",length(times),"\nProvided prediction matrix: ",NROW(p)," x ",NCOL(p),"\n\n",sep=""))
+predictRisk.coxph <- function(object,newdata,times,product.limit=FALSE,...){
+    if(product.limit){
+        p <- predictCoxPL(object=object,
+                          newdata=newdata,
+                          times=times,
+                          se = FALSE,
+                          iid = FALSE,
+                          keep.times=FALSE,
+                          type="survival")$survival
+    }else{
+        p <- predictCox(object=object,
+                        newdata=newdata,
+                        times=times,
+                        se = FALSE,
+                        iid = FALSE,
+                        keep.times=FALSE,
+                        type="survival")$survival
     }
+
+    ## if (NROW(p) != NROW(newdata) || NCOL(p) != length(times)){
+    ##     stop("Prediction matrix has wrong dimensions:",
+    ##          "Requested newdata x times: ",NROW(newdata)," x ",length(times),
+    ##          "Provided prediction matrix: ",NROW(p)," x ",NCOL(p),"\n")
+    ## }
+    
     return(1-p)
 }
 
@@ -475,21 +490,7 @@ predictRisk.coxph.penal <- function(object,newdata,times,...){
 
 
 ##' @export 
-predictRisk.cph <- function(object,newdata,times,...){
-    ## if (!match("surv",names(object),nomatch=0)) stop("Argument missing: set surv=TRUE in the call to cph!")
-    ## p <- rms::survest(object,times=times,newdata=newdata,se.fit=FALSE,what="survival")$surv
-    ## if (is.null(dim(p))) p <- matrix(p,nrow=NROW(newdata))
-    p <- predictCox(object=object,
-                    newdata=newdata,
-                    times=times,
-                    se = FALSE,
-                    iid = FALSE,
-                    keep.times=FALSE,
-                    type="survival")$survival
-    if (NROW(p) != NROW(newdata) || NCOL(p) != length(times))
-        stop(paste("\nPrediction matrix has wrong dimensions:\nRequested newdata x times: ",NROW(newdata)," x ",length(times),"\nProvided prediction matrix: ",NROW(p)," x ",NCOL(p),"\n\n",sep=""))
-    return(1-p)
-}
+predictRisk.cph <- predictRisk.coxph
 
 ##' @export
 predictRisk.selectCox <- function(object,newdata,times,...){
@@ -689,17 +690,24 @@ predictRisk.ARR <- function(object,newdata,times,cause,...){
 
 
 ##' @export 
-predictRisk.CauseSpecificCox <- function (object, newdata, times, cause, ...) { 
+predictRisk.CauseSpecificCox <- function (object, newdata, times, cause, product.limit = TRUE, ...) { 
     p <- predict(object=object,
                  newdata=newdata,
                  times=times,
                  cause=cause,
                  keep.strata=FALSE,
                  se = FALSE,
-                 iid = FALSE)$absRisk
-    if (NROW(p) != NROW(newdata) || NCOL(p) != length(times))
-        stop(paste("\nPrediction matrix has wrong dimension:\nRequested newdata x times: ",NROW(newdata)," x ",length(times),"\nProvided prediction matrix: ",NROW(p)," x ",NCOL(p),"\n\n",sep=""))
-    p
+                 iid = FALSE,
+                 product.limit = product.limit)$absRisk
+    
+    
+    ## if (NROW(p) != NROW(newdata) || NCOL(p) != length(times)){
+    ##     stop("Prediction matrix has wrong dimension:\n",
+    ##          "Requested newdata x times: ",NROW(newdata)," x ",length(times),"\n",
+    ##          "Provided prediction matrix: ",NROW(p)," x ",NCOL(p),"\n")
+    ## }
+    
+    return(p)
 }
 
 
@@ -940,35 +948,6 @@ predictRisk.flexsurvreg <- function(object, newdata, times, ...) {
     if (NROW(p) != NROW(newdata) || NCOL(p) != length(times)) 
         stop("Prediction failed")
     1 - p
-}
-
-##' @export 
-predictRisk.cv.glmnet <- function(object, newdata, times,...) {
-    p <- matrix(0, NROW(newdata), length(times))
-    time <- object$call$formula[[2]][[2]]
-    event <- object$call$formula[[2]][[3]]
-    d <- data.matrix(newdata)
-    requireNamespace("glmnetUtils")
-    xb.test <- predict(object, newdata = as.data.frame(newdata) , type = "link") 
-    H2 <- hdnom::glmnet_basesurv(time = newdata[, time], event = newdata[,event], lp = xb.test, times.eval = times)$cumulative_base_hazard
-    for (i in 1:length(times)) p[,i] <- exp(-H2[i] * exp(xb.test))
-    p[,times==0] <- 1
-    return(1-p)
-}
-
-##' @export 
-predictRisk.glmnet <- function(object, newdata, times,...) {
-    if (length(object$lambda) > 1) stop("Supply only a single value of lambda in the glmnet fit") 
-    p <- matrix(0, NROW(newdata), length(times))
-    time <- object$call$formula[[2]][[2]]
-    event <- object$call$formula[[2]][[3]]
-    d <- data.matrix(newdata)
-    requireNamespace("glmnetUtils")
-    xb.test <- predict(object, newdata = as.data.frame(newdata) , type = "link") 
-    H2 <- hdnom::glmnet_basesurv(time = newdata[, time], event = newdata[,event], lp = xb.test, times.eval = times)$cumulative_base_hazard
-    for (i in 1:length(times)) p[,i] <- exp(-H2[i] * exp(xb.test))
-    p[,times==0] <- 1
-    return(1-p)
 }
 
 #----------------------------------------------------------------------

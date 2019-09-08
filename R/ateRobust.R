@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne, Thomas A. Gerds
 ## Created: jun 27 2018 (17:47) 
 ## Version: 
-## Last-Updated: Jul 12 2019 (20:26) 
-##           By: Thomas Alexander Gerds
-##     Update #: 1235
+## Last-Updated: sep  6 2019 (17:49) 
+##           By: Brice Ozenne
+##     Update #: 1254
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -201,7 +201,6 @@ ateRobust <- function(data, times, cause, type,
     ## ** Evaluate fitted distributions  
     ## *** outcome model: conditional expectations
     if(type == "survival"){
-        
         ## Estimation of the survival
         prediction.event <- do.call(predictor.cox, args = list(model.event, newdata = data, times = times, type = "survival"))
         prediction.event0 <- do.call(predictor.cox, args = list(model.event, newdata = data0, times = times, type = "survival"))
@@ -213,7 +212,7 @@ ateRobust <- function(data, times, cause, type,
         data[, c("prob.event1") := 1 - prediction.event1$survival[,1]]
 
     }else if(type=="competing.risks"){
-
+        
         ## Estimation of the cumulative incidence function
         prediction.event <- predict(model.event, newdata = data, times = times, cause = cause, product.limit = product.limit)
         prediction.event0 <- predict(model.event, newdata = data0, times = times, cause = cause, product.limit = product.limit)
@@ -254,8 +253,8 @@ ateRobust <- function(data, times, cause, type,
         ## at each time
         predIndiv.censor <- do.call(predictor.cox, args = list(model.censor, newdata = data, times = data$time.tau-(1e-10), type = "survival", diag = TRUE))
         data[,c("weights") := .SD$Ncensoring.tau / predIndiv.censor$survival[,1]]
+
         ## data[,c("prob.indiv.censoring") := predIndiv.censor$survival[,1]]
-        
         ## store
         ## data[,c("weights") := as.numeric(NA)]
         ## data[coxMF$stop<=times, c("weights") := .SD$Ncensoring.tau / .SD$prob.indiv.censoring]
@@ -278,7 +277,7 @@ ateRobust <- function(data, times, cause, type,
                                            cause = cause)]
         }
     }
-
+    
     ## ** Influence function for the nuisance parameters
     ## needs to be after censoring to get the weights
     if(se>0){
@@ -511,8 +510,72 @@ ateRobust <- function(data, times, cause, type,
     }else{
         survCensoring <- matrix(1, nrow = n.obs, ncol = 1)
     }
+
     ## ** integral
     out <- rowSums(atRisk * riskConditional/survCensoring * (dN-dLambda))
+
     ## ** export
     return(out)
 }
+
+## * predictSurv 
+predictSurv <- function(object, newdata, times, product.limit){
+
+    ## ** check args
+    if(inherits(object,"CauseSpecificCox")==FALSE){
+        stop("predictSurv only compatible with CauseSpecificCox objects \n")
+    }
+
+
+    ## ** compute survival
+    if(object$surv.type=="survival"){
+        ## names(object$models)
+        predictor.cox <- if(product.limit){"predictCoxPL"}else{"predictCox"}
+        
+        out <- do.call(predictor.cox,
+                       args = list(object$models[["OverallSurvival"]], newdata = newdata, times = times, type = "survival")
+                       )$survival
+        
+    }else if(object$surv.type=="hazard"){
+        n.obs <- NROW(newdata)
+        n.times <- length(times)
+        n.cause <- length(object$cause)
+
+        if(product.limit){
+            jump.time <- object$eventTime[object$eventTime <= max(times)]
+            if(0 %in% jump.time){
+                jumpA.time <- c(jump.time,max(object$eventTime)+1e-10)
+            }else{
+                jumpA.time <- c(0,jump.time,max(object$eventTime)+1e-10)
+            }
+            n.jumpA <- length(jumpA.time)
+
+            predAll.hazard <- matrix(0, nrow = n.obs, ncol = n.jumpA)
+            for(iC in 1:n.cause){
+                outHazard <- predictCox(object$models[[iC]],
+                                        newdata = newdata,
+                                        times = jump.time,
+                                        type = "hazard")
+                
+                if(0 %in% jump.time){
+                    predAll.hazard <- predAll.hazard + cbind(outHazard$hazard,NA)
+                }else{
+                    predAll.hazard <- predAll.hazard + cbind(0,outHazard$hazard,NA)
+                }
+            }
+            index.jump <- prodlim::sindex(eval.times = times,
+                                          jump.times = jumpA.time)
+            predAll.survival <- t(apply(1-predAll.hazard,1,cumprod))
+            out <- predAll.survival[,index.jump,drop=FALSE]
+        }else{
+            pred.cumhazard <- matrix(0, nrow = n.obs, ncol = n.times)
+            for(iC in 1:n.cause){
+                pred.cumhazard <- pred.cumhazard + predictCox(object$models[[iC]], newdata = newdata, times = times, type = "cumhazard")$cumhazard
+            }
+            out <- exp(-pred.cumhazard)
+        }
+        
+    }
+
+    ## ** export
+    return(out)}

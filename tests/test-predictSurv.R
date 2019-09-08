@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: aug 28 2018 (10:06) 
 ## Version: 
-## Last-Updated: aug 28 2018 (10:42) 
+## Last-Updated: sep  6 2019 (18:35) 
 ##           By: Brice Ozenne
-##     Update #: 8
+##     Update #: 10
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -33,11 +33,13 @@ e.cox <- coxph(Surv(time, event>0)~ strata(X1) + strata(X2), data = d, x = TRUE,
 ## e.cox <- coxph(Surv(time, event>0)~ 1, data = d, x = TRUE, y = TRUE)
 
 test_that("predictSurv (hazard)", {
-    test <- predictSurv(e.CSC, newdata = d.pred, times = seqTime, product.limit = FALSE)
-    GS <- predictCox(e.cox, newdata = d.pred, times = seqTime)$survival
-    expect_equal(GS, test)
+    test <- predict(e.CSC, type = "survival", newdata = d.pred, times = seqTime, product.limit = FALSE, iid = TRUE)
+    GS <- predictCox(e.cox, newdata = d.pred, times = seqTime, iid = TRUE)
+    expect_equal(GS$survival, test$survival)
+    expect_equal(GS$survival.iid, test$survival.iid)
 
-    test <- predictSurv(e.CSC, newdata = d.pred, times = seqTime, product.limit = TRUE)
+
+    test <- predict(e.CSC, type = "survival", newdata = d.pred, times = seqTime, product.limit = TRUE, iid = TRUE)
     GS <- predictCoxPL(e.cox, newdata = d.pred, times = seqTime)$survival
     expect_equal(GS, test)
 })
