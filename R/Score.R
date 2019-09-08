@@ -2331,17 +2331,31 @@ AUC.competing.risks <- function(DT,MC,se.fit,conservative,cens.model,keep.vcov=F
         ## compute influence function
         ## data.table::setorder(aucDT,model,times,time,-status)
         data.table::setorder(aucDT,model,times,ID)
-        aucDT[,IF.AUC:=getInfluenceCurve.AUC.competing.risks(t=times[1],
-                                                             n=N,
-                                                             time=time,
-                                                             risk=risk,
-                                                             ipcwControls1=ipcwControls1,
-                                                             ipcwControls2=ipcwControls2,
-                                                             ipcwCases=ipcwCases,
-                                                             Cases=Cases,
-                                                             Controls1=Controls1,
-                                                             Controls2=Controls2,
-                                                             MC=MC), by=list(model,times)]
+        aucDT[,IF.AUC:={
+            if (sum(Controls2)==0){
+                getInfluenceCurve.AUC.survival(t=times[1],
+                                               n=N,
+                                               time=time,
+                                               risk=risk,
+                                               Cases=Cases,
+                                               Controls=Controls1,
+                                               ipcwControls=ipcwControls1,
+                                               ipcwCases=ipcwCases,
+                                               MC=MC)
+            }else{
+                getInfluenceCurve.AUC.competing.risks(t=times[1],
+                                                      n=N,
+                                                      time=time,
+                                                      risk=risk,
+                                                      ipcwControls1=ipcwControls1,
+                                                      ipcwControls2=ipcwControls2,
+                                                      ipcwCases=ipcwCases,
+                                                      Cases=Cases,
+                                                      Controls1=Controls1,
+                                                      Controls2=Controls2,
+                                                      MC=MC)
+            }
+        }, by=list(model,times)]
         se.score <- aucDT[,list(se=sd(IF.AUC)/sqrt(N)),by=list(model,times)]
         data.table::setkey(se.score,model,times)
         score <- score[se.score]

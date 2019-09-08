@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: May 31 2016 (11:32)
 ## Version:
-## last-updated: May 24 2019 (13:29)
+## last-updated: Sep  7 2019 (10:13) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 41
+##     Update #: 44
 #----------------------------------------------------------------------
 ##
 ### Commentary:
@@ -27,11 +27,11 @@
 print.Score <- function(x,digits=3,...){
     for (s in c(x$summary)){
         cat(paste0("\nSummary statistics ",s,":\n"))
-        print(x[[s]],digits=digits, ...)
+        print(x[[s]],digits=digits,response.type=x$response.type,...)
     }
     for (m in c(x$metrics)){
         cat(paste0("\nMetric ",m,":\n"))
-        print(x[[m]],digits=digits, ...)
+        print(x[[m]],digits=digits,response.type=x$response.type,...)
     }
     for (p in c(x$plots)){
         cat(paste0("\nData for ",p," plot are stored in the object as x[[\"",p,"\"]].\n"))
@@ -74,7 +74,7 @@ print.Score <- function(x,digits=3,...){
 
 #' @method print scoreAUC
 #' @export
-print.scoreAUC <- function(x,B,digits=3,...){
+print.scoreAUC <- function(x,B,digits=3,response.type,...){
     cat("\nResults by model:\n\n")
     print(x$score,digits=digits,...)
     if (length(x$contrasts)>0){
@@ -84,7 +84,7 @@ print.scoreAUC <- function(x,B,digits=3,...){
 }
 #' @method print scoreBrier
 #' @export
-print.scoreBrier <- function(x,B,digits=3,...){
+print.scoreBrier <- function(x,B,digits=3,response.type,...){
     cat("\nResults by model:\n\n")
     print(x$score,digits=digits,...)
     if (length(x$contrasts)>0){
@@ -96,7 +96,10 @@ print.scoreBrier <- function(x,B,digits=3,...){
 #' @method print scorerisks
 #' @export
 print.scorerisks <- function(x,B,digits=3,response.type,...){
-    data.table::setkeyv(x$score,c("times","risk"))
+    if (response.type=="binary")
+        data.table::setkeyv(x$score,c("risk"))
+    else
+        data.table::setkeyv(x$score,c("times","risk"))
     print(x$score,digits=digits)
     if ("times"%in%names(x$score))
         print(data.table::dcast(x$score,times+ID~model,value.var="risk"))

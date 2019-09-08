@@ -62,7 +62,19 @@ cox2 = coxph(Surv(time,event)~X3+X5+X6,data=learndat,x=TRUE)
 xs=Score(list("Cox(X1+X2+X7+X9)"=cox1,"Cox(X3+X5+X6)"=cox2),formula=Surv(time,event)~1,
          data=testdat,summary="risks",null.model=0L,times=c(3,5,6))
 plotRisk(xs,times=5)
-
+## competing risk
+\dontrun{
+library(prodlim)
+library(survival)
+set.seed(8)
+learndat = sampleData(80,outcome="competing.risk")
+testdat = sampleData(140,outcome="competing.risk")
+m1 = FGR(Hist(time,event)~X2+X7+X9,data=learndat,cause=1)
+m2 = CSC(Hist(time,event)~X2+X7+X9,data=learndat,cause=1)
+xcr=Score(list("FGR"=m1,"CSC"=m2),formula=Hist(time,event)~1,
+         data=testdat,summary="risks",null.model=0L,times=c(3,5))
+plotRisk(xcr,times=1)
+}
 }
 \author{
 Thomas A. Gerds <tag@biostat.ku.dk>

@@ -205,7 +205,7 @@ set.seed(16)
 resVet <- ate(fitTD,formula=Hist(entry=tstart,time=time,event=status)~1,
           data = vet2, object.treatment = "celltype", contrasts = NULL,
         times=5,verbose=1,
-        landmark = c(0,30,60,90), cause = 1, B = 4, se = 1,
+        landmark = c(0,30,60,90), cause = 1, B = 100, se = 1,
         band = FALSE, mc.cores=1)
 resVet
 }
@@ -224,7 +224,7 @@ resTD1 <- ate(cox1TD,formula=Hist(entry=start,time=time,event=status)~1,
         landmark = c(0,0.5,1), B = 20, se = 1,
         band = FALSE, mc.cores=1)
 resTD1
-## adjust for competing risks
+## account for competing risks
 cscTD <- CSC(Hist(time=time, event=event,entry=start) ~ X3+X5+X6+X8, data=d)
 set.seed(16)
 resTD <- ate(cscTD,formula=Hist(entry=start,time=time,event=event)~1,

@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jan  4 2016 (14:30) 
 ## Version: 
-## last-updated: Aug 17 2019 (18:26) 
+## last-updated: Aug 18 2019 (09:17) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 137
+##     Update #: 138
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -34,31 +34,6 @@ test_that("R squared/IPA", {
     expect_equal(r1$IPA.drop[1],full$Brier$score[model=="f1",IPA])
     expect_equal(r2$IPA[2],full$Brier$score[model=="f2",IPA])
 })
-# }}}
-# {{{ AUC for factors
-if (class(try(riskRegression.test,silent=TRUE))[1]!="try-error"){
-    test_that("AUC for factors binary",{
-        set.seed(112)
-        d <- sampleData(343,outcome="binary")
-        d[,this:=cut(X6,quantile(X6,seq(0,1,0.125)),include.lowest=TRUE)]
-        d[,that:=as.numeric(this)]
-        f2 <- glm(Y~X2+X6+X9+X10,data=d, family="binomial")
-        x1 <- Score(list(f2=f2,this=d$this,that=d$that),formula=Y~1,data=d,metrics="auc",conf.int=TRUE,null.model=0)
-        x2 <- Score(list(f2=f2),formula=Y~1,data=d,metrics="auc",conf.int=TRUE,null.model=0)
-    })
-}
-if (class(try(riskRegression.test,silent=TRUE))[1]!="try-error"){
-    test_that("AUC for factors survival",{
-        library(survival)
-        set.seed(112)
-        d <- sampleData(343,outcome="survival")
-        d[,this:=cut(X6,quantile(X6,seq(0,1,0.125)),include.lowest=TRUE)]
-        d[,that:=as.numeric(this)]
-        f2 <- coxph(Surv(time,event)~X2+X6+X9+X10,data=d,x=TRUE)
-        x1 <- Score(list(this=d$this,that=d$that,f2=f2),formula=Surv(time,event)~1,data=d,times=4,metrics="auc",conf.int=TRUE)
-        x2 <- Score(list(f2=f2),formula=Surv(time,event)~1,data=d,times=4,metrics="auc",conf.int=TRUE)
-    })
-}
 # }}}
 # {{{ "vcov AUC"
 if (class(try(riskRegression.test,silent=TRUE))[1]!="try-error"){

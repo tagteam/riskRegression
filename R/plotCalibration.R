@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Feb 23 2017 (11:15) 
 ## Version: 
-## last-updated: Aug 15 2019 (13:43) 
+## last-updated: Sep  8 2019 (16:43) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 325
+##     Update #: 337
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -130,7 +130,7 @@ plotCalibration <- function(x,
                             models,
                             times,
                             method="nne",
-                            cens.method="jackknife",
+                            cens.method,
                             round=TRUE,
                             bandwidth=NULL,
                             q=10,
@@ -161,7 +161,11 @@ plotCalibration <- function(x,
                             na.action=na.fail,
                             cex=1,
                             ...){
-                                        # {{{ plot frame
+    if (x$response.type!="binary" && missing(cens.method)){
+        cens.method <- "local"
+        message("The default method for estimating calibration curves based on censored data has changed for riskRegression version 2019-9-8 or higher\nSet cens.method=\"jackknife\" to get the estimate using pseudo-values.\nHowever, note that this estimate is sensititve to violations of the assumption that the censoring is independent of both the event times and the covariates.")
+    }
+  # {{{ plot frame
     model=risk=event=status=NULL
     if (missing(auc.in.legend))
         auc.in.legend <- ("auc" %in% x$metrics)
@@ -366,7 +370,7 @@ plotCalibration <- function(x,
                        plotFrame=data.frame(Pred=tapply(p,pcut,mean),
                                             Obs=pmin(1,pmax(0,tapply(jackF,pcut,mean))))
                    }else{
-                       if(xs$response.type=="survival"){
+                       if(x$response.type=="survival"){
                            censcode <- pframe[status==0,status[1]]
                            qfit <- prodlim::prodlim(prodlim::Hist(time,status,cens.code=censcode)~pcut,data=pframe)
                            cause <- 1
@@ -430,9 +434,9 @@ plotCalibration <- function(x,
                            }else{
                                ## local Kaplan-Meier/Aalen-Johansen 
                                if (cens.method=="local"){
-                                   if(xs$response.type=="survival"){
+                                   if(x$response.type=="survival"){
                                        censcode <- pframe[status==0,status[1]]
-                                       pfit <- prodlim::prodlim(prodlim::Hist(time,status,cens.code=censcode)~p,data=pframe)
+                                       pfit <- prodlim::prodlim(prodlim::Hist(time,status,cens.code=censcode)~p,data=pframe,bandwidth=bandwidth)
                                        cause <- x$call$cause
                                        plotFrame=data.frame(Pred=sort(unique(p)),
                                                             Obs=predict(pfit,
@@ -442,8 +446,9 @@ plotCalibration <- function(x,
                                                                         times=tp,type="cuminc"))
                                    }else{
                                        censcode <- pframe[status==0,event[1]]
-                                       pfit <- prodlim::prodlim(prodlim::Hist(time,event,cens.code=censcode)~p,data=pframe)
-                                       cause <- x$call$cause
+                                       pframe[,Event:=factor(event,levels=1:(length(x$states)+1),labels=c(x$states,censcode))]
+                                       pfit <- prodlim::prodlim(prodlim::Hist(time,Event,cens.code=censcode)~p,data=pframe,bandwidth=bandwidth)
+                                       cause <- x$cause
                                        plotFrame=data.frame(Pred=sort(unique(p)),
                                                             Obs=predict(pfit,
                                                                         newdata=data.frame(p=sort(unique(p))),
