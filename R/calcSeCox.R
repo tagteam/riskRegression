@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: maj 27 2017 (11:46) 
 ## Version: 
-## last-updated: sep  6 2019 (14:41) 
+## last-updated: sep  8 2019 (16:32) 
 ##           By: Brice Ozenne
-##     Update #: 499
+##     Update #: 504
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -74,6 +74,9 @@ calcSeCox <- function(object, times, oorder.times, nTimes, type, diag,
                       new.n, new.eXb, new.LPdata, new.strata, new.survival, 
                       nVar, export, store.iid){
 
+    ## restaure order of new.survival
+    new.survival <- new.survival[,oorder.times,drop=FALSE]
+    
                                         # {{{ computation of the influence function
     if(is.null(object$iid)){
         iid.object <- iidCox(object, tau.hazard = times, store.iid = store.iid)

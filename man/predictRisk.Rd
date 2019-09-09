@@ -28,8 +28,8 @@
 \usage{
 \method{predictRisk}{glm}(object,newdata,...)
 \method{predictRisk}{cox.aalen}(object,newdata,times,...)
-\method{predictRisk}{cph}(object,newdata,times,...)
-\method{predictRisk}{coxph}(object,newdata,times,...)
+\method{predictRisk}{cph}(object,newdata,times,product.limit,...)
+\method{predictRisk}{coxph}(object,newdata,times,product.limit,...)
 \method{predictRisk}{matrix}(object,newdata,times,cause,...)
 \method{predictRisk}{selectCox}(object,newdata,times,...)
 \method{predictRisk}{psm}(object,newdata,times,...)
@@ -38,8 +38,8 @@
 \method{predictRisk}{prodlim}(object,newdata,times,cause,...)
 \method{predictRisk}{rfsrc}(object,newdata,times,cause,...)
 \method{predictRisk}{FGR}(object,newdata,times,cause,...)
-\method{predictRisk}{CauseSpecificCox}(object,newdata,times,cause,...)
-\method{predictRisk}{gbm}(object,newdata,times,...)
+\method{predictRisk}{CauseSpecificCox}(object,newdata,times,cause,product.limit,...)
+\method{predictRisk}{gbm}(object,newdata,times,n.trees,...)
 \method{predictRisk}{flexsurvreg}(object,newdata,times,...)
 }
 \arguments{

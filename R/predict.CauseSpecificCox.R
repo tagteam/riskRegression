@@ -467,8 +467,15 @@ predict.CauseSpecificCox <- function(object,
 
         if(iid){
             out$survival.iid <- array(NA, dim = dim(pred.cumhazard.iid))
-            for(iTau in 1:n.times){
-                out$survival.iid[,iTau,] <- colMultiply_cpp(-pred.cumhazard.iid[,iTau,], scale = out$survival[,iTau])
+            oorder.times <- order(order(times)) ## iid is internally order by increasing
+            for(iTau in 1:n.times){ ## iTau <- 1
+                if(n.obs==1){
+                    out$survival.iid[,iTau,] <- -pred.cumhazard.iid[,iTau,] * out$survival[,iTau]
+                }else{
+                    browser()
+                    out$survival.iid[,iTau,] <- colMultiply_cpp(-pred.cumhazard.iid[,iTau,], scale = out$survival[,iTau])
+                    out$survival.iid[,iTau,] <- pred.cumhazard.iid[,iTau,]
+                }
             }
         }        
         

@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: maj 18 2017 (09:23) 
 ## Version: 
-## last-updated: sep  6 2019 (14:44) 
+## last-updated: sep  8 2019 (16:35) 
 ##           By: Brice Ozenne
-##     Update #: 196
+##     Update #: 197
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -875,6 +875,32 @@ test_that("Standard error after atanh transformation", {
     expect_equal(1, as.double(transformSE(estimate = rho, se = rho.se, type = "atanh")),
                  tol = 1e-5)
 })
+
+
+
+## ** se/iid should not depend on the ordering of the argument times
+
+test_that("Cox - iid/se should not depend on other arguments", {
+    set.seed(10)
+    d <- sampleData(70,outcome="survival")
+    d[, X1 := paste0("T",rbinom(.N, size = 2, prob = c(0.51)))]
+
+    fit <- coxph(Surv(time,event)~X1 + strata(X2) + X6,
+                 data=d, ties="breslow", x = TRUE, y = TRUE)
+
+    out1 <- predictCox(fit, newdata = d[1:5], times = c(0,3), se = TRUE)
+    out2 <- predictCox(fit, newdata = d[1:5], times = c(3,0), se = TRUE)
+
+    expect_equal(out1$survival.se,out2$survival.se[,2:1], tol = 1e-8)
+
+    ## d <- sampleData(70)
+    ## d[, X1 := paste0("T",rbinom(.N, size = 2, prob = c(0.51)))]
+    ## fit <- CSC(Hist(time,event) ~ X1 + X2, data = d)
+
+    ## out1 <- predict(fit, newdata = d[1:5], times = c(0,3), se = TRUE, cause = 1)
+    ## out2 <- predict(fit, newdata = d[1:5], times = c(3,0), se = TRUE, cause = 1)
+})    
+
 
 
 ## ** ???
