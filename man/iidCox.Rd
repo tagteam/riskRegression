@@ -5,23 +5,26 @@
 \title{Extract i.i.d. decomposition from a Cox model}
 \usage{
 iidCox(object, newdata = NULL, baseline.iid = TRUE,
-  tau.hazard = NULL, store.iid = "full", keep.times = TRUE)
+  tau.hazard = NULL, tau.max = NULL, store.iid = "full",
+  keep.times = TRUE)
 }
 \arguments{
 \item{object}{object The fitted Cox regression model object either
 obtained with \code{coxph} (survival package) or \code{cph}
 (rms package).}
 
-\item{newdata}{Optional new data at which to do i.i.d. decomposition}
+\item{newdata}{[data.frame] Optional new data at which to do i.i.d. decomposition}
 
-\item{baseline.iid}{Should the influence function for the baseline hazard be computed.}
+\item{baseline.iid}{[logical] Should the influence function for the baseline hazard be computed.}
 
-\item{tau.hazard}{the vector of times at which the i.i.d decomposition of the baseline hazard will be computed}
+\item{tau.hazard}{[numeric vector] the vector of times at which the i.i.d decomposition of the baseline hazard will be computed}
 
-\item{store.iid}{the method used to compute the influence function and the standard error.
+\item{tau.max}{[numeric] latest time at which the i.i.d decomposition of the baseline hazard will be computed. Alternative to \code{tau.hazard}.}
+
+\item{store.iid}{[character] the method used to compute the influence function and the standard error.
 Can be \code{"full"}, \code{"approx"} or \code{"minimal"}. See the details section.}
 
-\item{keep.times}{Logical. If \code{TRUE} add the evaluation times to the output.}
+\item{keep.times}{[Logical] If \code{TRUE} add the evaluation times to the output.}
 }
 \value{
 A list containing:

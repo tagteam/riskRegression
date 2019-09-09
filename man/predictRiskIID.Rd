@@ -18,13 +18,13 @@ predictRiskIID(object, newdata, average.iid, factor, ...)
   ...)
 
 \method{predictRiskIID}{coxph}(object, newdata, average.iid,
-  factor = NULL, times, ...)
+  factor = NULL, times, diag = FALSE, ...)
 
 \method{predictRiskIID}{cph}(object, newdata, average.iid, factor = NULL,
-  times, ...)
+  times, diag = FALSE, ...)
 
 \method{predictRiskIID}{phreg}(object, newdata, average.iid,
-  factor = NULL, times, ...)
+  factor = NULL, times, diag = FALSE, ...)
 
 \method{predictRiskIID}{CauseSpecificCox}(object, newdata, average.iid,
   factor = NULL, times, ...)
@@ -43,6 +43,8 @@ predictRiskIID(object, newdata, average.iid, factor, ...)
 \item{times}{A vector of times in the range of the response variable,
 e.g. for which the cumulative incidences event probabilities are computed.
 Disregarded when argument \code{object} is a logistic regression.}
+
+\item{diag}{[logical] If \code{TRUE} only compute the survival for the i-th row in dataset at the i-th time. Only relevant for Cox models.}
 }
 \value{
 \code{average.iid} is FALSE: an array containing

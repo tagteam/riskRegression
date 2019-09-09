@@ -5,12 +5,13 @@
 #' @param object object The fitted Cox regression model object either
 #'     obtained with \code{coxph} (survival package) or \code{cph}
 #'     (rms package).
-#' @param newdata Optional new data at which to do i.i.d. decomposition
-#' @param baseline.iid Should the influence function for the baseline hazard be computed.
-#' @param tau.hazard the vector of times at which the i.i.d decomposition of the baseline hazard will be computed
-#' @param store.iid the method used to compute the influence function and the standard error.
+#' @param newdata [data.frame] Optional new data at which to do i.i.d. decomposition
+#' @param baseline.iid [logical] Should the influence function for the baseline hazard be computed.
+#' @param tau.hazard [numeric vector] the vector of times at which the i.i.d decomposition of the baseline hazard will be computed
+#' @param tau.max [numeric] latest time at which the i.i.d decomposition of the baseline hazard will be computed. Alternative to \code{tau.hazard}.
+#' @param store.iid [character] the method used to compute the influence function and the standard error.
 #' Can be \code{"full"}, \code{"approx"} or \code{"minimal"}. See the details section.
-#' @param keep.times Logical. If \code{TRUE} add the evaluation times to the output.
+#' @param keep.times [Logical] If \code{TRUE} add the evaluation times to the output.
 
 #' @details
 #' This function implements the first three formula (no number,10,11) of the subsection
@@ -63,7 +64,7 @@
 #' @rdname iidCox
 #' @export
 iidCox <- function(object, newdata = NULL,
-                   baseline.iid = TRUE, tau.hazard = NULL, store.iid = "full", 
+                   baseline.iid = TRUE, tau.hazard = NULL, tau.max = NULL, store.iid = "full", 
                    keep.times = TRUE){
 
                                         # {{{ extract elements from object
@@ -297,6 +298,9 @@ iidCox <- function(object, newdata = NULL,
             ## tau.hazard
             if(is.null(tau.hazard)){
                 tau.hazard_strata <- object.time_strata[[iStrata]][object.status_strata[[iStrata]] == 1]
+                if(!is.null(tau.max)){
+                    tau.hazard_strata <- tau.hazard_strata[tau.hazard_strata<tau.max]
+                }
             }else if(is.list(tau.hazard)){
                 tau.hazard_strata <- tau.hazard[[nStrata]]
             }else{
@@ -351,8 +355,8 @@ iidCox <- function(object, newdata = NULL,
         }
     }
     # }}}
-  
-    # {{{ export
+
+                                        # {{{ export
     return(list(IFbeta = IFbeta,  
                 IFhazard = IFhazard,
                 IFcumhazard = IFcumhazard,

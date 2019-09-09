@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: jun 28 2019 (14:38) 
 ## Version: 
-## Last-Updated: sep  6 2019 (17:42) 
+## Last-Updated: sep  9 2019 (16:44) 
 ##           By: Brice Ozenne
-##     Update #: 65
+##     Update #: 79
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -27,6 +27,7 @@
 #' Disregarded when argument \code{object} is a logistic regression.
 #' @param average.iid Should the i.i.d. decomposition be averaged over individual observations in argument \code{newdata}?
 #' @param factor  When \code{average.iid} is TRUE, enables to perform weighted averages instead of averages.
+#' @param diag  [logical] If \code{TRUE} only compute the survival for the i-th row in dataset at the i-th time. Only relevant for Cox models.
 #' @param ... for compatibility with the generic method.
 #'
 #' @details Argument \code{factor} must be a matrix with the same number of rows as argument \code{newdata}.
@@ -114,9 +115,13 @@ predictRiskIID.glm <- function(object,
 ## * predictRiskIID."cox"
 #' @rdname predictRiskIID
 #' @export
-predictRiskIID.coxph <- function(object, newdata, average.iid, factor = NULL, times, ...){
+predictRiskIID.coxph <- function(object, newdata, average.iid, factor = NULL, times, diag = FALSE, ...){
     if(!is.null(factor)){
-        n.times <- length(times)
+        if(diag){
+            n.times <- 1
+        }else{
+            n.times <- length(times)
+        }
         n.obs <- NROW(newdata)
         if(!is.matrix(factor)){
             stop("Argument \'factor\' must be a matrix. \n")
@@ -128,15 +133,15 @@ predictRiskIID.coxph <- function(object, newdata, average.iid, factor = NULL, ti
             list(matrix(factor[,iCol,drop=FALSE], nrow = n.obs, ncol = n.times, byrow = FALSE))
         })
     }
-    
+
     resPred <- predictCox(object,
                           newdata = newdata,
                           times = times,
                           iid = !average.iid,
                           average.iid = average.iid,
-                          type = "survival")
+                          type = "survival",
+                          diag = diag)
     ## there is a minus because predictor.cox return iid(survival) = -iid(risk)
-
     if(average.iid){
         if(!is.null(factor)){
             return(lapply(resPred$survival.average.iid, function(x){-x}))

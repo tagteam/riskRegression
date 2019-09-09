@@ -113,3 +113,24 @@ test_that("stratified ATE",{
     expect_equal(1-GS.se$survival,test.se$meanRisk)
     expect_equal(GS.se$survival.se,GS.se$survival.se)
 })    
+
+## * pre-computation of iidCox does not affect the results
+test_that("precompute iid", {
+    set.seed(10)
+    d <- sampleData(100)
+
+    GS <- ate(Hist(time,event)~X1+X2,
+              treatment = "X1", data = d, times = 1:5, cause = 1,
+              verbose = FALSE)
+    e.CSC <- CSC(Hist(time,event)~X1+X2, data = d)
+    e.CSC$models[[1]]$iid <- iidCox(e.CSC$models[[1]])
+    e.CSC$models[[2]]$iid <- iidCox(e.CSC$models[[2]])
+
+
+    test <- ate(e.CSC,
+                treatment = "X1", data = d, times = 1:5, cause = 1,
+                verbose = FALSE)
+
+
+    expect_equal(test$meanRisk, GS$meanRisk)
+})

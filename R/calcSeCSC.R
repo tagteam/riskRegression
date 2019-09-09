@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: maj 27 2017 (21:23) 
 ## Version: 
-## last-updated: sep  9 2019 (09:58) 
+## last-updated: sep  9 2019 (16:20) 
 ##           By: Brice Ozenne
-##     Update #: 504
+##     Update #: 510
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -60,22 +60,20 @@ calcSeCSC <- function(object, cif, hazard, cumhazard, object.time, object.maxtim
 
     status <- strata.num <- NULL ## [:CRANcheck:] data.table
                                         # {{{ influence function for each Cox model
-    if(is.null(object$iid)){
-        object$iid <- list()
-        for(iModel in 1:nCause){ # iModel <- 1
-            object$iid[[iModel]] <- iidCox(object$models[[iModel]], tau.hazard = object.time, store.iid = store.iid)
-        }
-    }else{
-        store.iid <- object$iid[[1]]$store.iid
-        for(iModel in 1:nCause){
-            object$iid[[iModel]] <- selectJump(object$iid[[iModel]], times = object.time,
-                                               type = c("hazard","cumhazard"))
+    for(iModel in 1:nCause){ # iModel <- 1
+        if(is.null(object$models[[iModel]]$iid)){
+            object$models[[iModel]]$iid <- iidCox(object$models[[iModel]], tau.hazard = object.time, store.iid = store.iid)
+        }else{
+            object$models[[iModel]]$iid <- selectJump(object$models[[iModel]]$iid, times = object.time,
+                                                      type = c("hazard","cumhazard"))
         }
     }
+    store.iid <- object$models[[1]]$iid$store.iid
+
                                         # }}}
                                         # {{{ prepare arguments
     nEtimes <- length(object.time)
-    object.n <- NROW(object$iid[[1]]$IFbeta)
+    object.n <- NROW(object$models[[1]]$iid$IFbeta)
       
     if(store.iid == "minimal"){
         ## {{{ method = "minimal"
@@ -118,9 +116,9 @@ calcSeCSC <- function(object, cif, hazard, cumhazard, object.time, object.maxtim
             ls.args$seqTau <- times
             ls.args$jumpTime <- object.time
             ls.args$jumpTheCause <- object.time %in% object.modelFrame[status==1&strata.num==iStrataTheCause,stop]
-            ls.args$IFbeta <- lapply(object$iid, function(x){x$IFbeta})
-            ls.args$iS0 <- do.call(cbind,lapply(object$iid, function(x){
-                x$calcIFhazard$delta_iS0[[iStrataTheCause+1]]
+            ls.args$IFbeta <- lapply(object$models, function(x){x$iid$IFbeta})
+            ls.args$iS0 <- do.call(cbind,lapply(object$models, function(x){
+                x$iid$calcIFhazard$delta_iS0[[iStrataTheCause+1]]
             }))
             ls.args$newEXb <- eXb[indexStrataTheCause,,drop=FALSE]            
             ls.args$sampleEXb <- exp(do.call(cbind,lapply(object$models, coxLP, data = NULL, center = FALSE)))
@@ -140,14 +138,14 @@ calcSeCSC <- function(object, cif, hazard, cumhazard, object.time, object.maxtim
             for(iterC in 1:nCause){ # iterC <- 1
                 iStrataCause <- level.strata[iStrata,iterC]
 
-                ls.args$indexJump[,iterC] <- prodlim::sindex(object$iid[[iterC]]$calcIFhazard$time1[[iStrataCause + 1]],
+                ls.args$indexJump[,iterC] <- prodlim::sindex(object$models[[iterC]]$iid$calcIFhazard$time1[[iStrataCause + 1]],
                                                          eval.times = object.time)
-                ls.args$indexSample[,iterC] <- prodlim::sindex(object$iid[[iterC]]$calcIFhazard$time1[[iStrataCause + 1]],
+                ls.args$indexSample[,iterC] <- prodlim::sindex(object$models[[iterC]]$iid$calcIFhazard$time1[[iStrataCause + 1]],
                                                         eval.times = object.modelFrame[["stop"]])
-                ls.args$cumEhazard0[[iterC]] <- object$iid[[iterC]]$calcIFhazard$cumElambda0[[iStrataCause + 1]]
-                ls.args$Ehazard0[[iterC]] <- object$iid[[iterC]]$calcIFhazard$Elambda0[[iStrataCause + 1]]
-                ls.args$cumhazard_iS0[[iterC]] <- c(0,object$iid[[iterC]]$calcIFhazard$cumLambda0_iS0[[iStrataCause + 1]])## add 0 to match prodlim
-                ls.args$hazard_iS0[[iterC]] <- c(0,object$iid[[iterC]]$calcIFhazard$lambda0_iS0[[iStrataCause + 1]]) ## add 0 to match prodlim
+                ls.args$cumEhazard0[[iterC]] <- object$models[[iterC]]$iid$calcIFhazard$cumElambda0[[iStrataCause + 1]]
+                ls.args$Ehazard0[[iterC]] <- object$models[[iterC]]$iid$calcIFhazard$Elambda0[[iStrataCause + 1]]
+                ls.args$cumhazard_iS0[[iterC]] <- c(0,object$models[[iterC]]$iid$calcIFhazard$cumLambda0_iS0[[iStrataCause + 1]])## add 0 to match prodlim
+                ls.args$hazard_iS0[[iterC]] <- c(0,object$models[[iterC]]$iid$calcIFhazard$lambda0_iS0[[iStrataCause + 1]]) ## add 0 to match prodlim
                 ls.args$X[[iterC]] <- new.LPdata[[iterC]][indexStrataTheCause,,drop=FALSE]
                 ls.args$sameStrata[,iterC] <- M.object.strata.num[,iterC]==iStrataCause
                 ls.args$hazard0[[iterC]] <- hazard[[iterC]][,iStrataCause + 1]
@@ -157,7 +155,7 @@ calcSeCSC <- function(object, cif, hazard, cumhazard, object.time, object.maxtim
             # }}}
 
             ls.args$theCause <- cause-1
-            ls.args$firstJumpTime <- object$iid[[cause]]$etime1.min[iStrataTheCause+1]
+            ls.args$firstJumpTime <- object$models[[iterC]]$iid$etime1.min[iStrataTheCause+1]
             ls.args$lastSampleTime <- object.modelFrame[strata.num==iStrataCause,max(.SD$stop)]
             ls.args$nTau <- nTime
             ls.args$nJump <- nEtimes
@@ -200,12 +198,12 @@ calcSeCSC <- function(object, cif, hazard, cumhazard, object.time, object.maxtim
 
         if("iid" %in% export || "se" %in% export){
 
-            out <- calcSeCif2_cpp(ls_IFbeta = lapply(object$iid,"[[","IFbeta"),
+            out <- calcSeCif2_cpp(ls_IFbeta = lapply(object$models, function(x){x$iid$IFbeta}),
                                   ls_X = new.LPdata,
                                   ls_cumhazard = cumhazard,
                                   ls_hazard = hazard[[cause]],
-                                  ls_IFcumhazard = lapply(object$iid,"[[","IFcumhazard"),
-                                  ls_IFhazard = object$iid[[cause]]$IFhazard,
+                                  ls_IFcumhazard = lapply(object$models, function(x){x$iid$IFcumhazard}),
+                                  ls_IFhazard = object$models[[cause]]$iid$IFhazard,
                                   eXb = eXb,
                                   nJumpTime = nEtimes, JumpMax = object.maxtime,
                                   tau = times, tauIndex = sindex.times, nTau = nTimes,                                  
@@ -241,9 +239,9 @@ calcSeCSC <- function(object, cif, hazard, cumhazard, object.time, object.maxtim
                                       ls_cumhazard = cumhazard,
                                       ls_tX = lapply(new.LPdata,t),
                                       eXb = eXb,
-                                      ls_IFbeta = lapply(object$iid,"[[","IFbeta"),
-                                      ls_IFhazard = object$iid[[cause]]$IFhazard,
-                                      ls_IFcumhazard = lapply(object$iid,"[[","IFcumhazard"),
+                                      ls_IFbeta = lapply(object$models, function(x){x$iid$IFbeta}),
+                                      ls_IFhazard = object$models[[cause]]$iid$IFhazard,
+                                      ls_IFcumhazard = lapply(object$models, function(x){x$iid$IFcumhazard}),
                                       nCause = nCause, theCause = cause-1, hazardType = (surv.type == "hazard"),
                                       nJumpTime = nEtimes, JumpMax = tapply(object.maxtime,new.Ustrata,max),
                                       tau = times, tauIndex = sindex.times, nTau = nTimes,                                  

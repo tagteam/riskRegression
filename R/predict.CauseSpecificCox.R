@@ -382,7 +382,7 @@ predict.CauseSpecificCox <- function(object,
     if(object$surv.type=="survival"){
         ## names(object$models)
         predictor.cox <- if(product.limit){"predictCoxPL"}else{"predictCox"}
-        
+
         out <- do.call(predictor.cox,
                        args = list(object$models[["OverallSurvival"]], newdata = newdata, times = times, iid = iid, type = "survival")
                        )

@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: jun 27 2019 (10:43) 
 ## Version: 
-## Last-Updated: sep  6 2019 (18:32) 
+## Last-Updated: sep  9 2019 (15:25) 
 ##           By: Brice Ozenne
-##     Update #: 387
+##     Update #: 389
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -273,7 +273,7 @@ ATE_TI <- function(object.event,
         ## first term of the iid decomposition
         if(return.iid){
             ## center and scale iid decomposition for the functional delta method
-            attr(out,"iid.ate")[[iC]] <- rowCenter_cpp(iid.ate * (n.obs/n.obs.contrasts), center = meanRisk[iC,])/n.obs
+            attr(out,"iid.ate")[[iC]] <- rowCenter_cpp(iid.ate * (n.obs/n.obs.contrasts[iC]), center = meanRisk[iC,])/n.obs
             dimnames(attr(out,"iid.ate")[[iC]]) <- list(NULL, times)
         }        
     }

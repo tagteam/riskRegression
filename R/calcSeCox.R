@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: maj 27 2017 (11:46) 
 ## Version: 
-## last-updated: sep  9 2019 (10:50) 
+## last-updated: sep  9 2019 (15:53) 
 ##           By: Brice Ozenne
-##     Update #: 514
+##     Update #: 544
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -77,8 +77,8 @@ calcSeCox <- function(object, times, nTimes, type, diag,
     if(is.null(object$iid)){
         iid.object <- iidCox(object, tau.hazard = times, store.iid = store.iid)
     }else{
-        store.iid <- iid.object$store.iid
-        iid.object <- selectJump(iid.object, times = times, type = type)        
+        store.iid <- object$iid$store.iid
+        iid.object <- selectJump(object$iid, times = times, type = type)        
     }
                                         # }}}
 
@@ -180,14 +180,14 @@ calcSeCox <- function(object, times, nTimes, type, diag,
                     ## hazard based on the one of the baseline hazard
                     if (nVar == 0) {
                         if(diag){
-                            IF_tempo = iid.object$IFhazard[[iObs.strata]][,oorder.times[iObs],drop=FALSE]
+                            IF_tempo = iid.object$IFhazard[[iObs.strata]][,iObs,drop=FALSE]
                         }else{
                             IF_tempo = iid.object$IFhazard[[iObs.strata]]
                         }
                     }
                     else {
                         if(diag){
-                            IF_tempo = (new.eXb[iObs] * (iid.object$IFhazard[[iObs.strata]][,oorder.times[iObs],drop=FALSE] + X_IFbeta_mat[,iObs,drop=FALSE] * Lambda0$hazard[[iObs.strata]][oorder.times[iObs]]))
+                            IF_tempo = (new.eXb[iObs] * (iid.object$IFhazard[[iObs.strata]][,iObs,drop=FALSE] + X_IFbeta_mat[,iObs,drop=FALSE] * Lambda0$hazard[[iObs.strata]][iObs]))
                         }else{
                             IF_tempo = (new.eXb[iObs] * (iid.object$IFhazard[[iObs.strata]] + crossprod(t(X_IFbeta_mat[,iObs,drop=FALSE]),Lambda0$hazard[[iObs.strata]])))
                         }
@@ -202,13 +202,13 @@ calcSeCox <- function(object, times, nTimes, type, diag,
                     ## cumulative hazard based on the one of the cumulative baseline hazard
                     if(nVar == 0){
                         if(diag){
-                            IF_tempo <- iid.object$IFcumhazard[[iObs.strata]][,oorder.times[iObs],drop=FALSE]
+                            IF_tempo <- iid.object$IFcumhazard[[iObs.strata]][,iObs,drop=FALSE]
                         }else{
                             IF_tempo <- iid.object$IFcumhazard[[iObs.strata]]
                         }
                     }else{
                         if(diag){
-                            IF_tempo <- new.eXb[iObs]*(iid.object$IFcumhazard[[iObs.strata]][,oorder.times[iObs],drop=FALSE] + X_IFbeta_mat[,iObs,drop=FALSE] * Lambda0$cumhazard[[iObs.strata]][oorder.times[iObs]])
+                            IF_tempo <- new.eXb[iObs]*(iid.object$IFcumhazard[[iObs.strata]][,iObs,drop=FALSE] + X_IFbeta_mat[,iObs,drop=FALSE] * Lambda0$cumhazard[[iObs.strata]][iObs])
                         }else{
                             IF_tempo <- new.eXb[iObs]*(iid.object$IFcumhazard[[iObs.strata]] + crossprod(t(X_IFbeta_mat[,iObs,drop=FALSE]), Lambda0$cumhazard[[iObs.strata]]))
                         }
@@ -251,6 +251,7 @@ calcSeCox <- function(object, times, nTimes, type, diag,
                 rm.list <- FALSE
                 factor <- attr(export, "factor")
             }
+
             outRcpp <- calcAIFsurv_cpp(ls_IFcumhazard = iid.object$IFcumhazard[new.Ustrata], 
                                        IFbeta = iid.object$IFbeta,
                                        cumhazard0 = Lambda0$cumhazard[new.Ustrata],
@@ -264,9 +265,10 @@ calcSeCox <- function(object, times, nTimes, type, diag,
                                        nObs = object.n,
                                        nStrata = new.nStrata,
                                        nVar = nVar,
+                                       diag = diag,
                                        exportCumHazard = ("cumhazard" %in% type),
                                        exportSurvival = ("survival" %in% type))
-            
+
             if("cumhazard" %in% type){
                 if(rm.list){
                     out$cumhazard.average.iid <- matrix(outRcpp[[1]][[1]], nrow = object.n, ncol = nTimes)

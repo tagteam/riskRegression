@@ -237,8 +237,8 @@ predictCox <- function(object,
     if(diag[[1]]==TRUE && NROW(newdata)!=length(times)){
         stop("When argument \'diag\' is TRUE, the number of rows in \'newdata\' must equal the length of \'times\' \n")
     }
-    if(diag[[1]]==TRUE && (se[[1]]||band[[1]]||average.iid[[1]])){
-        stop("Arguments \'se\', \'band\', and \'average.iid\' must be FALSE when \'diag\' is TRUE \n")
+    if(diag[[1]]==TRUE && (se[[1]]||band[[1]])){
+        stop("Arguments \'se\' and \'band\' must be FALSE when \'diag\' is TRUE \n")
     }
     if(diag[[1]]==TRUE && iid[[1]]==TRUE && store.iid[[1]] == "minimal"){
         stop("Arguments \'store.iid\' must equal \"full\" when \'diag\' is TRUE \n")
@@ -463,9 +463,9 @@ predictCox <- function(object,
         ## Computation of the influence function and/or the standard error
         export <- c("iid"[(iid+band)>0],"se"[(se+band)>0],"average.iid"[average.iid==TRUE])
         attributes(export) <- attributes(average.iid)
-
+        
         outSE <- calcSeCox(object,
-                           times = times.sorted,
+                           times = if(diag){times.sorted[oorder.times]}else{times.sorted},
                            nTimes = nTimes,
                            type = type,
                            diag = diag,
@@ -479,11 +479,11 @@ predictCox <- function(object,
                            new.eXb = new.eXb,
                            new.LPdata = new.LPdata,
                            new.strata = new.strata,
-                           new.survival = out$survival[,order.times,drop=FALSE],
+                           new.survival = if(diag){out$survival}else{out$survival[,order.times,drop=FALSE]},
                            nVar = nVar, 
                            export = export,
                            store.iid = store.iid)
-      
+        
         ## restaure orginal time ordering
         if((iid+band)>0){
             if ("hazard" %in% type){
@@ -507,13 +507,13 @@ predictCox <- function(object,
         }
         if(average.iid == TRUE){
             if ("cumhazard" %in% type){
-                if (needOrder)
+                if (needOrder && diag[1] == FALSE)
                     out$cumhazard.average.iid <- outSE$cumhazard.average.iid[,oorder.times,drop=0L]
                 else
                     out$cumhazard.average.iid <- outSE$cumhazard.average.iid
             }
             if ("survival" %in% type){
-                if (needOrder)
+                if (needOrder && diag[1] == FALSE)
                     out$survival.average.iid <- outSE$survival.average.iid[,oorder.times,drop=0L]
                 else
                     out$survival.average.iid <- outSE$survival.average.iid
