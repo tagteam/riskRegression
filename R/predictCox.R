@@ -169,13 +169,15 @@ predictCox <- function(object,
     }
     needOrder <- (nTimes[1]>0 && is.unsorted(times))
     if (needOrder) {
-        oorder.times <- order(order(times))
+        order.times <- order(times)
+        oorder.times <- order(order.times)
         times.sorted <- sort(times)
     }else{
         if (nTimes==0){
             times.sorted <- numeric(0)
         } else{
             times.sorted <- times
+            order.times <- 1:nTimes
             oorder.times <- 1:nTimes
         }
     }
@@ -461,10 +463,9 @@ predictCox <- function(object,
         ## Computation of the influence function and/or the standard error
         export <- c("iid"[(iid+band)>0],"se"[(se+band)>0],"average.iid"[average.iid==TRUE])
         attributes(export) <- attributes(average.iid)
-        
+
         outSE <- calcSeCox(object,
                            times = times.sorted,
-                           oorder.times = oorder.times,
                            nTimes = nTimes,
                            type = type,
                            diag = diag,
@@ -478,7 +479,7 @@ predictCox <- function(object,
                            new.eXb = new.eXb,
                            new.LPdata = new.LPdata,
                            new.strata = new.strata,
-                           new.survival = out$survival,
+                           new.survival = out$survival[,order.times,drop=FALSE],
                            nVar = nVar, 
                            export = export,
                            store.iid = store.iid)

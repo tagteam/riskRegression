@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: maj 27 2017 (21:23) 
 ## Version: 
-## last-updated: Jan 29 2019 (16:02) 
-##           By: Thomas Alexander Gerds
-##     Update #: 502
+## last-updated: sep  9 2019 (09:58) 
+##           By: Brice Ozenne
+##     Update #: 504
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -119,7 +119,6 @@ calcSeCSC <- function(object, cif, hazard, cumhazard, object.time, object.maxtim
             ls.args$jumpTime <- object.time
             ls.args$jumpTheCause <- object.time %in% object.modelFrame[status==1&strata.num==iStrataTheCause,stop]
             ls.args$IFbeta <- lapply(object$iid, function(x){x$IFbeta})
-            ls.args$cif <- cif[indexStrataTheCause,,drop=FALSE]
             ls.args$iS0 <- do.call(cbind,lapply(object$iid, function(x){
                 x$calcIFhazard$delta_iS0[[iStrataTheCause+1]]
             }))

@@ -4,9 +4,9 @@
 \alias{calcSeCox}
 \title{Computation of standard errors for predictions}
 \usage{
-calcSeCox(object, times, oorder.times, nTimes, type, diag, Lambda0,
-  object.n, object.time, object.eXb, object.strata, nStrata, new.n,
-  new.eXb, new.LPdata, new.strata, new.survival, nVar, export, store.iid)
+calcSeCox(object, times, nTimes, type, diag, Lambda0, object.n,
+  object.time, object.eXb, object.strata, nStrata, new.n, new.eXb,
+  new.LPdata, new.strata, new.survival, nVar, export, store.iid)
 }
 \arguments{
 \item{object}{The fitted Cox regression model object either
@@ -15,8 +15,6 @@ obtained with \code{coxph} (survival package) or \code{cph}
 
 \item{times}{Vector of times at which to return the estimated
 hazard/survival.}
-
-\item{oorder.times}{Restaure original times (only use when \code{diag = TRUE}).}
 
 \item{nTimes}{the length of the argument \code{times}.}
 

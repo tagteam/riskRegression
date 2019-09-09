@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: apr  5 2018 (17:01) 
 ## Version: 
-## Last-Updated: sep  6 2019 (17:24) 
+## Last-Updated: sep  9 2019 (10:34) 
 ##           By: Brice Ozenne
-##     Update #: 520
+##     Update #: 521
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -77,12 +77,13 @@ iidATE <- function(estimator,
                 factor <- matrix(1, nrow = NROW(data.i), ncol = 1)
             }
             iid.ate[[iC]] <- iid.ate[[iC]] + predictRiskIID(object.event, newdata = data.i, times = times,
-                                                                      average.iid = TRUE, factor = factor, cause = cause)[[1]]
+                                                            average.iid = TRUE, factor = factor, cause = cause)[[1]]
 
         }
         
 
         if(attr(estimator,"integral")){
+            browser()
             F1.all.iid <- predictRiskIID(object.event, newdata = data, times = c(times, time.jumpC), cause = cause,
                                         average.iid = FALSE)
             F1.tau.iid <- F1.all.iid[,1:n.times,,drop=FALSE]

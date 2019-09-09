@@ -425,22 +425,20 @@ predict.CauseSpecificCox <- function(object,
                     predAll.hazard <- predAll.hazard + cbind(0,outHazard$hazard,NA)
                 }
 
-                if(iid){
+                if(iid){                    
                     ## cumulate hazard over time
                     if(0 %in% jump.time){
                         outHazard$cumhazard.iid <- base::aperm(apply(outHazard$hazard.iid,c(1,3),cumsum),
                                                                perm = c(2,1,3))
                     }else{
-                        outHazard$cumhazard.iid <- array(0, dim = c(n.obs,n.jumpA-1,n.obs))
+                        outHazard$cumhazard.iid <- array(0, dim = c(n.obs,n.jumpA-1,n.data))
                         outHazard$cumhazard.iid[,-1,] <- base::aperm(apply(outHazard$hazard.iid,c(1,3),cumsum),
                                                                perm = c(2,1,3))
                     }
                     ## check
                     ## range(outHazard$cumhazard.iid - predictCox(object$models[[iC]], newdata = newdata, times = c(0,jump.time), type = "cumhazard", iid = iid)$cumhazard.iid)
                     index.jump <- prodlim::sindex(jump.times = c(0,jump.time), eval.times = times)
-
                     pred.cumhazard.iid <- pred.cumhazard.iid + outHazard$cumhazard.iid[,index.jump,,drop=FALSE]
-
                     ## check
                     ## range(pred.cumhazard.iid - predictCox(object$models[[iC]], newdata = newdata, times = times, iid = iid, type = "cumhazard")$cumhazard.iid)
                 }
@@ -464,17 +462,24 @@ predict.CauseSpecificCox <- function(object,
             }
             out$survival <- exp(-pred.cumhazard)
         }
-
+##              [,1]      [,2]     [,3]
+## [1,]    0 0.5655874 1.343364
+        ## [2,]    0 0.5655874 1.343364
         if(iid){
             out$survival.iid <- array(NA, dim = dim(pred.cumhazard.iid))
-            oorder.times <- order(order(times)) ## iid is internally order by increasing
+
+            if(product.limit){ 
+                iSurvival <- exp(-rowCumSum(predAll.hazard)[,index.jump,drop=FALSE])
+            }else{
+                iSurvival <- out$survival
+            }
+
             for(iTau in 1:n.times){ ## iTau <- 1
                 if(n.obs==1){
-                    out$survival.iid[,iTau,] <- -pred.cumhazard.iid[,iTau,] * out$survival[,iTau]
+                    out$survival.iid[,iTau,] <- -pred.cumhazard.iid[,iTau,] * iSurvival[,iTau]
                 }else{
-                    browser()
-                    out$survival.iid[,iTau,] <- colMultiply_cpp(-pred.cumhazard.iid[,iTau,], scale = out$survival[,iTau])
-                    out$survival.iid[,iTau,] <- pred.cumhazard.iid[,iTau,]
+                    out$survival.iid[,iTau,] <- colMultiply_cpp(-pred.cumhazard.iid[,iTau,], scale = iSurvival[,iTau])
+                    ## out$survival.iid[,iTau,] <- pred.cumhazard.iid[,iTau,]
                 }
             }
         }        

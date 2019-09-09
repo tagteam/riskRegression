@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: maj 18 2017 (09:23) 
 ## Version: 
-## last-updated: sep  8 2019 (16:35) 
+## last-updated: sep  9 2019 (10:04) 
 ##           By: Brice Ozenne
-##     Update #: 197
+##     Update #: 198
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -888,10 +888,36 @@ test_that("Cox - iid/se should not depend on other arguments", {
     fit <- coxph(Surv(time,event)~X1 + strata(X2) + X6,
                  data=d, ties="breslow", x = TRUE, y = TRUE)
 
-    out1 <- predictCox(fit, newdata = d[1:5], times = c(0,3), se = TRUE)
-    out2 <- predictCox(fit, newdata = d[1:5], times = c(3,0), se = TRUE)
+    seqTau <- abs(rnorm(10))
+    out1 <- predictCox(fit, newdata = d[1:5], times = seqTau,
+                       se = TRUE, iid = TRUE, average.iid = TRUE)
+    out2 <- predictCox(fit, newdata = d[1:5], times = sort(seqTau),
+                       se = TRUE, iid = TRUE, average.iid = TRUE)
 
-    expect_equal(out1$survival.se,out2$survival.se[,2:1], tol = 1e-8)
+    out3 <- predictCox(fit, newdata = d[1:5], times = seqTau,
+                       average.iid = TRUE)
+    out4 <- predictCox(fit, newdata = d[1:5], times = sort(seqTau),
+                       average.iid = TRUE)
+
+    out5 <- predictCox(fit, newdata = d[1:5], times = seqTau,
+                       se = TRUE, iid = TRUE, average.iid = TRUE, store.iid = "minimal")
+    out6 <- predictCox(fit, newdata = d[1:5], times = sort(seqTau),
+                       se = TRUE, iid = TRUE, average.iid = TRUE, store.iid = "minimal")
+
+    expect_equal(out1$survival.iid[,order(seqTau),],out2$survival.iid)
+    expect_equal(out1$survival.se[,order(seqTau)],out2$survival.se)
+    expect_equal(out1$survival.average.iid[,order(seqTau)],out2$survival.average.iid)
+
+    expect_equal(out2$survival.average.iid,out4$survival.average.iid)
+    expect_equal(out3$survival.average.iid[,order(seqTau)],out4$survival.average.iid)
+
+    expect_equal(out5$survival.iid[,order(seqTau),],out6$survival.iid)
+    expect_equal(out5$survival.se[,order(seqTau)],out6$survival.se)
+    expect_equal(out5$survival.average.iid[,order(seqTau)],out6$survival.average.iid)
+
+    expect_equal(out2$survival.iid,out6$survival.iid)
+    expect_equal(out2$survival.se,out6$survival.se)
+    expect_equal(out2$survival.average.iid,out6$survival.average.iid)
 
     ## d <- sampleData(70)
     ## d[, X1 := paste0("T",rbinom(.N, size = 2, prob = c(0.51)))]

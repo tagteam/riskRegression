@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: maj 27 2017 (11:46) 
 ## Version: 
-## last-updated: sep  8 2019 (16:32) 
+## last-updated: sep  9 2019 (10:50) 
 ##           By: Brice Ozenne
-##     Update #: 504
+##     Update #: 514
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -28,7 +28,6 @@
 #'     (rms package).
 #' @param times Vector of times at which to return the estimated
 #'      hazard/survival.
-#' @param oorder.times Restaure original times (only use when \code{diag = TRUE}).
 #' @param nTimes the length of the argument \code{times}. 
 #' @param type One or several strings that match (either in lower or upper case or mixtures) one
 #' or several of the strings \code{"hazard"},\code{"cumhazard"}, \code{"survival"}.
@@ -69,14 +68,11 @@
 
 ## * calcSeCox (code)
 #' @rdname calcSeCox
-calcSeCox <- function(object, times, oorder.times, nTimes, type, diag,
+calcSeCox <- function(object, times, nTimes, type, diag,
                       Lambda0, object.n, object.time, object.eXb, object.strata, nStrata,
                       new.n, new.eXb, new.LPdata, new.strata, new.survival, 
                       nVar, export, store.iid){
 
-    ## restaure order of new.survival
-    new.survival <- new.survival[,oorder.times,drop=FALSE]
-    
                                         # {{{ computation of the influence function
     if(is.null(object$iid)){
         iid.object <- iidCox(object, tau.hazard = times, store.iid = store.iid)
@@ -123,7 +119,6 @@ calcSeCox <- function(object, times, oorder.times, nTimes, type, diag,
         if("hazard" %in% type){
             stop("store.iid=\"minimal\" cannot be used to extract the influence function of the hazard \n")
         }
-       
         for(iStrata in 1:nStrata){ # iStrata <- 1
             indexStrata <- which(new.strata==iStrata)
             if(length(indexStrata)==0){next}
