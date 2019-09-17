@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: maj 27 2017 (11:46) 
 ## Version: 
-## last-updated: sep  9 2019 (15:53) 
+## last-updated: sep 17 2019 (18:13) 
 ##           By: Brice Ozenne
-##     Update #: 544
+##     Update #: 588
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -31,7 +31,8 @@
 #' @param nTimes the length of the argument \code{times}. 
 #' @param type One or several strings that match (either in lower or upper case or mixtures) one
 #' or several of the strings \code{"hazard"},\code{"cumhazard"}, \code{"survival"}.
-#' @param diag [logical] If \code{TRUE} only compute the hazard/cumlative hazard/survival for the i-th row in dataset at the i-th time.
+#' @param diag [logical] when \code{FALSE} the hazard/cumlative hazard/survival for all observations at all times is computed,
+#' otherwise it is only computed for the i-th observation at the i-th time.
 #' @param Lambda0 the baseline hazard estimate returned by \code{BaseHazStrata_cpp}.
 #' @param object.n the number of observations in the dataset used to estimate the object. 
 #' @param object.time the time to event of the observations used to estimate the object.
@@ -75,12 +76,12 @@ calcSeCox <- function(object, times, nTimes, type, diag,
 
                                         # {{{ computation of the influence function
     if(is.null(object$iid)){
-        iid.object <- iidCox(object, tau.hazard = times, store.iid = store.iid)
+        iid.object <- iidCox(object, tau.hazard = times, store.iid = store.iid, return.object = FALSE)
     }else{
         store.iid <- object$iid$store.iid
         iid.object <- selectJump(object$iid, times = times, type = type)        
     }
-                                        # }}}
+                                         # }}}
 
                                         # {{{ prepare arguments
     if(diag){
@@ -94,8 +95,8 @@ calcSeCox <- function(object, times, nTimes, type, diag,
         Lambda0$strata <- as.numeric(Lambda0$strata)    
     }
 
-    if("hazard" %in% type){Lambda0$hazard <- lapply(1:nStrata,function(s){Lambda0$hazard[Lambda0$strata==s]})}
-    if("cumhazard" %in% type || "survival" %in% type){Lambda0$cumhazard <- lapply(1:nStrata,function(s){Lambda0$cumhazard[Lambda0$strata==s]})}
+    if("hazard" %in% type){Lambda0$hazard <- lapply(1:nStrata,function(s){Lambda0$hazard[Lambda0$strata==s][Lambda0$oorder.times]})}
+    if("cumhazard" %in% type || "survival" %in% type){Lambda0$cumhazard <- lapply(1:nStrata,function(s){Lambda0$cumhazard[Lambda0$strata==s][Lambda0$oorder.times]})}
     
     out <- list()
     if("se" %in% export){
@@ -268,7 +269,7 @@ calcSeCox <- function(object, times, nTimes, type, diag,
                                        diag = diag,
                                        exportCumHazard = ("cumhazard" %in% type),
                                        exportSurvival = ("survival" %in% type))
-
+            
             if("cumhazard" %in% type){
                 if(rm.list){
                     out$cumhazard.average.iid <- matrix(outRcpp[[1]][[1]], nrow = object.n, ncol = nTimes)

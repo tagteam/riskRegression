@@ -1,32 +1,188 @@
-### test-predict-SEconfint.R --- 
+### test-predictCox.R --- 
 #----------------------------------------------------------------------
 ## author: Brice Ozenne
-## created: maj 18 2017 (09:23) 
+## created: sep  4 2017 (10:38) 
 ## Version: 
-## last-updated: sep  9 2019 (10:04) 
+## last-updated: sep 17 2019 (18:42) 
 ##           By: Brice Ozenne
-##     Update #: 198
+##     Update #: 94
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
-## Compare the survival and its standard error obtained with iidCox and timereg:
+##
 ### Change Log:
 #----------------------------------------------------------------------
 ## 
 ### Code:
 
-## * Setting
-if (class(try(riskRegression.test,silent=TRUE))[1]!="try-error"){
+## * Settings
 library(riskRegression)
 library(testthat)
 library(rms)
 library(survival)
-library(timereg)
+library(data.table)
+library(timereg); nsim.band <- 500;
+context("function predictCox")
 
-context("[predictCox] Computation of iid,SE,CI,CB, comparison to timereg")
-nsim.band <- 500
 
-## * predictions: no strata
+## * [predictCox] Baseline hazard (no strata)
+cat("[predictCox] Estimation of the baseline hazard (no strata) \n")
+
+## ** Data
+data(Melanoma, package = "riskRegression")
+
+## ** Model
+fit.coxph <- coxph(Surv(time,status == 1) ~ thick + invasion + ici, data = Melanoma, y = TRUE, x = TRUE)
+fit.cph <- cph(Surv(time,status == 1) ~ thick + invasion + ici, data = Melanoma, y = TRUE, x = TRUE)
+
+## ** Compare to survival::basehaz
+test_that("baseline hazard (no strata): compare to survival::basehaz",{
+  ## vs basehaz
+  expect_equal(predictCox(fit.coxph, centered = FALSE)$cumhazard, 
+               survival::basehaz(fit.coxph, centered = FALSE)$hazard, tolerance = 1e-8)
+  expect_equal(predictCox(fit.coxph, centered = TRUE)$cumhazard, 
+               survival::basehaz(fit.coxph, centered = TRUE)$hazard, tolerance = 1e-8)
+  expect_equal(predictCox(fit.cph)$cumhazard, 
+               survival::basehaz(fit.cph)$hazard, tolerance = 1e-8)
+
+  ## consistency cph coxph
+  ## possible differences due to different fit - coef(fit.coxph)-coef(fit.cph)
+  expect_equal(predictCox(fit.cph),
+               predictCox(fit.coxph, centered = TRUE), 
+               tolerance = 100*max(abs(coef(fit.coxph)-coef(fit.cph))))
+})
+
+## ** Number of events
+test_that("baseline hazard (no strata): number of events",{
+
+    ## find all unique event times
+    GS.alltime <- sort(unique(Melanoma$time))
+    
+    RR.coxph <- predictCox(fit.coxph)
+    expect_equal(RR.coxph$times, GS.alltime)
+
+    RR.cph <- predictCox(fit.cph)
+    expect_equal(RR.cph$times, GS.alltime)
+})
+
+## * [predictCox] Baseline hazard (strata)
+cat("[predictCox] Estimation of the baseline hazard (strata) \n")
+
+## ** Data
+data(Melanoma, package = "riskRegression")
+
+## ** Model
+fitS.coxph <- coxph(Surv(time,status == 1) ~ thick + strata(invasion) + strata(ici), data = Melanoma, y = TRUE, x = TRUE)
+fitS.cph <- cph(Surv(time,status == 1) ~ thick + strat(invasion) + strat(ici), data = Melanoma, y = TRUE, x = TRUE)
+
+## ** Compare to survival::basehaz
+test_that("baseline hazard (strata): compare to survival::basehaz",{
+
+  ## vs basehaz
+  expect_equal(predictCox(fitS.coxph, centered = FALSE)$cumhazard, 
+               basehaz(fitS.coxph, centered = FALSE)$hazard, tolerance = 1e-8)
+  expect_equal(predictCox(fitS.coxph, centered = TRUE)$cumhazard, 
+               basehaz(fitS.coxph, centered = TRUE)$hazard, tolerance = 1e-8)
+  expect_equal(predictCox(fitS.cph)$cumhazard, 
+               basehaz(fitS.cph)$hazard, tolerance = 1e-8)
+  expect_equal(predictCox(fitS.coxph, keep.strata = TRUE)$strata, 
+               basehaz(fitS.coxph)$strata)
+  expect_equal(predictCox(fitS.cph, keep.strata = TRUE)$strata, 
+               basehaz(fitS.cph)$strata)
+
+  ## consistency cph coxph
+  ## different ordering of the strata
+  e.coxph <- as.data.table(predictCox(fitS.coxph))
+  e.cph <- as.data.table(predictCox(fitS.cph))
+  levels(e.coxph$strata)
+  levels(e.cph$strata)
+})
+
+## ** Number of events
+test_that("baseline hazard (strata): number of events",{
+
+    GS.alltime <- tapply(Melanoma$time, interaction(Melanoma$ici,Melanoma$invasion),
+                         function(x){sort(unique(x))})
+
+    RR.coxph <- predictCox(fitS.coxph)
+    test.alltime <- tapply(RR.coxph$times, RR.coxph$strata, function(x){x})
+
+    expect_equal(unname(GS.alltime),unname(test.alltime))
+
+
+    GS.alltime <- tapply(Melanoma$time, interaction(Melanoma$invasion,Melanoma$ici),
+                         function(x){sort(unique(x))})
+
+    RR.cph <- predictCox(fitS.cph)
+    test.alltime <- tapply(RR.cph$times, RR.cph$strata, function(x){x})
+
+    expect_equal(unname(GS.alltime),unname(test.alltime))
+})
+
+## * [predictCox] Baseline hazard with time varying covariates (no strata)
+cat("[predictCox] Estimation of the baseline hazard (time varying cov, no strata) \n")
+## ** Data
+## example from help(coxph)
+dt.TV <- list(start=c(1,2,5,2,1,7,3,4,8,8), 
+              stop=c(2,3,6,7,8,9,9,9,14,17), 
+              event=c(1,1,1,1,1,1,1,0,0,0), 
+              x=c(1,0,0,1,0,1,1,1,0,0)) 
+
+## ** Model
+fit.coxphTV <- coxph(Surv(start, stop, event) ~ x, data = dt.TV, x = TRUE, y = TRUE)
+fit.cphTV <- cph(Surv(start, stop, event) ~ x, data = dt.TV, x = TRUE, y = TRUE)
+
+
+## ** Compare to survival::basehaz
+test_that("baseline hazard (no strata, time varying): compare to survival::basehaz",{
+
+    expect_equal(suppressWarnings(predictCox(fit.coxphTV, centered = FALSE)$cumhazard), 
+                 basehaz(fit.coxphTV, centered = FALSE)$hazard, tolerance = 1e-8)
+    expect_equal(suppressWarnings(predictCox(fit.coxphTV, centered = TRUE)$cumhazard), 
+                 basehaz(fit.coxphTV, centered = TRUE)$hazard, tolerance = 1e-8)
+    expect_equal(suppressWarnings(predictCox(fit.cphTV)$cumhazard), 
+                 basehaz(fit.cphTV)$hazard, tolerance = 1e-8)
+  
+})
+
+## * [predictCox] Baseline hazard with time varying covariates (strata)
+cat("[predictCox] Estimation of the baseline hazard (time varying cov, strata) \n")
+## ** Data
+set.seed(10)
+dtS.TV <- rbind(cbind(as.data.table(dt.TV),S = 1),
+                      cbind(as.data.table(dt.TV),S = 2))
+dtS.TV[, randomS := rbinom(.N,size = 1, prob = 1/2)]
+
+## ** Model
+fitS1.coxphTV <- coxph(Surv(start, stop, event) ~ strata(S) + x, data = dtS.TV, x = TRUE, y = TRUE)
+fitS1.cphTV <- cph(Surv(start, stop, event) ~ strat(S) + x, data = dtS.TV, x = TRUE, y = TRUE)
+
+fitS2.coxphTV <- coxph(Surv(start, stop, event) ~ strata(randomS) + x, data = dtS.TV, x = TRUE, y = TRUE)
+fitS2.cphTV <- cph(Surv(start, stop, event) ~ strat(randomS) + x, data = dtS.TV, x = TRUE, y = TRUE)
+
+
+## ** Compare to survival::basehaz
+test_that("baseline hazard (strata, time varying): compare to survival::basehaz",{
+
+    ## strata defined by S
+    expect_equal(suppressWarnings(predictCox(fitS1.coxphTV, centered = FALSE)$cumhazard), 
+                 basehaz(fitS1.coxphTV, centered = FALSE)$hazard, tolerance = 1e-8)
+    expect_equal(suppressWarnings(predictCox(fitS1.coxphTV, centered = TRUE)$cumhazard), 
+                 basehaz(fitS1.coxphTV, centered = TRUE)$hazard, tolerance = 1e-8)
+    expect_equal(suppressWarnings(predictCox(fitS1.cphTV)$cumhazard), 
+                 basehaz(fitS1.cphTV)$hazard, tolerance = 1e-8)
+
+    ## strata defined by randomS
+    expect_equal(suppressWarnings(predictCox(fitS2.coxphTV, centered = FALSE)$cumhazard), 
+                 basehaz(fitS2.coxphTV, centered = FALSE)$hazard, tolerance = 1e-8)
+    expect_equal(suppressWarnings(predictCox(fitS2.coxphTV, centered = TRUE)$cumhazard), 
+                 basehaz(fitS2.coxphTV, centered = TRUE)$hazard, tolerance = 1e-8)
+    expect_equal(suppressWarnings(predictCox(fitS2.cphTV)$cumhazard), 
+                 basehaz(fitS2.cphTV)$hazard, tolerance = 1e-8)
+
+})
+
+## * [predictCox] Predictions,se,band,average.iid (no strata, continuous variables)
 cat("[predictCox] Predictions (no strata, continuous) \n")
 
 ## ** Data
@@ -35,7 +191,6 @@ dt <- sampleData(5e1, outcome = "survival")[,.(time,event,X1,X2,X6)]
 dt[,X1:=as.numeric(as.character(X1))]
 dt[,X2:=as.numeric(as.character(X2))]
 dt[ , X16 := X1*X6]
-dt[ , Xcat2 := as.factor(paste0(X1,X2))]
 
 ## sorted dataset
 dt.sort <- copy(dt)
@@ -48,7 +203,7 @@ e.coxph_sort <- coxph(Surv(time, event) ~ X1*X6, data = dt.sort, y = TRUE, x = T
 e.timereg <- cox.aalen(Surv(time, event) ~ prop(X1) + prop(X6) + prop(X1*X6),
                        data = dt, resample.iid = TRUE, max.timepoint.sim=NULL)
 
-## ** consistency between hazard/cumhazard/survival
+## ** Consistency between hazard/cumhazard/survival
 
 test_that("[predictCox] - consistency of hazard/cumhazard/survival",{
   predRR <- predictCox(e.coxph, type = c("hazard","cumhazard","survival"), times = sort(dt$time), newdata = dt)
@@ -56,7 +211,7 @@ test_that("[predictCox] - consistency of hazard/cumhazard/survival",{
   expect_equal(predRR$survival, exp(-predRR$cumhazard), tolerance = 1e-8)
 })
 
-## ** 1 fixed time
+## ** One time
 ## *** Extract information
 predGS <- predict(e.timereg, newdata = dt, times = 10)
 predRR1 <- predictCox(e.coxph, newdata = dt, times = 10,
@@ -192,7 +347,7 @@ test_that("[confint.predictCox] compare to known values (eventtimes, log log tra
                  GS, tol = 1e-4, scale = 1)
 })
 
-## ** after last event
+## ** After last event
 test_that("[predictCox] after the last event",{
 
     predRR1 <- predictCox(e.coxph, newdata = dt, times = 1e8,
@@ -249,7 +404,7 @@ test_that("Prediction - last event death",{
 })
 
 
-## ** before first event
+## ** Before first event
 test_that("[predictCox] before the first event",{
 
     predRR1 <- predictCox(e.coxph, newdata = dt, times = 1e-8,
@@ -266,7 +421,7 @@ test_that("[predictCox] before the first event",{
 
 })    
 
-## ** sorted vs. unsorted times
+## ** Sorted vs. unsorted times
 
 test_that("[predictCox] - sorted vs. unsorted times (no strata)",{
     vec.time <- dt$time
@@ -278,6 +433,9 @@ test_that("[predictCox] - sorted vs. unsorted times (no strata)",{
 
     expect_equal(predRR1$survival[,index.sort],
                  predRR2$survival)
+
+    expect_equal(predRR1$survival.se[,index.sort],
+                 predRR2$survival.se)
 
     expect_equal(predRR1$time[index.sort],
                  predRR2$time)
@@ -319,21 +477,29 @@ test_that("[predictCox] - fast iid average (no strata)",{
                  tolerance = 1e-8)
 })
 
-## * predictions: no strata with a categorical variable
+## * [predictCox] Predictions,se,band,average.iid (no strata, categorical variable)
 cat("[predictCox] Predictions (no strata, categorical) \n")
+
 ## ** Data
-## see no strata
+set.seed(10)
+dt <- sampleData(5e1, outcome = "survival")[,.(time,event,X1,X2,X6)]
+dt[,X1:=as.numeric(as.character(X1))]
+dt[,X2:=as.numeric(as.character(X2))]
+dt[ , Xcat2 := as.factor(paste0(X1,X2))]
+
+## sorted dataset
+dt.sort <- copy(dt)
+setkeyv(dt.sort,c("time")) 
+
 ## ** Model
 e.coxph <- coxph(Surv(time, event) ~ Xcat2 + X6 , data = dt, y = TRUE, x = TRUE)
 e.cph <- cph(Surv(time, event) ~ Xcat2 + X6 , data = dt, y = TRUE, x = TRUE)
 e.timereg <- cox.aalen(Surv(time, event) ~ prop(Xcat2) + prop(X6),
                        data = dt, resample.iid = TRUE, max.timepoint.sim=NULL)
 
-## ** test
 
-
+## ** One time and event times
 test_that("[predictCox] compare survival and survival.se to timereg/cph (categorical variable)",{
-
     ## fixed time
     predGS <- predict(e.timereg, newdata = dt, times = 10)
     predRR1 <- predictCox(e.coxph, newdata = dt, times = 10, se = TRUE)
@@ -355,7 +521,9 @@ test_that("[predictCox] compare survival and survival.se to timereg/cph (categor
     expect_equal(as.double(predRR1$survival.se), as.double(predCPH$survival.se), tol = 1e-3)
 })
 
-## * predictions: strata
+
+
+## * [predictCox] Predictions,se,band,average.iid (strata)
 cat("[predictCox] Predictions (strata) \n")
 ## ** Data
 set.seed(10)
@@ -557,7 +725,6 @@ test_that("[predictCox] before the first event (strata)",{
     expect_true(all(predRR1$cumhazard[dtStrata$strata==firststrata,]>0))
 
 })
-
 ## ** iid.average
 test_that("[predictCox] - iid average",{
     ## eS.coxph <- coxph(Surv(time, event) ~ strata(strata), data = dtStrata, x = TRUE)
@@ -608,7 +775,7 @@ test_that("[predictCox] - iid average",{
                  tolerance = 1e-8)
 })
 
-## * predictions: SE/CI check against manual computation
+## * [predictCox] SE/CI check against manual computation
 cat("[predictCox] SE/CI check against manual computation \n")
 ## from confint.predictCox
 
@@ -648,10 +815,161 @@ test_that("[confint.predictCox] manual computation on ci", {
                  exp(-exp(log(-log(fit.pred$survival)) + qnorm(0.025) * newse)))
 })
 
+## * [predictCox] Diag argument
+cat("[predictCox] Argument \'diag\' \n")
+set.seed(10)
+dt <- sampleData(5e1, outcome = "survival")[,.(time,event,X1,X2,X6)]
 
-## * Dependence on data
+test_that("[predictCox] diag no strata", {
+    e.coxph <- coxph(Surv(time, event) ~ X1*X6, data = dt, y = TRUE, x = TRUE)
+
+    GS <- predictCox(e.coxph, newdata = dt, times = dt$time, se = FALSE, iid = TRUE)
+    test <- predictCox(e.coxph, newdata = dt, times = dt$time,
+                       se = FALSE, iid = TRUE, average.iid = TRUE, diag = TRUE)
+    test2 <- predictCox(e.coxph, newdata = dt, times = dt$time,
+                        se = FALSE, iid = FALSE, average.iid = TRUE, diag = TRUE)
+
+    ## estimates
+    expect_equal(dt$time, as.double(test$time))
+    expect_equal(diag(GS$cumhazard), as.double(test$cumhazard))
+    expect_equal(diag(GS$survival), as.double(test$survival))
+
+    ## iid
+    GS.iid.diag <- do.call(rbind,lapply(1:NROW(dt),
+                                        function(iN){GS$survival.iid[iN,iN,]}))
+    expect_equal(GS.iid.diag, test$survival.iid[,1,])
+
+    ## average.iid
+    expect_equal(colMeans(GS.iid.diag), test2$survival.average.iid[,1])
+    expect_equal(test$survival.average.iid, test2$survival.average.iid)
+})
+
+test_that("[predictCox] diag strata", {
+    eS.coxph <- coxph(Surv(time, event) ~ strata(X1) + X6, data = dt, y = TRUE, x = TRUE)
+
+    GS <- predictCox(eS.coxph, newdata = dt, times = dt$time, se = FALSE, iid = TRUE)
+    test <- predictCox(eS.coxph, newdata = dt, times = dt$time,
+                       se = FALSE, iid = TRUE, average.iid = TRUE, diag = TRUE)
+    test2 <- predictCox(eS.coxph, newdata = dt, times = dt$time,
+                       se = FALSE, iid = FALSE, average.iid = TRUE, diag = TRUE)
+
+    ## estimate
+    expect_equal(dt$time, as.double(test$time))
+    expect_equal(diag(GS$cumhazard), as.double(test$cumhazard))
+    expect_equal(diag(GS$survival), as.double(test$survival))
+
+    ## iid
+    GS.iid.diag <- do.call(rbind,lapply(1:NROW(dt),
+                                        function(iN){GS$survival.iid[iN,iN,]}))
+    expect_equal(GS.iid.diag, test$survival.iid[,1,])
+
+    ## average.iid
+    expect_equal(colMeans(GS.iid.diag), test2$survival.average.iid[,1])
+    expect_equal(test$survival.average.iid, test2$survival.average.iid)
+})
+
+
+## * [predictCox] Miscellaneous
+## ** Confidence bands vs timereg
+cat("[predictCox] Confidence band vs timereg \n")
+
+## *** Data
+set.seed(10)
+dt <- sampleData(1e2, outcome = "survival")
+newdata <- dt[1:10,]
+
+dtStrata <- data.frame(time=c(4,3,1,1,2,2,3), 
+                       status=c(1,1,1,0,1,1,0), 
+                       x=c(0,2,1,1,1,0,0), 
+                       sex=c(0,0,0,0,1,1,1)) 
+
+## *** Model
+e.timereg <- cox.aalen(Surv(time, event) ~ prop(X1) + prop(X2), data = dt, max.timepoint.sim=NULL)
+e.coxph <- coxph(Surv(time, event) ~ X1 + X2, data = dt, x = TRUE, y = TRUE)
+
+vec.times <- e.timereg$time.sim.resolution
+
+## *** Compute quantile for confidence bands
+resTimereg <- list()
+for(i in 1:NROW(newdata)){ # i <- 1
+    set.seed(10)
+    resTimereg[[i]] <- predict.timereg(e.timereg,
+                                       newdata = newdata[i,,drop=FALSE],
+                                       times = vec.times,
+                                       resample.iid = 1,
+                                       n.sim = nsim.band)
+}
+
+## *** Tests
+test_that("[predictCox] Quantile for the confidence band of the cumhazard", {
+
+    predRR <- predictCox(e.coxph,
+                         newdata = newdata,
+                         times = vec.times,
+                         se = TRUE,
+                         iid = TRUE,
+                         band = TRUE,
+                         confint = FALSE,
+                         type = "cumhazard")
+
+    ## compatibility with timereg
+    ref <- unlist(lapply(resTimereg,"[[", "unif.band"))
+
+    set.seed(10)
+    pred.band2 <- riskRegression:::confBandCox(iid = predRR$cumhazard.iid,
+                                               se = predRR$cumhazard.se,
+                                               n.sim = nsim.band, 
+                                               conf.level = 0.95)
+
+    expect_equal(pred.band2,ref)
+
+
+    ## note confint is removing the first column since the standard error is 0
+    set.seed(10)
+    pred.band2.no0 <- riskRegression:::confBandCox(iid = predRR$cumhazard.iid[,-1,,drop=FALSE],
+                                                   se = predRR$cumhazard.se[,-1],
+                                                   n.sim = nsim.band, 
+                                                   conf.level = 0.95)
+
+    ## should not set transform to NA because at time 0 se=0 so the log-transform fails
+    pred.confint <- confint(predRR, nsim.band = nsim.band, seed = 10,
+                            cumhazard.transform = "none")
+    expect_equal(pred.confint$cumhazard.quantileBand, pred.band2.no0)
+    expect_equal(pred.confint$cumhazard.quantileBand, ref)
+
+})
+
+## *** Display
+predRR <- predictCox(e.coxph,
+                     newdata = newdata[1],
+                     times = vec.times,
+                     se = TRUE,
+                     band = TRUE,
+                     type = c("cumhazard","survival")
+                     )
+
+
+## plotRR <- autoplot(predRR, type = "survival", band = TRUE, ci = TRUE, plot = FALSE)
+## dev.new()
+## plotTR <- plot.predict.timereg(resTimereg[[1]])
+## dev.new()
+## plotRR$plot + coord_cartesian(ylim = c(0,1))
+## graphics.off()
+
+## *** With strata                                        
+## Fit a stratified model 
+eS.coxph <- coxph(Surv(time, status) ~ x + strata(sex), 
+                  data = dtStrata, x = TRUE, y = TRUE) 
+
+eS.pred  <- predictCox(eS.coxph, newdata = dtStrata, times = 1:4,
+                       se = TRUE, iid = TRUE, band = TRUE)
+eS.confint <- confint(eS.pred, seed = 10)
+eS.confint$survival.quantileBand
+
+
+## ** Dependence on data
 cat("[predictCox] Dependence on data \n")
-data(Melanoma)
+data(Melanoma, package = "riskRegression")
 
 test_that("[predictCox] Dependence on data", {   
   Melanoma$entry <- -abs(rnorm(NROW(Melanoma), mean = 1, sd = 1))
@@ -680,15 +998,15 @@ test_that("[predictCox] Dependence on data", {
 
 })
 
-## * Store.iid argument
+## ** Store.iid argument
 cat("[predictCox] Check same result store.iid=minimal vs. full \n")
 
-## ** Data
+## *** Data
 set.seed(10)
 d <- sampleData(50, outcome = "survival")
 setkey(d,time)
 
-## ** no strata
+## *** no strata
 m.coxph <- coxph(Surv(time, event) ~ X1+X6, data = d, y = TRUE, x = TRUE)
 seqTime <- c(1e-16,4:10,d$time[1:10],1e6)
 newdata <- d
@@ -719,7 +1037,7 @@ test_that("[predictCox] store.iid = minimal vs. full - no strata", {
     expect_equal(res2$survival.average.iid, t(apply(res3$survival.iid,2:3,mean)))
 })
 
-## ** strata
+## *** strata
 m.coxph <- coxph(Surv(time, event) ~ strata(X1)+X6, data = d, y = TRUE, x = TRUE)
  
 seqTime <- c(1e-16,4:10,d$time[1:10],1e6)
@@ -745,77 +1063,39 @@ test_that("[predictCox] store.iid = minimal vs. full - strata", {
     expect_equal(res2$survival.average.iid, t(apply(res3$survival.iid,2:3,mean)))
 })
 
-# }}}
-
-## * Weigthed cox
-cat("[predictCox] does not handle weights \n")
-## ** Data
+## ** Weigthed cox
+cat("[predictCox] Does not handle weights \n")
+## *** Data
 set.seed(10)
-data(Melanoma)
+data(Melanoma, package = "riskRegression")
 wdata <- runif(nrow(Melanoma), 0, 1)
 times1 <- unique(Melanoma$time)
 
-## ** Test
+## *** Test
 test_that("[predictCox] - weights",{
 
-fitW.coxph <- coxph(Surv(time,status == 1) ~ thick*age, data = Melanoma, weights = wdata, y = TRUE, x = TRUE)
-fitW.cph <- cph(Surv(time,status == 1) ~ thick*age, data = Melanoma, y = TRUE, x = TRUE, weights = wdata)
+    fitW.coxph <- coxph(Surv(time,status == 1) ~ thick*age, data = Melanoma, weights = wdata, y = TRUE, x = TRUE)
+    fitW.cph <- cph(Surv(time,status == 1) ~ thick*age, data = Melanoma, y = TRUE, x = TRUE, weights = wdata)
 
-expect_error(resW <- predictCox(fitW.coxph, times = Melanoma$time, newdata = Melanoma))
-expect_error(resW <- predictCox(fitW.cph, times = Melanoma$time, newdata = Melanoma))
+    expect_error(resW <- predictCox(fitW.coxph, times = Melanoma$time, newdata = Melanoma))
+    expect_error(resW <- predictCox(fitW.cph, times = Melanoma$time, newdata = Melanoma))
+})
+
+## ** Deal with negative timepoints
+cat("[predictCox] dealing with negative timepoints or NA \n")
+data(Melanoma, package = "riskRegression")
+
+fit.coxph <- coxph(Surv(time,status == 1) ~ thick*age, data = Melanoma, y = TRUE, x = TRUE)
+
+test_that("Deal with negative/NA time points",{
+    expect_equal(unname(predictCox(fit.coxph, times = -1, newdata = Melanoma)$survival),
+                 matrix(1,nrow = NROW(Melanoma), ncol = 1))
+
+    expect_error(predictCox(fit.coxph, times = c(1,2,NA), newdata = Melanoma))
 })
 # }}}
 
-## * Time varying variables
-# NOTE: I am not sure what timereg is exactly doing in this case
-
-## d <- sampleData(1e2, outcome = "survival")
-## d$start <- runif(NROW(d),min=0,max=(d$eventtime-0.1) )
-
-## test_that("predicted survival with time varying variables",{
-    ## fit.coxph <- coxph(Surv(start, eventtime, event) ~ X1, data = d, x = TRUE, y = TRUE)
-    ## fit.timereg <- cox.aalen(Surv(start, eventtime, event) ~ prop(X1), data = d)
-    ## predTimes <- sort(unique(d$eventtime))
-    ## M1 <- predictCox(fit.coxph, newdata = d, time = predTimes)$survival
-    ## M2 <- predict(fit.timereg, newdata = d, time = predTimes)$S0
-    ## expect_equal(M1,M2)
-## })
-# }}}
-
-## * Diag argument
-cat("[predictCox] diag argument \n")
-set.seed(10)
-dt <- sampleData(5e1, outcome = "survival")[,.(time,event,X1,X2,X6)]
-
-test_that("[predictCox] diag no strata", {
-    e.coxph <- coxph(Surv(time, event) ~ X1*X6, data = dt, y = TRUE, x = TRUE)
-
-    GS <- predictCox(e.coxph, newdata = dt, times = dt$time, se = FALSE, iid = TRUE)
-    test <- predictCox(e.coxph, newdata = dt, times = dt$time, se = FALSE, iid = TRUE, diag = TRUE)
-    expect_equal(dt$time, as.double(test$time))
-    expect_equal(diag(GS$cumhazard), as.double(test$cumhazard))
-    expect_equal(diag(GS$survival), as.double(test$survival))
-
-    GS <- predictCox(e.coxph, newdata = dt, times = dt$time, se = FALSE, iid = TRUE)
-    test <- predictCox(e.coxph, newdata = dt, times = dt$time, se = FALSE, iid = TRUE, diag = TRUE)
-
-    GS.iid.diag <- do.call(rbind,lapply(1:NROW(dt),
-                                        function(iN){GS$cumhazard.iid[iN,iN,]}))
-    expect_equal(GS.iid.diag, test$cumhazard.iid[,1,])
-})
-
-test_that("[predictCox] diag strata", {
-    eS.coxph <- coxph(Surv(time, event) ~ strata(X1) + X6, data = dt, y = TRUE, x = TRUE)
-
-    GS <- predictCox(eS.coxph, newdata = dt, times = dt$time, se = FALSE)
-    test <- predictCox(eS.coxph, newdata = dt, times = dt$time, se = FALSE, diag = TRUE)
-
-    expect_equal(dt$time, as.double(test$time))
-    expect_equal(diag(GS$cumhazard), as.double(test$cumhazard))
-    expect_equal(diag(GS$survival), as.double(test$survival))
-})
-
-## * Previous Bug
+## * [predictCox] Previous Bug
 cat("[predictCox] Previous bug \n")
 ## ** Some coef are NA
 dt <- sampleData(5e2, outcome = "survival")
@@ -826,7 +1106,7 @@ test_that("Return error when coef contains NA", {
     expect_error(predictCox(e.coxph, newdata = dt, times = 1))
 })
 
-## ** 0 average.iid
+## ** average.iid
 
 test_that("Cox - output of average.iid should not depend on other arguments", {
     set.seed(10)
@@ -842,23 +1122,8 @@ test_that("Cox - output of average.iid should not depend on other arguments", {
     expect_equal(out1$survival.average.iid,out2$survival.average.iid, tol = 1e-8)
 })    
 
-test_that("CSC - output of average.iid should not depend on other arguments", {
-    set.seed(10)
-    d <- sampleData(70,outcome="competing.risks")
-    d[, X1 := paste0("T",rbinom(.N, size = 2, prob = c(0.51)))]
 
-    fit <- CSC(Hist(time,event)~X1 + strata(X2) + X6,
-               data=d)
-
-    out1 <- predict(fit, newdata = d[1:5], times = 1:3, average.iid = TRUE, cause = 1)
-    out2 <- predict(fit, newdata = d[1:5], times = 1:3, se = TRUE, average.iid = TRUE, cause = 1)
-
-    test_that("output of average.iid should not depend on other arguments", {
-        expect_equal(out1$survival.average.iid,out2$survival.average.iid, tol = 1e-8)
-    })    
-})
-
-## ** (Previously) incorrect calculation of the standard error with atanh  (i.e. se/(1+b^2) instead of se/(1-b^2))
+## ** Incorrect calculation of the standard error with atanh  (i.e. se/(1+b^2) instead of se/(1-b^2))
 ## from: Paul Blanche &lt;pabl@sund.ku.dk&gt;
 ## subject: suspected error in riskRegression
 ## date: Tue, 30 Jul 2019 11:42:14 +0200
@@ -918,87 +1183,7 @@ test_that("Cox - iid/se should not depend on other arguments", {
     expect_equal(out2$survival.iid,out6$survival.iid)
     expect_equal(out2$survival.se,out6$survival.se)
     expect_equal(out2$survival.average.iid,out6$survival.average.iid)
-
-    ## d <- sampleData(70)
-    ## d[, X1 := paste0("T",rbinom(.N, size = 2, prob = c(0.51)))]
-    ## fit <- CSC(Hist(time,event) ~ X1 + X2, data = d)
-
-    ## out1 <- predict(fit, newdata = d[1:5], times = c(0,3), se = TRUE, cause = 1)
-    ## out2 <- predict(fit, newdata = d[1:5], times = c(3,0), se = TRUE, cause = 1)
 })    
 
-
-
-## ** ???
-f1 <- coxph(Surv(time,status==1) ~ age+logthick+epicel+strata(sex),
-            data=Melanoma, x=TRUE,y=TRUE)
-res <- predictCox(f1,newdata=Melanoma[c(17,101,123),],
-                  times=c(7,3,5)*365.25)
-}
-
-##----------------------------------------------------------------------
-### test-predictCox-SEconfint.R ends here
-
-
-
-## * Timing
-if(FALSE){
-
-    ## library(microbenchmark)
-    ## library(survival)
-    ## library(rms)
-    ## library(mets)
-    ## library(profvis)
-    
-    ## set.seed(10)
-    ## d <- sampleData(1e3)
-    ## m.coxph <- coxph(Surv(time, event>0) ~ X1 + X2 + X3, data = d, x = TRUE, y = TRUE)
-    ## m.cph <- cph(Surv(time, event>0) ~ X1 + X2 + X3, data = d, x = TRUE, y = TRUE)
-    ## m.phreg <- phreg(Surv(time, event>0) ~ X1 + X2 + X3, data = d)
-
-
-    ## ## baseline hazard
-    ## runBenchmark <- function(n) {
-    ##     microbenchmark(times = 20,  
-    ##                    coxph = {predictCox(m.coxph)},
-    ##                    cph = {predictCox(m.cph)},
-    ##                    phreg = {predictCox(m.phreg)},
-    ##                    basehaz = {basehaz(m.coxph)}
-    ##                    )
-    ## }
-    ## res <- runBenchmark()
-
-    ## profvis(
-    ##     predictCox(m.coxph)
-    ## )
-
-    ## ## predictions
-    ## runBenchmark <- function(n) {
-    ##     microbenchmark(times = 20,  
-    ##                    coxph = {predictCox(m.coxph, newdata = d, times = 1:5)},
-    ##                    cph = {predictCox(m.cph, newdata = d, times = 1:5)},
-    ##                    phreg = {predictCox(m.phreg, newdata = d, times = 1:5)}
-    ##                    )
-    ## }
-    ## res <- runBenchmark()
-    ## res
-
-    ## profvis(
-    ##     predictCox(m.coxph, newdata = d, times = 1:5)
-    ## )
-
-    ## ## predictions with SE
-    ## runBenchmark <- function(n) {
-    ##     microbenchmark(times = 20,  
-    ##                    coxph = {predictCox(m.coxph, newdata = d, times = 1:5, se = TRUE)},
-    ##                    cph = {predictCox(m.cph, newdata = d, times = 1:5, se = TRUE)},
-    ##                    phreg = {predictCox(m.phreg, newdata = d, times = 1:5, se = TRUE)}
-    ##                    )
-    ## }
-    ## res <- runBenchmark()
-    ## res
-
-    ## profvis(
-    ##     predictCox(m.coxph, newdata = d, times = 1:5, se = TRUE)
-    ## )
-}
+#----------------------------------------------------------------------
+### test-predictCox.R ends here

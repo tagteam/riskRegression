@@ -42,7 +42,8 @@
 #' @param iid [logical] If \code{TRUE} compute and add the influence function to the output.
 #' @param confint [logical] If \code{TRUE} compute and add the confidence intervals/bands to the output.
 #' They are computed applying the \code{confint} function to the output.
-#' @param diag [logical] If \code{TRUE} only compute the hazard/cumlative hazard/survival for the i-th row in dataset at the i-th time.
+#' @param diag [logical] when \code{FALSE} the hazard/cumlative hazard/survival for all observations at all times is computed,
+#' otherwise it is only computed for the i-th observation at the i-th time.
 #' @param average.iid [logical] If \code{TRUE} add the average of the influence function over \code{newdata} to the output.
 #' @param store.iid [character] Implementation used to estimate the influence function and the standard error.
 #' Can be \code{"full"} or \code{"minimal"}.
@@ -168,7 +169,7 @@ predictCox <- function(object,
         nTimes <- length(times)
     }
     needOrder <- (nTimes[1]>0 && is.unsorted(times))
-    if (needOrder) {
+    if (all(!is.na(times)) && needOrder) {
         order.times <- order(times)
         oorder.times <- order(order.times)
         times.sorted <- sort(times)
@@ -232,17 +233,21 @@ predictCox <- function(object,
         stop("XXXindexXXX is a reserved name. No variable should have this name. \n")
     }
     if(!is.logical(diag)){
-        stop("Argument \'diag\' must be logical \n")
+        stop("Argument \'diag\' must be of type logical \n")
     }
-    if(diag[[1]]==TRUE && NROW(newdata)!=length(times)){
-        stop("When argument \'diag\' is TRUE, the number of rows in \'newdata\' must equal the length of \'times\' \n")
+    if(diag){
+        if((se[[1]]||band[[1]])){
+            stop("Arguments \'se\' and \'band\' must be FALSE when \'diag\' is TRUE \n")
+        }
+        if(iid[[1]]==TRUE && store.iid[[1]] == "minimal"){
+            stop("Arguments \'store.iid\' must equal \"full\" when \'diag\' is TRUE \n")
+        }
+
+        if(NROW(newdata)!=length(times)){
+            stop("When argument \'diag\' is TRUE, the number of rows in \'newdata\' must equal the length of \'times\' \n")
+        }
     }
-    if(diag[[1]]==TRUE && (se[[1]]||band[[1]])){
-        stop("Arguments \'se\' and \'band\' must be FALSE when \'diag\' is TRUE \n")
-    }
-    if(diag[[1]]==TRUE && iid[[1]]==TRUE && store.iid[[1]] == "minimal"){
-        stop("Arguments \'store.iid\' must equal \"full\" when \'diag\' is TRUE \n")
-    }
+
     if(!is.null(newdata)){
       if(missing(times) || nTimes[[1]]==0){
           stop("Time points at which to evaluate the predictions are missing \n")
@@ -350,8 +355,8 @@ predictCox <- function(object,
                               sterms = infoVar$strata.sterms, 
                               strata.vars = infoVar$stratavars, 
                               strata.levels = infoVar$strata.levels)
-    
-      new.levelStrata <- levels(new.strata)
+
+      new.levelStrata <- levels(droplevels(new.strata))
       
       ## *** subject specific hazard
       if (is.strata==FALSE){
@@ -395,7 +400,8 @@ predictCox <- function(object,
               out$cumhazard <- matrix(NA, nrow = new.n, ncol = nTimes*(1-diag)+diag)                
           }
           if ("survival" %in% type){
-              out$survival <- matrix(NA, nrow = new.n, ncol = nTimes*(1-diag)+diag)                   }
+              out$survival <- matrix(NA, nrow = new.n, ncol = nTimes*(1-diag)+diag)
+          }
 
           ## loop across strata
           for(S in new.levelStrata){ ## S <- 1
@@ -459,6 +465,11 @@ predictCox <- function(object,
 
         ## restaure original ordering
         data.table::setkeyv(object.modelFrame,"XXXindexXXX")
+        if(diag){
+            Lambda0$oorder.times <- oorder.times
+        }else{
+            Lambda0$oorder.times <- 1:nTimes
+        }
 
         ## Computation of the influence function and/or the standard error
         export <- c("iid"[(iid+band)>0],"se"[(se+band)>0],"average.iid"[average.iid==TRUE])
@@ -487,19 +498,19 @@ predictCox <- function(object,
         ## restaure orginal time ordering
         if((iid+band)>0){
             if ("hazard" %in% type){
-                if (needOrder[1] && diag[1] == FALSE)
+                if (needOrder[1] && (diag[1] == FALSE))
                     out$hazard.iid <- outSE$hazard.iid[,oorder.times,,drop=0L]
                 else
                     out$hazard.iid <- outSE$hazard.iid
             }
             if ("cumhazard" %in% type){
-                if (needOrder[1] && diag[1] == FALSE)
+                if (needOrder[1] && (diag[1] == FALSE))
                     out$cumhazard.iid <- outSE$cumhazard.iid[,oorder.times,,drop=0L]
                 else
                     out$cumhazard.iid <- outSE$cumhazard.iid
             }
             if ("survival" %in% type){
-                if (needOrder[1] && diag[1] == FALSE)
+                if (needOrder[1] && (diag[1] == FALSE))
                     out$survival.iid <- outSE$survival.iid[,oorder.times,,drop=0L]
                 else
                     out$survival.iid <- outSE$survival.iid
@@ -507,13 +518,13 @@ predictCox <- function(object,
         }
         if(average.iid == TRUE){
             if ("cumhazard" %in% type){
-                if (needOrder && diag[1] == FALSE)
+                if (needOrder && (diag[1] == FALSE))
                     out$cumhazard.average.iid <- outSE$cumhazard.average.iid[,oorder.times,drop=0L]
                 else
                     out$cumhazard.average.iid <- outSE$cumhazard.average.iid
             }
             if ("survival" %in% type){
-                if (needOrder && diag[1] == FALSE)
+                if (needOrder && (diag[1] == FALSE))
                     out$survival.average.iid <- outSE$survival.average.iid[,oorder.times,drop=0L]
                 else
                     out$survival.average.iid <- outSE$survival.average.iid

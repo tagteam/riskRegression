@@ -1,18 +1,21 @@
-#' @title Extract i.i.d. decomposition from a Cox model
+## * iidCox - documentation
+#' @title Extract iid decomposition from a Cox model
 #' @description Compute the influence function for each observation used to estimate the model
 #' @name iidCox
 #' 
 #' @param object object The fitted Cox regression model object either
 #'     obtained with \code{coxph} (survival package) or \code{cph}
 #'     (rms package).
-#' @param newdata [data.frame] Optional new data at which to do i.i.d. decomposition
+#' @param newdata [data.frame] Optional new data at which to do iid decomposition
 #' @param baseline.iid [logical] Should the influence function for the baseline hazard be computed.
 #' @param tau.hazard [numeric vector] the vector of times at which the i.i.d decomposition of the baseline hazard will be computed
 #' @param tau.max [numeric] latest time at which the i.i.d decomposition of the baseline hazard will be computed. Alternative to \code{tau.hazard}.
 #' @param store.iid [character] the method used to compute the influence function and the standard error.
 #' Can be \code{"full"}, \code{"approx"} or \code{"minimal"}. See the details section.
-#' @param keep.times [Logical] If \code{TRUE} add the evaluation times to the output.
-
+#' @param keep.times [logical] If \code{TRUE} add the evaluation times to the output.
+#' @param return.object [logical] If \code{TRUE} return the object where the iid decomposition has been added.
+#' Otherwise return a list (see the return section)
+#' 
 #' @details
 #' This function implements the first three formula (no number,10,11) of the subsection
 #' "Empirical estimates" in (Ozenne et al., 2017).
@@ -31,7 +34,7 @@
 #' riskRegression: Predicting the Risk of an Event using Cox Regression Models.
 #' The R Journal (2017) 9:2, pages 440-460.
 #' 
-#' @return A list containing:
+#' @return For Cox models, the iid slot is a list containing:
 #'  \itemize{
 #'  \item{IFbeta}{Influence function for the regression coefficient.}
 #'  \item{IFhazard}{Time differential of the influence function of the hazard.}
@@ -42,6 +45,8 @@
 #'  \item{etime.max}{Last observation time (i.e. jump or censoring) in each strata.}
 #'  \item{indexObs}{Index of the observation in the original dataset.}
 #' }
+#' For Cause-Specific Cox models,
+#' a list containing the iid decomposition relative to each cause is returned. 
 #'                 
 #' @examples
 #' library(survival)
@@ -59,15 +64,21 @@
 #' IF.cox.all <- iidCox(m.cox, tau.hazard = sort(unique(c(7,d$eventtime))))
 #' IF.cox.beta <- iidCox(m.cox, baseline.iid = FALSE)
 #' 
-#'
+`iidCox` <-
+    function(object, newdata,
+             baseline.iid, tau.hazard, tau.max, store.iid, 
+             keep.times, return.object) UseMethod("iidCox")
 
+
+
+## * iidCox.coxph
 #' @rdname iidCox
 #' @export
-iidCox <- function(object, newdata = NULL,
-                   baseline.iid = TRUE, tau.hazard = NULL, tau.max = NULL, store.iid = "full", 
-                   keep.times = TRUE){
+iidCox.coxph <- function(object, newdata = NULL,
+                         baseline.iid = TRUE, tau.hazard = NULL, tau.max = NULL, store.iid = "full", 
+                         keep.times = TRUE, return.object = TRUE){
 
-                                        # {{{ extract elements from object
+    ## ** extract elements from object
     iInfo <- coxVarCov(object)
     object.modelFrame <- coxModelFrame(object)
     infoVar <- coxVariableName(object, model.frame = object.modelFrame)
@@ -82,9 +93,8 @@ iidCox <- function(object, newdata = NULL,
         object.LPdata <- NULL
     }
     nStrata <- length(levels(object.strata))
-                                        # }}}
     
-                                        # {{{ Extract new observations
+    ## ** Extract new observations
     if(!is.null(newdata)){
     
         if("data.frame" %in% class(newdata) == FALSE){
@@ -117,19 +127,38 @@ iidCox <- function(object, newdata = NULL,
       new.LPdata <- object.LPdata
     
   }
-                                        # }}}
     
-    # {{{ tests 
-    ## time at which the influence function is evaluated
-    if(is.list(tau.hazard) && (length(tau.hazard)!=nStrata)){
-        stop("argument \"tau.hazard\" must be a list with ",nStrata," elements \n",
-             "each element being the vector of times for each strata \n")
-    }
-  
+    ## ** tests 
     store.iid <- match.arg(store.iid, c("minimal","approx","full"))
-    # }}}
+
+    ## time at which the influence function is evaluated
+    if(is.list(tau.hazard)){
+        if(length(tau.hazard)!=nStrata){
+            stop("If a list, argument \"tau.hazard\" must be a list with ",nStrata," elements \n",
+                 "each element being the vector of times for each strata \n")
+        }
+
+        need.order <- FALSE
+        tau.oorder <- vector(mode = "list", length = nStrata)
+        for(iStrata in 1:nStrata){
+            need.order <- need.order + is.unsorted(tau.hazard[[is.unsorted]])
+            tau.oorder[[iStrata]] <- order(order(tau.hazard[[iStrata]]))
+            tau.hazard[[iStrata]] <- sort(tau.hazard[[iStrata]])
+        }
+        need.order <- (need.order>0)
     
-    # {{{ Compute quantities of interest
+    }else if(!is.null(tau.hazard)){
+        need.order <- is.unsorted(tau.hazard)
+        tau.oorder <- lapply(1:nStrata, function(iS){order(order(tau.hazard))})
+        tau.hazard <- sort(tau.hazard)
+    }else{
+        need.order <- FALSE
+    }
+    if(need.order && store.iid != "full"){
+        stop("Elements in argument \'tau.hazard\' should be ordered in increasing order when \'store.iid\' is not equal to \"full\" \n")
+    }
+    
+    ## ** Compute quantities of interest
   
     ## baseline hazard
     lambda0 <- predictCox(object,
@@ -221,9 +250,8 @@ iidCox <- function(object, newdata = NULL,
         }
     
     }
-    # }}}
     
-    # {{{ Computation of the influence function (coefficients)
+    ## ** Computation of the influence function (coefficients)
     IFbeta <- NULL
     IFcumhazard <- NULL
     IFhazard <- NULL
@@ -277,7 +305,7 @@ iidCox <- function(object, newdata = NULL,
     colnames(IFbeta) <- infoVar$lpvars
     # }}}
     
-                                        # {{{ Computation of the influence function (baseline hazard)
+    ## ** Computation of the influence function (baseline hazard)
     if(baseline.iid){
         for(iStrata in 1:nStrata){
 
@@ -354,10 +382,21 @@ iidCox <- function(object, newdata = NULL,
             }
         }
     }
-    # }}}
 
-                                        # {{{ export
-    return(list(IFbeta = IFbeta,  
+    if(need.order){
+        IFhazard <- lapply(1:nStrata, function(iS){
+            IFhazard[[iS]][,tau.oorder[[iS]],drop=FALSE]
+        })
+        IFcumhazard <- lapply(1:nStrata, function(iS){
+            IFcumhazard[[iS]][,tau.oorder[[iS]],drop=FALSE]
+        })
+        ls.Utime1 <- lapply(1:nStrata, function(iS){
+            ls.Utime1[[iS]][tau.oorder[[iS]]]
+        })        
+    }
+    
+    ## ** export
+    out <- list(IFbeta = IFbeta,  
                 IFhazard = IFhazard,
                 IFcumhazard = IFcumhazard,
                 calcIFhazard = calcIFhazard,
@@ -366,6 +405,67 @@ iidCox <- function(object, newdata = NULL,
                 etime.max = lambda0$lastEventTime,
                 indexObs = new.order,
                 store.iid = store.iid
-                ))
-    # }}}
+                )
+    if(return.object){
+        object$iid <- out
+        return(object)
+    }else{
+        return(out)
+    }
+}
+
+## * iidCox.cph
+#' @rdname iidCox
+#' @export
+iidCox.cph <- iidCox.coxph
+
+## * iidCox.phreg
+#' @rdname iidCox
+#' @export
+iidCox.phreg <- iidCox.coxph
+
+## * iidCox.CauseSpecificCox
+#' @rdname iidCox
+#' @export
+iidCox.CauseSpecificCox <- function(object, newdata = NULL,
+                                    baseline.iid = TRUE, tau.hazard = NULL, tau.max = NULL, store.iid = "full", 
+                                    keep.times = TRUE, return.object = TRUE){
+
+    nCause <- length(object$causes)
+    
+    for(iCause in 1:nCause){
+        object$models[[iCause]]$iid <- iidCox(object$models[[iCause]],
+                                              newdata = newdata,
+                                              baseline.iid = baseline.iid,
+                                              tau.hazard = tau.hazard,
+                                              tau.max = tau.max,
+                                              store.iid = store.iid,
+                                              keep.times = keep.times,
+                                              return.object = FALSE)
+    }
+
+    if(return.object){
+        return(object)
+    }else{
+        return(lapply(object$models, function(iM){iM$iid}))
+    }
+}
+
+
+## * is.iidCox
+`is.iidCox` <- function(object) UseMethod("is.iidCox")
+
+is.iidCox.default <- function(object){
+    return(NA)
+}
+
+is.iidCox.coxph <- function(object){
+    return(!is.null(object$iid))
+}
+is.iidCox.cph <- is.iidCox.coxph
+is.iidCox.phreg <- is.iidCox.coxph
+
+is.iidCox.CauseSpecificCox <- function(object){
+    out <- all(unlist(lapply(object$models, function(iM){!is.null(iM$iid)})))
+    return(out)
 }

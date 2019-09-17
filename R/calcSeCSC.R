@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: maj 27 2017 (21:23) 
 ## Version: 
-## last-updated: sep  9 2019 (16:20) 
+## last-updated: sep 17 2019 (17:26) 
 ##           By: Brice Ozenne
-##     Update #: 510
+##     Update #: 532
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -39,7 +39,8 @@
 #' @param nVar the number of variables that form the linear predictor in each Cox model
 #' @param export can be "iid" to return the value of the influence function for each observation
 #'                      "se" to return the standard error for a given timepoint
-#' 
+#' @param diag [logical] when \code{FALSE} the absolute risk/survival for all observations at all times is computed,
+#' otherwise it is only computed for the i-th observation at the i-th time. 
 #' @param store.iid the method used to compute the influence function and the standard error.
 #' Can be \code{"full"} or \code{"minimal"}. See the details section.
 #'
@@ -56,20 +57,23 @@
 #' @rdname calcSeCSC
 calcSeCSC <- function(object, cif, hazard, cumhazard, object.time, object.maxtime,
                       eXb, new.LPdata, new.strata, times, surv.type, ls.infoVar,
-                      new.n, cause, nCause, nVar, export, store.iid){
+                      new.n, cause, nCause, nVar, export, store.iid, diag){
 
     status <- strata.num <- NULL ## [:CRANcheck:] data.table
                                         # {{{ influence function for each Cox model
-    for(iModel in 1:nCause){ # iModel <- 1
-        if(is.null(object$models[[iModel]]$iid)){
-            object$models[[iModel]]$iid <- iidCox(object$models[[iModel]], tau.hazard = object.time, store.iid = store.iid)
-        }else{
-            object$models[[iModel]]$iid <- selectJump(object$models[[iModel]]$iid, times = object.time,
-                                                      type = c("hazard","cumhazard"))
+    if(is.iidCox(object)){
+        for(iModel in 1:nCause){ # iModel <- 1
+            if(!identical(object$models[[iModel]]$iid$time,object.time)){
+                object$models[[iModel]]$iid <- selectJump(object$models[[iModel]]$iid, times = object.time,
+                                                          type = c("hazard","cumhazard"))
+            }
         }
+    }else{
+        object <- iidCox(object, tau.hazard = object.time,
+                         store.iid = store.iid, return.object = TRUE)
     }
+    
     store.iid <- object$models[[1]]$iid$store.iid
-
                                         # }}}
                                         # {{{ prepare arguments
     nEtimes <- length(object.time)
@@ -155,7 +159,7 @@ calcSeCSC <- function(object, cif, hazard, cumhazard, object.time, object.maxtim
             # }}}
 
             ls.args$theCause <- cause-1
-            ls.args$firstJumpTime <- object$models[[iterC]]$iid$etime1.min[iStrataTheCause+1]
+            ls.args$firstJumpTime <- object$models[[cause]]$iid$etime1.min[iStrataTheCause+1]
             ls.args$lastSampleTime <- object.modelFrame[strata.num==iStrataCause,max(.SD$stop)]
             ls.args$nTau <- nTime
             ls.args$nJump <- nEtimes
@@ -169,7 +173,7 @@ calcSeCSC <- function(object, cif, hazard, cumhazard, object.time, object.maxtim
             ls.args$exportIFsum <- ("average.iid" %in% export)
 
             resCpp <- do.call(calcSeCif_cpp, args = ls.args)
-            
+
             if("se" %in% export){
                 out$se[indexStrataTheCause,] <- resCpp$se
             }
@@ -197,7 +201,7 @@ calcSeCSC <- function(object, cif, hazard, cumhazard, object.time, object.maxtim
         }
 
         if("iid" %in% export || "se" %in% export){
-
+            ## browser()
             out <- calcSeCif2_cpp(ls_IFbeta = lapply(object$models, function(x){x$iid$IFbeta}),
                                   ls_X = new.LPdata,
                                   ls_cumhazard = cumhazard,
@@ -210,7 +214,8 @@ calcSeCSC <- function(object, cif, hazard, cumhazard, object.time, object.maxtim
                                   nObs = object.n,
                                   theCause = (cause-1), nCause = nCause, hazardType = (surv.type=="hazard"), nVar = nVar,
                                   nNewObs = new.n, strata = new.strata,
-                                  exportSE = "se" %in% export, exportIF = "iid" %in% export, exportIFsum = "average.iid" %in% export)
+                                  exportSE = "se" %in% export, exportIF = "iid" %in% export, exportIFsum = "average.iid" %in% export,
+                                  diag = diag)
 
             if("iid" %in% export){
                 out$iid <- aperm(out$iid, c(1,3,2))
@@ -248,7 +253,8 @@ calcSeCSC <- function(object, cif, hazard, cumhazard, object.time, object.maxtim
                                       nObs = object.n, nNewObs = new.n,
                                       levelStrata = new.level.strata, nStrata = new.n.strata, ls_indexStrata = new.indexStrata,
                                       nVar = nVar,
-                                      factor = factor)
+                                      factor = factor,
+                                      diag = diag)
 
             if(rm.list){
                 out <- list(average.iid = matrix(outRcpp[[1]], nrow = object.n, ncol = nTimes))

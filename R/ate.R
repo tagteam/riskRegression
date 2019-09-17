@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Oct 23 2016 (08:53) 
 ## Version: 
-## last-updated: sep  6 2019 (18:31) 
+## last-updated: sep 16 2019 (18:08) 
 ##           By: Brice Ozenne
-##     Update #: 1346
+##     Update #: 1347
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -593,7 +593,7 @@ ate_initArgs <- function(object.event,
         myformula.event <- object.event
 
         if(grep("Hist",object.event)){
-            object.event <- CSC(myformula.event, data = data)
+            object.event <- CSC(myformula.event, data = data, surv.type = "survival")
         }else{
             object.event <- glm(myformula.event, data = data, family = stats::binomial(link = "logit"))
         }

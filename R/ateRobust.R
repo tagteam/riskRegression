@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne, Thomas A. Gerds
 ## Created: jun 27 2018 (17:47) 
 ## Version: 
-## Last-Updated: sep  6 2019 (17:49) 
+## Last-Updated: sep 16 2019 (12:57) 
 ##           By: Brice Ozenne
-##     Update #: 1254
+##     Update #: 1257
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 

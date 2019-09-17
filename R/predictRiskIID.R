@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: jun 28 2019 (14:38) 
 ## Version: 
-## Last-Updated: sep  9 2019 (16:44) 
+## Last-Updated: sep 16 2019 (13:00) 
 ##           By: Brice Ozenne
-##     Update #: 79
+##     Update #: 92
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -129,11 +129,15 @@ predictRiskIID.coxph <- function(object, newdata, average.iid, factor = NULL, ti
         if(NROW(factor) != NROW(newdata)){
             stop("Argument \'factor\' must have the same number of rows as argument \'newdata\'. \n")
         }
-        attr(average.iid, "factor") <- sapply(1:NCOL(factor),function(iCol){
-            list(matrix(factor[,iCol,drop=FALSE], nrow = n.obs, ncol = n.times, byrow = FALSE))
-        })
+        if(diag==2){
+            attr(average.iid, "factor") <- list(factor)
+            diag <- FALSE
+        }else{
+            attr(average.iid, "factor") <- sapply(1:NCOL(factor),function(iCol){
+                list(matrix(factor[,iCol,drop=FALSE], nrow = n.obs, ncol = n.times, byrow = FALSE))
+            })
+        }
     }
-
     resPred <- predictCox(object,
                           newdata = newdata,
                           times = times,
@@ -182,7 +186,7 @@ predictRiskIID.CauseSpecificCox <- function(object,
             stop("Argument \'factor\' must have the same number of rows as argument \'newdata\'. \n")
         }
         attr(average.iid, "factor") <- factor
-    }
+    }    
     resPred <- predict(object,
                        newdata = newdata,
                        times = times,

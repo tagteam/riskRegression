@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: apr  5 2018 (17:01) 
 ## Version: 
-## Last-Updated: sep  9 2019 (17:27) 
+## Last-Updated: sep 17 2019 (13:29) 
 ##           By: Brice Ozenne
-##     Update #: 583
+##     Update #: 595
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -62,19 +62,12 @@ iidATE <- function(estimator,
         vec.IF.times <- c(vec.IF.times,time.jumpC)
     }
     vec.IF.times <- sort(unique(vec.IF.times))
-    
-    if(attr(estimator,"Gformula")){
-        if(inherits(object.event,"coxph") || inherits(object.event,"cph") || inherits(object.event,"phreg")){
-            if(is.null(object.event$iid)){                
-                object.event$iid <- iidCox(object.event, tau.max = max(times))
-            }
-        }else if(inherits(object.event,"CauseSpecificCox")){            
-            for(iCause in 1:n.cause){
-                if(is.null(object.event$models[[iCause]]$iid)){
-                    object.event$models[[iCause]]$iid <- iidCox(object.event$models[[iCause]], tau.max = max(times))
-                }
-            }
-        }
+
+    test.Cox <- inherits(object.event,"coxph") || inherits(object.event,"cph") || inherits(object.event,"phreg")
+    test.CSC <- inherits(object.event,"CauseSpecificCox")
+
+    if(attr(estimator,"Gformula") && (test.Cox || test.CSC) && identical(is.iidCox(object.event),FALSE)){
+        object.event <- iidCox(object.event, tau.max = max(times), return.object = TRUE)
     }
 
     if(attr(estimator,"IPCW")){
@@ -110,25 +103,41 @@ iidATE <- function(estimator,
                                                             average.iid = TRUE, factor = factor, cause = cause)[[1]]
 
         }
-        
-        if(attr(estimator,"integral")){
-            ## ## term relative IF(tau)
-            ## compute integrant at each time
-            K2.jump <- dM.jump/(S.jump*G.jump[,1:n.jumps])
-            ## compute integral
-            int.IFF1_tau <- cbind(0,rowCumSum(K2.jump))
-            ## extract integral over the right time spand
-            for(iTau in 1:n.times){ ## iTau <- 1
-                index.col <- prodlim::sindex(jump.times = c(0,time.jumpC), eval.times = pmin(data[[eventVar.time]],times[iTau]))
-                factor <- colMultiply_cpp(iW.IPTW, scale = int.IFF1_tau[(1:n.obs) + (index.col-1) * n.obs])
-                term.intF1_tau <- predictRiskIID(object.event, newdata = data, times = times[iTau], cause = cause,
-                                                 average.iid = TRUE, factor = factor)
-                for(iC in 1:n.contrasts){ ## iC <- 1 
-                    iid.ate[[iC]][,iTau] <- iid.ate[[iC]][,iTau] + term.intF1_tau[[iC]]
-                }
+    }
+
+    if(attr(estimator,"integral")){
+        ## ## term relative to IF(tau)
+        ## compute integrant at each time
+        K2.jump <- dM.jump/(S.jump*G.jump[,1:n.jumps])
+        ## compute integral
+        int.IFF1_tau <- cbind(0,rowCumSum(K2.jump))
+        ## extract integral over the right time spand
+        for(iTau in 1:n.times){ ## iTau <- 1
+            index.col <- prodlim::sindex(jump.times = c(0,time.jumpC), eval.times = pmin(data[[eventVar.time]],times[iTau]))
+            factor <- colMultiply_cpp(iW.IPTW, scale = int.IFF1_tau[(1:n.obs) + (index.col-1) * n.obs])
+            term.intF1_tau <- predictRiskIID(object.event, newdata = data, times = times[iTau], cause = cause,
+                                             average.iid = TRUE, factor = factor)
+            for(iC in 1:n.contrasts){ ## iC <- 1 
+                iid.ate[[iC]][,iTau] <- iid.ate[[iC]][,iTau] + term.intF1_tau[[iC]]
             }
         }
 
+        ## ## term relative to IF(t)
+        for(iC in 1:n.contrasts){ ## iC <- 1
+            factor <- -colMultiply_cpp(dM.jump/(S.jump*G.jump[,-1,drop=FALSE]), scale = iW.IPTW[,iC])
+            factor[] <- 1
+            browser()
+            F1.jump.iid <- predictRiskIID(object.event, newdata = data, times = time.jumpC, cause = cause,
+                                         average.iid = TRUE, factor = factor)
+            F1.jump.iid.check <- predictRiskIID(object.event, newdata = data, times = time.jumpE, cause = cause,
+                                                average.iid = FALSE)
+            
+            dim(apply(F1.jump.iid.check,2:3,mean))
+            do.call(cbind,F1.jump.iid)
+            dim(F1.jump.iid[[1]])
+            length(F1.jump.iid)
+        }
+        
     }
 
     ## *** treatment model
@@ -155,13 +164,22 @@ iidATE <- function(estimator,
         }
     }
 
+    ## *** survival model
+    if(attr(estimator,"integral")){
+        S.jump.iid <- predict(object.event, type = "survival", newdata = data, times = time.jumpC, product.limit = FALSE, iid = TRUE)$survival.iid
+    }
+    
     ## *** censoring model
     if(attr(estimator,"IPCW")){
 
         for(iTau in 1:n.times){ ## iTau <- 1
             factor <- colMultiply_cpp(iW.IPTW, scale =  -iW.IPCW2[,iTau]*Y.tau[,iTau])
-            term.censoring <- predictRiskIID(object.censor, newdata = data, times = pmin(times[iTau], data[[eventVar.time]] - tol),
-                                             diag = TRUE, average.iid = TRUE, factor = factor)
+            term.censoring <- predictRiskIID(object.censor,
+                                             newdata = data,
+                                             times = pmin(times[iTau], data[[eventVar.time]] - tol),
+                                             diag = TRUE,
+                                             average.iid = TRUE,
+                                             factor = factor)
             for(iC in 1:n.contrasts){ ## iC <- 1 
                 iid.ate[[iC]][,iTau] <- iid.ate[[iC]][,iTau] + term.censoring[[iC]]
             }
@@ -172,10 +190,7 @@ iidATE <- function(estimator,
     ## *** augmentation term
     ## cat("augmentation \n")         
     if(attr(estimator,"integral")){
-
-        ## outcome: all jumps
-        F1.jump.iid <- predictRiskIID(object.event, newdata = data, times = time.jumpC, cause = cause,
-                                      average.iid = FALSE)
+        browser()
 
         ## survival: all jumps
         if(inherits(object.event,"CauseSpecificCox")){ ## competing risk case

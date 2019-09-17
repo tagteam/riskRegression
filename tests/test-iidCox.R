@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: maj 18 2017 (09:23) 
 ## Version: 
-## last-updated: Mar  3 2019 (17:13) 
-##           By: Thomas Alexander Gerds
-##     Update #: 104
+## last-updated: sep 17 2019 (14:45) 
+##           By: Brice Ozenne
+##     Update #: 107
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -24,8 +24,12 @@ library(survival)
 library(rms)
 library(timereg)
 library(data.table)
-## * Internal tests
-cat("[iidCox] internal test \n")
+
+context("function iidCox")
+
+## * Internal consistency
+cat("[iidCox] internal consistency \n")
+
 ## ** Data
 set.seed(10)
 dt <- sampleData(20, outcome = "survival")[,.(time,event,X1,X2)]
@@ -43,16 +47,22 @@ cph.fit <- coxph(Surv(time,event==1)~ X1+X2,
                  data=dt, x = TRUE, y = TRUE)
 
 ## ** Tests
-iid.coxph <-  iidCox(coxph.fit)
+iid.coxph <-  iidCox(coxph.fit, return.object = FALSE)
 
 test_that("[iidCox] consistency coxph,cph",{
-    iid.cph <-  iidCox(cph.fit)
+    iid.cph <-  iidCox(cph.fit, return.object = FALSE)
     expect_equal(iid.cph, iid.coxph)
 })
 
 test_that("[iidCox] consistency with manual specification of newdata and times",{
-    iid.test <- iidCox(coxph.fit, newdata = dt, tau.hazard = iid.coxph$time[[1]])
+    iid.test <- iidCox(coxph.fit, newdata = dt, tau.hazard = iid.coxph$time[[1]], return.object = FALSE)
     expect_equal(iid.coxph, iid.test)
+
+    new.order <- sample.int(length(iid.coxph$time[[1]]))
+    iid.test <- iidCox(coxph.fit, newdata = dt, tau.hazard = iid.coxph$time[[1]][new.order], return.object = FALSE)
+    expect_equal(iid.coxph$IFhazard[[1]], iid.test$IFhazard[[1]][,colnames(iid.coxph$IFhazard[[1]])])
+    expect_equal(iid.coxph$IFcumhazard[[1]], iid.test$IFcumhazard[[1]][,colnames(iid.coxph$IFcumhazard[[1]])])
+    expect_equal(iid.coxph$IFbeta, iid.coxph$IFbeta)
 })
 
 test_that("[iidCox] cumsum(iid hazard) = iid cumhazard",{
@@ -61,7 +71,7 @@ test_that("[iidCox] cumsum(iid hazard) = iid cumhazard",{
 })
 
 test_that("[iidCox] iid hazard = 0 at non event times and NA after last observation",{
-    iid.test <- iidCox(coxph.fit, tau.hazard = sort(c(dt$time,c(0.1,1,5,8,12,25))))
+    iid.test <- iidCox(coxph.fit, tau.hazard = sort(c(dt$time,c(0.1,1,5,8,12,25))), return.object = FALSE)
 
     expect_equal(iid.test$IFhazard[[1]][,as.character(iid.coxph$time[[1]])],
                  iid.coxph$IFhazard[[1]])
@@ -129,13 +139,13 @@ eApprox.timereg <- cox.aalen(Surv(time, event) ~ prop(X1)+prop(X6),
 
 ## *** Extract information
 ## compute the IF of the baseline hazard and then for the survival
-IF.coxph <- iidCox(e.coxph, keep.times = FALSE, store.iid = "full")
-IF.coxph_sort <- iidCox(e.coxph_sort, keep.times = FALSE, store.iid = "full")
+IF.coxph <- iidCox(e.coxph, keep.times = FALSE, store.iid = "full", return.object = FALSE)
+IF.coxph_sort <- iidCox(e.coxph_sort, keep.times = FALSE, store.iid = "full", return.object = FALSE)
 ## store "sufficient statistics" for the IF of the baseline hazard
 ## and then compute the IF for the survival
-IFminimal.coxph <- iidCox(e.coxph, keep.times = FALSE, store.iid = "minimal")
+IFminimal.coxph <- iidCox(e.coxph, keep.times = FALSE, store.iid = "minimal", return.object = FALSE)
 ## same as before but using an approximation
-IFapprox.coxph <- iidCox(e.coxph, keep.times = FALSE, store.iid = "approx")
+IFapprox.coxph <- iidCox(e.coxph, keep.times = FALSE, store.iid = "approx", return.object = FALSE)
 
 IFlambda_GS <- t(as.data.table(e.timereg$B.iid))
 IFlambda_GSapprox <- t(as.data.table(eApprox.timereg$B.iid))
@@ -165,7 +175,7 @@ e.timereg <- cox.aalen(Surv(time, event) ~ prop(X1) + prop(X6) + prop(X1*X6),
                        data = dt, resample.iid = TRUE, max.timepoint.sim=NULL)
 
 ## *** Extract information
-IF.coxph <- iidCox(e.coxph, keep.times = FALSE)
+IF.coxph <- iidCox(e.coxph, keep.times = FALSE, return.object = FALSE)
 IFlambda_GS <- t(as.data.table(e.timereg$B.iid))
 
 ## *** Tests
@@ -186,7 +196,7 @@ cat("[iidCox] compare to timereg - no covariate \n")
 
 test_that("[iidCox] beta - no covariate",{
     e.coxph <- coxph(Surv(time, event) ~ 1, data = dt, y = TRUE, x = TRUE)
-    IF.coxph <- iidCox(e.coxph, keep.times = FALSE)
+    IF.coxph <- iidCox(e.coxph, keep.times = FALSE, return.object = FALSE)
     expect_true(all(is.na(IF.coxph$IFbeta)))
 })
 
@@ -202,7 +212,7 @@ e.timereg <- cox.aalen(Surv(time, event) ~ prop(Xcat2) + prop(X6), data = dt, re
 
 ## *** Extract information
 IFlambda_GS <- t(as.data.table(e.timereg$B.iid))
-IF.coxph <- iidCox(e.coxph, keep.times = FALSE)
+IF.coxph <- iidCox(e.coxph, keep.times = FALSE, return.object = FALSE)
 
 ## *** Tests
 test_that("[iidCox] beta - no strata, interactions, categorical",{
@@ -231,8 +241,8 @@ coef(e.coxph_Efron)
 coef(e.timereg)[,"Coef."]
 
 ## *** Extract information
-IF.coxph_Efron <- iidCox(e.coxph_Efron, keep.times = FALSE)
-IF.coxph_Breslow <- iidCox(e.coxph_Breslow, keep.times = FALSE)
+IF.coxph_Efron <- iidCox(e.coxph_Efron, keep.times = FALSE, return.object = FALSE)
+IF.coxph_Breslow <- iidCox(e.coxph_Breslow, keep.times = FALSE, return.object = FALSE)
 
 ## *** Tests
 ## ??? Gold standard
@@ -246,7 +256,7 @@ e.timereg <- cox.aalen(Surv(time, event) ~ strata(strata)-1 + prop(X1) + prop(X6
 e.coxph <- coxph(Surv(time, event) ~ strata(strata) + X1 + X6, data = dtStrata, y = TRUE, x = TRUE)
 
 ## *** Extract information
-IF.coxph <- iidCox(e.coxph)
+IF.coxph <- iidCox(e.coxph, return.object = FALSE)
 
 ## *** Tests
 test_that("[iidCox] beta - strata",{
@@ -279,12 +289,13 @@ test_that("[iidCox] lambda - strata",{
 
 ## ** Melanoma data
 cat("[iidCox] compare to timereg - Melanoma \n")
+data(Melanoma, package = "riskRegression")
 
 test_that("[iidCox] Compare to timereg on Melanoma dta",{
     e.timereg <- cox.aalen(Surv(time,status==1)~prop(sex), data = Melanoma)
     e.coxph <- coxph(Surv(time,status==1)~sex, data=Melanoma, x=TRUE, y=TRUE)
 
-    RR.iid <- iidCox(e.coxph)
+    RR.iid <- iidCox(e.coxph, return.object = FALSE)
     timereg.iidLambda <- t(as.data.table(e.timereg$B.iid))
 
     expect_equal(unname(RR.iid$IFbeta),e.timereg$gamma.iid)
