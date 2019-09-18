@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: maj 27 2017 (11:46) 
 ## Version: 
-## last-updated: sep 17 2019 (18:13) 
+## last-updated: sep 18 2019 (09:46) 
 ##           By: Brice Ozenne
-##     Update #: 588
+##     Update #: 595
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -16,7 +16,6 @@
 ### Code:
 
 
-# {{{ calcSeCox
 ## * calcSeCox (documentation)
 #' @title Computation of standard errors for predictions
 #' @description Compute the standard error associated to the predictions from Cox regression model
@@ -249,10 +248,9 @@ calcSeCox <- function(object, times, nTimes, type, diag,
                 rm.list <- TRUE
                 factor <- list(matrix(1, nrow = new.n, ncol = nTimes))
             }else{
-                rm.list <- FALSE
+                rm.list <- FALSE                
                 factor <- attr(export, "factor")
             }
-
             outRcpp <- calcAIFsurv_cpp(ls_IFcumhazard = iid.object$IFcumhazard[new.Ustrata], 
                                        IFbeta = iid.object$IFbeta,
                                        cumhazard0 = Lambda0$cumhazard[new.Ustrata],
@@ -296,12 +294,6 @@ calcSeCox <- function(object, times, nTimes, type, diag,
     return(out)
     
 }
-
-# }}}
-
-# {{{ Associated functions
-
-# {{{ selectJump
 
 ## * selectJump
 #' @title Evaluate the influence function at selected times
@@ -356,8 +348,6 @@ selectJump <- function(IF, times, type){
   return(IF)
   
 }
-
-# }}}
 
 #----------------------------------------------------------------------
 ### calcSeCox.R ends here

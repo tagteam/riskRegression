@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: sep  4 2017 (10:38) 
 ## Version: 
-## last-updated: sep 17 2019 (18:42) 
+## last-updated: sep 18 2019 (12:01) 
 ##           By: Brice Ozenne
-##     Update #: 94
+##     Update #: 104
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -444,13 +444,13 @@ test_that("[predictCox] - sorted vs. unsorted times (no strata)",{
 
 ## ** iid.average
 test_that("[predictCox] - fast iid average (no strata)",{
+
     ## simple average
     predRR.av <- predictCox(e.coxph, times = dt$time[1:5], average.iid = TRUE, newdata = dt,
                             type = c("cumhazard","survival"))
     predRR.GS <- predictCox(e.coxph, times = dt$time[1:5], iid = TRUE, newdata = dt,
                             type = c("cumhazard","survival"))
 
-      
     expect_equal(t(apply(predRR.GS$cumhazard.iid, MARGIN = 2:3,mean)),
                  predRR.av$cumhazard.average.iid, tolerance = 1e-8)
 
@@ -823,7 +823,7 @@ dt <- sampleData(5e1, outcome = "survival")[,.(time,event,X1,X2,X6)]
 test_that("[predictCox] diag no strata", {
     e.coxph <- coxph(Surv(time, event) ~ X1*X6, data = dt, y = TRUE, x = TRUE)
 
-    GS <- predictCox(e.coxph, newdata = dt, times = dt$time, se = FALSE, iid = TRUE)
+    GS <- predictCox(e.coxph, newdata = dt, times = dt$time, se = FALSE, iid = TRUE, average.iid = TRUE)
     test <- predictCox(e.coxph, newdata = dt, times = dt$time,
                        se = FALSE, iid = TRUE, average.iid = TRUE, diag = TRUE)
     test2 <- predictCox(e.coxph, newdata = dt, times = dt$time,
@@ -842,12 +842,35 @@ test_that("[predictCox] diag no strata", {
     ## average.iid
     expect_equal(colMeans(GS.iid.diag), test2$survival.average.iid[,1])
     expect_equal(test$survival.average.iid, test2$survival.average.iid)
+
+    ## average.iid with factor
+    average.iid <- TRUE
+    attr(average.iid,"factor") <- list(matrix(1:length(dt$time), nrow = NROW(dt), ncol = length(dt$time), byrow = TRUE),
+                                       matrix(1:NROW(dt), nrow = NROW(dt), ncol = length(dt$time)))
+    test3 <- predictCox(e.coxph, newdata = dt, times = dt$time,
+                        se = FALSE, iid = FALSE, average.iid = average.iid, diag = FALSE)
+
+    expect_equal(rowMultiply_cpp(GS$survival.average.iid, scale = 1:length(dt$time)), test3$survival.average.iid[[1]])
+    expect_equal(t(apply(GS$survival.iid, 2:3, function(x){sum(x * (1:length(dt$time)))/length(x)})),
+                 test3$survival.average.iid[[2]])
+
+    average.iid <- TRUE
+    attr(average.iid,"factor") <- list(matrix(5, nrow = NROW(dt), ncol = 1, byrow = TRUE),
+                                       matrix(1:NROW(dt), nrow = NROW(dt), ncol = 1))
+    test4 <- predictCox(e.coxph, newdata = dt, times = dt$time,
+                        se = FALSE, iid = FALSE, average.iid = average.iid, diag = TRUE)
+
+    
+    expect_equal(5*test$survival.average.iid, test4$survival.average.iid[[1]])
+    expect_equal(colMeans(colMultiply_cpp(GS.iid.diag, 1:length(dt$time))),
+                 test4$survival.average.iid[[2]][,1])
+    
 })
 
 test_that("[predictCox] diag strata", {
     eS.coxph <- coxph(Surv(time, event) ~ strata(X1) + X6, data = dt, y = TRUE, x = TRUE)
 
-    GS <- predictCox(eS.coxph, newdata = dt, times = dt$time, se = FALSE, iid = TRUE)
+    GS <- predictCox(eS.coxph, newdata = dt, times = dt$time, se = FALSE, iid = TRUE, average.iid = TRUE)
     test <- predictCox(eS.coxph, newdata = dt, times = dt$time,
                        se = FALSE, iid = TRUE, average.iid = TRUE, diag = TRUE)
     test2 <- predictCox(eS.coxph, newdata = dt, times = dt$time,
@@ -866,6 +889,29 @@ test_that("[predictCox] diag strata", {
     ## average.iid
     expect_equal(colMeans(GS.iid.diag), test2$survival.average.iid[,1])
     expect_equal(test$survival.average.iid, test2$survival.average.iid)
+
+    ## average.iid with factor
+    average.iid <- TRUE
+    attr(average.iid,"factor") <- list(matrix(1:length(dt$time), nrow = NROW(dt), ncol = length(dt$time), byrow = TRUE),
+                                       matrix(1:NROW(dt), nrow = NROW(dt), ncol = length(dt$time)))
+    test3 <- predictCox(eS.coxph, newdata = dt, times = dt$time,
+                        se = FALSE, iid = FALSE, average.iid = average.iid, diag = FALSE)
+
+    expect_equal(rowMultiply_cpp(GS$survival.average.iid, scale = 1:length(dt$time)), test3$survival.average.iid[[1]])
+    expect_equal(t(apply(GS$survival.iid, 2:3, function(x){sum(x * (1:length(dt$time)))/length(x)})),
+                 test3$survival.average.iid[[2]])
+
+    average.iid <- TRUE
+    attr(average.iid,"factor") <- list(matrix(5, nrow = NROW(dt), ncol = 1, byrow = TRUE),
+                                       matrix(1:NROW(dt), nrow = NROW(dt), ncol = 1))
+    test4 <- predictCox(eS.coxph, newdata = dt, times = dt$time,
+                        se = FALSE, iid = FALSE, average.iid = average.iid, diag = TRUE)
+
+    
+    expect_equal(5*test$survival.average.iid, test4$survival.average.iid[[1]])
+    expect_equal(colMeans(colMultiply_cpp(GS.iid.diag, 1:length(dt$time))),
+                 test4$survival.average.iid[[2]][,1])
+
 })
 
 

@@ -189,192 +189,106 @@ std::vector< std::vector<arma::mat> > calcAIFsurv_cpp(const std::vector<arma::ma
   }
 
   // ** initialize
-  arma::rowvec rowvec_tempo;
-  arma::mat IFtempo1;
-  arma::mat IFtempo2;
   int nObs_strata;
-  arma::mat factor_tempo;
+
+  arma::mat iW_eXb;
+  arma::mat iW_eXb_S;
   
-  if(nVar == 0){
-    // ** non-parameteric
-    // <IF>(cumhazard) = IF_cumhazard0
-    // <IF>(Surv) = E[Surv] IF_cumhazard0
-
-    for(int iStrata=0; iStrata<nStrata; iStrata++){
-
-      nObs_strata = ls_indexStrata[iStrata].size();
+  arma::mat iAIF_H;
+  arma::mat iAIF_S;
   
-      for(int iFactor=0; iFactor<nFactor; iFactor++){
+  arma::mat iE_W_eXb_cumhazard0_X;
+  arma::mat iE_W_eXb_cumhazard0_X_S;
+  
+  for(int iStrata=0; iStrata<nStrata; iStrata++){
 
-		factor_tempo = factor[iFactor].rows(ls_indexStrata[iStrata]);
-	 
-		if(exportCumHazard){
-		  if(diag==1){
-			IFtempo1 = ls_IFcumhazard[iStrata].cols(ls_indexStrata[iStrata]);
-			// apply individual weights (a weight for each individual, i.e. each time)
-			IFtempo1.each_row() %= trans(factor_tempo);
-			// average and multiply by prevalence
- 			IFtempo1 = sum(IFtempo1,1) * prevStrata[iStrata]/nObs_strata;
-		  }else{		
-			IFtempo1 = ls_IFcumhazard[iStrata];
-			// compute average factor (=1 by default)
-			rowvec_tempo = sum(factor_tempo, 0)/nObs_strata; // colSums
-			// multiply by prevalence
-			IFtempo1.each_row() %= (prevStrata[iStrata] * rowvec_tempo);
-		  }
-		  // update cumhazard
-		  out[0][iFactor] += IFtempo1;
-		}
-		
-		if(exportSurvival){
-		  if(diag==1){
-			IFtempo1 = ls_IFcumhazard[iStrata].cols(ls_indexStrata[iStrata]);	      
-			// apply individual weights (a weight for each individual, i.e. each time)
-			IFtempo1.each_row() %= trans(survival.rows(ls_indexStrata[iStrata]) % factor_tempo);
-			// average and multiply by prevalence
- 			IFtempo1 = sum(IFtempo1,1) * prevStrata[iStrata]/nObs_strata;
-		  }else{
-			IFtempo1 = ls_IFcumhazard[iStrata];	      
-			// compute average survival times factor
-			rowvec_tempo = sum(survival.rows(ls_indexStrata[iStrata]) % factor_tempo,0)/nObs_strata; // colSums
-			// multiply by prevalence
-			IFtempo1.each_row() %= (prevStrata[iStrata] * rowvec_tempo);
-		  }
-		  // update survival
-		  out[1][iFactor] -= IFtempo1;
-		}
-      }
-      
-    }
-
-    
-  }else{
-    // ** semi-parametric
-
-    int iObsStrata;
-	arma::rowvec E_eXb; // when diag=0
-	arma::colvec E2_eXb; // when diag=1
-    arma::rowvec E_S_eXb; // when diag=0
-    arma::colvec E2_S_eXb; // when diag=1
-    arma::mat E_eXb_cumhazard0_X;
-    arma::mat E_S_eXb_cumhazard0_X;
-
-    arma::rowvec X_eXb;
-    arma::rowvec S_eXb;
-    
-    if(exportCumHazard){
-	  if(diag==1){
-		// <IF>(cumhazard) = E[eXb IF_cumhazard0] + E[eXb * cumhazard0 * X] IF_beta
-		E2_eXb.resize(nObs);     
-	  }else{
-		// <IF>(cumhazard) = E[eXb] IF_cumhazard0 + E[eXb * X] * cumhazard0 * IF_beta
-		E_eXb.resize(nTimes);     
-	  }
-		E_eXb_cumhazard0_X.resize(nVar, nTimes);
-    }
+	nObs_strata = ls_indexStrata[iStrata].size();
 	
-    if(exportSurvival){
-	  if(diag==1){
-		E2_S_eXb.resize(nObs);
-		// <IF>(Surv) = E[Surv * eXb IF_cumhazard0] + E[Surv * eXb * cumhazard0 * X] IF_beta
-	  }else{
-		E_S_eXb.resize(nTimes);
-	  // <IF>(Surv) = E[Surv * eXb] IF_cumhazard0 + E[Surv * eXb * X] * cumhazard0 IF_beta
-	  }
-      E_S_eXb_cumhazard0_X.resize(nVar, nTimes);
-    }
+	for(int iFactor=0; iFactor<nFactor; iFactor++){
 
-    // for(int iStrata=0; iStrata<nStrata; iStrata++){
-    for(int iStrata=0; iStrata<nStrata; iStrata++){
+	  iW_eXb = factor[iFactor].rows(ls_indexStrata[iStrata]);
+	  if(nVar>0){
+		iW_eXb.each_col() %= eXb.rows(ls_indexStrata[iStrata]);
+	  }
+	  if(exportSurvival){
+		iW_eXb_S = survival.rows(ls_indexStrata[iStrata]) % iW_eXb;
+	  }
 	  
-      nObs_strata = ls_indexStrata[iStrata].size();
+	  if(diag==1){
+		// <IF>(cumhazard) = E[w * eXb * IF_cumhazard0] + E[w * eXb * cumhazard0 * X] * IF_beta
+		// <IF>(survival) = -(E[w * Surv * eXb * IF_cumhazard0] + E[w * Surv * eXb * cumhazard0 * X] * IF_beta)
 
-      for(int iFactor=0; iFactor<nFactor; iFactor++){
-
-		factor_tempo = factor[iFactor].rows(ls_indexStrata[iStrata]);
-		factor_tempo.each_col() %= eXb.rows(ls_indexStrata[iStrata]);
-  
-		if(exportCumHazard){	
-		  E_eXb.fill(0.0);
-		  E_eXb_cumhazard0_X.fill(0.0);
-
-		  if(diag==1){
-			IFtempo1 = ls_IFcumhazard[iStrata].cols(ls_indexStrata[iStrata]);
-			// apply individual weights (a weight for each individual, i.e. each time)
-			IFtempo1.each_row() %= trans(factor_tempo);
-			// average and multiply by prevalence
- 			IFtempo1 = sum(IFtempo1,1) * prevStrata[iStrata]/nObs_strata;
-
-			E_eXb_cumhazard0_X = X.rows(ls_indexStrata[iStrata]);
-			E_eXb_cumhazard0_X.each_col() %= trans(cumhazard0[iStrata].cols(ls_indexStrata[iStrata])) % factor_tempo;
-			// average and multiply by prevalence
-			E_eXb_cumhazard0_X = sum(E_eXb_cumhazard0_X,0) * prevStrata[iStrata]/nObs_strata;
-
-			// export
-			out[0][iFactor] += IFtempo1 + IFbeta * trans(E_eXb_cumhazard0_X);		  
-		  }else{
-
-			// compute n*expectation
-			for(int iObs=0; iObs<nObs_strata; iObs++){
-			  iObsStrata = ls_indexStrata[iStrata][iObs];
-			  E_eXb += factor_tempo.row(iObs); // note: it is iObs and not iObs_strata
-			  E_eXb_cumhazard0_X += trans(X.row(iObsStrata)) * factor_tempo.row(iObs);
-			}
-			// divide by n (for the average) and multiply first term by the prevalence
-			E_eXb *= prevStrata[iStrata] / nObs_strata;
-			E_eXb_cumhazard0_X.each_row() %= cumhazard0[iStrata] * (prevStrata[iStrata] / nObs_strata);
-
-			// update first term
-			IFtempo1 = ls_IFcumhazard[iStrata];
-			IFtempo1.each_row() %= E_eXb;
-	
-			// export
-			out[0][iFactor] += IFtempo1 + IFbeta * E_eXb_cumhazard0_X;		  
-		  }
+		// first term
+		if(exportCumHazard){
+		  // Rcout << "b: ";
+		  iAIF_H = ls_IFcumhazard[iStrata].cols(ls_indexStrata[iStrata]);
+		  iAIF_H.each_row() %= trans(iW_eXb);
+		  iAIF_H = sum(iAIF_H,1)/nObs_strata;
+		  // Rcout << endl;
+		}
+		if(exportSurvival){
+		  iAIF_S = ls_IFcumhazard[iStrata].cols(ls_indexStrata[iStrata]);
+		  iAIF_S.each_row() %= trans(iW_eXb_S);
+		  iAIF_S = sum(iAIF_S,1)/nObs_strata;
 		}
 
-		if(exportSurvival){
-		  E_S_eXb.fill(0.0);
-		  E_S_eXb_cumhazard0_X.fill(0.0);
-      
-		  if(diag==1){
-			IFtempo1 = ls_IFcumhazard[iStrata].cols(ls_indexStrata[iStrata]);
-			// apply individual weights (a weight for each individual, i.e. each time)
-			IFtempo1.each_row() %= trans(survival.rows(ls_indexStrata[iStrata]) % factor_tempo);
-			// average and multiply by prevalence
-			IFtempo1 = sum(IFtempo1,1) * prevStrata[iStrata]/nObs_strata;
-			
-			E_S_eXb_cumhazard0_X = X.rows(ls_indexStrata[iStrata]);
-			E_S_eXb_cumhazard0_X.each_col() %= trans(cumhazard0[iStrata].cols(ls_indexStrata[iStrata])) % survival.rows(ls_indexStrata[iStrata]) % factor_tempo;
-			// average and multiply by prevalence
-			E_S_eXb_cumhazard0_X = sum(E_S_eXb_cumhazard0_X,0) * prevStrata[iStrata]/nObs_strata;
-			
-			// export
-			out[1][iFactor] -= IFtempo1 + IFbeta * trans(E_S_eXb_cumhazard0_X);
-		  }else{
-			// compute n*expectation
-			for(int iObs=0; iObs<nObs_strata; iObs++){
-			  iObsStrata = ls_indexStrata[iStrata][iObs];
-
-			  E_S_eXb += survival.row(iObsStrata) % factor_tempo.row(iObs);
-
-			  E_S_eXb_cumhazard0_X += trans(X.row(iObsStrata)) * (survival.row(iObsStrata) % factor_tempo.row(iObs));
-			}
-			// divide by n (for the average) and multiply first term by the prevalence
-			E_S_eXb *= prevStrata[iStrata] / nObs_strata;
-			E_S_eXb_cumhazard0_X.each_row() %= cumhazard0[iStrata] * (prevStrata[iStrata] / nObs_strata);
-
-			// update first term
-			IFtempo1 = ls_IFcumhazard[iStrata];
-			IFtempo1.each_row() %= E_S_eXb;
-
-			// export		 
-			out[1][iFactor] -= IFtempo1 + IFbeta * E_S_eXb_cumhazard0_X;
+		// second term
+		if(nVar>0){
+		  if(exportCumHazard){
+			// Rcout << "c: ";
+			iE_W_eXb_cumhazard0_X = X.rows(ls_indexStrata[iStrata]);
+			iE_W_eXb_cumhazard0_X.each_col() %= trans(cumhazard0[iStrata].cols(ls_indexStrata[iStrata])) % iW_eXb;
+			iE_W_eXb_cumhazard0_X = sum(iE_W_eXb_cumhazard0_X,0)/nObs_strata;
+			iAIF_H += IFbeta * trans(iE_W_eXb_cumhazard0_X);
+			// Rcout << endl;
 		  }
-        }
-      }
-    }
+		  if(exportSurvival){
+			iE_W_eXb_cumhazard0_X_S = X.rows(ls_indexStrata[iStrata]);
+			iE_W_eXb_cumhazard0_X_S.each_col() %= trans(cumhazard0[iStrata].cols(ls_indexStrata[iStrata])) % iW_eXb_S;
+			iE_W_eXb_cumhazard0_X_S = sum(iE_W_eXb_cumhazard0_X_S,0)/nObs_strata;
+			iAIF_S += IFbeta * trans(iE_W_eXb_cumhazard0_X_S);
+		  }		  
+		}
+		  
+	  }else{
+		// <IF>(cumhazard) = E[w * eXb] IF_cumhazard0 + E[w * eXb * X] * cumhazard0 * IF_beta
+		// <IF>(survival) = -(E[w * Surv * eXb] IF_cumhazard0 + E[w * Surv * eXb * X] * cumhazard0 * IF_beta)
+
+		// first term
+		if(exportCumHazard){
+		  iAIF_H = ls_IFcumhazard[iStrata];
+		  iAIF_H.each_row() %= sum(iW_eXb,0)/nObs_strata;
+		}
+		if(exportSurvival){
+		  iAIF_S = ls_IFcumhazard[iStrata];		  
+		  iAIF_S.each_row() %= sum(iW_eXb_S,0)/nObs_strata;
+		}
+		  
+		// second term
+		if(nVar>0){
+		  if(exportCumHazard){
+			iE_W_eXb_cumhazard0_X = (trans(X.rows(ls_indexStrata[iStrata])) * iW_eXb) / nObs_strata;			
+			iE_W_eXb_cumhazard0_X.each_row() %= cumhazard0[iStrata];
+			iAIF_H += IFbeta * iE_W_eXb_cumhazard0_X;
+		  }
+		  if(exportSurvival){
+			iE_W_eXb_cumhazard0_X_S = (trans(X.rows(ls_indexStrata[iStrata])) * iW_eXb_S) / nObs_strata;			
+			iE_W_eXb_cumhazard0_X_S.each_row() %= cumhazard0[iStrata];
+			iAIF_S += IFbeta * iE_W_eXb_cumhazard0_X_S;
+		  }
+		}
+	  }
+			
+	  // update - multiplying by the prevalence of the strata
+	  if(exportCumHazard){
+		out[0][iFactor] += iAIF_H * prevStrata[iStrata];
+	  }
+	  if(exportSurvival){
+		out[1][iFactor] -= iAIF_S * prevStrata[iStrata];
+	  }
+	}
   }
+
 
   return(out);
   
@@ -765,7 +679,7 @@ List calcSeCif2_cpp(std::vector<arma::mat> ls_IFbeta, std::vector<arma::mat> ls_
       // prepare IF
       if(hazard[iJump]>0){
 		if(iJump==0){
-			IF_tempo = IFhazard.col(iJump);
+		  IF_tempo = IFhazard.col(iJump);
 		}else{
 		  // cumhazard is evaluated just before the jump
 		  IF_tempo = (IFhazard.col(iJump) - IFcumhazard.col(iJump-1) * hazard[iJump]) * exp(-cumhazard[iJump-1]);
@@ -853,7 +767,11 @@ std::vector<arma::mat> calcAIFcif_cpp(const arma::mat& hazard1,
 
   std::vector<arma::mat> out(nFactor);
   for(int iFactor=0; iFactor<nFactor; iFactor++){
-    out[iFactor].resize(nObs, nTau);
+	if(diag){
+	  out[iFactor].resize(nObs, 1);
+	}else{
+	  out[iFactor].resize(nObs, nTau);
+	}
     out[iFactor].fill(0.0);
   }
 

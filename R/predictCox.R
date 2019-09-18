@@ -247,6 +247,9 @@ predictCox <- function(object,
             stop("When argument \'diag\' is TRUE, the number of rows in \'newdata\' must equal the length of \'times\' \n")
         }
     }
+    if(average.iid && "hazard" %in% type){
+        stop("Argument \'average.iid\' must be FALSE when argument \'type\' contains \"hazard\"\n")
+    }
 
     if(!is.null(newdata)){
       if(missing(times) || nTimes[[1]]==0){
@@ -473,27 +476,41 @@ predictCox <- function(object,
 
         ## Computation of the influence function and/or the standard error
         export <- c("iid"[(iid+band)>0],"se"[(se+band)>0],"average.iid"[average.iid==TRUE])
-        attributes(export) <- attributes(average.iid)
-        
-        outSE <- calcSeCox(object,
-                           times = if(diag){times.sorted[oorder.times]}else{times.sorted},
-                           nTimes = nTimes,
-                           type = type,
-                           diag = diag,
-                           Lambda0 = Lambda0,
-                           object.n = object.n,
-                           object.time = object.modelFrame$stop,
-                           object.eXb = object.modelFrame$eXb,
-                           object.strata =  object.modelFrame$strata, 
-                           nStrata = nStrata,
-                           new.n = new.n,
-                           new.eXb = new.eXb,
-                           new.LPdata = new.LPdata,
-                           new.strata = new.strata,
-                           new.survival = if(diag){out$survival}else{out$survival[,order.times,drop=FALSE]},
-                           nVar = nVar, 
-                           export = export,
-                           store.iid = store.iid)
+        if(!is.null(attr(average.iid,"factor"))){
+            test.list <- !is.list(attr(average.iid,"factor"))
+            test.matrix <- any(unlist(lapply(attr(average.iid,"factor"), is.matrix))==FALSE)
+            test.dim <- any(unlist(lapply(attr(average.iid,"factor"), function(iM){dim(iM)==c(new.n, diag + (1-diag)*nTimes)}))==FALSE)
+            if(test.list || test.matrix || test.dim){
+                stop("Attribute \"factor\" of argument \'average.iid\' must be a list of matrix of size ",new.n,",",diag + (1-diag)*nTimes," \n")
+            }
+            if(diag){
+                attr(export,"factor") <- attr(average.iid,"factor")
+            }else{
+                attr(export,"factor") <- lapply(attr(average.iid,"factor"), function(iF){
+                    iF[,order.times,drop=FALSE]
+                })
+            }
+        }
+    
+      outSE <- calcSeCox(object,
+                         times = if(diag){times.sorted[oorder.times]}else{times.sorted},
+                         nTimes = nTimes,
+                         type = type,
+                         diag = diag,
+                         Lambda0 = Lambda0,
+                         object.n = object.n,
+                         object.time = object.modelFrame$stop,
+                         object.eXb = object.modelFrame$eXb,
+                         object.strata =  object.modelFrame$strata, 
+                         nStrata = nStrata,
+                         new.n = new.n,
+                         new.eXb = new.eXb,
+                         new.LPdata = new.LPdata,
+                         new.strata = new.strata,
+                         new.survival = if(diag){out$survival}else{out$survival[,order.times,drop=FALSE]},
+                         nVar = nVar, 
+                         export = export,
+                         store.iid = store.iid)
         
         ## restaure orginal time ordering
         if((iid+band)>0){
@@ -518,16 +535,26 @@ predictCox <- function(object,
         }
         if(average.iid == TRUE){
             if ("cumhazard" %in% type){
-                if (needOrder && (diag[1] == FALSE))
-                    out$cumhazard.average.iid <- outSE$cumhazard.average.iid[,oorder.times,drop=0L]
-                else
+                if (needOrder && (diag[1] == FALSE)){
+                    if(is.list(outSE$cumhazard.average.iid)){
+                        out$cumhazard.average.iid <- lapply(outSE$cumhazard.average.iid, function(iIID){iIID[,oorder.times,drop=0L]})
+                    }else{
+                        out$cumhazard.average.iid <- outSE$cumhazard.average.iid[,oorder.times,drop=0L]
+                    }
+                }else{
                     out$cumhazard.average.iid <- outSE$cumhazard.average.iid
+                }
             }
             if ("survival" %in% type){
-                if (needOrder && (diag[1] == FALSE))
-                    out$survival.average.iid <- outSE$survival.average.iid[,oorder.times,drop=0L]
-                else
+                if (needOrder && (diag[1] == FALSE)){
+                    if(is.list(outSE$survival.average.iid)){
+                        out$survival.average.iid <- lapply(outSE$survival.average.iid, function(iIID){iIID[,oorder.times,drop=0L]})
+                    }else{
+                        out$survival.average.iid <- outSE$survival.average.iid[,oorder.times,drop=0L]
+                    }
+                }else {
                     out$survival.average.iid <- outSE$survival.average.iid
+                }
             }
         }
         if((se+band)>0){
