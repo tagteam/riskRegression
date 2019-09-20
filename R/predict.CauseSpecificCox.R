@@ -255,7 +255,7 @@ predict.CauseSpecificCox <- function(object,
 
     ## ** compute CIF
     vec.etimes.max <- apply(M.etimes.max,1,min)
-    
+
     CIF <- predictCIF_cpp(hazard = ls.hazard, 
                           cumhazard = ls.cumhazard, 
                           eXb = M.eXb, 
@@ -349,7 +349,11 @@ predict.CauseSpecificCox <- function(object,
     }
     if(average.iid){
         if(needOrder2 && (diag == FALSE)){
-            out$absRisk.average.iid <- out.seCSC$average.iid[,ootimes2,drop=FALSE]
+            if(is.list(out.seCSC$average.iid)){
+                out$absRisk.average.iid <- lapply(out.seCSC$average.iid, function(iIID){iIID[,ootimes2,drop=FALSE]})
+            }else{
+                out$absRisk.average.iid <- out.seCSC$average.iid[,ootimes2,drop=FALSE]
+            }
         }else{
             out$absRisk.average.iid <- out.seCSC$average.iid
         }
@@ -520,9 +524,6 @@ predict.CauseSpecificCox <- function(object,
             }
             out$survival <- exp(-pred.cumhazard)
         }
-        ##              [,1]      [,2]     [,3]
-        ## [1,]    0 0.5655874 1.343364
-        ## [2,]    0 0.5655874 1.343364
 
         if(iid || average.iid){
             if(product.limit){ 

@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: maj 18 2017 (09:23) 
 ## Version: 
-## last-updated: sep 17 2019 (18:42) 
+## last-updated: sep 18 2019 (14:18) 
 ##           By: Brice Ozenne
-##     Update #: 237
+##     Update #: 244
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -386,8 +386,8 @@ test_that("[predict.CSC]: check absolute risks add up to one",{
     }
 })
 
-## * [predictCSC] predict.CSC vs mstate on simulated and real data
-cat("[predictCSC] predict.CSC vs mstate \n")
+## * [predictCSC] predict.CSC vs. mstate on simulated and real data
+cat("[predictCSC] predict.CSC vs. mstate \n")
 ## ** Data
 set.seed(10)
 d <- sampleData(1e2, outcome = "competing.risks")[,.(time,event,X1,X2,X6)]
@@ -594,7 +594,7 @@ df.S$time <- round(df.S$time,2)
 df.S$X3 <- rbinom(n, size = 4, prob = rep(0.25,4))
 seqTime <- c(unique(sort(df.S$time)), max(df.S$time) + 1)[c(1,2,5,12,90,125,200,241,267,268)]
 
-test_that("[predictCSC] vs fixed values",{
+test_that("[predictCSC] vs. fixed values",{
     CSC.S <- CSC(Hist(time,event) ~ strata(X1) + strata(X3) + X2, data = df.S, ties = "efron", fitter = "coxph")
 
     ## cause 1
@@ -763,7 +763,7 @@ test_that("[predictCSC] conditional CIF vs. manual calculation", {
 })
 
 
-## ** vs fixed values
+## ** vs. fixed values
 set.seed(10)
 d <- sampleData(3e2, outcome = "competing.risks")
 d$time <- round(d$time,2)
@@ -804,11 +804,13 @@ dt <- sampleData(75, outcome = "competing.risks")[,.(time,event,X1,X2,X6)]
 test_that("[predictCox] diag no strata", {
     e.CSC <- CSC(Hist(time, event) ~ X1*X6, data = dt)
 
-    GS <- predict(e.CSC, newdata = dt, times = dt$time, se = FALSE, iid = TRUE, cause = 1)
+    GS <- predict(e.CSC, newdata = dt, times = dt$time, se = FALSE, iid = TRUE, average.iid = TRUE, cause = 1)
     test <- predict(e.CSC, newdata = dt, times = dt$time,
                     se = FALSE, iid = TRUE, average.iid = TRUE, diag = TRUE, cause = 1)
     test2 <- predict(e.CSC, newdata = dt, times = dt$time,
                      se = FALSE, iid = FALSE, average.iid = TRUE, diag = TRUE, cause = 1)
+    
+    ## estimates
     expect_equal(dt$time, as.double(test$time))
     expect_equal(diag(GS$absRisk), as.double(test$absRisk))
 
@@ -818,8 +820,14 @@ test_that("[predictCox] diag no strata", {
     expect_equal(GS.iid.diag, test$absRisk.iid[,1,])
 
     ## average.iid
-    expect_equal(colMeans(GS.iid.diag), test2$survival.average.iid[,1])
-    expect_equal(test$survival.average.iid, test2$survival.average.iid)
+    expect_equal(colMeans(GS.iid.diag), test2$absRisk.average.iid[,1])    
+    expect_equal(test$absRisk.average.iid, test2$absRisk.average.iid)
+    range(test$absRisk.average.iid - colMeans(GS.iid.diag))
+
+    test2 <- predict(e.CSC, newdata = dt, times = dt$time,
+                     se = FALSE, iid = FALSE, average.iid = TRUE, diag = TRUE, cause = 1)
+    dim(test2$absRisk.average.iid)
+
 })
 
 test_that("[predictCox] diag strata", {
@@ -900,8 +908,8 @@ test_that("iid average - semi parametric", {
 })
 
 ## * [predictCSC] Miscelaneous
-## ** Confidence bands vs timereg
-cat("[predictCSC] Confidence band vs timereg \n")
+## ** Confidence bands vs. timereg
+cat("[predictCSC] Confidence band vs. timereg \n")
 
 ## ** Data
 set.seed(10)

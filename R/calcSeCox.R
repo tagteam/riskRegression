@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: maj 27 2017 (11:46) 
 ## Version: 
-## last-updated: sep 20 2019 (13:24) 
+## last-updated: sep 20 2019 (13:46) 
 ##           By: Brice Ozenne
-##     Update #: 669
+##     Update #: 672
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -395,14 +395,14 @@ selectJump <- function(IF, times, type){
               if(any(times > IF$etime.max[[iStrata]])){
                   match.times[times > IF$etime.max[[iStrata]]] <- NA
               }
-              IF$IFhazard[[iStrata]] <- subsetCols(IF$IFhazard[[iStrata]], match.times, default = 0)
+              IF$IFhazard[[iStrata]] <- subsetIndex(IF$IFhazard[[iStrata]], index = match.times, default = 0, col = TRUE)
           }
           if("cumhazard" %in% type || "survival" %in% type){
               indexJump <- prodlim::sindex(jump.times = IF$time[[iStrata]], eval.times = times)
               if(any(times > IF$etime.max[[iStrata]])){
                   indexJump[times > IF$etime.max[[iStrata]]] <- NA
               }
-              IF$IFcumhazard[[iStrata]] <- subsetCols(IF$IFcumhazard[[iStrata]], indexJump, default = 0)
+              IF$IFcumhazard[[iStrata]] <- subsetIndex(IF$IFcumhazard[[iStrata]], index = indexJump, default = 0, col = TRUE)
           }    
       }
       IF$time[[iStrata]] <- times

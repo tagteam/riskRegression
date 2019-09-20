@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: sep 19 2019 (15:52) 
 ## Version: 
-## Last-Updated: sep 19 2019 (16:08) 
+## Last-Updated: sep 20 2019 (13:41) 
 ##           By: Brice Ozenne
-##     Update #: 11
+##     Update #: 16
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -38,47 +38,49 @@ rowPaste <- function(object){
 
 }
 
-
-## * subsetCols
-#' @title Extract Columns From Matrix
-#' @description Extract columns from matrix.
-#'
-#' @param object A matrix
-#' @param index index of the columns to be extracted.
+## * subsetIndex
+#' @title Extract Specific Elements From An Object
+#' @description Extract specific elements from an object.
+#' @name subsetIndex
+#' 
+#' @param object A vector or a matrix.
+#' @param index index of the elements to be extracted.
 #' 0 indicates that the column should be set to the default value.
 #' NA indicates that the column should be set to NA.
 #' @param default the default value.
+#' @param col If object is a matrix, \code{TRUE} lead to extract the columns and \code{FALSE} the rows.
+#' @param ... Only used by the generic method.
 #'
 #' @examples
 #' M <- matrix(rnorm(50),5,10)
-#' subsetCols(M, index = c(0,0,1), default = 0)
-#' subsetCols(M, index = c(0,2,3,NA), default = 0)
-#' subsetCols(M, index = c(0,NA,2,3,NA), default = 0)
-subsetCols <- function(object, index, default){
+#' subsetIndex(M, index = c(0,0,1), default = 0)
+#' subsetIndex(M, index = c(0,2,3,NA), default = 0)
+#' subsetIndex(M, index = c(0,NA,2,3,NA), default = 0)
+#'
+#' C <- 1:10
+#' subsetIndex(C, index = c(0,0,1,5,NA), default = 0)
+#' @export
+`subsetIndex` <- function(object, index, default,...) UseMethod("subsetIndex")
 
-    ## if(!is.matrix(object)){
-    ##     stop("Argument \'object\' must be a matrix \n")
-    ## }
-    out <- cbind(default,object)[,index+1,drop = FALSE]
+## ** subsetIndex.default
+#' @rdname subsetIndex
+#' @export
+subsetIndex.default <- function(object, index, default, ...){
+    out <- c(default,object)[index+1]
+    return(out)
+}
+
+## ** subsetIndex.matrix
+#' @rdname subsetIndex
+#' @export
+subsetIndex.matrix <- function(object, index, default, col = TRUE){
+    if(col){
+        out <- cbind(default,object)[,index+1,drop = FALSE]
+    }else{
+        out <- rbind(default,object)[index+1,,drop = FALSE]
+    }
     dimnames(out) <- NULL
     return(out)
-
-    
-    ## n.index <- length(index)
-    ## n.row <- NROW(object)
-
-    ## pos0 <- which(index==0)
-    ## posNA <- which(is.na(index))
-    ## posValid <- setdiff(1:n.index,c(pos0,posNA))
-
-    ## new.object <- matrix(default, nrow = n.row, ncol = n.index)
-    ## if(length(posNA)>0){
-    ##     new.object[,posNA] <- NA
-    ## }
-    ## if(length(posValid)>0){
-    ##     new.object[,posValid] <- object[,index[posValid]]
-    ## }
-    ## return(new.object)
 }
 
 ######################################################################
