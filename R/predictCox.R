@@ -236,9 +236,6 @@ predictCox <- function(object,
         stop("Argument \'diag\' must be of type logical \n")
     }
     if(diag){
-        if((se[[1]]||band[[1]])){
-            stop("Arguments \'se\' and \'band\' must be FALSE when \'diag\' is TRUE \n")
-        }
         if(iid[[1]]==TRUE && store.iid[[1]] == "minimal"){
             stop("Arguments \'store.iid\' must equal \"full\" when \'diag\' is TRUE \n")
         }
@@ -247,7 +244,7 @@ predictCox <- function(object,
             stop("When argument \'diag\' is TRUE, the number of rows in \'newdata\' must equal the length of \'times\' \n")
         }
     }
-    if(average.iid && "hazard" %in% type){
+    if(average.iid && (iid == FALSE) && ("hazard" %in% type)){
         stop("Argument \'average.iid\' must be FALSE when argument \'type\' contains \"hazard\"\n")
     }
 
@@ -263,7 +260,7 @@ predictCox <- function(object,
                "\"\n")
       }
       if(se[1] && ("hazard" %in% type)){
-          stop("confidence intervals cannot be computed for the hazard \n")
+          stop("Standard error cannot be computed for the hazard \n")
       }
       if(band[1] && ("hazard" %in% type)){
           stop("confidence bands cannot be computed for the hazard \n")

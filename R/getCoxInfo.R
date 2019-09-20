@@ -1092,3 +1092,4 @@ terms.phreg <- function(x, ...){
     stats::terms(x$formula)
 }
 
+
