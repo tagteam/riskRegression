@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: sep  4 2017 (10:38) 
 ## Version: 
-## last-updated: sep 20 2019 (13:27) 
+## last-updated: sep 23 2019 (18:43) 
 ##           By: Brice Ozenne
-##     Update #: 112
+##     Update #: 113
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -843,7 +843,7 @@ test_that("[predictCox] diag no strata", {
     expect_equal(colMeans(GS.iid.diag), test2$survival.average.iid[,1])
     expect_equal(test$survival.average.iid, test2$survival.average.iid)
 
-    ## average.iid with factor
+    ## average.iid with factor - diag=FALSE
     average.iid <- TRUE
     attr(average.iid,"factor") <- list(matrix(1:length(dt$time), nrow = NROW(dt), ncol = length(dt$time), byrow = TRUE),
                                        matrix(1:NROW(dt), nrow = NROW(dt), ncol = length(dt$time)))
@@ -854,6 +854,7 @@ test_that("[predictCox] diag no strata", {
     expect_equal(t(apply(GS$survival.iid, 2:3, function(x){sum(x * (1:length(dt$time)))/length(x)})),
                  test3$survival.average.iid[[2]])
 
+    ## average.iid with factor - diag=TRUE
     average.iid <- TRUE
     attr(average.iid,"factor") <- list(matrix(5, nrow = NROW(dt), ncol = 1, byrow = TRUE),
                                        matrix(1:NROW(dt), nrow = NROW(dt), ncol = 1))
@@ -890,7 +891,7 @@ test_that("[predictCox] diag strata", {
     expect_equal(colMeans(GS.iid.diag), test2$survival.average.iid[,1])
     expect_equal(test$survival.average.iid, test2$survival.average.iid)
 
-    ## average.iid with factor
+    ## average.iid with factor - diag=FALSE
     average.iid <- TRUE
     attr(average.iid,"factor") <- list(matrix(1:length(dt$time), nrow = NROW(dt), ncol = length(dt$time), byrow = TRUE),
                                        matrix(1:NROW(dt), nrow = NROW(dt), ncol = length(dt$time)))
@@ -901,6 +902,7 @@ test_that("[predictCox] diag strata", {
     expect_equal(t(apply(GS$survival.iid, 2:3, function(x){sum(x * (1:length(dt$time)))/length(x)})),
                  test3$survival.average.iid[[2]])
 
+    ## average.iid with factor - diag=TRUE
     average.iid <- TRUE
     attr(average.iid,"factor") <- list(matrix(5, nrow = NROW(dt), ncol = 1, byrow = TRUE),
                                        matrix(1:NROW(dt), nrow = NROW(dt), ncol = 1))

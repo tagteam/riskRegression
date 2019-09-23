@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: maj 27 2017 (21:23) 
 ## Version: 
-## last-updated: sep 20 2019 (18:07) 
+## last-updated: sep 23 2019 (18:33) 
 ##           By: Brice Ozenne
-##     Update #: 740
+##     Update #: 893
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -222,6 +222,7 @@ calcSeCSC <- function(object, cif, hazard, cumhazard, object.time, object.maxtim
             
         } else if("average.iid" %in% export){
 
+            ## prepare
             new.level.strata <- unique(new.strata)
             new.level.Ustrata <- apply(new.level.strata,1,paste0,collapse="")
             new.n.strata <- length(new.level.Ustrata)
@@ -237,9 +238,6 @@ calcSeCSC <- function(object, cif, hazard, cumhazard, object.time, object.maxtim
             }else{
                 rm.list <- FALSE
                 factor <- attr(export, "factor")
-                if(diag){
-                    warning("Attribute \"factor\" in argument \'average.iid\' is ignored \n")
-                }
             }
 
             all.cause <- switch(surv.type,
@@ -248,16 +246,189 @@ calcSeCSC <- function(object, cif, hazard, cumhazard, object.time, object.maxtim
            
             eMax.obs <- tapply(object.maxtime,new.Ustrata,max)
 
+            test_allCause <- 1:nCause %in% all.cause
+            test_theCause <- 1:nCause %in% cause
 
-            out <- warperCalcIID(hazard = hazard, IFhazard = object$models[[cause]]$iid$IFhazard,
-                                 cumhazard = cumhazard, IFcumhazard = lapply(object$models,function(iM){iM$iid$IFcumhazard}),
-                                 eXb = eXb, X = new.LPdata, IFbeta = lapply(object$models,function(iM){iM$iid$IFbeta}),
-                                 cause = cause, all.cause = all.cause, nCause = nCause,
-                                 object.n = object.n, new.n = new.n, object.time = object.time, times = times, nTimes = nTimes, 
-                                 new.level.strata = new.level.strata, new.n.strata = new.n.strata, new.indexStrata = new.indexStrata,
-                                 eMax.obs = eMax.obs, nVar = nVar, factor = factor, diag = diag
-                                 )
-            out <- list(average.iid = out)
+            n.factor <- length(factor)
+            out <- lapply(1:n.factor, function(iF){
+                matrix(0, nrow = object.n, ncol = (diag>0) + (1-(diag>0))*nTimes)
+            })
+
+            ## compute AIF for each strata
+            for(iStrata in 1:new.n.strata){ ## iStrata <- 1
+                iStrata_causes <- new.level.strata[iStrata,]+1
+                iStrata_theCause <- iStrata_causes[cause]
+                iIndex_obs <- new.indexStrata[[iStrata]]+1
+                iN_obs <- length(iIndex_obs)
+                iPrevalence <- iN_obs/new.n
+
+                ## subset times
+                if(diag==TRUE){
+                    iTimes <- times[iIndex_obs]
+                }else{
+                    iTimes <- times
+                }
+         
+                ## subset at jump
+                iIndex.jump <- which(hazard[[cause]][,iStrata_theCause]>0)
+                iTime.jump <- object.time[iIndex.jump]
+                iN.jump <- length(iIndex.jump)
+
+                if(iN.jump==0){next}
+                iSindex.times <- prodlim::sindex(jump.times = iTime.jump, eval.times = iTimes)
+                iValid.times <- which((iTimes >= min(iTime.jump))*(iTimes <= eMax.obs[iStrata]) == 1)
+                iNA.times <- which(iTimes > eMax.obs[iStrata])
+
+                if((diag==TRUE) && length(iNA.times)>0){
+                    out <- lapply(out,function(iF){matrix(NA, nrow = nrow(iF), ncol = ncol(iF))})
+                    break
+                }
+                iSindexV.times <- iSindex.times[iValid.times]
+                if(diag==TRUE){
+                    iIndex_obs <- iIndex_obs[iValid.times]
+                    iN_activobs <- length(iIndex_obs)
+                }else{
+                    iN_activobs <- iN_obs
+                }
+         
+                ## hazard at jump
+                ihazard0_cause <- hazard[[cause]][iIndex.jump,iStrata_theCause]
+                iIFhazard0_cause <- object$models[[cause]]$iid$IFhazard[[iStrata_theCause]][,iIndex.jump,drop=FALSE]
+
+                ## cumulative hazard just before jump
+                iCumhazard0 <- vector(mode = "list", length = nCause)
+                iCumhazard0[all.cause] <- lapply(all.cause, function(iC){
+                    subsetIndex(cumhazard[[iC]][,iStrata_causes[iC]], index = iIndex.jump-1, default = 0)
+                })
+                iIFCumhazard0 <- vector(mode = "list", length = nCause)
+                iIFCumhazard0[all.cause] <- lapply(all.cause, function(iC){subsetIndex(object$models[[iC]]$iid$IFcumhazard[[iStrata_causes[iC]]],
+                                                                                       index = iIndex.jump - 1, default = 0, col = TRUE)})
+         
+                ## design matrix
+                iX <- lapply(1:nCause, function(iC){new.LPdata[[iC]][iIndex_obs,,drop=FALSE]})
+
+                ## linear predictor
+                ieXb <- lapply(1:nCause, function(iC){eXb[iIndex_obs, iC]})
+
+                ## compute survival
+                iCumhazard <- lapply(1:nCause, function(iC){
+                    if(iC %in% all.cause){
+                        return(tcrossprod(ieXb[[iC]],iCumhazard0[[iC]]))
+                    }else{
+                        return(matrix(0,iN_activobs,iN.jump))
+                    }
+                })
+                iSurvival <- exp(-do.call("+",iCumhazard))
+
+                ## pre-compute quantities before averaging
+                eXb1_S <- colMultiply_cpp(iSurvival, scale = ieXb[[cause]])
+
+                eXb1_S_eXbj <- vector(mode = "list", length = nCause)
+                eXb1_S_eXbj[all.cause] <- lapply(all.cause, function(iC){colMultiply_cpp(eXb1_S, ieXb[[iC]])})
+                
+                if(nVar[cause]>0){
+                    eXb1_S_X1 <- lapply(1:nVar[cause], function(iP){ colMultiply_cpp(eXb1_S, scale = iX[[cause]][,iP]) })
+                }else{
+                    eXb1_S_X1 <- NULL
+                }
+         
+                eXb1_S_Xj_eXbj <- vector(mode = "list", length = nCause)
+                for(iCause in all.cause){
+                    if(nVar[iCause]>0){
+                        eXb1_S_Xj_eXbj[[iCause]] <- lapply(1:nVar[iCause], function(iP){ colMultiply_cpp(eXb1_S_eXbj[[iCause]], scale = iX[[iCause]][,iP]) })
+                    }
+                }
+
+                for(iFactor in 1:n.factor){
+                    ## compute average influence function at each jump time
+                    ## <IF>(absRisk) = \int(t) IF_hazard0(cause) E[w * eXb(cause) * S] 
+                    ##                       + IF_beta(cause) * hazard0(cause) * E[w * eXb(cause) * X(cause) * S]  
+                    ##                       - \sum_j hazard0(cause) * E[w * eXb(cause) * S * eXb(j)] * IF_cumhazard0(j)
+                    ##                       - \sum_j hazard0(cause) * E[w * eXb(cause) * X(j) * S * eXb(j)] * cumhazard0(j) * IF_beta(j)
+
+                    if(is.null(factor[[iFactor]])){                 
+                        if(diag==TRUE){
+                            iiN.jump <- iN.jump
+                            iiIndex.jump <- 1:iN.jump
+
+                            iMfactor <- do.call(rbind,lapply(iSindexV.times, function(i){c(rep(1,i),rep(0,iN.jump-i))}))
+                            iVN <- colSums(iMfactor)
+                        }else{
+                            iiN.jump <- iN.jump
+                            iiIndex.jump <- 1:iN.jump
+
+                            iMfactor <- matrix(1, nrow = iN_activobs, ncol = iN.jump)
+                            iVN <- rep(1,iN_activobs)
+                        }                 
+                    }else{
+                        if(diag==2){
+                            if(iFactor %in% iNA.times) {
+                                out[[iFactor]][,1] <- NA
+                                next
+                            }else if(iTimes[iFactor] < min(iTime.jump)){
+                                next
+                            }
+                            iiN.jump <- iSindexV.times[iFactor-sum(iTimes < min(iTime.jump))]
+                            iiIndex.jump <- 1:iiN.jump
+
+                            iMfactor <- matrix(factor[[iFactor]][iIndex_obs,1], nrow = iN_activobs, ncol = iiN.jump, byrow = FALSE)                     
+                        }else{
+                            iiN.jump <- iN.jump
+                            iiIndex.jump <- 1:iN.jump
+
+                            iMfactor <- matrix(factor[[iFactor]][iIndex_obs,1], nrow = iN_activobs, ncol = iN.jump, byrow = FALSE)
+                        }
+                    }
+
+                    if(diag==TRUE){
+                        iVN_time <- iVN
+                    }else{
+                        ## iVN_time <- (iVN %*% matrix(1, nrow = iN_activobs, ncol = iiN.jump, byrow = FALSE))[1,]
+                        iVN_time <- rep(iN_activobs, iiN.jump)
+                    }
+                    iAIF <- calcAICcif_R(hazard0_cause = ihazard0_cause,
+                                         cumhazard0 = iCumhazard0,
+                                         IFhazard0_cause = iIFhazard0_cause,
+                                         IFcumhazard0 = iIFCumhazard0,
+                                         IFbeta = lapply(object$models,function(iM){iM$iid$IFbeta}),                                         
+                                         eXb1_S = eXb1_S,
+                                         eXb1_S_eXbj = eXb1_S_eXbj,
+                                         eXb1_S_X1 = eXb1_S_X1,
+                                         eXb1_S_Xj_eXbj = eXb1_S_Xj_eXbj, 
+                                         weight = iVN_time, factor = iMfactor,
+                                         nJump = iiN.jump, subsetJump = iiIndex.jump,
+                                         nCause = nCause, test_allCause = test_allCause, test_theCause = test_theCause,
+                                         nVar = nVar)
+
+             
+                    ## export
+                    if(diag==TRUE){
+                        out[[iFactor]][,1] = out[[iFactor]][,1] + rowSums(iAIF[,iSindexV.times,drop=FALSE])/iN_obs * iPrevalence
+                    }else if(diag == 2){
+                        out[[iFactor]][,1] = out[[iFactor]][,1] + iAIF[,iiN.jump,drop=FALSE] * iPrevalence
+                    }else{
+                        out[[iFactor]][,iValid.times] = out[[iFactor]][,iValid.times] + iAIF[,iSindexV.times] * iPrevalence
+                    }
+
+                    ## NA after last obs
+                    if((length(iNA.times)>0) && (diag!=2)){
+                        if(diag==TRUE){
+                            out[[iFactor]][iNA.times,] <- NA
+                        }else{
+                            out[[iFactor]][,iNA.times] <- NA
+                        }
+                    }
+
+                }
+            }
+
+            if(rm.list){
+                out <- list(average.iid = out[[1]])
+            }else{
+                out <- list(average.iid = out)
+            }
+            
+            
 
         
         }
@@ -267,188 +438,57 @@ calcSeCSC <- function(object, cif, hazard, cumhazard, object.time, object.maxtim
     return(out)
 }
 
-## * warperCalcIID
-warperCalcIID <- function(hazard, IFhazard,
-                          cumhazard, IFcumhazard,
-                          eXb, X, IFbeta,
-                          cause, all.cause, nCause,
-                          object.n, new.n, object.time, times, nTimes, 
-                          new.level.strata, new.n.strata, new.indexStrata,
-                          eMax.obs, nVar, diag, factor
-                          ){
-
-    test_allCause <- 1:nCause %in% all.cause
-    test_theCause <- 1:nCause %in% cause
-
-    n.factor <- length(factor)
-    out <- lapply(1:n.factor, function(iF){
-        matrix(0, nrow = object.n, ncol = diag + (1-diag)*nTimes)
-    })
+## * calcAICcif_R
+calcAICcif_R <- function(hazard0_cause,
+                         cumhazard0,
+                         IFhazard0_cause,
+                         IFcumhazard0,
+                         IFbeta,                                         
+                         eXb1_S,
+                         eXb1_S_eXbj,
+                         eXb1_S_X1,
+                         eXb1_S_Xj_eXbj, 
+                         weight, factor,
+                         nJump, subsetJump,
+                         nCause, test_allCause, test_theCause,
+                         nVar){
     
-     for(iStrata in 1:new.n.strata){ ## iStrata <- 1
-         iStrata_causes <- new.level.strata[iStrata,]+1
-         iStrata_theCause <- iStrata_causes[cause]
-         iIndex_obs <- new.indexStrata[[iStrata]]+1
-         iN_obs <- length(iIndex_obs)
-         iPrevalence <- iN_obs/new.n
-                
-         ## subset at jump
-         iIndex.jump <- which(hazard[[cause]][,iStrata_theCause]>0)
-         iTime.jump <- object.time[iIndex.jump]
-         iN.jump <- length(iIndex.jump)
+    ## term 1
+    iAIF <- rowMultiply_cpp(IFhazard0_cause[,subsetJump,drop=FALSE], scale = colSums(eXb1_S[,subsetJump,drop=FALSE] * factor) / weight)
+    for(iCause in 1:nCause){
 
-         if(iN.jump==0){next}
-         iSindex.times <- prodlim::sindex(jump.times = iTime.jump, eval.times = times)
-         iValid.times <- which((times >= min(iTime.jump))*(times <= eMax.obs[iStrata]) == 1)
-         iNA.times <- which(times > eMax.obs[iStrata])
-
-         if(diag && length(iNA.times)>0){
-             out <- lapply(out,function(iF){matrix(NA, nrow = nrow(iF), ncol = ncol(iF))})
-             break
-         }
-         iSindexV.times <- iSindex.times[iValid.times]
-         if(diag){
-             iIndex_obs <- iIndex_obs[iValid.times]
-             iN_obs <- length(iIndex_obs)
-             iPrevalence <- iN_obs/new.n
-         }
-         ## hazard at jump
-         ihazard0_cause <- hazard[[cause]][iIndex.jump,iStrata_theCause]
-         iIFhazard0_cause <- IFhazard[[iStrata_theCause]][,iIndex.jump,drop=FALSE]
-
-         ## cumulative hazard just before jump
-         iCumhazard0 <- vector(mode = "list", length = nCause)
-         iCumhazard0[all.cause] <- lapply(all.cause, function(iC){
-             subsetIndex(cumhazard[[iC]][,iStrata_causes[iC]], index = iIndex.jump-1, default = 0)
-         })
-         iIFCumhazard0 <- vector(mode = "list", length = nCause)
-         iIFCumhazard0[all.cause] <- lapply(all.cause, function(iC){subsetIndex(IFcumhazard[[iC]][[iStrata_causes[iC]]], index = iIndex.jump - 1, default = 0, col = TRUE)})
-         
-         ## design matrix
-         iX <- lapply(1:nCause, function(iC){X[[iC]][iIndex_obs,,drop=FALSE]})
-
-         ## linear predictor
-         ieXb <- lapply(1:nCause, function(iC){eXb[iIndex_obs, iC]})
-
-         ## compute survival
-         iCumhazard <- lapply(1:nCause, function(iC){
-             if(iC %in% all.cause){
-                 return(tcrossprod(ieXb[[iC]],iCumhazard0[[iC]]))
-             }else{
-                 return(matrix(0,iN_obs,iN.jump))
-             }
-         })
-         iSurvival <- exp(-do.call("+",iCumhazard))
-
-         ## pre-compute quantities before averaging
-         eXb1_S <- colMultiply_cpp(iSurvival, scale = ieXb[[cause]])
-
-         eXb1_S_eXbj <- vector(mode = "list", length = nCause)
-         eXb1_S_eXbj[all.cause] <- lapply(all.cause, function(iC){colMultiply_cpp(eXb1_S, ieXb[[iC]])})
-                
-         if(nVar[cause]>0){
-             eXb1_S_X1 <- lapply(1:nVar[cause], function(iP){ colMultiply_cpp(eXb1_S, scale = iX[[cause]][,iP]) })
-         }else{
-             eXb1_S_X1 <- NULL
-         }
-         
-         eXb1_S_Xj_eXbj <- vector(mode = "list", length = nCause)
-         for(iCause in all.cause){
-             if(nVar[iCause]>0){
-                 eXb1_S_Xj_eXbj[[iCause]] <- lapply(1:nVar[iCause], function(iP){ colMultiply_cpp(eXb1_S_eXbj[[iCause]], scale = iX[[iCause]][,iP]) })
-             }
-         }
-
-         for(iFactor in 1:n.factor){
-         ## compute average influence function at each jump time
-         ## <IF>(absRisk) = \int(t) IF_hazard0(cause) E[w * eXb(cause) * S] 
-         ##                       + IF_beta(cause) * hazard0(cause) * E[w * eXb(cause) * X(cause) * S]  
-         ##                       - \sum_j hazard0(cause) * E[w * eXb(cause) * S * eXb(j)] * IF_cumhazard0(j)
-         ##                       - \sum_j hazard0(cause) * E[w * eXb(cause) * X(j) * S * eXb(j)] * cumhazard0(j) * IF_beta(j)
-
-             ## ## R version
-             if(is.null(factor[[iFactor]])){                 
-                 if(diag){
-                     iMfactor <- do.call(rbind,lapply(iSindexV.times, function(i){c(rep(1,i),rep(0,iN.jump-i))}))
-                     ## iTable <- table(iSindexV.times)
-                     iVN <- colSums(iMfactor)
-                 }else{
-                     iMfactor <- matrix(1, nrow = iN_obs, ncol = iN.jump)
-                     iVN <- rep(1,iN_obs)
-                 }                 
-             }else{
-                 iMfactor <- matrix(factor[[iFactor]][,1], nrow = iN_obs, ncol = iN.jump, byrow = FALSE)
-                 iVN <- rep(1,iN_obs)
-             }
-
-             ## term 1
-             iAIF <- rowMultiply_cpp(iIFhazard0_cause, scale = colSums(eXb1_S * iMfactor)/iVN)
-             browser()
-             for(iCause in 1:nCause){
-
-                 ## term 3
-                 if(test_allCause[iCause]){
-                     iAIF <- iAIF - rowMultiply_cpp(iIFCumhazard0[[iCause]], scale = ihazard0_cause * colSums(eXb1_S_eXbj[[iCause]] * iMfactor)/iVN)
-                 }
+        ## term 3
+        if(test_allCause[iCause]){
+            iAIF <- iAIF - rowMultiply_cpp(IFcumhazard0[[iCause]][,subsetJump,drop=FALSE], scale = hazard0_cause[subsetJump] * colSums(eXb1_S_eXbj[[iCause]][,subsetJump,drop=FALSE] * factor) / weight)
+        }
              
-                 if(nVar[iCause]>0){ ## iP <- 1
-                     E.tempo <- rep(0, length = iN.jump)
+        if(nVar[iCause]>0){ ## iP <- 1
+            E.tempo <- matrix(0, nrow = nVar[iCause], ncol = nJump)
 
-                     if(test_theCause[iCause]){
-                         ## term 2
-                         E.tempo = E.tempo + do.call(rbind,lapply(eXb1_S_X1, function(iX){colSums(iX * iMfactor)/iVN}))
-                     }
+            ## term 2
+            if(test_theCause[iCause]){
+                ## E.tempo <- E.tempo + do.call(rbind,lapply(eXb1_S_X1, function(iX){colSums(iX[,subsetJump,drop=FALSE] * factor) / weight}))
+                for(iP in 1:nVar[iCause]){ ## iP <- 1
+                  E.tempo[iP,] <- E.tempo[iP,] + colSums(eXb1_S_X1[[iP]][,subsetJump,drop=FALSE] * factor) / weight
+                }
+            }
                  
-                     ## term 4
-                     if(test_allCause[iCause]){
-                         E.tempo = E.tempo - rowMultiply_cpp(do.call(rbind,lapply(eXb1_S_Xj_eXbj[[iCause]], function(iX){colSums(iX * iMfactor)/iVN})),
-                                                             iCumhazard0[[iCause]])
-                     }
-                 
-                     iAIF <- iAIF + IFbeta[[iCause]] %*% (E.tempo * ihazard0_cause)
-                 }
-             }
-             ## accumulate over time
-             ## head(iAIF)
-             iAIF <- rowCumSum(iAIF)
+            ## term 4
+            if(test_allCause[iCause]){
+                ## E.tempo = E.tempo - rowMultiply_cpp(do.call(rbind,lapply(eXb1_S_Xj_eXbj[[iCause]], function(iX){colSums(iX[,subsetJump,drop=FALSE] * factor) / weight})),
+                                                    ## cumhazard0[[iCause]][subsetJump])
+                for(iP in 1:nVar[iCause]){
+                    E.tempo[iP,] <- E.tempo[iP,] - colSums(eXb1_S_Xj_eXbj[[iCause]][[iP]][,subsetJump,drop=FALSE] * factor) * cumhazard0[[iCause]][subsetJump] / weight
+                }
 
-             ## export
-             if(diag){
-                 out[[iFactor]][,1] = out[[iFactor]][,1] + rowMeans(iAIF) * iPrevalence
-             }else{
-                 out[[iFactor]][,iValid.times] = out[[iFactor]][,iValid.times] + iAIF[,iSindexV.times] * iPrevalence
-             }
+            }
+            iAIF <- iAIF + IFbeta[[iCause]] %*% rowMultiply_cpp(E.tempo, scale = hazard0_cause[subsetJump])
+        }
+    }
+    
+    ## accumulate over time
+    return(rowCumSum(iAIF))
 
-             ## NA after last obs
-             if(length(iNA.times)){
-                 if(diag){
-                     out[[iFactor]][iNA.times,] <- NA
-                 }else{
-                     out[[iFactor]][,iNA.times] <- NA
-                 }
-             }
-
-         }
-         ## ## C++ version
-         ## xx <- calcAIFcif_cpp(hazard1 = ihazard0_cause,
-         ##                      IFhazard1 = iIFhazard0_cause,
-         ##                      cumhazard = iCumhazard0,
-         ##                      IFcumhazard = iIFCumhazard0,
-         ##                      IFbeta = IFbeta,
-         ##                      eXb1_S = ieXb,
-         ##                      eXb1_S_eXbj = eXb1_S_eXbj,
-         ##                      eXb1_S_X1 = eXb1_S_X1,
-         ##                      eXb1_S_Xj_eXbj = eXb1_S_Xj_eXbj,
-         ##                      nObs = object.n, nJump = length(object.time), nTimes = nTimes,
-         ##                      validTimes = iValid.times, NATimes = iNA.times, sindexTimes = iSindex.times, 
-         ##                      nCause = nCause, test_allCause = test_allCause, test_theCause = test_theCause,
-         ##                      nVar = nVar,
-         ##                      factor = list(matrix(1, nrow = new.n, ncol = 1)),
-         ##                      diag = FALSE, is_factor2 = FALSE)
-
-     }
-
-     return(out)
 }
 
 #----------------------------------------------------------------------

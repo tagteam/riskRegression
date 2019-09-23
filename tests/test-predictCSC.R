@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: maj 18 2017 (09:23) 
 ## Version: 
-## last-updated: sep 18 2019 (14:18) 
+## last-updated: sep 23 2019 (16:33) 
 ##           By: Brice Ozenne
-##     Update #: 244
+##     Update #: 247
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -820,28 +820,78 @@ test_that("[predictCox] diag no strata", {
     expect_equal(GS.iid.diag, test$absRisk.iid[,1,])
 
     ## average.iid
-    expect_equal(colMeans(GS.iid.diag), test2$absRisk.average.iid[,1])    
+    expect_equal(colMeans(GS.iid.diag), test$absRisk.average.iid[,1])
     expect_equal(test$absRisk.average.iid, test2$absRisk.average.iid)
-    range(test$absRisk.average.iid - colMeans(GS.iid.diag))
 
-    test2 <- predict(e.CSC, newdata = dt, times = dt$time,
-                     se = FALSE, iid = FALSE, average.iid = TRUE, diag = TRUE, cause = 1)
-    dim(test2$absRisk.average.iid)
+    ## average.iid with factor - diag=FALSE
+    average.iid <- TRUE
+    attr(average.iid,"factor") <- list(matrix(5, nrow = NROW(dt), ncol = 1),
+                                       matrix(1:NROW(dt), nrow = NROW(dt), ncol = 1))
+    test3 <- predict(e.CSC, newdata = dt, times = dt$time,
+                     se = FALSE, iid = FALSE, average.iid = average.iid, diag = FALSE, cause = 1)
 
+    expect_equal(5*GS$absRisk.average.iid, test3$absRisk.average.iid[[1]])
+    expect_equal(t(apply(GS$absRisk.iid, 2:3, function(x){sum(x * (1:length(dt$time)))/length(x)})),
+                 test3$absRisk.average.iid[[2]])
+
+    ## average.iid with factor - diag=TRUE
+    average.iid <- TRUE
+    attr(average.iid,"factor") <- list(matrix(5, nrow = NROW(dt), ncol = 1),
+                                       matrix(1:NROW(dt), nrow = NROW(dt), ncol = 1))
+    test3 <- predict(e.CSC, newdata = dt, times = dt$time[10:11],
+                     se = FALSE, iid = FALSE, average.iid = average.iid, diag = 2, cause = 1)
+
+    expect_equal(5*GS$absRisk.average.iid[,10], test3$absRisk.average.iid[[1]][,1])
+    expect_equal(5*colMeans(GS$absRisk.iid[,10,]), test3$absRisk.average.iid[[1]][,1])
+    expect_equal(colMeans(colMultiply_cpp(GS$absRisk.iid[,11,], scale = 1:NROW(dt))),
+                 test3$absRisk.average.iid[[2]][,1])
 })
+
 
 test_that("[predictCox] diag strata", {
     eS.CSC <- CSC(Hist(time, event) ~ strata(X1) + X6, data = dt)
 
-    GS <- predict(eS.CSC, newdata = dt, times = dt$time, se = FALSE, iid = TRUE, cause = 1)
-    test <- predict(eS.CSC, newdata = dt, times = dt$time, se = FALSE, iid = TRUE, diag = TRUE, cause = 1)
+    GS <- predict(eS.CSC, newdata = dt, times = dt$time, se = FALSE, iid = TRUE, average.iid = TRUE, cause = 1)
+    test <- predict(eS.CSC, newdata = dt, times = dt$time,
+                    se = FALSE, iid = TRUE, average.iid = TRUE, diag = TRUE, cause = 1)
+    test2 <- predict(eS.CSC, newdata = dt, times = dt$time,
+                     se = FALSE, iid = FALSE, average.iid = TRUE, diag = TRUE, cause = 1)
 
+    ## estimates
     expect_equal(dt$time, as.double(test$time))
     expect_equal(diag(GS$absRisk), as.double(test$absRisk))
 
+    ## iid
     GS.iid.diag <- do.call(rbind,lapply(1:NROW(dt),
                                         function(iN){GS$absRisk.iid[iN,iN,]}))
     expect_equal(GS.iid.diag, test$absRisk.iid[,1,])
+
+    ## average.iid
+    expect_equal(colMeans(GS.iid.diag), test$absRisk.average.iid[,1])
+    expect_equal(test$absRisk.average.iid, test2$absRisk.average.iid)
+
+    ## average.iid with factor - diag=FALSE
+    average.iid <- TRUE
+    attr(average.iid,"factor") <- list(matrix(5, nrow = NROW(dt), ncol = 1),
+                                       matrix(1:NROW(dt), nrow = NROW(dt), ncol = 1))
+    test3 <- predict(eS.CSC, newdata = dt, times = dt$time,
+                     se = FALSE, iid = FALSE, average.iid = average.iid, diag = FALSE, cause = 1)
+
+    expect_equal(5*GS$absRisk.average.iid, test3$absRisk.average.iid[[1]])
+    expect_equal(t(apply(GS$absRisk.iid, 2:3, function(x){sum(x * (1:length(dt$time)))/length(x)})),
+                 test3$absRisk.average.iid[[2]])
+
+    ## average.iid with factor - diag=TRUE
+    average.iid <- TRUE
+    attr(average.iid,"factor") <- list(matrix(5, nrow = NROW(dt), ncol = 1),
+                                       matrix(1:NROW(dt), nrow = NROW(dt), ncol = 1))
+    test3 <- predict(eS.CSC, newdata = dt, times = dt$time[10:11],
+                     se = FALSE, iid = FALSE, average.iid = average.iid, diag = 2, cause = 1)
+
+    expect_equal(5*GS$absRisk.average.iid[,10], test3$absRisk.average.iid[[1]][,1])
+    expect_equal(5*colMeans(GS$absRisk.iid[,10,]), test3$absRisk.average.iid[[1]][,1])
+    expect_equal(colMeans(colMultiply_cpp(GS$absRisk.iid[,11,], scale = 1:NROW(dt))),
+                 test3$absRisk.average.iid[[2]][,1])
 
 })
 
