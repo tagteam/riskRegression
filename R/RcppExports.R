@@ -21,12 +21,8 @@ calcSeCif_cpp <- function(seqTau, jumpTime, jumpTheCause, indexJump, indexSample
     .Call(`_riskRegression_calcSeCif_cpp`, seqTau, jumpTime, jumpTheCause, indexJump, indexSample, IFbeta, Ehazard0, cumEhazard0, iS0, cumhazard_iS0, hazard_iS0, newEXb, sampleEXb, X, sameStrata, sampleTime, hazard0, cumhazard0, theCause, firstJumpTime, lastSampleTime, nTau, nJump, nNewObs, nSample, nCause, p, survtype, exportSE, exportIF, exportIFsum)
 }
 
-calcSeCif2_cpp <- function(ls_IFbeta, ls_X, ls_cumhazard, ls_hazard, ls_IFcumhazard, ls_IFhazard, eXb, nJumpTime, JumpMax, tau, tauIndex, nTau, nObs, theCause, nCause, hazardType, nVar, nNewObs, strata, exportSE, exportIF, exportIFsum) {
-    .Call(`_riskRegression_calcSeCif2_cpp`, ls_IFbeta, ls_X, ls_cumhazard, ls_hazard, ls_IFcumhazard, ls_IFhazard, eXb, nJumpTime, JumpMax, tau, tauIndex, nTau, nObs, theCause, nCause, hazardType, nVar, nNewObs, strata, exportSE, exportIF, exportIFsum)
-}
-
-calcAIFcif_cpp <- function(hazard1, ls_cumhazard, ls_tX, eXb, ls_IFbeta, ls_IFhazard, ls_IFcumhazard, nCause, theCause, hazardType, tau, nTau, tauIndex, nJumpTime, JumpMax, nObs, nNewObs, levelStrata, nStrata, ls_indexStrata, nVar, factor) {
-    .Call(`_riskRegression_calcAIFcif_cpp`, hazard1, ls_cumhazard, ls_tX, eXb, ls_IFbeta, ls_IFhazard, ls_IFcumhazard, nCause, theCause, hazardType, tau, nTau, tauIndex, nJumpTime, JumpMax, nObs, nNewObs, levelStrata, nStrata, ls_indexStrata, nVar, factor)
+calcSeCif2_cpp <- function(ls_IFbeta, ls_X, ls_cumhazard, ls_hazard, ls_IFcumhazard, ls_IFhazard, eXb, nJumpTime, JumpMax, tau, tauIndex, nTau, nObs, theCause, nCause, hazardType, nVar, nNewObs, strata, exportSE, exportIF, exportIFsum, diag) {
+    .Call(`_riskRegression_calcSeCif2_cpp`, ls_IFbeta, ls_X, ls_cumhazard, ls_hazard, ls_IFcumhazard, ls_IFhazard, eXb, nJumpTime, JumpMax, tau, tauIndex, nTau, nObs, theCause, nCause, hazardType, nVar, nNewObs, strata, exportSE, exportIF, exportIFsum, diag)
 }
 
 #' Apply cumsum in each column 
@@ -88,8 +84,8 @@ IFlambda0_cpp <- function(tau, IFbeta, newT, neweXb, newStatus, newStrata, newIn
     .Call(`_riskRegression_IFlambda0_cpp`, tau, IFbeta, newT, neweXb, newStatus, newStrata, newIndexJump, S01, E1, time1, lastTime1, lambda0, p, strata, exact, minimalExport)
 }
 
-predictCIF_cpp <- function(hazard, cumhazard, eXb, strata, newtimes, etimes, etimeMax, t0, nEventTimes, nNewTimes, nData, cause, nCause, survtype, productLimit) {
-    .Call(`_riskRegression_predictCIF_cpp`, hazard, cumhazard, eXb, strata, newtimes, etimes, etimeMax, t0, nEventTimes, nNewTimes, nData, cause, nCause, survtype, productLimit)
+predictCIF_cpp <- function(hazard, cumhazard, eXb, strata, newtimes, etimes, etimeMax, t0, nEventTimes, nNewTimes, nData, cause, nCause, survtype, productLimit, diag) {
+    .Call(`_riskRegression_predictCIF_cpp`, hazard, cumhazard, eXb, strata, newtimes, etimes, etimeMax, t0, nEventTimes, nNewTimes, nData, cause, nCause, survtype, productLimit, diag)
 }
 
 #' Apply cumsum in each row 

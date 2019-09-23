@@ -6,7 +6,7 @@
 \usage{
 calcSeCSC(object, cif, hazard, cumhazard, object.time, object.maxtime, eXb,
   new.LPdata, new.strata, times, surv.type, ls.infoVar, new.n, cause,
-  nCause, nVar, export, store.iid)
+  nCause, nVar, export, store.iid, diag)
 }
 \arguments{
 \item{object}{The fitted cause specific Cox model}
@@ -46,6 +46,9 @@ calcSeCSC(object, cif, hazard, cumhazard, object.time, object.maxtime, eXb,
 
 \item{store.iid}{the method used to compute the influence function and the standard error.
 Can be \code{"full"} or \code{"minimal"}. See the details section.}
+
+\item{diag}{[logical] when \code{FALSE} the absolute risk/survival for all observations at all times is computed,
+otherwise it is only computed for the i-th observation at the i-th time.}
 }
 \description{
 Standard error of the absolute risk predicted from cause-specific Cox models

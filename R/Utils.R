@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: sep 19 2019 (15:52) 
 ## Version: 
-## Last-Updated: sep 20 2019 (13:41) 
+## Last-Updated: sep 23 2019 (22:16) 
 ##           By: Brice Ozenne
-##     Update #: 16
+##     Update #: 18
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -29,7 +29,7 @@
 rowPaste <- function(object){
     if(is.matrix(object)){
         return(    do.call("paste0",lapply(1:NCOL(object), function(iC){object[,iC]}))  )
-    }else if(is.list(x) || is.data.frame(x)){
+    }else if(is.list(object) || is.data.frame(object)){
         return( do.call("paste0",object ) )
     }else{
         stop("Arugment \'object\' must be a matrix, data.frame, or list \n")
@@ -73,7 +73,7 @@ subsetIndex.default <- function(object, index, default, ...){
 ## ** subsetIndex.matrix
 #' @rdname subsetIndex
 #' @export
-subsetIndex.matrix <- function(object, index, default, col = TRUE){
+subsetIndex.matrix <- function(object, index, default, col = TRUE, ...){
     if(col){
         out <- cbind(default,object)[,index+1,drop = FALSE]
     }else{

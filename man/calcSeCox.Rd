@@ -21,7 +21,8 @@ hazard/survival.}
 \item{type}{One or several strings that match (either in lower or upper case or mixtures) one
 or several of the strings \code{"hazard"},\code{"cumhazard"}, \code{"survival"}.}
 
-\item{diag}{[logical] If \code{TRUE} only compute the hazard/cumlative hazard/survival for the i-th row in dataset at the i-th time.}
+\item{diag}{[logical] when \code{FALSE} the hazard/cumlative hazard/survival for all observations at all times is computed,
+otherwise it is only computed for the i-th observation at the i-th time.}
 
 \item{Lambda0}{the baseline hazard estimate returned by \code{BaseHazStrata_cpp}.}
 
