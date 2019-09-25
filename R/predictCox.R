@@ -556,14 +556,14 @@ predictCox <- function(object,
         }
         if((se+band)>0){
             if ("cumhazard" %in% type){
-                if (needOrder){
+                if (needOrder && (diag[1] == FALSE)){
                     out$cumhazard.se <- outSE$cumhazard.se[,oorder.times,drop=0L]
                 }else{
                     out$cumhazard.se <- outSE$cumhazard.se
                 }          
             }
             if ("survival" %in% type){
-                if (needOrder){
+                if (needOrder && (diag[1] == FALSE)){
                     out$survival.se <- outSE$survival.se[,oorder.times,drop=0L]
                 } else{
                     out$survival.se <- outSE$survival.se

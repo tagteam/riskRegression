@@ -6,31 +6,37 @@ using namespace arma;
 using namespace std;
 
 // [[Rcpp::export]]
-arma::mat predictCIF_cpp(const std::vector<arma::mat>& hazard, 
-                         const std::vector<arma::mat>& cumhazard, 
-                         const arma::mat& eXb,
-                         const arma::mat& strata, 
-                         const std::vector<double>& newtimes, 
-                         const std::vector<double>& etimes, 
-                         const std::vector<double>& etimeMax, 
-                         double t0,
-                         int nEventTimes, 
-                         int nNewTimes, 
-                         int nData, 
-                         int cause, 
-                         int nCause,
-						 bool survtype,
-                         bool productLimit,
-						 bool diag){
+List predictCIF_cpp(const std::vector<arma::mat>& hazard, 
+					const std::vector<arma::mat>& cumhazard, 
+					const arma::mat& eXb,
+					const arma::mat& strata, 
+					const std::vector<double>& newtimes, 
+					const std::vector<double>& etimes, 
+					const std::vector<double>& etimeMax, 
+					double t0,
+					int nEventTimes, 
+					int nNewTimes, 
+					int nData, 
+					int cause, 
+					int nCause,
+					bool survtype,
+					bool productLimit,
+					bool diag,
+					bool exportSurv){
   
   arma::mat pred_CIF;
-  if (diag) {
-	pred_CIF.resize(nData, 1);  
+  if (diag) {	
+	pred_CIF.resize(nData, 1);
   }else{
 	pred_CIF.resize(nData, nNewTimes);
   }
-  
   pred_CIF.fill(NA_REAL);
+
+  arma::mat pred_Surv;
+  if(exportSurv){
+	  pred_Surv.resize(nData, nEventTimes);
+	  pred_Surv.fill(0.0);
+  }
   
   double hazard_it; // hazard for the cause of interest at time t for individual i
   double hazard_tempo; // hazard for the cause of interest at time t for individual i
@@ -48,7 +54,7 @@ arma::mat predictCIF_cpp(const std::vector<arma::mat>& hazard,
   
   for(int iterI=0 ; iterI<nData; iterI++){ // index of the patient
     R_CheckUserInterrupt();
-    
+
     CIF_it = 0;
     iterP = 0;
     survival_it = 1;
@@ -110,11 +116,13 @@ arma::mat predictCIF_cpp(const std::vector<arma::mat>& hazard,
         }
 	
       } // otherwise the survival stays at 1
-      
+	  if(exportSurv){
+		pred_Surv(iterI,iterT) = survival_it;
+	  }
+	  
       // update the integral
       if(R_IsNA(t0)){	
         CIF_it += survival_it * hazard_it;
-	
       }else{// [only for conditional CIF]
 
 		// get the survival up to t0 i.e. the survival at etimes just before t0
@@ -157,5 +165,6 @@ arma::mat predictCIF_cpp(const std::vector<arma::mat>& hazard,
     
   }
   
-  return(pred_CIF);
+  return(List::create(Named("cif") = pred_CIF,
+                      Named("survival") = pred_Surv));
 }

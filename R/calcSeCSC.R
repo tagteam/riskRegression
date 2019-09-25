@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: maj 27 2017 (21:23) 
 ## Version: 
-## last-updated: sep 23 2019 (18:33) 
+## last-updated: sep 24 2019 (11:58) 
 ##           By: Brice Ozenne
-##     Update #: 893
+##     Update #: 914
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -25,6 +25,7 @@
 #' @param cif the cumulative incidence function at each prediction time for each individual.
 #' @param hazard list containing the baseline hazard for each cause in a matrix form. Columns correspond to the strata.
 #' @param cumhazard list containing the cumulative baseline hazard for each cause in a matrix form. Columns correspond to the strata.
+#' @param cumhazard list containing the (all cause) survival in a matrix form. Columns correspond to event times.
 #' @param object.time a vector containing all the events regardless to the cause.
 #' @param object.maxtime a matrix containing the latest event in the strata of the observation for each cause.
 #' @param eXb a matrix containing the exponential of the linear predictor evaluated for the new observations (rows) for each cause (columns)
@@ -55,7 +56,7 @@
 
 ## * calcSeCSC (code)
 #' @rdname calcSeCSC
-calcSeCSC <- function(object, cif, hazard, cumhazard, object.time, object.maxtime,
+calcSeCSC <- function(object, cif, hazard, cumhazard, survival, object.time, object.maxtime,
                       eXb, new.LPdata, new.strata, times, surv.type, ls.infoVar,
                       new.n, cause, nCause, nVar, export, store.iid, diag){
 
@@ -75,6 +76,7 @@ calcSeCSC <- function(object, cif, hazard, cumhazard, object.time, object.maxtim
     
     store.iid <- object$models[[1]]$iid$store.iid
                                         # }}}
+
                                         # {{{ prepare arguments
     nEtimes <- length(object.time)
     object.n <- NROW(object$models[[1]]$iid$IFbeta)
@@ -127,7 +129,8 @@ calcSeCSC <- function(object, cif, hazard, cumhazard, object.time, object.maxtim
             ls.args$newEXb <- eXb[indexStrataTheCause,,drop=FALSE]            
             ls.args$sampleEXb <- exp(do.call(cbind,lapply(object$models, coxLP, data = NULL, center = FALSE)))
             ls.args$sampleTime <- object.modelFrame[["stop"]]
-
+            ls.args$survival <- survival[indexStrataTheCause,,drop=FALSE]
+            
             ls.args$indexJump <- matrix(NA, ncol = nCause, nrow = nEtimes)
             ls.args$indexSample <- matrix(NA, ncol = nCause, nrow = object.n)
             ls.args$Ehazard0 <- vector(mode = "list", length = nCause)
@@ -185,9 +188,6 @@ calcSeCSC <- function(object, cif, hazard, cumhazard, object.time, object.maxtim
             }
             
         }
-             
-        
-        
                                         # }}}
     }else{
 
@@ -205,6 +205,7 @@ calcSeCSC <- function(object, cif, hazard, cumhazard, object.time, object.maxtim
                                   ls_X = new.LPdata,
                                   ls_cumhazard = cumhazard,
                                   ls_hazard = hazard[[cause]],
+                                  survival = survival,
                                   ls_IFcumhazard = lapply(object$models, function(x){x$iid$IFcumhazard}),
                                   ls_IFhazard = object$models[[cause]]$iid$IFhazard,
                                   eXb = eXb,
@@ -309,19 +310,9 @@ calcSeCSC <- function(object, cif, hazard, cumhazard, object.time, object.maxtim
 
                 ## linear predictor
                 ieXb <- lapply(1:nCause, function(iC){eXb[iIndex_obs, iC]})
-
-                ## compute survival
-                iCumhazard <- lapply(1:nCause, function(iC){
-                    if(iC %in% all.cause){
-                        return(tcrossprod(ieXb[[iC]],iCumhazard0[[iC]]))
-                    }else{
-                        return(matrix(0,iN_activobs,iN.jump))
-                    }
-                })
-                iSurvival <- exp(-do.call("+",iCumhazard))
-
+                
                 ## pre-compute quantities before averaging
-                eXb1_S <- colMultiply_cpp(iSurvival, scale = ieXb[[cause]])
+                eXb1_S <- colMultiply_cpp(survival[iIndex_obs,iIndex.jump,drop=FALSE], scale = ieXb[[cause]])
 
                 eXb1_S_eXbj <- vector(mode = "list", length = nCause)
                 eXb1_S_eXbj[all.cause] <- lapply(all.cause, function(iC){colMultiply_cpp(eXb1_S, ieXb[[iC]])})
