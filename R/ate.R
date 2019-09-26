@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Oct 23 2016 (08:53) 
 ## Version: 
-## last-updated: sep 16 2019 (18:08) 
+## last-updated: sep 26 2019 (17:42) 
 ##           By: Brice Ozenne
-##     Update #: 1347
+##     Update #: 1379
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -301,6 +301,9 @@ ate <- function(event,
     censorVar.status <- init$censorVar.status
     dots$product.limit <- init$product.limit
 
+    return.iid <- (se || band || iid) && (B==0)
+    return.iid.nuisance <- return.iid && (is.null(attr(iid,"nuisance")) || (attr(iid,"nuisance")==TRUE))
+    
     ## ** check consistency of the user arguments
     check <- ate_checkArgs(object.event = object.event,
                            object.censor = object.censor,
@@ -396,7 +399,8 @@ ate <- function(event,
                                eventVar.status = eventVar.status,
                                censorVar.time = censorVar.time,
                                censorVar.status = censorVar.status,
-                               return.iid = (se || band || iid) && (B==0)),
+                               return.iid = return.iid,
+                               return.iid.nuisance = return.iid.nuisance),
                                dots)
     if (TD){       
         args.pointEstimate <- c(args.pointEstimate,list(formula=formula))
@@ -490,16 +494,22 @@ ate <- function(event,
                 cat(" - Functional delta method: ")
             }
 
-            if(is.null(attr(iid,"nuisance")) || (attr(iid,"nuisance")==TRUE)){ ## compute iid decomposition relative to the nuisance parameters
-                
+            if(return.iid.nuisance){ ## compute iid decomposition relative to the nuisance parameters
 
-                ## add pre-computed quantities
-                name.attributes <- setdiff(names(attributes(pointEstimate)),"names")
-                for(iAttr in name.attributes){
-                    args.pointEstimate[[iAttr]] <- attr(pointEstimate, iAttr)
+                if(estimator=="Gformula"){
+                    ## no extra computation required
+                    outIID <- lapply(1:length(contrasts), function(iC){attr(pointEstimate, "iid.ate")[[iC]] + attr(pointEstimate, "iid.outcome")[[iC]]})
+                    names(outIID) <- contrasts
+                }else{
+                    ## add pre-computed quantities
+                    name.attributes <- setdiff(names(attributes(pointEstimate)),"names")
+                    for(iAttr in name.attributes){
+                        args.pointEstimate[[iAttr]] <- attr(pointEstimate, iAttr)
+                    }
+                    ## compute extra term and assemble
+                    outIID <- do.call(iidATE, args.pointEstimate)
                 }
                 
-                outIID <- do.call(iidATE, args.pointEstimate)
             }else{ ## ignore that the nuisance parameters have been estimated
                 outIID <- attr(pointEstimate, "iid.ate")
             }
@@ -591,9 +601,10 @@ ate_initArgs <- function(object.event,
     ## ** fit regression model when user specifies formula and extract formula
     if(inherits(object.event,"formula")){
         myformula.event <- object.event
-
-        if(grep("Hist",object.event)){
+        if(any(grepl("Hist(",object.event, fixed = TRUE))){
             object.event <- CSC(myformula.event, data = data, surv.type = "survival")
+        }else if(any(grepl("Surv(",object.event, fixed = TRUE))){
+            object.event <- rms::cph(myformula.event, data = data, x = TRUE, y = TRUE)
         }else{
             object.event <- glm(myformula.event, data = data, family = stats::binomial(link = "logit"))
         }
@@ -620,35 +631,13 @@ ate_initArgs <- function(object.event,
         myformula.censor <- coxFormula(object.censor)
     }
 
-    
+    test.CSC <- inherits(object.event,"CauseSpecificCox")
+    test.Cox <- inherits(object.event,"coxph") || inherits(object.event,"cph") || inherits(object.event,"phreg")
+    test.glm <- inherits(object.event,"glm")
+
     ## ** deduced from user defined arguments
 
-    ## censoring
-    if(inherits(object.censor,"coxph") || inherits(object.censor,"cph") || inherits(object.censor,"phreg")){
-        censoringMF <- coxModelFrame(object.censor)
-        n.censor <- sapply(times, function(t){sum((censoringMF$status == 1) * (censoringMF$stop <= t))})
-    }else{
-        n.censor <- 0
-    }
-    
-    ## level.censoring
-    if(!is.null(object.censor) && (inherits(object.censor,"coxph") || inherits(object.censor,"cph") || inherits(object.censor,"phreg"))){
-        censorVar <- SurvResponseVar(myformula.censor)
-        censorVar.status <- censorVar$status
-        censorVar.time <- censorVar$time
-        if(censorVar.status %in% names(data)){
-            iCandidates <- data[[censorVar.status]][coxModelFrame(object.censor)$status==1]
-            level.censoring <- unique(iCandidates)[1]            
-        }else{
-            level.censoring <- NA
-        }
-    }else{
-        level.censoring <- NA
-        censorVar.status <- NA
-        censorVar.time <- NA
-    }
-
-    ## event
+    ## event 
     if(inherits(object.event,"glm")){
         eventVar.time <- as.character(NA)
         eventVar.status <- all.vars(myformula.event)[1]
@@ -664,13 +653,44 @@ ate_initArgs <- function(object.event,
         eventVar.time <- responseVar$time
         eventVar.status <- responseVar$status
         type.multistate <- "competing.risks"
-    }else{
-        eventVar.time <- object.event[1]
-        eventVar.status <- object.event[2]
-        object.event <- NULL
+    }
+    
+    ## censoring
+    if(test.CSC){
+        test.censor <- object.event$response[,"status"] == 0        
+        n.censor <- sapply(times, function(t){sum(test.censor * (object.event$response[,"time"] <= t))})
         
-        all.states_nC <- setdiff(unique(data[[eventVar.status]]),level.censoring)
-        type.multistate <- if(length(all.states_nC)>1){"competing.risks"}else{"survival"}
+        level.censoring <- attr(object.event$response,"cens.code")
+
+        info.censor <- try(SurvResponseVar(coxFormula(object.censor)), silent = TRUE)
+        if(inherits(info.censor,"try-error")){
+            censorVar.status <- NA
+            censorVar.time <- NA
+        }else{
+            censorVar.status <- info.censor$status
+            censorVar.time <- info.censor$time
+        }
+    }else if(test.Cox){
+        censoringMF <- coxModelFrame(object.event)
+        test.censor <- censoringMF$status == 0
+        n.censor <- sapply(times, function(t){sum(test.censor * (censoringMF$stop <= t))})
+
+        level.censoring <- try(unique(data[[eventVar.status]][test.censor]), silent = TRUE)
+
+        info.censor <- try(SurvResponseVar(coxFormula(object.censor)), silent = TRUE)
+        if(inherits(info.censor,"try-error")){
+            censorVar.status <- NA
+            censorVar.time <- NA
+        }else{
+            censorVar.status <- info.censor$status
+            censorVar.time <- info.censor$time
+        }
+    }else{
+        n.censor <- 0
+        
+        level.censoring <- NA
+        censorVar.status <- NA
+        censorVar.time <- NA
     }
 
     ## treatment
@@ -849,7 +869,13 @@ ate_checkArgs <- function(object.event,
         if (all(match(candidateMethods,options$method.predictRisk,nomatch=0)==0)){
             stop(paste("Could not find predictRisk S3-method for ",class(object.event),collapse=" ,"),sep="")
         }
-
+        if(inherits(object.event,"CauseSpecificCox") && (object.event$surv.type=="hazard")){
+            if(attr(estimator,"integral") & (B==0) & (iid|se|band)){
+                stop("Can only compute iid/standard error/confidence bands for AIPTW,AIPCW estimators with CauseSpecificCox models for which surv.type=\"survival\" \n",
+                     "Consider using bootstrap resampling or changing \'surv.type\'\n")
+            }
+        }
+        
         if(estimator %in% c("AIPTW","AIPTW,AIPCW") && inherits(object.event,"glm")){
             warnings("It is unclear whether the current implementation of the double robust estimator is valid for logistic models.\n")
         }
@@ -871,7 +897,7 @@ ate_checkArgs <- function(object.event,
         }
         if(!inherits(object.censor,"coxph") && !inherits(object.censor,"cph") && !inherits(object.censor,"phreg")){
             stop("Argument \'censor\' must be a Cox model \n")
-        }
+        }        
         if(!identical(censorVar.status,eventVar.status)){
             if(sum(diag(table(data[[censorVar.status]],data[[eventVar.status]])))!=NROW(data)){
                 stop("The status variables in object.event and object.censor are inconsistent \n")

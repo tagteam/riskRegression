@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: apr 11 2018 (17:05) 
 ## Version: 
-## Last-Updated: jul 30 2019 (15:25) 
+## Last-Updated: sep 26 2019 (17:46) 
 ##           By: Brice Ozenne
-##     Update #: 200
+##     Update #: 201
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -35,7 +35,7 @@ calcBootATE <- function(args, name.estimate, n.obs, fct.pointEstimate,
             stop("Argument \'data\' in the object has the same name has an existing R function \n",
                  "This creates confusion - please rename the dataset \n")
         }else{
-            ls.data[[iModel]] <- data.table::as.data.table()
+            ls.data[[iModel]] <- data.table::as.data.table(data.tempo)
         }
     }
 

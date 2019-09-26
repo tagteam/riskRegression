@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: maj 27 2017 (11:46) 
 ## Version: 
-## last-updated: sep 20 2019 (13:46) 
+## last-updated: sep 26 2019 (17:29) 
 ##           By: Brice Ozenne
-##     Update #: 672
+##     Update #: 675
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -327,36 +327,63 @@ calcSeCox <- function(object, times, nTimes, type, diag,
         }
 
         ## C++
-        outRcpp <- calcAIFsurv_cpp(ls_IFcumhazard = iid.object$IFcumhazard[new.Ustrata], 
-                                   IFbeta = iid.object$IFbeta,
-                                   cumhazard0 = Lambda0$cumhazard[new.Ustrata],
-                                   survival = new.survival,
-                                   eXb = new.eXb,
-                                   X = new.LPdata,
-                                   prevStrata = new.prevStrata,
-                                   ls_indexStrata = new.indexStrata,
-                                   factor = factor,
-                                   nTimes = nTimes,
-                                   nObs = object.n,
-                                   nStrata = new.nStrata,
-                                   nVar = nVar,
-                                   diag = diag,
-                                   exportCumHazard = ("cumhazard" %in% type),
-                                   exportSurvival = ("survival" %in% type))
-
+        if("hazard" %in% type){
+            outRcpp.hazard <- calcAIFsurv_cpp(ls_IFcumhazard = iid.object$IFhazard[new.Ustrata], 
+                                              IFbeta = iid.object$IFbeta,
+                                              cumhazard0 = Lambda0$hazard[new.Ustrata],
+                                              survival = matrix(0),
+                                              eXb = new.eXb,
+                                              X = new.LPdata,
+                                              prevStrata = new.prevStrata,
+                                              ls_indexStrata = new.indexStrata,
+                                              factor = factor,
+                                              nTimes = nTimes,
+                                              nObs = object.n,
+                                              nStrata = new.nStrata,
+                                              nVar = nVar,
+                                              diag = diag,
+                                              exportCumHazard = TRUE,
+                                              exportSurvival = FALSE)
+        }
+        if(("cumhazard" %in% type) || ("survival" %in% type)){
+            outRcpp.cumhazard <- calcAIFsurv_cpp(ls_IFcumhazard = iid.object$IFcumhazard[new.Ustrata], 
+                                                 IFbeta = iid.object$IFbeta,
+                                                 cumhazard0 = Lambda0$cumhazard[new.Ustrata],
+                                                 survival = new.survival,
+                                                 eXb = new.eXb,
+                                                 X = new.LPdata,
+                                                 prevStrata = new.prevStrata,
+                                                 ls_indexStrata = new.indexStrata,
+                                                 factor = factor,
+                                                 nTimes = nTimes,
+                                                 nObs = object.n,
+                                                 nStrata = new.nStrata,
+                                                 nVar = nVar,
+                                                 diag = diag,
+                                                 exportCumHazard = ("cumhazard" %in% type),
+                                                 exportSurvival = ("survival" %in% type))
+        }
+        
         ## reshape
+        if("hazard" %in% type){
+            if(rm.list){
+                out$hazard.average.iid <- matrix(outRcpp.hazard[[1]][[1]], nrow = object.n, ncol = nTimes)
+            }else{
+                out$hazard.average.iid <- lapply(outRcpp.hazard[[1]], function(iMat){matrix(iMat, nrow = object.n, ncol = nTimes)})
+            }
+        }
         if("cumhazard" %in% type){
             if(rm.list){
-                out$cumhazard.average.iid <- matrix(outRcpp[[1]][[1]], nrow = object.n, ncol = nTimes)
+                out$cumhazard.average.iid <- matrix(outRcpp.cumhazard[[1]][[1]], nrow = object.n, ncol = nTimes)
             }else{
-                out$cumhazard.average.iid <- lapply(outRcpp[[1]], function(iMat){matrix(iMat, nrow = object.n, ncol = nTimes)})
+                out$cumhazard.average.iid <- lapply(outRcpp.cumhazard[[1]], function(iMat){matrix(iMat, nrow = object.n, ncol = nTimes)})
             }
         }
         if("survival" %in% type){
             if(rm.list){
-                out$survival.average.iid <- matrix(outRcpp[[2]][[1]], nrow = object.n, ncol = nTimes)
+                out$survival.average.iid <- matrix(outRcpp.cumhazard[[2]][[1]], nrow = object.n, ncol = nTimes)
             }else{
-                out$survival.average.iid <- lapply(outRcpp[[2]], function(iMat){matrix(iMat, nrow = object.n, ncol = nTimes)})
+                out$survival.average.iid <- lapply(outRcpp.cumhazard[[2]], function(iMat){matrix(iMat, nrow = object.n, ncol = nTimes)})
             }
         }
             

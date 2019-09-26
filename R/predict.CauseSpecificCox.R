@@ -426,7 +426,10 @@ predict.CauseSpecificCox <- function(object,
                        )
         
     }else if(object$surv.type=="hazard"){
-
+        if(!is.logical(diag)){
+            stop("Argument \'diag\' must be of type logical \n")
+        }
+        
         n.obs <- NROW(newdata)
         n.times <- length(times)
         n.cause <- length(object$cause)

@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: jun 28 2019 (14:38) 
 ## Version: 
-## Last-Updated: sep 16 2019 (13:00) 
+## Last-Updated: sep 26 2019 (16:52) 
 ##           By: Brice Ozenne
-##     Update #: 92
+##     Update #: 115
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -83,7 +83,7 @@ predictRiskIID.glm <- function(object,
         resPred <- predictGLM(object,
                               newdata = newdata,
                               average.iid = average.iid)
-
+        
         ## hidden argument: enable to ask for the prediction of Y==1 or Y==0
         level <- list(...)$level
         if(!is.null(level)){
@@ -100,12 +100,10 @@ predictRiskIID.glm <- function(object,
             }
         }
         ## convert to list format for compatibility with the other predictRiskIID
-        if(!is.null(factor) && NCOL(factor)>1){
-            return(lapply(1:NCOL(factor), function(iF){attr(resPred,"iid")[,iF,drop=FALSE]}))
-        }else{
-            return(list(attr(resPred,"iid")))
+        if(!is.null(factor)){
+            attr(resPred,"iid") <- lapply(1:NCOL(factor), function(iF){attr(resPred,"iid")[,iF,drop=FALSE]})
         }
-        
+        return(resPred)
     }else{
         stop("Currently only the binomial family is implemented for extracting the iid decomposition of the predictions from a glm object.")
     }
@@ -146,15 +144,18 @@ predictRiskIID.coxph <- function(object, newdata, average.iid, factor = NULL, ti
                           type = "survival",
                           diag = diag)
     ## there is a minus because predictor.cox return iid(survival) = -iid(risk)
+    out <- 1-resPred$survival
+    
     if(average.iid){
         if(!is.null(factor)){
-            return(lapply(resPred$survival.average.iid, function(x){-x}))
+            attr(out, "iid") <- lapply(resPred$survival.average.iid, function(x){-x})
         }else{
-            return(list(-resPred$survival.average.iid))
+            attr(out, "iid") <- - resPred$survival.average.iid
         }
     }else{
-        return(-resPred$survival.iid)
-    }    
+        attr(out, "iid") <- - resPred$survival.iid
+    }
+    return(out)
 }
 
 #' @rdname predictRiskIID
@@ -169,12 +170,25 @@ predictRiskIID.phreg <- predictRiskIID.coxph
 #' @rdname predictRiskIID
 #' @export
 predictRiskIID.CauseSpecificCox <- function(object,
+                                            type="absRisk",
                                             newdata,
                                             average.iid,
                                             factor = NULL,
                                             times,
+                                            diag,
                                             ...){
 
+    if(object$surv.type == "survival" && type == "survival"){
+        return(predictRiskIID(object$models[["OverallSurvival"]],
+                              newdata = newdata,
+                              average.iid = average.iid,
+                              factor = factor,
+                              times = times,
+                              diag = diag,
+                              ...
+                              ))
+    }
+    
     if(!is.null(factor)){
         n.times <- length(times)
         n.obs <- NROW(newdata)
@@ -185,23 +199,31 @@ predictRiskIID.CauseSpecificCox <- function(object,
         if(NROW(factor) != NROW(newdata)){
             stop("Argument \'factor\' must have the same number of rows as argument \'newdata\'. \n")
         }
-        attr(average.iid, "factor") <- factor
-    }    
+        attr(average.iid, "factor") <- sapply(1:NCOL(factor),function(iCol){
+            list(matrix(factor[,iCol,drop=FALSE], nrow = n.obs, ncol = 1, byrow = FALSE))
+        })
+    }
     resPred <- predict(object,
+                       type=type,
                        newdata = newdata,
                        times = times,
                        iid = !average.iid,
                        average.iid = average.iid,
+                       diag = diag,
                        ...)
+
+    out <- resPred$absRisk
+    
     if(average.iid){
-        if(!is.null(factor)){
-            return(resPred$absRisk.average.iid)
+        if(diag==2){
+            attr(out,"iid") <- list(do.call(cbind,resPred$absRisk.average.iid))
         }else{
-            return(list(resPred$absRisk.average.iid))
+            attr(out,"iid") <- resPred$absRisk.average.iid
         }
     }else{
-        return(resPred$absRisk.iid)
+        attr(out,"iid") <- resPred$absRisk.iid
     }
+    return(out)
 }
 
 

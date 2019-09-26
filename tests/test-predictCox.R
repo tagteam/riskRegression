@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: sep  4 2017 (10:38) 
 ## Version: 
-## last-updated: sep 25 2019 (09:37) 
+## last-updated: sep 26 2019 (17:27) 
 ##           By: Brice Ozenne
-##     Update #: 119
+##     Update #: 121
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -447,9 +447,12 @@ test_that("[predictCox] - fast iid average (no strata)",{
 
     ## simple average
     predRR.av <- predictCox(e.coxph, times = dt$time[1:5], average.iid = TRUE, newdata = dt,
-                            type = c("cumhazard","survival"))
+                            type = c("hazard","cumhazard","survival"))
     predRR.GS <- predictCox(e.coxph, times = dt$time[1:5], iid = TRUE, newdata = dt,
-                            type = c("cumhazard","survival"))
+                            type = c("hazard","cumhazard","survival"))
+
+    expect_equal(t(apply(predRR.GS$hazard.iid, MARGIN = 2:3,mean)),
+                 predRR.av$hazard.average.iid, tolerance = 1e-8)
 
     expect_equal(t(apply(predRR.GS$cumhazard.iid, MARGIN = 2:3,mean)),
                  predRR.av$cumhazard.average.iid, tolerance = 1e-8)
@@ -459,21 +462,36 @@ test_that("[predictCox] - fast iid average (no strata)",{
 
     ## weighted average
     fT <- TRUE
-    attr(fT, "factor") <- list(matrix(1, nrow = NROW(dt), ncol = 5),
+    attr(fT, "factor") <- list(matrix(5, nrow = NROW(dt), ncol = 5),
                                matrix(1:NROW(dt), nrow = NROW(dt), ncol = 5)
                                )
     
     predRR.av2 <- predictCox(e.coxph, times = sort(dt$time[1:5]), average.iid = fT, newdata = dt,
-                             type = c("cumhazard","survival"))
-    GS <- t(apply(predRR.GS$cumhazard.iid, MARGIN = 2:3, function(iCol){
-        mean(iCol * attr(fT, "factor")[[2]][,1])
-    }))
+                             type = c("hazard","cumhazard","survival"))
+    calcGS <- function(iid){
+        t(apply(iid, MARGIN = 2:3, function(iCol){
+            mean(iCol * attr(fT, "factor")[[2]][,1])
+        }))
+    }
 
-    expect_equal(predRR.av$cumhazard.average.iid[,order(dt$time[1:5])],
+    expect_equal(predRR.av$hazard.average.iid[,order(dt$time[1:5])]*5,
+                 predRR.av2$hazard.average.iid[[1]],
+                 tol = 1e-8)
+    expect_equal(predRR.av$cumhazard.average.iid[,order(dt$time[1:5])]*5,
                  predRR.av2$cumhazard.average.iid[[1]],
                  tol = 1e-8)
-    expect_equal(GS[,order(dt$time[1:5])],
+    expect_equal(predRR.av$survival.average.iid[,order(dt$time[1:5])]*5,
+                 predRR.av2$survival.average.iid[[1]],
+                 tol = 1e-8)
+
+    expect_equal(calcGS(predRR.GS$hazard.iid)[,order(dt$time[1:5])],
+                 predRR.av2$hazard.average.iid[[2]],
+                 tolerance = 1e-8)
+    expect_equal(calcGS(predRR.GS$cumhazard.iid)[,order(dt$time[1:5])],
                  predRR.av2$cumhazard.average.iid[[2]],
+                 tolerance = 1e-8)
+    expect_equal(calcGS(predRR.GS$survival.iid)[,order(dt$time[1:5])],
+                 predRR.av2$survival.average.iid[[2]],
                  tolerance = 1e-8)
 })
 
@@ -733,45 +751,51 @@ test_that("[predictCox] - iid average",{
     
     ## simple average
     predRR.av <- predictCox(eS.coxph, times = seqTime, average.iid = TRUE, newdata = dtStrata,
-                            type = c("cumhazard","survival"))
+                            type = c("hazard","cumhazard","survival"))
     predRR.GS <- predictCox(eS.coxph, times = seqTime, iid = TRUE, newdata = dtStrata,
-                            type = c("cumhazard","survival"))
+                            type = c("hazard","cumhazard","survival"))
 
-      
+    expect_equal(t(apply(predRR.GS$hazard.iid, MARGIN = 2:3,mean)),
+                 predRR.av$hazard.average.iid, tolerance = 1e-8)
+
     expect_equal(t(apply(predRR.GS$cumhazard.iid, MARGIN = 2:3,mean)),
                  predRR.av$cumhazard.average.iid, tolerance = 1e-8)
 
     expect_equal(t(apply(predRR.GS$survival.iid, MARGIN = 2:3,mean)),
                  predRR.av$survival.average.iid, tolerance = 1e-8)
 
-    
-    ## only one strata
-    index.strata1 <- dtStrata[,.I[strata == 1]]
-    predRR.avStrata1 <- predictCox(eS.coxph, times = seqTime, average.iid = TRUE, newdata = dtStrata[index.strata1],
-                                   type = c("cumhazard","survival"))
-
-    expect_equal(t(apply(predRR.GS$cumhazard.iid[index.strata1,,], MARGIN = 2:3,mean)),
-                 predRR.avStrata1$cumhazard.average.iid, tolerance = 1e-8)
-    expect_equal(t(apply(predRR.GS$survival.iid[index.strata1,,], MARGIN = 2:3,mean)),
-                 predRR.avStrata1$survival.average.iid, tolerance = 1e-8)
-
     ## weighted average
     fT <- TRUE
-    attr(fT, "factor") <- list(matrix(1, nrow = NROW(dtStrata), ncol = length(seqTime)),
-                               matrix(1:NROW(dtStrata), nrow = NROW(dtStrata), ncol = length(seqTime))
+    attr(fT, "factor") <- list(matrix(5, nrow = NROW(dtStrata), ncol = 6),
+                               matrix(1:NROW(dtStrata), nrow = NROW(dtStrata), ncol = 6)
                                )
     
     predRR.av2 <- predictCox(eS.coxph, times = sort(seqTime), average.iid = fT, newdata = dtStrata,
-                             type = c("cumhazard","survival"))
-    GS <- t(apply(predRR.GS$cumhazard.iid, MARGIN = 2:3, function(iCol){
-        mean(iCol * attr(fT, "factor")[[2]][,1])
-    }))
+                             type = c("hazard","cumhazard","survival"))
+    calcGS <- function(iid){
+        t(apply(iid, MARGIN = 2:3, function(iCol){
+            mean(iCol * attr(fT, "factor")[[2]][,1])
+        }))
+    }
 
-    expect_equal(predRR.av$cumhazard.average.iid[,order(seqTime)],
+    expect_equal(predRR.av$hazard.average.iid[,order(seqTime)]*5,
+                 predRR.av2$hazard.average.iid[[1]],
+                 tol = 1e-8)
+    expect_equal(predRR.av$cumhazard.average.iid[,order(seqTime)]*5,
                  predRR.av2$cumhazard.average.iid[[1]],
                  tol = 1e-8)
-    expect_equal(GS[,order(seqTime)],
+    expect_equal(predRR.av$survival.average.iid[,order(seqTime)]*5,
+                 predRR.av2$survival.average.iid[[1]],
+                 tol = 1e-8)
+
+    expect_equal(calcGS(predRR.GS$hazard.iid)[,order(seqTime)],
+                 predRR.av2$hazard.average.iid[[2]],
+                 tolerance = 1e-8)
+    expect_equal(calcGS(predRR.GS$cumhazard.iid)[,order(seqTime)],
                  predRR.av2$cumhazard.average.iid[[2]],
+                 tolerance = 1e-8)
+    expect_equal(calcGS(predRR.GS$survival.iid)[,order(seqTime)],
+                 predRR.av2$survival.average.iid[[2]],
                  tolerance = 1e-8)
 })
 

@@ -244,9 +244,9 @@ predictCox <- function(object,
             stop("When argument \'diag\' is TRUE, the number of rows in \'newdata\' must equal the length of \'times\' \n")
         }
     }
-    if(average.iid && (iid == FALSE) && ("hazard" %in% type)){
-        stop("Argument \'average.iid\' must be FALSE when argument \'type\' contains \"hazard\"\n")
-    }
+    ## if(average.iid && (iid == FALSE) && ("hazard" %in% type)){
+        ## stop("Argument \'average.iid\' must be FALSE when argument \'type\' contains \"hazard\"\n")
+    ## }
 
     if(!is.null(newdata)){
       if(missing(times) || nTimes[[1]]==0){
@@ -475,10 +475,16 @@ predictCox <- function(object,
         export <- c("iid"[(iid+band)>0],"se"[(se+band)>0],"average.iid"[average.iid==TRUE])
         if(!is.null(attr(average.iid,"factor"))){
             test.list <- !is.list(attr(average.iid,"factor"))
+            if(test.list){
+                stop("Attribute \"factor\" of argument \'average.iid\' must be a list \n")
+            }
             test.matrix <- any(unlist(lapply(attr(average.iid,"factor"), is.matrix))==FALSE)
+            if(test.matrix){
+                stop("Attribute \"factor\" of argument \'average.iid\' must be a list of matrices \n")
+            }
             test.dim <- any(unlist(lapply(attr(average.iid,"factor"), function(iM){dim(iM)==c(new.n, diag + (1-diag)*nTimes)}))==FALSE)
-            if(test.list || test.matrix || test.dim){
-                stop("Attribute \"factor\" of argument \'average.iid\' must be a list of matrix of size ",new.n,",",diag + (1-diag)*nTimes," \n")
+            if(test.dim){
+                stop("Attribute \"factor\" of argument \'average.iid\' must be a list of matrices of size ",new.n,",",diag + (1-diag)*nTimes," \n")
             }
             if(diag){
                 attr(export,"factor") <- attr(average.iid,"factor")
@@ -531,6 +537,17 @@ predictCox <- function(object,
             }
         }
         if(average.iid == TRUE){
+            if ("hazard" %in% type){
+                if (needOrder && (diag[1] == FALSE)){
+                    if(is.list(outSE$hazard.average.iid)){
+                        out$hazard.average.iid <- lapply(outSE$hazard.average.iid, function(iIID){iIID[,oorder.times,drop=0L]})
+                    }else{
+                        out$hazard.average.iid <- outSE$hazard.average.iid[,oorder.times,drop=0L]
+                    }
+                }else{
+                    out$hazard.average.iid <- outSE$hazard.average.iid
+                }
+            }
             if ("cumhazard" %in% type){
                 if (needOrder && (diag[1] == FALSE)){
                     if(is.list(outSE$cumhazard.average.iid)){

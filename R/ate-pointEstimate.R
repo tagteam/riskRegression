@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: jun 27 2019 (10:43) 
 ## Version: 
-## Last-Updated: sep 16 2019 (12:01) 
+## Last-Updated: sep 26 2019 (16:50) 
 ##           By: Brice Ozenne
-##     Update #: 391
+##     Update #: 435
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -99,6 +99,7 @@ ATE_TI <- function(object.event,
                    censorVar.status,
                    type.multistate,
                    return.iid,
+                   return.iid.nuisance,
                    product.limit,
                    ...){
 
@@ -109,10 +110,18 @@ ATE_TI <- function(object.event,
     
     ## ** prepare output
     out <- list()
+    if(return.iid){
+        attr(out,"iid.ate") <- vector(mode = "list", length = n.contrasts)
+    }
+    if(return.iid.nuisance){
+        attr(out,"iid.outcome") <- vector(mode = "list", length = n.contrasts)
+    }else if(return.iid){
+           attr(out,"iid.outcome") <- lapply(1:n.contrasts, function(iC){matrix(0, nrow = n.obs, ncol = n.times)})
+    }
     ## point estimate
     meanRisk <- matrix(NA, nrow = n.contrasts, ncol = n.times,
                        dimnames = list(contrasts, times))
-
+    
     ## ** compute event indicators
     if(attr(estimator,"IPTW")){
         ## *** indicator for the outcome of interest stopped at time tau
@@ -150,45 +159,6 @@ ATE_TI <- function(object.event,
     }
 
     ## ** compute predictions
-    ## *** outcome model (computation of Prob[T<=t,Delta=1|A,W] = F_1(t|A=a,W))
-    n.obs.contrasts <- rep(n.obs, n.contrasts)
-    if(attr(estimator,"Gformula")){
-        F1.ctf.tau <- lapply(1:n.contrasts, function(x){
-            matrix(0, nrow = n.obs, ncol = n.times,
-                   dimnames = list(NULL, times))
-        })
-        names(F1.ctf.tau) <- contrasts
-        
-        for(iC in 1:n.contrasts){
-            if(!is.null(treatment)){
-                ## hypothetical world: in which every subject is treated with the same treatment
-                data.i <- data.table::copy(data)
-                data.i[[treatment]] <- factor(contrasts[iC], levels = levels)
-                F1.ctf.tau[[iC]][] <- predictRisk(object.event, newdata = data.i, times = times, cause = cause, product.limit = product.limit)
-            }else{
-                ## hypothetical world: only patients with the same strata variable exist
-                index.strata <- which(data[[strata]]==contrasts[iC])
-                data.i <- data[index.strata]
-                n.obs.contrasts[iC] <- length(index.strata)
-                F1.ctf.tau[[iC]] <- matrix(0, nrow = n.obs, ncol = n.times)
-                F1.ctf.tau[[iC]][index.strata,] <- predictRisk(object.event, newdata = data.i, times = times, cause = cause, product.limit = product.limit)
-            }
-
-        }
-
-        if(attr(estimator,"integral")){
-            predTempo <- predictRisk(object.event, newdata = data, times = c(times, time.jumpC), cause = cause, product.limit = product.limit)
-            F1.tau <- predTempo[,1:n.times,drop=FALSE]
-            F1.jump <- predTempo[,n.times + (1:index.lastjumpC),drop=FALSE]
-
-            if(inherits(object.event,"CauseSpecificCox")){ ## competing risk case
-                S.jump <- predict(object.event, type = "survival", newdata = data, times = time.jumpC, product.limit = product.limit, iid = FALSE)$survival
-            }else{ ## survival case
-                S.jump <- 1 - F1.jump
-            }
-        }
-
-    }
     ## *** treatment model
     if(attr(estimator,"IPTW")){
         pi <- do.call(cbind,lapply(contrasts, function(iC){ ## iC <- 1
@@ -218,36 +188,86 @@ ATE_TI <- function(object.event,
         
         ## weights relative to the censoring
         iW.IPCW <- C.tau / G.T_tau
+
+    }
+
+    ## *** outcome model (computation of Prob[T<=t,Delta=1|A,W] = F_1(t|A=a,W))
+    n.obs.contrasts <- rep(n.obs, n.contrasts)
+    if(attr(estimator,"Gformula")){
+        F1.ctf.tau <- lapply(1:n.contrasts, function(x){
+            matrix(0, nrow = n.obs, ncol = n.times,
+                   dimnames = list(NULL, times))
+        })
+        names(F1.ctf.tau) <- contrasts
         
-#### for the augmentation term relative to the censoring process
-        if(attr(estimator,"integral")){
-
-            ## martingale for the censoring process
-            dN.jump <- matrix(0, nrow = n.obs, ncol = index.lastjumpC,
-                              dimnames = list(NULL, time.jumpC))
-            row.index <- which( (data[[eventVar.status]] == level.censoring)*(data[[eventVar.time]] <= max(time.jumpC)) == 1 )
-            for(iN in row.index){ ## iN <- row.index[1]
-                dN.jump[iN,which((time.jumpC == data[[eventVar.time]][iN]))] <- 1
+        for(iC in 1:n.contrasts){
+            
+            if(!is.null(treatment)){
+                ## hypothetical world: in which every subject is treated with the same treatment
+                index.strata <- 1:n.obs
+                data.i <- data.table::copy(data)
+                data.i[[treatment]] <- factor(contrasts[iC], levels = levels)
+            }else{
+                ## hypothetical world: only patients with the same strata variable exist
+                index.strata <- which(data[[strata]]==contrasts[iC])
+                data.i <- data[index.strata]
+                n.obs.contrasts[iC] <- length(index.strata)
             }
-
-            dLambda.jump <- predictCox(object.censor, newdata = data, times = time.jumpC, type = "hazard", ...)$hazard
-
-            dM.jump <- dN.jump - dLambda.jump
+            
+            if(return.iid.nuisance){
+                if(estimator %in% c("AIPTW","AIPTW,AIPCW")){
+                    factor <- cbind(1-iW.IPTW[,iC])
+                }else{
+                    factor <- matrix(1, nrow = NROW(data.i), ncol = 1)
+                }
+                outRisk <- predictRiskIID(object.event, newdata = data.i, times = times,
+                                          average.iid = TRUE, factor = factor, cause = cause,
+                                          product.limit = product.limit, diag = FALSE)
+                F1.ctf.tau[[iC]][index.strata,] <- outRisk
+                attr(out,"iid.outcome")[[iC]] <- attr(outRisk,"iid")[[1]]
+                dimnames(attr(out,"iid.outcome")[[iC]]) <- list(NULL, times)
+            }else{
+                F1.ctf.tau[[iC]][index.strata,] <- predictRisk(object.event, newdata = data.i, times = times, cause = cause, product.limit = product.limit)
+            }
 
         }
     }
-
+    
     ## ** Compute augmentation term    
     if(attr(estimator,"integral")){
-        augTerm <- .calcAugmentationTerm(G = G.jump[,1:index.lastjumpC], ## at t-
-                                         F1 = F1.jump,
-                                         F1.tau = F1.tau,
-                                         S = S.jump, 
-                                         dM = dM.jump,
-                                         index.store = index.maxjumpC,
-                                         n.obs = n.obs,
-                                         n.times = n.times,
-                                         n.jumps = max(index.lastjumpC))
+        ## absolute risk at event times
+        predTempo <- predictRisk(object.event, newdata = data, times = c(times, time.jumpC), cause = cause, product.limit = product.limit)
+        F1.tau <- predTempo[,1:n.times,drop=FALSE]
+        F1.jump <- predTempo[,n.times + (1:index.lastjumpC),drop=FALSE]
+
+        ## survival
+        if(inherits(object.event,"CauseSpecificCox")){ ## competing risk case
+            S.jump <- predict(object.event, type = "survival", newdata = data, times = time.jumpC, product.limit = product.limit, iid = FALSE)$survival
+        }else{ ## survival case
+            S.jump <- 1 - F1.jump
+        }
+
+        ## martingale for the censoring process
+        dN.jump <- matrix(0, nrow = n.obs, ncol = index.lastjumpC,
+                          dimnames = list(NULL, time.jumpC))
+        row.index <- which( (data[[eventVar.status]] == level.censoring)*(data[[eventVar.time]] <= max(time.jumpC)) == 1 )
+        for(iN in row.index){ ## iN <- row.index[1]
+            dN.jump[iN,which((time.jumpC == data[[eventVar.time]][iN]))] <- 1
+        }
+
+        dLambda.jump <- predictCox(object.censor, newdata = data, times = time.jumpC, type = "hazard", ...)$hazard
+
+        dM.jump <- dN.jump - dLambda.jump
+
+        ## integral
+        K <- dM.jump / (G.jump[,1:index.lastjumpC] * S.jump)
+        augTerm <- F1.tau * calcAugmentation_cpp(term = K,
+                                                 index = index.maxjumpC-1,
+                                                 nObs = n.obs,
+                                                 nTau = n.times) - calcAugmentation_cpp(term = K*F1.jump,
+                                                                                        index = index.maxjumpC-1,
+                                                                                        nObs = n.obs,
+                                                                                        nTau = n.times)
     }
        
     ## cumsum( (F1.tau[1,1] - F1.jump[1,])/(S.jump[1,] * G.jump[1,1:index.lastjumpC]) * dM.jump[1,] )
@@ -281,6 +301,9 @@ ATE_TI <- function(object.event,
     ## ** save quantities useful for the calculation of iid.nuisance
     if(return.iid){
         names(attr(out,"iid.ate")) <- contrasts
+        names(attr(out,"iid.outcome")) <- contrasts
+        attr(out,"n.obs") <- n.obs
+        attr(out,"n.times") <- n.times
         
         if(attr(estimator,"Gformula")){
             attr(out,"F1.ctf.tau") <- F1.ctf.tau            
@@ -309,8 +332,8 @@ ATE_TI <- function(object.event,
             attr(out,"G.jump") <- G.jump
             attr(out,"dM.jump") <- dM.jump
 
-            attr(out,"index.store") <- index.maxjumpC
-            attr(out,"n.jumps") <- max(index.lastjumpC)
+            attr(out,"store.jumps") <- index.maxjumpC
+            attr(out,"n.jumps") <- index.lastjumpC
         }
     }
 
@@ -337,30 +360,6 @@ ATE_TI <- function(object.event,
 }
                                         # }}}
 
-## * .calcAugmentationTerm
-## computes: int_{min(T,tau)} (F(tau) - F(t)) / (G(t) * S(t)) * dM(t) = F(tau) sum_{t \in min(T,tau)} K1(t) - sum_{t \in min(T,tau)} K2(t) 
-.calcAugmentationTerm <- function(F1, F1.tau, S, G, dM, 
-                                  index.store, n.obs, n.times, n.jumps){
-
-    K1 <- rowCumSum(dM / (G*S))
-    K2 <- rowCumSum(F1 * dM / (G*S))
-    
-    iTauStore <- 1:n.times
-
-    out <- matrix(0, nrow = n.obs, ncol = n.times)
-    for(iN in 1:n.obs){ ## iN <- 1
-        subset <- which(index.store[iN,]>0)
-        
-        if(length(subset)>0){
-            iJump <- index.store[iN,subset] 
-            iTau <- iTauStore[subset]
-
-            out[iN,iTau] <- (F1.tau[iN,iTau] * K1[iN,iJump] - K2[iN,iJump])
-        }
-    }
-
-    return(out)
-}
 
 ######################################################################
 ### ate-pointEstimate.R ends here
