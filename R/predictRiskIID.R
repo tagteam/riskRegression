@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: jun 28 2019 (14:38) 
 ## Version: 
-## Last-Updated: sep 26 2019 (16:52) 
+## Last-Updated: sep 27 2019 (11:43) 
 ##           By: Brice Ozenne
-##     Update #: 115
+##     Update #: 118
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -96,6 +96,7 @@ predictRiskIID.glm <- function(object,
             if(length(index.level)==2){
                 stop("Unknown value for the outcome variable \n")
             }else if(index.level == 1){
+                resPred <- 1 - resPred
                 attr(resPred,"iid") <- - attr(resPred,"iid")
             }
         }

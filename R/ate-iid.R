@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: apr  5 2018 (17:01) 
 ## Version: 
-## Last-Updated: sep 26 2019 (17:34) 
+## Last-Updated: sep 27 2019 (11:22) 
 ##           By: Brice Ozenne
-##     Update #: 674
+##     Update #: 676
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -219,6 +219,7 @@ iidATE <- function(estimator,
     for(iC in 1:n.contrasts){
         iid.total[[iC]] <- iid.ate[[iC]] + iid.outcome[[iC]] + iid.treatment[[iC]] + iid.survival[[iC]] + iid.censoring[[iC]]
     }
+    names(iid.total) <- contrasts
     
     return(iid.total)            
 }

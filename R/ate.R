@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Oct 23 2016 (08:53) 
 ## Version: 
-## last-updated: sep 26 2019 (17:42) 
+## last-updated: sep 27 2019 (11:21) 
 ##           By: Brice Ozenne
-##     Update #: 1379
+##     Update #: 1415
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -45,6 +45,9 @@
 #' @param se [logical] If \code{TRUE} compute and add the standard errors to the output.
 #' @param band [logical] If \code{TRUE} compute and add the quantiles for the confidence bands to the output.
 #' @param iid [logical] If \code{TRUE} compute and add the influence function to the output.
+#' @param known.nuisance [logical] If \code{FALSE} the uncertainty related to the estimation of the nuisance parameters is ignored.
+#' This greatly simplifies computations but requires to use a double robust estimator
+#' and to assumes that all event, treatment, and censoring models are valid to obtain consistent standard errors.
 #' @param B [integer, >0] the number of bootstrap replications used to compute the confidence intervals.
 #' If it equals 0, then the influence function is used to compute Wald-type confidence intervals/bands.
 #' @param seed [integer, >0] sed number used to generate seeds for bootstrap
@@ -250,6 +253,7 @@ ate <- function(event,
                 landmark,
                 se = TRUE,
                 iid = FALSE,
+                known.nuisance = FALSE,
                 band = FALSE,
                 B = 0,
                 seed,
@@ -302,7 +306,7 @@ ate <- function(event,
     dots$product.limit <- init$product.limit
 
     return.iid <- (se || band || iid) && (B==0)
-    return.iid.nuisance <- return.iid && (is.null(attr(iid,"nuisance")) || (attr(iid,"nuisance")==TRUE))
+    return.iid.nuisance <- return.iid && (known.nuisance == FALSE)
     
     ## ** check consistency of the user arguments
     check <- ate_checkArgs(object.event = object.event,
@@ -318,6 +322,7 @@ ate <- function(event,
                            landmark = landmark,
                            se = se,
                            iid = iid,
+                           return.iid.nuisance = return.iid.nuisance,
                            band = band,
                            B = B,
                            seed = seed,
@@ -372,7 +377,11 @@ ate <- function(event,
             cat("     Calculation of the average treatment effect \n\n", sep = "")
             cat(" - Estimator         : ",estimator,"\n",sep="")
             cat(" - Treatment variable: ",treatment," (",length(contrasts)," levels)\n",sep="")
-            cat(" - Event variable    : ",eventVar.status," (cause: ",cause,", censoring: ",level.censoring,")\n",sep="")
+            if(length(level.censoring)==0){
+                cat(" - Event variable    : ",eventVar.status," (cause: ",cause,", no censoring)\n",sep="")
+            }else{
+                cat(" - Event variable    : ",eventVar.status," (cause: ",cause,", censoring: ",level.censoring,")\n",sep="")
+            }
             cat(" - Time variable     : ",eventVar.time,"\n",sep="")
         }
         cat("\n")
@@ -493,7 +502,6 @@ ate <- function(event,
             if (verbose>1){ 
                 cat(" - Functional delta method: ")
             }
-
             if(return.iid.nuisance){ ## compute iid decomposition relative to the nuisance parameters
 
                 if(estimator=="Gformula"){
@@ -540,7 +548,7 @@ ate <- function(event,
                  old = c("Treatment.A","Treatment.B"),
                  new = paste0(strata,c(".A",".B")))
     }
-    
+
     out <- list(meanRisk = pointEstimate$meanRisk,
                 riskComparison = pointEstimate$riskComparison,
                 iid = outIID,
@@ -554,18 +562,14 @@ ate <- function(event,
                 boot = boot.object,
                 seeds = bootseeds)
 
-  
-    class(out) <- c("ate",class(object.event))
+
+    class(out) <- c("ate")
     if(se || band){
         if (verbose>1){ ## display
             cat(" - Confidence intervals: ")
         }
         ## FIXME: odd to have confint read and return everything 
-        try.ci <- try(this <- stats::confint(out),silent=TRUE)
-        if (class(try.ci)[1]=="try-error"){
-        }else{
-            out <- this
-        }
+        out <- stats::confint(out)
         if(iid == FALSE){
             out$iid <- NULL
         }
@@ -653,6 +657,19 @@ ate_initArgs <- function(object.event,
         eventVar.time <- responseVar$time
         eventVar.status <- responseVar$status
         type.multistate <- "competing.risks"
+    }else{ ## no outcome model
+        if(identical(names(object.event),c("time","status"))){
+            eventVar.time <- object.event[1]
+            eventVar.status <- object.event[2]
+        }else if(identical(names(object.event),c("status","time"))){
+            eventVar.status <- object.event[1]
+            eventVar.time <- object.event[2]
+        }else{            
+            eventVar.time <- object.event[1]
+            eventVar.status <- object.event[2]
+        }
+        type.multistate <- "NA"
+        object.event <- NULL
     }
     
     ## censoring
@@ -838,6 +855,7 @@ ate_checkArgs <- function(object.event,
                           landmark,
                           se,
                           iid,
+                          return.iid.nuisance,
                           band,
                           B,
                           confint,
@@ -1056,6 +1074,13 @@ ate_checkArgs <- function(object.event,
         }
     }
     
+    ## ** iid.nuisance
+    if((return.iid.nuisance == FALSE) & (iid == TRUE) & (estimator %in% c("AIPTW","AIPTW,AIPCW"))){
+        warning("Ignoring the uncertainty associated with the estimation of the nuisance parameters may lead to inconsistent standard errors. \n",
+                "Consider using a double robust estimator or setting the argument \'known.nuisance\' to TRUE \n")
+    }
+    
+
     ## ** output
     return(TRUE)
 }

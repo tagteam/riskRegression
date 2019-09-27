@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: jun 27 2019 (10:43) 
 ## Version: 
-## Last-Updated: sep 26 2019 (16:50) 
+## Last-Updated: sep 27 2019 (11:15) 
 ##           By: Brice Ozenne
-##     Update #: 435
+##     Update #: 438
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -114,9 +114,7 @@ ATE_TI <- function(object.event,
         attr(out,"iid.ate") <- vector(mode = "list", length = n.contrasts)
     }
     if(return.iid.nuisance){
-        attr(out,"iid.outcome") <- vector(mode = "list", length = n.contrasts)
-    }else if(return.iid){
-           attr(out,"iid.outcome") <- lapply(1:n.contrasts, function(iC){matrix(0, nrow = n.obs, ncol = n.times)})
+        attr(out,"iid.outcome") <- lapply(1:n.contrasts, function(iC){matrix(0, nrow = n.obs, ncol = n.times)})
     }
     ## point estimate
     meanRisk <- matrix(NA, nrow = n.contrasts, ncol = n.times,
@@ -299,7 +297,7 @@ ATE_TI <- function(object.event,
     }
 
     ## ** save quantities useful for the calculation of iid.nuisance
-    if(return.iid){
+    if(return.iid.nuisance){
         names(attr(out,"iid.ate")) <- contrasts
         names(attr(out,"iid.outcome")) <- contrasts
         attr(out,"n.obs") <- n.obs
