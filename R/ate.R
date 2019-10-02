@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Oct 23 2016 (08:53) 
 ## Version: 
-## last-updated: sep 27 2019 (11:21) 
+## last-updated: okt  2 2019 (17:04) 
 ##           By: Brice Ozenne
-##     Update #: 1415
+##     Update #: 1435
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -152,7 +152,7 @@
 #' a <- p["(Intercept)"] ; b <- p["X11"] ; c <- p["X2"] ;
 #' R.X11 <- expit(a + b + c * data[["X2"]])
 #' R.X10 <- expit(a + c * data[["X2"]])
-#' list(risk0=R.X10,risk1=R.X11,riskdiff=R.X10-R.X11)},
+#' list(risk0=R.X10,risk1=R.X11,riskdiff=R.X11-R.X10)},
 #' average=TRUE)
 #' ateLava
 #' }
@@ -508,6 +508,8 @@ ate <- function(event,
                     ## no extra computation required
                     outIID <- lapply(1:length(contrasts), function(iC){attr(pointEstimate, "iid.ate")[[iC]] + attr(pointEstimate, "iid.outcome")[[iC]]})
                     names(outIID) <- contrasts
+                    attr(outIID,"ate") <- attr(pointEstimate, "iid.ate")
+                    attr(outIID,"outcome") <- attr(pointEstimate, "iid.outcome")
                 }else{
                     ## add pre-computed quantities
                     name.attributes <- setdiff(names(attributes(pointEstimate)),"names")
@@ -703,11 +705,30 @@ ate_initArgs <- function(object.event,
             censorVar.time <- info.censor$time
         }
     }else{
-        n.censor <- 0
+        if(!missing(myformula.censor)){ ## could be IPTW,IPCW 
+            censoringMF <- coxModelFrame(object.censor)
+            test.censor <- censoringMF$status == 1
+            n.censor <- sapply(times, function(t){sum(test.censor * (censoringMF$stop <= t))})
+
+            info.censor <- try(SurvResponseVar(coxFormula(object.censor)), silent = TRUE)
+            if(inherits(info.censor,"try-error")){
+                censorVar.status <- NA
+                censorVar.time <- NA
+            }else{
+                censorVar.status <- info.censor$status
+                censorVar.time <- info.censor$time
+            }
+
+            level.censoring <- try(unique(data[[censorVar.status]][test.censor]), silent = TRUE)
+
+        }else{ ## or just logistic regression 
+            n.censor <- 0
+
+            level.censoring <- NA
+            censorVar.status <- NA
+            censorVar.time <- NA
+        }
         
-        level.censoring <- NA
-        censorVar.status <- NA
-        censorVar.time <- NA
     }
 
     ## treatment
@@ -756,7 +777,7 @@ ate_initArgs <- function(object.event,
     }
 
     n.obs <- NROW(data)
-        
+
     ## estimator
     if(!is.null(object.event) && is.null(object.treatment)){
         if(TD){
@@ -1074,8 +1095,8 @@ ate_checkArgs <- function(object.event,
         }
     }
     
-    ## ** iid.nuisance
-    if((return.iid.nuisance == FALSE) & (iid == TRUE) & (estimator %in% c("AIPTW","AIPTW,AIPCW"))){
+    ## ** iid.nuisance    
+    if((return.iid.nuisance == FALSE) & (iid == TRUE) & (estimator %in% c("AIPTW","AIPTW,AIPCW") == FALSE)){
         warning("Ignoring the uncertainty associated with the estimation of the nuisance parameters may lead to inconsistent standard errors. \n",
                 "Consider using a double robust estimator or setting the argument \'known.nuisance\' to TRUE \n")
     }

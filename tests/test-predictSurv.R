@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: aug 28 2018 (10:06) 
 ## Version: 
-## Last-Updated: sep 25 2019 (12:19) 
+## Last-Updated: okt  2 2019 (11:39) 
 ##           By: Brice Ozenne
-##     Update #: 29
+##     Update #: 35
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -15,7 +15,7 @@
 ## 
 ### Code:
 
-library(riskRegression)
+##library(riskRegression)
 library(rms)
 library(survival)
 library(testthat)
@@ -28,12 +28,12 @@ d <- sampleData(2e2, outcome = "competing.risk")
 d.pred <- d[5:15]
 seqTime <- c(0,d[["time"]][5:15],2.45,1e5)
 
-## ** hazard CSC
+## ** type=survival CSC
 e.CSC <- CSC(Hist(time, event)~ strata(X1) + strata(X2), data = d, surv.type = "hazard")
 e.cox <- coxph(Surv(time, event>0)~ strata(X1) + strata(X2), data = d, x = TRUE, y = TRUE)
 ## e.cox <- coxph(Surv(time, event>0)~ 1, data = d, x = TRUE, y = TRUE)
 
-test_that("predictSurv (hazard)", {
+test_that("predictSurv (type=survival)", {
     ## diag = FALSE 
     test <- predict(e.CSC, type = "survival", newdata = d.pred, times = seqTime,
                     product.limit = FALSE, iid = TRUE, se = TRUE, average.iid = TRUE)
@@ -62,7 +62,7 @@ test_that("predictSurv (hazard)", {
                  testPL$survival.average.iid)
 })
 
-test_that("predictSurv (hazard,diag)", {
+test_that("predictSurv (type=survival,diag)", {
     ## diag = FALSE 
     test <- predict(e.CSC, type = "survival", newdata = d.pred, times = d.pred$time,
                     diag = TRUE, product.limit = FALSE, iid = TRUE, se = TRUE, average.iid = TRUE)
@@ -93,7 +93,7 @@ test_that("predictSurv (hazard,diag)", {
 
 
 ## ** survival CSC
-expect_equal("[predictCSC] vs. predictCox (no strata) - surv.type=\"survival\"",{
+test_that("[predictCSC] vs. predictCox (no strata) - surv.type=\"survival\"",{
     e.CSC <- CSC(Hist(time, event)~ X6, data = d, surv.type = "survival")
     jumpTime <- e.CSC$eventTimes[e.CSC$eventTimes <= max(seqTime)]
     
@@ -116,7 +116,7 @@ expect_equal("[predictCSC] vs. predictCox (no strata) - surv.type=\"survival\"",
     expect_equal(GS$survival.average.iid,test$survival.average.iid)
 })
 
-expect_equal("[predictCSC] vs. predictCox (strata) - surv.type=\"survival\"",{
+test_that("[predictCSC] vs. predictCox (strata) - surv.type=\"survival\"",{
     e.CSC <- CSC(Hist(time, event)~ X6 + strata(X1), data = d, surv.type = "survival")
     
     test <- predict(e.CSC, type = "survival", times = jumpTime,

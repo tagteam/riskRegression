@@ -1,11 +1,11 @@
-### iid.R --- 
+### predictGLM.R --- 
 ##----------------------------------------------------------------------
 ## Author: Brice Ozenne
 ## Created: jul  5 2018 (13:29) 
 ## Version: 
-## Last-Updated: maj  6 2019 (14:42) 
+## Last-Updated: okt  2 2019 (11:41) 
 ##           By: Brice Ozenne
-##     Update #: 34
+##     Update #: 38
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -75,6 +75,12 @@ predictGLM <- function(object, newdata, average.iid = FALSE){
             factor <- matrix(1, nrow = n.obs, ncol = 1)
         }else{
             factor <- attr(average.iid, "factor")
+            if(!is.matrix(factor)){
+                stop("Attribute \'factor\' for argument \'average.iid\' must be a matrix \n")
+            }
+            if(NROW(factor) != NROW(newdata)){
+                stop("Attribute \'factor\' for argument \'average.iid\' must have the same number of rows as argument \'newdata\' \n")
+            }
         }
         n.factor <- NCOL(factor)
     }
@@ -119,4 +125,4 @@ predictGLM <- function(object, newdata, average.iid = FALSE){
 }
 
 ######################################################################
-### iid.R ends here
+### predictGLM.R ends here

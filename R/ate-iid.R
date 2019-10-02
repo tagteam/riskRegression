@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: apr  5 2018 (17:01) 
 ## Version: 
-## Last-Updated: sep 27 2019 (11:22) 
+## Last-Updated: okt  2 2019 (17:03) 
 ##           By: Brice Ozenne
-##     Update #: 676
+##     Update #: 699
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -68,6 +68,7 @@ iidATE <- function(estimator,
     if(attr(estimator,"integral")){
         SG <- S.jump*G.jump[,1:n.jumps]
         dM_SG <- dM.jump/SG
+        dM_SSG <- dM_SG/S.jump
         dM_SGG <- dM_SG/G.jump[,1:n.jumps]
         ls.F1tau_F1t <- lapply(1:n.times, function(iT){-colCenter_cpp(F1.jump, center = F1.tau[,iT])})
         ls.F1tau_F1t_dM_SG <- lapply(1:n.times, function(iT){ls.F1tau_F1t[[iT]]*dM_SG})
@@ -110,6 +111,8 @@ iidATE <- function(estimator,
         for(iTau in 1:n.times){ ## iTau <- 1
             index.col <- prodlim::sindex(jump.times = c(0,time.jumpC), eval.times = pmin(data[[eventVar.time]],times[iTau]))
             factor <- colMultiply_cpp(iW.IPTW, scale = int.IFF1_tau[(1:n.obs) + (index.col-1) * n.obs])
+
+            ## outputs -IF_S or IF_r : ok
             term.intF1_tau <- attr(predictRiskIID(object.event, newdata = data, times = times[iTau], cause = cause,
                                                   average.iid = TRUE, factor = factor, diag = FALSE),"iid")
 
@@ -120,14 +123,27 @@ iidATE <- function(estimator,
         
         ## **** integral outcome model at t
         for(iC in 1:n.contrasts){ ## iC <- 1
-            factor <- -colMultiply_cpp(dM_SG, scale = iW.IPTW[,iC])
-            term.intF1_t <- attr(predictRiskIID(object.event, newdata = data, times = time.jumpC, cause = cause,
-                                                average.iid = TRUE, factor = factor, diag = 2), "iid")[[1]]
+            if(inherits(object.event,"CauseSpecificCox")){
+                ## uncertainty of the numerator only
+                factor <- -colMultiply_cpp(dM_SG, scale = iW.IPTW[,iC])
+                term.intF1_t <- attr(predictRiskIID(object.event, newdata = data, times = time.jumpC, cause = cause,
+                                                    average.iid = TRUE, factor = factor, diag = 2), "iid")[[1]]
 
-            iid.outcome[[iC]] <- iid.outcome[[iC]] + calcAugmentation_cpp(term = term.intF1_t,
-                                                                          index = store.jumps-1,
-                                                                          nObs = n.obs,
-                                                                          nTau = n.times)
+                iid.outcome[[iC]] <- iid.outcome[[iC]] + calcAugmentation_cpp(term = term.intF1_t,
+                                                                              index = store.jumps-1,
+                                                                              nObs = n.obs,
+                                                                              nTau = n.times)
+            }else{
+                ## also integrate the uncertainty of the denominator
+                factor <- -colMultiply_cpp(dM_SSG, scale = iW.IPTW[,iC])                                
+                term.intF1_t <- attr(predictRiskIID(object.event, newdata = data, times = time.jumpC, cause = cause,
+                                                    average.iid = TRUE, factor = factor, diag = 2), "iid")[[1]]
+                
+                iid.outcome[[iC]] <- iid.outcome[[iC]] + F1.tau * calcAugmentation_cpp(term = term.intF1_t,
+                                                                                       index = store.jumps-1,
+                                                                                       nObs = n.obs,
+                                                                                       nTau = n.times)
+            }
         }
     }
 
@@ -150,13 +166,12 @@ iidATE <- function(estimator,
                                                   average.iid = TRUE,
                                                   factor = factor,
                                                   level = contrasts[iC]), "iid")
-
             iid.treatment[[iC]] <- do.call(cbind,term.treatment)
         }
     }
      
     ## *** survival term
-    if(attr(estimator,"integral")){
+    if(attr(estimator,"integral") && inherits(object.event,"CauseSpecificCox")){
         for(iTau in 1:n.times){ ## iTau <- 1
             for(iC in 1:n.contrasts){ ## iC <- 1
                 factor <- -colMultiply_cpp(ls.F1tau_F1t_dM_SSG[[iTau]], scale = iW.IPTW[,iC])
@@ -171,18 +186,21 @@ iidATE <- function(estimator,
         }
     }
     
-    ## *** censoring/survival model
+    ## *** censoring model
     if(attr(estimator,"IPCW")){
 
         ## **** IPCW
         for(iTau in 1:n.times){ ## iTau <- 1
-            factor <- colMultiply_cpp(iW.IPTW, scale =  -iW.IPCW2[,iTau]*Y.tau[,iTau])
-            term.censoring <- predictRiskIID(object.censor,
-                                             newdata = data,
-                                             times = pmin(times[iTau], data[[eventVar.time]] - tol),
-                                             diag = TRUE,
-                                             average.iid = TRUE,
-                                             factor = factor)
+            iW.IPCW2.Y <- iW.IPCW2[,iTau]*Y.tau[,iTau]
+            avTempo <- TRUE
+            attr(avTempo,"factor") <- lapply(1:n.contrasts, function(iC){cbind(-iW.IPTW[,iC]*iW.IPCW2.Y)})
+            
+            term.censoring <- predictCox(object.censor,
+                                         newdata = data,
+                                         times = pmin(times[iTau], data[[eventVar.time]] - tol),
+                                         diag = TRUE,
+                                         average.iid = avTempo)$survival.average.iid
+
             for(iC in 1:n.contrasts){ ## iC <- 1 
                 iid.censoring[[iC]][,iTau] <- term.censoring[[iC]]
             }
@@ -220,7 +238,12 @@ iidATE <- function(estimator,
         iid.total[[iC]] <- iid.ate[[iC]] + iid.outcome[[iC]] + iid.treatment[[iC]] + iid.survival[[iC]] + iid.censoring[[iC]]
     }
     names(iid.total) <- contrasts
-    
+    attr(iid.total,"ate") <- iid.ate
+    attr(iid.total,"outcome") <- iid.outcome
+    attr(iid.total,"treatment") <- iid.treatment
+    attr(iid.total,"survival") <- iid.survival
+    attr(iid.total,"censoring") <- iid.censoring
+
     return(iid.total)            
 }
 

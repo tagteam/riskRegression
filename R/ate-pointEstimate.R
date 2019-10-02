@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: jun 27 2019 (10:43) 
 ## Version: 
-## Last-Updated: sep 27 2019 (11:15) 
+## Last-Updated: okt  2 2019 (15:09) 
 ##           By: Brice Ozenne
-##     Update #: 438
+##     Update #: 454
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -123,7 +123,11 @@ ATE_TI <- function(object.event,
     ## ** compute event indicators
     if(attr(estimator,"IPTW")){
         ## *** indicator for the outcome of interest stopped at time tau
-        time.before.tau <- sapply(times, function(tau){data[[eventVar.time]] <= tau})
+        if(inherits(object.event,"glm")){
+            time.before.tau <- cbind(data[[eventVar.status]])
+        }else{
+            time.before.tau <- sapply(times, function(tau){data[[eventVar.time]] <= tau})
+        }
         
         Y.tau <- colMultiply_cpp(time.before.tau,
                                  scale = (data[[eventVar.status]] == cause)
@@ -222,6 +226,7 @@ ATE_TI <- function(object.event,
                                           average.iid = TRUE, factor = factor, cause = cause,
                                           product.limit = product.limit, diag = FALSE)
                 F1.ctf.tau[[iC]][index.strata,] <- outRisk
+
                 attr(out,"iid.outcome")[[iC]] <- attr(outRisk,"iid")[[1]]
                 dimnames(attr(out,"iid.outcome")[[iC]]) <- list(NULL, times)
             }else{
@@ -297,8 +302,10 @@ ATE_TI <- function(object.event,
     }
 
     ## ** save quantities useful for the calculation of iid.nuisance
-    if(return.iid.nuisance){
+    if(return.iid){
         names(attr(out,"iid.ate")) <- contrasts
+    }
+    if(return.iid.nuisance){
         names(attr(out,"iid.outcome")) <- contrasts
         attr(out,"n.obs") <- n.obs
         attr(out,"n.times") <- n.times
