@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: jul  5 2018 (13:29) 
 ## Version: 
-## Last-Updated: okt  2 2019 (11:41) 
+## Last-Updated: okt  4 2019 (15:55) 
 ##           By: Brice Ozenne
-##     Update #: 38
+##     Update #: 44
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -72,14 +72,20 @@ predictGLM <- function(object, newdata, average.iid = FALSE){
     ## ** prepare average.iid
     if(average.iid){
         if(is.null(attr(average.iid,"factor"))){
-            factor <- matrix(1, nrow = n.obs, ncol = 1)
+            factor <- list(matrix(1, nrow = n.obs, ncol = 1))
         }else{
             factor <- attr(average.iid, "factor")
-            if(!is.matrix(factor)){
-                stop("Attribute \'factor\' for argument \'average.iid\' must be a matrix \n")
+            if(is.matrix(factor)){
+                factor <- list(factor)
             }
-            if(NROW(factor) != NROW(newdata)){
-                stop("Attribute \'factor\' for argument \'average.iid\' must have the same number of rows as argument \'newdata\' \n")
+            if(!is.list(factor)){
+                stop("Attribute \'factor\' for argument \'average.iid\' must be a list \n")
+            }
+            if(any(sapply(factor, is.matrix)==FALSE)){
+                stop("Attribute \'factor\' for argument \'average.iid\' must be a list of matrices \n")
+            }
+            if(any(sapply(factor, function(iF){NROW(iF)==NROW(newdata)})==FALSE)){
+                stop("Attribute \'factor\' for argument \'average.iid\' must be a list of matrices with ",NROW(newdata)," rows \n")
             }
         }
         n.factor <- NCOL(factor)
@@ -107,10 +113,15 @@ predictGLM <- function(object, newdata, average.iid = FALSE){
         ## newX %*% coef(object) - Xbeta
         Xbeta <- predict(object, type = "link", newdata = newdata, se=FALSE)
         if(average.iid){
-            E.X <- apply(factor, 2, function(iFactor){ ## iFactor <- factor[,1]
-                colMeans(colMultiply_cpp(newX, scale = iFactor * exp(-Xbeta)/(1+exp(-Xbeta))^2))
+            attr(out, "iid") <- lapply(factor, function(iFactor){
+                iE.X <- apply(iFactor, 2, function(iiFactor){ ## iiFactor <- factor[[1]][,1]
+                    colMeans(colMultiply_cpp(newX, scale = iiFactor * exp(-Xbeta)/(1+exp(-Xbeta))^2))
+                })
+                return(iid.beta %*% iE.X)
             })
-            attr(out, "iid") <- iid.beta %*% E.X            
+            if(is.null(attr(average.iid,"factor"))){
+                attr(out, "iid") <- attr(out, "iid")[[1]]
+            }
         }else{
             attr(out, "iid") <- t(sapply(1:n.obs, function(iObs){ ## iObs <- 1
                 iid.beta %*% cbind(newX[iObs,]) * exp(-Xbeta[iObs])/(1+exp(-Xbeta[iObs]))^2

@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Oct 23 2016 (08:53) 
 ## Version: 
-## last-updated: okt  2 2019 (17:04) 
+## last-updated: okt  4 2019 (16:01) 
 ##           By: Brice Ozenne
-##     Update #: 1435
+##     Update #: 1453
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -272,7 +272,7 @@ ate <- function(event,
 
     ## ** initialize arguments
     data.table::setDT(data)
-
+    
     init <- ate_initArgs(object.event = event,
                          object.treatment = treatment,
                          object.censor = censor,
@@ -307,6 +307,12 @@ ate <- function(event,
 
     return.iid <- (se || band || iid) && (B==0)
     return.iid.nuisance <- return.iid && (known.nuisance == FALSE)
+    if("method.iid" %in% names(dots)){
+        method.iid <- dots$method.iid
+        dots$method.iid <- NULL
+    }else{
+        method.iid <- 1
+    }
     
     ## ** check consistency of the user arguments
     check <- ate_checkArgs(object.event = object.event,
@@ -341,6 +347,10 @@ ate <- function(event,
                            )
 
     ## ** Prepare
+    test.Cox <- inherits(object.event,"coxph") || inherits(object.event,"cph") || inherits(object.event,"phreg")
+    test.CSC <- inherits(object.event,"CauseSpecificCox")
+    test.glm <- inherits(object.event,"glm")
+
     if(!is.null(strata)){
         data[[strata]] <- factor(data[[strata]])        
         if(is.null(contrasts)){
@@ -385,32 +395,54 @@ ate <- function(event,
             cat(" - Time variable     : ",eventVar.time,"\n",sep="")
         }
         cat("\n")
-        cat(" - Point estimation:")
-        
     }
 
+    ## ** Compute influence function relative to each Cox model (if not already done)
+    if(return.iid){
+        if(verbose>1){
+            cat(" - Prepare influence function:")
+        }
+
+        if(attr(estimator,"Gformula") && (test.Cox || test.CSC) && identical(is.iidCox(object.event),FALSE)){
+            if(verbose>1){cat(" outcome")}
+            object.event <- iidCox(object.event, tau.max = max(times), return.object = TRUE)
+        }
+
+        if(attr(estimator,"IPCW")){
+            if(identical(is.iidCox(object.censor$iid),FALSE)){
+                if(verbose>1){cat(" censoring")}
+                object.censor$iid <- iidCox(object.censor, tau.max = max(times))
+            }
+        }
+        if(verbose>1){cat(" done \n")}
+    }
+    
     ## ** Point estimate
+    if(verbose>1){
+        cat(" - Point estimation:")
+    }
     args.pointEstimate <- c(list(object.event = object.event,
-                               object.censor = object.censor,
-                               object.treatment = object.treatment,
-                               data=data,
-                               treatment=treatment,
-                               strata=strata,
-                               contrasts=contrasts,
-                               levels=levels,
-                               times=times,
-                               cause=cause,
-                               landmark=landmark,
-                               n.censor = n.censor,
-                               level.censoring = level.censoring,
-                               estimator = estimator,
-                               eventVar.time = eventVar.time,
-                               eventVar.status = eventVar.status,
-                               censorVar.time = censorVar.time,
-                               censorVar.status = censorVar.status,
-                               return.iid = return.iid,
-                               return.iid.nuisance = return.iid.nuisance),
-                               dots)
+                                 object.censor = object.censor,
+                                 object.treatment = object.treatment,
+                                 data=data,
+                                 treatment=treatment,
+                                 strata=strata,
+                                 contrasts=contrasts,
+                                 levels=levels,
+                                 times=times,
+                                 cause=cause,
+                                 landmark=landmark,
+                                 n.censor = n.censor,
+                                 level.censoring = level.censoring,
+                                 estimator = estimator,
+                                 eventVar.time = eventVar.time,
+                                 eventVar.status = eventVar.status,
+                                 censorVar.time = censorVar.time,
+                                 censorVar.status = censorVar.status,
+                                 return.iid = return.iid,
+                                 return.iid.nuisance = return.iid.nuisance,
+                                 method.iid = method.iid),
+                            dots)
     if (TD){       
         args.pointEstimate <- c(args.pointEstimate,list(formula=formula))
     }
@@ -517,7 +549,11 @@ ate <- function(event,
                         args.pointEstimate[[iAttr]] <- attr(pointEstimate, iAttr)
                     }
                     ## compute extra term and assemble
-                    outIID <- do.call(iidATE, args.pointEstimate)
+                    if(identical(method.iid,2)){
+                        outIID <- do.call(iidATE2, args.pointEstimate)
+                    }else{
+                        outIID <- do.call(iidATE, args.pointEstimate)
+                    }
                 }
                 
             }else{ ## ignore that the nuisance parameters have been estimated
@@ -635,6 +671,8 @@ ate_initArgs <- function(object.event,
         object.censor <- rms::cph(myformula.censor, data = data, x = TRUE, y = TRUE)
     }else if(inherits(object.censor,"coxph") || inherits(object.censor,"cph") || inherits(object.censor,"phreg")){
         myformula.censor <- coxFormula(object.censor)
+    }else{
+        myformula.censor <- NULL
     }
 
     test.CSC <- inherits(object.event,"CauseSpecificCox")
@@ -705,7 +743,7 @@ ate_initArgs <- function(object.event,
             censorVar.time <- info.censor$time
         }
     }else{
-        if(!missing(myformula.censor)){ ## could be IPTW,IPCW 
+        if(!is.null(myformula.censor)){ ## could be IPTW,IPCW 
             censoringMF <- coxModelFrame(object.censor)
             test.censor <- censoringMF$status == 1
             n.censor <- sapply(times, function(t){sum(test.censor * (censoringMF$stop <= t))})
@@ -1081,6 +1119,9 @@ ate_checkArgs <- function(object.event,
         }
         if(any(freq.event < 0.01) || any(count.event < 5)  ){
             warning("Rare event, possible violation of the positivity assumption \n")
+        }
+        if(any(data[[eventVar.time]]<=0)){
+            stop("The time to event variable should only take strictly positive values \n")
         }
     }
 

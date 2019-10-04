@@ -591,8 +591,8 @@ List calcSeCif2_cpp(const std::vector<arma::mat>& ls_IFbeta, const std::vector<a
   }
   
   // ** prepare the influence function
-  arma::uvec iUvec_linspace;
-  arma::uvec iUvec_strata;
+  arma::uvec iUvec_linspace(1);
+  arma::uvec iUvec_strata(1);
 
   for(int iNewObs=startObs; iNewObs<nNewObs; iNewObs++){
 
@@ -621,7 +621,7 @@ List calcSeCif2_cpp(const std::vector<arma::mat>& ls_IFbeta, const std::vector<a
 
       iStrataCause = strata(iNewObs,iCause);
       if(diag){
-	iUvec_strata = {iStrataCause};
+		iUvec_strata(0) = iStrataCause;
       }
 	  
       // Rcout << "2 ";

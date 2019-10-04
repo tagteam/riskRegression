@@ -7,8 +7,40 @@ library(data.table)
 library(ipw)
 library(lava)
 
-handler <- if (Sys.info()["sysname"] == "Windows") "foreach" else "mclapply"
 verbose <- FALSE
+calcIterm <- function(factor, iid, indexJump, iid.outsideI){
+    n <- length(indexJump)
+
+    if(iid.outsideI){ ## compute iid int factor
+        ls.I <- lapply(1:n, function(iObs){ ## iObs <- 2
+            iIID <- iid[iObs,1,]
+            iFactor <- factor[iObs,1:indexJump[iObs]]
+        
+            if(indexJump[iObs]==0){
+                return(rep(0,n))
+            }else {
+                return(iIID*sum(iFactor))
+            }
+        })
+    } else { ## compute int iid * factor
+        ls.I <- lapply(1:n, function(iObs){ ## iObs <- 2
+            iIID <- iid[iObs,1:indexJump[iObs],]
+            iFactor <- factor[iObs,1:indexJump[iObs]]
+        
+            if(indexJump[iObs]==0){
+                return(rep(0,n))
+            }else if(indexJump[iObs]==1){
+                return(iIID*iFactor)
+            }else{
+                return(rowSums(rowMultiply_cpp(t(iIID), iFactor)))
+            }
+        })
+    }
+
+    return(t(do.call(cbind,ls.I)))
+}
+
+
 
 ## * [ate] G-formula only
 cat("[ate] G-formula only \n")
@@ -97,8 +129,10 @@ test_that("[ate] G-formula,survival - compare to fix values / explicit computati
     expect_equal(ratioATE.upper,
                  c(1.7478076, 1.5439995, 1.41259273))
 })
+
 ## ** strata argument
 test_that("[ate] G-formula,survival - strata argument",{
+    ## Cox model
     e.coxph <- coxph(Surv(time, event) ~ X1, data = dtS,
                      x = TRUE, y = TRUE)
     outATE <- ate(e.coxph, data = dtS, treatment = NULL, strata = "X1", time = 1, verbose = verbose)
@@ -106,6 +140,23 @@ test_that("[ate] G-formula,survival - strata argument",{
     outPred <- predictCox(e.coxph,
                           newdata = dtS,
                           times = 1,
+                          se = TRUE,
+                          keep.newdata = TRUE,
+                          type = "survival")
+    GS.se <- as.data.table(outPred)[,.SD[1],by = "X1"]
+    setkeyv(GS.se, cols = "X1")
+    test.se <- outATE$meanRisk
+    expect_equal(1-GS.se$survival,test.se$meanRisk)
+    expect_equal(GS.se$survival.se,GS.se$survival.se)
+
+    ## Stratified Cox model
+    e.coxph <- coxph(Surv(time, event) ~ strata(X1), data = dtS,
+                     x = TRUE, y = TRUE)
+    outATE <- ate(e.coxph, data = dtS, treatment = NULL, strata = "X1", time = 3, verbose = verbose)
+
+    outPred <- predictCox(e.coxph,
+                          newdata = dtS,
+                          times = 3,
                           se = TRUE,
                           keep.newdata = TRUE,
                           type = "survival")
@@ -136,7 +187,7 @@ test_that("[ate] logistic regression - compare to lava",{
     ## G-formula
     e.ate <- ate(fitY, data = dtB, treatment = "X1",
                  times = 5, 
-                 se = TRUE, iid = TRUE, B = 0, verbose = FALSE)
+                 se = TRUE, iid = TRUE, B = 0, verbose = verbose)
 
     e.lava <- estimate(fitY, function(p, data){
         a <- p["(Intercept)"] ; b <- p["X11"] ; c <- p["X21"] ;
@@ -154,7 +205,7 @@ test_that("[ate] logistic regression - compare to lava",{
                   treatment = fitT,
                   data = dtB, 
                   times = 5, 
-                  se = TRUE, iid = TRUE, B = 0, verbose = FALSE
+                  se = TRUE, iid = TRUE, B = 0, verbose = verbose
                   )
     ## ate(fitY,
         ## treatment = fitT,
@@ -179,7 +230,7 @@ test_that("[ate] logistic regression - compare to lava",{
 
 
     ## iid outcome
-    iid.risk <- attr(predictGLM(fitY, newdata = dtBC),"iid")
+    iid.risk <- attr(predictRisk(fitY, newdata = dtBC, iid = TRUE),"iid")
     nuisanceY.iid <- colMultiply_cpp(iid.risk, scale = (1-dtBC$X1test/dtBC$pi))
     dtBC$AnuisanceY.iid <- c(colMeans(nuisanceY.iid[dtBC$X1=="0",]),colMeans(nuisanceY.iid[dtBC$X1=="1",]))
 
@@ -187,7 +238,7 @@ test_that("[ate] logistic regression - compare to lava",{
                  unname(do.call(rbind,attr(e.ate2$iid,"outcome"))[,1]))
 
     ## iid treatment
-    iid.pi <- attr(predictGLM(fitT, newdata = dtBC),"iid")
+    iid.pi <- attr(predictRisk(fitT, newdata = dtBC, iid = TRUE),"iid")
     nuisanceT.iid <- colMultiply_cpp(iid.pi, scale = (-1)^(dtBC$X1=="1")*dtBC$X1test*(dtBC$Y-dtBC$r)/dtBC$pi^2)
     dtBC$AnuisanceT.iid <- c(colMeans(nuisanceT.iid[dtBC$X1=="0",]),colMeans(nuisanceT.iid[dtBC$X1=="1",]))
     
@@ -209,19 +260,20 @@ test_that("[ate] logistic regression - compare to lava",{
 })
 
 ## * [ate] Survival case
-cat("[ate] survival case")
+cat("[ate] Survival case \n")
 ## ** no censoring - manual computation
 ## *** Data
 n <- 5e1
 
 set.seed(10)
 dtS <- sampleData(n,outcome="survival")
+tau <- median(dtS$time)
+
 dtS$event <- 1
-dtS$Y <- (dtS$time<=tau)*(dtS$event==1)
 dtS$X1f <- dtS$X1
 dtS$X1 <- as.numeric(as.character(dtS$X1))
+dtS$Y <- (dtS$time<=tau)*(dtS$event==1)
 
-tau <- median(dtS$time)
 
 ## *** check
 test_that("[ate] no censoring, survival - check vs. manual calculations", {
@@ -232,28 +284,38 @@ test_that("[ate] no censoring, survival - check vs. manual calculations", {
     e.ate <- list("AIPTW" = ate(data = dtS, times = tau,
                                 event = e.S,
                                 treatment = e.T,
-                                iid = TRUE, se = TRUE, product.limit = FALSE, verbose = 0),
+                                iid = TRUE, se = TRUE, product.limit = FALSE, verbose = verbose),
+                  "AIPTW2" = ate(data = dtS, times = tau,
+                                event = e.S,
+                                treatment = e.T, method.iid = 2,
+                                iid = TRUE, se = TRUE, product.limit = FALSE, verbose = verbose),
                   "IPTW" = ate(data = dtS, times = tau,
                                event = c("time","event"),
                                treatment = e.T,
-                               iid = TRUE, se = TRUE, product.limit = FALSE, verbose = 0),
+                               iid = TRUE, se = TRUE, product.limit = FALSE, verbose = verbose),
+                  "IPTW2" = ate(data = dtS, times = tau,
+                                event = c("time","event"),
+                                treatment = e.T, method.iid = 2,
+                                iid = TRUE, se = TRUE, product.limit = FALSE, verbose = verbose),
                   "G-formula" = ate(data = dtS, times = tau,
                                     event = e.S,
                                     treatment = "X1f",
-                                    iid = TRUE, se = TRUE, product.limit = FALSE, verbose = 0)
+                                    iid = TRUE, se = TRUE, product.limit = FALSE, verbose = verbose)
                   )
-    ## GS <- ateRobust(data = dtS, times = tau,
-                    ## formula.event = Surv(time, event) ~ X1f + strata(X2) + X3*X6,
-                    ## formula.treatment = X1f ~ X2,
-                    ## se = TRUE, product.limit = FALSE, type = "survival")
+
+
+    expect_equal(e.ate[["IPTW2"]]$meanRisk,e.ate[["IPTW"]]$meanRisk)
+    expect_equal(e.ate[["IPTW2"]]$riskComparison,e.ate[["IPTW"]]$riskComparison)
+    expect_equal(e.ate[["AIPTW2"]]$meanRisk,e.ate[["AIPTW"]]$meanRisk)
+    expect_equal(e.ate[["AIPTW2"]]$riskComparison,e.ate[["AIPTW"]]$riskComparison)
     
     ## manual calculation
-    dtCf <- do.call(rbind,lapply(levels(dtS$X1f), function(iT){ ## iT <- "1"
+    dtCf <- do.call(rbind,lapply(levels(dtS$X1f), function(iT){ ## iT <- "0"
         iDT <- data.table::copy(dtS[,.(event,time,Y,X1,X2,X3,X6)])
         iDT[, X1f := factor(iT,levels(dtS$X1f))]
         iDT[, X1test := iT==as.character(X1)]
 
-        iPred.logit <- predictRiskIID(e.T, newdata = iDT, average.iid = FALSE, level = iT)
+        iPred.logit <- predictRisk(e.T, newdata = iDT, iid = TRUE, level = iT)
         iPred.Surv <- predictCox(e.S, newdata = iDT, times = tau, type = "survival", iid = TRUE)
 
         iDT[, pi := as.double(iPred.logit)]
@@ -271,7 +333,7 @@ test_that("[ate] no censoring, survival - check vs. manual calculations", {
 
         return(iDT)        
     }))
-
+    
     ## check estimate
     expect_equal(dtCf[,mean(r),by="X1f"][[2]],
                  e.ate[["G-formula"]]$meanRisk[["meanRisk"]])
@@ -335,111 +397,146 @@ n <- 5e1
 
 set.seed(10)
 dtS <- sampleData(n,outcome="survival")
+tau <- median(dtS$time)
+
 dtS$Y <- (dtS$time<=tau)*(dtS$event==1)
 dtS$C <- (dtS$time<=tau)*(dtS$event!=0)
 dtS$X1f <- dtS$X1
 dtS$X1 <- as.numeric(as.character(dtS$X1))
 
-tau <- median(dtS$time)
 
 test_that("[ate] Censoring, survival - check vs. manual calculations", {
     e.S <- coxph(Surv(time, event) ~ X1f + strata(X2) + X3*X6, data = dtS, x = TRUE , y = TRUE)
     e.T <- glm(X1f ~ X2, data = dtS, family = binomial(link = "logit"))
     e.C <- coxph(Surv(time, event == 0) ~ X1f + X2, data = dtS, x = TRUE, y = TRUE)
-
+    
     ## automatic calculation
     e.ate <- list("AIPTW" = ate(data = dtS, times = tau,
                                 event = e.S,
                                 treatment = e.T,
                                 censor = e.C,
-                                iid = TRUE, se = TRUE, product.limit = FALSE, verbose = 0),
+                                iid = TRUE, se = TRUE, product.limit = FALSE, verbose = verbose),
+                  "AIPTW2" = ate(data = dtS, times = tau,
+                                 event = e.S,
+                                 treatment = e.T,
+                                 censor = e.C, method.iid = 2,
+                                 iid = TRUE, se = TRUE, product.limit = FALSE, verbose = verbose),
                   "IPTW" = ate(data = dtS, times = tau,
                                event = c("time","event"),
                                treatment = e.T,
                                censor = e.C,
-                               iid = TRUE, se = TRUE, product.limit = FALSE, verbose = 0),
+                               iid = TRUE, se = TRUE, product.limit = FALSE, verbose = verbose),
+                  "IPTW2" = ate(data = dtS, times = tau,
+                                event = c("time","event"),
+                                treatment = e.T,
+                                censor = e.C, method.iid = 2,
+                                iid = TRUE, se = TRUE, product.limit = FALSE, verbose = verbose),
                   "G-formula" = ate(data = dtS, times = tau,
                                     event = e.S,
                                     treatment = "X1f",
-                                    iid = TRUE, se = TRUE, product.limit = FALSE, verbose = 0)
+                                    iid = TRUE, se = TRUE, product.limit = FALSE, verbose = verbose)
                   )
 
 
-    ## manual calculation
+    expect_equal(e.ate[["IPTW2"]]$meanRisk, e.ate[["IPTW"]]$meanRisk)
+    expect_equal(e.ate[["IPTW2"]]$riskComparison, e.ate[["IPTW"]]$riskComparison)
+    expect_equal(e.ate[["AIPTW2"]]$meanRisk, e.ate[["AIPTW"]]$meanRisk)
+    expect_equal(e.ate[["AIPTW2"]]$riskComparison, e.ate[["AIPTW"]]$riskComparison)
+
+    ## ## manual calculation ## ##
     iPred.Cens <- predictCox(e.C, newdata = dtS, times = pmin(tau,dtS$time-1e-10), type = "survival", iid = TRUE)
     iPred.Cens$survivalDiag <- diag(iPred.Cens$survival)
     iPred.Cens$survivalDiag.iid <- t(sapply(1:n, function(iObs){iPred.Cens$survival.iid[iObs,iObs,]}))
 
+    ## augmentation term
     jumpC <- sort(e.C$y[e.C$y[,"status"]==1,"time"])
     indexJump <- prodlim::sindex(jump.time = jumpC, eval.times = pmin(tau,dtS$time))
     pred.Surv_tau <- predictCox(e.S, newdata = dtS, times = tau, type = "survival", iid = TRUE)
     pred.Surv_jump <- predictCox(e.S, newdata = dtS, times = jumpC, type = "survival", iid = TRUE)
+    pred.Surv_beforejump <- predictCox(e.S, newdata = dtS, times = jumpC-1e-6, type = "survival", iid = TRUE)
     pred.G_jump <- predictCox(e.C, newdata = dtS, times = jumpC-1e-10, type = "survival", iid = TRUE)
     pred.dN_jump <- do.call(cbind,lapply(jumpC, function(iJ){iJ == dtS$time}))
     pred.dLambda_jump <- predictCox(e.C, newdata = dtS, times = jumpC, type = "hazard", iid = TRUE)
     pred.dM_jump <- pred.dN_jump-pred.dLambda_jump$hazard
-    
-    integrand_jump <- (1-colMultiply_cpp(1/pred.Surv_jump$survival,pred.Surv_tau$survival))*pred.dM_jump/pred.G_jump$survival
+
+    term.SS <- colCenter_cpp(pred.Surv_jump$survival,pred.Surv_tau$survival)/pred.Surv_beforejump$survival
+    integrand_jump <- term.SS*pred.dM_jump/pred.G_jump$survival
     augTerm <- sapply(1:n, function(iObs){
         if(indexJump[iObs]==0){
             return(0)
         }else{
-            sum(integrand_jump[iObs,1:indexJump[iObs]])
-        }
-    })
-
-    pred.GSdM <- pred.dM_jump/(pred.Surv_jump$survival*pred.G_jump$survival)
-    augTerm.iid <- sapply(1:n, function(iObs){ ## iObs <- 1
-        if(indexJump[iObs]==0){
-            return(0)
-        }else{
-            iIntegrand <- - t(pred.Surv_jump$survival.iid[iObs,,] * tcrossprod(pred.GSdM[iObs,],pred.Surv_tau$survival.iid[iObs,1,]))
-            sum(integrand_jump[iObs,1:indexJump[iObs]])
+            return(sum(integrand_jump[iObs,1:indexJump[iObs]]))
         }
     })
     
-    
+    augTermY1.iid <- calcIterm(factor = pred.dM_jump/(pred.Surv_beforejump$survival*pred.G_jump$survival),
+                               iid = -pred.Surv_tau$survival.iid,
+                               indexJump = indexJump,
+                               iid.outsideI = TRUE)
 
+    augTermY2.iid <- calcIterm(factor = -pred.dM_jump/(pred.Surv_beforejump$survival*pred.G_jump$survival),
+                               iid = -pred.Surv_jump$survival.iid,
+                               indexJump = indexJump,
+                               iid.outsideI = FALSE)
+
+    augTermSurv.iid <- calcIterm(factor = - term.SS * pred.dM_jump/(pred.Surv_beforejump$survival * pred.G_jump$survival),
+                                 iid = pred.Surv_beforejump$survival.iid,
+                                 indexJump = indexJump,
+                                 iid.outsideI = FALSE)
     
+    augTermG1.iid <- calcIterm(factor = - term.SS * pred.dM_jump/pred.G_jump$survival^2,
+                               iid = pred.G_jump$survival.iid,
+                               indexJump = indexJump,
+                               iid.outsideI = FALSE)
+
+    augTermG2.iid <- calcIterm(factor = - term.SS / pred.G_jump$survival,
+                               iid = pred.dLambda_jump$hazard.iid,
+                               indexJump = indexJump,
+                               iid.outsideI = FALSE)
+
     dtCf <- do.call(rbind,lapply(levels(dtS$X1f), function(iT){ ## iT <- "0"
         iDT <- data.table::copy(dtS[,.(event,time,Y,C,X1,X2,X3,X6)])
         iDT[, X1f := factor(iT,levels(dtS$X1f))]
         iDT[, X1test := iT==as.character(X1)]
 
-        iPred.logit <- predictRiskIID(e.T, newdata = iDT, average.iid = FALSE, level = iT)
+        iPred.logit <- predictRisk(e.T, newdata = iDT, iid = TRUE, level = iT)
         iPred.Surv_tau <- predictCox(e.S, newdata = iDT, times = tau, type = "survival", iid = TRUE)
-        
+
         iDT[, pi := as.double(iPred.logit)]
         iDT[, r := as.double(1-iPred.Surv_tau$survival)]
         iDT[, G := as.double(iPred.Cens$survivalDiag)]
         iDT[, I := augTerm]
 
+        ## Gformula ##
         iDT[, iid.Gformula := (r - mean(r))/.N]
         iDT[, iid.Gformula := iid.Gformula + colMeans(-iPred.Surv_tau$survival.iid[,1,])]
 
+        ## IPTW
         iDT[, iid.IPTW := (X1test*Y*C/(pi*G) - mean(X1test*Y*C/(pi*G)))/.N]
         iDT[, iid.IPTW := iid.IPTW + colMeans(colMultiply_cpp(attr(iPred.logit,"iid"), scale = -X1test*Y*C/(pi^2*G)))]
         iDT[, iid.IPTW := iid.IPTW + colMeans(colMultiply_cpp(iPred.Cens$survivalDiag.iid, scale = -X1test*Y*C/(pi*G^2)))]
 
-        if(FALSE){
-            iDT[, iid.AIPTW := (X1test*Y*C/(pi*G) + r*(1-X1test/pi) + I*X1test/pi - mean(X1test*Y*C/(pi*G) + r*(1-X1test/pi) + I*X1test/pi))/.N]
-            range(iDT$iid.AIPTW - attr(e.ate[["AIPTW"]]$iid,"ate")[[1]][,1])
-            
-            iDT[, iid.AIPTW := iid.AIPTW + colMeans(colMultiply_cpp(-iPred.Surv$survival.iid[,1,]),(1-X1test/pi))] ## outcome1
-            iDT[, iid.AIPTW := iid.AIPTW + colMeans(colMultiply_cpp(-iPred.Surv$survival.iid[,1,]),(1-X1test/pi))] ## outcome1
+        ## AIPTW,AIPCW ##        
+        iDT[, iid.AIPTW.ate := (X1test*Y*C/(pi*G) + r*(1-X1test/pi) + I*X1test/pi - mean(X1test*Y*C/(pi*G) + r*(1-X1test/pi) + I*X1test/pi))/.N]
 
-        ## iPred.Surv$survival.iid[,1,]
-        ## outcome2
-        iDT[, iid.AIPTW := iid.AIPTW + colMeans(colMultiply_cpp(-attr(iPred.logit,"iid"),-X1test*(Y*C/G - r + I)/(pi^2)))] ## treatment
-        }
-        ## censoring 1
-        ## censoring 2
-        ## censoring 3
+        ## outcome
+        iDT[, iid.AIPTW.outcome := colMeans(colMultiply_cpp(-iPred.Surv_tau$survival.iid[,1,], (1-X1test/pi)))]
+        iDT[, iid.AIPTW.outcome := iid.AIPTW.outcome + colMeans(colMultiply_cpp(augTermY1.iid,X1test/pi))]
+        iDT[, iid.AIPTW.outcome := iid.AIPTW.outcome + colMeans(colMultiply_cpp(augTermY2.iid,X1test/pi))]
 
-        ## iDT[, iid.AIPTW := (X1test*Y/pi + r*(1-X1test/pi) - mean(X1test*Y/pi + r*(1-X1test/pi)))/.N]
-        ## iDT[, iid.AIPTW := iid.AIPTW + colMeans(colMultiply_cpp(attr(iPred.logit,"iid"), scale = -X1test*(Y-r)/pi^2))]
-        ## iDT[, iid.AIPTW := iid.AIPTW + colMeans(colMultiply_cpp(-iPred.Surv$survival.iid[,1,], scale = 1-X1test/pi))]
+        ## treatment
+        iDT[, iid.AIPTW.treatment := colMeans(colMultiply_cpp(attr(iPred.logit,"iid"), scale = -(X1test/pi^2)*(Y*C/G - r + I)))]
 
+        ## survival
+        iDT[, iid.AIPTW.survival := colMeans(colMultiply_cpp(augTermSurv.iid, X1test/pi))]
+
+        ## censoring
+        iDT[, iid.AIPTW.censoring := colMeans(colMultiply_cpp(iPred.Cens$survivalDiag.iid, scale = -X1test*Y*C/(pi*G^2)))]
+        iDT[, iid.AIPTW.censoring := iid.AIPTW.censoring + colMeans(colMultiply_cpp(augTermG1.iid,X1test/pi))]
+        iDT[, iid.AIPTW.censoring := iid.AIPTW.censoring + colMeans(colMultiply_cpp(augTermG2.iid,X1test/pi))]
+
+        ## total
+        iDT[, iid.AIPTW := iid.AIPTW.ate + iid.AIPTW.outcome + iid.AIPTW.treatment + iid.AIPTW.survival + iid.AIPTW.censoring]
         return(iDT)        
     }))
 
@@ -470,15 +567,26 @@ test_that("[ate] Censoring, survival - check vs. manual calculations", {
                  dtCf$iid.IPTW)
 
     expect_equal(do.call(rbind,e.ate[["AIPTW"]]$iid)[,1],
-                 dtCf$iid.IPTW)
-
-    attr(e.ate[["IPTW"]]$iid,"ate")[[1]][,1]
-    attr(e.ate[["IPTW"]]$iid,"treatment")[[1]][,1]
-    attr(e.ate[["IPTW"]]$iid,"censoring")[[1]][,1]
-
-    expect_equal(do.call(rbind,e.ate[["AIPTW"]]$iid)[,1],
                  dtCf$iid.AIPTW)
 
+    ## check standard errors
+    expect_equal(dtCf[,sqrt(sum(iid.Gformula^2)), by = "X1f"][[2]],
+                 e.ate[["G-formula"]]$meanRisk[["meanRisk.se"]])
+    expect_equal(c(0.069586, 0.1201558),
+                 e.ate[["G-formula"]]$meanRisk[["meanRisk.se"]],
+                 tol = 1e-6)
+
+    expect_equal(dtCf[,sqrt(sum(iid.IPTW^2)), by = "X1f"][[2]],
+                 e.ate[["IPTW"]]$meanRisk[["meanRisk.se"]])
+    expect_equal(c(0.07693792, 0.12423590),
+                 e.ate[["IPTW"]]$meanRisk[["meanRisk.se"]],
+                 tol = 1e-6)
+
+    expect_equal(dtCf[,sqrt(sum(iid.AIPTW^2)), by = "X1f"][[2]],
+                 e.ate[["AIPTW"]]$meanRisk[["meanRisk.se"]])
+    expect_equal(c(0.07484163, 0.10880191),
+                 e.ate[["AIPTW"]]$meanRisk[["meanRisk.se"]],
+                 tol = 1e-6)
 
 
 })
@@ -507,32 +615,40 @@ test_that("[ate] no censoring, competing risks - check vs. manual calculations",
     e.ate <- list("AIPTW" = ate(data = dtS, times = tau, cause = 1,
                                 event = e.S,
                                 treatment = e.T,
-                                iid = TRUE, se = TRUE, product.limit = FALSE, verbose = 0),
+                                iid = TRUE, se = TRUE, product.limit = FALSE, verbose = verbose),
+                  "AIPTW2" = ate(data = dtS, times = tau, cause = 1,
+                                 event = e.S,
+                                 treatment = e.T, method.iid = 2,
+                                 iid = TRUE, se = TRUE, product.limit = FALSE, verbose = verbose),
                   "IPTW" = ate(data = dtS, times = tau, cause = 1,
                                event = c("time","event"),
                                treatment = e.T,
-                               iid = TRUE, se = TRUE, product.limit = FALSE, verbose = 0),
+                               iid = TRUE, se = TRUE, product.limit = FALSE, verbose = verbose),
+                  "IPTW2" = ate(data = dtS, times = tau, cause = 1,
+                                event = c("time","event"),
+                                treatment = e.T, method.iid = 2,
+                                iid = TRUE, se = TRUE, product.limit = FALSE, verbose = verbose),
                   "G-formula" = ate(data = dtS, times = tau, cause = 1,
                                     event = e.S,
                                     treatment = "X1f",
-                                    iid = TRUE, se = TRUE, product.limit = FALSE, verbose = 0)
+                                    iid = TRUE, se = TRUE, product.limit = FALSE, verbose = verbose)
                   )
-    ## GS <- ateRobust(data = dtS, times = tau, cause = 1,
-                    ## formula.event = Hist(time, event) ~ X1f + strata(X2) + X3*X6,
-                    ## formula.treatment = X1f ~ X2,
-                    ## se = TRUE, product.limit = FALSE, type = "competing.risks")
-    ## GS$ate.value[,"IPTW.IPCW"]
+
+    expect_equal(e.ate[["IPTW2"]]$meanRisk,e.ate[["IPTW"]]$meanRisk)
+    expect_equal(e.ate[["IPTW2"]]$riskComparison,e.ate[["IPTW"]]$riskComparison)
+    expect_equal(e.ate[["AIPTW2"]]$meanRisk,e.ate[["AIPTW"]]$meanRisk)
+    expect_equal(e.ate[["AIPTW2"]]$riskComparison,e.ate[["AIPTW"]]$riskComparison)
 
     ## manual calculation
-    dtCf <- do.call(rbind,lapply(levels(dtS$X1f), function(iT){ ## iT <- "1"
+    dtCf <- do.call(rbind,lapply(levels(dtS$X1f), function(iT){ ## iT <- "0"
         iDT <- data.table::copy(dtS[,.(event,time,Y,X1,X2,X3,X6)])
         iDT[, X1f := factor(iT,levels(dtS$X1f))]
         iDT[, X1test := iT==as.character(X1)]
 
-        iPred.logit <- predictRiskIID(e.T, newdata = iDT, average.iid = FALSE, level = iT)
-        iPred.risk <- predict(e.S, newdata = iDT, times = tau, iid = TRUE, cause = 1)
-        ## print(iPred.risk$absRisk[,1])
-        
+        iPred.logit <- predictRisk(e.T, newdata = iDT, iid = TRUE, level = iT)
+        iPred.risk <- predict(e.S, newdata = iDT, times = tau, iid = TRUE,
+                              cause = 1, product.limit = FALSE)
+
         iDT[, pi := as.double(iPred.logit)]
         iDT[, r := as.double(iPred.risk$absRisk)]
 
@@ -549,155 +665,253 @@ test_that("[ate] no censoring, competing risks - check vs. manual calculations",
         return(iDT)        
     }))
 
-    head(dtCf[X1f=="0"])
-    head(dtCf[X1f=="1"])
     ## check estimate
     expect_equal(dtCf[,mean(r),by="X1f"][[2]],
                  e.ate[["G-formula"]]$meanRisk[["meanRisk"]])
-    expect_equal(c(0.04174356, 0.15030393),
+    expect_equal(c(0.09315393, 0.37259431),
                  e.ate[["G-formula"]]$meanRisk[["meanRisk"]],
                  tol = 1e-6)
 
     expect_equal(dtCf[,mean(X1test*Y/pi),by="X1f"][[2]],
                  e.ate[["IPTW"]]$meanRisk[["meanRisk"]])
-    expect_equal(c(0.0262069, 0.2533333),
+    expect_equal(c(0.08405157, 0.26793249),
                  e.ate[["IPTW"]]$meanRisk[["meanRisk"]],
                  tol = 1e-6)
 
     expect_equal(dtCf[,mean(X1test*(event==1)*(time<=tau)/pi + r*(1-X1test/pi)),by="X1f"][[2]],
                  e.ate[["AIPTW"]]$meanRisk[["meanRisk"]])
-    expect_equal(c(0.02999833, 0.21693029),
+    expect_equal(c(0.07847289, 0.47497984),
                  e.ate[["AIPTW"]]$meanRisk[["meanRisk"]],
                  tol = 1e-6)
 
+    ## check influence function
+    expect_equal(do.call(rbind,e.ate[["G-formula"]]$iid)[,1],
+                 dtCf$iid.Gformula)
+
+    expect_equal(do.call(rbind,e.ate[["IPTW"]]$iid)[,1],
+                 dtCf$iid.IPTW)
+
+    expect_equal(do.call(rbind,e.ate[["AIPTW"]]$iid)[,1],
+                 dtCf$iid.AIPTW)
+
+    ## check standard error
+    expect_equal(sqrt(dtCf[,sum(iid.Gformula^2),by="X1f"][[2]]),
+                 e.ate[["G-formula"]]$meanRisk[["meanRisk.se"]])
+    expect_equal(c(0.0315163, 0.2407176),
+                 e.ate[["G-formula"]]$meanRisk[["meanRisk.se"]],
+                 tol = 1e-6)
+
+    expect_equal(sqrt(dtCf[,sum(iid.IPTW^2),by="X1f"][[2]]),
+                 e.ate[["IPTW"]]$meanRisk[["meanRisk.se"]])
+    expect_equal(c(0.03282852, 0.15183527),
+                 e.ate[["IPTW"]]$meanRisk[["meanRisk.se"]],
+                 tol = 1e-6)
+
+    expect_equal(sqrt(dtCf[,sum(iid.AIPTW^2),by="X1f"][[2]]),
+                 e.ate[["AIPTW"]]$meanRisk[["meanRisk.se"]])
+    expect_equal(c(0.03109236, 0.27245093),
+                 e.ate[["AIPTW"]]$meanRisk[["meanRisk.se"]],
+                 tol = 1e-6)
     
 })
 
-
-## ** agreement with ate
-set.seed(10)
+## ** Censoring - manual computation
 n <- 1e2
-dtS <- sampleData(n,outcome="competing.risks")
-## dtS[,min(time),by = event]
-tau <- 3 ## tau <- 3:4
-e.CSC <- CSC(Hist(time, event) ~ X1 + X2 + X3,
-             data = dtS, surv.type = "hazard")
+tau <- 1.5
 
-test_that("Agreement ate-ateRobust (competing.risks)",{
-    ## NOT POSSIBLE: predictRisk does not recognise the argument product.limit
-    ## e.ate <- ate(e.CSC, treatment = "X1", times = 3, data = dtS, cause = 1,
-    ## se = TRUE, product.limit = FALSE) 
-    e.ateG <- ate(e.CSC, treatment = "X1", times = tau, data = dtS, cause = 1,
-                  se = TRUE, verbose = 0)
-    e.ateRR <- ate(event = CSC(Hist(time,event) ~ X1 + X2 + X3, data = dtS),
-                   treatment = glm(X1 ~ 1, data = dtS, family = binomial(link = "logit")),
-                   censor = cph(Surv(time,event==0) ~ X1, data = dtS, x = TRUE, y = TRUE),
-                   data = dtS, times = tau, verbose = 0, cause = 1
-                   )
-    e.ateIP <- ate(event = c("time","event"),
-                   treatment = glm(X1 ~ 1, data = dtS, family = binomial(link = "logit")),
-                   censor = cph(Surv(time,event==0) ~ X1, data = dtS, x = TRUE, y = TRUE),
-                   data = dtS, times = tau, verbose = 0, cause = 1
-                   )
+set.seed(10)
+dtS <- sampleData(n, outcome="competing.risks")
+dtS$Y <- (dtS$time<=tau)*(dtS$event==1)
+dtS$C <- (dtS$time<=tau)*(dtS$event!=0)
+dtS$X1f <- dtS$X1
+dtS$X1 <- as.numeric(as.character(dtS$X1))
 
-    ## data0 <- copy(dtS)
-    ## data0[, X1 := factor("0", level = levels(dtS$X1))]
-    ## data1 <- copy(dtS)
-    ## data1[, X1 := factor("1", level = levels(dtS$X1))]
-    ## mean(predict(e.CSC, cause = 1, newdata = data0, times = 3, product.limit = TRUE)$absRisk)
+test_that("[ate] Censoring, competing risks - check vs. manual calculations", {
+    e.S <- CSC(Hist(time, event) ~ X1f + strata(X2) + X3*X6, data = dtS, surv.type = "survival")
+    e.T <- glm(X1f ~ X2, data = dtS, family = binomial(link = "logit"))
+    e.C <- coxph(Surv(time, event == 0) ~ X1f + X2, data = dtS, x = TRUE, y = TRUE)
     
-    e.ateRobust <- ateRobust(data = dtS, times = tau, cause = 1,
-                             formula.event = Hist(time,event) ~ X1 + X2 + X3,
-                             formula.censor = Surv(time,event==0) ~ X1,
-                             formula.treatment = X1 ~ 1,
-                             type = "competing.risks",
-                             product.limit = FALSE)
-    e.ateRobustPL <- ateRobust(data = dtS, times = tau, cause = 1,
-                             formula.event = Hist(time,event) ~ X1 + X2 + X3,
-                             formula.censor = Surv(time,event==0) ~ X1,
-                             formula.treatment = X1 ~ 1,
-                             type = "competing.risks",
-                             product.limit = TRUE)
-
-    ## 
-    expect_equal(as.double(e.ateRobustPL$ate.value[,"Gformula"]),
-                 c(e.ateG$meanRisk[,meanRisk],e.ateG$riskComparison[,diff]),
-                 tol = 1e-4)
-    expect_equal(as.double(e.ateRobustPL$ate.se[,"Gformula"]),
-                 c(e.ateG$meanRisk[,meanRisk.se],e.ateG$riskComparison[,diff.se]),
-                 tol = 1e-4)
-
-    expect_equal(as.double(e.ateRobustPL$ate.value[,"IPTW.IPCW"]),
-                 c(e.ateIP$meanRisk[,meanRisk],e.ateIP$riskComparison[,diff]),
-                 tol = 1e-4)
-    ## expect_equal(as.double(e.ateRobustPL$ate.se[,"IPTW.IPCW"]),
-                 ## c(e.ateIP$meanRisk[,meanRisk.se],e.ateIP$riskComparison[,diff.se]),
-                 ## tol = 1e-4)
-
-    expect_equal(as.double(e.ateRobustPL$ate.value[,"AIPTW.AIPCW_estimatedNuisance"]),
-                 c(e.ateRR$meanRisk[,meanRisk],e.ateRR$riskComparison[,diff]),
-                 tol = 1e-4)
-    ## expect_equal(as.double(e.ateRobustPL$ate.se[,"AIPTW.AIPCW_estimatedNuisance"]),
-                 ## c(e.ateRR$meanRisk[,meanRisk.se],e.ateRR$riskComparison[,diff.se]),
-                 ## tol = 1e-4)
-    ## check values
-    test <- e.ateRobust$ate.value
-    rownames(test) <- NULL
-    
-    M.GS <- cbind("Gformula" = c(0.28427, 0.30878, 0.02452), 
-                  "IPTW.IPCW" = c(0.25855, 0.5098, 0.25125), 
-                  "AIPTW.IPCW_knownNuisance" = c(0.25868, 0.50849, 0.24981), 
-                  "AIPTW.IPCW_estimatedNuisance" = c(0.25868, 0.50849, 0.24981), 
-                  "IPTW.AIPCW" = c(0.25835, 0.50462, 0.24627), 
-                  "AIPTW.AIPCW_knownNuisance" = c(0.25848, 0.50331, 0.24483), 
-                  "AIPTW.AIPCW_estimatedNuisance" = c(0.25848, 0.50331, 0.24483)
+    ## automatic calculation
+    e.ate <- list("AIPTW" = ate(data = dtS, times = tau, cause = 1,
+                                event = e.S,
+                                treatment = e.T,
+                                censor = e.C,
+                                iid = TRUE, se = TRUE, product.limit = FALSE, verbose = verbose),
+                  "AIPTW2" = ate(data = dtS, times = tau, cause = 1,
+                                 event = e.S,
+                                 treatment = e.T,
+                                 censor = e.C, method.iid = 2,
+                                 iid = TRUE, se = TRUE, product.limit = FALSE, verbose = verbose),
+                  "IPTW" = ate(data = dtS, times = tau, cause = 1,
+                               event = c("time","event"),
+                               treatment = e.T,
+                               censor = e.C,
+                               iid = TRUE, se = TRUE, product.limit = FALSE, verbose = verbose),
+                  "IPTW2" = ate(data = dtS, times = tau, cause = 1,
+                                event = c("time","event"),
+                                treatment = e.T,
+                                censor = e.C, method.iid = 2,
+                                iid = TRUE, se = TRUE, product.limit = FALSE, verbose = verbose),
+                  "G-formula" = ate(data = dtS, times = tau, cause = 1,
+                                    event = e.S,
+                                    treatment = "X1f",
+                                    iid = TRUE, se = TRUE, product.limit = FALSE, verbose = verbose)
                   )
+
+
+    expect_equal(e.ate[["IPTW2"]]$meanRisk, e.ate[["IPTW"]]$meanRisk)
+    expect_equal(e.ate[["IPTW2"]]$riskComparison, e.ate[["IPTW"]]$riskComparison)
+    expect_equal(e.ate[["AIPTW2"]]$meanRisk, e.ate[["AIPTW"]]$meanRisk)
+    expect_equal(e.ate[["AIPTW2"]]$riskComparison, e.ate[["AIPTW"]]$riskComparison)
+
+    ## ## manual calculation ## ##
+    iPred.Cens <- predictCox(e.C, newdata = dtS, times = pmin(tau,dtS$time-1e-10), type = "survival", iid = TRUE)
+    iPred.Cens$survivalDiag <- diag(iPred.Cens$survival)
+    iPred.Cens$survivalDiag.iid <- t(sapply(1:n, function(iObs){iPred.Cens$survival.iid[iObs,iObs,]}))
+
+    ## augmentation term
+    jumpC <- sort(e.C$y[e.C$y[,"status"]==1,"time"])
+    indexJump <- prodlim::sindex(jump.time = jumpC, eval.times = pmin(tau,dtS$time))
+    pred.Risk_tau <- predict(e.S, newdata = dtS, times = tau, iid = TRUE, cause = 1)
+    pred.Risk_jump <- predict(e.S, newdata = dtS, times = jumpC, iid = TRUE, cause = 1)
+    pred.Surv_jump <- predictCox(e.S$models[["OverallSurvival"]], newdata = dtS, times = jumpC-1e-6, type = "survival", iid = TRUE)
+    pred.G_jump <- predictCox(e.C, newdata = dtS, times = jumpC-1e-10, type = "survival", iid = TRUE)
+    pred.dN_jump <- do.call(cbind,lapply(jumpC, function(iJ){(iJ == dtS$time)*(dtS$event==0)}))
+    pred.dLambda_jump <- predictCox(e.C, newdata = dtS, times = jumpC, type = "hazard", iid = TRUE)
+    pred.dM_jump <- pred.dN_jump-pred.dLambda_jump$hazard
+
+    term.SS <- -colCenter_cpp(pred.Risk_jump$absRisk,pred.Risk_tau$absRisk)/pred.Surv_jump$survival
+    integrand_jump <- term.SS*pred.dM_jump/pred.G_jump$survival
+    augTerm <- sapply(1:n, function(iObs){
+        if(indexJump[iObs]==0){
+            return(0)
+        }else{
+            return(sum(integrand_jump[iObs,1:indexJump[iObs]]))
+        }
+    })
     
-    expect_equal(test, M.GS, tol = 1e-4)
-    ## butils::object2script(test, digit = 5) 
-    test <- e.ateRobust$ate.se
-    rownames(test) <- NULL
+    augTermY1.iid <- calcIterm(factor = pred.dM_jump/(pred.Surv_jump$survival*pred.G_jump$survival),
+                               iid = pred.Risk_tau$absRisk.iid,
+                               indexJump = indexJump,
+                               iid.outsideI = TRUE)
+
+    augTermY2.iid <- calcIterm(factor = -pred.dM_jump/(pred.G_jump$survival*pred.Surv_jump$survival),
+                               iid = pred.Risk_jump$absRisk.iid,
+                               indexJump = indexJump,
+                               iid.outsideI = FALSE)
+
+    augTermSurv.iid <- calcIterm(factor = - term.SS * pred.dM_jump/(pred.Surv_jump$survival * pred.G_jump$survival),
+                                 iid = pred.Surv_jump$survival.iid,
+                                 indexJump = indexJump,
+                                 iid.outsideI = FALSE)
     
-    M.GS <- cbind("Gformula" = c(0.04577, 0.15642, 0.15524), 
-                  "IPTW.IPCW" = c(0.04652, 0.16131, 0.16789), 
-                  "AIPTW.IPCW_knownNuisance" = c(0.04636, 0.16792, 0.17302), 
-                  "AIPTW.IPCW_estimatedNuisance" = c(0.04644, 0.15882, 0.16504), 
-                  "IPTW.AIPCW" = c(0.04648, 0.1619, 0.16844), 
-                  "AIPTW.AIPCW_knownNuisance" = c(0.04632, 0.16799, 0.1731), 
-                  "AIPTW.AIPCW_estimatedNuisance" = c(0.0464, 0.15946, 0.16567)
-                  )
-    expect_equal(test, M.GS, tol = 1e-4)
-    ## butils::object2script(test, digit = 5)
-    
-    test <- e.ateRobustPL$ate.value
-    rownames(test) <- NULL
-    
-    M.GS <- cbind("Gformula" = c(0.28382, 0.3082, 0.02438), 
-                  "IPTW.IPCW" = c(0.25857, 0.5099, 0.25133), 
-                  "AIPTW.IPCW_knownNuisance" = c(0.2587, 0.50859, 0.24988), 
-                  "AIPTW.IPCW_estimatedNuisance" = c(0.2587, 0.50859, 0.24988), 
-                  "IPTW.AIPCW" = c(0.25837, 0.50473, 0.24636), 
-                  "AIPTW.AIPCW_knownNuisance" = c(0.2585, 0.50341, 0.24491), 
-                  "AIPTW.AIPCW_estimatedNuisance" = c(0.2585, 0.50341, 0.24491)
-                  )
-    expect_equal(test, M.GS, tol = 1e-4)
-    ## butils::object2script(test, digit = 5)
-    
-    test <- e.ateRobustPL$ate.se
-    rownames(test) <- NULL
-    
-    M.GS <- cbind("Gformula" = c(0.04576, 0.15641, 0.15524), 
-                  "IPTW.IPCW" = c(0.04653, 0.16134, 0.16792), 
-                  "AIPTW.IPCW_knownNuisance" = c(0.04636, 0.16804, 0.17314), 
-                  "AIPTW.IPCW_estimatedNuisance" = c(0.04644, 0.15886, 0.16509), 
-                  "IPTW.AIPCW" = c(0.04648, 0.16193, 0.16847), 
-                  "AIPTW.AIPCW_knownNuisance" = c(0.04632, 0.1681, 0.17322), 
-                  "AIPTW.AIPCW_estimatedNuisance" = c(0.0464, 0.15951, 0.16572)
-                  )
-    expect_equal(test, M.GS, tol = 1e-4)
-    ## butils::object2script(test, digit = 5)
-   
+    augTermG1.iid <- calcIterm(factor = - term.SS * pred.dM_jump/pred.G_jump$survival^2,
+                               iid = pred.G_jump$survival.iid,
+                               indexJump = indexJump,
+                               iid.outsideI = FALSE)
+
+    augTermG2.iid <- calcIterm(factor = - term.SS / pred.G_jump$survival,
+                               iid = pred.dLambda_jump$hazard.iid,
+                               indexJump = indexJump,
+                               iid.outsideI = FALSE)
+
+    dtCf <- do.call(rbind,lapply(levels(dtS$X1f), function(iT){ ## iT <- "0"
+        iDT <- data.table::copy(dtS[,.(event,time,Y,C,X1,X2,X3,X6)])
+        iDT[, X1f := factor(iT,levels(dtS$X1f))]
+        iDT[, X1test := iT==as.character(X1)]
+
+        iPred.logit <- predictRisk(e.T, newdata = iDT, iid = TRUE, level = iT)
+        iPred.risk_tau <- predict(e.S, newdata = iDT, times = tau, iid = TRUE, cause = 1, product.limit = FALSE)
+
+        iDT[, pi := as.double(iPred.logit)]
+        iDT[, r := as.double(iPred.risk_tau$absRisk)]
+        iDT[, G := as.double(iPred.Cens$survivalDiag)]
+        iDT[, I := augTerm]
+
+        ## Gformula ##
+        iDT[, iid.Gformula := (r - mean(r))/.N]
+        iDT[, iid.Gformula := iid.Gformula + colMeans(iPred.risk_tau$absRisk.iid[,1,])]
+
+        ## IPTW
+        iDT[, iid.IPTW := (X1test*Y*C/(pi*G) - mean(X1test*Y*C/(pi*G)))/.N]
+        iDT[, iid.IPTW := iid.IPTW + colMeans(colMultiply_cpp(attr(iPred.logit,"iid"), scale = -X1test*Y*C/(pi^2*G)))]
+        iDT[, iid.IPTW := iid.IPTW + colMeans(colMultiply_cpp(iPred.Cens$survivalDiag.iid, scale = -X1test*Y*C/(pi*G^2)))]
+
+        ## AIPTW,AIPCW ##        
+        iDT[, iid.AIPTW.ate := (X1test*Y*C/(pi*G) + r*(1-X1test/pi) + I*X1test/pi - mean(X1test*Y*C/(pi*G) + r*(1-X1test/pi) + I*X1test/pi))/.N]
+
+        ## outcome
+        iDT[, iid.AIPTW.outcome := colMeans(colMultiply_cpp(iPred.risk_tau$absRisk.iid[,1,], (1-X1test/pi)))]
+        iDT[, iid.AIPTW.outcome := iid.AIPTW.outcome + colMeans(colMultiply_cpp(augTermY1.iid,X1test/pi))]
+        iDT[, iid.AIPTW.outcome := iid.AIPTW.outcome + colMeans(colMultiply_cpp(augTermY2.iid,X1test/pi))]
+
+        ## treatment
+        iDT[, iid.AIPTW.treatment := colMeans(colMultiply_cpp(attr(iPred.logit,"iid"), scale = -(X1test/pi^2)*(Y*C/G - r + I)))]
+
+        ## survival
+        iDT[, iid.AIPTW.survival := colMeans(colMultiply_cpp(augTermSurv.iid, X1test/pi))]
+
+        ## censoring
+        iDT[, iid.AIPTW.censoring := colMeans(colMultiply_cpp(iPred.Cens$survivalDiag.iid, scale = -X1test*Y*C/(pi*G^2)))]
+        iDT[, iid.AIPTW.censoring := iid.AIPTW.censoring + colMeans(colMultiply_cpp(augTermG1.iid,X1test/pi))]
+        iDT[, iid.AIPTW.censoring := iid.AIPTW.censoring + colMeans(colMultiply_cpp(augTermG2.iid,X1test/pi))]
+
+        ## total
+        iDT[, iid.AIPTW := iid.AIPTW.ate + iid.AIPTW.outcome + iid.AIPTW.treatment + iid.AIPTW.survival + iid.AIPTW.censoring]
+        return(iDT)        
+    }))
+
+    ## check estimate
+    expect_equal(dtCf[,mean(r),by="X1f"][[2]],
+                 e.ate[["G-formula"]]$meanRisk[["meanRisk"]])
+    expect_equal(c(0.07398793, 0.31937921),
+                 e.ate[["G-formula"]]$meanRisk[["meanRisk"]],
+                 tol = 1e-6)
+
+    expect_equal(dtCf[,mean(X1test*Y*C/(pi*G)),by="X1f"][[2]],
+                 e.ate[["IPTW"]]$meanRisk[["meanRisk"]])
+    expect_equal(c(0.06717914, 0.19047619),
+                 e.ate[["IPTW"]]$meanRisk[["meanRisk"]],
+                 tol = 1e-6)
+
+    expect_equal(dtCf[,mean(X1test*Y*C/(pi*G) + r*(1-X1test/pi) + I*X1test/pi),by="X1f"][[2]],
+                 e.ate[["AIPTW"]]$meanRisk[["meanRisk"]])
+    expect_equal(c(0.06112147, 0.39625028),
+                 e.ate[["AIPTW"]]$meanRisk[["meanRisk"]],
+                 tol = 1e-6)
+
+    ## check influence function
+    expect_equal(do.call(rbind,e.ate[["G-formula"]]$iid)[,1],
+                 dtCf$iid.Gformula)
+
+    expect_equal(do.call(rbind,e.ate[["IPTW"]]$iid)[,1],
+                 dtCf$iid.IPTW)
+
+    expect_equal(do.call(rbind,e.ate[["AIPTW"]]$iid)[,1],
+                 dtCf$iid.AIPTW)
+
+    ## check standard errors
+    expect_equal(dtCf[,sqrt(sum(iid.Gformula^2)), by = "X1f"][[2]],
+                 e.ate[["G-formula"]]$meanRisk[["meanRisk.se"]])
+    expect_equal(c(0.02510435, 0.20905295),
+                 e.ate[["G-formula"]]$meanRisk[["meanRisk.se"]],
+                 tol = 1e-6)
+
+    expect_equal(dtCf[,sqrt(sum(iid.IPTW^2)), by = "X1f"][[2]],
+                 e.ate[["IPTW"]]$meanRisk[["meanRisk.se"]])
+    expect_equal(c(0.02644557, 0.12057076),
+                 e.ate[["IPTW"]]$meanRisk[["meanRisk.se"]],
+                 tol = 1e-6)
+
+    expect_equal(dtCf[,sqrt(sum(iid.AIPTW^2)), by = "X1f"][[2]],
+                 e.ate[["AIPTW"]]$meanRisk[["meanRisk.se"]])
+    expect_equal(c(0.02461978, 0.22428431),
+                 e.ate[["AIPTW"]]$meanRisk[["meanRisk.se"]],
+                 tol = 1e-6)
+
+
 })
+
 
 ## * [ate] Miscellaneous
 
@@ -711,11 +925,11 @@ test_that("[ate] Cox model/G-formula - precompute iid", {
 
     GS <- ate(e.CSC,
               treatment = "X1", data = d, times = 1:5, cause = 1,
-              verbose = FALSE)
+              verbose = verbose)
     
     test <- ate(e.CSC,
                 treatment = "X1", data = d, times = 1:5, cause = 1,
-                verbose = FALSE)
+                verbose = verbose)
 
     expect_equal(test$meanRisk, GS$meanRisk)
 })
@@ -750,12 +964,12 @@ test_that("ate double robust estimator works with multiple timepoint",{
     e.ateRR <- ate(event = Hist(time,event) ~ X1 + X2 + X3, 
                    treatment = glm(X1 ~ 1, data = dtS, family = binomial(link = "logit")),
                    censor = cph(Surv(time,event==0) ~ X1, data = dtS, x = TRUE, y = TRUE),
-                   data = dtS, times = 3:4, verbose = 0, cause = 1
+                   data = dtS, times = 3:4, verbose = verbose, cause = 1
                    )
 
     e.ateRR <- ate(event = CSC(Hist(time,event) ~ X1 + X2 + X3, data = dtS),
                    treatment = "X1",
-                   data = dtS, times = 3:4, verbose = 0, cause = 1
+                   data = dtS, times = 3:4, verbose = verbose, cause = 1
                    )
 
 })

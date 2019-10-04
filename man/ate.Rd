@@ -6,8 +6,8 @@
 \usage{
 ate(event, treatment, censor = NULL, data, formula, strata = NULL,
   contrasts = NULL, times, cause = NA, landmark, se = TRUE,
-  iid = FALSE, band = FALSE, B = 0, seed, handler = "foreach",
-  mc.cores = 1, cl = NULL, verbose = 2, ...)
+  iid = FALSE, known.nuisance = FALSE, band = FALSE, B = 0, seed,
+  handler = "foreach", mc.cores = 1, cl = NULL, verbose = 2, ...)
 }
 \arguments{
 \item{event}{Outcome model which describes how event risk depends
@@ -42,6 +42,10 @@ it is assumed that that the covariates do not change between landmark and landma
 \item{se}{[logical] If \code{TRUE} compute and add the standard errors to the output.}
 
 \item{iid}{[logical] If \code{TRUE} compute and add the influence function to the output.}
+
+\item{known.nuisance}{[logical] If \code{FALSE} the uncertainty related to the estimation of the nuisance parameters is ignored.
+This greatly simplifies computations but requires to use a double robust estimator
+and to assumes that all event, treatment, and censoring models are valid to obtain consistent standard errors.}
 
 \item{band}{[logical] If \code{TRUE} compute and add the quantiles for the confidence bands to the output.}
 
@@ -149,7 +153,7 @@ ateLava <- estimate(fit, function(p, data){
 a <- p["(Intercept)"] ; b <- p["X11"] ; c <- p["X2"] ;
 R.X11 <- expit(a + b + c * data[["X2"]])
 R.X10 <- expit(a + c * data[["X2"]])
-list(risk0=R.X10,risk1=R.X11,riskdiff=R.X10-R.X11)},
+list(risk0=R.X10,risk1=R.X11,riskdiff=R.X11-R.X10)},
 average=TRUE)
 ateLava
 }

@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun  6 2016 (09:02) 
 ## Version: 
-## last-updated: sep  9 2019 (16:41) 
+## last-updated: okt  4 2019 (15:58) 
 ##           By: Brice Ozenne
-##     Update #: 220
+##     Update #: 264
 #----------------------------------------------------------------------
 ## 
 ### Commentary:
@@ -61,6 +61,8 @@
 #' @param times A vector of times in the range of the response variable, for
 #' which the cumulative incidences event probabilities are computed.
 #' @param cause Identifies the cause of interest among the competing events.
+#' @param iid Should the iid decomposition be output using an attribute?
+#' @param average.iid Should the average iid decomposition be output using an attribute?
 #' @param product.limit If \code{TRUE} the survival is computed using the product limit estimator.
 #' Otherwise the exponential approximation is used (i.e. exp(-cumulative hazard)).
 #' @param \dots Additional arguments that are passed on to the current method.
@@ -210,11 +212,22 @@ predictRisk.numeric <- function(object,newdata,times,cause,...){
 }
 
 ##' @export
-predictRisk.glm <- function(object,newdata,...){
+predictRisk.glm <- function(object, newdata, iid = FALSE, average.iid = FALSE,...){
 
     if (object$family$family=="binomial"){
-        out <- as.numeric(stats::predict(object,newdata=newdata,type="response"))
-
+        if(iid & average.iid){
+            stop("Cannot specify both \'iid\'=TRUE and \'average.iid\'=TRUE \n")
+        }else if(iid){
+            out <- predictGLM(object,
+                              newdata = newdata,
+                              average.iid = average.iid)
+        }else if(average.iid){
+            out <- predictGLM(object,
+                              newdata = newdata,
+                              average.iid = average.iid)
+        }else{
+            out <- as.numeric(stats::predict(object,newdata=newdata,type="response"))
+        }
         ## hidden argument: enable to ask for the prediction of Y==1 or Y==0
         level <- list(...)$level
         if(!is.null(level)){
@@ -224,13 +237,25 @@ predictRisk.glm <- function(object,newdata,...){
             level <- match.arg(level, all.levels)
 
             index.level <- which(matching.Ylevel[level,]>0)
-            if(length(index.level)==2){
+            if(length(index.level) > 1){
                 stop("Unknown value for the outcome variable \n")
             }else if(index.level == 1){
                 out <- 1 - out
+                if(iid){
+                    attr(out,"iid") <- - attr(out,"iid")
+                }else if(average.iid){
+                    if(is.list(attr(out,"iid"))){
+                        attr(out,"average.iid") <- lapply(attr(out,"iid"), function(iIID){-iIID})
+                    }else{
+                        attr(out,"average.iid") <- - attr(out,"iid")
+                    }
+                }                
+            }else if(average.iid){
+                attr(out,"average.iid") <- attr(out,"iid")
             }
+        }else if(average.iid){
+            attr(out,"average.iid") <- attr(out,"iid")
         }
-        
         return(out)
     } else {
         stop("Currently only the binomial family is implemented for predicting a status from a glm object.")
@@ -350,32 +375,51 @@ predictRisk.cox.aalen <- function(object,newdata,times,...){
 
     
 ##' @export
-predictRisk.coxph <- function(object,newdata,times,product.limit=FALSE,...){
+predictRisk.coxph <- function(object, newdata, times, product.limit = FALSE, iid = FALSE, average.iid = FALSE, ...){
+    type <- list(...)$type ## hidden argument for ate
+    
     if(product.limit){
-        p <- predictCoxPL(object=object,
-                          newdata=newdata,
-                          times=times,
-                          se = FALSE,
-                          iid = FALSE,
-                          keep.times=FALSE,
-                          type="survival")$survival
+        outPred <- predictCoxPL(object=object,
+                                newdata=newdata,
+                                times=times,
+                                iid = iid,
+                                iid = average.iid,
+                                keep.times=FALSE,
+                                type="survival")
     }else{
-        p <- predictCox(object=object,
-                        newdata=newdata,
-                        times=times,
-                        se = FALSE,
-                        iid = FALSE,
-                        keep.times=FALSE,
-                        type="survival")$survival
+        outPred <- predictCox(object=object,
+                              newdata=newdata,
+                              times=times,
+                              iid = iid,
+                              average.iid = average.iid,
+                              keep.times=FALSE,
+                              type="survival")
+    }
+    if(identical(type,"survival")){
+        out <- outPred$survival
+    }else{
+        out <- 1-outPred$survival
+    }
+    if(iid){
+        if(identical(type,"survival")){
+            attr(out,"iid") <- outPred$survival.iid
+        }else{
+            attr(out,"iid") <- -outPred$survival.iid
+        }
+    }
+    if(average.iid){
+        if(identical(type,"survival")){
+            attr(out,"average.iid") <- outPred$survival.average.iid
+        }else{
+            if(is.list(outPred$survival.average.iid)){
+                attr(out,"average.iid") <- lapply(outPred$survival.average.iid, function(iIID){-iIID})
+            }else{
+                attr(out,"average.iid") <- -outPred$survival.average.iid
+            }
+        }
     }
 
-    ## if (NROW(p) != NROW(newdata) || NCOL(p) != length(times)){
-    ##     stop("Prediction matrix has wrong dimensions:",
-    ##          "Requested newdata x times: ",NROW(newdata)," x ",length(times),
-    ##          "Provided prediction matrix: ",NROW(p)," x ",NCOL(p),"\n")
-    ## }
-    
-    return(1-p)
+    return(out)
 }
 
 ##' @export
@@ -690,24 +734,30 @@ predictRisk.ARR <- function(object,newdata,times,cause,...){
 
 
 ##' @export 
-predictRisk.CauseSpecificCox <- function (object, newdata, times, cause, product.limit = TRUE, ...) { 
-    p <- predict(object=object,
-                 newdata=newdata,
-                 times=times,
-                 cause=cause,
-                 keep.strata=FALSE,
-                 se = FALSE,
-                 iid = FALSE,
-                 product.limit = product.limit)$absRisk
+predictRisk.CauseSpecificCox <- function (object, newdata, times, cause, product.limit = TRUE, iid = FALSE, average.iid = FALSE, ...) { 
+    diag <- list(...)$diag
+    if(is.null(diag)){diag <- FALSE}
     
+    outPred <- predict(object=object,
+                       newdata=newdata,
+                       times=times,
+                       cause=cause,
+                       keep.strata=FALSE,
+                       se = FALSE,
+                       iid = iid,
+                       diag = diag,
+                       average.iid = average.iid,
+                       product.limit = product.limit)
     
-    ## if (NROW(p) != NROW(newdata) || NCOL(p) != length(times)){
-    ##     stop("Prediction matrix has wrong dimension:\n",
-    ##          "Requested newdata x times: ",NROW(newdata)," x ",length(times),"\n",
-    ##          "Provided prediction matrix: ",NROW(p)," x ",NCOL(p),"\n")
-    ## }
-    
-    return(p)
+    out <- outPred$absRisk
+    if(iid){
+        attr(out,"iid") <- outPred$absRisk.iid
+    }
+    if(average.iid){
+        attr(out,"average.iid") <- outPred$absRisk.average.iid
+    }
+
+    return(out)
 }
 
 

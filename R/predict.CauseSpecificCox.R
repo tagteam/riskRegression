@@ -181,31 +181,39 @@ predict.CauseSpecificCox <- function(object,
     if(length(landmark)!=1){
         stop("\'t0\' must have length one \n")
     }
-    if(!identical(diag,FALSE) && !identical(diag,TRUE) && !identical(diag,2)){ ## 2 is an hidden option
+    if(!is.logical(diag)){ 
         stop("Argument \'diag\' must be logical \n")
     }
     
-    if(diag>0){
+    if(diag){
         if((se[[1]]||band[[1]])){
             stop("Arguments \'se\' and \'band\' must be FALSE when \'diag\' is TRUE \n")
         }
         if(iid[[1]]==TRUE && store.iid[[1]] == "minimal"){
             stop("Arguments \'store.iid\' must equal \"full\" when \'diag\' is TRUE \n")
         }
-        if(diag==TRUE){
-            if(NROW(newdata)!=length(times)){
-                stop("When argument \'diag\' is TRUE, the number of rows in \'newdata\' must equal the length of \'times\' \n")
-            }
-            if(!is.null(attr(average.iid,"factor"))){
-                stop("Attribute \"factor\" in argument \'average.iid\' should be NULL when argument \'diag\' is set to TRUE \n")
-            }
-        }else{ ## diag = 2 [for ate]
-            if(iid[[1]]==TRUE){
-                stop("Argument \'iid\' must be FALSE when \'diag\' is equal to 2 \n")
-            }
-            if(length(attr(average.iid,"factor"))!=length(times)){
-                stop("When argument \'diag\' is 2, the attribute \"factor\" of \'average.iid\' must be a list with as many elements as the length of \'times\' \n")
-            }
+        if(NROW(newdata)!=length(times)){
+            stop("When argument \'diag\' is TRUE, the number of rows in \'newdata\' must equal the length of \'times\' \n")
+        }
+        if(!is.null(attr(average.iid,"factor"))){
+            stop("Attribute \"factor\" in argument \'average.iid\' should be NULL when argument \'diag\' is set to TRUE \n")
+        }
+    }else if(!is.null(attr(average.iid,"factor"))){
+        if(iid==TRUE){
+            stop("Argument \'iid\' must be FALSE when \'average.iid\' contains an attribute \"factor\" \n")
+        }
+        if(se==TRUE){
+            stop("Argument \'se\' must be FALSE when \'average.iid\' contains an attribute \"factor\" \n")
+        }
+        if(!is.list(attr(average.iid,"factor"))){
+            stop("Attribute \"factor\" of argument \'average.iid\' must be a list \n")
+        }
+        test.matrix <- any(unlist(lapply(attr(average.iid,"factor"), is.matrix))==FALSE)
+        if(test.matrix){
+            stop("Attribute \"factor\" of argument \'average.iid\' must be a list of matrices \n")
+        }
+        if(any(sapply(attr(average.iid,"factor"),NCOL) != length(times))){
+            stop("When argument \'diag\' is 2, the attribute \"factor\" of \'average.iid\' must be a list of matrices with either one or as many columns as the length of \'times\' \n")
         }
     }
     
@@ -273,7 +281,7 @@ predict.CauseSpecificCox <- function(object,
                              cumhazard = ls.cumhazard, 
                              eXb = M.eXb, 
                              strata = M.strata.num,
-                             newtimes = if(diag>0){times}else{sort(times)}, 
+                             newtimes = if(diag){times}else{sort(times)}, 
                              etimes = eventTimes, 
                              etimeMax = vec.etimes.max, 
                              t0 = landmark,
@@ -284,7 +292,7 @@ predict.CauseSpecificCox <- function(object,
                              nCause = nCause,
                              survtype = (surv.type=="survival"),
                              productLimit = product.limit,
-                             diag = (diag==TRUE),
+                             diag = diag,
                              exportSurv = (se || band || iid || average.iid))
 
     ## ** compute standard error for CIF
@@ -325,7 +333,7 @@ predict.CauseSpecificCox <- function(object,
                                eXb = M.eXb,
                                new.LPdata = new.LPdata,
                                new.strata = M.strata.num,                               
-                               times = if(diag>0){times}else{Utimes},
+                               times = if(diag){times}else{Utimes},
                                ls.infoVar = ls.infoVar,
                                new.n = new.n,
                                cause = index.cause,

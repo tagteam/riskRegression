@@ -56,6 +56,10 @@ which the cumulative incidences event probabilities are computed.}
 
 \item{cause}{Identifies the cause of interest among the competing events.}
 
+\item{iid}{Should the iid decomposition be output using an attribute?}
+
+\item{average.iid}{Should the average iid decomposition be output using an attribute?}
+
 \item{product.limit}{If \code{TRUE} the survival is computed using the product limit estimator.
 Otherwise the exponential approximation is used (i.e. exp(-cumulative hazard)).}
 }

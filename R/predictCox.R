@@ -252,6 +252,10 @@ predictCox <- function(object,
       if(missing(times) || nTimes[[1]]==0){
           stop("Time points at which to evaluate the predictions are missing \n")
       }
+      
+      if(!is.vector(times)){
+          stop("Argument \'times\' must be a vector \n")
+      }
 
       name.regressor <- c(infoVar$lpvars.original, infoVar$stratavars.original)
       if(length(name.regressor) > 0 && any(name.regressor %in% names(newdata) == FALSE)){
@@ -357,7 +361,7 @@ predictCox <- function(object,
                               strata.levels = infoVar$strata.levels)
 
       new.levelStrata <- levels(droplevels(new.strata))
-      
+
       ## *** subject specific hazard
       if (is.strata==FALSE){
           if(diag){
@@ -407,6 +411,7 @@ predictCox <- function(object,
           for(S in new.levelStrata){ ## S <- 1
               id.S <- which(Lambda0$strata==S)
               newid.S <- which(new.strata==S)
+
               if(diag){
                   if(needOrder){
                       iSTimes <- prodlim::sindex(jump.times = Lambda0$times[id.S], eval.times = times.sorted[oorder.times[newid.S]])
@@ -415,34 +420,34 @@ predictCox <- function(object,
                   }                  
               }
         
-        if ("hazard" %in% type){
-            if(diag){
-                out$hazard[newid.S] <- new.eXb[newid.S] * Lambda0$hazard[id.S][iSTimes]
-            }else{
-                out$hazard[newid.S,] <- new.eXb[newid.S] %o% Lambda0$hazard[id.S]
-                if (needOrder){
-                    out$hazard[newid.S,] <- out$hazard[newid.S,oorder.times,drop=0L]
-                }
-            }
-        }
-        if ("cumhazard" %in% type || "survival" %in% type){
-            if(diag){
-                cumhazard.S <-  cbind(new.eXb[newid.S] * Lambda0$cumhazard[id.S][iSTimes])
-            }else{
-                cumhazard.S <-  new.eXb[newid.S] %o% Lambda0$cumhazard[id.S]
-                if (needOrder){
-                    cumhazard.S <- cumhazard.S[,oorder.times,drop=0L]
-                }
-            }
+              if ("hazard" %in% type){
+                  if(diag){
+                      out$hazard[newid.S] <- new.eXb[newid.S] * Lambda0$hazard[id.S][iSTimes]
+                  }else{
+                      out$hazard[newid.S,] <- new.eXb[newid.S] %o% Lambda0$hazard[id.S]
+                      if (needOrder){
+                          out$hazard[newid.S,] <- out$hazard[newid.S,oorder.times,drop=0L]
+                      }
+                  }
+              }
+              if ("cumhazard" %in% type || "survival" %in% type){
+                  if(diag){
+                      cumhazard.S <-  cbind(new.eXb[newid.S] * Lambda0$cumhazard[id.S][iSTimes])
+                  }else{
+                      cumhazard.S <-  new.eXb[newid.S] %o% Lambda0$cumhazard[id.S]
+                      if (needOrder){
+                          cumhazard.S <- cumhazard.S[,oorder.times,drop=0L]
+                      }
+                  }
 
-            if ("cumhazard" %in% type){
-                out$cumhazard[newid.S,] <- cumhazard.S
-            }
-            if ("survival" %in% type){
-                out$survival[newid.S,] <- exp(-cumhazard.S)
-            }
-        }
-      }
+                  if ("cumhazard" %in% type){
+                      out$cumhazard[newid.S,] <- cumhazard.S
+                  }
+                  if ("survival" %in% type){
+                      out$survival[newid.S,] <- exp(-cumhazard.S)
+                  }
+              }
+          }
       }
                                         # }}}
                                         # {{{ standard error
@@ -482,9 +487,15 @@ predictCox <- function(object,
             if(test.matrix){
                 stop("Attribute \"factor\" of argument \'average.iid\' must be a list of matrices \n")
             }
-            test.dim <- any(unlist(lapply(attr(average.iid,"factor"), function(iM){dim(iM)==c(new.n, diag + (1-diag)*nTimes)}))==FALSE)
-            if(test.dim){
-                stop("Attribute \"factor\" of argument \'average.iid\' must be a list of matrices of size ",new.n,",",diag + (1-diag)*nTimes," \n")
+            for(iFactor in 1:length(attr(average.iid,"factor"))){ ## iFactor <- 1
+                if((diag == FALSE) && (NCOL(attr(average.iid,"factor")[[iFactor]])==1) && (nTimes > 1)){
+                    attr(average.iid,"factor")[[iFactor]] <- matrix(attr(average.iid,"factor")[[iFactor]][,1],
+                                                                    nrow = NROW(attr(average.iid,"factor")[[iFactor]]),
+                                                                    ncol = nTimes, byrow = FALSE)
+                }
+                if(any(dim(attr(average.iid,"factor")[[iFactor]])!=c(new.n, diag + (1-diag)*nTimes))){
+                    stop("Attribute \"factor\" of argument \'average.iid\' must be a list of matrices of size ",new.n,",",diag + (1-diag)*nTimes," \n")
+                }
             }
             if(diag){
                 attr(export,"factor") <- attr(average.iid,"factor")

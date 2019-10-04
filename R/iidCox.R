@@ -51,7 +51,7 @@
 #' @examples
 #' library(survival)
 #' library(data.table)
-##' library(prodlim)
+#' library(prodlim)
 #' set.seed(10)
 #' d <- sampleData(100, outcome = "survival")[,.(eventtime,event,X1,X6)]
 #' setkey(d, eventtime)
@@ -63,7 +63,8 @@
 #' 
 #' IF.cox.all <- iidCox(m.cox, tau.hazard = sort(unique(c(7,d$eventtime))))
 #' IF.cox.beta <- iidCox(m.cox, baseline.iid = FALSE)
-#' 
+#'
+#' @export
 `iidCox` <-
     function(object, newdata,
              baseline.iid, tau.hazard, tau.max, store.iid, 
@@ -83,6 +84,7 @@ iidCox.coxph <- function(object, newdata = NULL,
     object.modelFrame <- coxModelFrame(object)
     infoVar <- coxVariableName(object, model.frame = object.modelFrame)
     nVar <- length(infoVar$lpvars)
+    nObs <- NROW(object.modelFrame)
     
     object.strata <- coxStrata(object, data = NULL, strata.vars = infoVar$stratavars)
     object.levelStrata <- levels(object.strata)
@@ -165,7 +167,6 @@ iidCox.coxph <- function(object, newdata = NULL,
                           type = "hazard",
                           centered = FALSE,
                           keep.strata = TRUE)
-    etime1.min <- rep(NA, nStrata)
     
     ## S0, E, jump times
     object.index_strata <- list() 
@@ -250,59 +251,72 @@ iidCox.coxph <- function(object, newdata = NULL,
         }
     
     }
+
+    ## ** Prepare output
+    out <- list(IFbeta = matrix(NA, nrow = nObs, ncol = nVar,
+                                dimnames = list(NULL, infoVar$lpvars)),  
+                IFhazard = NULL,
+                IFcumhazard = NULL,
+                calcIFhazard = list(delta_iS0 = NULL,
+                                    Elambda0 = NULL,
+                                    cumElambda0 = NULL,
+                                    lambda0_iS0= NULL,
+                                    cumLambda0_iS0= NULL,
+                                    time1 = NULL),
+                time = vector(mode = "list", length = nStrata),  # time at which the IF is assessed
+                etime1.min = rep(NA, nStrata),
+                etime.max = lambda0$lastEventTime,
+                indexObs = new.order,
+                store.iid = store.iid
+                )
+
+    if(store.iid=="minimal"){
+        out$calcIFhazard$delta_iS0 <- vector(mode = "list", length = nStrata)
+        out$calcIFhazard$Elambda0 <- vector(mode = "list", length = nStrata)
+        out$calcIFhazard$cumElambda0 <- vector(mode = "list", length = nStrata)
+        out$calcIFhazard$lambda0_iS0 <- vector(mode = "list", length = nStrata)
+        out$calcIFhazard$cumLambda0_iS0 <- vector(mode = "list", length = nStrata)
+        out$calcIFhazard$time1 <- vector(mode = "list", length = nStrata)
+    }else{
+        out$IFhazard <- vector(mode = "list", length = nStrata)
+        out$IFcumhazard <- vector(mode = "list", length = nStrata)
+    }
     
     ## ** Computation of the influence function (coefficients)
-    IFbeta <- NULL
-    IFcumhazard <- NULL
-    IFhazard <- NULL
-    calcIFhazard <- list(delta_iS0 = NULL,
-                         Elambda0 = NULL,
-                         cumElambda0 = NULL,
-                         lambda0_iS0= NULL,
-                         cumLambda0_iS0= NULL,
-                         time1 = NULL)
-    ls.Utime1 <- NULL
-  
-    #### beta
     for(iStrata in 1:nStrata){
-    
-        new.indexJump_strata <- new.indexJump[[iStrata]][new.index_strata[[iStrata]][new.order_strata[[iStrata]]]]
+
+        iSubset <- new.index_strata[[iStrata]]
+        iOrder <- new.order_strata[[iStrata]]
+        iOrderBack <- order(new.order_strata[[iStrata]])
+        new.indexJump_strata <- new.indexJump[[iStrata]][iSubset[iOrder]]
     
         ## IF
         if(nVar > 0){
             if(store.iid != "approx"){
-                IFbeta_tempo <- IFbeta_cpp(newT = new.time_strata[[iStrata]],
-                                           neweXb = new.eXb_strata[[iStrata]],
-                                           newX = new.LPdata_strata[[iStrata]],
-                                           newStatus = new.status_strata[[iStrata]], 
-                                           newIndexJump = new.indexJump_strata, 
-                                           S01 = Ecpp[[iStrata]]$S0,
-                                           E1 = Ecpp[[iStrata]]$E,
-                                           time1 = Ecpp[[iStrata]]$Utime1,
-                                           iInfo = iInfo,
-                                           p = nVar)
+                out$IFbeta[iSubset,] <- IFbeta_cpp(newT = new.time_strata[[iStrata]],
+                                                   neweXb = new.eXb_strata[[iStrata]],
+                                                   newX = new.LPdata_strata[[iStrata]],
+                                                   newStatus = new.status_strata[[iStrata]], 
+                                                   newIndexJump = new.indexJump_strata, 
+                                                   S01 = Ecpp[[iStrata]]$S0,
+                                                   E1 = Ecpp[[iStrata]]$E,
+                                                   time1 = Ecpp[[iStrata]]$Utime1,
+                                                   iInfo = iInfo,
+                                                   p = nVar)[iOrderBack,,drop=FALSE]
             }else{
-                IFbeta_tempo <- IFbetaApprox_cpp(newX = new.LPdata_strata[[iStrata]],
-                                                 newStatus = new.status_strata[[iStrata]],
-                                                 newIndexJump = new.indexJump_strata,  
-                                                 E1 = Ecpp[[iStrata]]$E,
-                                                 iInfo = iInfo,
-                                                 p = nVar)
+                out$IFbeta[iSubset,] <- IFbetaApprox_cpp(newX = new.LPdata_strata[[iStrata]],
+                                                         newStatus = new.status_strata[[iStrata]],
+                                                         newIndexJump = new.indexJump_strata,  
+                                                         E1 = Ecpp[[iStrata]]$E,
+                                                         iInfo = iInfo,
+                                                         p = nVar)[iOrderBack,,drop=FALSE]
             }
         }else{
-            IFbeta_tempo <- matrix(NA, ncol = 1, nrow = length(new.index_strata[[iStrata]]))
+            out$IFbeta[iSubset,] <- matrix(NA, ncol = 1, nrow = length(new.index_strata[[iStrata]]))
         }
-    
-        ## output
-        IFbeta <- rbind(IFbeta, IFbeta_tempo)
-    
+        
     }
     
-  
-    ## set original order
-    IFbeta <- IFbeta[order(new.order),,drop=FALSE]
-    ## name coefficients
-    colnames(IFbeta) <- infoVar$lpvars
     # }}}
     
     ## ** Computation of the influence function (baseline hazard)
@@ -321,7 +335,7 @@ iidCox.coxph <- function(object, newdata = NULL,
                 lambda0Strata <- lambda0$hazard[index.keep]
             }
     
-            etime1.min[iStrata] <- timeStrata[1]
+            out$etime1.min[iStrata] <- timeStrata[1]
     
             ## tau.hazard
             if(is.null(tau.hazard)){
@@ -346,7 +360,7 @@ iidCox.coxph <- function(object, newdata = NULL,
             ## IF
             if(any(new.status_strata[[iStrata]]>0)){
                 IFlambda_res <- IFlambda0_cpp(tau = tau.hazard_strata,
-                                              IFbeta = IFbeta,
+                                              IFbeta = out$IFbeta,
                                               newT = new.time, neweXb = new.eXb, newStatus = new.status, newIndexJump = new.indexJump[[iStrata]], newStrata = as.numeric(new.strata),
                                               S01 = Ecpp[[iStrata]]$S0,
                                               E1 = Etempo,
@@ -357,55 +371,45 @@ iidCox.coxph <- function(object, newdata = NULL,
                                               )      
             }else{
                 if(length(tau.hazard_strata)==0){tau.hazard_strata <- max(object.time_strata[[iStrata]])}
-                IFlambda_res <- list(hazard = matrix(0, ncol = length(tau.hazard_strata), nrow = NROW(IFbeta)),
-                                     cumhazard = matrix(0, ncol = length(tau.hazard_strata), nrow = NROW(IFbeta))
+                IFlambda_res <- list(hazard = matrix(0, ncol = length(tau.hazard_strata), nrow = nObs),
+                                     cumhazard = matrix(0, ncol = length(tau.hazard_strata), nrow = nObs)
                                      )
                 if(length(tau.hazard_strata)==0){tau.hazard_strata <- NA}
             }
     
-            # output 
-            ls.Utime1 <- c(ls.Utime1, list(tau.hazard_strata))
+            ## output
+            if(length(tau.hazard_strata)==0){
+                tau.hazard_strata <- 0
+            }
+            if(need.order){
+                out$time[[iStrata]] <- tau.hazard_strata[tau.oorder[[iStrata]]]
+            }else{
+                out$time[[iStrata]] <- tau.hazard_strata
+            }
             if(store.iid=="minimal"){
-                calcIFhazard$delta_iS0 <- c(calcIFhazard$delta_iS0, list(IFlambda_res$delta_iS0))
-                calcIFhazard$Elambda0 <- c(calcIFhazard$Elambda0, list(IFlambda_res$Elambda0))
-                calcIFhazard$cumElambda0 <- c(calcIFhazard$cumElambda0, list(IFlambda_res$cumElambda0))
-                calcIFhazard$lambda0_iS0 <- c(calcIFhazard$lambda0_iS0, list(IFlambda_res$lambda0_iS0))
-                calcIFhazard$cumLambda0_iS0 <- c(calcIFhazard$cumLambda0_iS0, list(IFlambda_res$cumLambda0_iS0))
-                calcIFhazard$time1 <- c(calcIFhazard$time1, list(timeStrata)) # event time by strata
+                out$calcIFhazard$delta_iS0[[iStrata]] <- IFlambda_res$delta_iS0
+                out$calcIFhazard$Elambda0[[iStrata]] <- IFlambda_res$Elambda0
+                out$calcIFhazard$cumElambda0[[iStrata]] <- IFlambda_res$cumElambda0
+                out$calcIFhazard$lambda0_iS0[[iStrata]] <- IFlambda_res$lambda0_iS0
+                out$calcIFhazard$cumLambda0_iS0[[iStrata]] <- IFlambda_res$cumLambda0_iS0
+                out$calcIFhazard$time1[[iStrata]] <- timeStrata # event time by strata
             }else{
                 if(keep.times){
                     colnames(IFlambda_res$hazard) <- tau.hazard_strata
                     colnames(IFlambda_res$cumhazard) <- tau.hazard_strata
                 }
-                IFhazard <- c(IFhazard, list(IFlambda_res$hazard))
-                IFcumhazard <- c(IFcumhazard, list(IFlambda_res$cumhazard))
+                if(need.order){
+                    out$IFhazard[[iStrata]] <- IFlambda_res$hazard[,tau.oorder[[iStrata]],drop=FALSE]
+                    out$IFcumhazard[[iStrata]] <- IFlambda_res$cumhazard[,tau.oorder[[iStrata]],drop=FALSE]
+                }else{
+                    out$IFhazard[[iStrata]] <- IFlambda_res$hazard
+                    out$IFcumhazard[[iStrata]] <- IFlambda_res$cumhazard
+                }
             }
         }
     }
 
-    if(need.order){
-        IFhazard <- lapply(1:nStrata, function(iS){
-            IFhazard[[iS]][,tau.oorder[[iS]],drop=FALSE]
-        })
-        IFcumhazard <- lapply(1:nStrata, function(iS){
-            IFcumhazard[[iS]][,tau.oorder[[iS]],drop=FALSE]
-        })
-        ls.Utime1 <- lapply(1:nStrata, function(iS){
-            ls.Utime1[[iS]][tau.oorder[[iS]]]
-        })        
-    }
-    
     ## ** export
-    out <- list(IFbeta = IFbeta,  
-                IFhazard = IFhazard,
-                IFcumhazard = IFcumhazard,
-                calcIFhazard = calcIFhazard,
-                time = ls.Utime1,  # time at which the IF is assessed
-                etime1.min = etime1.min,
-                etime.max = lambda0$lastEventTime,
-                indexObs = new.order,
-                store.iid = store.iid
-                )
     if(return.object){
         object$iid <- out
         return(object)
