@@ -200,38 +200,64 @@ predictCox <- function(object,
   ## if we predict the hazard for newdata then there is no need to center the covariates
   object.modelFrame[,c("eXb") := exp(coxLP(object, data = NULL, center = if(is.null(newdata)){centered}else{FALSE}))]
 
-  ## ** checks 
-  if(object.baseEstimator == "exact"){
-      stop("Prediction with exact handling of ties is not implemented.\n")
-  }
-  if(nTimes[1]>0 && any(is.na(times))){
-      stop("Missing (NA) values in argument \'times\' are not allowed.\n")
-  }
-  type <- tolower(type)
-  if(!is.null(object$weights) && !all(object$weights==1)){
-      stop("predictCox does not know how to handle Cox models fitted with weights \n")
-  }
-  if(any(type %in% c("hazard","cumhazard","survival") == FALSE)){
-      stop("type can only be \"hazard\", \"cumhazard\" or/and \"survival\" \n") 
-  }
-  if(any(object.modelFrame[["start"]]!=0)){
-      warning("The current version of predictCox was not designed to handle left censoring \n",
-              "The function may be used on own risks \n") 
-  }    
-  if(!is.null(object$naive.var)){
-      stop("predictCox does not know how to handle fraitly \n") 
-  }
-  if(!is.null(coef(object)) && any(is.na(coef(object)))){
-      stop("Incorrect object",
-           "One or several model parameters have been estimated to be NA \n")
-  }
-
-    if (se[[1]]==1L || iid[[1]]==1L){
-        if (missing(newdata)) stop("Argument 'newdata' is missing. Cannot compute standard errors in this case.")
+    ## ** checks
+    ## check user imputs 
+    if(nTimes[1]>0 && any(is.na(times))){
+        stop("Missing (NA) values in argument \'times\' are not allowed.\n")
     }
+    type <- tolower(type)
+    if(any(type %in% c("hazard","cumhazard","survival") == FALSE)){
+        stop("type can only be \"hazard\", \"cumhazard\" or/and \"survival\" \n") 
+    }
+    
     if("XXXindexXXX" %in% names(object.modelFrame)){
         stop("XXXindexXXX is a reserved name. No variable should have this name. \n")
     }
+    ## predictCox is not compatible with all coxph/cph object (i.e. only handle only simple cox models)
+    if(!is.null(object$weights) && !all(object$weights==1)){
+        stop("predictCox does not know how to handle Cox models fitted with weights \n")
+    }
+    if(!is.null(object$naive.var)){
+        stop("predictCox does not know how to handle fraitly \n") 
+    }
+    if(any(object.modelFrame[["start"]]!=0)){
+        warning("The current version of predictCox was not designed to handle left censoring \n",
+                "The function may be used on own risks \n") 
+    }    
+    if(object.baseEstimator == "exact"){
+        stop("Prediction with exact handling of ties is not implemented.\n")
+    }
+
+    ## convergence issue
+    if(!is.null(coef(object)) && any(is.na(coef(object)))){
+        stop("Incorrect object",
+             "One or several model parameters have been estimated to be NA \n")
+    }
+    ## prediction 
+    if (missing(newdata) && (se || iid || average.iid)){
+        stop("Argument 'newdata' is missing. Cannot compute standard errors in this case.")
+    }
+    if(!is.null(newdata)){
+        if(missing(times) || nTimes[1]==0){
+            stop("Time points at which to evaluate the predictions are missing \n")
+        }
+        if(!is.vector(times)){
+            stop("Argument \'times\' must be a vector \n")
+        }
+        name.regressor <- c(infoVar$lpvars.original, infoVar$stratavars.original)
+        if(length(name.regressor) > 0 && any(name.regressor %in% names(newdata) == FALSE)){
+            stop("Missing variables in argument \'newdata\': \"",
+                 paste0(setdiff(name.regressor,names(newdata)), collapse = "\" \""),
+                 "\"\n")
+        }
+        if(se[1] && ("hazard" %in% type)){
+            stop("Standard error cannot be computed for the hazard \n")
+        }
+        if(band[1] && ("hazard" %in% type)){
+            stop("confidence bands cannot be computed for the hazard \n")
+        }
+    }
+    ## diag argument
     if(!is.logical(diag)){
         stop("Argument \'diag\' must be of type logical \n")
     }
@@ -244,33 +270,36 @@ predictCox <- function(object,
             stop("When argument \'diag\' is TRUE, the number of rows in \'newdata\' must equal the length of \'times\' \n")
         }
     }
-    ## if(average.iid && (iid == FALSE) && ("hazard" %in% type)){
-        ## stop("Argument \'average.iid\' must be FALSE when argument \'type\' contains \"hazard\"\n")
-    ## }
+    if(average.iid==TRUE && !is.null(attr(average.iid,"factor"))){
+        if(iid){
+            stop("Attribute \"factor\" of argument \'average.iid\' ignored when \'iid\' is TRUE \n")
+        }
+        if(se){
+            stop("Attribute \"factor\" of argument \'average.iid\' ignored when \'se\' is TRUE \n")
+        }
+        test.list <- !is.list(attr(average.iid,"factor"))
+        if(test.list){
+            stop("Attribute \"factor\" of argument \'average.iid\' must be a list \n")
+        }
+        test.matrix <- any(unlist(lapply(attr(average.iid,"factor"), is.matrix))==FALSE)
+        if(test.matrix){
+            stop("Attribute \"factor\" of argument \'average.iid\' must be a list of matrices \n")
+        }
+        for(iFactor in 1:length(attr(average.iid,"factor"))){ ## iFactor <- 1
+            ## when only one column and diag = FALSE, use the same weights at all times
+            if((diag == FALSE) && (NCOL(attr(average.iid,"factor")[[iFactor]])==1) && (nTimes > 1)){
+                attr(average.iid,"factor")[[iFactor]] <- matrix(attr(average.iid,"factor")[[iFactor]][,1],
+                                                                nrow = NROW(attr(average.iid,"factor")[[iFactor]]),
+                                                                ncol = nTimes, byrow = FALSE)
+            }
+            ## check dimensions
+            if(any(dim(attr(average.iid,"factor")[[iFactor]])!=c(NROW(newdata), diag + (1-diag)*nTimes))){
+                stop("Attribute \"factor\" of argument \'average.iid\' must be a list of matrices of size ",new.n,",",diag + (1-diag)*nTimes," \n")
+            }
+        }
+    }
 
-    if(!is.null(newdata)){
-      if(missing(times) || nTimes[[1]]==0){
-          stop("Time points at which to evaluate the predictions are missing \n")
-      }
-      
-      if(!is.vector(times)){
-          stop("Argument \'times\' must be a vector \n")
-      }
 
-      name.regressor <- c(infoVar$lpvars.original, infoVar$stratavars.original)
-      if(length(name.regressor) > 0 && any(name.regressor %in% names(newdata) == FALSE)){
-          stop("Missing variables in argument \'newdata\': \"",
-               paste0(setdiff(name.regressor,names(newdata)), collapse = "\" \""),
-               "\"\n")
-      }
-      if(se[1] && ("hazard" %in% type)){
-          stop("Standard error cannot be computed for the hazard \n")
-      }
-      if(band[1] && ("hazard" %in% type)){
-          stop("confidence bands cannot be computed for the hazard \n")
-      }
-
-  }
 
                                         # }}}  
                                         # {{{ computation of the baseline hazard
@@ -479,27 +508,10 @@ predictCox <- function(object,
         ## Computation of the influence function and/or the standard error
         export <- c("iid"[(iid+band)>0],"se"[(se+band)>0],"average.iid"[average.iid==TRUE])
         if(!is.null(attr(average.iid,"factor"))){
-            test.list <- !is.list(attr(average.iid,"factor"))
-            if(test.list){
-                stop("Attribute \"factor\" of argument \'average.iid\' must be a list \n")
-            }
-            test.matrix <- any(unlist(lapply(attr(average.iid,"factor"), is.matrix))==FALSE)
-            if(test.matrix){
-                stop("Attribute \"factor\" of argument \'average.iid\' must be a list of matrices \n")
-            }
-            for(iFactor in 1:length(attr(average.iid,"factor"))){ ## iFactor <- 1
-                if((diag == FALSE) && (NCOL(attr(average.iid,"factor")[[iFactor]])==1) && (nTimes > 1)){
-                    attr(average.iid,"factor")[[iFactor]] <- matrix(attr(average.iid,"factor")[[iFactor]][,1],
-                                                                    nrow = NROW(attr(average.iid,"factor")[[iFactor]]),
-                                                                    ncol = nTimes, byrow = FALSE)
-                }
-                if(any(dim(attr(average.iid,"factor")[[iFactor]])!=c(new.n, diag + (1-diag)*nTimes))){
-                    stop("Attribute \"factor\" of argument \'average.iid\' must be a list of matrices of size ",new.n,",",diag + (1-diag)*nTimes," \n")
-                }
-            }
             if(diag){
                 attr(export,"factor") <- attr(average.iid,"factor")
             }else{
+                ## re-order columns according to times
                 attr(export,"factor") <- lapply(attr(average.iid,"factor"), function(iF){
                     iF[,order.times,drop=FALSE]
                 })

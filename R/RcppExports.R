@@ -49,8 +49,8 @@ colCumSum <- function(x) {
 #' x <- matrix(1:8,ncol=2)
 #' colCumProd(x)
 #' @export
-colCumPrd <- function(x) {
-    .Call(`_riskRegression_colCumPrd`, x)
+colCumProd <- function(x) {
+    .Call(`_riskRegression_colCumProd`, x)
 }
 
 #' Apply crossprod and colSums 

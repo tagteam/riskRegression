@@ -538,7 +538,11 @@ List calcSeCif2_cpp(const std::vector<arma::mat>& ls_IFbeta, const std::vector<a
   // ** initialize for export
   arma::mat outSE;
   if(exportSE){
-    outSE.resize(nNewObs,nTau);
+	if(diag){
+      outSE.resize(nNewObs,1);
+    }else{
+      outSE.resize(nNewObs,nTau);
+    }
     outSE.fill(0.0);
   }
   arma::cube outIF;

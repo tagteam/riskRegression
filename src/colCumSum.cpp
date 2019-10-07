@@ -31,7 +31,7 @@ NumericMatrix colCumSum(NumericMatrix x){
 //' colCumProd(x)
 //' @export
 // [[Rcpp::export]]
-NumericMatrix colCumPrd(NumericMatrix x){
+NumericMatrix colCumProd(NumericMatrix x){
   arma::mat m(x.begin(), x.nrow(), x.ncol(), false);
   arma::mat result;
   result=cumprod(m,0);

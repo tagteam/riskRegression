@@ -25,7 +25,7 @@ events.}
 
 \item{type}{[character] Can be changed to \code{"survival"} if the event free survival should be output instead of the absolute risk.}
 
-\item{landmark}{[integer] The starting time for the computation of the cumulative risk.,}
+\item{landmark}{[integer] The starting time for the computation of the cumulative risk.}
 
 \item{keep.times}{[logical] If \code{TRUE} add the evaluation times to the output.}
 

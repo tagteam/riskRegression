@@ -186,14 +186,14 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// colCumPrd
-NumericMatrix colCumPrd(NumericMatrix x);
-RcppExport SEXP _riskRegression_colCumPrd(SEXP xSEXP) {
+// colCumProd
+NumericMatrix colCumProd(NumericMatrix x);
+RcppExport SEXP _riskRegression_colCumProd(SEXP xSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< NumericMatrix >::type x(xSEXP);
-    rcpp_result_gen = Rcpp::wrap(colCumPrd(x));
+    rcpp_result_gen = Rcpp::wrap(colCumProd(x));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -508,7 +508,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_riskRegression_calcSeCif_cpp", (DL_FUNC) &_riskRegression_calcSeCif_cpp, 32},
     {"_riskRegression_calcSeCif2_cpp", (DL_FUNC) &_riskRegression_calcSeCif2_cpp, 24},
     {"_riskRegression_colCumSum", (DL_FUNC) &_riskRegression_colCumSum, 1},
-    {"_riskRegression_colCumPrd", (DL_FUNC) &_riskRegression_colCumPrd, 1},
+    {"_riskRegression_colCumProd", (DL_FUNC) &_riskRegression_colCumProd, 1},
     {"_riskRegression_colSumsCrossprod", (DL_FUNC) &_riskRegression_colSumsCrossprod, 3},
     {"_riskRegression_quantileProcess_cpp", (DL_FUNC) &_riskRegression_quantileProcess_cpp, 6},
     {"_riskRegression_sampleMaxProcess_cpp", (DL_FUNC) &_riskRegression_sampleMaxProcess_cpp, 5},

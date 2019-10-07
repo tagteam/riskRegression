@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: apr  5 2018 (17:01) 
 ## Version: 
-## Last-Updated: okt  4 2019 (17:15) 
+## Last-Updated: okt  7 2019 (11:31) 
 ##           By: Brice Ozenne
-##     Update #: 843
+##     Update #: 845
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -82,7 +82,7 @@ iidATE <- function(estimator,
 
             ## outputs -IF_S or IF_r : ok
             term.intF1_tau <- attr(predictRisk(object.event, newdata = data, times = times[iTau], cause = cause,
-                                     average.iid = factor, diag = FALSE),"average.iid")
+                                               average.iid = factor),"average.iid")
 
             for(iC in 1:n.contrasts){ ## iC <- 1 
                 iid.outcome[[iC]][,iTau] <- iid.outcome[[iC]][,iTau] + term.intF1_tau[[iC]]
@@ -94,7 +94,7 @@ iidATE <- function(estimator,
             factor <- TRUE
             attr(factor, "factor") <- list(-colMultiply_cpp(dM_SG*beforeEvent.jumpC, scale = iW.IPTW[,iC]))                                
             integrand.F1t <- attr(predictRisk(object.event, newdata = data, times = time.jumpC, cause = cause,
-                                              average.iid = factor, diag = 2), "average.iid")[[1]] ## argument diag=2 is only used by CauseSpecificCox models
+                                              average.iid = factor), "average.iid")[[1]] ## argument diag=2 is only used by CauseSpecificCox models
             iid.outcome[[iC]] <- iid.outcome[[iC]] + rowCumSum(integrand.F1t)[,beforeTau.nJumpC]
         }
     }
@@ -131,7 +131,7 @@ iidATE <- function(estimator,
                 factor <- TRUE
                 attr(factor,"factor") <- list(-colMultiply_cpp(ls.F1tau_F1t_dM_SSG[[iTau]]*beforeEvent.jumpC, scale = iW.IPTW[,iC]))
                 integrand.St <- attr(predictRisk(object.event, type = "survival", newdata = data, times = time.jumpC-tol, cause = cause,
-                                                 average.iid = factor, diag = 2), "average.iid")[[1]]
+                                                 average.iid = factor), "average.iid")[[1]]
                 iid.survival[[iC]][,iTau] <- iid.survival[[iC]][,iTau] + rowSums(integrand.St[,1:beforeTau.nJumpC[iTau]])
             }
         }

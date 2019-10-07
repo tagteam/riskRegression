@@ -242,7 +242,6 @@ resTD
 \seealso{
 \code{\link{confint.ate}} to compute confidence intervals/bands.
 \code{\link{autoplot.ate}} to display the average risk.
-\code{\link{ateRobust}} to make the estimator doubly robust
 }
 \author{
 Brice Ozenne \email{broz@sund.ku.dk}

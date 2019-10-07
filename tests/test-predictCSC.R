@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: maj 18 2017 (09:23) 
 ## Version: 
-## last-updated: sep 25 2019 (09:41) 
+## last-updated: okt  7 2019 (19:08) 
 ##           By: Brice Ozenne
-##     Update #: 261
+##     Update #: 276
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -18,7 +18,10 @@
 ## * Settings
 library(riskRegression)
 library(testthat)
+library(data.table)
 library(mstate)
+library(prodlim)
+library(rms)
 tmat <- trans.comprisk(2, names = c("0", "1", "2"))
 library(survival)
 library(timereg); nsim.band <- 100
@@ -820,9 +823,9 @@ dt <- sampleData(75, outcome = "competing.risks")[,.(time,event,X1,X2,X6)]
 test_that("[predictCSC] diag no strata", {
     e.CSC <- CSC(Hist(time, event) ~ X1*X6, data = dt)
 
-    GS <- predict(e.CSC, newdata = dt, times = dt$time, se = FALSE, iid = TRUE, average.iid = TRUE, cause = 1)
+    GS <- predict(e.CSC, newdata = dt, times = dt$time, se = TRUE, iid = TRUE, average.iid = TRUE, cause = 1)
     test <- predict(e.CSC, newdata = dt, times = dt$time,
-                    se = FALSE, iid = TRUE, average.iid = TRUE, diag = TRUE, cause = 1)
+                    se = TRUE, iid = TRUE, average.iid = TRUE, diag = TRUE, cause = 1)
     test2 <- predict(e.CSC, newdata = dt, times = dt$time,
                      se = FALSE, iid = FALSE, average.iid = TRUE, diag = TRUE, cause = 1)
     
@@ -830,6 +833,9 @@ test_that("[predictCSC] diag no strata", {
     expect_equal(dt$time, as.double(test$time))
     expect_equal(diag(GS$absRisk), as.double(test$absRisk))
 
+    ## se
+    expect_equal(diag(GS$absRisk.se), test$absRisk.se[,1])
+    
     ## iid
     GS.iid.diag <- do.call(rbind,lapply(1:NROW(dt),
                                         function(iN){GS$absRisk.iid[iN,iN,]}))
@@ -843,6 +849,7 @@ test_that("[predictCSC] diag no strata", {
     average.iid <- TRUE
     attr(average.iid,"factor") <- list(matrix(5, nrow = NROW(dt), ncol = 1),
                                        matrix(1:NROW(dt), nrow = NROW(dt), ncol = 1))
+
     test3 <- predict(e.CSC, newdata = dt, times = dt$time,
                      se = FALSE, iid = FALSE, average.iid = average.iid, diag = FALSE, cause = 1)
 
@@ -850,33 +857,43 @@ test_that("[predictCSC] diag no strata", {
     expect_equal(t(apply(GS$absRisk.iid, 2:3, function(x){sum(x * (1:length(dt$time)))/length(x)})),
                  test3$absRisk.average.iid[[2]])
 
+    ## average.iid with factor - diag=FALSE, time varying factor
+    average.iid <- TRUE
+    attr(average.iid,"factor") <- list(matrix(rnorm(NROW(dt)*length(dt$time)), nrow = NROW(dt), ncol = length(dt$time)))
+    test4 <- predict(e.CSC, newdata = dt, times = dt$time, cause = 1,
+                     se = FALSE, iid = FALSE, average.iid = average.iid, diag = FALSE)
+    expect_equal(do.call(rbind,lapply(1:NROW(dt), function(iObs){colMeans(GS$absRisk.iid[,,iObs] * attr(average.iid,"factor")[[1]])})),
+                 test4$absRisk.average.iid[[1]])
+
     ## average.iid with factor - diag=TRUE
     average.iid <- TRUE
-    attr(average.iid,"factor") <- list(matrix(5, nrow = NROW(dt), ncol = 1),
+    attr(average.iid,"factor") <- list(matrix(5, nrow = NROW(dt), ncol = 1, byrow = TRUE),
                                        matrix(1:NROW(dt), nrow = NROW(dt), ncol = 1))
+    test5 <- predict(e.CSC, newdata = dt, times = dt$time, cause = 1,
+                     se = FALSE, iid = FALSE, average.iid = average.iid, diag = TRUE)
 
-    test3 <- predict(e.CSC, newdata = dt, times = dt$time[10:11],
-                     se = FALSE, iid = FALSE, average.iid = average.iid, diag = 2, cause = 1)
     
-    expect_equal(5*GS$absRisk.average.iid[,10], test3$absRisk.average.iid[[1]][,1])
-    expect_equal(5*colMeans(GS$absRisk.iid[,10,]), test3$absRisk.average.iid[[1]][,1])
-    expect_equal(colMeans(colMultiply_cpp(GS$absRisk.iid[,11,], scale = 1:NROW(dt))),
-                 test3$absRisk.average.iid[[2]][,1])
+    expect_equal(5*test$absRisk.average.iid, test5$absRisk.average.iid[[1]])
+    expect_equal(colMeans(colMultiply_cpp(GS.iid.diag, 1:length(dt$time))),
+                 test5$absRisk.average.iid[[2]][,1])
+
 })
 
-
-test_that("[predictCox] diag strata", {
+test_that("[predictCSC] diag strata", {
     eS.CSC <- CSC(Hist(time, event) ~ strata(X1) + X6, data = dt)
 
-    GS <- predict(eS.CSC, newdata = dt, times = dt$time, se = FALSE, iid = TRUE, average.iid = TRUE, cause = 1)
+    GS <- predict(eS.CSC, newdata = dt, times = dt$time, se = TRUE, iid = TRUE, average.iid = TRUE, cause = 1)
     test <- predict(eS.CSC, newdata = dt, times = dt$time,
-                    se = FALSE, iid = TRUE, average.iid = TRUE, diag = TRUE, cause = 1)
+                    se = TRUE, iid = TRUE, average.iid = TRUE, diag = TRUE, cause = 1)
     test2 <- predict(eS.CSC, newdata = dt, times = dt$time,
                      se = FALSE, iid = FALSE, average.iid = TRUE, diag = TRUE, cause = 1)
-
+    
     ## estimates
     expect_equal(dt$time, as.double(test$time))
     expect_equal(diag(GS$absRisk), as.double(test$absRisk))
+
+    ## se
+    expect_equal(diag(GS$absRisk.se), test$absRisk.se[,1])
 
     ## iid
     GS.iid.diag <- do.call(rbind,lapply(1:NROW(dt),
@@ -898,19 +915,26 @@ test_that("[predictCox] diag strata", {
     expect_equal(t(apply(GS$absRisk.iid, 2:3, function(x){sum(x * (1:length(dt$time)))/length(x)})),
                  test3$absRisk.average.iid[[2]])
 
+    ## average.iid with factor - diag=FALSE, time varying factor
+    average.iid <- TRUE
+    attr(average.iid,"factor") <- list(matrix(rnorm(NROW(dt)*length(dt$time)), nrow = NROW(dt), ncol = length(dt$time)))
+    test4 <- predict(eS.CSC, newdata = dt, times = dt$time, cause = 1,
+                     se = FALSE, iid = FALSE, average.iid = average.iid, diag = FALSE)
+    expect_equal(do.call(rbind,lapply(1:NROW(dt), function(iObs){colMeans(GS$absRisk.iid[,,iObs] * attr(average.iid,"factor")[[1]])})),
+                 test4$absRisk.average.iid[[1]])
+
     ## average.iid with factor - diag=TRUE
     average.iid <- TRUE
-    attr(average.iid,"factor") <- list(matrix(5, nrow = NROW(dt), ncol = 1),
+    attr(average.iid,"factor") <- list(matrix(5, nrow = NROW(dt), ncol = 1, byrow = TRUE),
                                        matrix(1:NROW(dt), nrow = NROW(dt), ncol = 1))
-    test3 <- predict(eS.CSC, newdata = dt, times = dt$time[10:11],
-                     se = FALSE, iid = FALSE, average.iid = average.iid, diag = 2, cause = 1)
+    test5 <- predict(eS.CSC, newdata = dt, times = dt$time, cause = 1,
+                     se = FALSE, iid = FALSE, average.iid = average.iid, diag = TRUE)
 
-    expect_equal(5*GS$absRisk.average.iid[,10], test3$absRisk.average.iid[[1]][,1])
-    expect_equal(5*colMeans(GS$absRisk.iid[,10,]), test3$absRisk.average.iid[[1]][,1])
-    expect_equal(colMeans(colMultiply_cpp(GS$absRisk.iid[,11,], scale = 1:NROW(dt))),
-                 test3$absRisk.average.iid[[2]][,1])
-
+    expect_equal(5*test$absRisk.average.iid, test5$absRisk.average.iid[[1]])
+    expect_equal(colMeans(colMultiply_cpp(GS.iid.diag, 1:length(dt$time))),
+                 test5$absRisk.average.iid[[2]][,1])
 })
+
 
 ## * [predictCSC] Average iid
 cat("[predictCSC] Average iid \n")
@@ -973,6 +997,150 @@ test_that("iid average - semi parametric", {
     }
 
 })
+
+## * [predictCSC] survival
+cat("[predictCSC] survival \n")
+## ** Simulate data
+set.seed(10)
+d <- sampleData(2e2, outcome = "competing.risk")
+d.pred <- d[5:15]
+seqTime <- c(0,d[["time"]][5:15],2.45,1e5)
+
+## ** type=survival CSC
+e.CSC <- CSC(Hist(time, event)~ strata(X1) + strata(X2), data = d, surv.type = "hazard")
+e.cox <- coxph(Surv(time, event>0)~ strata(X1) + strata(X2), data = d, x = TRUE, y = TRUE)
+## e.cox <- coxph(Surv(time, event>0)~ 1, data = d, x = TRUE, y = TRUE)
+
+test_that("predictSurv (type=survival)", {
+    ## diag = FALSE 
+    test <- predict(e.CSC, type = "survival", newdata = d.pred, times = seqTime,
+                    product.limit = FALSE, iid = TRUE, se = TRUE, average.iid = TRUE)
+    GS <- predictCox(e.cox, newdata = d.pred, times = seqTime,
+                     iid = TRUE, se = TRUE, average.iid = TRUE)
+
+    expect_equal(GS$survival,test$survival)
+    expect_equal(GS$survival.se,test$survival.se)
+    expect_equal(GS$survival.iid,test$survival.iid)
+    expect_equal(GS$survival.average.iid,test$survival.average.iid)
+
+    testPL <- predict(e.CSC, type = "survival", newdata = d.pred, times = seqTime,
+                    product.limit = TRUE, iid = TRUE, se = TRUE, average.iid = TRUE)
+    GSPL <- predictCoxPL(e.cox, newdata = d.pred, times = seqTime,
+                     iid = TRUE, se = TRUE, average.iid = TRUE)
+
+    ratioSurv <- test$survival/testPL$survival
+    testPL$survival.iid2 <- testPL$survival.iid
+    for(iObs in 1:NROW(d)){
+        testPL$survival.iid2[,,iObs] <- testPL$survival.iid[,,iObs]*ratioSurv
+    }
+    expect_equal(GSPL$survival,testPL$survival)
+    expect_equal(GSPL$survival.se, testPL$survival.se * ratioSurv)
+    expect_equal(GSPL$survival.iid,testPL$survival.iid2)
+    expect_equal(t(apply(testPL$survival.iid,2:3,mean)),
+                 testPL$survival.average.iid)
+})
+
+test_that("predictSurv (type=survival,diag)", {
+    ## diag = FALSE 
+    test <- predict(e.CSC, type = "survival", newdata = d.pred, times = d.pred$time,
+                    diag = TRUE, product.limit = FALSE, iid = TRUE, se = TRUE, average.iid = TRUE)
+    GS <- predictCox(e.cox, newdata = d.pred, times = d.pred$time,
+                     diag = TRUE, iid = TRUE, se = TRUE, average.iid = TRUE)
+
+    expect_equal(GS$survival,test$survival)
+    expect_equal(GS$survival.se,test$survival.se)
+    expect_equal(GS$survival.iid,test$survival.iid)
+    expect_equal(GS$survival.average.iid,test$survival.average.iid)
+
+    testPL <- predict(e.CSC, type = "survival", newdata = d.pred, times = d.pred$time,
+                    diag = TRUE, product.limit = TRUE, iid = TRUE, se = TRUE, average.iid = TRUE)
+    GSPL <- predictCoxPL(e.cox, newdata = d.pred, times = d.pred$time,
+                     diag = TRUE, iid = TRUE, se = TRUE, average.iid = TRUE)
+
+    ratioSurv <- test$survival/testPL$survival
+    testPL$survival.iid2 <- testPL$survival.iid
+    for(iObs in 1:NROW(d)){
+        testPL$survival.iid2[,,iObs] <- testPL$survival.iid[,,iObs]*ratioSurv
+    }
+    expect_equal(GSPL$survival,testPL$survival)
+    expect_equal(GSPL$survival.se, testPL$survival.se * ratioSurv)
+    expect_equal(GSPL$survival.iid,testPL$survival.iid2)
+    expect_equal(t(apply(testPL$survival.iid,2:3,mean)),
+                 testPL$survival.average.iid)
+})
+
+
+## ** survival CSC
+test_that("[predictCSC] vs. predictCox (no strata) - surv.type=\"survival\"",{
+    e.CSC <- CSC(Hist(time, event)~ X6, data = d, surv.type = "survival")
+    jumpTime <- e.CSC$eventTimes[e.CSC$eventTimes <= max(seqTime)]
+    
+    test <- predict(e.CSC, type = "survival", times = jumpTime,
+                    newdata = d.pred, product.limit = FALSE, iid = TRUE, average.iid = TRUE, se = TRUE)
+    GS <- predictCox(e.CSC$models[["OverallSurvival"]],times = jumpTime,
+                     newdata = d.pred, iid = TRUE, average.iid = TRUE, se = TRUE)
+    expect_equal(GS$survival,test$survival)
+    expect_equal(GS$survival.se,test$survival.se)
+    expect_equal(GS$survival.iid,test$survival.iid)
+    expect_equal(GS$survival.average.iid,test$survival.average.iid)
+
+    test <- predict(e.CSC, type = "survival", times = jumpTime,
+                    newdata = d.pred, product.limit = TRUE, iid = TRUE, average.iid = TRUE, se = TRUE)
+    GS <- predictCoxPL(e.CSC$models[["OverallSurvival"]],times = jumpTime,
+                       newdata = d.pred, iid = TRUE, average.iid = TRUE, se = TRUE)
+    expect_equal(GS$survival,test$survival)
+    expect_equal(GS$survival.se,test$survival.se)
+    expect_equal(GS$survival.iid,test$survival.iid)
+    expect_equal(GS$survival.average.iid,test$survival.average.iid)
+})
+
+test_that("[predictCSC] vs. predictCox (strata) - surv.type=\"survival\"",{
+    e.CSC <- CSC(Hist(time, event)~ X6 + strata(X1), data = d, surv.type = "survival")
+    jumpTime <- e.CSC$eventTimes[e.CSC$eventTimes <= max(seqTime)]
+
+    test <- predict(e.CSC, type = "survival", times = jumpTime,
+                    newdata = d.pred, product.limit = FALSE, iid = TRUE, average.iid = TRUE, se = TRUE)
+    GS <- predictCox(e.CSC$models[["OverallSurvival"]], type = "survival", times = jumpTime,
+                     newdata = d.pred, iid = TRUE, average.iid = TRUE, se = TRUE)
+    expect_equal(GS$survival,test$survival)
+    expect_equal(GS$survival.se,test$survival.se)
+    expect_equal(GS$survival.iid,test$survival.iid)
+    expect_equal(GS$survival.average.iid,test$survival.average.iid)
+
+    test <- predict(e.CSC, type = "survival", times = jumpTime,
+                    newdata = d.pred, product.limit = TRUE, iid = TRUE, average.iid = TRUE, se = TRUE)
+    GS <- predictCoxPL(e.CSC$models[["OverallSurvival"]], type = "survival", times = jumpTime,
+                       newdata = d.pred, iid = TRUE, average.iid = TRUE, se = TRUE)
+    expect_equal(GS$survival,test$survival)
+    expect_equal(GS$survival.se,test$survival.se)
+    expect_equal(GS$survival.iid,test$survival.iid)
+    expect_equal(GS$survival.average.iid,test$survival.average.iid)
+    
+    ## different strata for each cause
+    e.CSC <- CSC(list(Hist(time, event)~ X6 + strata(X1),
+                      Hist(time, event)~ X6 + strata(X2)),
+                 data = d, surv.type = "survival")
+    
+    test <- predict(e.CSC, type = "survival", times = jumpTime,
+                    newdata = d.pred, product.limit = FALSE, iid = TRUE, average.iid = TRUE, se = TRUE)
+    GS <- predictCox(e.CSC$models[["OverallSurvival"]], type = "survival", times = jumpTime,
+                       newdata = d.pred, iid = TRUE, average.iid = TRUE, se = TRUE)
+    expect_equal(GS$survival,test$survival)
+    expect_equal(GS$survival.se,test$survival.se)
+    expect_equal(GS$survival.iid,test$survival.iid)
+    expect_equal(GS$survival.average.iid,test$survival.average.iid)
+
+    test <- predict(e.CSC, type = "survival", times = jumpTime,
+                    newdata = d.pred, product.limit = TRUE, iid = TRUE, average.iid = TRUE, se = TRUE)
+    GS <- predictCoxPL(e.CSC$models[["OverallSurvival"]], type = "survival", times = jumpTime,
+                       newdata = d.pred, iid = TRUE, average.iid = TRUE, se = TRUE)
+    expect_equal(GS$survival,test$survival)
+    expect_equal(GS$survival.se,test$survival.se)
+    expect_equal(GS$survival.iid,test$survival.iid)
+    expect_equal(GS$survival.average.iid,test$survival.average.iid)
+
+})
+
 
 ## * [predictCSC] Miscelaneous
 ## ** Confidence bands vs. timereg

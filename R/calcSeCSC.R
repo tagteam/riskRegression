@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: maj 27 2017 (21:23) 
 ## Version: 
-## last-updated: okt  4 2019 (18:16) 
+## last-updated: okt  7 2019 (15:42) 
 ##           By: Brice Ozenne
-##     Update #: 922
+##     Update #: 955
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -25,7 +25,7 @@
 #' @param cif the cumulative incidence function at each prediction time for each individual.
 #' @param hazard list containing the baseline hazard for each cause in a matrix form. Columns correspond to the strata.
 #' @param cumhazard list containing the cumulative baseline hazard for each cause in a matrix form. Columns correspond to the strata.
-#' @param cumhazard list containing the (all cause) survival in a matrix form. Columns correspond to event times.
+#' @param survival list containing the (all cause) survival in a matrix form. Columns correspond to event times.
 #' @param object.time a vector containing all the events regardless to the cause.
 #' @param object.maxtime a matrix containing the latest event in the strata of the observation for each cause.
 #' @param eXb a matrix containing the exponential of the linear predictor evaluated for the new observations (rows) for each cause (columns)
@@ -216,14 +216,13 @@ calcSeCSC <- function(object, cif, hazard, cumhazard, survival, object.time, obj
                                   nNewObs = new.n, strata = new.strata,
                                   exportSE = "se" %in% export, exportIF = "iid" %in% export, exportIFsum = "average.iid" %in% export,
                                   diag = diag)
-
             if("iid" %in% export){
                 out$iid <- aperm(out$iid, c(1,3,2))
             }
             
         }else if("average.iid" %in% export){
 
-            ## prepare
+            ## identify strata index
             new.level.strata <- unique(new.strata)
             new.level.Ustrata <- apply(new.level.strata,1,paste0,collapse="")
             new.n.strata <- length(new.level.Ustrata)
@@ -285,7 +284,7 @@ calcSeCSC <- function(object, cif, hazard, cumhazard, survival, object.time, obj
                     break
                 }
                 iSindexV.times <- iSindex.times[iValid.times]
-                if(diag){
+                if(diag){ ## only keep individuals and times corresponding to the current strata
                     iIndex_obs <- iIndex_obs[iValid.times]
                     iN_activobs <- length(iIndex_obs)
                 }else{
@@ -339,7 +338,6 @@ calcSeCSC <- function(object, cif, hazard, cumhazard, survival, object.time, obj
 
                     if(is.null(factor[[iFactor]])){
                         test.duplicated <- FALSE
-                        
                         if(diag){
                             iiN.jump <- iN.jump
                             iiIndex.jump <- 1:iN.jump
@@ -357,31 +355,40 @@ calcSeCSC <- function(object, cif, hazard, cumhazard, survival, object.time, obj
                         n.factor2 <- 1
                         
                     }else{
-                        test.duplicated <- sum(duplicated(factor[[iFactor]], MARGIN = 2)) < (length(times)-1)
-                        
-                        if(test.duplicated){
+                        if(diag){
+                            test.duplicated <- FALSE
                             iiN.jump <- iN.jump
                             iiIndex.jump <- 1:iN.jump
 
-                            iMfactor <- matrix(factor[[iFactor]][iIndex_obs,1], nrow = iN_activobs, ncol = iN.jump, byrow = FALSE)
-                            iVN_time <- rep(iN_activobs, iiN.jump)
+                            iMfactor <- do.call(rbind,lapply(iSindexV.times, function(i){c(rep(1,i),rep(0,iN.jump-i))}))
+                            iVN_time <- colSums(iMfactor)
+                            iMfactor <- colMultiply_cpp(iMfactor, factor[[iFactor]][iIndex_obs,1])
                             
                             n.factor2 <- 1
                         }else{
-                            n.factor2 <- length(times)
+                            if(NCOL(factor[[iFactor]]) == 1){ ## same weights at all times
+                                iiN.jump <- iN.jump
+                                iiIndex.jump <- 1:iN.jump
+
+                                iMfactor <- matrix(factor[[iFactor]][iIndex_obs,1], nrow = iN_activobs, ncol = iN.jump, byrow = FALSE)
+                                iVN_time <- rep(iN_activobs, iiN.jump)
+                            
+                                n.factor2 <- 1
+                            }else{ ## weights varying over time
+                                n.factor2 <- length(times)
+                            }
                         }
                     }
 
 
                     for(iFactor2 in 1:n.factor2){ ## iFactor2 <- 1
 
-                        if(test.duplicated){
+                        if(n.factor2>1){
                             if((iTimes[iFactor2] < min(iTime.jump)) ||(iFactor2 %in% iNA.times)){ ## 0 or NA, skip (NA are taken care after)
                                 next
                             }
                             iiN.jump <- iSindexV.times[iFactor2-sum(iTimes < min(iTime.jump))]
                             iiIndex.jump <- 1:iiN.jump
-                            
                             iMfactor <- matrix(factor[[iFactor]][iIndex_obs,iFactor2], nrow = iN_activobs, ncol = iiN.jump, byrow = FALSE)
                             iVN_time <- rep(iN_activobs, iiN.jump)
                         }
@@ -404,7 +411,7 @@ calcSeCSC <- function(object, cif, hazard, cumhazard, survival, object.time, obj
                         ## export
                         if(diag==TRUE){
                             out[[iFactor]][,1] <- out[[iFactor]][,1] + rowSums(iAIF[,iSindexV.times,drop=FALSE])/iN_obs * iPrevalence
-                        }else if(test.duplicated){
+                        }else if(n.factor2>1){
                             out[[iFactor]][,iFactor2] <- out[[iFactor]][,iFactor2] + iAIF[,iiN.jump,drop=FALSE] * iPrevalence
                         }else{
                             out[[iFactor]][,iValid.times] <- out[[iFactor]][,iValid.times] + iAIF[,iSindexV.times] * iPrevalence

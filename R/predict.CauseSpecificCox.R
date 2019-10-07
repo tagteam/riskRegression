@@ -14,7 +14,7 @@
 #' @param cause [integer/character] Identifies the cause of interest among the competing
 #'     events.
 #' @param type [character] Can be changed to \code{"survival"} if the event free survival should be output instead of the absolute risk.
-#' @param landmark [integer] The starting time for the computation of the cumulative risk.,
+#' @param landmark [integer] The starting time for the computation of the cumulative risk.
 #' @param keep.times [logical] If \code{TRUE} add the evaluation times to the output.
 #' @param keep.newdata [logical] If \code{TRUE} add the value of the covariates used to make the prediction in the output list. 
 #' @param keep.strata [logical] If \code{TRUE} add the value of the strata used to make the prediction in the output list. 
@@ -126,23 +126,27 @@ predict.CauseSpecificCox <- function(object,
                                      diag = FALSE,
                                      ...){
 
-    ## ** event-free survival instead of absolute risk
-    type <- match.arg(type, c("absRisk","survival"))
-    if(type=="survival"){
-        return(.predictSurv_CSC(object, newdata = newdata, times = times, product.limit = product.limit, se = se, diag = diag, iid = iid, average.iid = average.iid))
-    }
-        
-    ## ** prepare
-    if(object$fitter=="phreg"){newdata$entry <- 0} 
+
     if(missing(newdata)){
         newdata <- eval(object$call$data)
     }else{
         setDT(newdata)
     }
+
+    ## ** event-free survival instead of absolute risk
+    type <- match.arg(type, c("absRisk","survival"))
+    if(type=="survival"){
+        return(.predictSurv_CSC(object, newdata = newdata, times = times, product.limit = product.limit, se = se, diag = diag, iid = iid, average.iid = average.iid))
+    }
+
+    ## ** prepare
+    n.times <- length(times)
+    if(object$fitter=="phreg"){newdata$entry <- 0} 
+    new.n <- NROW(newdata)
     ## if(data.table::is.data.table(newdata)){
-        ## newdata <- data.table::copy(newdata)
+    ## newdata <- data.table::copy(newdata)
     ## }else{
-        ## newdata <- data.table::as.data.table(newdata)
+    ## newdata <- data.table::as.data.table(newdata)
     ## }
     
     surv.type <- object$surv.type
@@ -162,14 +166,13 @@ predict.CauseSpecificCox <- function(object,
     
     ## event times
     eTimes <- object$eventTimes
-    
+
+    ## ** check
     if (any(match(as.character(cause), causes, nomatch = 0)==0L))
         stop(paste0("Cannot find all requested cause(s) ...\n\n", 
                     "Requested cause(s): ", paste0(cause, collapse = ", "), 
                     "\n Available causes: ", paste(causes, collapse = ", "), 
                     "\n"))
-    ## stopifnot(match(as.character(cause), causes, nomatch = 0) != 
-    ## 0)
     if (surv.type == "survival") {
         if (object$theCause != cause) 
             stop("Object can be used to predict cause ", object$theCause, 
@@ -186,34 +189,31 @@ predict.CauseSpecificCox <- function(object,
     }
     
     if(diag){
-        if((se[[1]]||band[[1]])){
-            stop("Arguments \'se\' and \'band\' must be FALSE when \'diag\' is TRUE \n")
-        }
         if(iid[[1]]==TRUE && store.iid[[1]] == "minimal"){
             stop("Arguments \'store.iid\' must equal \"full\" when \'diag\' is TRUE \n")
         }
-        if(NROW(newdata)!=length(times)){
+        if(NROW(newdata)!=n.times){
             stop("When argument \'diag\' is TRUE, the number of rows in \'newdata\' must equal the length of \'times\' \n")
         }
-        if(!is.null(attr(average.iid,"factor"))){
-            stop("Attribute \"factor\" in argument \'average.iid\' should be NULL when argument \'diag\' is set to TRUE \n")
-        }
-    }else if(!is.null(attr(average.iid,"factor"))){
-        if(iid==TRUE){
-            stop("Argument \'iid\' must be FALSE when \'average.iid\' contains an attribute \"factor\" \n")
-        }
-        if(se==TRUE){
-            stop("Argument \'se\' must be FALSE when \'average.iid\' contains an attribute \"factor\" \n")
-        }
-        if(!is.list(attr(average.iid,"factor"))){
+    }
+    if(average.iid==TRUE && !is.null(attr(average.iid,"factor"))){
+
+        test.list <- !is.list(attr(average.iid,"factor"))
+        if(test.list){
             stop("Attribute \"factor\" of argument \'average.iid\' must be a list \n")
         }
         test.matrix <- any(unlist(lapply(attr(average.iid,"factor"), is.matrix))==FALSE)
         if(test.matrix){
             stop("Attribute \"factor\" of argument \'average.iid\' must be a list of matrices \n")
         }
-        if(any(sapply(attr(average.iid,"factor"),NCOL) != length(times))){
-            stop("When argument \'diag\' is 2, the attribute \"factor\" of \'average.iid\' must be a list of matrices with either one or as many columns as the length of \'times\' \n")
+        for(iFactor in 1:length(attr(average.iid,"factor"))){ ## iFactor <- 1
+            ## check dimensions
+            if(NROW(attr(average.iid,"factor")[[iFactor]])!=new.n){
+                stop("Attribute \"factor\" of argument \'average.iid\' must be a list of matrices with ",new.n," rows \n")
+            }
+            if(NCOL(attr(average.iid,"factor")[[iFactor]]) %in% c(1, diag + (1-diag)*n.times) == FALSE){
+                stop("Attribute \"factor\" of argument \'average.iid\' must be a list of matrices with ",diag + (1-diag)*n.times," columns\n")
+            }
         }
     }
     
@@ -227,7 +227,8 @@ predict.CauseSpecificCox <- function(object,
     }
     
     ## order prediction times
-    ootimes <- order(order(times))
+    otimes <- order(times)
+    ootimes <- order(otimes)
     needOrder <- !identical(1:length(ootimes),ootimes)
 
     ## ** extract baseline hazard, linear predictor and strata from Cox models
@@ -321,8 +322,21 @@ predict.CauseSpecificCox <- function(object,
 
         ## Computation of the influence function and/or the standard error
         export <- c("iid"[(iid+band)>0],"se"[(se+band)>0],"average.iid"[average.iid==TRUE])
-        attributes(export) <- attributes(average.iid)
-
+        if(!is.null(attr(average.iid,"factor"))){
+            if(diag){
+                attr(export,"factor") <- attr(average.iid,"factor")
+            }else{
+                ## re-order columns according to times
+                attr(export,"factor") <- lapply(attr(average.iid,"factor"), function(iF){
+                    if(NCOL(iF)>1){
+                        return(iF[,otimes,drop=FALSE])
+                    }else{
+                        return(iF)
+                    }
+                })
+            }
+        }
+        
         out.seCSC <- calcSeCSC(object,
                                cif = outCpp$cif,
                                hazard = ls.hazard,

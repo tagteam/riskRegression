@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Oct 23 2016 (08:53) 
 ## Version: 
-## last-updated: okt  4 2019 (16:01) 
+## last-updated: okt  7 2019 (16:22) 
 ##           By: Brice Ozenne
-##     Update #: 1453
+##     Update #: 1454
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -72,7 +72,6 @@
 #' @seealso
 #' \code{\link{confint.ate}} to compute confidence intervals/bands.
 #' \code{\link{autoplot.ate}} to display the average risk.
-#' \code{\link{ateRobust}} to make the estimator doubly robust 
 
 ## * ate (examples)
 #' @rdname ate

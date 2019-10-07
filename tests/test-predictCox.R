@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: sep  4 2017 (10:38) 
 ## Version: 
-## last-updated: okt  3 2019 (17:07) 
+## last-updated: okt  7 2019 (16:27) 
 ##           By: Brice Ozenne
-##     Update #: 122
+##     Update #: 129
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -847,9 +847,9 @@ dt <- sampleData(5e1, outcome = "survival")[,.(time,event,X1,X2,X6)]
 test_that("[predictCox] diag no strata", {
     e.coxph <- coxph(Surv(time, event) ~ X1*X6, data = dt, y = TRUE, x = TRUE)
 
-    GS <- predictCox(e.coxph, newdata = dt, times = dt$time, se = FALSE, iid = TRUE, average.iid = TRUE)
+    GS <- predictCox(e.coxph, newdata = dt, times = dt$time, se = TRUE, iid = TRUE, average.iid = TRUE)
     test <- predictCox(e.coxph, newdata = dt, times = dt$time,
-                       se = FALSE, iid = TRUE, average.iid = TRUE, diag = TRUE)
+                       se = TRUE, iid = TRUE, average.iid = TRUE, diag = TRUE)
     test2 <- predictCox(e.coxph, newdata = dt, times = dt$time,
                         se = FALSE, iid = FALSE, average.iid = TRUE, diag = TRUE)
 
@@ -858,6 +858,10 @@ test_that("[predictCox] diag no strata", {
     expect_equal(diag(GS$cumhazard), as.double(test$cumhazard))
     expect_equal(diag(GS$survival), as.double(test$survival))
 
+    ## se
+    expect_equal(diag(GS$cumhazard.se), test$cumhazard.se[,1])
+    expect_equal(diag(GS$survival.se), test$survival.se[,1])
+    
     ## iid
     GS.iid.diag <- do.call(rbind,lapply(1:NROW(dt),
                                         function(iN){GS$survival.iid[iN,iN,]}))
@@ -878,17 +882,26 @@ test_that("[predictCox] diag no strata", {
     expect_equal(t(apply(GS$survival.iid, 2:3, function(x){sum(x * (1:length(dt$time)))/length(x)})),
                  test3$survival.average.iid[[2]])
 
+    ## average.iid with factor - diag=FALSE, time varying factor
+    average.iid <- TRUE
+    attr(average.iid,"factor") <- list(matrix(rnorm(NROW(dt)*length(dt$time)), nrow = NROW(dt), ncol = length(dt$time)))
+    test4 <- predictCox(e.coxph, newdata = dt, times = dt$time,
+                        se = FALSE, iid = FALSE, average.iid = average.iid, diag = FALSE)
+    expect_equal(do.call(rbind,lapply(1:NROW(dt), function(iObs){colMeans(GS$survival.iid[,,iObs] * attr(average.iid,"factor")[[1]])})),
+                 test4$survival.average.iid[[1]])
+
+
     ## average.iid with factor - diag=TRUE
     average.iid <- TRUE
     attr(average.iid,"factor") <- list(matrix(5, nrow = NROW(dt), ncol = 1, byrow = TRUE),
                                        matrix(1:NROW(dt), nrow = NROW(dt), ncol = 1))
-    test4 <- predictCox(e.coxph, newdata = dt, times = dt$time,
+    test5 <- predictCox(e.coxph, newdata = dt, times = dt$time,
                         se = FALSE, iid = FALSE, average.iid = average.iid, diag = TRUE)
 
     
-    expect_equal(5*test$survival.average.iid, test4$survival.average.iid[[1]])
+    expect_equal(5*test$survival.average.iid, test5$survival.average.iid[[1]])
     expect_equal(colMeans(colMultiply_cpp(GS.iid.diag, 1:length(dt$time))),
-                 test4$survival.average.iid[[2]][,1])
+                 test5$survival.average.iid[[2]][,1])
     
 })
 
@@ -926,17 +939,26 @@ test_that("[predictCox] diag strata", {
     expect_equal(t(apply(GS$survival.iid, 2:3, function(x){sum(x * (1:length(dt$time)))/length(x)})),
                  test3$survival.average.iid[[2]])
 
+    ## average.iid with factor - diag=FALSE, time varying factor
+    average.iid <- TRUE
+    attr(average.iid,"factor") <- list(matrix(rnorm(NROW(dt)*length(dt$time)), nrow = NROW(dt), ncol = length(dt$time)))
+    test4 <- predictCox(eS.coxph, newdata = dt, times = dt$time,
+                        se = FALSE, iid = FALSE, average.iid = average.iid, diag = FALSE)
+    expect_equal(do.call(rbind,lapply(1:NROW(dt), function(iObs){colMeans(GS$survival.iid[,,iObs] * attr(average.iid,"factor")[[1]])})),
+                 test4$survival.average.iid[[1]])
+
+
     ## average.iid with factor - diag=TRUE
     average.iid <- TRUE
     attr(average.iid,"factor") <- list(matrix(5, nrow = NROW(dt), ncol = 1, byrow = TRUE),
                                        matrix(1:NROW(dt), nrow = NROW(dt), ncol = 1))
-    test4 <- predictCox(eS.coxph, newdata = dt, times = dt$time,
+    test5 <- predictCox(eS.coxph, newdata = dt, times = dt$time,
                         se = FALSE, iid = FALSE, average.iid = average.iid, diag = TRUE)
 
     
-    expect_equal(5*test$survival.average.iid, test4$survival.average.iid[[1]])
+    expect_equal(5*test$survival.average.iid, test5$survival.average.iid[[1]])
     expect_equal(colMeans(colMultiply_cpp(GS.iid.diag, 1:length(dt$time))),
-                 test4$survival.average.iid[[2]][,1])
+                 test5$survival.average.iid[[2]][,1])
 
 })
 
@@ -1257,108 +1279,6 @@ test_that("Cox - iid/se should not depend on other arguments", {
     expect_equal(out2$survival.average.iid,out6$survival.average.iid)
 })    
 
-## * Extra [not run]
-if(FALSE){
-    library(riskRegression, verbose = FALSE, quietly = TRUE)
-    library(survival)
-    library(microbenchmark)
-    library(profvis)
-
-    set.seed(10) ## n = 100
-    dt <- sampleData(1000, outcome = "competing.risks")[,.(time,event,X1,X2,X6)]
-    setkeyv(dt, "time")
-    e.coxph <- coxph(Surv(time, event>0) ~ X2*X6 + strata(X1), data = dt, x = TRUE, y = TRUE)
-
-    mydata <- dt
-    seqTime <- c(0,dt$time[1:10],1e5)
-
-    ## ** all (cumhazard,survival): se, iid, average.iid
-    GS1 <- riskRegression::predictCox(e.coxph, newdata = mydata, times = seqTime,
-                                      diag = FALSE, se = TRUE, iid = TRUE, average.iid = TRUE)
-    test1 <- predictCox(e.coxph, newdata = mydata, times = seqTime,
-                        diag = FALSE, se = TRUE, iid = TRUE, average.iid = TRUE)
-
-    expect_equal(GS1$cumhazard.se, test1$cumhazard.se)
-    expect_equal(GS1$cumhazard.iid, test1$cumhazard.iid)
-    expect_equal(GS1$cumhazard.average.iid, test1$cumhazard.average.iid)
-
-    expect_equal(GS1$survival.se, test1$survival.se)
-    expect_equal(GS1$survival.iid, test1$survival.iid)
-    expect_equal(GS1$survival.average.iid, test1$survival.average.iid)
-
-    ## microbenchmark(
-    ##     A = riskRegression::predictCox(e.coxph, newdata = mydata, times = seqTime,
-    ##                                    diag = FALSE, se = TRUE, iid = TRUE, average.iid = TRUE),
-    ##     B = predictCox(e.coxph, newdata = mydata, times = seqTime,
-    ##                    diag = FALSE, se = TRUE, iid = TRUE, average.iid = TRUE),
-    ##     times = 5 
-    ## )
-
-    ## ** all (hazard): iid, average.iid
-    GS2 <- riskRegression::predictCox(e.coxph, newdata = mydata, times = seqTime, type = c("hazard","survival"),
-                                      diag = FALSE, se = FALSE, iid = TRUE, average.iid = TRUE)
-    test2 <- predictCox(e.coxph, newdata = mydata, times = seqTime, type = c("hazard","survival"),
-                        diag = FALSE, se = FALSE, iid = TRUE, average.iid = TRUE)
-
-    expect_equal(GS2$hazard.se, test2$hazard.se)
-    expect_equal(GS2$hazard.iid, test2$hazard.iid)
-    expect_equal(GS2$hazard.average.iid, test2$hazard.average.iid)
-
-    expect_equal(GS2$survival.se, test2$survival.se)
-    expect_equal(GS2$survival.iid, test2$survival.iid)
-    expect_equal(GS2$survival.average.iid, test2$survival.average.iid)
-
-    ## ** diag (cumhazard,survival): iid,average.iid
-    GS3 <- riskRegression::predictCox(e.coxph, newdata = dt, times = dt$time,
-                                      type = c("hazard","cumhazard","survival"),
-                                      diag = TRUE, se = FALSE, iid = TRUE, average.iid = TRUE)
-
-    test3 <- predictCox(e.coxph, newdata = dt, times = dt$time,
-                        type = c("hazard","cumhazard","survival"),
-                        diag = TRUE, se = FALSE, iid = TRUE, average.iid = TRUE)
-    
-    expect_equal(GS3$hazard.iid, test3$hazard.iid)
-    expect_equal(unname(GS3$hazard.average.iid), unname(test3$hazard.average.iid))
-
-    expect_equal(GS3$cumhazard.se, test3$cumhazard.se)
-    expect_equal(GS3$cumhazard.iid, test3$cumhazard.iid)
-    expect_equal(unname(GS3$cumhazard.average.iid), unname(test3$cumhazard.average.iid))
-
-    expect_equal(GS3$survival.se, test3$survival.se)
-    expect_equal(GS3$survival.iid, test3$survival.iid)
-    expect_equal(GS3$survival.average.iid, test3$survival.average.iid)
-
-    ## microbenchmark(
-    ##     A = riskRegression::predictCox(e.coxph, newdata = dt, times = dt$time,
-    ##                                    diag = TRUE, se = FALSE, iid = TRUE, average.iid = TRUE),
-    ##     B = predictCox(e.coxph, newdata = dt, times = dt$time,
-    ##                    diag = TRUE, se = FALSE, iid = TRUE, average.iid = TRUE),
-    ##     times = 5 
-    ## )
-
-    test3 <- predictCox(e.coxph, newdata = dt, times = dt$time,
-                        type = c("cumhazard","survival"),
-                        diag = TRUE, se = TRUE, iid = TRUE, average.iid = TRUE)
-
-    ## as.data.table(test3)[c(1,2)]
-    ## as.data.table(test1)[c(1,NROW(dt)+1)]
-    test3$cumhazard.se[1:10] - diag(test1$cumhazard.se)
-    test3$survival.se[1:10] - diag(test1$survival.se)
-
-    sqrt(rowSums(test1$cumhazard.iid[1,1:10,]^2))
-    test1$cumhazard.se[1,1:10]
-
-    sqrt(sum(GS3$cumhazard.iid[1,,]^2))
-
-    GS3$cumhazard.iid[1,,] - test3$cumhazard.iid[1,,]
-    
-    test3$cumhazard.iid[1,1,]
-    test1$cumhazard.iid[1,1,]
-    
-    sqrt(sum(test3$cumhazard.iid[1,1,]^2))
-    test1$cumhazard.se[1,1:10]
-
-}
 
 #----------------------------------------------------------------------
 ### test-predictCox.R ends here

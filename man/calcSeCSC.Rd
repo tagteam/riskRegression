@@ -17,6 +17,8 @@ calcSeCSC(object, cif, hazard, cumhazard, survival, object.time,
 
 \item{cumhazard}{list containing the cumulative baseline hazard for each cause in a matrix form. Columns correspond to the strata.}
 
+\item{survival}{list containing the (all cause) survival in a matrix form. Columns correspond to event times.}
+
 \item{object.time}{a vector containing all the events regardless to the cause.}
 
 \item{object.maxtime}{a matrix containing the latest event in the strata of the observation for each cause.}
@@ -49,8 +51,6 @@ Can be \code{"full"} or \code{"minimal"}. See the details section.}
 
 \item{diag}{[logical] when \code{FALSE} the absolute risk/survival for all observations at all times is computed,
 otherwise it is only computed for the i-th observation at the i-th time.}
-
-\item{cumhazard}{list containing the (all cause) survival in a matrix form. Columns correspond to event times.}
 }
 \description{
 Standard error of the absolute risk predicted from cause-specific Cox models
