@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Feb 23 2017 (11:15) 
 ## Version: 
-## last-updated: Sep  8 2019 (16:43) 
+## last-updated: Oct  1 2019 (17:05) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 337
+##     Update #: 347
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -104,6 +104,7 @@
 ##' 
 ##' # survival
 ##' library(survival)
+##' library(prodlim)
 ##' dslearn=sampleData(56,outcome="survival")
 ##' dstest=sampleData(100,outcome="survival")
 ##' fs1=coxph(Surv(time,event)~X1+X5+X7,data=dslearn,x=1)
@@ -111,7 +112,7 @@
 ##' xs=Score(list(Cox1=fs1,Cox2=fs2),Surv(time,event)~1,data=dstest,
 ##'           plots="cal",metrics=NULL)
 ##' plotCalibration(xs)
-##' plotCalibration(xs,cens.method="local")
+##' plotCalibration(xs,cens.method="local",pseudo=1)
 ##' plotCalibration(xs,method="quantile")
 ##'
 ##'
@@ -137,8 +138,9 @@ plotCalibration <- function(x,
                             bars=FALSE,
                             hanging=FALSE,
                             names="quantiles",
-                            pseudo,
+                            pseudo=FALSE,
                             rug,
+                            boxplot=FALSE,
                             show.frequencies=FALSE,
                             plot=TRUE,
                             add=FALSE,
@@ -163,9 +165,9 @@ plotCalibration <- function(x,
                             ...){
     if (x$response.type!="binary" && missing(cens.method)){
         cens.method <- "local"
-        message("The default method for estimating calibration curves based on censored data has changed for riskRegression version 2019-9-8 or higher\nSet cens.method=\"jackknife\" to get the estimate using pseudo-values.\nHowever, note that this estimate is sensititve to violations of the assumption that the censoring is independent of both the event times and the covariates.")
+        message("The default method for estimating calibration curves based on censored data has changed for riskRegression version 2019-9-8 or higher\nSet cens.method=\"jackknife\" to get the estimate using pseudo-values.\nHowever, note that the option \"jackknife\" is sensititve to violations of the assumption that the censoring is independent of both the event times and the covariates.\nSet cens.method=\"local\" to suppress this message.")
     }
-  # {{{ plot frame
+                                        # {{{ plot frame
     model=risk=event=status=NULL
     if (missing(auc.in.legend))
         auc.in.legend <- ("auc" %in% x$metrics)
@@ -173,7 +175,7 @@ plotCalibration <- function(x,
         brier.in.legend <- ("auc" %in% x$metrics)
     if (missing(pseudo) & missing(rug))
         if (x$cens.type=="rightCensored"){
-            showPseudo <- TRUE
+            showPseudo <- FALSE
             showRug <- FALSE
         } else{
             showPseudo <- FALSE
@@ -519,6 +521,13 @@ plotCalibration <- function(x,
                                         # }}}
                                         # {{{ do the actual plot
     if (plot){
+        if (boxplot){
+            nbox <- length(control$lines$col)
+            layout(matrix(c(1:nbox, nbox, 1), widths = 100, heights = c(100-nbox*5,rep(5,nbox))))
+            for (m in 1:nbox){
+                pframe[model==m,boxplot(risk,col=control$lines$col[m],ylim=c(0,1),horizontal=1L)]
+            }
+        }
         if (out$add[1]==FALSE && !out$bars[1]){
             do.call("plot",control$plot)
         }

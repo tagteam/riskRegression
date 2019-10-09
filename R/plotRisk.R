@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Mar 13 2017 (16:53) 
 ## Version: 
-## Last-Updated: Sep  8 2019 (13:43) 
+## Last-Updated: Sep  9 2019 (10:24) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 87
+##     Update #: 94
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -30,6 +30,7 @@
 ##' @param pch point type
 ##' @param cex point size
 ##' @param preclipse Value between 0 and 1 defining the preclipse area
+##' @param preclipse.shade Logical. If \code{TRUE} shade the area of clinically meaningful change.
 ##' @param ... Used to control the subroutines: plot, axis, lines,
 ##'     barplot, legend. See \code{\link{SmartControl}}.
 ##' @return a nice graph
@@ -78,6 +79,7 @@ plotRisk <- function(x,
                      pch=3,
                      cex=1,
                      preclipse=0,
+                     preclipse.shade=FALSE,
                      ...){
     model=ReSpOnSe=risk=status=NULL
     if (is.null(x$risks$score)) stop("No predicted risks in object. You should set summary='risks' when calling Score.")
@@ -112,16 +114,16 @@ plotRisk <- function(x,
         if  (x$response.type=="survival"){
             R <- pframe[model==modelnames[1],
             {
-                r <- status # 0,1,2
+                r <- status # 0,1
                 r[time>times] <- 2
                 r
             }]
         }else{ ## competing risks
             R <- pframe[model==modelnames[1],
             {
-                r <- event # 0,1,2,3
-                r[time>times] <- 3
-                r
+                r <- event # 1,2,3
+                r[time>times] <- 4
+                r-1
             }]
         }
     }
@@ -185,6 +187,10 @@ plotRisk <- function(x,
                                      verbose=TRUE)
                                         # }}}
     do.call("plot",control$plot)
+    if (preclipse.shade==TRUE){
+        ## rect(xleft=0,xright=1,ybottom=0,ytop=1,col="white",border=0)
+        draw.ellipse(x=0.5,y=.5, a=.75, b=.1, border=0, angle=c(45), lty=3,col="gray88")
+    }
     do.call("abline",control$abline)
     do.call("points",control$points)
     control$axis2$labels <- paste(100*control$axis2$at,"%")

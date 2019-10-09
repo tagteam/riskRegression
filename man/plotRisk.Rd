@@ -5,7 +5,8 @@
 \title{plot predicted risks}
 \usage{
 plotRisk(x, models, times, xlim = c(0, 1), ylim = c(0, 1), xlab, ylab,
-  col, pch = 3, cex = 1, preclipse = 0, ...)
+  col, pch = 3, cex = 1, preclipse = 0, preclipse.shade = FALSE,
+  ...)
 }
 \arguments{
 \item{x}{Object obtained with function \code{Score}}
@@ -30,6 +31,8 @@ the first (second) are shown along the x-axis (y-axis).}
 \item{cex}{point size}
 
 \item{preclipse}{Value between 0 and 1 defining the preclipse area}
+
+\item{preclipse.shade}{Logical. If \code{TRUE} shade the area of clinically meaningful change.}
 
 \item{...}{Used to control the subroutines: plot, axis, lines,
 barplot, legend. See \code{\link{SmartControl}}.}
