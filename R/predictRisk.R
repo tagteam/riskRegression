@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun  6 2016 (09:02) 
 ## Version: 
-## last-updated: Aug 17 2019 (18:29) 
+## last-updated: Oct  9 2019 (11:35) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 212
+##     Update #: 282
 #----------------------------------------------------------------------
 ## 
 ### Commentary:
@@ -17,20 +17,18 @@
 ## 
 ### Code:
 # --------------------------------------------------------------------
-#' Extrating predicting risks from regression models 
+#' @title Extrating predicting risks from regression models 
 #' 
-#' Extract event probabilities from fitted regression models and machine learning objects.
-#' 
+#' @description Extract event probabilities from fitted regression models and machine learning objects. 
 #' The function predictRisk is a generic function, meaning that it invokes
 #' specifically designed functions depending on the 'class' of the first
-#' argument.
-#' 
-#' See \code{\link{predictRisk}}.
+#' argument. See \code{\link{predictRisk}}.
+#' @name predictRisk
 #' 
 #' @aliases predictRisk predictRisk.CauseSpecificCox
 #' predictRisk.riskRegression predictRisk.FGR
 #' predictRisk.prodlim predictRisk.rfsrc predictRisk.aalen
-#' predictRisk.riskRegression predictRisk.cox.aalen
+#' predictRisk.riskRegression predictRisk.ARR predictRisk.cox.aalen
 #' predictRisk.coxph predictRisk.cph predictRisk.default
 #' predictRisk.matrix predictRisk.pecCtree
 #' predictRisk.pecCforest predictRisk.prodlim predictRisk.psm
@@ -38,36 +36,29 @@
 #' predictRisk.lrm predictRisk.glm
 #' predictRisk.rpart predictRisk.gbm
 #' predictRisk.flexsurvreg
-#' @usage
-#' \method{predictRisk}{glm}(object,newdata,...)
-#' \method{predictRisk}{cox.aalen}(object,newdata,times,...)
-#' \method{predictRisk}{cph}(object,newdata,times,...)
-#' \method{predictRisk}{coxph}(object,newdata,times,...)
-#' \method{predictRisk}{matrix}(object,newdata,times,cause,...)
-#' \method{predictRisk}{selectCox}(object,newdata,times,...)
-#' \method{predictRisk}{psm}(object,newdata,times,...)
-#' \method{predictRisk}{survfit}(object,newdata,times,...)
-#' \method{predictRisk}{riskRegression}(object,newdata,times,cause,...)
-#' \method{predictRisk}{prodlim}(object,newdata,times,cause,...)
-#' \method{predictRisk}{rfsrc}(object,newdata,times,cause,...)
-#' \method{predictRisk}{FGR}(object,newdata,times,cause,...)
-#' \method{predictRisk}{CauseSpecificCox}(object,newdata,times,cause,...)
-#' \method{predictRisk}{gbm}(object,newdata,times,...)
-#' \method{predictRisk}{flexsurvreg}(object,newdata,times,...)
+#' 
 #' @param object A fitted model from which to extract predicted event
-#' probabilities
+#' probabilities.
 #' @param newdata A data frame containing predictor variable combinations for
 #' which to compute predicted event probabilities.
 #' @param times A vector of times in the range of the response variable, for
 #' which the cumulative incidences event probabilities are computed.
 #' @param cause Identifies the cause of interest among the competing events.
+#' @param iid Should the iid decomposition be output using an attribute?
+#' @param average.iid Should the average iid decomposition be output using an attribute?
+#' @param product.limit If \code{TRUE} the survival is computed using the product limit estimator.
+#' Otherwise the exponential approximation is used (i.e. exp(-cumulative hazard)).
+#' @param landmark The starting time for the computation of the cumulative risk.
 #' @param \dots Additional arguments that are passed on to the current method.
+#' 
 #' @return For binary outcome a vector with predicted risks. For survival outcome with and without
 #' competing risks
 #' a matrix with as many rows as \code{NROW(newdata)} and as many
 #' columns as \code{length(times)}. Each entry is a probability and in
 #' rows the values should be increasing.
+#' 
 #' @author Thomas A. Gerds \email{tag@@biostat.ku.dk}
+#' 
 #' @details
 #' In uncensored binary outcome data there is no need to choose a time point.
 #'
@@ -85,6 +76,7 @@
 #' model (FGR) is specific to one of the causes. 
 #' 
 #' @keywords survival
+#' 
 #' @examples
 #' ## binary outcome
 #' library(rms)
@@ -102,63 +94,63 @@
 #' 
 #' ## survival outcome
 #' # generate survival data
-##' library(prodlim)
-##' set.seed(100)
-##' d <- sampleData(100,outcome="survival")
-##' d[,X1:=as.numeric(as.character(X1))]
-##' d[,X2:=as.numeric(as.character(X2))]
-##' # then fit a Cox model
-##' library(rms)
-##' cphmodel <- cph(Surv(time,event)~X1+X2,data=d,surv=TRUE,x=TRUE,y=TRUE)
-##' # or via survival
-##' library(survival)
-##' coxphmodel <- coxph(Surv(time,event)~X1+X2,data=d,x=TRUE,y=TRUE)
-##' 
-##' # Extract predicted survival probabilities 
-##' # at selected time-points:
-##' ttt <- quantile(d$time)
-##' # for selected predictor values:
-##' ndat <- data.frame(X1=c(0.25,0.25,-0.05,0.05),X2=c(0,1,0,1))
-##' # as follows
-##' predictRisk(cphmodel,newdata=ndat,times=ttt)
-##' predictRisk(coxphmodel,newdata=ndat,times=ttt)
-##' 
-##' # stratified cox model
-##' sfit <- coxph(Surv(time,event)~strata(X1)+X2,data=d,x=TRUE,y=TRUE)
-##' predictRisk(sfit,newdata=d[1:3,],times=c(1,3,5,10))
-##' 
-##' ## simulate learning and validation data
-##' learndat <- sampleData(100,outcome="survival")
-##' valdat <- sampleData(100,outcome="survival")
-##' ## use the learning data to fit a Cox model
-##' library(survival)
-##' fitCox <- coxph(Surv(time,event)~X1+X2,data=learndat,x=TRUE,y=TRUE)
-##' ## suppose we want to predict the survival probabilities for all subjects
-##' ## in the validation data at the following time points:
-##' ## 0, 12, 24, 36, 48, 60
-##' psurv <- predictRisk(fitCox,newdata=valdat,times=seq(0,60,12))
-##' ## This is a matrix with event probabilities (1-survival)
-##' ## one column for each of the 5 time points
-##' ## one row for each validation set individual
-##' 
-##' # Do the same for a randomSurvivalForest model
-##' # library(randomForestSRC)
-##' # rsfmodel <- rfsrc(Surv(time,event)~X1+X2,data=learndat)
-##' # prsfsurv=predictRisk(rsfmodel,newdata=valdat,times=seq(0,60,12))
-##' # plot(psurv,prsfsurv)
-##' 
-##' ## Cox with ridge option
-##' f1 <- coxph(Surv(time,event)~X1+X2,data=learndat,x=TRUE,y=TRUE)
-##' f2 <- coxph(Surv(time,event)~ridge(X1)+ridge(X2),data=learndat,x=TRUE,y=TRUE)
-##' \dontrun{
-##' plot(predictRisk(f1,newdata=valdat,times=10),
-##'      riskRegression:::predictRisk.coxph(f2,newdata=valdat,times=10),
-##'      xlim=c(0,1),
-##'      ylim=c(0,1),
-##'      xlab="Unpenalized predicted survival chance at 10",
-##'      ylab="Ridge predicted survival chance at 10")
-##'}
-##' 
+#' library(prodlim)
+#' set.seed(100)
+#' d <- sampleData(100,outcome="survival")
+#' d[,X1:=as.numeric(as.character(X1))]
+#' d[,X2:=as.numeric(as.character(X2))]
+#' # then fit a Cox model
+#' library(rms)
+#' cphmodel <- cph(Surv(time,event)~X1+X2,data=d,surv=TRUE,x=TRUE,y=TRUE)
+#' # or via survival
+#' library(survival)
+#' coxphmodel <- coxph(Surv(time,event)~X1+X2,data=d,x=TRUE,y=TRUE)
+#' 
+#' # Extract predicted survival probabilities 
+#' # at selected time-points:
+#' ttt <- quantile(d$time)
+#' # for selected predictor values:
+#' ndat <- data.frame(X1=c(0.25,0.25,-0.05,0.05),X2=c(0,1,0,1))
+#' # as follows
+#' predictRisk(cphmodel,newdata=ndat,times=ttt)
+#' predictRisk(coxphmodel,newdata=ndat,times=ttt)
+#' 
+#' # stratified cox model
+#' sfit <- coxph(Surv(time,event)~strata(X1)+X2,data=d,x=TRUE,y=TRUE)
+#' predictRisk(sfit,newdata=d[1:3,],times=c(1,3,5,10))
+#' 
+#' ## simulate learning and validation data
+#' learndat <- sampleData(100,outcome="survival")
+#' valdat <- sampleData(100,outcome="survival")
+#' ## use the learning data to fit a Cox model
+#' library(survival)
+#' fitCox <- coxph(Surv(time,event)~X1+X2,data=learndat,x=TRUE,y=TRUE)
+#' ## suppose we want to predict the survival probabilities for all subjects
+#' ## in the validation data at the following time points:
+#' ## 0, 12, 24, 36, 48, 60
+#' psurv <- predictRisk(fitCox,newdata=valdat,times=seq(0,60,12))
+#' ## This is a matrix with event probabilities (1-survival)
+#' ## one column for each of the 5 time points
+#' ## one row for each validation set individual
+#' 
+#' # Do the same for a randomSurvivalForest model
+#' # library(randomForestSRC)
+#' # rsfmodel <- rfsrc(Surv(time,event)~X1+X2,data=learndat)
+#' # prsfsurv=predictRisk(rsfmodel,newdata=valdat,times=seq(0,60,12))
+#' # plot(psurv,prsfsurv)
+#' 
+#' ## Cox with ridge option
+#' f1 <- coxph(Surv(time,event)~X1+X2,data=learndat,x=TRUE,y=TRUE)
+#' f2 <- coxph(Surv(time,event)~ridge(X1)+ridge(X2),data=learndat,x=TRUE,y=TRUE)
+#' \dontrun{
+#' plot(predictRisk(f1,newdata=valdat,times=10),
+#'      riskRegression:::predictRisk.coxph(f2,newdata=valdat,times=10),
+#'      xlim=c(0,1),
+#'      ylim=c(0,1),
+#'      xlab="Unpenalized predicted survival chance at 10",
+#'      ylab="Ridge predicted survival chance at 10")
+#'}
+#' 
 #' ## competing risks
 #' 
 #' library(survival)
@@ -178,41 +170,110 @@ predictRisk <- function(object,newdata,...){
   UseMethod("predictRisk",object)
 }
 
-##' @export 
+## * predictRisk.default
+##' @export
+#' @rdname predictRisk
+#' @method predictRisk default
 predictRisk.default <- function(object,newdata,times,cause,...){
     stop(paste0("No method available for evaluating predicted probabilities from objects in class: ",class(object),". But, you can write it yourself or ask the package manager."),call.=FALSE)
 }
 
+## * predictRisk.double
 ##' @export
+##' @rdname predictRisk
+##' @method predictRisk double
 predictRisk.double <- function(object,newdata,times,cause,...){
     stopifnot(NROW(object)==NROW(newdata))
     object
 }
 
+## * predictRisk.integer
 ##' @export
+##' @rdname predictRisk
+##' @method predictRisk integer
 predictRisk.integer <- function(object,newdata,times,cause,...){
     stopifnot(NROW(object)==NROW(newdata))
     object
 }
 
+## * predictRisk.factor
 ##' @export
+##' @rdname predictRisk
+##' @method predictRisk factor
 predictRisk.factor <- function(object,newdata,times,cause,...){
     stopifnot(NROW(object)==NROW(newdata))
     as.numeric(object)
 }
 
+## * predictRisk.numeric
 ##' @export
+##' @rdname predictRisk
+##' @method predictRisk numeric
 predictRisk.numeric <- function(object,newdata,times,cause,...){
     stopifnot(NROW(object)==NROW(newdata))
     object
 }
 
+## * predictRisk.glm
 ##' @export
-predictRisk.glm <- function(object,newdata,...){
+##' @rdname predictRisk
+##' @method predictRisk glm
+predictRisk.glm <- function(object, newdata, iid = FALSE, average.iid = FALSE,...){
 
     if (object$family$family=="binomial"){
-        out <- as.numeric(stats::predict(object,newdata=newdata,type="response"))
 
+        n.obs <- NROW(newdata)
+        out <- predict(object, type = "response", newdata = newdata, se = FALSE)
+
+        if(iid || average.iid){
+            ## ** prepare average.iid
+            if(average.iid){
+                if(is.null(attr(average.iid,"factor"))){
+                    factor <- list(matrix(1, nrow = n.obs, ncol = 1))
+                }else{
+                    factor <- attr(average.iid, "factor")
+                    if(is.matrix(factor)){
+                        factor <- list(factor)
+                    }
+                    if(!is.list(factor)){
+                        stop("Attribute \'factor\' for argument \'average.iid\' must be a list \n")
+                    }
+                    if(any(sapply(factor, is.matrix)==FALSE)){
+                        stop("Attribute \'factor\' for argument \'average.iid\' must be a list of matrices \n")
+                    }
+                    if(any(sapply(factor, function(iF){NROW(iF)==NROW(newdata)})==FALSE)){
+                        stop("Attribute \'factor\' for argument \'average.iid\' must be a list of matrices with ",NROW(newdata)," rows \n")
+                    }
+                }
+                n.factor <- NCOL(factor)
+            }
+
+            ## ** compute influence function of the coefficients using lava
+            iid.beta <- lava::iid(object)
+
+            newX <- model.matrix(stats::formula(object), newdata)
+            Xbeta <- predict(object, type = "link", newdata = newdata, se=FALSE)
+            
+            ## ** chain rule
+            if(average.iid){
+                attr(out,"average.iid") <- lapply(factor, function(iFactor){
+                    iE.X <- apply(iFactor, 2, function(iiFactor){ ## iiFactor <- factor[[1]][,1]
+                        colMeans(colMultiply_cpp(newX, scale = iiFactor * exp(-Xbeta)/(1+exp(-Xbeta))^2))
+                    })
+                    return(iid.beta %*% iE.X)
+                })
+                if(is.null(attr(average.iid,"factor"))){
+                    attr(out,"average.iid") <- attr(out,"average.iid")[[1]]
+                }
+            }
+            if(iid){
+                attr(out,"iid") <- t(sapply(1:n.obs, function(iObs){ ## iObs <- 1
+                    iid.beta %*% cbind(newX[iObs,]) * exp(-Xbeta[iObs])/(1+exp(-Xbeta[iObs]))^2
+                }))
+            }
+        }
+
+        ## ** set correct level
         ## hidden argument: enable to ask for the prediction of Y==1 or Y==0
         level <- list(...)$level
         if(!is.null(level)){
@@ -222,20 +283,32 @@ predictRisk.glm <- function(object,newdata,...){
             level <- match.arg(level, all.levels)
 
             index.level <- which(matching.Ylevel[level,]>0)
-            if(length(index.level)==2){
+            if(length(index.level) > 1){
                 stop("Unknown value for the outcome variable \n")
             }else if(index.level == 1){
                 out <- 1 - out
+                if(iid){
+                    attr(out,"iid") <- - attr(out,"iid")
+                }
+                if(average.iid){
+                    if(is.list(attr(out,"average.iid"))){
+                        attr(out,"average.iid") <- lapply(attr(out,"average.iid"), function(iIID){-iIID})
+                    }else{                        
+                        attr(out,"average.iid") <- - attr(out,"average.iid")
+                    }
+                }                
             }
         }
-        
         return(out)
     } else {
         stop("Currently only the binomial family is implemented for predicting a status from a glm object.")
     }
 }
 
+## * predictRisk.formula
 ##' @export
+##' @rdname predictRisk
+##' @method predictRisk formula
 predictRisk.formula <- function(object,newdata,...){
     ff <- update.formula(object,"NULL~.")
     if (length(all.vars(ff))==1){
@@ -247,29 +320,44 @@ predictRisk.formula <- function(object,newdata,...){
     }
 }
 
+## * predictRisk.BinaryTree
 ##' @export
+##' @rdname predictRisk
+##' @method predictRisk BinaryTree
 predictRisk.BinaryTree <- function(object,newdata,...){
     treeresponse <- party::treeresponse
     sapply(treeresponse(object,newdata=newdata),function(x)x[1])
 }
 
+## * predictRisk.lrm
 ##' @export
+##' @rdname predictRisk
+##' @method predictRisk lrm
 predictRisk.lrm <- function(object,newdata,...){
   as.numeric(stats::predict(object,newdata=newdata,type="fitted"))
 }
 
+## * predictRisk.rpart
 ##' @export
+##' @rdname predictRisk
+##' @method predictRisk rpart
 predictRisk.rpart <- function(object,newdata,...){
   p <- as.numeric(stats::predict(object,newdata=newdata,type="prob")[,2,drop=TRUE])
   p
 }
 
+## * predictRisk.randomForest
 ##' @export
+##' @rdname predictRisk
+##' @method predictRisk randomForest
 predictRisk.randomForest <- function(object,newdata,...){
   as.numeric(stats::predict(object,newdata=newdata,type="prob")[,2,drop=TRUE])
 }
 
+## * predictRisk.matrix
 ##' @export
+##' @rdname predictRisk
+##' @method predictRisk matrix
 predictRisk.matrix <- function(object,newdata,times,cause,...){
     if (NROW(object) != NROW(newdata) || NCOL(object) != length(times)){
         stop(paste("Prediction matrix has wrong dimensions: ",
@@ -286,7 +374,10 @@ predictRisk.matrix <- function(object,newdata,times,cause,...){
     object
 }
 
-
+## * predictRisk.aalen
+##' @export
+##' @rdname predictRisk
+##' @method predictRisk aalen
 predictRisk.aalen <- function(object,newdata,times,...){
     ## require(timereg)
     stop("FIXME")
@@ -320,6 +411,10 @@ predictRisk.aalen <- function(object,newdata,times,...){
     1-p
 }
 
+## * predictRisk.cox.aalen
+##' @export
+##' @rdname predictRisk
+##' @method predictRisk cox.aalen
 predictRisk.cox.aalen <- function(object,newdata,times,...){
     #  require(timereg)
     ##  The time-constant effects first
@@ -347,23 +442,61 @@ predictRisk.cox.aalen <- function(object,newdata,times,...){
 }
 
     
+## * predictRisk.coxph
 ##' @export
-predictRisk.coxph <- function(object,newdata,times,...){
-    p <- predictCox(object=object,
-                    newdata=newdata,
-                    times=times,
-                    se = FALSE,
-                    iid = FALSE,
-                    keep.times=FALSE,
-                    type="survival")$survival
-
-    if (NROW(p) != NROW(newdata) || NCOL(p) != length(times)){
-        stop(paste("\nPrediction matrix has wrong dimensions:\nRequested newdata x times: ",NROW(newdata)," x ",length(times),"\nProvided prediction matrix: ",NROW(p)," x ",NCOL(p),"\n\n",sep=""))
+##' @rdname predictRisk
+##' @method predictRisk coxph
+predictRisk.coxph <- function(object, newdata, times, product.limit = FALSE, iid = FALSE, average.iid = FALSE, ...){
+    type <- list(...)$type ## hidden argument for ate
+    
+    if(product.limit){
+        outPred <- predictCoxPL(object=object,
+                                newdata=newdata,
+                                times=times,
+                                iid = iid,
+                                iid = average.iid,
+                                keep.times=FALSE,
+                                type="survival")
+    }else{
+        outPred <- predictCox(object=object,
+                              newdata=newdata,
+                              times=times,
+                              iid = iid,
+                              average.iid = average.iid,
+                              keep.times=FALSE,
+                              type="survival")
     }
-    return(1-p)
+    if(identical(type,"survival")){
+        out <- outPred$survival
+    }else{
+        out <- 1-outPred$survival
+    }
+    if(iid){
+        if(identical(type,"survival")){
+            attr(out,"iid") <- outPred$survival.iid
+        }else{
+            attr(out,"iid") <- -outPred$survival.iid
+        }
+    }
+    if(average.iid){
+        if(identical(type,"survival")){
+            attr(out,"average.iid") <- outPred$survival.average.iid
+        }else{
+            if(is.list(outPred$survival.average.iid)){
+                attr(out,"average.iid") <- lapply(outPred$survival.average.iid, function(iIID){-iIID})
+            }else{
+                attr(out,"average.iid") <- -outPred$survival.average.iid
+            }
+        }
+    }
+
+    return(out)
 }
 
+## * predictRisk.coxphTD
 ##' @export
+##' @rdname predictRisk
+##' @method predictRisk coxphTD
 predictRisk.coxphTD <- function(object,newdata,times,landmark,...){
     stopifnot(attr(object$y,"type")=="counting")
     bh <- survival::basehaz(object,centered=TRUE)
@@ -381,7 +514,11 @@ predictRisk.coxphTD <- function(object,newdata,times,landmark,...){
     return(p)
 }
 
+
+## * predictRisk.CSCTD
 ##' @export
+##' @rdname predictRisk
+##' @method predictRisk CSCTD
 predictRisk.CSCTD <- function(object,newdata,times,cause,landmark,...){
     stopifnot(attr(object$models[[1]]$y,"type")=="counting")
     if (missing(cause)) cause <- object$theCause
@@ -424,36 +561,11 @@ predictRisk.CSCTD <- function(object,newdata,times,cause,landmark,...){
 }
 
 
-## predictRisk.coxph <- function(object,newdata,times,...){
-## baselineHazard.coxph(object,times)
-## require(survival)
-## new feature of the survival package requires that the
-## original data are included
-## survival.survfit.coxph <- getFromNamespace("survfit.coxph",ns="survival")
-## survival.summary.survfit <- getFromNamespace("summary.survfit",ns="survival")
-## survfit.object <- survival::survfit(object,newdata=newdata,se.fit=FALSE,conf.int=FALSE)
-## if (is.null(attr(object$terms,"specials")$strata)){
-## ## case without strata 
-## inflated.pred <- summary(survfit.object,times=times)$surv
-## p <- t(inflated.pred)        
-## } else{
-## ## case with strata 
-## inflated.pred <- summary(survfit.object,times=times)
-## plist <- split(inflated.pred$surv,inflated.pred$strata)
-## p <- do.call("rbind",lapply(plist,function(x){
-## beyond <- length(times)-length(x)
-## c(x,rep(NA,beyond))
-## }))
-## ## p <- matrix(inflated.pred,ncol=length(times),byrow=TRUE)
-## }
-## if ((miss.time <- (length(times) - NCOL(p)))>0)
-## p <- cbind(p,matrix(rep(NA,miss.time*NROW(p)),nrow=NROW(p)))
-## if (NROW(p) != NROW(newdata) || NCOL(p) != length(times))
-## stop(paste("\nPrediction matrix has wrong dimensions:\nRequested newdata x times: ",NROW(newdata)," x ",length(times),"\nProvided prediction matrix: ",NROW(p)," x ",NCOL(p),"\n\n",sep=""))
-## 1-p
-## }
 
+## * predictRisk.coxph.penal
 ##' @export
+##' @rdname predictRisk
+##' @method predictRisk coxph.penal
 predictRisk.coxph.penal <- function(object,newdata,times,...){
   frailhistory <- object$history$'frailty(cluster)'$history
   frailVar <- frailhistory[NROW(frailhistory),1]
@@ -474,30 +586,25 @@ predictRisk.coxph.penal <- function(object,newdata,times,...){
 }
 
 
-##' @export 
-predictRisk.cph <- function(object,newdata,times,...){
-    ## if (!match("surv",names(object),nomatch=0)) stop("Argument missing: set surv=TRUE in the call to cph!")
-    ## p <- rms::survest(object,times=times,newdata=newdata,se.fit=FALSE,what="survival")$surv
-    ## if (is.null(dim(p))) p <- matrix(p,nrow=NROW(newdata))
-    p <- predictCox(object=object,
-                    newdata=newdata,
-                    times=times,
-                    se = FALSE,
-                    iid = FALSE,
-                    keep.times=FALSE,
-                    type="survival")$survival
-    if (NROW(p) != NROW(newdata) || NCOL(p) != length(times))
-        stop(paste("\nPrediction matrix has wrong dimensions:\nRequested newdata x times: ",NROW(newdata)," x ",length(times),"\nProvided prediction matrix: ",NROW(p)," x ",NCOL(p),"\n\n",sep=""))
-    return(1-p)
-}
-
+## * predictRisk.cph
 ##' @export
+##' @rdname predictRisk
+##' @method predictRisk cph
+predictRisk.cph <- predictRisk.coxph
+
+## * predictRisk.selectCox
+##' @export
+##' @rdname predictRisk
+##' @method predictRisk selectCox
 predictRisk.selectCox <- function(object,newdata,times,...){
     predictRisk(object[[1]],newdata=newdata,times=times,...)
 }
 
 
-##' @export 
+## * predictRisk.prodlim
+##' @export
+##' @rdname predictRisk
+##' @method predictRisk prodlim
 predictRisk.prodlim <- function(object,newdata,times,cause,...){
     ## require(prodlim)
     if (object$model[[1]]=="competing.risks" && missing(cause))
@@ -523,6 +630,17 @@ predictRisk.prodlim <- function(object,newdata,times,cause,...){
         if (NROW(p) != NROW(newdata) || NCOL(p) != length(times))
             stop(paste("\nPrediction matrix has wrong dimensions:\nRequested newdata x times: ",NROW(newdata)," x ",length(times),"\nProvided prediction matrix: ",NROW(p)," x ",NCOL(p),"\n\n",sep=""))
     }
+    p
+}
+
+## * predictRisk.survfit
+##' @export
+##' @rdname predictRisk
+##' @method predictRisk survfit
+predictRisk.survfit <- function(object,newdata,times,...){
+    p <- predict.survfit(object,newdata=newdata,times=times,type="cuminc",bytimes=TRUE,fill="last")
+    if (NROW(p) != NROW(newdata) || NCOL(p) != length(times))
+        stop(paste("\nPrediction matrix has wrong dimensions:\nRequested newdata x times: ",NROW(newdata)," x ",length(times),"\nProvided prediction matrix: ",NROW(p)," x ",NCOL(p),"\n\n",sep=""))
     p
 }
 
@@ -582,17 +700,11 @@ predict.survfit <- function(object,newdata,times,bytimes=TRUE,type="cuminc",fill
     if (type=="cuminc") 1-p else p
 }
 
+
+## * predictRisk.psm
 ##' @export
-predictRisk.survfit <- function(object,newdata,times,...){
-    p <- predict.survfit(object,newdata=newdata,times=times,type="cuminc",bytimes=TRUE,fill="last")
-    if (NROW(p) != NROW(newdata) || NCOL(p) != length(times))
-        stop(paste("\nPrediction matrix has wrong dimensions:\nRequested newdata x times: ",NROW(newdata)," x ",length(times),"\nProvided prediction matrix: ",NROW(p)," x ",NCOL(p),"\n\n",sep=""))
-    p
-}
-
-
-
-##' @export
+##' @rdname predictRisk
+##' @method predictRisk psm
 predictRisk.psm <- function(object,newdata,times,...){
     if (length(times)==1){
         p <- rms::survest(object,times=c(0,times),newdata=newdata,what="survival",conf.int=FALSE)[,2]
@@ -604,7 +716,10 @@ predictRisk.psm <- function(object,newdata,times,...){
     1-p
 }
 
-##' @export 
+## * predictRisk.ranger
+##' @export
+##' @rdname predictRisk
+##' @method predictRisk ranger
 predictRisk.ranger <- function(object, newdata, times, cause, ...){
     xvars <- object$forest$independent.variable.names
     newdata <- subset(newdata,select=xvars)
@@ -625,7 +740,10 @@ predictRisk.ranger <- function(object, newdata, times, cause, ...){
     }
 }
 
-##' @export 
+## * predictRisk.rfsrc
+##' @export
+##' @rdname predictRisk
+##' @method predictRisk rfsrc
 predictRisk.rfsrc <- function(object, newdata, times, cause, ...){
     if (missing(times)||is.null(times)){
         p <- as.numeric(stats::predict(object,newdata=newdata,importance="none",...)$predicted[,2])
@@ -652,7 +770,10 @@ predictRisk.rfsrc <- function(object, newdata, times, cause, ...){
     }
 }
 
-##' @export 
+## * predictRisk.FGR
+##' @export
+##' @rdname predictRisk
+##' @method predictRisk FGR
 predictRisk.FGR <- function(object,newdata,times,cause,...){
     ## require(cmprsk)
     ## predict.crr <- cmprsk:::predict.crr
@@ -662,7 +783,10 @@ predictRisk.FGR <- function(object,newdata,times,cause,...){
     p
 }
 
+## * predictRisk.riskRegression
 ##' @export
+##' @rdname predictRisk
+##' @method predictRisk riskRegression
 predictRisk.riskRegression <- function(object,newdata,times,cause,...){
   if (missing(times))stop("Argument times is missing")
   temp <- predict(object,newdata=newdata,times=times)
@@ -676,7 +800,10 @@ predictRisk.riskRegression <- function(object,newdata,times,cause,...){
   p
 }
 
-##' @export 
+## * predictRisk.ARR
+##' @export
+##' @rdname predictRisk
+##' @method predictRisk ARR
 predictRisk.ARR <- function(object,newdata,times,cause,...){
   if (missing(times))stop("Argument times is missing")
   temp <- predict(object,newdata=newdata,times=times)
@@ -687,19 +814,31 @@ predictRisk.ARR <- function(object,newdata,times,cause,...){
   p
 }
 
+## * predictRisk.CauseSpecificCox
+##' @export
+##' @rdname predictRisk
+##' @method predictRisk CauseSpecificCox
+predictRisk.CauseSpecificCox <- function (object, newdata, times, cause, product.limit = TRUE, iid = FALSE, average.iid = FALSE, ...) { 
+    
+    outPred <- predict(object=object,
+                       newdata=newdata,
+                       times=times,
+                       cause=cause,
+                       keep.strata=FALSE,
+                       se = FALSE,
+                       iid = iid,
+                       average.iid = average.iid,
+                       product.limit = product.limit)
+    
+    out <- outPred$absRisk
+    if(iid){
+        attr(out,"iid") <- outPred$absRisk.iid
+    }
+    if(average.iid){
+        attr(out,"average.iid") <- outPred$absRisk.average.iid
+    }
 
-##' @export 
-predictRisk.CauseSpecificCox <- function (object, newdata, times, cause, ...) { 
-    p <- predict(object=object,
-                 newdata=newdata,
-                 times=times,
-                 cause=cause,
-                 keep.strata=FALSE,
-                 se = FALSE,
-                 iid = FALSE)$absRisk
-    if (NROW(p) != NROW(newdata) || NCOL(p) != length(times))
-        stop(paste("\nPrediction matrix has wrong dimension:\nRequested newdata x times: ",NROW(newdata)," x ",length(times),"\nProvided prediction matrix: ",NROW(p)," x ",NCOL(p),"\n\n",sep=""))
-    p
+    return(out)
 }
 
 
@@ -810,7 +949,10 @@ penalizedS3 <- function(formula,
                                         # }}}
 }
 
-##' @export 
+## * predictRisk.penfitS3
+##' @export
+##' @rdname predictRisk
+##' @method predictRisk penfitS3
 predictRisk.penfitS3 <- function(object,
                                  newdata,
                                  times,
@@ -906,7 +1048,10 @@ predictRisk.SmcFcs <- function(object,newdata,...){
     p
 }
 
-##' @export 
+## * predictRisk.SuperPredictor
+##' @export
+##' @rdname predictRisk
+##' @method predictRisk SuperPredictor
 predictRisk.SuperPredictor  <- function(object,newdata,...){
     p <- SuperLearner::predict.SuperLearner(object=object,newdata=newdata)$pred
     ## if (NROW(p) != NROW(newdata) || NCOL(p) != length(times))
@@ -914,7 +1059,10 @@ predictRisk.SuperPredictor  <- function(object,newdata,...){
     p
 }
 
-##' @export 
+## * predictRisk.gbm
+##' @export
+##' @rdname predictRisk
+##' @method predictRisk gbm
 predictRisk.gbm <- function(object, newdata, times, ...) {
     n.trees <- object$n.trees
     traindata <-  gbm::reconstructGBMdata(object)
@@ -928,7 +1076,10 @@ predictRisk.gbm <- function(object, newdata, times, ...) {
     p[,times==0] <- 1
     1 - p
 }
-##' @export 
+## * predictRisk.flexsurvreg
+##' @export
+##' @rdname predictRisk
+##' @method predictRisk flexsurvreg
 predictRisk.flexsurvreg <- function(object, newdata, times, ...) {
     newdata <- data.frame(newdata)
     p <- matrix(0, NROW(newdata), length(times))
@@ -940,35 +1091,6 @@ predictRisk.flexsurvreg <- function(object, newdata, times, ...) {
     if (NROW(p) != NROW(newdata) || NCOL(p) != length(times)) 
         stop("Prediction failed")
     1 - p
-}
-
-##' @export 
-predictRisk.cv.glmnet <- function(object, newdata, times,...) {
-    p <- matrix(0, NROW(newdata), length(times))
-    time <- object$call$formula[[2]][[2]]
-    event <- object$call$formula[[2]][[3]]
-    d <- data.matrix(newdata)
-    requireNamespace("glmnetUtils")
-    xb.test <- predict(object, newdata = as.data.frame(newdata) , type = "link") 
-    H2 <- hdnom::glmnet_basesurv(time = newdata[, time], event = newdata[,event], lp = xb.test, times.eval = times)$cumulative_base_hazard
-    for (i in 1:length(times)) p[,i] <- exp(-H2[i] * exp(xb.test))
-    p[,times==0] <- 1
-    return(1-p)
-}
-
-##' @export 
-predictRisk.glmnet <- function(object, newdata, times,...) {
-    if (length(object$lambda) > 1) stop("Supply only a single value of lambda in the glmnet fit") 
-    p <- matrix(0, NROW(newdata), length(times))
-    time <- object$call$formula[[2]][[2]]
-    event <- object$call$formula[[2]][[3]]
-    d <- data.matrix(newdata)
-    requireNamespace("glmnetUtils")
-    xb.test <- predict(object, newdata = as.data.frame(newdata) , type = "link") 
-    H2 <- hdnom::glmnet_basesurv(time = newdata[, time], event = newdata[,event], lp = xb.test, times.eval = times)$cumulative_base_hazard
-    for (i in 1:length(times)) p[,i] <- exp(-H2[i] * exp(xb.test))
-    p[,times==0] <- 1
-    return(1-p)
 }
 
 #----------------------------------------------------------------------

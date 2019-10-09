@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: apr 11 2018 (17:05) 
 ## Version: 
-## Last-Updated: Aug 18 2019 (09:27) 
+## Last-Updated: Oct  9 2019 (11:34) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 199
+##     Update #: 202
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -28,15 +28,22 @@ calcBootATE <- function(args, name.estimate, n.obs, fct.pointEstimate,
     ls.data <- list(object.event = NULL,
                     object.treatment = NULL,
                     object.censor = NULL)
-    for(iModel in c("object.event","object.treatment","object.censor")){
-        ls.data[[iModel]] <- data.table::as.data.table(eval(args[[iModel]]$call$data))
+    for(iModel in c("object.event","object.treatment","object.censor")){ ## iModel <- "object.event"
+        
+        data.tempo <- eval(args[[iModel]]$call$data)
+        if(inherits(data.tempo,"function")){
+            stop("Argument \'data\' in the object has the same name has an existing R function \n",
+                 "This creates confusion - please rename the dataset \n")
+        }else{
+            ls.data[[iModel]] <- data.table::as.data.table(data.tempo)
+        }
     }
 
     ## package to be exported to cluster
     vec.fitter <- unique(c(as.character(args$object.event$call[[1]]),
                            as.character(args$object.treatment$call[[1]]),
                            as.character(args$object.censor$call[[1]])))
-    ls.package <- lapply(vec.fitter,function(iFitter){
+    ls.package <- lapply(vec.fitter,function(iFitter){ ## iFitter <- "CSC"
         iSource <- utils::find(iFitter)
         if(any(ifound <- grepl("package:",iSource))){
             gsub("package:","",iSource[ifound])

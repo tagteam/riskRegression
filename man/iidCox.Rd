@@ -2,29 +2,54 @@
 % Please edit documentation in R/iidCox.R
 \name{iidCox}
 \alias{iidCox}
-\title{Extract i.i.d. decomposition from a Cox model}
+\alias{iidCox.coxph}
+\alias{iidCox.cph}
+\alias{iidCox.phreg}
+\alias{iidCox.CauseSpecificCox}
+\title{Extract iid decomposition from a Cox model}
 \usage{
-iidCox(object, newdata = NULL, baseline.iid = TRUE,
-  tau.hazard = NULL, store.iid = "full", keep.times = TRUE)
+iidCox(object, newdata, baseline.iid, tau.hazard, tau.max, store.iid,
+  keep.times, return.object)
+
+\method{iidCox}{coxph}(object, newdata = NULL, baseline.iid = TRUE,
+  tau.hazard = NULL, tau.max = NULL, store.iid = "full",
+  keep.times = TRUE, return.object = TRUE)
+
+\method{iidCox}{cph}(object, newdata = NULL, baseline.iid = TRUE,
+  tau.hazard = NULL, tau.max = NULL, store.iid = "full",
+  keep.times = TRUE, return.object = TRUE)
+
+\method{iidCox}{phreg}(object, newdata = NULL, baseline.iid = TRUE,
+  tau.hazard = NULL, tau.max = NULL, store.iid = "full",
+  keep.times = TRUE, return.object = TRUE)
+
+\method{iidCox}{CauseSpecificCox}(object, newdata = NULL,
+  baseline.iid = TRUE, tau.hazard = NULL, tau.max = NULL,
+  store.iid = "full", keep.times = TRUE, return.object = TRUE)
 }
 \arguments{
 \item{object}{object The fitted Cox regression model object either
 obtained with \code{coxph} (survival package) or \code{cph}
 (rms package).}
 
-\item{newdata}{Optional new data at which to do i.i.d. decomposition}
+\item{newdata}{[data.frame] Optional new data at which to do iid decomposition}
 
-\item{baseline.iid}{Should the influence function for the baseline hazard be computed.}
+\item{baseline.iid}{[logical] Should the influence function for the baseline hazard be computed.}
 
-\item{tau.hazard}{the vector of times at which the i.i.d decomposition of the baseline hazard will be computed}
+\item{tau.hazard}{[numeric vector] the vector of times at which the i.i.d decomposition of the baseline hazard will be computed}
 
-\item{store.iid}{the method used to compute the influence function and the standard error.
+\item{tau.max}{[numeric] latest time at which the i.i.d decomposition of the baseline hazard will be computed. Alternative to \code{tau.hazard}.}
+
+\item{store.iid}{[character] the method used to compute the influence function and the standard error.
 Can be \code{"full"}, \code{"approx"} or \code{"minimal"}. See the details section.}
 
-\item{keep.times}{Logical. If \code{TRUE} add the evaluation times to the output.}
+\item{keep.times}{[logical] If \code{TRUE} add the evaluation times to the output.}
+
+\item{return.object}{[logical] If \code{TRUE} return the object where the iid decomposition has been added.
+Otherwise return a list (see the return section)}
 }
 \value{
-A list containing:
+For Cox models, the iid slot is a list containing:
  \itemize{
  \item{IFbeta}{Influence function for the regression coefficient.}
  \item{IFhazard}{Time differential of the influence function of the hazard.}
@@ -35,6 +60,8 @@ A list containing:
  \item{etime.max}{Last observation time (i.e. jump or censoring) in each strata.}
  \item{indexObs}{Index of the observation in the original dataset.}
 }
+For Cause-Specific Cox models,
+a list containing the iid decomposition relative to each cause is returned.
 }
 \description{
 Compute the influence function for each observation used to estimate the model
@@ -67,7 +94,6 @@ system.time(IF.cox_approx <- iidCox(m.cox, store.iid = "approx"))
 
 IF.cox.all <- iidCox(m.cox, tau.hazard = sort(unique(c(7,d$eventtime))))
 IF.cox.beta <- iidCox(m.cox, baseline.iid = FALSE)
-
 
 }
 \references{

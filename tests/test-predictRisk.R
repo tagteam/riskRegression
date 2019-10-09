@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Aug 10 2017 (08:56) 
 ## Version: 
-## Last-Updated: Mar  3 2019 (17:32) 
-##           By: Thomas Alexander Gerds
-##     Update #: 19
+## Last-Updated: okt  7 2019 (18:48) 
+##           By: Brice Ozenne
+##     Update #: 28
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -22,7 +22,11 @@ library(survival)
 library(randomForestSRC)
 library(ggplot2)
 library(data.table)
-# {{{ SuperLearner
+library(lava)
+
+## * SuperLearner
+cat("[predictRisk.SuperPredictor] \n")
+
 test_that("wrap the SuperLearner", {
     d <- sampleData(139,outcome="binary")
     sl = SuperLearner(Y = d$Y,
@@ -30,9 +34,9 @@ test_that("wrap the SuperLearner", {
                       family = binomial(),
                       SL.library = "SL.glm")
 })
-# }}}
 
-# {{{ missing data
+## * rfsrc
+cat("[predictRisk.rfsrc]  \n")
 test_that("Additional arguments: example with imputation of missing data", {
     data(pbc,package="survival")
     set.seed(10)
@@ -44,9 +48,9 @@ test_that("Additional arguments: example with imputation of missing data", {
     ## wrong specification
     expect_error(print(Score(list(forest),formula=Hist(time,status)~1,data=pbc,conf.int=FALSE,metrics="brier",cens.model="km",predictRisk.args=list("randomForestSRC"=list(na.action="na.impute")))))
 })
-# }}}
 
-# {{{ predictCox/predictCSC - to be reorganized (there is no clear test in this section)
+## * predictCox/predictCSC - to be reorganized (there is no clear test in this section)
+cat("[predictRisk.CauseSpecificCox] \n")
 test_that("Prediction with CSC - categorical cause",{
     set.seed(10)
     n <- 300
@@ -83,7 +87,90 @@ test_that("Prediction with CSC - categorical cause",{
     predictRisk(CSC.h$models[[2]], newdata = dn, times = c(5,10,15,20), cause = cause)
     predictRisk(CSC.s$models[[2]], newdata = dn, times = c(5,10,15,20), cause = cause)
 })
-# }}}
+
+## * [predictRisk.glm] vs. lava
+cat("[predictRisk.glm] vs. lava \n")
+
+## ** data
+n <- 100
+set.seed(10)
+dt <- sampleData(n, outcome="binary")
+
+fit <- glm(formula = Y ~ X1+X2, data=dt, family = "binomial")
+
+## ** iid
+test_that("[predictRisk.glm] compare to lava",{
+
+    e.RR <- predictRisk(fit, newdata = dt, iid = TRUE, average.iid = FALSE)
+    e.RR.iid <- attr(e.RR,"iid")
+    attr(e.RR,"iid") <- NULL
+
+    e.lava <- estimate(fit, function(p, data){
+        a <- p["(Intercept)"] ; b <- p["X11"] ; c <- p["X21"] ;
+        return(expit(a + b * (data[["X1"]]=="1") + c * (data[["X2"]]=="1")))
+    })
+    ## check point estimate
+    expect_equal(e.RR, predict(fit, newdata = dt, type = "response"))
+    expect_equal(unname(e.RR), unname(e.lava$coef))
+
+    ## check variance
+    expect_equal(unname(tcrossprod(e.RR.iid)), unname(e.lava$vcov))
+})
+
+## ** average.iid 
+test_that("[predictRisk.glm] compare to lava (average.iid, no factor)",{
+
+    ## no factor
+    e.RR0 <- predictRisk(fit, newdata = dt, iid = TRUE, average.iid = FALSE)
+    
+    e.RR <- predictRisk(fit, newdata = dt, iid = TRUE, average.iid = TRUE)
+    e.RR.average.iid <- attr(e.RR,"average.iid")
+    attr(e.RR,"average.iid") <- NULL
+
+    e.lava <- estimate(fit, function(p, data){
+        a <- p["(Intercept)"] ; b <- p["X11"] ; c <- p["X21"] ;
+        eXb <- expit(a + b * (data[["X1"]]=="1") + c * (data[["X2"]]=="1"))
+        return(list(risk = eXb))},
+        average=TRUE)
+
+    ## check point estimate
+    expect_equal(unname(mean(e.RR)), unname(e.lava$coef))
+
+    ## check iid
+    expect_equal(colMeans(attr(e.RR0,"iid")), unname(e.RR.average.iid[,1]))
+
+    ## check variance
+    expect_equal(unname(sum((e.RR.average.iid + (e.RR-mean(e.RR))/NROW(e.RR))^2)), unname(e.lava$vcov)[1,1])
+})
+
+## ** average.iid with factor
+test_that("[predictGLM] compare to lava (average.iid, factor)",{
+
+    factor <- TRUE
+    attr(factor,"factor") <- matrix(1:NROW(dt), ncol = 1)
+    
+    e.RR0 <- predictRisk(fit, newdata = dt, iid = TRUE, average.iid = FALSE)
+    
+    e.RR <- predictRisk(fit, newdata = dt, average.iid = factor)
+    e.RR.average.iid <- attr(e.RR,"average.iid")
+    attr(e.RR,"average.iid") <- NULL
+    e.RR <- e.RR * (1:NROW(dt))
+    
+    e.lava <- estimate(fit, function(p, data){
+        a <- p["(Intercept)"] ; b <- p["X11"] ; c <- p["X21"] ;
+        eXb <- expit(a + b * (data[["X1"]]=="1") + c * (data[["X2"]]=="1"))
+        return(list(risk = eXb*(1:NROW(data))))},
+        average=TRUE)
+
+    ## check point estimate
+    expect_equal(unname(mean(e.RR)), unname(e.lava$coef))
+
+    ## check iid
+    expect_equal(colMeans(colMultiply_cpp(attr(e.RR0,"iid"), scale = 1:NROW(dt))), unname(e.RR.average.iid[[1]])[,1])
+
+    ## check variance
+    expect_equal(unname(sum((e.RR.average.iid[[1]] + (e.RR-mean(e.RR))/NROW(e.RR))^2)), unname(e.lava$vcov)[1,1])
+})
 
 
 ######################################################################

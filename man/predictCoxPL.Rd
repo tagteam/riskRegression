@@ -42,6 +42,9 @@ to the output. Only if there any.}
 \description{
 Same as predictCox except that the survival is estimated using the product limit estimator.
 }
+\details{
+Note: the iid and standard errors are computed using the exponential approximation.
+}
 \examples{
 library(survival)
 

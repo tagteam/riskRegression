@@ -8,6 +8,7 @@
 \alias{predictRisk.prodlim}
 \alias{predictRisk.rfsrc}
 \alias{predictRisk.aalen}
+\alias{predictRisk.ARR}
 \alias{predictRisk.cox.aalen}
 \alias{predictRisk.coxph}
 \alias{predictRisk.cph}
@@ -24,27 +25,95 @@
 \alias{predictRisk.rpart}
 \alias{predictRisk.gbm}
 \alias{predictRisk.flexsurvreg}
+\alias{predictRisk.double}
+\alias{predictRisk.integer}
+\alias{predictRisk.factor}
+\alias{predictRisk.numeric}
+\alias{predictRisk.formula}
+\alias{predictRisk.BinaryTree}
+\alias{predictRisk.coxphTD}
+\alias{predictRisk.CSCTD}
+\alias{predictRisk.coxph.penal}
+\alias{predictRisk.ranger}
+\alias{predictRisk.penfitS3}
+\alias{predictRisk.SuperPredictor}
 \title{Extrating predicting risks from regression models}
 \usage{
-\method{predictRisk}{glm}(object,newdata,...)
-\method{predictRisk}{cox.aalen}(object,newdata,times,...)
-\method{predictRisk}{cph}(object,newdata,times,...)
-\method{predictRisk}{coxph}(object,newdata,times,...)
-\method{predictRisk}{matrix}(object,newdata,times,cause,...)
-\method{predictRisk}{selectCox}(object,newdata,times,...)
-\method{predictRisk}{psm}(object,newdata,times,...)
-\method{predictRisk}{survfit}(object,newdata,times,...)
-\method{predictRisk}{riskRegression}(object,newdata,times,cause,...)
-\method{predictRisk}{prodlim}(object,newdata,times,cause,...)
-\method{predictRisk}{rfsrc}(object,newdata,times,cause,...)
-\method{predictRisk}{FGR}(object,newdata,times,cause,...)
-\method{predictRisk}{CauseSpecificCox}(object,newdata,times,cause,...)
-\method{predictRisk}{gbm}(object,newdata,times,...)
-\method{predictRisk}{flexsurvreg}(object,newdata,times,...)
+predictRisk(object, newdata, ...)
+
+\method{predictRisk}{default}(object, newdata, times, cause, ...)
+
+\method{predictRisk}{double}(object, newdata, times, cause, ...)
+
+\method{predictRisk}{integer}(object, newdata, times, cause, ...)
+
+\method{predictRisk}{factor}(object, newdata, times, cause, ...)
+
+\method{predictRisk}{numeric}(object, newdata, times, cause, ...)
+
+\method{predictRisk}{glm}(object, newdata, iid = FALSE,
+  average.iid = FALSE, ...)
+
+\method{predictRisk}{formula}(object, newdata, ...)
+
+\method{predictRisk}{BinaryTree}(object, newdata, ...)
+
+\method{predictRisk}{lrm}(object, newdata, ...)
+
+\method{predictRisk}{rpart}(object, newdata, ...)
+
+\method{predictRisk}{randomForest}(object, newdata, ...)
+
+\method{predictRisk}{matrix}(object, newdata, times, cause, ...)
+
+\method{predictRisk}{aalen}(object, newdata, times, ...)
+
+\method{predictRisk}{cox.aalen}(object, newdata, times, ...)
+
+\method{predictRisk}{coxph}(object, newdata, times,
+  product.limit = FALSE, iid = FALSE, average.iid = FALSE, ...)
+
+\method{predictRisk}{coxphTD}(object, newdata, times, landmark, ...)
+
+\method{predictRisk}{CSCTD}(object, newdata, times, cause, landmark, ...)
+
+\method{predictRisk}{coxph.penal}(object, newdata, times, ...)
+
+\method{predictRisk}{cph}(object, newdata, times, product.limit = FALSE,
+  iid = FALSE, average.iid = FALSE, ...)
+
+\method{predictRisk}{selectCox}(object, newdata, times, ...)
+
+\method{predictRisk}{prodlim}(object, newdata, times, cause, ...)
+
+\method{predictRisk}{survfit}(object, newdata, times, ...)
+
+\method{predictRisk}{psm}(object, newdata, times, ...)
+
+\method{predictRisk}{ranger}(object, newdata, times, cause, ...)
+
+\method{predictRisk}{rfsrc}(object, newdata, times, cause, ...)
+
+\method{predictRisk}{FGR}(object, newdata, times, cause, ...)
+
+\method{predictRisk}{riskRegression}(object, newdata, times, cause, ...)
+
+\method{predictRisk}{ARR}(object, newdata, times, cause, ...)
+
+\method{predictRisk}{CauseSpecificCox}(object, newdata, times, cause,
+  product.limit = TRUE, iid = FALSE, average.iid = FALSE, ...)
+
+\method{predictRisk}{penfitS3}(object, newdata, times, ...)
+
+\method{predictRisk}{SuperPredictor}(object, newdata, ...)
+
+\method{predictRisk}{gbm}(object, newdata, times, ...)
+
+\method{predictRisk}{flexsurvreg}(object, newdata, times, ...)
 }
 \arguments{
 \item{object}{A fitted model from which to extract predicted event
-probabilities}
+probabilities.}
 
 \item{newdata}{A data frame containing predictor variable combinations for
 which to compute predicted event probabilities.}
@@ -55,6 +124,15 @@ which to compute predicted event probabilities.}
 which the cumulative incidences event probabilities are computed.}
 
 \item{cause}{Identifies the cause of interest among the competing events.}
+
+\item{iid}{Should the iid decomposition be output using an attribute?}
+
+\item{average.iid}{Should the average iid decomposition be output using an attribute?}
+
+\item{product.limit}{If \code{TRUE} the survival is computed using the product limit estimator.
+Otherwise the exponential approximation is used (i.e. exp(-cumulative hazard)).}
+
+\item{landmark}{The starting time for the computation of the cumulative risk.}
 }
 \value{
 For binary outcome a vector with predicted risks. For survival outcome with and without
@@ -64,16 +142,12 @@ columns as \code{length(times)}. Each entry is a probability and in
 rows the values should be increasing.
 }
 \description{
-Extract event probabilities from fitted regression models and machine learning objects.
-}
-\details{
+Extract event probabilities from fitted regression models and machine learning objects. 
 The function predictRisk is a generic function, meaning that it invokes
 specifically designed functions depending on the 'class' of the first
-argument.
-
-See \code{\link{predictRisk}}.
-
-
+argument. See \code{\link{predictRisk}}.
+}
+\details{
 In uncensored binary outcome data there is no need to choose a time point.
 
 When operating on models for survival analysis (without competing risks) the function still

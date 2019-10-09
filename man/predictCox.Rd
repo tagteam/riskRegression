@@ -61,7 +61,8 @@ covariates used to make the prediction in the output list.}
 \item{confint}{[logical] If \code{TRUE} compute and add the confidence intervals/bands to the output.
 They are computed applying the \code{confint} function to the output.}
 
-\item{diag}{[logical] If \code{TRUE} only compute the hazard/cumlative hazard/survival for the i-th row in dataset at the i-th time.}
+\item{diag}{[logical] when \code{FALSE} the hazard/cumlative hazard/survival for all observations at all times is computed,
+otherwise it is only computed for the i-th observation at the i-th time.}
 
 \item{average.iid}{[logical] If \code{TRUE} add the average of the influence function over \code{newdata} to the output.}
 

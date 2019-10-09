@@ -13,7 +13,8 @@
 #' the estimated absolute risk.
 #' @param cause [integer/character] Identifies the cause of interest among the competing
 #'     events.
-#' @param landmark [integer] The starting time for the computation of the cumulative risk.,
+#' @param type [character] Can be changed to \code{"survival"} if the event free survival should be output instead of the absolute risk.
+#' @param landmark [integer] The starting time for the computation of the cumulative risk.
 #' @param keep.times [logical] If \code{TRUE} add the evaluation times to the output.
 #' @param keep.newdata [logical] If \code{TRUE} add the value of the covariates used to make the prediction in the output list. 
 #' @param keep.strata [logical] If \code{TRUE} add the value of the strata used to make the prediction in the output list. 
@@ -27,6 +28,8 @@
 #' Otherwise the exponential approximation is used (i.e. exp(-cumulative hazard)).
 #' @param store.iid [character] Implementation used to estimate the influence function and the standard error.
 #' Can be \code{"full"} or \code{"minimal"}. 
+#' @param diag [logical] when \code{FALSE} the absolute risk/survival for all observations at all times is computed,
+#' otherwise it is only computed for the i-th observation at the i-th time.
 #' @param ... not used.
 #' 
 #' @author Brice Ozenne broz@@sund.ku.dk, Thomas A. Gerds
@@ -108,6 +111,7 @@ predict.CauseSpecificCox <- function(object,
                                      newdata,
                                      times,
                                      cause,
+                                     type = "absRisk",
                                      landmark = NA,
                                      keep.times = 1L,
                                      keep.newdata = 1L,
@@ -119,19 +123,30 @@ predict.CauseSpecificCox <- function(object,
                                      average.iid = FALSE,
                                      product.limit = TRUE,
                                      store.iid = "full",
+                                     diag = FALSE,
                                      ...){
 
-    ## ** prepare
-    if(object$fitter=="phreg"){newdata$entry <- 0} 
+
     if(missing(newdata)){
         newdata <- eval(object$call$data)
     }else{
         setDT(newdata)
     }
+
+    ## ** event-free survival instead of absolute risk
+    type <- match.arg(type, c("absRisk","survival"))
+    if(type=="survival"){
+        return(.predictSurv_CSC(object, newdata = newdata, times = times, product.limit = product.limit, se = se, diag = diag, iid = iid, average.iid = average.iid))
+    }
+
+    ## ** prepare
+    n.times <- length(times)
+    if(object$fitter=="phreg"){newdata$entry <- 0} 
+    new.n <- NROW(newdata)
     ## if(data.table::is.data.table(newdata)){
-        ## newdata <- data.table::copy(newdata)
+    ## newdata <- data.table::copy(newdata)
     ## }else{
-        ## newdata <- data.table::as.data.table(newdata)
+    ## newdata <- data.table::as.data.table(newdata)
     ## }
     
     surv.type <- object$surv.type
@@ -151,14 +166,13 @@ predict.CauseSpecificCox <- function(object,
     
     ## event times
     eTimes <- object$eventTimes
-    
+
+    ## ** check
     if (any(match(as.character(cause), causes, nomatch = 0)==0L))
         stop(paste0("Cannot find all requested cause(s) ...\n\n", 
                     "Requested cause(s): ", paste0(cause, collapse = ", "), 
                     "\n Available causes: ", paste(causes, collapse = ", "), 
                     "\n"))
-    ## stopifnot(match(as.character(cause), causes, nomatch = 0) != 
-    ## 0)
     if (surv.type == "survival") {
         if (object$theCause != cause) 
             stop("Object can be used to predict cause ", object$theCause, 
@@ -170,7 +184,39 @@ predict.CauseSpecificCox <- function(object,
     if(length(landmark)!=1){
         stop("\'t0\' must have length one \n")
     }
+    if(!is.logical(diag)){ 
+        stop("Argument \'diag\' must be logical \n")
+    }
+    
+    if(diag){
+        if(iid[[1]]==TRUE && store.iid[[1]] == "minimal"){
+            stop("Arguments \'store.iid\' must equal \"full\" when \'diag\' is TRUE \n")
+        }
+        if(NROW(newdata)!=n.times){
+            stop("When argument \'diag\' is TRUE, the number of rows in \'newdata\' must equal the length of \'times\' \n")
+        }
+    }
+    if(average.iid==TRUE && !is.null(attr(average.iid,"factor"))){
 
+        test.list <- !is.list(attr(average.iid,"factor"))
+        if(test.list){
+            stop("Attribute \"factor\" of argument \'average.iid\' must be a list \n")
+        }
+        test.matrix <- any(unlist(lapply(attr(average.iid,"factor"), is.matrix))==FALSE)
+        if(test.matrix){
+            stop("Attribute \"factor\" of argument \'average.iid\' must be a list of matrices \n")
+        }
+        for(iFactor in 1:length(attr(average.iid,"factor"))){ ## iFactor <- 1
+            ## check dimensions
+            if(NROW(attr(average.iid,"factor")[[iFactor]])!=new.n){
+                stop("Attribute \"factor\" of argument \'average.iid\' must be a list of matrices with ",new.n," rows \n")
+            }
+            if(NCOL(attr(average.iid,"factor")[[iFactor]]) %in% c(1, diag + (1-diag)*n.times) == FALSE){
+                stop("Attribute \"factor\" of argument \'average.iid\' must be a list of matrices with ",diag + (1-diag)*n.times," columns\n")
+            }
+        }
+    }
+    
     ## relevant event times to use
     valid.times <- times[times<=max(object$response[,"time"])] ## prediction times before the event 
     if(length(valid.times) == 0){
@@ -181,7 +227,8 @@ predict.CauseSpecificCox <- function(object,
     }
     
     ## order prediction times
-    ootimes <- order(order(times))
+    otimes <- order(times)
+    ootimes <- order(otimes)
     needOrder <- !identical(1:length(ootimes),ootimes)
 
     ## ** extract baseline hazard, linear predictor and strata from Cox models
@@ -231,24 +278,26 @@ predict.CauseSpecificCox <- function(object,
 
     ## ** compute CIF
     vec.etimes.max <- apply(M.etimes.max,1,min)
+    outCpp <- predictCIF_cpp(hazard = ls.hazard, 
+                             cumhazard = ls.cumhazard, 
+                             eXb = M.eXb, 
+                             strata = M.strata.num,
+                             newtimes = if(diag){times}else{sort(times)}, 
+                             etimes = eventTimes, 
+                             etimeMax = vec.etimes.max, 
+                             t0 = landmark,
+                             nEventTimes = nEventTimes,
+                             nNewTimes = length(times), 
+                             nData = new.n,
+                             cause = index.cause - 1, 
+                             nCause = nCause,
+                             survtype = (surv.type=="survival"),
+                             productLimit = product.limit,
+                             diag = diag,
+                             exportSurv = (se || band || iid || average.iid))
 
-    CIF <- predictCIF_cpp(hazard = ls.hazard, 
-                          cumhazard = ls.cumhazard, 
-                          eXb = M.eXb, 
-                          strata = M.strata.num,
-                          newtimes = sort(times), 
-                          etimes = eventTimes, 
-                          etimeMax = vec.etimes.max, 
-                          t0 = landmark,
-                          nEventTimes = nEventTimes,
-                          nNewTimes = length(times), 
-                          nData = new.n,
-                          cause = index.cause - 1, 
-                          nCause = nCause,
-                          survtype = (surv.type=="survival"),
-                          productLimit = product.limit)
     ## ** compute standard error for CIF
-    if(se[[1]] || band[[1]] || iid[[1]] || average.iid[[1]]){
+    if(se || band || iid || average.iid){
         if(!is.na(landmark)){
             stop("standard error for the conditional survival not implemented \n")
         }
@@ -273,18 +322,32 @@ predict.CauseSpecificCox <- function(object,
 
         ## Computation of the influence function and/or the standard error
         export <- c("iid"[(iid+band)>0],"se"[(se+band)>0],"average.iid"[average.iid==TRUE])
-        attributes(export) <- attributes(average.iid)
-     
+        if(!is.null(attr(average.iid,"factor"))){
+            if(diag){
+                attr(export,"factor") <- attr(average.iid,"factor")
+            }else{
+                ## re-order columns according to times
+                attr(export,"factor") <- lapply(attr(average.iid,"factor"), function(iF){
+                    if(NCOL(iF)>1){
+                        return(iF[,otimes,drop=FALSE])
+                    }else{
+                        return(iF)
+                    }
+                })
+            }
+        }
+        
         out.seCSC <- calcSeCSC(object,
-                               cif = CIF,
+                               cif = outCpp$cif,
                                hazard = ls.hazard,
                                cumhazard = ls.cumhazard,
+                               survival = outCpp$survival,
                                object.time = eventTimes,
                                object.maxtime = vec.etimes.max, 
                                eXb = M.eXb,
                                new.LPdata = new.LPdata,
                                new.strata = M.strata.num,                               
-                               times = Utimes,
+                               times = if(diag){times}else{Utimes},
                                ls.infoVar = ls.infoVar,
                                new.n = new.n,
                                cause = index.cause,
@@ -292,7 +355,8 @@ predict.CauseSpecificCox <- function(object,
                                nVar = nVar,
                                surv.type = surv.type,
                                export = export,
-                               store.iid = store.iid)
+                               store.iid = store.iid,
+                               diag = diag)
 
         ootimes2 <- prodlim::sindex(jump.times = Utimes, eval.times = times)
         needOrder2 <- !identical(1:length(ootimes2),ootimes2)
@@ -300,29 +364,33 @@ predict.CauseSpecificCox <- function(object,
     
     ## ** export
     ## gather all outputs
-    if(needOrder){
-        out <- list(absRisk = CIF[,ootimes,drop=FALSE]) # reorder prediction times
+    if(needOrder && (diag == FALSE)){
+        out <- list(absRisk = outCpp$cif[,ootimes,drop=FALSE]) # reorder prediction times
     }else{
-        out <- list(absRisk = CIF) # reorder prediction times
+        out <- list(absRisk = outCpp$cif) # reorder prediction times
     }
     
     if(se+band){
-        if(needOrder2){
+        if(needOrder2 && (diag == FALSE)){
             out$absRisk.se <- out.seCSC$se[,ootimes2,drop=FALSE]
         }else{
             out$absRisk.se <- out.seCSC$se
         }
     }
     if(iid+band){
-        if(needOrder2){
+        if(needOrder2 && (diag == FALSE)){
             out$absRisk.iid <- out.seCSC$iid[,ootimes2,,drop=FALSE]
         }else{
             out$absRisk.iid <- out.seCSC$iid
         }
     }
     if(average.iid){
-        if(needOrder2){
-            out$absRisk.average.iid <- out.seCSC$average.iid[,ootimes2,drop=FALSE]
+        if(needOrder2 && (diag == FALSE)){
+            if(is.list(out.seCSC$average.iid)){
+                out$absRisk.average.iid <- lapply(out.seCSC$average.iid, function(iIID){iIID[,ootimes2,drop=FALSE]})
+            }else{
+                out$absRisk.average.iid <- out.seCSC$average.iid[,ootimes2,drop=FALSE]
+            }
         }else{
             out$absRisk.average.iid <- out.seCSC$average.iid
         }
@@ -343,6 +411,7 @@ predict.CauseSpecificCox <- function(object,
             out$strata <- newdata[, interaction(.SD, sep = " "), .SDcols = allStrata]
         }
     }
+    out$diag <- diag
     out$se <- se
     out$keep.times <- keep.times
     out$band <- band
@@ -365,3 +434,161 @@ predict.CauseSpecificCox <- function(object,
 
 
 
+
+
+## * .predictSurv_CSC
+.predictSurv_CSC <- function(object, newdata, times, product.limit, diag, iid, average.iid, se){
+
+    if(object$surv.type=="survival"){
+        ## names(object$models)
+        predictor.cox <- if(product.limit){"predictCoxPL"}else{"predictCox"}
+
+        out <- do.call(predictor.cox,
+                       args = list(object$models[["OverallSurvival"]], newdata = newdata, times = times, diag = diag, iid = iid, average.iid = average.iid, type = "survival", se = se)
+                       )
+        
+    }else if(object$surv.type=="hazard"){
+        if(!is.logical(diag)){
+            stop("Argument \'diag\' must be of type logical \n")
+        }
+        
+        n.obs <- NROW(newdata)
+        n.times <- length(times)
+        n.cause <- length(object$cause)
+        n.data <- NROW(object$response)
+
+        iid.save <- iid
+        iid <- (iid || se)
+
+        ## ** prepare output        
+        out <- list(survival = NULL, survival.iid = NULL, survival.average.iid = NULL,
+                    lastEventTime = NA,
+                    se = FALSE, band = FALSE, type = "survival", diag = diag, times = times)
+        class(out) <- "predictCox"
+
+        if(diag){
+            out$survival <- matrix(0, nrow = n.obs, ncol = 1)
+            if(se){out$survival.se <- matrix(0, nrow = n.obs, ncol = 1)}
+            if(iid){out$survival.iid <- array(0, dim = c(n.obs, 1, n.data))}
+            if(average.iid){out$survival.average.iid <- matrix(0, nrow = n.obs, ncol = 1)}
+        }else{
+            out$survival <- matrix(0, nrow = n.obs, ncol = n.times)
+            if(se){out$survival.se <- matrix(0, nrow = n.obs, ncol = n.times)}
+            if(iid){out$survival.iid <- array(0, dim = c(n.obs, n.times, n.data))}
+            if(average.iid){out$survival.average.iid <- matrix(0, nrow = n.obs, ncol = n.times)}
+        }
+
+        ## ** compute survival && iid for cumulative hazard
+        if(product.limit){
+
+            ## find all jumps
+            jump.time <- object$eventTime[object$eventTime <= max(times)]
+            if(0 %in% jump.time){
+                jumpA.time <- c(jump.time,max(object$eventTime)+1e-10)
+            }else{
+                jumpA.time <- c(0,jump.time,max(object$eventTime)+1e-10)
+            }
+            n.jumpA <- length(jumpA.time)
+
+            ## compute hazard at all times
+            predAll.hazard <- matrix(0, nrow = n.obs, ncol = n.jumpA)
+            for(iC in 1:n.cause){
+                outHazard <- predictCox(object$models[[iC]],
+                                        newdata = newdata,
+                                        times = jump.time,
+                                        iid = iid & (diag == FALSE),
+                                        type = if(iid & (diag == FALSE)){c("hazard","cumhazard")}else{"hazard"})
+
+                if(0 %in% jump.time){
+                    predAll.hazard <- predAll.hazard + cbind(outHazard$hazard,NA)
+                }else{
+                    predAll.hazard <- predAll.hazard + cbind(0,outHazard$hazard,NA)
+                }
+
+                if(iid){
+                    outHazard2 <- predictCox(object$models[[iC]],
+                                             newdata = newdata,
+                                             times = times,
+                                             iid = iid,
+                                             diag = diag,
+                                             type = "cumhazard")
+                    out$survival.iid <- out$survival.iid + outHazard2$cumhazard.iid
+                }
+            }
+
+            index.jump <- prodlim::sindex(eval.times = times,
+                                          jump.times = jumpA.time)
+
+            out$survival <- rowCumProd(1-predAll.hazard)[,index.jump,drop=FALSE]
+            if(diag){
+                out$survival <- cbind(diag(out$survival))
+            }
+            
+        }else{
+
+            for(iC in 1:n.cause){
+                outHazard <- predictCox(object$models[[iC]],
+                                        newdata = newdata,
+                                        times = times,
+                                        diag = diag,
+                                        iid = iid,
+                                        type = "cumhazard")
+                out$survival <- out$survival + outHazard$cumhazard
+                if(iid){
+                    out$survival.iid <- out$survival.iid + outHazard$cumhazard.iid
+                }
+            }
+            out$survival <- exp(-out$survival)
+        }
+
+        ## ** compute iid for survival
+        if(iid){
+            if(diag){
+                out$survival.iid[,1,] <- colMultiply_cpp(-out$survival.iid[,1,], scale = out$survival)
+            }else{
+                for(iTau in 1:n.times){ ## iTau <- 1
+                    if(n.obs==1){
+                        out$survival.iid[,iTau,] <- -out$survival.iid[,iTau,] * out$survival[,iTau]
+                    }else{
+                        out$survival.iid[,iTau,] <- colMultiply_cpp(-out$survival.iid[,iTau,], scale = out$survival[,iTau])
+                    }
+                }            
+            }
+        }
+
+        ## ** compute se for survival
+        if(se){
+            out$survival.se[] <- sqrt(apply(out$survival.iid^2,1:2,sum))
+            if(iid.save == FALSE){
+                out$survival.iid <- NULL
+            }
+        }
+
+        ## ** compute average iid survival
+        if(average.iid){
+            if(iid){
+                out$survival.average.iid <- t(apply(out$survival.iid,2:3,mean))
+            }else{
+                factor <- attr(average.iid,"factor")
+                if(is.null(factor)){
+                    factor <- list(out$survival)
+                }else{
+                    stop("factor for average.iid when calling predict.CauseSpecificCox with type=\"survival\" not implemented \n")
+                }
+                for(iC in 1:n.cause){
+                    out$survival.average.iid <- out$survival.average.iid + predictCox(object$models[[iC]],
+                                                                                      newdata = newdata,
+                                                                                      times = times,
+                                                                                      diag = diag,
+                                                                                      iid = FALSE,
+                                                                                      average.iid = average.iid,
+                                                                                      type = "cumhazard")$cumhazard.average.iid
+                }
+            }
+        }
+        
+    }
+
+    ## ** export
+    return(out)
+}

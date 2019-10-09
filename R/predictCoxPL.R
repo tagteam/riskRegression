@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: sep  4 2017 (16:43) 
 ## Version: 
-## last-updated: Jul 12 2019 (20:53) 
-##           By: Thomas Alexander Gerds
-##     Update #: 152
+## last-updated: sep 24 2019 (11:41) 
+##           By: Brice Ozenne
+##     Update #: 154
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -22,7 +22,8 @@
 #'
 #' @inheritParams predictCox
 #' @param ... additional arguments to be passed to \code{\link{predictCox}}.
-#' 
+#'
+#' @details Note: the iid and standard errors are computed using the exponential approximation.
 
 ## * predictCoxPL (code)
 #' @rdname predictCoxPL

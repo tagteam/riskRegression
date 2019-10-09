@@ -5,7 +5,7 @@ using namespace Rcpp;
 using namespace arma;
 using namespace std;
 
-// {{{ calcE_cpp
+// * calcE_cpp
 // [[Rcpp::export]]
 List calcE_cpp(const NumericVector& eventtime, 
                const NumericVector& status,
@@ -64,8 +64,8 @@ List calcE_cpp(const NumericVector& eventtime,
                       Named("S0")  = resS0,
                       Named("Utime1") = t));
 }
-// }}}
-// {{{ IFbeta_cpp
+
+// * IFbeta_cpp
 // [[Rcpp::export]]
 arma::mat IFbeta_cpp(const NumericVector& newT, const NumericVector& neweXb, const arma::mat& newX, const NumericVector& newStatus, const IntegerVector& newIndexJump, 
                      const NumericVector& S01, const arma::mat& E1, const NumericVector& time1, const arma::mat& iInfo,
@@ -132,9 +132,8 @@ arma::mat IFbeta_cpp(const NumericVector& newT, const NumericVector& neweXb, con
   
   return(IFbeta);
 }
-// }}}
 
-// {{{ IFbetaApprox_cpp
+// * IFbetaApprox_cpp
 // [[Rcpp::export]]
 arma::mat IFbetaApprox_cpp(const arma::mat& newX, const NumericVector& newStatus, const IntegerVector& newIndexJump, 
                            const arma::mat& E1, const arma::mat& iInfo, int p){
@@ -169,9 +168,8 @@ arma::mat IFbetaApprox_cpp(const arma::mat& newX, const NumericVector& newStatus
   
   return(IFbeta);
 }
-// }}}
 
-// {{{ IFlambda0_cpp
+// * IFlambda0_cpp
 // [[Rcpp::export]]
 List IFlambda0_cpp(const NumericVector& tau, const arma::mat& IFbeta,
                    const NumericVector& newT, const NumericVector& neweXb, const NumericVector& newStatus, const IntegerVector& newStrata, const IntegerVector& newIndexJump, 
@@ -181,28 +179,48 @@ List IFlambda0_cpp(const NumericVector& tau, const arma::mat& IFbeta,
   int nObs = newT.size();
   int nTau = tau.size();
   int nTime1 = time1.size();
-  arma::mat IFlambda0(nObs, nTau);
-  arma::mat IFLambda0(nObs, nTau);
+
+  // ** Prepare output
+  arma::mat IFlambda0(nObs, std::max(nTau,1));
+  arma::mat IFLambda0(nObs, std::max(nTau,1));
   IFlambda0.fill(NA_REAL);
   IFLambda0.fill(NA_REAL);
 
-  // Find early prediction times
+  arma::mat Elambda0(p, std::max(nTau,1), fill::zeros);
+  arma::mat cumElambda0(p, std::max(nTau,1), fill::zeros);
+  NumericVector lambda0_iS0(nTime1,0.0);
+  NumericVector cumLambda0_iS0(nTime1,0.0);
+  
+  // ** Find early prediction times
   // if iTau0 = 5 this means that the first five prediction times are before the first event, i.e IF = 0
   int iTau0 = 0;
   while(iTau0 < nTau && time1[0]>tau[iTau0]){
         iTau0++;
   }
 
-  // Compute delta_iS0
+  // ** Compute delta_iS0
   NumericVector delta_iS0(nObs);
   for(int iObs=0; iObs<nObs ; iObs++){
     delta_iS0[iObs] = newStatus[iObs]/S01[newIndexJump[iObs]];
   } 
-  
+
+  // Exclude case with no Tau
+  if(nTau==0){
+	if(minimalExport){
+	  return(List::create(Named("delta_iS0") = delta_iS0,
+						  Named("Elambda0") = Elambda0,
+						  Named("cumElambda0") = cumElambda0,
+						  Named("lambda0_iS0") = lambda0_iS0,
+						  Named("cumLambda0_iS0") = cumLambda0_iS0));
+	}else{
+	  IFlambda0.fill(0.0);
+	  IFLambda0.fill(0.0);
+	  return(List::create(Named("hazard") = IFlambda0,
+						  Named("cumhazard") = IFLambda0));
+	}
+  }
+
   // Compute  Elambda0 and cumLamba0_iS0
-  arma::mat Elambda0(p, nTau), cumElambda0(p, nTau);
-  Elambda0.fill(0.0); cumElambda0.fill(0.0);
-  NumericVector lambda0_iS0(nTime1,0.0), cumLambda0_iS0(nTime1,0.0);
   int iTau = iTau0;
   
   colvec Elambda0_iter(p), cumElambda0_iter(p); 
@@ -247,7 +265,7 @@ List IFlambda0_cpp(const NumericVector& tau, const arma::mat& IFbeta,
     return(List::create(Named("delta_iS0") = delta_iS0,
                         Named("Elambda0") = Elambda0,
                         Named("cumElambda0") = cumElambda0,
-			Named("lambda0_iS0") = lambda0_iS0,
+						Named("lambda0_iS0") = lambda0_iS0,
                         Named("cumLambda0_iS0") = cumLambda0_iS0));
   }
   
