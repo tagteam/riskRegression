@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: apr  5 2018 (17:01) 
 ## Version: 
-## Last-Updated: okt  7 2019 (19:44) 
+## Last-Updated: okt 11 2019 (16:11) 
 ##           By: Brice Ozenne
-##     Update #: 854
+##     Update #: 921
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -24,8 +24,9 @@ iidATE <- function(estimator,
                    contrasts,
                    times,
                    cause,
-                   iid.ate,
-                   iid.outcome,
+                   iid.Gformula,
+                   iid.IPTW,
+                   iid.AIPTW,
                    Y.tau,
                    F1.ctf.tau,
                    iW.IPTW,
@@ -44,17 +45,12 @@ iidATE <- function(estimator,
                    beforeTau.nJumpC,
                    n.obs,
                    n.times,
+                   product.limit,
                    ...){
 
+    
     ## ** prepare output
     n.contrasts <- length(contrasts)
-    iid.treatment <- lapply(1:n.contrasts,function(iC){matrix(0, nrow = n.obs, ncol = n.times)})
-    names(iid.treatment) <- contrasts
-    iid.censoring <- lapply(1:n.contrasts,function(iC){matrix(0, nrow = n.obs, ncol = n.times)})
-    names(iid.censoring) <- contrasts
-    iid.survival <- lapply(1:n.contrasts,function(iC){matrix(0, nrow = n.obs, ncol = n.times)})
-    names(iid.survival) <- contrasts              
-
     grid <- expand.grid(tau = 1:n.times, contrast = 1:n.contrasts)
     n.grid <- NROW(grid)
     
@@ -77,19 +73,24 @@ iidATE <- function(estimator,
         ## **** integral outcome model at tau
         ## compute integral
         int.IFF1_tau <- cbind(0,rowCumSum(dM_SG))
+
         ## extract integral over the right time spand
+        factor <- TRUE
+        attr(factor,"factor") <- lapply(1:n.contrasts, function(iC){
+            matrix(NA, nrow = n.obs, ncol = n.times)
+        })
+
         for(iTau in 1:n.times){ ## iTau <- 1
             index.col <- prodlim::sindex(jump.times = c(0,time.jumpC), eval.times = pmin(data[[eventVar.time]],times[iTau]))
-            factor <- TRUE
-            attr(factor,"factor") <- lapply(1:n.contrasts, function(iC){cbind(iW.IPTW[,iC] * int.IFF1_tau[(1:n.obs) + (index.col-1) * n.obs])})
-
-            ## outputs -IF_S or IF_r : ok
-            term.intF1_tau <- attr(predictRisk(object.event, newdata = data, times = times[iTau], cause = cause,
-                                               average.iid = factor),"average.iid")
-
-            for(iC in 1:n.contrasts){ ## iC <- 1 
-                iid.outcome[[iC]][,iTau] <- iid.outcome[[iC]][,iTau] + term.intF1_tau[[iC]]
+            for(iC in 1:n.contrasts){
+                attr(factor,"factor")[[iC]][,iTau] <- cbind(iW.IPTW[,iC] * int.IFF1_tau[(1:n.obs) + (index.col-1) * n.obs])
             }
+        }
+        term.intF1_tau <- attr(predictRisk(object.event, newdata = data, times = times, cause = cause,
+                                           average.iid = factor, product.limit = product.limit),"average.iid")
+
+        for(iC in 1:n.contrasts){ ## iC <- 1
+            iid.AIPTW[[iC]] <- iid.AIPTW[[iC]] + term.intF1_tau[[iC]]
         }
         
         ## **** integral outcome model at t
@@ -97,26 +98,42 @@ iidATE <- function(estimator,
         attr(factor, "factor") <- lapply(1:n.contrasts, function(iC){
             -colMultiply_cpp(dM_SG*beforeEvent.jumpC, scale = iW.IPTW[,iC])
         })
+        
         integrand.F1t <- attr(predictRisk(object.event, newdata = data, times = time.jumpC, cause = cause,
-                                          average.iid = factor), "average.iid")
+                                          average.iid = factor, product.limit = product.limit), "average.iid")
+
+        
         for(iC in 1:n.contrasts){ ## iC <- 1
-            iid.outcome[[iC]] <- iid.outcome[[iC]] + rowCumSum(integrand.F1t[[iC]])[,beforeTau.nJumpC]
+            iid.AIPTW[[iC]] <- iid.AIPTW[[iC]] + rowCumSum(integrand.F1t[[iC]])[,beforeTau.nJumpC]
         }
     }
+    ## cat("Outcome (method=1) \n")
+    ## print(head(iid.AIPTW[[1]]))
 
     ## *** treatment model
     if(attr(estimator,"IPTW")){
         for(iC in 1:n.contrasts){ ## iC <- 1
 
             factor <- TRUE
-            if(estimator == "IPTW"){
-                attr(factor,"factor") <- list(colMultiply_cpp(Y.tau, scale = -iW.IPTW2[,iC]))
-            }else if(estimator == "IPTW,IPCW"){
-                attr(factor,"factor") <- list(colMultiply_cpp(Y.tau * iW.IPCW, scale = -iW.IPTW2[,iC]))
-            }else if(estimator == "AIPTW"){
-                attr(factor,"factor") <- list(colMultiply_cpp(Y.tau - F1.ctf.tau[[iC]], scale = -iW.IPTW2[,iC]))
-            }else if(estimator == "AIPTW,AIPCW"){
-                attr(factor,"factor") <- list(colMultiply_cpp(Y.tau * iW.IPCW - F1.ctf.tau[[iC]] + augTerm, scale = -iW.IPTW2[,iC]))
+            attr(factor,"factor") <- list()
+            if("IPTW" %in% estimator){
+                attr(factor,"factor") <- c(attr(factor,"factor"),
+                                           list(IPTW = colMultiply_cpp(Y.tau, scale = -iW.IPTW2[,iC]))
+                                           )
+            }else if("IPTW,IPCW" %in% estimator){
+                attr(factor,"factor") <- c(attr(factor,"factor"),
+                                           list(IPTW = colMultiply_cpp(Y.tau * iW.IPCW, scale = -iW.IPTW2[,iC]))
+                                           )
+            }
+            
+            if("AIPTW" %in% estimator){
+                attr(factor,"factor") <- c(attr(factor,"factor"),
+                                           list(AIPTW = colMultiply_cpp(Y.tau - F1.ctf.tau[[iC]], scale = -iW.IPTW2[,iC]))
+                                           )
+            }else if("AIPTW,AIPCW" %in% estimator){
+                attr(factor,"factor") <- c(attr(factor,"factor"),
+                                           list(AIPTW = colMultiply_cpp(Y.tau * iW.IPCW - F1.ctf.tau[[iC]] + augTerm, scale = -iW.IPTW2[,iC]))
+                                           )
             }
 
             term.treatment <- attr(predictRisk(object.treatment,
@@ -124,10 +141,17 @@ iidATE <- function(estimator,
                                                average.iid = factor,
                                                level = contrasts[iC]), "average.iid")
 
-            iid.treatment[[iC]] <- term.treatment[[1]]
+            if(attr(estimator,"export.IPTW")){
+                iid.IPTW[[iC]] <- iid.IPTW[[iC]] + term.treatment[["IPTW"]]
+            }
+            if(attr(estimator,"export.AIPTW")){
+                iid.AIPTW[[iC]] <- iid.AIPTW[[iC]] + term.treatment[["AIPTW"]]
+            }
         }
     }
-     
+    ## cat("Treatment (method=1) \n")
+    ## print(head(iid.AIPTW[[1]]))
+
     ## *** survival term
     if(attr(estimator,"integral")){
         factor <- TRUE
@@ -138,33 +162,45 @@ iidATE <- function(estimator,
         })
 
         integrand.St <- attr(predictRisk(object.event, type = "survival", newdata = data, times = time.jumpC-tol, cause = cause,
-                                         average.iid = factor), "average.iid")
-
+                                         average.iid = factor, product.limit = product.limit), "average.iid")
+        
         for(iGrid in 1:n.grid){ ## iGrid <- 1
             iTau <- grid[iGrid,"tau"]
             iC <- grid[iGrid,"contrast"]
-            iid.survival[[iC]][,iTau] <- iid.survival[[iC]][,iTau] + rowSums(integrand.St[[iGrid]][,1:beforeTau.nJumpC[iTau]])
+            iid.AIPTW[[iC]][,iTau] <- iid.AIPTW[[iC]][,iTau] + rowSums(integrand.St[[iGrid]][,1:beforeTau.nJumpC[iTau]])
         }
     }
+    ## cat("Survival (method=1) \n")
+    ## print(head(iid.AIPTW[[1]]))
     
     ## *** censoring model
     if(attr(estimator,"IPCW")){
 
         ## **** IPCW
-        for(iTau in 1:n.times){ ## iTau <- 1
-            factor <- TRUE
-            attr(factor,"factor") <- lapply(1:n.contrasts, function(iC){cbind(-iW.IPTW[,iC]*iW.IPCW2[,iTau]*Y.tau[,iTau])})
-            
-            term.censoring <- predictCox(object.censor,
-                                         newdata = data,
-                                         times = pmin(times[iTau], data[[eventVar.time]] - tol),
-                                         diag = TRUE,
-                                         average.iid = factor)$survival.average.iid
+        factor <- TRUE
+        attr(factor,"factor") <- lapply(1:n.grid, function(iGrid){
+            iTau <- grid[iGrid,"tau"]
+            iC <- grid[iGrid,"contrast"]
+            return(cbind(-iW.IPTW[,iC]*iW.IPCW2[,iTau]*Y.tau[,iTau]))
+        })
+        
+        term.censoring <- predictCox(object.censor,
+                                     newdata = data,
+                                     times = data[[eventVar.time]] - tol, ## same as pmin(times[iTau], data[[eventVar.time]] - tol) because indicator in the weights
+                                     diag = TRUE,
+                                     average.iid = factor)$survival.average.iid
 
-            for(iC in 1:n.contrasts){ ## iC <- 1 
-                iid.censoring[[iC]][,iTau] <- term.censoring[[iC]]
+        for(iGrid in 1:n.grid){ ## iGrid <- 1
+            iTau <- grid[iGrid,"tau"]
+            iC <- grid[iGrid,"contrast"]
+            if(attr(estimator,"export.IPTW")){
+                iid.IPTW[[iC]][,iTau] <- iid.IPTW[[iC]][,iTau] + term.censoring[[iGrid]]
+            }
+            if(attr(estimator,"export.AIPTW")){
+                iid.AIPTW[[iC]][,iTau] <- iid.AIPTW[[iC]][,iTau] + term.censoring[[iGrid]]
             }
         }
+    
 
         ## **** integral term
         if(attr(estimator,"integral")){
@@ -194,31 +230,33 @@ iidATE <- function(estimator,
                 iTau <- grid[iGrid,"tau"]
                 iC <- grid[iGrid,"contrast"]
 
-                iid.censoring[[iC]][,iTau] <- iid.censoring[[iC]][,iTau] + rowSums(integrand.G1[[iGrid]][,1:beforeTau.nJumpC[iTau]] + integrand.G2[[iGrid]][,1:beforeTau.nJumpC[iTau]])
+                iid.AIPTW[[iC]][,iTau] <- iid.AIPTW[[iC]][,iTau] + rowSums(integrand.G1[[iGrid]][,1:beforeTau.nJumpC[iTau]] + integrand.G2[[iGrid]][,1:beforeTau.nJumpC[iTau]])
             }
         }
     }
+    ## cat("Censoring (method=1) \n")
+    ## print(head(iid.AIPTW[[1]]))
 
     ## ** export
-    iid.total <- vector(mode = "list", length = n.contrasts)
-    for(iC in 1:n.contrasts){
-        iid.total[[iC]] <- iid.ate[[iC]] + iid.outcome[[iC]] + iid.treatment[[iC]] + iid.survival[[iC]] + iid.censoring[[iC]]
+    out <- list()
+    if(attr(estimator,"export.Gformula")){
+        out <- c(out, list(Gformula = iid.Gformula))
     }
-    names(iid.total) <- contrasts
-    attr(iid.total,"ate") <- iid.ate
-    attr(iid.total,"outcome") <- iid.outcome
-    attr(iid.total,"treatment") <- iid.treatment
-    attr(iid.total,"survival") <- iid.survival
-    attr(iid.total,"censoring") <- iid.censoring
-
-    return(iid.total)            
+    if(attr(estimator,"export.IPTW")){
+        out <- c(out, list(IPTW = iid.IPTW))
+    }
+    if(attr(estimator,"export.AIPTW")){
+        out <- c(out, list(AIPTW = iid.AIPTW))
+    }
+    return(out)            
 }
 
 ## * iidATE2
 iidATE2 <- function(estimator,
                     contrasts,
-                    iid.ate,
-                    iid.outcome,
+                    iid.Gformula,
+                    iid.IPTW,
+                    iid.AIPTW,
                     Y.tau,
                     F1.ctf.tau,
                     iW.IPTW,
@@ -241,15 +279,9 @@ iidATE2 <- function(estimator,
                     n.times,
                     n.jumps,
                     ...){
-
+    
     ## ** prepare output
     n.contrasts <- length(contrasts)
-    iid.treatment <- lapply(1:n.contrasts,function(iC){matrix(0, nrow = n.obs, ncol = n.times)})
-    names(iid.treatment) <- contrasts
-    iid.censoring <- lapply(1:n.contrasts,function(iC){matrix(0, nrow = n.obs, ncol = n.times)})
-    names(iid.censoring) <- contrasts
-    iid.survival <- lapply(1:n.contrasts,function(iC){matrix(0, nrow = n.obs, ncol = n.times)})
-    names(iid.survival) <- contrasts
     
     ## ** Precompute quantities
     tol <- 1e-12
@@ -264,52 +296,57 @@ iidATE2 <- function(estimator,
     ## *** outcome model
     if(attr(estimator,"integral")){
 
-        ## **** integral outcome model at tau
         for(iTau in 1:n.times){ ## iTau <- 1
+            ## **** integral outcome model at tau
             integral.F1tau <- calcIterm(factor = dM_SG,
                                         iid = iid.nuisance.outcome[,iTau,,drop=FALSE],
                                         indexJump = index.obsSINDEXjumpC[,iTau],
                                         iid.outsideI = TRUE)
 
-            for(iC in 1:n.contrasts){ ## iC <- 1 
-                iid.outcome[[iC]][,iTau] <- iid.outcome[[iC]][,iTau] + colMeans(colMultiply_cpp(integral.F1tau, scale = iW.IPTW[,iC]))
-            }
-        }
-        
-        ## **** integral outcome model at t
-        for(iTau in 1:n.times){ ## iTau <- 1
+            ## **** integral outcome model at t
             integral.F1t <- calcIterm(factor = -dM_SG,
                                       iid = iid.nuisance.outcome[, n.times+(1:n.jumps),,drop=FALSE],
                                       indexJump = index.obsSINDEXjumpC[,iTau],
                                       iid.outsideI = FALSE)
-
+            
+            ## **** assemble
             for(iC in 1:n.contrasts){ ## iC <- 1 
-                iid.outcome[[iC]][,iTau] <- iid.outcome[[iC]][,iTau] + colMeans(colMultiply_cpp(integral.F1t, scale = iW.IPTW[,iC]))
+                iid.AIPTW[[iC]][,iTau] <- iid.AIPTW[[iC]][,iTau] + colMeans(colMultiply_cpp(integral.F1tau + integral.F1t, scale = iW.IPTW[,iC]))
             }
+            
         }
     }
-
+    ## cat("Outcome (method=2) \n")
+    ## print(head(iid.AIPTW[[1]]))
     
     ## *** treatment model
     if(attr(estimator,"IPTW")){
         
         for(iC in 1:n.contrasts){ ## iC <- 1
-            
             for(iTau in 1:n.times){ ## iTau <- 1
-                if(estimator == "IPTW"){
-                    iFactor <- - Y.tau[,iTau] * iW.IPTW2[,iC]
-                }else if(estimator == "IPTW,IPCW"){
-                    iFactor <- - Y.tau[,iTau] * iW.IPCW[,iTau] * iW.IPTW2[,iC]
-                }else if(estimator == "AIPTW"){
-                    iFactor <- - (Y.tau[,iTau] - F1.ctf.tau[[iC]][,iTau]) * iW.IPTW2[,iC]
-                }else if(estimator == "AIPTW,AIPCW"){
-                    iFactor <- - (Y.tau[,iTau] * iW.IPCW[,iTau] - F1.ctf.tau[[iC]][,iTau] + augTerm[,iTau]) * iW.IPTW2[,iC]
-                }
 
-                iid.treatment[[iC]][,iTau] <- colMeans(colMultiply_cpp(iid.nuisance.treatment[[iC]], scale = iFactor))
+                if(attr(estimator,"export.IPTW")){
+                    if("IPTW" %in% estimator){
+                        iFactor <- - Y.tau[,iTau] * iW.IPTW2[,iC]
+                    }else if("IPTW,IPCW" %in% estimator){
+                        iFactor <- - Y.tau[,iTau] * iW.IPCW[,iTau] * iW.IPTW2[,iC]
+                    }
+                    iid.IPTW[[iC]][,iTau] <- iid.IPTW[[iC]][,iTau] + colMeans(colMultiply_cpp(iid.nuisance.treatment[[iC]], scale = iFactor))
+                }
+                if(attr(estimator,"export.AIPTW")){
+                    if("AIPTW" %in% estimator){
+                        iFactor <- - (Y.tau[,iTau] - F1.ctf.tau[[iC]][,iTau]) * iW.IPTW2[,iC]
+                    }else if("AIPTW,AIPCW" %in% estimator){
+                        iFactor <- - (Y.tau[,iTau] * iW.IPCW[,iTau] - F1.ctf.tau[[iC]][,iTau] + augTerm[,iTau]) * iW.IPTW2[,iC]
+                    }
+                    iid.AIPTW[[iC]][,iTau] <- iid.AIPTW[[iC]][,iTau] + colMeans(colMultiply_cpp(iid.nuisance.treatment[[iC]], scale = iFactor))
+                }
+                
             }
         }
     }
+    ## cat("Treatment (method=2) \n")
+    ## print(head(iid.AIPTW[[1]]))
 
     ## *** survival model
     if(attr(estimator,"integral")){
@@ -321,10 +358,12 @@ iidATE2 <- function(estimator,
                                        iid.outsideI = FALSE)
 
             for(iC in 1:n.contrasts){ ## iC <- 1 
-                iid.survival[[iC]][,iTau] <- iid.survival[[iC]][,iTau] + colMeans(colMultiply_cpp(integral.Surv, scale = iW.IPTW[,iC]))
+                iid.AIPTW[[iC]][,iTau] <- iid.AIPTW[[iC]][,iTau] + colMeans(colMultiply_cpp(integral.Surv, scale = iW.IPTW[,iC]))
             }
         }
     }
+    ## cat("Survival (method=2) \n")
+    ## print(head(iid.AIPTW[[1]]))
     
     ## *** censoring model
     if(attr(estimator,"IPCW")){
@@ -338,8 +377,13 @@ iidATE2 <- function(estimator,
                     return(iid.nuisance.censoring[iObs,index.obsSINDEXjumpC[iObs,iTau],])
                 }
             }))
-            for(iC in 1:n.contrasts){ ## iC <- 1 
-                iid.censoring[[iC]][,iTau] <- colMeans(colMultiply_cpp(predIID.censoringSurv_obs, -iW.IPCW2[,iTau]*Y.tau[,iTau]*iW.IPTW[,iC]))
+            for(iC in 1:n.contrasts){ ## iC <- 1
+                if(attr(estimator,"export.IPTW")){
+                    iid.IPTW[[iC]][,iTau] <- iid.IPTW[[iC]][,iTau] + colMeans(colMultiply_cpp(predIID.censoringSurv_obs, -iW.IPCW2[,iTau]*Y.tau[,iTau]*iW.IPTW[,iC]))
+                }
+                if(attr(estimator,"export.IPTW")){
+                    iid.AIPTW[[iC]][,iTau] <- iid.AIPTW[[iC]][,iTau] + colMeans(colMultiply_cpp(predIID.censoringSurv_obs, -iW.IPCW2[,iTau]*Y.tau[,iTau]*iW.IPTW[,iC]))
+                }
             }
         }
 
@@ -365,25 +409,27 @@ iidATE2 <- function(estimator,
 
                 ## collect
                 for(iC in 1:n.contrasts){ ## iC <- 1
-                    iid.censoring[[iC]][,iTau] <- iid.censoring[[iC]][,iTau] + colMeans(colMultiply_cpp(integral.G + integral.dLambda, scale = iW.IPTW[,iC]))
+                    iid.AIPTW[[iC]][,iTau] <- iid.AIPTW[[iC]][,iTau] + colMeans(colMultiply_cpp(integral.G + integral.dLambda, scale = iW.IPTW[,iC]))
                 }
             }
         }
     }
+    ## cat("Censoring (method=2) \n")
+    ## print(head(iid.AIPTW[[1]]))
 
     ## ** export
-    iid.total <- vector(mode = "list", length = n.contrasts)
-    for(iC in 1:n.contrasts){
-        iid.total[[iC]] <- iid.ate[[iC]] + iid.outcome[[iC]] + iid.treatment[[iC]] + iid.survival[[iC]] + iid.censoring[[iC]]
+    out <- list()
+    if(attr(estimator,"export.Gformula")){
+        out <- c(out, list(Gformula = iid.Gformula))
     }
-    names(iid.total) <- contrasts
-    attr(iid.total,"ate") <- iid.ate
-    attr(iid.total,"outcome") <- iid.outcome
-    attr(iid.total,"treatment") <- iid.treatment
-    attr(iid.total,"survival") <- iid.survival
-    attr(iid.total,"censoring") <- iid.censoring
+    if(attr(estimator,"export.IPTW")){
+        out <- c(out, list(IPTW = iid.IPTW))
+    }
+    if(attr(estimator,"export.AIPTW")){
+        out <- c(out, list(AIPTW = iid.AIPTW))
+    }
 
-    return(iid.total)            
+    return(out)            
 }
 
 ## * calcIterm (for iidATE2)

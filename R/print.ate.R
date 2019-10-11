@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun  6 2016 (06:48) 
 ## Version: 
-## last-updated: Feb 19 2019 (15:05) 
-##           By: Thomas Alexander Gerds
-##     Update #: 262
+## last-updated: okt 10 2019 (14:03) 
+##           By: Brice Ozenne
+##     Update #: 271
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -24,6 +24,7 @@
 #' @param digits [integer, >0] Number of digits.
 #' @param type [character vector] what to displayed.
 #' Can be any combination of \code{"meanRisk"}, \code{"diffRisk"}, and \code{"ratioRisk"}.
+#' @param estimator [character] The type of estimator relative to which the estimates should be displayed. 
 #' @param ... passed to print
 #'
 #' @details to display confidence intervals/bands and p.value,
@@ -37,13 +38,13 @@
 #' @rdname print.ate
 #' @method print ate
 #' @export
-print.ate <- function(x, digits = 3, type = c("meanRisk","diffRisk","ratioRisk"), ...){
+print.ate <- function(x, digits = 3, type = c("meanRisk","diffRisk","ratioRisk"), estimator = x$estimator[1], ...){
 
     lower <- upper <- lowerBand <- upperBand <- NULL ## [:CRANcheck:] data.table
     
     ## check arguments
     type <- match.arg(type,c("meanRisk","diffRisk","ratioRisk"), several.ok = TRUE)
-    
+    estimator <- match.arg(estimator, choices =  x$estimator, several.ok = FALSE)
                                         # {{{ display
     if(!is.null(x$treatment)){
         cat("The treatment variable ",x$treatment," has the following options:\n",sep="")
@@ -56,15 +57,17 @@ print.ate <- function(x, digits = 3, type = c("meanRisk","diffRisk","ratioRisk")
         }else{
             cat("Average risks within strata on probability scale [0,1]:\n\n")
         }
-        dt.tempo <- data.table::copy(x$meanRisk)
+        keep.cols <- c(names(x$meanRisk)[!grepl("meanRisk",names(x$meanRisk))],
+                       grep(estimator,names(x$meanRisk), value = TRUE))
+                       
+        dt.tempo <- data.table::copy(x$meanRisk[,.SD,.SDcols = keep.cols])
         ## order.col <- c(names(dt.tempo)[1:2],"meanRisk")
         ## if(!is.null(x$boot) && !is.null(x$conf.level)){
             ## order.col <- c(order.col,"bootstrap")
         ## }
 
-        numeric.col <- names(dt.tempo)[-(1:2)]
-        ## simplify names
-        names(dt.tempo)[-(1:2)] <- gsub("meanRisk\\.","",numeric.col)
+        ## simplify names (needs to be done in two steps)
+        names(dt.tempo) <- gsub("meanRisk\\.","",gsub(paste0("\\.",estimator),"",names(dt.tempo)))
 
         ## merge into CI and CB
         if(!is.null(x$conf.level)){
@@ -101,19 +104,20 @@ print.ate <- function(x, digits = 3, type = c("meanRisk","diffRisk","ratioRisk")
     and given on the probability scale [0,1]. They are interpreded in hypothetical worlds
     where all subjects are treated with one of the treatment options.\n\n")
     if(!is.null(x$treatment) && ("diffRisk" %in% type || "ratioRisk" %in% type)){
-        id.name <- names(x$riskComparison)[1:3]
         if("diffRisk" %in% type){
             cat("\nRisk difference: \n\n")
             ## only pick diff
-            name.diff <- grep("^diff",names(x$riskComparison),value = TRUE)
-            dt.tempo <- x$riskComparison[,.SD,.SDcols = c(id.name,name.diff)]
+            keep.cols <- c(names(x$riskComparison)[!grepl("diff|ratio",names(x$riskComparison))],
+                           grep(paste0("diff\\.",estimator),names(x$riskComparison), value = TRUE))
+            dt.tempo <- x$riskComparison[,.SD,.SDcols = keep.cols]
             ## order.col <- c(names(dt.tempo)[1:3],"diff")
             ## if(!is.null(x$boot) && !is.null(x$conf.level)){
             ## order.col <- c(order.col,"bootstrap")
             ## }
-            numeric.col <- names(dt.tempo)[-(1:3)]
-            ## simplify names
-            names(dt.tempo)[-(1:3)] <- gsub("diff\\.","",numeric.col)
+
+            ## simplify names (needs to be done in two steps)
+            names(dt.tempo) <- gsub("diff\\.","",gsub(paste0("\\.",estimator),"",names(dt.tempo)))
+
             ## merge into CI and CB
             if(!is.null(x$conf.level)){
                 if(x$se){
@@ -154,17 +158,16 @@ and are interpreted as what would have been observed had treatment been randomiz
         if("ratioRisk" %in% type){
             cat("\n\nRisk ratio: \n\n")
             ## only pick ratio
-            name.ratio <- grep("^ratio",names(x$riskComparison),value = TRUE)
-            dt.tempo <- x$riskComparison[,.SD,.SDcols = c(id.name,name.ratio)]
+            keep.cols <- c(names(x$riskComparison)[!grepl("diff|ratio",names(x$riskComparison))],
+                           grep(paste0("ratio\\.",estimator),names(x$riskComparison), value = TRUE))
+            dt.tempo <- x$riskComparison[,.SD,.SDcols = keep.cols]
             ## order.col <- c(names(dt.tempo)[1:3],"ratio")
             ## if(!is.null(x$boot) && !is.null(x$conf.level)){
-                ## order.col <- c(order.col,"bootstrap")
+            ## order.col <- c(order.col,"bootstrap")
             ## }
             
-            numeric.col <- names(dt.tempo)[-(1:3)]
-
-            ## simplify names
-            names(dt.tempo)[-(1:3)] <- gsub("ratio\\.","",numeric.col)
+            ## simplify names (needs to be done in two steps)
+            names(dt.tempo) <- gsub("ratio\\.","",gsub(paste0("\\.",estimator),"",names(dt.tempo)))
 
             ## merge into CI and CB
             if(!is.null(x$conf.level)){

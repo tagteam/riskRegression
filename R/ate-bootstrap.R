@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: apr 11 2018 (17:05) 
 ## Version: 
-## Last-Updated: sep 26 2019 (17:46) 
+## Last-Updated: okt 11 2019 (13:16) 
 ##           By: Brice Ozenne
-##     Update #: 201
+##     Update #: 235
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -17,12 +17,11 @@
 
 ## * calcBootATE
 ## generate a boot object for the ate function that will be used to compute CI and p.values
-calcBootATE <- function(args, name.estimate, n.obs, fct.pointEstimate,
+calcBootATE <- function(args, name.estimate, estimator.boot, n.obs, fct.pointEstimate,
                         handler, B, seed, mc.cores, cl,
                         verbose){
-
-                                        # {{{ prepare arguments
     n.estimate <- length(name.estimate)
+                                        # {{{ prepare arguments
     
     ## hard copy of the dataset before bootstrap
     ls.data <- list(object.event = NULL,
@@ -54,7 +53,7 @@ calcBootATE <- function(args, name.estimate, n.obs, fct.pointEstimate,
 
     ## packages and functions to be exported to the cluster
     add.Package <- unique(c("riskRegression","prodlim","data.table","parallel","survival",unlist(ls.package)))
-    add.Fct <- c(".calcLterm","SurvResponseVar","predictRisk.coxphTD","predictRisk.CSCTD")
+    add.Fct <- c("SurvResponseVar","predictRisk.coxphTD","predictRisk.CSCTD")
     
     ## if cluster already defined by the user
     no.cl <- is.null(cl)
@@ -74,7 +73,7 @@ calcBootATE <- function(args, name.estimate, n.obs, fct.pointEstimate,
                                         # }}}
 
                                         # {{{ warper
-    warperBootATE <- function(index, args, fct.pointEstimate, name.estimate, n.estimate){
+    warperBootATE <- function(index, args, estimator.boot, fct.pointEstimate, name.estimate, n.estimate){
         ## models for the conditional mean
         for(iModel in c("object.event","object.treatment","object.censor")){
             if(!is.null(args[[iModel]])){
@@ -87,19 +86,24 @@ calcBootATE <- function(args, name.estimate, n.obs, fct.pointEstimate,
                 }
             }
         }
-
         ## compute ate
         iBoot <- try(do.call(fct.pointEstimate, args), silent = TRUE)
-
         ## export
         if(inherits(iBoot,"try-error")){ ## error handling
             out <- setNames(rep(NA, n.estimate), name.estimate)
             attr(out,"error") <- iBoot
             return(out)        
         }else{
-            return(setNames(c(iBoot$meanRisk$meanRisk,iBoot$riskComparison$diff,iBoot$riskComparison$ratio), name.estimate))
+            ls.estimate <- lapply(1:length(estimator.boot), function(iE){
+                return(c(iBoot$meanRisk[[paste0("meanRisk.",estimator.boot[iE])]],
+                         iBoot$riskComparison[[paste0("diff.",estimator.boot[iE])]],
+                         iBoot$riskComparison[[paste0("ratio.",estimator.boot[iE])]]))
+                
+            })
+            return(setNames(do.call("c", ls.estimate), name.estimate))
         }
     }
+
                                         # }}}
     ## bootstrap
     if(handler %in% c("snow","multicore")) {
@@ -131,6 +135,7 @@ calcBootATE <- function(args, name.estimate, n.obs, fct.pointEstimate,
                                       warperBootATE(index = index,
                                                     args = args,
                                                     fct.pointEstimate = fct.pointEstimate,
+                                                    estimator.boot = estimator.boot,
                                                     name.estimate = name.estimate,
                                                     n.estimate = n.estimate)                                      
                                   })
@@ -140,7 +145,7 @@ calcBootATE <- function(args, name.estimate, n.obs, fct.pointEstimate,
         if (handler=="foreach"){ # [@TAG: removed mc.cores > 1]
                                         # {{{ foreach
             if(no.cl){
-                if(verbose){
+                if(verbose>0){
                     cl <- parallel::makeCluster(mc.cores, outfile = "")
                 }else{
                     cl <- parallel::makeCluster(mc.cores)
@@ -148,18 +153,19 @@ calcBootATE <- function(args, name.estimate, n.obs, fct.pointEstimate,
             }           
             doParallel::registerDoParallel(cl)
             ## progress bar 
-            if(verbose){pb <- txtProgressBar(max = B, style = 3)}
+            if(verbose>0){pb <- txtProgressBar(max = B, style = 3)}
             b <- NULL ## [:forCRANcheck:] foreach
             boots <- foreach::`%dopar%`(foreach::foreach(b = 1:B, .packages = add.Package, .export = add.Fct), { ## b <- 1
-                if(verbose){setTxtProgressBar(pb, b)}
+                if(verbose>0){setTxtProgressBar(pb, b)}
                 set.seed(bootseeds[[b]])
                 warperBootATE(index = sample(1:n.obs, size = n.obs, replace = TRUE),
                               args = args,
                               fct.pointEstimate = fct.pointEstimate,
+                              estimator.boot = estimator.boot,
                               name.estimate = name.estimate,
                               n.estimate = n.estimate)                                      
             })            
-            if(verbose){close(pb)}
+            if(verbose>0){close(pb)}
             if(no.cl){parallel::stopCluster(cl)}
                                         # }}}
         }else if(handler=="mclapply"){
@@ -169,12 +175,12 @@ calcBootATE <- function(args, name.estimate, n.obs, fct.pointEstimate,
                 warperBootATE(index = sample(1:n.obs, size = n.obs, replace = TRUE),
                               args = args,
                               fct.pointEstimate = fct.pointEstimate,
+                              estimator.boot = estimator.boot,
                               name.estimate = name.estimate,
                               n.estimate = n.estimate)                                      
             })
                                         # }}}
         }
-
                                         # {{{ convert to boot object
         M.bootEstimate <- do.call(rbind,boots)
         

@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: maj 18 2017 (09:23) 
 ## Version: 
-## last-updated: okt  7 2019 (19:08) 
+## last-updated: okt 11 2019 (16:10) 
 ##           By: Brice Ozenne
-##     Update #: 276
+##     Update #: 282
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -1140,7 +1140,33 @@ test_that("[predictCSC] vs. predictCox (strata) - surv.type=\"survival\"",{
     expect_equal(GS$survival.average.iid,test$survival.average.iid)
 
 })
+## ** type=hazard
+tau <- median(d$time)
 
+e.CSC <- CSC(Hist(time, event)~ X6, data = d, surv.type = "hazard")
+
+test_that("[predictCSC] for survival surv.type=\"survival\" (internal consistency)",{
+
+    GS <- predict(e.CSC, type = "survival", times = tau,
+                  newdata = d, product.limit = FALSE, iid = TRUE, average.iid = TRUE)
+
+    test <- predict(e.CSC, type = "survival", times = tau,
+                    newdata = d, product.limit = FALSE, iid = FALSE, average.iid = TRUE)
+
+    factor <- TRUE
+    attr(factor,"factor") <- list(matrix(5, nrow = NROW(d), ncol = 1),
+                                  matrix(1:NROW(d), nrow = NROW(d), ncol = 1))
+    test2 <- predict(e.CSC, type = "survival", times = tau,
+                     newdata = d, product.limit = FALSE, iid = FALSE, average.iid = factor)
+
+
+    expect_equal(GS$survival.average.iid,test$survival.average.iid)
+    expect_equal(GS$survival.average.iid[,1],test$survival.average.iid[,1])
+    expect_equal(5*GS$survival.average.iid[,1],test2$survival.average.iid[[1]][,1])
+
+    expect_equal(colMeans(colMultiply_cpp(GS$survival.iid[,1,],1:NROW(d))),
+                 test2$survival.average.iid[[2]][,1])
+})
 
 ## * [predictCSC] Miscelaneous
 ## ** Confidence bands vs. timereg

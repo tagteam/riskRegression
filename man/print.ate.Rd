@@ -5,7 +5,7 @@
 \title{Print Average Treatment Effects}
 \usage{
 \method{print}{ate}(x, digits = 3, type = c("meanRisk", "diffRisk",
-  "ratioRisk"), ...)
+  "ratioRisk"), estimator = x$estimator[1], ...)
 }
 \arguments{
 \item{x}{object obtained with function \code{ate}}
@@ -14,6 +14,8 @@
 
 \item{type}{[character vector] what to displayed.
 Can be any combination of \code{"meanRisk"}, \code{"diffRisk"}, and \code{"ratioRisk"}.}
+
+\item{estimator}{[character] The type of estimator relative to which the estimates should be displayed.}
 
 \item{...}{passed to print}
 }
