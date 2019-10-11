@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Mar  3 2017 (09:28) 
 ## Version: 
-## Last-Updated: Jan 29 2019 (10:49) 
-##           By: Thomas Alexander Gerds
-##     Update #: 74
+## Last-Updated: okt 11 2019 (13:45) 
+##           By: Brice Ozenne
+##     Update #: 105
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -23,65 +23,87 @@
 #' @param x object obtained with function \code{ate}
 #' @param keep.rownames Not used.
 #' @param se [logical] Should standard errors/quantile for confidence bands be displayed?
+#' @param estimator [character] The type of estimator relative to which the estimates should be output. 
 #' @param ... Not used.
 #'
 
 ## * as.data.table.ate (code)
 #' @rdname as.data.table.ate
 #' @export
-as.data.table.ate <- function(x, keep.rownames = FALSE, se = TRUE, ...){
+as.data.table.ate <- function(x, keep.rownames = FALSE, se = TRUE, estimator = x$estimator, ...){
 
-    ## ** which columns to keep
-    keep.col <- NULL
-    if(x$se[[1]] && !is.null(x$conf.level)){
-        if(se){
-            keep.col <- c(keep.col, "se")
+    estimator <- match.arg(estimator, choices =  x$estimator, several.ok = TRUE)
+    landmark <- all(attr(x$estimator,"full")=="GformulaTD")
+    col.time <- switch(as.character(landmark),
+                       "TRUE" = c("time","landmark"),
+                       "FALSE" = "time")
+    out <- NULL
+    
+    for(iE in 1:length(estimator)){ ## iE <- 1
+        iEstimator <- estimator[iE]
+
+        ## ** which columns to keep
+        keep.col <- NULL
+        if(x$se[[1]] && !is.null(x$conf.level)){
+            if(se){
+                keep.col <- c(keep.col, "se")
+            }
+            keep.col <- c(keep.col, "lower", "upper", "p.value")
+            x$meanRisk[, paste0("meanRisk.",iEstimator,".p.value") := as.numeric(NA)]
         }
-        keep.col <- c(keep.col, "lower", "upper")
-    }
-    if(x$band[[1]] && !is.null(x$conf.level)){
-        if(se){
-            keep.col <- c(keep.col, "quantileBand")
+        if(x$band[[1]] && !is.null(x$conf.level)){
+            if(se){
+                keep.col <- c(keep.col, "quantileBand")
+            }
+            keep.col <- c(keep.col, "lowerBand", "upperBand")
         }
-        keep.col <- c(keep.col, "lowerBand", "upperBand")
-    }
+        
     
-    keep.cols <- c("lower","upper")
+        ## ** ate
+        out1 <- cbind(type = "ate",
+                      level = x$meanRisk[[1]],
+                      x$meanRisk[,.SD,.SDcols = col.time],
+                      value = x$meanRisk[[paste0("meanRisk.",iEstimator)]])
+        if(!is.null(x$boot)){
+            out1[,c("value.boot") := x$meanRisk[[paste0("meanRisk.",iEstimator,".boot")]]]
+        }
+        if(!is.null(keep.col)){
+            out1[, c(keep.col) := x$meanRisk[, .SD, .SDcols = paste0("meanRisk.",iEstimator,".",keep.col)]]
+        }
+        out1[, c("estimator") := iEstimator]
+        
+        ## ** diff ate
+        out2 <- cbind(type = "diffAte",
+                      level = paste0(x$riskComparison[[1]],".",x$riskComparison[[2]]),
+                      x$riskComparison[,.SD,.SDcols = col.time],
+                      value = x$riskComparison[[paste0("diff.",iEstimator)]])
+        if(!is.null(x$boot)){
+            out2[,c("value.boot") := x$riskComparison[[paste0("diff.",iEstimator,".boot")]]]
+        }
+        if(!is.null(keep.col)){
+            out2[, c(keep.col) := x$riskComparison[, .SD, .SDcols = paste0("diff.",iEstimator,".",keep.col)]]
+        }
+        out2[, c("estimator") := iEstimator]
     
-    ## ** ate
-    out1 <- data.table(type = "ate",
-                       level = x$meanRisk[[1]],
-                       time = x$meanRisk[["time"]],
-                       value = x$meanRisk[["meanRisk"]])
-    if(!is.null(x$boot)){
-        out1[,c("value.boot") := x$meanRisk$meanRisk.boot]
-    }
-    out1[, c(keep.col) := x$meanRisk[, .SD, .SDcols = paste0("meanRisk.",keep.col)]]
-    
-    ## ** diff ate
-    out2 <- data.table(type = "diffAte",
-                       level = paste0(x$riskComparison[[1]],".",x$riskComparison[[2]]),
-                       time = x$riskComparison[["time"]],
-                       value = x$riskComparison[["diff"]])
-    if(!is.null(x$boot)){
-        out2[,c("value.boot") := x$riskComparison$diff.boot]
-    }
+        ## ** ratio ate
+        out3 <- cbind(type = "ratioAte",
+                      level = paste0(x$riskComparison[[1]],".",x$riskComparison[[2]]),
+                      x$riskComparison[,.SD,.SDcols = col.time],
+                      value = x$riskComparison[[paste0("ratio.",iEstimator)]])
+        if(!is.null(x$boot)){
+            out3[,c("value.boot") := x$riskComparison[[paste0("ratio.",iEstimator,".boot")]]]
+        }
+        if(!is.null(keep.col)){
+            out3[, c(keep.col) := x$riskComparison[, .SD, .SDcols = paste0("ratio.",iEstimator,".",keep.col)]]
+        }
+        out3[, c("estimator") := iEstimator]
 
-    out2[, c(keep.col) := x$riskComparison[, .SD, .SDcols = paste0("diff.",keep.col)]]
-
-    ## ** ratio ate
-    out3 <- data.table(type = "ratioAte",
-                       level = paste0(x$riskComparison[[1]],".",x$riskComparison[[2]]),
-                       time = x$riskComparison[["time"]],
-                       value = x$riskComparison[["ratio"]])
-    
-    out3[, c(keep.col) := x$riskComparison[, .SD, .SDcols = paste0("ratio.",keep.col)]]
-    if(!is.null(x$boot)){
-        out3[,c("value.boot") := x$riskComparison$ratio.boot]
+        ## ** assemble
+        out <- rbind(out,rbind(out1,out2,out3))
     }
-
+    
     ## export
-    return(rbind(out1,out2,out3))
+    return(out)
   
 }
 

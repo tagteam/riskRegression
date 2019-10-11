@@ -3,9 +3,15 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun  6 2016 (09:02) 
 ## Version: 
+<<<<<<< HEAD
 ## last-updated: Oct  9 2019 (11:35) 
 ##           By: Thomas Alexander Gerds
 ##     Update #: 282
+=======
+## last-updated: okt 11 2019 (15:32) 
+##           By: Brice Ozenne
+##     Update #: 286
+>>>>>>> 0e19c91b8fc24e8791bacb8f1450ee8695f21fd6
 #----------------------------------------------------------------------
 ## 
 ### Commentary:
@@ -293,6 +299,7 @@ predictRisk.glm <- function(object, newdata, iid = FALSE, average.iid = FALSE,..
                 if(average.iid){
                     if(is.list(attr(out,"average.iid"))){
                         attr(out,"average.iid") <- lapply(attr(out,"average.iid"), function(iIID){-iIID})
+                        names(attr(out,"average.iid")) <- names(factor)
                     }else{                        
                         attr(out,"average.iid") <- - attr(out,"average.iid")
                     }
@@ -819,6 +826,10 @@ predictRisk.ARR <- function(object,newdata,times,cause,...){
 ##' @rdname predictRisk
 ##' @method predictRisk CauseSpecificCox
 predictRisk.CauseSpecificCox <- function (object, newdata, times, cause, product.limit = TRUE, iid = FALSE, average.iid = FALSE, ...) { 
+    type <- list(...)$type
+    if(is.null(type)){
+        type <- "absRisk"
+    }
     
     outPred <- predict(object=object,
                        newdata=newdata,
@@ -828,14 +839,15 @@ predictRisk.CauseSpecificCox <- function (object, newdata, times, cause, product
                        se = FALSE,
                        iid = iid,
                        average.iid = average.iid,
-                       product.limit = product.limit)
-    
-    out <- outPred$absRisk
+                       product.limit = product.limit,
+                       type = type)
+
+    out <- outPred[[type]]
     if(iid){
-        attr(out,"iid") <- outPred$absRisk.iid
+        attr(out,"iid") <- outPred[[paste0(type,".iid")]]
     }
     if(average.iid){
-        attr(out,"average.iid") <- outPred$absRisk.average.iid
+        attr(out,"average.iid") <- outPred[[paste0(type,".average.iid")]]
     }
 
     return(out)

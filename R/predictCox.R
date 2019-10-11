@@ -272,10 +272,10 @@ predictCox <- function(object,
     }
     if(average.iid==TRUE && !is.null(attr(average.iid,"factor"))){
         if(iid){
-            stop("Attribute \"factor\" of argument \'average.iid\' ignored when \'iid\' is TRUE \n")
+            stop("Attribute \"factor\" of argument \'average.iid\' not available when \'iid\' is TRUE \n")
         }
         if(se){
-            stop("Attribute \"factor\" of argument \'average.iid\' ignored when \'se\' is TRUE \n")
+            stop("Attribute \"factor\" of argument \'average.iid\' not available when \'se\' is TRUE \n")
         }
         test.list <- !is.list(attr(average.iid,"factor"))
         if(test.list){
@@ -593,6 +593,19 @@ predictCox <- function(object,
                     out$survival.average.iid <- outSE$survival.average.iid
                 }
             }
+
+            if(is.list(attr(average.iid,"factor"))){
+                if("hazard" %in% type){
+                    names(out$hazard.average.iid) <- names(attr(average.iid,"factor"))
+                }
+                if("cumhazard" %in% type){
+                    names(out$cumhazard.average.iid) <- names(attr(average.iid,"factor"))
+                }
+                if("survival" %in% type){
+                    names(out$survival.average.iid) <- names(attr(average.iid,"factor"))
+                }
+            }
+
         }
         if((se+band)>0){
             if ("cumhazard" %in% type){

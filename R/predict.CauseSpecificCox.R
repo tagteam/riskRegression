@@ -197,6 +197,12 @@ predict.CauseSpecificCox <- function(object,
         }
     }
     if(average.iid==TRUE && !is.null(attr(average.iid,"factor"))){
+        if(iid && !is.null(attr(average.iid,"factor"))){
+            stop("Attribute \"factor\" of argument \'average.iid\' not available when \'iid\' is TRUE \n")
+        }
+        if(se && !is.null(attr(average.iid,"factor"))){
+            stop("Attribute \"factor\" of argument \'average.iid\' not available when \'se\' is TRUE \n")
+        }
 
         test.list <- !is.list(attr(average.iid,"factor"))
         if(test.list){
@@ -394,6 +400,9 @@ predict.CauseSpecificCox <- function(object,
         }else{
             out$absRisk.average.iid <- out.seCSC$average.iid
         }
+        if(is.list(attr(average.iid,"factor"))){
+            names(out$absRisk.average.iid) <- names(attr(average.iid,"factor"))
+        }
     }
     if(keep.times){out$times <- times}
 
@@ -470,12 +479,12 @@ predict.CauseSpecificCox <- function(object,
             out$survival <- matrix(0, nrow = n.obs, ncol = 1)
             if(se){out$survival.se <- matrix(0, nrow = n.obs, ncol = 1)}
             if(iid){out$survival.iid <- array(0, dim = c(n.obs, 1, n.data))}
-            if(average.iid){out$survival.average.iid <- matrix(0, nrow = n.obs, ncol = 1)}
+            if(average.iid){out$survival.average.iid <- matrix(0, nrow = n.data, ncol = 1)}
         }else{
             out$survival <- matrix(0, nrow = n.obs, ncol = n.times)
             if(se){out$survival.se <- matrix(0, nrow = n.obs, ncol = n.times)}
             if(iid){out$survival.iid <- array(0, dim = c(n.obs, n.times, n.data))}
-            if(average.iid){out$survival.average.iid <- matrix(0, nrow = n.obs, ncol = n.times)}
+            if(average.iid){out$survival.average.iid <- matrix(0, nrow = n.data, ncol = n.times)}
         }
 
         ## ** compute survival && iid for cumulative hazard
@@ -496,8 +505,8 @@ predict.CauseSpecificCox <- function(object,
                 outHazard <- predictCox(object$models[[iC]],
                                         newdata = newdata,
                                         times = jump.time,
-                                        iid = iid & (diag == FALSE),
-                                        type = if(iid & (diag == FALSE)){c("hazard","cumhazard")}else{"hazard"})
+                                        iid = FALSE, se = FALSE,
+                                        type = "hazard")
 
                 if(0 %in% jump.time){
                     predAll.hazard <- predAll.hazard + cbind(outHazard$hazard,NA)
@@ -566,23 +575,68 @@ predict.CauseSpecificCox <- function(object,
 
         ## ** compute average iid survival
         if(average.iid){
+            if(iid && !is.null(attr(average.iid,"factor"))){
+                stop("Attribute \"factor\" of argument \'average.iid\' not available when \'iid\' is TRUE \n")
+            }
+            if(se && !is.null(attr(average.iid,"factor"))){
+                stop("Attribute \"factor\" of argument \'average.iid\' not available when \'se\' is TRUE \n")
+            }
+
+                    
             if(iid){
                 out$survival.average.iid <- t(apply(out$survival.iid,2:3,mean))
             }else{
                 factor <- attr(average.iid,"factor")
                 if(is.null(factor)){
-                    factor <- list(out$survival)
+                    factor <- list(-out$survival)
+                    n.factor <- 1
                 }else{
-                    stop("factor for average.iid when calling predict.CauseSpecificCox with type=\"survival\" not implemented \n")
+                    test.list <- !is.list(factor)
+                    if(test.list){
+                        stop("Attribute \"factor\" of argument \'average.iid\' must be a list \n")
+                    }
+                    test.matrix <- any(unlist(lapply(factor, is.matrix))==FALSE)
+                    if(test.matrix){
+                        stop("Attribute \"factor\" of argument \'average.iid\' must be a list of matrices \n")
+                    }
+                    n.factor <- length(factor)
+                    out$survival.average.iid <- vector(mode = "list", length = n.factor)
+                    
+                    for(iFactor in 1:n.factor){ ## iFactor <- 1
+                        ## when only one column and diag = FALSE, use the same weights at all times
+                        if((diag == FALSE) && (NCOL(factor[[iFactor]])==1) && (NCOL(factor[[iFactor]])==n.obs) && (n.times > 1)){
+                            factor[[iFactor]] <- matrix(factor[[iFactor]][,1],
+                                                        nrow = NROW(factor[[iFactor]]),
+                                                        ncol = n.times, byrow = FALSE)
+                        }
+                        ## check dimensions
+                        if(any(dim(factor[[iFactor]])!=c(n.obs, diag + (1-diag)*n.times))){
+                            stop("Attribute \"factor\" of argument \'average.iid\' must be a list of matrices of size ",n.obs,",",diag + (1-diag)*n.times," \n")
+                        }
+
+                        factor[[iFactor]] <- -factor[[iFactor]]*out$survival
+                        out$survival.average.iid[[iFactor]] <- matrix(0, nrow = n.data, ncol = n.times)
+                    }
+                    ## stop("factor for average.iid when calling predict.CauseSpecificCox with type=\"survival\" not implemented \n")
                 }
+                attr(average.iid,"factor") <- factor
+                
                 for(iC in 1:n.cause){
-                    out$survival.average.iid <- out$survival.average.iid + predictCox(object$models[[iC]],
-                                                                                      newdata = newdata,
-                                                                                      times = times,
-                                                                                      diag = diag,
-                                                                                      iid = FALSE,
-                                                                                      average.iid = average.iid,
-                                                                                      type = "cumhazard")$cumhazard.average.iid
+                    iAvIID <- predictCox(object$models[[iC]],
+                                         newdata = newdata,
+                                         times = times,
+                                         diag = diag,
+                                         iid = FALSE,
+                                         average.iid = average.iid,
+                                         type = "cumhazard")$cumhazard.average.iid
+
+                    if(is.list(out$survival.average.iid)){
+                        for(iF in 1:n.factor){ ## iF <- 1
+                            out$survival.average.iid[[iF]] <- out$survival.average.iid[[iF]] + iAvIID[[iF]]
+                        }
+                    }else{
+                        out$survival.average.iid <- out$survival.average.iid + iAvIID[[1]]
+                    }
                 }
             }
         }
