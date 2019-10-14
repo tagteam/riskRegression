@@ -1086,6 +1086,16 @@ test_that("[ate] check that bootstrap returns a result", {
     dt.ate1 <- as.data.table(e.ate1)
 })
 }
+## ** Ate using list of formulae
+test_that("[ate] using list of formulae",{
+    set.seed(10)
+    d <- sampleData(100)
+    GS <- ate(list(Hist(time,event)~X1+X2,
+                   Hist(time,event)~X1+X2),
+              treatment = "X1", data = d, times = 1:5, cause = 1,
+              verbose = verbose)
+})
+
 ## * [ate] Previous bug
 cat("[ate] Previous bug \n")
 
