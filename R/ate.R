@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Oct 23 2016 (08:53) 
 ## Version: 
-## last-updated: okt 11 2019 (15:36) 
+## last-updated: okt 14 2019 (11:12) 
 ##           By: Brice Ozenne
-##     Update #: 1546
+##     Update #: 1554
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -653,22 +653,22 @@ ate_initArgs <- function(object.event,
     handler <- match.arg(handler, c("foreach","mclapply","snow","multicore"))
 
     ## ** fit regression model when user specifies formula and extract formula
-    if(inherits(object.event,"formula")){
+    if(inherits(object.event,"formula")){ ## formula
         myformula.event <- object.event
         if(any(grepl("Hist(",object.event, fixed = TRUE))){
-            object.event <- CSC(myformula.event, data = data, surv.type = "survival")
+            object.event <- CSC(myformula.event, data = data)
         }else if(any(grepl("Surv(",object.event, fixed = TRUE))){
             object.event <- rms::cph(myformula.event, data = data, x = TRUE, y = TRUE)
         }else{
             object.event <- glm(myformula.event, data = data, family = stats::binomial(link = "logit"))
         }
-    }else{
-        if(inherits(object.event,"glm") || inherits(object.event,"CauseSpecificCox")){
-            myformula.event <- stats::formula(object.event)
-        }else if(inherits(object.event,"coxph") || inherits(object.event,"cph") ||inherits(object.event,"phreg")){
-            myformula.event <- coxFormula(object.event)
-        }
-
+    }else if(all(sapply(object.event, function(iE){inherits(iE,"formula")})) && all(sapply(object.event, function(iE){grepl("Hist",deparse(iE))}))){ ## list of formula
+        myformula.event <- object.event
+        object.event <- CSC(myformula.event, data = data)
+    }else if(inherits(object.event,"glm") || inherits(object.event,"CauseSpecificCox")){ ## glm / CSC
+        myformula.event <- stats::formula(object.event)
+    }else if(inherits(object.event,"coxph") || inherits(object.event,"cph") ||inherits(object.event,"phreg")){ ## Cox
+        myformula.event <- coxFormula(object.event)
     }
 
     if(!missing(object.treatment) && inherits(object.treatment,"formula")){
@@ -694,7 +694,7 @@ ate_initArgs <- function(object.event,
     ## ** deduced from user defined arguments
 
     ## event 
-    if(inherits(object.event,"glm")){
+    if(inherits(object.event,"glm")){        
         eventVar.time <- as.character(NA)
         eventVar.status <- all.vars(myformula.event)[1]
         type.multistate <- "NA"
