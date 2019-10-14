@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Feb 23 2017 (11:15) 
 ## Version: 
-## last-updated: Oct  1 2019 (17:05) 
+## last-updated: Oct 13 2019 (18:56) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 347
+##     Update #: 350
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -98,7 +98,7 @@
 ##' fb2=glm(Y~X1+X3+X6+X7,data=db,family="binomial")
 ##' xb=Score(list(model1=fb1,model2=fb2),Y~1,data=db,
 ##'           plots="cal")
-##' plotCalibration(xb)
+##' plotCalibration(xb,brier.in.legend=TRUE)
 ##' plotCalibration(xb,bars=TRUE,model="model1")
 ##' plotCalibration(xb,models=1,bars=TRUE,names.cex=1.3)
 ##' 
@@ -140,7 +140,7 @@ plotCalibration <- function(x,
                             names="quantiles",
                             pseudo=FALSE,
                             rug,
-                            boxplot=FALSE,
+                            ## boxplot=FALSE,
                             show.frequencies=FALSE,
                             plot=TRUE,
                             add=FALSE,
@@ -521,13 +521,13 @@ plotCalibration <- function(x,
                                         # }}}
                                         # {{{ do the actual plot
     if (plot){
-        if (boxplot){
-            nbox <- length(control$lines$col)
-            layout(matrix(c(1:nbox, nbox, 1), widths = 100, heights = c(100-nbox*5,rep(5,nbox))))
-            for (m in 1:nbox){
-                pframe[model==m,boxplot(risk,col=control$lines$col[m],ylim=c(0,1),horizontal=1L)]
-            }
-        }
+        ## if (boxplot){
+            ## nbox <- length(control$lines$col)
+            ## layout(matrix(c(1:nbox, nbox, 1), widths = 100, heights = c(100-nbox*5,rep(5,nbox))))
+            ## for (m in 1:nbox){
+                ## pframe[model==m,boxplot(risk,col=control$lines$col[m],ylim=c(0,1),horizontal=1L)]
+            ## }
+        ## }
         if (out$add[1]==FALSE && !out$bars[1]){
             do.call("plot",control$plot)
         }

@@ -7,12 +7,12 @@
 plotCalibration(x, models, times, method = "nne", cens.method,
   round = TRUE, bandwidth = NULL, q = 10, bars = FALSE,
   hanging = FALSE, names = "quantiles", pseudo = FALSE, rug,
-  boxplot = FALSE, show.frequencies = FALSE, plot = TRUE,
-  add = FALSE, diag = !add, legend = !add, auc.in.legend,
-  brier.in.legend, axes = !add, xlim = c(0, 1), ylim = c(0, 1),
-  xlab = ifelse(bars, "Risk groups", "Predicted risk"),
-  ylab = "Observed frequency", col, lwd, lty, pch, type, cause = 1,
-  percent = TRUE, na.action = na.fail, cex = 1, ...)
+  show.frequencies = FALSE, plot = TRUE, add = FALSE, diag = !add,
+  legend = !add, auc.in.legend, brier.in.legend, axes = !add,
+  xlim = c(0, 1), ylim = c(0, 1), xlab = ifelse(bars, "Risk groups",
+  "Predicted risk"), ylab = "Observed frequency", col, lwd, lty, pch,
+  type, cause = 1, percent = TRUE, na.action = na.fail, cex = 1,
+  ...)
 }
 \arguments{
 \item{x}{Object obtained with function \code{Score}}
@@ -139,6 +139,7 @@ plotCalibration(xb,models=1,bars=TRUE,names.cex=1.3)
 
 # survival
 library(survival)
+library(prodlim)
 dslearn=sampleData(56,outcome="survival")
 dstest=sampleData(100,outcome="survival")
 fs1=coxph(Surv(time,event)~X1+X5+X7,data=dslearn,x=1)
@@ -146,7 +147,7 @@ fs2=coxph(Surv(time,event)~strata(X1)+X3+X6+X7,data=dslearn,x=1)
 xs=Score(list(Cox1=fs1,Cox2=fs2),Surv(time,event)~1,data=dstest,
           plots="cal",metrics=NULL)
 plotCalibration(xs)
-plotCalibration(xs,cens.method="local")
+plotCalibration(xs,cens.method="local",pseudo=1)
 plotCalibration(xs,method="quantile")
 
 

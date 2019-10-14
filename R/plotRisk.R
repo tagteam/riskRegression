@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Mar 13 2017 (16:53) 
 ## Version: 
-## Last-Updated: Sep  9 2019 (10:24) 
+## Last-Updated: Oct 13 2019 (10:54) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 94
+##     Update #: 95
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -81,7 +81,7 @@ plotRisk <- function(x,
                      preclipse=0,
                      preclipse.shade=FALSE,
                      ...){
-    model=ReSpOnSe=risk=status=NULL
+    model=ReSpOnSe=risk=status=event=NULL
     if (is.null(x$risks$score)) stop("No predicted risks in object. You should set summary='risks' when calling Score.")
     if (!is.null(x$null.model)){
         pframe <- x$risks$score[model!=x$null.model]
@@ -189,7 +189,7 @@ plotRisk <- function(x,
     do.call("plot",control$plot)
     if (preclipse.shade==TRUE){
         ## rect(xleft=0,xright=1,ybottom=0,ytop=1,col="white",border=0)
-        draw.ellipse(x=0.5,y=.5, a=.75, b=.1, border=0, angle=c(45), lty=3,col="gray88")
+        plotrix::draw.ellipse(x=0.5,y=.5, a=.75, b=.1, border=0, angle=c(45), lty=3,col="gray88")
     }
     do.call("abline",control$abline)
     do.call("points",control$points)
