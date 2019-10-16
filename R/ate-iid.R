@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: apr  5 2018 (17:01) 
 ## Version: 
-## Last-Updated: okt 11 2019 (16:11) 
+## Last-Updated: okt 16 2019 (14:25) 
 ##           By: Brice Ozenne
-##     Update #: 921
+##     Update #: 928
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -102,9 +102,10 @@ iidATE <- function(estimator,
         integrand.F1t <- attr(predictRisk(object.event, newdata = data, times = time.jumpC, cause = cause,
                                           average.iid = factor, product.limit = product.limit), "average.iid")
 
-        
         for(iC in 1:n.contrasts){ ## iC <- 1
-            iid.AIPTW[[iC]] <- iid.AIPTW[[iC]] + rowCumSum(integrand.F1t[[iC]])[,beforeTau.nJumpC]
+            iid.AIPTW[[iC]] <- iid.AIPTW[[iC]] + subsetIndex(rowCumSum(integrand.F1t[[iC]]),
+                                                             index = beforeTau.nJumpC,
+                                                             default = 0, col = TRUE)
         }
     }
     ## cat("Outcome (method=1) \n")
@@ -167,7 +168,9 @@ iidATE <- function(estimator,
         for(iGrid in 1:n.grid){ ## iGrid <- 1
             iTau <- grid[iGrid,"tau"]
             iC <- grid[iGrid,"contrast"]
-            iid.AIPTW[[iC]][,iTau] <- iid.AIPTW[[iC]][,iTau] + rowSums(integrand.St[[iGrid]][,1:beforeTau.nJumpC[iTau]])
+            if(beforeTau.nJumpC[iTau]>0){
+                iid.AIPTW[[iC]][,iTau] <- iid.AIPTW[[iC]][,iTau] + rowSums(integrand.St[[iGrid]][,1:beforeTau.nJumpC[iTau],drop=FALSE])
+            }
         }
     }
     ## cat("Survival (method=1) \n")
@@ -229,8 +232,9 @@ iidATE <- function(estimator,
             for(iGrid in 1:n.grid){ ## iGrid <- 1
                 iTau <- grid[iGrid,"tau"]
                 iC <- grid[iGrid,"contrast"]
-
-                iid.AIPTW[[iC]][,iTau] <- iid.AIPTW[[iC]][,iTau] + rowSums(integrand.G1[[iGrid]][,1:beforeTau.nJumpC[iTau]] + integrand.G2[[iGrid]][,1:beforeTau.nJumpC[iTau]])
+                if(beforeTau.nJumpC[iTau]>0){
+                    iid.AIPTW[[iC]][,iTau] <- iid.AIPTW[[iC]][,iTau] + rowSums(integrand.G1[[iGrid]][,1:beforeTau.nJumpC[iTau],drop=FALSE] + integrand.G2[[iGrid]][,1:beforeTau.nJumpC[iTau],drop=FALSE])
+                }
             }
         }
     }

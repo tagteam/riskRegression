@@ -1112,6 +1112,20 @@ test_that("[ate] Cox model/G-formula - one or several timepoints affects the res
                  a1$meanRisk[time==5,])
 })
 
+## ** Before the first jump or at the first jump
+test_that("[ate] double robust estimator - before or at the first jump",{
+    ## Error in rowSums(integrand.St[[iGrid]][, 1:beforeTau.nJumpC[iTau]]) : 
+    ##   'x' must be an array of at least two dimensions
+
+    set.seed(1)
+    d <- sampleData(100,outcome="survival")
+    tau <- c(d[event>0,min(time)] + c(-1e-5,+1e-5), median(d$time))
+    
+    fit <-  ate(event = coxph(Surv(time,event)~X1+X4+X7+X8,data=d,x=TRUE,y=TRUE),
+                treatment = X1~X4,
+                censor = coxph(Surv(time,event==0)~X1+X4+X7+X8,data=d,x=TRUE,y=TRUE),
+                data=d, time=tau, se = TRUE, verbose = verbose)
+})
 ## ** Multiple timepoints
 ## TAG: Monday, Jul 8, 2019 9:09:36 PM (email subject Re: Branche ate for riskRegression ready)
 set.seed(10)
