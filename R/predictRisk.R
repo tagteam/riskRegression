@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun  6 2016 (09:02) 
 ## Version: 
-## last-updated: okt 11 2019 (15:32) 
+## last-updated: okt 16 2019 (14:01) 
 ##           By: Brice Ozenne
-##     Update #: 286
+##     Update #: 287
 #----------------------------------------------------------------------
 ## 
 ### Commentary:
@@ -455,7 +455,7 @@ predictRisk.coxph <- function(object, newdata, times, product.limit = FALSE, iid
                                 newdata=newdata,
                                 times=times,
                                 iid = iid,
-                                iid = average.iid,
+                                average.iid = average.iid,
                                 keep.times=FALSE,
                                 type="survival")
     }else{
