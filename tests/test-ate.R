@@ -1096,6 +1096,33 @@ test_that("[ate] using list of formulae",{
               verbose = verbose)
 })
 
+## ** Specification of the censoring mecanism
+test_that("[ate] Specification of the censoring mecanism",{
+    set.seed(10)
+    d <- sampleData(100)
+    d$allevent <- as.numeric(d$event>0)
+        
+    expect_error(ate(event = Surv(time,allevent)~X1+X2,
+                     censor = Surv(time,allevent)~X1,
+                     treatment = X1 ~ X2,
+                     data = d, times = 1:5, cause = 1,
+                     verbose = verbose))
+
+    expect_error(ate(event = Hist(time,event)~X1+X2,
+                     censor = Surv(time,allevent)~X1,
+                     treatment = X1 ~ X2,
+                     data = d, times = 1:5, cause = 1,
+                     verbose = verbose))
+
+    ## should run
+    test1 <- ate(event = Hist(time,event)~X1+X2,
+                 censor = Surv(time,allevent==0)~X1,
+                 treatment = X1 ~ X2,
+                 data = d, times = 1:5, cause = 1,
+                 verbose = verbose)
+})
+
+
 ## * [ate] Previous bug
 cat("[ate] Previous bug \n")
 

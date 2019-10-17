@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Oct 23 2016 (08:53) 
 ## Version: 
-## last-updated: okt 14 2019 (11:12) 
+## last-updated: okt 17 2019 (10:40) 
 ##           By: Brice Ozenne
-##     Update #: 1554
+##     Update #: 1592
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -275,11 +275,6 @@ ate <- function(event,
 
     dots <- list(...)
 
-    ## for CRAN tests
-    meanRisk=Treatment=ratio=Treatment.A=Treatment.B=b <- NULL
-    .=.I <- NULL
-    diff.se=ratio.se=.GRP=lower=upper=diff.lower=diff.upper=diff.p.value=ratio.lower=ratio.upper=ratio.p.value <- NULL
-
     ## ** initialize arguments
     data.table::setDT(data)
     
@@ -312,6 +307,7 @@ ate <- function(event,
     eventVar.time <- init$eventVar.time
     eventVar.status <- init$eventVar.status
     level.censoring <- init$level.censoring
+    level.states <- init$level.states
     censorVar.time <- init$censorVar.time
     censorVar.status <- init$censorVar.status
     dots$product.limit <- init$product.limit
@@ -349,6 +345,7 @@ ate <- function(event,
                            TD = TD,
                            n.censor = n.censor,
                            level.censoring = level.censoring,
+                           level.states = level.states,
                            estimator = estimator,
                            eventVar.time = eventVar.time,
                            eventVar.status = eventVar.status,
@@ -389,11 +386,15 @@ ate <- function(event,
             cat("     Calculation of the average treatment effect \n\n", sep = "")
             cat(" - Estimator",if(length(estimator)>1){"s"},"      : ",paste(estimator, collapse = " "),"\n",sep="")
             cat(" - Treatment variable: ",treatment," (",length(contrasts)," levels)\n",sep="")
-            if(length(level.censoring)==0){
-                cat(" - Event variable    : ",eventVar.status," (cause: ",cause,", no censoring)\n",sep="")
-            }else{
-                cat(" - Event variable    : ",eventVar.status," (cause: ",cause,", censoring: ",level.censoring,")\n",sep="")
+
+            txt.parenthesis <- paste0("cause: ",cause)
+            if(length(level.states)>1){
+                txt.parenthesis <- paste0(txt.parenthesis,", competing risk(s): ",setdiff(level.states,cause))
             }
+            if(any(n.censor>0)){
+                txt.parenthesis <- paste0(txt.parenthesis, ", censoring: ",level.censoring)
+            }
+            cat(" - Event variable    : ",eventVar.status," (",txt.parenthesis,")\n",sep="")
             cat(" - Time variable     : ",eventVar.time,"\n",sep="")
         }
         cat("\n")
@@ -482,7 +483,7 @@ ate <- function(event,
 
             ## extractor for the bootstrap
             estimator.boot <- gsub("meanRisk\\.","",grep("meanRisk",names(pointEstimate$meanRisk),value = TRUE))
-            otherCols.meanRisk <- names(pointEstimate$meanRisk)[grepl("meanRisk",names(pointEstimate$meanRisk))==FALSE]
+            otherCols.meanRisk <- names(pointEstimate$meanRisk)[grepl("meanRiskr",names(pointEstimate$meanRisk))==FALSE]
             otherCols.riskComparison <- names(pointEstimate$riskComparison)[grepl("diff|ratio",names(pointEstimate$riskComparison))==FALSE]
             
             vec.pointEstimate <- do.call("c",lapply(1:length(estimator.boot), function(iE){
@@ -728,8 +729,9 @@ ate_initArgs <- function(object.event,
     if(test.CSC){
         test.censor <- object.event$response[,"status"] == 0        
         n.censor <- sapply(times, function(t){sum(test.censor * (object.event$response[,"time"] <= t))})
-        
+
         level.censoring <- attr(object.event$response,"cens.code")
+        level.states <- attr(object.event$response,"states")
 
         info.censor <- try(SurvResponseVar(coxFormula(object.censor)), silent = TRUE)
         if(inherits(info.censor,"try-error")){
@@ -745,6 +747,7 @@ ate_initArgs <- function(object.event,
         n.censor <- sapply(times, function(t){sum(test.censor * (censoringMF$stop <= t))})
 
         level.censoring <- try(unique(data[[eventVar.status]][test.censor]), silent = TRUE)
+        level.states <- try(unique(data[[eventVar.status]][!test.censor]), silent = TRUE)
 
         info.censor <- try(SurvResponseVar(coxFormula(object.censor)), silent = TRUE)
         if(inherits(info.censor,"try-error")){
@@ -770,11 +773,13 @@ ate_initArgs <- function(object.event,
             }
 
             level.censoring <- try(unique(data[[censorVar.status]][test.censor]), silent = TRUE)
+            level.states <- try(unique(data[[censorVar.status]][!test.censor]), silent = TRUE)
 
         }else{ ## or just logistic regression 
             n.censor <- 0
 
             level.censoring <- NA
+            level.states <- NA
             censorVar.status <- NA
             censorVar.time <- NA
         }
@@ -936,6 +941,7 @@ ate_initArgs <- function(object.event,
                 treatment = treatment,
                 cause = cause,
                 level.censoring = level.censoring,
+                level.states = level.states,
                 eventVar.time = eventVar.time,
                 eventVar.status = eventVar.status,
                 censorVar.time = censorVar.time,
@@ -970,6 +976,7 @@ ate_checkArgs <- function(object.event,
                           TD,
                           n.censor,
                           level.censoring,
+                          level.states,
                           estimator,
                           eventVar.time,
                           eventVar.status,
@@ -1016,6 +1023,12 @@ ate_checkArgs <- function(object.event,
         if (all(match(candidateMethods,options$method.predictRisk,nomatch=0)==0)){
             stop(paste("Could not find predictRisk S3-method for ",class(object.event),collapse=" ,"),sep="")
         }
+        if(inherits(object.event,"CauseSpecificCox") && (cause %in% object.event$causes == FALSE)){
+            stop("Argument \'cause\' does not match one of the available causes: ",paste(object.event$causes,collapse=" "),"\n")
+        }
+        if(length(level.censoring)>1 && (level.censoring == cause)){
+            stop("The cause of interest must differ from the level indicating censoring (in the outcome model) \n")
+        } 
         ## if(inherits(object.event,"CauseSpecificCox") && (object.event$surv.type=="hazard")){
         ##     if(attr(estimator,"integral") & (B==0) & (iid|se|band)){
         ##         stop("Can only compute iid/standard error/confidence bands for AIPTW,AIPCW estimators with CauseSpecificCox models for which surv.type=\"survival\" \n",
@@ -1041,23 +1054,21 @@ ate_checkArgs <- function(object.event,
         ## require censoring model
         if(!inherits(object.censor,"coxph") && !inherits(object.censor,"cph") && !inherits(object.censor,"phreg")){
             stop("Argument \'censor\' must be a Cox model \n")
-        }        
-        if(!identical(censorVar.status,eventVar.status)){
-            if(sum(diag(table(data[[censorVar.status]],data[[eventVar.status]])))!=NROW(data)){
-                stop("The status variables in object.event and object.censor are inconsistent \n")
-            }
         }
-        causeANDcensor <- intersect(which(data[[censorVar.status]]==level.censoring),
-                                    which(data[[eventVar.status]]==cause))
-        if(length(causeANDcensor)>0){
-            stop("The status variables in object.event and object.censor are inconsistent \n",
-                 "Some observations are both censored and have the event of interest \n")        
-        }
-        
         if(!identical(censorVar.time,eventVar.time)){
             stop("The time variable should be the same in object.event and object.censor \n")
         }
-
+        level.censoring2 <- unique(data[[censorVar.status]][coxModelFrame(object.censor)$status == 0])
+        if(any(level.censoring2 == level.censoring)){
+                stop("The level indicating censoring should differ between the outcome model and the censoring model \n",
+                     "maybe you have forgotten to set the event type == 0 in the censoring model \n")
+        }
+        
+        if(!identical(censorVar.status,eventVar.status)){
+            if(sum(diag(table(data[[censorVar.status]] == level.censoring, data[[eventVar.status]] %in% level.states == FALSE)))!=NROW(data)){
+                stop("The status variables in object.event and object.censor are inconsistent \n")
+            }
+        }
     }
 
     ## ** bootstrap
