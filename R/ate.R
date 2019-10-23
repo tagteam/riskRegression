@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Oct 23 2016 (08:53) 
 ## Version: 
-## last-updated: okt 17 2019 (10:40) 
+## last-updated: okt 23 2019 (16:35) 
 ##           By: Brice Ozenne
-##     Update #: 1592
+##     Update #: 1597
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -16,9 +16,9 @@
 ### Code:
 
 ## * ate (documentation)
-#' @title Compute the Average Treatment Effects Via the G-formula
-#' @description Use the g-formula to estimate the average treatment
-#'     effect based on Cox regression with or without competing risks.
+#' @title Compute the Average Treatment Effects Via 
+#' @description Use the g-formula/IPTW/double robust estimator to estimate the average treatment
+#'     effect based on Cox regression with or without competing ryisks.
 #' @name ate
 #' 
 #' @param event Outcome model which describes how event risk depends
@@ -412,9 +412,9 @@ ate <- function(event,
         }
 
         if(attr(estimator,"IPCW")){
-            if(identical(is.iidCox(object.censor$iid),FALSE)){
+            if(identical(is.iidCox(object.censor),FALSE)){
                 if(verbose>1/2){cat(" censoring")}
-                object.censor$iid <- iidCox(object.censor, tau.max = max(times))
+                object.censor <- iidCox(object.censor, tau.max = max(times))
             }
         }
         if(verbose>1/2){cat(" done \n")}
@@ -600,6 +600,8 @@ ate <- function(event,
     out <- list(meanRisk = pointEstimate$meanRisk,
                 riskComparison = pointEstimate$riskComparison,
                 iid = outIID,
+                event = eventVar.status,
+                cause = cause,
                 treatment = treatment,
                 contrasts = contrasts,
                 times = times,

@@ -2,7 +2,7 @@
 % Please edit documentation in R/ate.R
 \name{ate}
 \alias{ate}
-\title{Compute the Average Treatment Effects Via the G-formula}
+\title{Compute the Average Treatment Effects Via}
 \usage{
 ate(event, treatment, censor = NULL, data, formula, estimator = NULL,
   strata = NULL, contrasts = NULL, times, cause = NA, landmark,
@@ -81,8 +81,8 @@ The packages necessary to run the computations (e.g. riskRegression) must alread
 \item{...}{passed to predictRisk}
 }
 \description{
-Use the g-formula to estimate the average treatment
-    effect based on Cox regression with or without competing risks.
+Use the g-formula/IPTW/double robust estimator to estimate the average treatment
+    effect based on Cox regression with or without competing ryisks.
 }
 \examples{
 library(survival)
