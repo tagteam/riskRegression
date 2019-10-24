@@ -1026,8 +1026,44 @@ test_that("[ate] landmark analyses", {
     expect_equal(dt.resVet[type=="ratioAte",value], GS, tol = 1e-6)
 
 })
-## * [ate] Miscellaneous
+## * Bootstrap
+n <- 250
 
+set.seed(10)
+dtS <- sampleData(n,outcome="survival")
+tau <- median(dtS$time)
+dtS$X1f <- dtS$X1
+dtS$X1 <- as.numeric(as.character(dtS$X1))
+
+test_that("[ate] check that bootstrap returns a result", {
+    e.S <- coxph(Surv(time, event) ~ X1f + strata(X2) + X3*X6, data = dtS, x = TRUE , y = TRUE)
+    e.T <- glm(X1f ~ X2, data = dtS, family = binomial(link = "logit"))
+    e.C <- coxph(Surv(time, event == 0) ~ X1f + X2, data = dtS, x = TRUE, y = TRUE)
+
+    e.ate1 <- ate(data = dtS, times = tau,
+                  event = e.S,
+                  treatment = e.T,
+                  censor = e.C,
+                  verbose = verbose,
+                  se = TRUE, iid = FALSE, product.limit = FALSE,
+                  B = 5, cpus = 1
+                  )
+    xx <- capture.output(print(e.ate1))
+
+    e.ate2 <- ate(data = dtS, times = tau,
+                  event = Surv(time, event) ~ X1f + strat(X2) + X3*X6,
+                  treatment = X1f ~ X2,
+                  censor = Surv(time, event == 0) ~ X1f + X2,
+                  estimator = c("Gformula","IPTW","AIPTW"),
+                  verbose = verbose,
+                  se = TRUE, iid = FALSE, product.limit = FALSE,
+                  B = 5, cpus = 1
+                  )
+    yy <- capture.output(print(e.ate2))
+
+})
+
+## * [ate] Miscellaneous
 ## ** Pre-computation of iidCox does not affect the results
 test_that("[ate] Cox model/G-formula - precompute iid", {
     set.seed(10)
@@ -1047,45 +1083,6 @@ test_that("[ate] Cox model/G-formula - precompute iid", {
 
     expect_equal(as.data.table(test), as.data.table(GS))
 })
-## ** Bootstrap
-if(FALSE){
-n <- 250
-
-set.seed(10)
-dtS <- sampleData(n,outcome="survival")
-tau <- median(dtS$time)
-dtS$X1f <- dtS$X1
-dtS$X1 <- as.numeric(as.character(dtS$X1))
-
-test_that("[ate] check that bootstrap returns a result", {
-    e.S <- coxph(Surv(time, event) ~ X1f + strata(X2) + X3*X6, data = dtS, x = TRUE , y = TRUE)
-    e.T <- glm(X1f ~ X2, data = dtS, family = binomial(link = "logit"))
-    e.C <- coxph(Surv(time, event == 0) ~ X1f + X2, data = dtS, x = TRUE, y = TRUE)
-
-    e.GS <- ate(data = dtS, times = tau,
-                event = e.S,
-                treatment = e.T,
-                censor = e.C,
-                estimator = c("Gformula","IPTW","AIPTW"),
-                verbose = verbose,
-                se = TRUE, iid = FALSE, product.limit = FALSE,
-                )
-    
-    e.ate1 <- ate(data = dtS, times = tau,
-                  event = e.S,
-                  treatment = e.T,
-                  censor = e.C,
-                  estimator = c("Gformula","IPTW","AIPTW"),
-                  verbose = verbose,
-                  se = TRUE, iid = FALSE, product.limit = FALSE,
-                  B = 1000, cpus = 1
-                  )
-
-    rbind(e.GS$meanRisk,e.ate1$meanRisk[,.SD,.SDcols = names(e.GS$meanRisk)])
-    rbind(e.GS$riskComparison,e.ate1$riskComparison[,.SD,.SDcols = names(e.GS$riskComparison)])
-    dt.ate1 <- as.data.table(e.ate1)
-})
-}
 ## ** Ate using list of formulae
 test_that("[ate] using list of formulae",{
     set.seed(10)

@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun  6 2016 (06:48) 
 ## Version: 
-## last-updated: okt 23 2019 (16:25) 
+## last-updated: okt 24 2019 (10:04) 
 ##           By: Brice Ozenne
-##     Update #: 334
+##     Update #: 342
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -69,7 +69,7 @@ print.ate <- function(x, digits = 3, type = c("meanRisk","diffRisk","ratioRisk")
                                     "wald" = "Wald",
                                     "quantile" = "Percentile")
             cat(bootci.method," bootstrap based on ",x$B," bootstrap samples\n",
-                "that were drawn with replacement from the original data.",sep="")
+                "                                    that were drawn with replacement from the original data.\n",sep="")
         }else {
             cat("using iid decomposition of the statistic (asymptotic normality, robust standard error) \n")
             if(x$meanRisk.transform!="none" && "meanRisk" %in% type){
@@ -154,7 +154,7 @@ print.ate <- function(x, digits = 3, type = c("meanRisk","diffRisk","ratioRisk")
             }else{  
                 cat("                      between two strata,\n")
             }
-            cat("                      reported on the scale [-1,1] (difference of two probabilities)\n\n")
+            cat("                      reported on the scale [-1,1] (difference between two probabilities)\n\n")
 
             ## only pick diff
             keep.cols <- c(names(x$riskComparison)[!grepl("diff|ratio",names(x$riskComparison))],
@@ -167,7 +167,7 @@ print.ate <- function(x, digits = 3, type = c("meanRisk","diffRisk","ratioRisk")
 
             ## simplify names (needs to be done in two steps)
             names(dt.tempo) <- gsub("diff\\.","",gsub(paste0("\\.",estimator),"",names(dt.tempo)))
-            names(dt.tempo)[names(dt.tempo)=="diff"] <- "risk difference"
+            names(dt.tempo)[names(dt.tempo)=="diff"] <- "Risk difference"
 
             ## merge into CI and CB
             if(!is.null(x$conf.level)){
@@ -209,7 +209,7 @@ print.ate <- function(x, digits = 3, type = c("meanRisk","diffRisk","ratioRisk")
             cat("Ratio of risks: (B/A) between time zero and 'time',\n")
             if(!is.null(x$treatment)){
                 cat("                comparing an hypothetical world in which all subjects are treated with one treatment option (A),\n",
-                    "                       to an hypothetical world in which all subjects are treated with the other treatment options (B),\n")
+                    "                      to an hypothetical world in which all subjects are treated with the other treatment options (B),\n")
             }else{
                 cat("                between two strata,\n")
             }
@@ -226,7 +226,7 @@ print.ate <- function(x, digits = 3, type = c("meanRisk","diffRisk","ratioRisk")
             
             ## simplify names (needs to be done in two steps)
             names(dt.tempo) <- gsub("ratio\\.","",gsub(paste0("\\.",estimator),"",names(dt.tempo)))
-            names(dt.tempo)[names(dt.tempo)=="ratio"] <- "risk ratio"
+            names(dt.tempo)[names(dt.tempo)=="ratio"] <- "Risk ratio"
 
             ## merge into CI and CB
             if(!is.null(x$conf.level)){

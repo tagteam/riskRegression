@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: jun 27 2019 (10:43) 
 ## Version: 
-## Last-Updated: okt 14 2019 (11:16) 
+## Last-Updated: okt 24 2019 (09:33) 
 ##           By: Brice Ozenne
-##     Update #: 630
+##     Update #: 631
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -18,7 +18,7 @@
                                         # {{{ Gformula: time dependent covariates
 ## * ATE_TD
 ATE_TD <- function(object.event,
-                   data,
+                   mydata,
                    formula,
                    treatment,
                    contrasts,
@@ -32,7 +32,7 @@ ATE_TD <- function(object.event,
     Treatment <- NULL ## [:forCRANcheck:]
     n.contrasts <- length(contrasts)
 
-    response <- eval(formula[[2]],envir=data)
+    response <- eval(formula[[2]],envir=mydata)
     time <- response[,"time"]
     entry <- response[,"entry"]
     if(class(object.event)[[1]]=="coxph"){
@@ -42,7 +42,7 @@ ATE_TD <- function(object.event,
     }
     ## prediction for the hypothetical worlds in which every subject is treated with the same treatment
     dt.meanRisk <- data.table::rbindlist(lapply(1:n.contrasts,function(i){
-        data.i <- data
+        data.i <- mydata
         data.i[[treatment]] <- factor(contrasts[i], levels = levels)
         data.table::rbindlist(lapply(landmark,function(lm){
             atrisk <- (entry <= lm & time >= lm)
@@ -87,7 +87,7 @@ ATE_TD <- function(object.event,
 ATE_TI <- function(object.event,
                    object.treatment,
                    object.censor,
-                   data,
+                   mydata,
                    treatment,
                    strata,
                    contrasts,
@@ -110,7 +110,7 @@ ATE_TI <- function(object.event,
                    ...){
 
     tol <- 1e-12 ## difference in jump time must be above tol
-    n.obs <- NROW(data)
+    n.obs <- NROW(mydata)
     n.contrasts <- length(contrasts)
     n.times <- length(times)
 
@@ -149,30 +149,30 @@ ATE_TI <- function(object.event,
     if(attr(estimator,"IPTW")){
         ## *** indicator for the outcome of interest stopped at time tau
         if(inherits(object.event,"glm")){
-            time.before.tau <- cbind(data[[eventVar.status]])
+            time.before.tau <- cbind(mydata[[eventVar.status]])
         }else{
-            time.before.tau <- sapply(times, function(tau){data[[eventVar.time]] <= tau})
+            time.before.tau <- sapply(times, function(tau){mydata[[eventVar.time]] <= tau})
         }
         
         Y.tau <- colMultiply_cpp(time.before.tau,
-                                 scale = (data[[eventVar.status]] == cause)
+                                 scale = (mydata[[eventVar.status]] == cause)
                                  )
 
         ## *** treatment indicator
-        M.treatment <- do.call(cbind,lapply(contrasts, "==", data[[treatment]]))
+        M.treatment <- do.call(cbind,lapply(contrasts, "==", mydata[[treatment]]))
     }
 
     if(attr(estimator,"IPCW")){
         ## *** indicator for no censoring stopped at time tau
         C.tau <- colMultiply_cpp(time.before.tau,
-                                 scale = (data[[eventVar.status]] != level.censoring)
+                                 scale = (mydata[[eventVar.status]] != level.censoring)
                                  )
 
         ## *** jump time for the censoring process
-        time.jumpC <- sort(data[[eventVar.time]][(data[[eventVar.status]] == level.censoring)])
+        time.jumpC <- sort(mydata[[eventVar.time]][(mydata[[eventVar.status]] == level.censoring)])
 
         index.obsSINDEXjumpC <- do.call(cbind,lapply(times, function(tau){
-            prodlim::sindex(jump.times = time.jumpC, eval.times = pmin(data[[eventVar.time]],tau))
+            prodlim::sindex(jump.times = time.jumpC, eval.times = pmin(mydata[[eventVar.time]],tau))
         }))
         index.lastjumpC <- max(index.obsSINDEXjumpC)
         time.jumpC <- time.jumpC[1:index.lastjumpC]
@@ -180,7 +180,7 @@ ATE_TI <- function(object.event,
     }
     if(attr(estimator,"integral")){
         ## *** jump time of the censoring mecanism before event time
-        beforeEvent.jumpC <- do.call(cbind,lapply(time.jumpC, function(iJump){iJump <= data[[eventVar.time]]}))
+        beforeEvent.jumpC <- do.call(cbind,lapply(time.jumpC, function(iJump){iJump <= mydata[[eventVar.time]]}))
         beforeTau.nJumpC <- sapply(times, function(iTau){sum(time.jumpC <= iTau)})
         beforeTau.nJumpC.n0 <- beforeTau.nJumpC[beforeTau.nJumpC!=0]
     }
@@ -188,7 +188,7 @@ ATE_TI <- function(object.event,
     ## ** compute predictions
     ## *** treatment model
     if(attr(estimator,"IPTW")){
-        iPred <- lapply(contrasts, function(iC){predictRisk(object = object.treatment, newdata = data, levels = iC, iid = (method.iid==2)*return.iid.nuisance)})
+        iPred <- lapply(contrasts, function(iC){predictRisk(object = object.treatment, newdata = mydata, levels = iC, iid = (method.iid==2)*return.iid.nuisance)})
         pi <- do.call(cbind,iPred)
         if(return.iid.nuisance && (method.iid==2)){
             attr(out,"iid.nuisance.treatment") <- lapply(iPred,attr,"iid")
@@ -203,9 +203,9 @@ ATE_TI <- function(object.event,
 
         ## at all times of jump of the censoring process
         if(product.limit){
-            G.jump <- predictCoxPL(object.censor, newdata = data, times = time.jumpC, iid = (method.iid==2)*return.iid.nuisance)
+            G.jump <- predictCoxPL(object.censor, newdata = mydata, times = time.jumpC, iid = (method.iid==2)*return.iid.nuisance)
         }else{
-            G.jump <- predictCox(object.censor, newdata = data, times = time.jumpC, iid = (method.iid==2)*return.iid.nuisance)
+            G.jump <- predictCox(object.censor, newdata = mydata, times = time.jumpC, iid = (method.iid==2)*return.iid.nuisance)
         }
         if(return.iid.nuisance && (method.iid==2)){
             attr(out,"iid.nuisance.censoring") <- G.jump$survival.iid
@@ -242,12 +242,12 @@ ATE_TI <- function(object.event,
             if(!is.null(treatment)){
                 ## hypothetical world: in which every subject is treated with the same treatment
                 ls.index.strata[[iC]] <- 1:n.obs
-                data.i <- data.table::copy(data)
+                data.i <- data.table::copy(mydata)
                 data.i[[treatment]] <- factor(contrasts[iC], levels = levels)
             }else{
                 ## hypothetical world: only patients with the same strata variable exist
-                ls.index.strata[[iC]] <- which(data[[strata]]==contrasts[iC])
-                data.i <- data[ls.index.strata[[iC]]]
+                ls.index.strata[[iC]] <- which(mydata[[strata]]==contrasts[iC])
+                data.i <- mydata[ls.index.strata[[iC]]]
                 n.obs.contrasts[iC] <- length(ls.index.strata[[iC]])
             }
             
@@ -287,7 +287,7 @@ ATE_TI <- function(object.event,
     ## ** Compute augmentation term    
     if(attr(estimator,"integral")){
         ## absolute risk at event times
-        predTempo <- predictRisk(object.event, newdata = data, times = c(times, time.jumpC), cause = cause, product.limit = product.limit,
+        predTempo <- predictRisk(object.event, newdata = mydata, times = c(times, time.jumpC), cause = cause, product.limit = product.limit,
                                  iid = (method.iid==2)*return.iid.nuisance)
         F1.tau <- predTempo[,1:n.times,drop=FALSE]
         F1.jump <- predTempo[,n.times + (1:index.lastjumpC),drop=FALSE]
@@ -297,13 +297,13 @@ ATE_TI <- function(object.event,
         
         ## survival
         if(inherits(object.event,"CauseSpecificCox")){ ## competing risk case
-            S.jump <- predict(object.event, type = "survival", newdata = data, times = time.jumpC-tol, product.limit = product.limit,
+            S.jump <- predict(object.event, type = "survival", newdata = mydata, times = time.jumpC-tol, product.limit = product.limit,
                               iid = (method.iid==2)*return.iid.nuisance)
         }else if(product.limit){ ## survival case
-            S.jump <- predictCoxPL(object.event, type = "survival", newdata = data, times = time.jumpC-tol,
+            S.jump <- predictCoxPL(object.event, type = "survival", newdata = mydata, times = time.jumpC-tol,
                                    iid = (method.iid==2)*return.iid.nuisance)
         }else{
-            S.jump <- predictCox(object.event, type = "survival", newdata = data, times = time.jumpC-tol,
+            S.jump <- predictCox(object.event, type = "survival", newdata = mydata, times = time.jumpC-tol,
                                  iid = (method.iid==2)*return.iid.nuisance)
         }
         if((method.iid==2)*return.iid.nuisance){
@@ -311,8 +311,8 @@ ATE_TI <- function(object.event,
         }
 
         ## martingale for the censoring process
-        dN.jump <- do.call(rbind,lapply(1:n.obs, function(iObs){(data[[eventVar.time]][iObs] == time.jumpC)*(data[[eventVar.status]][iObs] == level.censoring)}))
-        dLambda.jump <- predictCox(object.censor, newdata = data, times = time.jumpC, type = "hazard", iid = (method.iid==2)*return.iid.nuisance)
+        dN.jump <- do.call(rbind,lapply(1:n.obs, function(iObs){(mydata[[eventVar.time]][iObs] == time.jumpC)*(mydata[[eventVar.status]][iObs] == level.censoring)}))
+        dLambda.jump <- predictCox(object.censor, newdata = mydata, times = time.jumpC, type = "hazard", iid = (method.iid==2)*return.iid.nuisance)
         if((method.iid==2)*return.iid.nuisance){
             attr(out,"iid.nuisance.martingale") <- dLambda.jump$hazard.iid
         }
