@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Oct 23 2016 (08:53) 
 ## Version: 
-## last-updated: okt 24 2019 (10:05) 
+## last-updated: okt 28 2019 (11:39) 
 ##           By: Brice Ozenne
-##     Update #: 1604
+##     Update #: 1617
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -277,7 +277,7 @@ ate <- function(event,
 
     ## ** initialize arguments
     data.table::setDT(data)
-    
+
     init <- ate_initArgs(object.event = event,
                          object.treatment = treatment,
                          object.censor = censor,
@@ -655,9 +655,7 @@ ate_initArgs <- function(object.event,
     ## handler
     handler <- match.arg(handler, c("foreach","mclapply","snow","multicore"))
 
-
-    
-    ## ** fit regression model when user specifies formula and extract formula        
+    ## ** fit regression model when user specifies formula and extract formula
     if(inherits(object.event,"formula")){ ## formula
         myformula.event <- object.event
         if(any(grepl("Hist(",object.event, fixed = TRUE))){
@@ -667,7 +665,7 @@ ate_initArgs <- function(object.event,
         }else{
             object.event <- do.call(stats::glm, args = list(formula = myformula.event, data = mydata, family = stats::binomial(link = "logit")))
         }
-    }else if(all(sapply(object.event, function(iE){inherits(iE,"formula")})) && all(sapply(object.event, function(iE){grepl("Hist",deparse(iE))}))){ ## list of formula
+    }else if(all(sapply(object.event, function(iE){inherits(iE,"formula")})) && all(sapply(object.event, function(iE){grepl("Hist(",deparse(iE, width.cutoff = 500), fixed = TRUE)[1]}))){ ## list of formula
         myformula.event <- object.event
         object.event <- do.call(CSC, args = list(formula = myformula.event, data = mydata))
     }else if(inherits(object.event,"glm") || inherits(object.event,"CauseSpecificCox")){ ## glm / CSC
