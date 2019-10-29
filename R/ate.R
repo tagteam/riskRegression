@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Oct 23 2016 (08:53) 
 ## Version: 
-## last-updated: Oct 29 2019 (06:59) 
+## last-updated: Oct 29 2019 (07:28) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 1618
+##     Update #: 1620
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -668,7 +668,7 @@ ate_initArgs <- function(object.event,
         if(all(sapply(object.event, function(iE){inherits(iE,"formula")}))){
             ## list of formula
             myformula.event <- object.event
-            object.event <- CSC(myformula.event, data = data)
+            object.event <- CSC(myformula.event, data = mydata)
         }else{ if(inherits(object.event,"glm") || inherits(object.event,"CauseSpecificCox")){ ## glm / CSC
                    myformula.event <- stats::formula(object.event)
                }else{ if(inherits(object.event,"coxph") || inherits(object.event,"cph") ||inherits(object.event,"phreg")){ ## Cox
