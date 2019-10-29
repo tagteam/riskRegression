@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: apr  5 2018 (17:01) 
 ## Version: 
-## Last-Updated: okt 11 2019 (16:11) 
+## Last-Updated: okt 24 2019 (09:32) 
 ##           By: Brice Ozenne
-##     Update #: 921
+##     Update #: 929
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -20,7 +20,7 @@ iidATE <- function(estimator,
                    object.event,
                    object.treatment,
                    object.censor,
-                   data,
+                   mydata,
                    contrasts,
                    times,
                    cause,
@@ -81,12 +81,12 @@ iidATE <- function(estimator,
         })
 
         for(iTau in 1:n.times){ ## iTau <- 1
-            index.col <- prodlim::sindex(jump.times = c(0,time.jumpC), eval.times = pmin(data[[eventVar.time]],times[iTau]))
+            index.col <- prodlim::sindex(jump.times = c(0,time.jumpC), eval.times = pmin(mydata[[eventVar.time]],times[iTau]))
             for(iC in 1:n.contrasts){
                 attr(factor,"factor")[[iC]][,iTau] <- cbind(iW.IPTW[,iC] * int.IFF1_tau[(1:n.obs) + (index.col-1) * n.obs])
             }
         }
-        term.intF1_tau <- attr(predictRisk(object.event, newdata = data, times = times, cause = cause,
+        term.intF1_tau <- attr(predictRisk(object.event, newdata = mydata, times = times, cause = cause,
                                            average.iid = factor, product.limit = product.limit),"average.iid")
 
         for(iC in 1:n.contrasts){ ## iC <- 1
@@ -99,12 +99,13 @@ iidATE <- function(estimator,
             -colMultiply_cpp(dM_SG*beforeEvent.jumpC, scale = iW.IPTW[,iC])
         })
         
-        integrand.F1t <- attr(predictRisk(object.event, newdata = data, times = time.jumpC, cause = cause,
+        integrand.F1t <- attr(predictRisk(object.event, newdata = mydata, times = time.jumpC, cause = cause,
                                           average.iid = factor, product.limit = product.limit), "average.iid")
 
-        
         for(iC in 1:n.contrasts){ ## iC <- 1
-            iid.AIPTW[[iC]] <- iid.AIPTW[[iC]] + rowCumSum(integrand.F1t[[iC]])[,beforeTau.nJumpC]
+            iid.AIPTW[[iC]] <- iid.AIPTW[[iC]] + subsetIndex(rowCumSum(integrand.F1t[[iC]]),
+                                                             index = beforeTau.nJumpC,
+                                                             default = 0, col = TRUE)
         }
     }
     ## cat("Outcome (method=1) \n")
@@ -137,7 +138,7 @@ iidATE <- function(estimator,
             }
 
             term.treatment <- attr(predictRisk(object.treatment,
-                                               newdata = data,
+                                               newdata = mydata,
                                                average.iid = factor,
                                                level = contrasts[iC]), "average.iid")
 
@@ -161,13 +162,15 @@ iidATE <- function(estimator,
             return(-colMultiply_cpp(ls.F1tau_F1t_dM_SSG[[iTau]]*beforeEvent.jumpC, scale = iW.IPTW[,iC]))
         })
 
-        integrand.St <- attr(predictRisk(object.event, type = "survival", newdata = data, times = time.jumpC-tol, cause = cause,
+        integrand.St <- attr(predictRisk(object.event, type = "survival", newdata = mydata, times = time.jumpC-tol, cause = cause,
                                          average.iid = factor, product.limit = product.limit), "average.iid")
         
         for(iGrid in 1:n.grid){ ## iGrid <- 1
             iTau <- grid[iGrid,"tau"]
             iC <- grid[iGrid,"contrast"]
-            iid.AIPTW[[iC]][,iTau] <- iid.AIPTW[[iC]][,iTau] + rowSums(integrand.St[[iGrid]][,1:beforeTau.nJumpC[iTau]])
+            if(beforeTau.nJumpC[iTau]>0){
+                iid.AIPTW[[iC]][,iTau] <- iid.AIPTW[[iC]][,iTau] + rowSums(integrand.St[[iGrid]][,1:beforeTau.nJumpC[iTau],drop=FALSE])
+            }
         }
     }
     ## cat("Survival (method=1) \n")
@@ -185,8 +188,8 @@ iidATE <- function(estimator,
         })
         
         term.censoring <- predictCox(object.censor,
-                                     newdata = data,
-                                     times = data[[eventVar.time]] - tol, ## same as pmin(times[iTau], data[[eventVar.time]] - tol) because indicator in the weights
+                                     newdata = mydata,
+                                     times = mydata[[eventVar.time]] - tol, ## same as pmin(times[iTau], mydata[[eventVar.time]] - tol) because indicator in the weights
                                      diag = TRUE,
                                      average.iid = factor)$survival.average.iid
 
@@ -213,7 +216,7 @@ iidATE <- function(estimator,
                 return(-colMultiply_cpp(ls.F1tau_F1t_dM_SGG[[iTau]]*beforeEvent.jumpC, scale = iW.IPTW[,iC]))
             })
 
-            integrand.G1 <- predictCox(object.censor, newdata = data, times = time.jumpC - tol, 
+            integrand.G1 <- predictCox(object.censor, newdata = mydata, times = time.jumpC - tol, 
                                        average.iid = factor)$survival.average.iid
 
             ## integral censoring martingale
@@ -223,14 +226,15 @@ iidATE <- function(estimator,
                 iC <- grid[iGrid,"contrast"]
                 return(-colMultiply_cpp(ls.F1tau_F1t_SG[[iTau]]*beforeEvent.jumpC, scale = iW.IPTW[,iC]))
             })
-            integrand.G2 <- predictCox(object.censor, newdata = data, times = time.jumpC, type = "hazard",
+            integrand.G2 <- predictCox(object.censor, newdata = mydata, times = time.jumpC, type = "hazard",
                                        average.iid = factor)$hazard.average.iid
 
             for(iGrid in 1:n.grid){ ## iGrid <- 1
                 iTau <- grid[iGrid,"tau"]
                 iC <- grid[iGrid,"contrast"]
-
-                iid.AIPTW[[iC]][,iTau] <- iid.AIPTW[[iC]][,iTau] + rowSums(integrand.G1[[iGrid]][,1:beforeTau.nJumpC[iTau]] + integrand.G2[[iGrid]][,1:beforeTau.nJumpC[iTau]])
+                if(beforeTau.nJumpC[iTau]>0){
+                    iid.AIPTW[[iC]][,iTau] <- iid.AIPTW[[iC]][,iTau] + rowSums(integrand.G1[[iGrid]][,1:beforeTau.nJumpC[iTau],drop=FALSE] + integrand.G2[[iGrid]][,1:beforeTau.nJumpC[iTau],drop=FALSE])
+                }
             }
         }
     }

@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: apr 11 2018 (17:05) 
 ## Version: 
-## Last-Updated: Oct 11 2019 (16:46) 
+## Last-Updated: Oct 29 2019 (06:59) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 237
+##     Update #: 268
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -27,29 +27,46 @@ calcBootATE <- function(args, name.estimate, estimator.boot, n.obs, fct.pointEst
     ls.data <- list(object.event = NULL,
                     object.treatment = NULL,
                     object.censor = NULL)
+    ls.package <- list(object.event = NULL,
+                       object.treatment = NULL,
+                       object.censor = NULL)
     for(iModel in c("object.event","object.treatment","object.censor")){ ## iModel <- "object.event"
-        
-        data.tempo <- eval(args[[iModel]]$call$data)
-        if(inherits(data.tempo,"function")){
-            stop("Argument \'data\' in the object has the same name has an existing R function \n",
-                 "This creates confusion - please rename the dataset \n")
+
+        if(inherits(args[[iModel]]$call$data,"name")){
+            data.tempo <- eval(args[[iModel]]$call$data)
+            if(inherits(data.tempo,"function")){
+                stop("The dataset in argument \'",iModel,"\' has the same name has an existing R function \n",
+                     "This creates confusion - please rename the dataset \n")
+            }else{
+                ls.data[[iModel]] <- data.table::as.data.table(data.tempo)
+            }
         }else{
-            ls.data[[iModel]] <- data.table::as.data.table(data.tempo)
+            ls.data[[iModel]] <- args[[iModel]]$call$data
+        }
+        
+        if(inherits(args[[iModel]]$call$formula,"name")){
+            formula.tempo <- eval(args[[iModel]]$call$formula)
+            if(inherits(formula.tempo,"function")){
+                stop("The formula in argument \'",iModel,"\' has the same name has an existing R function \n",
+                     "This creates confusion - please rename the formula \n")
+            }else{
+                args[[iModel]]$call$formula <- formula.tempo
+            }
+        }
+
+        ## package to be exported to cluster
+        if(inherits(args[[iModel]]$call[[1]],"name")){
+            iSource <- utils::find(deparse(args[[iModel]]$call[[1]]))
+            iFound <- grepl("package:",iSource)
+            if(any(iFound)){
+                ls.package[[iModel]] <- gsub("package:","",iSource[iFound])
+            }else{
+                NULL
+            }
+        }else{
+            ls.package[[iModel]] <- utils::packageName(environment(args[[iModel]]$call[[1]]))
         }
     }
-
-    ## package to be exported to cluster
-    vec.fitter <- unique(c(as.character(args$object.event$call[[1]]),
-                           as.character(args$object.treatment$call[[1]]),
-                           as.character(args$object.censor$call[[1]])))
-    ls.package <- lapply(vec.fitter,function(iFitter){ ## iFitter <- "CSC"
-        iSource <- utils::find(iFitter)
-        if(any(ifound <- grepl("package:",iSource))){
-            gsub("package:","",iSource[ifound])
-        }else{
-            NULL
-        }
-    })
 
     ## packages and functions to be exported to the cluster
     add.Package <- unique(c("riskRegression","prodlim","data.table","parallel","survival",unlist(ls.package)))
@@ -123,7 +140,7 @@ calcBootATE <- function(args, name.estimate, estimator.boot, n.obs, fct.pointEst
             set.seed(bootseeds)
         }
         ## run bootstrap
-        boot.object <- boot::boot(data = args$data,
+        boot.object <- boot::boot(data = args$mydata,
                                   R = B,
                                   sim = "ordinary",
                                   stpe = "indices",
@@ -155,6 +172,7 @@ calcBootATE <- function(args, name.estimate, estimator.boot, n.obs, fct.pointEst
             ## progress bar 
             if(verbose){pb <- txtProgressBar(max = B, style = 3,width=30)}
             b <- NULL ## [:forCRANcheck:] foreach
+
             boots <- foreach::`%dopar%`(foreach::foreach(b = 1:B, .packages = add.Package, .export = add.Fct), { ## b <- 1
                 if(verbose>0){setTxtProgressBar(pb, b)}
                 set.seed(bootseeds[[b]])
