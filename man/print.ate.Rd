@@ -4,29 +4,18 @@
 \alias{print.ate}
 \title{Print Average Treatment Effects}
 \usage{
-\method{print}{ate}(x, digits = 3, type = c("meanRisk", "diffRisk",
-  "ratioRisk"), estimator = x$estimator[1], ...)
+\method{print}{ate}(x, ...)
 }
 \arguments{
 \item{x}{object obtained with function \code{ate}}
 
-\item{digits}{[integer, >0] Number of digits.}
-
-\item{type}{[character vector] what to displayed.
-Can be any combination of \code{"meanRisk"}, \code{"diffRisk"}, and \code{"ratioRisk"}.}
-
-\item{estimator}{[character] The type of estimator relative to which the estimates should be displayed.}
-
-\item{...}{passed to print}
+\item{...}{passed to summary}
 }
 \description{
 Print average treatment effects.
 }
-\details{
-to display confidence intervals/bands and p.value,
-the \code{confint} method needs to be applied on the object.
-}
 \seealso{
+\code{\link{summary.ate}} to obtained a more detailed output
 \code{\link{confint.ate}} to compute confidence intervals/bands.
 \code{\link{ate}} to compute the average treatment effects.
 }

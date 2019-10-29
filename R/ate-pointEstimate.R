@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: jun 27 2019 (10:43) 
 ## Version: 
-## Last-Updated: okt 24 2019 (09:33) 
+## Last-Updated: okt 29 2019 (13:13) 
 ##           By: Brice Ozenne
-##     Update #: 631
+##     Update #: 632
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -29,7 +29,6 @@ ATE_TD <- function(object.event,
                    levels,
                    ...){
 
-    Treatment <- NULL ## [:forCRANcheck:]
     n.contrasts <- length(contrasts)
 
     response <- eval(formula[[2]],envir=mydata)
@@ -53,7 +52,7 @@ ATE_TD <- function(object.event,
                                                    cause = cause,
                                                    landmark=lm,
                                                    ...)))
-            data.table::data.table(Treatment=contrasts[[i]],
+            data.table::data.table(treatment=contrasts[[i]],
                                    time=times,
                                    landmark=lm,
                                    meanRisk.Gformula=risk.i)
@@ -62,17 +61,17 @@ ATE_TD <- function(object.event,
     riskComparison <- data.table::rbindlist(lapply(1:(n.contrasts-1),function(i){
         data.table::rbindlist(lapply(((i+1):n.contrasts),function(j){
             ## compute differences between all pairs of treatments
-            iDT <- dt.meanRisk[Treatment==contrasts[[i]]]
-            setnames(iDT,"Treatment","Treatment.A")
+            iDT <- dt.meanRisk[dt.meanRisk$treatment==contrasts[[i]]]
+            setnames(iDT,"treatment","treatment.A")
             baseRisk <- iDT$meanRisk.Gformula
             iDT[,c("meanRisk.Gformula"):=NULL]
 
-            newRisk <- dt.meanRisk[Treatment==contrasts[[j]], .SD$meanRisk.Gformula]
+            newRisk <- dt.meanRisk[treatment==contrasts[[j]], .SD$meanRisk.Gformula]
 
-            iDT[,c("Treatment.B","diff.Gformula","ratio.Gformula") := list(contrasts[[j]],newRisk-baseRisk,newRisk/baseRisk)]
+            iDT[,c("treatment.B","diff.Gformula","ratio.Gformula") := list(contrasts[[j]],newRisk-baseRisk,newRisk/baseRisk)]
             return(iDT[])
         }))}))
-    setcolorder(riskComparison, neworder = c("Treatment.A","Treatment.B", setdiff(names(riskComparison),c("Treatment.A","Treatment.B"))))
+    setcolorder(riskComparison, neworder = c("treatment.A","treatment.B", setdiff(names(riskComparison),c("treatment.A","treatment.B"))))
     out <- list(meanRisk = dt.meanRisk,
                 riskComparison = riskComparison,
                 treatment = treatment,
@@ -402,8 +401,8 @@ ATE_TI <- function(object.event,
 
     ## ** reshape results before exporting
     meanRiskL <- lapply(names(meanRisk), function(iE){ ## iE <- "Gformula"
-        iDT <- melt(data.table(Treatment = rownames(meanRisk[[iE]]),meanRisk[[iE]]),
-                    id.vars = "Treatment",
+        iDT <- melt(data.table(treatment = rownames(meanRisk[[iE]]),meanRisk[[iE]]),
+                    id.vars = "treatment",
                     value.name = paste0("meanRisk.",iE),
                     variable.name = "time")
         if(iE==names(meanRisk)[[1]]){
@@ -423,8 +422,8 @@ ATE_TI <- function(object.event,
     out$riskComparison <- data.table::rbindlist(lapply(1:(n.contrasts-1),function(i){ ## i <- 1
         data.table::rbindlist(lapply(((i+1):n.contrasts),function(j){ ## j <- 2
             ## compute differences between all pairs of treatments
-            iDT <- data.table(Treatment.A=contrasts[i],
-                              Treatment.B=contrasts[j],
+            iDT <- data.table(treatment.A=contrasts[i],
+                              treatment.B=contrasts[j],
                               time=times)
             if(attr(estimator,"export.Gformula")){
                 iDT[, c("diff.Gformula","ratio.Gformula") := list(meanRisk$Gformula[j,]-meanRisk$Gformula[i,],

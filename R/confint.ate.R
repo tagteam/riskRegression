@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: maj 23 2018 (14:08) 
 ## Version: 
-## Last-Updated: okt 11 2019 (14:24) 
+## Last-Updated: okt 29 2019 (13:15) 
 ##           By: Brice Ozenne
-##     Update #: 615
+##     Update #: 616
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -79,7 +79,7 @@
 ##' term1 <- -out$survival.average.iid
 ##' term2 <- sweep(1-out$survival, MARGIN = 2, FUN = "-", STATS = colMeans(1-out$survival))
 ##' sqrt(colSums((term1 + term2/NROW(d))^2)) 
-##' ## fit.ate$meanRisk[Treatment=="T0",meanRisk.se]
+##' ## fit.ate$meanRisk[treatment=="T0",meanRisk.se]
 ##' 
 ##' ## note
 ##' out2 <- predictCox(fit, newdata = dd, se = TRUE, times = 1:3, iid = TRUE)

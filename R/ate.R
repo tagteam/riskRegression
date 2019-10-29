@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Oct 23 2016 (08:53) 
 ## Version: 
-## last-updated: okt 28 2019 (11:39) 
+## last-updated: okt 29 2019 (13:14) 
 ##           By: Brice Ozenne
-##     Update #: 1617
+##     Update #: 1618
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -464,12 +464,12 @@ ate <- function(event,
     ## ** Confidence intervals
     if(se || band || iid){
         if (TD){
-            key1 <- c("Treatment","landmark")
-            key2 <- c("Treatment.A","Treatment.B","landmark")
+            key1 <- c("treatment","landmark")
+            key2 <- c("treatment.A","treatment.B","landmark")
         }
         else{
-            key1 <- c("Treatment","time")
-            key2 <- c("Treatment.A","Treatment.B","time")
+            key1 <- c("treatment","time")
+            key2 <- c("treatment.A","treatment.B","time")
         }
 
         if(B>0){
@@ -588,10 +588,10 @@ ate <- function(event,
     ## ** export
     if(!is.null(strata)){ ## when computing the average risk over strata
         setnames(pointEstimate$meanRisk,
-                 old = "Treatment",
+                 old = "treatment",
                  new = strata)
         setnames(pointEstimate$riskComparison,
-                 old = c("Treatment.A","Treatment.B"),
+                 old = c("treatment.A","treatment.B"),
                  new = paste0(strata,c(".A",".B")))
     }
 

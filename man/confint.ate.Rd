@@ -77,7 +77,7 @@ out <- predictCox(fit, newdata = dd, se = TRUE, times = 1:3, average.iid = TRUE)
 term1 <- -out$survival.average.iid
 term2 <- sweep(1-out$survival, MARGIN = 2, FUN = "-", STATS = colMeans(1-out$survival))
 sqrt(colSums((term1 + term2/NROW(d))^2)) 
-## fit.ate$meanRisk[Treatment=="T0",meanRisk.se]
+## fit.ate$meanRisk[treatment=="T0",meanRisk.se]
 
 ## note
 out2 <- predictCox(fit, newdata = dd, se = TRUE, times = 1:3, iid = TRUE)

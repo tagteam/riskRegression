@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: apr 28 2017 (14:19) 
 ## Version: 
-## last-updated: jul 31 2019 (12:54) 
+## last-updated: okt 29 2019 (17:52) 
 ##           By: Brice Ozenne
-##     Update #: 67
+##     Update #: 74
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -26,6 +26,7 @@
 #' @param plot [logical] Should the graphic be plotted.
 #' @param digits [integer, >0] Number of decimal places.
 #' @param alpha [numeric, 0-1] Transparency of the confidence bands. Argument passed to \code{ggplot2::geom_ribbon}.
+#' @param estimator [character] The type of estimator relative to which the risks should be displayed. 
 #' @param ... not used. Only for compatibility with the plot method.
 #' 
 #' @seealso
@@ -58,8 +59,8 @@
 #' autoplot(ateFit)
 #' 
 #' outGG <- autoplot(ateFit, band = TRUE, ci = TRUE, alpha = 0.1)
-#' dd <- as.data.frame(outGG$data[Treatment == 0])
-#' outGG$plot + facet_wrap(~Treatment, labeller = label_both)
+#' dd <- as.data.frame(outGG$data[treatment == 0])
+#' outGG$plot + facet_wrap(~treatment, labeller = label_both)
 #' }
 
 ## * autoplot.ate (code)
@@ -67,16 +68,16 @@
 #' @method autoplot ate
 #' @export
 autoplot.ate <- function(object,
+                         estimator = object$estimator[1],
                          ci = FALSE,
                          band = FALSE,
                          plot = TRUE,
                          digits = 2,
                          alpha = NA, ...){
 
-    ## for CRAN check
-    Treatment <- NULL
-    
-    ## initialize and check          
+    ## initialize and check
+    estimator <- match.arg(estimator, choices =  object$estimator, several.ok = FALSE)
+
     if(ci[[1]]==TRUE && (object$se[[1]]==FALSE || is.null(object$conf.level))){
         stop("argument \'ci\' cannot be TRUE when no standard error have been computed \n",
              "set arguments \'se\' and \'confint\' to TRUE when calling ate \n")
@@ -95,22 +96,24 @@ autoplot.ate <- function(object,
 
     ## display
     dataL <- copy(object$meanRisk)
-    dataL[,row := as.numeric(as.factor(Treatment))]
+    dataL[,row := as.numeric(as.factor(.SD$treatment))]
+
+    data.table::setnames(dataL, old = paste0("meanRisk.",estimator), new = "meanRisk")
     if(ci){
         data.table::setnames(dataL,
-                             old = c("meanRisk.lower","meanRisk.upper"),
+                             old = c(paste0("meanRisk.",estimator,".lower"),paste0("meanRisk.",estimator,".upper")),
                              new = c("lowerCI","upperCI"))
     }
     if(band){
         data.table::setnames(dataL,
-                             old = c("meanRisk.lowerBand","meanRisk.upperBand"),
+                             old = c(paste0("meanRisk.",estimator,".lowerBand"),paste0("meanRisk.",estimator,".upperBand")),
                              new = c("lowerBand","upperBand"))
     }
 
     gg.res <- predict2plot(dataL = dataL,
                            name.outcome = "meanRisk", # must not contain space to avoid error in ggplot2
                            ci = ci, band = band,
-                           group.by = "Treatment",
+                           group.by = "treatment",
                            conf.level = object$conf.level,
                            alpha = alpha,
                            ylab = "Average absolute risk")
