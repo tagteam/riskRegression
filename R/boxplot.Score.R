@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Aug 15 2016 (09:45) 
 ## Version: 
-## last-updated: Mar 25 2019 (18:01) 
+## last-updated: Oct 19 2019 (18:15) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 137
+##     Update #: 138
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -128,9 +128,9 @@ boxplot.Score <- function(x,
     ## }
 
     if (type=="diff"){
-        pframe <- x$riskQuantile$contrasts
+        pframe <- x$riskQuantile$contrasts[model!="Null model"]
     } else{
-        pframe <- x$riskQuantile$score
+        pframe <- x$riskQuantile$score[model!="Null model"]
     }
     if (x$response.type!='binary'){
         if (missing(timepoint))

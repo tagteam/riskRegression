@@ -5,7 +5,7 @@
 ## Version: 
 ## last-updated: Oct 13 2019 (18:56) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 350
+##     Update #: 361
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -170,9 +170,9 @@ plotCalibration <- function(x,
                                         # {{{ plot frame
     model=risk=event=status=NULL
     if (missing(auc.in.legend))
-        auc.in.legend <- ("auc" %in% x$metrics)
+        auc.in.legend <- ("auc" %in% tolower(x$metrics))
     if (missing(brier.in.legend))
-        brier.in.legend <- ("auc" %in% x$metrics)
+        brier.in.legend <- ("auc" %in% tolower(x$metrics))
     if (missing(pseudo) & missing(rug))
         if (x$cens.type=="rightCensored"){
             showPseudo <- FALSE
@@ -252,7 +252,7 @@ plotCalibration <- function(x,
     modelnames <- pframe[,unique(model)]
     axis1.DefaultArgs <- list(side=1,las=1,at=seq(0,xlim[2],xlim[2]/4))
     axis2.DefaultArgs <- list(side=2,las=2,at=seq(0,ylim[2],ylim[2]/4),mgp=c(4,1,0))
-    if (is.character(legend[[1]])|| legend[[1]]==TRUE){
+    if (is.character(legend[[1]])|| legend[[1]]==TRUE||auc.in.legend==TRUE|| brier.in.legend==TRUE){
         legend.data <- getLegendData(object=x,
                                      models=models,
                                      times=tp,
@@ -261,8 +261,9 @@ plotCalibration <- function(x,
                                      drop.null.model=TRUE)
         if (is.character(legend))
             legend.text <- legend
-        else
+        else{
             legend.text <- unlist(legend.data[,1])
+        }
         nrows.legend <- NROW(legend.data)
         if (nrows.legend==1){
             legend.lwd <- NA
@@ -271,7 +272,9 @@ plotCalibration <- function(x,
         }
         legend.DefaultArgs <- list(legend=legend.text,lwd=legend.lwd,col=col,ncol=1,lty=lty,cex=cex,bty="n",y.intersp=1,x="topleft",title="")
         if (NCOL(legend.data)>1){
-            addtable2plot.DefaultArgs <- list(yjust=1.18,cex=cex, table=legend.data[,-1,drop=FALSE])
+            addtable2plot.DefaultArgs <- list(yjust=1.18,
+                                              cex=cex,
+                                              table=legend.data[,-1,drop=FALSE])
         }else{
             addtable2plot.DefaultArgs <- NULL
         }
@@ -284,7 +287,7 @@ plotCalibration <- function(x,
         names.DefaultArgs <- list(cex=.7*par()$cex,y=c(-abs(diff(ylim))/15,-abs(diff(ylim))/25))
         frequencies.DefaultArgs <- list(cex=.7*par()$cex,percent=FALSE,offset=0)
     } else{
-        if (length(modelnames)<=1){
+        if (length(modelnames)<=1 && sum(auc.in.legend+brier.in.legend)==0){
             legend=FALSE
         }
     }
@@ -522,11 +525,11 @@ plotCalibration <- function(x,
                                         # {{{ do the actual plot
     if (plot){
         ## if (boxplot){
-            ## nbox <- length(control$lines$col)
-            ## layout(matrix(c(1:nbox, nbox, 1), widths = 100, heights = c(100-nbox*5,rep(5,nbox))))
-            ## for (m in 1:nbox){
-                ## pframe[model==m,boxplot(risk,col=control$lines$col[m],ylim=c(0,1),horizontal=1L)]
-            ## }
+        ## nbox <- length(control$lines$col)
+        ## layout(matrix(c(1:nbox, nbox, 1), widths = 100, heights = c(100-nbox*5,rep(5,nbox))))
+        ## for (m in 1:nbox){
+        ## pframe[model==m,boxplot(risk,col=control$lines$col[m],ylim=c(0,1),horizontal=1L)]
+        ## }
         ## }
         if (out$add[1]==FALSE && !out$bars[1]){
             do.call("plot",control$plot)

@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Oct 23 2016 (08:53) 
 ## Version: 
-## last-updated: Oct 14 2019 (14:27) 
+## last-updated: Oct 29 2019 (06:31) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 1555
+##     Update #: 1563
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -650,8 +650,8 @@ ate_initArgs <- function(object.event,
     }
     ## handler
     handler <- match.arg(handler, c("foreach","mclapply","snow","multicore"))
-
-    ## ** fit regression model when user specifies formula and extract formula
+    ## ** fit a regression model when the user specifies a formula
+    ##    and extract the formula
     if(inherits(object.event,"formula")){ ## formula
         myformula.event <- object.event
         if(any(grepl("Hist(",object.event, fixed = TRUE))){
@@ -661,15 +661,20 @@ ate_initArgs <- function(object.event,
         }else{
             object.event <- glm(myformula.event, data = data, family = stats::binomial(link = "logit"))
         }
-    }else if(all(sapply(object.event, function(iE){inherits(iE,"formula")})) && all(sapply(object.event, function(iE){grepl("Hist",deparse(iE))}))){ ## list of formula
-        myformula.event <- object.event
-        object.event <- CSC(myformula.event, data = data)
-    }else if(inherits(object.event,"glm") || inherits(object.event,"CauseSpecificCox")){ ## glm / CSC
-        myformula.event <- stats::formula(object.event)
-    }else if(inherits(object.event,"coxph") || inherits(object.event,"cph") ||inherits(object.event,"phreg")){ ## Cox
-        myformula.event <- coxFormula(object.event)
+    }else{
+        if(all(sapply(object.event, function(iE){inherits(iE,"formula")}))){
+            ## list of formula
+            myformula.event <- object.event
+            object.event <- CSC(myformula.event, data = data)
+        }else{ if(inherits(object.event,"glm") || inherits(object.event,"CauseSpecificCox")){ ## glm / CSC
+                   myformula.event <- stats::formula(object.event)
+               }else{ if(inherits(object.event,"coxph") || inherits(object.event,"cph") ||inherits(object.event,"phreg")){ ## Cox
+                          myformula.event <- coxFormula(object.event)
+                      }
+               }
+        }
     }
-
+    
     if(!missing(object.treatment) && inherits(object.treatment,"formula")){
         myformula.treatment <- object.treatment
         object.treatment <- glm(myformula.treatment, data = data, family = stats::binomial(link = "logit"))        
