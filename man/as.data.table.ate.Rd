@@ -4,7 +4,8 @@
 \alias{as.data.table.ate}
 \title{Turn ate Object Into a \code{data.table}}
 \usage{
-\method{as.data.table}{ate}(x, keep.rownames = FALSE, se = TRUE, ...)
+\method{as.data.table}{ate}(x, keep.rownames = FALSE, se = TRUE,
+  estimator = x$estimator, ...)
 }
 \arguments{
 \item{x}{object obtained with function \code{ate}}
@@ -12,6 +13,8 @@
 \item{keep.rownames}{Not used.}
 
 \item{se}{[logical] Should standard errors/quantile for confidence bands be displayed?}
+
+\item{estimator}{[character] The type of estimator relative to which the estimates should be output.}
 
 \item{...}{Not used.}
 }

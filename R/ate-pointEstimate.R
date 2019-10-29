@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: jun 27 2019 (10:43) 
 ## Version: 
-## Last-Updated: okt  4 2019 (15:59) 
+## Last-Updated: okt 24 2019 (09:33) 
 ##           By: Brice Ozenne
-##     Update #: 533
+##     Update #: 631
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -18,7 +18,7 @@
                                         # {{{ Gformula: time dependent covariates
 ## * ATE_TD
 ATE_TD <- function(object.event,
-                   data,
+                   mydata,
                    formula,
                    treatment,
                    contrasts,
@@ -29,10 +29,10 @@ ATE_TD <- function(object.event,
                    levels,
                    ...){
 
-    Treatment <- Treatment.B <- meanRisk <- ratio <- NULL ## [:forCRANcheck:]
+    Treatment <- NULL ## [:forCRANcheck:]
     n.contrasts <- length(contrasts)
 
-    response <- eval(formula[[2]],envir=data)
+    response <- eval(formula[[2]],envir=mydata)
     time <- response[,"time"]
     entry <- response[,"entry"]
     if(class(object.event)[[1]]=="coxph"){
@@ -42,7 +42,7 @@ ATE_TD <- function(object.event,
     }
     ## prediction for the hypothetical worlds in which every subject is treated with the same treatment
     dt.meanRisk <- data.table::rbindlist(lapply(1:n.contrasts,function(i){
-        data.i <- data
+        data.i <- mydata
         data.i[[treatment]] <- factor(contrasts[i], levels = levels)
         data.table::rbindlist(lapply(landmark,function(lm){
             atrisk <- (entry <= lm & time >= lm)
@@ -53,20 +53,26 @@ ATE_TD <- function(object.event,
                                                    cause = cause,
                                                    landmark=lm,
                                                    ...)))
-            data.table::data.table(Treatment=contrasts[[i]],time=times,landmark=lm,meanRisk=risk.i)
+            data.table::data.table(Treatment=contrasts[[i]],
+                                   time=times,
+                                   landmark=lm,
+                                   meanRisk.Gformula=risk.i)
         }))
     }))
     riskComparison <- data.table::rbindlist(lapply(1:(n.contrasts-1),function(i){
         data.table::rbindlist(lapply(((i+1):n.contrasts),function(j){
             ## compute differences between all pairs of treatments
-            RC <- dt.meanRisk[Treatment==contrasts[[i]]]
-            setnames(RC,"Treatment","Treatment.A")
-            RC[,Treatment.B:=contrasts[[j]]]
-            RC[,diff:=dt.meanRisk[Treatment==contrasts[[j]],meanRisk]-meanRisk]
-            RC[,ratio:=dt.meanRisk[Treatment==contrasts[[j]],meanRisk]/meanRisk]
-            RC[,meanRisk:=NULL]
-            RC[]
+            iDT <- dt.meanRisk[Treatment==contrasts[[i]]]
+            setnames(iDT,"Treatment","Treatment.A")
+            baseRisk <- iDT$meanRisk.Gformula
+            iDT[,c("meanRisk.Gformula"):=NULL]
+
+            newRisk <- dt.meanRisk[Treatment==contrasts[[j]], .SD$meanRisk.Gformula]
+
+            iDT[,c("Treatment.B","diff.Gformula","ratio.Gformula") := list(contrasts[[j]],newRisk-baseRisk,newRisk/baseRisk)]
+            return(iDT[])
         }))}))
+    setcolorder(riskComparison, neworder = c("Treatment.A","Treatment.B", setdiff(names(riskComparison),c("Treatment.A","Treatment.B"))))
     out <- list(meanRisk = dt.meanRisk,
                 riskComparison = riskComparison,
                 treatment = treatment,
@@ -81,7 +87,7 @@ ATE_TD <- function(object.event,
 ATE_TI <- function(object.event,
                    object.treatment,
                    object.censor,
-                   data,
+                   mydata,
                    treatment,
                    strata,
                    contrasts,
@@ -98,59 +104,75 @@ ATE_TI <- function(object.event,
                    censorVar.time,
                    censorVar.status,
                    type.multistate,
-                   return.iid,
                    return.iid.nuisance,
                    method.iid,
                    product.limit,
                    ...){
 
     tol <- 1e-12 ## difference in jump time must be above tol
-    n.obs <- NROW(data)
+    n.obs <- NROW(mydata)
     n.contrasts <- length(contrasts)
     n.times <- length(times)
 
     ## ** prepare output
     out <- list()
-    if(return.iid){
-        attr(out,"iid.ate") <- vector(mode = "list", length = n.contrasts)
-        names(attr(out,"iid.ate")) <- contrasts
-    }
-    if(return.iid.nuisance){
-        attr(out,"iid.outcome") <- lapply(1:n.contrasts, function(iC){matrix(0, nrow = n.obs, ncol = n.times)})
-        names(attr(out,"iid.outcome")) <- contrasts
-    }
-    ## point estimate
-    meanRisk <- matrix(NA, nrow = n.contrasts, ncol = n.times,
-                       dimnames = list(contrasts, times))
+    meanRisk <- list()
     
+    if(attr(estimator,"export.Gformula")){
+        meanRisk <- c(meanRisk,
+                      Gformula = list(matrix(0, nrow = n.contrasts, ncol = n.times,
+                                             dimnames = list(contrasts, times))))
+
+        attr(out,"iid.Gformula") <- lapply(1:n.contrasts, function(iC){matrix(0, nrow = n.obs, ncol = n.times)})
+        names(attr(out,"iid.Gformula")) <- contrasts
+    }
+    
+    if(attr(estimator,"export.IPTW")){
+        meanRisk <- c(meanRisk,
+                      IPTW = list(matrix(0, nrow = n.contrasts, ncol = n.times,
+                                         dimnames = list(contrasts, times))))
+
+        attr(out,"iid.IPTW") <- lapply(1:n.contrasts, function(iC){matrix(0, nrow = n.obs, ncol = n.times)})
+        names(attr(out,"iid.IPTW")) <- contrasts
+    }
+    
+    if(attr(estimator,"export.AIPTW")){
+        meanRisk <- c(meanRisk,
+                      AIPTW = list(matrix(0, nrow = n.contrasts, ncol = n.times,
+                                          dimnames = list(contrasts, times))))
+
+        attr(out,"iid.AIPTW") <- lapply(1:n.contrasts, function(iC){matrix(0, nrow = n.obs, ncol = n.times)})
+        names(attr(out,"iid.AIPTW")) <- contrasts
+    }
+
     ## ** compute event indicators
     if(attr(estimator,"IPTW")){
         ## *** indicator for the outcome of interest stopped at time tau
         if(inherits(object.event,"glm")){
-            time.before.tau <- cbind(data[[eventVar.status]])
+            time.before.tau <- cbind(mydata[[eventVar.status]])
         }else{
-            time.before.tau <- sapply(times, function(tau){data[[eventVar.time]] <= tau})
+            time.before.tau <- sapply(times, function(tau){mydata[[eventVar.time]] <= tau})
         }
         
         Y.tau <- colMultiply_cpp(time.before.tau,
-                                 scale = (data[[eventVar.status]] == cause)
+                                 scale = (mydata[[eventVar.status]] == cause)
                                  )
 
         ## *** treatment indicator
-        M.treatment <- do.call(cbind,lapply(contrasts, "==", data[[treatment]]))
+        M.treatment <- do.call(cbind,lapply(contrasts, "==", mydata[[treatment]]))
     }
 
     if(attr(estimator,"IPCW")){
         ## *** indicator for no censoring stopped at time tau
         C.tau <- colMultiply_cpp(time.before.tau,
-                                 scale = (data[[eventVar.status]] != level.censoring)
+                                 scale = (mydata[[eventVar.status]] != level.censoring)
                                  )
 
         ## *** jump time for the censoring process
-        time.jumpC <- sort(data[[eventVar.time]][(data[[eventVar.status]] == level.censoring)])
+        time.jumpC <- sort(mydata[[eventVar.time]][(mydata[[eventVar.status]] == level.censoring)])
 
         index.obsSINDEXjumpC <- do.call(cbind,lapply(times, function(tau){
-            prodlim::sindex(jump.times = time.jumpC, eval.times = pmin(data[[eventVar.time]],tau))
+            prodlim::sindex(jump.times = time.jumpC, eval.times = pmin(mydata[[eventVar.time]],tau))
         }))
         index.lastjumpC <- max(index.obsSINDEXjumpC)
         time.jumpC <- time.jumpC[1:index.lastjumpC]
@@ -158,7 +180,7 @@ ATE_TI <- function(object.event,
     }
     if(attr(estimator,"integral")){
         ## *** jump time of the censoring mecanism before event time
-        beforeEvent.jumpC <- do.call(cbind,lapply(time.jumpC, function(iJump){iJump <= data[[eventVar.time]]}))
+        beforeEvent.jumpC <- do.call(cbind,lapply(time.jumpC, function(iJump){iJump <= mydata[[eventVar.time]]}))
         beforeTau.nJumpC <- sapply(times, function(iTau){sum(time.jumpC <= iTau)})
         beforeTau.nJumpC.n0 <- beforeTau.nJumpC[beforeTau.nJumpC!=0]
     }
@@ -166,7 +188,7 @@ ATE_TI <- function(object.event,
     ## ** compute predictions
     ## *** treatment model
     if(attr(estimator,"IPTW")){
-        iPred <- lapply(contrasts, function(iC){predictRisk(object = object.treatment, newdata = data, levels = iC, iid = (method.iid==2)*return.iid.nuisance)})
+        iPred <- lapply(contrasts, function(iC){predictRisk(object = object.treatment, newdata = mydata, levels = iC, iid = (method.iid==2)*return.iid.nuisance)})
         pi <- do.call(cbind,iPred)
         if(return.iid.nuisance && (method.iid==2)){
             attr(out,"iid.nuisance.treatment") <- lapply(iPred,attr,"iid")
@@ -181,9 +203,9 @@ ATE_TI <- function(object.event,
 
         ## at all times of jump of the censoring process
         if(product.limit){
-            G.jump <- predictCoxPL(object.censor, newdata = data, times = time.jumpC, iid = (method.iid==2)*return.iid.nuisance)
+            G.jump <- predictCoxPL(object.censor, newdata = mydata, times = time.jumpC, iid = (method.iid==2)*return.iid.nuisance)
         }else{
-            G.jump <- predictCox(object.censor, newdata = data, times = time.jumpC, iid = (method.iid==2)*return.iid.nuisance)
+            G.jump <- predictCox(object.censor, newdata = mydata, times = time.jumpC, iid = (method.iid==2)*return.iid.nuisance)
         }
         if(return.iid.nuisance && (method.iid==2)){
             attr(out,"iid.nuisance.censoring") <- G.jump$survival.iid
@@ -207,6 +229,7 @@ ATE_TI <- function(object.event,
 
     ## *** outcome model (computation of Prob[T<=t,Delta=1|A,W] = F_1(t|A=a,W))
     n.obs.contrasts <- rep(n.obs, n.contrasts)
+    ls.index.strata <- vector(mode = "list", length = n.obs)
     if(attr(estimator,"Gformula")){
         F1.ctf.tau <- lapply(1:n.contrasts, function(x){
             matrix(0, nrow = n.obs, ncol = n.times,
@@ -218,41 +241,53 @@ ATE_TI <- function(object.event,
             
             if(!is.null(treatment)){
                 ## hypothetical world: in which every subject is treated with the same treatment
-                index.strata <- 1:n.obs
-                data.i <- data.table::copy(data)
+                ls.index.strata[[iC]] <- 1:n.obs
+                data.i <- data.table::copy(mydata)
                 data.i[[treatment]] <- factor(contrasts[iC], levels = levels)
             }else{
                 ## hypothetical world: only patients with the same strata variable exist
-                index.strata <- which(data[[strata]]==contrasts[iC])
-                data.i <- data[index.strata]
-                n.obs.contrasts[iC] <- length(index.strata)
+                ls.index.strata[[iC]] <- which(mydata[[strata]]==contrasts[iC])
+                data.i <- mydata[ls.index.strata[[iC]]]
+                n.obs.contrasts[iC] <- length(ls.index.strata[[iC]])
             }
             
             if(return.iid.nuisance){
-                average.iid <- TRUE
-                if(estimator %in% c("AIPTW","AIPTW,AIPCW")){
-                    attr(average.iid,"factor") <- list(cbind(1-iW.IPTW[index.strata,iC]))
-                }else{
-                    attr(average.iid,"factor") <- list(matrix(1, nrow =  NROW(data.i), ncol = 1))
+                factor <- TRUE
+                attr(factor,"factor") <- list()
+                
+                if(attr(estimator,"export.Gformula")){
+                    attr(factor,"factor") <- c(attr(factor,"factor"),
+                                               list(Gformula = matrix(1, nrow =  n.obs.contrasts[iC], ncol = 1))
+                                               )
+                }
+                if(attr(estimator,"export.AIPTW")){
+                    attr(factor,"factor") <- c(attr(factor,"factor"),
+                                               list(AIPTW = cbind(1-iW.IPTW[ls.index.strata[[iC]],iC]))
+                                               )
                 }
             }else{
-                average.iid <- FALSE
+                factor <- FALSE
             }            
-            outRisk <- predictRisk(object.event, newdata = data.i, times = times,
-                                   average.iid = average.iid, cause = cause,
-                                   product.limit = product.limit)
-            F1.ctf.tau[[iC]][index.strata,] <- outRisk
-            if(return.iid.nuisance){
-                attr(out,"iid.outcome")[[iC]] <- attr(outRisk,"average.iid")[[1]]
-            }
 
+            outRisk <- predictRisk(object.event, newdata = data.i, times = times,
+                                   average.iid = factor, cause = cause,
+                                   product.limit = product.limit)
+            F1.ctf.tau[[iC]][ls.index.strata[[iC]],] <- outRisk
+            if(return.iid.nuisance){
+                if(attr(estimator,"export.Gformula")){
+                    attr(out,"iid.Gformula")[[iC]] <- attr(outRisk,"average.iid")[["Gformula"]]
+                }
+                if(attr(estimator,"export.AIPTW")){
+                    attr(out,"iid.AIPTW")[[iC]] <- attr(outRisk,"average.iid")[["AIPTW"]]
+                }
+            }
         }
     }
     
     ## ** Compute augmentation term    
     if(attr(estimator,"integral")){
         ## absolute risk at event times
-        predTempo <- predictRisk(object.event, newdata = data, times = c(times, time.jumpC), cause = cause, product.limit = product.limit,
+        predTempo <- predictRisk(object.event, newdata = mydata, times = c(times, time.jumpC), cause = cause, product.limit = product.limit,
                                  iid = (method.iid==2)*return.iid.nuisance)
         F1.tau <- predTempo[,1:n.times,drop=FALSE]
         F1.jump <- predTempo[,n.times + (1:index.lastjumpC),drop=FALSE]
@@ -262,13 +297,13 @@ ATE_TI <- function(object.event,
         
         ## survival
         if(inherits(object.event,"CauseSpecificCox")){ ## competing risk case
-            S.jump <- predict(object.event, type = "survival", newdata = data, times = time.jumpC-tol, product.limit = product.limit,
+            S.jump <- predict(object.event, type = "survival", newdata = mydata, times = time.jumpC-tol, product.limit = product.limit,
                               iid = (method.iid==2)*return.iid.nuisance)
         }else if(product.limit){ ## survival case
-            S.jump <- predictCoxPL(object.event, type = "survival", newdata = data, times = time.jumpC-tol,
+            S.jump <- predictCoxPL(object.event, type = "survival", newdata = mydata, times = time.jumpC-tol,
                                    iid = (method.iid==2)*return.iid.nuisance)
         }else{
-            S.jump <- predictCox(object.event, type = "survival", newdata = data, times = time.jumpC-tol,
+            S.jump <- predictCox(object.event, type = "survival", newdata = mydata, times = time.jumpC-tol,
                                  iid = (method.iid==2)*return.iid.nuisance)
         }
         if((method.iid==2)*return.iid.nuisance){
@@ -276,8 +311,8 @@ ATE_TI <- function(object.event,
         }
 
         ## martingale for the censoring process
-        dN.jump <- do.call(rbind,lapply(1:n.obs, function(iObs){(data[[eventVar.time]][iObs] == time.jumpC)*(data[[eventVar.status]][iObs] == level.censoring)}))
-        dLambda.jump <- predictCox(object.censor, newdata = data, times = time.jumpC, type = "hazard", iid = (method.iid==2)*return.iid.nuisance)
+        dN.jump <- do.call(rbind,lapply(1:n.obs, function(iObs){(mydata[[eventVar.time]][iObs] == time.jumpC)*(mydata[[eventVar.status]][iObs] == level.censoring)}))
+        dLambda.jump <- predictCox(object.censor, newdata = mydata, times = time.jumpC, type = "hazard", iid = (method.iid==2)*return.iid.nuisance)
         if((method.iid==2)*return.iid.nuisance){
             attr(out,"iid.nuisance.martingale") <- dLambda.jump$hazard.iid
         }
@@ -289,35 +324,43 @@ ATE_TI <- function(object.event,
         integrand2 <- F1.jump * integrand
         integral <- rowCumSum(integrand)
         integral2 <- rowCumSum(integrand2)
-
         augTerm <- matrix(0, nrow = n.obs, ncol = n.times)
         augTerm[,beforeTau.nJumpC!=0] <- F1.tau[,beforeTau.nJumpC!=0,drop=FALSE] * integral[,beforeTau.nJumpC.n0,drop=FALSE] - integral2[,beforeTau.nJumpC.n0,drop=FALSE]
     }
        
-    ## ** Compute individual contribution to the ATE
+    ## ** Compute individual contribution to the ATE + influence function for the Gformula
     for(iC in 1:n.contrasts){ ## iC <- 1
-        ## compute influence function
-        if(estimator == "Gformula"){
-            iid.ate <- F1.ctf.tau[[iC]]
-        }else if(estimator == "IPTW"){
-            iid.ate <- colMultiply_cpp(Y.tau, scale = iW.IPTW[,iC])
-        }else if(estimator == "AIPTW"){
-            iid.ate <- F1.ctf.tau[[iC]] + colMultiply_cpp(Y.tau - F1.ctf.tau[[iC]], scale = iW.IPTW[,iC])
-        }else if(estimator == "IPTW,IPCW"){
-            iid.ate <- colMultiply_cpp(iW.IPCW * Y.tau, scale = iW.IPTW[,iC])
-        }else if(estimator == "AIPTW,AIPCW"){
-            iid.ate <- F1.ctf.tau[[iC]] + colMultiply_cpp(iW.IPCW * Y.tau - F1.ctf.tau[[iC]] + augTerm, scale = iW.IPTW[,iC])
+        if(attr(estimator,"export.Gformula")){
+            if(!is.null(treatment)){
+                iIID.ate <- F1.ctf.tau[[iC]]
+                meanRisk$Gformula[iC,] <- colSums(iIID.ate)/n.obs
+                attr(out,"iid.Gformula")[[iC]] <- attr(out,"iid.Gformula")[[iC]] + rowCenter_cpp(iIID.ate, center = meanRisk$Gformula[iC,])/n.obs
+            }else{
+                iIID.ate <- F1.ctf.tau[[iC]][ls.index.strata[[iC]],,drop=FALSE]
+                meanRisk$Gformula[iC,] <- colSums(iIID.ate)/n.obs.contrasts[iC]
+                attr(out,"iid.Gformula")[[iC]][ls.index.strata[[iC]],] <- attr(out,"iid.Gformula")[[iC]][ls.index.strata[[iC]],] + rowCenter_cpp(iIID.ate, center = meanRisk$Gformula[iC,])/n.obs.contrasts[iC]
+            }
         }
-        
-        ## estimate ate
-        meanRisk[iC,] <- colSums(iid.ate)/n.obs.contrasts[iC]
+        if(attr(estimator,"export.IPTW")){
+            if(attr(estimator,"IPCW")){
+                iIID.ate <- colMultiply_cpp(iW.IPCW * Y.tau, scale = iW.IPTW[,iC])
+            }else{
+                iIID.ate <- colMultiply_cpp(Y.tau, scale = iW.IPTW[,iC])
+            }
+            
+            meanRisk$IPTW[iC,] <- colSums(iIID.ate)/n.obs
+            attr(out,"iid.IPTW")[[iC]] <- attr(out,"iid.IPTW")[[iC]]  + rowCenter_cpp(iIID.ate, center = meanRisk$IPTW[iC,])/n.obs
+        }
+        if(attr(estimator,"export.AIPTW")){
+            if(attr(estimator,"IPCW")){
+                iIID.ate <- F1.ctf.tau[[iC]] + colMultiply_cpp(iW.IPCW * Y.tau - F1.ctf.tau[[iC]] + augTerm, scale = iW.IPTW[,iC])
+            }else{
+                iIID.ate <- F1.ctf.tau[[iC]] + colMultiply_cpp(Y.tau - F1.ctf.tau[[iC]], scale = iW.IPTW[,iC])
+            }
 
-        ## first term of the iid decomposition
-        if(return.iid){
-            ## center and scale iid decomposition for the functional delta method
-            attr(out,"iid.ate")[[iC]] <- rowCenter_cpp(iid.ate * (n.obs/n.obs.contrasts[iC]), center = meanRisk[iC,])/n.obs
-            dimnames(attr(out,"iid.ate")[[iC]]) <- list(NULL, times)
-        }        
+            meanRisk$AIPTW[iC,] <- colSums(iIID.ate)/n.obs
+            attr(out,"iid.AIPTW")[[iC]] <- attr(out,"iid.AIPTW")[[iC]] + rowCenter_cpp(iIID.ate, center = meanRisk$AIPTW[iC,])/n.obs
+        }
     }
 
     ## ** save quantities useful for the calculation of iid.nuisance
@@ -358,22 +401,44 @@ ATE_TI <- function(object.event,
     }
 
     ## ** reshape results before exporting
-    out$meanRisk <- melt(data.table(Treatment = rownames(meanRisk),meanRisk),
-                         id.vars = "Treatment",
-                         value.name = "meanRisk",
-                         variable.name = "timeChar")
-    out$meanRisk[,c("time") := times,by="Treatment"]
-    out$meanRisk[,c("timeChar") := NULL]
-    ## range(as.numeric(as.character(out$meanRisk$timeChar))-out$meanRisk$time)
+    meanRiskL <- lapply(names(meanRisk), function(iE){ ## iE <- "Gformula"
+        iDT <- melt(data.table(Treatment = rownames(meanRisk[[iE]]),meanRisk[[iE]]),
+                    id.vars = "Treatment",
+                    value.name = paste0("meanRisk.",iE),
+                    variable.name = "time")
+        if(iE==names(meanRisk)[[1]]){
+            return(iDT)
+        }else{
+            return(iDT[,.SD,.SDcols = paste0("meanRisk.",iE)])
+        }
+    })
+    out$meanRisk <- do.call(cbind,meanRiskL)
+    if(all(is.na(times))){
+        out$meanRisk[, time := as.numeric(NA)]
+    }else{
+        out$meanRisk[, time := as.numeric(levels(time))[time]] ## recommanded way to convert from factor to numeric (https://stackoverflow.com/questions/3418128/how-to-convert-a-factor-to-integer-numeric-without-loss-of-information)
+        ## range(as.numeric(as.character(out$meanRisk$timeChar))-out$meanRisk$time)
+    }
     
     out$riskComparison <- data.table::rbindlist(lapply(1:(n.contrasts-1),function(i){ ## i <- 1
         data.table::rbindlist(lapply(((i+1):n.contrasts),function(j){ ## j <- 2
             ## compute differences between all pairs of treatments
-            data.table(Treatment.A=contrasts[i],
-                       Treatment.B=contrasts[j],
-                       time=times,
-                       diff=meanRisk[j,]-meanRisk[i,],
-                       ratio=meanRisk[j,]/meanRisk[i,])
+            iDT <- data.table(Treatment.A=contrasts[i],
+                              Treatment.B=contrasts[j],
+                              time=times)
+            if(attr(estimator,"export.Gformula")){
+                iDT[, c("diff.Gformula","ratio.Gformula") := list(meanRisk$Gformula[j,]-meanRisk$Gformula[i,],
+                                                                  meanRisk$Gformula[j,]/meanRisk$Gformula[i,])]
+            }
+            if(attr(estimator,"export.IPTW")){
+                iDT[, c("diff.IPTW","ratio.IPTW") := list(meanRisk$IPTW[j,]-meanRisk$IPTW[i,],
+                                                          meanRisk$IPTW[j,]/meanRisk$IPTW[i,])]
+            }
+            if(attr(estimator,"export.AIPTW")){
+                iDT[, c("diff.AIPTW","ratio.AIPTW") := list(meanRisk$AIPTW[j,]-meanRisk$AIPTW[i,],
+                                                            meanRisk$AIPTW[j,]/meanRisk$AIPTW[i,])]
+            }
+            return(iDT)
         }))}))
 
     return(out)            

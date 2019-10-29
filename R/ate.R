@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Oct 23 2016 (08:53) 
 ## Version: 
-## last-updated: okt  7 2019 (16:22) 
+## last-updated: okt 28 2019 (11:39) 
 ##           By: Brice Ozenne
-##     Update #: 1454
+##     Update #: 1617
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -16,9 +16,9 @@
 ### Code:
 
 ## * ate (documentation)
-#' @title Compute the Average Treatment Effects Via the G-formula
-#' @description Use the g-formula to estimate the average treatment
-#'     effect based on Cox regression with or without competing risks.
+#' @title Compute the Average Treatment Effects Via 
+#' @description Use the g-formula/IPTW/double robust estimator to estimate the average treatment
+#'     effect based on Cox regression with or without competing ryisks.
 #' @name ate
 #' 
 #' @param event Outcome model which describes how event risk depends
@@ -45,6 +45,11 @@
 #' @param se [logical] If \code{TRUE} compute and add the standard errors to the output.
 #' @param band [logical] If \code{TRUE} compute and add the quantiles for the confidence bands to the output.
 #' @param iid [logical] If \code{TRUE} compute and add the influence function to the output.
+#' @param estimator [character] The type of estimator used to compute the average treatment effect. 
+#' Can be \code{"G-formula"}, \code{"IPTW"}, or \code{"AIPTW"}.
+#' When using \code{estimator="G-formula"}, a model for the outcome should be provided (argument event).
+#' When using \code{estimator="IPTW"}, a model for the treatment should be provided (argument treatment), as well as for the censoring (if any, argument censor).
+#' When using \code{estimator="AIPTW"} (double robust estimator), a model for the outcome and the treatment should be provided (argument event and treatment), as well as for the censoring (if any, argument censor).
 #' @param known.nuisance [logical] If \code{FALSE} the uncertainty related to the estimation of the nuisance parameters is ignored.
 #' This greatly simplifies computations but requires to use a double robust estimator
 #' and to assumes that all event, treatment, and censoring models are valid to obtain consistent standard errors.
@@ -154,6 +159,8 @@
 #' list(risk0=R.X10,risk1=R.X11,riskdiff=R.X11-R.X10)},
 #' average=TRUE)
 #' ateLava
+#'
+#' ateFit1b$meanRisk
 #' }
 #' 
 #' #### Competing risks settings               ####
@@ -162,37 +169,38 @@
 #' \dontrun{
 #' ## generate data
 #' n <- 500
+#' set.seed(10)
 #' dt <- sampleData(n, outcome="competing.risks")
 #' dt$time <- round(dt$time,1)
-#' dt$X1 <- factor(rbinom(n, prob = c(0.2,0.3,0.2) , size = 3), labels = paste0("T",0:3))
+#' dt$X1 <- factor(rbinom(n, prob = c(0.2,0.3) , size = 2), labels = paste0("T",0:2))
 #'
 #' ## estimate cause specific Cox model
 #' fitCR <-  CSC(Hist(time,event)~ X1+X8,data=dt,cause=1)
 #' 
-#' ## compute the ATE at times 5, 6, 7, and 8 using X1 as the treatment variable
-#' ateFit2a <- ate(fitCR, data = dt, treatment = "X1", times = 5:8, cause = 1,
-#'                se = FALSE)
+#' ## compute the ATE at times 10, 15, 20 using X1 as the treatment variable
+#' ateFit2a <- ate(fitCR, data = dt, treatment = "X1", times = c(10,15,20),
+#'                 cause = 1, se = FALSE)
 #'
 #' ## standard error / confidence intervals computed using the influence function
 #' ## (argument se = TRUE and B = 0)
-#' ateFit2b <- ate(fitCR, data = dt, treatment = "X1", times = 5:8, cause = 1,
-#'                se = TRUE, B = 0)
+#' ateFit2b <- ate(fitCR, data = dt, treatment = "X1", times = c(10,15,20),
+#'                 cause = 1, se = TRUE, B = 0)
 #'
 #' ## same as before with in addition the confidence bands for the ATE
 #' ## (argument band = TRUE)
-#' ateFit2c <- ate(fitCR, data = dt, treatment = "X1", times = 5:8, cause = 1,
-#'                se = TRUE, band = TRUE, B = 0)
+#' ateFit2c <- ate(fitCR, data = dt, treatment = "X1", times = c(10,15,20), 
+#'                cause = 1, se = TRUE, band = TRUE, B = 0)
 #' 
 #' ## standard error / confidence intervals computed using 100 boostrap samples
 #' ## (argument se = TRUE and B = 100) 
-#' ateFit2d <- ate(fitCR, data = dt, treatment = "X1", times = 5:8, cause = 1,
-#'                 se = TRUE, B = 100)
+#' ateFit2d <- ate(fitCR, data = dt, treatment = "X1", times = c(10,15,20), 
+#'                 cause = 1, se = TRUE, B = 100)
 #' ## NOTE: for real applications 100 bootstrap samples is not enougth 
 #'
 #' ## same but using 2 cpus for generating and analyzing the boostrap samples
 #' ## (parallel computation, argument mc.cores = 2) 
-#' ateFit2e <- ate(fitCR, data = dt, treatment = "X1", times = 5:8, cause = 1,
-#'                 se = TRUE, B = 100, mc.cores = 2)
+#' ateFit2e <- ate(fitCR, data = dt, treatment = "X1", times = c(10,15,20), 
+#'                 cause = 1, se = TRUE, B = 100, mc.cores = 2)
 #' }
 #' 
 #' #### time-dependent covariates ###
@@ -207,7 +215,7 @@
 #' resVet <- ate(fitTD,formula=Hist(entry=tstart,time=time,event=status)~1,
 #'           data = vet2, treatment = "celltype", contrasts = NULL,
 #'         times=5,verbose=1,
-#'         landmark = c(0,30,60,90), cause = 1, B = 4, se = 1,
+#'         landmark = c(0,30,60,90), cause = 1, B = 10, se = 1,
 #'         band = FALSE, mc.cores=1)
 #' resVet
 #' }
@@ -219,7 +227,8 @@
 #' d[,status:=1*(event==1)]
 #' d[,X3:=as.factor(X3)]
 #' ## ignore competing risks
-#' cox1TD <- coxph(Surv(start,time, status,type="counting") ~ X3+X5+X6+X8, data=d)
+#' cox1TD <- coxph(Surv(start,time, status,type="counting") ~ X3+X5+X6+X8,
+#'                 data=d, x = TRUE)
 #' resTD1 <- ate(cox1TD,formula=Hist(entry=start,time=time,event=status)~1,
 #'         data = d, treatment = "X3", contrasts = NULL,
 #'         times=.5,verbose=1,
@@ -227,7 +236,8 @@
 #'         band = FALSE, mc.cores=1)
 #' resTD1
 #' ## adjust for competing risks
-#' cscTD <- CSC(Hist(time=time, event=event,entry=start) ~ X3+X5+X6+X8, data=d)
+#' cscTD <- CSC(Hist(time=time, event=event,entry=start) ~ X3+X5+X6+X8,
+#'              x = TRUE, data=d)
 #' set.seed(16)
 #' resTD <- ate(cscTD,formula=Hist(entry=start,time=time,event=event)~1,
 #'         data = d, treatment = "X3", contrasts = NULL,
@@ -245,6 +255,7 @@ ate <- function(event,
                 censor = NULL,
                 data,
                 formula,
+                estimator = NULL,
                 strata = NULL,
                 contrasts = NULL,
                 times,
@@ -259,25 +270,21 @@ ate <- function(event,
                 handler = "foreach",
                 mc.cores = 1,
                 cl = NULL,
-                verbose = 2,
+                verbose = TRUE,
                 ...){
 
     dots <- list(...)
 
-    ## for CRAN tests
-    meanRisk=Treatment=ratio=Treatment.A=Treatment.B=b <- NULL
-    .=.I <- NULL
-    diff.se=ratio.se=.GRP=lower=upper=diff.lower=diff.upper=diff.p.value=ratio.lower=ratio.upper=ratio.p.value <- NULL
-
     ## ** initialize arguments
     data.table::setDT(data)
-    
+
     init <- ate_initArgs(object.event = event,
                          object.treatment = treatment,
                          object.censor = censor,
                          formula = formula,
                          landmark = landmark,
-                         data = data,
+                         mydata = data,
+                         estimator = estimator,
                          times = times,
                          cause = cause,
                          handler = handler,
@@ -300,12 +307,12 @@ ate <- function(event,
     eventVar.time <- init$eventVar.time
     eventVar.status <- init$eventVar.status
     level.censoring <- init$level.censoring
+    level.states <- init$level.states
     censorVar.time <- init$censorVar.time
     censorVar.status <- init$censorVar.status
     dots$product.limit <- init$product.limit
 
-    return.iid <- (se || band || iid) && (B==0)
-    return.iid.nuisance <- return.iid && (known.nuisance == FALSE)
+    return.iid.nuisance <- (se || band || iid) && (B==0) && (known.nuisance == FALSE)
     if("method.iid" %in% names(dots)){
         method.iid <- dots$method.iid
         dots$method.iid <- NULL
@@ -317,7 +324,7 @@ ate <- function(event,
     check <- ate_checkArgs(object.event = object.event,
                            object.censor = object.censor,
                            object.treatment = object.treatment,
-                           data = data,
+                           mydata = data,
                            formula = formula,
                            treatment = treatment,
                            strata = strata,
@@ -338,6 +345,7 @@ ate <- function(event,
                            TD = TD,
                            n.censor = n.censor,
                            level.censoring = level.censoring,
+                           level.states = level.states,
                            estimator = estimator,
                            eventVar.time = eventVar.time,
                            eventVar.status = eventVar.status,
@@ -368,62 +376,58 @@ ate <- function(event,
     }
 
     ## ** Overview of the calculations
-    if(verbose>1){
-        name.estimator <- switch(estimator,
-                                 "Gformula" = "the G-formula",
-                                 "GformulaTD" = "the G-formula with time dependent covariates",
-                                 "IPTW" = "the IPTW estimator",
-                                 "IPTW,IPCW" = "the IPTW, IPCW estimator",
-                                 "AIPTW" = "the AIPTW estimator",
-                                 "AIPTW,AIPCW" = "the AIPTW, AIPCW estimator"
-                                 )
+    if(verbose>1/2){
 
         if(!is.null(strata)){
             cat("Calculation of the average risk by strata \n", sep = "")
-            cat(" - Estimator      : ",estimator,"\n",sep="")
+            cat(" - Estimator",if(length(estimator)>1){"s"}else{" "},"        : ",paste(estimator, collapse = " "),"\n",sep="")
             cat(" - Strata variable: ",strata,"\n",sep="")
         }else{
             cat("     Calculation of the average treatment effect \n\n", sep = "")
-            cat(" - Estimator         : ",estimator,"\n",sep="")
+            cat(" - Estimator",if(length(estimator)>1){"s"}else{" "},"        : ",paste(estimator, collapse = " "),"\n",sep="")
             cat(" - Treatment variable: ",treatment," (",length(contrasts)," levels)\n",sep="")
-            if(length(level.censoring)==0){
-                cat(" - Event variable    : ",eventVar.status," (cause: ",cause,", no censoring)\n",sep="")
-            }else{
-                cat(" - Event variable    : ",eventVar.status," (cause: ",cause,", censoring: ",level.censoring,")\n",sep="")
+
+            txt.parenthesis <- paste0("cause: ",cause)
+            if(length(level.states)>1){
+                txt.parenthesis <- paste0(txt.parenthesis,", competing risk(s): ",setdiff(level.states,cause))
             }
+            if(any(n.censor>0)){
+                txt.parenthesis <- paste0(txt.parenthesis, ", censoring: ",level.censoring)
+            }
+            cat(" - Event variable    : ",eventVar.status," (",txt.parenthesis,")\n",sep="")
             cat(" - Time variable     : ",eventVar.time,"\n",sep="")
         }
         cat("\n")
     }
 
     ## ** Compute influence function relative to each Cox model (if not already done)
-    if(return.iid){
-        if(verbose>1){
+    if(return.iid.nuisance){
+        if(verbose>1/2){
             cat(" - Prepare influence function:")
         }
 
         if(attr(estimator,"Gformula") && (test.Cox || test.CSC) && identical(is.iidCox(object.event),FALSE)){
-            if(verbose>1){cat(" outcome")}
+            if(verbose>1/2){cat(" outcome")}
             object.event <- iidCox(object.event, tau.max = max(times), return.object = TRUE)
         }
 
         if(attr(estimator,"IPCW")){
-            if(identical(is.iidCox(object.censor$iid),FALSE)){
-                if(verbose>1){cat(" censoring")}
-                object.censor$iid <- iidCox(object.censor, tau.max = max(times))
+            if(identical(is.iidCox(object.censor),FALSE)){
+                if(verbose>1/2){cat(" censoring")}
+                object.censor <- iidCox(object.censor, tau.max = max(times))
             }
         }
-        if(verbose>1){cat(" done \n")}
+        if(verbose>1/2){cat(" done \n")}
     }
     
     ## ** Point estimate
-    if(verbose>1){
+    if(verbose>1/2){
         cat(" - Point estimation:")
     }
     args.pointEstimate <- c(list(object.event = object.event,
                                  object.censor = object.censor,
                                  object.treatment = object.treatment,
-                                 data=data,
+                                 mydata=data,
                                  treatment=treatment,
                                  strata=strata,
                                  contrasts=contrasts,
@@ -438,7 +442,6 @@ ate <- function(event,
                                  eventVar.status = eventVar.status,
                                  censorVar.time = censorVar.time,
                                  censorVar.status = censorVar.status,
-                                 return.iid = return.iid,
                                  return.iid.nuisance = return.iid.nuisance,
                                  method.iid = method.iid),
                             dots)
@@ -456,7 +459,7 @@ ate <- function(event,
         estimateTime <- as.numeric(tps2-tps1)
     }
     
-    if(verbose>1){cat(" done \n")}
+    if(verbose>1/2){cat(" done \n")}
 
     ## ** Confidence intervals
     if(se || band || iid){
@@ -473,23 +476,33 @@ ate <- function(event,
                                         # {{{ Bootstrap
             ## *** Bootstrap
             ## display start
-            if (verbose>1){ 
+            if (verbose>1/2){ 
                 cat(" - Non-parametric bootstrap using ",B," samples and ",mc.cores," core",if(mc.cores>1){"s"},"\n", sep ="")
                 cat("                            (expected time: ",round(estimateTime*B/mc.cores,2)," seconds)\n", sep = "")
             }
 
-            ## prepare arguments
-            vec.pointEstimate <- c(pointEstimate$meanRisk$meanRisk,
-                                   pointEstimate$riskComparison$diff,
-                                   pointEstimate$riskComparison$ratio)
-            names(vec.pointEstimate) <- c(pointEstimate$meanRisk[,paste0("meanRisk:",.SD$Treatment,":",.SD$time)],
-                                          pointEstimate$riskComparison[,paste0("compRisk:diff:",.SD$Treatment.A,":",.SD$Treatment.B,":",.SD$time)],
-                                          pointEstimate$riskComparison[,paste0("compRisk:ratio:",.SD$Treatment.A,":",.SD$Treatment.B,":",.SD$time)]
-                                          )
+            ## extractor for the bootstrap
+            estimator.boot <- gsub("meanRisk\\.","",grep("meanRisk",names(pointEstimate$meanRisk),value = TRUE))
+            otherCols.meanRisk <- names(pointEstimate$meanRisk)[grepl("meanRiskr",names(pointEstimate$meanRisk))==FALSE]
+            otherCols.riskComparison <- names(pointEstimate$riskComparison)[grepl("diff|ratio",names(pointEstimate$riskComparison))==FALSE]
+            
+            vec.pointEstimate <- do.call("c",lapply(1:length(estimator.boot), function(iE){
+                iEstimator <- estimator.boot[iE]
+                iVec <- c(pointEstimate$meanRisk[[paste0("meanRisk.",iEstimator)]],
+                          pointEstimate$riskComparison[[paste0("diff.",iEstimator)]],
+                          pointEstimate$riskComparison[[paste0("ratio.",iEstimator)]])
+                names(iVec) <- c(paste0("meanRisk:",iEstimator,":",pointEstimate$meanRisk[,as.character(interaction(.SD,sep=":")),.SDcols = otherCols.meanRisk]),
+                                 paste0("diff:",iEstimator,":",pointEstimate$riskComparison[,as.character(interaction(.SD,sep=":")),.SDcols = otherCols.riskComparison]),
+                                 paste0("ratio:",iEstimator,":",pointEstimate$riskComparison[,as.character(interaction(.SD,sep=":")),.SDcols = otherCols.riskComparison])
+                                 )
+                return(iVec)
+                
+            }))
 
             ## run
             resBoot <- calcBootATE(args = args.pointEstimate,
                                    name.estimate = names(vec.pointEstimate),
+                                   estimator.boot = estimator.boot,
                                    n.obs = n.obs,
                                    fct.pointEstimate = fct.pointEstimate,
                                    handler = handler,
@@ -521,7 +534,7 @@ ate <- function(event,
             outIID <- NULL
 
             ## display end
-            if (verbose>1){ 
+            if (verbose>1/2){ 
                 cat("\n")
             }
 
@@ -530,39 +543,35 @@ ate <- function(event,
                                         # {{{ compute standard error and quantiles via the influence function
             ## *** Delta method
             ## display start
-            if (verbose>1){ 
+            if (verbose>1/2){ 
                 cat(" - Functional delta method: ")
             }
-            if(return.iid.nuisance){ ## compute iid decomposition relative to the nuisance parameters
 
-                if(estimator=="Gformula"){
-                    ## no extra computation required
-                    outIID <- lapply(1:length(contrasts), function(iC){attr(pointEstimate, "iid.ate")[[iC]] + attr(pointEstimate, "iid.outcome")[[iC]]})
-                    names(outIID) <- contrasts
-                    attr(outIID,"ate") <- attr(pointEstimate, "iid.ate")
-                    attr(outIID,"outcome") <- attr(pointEstimate, "iid.outcome")
-                }else{
-                    ## add pre-computed quantities
-                    name.attributes <- setdiff(names(attributes(pointEstimate)),"names")
-                    for(iAttr in name.attributes){
-                        args.pointEstimate[[iAttr]] <- attr(pointEstimate, iAttr)
-                    }
-                    ## compute extra term and assemble
-                    if(identical(method.iid,2)){
-                        outIID <- do.call(iidATE2, args.pointEstimate)
-                    }else{
-                        outIID <- do.call(iidATE, args.pointEstimate)
-                    }
-                }
+            if(return.iid.nuisance && (attr(estimator,"IPTW") == TRUE)){
+                ## compute iid decomposition relative to the nuisance parameters
                 
-            }else{ ## ignore that the nuisance parameters have been estimated
-                outIID <- attr(pointEstimate, "iid.ate")
+                ## add pre-computed quantities
+                name.attributes <- setdiff(names(attributes(pointEstimate)),"names")
+                for(iAttr in name.attributes){
+                    args.pointEstimate[[iAttr]] <- attr(pointEstimate, iAttr)
+                }
+                ## compute extra term and assemble
+                if(identical(method.iid,2)){
+                    outIID <- do.call(iidATE2, args.pointEstimate)
+                }else{
+                    outIID <- do.call(iidATE, args.pointEstimate)
+                }
+            }else{
+                ## otherwise no extra computation required
+                outIID <- list(Gformula = attr(pointEstimate,"iid.Gformula"),
+                               IPTW = attr(pointEstimate,"iid.IPTW"),
+                               AIPTW = attr(pointEstimate,"iid.AIPTW"))
             }
             bootseeds <- NULL
             boot.object <- NULL
 
             ## display end
-            if (verbose>1){ 
+            if (verbose>1/2){ 
                 cat("done\n")
             }
 
@@ -586,15 +595,21 @@ ate <- function(event,
                  new = paste0(strata,c(".A",".B")))
     }
 
+    estimator.output <- unname(sapply(estimator, gsub, pattern = ",IPCW|,AIPCW|TD", replacement = ""))
+    attr(estimator.output,"full") <- estimator
     out <- list(meanRisk = pointEstimate$meanRisk,
                 riskComparison = pointEstimate$riskComparison,
                 iid = outIID,
+                event = eventVar.status,
+                cause = cause,
                 treatment = treatment,
                 contrasts = contrasts,
                 times = times,
                 se = se,
                 TD = TD,
                 B = B,
+                estimator = estimator.output,
+                n = n.obs,
                 band = band,
                 boot = boot.object,
                 seeds = bootseeds)
@@ -602,7 +617,7 @@ ate <- function(event,
 
     class(out) <- c("ate")
     if(se || band){
-        if (verbose>1){ ## display
+        if (verbose>1/2){ ## display
             cat(" - Confidence intervals: ")
         }
         ## FIXME: odd to have confint read and return everything 
@@ -610,7 +625,7 @@ ate <- function(event,
         if(iid == FALSE){
             out$iid <- NULL
         }
-        if (verbose>1){ ## display
+        if (verbose>1/2){ ## display
             cat("done\n")
         }
     }
@@ -625,7 +640,8 @@ ate_initArgs <- function(object.event,
                          object.censor,
                          landmark,
                          formula,
-                         data,
+                         estimator,
+                         mydata, ## instead of data to avoid confusion between the function data and the dataset when running the bootstrap
                          cause,
                          times,
                          handler,
@@ -640,34 +656,34 @@ ate_initArgs <- function(object.event,
     handler <- match.arg(handler, c("foreach","mclapply","snow","multicore"))
 
     ## ** fit regression model when user specifies formula and extract formula
-    if(inherits(object.event,"formula")){
+    if(inherits(object.event,"formula")){ ## formula
         myformula.event <- object.event
         if(any(grepl("Hist(",object.event, fixed = TRUE))){
-            object.event <- CSC(myformula.event, data = data, surv.type = "survival")
+            object.event <- do.call(CSC, args = list(formula = myformula.event, data = mydata))
         }else if(any(grepl("Surv(",object.event, fixed = TRUE))){
-            object.event <- rms::cph(myformula.event, data = data, x = TRUE, y = TRUE)
+            object.event <- do.call(rms::cph, args = list(formula = myformula.event, data = mydata, x = TRUE, y = TRUE))
         }else{
-            object.event <- glm(myformula.event, data = data, family = stats::binomial(link = "logit"))
+            object.event <- do.call(stats::glm, args = list(formula = myformula.event, data = mydata, family = stats::binomial(link = "logit")))
         }
-    }else{
-        if(inherits(object.event,"glm") || inherits(object.event,"CauseSpecificCox")){
-            myformula.event <- stats::formula(object.event)
-        }else if(inherits(object.event,"coxph") || inherits(object.event,"cph") ||inherits(object.event,"phreg")){
-            myformula.event <- coxFormula(object.event)
-        }
-
+    }else if(all(sapply(object.event, function(iE){inherits(iE,"formula")})) && all(sapply(object.event, function(iE){grepl("Hist(",deparse(iE, width.cutoff = 500), fixed = TRUE)[1]}))){ ## list of formula
+        myformula.event <- object.event
+        object.event <- do.call(CSC, args = list(formula = myformula.event, data = mydata))
+    }else if(inherits(object.event,"glm") || inherits(object.event,"CauseSpecificCox")){ ## glm / CSC
+        myformula.event <- stats::formula(object.event)
+    }else if(inherits(object.event,"coxph") || inherits(object.event,"cph") ||inherits(object.event,"phreg")){ ## Cox
+        myformula.event <- coxFormula(object.event)
     }
 
     if(!missing(object.treatment) && inherits(object.treatment,"formula")){
         myformula.treatment <- object.treatment
-        object.treatment <- glm(myformula.treatment, data = data, family = stats::binomial(link = "logit"))        
+        object.treatment <- do.call(stats::glm, args = list(formula = myformula.treatment, data = mydata, family = stats::binomial(link = "logit")))        
     }else if(!missing(object.treatment) && inherits(object.treatment,"glm")){
         myformula.treatment <- stats::formula(object.treatment)
     }
 
     if(inherits(object.censor,"formula")){
         myformula.censor <- object.censor
-        object.censor <- rms::cph(myformula.censor, data = data, x = TRUE, y = TRUE)
+        object.censor <- do.call(rms::cph, args = list(formula = myformula.censor, data = mydata, x = TRUE, y = TRUE))
     }else if(inherits(object.censor,"coxph") || inherits(object.censor,"cph") || inherits(object.censor,"phreg")){
         myformula.censor <- coxFormula(object.censor)
     }else{
@@ -681,7 +697,7 @@ ate_initArgs <- function(object.event,
     ## ** deduced from user defined arguments
 
     ## event 
-    if(inherits(object.event,"glm")){
+    if(inherits(object.event,"glm")){        
         eventVar.time <- as.character(NA)
         eventVar.status <- all.vars(myformula.event)[1]
         type.multistate <- "NA"
@@ -715,8 +731,9 @@ ate_initArgs <- function(object.event,
     if(test.CSC){
         test.censor <- object.event$response[,"status"] == 0        
         n.censor <- sapply(times, function(t){sum(test.censor * (object.event$response[,"time"] <= t))})
-        
+
         level.censoring <- attr(object.event$response,"cens.code")
+        level.states <- attr(object.event$response,"states")
 
         info.censor <- try(SurvResponseVar(coxFormula(object.censor)), silent = TRUE)
         if(inherits(info.censor,"try-error")){
@@ -731,7 +748,8 @@ ate_initArgs <- function(object.event,
         test.censor <- censoringMF$status == 0
         n.censor <- sapply(times, function(t){sum(test.censor * (censoringMF$stop <= t))})
 
-        level.censoring <- try(unique(data[[eventVar.status]][test.censor]), silent = TRUE)
+        level.censoring <- try(unique(mydata[[eventVar.status]][test.censor]), silent = TRUE)
+        level.states <- try(unique(mydata[[eventVar.status]][!test.censor]), silent = TRUE)
 
         info.censor <- try(SurvResponseVar(coxFormula(object.censor)), silent = TRUE)
         if(inherits(info.censor,"try-error")){
@@ -756,12 +774,14 @@ ate_initArgs <- function(object.event,
                 censorVar.time <- info.censor$time
             }
 
-            level.censoring <- try(unique(data[[censorVar.status]][test.censor]), silent = TRUE)
+            level.censoring <- try(unique(mydata[[censorVar.status]][test.censor]), silent = TRUE)
+            level.states <- try(unique(mydata[[censorVar.status]][!test.censor]), silent = TRUE)
 
         }else{ ## or just logistic regression 
             n.censor <- 0
 
             level.censoring <- NA
+            level.states <- NA
             censorVar.status <- NA
             censorVar.time <- NA
         }
@@ -782,7 +802,7 @@ ate_initArgs <- function(object.event,
     }
 
     ## cause
-    if(is.na(cause) && (eventVar.status %in% names(data))){
+    if(is.na(cause) && (eventVar.status %in% names(mydata))){
 
         if(!is.null(object.event) && !inherits(object.event,"CauseSpecificCox")){
             event.call <- attr(SurvResponseVar(myformula.event)$status,"call")
@@ -793,9 +813,9 @@ ate_initArgs <- function(object.event,
         if(!is.null(event.call) && grepl("==",event.call)){
             event.call.rhs <- trimws(gsub(")","",strsplit(event.call,"==")[[1]][2]), which = "both")
             cause <- eval(parse(text = event.call.rhs))
-        }else if(is.factor(data[[eventVar.status]]) && length(levels(data[[eventVar.status]]))==2){
-            cause <- levels(data[[eventVar.status]])[2]
-        }else if(all(data[[eventVar.status]] %in% c(0,1)) ){
+        }else if(is.factor(mydata[[eventVar.status]]) && length(levels(mydata[[eventVar.status]]))==2){
+            cause <- levels(mydata[[eventVar.status]])[2]
+        }else if(all(mydata[[eventVar.status]] %in% c(0,1)) ){
             cause <- 1
         }
     }
@@ -813,58 +833,90 @@ ate_initArgs <- function(object.event,
         fct.pointEstimate <- ATE_TI
     }
 
-    n.obs <- NROW(data)
+    n.obs <- NROW(mydata)
 
     ## estimator
-    if(!is.null(object.event) && is.null(object.treatment)){
-        if(TD){
-            estimator <- "GformulaTD"
+    if(is.null(estimator)){
+        if(!is.null(object.event) && is.null(object.treatment)){
+            if(TD){
+                estimator <- "GformulaTD"
+            }else{
+                estimator <- "Gformula"
+            }
+        }else if(is.null(object.event) && !is.null(object.treatment)){
+            if(any(n.censor>0)){
+                estimator <- "IPTW,IPCW"
+            }else{
+                estimator <- "IPTW"
+            }
+        }else if(!is.null(object.event) && !is.null(object.treatment)){
+            if(any(n.censor>0)){
+                estimator <- "AIPTW,AIPCW"
+            }else{
+                estimator <- "AIPTW"
+            }
         }else{
-            estimator <- "Gformula"
-        }
-    }else if(is.null(object.event) && !is.null(object.treatment)){
-        if(any(n.censor>0)){
-            estimator <- "IPTW,IPCW"
-        }else{
-            estimator <- "IPTW"
-        }
-    }else if(!is.null(object.event) && !is.null(object.treatment)){
-        if(any(n.censor>0)){
-            estimator <- "AIPTW,AIPCW"
-        }else{
-            estimator <- "AIPTW"
+            estimator <- NA
         }
     }else{
-        estimator <- NA
+        if(any(estimator == "IPTW") && any(n.censor>0)){
+            estimator[estimator == "IPTW"] <- "IPTW,IPCW"
+        }
+        if(any(estimator == "AIPTW") && any(n.censor>0)){
+            estimator[estimator == "AIPTW"] <- "AIPTW,AIPCW"
+        }
     }
 
     #### which terms are used by the estimator
     ## term 1: F_1(\tau|A=a,W) or F_1(\tau|A=a,W) (1-1(A=a)/Prob[A=a|W])
-    if(estimator %in% c("Gformula","AIPTW","AIPTW,AIPCW")){
+    if(any(estimator %in% c("Gformula","AIPTW","AIPTW,AIPCW"))){
         attr(estimator,"Gformula") <- TRUE
     }else{
         attr(estimator,"Gformula") <- FALSE
     }
 
     ## term 2 (treatment): 1(A=a)Y(tau)/Prob[A=a|W] or 1(A=a)Y(tau)/Prob[A=a|W] 1(\Delta!=0)/Prob[\Delta!=0]
-    if(estimator %in% c("IPTW","IPTW,IPCW","AIPTW","AIPTW,AIPCW")){
+    if(any(estimator %in% c("IPTW","IPTW,IPCW","AIPTW","AIPTW,AIPCW"))){
         attr(estimator,"IPTW") <- TRUE
     }else{
         attr(estimator,"IPTW") <- FALSE
     }
 
     ## term 2 (censoring): 1(A=a)Y(tau)/Prob[A=a|W] 1(\Delta!=0)/Prob[\Delta!=0]
-    if(estimator %in% c("IPTW,IPCW","AIPTW,AIPCW")){
+    if(any(estimator %in% c("IPTW,IPCW","AIPTW,AIPCW"))){
         attr(estimator,"IPCW") <- TRUE
     }else{
         attr(estimator,"IPCW") <- FALSE
     }
 
     ## term 3: 1(A=a)Y(tau) \int () dM
-    if(estimator %in% c("AIPTW,AIPCW")){
+    if(any(estimator %in% c("AIPTW,AIPCW"))){
         attr(estimator,"integral") <- TRUE
     }else{
         attr(estimator,"integral") <- FALSE
+    }
+
+    if(any(estimator %in% c("AIPTW","AIPTW,AIPCW"))){
+        attr(estimator,"augmented") <- TRUE
+    }else{
+        attr(estimator,"augmented") <- FALSE
+    }
+
+    ## which estimates should be output?
+    if(any(estimator %in% c("Gformula","GformulaTD"))){
+        attr(estimator,"export.Gformula") <- TRUE
+    }else{
+        attr(estimator,"export.Gformula") <- FALSE
+    }
+    if(any(estimator %in% c("IPTW","IPTW,IPCW"))){
+        attr(estimator,"export.IPTW") <- TRUE
+    }else{
+        attr(estimator,"export.IPTW") <- FALSE
+    }
+    if(any(estimator %in% c("AIPTW","AIPTW,AIPCW"))){
+        attr(estimator,"export.AIPTW") <- TRUE
+    }else{
+        attr(estimator,"export.AIPTW") <- FALSE
     }
 
     ## ** product.limit
@@ -891,6 +943,7 @@ ate_initArgs <- function(object.event,
                 treatment = treatment,
                 cause = cause,
                 level.censoring = level.censoring,
+                level.states = level.states,
                 eventVar.time = eventVar.time,
                 eventVar.status = eventVar.status,
                 censorVar.time = censorVar.time,
@@ -903,7 +956,7 @@ ate_initArgs <- function(object.event,
 ate_checkArgs <- function(object.event,
                           object.treatment,
                           object.censor,
-                          data,
+                          mydata,
                           formula,
                           treatment,
                           strata,
@@ -925,6 +978,7 @@ ate_checkArgs <- function(object.event,
                           TD,
                           n.censor,
                           level.censoring,
+                          level.states,
                           estimator,
                           eventVar.time,
                           eventVar.status,
@@ -939,21 +993,53 @@ ate_checkArgs <- function(object.event,
              "It should be set to NA \n")        
     }
 
+    ## ** estimator
+    if(any(is.na(estimator))){
+        stop("No model for the outcome/treatment/censoring has been specified. Cannot estimate the average treatment effect. \n")
+    }
+    
+    valid.estimator <- c("GformulaTD","Gformula","IPTW,IPCW","IPTW","AIPTW,AIPCW","AIPTW")
+    if(any(estimator %in% valid.estimator == FALSE)){
+        stop("Incorrect value(s) for argument \'estimator\': \"",paste(estimator[estimator %in% valid.estimator == FALSE], collapse = "\" \""),"\"\n",
+             "Valid values: ",paste(valid.estimator, collapse="\" \""),"\"\n")
+    }
+    if(attr(estimator,"Gformula")){
+        if(is.null(object.event)){
+            stop("Using a G-formula/AIPTW estimator requires to specify a model for the outcome (argument \'event\') \n")
+        }
+    }
+    if(attr(estimator,"IPTW")){
+        if(is.null(object.event)){
+            stop("Using a ITPW/AIPTW estimator requires to specify a model for the treatment allocation (argument \'treatment\') \n")
+        }
+    }
+    if(attr(estimator,"IPCW")){
+        if(is.null(object.event)){
+            stop("Using a ITPW/AIPTW estimator requires to specify a model for the censoring mechanism (argument \'censor\') in presence of right-censoring \n")
+        }
+    }
+    
     ## ** object.event
     if(!is.null(object.event)){
         candidateMethods <- paste("predictRisk",class(object.event),sep=".")
         if (all(match(candidateMethods,options$method.predictRisk,nomatch=0)==0)){
             stop(paste("Could not find predictRisk S3-method for ",class(object.event),collapse=" ,"),sep="")
         }
-        if(inherits(object.event,"CauseSpecificCox") && (object.event$surv.type=="hazard")){
-            if(attr(estimator,"integral") & (B==0) & (iid|se|band)){
-                stop("Can only compute iid/standard error/confidence bands for AIPTW,AIPCW estimators with CauseSpecificCox models for which surv.type=\"survival\" \n",
-                     "Consider using bootstrap resampling or changing \'surv.type\'\n")
-            }
+        if(inherits(object.event,"CauseSpecificCox") && (cause %in% object.event$causes == FALSE)){
+            stop("Argument \'cause\' does not match one of the available causes: ",paste(object.event$causes,collapse=" "),"\n")
         }
+        if(length(level.censoring)>1 && (level.censoring == cause)){
+            stop("The cause of interest must differ from the level indicating censoring (in the outcome model) \n")
+        } 
+        ## if(inherits(object.event,"CauseSpecificCox") && (object.event$surv.type=="hazard")){
+        ##     if(attr(estimator,"integral") & (B==0) & (iid|se|band)){
+        ##         stop("Can only compute iid/standard error/confidence bands for AIPTW,AIPCW estimators with CauseSpecificCox models for which surv.type=\"survival\" \n",
+        ##              "Consider using bootstrap resampling or changing \'surv.type\'\n")
+        ##     }
+        ## }
         
-        if(estimator %in% c("AIPTW","AIPTW,AIPCW") && inherits(object.event,"glm")){
-            warnings("It is unclear whether the current implementation of the double robust estimator is valid for logistic models.\n")
+        if(attr(estimator, "augmented") && attr(estimator, "IPCW") && inherits(object.event,"glm")){
+            stop("In presence of censoring, the double robust estimator has not been implemented for logistic models.\n")
         }
     }
     
@@ -966,30 +1052,25 @@ ate_checkArgs <- function(object.event,
     }
 
     ## ** object.censor
-    if(estimator %in% c("AIPTW,AIPCW","IPTW,IPCW")){
+    if(attr(estimator,"IPCW")){
         ## require censoring model
-        if(is.null(object.censor)){
-            stop("Argument \'censor\' must not be NULL for ",estimator," estimators in presence of censoring")
-        }
         if(!inherits(object.censor,"coxph") && !inherits(object.censor,"cph") && !inherits(object.censor,"phreg")){
             stop("Argument \'censor\' must be a Cox model \n")
-        }        
-        if(!identical(censorVar.status,eventVar.status)){
-            if(sum(diag(table(data[[censorVar.status]],data[[eventVar.status]])))!=NROW(data)){
-                stop("The status variables in object.event and object.censor are inconsistent \n")
-            }
         }
-        causeANDcensor <- intersect(which(data[[censorVar.status]]==level.censoring),
-                                    which(data[[eventVar.status]]==cause))
-        if(length(causeANDcensor)>0){
-            stop("The status variables in object.event and object.censor are inconsistent \n",
-                 "Some observations are both censored and have the event of interest \n")        
-        }
-        
         if(!identical(censorVar.time,eventVar.time)){
             stop("The time variable should be the same in object.event and object.censor \n")
         }
-
+        level.censoring2 <- unique(mydata[[censorVar.status]][coxModelFrame(object.censor)$status == 0])
+        if(any(level.censoring2 == level.censoring)){
+                stop("The level indicating censoring should differ between the outcome model and the censoring model \n",
+                     "maybe you have forgotten to set the event type == 0 in the censoring model \n")
+        }
+        
+        if(!identical(censorVar.status,eventVar.status)){
+            if(sum(diag(table(mydata[[censorVar.status]] == level.censoring, mydata[[eventVar.status]] %in% level.states == FALSE)))!=NROW(mydata)){
+                stop("The status variables in object.event and object.censor are inconsistent \n")
+            }
+        }
     }
 
     ## ** bootstrap
@@ -1040,18 +1121,18 @@ ate_checkArgs <- function(object.event,
                      "Set argument \'B\' to a positive integer to use a boostrap instead \n",sep="")
             }
 
-            if(coxN(object.event)[1]!=NROW(data)){
+            if(coxN(object.event)[1]!=NROW(mydata)){
                 stop("Argument \'event\' must be have been fitted using argument \'data\' for the functional delta method to work\n",
                      "(discrepancy found in number of rows) \n")
             }
         }
 
-        if(!is.null(object.treatment) && coxN(object.treatment)!=NROW(data)){ ## note: only check that the datasets have the same size
+        if(!is.null(object.treatment) && coxN(object.treatment)!=NROW(mydata)){ ## note: only check that the datasets have the same size
             stop("Argument \'treatment\' must be have been fitted using argument \'data\' for the functional delta method to work\n",
                  "(discrepancy found in number of rows) \n")
         }
 
-        if(!is.null(object.censor) && coxN(object.censor)!=NROW(data)){ ## note: only check that the datasets have the same size
+        if(!is.null(object.censor) && coxN(object.censor)!=NROW(mydata)){ ## note: only check that the datasets have the same size
                 stop("Argument \'censor\' must be have been fitted using argument \'data\' for the functional delta method to work\n",
                      "(discrepancy found in number of rows) \n")
         }
@@ -1061,10 +1142,10 @@ ate_checkArgs <- function(object.event,
     
     ## ** treatment
     if(!is.null(treatment)){        
-        if(treatment %in% names(data) == FALSE){
+        if(treatment %in% names(mydata) == FALSE){
             stop("The data set does not seem to have a variable ",treatment," (argument: object.treatment). \n")
         }
-        if(is.numeric(data[[treatment]])){
+        if(is.numeric(mydata[[treatment]])){
             stop("The treatment variable must be a factor variable. \n",
                  "Convert treatment to factor, re-fit the object using this new variable and then call ate. \n")
         }
@@ -1074,10 +1155,10 @@ ate_checkArgs <- function(object.event,
 
     ## ** strata
     if(!is.null(strata)){
-        if(estimator != "Gformula"){
+        if(attr(estimator, "IPTW")){
             stop("Argument \'strata\' only compatible with the G-formula estimator \n")
         }
-        if(any(strata %in% names(data) == FALSE)){
+        if(any(strata %in% names(mydata) == FALSE)){
             stop("The data set does not seem to have a variable \"",paste0(strata, collapse = "\" \""),"\" (argument: strata). \n")
         }
         if(length(strata) != 1){
@@ -1089,20 +1170,20 @@ ate_checkArgs <- function(object.event,
     }
 
     ## ** status
-    if(eventVar.status %in% names(data) == FALSE){
+    if(eventVar.status %in% names(mydata) == FALSE){
         stop("The data set does not seem to have a variable ",eventVar.status," (argument: object.event[2]). \n")
     }
     if(is.na(cause)){
         stop("Cannot guess which value of the variable \"",eventVar.status,"\" corresponds to the outcome of interest \n",
              "Please specify the argument \'cause\'. \n")
     }
-    if(cause %in% data[[eventVar.status]] == FALSE){
+    if(cause %in% mydata[[eventVar.status]] == FALSE){
         stop("Value of the argument \'cause\' not found in column \"",eventVar.status,"\" \n")
     }
     
     ## ** event time
     if(!is.na(eventVar.time)){
-        if(eventVar.time %in% names(data) == FALSE){
+        if(eventVar.time %in% names(mydata) == FALSE){
             stop("The data set does not seem to have a variable ",eventVar.time," (argument: object.event[1]). \n")
         }
         if(is.na(cause)){
@@ -1110,16 +1191,16 @@ ate_checkArgs <- function(object.event,
         }
 
         if(!is.null(treatment)){
-            freq.event <- tapply(data[[eventVar.status]], data[[treatment]], function(x){mean(x==cause)})
-            count.event <- tapply(data[[eventVar.status]], data[[treatment]], function(x){sum(x==cause)})
+            freq.event <- tapply(mydata[[eventVar.status]], mydata[[treatment]], function(x){mean(x==cause)})
+            count.event <- tapply(mydata[[eventVar.status]], mydata[[treatment]], function(x){sum(x==cause)})
         }else{
-            freq.event <- tapply(data[[eventVar.status]], data[[strata]], function(x){mean(x==cause)})
-            count.event <- tapply(data[[eventVar.status]], data[[strata]], function(x){sum(x==cause)})
+            freq.event <- tapply(mydata[[eventVar.status]], mydata[[strata]], function(x){mean(x==cause)})
+            count.event <- tapply(mydata[[eventVar.status]], mydata[[strata]], function(x){sum(x==cause)})
         }
         if(any(freq.event < 0.01) || any(count.event < 5)  ){
             warning("Rare event, possible violation of the positivity assumption \n")
         }
-        if(any(data[[eventVar.time]]<=0)){
+        if(any(mydata[[eventVar.time]]<=0)){
             stop("The time to event variable should only take strictly positive values \n")
         }
     }
@@ -1136,7 +1217,7 @@ ate_checkArgs <- function(object.event,
     }
     
     ## ** iid.nuisance    
-    if((return.iid.nuisance == FALSE) & (iid == TRUE) & (estimator %in% c("AIPTW","AIPTW,AIPCW") == FALSE)){
+    if((return.iid.nuisance == FALSE) & (iid == TRUE) & (attr(estimator, "augmented") == FALSE)){
         warning("Ignoring the uncertainty associated with the estimation of the nuisance parameters may lead to inconsistent standard errors. \n",
                 "Consider using a double robust estimator or setting the argument \'known.nuisance\' to TRUE \n")
     }

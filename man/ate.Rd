@@ -2,12 +2,13 @@
 % Please edit documentation in R/ate.R
 \name{ate}
 \alias{ate}
-\title{Compute the Average Treatment Effects Via the G-formula}
+\title{Compute the Average Treatment Effects Via}
 \usage{
-ate(event, treatment, censor = NULL, data, formula, strata = NULL,
-  contrasts = NULL, times, cause = NA, landmark, se = TRUE,
-  iid = FALSE, known.nuisance = FALSE, band = FALSE, B = 0, seed,
-  handler = "foreach", mc.cores = 1, cl = NULL, verbose = 2, ...)
+ate(event, treatment, censor = NULL, data, formula, estimator = NULL,
+  strata = NULL, contrasts = NULL, times, cause = NA, landmark,
+  se = TRUE, iid = FALSE, known.nuisance = FALSE, band = FALSE,
+  B = 0, seed, handler = "foreach", mc.cores = 1, cl = NULL,
+  verbose = TRUE, ...)
 }
 \arguments{
 \item{event}{Outcome model which describes how event risk depends
@@ -25,6 +26,12 @@ on treatment and covariates. The object must be a \code{coxph} or \code{cph} obj
 based on the outcome model}
 
 \item{formula}{For analyses with time-dependent covariates, the response formula. See examples.}
+
+\item{estimator}{[character] The type of estimator used to compute the average treatment effect. 
+Can be \code{"G-formula"}, \code{"IPTW"}, or \code{"AIPTW"}.
+When using \code{estimator="G-formula"}, a model for the outcome should be provided (argument event).
+When using \code{estimator="IPTW"}, a model for the treatment should be provided (argument treatment), as well as for the censoring (if any, argument censor).
+When using \code{estimator="AIPTW"} (double robust estimator), a model for the outcome and the treatment should be provided (argument event and treatment), as well as for the censoring (if any, argument censor).}
 
 \item{strata}{[character] Strata variable on which to compute the average risk.
 Incompatible with treatment. Experimental.}
@@ -74,8 +81,8 @@ The packages necessary to run the computations (e.g. riskRegression) must alread
 \item{...}{passed to predictRisk}
 }
 \description{
-Use the g-formula to estimate the average treatment
-    effect based on Cox regression with or without competing risks.
+Use the g-formula/IPTW/double robust estimator to estimate the average treatment
+    effect based on Cox regression with or without competing ryisks.
 }
 \examples{
 library(survival)
@@ -156,6 +163,8 @@ R.X10 <- expit(a + c * data[["X2"]])
 list(risk0=R.X10,risk1=R.X11,riskdiff=R.X11-R.X10)},
 average=TRUE)
 ateLava
+
+ateFit1b$meanRisk
 }
 
 #### Competing risks settings               ####
@@ -164,37 +173,38 @@ ateLava
 \dontrun{
 ## generate data
 n <- 500
+set.seed(10)
 dt <- sampleData(n, outcome="competing.risks")
 dt$time <- round(dt$time,1)
-dt$X1 <- factor(rbinom(n, prob = c(0.2,0.3,0.2) , size = 3), labels = paste0("T",0:3))
+dt$X1 <- factor(rbinom(n, prob = c(0.2,0.3) , size = 2), labels = paste0("T",0:2))
 
 ## estimate cause specific Cox model
 fitCR <-  CSC(Hist(time,event)~ X1+X8,data=dt,cause=1)
 
-## compute the ATE at times 5, 6, 7, and 8 using X1 as the treatment variable
-ateFit2a <- ate(fitCR, data = dt, treatment = "X1", times = 5:8, cause = 1,
-               se = FALSE)
+## compute the ATE at times 10, 15, 20 using X1 as the treatment variable
+ateFit2a <- ate(fitCR, data = dt, treatment = "X1", times = c(10,15,20),
+                cause = 1, se = FALSE)
 
 ## standard error / confidence intervals computed using the influence function
 ## (argument se = TRUE and B = 0)
-ateFit2b <- ate(fitCR, data = dt, treatment = "X1", times = 5:8, cause = 1,
-               se = TRUE, B = 0)
+ateFit2b <- ate(fitCR, data = dt, treatment = "X1", times = c(10,15,20),
+                cause = 1, se = TRUE, B = 0)
 
 ## same as before with in addition the confidence bands for the ATE
 ## (argument band = TRUE)
-ateFit2c <- ate(fitCR, data = dt, treatment = "X1", times = 5:8, cause = 1,
-               se = TRUE, band = TRUE, B = 0)
+ateFit2c <- ate(fitCR, data = dt, treatment = "X1", times = c(10,15,20), 
+               cause = 1, se = TRUE, band = TRUE, B = 0)
 
 ## standard error / confidence intervals computed using 100 boostrap samples
 ## (argument se = TRUE and B = 100) 
-ateFit2d <- ate(fitCR, data = dt, treatment = "X1", times = 5:8, cause = 1,
-                se = TRUE, B = 100)
+ateFit2d <- ate(fitCR, data = dt, treatment = "X1", times = c(10,15,20), 
+                cause = 1, se = TRUE, B = 100)
 ## NOTE: for real applications 100 bootstrap samples is not enougth 
 
 ## same but using 2 cpus for generating and analyzing the boostrap samples
 ## (parallel computation, argument mc.cores = 2) 
-ateFit2e <- ate(fitCR, data = dt, treatment = "X1", times = 5:8, cause = 1,
-                se = TRUE, B = 100, mc.cores = 2)
+ateFit2e <- ate(fitCR, data = dt, treatment = "X1", times = c(10,15,20), 
+                cause = 1, se = TRUE, B = 100, mc.cores = 2)
 }
 
 #### time-dependent covariates ###
@@ -209,7 +219,7 @@ set.seed(16)
 resVet <- ate(fitTD,formula=Hist(entry=tstart,time=time,event=status)~1,
           data = vet2, treatment = "celltype", contrasts = NULL,
         times=5,verbose=1,
-        landmark = c(0,30,60,90), cause = 1, B = 4, se = 1,
+        landmark = c(0,30,60,90), cause = 1, B = 10, se = 1,
         band = FALSE, mc.cores=1)
 resVet
 }
@@ -221,7 +231,8 @@ library(survival)
 d[,status:=1*(event==1)]
 d[,X3:=as.factor(X3)]
 ## ignore competing risks
-cox1TD <- coxph(Surv(start,time, status,type="counting") ~ X3+X5+X6+X8, data=d)
+cox1TD <- coxph(Surv(start,time, status,type="counting") ~ X3+X5+X6+X8,
+                data=d, x = TRUE)
 resTD1 <- ate(cox1TD,formula=Hist(entry=start,time=time,event=status)~1,
         data = d, treatment = "X3", contrasts = NULL,
         times=.5,verbose=1,
@@ -229,7 +240,8 @@ resTD1 <- ate(cox1TD,formula=Hist(entry=start,time=time,event=status)~1,
         band = FALSE, mc.cores=1)
 resTD1
 ## adjust for competing risks
-cscTD <- CSC(Hist(time=time, event=event,entry=start) ~ X3+X5+X6+X8, data=d)
+cscTD <- CSC(Hist(time=time, event=event,entry=start) ~ X3+X5+X6+X8,
+             x = TRUE, data=d)
 set.seed(16)
 resTD <- ate(cscTD,formula=Hist(entry=start,time=time,event=event)~1,
         data = d, treatment = "X3", contrasts = NULL,
