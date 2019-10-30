@@ -4,11 +4,14 @@
 \alias{autoplot.ate}
 \title{Plot Average Risks}
 \usage{
-\method{autoplot}{ate}(object, ci = FALSE, band = FALSE, plot = TRUE,
-  digits = 2, alpha = NA, ...)
+\method{autoplot}{ate}(object, estimator = object$estimator[1],
+  ci = FALSE, band = FALSE, plot = TRUE, digits = 2, alpha = NA,
+  ...)
 }
 \arguments{
 \item{object}{Object obtained with the function \code{ate}.}
+
+\item{estimator}{[character] The type of estimator relative to which the risks should be displayed.}
 
 \item{ci}{[logical] If \code{TRUE} display the confidence intervals for the average risks.}
 

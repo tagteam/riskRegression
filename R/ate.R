@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Oct 23 2016 (08:53) 
 ## Version: 
-## last-updated: okt 30 2019 (09:22) 
+## last-updated: okt 30 2019 (09:48) 
 ##           By: Brice Ozenne
-##     Update #: 1619
+##     Update #: 1625
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -727,7 +727,12 @@ ate_initArgs <- function(object.event,
             eventVar.time <- object.event[1]
             eventVar.status <- object.event[2]
         }
-        type.multistate <- "NA"
+        nType.tempo <- try(length(unique(mydata[[eventVar.status]])) - !is.null(myformula.censor), silent = TRUE)
+        if(nType.tempo==1){
+            type.multistate <- "survival"
+        }else{
+            type.multistate <- "competing.risks"
+        }
         object.event <- NULL
     }
     
@@ -1013,12 +1018,12 @@ ate_checkArgs <- function(object.event,
         }
     }
     if(attr(estimator,"IPTW")){
-        if(is.null(object.event)){
+        if(is.null(object.treatment)){
             stop("Using a ITPW/AIPTW estimator requires to specify a model for the treatment allocation (argument \'treatment\') \n")
         }
     }
     if(attr(estimator,"IPCW")){
-        if(is.null(object.event)){
+        if(is.null(object.censor)){
             stop("Using a ITPW/AIPTW estimator requires to specify a model for the censoring mechanism (argument \'censor\') in presence of right-censoring \n")
         }
     }
