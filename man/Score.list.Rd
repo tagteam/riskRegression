@@ -224,7 +224,7 @@ val.data = data[outofbag]
 riskRegression:::getSplitMethod("bootcv",B=10,N=17)$index
 }
 NOTE: the number .632 is the expected probability to draw one subject (for example subject 1) with
-   replacement from the data, which does not depend on the sample size:
+replacement from the data, which does not depend on the sample size:
 \code{B=10000}
 \code{N=137}
 \code{mean(sapply(1:B, function(b){match(1,sample(1:N,size=N,replace=TRUE),nomatch=0)}))}

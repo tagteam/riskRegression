@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun  6 2016 (09:02) 
 ## Version: 
-## last-updated: okt 16 2019 (14:01) 
-##           By: Brice Ozenne
-##     Update #: 287
+## last-updated: Oct 29 2019 (07:00) 
+##           By: Thomas Alexander Gerds
+##     Update #: 288
 #----------------------------------------------------------------------
 ## 
 ### Commentary:
@@ -202,7 +202,7 @@ predictRisk.integer <- function(object,newdata,times,cause,...){
 ##' @method predictRisk factor
 predictRisk.factor <- function(object,newdata,times,cause,...){
     stopifnot(NROW(object)==NROW(newdata))
-    object
+    as.numeric(object)
 }
 
 ## * predictRisk.numeric

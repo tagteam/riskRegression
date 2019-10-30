@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Feb 23 2017 (11:15) 
 ## Version: 
-## last-updated: Jul 13 2019 (12:01) 
+## last-updated: Oct 13 2019 (18:56) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 303
+##     Update #: 361
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -22,16 +22,25 @@
 ##' @param models Choice of models to plot
 ##' @param times Time point specifying the prediction horizon.
 ##' @param method The method for estimating the calibration curve(s):
-##' 
-##' \code{"nne"}: The expected event status is obtained in the nearest
-##' neighborhood around the predicted event probabilities.
-##' 
-##' \code{"quantile"}: The expected event status is obtained in groups
-##' defined by quantiles of the predicted event probabilities.
-##' @param cens.method For right censored data only. How observed proportions are calculated. Either "jackknife" here relying on the
-##' pseudovalues which in turn rely on censoring being independent of the event time and the covariates,
-##' or "local" which means to estimate Kaplan-Meier (no competing risks) and Aalen-Johansen (with competing risks)
-##' locally in the neighborhood/category of the predicted risks.
+##' \itemize{
+##' \item{\code{"quantile"}}{The observed proportion at predicted risk value 'p'
+##' is obtained in groups
+##' defined by quantiles of the predicted event probabilities of all subjects.
+##' The number of groups is controlled by argument \code{q}.}
+##' \item{\code{"nne"}}: {The observed proportion at predicted risk value 'p' is obtained based
+##' on the subjects whose predicted risk is inside a nearest
+##' neighborhood around the value 'p'. The larger the
+##' bandwidth the more subjects are included in the current neighborhood. 
+##' }}
+##' @param cens.method For right censored data only. How observed proportions are calculated. Either \code{"jackknife"} or \code{"local"}:
+##' \itemize{
+##' \item{\code{"jackknife"}}{Compute a running mean of the jackknife pseudovalues across neighborhoods/groups of the predicted risks.
+##' Here we rely on the
+##' assumption that censoring is independent of the event time and the covariates, see References. }
+##' \item{\code{"local"}}{Compute the Kaplan-Meier estimator in absence of competing risks and the Aalen-Johansen estimator in presence of competing risks
+##' locally like a running mean in neighborhoods of the predicted risks. The widths of the neighborhoods
+##' are defined according to method.
+##' }}
 ##' @param round If \code{TRUE} predicted probabilities are rounded to
 ##'     two digits before smoothing. This may have a considerable
 ##'     effect on computing efficiency in large data sets.
@@ -89,21 +98,26 @@
 ##' fb2=glm(Y~X1+X3+X6+X7,data=db,family="binomial")
 ##' xb=Score(list(model1=fb1,model2=fb2),Y~1,data=db,
 ##'           plots="cal")
-##' plotCalibration(xb)
+##' plotCalibration(xb,brier.in.legend=TRUE)
 ##' plotCalibration(xb,bars=TRUE,model="model1")
 ##' plotCalibration(xb,models=1,bars=TRUE,names.cex=1.3)
 ##' 
 ##' # survival
 ##' library(survival)
-##' ds=sampleData(100,outcome="survival")
-##' fs1=coxph(Surv(time,event)~X1+X5+X7,data=ds,x=1)
-##' fs2=coxph(Surv(time,event)~X1+X3+X6+X7,data=ds,x=1)
-##' xs=Score(list(Cox1=fs1,Cox2=fs2),Surv(time,event)~1,data=ds,
+##' library(prodlim)
+##' dslearn=sampleData(56,outcome="survival")
+##' dstest=sampleData(100,outcome="survival")
+##' fs1=coxph(Surv(time,event)~X1+X5+X7,data=dslearn,x=1)
+##' fs2=coxph(Surv(time,event)~strata(X1)+X3+X6+X7,data=dslearn,x=1)
+##' xs=Score(list(Cox1=fs1,Cox2=fs2),Surv(time,event)~1,data=dstest,
 ##'           plots="cal",metrics=NULL)
 ##' plotCalibration(xs)
+##' plotCalibration(xs,cens.method="local",pseudo=1)
+##' plotCalibration(xs,method="quantile")
 ##'
 ##'
 ##' # competing risks
+##' 
 ##' \dontrun{
 ##' data(Melanoma)
 ##' f1 <- CSC(Hist(time,status)~age+sex+epicel+ulcer,data=Melanoma)
@@ -117,22 +131,23 @@ plotCalibration <- function(x,
                             models,
                             times,
                             method="nne",
-                            cens.method="jackknife",
+                            cens.method,
                             round=TRUE,
                             bandwidth=NULL,
                             q=10,
                             bars=FALSE,
                             hanging=FALSE,
                             names="quantiles",
-                            pseudo,
+                            pseudo=FALSE,
                             rug,
+                            ## boxplot=FALSE,
                             show.frequencies=FALSE,
                             plot=TRUE,
                             add=FALSE,
                             diag=!add,
                             legend=!add,
-                            auc.in.legend=TRUE,
-                            brier.in.legend=TRUE,
+                            auc.in.legend,
+                            brier.in.legend,
                             axes=!add,
                             xlim=c(0,1),
                             ylim=c(0,1),
@@ -148,11 +163,19 @@ plotCalibration <- function(x,
                             na.action=na.fail,
                             cex=1,
                             ...){
+    if (x$response.type!="binary" && missing(cens.method)){
+        cens.method <- "local"
+        message("The default method for estimating calibration curves based on censored data has changed for riskRegression version 2019-9-8 or higher\nSet cens.method=\"jackknife\" to get the estimate using pseudo-values.\nHowever, note that the option \"jackknife\" is sensititve to violations of the assumption that the censoring is independent of both the event times and the covariates.\nSet cens.method=\"local\" to suppress this message.")
+    }
                                         # {{{ plot frame
     model=risk=event=status=NULL
+    if (missing(auc.in.legend))
+        auc.in.legend <- ("auc" %in% tolower(x$metrics))
+    if (missing(brier.in.legend))
+        brier.in.legend <- ("auc" %in% tolower(x$metrics))
     if (missing(pseudo) & missing(rug))
         if (x$cens.type=="rightCensored"){
-            showPseudo <- TRUE
+            showPseudo <- FALSE
             showRug <- FALSE
         } else{
             showPseudo <- FALSE
@@ -229,7 +252,7 @@ plotCalibration <- function(x,
     modelnames <- pframe[,unique(model)]
     axis1.DefaultArgs <- list(side=1,las=1,at=seq(0,xlim[2],xlim[2]/4))
     axis2.DefaultArgs <- list(side=2,las=2,at=seq(0,ylim[2],ylim[2]/4),mgp=c(4,1,0))
-    if (is.character(legend[[1]])|| legend[[1]]==TRUE){
+    if (is.character(legend[[1]])|| legend[[1]]==TRUE||auc.in.legend==TRUE|| brier.in.legend==TRUE){
         legend.data <- getLegendData(object=x,
                                      models=models,
                                      times=tp,
@@ -238,8 +261,9 @@ plotCalibration <- function(x,
                                      drop.null.model=TRUE)
         if (is.character(legend))
             legend.text <- legend
-        else
+        else{
             legend.text <- unlist(legend.data[,1])
+        }
         nrows.legend <- NROW(legend.data)
         if (nrows.legend==1){
             legend.lwd <- NA
@@ -248,7 +272,9 @@ plotCalibration <- function(x,
         }
         legend.DefaultArgs <- list(legend=legend.text,lwd=legend.lwd,col=col,ncol=1,lty=lty,cex=cex,bty="n",y.intersp=1,x="topleft",title="")
         if (NCOL(legend.data)>1){
-            addtable2plot.DefaultArgs <- list(yjust=1.18,cex=cex, table=legend.data[,-1,drop=FALSE])
+            addtable2plot.DefaultArgs <- list(yjust=1.18,
+                                              cex=cex,
+                                              table=legend.data[,-1,drop=FALSE])
         }else{
             addtable2plot.DefaultArgs <- NULL
         }
@@ -261,7 +287,7 @@ plotCalibration <- function(x,
         names.DefaultArgs <- list(cex=.7*par()$cex,y=c(-abs(diff(ylim))/15,-abs(diff(ylim))/25))
         frequencies.DefaultArgs <- list(cex=.7*par()$cex,percent=FALSE,offset=0)
     } else{
-        if (length(modelnames)<=1){
+        if (length(modelnames)<=1 && sum(auc.in.legend+brier.in.legend)==0){
             legend=FALSE
         }
     }
@@ -349,15 +375,27 @@ plotCalibration <- function(x,
                        plotFrame=data.frame(Pred=tapply(p,pcut,mean),
                                             Obs=pmin(1,pmax(0,tapply(jackF,pcut,mean))))
                    }else{
-                       censcode <- pframe[status==0,event[1]]
-                       qfit <- prodlim(Hist(time,event,cens.code=censcode)~pcut,data=pframe)
-                       cause <- x$call$cause
-                       plotFrame=data.frame(Pred=tapply(p,pcut,mean),
-                                            Obs=predict(qfit,
-                                                        newdata=data.frame(pcut=levels(pcut)),
-                                                        cause=cause,
-                                                        mode="matrix",
-                                                        times=tp,surv=FALSE))
+                       if(x$response.type=="survival"){
+                           censcode <- pframe[status==0,status[1]]
+                           qfit <- prodlim::prodlim(prodlim::Hist(time,status,cens.code=censcode)~pcut,data=pframe)
+                           cause <- 1
+                           plotFrame=data.frame(Pred=tapply(p,pcut,mean),
+                                                Obs=predict(qfit,
+                                                            newdata=data.frame(pcut=levels(pcut)),
+                                                            cause=cause,
+                                                            mode="matrix",
+                                                            times=tp,type="cuminc"))
+                       }else{
+                           censcode <- pframe[status==0,event[1]]
+                           qfit <- prodlim::prodlim(prodlim::Hist(time,event,cens.code=censcode)~pcut,data=pframe)
+                           cause <- x$call$cause
+                           plotFrame=data.frame(Pred=tapply(p,pcut,mean),
+                                                Obs=predict(qfit,
+                                                            newdata=data.frame(pcut=levels(pcut)),
+                                                            cause=cause,
+                                                            mode="matrix",
+                                                            times=tp,type="cuminc"))
+                       }
                    }
                    attr(plotFrame,"quantiles") <- groups
                    plotFrame
@@ -397,19 +435,32 @@ plotCalibration <- function(x,
                                nbh <- prodlim::meanNeighbors(x=p,y=jackF,bandwidth=bw)
                                plotFrame <- data.frame(Pred=nbh$uniqueX,Obs=nbh$averageY)
                                ## plotFrame=data.frame(Pred=tapply(p,pcut,mean),
-                                                    ## Obs=pmin(1,pmax(0,tapply(jackF,pcut,mean))))
+                               ## Obs=pmin(1,pmax(0,tapply(jackF,pcut,mean))))
                            }else{
                                ## local Kaplan-Meier/Aalen-Johansen 
                                if (cens.method=="local"){
-                                   censcode <- pframe[status==0,event[1]]
-                                   pfit <- prodlim(Hist(time,event,cens.code=censcode)~p,data=pframe)
-                                   cause <- x$call$cause
-                                   plotFrame=data.frame(Pred=sort(unique(p)),
-                                                        Obs=predict(pfit,
-                                                                    newdata=data.frame(p=sort(unique(p))),
-                                                                    cause=cause,
-                                                                    mode="matrix",
-                                                                    times=tp,surv=FALSE))
+                                   if(x$response.type=="survival"){
+                                       censcode <- pframe[status==0,status[1]]
+                                       pfit <- prodlim::prodlim(prodlim::Hist(time,status,cens.code=censcode)~p,data=pframe,bandwidth=bandwidth)
+                                       cause <- x$call$cause
+                                       plotFrame=data.frame(Pred=sort(unique(p)),
+                                                            Obs=predict(pfit,
+                                                                        newdata=data.frame(p=sort(unique(p))),
+                                                                        cause=cause,
+                                                                        mode="matrix",
+                                                                        times=tp,type="cuminc"))
+                                   }else{
+                                       censcode <- pframe[status==0,event[1]]
+                                       pframe[,Event:=factor(event,levels=1:(length(x$states)+1),labels=c(x$states,censcode))]
+                                       pfit <- prodlim::prodlim(prodlim::Hist(time,Event,cens.code=censcode)~p,data=pframe,bandwidth=bandwidth)
+                                       cause <- x$cause
+                                       plotFrame=data.frame(Pred=sort(unique(p)),
+                                                            Obs=predict(pfit,
+                                                                        newdata=data.frame(p=sort(unique(p))),
+                                                                        cause=cause,
+                                                                        mode="matrix",
+                                                                        times=tp,type="cuminc"))
+                                   }
                                } else{
                                    ## jackknife pseudo values
                                    nbh <- prodlim::meanNeighbors(x=p,y=jackF,bandwidth=bw)
@@ -473,6 +524,13 @@ plotCalibration <- function(x,
                                         # }}}
                                         # {{{ do the actual plot
     if (plot){
+        ## if (boxplot){
+        ## nbox <- length(control$lines$col)
+        ## layout(matrix(c(1:nbox, nbox, 1), widths = 100, heights = c(100-nbox*5,rep(5,nbox))))
+        ## for (m in 1:nbox){
+        ## pframe[model==m,boxplot(risk,col=control$lines$col[m],ylim=c(0,1),horizontal=1L)]
+        ## }
+        ## }
         if (out$add[1]==FALSE && !out$bars[1]){
             do.call("plot",control$plot)
         }

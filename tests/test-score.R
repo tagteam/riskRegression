@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jan  4 2016 (14:30) 
 ## Version: 
-## last-updated: Jun 13 2019 (09:58) 
+## last-updated: Aug 18 2019 (09:17) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 134
+##     Update #: 138
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -34,7 +34,6 @@ test_that("R squared/IPA", {
     expect_equal(r1$IPA.drop[1],full$Brier$score[model=="f1",IPA])
     expect_equal(r2$IPA[2],full$Brier$score[model=="f2",IPA])
 })
-
 # }}}
 # {{{ "vcov AUC"
 if (class(try(riskRegression.test,silent=TRUE))[1]!="try-error"){

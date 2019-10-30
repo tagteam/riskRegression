@@ -164,13 +164,12 @@ x <- Score(list(fit.arr2a,fit.arr2b,fit.lrr),
 
 }
 \references{
-Gerds, TA and Scheike, T and Andersen, PK (2011) Absolute risk
-regression for competing risks: interpretation, link functions and
-prediction Research report 11/8. Department of Biostatistics, University of
-Copenhagen
+Thomas A Gerds, Thomas H Scheike, and Per K Andersen. Absolute risk
+regression for competing risks: interpretation, link functions, and
+prediction. Statistics in medicine, 31(29):3921--3930, 2012.
 
-Scheike, Zhang and Gerds (2008), Predicting cumulativeincidence probability
-by direct binomial regression,Biometrika, 95, 205-220.
+Scheike, Zhang and Gerds (2008), Predicting cumulative incidence probability
+by direct binomial regression, Biometrika, 95, 205-220.
 
 Scheike and Zhang (2007), Flexible competing risks regression modelling and
 goodness of fit, LIDA, 14, 464-483.

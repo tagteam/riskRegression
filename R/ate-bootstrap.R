@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: apr 11 2018 (17:05) 
 ## Version: 
-## Last-Updated: okt 24 2019 (10:25) 
-##           By: Brice Ozenne
-##     Update #: 267
+## Last-Updated: Oct 29 2019 (06:59) 
+##           By: Thomas Alexander Gerds
+##     Update #: 268
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -170,7 +170,7 @@ calcBootATE <- function(args, name.estimate, estimator.boot, n.obs, fct.pointEst
             }           
             doParallel::registerDoParallel(cl)
             ## progress bar 
-            if(verbose>0){pb <- txtProgressBar(max = B, style = 3)}
+            if(verbose){pb <- txtProgressBar(max = B, style = 3,width=30)}
             b <- NULL ## [:forCRANcheck:] foreach
 
             boots <- foreach::`%dopar%`(foreach::foreach(b = 1:B, .packages = add.Package, .export = add.Fct), { ## b <- 1

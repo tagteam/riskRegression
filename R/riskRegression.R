@@ -32,13 +32,13 @@
 #' by the estimate of the inverse of the probability of censoring weights 
 #' @param ... Further arguments passed to \code{comp.risk}
 #' @author Thomas A. Gerds \email{tag@@biostat.ku.dk}, Thomas H. Scheike \email{ts@@biostat.ku.dk}
-#' @references Gerds, TA and Scheike, T and Andersen, PK (2011) Absolute risk
-#' regression for competing risks: interpretation, link functions and
-#' prediction Research report 11/8. Department of Biostatistics, University of
-#' Copenhagen
-#' 
-#' Scheike, Zhang and Gerds (2008), Predicting cumulativeincidence probability
-#' by direct binomial regression,Biometrika, 95, 205-220.
+#' @references
+#' Thomas A Gerds, Thomas H Scheike, and Per K Andersen. Absolute risk
+#' regression for competing risks: interpretation, link functions, and
+#' prediction. Statistics in medicine, 31(29):3921--3930, 2012.
+#'
+#' Scheike, Zhang and Gerds (2008), Predicting cumulative incidence probability
+#' by direct binomial regression, Biometrika, 95, 205-220.
 #' 
 #' Scheike and Zhang (2007), Flexible competing risks regression modelling and
 #' goodness of fit, LIDA, 14, 464-483.

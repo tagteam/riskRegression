@@ -45,12 +45,13 @@ cat("\nPublish:")
 packageVersion("Publish")
 #+END_SRC
 
-#+RESULTS[<2019-06-13 10:19:00> f47684812cfced1ee3e11c1d127ff83471a909ef]:
+#+RESULTS[<2019-08-18 09:23:22> f47684812cfced1ee3e11c1d127ff83471a909ef]:
+: data.table 1.12.2 using 2 threads (see ?getDTthreads).  Latest news: r-datatable.com
 : data.table:> [1] ‘1.12.2’
 : 
 : survival:> [1] ‘2.44.1.1’
 : 
-: riskRegression:> [1] ‘2019.6.13’
+: riskRegression:> [1] ‘2019.8.15’
 : 
 : Publish:> [1] ‘2019.3.11’
 
@@ -98,7 +99,7 @@ lrfit.inc <- glm(Y1~age+lpsaden+ppb5+lmax+ct1+diaggs+erg.status,data=astrain,fam
 publish(lrfit.inc,org=TRUE)
 #+END_SRC
 
-#+RESULTS[<2019-06-13 10:19:01> 4ad587463242261d838b316f44356bc6b6112649]:
+#+RESULTS[<2019-08-18 09:23:23> 4ad587463242261d838b316f44356bc6b6112649]:
 :results:
 | Variable   | Units | OddsRatio | CI.95       | p-value |
 |------------+-------+-----------+-------------+---------|
@@ -125,7 +126,7 @@ astest[,risk.inc:=100*predictRisk(lrfit.inc,newdata=astest)]
 publish(head(astest[,-c(8,9)]),digits=1,org=TRUE)
 #+END_SRC
 
-#+RESULTS[<2019-06-13 10:19:01> 1b832f895d12a85feea8e807fa4ca3edced723a1]:
+#+RESULTS[<2019-08-18 09:23:23> 1b832f895d12a85feea8e807fa4ca3edced723a1]:
 :results:
 |  age | lpsaden | ppb5 | lmax | ct1 | diaggs | erg.status |  Y1 | risk.ex | risk.inc |
 |------+---------+------+------+-----+--------+------------+-----+---------+----------|
@@ -148,20 +149,16 @@ X1 <- Score(list("Exclusive ERG"=lrfit.ex,"Inclusive ERG"=lrfit.inc),data=astest
 X1
 #+END_SRC
 
-#+RESULTS[<2019-06-13 10:19:01> 2bcd79c4cca9a135621f7e88a43adbe243da55d5]:
-#+begin_example
- [1] "ReSpOnSe"   "age"        "lpsaden"    "ppb5"       "lmax"       "ct1"        "diaggs"     "erg.status"
- [9] "time"       "event"      "Y1"         "risk.ex"    "risk.inc"
-
-Metric Brier:
-
-Results by model:
-
-           model Brier    IPA
-1:    Null model 0.152 0.0000
-2: Exclusive ERG 0.148 0.0268
-3: Inclusive ERG 0.141 0.0729
-#+end_example
+#+RESULTS[<2019-08-18 09:23:23> 2bcd79c4cca9a135621f7e88a43adbe243da55d5]:
+: 
+: Metric Brier:
+: 
+: Results by model:
+: 
+:            model Brier    IPA
+: 1:    Null model 0.152 0.0000
+: 2: Exclusive ERG 0.148 0.0268
+: 3: Inclusive ERG 0.141 0.0729
 
 Both logistic regression models have a lower Brier score than the
 =Null model= which ignores all predictor variables. Hence, both models
@@ -184,10 +181,8 @@ model and IPA of the model where the variable is omitted.
 IPA(lrfit.inc,newdata=astest)
 #+END_SRC
 
-#+RESULTS[<2019-06-13 10:19:01> 0a14f54e5393497b5ed8baf2e0ffce5d57ed4e7f]:
+#+RESULTS[<2019-08-18 09:23:23> 0a14f54e5393497b5ed8baf2e0ffce5d57ed4e7f]:
 #+begin_example
- [1] "ReSpOnSe"   "age"        "lpsaden"    "ppb5"       "lmax"       "ct1"        "diaggs"     "erg.status"
- [9] "time"       "event"      "Y1"         "risk.ex"    "risk.inc"  
     Variable     Brier        IPA        IPA.drop
 1 Null model 0.1523438 0.00000000  0.072907470973
 2 Full model 0.1412368 0.07290747  0.000000000000
@@ -217,7 +212,7 @@ coxfit.inc <- coxph(Surv(time,event!=0)~age+lpsaden+ppb5+lmax+ct1+diaggs+erg.sta
 publish(coxfit.inc,org=TRUE)
 #+END_SRC
 
-#+RESULTS[<2019-06-13 10:19:01> ab47285b61012d2bca8c73e0eb087b9e08233abe]:
+#+RESULTS[<2019-08-18 09:23:23> ab47285b61012d2bca8c73e0eb087b9e08233abe]:
 :results:
 | Variable   | Units | HazardRatio | CI.95       | p-value |
 |------------+-------+-------------+-------------+---------|
@@ -244,7 +239,7 @@ astest[,risk.inc:=100*predictRisk(coxfit.inc,newdata=astest,times=3)]
 publish(head(astest[,-c(8,9)]),digits=1,org=TRUE)
 #+END_SRC
 
-#+RESULTS[<2019-06-13 10:19:01> 5bcf6350ff6f463c8beb576216fb983d9574bfa1]:
+#+RESULTS[<2019-08-18 09:23:23> 5bcf6350ff6f463c8beb576216fb983d9574bfa1]:
 :results:
 |  age | lpsaden | ppb5 | lmax | ct1 | diaggs | erg.status |  Y1 | risk.ex | risk.inc |
 |------+---------+------+------+-----+--------+------------+-----+---------+----------|
@@ -267,21 +262,16 @@ X2 <- Score(list("Exclusive ERG"=coxfit.ex,"Inclusive ERG"=coxfit.inc),data=aste
 X2
 #+END_SRC
 
-#+RESULTS[<2019-06-13 10:19:01> 7d2e02fc1a5cd4dca72e69d8a94326dfcb717594]:
-#+begin_example
- [1] "time"               "status"             "age"                "lpsaden"            "ppb5"              
- [6] "lmax"               "ct1"                "diaggs"             "erg.status"         "protectedName.time"
-[11] "event"              "Y1"                 "risk.ex"            "risk.inc"
-
-Metric Brier:
-
-Results by model:
-
-           model times Brier    IPA
-1:    Null model     3 0.240 0.0000
-2: Exclusive ERG     3 0.224 0.0638
-3: Inclusive ERG     3 0.199 0.1709
-#+end_example
+#+RESULTS[<2019-08-18 09:23:24> 7d2e02fc1a5cd4dca72e69d8a94326dfcb717594]:
+: 
+: Metric Brier:
+: 
+: Results by model:
+: 
+:            model times Brier    IPA
+: 1:    Null model     3 0.240 0.0000
+: 2: Exclusive ERG     3 0.224 0.0638
+: 3: Inclusive ERG     3 0.199 0.1709
 
 It is sometimes interesting to compare the predictor variables
 according to how much they contribute to the prediction
@@ -297,11 +287,8 @@ model and IPA of the model where the variable is omitted.
 IPA(coxfit.inc,newdata=astest,times=3)
 #+END_SRC
 
-#+RESULTS[<2019-06-13 10:19:01> f4b18b24db785e34b067d3c4ce6c02234098476e]:
+#+RESULTS[<2019-08-18 09:23:24> f4b18b24db785e34b067d3c4ce6c02234098476e]:
 #+begin_example
- [1] "time"               "status"             "age"                "lpsaden"            "ppb5"              
- [6] "lmax"               "ct1"                "diaggs"             "erg.status"         "protectedName.time"
-[11] "event"              "Y1"                 "risk.ex"            "risk.inc"          
     Variable times     Brier       IPA      IPA.drop
 1 Null model     3 0.2395320 0.0000000  0.1708698205
 2 Full model     3 0.1986032 0.1708698  0.0000000000
@@ -331,7 +318,7 @@ cscfit.inc <- CSC(Hist(time,event)~age+lpsaden+ppb5+lmax+ct1+diaggs+erg.status,d
 publish(cscfit.inc)
 #+END_SRC
 
-#+RESULTS[<2019-06-13 10:19:02> b0817074933de144121448371b80edfbf281c9da]:
+#+RESULTS[<2019-08-18 09:23:24> b0817074933de144121448371b80edfbf281c9da]:
 #+begin_example
 Cause 1 :
      Variable Units HazardRatio       CI.95   p-value
@@ -372,7 +359,7 @@ astest[,risk.inc:=100*predictRisk(cscfit.inc,newdata=astest,times=3,cause=1)]
 publish(head(astest[,-c(8,9)]),digits=1,org=TRUE)
 #+END_SRC
 
-#+RESULTS[<2019-06-13 10:19:02> 841985da41439efcbff01b0901042c38e91abda3]:
+#+RESULTS[<2019-08-18 09:23:24> 841985da41439efcbff01b0901042c38e91abda3]:
 :results:
 |  age | lpsaden | ppb5 | lmax | ct1 | diaggs | erg.status |  Y1 | risk.ex | risk.inc |
 |------+---------+------+------+-----+--------+------------+-----+---------+----------|
@@ -398,21 +385,16 @@ X3 <- Score(list("Exclusive ERG"=cscfit.ex,
 X3
 #+END_SRC
 
-#+RESULTS[<2019-06-13 10:19:02> 262eb718c337234dcf3f7891b3d3d55254f3b16c]:
-#+begin_example
- [1] "time"                "status"              "event"               "age"                 "lpsaden"            
- [6] "ppb5"                "lmax"                "ct1"                 "diaggs"              "erg.status"         
-[11] "protectedName.time"  "protectedName.event" "Y1"                  "risk.ex"             "risk.inc"
-
-Metric Brier:
-
-Results by model:
-
-           model times Brier    IPA
-1:    Null model     3 0.245 0.0000
-2: Exclusive ERG     3 0.232 0.0504
-3: Inclusive ERG     3 0.202 0.1753
-#+end_example
+#+RESULTS[<2019-08-18 09:23:24> 262eb718c337234dcf3f7891b3d3d55254f3b16c]:
+: 
+: Metric Brier:
+: 
+: Results by model:
+: 
+:            model times Brier    IPA
+: 1:    Null model     3 0.245 0.0000
+: 2: Exclusive ERG     3 0.232 0.0504
+: 3: Inclusive ERG     3 0.202 0.1753
 
 It is sometimes interesting to compare the predictor variables
 according to how much they contribute to the prediction
@@ -429,11 +411,8 @@ IPA of the model where the variable is omitted.
 IPA(cscfit.inc,newdata=astest,times=3)
 #+END_SRC
 
-#+RESULTS[<2019-06-13 10:19:03> 3c35cfc9e150c201ca36c34c13353d76b053d7ba]:
+#+RESULTS[<2019-08-18 09:23:24> 3c35cfc9e150c201ca36c34c13353d76b053d7ba]:
 #+begin_example
- [1] "time"                "status"              "event"               "age"                 "lpsaden"            
- [6] "ppb5"                "lmax"                "ct1"                 "diaggs"              "erg.status"         
-[11] "protectedName.time"  "protectedName.event" "Y1"                  "risk.ex"             "risk.inc"           
     Variable times     Brier        IPA     IPA.drop
 1 Null model     3 0.2445718 0.00000000  0.175254870
 2 Full model     3 0.2017094 0.17525487  0.000000000

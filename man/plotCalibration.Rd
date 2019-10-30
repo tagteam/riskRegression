@@ -4,15 +4,15 @@
 \alias{plotCalibration}
 \title{Plot Calibration curve}
 \usage{
-plotCalibration(x, models, times, method = "nne",
-  cens.method = "jackknife", round = TRUE, bandwidth = NULL,
-  q = 10, bars = FALSE, hanging = FALSE, names = "quantiles",
-  pseudo, rug, show.frequencies = FALSE, plot = TRUE, add = FALSE,
-  diag = !add, legend = !add, auc.in.legend = TRUE,
-  brier.in.legend = TRUE, axes = !add, xlim = c(0, 1), ylim = c(0,
-  1), xlab = ifelse(bars, "Risk groups", "Predicted risk"),
-  ylab = "Observed frequency", col, lwd, lty, pch, type, cause = 1,
-  percent = TRUE, na.action = na.fail, cex = 1, ...)
+plotCalibration(x, models, times, method = "nne", cens.method,
+  round = TRUE, bandwidth = NULL, q = 10, bars = FALSE,
+  hanging = FALSE, names = "quantiles", pseudo = FALSE, rug,
+  show.frequencies = FALSE, plot = TRUE, add = FALSE, diag = !add,
+  legend = !add, auc.in.legend, brier.in.legend, axes = !add,
+  xlim = c(0, 1), ylim = c(0, 1), xlab = ifelse(bars, "Risk groups",
+  "Predicted risk"), ylab = "Observed frequency", col, lwd, lty, pch,
+  type, cause = 1, percent = TRUE, na.action = na.fail, cex = 1,
+  ...)
 }
 \arguments{
 \item{x}{Object obtained with function \code{Score}}
@@ -22,17 +22,26 @@ plotCalibration(x, models, times, method = "nne",
 \item{times}{Time point specifying the prediction horizon.}
 
 \item{method}{The method for estimating the calibration curve(s):
+\itemize{
+\item{\code{"quantile"}}{The observed proportion at predicted risk value 'p'
+is obtained in groups
+defined by quantiles of the predicted event probabilities of all subjects.
+The number of groups is controlled by argument \code{q}.}
+\item{\code{"nne"}}: {The observed proportion at predicted risk value 'p' is obtained based
+on the subjects whose predicted risk is inside a nearest
+neighborhood around the value 'p'. The larger the
+bandwidth the more subjects are included in the current neighborhood. 
+}}}
 
-\code{"nne"}: The expected event status is obtained in the nearest
-neighborhood around the predicted event probabilities.
-
-\code{"quantile"}: The expected event status is obtained in groups
-defined by quantiles of the predicted event probabilities.}
-
-\item{cens.method}{For right censored data only. How observed proportions are calculated. Either "jackknife" here relying on the
-pseudovalues which in turn rely on censoring being independent of the event time and the covariates,
-or "local" which means to estimate Kaplan-Meier (no competing risks) and Aalen-Johansen (with competing risks)
-locally in the neighborhood/category of the predicted risks.}
+\item{cens.method}{For right censored data only. How observed proportions are calculated. Either \code{"jackknife"} or \code{"local"}:
+\itemize{
+\item{\code{"jackknife"}}{Compute a running mean of the jackknife pseudovalues across neighborhoods/groups of the predicted risks.
+Here we rely on the
+assumption that censoring is independent of the event time and the covariates, see References. }
+\item{\code{"local"}}{Compute the Kaplan-Meier estimator in absence of competing risks and the Aalen-Johansen estimator in presence of competing risks
+locally like a running mean in neighborhoods of the predicted risks. The widths of the neighborhoods
+are defined according to method.
+}}}
 
 \item{round}{If \code{TRUE} predicted probabilities are rounded to
 two digits before smoothing. This may have a considerable
@@ -124,21 +133,26 @@ fb1=glm(Y~X1+X5+X7,data=db,family="binomial")
 fb2=glm(Y~X1+X3+X6+X7,data=db,family="binomial")
 xb=Score(list(model1=fb1,model2=fb2),Y~1,data=db,
           plots="cal")
-plotCalibration(xb)
+plotCalibration(xb,brier.in.legend=TRUE)
 plotCalibration(xb,bars=TRUE,model="model1")
 plotCalibration(xb,models=1,bars=TRUE,names.cex=1.3)
 
 # survival
 library(survival)
-ds=sampleData(100,outcome="survival")
-fs1=coxph(Surv(time,event)~X1+X5+X7,data=ds,x=1)
-fs2=coxph(Surv(time,event)~X1+X3+X6+X7,data=ds,x=1)
-xs=Score(list(Cox1=fs1,Cox2=fs2),Surv(time,event)~1,data=ds,
+library(prodlim)
+dslearn=sampleData(56,outcome="survival")
+dstest=sampleData(100,outcome="survival")
+fs1=coxph(Surv(time,event)~X1+X5+X7,data=dslearn,x=1)
+fs2=coxph(Surv(time,event)~strata(X1)+X3+X6+X7,data=dslearn,x=1)
+xs=Score(list(Cox1=fs1,Cox2=fs2),Surv(time,event)~1,data=dstest,
           plots="cal",metrics=NULL)
 plotCalibration(xs)
+plotCalibration(xs,cens.method="local",pseudo=1)
+plotCalibration(xs,method="quantile")
 
 
 # competing risks
+
 \dontrun{
 data(Melanoma)
 f1 <- CSC(Hist(time,status)~age+sex+epicel+ulcer,data=Melanoma)

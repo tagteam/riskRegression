@@ -83,7 +83,7 @@ getInfluenceCurve.AUC.competing.risks <- function(t,n,time,risk,Cases,Controls1,
     rowSumshtij2 <- rep(0,n) # initialize at 0
     rowSumshtij2[Controls2] <- colSums(htij2)
     hathtstar <- (sum(htij1))/(n*n)  
-    vectTisupt <- n*Controls1/sum(Controls1)
+    vectTisupt <- n*Controls1/nbControls1
     # Integral_0^T_i dMC_k/S for i %in% Cases
     MC.Ti.cases <- MC[sindex(eval.times=time[Cases],jump.times=unique(time)),,drop=FALSE]
     # Integral_0^T_i dMC_k/S for i %in% Controls 2
