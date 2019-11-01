@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: maj 23 2018 (14:08) 
 ## Version: 
-## Last-Updated: okt 29 2019 (13:15) 
+## Last-Updated: nov  1 2019 (11:02) 
 ##           By: Brice Ozenne
-##     Update #: 616
+##     Update #: 618
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -311,9 +311,9 @@ confintIID.ate <- function(object,
     }
     estimator <- object$estimator
     n.estimator <- length(estimator)
-    
+
     ## ** check arguments
-    if(any(sapply(object$iid[estimator],is.null))){
+    if(is.null(object$iid) || any(sapply(object$iid[estimator],is.null))){
         stop("Cannot re-compute standard error or confidence bands without the iid decomposition \n",
              "Set argument \'iid\' to TRUE when calling ate \n")
     }

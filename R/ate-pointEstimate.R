@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: jun 27 2019 (10:43) 
 ## Version: 
-## Last-Updated: okt 29 2019 (13:13) 
+## Last-Updated: nov  1 2019 (11:26) 
 ##           By: Brice Ozenne
-##     Update #: 632
+##     Update #: 633
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -392,6 +392,7 @@ ATE_TI <- function(object.event,
             attr(out,"F1.jump") <- F1.jump
             attr(out,"S.jump") <- S.jump$survival
             attr(out,"G.jump") <- G.jump$survival
+            attr(out,"dLambda.jump") <- dLambda.jump$hazard
             attr(out,"dM.jump") <- dM.jump
 
             attr(out,"beforeEvent.jumpC") <- beforeEvent.jumpC
