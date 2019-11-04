@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: May 31 2016 (11:32)
 ## Version:
-## last-updated: Nov  4 2019 (11:12) 
+## last-updated: Nov  4 2019 (11:26) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 54
+##     Update #: 56
 #----------------------------------------------------------------------
 ##
 ### Commentary:
@@ -20,11 +20,12 @@
 ##' @title Print Score object
 ##' @param x Object obtained with \code{Score.list}
 ##' @param digits Number of digits
+##' @param percent Logical. If \code{TRUE} show percentages.
 ##' @param ... passed to print
 #'
 #' @method print Score
 #' @export
-print.Score <- function(x,percent=TRUE,digits,...){
+print.Score <- function(x,digits,percent=TRUE,...){
     if (missing(digits)){
         if (percent==TRUE) digits <- 1 else digits <- 3
     }
