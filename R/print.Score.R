@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: May 31 2016 (11:32)
 ## Version:
-## last-updated: Nov  4 2019 (11:26) 
+## last-updated: Nov  4 2019 (12:22) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 56
+##     Update #: 57
 #----------------------------------------------------------------------
 ##
 ### Commentary:
@@ -79,6 +79,7 @@ print.Score <- function(x,digits,percent=TRUE,...){
 #' @method print scoreAUC
 #' @export
 print.scoreAUC <- function(x,B,digits=3,response.type,percent=TRUE,...){
+    AUC=se=lower=upper=delta.AUC=NULL
     cat("\nResults by model:\n\n")
     if (percent[1]==TRUE){
         fmt <- paste0("%1.",digits[[1]],"f")
@@ -110,6 +111,7 @@ print.scoreAUC <- function(x,B,digits=3,response.type,percent=TRUE,...){
 #' @method print scoreBrier
 #' @export
 print.scoreBrier <- function(x,B,digits=3,response.type,percent=TRUE,...){
+    Brier=IPA=se=lower=upper=delta.Brier=NULL
     cat("\nResults by model:\n\n")
     if (percent[1]==TRUE){
         fmt <- paste0("%1.",digits[[1]],"f")

@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Nov  4 2019 (09:07) 
 ## Version: 
-## Last-Updated: Nov  4 2019 (12:09) 
+## Last-Updated: Nov  4 2019 (12:21) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 11
+##     Update #: 12
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -26,6 +26,7 @@
 ##' @export 
 ##' @author Thomas A. Gerds <tag@@biostat.ku.dk>
 print.IPA <- function(x,percent=TRUE,digits=2,...){
+    Brier=IPA.drop=IPA=NULL
     if (missing(digits)){
         if (percent==TRUE) digits <- 1 else digits <- 3
     }
