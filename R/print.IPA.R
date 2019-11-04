@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Nov  4 2019 (09:07) 
 ## Version: 
-## Last-Updated: Nov  4 2019 (11:27) 
+## Last-Updated: Nov  4 2019 (12:09) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 10
+##     Update #: 11
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -35,7 +35,7 @@ print.IPA <- function(x,percent=TRUE,digits=2,...){
         fmt <- paste0("%1.",digits[[1]],"f")
         X[,Brier:=sprintf(fmt=fmt,100*Brier)]
         X[,IPA:=sprintf(fmt=fmt,100*IPA)]
-        X[,IPA.drop:=sprintf(fmt=fmt,100*IPA.drop)]
+        if (match("IPA.drop",colnames(X),nomatch=0)) X[,IPA.drop:=sprintf(fmt=fmt,100*IPA.drop)]
         print(X,...)
         message("\nNOTE: Values are multiplied by 100 and given in % (use print(...,percent=FALSE) to avoid this.")
     }else{
