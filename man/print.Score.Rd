@@ -4,7 +4,7 @@
 \alias{print.Score}
 \title{Print Score object}
 \usage{
-\method{print}{Score}(x, digits = 3, ...)
+\method{print}{Score}(x, percent = TRUE, digits, ...)
 }
 \arguments{
 \item{x}{Object obtained with \code{Score.list}}

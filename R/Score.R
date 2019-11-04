@@ -1121,7 +1121,7 @@ Score.list <- function(object,
         if (!is.null(progress.bar)){
             message("Running crossvalidation ...")
             if (!(progress.bar %in% c(1,2,3))) progress.bar <- 3
-            pb <- txtProgressBar(max = B, style = progress.bar)
+            pb <- txtProgressBar(max = B, style = progress.bar,width=20)
         }
         `%dopar%` <- foreach::`%dopar%`
         ## k-fold-CV
@@ -1631,7 +1631,7 @@ Score.list <- function(object,
             if (parallel=="snow") exports <- c("DT.B","N.b","cens.model","multi.split.test") else exports <- NULL
             if (!is.null(progress.bar)){
                 if (!(progress.bar %in% c(1,2,3))) progress.bar <- 3
-                pb <- txtProgressBar(max = B, style = progress.bar)
+                pb <- txtProgressBar(max = B, style = progress.bar,width=20)
             }
             crossval <- foreach (j=1:B,.export=exports) %dopar%{
                 ## crossval <- lapply(1:B,function(j){

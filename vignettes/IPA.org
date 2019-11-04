@@ -45,15 +45,14 @@ cat("\nPublish:")
 packageVersion("Publish")
 #+END_SRC
 
-#+RESULTS[<2019-08-18 09:23:22> f47684812cfced1ee3e11c1d127ff83471a909ef]:
-: data.table 1.12.2 using 2 threads (see ?getDTthreads).  Latest news: r-datatable.com
+#+RESULTS[<2019-11-04 08:07:02> f47684812cfced1ee3e11c1d127ff83471a909ef]:
 : data.table:> [1] ‘1.12.2’
 : 
 : survival:> [1] ‘2.44.1.1’
 : 
-: riskRegression:> [1] ‘2019.8.15’
+: riskRegression:> [1] ‘2019.11.2’
 : 
-: Publish:> [1] ‘2019.3.11’
+: Publish:> [1] ‘2019.11.2’
 
 * Data
 
@@ -99,7 +98,7 @@ lrfit.inc <- glm(Y1~age+lpsaden+ppb5+lmax+ct1+diaggs+erg.status,data=astrain,fam
 publish(lrfit.inc,org=TRUE)
 #+END_SRC
 
-#+RESULTS[<2019-08-18 09:23:23> 4ad587463242261d838b316f44356bc6b6112649]:
+#+RESULTS[<2019-11-04 08:07:03> 4ad587463242261d838b316f44356bc6b6112649]:
 :results:
 | Variable   | Units | OddsRatio | CI.95       | p-value |
 |------------+-------+-----------+-------------+---------|
@@ -126,7 +125,7 @@ astest[,risk.inc:=100*predictRisk(lrfit.inc,newdata=astest)]
 publish(head(astest[,-c(8,9)]),digits=1,org=TRUE)
 #+END_SRC
 
-#+RESULTS[<2019-08-18 09:23:23> 1b832f895d12a85feea8e807fa4ca3edced723a1]:
+#+RESULTS[<2019-11-04 08:07:03> 1b832f895d12a85feea8e807fa4ca3edced723a1]:
 :results:
 |  age | lpsaden | ppb5 | lmax | ct1 | diaggs | erg.status |  Y1 | risk.ex | risk.inc |
 |------+---------+------+------+-----+--------+------------+-----+---------+----------|
@@ -149,7 +148,7 @@ X1 <- Score(list("Exclusive ERG"=lrfit.ex,"Inclusive ERG"=lrfit.inc),data=astest
 X1
 #+END_SRC
 
-#+RESULTS[<2019-08-18 09:23:23> 2bcd79c4cca9a135621f7e88a43adbe243da55d5]:
+#+RESULTS[<2019-11-04 08:07:03> 2bcd79c4cca9a135621f7e88a43adbe243da55d5]:
 : 
 : Metric Brier:
 : 
@@ -181,7 +180,7 @@ model and IPA of the model where the variable is omitted.
 IPA(lrfit.inc,newdata=astest)
 #+END_SRC
 
-#+RESULTS[<2019-08-18 09:23:23> 0a14f54e5393497b5ed8baf2e0ffce5d57ed4e7f]:
+#+RESULTS[<2019-11-04 08:07:04> 0a14f54e5393497b5ed8baf2e0ffce5d57ed4e7f]:
 #+begin_example
     Variable     Brier        IPA        IPA.drop
 1 Null model 0.1523438 0.00000000  0.072907470973
@@ -212,7 +211,7 @@ coxfit.inc <- coxph(Surv(time,event!=0)~age+lpsaden+ppb5+lmax+ct1+diaggs+erg.sta
 publish(coxfit.inc,org=TRUE)
 #+END_SRC
 
-#+RESULTS[<2019-08-18 09:23:23> ab47285b61012d2bca8c73e0eb087b9e08233abe]:
+#+RESULTS[<2019-11-04 08:07:05> ab47285b61012d2bca8c73e0eb087b9e08233abe]:
 :results:
 | Variable   | Units | HazardRatio | CI.95       | p-value |
 |------------+-------+-------------+-------------+---------|
@@ -239,7 +238,7 @@ astest[,risk.inc:=100*predictRisk(coxfit.inc,newdata=astest,times=3)]
 publish(head(astest[,-c(8,9)]),digits=1,org=TRUE)
 #+END_SRC
 
-#+RESULTS[<2019-08-18 09:23:23> 5bcf6350ff6f463c8beb576216fb983d9574bfa1]:
+#+RESULTS[<2019-11-04 08:07:05> 5bcf6350ff6f463c8beb576216fb983d9574bfa1]:
 :results:
 |  age | lpsaden | ppb5 | lmax | ct1 | diaggs | erg.status |  Y1 | risk.ex | risk.inc |
 |------+---------+------+------+-----+--------+------------+-----+---------+----------|
@@ -262,7 +261,7 @@ X2 <- Score(list("Exclusive ERG"=coxfit.ex,"Inclusive ERG"=coxfit.inc),data=aste
 X2
 #+END_SRC
 
-#+RESULTS[<2019-08-18 09:23:24> 7d2e02fc1a5cd4dca72e69d8a94326dfcb717594]:
+#+RESULTS[<2019-11-04 08:07:05> 7d2e02fc1a5cd4dca72e69d8a94326dfcb717594]:
 : 
 : Metric Brier:
 : 
@@ -287,7 +286,7 @@ model and IPA of the model where the variable is omitted.
 IPA(coxfit.inc,newdata=astest,times=3)
 #+END_SRC
 
-#+RESULTS[<2019-08-18 09:23:24> f4b18b24db785e34b067d3c4ce6c02234098476e]:
+#+RESULTS[<2019-11-04 08:07:05> f4b18b24db785e34b067d3c4ce6c02234098476e]:
 #+begin_example
     Variable times     Brier       IPA      IPA.drop
 1 Null model     3 0.2395320 0.0000000  0.1708698205
@@ -318,35 +317,20 @@ cscfit.inc <- CSC(Hist(time,event)~age+lpsaden+ppb5+lmax+ct1+diaggs+erg.status,d
 publish(cscfit.inc)
 #+END_SRC
 
-#+RESULTS[<2019-08-18 09:23:24> b0817074933de144121448371b80edfbf281c9da]:
+#+RESULTS[<2019-11-04 08:07:06> b0817074933de144121448371b80edfbf281c9da]:
 #+begin_example
-Cause 1 :
-     Variable Units HazardRatio       CI.95   p-value
-1         age              1.04 [1.00;1.09]   0.07631
-2     lpsaden              1.13 [0.92;1.38]   0.23133
-3        ppb5              1.14 [1.04;1.24]   0.00589
-4        lmax              1.19 [1.03;1.39]   0.02208
-5         ct1   cT1         Ref                      
-6               cT2        1.31 [0.73;2.36]   0.36635
-7      diaggs   GNA         Ref                      
-8               3/3        0.54 [0.35;0.84]   0.00662
-9               3/4        0.44 [0.22;0.88]   0.02024
-10 erg.status   neg         Ref                      
-11              pos        2.20 [1.56;3.11]   < 0.001
-
-Cause 2 :
-     Variable Units HazardRatio       CI.95   p-value
-1         age              1.01 [0.95;1.07]   0.81571
-2     lpsaden              1.09 [0.83;1.42]   0.53701
-3        ppb5              1.39 [1.22;1.58]   < 0.001
-4        lmax              0.82 [0.67;1.00]   0.05458
-5         ct1   cT1         Ref                      
-6               cT2        0.31 [0.07;1.28]   0.10482
-7      diaggs   GNA         Ref                      
-8               3/3        0.56 [0.29;1.10]   0.09212
-9               3/4        0.19 [0.06;0.60]   0.00486
-10 erg.status   neg         Ref                      
-11              pos        1.20 [0.71;2.04]   0.49269
+   Variable Units                1                2 
+        age       1.04 [1.00;1.09] 1.01 [0.95;1.07] 
+    lpsaden       1.13 [0.92;1.38] 1.09 [0.83;1.42] 
+       ppb5       1.14 [1.04;1.24] 1.39 [1.22;1.58] 
+       lmax       1.19 [1.03;1.39] 0.82 [0.67;1.00] 
+        ct1   cT1             Ref              Ref  
+              cT2 1.31 [0.73;2.36] 0.31 [0.07;1.28] 
+     diaggs   GNA             Ref              Ref  
+              3/3 0.54 [0.35;0.84] 0.56 [0.29;1.10] 
+              3/4 0.44 [0.22;0.88] 0.19 [0.06;0.60] 
+ erg.status   neg             Ref              Ref  
+              pos 2.20 [1.56;3.11] 1.20 [0.71;2.04]
 #+end_example
 
 Based on these models we predict the risk of progression in presence
@@ -359,7 +343,7 @@ astest[,risk.inc:=100*predictRisk(cscfit.inc,newdata=astest,times=3,cause=1)]
 publish(head(astest[,-c(8,9)]),digits=1,org=TRUE)
 #+END_SRC
 
-#+RESULTS[<2019-08-18 09:23:24> 841985da41439efcbff01b0901042c38e91abda3]:
+#+RESULTS[<2019-11-04 08:07:06> 841985da41439efcbff01b0901042c38e91abda3]:
 :results:
 |  age | lpsaden | ppb5 | lmax | ct1 | diaggs | erg.status |  Y1 | risk.ex | risk.inc |
 |------+---------+------+------+-----+--------+------------+-----+---------+----------|
@@ -385,7 +369,7 @@ X3 <- Score(list("Exclusive ERG"=cscfit.ex,
 X3
 #+END_SRC
 
-#+RESULTS[<2019-08-18 09:23:24> 262eb718c337234dcf3f7891b3d3d55254f3b16c]:
+#+RESULTS[<2019-11-04 08:07:06> 262eb718c337234dcf3f7891b3d3d55254f3b16c]:
 : 
 : Metric Brier:
 : 
@@ -411,7 +395,7 @@ IPA of the model where the variable is omitted.
 IPA(cscfit.inc,newdata=astest,times=3)
 #+END_SRC
 
-#+RESULTS[<2019-08-18 09:23:24> 3c35cfc9e150c201ca36c34c13353d76b053d7ba]:
+#+RESULTS[<2019-11-04 08:07:06> 3c35cfc9e150c201ca36c34c13353d76b053d7ba]:
 #+begin_example
     Variable times     Brier        IPA     IPA.drop
 1 Null model     3 0.2445718 0.00000000  0.175254870
