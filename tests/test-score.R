@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jan  4 2016 (14:30) 
 ## Version: 
-## last-updated: Aug 18 2019 (09:17) 
+## last-updated: Nov  3 2019 (19:29) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 138
+##     Update #: 139
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -224,10 +224,11 @@ test_that("survival outcome uncensored",{
     library(randomForestSRC)
     library(riskRegression)
     library(prodlim)
+    set.seed(8)
     d <- sampleData(100,outcome="survival")
     d$event=1
     cx=coxph(Surv(time,event)~X1+X2+X3+X4+X5+X6+X7+X8+X9+X10,d,x=TRUE)
-    rfx=rfsrc(Surv(time,event)~X1+X2+X3+X4+X5+X6+X7+X8+X9+X10,d,ntree=10)
+    rfx=rfsrc(Surv(time,event)~X1+X2+X3+X4+X5+X6+X7+X8+X9+X10,data=d,ntree=10)
     out <- Score(list(Cox=cx,RF=rfx),
                  data=d,
                  metrics="brier",

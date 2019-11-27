@@ -1,11 +1,11 @@
-### rsquared.R --- 
+### IPA.R --- 
 #----------------------------------------------------------------------
 ## Author: Thomas Alexander Gerds
 ## Created: Aug  9 2017 (10:36) 
 ## Version: 
-## Last-Updated: okt  7 2019 (18:58) 
-##           By: Brice Ozenne
-##     Update #: 153
+## Last-Updated: Nov  4 2019 (12:09) 
+##           By: Thomas Alexander Gerds
+##     Update #: 160
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -14,13 +14,13 @@
 #----------------------------------------------------------------------
 ## 
 ### Code:
-##' General R^2 for binary outcome and right censored time to event (survival) outcome also with competing risks
+##' Index of Prediction Accuracy: General R^2 for binary outcome and right censored time to event (survival) outcome also with competing risks
 ##'
-##' R^2 is calculated based on the model's predicted risks. The Brier score of the model is compared to the Brier score of the null model.
+##' IPA (R^2) is calculated based on the model's predicted risks. The Brier score of the model is compared to the Brier score of the null model.
 ##' @title Explained variation for settings with binary, survival and competing risk outcome
 ##' @aliases rsquared rsquared.default rsquared.glm rsquared.coxph rsquared.CauseSpecificCox IPA IPA.default IPA.glm IPA.coxph IPA.CauseSpecificCox
-##' @param object Model for which we want R^2
-##' @param newdata Optional validation data set in which to compute R^2
+##' @param object Model for which we want IPA.
+##' @param newdata Optional validation data set in which to compute IPA
 ##' @param formula Formula passed to \code{Score}. If not provided, try to use the formula of the call of \code{object}, if any.
 ##' @param cause For competing risk models the event of interest
 ##' @param times Vector of time points used as prediction horizon for the computation of Brier scores.
@@ -41,20 +41,21 @@
 ##' @seealso Score
 ##' @examples
 ##' library(prodlim)
+##' library(data.table)
 ##' # binary outcome
 ##' library(lava)
 ##' set.seed(18)
 ##' learndat <- sampleData(48,outcome="binary")
 ##' lr1 = glm(Y~X1+X2+X7+X9,data=learndat,family=binomial)
-##' rsquared(lr1)
+##' IPA(lr1)
 ##' 
 ##' ## validation data
 ##' valdat=sampleData(94,outcome="binary")
-##' rsquared(lr1,newdata=valdat)
+##' IPA(lr1,newdata=valdat)
 ##'
 ##' ## predicted risks externally given
 ##' p1=predictRisk(lr1,newdata=valdat)
-##' rsquared(p1,formula=Y~1,valdat)
+##' IPA(p1,formula=Y~1,valdat)
 ##' 
 ##' # survival
 ##' library(survival)
@@ -66,15 +67,15 @@
 ##'       data=pbclearn,x=TRUE)
 ##' 
 ##' ## same data
-##' rsquared(cox1,formula=Surv(time,status!=0)~1,times=1000)
+##' IPA(cox1,formula=Surv(time,status!=0)~1,times=1000)
 ##'
 ##' ## validation data
 ##' pbcval=pbc[!pbctest,]
-##' rsquared(cox1,formula=Surv(time,status!=0)~1,newdata=pbcval,times=1000)
+##' IPA(cox1,formula=Surv(time,status!=0)~1,newdata=pbcval,times=1000)
 ##'
 ##' ## predicted risks externally given
 ##' p2=predictRisk(cox1,newdata=pbcval,times=1000)
-##' rsquared(cox1,formula=Surv(time,status!=0)~1,newdata=pbcval,times=1000)
+##' IPA(cox1,formula=Surv(time,status!=0)~1,newdata=pbcval,times=1000)
 ##'  
 ##' # competing risks
 ##' data(Melanoma)
@@ -83,24 +84,24 @@
 ##' fit1 <- CSC(list(Hist(time,status)~sex,
 ##'                  Hist(time,status)~invasion+epicel+age),
 ##'                  data=Melanoma)
-##' rsquared(fit1,times=1000,cause=2)
+##' IPA(fit1,times=1000,cause=2)
 ##'
 ##' ## validation data
 ##' Melanomaval=Melanoma[!Melanomatest,]
-##' rsquared(fit1,formula=Hist(time,status)~1,newdata=Melanomaval,times=1000)
+##' IPA(fit1,formula=Hist(time,status)~1,newdata=Melanomaval,times=1000)
 ##'
 ##' ## predicted risks externally given
 ##' p3= predictRisk(fit1,cause=1,newdata=Melanomaval,times=1000)
-##' rsquared(p3,formula=Hist(time,status)~1,cause=1,newdata=Melanomaval,times=1000)
+##' IPA(p3,formula=Hist(time,status)~1,cause=1,newdata=Melanomaval,times=1000)
 ##'  
 ##' @export 
 ##' @author Thomas A. Gerds <tag@@biostat.ku.dk>
-rsquared <- function(object,...){
-    UseMethod("rsquared")
+IPA <- function(object,...){
+    UseMethod("IPA")
 }
 
 ##' @export
-rsquared.default <- function(object,formula,newdata,times,cause,...){
+IPA.default <- function(object,formula,newdata,times,cause,...){
     if (missing(formula)) stop("Need formula to define the outcome variable.")
     if (missing(newdata)) stop("Need newdata to calculate R^2.")
     ## stop("No method available for calculating R^2 for objects in class: ",class(object),call.=FALSE)
@@ -115,14 +116,14 @@ rsquared.default <- function(object,formula,newdata,times,cause,...){
                  conf.int=FALSE,
                  metrics="brier",
                  cens.model="km",
-                 summary="rsquared",
+                 summary="IPA",
                  ...)$Brier$score
     class(out) <- c("IPA",class(out))
     out
 }
 
 ##' @export
-rsquared.CauseSpecificCox <- function(object,formula,newdata,times,cause,...){
+IPA.CauseSpecificCox <- function(object,formula,newdata,times,cause,...){
     IPA=model=Variable=IPA.drop=Brier=NULL
     ## this is a modification of drop1
     models <- object$models
@@ -175,7 +176,7 @@ rsquared.CauseSpecificCox <- function(object,formula,newdata,times,cause,...){
                 conf.int=FALSE,
                 metrics="brier",
                 cens.model="km",
-                summary="rsquared",
+                summary="IPA",
                 ...)$Brier$score
     ## r2[,IPA:=100*IPA]
     ## r2 <- r2[model!="Null model"]
@@ -188,7 +189,7 @@ rsquared.CauseSpecificCox <- function(object,formula,newdata,times,cause,...){
 }
 
 ##' @export
-rsquared.coxph <- function(object,formula,newdata,times,...){
+IPA.coxph <- function(object,formula,newdata,times,...){
     IPA=model=Variable=IPA.drop=Brier=NULL
     ## this is a modification of drop1
     Terms <- stats::terms(object)
@@ -217,7 +218,7 @@ rsquared.coxph <- function(object,formula,newdata,times,...){
                 conf.int=FALSE,
                 metrics="brier",
                 cens.model="km",
-                summary="rsquared",
+                summary="IPA",
                 ...)$Brier$score
     ## r2[,IPA:=100*IPA]
     ## r2 <- r2[model!="Null model"]
@@ -230,7 +231,7 @@ rsquared.coxph <- function(object,formula,newdata,times,...){
 }
 
 ##' @export
-rsquared.glm <- function(object,formula,newdata,...){
+IPA.glm <- function(object,formula,newdata,...){
     IPA=model=Variable=IPA.drop=Brier=NULL
     ## this is a modification of drop1
     stopifnot(family(object)$family=="binomial")
@@ -258,7 +259,7 @@ rsquared.glm <- function(object,formula,newdata,...){
                 contrasts=FALSE,
                 conf.int=FALSE,
                 metrics="brier",
-                summary="rsquared",
+                summary="IPA",
                 ...)$Brier$score
     ## r2[,IPA:=100*IPA]
     ## r2 <- r2[model!="Null model"]
@@ -271,16 +272,14 @@ rsquared.glm <- function(object,formula,newdata,...){
 } 
 
 #' @export
-IPA <- rsquared
+rsquared <- IPA
 #' @export
-IPA.default <- rsquared.default
+rsquared.default <- IPA.default
 #' @export
-IPA.CauseSpecificCox <- rsquared.CauseSpecificCox
+rsquared.CauseSpecificCox <- IPA.CauseSpecificCox
 #' @export
-IPA.coxph <- rsquared.coxph
+rsquared.coxph <- IPA.coxph
 #' @export
-IPA.glm <- rsquared.glm
-
-
+rsquared.glm <- IPA.glm
 ######################################################################
-### rsquared.R ends here
+### IPA.R ends here

@@ -132,7 +132,7 @@ Copy/paste some functionality form other vignette.
 Packages and source for reloading after edits.
 #+BEGIN_SRC R  :results output   :exports silent  :session *R* :cache yes
 library(riskRegression)
-sessionInfo()
+packageVersion("riskRegression")
 #+END_SRC
 
 #+RESULTS[<2019-06-13 09:25:58> 89bbea24d7a593489c4d8d082db5a2eb5946e265]:
