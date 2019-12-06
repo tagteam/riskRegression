@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Oct 23 2016 (08:53) 
 ## Version: 
-## last-updated: okt 30 2019 (09:48) 
+## last-updated: nov  8 2019 (14:34) 
 ##           By: Brice Ozenne
-##     Update #: 1625
+##     Update #: 1626
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -18,7 +18,7 @@
 ## * ate (documentation)
 #' @title Compute the Average Treatment Effects Via 
 #' @description Use the g-formula/IPTW/double robust estimator to estimate the average treatment
-#'     effect based on Cox regression with or without competing ryisks.
+#'     effect based on Cox regression with or without competing risks.
 #' @name ate
 #' 
 #' @param event Outcome model which describes how event risk depends
