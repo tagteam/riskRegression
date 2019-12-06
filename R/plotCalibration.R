@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Feb 23 2017 (11:15) 
 ## Version: 
-## last-updated: Oct 13 2019 (18:56) 
+## last-updated: Dec  6 2019 (10:19) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 361
+##     Update #: 364
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -378,7 +378,6 @@ plotCalibration <- function(x,
                        if(x$response.type=="survival"){
                            censcode <- pframe[status==0,status[1]]
                            qfit <- prodlim::prodlim(prodlim::Hist(time,status,cens.code=censcode)~pcut,data=pframe)
-                           cause <- 1
                            plotFrame=data.frame(Pred=tapply(p,pcut,mean),
                                                 Obs=predict(qfit,
                                                             newdata=data.frame(pcut=levels(pcut)),

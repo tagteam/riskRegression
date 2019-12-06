@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: May 31 2016 (11:32)
 ## Version:
-## last-updated: Nov  4 2019 (12:22) 
+## last-updated: Dec  1 2019 (10:25) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 57
+##     Update #: 58
 #----------------------------------------------------------------------
 ##
 ### Commentary:
@@ -119,6 +119,7 @@ print.scoreBrier <- function(x,B,digits=3,response.type,percent=TRUE,...){
         X$score[,Brier:=sprintf(fmt=fmt,100*Brier)]
         if (match("IPA",colnames(X$score),nomatch=0)) X$score[,IPA:=sprintf(fmt=fmt,100*IPA)]
         if (match("se",colnames(X$score),nomatch=0)) X$score[,se:=NULL]
+        if (match("se.conservative",colnames(X$score),nomatch=0)) X$score[,se.conservative:=NULL]
         if (match("lower",colnames(X$score),nomatch=0)) X$score[,lower:=sprintf(fmt=fmt,100*lower)]
         if (match("upper",colnames(X$score),nomatch=0)) X$score[,upper:=sprintf(fmt=fmt,100*upper)]
         print(X$score,...)
