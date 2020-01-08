@@ -82,7 +82,7 @@ The packages necessary to run the computations (e.g. riskRegression) must alread
 }
 \description{
 Use the g-formula/IPTW/double robust estimator to estimate the average treatment
-    effect based on Cox regression with or without competing ryisks.
+    effect based on Cox regression with or without competing risks.
 }
 \examples{
 library(survival)

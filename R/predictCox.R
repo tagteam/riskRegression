@@ -482,13 +482,19 @@ predictCox <- function(object,
                                         # {{{ standard error
     
     if(se[[1]] || band[[1]] || iid[[1]] || average.iid[[1]]){
-      
+
         if(nVar > 0){
             ## use prodlim to get the design matrix
-            new.LPdata <- prodlim::model.design(infoVar$lp.sterms,
-                                                data = newdata,
-                                                specialsFactor = TRUE,
-                                                dropIntercept = TRUE)$design
+            new.LPdata <- try(prodlim::model.design(infoVar$lp.sterms,
+                                                    data = newdata,
+                                                    specialsFactor = TRUE,
+                                                    dropIntercept = TRUE)$design,
+                              silent = TRUE)
+            if(inherits(new.LPdata, "try-error")){
+                stop("Could not extract the design matrix corresponding to argument \'newdata\' using prodlim::model.design \n",
+                     "Error message:\n",new.LPdata,"\n")
+            }
+            
             if(NROW(new.LPdata)!=NROW(newdata)){
                 stop("NROW of the design matrix and newdata differ \n",
                      "maybe because newdata contains NA values \n")
@@ -667,5 +673,30 @@ predictCox <- function(object,
   
 }
 
+## * formulaWithKnots
+`formulaWithKnots` <-
+    function(object) UseMethod("formulaWithKnots")
 
+formulaWithKnots.cph <- function(object){
 
+    ff <- deparse(formula(object))
+    if(grepl("rcs(",ff,fixed=TRUE)){
+        test.nl <- sapply(object$Design$nonlinear, any)
+        var.nl <- names(test.nl)[test.nl]
+        parms.nl <- object$Design$parms[var.nl]
+
+        vec.terms <- strsplit(ff, "+", fixed = TRUE)[[1]]
+        index.rcs <- grep("rcs(", vec.terms, fixed = TRUE)
+        
+        for(iRcs in index.rcs){ ## iRcs <- 3
+            iTerm <- vec.terms[iRcs]
+            iVar <- var.nl[sapply(var.nl, grepl, x = iTerm, fixed = TRUE)]
+            vec.terms[iRcs] <- paste0("rcs(",iVar,", c(",paste0(parms.nl[[iVar]],collapse=","),"))")
+        }
+        newff <- as.formula(paste(vec.terms, collapse = "+"))
+    }else{
+        newff <- parse(text = ff)
+    }
+    
+    return(newff)
+}
