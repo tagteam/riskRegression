@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: feb 17 2017 (10:06) 
 ## Version: 
-## last-updated: Jul 12 2019 (20:53) 
-##           By: Thomas Alexander Gerds
-##     Update #: 487
+## last-updated: jan 20 2020 (17:50) 
+##           By: Brice Ozenne
+##     Update #: 491
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -121,20 +121,20 @@ autoplot.predictCox <- function(object,
   
     if(group.by[[1]] == "covariates" && (("newdata" %in% names(object)) == FALSE)){
         stop("argument \'group.by\' cannot be \"covariates\" when newdata is missing in the object \n",
-             "set argment \'keep.newdata\' to TRUE when calling predictCox \n")
+             "set argment \'keep.newdata\' to TRUE when calling the predictCox function \n")
     }
     if(group.by[[1]] == "strata" && ("strata" %in% names(object) == FALSE)){
         stop("argument \'group.by\' cannot be \"strata\" when strata is missing in the object \n",
-             "set argment \'keep.strata\' to TRUE when calling predictCox \n")
+             "set argment \'keep.strata\' to TRUE when calling the predictCox function \n")
     }
   
     if(ci[[1]]==TRUE && (object$se[[1]]==FALSE || is.null(object$conf.level))){
         stop("argument \'ci\' cannot be TRUE when no standard error have been computed \n",
-             "set arguments \'se\' and \'confint\' to TRUE when calling predictCox \n")
+             "set arguments \'se\' and \'confint\' to TRUE when calling the predictCox function \n")
     }
     if(band[[1]] && (object$band[[1]]==FALSE  || is.null(object$conf.level))){
         stop("argument \'band\' cannot be TRUE when the quantiles for the confidence bands have not been computed \n",
-             "set arguments \'band\' and \'confint\' to TRUE when calling predictCox \n")
+             "set arguments \'band\' and \'confint\' to TRUE when calling the predictCox function \n")
     }
 
     dots <- list(...)

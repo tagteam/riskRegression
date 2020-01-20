@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: maj 23 2018 (14:08) 
 ## Version: 
-## Last-Updated: Mar  3 2019 (20:02) 
-##           By: Thomas Alexander Gerds
-##     Update #: 158
+## Last-Updated: jan 20 2020 (17:51) 
+##           By: Brice Ozenne
+##     Update #: 160
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -81,7 +81,7 @@ confint.predictCSC <- function(object,
 
     if(object$se[[1]] == FALSE && object$band[[1]] == FALSE){
         message("No confidence interval/band computed \n",
-                "Set argument \'se\' or argument \'band\' to TRUE when calling predictCSC \n")
+                "Set argument \'se\' or argument \'band\' to TRUE when calling the predictCSC function \n")
         return(object)
     }
 
@@ -98,11 +98,11 @@ confint.predictCSC <- function(object,
     if(object$band){
         if(is.null(object$absRisk.se)){
             stop("Cannot compute confidence bands \n",
-                 "Set argument \'se\' to TRUE when calling predictCSC \n")
+                 "Set argument \'se\' to TRUE when calling the predictCSC function \n")
         }
         if(is.null(object$absRisk.iid)){
             stop("Cannot compute confidence bands \n",
-                 "Set argument \'iid\' to TRUE when calling predictCSC \n")
+                 "Set argument \'iid\' to TRUE when calling the predictCSC function \n")
         }
     }
     

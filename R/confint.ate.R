@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: maj 23 2018 (14:08) 
 ## Version: 
-## Last-Updated: nov  1 2019 (11:02) 
+## Last-Updated: jan 20 2020 (17:51) 
 ##           By: Brice Ozenne
-##     Update #: 618
+##     Update #: 621
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -120,7 +120,7 @@ confint.ate <- function(object,
 
     if(object$se[[1]] == FALSE && object$band[[1]] == FALSE){
         message("No confidence interval is computed \n",
-                "Set argument \'se\' to TRUE when calling ate \n")
+                "Set argument \'se\' to TRUE when calling the ate function \n")
         return(object)
     }
 
@@ -306,7 +306,7 @@ confintIID.ate <- function(object,
 
     if(object$se[[1]] == FALSE && object$band[[1]] == FALSE){
         message("No confidence interval/band computed \n",
-                "Set argument \'se\' or argument \'band\' to TRUE when calling ate \n")
+                "Set argument \'se\' or argument \'band\' to TRUE when calling the ate function \n")
         return(object)
     }
     estimator <- object$estimator
@@ -315,7 +315,7 @@ confintIID.ate <- function(object,
     ## ** check arguments
     if(is.null(object$iid) || any(sapply(object$iid[estimator],is.null))){
         stop("Cannot re-compute standard error or confidence bands without the iid decomposition \n",
-             "Set argument \'iid\' to TRUE when calling ate \n")
+             "Set argument \'iid\' to TRUE when calling the ate function \n")
     }
     object$meanRisk.transform <- match.arg(meanRisk.transform, c("none","log","loglog","cloglog"))
     object$diffRisk.transform <- match.arg(diffRisk.transform, c("none","atanh"))
