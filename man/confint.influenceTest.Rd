@@ -4,8 +4,15 @@
 \alias{confint.influenceTest}
 \title{Confidence Intervals and Confidence Bands for the Difference Between Two Estimates}
 \usage{
-\method{confint}{influenceTest}(object, parm = NULL, level = 0.95,
-  nsim.band = 10000, transform = "none", seed = NA, ...)
+\method{confint}{influenceTest}(
+  object,
+  parm = NULL,
+  level = 0.95,
+  nsim.band = 10000,
+  transform = "none",
+  seed = NA,
+  ...
+)
 }
 \arguments{
 \item{object}{A \code{influenceTest} object, i.e. output of the \code{influenceTest} function.}

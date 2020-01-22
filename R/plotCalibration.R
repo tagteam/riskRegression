@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Feb 23 2017 (11:15) 
 ## Version: 
-## last-updated: Dec  6 2019 (10:35) 
+## last-updated: Dec 30 2019 (20:36) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 370
+##     Update #: 371
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -227,8 +227,12 @@ plotCalibration <- function(x,
     if (missing(col)) {
         if (bars)
             col <- c("grey90","grey30")
-        else
-            col <- 1:NF
+        else{
+            cbbPalette <- c("#000000", "#E69F00", "#56B4E9", "#009E73", "#D55E00", "#0072B2", "#CC79A7", "#F0E442")
+            if (NF>length(cbbPalette))
+                col <- 1:NF
+            else col <- cbbPalette[1:NF]
+        }
     }
     if (missing(type)){
         if (method=="quantile"){

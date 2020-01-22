@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: May 31 2016 (11:32)
 ## Version:
-## last-updated: Dec  1 2019 (10:25) 
+## last-updated: Dec  6 2019 (10:41) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 58
+##     Update #: 59
 #----------------------------------------------------------------------
 ##
 ### Commentary:
@@ -89,7 +89,6 @@ print.scoreAUC <- function(x,B,digits=3,response.type,percent=TRUE,...){
         if (match("lower",colnames(X$score),nomatch=0)) X$score[,lower:=sprintf(fmt=fmt,100*lower)]
         if (match("upper",colnames(X$score),nomatch=0)) X$score[,upper:=sprintf(fmt=fmt,100*upper)]
         print(X$score,digits=digits,...)
-        message("\nNOTE: Values are multiplied by 100 and given in % (use print(...,percent=FALSE) to avoid this.")
         if (length(x$contrasts)>0){
             X$contrasts[,delta.AUC:=sprintf(fmt=fmt,100*delta.AUC)]
             if (match("se",colnames(X$contrasts),nomatch=0)) X$contrasts[,se:=NULL]
@@ -123,7 +122,6 @@ print.scoreBrier <- function(x,B,digits=3,response.type,percent=TRUE,...){
         if (match("lower",colnames(X$score),nomatch=0)) X$score[,lower:=sprintf(fmt=fmt,100*lower)]
         if (match("upper",colnames(X$score),nomatch=0)) X$score[,upper:=sprintf(fmt=fmt,100*upper)]
         print(X$score,...)
-        message("\nNOTE: Values are multiplied by 100 and given in % (use print(...,percent=FALSE) to avoid this.")
         if (length(x$contrasts)>0){
             X$contrasts[,delta.Brier:=sprintf(fmt=fmt,100*delta.Brier)]
             if (match("se",colnames(X$contrasts),nomatch=0)) X$contrasts[,se:=NULL]
@@ -131,8 +129,8 @@ print.scoreBrier <- function(x,B,digits=3,response.type,percent=TRUE,...){
             if (match("upper",colnames(X$contrasts),nomatch=0)) X$contrasts[,upper:=sprintf(fmt=fmt,100*upper)]
             cat("\nResults of model comparisons:\n\n")
             print(X$contrasts,...)
-            message("\nNOTE: Values are multiplied by 100 and given in % (use print(...,percent=FALSE) to avoid this.")
         }
+        message("\nNOTE: Values are multiplied by 100 and given in % (use print(...,percent=FALSE) to avoid this.")
     }else{
         print(x$score,digits=digits,...)
         if (length(x$contrasts)>0){

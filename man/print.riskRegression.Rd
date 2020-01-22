@@ -4,8 +4,7 @@
 \alias{print.riskRegression}
 \title{Print function for riskRegression models}
 \usage{
-\method{print}{riskRegression}(x, times, digits = 3, eps = 10^-4,
-  verbose = TRUE, conf.int = 0.95, ...)
+\method{print}{riskRegression}(x, times, digits = 3, eps = 10^-4, verbose = TRUE, conf.int = 0.95, ...)
 }
 \arguments{
 \item{x}{Object obtained with ARR, LRR or riskRegression}

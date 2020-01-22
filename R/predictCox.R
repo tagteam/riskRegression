@@ -82,7 +82,6 @@
 #' \code{\link{autoplot.predictCox}} to display the predictions.
 
 ## * predictCox (examples)
-#' @rdname predictCox
 #' @examples
 ##' 
 #' library(survival)

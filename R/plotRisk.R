@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Mar 13 2017 (16:53) 
 ## Version: 
-## Last-Updated: Oct 13 2019 (10:54) 
+## Last-Updated: Dec 27 2019 (11:03) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 95
+##     Update #: 141
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -26,8 +26,14 @@
 ##' @param ylim y-axis limits
 ##' @param xlab x-axis labels
 ##' @param ylab y-axis labels
-##' @param col colour
-##' @param pch point type
+##' @param col Colors used according to the outcome.
+##' binary outcome (two colors: no event, event),
+##' survival outcome (three colors: censored, event, no event)
+##' competing risk outcome (4 or more colors: event, competing risk 1, ..., competing risk k, censored, no event)
+##' @param pch Symbols used according to the outcome
+##' binary outcome (two symbols: no event, event),
+##' survival outcome (three symbols: censored, event, no event)
+##' competing risk outcome (4 or more symbols: event, competing risk 1, ..., competing risk k, censored, no event)
 ##' @param cex point size
 ##' @param preclipse Value between 0 and 1 defining the preclipse area
 ##' @param preclipse.shade Logical. If \code{TRUE} shade the area of clinically meaningful change.
@@ -121,14 +127,12 @@ plotRisk <- function(x,
         }else{ ## competing risks
             R <- pframe[model==modelnames[1],
             {
-                r <- event # 1,2,3
-                r[time>times] <- 4
+                r <- event # 1,2,3,4? ...
+                r[time>times] <- max(event)+1
                 r-1
             }]
         }
     }
-    ## m1 <- pframe[model==modelnames[1],.(risk,ID)]
-    ## m2 <- pframe[model==modelnames[2],.(risk,ID)]
     pframe[,model:=factor(model)]
     m1 <- levels(pframe$model)[[1]]
     m2 <- levels(pframe$model)[[2]]
@@ -150,23 +154,58 @@ plotRisk <- function(x,
         pred.m2 <- pred.m2[which]
         R <- R[which]
     }
+    nR <- length(unique(R))
+    if (x$response.type=="competing.risks") nCR <- nR-3
+    Rfactor <- factor(R,
+                      levels=sort(unique(R)),
+                      labels=switch(x$response.type,
+                                    "binary"={c("event-free","event")},
+                                    "survival"={c("right-censored","event","event-free")},
+                                    "competing.risks"={if (nR==4)
+                                                           c("event","competing-risk","right-censored","event-free")
+                                                       else
+                                                           c("event",paste0("competing-risk",1:nCR),"right-censored","event-free")}))
     if (missing(col)){
-        col <- switch(x$response.type,
-                      "binary"={as.character(factor(R,levels=c(0,1),labels=c("darkgreen","red")))},
-                      "survival"={as.character(factor(R,levels=c(0,1,2),labels=c("darkorange","red","darkgreen")))},
-                      "competing.risks"={as.character(factor(R,levels=c(0,1,2,3),labels=c("darkorange","red","purple","darkgreen")))})
+        colcode <- switch(x$response.type,
+                          "binary"={c("#52da58","red")},
+                          "survival"={c("gray55","red","#52da58")},
+                          "competing.risks"={c("red",rep("purple",nCR),"gray55","#52da58")})
+    }else{
+        if (nR!=length(col)){
+            warning(paste0("Need exactly ",nR," colors (argument col) in the following order: ",paste0(levels(Rfactor),collapse=", ")))
+        }
+        colcode <- col
     }
-                                        # {{{ smart argument control
+    if (missing(pch)){
+        pchcode <- switch(x$response.type,
+                          "binary"={c(1,16)},
+                          "survival"={c(8,16,1)},
+                          "competing.risks"={c(16,rep(17,nCR),8,1)})
+    } else{
+        if (nR!=length(pch)){
+            warning(paste0("Need exactly ",nR," symbols (argument pch) in the following order: ",paste0(labels(Rfactor),
+                                                                                                        collapse=", ")))
+        }
+        pchcode <- pch
+    }
+    pch=as.numeric(as.character(factor(Rfactor,labels=pchcode)))
+    col=as.character(factor(Rfactor,labels=colcode))
+    # {{{ smart argument control
     plot.DefaultArgs <- list(x=0,y=0,type = "n",ylim = ylim,xlim = xlim,ylab=ylab,xlab=xlab)
     axis1.DefaultArgs <- list(side=1,las=1,at=seq(xlim[1],xlim[2],(xlim[2]-xlim[1])/4))
     axis2.DefaultArgs <- list(side=2,las=2,at=seq(xlim[1],xlim[2],(xlim[2]-xlim[1])/4),mgp=c(4,1,0))
     this.legend <- switch(x$response.type,"binary"={paste0(c("No event","Event")," (n=",c(sum(R==0),sum(R==1)),")")},
                           "survival"={paste0(c("Censored","Event","No event")," (n=",c(sum(R==0),sum(R==1),sum(R==2)),")")},
-                          "competing.risks"={paste0(c("Censored","Event","Competing risk","No event")," (n=",c(sum(R==0),sum(R==1),sum(R==2),sum(R==3)),")")})
+                          "competing.risks"={
+                              if (nCR==1){
+                                  paste0(c("Event","Competing risk","Censored","No event")," (n=",c(sum(R==0),sum(R==1),sum(R==2),sum(R==3)),")")
+                              }else{
+                                  paste0(c("Event",paste0("Competing risk ",1:nCR),"Censored","No event")," (n=",sapply(1:nR,function(r){sum(R==r)}),")")
+                              }
+                              })
     legend.DefaultArgs <- list(legend=this.legend,
-                               pch=pch,
-                               col=switch(x$response.type,"binary"= c("darkgreen","red"),"survival"=c("darkorange","red","darkgreen"),
-                                          "competing.risks"=c("darkorange","red","purple","darkgreen")),
+                               pch=pchcode,
+                               col=colcode,
                                cex=cex,
                                bty="n",
                                y.intersp=1.3,
@@ -183,9 +222,9 @@ plotRisk <- function(x,
                                                    "legend"=legend.DefaultArgs,
                                                    "axis1"=axis1.DefaultArgs,
                                                    "axis2"=axis2.DefaultArgs),
-                                     forced=list("plot"=list(axes=FALSE)),
+                                     forced=list("plot"=list(axes=FALSE),"legend"=list(col=colcode)),
                                      verbose=TRUE)
-                                        # }}}
+    # }}}
     do.call("plot",control$plot)
     if (preclipse.shade==TRUE){
         ## rect(xleft=0,xright=1,ybottom=0,ytop=1,col="white",border=0)

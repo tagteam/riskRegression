@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: feb 27 2017 (10:47) 
 ## Version: 
-## last-updated: Mar  3 2019 (20:02) 
+## last-updated: Jan  6 2020 (08:59) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 83
+##     Update #: 84
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -31,7 +31,6 @@
 #' @param ... Not used. Only for compatibility with the plot method.
 
 ## * autoplot.predictCSC (examples)
-#' @rdname autoplot.predictCSC
 #' @examples
 #' library(survival)
 #' library(rms)

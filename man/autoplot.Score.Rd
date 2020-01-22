@@ -4,8 +4,17 @@
 \alias{autoplot.Score}
 \title{ggplot AUC curve}
 \usage{
-\method{autoplot}{Score}(object, models, type = "score", lwd = 2, xlim,
-  ylim, axes = TRUE, conf.int = FALSE, ...)
+\method{autoplot}{Score}(
+  object,
+  models,
+  type = "score",
+  lwd = 2,
+  xlim,
+  ylim,
+  axes = TRUE,
+  conf.int = FALSE,
+  ...
+)
 }
 \arguments{
 \item{object}{Object obtained with \code{Score.list}}
@@ -37,6 +46,8 @@ f1=coxph(Surv(time,event)~X1+X6+X8,data=d,x=TRUE,y=TRUE)
 f2=coxph(Surv(time,event)~X2+X5+X9,data=d,x=TRUE,y=TRUE)
 xx=Score(list(f1,f2), formula=Surv(time,event)~1,
 data=nd, metrics="auc", null.model=FALSE, times=seq(3:10))
+g <- autoplot(xx)
+print(g)
 aucgraph <- plotAUC(xx)
 plotAUC(xx,conf.int=TRUE)
 plotAUC(xx,which="contrasts")

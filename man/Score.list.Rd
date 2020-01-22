@@ -5,15 +5,45 @@
 \alias{Score}
 \title{Score risk predictions}
 \usage{
-\method{Score}{list}(object, formula, data, metrics = c("auc", "brier"),
-  summary = NULL, plots = NULL, cause, times, landmarks,
-  use.event.times = FALSE, null.model = TRUE, se.fit = TRUE,
-  conservative = FALSE, multi.split.test = FALSE, conf.int = 0.95,
-  contrasts = TRUE, probs = c(0, 0.25, 0.5, 0.75, 1),
-  cens.method = "ipcw", cens.model = "cox", split.method, B, M, seed,
-  trainseeds, parallel = c("no", "multicore", "snow"), ncpus = 1,
-  cl = NULL, progress.bar = 3, keep, predictRisk.args, debug = 0L,
-  useEventTimes, nullModel, censMethod, censModel, splitMethod, ...)
+\method{Score}{list}(
+  object,
+  formula,
+  data,
+  metrics = c("auc", "brier"),
+  summary = NULL,
+  plots = NULL,
+  cause,
+  times,
+  landmarks,
+  use.event.times = FALSE,
+  null.model = TRUE,
+  se.fit = TRUE,
+  conservative = FALSE,
+  multi.split.test = FALSE,
+  conf.int = 0.95,
+  contrasts = TRUE,
+  probs = c(0, 0.25, 0.5, 0.75, 1),
+  cens.method = "ipcw",
+  cens.model = "cox",
+  split.method,
+  B,
+  M,
+  seed,
+  trainseeds,
+  parallel = c("no", "multicore", "snow"),
+  ncpus = 1,
+  cl = NULL,
+  progress.bar = 3,
+  keep,
+  predictRisk.args,
+  debug = 0L,
+  useEventTimes,
+  nullModel,
+  censMethod,
+  censModel,
+  splitMethod,
+  ...
+)
 }
 \arguments{
 \item{object}{List of risk predictions (see details and examples).}

@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Feb 23 2017 (11:07) 
 ## Version: 
-## last-updated: Mar  3 2019 (20:02) 
+## last-updated: Dec  6 2019 (11:18) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 48
+##     Update #: 73
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -70,22 +70,43 @@ plotBrier <- function(x,
     times=contrast=model=se=Brier=lower=upper=delta.Brier=reference=NULL
     ## cbPalette <- c("#999999", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
     cbbPalette <- c("#000000", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
-    pframe <- switch(which,"score"={copy(x$Brier$score)},"contrasts"={copy(x$Brier$contrasts)},{stop("argument 'which' has to be either 'score' for Brier or 'contrasts' for differences in Brier.")})
+    which <- tolower(which[1])
+    pframe <- switch(which,
+                     "score"={copy(x$Brier$score)},
+                     "ipa"={copy(x$Brier$score)},
+                     "contrasts"={copy(x$Brier$contrasts)},
+                     {stop("argument 'which' has to be either 'score' for Brier, 'ipa' for IPA, or 'contrasts' for differences in Brier.")})
     if (length(pframe$times)<2) stop(paste("Need at least two time points for plotting time-dependent Brier. Object has only ",length(pframe$times),"times"))
     if (!missing(models)) pframe <- pframe[model %in% models]
     if (which=="score"){
         mm <- unique(pframe$model)
-        pframe[is.na(se)&times==0,lower:=0]
-        pframe[is.na(se)&times==0,upper:=0]
+        if ("se"%in%names(pframe)){
+            pframe[is.na(se)&times==0,lower:=0]
+            pframe[is.na(se)&times==0,upper:=0]
+        }
     }else{
-        pframe[,contrast:=factor(paste(model,reference,sep=" - "))]
-        mm <- unique(pframe$contrast)
-        pframe[is.na(se)&times==0,lower:=0]
-        pframe[is.na(se)&times==0,upper:=0]
+        if (which =="ipa"){
+            mm <- unique(pframe[model!="Null model",model[1]])
+            pframe <- pframe[model%in%mm]
+            if ("se"%in%names(pframe)){
+                pframe[is.na(se)&times==0,lower:=0]
+                pframe[is.na(se)&times==0,upper:=0]
+            }
+        }else{
+            pframe[,contrast:=factor(paste(model,reference,sep=" - "))]
+            mm <- unique(pframe$contrast)
+            if ("se"%in%names(pframe)){
+                pframe[is.na(se)&times==0,lower:=0]
+                pframe[is.na(se)&times==0,upper:=0]
+            }
+        }
     }
     lenmm <- length(mm)
     if(missing(xlab)) xlab <- "Time"
-    if(missing(ylab)) if (which=="score") ylab <- "Brier score" else ylab <- expression(paste(Delta, " Brier score"))
+    if(missing(ylab)) ylab <- switch(which,
+                                     "score"="Brier score",
+                                     "ipa"="Index of prediction accuracy",
+                                     expression(paste(Delta, " Brier score")))
     if(missing(col)) col <- rep(cbbPalette,length.out=lenmm)
     names(col) <- mm
     if(missing(lwd)) lwd <- 2
@@ -100,9 +121,15 @@ plotBrier <- function(x,
     names(lty) <- mm
     if (missing(xlim)) xlim <- pframe[,range(times)]
     if (missing(ylim)){
-        if (which=="score") {
+        if (which%in%c("score","ipa")) {
             ylim <- c(0,.3)
-            axis2.DefaultArgs <- list(side=2,las=2,at=seq(0,ylim[2],ylim[2]/4),mgp=c(4,1,0))
+            if (which=="ipa"){
+                ylim <- c(0,max(pframe$IPA,na.rm=0))
+            }
+            axis2.DefaultArgs <- list(side=2,
+                                      las=2,
+                                      at=seq(0,ylim[2],ylim[2]/4),
+                                      mgp=c(4,1,0))
         } else{
             ylim <- c(floor(10*min(pframe$lower))/10,ceiling(10*max(pframe$upper))/10)
             yat <- seq(ylim[1],ylim[2],0.05)
@@ -118,8 +145,9 @@ plotBrier <- function(x,
     }
     lines.DefaultArgs <- list(pch=pch,type=type,cex=cex,lwd=lwd,col=col,lty=lty)
     axis1.DefaultArgs <- list(side=1,las=1,at=seq(0,xlim[2],xlim[2]/4))
-    if (which=="score"){
+    if (which%in%c("score","ipa")){
         legend.DefaultArgs <- list(legend=mm,lwd=lwd,col=col,lty=lty,cex=cex,bty="n",y.intersp=1.3,x="topleft")
+        if (which=="ipa") legend.DefaultArgs$x="bottomleft"
     } else{
         legend.DefaultArgs <- list(legend=as.character(unique(pframe$contrast)),lwd=lwd,col=col,lty=lty,cex=cex,bty="n",y.intersp=1.3,x="topleft")
     }
@@ -136,54 +164,57 @@ plotBrier <- function(x,
                                      forced=list("plot"=list(axes=FALSE),
                                                  "axis1"=list(side=1)),
                                      verbose=TRUE)
-    
-    if (which=="score"){
-        ## Brier
-        do.call("plot",control$plot)
-        pframe[,{thisline <- control$line
-            thisline$col=thisline$col[[as.character(model[1])]]
-            thisline$lwd=thisline$lwd[[as.character(model[1])]]
-            thisline$lty=thisline$lty[[as.character(model[1])]]
-            thisline$pch=thisline$pch[[as.character(model[1])]]
-            thisline$type=thisline$type[[as.character(model[1])]]
-            thisline$x=times
-            thisline$y=Brier
-            do.call("lines",thisline)},by=model]
-    }else{
-        ## delta Brier
-        do.call("plot",control$plot)
-        pframe[,{thisline <- control$line;
-            thisline$col=thisline$col[[as.character(contrast[1])]];
-            thisline$lwd=thisline$lwd[[as.character(contrast[1])]];
-            thisline$lty=thisline$lty[[as.character(contrast[1])]];
-            thisline$pch=thisline$pch[[as.character(contrast[1])]];
-            thisline$type=thisline$type[[as.character(contrast[1])]];
-            thisline$x=times;
-            thisline$y=delta.Brier;
-            do.call("lines",thisline)},by=contrast]
+                                     
+                                     if (which%in%c("score","ipa")){
+                                         ## Brier
+                                         do.call("plot",control$plot)
+                                         pframe[,{thisline <- control$line
+                                             thisline$col=thisline$col[[as.character(model[1])]]
+                                             thisline$lwd=thisline$lwd[[as.character(model[1])]]
+                                             thisline$lty=thisline$lty[[as.character(model[1])]]
+                                             thisline$pch=thisline$pch[[as.character(model[1])]]
+                                             thisline$type=thisline$type[[as.character(model[1])]]
+                                             thisline$x=times
+                                             if (which =="ipa"){
+                                                 thisline$y=IPA
+                                             }else{
+                                                 thisline$y=Brier
+                                             }
+                                             do.call("lines",thisline)},by=model]
+                                     }else{
+                                         ## delta Brier
+                                         do.call("plot",control$plot)
+                                         pframe[,{thisline <- control$line;
+                                             thisline$col=thisline$col[[as.character(contrast[1])]];
+                                             thisline$lwd=thisline$lwd[[as.character(contrast[1])]];
+                                             thisline$lty=thisline$lty[[as.character(contrast[1])]];
+                                             thisline$pch=thisline$pch[[as.character(contrast[1])]];
+                                             thisline$type=thisline$type[[as.character(contrast[1])]];
+                                             thisline$x=times;
+                                             thisline$y=delta.Brier;
+                                             do.call("lines",thisline)},by=contrast]
+                                     }
+                                     ## legend
+                                     if (!(is.logical(legend[[1]]) && legend[[1]]==FALSE)){
+                                         do.call("legend",control$legend)
+                                     }
+                                     ## x-axis
+                                     if (conf.int==TRUE){
+                                         dimcol <- sapply(col,function(cc){prodlim::dimColor(cc)})
+                                         names(dimcol) <- names(col)
+                                         if (which=="score"){
+                                             pframe[,polygon(x=c(times,rev(times)),y=c(lower,rev(upper)),col=dimcol[[as.character(model)]],border=NA),by=model]
+                                         }else{
+                                             pframe[,polygon(x=c(times,rev(times)),y=c(lower,rev(upper)),col=dimcol[[as.character(contrast)]],border=NA),by=contrast]
+                                         }
+                                     }
+                                     if (axes){
+                                         control$axis2$labels <- paste(100*control$axis2$at,"%")
+                                         do.call("axis",control$axis1)
+                                         do.call("axis",control$axis2)
+                                     }
+                                     invisible(pframe)
     }
-    ## legend
-    if (!(is.logical(legend[[1]]) && legend[[1]]==FALSE)){
-        do.call("legend",control$legend)
-    }
-    ## x-axis
-    if (conf.int==TRUE){
-        dimcol <- sapply(col,function(cc){prodlim::dimColor(cc)})
-        names(dimcol) <- names(col)
-        if (which=="score"){
-            pframe[,polygon(x=c(times,rev(times)),y=c(lower,rev(upper)),col=dimcol[[as.character(model)]],border=NA),by=model]
-        }else{
-            pframe[,polygon(x=c(times,rev(times)),y=c(lower,rev(upper)),col=dimcol[[as.character(contrast)]],border=NA),by=contrast]
-        }
-    }
-    if (axes){
-        control$axis2$labels <- paste(100*control$axis2$at,"%")
-        do.call("axis",control$axis1)
-        do.call("axis",control$axis2)
-    }
-    invisible(pframe)
-}
-
 
 
 #----------------------------------------------------------------------

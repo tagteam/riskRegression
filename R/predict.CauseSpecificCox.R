@@ -64,7 +64,6 @@
 #'
 
 ## * predict.CauseSpecificCox (examples)
-#' @rdname predict.CauseSpecificCox
 #' @examples
 #' library(survival)
 ##' library(prodlim)

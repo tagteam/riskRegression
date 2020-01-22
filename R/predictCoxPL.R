@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: sep  4 2017 (16:43) 
 ## Version: 
-## last-updated: sep 24 2019 (11:41) 
-##           By: Brice Ozenne
-##     Update #: 154
+## last-updated: Jan  6 2020 (09:00) 
+##           By: Thomas Alexander Gerds
+##     Update #: 155
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -26,7 +26,6 @@
 #' @details Note: the iid and standard errors are computed using the exponential approximation.
 
 ## * predictCoxPL (code)
-#' @rdname predictCoxPL
 #' @examples 
 #' library(survival)
 #'

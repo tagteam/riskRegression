@@ -4,8 +4,7 @@
 \alias{penalizedS3}
 \title{S3-wrapper for S4 function penalized}
 \usage{
-penalizedS3(formula, data, type = "elastic.net", lambda1, lambda2, fold,
-  ...)
+penalizedS3(formula, data, type = "elastic.net", lambda1, lambda2, fold, ...)
 }
 \arguments{
 \item{formula}{Communicated outcome and explanatory variables. See examples.}

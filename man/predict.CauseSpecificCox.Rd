@@ -2,13 +2,29 @@
 % Please edit documentation in R/predict.CauseSpecificCox.R
 \name{predict.CauseSpecificCox}
 \alias{predict.CauseSpecificCox}
+\alias{predictBig.CauseSpecificCox}
 \title{Predicting Absolute Risk from Cause-Specific Cox Models}
 \usage{
-\method{predict}{CauseSpecificCox}(object, newdata, times, cause,
-  type = "absRisk", landmark = NA, keep.times = 1L,
-  keep.newdata = 1L, keep.strata = 1L, se = FALSE, band = FALSE,
-  iid = FALSE, confint = (se + band) > 0, average.iid = FALSE,
-  product.limit = TRUE, store.iid = "full", diag = FALSE, ...)
+\method{predict}{CauseSpecificCox}(
+  object,
+  newdata,
+  times,
+  cause,
+  type = "absRisk",
+  landmark = NA,
+  keep.times = 1L,
+  keep.newdata = 1L,
+  keep.strata = 1L,
+  se = FALSE,
+  band = FALSE,
+  iid = FALSE,
+  confint = (se + band) > 0,
+  average.iid = FALSE,
+  product.limit = TRUE,
+  store.iid = "full",
+  diag = FALSE,
+  ...
+)
 }
 \arguments{
 \item{object}{The fitted cause specific Cox model}

@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: maj 23 2018 (14:08) 
 ## Version: 
-## Last-Updated: Mar  3 2019 (20:02) 
+## Last-Updated: Jan  6 2020 (08:59) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 158
+##     Update #: 159
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -37,7 +37,6 @@
 ##'
 
 ## * confint.predictCSC (examples)
-##' @rdname confint.predictCSC
 ##' @examples
 ##' library(survival)
 ##' library(prodlim)

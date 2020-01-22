@@ -574,7 +574,10 @@ Score.list <- function(object,
     rm(response)
                                         # }}}
                                         # {{{ SplitMethod & parallel stuff
-    if (!missing(seed)) set.seed(seed)
+    if (!missing(seed)) {
+        ## message("Random seed set to control split of data: seed=",seed)
+        set.seed(seed)
+    }
     split.method <- getSplitMethod(split.method=split.method,B=B,N=N,M=M)
     B <- split.method$B
     splitIndex <- split.method$index
@@ -712,6 +715,8 @@ Score.list <- function(object,
     }else{
         alpha <- NA
     }
+    # allow user to write contrasts=0 instead of contrasts=FALSE 
+    if (length(contrasts)==1 && contrasts==0) contrasts = FALSE
     if ((NF+length(nullobject))<=1) dolist <- NULL
     else{
         if ((is.logical(contrasts) && contrasts[1]==FALSE)){
@@ -726,7 +731,10 @@ Score.list <- function(object,
             }else{
                 dolist <- contrasts
                 if (!is.list(contrasts)) contrasts <- list(contrasts)
-                if (!(all(sapply(dolist,function(x){all(x<=NF) && all(x>=0)}))))
+                if (!(all(sapply(dolist,function(x){
+                    if (!(length(x)>1)) stop("All elements of the list contrasts must contain at least two elements, i.e., the two models to be compared.")
+                    all(x<=NF) && all(x>=0)
+                }))))
                     stop(paste("Argument contrasts should be a list of positive integers possibly mixed with 0 that refer to elements of object.\nThe object has ",NF,"elements but "))
             }
         }
@@ -1427,6 +1435,7 @@ Score.list <- function(object,
                                                                        se.fit=TRUE)]
                             }
                         }
+                        setnames(contrasts.AUC,"delta","delta.AUC")
                         output <- c(output,list(contrasts=contrasts.AUC))
                     }
                     if (!is.null(output$score)){
@@ -1799,6 +1808,7 @@ Score.list <- function(object,
                             censoringHandling=cens.method,
                             split.method=split.method,
                             metrics=metrics,
+                            times=times,
                             alpha=alpha,
                             plots=plots,
                             summary=summary,
@@ -2154,13 +2164,15 @@ delongtest <-  function(risk,
         }
         if (se.fit[[1]]==TRUE||multi.split.test[[1]]==TRUE){
             deltaAUC <- data.table(model,reference,delta.AUC=as.vector(delta.AUC),se)
-            deltaAUC[,p:=2*pnorm(abs(delta.AUC)/se,lower.tail=FALSE)]
         }else{
             deltaAUC <- data.table(model,reference,delta.AUC=as.vector(delta.AUC))
         }
         if (se.fit==TRUE){
             deltaAUC[,lower:=delta.AUC-Qnorm*se]
             deltaAUC[,upper:=delta.AUC+Qnorm*se]
+        }
+        if (se.fit[[1]]==TRUE||multi.split.test[[1]]==TRUE){
+            deltaAUC[,p:=2*pnorm(abs(delta.AUC)/se,lower.tail=FALSE)]
         }
         out <- list(score = score, contrasts = deltaAUC)
     }else{

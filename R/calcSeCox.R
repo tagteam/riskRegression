@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: maj 27 2017 (11:46) 
 ## Version: 
-## last-updated: okt  4 2019 (10:53) 
-##           By: Brice Ozenne
-##     Update #: 677
+## last-updated: Jan  9 2020 (18:05) 
+##           By: Thomas Alexander Gerds
+##     Update #: 678
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -59,7 +59,7 @@
 #' This avoid to store all the influence functions but may lead to repeated evaluation of the influence function.
 #' This solution is therefore more efficient in memory usage but may not be in terms of computation time.
 #' 
-#' @inheritParams  predict.CauseSpecificCox
+# #' @inheritParams  predict.CauseSpecificCox
 #' 
 #' @author Brice Ozenne broz@@sund.ku.dk, Thomas A. Gerds tag@@biostat.ku.dk
 #' 

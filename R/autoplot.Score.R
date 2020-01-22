@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun 23 2016 (09:19) 
 ## Version: 
-## last-updated: Mar  3 2019 (20:02) 
+## last-updated: Jan 13 2020 (12:06) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 76
+##     Update #: 77
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -34,6 +34,8 @@
 ##' f2=coxph(Surv(time,event)~X2+X5+X9,data=d,x=TRUE,y=TRUE)
 ##' xx=Score(list(f1,f2), formula=Surv(time,event)~1,
 ##' data=nd, metrics="auc", null.model=FALSE, times=seq(3:10))
+##' g <- autoplot(xx)
+##' print(g)
 ##' aucgraph <- plotAUC(xx)
 ##' plotAUC(xx,conf.int=TRUE)
 ##' plotAUC(xx,which="contrasts")

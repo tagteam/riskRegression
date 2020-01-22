@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: maj 19 2017 (16:01) 
 ## Version: 
-## last-updated: Mar  3 2019 (19:46) 
+## last-updated: Jan  6 2020 (08:59) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 180
+##     Update #: 181
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -43,7 +43,6 @@
   function(object,...) UseMethod("influenceTest")
 
 ## * Influence test (code)
-#' @rdname influenceTest
 #' @examples
 #' library(lava)
 #' library(survival)

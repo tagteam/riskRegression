@@ -4,8 +4,15 @@
 \alias{confint.predictCSC}
 \title{Confidence Intervals and Confidence Bands for the Predicted Absolute Risk (Cumulative Incidence Function)}
 \usage{
-\method{confint}{predictCSC}(object, parm = NULL, level = 0.95,
-  nsim.band = 10000, absRisk.transform = "loglog", seed = NA, ...)
+\method{confint}{predictCSC}(
+  object,
+  parm = NULL,
+  level = 0.95,
+  nsim.band = 10000,
+  absRisk.transform = "loglog",
+  seed = NA,
+  ...
+)
 }
 \arguments{
 \item{object}{A \code{predictCSC} object, i.e. output of the \code{predictCSC} function.}

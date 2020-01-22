@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: jun  1 2018 (13:35) 
 ## Version: 
-## Last-Updated: Jul 13 2019 (11:39) 
+## Last-Updated: Jan  6 2020 (09:00) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 45
+##     Update #: 46
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -18,7 +18,6 @@
 ## * print.influenceTest (documentation)
 #' @title Output of the DIfference Between Two Estimates
 #' @description Output of the difference between two estimates.
-#' @rdname print.influenceTest
 #' 
 #' @param x object obtained with the function \code{influenceTest}.
 #' @param digits [integer, >0] indicating the number of decimal places.

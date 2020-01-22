@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: maj 23 2018 (14:08) 
 ## Version: 
-## Last-Updated: nov  1 2019 (11:02) 
-##           By: Brice Ozenne
-##     Update #: 618
+## Last-Updated: Jan  6 2020 (08:59) 
+##           By: Thomas Alexander Gerds
+##     Update #: 619
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -51,7 +51,6 @@
 ##' @author Brice Ozenne
 
 ## * confint.ate (examples)
-##' @rdname confint.ate
 ##' @examples
 ##' library(survival)
 ##' library(data.table)

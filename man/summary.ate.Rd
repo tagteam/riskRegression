@@ -4,8 +4,13 @@
 \alias{summary.ate}
 \title{Summary Average Treatment Effects}
 \usage{
-\method{summary}{ate}(object, digits = 3, type = c("meanRisk",
-  "diffRisk", "ratioRisk"), estimator = object$estimator[1], ...)
+\method{summary}{ate}(
+  object,
+  digits = 3,
+  type = c("meanRisk", "diffRisk", "ratioRisk"),
+  estimator = object$estimator[1],
+  ...
+)
 }
 \arguments{
 \item{object}{object obtained with function \code{ate}}

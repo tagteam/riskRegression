@@ -4,8 +4,21 @@
 \alias{transformCIBP}
 \title{Compute Confidence Intervals/Bands and P-values After a Transformation}
 \usage{
-transformCIBP(estimate, se, iid, null, conf.level, nsim.band, seed, type,
-  min.value, max.value, ci, band, p.value)
+transformCIBP(
+  estimate,
+  se,
+  iid,
+  null,
+  conf.level,
+  nsim.band,
+  seed,
+  type,
+  min.value,
+  max.value,
+  ci,
+  band,
+  p.value
+)
 }
 \arguments{
 \item{estimate}{[numeric matrix] the estimate value before transformation.}

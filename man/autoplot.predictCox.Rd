@@ -4,9 +4,19 @@
 \alias{autoplot.predictCox}
 \title{Plot Predictions From a Cox Model}
 \usage{
-\method{autoplot}{predictCox}(object, type = NULL, ci = FALSE,
-  band = FALSE, group.by = "row", reduce.data = FALSE, plot = TRUE,
-  ylab = NULL, digits = 2, alpha = NA, ...)
+\method{autoplot}{predictCox}(
+  object,
+  type = NULL,
+  ci = FALSE,
+  band = FALSE,
+  group.by = "row",
+  reduce.data = FALSE,
+  plot = TRUE,
+  ylab = NULL,
+  digits = 2,
+  alpha = NA,
+  ...
+)
 }
 \arguments{
 \item{object}{Object obtained with the function \code{predictCox}.}

@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: feb 17 2017 (10:06) 
 ## Version: 
-## last-updated: Jul 12 2019 (20:53) 
+## last-updated: Jan  6 2020 (08:59) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 487
+##     Update #: 488
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -38,7 +38,6 @@
 #' @param ... Not used. Only for compatibility with the plot method.
 
 ## * autoplot.predictCox (examples)
-#' @rdname autoplot.predictCox
 #' @examples
 #' library(survival)
 #' library(ggplot2)

@@ -4,9 +4,16 @@
 \alias{confint.predictCox}
 \title{Confidence Intervals and Confidence Bands for the predicted Survival/Cumulative Hazard}
 \usage{
-\method{confint}{predictCox}(object, parm = NULL, level = 0.95,
-  nsim.band = 10000, cumhazard.transform = "log",
-  survival.transform = "loglog", seed = NA, ...)
+\method{confint}{predictCox}(
+  object,
+  parm = NULL,
+  level = 0.95,
+  nsim.band = 10000,
+  cumhazard.transform = "log",
+  survival.transform = "loglog",
+  seed = NA,
+  ...
+)
 }
 \arguments{
 \item{object}{A \code{predictCox} object, i.e. output of the \code{predictCox} function.}

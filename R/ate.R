@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Oct 23 2016 (08:53) 
 ## Version: 
-## last-updated: nov  8 2019 (14:34) 
-##           By: Brice Ozenne
-##     Update #: 1626
+## last-updated: Jan  6 2020 (08:58) 
+##           By: Thomas Alexander Gerds
+##     Update #: 1627
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -79,7 +79,6 @@
 #' \code{\link{autoplot.ate}} to display the average risk.
 
 ## * ate (examples)
-#' @rdname ate
 #' @examples 
 #' library(survival)
 #' library(rms)

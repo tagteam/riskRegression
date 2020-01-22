@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun  6 2016 (09:02) 
 ## Version: 
-## last-updated: Oct 29 2019 (07:00) 
+## last-updated: Jan 18 2020 (10:29) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 288
+##     Update #: 289
 #----------------------------------------------------------------------
 ## 
 ### Commentary:
@@ -343,7 +343,7 @@ predictRisk.lrm <- function(object,newdata,...){
 ##' @rdname predictRisk
 ##' @method predictRisk rpart
 predictRisk.rpart <- function(object,newdata,...){
-  p <- as.numeric(stats::predict(object,newdata=newdata,type="prob")[,2,drop=TRUE])
+  p <- as.numeric(stats::predict(object,newdata=newdata))
   p
 }
 

@@ -4,9 +4,21 @@
 \alias{plotRisk}
 \title{plot predicted risks}
 \usage{
-plotRisk(x, models, times, xlim = c(0, 1), ylim = c(0, 1), xlab, ylab,
-  col, pch = 3, cex = 1, preclipse = 0, preclipse.shade = FALSE,
-  ...)
+plotRisk(
+  x,
+  models,
+  times,
+  xlim = c(0, 1),
+  ylim = c(0, 1),
+  xlab,
+  ylab,
+  col,
+  pch = 3,
+  cex = 1,
+  preclipse = 0,
+  preclipse.shade = FALSE,
+  ...
+)
 }
 \arguments{
 \item{x}{Object obtained with function \code{Score}}
@@ -24,9 +36,15 @@ the first (second) are shown along the x-axis (y-axis).}
 
 \item{ylab}{y-axis labels}
 
-\item{col}{colour}
+\item{col}{Colors used according to the outcome.
+binary outcome (two colors: no event, event),
+survival outcome (three colors: censored, event, no event)
+competing risk outcome (4 or more colors: event, competing risk 1, ..., competing risk k, censored, no event)}
 
-\item{pch}{point type}
+\item{pch}{Symbols used according to the outcome
+binary outcome (two symbols: no event, event),
+survival outcome (three symbols: censored, event, no event)
+competing risk outcome (4 or more symbols: event, competing risk 1, ..., competing risk k, censored, no event)}
 
 \item{cex}{point size}
 

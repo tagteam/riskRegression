@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: maj 23 2018 (14:08) 
 ## Version: 
-## Last-Updated: Jan 29 2019 (10:49) 
+## Last-Updated: Jan  6 2020 (08:59) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 262
+##     Update #: 263
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -42,7 +42,6 @@
 ##' @author Brice Ozenne
                                         
 ## * confint.predictCox (examples)
-##' @rdname confint.predictCox
 ##' @examples
 ##' library(survival)
 ##'
