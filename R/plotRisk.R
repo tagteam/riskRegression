@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Mar 13 2017 (16:53) 
 ## Version: 
-## Last-Updated: Dec 27 2019 (11:03) 
+## Last-Updated: Jan 27 2020 (07:35) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 141
+##     Update #: 157
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -82,7 +82,7 @@ plotRisk <- function(x,
                      xlab,
                      ylab,
                      col,
-                     pch=3,
+                     pch,
                      cex=1,
                      preclipse=0,
                      preclipse.shade=FALSE,
@@ -112,7 +112,9 @@ plotRisk <- function(x,
     }
     if (is.na(models[2])) stop("Need two models for a scatterplot of predicted risks")
     pframe <- pframe[model%in%models]
-    modelnames <- pframe[,levels(model)]
+    modelnames <- models
+    pframe[,model:=factor(model,levels=models)]
+    data.table::setkey(pframe,model)
     if (x$response.type=="binary"){
         R <- pframe[model==modelnames[1],ReSpOnSe]
     }
@@ -133,7 +135,7 @@ plotRisk <- function(x,
             }]
         }
     }
-    pframe[,model:=factor(model)]
+    ## pframe[,model:=factor(model)]
     m1 <- levels(pframe$model)[[1]]
     m2 <- levels(pframe$model)[[2]]
     if (missing(xlab)) xlab <- paste0("Risk (%, ",modelnames[1],")")
@@ -202,7 +204,7 @@ plotRisk <- function(x,
                               }else{
                                   paste0(c("Event",paste0("Competing risk ",1:nCR),"Censored","No event")," (n=",sapply(1:nR,function(r){sum(R==r)}),")")
                               }
-                              })
+                          })
     legend.DefaultArgs <- list(legend=this.legend,
                                pch=pchcode,
                                col=colcode,

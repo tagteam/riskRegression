@@ -57,7 +57,7 @@ ateFit <- ate(fit, data = dtS, treatment = "X1", contrasts = NULL,
               mc.cores=1)
 
 #### display #### 
-autoplot(ateFit)
+ggplot2::autoplot(ateFit)
 
 outGG <- autoplot(ateFit, band = TRUE, ci = TRUE, alpha = 0.1)
 dd <- as.data.frame(outGG$data[treatment == 0])

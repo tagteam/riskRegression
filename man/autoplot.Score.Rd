@@ -40,6 +40,7 @@ ggplot AUC curves
 }
 \examples{
 library(survival)
+library(ggplot2)
 d=sampleData(100,outcome="survival")
 nd=sampleData(100,outcome="survival")
 f1=coxph(Surv(time,event)~X1+X6+X8,data=d,x=TRUE,y=TRUE)
