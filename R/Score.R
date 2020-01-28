@@ -715,8 +715,8 @@ Score.list <- function(object,
     }else{
         alpha <- NA
     }
-    # allow user to write contrasts=0 instead of contrasts=FALSE 
-    if (length(contrasts)==1 && contrasts==0) contrasts = FALSE
+    # allow user to write contrasts=0 instead of contrasts=FALSE
+    if (length(contrasts)==1 && length(contrasts[[1]])==1 && contrasts==0) contrasts = FALSE
     if ((NF+length(nullobject))<=1) dolist <- NULL
     else{
         if ((is.logical(contrasts) && contrasts[1]==FALSE)){

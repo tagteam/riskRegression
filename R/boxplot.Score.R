@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Aug 15 2016 (09:45) 
 ## Version: 
-## last-updated: Oct 19 2019 (18:15) 
+## last-updated: Jan 27 2020 (12:26) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 138
+##     Update #: 141
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -44,10 +44,10 @@
 ##' db=sampleData(40,outcome="binary")
 ##' fitconv=glm(Y~X3+X5,data=db,family=binomial)
 ##' fitnew=glm(Y~X1+X3+X5+X6+X7,data=db,family=binomial)
-##' scoreobj=Score(list(new=fitnew,conv=fitconv),
+##' x=Score(list(new=fitnew,conv=fitconv),
 ##'         formula=Y~1,contrasts=list(c(2,1)),
 ##'                data=db,summary="riskQuantile",null.model=FALSE)
-##' boxplot(scoreobj)
+##' boxplot(x)
 ##'
 ##' # survival outcome
 ##' library(survival)
@@ -112,7 +112,7 @@ boxplot.Score <- function(x,
                           outcome.label,
                           outcome.label.offset=0,
                           event.labels,
-                          refline=(type=="diff"),
+                          refline=(type!="risk"),
                           add=FALSE,
                           ...){
     if (is.null(x$riskQuantile))
@@ -128,6 +128,7 @@ boxplot.Score <- function(x,
     ## }
 
     if (type=="diff"){
+        warning("Boxplots of differences of predicted risk are non-proper\nin the sense that a miscalibrated model can apparently look good.")
         pframe <- x$riskQuantile$contrasts[model!="Null model"]
     } else{
         pframe <- x$riskQuantile$score[model!="Null model"]
