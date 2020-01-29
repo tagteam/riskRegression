@@ -18,7 +18,7 @@
   outcome.label,
   outcome.label.offset = 0,
   event.labels,
-  refline = (type == "diff"),
+  refline = (type != "risk"),
   add = FALSE,
   ...
 )
@@ -70,10 +70,10 @@ library(prodlim)
 db=sampleData(40,outcome="binary")
 fitconv=glm(Y~X3+X5,data=db,family=binomial)
 fitnew=glm(Y~X1+X3+X5+X6+X7,data=db,family=binomial)
-scoreobj=Score(list(new=fitnew,conv=fitconv),
+x=Score(list(new=fitnew,conv=fitconv),
         formula=Y~1,contrasts=list(c(2,1)),
                data=db,summary="riskQuantile",null.model=FALSE)
-boxplot(scoreobj)
+boxplot(x)
 
 # survival outcome
 library(survival)
