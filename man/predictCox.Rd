@@ -81,8 +81,6 @@ otherwise it is only computed for the i-th observation at the i-th time.}
 
 \item{store.iid}{[character] Implementation used to estimate the influence function and the standard error.
 Can be \code{"full"} or \code{"minimal"}.}
-
-\item{...}{not used.}
 }
 \description{
 Fast routine to get baseline hazards and subject specific hazards

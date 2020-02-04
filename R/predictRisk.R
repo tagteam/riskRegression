@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun  6 2016 (09:02) 
 ## Version: 
-## last-updated: Jan 18 2020 (10:29) 
+## last-updated: Feb  4 2020 (07:45) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 289
+##     Update #: 290
 #----------------------------------------------------------------------
 ## 
 ### Commentary:
@@ -1003,7 +1003,7 @@ predictRisk.penfitS3 <- function(object,
 ##' @param fit.formula TODO
 ##' @param ... TODO
 ##' 
-##' @export
+##' # @export
 SmcFcs  <- function(formula,data,m=5,method,fitter="glm",fit.formula,...){
     requireNamespace("smcfcs")
     this <- as.character(formula)

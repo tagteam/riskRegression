@@ -19,7 +19,9 @@ SmcFcs(formula, data, m = 5, method, fitter = "glm", fit.formula, ...)
 
 \item{fit.formula}{TODO}
 
-\item{...}{TODO}
+\item{...}{TODO
+
+# @export}
 }
 \description{
 TODO

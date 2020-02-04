@@ -47,7 +47,6 @@
 #' @param average.iid [logical] If \code{TRUE} add the average of the influence function over \code{newdata} to the output.
 #' @param store.iid [character] Implementation used to estimate the influence function and the standard error.
 #' Can be \code{"full"} or \code{"minimal"}.
-#' @param ... not used.
 #' 
 #' @details
 #' When the argument \code{newdata} is not specified, the function computes the baseline hazard estimate.
