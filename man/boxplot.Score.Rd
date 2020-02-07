@@ -72,38 +72,32 @@ fitconv=glm(Y~X3+X5,data=db,family=binomial)
 fitnew=glm(Y~X1+X3+X5+X6+X7,data=db,family=binomial)
 x=Score(list(new=fitnew,conv=fitconv),
         formula=Y~1,contrasts=list(c(2,1)),
-               data=db,summary="riskQuantile",null.model=FALSE)
+               data=db,plots="box",null.model=FALSE)
 boxplot(x)
 
 # survival outcome
 library(survival)
 ds=sampleData(40,outcome="survival")
-fitconv=coxph(Surv(time,event)~X6,data=ds,x=TRUE,y=TRUE)
-fitnew=coxph(Surv(time,event)~X6+X9,data=ds,x=TRUE,y=TRUE)
+fit=coxph(Surv(time,event)~X6+X9,data=ds,x=TRUE,y=TRUE)
 \dontrun{ 
-scoreobj=Score(list("conventional model"=fitconv,"new model"=fitnew),
+scoreobj=Score(list("Cox"=fit),
                 formula=Hist(time,event)~1, data=ds,
-                summary="riskQuantile",metrics=NULL, plots=NULL,
-                c(0,0.25,0.5,0.75,1),
-                times=5,null.model=FALSE)
-boxplot(scoreobj)
+                metrics=NULL, plots="box",
+                times=c(1,5),null.model=FALSE)
+boxplot(scoreobj,timepoint=5)
+boxplot(scoreobj,timepoint=1)
 
-scoreobj1=Score(list("conventional model"=fitconv,"new model"=fitnew),
-                formula=Hist(time,event)~1, data=ds,
-                summary="riskQuantile",metrics=NULL, plots=NULL,
-                times=5,null.model=FALSE,compare=list(c(2,1)))
-boxplot(scoreobj1)
 }
 
 # competing risks outcome
 library(survival)
 data(Melanoma, package = "riskRegression")
-fitconv = CSC(Hist(time,status)~invasion+age+sex,data=Melanoma)
-fitnew = CSC(Hist(time,status)~invasion+age+sex+logthick,data=Melanoma)
-scoreobj=Score(list("Conventional model"=fitconv,"New model"=fitnew),
-               formula=Hist(time,status)~1,
-               data=Melanoma,metrics=NULL,summary="riskQuantile",times=5*365.25,null.model=FALSE)
-boxplot(scoreobj)
+fit = CSC(Hist(time,event,cens.code="censored")~invasion+age+sex,data=Melanoma)
+scoreobj=Score(list("CSC"=fit),
+               formula=Hist(time,event,cens.code="censored")~1,
+               data=Melanoma,plots="box",times=5*365.25,null.model=FALSE)
+par(mar=c(4,12,4,4))
+boxplot(scoreobj,timepoint=5*365.25)
 
 # more than 2 competing risks
 m=lava::lvm(~X1+X2+X3)
@@ -116,11 +110,10 @@ m <- lava::eventTime(m,
 time ~ min(eventtime1 = 1, eventtime2 = 2, eventtime3 = 3, censtime = 0), "event")
 set.seed(101)
 dcr=as.data.table(lava::sim(m,101))
-fitOld = CSC(Hist(time,event)~X1+X2,data=dcr)
-fitNew = CSC(Hist(time,event)~X1+X2+X3,data=dcr)
-scoreobj=Score(list("Conventional model"=fitOld,"New model"=fitNew),
+fit = CSC(Hist(time,event)~X1+X2+X3,data=dcr)
+scoreobj=Score(list("my model"=fit),
                formula=Hist(time,event)~1,
-               data=dcr,summary="riskQuantile",times=5,null.model=FALSE)
+               data=dcr,plots="box",times=5,null.model=FALSE)
 boxplot(scoreobj)
 
 

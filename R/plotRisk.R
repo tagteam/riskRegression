@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Mar 13 2017 (16:53) 
 ## Version: 
-## Last-Updated: Jan 27 2020 (07:35) 
+## Last-Updated: Feb  7 2020 (19:20) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 157
+##     Update #: 160
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -109,8 +109,21 @@ plotRisk <- function(x,
     }else tp <- NULL
     if (missing(models)){
         models <- pframe[,levels(model)[1:2]]
+    }else{
+        if (is.na(models[2])) stop("Need two models for a scatterplot of predicted risks")
+        fitted.models <- x$models
+        if (is.numeric(models)) {
+            if (any(notfitted <- !(models%in%fitted.models))){
+                stop(paste("Cannot find all models. Fitted models are:\n",paste(paste0(x$models,": ",names(x$models)),collapse="\n")))
+            } else{
+                models <- names(fitted.models[models])
+            }
+        }else{
+            if (any(notfitted <- !(models%in%names(fitted.models)))){
+                stop(paste("Cannot find all models. Fitted models are:\n",paste(paste0(x$models,": ",names(x$models)),collapse="\n")))
+            }
+        }
     }
-    if (is.na(models[2])) stop("Need two models for a scatterplot of predicted risks")
     pframe <- pframe[model%in%models]
     modelnames <- models
     pframe[,model:=factor(model,levels=models)]
