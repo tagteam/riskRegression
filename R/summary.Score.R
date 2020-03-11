@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Dec 26 2019 (08:58) 
 ## Version: 
-## Last-Updated: Jan 27 2020 (07:37) 
+## Last-Updated: Feb 12 2020 (08:01) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 27
+##     Update #: 34
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -61,20 +61,22 @@ summary.Score <- function(object,times,what=c("score","contrasts"),digits=1,pval
         }
         if ("contrasts"%in% tolower(what)){
             if ("upper"%in%names(object$AUC$contrasts)){
-                if ("p"%in%names(object$AUC$contrasts))
-                    tab.deltaAUC <- x$AUC$contrasts[,data.table::data.table(Model=model,Reference=reference,"delta AUC (%)"=Publish::formatCI(x=100*delta.AUC,lower=100*lower,upper=100*upper,show.x=1,digits=digits),"p-value"=format.pval(p,eps=0.001,digits=pvalue.digits))]
-                else
-                    tab.deltaAUC <- x$AUC$contrasts[,data.table::data.table(Model=model,Reference=reference,"delta AUC (%)"=Publish::formatCI(x=100*delta.AUC,lower=100*lower,upper=100*upper,show.x=1,digits=digits))]
+                if ("p"%in%names(object$AUC$contrasts)){
+                    tab.deltaAUC <- object$AUC$contrasts[,data.table::data.table(Model=model,Reference=reference,"delta AUC (%)"=Publish::formatCI(x=100*delta.AUC,lower=100*lower,upper=100*upper,show.x=1,digits=digits),"p-value"=format.pval(p,eps=0.001,digits=pvalue.digits))]
+                } else{
+                    tab.deltaAUC <- object$AUC$contrasts[,data.table::data.table(Model=model,Reference=reference,"delta AUC (%)"=Publish::formatCI(x=100*delta.AUC,lower=100*lower,upper=100*upper,show.x=1,digits=digits))]
+                }
             }else{
-                tab.deltaAUC <- x$AUC$contrasts[,data.table::data.table(Model=model,Reference=reference,"delta AUC (%)"=Publish::pubformat(x=100*delta.AUC,digits=pvalue.digits))]
+                tab.deltaAUC <- object$AUC$contrasts[,data.table::data.table(Model=model,Reference=reference,"delta AUC (%)"=Publish::pubformat(x=100*delta.AUC,digits=pvalue.digits))]
             }
             if ("upper"%in%names(object$Brier$contrasts)){
-                if ("p"%in%names(object$Brier$contrasts))
-                    tab.deltaBrier <- x$Brier$contrast[reference!="Null model",data.table::data.table(Model=model,Reference=reference,"delta Brier (%)"=Publish::formatCI(x=100*delta.Brier,lower=100*lower,upper=100*upper,show.x=1,digits=digits),"p-value"=format.pval(p,eps=0.001,digits=pvalue.digits))]
-                else
-                    tab.deltaBrier <- x$Brier$contrast[reference!="Null model",data.table::data.table(Model=model,Reference=reference,"delta Brier (%)"=Publish::formatCI(x=100*delta.Brier,lower=100*lower,upper=100*upper,show.x=1,digits=digits))]
+                if ("p"%in%names(object$Brier$contrasts)){
+                    tab.deltaBrier <- object$Brier$contrast[,data.table::data.table(Model=model,Reference=reference,"delta Brier (%)"=Publish::formatCI(x=100*delta.Brier,lower=100*lower,upper=100*upper,show.x=1,digits=digits),"p-value"=format.pval(p,eps=0.001,digits=pvalue.digits))]
+                } else{
+                    tab.deltaBrier <- object$Brier$contrast[,data.table::data.table(Model=model,Reference=reference,"delta Brier (%)"=Publish::formatCI(x=100*delta.Brier,lower=100*lower,upper=100*upper,show.x=1,digits=digits))]
+                }
             }else{
-                tab.deltaBrier <- x$Brier$contrast[reference!="Null model",data.table::data.table(Model=model,Reference=reference,"delta Brier (%)"=Publish::pubformat(x=100*delta.Brier,digits=digits))]
+                tab.deltaBrier <- object$Brier$contrast[,data.table::data.table(Model=model,Reference=reference,"delta Brier (%)"=Publish::pubformat(x=100*delta.Brier,digits=digits))]
             }
             setkey(tab.deltaBrier,Model,Reference)
             setkey(tab.deltaAUC,Model,Reference)
@@ -117,19 +119,19 @@ summary.Score <- function(object,times,what=c("score","contrasts"),digits=1,pval
         if ("contrasts"%in% tolower(what)){
             if ("upper"%in%names(object$AUC$contrasts)){
                 if ("p"%in%names(object$AUC$contrasts))
-                    tab.deltaAUC <- x$AUC$contrasts[times%in%ttt,data.table::data.table(times=times,Model=model,Reference=reference,"delta AUC (%)"=Publish::formatCI(x=100*delta.AUC,lower=100*lower,upper=100*upper,show.x=1,digits=digits),"p-value"=format.pval(p,eps=0.001,digits=pvalue.digits))]
+                    tab.deltaAUC <- object$AUC$contrasts[times%in%ttt,data.table::data.table(times=times,Model=model,Reference=reference,"delta AUC (%)"=Publish::formatCI(x=100*delta.AUC,lower=100*lower,upper=100*upper,show.x=1,digits=digits),"p-value"=format.pval(p,eps=0.001,digits=pvalue.digits))]
                 else
-                    tab.deltaAUC <- x$AUC$contrasts[times%in%ttt,data.table::data.table(times=times,Model=model,Reference=reference,"delta AUC (%)"=Publish::formatCI(x=100*delta.AUC,lower=100*lower,upper=100*upper,show.x=1,digits=digits))]
+                    tab.deltaAUC <- object$AUC$contrasts[times%in%ttt,data.table::data.table(times=times,Model=model,Reference=reference,"delta AUC (%)"=Publish::formatCI(x=100*delta.AUC,lower=100*lower,upper=100*upper,show.x=1,digits=digits))]
             }else{
-                tab.deltaAUC <- x$AUC$contrasts[times%in%ttt,data.table::data.table(times=times,Model=model,Reference=reference,"delta AUC (%)"=Publish::pubformat(x=100*delta.AUC,digits=digits))]
+                tab.deltaAUC <- object$AUC$contrasts[times%in%ttt,data.table::data.table(times=times,Model=model,Reference=reference,"delta AUC (%)"=Publish::pubformat(x=100*delta.AUC,digits=digits))]
             }
             if ("upper"%in%names(object$Brier$contrasts)){
                 if ("p"%in%names(object$AUC$contrasts))
-                    tab.deltaBrier <- x$Brier$contrast[times%in%ttt & reference!="Null model",data.table::data.table(times=times,Model=model,Reference=reference,"delta Brier (%)"=Publish::formatCI(x=100*delta.Brier,lower=100*lower,upper=100*upper,show.x=1,digits=digits),"p-value"=format.pval(p,eps=0.001,digits=pvalue.digits))]
+                    tab.deltaBrier <- object$Brier$contrast[times%in%ttt & reference!="Null model",data.table::data.table(times=times,Model=model,Reference=reference,"delta Brier (%)"=Publish::formatCI(x=100*delta.Brier,lower=100*lower,upper=100*upper,show.x=1,digits=digits),"p-value"=format.pval(p,eps=0.001,digits=pvalue.digits))]
                 else
-                    tab.deltaBrier <- x$Brier$contrast[times%in%ttt & reference!="Null model",data.table::data.table(times=times,Model=model,Reference=reference,"delta Brier (%)"=Publish::formatCI(x=100*delta.Brier,lower=100*lower,upper=100*upper,show.x=1,digits=digits))]
+                    tab.deltaBrier <- object$Brier$contrast[times%in%ttt & reference!="Null model",data.table::data.table(times=times,Model=model,Reference=reference,"delta Brier (%)"=Publish::formatCI(x=100*delta.Brier,lower=100*lower,upper=100*upper,show.x=1,digits=digits))]
             }else{
-                tab.deltaBrier <- x$Brier$contrast[times%in%ttt & reference!="Null model",data.table::data.table(times=times,Model=model,Reference=reference,"delta Brier (%)"=Publish::pubformat(x=100*delta.Brier,digits=digits))]
+                tab.deltaBrier <- object$Brier$contrast[times%in%ttt & reference!="Null model",data.table::data.table(times=times,Model=model,Reference=reference,"delta Brier (%)"=Publish::pubformat(x=100*delta.Brier,digits=digits))]
             }
             setkey(tab.deltaBrier,times,Model,Reference)
             setkey(tab.deltaAUC,times,Model,Reference)

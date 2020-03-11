@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun  6 2016 (09:02) 
 ## Version: 
-## last-updated: Feb  4 2020 (07:45) 
+## last-updated: Mar 10 2020 (16:47) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 290
+##     Update #: 297
 #----------------------------------------------------------------------
 ## 
 ### Commentary:
@@ -167,7 +167,7 @@
 #'
 #' @export 
 predictRisk <- function(object,newdata,...){
-  UseMethod("predictRisk",object)
+    UseMethod("predictRisk",object)
 }
 
 ## * predictRisk.default
@@ -725,7 +725,9 @@ predictRisk.ranger <- function(object, newdata, times, cause, ...){
     xvars <- object$forest$independent.variable.names
     newdata <- subset(newdata,select=xvars)
     if (missing(times)||is.null(times)){
-        p <- stats::predict(object,data=newdata,importance="none",...)$predictions
+        p <- stats::predict(object,data=newdata,importance="none",...)$predictions[,2,drop=TRUE]
+        if (length(p) != NROW(newdata))
+            stop(paste("\nPrediction vector has wrong length:\nRequested length of newdata: ",NROW(newdata)," \nProvided prediction vector: ",length(p),"\n\n",sep=""))
         p
     }else{
         if (object$treetype=="Survival") {
@@ -747,7 +749,7 @@ predictRisk.ranger <- function(object, newdata, times, cause, ...){
 ##' @method predictRisk rfsrc
 predictRisk.rfsrc <- function(object, newdata, times, cause, ...){
     if (missing(times)||is.null(times)){
-        p <- as.numeric(stats::predict(object,newdata=newdata,importance="none",...)$predicted[,2])
+        p <- as.numeric(stats::predict(object,newdata=newdata,importance="none",...)$predicted[,2,drop=TRUE])
         ## class(p) <- "predictRisk"
         p
     }else{
