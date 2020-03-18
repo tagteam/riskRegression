@@ -881,6 +881,7 @@ Score.list <- function(object,
             trainX[,ID:=NULL]
         }
         pred <- data.table::rbindlist(lapply(mlevs, function(f){
+            ## add object specific arguments to predictRisk methods
             if (f[1]>0 && (length(extra.args <- unlist(lapply(object.classes[[f]],function(cc){predictRisk.args[[cc]]})))>0)){
                 args <- c(args,extra.args)
             }
@@ -907,6 +908,7 @@ Score.list <- function(object,
                     set.seed(trainseed)
                     if (f==0) model.f=nullobject[[1]] else model.f=object[[f]]
                     model.f$call$data <- trainX
+                    # browser(skipCalls = 1)
                     trained.model <- try(eval(model.f$call),silent=TRUE)
                     if ("try-error" %in% class(trained.model)){
                         message(paste0("Failed to fit model ",f,ifelse(looping,paste0(" in cross-validation step ",b)),":"))
@@ -1133,17 +1135,21 @@ Score.list <- function(object,
         if (!is.null(progress.bar)){
             message("Running crossvalidation ...")
             if (!(progress.bar %in% c(1,2,3))) progress.bar <- 3
-            pb <- txtProgressBar(max = B, style = progress.bar,width=20)
+            if (B==1 && split.method$internal.name == "crossval")
+                pb <- txtProgressBar(max = split.method$k, style = progress.bar,width=20)
+            else
+                pb <- txtProgressBar(max = B, style = progress.bar,width=20)
         }
         `%dopar%` <- foreach::`%dopar%`
         ## k-fold-CV
         if (split.method$internal.name == "crossval"){
             DT.B <- rbindlist(foreach::foreach (b=1:B,.export=exports) %dopar%{ ## repetitions of k-fold to avoid Monte-Carlo error
                 index.b <- split.method$index[,b] ## contains a sample of the numbers 1:k with replacement
-                if(!is.null(progress.bar)){setTxtProgressBar(pb, b)}
+                if((B>1) && !is.null(progress.bar)){setTxtProgressBar(pb, b)}
                 DT.b <- rbindlist(lapply(1:split.method$k,function(fold){
                     traindata=data[index.b!=fold]
                     testids <- index.b==fold # (1:N)[index.b!=fold]
+                    if((B==1) && !is.null(progress.bar)){setTxtProgressBar(pb, fold)}
                     ## NOTE: subset.data.table preserves order ## So we need to use subset??
                     testdata <- subset(data,testids)
                     if (cens.type=="rightCensored"){

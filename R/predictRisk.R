@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun  6 2016 (09:02) 
 ## Version: 
-## last-updated: Mar 10 2020 (16:47) 
+## last-updated: Mar 15 2020 (07:51) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 297
+##     Update #: 300
 #----------------------------------------------------------------------
 ## 
 ### Commentary:
@@ -725,6 +725,8 @@ predictRisk.ranger <- function(object, newdata, times, cause, ...){
     xvars <- object$forest$independent.variable.names
     newdata <- subset(newdata,select=xvars)
     if (missing(times)||is.null(times)){
+        if (object$treetype[[1]]=="Classification")
+            stop("Ranger needs option probability=TRUE to predict outcome probabilities.")
         p <- stats::predict(object,data=newdata,importance="none",...)$predictions[,2,drop=TRUE]
         if (length(p) != NROW(newdata))
             stop(paste("\nPrediction vector has wrong length:\nRequested length of newdata: ",NROW(newdata)," \nProvided prediction vector: ",length(p),"\n\n",sep=""))
@@ -1100,6 +1102,9 @@ predictRisk.flexsurvreg <- function(object, newdata, times, ...) {
         stop("Prediction failed")
     1 - p
 }
+
+
+
 
 #----------------------------------------------------------------------
 ### predictRisk.R ends here

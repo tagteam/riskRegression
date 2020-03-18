@@ -68,11 +68,16 @@ Cforest <- function(formula,data,...){
 ##' @export 
 predictRisk.Cforest <- function (object, newdata, times, ...) {
     requireNamespace("party")
-    survObj <- party::treeresponse(object$forest,newdata=newdata)
-    p <- do.call("rbind",lapply(survObj,function(x){
-        predictRisk(x,newdata=newdata[1,,drop=FALSE],times=times)
-    }))
-    if (NROW(p) != NROW(newdata) || NCOL(p) != length(times)) 
-        stop(paste("\nPrediction matrix has wrong dimension:\nRequested newdata x times: ",NROW(newdata)," x ",length(times),"\nProvided prediction matrix: ",NROW(p)," x ",NCOL(p),"\n\n",sep=""))
-    p
+    if (missing(times)||is.null(times)){
+        p <- as.numeric(unlist(party::treeresponse(object$forest,newdata=newdata)))
+        return(p)
+    }else{
+        survObj <- party::treeresponse(object$forest,newdata=newdata)
+        p <- do.call("rbind",lapply(survObj,function(x){
+            predictRisk(x,newdata=newdata[1,,drop=FALSE],times=times)
+        }))
+        if (NROW(p) != NROW(newdata) || NCOL(p) != length(times)) 
+            stop(paste("\nPrediction matrix has wrong dimension:\nRequested newdata x times: ",NROW(newdata)," x ",length(times),"\nProvided prediction matrix: ",NROW(p)," x ",NCOL(p),"\n\n",sep=""))
+        p
+    }
 }
