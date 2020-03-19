@@ -726,7 +726,7 @@ predictRisk.ranger <- function(object, newdata, times, cause, ...){
     newdata <- subset(newdata,select=xvars)
     if (missing(times)||is.null(times)){
         if (object$treetype=="Classification") {
-          pred <- predict(object,data=newdata,predict.all=TRUE,...)$predictions
+          pred <- stats::predict(object,data=newdata,predict.all=TRUE,...)$predictions
           p <- rowMeans(pred == 2)
         } else {
           p <- stats::predict(object,data=newdata,importance="none",...)$predictions[,2,drop=TRUE]
