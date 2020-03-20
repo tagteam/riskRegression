@@ -725,9 +725,12 @@ predictRisk.ranger <- function(object, newdata, times, cause, ...){
     xvars <- object$forest$independent.variable.names
     newdata <- subset(newdata,select=xvars)
     if (missing(times)||is.null(times)){
-        if (object$treetype[[1]]=="Classification")
-            stop("Ranger needs option probability=TRUE to predict outcome probabilities.")
-        p <- stats::predict(object,data=newdata,importance="none",...)$predictions[,2,drop=TRUE]
+        if (object$treetype=="Classification") {
+          pred <- stats::predict(object,data=newdata,predict.all=TRUE,...)$predictions
+          p <- rowMeans(pred == 2)
+        } else {
+          p <- stats::predict(object,data=newdata,importance="none",...)$predictions[,2,drop=TRUE]
+        }
         if (length(p) != NROW(newdata))
             stop(paste("\nPrediction vector has wrong length:\nRequested length of newdata: ",NROW(newdata)," \nProvided prediction vector: ",length(p),"\n\n",sep=""))
         p
