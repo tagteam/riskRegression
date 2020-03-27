@@ -255,12 +255,14 @@ CSC <- function(formula,
         ## as.formula(paste(survresponse,
         ## as.character(delete.response(terms.formula(formulaX)))[[2]],
         ## sep="~"))
+        args <- list(formulaXX, data = workData)
+        extra.args <- list(...)
         if (fitter=="coxph"){
-            fit <- survival::coxph(formulaXX, data = workData,x=TRUE,y=TRUE,...)
+            fit <- do.call("coxph",c(args,list(x=TRUE,y=TRUE),extra.args))
         } else if(fitter=="cph") {
-            fit <- rms::cph(formulaXX, data = workData,surv=TRUE,x=TRUE,y=TRUE,...)
+            fit <- do.call("cph",c(args,list(surv=TRUE,x=TRUE,y=TRUE),extra.args))
         } else if(fitter=="phreg") {
-            fit <- mets::phreg(formulaXX, data = workData, ...)
+            fit <- do.call("phreg",c(args,extra.args))
         }
         ## fit$formula <- terms(fit$formula)
         ## fit$call$formula <- terms(formulaXX)

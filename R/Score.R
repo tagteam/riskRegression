@@ -1349,9 +1349,9 @@ Score.list <- function(object,
                                         auc.loob[times==t&model==mod,se:=sd(aucDT[["IF.AUC"]])/sqrt(N)]
                                     }
                                 }else{
+                                    ic.weights <- matrix(0,N,N)
                                     if (cens.type[1]=="rightCensored" && (conservative[1]==FALSE)) {
                                         ## ## Influence function for G - i.e. censoring survival distribution
-                                        ic.weights <- matrix(0,N,N)
                                         if  (cens.model=="cox"){
                                             k=0 ## counts subject-times with event before t
                                             for (i in 1:N){

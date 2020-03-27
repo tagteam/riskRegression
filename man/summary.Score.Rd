@@ -8,6 +8,7 @@
   object,
   times,
   what = c("score", "contrasts"),
+  models,
   digits = 1,
   pvalue.digits = 4,
   ...
