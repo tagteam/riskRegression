@@ -68,5 +68,6 @@ Description: Implementation of the following methods for event history analysis.
     the risk prediction models on one part of each split and then summarizes and
     compares the performance across splits.
 License: GPL (>= 2)
-RoxygenNote: 7.0.2
+RoxygenNote: 7.1.0
 VignetteBuilder: R.rsp
+Encoding: UTF-8

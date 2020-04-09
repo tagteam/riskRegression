@@ -4,7 +4,8 @@
 \name{Melanoma}
 \alias{Melanoma}
 \title{Malignant melanoma data}
-\format{A data frame with 205 observations on the following 12 variables.
+\format{
+A data frame with 205 observations on the following 12 variables.
 \describe{
 \item{time}{ time in days from operation}
 \item{status}{a numeric with values \code{0=censored} \code{1=death.malignant.melanoma} \code{2=death.other.causes}}
@@ -17,7 +18,8 @@
 \item{sex}{a factor with levels \code{Female} \code{Male}}
 \item{age}{age at operation (years)} 
 \item{logthick}{tumour thickness on log-scale}
-}}
+}
+}
 \description{
 In the period 1962-77, 205 patients with malignant melanoma (cancer of the
 skin) had a radical operation performed at Odense University Hospital,

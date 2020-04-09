@@ -37,6 +37,7 @@
 \alias{predictRisk.ranger}
 \alias{predictRisk.penfitS3}
 \alias{predictRisk.SuperPredictor}
+\alias{predictRisk.singleEventCB}
 \title{Extrating predicting risks from regression models}
 \usage{
 predictRisk(object, newdata, ...)
@@ -131,6 +132,8 @@ predictRisk(object, newdata, ...)
 \method{predictRisk}{gbm}(object, newdata, times, ...)
 
 \method{predictRisk}{flexsurvreg}(object, newdata, times, ...)
+
+\method{predictRisk}{singleEventCB}(object, newdata, times, cause, ...)
 }
 \arguments{
 \item{object}{A fitted model from which to extract predicted event
