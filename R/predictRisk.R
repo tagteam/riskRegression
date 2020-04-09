@@ -1135,7 +1135,7 @@ predictRisk.singleEventCB <- function(object, newdata, times, cause, ...) {
       # case 2 b) zero is not included in the number of time points (but the absoluteRisk function adds it)
       a <- absoluteRisk(object, newdata = newdata, time = times)
       ### we need to invert the plot because, by default, we get cumulative incidence
-      a[, -c(1)] <- 1 - a[, -c(1)]
+      #a[, -c(1)] <- 1 - a[, -c(1)]
       ### we remove time 0 for everyone, and remove the time column
       a <- a[-c(1), -c(1)] ### a[-c(1), ] to keep times column, but remove time 0 probabilities
       # now we transpose the matrix because in riskRegression we work with number of
