@@ -1123,17 +1123,17 @@ predictRisk.singleEventCB <- function(object, newdata, times, cause, ...) {
   # case 1: the number of time points is 1
   #         dim(array) =  (length(time), NROW(newdata), number of causes in the data)
   if (length(times) == 1) {
-    a <- absoluteRisk(object, newdata = newdata, time = times)
+    a <- casebase::absoluteRisk(object, newdata = newdata, time = times)
     p <- matrix(a, ncol = 1)
   } else {
     # case 2 a) zero is included in the number of time points
     if (0 %in% times) {
       # dim(array) =  (length(time)+1, NROW(newdata)+1, number of causes in the data)
-      a <- absoluteRisk(object, newdata = newdata, time = times)
+      a <- casebase::absoluteRisk(object, newdata = newdata, time = times)
       p <- t(a)
     } else {
       # case 2 b) zero is not included in the number of time points (but the absoluteRisk function adds it)
-      a <- absoluteRisk(object, newdata = newdata, time = times)
+      a <- casebase::absoluteRisk(object, newdata = newdata, time = times)
       ### we need to invert the plot because, by default, we get cumulative incidence
       #a[, -c(1)] <- 1 - a[, -c(1)]
       ### we remove time 0 for everyone, and remove the time column
