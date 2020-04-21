@@ -4,13 +4,15 @@
 \name{Paquid}
 \alias{Paquid}
 \title{Paquid sample}
-\format{A data frame with 2561 observations on the following 4 variables.
+\format{
+A data frame with 2561 observations on the following 4 variables.
 \describe{
 \item{\code{time}}{the time-to-event (in years).}
 \item{\code{status}}{the type of event \code{0} = censored, \code{1} = dementia onset and \code{2} = death without dementia.}
 \item{\code{DSST}}{score at the Digit Symbol Substitution Score Test. This test explores attention and psychomotor speed.}
 \item{\code{MMSE}}{score at the Mini Mental State Examination. This test is often used as an index of global cognitive performance.}
-}}
+}
+}
 \source{
 The data have been first made publicly available via the package timeROC.
 }

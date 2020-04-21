@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Oct 23 2016 (08:53) 
 ## Version: 
-## last-updated: Jan  6 2020 (08:58) 
-##           By: Thomas Alexander Gerds
-##     Update #: 1627
+## last-updated: apr 21 2020 (16:24) 
+##           By: Brice Ozenne
+##     Update #: 1684
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -31,7 +31,8 @@
 #'     on treatment and covariates. The object must be a \code{coxph} or \code{cph} object. See examples.
 #' @param data [data.frame or data.table] Data set in which to evaluate risk predictions
 #' based on the outcome model
-#' 
+#' @param data.index [numeric vector] Position of the observation in argument data relative to the dataset used to obtain the argument event, treatment, censor.
+#' Only necessary for the standard errors when computing the Average Treatment Effects on a subset of the data set. 
 #' @param formula For analyses with time-dependent covariates, the response formula. See examples.
 #' @param contrasts [character] The levels of the treatment variable to be compared.
 #' @param strata [character] Strata variable on which to compute the average risk.
@@ -252,6 +253,7 @@ ate <- function(event,
                 treatment,
                 censor = NULL,
                 data,
+                data.index = NULL,
                 formula,
                 estimator = NULL,
                 strata = NULL,
@@ -282,6 +284,7 @@ ate <- function(event,
                          formula = formula,
                          landmark = landmark,
                          mydata = data,
+                         data.index = data.index,
                          estimator = estimator,
                          times = times,
                          cause = cause,
@@ -291,6 +294,7 @@ ate <- function(event,
     object.event <- init$object.event
     object.treatment <- init$object.treatment
     object.censor <- init$object.censor
+    data.index <- init$data.index
     times <- init$times
     handler <- init$handler
     formula <- init$formula
@@ -332,6 +336,7 @@ ate <- function(event,
                            landmark = landmark,
                            se = se,
                            iid = iid,
+                           data.index = data.index,
                            return.iid.nuisance = return.iid.nuisance,
                            band = band,
                            B = B,
@@ -348,7 +353,8 @@ ate <- function(event,
                            eventVar.time = eventVar.time,
                            eventVar.status = eventVar.status,
                            censorVar.time = censorVar.time,
-                           censorVar.status = censorVar.status
+                           censorVar.status = censorVar.status,
+                           n.obs = n.obs
                            )
 
     ## ** Prepare
@@ -357,14 +363,17 @@ ate <- function(event,
     test.glm <- inherits(object.event,"glm")
 
     if(!is.null(strata)){
-        data[[strata]] <- factor(data[[strata]])        
+        if(!is.factor(data[[strata]])){
+            data[[strata]] <- factor(data[[strata]])
+        }   
         if(is.null(contrasts)){
             contrasts <- levels(data[[strata]])
         }
         levels <- levels(data[[strata]]) ## necessary to get the correct factor format in case that not all levels are in contrast
     }else{
-        data[[treatment]] <- factor(data[[treatment]])
-    
+        if(!is.factor(data[[treatment]])){
+            data[[treatment]] <- factor(data[[treatment]])
+        }   
         if(is.null(contrasts)){
             contrasts <- levels(data[[treatment]])
             ## if (length(contrasts)>50) warning("Treatment variable has more than 50 levels.\nIf this is not a mistake,
@@ -441,6 +450,7 @@ ate <- function(event,
                                  censorVar.time = censorVar.time,
                                  censorVar.status = censorVar.status,
                                  return.iid.nuisance = return.iid.nuisance,
+                                 data.index = data.index,
                                  method.iid = method.iid),
                             dots)
     if (TD){       
@@ -501,7 +511,7 @@ ate <- function(event,
             resBoot <- calcBootATE(args = args.pointEstimate,
                                    name.estimate = names(vec.pointEstimate),
                                    estimator.boot = estimator.boot,
-                                   n.obs = n.obs,
+                                   n.obs = n.obs["data"],
                                    fct.pointEstimate = fct.pointEstimate,
                                    handler = handler,
                                    B = B,
@@ -520,8 +530,8 @@ ate <- function(event,
                                 sim = "ordinary",
                                 call = quote(boot(data = XX, statistic = XX, R = XX)),
                                 stype = "i",
-                                strata = rep(1,n.obs),
-                                weights = rep(1/n.obs,n.obs),
+                                strata = rep(1,n.obs["data"]),
+                                weights = rep(1/n.obs["data"],n.obs["data"]),
                                 pred.i = NULL,  ## Omitted if m is 0 or sim is not "ordinary" (from doc of boot::boot)
                                 L = NULL, ## only used when sim is "antithetic" (from doc of boot::boot)
                                 ran.gen = NULL, ## only used when sim is "parametric" (from doc of boot::boot)
@@ -640,6 +650,7 @@ ate_initArgs <- function(object.event,
                          formula,
                          estimator,
                          mydata, ## instead of data to avoid confusion between the function data and the dataset when running the bootstrap
+                         data.index,
                          cause,
                          times,
                          handler,
@@ -710,7 +721,9 @@ ate_initArgs <- function(object.event,
         eventVar.status <- responseVar$status
         type.multistate <- "survival"
     }else if(inherits(object.event,"CauseSpecificCox")){
-        causeNNA <- na.omit(c(cause,1))[1]
+        if(is.na(cause)){
+            cause <- object.event$theCause
+        }
         responseVar <- SurvResponseVar(myformula.event)
         eventVar.time <- responseVar$time
         eventVar.status <- responseVar$status
@@ -756,8 +769,8 @@ ate_initArgs <- function(object.event,
         test.censor <- censoringMF$status == 0
         n.censor <- sapply(times, function(t){sum(test.censor * (censoringMF$stop <= t))})
 
-        level.censoring <- try(unique(mydata[[eventVar.status]][test.censor]), silent = TRUE)
-        level.states <- try(unique(mydata[[eventVar.status]][!test.censor]), silent = TRUE)
+        level.censoring <- 0 ## try(unique(mydata[[eventVar.status]][test.censor]), silent = TRUE)
+        level.states <- 1 ## try(unique(mydata[[eventVar.status]][!test.censor]), silent = TRUE)
 
         info.censor <- try(SurvResponseVar(coxFormula(object.censor)), silent = TRUE)
         if(inherits(info.censor,"try-error")){
@@ -782,8 +795,8 @@ ate_initArgs <- function(object.event,
                 censorVar.time <- info.censor$time
             }
 
-            level.censoring <- try(unique(mydata[[censorVar.status]][test.censor]), silent = TRUE)
-            level.states <- try(unique(mydata[[censorVar.status]][!test.censor]), silent = TRUE)
+            level.censoring <- 0 ## try(unique(mydata[[censorVar.status]][test.censor]), silent = TRUE)
+            level.states <- 1 ## try(unique(mydata[[censorVar.status]][!test.censor]), silent = TRUE)
 
         }else{ ## or just logistic regression 
             n.censor <- 0
@@ -840,8 +853,6 @@ ate_initArgs <- function(object.event,
         formula <- NULL
         fct.pointEstimate <- ATE_TI
     }
-
-    n.obs <- NROW(mydata)
 
     ## estimator
     if(is.null(estimator)){
@@ -934,6 +945,16 @@ ate_initArgs <- function(object.event,
                                 "competing.risks" = TRUE,
                                 "NA" = NA)
     }
+
+    ## ** sample size
+    n.obs <- c(data = NROW(mydata),
+               model.event = if(!is.null(object.event)){stats::nobs(object.event)}else{NA},
+               model.treatment = if(!is.null(object.treatment)){stats::nobs(object.treatment)}else{NA},
+               model.censor = if(!is.null(object.censor)){stats::nobs(object.censor)}else{NA}
+               )
+    if(is.null(data.index) && length(unique(stats::na.omit(n.obs)))==1){
+        data.index <- 1:n.obs["data"]
+    }
     
     ## ** output
     return(list(object.event = object.event,
@@ -956,7 +977,8 @@ ate_initArgs <- function(object.event,
                 eventVar.status = eventVar.status,
                 censorVar.time = censorVar.time,
                 censorVar.status = censorVar.status,
-                product.limit = product.limit
+                product.limit = product.limit,
+                data.index = data.index
                 ))
 }
 
@@ -974,6 +996,7 @@ ate_checkArgs <- function(object.event,
                           landmark,
                           se,
                           iid,
+                          data.index,
                           return.iid.nuisance,
                           band,
                           B,
@@ -991,10 +1014,11 @@ ate_checkArgs <- function(object.event,
                           eventVar.time,
                           eventVar.status,
                           censorVar.time,
-                          censorVar.status){
+                          censorVar.status,
+                          n.obs){
 
     options <- riskRegression.options()
-    
+
     ## ** times
     if(inherits(object.event,"glm") && length(times)!=1){
         stop("Argument \'times\' has no effect when using a glm object \n",
@@ -1056,6 +1080,12 @@ ate_checkArgs <- function(object.event,
         if(!inherits(object.treatment,"glm") || object.treatment$family$family!="binomial"){
             stop("Argument \'treatment\' must be a logistic regression\n",
                  " or a character variable giving the name of the treatment variable. \n")
+        }
+
+        if(any(levels(mydata[[treatment]]) %in% mydata[[treatment]] == FALSE)){
+            mistreat <- levels(mydata[[treatment]])[levels(mydata[[treatment]]) %in% mydata[[treatment]] == FALSE]
+            stop("Argument \'mydata\' needs to take all possible treatment values when using IPTW/AIPTW \n",
+                 "missing treatment values: \"",paste(mistreat,collapse="\" \""),"\"\n")
         }
     }
 
@@ -1120,18 +1150,25 @@ ate_checkArgs <- function(object.event,
         if(!is.null(landmark)){
             stop("Calculation of the standard errors via the functional delta method not implemented for time dependent covariates \n")
         }
+        if(length(unique(stats::na.omit(n.obs[-1])))>1){
+            stop("Arguments \'",paste(names(stats::na.omit(n.obs[-1])), collapse ="\' "),"\' must be fitted using the same number of observations \n")
+        }
 
+        if(is.null(data.index)){
+            stop("Incompatible number of observations between argument \'data\' and the datasets from argument(s) \'",paste(names(stats::na.omit(n.obs[-1])), collapse ="\' "),"\' \n",
+                 "Consider specifying argument \'data.index\' \n \n")
+        }
+        if(!is.numeric(data.index) || any(duplicated(data.index)) || any(is.na(data.index)) || any(data.index %in% 1:max(n.obs[-1],na.rm = TRUE) == FALSE)){
+            stop("Incorrect specification of argument \'data.index\' \n",
+                 "Must be a vector of integers between 0 and ",max(n.obs[-1],na.rm = TRUE)," \n")
+        }
+        
         if(!is.null(object.event)){
             candidateMethods <- paste("predictRiskIID",class(object.event),sep=".")
             if (all(match(candidateMethods,options$method.predictRiskIID,nomatch=0)==0)){
                 stop(paste("Could not find predictRiskIID S3-method for ",class(object.event),collapse=" ,"),"\n",
                      "Functional delta method not implemented for this type of object \n",
                      "Set argument \'B\' to a positive integer to use a boostrap instead \n",sep="")
-            }
-
-            if(coxN(object.event)[1]!=NROW(mydata)){
-                stop("Argument \'event\' must be have been fitted using argument \'data\' for the functional delta method to work\n",
-                     "(discrepancy found in number of rows) \n")
             }
         }
 
@@ -1197,14 +1234,18 @@ ate_checkArgs <- function(object.event,
         if(is.na(cause)){
             stop("Argument \'cause\' not specified\n")
         }
-
+        data.status <- mydata[[eventVar.status]]
         if(!is.null(treatment)){
-            freq.event <- tapply(mydata[[eventVar.status]], mydata[[treatment]], function(x){mean(x==cause)})
-            count.event <- tapply(mydata[[eventVar.status]], mydata[[treatment]], function(x){sum(x==cause)})
+            data.strata <- mydata[[treatment]]
         }else{
-            freq.event <- tapply(mydata[[eventVar.status]], mydata[[strata]], function(x){mean(x==cause)})
-            count.event <- tapply(mydata[[eventVar.status]], mydata[[strata]], function(x){sum(x==cause)})
+            data.strata <- mydata[[strata]]
         }
+        if(is.factor(data.strata)){
+            data.strata <- droplevels(data.strata)
+        }
+        freq.event <- tapply(data.status, data.strata, function(x){mean(x==cause)})
+        count.event <- tapply(data.status, data.strata, function(x){sum(x==cause)})
+
         if(any(freq.event < 0.01) || any(count.event < 5)  ){
             warning("Rare event, possible violation of the positivity assumption \n")
         }

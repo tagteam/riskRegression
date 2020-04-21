@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: maj 23 2018 (14:08) 
 ## Version: 
-## Last-Updated: Jan  6 2020 (08:59) 
-##           By: Thomas Alexander Gerds
-##     Update #: 619
+## Last-Updated: apr 21 2020 (11:40) 
+##           By: Brice Ozenne
+##     Update #: 621
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -327,8 +327,7 @@ confintIID.ate <- function(object,
     n.contrasts <- length(contrasts)
     allContrasts <- utils::combn(contrasts, m = 2)
     n.allContrasts <- NCOL(allContrasts)
-    n.obs <- object$n
-    
+    n.obs <- max(stats::na.omit(object$n[-1]))
     for(iE in 1:n.estimator){ ## iE <- 1
         iEstimator <- estimator[iE]
         ## ** meanRisk

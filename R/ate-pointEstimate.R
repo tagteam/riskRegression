@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: jun 27 2019 (10:43) 
 ## Version: 
-## Last-Updated: nov  1 2019 (11:26) 
+## Last-Updated: apr 21 2020 (16:05) 
 ##           By: Brice Ozenne
-##     Update #: 633
+##     Update #: 645
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -104,6 +104,7 @@ ATE_TI <- function(object.event,
                    censorVar.status,
                    type.multistate,
                    return.iid.nuisance,
+                   data.index,
                    method.iid,
                    product.limit,
                    ...){
@@ -333,11 +334,11 @@ ATE_TI <- function(object.event,
             if(!is.null(treatment)){
                 iIID.ate <- F1.ctf.tau[[iC]]
                 meanRisk$Gformula[iC,] <- colSums(iIID.ate)/n.obs
-                attr(out,"iid.Gformula")[[iC]] <- attr(out,"iid.Gformula")[[iC]] + rowCenter_cpp(iIID.ate, center = meanRisk$Gformula[iC,])/n.obs
+                attr(out,"iid.Gformula")[[iC]][data.index,] <- attr(out,"iid.Gformula")[[iC]][data.index,] + rowCenter_cpp(iIID.ate, center = meanRisk$Gformula[iC,])/n.obs
             }else{
                 iIID.ate <- F1.ctf.tau[[iC]][ls.index.strata[[iC]],,drop=FALSE]
                 meanRisk$Gformula[iC,] <- colSums(iIID.ate)/n.obs.contrasts[iC]
-                attr(out,"iid.Gformula")[[iC]][ls.index.strata[[iC]],] <- attr(out,"iid.Gformula")[[iC]][ls.index.strata[[iC]],] + rowCenter_cpp(iIID.ate, center = meanRisk$Gformula[iC,])/n.obs.contrasts[iC]
+                attr(out,"iid.Gformula")[[iC]][data.index[ls.index.strata[[iC]]],] <- attr(out,"iid.Gformula")[[iC]][data.index[ls.index.strata[[iC]]],] + rowCenter_cpp(iIID.ate, center = meanRisk$Gformula[iC,])/n.obs.contrasts[iC]
             }
         }
         if(attr(estimator,"export.IPTW")){
@@ -348,7 +349,7 @@ ATE_TI <- function(object.event,
             }
             
             meanRisk$IPTW[iC,] <- colSums(iIID.ate)/n.obs
-            attr(out,"iid.IPTW")[[iC]] <- attr(out,"iid.IPTW")[[iC]]  + rowCenter_cpp(iIID.ate, center = meanRisk$IPTW[iC,])/n.obs
+            attr(out,"iid.IPTW")[[iC]][data.index,] <- attr(out,"iid.IPTW")[[iC]][data.index,]  + rowCenter_cpp(iIID.ate, center = meanRisk$IPTW[iC,])/n.obs
         }
         if(attr(estimator,"export.AIPTW")){
             if(attr(estimator,"IPCW")){
@@ -358,7 +359,7 @@ ATE_TI <- function(object.event,
             }
 
             meanRisk$AIPTW[iC,] <- colSums(iIID.ate)/n.obs
-            attr(out,"iid.AIPTW")[[iC]] <- attr(out,"iid.AIPTW")[[iC]] + rowCenter_cpp(iIID.ate, center = meanRisk$AIPTW[iC,])/n.obs
+            attr(out,"iid.AIPTW")[[iC]][data.index,] <- attr(out,"iid.AIPTW")[[iC]][data.index,] + rowCenter_cpp(iIID.ate, center = meanRisk$AIPTW[iC,])/n.obs
         }
     }
 
@@ -419,9 +420,9 @@ ATE_TI <- function(object.event,
         out$meanRisk[, time := as.numeric(levels(time))[time]] ## recommanded way to convert from factor to numeric (https://stackoverflow.com/questions/3418128/how-to-convert-a-factor-to-integer-numeric-without-loss-of-information)
         ## range(as.numeric(as.character(out$meanRisk$timeChar))-out$meanRisk$time)
     }
-    
     out$riskComparison <- data.table::rbindlist(lapply(1:(n.contrasts-1),function(i){ ## i <- 1
         data.table::rbindlist(lapply(((i+1):n.contrasts),function(j){ ## j <- 2
+
             ## compute differences between all pairs of treatments
             iDT <- data.table(treatment.A=contrasts[i],
                               treatment.B=contrasts[j],

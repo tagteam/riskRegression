@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: okt 29 2019 (13:18) 
 ## Version: 
-## Last-Updated: nov 27 2019 (14:13) 
+## Last-Updated: apr 21 2020 (10:27) 
 ##           By: Brice Ozenne
-##     Update #: 8
+##     Update #: 16
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -121,7 +121,6 @@ summary.ate <- function(object, digits = 3, type = c("meanRisk","diffRisk","rati
 
         ## merge into CI and CB
         if(!is.null(object$conf.level)){
-            dt.tempo[, c("p.value") := NULL]
             if(object$se){
                 dt.tempo[, c("conf.interval") := paste0("[",
                                                         sprintf(paste0("%1.",digits,"f"),lower),
