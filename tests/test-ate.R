@@ -204,6 +204,8 @@ test_that("[ate] logistic regression - compare to lava",{
     fitT <- glm(formula = X1 ~ X2, data=dtB, family = "binomial")
 
     ## G-formula
+    e0.ate <- ate(fitY, data = dtB, treatment = "X1",
+                 se = TRUE, iid = TRUE, B = 0, verbose = verbose)
     e.ate <- ate(fitY, data = dtB, treatment = "X1",
                  times = 5, 
                  se = TRUE, iid = TRUE, B = 0, verbose = verbose)
@@ -1220,3 +1222,4 @@ test_that("ate double robust estimator works with multiple timepoint",{
                    )
 
 })
+

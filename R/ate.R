@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Oct 23 2016 (08:53) 
 ## Version: 
-## last-updated: apr 21 2020 (16:24) 
+## last-updated: maj  1 2020 (18:09) 
 ##           By: Brice Ozenne
-##     Update #: 1684
+##     Update #: 1685
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -1249,8 +1249,8 @@ ate_checkArgs <- function(object.event,
         if(any(freq.event < 0.01) || any(count.event < 5)  ){
             warning("Rare event, possible violation of the positivity assumption \n")
         }
-        if(any(mydata[[eventVar.time]]<=0)){
-            stop("The time to event variable should only take strictly positive values \n")
+        if(any(mydata[[eventVar.time]]<0)){
+            stop("The time to event variable should only take positive values \n")
         }
     }
 

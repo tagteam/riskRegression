@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: okt 29 2019 (13:18) 
 ## Version: 
-## Last-Updated: apr 21 2020 (10:27) 
+## Last-Updated: maj  1 2020 (18:25) 
 ##           By: Brice Ozenne
-##     Update #: 16
+##     Update #: 19
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -108,11 +108,13 @@ summary.ate <- function(object, digits = 3, type = c("meanRisk","diffRisk","rati
         
         keep.cols <- c(names(object$meanRisk)[!grepl("meanRisk",names(object$meanRisk))],
                        grep(estimator,names(object$meanRisk), value = TRUE))
-                       
+        if(all(is.na(object$meanRisk$time))){
+            keep.cols <- setdiff(keep.cols, "time")
+        }
         dt.tempo <- data.table::copy(object$meanRisk[,.SD,.SDcols = keep.cols])
         ## order.col <- c(names(dt.tempo)[1:2],"meanRisk")
         ## if(!is.null(object$boot) && !is.null(object$conf.level)){
-            ## order.col <- c(order.col,"bootstrap")
+        ## order.col <- c(order.col,"bootstrap")
         ## }
 
         ## simplify names (needs to be done in two steps)
@@ -170,6 +172,9 @@ summary.ate <- function(object, digits = 3, type = c("meanRisk","diffRisk","rati
             ## only pick diff
             keep.cols <- c(names(object$riskComparison)[!grepl("diff|ratio",names(object$riskComparison))],
                            grep(paste0("diff\\.",estimator),names(object$riskComparison), value = TRUE))
+            if(all(is.na(object$riskComparison$time))){
+                keep.cols <- setdiff(keep.cols, "time")
+            }
             dt.tempo <- object$riskComparison[,.SD,.SDcols = keep.cols]
             ## order.col <- c(names(dt.tempo)[1:3],"diff")
             ## if(!is.null(object$boot) && !is.null(object$conf.level)){
@@ -233,6 +238,9 @@ summary.ate <- function(object, digits = 3, type = c("meanRisk","diffRisk","rati
             ## only pick ratio
             keep.cols <- c(names(object$riskComparison)[!grepl("diff|ratio",names(object$riskComparison))],
                            grep(paste0("ratio\\.",estimator),names(object$riskComparison), value = TRUE))
+            if(all(is.na(object$riskComparison$time))){
+                keep.cols <- setdiff(keep.cols, "time")
+            }
             dt.tempo <- object$riskComparison[,.SD,.SDcols = keep.cols]
             ## order.col <- c(names(dt.tempo)[1:3],"ratio")
             ## if(!is.null(object$boot) && !is.null(object$conf.level)){
