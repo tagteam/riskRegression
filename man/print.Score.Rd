@@ -4,14 +4,12 @@
 \alias{print.Score}
 \title{Print Score object}
 \usage{
-\method{print}{Score}(x, digits, percent = TRUE, ...)
+\method{print}{Score}(x, digits, ...)
 }
 \arguments{
 \item{x}{Object obtained with \code{Score.list}}
 
 \item{digits}{Number of digits}
-
-\item{percent}{Logical. If \code{TRUE} show percentages.}
 
 \item{...}{passed to print}
 }

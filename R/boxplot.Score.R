@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Aug 15 2016 (09:45) 
 ## Version: 
-## last-updated: Feb  7 2020 (19:00) 
+## last-updated: Mar 30 2020 (09:45) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 144
+##     Update #: 147
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -122,7 +122,7 @@ boxplot.Score <- function(x,
 
     if (type=="diff"){
         warning("ATTENTION PLEASE: Boxplots of differences of predicted risk are non-proper\nin the sense that a miscalibrated model can apparently look good.")
-        pframe <- x$riskQuantile$contrasts[model!="Null model"]
+        pframe <- x$riskQuantile$contrasts[reference!="Null model"& model!="Null model"]
     } else{
         pframe <- x$riskQuantile$score[model!="Null model"]
     }
