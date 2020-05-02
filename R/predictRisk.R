@@ -1131,7 +1131,48 @@ predictRisk.flexsurvreg <- function(object, newdata, times, ...) {
     1 - p
 }
 
-
+## * predictRisk.singleEventCB
+##' @export
+##' @rdname predictRisk
+##' @method predictRisk singleEventCB
+predictRisk.singleEventCB <- function(object, newdata, times, cause, ...) {
+  if (object$call[[1]]!="glm"){
+    #get all covariates excluding intercept and time
+    coVars=colnames(object$originalData$x)
+    #coVars is used in lines 44 and 50
+    newdata=data.matrix(drop(subset(newdata, select=coVars)))
+  }
+  
+  # if (missing(cause)) stop("Argument cause should be the event type for which we predict the absolute risk.")
+  # the output of absoluteRisk is an array with dimension dependening on the length of the requested times:
+  # case 1: the number of time points is 1
+  #         dim(array) =  (length(time), NROW(newdata), number of causes in the data)
+  if (length(times) == 1) {
+    a <- casebase::absoluteRisk(object, newdata = newdata, time = times)
+    p <- matrix(a, ncol = 1)
+  } else {
+    # case 2 a) zero is included in the number of time points
+    if (0 %in% times) {
+      # dim(array) =  (length(time)+1, NROW(newdata)+1, number of causes in the data)
+      a <- casebase::absoluteRisk(object, newdata = newdata, time = times)
+      p <- t(a)
+    } else {
+      # case 2 b) zero is not included in the number of time points (but the absoluteRisk function adds it)
+      a <- casebase::absoluteRisk(object, newdata = newdata, time = times)
+      ### we need to invert the plot because, by default, we get cumulative incidence
+      #a[, -c(1)] <- 1 - a[, -c(1)]
+      ### we remove time 0 for everyone, and remove the time column
+      a <- a[-c(1), -c(1)] ### a[-c(1), ] to keep times column, but remove time 0 probabilities
+      # now we transpose the matrix because in riskRegression we work with number of
+      # observations in rows and time points in columns
+      p <- t(a)
+    }
+  }
+  if (NROW(p) != NROW(newdata) || NCOL(p) != length(times)) {
+    stop(paste("\nPrediction matrix has wrong dimensions:\nRequested newdata x times: ", NROW(newdata), " x ", length(times), "\nProvided prediction matrix: ", NROW(p), " x ", NCOL(p), "\n\n", sep = ""))
+  }
+  p
+}
 
 
 #----------------------------------------------------------------------
