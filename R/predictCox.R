@@ -480,7 +480,6 @@ predictCox <- function(object,
                                         # {{{ standard error
     
     if(se[[1]] || band[[1]] || iid[[1]] || average.iid[[1]]){
-      
         if(nVar > 0){
             ## use prodlim to get the design matrix
             new.LPdata <- prodlim::model.design(infoVar$lp.sterms,
@@ -515,7 +514,6 @@ predictCox <- function(object,
                 })
             }
         }
-    
       outSE <- calcSeCox(object,
                          times = if(diag){times.sorted[oorder.times]}else{times.sorted},
                          nTimes = nTimes,

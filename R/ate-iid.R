@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: apr  5 2018 (17:01) 
 ## Version: 
-## Last-Updated: nov  1 2019 (11:56) 
+## Last-Updated: apr 21 2020 (16:02) 
 ##           By: Brice Ozenne
-##     Update #: 989
+##     Update #: 992
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -50,7 +50,6 @@ iidATE <- function(estimator,
                    method.iid,
                    ...){
 
-    
     ## ** prepare output
     n.contrasts <- length(contrasts)
     grid <- expand.grid(tau = 1:n.times, contrast = 1:n.contrasts)

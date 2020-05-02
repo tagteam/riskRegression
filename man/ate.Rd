@@ -9,6 +9,7 @@ ate(
   treatment,
   censor = NULL,
   data,
+  data.index = NULL,
   formula,
   estimator = NULL,
   strata = NULL,
@@ -43,6 +44,9 @@ on treatment and covariates. The object must be a \code{coxph} or \code{cph} obj
 
 \item{data}{[data.frame or data.table] Data set in which to evaluate risk predictions
 based on the outcome model}
+
+\item{data.index}{[numeric vector] Position of the observation in argument data relative to the dataset used to obtain the argument event, treatment, censor.
+Only necessary for the standard errors when computing the Average Treatment Effects on a subset of the data set.}
 
 \item{formula}{For analyses with time-dependent covariates, the response formula. See examples.}
 

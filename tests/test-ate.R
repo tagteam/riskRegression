@@ -204,6 +204,8 @@ test_that("[ate] logistic regression - compare to lava",{
     fitT <- glm(formula = X1 ~ X2, data=dtB, family = "binomial")
 
     ## G-formula
+    e0.ate <- ate(fitY, data = dtB, treatment = "X1",
+                 se = TRUE, iid = TRUE, B = 0, verbose = verbose)
     e.ate <- ate(fitY, data = dtB, treatment = "X1",
                  times = 5, 
                  se = TRUE, iid = TRUE, B = 0, verbose = verbose)
@@ -1026,6 +1028,53 @@ test_that("[ate] landmark analyses", {
     expect_equal(dt.resVet[type=="ratioAte",value], GS, tol = 1e-6)
 
 })
+## * [ate] Case only
+set.seed(11)
+d <- sampleData(100, outcome = "survival")
+d$id <- 1:NROW(d)
+tau <- 3
+
+## ** statistical model
+e.cox <- coxph(Surv(time,event) ~ X1 + X2, x = TRUE, y = TRUE, data = d)
+
+## ** ate: case only
+test_that("Case only ate", {
+
+    ## automatically
+    e.ateC <- ate(e.cox,
+                  treatment  = "X1",
+                  data = d[X1 == "1"], time = tau, se = TRUE,
+                  data.index = d[X1 == "1",id],
+                  verbose = 0)
+
+    ## manually
+    d0C <- copy(d[X1 == "1"])
+    d0C[, X1:= factor("0", levels = c("0","1"))]
+    d1C <- copy(d[X1 == "1"])
+    d1C[, X1:= factor("1", levels = c("0","1"))]
+
+    e.pred0C <- predictCox(e.cox, newdata = d0C, times = tau, average.iid = TRUE)
+    e.pred1C <- predictCox(e.cox, newdata = d1C, times = tau, average.iid = TRUE)
+    e2.ateC <- c(mean(1-e.pred0C$survival),
+                 mean(1-e.pred1C$survival),
+                 mean( (1-e.pred1C$survival)-(1-e.pred0C$survival)),
+                 mean(1-e.pred1C$survival)/mean(1-e.pred0C$survival))
+
+    iid0C <- -e.pred0C$survival.average.iid
+    iid0C[d0C$id,] <- iid0C[d0C$id,] + (1-e.pred0C$survival-e2.ateC[1])/NROW(d0C)
+    iid1C <- -e.pred1C$survival.average.iid
+    iid1C[d1C$id,] <- iid1C[d1C$id,] + (1-e.pred1C$survival-e2.ateC[2])/NROW(d1C)
+
+    e2.se.ateC <- c(sqrt(sum(iid0C^2)),
+                    sqrt(sum(iid1C^2)),
+                    sqrt(sum((iid1C-iid0C)^2)),
+                    sqrt(sum((iid1C/e2.ateC[1]-e2.ateC[2]*iid0C/e2.ateC[1]^2)^2))
+                    )
+
+    
+    expect_equal(as.data.table(e.ateC)$value, e2.ateC, tol = 1e-6)
+    expect_equal(as.data.table(e.ateC)$se, e2.se.ateC, tol = 1e-5)
+})
 ## * Bootstrap
 n <- 250
 
@@ -1173,3 +1222,4 @@ test_that("ate double robust estimator works with multiple timepoint",{
                    )
 
 })
+
