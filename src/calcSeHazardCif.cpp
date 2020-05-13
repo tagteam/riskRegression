@@ -7,173 +7,45 @@ using namespace std;
 
 
 inline double calcIFhazard(double time,
-						   double sampleTime,
-						   const rowvec& IFbeta,
-						   const colvec& Ehazard0,
-						   const rowvec& X,
-						   double hazard_iS0,
-						   double newEXb,
-						   double sampleEXb,
-						   double hazard0,
-						   double iS0,
-						   bool sameStrata,
-						   bool jumpTime,
-						   int p,
-						   bool hazard);
+			   double sampleTime,
+			   const rowvec& IFbeta,
+			   const colvec& Ehazard0,
+			   const rowvec& X,
+			   double hazard_iS0,
+			   double newEXb,
+			   double sampleEXb,
+			   double hazard0,
+			   double iS0,
+			   bool sameStrata,
+			   bool jumpTime,
+			   int p,
+			   bool hazard);
 
 arma::mat calcSurvBeforeJump_cpp(const std::vector<arma::mat>& ls_cumhazard,
-								 const arma::mat& eXb,
-								 unsigned int nCause, unsigned int theCause, bool hazardType,
-								 int nNewObs, int nJumpTime,
-								 const arma::umat& Ustrata, unsigned int nStrata, const std::vector<arma::uvec>& ls_indexStrata);
+				 const arma::mat& eXb,
+				 unsigned int nCause, unsigned int theCause, bool hazardType,
+				 int nNewObs, int nJumpTime,
+				 const arma::umat& Ustrata, unsigned int nStrata, const std::vector<arma::uvec>& ls_indexStrata);
 
 // * calcSeCox
-// ** calcSeHazard_cpp: compute IF for the cumlative hazard / survival (method 1)
-// [[Rcpp::export]]
-List calcSeHazard_cpp(const NumericVector& seqTau, // horizon time for the predictions
-					  const IntegerVector& indexTau, // position of the prediction times relatively to the event times in the strata
-					  const IntegerVector& indexJump, // position of the event time of the sample relatively to the event times in the strata
-					  const arma::mat& IFbeta, // pre-computed iidCox
-					  const arma::mat& cumEhazard0, // pre-computed iidCox
-					  const NumericVector& iS0, // pre-computed iidCox
-					  const NumericVector& cumhazard_iS0, // pre-computed iidCox
-					  const NumericVector& newEXb, // linear predictor fit
-					  const NumericVector& sampleEXb, // linear predictor new observation
-					  const arma::mat& X, // covariates to condition on to make prediction
-					  const LogicalVector& sameStrata, // strata of observations used to fit the Cox model
-					  const NumericVector& sampleTime, // event times relative to the observations used to fit the Cox model
-					  const NumericVector& cumhazard0, // baseline cumulative hazard
-					  const arma::mat& newSurvival, //
-					  double firstJumpTime, double lastSampleTime,
-					  int nTau, int nNewObs, int nSample, int p,
-					  bool exportSE, bool exportIF, bool exportIFsum_cumhazard, bool exportIFsum_survival){
-
-  // define objects
-  double IF_cumhazard;
-  int iTau0=0,iTauMax=nTau-1;
-  int indexTempo;
-  
-  arma::mat SEcumhazard;
-  if(exportSE){
-    SEcumhazard.resize(nNewObs, nTau);
-    SEcumhazard.fill(0.0);
-  }
-  arma::cube IFcumhazard;
-  if(exportIF){
-    IFcumhazard.resize(nNewObs, nTau, nSample);
-    IFcumhazard.fill(0.0);
-  }
-  arma::mat IFsum_cumhazard;
-  if(exportIFsum_cumhazard){
-    IFsum_cumhazard.resize(nSample, nTau);
-    IFsum_cumhazard.fill(0.0);
-  }
-  arma::mat IFsum_survival;
-  if(exportIFsum_survival){
-    IFsum_survival.resize(nSample, nTau);
-    IFsum_survival.fill(0.0);
-  }
-  
-  // narrow prediction times
-  while((iTau0 < nTau) && firstJumpTime>seqTau[iTau0]){ // start at the first event or after 
-    iTau0++;    
-  }
-  while((iTauMax >= 0) && seqTau[iTauMax]>lastSampleTime){ // end at the last event or before
-    iTauMax--;
-  }
-
-  // interesting times
-  if(iTau0 < nTau && iTauMax >= 0){
-    for(int iNewObs=0; iNewObs<nNewObs ; iNewObs++){
-     
-      R_CheckUserInterrupt();
-      
-      for(int iTime=iTau0; iTime<=iTauMax; iTime++){
-
-		for(int iSample=0; iSample<nSample ; iSample++){
-		  indexTempo = std::min(indexJump[iSample],indexTau[iTime]);
-		  IF_cumhazard = calcIFhazard(seqTau[iTime],
-									  sampleTime[iSample],
-									  IFbeta.row(iSample),
-									  cumEhazard0.col(iTime),
-									  X.row(iNewObs),
-									  cumhazard_iS0[indexTempo],
-									  newEXb[iNewObs],
-									  sampleEXb[iSample],  
-									  cumhazard0[iTime],
-									  iS0[iSample],
-									  sameStrata[iSample],
-									  false, // wrong value but not used when computing the cumulative hazard
-									  p, false);
-		  if(exportSE){
-			SEcumhazard(iNewObs,iTime) += pow(IF_cumhazard,2);
-		  }
-		  if(exportIF){
-			IFcumhazard(iNewObs,iTime,iSample) = IF_cumhazard;	    
-		  }
-		  if(exportIFsum_cumhazard){
-			IFsum_cumhazard(iSample,iTime) += IF_cumhazard;	    
-		  }
-		  if(exportIFsum_survival){
-			IFsum_survival(iSample,iTime) += -IF_cumhazard*newSurvival(iNewObs,iTime);
-		  }
-		}
-      }
-    }
-
-    // return standard error instead of variance
-    if(exportSE){
-      for(int iTime=iTau0; iTime<=iTauMax; iTime++){
-		SEcumhazard.col(iTime) = sqrt(SEcumhazard.col(iTime));
-      }      
-    }
-  }
-
-  // set IF/variance to NA after the last event time
-  if(iTauMax+1 < nTau){
-    for(int iTime=iTauMax+1; iTime<nTau; iTime++){
-      if(exportIF){
-		for(int iSample=0; iSample<nSample ; iSample++){
-		  IFcumhazard.slice(iSample).col(iTime).fill(NA_REAL);
-		}
-      }
-      if(exportSE){
-		SEcumhazard.col(iTime).fill(NA_REAL);
-      }
-      if(exportIFsum_cumhazard){
-		IFsum_cumhazard.col(iTime).fill(NA_REAL);
-      }
-      if(exportIFsum_survival){
-		IFsum_survival.col(iTime).fill(NA_REAL);
-      }
-    }
-  }
- 
-  // SEcumhazard
-  return(List::create(Named("iid") = IFcumhazard,
-					  Named("iidsum_cumhazard") = IFsum_cumhazard,
-					  Named("iidsum_survival") = IFsum_survival,
-                      Named("se") = SEcumhazard));
-}
-
 // ** calcAIFsurv_cpp: compute average IF for the cumlative hazard / survival (method 3)
 // [[Rcpp::export]]
 std::vector< std::vector<arma::mat> > calcAIFsurv_cpp(const std::vector<arma::mat>& ls_IFcumhazard,
-													  const arma::mat& IFbeta,
-													  const std::vector<arma::rowvec>& cumhazard0,
-													  const arma::mat& survival,
-													  const arma::colvec& eXb,
-													  const arma::mat& X,
-													  const NumericVector& prevStrata,
-													  const std::vector<arma::uvec>& ls_indexStrata,
-													  const std::vector<arma::mat>& factor,
-													  int nTimes,
-													  int nObs,
-													  int nStrata,
-													  int nVar,
-													  int diag,
-													  bool exportCumHazard,
-													  bool exportSurvival){
+						      const arma::mat& IFbeta,
+						      const std::vector<arma::rowvec>& cumhazard0,
+						      const arma::mat& survival,
+						      const arma::colvec& eXb,
+						      const arma::mat& X,
+						      const NumericVector& prevStrata,
+						      const std::vector<arma::uvec>& ls_indexStrata,
+						      const std::vector<arma::mat>& factor,
+						      int nTimes,
+						      int nObs,
+						      int nStrata,
+						      int nVar,
+						      int diag,
+						      bool exportCumHazard,
+						      bool exportSurvival){
 
   // ** prepare output
   int nFactor = factor.size();
@@ -182,9 +54,9 @@ std::vector< std::vector<arma::mat> > calcAIFsurv_cpp(const std::vector<arma::ma
     out[0].resize(nFactor);
     for(int iFactor=0; iFactor<nFactor; iFactor++){
       if(diag){
-		out[0][iFactor].resize(nObs, 1);
+	out[0][iFactor].resize(nObs, 1);
       }else{
-		out[0][iFactor].resize(nObs, nTimes);
+	out[0][iFactor].resize(nObs, nTimes);
       }
       out[0][iFactor].fill(0.0);
     }
@@ -193,9 +65,9 @@ std::vector< std::vector<arma::mat> > calcAIFsurv_cpp(const std::vector<arma::ma
     out[1].resize(nFactor);
     for(int iFactor=0; iFactor<nFactor; iFactor++){
       if(diag){
-		out[1][iFactor].resize(nObs, 1);
+	out[1][iFactor].resize(nObs, 1);
       }else{
-		out[1][iFactor].resize(nObs, nTimes);
+	out[1][iFactor].resize(nObs, nTimes);
       }
       out[1][iFactor].fill(0.0);
     }
@@ -221,83 +93,83 @@ std::vector< std::vector<arma::mat> > calcAIFsurv_cpp(const std::vector<arma::ma
 
       iW_eXb = factor[iFactor].rows(ls_indexStrata[iStrata]);
       if(nVar>0){
-		iW_eXb.each_col() %= eXb.rows(ls_indexStrata[iStrata]);
+	iW_eXb.each_col() %= eXb.rows(ls_indexStrata[iStrata]);
       }
       if(exportSurvival){
-		iW_eXb_S = survival.rows(ls_indexStrata[iStrata]) % iW_eXb;
+	iW_eXb_S = survival.rows(ls_indexStrata[iStrata]) % iW_eXb;
       }
 	  
       if(diag==1){
-		// <IF>(cumhazard) = E[w * eXb * IF_cumhazard0] + E[w * eXb * cumhazard0 * X] * IF_beta
-		// <IF>(survival) = -(E[w * Surv * eXb * IF_cumhazard0] + E[w * Surv * eXb * cumhazard0 * X] * IF_beta)
+	// <IF>(cumhazard) = E[w * eXb * IF_cumhazard0] + E[w * eXb * cumhazard0 * X] * IF_beta
+	// <IF>(survival) = -(E[w * Surv * eXb * IF_cumhazard0] + E[w * Surv * eXb * cumhazard0 * X] * IF_beta)
 
-		// first term
-		if(exportCumHazard){
-		  // Rcout << "b: ";
-		  iAIF_H = ls_IFcumhazard[iStrata].cols(ls_indexStrata[iStrata]);
-		  iAIF_H.each_row() %= trans(iW_eXb);
-		  iAIF_H = sum(iAIF_H,1)/nObs_strata;
-		  // Rcout << endl;
-		}
-		if(exportSurvival){
-		  iAIF_S = ls_IFcumhazard[iStrata].cols(ls_indexStrata[iStrata]);
-		  iAIF_S.each_row() %= trans(iW_eXb_S);
-		  iAIF_S = sum(iAIF_S,1)/nObs_strata;
-		}
+	// first term
+	if(exportCumHazard){
+	  // Rcout << "b: ";
+	  iAIF_H = ls_IFcumhazard[iStrata].cols(ls_indexStrata[iStrata]);
+	  iAIF_H.each_row() %= trans(iW_eXb);
+	  iAIF_H = sum(iAIF_H,1)/nObs_strata;
+	  // Rcout << endl;
+	}
+	if(exportSurvival){
+	  iAIF_S = ls_IFcumhazard[iStrata].cols(ls_indexStrata[iStrata]);
+	  iAIF_S.each_row() %= trans(iW_eXb_S);
+	  iAIF_S = sum(iAIF_S,1)/nObs_strata;
+	}
 
-		// second term
-		if(nVar>0){
-		  if(exportCumHazard){
-			// Rcout << "c: ";
-			iE_W_eXb_cumhazard0_X = X.rows(ls_indexStrata[iStrata]);
-			iE_W_eXb_cumhazard0_X.each_col() %= trans(cumhazard0[iStrata].cols(ls_indexStrata[iStrata])) % iW_eXb;
-			iE_W_eXb_cumhazard0_X = sum(iE_W_eXb_cumhazard0_X,0)/nObs_strata;
-			iAIF_H += IFbeta * trans(iE_W_eXb_cumhazard0_X);
-			// Rcout << endl;
-		  }
-		  if(exportSurvival){
-			iE_W_eXb_cumhazard0_X_S = X.rows(ls_indexStrata[iStrata]);
-			iE_W_eXb_cumhazard0_X_S.each_col() %= trans(cumhazard0[iStrata].cols(ls_indexStrata[iStrata])) % iW_eXb_S;
-			iE_W_eXb_cumhazard0_X_S = sum(iE_W_eXb_cumhazard0_X_S,0)/nObs_strata;
-			iAIF_S += IFbeta * trans(iE_W_eXb_cumhazard0_X_S);
-		  }		  
-		}
+	// second term
+	if(nVar>0){
+	  if(exportCumHazard){
+	    // Rcout << "c: ";
+	    iE_W_eXb_cumhazard0_X = X.rows(ls_indexStrata[iStrata]);
+	    iE_W_eXb_cumhazard0_X.each_col() %= trans(cumhazard0[iStrata].cols(ls_indexStrata[iStrata])) % iW_eXb;
+	    iE_W_eXb_cumhazard0_X = sum(iE_W_eXb_cumhazard0_X,0)/nObs_strata;
+	    iAIF_H += IFbeta * trans(iE_W_eXb_cumhazard0_X);
+	    // Rcout << endl;
+	  }
+	  if(exportSurvival){
+	    iE_W_eXb_cumhazard0_X_S = X.rows(ls_indexStrata[iStrata]);
+	    iE_W_eXb_cumhazard0_X_S.each_col() %= trans(cumhazard0[iStrata].cols(ls_indexStrata[iStrata])) % iW_eXb_S;
+	    iE_W_eXb_cumhazard0_X_S = sum(iE_W_eXb_cumhazard0_X_S,0)/nObs_strata;
+	    iAIF_S += IFbeta * trans(iE_W_eXb_cumhazard0_X_S);
+	  }		  
+	}
 		  
       }else{
-		// <IF>(cumhazard) = E[w * eXb] IF_cumhazard0 + E[w * eXb * X] * cumhazard0 * IF_beta
-		// <IF>(survival) = -(E[w * Surv * eXb] IF_cumhazard0 + E[w * Surv * eXb * X] * cumhazard0 * IF_beta)
+	// <IF>(cumhazard) = E[w * eXb] IF_cumhazard0 + E[w * eXb * X] * cumhazard0 * IF_beta
+	// <IF>(survival) = -(E[w * Surv * eXb] IF_cumhazard0 + E[w * Surv * eXb * X] * cumhazard0 * IF_beta)
 
-		// first term
-		if(exportCumHazard){
-		  iAIF_H = ls_IFcumhazard[iStrata];
-		  iAIF_H.each_row() %= sum(iW_eXb,0)/nObs_strata;
-		}
-		if(exportSurvival){
-		  iAIF_S = ls_IFcumhazard[iStrata];		  
-		  iAIF_S.each_row() %= sum(iW_eXb_S,0)/nObs_strata;
-		}
+	// first term
+	if(exportCumHazard){
+	  iAIF_H = ls_IFcumhazard[iStrata];
+	  iAIF_H.each_row() %= sum(iW_eXb,0)/nObs_strata;
+	}
+	if(exportSurvival){
+	  iAIF_S = ls_IFcumhazard[iStrata];		  
+	  iAIF_S.each_row() %= sum(iW_eXb_S,0)/nObs_strata;
+	}
 		  
-		// second term
-		if(nVar>0){
-		  if(exportCumHazard){
-			iE_W_eXb_cumhazard0_X = (trans(X.rows(ls_indexStrata[iStrata])) * iW_eXb) / nObs_strata;			
-			iE_W_eXb_cumhazard0_X.each_row() %= cumhazard0[iStrata];
-			iAIF_H += IFbeta * iE_W_eXb_cumhazard0_X;
-		  }
-		  if(exportSurvival){
-			iE_W_eXb_cumhazard0_X_S = (trans(X.rows(ls_indexStrata[iStrata])) * iW_eXb_S) / nObs_strata;			
-			iE_W_eXb_cumhazard0_X_S.each_row() %= cumhazard0[iStrata];
-			iAIF_S += IFbeta * iE_W_eXb_cumhazard0_X_S;
-		  }
-		}
+	// second term
+	if(nVar>0){
+	  if(exportCumHazard){
+	    iE_W_eXb_cumhazard0_X = (trans(X.rows(ls_indexStrata[iStrata])) * iW_eXb) / nObs_strata;			
+	    iE_W_eXb_cumhazard0_X.each_row() %= cumhazard0[iStrata];
+	    iAIF_H += IFbeta * iE_W_eXb_cumhazard0_X;
+	  }
+	  if(exportSurvival){
+	    iE_W_eXb_cumhazard0_X_S = (trans(X.rows(ls_indexStrata[iStrata])) * iW_eXb_S) / nObs_strata;			
+	    iE_W_eXb_cumhazard0_X_S.each_row() %= cumhazard0[iStrata];
+	    iAIF_S += IFbeta * iE_W_eXb_cumhazard0_X_S;
+	  }
+	}
       }
 			
       // update - multiplying by the prevalence of the strata
       if(exportCumHazard){
-		out[0][iFactor] += iAIF_H * prevStrata[iStrata];
+	out[0][iFactor] += iAIF_H * prevStrata[iStrata];
       }
       if(exportSurvival){
-		out[1][iFactor] -= iAIF_S * prevStrata[iStrata];
+	out[1][iFactor] -= iAIF_S * prevStrata[iStrata];
       }
     }
   }
@@ -312,28 +184,28 @@ std::vector< std::vector<arma::mat> > calcAIFsurv_cpp(const std::vector<arma::ma
 // ** calcSeCif_cpp: compute IF for the absolute risk (method 1)
 // [[Rcpp::export]]
 List calcSeCif_cpp(const NumericVector& seqTau, // horizon time for the predictions
-				   const NumericVector& jumpTime, 
-				   const LogicalVector& jumpTheCause, 
-				   const arma::mat& indexJump,
-				   const arma::mat& indexSample,
-				   const std::vector< arma::mat >& IFbeta,
-				   const std::vector< arma::mat >& Ehazard0,
-				   const std::vector< arma::mat >& cumEhazard0,
-				   const arma::mat& survival,
-				   const arma::mat& iS0,
-				   const std::vector< NumericVector >& cumhazard_iS0,
-				   const std::vector< NumericVector >& hazard_iS0,
-				   const arma::mat& newEXb,
+		   const NumericVector& jumpTime, 
+		   const LogicalVector& jumpTheCause, 
+		   const arma::mat& indexJump,
+		   const arma::mat& indexSample,
+		   const std::vector< arma::mat >& IFbeta,
+		   const std::vector< arma::mat >& Ehazard0,
+		   const std::vector< arma::mat >& cumEhazard0,
+		   const arma::mat& survival,
+		   const arma::mat& iS0,
+		   const std::vector< NumericVector >& cumhazard_iS0,
+		   const std::vector< NumericVector >& hazard_iS0,
+		   const arma::mat& newEXb,
                    const arma::mat& sampleEXb,
-				   const std::vector< arma::mat >& X,
-				   const arma::mat sameStrata,
-				   const NumericVector& sampleTime,
-				   const std::vector< NumericVector>& hazard0,
-				   const std::vector< NumericVector>& cumhazard0,
-				   int theCause, double firstJumpTime, double lastSampleTime,
-				   int nTau, int nJump, int nNewObs, int nSample, int nCause, const IntegerVector& p,
-				   bool survtype,
-				   bool exportSE, bool exportIF, bool exportIFsum){
+		   const std::vector< arma::mat >& X,
+		   const arma::mat sameStrata,
+		   const NumericVector& sampleTime,
+		   const std::vector< NumericVector>& hazard0,
+		   const std::vector< NumericVector>& cumhazard0,
+		   int theCause, double firstJumpTime, double lastSampleTime,
+		   int nTau, int nJump, int nNewObs, int nSample, int nCause, const IntegerVector& p,
+		   bool survtype,
+		   bool exportSE, bool exportIF, bool exportIFsum){
 
   // // define objects
   NumericVector veci_IF_risk(nSample);
@@ -382,106 +254,106 @@ List calcSeCif_cpp(const NumericVector& seqTau, // horizon time for the predicti
       std::fill(veci_IF_risk.begin(), veci_IF_risk.end(), 0);
      	
       for(int iJump=0; iJump<nJump; iJump++){
-		if(jumpTime[iJump]>lastSampleTime){break;}
+	if(jumpTime[iJump]>lastSampleTime){break;}
 
-		//// compute the hazard for the cause of interest ////
-		i_hazard = hazard0[theCause][iJump]*newEXb(iNewObs,theCause);
+	//// compute the hazard for the cause of interest ////
+	i_hazard = hazard0[theCause][iJump]*newEXb(iNewObs,theCause);
 
-		//// compute the survival ////
-		// it is survival at t- which is stored i.e. the survival at the previous eventtime (censoring does not affect survival)
-		i_survival = survival(iNewObs,iJump);
+	//// compute the survival ////
+	// it is survival at t- which is stored i.e. the survival at the previous eventtime (censoring does not affect survival)
+	i_survival = survival(iNewObs,iJump);
 
-		for(int iSample=0; iSample<nSample ; iSample++){
+	for(int iSample=0; iSample<nSample ; iSample++){
 
-		  indexTempo = std::min(indexSample(iSample,theCause),indexJump(iJump,theCause));
-		  // compute the influence function for the hazard
-		  i_IF_hazard = calcIFhazard(jumpTime[iJump],
-									 sampleTime[iSample],
-									 IFbeta[theCause].row(iSample),
-									 Ehazard0[theCause].col(iJump),
-									 X[theCause].row(iNewObs),
-									 hazard_iS0[theCause][indexTempo],
-									 newEXb(iNewObs,theCause),
-									 sampleEXb(iSample,theCause),  
-									 hazard0[theCause][iJump],
-									 iS0(iSample,theCause),
-									 sameStrata(iSample,theCause),
-									 jumpTheCause[iJump], 
-									 p[theCause], true);
+	  indexTempo = std::min(indexSample(iSample,theCause),indexJump(iJump,theCause));
+	  // compute the influence function for the hazard
+	  i_IF_hazard = calcIFhazard(jumpTime[iJump],
+				     sampleTime[iSample],
+				     IFbeta[theCause].row(iSample),
+				     Ehazard0[theCause].col(iJump),
+				     X[theCause].row(iNewObs),
+				     hazard_iS0[theCause][indexTempo],
+				     newEXb(iNewObs,theCause),
+				     sampleEXb(iSample,theCause),  
+				     hazard0[theCause][iJump],
+				     iS0(iSample,theCause),
+				     sameStrata(iSample,theCause),
+				     jumpTheCause[iJump], 
+				     p[theCause], true);
 
-		  // cumulate the influence function for the cumulative hazard
-		  // it is at t-
-		  i_IF_cumhazard = 0;
-		  if(iJump>0){
-			for(int iCause=0; iCause<nCause; iCause++){
-			  indexTempo = std::min(indexSample(iSample,iCause),indexJump(iJump-1,iCause));
+	  // cumulate the influence function for the cumulative hazard
+	  // it is at t-
+	  i_IF_cumhazard = 0;
+	  if(iJump>0){
+	    for(int iCause=0; iCause<nCause; iCause++){
+	      indexTempo = std::min(indexSample(iSample,iCause),indexJump(iJump-1,iCause));
 
-			  i_IF_cumhazard += calcIFhazard(jumpTime[iJump-1],
-											 sampleTime[iSample],
-											 IFbeta[iCause].row(iSample),
-											 cumEhazard0[iCause].col(iJump-1),
-											 X[iCause].row(iNewObs),
-											 cumhazard_iS0[iCause][indexTempo],
-											 newEXb(iNewObs,iCause),
-											 sampleEXb(iSample,iCause),  
-											 cumhazard0[iCause][iJump-1],
-											 iS0(iSample,iCause),
-											 sameStrata(iSample,iCause),
-											 true, // this argument is ignored when computing the influence function for the cumulative hazard
-											 p[iCause], false);
+	      i_IF_cumhazard += calcIFhazard(jumpTime[iJump-1],
+					     sampleTime[iSample],
+					     IFbeta[iCause].row(iSample),
+					     cumEhazard0[iCause].col(iJump-1),
+					     X[iCause].row(iNewObs),
+					     cumhazard_iS0[iCause][indexTempo],
+					     newEXb(iNewObs,iCause),
+					     sampleEXb(iSample,iCause),  
+					     cumhazard0[iCause][iJump-1],
+					     iS0(iSample,iCause),
+					     sameStrata(iSample,iCause),
+					     true, // this argument is ignored when computing the influence function for the cumulative hazard
+					     p[iCause], false);
 	    
-			}
-		  }
+	    }
+	  }
 
-		  // update the influence function for the absolute risk
-		  veci_IF_risk[iSample] += i_survival *(i_IF_hazard - i_hazard * i_IF_cumhazard);
+	  // update the influence function for the absolute risk
+	  veci_IF_risk[iSample] += i_survival *(i_IF_hazard - i_hazard * i_IF_cumhazard);
 
 
-		} // end loop over sample
+	} // end loop over sample
 
-		//// export results ////
-		// while there are remaining times to export
-		// AND the prediction time is before the next event
-		//     OR its the last jump, i.e. the prediction time coincide with the last jump (otherwise it would have been removed at the begining)
+	//// export results ////
+	// while there are remaining times to export
+	// AND the prediction time is before the next event
+	//     OR its the last jump, i.e. the prediction time coincide with the last jump (otherwise it would have been removed at the begining)
 
-		while((iTau <= iTauMax) && ( (((iJump+1)<nJump) && (seqTau[iTau] < jumpTime[iJump+1])) || (iJump+1==nJump))){
+	while((iTau <= iTauMax) && ( (((iJump+1)<nJump) && (seqTau[iTau] < jumpTime[iJump+1])) || (iJump+1==nJump))){
 
-		  for(int iSample=0; iSample<nSample ; iSample++){
-            IF_risk_tempo = veci_IF_risk[iSample];
+	  for(int iSample=0; iSample<nSample ; iSample++){
+	    IF_risk_tempo = veci_IF_risk[iSample];
 	    
-			if(exportSE){
-			  SErisk(iNewObs,iTau) += pow(IF_risk_tempo,2);
-			}
-			if(exportIF){
-			  IFrisk(iNewObs,iTau,iSample) = IF_risk_tempo;
-			}
-			if(exportIFsum){
-			  IFsumrisk(iSample,iTau) += IF_risk_tempo;
-			}
-		  }
-		  iTau++;	  
-		}      
+	    if(exportSE){
+	      SErisk(iNewObs,iTau) += pow(IF_risk_tempo,2);
+	    }
+	    if(exportIF){
+	      IFrisk(iNewObs,iTau,iSample) = IF_risk_tempo;
+	    }
+	    if(exportIFsum){
+	      IFsumrisk(iSample,iTau) += IF_risk_tempo;
+	    }
+	  }
+	  iTau++;	  
+	}      
       } // end loop over jump times
 	  
       // set IF/variance to NA after the last event time
       if(iTau < nTau){
         for(int iTime=iTau; iTime<nTau; iTime++){
-		  if(exportIF){
-			for(int iSample=0; iSample<nSample ; iSample++){
-			  IFrisk(iNewObs,iTime,iSample) = NA_REAL;
-			}
-		  }
-		  if(exportSE){
-			SErisk(iNewObs,iTime) = NA_REAL;
-		  }	  
-		}
+	  if(exportIF){
+	    for(int iSample=0; iSample<nSample ; iSample++){
+	      IFrisk(iNewObs,iTime,iSample) = NA_REAL;
+	    }
+	  }
+	  if(exportSE){
+	    SErisk(iNewObs,iTime) = NA_REAL;
+	  }	  
+	}
       }
     } // end loop over new observations
 
     // return standard error instead of variance
     if(exportSE){
       for(int iTime=iTau0; iTime<nTau; iTime++){
-		SErisk.col(iTime) = sqrt(SErisk.col(iTime));
+	SErisk.col(iTime) = sqrt(SErisk.col(iTime));
       }
     }    
   }
@@ -490,38 +362,38 @@ List calcSeCif_cpp(const NumericVector& seqTau, // horizon time for the predicti
   if(iTauMax+1 < nTau){
     for(int iTime=iTauMax+1; iTime<nTau; iTime++){
       if(exportIF){
-		for(int iSample=0; iSample<nSample ; iSample++){
-		  IFrisk.slice(iSample).col(iTime).fill(NA_REAL);
-		}
+	for(int iSample=0; iSample<nSample ; iSample++){
+	  IFrisk.slice(iSample).col(iTime).fill(NA_REAL);
+	}
       }
       if(exportSE){
-		SErisk.col(iTime).fill(NA_REAL);
+	SErisk.col(iTime).fill(NA_REAL);
       }
       if(exportIFsum){
-		IFsumrisk.col(iTime).fill(NA_REAL);
+	IFsumrisk.col(iTime).fill(NA_REAL);
       }
     }
   }
   
   // export
   return(List::create(Named("iid") = IFrisk,
-					  Named("iidsum") = IFsumrisk,
-					  Named("se") = SErisk));
+		      Named("iidsum") = IFsumrisk,
+		      Named("se") = SErisk));
 }
 
 
 // ** calcSeCif2_cpp: compute IF for the absolute risk (method 2)
 // [[Rcpp::export]]
 List calcSeCif2_cpp(const std::vector<arma::mat>& ls_IFbeta, const std::vector<arma::mat>& ls_X,
-					const std::vector<arma::mat>& ls_cumhazard, const arma::mat& ls_hazard, const arma::mat& survival,
-					const std::vector< std::vector<arma::mat> >& ls_IFcumhazard, const std::vector<arma::mat>& ls_IFhazard,
-					const NumericMatrix& eXb,
-					int nJumpTime, const NumericVector& JumpMax,
-					const NumericVector& tau, const arma::vec& tauIndex, int nTau,
-					int nObs,  
-					int theCause, int nCause, bool hazardType, arma::vec nVar,
-					int nNewObs, NumericMatrix strata,
-					bool exportSE, bool exportIF, bool exportIFsum, bool diag){
+		    const std::vector<arma::mat>& ls_cumhazard, const arma::mat& ls_hazard, const arma::mat& survival,
+		    const std::vector< std::vector<arma::mat> >& ls_IFcumhazard, const std::vector<arma::mat>& ls_IFhazard,
+		    const NumericMatrix& eXb,
+		    int nJumpTime, const NumericVector& JumpMax,
+		    const NumericVector& tau, const arma::vec& tauIndex, int nTau,
+		    int nObs,  
+		    int theCause, int nCause, bool hazardType, arma::vec nVar,
+		    int nNewObs, NumericMatrix strata,
+		    bool exportSE, bool exportIF, bool exportIFsum, bool diag){
 
   arma::mat X_IFbeta;
 
@@ -538,7 +410,7 @@ List calcSeCif2_cpp(const std::vector<arma::mat>& ls_IFbeta, const std::vector<a
   // ** initialize for export
   arma::mat outSE;
   if(exportSE){
-	if(diag){
+    if(diag){
       outSE.resize(nNewObs,1);
     }else{
       outSE.resize(nNewObs,nTau);
@@ -625,7 +497,7 @@ List calcSeCif2_cpp(const std::vector<arma::mat>& ls_IFbeta, const std::vector<a
 
       iStrataCause = strata(iNewObs,iCause);
       if(diag){
-		iUvec_strata(0) = iStrataCause;
+	iUvec_strata(0) = iStrataCause;
       }
 	  
       // Rcout << "2 ";
