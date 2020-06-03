@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: maj 27 2017 (21:23) 
 ## Version: 
-## last-updated: maj 12 2020 (11:20) 
+## last-updated: maj 16 2020 (10:23) 
 ##           By: Brice Ozenne
-##     Update #: 981
+##     Update #: 995
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -59,138 +59,50 @@
 calcSeCSC <- function(object, cif, hazard, cumhazard, survival, object.time, object.maxtime,
                       eXb, new.LPdata, new.strata, times, surv.type, ls.infoVar,
                       new.n, cause, nCause, nVar, export, store.iid, diag){
-
     nTau <- length(times)
     nEtimes <- length(object.time)
     object.n <- stats::nobs(object)
 
     if(store.iid == "minimal"){
-
-        ## ** prepare for export
-        out <- list()
-        if("se" %in% export){  
-            out$se <- matrix(NA, nrow = new.n, ncol = nTau)
-        }    
-        if("iid" %in% export){
-            out$iid <- array(NA, dim = c(new.n, nTau, object.n))
-        }
-        if("average.iid" %in% export){
-            out$average.iid <- matrix(0, nrow = object.n, ncol = nTau)
-        }
-
-        ## ** design matrix
-        object.modelFrame <- coxModelFrame(object$models[[cause]])
-        object.modelFrame[, c("strata.num") := as.numeric(.SD$strata)-1]
-
-        ## ** recover strata in the training dataset
-        M.object.strata.num <- do.call(cbind,lapply(1:nCause, function(iCause){
-            as.numeric(coxStrata(object$models[[iCause]], data = NULL,
-                                 strata.vars = ls.infoVar[[iCause]]$stratavars))-1
-        }))
-        object.Ustrata <- do.call(paste0, as.data.frame(M.object.strata.num))
         
-        ## ** collapse strata variables into on variable
-        level.strata <- unique(new.strata)
-        new.Ustrata <- do.call(paste0, as.data.frame(new.strata))
-        level.Ustrata <- unique(new.Ustrata)
-        nStrata <- length(level.Ustrata)
+        browser()
+        new.strata.interact <- as.numeric(interaction(as.data.frame(new.strata)))-1
+        nStrata <- length(unique(new.strata.interact))
+        index.strata <- tapply(0:(new.n-1), new.strata.interact, function(x){x})
 
-        ## ** linear predictor
-        sampleEXb <- exp(do.call(cbind,lapply(object$models, coxLP, data = NULL, center = FALSE)))
-
-        ## ** influence function beta
-        IFbeta <- lapply(object$models, function(x){x$iid$IFbeta})
-
-        ## ** computation over strata
-        for(iS in 1:nStrata){ # iS <- 1
-            iStrataCause <- level.strata[iS,]
-            iStrataTheCause <- new.strata[iS,cause]
-            iIndexStrataTheCause <- which(new.Ustrata==level.Ustrata[iS])
-            iObject.modelFrame <- object.modelFrame[object.modelFrame$strata.num == iStrataTheCause]
-            
-            ## ** prepare arguments
-            iDelta_iS0 <- do.call(cbind, lapply(1:nCause, function(iC){
-                object$models[[iC]]$iid$calcIFhazard$delta_iS0[[iStrataTheCause+1]]
-            }))
-            iIndexJump <- do.call(cbind, lapply(1:nCause, function(iC){
-                prodlim::sindex(object$models[[iC]]$iid$calcIFhazard$time1[[iStrataCause[iC] + 1]],
-                                eval.times = object.time)
-            }))
-            iIndexSample <- do.call(cbind, lapply(1:nCause, function(iC){
-                prodlim::sindex(object$models[[iC]]$iid$calcIFhazard$time1[[iStrataCause[iC] + 1]],
-                                eval.times = object.modelFrame[["stop"]])
-            }))
-            iEhazard0 <- lapply(1:nCause, function(iC){
-                object$models[[iC]]$iid$calcIFhazard$cumElambda0[[iStrataCause[iC] + 1]]
-            })
-            iCumEhazard0 <- lapply(1:nCause, function(iC){
-                object$models[[iC]]$iid$calcIFhazard$Elambda0[[iStrataCause[iC] + 1]]
-            })
-            iCumhazard_iS0 <- lapply(1:nCause, function(iC){
-                c(0,object$models[[iC]]$iid$calcIFhazard$cumLambda0_iS0[[iStrataCause[iC] + 1]])## add 0 to match prodlim
-            })
-            iHazard_iS0 <- lapply(1:nCause, function(iC){
-                c(0,object$models[[iC]]$iid$calcIFhazard$lambda0_iS0[[iStrataCause[iC] + 1]]) ## add 0 to match prodlim
-            })
-            iX <- lapply(1:nCause, function(iC){
-                new.LPdata[[iC]][iIndexStrataTheCause,,drop=FALSE]
-            })
-            iSameStrata <- do.call(cbind, lapply(1:nCause, function(iC){
-                M.object.strata.num[,iC]==iStrataCause[iC]
-            }))
-            iCumhazard0 <- lapply(1:nCause, function(iC){
-                cumhazard[[iC]][,iStrataCause[iC] + 1]
-            })
-            iHazard0 <- lapply(1:nCause, function(iC){
-                hazard[[iC]][,iStrataCause[iC] + 1]
-            })          
-
-            ## *** call C++ routine
-            resCpp <- calcSeCif_cpp(seqTau = times,
-                                    jumpTime = object.time,
-                                    jumpTheCause = object.time %in% iObject.modelFrame[object.modelFrame$status==1, .SD$stop],
-                                    IFbeta = IFbeta,
-                                    iS0 = iDelta_iS0,
-                                    newEXb = eXb[iIndexStrataTheCause,,drop=FALSE],
-                                    sampleEXb = sampleEXb,
-                                    sampleTime = object.modelFrame[["stop"]],
-                                    survival = survival[iIndexStrataTheCause,,drop=FALSE],            
-                                    indexJump = iIndexJump,
-                                    indexSample = iIndexSample,
-                                    Ehazard0 = iEhazard0,
-                                    cumEhazard0 = iCumEhazard0,
-                                    cumhazard_iS0 = iCumhazard_iS0,
-                                    hazard_iS0 = iHazard_iS0,
-                                    X = iX,
-                                    sameStrata = iSameStrata,
-                                    cumhazard0 = iCumhazard0,
-                                    hazard0 = iHazard0,
-                                    theCause = cause-1,
-                                    firstJumpTime = object$models[[cause]]$iid$etime1.min[iStrataTheCause+1],
-                                    lastSampleTime = object.modelFrame[strata.num==iStrataCause,max(.SD$stop)],
-                                    nTau = nTau,
-                                    nJump = nEtimes,
-                                    nNewObs = length(iIndexStrataTheCause),
-                                    nSample = object.n,
-                                    nCause = nCause,
-                                    p = nVar,
-                                    survtype = surv.type=="survival",
-                                    exportSE = ("se" %in% export),
-                                    exportIF = ("iid" %in% export),
-                                    exportIFsum = ("average.iid" %in% export)
-                                    )
-
-            ## *** store
-            if("se" %in% export){
-                out$se[iIndexStrataTheCause,] <- resCpp$se
-            }
-            if("iid" %in% export){
-                out$iid[iIndexStrataTheCause,,] <- resCpp$iid
-            }
-            if("average.iid" %in% export){                
-                out$average.iid <- out$average.iid + resCpp$iidsum/new.n
-            }
-        } ## end strata
+        out <- calcSeCif_cpp(tau = times,
+                             zipIF_Elambda0 = lapply(object$models, function(x){x$iid$zipIFhazard$Elambda0}),
+                             zipIF_cumElambda0 = lapply(object$models, function(x){x$iid$zipIFhazard$cumElambda0}),
+                             zipIF_strata = lapply(object$models, function(x){as.numeric(x$iid$zipIFhazard$strata)-1}),
+                             zipIF_eXb = lapply(object$models, function(x){x$iid$zipIFhazard$eXb}),
+                             zipIF_time = lapply(object$models, function(x){x$iid$zipIFhazard$time}),
+                             zipIF_jump = lapply(object$models, function(x){x$iid$zipIFhazard$jump}),
+                             zipIF_lambda0_iS0 = lapply(object$models, function(x){x$iid$zipIFhazard$lambda0_iS0}),
+                             zipIF_cumLambda0_iS0 = lapply(object$models, function(x){x$iid$zipIFhazard$cumLambda0_iS0}),
+                             zipIF_delta_iS0 = lapply(object$models, function(x){x$iid$zipIFhazard$delta_iS0}),
+                             zipIF_time1 = lapply(object$models, function(x){x$iid$zipIFhazard$time1}),
+                             zipIF_etime1.min = object$models[[1]]$iid$etime.max, ## same for all causes
+                             ls_IFbeta = lapply(object$models, function(x){x$iid$IFbeta}),
+                             ls_X = new.LPdata,
+                             ls_cumhazard = cumhazard,
+                             ls_hazard = hazard[[cause]],
+                             survival = survival,
+                             eXb = eXb,
+                             strata = new.strata,
+                             strataU = new.strata.interact,
+                             indexStrata = index.strata,
+                             theCause = (cause-1),
+                             hazardType = (surv.type=="hazard"),
+                             nNewObs = new.n,
+                             nSample = object.n,
+                             nStrata = nStrata,
+                             nVar = nVar,
+                             nCause = nCause,
+                             nTau = nTau,
+                             exportSE = "se" %in% export,
+                             exportIF = "iid" %in% export,
+                             exportIFsum = "average.iid" %in% export,
+                             diag = diag)
         
     }else{
 

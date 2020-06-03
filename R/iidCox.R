@@ -308,7 +308,7 @@ iidCox.coxph <- function(object, newdata = NULL,
                 if(type == "cumhazard"){
                     out[iIndex.strata,iS] <- out[iIndex.strata,iS] + zipIFhazard$delta_iS0[[iS]]*(zipIFhazard$time[[iS]]<=time)
                 }else if(type == "hazard" && is.jump){
-                    out[iIndex.strata,iS] <- out[iIndex.strata,iS] + zipIFhazard$delta_iS0[[iS]]*(zipIFhazard$time[[iS]]==time) * test.jump
+                    out[iIndex.strata,iS] <- out[iIndex.strata,iS] + zipIFhazard$delta_iS0[[iS]]*(zipIFhazard$time[[iS]]==time)
                 }
             }
             return(out)

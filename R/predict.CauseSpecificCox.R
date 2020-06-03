@@ -367,10 +367,10 @@ predict.CauseSpecificCox <- function(object,
         }else if(average.iid){ ## only average.iid in export
             if(!is.null(attr(average.iid,"factor"))){
                 if(diag){
-                    average.iid.factor <- attr(average.iid,"factor")
+                    factor <- attr(average.iid,"factor")
                 }else{
                     ## re-order columns according to times
-                    average.iid.factor <- lapply(attr(average.iid,"factor"), function(iF){
+                    factor <- lapply(attr(average.iid,"factor"), function(iF){
                         if(NCOL(iF)>1){return(iF[,otimes,drop=FALSE])}else{return(iF)}
                     })
                 }
@@ -392,7 +392,7 @@ predict.CauseSpecificCox <- function(object,
                                      nCause = nCause,
                                      nVar = nVar,
                                      surv.type = surv.type,
-                                     export = export,
+                                     factor = factor,
                                      store.iid = store.iid,
                                      diag = diag)
         }
