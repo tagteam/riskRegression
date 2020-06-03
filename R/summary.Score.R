@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Dec 26 2019 (08:58) 
 ## Version: 
-## Last-Updated: Mar 24 2020 (10:50) 
+## Last-Updated: Apr 12 2020 (08:27) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 48
+##     Update #: 61
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -21,6 +21,7 @@
 ##' @param object Object obtained with \code{Score}.
 ##' @param times Select time points 
 ##' @param what Either \code{"score"}, \code{"contrasts"} or both, i.e., \code{c("score","contrasts")}
+##' @param models Select which models to summarize. Need to be a subset of \code{object$models}
 ##' @param digits For rounding everything but p-values
 ##' @param pvalue.digits For rounding p-values
 ##' @param ... not used
@@ -37,19 +38,27 @@ summary.Score <- function(object,
                           ...){
     ## score
     out=AUC=model=lower=upper=Brier=Model=x=reference=delta.AUC=p=delta.Brier=Reference=NULL
+    what <- sapply(tolower(what),function(w){match.arg(w,c("score","contrasts"))})
+    # check models 
     fitted.models <- names(object$models)
-    if (missing(models)) models <- fitted.models
-    else if (!all(models %in% fitted.models)) stop(paste0("\nRequested models:",paste0(models,collapse=", "),"\nFitted models:",paste0(fitted.models,collapse=", ")))
+    if (missing(models)){
+        models <- fitted.models
+    } else{
+        if (!all(models %in% fitted.models))
+            stop(paste0("\nRequested models:",paste0(models,collapse=", "),"\nFitted models:",paste0(fitted.models,collapse=", ")))
+    }
+    # {{{ binary
     if (object$response.type=="binary"){
+        # {{{ score
         if ("score"%in% tolower(what)){
             if ("upper"%in%names(object$AUC$score)){
                 tab.AUC <- object$AUC$score[(model %in% models),data.table::data.table(Model=c("Null model",as.character(model)),
-                                                                                             "AUC (%)"=c(Publish::pubformat(50.00,digits=digits),
-                                                                                                         Publish::formatCI(x=100*AUC,lower=100*lower,upper=100*upper,show.x=1,digits=digits)))]
+                                                                                       "AUC (%)"=c(Publish::pubformat(50.00,digits=digits),
+                                                                                                   Publish::formatCI(x=100*AUC,lower=100*lower,upper=100*upper,show.x=1,digits=digits)))]
             }else{
                 tab.AUC <- object$AUC$score[(model %in% models),data.table::data.table(Model=c("Null model",as.character(model)),
-                                                                    "AUC (%)"=c(Publish::pubformat(50.00,digits=digits),
-                                                                                Publish::pubformat(x=100*AUC,digits=digits)))]
+                                                                                       "AUC (%)"=c(Publish::pubformat(50.00,digits=digits),
+                                                                                                   Publish::pubformat(x=100*AUC,digits=digits)))]
             }
             if ("upper"%in%names(object$Brier$score)){
                 if ("IPA"%in% names(object$Brier$score))
@@ -73,11 +82,13 @@ summary.Score <- function(object,
                     tab <- tab.Brier
                 }
             }else{
-                setkey(tab.AUC,times,Model)
+                setkey(tab.AUC,Model)
                 tab <- tab.AUC
             }
             out <- list(score=tab)
         }
+        # }}}
+        # {{{ contrasts
         if ("contrasts"%in% tolower(what)){
             if ("upper"%in%names(object$AUC$contrasts)){
                 if ("p"%in%names(object$AUC$contrasts)){
@@ -105,6 +116,15 @@ summary.Score <- function(object,
                 setkey(tab.deltaBrier,Model,Reference)
                 if (length(tab.deltaAUC)>0) {setkey(tab.deltaAUC,Model,Reference)
                     tab.delta <- tab.deltaAUC[tab.deltaBrier]
+                    if (any(is.na(tmp <- tab.delta[[3]]))){
+                        tmp[is.na(tmp)] <- ""
+                        set(tab.delta,j=3L,value=tmp)
+                    }
+                    if (any(is.na(tmp <- tab.delta[[4]]))){
+                        tmp[is.na(tmp)] <- ""
+                        set(tab.delta,j=4L,value=tmp)
+                    }
+                    rm(tmp)
                     if ("i.p-value"%in%names(tab.delta))
                         setnames(tab.delta,"i.p-value","p-value")
                 }else{
@@ -114,10 +134,14 @@ summary.Score <- function(object,
                 setkey(tab.deltaAUC,Model,Reference)
                 tab.delta <- tab.deltaAUC
             }
-            out <- c(out,list(contrast=tab.delta))
+            out <- c(out,list(contrasts=tab.delta))
         }
-    }else{
+        # }}}
+        # }}}
+    } else{
+        # {{{ time-to-event
         if (missing(times)) ttt = object$times else ttt <- times
+        # {{{ score
         if ("score"%in% tolower(what)){
             setkey(object$AUC$score,times)
             tab.NULLAUC <- data.table(times=ttt,
@@ -155,6 +179,8 @@ summary.Score <- function(object,
             }
             out <- list(score=tab)
         }
+        # }}}
+        # {{{ contrasts
         if ("contrasts"%in% tolower(what)){
             if ("upper"%in%names(object$AUC$contrasts)){
                 if ("p"%in%names(object$AUC$contrasts))
@@ -166,11 +192,11 @@ summary.Score <- function(object,
             }
             if ("upper"%in%names(object$Brier$contrasts)){
                 if ("p"%in%names(object$AUC$contrasts))
-                    tab.deltaBrier <- object$Brier$contrast[(times%in%ttt)&(model%in%models) & reference!="Null model",data.table::data.table(times=times,Model=model,Reference=reference,"delta Brier (%)"=Publish::formatCI(x=100*delta.Brier,lower=100*lower,upper=100*upper,show.x=1,digits=digits),"p-value"=format.pval(p,eps=0.001,digits=pvalue.digits))]
+                    tab.deltaBrier <- object$Brier$contrasts[(times%in%ttt)&(model%in%models) & reference!="Null model",data.table::data.table(times=times,Model=model,Reference=reference,"delta Brier (%)"=Publish::formatCI(x=100*delta.Brier,lower=100*lower,upper=100*upper,show.x=1,digits=digits),"p-value"=format.pval(p,eps=0.001,digits=pvalue.digits))]
                 else
-                    tab.deltaBrier <- object$Brier$contrast[(times%in%ttt)&(model%in%models) & reference!="Null model",data.table::data.table(times=times,Model=model,Reference=reference,"delta Brier (%)"=Publish::formatCI(x=100*delta.Brier,lower=100*lower,upper=100*upper,show.x=1,digits=digits))]
+                    tab.deltaBrier <- object$Brier$contrasts[(times%in%ttt)&(model%in%models) & reference!="Null model",data.table::data.table(times=times,Model=model,Reference=reference,"delta Brier (%)"=Publish::formatCI(x=100*delta.Brier,lower=100*lower,upper=100*upper,show.x=1,digits=digits))]
             }else{
-                tab.deltaBrier <- object$Brier$contrast[(times%in%ttt)&(model%in%models) & reference!="Null model",data.table::data.table(times=times,Model=model,Reference=reference,"delta Brier (%)"=Publish::pubformat(x=100*delta.Brier,digits=digits))]
+                tab.deltaBrier <- object$Brier$contrasts[(times%in%ttt)&(model%in%models) & reference!="Null model",data.table::data.table(times=times,Model=model,Reference=reference,"delta Brier (%)"=Publish::pubformat(x=100*delta.Brier,digits=digits))]
             }
             ## merging the two tables if there are two
             if (length(tab.deltaBrier)>0) {
@@ -187,9 +213,11 @@ summary.Score <- function(object,
                 setkey(tab.deltaAUC,Model,Reference)
                 tab.delta <- tab.deltaAUC
             }
-            out <- c(out,list(contrast=tab.delta))
+            out <- c(out,list(contrasts=tab.delta))
         }
     }
+    # }}}
+    # }}}
     out
 }
 

@@ -52,7 +52,8 @@ Suggests:
     rbenchmark,
     rpart,
     testthat,
-    R.rsp
+    R.rsp,
+    casebase
 Maintainer: Thomas Alexander Gerds <tag@biostat.ku.dk>
 Description: Implementation of the following methods for event history analysis.
     Risk regression models for survival endpoints also in the presence of competing
@@ -70,3 +71,4 @@ Description: Implementation of the following methods for event history analysis.
 License: GPL (>= 2)
 RoxygenNote: 7.1.0
 VignetteBuilder: R.rsp
+Encoding: UTF-8

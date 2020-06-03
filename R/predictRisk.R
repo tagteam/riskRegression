@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun  6 2016 (09:02) 
 ## Version: 
-## last-updated: Mar 15 2020 (07:51) 
+## last-updated: Apr  1 2020 (08:43) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 300
+##     Update #: 310
 #----------------------------------------------------------------------
 ## 
 ### Commentary:
@@ -855,8 +855,6 @@ predictRisk.CauseSpecificCox <- function (object, newdata, times, cause, product
 }
 
 
-
-
 ##' S3-wrapper for S4 function penalized
 ##'
 ##' S3-wrapper for S4 function penalized
@@ -878,9 +876,9 @@ predictRisk.CauseSpecificCox <- function (object, newdata, times, cause, product
 ##' d <- sampleData(200,outcome="binary")
 ##' newd <- sampleData(80,outcome="binary")
 ##' fitridge <- penalizedS3(Y~X1+X2+pen(7:8), data=d, type="ridge",
-##' standardize=TRUE, model="logistic",trace=FALSE)
+##'                 standardize=TRUE, model="logistic",trace=FALSE)
 ##' fitlasso <- penalizedS3(Y~X1+X2+pen(7:8), data=d, type="lasso",
-##' standardize=TRUE, model="logistic",trace=FALSE)
+##'                 standardize=TRUE, model="logistic",trace=FALSE)
 ##' # fitnet <- penalizedS3(Y~X1+X2+pen(7:8), data=d, type="elastic.net",
 ##' # standardize=TRUE, model="logistic",trace=FALSE)
 ##' predictRisk(fitridge,newdata=newd)
@@ -889,11 +887,12 @@ predictRisk.CauseSpecificCox <- function (object, newdata, times, cause, product
 ##' Score(list(fitridge),data=newd,formula=Y~1)
 ##' Score(list(fitridge),data=newd,formula=Y~1,split.method="bootcv",B=2)
 ##' }
-##'\dontrun{ data(nki70) ## S4 fit
-##' pen <- penalized(Surv(time, event), penalized = nki70[,8:77],
+##'\dontrun{
+##' data(nki70) ## S4 fit
+##' fitS4 <- penalized(Surv(time, event), penalized = nki70[,8:77],
 ##'                  unpenalized = ~ER+Age+Diam+N+Grade, data = nki70,
-##' lambda1 = 1)
-##' penS3 <- penalizedS3(Surv(time,event)~ER+Age+Diam+pen(8:77)+N+Grade,
+##'                  lambda1 = 1)
+##' fitS3 <- penalizedS3(Surv(time,event)~ER+Age+Diam+pen(8:77)+N+Grade,
 ##'                      data=nki70, lambda1=1)
 ##' ## or
 ##' penS3 <- penalizedS3(Surv(time,event)~ER+pen(TSPYL5,Contig63649_RC)+pen(10:77)+N+Grade,
@@ -910,34 +909,60 @@ penalizedS3 <- function(formula,
                         lambda2,
                         fold,
                         ...){
-                                        # {{{ distangle the formula
-    EHF <- prodlim::EventHistory.frame(formula,
-                                       data,
-                                       specials=c("pen","unpen"),
-                                       stripSpecials=c("pen","unpen"),
-                                       stripUnspecials="pen",
-                                       specialsDesign=TRUE)
-    response <- EHF$event.history
-    pen <- EHF$pen
-    unpen <- EHF$unpen
-    if (is.null(unpen))
-        args <- list(response=response,penalized=pen,data=data,...)
-    else
-        args <- list(response=response,penalized=pen,unpenalized=unpen,data=data,...)
-                                        # {{{ find optimal L1
+    responseFormula <- stats::update(formula,~1)
+    responsevars <- all.vars(responseFormula)
+    if (length(responsevars)==1){
+        FRAME  <- Publish::specialFrame(formula,
+                                        data,
+                                        specials=c("pen","unpen"),
+                                        strip.specials=c("pen","unpen"),
+                                        strip.unspecials="pen",
+                                        strip.arguments=NULL,
+                                        strip.alias=list("penalized"="pen","unpenalized"="unpen"),
+                                        drop.intercept=TRUE,
+                                        specials.design=TRUE,
+                                        response=TRUE,
+                                        na.action=options()$na.action)
+        response <- FRAME$response[[1]]
+        pen <- FRAME$pen
+        unpen <- FRAME$unpen
+        if (is.null(unpen))
+            args <- list(response=response,penalized=pen,data=data,...)
+        else
+            args <- list(response=response,penalized=pen,unpenalized=unpen,data=data,...)
+        #modelframe <- stats::model.frame(formula=formula,data=data,na.action=na.fail)
+    }else{
+        # {{{ distangle the formula
+        EHF <- prodlim::EventHistory.frame(formula,
+                                           data,
+                                           specials=c("pen","unpen"),
+                                           stripSpecials=c("pen","unpen"),
+                                           stripUnspecials="pen",
+                                           stripAlias=list("penalized"="pen","unpenalized"="unpen"),
+                                           specialsDesign=TRUE)
+        response <- EHF$event.history
+        pen <- EHF$pen
+        unpen <- EHF$unpen
+        if (is.null(unpen))
+            args <- list(response=response,penalized=pen,data=data,...)
+        else
+            args <- list(response=response,penalized=pen,unpenalized=unpen,data=data,...)
+    }
+    # {{{ find optimal L1
     if ((tolower(type) %in% c("lasso","elastic.net")) && missing(lambda1)){
         if (missing(fold)) fold <- 1:NROW(data)
         las1 <- do.call(penalized::profL1,c(args,list(fold=fold)))
         lambda1 <- do.call(penalized::optL1,c(args,list(fold=las1$fold)))$lambda
     }
-                                        # }}}
-                                        # {{{ find optimal L2
+    # }}}
+    # {{{ find optimal L2
     if ((tolower(type) %in% c("ridge","elastic.net")) && missing(lambda2)){
         if (missing(fold)) fold <- 1:NROW(data)
-        lambda2 <- do.call(penalized::optL2,c(args,list(fold=fold)))$lambda
+        lambda2 <- do.call(penalized::optL2,
+                           c(args,list(fold=fold)))$lambda
     }
-                                        # }}}
-                                        # {{{ call S4 method
+    # }}}
+    # {{{ call S4 method
     ## unpenalized terms are communicated via
     ## the left hand side of response
     fitS4 <- switch(type,"ridge"={
@@ -953,13 +978,13 @@ penalizedS3 <- function(formula,
         print(fitS4)
         stop()
     }
-                                        # }}}
-                                        # {{{ deliver S3 object
+    # }}}
+    # {{{ deliver S3 object
     fit <- list(fitS4=fitS4,call=match.call())
     fit$terms <- terms(formula)
     class(fit) <- "penfitS3"
     fit
-                                        # }}}
+    # }}}
 }
 
 ## * predictRisk.penfitS3
@@ -1106,7 +1131,48 @@ predictRisk.flexsurvreg <- function(object, newdata, times, ...) {
     1 - p
 }
 
-
+## * predictRisk.singleEventCB
+##' @export
+##' @rdname predictRisk
+##' @method predictRisk singleEventCB
+predictRisk.singleEventCB <- function(object, newdata, times, cause, ...) {
+  if (object$call[[1]]!="glm"){
+    #get all covariates excluding intercept and time
+    coVars=colnames(object$originalData$x)
+    #coVars is used in lines 44 and 50
+    newdata=data.matrix(drop(subset(newdata, select=coVars)))
+  }
+  
+  # if (missing(cause)) stop("Argument cause should be the event type for which we predict the absolute risk.")
+  # the output of absoluteRisk is an array with dimension dependening on the length of the requested times:
+  # case 1: the number of time points is 1
+  #         dim(array) =  (length(time), NROW(newdata), number of causes in the data)
+  if (length(times) == 1) {
+    a <- casebase::absoluteRisk(object, newdata = newdata, time = times)
+    p <- matrix(a, ncol = 1)
+  } else {
+    # case 2 a) zero is included in the number of time points
+    if (0 %in% times) {
+      # dim(array) =  (length(time)+1, NROW(newdata)+1, number of causes in the data)
+      a <- casebase::absoluteRisk(object, newdata = newdata, time = times)
+      p <- t(a)
+    } else {
+      # case 2 b) zero is not included in the number of time points (but the absoluteRisk function adds it)
+      a <- casebase::absoluteRisk(object, newdata = newdata, time = times)
+      ### we need to invert the plot because, by default, we get cumulative incidence
+      #a[, -c(1)] <- 1 - a[, -c(1)]
+      ### we remove time 0 for everyone, and remove the time column
+      a <- a[-c(1), -c(1)] ### a[-c(1), ] to keep times column, but remove time 0 probabilities
+      # now we transpose the matrix because in riskRegression we work with number of
+      # observations in rows and time points in columns
+      p <- t(a)
+    }
+  }
+  if (NROW(p) != NROW(newdata) || NCOL(p) != length(times)) {
+    stop(paste("\nPrediction matrix has wrong dimensions:\nRequested newdata x times: ", NROW(newdata), " x ", length(times), "\nProvided prediction matrix: ", NROW(p), " x ", NCOL(p), "\n\n", sep = ""))
+  }
+  p
+}
 
 
 #----------------------------------------------------------------------

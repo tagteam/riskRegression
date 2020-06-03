@@ -4,12 +4,10 @@
 \alias{print.IPA}
 \title{Print IPA object}
 \usage{
-\method{print}{IPA}(x, percent = TRUE, digits = 2, ...)
+\method{print}{IPA}(x, digits = 2, ...)
 }
 \arguments{
 \item{x}{Object obtained with \code{IPA}}
-
-\item{percent}{Logical. If \code{TRUE} show percentages.}
 
 \item{digits}{Number of digits}
 

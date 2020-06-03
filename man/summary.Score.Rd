@@ -21,6 +21,8 @@
 
 \item{what}{Either \code{"score"}, \code{"contrasts"} or both, i.e., \code{c("score","contrasts")}}
 
+\item{models}{Select which models to summarize. Need to be a subset of \code{object$models}}
+
 \item{digits}{For rounding everything but p-values}
 
 \item{pvalue.digits}{For rounding p-values}
