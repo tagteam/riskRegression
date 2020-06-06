@@ -8,24 +8,60 @@
 \alias{iidCox.CauseSpecificCox}
 \title{Extract iid decomposition from a Cox model}
 \usage{
-iidCox(object, newdata, baseline.iid, tau.hazard, tau.max, store.iid,
-  keep.times, return.object)
+iidCox(
+  object,
+  newdata,
+  baseline.iid,
+  tau.hazard,
+  tau.max,
+  store.iid,
+  keep.times,
+  return.object
+)
 
-\method{iidCox}{coxph}(object, newdata = NULL, baseline.iid = TRUE,
-  tau.hazard = NULL, tau.max = NULL, store.iid = "full",
-  keep.times = TRUE, return.object = TRUE)
+\method{iidCox}{coxph}(
+  object,
+  newdata = NULL,
+  baseline.iid = TRUE,
+  tau.hazard = NULL,
+  tau.max = NULL,
+  store.iid = "full",
+  keep.times = TRUE,
+  return.object = TRUE
+)
 
-\method{iidCox}{cph}(object, newdata = NULL, baseline.iid = TRUE,
-  tau.hazard = NULL, tau.max = NULL, store.iid = "full",
-  keep.times = TRUE, return.object = TRUE)
+\method{iidCox}{cph}(
+  object,
+  newdata = NULL,
+  baseline.iid = TRUE,
+  tau.hazard = NULL,
+  tau.max = NULL,
+  store.iid = "full",
+  keep.times = TRUE,
+  return.object = TRUE
+)
 
-\method{iidCox}{phreg}(object, newdata = NULL, baseline.iid = TRUE,
-  tau.hazard = NULL, tau.max = NULL, store.iid = "full",
-  keep.times = TRUE, return.object = TRUE)
+\method{iidCox}{phreg}(
+  object,
+  newdata = NULL,
+  baseline.iid = TRUE,
+  tau.hazard = NULL,
+  tau.max = NULL,
+  store.iid = "full",
+  keep.times = TRUE,
+  return.object = TRUE
+)
 
-\method{iidCox}{CauseSpecificCox}(object, newdata = NULL,
-  baseline.iid = TRUE, tau.hazard = NULL, tau.max = NULL,
-  store.iid = "full", keep.times = TRUE, return.object = TRUE)
+\method{iidCox}{CauseSpecificCox}(
+  object,
+  newdata = NULL,
+  baseline.iid = TRUE,
+  tau.hazard = NULL,
+  tau.max = NULL,
+  store.iid = "full",
+  keep.times = TRUE,
+  return.object = TRUE
+)
 }
 \arguments{
 \item{object}{object The fitted Cox regression model object either

@@ -8,8 +8,16 @@
 \usage{
 influenceTest(object, ...)
 
-\method{influenceTest}{list}(object, newdata, times, type, cause,
-  keep.newdata = TRUE, keep.strata = FALSE, ...)
+\method{influenceTest}{list}(
+  object,
+  newdata,
+  times,
+  type,
+  cause,
+  keep.newdata = TRUE,
+  keep.strata = FALSE,
+  ...
+)
 
 \method{influenceTest}{default}(object, object2, band = TRUE, ...)
 }

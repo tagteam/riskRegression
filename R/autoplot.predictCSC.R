@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: feb 27 2017 (10:47) 
 ## Version: 
-## last-updated: jan 20 2020 (17:46) 
+## last-updated: jun  6 2020 (12:30) 
 ##           By: Brice Ozenne
-##     Update #: 85
+##     Update #: 89
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -36,7 +36,7 @@
 #' library(survival)
 #' library(rms)
 #' library(ggplot2)
-##' library(prodlim)
+#' library(prodlim)
 #' #### simulate data ####
 #' set.seed(10)
 #' d <- sampleData(1e2, outcome = "competing.risks")
@@ -111,6 +111,7 @@ autoplot.predictCSC <- function(object,
                           outcome.lowerBand = if(band){object$absRisk.lowerBand}else{NULL},
                           outcome.upperBand = if(band){object$absRisk.upperBand}else{NULL},
                           newdata = newdata,
+                          status = NULL,
                           strata = object$strata,
                           times = object$times,
                           name.outcome = "absRisk",
@@ -125,6 +126,7 @@ autoplot.predictCSC <- function(object,
                            group.by = group.by,
                            conf.level = object$conf.level,
                            alpha = alpha,
+                           xlab = "time",
                            ylab = "absolute risk"
                            )
       

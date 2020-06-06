@@ -3,16 +3,25 @@
 \docType{package}
 \name{riskRegression}
 \alias{riskRegression}
-\alias{riskRegression-package}
 \alias{ARR}
 \alias{LRR}
 \title{Risk Regression
 Fits a regression model for the risk of an event -- allowing for competing
 risks.}
 \usage{
-riskRegression(formula, data, times, link = "relative", cause,
-  conf.int = TRUE, cens.model, cens.formula, max.iter = 50,
-  conservative = TRUE, ...)
+riskRegression(
+  formula,
+  data,
+  times,
+  link = "relative",
+  cause,
+  conf.int = TRUE,
+  cens.model,
+  cens.formula,
+  max.iter = 50,
+  conservative = TRUE,
+  ...
+)
 }
 \arguments{
 \item{formula}{Formula where the left hand side specifies the event

@@ -4,9 +4,24 @@
 \alias{plotEffects}
 \title{Plotting time-varying effects from a risk regression model.}
 \usage{
-plotEffects(x, formula, level, ref.line = TRUE, conf.int = 0.95, xlim,
-  ylim, xlab = "Time", ylab = "Cumulative coefficient", col, lty, lwd,
-  add = FALSE, legend, axes = TRUE, ...)
+plotEffects(
+  x,
+  formula,
+  level,
+  ref.line = TRUE,
+  conf.int = 0.95,
+  xlim,
+  ylim,
+  xlab = "Time",
+  ylab = "Cumulative coefficient",
+  col,
+  lty,
+  lwd,
+  add = FALSE,
+  legend,
+  axes = TRUE,
+  ...
+)
 }
 \arguments{
 \item{x}{Fitted object obtained with one of \code{ARR}, \code{LRR},

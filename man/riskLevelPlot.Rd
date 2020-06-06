@@ -4,8 +4,14 @@
 \alias{riskLevelPlot}
 \title{Level plots for risk prediction models}
 \usage{
-riskLevelPlot(object, formula, data = parent.frame(), horizon = NULL,
-  cause = 1, ...)
+riskLevelPlot(
+  object,
+  formula,
+  data = parent.frame(),
+  horizon = NULL,
+  cause = 1,
+  ...
+)
 }
 \arguments{
 \item{object}{risk prediction model object}

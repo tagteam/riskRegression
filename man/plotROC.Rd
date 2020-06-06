@@ -4,9 +4,23 @@
 \alias{plotROC}
 \title{Plot ROC curves}
 \usage{
-plotROC(x, models, times, xlab = "1-Specificity", ylab = "Sensitivity",
-  col, lwd, lty = 1, cex = 1, pch = 1, legend = TRUE,
-  auc.in.legend = TRUE, brier.in.legend = FALSE, add = FALSE, ...)
+plotROC(
+  x,
+  models,
+  times,
+  xlab = "1-Specificity",
+  ylab = "Sensitivity",
+  col,
+  lwd,
+  lty = 1,
+  cex = 1,
+  pch = 1,
+  legend = TRUE,
+  auc.in.legend = TRUE,
+  brier.in.legend = FALSE,
+  add = FALSE,
+  ...
+)
 }
 \arguments{
 \item{x}{Object obtained with function \code{Score}}

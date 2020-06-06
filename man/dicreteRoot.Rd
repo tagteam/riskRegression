@@ -4,8 +4,13 @@
 \alias{discreteRoot}
 \title{Dichotomic search for monotone function}
 \usage{
-discreteRoot(fn, grid, increasing = TRUE, check = TRUE,
-  tol = .Machine$double.eps^0.5)
+discreteRoot(
+  fn,
+  grid,
+  increasing = TRUE,
+  check = TRUE,
+  tol = .Machine$double.eps^0.5
+)
 }
 \arguments{
 \item{fn}{[function] objective function to minimize in absolute value.}

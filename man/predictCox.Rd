@@ -4,11 +4,24 @@
 \alias{predictCox}
 \title{Fast computation of survival probabilities, hazards and cumulative hazards from Cox regression models}
 \usage{
-predictCox(object, times, newdata = NULL, centered = TRUE,
-  type = c("cumhazard", "survival"), keep.strata = TRUE,
-  keep.times = TRUE, keep.newdata = FALSE, keep.infoVar = FALSE,
-  se = FALSE, band = FALSE, iid = FALSE, confint = (se + band) > 0,
-  diag = FALSE, average.iid = FALSE, store.iid = "full")
+predictCox(
+  object,
+  times,
+  newdata = NULL,
+  centered = TRUE,
+  type = c("cumhazard", "survival"),
+  keep.strata = TRUE,
+  keep.times = TRUE,
+  keep.newdata = FALSE,
+  keep.infoVar = FALSE,
+  se = FALSE,
+  band = FALSE,
+  iid = FALSE,
+  confint = (se + band) > 0,
+  diag = FALSE,
+  average.iid = FALSE,
+  store.iid = "full"
+)
 }
 \arguments{
 \item{object}{The fitted Cox regression model object either

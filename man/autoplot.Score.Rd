@@ -4,8 +4,17 @@
 \alias{autoplot.Score}
 \title{ggplot AUC curve}
 \usage{
-\method{autoplot}{Score}(object, models, type = "score", lwd = 2, xlim,
-  ylim, axes = TRUE, conf.int = FALSE, ...)
+\method{autoplot}{Score}(
+  object,
+  models,
+  type = "score",
+  lwd = 2,
+  xlim,
+  ylim,
+  axes = TRUE,
+  conf.int = FALSE,
+  ...
+)
 }
 \arguments{
 \item{object}{Object obtained with \code{Score.list}}

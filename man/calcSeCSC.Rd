@@ -4,9 +4,28 @@
 \alias{calcSeCSC}
 \title{Standard error of the absolute risk predicted from cause-specific Cox models}
 \usage{
-calcSeCSC(object, cif, hazard, cumhazard, survival, object.time,
-  object.maxtime, eXb, new.LPdata, new.strata, times, surv.type,
-  ls.infoVar, new.n, cause, nCause, nVar, export, store.iid, diag)
+calcSeCSC(
+  object,
+  cif,
+  hazard,
+  cumhazard,
+  survival,
+  object.time,
+  object.maxtime,
+  eXb,
+  new.LPdata,
+  new.strata,
+  times,
+  surv.type,
+  ls.infoVar,
+  new.n,
+  cause,
+  nCause,
+  nVar,
+  export,
+  store.iid,
+  diag
+)
 }
 \arguments{
 \item{object}{The fitted cause specific Cox model}

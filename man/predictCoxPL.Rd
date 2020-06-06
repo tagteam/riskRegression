@@ -4,8 +4,15 @@
 \alias{predictCoxPL}
 \title{Computation of survival probabilities from Cox regression models using the product limit estimator.}
 \usage{
-predictCoxPL(object, times, newdata = NULL, type = c("cumhazard",
-  "survival"), keep.strata = TRUE, keep.infoVar = FALSE, ...)
+predictCoxPL(
+  object,
+  times,
+  newdata = NULL,
+  type = c("cumhazard", "survival"),
+  keep.strata = TRUE,
+  keep.infoVar = FALSE,
+  ...
+)
 }
 \arguments{
 \item{object}{The fitted Cox regression model object either

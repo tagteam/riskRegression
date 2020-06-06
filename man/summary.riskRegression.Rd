@@ -4,8 +4,15 @@
 \alias{summary.riskRegression}
 \title{Summary of a risk regression model}
 \usage{
-\method{summary}{riskRegression}(object, times, digits = 3,
-  pvalue.digits = 4, eps = 10^-4, verbose = TRUE, ...)
+\method{summary}{riskRegression}(
+  object,
+  times,
+  digits = 3,
+  pvalue.digits = 4,
+  eps = 10^-4,
+  verbose = TRUE,
+  ...
+)
 }
 \arguments{
 \item{object}{Object obtained with ARR, LRR or riskRegression}

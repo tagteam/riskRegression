@@ -4,8 +4,7 @@
 \alias{as.data.table.predictCox}
 \title{Turn predictCox Object Into a \code{data.table}}
 \usage{
-\method{as.data.table}{predictCox}(x, keep.rownames = FALSE, se = TRUE,
-  ...)
+\method{as.data.table}{predictCox}(x, keep.rownames = FALSE, se = TRUE, ...)
 }
 \arguments{
 \item{x}{object obtained with function \code{predictCox}}

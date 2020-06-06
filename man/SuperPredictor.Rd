@@ -4,8 +4,13 @@
 \alias{SuperPredictor}
 \title{Formula interface for SuperLearner::SuperLearner}
 \usage{
-SuperPredictor(formula, data, family = "binomial",
-  SL.library = c("SL.glm", "SL.glm.interaction", "SL.ranger"), ...)
+SuperPredictor(
+  formula,
+  data,
+  family = "binomial",
+  SL.library = c("SL.glm", "SL.glm.interaction", "SL.ranger"),
+  ...
+)
 }
 \arguments{
 \item{formula}{where the left hand side specifies the outcome and the right hand side the predictors}

@@ -4,9 +4,21 @@
 \alias{plotRisk}
 \title{plot predicted risks}
 \usage{
-plotRisk(x, models, times, xlim = c(0, 1), ylim = c(0, 1), xlab, ylab,
-  col, pch = 3, cex = 1, preclipse = 0, preclipse.shade = FALSE,
-  ...)
+plotRisk(
+  x,
+  models,
+  times,
+  xlim = c(0, 1),
+  ylim = c(0, 1),
+  xlab,
+  ylab,
+  col,
+  pch = 3,
+  cex = 1,
+  preclipse = 0,
+  preclipse.shade = FALSE,
+  ...
+)
 }
 \arguments{
 \item{x}{Object obtained with function \code{Score}}

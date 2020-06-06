@@ -343,37 +343,40 @@ predictCox <- function(object,
                                         # }}}
 
   
-  ## ** compute cumlative hazard and survival
-  if (is.null(newdata)){  
+    ## ** compute cumlative hazard and survival
+    if (is.null(newdata)){  
                                         # {{{ results from the training dataset
-      if (!("hazard" %in% type)){
-          Lambda0$hazard <- NULL
-      } 
-      if ("survival" %in% type){  ## must be before cumhazard
-          Lambda0$survival = exp(-Lambda0$cumhazard)
-      }
-      if (!("cumhazard" %in% type)){
-          Lambda0$cumhazard <- NULL
-      } 
-      if (keep.times==FALSE){
-          Lambda0$times <- NULL
-      }
-      if (keep.strata[[1]]==FALSE || is.strata[[1]] == FALSE){
-          Lambda0$strata <- NULL
-      }
-
-      add.list <- list(lastEventTime = etimes.max,
-                       se = FALSE,
-                       band = FALSE,
-                       type = type)
-      if(keep.infoVar){
-          add.list$infoVar <- infoVar
-      }
-      Lambda0[names(add.list)] <- add.list
-      class(Lambda0) <- "predictCox"
-      return(Lambda0)
+        if (!("hazard" %in% type)){
+            Lambda0$hazard <- NULL
+        } 
+        if ("survival" %in% type){  ## must be before cumhazard
+            Lambda0$survival = exp(-Lambda0$cumhazard)
+        }
+        if (!("cumhazard" %in% type)){
+            Lambda0$cumhazard <- NULL
+        } 
+        if (keep.times==FALSE){
+            Lambda0$times <- NULL
+        }
+        if (keep.strata[[1]]==FALSE || is.strata[[1]] == FALSE){
+            Lambda0$strata <- NULL
+        }
+        add.list <- list(lastEventTime = etimes.max,
+                         se = FALSE,
+                         band = FALSE,
+                         type = type)
+        if(keep.newdata){
+            add.list$status <- object.modelFrame[,sum(.SD$status),by=c("stop","strata")]
+            data.table::setnames(add.list$status, old = names(add.list$status), new = c("time","strata","nevent"))
+        }
+        if(keep.infoVar){
+            add.list$infoVar <- infoVar
+        }
+        Lambda0[names(add.list)] <- add.list
+        class(Lambda0) <- "predictCox"
+        return(Lambda0)
                                         # }}}
-  } else {
+    } else {
     
                                         # {{{ predictions in new dataset
       out <- list()

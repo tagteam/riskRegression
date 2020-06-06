@@ -4,11 +4,30 @@
 \alias{ate}
 \title{Compute the Average Treatment Effects Via}
 \usage{
-ate(event, treatment, censor = NULL, data, formula, estimator = NULL,
-  strata = NULL, contrasts = NULL, times, cause = NA, landmark,
-  se = TRUE, iid = FALSE, known.nuisance = FALSE, band = FALSE,
-  B = 0, seed, handler = "foreach", mc.cores = 1, cl = NULL,
-  verbose = TRUE, ...)
+ate(
+  event,
+  treatment,
+  censor = NULL,
+  data,
+  formula,
+  estimator = NULL,
+  strata = NULL,
+  contrasts = NULL,
+  times,
+  cause = NA,
+  landmark,
+  se = TRUE,
+  iid = FALSE,
+  known.nuisance = FALSE,
+  band = FALSE,
+  B = 0,
+  seed,
+  handler = "foreach",
+  mc.cores = 1,
+  cl = NULL,
+  verbose = TRUE,
+  ...
+)
 }
 \arguments{
 \item{event}{Outcome model which describes how event risk depends

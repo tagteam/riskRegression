@@ -4,9 +4,17 @@
 \alias{autoplot.predictCSC}
 \title{Plot Predictions From a Cause-specific Cox Proportional Hazard Regression}
 \usage{
-\method{autoplot}{predictCSC}(object, ci = FALSE, band = FALSE,
-  group.by = "row", reduce.data = FALSE, plot = TRUE, digits = 2,
-  alpha = NA, ...)
+\method{autoplot}{predictCSC}(
+  object,
+  ci = FALSE,
+  band = FALSE,
+  group.by = "row",
+  reduce.data = FALSE,
+  plot = TRUE,
+  digits = 2,
+  alpha = NA,
+  ...
+)
 }
 \arguments{
 \item{object}{Object obtained with the function \code{predictCox}.}

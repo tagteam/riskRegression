@@ -51,8 +51,7 @@ predictRisk(object, newdata, ...)
 
 \method{predictRisk}{numeric}(object, newdata, times, cause, ...)
 
-\method{predictRisk}{glm}(object, newdata, iid = FALSE,
-  average.iid = FALSE, ...)
+\method{predictRisk}{glm}(object, newdata, iid = FALSE, average.iid = FALSE, ...)
 
 \method{predictRisk}{formula}(object, newdata, ...)
 
@@ -70,8 +69,15 @@ predictRisk(object, newdata, ...)
 
 \method{predictRisk}{cox.aalen}(object, newdata, times, ...)
 
-\method{predictRisk}{coxph}(object, newdata, times,
-  product.limit = FALSE, iid = FALSE, average.iid = FALSE, ...)
+\method{predictRisk}{coxph}(
+  object,
+  newdata,
+  times,
+  product.limit = FALSE,
+  iid = FALSE,
+  average.iid = FALSE,
+  ...
+)
 
 \method{predictRisk}{coxphTD}(object, newdata, times, landmark, ...)
 
@@ -79,8 +85,15 @@ predictRisk(object, newdata, ...)
 
 \method{predictRisk}{coxph.penal}(object, newdata, times, ...)
 
-\method{predictRisk}{cph}(object, newdata, times, product.limit = FALSE,
-  iid = FALSE, average.iid = FALSE, ...)
+\method{predictRisk}{cph}(
+  object,
+  newdata,
+  times,
+  product.limit = FALSE,
+  iid = FALSE,
+  average.iid = FALSE,
+  ...
+)
 
 \method{predictRisk}{selectCox}(object, newdata, times, ...)
 
@@ -100,8 +113,16 @@ predictRisk(object, newdata, ...)
 
 \method{predictRisk}{ARR}(object, newdata, times, cause, ...)
 
-\method{predictRisk}{CauseSpecificCox}(object, newdata, times, cause,
-  product.limit = TRUE, iid = FALSE, average.iid = FALSE, ...)
+\method{predictRisk}{CauseSpecificCox}(
+  object,
+  newdata,
+  times,
+  cause,
+  product.limit = TRUE,
+  iid = FALSE,
+  average.iid = FALSE,
+  ...
+)
 
 \method{predictRisk}{penfitS3}(object, newdata, times, ...)
 

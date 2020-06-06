@@ -4,10 +4,18 @@
 \alias{confint.ate}
 \title{Confidence Intervals and Confidence Bands for the Predicted Absolute Risk (Cumulative Incidence Function)}
 \usage{
-\method{confint}{ate}(object, parm = NULL, level = 0.95,
-  nsim.band = 10000, meanRisk.transform = "none",
-  diffRisk.transform = "none", ratioRisk.transform = "none",
-  seed = NA, bootci.method = "perc", ...)
+\method{confint}{ate}(
+  object,
+  parm = NULL,
+  level = 0.95,
+  nsim.band = 10000,
+  meanRisk.transform = "none",
+  diffRisk.transform = "none",
+  ratioRisk.transform = "none",
+  seed = NA,
+  bootci.method = "perc",
+  ...
+)
 }
 \arguments{
 \item{object}{A \code{ate} object, i.e. output of the \code{ate} function.}

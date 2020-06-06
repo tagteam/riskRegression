@@ -4,8 +4,13 @@
 \alias{as.data.table.ate}
 \title{Turn ate Object Into a \code{data.table}}
 \usage{
-\method{as.data.table}{ate}(x, keep.rownames = FALSE, se = TRUE,
-  estimator = x$estimator, ...)
+\method{as.data.table}{ate}(
+  x,
+  keep.rownames = FALSE,
+  se = TRUE,
+  estimator = x$estimator,
+  ...
+)
 }
 \arguments{
 \item{x}{object obtained with function \code{ate}}
