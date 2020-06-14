@@ -1748,7 +1748,7 @@ Score.list <- function(object,
                                         # }}}
                                         # {{{ collect data for calibration plots
         if ("Calibration" %in% plots){
-            if (keep.residuals[1] && split.method$name[1]=="LeaveOneOutBoot"){
+            if (keep.residuals[[1]]==TRUE && split.method$name[[1]]=="LeaveOneOutBoot"){
                 crossvalPerf[["Calibration"]]$plotframe <- crossvalPerf$Brier$Residuals[model!=0,]
             } else{
                 ## there are no residuals in this case. residuals are only available for LOOB!
@@ -1759,7 +1759,7 @@ Score.list <- function(object,
                 setcolorder(crossvalPerf[["Calibration"]]$plotframe,c("ID",byvars,Response.names,"risk"))
             }
             crossvalPerf[["Calibration"]]$plotframe[,model:=factor(model,levels=mlevs,mlabels)]
-            if (keep.residuals[1]==FALSE && split.method$name[1]=="LeaveOneOutBoot"){
+            if (keep.residuals[[1]]==FALSE && split.method$name[[1]]=="LeaveOneOutBoot"){
                 crossvalPerf$Brier$Residuals <- NULL
             }
             if (cens.type=="rightCensored")

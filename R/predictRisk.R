@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun  6 2016 (09:02) 
 ## Version: 
-## last-updated: Apr  1 2020 (08:43) 
+## last-updated: Jun 14 2020 (08:32) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 310
+##     Update #: 320
 #----------------------------------------------------------------------
 ## 
 ### Commentary:
@@ -918,7 +918,7 @@ penalizedS3 <- function(formula,
                                         strip.specials=c("pen","unpen"),
                                         strip.unspecials="pen",
                                         strip.arguments=NULL,
-                                        strip.alias=list("penalized"="pen","unpenalized"="unpen"),
+                                        ## strip.alias=list("pen"="penalized","unpen"="unpenalized"),
                                         drop.intercept=TRUE,
                                         specials.design=TRUE,
                                         response=TRUE,
@@ -933,12 +933,12 @@ penalizedS3 <- function(formula,
         #modelframe <- stats::model.frame(formula=formula,data=data,na.action=na.fail)
     }else{
         # {{{ distangle the formula
-        EHF <- prodlim::EventHistory.frame(formula,
+        EHF <- EventHistory.frame(formula,
                                            data,
                                            specials=c("pen","unpen"),
                                            stripSpecials=c("pen","unpen"),
                                            stripUnspecials="pen",
-                                           stripAlias=list("penalized"="pen","unpenalized"="unpen"),
+                                           # stripAlias=list("penalized"="pen","unpenalized"="unpen"),
                                            specialsDesign=TRUE)
         response <- EHF$event.history
         pen <- EHF$pen

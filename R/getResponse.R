@@ -10,6 +10,7 @@ getResponse <- function(formula,cause,data,vars){
         m <- stats::model.frame(formula=formula,data=data,na.action=na.fail)
         response <- stats::model.response(m)
         rlevs <- unique(response)
+        if (length(rlevs)==1) stop(paste0("There is no variation in the outcome. The only value is: ",rlevs))
         if (is.factor(response) || length(rlevs)==2){
             if (is.factor(response)) rlevs <- levels(response)
             if (length(rlevs)==2) {
