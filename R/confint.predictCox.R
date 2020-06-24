@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: maj 23 2018 (14:08) 
 ## Version: 
-## Last-Updated: Jan  6 2020 (08:59) 
-##           By: Thomas Alexander Gerds
-##     Update #: 263
+## Last-Updated: jun 24 2020 (09:05) 
+##           By: Brice Ozenne
+##     Update #: 267
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -89,7 +89,7 @@ confint.predictCox <- function(object,
     
     if(object$se[[1]] == FALSE && object$band[[1]] == FALSE){
         message("No confidence interval/band computed \n",
-                "Set argument \'se\' or argument \'band\' to TRUE when calling predictCox \n")
+                "Set argument \'se\' or argument \'band\' to TRUE when calling the predictCox function \n")
         return(object)
     }
 
@@ -114,18 +114,18 @@ confint.predictCox <- function(object,
         txt <- parm[parm %in% names(object) == FALSE]
         txt2 <- paste0("\"",paste0(txt, collapse = "\" \""),"\"")
         stop(txt2," has/have not been stored in the object \n",
-             "set argument \'parm\' to ",txt2," when calling predictCox \n")
+             "set argument \'parm\' to ",txt2," when calling the predictCox function \n")
     }
 
     if("cumhazard" %in% parm){
         object$cumhazard.transform <- match.arg(cumhazard.transform, c("none","log"))
         if(object$band[[1]] && is.null(object$cumhazard.se)){
             stop("Cannot compute confidence bands \n",
-                 "Set argument \'se\' to TRUE when calling predictCox \n")
+                 "Set argument \'se\' to TRUE when calling the predictCox function \n")
         }
         if(object$band[[1]] && is.null(object$cumhazard.iid)){
             stop("Cannot compute confidence bands \n",
-                 "Set argument \'iid\' to TRUE when calling predictCox \n")
+                 "Set argument \'iid\' to TRUE when calling the predictCox function \n")
         }
 
     }
@@ -134,11 +134,11 @@ confint.predictCox <- function(object,
         object$survival.transform <- match.arg(survival.transform, c("none","log","loglog","cloglog"))
         if(object$band[[1]] && is.null(object$survival.se)){
             stop("Cannot compute confidence bands \n",
-                 "Set argument \'se\' to TRUE when calling predictCox \n")
+                 "Set argument \'se\' to TRUE when calling the predictCox function \n")
         }
         if(object$band[[1]] && is.null(object$survival.iid)){
             stop("Cannot compute confidence bands \n",
-                 "Set argument \'iid\' to TRUE when calling predictCox \n")
+                 "Set argument \'iid\' to TRUE when calling the predictCox function \n")
         }
     }
 

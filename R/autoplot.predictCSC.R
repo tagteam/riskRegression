@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: feb 27 2017 (10:47) 
 ## Version: 
-## last-updated: Jan  6 2020 (08:59) 
-##           By: Thomas Alexander Gerds
-##     Update #: 84
+## last-updated: jun 24 2020 (09:05) 
+##           By: Brice Ozenne
+##     Update #: 90
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -35,7 +35,7 @@
 #' library(survival)
 #' library(rms)
 #' library(ggplot2)
-##' library(prodlim)
+#' library(prodlim)
 #' #### simulate data ####
 #' set.seed(10)
 #' d <- sampleData(1e2, outcome = "competing.risks")
@@ -71,20 +71,20 @@ autoplot.predictCSC <- function(object,
   
     if(group.by[[1]] == "covariates" && ("newdata" %in% names(object) == FALSE)){
         stop("argument \'group.by\' cannot be \"covariates\" when newdata is missing in the object \n",
-             "set argment \'keep.newdata\' to TRUE when calling predictCox \n")
+             "set argment \'keep.newdata\' to TRUE when calling the predictCox function \n")
     }
     if(group.by[[1]] == "strata" && ("strata" %in% names(object) == FALSE)){
         stop("argument \'group.by\' cannot be \"strata\" when strata is missing in the object \n",
-             "set argment \'keep.strata\' to TRUE when calling predictCox \n")
+             "set argment \'keep.strata\' to TRUE when calling the predictCox function \n")
     }
   
     if(ci[[1]] && (object$se[[1]]==FALSE || is.null(object$conf.level))){
         stop("argument \'ci\' cannot be TRUE when no standard error have been computed \n",
-             "set arguments \'se\' and \'confint\' to TRUE when calling predict.CauseSpecificCox \n")
+             "set arguments \'se\' and \'confint\' to TRUE when calling the predict.CauseSpecificCox function \n")
     }
     if(band[[1]] && (object$band[[1]]==FALSE  || is.null(object$conf.level))){
         stop("argument \'band\' cannot be TRUE when the quantiles for the confidence bands have not been computed \n",
-             "set arguments \'band\' and \'confint\' to TRUE when calling predict.CauseSpecificCox \n")
+             "set arguments \'band\' and \'confint\' to TRUE when calling the predict.CauseSpecificCox function \n")
     }
     
     dots <- list(...)
@@ -110,6 +110,7 @@ autoplot.predictCSC <- function(object,
                           outcome.lowerBand = if(band){object$absRisk.lowerBand}else{NULL},
                           outcome.upperBand = if(band){object$absRisk.upperBand}else{NULL},
                           newdata = newdata,
+                          status = NULL,
                           strata = object$strata,
                           times = object$times,
                           name.outcome = "absRisk",
@@ -124,6 +125,7 @@ autoplot.predictCSC <- function(object,
                            group.by = group.by,
                            conf.level = object$conf.level,
                            alpha = alpha,
+                           xlab = "time",
                            ylab = "absolute risk"
                            )
       

@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: maj 27 2017 (11:46) 
 ## Version: 
-## last-updated: maj 13 2020 (09:39) 
+## last-updated: jun 24 2020 (09:05) 
 ##           By: Brice Ozenne
-##     Update #: 707
+##     Update #: 680
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -55,8 +55,6 @@
 #' \code{store.iid="minimal"} recompute for each subject specific prediction the influence function for the baseline hazard.
 #' This avoid to store all the influence functions but may lead to repeated evaluation of the influence function.
 #' This solution is therefore more efficient in memory usage but may not be in terms of computation time.
-#' 
-# #' @inheritParams  predict.CauseSpecificCox
 #' 
 #' @author Brice Ozenne broz@@sund.ku.dk, Thomas A. Gerds tag@@biostat.ku.dk
 #' 

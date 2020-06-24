@@ -340,11 +340,14 @@ predictCox <- function(object,
         if (keep.strata[[1]]==FALSE || is.strata[[1]] == FALSE){
             Lambda0$strata <- NULL
         }
-
         add.list <- list(lastEventTime = etimes.max,
                          se = FALSE,
                          band = FALSE,
                          type = type)
+        if(keep.newdata){
+            add.list$status <- object.modelFrame[,sum(.SD$status),by=c("stop","strata")]
+            data.table::setnames(add.list$status, old = names(add.list$status), new = c("time","strata","nevent"))
+        }
         if(keep.infoVar){
             add.list$infoVar <- infoVar
         }
@@ -352,27 +355,32 @@ predictCox <- function(object,
         class(Lambda0) <- "predictCox"
         return(Lambda0)
     } else {
-        ## predictions in new dataset
-        out <- list()
-        ## *** reformat newdata (compute linear predictor and strata)
-        new.n <- NROW(newdata)
-        ## newdata <- copy(newdata)
-        setDT(newdata)
+    
+                                        # {{{ predictions in new dataset
+      out <- list()
+      ## *** reformat newdata (compute linear predictor and strata)
+      new.n <- NROW(newdata)
+      ## newdata <- copy(newdata)
+      setDT(newdata)
 
-        new.eXb <- exp(coxLP(object, data = newdata, center = FALSE))
+      new.eXb <- exp(coxLP(object, data = newdata, center = FALSE))
 
-        new.strata <- coxStrata(object, data = newdata, 
-                                sterms = infoVar$strata.sterms, 
-                                strata.vars = infoVar$stratavars, 
-                                strata.levels = infoVar$strata.levels)
+      new.strata <- coxStrata(object, data = newdata, 
+                              sterms = infoVar$strata.sterms, 
+                              strata.vars = infoVar$stratavars, 
+                              strata.levels = infoVar$strata.levels)
 
-        new.levelStrata <- levels(droplevels(new.strata))
+      new.levelStrata <- levels(droplevels(new.strata))
 
-        ## *** subject specific predictions
-        if (is.strata==FALSE){
-            if(diag){
-                iTimes <- prodlim::sindex(jump.times = Lambda0$times, eval.times = times)
-            }
+      ## *** subject specific hazard
+      if (is.strata==FALSE){
+          if(diag){
+              if(needOrder){
+                  iTimes <- prodlim::sindex(jump.times = Lambda0$times, eval.times = times.sorted[oorder.times])
+              }else{
+                  iTimes <- prodlim::sindex(jump.times = Lambda0$times, eval.times = times.sorted)
+              }                  
+          }
           
           if ("hazard" %in% type){
               if(diag){
@@ -451,12 +459,18 @@ predictCox <- function(object,
     
     if(se[[1]] || band[[1]] || iid[[1]] || average.iid[[1]]){
 
-        ##  design matrix
         if(nVar > 0){
-            new.LPdata <- prodlim::model.design(infoVar$lp.sterms,
-                                                data = newdata,
-                                                specialsFactor = TRUE,
-                                                dropIntercept = TRUE)$design
+            ## use prodlim to get the design matrix
+            new.LPdata <- try(prodlim::model.design(infoVar$lp.sterms,
+                                                    data = newdata,
+                                                    specialsFactor = TRUE,
+                                                    dropIntercept = TRUE)$design,
+                              silent = TRUE)
+            if(inherits(new.LPdata, "try-error")){
+                stop("Could not extract the design matrix corresponding to argument \'newdata\' using prodlim::model.design \n",
+                     "Error message:\n",new.LPdata,"\n")
+            }
+            
             if(NROW(new.LPdata)!=NROW(newdata)){
                 stop("NROW of the design matrix and newdata differ \n",
                      "maybe because newdata contains NA values \n")
@@ -673,5 +687,30 @@ predictCox <- function(object,
   
 }
 
+## * formulaWithKnots
+`formulaWithKnots` <-
+    function(object) UseMethod("formulaWithKnots")
 
+formulaWithKnots.cph <- function(object){
 
+    ff <- deparse(formula(object))
+    if(grepl("rcs(",ff,fixed=TRUE)){
+        test.nl <- sapply(object$Design$nonlinear, any)
+        var.nl <- names(test.nl)[test.nl]
+        parms.nl <- object$Design$parms[var.nl]
+
+        vec.terms <- strsplit(ff, "+", fixed = TRUE)[[1]]
+        index.rcs <- grep("rcs(", vec.terms, fixed = TRUE)
+        
+        for(iRcs in index.rcs){ ## iRcs <- 3
+            iTerm <- vec.terms[iRcs]
+            iVar <- var.nl[sapply(var.nl, grepl, x = iTerm, fixed = TRUE)]
+            vec.terms[iRcs] <- paste0("rcs(",iVar,", c(",paste0(parms.nl[[iVar]],collapse=","),"))")
+        }
+        newff <- as.formula(paste(vec.terms, collapse = "+"))
+    }else{
+        newff <- parse(text = ff)
+    }
+    
+    return(newff)
+}
