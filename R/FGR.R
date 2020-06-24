@@ -6,6 +6,8 @@
 #' The function \code{crr} allows to multiply some covariates by time before
 #' they enter the linear predictor. This can be achieved with the formula
 #' interface, however, the code becomes a little cumbersome. See the examples.
+#' Note that FGR does not allow for delayed entry (left-truncation).
+#' 
 #'
 #' @title Formula wrapper for crr from cmprsk 
 #' @param formula A formula whose left hand side is a \code{Hist} object -- see

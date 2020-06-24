@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun  6 2016 (09:02) 
 ## Version: 
-## last-updated: Jun 14 2020 (08:32) 
+## last-updated: Jun 14 2020 (08:56) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 320
+##     Update #: 321
 #----------------------------------------------------------------------
 ## 
 ### Commentary:
@@ -999,18 +999,43 @@ predictRisk.penfitS3 <- function(object,
     if (missing(newdata)) stop("Argument 'newdata' is missing")
     if (NROW(newdata) == 0) stop("No (non-missing) observations")
     rhs <- as.formula(delete.response(object$terms))
-    newdata$dummy.time=1
-    newdata$dummy.event=1
-    dummy.formula=stats::update.formula(rhs,"Hist(dummy.time,dummy.event)~.")
-    EHF <- prodlim::EventHistory.frame(dummy.formula,
-                                       data=newdata,
-                                       specials=c("pen","unpen"),
-                                       stripSpecials=c("pen","unpen"),
-                                       stripUnspecials="pen",
-                                       specialsDesign=TRUE)
-    pen <- EHF$pen
-    unpen <- EHF$unpen
-    args <- list(penfit,penalized=pen)
+    responseFormula <- stats::update(object$terms,~1)
+    responsevars <- all.vars(responseFormula)
+    if (length(responsevars)==1){
+        FRAME  <- Publish::specialFrame(formula,
+                                        data,
+                                        specials=c("pen","unpen"),
+                                        strip.specials=c("pen","unpen"),
+                                        strip.unspecials="pen",
+                                        strip.arguments=NULL,
+                                        ## strip.alias=list("pen"="penalized","unpen"="unpenalized"),
+                                        drop.intercept=TRUE,
+                                        specials.design=TRUE,
+                                        response=TRUE,
+                                        na.action=options()$na.action)
+        response <- FRAME$response[[1]]
+        pen <- FRAME$pen
+        unpen <- FRAME$unpen
+        if (is.null(unpen))
+            args <- list(penfit,penalized=pen,data=data,...)
+        else
+            args <- list(penfit,penalized=pen,unpenalized=unpen,data=data,...)
+        #modelframe <- stats::model.frame(formula=formula,data=data,na.action=na.fail)
+    }else{
+
+        newdata$dummy.time=1
+        newdata$dummy.event=1
+        dummy.formula=stats::update.formula(rhs,"Hist(dummy.time,dummy.event)~.")
+        EHF <- prodlim::EventHistory.frame(dummy.formula,
+                                           data=newdata,
+                                           specials=c("pen","unpen"),
+                                           stripSpecials=c("pen","unpen"),
+                                           stripUnspecials="pen",
+                                           specialsDesign=TRUE)
+        pen <- EHF$pen
+        unpen <- EHF$unpen
+        args <- list(penfit,penalized=pen)
+    }
     if (length(unpen)>0) args <- c(args,list(unpenalized=unpen))
     p <- do.call(penalized::predict,args)
     if (penfit@model=="cox"){

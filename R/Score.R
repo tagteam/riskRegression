@@ -1650,7 +1650,7 @@ Score.list <- function(object,
                 ## if it turns out that there are almost no bugs, then it may make sense to use the LeaveOneOutBoot clause
                 ## also for k-fold ...
 
-        }}
+            }}
         if (split.method$name=="BootCv"){
             ## | split.method$internal.name=="crossval"){
                                         # {{{ bootcv
@@ -1664,7 +1664,7 @@ Score.list <- function(object,
                 DT.b <- DT.B[b==j]
                 N.b <- length(unique(DT.b[["ID"]]))
                 if(!is.null(progress.bar)){
-                    setTxtProgressBar(pb, b)
+                    setTxtProgressBar(pb, j)
                 }
                 computePerformance(DT.b,
                                    N=N.b,
