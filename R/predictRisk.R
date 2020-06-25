@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun  6 2016 (09:02) 
 ## Version: 
-## last-updated: Jun 14 2020 (08:56) 
+## last-updated: Jun 25 2020 (15:33) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 322
+##     Update #: 324
 #----------------------------------------------------------------------
 ## 
 ### Commentary:
@@ -933,8 +933,8 @@ penalizedS3 <- function(formula,
         #modelframe <- stats::model.frame(formula=formula,data=data,na.action=na.fail)
     }else{
         # {{{ distangle the formula
-        EHF <- prodlim::EventHistory.frame(formula,
-                                           data,
+        EHF <- prodlim::EventHistory.frame(formula=formula,
+                                           data=data,
                                            specials=c("pen","unpen"),
                                            stripSpecials=c("pen","unpen"),
                                            stripUnspecials="pen",
@@ -1002,8 +1002,9 @@ predictRisk.penfitS3 <- function(object,
     responseFormula <- stats::update(object$terms,~1)
     responsevars <- all.vars(responseFormula)
     if (length(responsevars)==1){
-        FRAME  <- Publish::specialFrame(formula,
-                                        data,
+        dummy.formula=stats::update.formula(rhs,paste0(responsevars,"~."))
+        FRAME  <- Publish::specialFrame(formula=responseFormula,
+                                        data=newdata,
                                         specials=c("pen","unpen"),
                                         strip.specials=c("pen","unpen"),
                                         strip.unspecials="pen",
@@ -1017,16 +1018,16 @@ predictRisk.penfitS3 <- function(object,
         pen <- FRAME$pen
         unpen <- FRAME$unpen
         if (is.null(unpen))
-            args <- list(penfit,penalized=pen,data=data,...)
+            args <- list(penfit,penalized=pen,data=newdata,...)
         else
-            args <- list(penfit,penalized=pen,unpenalized=unpen,data=data,...)
+            args <- list(penfit,penalized=pen,unpenalized=unpen,data=newdata,...)
         #modelframe <- stats::model.frame(formula=formula,data=data,na.action=na.fail)
     }else{
 
         newdata$dummy.time=1
         newdata$dummy.event=1
         dummy.formula=stats::update.formula(rhs,"Hist(dummy.time,dummy.event)~.")
-        EHF <- prodlim::EventHistory.frame(dummy.formula,
+        EHF <- prodlim::EventHistory.frame(formula=dummy.formula,
                                            data=newdata,
                                            specials=c("pen","unpen"),
                                            stripSpecials=c("pen","unpen"),

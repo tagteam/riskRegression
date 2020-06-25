@@ -77,7 +77,7 @@ obtained with \code{coxph} (survival package) or \code{cph}
 \item{tau.max}{[numeric] latest time at which the i.i.d decomposition of the baseline hazard will be computed. Alternative to \code{tau.hazard}.}
 
 \item{store.iid}{[character] the method used to compute the influence function and the standard error.
-Can be \code{"full"} or \code{"minimal"}. See the details section.}
+Can be \code{"full"}, \code{"approx"} or \code{"minimal"}. See the details section.}
 
 \item{keep.times}{[logical] If \code{TRUE} add the evaluation times to the output.}
 
@@ -90,8 +90,7 @@ For Cox models, the iid slot is a list containing:
  \item{IFbeta}{Influence function for the regression coefficient.}
  \item{IFhazard}{Time differential of the influence function of the hazard.}
  \item{IFcumhazard}{Influence function of the cumulative hazard.}
- \item{zipIFhazard}{Elements used to compute the influence function at a given time.}
- \item{calcIFhazard}{Function computing IFhazard and IFcumhazard at a given time based on zipIFhazard.}
+ \item{calcIFhazard}{Elements used to compute the influence function at a given time.}
  \item{time}{Times at which the influence function has been evaluated.}
  \item{etime1.min}{Time of first event (i.e. jump) in each strata.}
  \item{etime.max}{Last observation time (i.e. jump or censoring) in each strata.}
@@ -111,6 +110,8 @@ If there is no event in a strata, the influence function for the baseline hazard
 
 \code{store.iid} equal to \code{"full"} exports the influence function for the coefficients
 and the baseline hazard at each event time.
+\code{store.iid} equal to \code{"approx"} does the same except that the terms that do not contributes
+to the variance are not ignored (i.e. set to 0)
 \code{store.iid} equal to \code{"minimal"} exports the influence function for the coefficients. For the
 baseline hazard it only computes the quantities necessary to compute the influence function in order to save memory.
 }
@@ -124,6 +125,7 @@ setkey(d, eventtime)
 
 m.cox <- coxph(Surv(eventtime, event) ~ X1+X6, data = d, y = TRUE, x = TRUE)
 system.time(IF.cox <- iidCox(m.cox))
+system.time(IF.cox_approx <- iidCox(m.cox, store.iid = "approx"))
 
 
 IF.cox.all <- iidCox(m.cox, tau.hazard = sort(unique(c(7,d$eventtime))))

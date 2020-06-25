@@ -2,7 +2,6 @@
 % Please edit documentation in R/calcSeCox.R
 \name{calcSeCox}
 \alias{calcSeCox}
-\alias{calcAiidCox}
 \title{Computation of standard errors for predictions}
 \usage{
 calcSeCox(
@@ -23,28 +22,8 @@ calcSeCox(
   new.strata,
   new.survival,
   nVar,
-  export
-)
-
-calcAiidCox(
-  object,
-  times,
-  nTimes,
-  type,
-  diag,
-  Lambda0,
-  object.n,
-  object.time,
-  object.eXb,
-  object.strata,
-  nStrata,
-  new.n,
-  new.eXb,
-  new.LPdata,
-  new.strata,
-  new.survival,
-  nVar,
-  factor
+  export,
+  store.iid
 )
 }
 \arguments{
@@ -89,6 +68,9 @@ otherwise it is only computed for the i-th observation at the i-th time.}
 
 \item{export}{can be "iid" to return the value of the influence function for each observation.
 "se" to return the standard error for a given timepoint.}
+
+\item{store.iid}{Implementation used to estimate the influence function and the standard error.
+Can be \code{"full"} or \code{"minimal"}. See the details section.}
 }
 \value{
 A list optionally containing the standard error for the survival, cumulative hazard and hazard.

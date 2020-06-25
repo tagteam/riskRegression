@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: maj 18 2017 (09:23) 
 ## Version: 
-## last-updated: maj 12 2020 (22:28) 
-##           By: Brice Ozenne
-##     Update #: 125
+## last-updated: Jun 25 2020 (14:55) 
+##           By: Thomas Alexander Gerds
+##     Update #: 116
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -93,21 +93,6 @@ test_that("[iidCox] iid hazard = 0 at non event times and NA after last observat
                           iid.test$time[[1]][iid.test$time[[1]]<=timeLastObs])
     expect_true(all(iid.test$IFcumhazard[[1]][,as.character(vec.time)]-iid.test$IFcumhazard[[1]][,as.character(timeLastEvent)]==0))
 })
-
-test_that("[iidCox] store.iid minimal vs. full (no strata)",{
-    iid.minimal <-  iidCox(coxph.fit, store.iid = "minimal", return.object = FALSE)
-    ls.iid_hazard <- lapply(iid.coxph$time[[1]], function(iT){iid.minimal$calcIFhazard(iid.minimal$zipIFhazard, IFbeta = iid.minimal$IFbeta, etime.max = iid.minimal$etime.max, time = iT, type = "hazard")})
-    expect_equal(unname(iid.coxph$IFhazard[[1]]), unname(do.call(cbind,ls.iid_hazard)), tol = 1e-6)
-    ls.iid_cumhazard <- lapply(iid.coxph$time[[1]], function(iT){iid.minimal$calcIFhazard(iid.minimal$zipIFhazard, IFbeta = iid.minimal$IFbeta, etime.max = iid.minimal$etime.max,  time = iT, type = "cumhazard")})
-    expect_equal(unname(iid.coxph$IFcumhazard[[1]]), unname(do.call(cbind,ls.iid_cumhazard)), tol = 1e-6)
-
-    iid.test <- iidCox(coxph.fit, tau.hazard = c(0.1,1,5,8,12,25), return.object = FALSE)
-    ls.iid_hazard <- lapply(c(0.1,1,5,8,12,25), function(iT){iid.minimal$calcIFhazard(iid.minimal$zipIFhazard, IFbeta = iid.minimal$IFbeta, etime.max = iid.minimal$etime.max, time = iT, type = "hazard")})
-    expect_equal(unname(iid.test$IFhazard[[1]]), unname(do.call(cbind,ls.iid_hazard)), tol = 1e-6)
-    ls.iid_cumhazard <- lapply(c(0.1,1,5,8,12,25), function(iT){iid.minimal$calcIFhazard(iid.minimal$zipIFhazard, IFbeta = iid.minimal$IFbeta, etime.max = iid.minimal$etime.max, time = iT, type = "cumhazard")})
-    expect_equal(unname(iid.test$IFcumhazard[[1]]), unname(do.call(cbind,ls.iid_cumhazard)), tol = 1e-6)
-})
-
 ## ** selectJump
 ## test_that("[iidCox] selectJump",{
 ##     seqTest <- c(0,dt$time[1:10],dt$time[1:10]-1e-12,dt$time[1:10]+1e-5,1e5,1)
@@ -155,7 +140,7 @@ test_that("[iidCox] empty strata", {
 
 ## * Compare to timereg
 ## ** Data
-data(Melanoma, package = "riskRegression")
+data(Melanoma)
 
 set.seed(10)
 dt <- sampleData(5e1, outcome = "survival")[,.(time,event,X1,X2,X6)]
@@ -199,6 +184,11 @@ eApprox.timereg <- cox.aalen(Surv(time, event) ~ prop(X1)+prop(X6),
 ## compute the IF of the baseline hazard and then for the survival
 IF.coxph <- iidCox(e.coxph, keep.times = FALSE, store.iid = "full", return.object = FALSE)
 IF.coxph_sort <- iidCox(e.coxph_sort, keep.times = FALSE, store.iid = "full", return.object = FALSE)
+## store "sufficient statistics" for the IF of the baseline hazard
+## and then compute the IF for the survival
+IFminimal.coxph <- iidCox(e.coxph, keep.times = FALSE, store.iid = "minimal", return.object = FALSE)
+## same as before but using an approximation
+IFapprox.coxph <- iidCox(e.coxph, keep.times = FALSE, store.iid = "approx", return.object = FALSE)
 
 IFlambda_GS <- t(as.data.table(e.timereg$B.iid))
 IFlambda_GSapprox <- t(as.data.table(eApprox.timereg$B.iid))
@@ -207,11 +197,15 @@ IFlambda_GSapprox <- t(as.data.table(eApprox.timereg$B.iid))
 test_that("[iidCox] beta - no strata, no interaction, continuous",{
     expect_equal(unname(IF.coxph$IFbeta),e.timereg$gamma.iid)
     expect_equal(unname(IF.coxph$IFbeta[order(dt$time),]),unname(IF.coxph_sort$IFbeta))
+    expect_equal(unname(IFminimal.coxph$IFbeta),e.timereg$gamma.iid)
+    expect_equal(unname(IFapprox.coxph$IFbeta),eApprox.timereg$gamma.iid)
 })
 
 test_that("[iidCox] lambda - no strata, no interaction, continuous",{
     expect_equal(as.double(IF.coxph$IFcumhazard[[1]]), as.double(IFlambda_GS[,-1]))
     expect_equal(IF.coxph$IFcumhazard[[1]][order(dt$time),], IF.coxph_sort$IFcumhazard[[1]])
+    expect_equal(IFminimal.coxph$IFcumhazard[[1]], NULL)
+    expect_equal(as.double(IFapprox.coxph$IFcumhazard[[1]]), as.double(IFlambda_GSapprox[,-1]))
 })
   
 
@@ -247,17 +241,6 @@ test_that("[iidCox] beta - no covariate",{
     e.coxph <- coxph(Surv(time, event) ~ 1, data = dt, y = TRUE, x = TRUE)
     IF.coxph <- iidCox(e.coxph, keep.times = FALSE, return.object = FALSE)
     expect_true(all(is.na(IF.coxph$IFbeta)))
-
-    IF.coxph.minimal <- iidCox(e.coxph, keep.times = FALSE, return.object = FALSE, store.iid = "minimal")
-    ls.IF_hazard <- lapply(IF.coxph.minimal$time[[1]], function(iT){
-        IF.coxph.minimal$calcIFhazard(IF.coxph.minimal$zipIFhazard, IFbeta = IF.coxph.minimal$IFbeta, etime.max = IF.coxph.minimal$etime.max, time = iT, type = "hazard")
-    })
-    expect_equal(unname(IF.coxph$IFhazard[[1]]), unname(do.call(cbind,ls.IF_hazard)), tol = 1e-6)
-    ls.IF_cumhazard <- lapply(IF.coxph.minimal$time[[1]], function(iT){
-        IF.coxph.minimal$calcIFhazard(IF.coxph.minimal$zipIFhazard, IFbeta = IF.coxph.minimal$IFbeta, etime.max = IF.coxph.minimal$etime.max, time = iT, type = "cumhazard")
-    })
-    expect_equal(unname(IF.coxph$IFcumhazard[[1]]),
-                 unname(do.call(cbind,ls.IF_cumhazard)), tol = 1e-6)
 })
 
 ## ** no strata, no interaction, with a categorical variable
@@ -345,25 +328,6 @@ test_that("[iidCox] lambda - strata",{
     
   })
 
-test_that("[iidCox] store.iid minimal vs. full",{
-    IF.minimal <- iidCox(e.coxph, return.object = FALSE, store.iid = "minimal")
-
-    ## over strata
-    for(iStrata in 1:3){
-        ls.IF_hazard <- lapply(IF.coxph$time[[iStrata]], function(iT){
-            IF.minimal$calcIFhazard(IF.minimal$zipIFhazard, IFbeta = IF.minimal$IFbeta, etime.max = IF.minimal$etime.max, time = iT, type = "hazard")
-        })
-        ls.IF_cumhazard <- lapply(IF.coxph$time[[iStrata]], function(iT){
-            IF.minimal$calcIFhazard(IF.minimal$zipIFhazard, IFbeta = IF.minimal$IFbeta, etime.max = IF.minimal$etime.max, time = iT, type = "cumhazard")
-        })
-        expect_equal(unname(IF.coxph$IFhazard[[iStrata]]),
-                     unname(do.call(cbind,lapply(ls.IF_hazard, function(iH){iH[,iStrata,drop=FALSE]}))),
-                     tol = 1e-6)
-        expect_equal(unname(IF.coxph$IFcumhazard[[iStrata]]),
-                     unname(do.call(cbind,lapply(ls.IF_cumhazard, function(iH){iH[,iStrata,drop=FALSE]}))),
-                     tol = 1e-6)
-    }
-})
 
 
 ## ** Melanoma data
