@@ -9,6 +9,7 @@ ate(
   treatment,
   censor = NULL,
   data,
+  data.index = NULL,
   formula,
   estimator = NULL,
   strata = NULL,

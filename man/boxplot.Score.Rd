@@ -18,7 +18,7 @@
   outcome.label,
   outcome.label.offset = 0,
   event.labels,
-  refline = (type == "diff"),
+  refline = (type != "risk"),
   add = FALSE,
   ...
 )

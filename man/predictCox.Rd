@@ -19,8 +19,7 @@ predictCox(
   iid = FALSE,
   confint = (se + band) > 0,
   diag = FALSE,
-  average.iid = FALSE,
-  store.iid = "full"
+  average.iid = FALSE
 )
 }
 \arguments{
@@ -78,9 +77,6 @@ They are computed applying the \code{confint} function to the output.}
 otherwise it is only computed for the i-th observation at the i-th time.}
 
 \item{average.iid}{[logical] If \code{TRUE} add the average of the influence function over \code{newdata} to the output.}
-
-\item{store.iid}{[character] Implementation used to estimate the influence function and the standard error.
-Can be \code{"full"} or \code{"minimal"}.}
 }
 \description{
 Fast routine to get baseline hazards and subject specific hazards
@@ -93,9 +89,6 @@ See (Ozenne et al., 2017) section "Handling of tied event times".
 Otherwise the function computes survival probabilities with confidence intervals/bands.
 See (Ozenne et al., 2017) section "Confidence intervals and confidence bands for survival probabilities".
 The survival is computed using the exponential approximation (equation 3).
-
-A detailed explanation about the meaning of the argument \code{store.iid} can be found
-in (Ozenne et al., 2017) Appendix B "Saving the influence functions".
 
 The function is not compatible with time varying predictor variables.
 

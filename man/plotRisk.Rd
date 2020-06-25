@@ -13,7 +13,7 @@ plotRisk(
   xlab,
   ylab,
   col,
-  pch = 3,
+  pch,
   cex = 1,
   preclipse = 0,
   preclipse.shade = FALSE,
