@@ -5,7 +5,7 @@
 ## Version: 
 ## last-updated: Jan  6 2020 (09:00) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 155
+##     Update #: 156
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -89,7 +89,7 @@ predictCoxPL <- function(object,
         if(is.data.table(newdata)){
             newdata <- copy(newdata)
         }else{
-            setDT(newdata)
+            setDT(copy(newdata))
         }
     }else if (missing(times)) {
         times <- numeric(0)

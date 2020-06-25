@@ -5,7 +5,7 @@
 ## Version: 
 ## last-updated: Jun 14 2020 (08:56) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 321
+##     Update #: 322
 #----------------------------------------------------------------------
 ## 
 ### Commentary:
@@ -933,7 +933,7 @@ penalizedS3 <- function(formula,
         #modelframe <- stats::model.frame(formula=formula,data=data,na.action=na.fail)
     }else{
         # {{{ distangle the formula
-        EHF <- EventHistory.frame(formula,
+        EHF <- prodlim::EventHistory.frame(formula,
                                            data,
                                            specials=c("pen","unpen"),
                                            stripSpecials=c("pen","unpen"),

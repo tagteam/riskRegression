@@ -4,8 +4,8 @@
 ## created: Oct 23 2016 (08:53) 
 ## Version: 
 ## last-updated: maj  1 2020 (18:09) 
-##           By: Brice Ozenne
-##     Update #: 1685
+##           By: Thomas Alexander Gerds
+##     Update #: 1687
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -276,7 +276,7 @@ ate <- function(event,
     dots <- list(...)
 
     ## ** initialize arguments
-    data.table::setDT(data)
+    data.table::setDT(copy(data))
 
     init <- ate_initArgs(object.event = event,
                          object.treatment = treatment,

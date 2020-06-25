@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Nov  4 2019 (09:07) 
 ## Version: 
-## Last-Updated: Apr 12 2020 (07:59) 
+## Last-Updated: Jun 25 2020 (13:42) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 17
+##     Update #: 20
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -38,7 +38,7 @@ print.IPA <- function(x,digits=2,...){
     print(X,...)
     message("\nNOTE: Values are multiplied by 100 and given in %.")
     message("NOTE: The higher IPA the better.")
-    message("NOTE: IPA.drop = IPA(Full model) - IPA.")
+    message("NOTE: IPA.drop = IPA(Full model) - IPA. The higher the drop\nthe more important is the variable for the full model.")
 }
 
 

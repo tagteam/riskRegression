@@ -378,7 +378,7 @@ predictCox <- function(object,
       ## *** reformat newdata (compute linear predictor and strata)
       new.n <- NROW(newdata)
       ## newdata <- copy(newdata)
-      setDT(newdata)
+      setDT(copy(newdata))
 
       new.eXb <- exp(coxLP(object, data = newdata, center = FALSE))
 

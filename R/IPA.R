@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Aug  9 2017 (10:36) 
 ## Version: 
-## Last-Updated: Nov  4 2019 (12:09) 
+## Last-Updated: Jun 25 2020 (06:58) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 160
+##     Update #: 166
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -129,10 +129,10 @@ IPA.CauseSpecificCox <- function(object,formula,newdata,times,cause,...){
     models <- object$models
     Terms <- lapply(models,stats::terms)
     ## tl <- attr(Terms, "term.labels")
-    scope.list <- lapply(models,stats::drop.scope)
+    scope.list <- lapply(models,function(x){stats::drop.scope(x)})
     scope <- unique(unlist(scope.list,use.names=0))
     ns <- length(scope)
-    n0 <- lapply(models,stats::nobs, use.fallback = TRUE)
+    n0 <- lapply(models,function(x){stats::nobs(x, use.fallback = TRUE)})
     leaveOneOut <- lapply(scope,function(var){
         varfit <- object
         varfit$models <- lapply(1:length(models),function(m){
@@ -142,7 +142,7 @@ IPA.CauseSpecificCox <- function(object,formula,newdata,times,cause,...){
             fit.m <- eval(fit.m, envir = env)
             nnew <- stats::nobs(models[[m]], use.fallback = TRUE)
             if (all(is.finite(c(n0[[m]], nnew))) && nnew[[1]] != n0[[m]])
-                stop("number of rows in use has changed: remove missing values?")
+                stop("Number of rows has changed. Perhaps you need to remove missing values from the data set first?")
             fit.m
         })
         varfit

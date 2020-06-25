@@ -129,7 +129,7 @@ predict.CauseSpecificCox <- function(object,
     if(missing(newdata)){
         newdata <- eval(object$call$data)
     }else{
-        setDT(newdata)
+        setDT(copy(newdata))
     }
 
     ## ** event-free survival instead of absolute risk
