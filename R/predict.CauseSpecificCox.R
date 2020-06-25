@@ -325,43 +325,77 @@ predict.CauseSpecificCox <- function(object,
 
         Utimes <- sort(unique(times))
 
-        ## Computation of the influence function and/or the standard error
-        export <- c("iid"[(iid+band)>0],"se"[(se+band)>0],"average.iid"[average.iid==TRUE])
-        if(!is.null(attr(average.iid,"factor"))){
-            if(diag){
-                attr(export,"factor") <- attr(average.iid,"factor")
-            }else{
-                ## re-order columns according to times
-                attr(export,"factor") <- lapply(attr(average.iid,"factor"), function(iF){
-                    if(NCOL(iF)>1){
-                        return(iF[,otimes,drop=FALSE])
-                    }else{
-                        return(iF)
-                    }
-                })
+        ## influence function for the parameters of the Cox model
+        if(is.iidCox(object)){
+            for(iModel in 1:nCause){ # iModel <- 1
+                if(!identical(object$models[[iModel]]$iid$time,eventTimes)){
+                    object$models[[iModel]]$iid <- selectJump(object$models[[iModel]]$iid, times = eventTimes,
+                                                              type = c("hazard","cumhazard"))
+                    store.iid <- unique(c(store.iid,object$models[[iModel]]$iid$store.iid))
+                }
             }
+            if(length(store.iid)!=1){
+                stop("When pre-computed, the iid for the Cox models must be done using the same \'store.iid\' argument \n")
+            }
+        }else{
+            object <- iidCox(object, tau.hazard = eventTimes,
+                             store.iid = store.iid, return.object = TRUE)
         }
-        
-        out.seCSC <- calcSeCSC(object,
-                               cif = outCpp$cif,
-                               hazard = ls.hazard,
-                               cumhazard = ls.cumhazard,
-                               survival = outCpp$survival,
-                               object.time = eventTimes,
-                               object.maxtime = vec.etimes.max, 
-                               eXb = M.eXb,
-                               new.LPdata = new.LPdata,
-                               new.strata = M.strata.num,                               
-                               times = if(diag){times}else{Utimes},
-                               ls.infoVar = ls.infoVar,
-                               new.n = new.n,
-                               cause = index.cause,
-                               nCause = nCause,
-                               nVar = nVar,
-                               surv.type = surv.type,
-                               export = export,
-                               store.iid = store.iid,
-                               diag = diag)
+
+        ## Computations
+        if(se || band || iid){
+            out.seCSC <- calcSeCSC(object,
+                                   cif = outCpp$cif,
+                                   hazard = ls.hazard,
+                                   cumhazard = ls.cumhazard,
+                                   survival = outCpp$survival,
+                                   object.time = eventTimes,
+                                   object.maxtime = vec.etimes.max, 
+                                   eXb = M.eXb,
+                                   new.LPdata = new.LPdata,
+                                   new.strata = M.strata.num,                               
+                                   times = if(diag){times}else{Utimes},
+                                   ls.infoVar = ls.infoVar,
+                                   new.n = new.n,
+                                   cause = index.cause,
+                                   nCause = nCause,
+                                   nVar = nVar,
+                                   surv.type = surv.type,
+                                   export = c("iid"[(iid+band)>0],"se"[(se+band)>0],"average.iid"[average.iid==TRUE]),
+                                   store.iid = store.iid,
+                                   diag = diag)
+        }else if(average.iid){ ## only average.iid in export
+            if(!is.null(attr(average.iid,"factor"))){
+                if(diag){
+                    factor <- attr(average.iid,"factor")
+                }else{
+                    ## re-order columns according to times
+                    factor <- lapply(attr(average.iid,"factor"), function(iF){
+                        if(NCOL(iF)>1){return(iF[,otimes,drop=FALSE])}else{return(iF)}
+                    })
+                }
+            }
+            out.seCSC <- calcAiidCSC(object,
+                                     cif = outCpp$cif,
+                                     hazard = ls.hazard,
+                                     cumhazard = ls.cumhazard,
+                                     survival = outCpp$survival,
+                                     object.time = eventTimes,
+                                     object.maxtime = vec.etimes.max, 
+                                     eXb = M.eXb,
+                                     new.LPdata = new.LPdata,
+                                     new.strata = M.strata.num,                               
+                                     times = if(diag){times}else{Utimes},
+                                     ls.infoVar = ls.infoVar,
+                                     new.n = new.n,
+                                     cause = index.cause,
+                                     nCause = nCause,
+                                     nVar = nVar,
+                                     surv.type = surv.type,
+                                     factor = factor,
+                                     store.iid = store.iid,
+                                     diag = diag)
+        }
 
         ootimes2 <- prodlim::sindex(jump.times = Utimes, eval.times = times)
         needOrder2 <- !identical(1:length(ootimes2),ootimes2)

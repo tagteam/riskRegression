@@ -62,7 +62,10 @@ m.cox <- coxph(Surv(time,event)~ X1 + X2 + X3,
 
 ## display baseline hazard
 e.basehaz <- predictCox(m.cox)
+autoplot(e.basehaz, type = "cumhazard")
 
+## display baseline hazard with type of event 
+e.basehaz <- predictCox(m.cox, keep.newdata = TRUE)
 autoplot(e.basehaz, type = "cumhazard")
 
 ## display predicted survival
@@ -79,16 +82,17 @@ autoplot(pred.cox, ci = TRUE, band = TRUE)
 autoplot(pred.cox, ci = TRUE, band = TRUE, alpha = 0.1)
 
 #### Stratified Cox model ####
-m.cox.strata <- coxph(Surv(time,event)~ strata(X1) + strata(X2) + X3 + X6,
+m.cox.strata <- coxph(Surv(time,event)~ strata(X1) + strata(X2) + X3 + X4,
                       data = d, x = TRUE, y = TRUE)
 
+## baseline hazard
+pred.baseline <- predictCox(m.cox.strata, keep.newdata = TRUE, type = "survival")
+res <- autoplot(pred.baseline)
+res$plot + facet_wrap(~strata, labeller = label_both)
+
+## predictions
 pred.cox.strata <- predictCox(m.cox.strata, newdata = d[1:5,,drop=FALSE],
                               time = 1:5, keep.newdata = TRUE)
 
-## display
-res <- autoplot(pred.cox.strata, type = "survival", group.by = "strata")
-
-## customize display
-res$plot + facet_wrap(~strata, labeller = label_both)
-res$plot \%+\% res$data[strata == "0, 1"]
+autoplot(pred.cox.strata, type = "survival", group.by = "strata")
 }

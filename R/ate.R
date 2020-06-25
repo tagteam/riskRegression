@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Oct 23 2016 (08:53) 
 ## Version: 
-## last-updated: maj  1 2020 (18:09) 
+## last-updated: Jun 25 2020 (13:43) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 1687
+##     Update #: 1688
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -1277,7 +1277,28 @@ ate_checkArgs <- function(object.event,
 }
 
 
-            
+## * coef.ate
+coef.ate <- function(object, ...){
+    name.coef <- interaction(object$meanRisk[["treatment"]],object$meanRisk[["time"]])
+    value.coef <- object$meanRisk[[paste0("meanRisk.",object$estimator[1])]]
+    return(setNames(value.coef, name.coef))
+}
+
+## * vcov.ate
+vcov.ate <- function(object, ...){
+    if(is.null(object$iid)){
+        stop("Missing iid decomposition in object \n",
+             "Consider setting the argument \'iid\' to TRUE when calling the ate function \n")
+    }
+    name.coef <- interaction(object$meanRisk[["treatment"]],object$meanRisk[["time"]])
+    iid <- NULL
+    for(iT in names(object$iid[[object$estimator[1]]])){ ## iT <- "T0"
+        tempo <- object$iid[[object$estimator[1]]][[iT]]
+        colnames(tempo) <- interaction(iT,object$time)
+        iid <- cbind(iid,tempo)
+    }
+    return(crossprod(iid[,names(coef(object)),drop=FALSE]))
+}
 
 #----------------------------------------------------------------------
 ### ate.R ends here

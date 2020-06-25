@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: feb 17 2017 (10:06) 
 ## Version: 
-## last-updated: Jan  6 2020 (08:59) 
-##           By: Thomas Alexander Gerds
-##     Update #: 488
+## last-updated: jun 24 2020 (09:05) 
+##           By: Brice Ozenne
+##     Update #: 603
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -52,7 +52,10 @@
 #'
 #' ## display baseline hazard
 #' e.basehaz <- predictCox(m.cox)
+#' autoplot(e.basehaz, type = "cumhazard")
 #'
+#' ## display baseline hazard with type of event 
+#' e.basehaz <- predictCox(m.cox, keep.newdata = TRUE)
 #' autoplot(e.basehaz, type = "cumhazard")
 #'
 #' ## display predicted survival
@@ -69,18 +72,19 @@
 #' autoplot(pred.cox, ci = TRUE, band = TRUE, alpha = 0.1)
 #'
 #' #### Stratified Cox model ####
-#' m.cox.strata <- coxph(Surv(time,event)~ strata(X1) + strata(X2) + X3 + X6,
+#' m.cox.strata <- coxph(Surv(time,event)~ strata(X1) + strata(X2) + X3 + X4,
 #'                       data = d, x = TRUE, y = TRUE)
+#'
+#' ## baseline hazard
+#' pred.baseline <- predictCox(m.cox.strata, keep.newdata = TRUE, type = "survival")
+#' res <- autoplot(pred.baseline)
+#' res$plot + facet_wrap(~strata, labeller = label_both)
 #' 
+#' ## predictions
 #' pred.cox.strata <- predictCox(m.cox.strata, newdata = d[1:5,,drop=FALSE],
 #'                               time = 1:5, keep.newdata = TRUE)
 #'
-#' ## display
-#' res <- autoplot(pred.cox.strata, type = "survival", group.by = "strata")
-#'
-#' ## customize display
-#' res$plot + facet_wrap(~strata, labeller = label_both)
-#' res$plot %+% res$data[strata == "0, 1"]
+#' autoplot(pred.cox.strata, type = "survival", group.by = "strata")
 
 ## * autoplot.predictCox (code)
 #' @rdname autoplot.predictCox
@@ -116,24 +120,24 @@ autoplot.predictCox <- function(object,
     }
 
     group.by <- match.arg(group.by, c("row","covariates","strata"))
- 
-  
-    if(group.by[[1]] == "covariates" && (("newdata" %in% names(object)) == FALSE)){
+
+    if((group.by[[1]] == "covariates") && ("newdata" %in% names(object)) == FALSE){
         stop("argument \'group.by\' cannot be \"covariates\" when newdata is missing in the object \n",
-             "set argment \'keep.newdata\' to TRUE when calling predictCox \n")
+             "set argment \'keep.newdata\' to TRUE when calling the predictCox function \n")
     }
+
     if(group.by[[1]] == "strata" && ("strata" %in% names(object) == FALSE)){
         stop("argument \'group.by\' cannot be \"strata\" when strata is missing in the object \n",
-             "set argment \'keep.strata\' to TRUE when calling predictCox \n")
+             "set argment \'keep.strata\' to TRUE when calling the predictCox function \n")
     }
   
     if(ci[[1]]==TRUE && (object$se[[1]]==FALSE || is.null(object$conf.level))){
         stop("argument \'ci\' cannot be TRUE when no standard error have been computed \n",
-             "set arguments \'se\' and \'confint\' to TRUE when calling predictCox \n")
+             "set arguments \'se\' and \'confint\' to TRUE when calling the predictCox function \n")
     }
     if(band[[1]] && (object$band[[1]]==FALSE  || is.null(object$conf.level))){
         stop("argument \'band\' cannot be TRUE when the quantiles for the confidence bands have not been computed \n",
-             "set arguments \'band\' and \'confint\' to TRUE when calling predictCox \n")
+             "set arguments \'band\' and \'confint\' to TRUE when calling the predictCox function \n")
     }
 
     dots <- list(...)
@@ -177,6 +181,7 @@ autoplot.predictCox <- function(object,
             group.by <- "strata"
         }
         newdata <- NULL
+        status <- object$status
         
     }else{
         newdata <- data.table::copy(object$newdata) ## can be NULL
@@ -186,6 +191,7 @@ autoplot.predictCox <- function(object,
                 newdata[, (names(test)[test]):=NULL]
             }        
         }
+        status <- NULL
     }
 
     dataL <- predict2melt(outcome = object[[type]], ci = ci, band = band,
@@ -194,6 +200,7 @@ autoplot.predictCox <- function(object,
                           outcome.lowerBand = if(band){object[[paste0(type,".lowerBand")]]}else{NULL},
                           outcome.upperBand = if(band){object[[paste0(type,".upperBand")]]}else{NULL},
                           newdata = newdata,
+                          status = status,
                           strata = object$strata,
                           times = object$times,
                           name.outcome = type,
@@ -202,6 +209,7 @@ autoplot.predictCox <- function(object,
                           )
 
     ## display
+
     gg.res <- predict2plot(dataL = dataL,
                            name.outcome = type,
                            ci = ci,
@@ -209,6 +217,7 @@ autoplot.predictCox <- function(object,
                            group.by = group.by,
                            conf.level = object$conf.level,
                            alpha = alpha,
+                           xlab = if(is.null(object$infoVar)){"time"}else{object$infoVar$time},
                            ylab = ylab
                            )
   
@@ -225,10 +234,10 @@ autoplot.predictCox <- function(object,
 predict2melt <- function(outcome, name.outcome,
                          ci, outcome.lower, outcome.upper,
                          band, outcome.lowerBand, outcome.upperBand,
-                         newdata, strata, times, group.by, digits){
+                         newdata, status, strata, times, group.by, digits){
 
     patterns <- NULL ## [:CRANtest:] data.table
-    
+
     n.time <- NCOL(outcome)
     if(!is.null(time)){
         time.names <- times 
@@ -240,12 +249,30 @@ predict2melt <- function(outcome, name.outcome,
 
     ## add initial values ####
     first.dt <- switch(name.outcome,
-                       "cumhazard" = data.table(time = 0, cumhazard = 0),
-                       "survival" = data.table(time = 0, survival = 1),
-                       "absRisk" = data.table(time = 0, absRisk = 0))
+                       "cumhazard" = data.table::data.table(time = 0, cumhazard = 0, origin = TRUE),
+                       "survival" = data.table::data.table(time = 0, survival = 1, origin = TRUE),
+                       "absRisk" = data.table::data.table(time = 0, absRisk = 0, origin = TRUE))
     
     ## merge outcome with CI and band ####
     pattern <- paste0(name.outcome,"_")
+    if(!is.null(status)){
+        Ustrata <- unique(status$strata)
+
+        M.status <- matrix(as.numeric(NA), nrow = NROW(outcome), ncol = NCOL(outcome),
+                           dimnames = list(NULL, paste0("status_",time.names)))
+        status[,c("index") := match(.SD$time, times)]
+
+        for(iS in 1:length(Ustrata)){ ## iS <- 1
+            iStatus <- status[status$strata == Ustrata[iS]]
+            M.status[iS, iStatus$index] <- (iStatus$nevent>0)
+        }
+        ## M.status[1,times[]] <- status[strata==Ustrata[1]]
+        ## times
+        outcome <- cbind(outcome, M.status)
+        pattern <- c(pattern,"status")
+        first.dt[, status := as.character(NA)]
+    }
+
     if(ci){
         pattern <- c(pattern,"lowerCI_","upperCI_")
     
@@ -287,9 +314,10 @@ predict2melt <- function(outcome, name.outcome,
     dataL <- melt(outcome, id.vars = union("row",group.by),
                   measure = patterns(pattern),
                   variable.name = "time", value.name = gsub("_","",pattern))
+
     dataL[, time := as.numeric(as.character(factor(time, labels = time.names)))]
+    dataL[, c("origin") := FALSE]
     dataL <- dataL[!is.na(dataL[[name.outcome]])]
-    
     dataL <- dataL[, rbind(first.dt,.SD), by = c(union("row",group.by))]
     return(dataL)    
 }
@@ -299,11 +327,10 @@ predict2melt <- function(outcome, name.outcome,
 ## * predict2plot
 predict2plot <- function(dataL, name.outcome,
                          ci, band, group.by,                         
-                         conf.level, alpha, ylab){
-
-    # for CRAN tests
+                         conf.level, alpha, xlab, ylab){
+                                        # for CRAN tests
     original <- lowerCI <- upperCI <- lowerBand <- upperBand <- timeLeft <- NULL
-    #### duplicate observations to obtain step curves ####
+    ## duplicate observations to obtain step curves ####
     keep.cols <- unique(c("time",name.outcome,"row",group.by,"original"))
     if(ci){
         keep.cols <- c(keep.cols,"lowerCI","upperCI")
@@ -328,10 +355,15 @@ predict2plot <- function(dataL, name.outcome,
     labelCI <- paste0(conf.level*100,"% confidence \n interval")
     labelBand <- paste0(conf.level*100,"% confidence \n band")
 
-    gg.base <- ggplot(data = dataL, mapping = aes_string(group = "row", color = group.by))
-    gg.base <- gg.base + ggplot2::geom_segment(aes_string(x = "timeLeft", y = name.outcome, xend = "time", yend = name.outcome), size = 1.5)
-    gg.base <- gg.base + ggplot2::geom_point(aes_string(x = "timeLeft", y = name.outcome), size = 2)
-
+    gg.base <- ggplot(data = dataL, mapping = aes_string(group = "row"))
+    gg.base <- gg.base + ggplot2::geom_segment(mapping = aes_string(x = "timeLeft", y = name.outcome, xend = "time", yend = name.outcome, color = group.by), size = 1.5)
+    if("status" %in% names(dataL)){
+        gg.base <- gg.base + ggplot2::geom_point(data = dataL[dataL$origin==FALSE], mapping = aes_string(x = "timeLeft", y = name.outcome, color = group.by, shape = "status"), size = 3)
+        gg.base <- gg.base + ggplot2::scale_shape_manual(breaks = c(0,1), values=c(3,18), labels = c("censoring","event"))
+    }else{
+        gg.base <- gg.base + ggplot2::geom_point(data = dataL[dataL$origin==FALSE], mapping = aes_string(x = "timeLeft", y = name.outcome, color = group.by), size = 2)
+    }
+    
     if(group.by=="row"){
         gg.base <- gg.base + ggplot2::labs(color="observation") + theme(legend.key.height=unit(0.1,"npc"),
                                                                         legend.key.width=unit(0.08,"npc"))
@@ -387,7 +419,7 @@ predict2plot <- function(dataL, name.outcome,
                                              group = ggplot2::guide_legend(order = 3)
                                              )
     }
-    gg.base <- gg.base + ggplot2::ylab(ylab)
+    gg.base <- gg.base + ggplot2::xlab(xlab) + ggplot2::ylab(ylab)
     
     ## export
     ls.export <- list(plot = gg.base,

@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: sep  4 2017 (10:38) 
 ## Version: 
-## last-updated: okt  7 2019 (16:27) 
+## last-updated: maj 13 2020 (09:12) 
 ##           By: Brice Ozenne
-##     Update #: 129
+##     Update #: 141
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -16,7 +16,7 @@
 ### Code:
 
 ## * Settings
-library(riskRegression)
+##library(riskRegression)
 library(testthat)
 library(rms)
 library(survival)
@@ -1092,71 +1092,6 @@ test_that("[predictCox] Dependence on data", {
 
 })
 
-## ** Store.iid argument
-cat("[predictCox] Check same result store.iid=minimal vs. full \n")
-
-## *** Data
-set.seed(10)
-d <- sampleData(50, outcome = "survival")
-setkey(d,time)
-
-## *** no strata
-m.coxph <- coxph(Surv(time, event) ~ X1+X6, data = d, y = TRUE, x = TRUE)
-seqTime <- c(1e-16,4:10,d$time[1:10],1e6)
-newdata <- d
-
-## system.time(
-##     res1 <- predictCox(m.coxph, times = seqTime, newdata = newdata, store.iid = "minimal", se = TRUE, iid = FALSE)
-## )
-## system.time(
-##     res3 <- predictCox(m.coxph, times = seqTime, newdata = newdata, store.iid = "full", se = TRUE, iid = FALSE)
-## )
-
-test_that("[predictCox] store.iid = minimal vs. full - no strata", {
-    res1 <- predictCox(m.coxph, times = seqTime, newdata = newdata,
-                       type = c("cumhazard", "survival"),
-                       store.iid = "minimal", se = TRUE, iid = TRUE) 
-    res2 <- predictCox(m.coxph, times = seqTime, newdata = newdata,
-                       type = c("cumhazard", "survival"),
-                       store.iid = "minimal", average.iid = TRUE) 
-    res3 <- predictCox(m.coxph, times = seqTime, newdata = newdata,
-                       type = c("cumhazard", "survival"),
-                       store.iid = "full", se = TRUE, iid = TRUE)
-    expect_equal(res1$cumhazard.se,res3$cumhazard.se)
-    expect_equal(res1$survival.se,res3$survival.se)
-    expect_equal(res1$cumhazard.iid,res3$cumhazard.iid)
-    expect_equal(res1$survival.iid,res3$survival.iid)
-
-    expect_equal(res2$cumhazard.average.iid, t(apply(res3$cumhazard.iid,2:3,mean)))
-    expect_equal(res2$survival.average.iid, t(apply(res3$survival.iid,2:3,mean)))
-})
-
-## *** strata
-m.coxph <- coxph(Surv(time, event) ~ strata(X1)+X6, data = d, y = TRUE, x = TRUE)
- 
-seqTime <- c(1e-16,4:10,d$time[1:10],1e6)
-newdata <- d
-
-test_that("[predictCox] store.iid = minimal vs. full - strata", {
-    newdata <- rbind(d[1],d[1])
-    res1 <- predictCox(m.coxph, times = seqTime, newdata = newdata,
-                       type = c("cumhazard", "survival"),
-                       store.iid = "minimal", se = TRUE, iid = TRUE) 
-    res2 <- predictCox(m.coxph, times = seqTime, newdata = newdata,
-                       type = c("cumhazard", "survival"),
-                       store.iid = "minimal", average.iid = TRUE) 
-    res3 <- predictCox(m.coxph, times = seqTime, newdata = newdata,
-                       type = c("cumhazard", "survival"),
-                       store.iid = "full", se = TRUE, iid = TRUE)
-    expect_equal(res1$cumhazard.se,res3$cumhazard.se)
-    expect_equal(res1$survival.se,res3$survival.se)
-    expect_equal(res1$cumhazard.iid,res3$cumhazard.iid)
-    expect_equal(res1$survival.iid,res3$survival.iid)
-
-    expect_equal(res2$cumhazard.average.iid, t(apply(res3$cumhazard.iid,2:3,mean)))
-    expect_equal(res2$survival.average.iid, t(apply(res3$survival.iid,2:3,mean)))
-})
-
 ## ** Weigthed cox
 cat("[predictCox] Does not handle weights \n")
 ## *** Data
@@ -1258,25 +1193,12 @@ test_that("Cox - iid/se should not depend on other arguments", {
     out4 <- predictCox(fit, newdata = d[1:5], times = sort(seqTau),
                        average.iid = TRUE)
 
-    out5 <- predictCox(fit, newdata = d[1:5], times = seqTau,
-                       se = TRUE, iid = TRUE, average.iid = TRUE, store.iid = "minimal")
-    out6 <- predictCox(fit, newdata = d[1:5], times = sort(seqTau),
-                       se = TRUE, iid = TRUE, average.iid = TRUE, store.iid = "minimal")
-
     expect_equal(out1$survival.iid[,order(seqTau),],out2$survival.iid)
     expect_equal(out1$survival.se[,order(seqTau)],out2$survival.se)
     expect_equal(out1$survival.average.iid[,order(seqTau)],out2$survival.average.iid)
 
     expect_equal(out2$survival.average.iid,out4$survival.average.iid)
     expect_equal(out3$survival.average.iid[,order(seqTau)],out4$survival.average.iid)
-
-    expect_equal(out5$survival.iid[,order(seqTau),],out6$survival.iid)
-    expect_equal(out5$survival.se[,order(seqTau)],out6$survival.se)
-    expect_equal(out5$survival.average.iid[,order(seqTau)],out6$survival.average.iid)
-
-    expect_equal(out2$survival.iid,out6$survival.iid)
-    expect_equal(out2$survival.se,out6$survival.se)
-    expect_equal(out2$survival.average.iid,out6$survival.average.iid)
 })    
 
 

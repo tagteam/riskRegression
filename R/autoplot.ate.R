@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: apr 28 2017 (14:19) 
 ## Version: 
-## last-updated: Jan 27 2020 (07:32) 
-##           By: Thomas Alexander Gerds
-##     Update #: 77
+## last-updated: jun 24 2020 (09:05) 
+##           By: Brice Ozenne
+##     Update #: 100
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -79,11 +79,11 @@ autoplot.ate <- function(object,
 
     if(ci[[1]]==TRUE && (object$se[[1]]==FALSE || is.null(object$conf.level))){
         stop("argument \'ci\' cannot be TRUE when no standard error have been computed \n",
-             "set arguments \'se\' and \'confint\' to TRUE when calling ate \n")
+             "set arguments \'se\' and \'confint\' to TRUE when calling the ate function \n")
     }
     if(band[[1]] && (object$band[[1]]==FALSE  || is.null(object$conf.level))){
         stop("argument \'band\' cannot be TRUE when the quantiles for the confidence bands have not been computed \n",
-             "set arguments \'band\' and \'confint\' to TRUE when calling ate \n")
+             "set arguments \'band\' and \'confint\' to TRUE when calling the ate function \n")
     }
     
     dots <- list(...)
@@ -96,25 +96,42 @@ autoplot.ate <- function(object,
     ## display
     dataL <- copy(object$meanRisk)
     dataL[,row := as.numeric(as.factor(.SD$treatment))]
-
+    dataL[,c("origin") := FALSE]
     data.table::setnames(dataL, old = paste0("meanRisk.",estimator), new = "meanRisk")
+    if(min(dataL$time)>1e-12){
+        first.dt <- data.table::data.table(time = c(0,min(dataL$time)-1e-12), meanRisk = 0, origin = TRUE)
+    }else{
+        first.dt <- NULL
+    }
+    
     if(ci){
         data.table::setnames(dataL,
                              old = c(paste0("meanRisk.",estimator,".lower"),paste0("meanRisk.",estimator,".upper")),
                              new = c("lowerCI","upperCI"))
+        if(!is.null(first.dt)){
+            first.dt[, c("lowerCI","upperCI") := 0]
+        }
     }
     if(band){
         data.table::setnames(dataL,
                              old = c(paste0("meanRisk.",estimator,".lowerBand"),paste0("meanRisk.",estimator,".upperBand")),
                              new = c("lowerBand","upperBand"))
+        if(!is.null(first.dt)){
+            first.dt[, c("lowerBand","upperBand") := 0]
+        }
     }
-
+    dataL <- dataL[, .SD, .SDcol = c(names(first.dt),c("row","treatment"))]
+    if(!is.null(first.dt)){
+        dataL <- dataL[, rbind(first.dt,.SD), by = c("row","treatment")]
+    }
+    
     gg.res <- predict2plot(dataL = dataL,
                            name.outcome = "meanRisk", # must not contain space to avoid error in ggplot2
                            ci = ci, band = band,
                            group.by = "treatment",
                            conf.level = object$conf.level,
                            alpha = alpha,
+                           xlab = "time",
                            ylab = "Average absolute risk")
   
     if(plot){
