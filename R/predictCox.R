@@ -175,13 +175,13 @@ predictCox <- function(object,
     object.modelFrame <- coxModelFrame(object)
     infoVar <- coxVariableName(object, model.frame = object.modelFrame)
     object.baseEstimator <- coxBaseEstimator(object)
-
     ## ease access
     is.strata <- infoVar$is.strata
     object.levelStrata <- levels(object.modelFrame$strata) ## levels of the strata variable
     nStrata <- length(object.levelStrata) ## number of strata
     nVar <- length(infoVar$lpvars) ## number of variables in the linear predictor
-  
+
+    ## ** normalize model frame
     ## convert strata to numeric
     object.modelFrame[,c("strata.num") := as.numeric(.SD$strata) - 1]
 
@@ -189,6 +189,82 @@ predictCox <- function(object,
     ## if we predict the hazard for newdata then there is no need to center the covariates
     object.modelFrame[,c("eXb") := exp(coxLP(object, data = NULL, center = if(is.null(newdata)){centered}else{FALSE}))]
 
+    ## add linear predictor and remove useless columns
+    rm.name <- setdiff(names(object.modelFrame),c("start","stop","status","eXb","strata","strata.num"))
+    if(length(rm.name)>0){
+        object.modelFrame[,c(rm.name) := NULL]
+    }
+  
+    ## sort the data
+    object.modelFrame[, c("statusM1") := 1-.SD$status] ## sort by statusM1 such that deaths appear first and then censored events
+    object.modelFrame[, c("XXXindexXXX") := 1:.N] ## keep track of the initial positions (useful when calling calcSeCox)
+    data.table::setkeyv(object.modelFrame, c("strata.num","stop","start","statusM1"))
+
+    ## last event time in each strata
+    if(is.strata){
+        etimes.max <- object.modelFrame[, max(.SD$stop), by = "strata.num"][[2]]
+    }else{
+        etimes.max <- max(object.modelFrame[["stop"]])
+    }
+
+    ## ** exit if no event
+    if(all(object.modelFrame$status==0)){ ## no event
+        if(is.null(newdata)){
+            ## known bug: when using coxph the strata variable is 0 for all observations even in presence of actual strata
+            out <- list(times = object.modelFrame$stop,
+                        strata = object.modelFrame$strata.num,
+                        lastEventTime = etimes.max,
+                        se = se,
+                        band = band,
+                        type = type)
+            if("hazard" %in% type){out$hazard <- 0}
+            if("cumhazard" %in% type){out$cumhazard <- 0}
+            if("survival" %in% type){out$survival <- 0}
+        }else{
+            new.strata <- coxStrata(object, data = newdata, 
+                                    sterms = infoVar$strata.sterms, 
+                                    strata.vars = infoVar$stratavars, 
+                                    strata.levels = infoVar$strata.levels)
+                  
+            out <- list(se = se,
+                        band = band,
+                        type = type,
+                        diag = diag,
+                        times = times,
+                        strata = new.strata)
+
+            ls.value0 <- unlist(lapply(times, function(x){ifelse(x<=etimes.max[as.numeric(new.strata)],0,NA)}))
+            ls.value1 <- unlist(lapply(times, function(x){ifelse(x<=etimes.max[as.numeric(new.strata)],1,NA)}))
+
+            if("hazard" %in% type){
+                out$hazard <- matrix(ls.value0, nrow = NROW(newdata), ncol = length(times), dimnames = list(NULL, times), byrow = FALSE)
+            }
+            if("cumhazard" %in% type){
+                out$cumhazard <- matrix(ls.value0, nrow = NROW(newdata), ncol = length(times), dimnames = list(NULL, times), byrow = FALSE)
+            }
+            if("survival" %in% type){
+                out$survival <- matrix(ls.value1, nrow = NROW(newdata), ncol = length(times), dimnames = list(NULL, times), byrow = FALSE)
+            }
+            if(se){
+                out[paste0(type,".se")] <- matrix(ls.value0, nrow = NROW(newdata), ncol = length(times), dimnames = list(NULL, times), byrow = FALSE)
+            }
+            if(iid){
+                Als.value <- array(unlist(lapply(1:object.n, function(x){ls.value0})), dim = c(NROW(newdata), nTimes, object.n))
+                if("hazard" %in% type){out$hazard.iid <- Als.value}
+                if("cumhazard" %in% type){out$cumhazard.iid <- Als.value}
+                if("survival" %in% type){out$survival.iid <- Als.value}
+            }
+            if(average.iid){
+                iM.iid <- matrix(0, nrow = NROW(object.modelFrame), ncol = length(times), dimnames = list(NULL, times))
+                out$survival.average.iid[,times>min(etimes.max)] <- NA
+                out[paste0(type,".average.iid")] <- iM.iid
+            }
+        }
+        class(out) <- "predictCox"
+        return(out)
+    }
+
+    
     ## ** checks
     ## check user imputs 
     if(nTimes[1]>0 && any(is.na(times))){
@@ -197,10 +273,6 @@ predictCox <- function(object,
     type <- tolower(type)
     if(any(type %in% c("hazard","cumhazard","survival") == FALSE)){
         stop("type can only be \"hazard\", \"cumhazard\" or/and \"survival\" \n") 
-    }
-    
-    if("XXXindexXXX" %in% names(object.modelFrame)){
-        stop("XXXindexXXX is a reserved name. No variable should have this name. \n")
     }
     ## predictCox is not compatible with all coxph/cph object (i.e. only handle only simple cox models)
     if(!is.null(object$weights) && !all(object$weights==1)){
@@ -285,24 +357,6 @@ predictCox <- function(object,
     }
 
     ## ** baseline hazard
-    ## add linear predictor and remove useless columns
-    rm.name <- setdiff(names(object.modelFrame),c("start","stop","status","eXb","strata","strata.num"))
-    if(length(rm.name)>0){
-        object.modelFrame[,c(rm.name) := NULL]
-    }
-  
-    ## sort the data
-    object.modelFrame[, c("statusM1") := 1-.SD$status] ## sort by statusM1 such that deaths appear first and then censored events
-    object.modelFrame[, c("XXXindexXXX") := 1:.N] ## keep track of the initial positions (useful when calling calcSeCox)
-    data.table::setkeyv(object.modelFrame, c("strata.num","stop","start","statusM1"))
-
-    ## last event time in each strata
-    if(is.strata){
-        etimes.max <- object.modelFrame[, max(.SD$stop), by = "strata.num"][[2]]
-    }else{
-        etimes.max <- max(object.modelFrame[["stop"]])
-    }
-
     ## compute the baseline hazard
     Lambda0 <- baseHaz_cpp(starttimes = object.modelFrame$start,
                            stoptimes = object.modelFrame$stop,

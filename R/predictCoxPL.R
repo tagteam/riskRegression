@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: sep  4 2017 (16:43) 
 ## Version: 
-## last-updated: Jan  6 2020 (09:00) 
-##           By: Thomas Alexander Gerds
-##     Update #: 155
+## last-updated: jul 24 2020 (16:14) 
+##           By: Brice Ozenne
+##     Update #: 157
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -108,9 +108,15 @@ predictCoxPL <- function(object,
                                keep.strata = TRUE,
                                keep.infoVar = TRUE,
                                ...)
+
     infoVar <- original.res$infoVar
     if(keep.infoVar==FALSE){
         original.res$infoVar <- NULL
+    }
+
+    ## no event: return exponential approximation (which equals 1 everywhere)
+    if(all(object.modelFrame$status==0)){
+        return(original.res)
     }
 
     ## ** compute survival
