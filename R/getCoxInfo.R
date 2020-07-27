@@ -187,17 +187,23 @@ coxModelFrame <- function(object, center){
 #' @export
 coxModelFrame.coxph <- function(object, center = FALSE){
 
-    default.start <- 0
-  
-    if("x" %in% names(object) == FALSE){
-        stop("invalid object \n",
-             "set x=TRUE in the call to ",class(object)[1]," \n")
-    }
-  
     if("y" %in% names(object) == FALSE){
         stop("invalid object \n",
              "set y=TRUE in the call to ",class(object)[1]," \n")
     }
+    
+    if("x" %in% names(object) == FALSE){
+        if(object$nevent==0){
+            ## name.var <- setdiff(all.vars(object$terms), unlist(SurvResponseVar(coxFormula(object))[-1]))
+            name.var <- names(object$coef)
+            object$x <- matrix(0, nrow = NROW(object$y), ncol = length(name.var),
+                               dimnames = list(NULL, name.var))
+        }else{
+            stop("invalid object \n",
+                 "set x=TRUE in the call to ",class(object)[1]," \n")
+        }
+    }
+ 
 
     ## ** add x
     if(NCOL(object[["x"]])!=0){
@@ -320,7 +326,16 @@ coxFormula.cph <- function(object){
 #' @method coxFormula coxph
 #' @export
 coxFormula.coxph <- function(object){
-  return(object$formula)
+    if(object$nevent>0){
+        return(object$formula)
+    }else{
+        out <- object$terms
+        extra.attr <- names(attributes(out))
+        for(iAttr in extra.attr){
+            attr(out, iAttr) <- NULL
+        }
+        return(as.formula(out))
+    }
 }
 
 ## ** coxFormula.phreg
