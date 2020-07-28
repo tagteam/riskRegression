@@ -133,48 +133,12 @@ arma::mat IFbeta_cpp(const NumericVector& newT, const NumericVector& neweXb, con
   return(IFbeta);
 }
 
-// * IFbetaApprox_cpp
-// [[Rcpp::export]]
-arma::mat IFbetaApprox_cpp(const arma::mat& newX, const NumericVector& newStatus, const IntegerVector& newIndexJump, 
-                           const arma::mat& E1, const arma::mat& iInfo, int p){
-  
-  arma::mat IFbeta;
-  int nObs = newIndexJump.size();
-  
-  if(p==0){
-    IFbeta.resize(nObs, 1);
-    IFbeta.fill(0);
-  }else{
-    IFbeta.resize(nObs, p);
-    IFbeta.fill(NA_REAL);
-    
-    arma::colvec Score(p);    
-    int iObs = 0;
-    
-    while(iObs < nObs){ // before the first event
-      
-      // compute the score
-      for(int iX=0;iX<p;iX++){
-        Score[iX] = newStatus[iObs] * (newX(iObs,iX)-E1(newIndexJump[iObs],iX) );
-      }
-      
-      IFbeta.row(iObs) = (iInfo * Score).t();
-      
-      iObs++;
-      
-    }
-    
-  }
-  
-  return(IFbeta);
-}
-
 // * IFlambda0_cpp
 // [[Rcpp::export]]
 List IFlambda0_cpp(const NumericVector& tau, const arma::mat& IFbeta,
                    const NumericVector& newT, const NumericVector& neweXb, const NumericVector& newStatus, const IntegerVector& newStrata, const IntegerVector& newIndexJump, 
                    const NumericVector& S01, const arma::mat& E1, const NumericVector& time1, double lastTime1, const NumericVector& lambda0,
-                   int p, int strata, bool exact, bool minimalExport){
+                   int p, int strata, bool minimalExport){
   
   int nObs = newT.size();
   int nTau = tau.size();
@@ -195,23 +159,30 @@ List IFlambda0_cpp(const NumericVector& tau, const arma::mat& IFbeta,
   // if iTau0 = 5 this means that the first five prediction times are before the first event, i.e IF = 0
   int iTau0 = 0;
   while(iTau0 < nTau && time1[0]>tau[iTau0]){
-        iTau0++;
+	iTau0++;
   }
 
   // ** Compute delta_iS0
-  NumericVector delta_iS0(nObs);
+  NumericVector delta_iS0(nObs,0.0);
   for(int iObs=0; iObs<nObs ; iObs++){
-    delta_iS0[iObs] = newStatus[iObs]/S01[newIndexJump[iObs]];
+	if(strata == newStrata[iObs]){
+	  delta_iS0[iObs] = newStatus[iObs]/S01[newIndexJump[iObs]];
+	}
   } 
 
   // Exclude case with no Tau
   if(nTau==0){
 	if(minimalExport){
-	  return(List::create(Named("delta_iS0") = delta_iS0,
-						  Named("Elambda0") = Elambda0,
+	  NumericVector indeXb = clone(neweXb);
+	  indeXb[newStrata == strata] = 0;
+	  return(List::create(Named("Elambda0") = Elambda0,
 						  Named("cumElambda0") = cumElambda0,
+						  Named("eXb") = indeXb,
 						  Named("lambda0_iS0") = lambda0_iS0,
-						  Named("cumLambda0_iS0") = cumLambda0_iS0));
+						  Named("cumLambda0_iS0") = cumLambda0_iS0,
+						  Named("delta_iS0") = delta_iS0,
+						  Named("time1") = time1
+						  ));
 	}else{
 	  IFlambda0.fill(0.0);
 	  IFLambda0.fill(0.0);
@@ -237,14 +208,12 @@ List IFlambda0_cpp(const NumericVector& tau, const arma::mat& IFbeta,
     }
     
     // update (cum)Lambda0_iS0
-    if(exact){
-      lambda0_iS0[iTime1] = lambda0[iTime1]/S01[iTime1];
-      if(iTime1 == 0){
-        cumLambda0_iS0[0] = lambda0_iS0[0];
-      }else{
-        cumLambda0_iS0[iTime1] = cumLambda0_iS0[iTime1-1] + lambda0_iS0[iTime1];  
-      }
-    }
+	lambda0_iS0[iTime1] = lambda0[iTime1]/S01[iTime1];
+	if(iTime1 == 0){
+	  cumLambda0_iS0[0] = lambda0_iS0[0];
+	}else{
+	  cumLambda0_iS0[iTime1] = cumLambda0_iS0[iTime1-1] + lambda0_iS0[iTime1];  
+	}
     
     
     // store in Elambda0 when time is tau if
@@ -262,19 +231,24 @@ List IFlambda0_cpp(const NumericVector& tau, const arma::mat& IFbeta,
   }
   
   if(minimalExport){
+	NumericVector indeXb = clone(neweXb);
+	indeXb[newStrata != strata] = 0;
+	
     return(List::create(Named("delta_iS0") = delta_iS0,
                         Named("Elambda0") = Elambda0,
                         Named("cumElambda0") = cumElambda0,
+						Named("eXb") = indeXb,
 						Named("lambda0_iS0") = lambda0_iS0,
-                        Named("cumLambda0_iS0") = cumLambda0_iS0));
+                        Named("cumLambda0_iS0") = cumLambda0_iS0,
+                        Named("time1") = time1));
   }
   
   // main loop
   if(iTau0>0){
     for(int iiTau=0 ; iiTau<iTau0; iiTau++){ // before the first event    
-    IFlambda0.col(iiTau).zeros();
-    IFLambda0.col(iiTau).zeros();    
-  }
+	  IFlambda0.col(iiTau).zeros();
+	  IFLambda0.col(iiTau).zeros();    
+	}
   }
   
   int index_newT_time1; // position of the minimum between t and t_train in cumLamba0_iS0
@@ -306,12 +280,10 @@ List IFlambda0_cpp(const NumericVector& tau, const arma::mat& IFbeta,
       
       if(strata == newStrata[iObs]){
         // second term
-        if(exact && index_newT_time1>=0){
-          if(tau[iiTau]==time1[Vindex_tau_time1[iiTau]] && time1[Vindex_tau_time1[iiTau]] <= newT[iObs]){
-            IFlambda0(iObs,iiTau) -= neweXb[iObs] * lambda0_iS0[Vindex_tau_time1[iiTau]];
-          }
-          IFLambda0(iObs,iiTau) -= neweXb[iObs] * cumLambda0_iS0[min(Vindex_tau_time1[iiTau],index_newT_time1)];
-        }
+		if(tau[iiTau]==time1[Vindex_tau_time1[iiTau]] && time1[Vindex_tau_time1[iiTau]] <= newT[iObs]){
+		  IFlambda0(iObs,iiTau) -= neweXb[iObs] * lambda0_iS0[Vindex_tau_time1[iiTau]];
+		}
+		IFLambda0(iObs,iiTau) -= neweXb[iObs] * cumLambda0_iS0[min(Vindex_tau_time1[iiTau],index_newT_time1)];
 
         // third term
         if(newT[iObs]<=tau[iiTau]){

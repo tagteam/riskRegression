@@ -187,6 +187,8 @@ coxModelFrame <- function(object, center){
 #' @export
 coxModelFrame.coxph <- function(object, center = FALSE){
 
+    default.start <- 0
+    
     if("y" %in% names(object) == FALSE){
         stop("invalid object \n",
              "set y=TRUE in the call to ",class(object)[1]," \n")
@@ -218,7 +220,7 @@ coxModelFrame.coxph <- function(object, center = FALSE){
     if("strata" %in% names(dt)){
         stop("The variables in the linear predictor should be named \"strata\" \n")
     }
-    
+
     ## ** add y
     if(is.null(dt)){
         dt <- data.table(status = object[["y"]][,"status"])

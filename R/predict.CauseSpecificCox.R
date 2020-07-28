@@ -121,7 +121,7 @@ predict.CauseSpecificCox <- function(object,
                                      confint = (se+band)>0,
                                      average.iid = FALSE,
                                      product.limit = TRUE,
-                                     store.iid = "full",
+                                     store.iid = "minimal",
                                      diag = FALSE,
                                      ...){
 

@@ -11,7 +11,7 @@
 #' @param tau.hazard [numeric vector] the vector of times at which the i.i.d decomposition of the baseline hazard will be computed
 #' @param tau.max [numeric] latest time at which the i.i.d decomposition of the baseline hazard will be computed. Alternative to \code{tau.hazard}.
 #' @param store.iid [character] the method used to compute the influence function and the standard error.
-#' Can be \code{"full"}, \code{"approx"} or \code{"minimal"}. See the details section.
+#' Can be \code{"full"} or \code{"minimal"}. See the details section.
 #' @param keep.times [logical] If \code{TRUE} add the evaluation times to the output.
 #' @param return.object [logical] If \code{TRUE} return the object where the iid decomposition has been added.
 #' Otherwise return a list (see the return section)
@@ -24,8 +24,6 @@
 #'
 #' \code{store.iid} equal to \code{"full"} exports the influence function for the coefficients
 #' and the baseline hazard at each event time.
-#' \code{store.iid} equal to \code{"approx"} does the same except that the terms that do not contributes
-#' to the variance are not ignored (i.e. set to 0)
 #' \code{store.iid} equal to \code{"minimal"} exports the influence function for the coefficients. For the
 #' baseline hazard it only computes the quantities necessary to compute the influence function in order to save memory.
 #'
@@ -58,8 +56,6 @@
 #' 
 #' m.cox <- coxph(Surv(eventtime, event) ~ X1+X6, data = d, y = TRUE, x = TRUE)
 #' system.time(IF.cox <- iidCox(m.cox))
-#' system.time(IF.cox_approx <- iidCox(m.cox, store.iid = "approx"))
-#'
 #' 
 #' IF.cox.all <- iidCox(m.cox, tau.hazard = sort(unique(c(7,d$eventtime))))
 #' IF.cox.beta <- iidCox(m.cox, baseline.iid = FALSE)
@@ -131,7 +127,7 @@ iidCox.coxph <- function(object, newdata = NULL,
   }
     
     ## ** tests 
-    store.iid <- match.arg(store.iid, c("minimal","approx","full"))
+    store.iid <- match.arg(store.iid, c("minimal","full"))
 
     ## time at which the influence function is evaluated
     if(is.list(tau.hazard)){
@@ -263,6 +259,7 @@ iidCox.coxph <- function(object, newdata = NULL,
                                     lambda0_iS0= NULL,
                                     cumLambda0_iS0= NULL,
                                     time1 = NULL),
+                obstime = new.time,
                 time = vector(mode = "list", length = nStrata),  # time at which the IF is assessed
                 etime1.min = rep(NA, nStrata),
                 etime.max = lambda0$lastEventTime,
@@ -271,11 +268,12 @@ iidCox.coxph <- function(object, newdata = NULL,
                 )
 
     if(store.iid=="minimal"){
-        out$calcIFhazard$delta_iS0 <- vector(mode = "list", length = nStrata)
         out$calcIFhazard$Elambda0 <- vector(mode = "list", length = nStrata)
         out$calcIFhazard$cumElambda0 <- vector(mode = "list", length = nStrata)
+        out$calcIFhazard$eXb <- matrix(NA, nrow = nObs, ncol = nStrata)
         out$calcIFhazard$lambda0_iS0 <- vector(mode = "list", length = nStrata)
         out$calcIFhazard$cumLambda0_iS0 <- vector(mode = "list", length = nStrata)
+        out$calcIFhazard$delta_iS0 <- matrix(NA, nrow = nObs, ncol = nStrata)
         out$calcIFhazard$time1 <- vector(mode = "list", length = nStrata)
     }else{
         out$IFhazard <- vector(mode = "list", length = nStrata)
@@ -292,25 +290,16 @@ iidCox.coxph <- function(object, newdata = NULL,
     
         ## IF
         if(nVar > 0){
-            if(store.iid != "approx"){
-                out$IFbeta[iSubset,] <- IFbeta_cpp(newT = new.time_strata[[iStrata]],
-                                                   neweXb = new.eXb_strata[[iStrata]],
-                                                   newX = new.LPdata_strata[[iStrata]],
-                                                   newStatus = new.status_strata[[iStrata]], 
-                                                   newIndexJump = new.indexJump_strata, 
-                                                   S01 = Ecpp[[iStrata]]$S0,
-                                                   E1 = Ecpp[[iStrata]]$E,
-                                                   time1 = Ecpp[[iStrata]]$Utime1,
-                                                   iInfo = iInfo,
-                                                   p = nVar)[iOrderBack,,drop=FALSE]
-            }else{
-                out$IFbeta[iSubset,] <- IFbetaApprox_cpp(newX = new.LPdata_strata[[iStrata]],
-                                                         newStatus = new.status_strata[[iStrata]],
-                                                         newIndexJump = new.indexJump_strata,  
-                                                         E1 = Ecpp[[iStrata]]$E,
-                                                         iInfo = iInfo,
-                                                         p = nVar)[iOrderBack,,drop=FALSE]
-            }
+            out$IFbeta[iSubset,] <- IFbeta_cpp(newT = new.time_strata[[iStrata]],
+                                               neweXb = new.eXb_strata[[iStrata]],
+                                               newX = new.LPdata_strata[[iStrata]],
+                                               newStatus = new.status_strata[[iStrata]], 
+                                               newIndexJump = new.indexJump_strata, 
+                                               S01 = Ecpp[[iStrata]]$S0,
+                                               E1 = Ecpp[[iStrata]]$E,
+                                               time1 = Ecpp[[iStrata]]$Utime1,
+                                               iInfo = iInfo,
+                                               p = nVar)[iOrderBack,,drop=FALSE]
         }else{
             out$IFbeta[iSubset,] <- matrix(NA, ncol = 1, nrow = length(new.index_strata[[iStrata]]))
         }
@@ -367,8 +356,8 @@ iidCox.coxph <- function(object, newdata = NULL,
                                               time1 = timeStrata, lastTime1 = Ecpp[[iStrata]]$Utime1[nUtime1_strata], # here lastTime1 will not correspond to timeStrata[length(timeStrata)] when there are censored observations
                                               lambda0 = lambda0Strata,
                                               p = nVar, strata = iStrata,
-                                              exact = (store.iid!="approx"), minimalExport = (store.iid=="minimal")
-                                              )      
+                                              minimalExport = (store.iid=="minimal")
+                                              )
             }else{
                 if(length(tau.hazard_strata)==0){tau.hazard_strata <- max(object.time_strata[[iStrata]])}
                 IFlambda_res <- list(hazard = matrix(0, ncol = length(tau.hazard_strata), nrow = nObs),
@@ -387,12 +376,13 @@ iidCox.coxph <- function(object, newdata = NULL,
                 out$time[[iStrata]] <- tau.hazard_strata
             }
             if(store.iid=="minimal"){
-                out$calcIFhazard$delta_iS0[[iStrata]] <- IFlambda_res$delta_iS0
                 out$calcIFhazard$Elambda0[[iStrata]] <- IFlambda_res$Elambda0
                 out$calcIFhazard$cumElambda0[[iStrata]] <- IFlambda_res$cumElambda0
-                out$calcIFhazard$lambda0_iS0[[iStrata]] <- IFlambda_res$lambda0_iS0
-                out$calcIFhazard$cumLambda0_iS0[[iStrata]] <- IFlambda_res$cumLambda0_iS0
-                out$calcIFhazard$time1[[iStrata]] <- timeStrata # event time by strata
+                out$calcIFhazard$eXb[,iStrata] <- IFlambda_res$eXb
+                out$calcIFhazard$lambda0_iS0[[iStrata]] <- c(0,IFlambda_res$lambda0_iS0)
+                out$calcIFhazard$cumLambda0_iS0[[iStrata]] <- c(0,IFlambda_res$cumLambda0_iS0)
+                out$calcIFhazard$delta_iS0[,iStrata] <- IFlambda_res$delta_iS0
+                out$calcIFhazard$time1[[iStrata]] <- c(0,IFlambda_res$time1) # event time by strata
             }else{
                 if(keep.times){
                     colnames(IFlambda_res$hazard) <- tau.hazard_strata
