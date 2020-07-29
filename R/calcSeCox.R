@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: maj 27 2017 (11:46) 
 ## Version: 
-## last-updated: jul 28 2020 (17:16) 
+## last-updated: jul 29 2020 (12:12) 
 ##           By: Brice Ozenne
-##     Update #: 712
+##     Update #: 740
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -110,7 +110,6 @@ calcSeCox <- function(object, times, nTimes, type, diag,
         if("cumhazard" %in% type){out$cumhazard.average.iid <- matrix(0, nrow = object.n, ncol = nTimes)}
         if("survival" %in% type){out$survival.average.iid <- matrix(0, nrow = object.n, ncol = nTimes)}
     }
-
     
     if(store.iid[[1]] == "minimal"){
         ## ** method 1: minimal storage of the influence function
@@ -134,7 +133,7 @@ calcSeCox <- function(object, times, nTimes, type, diag,
                                 lastSampleTime = iid.object$etime.max,
                                 newdata_index = lapply(1:nStrata, function(iS){which(new.strata == iS)-1}),
                                 nTau = nTimes, nNewObs = new.n, nSample = object.n, nStrata = nStrata, p = nVar,
-                                exportSE = "se" %in% export, exportIF = "iid" %in% export, exportIFmean = "average.iid" %in% export,
+                                diag = diag, exportSE = "se" %in% export, exportIF = "iid" %in% export, exportIFmean = "average.iid" %in% export,
                                 exportHazard = "hazard" %in% type, exportCumhazard = "cumhazard" %in% type, exportSurvival = "survival" %in% type,
                                 debug = 0)
 
@@ -155,7 +154,7 @@ calcSeCox <- function(object, times, nTimes, type, diag,
 
                                         # }}}
     }else if("iid" %in% export || "se" %in% export){
-        ## ** method 2: full computation of the influence function
+        ## ** method 2: using the influence function of the baseline hazard/baseline cumulative hazard
 
         if(nVar>0){
             X_IFbeta_mat <- tcrossprod(iid.object$IFbeta, new.LPdata)
@@ -164,7 +163,7 @@ calcSeCox <- function(object, times, nTimes, type, diag,
         if( diag || (nVar==0) ){
 
             for(iStrata in 1:nStrata){ ## iStrata <- 1
-                indexStrata <- which(new.strata==iStrata)                
+                indexStrata <- which(new.strata==iStrata)
                 if(length(indexStrata)==0){next}
                 iPrevalence <- length(indexStrata)/new.n
 
@@ -174,7 +173,8 @@ calcSeCox <- function(object, times, nTimes, type, diag,
                         if(nVar==0){
                             iIFhazard <- iid.object$IFhazard[[iStrata]][,indexStrata,drop=FALSE]
                         }else{
-                            iIFhazard <- rowMultiply_cpp(iid.object$IFhazard[[iStrata]][,indexStrata,drop=FALSE] + rowMultiply_cpp(X_IFbeta_mat[,indexStrata], scale = Lambda0$hazard[[iStrata]][indexStrata]),
+                            iIFhazard <- rowMultiply_cpp(iid.object$IFhazard[[iStrata]][,indexStrata,drop=FALSE] + rowMultiply_cpp(X_IFbeta_mat[,indexStrata,drop=FALSE],
+                                                                                                                                   scale = Lambda0$hazard[[iStrata]][indexStrata]),
                                                          scale = new.eXb[indexStrata])
                         }
                     }else{

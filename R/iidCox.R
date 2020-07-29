@@ -152,9 +152,6 @@ iidCox.coxph <- function(object, newdata = NULL,
     }else{
         need.order <- FALSE
     }
-    if(need.order && store.iid != "full"){
-        stop("Elements in argument \'tau.hazard\' should be ordered in increasing order when \'store.iid\' is not equal to \"full\" \n")
-    }
     
     ## ** Compute quantities of interest
   
@@ -376,8 +373,13 @@ iidCox.coxph <- function(object, newdata = NULL,
                 out$time[[iStrata]] <- tau.hazard_strata
             }
             if(store.iid=="minimal"){
-                out$calcIFhazard$Elambda0[[iStrata]] <- IFlambda_res$Elambda0
-                out$calcIFhazard$cumElambda0[[iStrata]] <- IFlambda_res$cumElambda0
+                if(need.order && nVar>0){
+                    out$calcIFhazard$Elambda0[[iStrata]] <- IFlambda_res$Elambda0[,tau.oorder[[iStrata]],drop=FALSE]
+                    out$calcIFhazard$cumElambda0[[iStrata]] <- IFlambda_res$cumElambda0[,tau.oorder[[iStrata]],drop=FALSE]
+                }else{
+                    out$calcIFhazard$Elambda0[[iStrata]] <- IFlambda_res$Elambda0
+                    out$calcIFhazard$cumElambda0[[iStrata]] <- IFlambda_res$cumElambda0
+                }
                 out$calcIFhazard$eXb[,iStrata] <- IFlambda_res$eXb
                 out$calcIFhazard$lambda0_iS0[[iStrata]] <- c(0,IFlambda_res$lambda0_iS0)
                 out$calcIFhazard$cumLambda0_iS0[[iStrata]] <- c(0,IFlambda_res$cumLambda0_iS0)
@@ -387,7 +389,7 @@ iidCox.coxph <- function(object, newdata = NULL,
                 if(keep.times){
                     colnames(IFlambda_res$hazard) <- tau.hazard_strata
                     colnames(IFlambda_res$cumhazard) <- tau.hazard_strata
-                }
+                } 
                 if(need.order){
                     out$IFhazard[[iStrata]] <- IFlambda_res$hazard[,tau.oorder[[iStrata]],drop=FALSE]
                     out$IFcumhazard[[iStrata]] <- IFlambda_res$cumhazard[,tau.oorder[[iStrata]],drop=FALSE]

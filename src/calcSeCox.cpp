@@ -31,16 +31,20 @@ List calcSeCox_cpp(const arma::vec& seqTau, // horizon time for the predictions 
 				   const std::vector< arma::uvec >& indexJumpTau, // index of the jump time corresponding to the horizon times (SxJ)
 				   const arma::vec& lastSampleTime, // time after which the prediction are NA (S)
 				   const std::vector< arma::uvec>& newdata_index, // index of the observations within strata
-				   int nTau, int nNewObs, int nSample, int nStrata, int p,
-				   bool exportSE, bool exportIF, bool exportIFmean,
+				   int nTau, int nNewObs, int nSample, int nStrata, int p, 
+				   bool diag, bool exportSE, bool exportIF, bool exportIFmean,
 				   bool exportHazard, bool exportCumhazard, bool exportSurvival,
 				   int debug){
 
   // ** prepare
   if(debug>0){Rcpp::Rcout << "Prepare" << std::endl;}
   int iStrata_tauMin,iStrata_tauMax; 
+  arma::vec iStrata_seqTau;
+  arma::uvec iStrata_indexJumpTau;
   int iStrata_nNewObs; 
   int iJump; 
+  int iTau,iTauStore; 
+  int iNewObs2; 
   arma::colvec iStrata_IFhazard0, iStrata_IFcumhazard0;
   arma::colvec iStrata_IFhazard, iStrata_IFcumhazard, iStrata_IFsurvival;
 
@@ -117,100 +121,143 @@ List calcSeCox_cpp(const arma::vec& seqTau, // horizon time for the predictions 
 	if(jump_time[iStrata].size()==0){continue;}
 
 	// *** narrow down prediction times
-	iStrata_tauMin=0;
-	iStrata_tauMax=nTau-1;
-	
-	while((iStrata_tauMin < nTau) && jump_time[iStrata][0]>seqTau[iStrata_tauMin]){ // start at the first event or after 
+    iStrata_tauMin=0;
+    if(diag){
+	  iStrata_tauMax = iStrata_nNewObs-1;
+	  iStrata_seqTau = seqTau(newdata_index[iStrata]);
+	  iStrata_indexJumpTau = indexJumpTau[iStrata](newdata_index[iStrata]);
+	  iStrata_nNewObs = 1;
+	}else{
+	  iStrata_tauMax = nTau-1;
+	  iStrata_seqTau = seqTau;
+	  iStrata_indexJumpTau = indexJumpTau[iStrata];
+	}
+
+	// WARNING: this part needs to be before iStrata_tauMax is modified (i.e. the next while loop)
+	while((iStrata_tauMin <= iStrata_tauMax) && jump_time[iStrata](0)>iStrata_seqTau(iStrata_tauMin)){ // start at the first event or after 
 	  iStrata_tauMin++;    
 	}
-	
-	while((iStrata_tauMax >= 0) && seqTau[iStrata_tauMax]>lastSampleTime[iStrata]){ // end at the last event or before
-	  for(int iNewObs=0; iNewObs<iStrata_nNewObs ; iNewObs++){
+	if(iStrata_tauMin > iStrata_tauMax){continue;}
 
-
+	while((iStrata_tauMax >= 0) && seqTau(iStrata_tauMax)>lastSampleTime(iStrata)){ // end at the last event or before
+	  for(int iNewObs=0; iNewObs<iStrata_nNewObs ; iNewObs++){		
+		if(diag){
+		  iTauStore = 0;
+		  iNewObs2 = newdata_index[iStrata](iStrata_tauMax);
+		}else{
+		  iTauStore = iStrata_tauMax;
+		  iNewObs2 = newdata_index[iStrata](iNewObs);
+		}
+		
 		if(exportHazard){
-		  if(exportIF){IF_hazard.slice(iStrata_tauMax).col(newdata_index[iStrata][iNewObs]).fill(NA_REAL);}
-		  if(exportIFmean){IFmean_hazard.col(iStrata_tauMax).fill(NA_REAL);}
+		  if(exportIF){IF_hazard.slice(iTauStore).col(iNewObs2).fill(NA_REAL);}
+		  if(exportIFmean){IFmean_hazard.col(iTauStore).fill(NA_REAL);}
 		}
 
 		if(exportCumhazard){
-		  if(exportIF){IF_cumhazard.slice(iStrata_tauMax).col(newdata_index[iStrata][iNewObs]).fill(NA_REAL);}
-		  if(exportSE){SE_cumhazard(newdata_index[iStrata][iNewObs],iStrata_tauMax) = NA_REAL;}
-		  if(exportIFmean){IFmean_cumhazard.col(iStrata_tauMax).fill(NA_REAL);}
+		  if(exportIF){IF_cumhazard.slice(iTauStore).col(iNewObs2).fill(NA_REAL);}
+		  if(exportSE){SE_cumhazard(iNewObs2,iTauStore) = NA_REAL;}
+		  if(exportIFmean){IFmean_cumhazard.col(iTauStore).fill(NA_REAL);}
 		}
 
 		if(exportSurvival){
-		  if(exportIF){IF_survival.slice(iStrata_tauMax).col(newdata_index[iStrata][iNewObs]).fill(NA_REAL);}
-		  if(exportSE){SE_survival(newdata_index[iStrata][iNewObs],iStrata_tauMax) = NA_REAL;}
-		  if(exportIFmean){IFmean_survival.col(iStrata_tauMax).fill(NA_REAL);}
+		  if(exportIF){IF_survival.slice(iTauStore).col(iNewObs2).fill(NA_REAL);}
+		  if(exportSE){SE_survival(iNewObs2,iTauStore) = NA_REAL;}
+		  if(exportIFmean){IFmean_survival.col(iTauStore).fill(NA_REAL);}
 		}
 	  }
 	  iStrata_tauMax--;
 	}
-
-	if(iStrata_tauMin >= nTau || iStrata_tauMax < 0){continue;}
+	if(iStrata_tauMax < 0){continue;}
+	
     R_CheckUserInterrupt();
 
 	if(debug>1){Rcpp::Rcout << " (tau=" << iStrata_tauMin << "-" << iStrata_tauMax << ")" << std::endl;}
 	
 	// *** compute IF at each time point
 	for(int iTime=iStrata_tauMin; iTime<=iStrata_tauMax; iTime++){
-	  iJump = indexJumpTau[iStrata][iTime];
-
-	  if(debug>1){Rcpp::Rcout << " time " << iTime << "/" << iStrata_tauMax << " jump=" << iJump << " ";}
-	  
-	  // stop
-	  index_timestop = indexJumpSample_time[iStrata];
-	  index_timestop.elem(find(index_timestop > iJump)).fill(iJump);
-
-	  // IF baseline 
-	  if(exportHazard){
-	  	iStrata_IFhazard0 = delta_iS0.col(iStrata) % (sample_time == jump_time[iStrata][iJump]) - sample_eXb.col(iStrata) % hazard_iS0[iStrata](index_timestop);
-	  	if(p>0){
-	  	  iStrata_IFhazard0 -= IFbeta * Ehazard0[iStrata].col(iTime);
-	  	}
+	  if(diag){
+		iTau = newdata_index[iStrata](iTime);
+		iTauStore = 0;
+	  }else{
+		iTau = iTime;
+		iTauStore = iTime;
 	  }
 
+	  // jump
+	  iJump = iStrata_indexJumpTau(iTime);
+	   
+	  // IF baseline hazard 
+	  if(exportHazard && (iStrata_seqTau(iTime) == jump_time[iStrata](iJump))){
+	  	iStrata_IFhazard0 = delta_iS0.col(iStrata) % (sample_time == iStrata_seqTau(iTime)) - sample_eXb.col(iStrata) % (iStrata_seqTau(iTime) <= sample_time) * hazard_iS0[iStrata](iJump);
+	  	if(p>0){
+		  iStrata_IFhazard0 -= IFbeta * Ehazard0[iStrata].col(iTau);
+	  	}
+	  }else{
+		iStrata_IFhazard0.resize(nSample);
+		iStrata_IFhazard0.fill(0.0);
+	  }
+
+	  // IF baseline cumulative hazard hazard 
 	  if(exportCumhazard || exportSurvival){
-	  	iStrata_IFcumhazard0 = delta_iS0.col(iStrata) % (sample_time <= jump_time[iStrata][iJump]) - sample_eXb.col(iStrata) % cumhazard_iS0[iStrata](index_timestop);
+		index_timestop = indexJumpSample_time[iStrata];
+		index_timestop.elem(find(index_timestop > iJump)).fill(iJump);
+
+		iStrata_IFcumhazard0 = delta_iS0.col(iStrata) % (sample_time <= iStrata_seqTau(iTime)) - sample_eXb.col(iStrata) % cumhazard_iS0[iStrata](index_timestop);
 	  	if(p>0){
-	  	  iStrata_IFcumhazard0 -= IFbeta * cumEhazard0[iStrata].col(iTime);
+		  // Rcpp::Rcout << iStrata_seqTau(iTime) << " | obs=" << newdata_index[iStrata](iTime) << " | strata=" << iStrata << " | E=" <<  cumEhazard0[iStrata].col(iTime) << std::endl;
+		  iStrata_IFcumhazard0 -= IFbeta * cumEhazard0[iStrata].col(iTau);
 	  	}
 	  }
-
+	  
 	  // IF hazard/cumhazard/survival
 	  for(int iNewObs=0; iNewObs<iStrata_nNewObs; iNewObs++){
+		if(diag){
+		  iNewObs2 = newdata_index[iStrata](iTime);
+		}else{
+		  iNewObs2 = newdata_index[iStrata](iNewObs);
+		}
+		
 	  	if(p>0){
 	  	  if(exportHazard){
-	  		iStrata_IFhazard = neweXb[iNewObs]*(iStrata_IFhazard0 + newHazard0[iStrata][iTime] * XIFbeta[iNewObs]);
+	  		iStrata_IFhazard = neweXb(iNewObs2)*(iStrata_IFhazard0 + newHazard0[iStrata](iTau) * XIFbeta[iNewObs2]);
 	  	  }
 	  	  if(exportCumhazard || exportSurvival){
-	  		iStrata_IFcumhazard = neweXb[iNewObs]*(iStrata_IFcumhazard0 + newCumHazard0[iStrata][iTime] * XIFbeta[iNewObs]);
+	  		iStrata_IFcumhazard = neweXb(iNewObs2)*(iStrata_IFcumhazard0 + newCumHazard0[iStrata](iTau) * XIFbeta[iNewObs2]);
 	  	  }
-	  	}
+	  	}else{
+		  if(exportHazard){
+	  		iStrata_IFhazard = iStrata_IFhazard0;
+	  	  }
+	  	  if(exportCumhazard || exportSurvival){
+	  		iStrata_IFcumhazard = iStrata_IFcumhazard0;
+	  	  }
+		}
 
+		// store
 	  	if(exportHazard){
-	  	  if(exportIF){IF_hazard.slice(iTime).col(newdata_index[iStrata][iNewObs])= iStrata_IFhazard;}
-	  	  if(exportIFmean){IFmean_hazard.col(iTime) += iStrata_IFhazard;}
+	  	  if(exportIF){IF_hazard.slice(iTauStore).col(iNewObs2)= iStrata_IFhazard;}
+	  	  if(exportIFmean){IFmean_hazard.col(iTauStore) += iStrata_IFhazard;}
 	  	}
 	  	if(exportCumhazard){
-	  	  if(exportIF){IF_cumhazard.slice(iTime).col(newdata_index[iStrata][iNewObs]) = iStrata_IFcumhazard;}
-	  	  if(exportSE){SE_cumhazard(newdata_index[iStrata][iNewObs],iTime) = arma::sum(iStrata_IFcumhazard % iStrata_IFcumhazard);}
-	  	  if(exportIFmean){IFmean_cumhazard.col(iTime) += iStrata_IFcumhazard;}
+	  	  if(exportIF){IF_cumhazard.slice(iTauStore).col(iNewObs2) = iStrata_IFcumhazard;}
+	  	  if(exportSE){SE_cumhazard(iNewObs2,iTauStore) = arma::sum(iStrata_IFcumhazard % iStrata_IFcumhazard);}
+	  	  if(exportIFmean){IFmean_cumhazard.col(iTauStore) += iStrata_IFcumhazard;}
 	  	}
 	  	if(exportSurvival){
-	  	  iStrata_IFsurvival = -iStrata_IFcumhazard*newSurvival(iNewObs,iTime);
-	  	  if(exportIF){IF_survival.slice(iTime).col(newdata_index[iStrata][iNewObs]) = iStrata_IFsurvival;}
-	  	  if(exportSE){SE_survival(newdata_index[iStrata][iNewObs],iTime) = arma::sum(iStrata_IFsurvival % iStrata_IFsurvival);}
-	  	  if(exportIFmean){IFmean_survival.col(iTime) += iStrata_IFsurvival;}
+	  	  iStrata_IFsurvival = -iStrata_IFcumhazard*newSurvival(iNewObs2,iTauStore);
+	  	  if(exportIF){IF_survival.slice(iTauStore).col(iNewObs2) = iStrata_IFsurvival;}
+	  	  if(exportSE){SE_survival(iNewObs2,iTauStore) = arma::sum(iStrata_IFsurvival % iStrata_IFsurvival);}
+	  	  if(exportIFmean){IFmean_survival.col(iTauStore) += iStrata_IFsurvival;}
 	  	}
+
 	  }
 	}
 	if(debug>1){Rcpp::Rcout << std::endl;}
 
   }
 
-  // ** return standard error instead of variance
+  // ** Post process
   if(debug>0){Rcpp::Rcout << "Post process" << std::endl;}
   if(exportSE){
 	if(exportCumhazard){SE_cumhazard = sqrt(SE_cumhazard);}

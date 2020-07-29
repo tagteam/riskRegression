@@ -333,10 +333,6 @@ predictCox <- function(object,
         stop("Argument \'diag\' must be of type logical \n")
     }
     if(diag){
-        if(iid[[1]]==TRUE && store.iid[[1]] == "minimal"){
-            stop("Arguments \'store.iid\' must equal \"full\" when \'diag\' is TRUE \n")
-        }
-
         if(NROW(newdata)!=length(times)){
             stop("When argument \'diag\' is TRUE, the number of rows in \'newdata\' must equal the length of \'times\' \n")
         }
