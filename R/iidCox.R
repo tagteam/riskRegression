@@ -356,11 +356,20 @@ iidCox.coxph <- function(object, newdata = NULL,
                                               minimalExport = (store.iid=="minimal")
                                               )
             }else{
-                if(length(tau.hazard_strata)==0){tau.hazard_strata <- max(object.time_strata[[iStrata]])}
-                IFlambda_res <- list(hazard = matrix(0, ncol = length(tau.hazard_strata), nrow = nObs),
-                                     cumhazard = matrix(0, ncol = length(tau.hazard_strata), nrow = nObs)
-                                     )
-                if(length(tau.hazard_strata)==0){tau.hazard_strata <- NA}
+                if(store.iid=="full"){
+                    IFlambda_res <- list(hazard = matrix(0, nrow = nObs, ncol = max(1,length(tau.hazard_strata))),
+                                         cumhazard = matrix(0, nrow = nObs, ncol = max(1,length(tau.hazard_strata)))
+                                         )
+                }else{
+                    IFlambda_res <- list(delta_iS0 = rep(0, nObs),
+                                         Elambda0 = matrix(0, nrow = nObs, ncol = max(1,length(tau.hazard_strata))),
+                                         cumElambda0 = matrix(0, nrow = nObs, ncol = max(1,length(tau.hazard_strata))) ,
+                                         eXb = rep(0, nObs),
+                                         lambda0_iS0 = numeric(0),
+                                         cumLambda0_iS0 = numeric(0),
+                                         time1 = numeric(0)
+                                         )
+                }
             }
     
             ## output
