@@ -276,7 +276,7 @@ iidCox.coxph <- function(object, newdata = NULL,
         out$IFhazard <- vector(mode = "list", length = nStrata)
         out$IFcumhazard <- vector(mode = "list", length = nStrata)
     }
-    
+
     ## ** Computation of the influence function (coefficients)
     for(iStrata in 1:nStrata){
 

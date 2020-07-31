@@ -9,20 +9,20 @@ baseHaz_cpp <- function(starttimes, stoptimes, status, eXb, strata, predtimes, e
     .Call(`_riskRegression_baseHaz_cpp`, starttimes, stoptimes, status, eXb, strata, predtimes, emaxtimes, nPatients, nStrata, cause, Efron)
 }
 
-calcSeHazard_cpp <- function(seqTau, indexTau, indexJump, IFbeta, cumEhazard0, iS0, cumhazard_iS0, newEXb, sampleEXb, X, sameStrata, sampleTime, cumhazard0, newSurvival, firstJumpTime, lastSampleTime, nTau, nNewObs, nSample, p, exportSE, exportIF, exportIFsum_cumhazard, exportIFsum_survival) {
-    .Call(`_riskRegression_calcSeHazard_cpp`, seqTau, indexTau, indexJump, IFbeta, cumEhazard0, iS0, cumhazard_iS0, newEXb, sampleEXb, X, sameStrata, sampleTime, cumhazard0, newSurvival, firstJumpTime, lastSampleTime, nTau, nNewObs, nSample, p, exportSE, exportIF, exportIFsum_cumhazard, exportIFsum_survival)
-}
-
-calcAIFsurv_cpp <- function(ls_IFcumhazard, IFbeta, cumhazard0, survival, eXb, X, prevStrata, ls_indexStrata, factor, nTimes, nObs, nStrata, nVar, diag, exportCumHazard, exportSurvival) {
-    .Call(`_riskRegression_calcAIFsurv_cpp`, ls_IFcumhazard, IFbeta, cumhazard0, survival, eXb, X, prevStrata, ls_indexStrata, factor, nTimes, nObs, nStrata, nVar, diag, exportCumHazard, exportSurvival)
-}
-
-calcSeCif_cpp <- function(seqTau, jumpTime, jumpTheCause, indexJump, indexSample, IFbeta, Ehazard0, cumEhazard0, survival, iS0, cumhazard_iS0, hazard_iS0, newEXb, sampleEXb, X, sameStrata, sampleTime, hazard0, cumhazard0, theCause, firstJumpTime, lastSampleTime, nTau, nJump, nNewObs, nSample, nCause, p, survtype, exportSE, exportIF, exportIFsum) {
-    .Call(`_riskRegression_calcSeCif_cpp`, seqTau, jumpTime, jumpTheCause, indexJump, indexSample, IFbeta, Ehazard0, cumEhazard0, survival, iS0, cumhazard_iS0, hazard_iS0, newEXb, sampleEXb, X, sameStrata, sampleTime, hazard0, cumhazard0, theCause, firstJumpTime, lastSampleTime, nTau, nJump, nNewObs, nSample, nCause, p, survtype, exportSE, exportIF, exportIFsum)
+calcSeMinimalCSC_cpp <- function(seqTau, newSurvival, hazard0, cumhazard0, newX, neweXb, IFbeta, Ehazard0, cumEhazard0, hazard_iS0, cumhazard_iS0, delta_iS0, sample_eXb, sample_time, indexJumpSample_time, jump_time, isJump_time1, jump2jump, firstTime1theCause, lastSampleTime, newdata_index, factor, grid_strata, nTau, nNewObs, nSample, nStrata, nCause, p, theCause, diag, survtype, exportSE, exportIF, exportIFmean, debug) {
+    .Call(`_riskRegression_calcSeMinimalCSC_cpp`, seqTau, newSurvival, hazard0, cumhazard0, newX, neweXb, IFbeta, Ehazard0, cumEhazard0, hazard_iS0, cumhazard_iS0, delta_iS0, sample_eXb, sample_time, indexJumpSample_time, jump_time, isJump_time1, jump2jump, firstTime1theCause, lastSampleTime, newdata_index, factor, grid_strata, nTau, nNewObs, nSample, nStrata, nCause, p, theCause, diag, survtype, exportSE, exportIF, exportIFmean, debug)
 }
 
 calcSeCif2_cpp <- function(ls_IFbeta, ls_X, ls_cumhazard, ls_hazard, survival, ls_IFcumhazard, ls_IFhazard, eXb, nJumpTime, JumpMax, tau, tauIndex, nTau, nObs, theCause, nCause, hazardType, nVar, nNewObs, strata, exportSE, exportIF, exportIFsum, diag) {
     .Call(`_riskRegression_calcSeCif2_cpp`, ls_IFbeta, ls_X, ls_cumhazard, ls_hazard, survival, ls_IFcumhazard, ls_IFhazard, eXb, nJumpTime, JumpMax, tau, tauIndex, nTau, nObs, theCause, nCause, hazardType, nVar, nNewObs, strata, exportSE, exportIF, exportIFsum, diag)
+}
+
+calcSeMinimalCox_cpp <- function(seqTau, newSurvival, hazard0, cumhazard0, newX, neweXb, IFbeta, Ehazard0, cumEhazard0, hazard_iS0, cumhazard_iS0, delta_iS0, sample_eXb, sample_time, indexJumpSample_time, jump_time, indexJumpTau, lastSampleTime, newdata_index, factor, nTau, nNewObs, nSample, nStrata, p, diag, exportSE, exportIF, exportIFmean, exportHazard, exportCumhazard, exportSurvival, debug) {
+    .Call(`_riskRegression_calcSeMinimalCox_cpp`, seqTau, newSurvival, hazard0, cumhazard0, newX, neweXb, IFbeta, Ehazard0, cumEhazard0, hazard_iS0, cumhazard_iS0, delta_iS0, sample_eXb, sample_time, indexJumpSample_time, jump_time, indexJumpTau, lastSampleTime, newdata_index, factor, nTau, nNewObs, nSample, nStrata, p, diag, exportSE, exportIF, exportIFmean, exportHazard, exportCumhazard, exportSurvival, debug)
+}
+
+calcAIFsurv_cpp <- function(ls_IFcumhazard, IFbeta, cumhazard0, survival, eXb, X, prevStrata, ls_indexStrata, factor, nTimes, nObs, nStrata, nVar, diag, exportCumHazard, exportSurvival) {
+    .Call(`_riskRegression_calcAIFsurv_cpp`, ls_IFcumhazard, IFbeta, cumhazard0, survival, eXb, X, prevStrata, ls_indexStrata, factor, nTimes, nObs, nStrata, nVar, diag, exportCumHazard, exportSurvival)
 }
 
 #' Apply cumsum in each column 
@@ -90,12 +90,8 @@ IFbeta_cpp <- function(newT, neweXb, newX, newStatus, newIndexJump, S01, E1, tim
     .Call(`_riskRegression_IFbeta_cpp`, newT, neweXb, newX, newStatus, newIndexJump, S01, E1, time1, iInfo, p)
 }
 
-IFbetaApprox_cpp <- function(newX, newStatus, newIndexJump, E1, iInfo, p) {
-    .Call(`_riskRegression_IFbetaApprox_cpp`, newX, newStatus, newIndexJump, E1, iInfo, p)
-}
-
-IFlambda0_cpp <- function(tau, IFbeta, newT, neweXb, newStatus, newStrata, newIndexJump, S01, E1, time1, lastTime1, lambda0, p, strata, exact, minimalExport) {
-    .Call(`_riskRegression_IFlambda0_cpp`, tau, IFbeta, newT, neweXb, newStatus, newStrata, newIndexJump, S01, E1, time1, lastTime1, lambda0, p, strata, exact, minimalExport)
+IFlambda0_cpp <- function(tau, IFbeta, newT, neweXb, newStatus, newStrata, newIndexJump, S01, E1, time1, lastTime1, lambda0, p, strata, minimalExport) {
+    .Call(`_riskRegression_IFlambda0_cpp`, tau, IFbeta, newT, neweXb, newStatus, newStrata, newIndexJump, S01, E1, time1, lastTime1, lambda0, p, strata, minimalExport)
 }
 
 predictCIF_cpp <- function(hazard, cumhazard, eXb, strata, newtimes, etimes, etimeMax, t0, nEventTimes, nNewTimes, nData, cause, nCause, survtype, productLimit, diag, exportSurv) {

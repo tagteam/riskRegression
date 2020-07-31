@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: maj 27 2017 (11:46) 
 ## Version: 
-## last-updated: jul 30 2020 (11:34) 
+## last-updated: jul 31 2020 (17:15) 
 ##           By: Brice Ozenne
-##     Update #: 751
+##     Update #: 758
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -123,8 +123,8 @@ calcSeCox <- function(object, times, nTimes, type, diag,
         ## ** method 1: minimal storage of the influence function
         resCpp <- calcSeMinimalCox_cpp(seqTau = times,
                                        newSurvival = if("survival" %in% type){new.survival}else{new.survival <- matrix(NA)},
-                                       newHazard0 = if("hazard" %in% type){Lambda0$hazard}else{list(NA)},
-                                       newCumHazard0 = if("cumhazard" %in% type || "survival" %in% type){Lambda0$cumhazard}else{list(NA)},
+                                       hazard0 = if("hazard" %in% type){Lambda0$hazard}else{list(NA)},
+                                       cumHazard0 = if("cumhazard" %in% type || "survival" %in% type){Lambda0$cumhazard}else{list(NA)},
                                        newX = new.LPdata,
                                        neweXb = new.eXb,
                                        IFbeta = iid.object$IFbeta,
@@ -273,7 +273,6 @@ calcSeCox <- function(object, times, nTimes, type, diag,
             }
 
         }else{ ## nVar > 0
-
             for(iObs in 1:new.n){ ## iObs <- 1
                 iObs.strata <- new.strata[iObs]
 
