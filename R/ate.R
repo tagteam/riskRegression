@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Oct 23 2016 (08:53) 
 ## Version: 
-## last-updated: Jun 25 2020 (13:43) 
-##           By: Thomas Alexander Gerds
-##     Update #: 1688
+## last-updated: aug  7 2020 (18:18) 
+##           By: Brice Ozenne
+##     Update #: 1693
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -289,7 +289,8 @@ ate <- function(event,
                          times = times,
                          cause = cause,
                          handler = handler,
-                         product.limit = dots$product.limit)
+                         product.limit = dots$product.limit,
+                         store.iid = dots$store.iid)
 
     object.event <- init$object.event
     object.treatment <- init$object.treatment
@@ -313,6 +314,7 @@ ate <- function(event,
     censorVar.time <- init$censorVar.time
     censorVar.status <- init$censorVar.status
     dots$product.limit <- init$product.limit
+    store.iid <- init$store.iid
 
     return.iid.nuisance <- (se || band || iid) && (B==0) && (known.nuisance == FALSE)
     if("method.iid" %in% names(dots)){
@@ -460,7 +462,6 @@ ate <- function(event,
     if(B>0){
         tps1 <- Sys.time()
     }
-
     pointEstimate <- do.call(fct.pointEstimate, args.pointEstimate)
     if(B>0){
         tps2 <- Sys.time()
@@ -654,7 +655,8 @@ ate_initArgs <- function(object.event,
                          cause,
                          times,
                          handler,
-                         product.limit){
+                         product.limit,
+                         store.iid){
 
     ## ** user-defined arguments
     ## times
@@ -955,6 +957,11 @@ ate_initArgs <- function(object.event,
     if(is.null(data.index) && length(unique(stats::na.omit(n.obs)))==1){
         data.index <- 1:n.obs["data"]
     }
+
+    ## ** store.iid
+    if(is.null(store.iid)){
+        store.iid <- "minimal"
+    }
     
     ## ** output
     return(list(object.event = object.event,
@@ -978,7 +985,8 @@ ate_initArgs <- function(object.event,
                 censorVar.time = censorVar.time,
                 censorVar.status = censorVar.status,
                 product.limit = product.limit,
-                data.index = data.index
+                data.index = data.index,
+                store.iid = store.iid
                 ))
 }
 

@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: maj 27 2017 (11:46) 
 ## Version: 
-## last-updated: jul 31 2020 (17:15) 
+## last-updated: aug  7 2020 (13:25) 
 ##           By: Brice Ozenne
-##     Update #: 758
+##     Update #: 763
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -120,11 +120,12 @@ calcSeCox <- function(object, times, nTimes, type, diag,
     }
     
     if(store.iid[[1]] == "minimal"){
+
         ## ** method 1: minimal storage of the influence function
         resCpp <- calcSeMinimalCox_cpp(seqTau = times,
                                        newSurvival = if("survival" %in% type){new.survival}else{new.survival <- matrix(NA)},
                                        hazard0 = if("hazard" %in% type){Lambda0$hazard}else{list(NA)},
-                                       cumHazard0 = if("cumhazard" %in% type || "survival" %in% type){Lambda0$cumhazard}else{list(NA)},
+                                       cumhazard0 = if("cumhazard" %in% type || "survival" %in% type){Lambda0$cumhazard}else{list(NA)},
                                        newX = new.LPdata,
                                        neweXb = new.eXb,
                                        IFbeta = iid.object$IFbeta,
@@ -147,7 +148,7 @@ calcSeCox <- function(object, times, nTimes, type, diag,
                                        nTau = nTimes, nNewObs = new.n, nSample = object.n, nStrata = nStrata, p = nVar,
                                        diag = diag, exportSE = "se" %in% export, exportIF = "iid" %in% export, exportIFmean = "average.iid" %in% export,
                                        exportHazard = "hazard" %in% type, exportCumhazard = "cumhazard" %in% type, exportSurvival = "survival" %in% type,
-                                       debug = 5)
+                                       debug = 0)
 
         if("iid" %in% export){
             if("hazard" %in% type){out$hazard.iid <-  aperm(resCpp$IF_hazard, perm = c(2,3,1))}

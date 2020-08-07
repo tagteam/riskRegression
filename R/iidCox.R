@@ -316,12 +316,16 @@ iidCox.coxph <- function(object, newdata = NULL,
             }else{ # same within the strata
                 index.strata <- which(lambda0$strata == object.levelStrata[iStrata])
                 index.keep <- index.strata[lambda0$time[index.strata] %in% Ecpp[[iStrata]]$Utime1]
-      
+                
                 timeStrata <- lambda0$time[index.keep]
                 lambda0Strata <- lambda0$hazard[index.keep]
             }
-    
-            out$etime1.min[iStrata] <- timeStrata[1]
+
+            if(length(timeStrata)>0){
+                out$etime1.min[iStrata] <- timeStrata[1]
+            }else{ ## case of no event in strata
+                out$etime1.min[iStrata] <- min(Ecpp[[iStrata]]$Utime1)
+            }
     
             ## tau.hazard
             if(is.null(tau.hazard)){
@@ -362,8 +366,8 @@ iidCox.coxph <- function(object, newdata = NULL,
                                          )
                 }else{
                     IFlambda_res <- list(delta_iS0 = rep(0, nObs),
-                                         Elambda0 = matrix(0, nrow = nObs, ncol = max(1,length(tau.hazard_strata))),
-                                         cumElambda0 = matrix(0, nrow = nObs, ncol = max(1,length(tau.hazard_strata))) ,
+                                         Elambda0 = matrix(0, nrow = nVar, ncol = max(1,length(tau.hazard_strata))),
+                                         cumElambda0 = matrix(0, nrow = nVar, ncol = max(1,length(tau.hazard_strata))) ,
                                          eXb = rep(0, nObs),
                                          lambda0_iS0 = numeric(0),
                                          cumLambda0_iS0 = numeric(0),

@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: sep  4 2017 (10:38) 
 ## Version: 
-## last-updated: Jun 25 2020 (14:56) 
-##           By: Thomas Alexander Gerds
-##     Update #: 130
+## last-updated: aug  7 2020 (13:44) 
+##           By: Brice Ozenne
+##     Update #: 132
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -1188,6 +1188,20 @@ test_that("Deal with negative/NA time points",{
     expect_error(predictCox(fit.coxph, times = c(1,2,NA), newdata = Melanoma))
 })
 # }}}
+
+## ** Deal with no event
+set.seed(10)
+dt <- sampleData(1e2, outcome = "survival")
+dt$event <- 0
+
+e.coxph <- coxph(Surv(time,event) ~ 1, data = dt, x = TRUE, y = TRUE)
+
+test_that("Deal with no event",{
+    expect_equal(predictCox(e.coxph)$cumhazard,0)
+    expect_equal(predictCox(e.coxph)$survival,1)
+    expect_true(all(predictCox(e.coxph, newdata = dt, times = 1:5)$cumhazard==0))
+    expect_true(all(predictCox(e.coxph, newdata = dt, times = 1:5)$survival==1))
+})
 
 ## * [predictCox] Previous Bug
 cat("[predictCox] Previous bug \n")

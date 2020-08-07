@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: jun 27 2019 (10:43) 
 ## Version: 
-## Last-Updated: apr 21 2020 (16:05) 
+## Last-Updated: aug  7 2020 (18:22) 
 ##           By: Brice Ozenne
-##     Update #: 645
+##     Update #: 652
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -107,6 +107,7 @@ ATE_TI <- function(object.event,
                    data.index,
                    method.iid,
                    product.limit,
+                   store.iid,
                    ...){
 
     tol <- 1e-12 ## difference in jump time must be above tol
@@ -203,9 +204,9 @@ ATE_TI <- function(object.event,
 
         ## at all times of jump of the censoring process
         if(product.limit){
-            G.jump <- predictCoxPL(object.censor, newdata = mydata, times = time.jumpC, iid = (method.iid==2)*return.iid.nuisance)
+            G.jump <- predictCoxPL(object.censor, newdata = mydata, times = time.jumpC, iid = (method.iid==2)*return.iid.nuisance, store.iid = store.iid)
         }else{
-            G.jump <- predictCox(object.censor, newdata = mydata, times = time.jumpC, iid = (method.iid==2)*return.iid.nuisance)
+            G.jump <- predictCox(object.censor, newdata = mydata, times = time.jumpC, iid = (method.iid==2)*return.iid.nuisance, store.iid = store.iid)
         }
         if(return.iid.nuisance && (method.iid==2)){
             attr(out,"iid.nuisance.censoring") <- G.jump$survival.iid
@@ -267,11 +268,10 @@ ATE_TI <- function(object.event,
                 }
             }else{
                 factor <- FALSE
-            }            
-
+            }
             outRisk <- predictRisk(object.event, newdata = data.i, times = times,
                                    average.iid = factor, cause = cause,
-                                   product.limit = product.limit)
+                                   product.limit = product.limit, store.iid = store.iid)
             F1.ctf.tau[[iC]][ls.index.strata[[iC]],] <- outRisk
             if(return.iid.nuisance){
                 if(attr(estimator,"export.Gformula")){
@@ -288,7 +288,7 @@ ATE_TI <- function(object.event,
     if(attr(estimator,"integral")){
         ## absolute risk at event times
         predTempo <- predictRisk(object.event, newdata = mydata, times = c(times, time.jumpC), cause = cause, product.limit = product.limit,
-                                 iid = (method.iid==2)*return.iid.nuisance)
+                                 iid = (method.iid==2)*return.iid.nuisance, store.iid = store.iid)
         F1.tau <- predTempo[,1:n.times,drop=FALSE]
         F1.jump <- predTempo[,n.times + (1:index.lastjumpC),drop=FALSE]
         if((method.iid==2)*return.iid.nuisance){
@@ -298,13 +298,13 @@ ATE_TI <- function(object.event,
         ## survival
         if(inherits(object.event,"CauseSpecificCox")){ ## competing risk case
             S.jump <- predict(object.event, type = "survival", newdata = mydata, times = time.jumpC-tol, product.limit = product.limit,
-                              iid = (method.iid==2)*return.iid.nuisance)
+                              iid = (method.iid==2)*return.iid.nuisance, store.iid = store.iid)
         }else if(product.limit){ ## survival case
             S.jump <- predictCoxPL(object.event, type = "survival", newdata = mydata, times = time.jumpC-tol,
-                                   iid = (method.iid==2)*return.iid.nuisance)
+                                   iid = (method.iid==2)*return.iid.nuisance, store.iid = store.iid)
         }else{
             S.jump <- predictCox(object.event, type = "survival", newdata = mydata, times = time.jumpC-tol,
-                                 iid = (method.iid==2)*return.iid.nuisance)
+                                 iid = (method.iid==2)*return.iid.nuisance, store.iid = store.iid)
         }
         if((method.iid==2)*return.iid.nuisance){
             attr(out,"iid.nuisance.survival") <- S.jump$survival.iid

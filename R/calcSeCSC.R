@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: maj 27 2017 (21:23) 
 ## Version: 
-## last-updated: jul 31 2020 (18:04) 
+## last-updated: aug  7 2020 (18:23) 
 ##           By: Brice Ozenne
-##     Update #: 1022
+##     Update #: 1080
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -25,7 +25,7 @@
 #' @param cif the cumulative incidence function at each prediction time for each individual.
 #' @param hazard list containing the baseline hazard for each cause in a matrix form. Columns correspond to the strata.
 #' @param cumhazard list containing the cumulative baseline hazard for each cause in a matrix form. Columns correspond to the strata.
-#' @param survival list containing the (all cause) survival in a matrix form. Columns correspond to event times.
+#' @param survival list containing the (all cause) survival in a matrix form at t-. Columns correspond to event times.
 #' @param object.time a vector containing all the events regardless to the cause.
 #' @param object.maxtime a matrix containing the latest event in the strata of the observation for each cause.
 #' @param eXb a matrix containing the exponential of the linear predictor evaluated for the new observations (rows) for each cause (columns)
@@ -92,21 +92,19 @@ calcSeCSC <- function(object, cif, hazard, cumhazard, survival, object.time, obj
         which(new.Ustrata==iStrata) - 1
     })
 
-
     if(store.iid == "minimal"){
         ## {{{ method = "minimal"
         ## factor
         if(is.null(attr(export,"factor"))){
             rm.list <- TRUE
-            factor <- list(matrix(1, nrow = new.n, ncol = length(object.time)))
+            factor <- list(matrix(1, nrow = new.n, ncol = 1))
         }else{
             rm.list <- FALSE
             factor <- attr(export, "factor")
         }
-
         grid.strata <- unique(new.strata)
         resCpp <- calcSeMinimalCSC_cpp(seqTau = times,
-                                       newSurvival = survival,
+                                       newSurvival = survival, 
                                        hazard0 = hazard[[cause]],
                                        cumhazard0 = cumhazard,
                                        newX = new.LPdata,
@@ -126,7 +124,9 @@ calcSeCSC <- function(object, cif, hazard, cumhazard, survival, object.time, obj
                                        jump2jump = lapply(object$model, function(x){lapply(x$iid$calcIFhazard$time1, function(y){
                                            prodlim::sindex(y, eval.times = object.time)-1})}),
                                        firstTime1theCause = object$models[[cause]]$iid$etime1.min[grid.strata[,cause]+1],
-                                       lastSampleTime = apply(grid.strata,1,function(iStrata){min(object$models[[cause]]$iid$etime.max[iStrata+1])}),
+                                       lastSampleTime = apply(grid.strata,1,function(iStrata){
+                                           min(sapply(1:nCause, function(iCause){object$models[[iCause]]$iid$etime.max[iStrata[iCause]+1]}))
+                                       }),
                                        newdata_index = new.indexStrata,
                                        factor = factor, grid_strata = grid.strata,
                                        nTau = nTimes, nNewObs = new.n, nSample = object.n, nStrata = new.n.strata, nCause = nCause, p = nVar,
@@ -143,9 +143,9 @@ calcSeCSC <- function(object, cif, hazard, cumhazard, survival, object.time, obj
         }
         if("average.iid" %in% export){
             if(rm.list){
-                out$average.iid <- matrix(resCpp$IFmean_cif[[1]], nrow = object.n, ncol = nTimes)
+                out$average.iid <- matrix(resCpp$IFmean_cif[[1]], nrow = object.n, ncol = diag + (1-diag)*nTimes)
             }else{
-                out$average.iid <- lapply(resCpp$IFmean_cif, function(iVec){matrix(iVec, nrow = object.n, ncol = nTimes)})
+                out$average.iid <- lapply(resCpp$IFmean_cif, function(iVec){matrix(iVec, nrow = object.n, ncol = diag + (1-diag)*nTimes)})
             }
         }
                                         # }}}
@@ -178,7 +178,7 @@ calcSeCSC <- function(object, cif, hazard, cumhazard, survival, object.time, obj
             if("iid" %in% export){
                 out$iid <- aperm(out$iid, c(1,3,2))
             }
-            
+
         }else if("average.iid" %in% export){
 
             if(is.null(attr(export,"factor"))){
@@ -340,7 +340,6 @@ calcSeCSC <- function(object, cif, hazard, cumhazard, survival, object.time, obj
                             iMfactor <- matrix(factor[[iFactor]][iIndex_obs,iFactor2], nrow = iN_activobs, ncol = iiN.jump, byrow = FALSE)
                             iVN_time <- rep(iN_activobs, iiN.jump)
                         }
-
                         iAIF <- calcAICcif_R(hazard0_cause = ihazard0_cause,
                                              cumhazard0 = iCumhazard0,
                                              IFhazard0_cause = iIFhazard0_cause,

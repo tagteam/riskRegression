@@ -229,7 +229,7 @@ predictCox <- function(object,
                         type = type)
             if("hazard" %in% type){out$hazard <- 0}
             if("cumhazard" %in% type){out$cumhazard <- 0}
-            if("survival" %in% type){out$survival <- 0}
+            if("survival" %in% type){out$survival <- 1}
         }else{
             new.strata <- coxStrata(object, data = newdata, 
                                     sterms = infoVar$strata.sterms, 

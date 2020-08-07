@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: maj 18 2017 (09:23) 
 ## Version: 
-## last-updated: Jun 25 2020 (14:55) 
-##           By: Thomas Alexander Gerds
-##     Update #: 116
+## last-updated: aug  7 2020 (12:24) 
+##           By: Brice Ozenne
+##     Update #: 117
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -188,24 +188,20 @@ IF.coxph_sort <- iidCox(e.coxph_sort, keep.times = FALSE, store.iid = "full", re
 ## and then compute the IF for the survival
 IFminimal.coxph <- iidCox(e.coxph, keep.times = FALSE, store.iid = "minimal", return.object = FALSE)
 ## same as before but using an approximation
-IFapprox.coxph <- iidCox(e.coxph, keep.times = FALSE, store.iid = "approx", return.object = FALSE)
 
 IFlambda_GS <- t(as.data.table(e.timereg$B.iid))
-IFlambda_GSapprox <- t(as.data.table(eApprox.timereg$B.iid))
  
 ## *** Tests
 test_that("[iidCox] beta - no strata, no interaction, continuous",{
     expect_equal(unname(IF.coxph$IFbeta),e.timereg$gamma.iid)
     expect_equal(unname(IF.coxph$IFbeta[order(dt$time),]),unname(IF.coxph_sort$IFbeta))
     expect_equal(unname(IFminimal.coxph$IFbeta),e.timereg$gamma.iid)
-    expect_equal(unname(IFapprox.coxph$IFbeta),eApprox.timereg$gamma.iid)
 })
 
 test_that("[iidCox] lambda - no strata, no interaction, continuous",{
     expect_equal(as.double(IF.coxph$IFcumhazard[[1]]), as.double(IFlambda_GS[,-1]))
     expect_equal(IF.coxph$IFcumhazard[[1]][order(dt$time),], IF.coxph_sort$IFcumhazard[[1]])
     expect_equal(IFminimal.coxph$IFcumhazard[[1]], NULL)
-    expect_equal(as.double(IFapprox.coxph$IFcumhazard[[1]]), as.double(IFlambda_GSapprox[,-1]))
 })
   
 

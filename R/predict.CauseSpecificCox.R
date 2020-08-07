@@ -121,7 +121,7 @@ predict.CauseSpecificCox <- function(object,
                                      confint = (se+band)>0,
                                      average.iid = FALSE,
                                      product.limit = TRUE,
-                                     store.iid = "minimal",
+                                     store.iid = "full",
                                      diag = FALSE,
                                      ...){
 
@@ -187,13 +187,8 @@ predict.CauseSpecificCox <- function(object,
         stop("Argument \'diag\' must be logical \n")
     }
     
-    if(diag){
-        if(iid[[1]]==TRUE && store.iid[[1]] == "minimal"){
-            stop("Arguments \'store.iid\' must equal \"full\" when \'diag\' is TRUE \n")
-        }
-        if(NROW(newdata)!=n.times){
-            stop("When argument \'diag\' is TRUE, the number of rows in \'newdata\' must equal the length of \'times\' \n")
-        }
+    if(diag && NROW(newdata)!=n.times){
+        stop("When argument \'diag\' is TRUE, the number of rows in \'newdata\' must equal the length of \'times\' \n")
     }
     if(average.iid==TRUE && !is.null(attr(average.iid,"factor"))){
         if(iid && !is.null(attr(average.iid,"factor"))){
@@ -346,7 +341,7 @@ predict.CauseSpecificCox <- function(object,
                                cif = outCpp$cif,
                                hazard = ls.hazard,
                                cumhazard = ls.cumhazard,
-                               survival = outCpp$survival,
+                               survival = outCpp$survival, ## survival at t-
                                object.time = eventTimes,
                                object.maxtime = vec.etimes.max, 
                                eXb = M.eXb,

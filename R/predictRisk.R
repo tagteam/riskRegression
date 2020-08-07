@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun  6 2016 (09:02) 
 ## Version: 
-## last-updated: Jun 25 2020 (15:33) 
-##           By: Thomas Alexander Gerds
-##     Update #: 324
+## last-updated: aug  7 2020 (18:21) 
+##           By: Brice Ozenne
+##     Update #: 325
 #----------------------------------------------------------------------
 ## 
 ### Commentary:
@@ -457,7 +457,8 @@ predictRisk.coxph <- function(object, newdata, times, product.limit = FALSE, iid
                                 iid = iid,
                                 average.iid = average.iid,
                                 keep.times=FALSE,
-                                type="survival")
+                                type="survival",
+                                ...)
     }else{
         outPred <- predictCox(object=object,
                               newdata=newdata,
@@ -465,7 +466,8 @@ predictRisk.coxph <- function(object, newdata, times, product.limit = FALSE, iid
                               iid = iid,
                               average.iid = average.iid,
                               keep.times=FALSE,
-                              type="survival")
+                              type="survival",
+                              ...)
     }
     if(identical(type,"survival")){
         out <- outPred$survival
@@ -841,7 +843,7 @@ predictRisk.CauseSpecificCox <- function (object, newdata, times, cause, product
                        iid = iid,
                        average.iid = average.iid,
                        product.limit = product.limit,
-                       type = type)
+                       type = type, ...)
 
     out <- outPred[[type]]
     if(iid){

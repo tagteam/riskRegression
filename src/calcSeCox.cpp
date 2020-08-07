@@ -294,7 +294,6 @@ List calcSeMinimalCox_cpp(const arma::vec& seqTau, // horizon time for the predi
 		tempo_uvec(0) = iTau;
 		
 		for(int iFactor=0; iFactor<nFactor; iFactor++){
-
 		  iStrata_weXb = factor[iFactor].submat(newdata_index[iStrata],tempo_uvec) % neweXb(newdata_index[iStrata]);
 		  if(p>0){
 			iStrata_weXbX = newX.rows(newdata_index[iStrata]);
@@ -304,7 +303,7 @@ List calcSeMinimalCox_cpp(const arma::vec& seqTau, // horizon time for the predi
 		  if(exportHazard){
 			IFmean_hazard[iFactor].col(iTauStore) += iStrata_IFhazard0 * arma::sum(iStrata_weXb);
 			if(p>0){
-			  IFmean_hazard[iFactor].col(iTauStore) += IFbeta % arma::trans(arma::sum(iStrata_weXbX,0)) * hazard0[iStrata](iTau);
+			  IFmean_hazard[iFactor].col(iTauStore) += IFbeta * arma::trans(arma::sum(iStrata_weXbX,0)) * hazard0[iStrata](iTau);
 			}
 		  }
 		
@@ -341,7 +340,7 @@ List calcSeMinimalCox_cpp(const arma::vec& seqTau, // horizon time for the predi
 
   if(exportIFmean == true){
 	for(int iFactor=0; iFactor<nFactor; iFactor++){
-	  if(exportHazard){IFmean_cumhazard[iFactor] /= nNewObs;}
+	  if(exportHazard){IFmean_hazard[iFactor] /= nNewObs;}
 	  if(exportCumhazard){IFmean_cumhazard[iFactor] /= nNewObs;}
 	  if(exportSurvival){IFmean_survival[iFactor] /= nNewObs;}
 	}
