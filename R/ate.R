@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Oct 23 2016 (08:53) 
 ## Version: 
-## last-updated: aug 10 2020 (17:47) 
+## last-updated: aug 10 2020 (18:09) 
 ##           By: Brice Ozenne
-##     Update #: 1724
+##     Update #: 1730
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -724,7 +724,7 @@ ate_initArgs <- function(object.event,
     if(!missing(object.treatment) && inherits(object.treatment,"formula")){
         myformula.treatment <- object.treatment
         object.treatment <- do.call(stats::glm, args = list(formula = myformula.treatment, data = mydata, family = stats::binomial(link = "logit")))        
-    }else if(!missing(object.treatment) && !is.character(object.treatment)){
+    }else if(!missing(object.treatment) && !is.null(object.treatment) && !is.character(object.treatment)){
         myformula.treatment <- stats::formula(object.treatment)
     }
 
@@ -847,7 +847,7 @@ ate_initArgs <- function(object.event,
         treatment <- NULL
         object.treatment <- NULL
         object.censor <- NULL
-    }else  if(is.character(object.treatment)){
+    }else  if(is.character(object.treatment) || is.null(object.treatment)){
         treatment <- object.treatment
         object.treatment <- NULL
         object.censor <- NULL
@@ -1239,7 +1239,7 @@ ate_checkArgs <- function(object.event,
 
     
     ## ** treatment
-    if(!is.null(treatment)){        
+    if(!is.null(treatment)){
         if(treatment %in% names(mydata) == FALSE){
             stop("The data set does not seem to have a variable ",treatment," (argument: object.treatment). \n")
         }
@@ -1355,7 +1355,7 @@ vcov.ate <- function(object, ...){
 
 ## * nobs.multinom
 nobs.multinom <- function(object,...){
-    NROW(m.treatment3$residuals)
+    NROW(object$residuals)
 }
 ##----------------------------------------------------------------------
 ### ate.R ends here

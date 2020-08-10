@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun  6 2016 (09:02) 
 ## Version: 
-## last-updated: aug 10 2020 (17:46) 
+## last-updated: aug 10 2020 (18:00) 
 ##           By: Brice Ozenne
-##     Update #: 375
+##     Update #: 376
 #----------------------------------------------------------------------
 ## 
 ### Commentary:
@@ -378,7 +378,7 @@ predictRisk.multinom <- function(object, newdata, iid = FALSE, average.iid = FAL
         ## /\beta_kj = \sum_i y_{ki} X_ij - X_ij exp(X_i \beta_k) / (1 + \sum_k>1 exp(X_i \beta_k))
         score <- do.call(cbind,lapply(2:n.class, function(iY){colMultiply_cpp(oldX, scale = (oldY[,iY,drop=FALSE] - oldeXbeta[,iY-1,drop=FALSE] / (1+rowSums(oldeXbeta))))}))
         ## > information
-        informationM1 <- vcov(object)
+        informationM1 <- stats::vcov(object)
 
         iid.beta <- score %*% informationM1
         iid.beta.level <- lapply(2:n.class, function(iClass){iid.beta[,(iClass-2) * n.coefperY + 1:n.coefperY,drop=FALSE]})

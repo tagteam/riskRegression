@@ -237,7 +237,7 @@ n <- 500
 set.seed(10)
 dt <- sampleData(n, outcome="competing.risks")
 dt$time <- round(dt$time,1)
-dt$X1 <- factor(rbinom(n, prob = c(0.2,0.3) , size = 2), labels = paste0("T",0:2))
+dt$X1 <- factor(rbinom(n, prob = c(0.4) , size = 1), labels = paste0("T",0:1))
 
 ## working models
 m.event <-  CSC(Hist(time,event)~ X1+X2+X3+X5+X8,data=dt)
@@ -245,22 +245,20 @@ m.censor <-  coxph(Surv(time,event==0)~ X1+X2+X3+X5+X8,data=dt, x = TRUE, y = TR
 m.treatment <-  glm(X1~X2+X3+X5+X8,data=dt,family=binomial(link="logit"))
 
 ## prediction + average
-profvis(
 ateRobust <- ate(event = m.event,
                  treatment = m.treatment,
                  censor = m.censor,
-                 data = dt, times = 5:10,##seq(0,10,0.1), 
+                 data = dt, times = 5:10, 
                  cause = 1, band = TRUE)
-)
-autoplot(ateRobust, alpha = 0.25, band = TRUE)
 
 ## compare various estimators
-ateRobust <- ate(event = m.event,
+ateRobust3 <- ate(event = m.event,
                  treatment = m.treatment,
                  censor = m.censor,
+                 estimator = c("Gformula","IPTW","AIPTW"),
                  data = dt, times = c(5:10), 
                  cause = 1, se = TRUE)
-ateRobust
+ateRobust3$meanRisk[,.(meanRisk.Gformula,meanRisk.IPTW,meanRisk.AIPTW)]
 }
 
 #### time-dependent covariates ###
