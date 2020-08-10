@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: sep  4 2017 (10:38) 
 ## Version: 
-## last-updated: aug  7 2020 (13:44) 
+## last-updated: aug 10 2020 (11:55) 
 ##           By: Brice Ozenne
-##     Update #: 132
+##     Update #: 140
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -1115,20 +1115,29 @@ newdata <- d
 test_that("[predictCox] store.iid = minimal vs. full - no strata", {
     res1 <- predictCox(m.coxph, times = seqTime, newdata = newdata,
                        type = c("cumhazard", "survival"),
-                       store.iid = "minimal", se = TRUE, iid = TRUE) 
+                       store.iid = "minimal", se = TRUE, iid = TRUE, average.iid = TRUE) 
     res2 <- predictCox(m.coxph, times = seqTime, newdata = newdata,
                        type = c("cumhazard", "survival"),
-                       store.iid = "minimal", average.iid = TRUE) 
-    res3 <- predictCox(m.coxph, times = seqTime, newdata = newdata,
-                       type = c("cumhazard", "survival"),
                        store.iid = "full", se = TRUE, iid = TRUE)
-    expect_equal(res1$cumhazard.se,res3$cumhazard.se)
-    expect_equal(res1$survival.se,res3$survival.se)
-    expect_equal(res1$cumhazard.iid,res3$cumhazard.iid)
-    expect_equal(res1$survival.iid,res3$survival.iid)
+    expect_equal(res1$cumhazard.se,res2$cumhazard.se)
+    expect_equal(res1$survival.se,res2$survival.se)
+    expect_equal(res1$cumhazard.iid,res2$cumhazard.iid)
+    expect_equal(res1$survival.iid,res2$survival.iid)
+    expect_equal(res1$cumhazard.average.iid, t(apply(res2$cumhazard.iid,2:3,mean)))
+    expect_equal(res1$survival.average.iid, t(apply(res2$survival.iid,2:3,mean)))
 
-    expect_equal(res2$cumhazard.average.iid, t(apply(res3$cumhazard.iid,2:3,mean)))
-    expect_equal(res2$survival.average.iid, t(apply(res3$survival.iid,2:3,mean)))
+    ## pre-store
+    m2.coxph <- iidCox(m.coxph, store.iid = "minimal")
+    res1bis <- predictCox(m2.coxph, times = seqTime, newdata = newdata,
+                          type = c("cumhazard", "survival"),
+                          se = TRUE, iid = TRUE, average.iid = TRUE) 
+    expect_equal(res1bis$cumhazard.se,res2$cumhazard.se)
+    expect_equal(res1bis$survival.se,res2$survival.se)
+    expect_equal(res1bis$cumhazard.iid,res2$cumhazard.iid)
+    expect_equal(res1bis$survival.iid,res2$survival.iid)
+    expect_equal(res1bis$cumhazard.average.iid, t(apply(res2$cumhazard.iid,2:3,mean)))
+    expect_equal(res1bis$survival.average.iid, t(apply(res2$survival.iid,2:3,mean)))
+    
 })
 
 ## *** strata
@@ -1141,20 +1150,28 @@ test_that("[predictCox] store.iid = minimal vs. full - strata", {
     newdata <- rbind(d[1],d[1])
     res1 <- predictCox(m.coxph, times = seqTime, newdata = newdata,
                        type = c("cumhazard", "survival"),
-                       store.iid = "minimal", se = TRUE, iid = TRUE) 
+                       store.iid = "minimal", se = TRUE, iid = TRUE, average.iid = TRUE) 
     res2 <- predictCox(m.coxph, times = seqTime, newdata = newdata,
                        type = c("cumhazard", "survival"),
-                       store.iid = "minimal", average.iid = TRUE) 
-    res3 <- predictCox(m.coxph, times = seqTime, newdata = newdata,
-                       type = c("cumhazard", "survival"),
                        store.iid = "full", se = TRUE, iid = TRUE)
-    expect_equal(res1$cumhazard.se,res3$cumhazard.se)
-    expect_equal(res1$survival.se,res3$survival.se)
-    expect_equal(res1$cumhazard.iid,res3$cumhazard.iid)
-    expect_equal(res1$survival.iid,res3$survival.iid)
+    expect_equal(res1$cumhazard.se,res2$cumhazard.se)
+    expect_equal(res1$survival.se,res2$survival.se)
+    expect_equal(res1$cumhazard.iid,res2$cumhazard.iid)
+    expect_equal(res1$survival.iid,res2$survival.iid)
+    expect_equal(res1$cumhazard.average.iid, t(apply(res2$cumhazard.iid,2:3,mean)))
+    expect_equal(res1$survival.average.iid, t(apply(res2$survival.iid,2:3,mean)))
 
-    expect_equal(res2$cumhazard.average.iid, t(apply(res3$cumhazard.iid,2:3,mean)))
-    expect_equal(res2$survival.average.iid, t(apply(res3$survival.iid,2:3,mean)))
+    ## pre store
+    m2.coxph <- iidCox(m.coxph, store.iid = "minimal")
+    res1bis <- predictCox(m2.coxph, times = seqTime, newdata = newdata,
+                       type = c("cumhazard", "survival"),
+                       se = TRUE, iid = TRUE, average.iid = TRUE) 
+    expect_equal(res1bis$cumhazard.se,res2$cumhazard.se)
+    expect_equal(res1bis$survival.se,res2$survival.se)
+    expect_equal(res1bis$cumhazard.iid,res2$cumhazard.iid)
+    expect_equal(res1bis$survival.iid,res2$survival.iid)
+    expect_equal(res1bis$cumhazard.average.iid, t(apply(res2$cumhazard.iid,2:3,mean)))
+    expect_equal(res1bis$survival.average.iid, t(apply(res2$survival.iid,2:3,mean)))
 })
 
 ## ** Weigthed cox
@@ -1197,8 +1214,8 @@ dt$event <- 0
 e.coxph <- coxph(Surv(time,event) ~ 1, data = dt, x = TRUE, y = TRUE)
 
 test_that("Deal with no event",{
-    expect_equal(predictCox(e.coxph)$cumhazard,0)
-    expect_equal(predictCox(e.coxph)$survival,1)
+    expect_true(all(predictCox(e.coxph)$cumhazard==0))
+    expect_true(all(predictCox(e.coxph)$survival==1))
     expect_true(all(predictCox(e.coxph, newdata = dt, times = 1:5)$cumhazard==0))
     expect_true(all(predictCox(e.coxph, newdata = dt, times = 1:5)$survival==1))
 })

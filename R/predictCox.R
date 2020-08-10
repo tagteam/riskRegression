@@ -216,64 +216,6 @@ predictCox <- function(object,
     }else{
         etimes.max <- max(object.modelFrame[["stop"]])
     }
-
-    ## ** exit if no event
-    if(all(object.modelFrame$status==0)){ ## no event
-        if(is.null(newdata)){
-            ## known bug: when using coxph the strata variable is 0 for all observations even in presence of actual strata
-            out <- list(times = object.modelFrame$stop,
-                        strata = object.modelFrame$strata.num,
-                        lastEventTime = etimes.max,
-                        se = se,
-                        band = band,
-                        type = type)
-            if("hazard" %in% type){out$hazard <- 0}
-            if("cumhazard" %in% type){out$cumhazard <- 0}
-            if("survival" %in% type){out$survival <- 1}
-        }else{
-            new.strata <- coxStrata(object, data = newdata, 
-                                    sterms = infoVar$strata.sterms, 
-                                    strata.vars = infoVar$stratavars, 
-                                    strata.levels = infoVar$strata.levels)
-                  
-            out <- list(se = se,
-                        band = band,
-                        type = type,
-                        diag = diag,
-                        times = times,
-                        strata = new.strata)
-
-            ls.value0 <- unlist(lapply(times, function(x){ifelse(x<=etimes.max[as.numeric(new.strata)],0,NA)}))
-            ls.value1 <- unlist(lapply(times, function(x){ifelse(x<=etimes.max[as.numeric(new.strata)],1,NA)}))
-
-            if("hazard" %in% type){
-                out$hazard <- matrix(ls.value0, nrow = NROW(newdata), ncol = length(times), dimnames = list(NULL, times), byrow = FALSE)
-            }
-            if("cumhazard" %in% type){
-                out$cumhazard <- matrix(ls.value0, nrow = NROW(newdata), ncol = length(times), dimnames = list(NULL, times), byrow = FALSE)
-            }
-            if("survival" %in% type){
-                out$survival <- matrix(ls.value1, nrow = NROW(newdata), ncol = length(times), dimnames = list(NULL, times), byrow = FALSE)
-            }
-            if(se){
-                out[paste0(type,".se")] <- matrix(ls.value0, nrow = NROW(newdata), ncol = length(times), dimnames = list(NULL, times), byrow = FALSE)
-            }
-            if(iid){
-                Als.value <- array(unlist(lapply(1:object.n, function(x){ls.value0})), dim = c(NROW(newdata), nTimes, object.n))
-                if("hazard" %in% type){out$hazard.iid <- Als.value}
-                if("cumhazard" %in% type){out$cumhazard.iid <- Als.value}
-                if("survival" %in% type){out$survival.iid <- Als.value}
-            }
-            if(average.iid){
-                iM.iid <- matrix(0, nrow = NROW(object.modelFrame), ncol = length(times), dimnames = list(NULL, times))
-                out$survival.average.iid[,times>min(etimes.max)] <- NA
-                out[paste0(type,".average.iid")] <- iM.iid
-            }
-        }
-        class(out) <- "predictCox"
-        return(out)
-    }
-
     
     ## ** checks
     ## check user imputs 

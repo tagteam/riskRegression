@@ -6,13 +6,13 @@ using namespace arma;
 using namespace std;
 
 // * calcSeMinimalCox_cpp: compute IF/sumIF/se for the hazard / cumlative hazard / survival (method 1)
-// [[Rcpp::export]]
 // J: number of jump times
 // n: number of observations in the training set
 // N: number of observations in the prediction set
 // p: number of regressors
 // S: number of strata
 // T: number of prediction times
+// [[Rcpp::export]]
 List calcSeMinimalCox_cpp(const arma::vec& seqTau, // horizon time for the predictions (T)
 						  const arma::mat& newSurvival, // predicted survival for all observations at each horizon time (NxT)
 						  const std::vector< arma::vec >& hazard0, // baseline hazard for each strata  S:T

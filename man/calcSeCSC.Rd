@@ -36,7 +36,7 @@ calcSeCSC(
 
 \item{cumhazard}{list containing the cumulative baseline hazard for each cause in a matrix form. Columns correspond to the strata.}
 
-\item{survival}{list containing the (all cause) survival in a matrix form. Columns correspond to event times.}
+\item{survival}{list containing the (all cause) survival in a matrix form at t-. Columns correspond to event times.}
 
 \item{object.time}{a vector containing all the events regardless to the cause.}
 

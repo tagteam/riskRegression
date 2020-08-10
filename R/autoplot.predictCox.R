@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: feb 17 2017 (10:06) 
 ## Version: 
-## last-updated: jun 24 2020 (09:05) 
+## last-updated: aug 10 2020 (12:05) 
 ##           By: Brice Ozenne
-##     Update #: 603
+##     Update #: 604
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -356,6 +356,34 @@ predict2plot <- function(dataL, name.outcome,
     labelBand <- paste0(conf.level*100,"% confidence \n band")
 
     gg.base <- ggplot(data = dataL, mapping = aes_string(group = "row"))
+
+    if(band){ ## confidence band
+        if(!is.na(alpha)){
+            gg.base <- gg.base + ggplot2::geom_rect(aes(xmin = timeLeft, xmax = time, ymin = lowerBand, ymax = upperBand,
+                                                        fill = labelBand), linetype = 0, alpha = alpha)
+            gg.base <- gg.base + scale_fill_manual("", values="grey12")        
+        }else{
+            gg.base <- gg.base + ggplot2::geom_segment(aes(x = timeLeft, y = lowerBand, xend = time, yend = lowerBand, linetype = "band"),
+                                                       size = 1.2, color = "black")
+            gg.base <- gg.base + ggplot2::geom_segment(aes(x = timeLeft, y = upperBand, xend = time, yend = upperBand, linetype = "band"),
+                                                       size = 1.2, color = "black")
+        }
+    }
+    
+    if(ci){ ## confidence interval
+        if(!is.na(alpha)){
+            gg.base <- gg.base + ggplot2::geom_errorbar(aes(x = time, ymin = lowerCI, ymax = upperCI, linetype = labelCI))
+            gg.base <- gg.base + scale_linetype_manual("",values=setNames(1,labelCI))
+
+        }else{
+            gg.base <- gg.base + ggplot2::geom_segment(aes(x = timeLeft, y = lowerCI, xend = time, yend = lowerCI, linetype = "ci"),
+                                                       size = 1.2, color = "black")
+            gg.base <- gg.base + ggplot2::geom_segment(aes(x = timeLeft, y = upperCI, xend = time, yend = upperCI, linetype = "ci"),
+                                                       size = 1.2, color = "black")
+        }
+    }
+
+    ## estimate
     gg.base <- gg.base + ggplot2::geom_segment(mapping = aes_string(x = "timeLeft", y = name.outcome, xend = "time", yend = name.outcome, color = group.by), size = 1.5)
     if("status" %in% names(dataL)){
         gg.base <- gg.base + ggplot2::geom_point(data = dataL[dataL$origin==FALSE], mapping = aes_string(x = "timeLeft", y = name.outcome, color = group.by, shape = "status"), size = 3)
@@ -376,30 +404,6 @@ predict2plot <- function(dataL, name.outcome,
         }else{
             gg.base <- gg.base + scale_color_continuous(breaks = uniqueObs[seq(1,length(uniqueObs), length.out = min(10,length(uniqueObs)))],
                                                         limits = c(0.5, length(uniqueObs) + 0.5))
-        }
-    }
-    if(ci){
-        if(!is.na(alpha)){
-            gg.base <- gg.base + ggplot2::geom_errorbar(aes(x = time, ymin = lowerCI, ymax = upperCI, linetype = labelCI))
-            gg.base <- gg.base + scale_linetype_manual("",values=setNames(1,labelCI))
-
-        }else{
-            gg.base <- gg.base + ggplot2::geom_segment(aes(x = timeLeft, y = lowerCI, xend = time, yend = lowerCI, linetype = "ci"),
-                                                       size = 1.2, color = "black")
-            gg.base <- gg.base + ggplot2::geom_segment(aes(x = timeLeft, y = upperCI, xend = time, yend = upperCI, linetype = "ci"),
-                                                       size = 1.2, color = "black")
-        }
-    }
-    if(band){
-        if(!is.na(alpha)){
-            gg.base <- gg.base + ggplot2::geom_rect(aes(xmin = timeLeft, xmax = time, ymin = lowerBand, ymax = upperBand,
-                                                        fill = labelBand), linetype = 0, alpha = alpha)
-            gg.base <- gg.base + scale_fill_manual("", values="grey12")        
-        }else{
-            gg.base <- gg.base + ggplot2::geom_segment(aes(x = timeLeft, y = lowerBand, xend = time, yend = lowerBand, linetype = "band"),
-                                                       size = 1.2, color = "black")
-            gg.base <- gg.base + ggplot2::geom_segment(aes(x = timeLeft, y = upperBand, xend = time, yend = upperBand, linetype = "band"),
-                                                       size = 1.2, color = "black")
         }
     }
 

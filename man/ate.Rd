@@ -126,11 +126,10 @@ dtS$X1 <- factor(rbinom(n, prob = c(0.3,0.4) , size = 2), labels = paste0("T",0:
 fit <- cph(formula = Surv(time,event)~ X1+X2,data=dtS,y=TRUE,x=TRUE)
 
 ## compute the ATE at times 5, 6, 7, and 8 using X1 as the treatment variable
-\dontrun{
 ## only point estimate (argument se = FALSE)
 ateFit1a <- ate(fit, data = dtS, treatment = "X1", times = 5:8,
                se = FALSE)
-
+\dontrun{
 ## standard error / confidence intervals computed using the influence function
 ## (argument se = TRUE and B = 0)
 ateFit1b <- ate(fit, data = dtS, treatment = "X1", times = 5:8,
@@ -228,6 +227,40 @@ ateFit2d <- ate(fitCR, data = dt, treatment = "X1", times = c(10,15,20),
 ## (parallel computation, argument mc.cores = 2) 
 ateFit2e <- ate(fitCR, data = dt, treatment = "X1", times = c(10,15,20), 
                 cause = 1, se = TRUE, B = 100, mc.cores = 2)
+
+}
+
+#### Double robust estimator ####
+\dontrun{
+## generate data
+n <- 500
+set.seed(10)
+dt <- sampleData(n, outcome="competing.risks")
+dt$time <- round(dt$time,1)
+dt$X1 <- factor(rbinom(n, prob = c(0.2,0.3) , size = 2), labels = paste0("T",0:2))
+
+## working models
+m.event <-  CSC(Hist(time,event)~ X1+X2+X3+X5+X8,data=dt)
+m.censor <-  coxph(Surv(time,event==0)~ X1+X2+X3+X5+X8,data=dt, x = TRUE, y = TRUE)
+m.treatment <-  glm(X1~X2+X3+X5+X8,data=dt,family=binomial(link="logit"))
+
+## prediction + average
+profvis(
+ateRobust <- ate(event = m.event,
+                 treatment = m.treatment,
+                 censor = m.censor,
+                 data = dt, times = 5:10,##seq(0,10,0.1), 
+                 cause = 1, band = TRUE)
+)
+autoplot(ateRobust, alpha = 0.25, band = TRUE)
+
+## compare various estimators
+ateRobust <- ate(event = m.event,
+                 treatment = m.treatment,
+                 censor = m.censor,
+                 data = dt, times = c(5:10), 
+                 cause = 1, se = TRUE)
+ateRobust
 }
 
 #### time-dependent covariates ###

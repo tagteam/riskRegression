@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: maj 18 2017 (09:23) 
 ## Version: 
-## last-updated: okt 11 2019 (16:10) 
+## last-updated: aug 10 2020 (11:13) 
 ##           By: Brice Ozenne
-##     Update #: 282
+##     Update #: 283
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -1369,39 +1369,52 @@ m.CSC <- CSC(Hist(time, event) ~ X1+X6, data = d)
  
 seqTime <- c(1e-16,4:10,d$time[1:10],1e6)
 newdata <- d
-head(newdata[,.(time,event,X1,X6)])
+## head(newdata[,.(time,event,X1,X6)])
 
 test_that("[predictCSC]: iid minimal - no strata", {
-    res1 <- predict(m.CSC, times = seqTime, newdata = newdata[1],
+    res1 <- predict(m.CSC, times = seqTime, newdata = newdata,
                     cause = 1,
-                    store.iid = "minimal", se = TRUE, iid = TRUE)
-    res2 <- predict(m.CSC, times = seqTime, newdata = newdata[1],
-                    cause = 1,
-                    store.iid = "minimal", average.iid = TRUE)
-    res3 <- predict(m.CSC, times = seqTime, newdata = newdata[1],
+                    store.iid = "minimal", se = TRUE, iid = TRUE, average.iid = TRUE)
+    res2 <- predict(m.CSC, times = seqTime, newdata = newdata,
                     cause = 1,
                     store.iid = "full", se = TRUE, iid = TRUE)
 
+    expect_equal(res1$absRisk.se,res2$absRisk.se)
+    expect_equal(res1$absRisk.iid,res2$absRisk.iid)
+    expect_equal(res1$absRisk.average.iid, t(apply(res2$absRisk.iid,2:3,mean)))
+
+    m2.CSC <- iidCox(m.CSC, store.iid = "minimal")
+    res1bis <- predict(m2.CSC, times = seqTime, newdata = newdata,
+                    cause = 1,
+                    se = TRUE, iid = TRUE, average.iid = TRUE)
     
-    expect_equal(res1$absRisk.se,res3$absRisk.se)
-    expect_equal(res1$absRisk.iid,res3$absRisk.iid)
-    expect_equal(res2$absRisk.average.iid, t(apply(res3$absRisk.iid,2:3,mean)))
+    expect_equal(res1bis$absRisk.se,res2$absRisk.se)
+    expect_equal(res1bis$absRisk.iid,res2$absRisk.iid)
+    expect_equal(res1bis$absRisk.average.iid, t(apply(res2$absRisk.iid,2:3,mean)))
 })
 
+m.CSC <- CSC(Hist(time, event) ~ strata(X1)+X6, data = d)
 
 test_that("[predictCSC]: iid minimal - strata", {
     res1 <- predict(m.CSC, times = seqTime, newdata = newdata,
                     cause = 1,
-                    store.iid = "minimal", se = TRUE, iid = TRUE)
+                    store.iid = "minimal", se = TRUE, iid = TRUE, average.iid = TRUE)
     res2 <- predict(m.CSC, times = seqTime, newdata = newdata,
                     cause = 1,
-                    store.iid = "minimal", average.iid = TRUE)
-    res3 <- predict(m.CSC, times = seqTime, newdata = newdata,
-                    cause = 1,
                     store.iid = "full", se = TRUE, iid = TRUE)
-    expect_equal(res1$absRisk.se,res3$absRisk.se)
-    expect_equal(res1$absRisk.iid,res3$absRisk.iid)
-    expect_equal(res2$absRisk.average.iid, t(apply(res3$absRisk.iid,2:3,mean)))
+
+    expect_equal(res1$absRisk.se,res2$absRisk.se)
+    expect_equal(res1$absRisk.iid,res2$absRisk.iid)
+    expect_equal(res1$absRisk.average.iid, t(apply(res2$absRisk.iid,2:3,mean)))
+
+    m2.CSC <- iidCox(m.CSC, store.iid = "minimal")
+    res1bis <- predict(m2.CSC, times = seqTime, newdata = newdata,
+                    cause = 1,
+                    se = TRUE, iid = TRUE, average.iid = TRUE)
+    
+    expect_equal(res1bis$absRisk.se,res2$absRisk.se)
+    expect_equal(res1bis$absRisk.iid,res2$absRisk.iid)
+    expect_equal(res1bis$absRisk.average.iid, t(apply(res2$absRisk.iid,2:3,mean)))
 })
 ## * [predictCSC] Possible issue (estimated absolute risk over 1)
 ## this section does not perform any tests

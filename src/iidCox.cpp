@@ -165,16 +165,17 @@ List IFlambda0_cpp(const NumericVector& tau, const arma::mat& IFbeta,
   // ** Compute delta_iS0
   NumericVector delta_iS0(nObs,0.0);
   for(int iObs=0; iObs<nObs ; iObs++){
-	if(strata == newStrata[iObs]){
+	if(strata == newStrata[iObs] && newStatus[iObs] > 0){
 	  delta_iS0[iObs] = newStatus[iObs]/S01[newIndexJump[iObs]];
 	}
   } 
 
   // Exclude case with no Tau
-  if(nTau==0){
+  if(nTau==0 || iTau0 >= nTau){
 	if(minimalExport){
 	  NumericVector indeXb = clone(neweXb);
-	  indeXb[newStrata == strata] = 0;
+	  indeXb[newStrata != strata] = 0;
+
 	  return(List::create(Named("Elambda0") = Elambda0,
 						  Named("cumElambda0") = cumElambda0,
 						  Named("eXb") = indeXb,
@@ -196,7 +197,7 @@ List IFlambda0_cpp(const NumericVector& tau, const arma::mat& IFbeta,
   
   colvec Elambda0_iter(p), cumElambda0_iter(p); 
   cumElambda0_iter.fill(0);
-  
+
   for(int iTime1 = 0; iTime1 < nTime1; iTime1++){
     Elambda0_iter.fill(0);
     

@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Oct 23 2016 (08:53) 
 ## Version: 
-## last-updated: aug  7 2020 (18:18) 
+## last-updated: aug 10 2020 (17:47) 
 ##           By: Brice Ozenne
-##     Update #: 1693
+##     Update #: 1724
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -99,11 +99,10 @@
 #' fit <- cph(formula = Surv(time,event)~ X1+X2,data=dtS,y=TRUE,x=TRUE)
 #'
 #' ## compute the ATE at times 5, 6, 7, and 8 using X1 as the treatment variable
-#' \dontrun{
 #' ## only point estimate (argument se = FALSE)
 #' ateFit1a <- ate(fit, data = dtS, treatment = "X1", times = 5:8,
 #'                se = FALSE)
-#'
+#' \dontrun{
 #' ## standard error / confidence intervals computed using the influence function
 #' ## (argument se = TRUE and B = 0)
 #' ateFit1b <- ate(fit, data = dtS, treatment = "X1", times = 5:8,
@@ -201,6 +200,38 @@
 #' ## (parallel computation, argument mc.cores = 2) 
 #' ateFit2e <- ate(fitCR, data = dt, treatment = "X1", times = c(10,15,20), 
 #'                 cause = 1, se = TRUE, B = 100, mc.cores = 2)
+#'
+#' }
+#' 
+#' #### Double robust estimator ####
+#' \dontrun{
+#' ## generate data
+#' n <- 500
+#' set.seed(10)
+#' dt <- sampleData(n, outcome="competing.risks")
+#' dt$time <- round(dt$time,1)
+#' dt$X1 <- factor(rbinom(n, prob = c(0.4) , size = 1), labels = paste0("T",0:1))
+#'
+#' ## working models
+#' m.event <-  CSC(Hist(time,event)~ X1+X2+X3+X5+X8,data=dt)
+#' m.censor <-  coxph(Surv(time,event==0)~ X1+X2+X3+X5+X8,data=dt, x = TRUE, y = TRUE)
+#' m.treatment <-  glm(X1~X2+X3+X5+X8,data=dt,family=binomial(link="logit"))
+#'
+#' ## prediction + average
+#' ateRobust <- ate(event = m.event,
+#'                  treatment = m.treatment,
+#'                  censor = m.censor,
+#'                  data = dt, times = 5:10, 
+#'                  cause = 1, band = TRUE)
+#' 
+#' ## compare various estimators
+#' ateRobust3 <- ate(event = m.event,
+#'                  treatment = m.treatment,
+#'                  censor = m.censor,
+#'                  estimator = c("Gformula","IPTW","AIPTW"),
+#'                  data = dt, times = c(5:10), 
+#'                  cause = 1, se = TRUE)
+#' ateRobust3$meanRisk[,.(meanRisk.Gformula,meanRisk.IPTW,meanRisk.AIPTW)]
 #' }
 #' 
 #' #### time-dependent covariates ###
@@ -417,13 +448,13 @@ ate <- function(event,
 
         if(attr(estimator,"Gformula") && (test.Cox || test.CSC) && identical(is.iidCox(object.event),FALSE)){
             if(verbose>1/2){cat(" outcome")}
-            object.event <- iidCox(object.event, tau.max = max(times), return.object = TRUE)
+            object.event <- iidCox(object.event, tau.max = max(times), store.iid = store.iid, return.object = TRUE)
         }
 
         if(attr(estimator,"IPCW")){
             if(identical(is.iidCox(object.censor),FALSE)){
                 if(verbose>1/2){cat(" censoring")}
-                object.censor <- iidCox(object.censor, tau.max = max(times))
+                object.censor <- iidCox(object.censor, store.iid = store.iid, tau.max = max(times))
             }
         }
         if(verbose>1/2){cat(" done \n")}
@@ -693,7 +724,7 @@ ate_initArgs <- function(object.event,
     if(!missing(object.treatment) && inherits(object.treatment,"formula")){
         myformula.treatment <- object.treatment
         object.treatment <- do.call(stats::glm, args = list(formula = myformula.treatment, data = mydata, family = stats::binomial(link = "logit")))        
-    }else if(!missing(object.treatment) && inherits(object.treatment,"glm")){
+    }else if(!missing(object.treatment) && !is.character(object.treatment)){
         myformula.treatment <- stats::formula(object.treatment)
     }
 
@@ -816,12 +847,12 @@ ate_initArgs <- function(object.event,
         treatment <- NULL
         object.treatment <- NULL
         object.censor <- NULL
-    }else  if(inherits(object.treatment,"glm")){
-        treatment <- all.vars(myformula.treatment)[1]
-    }else{
+    }else  if(is.character(object.treatment)){
         treatment <- object.treatment
         object.treatment <- NULL
         object.censor <- NULL
+    }else{
+        treatment <- all.vars(myformula.treatment)[1]
     }
 
     ## cause
@@ -1052,6 +1083,9 @@ ate_checkArgs <- function(object.event,
         if(is.null(object.treatment)){
             stop("Using a ITPW/AIPTW estimator requires to specify a model for the treatment allocation (argument \'treatment\') \n")
         }
+        if(inherits(object.treatment,"glm") && object.treatment$family$family == "binomial" && length(unique(mydata[[treatment]]))>2){
+            stop("Cannot use a logistic regression in argument \"object.treatment\" when there are more than two treatment categories \n")
+        }
     }
     if(attr(estimator,"IPCW")){
         if(is.null(object.censor)){
@@ -1077,7 +1111,9 @@ ate_checkArgs <- function(object.event,
         ##              "Consider using bootstrap resampling or changing \'surv.type\'\n")
         ##     }
         ## }
-        
+        if(any(is.na(coef(object.event)))){
+            stop("Cannot handle missing values in the model coefficients (object.event) \n")
+        }
         if(attr(estimator, "augmented") && attr(estimator, "IPCW") && inherits(object.event,"glm")){
             stop("In presence of censoring, the double robust estimator has not been implemented for logistic models.\n")
         }
@@ -1085,8 +1121,8 @@ ate_checkArgs <- function(object.event,
     
     ## ** object.treatment    
     if(!is.null(object.treatment)){
-        if(!inherits(object.treatment,"glm") || object.treatment$family$family!="binomial"){
-            stop("Argument \'treatment\' must be a logistic regression\n",
+        if(!inherits(object.treatment,"multinom") && (!inherits(object.treatment,"glm") || object.treatment$family$family!="binomial")){
+            stop("Argument \'treatment\' must be a logistic regression (glm object) or a multinomial regression (multinom object)\n",
                  " or a character variable giving the name of the treatment variable. \n")
         }
 
@@ -1095,10 +1131,15 @@ ate_checkArgs <- function(object.event,
             stop("Argument \'mydata\' needs to take all possible treatment values when using IPTW/AIPTW \n",
                  "missing treatment values: \"",paste(mistreat,collapse="\" \""),"\"\n")
         }
+
+        if(any(is.na(coef(object.treatment)))){
+            stop("Cannot handle missing values in the model coefficients (object.treatment) \n")
+        }
     }
 
     ## ** object.censor
     if(attr(estimator,"IPCW")){
+
         ## require censoring model
         if(!inherits(object.censor,"coxph") && !inherits(object.censor,"cph") && !inherits(object.censor,"phreg")){
             stop("Argument \'censor\' must be a Cox model \n")
@@ -1116,6 +1157,10 @@ ate_checkArgs <- function(object.event,
             if(sum(diag(table(mydata[[censorVar.status]] == level.censoring, mydata[[eventVar.status]] %in% level.states == FALSE)))!=NROW(mydata)){
                 stop("The status variables in object.event and object.censor are inconsistent \n")
             }
+        }
+
+        if(any(is.na(coef(object.censor)))){
+            stop("Cannot handle missing values in the model coefficients (object.treatment) \n")
         }
     }
 
@@ -1180,7 +1225,7 @@ ate_checkArgs <- function(object.event,
             }
         }
 
-        if(!is.null(object.treatment) && coxN(object.treatment)!=NROW(mydata)){ ## note: only check that the datasets have the same size
+        if(!is.null(object.treatment) && stats::nobs(object.treatment)!=NROW(mydata)){ ## note: only check that the datasets have the same size
             stop("Argument \'treatment\' must be have been fitted using argument \'data\' for the functional delta method to work\n",
                  "(discrepancy found in number of rows) \n")
         }
@@ -1308,5 +1353,9 @@ vcov.ate <- function(object, ...){
     return(crossprod(iid[,names(coef(object)),drop=FALSE]))
 }
 
-#----------------------------------------------------------------------
+## * nobs.multinom
+nobs.multinom <- function(object,...){
+    NROW(m.treatment3$residuals)
+}
+##----------------------------------------------------------------------
 ### ate.R ends here

@@ -77,7 +77,7 @@ obtained with \code{coxph} (survival package) or \code{cph}
 \item{tau.max}{[numeric] latest time at which the i.i.d decomposition of the baseline hazard will be computed. Alternative to \code{tau.hazard}.}
 
 \item{store.iid}{[character] the method used to compute the influence function and the standard error.
-Can be \code{"full"}, \code{"approx"} or \code{"minimal"}. See the details section.}
+Can be \code{"full"} or \code{"minimal"}. See the details section.}
 
 \item{keep.times}{[logical] If \code{TRUE} add the evaluation times to the output.}
 
@@ -110,8 +110,6 @@ If there is no event in a strata, the influence function for the baseline hazard
 
 \code{store.iid} equal to \code{"full"} exports the influence function for the coefficients
 and the baseline hazard at each event time.
-\code{store.iid} equal to \code{"approx"} does the same except that the terms that do not contributes
-to the variance are not ignored (i.e. set to 0)
 \code{store.iid} equal to \code{"minimal"} exports the influence function for the coefficients. For the
 baseline hazard it only computes the quantities necessary to compute the influence function in order to save memory.
 }
@@ -125,8 +123,6 @@ setkey(d, eventtime)
 
 m.cox <- coxph(Surv(eventtime, event) ~ X1+X6, data = d, y = TRUE, x = TRUE)
 system.time(IF.cox <- iidCox(m.cox))
-system.time(IF.cox_approx <- iidCox(m.cox, store.iid = "approx"))
-
 
 IF.cox.all <- iidCox(m.cox, tau.hazard = sort(unique(c(7,d$eventtime))))
 IF.cox.beta <- iidCox(m.cox, baseline.iid = FALSE)

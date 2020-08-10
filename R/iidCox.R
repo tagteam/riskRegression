@@ -348,34 +348,17 @@ iidCox.coxph <- function(object, newdata = NULL,
             }
     
             ## IF
-            if(any(new.status_strata[[iStrata]]>0)){
-                IFlambda_res <- IFlambda0_cpp(tau = tau.hazard_strata,
-                                              IFbeta = out$IFbeta,
-                                              newT = new.time, neweXb = new.eXb, newStatus = new.status, newIndexJump = new.indexJump[[iStrata]], newStrata = as.numeric(new.strata),
-                                              S01 = Ecpp[[iStrata]]$S0,
-                                              E1 = Etempo,
-                                              time1 = timeStrata, lastTime1 = Ecpp[[iStrata]]$Utime1[nUtime1_strata], # here lastTime1 will not correspond to timeStrata[length(timeStrata)] when there are censored observations
-                                              lambda0 = lambda0Strata,
-                                              p = nVar, strata = iStrata,
-                                              minimalExport = (store.iid=="minimal")
-                                              )
-            }else{
-                if(store.iid=="full"){
-                    IFlambda_res <- list(hazard = matrix(0, nrow = nObs, ncol = max(1,length(tau.hazard_strata))),
-                                         cumhazard = matrix(0, nrow = nObs, ncol = max(1,length(tau.hazard_strata)))
-                                         )
-                }else{
-                    IFlambda_res <- list(delta_iS0 = rep(0, nObs),
-                                         Elambda0 = matrix(0, nrow = nVar, ncol = max(1,length(tau.hazard_strata))),
-                                         cumElambda0 = matrix(0, nrow = nVar, ncol = max(1,length(tau.hazard_strata))) ,
-                                         eXb = rep(0, nObs),
-                                         lambda0_iS0 = numeric(0),
-                                         cumLambda0_iS0 = numeric(0),
-                                         time1 = numeric(0)
-                                         )
-                }
-            }
-    
+            IFlambda_res <- IFlambda0_cpp(tau = tau.hazard_strata,
+                                          IFbeta = out$IFbeta,
+                                          newT = new.time, neweXb = new.eXb, newStatus = new.status, newIndexJump = new.indexJump[[iStrata]], newStrata = as.numeric(new.strata),
+                                          S01 = Ecpp[[iStrata]]$S0,
+                                          E1 = Etempo,
+                                          time1 = timeStrata, lastTime1 = Ecpp[[iStrata]]$Utime1[nUtime1_strata], # here lastTime1 will not correspond to timeStrata[length(timeStrata)] when there are censored observations
+                                          lambda0 = lambda0Strata,
+                                          p = nVar, strata = iStrata,
+                                          minimalExport = (store.iid=="minimal")
+                                          )
+
             ## output
             if(length(tau.hazard_strata)==0){
                 tau.hazard_strata <- 0

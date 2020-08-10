@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun  6 2016 (09:02) 
 ## Version: 
-## last-updated: aug  7 2020 (18:21) 
+## last-updated: aug 10 2020 (17:46) 
 ##           By: Brice Ozenne
-##     Update #: 325
+##     Update #: 375
 #----------------------------------------------------------------------
 ## 
 ### Commentary:
@@ -252,7 +252,7 @@ predictRisk.glm <- function(object, newdata, iid = FALSE, average.iid = FALSE,..
             iid.beta <- lava::iid(object)
 
             newX <- model.matrix(stats::formula(object), newdata)
-            Xbeta <- predict(object, type = "link", newdata = newdata, se=FALSE)
+            Xbeta <- predict(object, type = "link", newdata = newdata, se = FALSE)
             
             ## ** chain rule
             if(average.iid){
@@ -267,9 +267,7 @@ predictRisk.glm <- function(object, newdata, iid = FALSE, average.iid = FALSE,..
                 }
             }
             if(iid){
-                attr(out,"iid") <- t(sapply(1:n.obs, function(iObs){ ## iObs <- 1
-                    iid.beta %*% cbind(newX[iObs,]) * exp(-Xbeta[iObs])/(1+exp(-Xbeta[iObs]))^2
-                }))
+                attr(out,"iid") <- iid.beta %*% t(colMultiply_cpp(newX, scale = exp(-Xbeta)/(1+exp(-Xbeta))^2))
             }
         }
 
@@ -305,7 +303,123 @@ predictRisk.glm <- function(object, newdata, iid = FALSE, average.iid = FALSE,..
         stop("Currently only the binomial family is implemented for predicting a status from a glm object.")
     }
 }
+## * predictRisk.multinom
+predictRisk.multinom <- function(object, newdata, iid = FALSE, average.iid = FALSE,...){
+    n.obs <- NROW(newdata)
+    n.class <- length(object$lev)
+    n.coef <- length(coef(object))
+    n.coefperY <- NROW(coef(object))
+    out <- predict(object, newdata = newdata, type = "probs")
 
+    if(n.class == 2){
+        out <- cbind(1-out, out)
+        colnames(out) <- object$lev
+    }
+
+    ## ** set correct level
+    ## hidden argument: enable to ask for the prediction of a specific level
+    level <- list(...)$level
+    if(!is.null(level)){
+        if(length(level)>1){
+            stop("Argument \'level\' must have length 1 \n")
+        }
+        if(level %in% object$lev == FALSE){
+            stop("Argument \'level\' must be one of \"",paste0(object$lev,collapse="\" \""),"\" \n")
+        }
+        out <- out[,level]
+    }else if(iid || average.iid){
+        stop("Argument \'level\' must be specified when exporting the iid decomposition")
+    }
+        
+    if(iid || average.iid){
+        ## ** prepare average.iid
+        if(average.iid){
+            if(is.null(attr(average.iid,"factor"))){
+                factor <- list(matrix(1, nrow = n.obs, ncol = 1))
+            }else{
+                factor <- attr(average.iid, "factor")
+                if(is.matrix(factor)){
+                    factor <- list(factor)
+                }
+                if(!is.list(factor)){
+                    stop("Attribute \'factor\' for argument \'average.iid\' must be a list \n")
+                }
+                if(any(sapply(factor, is.matrix)==FALSE)){
+                    stop("Attribute \'factor\' for argument \'average.iid\' must be a list of matrices \n")
+                }
+                if(any(sapply(factor, function(iF){NROW(iF)==NROW(newdata)})==FALSE)){
+                    stop("Attribute \'factor\' for argument \'average.iid\' must be a list of matrices with ",NROW(newdata)," rows \n")
+                }
+            }
+            n.factor <- NCOL(factor)
+        }
+
+        ## ** compute influence function of the coefficients
+        oldX <- model.matrix(object)
+        beta <- coef(object)
+        oldY <- object$fitted.values + object$residuals
+        if(n.class == 2){
+            beta <- matrix(beta, nrow = 1)
+            oldY <- cbind(1-oldY,oldY)
+        }
+        oldXbeta <- oldX %*% t(beta)
+        oldeXbeta <- exp(oldXbeta)
+        ## range(out - colScale_cpp(cbind(1,exp(Xbeta)), scale = 1+rowSums(exp(Xbeta))))
+
+        ## > Likelihood
+        ## \prod_i \prod_k p_k(X_i)^y_{ki}
+        ## > Log-likelihood
+        ## \sum_i \sum_k y_{ki}\log(p_k(X_i)) = \sum_i \sum_k>1 y_{ki}\log(p_k(X_i)) + (1-\sum_k>1 y_{ki})\log(p_1(X_i))
+        ##                                     = \sum_i \sum_k>1 y_{ki}\log(p_k(X_i)/p_1(X_i)) + log(p_1(X_i)) 
+        ##                                     = \sum_i \sum_k>1 y_{ki} X_i \beta_k - log(1 + \sum_k>1 exp(X_i \beta_k))
+        ## LL <- prod(out^Y)
+        ## ll <- rowSums(Y[,-1,drop=FALSE] * Xbeta) - log(1 + rowSums(eXbeta))
+        ## > Score
+        ## /\beta_kj = \sum_i y_{ki} X_ij - X_ij exp(X_i \beta_k) / (1 + \sum_k>1 exp(X_i \beta_k))
+        score <- do.call(cbind,lapply(2:n.class, function(iY){colMultiply_cpp(oldX, scale = (oldY[,iY,drop=FALSE] - oldeXbeta[,iY-1,drop=FALSE] / (1+rowSums(oldeXbeta))))}))
+        ## > information
+        informationM1 <- vcov(object)
+
+        iid.beta <- score %*% informationM1
+        iid.beta.level <- lapply(2:n.class, function(iClass){iid.beta[,(iClass-2) * n.coefperY + 1:n.coefperY,drop=FALSE]})
+        names(iid.beta.level) <- object$lev[-1]
+        
+        ## ** chain rule
+        newX <- model.matrix(stats::formula(object), newdata)
+        Xbeta <- cbind(0,newX %*% t(beta))
+        eXbeta_rowSum <- rowSums(exp(Xbeta))
+        colnames(Xbeta) <- object$lev
+        
+
+        if(average.iid){
+            attr(out,"average.iid") <- lapply(factor, function(iFactor){
+                apply(iFactor, 2, function(iiFactor){
+                    iRes <- Reduce("+",lapply(object$lev[-1], function(iClass){ ## iClass <- "1"
+                        - iid.beta.level[[iClass]] %*% colMeans(colMultiply_cpp(newX, scale = iiFactor * exp(Xbeta[,iClass]+Xbeta[,level])/eXbeta_rowSum^2))
+                    }))
+                    if(which(level %in% object$lev)>1){
+                        iRes <- iRes + iid.beta.level[[level]] %*% colMeans(colMultiply_cpp(newX, scale = iiFactor * exp(Xbeta[,level])/eXbeta_rowSum))
+                    }
+                    return(iRes)
+                })
+            })
+                
+            if(is.null(attr(average.iid,"factor"))){
+                attr(out,"average.iid") <- attr(out,"average.iid")[[1]]
+            }
+        }
+        if(iid){
+            attr(out,"iid") <- Reduce("+",lapply(object$lev[-1], function(iClass){ ## iClass <- "1"
+                - iid.beta.level[[iClass]] %*% t(colMultiply_cpp(newX, scale = exp(Xbeta[,iClass]+Xbeta[,level])/eXbeta_rowSum^2))
+            }))
+            if(which(level %in% object$lev)>0){
+                attr(out,"iid") <- attr(out,"iid") + iid.beta.level[[level]] %*% t(colMultiply_cpp(newX, scale = exp(Xbeta[,level])/eXbeta_rowSum))
+            }
+        }
+    }
+
+    return(out)
+}
 ## * predictRisk.formula
 ##' @export
 ##' @rdname predictRisk
@@ -448,7 +562,9 @@ predictRisk.cox.aalen <- function(object,newdata,times,...){
 ##' @rdname predictRisk
 ##' @method predictRisk coxph
 predictRisk.coxph <- function(object, newdata, times, product.limit = FALSE, iid = FALSE, average.iid = FALSE, ...){
-    type <- list(...)$type ## hidden argument for ate
+    dots <- list(...)
+    type <- dots$type ## hidden argument for ate
+    store.iid <- dots$store ## hidden argument for ate
     
     if(product.limit){
         outPred <- predictCoxPL(object=object,
@@ -457,17 +573,16 @@ predictRisk.coxph <- function(object, newdata, times, product.limit = FALSE, iid
                                 iid = iid,
                                 average.iid = average.iid,
                                 keep.times=FALSE,
-                                type="survival",
-                                ...)
+                                store.iid = store.iid,
+                                type="survival")
     }else{
         outPred <- predictCox(object=object,
                               newdata=newdata,
                               times=times,
                               iid = iid,
                               average.iid = average.iid,
-                              keep.times=FALSE,
-                              type="survival",
-                              ...)
+                              store.iid = store.iid,
+                              type="survival")
     }
     if(identical(type,"survival")){
         out <- outPred$survival
@@ -828,11 +943,13 @@ predictRisk.ARR <- function(object,newdata,times,cause,...){
 ##' @export
 ##' @rdname predictRisk
 ##' @method predictRisk CauseSpecificCox
-predictRisk.CauseSpecificCox <- function (object, newdata, times, cause, product.limit = TRUE, iid = FALSE, average.iid = FALSE, ...) { 
-    type <- list(...)$type
+predictRisk.CauseSpecificCox <- function (object, newdata, times, cause, product.limit = TRUE, iid = FALSE, average.iid = FALSE, ...) {
+    dots <- list(...)
+    type <- dots$type
     if(is.null(type)){
         type <- "absRisk"
     }
+    store.iid <- dots$store.iid
     
     outPred <- predict(object=object,
                        newdata=newdata,
@@ -843,7 +960,8 @@ predictRisk.CauseSpecificCox <- function (object, newdata, times, cause, product
                        iid = iid,
                        average.iid = average.iid,
                        product.limit = product.limit,
-                       type = type, ...)
+                       store.iid = store.iid,
+                       type = type)
 
     out <- outPred[[type]]
     if(iid){

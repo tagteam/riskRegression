@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: apr  5 2018 (17:01) 
 ## Version: 
-## Last-Updated: aug  7 2020 (18:17) 
+## Last-Updated: aug 10 2020 (12:16) 
 ##           By: Brice Ozenne
-##     Update #: 993
+##     Update #: 996
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -48,7 +48,6 @@ iidATE <- function(estimator,
                    n.times,
                    product.limit,
                    method.iid,
-                   store.iid,
                    ...){
 
     ## ** prepare output
@@ -140,8 +139,7 @@ iidATE <- function(estimator,
                                      newdata = mydata,
                                      times = mydata[[eventVar.time]] - tol, ## same as pmin(times[iTau], mydata[[eventVar.time]] - tol) because indicator in the weights
                                      diag = TRUE,
-                                     average.iid = factor,
-                                     store.iid = store.iid)$survival.average.iid
+                                     average.iid = factor)$survival.average.iid
 
         for(iGrid in 1:n.grid){ ## iGrid <- 1
             iTau <- grid[iGrid,"tau"]
@@ -183,7 +181,7 @@ iidATE <- function(estimator,
             }
 
             term.intF1_tau <- attr(predictRisk(object.event, newdata = mydata, times = times, cause = cause,
-                                               average.iid = factor, product.limit = product.limit, store.iid = store.iid),"average.iid")
+                                               average.iid = factor, product.limit = product.limit),"average.iid")
 
             for(iC in 1:n.contrasts){ ## iC <- 1
                 iid.AIPTW[[iC]] <- iid.AIPTW[[iC]] + term.intF1_tau[[iC]]
@@ -196,7 +194,7 @@ iidATE <- function(estimator,
             })
         
             integrand.F1t <- attr(predictRisk(object.event, newdata = mydata, times = time.jumpC, cause = cause,
-                                              average.iid = factor, product.limit = product.limit, store.iid = store.iid), "average.iid")
+                                              average.iid = factor, product.limit = product.limit), "average.iid")
 
             for(iC in 1:n.contrasts){ ## iC <- 1
                 iid.AIPTW[[iC]] <- iid.AIPTW[[iC]] + subsetIndex(rowCumSum(integrand.F1t[[iC]]),
@@ -229,9 +227,8 @@ iidATE <- function(estimator,
                 iC <- grid[iGrid,"contrast"]
                 return(-colMultiply_cpp(ls.F1tau_F1t_dM_SSG[[iTau]]*beforeEvent.jumpC, scale = iW.IPTW[,iC]))
             })
-
             integrand.St <- attr(predictRisk(object.event, type = "survival", newdata = mydata, times = time.jumpC-tol, cause = cause,
-                                             average.iid = factor, product.limit = product.limit, store.iid = store.iid), "average.iid")
+                                             average.iid = factor, product.limit = product.limit), "average.iid")
         
             for(iGrid in 1:n.grid){ ## iGrid <- 1
                 iTau <- grid[iGrid,"tau"]

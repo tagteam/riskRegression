@@ -7,13 +7,13 @@ using namespace std;
 
 
 // * calcSeMinimalCSC_cpp: compute IF/sumIF/se for the cif (method 1)
-// [[Rcpp::export]]
 // J: number of jump times
 // n: number of observations in the training set
 // N: number of observations in the prediction set
 // p: number of regressors
 // S: number of strata
 // T: number of prediction times
+// [[Rcpp::export]]
 List calcSeMinimalCSC_cpp(const arma::vec& seqTau, // horizon time for the predictions (T)
 						  const arma::mat& newSurvival, // predicted survival for all observations just before each jump time (NxJ)
 						  const arma::mat& hazard0, // baseline hazard of the event of interest for each strata JxS
