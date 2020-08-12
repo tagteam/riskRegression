@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: maj 30 2018 (15:58) 
 ## Version: 
-## Last-Updated: jul 30 2019 (15:19) 
+## Last-Updated: aug 11 2020 (11:23) 
 ##           By: Brice Ozenne
-##     Update #: 178
+##     Update #: 184
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -74,7 +74,7 @@ transformSE <- function(estimate, se, type){
 ##' 
 ##' @details Use a delta method to find the standard error after transformation. \cr \cr
 ##'
-##' The iid decomposition must contain have dimension [n.prediction,time,n.obs] and estimate [n.prediction,time].
+##' The iid decomposition must contain have dimension [n.obs,time,n.prediction] and estimate [n.prediction,time].
 ##'
 ##' @export
 transformIID <- function(estimate, iid, type){
@@ -84,21 +84,25 @@ transformIID <- function(estimate, iid, type){
     if(type == "none"){
         ## no change
         return(iid)
-    }else if(type == "log"){
-        ## formula 4.10 p 58 (Beyersmann et al. 2012)
-        newiid <- sliceScale_cpp(iid, M = estimate)
-    }else if(type == "loglog"){
-        ## formula 4.16 p 59 (Beyersmann et al. 2012)
-        newiid <- sliceScale_cpp(iid, M = - estimate * log(estimate) )
-    }else if(type == "cloglog"){
-        newiid <- sliceScale_cpp(iid, M = - (1 - estimate) * log(1-estimate) )
-        ## formula 4.21 p 62 (Beyersmann et al. 2012)
-    }else if(type == "atanh"){
-        ## fisher transform: f(x) = 1/2 log(1+x) - 1/2 log(1-x)
-        ##                   df(x) = dx/(2+2x) + dx/(2-2x) = dx(1/(1+x)+1/(1-x))/2
-        ##                         = dx/(1-x^2)
-        ##               Var(f(x)) = Var(x)/(1-x^2)
-        newiid <- sliceScale_cpp(iid, M = 1 - estimate^2 )
+    }else{
+        newiid <- aperm(iid, c(3,2,1))
+        if(type == "log"){
+            ## formula 4.10 p 58 (Beyersmann et al. 2012)
+            newiid <- sliceScale_cpp(newiid, M = estimate)
+        }else if(type == "loglog"){
+            ## formula 4.16 p 59 (Beyersmann et al. 2012)
+            newiid <- sliceScale_cpp(newiid, M = - estimate * log(estimate) )
+        }else if(type == "cloglog"){
+            newiid <- sliceScale_cpp(newiid, M = - (1 - estimate) * log(1-estimate) )
+            ## formula 4.21 p 62 (Beyersmann et al. 2012)
+        }else if(type == "atanh"){
+            ## fisher transform: f(x) = 1/2 log(1+x) - 1/2 log(1-x)
+            ##                   df(x) = dx/(2+2x) + dx/(2-2x) = dx(1/(1+x)+1/(1-x))/2
+            ##                         = dx/(1-x^2)
+            ##               Var(f(x)) = Var(x)/(1-x^2)
+            newiid <- sliceScale_cpp(newiid, M = 1 - estimate^2 )
+        }
+        newiid <- aperm(newiid, c(3,2,1))
     }
     index0 <- which(iid==0)
     if(length(index0)>0){
@@ -222,7 +226,7 @@ transformP <- function(estimate, se, null, type){
 ##' @param band [logical] should confidence bands be computed.
 ##' @param p.value [logical] should p-values be computed.
 ##'
-##' The iid decomposition must have dimensions [n.prediction,time,n.obs]
+##' The iid decomposition must have dimensions [n.obs,time,n.prediction]
 ##' while estimate and se must have dimensions [n.prediction,time].
 ##' 
 ##' @export
@@ -267,7 +271,7 @@ transformCIBP <- function(estimate, se, iid, null,
 
         ## find quantiles for the bands
         if(!is.na(seed)){set.seed(seed)}
-        ## sqrt(rowSums(iid[1,,]^2))
+        ## sqrt(rowSums(iid[,,1]^2))
         ## se[1,]
         index.firstSE <- which(colSums(se!=0)>0)[1]
         if(all(is.na(index.firstSE))){

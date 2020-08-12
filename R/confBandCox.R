@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: apr 21 2017 (17:40) 
 ## Version: 
-## last-updated: jun  6 2018 (15:48) 
+## last-updated: aug 11 2020 (12:51) 
 ##           By: Brice Ozenne
-##     Update #: 28
+##     Update #: 37
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -25,14 +25,13 @@
 #' 
 confBandCox <- function(iid, se, n.sim, conf.level){    
     # NOTE
-    # iid must be (n.new,n.times,n.object)
+    # iid must be (n.object,n.times,n.new)
     #  se must be (n.new,n.times)
     dimTempo <- dim(iid)
-
-    new.quantile <- quantileProcess_cpp(nObject = dimTempo[3],
-                                        nNew = dimTempo[1],
+    new.quantile <- quantileProcess_cpp(nObject = dimTempo[1],
+                                        nNew = dimTempo[3],
                                         nSim = n.sim,
-                                        iid = aperm(iid, c(2,3,1)),
+                                        iid = aperm(iid, c(2,1,3)),
                                         se = t(se),
                                         confLevel = conf.level)
     

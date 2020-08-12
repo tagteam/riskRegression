@@ -522,7 +522,7 @@ predictCox <- function(object,
                          nVar = nVar, 
                          export = export,
                          store.iid = store.iid)
-        
+
         ## restaure orginal time ordering
         if((iid+band)>0){
             if ("hazard" %in% type){

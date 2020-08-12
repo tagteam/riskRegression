@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: maj 18 2017 (09:23) 
 ## Version: 
-## last-updated: aug 10 2020 (11:13) 
+## last-updated: aug 12 2020 (12:01) 
 ##           By: Brice Ozenne
-##     Update #: 283
+##     Update #: 286
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -837,12 +837,12 @@ test_that("[predictCSC] diag no strata", {
     expect_equal(diag(GS$absRisk.se), test$absRisk.se[,1])
     
     ## iid
-    GS.iid.diag <- do.call(rbind,lapply(1:NROW(dt),
-                                        function(iN){GS$absRisk.iid[iN,iN,]}))
+    GS.iid.diag <- do.call(cbind,lapply(1:NROW(dt),
+                                        function(iN){GS$absRisk.iid[,iN,iN]}))
     expect_equal(GS.iid.diag, test$absRisk.iid[,1,])
 
     ## average.iid
-    expect_equal(colMeans(GS.iid.diag), test$absRisk.average.iid[,1])
+    expect_equal(rowMeans(GS.iid.diag), test$absRisk.average.iid[,1])
     expect_equal(test$absRisk.average.iid, test2$absRisk.average.iid)
 
     ## average.iid with factor - diag=FALSE
@@ -854,7 +854,7 @@ test_that("[predictCSC] diag no strata", {
                      se = FALSE, iid = FALSE, average.iid = average.iid, diag = FALSE, cause = 1)
 
     expect_equal(5*GS$absRisk.average.iid, test3$absRisk.average.iid[[1]])
-    expect_equal(t(apply(GS$absRisk.iid, 2:3, function(x){sum(x * (1:length(dt$time)))/length(x)})),
+    expect_equal(apply(GS$absRisk.iid, 1:2, function(x){sum(x * (1:length(dt$time)))/length(x)}),
                  test3$absRisk.average.iid[[2]])
 
     ## average.iid with factor - diag=FALSE, time varying factor
@@ -862,7 +862,8 @@ test_that("[predictCSC] diag no strata", {
     attr(average.iid,"factor") <- list(matrix(rnorm(NROW(dt)*length(dt$time)), nrow = NROW(dt), ncol = length(dt$time)))
     test4 <- predict(e.CSC, newdata = dt, times = dt$time, cause = 1,
                      se = FALSE, iid = FALSE, average.iid = average.iid, diag = FALSE)
-    expect_equal(do.call(rbind,lapply(1:NROW(dt), function(iObs){colMeans(GS$absRisk.iid[,,iObs] * attr(average.iid,"factor")[[1]])})),
+    ## iObs <- 1
+    expect_equal(do.call(rbind,lapply(1:NROW(dt), function(iObs){rowMeans(GS$absRisk.iid[iObs,,] * t(attr(average.iid,"factor")[[1]]))})),
                  test4$absRisk.average.iid[[1]])
 
     ## average.iid with factor - diag=TRUE
@@ -874,7 +875,7 @@ test_that("[predictCSC] diag no strata", {
 
     
     expect_equal(5*test$absRisk.average.iid, test5$absRisk.average.iid[[1]])
-    expect_equal(colMeans(colMultiply_cpp(GS.iid.diag, 1:length(dt$time))),
+    expect_equal(rowMeans(rowMultiply_cpp(GS.iid.diag, 1:length(dt$time))),
                  test5$absRisk.average.iid[[2]][,1])
 
 })
@@ -896,12 +897,12 @@ test_that("[predictCSC] diag strata", {
     expect_equal(diag(GS$absRisk.se), test$absRisk.se[,1])
 
     ## iid
-    GS.iid.diag <- do.call(rbind,lapply(1:NROW(dt),
-                                        function(iN){GS$absRisk.iid[iN,iN,]}))
+    GS.iid.diag <- do.call(cbind,lapply(1:NROW(dt),
+                                        function(iN){GS$absRisk.iid[,iN,iN]}))
     expect_equal(GS.iid.diag, test$absRisk.iid[,1,])
 
     ## average.iid
-    expect_equal(colMeans(GS.iid.diag), test$absRisk.average.iid[,1])
+    expect_equal(rowMeans(GS.iid.diag), test$absRisk.average.iid[,1])
     expect_equal(test$absRisk.average.iid, test2$absRisk.average.iid)
 
     ## average.iid with factor - diag=FALSE
@@ -912,7 +913,7 @@ test_that("[predictCSC] diag strata", {
                      se = FALSE, iid = FALSE, average.iid = average.iid, diag = FALSE, cause = 1)
 
     expect_equal(5*GS$absRisk.average.iid, test3$absRisk.average.iid[[1]])
-    expect_equal(t(apply(GS$absRisk.iid, 2:3, function(x){sum(x * (1:length(dt$time)))/length(x)})),
+    expect_equal(apply(GS$absRisk.iid, 1:2, function(x){sum(x * (1:length(dt$time)))/length(x)}),
                  test3$absRisk.average.iid[[2]])
 
     ## average.iid with factor - diag=FALSE, time varying factor
@@ -920,7 +921,7 @@ test_that("[predictCSC] diag strata", {
     attr(average.iid,"factor") <- list(matrix(rnorm(NROW(dt)*length(dt$time)), nrow = NROW(dt), ncol = length(dt$time)))
     test4 <- predict(eS.CSC, newdata = dt, times = dt$time, cause = 1,
                      se = FALSE, iid = FALSE, average.iid = average.iid, diag = FALSE)
-    expect_equal(do.call(rbind,lapply(1:NROW(dt), function(iObs){colMeans(GS$absRisk.iid[,,iObs] * attr(average.iid,"factor")[[1]])})),
+    expect_equal(do.call(rbind,lapply(1:NROW(dt), function(iObs){rowMeans(GS$absRisk.iid[iObs,,] * t(attr(average.iid,"factor")[[1]]))})),
                  test4$absRisk.average.iid[[1]])
 
     ## average.iid with factor - diag=TRUE
@@ -931,7 +932,7 @@ test_that("[predictCSC] diag strata", {
                      se = FALSE, iid = FALSE, average.iid = average.iid, diag = TRUE)
 
     expect_equal(5*test$absRisk.average.iid, test5$absRisk.average.iid[[1]])
-    expect_equal(colMeans(colMultiply_cpp(GS.iid.diag, 1:length(dt$time))),
+    expect_equal(rowMeans(rowMultiply_cpp(GS.iid.diag, 1:length(dt$time))),
                  test5$absRisk.average.iid[[2]][,1])
 })
 
@@ -964,13 +965,13 @@ test_that("iid average - non parametric (hazard)", {
         expect_true(all(res1$absRisk.average.iid[,1]==0))
         expect_true(all(is.na(res1$absRisk.average.iid[,length(seqTime)])))
 
-        expect_equal(t(apply(res1$absRisk.iid,2:3,mean)),
+        expect_equal(apply(res1$absRisk.iid,1:2,mean),
                      res2$absRisk.average.iid)
         
         ## compare to fixed value    
         ## d[time==min(time),]
         ## levels(predictCox(m.CSC$models[[1]])$strata)
-        expect_equal(res1$absRisk.iid[obs.firstEvent, index.firstEvent,],
+        expect_equal(res1$absRisk.iid[, index.firstEvent,obs.firstEvent],
                      iidCox(m.CSC$models[[1]], return.object = FALSE)$IFhazard[[strata.firstEvent]][,1])
     }
 })
@@ -991,7 +992,7 @@ test_that("iid average - semi parametric", {
         expect_true(all(res1$absRisk.average.iid[,1]==0))
         expect_true(all(is.na(res1$absRisk.average.iid[,length(seqTime)])))
 
-        expect_equal(t(apply(res1$absRisk.iid,2:3,mean)),
+        expect_equal(apply(res1$absRisk.iid,1:2,mean),
                      res2$absRisk.average.iid)
 
     }
@@ -1017,7 +1018,7 @@ test_that("predictSurv (type=survival)", {
                     product.limit = FALSE, iid = TRUE, se = TRUE, average.iid = TRUE)
     GS <- predictCox(e.cox, newdata = d.pred, times = seqTime,
                      iid = TRUE, se = TRUE, average.iid = TRUE)
-
+    
     expect_equal(GS$survival,test$survival)
     expect_equal(GS$survival.se,test$survival.se)
     expect_equal(GS$survival.iid,test$survival.iid)
@@ -1031,12 +1032,12 @@ test_that("predictSurv (type=survival)", {
     ratioSurv <- test$survival/testPL$survival
     testPL$survival.iid2 <- testPL$survival.iid
     for(iObs in 1:NROW(d)){
-        testPL$survival.iid2[,,iObs] <- testPL$survival.iid[,,iObs]*ratioSurv
+        testPL$survival.iid2[iObs,,] <- testPL$survival.iid[iObs,,]*t(ratioSurv)
     }
     expect_equal(GSPL$survival,testPL$survival)
     expect_equal(GSPL$survival.se, testPL$survival.se * ratioSurv)
     expect_equal(GSPL$survival.iid,testPL$survival.iid2)
-    expect_equal(t(apply(testPL$survival.iid,2:3,mean)),
+    expect_equal(apply(testPL$survival.iid,1:2,mean),
                  testPL$survival.average.iid)
 })
 
@@ -1060,12 +1061,12 @@ test_that("predictSurv (type=survival,diag)", {
     ratioSurv <- test$survival/testPL$survival
     testPL$survival.iid2 <- testPL$survival.iid
     for(iObs in 1:NROW(d)){
-        testPL$survival.iid2[,,iObs] <- testPL$survival.iid[,,iObs]*ratioSurv
+        testPL$survival.iid2[iObs,,] <- testPL$survival.iid[iObs,,]*t(ratioSurv)
     }
     expect_equal(GSPL$survival,testPL$survival)
     expect_equal(GSPL$survival.se, testPL$survival.se * ratioSurv)
     expect_equal(GSPL$survival.iid,testPL$survival.iid2)
-    expect_equal(t(apply(testPL$survival.iid,2:3,mean)),
+    expect_equal(apply(testPL$survival.iid,1:2,mean),
                  testPL$survival.average.iid)
 })
 
@@ -1076,7 +1077,7 @@ test_that("[predictCSC] vs. predictCox (no strata) - surv.type=\"survival\"",{
     jumpTime <- e.CSC$eventTimes[e.CSC$eventTimes <= max(seqTime)]
     
     test <- predict(e.CSC, type = "survival", times = jumpTime,
-                    newdata = d.pred, product.limit = FALSE, iid = TRUE, average.iid = TRUE, se = TRUE)
+                    newdata = d.pred, product.limit = FALSE, iid = TRUE, average.iid = TRUE, se = TRUE, cause = 1)
     GS <- predictCox(e.CSC$models[["OverallSurvival"]],times = jumpTime,
                      newdata = d.pred, iid = TRUE, average.iid = TRUE, se = TRUE)
     expect_equal(GS$survival,test$survival)
@@ -1164,7 +1165,7 @@ test_that("[predictCSC] for survival surv.type=\"survival\" (internal consistenc
     expect_equal(GS$survival.average.iid[,1],test$survival.average.iid[,1])
     expect_equal(5*GS$survival.average.iid[,1],test2$survival.average.iid[[1]][,1])
 
-    expect_equal(colMeans(colMultiply_cpp(GS$survival.iid[,1,],1:NROW(d))),
+    expect_equal(rowMeans(rowMultiply_cpp(GS$survival.iid[,1,],1:NROW(d))),
                  test2$survival.average.iid[[2]][,1])
 })
 
@@ -1381,7 +1382,7 @@ test_that("[predictCSC]: iid minimal - no strata", {
 
     expect_equal(res1$absRisk.se,res2$absRisk.se)
     expect_equal(res1$absRisk.iid,res2$absRisk.iid)
-    expect_equal(res1$absRisk.average.iid, t(apply(res2$absRisk.iid,2:3,mean)))
+    expect_equal(res1$absRisk.average.iid, apply(res2$absRisk.iid,1:2,mean))
 
     m2.CSC <- iidCox(m.CSC, store.iid = "minimal")
     res1bis <- predict(m2.CSC, times = seqTime, newdata = newdata,
@@ -1390,7 +1391,7 @@ test_that("[predictCSC]: iid minimal - no strata", {
     
     expect_equal(res1bis$absRisk.se,res2$absRisk.se)
     expect_equal(res1bis$absRisk.iid,res2$absRisk.iid)
-    expect_equal(res1bis$absRisk.average.iid, t(apply(res2$absRisk.iid,2:3,mean)))
+    expect_equal(res1bis$absRisk.average.iid, apply(res2$absRisk.iid,1:2,mean))
 })
 
 m.CSC <- CSC(Hist(time, event) ~ strata(X1)+X6, data = d)
@@ -1405,7 +1406,7 @@ test_that("[predictCSC]: iid minimal - strata", {
 
     expect_equal(res1$absRisk.se,res2$absRisk.se)
     expect_equal(res1$absRisk.iid,res2$absRisk.iid)
-    expect_equal(res1$absRisk.average.iid, t(apply(res2$absRisk.iid,2:3,mean)))
+    expect_equal(res1$absRisk.average.iid, apply(res2$absRisk.iid,1:2,mean))
 
     m2.CSC <- iidCox(m.CSC, store.iid = "minimal")
     res1bis <- predict(m2.CSC, times = seqTime, newdata = newdata,
@@ -1414,7 +1415,7 @@ test_that("[predictCSC]: iid minimal - strata", {
     
     expect_equal(res1bis$absRisk.se,res2$absRisk.se)
     expect_equal(res1bis$absRisk.iid,res2$absRisk.iid)
-    expect_equal(res1bis$absRisk.average.iid, t(apply(res2$absRisk.iid,2:3,mean)))
+    expect_equal(res1bis$absRisk.average.iid, apply(res2$absRisk.iid,1:2,mean))
 })
 ## * [predictCSC] Possible issue (estimated absolute risk over 1)
 ## this section does not perform any tests

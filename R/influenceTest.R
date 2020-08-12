@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: maj 19 2017 (16:01) 
 ## Version: 
-## last-updated: Jan  6 2020 (08:59) 
-##           By: Thomas Alexander Gerds
-##     Update #: 181
+## last-updated: aug 11 2020 (16:24) 
+##           By: Brice Ozenne
+##     Update #: 183
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -231,8 +231,8 @@ influenceTest.default <- function(object,
     }
     
     ## check sample size
-    n.obs <- length(estimator1.iid[1,1,])
-    if(n.obs!=length(estimator2.iid[1,1,])){
+    n.obs <- length(estimator1.iid[,1,1])
+    if(n.obs!=length(estimator2.iid[,1,1])){
         stop("Cannot compare estimates on different sample size \n")
     }
     
@@ -250,7 +250,7 @@ influenceTest.default <- function(object,
                 band = band)
     out$delta <- estimator1-estimator2
     out$delta.iid <- estimator1.iid-estimator2.iid
-    out$delta.se <- sqrt(apply(out$delta.iid^2, MARGIN = c(1,2), sum))
+    out$delta.se <- t(sqrt(apply(out$delta.iid^2, MARGIN = 2:3, sum)))
     class(out) <- "influenceTest"
 
     if(band==FALSE){

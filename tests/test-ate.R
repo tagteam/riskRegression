@@ -13,7 +13,7 @@ calcIterm <- function(factor, iid, indexJump, iid.outsideI){
 
     if(iid.outsideI){ ## compute iid int factor
         ls.I <- lapply(1:n, function(iObs){ ## iObs <- 2
-            iIID <- iid[iObs,1,]
+            iIID <- iid[,1,iObs]
             iFactor <- factor[iObs,1:indexJump[iObs]]
         
             if(indexJump[iObs]==0){
@@ -24,7 +24,7 @@ calcIterm <- function(factor, iid, indexJump, iid.outsideI){
         })
     } else { ## compute int iid * factor
         ls.I <- lapply(1:n, function(iObs){ ## iObs <- 2
-            iIID <- iid[iObs,1:indexJump[iObs],]
+            iIID <- iid[,1:indexJump[iObs],iObs]
             iFactor <- factor[iObs,1:indexJump[iObs]]
         
             if(indexJump[iObs]==0){
@@ -32,12 +32,11 @@ calcIterm <- function(factor, iid, indexJump, iid.outsideI){
             }else if(indexJump[iObs]==1){
                 return(iIID*iFactor)
             }else{
-                return(rowSums(rowMultiply_cpp(t(iIID), iFactor)))
+                return(rowSums(rowMultiply_cpp(iIID, iFactor)))
             }
         })
     }
-
-    return(t(do.call(cbind,ls.I)))
+    return(do.call(cbind,ls.I))
 }
 
 
@@ -103,7 +102,8 @@ test_that("[ate] G-formula,survival - compare to fix values / explicit computati
         fit <- cph(formula = Surv(time,event)~ X1+X2,data=dtS,y=TRUE,x=TRUE)
         resPred <- predictCox(fit, newdata = newdata0, time = seqTime, iid = TRUE)
         ATE[[iT]] <- colMeans(1-resPred$survival)
-        ATE.iid_term1 <- apply(-resPred$survival.iid,3,colMeans)
+        
+        ATE.iid_term1 <- apply(-resPred$survival.iid,1,rowMeans)
         ATE.iid_term2 <- apply(1-resPred$survival, 1, function(x){x-ATE[[iT]]})/n
         ATE.iid[[iT]] <- t(ATE.iid_term1) + t(ATE.iid_term2)
         ATE.se <- sqrt(apply(ATE.iid[[iT]]^2, 2, sum))
@@ -244,13 +244,13 @@ test_that("[ate] logistic regression - compare to lava",{
 
     ## iid outcome
     iid.risk <- attr(predictRisk(fitY, newdata = dtBC, iid = TRUE),"iid")
-    nuisanceY.iid <- colMultiply_cpp(iid.risk, scale = (1-dtBC$X1test/dtBC$pi))
-    dtBC$AnuisanceY.iid <- c(colMeans(nuisanceY.iid[dtBC$X1=="0",]),colMeans(nuisanceY.iid[dtBC$X1=="1",]))
+    nuisanceY.iid <- rowMultiply_cpp(iid.risk, scale = (1-dtBC$X1test/dtBC$pi))
+    dtBC$AnuisanceY.iid <- c(rowMeans(nuisanceY.iid[,dtBC$X1=="0"]),rowMeans(nuisanceY.iid[,dtBC$X1=="1"]))
 
     ## iid treatment
     iid.pi <- attr(predictRisk(fitT, newdata = dtBC, iid = TRUE),"iid")
-    nuisanceT.iid <- colMultiply_cpp(iid.pi, scale = (-1)^(dtBC$X1=="1")*dtBC$X1test*(dtBC$Y-dtBC$r)/dtBC$pi^2)
-    dtBC$AnuisanceT.iid <- c(colMeans(nuisanceT.iid[dtBC$X1=="0",]),colMeans(nuisanceT.iid[dtBC$X1=="1",]))
+    nuisanceT.iid <- rowMultiply_cpp(iid.pi, scale = (-1)^(dtBC$X1=="1")*dtBC$X1test*(dtBC$Y-dtBC$r)/dtBC$pi^2)
+    dtBC$AnuisanceT.iid <- c(rowMeans(nuisanceT.iid[,dtBC$X1=="0"]),rowMeans(nuisanceT.iid[,dtBC$X1=="1"]))
     
     ## global
     expect_equal(dtBC[, mean(ate), by = "X1"][[2]],
@@ -323,14 +323,14 @@ test_that("[ate] no censoring, survival - check vs. manual calculations", {
         iDT[, r := as.double(1-iPred.Surv$survival)]
 
         iDT[, iid.Gformula := (r - mean(r))/.N]
-        iDT[, iid.Gformula := iid.Gformula + colMeans(-iPred.Surv$survival.iid[,1,])]
+        iDT[, iid.Gformula := iid.Gformula + rowMeans(-iPred.Surv$survival.iid[,1,])]
 
         iDT[, iid.IPTW := (X1test*Y/pi - mean(X1test*Y/pi))/.N]
-        iDT[, iid.IPTW := iid.IPTW + colMeans(colMultiply_cpp(attr(iPred.logit,"iid"), scale = -X1test*Y/pi^2))]
+        iDT[, iid.IPTW := iid.IPTW + rowMeans(rowMultiply_cpp(attr(iPred.logit,"iid"), scale = -X1test*Y/pi^2))]
 
         iDT[, iid.AIPTW := (X1test*Y/pi + r*(1-X1test/pi) - mean(X1test*Y/pi + r*(1-X1test/pi)))/.N]
-        iDT[, iid.AIPTW := iid.AIPTW + colMeans(colMultiply_cpp(attr(iPred.logit,"iid"), scale = -X1test*(Y-r)/pi^2))]
-        iDT[, iid.AIPTW := iid.AIPTW + colMeans(colMultiply_cpp(-iPred.Surv$survival.iid[,1,], scale = 1-X1test/pi))]
+        iDT[, iid.AIPTW := iid.AIPTW + rowMeans(rowMultiply_cpp(attr(iPred.logit,"iid"), scale = -X1test*(Y-r)/pi^2))]
+        iDT[, iid.AIPTW := iid.AIPTW + rowMeans(rowMultiply_cpp(-iPred.Surv$survival.iid[,1,], scale = 1-X1test/pi))]
 
         return(iDT)        
     }))
@@ -456,7 +456,7 @@ test_that("[ate] Censoring, survival - check vs. manual calculations", {
     ## ## manual calculation ## ##
     iPred.Cens <- predictCox(e.C, newdata = dtS, times = pmin(tau,dtS$time-1e-10), type = "survival", iid = TRUE)
     iPred.Cens$survivalDiag <- diag(iPred.Cens$survival)
-    iPred.Cens$survivalDiag.iid <- t(sapply(1:n, function(iObs){iPred.Cens$survival.iid[iObs,iObs,]}))
+    iPred.Cens$survivalDiag.iid <- sapply(1:n, function(iObs){iPred.Cens$survival.iid[,iObs,iObs]})
 
     ## augmentation term
     jumpC <- sort(e.C$y[e.C$y[,"status"]==1,"time"])
@@ -519,31 +519,31 @@ test_that("[ate] Censoring, survival - check vs. manual calculations", {
 
         ## Gformula ##
         iDT[, iid.Gformula := (r - mean(r))/.N]
-        iDT[, iid.Gformula := iid.Gformula + colMeans(-iPred.Surv_tau$survival.iid[,1,])]
+        iDT[, iid.Gformula := iid.Gformula + rowMeans(-iPred.Surv_tau$survival.iid[,1,])]
 
         ## IPTW
         iDT[, iid.IPTW := (X1test*Y*C/(pi*G) - mean(X1test*Y*C/(pi*G)))/.N]
-        iDT[, iid.IPTW := iid.IPTW + colMeans(colMultiply_cpp(attr(iPred.logit,"iid"), scale = -X1test*Y*C/(pi^2*G)))]
-        iDT[, iid.IPTW := iid.IPTW + colMeans(colMultiply_cpp(iPred.Cens$survivalDiag.iid, scale = -X1test*Y*C/(pi*G^2)))]
+        iDT[, iid.IPTW := iid.IPTW + rowMeans(rowMultiply_cpp(attr(iPred.logit,"iid"), scale = -X1test*Y*C/(pi^2*G)))]
+        iDT[, iid.IPTW := iid.IPTW + rowMeans(rowMultiply_cpp(iPred.Cens$survivalDiag.iid, scale = -X1test*Y*C/(pi*G^2)))]
 
         ## AIPTW,AIPCW ##        
         iDT[, iid.AIPTW.ate := (X1test*Y*C/(pi*G) + r*(1-X1test/pi) + I*X1test/pi - mean(X1test*Y*C/(pi*G) + r*(1-X1test/pi) + I*X1test/pi))/.N]
 
         ## outcome
-        iDT[, iid.AIPTW.outcome := colMeans(colMultiply_cpp(-iPred.Surv_tau$survival.iid[,1,], (1-X1test/pi)))]
-        iDT[, iid.AIPTW.outcome := iid.AIPTW.outcome + colMeans(colMultiply_cpp(augTermY1.iid,X1test/pi))]
-        iDT[, iid.AIPTW.outcome := iid.AIPTW.outcome + colMeans(colMultiply_cpp(augTermY2.iid,X1test/pi))]
+        iDT[, iid.AIPTW.outcome := rowMeans(rowMultiply_cpp(-iPred.Surv_tau$survival.iid[,1,], (1-X1test/pi)))]
+        iDT[, iid.AIPTW.outcome := iid.AIPTW.outcome + rowMeans(rowMultiply_cpp(augTermY1.iid,X1test/pi))]
+        iDT[, iid.AIPTW.outcome := iid.AIPTW.outcome + rowMeans(rowMultiply_cpp(augTermY2.iid,X1test/pi))]
 
         ## treatment
-        iDT[, iid.AIPTW.treatment := colMeans(colMultiply_cpp(attr(iPred.logit,"iid"), scale = -(X1test/pi^2)*(Y*C/G - r + I)))]
+        iDT[, iid.AIPTW.treatment := rowMeans(rowMultiply_cpp(attr(iPred.logit,"iid"), scale = -(X1test/pi^2)*(Y*C/G - r + I)))]
 
         ## survival
-        iDT[, iid.AIPTW.survival := colMeans(colMultiply_cpp(augTermSurv.iid, X1test/pi))]
+        iDT[, iid.AIPTW.survival := rowMeans(rowMultiply_cpp(augTermSurv.iid, X1test/pi))]
 
         ## censoring
-        iDT[, iid.AIPTW.censoring := colMeans(colMultiply_cpp(iPred.Cens$survivalDiag.iid, scale = -X1test*Y*C/(pi*G^2)))]
-        iDT[, iid.AIPTW.censoring := iid.AIPTW.censoring + colMeans(colMultiply_cpp(augTermG1.iid,X1test/pi))]
-        iDT[, iid.AIPTW.censoring := iid.AIPTW.censoring + colMeans(colMultiply_cpp(augTermG2.iid,X1test/pi))]
+        iDT[, iid.AIPTW.censoring := rowMeans(rowMultiply_cpp(iPred.Cens$survivalDiag.iid, scale = -X1test*Y*C/(pi*G^2)))]
+        iDT[, iid.AIPTW.censoring := iid.AIPTW.censoring + rowMeans(rowMultiply_cpp(augTermG1.iid,X1test/pi))]
+        iDT[, iid.AIPTW.censoring := iid.AIPTW.censoring + rowMeans(rowMultiply_cpp(augTermG2.iid,X1test/pi))]
 
         ## total
         iDT[, iid.AIPTW := iid.AIPTW.ate + iid.AIPTW.outcome + iid.AIPTW.treatment + iid.AIPTW.survival + iid.AIPTW.censoring]
@@ -674,14 +674,14 @@ test_that("[ate] no censoring, competing risks - check vs. manual calculations",
         iDT[, r := as.double(iPred.risk$absRisk)]
 
         iDT[, iid.Gformula := (r - mean(r))/.N]
-        iDT[, iid.Gformula := iid.Gformula + colMeans(iPred.risk$absRisk.iid[,1,])]
+        iDT[, iid.Gformula := iid.Gformula + rowMeans(iPred.risk$absRisk.iid[,1,])]
 
         iDT[, iid.IPTW := (X1test*Y/pi - mean(X1test*Y/pi))/.N]
-        iDT[, iid.IPTW := iid.IPTW + colMeans(colMultiply_cpp(attr(iPred.logit,"iid"), scale = -X1test*Y/pi^2))]
+        iDT[, iid.IPTW := iid.IPTW + rowMeans(rowMultiply_cpp(attr(iPred.logit,"iid"), scale = -X1test*Y/pi^2))]
 
         iDT[, iid.AIPTW := (X1test*Y/pi + r*(1-X1test/pi) - mean(X1test*Y/pi + r*(1-X1test/pi)))/.N]
-        iDT[, iid.AIPTW := iid.AIPTW + colMeans(colMultiply_cpp(attr(iPred.logit,"iid"), scale = -X1test*(Y-r)/pi^2))]
-        iDT[, iid.AIPTW := iid.AIPTW + colMeans(colMultiply_cpp(iPred.risk$absRisk.iid[,1,], scale = 1-X1test/pi))]
+        iDT[, iid.AIPTW := iid.AIPTW + rowMeans(rowMultiply_cpp(attr(iPred.logit,"iid"), scale = -X1test*(Y-r)/pi^2))]
+        iDT[, iid.AIPTW := iid.AIPTW + rowMeans(rowMultiply_cpp(iPred.risk$absRisk.iid[,1,], scale = 1-X1test/pi))]
 
         return(iDT)        
     }))
@@ -798,7 +798,7 @@ test_that("[ate] Censoring, competing risks (surv.type=\"survival\") - check vs.
     ## ## manual calculation ## ##
     iPred.Cens <- predictCox(e.C, newdata = dtS, times = pmin(tau,dtS$time-1e-10), type = "survival", iid = TRUE)
     iPred.Cens$survivalDiag <- diag(iPred.Cens$survival)
-    iPred.Cens$survivalDiag.iid <- t(sapply(1:n, function(iObs){iPred.Cens$survival.iid[iObs,iObs,]}))
+    iPred.Cens$survivalDiag.iid <- sapply(1:n, function(iObs){iPred.Cens$survival.iid[,iObs,iObs]})
 
     ## augmentation term
     jumpC <- sort(e.C$y[e.C$y[,"status"]==1,"time"])
@@ -861,31 +861,31 @@ test_that("[ate] Censoring, competing risks (surv.type=\"survival\") - check vs.
 
         ## Gformula ##
         iDT[, iid.Gformula := (r - mean(r))/.N]
-        iDT[, iid.Gformula := iid.Gformula + colMeans(iPred.risk_tau$absRisk.iid[,1,])]
+        iDT[, iid.Gformula := iid.Gformula + rowMeans(iPred.risk_tau$absRisk.iid[,1,])]
 
         ## IPTW
         iDT[, iid.IPTW := (X1test*Y*C/(pi*G) - mean(X1test*Y*C/(pi*G)))/.N]
-        iDT[, iid.IPTW := iid.IPTW + colMeans(colMultiply_cpp(attr(iPred.logit,"iid"), scale = -X1test*Y*C/(pi^2*G)))]
-        iDT[, iid.IPTW := iid.IPTW + colMeans(colMultiply_cpp(iPred.Cens$survivalDiag.iid, scale = -X1test*Y*C/(pi*G^2)))]
+        iDT[, iid.IPTW := iid.IPTW + rowMeans(rowMultiply_cpp(attr(iPred.logit,"iid"), scale = -X1test*Y*C/(pi^2*G)))]
+        iDT[, iid.IPTW := iid.IPTW + rowMeans(rowMultiply_cpp(iPred.Cens$survivalDiag.iid, scale = -X1test*Y*C/(pi*G^2)))]
 
         ## AIPTW,AIPCW ##        
         iDT[, iid.AIPTW.ate := (X1test*Y*C/(pi*G) + r*(1-X1test/pi) + I*X1test/pi - mean(X1test*Y*C/(pi*G) + r*(1-X1test/pi) + I*X1test/pi))/.N]
 
         ## outcome
-        iDT[, iid.AIPTW.outcome := colMeans(colMultiply_cpp(iPred.risk_tau$absRisk.iid[,1,], (1-X1test/pi)))]
-        iDT[, iid.AIPTW.outcome := iid.AIPTW.outcome + colMeans(colMultiply_cpp(augTermY1.iid,X1test/pi))]
-        iDT[, iid.AIPTW.outcome := iid.AIPTW.outcome + colMeans(colMultiply_cpp(augTermY2.iid,X1test/pi))]
+        iDT[, iid.AIPTW.outcome := rowMeans(rowMultiply_cpp(iPred.risk_tau$absRisk.iid[,1,], (1-X1test/pi)))]
+        iDT[, iid.AIPTW.outcome := iid.AIPTW.outcome + rowMeans(rowMultiply_cpp(augTermY1.iid,X1test/pi))]
+        iDT[, iid.AIPTW.outcome := iid.AIPTW.outcome + rowMeans(rowMultiply_cpp(augTermY2.iid,X1test/pi))]
 
         ## treatment
-        iDT[, iid.AIPTW.treatment := colMeans(colMultiply_cpp(attr(iPred.logit,"iid"), scale = -(X1test/pi^2)*(Y*C/G - r + I)))]
+        iDT[, iid.AIPTW.treatment := rowMeans(rowMultiply_cpp(attr(iPred.logit,"iid"), scale = -(X1test/pi^2)*(Y*C/G - r + I)))]
 
         ## survival
-        iDT[, iid.AIPTW.survival := colMeans(colMultiply_cpp(augTermSurv.iid, X1test/pi))]
+        iDT[, iid.AIPTW.survival := rowMeans(rowMultiply_cpp(augTermSurv.iid, X1test/pi))]
 
         ## censoring
-        iDT[, iid.AIPTW.censoring := colMeans(colMultiply_cpp(iPred.Cens$survivalDiag.iid, scale = -X1test*Y*C/(pi*G^2)))]
-        iDT[, iid.AIPTW.censoring := iid.AIPTW.censoring + colMeans(colMultiply_cpp(augTermG1.iid,X1test/pi))]
-        iDT[, iid.AIPTW.censoring := iid.AIPTW.censoring + colMeans(colMultiply_cpp(augTermG2.iid,X1test/pi))]
+        iDT[, iid.AIPTW.censoring := rowMeans(rowMultiply_cpp(iPred.Cens$survivalDiag.iid, scale = -X1test*Y*C/(pi*G^2)))]
+        iDT[, iid.AIPTW.censoring := iid.AIPTW.censoring + rowMeans(rowMultiply_cpp(augTermG1.iid,X1test/pi))]
+        iDT[, iid.AIPTW.censoring := iid.AIPTW.censoring + rowMeans(rowMultiply_cpp(augTermG2.iid,X1test/pi))]
 
         ## total
         iDT[, iid.AIPTW := iid.AIPTW.ate + iid.AIPTW.outcome + iid.AIPTW.treatment + iid.AIPTW.survival + iid.AIPTW.censoring]

@@ -67,7 +67,8 @@ otherwise it is only computed for the i-th observation at the i-th time.}
 \item{nVar}{the number of variables that form the linear predictor.}
 
 \item{export}{can be "iid" to return the value of the influence function for each observation.
-"se" to return the standard error for a given timepoint.}
+"se" to return the standard error for a given timepoint.
+"average.iid" to return the value of the average influence function over the observations for which the prediction was performed.}
 
 \item{store.iid}{Implementation used to estimate the influence function and the standard error.
 Can be \code{"full"} or \code{"minimal"}. See the details section.}
@@ -80,9 +81,6 @@ Compute the standard error associated to the predictions from Cox regression mod
 using a first order von Mises expansion of the functional (cumulative hazard or survival).
 }
 \details{
-Can also return the estimated influence function for the cumulative hazard function and survival probabilities
- the sum over the observations of the estimated influence function.
-
 \code{store.iid="full"} compute the influence function for each observation at each time in the argument \code{times}
 before computing the standard error / influence functions.
 \code{store.iid="minimal"} recompute for each subject specific prediction the influence function for the baseline hazard.

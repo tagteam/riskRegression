@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: maj 23 2018 (14:08) 
 ## Version: 
-## Last-Updated: jun 24 2020 (09:05) 
+## Last-Updated: aug 11 2020 (16:12) 
 ##           By: Brice Ozenne
-##     Update #: 622
+##     Update #: 633
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -78,11 +78,11 @@
 ##' term1 <- -out$survival.average.iid
 ##' term2 <- sweep(1-out$survival, MARGIN = 2, FUN = "-", STATS = colMeans(1-out$survival))
 ##' sqrt(colSums((term1 + term2/NROW(d))^2)) 
-##' ## fit.ate$meanRisk[treatment=="T0",meanRisk.se]
+##' ## fit.ate$meanRisk[treatment=="T0",meanRisk.Gformula.se]
 ##' 
 ##' ## note
 ##' out2 <- predictCox(fit, newdata = dd, se = TRUE, times = 1:3, iid = TRUE)
-##' mean(out2$survival.iid[,1,1])
+##' mean(out2$survival.iid[1,1,])
 ##' out$survival.average.iid[1,1]
 ##' 
 ##' ## check confidence intervals (no transformation)
@@ -344,12 +344,12 @@ confintIID.ate <- function(object,
 
         ## reshape data
         estimate.mR <- matrix(NA, nrow = n.contrasts, ncol = n.times)
-        iid.mR <- array(NA, dim = c(n.contrasts, n.times, n.obs))
+        iid.mR <- array(NA, dim = c(n.obs, n.times, n.contrasts))
         for(iC in 1:n.contrasts){ ## iC <- 1
             estimate.mR[iC,] <- object$meanRisk[object$meanRisk[[1]]==contrasts[iC], .SD[[paste0("meanRisk.",iEstimator)]]]
-            iid.mR[iC,,] <- t(object$iid[[iEstimator]][[contrasts[iC]]])
+            iid.mR[,,iC] <- object$iid[[iEstimator]][[contrasts[iC]]]
         }
-        se.mR <- sqrt(apply(iid.mR^2, MARGIN = 1:2, sum))
+        se.mR <- t(sqrt(apply(iid.mR^2, MARGIN = 2:3, sum)))
 
         ## compute
         CIBP.mR <- transformCIBP(estimate = estimate.mR,
@@ -399,13 +399,13 @@ confintIID.ate <- function(object,
 
         ## reshape data
         estimate.dR <- matrix(NA, nrow = n.allContrasts, ncol = n.times)
-        iid.dR <- array(NA, dim = c(n.allContrasts, n.times, n.obs))
+        iid.dR <- array(NA, dim = c(n.obs, n.times, n.allContrasts))
         for(iC in 1:n.allContrasts){ ## iC <- 1
             estimate.dR[iC,] <- object$riskComparison[(object$riskComparison[[1]] == allContrasts[1,iC]) & (object$riskComparison[[2]] == allContrasts[2,iC]),
                                                       .SD[[paste0("diff.",iEstimator)]]]
-            iid.dR[iC,,] <- t(object$iid[[iEstimator]][[allContrasts[2,iC]]] - object$iid[[iEstimator]][[allContrasts[1,iC]]])
+            iid.dR[,,iC] <- object$iid[[iEstimator]][[allContrasts[2,iC]]] - object$iid[[iEstimator]][[allContrasts[1,iC]]]
         }
-        se.dR <- sqrt(apply(iid.dR^2, MARGIN = 1:2, sum))
+        se.dR <- t(sqrt(apply(iid.dR^2, MARGIN = 2:3, sum)))
 
         ## compute
         CIBP.dR <- transformCIBP(estimate = estimate.dR,
@@ -454,7 +454,7 @@ confintIID.ate <- function(object,
 
         ## reshape data
         estimate.rR <- matrix(NA, nrow = n.allContrasts, ncol = n.times)
-        iid.rR <- array(NA, dim = c(n.allContrasts, n.times, n.obs))
+        iid.rR <- array(NA, dim = c(n.obs, n.times, n.allContrasts))
     
         for(iC in 1:n.allContrasts){ ## iC <- 1
             estimate.rR[iC,] <- object$riskComparison[(object$riskComparison[[1]] == allContrasts[1,iC]) & (object$riskComparison[[2]] == allContrasts[2,iC]),
@@ -467,9 +467,9 @@ confintIID.ate <- function(object,
                                      scale = 1/factor1)
             term2 <- rowMultiply_cpp(object$iid[[iEstimator]][[allContrasts[1,iC]]],
                                      scale = factor2/factor1^2)
-            iid.rR[iC,,] <- t(term1 - term2)
+            iid.rR[,,iC] <- term1 - term2
         }
-        se.rR <- sqrt(apply(iid.rR^2, MARGIN = 1:2, sum))
+        se.rR <- t(sqrt(apply(iid.rR^2, MARGIN = 2:3, sum)))
     
         ## compute
         CIBP.rR <- transformCIBP(estimate = estimate.rR,

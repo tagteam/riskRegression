@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: maj 18 2017 (09:23) 
 ## Version: 
-## last-updated: aug  7 2020 (12:24) 
+## last-updated: aug 11 2020 (11:07) 
 ##           By: Brice Ozenne
-##     Update #: 117
+##     Update #: 120
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -18,8 +18,8 @@
 ### Code:
 
 ## * Settings
-library(testthat)
 library(riskRegression)
+library(testthat)
 library(survival)
 library(rms)
 library(timereg)
@@ -140,7 +140,7 @@ test_that("[iidCox] empty strata", {
 
 ## * Compare to timereg
 ## ** Data
-data(Melanoma)
+data(Melanoma, package = "riskRegression")
 
 set.seed(10)
 dt <- sampleData(5e1, outcome = "survival")[,.(time,event,X1,X2,X6)]

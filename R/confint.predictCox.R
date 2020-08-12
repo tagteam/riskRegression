@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: maj 23 2018 (14:08) 
 ## Version: 
-## Last-Updated: jun 24 2020 (09:05) 
+## Last-Updated: aug 11 2020 (18:12) 
 ##           By: Brice Ozenne
-##     Update #: 267
+##     Update #: 268
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -59,7 +59,7 @@
 ##' fit.pred
 ##'
 ##' ## check standard error
-##' sqrt(rowSums(fit.pred$survival.iid[1,,]^2)) ## se for individual 1
+##' sqrt(rowSums(fit.pred$survival.iid[,,1]^2)) ## se for individual 1
 ##'
 ##' ## check confidence interval
 ##' newse <- fit.pred$survival.se/(-fit.pred$survival*log(fit.pred$survival))

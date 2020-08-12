@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Aug 10 2017 (08:56) 
 ## Version: 
-## Last-Updated: okt  7 2019 (18:48) 
+## Last-Updated: aug 12 2020 (12:05) 
 ##           By: Brice Ozenne
-##     Update #: 28
+##     Update #: 31
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -114,7 +114,7 @@ test_that("[predictRisk.glm] compare to lava",{
     expect_equal(unname(e.RR), unname(e.lava$coef))
 
     ## check variance
-    expect_equal(unname(tcrossprod(e.RR.iid)), unname(e.lava$vcov))
+    expect_equal(unname(crossprod(e.RR.iid)), unname(e.lava$vcov))
 })
 
 ## ** average.iid 
@@ -137,7 +137,7 @@ test_that("[predictRisk.glm] compare to lava (average.iid, no factor)",{
     expect_equal(unname(mean(e.RR)), unname(e.lava$coef))
 
     ## check iid
-    expect_equal(colMeans(attr(e.RR0,"iid")), unname(e.RR.average.iid[,1]))
+    expect_equal(unname(rowMeans(attr(e.RR0,"iid"))), unname(e.RR.average.iid[,1]))
 
     ## check variance
     expect_equal(unname(sum((e.RR.average.iid + (e.RR-mean(e.RR))/NROW(e.RR))^2)), unname(e.lava$vcov)[1,1])
@@ -166,7 +166,7 @@ test_that("[predictGLM] compare to lava (average.iid, factor)",{
     expect_equal(unname(mean(e.RR)), unname(e.lava$coef))
 
     ## check iid
-    expect_equal(colMeans(colMultiply_cpp(attr(e.RR0,"iid"), scale = 1:NROW(dt))), unname(e.RR.average.iid[[1]])[,1])
+    expect_equal(unname(rowMeans(rowMultiply_cpp(attr(e.RR0,"iid"), scale = 1:NROW(dt)))), unname(e.RR.average.iid[[1]])[,1])
 
     ## check variance
     expect_equal(unname(sum((e.RR.average.iid[[1]] + (e.RR-mean(e.RR))/NROW(e.RR))^2)), unname(e.lava$vcov)[1,1])

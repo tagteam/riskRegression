@@ -50,7 +50,7 @@ it will be set at \code{max}.}
 
 \item{p.value}{[logical] should p-values be computed.
 
-The iid decomposition must have dimensions [n.prediction,time,n.obs]
+The iid decomposition must have dimensions [n.obs,time,n.prediction]
 while estimate and se must have dimensions [n.prediction,time].}
 }
 \description{

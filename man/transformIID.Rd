@@ -21,5 +21,5 @@ based on the influence function before transformation.
 \details{
 Use a delta method to find the standard error after transformation. \cr \cr
 
-The iid decomposition must contain have dimension [n.prediction,time,n.obs] and estimate [n.prediction,time].
+The iid decomposition must contain have dimension [n.obs,time,n.prediction] and estimate [n.prediction,time].
 }

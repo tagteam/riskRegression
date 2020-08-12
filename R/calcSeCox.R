@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: maj 27 2017 (11:46) 
 ## Version: 
-## last-updated: aug 10 2020 (11:03) 
+## last-updated: aug 11 2020 (13:10) 
 ##           By: Brice Ozenne
-##     Update #: 798
+##     Update #: 811
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -46,14 +46,12 @@
 #' @param nVar the number of variables that form the linear predictor.
 #' @param export can be "iid" to return the value of the influence function for each observation.
 #'                      "se" to return the standard error for a given timepoint.
+#'                      "average.iid" to return the value of the average influence function over the observations for which the prediction was performed.
 #'                      
 #' @param store.iid Implementation used to estimate the influence function and the standard error.
 #' Can be \code{"full"} or \code{"minimal"}. See the details section.
 #' 
-#' @details Can also return the estimated influence function for the cumulative hazard function and survival probabilities
-#'  the sum over the observations of the estimated influence function.
-#'
-#' \code{store.iid="full"} compute the influence function for each observation at each time in the argument \code{times}
+#' @details \code{store.iid="full"} compute the influence function for each observation at each time in the argument \code{times}
 #' before computing the standard error / influence functions.
 #' \code{store.iid="minimal"} recompute for each subject specific prediction the influence function for the baseline hazard.
 #' This avoid to store all the influence functions but may lead to repeated evaluation of the influence function.
@@ -110,9 +108,9 @@ calcSeCox <- function(object, times, nTimes, type, diag,
         if("survival" %in% type){out$survival.se <- matrix(NA, nrow = new.n, ncol = nTimes)}
     }
     if("iid" %in% export){
-        if("hazard" %in% type){out$hazard.iid <- array(NA, dim = c(new.n, nTimes, object.n))}
-        if("cumhazard" %in% type){out$cumhazard.iid <- array(NA, dim = c(new.n, nTimes, object.n))}
-        if("survival" %in% type){out$survival.iid <- array(NA, dim = c(new.n, nTimes, object.n))}
+        if("hazard" %in% type){out$hazard.iid <- array(NA, dim = c(object.n, nTimes, new.n))}
+        if("cumhazard" %in% type){out$cumhazard.iid <- array(NA, dim = c(object.n, nTimes, new.n))}
+        if("survival" %in% type){out$survival.iid <- array(NA, dim = c(object.n, nTimes, new.n))}
     }
     if("average.iid" %in% export){
         if("cumhazard" %in% type){out$cumhazard.average.iid <- matrix(0, nrow = object.n, ncol = nTimes)}
@@ -151,9 +149,9 @@ calcSeCox <- function(object, times, nTimes, type, diag,
                                        debug = 0)
 
         if("iid" %in% export){
-            if("hazard" %in% type){out$hazard.iid <-  aperm(resCpp$IF_hazard, perm = c(2,3,1))}
-            if("cumhazard" %in% type){out$cumhazard.iid <-  aperm(resCpp$IF_cumhazard, perm = c(2,3,1))}
-            if("survival" %in% type){out$survival.iid <-  aperm(resCpp$IF_survival, perm = c(2,3,1))}
+            if("hazard" %in% type){out$hazard.iid <-  aperm(resCpp$IF_hazard, perm = c(1,3,2))}
+            if("cumhazard" %in% type){out$cumhazard.iid <-  aperm(resCpp$IF_cumhazard, perm = c(1,3,2))}
+            if("survival" %in% type){out$survival.iid <-  aperm(resCpp$IF_survival, perm = c(1,3,2))}
         }
         if("se" %in% export){
             if("cumhazard" %in% type){out$cumhazard.se <- resCpp$SE_cumhazard}
@@ -230,9 +228,9 @@ calcSeCox <- function(object, times, nTimes, type, diag,
                 ## export
                 if(diag){                    
                     if("iid" %in% export){
-                        if("hazard" %in% type){out$hazard.iid[indexStrata,1,] <- t(iIFhazard)}
-                        if("cumhazard" %in% type){out$cumhazard.iid[indexStrata,1,] <- t(iIFcumhazard)}
-                        if("survival" %in% type){out$survival.iid[indexStrata,1,] <- t(iIFsurvival)}
+                        if("hazard" %in% type){out$hazard.iid[,1,indexStrata] <- iIFhazard}
+                        if("cumhazard" %in% type){out$cumhazard.iid[,1,indexStrata] <- iIFcumhazard}
+                        if("survival" %in% type){out$survival.iid[,1,indexStrata] <- iIFsurvival}
                     }
                     if("se" %in% export){
                         iSEcumhazard <- sqrt(colSums(iIFcumhazard^2))
@@ -255,9 +253,9 @@ calcSeCox <- function(object, times, nTimes, type, diag,
 
                     for(iObs in indexStrata){ ## iObs <- 1
                         if("iid" %in% export){
-                            if("hazard" %in% type){out$hazard.iid[iObs,,] <- tiIFhazard}
-                            if("cumhazard" %in% type){out$cumhazard.iid[iObs,,] <- tiIFcumhazard}
-                            if("survival" %in% type){out$survival.iid[iObs,,] <- tiIFsurvival}
+                            if("hazard" %in% type){out$hazard.iid[,,iObs] <- iIFhazard}
+                            if("cumhazard" %in% type){out$cumhazard.iid[,,iObs] <- iIFcumhazard}
+                            if("survival" %in% type){out$survival.iid[,,iObs] <- iIFsurvival}
                         }
                         if("se" %in% export){
                             if("cumhazard" %in% type){out$cumhazard.se[iObs,] <- iSEcumhazard}
@@ -290,9 +288,9 @@ calcSeCox <- function(object, times, nTimes, type, diag,
                 
                 ## export                    
                 if("iid" %in% export){
-                    if("hazard" %in% type){out$hazard.iid[iObs,,] <- t(iIFhazard)}
-                    if("cumhazard" %in% type){out$cumhazard.iid[iObs,,] <- t(iIFcumhazard)}
-                    if("survival" %in% type){out$survival.iid[iObs,,] <- t(iIFsurvival)}
+                    if("hazard" %in% type){out$hazard.iid[,,iObs] <- iIFhazard}
+                    if("cumhazard" %in% type){out$cumhazard.iid[,,iObs] <- iIFcumhazard}
+                    if("survival" %in% type){out$survival.iid[,,iObs] <- iIFsurvival}
                 }
                 if("se" %in% export){
                     iSEcumhazard <- sqrt(colSums(iIFcumhazard^2))

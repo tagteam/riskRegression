@@ -62,7 +62,7 @@ fit.pred <- predictCox(fit, newdata=d[1:3], times=c(3,8), type = "survival",
 fit.pred
 
 ## check standard error
-sqrt(rowSums(fit.pred$survival.iid[1,,]^2)) ## se for individual 1
+sqrt(rowSums(fit.pred$survival.iid[,,1]^2)) ## se for individual 1
 
 ## check confidence interval
 newse <- fit.pred$survival.se/(-fit.pred$survival*log(fit.pred$survival))

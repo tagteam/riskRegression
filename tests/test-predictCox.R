@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: sep  4 2017 (10:38) 
 ## Version: 
-## last-updated: aug 10 2020 (11:55) 
+## last-updated: aug 11 2020 (12:53) 
 ##           By: Brice Ozenne
-##     Update #: 140
+##     Update #: 156
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -451,13 +451,13 @@ test_that("[predictCox] - fast iid average (no strata)",{
     predRR.GS <- predictCox(e.coxph, times = dt$time[1:5], iid = TRUE, newdata = dt,
                             type = c("hazard","cumhazard","survival"))
 
-    expect_equal(t(apply(predRR.GS$hazard.iid, MARGIN = 2:3,mean)),
+    expect_equal(apply(predRR.GS$hazard.iid, MARGIN = 1:2,mean),
                  predRR.av$hazard.average.iid, tolerance = 1e-8)
 
-    expect_equal(t(apply(predRR.GS$cumhazard.iid, MARGIN = 2:3,mean)),
+    expect_equal(apply(predRR.GS$cumhazard.iid, MARGIN = 1:2,mean),
                  predRR.av$cumhazard.average.iid, tolerance = 1e-8)
 
-    expect_equal(t(apply(predRR.GS$survival.iid, MARGIN = 2:3,mean)),
+    expect_equal(apply(predRR.GS$survival.iid, MARGIN = 1:2,mean),
                  predRR.av$survival.average.iid, tolerance = 1e-8)
 
     ## weighted average
@@ -469,9 +469,9 @@ test_that("[predictCox] - fast iid average (no strata)",{
     predRR.av2 <- predictCox(e.coxph, times = sort(dt$time[1:5]), average.iid = fT, newdata = dt,
                              type = c("hazard","cumhazard","survival"))
     calcGS <- function(iid){
-        t(apply(iid, MARGIN = 2:3, function(iCol){
+        apply(iid, MARGIN = 1:2, function(iCol){
             mean(iCol * attr(fT, "factor")[[2]][,1])
-        }))
+        })
     }
 
     expect_equal(predRR.av$hazard.average.iid[,order(dt$time[1:5])]*5,
@@ -755,13 +755,13 @@ test_that("[predictCox] - iid average",{
     predRR.GS <- predictCox(eS.coxph, times = seqTime, iid = TRUE, newdata = dtStrata,
                             type = c("hazard","cumhazard","survival"))
 
-    expect_equal(t(apply(predRR.GS$hazard.iid, MARGIN = 2:3,mean)),
+    expect_equal(apply(predRR.GS$hazard.iid, MARGIN = 1:2,mean),
                  predRR.av$hazard.average.iid, tolerance = 1e-8)
 
-    expect_equal(t(apply(predRR.GS$cumhazard.iid, MARGIN = 2:3,mean)),
+    expect_equal(apply(predRR.GS$cumhazard.iid, MARGIN = 1:2,mean),
                  predRR.av$cumhazard.average.iid, tolerance = 1e-8)
 
-    expect_equal(t(apply(predRR.GS$survival.iid, MARGIN = 2:3,mean)),
+    expect_equal(apply(predRR.GS$survival.iid, MARGIN = 1:2,mean),
                  predRR.av$survival.average.iid, tolerance = 1e-8)
 
     ## weighted average
@@ -773,9 +773,9 @@ test_that("[predictCox] - iid average",{
     predRR.av2 <- predictCox(eS.coxph, times = sort(seqTime), average.iid = fT, newdata = dtStrata,
                              type = c("hazard","cumhazard","survival"))
     calcGS <- function(iid){
-        t(apply(iid, MARGIN = 2:3, function(iCol){
+        apply(iid, MARGIN = 1:2, function(iCol){
             mean(iCol * attr(fT, "factor")[[2]][,1])
-        }))
+        })
     }
 
     expect_equal(predRR.av$hazard.average.iid[,order(seqTime)]*5,
@@ -819,7 +819,7 @@ confint.pred2 <- confint(fit.pred, survival.transform = "loglog", nsim.band = ns
 ## ** standard errors
 test_that("[predictCox] consistency  iid se", {
     expect_equal(fit.pred$survival.se[1,],
-                 sqrt(rowSums(fit.pred$survival.iid[1,,]^2))
+                 sqrt(colSums(fit.pred$survival.iid[,,1]^2))
                  )
 })
 
@@ -863,12 +863,12 @@ test_that("[predictCox] diag no strata", {
     expect_equal(diag(GS$survival.se), test$survival.se[,1])
     
     ## iid
-    GS.iid.diag <- do.call(rbind,lapply(1:NROW(dt),
-                                        function(iN){GS$survival.iid[iN,iN,]}))
+    GS.iid.diag <- do.call(cbind,lapply(1:NROW(dt),
+                                        function(iN){GS$survival.iid[,iN,iN]}))
     expect_equal(GS.iid.diag, test$survival.iid[,1,])
 
     ## average.iid
-    expect_equal(colMeans(GS.iid.diag), test2$survival.average.iid[,1])
+    expect_equal(rowMeans(GS.iid.diag), test2$survival.average.iid[,1])
     expect_equal(test$survival.average.iid, test2$survival.average.iid)
 
     ## average.iid with factor - diag=FALSE
@@ -879,7 +879,7 @@ test_that("[predictCox] diag no strata", {
                         se = FALSE, iid = FALSE, average.iid = average.iid, diag = FALSE)
 
     expect_equal(rowMultiply_cpp(GS$survival.average.iid, scale = 1:length(dt$time)), test3$survival.average.iid[[1]])
-    expect_equal(t(apply(GS$survival.iid, 2:3, function(x){sum(x * (1:length(dt$time)))/length(x)})),
+    expect_equal(apply(GS$survival.iid, 1:2, function(x){sum(x * (1:length(dt$time)))/length(x)}),
                  test3$survival.average.iid[[2]])
 
     ## average.iid with factor - diag=FALSE, time varying factor
@@ -887,7 +887,8 @@ test_that("[predictCox] diag no strata", {
     attr(average.iid,"factor") <- list(matrix(rnorm(NROW(dt)*length(dt$time)), nrow = NROW(dt), ncol = length(dt$time)))
     test4 <- predictCox(e.coxph, newdata = dt, times = dt$time,
                         se = FALSE, iid = FALSE, average.iid = average.iid, diag = FALSE)
-    expect_equal(do.call(rbind,lapply(1:NROW(dt), function(iObs){colMeans(GS$survival.iid[,,iObs] * attr(average.iid,"factor")[[1]])})),
+    ## iObs <- 1    
+    expect_equal(do.call(rbind,lapply(1:NROW(dt), function(iObs){rowMeans(GS$survival.iid[iObs,,] * t(attr(average.iid,"factor")[[1]]))})),
                  test4$survival.average.iid[[1]])
 
 
@@ -900,7 +901,7 @@ test_that("[predictCox] diag no strata", {
 
     
     expect_equal(5*test$survival.average.iid, test5$survival.average.iid[[1]])
-    expect_equal(colMeans(colMultiply_cpp(GS.iid.diag, 1:length(dt$time))),
+    expect_equal(rowMeans(rowMultiply_cpp(GS.iid.diag, 1:length(dt$time))),
                  test5$survival.average.iid[[2]][,1])
     
 })
@@ -920,12 +921,12 @@ test_that("[predictCox] diag strata", {
     expect_equal(diag(GS$survival), as.double(test$survival))
 
     ## iid
-    GS.iid.diag <- do.call(rbind,lapply(1:NROW(dt),
-                                        function(iN){GS$survival.iid[iN,iN,]}))
+    GS.iid.diag <- do.call(cbind,lapply(1:NROW(dt),
+                                        function(iN){GS$survival.iid[,iN,iN]}))
     expect_equal(GS.iid.diag, test$survival.iid[,1,])
 
     ## average.iid
-    expect_equal(colMeans(GS.iid.diag), test2$survival.average.iid[,1])
+    expect_equal(rowMeans(GS.iid.diag), test2$survival.average.iid[,1])
     expect_equal(test$survival.average.iid, test2$survival.average.iid)
 
     ## average.iid with factor - diag=FALSE
@@ -936,7 +937,7 @@ test_that("[predictCox] diag strata", {
                         se = FALSE, iid = FALSE, average.iid = average.iid, diag = FALSE)
 
     expect_equal(rowMultiply_cpp(GS$survival.average.iid, scale = 1:length(dt$time)), test3$survival.average.iid[[1]])
-    expect_equal(t(apply(GS$survival.iid, 2:3, function(x){sum(x * (1:length(dt$time)))/length(x)})),
+    expect_equal(apply(GS$survival.iid, 1:2, function(x){sum(x * (1:length(dt$time)))/length(x)}),
                  test3$survival.average.iid[[2]])
 
     ## average.iid with factor - diag=FALSE, time varying factor
@@ -944,7 +945,7 @@ test_that("[predictCox] diag strata", {
     attr(average.iid,"factor") <- list(matrix(rnorm(NROW(dt)*length(dt$time)), nrow = NROW(dt), ncol = length(dt$time)))
     test4 <- predictCox(eS.coxph, newdata = dt, times = dt$time,
                         se = FALSE, iid = FALSE, average.iid = average.iid, diag = FALSE)
-    expect_equal(do.call(rbind,lapply(1:NROW(dt), function(iObs){colMeans(GS$survival.iid[,,iObs] * attr(average.iid,"factor")[[1]])})),
+    expect_equal(do.call(rbind,lapply(1:NROW(dt), function(iObs){rowMeans(GS$survival.iid[iObs,,] * t(attr(average.iid,"factor")[[1]]))})),
                  test4$survival.average.iid[[1]])
 
 
@@ -957,7 +958,7 @@ test_that("[predictCox] diag strata", {
 
     
     expect_equal(5*test$survival.average.iid, test5$survival.average.iid[[1]])
-    expect_equal(colMeans(colMultiply_cpp(GS.iid.diag, 1:length(dt$time))),
+    expect_equal(rowMeans(rowMultiply_cpp(GS.iid.diag, 1:length(dt$time))),
                  test5$survival.average.iid[[2]][,1])
 
 })
@@ -1123,8 +1124,8 @@ test_that("[predictCox] store.iid = minimal vs. full - no strata", {
     expect_equal(res1$survival.se,res2$survival.se)
     expect_equal(res1$cumhazard.iid,res2$cumhazard.iid)
     expect_equal(res1$survival.iid,res2$survival.iid)
-    expect_equal(res1$cumhazard.average.iid, t(apply(res2$cumhazard.iid,2:3,mean)))
-    expect_equal(res1$survival.average.iid, t(apply(res2$survival.iid,2:3,mean)))
+    expect_equal(res1$cumhazard.average.iid, apply(res2$cumhazard.iid,1:2,mean))
+    expect_equal(res1$survival.average.iid, apply(res2$survival.iid,1:2,mean))
 
     ## pre-store
     m2.coxph <- iidCox(m.coxph, store.iid = "minimal")
@@ -1135,8 +1136,8 @@ test_that("[predictCox] store.iid = minimal vs. full - no strata", {
     expect_equal(res1bis$survival.se,res2$survival.se)
     expect_equal(res1bis$cumhazard.iid,res2$cumhazard.iid)
     expect_equal(res1bis$survival.iid,res2$survival.iid)
-    expect_equal(res1bis$cumhazard.average.iid, t(apply(res2$cumhazard.iid,2:3,mean)))
-    expect_equal(res1bis$survival.average.iid, t(apply(res2$survival.iid,2:3,mean)))
+    expect_equal(res1bis$cumhazard.average.iid, apply(res2$cumhazard.iid,1:2,mean))
+    expect_equal(res1bis$survival.average.iid, apply(res2$survival.iid,1:2,mean))
     
 })
 
@@ -1158,8 +1159,8 @@ test_that("[predictCox] store.iid = minimal vs. full - strata", {
     expect_equal(res1$survival.se,res2$survival.se)
     expect_equal(res1$cumhazard.iid,res2$cumhazard.iid)
     expect_equal(res1$survival.iid,res2$survival.iid)
-    expect_equal(res1$cumhazard.average.iid, t(apply(res2$cumhazard.iid,2:3,mean)))
-    expect_equal(res1$survival.average.iid, t(apply(res2$survival.iid,2:3,mean)))
+    expect_equal(res1$cumhazard.average.iid, apply(res2$cumhazard.iid,1:2,mean))
+    expect_equal(res1$survival.average.iid, apply(res2$survival.iid,1:2,mean))
 
     ## pre store
     m2.coxph <- iidCox(m.coxph, store.iid = "minimal")
@@ -1170,8 +1171,8 @@ test_that("[predictCox] store.iid = minimal vs. full - strata", {
     expect_equal(res1bis$survival.se,res2$survival.se)
     expect_equal(res1bis$cumhazard.iid,res2$cumhazard.iid)
     expect_equal(res1bis$survival.iid,res2$survival.iid)
-    expect_equal(res1bis$cumhazard.average.iid, t(apply(res2$cumhazard.iid,2:3,mean)))
-    expect_equal(res1bis$survival.average.iid, t(apply(res2$survival.iid,2:3,mean)))
+    expect_equal(res1bis$cumhazard.average.iid, apply(res2$cumhazard.iid,1:2,mean))
+    expect_equal(res1bis$survival.average.iid, apply(res2$survival.iid,1:2,mean))
 })
 
 ## ** Weigthed cox

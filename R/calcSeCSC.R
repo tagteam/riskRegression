@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: maj 27 2017 (21:23) 
 ## Version: 
-## last-updated: aug  7 2020 (18:23) 
+## last-updated: aug 11 2020 (10:54) 
 ##           By: Brice Ozenne
-##     Update #: 1080
+##     Update #: 1085
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -136,7 +136,7 @@ calcSeCSC <- function(object, cif, hazard, cumhazard, survival, object.time, obj
 
         out <- list()
         if("iid" %in% export){
-            out$iid <- aperm(resCpp$IF_cif, perm = c(2,3,1))
+            out$iid <- aperm(resCpp$IF_cif, perm = c(1,3,2))
         }
         if("se" %in% export){
             out$se <- resCpp$SE_cif
@@ -176,7 +176,7 @@ calcSeCSC <- function(object, cif, hazard, cumhazard, survival, object.time, obj
                                   exportSE = "se" %in% export, exportIF = "iid" %in% export, exportIFsum = "average.iid" %in% export,
                                   diag = diag)
             if("iid" %in% export){
-                out$iid <- aperm(out$iid, c(1,3,2))
+                out$iid <- aperm(out$iid, c(2,3,1))
             }
 
         }else if("average.iid" %in% export){

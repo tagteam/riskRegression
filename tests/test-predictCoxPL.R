@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: jun 21 2018 (15:10) 
 ## Version: 
-## Last-Updated: sep 25 2019 (09:37) 
+## Last-Updated: aug 12 2020 (11:56) 
 ##           By: Brice Ozenne
-##     Update #: 19
+##     Update #: 23
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -67,12 +67,12 @@ test_that("[predictCoxPL] diag no strata", {
 
     ## check iid for survival
     expect_equal(GS0$survival.iid, GS$survival.iid) ## same predictCox / predictCoxPL
-    expect_equal(GS$survival.iid[1,1,], test$survival.iid[1,1,]) ## same when using diag
-    expect_equal(apply(GS$survival.iid,3,diag), test$survival.iid[,1,])
-
+    expect_equal(GS$survival.iid[,1,1], test$survival.iid[,1,1]) ## same when using diag
+    expect_equal(t(apply(GS$survival.iid,1,diag)), test$survival.iid[,1,])
+    
     ## check average.iid for survival
     expect_equal(GS0$survival.average.iid, GS$survival.average.iid) ## same predictCox / predictCoxPL
-    expect_equal(colMeans(apply(GS$survival.iid,3,diag)), test$survival.average.iid[,1])
+    expect_equal(rowMeans(t(apply(GS$survival.iid,1,diag))), test$survival.average.iid[,1])
 })
 
 test_that("[predictCoxPL] diag strata", {
@@ -89,12 +89,12 @@ test_that("[predictCoxPL] diag strata", {
 
     ## check iid for survival
     expect_equal(GS0$survival.iid, GS$survival.iid) ## same predictCox / predictCoxPL
-    expect_equal(GS$survival.iid[1,1,], test$survival.iid[1,1,]) ## same when using diag
-    expect_equal(apply(GS$survival.iid,3,diag), test$survival.iid[,1,])
+    expect_equal(GS$survival.iid[,1,1], test$survival.iid[,1,1]) ## same when using diag
+    expect_equal(t(apply(GS$survival.iid,1,diag)), test$survival.iid[,1,])
 
     ## check average.iid for survival
     expect_equal(GS0$survival.average.iid, GS$survival.average.iid) ## same predictCox / predictCoxPL
-    expect_equal(colMeans(apply(GS$survival.iid,3,diag)), test$survival.average.iid[,1])
+    expect_equal(rowMeans(t(apply(GS$survival.iid,1,diag))), test$survival.average.iid[,1])
 })
 
 ######################################################################
