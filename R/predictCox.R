@@ -225,9 +225,9 @@ predictCox <- function(object,
     if(object.baseEstimator == "exact"){
         stop("Prediction with exact handling of ties is not implemented.\n")
     }
-
     ## convergence issue
     if(!is.null(coef(object)) && any(is.na(coef(object)))){
+        print(coef(object))
         stop("Incorrect object",
              "One or several model parameters have been estimated to be NA \n")
     }

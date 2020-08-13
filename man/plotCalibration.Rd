@@ -29,7 +29,7 @@ plotCalibration(
   xlim = c(0, 1),
   ylim = c(0, 1),
   xlab = ifelse(bars, "Risk groups", "Predicted risk"),
-  ylab = "Observed frequency",
+  ylab,
   col,
   lwd,
   lty,
@@ -82,7 +82,7 @@ effect on computing efficiency in large data sets.}
 \item{bars}{If \code{TRUE}, use barplots to show calibration.}
 
 \item{hanging}{Barplots only. If \code{TRUE}, hang bars
-corresponding to observed frequencies at the value of the
+corresponding to observed frequencies (estimated actual risk)  at the value of the
 corresponding prediction.}
 
 \item{names}{Barplots only. Names argument passed to
@@ -147,7 +147,13 @@ barplot, legend, addtable2plot, points (pseudo values), rug. See
 \code{\link{SmartControl}}.}
 }
 \description{
-Plot Calibration curve
+Plot Calibration curves for risk prediction models
+}
+\details{
+In uncensored data, the observed frequency of the outcome event is calculated locally at the predicted risk.
+In right censored data with and without competing risks, the actual risk
+is calculated using the Kaplan-Meier and the Aalen-Johansen method, respectively,
+locally at the predicted risk.
 }
 \examples{
 library(prodlim)

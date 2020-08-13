@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jan  4 2016 (14:30) 
 ## Version: 
-## last-updated: Nov  3 2019 (19:29) 
+## last-updated: Aug 12 2020 (17:43) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 139
+##     Update #: 140
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -407,41 +407,40 @@ if (class(try(riskRegression.test,silent=TRUE))[1]!="try-error"){
     })
 }
 
-test_that("R squared/IPA for casebase", { 
-    # Simulate censored survival data for two outcome types from exponential distributions
-    library(data.table)
-    library(casebase)
-    library(survival)
-    library(riskRegression)
-    library(prodlim)
-    nobs <- 200
-    set.seed(12345)
-    
-    DT <- sampleData(nobs, outcome = "survival")
-    tlim <- 12
-    DT[time >= tlim, `:=`("event" = 0, "time" = tlim)]
-    simple_linear <- fitSmoothHazard(event ~ time + X1, DT)
-    multiple_linear <- fitSmoothHazard(event ~ time + X1 + X6 + X7, DT)
-    #change to correct class (casebase will be updated and so will this test
-    #so that the reclassing is unecessary)
-    class(simple_linear) <- c("singleEventCB",class(simple_linear))
-    class(multiple_linear) <- c("singleEventCB",class(multiple_linear))
-    #to show IPA is comparable.
-    coxfit <- coxph(Surv(time, event != 0) ~ X1+X6+X7, data = DT, x = TRUE)
-    # compare prediction performance on a test set
-    testDT <- sampleData(130, outcome = "survival")
-    x <- Score(list("Simple, linear" = simple_linear, "Multiple, linear" = multiple_linear, "Cox" = coxfit),
-               data = testDT, # data for evaluation
-               formula = Hist(time, event) ~ 1, # used to communicate the outcome variables
-               # and which variables affect censoring
-               cause = 1, # cause of interest
-               times = 5
-    ) # evaluation time point
-    
-    x
-})
-
-                                        # }}}
-                                        # }}}
-                                        #----------------------------------------------------------------------
+if (FALSE){
+    test_that("R squared/IPA for casebase", { 
+        # Simulate censored survival data for two outcome types from exponential distributions
+        library(data.table)
+        library(casebase)
+        library(survival)
+        library(riskRegression)
+        library(prodlim)
+        nobs <- 200
+        set.seed(12345)
+        DT <- sampleData(nobs, outcome = "survival")
+        tlim <- 12
+        DT[time >= tlim, `:=`("event" = 0, "time" = tlim)]
+        simple_linear <- fitSmoothHazard(event ~ time + X1, DT)
+        multiple_linear <- fitSmoothHazard(event ~ time + X1 + X6 + X7, DT)
+        #change to correct class (casebase will be updated and so will this test
+        #so that the reclassing is unecessary)
+        class(simple_linear) <- c("singleEventCB",class(simple_linear))
+        class(multiple_linear) <- c("singleEventCB",class(multiple_linear))
+        #to show IPA is comparable.
+        coxfit <- coxph(Surv(time, event != 0) ~ X1+X6+X7, data = DT, x = TRUE)
+        # compare prediction performance on a test set
+        testDT <- sampleData(130, outcome = "survival")
+        x <- Score(list("Simple, linear" = simple_linear, "Multiple, linear" = multiple_linear, "Cox" = coxfit),
+                   data = testDT, # data for evaluation
+                   formula = Hist(time, event) ~ 1, # used to communicate the outcome variables
+                   # and which variables affect censoring
+                   cause = 1, # cause of interest
+                   times = 5
+                   ) # evaluation time point
+                   x
+    })
+}
+# }}}
+# }}}
+#----------------------------------------------------------------------
 ### test-Score.R ends here
