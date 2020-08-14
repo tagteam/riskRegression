@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: feb 17 2017 (10:06) 
 ## Version: 
-## last-updated: aug 10 2020 (12:05) 
+## last-updated: aug 14 2020 (11:46) 
 ##           By: Brice Ozenne
-##     Update #: 604
+##     Update #: 690
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -15,7 +15,6 @@
 ## 
 ### Code:
 
-                                        # {{{ autoplot.predictCox
 ## * autoplot.predictCox (documentation)
 #' @title Plot Predictions From a Cox Model
 #' @description Plot predictions from a Cox model.
@@ -33,6 +32,7 @@
 #' @param reduce.data [logical] If \code{TRUE} only the covariates that does take indentical values for all observations are displayed.
 #' @param plot [logical] Should the graphic be plotted.
 #' @param digits [integer] Number of decimal places.
+#' @param smooth [logical] Should a smooth version of the risk function be plotted instead of a simple function?
 #' @param ylab [character] Label for the y axis.
 #' @param alpha [numeric, 0-1] Transparency of the confidence bands. Argument passed to \code{ggplot2::geom_ribbon}.
 #' @param ... Not used. Only for compatibility with the plot method.
@@ -94,11 +94,14 @@ autoplot.predictCox <- function(object,
                                 type = NULL,
                                 ci = FALSE,
                                 band = FALSE,
+                                plot = TRUE,
+                                smooth = FALSE,
+                                digits = 2,
+                                alpha = NA,
                                 group.by = "row",
                                 reduce.data = FALSE,
-                                plot = TRUE,
                                 ylab = NULL,
-                                digits = 2, alpha = NA, ...){
+                                 ...){
   
     ## initialize and check    
     possibleType <- c("cumhazard","survival")
@@ -217,6 +220,7 @@ autoplot.predictCox <- function(object,
                            group.by = group.by,
                            conf.level = object$conf.level,
                            alpha = alpha,
+                           smooth = smooth,
                            xlab = if(is.null(object$infoVar)){"time"}else{object$infoVar$time},
                            ylab = ylab
                            )
@@ -227,9 +231,7 @@ autoplot.predictCox <- function(object,
   
     return(invisible(gg.res))
 }
-                                        # }}}
 
-                                        # {{{ predict2melt
 ## * predict2melt
 predict2melt <- function(outcome, name.outcome,
                          ci, outcome.lower, outcome.upper,
@@ -322,11 +324,9 @@ predict2melt <- function(outcome, name.outcome,
     return(dataL)    
 }
 
-                                        # }}}
-                                        # {{{ predict2plot
 ## * predict2plot
 predict2plot <- function(dataL, name.outcome,
-                         ci, band, group.by,                         
+                         ci, band, group.by, smooth,                        
                          conf.level, alpha, xlab, ylab){
                                         # for CRAN tests
     original <- lowerCI <- upperCI <- lowerBand <- upperBand <- timeLeft <- NULL
@@ -350,46 +350,85 @@ predict2plot <- function(dataL, name.outcome,
         vec.outcome <- c(vec.outcome,"lowerBand","upperBand")
     }
     dataL[,c("timeLeft") := .SD[c(1,1:(.N-1))], .SDcols = "time", by = "row"] 
-    
+
+    if(smooth){
+        if(ci){
+            dataL[, c("lowerCI.smooth") := loess(lowerCI ~ time, data = .SD)$fitted, by = "row"]
+            dataL[, c("upperCI.smooth") := loess(upperCI ~ time, data = .SD)$fitted, by = "row"]
+        }
+        if(band){
+            dataL[, c("lowerBand.smooth") := loess(lowerBand ~ time, data = .SD)$fitted, by = "row"]
+            dataL[, c("upperBand.smooth") := loess(upperBand ~ time, data = .SD)$fitted, by = "row"]
+        }
+    }
+
     ## display ####
     labelCI <- paste0(conf.level*100,"% confidence \n interval")
     labelBand <- paste0(conf.level*100,"% confidence \n band")
 
-    gg.base <- ggplot(data = dataL, mapping = aes_string(group = "row"))
-
+    gg.base <- ggplot(data = dataL, mapping = aes(group = row))
     if(band){ ## confidence band
-        if(!is.na(alpha)){
-            gg.base <- gg.base + ggplot2::geom_rect(aes(xmin = timeLeft, xmax = time, ymin = lowerBand, ymax = upperBand,
-                                                        fill = labelBand), linetype = 0, alpha = alpha)
-            gg.base <- gg.base + scale_fill_manual("", values="grey12")        
+        if(smooth){
+            if(!is.na(alpha)){
+                gg.base <- gg.base + ggplot2::geom_ribbon(aes(x = time, ymin = lowerBand.smooth, ymax = upperBand.smooth), alpha = alpha)
+            }else{
+                gg.base <- gg.base + ggplot2::geom_smooth(eval(parse(text = paste0("aes(x = ","time",", y = ","lowerBand.smooth",", color = ",group.by,", linetype = \"band\")"))),
+                                                          se = FALSE, method = "loess", formula = y~x)
+                gg.base <- gg.base + ggplot2::geom_smooth(eval(parse(text = paste0("aes(x = ","time",", y = ","upperBand.smooth",", color = ",group.by,", linetype = \"band\")"))),
+                                                          se = FALSE, method = "loess", formula = y~x)
+            }
         }else{
-            gg.base <- gg.base + ggplot2::geom_segment(aes(x = timeLeft, y = lowerBand, xend = time, yend = lowerBand, linetype = "band"),
-                                                       size = 1.2, color = "black")
-            gg.base <- gg.base + ggplot2::geom_segment(aes(x = timeLeft, y = upperBand, xend = time, yend = upperBand, linetype = "band"),
-                                                       size = 1.2, color = "black")
+            if(!is.na(alpha)){
+                gg.base <- gg.base + ggplot2::geom_rect(aes(xmin = timeLeft, xmax = time, ymin = lowerBand, ymax = upperBand,
+                                                            fill = labelBand), linetype = 0, alpha = alpha)
+                gg.base <- gg.base + scale_fill_manual("", values="grey12")        
+            }else{
+                gg.base <- gg.base + ggplot2::geom_segment(aes(x = timeLeft, y = lowerBand, xend = time, yend = lowerBand, color = "band"),
+                                                           size = 1.2)
+                gg.base <- gg.base + ggplot2::geom_segment(aes(x = timeLeft, y = upperBand, xend = time, yend = upperBand, color = "band"),
+                                                           size = 1.2)
+            }
         }
     }
     
     if(ci){ ## confidence interval
-        if(!is.na(alpha)){
-            gg.base <- gg.base + ggplot2::geom_errorbar(aes(x = time, ymin = lowerCI, ymax = upperCI, linetype = labelCI))
-            gg.base <- gg.base + scale_linetype_manual("",values=setNames(1,labelCI))
+        if(smooth){
+            if(!is.na(alpha)){
+                gg.base <- gg.base + ggplot2::geom_errorbar(aes(x = time, ymin = lowerCI.smooth, ymax = upperCI.smooth, linetype = labelCI), width = 1.2)
+                gg.base <- gg.base + scale_linetype_manual("",values=setNames(1,labelCI))
+            }else{
+                gg.base <- gg.base + ggplot2::geom_smooth(eval(parse(text = paste0("aes(x = ","time",", y = ","lowerCI.smooth",", color = ",group.by,", linetype = \"ci\")"))),
+                                                          se = FALSE, method = "loess", formula = y~x)
+                gg.base <- gg.base + ggplot2::geom_smooth(eval(parse(text = paste0("aes(x = ","time",", y = ","upperCI.smooth",", color = ",group.by,", linetype = \"ci\")"))),
+                                                          se = FALSE, method = "loess", formula = y~x)
 
+            }
         }else{
-            gg.base <- gg.base + ggplot2::geom_segment(aes(x = timeLeft, y = lowerCI, xend = time, yend = lowerCI, linetype = "ci"),
-                                                       size = 1.2, color = "black")
-            gg.base <- gg.base + ggplot2::geom_segment(aes(x = timeLeft, y = upperCI, xend = time, yend = upperCI, linetype = "ci"),
-                                                       size = 1.2, color = "black")
+            if(!is.na(alpha)){
+                gg.base <- gg.base + ggplot2::geom_errorbar(aes(x = time, ymin = lowerCI, ymax = upperCI, linetype = labelCI), width = 1.2)
+                gg.base <- gg.base + scale_linetype_manual("",values=setNames(1,labelCI))
+
+            }else{
+                gg.base <- gg.base + ggplot2::geom_segment(aes(x = timeLeft, y = lowerCI, xend = time, yend = lowerCI, color = "ci"),
+                                                           size = 1.2)
+                gg.base <- gg.base + ggplot2::geom_segment(aes(x = timeLeft, y = upperCI, xend = time, yend = upperCI, color = "ci"),
+                                                           size = 1.2)
+            }
         }
     }
 
     ## estimate
-    gg.base <- gg.base + ggplot2::geom_segment(mapping = aes_string(x = "timeLeft", y = name.outcome, xend = "time", yend = name.outcome, color = group.by), size = 1.5)
-    if("status" %in% names(dataL)){
-        gg.base <- gg.base + ggplot2::geom_point(data = dataL[dataL$origin==FALSE], mapping = aes_string(x = "timeLeft", y = name.outcome, color = group.by, shape = "status"), size = 3)
-        gg.base <- gg.base + ggplot2::scale_shape_manual(breaks = c(0,1), values=c(3,18), labels = c("censoring","event"))
+    if(smooth){
+        gg.base <- gg.base + ggplot2::geom_smooth(mapping = aes_string(x = "time", y = name.outcome, color = group.by),
+                                                  size = 1.5, se = FALSE, method = "loess", formula = y~x)
     }else{
-        gg.base <- gg.base + ggplot2::geom_point(data = dataL[dataL$origin==FALSE], mapping = aes_string(x = "timeLeft", y = name.outcome, color = group.by), size = 2)
+        gg.base <- gg.base + ggplot2::geom_segment(mapping = aes_string(x = "timeLeft", y = name.outcome, xend = "time", yend = name.outcome, color = group.by), size = 1.5)
+        if("status" %in% names(dataL)){
+            gg.base <- gg.base + ggplot2::geom_point(data = dataL[dataL$origin==FALSE], mapping = aes_string(x = "timeLeft", y = name.outcome, color = group.by, shape = "status"), size = 3)
+            gg.base <- gg.base + ggplot2::scale_shape_manual(breaks = c(0,1), values=c(3,18), labels = c("censoring","event"))
+        }else{
+            gg.base <- gg.base + ggplot2::geom_point(data = dataL[dataL$origin==FALSE], mapping = aes_string(x = "timeLeft", y = name.outcome, color = group.by), size = 2)
+        }
     }
     
     if(group.by=="row"){
@@ -409,21 +448,26 @@ predict2plot <- function(dataL, name.outcome,
 
     if(is.na(alpha)[[1]] && (band[[1]] || ci[[1]])){
         indexTempo <- which(c(ci,band)==1)
-        if(band && ci){
-            value <- c(1,2)
-        }else{
-            value <- 1
+        if(smooth == FALSE){
+            levels.group.by <- unique(dataL[[group.by]])
+            n.levels.group.by <- length(levels.group.by)
+            
+            gg.base <- gg.base + scale_color_manual("", breaks = c(c("ci","band")[indexTempo],levels.group.by),
+                                                    labels = c(c(labelCI,labelBand)[indexTempo],levels.group.by),
+                                                    values = c(c("grey","black")[indexTempo],
+                                                               hcl(h = seq(15, 375, length = n.levels.group.by + 1), l = 65, c = 100)[1:n.levels.group.by]))
+            }else{
+                gg.base <- gg.base + scale_linetype_manual("", breaks = c("ci","band")[indexTempo],
+                                                           labels = c(labelCI,labelBand)[indexTempo],
+                                                           values = c("dotdash","longdash")[indexTempo])
+            }
+        }else if(ci[[1]] && band[[1]]){
+            gg.base <- gg.base + ggplot2::guides(linetype = ggplot2::guide_legend(order = 1),
+                                                 fill = ggplot2::guide_legend(order = 2),
+                                                 group = ggplot2::guide_legend(order = 3)
+                                                 )
         }
-        gg.base <- gg.base + scale_linetype_manual("", breaks = c("ci","band")[indexTempo],
-                                                   labels = c(labelCI,labelBand)[indexTempo],
-                                                   values = value)
-    }else if(ci[[1]] && band[[1]]){
-        gg.base <- gg.base + ggplot2::guides(linetype = ggplot2::guide_legend(order = 1),
-                                             fill = ggplot2::guide_legend(order = 2),
-                                             group = ggplot2::guide_legend(order = 3)
-                                             )
-    }
-    gg.base <- gg.base + ggplot2::xlab(xlab) + ggplot2::ylab(ylab)
+        gg.base <- gg.base + ggplot2::xlab(xlab) + ggplot2::ylab(ylab)
     
     ## export
     ls.export <- list(plot = gg.base,
@@ -431,7 +475,6 @@ predict2plot <- function(dataL, name.outcome,
     
     return(ls.export)
 }
-                                        # }}}
 
 #----------------------------------------------------------------------
 ### autoplot.predictCox.R ends here

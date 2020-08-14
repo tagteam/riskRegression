@@ -331,7 +331,7 @@ iidCox.coxph <- function(object, newdata = NULL,
             if(is.null(tau.hazard)){
                 tau.hazard_strata <- object.time_strata[[iStrata]][object.status_strata[[iStrata]] == 1]
                 if(!is.null(tau.max)){
-                    tau.hazard_strata <- tau.hazard_strata[tau.hazard_strata<tau.max]
+                    tau.hazard_strata <- tau.hazard_strata[tau.hazard_strata<=tau.max]
                 }
             }else if(is.list(tau.hazard)){
                 tau.hazard_strata <- tau.hazard[[nStrata]]

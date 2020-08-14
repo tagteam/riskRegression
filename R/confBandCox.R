@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: apr 21 2017 (17:40) 
 ## Version: 
-## last-updated: aug 11 2020 (12:51) 
+## last-updated: aug 14 2020 (12:11) 
 ##           By: Brice Ozenne
-##     Update #: 37
+##     Update #: 40
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -31,8 +31,8 @@ confBandCox <- function(iid, se, n.sim, conf.level){
     new.quantile <- quantileProcess_cpp(nObject = dimTempo[1],
                                         nNew = dimTempo[3],
                                         nSim = n.sim,
-                                        iid = aperm(iid, c(2,1,3)),
-                                        se = t(se),
+                                        iid = aperm(iid, c(2,1,3)), ## T x N x C
+                                        se = t(se), ## T x C
                                         confLevel = conf.level)
     
     return(new.quantile)

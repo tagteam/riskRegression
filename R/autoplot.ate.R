@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: apr 28 2017 (14:19) 
 ## Version: 
-## last-updated: jun 24 2020 (09:05) 
+## last-updated: aug 14 2020 (11:47) 
 ##           By: Brice Ozenne
-##     Update #: 100
+##     Update #: 118
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -26,6 +26,7 @@
 #' @param plot [logical] Should the graphic be plotted.
 #' @param digits [integer, >0] Number of decimal places.
 #' @param alpha [numeric, 0-1] Transparency of the confidence bands. Argument passed to \code{ggplot2::geom_ribbon}.
+#' @param smooth [logical] Should a smooth version of the risk function be plotted instead of a simple function?
 #' @param estimator [character] The type of estimator relative to which the risks should be displayed. 
 #' @param ... not used. Only for compatibility with the plot method.
 #' 
@@ -71,8 +72,10 @@ autoplot.ate <- function(object,
                          ci = FALSE,
                          band = FALSE,
                          plot = TRUE,
+                         smooth = FALSE,
                          digits = 2,
-                         alpha = NA, ...){
+                         alpha = NA,
+                         ...){
 
     ## initialize and check
     estimator <- match.arg(estimator, choices =  object$estimator, several.ok = FALSE)
@@ -120,16 +123,19 @@ autoplot.ate <- function(object,
             first.dt[, c("lowerBand","upperBand") := 0]
         }
     }
-    dataL <- dataL[, .SD, .SDcol = c(names(first.dt),c("row","treatment"))]
     if(!is.null(first.dt)){
+        dataL <- dataL[, .SD, .SDcol = c(names(first.dt),c("row","treatment"))]
         dataL <- dataL[, rbind(first.dt,.SD), by = c("row","treatment")]
+    }else{
+        dataL <- dataL[, .SD, .SDcol = c("time","meanRisk","row","treatment", if(ci){c("lowerCI","upperCI")}, if(band){c("lowerBand","upperBand")})]
+        dataL[,c("origin") := TRUE]
     }
-    
     gg.res <- predict2plot(dataL = dataL,
                            name.outcome = "meanRisk", # must not contain space to avoid error in ggplot2
                            ci = ci, band = band,
                            group.by = "treatment",
                            conf.level = object$conf.level,
+                           smooth = smooth,
                            alpha = alpha,
                            xlab = "time",
                            ylab = "Average absolute risk")

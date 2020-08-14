@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: jun 27 2019 (10:43) 
 ## Version: 
-## Last-Updated: aug 11 2020 (17:59) 
+## Last-Updated: aug 12 2020 (17:09) 
 ##           By: Brice Ozenne
-##     Update #: 660
+##     Update #: 667
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -271,6 +271,7 @@ ATE_TI <- function(object.event,
             outRisk <- predictRisk(object.event, newdata = data.i, times = times,
                                    average.iid = factor, cause = cause,
                                    product.limit = product.limit)
+
             F1.ctf.tau[[iC]][ls.index.strata[[iC]],] <- outRisk
             if(return.iid.nuisance){
                 if(attr(estimator,"export.Gformula")){

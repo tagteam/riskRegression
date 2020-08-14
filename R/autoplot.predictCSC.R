@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: feb 27 2017 (10:47) 
 ## Version: 
-## last-updated: jun 24 2020 (09:05) 
+## last-updated: aug 14 2020 (09:49) 
 ##           By: Brice Ozenne
-##     Update #: 90
+##     Update #: 94
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -27,6 +27,7 @@
 #' @param reduce.data [logical] If \code{TRUE} only the covariates that does take indentical values for all observations are displayed.
 #' @param plot [logical] Should the graphic be plotted.
 #' @param digits [integer] Number of decimal places.
+#' @param smooth [logical] Should a smooth version of the risk function be plotted instead of a simple function?
 #' @param alpha [numeric, 0-1] Transparency of the confidence bands. Argument passed to \code{ggplot2::geom_ribbon}.
 #' @param ... Not used. Only for compatibility with the plot method.
 
@@ -61,10 +62,13 @@
 autoplot.predictCSC <- function(object,
                                 ci = FALSE,
                                 band = FALSE,
+                                plot = TRUE,
+                                smooth = FALSE,
+                                digits = 2,
+                                alpha = NA,
                                 group.by = "row",
                                 reduce.data = FALSE,
-                                plot = TRUE,
-                                digits = 2, alpha = NA, ...){
+                                ...){
   
     ## initialize and check
     group.by <- match.arg(group.by, c("row","covariates","strata"))
@@ -125,6 +129,7 @@ autoplot.predictCSC <- function(object,
                            group.by = group.by,
                            conf.level = object$conf.level,
                            alpha = alpha,
+                           smooth = smooth,
                            xlab = "time",
                            ylab = "absolute risk"
                            )

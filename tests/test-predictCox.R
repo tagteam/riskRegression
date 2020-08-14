@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: sep  4 2017 (10:38) 
 ## Version: 
-## last-updated: aug 11 2020 (12:53) 
+## last-updated: aug 12 2020 (17:07) 
 ##           By: Brice Ozenne
-##     Update #: 156
+##     Update #: 161
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -1311,6 +1311,23 @@ test_that("Cox - iid/se should not depend on other arguments", {
     expect_equal(out2$survival.average.iid,out6$survival.average.iid)
 })    
 
+## ** iidCox is working when stopped early
+test_that("iidCox - stopped early", {
+    n <- 500
+    set.seed(10)
+    dt <- sampleData(n, outcome="survival")
+    seqJump <- sort(dt[dt$event==1,time])
+    
+    m.cox <-  coxph(Surv(time,event)~ X1*X6+strata(X2),data=dt, x = TRUE, y = TRUE)
+    m2.cox <- iidCox(m.cox, tau.max = seqJump[5], store.iid = "minimal")
+    m3.cox <- iidCox(m.cox, tau.max = seqJump[5], store.iid = "full")
+
+    GS <- predictCox(m.cox, newdata = dt, times = seqJump[1:5], average.iid = TRUE)
+    test1 <- predictCox(m2.cox, newdata = dt, times = seqJump[1:5], average.iid = TRUE)
+    test2 <- predictCox(m3.cox, newdata = dt, times = seqJump[1:5], average.iid = TRUE)
+    expect_equal(GS$survival.average.iid,test1$survival.average.iid)
+    expect_equal(GS$survival.average.iid,test2$survival.average.iid)
+})
 
 #----------------------------------------------------------------------
 ### test-predictCox.R ends here

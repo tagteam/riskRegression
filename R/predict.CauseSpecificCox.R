@@ -132,26 +132,6 @@ predict.CauseSpecificCox <- function(object,
         setDT(newdata)
     }
 
-    ## ** event-free survival instead of absolute risk
-    type <- match.arg(type, c("absRisk","survival"))
-    if(type=="survival"){
-        if(object$surv.type=="survival"){
-            predictor.cox <- if(product.limit){"predictCoxPL"}else{"predictCox"}
-            return(do.call(predictor.cox,
-                           args = list(object$models[["OverallSurvival"]], times = times, newdata = newdata, type = "survival",
-                                       keep.strata = keep.strata, keep.newdata = keep.newdata,
-                                       se = se, band = band, iid = iid, confint = confint, diag = diag,
-                                       average.iid = average.iid, store.iid = store.iid)
-                           ))
-        }else if(object$surv.type=="hazard"){
-            return(.predictSurv_CSC(object, times = times, newdata = newdata, type = "survival",
-                                    keep.strata = keep.strata, keep.newdata = keep.newdata,
-                                    se = se, band = band, iid = iid, confint = confint, diag = diag,
-                                    average.iid = average.iid, store.iid = store.iid,
-                                    product.limit = product.limit))
-        }
-    }
-
     ## ** prepare
     n.times <- length(times)
     if(object$fitter=="phreg"){newdata$entry <- 0} 
@@ -163,12 +143,12 @@ predict.CauseSpecificCox <- function(object,
     ## }
     
     surv.type <- object$surv.type
+    if (missing(cause)) {
+        cause <- object$theCause
+    }
     if (length(cause) > 1){
         stop(paste0("Can only predict one cause. Provided are: ", 
                     paste(cause, collapse = ", "), sep = ""))
-    }
-    if (missing(cause)) {
-        cause <- object$theCause
     }
 	
     ## causes
@@ -290,25 +270,45 @@ predict.CauseSpecificCox <- function(object,
         M.etimes.max[,iterC] <- baseline$lastEventTime[M.strata.num[,iterC]+1]
     }
 
-    ## ** compute CIF
+    ## ** compute CIF (aka absolute risk) or event-free survival
     vec.etimes.max <- apply(M.etimes.max,1,min)
-    outCpp <- predictCIF_cpp(hazard = ls.hazard, 
-                             cumhazard = ls.cumhazard, 
-                             eXb = M.eXb, 
-                             strata = M.strata.num,
-                             newtimes = if(diag){times}else{sort(times)}, 
-                             etimes = eventTimes, 
-                             etimeMax = vec.etimes.max, 
-                             t0 = landmark,
-                             nEventTimes = nEventTimes,
-                             nNewTimes = length(times), 
-                             nData = new.n,
-                             cause = index.cause - 1, 
-                             nCause = nCause,
-                             survtype = (surv.type=="survival"),
-                             productLimit = product.limit,
-                             diag = diag,
-                             exportSurv = (se || band || iid || average.iid))
+
+    if(type == "absRisk"){
+        outCpp <- predictCIF_cpp(hazard = ls.hazard, 
+                                 cumhazard = ls.cumhazard, 
+                                 eXb = M.eXb, 
+                                 strata = M.strata.num,
+                                 newtimes = if(diag){times}else{sort(times)}, 
+                                 etimes = eventTimes, 
+                                 etimeMax = vec.etimes.max, 
+                                 t0 = landmark,
+                                 nEventTimes = nEventTimes,
+                                 nNewTimes = n.times, 
+                                 nData = new.n,
+                                 cause = index.cause - 1, 
+                                 nCause = nCause,
+                                 survtype = (surv.type=="survival"),
+                                 productLimit = product.limit,
+                                 diag = diag,
+                                 exportSurv = (se || band || iid || average.iid))
+
+    }else if(object$surv.type=="survival"){ ## type=="survival"
+        predictor.cox <- if(product.limit){"predictCoxPL"}else{"predictCox"}
+        return(do.call(predictor.cox,
+                       args = list(object$models[["OverallSurvival"]], times = times, newdata = newdata, type = "survival",
+                                   keep.strata = keep.strata, keep.newdata = keep.newdata,
+                                   se = se, band = band, iid = iid, confint = confint, diag = diag,
+                                   average.iid = average.iid, store.iid = store.iid)
+                       ))
+    }else{ ## type == "survival" && object$surv.type=="hazard"
+
+        return(.predictSurv_CSC(object, times = times, newdata = newdata, ls.hazard = ls.hazard, eXb = M.eXb,
+                                etimes = eventTimes, etimeMax = vec.etimes.max, strata = M.strata.num,
+                                keep.times = keep.times, keep.strata = keep.strata, keep.newdata = keep.newdata,
+                                se = se, band = band, iid = iid, 
+                                confint = confint, diag = diag, average.iid = average.iid, 
+                                store.iid = store.iid, product.limit = product.limit))
+    }
 
     ## ** compute standard error for CIF
     if(se || band || iid || average.iid){
@@ -454,197 +454,164 @@ predict.CauseSpecificCox <- function(object,
 
 
 ## * .predictSurv_CSC
-.predictSurv_CSC <- function(object, times, newdata, type, keep.strata, keep.newdata,
+.predictSurv_CSC <- function(object, times, newdata, type, ls.hazard, eXb, etimes, strata, etimeMax,
+                             keep.times, keep.strata, keep.newdata,
                              se, band, iid, confint, diag, average.iid, store.iid, product.limit){
 
-        if(!is.logical(diag)){
-            stop("Argument \'diag\' must be of type logical \n")
-        }
+    if(!is.logical(diag)){
+        stop("Argument \'diag\' must be of type logical \n")
+    }
         
-        n.obs <- NROW(newdata)
-        n.times <- length(times)
-        n.cause <- length(object$cause)
-        n.data <- NROW(object$response)
+    new.n <- NROW(newdata)
+    n.times <- length(times)
+    nCause <- length(object$cause)
+    n.sample <- NROW(object$response)
 
-        iid.save <- iid
-        iid <- (iid || se)
-
-        ## ** prepare output        
-        out <- list(survival = NULL, survival.iid = NULL, survival.average.iid = NULL,
-                    lastEventTime = NA,
-                    se = FALSE, band = FALSE, type = "survival", diag = diag, times = times)
-        class(out) <- "predictCox"
-
-        if(diag){
-            out$survival <- matrix(0, nrow = n.obs, ncol = 1)
-            if(se){out$survival.se <- matrix(0, nrow = n.obs, ncol = 1)}
-            if(iid){out$survival.iid <- array(0, dim = c(n.data, 1, n.obs))}
-            if(average.iid){out$survival.average.iid <- matrix(0, nrow = n.data, ncol = 1)}
-        }else{
-            out$survival <- matrix(0, nrow = n.obs, ncol = n.times)
-            if(se){out$survival.se <- matrix(0, nrow = n.obs, ncol = n.times)}
-            if(iid){out$survival.iid <- array(0, dim = c(n.data, n.times, n.obs))}
-            if(average.iid){out$survival.average.iid <- matrix(0, nrow = n.data, ncol = n.times)}
+    iid.save <- iid
+    iid <- (iid || se)
+    if(is.null(store.iid)){
+        if(is.iidCox(object)){
+            store.iid <- object$models[[1]]$iid$store.iid
         }
+    }
 
-        ## ** compute survival && iid for cumulative hazard
-        if(product.limit){
+    ## ** prepare output        
+    n.sample <- stats::nobs(object)
+    out <- list(survival = NULL, survival.iid = NULL, survival.average.iid = NULL,
+                lastEventTime = NA,
+                se = se, band = band, type = "survival", diag = diag)
+    class(out) <- "predictCox"
 
-            ## find all jumps
-            jump.time <- object$eventTime[object$eventTime <= max(times)]
-            if(0 %in% jump.time){
-                jumpA.time <- c(jump.time,max(object$eventTime)+1e-10)
-            }else{
-                jumpA.time <- c(0,jump.time,max(object$eventTime)+1e-10)
-            }
-            n.jumpA <- length(jumpA.time)
+    if(diag){
+        out$survival <- matrix(1, nrow = new.n, ncol = 1)
+    }else{
+        out$survival <- matrix(1, nrow = new.n, ncol = n.times)
+    }
 
-            ## compute hazard at all times
-            predAll.hazard <- matrix(0, nrow = n.obs, ncol = n.jumpA)
-            for(iC in 1:n.cause){
-                outHazard <- predictCox(object$models[[iC]],
-                                        newdata = newdata,
-                                        times = jump.time,
-                                        iid = FALSE, se = FALSE,
-                                        type = "hazard")
-
-                if(0 %in% jump.time){
-                    predAll.hazard <- predAll.hazard + cbind(outHazard$hazard,NA)
-                }else{
-                    predAll.hazard <- predAll.hazard + cbind(0,outHazard$hazard,NA)
-                }
-
-                if(iid){
-                    outHazard2 <- predictCox(object$models[[iC]],
-                                             newdata = newdata,
-                                             times = times,
-                                             iid = iid,
-                                             average.iid = average.iid,
-                                             diag = diag,
-                                             store.iid = store.iid,
-                                             type = "cumhazard")
-                    out$survival.iid <- out$survival.iid + outHazard2$cumhazard.iid
-                }
-            }
-
-            index.jump <- prodlim::sindex(eval.times = times,
-                                          jump.times = jumpA.time)
-
-            out$survival <- rowCumProd(1-predAll.hazard)[,index.jump,drop=FALSE]
-            if(diag){
-                out$survival <- cbind(diag(out$survival))
-            }
+    ## ** compute survival
+    if(product.limit){
+        index.times <- prodlim::sindex(jump.times = etimes, eval.times = times)
             
-        }else{
-
-            for(iC in 1:n.cause){
-                outHazard <- predictCox(object$models[[iC]],
-                                        newdata = newdata,
-                                        times = times,
-                                        diag = diag,
-                                        iid = iid,
-                                        store.iid = store.iid,
-                                        type = "cumhazard")
-                out$survival <- out$survival + outHazard$cumhazard
-                if(iid){
-                    out$survival.iid <- out$survival.iid + outHazard$cumhazard.iid
-                }
+        for(iObs in 1:new.n){ ## iObs <- 1 ## iC <- 1
+            iStrata <- strata[iObs,]+1
+            ihazard <- lapply(1:nCause, function(iC){ls.hazard[[iC]][,strata[iObs,iC]+1]*eXb[iObs,iC]})
+            out$survival[iObs,index.times>0] <- cumprod(1-rowSums(do.call(cbind,ihazard)))[index.times[index.times>0]]
+            if(any(times > etimeMax[iObs])){
+                out$survival[iObs,times > etimeMax[iObs]] <- NA
             }
-            out$survival <- exp(-out$survival)
+                
         }
+    }else{
+        iCumHazard <- matrix(0, nrow = new.n, ncol = n.times)
+        for(iC in 1:nCause){
+            iCumHazard <- iCumHazard + predictCox(object$models[[iC]], 
+                                                  newdata = newdata, times = times, diag = diag, 
+                                                  type = "cumhazard")$cumhazard
+        }
+        out$survival <- exp(-iCumHazard)
+    }
 
+    ## ** update factor with survival
+    if(average.iid){
+        factor <- attr(average.iid,"factor")
+        if(is.null(factor)){
+            attr(average.iid,"factor") <- list(-out$survival)
+        }else{
+            test.list <- !is.list(factor)
+            n.factor <- length(factor)
+                    
+            for(iFactor in 1:n.factor){ ## iFactor <- 1
+                ## when only one column and diag = FALSE, use the same weights at all times
+                if((diag == FALSE) && (NCOL(factor[[iFactor]])==1) && (NCOL(factor[[iFactor]])==new.n) && (n.times > 1)){
+                    factor[[iFactor]] <- matrix(factor[[iFactor]][,1],
+                                                nrow = NROW(factor[[iFactor]]),
+                                                ncol = n.times, byrow = FALSE)
+                }
+                ## check dimensions
+                if(any(dim(factor[[iFactor]])!=c(new.n, diag + (1-diag)*n.times))){
+                    stop("Attribute \"factor\" of argument \'average.iid\' must be a list of matrices of size ",new.n,",",diag + (1-diag)*n.times," \n")
+                }
+
+                factor[[iFactor]] <- -factor[[iFactor]]*out$survival
+            }
+            attr(average.iid,"factor") <- factor
+        }
+    }
+    
     ## ** compute iid for survival
-    if(iid){
-        if(diag){
-            out$survival.iid[,1,] <- rowMultiply_cpp(-out$survival.iid[,1,], scale = out$survival)
-        }else{
-            for(iTau in 1:n.times){ ## iTau <- 1
-                if(n.obs==1){
-                    out$survival.iid[,iTau,] <- -out$survival.iid[,iTau,] * out$survival[,iTau]
-                }else{
-                    out$survival.iid[,iTau,] <- rowMultiply_cpp(-out$survival.iid[,iTau,], scale = out$survival[,iTau])
-                }
-            }            
-        }
-    }
+    if(iid || se || band || average.iid){
 
-    ## ** compute se for survival
-    if(se){
-        out$survival.se[] <- t(sqrt(apply(out$survival.iid^2,2:3,sum)))
-        if(iid.save == FALSE){
-            out$survival.iid <- NULL
+        if(iid || se || band){
+            iIid <- array(0, dim = c(n.sample, n.times, new.n))
         }
-    }
-
-        ## ** compute average iid survival
         if(average.iid){
-            if(iid && !is.null(attr(average.iid,"factor"))){
-                stop("Attribute \"factor\" of argument \'average.iid\' not available when \'iid\' is TRUE \n")
-            }
-            if(se && !is.null(attr(average.iid,"factor"))){
-                stop("Attribute \"factor\" of argument \'average.iid\' not available when \'se\' is TRUE \n")
-            }
-
-                    
-            if(iid){
-                out$survival.average.iid <- apply(out$survival.iid,1:2,mean)
+            if(is.null(factor)){
+                iAverageIid <- matrix(0, nrow = n.sample, ncol = n.times)
             }else{
-                factor <- attr(average.iid,"factor")
-                if(is.null(factor)){
-                    factor <- list(-out$survival)
-                    n.factor <- 1
-                }else{
-                    test.list <- !is.list(factor)
-                    if(test.list){
-                        stop("Attribute \"factor\" of argument \'average.iid\' must be a list \n")
-                    }
-                    test.matrix <- any(unlist(lapply(factor, is.matrix))==FALSE)
-                    if(test.matrix){
-                        stop("Attribute \"factor\" of argument \'average.iid\' must be a list of matrices \n")
-                    }
-                    n.factor <- length(factor)
-                    out$survival.average.iid <- vector(mode = "list", length = n.factor)
-                    
-                    for(iFactor in 1:n.factor){ ## iFactor <- 1
-                        ## when only one column and diag = FALSE, use the same weights at all times
-                        if((diag == FALSE) && (NCOL(factor[[iFactor]])==1) && (NCOL(factor[[iFactor]])==n.obs) && (n.times > 1)){
-                            factor[[iFactor]] <- matrix(factor[[iFactor]][,1],
-                                                        nrow = NROW(factor[[iFactor]]),
-                                                        ncol = n.times, byrow = FALSE)
-                        }
-                        ## check dimensions
-                        if(any(dim(factor[[iFactor]])!=c(n.obs, diag + (1-diag)*n.times))){
-                            stop("Attribute \"factor\" of argument \'average.iid\' must be a list of matrices of size ",n.obs,",",diag + (1-diag)*n.times," \n")
-                        }
+                iAverageIid <- lapply(1:n.factor, function(iF){matrix(0, nrow = n.sample, ncol = n.times)})
+            }
+        }
 
-                        factor[[iFactor]] <- -factor[[iFactor]]*out$survival
-                        out$survival.average.iid[[iFactor]] <- matrix(0, nrow = n.data, ncol = n.times)
-                    }
-                    ## stop("factor for average.iid when calling predict.CauseSpecificCox with type=\"survival\" not implemented \n")
+        tsurvival <- t(out$survival)
+        
+        for(iC in 1:nCause){
+            resTempo <- predictCox(object$models[[iC]],
+                                   newdata = newdata,
+                                   times = times,
+                                   diag = diag,
+                                   iid = iid || se || band,
+                                   average.iid = average.iid,
+                                   store.iid = store.iid,
+                                   type = "cumhazard")
+            if(iid || se || band){
+                for(iObs in 1:n.sample){
+                    iIid[iObs,,] <- iIid[iObs,,] - resTempo$cumhazard.iid[iObs,,] * tsurvival
                 }
-                attr(average.iid,"factor") <- factor
-
-                for(iC in 1:n.cause){
-                    iAvIID <- predictCox(object$models[[iC]],
-                                         newdata = newdata,
-                                         times = times,
-                                         diag = diag,
-                                         iid = FALSE,
-                                         average.iid = average.iid,
-                                         store.iid = store.iid,
-                                         type = "cumhazard")$cumhazard.average.iid
-
-                    if(is.list(out$survival.average.iid)){
-                        for(iF in 1:n.factor){ ## iF <- 1
-                            out$survival.average.iid[[iF]] <- out$survival.average.iid[[iF]] + iAvIID[[iF]]
-                        }
-                    }else{
-                        out$survival.average.iid <- out$survival.average.iid + iAvIID[[1]]
+            }
+            if(average.iid){
+                if(is.null(factor)){
+                    iAverageIid <- iAverageIid + resTempo$cumhazard.average.iid[[1]]
+                }else{
+                    for(iFactor in 1:n.factor){
+                        iAverageIid[[iFactor]] <- iAverageIid[[iFactor]] + resTempo$cumhazard.average.iid[[iFactor]]
                     }
                 }
             }
         }
+
+        if(iid || band){
+            out$survival.iid <- iIid
+        }
+        if(se || band){
+            out$survival.se <- t(sqrt(apply(iIid^2,2:3,sum)))
+        }
+        if(average.iid){
+            out$survival.average.iid <- iAverageIid
+        ## apply(iIid,1:2,mean) - iAverageIid
+        }
+    }
 
     ## ** export
+    if (keep.times==TRUE){
+        out$times <- times
+    }
+    if (keep.strata[1]==TRUE){
+        out$strata <- unique(strata)
+    }
+    if( keep.newdata[1]==TRUE){
+        out$newdata <- newdata
+    }
+
+    ## ** confidence intervals/bands
+    if(confint){
+        out <- stats::confint(out)
+    }
+    if(band[1] && se[1]==FALSE){
+        out[paste0(type,".se")] <- NULL
+    }
+    if(band[1] && iid[1]==FALSE){
+        out[paste0(type,".iid")] <- NULL
+    }
+
     return(out)
 }

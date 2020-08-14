@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: apr  5 2018 (17:01) 
 ## Version: 
-## Last-Updated: aug 12 2020 (11:42) 
+## Last-Updated: aug 12 2020 (17:11) 
 ##           By: Brice Ozenne
-##     Update #: 1177
+##     Update #: 1197
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -72,8 +72,8 @@ iidATE <- function(estimator,
 
     ## cat("Outcome (method=1) \n")
     ## print(head(iid.AIPTW[[1]]))
-
-    ## ## *** treatment model
+    
+    ## *** treatment model
     if(attr(estimator,"IPTW")){
         for(iC in 1:n.contrasts){ ## iC <- 1
 
@@ -113,6 +113,7 @@ iidATE <- function(estimator,
             }
         }
     }
+    
     ## cat("Treatment (method=1) \n")
     ## print(head(iid.AIPTW[[1]]))
 
@@ -209,60 +210,59 @@ iidATE <- function(estimator,
         ## cat("Augmentation treatment (method=1) \n")
         ## print(head(iid.AIPTW[[1]]))
 
-            ## **** survival term
-            factor <- TRUE
-            attr(factor,"factor") <- lapply(1:n.grid, function(iGrid){ ## iGrid <- 1
-                iTau <- grid[iGrid,"tau"]
-                iC <- grid[iGrid,"contrast"]
-                return(-colMultiply_cpp(ls.F1tau_F1t_dM_SSG[[iTau]]*beforeEvent.jumpC, scale = iW.IPTW[,iC]))
-            })
-            integrand.St <- attr(predictRisk(object.event, type = "survival", newdata = mydata, times = time.jumpC-tol, cause = cause,
-                                             average.iid = factor, product.limit = product.limit), "average.iid")
-        
-            for(iGrid in 1:n.grid){ ## iGrid <- 1
-                iTau <- grid[iGrid,"tau"]
-                iC <- grid[iGrid,"contrast"]
+        ## **** survival term
+        factor <- TRUE
+        attr(factor,"factor") <- lapply(1:n.grid, function(iGrid){ ## iGrid <- 1
+            iTau <- grid[iGrid,"tau"]
+            iC <- grid[iGrid,"contrast"]
+            return(-colMultiply_cpp(ls.F1tau_F1t_dM_SSG[[iTau]]*beforeEvent.jumpC, scale = iW.IPTW[,iC]))
+        })
+        integrand.St <- attr(predictRisk(object.event, type = "survival", newdata = mydata, times = time.jumpC-tol, cause = cause,
+                                         average.iid = factor, product.limit = product.limit), "average.iid")
+        for(iGrid in 1:n.grid){ ## iGrid <- 1
+            iTau <- grid[iGrid,"tau"]
+            iC <- grid[iGrid,"contrast"]
                         
-                if(beforeTau.nJumpC[iTau]>0){
-                    iid.AIPTW[[iC]][,iTau] <- iid.AIPTW[[iC]][,iTau] + rowSums(integrand.St[[iGrid]][,1:beforeTau.nJumpC[iTau],drop=FALSE])
-                }
+            if(beforeTau.nJumpC[iTau]>0){
+                iid.AIPTW[[iC]][,iTau] <- iid.AIPTW[[iC]][,iTau] + rowSums(integrand.St[[iGrid]][,1:beforeTau.nJumpC[iTau],drop=FALSE])
             }
+        }
         ## cat("Augmentation survival (method=1) \n")
         ## print(head(iid.AIPTW[[1]]))
-
-            ## **** censoring term            
-            ## ## integral censoring denominator
-            factor <- TRUE
-            attr(factor,"factor") <- lapply(1:n.grid, function(iGrid){ ## iGrid <- 1
-                iTau <- grid[iGrid,"tau"]
-                iC <- grid[iGrid,"contrast"]
-                return(-colMultiply_cpp(ls.F1tau_F1t_dM_SGG[[iTau]]*beforeEvent.jumpC, scale = iW.IPTW[,iC]))
-            })
+        
+        ## **** censoring term            
+        ## ## integral censoring denominator
+        factor <- TRUE
+        attr(factor,"factor") <- lapply(1:n.grid, function(iGrid){ ## iGrid <- 1
+            iTau <- grid[iGrid,"tau"]
+            iC <- grid[iGrid,"contrast"]
+            return(-colMultiply_cpp(ls.F1tau_F1t_dM_SGG[[iTau]]*beforeEvent.jumpC, scale = iW.IPTW[,iC]))
+        })
 
             integrand.G1 <- predictCox(object.censor, newdata = mydata, times = time.jumpC - tol, 
                                        average.iid = factor)$survival.average.iid
 
-            ## ## integral censoring martingale
-            factor <- TRUE
-            attr(factor,"factor") <- lapply(1:n.grid, function(iGrid){ ## iGrid <- 1
-                iTau <- grid[iGrid,"tau"]
-                iC <- grid[iGrid,"contrast"]
-                return(-colMultiply_cpp(ls.F1tau_F1t_SG[[iTau]]*beforeEvent.jumpC, scale = iW.IPTW[,iC]))
-            })
-            integrand.G2 <- predictCox(object.censor, newdata = mydata, times = time.jumpC, type = "hazard",
-                                       average.iid = factor)$hazard.average.iid
+        ## ## integral censoring martingale
+        factor <- TRUE
+        attr(factor,"factor") <- lapply(1:n.grid, function(iGrid){ ## iGrid <- 1
+            iTau <- grid[iGrid,"tau"]
+            iC <- grid[iGrid,"contrast"]
+            return(-colMultiply_cpp(ls.F1tau_F1t_SG[[iTau]]*beforeEvent.jumpC, scale = iW.IPTW[,iC]))
+        })
+        integrand.G2 <- predictCox(object.censor, newdata = mydata, times = time.jumpC, type = "hazard",
+                                   average.iid = factor)$hazard.average.iid
 
-            for(iGrid in 1:n.grid){ ## iGrid <- 1
-                iTau <- grid[iGrid,"tau"]
-                iC <- grid[iGrid,"contrast"]
-                if(beforeTau.nJumpC[iTau]>0){
-                    iid.AIPTW[[iC]][,iTau] <- iid.AIPTW[[iC]][,iTau] + rowSums(integrand.G1[[iGrid]][,1:beforeTau.nJumpC[iTau],drop=FALSE] + integrand.G2[[iGrid]][,1:beforeTau.nJumpC[iTau],drop=FALSE])
-                }
+        for(iGrid in 1:n.grid){ ## iGrid <- 1
+            iTau <- grid[iGrid,"tau"]
+            iC <- grid[iGrid,"contrast"]
+            if(beforeTau.nJumpC[iTau]>0){
+                iid.AIPTW[[iC]][,iTau] <- iid.AIPTW[[iC]][,iTau] + rowSums(integrand.G1[[iGrid]][,1:beforeTau.nJumpC[iTau],drop=FALSE] + integrand.G2[[iGrid]][,1:beforeTau.nJumpC[iTau],drop=FALSE])
             }
+        }
     } ## end attr(estimator,"integral")
     ## cat("Augmentation (method=1) \n")
     ## print(head(iid.AIPTW[[1]]))
-
+    
     ## ** export
     out <- list()
     if(attr(estimator,"export.Gformula")){

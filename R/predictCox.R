@@ -280,11 +280,18 @@ predictCox <- function(object,
         }
     }
     if(average.iid==TRUE && !is.null(attr(average.iid,"factor"))){
-        if(iid){
-            stop("Attribute \"factor\" of argument \'average.iid\' not available when \'iid\' is TRUE \n")
+        if(is.null(store.iid) && !is.null(object$iid$store.iid)){
+            store.iid <- object$iid$store.iid
         }
-        if(se){
-            stop("Attribute \"factor\" of argument \'average.iid\' not available when \'se\' is TRUE \n")
+        if(store.iid == "full"){
+            if(iid){
+                stop("Attribute \"factor\" of argument \'average.iid\' not available when \'iid\' is TRUE with argument \'store.iid\' set to \"full\" \n",
+                     "Consider setting  \'store.iid\' set to \"minimal\" \n")
+            }
+            if(se){
+                stop("Attribute \"factor\" of argument \'average.iid\' not available when \'se\' is TRUE with argument \'store.iid\' set to \"full\" \n",
+                     "Consider setting  \'store.iid\' set to \"minimal\" \n")
+            }
         }
         test.list <- !is.list(attr(average.iid,"factor"))
         if(test.list){

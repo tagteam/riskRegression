@@ -1,3 +1,5 @@
+## minor change compare to the hard coded version can be due to a previous bug in iidCox (the value have not been updated)
+## (the calculation of the iid was stopped on jump to early when using tau.max)
 library(riskRegression)
 library(testthat)
 library(rms)
