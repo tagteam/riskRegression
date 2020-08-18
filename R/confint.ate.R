@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: maj 23 2018 (14:08) 
 ## Version: 
-## Last-Updated: aug 11 2020 (16:12) 
+## Last-Updated: aug 18 2020 (11:12) 
 ##           By: Brice Ozenne
-##     Update #: 633
+##     Update #: 721
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -23,7 +23,8 @@
 ##' @param object A \code{ate} object, i.e. output of the \code{ate} function.
 ##' @param parm not used. For compatibility with the generic method.
 ##' @param level [numeric, 0-1] Level of confidence.
-##' @param nsim.band [integer, >0]the number of simulations used to compute the quantiles for the confidence bands.
+##' @param n.sim [integer, >0] the number of simulations used to compute the quantiles for the confidence bands and/or perform adjustment for multiple comparisons.
+##' @param method.band [character] method used to adjust for multiple comparisons. Can be \code{"null"} to perform no adjustment, or any element of \code{p.adjust.methods} (e.g. \code{"holm"}), \code{"maxT-integration"}, or \code{"maxT-simulation"}. 
 ##' @param meanRisk.transform [character] the transformation used to improve coverage
 ##' of the confidence intervals for the mean risk in small samples.
 ##' Can be \code{"none"}, \code{"log"}, \code{"loglog"}, \code{"cloglog"}.
@@ -40,10 +41,10 @@
 ##' @param ... not used.
 ##'
 ##' @details
-##' Confidence bands and confidence intervals computed via the influence function
-##' are automatically restricted to the interval [0;1]. \cr \cr
+##' \textbf{Influence function}: confidence bands and confidence intervals computed via the influence function are automatically restricted to the interval [0;1].
+##' Single step max adjustment for multiple comparisons, i.e. accounting for the correlation between the test statistics but not for the ordering of the tests, can be performed setting the arguemnt \code{method.band} to \code{"maxT-integration"} or \code{"maxT-simulation"}. The former uses numerical integration (\code{pmvnorm} and \code{qmvnorm} to perform the adjustment while the latter using simulation. Both assume that the test statistics are jointly normally distributed. \cr \cr
 ##'
-##' Confidence intervals obtained via bootstrap are computed
+##' \textbf{Bootstrap}: confidence intervals obtained via bootstrap are computed
 ##' using the \code{boot.ci} function of the \code{boot} package.
 ##' p-value are obtained using test inversion method
 ##' (finding the smallest confidence level such that the interval contain the null hypothesis).
@@ -109,11 +110,16 @@
 confint.ate <- function(object,
                         parm = NULL,
                         level = 0.95,
-                        nsim.band = 1e4,
+                        n.sim = 1e4,
                         meanRisk.transform = "none",
                         diffRisk.transform = "none",
                         ratioRisk.transform = "none",
                         seed = NA,
+                        ci = object$se,
+                        band = object$band,
+                        p.value = FALSE,
+                        method.band = "maxT-simulation",
+                        alternative = "two.sided",
                         bootci.method = "perc",
                         ...){
 
@@ -130,6 +136,12 @@ confint.ate <- function(object,
 
     ## ** compute CI
     if(!is.null(object$boot)){
+        if(!identical(method.band,"none")){
+            stop("Adjustment for multiple comparisons not implemented for the boostrap. \n")
+        }
+        if(!identical(alternative,"two.sided")){
+            stop("Only two sided tests are implemented for the boostrap. \n")
+        }
         object <- confintBoot.ate(object,
                                   bootci.method = bootci.method,
                                   conf.level = level,
@@ -137,12 +149,17 @@ confint.ate <- function(object,
 
     }else{
         object <- confintIID.ate(object,
-                                 nsim.band = nsim.band,
+                                 n.sim = n.sim,
                                  meanRisk.transform = meanRisk.transform,
                                  diffRisk.transform = diffRisk.transform,
                                  ratioRisk.transform = ratioRisk.transform,
                                  seed = seed,
                                  conf.level = level,
+                                 ci = ci,
+                                 band = band,
+                                 p.value = p.value,
+                                 method.band = method.band,
+                                 alternative = alternative,
                                  ...)
     }
     object$meanRisk[] ## ensure direct print
@@ -296,8 +313,15 @@ confintBoot.ate <- function(object,
 
 ## * confintIID.ate 
 confintIID.ate <- function(object,
+                           contrasts = object$contrasts,
+                           allContrasts = NULL,
                            conf.level,
-                           nsim.band,
+                           alternative,
+                           ci,
+                           band,
+                           p.value,                          
+                           method.band,
+                           n.sim,
                            meanRisk.transform,
                            diffRisk.transform,
                            ratioRisk.transform,
@@ -320,26 +344,42 @@ confintIID.ate <- function(object,
     object$diffRisk.transform <- match.arg(diffRisk.transform, c("none","atanh"))
     object$ratioRisk.transform <- match.arg(ratioRisk.transform, c("none","log"))
 
+
+    
     ## ** prepare
     times <- object$times
     n.times <- length(times)
-    contrasts <- object$contrasts
     n.contrasts <- length(contrasts)
-    allContrasts <- utils::combn(contrasts, m = 2)
+    if(is.null(allContrasts)){
+        allContrasts <- utils::combn(contrasts, m = 2)
+    }
     n.allContrasts <- NCOL(allContrasts)
     n.obs <- max(stats::na.omit(object$n[-1]))
+
+    ## remove previous values
+    all.endings <- paste(paste0("\\.",c("se","lower","upper","p.value","quantileBand","lowerBand","upperBand","adj.p.value"),"$"),collapse = "|")
+    indexRM.mR <- grep(all.endings,names(object$meanRisk), value = TRUE)
+    indexRM.rC <- grep(all.endings,names(object$riskComparison), value = TRUE)
+    if(length(indexRM.mR)>0){
+        object$meanRisk[,c(indexRM.mR) := NULL]
+    }
+    if(length(indexRM.rC)>0){
+        object$riskComparison[,c(indexRM.rC) := NULL]
+    }
+    
+    ## ** run
     for(iE in 1:n.estimator){ ## iE <- 1
         iEstimator <- estimator[iE]
         ## ** meanRisk
-
+        ## cat("meanRisk \n")
         ## initialize
-        if(object$se){
+        if(ci){
             name.se <- paste0("meanRisk.",iEstimator,c(".se",".lower",".upper"))
-            object$meanRisk[, c(name.se) := list(as.numeric(NA),as.numeric(NA),as.numeric(NA))]
+            object$meanRisk[,c(name.se) := as.list(rep(as.numeric(NA),length(name.se)))]
         }
-        if(object$band){
+        if((band>0) && (method.band %in% c("bonferroni","maxT-integration","maxT-simulation"))){
             name.band <- paste0("meanRisk.",iEstimator,c(".quantileBand",".lowerBand",".upperBand"))
-            object$meanRisk[, c(name.band) := list(as.numeric(NA),as.numeric(NA),as.numeric(NA))]
+            object$meanRisk[,c(name.band) := as.list(rep(as.numeric(NA),length(name.band)))]
         }
 
         ## reshape data
@@ -357,7 +397,8 @@ confintIID.ate <- function(object,
                                  iid = iid.mR,
                                  null = NA,
                                  conf.level = conf.level,
-                                 nsim.band = nsim.band,
+                                 alternative = "two.sided",
+                                 n.sim = n.sim,
                                  seed = seed,
                                  type = object$meanRisk.transform,
                                  min.value = switch(object$meanRisk.transform,
@@ -370,31 +411,39 @@ confintIID.ate <- function(object,
                                                     "log" = 1,
                                                     "loglog" = NULL,
                                                     "cloglog" = NULL),
-                                 ci = object$se,
-                                 band = object$band,
+                                 ci = ci,
+                                 band = band,
+                                 method.band = method.band,
                                  p.value = FALSE)
 
         ## store
         for(iC in 1:n.contrasts){ ## iT <- 1
-            if(object$se){
+            if(ci){
                 object$meanRisk[object$meanRisk[[1]] == contrasts[iC],
                                 c(name.se) := list(se.mR[iC,],CIBP.mR$lower[iC,],CIBP.mR$upper[iC,])]
             }
-            if(object$band){
+            if((band>0) && (method.band %in% c("bonferroni","maxT-integration","maxT-simulation"))){
                 object$meanRisk[object$meanRisk[[1]] == contrasts[iC],
                                 c(name.band) := list(CIBP.mR$quantileBand[iC],CIBP.mR$lowerBand[iC,],CIBP.mR$upperBand[iC,])]
             }
         }
 
         ## ** diffRisk: se, CI/CB
+        ## cat("diffRisk \n")
         ## initialize
-        if(object$se){
-            name.se <- paste0("diff.",iEstimator,c(".se",".lower",".upper",".p.value"))
-            object$riskComparison[,c(name.se) := list(as.numeric(NA),as.numeric(NA),as.numeric(NA),as.numeric(NA))]
+        if(ci){
+            name.se <- paste0("diff.",iEstimator,c(".se",".lower",".upper",if(p.value){".p.value"}))
+            object$riskComparison[,c(name.se) := as.list(rep(as.numeric(NA),length(name.se)))]
         }
-        if(object$band){
-            name.band <- paste0("diff.",iEstimator,c(".quantileBand",".lowerBand",".upperBand"))
-            object$riskComparison[,c(name.band) := list(as.numeric(NA),as.numeric(NA),as.numeric(NA))]
+        if(band>0){
+            name.band <- NULL
+            if(method.band %in% c("bonferroni","maxT-integration","maxT-simulation")){
+                name.band <- c(name.band,paste0("diff.",iEstimator,c(".quantileBand",".lowerBand",".upperBand")))
+            }
+            if(p.value){
+                name.band <- c(name.band, paste0("diff.",iEstimator,".adj.p.value"))
+            }
+            object$riskComparison[,c(name.band) := as.list(rep(as.numeric(NA),length(name.band)))]
         }
 
         ## reshape data
@@ -413,7 +462,8 @@ confintIID.ate <- function(object,
                                  iid = iid.dR,
                                  null = 0,
                                  conf.level = conf.level,
-                                 nsim.band = nsim.band,
+                                 alternative = alternative,
+                                 n.sim = n.sim,
                                  seed = seed,
                                  type = object$diffRisk.transform,
                                  min.value = switch(object$diffRisk.transform,
@@ -422,34 +472,50 @@ confintIID.ate <- function(object,
                                  max.value = switch(object$diffRisk.transform,
                                                     "none" = 1,
                                                     "atanh" = NULL),
-                                 ci = object$se,
-                                 band = object$band,
-                                 p.value = object$se)
-
-
+                                 ci = ci,
+                                 band = band,
+                                 method.band = method.band,
+                                 p.value = p.value)
+        
         ## store
-        for(iC in 1:n.allContrasts){ ## iT <- 1
-            if(object$se){
+        for(iC in 1:n.allContrasts){ ## iC <- 1
+            if(ci){
+                ## if(lower %in% names(CIBP.dR))
                 object$riskComparison[(object$riskComparison[[1]] == allContrasts[1,iC]) & (object$riskComparison[[2]] == allContrasts[2,iC]),
-                                      c(name.se) := list(se.dR[iC,],CIBP.dR$lower[iC,],CIBP.dR$upper[iC,],CIBP.dR$p.value[iC,])]
+                                      c(name.se[1:3]) := list(se.dR[iC,],CIBP.dR$lower[iC,],CIBP.dR$upper[iC,])]
+                if(p.value){
+                    object$riskComparison[(object$riskComparison[[1]] == allContrasts[1,iC]) & (object$riskComparison[[2]] == allContrasts[2,iC]),
+                                          c(utils::tail(name.se,1)) := list(CIBP.dR$p.value[iC,])]
+                }
             }
-            if(object$band){
-                object$riskComparison[(object$riskComparison[[1]] == allContrasts[1,iC]) & (object$riskComparison[[2]] == allContrasts[2,iC]),
-                                      c(name.band) := list(CIBP.dR$quantileBand[iC],CIBP.dR$lowerBand[iC,],CIBP.dR$upperBand[iC,])]
+            if(band>0){
+                if(method.band %in% c("bonferroni","maxT-integration","maxT-simulation")){
+                    object$riskComparison[(object$riskComparison[[1]] == allContrasts[1,iC]) & (object$riskComparison[[2]] == allContrasts[2,iC]),
+                                          c(name.band[1:3]) := list(CIBP.dR$quantileBand[iC],CIBP.dR$lowerBand[iC,],CIBP.dR$upperBand[iC,])]
+                }
+                if(p.value){
+                    object$riskComparison[(object$riskComparison[[1]] == allContrasts[1,iC]) & (object$riskComparison[[2]] == allContrasts[2,iC]),
+                                          c(utils::tail(name.band,1)) := list(CIBP.dR$adj.p.value[iC,])]
+                }
             }
         }
 
         ## ** ratioRisk: se, CI/CB
+        ## cat("ratioRisk \n")
         ## initialize
-        if(object$se){
-            name.se <- paste0("ratio.",iEstimator,c(".se",".lower",".upper",".p.value"))
-            object$riskComparison[,
-                                  c(name.se) := list(as.numeric(NA),as.numeric(NA),as.numeric(NA),as.numeric(NA))]
+        if(ci){
+            name.se <- paste0("ratio.",iEstimator,c(".se",".lower",".upper",if(p.value){".p.value"}))
+            object$riskComparison[,c(name.se) := as.list(rep(as.numeric(NA),length(name.se)))]
         }
-        if(object$band){
-            name.band <- paste0("ratio.",iEstimator,c(".quantileBand",".lowerBand",".upperBand"))
-            object$riskComparison[,
-                                  c(name.band) := list(as.numeric(NA),as.numeric(NA),as.numeric(NA))]
+        if(band>0){
+            name.band <- NULL
+            if(method.band %in% c("bonferroni","maxT-integration","maxT-simulation")){
+                name.band <- c(name.band,paste0("ratio.",iEstimator,c(".quantileBand",".lowerBand",".upperBand")))
+            }
+            if(p.value){
+                name.band <- c(name.band,paste0("ratio.",iEstimator,".adj.p.value"))
+            }
+            object$riskComparison[,c(name.band) := as.list(rep(as.numeric(NA),length(name.band)))]
         }
 
         ## reshape data
@@ -477,33 +543,52 @@ confintIID.ate <- function(object,
                                  iid = iid.rR,
                                  null = 1,
                                  conf.level = conf.level,
-                                 nsim.band = nsim.band,
+                                 alternative = alternative,
+                                 n.sim = n.sim,
                                  seed = seed,
                                  type = object$ratioRisk.transform,
                                  min.value = switch(object$ratioRisk.transform,
                                                     "none" = 0,
                                                     "log" = NULL),
                                  max.value = NULL,
-                                 ci = object$se,
-                                 band = object$band,
-                                 p.value = object$se)
+                                 ci = ci,
+                                 band = band,
+                                 method.band = method.band,
+                                 p.value = p.value)
 
         ## store
         for(iC in 1:n.allContrasts){ ## iT <- 1
-            if(object$se){
+            if(ci){
                 object$riskComparison[(object$riskComparison[[1]] == allContrasts[1,iC]) & (object$riskComparison[[2]] == allContrasts[2,iC]),
-                                      c(name.se) := list(se.rR[iC,],CIBP.rR$lower[iC,],CIBP.rR$upper[iC,],CIBP.rR$p.value[iC,])]
+                                      c(name.se[1:3]) := list(se.rR[iC,],CIBP.rR$lower[iC,],CIBP.rR$upper[iC,])]
+                if(p.value){
+                    object$riskComparison[(object$riskComparison[[1]] == allContrasts[1,iC]) & (object$riskComparison[[2]] == allContrasts[2,iC]),
+                                          c(utils::tail(name.se,1)) := list(CIBP.rR$p.value[iC,])]
+                }
             }
-            if(object$band){
-                object$riskComparison[(object$riskComparison[[1]] == allContrasts[1,iC]) & (object$riskComparison[[2]] == allContrasts[2,iC]),
-                                      c(name.band) := list(CIBP.rR$quantileBand[iC],CIBP.rR$lowerBand[iC,],CIBP.rR$upperBand[iC,])]
+            if(band>0){
+                if(method.band %in% c("bonferroni","maxT-integration","maxT-simulation")){
+                    object$riskComparison[(object$riskComparison[[1]] == allContrasts[1,iC]) & (object$riskComparison[[2]] == allContrasts[2,iC]),
+                                          c(name.band[1:3]) := list(CIBP.rR$quantileBand[iC],CIBP.rR$lowerBand[iC,],CIBP.rR$upperBand[iC,])]
+                }
+                if(p.value){
+                    object$riskComparison[(object$riskComparison[[1]] == allContrasts[1,iC]) & (object$riskComparison[[2]] == allContrasts[2,iC]),
+                                          c(utils::tail(name.band,1)) := list(CIBP.rR$adj.p.value[iC,])]
+                }
+
             }
         }
     }
 
     ## ** export
+    object$allContrasts <- allContrasts
+    attr(object$allContrasts,"contrasts") <- contrasts
     object$conf.level <- conf.level
-    object$nsim.band <- nsim.band
+    object$ci <- ci
+    object$band <- band
+    object$p.value <- p.value
+    object$n.sim <- n.sim
+    object$method.band <- method.band
     return(object)
 }
 
