@@ -1143,7 +1143,7 @@ Score.list <- function(object,
         `%dopar%` <- foreach::`%dopar%`
         ## k-fold-CV
         if (split.method$internal.name == "crossval"){
-            DT.B <- rbindlist(foreach::foreach (b=1:B,.export=exports) %dopar%{ ## repetitions of k-fold to avoid Monte-Carlo error
+            DT.B <- rbindlist(foreach::foreach (b=1:B,.export=exports,.packages="data.table",.errorhandling="pass") %dopar%{ ## repetitions of k-fold to avoid Monte-Carlo error
                 index.b <- split.method$index[,b] ## contains a sample of the numbers 1:k with replacement
                 if((B>1) && !is.null(progress.bar)){setTxtProgressBar(pb, b)}
                 DT.b <- rbindlist(lapply(1:split.method$k,function(fold){
@@ -1174,7 +1174,7 @@ Score.list <- function(object,
                 DT.b
             })
         }else{# either LeaveOneOutBoot or BootCv
-            DT.B <- rbindlist(foreach::foreach (b=1:B,.export=exports) %dopar%{
+            DT.B <- rbindlist(foreach::foreach (b=1:B,.export=exports,.packages="data.table",.errorhandling="pass") %dopar%{
                 if(!is.null(progress.bar)){setTxtProgressBar(pb, b)}
                 ## DT.B <- rbindlist(lapply(1:B,function(b){
                 traindata=data[split.method$index[,b]]
@@ -1659,7 +1659,7 @@ Score.list <- function(object,
                 if (!(progress.bar %in% c(1,2,3))) progress.bar <- 3
                 pb <- txtProgressBar(max = B, style = progress.bar,width=20)
             }
-            crossval <- foreach (j=1:B,.export=exports) %dopar%{
+            crossval <- foreach(j=1:B,.export=exports,.packages="data.table",.errorhandling="pass") %dopar%{
                 ## crossval <- lapply(1:B,function(j){
                 DT.b <- DT.B[b==j]
                 N.b <- length(unique(DT.b[["ID"]]))

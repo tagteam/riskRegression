@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Feb 23 2017 (11:15) 
 ## Version: 
-## last-updated: Dec 30 2019 (20:36) 
+## last-updated: Jul  2 2020 (19:37) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 371
+##     Update #: 380
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -14,8 +14,12 @@
 #----------------------------------------------------------------------
 ## 
 ### Code:
-##' Plot Calibration curve 
-##'
+##' Plot Calibration curves for risk prediction models
+##' 
+##' In uncensored data, the observed frequency of the outcome event is calculated locally at the predicted risk.
+##' In right censored data with and without competing risks, the actual risk
+##' is calculated using the Kaplan-Meier and the Aalen-Johansen method, respectively,
+##' locally at the predicted risk.
 ##' @title Plot Calibration curve
 ##' @export
 ##' @param x Object obtained with function \code{Score}
@@ -49,7 +53,7 @@
 ##'     \code{bars=TRUE}.
 ##' @param bars If \code{TRUE}, use barplots to show calibration.
 ##' @param hanging Barplots only. If \code{TRUE}, hang bars
-##'     corresponding to observed frequencies at the value of the
+##'     corresponding to observed frequencies (estimated actual risk)  at the value of the
 ##'     corresponding prediction.
 ##' @param names Barplots only. Names argument passed to
 ##'     \code{names.arg} of \code{barplot}.
@@ -150,7 +154,7 @@ plotCalibration <- function(x,
                             xlim=c(0,1),
                             ylim=c(0,1),
                             xlab=ifelse(bars,"Risk groups","Predicted risk"),
-                            ylab="Observed frequency",
+                            ylab,
                             col,
                             lwd,
                             lty,
@@ -164,8 +168,20 @@ plotCalibration <- function(x,
         cens.method <- "local"
         message("The default method for estimating calibration curves based on censored data has changed for riskRegression version 2019-9-8 or higher\nSet cens.method=\"jackknife\" to get the estimate using pseudo-values.\nHowever, note that the option \"jackknife\" is sensititve to violations of the assumption that the censoring is independent of both the event times and the covariates.\nSet cens.method=\"local\" to suppress this message.")
     }
-                                        # {{{ plot frame
+    
+    # {{{ plot frame
     model=risk=event=status=NULL
+    if (missing(ylab)){
+        if (bars==TRUE){
+            ylab=""
+        } else{
+            if (x$cens.type=="rightCensored"){
+                ylab="Estimated actual risk"
+            } else{
+                ylab="Observed frequency"
+            }
+        }
+    }
     if (missing(auc.in.legend))
         auc.in.legend <- ("auc" %in% tolower(x$metrics))
     if (missing(brier.in.legend))
@@ -221,8 +237,8 @@ plotCalibration <- function(x,
         method="quantile"
         if (!(NF==1)) stop(paste0("Barplots work only for one risk prediction model at a time. Provided are ",NF, "models."))
     }
-                                        # }}}
-                                        # {{{ lines 
+    # }}}
+    # {{{ lines 
     if (missing(lwd)) lwd <- rep(3,NF)
     if (missing(col)) {
         if (bars)
@@ -248,8 +264,8 @@ plotCalibration <- function(x,
     if (length(lty) < NF) lty <- rep(lty,length.out=NF)
     if (length(col) < NF) col <- rep(col,length.out=NF)
     if (length(pch) < NF) pch <- rep(pch,length.out=NF)
-                                        # }}}
-                                        # {{{ SmartControl
+    # }}}
+    # {{{ SmartControl
     modelnames <- pframe[,unique(model)]
     axis1.DefaultArgs <- list(side=1,las=1,at=seq(0,xlim[2],xlim[2]/4))
     axis2.DefaultArgs <- list(side=2,las=2,at=seq(0,ylim[2],ylim[2]/4),mgp=c(4,1,0))
@@ -293,7 +309,12 @@ plotCalibration <- function(x,
         }
     }
     if(bars){
-        legend.DefaultArgs$legend <- c("Predicted risks","Observed frequencies")
+        if (x$cens.type=="rightCensored")
+            legend.DefaultArgs$legend <- c("Predicted risk",
+                                           "Estimated actual risk")
+        else
+            legend.DefaultArgs$legend <- c("Predicted risk",
+                                           "Observed frequency")
     }
     lines.DefaultArgs <- list(pch=pch,type=type,cex=cex,lwd=lwd,col=col,lty=lty)
     abline.DefaultArgs <- list(lwd=1,col="red")
@@ -355,8 +376,8 @@ plotCalibration <- function(x,
                                                      "axis1"=list(side=1)),
                                          verbose=TRUE)
     }
-                                        # }}}
-                                        # {{{ smoothing
+    # }}}
+    # {{{ smoothing
     method <- match.arg(method,c("quantile","nne"))
     getXY <- function(f){
         risk=NULL
@@ -473,8 +494,8 @@ plotCalibration <- function(x,
     }
     plotFrames <- lapply(modelnames,function(f){getXY(f)})
     names(plotFrames) <- modelnames
-                                        # }}}
-                                        # {{{ plot and/or invisibly output the results
+    # }}}
+    # {{{ plot and/or invisibly output the results
     if (bars){
         if ((is.logical(names[[1]]) && names[[1]]==TRUE)|| names[[1]] %in% c("quantiles.labels","quantiles")){
             qq <- attr(plotFrames[[1]],"quantiles")
@@ -519,8 +540,8 @@ plotCalibration <- function(x,
     if (method=="nne")
         out <- c(out,list(bandwidth=sapply(plotFrames,
                                            function(x)attr(x,"bandwidth"))))
-                                        # }}}
-                                        # {{{ do the actual plot
+    # }}}
+    # {{{ do the actual plot
     if (plot){
         ## if (boxplot){
         ## nbox <- length(control$lines$col)
@@ -653,7 +674,7 @@ plotCalibration <- function(x,
             do.call("axis",control$axis2)
         }
     }
-                                        # }}}
+    # }}}
     class(out) <- "calibrationPlot"
     invisible(out)
 }
