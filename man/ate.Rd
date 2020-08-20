@@ -2,7 +2,7 @@
 % Please edit documentation in R/ate.R
 \name{ate}
 \alias{ate}
-\title{Compute the Average Treatment Effects Via}
+\title{Average Treatment Effects Computation}
 \usage{
 ate(
   event,
@@ -74,8 +74,8 @@ it is assumed that that the covariates do not change between landmark and landma
 \item{iid}{[logical] If \code{TRUE} compute and add the influence function to the output.}
 
 \item{known.nuisance}{[logical] If \code{FALSE} the uncertainty related to the estimation of the nuisance parameters is ignored.
-This greatly simplifies computations but requires to use a double robust estimator
-and to assumes that all event, treatment, and censoring models are valid to obtain consistent standard errors.}
+This greatly simplifies computations but requires to use a double robust estimator.
+The resulting standard error is known to be consistent when all event, treatment, and censoring models are valid.}
 
 \item{band}{[logical] If \code{TRUE} compute and add the quantiles for the confidence bands to the output.}
 
@@ -98,8 +98,7 @@ The option is initialized from environment variable mc_cores if set.}
 Output by \code{parallel::makeCluster}.
 The packages necessary to run the computations (e.g. riskRegression) must already be loaded on each worker.}
 
-\item{verbose}{[logical] If \code{TRUE} inform about estimated run time.
-\code{"minimal"} requires less memory but can only estimate the standard for the difference between treatment effects (and not for the ratio).}
+\item{verbose}{[logical] If \code{TRUE} inform about estimated run time.}
 
 \item{...}{passed to predictRisk}
 }

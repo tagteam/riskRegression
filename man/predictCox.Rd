@@ -103,8 +103,8 @@ The centered argument enables us to reproduce the results obtained with the \cod
 function from the survival package but should not be modified by the user.
 
 The iid decomposition is output using an array containing the value of the influence
-of each subject used to fit the object (dim 3),
-for each subject in newdata (dim 1),
+of each subject used to fit the object (dim 1),
+for each subject in newdata (dim 3),
 and each time (dim 2).
 }
 \examples{

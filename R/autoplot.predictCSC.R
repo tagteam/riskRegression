@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: feb 27 2017 (10:47) 
 ## Version: 
-## last-updated: aug 14 2020 (09:49) 
+## last-updated: aug 20 2020 (14:02) 
 ##           By: Brice Ozenne
-##     Update #: 94
+##     Update #: 101
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -30,6 +30,15 @@
 #' @param smooth [logical] Should a smooth version of the risk function be plotted instead of a simple function?
 #' @param alpha [numeric, 0-1] Transparency of the confidence bands. Argument passed to \code{ggplot2::geom_ribbon}.
 #' @param ... Not used. Only for compatibility with the plot method.
+#' 
+#' @return Invisible. A list containing:
+#' \itemize{
+#' \item plot: the ggplot object.
+#' \item data: the data used to create the plot.
+#' }
+#'
+#' @seealso
+#' \code{\link{predict.CauseSpecificCox}} to compute risks based on a CSC model.
 
 ## * autoplot.predictCSC (examples)
 #' @examples
@@ -37,21 +46,22 @@
 #' library(rms)
 #' library(ggplot2)
 #' library(prodlim)
+#' 
 #' #### simulate data ####
 #' set.seed(10)
 #' d <- sampleData(1e2, outcome = "competing.risks")
-#'
+#' seqTau <- c(0,unique(sort(d[d$event==1,time])), max(d$time))
+#' 
 #' #### CSC model ####
 #' m.CSC <- CSC(Hist(time,event)~ X1 + X2 + X6, data = d)
 #' 
-#' pred.CSC <- predict(m.CSC, newdata = d[1:2,], time = 1:5, cause = 1)#'
-#' autoplot(pred.CSC)
+#' pred.CSC <- predict(m.CSC, newdata = d[1:2,], time = seqTau, cause = 1, band = TRUE)
+#' autoplot(pred.CSC, alpha = 0.2)
 #' 
-#'
 #' #### stratified CSC model ####
 #' m.SCSC <- CSC(Hist(time,event)~ strata(X1) + strata(X2) + X6,
 #'               data = d)
-#' pred.SCSC <- predict(m.SCSC, time = 1:3, newdata = d[1:4,],
+#' pred.SCSC <- predict(m.SCSC, time = seqTau, newdata = d[1:4,],
 #'                      cause = 1, keep.newdata = TRUE, keep.strata = TRUE)
 #' autoplot(pred.SCSC, group.by = "strata")
 
@@ -60,8 +70,8 @@
 #' @method autoplot predictCSC
 #' @export
 autoplot.predictCSC <- function(object,
-                                ci = FALSE,
-                                band = FALSE,
+                                ci = object$se,
+                                band = object$band,
                                 plot = TRUE,
                                 smooth = FALSE,
                                 digits = 2,
@@ -89,6 +99,9 @@ autoplot.predictCSC <- function(object,
     if(band[[1]] && (object$band[[1]]==FALSE  || is.null(object$conf.level))){
         stop("argument \'band\' cannot be TRUE when the quantiles for the confidence bands have not been computed \n",
              "set arguments \'band\' and \'confint\' to TRUE when calling the predict.CauseSpecificCox function \n")
+    }
+    if(any(rank(object$times) != 1:length(object$times))){
+        stop("Invalid object. The prediction times must be strictly increasing \n")
     }
     
     dots <- list(...)

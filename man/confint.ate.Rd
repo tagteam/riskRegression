@@ -8,11 +8,16 @@
   object,
   parm = NULL,
   level = 0.95,
-  nsim.band = 10000,
+  n.sim = 10000,
   meanRisk.transform = "none",
   diffRisk.transform = "none",
   ratioRisk.transform = "none",
   seed = NA,
+  ci = object$se,
+  band = object$band,
+  p.value = FALSE,
+  method.band = "maxT-simulation",
+  alternative = "two.sided",
   bootci.method = "perc",
   ...
 )
@@ -24,7 +29,7 @@
 
 \item{level}{[numeric, 0-1] Level of confidence.}
 
-\item{nsim.band}{[integer, >0]the number of simulations used to compute the quantiles for the confidence bands.}
+\item{n.sim}{[integer, >0] the number of simulations used to compute the quantiles for the confidence bands and/or perform adjustment for multiple comparisons.}
 
 \item{meanRisk.transform}{[character] the transformation used to improve coverage
 of the confidence intervals for the mean risk in small samples.
@@ -41,6 +46,19 @@ Can be \code{"none"}, \code{"log"}.}
 \item{seed}{[integer, >0] seed number set when performing simulation for the confidence bands.
 If not given or NA no seed is set.}
 
+\item{ci}{[logical] should the confidence intervals be computed?}
+
+\item{band}{[logical] should the confidence bands be computed?}
+
+\item{p.value}{[logical] should the p-values/adjusted p-values be computed?
+Requires argument \code{ci} and/or \code{band} to be \code{TRUE}.}
+
+\item{method.band}{[character] method used to adjust for multiple comparisons.
+Can be any element of \code{p.adjust.methods} (e.g. \code{"holm"}), \code{"maxT-integration"}, or \code{"maxT-simulation"}.}
+
+\item{alternative}{[character] a character string specifying the alternative hypothesis,
+must be one of \code{"two.sided"} (default), \code{"greater"} or \code{"less"}.}
+
 \item{bootci.method}{[character] Method for constructing bootstrap confidence intervals.
 Either "perc" (the default), "norm", "basic", "stud", or "bca".}
 
@@ -50,10 +68,13 @@ Either "perc" (the default), "norm", "basic", "stud", or "bca".}
 Confidence intervals and confidence Bands for the predicted absolute risk (cumulative incidence function).
 }
 \details{
-Confidence bands and confidence intervals computed via the influence function
-are automatically restricted to the interval [0;1]. \cr \cr
+Argument \code{ci}, \code{band}, \code{p.value}, \code{method.band}, \code{alternative}, \code{meanRisk.transform}, \code{diffRisk.transform}, \code{ratioRisk.transform} are only active when the \code{ate} object contains the influence function.
+Argument \code{bootci.method} is only active when the \code{ate} object contains bootstrap samples.
 
-Confidence intervals obtained via bootstrap are computed
+\strong{Influence function}: confidence bands and confidence intervals computed via the influence function are automatically restricted to the interval of definition of the parameter (e.g. [0;1] for the average risk).
+Single step max adjustment for multiple comparisons, i.e. accounting for the correlation between the test statistics but not for the ordering of the tests, can be performed setting the arguemnt \code{method.band} to \code{"maxT-integration"} or \code{"maxT-simulation"}. The former uses numerical integration (\code{pmvnorm} and \code{qmvnorm} to perform the adjustment while the latter using simulation. Both assume that the test statistics are jointly normally distributed.
+
+\strong{Bootstrap}: confidence intervals obtained via bootstrap are computed
 using the \code{boot.ci} function of the \code{boot} package.
 p-value are obtained using test inversion method
 (finding the smallest confidence level such that the interval contain the null hypothesis).

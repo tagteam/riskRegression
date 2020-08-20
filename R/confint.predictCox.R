@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: maj 23 2018 (14:08) 
 ## Version: 
-## Last-Updated: aug 11 2020 (18:12) 
+## Last-Updated: aug 19 2020 (17:07) 
 ##           By: Brice Ozenne
-##     Update #: 268
+##     Update #: 272
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -30,7 +30,7 @@
 ##' @param survival.transform [character] the transformation used to improve coverage
 ##' of the confidence intervals for the survival in small samples.
 ##' Can be \code{"none"}, \code{"log"}, \code{"loglog"}, \code{"cloglog"}.
-##' @param nsim.band [integer, >0] the number of simulations used to compute the quantiles for the confidence bands.
+##' @param n.sim [integer, >0] the number of simulations used to compute the quantiles for the confidence bands.
 ##' @param seed [integer, >0] seed number set before performing simulations for the confidence bands.
 ##' If not given or NA no seed is set.
 ##' @param ... not used.
@@ -81,7 +81,7 @@
 confint.predictCox <- function(object,
                                parm = NULL,
                                level = 0.95,
-                               nsim.band = 1e4,
+                               n.sim = 1e4,
                                cumhazard.transform = "log",
                                survival.transform = "loglog",
                                seed = NA,
@@ -167,13 +167,15 @@ confint.predictCox <- function(object,
                                  iid = object[[paste0(iType,".iid")]],
                                  null = NA,
                                  conf.level = level,
-                                 nsim.band = nsim.band,
+                                 n.sim = n.sim,
                                  seed = seed,
                                  type = object[[paste0(iType,".transform")]],
                                  min.value = min.value,
                                  max.value = max.value,
                                  ci = object$se,
                                  band = object$band,
+                                 method.band = "maxT-simulation",
+                                 alternative = "two.sided",
                                  p.value = FALSE)
         names(outCIBP) <- paste0(iType,".", names(outCIBP))
 

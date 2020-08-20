@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: okt 29 2019 (13:18) 
 ## Version: 
-## Last-Updated: aug 18 2020 (11:01) 
+## Last-Updated: aug 20 2020 (10:25) 
 ##           By: Brice Ozenne
-##     Update #: 51
+##     Update #: 73
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -25,6 +25,8 @@
 #' @param type [character vector] what to displayed.
 #' Can be any combination of \code{"meanRisk"}, \code{"diffRisk"}, and \code{"ratioRisk"}.
 #' @param estimator [character] The type of estimator relative to which the estimates should be displayed. 
+#' @param se [logical] should the standard error of the risks be displayed?
+#' @param quantile [logical] should the quantile of the confidence bands be displayed?
 #' @param ... passed to print
 #'
 #' @details to display confidence intervals/bands and p.value,
@@ -46,6 +48,11 @@ summary.ate <- function(object,  estimator = object$estimator[1],
     lower <- upper <- lowerBand <- upperBand <- NULL ## [:CRANcheck:] data.table
     allContrasts <- object$allContrasts
     contrasts <- attr(allContrasts,"contrasts")
+
+    test.se <- !is.null(object$se) && object$se
+    test.ci <- !is.null(object$ci) && object$ci
+    test.band <- !is.null(object$band) && object$band
+    test.p.value <- !is.null(object$p.value) && object$p.value
     
     ## ** check arguments
     type <- match.arg(type,c("meanRisk","diffRisk","ratioRisk"), several.ok = TRUE)
@@ -53,21 +60,21 @@ summary.ate <- function(object,  estimator = object$estimator[1],
 
     ## ** keep columns
     keep.cols <- NULL
-    if(object$se && se){
+    if(test.se){
         keep.cols <- c(keep.cols,"se")
     }
-    if(object$ci){
+    if(test.ci){
         keep.cols <- c(keep.cols,"lower","upper")
-        if(object$p.value){keep.cols <- c(keep.cols,"p.value")}
+        if(test.p.value){keep.cols <- c(keep.cols,"p.value")}
     }
-    if(object$band){
+    if(test.band){
         if(object$method.band %in% c("bonferroni","maxT-integration","maxT-simulation")){
             if(quantile){
                 keep.cols <- c(keep.cols,"quantileBand")
             }        
             keep.cols <- c(keep.cols,"lowerBand","upperBand")
         }
-        if(object$p.value){keep.cols <- c(keep.cols,"adj.p.value")}
+        if(test.p.value){keep.cols <- c(keep.cols,"adj.p.value")}
     }
     
     ## ** Display: specification of ate
@@ -82,7 +89,7 @@ summary.ate <- function(object,  estimator = object$estimator[1],
                                                           "Gformula" = "G-formula",
                                                           "IPTW"= "inverse probability of treatment weighting",
                                                           "AIPTW" = "double robust"),"\n", sep = "")
-        if(object$ci || object$band){
+        if(test.ci || test.band){
             cat("- Statistical inference           : ")
             if(!is.null(object$boot)){
                 bootci.method <- switch(object$bootci.method,
@@ -96,7 +103,7 @@ summary.ate <- function(object,  estimator = object$estimator[1],
                 cat(bootci.method," bootstrap based on ",object$B," bootstrap samples\n",
                     "                                    that were drawn with replacement from the original data.\n",sep="")
             }else {
-                cat("using iid decomposition of the statistic (asymptotic normality, robust standard error) \n")
+                cat("using iid decomposition of the statistic (robust standard errors) \n")
                 if(object$meanRisk.transform!="none" && "meanRisk" %in% type){
                     cat("                                  : on the ",object$meanRisk.transform," scale for the mean risk \n",sep="")
                 }
@@ -107,24 +114,28 @@ summary.ate <- function(object,  estimator = object$estimator[1],
                     cat("                                  : on the ",object$ratioRisk.transform," scale for the risk ratio \n",sep="")
                 }
             }
-        
-            cat("- Confidence level                : ", object$conf.level,"\n", sep ="")
-            if(object$band){
+
+            txt.alternative <- switch(object$alternative,
+                                      "two.sided" = "two-sided tests, alternative: unequal risk",
+                                      "greater" = "one-sided tests, alternative: greater risk",
+                                      "less" = "one-sided tests, alternative: less risk")
+            cat("- Confidence level                : ", object$conf.level," (",txt.alternative,")\n", sep ="")
+            if(test.band){
                 if(object$method.band=="maxT-simulation"){
-                    cat("- Confidence bands/adj. p-values  : computed using ", object$nsim," simulations\n", sep ="")
+                    cat("- Confidence bands/adj. p-values  : single-step maxT computed using ", object$n.sim," simulations\n", sep ="")
                 }else if(object$method.band=="maxT-integration"){
-                    cat("- Confidence bands/adj. p-values  : computed using numerical integration\n", sep ="")
-                }else if(object$method.band=="maxT-integration"){
-                    cat("- Confidence bands/adj. p-values  : computed ",object$method.band," method\n", sep ="")
+                    cat("- Confidence bands/adj. p-values  : single-step maxT computed using numerical integration\n", sep ="")
+                }else{
+                    cat("- Confidence bands/adj. p-values  : ",object$method.band," method\n", sep ="")
                 }
             }
     
         }
+        if("meanRisk" %in% type || !is.null(object$treatment) && ("diffRisk" %in% type || "ratioRisk" %in% type)){cat("\n")}        
     }
 
     ## ** Display: meanRisk
     if("meanRisk" %in% type){
-        if(!identical(short,TRUE)){cat("\n")}
         cat("Average risk: between time zero and 'time',\n")
 
         if(!identical(short,TRUE)){
@@ -137,7 +148,8 @@ summary.ate <- function(object,  estimator = object$estimator[1],
         }
         keep.cols.mR <- c(names(object$meanRisk)[!grepl("meanRisk",names(object$meanRisk))],
                           paste0("meanRisk.",estimator),
-                          paste0("meanRisk.",estimator,".",setdiff(keep.cols,c("p.value","adj.p.value"))))
+                          if(length(keep.cols)>0){paste0("meanRisk.",estimator,".",setdiff(keep.cols,c("p.value","adj.p.value")))}
+                          )
         if(all(is.na(object$meanRisk$time))){
             keep.cols.mR <- setdiff(keep.cols.mR, "time")
         }
@@ -155,7 +167,7 @@ summary.ate <- function(object,  estimator = object$estimator[1],
         names(dt.tempo)[names(dt.tempo)=="meanRisk"] <- "average risk"
 
         ## merge into CI and CB
-        if(object$ci){
+        if(test.ci){
             dt.tempo[, c("lower") := paste0("[",
                                                     sprintf(paste0("%1.",digits,"f"),lower),
                                                     " ; ",
@@ -165,7 +177,7 @@ summary.ate <- function(object,  estimator = object$estimator[1],
             data.table::setnames(dt.tempo, old = "lower", new = "conf.interval")
             ## order.col <- c(order.col,"se","conf.interval")
         }
-        if(object$band && object$method.band %in% c("bonferroni","maxT-integration","maxT-simulation")){
+        if(test.band && object$method.band %in% c("bonferroni","maxT-integration","maxT-simulation")){
             dt.tempo[, c("lowerBand") := paste0("[",
                                                 sprintf(paste0("%1.",digits,"f"),lowerBand),
                                                 " ; ",
@@ -178,7 +190,7 @@ summary.ate <- function(object,  estimator = object$estimator[1],
         ## print
         ## data.table::setcolorder(dt.tempo, neworder = order.col)
         print(dt.tempo,digits=digits,...)
-        cat("\n")
+        if(!is.null(object$treatment) && ("diffRisk" %in% type || "ratioRisk" %in% type)){cat("\n")}
     }
 
     if(!is.null(object$treatment) && ("diffRisk" %in% type || "ratioRisk" %in% type)){
@@ -200,7 +212,7 @@ summary.ate <- function(object,  estimator = object$estimator[1],
             ## only pick diff
             keep.cols.dR <- c(names(object$riskComparison)[!grepl("diff|ratio",names(object$riskComparison))],
                               paste0("diff.",estimator),
-                              paste0("diff.",estimator,".",keep.cols))
+                              if(length(keep.cols)>0){paste0("diff.",estimator,".",keep.cols)})
             if(all(is.na(object$riskComparison$time))){
                 keep.cols.dR <- setdiff(keep.cols.dR, "time")
             }
@@ -218,7 +230,7 @@ summary.ate <- function(object,  estimator = object$estimator[1],
             names(dt.tempo)[names(dt.tempo)=="diff"] <- "risk difference"
 
             ## merge into CI and CB
-            if(object$ci){
+            if(test.ci){
                 dt.tempo[, c("lower") := paste0("[",
                                                         sprintf(paste0("%1.",digits,"f"),lower),
                                                         " ; ",
@@ -228,11 +240,11 @@ summary.ate <- function(object,  estimator = object$estimator[1],
                 data.table::setnames(dt.tempo, old = "lower", new = "conf.interval")
                                        
                 ## order.col <- c(order.col,"se","conf.interval","p.value")
-                if(object$p.value){
+                if(test.p.value){
                     dt.tempo$p.value <- format.pval(dt.tempo$p.value,digits=digits,eps=10^{-digits})
                 }
             }
-            if(object$band){
+            if(test.band){
                 if(object$method.band %in% c("bonferroni","maxT-integration","maxT-simulation")){
                     dt.tempo[, c("lowerBand") := paste0("[",
                                                         sprintf(paste0("%1.",digits,"f"),lowerBand),
@@ -243,7 +255,7 @@ summary.ate <- function(object,  estimator = object$estimator[1],
                     data.table::setnames(dt.tempo, old = "lowerBand", new = "conf.band")
                 }
                 ## order.col <- c(order.col,"quantileBand","conf.band")
-                if(object$p.value){
+                if(test.p.value){
                     dt.tempo$adj.p.value <- format.pval(dt.tempo$adj.p.value,digits=digits,eps=10^{-digits})
                 }
             }
@@ -251,7 +263,7 @@ summary.ate <- function(object,  estimator = object$estimator[1],
 
             ## print
             print(dt.tempo,digits=digits,...)
-            cat("\n")
+            if("ratioRisk" %in% type){cat("\n")}
         }
         if("ratioRisk" %in% type){
 
@@ -271,7 +283,7 @@ summary.ate <- function(object,  estimator = object$estimator[1],
             ## only pick ratio
             keep.cols.rR <- c(names(object$riskComparison)[!grepl("diff|ratio",names(object$riskComparison))],
                               paste0("ratio.",estimator),
-                              paste0("ratio.",estimator,".",keep.cols))
+                              if(length(keep.cols)>0){paste0("ratio.",estimator,".",keep.cols)})
             if(all(is.na(object$riskComparison$time))){
                 keep.cols.rR <- setdiff(keep.cols, "time")
             }
@@ -289,7 +301,7 @@ summary.ate <- function(object,  estimator = object$estimator[1],
             names(dt.tempo)[names(dt.tempo)=="ratio"] <- "risk ratio"
 
             ## merge into CI and CB
-            if(object$ci){
+            if(test.ci){
                 dt.tempo[, c("lower") := paste0("[",
                                                 sprintf(paste0("%1.",digits,"f"),lower),
                                                 " ; ",
@@ -298,11 +310,11 @@ summary.ate <- function(object,  estimator = object$estimator[1],
                 dt.tempo[,c("upper") := NULL]
                 data.table::setnames(dt.tempo, old = "lower", new = "conf.interval")
                 ## order.col <- c(order.col,"se","conf.interval","p.value")
-                if(object$p.value){
+                if(test.p.value){
                     dt.tempo$p.value <- format.pval(dt.tempo$p.value,digits=digits,eps=10^{-digits})
                 }
             }
-            if(object$band){
+            if(test.band){
                 if(object$method.band %in% c("bonferroni","maxT-integration","maxT-simulation")){
                     dt.tempo[, c("lowerBand") := paste0("[",
                                                         sprintf(paste0("%1.",digits,"f"),lowerBand),
@@ -313,7 +325,7 @@ summary.ate <- function(object,  estimator = object$estimator[1],
                     data.table::setnames(dt.tempo, old = "lowerBand", new = "conf.band")
                 }
                 ## order.col <- c(order.col,"quantileBand","conf.band")
-                if(object$p.value){
+                if(test.p.value){
                     dt.tempo$adj.p.value <- format.pval(dt.tempo$adj.p.value,digits=digits,eps=10^{-digits})
                 }
             }
@@ -323,7 +335,6 @@ summary.ate <- function(object,  estimator = object$estimator[1],
             ## data.table::setcolorder(dt.tempo, neworder = order.col)
             print(dt.tempo,digits=digits,...)
         }
-        cat("\n")
     }
 
     ## export

@@ -1,4 +1,3 @@
-                                        # {{{ header
 ## * predictCox (documentation)
 #' @title Fast computation of survival probabilities, hazards and cumulative hazards from Cox regression models 
 #' @name predictCox
@@ -65,8 +64,8 @@
 #' function from the survival package but should not be modified by the user.
 #'
 #' The iid decomposition is output using an array containing the value of the influence
-#' of each subject used to fit the object (dim 3),
-#' for each subject in newdata (dim 1),
+#' of each subject used to fit the object (dim 1),
+#' for each subject in newdata (dim 3),
 #' and each time (dim 2).
 #' 
 #' @author Brice Ozenne broz@@sund.ku.dk, Thomas A. Gerds tag@@biostat.ku.dk
@@ -135,7 +134,6 @@
 #' as.data.table(predictCox(m.cph))
 #'
 #' basehaz(m.cph)
-# }}}
 
 ## * predictCox (code)
 #' @rdname predictCox
@@ -156,8 +154,6 @@ predictCox <- function(object,
                        diag = FALSE,
                        average.iid = FALSE,
                        store.iid = "full"){
-  
-  # {{{ treatment of times and stopping rules
   
     ## ** Extract elements from object
     if (missing(times)) {
@@ -330,46 +326,43 @@ predictCox <- function(object,
                            cause = 1,
                            Efron = (object.baseEstimator == "efron"))
 
-  ## restaure strata levels
-  if (is.strata == TRUE){
-      Lambda0$strata <- factor(Lambda0$strata, levels = 0:(nStrata-1), labels = object.levelStrata)
-  }
-                                        # }}}
-
+    ## restaure strata levels
+    Lambda0$strata <- factor(Lambda0$strata, levels = 0:(nStrata-1), labels = object.levelStrata)
   
-  ## ** compute cumlative hazard and survival
-  if (is.null(newdata)){  
-                                        # {{{ results from the training dataset
-      if (!("hazard" %in% type)){
-          Lambda0$hazard <- NULL
-      } 
-      if ("survival" %in% type){  ## must be before cumhazard
-          Lambda0$survival = exp(-Lambda0$cumhazard)
-      }
-      if (!("cumhazard" %in% type)){
-          Lambda0$cumhazard <- NULL
-      } 
-      if (keep.times==FALSE){
-          Lambda0$times <- NULL
-      }
-      if (keep.strata[[1]]==FALSE || is.strata[[1]] == FALSE){
-          Lambda0$strata <- NULL
-      }
-
-      add.list <- list(lastEventTime = etimes.max,
-                       se = FALSE,
-                       band = FALSE,
-                       type = type)
-      if(keep.infoVar){
-          add.list$infoVar <- infoVar
-      }
-      Lambda0[names(add.list)] <- add.list
-      class(Lambda0) <- "predictCox"
-      return(Lambda0)
-                                        # }}}
-  } else {
+    ## ** compute cumlative hazard and survival
+    if (is.null(newdata)){  
+        if (!("hazard" %in% type)){
+            Lambda0$hazard <- NULL
+        } 
+        if ("survival" %in% type){  ## must be before cumhazard
+            Lambda0$survival = exp(-Lambda0$cumhazard)
+        }
+        if (!("cumhazard" %in% type)){
+            Lambda0$cumhazard <- NULL
+        } 
+        if (keep.times==FALSE){
+            Lambda0$times <- NULL
+        }
+        if (keep.strata[[1]]==FALSE ||(is.null(match.call()$keep.strata) && !is.strata)){
+            Lambda0$strata <- NULL
+        }
+        if( keep.newdata[1]==TRUE){
+            Lambda0$newdata <- object.modelFrame
+        }
+        add.list <- list(lastEventTime = etimes.max,
+                         se = FALSE,
+                         band = FALSE,
+                         type = type,
+                         nTimes = nTimes)
+        if(keep.infoVar){
+            add.list$infoVar <- infoVar
+        }
+        
+        Lambda0[names(add.list)] <- add.list
+        class(Lambda0) <- "predictCox"
+        return(Lambda0)
+    } else {
     
-                                        # {{{ predictions in new dataset
       out <- list()
       ## *** reformat newdata (compute linear predictor and strata)
       new.n <- NROW(newdata)
@@ -472,8 +465,6 @@ predictCox <- function(object,
               }
           }
       }
-                                        # }}}
-                                        # {{{ standard error
     
     if(se[[1]] || band[[1]] || iid[[1]] || average.iid[[1]]){
         if(nVar > 0){
@@ -616,15 +607,14 @@ predictCox <- function(object,
             }
         }      
     }
-                                        # }}}
-                                        # {{{ export 
 
       ## ** add information to the predictions
       add.list <- list(lastEventTime = etimes.max,
                        se = se,
                        band = band,
                        type = type,
-                       diag = diag)
+                       diag = diag,
+                       nTimes = nTimes)
       if (keep.times==TRUE){
           add.list$times <- times
       }
@@ -654,7 +644,6 @@ predictCox <- function(object,
       }
       
       return(out)
-                                        # }}}
   }
   
 }

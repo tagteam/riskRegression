@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: sep  4 2017 (10:38) 
 ## Version: 
-## last-updated: aug 12 2020 (17:07) 
+## last-updated: aug 20 2020 (15:58) 
 ##           By: Brice Ozenne
-##     Update #: 161
+##     Update #: 163
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -21,7 +21,7 @@ library(testthat)
 library(rms)
 library(survival)
 library(data.table)
-library(timereg); nsim.band <- 500;
+library(timereg); n.sim <- 500;
 context("function predictCox")
 
 
@@ -220,9 +220,9 @@ predRR2 <- predictCox(e.coxph_sort, newdata = dt, times = 10,
                       se = TRUE, iid = TRUE, band = TRUE, confint = FALSE)
 
 predRR1.none <- confint(predRR1, survival.transform = "none", seed = 10,
-                        nsim.band = nsim.band)
+                        n.sim = n.sim)
 predRR1.loglog <- confint(predRR1, survival.transform = "loglog", seed = 10,
-                          nsim.band = nsim.band)
+                          n.sim = n.sim)
 
 ## *** Test vs. cph
 test_that("[predictCox] compare survival and survival.se coxph/cph (1 fixed time)",{
@@ -290,8 +290,8 @@ predRR1 <- predictCox(e.coxph, newdata = dt, times = vec.time,
 predRR2 <- predictCox(e.coxph_sort, newdata = dt, times = vec.time,
                       se = TRUE, iid = TRUE, band = TRUE, confint = FALSE)
 
-predRR1.none <- confint(predRR1, survival.transform = "none", seed = 10, nsim.band = nsim.band)
-predRR1.loglog <- confint(predRR1, survival.transform = "loglog", seed = 10, nsim.band = nsim.band)
+predRR1.none <- confint(predRR1, survival.transform = "none", seed = 10, n.sim = n.sim)
+predRR1.loglog <- confint(predRR1, survival.transform = "loglog", seed = 10, n.sim = n.sim)
 
 
 ## *** Test vs. cph
@@ -352,7 +352,7 @@ test_that("[predictCox] after the last event",{
 
     predRR1 <- predictCox(e.coxph, newdata = dt, times = 1e8,
                           se = TRUE, iid = TRUE, band = TRUE, confint = FALSE)
-    predRR1 <- confint(predRR1, nsim.band = nsim.band)
+    predRR1 <- confint(predRR1, n.sim = n.sim)
     
     expect_true(all(is.na(predRR1$survival)))
     expect_true(all(is.na(predRR1$survival.se)))
@@ -409,7 +409,7 @@ test_that("[predictCox] before the first event",{
 
     predRR1 <- predictCox(e.coxph, newdata = dt, times = 1e-8,
                           se = TRUE, iid = TRUE, band = TRUE, confint = FALSE)
-    predRR1 <- confint(predRR1, nsim.band = nsim.band)
+    predRR1 <- confint(predRR1, n.sim = n.sim)
     
     expect_true(all(predRR1$survival==1))
     expect_true(all(predRR1$cumhazard==0))
@@ -577,9 +577,9 @@ predRR1 <- predictCox(eS.coxph, newdata = dtStrata, times = 4,
                       se = TRUE, iid = TRUE, band = TRUE, confint = FALSE)
 
 predRR1.none <- confint(predRR1, survival.transform = "none", seed = 10,
-                        nsim.band = nsim.band)
+                        n.sim = n.sim)
 predRR1.loglog <- confint(predRR1, survival.transform = "loglog", seed = 10,
-                          nsim.band = nsim.band)
+                          n.sim = n.sim)
 
 ## *** Test vs. cph
 test_that("[predictCox] compare survival and survival.se coxph/cph (1 fixed time, strata)",{
@@ -647,9 +647,9 @@ predRR1 <- predictCox(eS.coxph, newdata = dtStrata, times = vec.time,
                       se = TRUE, iid = TRUE, band = TRUE, confint = FALSE)
 
 predRR1.none <- confint(predRR1, survival.transform = "none", seed = 10,
-                        nsim.band = nsim.band)
+                        n.sim = n.sim)
 predRR1.loglog <- confint(predRR1, survival.transform = "loglog", seed = 10,
-                          nsim.band = nsim.band)
+                          n.sim = n.sim)
 
 ## *** Test vs. cph
 test_that("[predictCox] compare survival and survival.se coxph/cph (eventtime, strata)",{
@@ -712,7 +712,7 @@ test_that("[predictCox] after the last event (strata)",{
     
     predRR1 <- predictCox(eS.coxph, newdata = dtStrata, times = max(lastevent[["V1"]]),
                           se = TRUE, iid = TRUE, band = TRUE, confint = FALSE)
-    predRR1 <- confint(predRR1, nsim.band = nsim.band)
+    predRR1 <- confint(predRR1, n.sim = n.sim)
     
     expect_true(all(is.na(predRR1$survival[dtStrata$strata!=laststrata,])))
     expect_true(all(is.na(predRR1$cumhazard[dtStrata$strata!=laststrata,])))
@@ -725,7 +725,6 @@ test_that("[predictCox] after the last event (strata)",{
     expect_true(all(is.na(predRR1$survival.upper[dtStrata$strata!=laststrata,])))
     expect_true(all(is.na(predRR1$survival.lowerBand[dtStrata$strata!=laststrata,])))
     expect_true(all(is.na(predRR1$survival.upperBand[dtStrata$strata!=laststrata,])))
-
 
 })    
 
@@ -813,8 +812,8 @@ fit <- coxph(Surv(time,event)~X1 + strata(X2) + X6,
 
 fit.pred <- predictCox(fit, newdata=dt[1:3], times=c(3,8), type = "survival",
                        se = TRUE, iid = TRUE, band = TRUE, confint = FALSE)
-confint.pred1 <- confint(fit.pred, survival.transform = "none", nsim.band = nsim.band)
-confint.pred2 <- confint(fit.pred, survival.transform = "loglog", nsim.band = nsim.band)
+confint.pred1 <- confint(fit.pred, survival.transform = "none", n.sim = n.sim)
+confint.pred2 <- confint(fit.pred, survival.transform = "loglog", n.sim = n.sim)
 
 ## ** standard errors
 test_that("[predictCox] consistency  iid se", {
@@ -992,7 +991,7 @@ for(i in 1:NROW(newdata)){ # i <- 1
                                        newdata = newdata[i,,drop=FALSE],
                                        times = vec.times,
                                        resample.iid = 1,
-                                       n.sim = nsim.band)
+                                       n.sim = n.sim)
 }
 
 ## *** Tests
@@ -1011,23 +1010,33 @@ test_that("[predictCox] Quantile for the confidence band of the cumhazard", {
     ref <- unlist(lapply(resTimereg,"[[", "unif.band"))
 
     set.seed(10)
-    pred.band2 <- riskRegression:::confBandCox(iid = predRR$cumhazard.iid,
-                                               se = predRR$cumhazard.se,
-                                               n.sim = nsim.band, 
-                                               conf.level = 0.95)
+    iid2cpp <- array(NA, dim(predRR$cumhazard.iid))
+    for(iC in 1:dim(predRR$cumhazard.iid)[3]){ ## iC <- 1 
+        iid2cpp[,,iC] <- rowScale_cpp(predRR$cumhazard.iid[,,iC],sqrt(diag(crossprod(predRR$cumhazard.iid[,,iC]))))
+    }
+    pred.band2 <- riskRegression:::quantileProcess_cpp(nSample = dim(predRR$cumhazard.iid)[1],
+                                                       nContrast = dim(predRR$cumhazard.iid)[3],
+                                                       nSim = n.sim,
+                                                       iid = aperm(iid2cpp, c(2,1,3)),
+                                                       alternative = 3,
+                                                       global = FALSE, 
+                                                       confLevel = 0.95)
 
     expect_equal(pred.band2,ref)
 
 
     ## note confint is removing the first column since the standard error is 0
     set.seed(10)
-    pred.band2.no0 <- riskRegression:::confBandCox(iid = predRR$cumhazard.iid[,-1,,drop=FALSE],
-                                                   se = predRR$cumhazard.se[,-1],
-                                                   n.sim = nsim.band, 
-                                                   conf.level = 0.95)
+    pred.band2.no0 <- riskRegression:::quantileProcess_cpp(nSample = dim(predRR$cumhazard.iid)[1],
+                                                           nContrast = dim(predRR$cumhazard.iid)[3],
+                                                           nSim = n.sim,
+                                                           iid = aperm(iid2cpp[,-1,], c(2,1,3)),
+                                                           alternative = 3,
+                                                           global = FALSE, 
+                                                           confLevel = 0.95)
 
     ## should not set transform to NA because at time 0 se=0 so the log-transform fails
-    pred.confint <- confint(predRR, nsim.band = nsim.band, seed = 10,
+    pred.confint <- confint(predRR, n.sim = n.sim, seed = 10,
                             cumhazard.transform = "none")
     expect_equal(pred.confint$cumhazard.quantileBand, pred.band2.no0)
     expect_equal(pred.confint$cumhazard.quantileBand, ref)

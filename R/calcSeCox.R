@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: maj 27 2017 (11:46) 
 ## Version: 
-## last-updated: aug 11 2020 (13:10) 
+## last-updated: aug 20 2020 (11:34) 
 ##           By: Brice Ozenne
-##     Update #: 811
+##     Update #: 823
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -85,12 +85,7 @@ calcSeCox <- function(object, times, nTimes, type, diag,
     }
     new.strata <- as.numeric(new.strata)
     
-    if(length(Lambda0$strata)==0){
-        Lambda0$strata <- rep(1, length(Lambda0$time))
-    }else{
-        Lambda0$strata <- as.numeric(Lambda0$strata)    
-    }
-
+    Lambda0$strata <- as.numeric(Lambda0$strata)    
     if("hazard" %in% type){Lambda0$hazard <- lapply(1:nStrata,function(s){Lambda0$hazard[Lambda0$strata==s][Lambda0$oorder.times]})}
     if("cumhazard" %in% type || "survival" %in% type){Lambda0$cumhazard <- lapply(1:nStrata,function(s){Lambda0$cumhazard[Lambda0$strata==s][Lambda0$oorder.times]})}
 
@@ -414,8 +409,16 @@ selectJump <- function(IF, times, type){
       if(IF$store.iid == "minimal"){
           isJump <- times %in% IF$time[[iStrata]]
           indexJump <- prodlim::sindex(jump.times = c(0,IF$time[[iStrata]]), eval.times = times)
-          IF$calcIFhazard$Elambda0[[iStrata]] <- rowMultiply_cpp(cbind(0,IF$calcIFhazard$Elambda0[[iStrata]])[,indexJump,drop=FALSE], scale = isJump)
-          IF$calcIFhazard$cumElambda0[[iStrata]] <- cbind(0,IF$calcIFhazard$cumElambda0[[iStrata]])[,indexJump,drop=FALSE]
+          if(NROW(IF$calcIFhazard$Elambda0[[iStrata]])>0){
+              IF$calcIFhazard$Elambda0[[iStrata]] <- rowMultiply_cpp(cbind(0,IF$calcIFhazard$Elambda0[[iStrata]])[,indexJump,drop=FALSE], scale = isJump)
+          }else{
+              IF$calcIFhazard$Elambda0[[iStrata]] <- matrix(NA, nrow = 0, ncol = length(isJump))
+          }
+          if(NROW(IF$calcIFhazard$cumElambda0[[iStrata]])>0){
+              IF$calcIFhazard$cumElambda0[[iStrata]] <- cbind(0,IF$calcIFhazard$cumElambda0[[iStrata]])[,indexJump,drop=FALSE]
+          }else{
+              IF$calcIFhazard$cumElambda0[[iStrata]] <- matrix(NA, nrow = 0, ncol = length(isJump))
+          }
           IF$calcIFhazard$lambda0_iS0[[iStrata]] <- IF$calcIFhazard$lambda0_iS0[[iStrata]] * (IF$calcIFhazard$time1[[iStrata]] <= max(times))
           IF$calcIFhazard$cumLambda0_iS0[[iStrata]] <- IF$calcIFhazard$cumLambda0_iS0[[iStrata]] * (IF$calcIFhazard$time1[[iStrata]] <= max(times))
       }else{

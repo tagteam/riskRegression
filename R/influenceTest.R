@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: maj 19 2017 (16:01) 
 ## Version: 
-## last-updated: aug 11 2020 (16:24) 
+## last-updated: aug 19 2020 (09:17) 
 ##           By: Brice Ozenne
-##     Update #: 183
+##     Update #: 184
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -261,4 +261,4 @@ influenceTest.default <- function(object,
 }
 
 #----------------------------------------------------------------------
-### influence2.R ends here
+### influenceTest.R ends here

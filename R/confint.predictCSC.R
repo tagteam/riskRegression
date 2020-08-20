@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: maj 23 2018 (14:08) 
 ## Version: 
-## Last-Updated: jun 24 2020 (09:05) 
+## Last-Updated: aug 19 2020 (17:07) 
 ##           By: Brice Ozenne
-##     Update #: 161
+##     Update #: 165
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -26,7 +26,7 @@
 ##' @param absRisk.transform [character] the transformation used to improve coverage
 ##' of the confidence intervals for the predicted absolute risk in small samples.
 ##' Can be \code{"none"}, \code{"log"}, \code{"loglog"}, \code{"cloglog"}.
-##' @param nsim.band [integer, >0] the number of simulations used to compute the quantiles for the confidence bands.
+##' @param n.sim [integer, >0] the number of simulations used to compute the quantiles for the confidence bands.
 ##' @param seed [integer, >0] seed number set before performing simulations for the confidence bands.
 ##' If not given or NA no seed is set.
 ##' @param ... not used.
@@ -73,7 +73,7 @@
 confint.predictCSC <- function(object,
                                parm = NULL,
                                level = 0.95,
-                               nsim.band = 1e4,
+                               n.sim = 1e4,
                                absRisk.transform = "loglog",
                                seed = NA,
                                ...){
@@ -111,7 +111,7 @@ confint.predictCSC <- function(object,
                              iid = object$absRisk.iid,
                              null = NA,
                              conf.level = level,
-                             nsim.band = nsim.band,
+                             n.sim = n.sim,
                              seed = seed,
                              type = object$absRisk.transform,
                              min.value = switch(object$absRisk.transform,
@@ -126,6 +126,8 @@ confint.predictCSC <- function(object,
                                                 "cloglog" = NULL),
                              ci = object$se,
                              band = object$band,
+                             method.band = "maxT-simulation",
+                             alternative = "two.sided",
                              p.value = FALSE)
     
     names(outCIBP) <- paste0("absRisk.", names(outCIBP))

@@ -74,12 +74,12 @@ colSumsCrossprod <- function(X, Y, transposeY) {
     .Call(`_riskRegression_colSumsCrossprod`, X, Y, transposeY)
 }
 
-quantileProcess_cpp <- function(nObject, nNew, nSim, iid, se, confLevel) {
-    .Call(`_riskRegression_quantileProcess_cpp`, nObject, nNew, nSim, iid, se, confLevel)
+quantileProcess_cpp <- function(nSample, nContrast, nSim, iid, alternative, global, confLevel) {
+    .Call(`_riskRegression_quantileProcess_cpp`, nSample, nContrast, nSim, iid, alternative, global, confLevel)
 }
 
-sampleMaxProcess_cpp <- function(nObject, nNew, nSim, iid, se) {
-    .Call(`_riskRegression_sampleMaxProcess_cpp`, nObject, nNew, nSim, iid, se)
+sampleMaxProcess_cpp <- function(nSample, nContrast, nSim, value, iid, alternative, type, global) {
+    .Call(`_riskRegression_sampleMaxProcess_cpp`, nSample, nContrast, nSim, value, iid, alternative, type, global)
 }
 
 calcE_cpp <- function(eventtime, status, eXb, X, p, add0) {

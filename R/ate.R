@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Oct 23 2016 (08:53) 
 ## Version: 
-## last-updated: aug 18 2020 (10:01) 
+## last-updated: aug 20 2020 (14:18) 
 ##           By: Brice Ozenne
-##     Update #: 1733
+##     Update #: 1736
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -16,7 +16,7 @@
 ### Code:
 
 ## * ate (documentation)
-#' @title Compute the Average Treatment Effects Via 
+#' @title Average Treatment Effects Computation 
 #' @description Use the g-formula/IPTW/double robust estimator to estimate the average treatment
 #'     effect based on Cox regression with or without competing risks.
 #' @name ate
@@ -52,8 +52,8 @@
 #' When using \code{estimator="IPTW"}, a model for the treatment should be provided (argument treatment), as well as for the censoring (if any, argument censor).
 #' When using \code{estimator="AIPTW"} (double robust estimator), a model for the outcome and the treatment should be provided (argument event and treatment), as well as for the censoring (if any, argument censor).
 #' @param known.nuisance [logical] If \code{FALSE} the uncertainty related to the estimation of the nuisance parameters is ignored.
-#' This greatly simplifies computations but requires to use a double robust estimator
-#' and to assumes that all event, treatment, and censoring models are valid to obtain consistent standard errors.
+#' This greatly simplifies computations but requires to use a double robust estimator.
+#' The resulting standard error is known to be consistent when all event, treatment, and censoring models are valid.
 #' @param B [integer, >0] the number of bootstrap replications used to compute the confidence intervals.
 #' If it equals 0, then the influence function is used to compute Wald-type confidence intervals/bands.
 #' @param seed [integer, >0] sed number used to generate seeds for bootstrap
@@ -69,7 +69,6 @@
 #' Output by \code{parallel::makeCluster}.
 #' The packages necessary to run the computations (e.g. riskRegression) must already be loaded on each worker.
 #' @param verbose [logical] If \code{TRUE} inform about estimated run time.
-#' \code{"minimal"} requires less memory but can only estimate the standard for the difference between treatment effects (and not for the ratio).
 #' @param ... passed to predictRisk
 #'
 #' @author Brice Ozenne \email{broz@@sund.ku.dk}
@@ -668,6 +667,9 @@ ate <- function(event,
         if (verbose>1/2){ ## display
             cat("done\n")
         }
+    }else{
+        out$ci <- FALSE
+        out$p.value <- FALSE
     }
 
     return(out)

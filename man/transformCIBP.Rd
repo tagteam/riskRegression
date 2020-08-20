@@ -10,13 +10,15 @@ transformCIBP(
   iid,
   null,
   conf.level,
-  nsim.band,
-  seed,
+  alternative,
+  ci,
   type,
   min.value,
   max.value,
-  ci,
   band,
+  method.band,
+  n.sim,
+  seed,
   p.value
 )
 }
@@ -31,9 +33,10 @@ transformCIBP(
 
 \item{conf.level}{[numeric, 0-1] Level of confidence.}
 
-\item{nsim.band}{[integer, >0] the number of simulations used to compute the quantiles for the confidence bands.}
+\item{alternative}{[character] a character string specifying the alternative hypothesis,
+must be one of \code{"two.sided"} (default), \code{"greater"} or \code{"less"}.}
 
-\item{seed}{[integer, >0] seed number set before performing simulations for the confidence bands.}
+\item{ci}{[logical] should confidence intervals be computed.}
 
 \item{type}{[character] the transforamtion.
 Can be \code{"log"}, \code{"loglog"}, \code{"cloglog"}, or \code{"atanh"} (Fisher transform).}
@@ -44,15 +47,23 @@ it will be set at \code{min}.}
 \item{max.value}{[numeric] if not \code{NULL} and the lower bound of the confidence interval is below \code{max},
 it will be set at \code{max}.}
 
-\item{ci}{[logical] should confidence intervals be computed.}
+\item{band}{[integer 0,1,2] When non-0, the confidence bands are computed for each contrasts (\code{band=1}) or over all contrasts (\code{band=2}).}
 
-\item{band}{[logical] should confidence bands be computed.}
+\item{method.band}{[character] method used to adjust for multiple comparisons.
+Can be any element of \code{p.adjust.methods} (e.g. \code{"holm"}), \code{"maxT-integration"}, or \code{"maxT-simulation"}.}
 
-\item{p.value}{[logical] should p-values be computed.
+\item{n.sim}{[integer, >0] the number of simulations used to compute the quantiles for the confidence bands.}
 
-The iid decomposition must have dimensions [n.obs,time,n.prediction]
-while estimate and se must have dimensions [n.prediction,time].}
+\item{seed}{[integer, >0] seed number set before performing simulations for the confidence bands.}
+
+\item{p.value}{[logical] should p-values and adjusted p-values be computed. Only active if \code{ci=TRUE} or \code{band>0}.}
 }
 \description{
 Compute confidence intervals/bands and p-values after a transformation
+}
+\details{
+The iid decomposition must have dimensions [n.obs,time,n.prediction]
+while estimate and se must have dimensions [n.prediction,time].
+
+Single step max adjustment for multiple comparisons, i.e. accounting for the correlation between the test statistics but not for the ordering of the tests, can be performed setting the arguemnt \code{method.band} to \code{"maxT-integration"} or \code{"maxT-simulation"}. The former uses numerical integration (\code{pmvnorm} and \code{qmvnorm} to perform the adjustment while the latter using simulation. Both assume that the test statistics are jointly normally distributed.
 }

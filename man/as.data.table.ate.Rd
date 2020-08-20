@@ -6,20 +6,30 @@
 \usage{
 \method{as.data.table}{ate}(
   x,
-  keep.rownames = FALSE,
-  se = TRUE,
   estimator = x$estimator,
+  se = x$se,
+  ci = x$ci,
+  band = x$band,
+  quantileBand = x$band,
+  p.value = x$p.value,
+  keep.rownames = FALSE,
   ...
 )
 }
 \arguments{
 \item{x}{object obtained with function \code{ate}}
 
-\item{keep.rownames}{Not used.}
-
-\item{se}{[logical] Should standard errors/quantile for confidence bands be displayed?}
-
 \item{estimator}{[character] The type of estimator relative to which the estimates should be output.}
+
+\item{se}{[logical] Should the standard errors be output?}
+
+\item{ci}{[logical] Should the confidence intervals be output?}
+
+\item{band}{[logical] Should the confidence bands be output?}
+
+\item{quantileBand}{[logical] Should the p-values/adjusted p-values be output?}
+
+\item{keep.rownames}{Not used.}
 
 \item{...}{Not used.}
 }

@@ -6,21 +6,27 @@
 \usage{
 \method{summary}{ate}(
   object,
-  digits = 3,
-  type = c("meanRisk", "diffRisk", "ratioRisk"),
   estimator = object$estimator[1],
+  type = c("meanRisk", "diffRisk", "ratioRisk"),
+  se = object$se,
+  quantile = FALSE,
+  digits = 3,
   ...
 )
 }
 \arguments{
 \item{object}{object obtained with function \code{ate}}
 
-\item{digits}{[integer, >0] Number of digits.}
+\item{estimator}{[character] The type of estimator relative to which the estimates should be displayed.}
 
 \item{type}{[character vector] what to displayed.
 Can be any combination of \code{"meanRisk"}, \code{"diffRisk"}, and \code{"ratioRisk"}.}
 
-\item{estimator}{[character] The type of estimator relative to which the estimates should be displayed.}
+\item{se}{[logical] should the standard error of the risks be displayed?}
+
+\item{quantile}{[logical] should the quantile of the confidence bands be displayed?}
+
+\item{digits}{[integer, >0] Number of digits.}
 
 \item{...}{passed to print}
 }

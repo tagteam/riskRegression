@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: maj 18 2017 (09:23) 
 ## Version: 
-## last-updated: aug 12 2020 (12:01) 
+## last-updated: aug 20 2020 (15:01) 
 ##           By: Brice Ozenne
-##     Update #: 286
+##     Update #: 289
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -1013,9 +1013,9 @@ e.cox <- coxph(Surv(time, event>0)~ strata(X1) + strata(X2), data = d, x = TRUE,
 ## e.cox <- coxph(Surv(time, event>0)~ 1, data = d, x = TRUE, y = TRUE)
 
 test_that("predictSurv (type=survival)", {
-    ## diag = FALSE 
     test <- predict(e.CSC, type = "survival", newdata = d.pred, times = seqTime,
-                    product.limit = FALSE, iid = TRUE, se = TRUE, average.iid = TRUE)
+                    product.limit = FALSE, iid = TRUE, se = TRUE, average.iid = TRUE,
+                    store.iid = "minimal")
     GS <- predictCox(e.cox, newdata = d.pred, times = seqTime,
                      iid = TRUE, se = TRUE, average.iid = TRUE)
     
@@ -1025,7 +1025,8 @@ test_that("predictSurv (type=survival)", {
     expect_equal(GS$survival.average.iid,test$survival.average.iid)
 
     testPL <- predict(e.CSC, type = "survival", newdata = d.pred, times = seqTime,
-                    product.limit = TRUE, iid = TRUE, se = TRUE, average.iid = TRUE)
+                      product.limit = TRUE, iid = TRUE, se = TRUE, average.iid = TRUE,
+                      store.iid = "minimal")
     GSPL <- predictCoxPL(e.cox, newdata = d.pred, times = seqTime,
                      iid = TRUE, se = TRUE, average.iid = TRUE)
 
@@ -1042,9 +1043,10 @@ test_that("predictSurv (type=survival)", {
 })
 
 test_that("predictSurv (type=survival,diag)", {
-    ## diag = FALSE 
     test <- predict(e.CSC, type = "survival", newdata = d.pred, times = d.pred$time,
-                    diag = TRUE, product.limit = FALSE, iid = TRUE, se = TRUE, average.iid = TRUE)
+                    diag = TRUE, product.limit = FALSE, iid = TRUE, se = TRUE, average.iid = TRUE,
+                    store.iid = "minimal")
+
     GS <- predictCox(e.cox, newdata = d.pred, times = d.pred$time,
                      diag = TRUE, iid = TRUE, se = TRUE, average.iid = TRUE)
 
@@ -1054,9 +1056,10 @@ test_that("predictSurv (type=survival,diag)", {
     expect_equal(GS$survival.average.iid,test$survival.average.iid)
 
     testPL <- predict(e.CSC, type = "survival", newdata = d.pred, times = d.pred$time,
-                    diag = TRUE, product.limit = TRUE, iid = TRUE, se = TRUE, average.iid = TRUE)
+                      diag = TRUE, product.limit = TRUE, iid = TRUE, se = TRUE, average.iid = TRUE,
+                      store.iid = "minimal")
     GSPL <- predictCoxPL(e.cox, newdata = d.pred, times = d.pred$time,
-                     diag = TRUE, iid = TRUE, se = TRUE, average.iid = TRUE)
+                         diag = TRUE, iid = TRUE, se = TRUE, average.iid = TRUE)
 
     ratioSurv <- test$survival/testPL$survival
     testPL$survival.iid2 <- testPL$survival.iid
@@ -1149,10 +1152,12 @@ e.CSC <- CSC(Hist(time, event)~ X6, data = d, surv.type = "hazard")
 test_that("[predictCSC] for survival surv.type=\"survival\" (internal consistency)",{
 
     GS <- predict(e.CSC, type = "survival", times = tau,
-                  newdata = d, product.limit = FALSE, iid = TRUE, average.iid = TRUE)
+                  newdata = d, product.limit = FALSE, iid = TRUE, average.iid = TRUE,
+                  store.iid = "minimal")
 
     test <- predict(e.CSC, type = "survival", times = tau,
-                    newdata = d, product.limit = FALSE, iid = FALSE, average.iid = TRUE)
+                    newdata = d, product.limit = FALSE, iid = FALSE, average.iid = TRUE,
+                    store.iid = "minimal")
 
     factor <- TRUE
     attr(factor,"factor") <- list(matrix(5, nrow = NROW(d), ncol = 1),
@@ -1194,7 +1199,7 @@ if(FALSE){
                                   newdata = newdata[1,,drop=FALSE],
                                   times = vec.times,
                                   resample.iid = 1,
-                                  n.sim = nsim.band)
+                                  n.sim = n.sim)
     resTimereg$P1
 }
 predRR <- predict(e.CSC,
@@ -1202,7 +1207,7 @@ predRR <- predict(e.CSC,
                   times = vec.times-1e-5,
                   se = TRUE,
                   band = TRUE,
-                  nsim.band = nsim.band,
+                  n.sim = n.sim,
                   cause = 1)
 ## debuging
 

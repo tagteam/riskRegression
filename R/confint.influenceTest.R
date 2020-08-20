@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: jun  1 2018 (12:15) 
 ## Version: 
-## Last-Updated: sep 17 2018 (22:28) 
+## Last-Updated: aug 19 2020 (17:07) 
 ##           By: Brice Ozenne
-##     Update #: 31
+##     Update #: 35
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -25,7 +25,7 @@
 ##' @param level [numeric, 0-1] Level of confidence.
 ##' @param transform [character] the transformation used to improve coverage of the confidence intervals.
 ##' Can be \code{"none"} or \code{"atanh"}.
-##' @param nsim.band [integer, >0] the number of simulations used to compute the quantiles for the confidence bands.
+##' @param n.sim [integer, >0] the number of simulations used to compute the quantiles for the confidence bands.
 ##' @param seed [integer, >0] seed number set before performing simulations for the confidence bands.
 ##' If not given or NA no seed is set.
 ##' @param ... not used.
@@ -43,7 +43,7 @@
 confint.influenceTest <- function(object,
                                   parm = NULL,
                                   level = 0.95,
-                                  nsim.band = 1e4,
+                                  n.sim = 1e4,
                                   transform = "none",
                                   seed = NA,
                                   ...){
@@ -68,7 +68,7 @@ confint.influenceTest <- function(object,
                              iid = object$delta.iid,
                              null = 0,
                              conf.level = level,
-                             nsim.band = nsim.band,
+                             n.sim = n.sim,
                              seed = seed,
                              type = object$transform,
                              min.value = switch(object$transform,
@@ -79,6 +79,8 @@ confint.influenceTest <- function(object,
                                                 "atanh" = NULL),
                              ci = TRUE,
                              band = object$band,
+                             method.band = "maxT-simulation",
+                             alternative = "two.sided",
                              p.value = TRUE)
     
     names(outCIBP) <- paste0("delta.", names(outCIBP))

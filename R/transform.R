@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: maj 30 2018 (15:58) 
 ## Version: 
-## Last-Updated: aug 18 2020 (16:54) 
+## Last-Updated: aug 20 2020 (15:49) 
 ##           By: Brice Ozenne
-##     Update #: 358
+##     Update #: 394
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -72,7 +72,7 @@ transformSE <- function(estimate, se, type){
 ##' @param type [character] the transforamtion.
 ##' Can be \code{"log"}, \code{"loglog"}, \code{"cloglog"}, or \code{"atanh"} (Fisher transform).
 ##' 
-##' @details Use a delta method to find the standard error after transformation. \cr \cr
+##' @details Use a delta method to find the standard error after transformation.
 ##'
 ##' The iid decomposition must contain have dimension [n.obs,time,n.prediction] and estimate [n.prediction,time].
 ##'
@@ -185,6 +185,8 @@ transformCI <- function(estimate, se, quantile, type, min.value, max.value){
 ##' @param null [numeric] the value of the estimate (before transformation) under the null hypothesis.
 ##' @param type [character] the transforamtion.
 ##' Can be \code{"log"}, \code{"loglog"}, \code{"cloglog"}, or \code{"atanh"} (Fisher transform).
+##' @param alternative [character] a character string specifying the alternative hypothesis,
+##' must be one of \code{"two.sided"} (default), \code{"greater"} or \code{"less"}.
 ##' 
 ##' @details \code{se} and \code{estimate} must have same dimensions.
 ##' 
@@ -223,11 +225,12 @@ transformT <- function(estimate, se, null, type, alternative){
 ##' it will be set at \code{min}. 
 ##' @param max.value [numeric] if not \code{NULL} and the lower bound of the confidence interval is below \code{max},
 ##' it will be set at \code{max}.
-##' @param band [integer 0,1,2] When non-0 the confidence bands are computed for each contrasts (\code{band=1}) or over all contrasts (\code{band=2}). 
-##' @param method.band [character] method used to adjust for multiple comparisons. Can be \code{"null"} to perform no adjustment, or any element of \code{p.adjust.methods} (e.g. \code{"holm"}), \code{"maxT-integration"}, or \code{"maxT-simulation"}. 
+##' @param band [integer 0,1,2] When non-0, the confidence bands are computed for each contrasts (\code{band=1}) or over all contrasts (\code{band=2}). 
+##' @param method.band [character] method used to adjust for multiple comparisons.
+##' Can be any element of \code{p.adjust.methods} (e.g. \code{"holm"}), \code{"maxT-integration"}, or \code{"maxT-simulation"}. 
 ##' @param n.sim [integer, >0] the number of simulations used to compute the quantiles for the confidence bands.
 ##' @param seed [integer, >0] seed number set before performing simulations for the confidence bands.
-##' @param p.value [logical] should p-values be computed.
+##' @param p.value [logical] should p-values and adjusted p-values be computed. Only active if \code{ci=TRUE} or \code{band>0}.
 ##' 
 ##' @details The iid decomposition must have dimensions [n.obs,time,n.prediction]
 ##' while estimate and se must have dimensions [n.prediction,time].
@@ -241,6 +244,7 @@ transformCIBP <- function(estimate, se, iid, null,
                           band, method.band, n.sim, seed,
                           p.value){
 
+    p.adjust.methods <-  c("holm", "hochberg", "hommel", "bonferroni", "BH", "BY", "fdr", "none")
     out <- list()
     if(band %in% c(0,1,2) == FALSE){
         stop("Incorrect value for argument \'band\'. Should be 0, 1, or 2. \n")
@@ -252,7 +256,7 @@ transformCIBP <- function(estimate, se, iid, null,
     }
     n.contrast <- NROW(estimate)
     method.band <- match.arg(method.band, choices = c(setdiff(p.adjust.methods,"none"),"maxT-integration","maxT-simulation"))
-    if(all(abs(se)<1e-12)){
+    if(all((abs(se[!is.na(se)])<1e-12))){
         method.band <- "bonferroni"
     }
     if(!is.na(seed)){set.seed(seed)}
@@ -285,13 +289,13 @@ transformCIBP <- function(estimate, se, iid, null,
         n.time <- dim(iid)[2]
 
         ## times with 0 variance (to be removed in further calculaltion as they introduce singularities)
-        index.keep <- which(colSums(abs(se)>1e-12)>0)[1]:NCOL(se)
+        index.keep <- which(colSums(abs(se)>1e-12, na.rm = TRUE)>0)[1]:NCOL(se)
         iid.norm <- array(NA, dim = c(dim(iid)[1],length(index.keep), dim(iid)[3]))
         for(iC in 1:n.contrast){ ## iC <- 1
             if(length(index.keep)==1){
-                iid.norm[,index.keep,iC] <- iid[,index.keep,iC] * se[iC,index.keep]
+                iid.norm[,,iC] <- iid[,index.keep,iC] / se[iC,index.keep]
             }else{
-                iid.norm[,index.keep,iC] <- rowScale_cpp(iid[,index.keep,iC], scale = se[iC,index.keep])
+                iid.norm[,,iC] <- rowScale_cpp(iid[,index.keep,iC], scale = se[iC,index.keep])
             }
         }
         if(band==1){
@@ -354,11 +358,19 @@ transformCIBP <- function(estimate, se, iid, null,
             if(method.band == "maxT-integration"){
                 if(band == 1){
                     for(iC in 1:n.contrast){ ## iC <- 1
-                        resQ <- qmvnorm(p = conf.level, mean = rep(0, n.test),
-                                        cor = rho[[iC]], tail = switch(alternative,
-                                                                       "two.sided" = "both.tails",
-                                                                       "less" = "upper.tail", ## 'upper.tail' gives x with P[X > x] = p = P[x < X < Inf]
-                                                                       "greater" = "lower.tail"))$quantile
+                        if(n.test==1){
+                            resQ <- mvtnorm::qmvnorm(p = conf.level, mean = rep(0, n.test),
+                                                     sigma = rho[[iC]], tail = switch(alternative,
+                                                                                      "two.sided" = "both.tails",
+                                                                                      "less" = "upper.tail", ## 'upper.tail' gives x with P[X > x] = p = P[x < X < Inf]
+                                                                                      "greater" = "lower.tail"))$quantile
+                        }else{
+                            resQ <- mvtnorm::qmvnorm(p = conf.level, mean = rep(0, n.test),
+                                                     cor = rho[[iC]], tail = switch(alternative,
+                                                                                    "two.sided" = "both.tails",
+                                                                                    "less" = "upper.tail", ## 'upper.tail' gives x with P[X > x] = p = P[x < X < Inf]
+                                                                                    "greater" = "lower.tail"))$quantile
+                        }
                         if(alternative == "two.sided"){
                             quantileBand[iC,1] <- -resQ
                             quantileBand[iC,2] <- resQ
@@ -371,11 +383,11 @@ transformCIBP <- function(estimate, se, iid, null,
                         }
                     }
                 }else if(band == 2){
-                    resQ <- qmvnorm(p = conf.level, mean = rep(0, n.test),
-                                    cor = rho, tail = switch(alternative,
-                                                             "two.sided" = "both.tails",
-                                                             "less" = "upper.tail", ## 'upper.tail' gives x with P[X > x] = p = P[x < X < Inf]
-                                                             "greater" = "lower.tail"))$quantile
+                    resQ <- mvtnorm::qmvnorm(p = conf.level, mean = rep(0, n.test),
+                                             cor = rho, tail = switch(alternative,
+                                                                      "two.sided" = "both.tails",
+                                                                      "less" = "upper.tail", ## 'upper.tail' gives x with P[X > x] = p = P[x < X < Inf]
+                                                                      "greater" = "lower.tail"))$quantile
                     if(alternative == "two.sided"){
                         quantileBand[,1] <- -resQ
                         quantileBand[,2] <- resQ
@@ -394,9 +406,9 @@ transformCIBP <- function(estimate, se, iid, null,
                                               nSim = n.sim,
                                               iid = aperm(iid.norm, perm = c(2, 1, 3)),
                                               alternative = switch(alternative,
-                                                            "two.sided" = 3,
-                                                            "greater" = 2,
-                                                            "less" = 1),
+                                                                   "two.sided" = 3,
+                                                                   "greater" = 2,
+                                                                   "less" = 1),
                                               global = (band == 2),
                                               confLevel = conf.level)
                 if(alternative == "two.sided"){
@@ -432,10 +444,10 @@ transformCIBP <- function(estimate, se, iid, null,
                 if(band == 1){
                     out$adj.p.value <- matrix(NA, nrow = n.contrast, ncol = NCOL(estimate))
                     for(iC in 1:NROW(out[["p.value"]])){
-                        out[["adj.p.value"]][iC,] <- p.adjust(out[["p.value"]][iC,], method = method.band)
+                        out[["adj.p.value"]][iC,] <- stats::p.adjust(out[["p.value"]][iC,], method = method.band)
                     }
                 }else if(band == 2){
-                    out[["adj.p.value"]] <- p.adjust(out[["p.value"]], method = method.band)
+                    out[["adj.p.value"]] <- stats::p.adjust(out[["p.value"]], method = method.band)
                 }
             }else if(method.band == "maxT-integration"){
                 out$adj.p.value <- matrix(NA, nrow = n.contrast, ncol = NCOL(estimate))
@@ -444,13 +456,13 @@ transformCIBP <- function(estimate, se, iid, null,
                     for(iC in 1:n.contrast){ ## iC <- 1
                         out$adj.p.value[iC,] <- sapply(statistic[iC,], function(iT){
                             if(alternative=="two.sided"){
-                                return(1-pmvnorm(lower=-abs(iT), upper=abs(iT),
+                                return(1-mvtnorm::pmvnorm(lower=-abs(iT), upper=abs(iT),
                                                  mean=rep(0, n.test), corr = rho[[iC]]))
                             }else if(alternative=="greater"){
-                                return(pmvnorm(lower=iT, upper=Inf,
+                                return(mvtnorm::pmvnorm(lower=iT, upper=Inf,
                                                mean=rep(0, n.test), corr = rho[[iC]]))
                             }else if(alternative=="less"){
-                                return(pmvnorm(lower=-Inf, upper=iT,
+                                return(mvtnorm::pmvnorm(lower=-Inf, upper=iT,
                                                mean=rep(0, n.test), corr = rho[[iC]]))
                             }
                         })
@@ -458,13 +470,13 @@ transformCIBP <- function(estimate, se, iid, null,
                 }else if(band == 2){
                     out$adj.p.value[iC,] <- sapply(statistic, function(iT){
                         if(alternative=="two.sided"){
-                            return(1-pmvnorm(lower=-abs(iT), upper=abs(iT),
+                            return(1-mvtnorm::pmvnorm(lower=-abs(iT), upper=abs(iT),
                                              mean=rep(0, n.test), corr = rho))
                         }else if(alternative=="greater"){
-                            return(pmvnorm(lower=iT, upper=Inf,
+                            return(mvtnorm::pmvnorm(lower=iT, upper=Inf,
                                            mean=rep(0, n.test), corr = rho))
                         }else if(alternative=="less"){
-                            return(pmvnorm(lower=-Inf, upper=iT,
+                            return(mvtnorm::pmvnorm(lower=-Inf, upper=iT,
                                            mean=rep(0, n.test), corr = rho))
                         }
                     })
@@ -481,7 +493,7 @@ transformCIBP <- function(estimate, se, iid, null,
                         mean(sampleMaxProcess_cpp(nSample = n.sample,
                                                   nContrast = dim(iid.norm.tempo)[3],
                                                   nSim = n.sim,
-                                                  value = rep(iT,n.time),
+                                                  value = matrix(iT, nrow = n.time, ncol = dim(iid.norm.tempo)[3]),
                                                   iid =  iid.norm.tempo,
                                                   global = (band == 2),
                                                   type = 1,
@@ -510,7 +522,9 @@ transformCIBP <- function(estimate, se, iid, null,
         if(ci){
             out$lower[indexNA] <- NA
             out$upper[indexNA] <- NA
-            out$p.value[indexNA] <- NA
+            if(p.value){
+                out$p.value[indexNA] <- NA
+            }
         }
         if(band){ ## if cannot compute se at one time then remove confidence band at all times
             indexNA2 <- union(
@@ -522,7 +536,9 @@ transformCIBP <- function(estimate, se, iid, null,
             out$quantileBand[indexNA2] <- NA
             out$lowerBand[indexNA2,] <- NA
             out$upperBand[indexNA2,] <- NA
-            out$adj.p.value[indexNA2,] <- NA
+            if(p.value){
+                out$adj.p.value[indexNA2,] <- NA
+            }
         }
     }
 

@@ -1,3 +1,8 @@
+Version: 2020.06.20 (Brice - 06/20/20 3:30)
+- calculation of the influence function is now more memory efficient in ate (argument store.iid="minimal")
+- confint.ate now can display adjusted p-values (argument p.value=TRUE) and perform one- or two-sided tests (argument alternative).
+- autoplot has been improved for predictCox, predict.CauseSpecificCox, and ate objects.
+
 Version: 2018.06.13 (Brice - 06/13/18 3:30)
 - confint is now called by predictCox/predictCSC/ate by default.
   If the user wants to apply confint on the output of predictCox/predictCSC/ate,

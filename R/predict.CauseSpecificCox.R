@@ -49,8 +49,8 @@
 #'     available at the time origin.
 #' 
 #' The iid decomposition is output using an array containing the value of the influence
-#' of each subject used to fit the object (dim 3),
-#' for each subject in newdata (dim 1),
+#' of each subject used to fit the object (dim 1),
+#' for each subject in newdata (dim 3),
 #' and each time (dim 2).
 #' 
 #' @seealso
@@ -464,6 +464,7 @@ predict.CauseSpecificCox <- function(object,
         
     new.n <- NROW(newdata)
     n.times <- length(times)
+    n.times2 <- ifelse(diag>0,1,n.times)
     nCause <- length(object$cause)
     n.sample <- NROW(object$response)
 
@@ -482,11 +483,7 @@ predict.CauseSpecificCox <- function(object,
                 se = se, band = band, type = "survival", diag = diag)
     class(out) <- "predictCox"
 
-    if(diag){
-        out$survival <- matrix(1, nrow = new.n, ncol = 1)
-    }else{
-        out$survival <- matrix(1, nrow = new.n, ncol = n.times)
-    }
+    out$survival <- matrix(1, nrow = new.n, ncol = n.times2)
 
     ## ** compute survival
     if(product.limit){
@@ -494,16 +491,24 @@ predict.CauseSpecificCox <- function(object,
             
         for(iObs in 1:new.n){ ## iObs <- 1 ## iC <- 1
             iStrata <- strata[iObs,]+1
-            ihazard <- lapply(1:nCause, function(iC){ls.hazard[[iC]][,strata[iObs,iC]+1]*eXb[iObs,iC]})
-            out$survival[iObs,index.times>0] <- cumprod(1-rowSums(do.call(cbind,ihazard)))[index.times[index.times>0]]
-            if(any(times > etimeMax[iObs])){
-                out$survival[iObs,times > etimeMax[iObs]] <- NA
+            if(diag){
+                if(times[iObs]>etimeMax[iObs]){
+                    out$survival[iObs,1] <- NA
+                }else if(index.times[iObs]>0){
+                    ihazard <- lapply(1:nCause, function(iC){ls.hazard[[iC]][1:index.times[iObs],strata[iObs,iC]+1]*eXb[iObs,iC]})
+                    out$survival[iObs,1] <- prod(1-rowSums(do.call(cbind,ihazard)))
+                }
+            }else if(diag==0){
+                ihazard <- lapply(1:nCause, function(iC){ls.hazard[[iC]][,strata[iObs,iC]+1]*eXb[iObs,iC]})
+                out$survival[iObs,index.times>0] <- cumprod(1-rowSums(do.call(cbind,ihazard)))[index.times[index.times>0]]
+                if(any(times > etimeMax[iObs])){
+                    out$survival[iObs,times > etimeMax[iObs]] <- NA
+                }
             }
-                
         }
     }else{
-        iCumHazard <- matrix(0, nrow = new.n, ncol = n.times)
-        for(iC in 1:nCause){
+        iCumHazard <- matrix(0, nrow = new.n, ncol = n.times2)
+        for(iC in 1:nCause){ ## iC <- 1
             iCumHazard <- iCumHazard + predictCox(object$models[[iC]], 
                                                   newdata = newdata, times = times, diag = diag, 
                                                   type = "cumhazard")$cumhazard
@@ -528,8 +533,8 @@ predict.CauseSpecificCox <- function(object,
                                                 ncol = n.times, byrow = FALSE)
                 }
                 ## check dimensions
-                if(any(dim(factor[[iFactor]])!=c(new.n, diag + (1-diag)*n.times))){
-                    stop("Attribute \"factor\" of argument \'average.iid\' must be a list of matrices of size ",new.n,",",diag + (1-diag)*n.times," \n")
+                if(any(dim(factor[[iFactor]])!=c(new.n, n.times2))){
+                    stop("Attribute \"factor\" of argument \'average.iid\' must be a list of matrices of size ",new.n,",",n.times2," \n")
                 }
 
                 factor[[iFactor]] <- -factor[[iFactor]]*out$survival
@@ -542,13 +547,14 @@ predict.CauseSpecificCox <- function(object,
     if(iid || se || band || average.iid){
 
         if(iid || se || band){
-            iIid <- array(0, dim = c(n.sample, n.times, new.n))
+            iIid <- array(0, dim = c(n.sample, n.times2, new.n))
         }
         if(average.iid){
+            
             if(is.null(factor)){
-                iAverageIid <- matrix(0, nrow = n.sample, ncol = n.times)
+                iAverageIid <- matrix(0, nrow = n.sample, ncol = n.times2)
             }else{
-                iAverageIid <- lapply(1:n.factor, function(iF){matrix(0, nrow = n.sample, ncol = n.times)})
+                iAverageIid <- lapply(1:n.factor, function(iF){matrix(0, nrow = n.sample, ncol = n.times2)})
             }
         }
 

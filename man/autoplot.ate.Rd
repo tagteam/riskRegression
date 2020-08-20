@@ -7,9 +7,10 @@
 \method{autoplot}{ate}(
   object,
   estimator = object$estimator[1],
-  ci = FALSE,
-  band = FALSE,
+  ci = object$ci,
+  band = object$band,
   plot = TRUE,
+  smooth = FALSE,
   digits = 2,
   alpha = NA,
   ...
@@ -26,43 +27,48 @@
 
 \item{plot}{[logical] Should the graphic be plotted.}
 
+\item{smooth}{[logical] Should a smooth version of the risk function be plotted instead of a simple function?}
+
 \item{digits}{[integer, >0] Number of decimal places.}
 
 \item{alpha}{[numeric, 0-1] Transparency of the confidence bands. Argument passed to \code{ggplot2::geom_ribbon}.}
 
 \item{...}{not used. Only for compatibility with the plot method.}
 }
+\value{
+Invisible. A list containing:
+\itemize{
+\item plot: the ggplot object.
+\item data: the data used to create the plot.
+}
+}
 \description{
 Plot average risks.
 }
 \examples{
-\dontrun{
 library(survival)
 library(rms)
 library(ggplot2)
+
 #### simulate data ####
 n <- 1e2
 set.seed(10)
 dtS <- sampleData(n,outcome="survival")
-
+seqTimes <- c(0,sort(dtS$time[dtS$event==1]),max(dtS$time))
 
 #### Cox model ####
 fit <- cph(formula = Surv(time,event)~ X1+X2,data=dtS,y=TRUE,x=TRUE)
 
 #### Average treatment effect ####
-seqTimes <- sort(unique(fit$y[,1]))
-seqTimes5 <- seqTimes[seqTimes>5 & seqTimes<10]
-ateFit <- ate(fit, data = dtS, treatment = "X1", contrasts = NULL,
-              times = seqTimes, B = 0, band = TRUE, nsim.band = 500, y = TRUE,
-              mc.cores=1)
+ateFit <- ate(fit, data = dtS, treatment = "X1",
+              times = seqTimes[seqTimes>5], se = TRUE, band = TRUE)
 
 #### display #### 
 ggplot2::autoplot(ateFit)
+outGG <- ggplot2::autoplot(ateFit, alpha = 0.1)
 
-outGG <- autoplot(ateFit, band = TRUE, ci = TRUE, alpha = 0.1)
 dd <- as.data.frame(outGG$data[treatment == 0])
 outGG$plot + facet_wrap(~treatment, labeller = label_both)
-}
 }
 \seealso{
 \code{\link{ate}} to compute average risks.

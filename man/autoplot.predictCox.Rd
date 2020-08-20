@@ -7,14 +7,15 @@
 \method{autoplot}{predictCox}(
   object,
   type = NULL,
-  ci = FALSE,
-  band = FALSE,
-  group.by = "row",
-  reduce.data = FALSE,
+  ci = object$se,
+  band = object$band,
   plot = TRUE,
-  ylab = NULL,
+  smooth = FALSE,
   digits = 2,
   alpha = NA,
+  group.by = "row",
+  reduce.data = FALSE,
+  ylab = NULL,
   ...
 )
 }
@@ -31,19 +32,28 @@ or \code{"survival"} the survival function.}
 
 \item{band}{[logical] If \code{TRUE} display the confidence bands for the predictions.}
 
-\item{group.by}{[character] The grouping factor used to color the prediction curves. Can be \code{"row"}, \code{"strata"}, or \code{"covariates"}.}
-
-\item{reduce.data}{[logical] If \code{TRUE} only the covariates that does take indentical values for all observations are displayed.}
-
 \item{plot}{[logical] Should the graphic be plotted.}
 
-\item{ylab}{[character] Label for the y axis.}
+\item{smooth}{[logical] Should a smooth version of the risk function be plotted instead of a simple function?}
 
 \item{digits}{[integer] Number of decimal places.}
 
 \item{alpha}{[numeric, 0-1] Transparency of the confidence bands. Argument passed to \code{ggplot2::geom_ribbon}.}
 
+\item{group.by}{[character] The grouping factor used to color the prediction curves. Can be \code{"row"}, \code{"strata"}, or \code{"covariates"}.}
+
+\item{reduce.data}{[logical] If \code{TRUE} only the covariates that does take indentical values for all observations are displayed.}
+
+\item{ylab}{[character] Label for the y axis.}
+
 \item{...}{Not used. Only for compatibility with the plot method.}
+}
+\value{
+Invisible. A list containing:
+\itemize{
+\item plot: the ggplot object.
+\item data: the data used to create the plot.
+}
 }
 \description{
 Plot predictions from a Cox model.
@@ -55,6 +65,7 @@ library(ggplot2)
 #### simulate data ####
 set.seed(10)
 d <- sampleData(1e2, outcome = "survival")
+seqTau <- c(0,sort(unique(d$time[d$event==1])), max(d$time))
 
 #### Cox model ####
 m.cox <- coxph(Surv(time,event)~ X1 + X2 + X3,
@@ -63,23 +74,26 @@ m.cox <- coxph(Surv(time,event)~ X1 + X2 + X3,
 ## display baseline hazard
 e.basehaz <- predictCox(m.cox)
 autoplot(e.basehaz, type = "cumhazard")
+autoplot(e.basehaz, type = "cumhazard", smooth = TRUE)
 
 ## display baseline hazard with type of event 
 e.basehaz <- predictCox(m.cox, keep.newdata = TRUE)
 autoplot(e.basehaz, type = "cumhazard")
 
 ## display predicted survival
-pred.cox <- predictCox(m.cox, newdata = d[1:4,],
-  times = 1:5, type = "survival", keep.newdata = TRUE)
+pred.cox <- predictCox(m.cox, newdata = d[1:2,],
+  times = seqTau, type = "survival", keep.newdata = TRUE)
 autoplot(pred.cox)
 autoplot(pred.cox, group.by = "covariates")
 autoplot(pred.cox, group.by = "covariates", reduce.data = TRUE)
 
 ## predictions with confidence interval/bands
-pred.cox <- predictCox(m.cox, newdata = d[1,,drop=FALSE],
-  times = 1:5, type = "survival", band = TRUE, se = TRUE, keep.newdata = TRUE)
-autoplot(pred.cox, ci = TRUE, band = TRUE)
-autoplot(pred.cox, ci = TRUE, band = TRUE, alpha = 0.1)
+pred.cox <- predictCox(m.cox, newdata = d[1:2,,drop=FALSE],
+  times = seqTau, type = "survival", band = TRUE, se = TRUE, keep.newdata = TRUE)
+res <- autoplot(pred.cox, ci = TRUE, band = TRUE, plot = FALSE)
+res$plot + facet_wrap(~row)
+res2 <- autoplot(pred.cox, ci = TRUE, band = TRUE, alpha = 0.1, plot = FALSE)
+res2$plot + facet_wrap(~row)
 
 #### Stratified Cox model ####
 m.cox.strata <- coxph(Surv(time,event)~ strata(X1) + strata(X2) + X3 + X4,
@@ -92,7 +106,11 @@ res$plot + facet_wrap(~strata, labeller = label_both)
 
 ## predictions
 pred.cox.strata <- predictCox(m.cox.strata, newdata = d[1:5,,drop=FALSE],
-                              time = 1:5, keep.newdata = TRUE)
+                              time = seqTau, keep.newdata = TRUE, se = TRUE)
 
-autoplot(pred.cox.strata, type = "survival", group.by = "strata")
+res2 <- autoplot(pred.cox.strata, type = "survival", group.by = "strata", plot = FALSE)
+res2$plot + facet_wrap(~strata, labeller = label_both)
+}
+\seealso{
+\code{\link{predictCox}} to compute cumulative hazard and survival based on a Cox model.
 }

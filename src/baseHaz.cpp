@@ -146,9 +146,9 @@ List baseHaz_cpp(const NumericVector& starttimes,
     timeRes.insert( timeRes.end(), resH.time.begin(), resH.time.end() );
     hazardRes.insert( hazardRes.end(), resH.hazard.begin(), resH.hazard.end() );
     cumhazardRes.insert( cumhazardRes.end(), resH.cumhazard.begin(), resH.cumhazard.end() );
-    if(nStrata > 1){
+    // if(nStrata > 1){
       strataRes.resize( strataRes.size() + resH.n, iter_s);
-    }
+    // }
   }
   
   

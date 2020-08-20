@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: apr 28 2017 (14:19) 
 ## Version: 
-## last-updated: aug 14 2020 (11:47) 
+## last-updated: aug 20 2020 (16:22) 
 ##           By: Brice Ozenne
-##     Update #: 118
+##     Update #: 126
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -30,38 +30,40 @@
 #' @param estimator [character] The type of estimator relative to which the risks should be displayed. 
 #' @param ... not used. Only for compatibility with the plot method.
 #' 
+#' @return Invisible. A list containing:
+#' \itemize{
+#' \item plot: the ggplot object.
+#' \item data: the data used to create the plot.
+#' }
+#'
 #' @seealso
 #' \code{\link{ate}} to compute average risks.
 
 ## * autoplot.ate (examples)
 #' @examples
-#' \dontrun{
 #' library(survival)
 #' library(rms)
 #' library(ggplot2)
+#' 
 #' #### simulate data ####
 #' n <- 1e2
 #' set.seed(10)
 #' dtS <- sampleData(n,outcome="survival")
-#' 
+#' seqTimes <- c(0,sort(dtS$time[dtS$event==1]),max(dtS$time))
 #' 
 #' #### Cox model ####
 #' fit <- cph(formula = Surv(time,event)~ X1+X2,data=dtS,y=TRUE,x=TRUE)
 #'
 #' #### Average treatment effect ####
-#' seqTimes <- sort(unique(fit$y[,1]))
-#' seqTimes5 <- seqTimes[seqTimes>5 & seqTimes<10]
-#' ateFit <- ate(fit, data = dtS, treatment = "X1", contrasts = NULL,
-#'               times = seqTimes, B = 0, band = TRUE, nsim.band = 500, y = TRUE,
-#'               mc.cores=1)
+#' ateFit <- ate(fit, data = dtS, treatment = "X1",
+#'               times = seqTimes, se = TRUE, band = TRUE)
 #'
 #' #### display #### 
 #' ggplot2::autoplot(ateFit)
+#' outGG <- ggplot2::autoplot(ateFit, alpha = 0.1)
 #' 
-#' outGG <- autoplot(ateFit, band = TRUE, ci = TRUE, alpha = 0.1)
 #' dd <- as.data.frame(outGG$data[treatment == 0])
 #' outGG$plot + facet_wrap(~treatment, labeller = label_both)
-#' }
 
 ## * autoplot.ate (code)
 #' @rdname autoplot.ate
@@ -69,8 +71,8 @@
 #' @export
 autoplot.ate <- function(object,
                          estimator = object$estimator[1],
-                         ci = FALSE,
-                         band = FALSE,
+                         ci = object$ci,
+                         band = object$band,
                          plot = TRUE,
                          smooth = FALSE,
                          digits = 2,
@@ -88,6 +90,9 @@ autoplot.ate <- function(object,
         stop("argument \'band\' cannot be TRUE when the quantiles for the confidence bands have not been computed \n",
              "set arguments \'band\' and \'confint\' to TRUE when calling the ate function \n")
     }
+    if(any(rank(object$times) != 1:length(object$times))){
+        stop("Invalid object. The prediction times must be strictly increasing \n")
+    }
     
     dots <- list(...)
     if(length(dots)>0){
@@ -101,35 +106,20 @@ autoplot.ate <- function(object,
     dataL[,row := as.numeric(as.factor(.SD$treatment))]
     dataL[,c("origin") := FALSE]
     data.table::setnames(dataL, old = paste0("meanRisk.",estimator), new = "meanRisk")
-    if(min(dataL$time)>1e-12){
-        first.dt <- data.table::data.table(time = c(0,min(dataL$time)-1e-12), meanRisk = 0, origin = TRUE)
-    }else{
-        first.dt <- NULL
-    }
     
     if(ci){
         data.table::setnames(dataL,
                              old = c(paste0("meanRisk.",estimator,".lower"),paste0("meanRisk.",estimator,".upper")),
                              new = c("lowerCI","upperCI"))
-        if(!is.null(first.dt)){
-            first.dt[, c("lowerCI","upperCI") := 0]
-        }
     }
     if(band){
         data.table::setnames(dataL,
                              old = c(paste0("meanRisk.",estimator,".lowerBand"),paste0("meanRisk.",estimator,".upperBand")),
                              new = c("lowerBand","upperBand"))
-        if(!is.null(first.dt)){
-            first.dt[, c("lowerBand","upperBand") := 0]
-        }
     }
-    if(!is.null(first.dt)){
-        dataL <- dataL[, .SD, .SDcol = c(names(first.dt),c("row","treatment"))]
-        dataL <- dataL[, rbind(first.dt,.SD), by = c("row","treatment")]
-    }else{
-        dataL <- dataL[, .SD, .SDcol = c("time","meanRisk","row","treatment", if(ci){c("lowerCI","upperCI")}, if(band){c("lowerBand","upperBand")})]
-        dataL[,c("origin") := TRUE]
-    }
+    dataL <- dataL[, .SD, .SDcol = c("time","meanRisk","row","treatment", if(ci){c("lowerCI","upperCI")}, if(band){c("lowerBand","upperBand")})]
+    dataL[,c("origin") := TRUE]
+
     gg.res <- predict2plot(dataL = dataL,
                            name.outcome = "meanRisk", # must not contain space to avoid error in ggplot2
                            ci = ci, band = band,

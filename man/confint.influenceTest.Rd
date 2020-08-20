@@ -8,7 +8,7 @@
   object,
   parm = NULL,
   level = 0.95,
-  nsim.band = 10000,
+  n.sim = 10000,
   transform = "none",
   seed = NA,
   ...
@@ -21,7 +21,7 @@
 
 \item{level}{[numeric, 0-1] Level of confidence.}
 
-\item{nsim.band}{[integer, >0] the number of simulations used to compute the quantiles for the confidence bands.}
+\item{n.sim}{[integer, >0] the number of simulations used to compute the quantiles for the confidence bands.}
 
 \item{transform}{[character] the transformation used to improve coverage of the confidence intervals.
 Can be \code{"none"} or \code{"atanh"}.}

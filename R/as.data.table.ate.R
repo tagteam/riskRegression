@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Mar  3 2017 (09:28) 
 ## Version: 
-## Last-Updated: aug 18 2020 (10:53) 
+## Last-Updated: aug 20 2020 (16:21) 
 ##           By: Brice Ozenne
-##     Update #: 138
+##     Update #: 143
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -22,7 +22,11 @@
 #' 
 #' @param x object obtained with function \code{ate}
 #' @param keep.rownames Not used.
-#' @param se [logical] Should standard errors/quantile for confidence bands be displayed?
+#' @param se [logical] Should the standard errors be output?
+#' @param ci [logical] Should the confidence intervals be output?
+#' @param band [logical] Should the confidence bands be output?
+#' @param quantileBand [logical] Should the quantiles for confidence bands be output?
+#' @param p.value [logical] Should the p-values/adjusted p-values be output?
 #' @param estimator [character] The type of estimator relative to which the estimates should be output. 
 #' @param ... Not used.
 #'
@@ -43,7 +47,7 @@ as.data.table.ate <- function(x, estimator = x$estimator,
     allContrasts <- x$allContrasts
     contrasts <- attr(allContrasts,"contrasts")
     
-    meanRisk <- data.table:::copy(x$meanRisk)
+    meanRisk <- data.table::copy(x$meanRisk)
     
     ## ** which columns to keep    
     keep.col <- NULL

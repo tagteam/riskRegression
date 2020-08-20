@@ -6,13 +6,14 @@
 \usage{
 \method{autoplot}{predictCSC}(
   object,
-  ci = FALSE,
-  band = FALSE,
-  group.by = "row",
-  reduce.data = FALSE,
+  ci = object$se,
+  band = object$band,
   plot = TRUE,
+  smooth = FALSE,
   digits = 2,
   alpha = NA,
+  group.by = "row",
+  reduce.data = FALSE,
   ...
 )
 }
@@ -23,17 +24,26 @@
 
 \item{band}{[logical] If \code{TRUE} display the confidence bands for the predictions.}
 
-\item{group.by}{[character] The grouping factor used to color the prediction curves. Can be \code{"row"}, \code{"strata"}, or \code{"covariates"}.}
-
-\item{reduce.data}{[logical] If \code{TRUE} only the covariates that does take indentical values for all observations are displayed.}
-
 \item{plot}{[logical] Should the graphic be plotted.}
+
+\item{smooth}{[logical] Should a smooth version of the risk function be plotted instead of a simple function?}
 
 \item{digits}{[integer] Number of decimal places.}
 
 \item{alpha}{[numeric, 0-1] Transparency of the confidence bands. Argument passed to \code{ggplot2::geom_ribbon}.}
 
+\item{group.by}{[character] The grouping factor used to color the prediction curves. Can be \code{"row"}, \code{"strata"}, or \code{"covariates"}.}
+
+\item{reduce.data}{[logical] If \code{TRUE} only the covariates that does take indentical values for all observations are displayed.}
+
 \item{...}{Not used. Only for compatibility with the plot method.}
+}
+\value{
+Invisible. A list containing:
+\itemize{
+\item plot: the ggplot object.
+\item data: the data used to create the plot.
+}
 }
 \description{
 Plot predictions from a Cause-specific Cox proportional hazard regression.
@@ -43,21 +53,25 @@ library(survival)
 library(rms)
 library(ggplot2)
 library(prodlim)
+
 #### simulate data ####
 set.seed(10)
 d <- sampleData(1e2, outcome = "competing.risks")
+seqTau <- c(0,unique(sort(d[d$event==1,time])), max(d$time))
 
 #### CSC model ####
 m.CSC <- CSC(Hist(time,event)~ X1 + X2 + X6, data = d)
 
-pred.CSC <- predict(m.CSC, newdata = d[1:2,], time = 1:5, cause = 1)#'
-autoplot(pred.CSC)
-
+pred.CSC <- predict(m.CSC, newdata = d[1:2,], time = seqTau, cause = 1, band = TRUE)
+autoplot(pred.CSC, alpha = 0.2)
 
 #### stratified CSC model ####
 m.SCSC <- CSC(Hist(time,event)~ strata(X1) + strata(X2) + X6,
               data = d)
-pred.SCSC <- predict(m.SCSC, time = 1:3, newdata = d[1:4,],
+pred.SCSC <- predict(m.SCSC, time = seqTau, newdata = d[1:4,],
                      cause = 1, keep.newdata = TRUE, keep.strata = TRUE)
 autoplot(pred.SCSC, group.by = "strata")
+}
+\seealso{
+\code{\link{predict.CauseSpecificCox}} to compute risks based on a CSC model.
 }

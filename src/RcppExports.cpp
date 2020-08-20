@@ -224,33 +224,37 @@ BEGIN_RCPP
 END_RCPP
 }
 // quantileProcess_cpp
-NumericVector quantileProcess_cpp(int nObject, int nNew, int nSim, arma::cube iid, arma::mat se, double confLevel);
-RcppExport SEXP _riskRegression_quantileProcess_cpp(SEXP nObjectSEXP, SEXP nNewSEXP, SEXP nSimSEXP, SEXP iidSEXP, SEXP seSEXP, SEXP confLevelSEXP) {
+NumericVector quantileProcess_cpp(int nSample, int nContrast, int nSim, arma::cube iid, int alternative, bool global, double confLevel);
+RcppExport SEXP _riskRegression_quantileProcess_cpp(SEXP nSampleSEXP, SEXP nContrastSEXP, SEXP nSimSEXP, SEXP iidSEXP, SEXP alternativeSEXP, SEXP globalSEXP, SEXP confLevelSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< int >::type nObject(nObjectSEXP);
-    Rcpp::traits::input_parameter< int >::type nNew(nNewSEXP);
+    Rcpp::traits::input_parameter< int >::type nSample(nSampleSEXP);
+    Rcpp::traits::input_parameter< int >::type nContrast(nContrastSEXP);
     Rcpp::traits::input_parameter< int >::type nSim(nSimSEXP);
     Rcpp::traits::input_parameter< arma::cube >::type iid(iidSEXP);
-    Rcpp::traits::input_parameter< arma::mat >::type se(seSEXP);
+    Rcpp::traits::input_parameter< int >::type alternative(alternativeSEXP);
+    Rcpp::traits::input_parameter< bool >::type global(globalSEXP);
     Rcpp::traits::input_parameter< double >::type confLevel(confLevelSEXP);
-    rcpp_result_gen = Rcpp::wrap(quantileProcess_cpp(nObject, nNew, nSim, iid, se, confLevel));
+    rcpp_result_gen = Rcpp::wrap(quantileProcess_cpp(nSample, nContrast, nSim, iid, alternative, global, confLevel));
     return rcpp_result_gen;
 END_RCPP
 }
 // sampleMaxProcess_cpp
-arma::mat sampleMaxProcess_cpp(int nObject, int nNew, int nSim, const arma::cube& iid, const arma::mat& se);
-RcppExport SEXP _riskRegression_sampleMaxProcess_cpp(SEXP nObjectSEXP, SEXP nNewSEXP, SEXP nSimSEXP, SEXP iidSEXP, SEXP seSEXP) {
+arma::mat sampleMaxProcess_cpp(int nSample, int nContrast, int nSim, const arma::mat& value, const arma::cube& iid, int alternative, int type, bool global);
+RcppExport SEXP _riskRegression_sampleMaxProcess_cpp(SEXP nSampleSEXP, SEXP nContrastSEXP, SEXP nSimSEXP, SEXP valueSEXP, SEXP iidSEXP, SEXP alternativeSEXP, SEXP typeSEXP, SEXP globalSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< int >::type nObject(nObjectSEXP);
-    Rcpp::traits::input_parameter< int >::type nNew(nNewSEXP);
+    Rcpp::traits::input_parameter< int >::type nSample(nSampleSEXP);
+    Rcpp::traits::input_parameter< int >::type nContrast(nContrastSEXP);
     Rcpp::traits::input_parameter< int >::type nSim(nSimSEXP);
+    Rcpp::traits::input_parameter< const arma::mat& >::type value(valueSEXP);
     Rcpp::traits::input_parameter< const arma::cube& >::type iid(iidSEXP);
-    Rcpp::traits::input_parameter< const arma::mat& >::type se(seSEXP);
-    rcpp_result_gen = Rcpp::wrap(sampleMaxProcess_cpp(nObject, nNew, nSim, iid, se));
+    Rcpp::traits::input_parameter< int >::type alternative(alternativeSEXP);
+    Rcpp::traits::input_parameter< int >::type type(typeSEXP);
+    Rcpp::traits::input_parameter< bool >::type global(globalSEXP);
+    rcpp_result_gen = Rcpp::wrap(sampleMaxProcess_cpp(nSample, nContrast, nSim, value, iid, alternative, type, global));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -506,8 +510,8 @@ static const R_CallMethodDef CallEntries[] = {
     {"_riskRegression_colCumSum", (DL_FUNC) &_riskRegression_colCumSum, 1},
     {"_riskRegression_colCumProd", (DL_FUNC) &_riskRegression_colCumProd, 1},
     {"_riskRegression_colSumsCrossprod", (DL_FUNC) &_riskRegression_colSumsCrossprod, 3},
-    {"_riskRegression_quantileProcess_cpp", (DL_FUNC) &_riskRegression_quantileProcess_cpp, 6},
-    {"_riskRegression_sampleMaxProcess_cpp", (DL_FUNC) &_riskRegression_sampleMaxProcess_cpp, 5},
+    {"_riskRegression_quantileProcess_cpp", (DL_FUNC) &_riskRegression_quantileProcess_cpp, 7},
+    {"_riskRegression_sampleMaxProcess_cpp", (DL_FUNC) &_riskRegression_sampleMaxProcess_cpp, 8},
     {"_riskRegression_calcE_cpp", (DL_FUNC) &_riskRegression_calcE_cpp, 6},
     {"_riskRegression_IFbeta_cpp", (DL_FUNC) &_riskRegression_IFbeta_cpp, 10},
     {"_riskRegression_IFlambda0_cpp", (DL_FUNC) &_riskRegression_IFlambda0_cpp, 15},
