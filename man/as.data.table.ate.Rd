@@ -27,7 +27,9 @@
 
 \item{band}{[logical] Should the confidence bands be output?}
 
-\item{quantileBand}{[logical] Should the p-values/adjusted p-values be output?}
+\item{quantileBand}{[logical] Should the quantiles for confidence bands be output?}
+
+\item{p.value}{[logical] Should the p-values/adjusted p-values be output?}
 
 \item{keep.rownames}{Not used.}
 

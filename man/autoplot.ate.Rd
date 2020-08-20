@@ -61,7 +61,7 @@ fit <- cph(formula = Surv(time,event)~ X1+X2,data=dtS,y=TRUE,x=TRUE)
 
 #### Average treatment effect ####
 ateFit <- ate(fit, data = dtS, treatment = "X1",
-              times = seqTimes[seqTimes>5], se = TRUE, band = TRUE)
+              times = seqTimes, se = TRUE, band = TRUE)
 
 #### display #### 
 ggplot2::autoplot(ateFit)
