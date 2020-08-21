@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: maj 23 2018 (14:08) 
 ## Version: 
-## Last-Updated: aug 20 2020 (14:25) 
+## Last-Updated: aug 21 2020 (10:48) 
 ##           By: Brice Ozenne
-##     Update #: 756
+##     Update #: 762
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -395,9 +395,10 @@ confintIID.ate <- function(object,
         ## ** meanRisk
         ## cat("meanRisk \n")
         ## initialize
+        object$meanRisk[,c(paste0("meanRisk.",iEstimator,".se")) := as.numeric(NA)]
         if(ci){
-            name.se <- paste0("meanRisk.",iEstimator,c(".se",".lower",".upper"))
-            object$meanRisk[,c(name.se) := as.list(rep(as.numeric(NA),length(name.se)))]
+            name.ci <- paste0("meanRisk.",iEstimator,c(".lower",".upper"))
+            object$meanRisk[,c(name.ci) := as.list(rep(as.numeric(NA),length(name.ci)))]
         }
         if((band>0) && (method.band %in% c("bonferroni","maxT-integration","maxT-simulation"))){
             name.band <- paste0("meanRisk.",iEstimator,c(".quantileBand",".lowerBand",".upperBand"))
@@ -440,9 +441,10 @@ confintIID.ate <- function(object,
 
         ## store
         for(iC in 1:n.contrasts){ ## iT <- 1
+            object$meanRisk[object$meanRisk[[1]] == contrasts[iC], c(paste0("meanRisk.",iEstimator,".se")) := se.mR[iC,]]
             if(ci){
                 object$meanRisk[object$meanRisk[[1]] == contrasts[iC],
-                                c(name.se) := list(se.mR[iC,],CIBP.mR$lower[iC,],CIBP.mR$upper[iC,])]
+                                c(name.ci) := list(CIBP.mR$lower[iC,],CIBP.mR$upper[iC,])]
             }
             if((band>0) && (method.band %in% c("bonferroni","maxT-integration","maxT-simulation"))){
                 object$meanRisk[object$meanRisk[[1]] == contrasts[iC],
@@ -453,9 +455,10 @@ confintIID.ate <- function(object,
         ## ** diffRisk: se, CI/CB
         ## cat("diffRisk \n")
         ## initialize
+        object$riskComparison[,c(paste0("diff.",iEstimator,".se")) := as.numeric(NA)]
         if(ci){
-            name.se <- paste0("diff.",iEstimator,c(".se",".lower",".upper",if(p.value){".p.value"}))
-            object$riskComparison[,c(name.se) := as.list(rep(as.numeric(NA),length(name.se)))]
+            name.ci <- paste0("diff.",iEstimator,c(".lower",".upper",if(p.value){".p.value"}))
+            object$riskComparison[,c(name.ci) := as.list(rep(as.numeric(NA),length(name.ci)))]
         }
         if(band>0){
             name.band <- NULL
@@ -501,13 +504,16 @@ confintIID.ate <- function(object,
         
         ## store
         for(iC in 1:n.allContrasts){ ## iC <- 1
+            object$riskComparison[(object$riskComparison[[1]] == allContrasts[1,iC]) & (object$riskComparison[[2]] == allContrasts[2,iC]),
+                                  c(paste0("diff.",iEstimator,".se")) := se.dR[iC,]]
+
             if(ci){
                 ## if(lower %in% names(CIBP.dR))
                 object$riskComparison[(object$riskComparison[[1]] == allContrasts[1,iC]) & (object$riskComparison[[2]] == allContrasts[2,iC]),
-                                      c(name.se[1:3]) := list(se.dR[iC,],CIBP.dR$lower[iC,],CIBP.dR$upper[iC,])]
+                                      c(name.ci[1:2]) := list(CIBP.dR$lower[iC,],CIBP.dR$upper[iC,])]
                 if(p.value){
                     object$riskComparison[(object$riskComparison[[1]] == allContrasts[1,iC]) & (object$riskComparison[[2]] == allContrasts[2,iC]),
-                                          c(utils::tail(name.se,1)) := list(CIBP.dR$p.value[iC,])]
+                                          c(utils::tail(name.ci,1)) := list(CIBP.dR$p.value[iC,])]
                 }
             }
             if(band>0){
@@ -525,9 +531,10 @@ confintIID.ate <- function(object,
         ## ** ratioRisk: se, CI/CB
         ## cat("ratioRisk \n")
         ## initialize
+        object$riskComparison[,c(paste0("ratio.",iEstimator,".se")) := as.numeric(NA)]
         if(ci){
-            name.se <- paste0("ratio.",iEstimator,c(".se",".lower",".upper",if(p.value){".p.value"}))
-            object$riskComparison[,c(name.se) := as.list(rep(as.numeric(NA),length(name.se)))]
+            name.ci <- paste0("ratio.",iEstimator,c(".lower",".upper",if(p.value){".p.value"}))
+            object$riskComparison[,c(name.ci) := as.list(rep(as.numeric(NA),length(name.ci)))]
         }
         if(band>0){
             name.band <- NULL
@@ -580,12 +587,15 @@ confintIID.ate <- function(object,
 
         ## store
         for(iC in 1:n.allContrasts){ ## iT <- 1
+            object$riskComparison[(object$riskComparison[[1]] == allContrasts[1,iC]) & (object$riskComparison[[2]] == allContrasts[2,iC]),
+                                  c(paste0("ratio.",iEstimator,".se")) := se.rR[iC,]]
+
             if(ci){
                 object$riskComparison[(object$riskComparison[[1]] == allContrasts[1,iC]) & (object$riskComparison[[2]] == allContrasts[2,iC]),
-                                      c(name.se[1:3]) := list(se.rR[iC,],CIBP.rR$lower[iC,],CIBP.rR$upper[iC,])]
+                                      c(name.ci[1:2]) := list(CIBP.rR$lower[iC,],CIBP.rR$upper[iC,])]
                 if(p.value){
                     object$riskComparison[(object$riskComparison[[1]] == allContrasts[1,iC]) & (object$riskComparison[[2]] == allContrasts[2,iC]),
-                                          c(utils::tail(name.se,1)) := list(CIBP.rR$p.value[iC,])]
+                                          c(utils::tail(name.ci,1)) := list(CIBP.rR$p.value[iC,])]
                 }
             }
             if(band>0){

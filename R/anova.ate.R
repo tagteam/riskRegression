@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: aug 19 2020 (09:18) 
 ## Version: 
-## Last-Updated: aug 20 2020 (14:22) 
+## Last-Updated: aug 21 2020 (15:14) 
 ##           By: Brice Ozenne
-##     Update #: 61
+##     Update #: 62
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -221,8 +221,8 @@ anova.ate <- function(object,
     if(print){
         txt.alternative <- switch(alternative,
                                   "two.sided" = "unequal mean risk between treatment groups",
-                                  "greater" = "greater mean risk between treatment groups",
-                                  "less" = "lower mean risk between treatment groups")
+                                  "greater" = "greater mean risk with treatment B compared to treatment A",
+                                  "less" = "lower mean risk with treatment B compared to treatment A")
         txt.test <- switch(test,
                            "KS" = "maximum",
                            "CvM" = "sum of squares",

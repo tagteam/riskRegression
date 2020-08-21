@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: feb 17 2017 (10:06) 
 ## Version: 
-## last-updated: aug 20 2020 (14:22) 
+## last-updated: aug 21 2020 (15:08) 
 ##           By: Brice Ozenne
-##     Update #: 820
+##     Update #: 823
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -474,15 +474,14 @@ predict2plot <- function(dataL, name.outcome,
         if(smooth == FALSE){
             levels.group.by <- levels(dataL[[group.by]])
             n.levels.group.by <- length(levels.group.by)
-
             gg.base <- gg.base + ggplot2::scale_color_manual("", breaks = c(c("ci","band")[indexTempo],levels.group.by),
-                                                    labels = c(c(labelCI,labelBand)[indexTempo],paste0("observation ",levels.group.by)),
-                                                    values = c(c("grey","black")[indexTempo],
-                                                               grDevices::hcl(h = seq(15, 375, length = n.levels.group.by + 1), l = 65, c = 100)[1:n.levels.group.by]))
+                                                             labels = c(c(labelCI,labelBand)[indexTempo],paste0(group.by," ",levels.group.by)),
+                                                             values = c(c("grey","black")[indexTempo],
+                                                                        grDevices::hcl(h = seq(15, 375, length = n.levels.group.by + 1), l = 65, c = 100)[1:n.levels.group.by]))
         }else{
             gg.base <- gg.base + ggplot2::scale_linetype_manual("", breaks = c("ci","band")[indexTempo],
-                                                       labels = c(labelCI,labelBand)[indexTempo],
-                                                       values = c("dotdash","longdash")[indexTempo])
+                                                                labels = c(labelCI,labelBand)[indexTempo],
+                                                                values = c("dotdash","longdash")[indexTempo])
         }
     }else if(ci[[1]] && band[[1]]){
         gg.base <- gg.base + ggplot2::guides(linetype = ggplot2::guide_legend(order = 1),

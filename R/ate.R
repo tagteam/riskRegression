@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Oct 23 2016 (08:53) 
 ## Version: 
-## last-updated: aug 20 2020 (14:18) 
+## last-updated: aug 21 2020 (15:05) 
 ##           By: Brice Ozenne
-##     Update #: 1736
+##     Update #: 1738
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -657,7 +657,13 @@ ate <- function(event,
     class(out) <- c("ate")
     if(se || band){
         if (verbose>1/2){ ## display
-            cat(" - Confidence intervals / bands / p-values: ")
+            if(se && band){
+                cat(" - Confidence intervals / bands: ")
+            }else if(se){
+                cat(" - Confidence intervals: ")
+            }else if(band){
+                cat(" - Confidence bands: ")
+            }
         }
         ## FIXME: odd to have confint read and return everything 
         out <- stats::confint(out)

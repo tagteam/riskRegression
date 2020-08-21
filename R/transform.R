@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: maj 30 2018 (15:58) 
 ## Version: 
-## Last-Updated: aug 20 2020 (15:49) 
+## Last-Updated: aug 21 2020 (14:32) 
 ##           By: Brice Ozenne
-##     Update #: 394
+##     Update #: 437
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -290,18 +290,26 @@ transformCIBP <- function(estimate, se, iid, null,
 
         ## times with 0 variance (to be removed in further calculaltion as they introduce singularities)
         index.keep <- which(colSums(abs(se)>1e-12, na.rm = TRUE)>0)[1]:NCOL(se)
-        iid.norm <- array(NA, dim = c(dim(iid)[1],length(index.keep), dim(iid)[3]))
+        iid.norm <- array(NA, dim = c(length(index.keep), dim(iid)[1], dim(iid)[3]))
         for(iC in 1:n.contrast){ ## iC <- 1
             if(length(index.keep)==1){
-                iid.norm[,,iC] <- iid[,index.keep,iC] / se[iC,index.keep]
+                iid.norm[,,iC] <- t(iid[,index.keep,iC] / se[iC,index.keep])
             }else{
-                iid.norm[,,iC] <- rowScale_cpp(iid[,index.keep,iC], scale = se[iC,index.keep])
+                iid.norm[,,iC] <- t(rowScale_cpp(iid[,index.keep,iC], scale = se[iC,index.keep]))
             }
         }
         if(band==1){
-            rho <- lapply(1:n.contrast, function(iC){crossprod(iid.norm[,,iC])})
+            if(n.time==1){
+                rho <- lapply(diag(crossprod(iid.norm[1,,])),as.matrix)
+            }else{
+                rho <- lapply(1:n.contrast, function(iC){tcrossprod(iid.norm[,,iC])})
+            }
         }else if(band == 2){
-            rho <- crossprod(do.call(cbind,lapply(1:n.contrast, function(iC){iid.norm[,,iC]})))
+            if(n.time==1){
+                rho <- crossprod(iid.norm[1,,])
+            }else{
+                rho <- tcrossprod(do.call(rbind,lapply(1:n.contrast, function(iC){iid.norm[,,iC]})))
+            }
         }
     }
 
@@ -329,9 +337,9 @@ transformCIBP <- function(estimate, se, iid, null,
             if(alternative == "two.sided"){
                 out[["p.value"]] <- 2*(1-pnorm(abs(statistic)))
             }else if(alternative == "less"){
-                out[["p.value"]] <-- pnorm(statistic)
+                out[["p.value"]] <- pnorm(statistic)
             }else if(alternative == "greater"){
-                out[["p.value"]] <- -pnorm(statistic)
+                out[["p.value"]] <- 1-pnorm(statistic)
             }
         }
     }
@@ -358,19 +366,11 @@ transformCIBP <- function(estimate, se, iid, null,
             if(method.band == "maxT-integration"){
                 if(band == 1){
                     for(iC in 1:n.contrast){ ## iC <- 1
-                        if(n.test==1){
-                            resQ <- mvtnorm::qmvnorm(p = conf.level, mean = rep(0, n.test),
-                                                     sigma = rho[[iC]], tail = switch(alternative,
-                                                                                      "two.sided" = "both.tails",
-                                                                                      "less" = "upper.tail", ## 'upper.tail' gives x with P[X > x] = p = P[x < X < Inf]
-                                                                                      "greater" = "lower.tail"))$quantile
-                        }else{
-                            resQ <- mvtnorm::qmvnorm(p = conf.level, mean = rep(0, n.test),
-                                                     cor = rho[[iC]], tail = switch(alternative,
-                                                                                    "two.sided" = "both.tails",
-                                                                                    "less" = "upper.tail", ## 'upper.tail' gives x with P[X > x] = p = P[x < X < Inf]
-                                                                                    "greater" = "lower.tail"))$quantile
-                        }
+                        resQ <- mvtnorm::qmvnorm(p = conf.level, mean = rep(0, n.test),
+                                                 sigma = rho[[iC]], tail = switch(alternative,
+                                                                                  "two.sided" = "both.tails",
+                                                                                  "less" = "upper.tail", ## 'upper.tail' gives x with P[X > x] = p = P[x < X < Inf]
+                                                                                  "greater" = "lower.tail"))$quantile
                         if(alternative == "two.sided"){
                             quantileBand[iC,1] <- -resQ
                             quantileBand[iC,2] <- resQ
@@ -404,13 +404,14 @@ transformCIBP <- function(estimate, se, iid, null,
                 resCpp <- quantileProcess_cpp(nSample = n.sample,
                                               nContrast = n.contrast,
                                               nSim = n.sim,
-                                              iid = aperm(iid.norm, perm = c(2, 1, 3)),
+                                              iid = iid.norm,
                                               alternative = switch(alternative,
                                                                    "two.sided" = 3,
                                                                    "greater" = 2,
                                                                    "less" = 1),
                                               global = (band == 2),
                                               confLevel = conf.level)
+
                 if(alternative == "two.sided"){
                     quantileBand[,1] <- -resCpp
                     quantileBand[,2] <- resCpp
@@ -453,57 +454,49 @@ transformCIBP <- function(estimate, se, iid, null,
                 out$adj.p.value <- matrix(NA, nrow = n.contrast, ncol = NCOL(estimate))
 
                 if(band == 1){
-                    for(iC in 1:n.contrast){ ## iC <- 1
+                    for(iC in 1:n.contrast){ ## iC <- 2
                         out$adj.p.value[iC,] <- sapply(statistic[iC,], function(iT){
                             if(alternative=="two.sided"){
-                                return(1-mvtnorm::pmvnorm(lower=-abs(iT), upper=abs(iT),
-                                                 mean=rep(0, n.test), corr = rho[[iC]]))
+                                return(1-mvtnorm::pmvnorm(lower=rep(-abs(iT),n.test), upper=rep(abs(iT),n.test),
+                                                          mean=rep(0, n.test), sigma = rho[[iC]]))
                             }else if(alternative=="greater"){
-                                return(mvtnorm::pmvnorm(lower=iT, upper=Inf,
-                                               mean=rep(0, n.test), corr = rho[[iC]]))
+                                return(1-mvtnorm::pmvnorm(lower=rep(-Inf,n.test), upper=rep(iT,n.test),
+                                                          mean=rep(0, n.test), sigma = rho[[iC]]))
                             }else if(alternative=="less"){
-                                return(mvtnorm::pmvnorm(lower=-Inf, upper=iT,
-                                               mean=rep(0, n.test), corr = rho[[iC]]))
+                                return(1-mvtnorm::pmvnorm(lower=rep(iT,n.test), upper=rep(Inf,n.test),
+                                                          mean=rep(0, n.test), sigma = rho[[iC]]))
                             }
                         })
                     }
                 }else if(band == 2){
-                    out$adj.p.value[iC,] <- sapply(statistic, function(iT){
-                        if(alternative=="two.sided"){
-                            return(1-mvtnorm::pmvnorm(lower=-abs(iT), upper=abs(iT),
-                                             mean=rep(0, n.test), corr = rho))
-                        }else if(alternative=="greater"){
-                            return(mvtnorm::pmvnorm(lower=iT, upper=Inf,
-                                           mean=rep(0, n.test), corr = rho))
-                        }else if(alternative=="less"){
-                            return(mvtnorm::pmvnorm(lower=-Inf, upper=iT,
-                                           mean=rep(0, n.test), corr = rho))
-                        }
-                    })
+                    for(iC in 1:n.contrast){ ## iC <- 2
+                        out$adj.p.value[iC,] <- sapply(statistic[iC,], function(iT){
+                            if(alternative=="two.sided"){
+                                return(1-mvtnorm::pmvnorm(lower=rep(-abs(iT),n.test), upper=rep(abs(iT),n.test),
+                                                          mean=rep(0, n.test), sigma = rho))
+                            }else if(alternative=="greater"){
+                                return(1-mvtnorm::pmvnorm(lower=rep(-Inf,n.test), upper=rep(iT,n.test),
+                                                          mean=rep(0, n.test), sigma = rho))
+                            }else if(alternative=="less"){
+                                return(1-mvtnorm::pmvnorm(lower=rep(iT,n.test), upper=rep(Inf,n.test),
+                                                          mean=rep(0, n.test), sigma = rho))
+                            }
+                        })
+                    }
                 }
             }else if(method.band == "maxT-simulation"){
-                out$adj.p.value <- matrix(NA, nrow = n.contrast, ncol = NCOL(estimate))
-                for(iC in 1:n.contrast){ ## iC <- 2
-                    if(band == 1){
-                        iid.norm.tempo <- aperm(iid.norm[,,iC,drop=FALSE], c(2,1,3))
-                    }else{
-                        iid.norm.tempo <- aperm(iid.norm, c(2,1,3))
-                    }
-                    out$adj.p.value[iC,] <- sapply(statistic[iC,], function(iT){
-                        mean(sampleMaxProcess_cpp(nSample = n.sample,
-                                                  nContrast = dim(iid.norm.tempo)[3],
-                                                  nSim = n.sim,
-                                                  value = matrix(iT, nrow = n.time, ncol = dim(iid.norm.tempo)[3]),
-                                                  iid =  iid.norm.tempo,
-                                                  global = (band == 2),
-                                                  type = 1,
-                                                  alternative = switch(alternative,
-                                                                       "two.sided" = 3,
-                                                                       "greater" = 2,
-                                                                       "less" = 1)
-                                                  )>=0)
-                    })
-                }
+                out$adj.p.value <- pProcess_cpp(nSample = n.sample,
+                                                nContrast = n.contrast,
+                                                nTime = n.time,
+                                                nSim = n.sim,
+                                                value = statistic,
+                                                iid =  iid.norm,
+                                                alternative = switch(alternative,
+                                                                     "two.sided" = 3,
+                                                                     "greater" = 2,
+                                                                     "less" = 1),
+                                                global = (band == 2)                             
+                                                )
             }
         }
 

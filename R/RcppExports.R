@@ -78,6 +78,10 @@ quantileProcess_cpp <- function(nSample, nContrast, nSim, iid, alternative, glob
     .Call(`_riskRegression_quantileProcess_cpp`, nSample, nContrast, nSim, iid, alternative, global, confLevel)
 }
 
+pProcess_cpp <- function(nSample, nContrast, nTime, nSim, value, iid, alternative, global) {
+    .Call(`_riskRegression_pProcess_cpp`, nSample, nContrast, nTime, nSim, value, iid, alternative, global)
+}
+
 sampleMaxProcess_cpp <- function(nSample, nContrast, nSim, value, iid, alternative, type, global) {
     .Call(`_riskRegression_sampleMaxProcess_cpp`, nSample, nContrast, nSim, value, iid, alternative, type, global)
 }
