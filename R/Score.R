@@ -553,12 +553,12 @@ Score.list <- function(object,
             setnames(data,protected.names,paste0("protectedName.",protected.names))
         }
         data <- cbind(response,data)
-        N <- NROW(data)
+        N <- as.numeric(NROW(data))
         neworder <- data[,order(time,-status)]
         data.table::setorder(data,time,-status)
     }else{
         data <- cbind(response,data)
-        N <- NROW(data)
+        N <- as.numeric(NROW(data))
         neworder <- 1:N
     }
     ## add ID variable for merging purposes and because output has long format
@@ -854,7 +854,7 @@ Score.list <- function(object,
         Brier=IPA=IBS=NULL
         looping <- !is.null(traindata)
         ## if (!looping) b=0
-        N <- NROW(testdata)
+        N <- as.numeric(NROW(testdata))
         # split data vertically into response and predictors X
         response <- testdata[,1:response.dim,with=FALSE]
         response[,ID:=testdata[["ID"]]]
