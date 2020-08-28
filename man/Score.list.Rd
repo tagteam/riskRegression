@@ -30,7 +30,7 @@
   M,
   seed,
   trainseeds,
-  parallel = c("no", "multicore", "snow"),
+  parallel = c("no", "multicore", "snow", "as.registered"),
   ncpus = 1,
   cl = NULL,
   progress.bar = 3,
