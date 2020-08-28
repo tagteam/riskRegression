@@ -397,7 +397,7 @@ Score.list <- function(object,
                        M,
                        seed,
                        trainseeds,
-                       parallel=c("no","multicore","snow"),
+                       parallel=c("no","multicore","snow","as.registered"),
                        ncpus=1,
                        cl=NULL,
                        progress.bar=3,
@@ -585,7 +585,11 @@ Score.list <- function(object,
     if (split.method$internal.name!="noplan"){
         if (missing(parallel)) parallel <- "no"
         parallel <- match.arg(parallel)
-        if (ncpus<=1) {
+        ## Additionally, I'd like the process to be adjusted when a cluster is
+        ## passed or `as.registered` is specified to ignore the `ncpus` argument
+        ## (very counter-intuitive that when I'm setting up the cluster I still
+        ## need to specify ncpus > 1):
+        if (ncpus<=1 && is.null(cluster) && parallel != "as.registered") {            
             parallel <- "no"
         }
         ## if (ncpus <- pmin(ncpus,parallel::detectCores()))
