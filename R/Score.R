@@ -589,7 +589,7 @@ Score.list <- function(object,
         ## passed or `as.registered` is specified to ignore the `ncpus` argument
         ## (very counter-intuitive that when I'm setting up the cluster I still
         ## need to specify ncpus > 1):
-        if (ncpus<=1 && is.null(cluster) && parallel != "as.registered") {            
+        if (ncpus<=1 && parallel != "as.registered") {            
             parallel <- "no"
         }
         ## if (ncpus <- pmin(ncpus,parallel::detectCores()))
