@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: feb 17 2017 (10:06) 
 ## Version: 
-## last-updated: aug 21 2020 (15:08) 
+## last-updated: aug 31 2020 (17:13) 
 ##           By: Brice Ozenne
-##     Update #: 823
+##     Update #: 825
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -170,12 +170,16 @@ autoplot.predictCox <- function(object,
     ## reshape data
     if(!is.matrix(object[[type]])){
         
-        ## baseline hazard
+        ## baseline hazard/survival
         if(is.null(object[["strata"]])){
             object[[type]] <- rbind(object[[type]])
             if(object$nTimes==0){
                 if(0 %in% object$times == FALSE){
-                    object[[type]] <- cbind(0,object[[type]])
+                    if(type=="cumhazard"){
+                        object[[type]] <- cbind(0,object[[type]])
+                    }else if(type=="survival"){
+                        object[[type]] <- cbind(1,object[[type]])
+                    }
                     object$times <- c(0,object$times)
                     if(!is.null(object$newdata)){
                         object$newdata <- rbind(data.table(start = 0, stop = 0, status = NA, strata = 1, strata.num = 0, eXb = NA, statusM1 = NA, XXXindexXXX = NA),

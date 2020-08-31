@@ -1048,6 +1048,7 @@ test_that("[ate] landmark analyses", {
 
 })
 ## * [ate] Case only
+cat("[ate] Case only \n")
 set.seed(11)
 d <- sampleData(100, outcome = "survival")
 d$id <- 1:NROW(d)
@@ -1094,7 +1095,8 @@ test_that("Case only ate", {
     expect_equal(as.data.table(e.ateC)$value, e2.ateC, tol = 1e-6)
     expect_equal(as.data.table(e.ateC)$se, e2.se.ateC, tol = 1e-5)
 })
-## * Bootstrap
+## * [ate]  Bootstrap
+cat("[ate] Bootstrap \n")
 n <- 250
 
 set.seed(10)
@@ -1132,6 +1134,8 @@ test_that("[ate] check that bootstrap returns a result", {
 })
 
 ## * [ate] Miscellaneous
+cat("[ate] Miscellaneous \n")
+
 ## ** Pre-computation of iidCox does not affect the results
 test_that("[ate] Cox model/G-formula - precompute iid", {
     set.seed(10)

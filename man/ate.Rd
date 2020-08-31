@@ -31,15 +31,15 @@ ate(
 )
 }
 \arguments{
-\item{event}{Outcome model which describes how event risk depends
+\item{event}{Outcome model which describes how the probability of experiencing a terminal event depends
 on treatment and covariates. The object carry its own call and
 have a \code{predictRisk} method. See examples.}
 
-\item{treatment}{Treatment model which describes how treatment depends
+\item{treatment}{Treatment model which describes how the probability of being allocated to a treatment group depends
 on covariates. The object must be a \code{glm} object (logistic regression) or the name of the treatment variable.
 See examples.}
 
-\item{censor}{Censoring model which describes how censoring depends
+\item{censor}{Censoring model which describes how the probability of being censored depends
 on treatment and covariates. The object must be a \code{coxph} or \code{cph} object. See examples.}
 
 \item{data}{[data.frame or data.table] Data set in which to evaluate risk predictions

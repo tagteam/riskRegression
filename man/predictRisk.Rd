@@ -75,6 +75,7 @@ predictRisk(object, newdata, ...)
   newdata,
   times,
   product.limit = FALSE,
+  diag = FALSE,
   iid = FALSE,
   average.iid = FALSE,
   ...
@@ -91,6 +92,7 @@ predictRisk(object, newdata, ...)
   newdata,
   times,
   product.limit = FALSE,
+  diag = FALSE,
   iid = FALSE,
   average.iid = FALSE,
   ...
@@ -120,6 +122,7 @@ predictRisk(object, newdata, ...)
   times,
   cause,
   product.limit = TRUE,
+  diag = FALSE,
   iid = FALSE,
   average.iid = FALSE,
   ...

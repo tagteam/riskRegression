@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Oct 23 2016 (08:53) 
 ## Version: 
-## last-updated: aug 21 2020 (15:05) 
+## last-updated: aug 31 2020 (15:21) 
 ##           By: Brice Ozenne
-##     Update #: 1738
+##     Update #: 1873
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -21,13 +21,13 @@
 #'     effect based on Cox regression with or without competing risks.
 #' @name ate
 #' 
-#' @param event Outcome model which describes how event risk depends
+#' @param event Outcome model which describes how the probability of experiencing a terminal event depends
 #'     on treatment and covariates. The object carry its own call and
 #'     have a \code{predictRisk} method. See examples.
-#' @param treatment Treatment model which describes how treatment depends
+#' @param treatment Treatment model which describes how the probability of being allocated to a treatment group depends
 #'     on covariates. The object must be a \code{glm} object (logistic regression) or the name of the treatment variable.
 #'     See examples.
-#' @param censor Censoring model which describes how censoring depends
+#' @param censor Censoring model which describes how the probability of being censored depends
 #'     on treatment and covariates. The object must be a \code{coxph} or \code{cph} object. See examples.
 #' @param data [data.frame or data.table] Data set in which to evaluate risk predictions
 #' based on the outcome model
@@ -390,9 +390,9 @@ ate <- function(event,
                            )
 
     ## ** Prepare
-    test.Cox <- inherits(object.event,"coxph") || inherits(object.event,"cph") || inherits(object.event,"phreg")
-    test.CSC <- inherits(object.event,"CauseSpecificCox")
-    test.glm <- inherits(object.event,"glm")
+    testE.Cox <- inherits(object.event,"coxph") || inherits(object.event,"cph") || inherits(object.event,"phreg")
+    testE.CSC <- inherits(object.event,"CauseSpecificCox")
+    testE.glm <- inherits(object.event,"glm")
 
     if(!is.null(strata)){
         if(!is.factor(data[[strata]])){
@@ -445,7 +445,7 @@ ate <- function(event,
             cat(" - Prepare influence function:")
         }
 
-        if(attr(estimator,"Gformula") && (test.Cox || test.CSC) && identical(is.iidCox(object.event),FALSE)){
+        if(attr(estimator,"Gformula") && (testE.Cox || testE.CSC) && identical(is.iidCox(object.event),FALSE)){
             if(verbose>1/2){cat(" outcome")}
             object.event <- iidCox(object.event, tau.max = max(times), store.iid = store.iid, return.object = TRUE)
         }
@@ -588,7 +588,7 @@ ate <- function(event,
 
             if(return.iid.nuisance && (attr(estimator,"IPTW") == TRUE)){
                 ## compute iid decomposition relative to the nuisance parameters
-                
+
                 ## add pre-computed quantities
                 name.attributes <- setdiff(names(attributes(pointEstimate)),"names")
                 for(iAttr in name.attributes){
@@ -704,72 +704,130 @@ ate_initArgs <- function(object.event,
     }
     ## handler
     handler <- match.arg(handler, c("foreach","mclapply","snow","multicore"))
+    ## data.index
+    if(is.null(data.index)){data.index <- 1:NROW(mydata)}
+    
     ## ** fit a regression model when the user specifies a formula
-    ##    and extract the formula
-    if(inherits(object.event,"formula")){ ## formula
-        myformula.event <- object.event
+    ## Event
+    if(missing(object.event)){
+        formula.event <- NULL
+        model.event <- NULL
+    }else if(inherits(object.event,"formula")){ ## formula
+        formula.event <- object.event
         if(any(grepl("Hist(",object.event, fixed = TRUE))){
-            object.event <- do.call(CSC, args = list(formula = myformula.event, data = mydata))
+            model.event <- do.call(CSC, args = list(formula = object.event, data = mydata))
         }else if(any(grepl("Surv(",object.event, fixed = TRUE))){
-            object.event <- do.call(rms::cph, args = list(formula = myformula.event, data = mydata, x = TRUE, y = TRUE))
+            model.event <- do.call(rms::cph, args = list(formula = object.event, data = mydata, x = TRUE, y = TRUE))
         }else{
-            object.event <- do.call(stats::glm, args = list(formula = myformula.event, data = mydata, family = stats::binomial(link = "logit")))
+            model.event <- do.call(stats::glm, args = list(formula = object.event, data = mydata, family = stats::binomial(link = "logit")))
         }
+    }else if(is.list(object.event) && all(sapply(object.event, function(iE){inherits(iE,"formula")}))){   ## list of formula
+        formula.event <- object.event
+        model.event <- CSC(object.event, data = mydata)
+    }else if(inherits(object.event,"glm") || inherits(object.event,"CauseSpecificCox")){ ## glm / CSC
+        formula.event <- stats::formula(object.event)
+        model.event <- object.event
+    }else if(inherits(object.event,"coxph") || inherits(object.event,"cph") ||inherits(object.event,"phreg")){ ## Cox
+        formula.event <- coxFormula(object.event)
+        model.event <- object.event
+    }else{ ## character (time,event) i.e. no model
+        formula.event <- NULL
+        model.event <- NULL
+    }
+
+    ## Treatment
+    if(missing(object.treatment)){
+        formula.treatment <- NULL
+        model.treatment <- NULL
+    }else if(inherits(object.treatment,"formula")){
+        model.treatment <- do.call(stats::glm, args = list(formula = object.treatment, data = mydata, family = stats::binomial(link = "logit")))        
+        formula.treatment <- object.treatment
+    }else if(inherits(object.treatment,"glm")){
+        formula.treatment <- stats::formula(object.treatment)
+        model.treatment <- object.treatment
     }else{
-        if(all(sapply(object.event, function(iE){inherits(iE,"formula")}))){
-            ## list of formula
-            myformula.event <- object.event
-            object.event <- CSC(myformula.event, data = mydata)
-        }else{ if(inherits(object.event,"glm") || inherits(object.event,"CauseSpecificCox")){ ## glm / CSC
-                   myformula.event <- stats::formula(object.event)
-               }else{ if(inherits(object.event,"coxph") || inherits(object.event,"cph") ||inherits(object.event,"phreg")){ ## Cox
-                          myformula.event <- coxFormula(object.event)
-                      }
-               }
+        formula.treatment <- NULL
+        model.treatment <- NULL
+    }
+
+    ## Censoring
+    if(missing(object.censor)){
+        formula.censor <- NULL
+        model.censor <- NULL
+    }else if(inherits(object.censor,"formula")){
+        formula.censor <- object.censor
+        model.censor <- do.call(rms::cph, args = list(formula = object.censor, data = mydata, x = TRUE, y = TRUE))
+    }else if(inherits(object.censor,"coxph") || inherits(object.censor,"cph") || inherits(object.censor,"phreg")){
+        formula.censor <- coxFormula(object.censor)
+        model.censor <- object.censor
+    }else{
+        formula.censor <- NULL
+        model.censor <- NULL
+    }
+
+    ## ** identify event, treatment and censoring variables
+    if(inherits(model.censor,"coxph") || inherits(model.censor,"cph") || inherits(model.censor,"phreg")){ 
+        censoringMF <- coxModelFrame(model.censor)
+        test.censor <- censoringMF$status == 1
+        n.censor <- sapply(times, function(t){sum(test.censor * (censoringMF$stop <= t))})
+
+        info.censor <- SurvResponseVar(coxFormula(model.censor))
+        censorVar.status <- info.censor$status
+        censorVar.time <- info.censor$time        
+        level.censoring <- unique(mydata[[censorVar.status]][model.censor$y[data.index,2]==1])
+    }else{ ## G-formula or IPTW (no censoring)
+        censorVar.status <- NA
+        censorVar.time <- NA
+        level.censoring <- NA
+        
+        if(inherits(model.event,"CauseSpecificCox")){
+            test.censor <- model.event$response[,"status"] == 0        
+            n.censor <- sapply(times, function(t){sum(test.censor * (model.event$response[,"time"] <= t))})
+        }else if(inherits(model.event,"coxph") || inherits(model.event,"cph") || inherits(model.event,"phreg")){ 
+            censoringMF <- coxModelFrame(model.event)
+            test.censor <- censoringMF$status == 0
+            n.censor <- sapply(times, function(t){sum(test.censor * (censoringMF$stop <= t))})
+        }else{ 
+            n.censor <- 0
         }
+    }
+
+    ## treatment
+    if(missing(object.treatment) || is.null(object.treatment)){
+        treatment <- NULL
+    }else if(!is.null(formula.treatment)){
+        treatment <- all.vars(formula.treatment)[1]
+    }else if(is.character(object.treatment)){
+        treatment <- object.treatment
     }
     
-    if(!missing(object.treatment) && inherits(object.treatment,"formula")){
-        myformula.treatment <- object.treatment
-        object.treatment <- do.call(stats::glm, args = list(formula = myformula.treatment, data = mydata, family = stats::binomial(link = "logit")))        
-    }else if(!missing(object.treatment) && !is.null(object.treatment) && !is.character(object.treatment)){
-        myformula.treatment <- stats::formula(object.treatment)
-    }
-
-    if(inherits(object.censor,"formula")){
-        myformula.censor <- object.censor
-        object.censor <- do.call(rms::cph, args = list(formula = myformula.censor, data = mydata, x = TRUE, y = TRUE))
-    }else if(inherits(object.censor,"coxph") || inherits(object.censor,"cph") || inherits(object.censor,"phreg")){
-        myformula.censor <- coxFormula(object.censor)
-    }else{
-        myformula.censor <- NULL
-    }
-
-    test.CSC <- inherits(object.event,"CauseSpecificCox")
-    test.Cox <- inherits(object.event,"coxph") || inherits(object.event,"cph") || inherits(object.event,"phreg")
-    test.glm <- inherits(object.event,"glm")
-
-    ## ** deduced from user defined arguments
-
-    ## event 
-    if(inherits(object.event,"glm")){        
-        eventVar.time <- as.character(NA)
-        eventVar.status <- all.vars(myformula.event)[1]
-        type.multistate <- "NA"
-    }else if(inherits(object.event,"coxph") || inherits(object.event,"cph") || inherits(object.event,"phreg")){
-        responseVar <- SurvResponseVar(myformula.event)
+    ## event
+    if(inherits(model.event,"CauseSpecificCox")){
+        responseVar <- SurvResponseVar(formula.event)
         eventVar.time <- responseVar$time
         eventVar.status <- responseVar$status
-        type.multistate <- "survival"
-    }else if(inherits(object.event,"CauseSpecificCox")){
         if(is.na(cause)){
-            cause <- object.event$theCause
+            cause <- model.event$theCause
         }
-        responseVar <- SurvResponseVar(myformula.event)
+        if(is.null(product.limit)){product.limit <- TRUE}
+    }else if(inherits(model.event,"coxph") || inherits(model.event,"cph") || inherits(model.event,"phreg")){
+        responseVar <- SurvResponseVar(formula.event)
         eventVar.time <- responseVar$time
         eventVar.status <- responseVar$status
-        type.multistate <- "competing.risks"
-    }else{ ## no outcome model
+        if(is.na(cause)){ ## handle Surv(time,event > 0) ~ ...
+            if(any(model.event$y[data.index,2]==1)){
+                cause <- unique(mydata[[eventVar.status]][model.event$y[data.index,2]==1])
+            }
+        }
+        if(is.null(product.limit)){product.limit <- FALSE}
+    }else if(inherits(object.event,"glm")){
+        eventVar.time <- as.character(NA)
+        eventVar.status <- all.vars(formula.event)[1]
+        if(is.na(cause)){ ## handle I(Y > 0) ~ ...
+            cause <- unique(mydata[[eventVar.status]][model.event$y[data.index]==1])
+        }
+        if(is.null(product.limit)){product.limit <- NA}
+    }else { ## no outcome model
         if(identical(names(object.event),c("time","status"))){
             eventVar.time <- object.event[1]
             eventVar.status <- object.event[2]
@@ -780,107 +838,24 @@ ate_initArgs <- function(object.event,
             eventVar.time <- object.event[1]
             eventVar.status <- object.event[2]
         }
-        nType.tempo <- try(length(unique(mydata[[eventVar.status]])) - !is.null(myformula.censor), silent = TRUE)
-        if(nType.tempo==1){
-            type.multistate <- "survival"
-        }else{
-            type.multistate <- "competing.risks"
-        }
-        object.event <- NULL
-    }
-    
-    ## censoring
-    if(test.CSC){
-        test.censor <- object.event$response[,"status"] == 0        
-        n.censor <- sapply(times, function(t){sum(test.censor * (object.event$response[,"time"] <= t))})
-
-        level.censoring <- attr(object.event$response,"cens.code")
-        level.states <- attr(object.event$response,"states")
-
-        info.censor <- try(SurvResponseVar(coxFormula(object.censor)), silent = TRUE)
-        if(inherits(info.censor,"try-error")){
-            censorVar.status <- NA
-            censorVar.time <- NA
-        }else{
-            censorVar.status <- info.censor$status
-            censorVar.time <- info.censor$time
-        }
-    }else if(test.Cox){
-        censoringMF <- coxModelFrame(object.event)
-        test.censor <- censoringMF$status == 0
-        n.censor <- sapply(times, function(t){sum(test.censor * (censoringMF$stop <= t))})
-
-        level.censoring <- 0 ## try(unique(mydata[[eventVar.status]][test.censor]), silent = TRUE)
-        level.states <- 1 ## try(unique(mydata[[eventVar.status]][!test.censor]), silent = TRUE)
-
-        info.censor <- try(SurvResponseVar(coxFormula(object.censor)), silent = TRUE)
-        if(inherits(info.censor,"try-error")){
-            censorVar.status <- NA
-            censorVar.time <- NA
-        }else{
-            censorVar.status <- info.censor$status
-            censorVar.time <- info.censor$time
-        }
-    }else{
-        if(!is.null(myformula.censor)){ ## could be IPTW,IPCW 
-            censoringMF <- coxModelFrame(object.censor)
-            test.censor <- censoringMF$status == 1
-            n.censor <- sapply(times, function(t){sum(test.censor * (censoringMF$stop <= t))})
-
-            info.censor <- try(SurvResponseVar(coxFormula(object.censor)), silent = TRUE)
-            if(inherits(info.censor,"try-error")){
-                censorVar.status <- NA
-                censorVar.time <- NA
+        if(is.na(cause)){
+            if(is.numeric(mydata[[eventVar.status]])){
+                if(n.censor>0){
+                    cause <- unique(mydata[[eventVar.status]][mydata[[censorVar.status]]==level.censoring])
+                }else{
+                    cause <- mydata[[eventVar.status]]
+                }
             }else{
-                censorVar.status <- info.censor$status
-                censorVar.time <- info.censor$time
+                if(n.censor>0){
+                    cause <- levels(as.factor(mydata[[eventVar.status]][mydata[[censorVar.status]]==level.censoring]))
+                }else{
+                    cause <- levels(as.factor(mydata[[eventVar.status]]))
+                }
             }
-
-            level.censoring <- 0 ## try(unique(mydata[[censorVar.status]][test.censor]), silent = TRUE)
-            level.states <- 1 ## try(unique(mydata[[censorVar.status]][!test.censor]), silent = TRUE)
-
-        }else{ ## or just logistic regression 
-            n.censor <- 0
-
-            level.censoring <- NA
-            level.states <- NA
-            censorVar.status <- NA
-            censorVar.time <- NA
         }
-        
+        if(is.null(product.limit)){product.limit <- NA}
     }
-
-    ## treatment
-    if(missing(object.treatment)){
-        treatment <- NULL
-        object.treatment <- NULL
-        object.censor <- NULL
-    }else  if(is.character(object.treatment) || is.null(object.treatment)){
-        treatment <- object.treatment
-        object.treatment <- NULL
-        object.censor <- NULL
-    }else{
-        treatment <- all.vars(myformula.treatment)[1]
-    }
-
-    ## cause
-    if(is.na(cause) && (eventVar.status %in% names(mydata))){
-
-        if(!is.null(object.event) && !inherits(object.event,"CauseSpecificCox")){
-            event.call <- attr(SurvResponseVar(myformula.event)$status,"call")
-        }else{
-            event.call <- NULL
-        }
-            
-        if(!is.null(event.call) && grepl("==",event.call)){
-            event.call.rhs <- trimws(gsub(")","",strsplit(event.call,"==")[[1]][2]), which = "both")
-            cause <- eval(parse(text = event.call.rhs))
-        }else if(is.factor(mydata[[eventVar.status]]) && length(levels(mydata[[eventVar.status]]))==2){
-            cause <- levels(mydata[[eventVar.status]])[2]
-        }else if(all(mydata[[eventVar.status]] %in% c(0,1)) ){
-            cause <- 1
-        }
-    }
+    level.states <- setdiff(sort(unique(mydata[[eventVar.status]])), level.censoring)
 
     ## presence of time dependent covariates
     TD <- switch(class(object.event)[[1]],
@@ -897,19 +872,19 @@ ate_initArgs <- function(object.event,
 
     ## estimator
     if(is.null(estimator)){
-        if(!is.null(object.event) && is.null(object.treatment)){
+        if(!is.null(model.event) && is.null(model.treatment)){
             if(TD){
                 estimator <- "GformulaTD"
             }else{
                 estimator <- "Gformula"
             }
-        }else if(is.null(object.event) && !is.null(object.treatment)){
+        }else if(is.null(model.event) && !is.null(model.treatment)){
             if(any(n.censor>0)){
                 estimator <- "IPTW,IPCW"
             }else{
                 estimator <- "IPTW"
             }
-        }else if(!is.null(object.event) && !is.null(object.treatment)){
+        }else if(!is.null(model.event) && !is.null(model.treatment)){
             if(any(n.censor>0)){
                 estimator <- "AIPTW,AIPCW"
             }else{
@@ -979,19 +954,11 @@ ate_initArgs <- function(object.event,
         attr(estimator,"export.AIPTW") <- FALSE
     }
 
-    ## ** product.limit
-    if(is.null(product.limit)){
-        product.limit <- switch(type.multistate,
-                                "survival" = FALSE,
-                                "competing.risks" = TRUE,
-                                "NA" = NA)
-    }
-
     ## ** sample size
     n.obs <- c(data = NROW(mydata),
-               model.event = if(!is.null(object.event)){stats::nobs(object.event)}else{NA},
-               model.treatment = if(!is.null(object.treatment)){stats::nobs(object.treatment)}else{NA},
-               model.censor = if(!is.null(object.censor)){stats::nobs(object.censor)}else{NA}
+               model.event = if(!is.null(model.event)){stats::nobs(model.event)}else{NA},
+               model.treatment = if(!is.null(model.treatment)){stats::nobs(model.treatment)}else{NA},
+               model.censor = if(!is.null(model.censor)){stats::nobs(model.censor)}else{NA}
                )
     if(is.null(data.index) && length(unique(stats::na.omit(n.obs)))==1){
         data.index <- 1:n.obs["data"]
@@ -1001,11 +968,11 @@ ate_initArgs <- function(object.event,
     if(is.null(store.iid)){
         store.iid <- "minimal"
     }
-    
+
     ## ** output
-    return(list(object.event = object.event,
-                object.treatment = object.treatment,
-                object.censor = object.censor,
+    return(list(object.event = model.event,
+                object.treatment = model.treatment,
+                object.censor = model.censor,
                 times = times,
                 handler = handler,
                 estimator = estimator,
@@ -1072,6 +1039,18 @@ ate_checkArgs <- function(object.event,
              "It should be set to NA \n")        
     }
 
+    ## ** status
+    if(eventVar.status %in% names(mydata) == FALSE){
+        stop("The data set does not seem to have a variable ",eventVar.status," (argument: object.event[2]). \n")
+    }
+    if(length(cause)>1 || is.na(cause)){
+        stop("Cannot guess which value of the variable \"",eventVar.status,"\" corresponds to the outcome of interest \n",
+             "Please specify the argument \'cause\'. \n")
+    }
+    if(cause %in% mydata[[eventVar.status]] == FALSE){
+        stop("Value of the argument \'cause\' not found in column \"",eventVar.status,"\" \n")
+    }
+
     ## ** estimator
     if(any(is.na(estimator))){
         stop("No model for the outcome/treatment/censoring has been specified. Cannot estimate the average treatment effect. \n")
@@ -1110,20 +1089,11 @@ ate_checkArgs <- function(object.event,
         if(inherits(object.event,"CauseSpecificCox") && (cause %in% object.event$causes == FALSE)){
             stop("Argument \'cause\' does not match one of the available causes: ",paste(object.event$causes,collapse=" "),"\n")
         }
-        if(length(level.censoring)>1 && (level.censoring == cause)){
+        if(any(is.na(level.censoring)) && any(na.omit(level.censoring) == cause)){
             stop("The cause of interest must differ from the level indicating censoring (in the outcome model) \n")
         } 
-        ## if(inherits(object.event,"CauseSpecificCox") && (object.event$surv.type=="hazard")){
-        ##     if(attr(estimator,"integral") & (B==0) & (iid|se|band)){
-        ##         stop("Can only compute iid/standard error/confidence bands for AIPTW,AIPCW estimators with CauseSpecificCox models for which surv.type=\"survival\" \n",
-        ##              "Consider using bootstrap resampling or changing \'surv.type\'\n")
-        ##     }
-        ## }
         if(any(is.na(coef(object.event)))){
             stop("Cannot handle missing values in the model coefficients (object.event) \n")
-        }
-        if(attr(estimator, "augmented") && attr(estimator, "IPCW") && inherits(object.event,"glm")){
-            stop("In presence of censoring, the double robust estimator has not been implemented for logistic models.\n")
         }
     }
     
@@ -1147,18 +1117,18 @@ ate_checkArgs <- function(object.event,
 
     ## ** object.censor
     if(attr(estimator,"IPCW")){
-
         ## require censoring model
         if(!inherits(object.censor,"coxph") && !inherits(object.censor,"cph") && !inherits(object.censor,"phreg")){
-            stop("Argument \'censor\' must be a Cox model \n")
+            stop("Argument \'object.censor\' must be a Cox model \n")
         }
+
         if(!identical(censorVar.time,eventVar.time)){
-            stop("The time variable should be the same in object.event and object.censor \n")
+            stop("The time variable should be the same in \'object.event\' and \'object.censor\' \n")
         }
         level.censoring2 <- unique(mydata[[censorVar.status]][coxModelFrame(object.censor)$status == 0])
         if(any(level.censoring2 == level.censoring)){
-                stop("The level indicating censoring should differ between the outcome model and the censoring model \n",
-                     "maybe you have forgotten to set the event type == 0 in the censoring model \n")
+            stop("The level indicating censoring should differ between the outcome model and the censoring model \n",
+                 "maybe you have forgotten to set the event type == 0 in the censoring model \n")
         }
         
         if(!identical(censorVar.status,eventVar.status)){
@@ -1166,7 +1136,6 @@ ate_checkArgs <- function(object.event,
                 stop("The status variables in object.event and object.censor are inconsistent \n")
             }
         }
-
         if(any(is.na(coef(object.censor)))){
             stop("Cannot handle missing values in the model coefficients (object.treatment) \n")
         }
@@ -1274,18 +1243,6 @@ ate_checkArgs <- function(object.event,
             stop("Landmark analysis is not available when argument strata is specified. \n")
         }
     }
-
-    ## ** status
-    if(eventVar.status %in% names(mydata) == FALSE){
-        stop("The data set does not seem to have a variable ",eventVar.status," (argument: object.event[2]). \n")
-    }
-    if(is.na(cause)){
-        stop("Cannot guess which value of the variable \"",eventVar.status,"\" corresponds to the outcome of interest \n",
-             "Please specify the argument \'cause\'. \n")
-    }
-    if(cause %in% mydata[[eventVar.status]] == FALSE){
-        stop("Value of the argument \'cause\' not found in column \"",eventVar.status,"\" \n")
-    }
     
     ## ** event time
     if(!is.na(eventVar.time)){
@@ -1338,14 +1295,15 @@ ate_checkArgs <- function(object.event,
 }
 
 
-## * coef.ate
+## * helpers
+## ** coef.ate
 coef.ate <- function(object, ...){
     name.coef <- interaction(object$meanRisk[["treatment"]],object$meanRisk[["time"]])
     value.coef <- object$meanRisk[[paste0("meanRisk.",object$estimator[1])]]
     return(setNames(value.coef, name.coef))
 }
 
-## * vcov.ate
+## ** vcov.ate
 vcov.ate <- function(object, ...){
     if(is.null(object$iid)){
         stop("Missing iid decomposition in object \n",
@@ -1361,9 +1319,11 @@ vcov.ate <- function(object, ...){
     return(crossprod(iid[,names(coef(object)),drop=FALSE]))
 }
 
-## * nobs.multinom
+## ** nobs.multinom
 nobs.multinom <- function(object,...){
     NROW(object$residuals)
 }
 ##----------------------------------------------------------------------
 ### ate.R ends here
+
+

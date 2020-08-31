@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: okt 29 2019 (13:18) 
 ## Version: 
-## Last-Updated: aug 20 2020 (10:25) 
+## Last-Updated: aug 28 2020 (15:41) 
 ##           By: Brice Ozenne
-##     Update #: 73
+##     Update #: 77
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -78,7 +78,7 @@ summary.ate <- function(object,  estimator = object$estimator[1],
     }
     
     ## ** Display: specification of ate
-    cat("    Estimation of the Average Treatment Effect \n\n")
+    cat("    Estimation of the Average Treatment Effect for cause ",object$cause," \n\n",sep="")
 
     if(!identical(short,TRUE)){
         cat("- Event of interest               : ",object$event,"=",object$cause,"\n", sep = "")
@@ -285,7 +285,7 @@ summary.ate <- function(object,  estimator = object$estimator[1],
                               paste0("ratio.",estimator),
                               if(length(keep.cols)>0){paste0("ratio.",estimator,".",keep.cols)})
             if(all(is.na(object$riskComparison$time))){
-                keep.cols.rR <- setdiff(keep.cols, "time")
+                keep.cols.rR <- setdiff(keep.cols.rR, "time")
             }
             dt.tempo <- object$riskComparison[,.SD,.SDcols = keep.cols.rR]
             if(!is.null(allContrasts)){

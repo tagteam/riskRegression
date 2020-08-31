@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: apr 11 2018 (17:05) 
 ## Version: 
-## Last-Updated: Aug 12 2020 (07:53) 
-##           By: Thomas Alexander Gerds
-##     Update #: 269
+## Last-Updated: aug 31 2020 (17:01) 
+##           By: Brice Ozenne
+##     Update #: 276
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -172,7 +172,6 @@ calcBootATE <- function(args, name.estimate, estimator.boot, n.obs, fct.pointEst
             ## progress bar 
             if(verbose){pb <- txtProgressBar(max = B, style = 3,width=30)}
             b <- NULL ## [:forCRANcheck:] foreach
-
             boots <- foreach::`%dopar%`(foreach::foreach(b = 1:B, .packages = add.Package, .export = add.Fct), { ## b <- 1
                 if(verbose>0){setTxtProgressBar(pb, b)}
                 set.seed(bootseeds[[b]])
@@ -201,7 +200,7 @@ calcBootATE <- function(args, name.estimate, estimator.boot, n.obs, fct.pointEst
         }
                                         # {{{ convert to boot object
         M.bootEstimate <- do.call(rbind,boots)
-        
+            
         if(all(is.na(M.bootEstimate))){
             stop(paste0("Error in all bootstrap samples: ", attr(boots[[1]],"error")[1]))
         }

@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun  6 2016 (09:02) 
 ## Version: 
-## last-updated: aug 20 2020 (16:24) 
+## last-updated: aug 31 2020 (17:14) 
 ##           By: Brice Ozenne
-##     Update #: 328
+##     Update #: 332
 #----------------------------------------------------------------------
 ## 
 ### Commentary:
@@ -44,6 +44,8 @@
 #' @param times A vector of times in the range of the response variable, for
 #' which the cumulative incidences event probabilities are computed.
 #' @param cause Identifies the cause of interest among the competing events.
+#' @param diag when \code{FALSE} the hazard/cumlative hazard/survival for all observations at all times is computed,
+#' otherwise it is only computed for the i-th observation at the i-th time.
 #' @param iid Should the iid decomposition be output using an attribute?
 #' @param average.iid Should the average iid decomposition be output using an attribute?
 #' @param product.limit If \code{TRUE} the survival is computed using the product limit estimator.
@@ -561,7 +563,8 @@ predictRisk.cox.aalen <- function(object,newdata,times,...){
 ##' @export
 ##' @rdname predictRisk
 ##' @method predictRisk coxph
-predictRisk.coxph <- function(object, newdata, times, product.limit = FALSE, iid = FALSE, average.iid = FALSE, ...){
+predictRisk.coxph <- function(object, newdata, times,
+                              product.limit = FALSE, diag = FALSE, iid = FALSE, average.iid = FALSE, ...){
     dots <- list(...)
     type <- dots$type ## hidden argument for ate
     store.iid <- dots$store ## hidden argument for ate
@@ -573,6 +576,7 @@ predictRisk.coxph <- function(object, newdata, times, product.limit = FALSE, iid
                                 iid = iid,
                                 average.iid = average.iid,
                                 keep.times=FALSE,
+                                diag = diag,
                                 store.iid = store.iid,
                                 type="survival")
     }else{
@@ -580,6 +584,7 @@ predictRisk.coxph <- function(object, newdata, times, product.limit = FALSE, iid
                               newdata=newdata,
                               times=times,
                               iid = iid,
+                              diag = diag,
                               average.iid = average.iid,
                               store.iid = store.iid,
                               type="survival")
@@ -943,7 +948,8 @@ predictRisk.ARR <- function(object,newdata,times,cause,...){
 ##' @export
 ##' @rdname predictRisk
 ##' @method predictRisk CauseSpecificCox
-predictRisk.CauseSpecificCox <- function (object, newdata, times, cause, product.limit = TRUE, iid = FALSE, average.iid = FALSE, ...) {
+predictRisk.CauseSpecificCox <- function (object, newdata, times, cause,
+                                          product.limit = TRUE, diag = FALSE, iid = FALSE, average.iid = FALSE, ...) {
     dots <- list(...)
     type <- dots$type
     if(is.null(type)){
@@ -958,6 +964,7 @@ predictRisk.CauseSpecificCox <- function (object, newdata, times, cause, product
                        keep.strata=FALSE,
                        se = FALSE,
                        iid = iid,
+                       diag = diag,
                        average.iid = average.iid,
                        product.limit = product.limit,
                        store.iid = store.iid,
