@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: jun 27 2019 (10:43) 
 ## Version: 
-## Last-Updated: aug 31 2020 (15:25) 
+## Last-Updated: sep  1 2020 (12:04) 
 ##           By: Brice Ozenne
-##     Update #: 751
+##     Update #: 752
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -164,9 +164,12 @@ ATE_TI <- function(object.event,
 
     if(attr(estimator,"IPCW")){
         ## *** indicator for no censoring stopped at time tau
-        C.tau <- colMultiply_cpp(time.before.tau,
-                                 scale = (mydata[[censorVar.status]] != level.censoring)
-                                 )
+        ## C.tau <- colMultiply_cpp(time.before.tau,
+        ##                          scale = (mydata[[censorVar.status]] != level.censoring)
+        ##                          )
+        C.tau <- 1-colMultiply_cpp(time.before.tau,
+                                   scale = (mydata[[censorVar.status]] == level.censoring)
+                                   )
 
         ## *** jump time for the censoring process
         time.jumpC <- sort(mydata[[censorVar.time]][(mydata[[censorVar.status]] == level.censoring)])

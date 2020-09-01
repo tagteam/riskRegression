@@ -18,7 +18,7 @@ ate(
   cause = NA,
   landmark,
   se = TRUE,
-  iid = FALSE,
+  iid = (B == 0) && (se || band),
   known.nuisance = FALSE,
   band = FALSE,
   B = 0,
@@ -125,30 +125,33 @@ dtS$X1 <- factor(rbinom(n, prob = c(0.3,0.4) , size = 2), labels = paste0("T",0:
 fit <- cph(formula = Surv(time,event)~ X1+X2,data=dtS,y=TRUE,x=TRUE)
 
 ## compute the ATE at times 5, 6, 7, and 8 using X1 as the treatment variable
-## only point estimate (argument se = FALSE)
-ateFit1a <- ate(fit, data = dtS, treatment = "X1", times = 5:8,
-               se = FALSE)
+## standard error computed using the influence function
+## confidence intervals / p-values based on asymptotic results
+ateFit1a <- ate(fit, data = dtS, treatment = "X1", times = 5:8)
+summary(ateFit1a)
+
 \dontrun{
-## standard error / confidence intervals computed using the influence function
-## (argument se = TRUE and B = 0)
-ateFit1b <- ate(fit, data = dtS, treatment = "X1", times = 5:8,
-               se = TRUE, B = 0)
-
-## same as before with in addition the confidence bands for the ATE
+## same as before with in addition the confidence bands / adjusted p-values
 ## (argument band = TRUE)
-ateFit1c <- ate(fit, data = dtS, treatment = "X1", times = 5:8,
-               se = TRUE, band = TRUE, B = 0)
+ateFit1b <- ate(fit, data = dtS, treatment = "X1", times = 5:8,
+                band = TRUE)
+summary(ateFit1b)
 
-## standard error / confidence intervals computed using 100 boostrap samples
-## (argument se = TRUE and B = 100) 
-ateFit1d <- ate(fit, data = dtS, treatment = "X1",
-                times = 5:8, se = TRUE, B = 100)
-## NOTE: for real applications 100 bootstrap samples is not enougth 
+## by default bands/adjuste p-values computed separately for each treatment modality
+print(confint(ateFit1b, band = 1), quantile = TRUE)
+## adjustment over all treatment and times using the band argument of confint
+print(confint(ateFit1b, band = 2), quantile = TRUE)
+
+## confidence intervals / p-values computed using 1000 boostrap samples
+## (argument se = TRUE and B = 1000) 
+ateFit1c <- ate(fit, data = dtS, treatment = "X1",
+                times = 5:8, se = TRUE, B = 1000)
+## NOTE: for real applications 1000 bootstrap samples is not enough 
 
 ## same but using 2 cpus for generating and analyzing the boostrap samples
 ## (parallel computation, argument mc.cores = 2) 
-ateFit1e <- ate(fit, data = dtS, treatment = "X1",
-                times = 5:8, se = TRUE, B = 100, mc.cores = 2)
+ateFit1d <- ate(fit, data = dtS, treatment = "X1",
+                times = 5:8, se = TRUE, B = 1000, mc.cores = 2)
 }
 
 #### Survival settings without censoring ####
@@ -165,16 +168,13 @@ fit <- glm(formula = Y ~ X1+X2, data=dtB, family = "binomial")
 ## compute the ATE using X1 as the treatment variable
 ## only point estimate (argument se = FALSE)
 ateFit1a <- ate(fit, data = dtB, treatment = "X1", se = FALSE)
+ateFit1a
 
 \dontrun{
-## standard error / confidence intervals computed using the influence function
+## with confidence intervals
 ateFit1b <- ate(fit, data = dtB, treatment = "X1",
-               times = 5, ## just for having a nice output not used in computations
-               se = TRUE, B = 0)
-
-## standard error / confidence intervals computed using 100 boostrap samples
-ateFit1d <- ate(fit, data = dtB, treatment = "X1",
-                times = 5, se = TRUE, B = 100)
+               times = 5) ## just for having a nice output not used in computations
+ateFit1b
 
 ## using the lava package
 ateLava <- estimate(fit, function(p, data){
@@ -191,43 +191,19 @@ ateFit1b$meanRisk
 #### Competing risks settings               ####
 #### ATE with cause specific Cox regression ####
 
-\dontrun{
 ## generate data
 n <- 500
 set.seed(10)
 dt <- sampleData(n, outcome="competing.risks")
-dt$time <- round(dt$time,1)
 dt$X1 <- factor(rbinom(n, prob = c(0.2,0.3) , size = 2), labels = paste0("T",0:2))
 
 ## estimate cause specific Cox model
 fitCR <-  CSC(Hist(time,event)~ X1+X8,data=dt,cause=1)
 
-## compute the ATE at times 10, 15, 20 using X1 as the treatment variable
-ateFit2a <- ate(fitCR, data = dt, treatment = "X1", times = c(10,15,20),
-                cause = 1, se = FALSE)
-
-## standard error / confidence intervals computed using the influence function
-## (argument se = TRUE and B = 0)
-ateFit2b <- ate(fitCR, data = dt, treatment = "X1", times = c(10,15,20),
-                cause = 1, se = TRUE, B = 0)
-
-## same as before with in addition the confidence bands for the ATE
-## (argument band = TRUE)
-ateFit2c <- ate(fitCR, data = dt, treatment = "X1", times = c(10,15,20), 
-               cause = 1, se = TRUE, band = TRUE, B = 0)
-
-## standard error / confidence intervals computed using 100 boostrap samples
-## (argument se = TRUE and B = 100) 
-ateFit2d <- ate(fitCR, data = dt, treatment = "X1", times = c(10,15,20), 
-                cause = 1, se = TRUE, B = 100)
-## NOTE: for real applications 100 bootstrap samples is not enougth 
-
-## same but using 2 cpus for generating and analyzing the boostrap samples
-## (parallel computation, argument mc.cores = 2) 
-ateFit2e <- ate(fitCR, data = dt, treatment = "X1", times = c(10,15,20), 
-                cause = 1, se = TRUE, B = 100, mc.cores = 2)
-
-}
+## compute the ATE at times 1, 5, 10 using X1 as the treatment variable
+ateFit2a <- ate(fitCR, data = dt, treatment = "X1", times = c(1,5,10),
+                cause = 1, se = TRUE, band = TRUE)
+ateFit2a
 
 #### Double robust estimator ####
 \dontrun{

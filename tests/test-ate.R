@@ -60,9 +60,9 @@ test_that("[ate] G-formula,survival - compare to fix values / explicit computati
     fit <- cph(formula = Surv(time,event)~ X1+X2,data=dtS,y=TRUE,x=TRUE)
     
     ateFit <- ate(fit, data = dtS, treatment = "X1", contrasts = NULL,
-                  times = seqTime, B = 0, iid = TRUE, se = TRUE, band = TRUE, verbose = verbose)
-    dt.ateFit <- as.data.table(ateFit)
-    
+                  times = seqTime, band = FALSE, verbose = verbose)
+    dt.ateFit <- as.data.table(confint(ateFit, band = TRUE, p.value = FALSE))
+
     ## point estimate
     expect_equal(dt.ateFit[level == "T0" & type == "ate",value],
                  c(0.05842145, 0.46346908, 0.66107744),
@@ -84,6 +84,13 @@ test_that("[ate] G-formula,survival - compare to fix values / explicit computati
                  c(0.0437218, 0.2512001, 0.2720261),
                  tol = 1e-6)
 
+    expect_equal(dt.ateFit[level == "T0.T1" & type == "diffAte", lowerBand],
+                 c(-0.04230655, -0.24302677, -0.26317472),
+                 tol = 1e-6)
+    expect_equal(dt.ateFit[level == "T0.T1" & type == "diffAte", upperBand],
+                 c(0.04361489, 0.25058589, 0.27136103),
+                 tol = 1e-6)
+
     expect_equal(dt.ateFit[level == "T0.T1" & type == "ratioAte",value],
                  c(1.011197, 1.008155, 1.006192),
                  tol = 1e-6)
@@ -92,6 +99,13 @@ test_that("[ate] G-formula,survival - compare to fix values / explicit computati
                  tol = 1e-6)
     expect_equal(dt.ateFit[level == "T0.T1" & type == "ratioAte",upper],
                  c(1.747808, 1.543999, 1.412593),
+                 tol = 1e-6)
+
+    expect_equal(dt.ateFit[level == "T0.T1" & type == "ratioAte", lowerBand],
+                 c(0.26976028, 0.46879896, 0.5971274),
+                 tol = 1e-6)
+    expect_equal(dt.ateFit[level == "T0.T1" & type == "ratioAte", upperBand],
+                 c(1.75263463, 1.5475109, 1.41525588),
                  tol = 1e-6)
 
     ## standard error
@@ -143,9 +157,6 @@ test_that("[ate] G-formula,survival - compare to fix values / explicit computati
     expect_equal(ratioATE.lower, c(0.2745873, 0.47231036, 0.59979056), tol = 1e-6)
     expect_equal(ratioATE.upper, dt.ateFit[level == "T0.T1" & type == "ratioAte", upper])
     expect_equal(ratioATE.upper, c(1.7478076, 1.5439995, 1.41259273))
-
-    expect_equal(dt.ateFit[level == "T0.T1" & type == "ratioAte", lowerBand], c(0.26976028, 0.46879896, 0.5971274), tol = 1e-6)
-    expect_equal(dt.ateFit[level == "T0.T1" & type == "ratioAte", upperBand], c(1.75263463, 1.5475109, 1.41525588))
 })
 
 ## ** strata argument
@@ -302,18 +313,20 @@ test_that("[ate] no censoring, survival - check vs. manual calculations", {
                   treatment = e.T,
                   estimator = c("Gformula","IPTW","AIPTW"),
                   verbose = verbose,
-                  iid = TRUE, se = TRUE, band = TRUE, product.limit = FALSE
+                  band = FALSE, product.limit = FALSE
                   )
-    dt.ate1 <- as.data.table(confint(e.ate1, p.value = TRUE))
+    set.seed(15)
+    dt.ate1 <- as.data.table(confint(e.ate1, band = TRUE))
     e.ate2 <- ate(data = dtS, times = tau,
                   event = e.S,
                   treatment = e.T,
                   method.iid = 2,
                   estimator = c("Gformula","IPTW","AIPTW"),
                   verbose = verbose,
-                  iid = TRUE, se = TRUE, product.limit = FALSE
+                  band = FALSE, product.limit = FALSE
                   )
-    dt.ate2 <- as.data.table(confint(e.ate2, p.value = TRUE))
+    set.seed(15)
+    dt.ate2 <- as.data.table(confint(e.ate2, band = TRUE))
 
     expect_equal(dt.ate1[,.SD,.SDcols = names(dt.ate2)], dt.ate2, tol = 1e-8)
     
@@ -396,8 +409,8 @@ test_that("[ate] no censoring, survival - check vs. manual calculations", {
                      "lower" = c(0.14596632, 0.02721154, 0.10480955), 
                      "upper" = c(0.5491072, 0.5841155, 0.5397359), 
                      "p.value" = c(0.00072680, 0.03143674, 0.00367726), 
-                     "quantileBand" = c(1.960035, 1.950264, 1.973776), 
-                     "adj.p.value" = c(0.0009, 0.0335, 0.0036), 
+                     "quantileBand" = c(1.962359, 1.973331, 1.915003), 
+                     "adj.p.value" = c(0.0007, 0.0296, 0.0056), 
                      "estimator" = c("Gformula", "IPTW", "AIPTW"))
     expect_equal(GS, dt.ate1[type == "diffAte",.(value,se,lower,upper,p.value,quantileBand,adj.p.value,estimator)],
                  tol = 1e-6)
@@ -407,8 +420,8 @@ test_that("[ate] no censoring, survival - check vs. manual calculations", {
                      "lower" = c(1.175396, 0.907892, 1.090545), 
                      "upper" = c(2.427772, 2.478327, 2.350447), 
                      "p.value" = c(0.01210904, 0.08362040, 0.02498223), 
-                     "quantileBand" = c(1.931102, 1.949319, 1.929075), 
-                     "adj.p.value" = c(0.0119, 0.0872, 0.0263), 
+                     "quantileBand" = c(1.971454, 1.969537, 1.952972), 
+                     "adj.p.value" = c(0.0118, 0.0832, 0.0246), 
                      "estimator" = c("Gformula", "IPTW", "AIPTW"))
     expect_equal(GS, dt.ate1[type == "ratioAte",.(value,se,lower,upper,p.value,quantileBand,adj.p.value,estimator)],
                  tol = 1e-6)
@@ -435,7 +448,6 @@ dtS$C <- (dtS$time<=tau)*(dtS$event!=0)
 dtS$X1f <- dtS$X1
 dtS$X1 <- as.numeric(as.character(dtS$X1))
 
-
 test_that("[ate] Censoring, survival - check vs. manual calculations", {
     e.S <- coxph(Surv(time, event) ~ X1f + strata(X2) + X3*X6, data = dtS, x = TRUE , y = TRUE)
     e.T <- glm(X1f ~ X2, data = dtS, family = binomial(link = "logit"))
@@ -448,9 +460,10 @@ test_that("[ate] Censoring, survival - check vs. manual calculations", {
                   censor = e.C,
                   estimator = c("Gformula","IPTW","AIPTW"),
                   verbose = verbose,
-                  iid = TRUE, band = TRUE, product.limit = FALSE
+                  band = FALSE, product.limit = FALSE
                   )
-    dt.ate1 <- as.data.table(confint(e.ate1, p.value = TRUE))
+    set.seed(15)
+    dt.ate1 <- as.data.table(confint(e.ate1, band = TRUE, p.value = TRUE))
     e.ate2 <- ate(data = dtS, times = tau,
                   event = e.S,
                   censor = e.C,
@@ -458,9 +471,10 @@ test_that("[ate] Censoring, survival - check vs. manual calculations", {
                   method.iid = 2,
                   estimator = c("Gformula","IPTW","AIPTW"),
                   verbose = verbose,
-                  iid = TRUE, product.limit = FALSE
+                  band = FALSE, product.limit = FALSE
                   )
-    dt.ate2 <- as.data.table(confint(e.ate2, p.value = TRUE))
+    set.seed(15)
+    dt.ate2 <- as.data.table(confint(e.ate2, band = TRUE, p.value = TRUE))
 
     expect_equal(dt.ate1[,.SD,.SDcols = names(dt.ate2)], dt.ate2, tol = 1e-8)
 
@@ -615,8 +629,8 @@ test_that("[ate] Censoring, survival - check vs. manual calculations", {
                      "lower" = c(0.0686292, 0.1045717, 0.1764890), 
                      "upper" = c(0.5499259, 0.6634350, 0.6160507), 
                      "p.value" = c(0.01177169, 0.00707186, 0.00040954), 
-                     "quantileBand" = c(1.938078, 1.958492, 1.983769), 
-                     "adj.p.value" = c(0.0131, 0.0075, 0.0002), 
+                     "quantileBand" = c(1.965073, 1.948196, 1.931335), 
+                     "adj.p.value" = c(0.0122, 0.0079, 0.0007), 
                      "estimator" = c("Gformula", "IPTW", "AIPTW"))
     expect_equal(GS, dt.ate1[type == "diffAte",.(value,se,lower,upper,p.value,quantileBand,adj.p.value,estimator)],
                  tol = 1e-6)
@@ -626,8 +640,8 @@ test_that("[ate] Censoring, survival - check vs. manual calculations", {
                      "lower" = c(1.036673, 1.008955, 1.222079), 
                      "upper" = c(2.584262, 3.049264, 2.881958), 
                      "p.value" = c(0.04008663, 0.04802263, 0.01297622), 
-                     "quantileBand" = c(1.945498, 1.947672, 1.959064), 
-                     "adj.p.value" = c(0.0428, 0.0546, 0.0144), 
+                     "quantileBand" = c(1.961192, 1.959446, 1.952883), 
+                     "adj.p.value" = c(0.0392, 0.0459, 0.0129), 
                      "estimator" = c("Gformula", "IPTW", "AIPTW"))
     expect_equal(GS,dt.ate1[type == "ratioAte",.(value,se,lower,upper,p.value,quantileBand,adj.p.value,estimator)],
                  tol = 1e-6)
@@ -660,9 +674,10 @@ test_that("[ate] no censoring, competing risks - check vs. manual calculations",
                   treatment = e.T,
                   estimator = c("Gformula","IPTW","AIPTW"),
                   verbose = verbose, cause = 1,
-                  iid = TRUE, band = TRUE, product.limit = FALSE
+                  band = FALSE, product.limit = FALSE
                   )
-    dt.ate1 <- as.data.table(confint(e.ate1, p.value = TRUE))
+    set.seed(15)
+    dt.ate1 <- as.data.table(confint(e.ate1, band = TRUE, p.value = TRUE))
     e.ate2 <- ate(data = dtS, times = tau,
                   event = e.S,
                   treatment = e.T,
@@ -671,7 +686,8 @@ test_that("[ate] no censoring, competing risks - check vs. manual calculations",
                   verbose = verbose, cause = 1,
                   iid = TRUE, product.limit = FALSE
                   )
-    dt.ate2 <- as.data.table(confint(e.ate2, p.value = TRUE))
+    set.seed(15)
+    dt.ate2 <- as.data.table(confint(e.ate2, band = TRUE, p.value = TRUE))
 
     expect_equal(dt.ate1[,.SD,.SDcols = names(dt.ate2)],  dt.ate2)
 
@@ -755,9 +771,10 @@ test_that("[ate] no censoring, competing risks - check vs. manual calculations",
                      "lower" = c(-0.1658668, -0.1197399, -0.1304426), 
                      "upper" = c(0.7247475, 0.4875017, 0.9234565), 
                      "p.value" = c(0.2187263, 0.2352249, 0.1402693), 
-                     "quantileBand" = c(1.961654, 1.968735, 1.954209), 
-                     "adj.p.value" = c(0.2146, 0.2346, 0.1427), 
+                     "quantileBand" = c(1.969141, 1.922815, 1.933780), 
+                     "adj.p.value" = c(0.2235, 0.2291, 0.1376), 
                      "estimator" = c("Gformula", "IPTW", "AIPTW"))
+
     expect_equal(GS, dt.ate1[type == "diffAte",.(value,se,lower,upper,p.value,quantileBand,adj.p.value,estimator)],
                  tol = 1e-6)
 
@@ -766,8 +783,8 @@ test_that("[ate] no censoring, competing risks - check vs. manual calculations",
                      "lower" = c(0, 0, 0), 
                      "upper" = c( 8.441504,  7.460660, 13.629289), 
                      "p.value" = c(0.1856088, 0.3156261, 0.1911770), 
-                     "quantileBand" = c(1.955296, 1.941872, 1.968158), 
-                     "adj.p.value" = c(0.1858, 0.3171, 0.1926), 
+                     "quantileBand" = c(1.971403, 1.958227, 1.974396), 
+                     "adj.p.value" = c(0.1872, 0.3072, 0.1973), 
                      "estimator" = c("Gformula", "IPTW", "AIPTW"))
     expect_equal(GS, dt.ate1[type == "ratioAte",.(value,se,lower,upper,p.value,quantileBand,adj.p.value,estimator)],
                  tol = 1e-6)
@@ -798,9 +815,10 @@ test_that("[ate] Censoring, competing risks (surv.type=\"survival\") - check vs.
                   censor = e.C,
                   estimator = c("Gformula","IPTW","AIPTW"),
                   verbose = verbose,
-                  iid = TRUE, product.limit = FALSE, cause = 1
+                  band = FALSE, product.limit = FALSE, cause = 1
                   )
-    dt.ate1 <- as.data.table(confint(e.ate1, p.value = TRUE))
+    set.seed(15)
+    dt.ate1 <- as.data.table(confint(e.ate1, band = TRUE, p.value = TRUE))
     e.ate2 <- ate(data = dtS, times = tau,
                   event = e.S,
                   censor = e.C,
@@ -808,9 +826,10 @@ test_that("[ate] Censoring, competing risks (surv.type=\"survival\") - check vs.
                   method.iid = 2,
                   estimator = c("Gformula","IPTW","AIPTW"),
                   verbose = verbose,
-                  iid = TRUE, product.limit = FALSE, cause = 1
+                  band = FALSE, product.limit = FALSE, cause = 1
                   )
-    dt.ate2 <- as.data.table(confint(e.ate2, p.value = TRUE))
+    set.seed(15)
+    dt.ate2 <- as.data.table(confint(e.ate2, band = TRUE, p.value = TRUE))
 
     expect_equal(dt.ate1, dt.ate2, tol = 1e-8)
     
@@ -965,8 +984,10 @@ test_that("[ate] Censoring, competing risks (surv.type=\"survival\") - check vs.
                      "lower" = c(-0.17799448, -0.14723439,  0.05910013), 
                      "upper" = c(1.0000000, 0.5016232, 1.0000000), 
                      "p.value" = c(0.12089283, 0.28440314, 0.03231356), 
+                     "quantileBand" = c(1.958676, 1.963257, 1.952228), 
+                     "adj.p.value" = c(0.1177, 0.2880, 0.0331), 
                      "estimator" = c("Gformula", "IPTW", "AIPTW"))
-    expect_equal(GS, dt.ate1[type == "diffAte",.(value,se,lower,upper,p.value,estimator)],
+    expect_equal(GS, dt.ate1[type == "diffAte",.(value,se,lower,upper,p.value,quantileBand,adj.p.value,estimator)],
                  tol = 1e-6)
 
     GS <- data.table("value" = c(3.102436, 1.555969, 3.371188), 
@@ -974,8 +995,10 @@ test_that("[ate] Censoring, competing risks (surv.type=\"survival\") - check vs.
                      "lower" = c(0.2223595, 0.4778388, 0.8757540), 
                      "upper" = c(5.982512, 2.634099, 5.866623), 
                      "p.value" = c(0.15249898, 0.31215422, 0.06254973), 
+                     "quantileBand" = c(1.955519, 1.941080, 1.992390), 
+                     "adj.p.value" = c(0.1553, 0.3178, 0.0605), 
                      "estimator" = c("Gformula", "IPTW", "AIPTW"))
-    expect_equal(GS, dt.ate1[type == "ratioAte",.(value,se,lower,upper,p.value,estimator)],
+    expect_equal(GS, dt.ate1[type == "ratioAte",.(value,se,lower,upper,p.value,quantileBand,adj.p.value,estimator)],
                  tol = 1e-6)
 
 })
@@ -1095,7 +1118,7 @@ test_that("Case only ate", {
     expect_equal(as.data.table(e.ateC)$value, e2.ateC, tol = 1e-6)
     expect_equal(as.data.table(e.ateC)$se, e2.se.ateC, tol = 1e-5)
 })
-## * [ate]  Bootstrap
+## * [ate] Bootstrap
 cat("[ate] Bootstrap \n")
 n <- 250
 
@@ -1246,8 +1269,9 @@ test_that("ate double robust estimator works with multiple timepoint",{
                      "se" = c(0.04636428, 0.15684698, 0.04902926, 0.15630839, 0.16327935, 0.16374745, 0.69821732, 0.57546242), 
                      "lower" = c( 0.16763051,  0.19599485,  0.20916489,  0.19420653, -0.07511518, -0.12563425,  0.57892260,  0.51191176), 
                      "upper" = c(0.3493751, 0.8108237, 0.4013561, 0.8069241, 0.5649281, 0.5162440, 3.3158842, 2.7676830), 
+                     "p.value" = c(NA, NA, NA, NA, 0.1336343, 0.2329791, 0.1748165, 0.2662254), 
                      "estimator" = c("AIPTW", "AIPTW", "AIPTW", "AIPTW", "AIPTW", "AIPTW", "AIPTW", "AIPTW"))
-
+    
     expect_equal(as.data.table(e.ateRR), GS, tol = 1e-6)
     
     
@@ -1258,3 +1282,28 @@ test_that("ate double robust estimator works with multiple timepoint",{
 
 })
 
+## ** Tied events
+## Brice: Tuesday, Sept 1, 2020 11:10
+n <- 500
+set.seed(10)
+dt <- sampleData(n, outcome="survival")
+dt$time <- round(dt$time,1)+0.1
+dt$X1 <- factor(rbinom(n, prob = c(0.4) , size = 1), labels = paste0("T",0:1))
+
+test_that("ate in presence of ties",{
+    m.event <-  coxph(Surv(time,event)~ X1,data=dt,x=TRUE,y=TRUE)
+
+    ateRobust <- ate(event = m.event,
+                     treatment = "X1",
+                     data = dt, times = 1, 
+                     cause = 1, product.limit = FALSE,
+                     verbose = verbose)
+
+    iPred <- predictCox(m.event, newdata = unique(dt[,.SD,.SDcols = "X1"]),
+                        times = 1, se = TRUE, type = "survival", keep.newdata = TRUE)
+
+    iDT <- as.data.table(iPred)
+    setkeyv(iDT, "X1")
+    expect_equal(ateRobust$meanRisk$meanRisk.Gformula, 1-iDT$survival, tol = 1e-7)
+    expect_equal(ateRobust$meanRisk$meanRisk.Gformula.se, iDT$survival.se, tol = 1e-7)
+})

@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: apr 11 2018 (17:05) 
 ## Version: 
-## Last-Updated: aug 31 2020 (17:01) 
+## Last-Updated: sep  1 2020 (10:36) 
 ##           By: Brice Ozenne
-##     Update #: 276
+##     Update #: 279
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -20,6 +20,7 @@
 calcBootATE <- function(args, name.estimate, estimator.boot, n.obs, fct.pointEstimate,
                         handler, B, seed, mc.cores, cl,
                         verbose){
+
     n.estimate <- length(name.estimate)
                                         # {{{ prepare arguments
     
@@ -120,7 +121,6 @@ calcBootATE <- function(args, name.estimate, estimator.boot, n.obs, fct.pointEst
             return(setNames(do.call("c", ls.estimate), name.estimate))
         }
     }
-
                                         # }}}
     ## bootstrap
     if(handler %in% c("snow","multicore")) {

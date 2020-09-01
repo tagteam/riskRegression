@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: maj 23 2018 (14:08) 
 ## Version: 
-## Last-Updated: aug 21 2020 (10:48) 
+## Last-Updated: sep  1 2020 (10:41) 
 ##           By: Brice Ozenne
-##     Update #: 762
+##     Update #: 774
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -127,7 +127,7 @@ confint.ate <- function(object,
                         seed = NA,
                         ci = object$se,
                         band = object$band,
-                        p.value = FALSE,
+                        p.value = TRUE,
                         method.band = "maxT-simulation",
                         alternative = "two.sided",
                         bootci.method = "perc",
@@ -253,7 +253,7 @@ confintBoot.ate <- function(object,
     } else{
         boot.CI <- do.call(rbind,ls.CI)
     }
-    
+
     ## pvalue
     null <- setNames(rep(NA,length(name.estimate)),name.estimate)
     null[grep("^diff", name.estimate)] <- 0
@@ -317,7 +317,13 @@ confintBoot.ate <- function(object,
                                    .SD,.SDcols = c("mean","se","lower","upper","p.value")]
         object$riskComparison[,c(iVecNames.ratioRisk) :=  iSubDT.ratioAte]
     }
-    
+    object$conf.level <- conf.level
+    object$ci <- TRUE
+    object$band <- FALSE
+    object$p.value <- TRUE
+    object$n.sim <- NA
+    object$method.band <- NA
+    object$alternative <- "two.sided"
     return(object)    
 }
 

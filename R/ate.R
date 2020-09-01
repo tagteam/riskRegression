@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Oct 23 2016 (08:53) 
 ## Version: 
-## last-updated: aug 31 2020 (15:21) 
+## last-updated: sep  1 2020 (11:49) 
 ##           By: Brice Ozenne
-##     Update #: 1873
+##     Update #: 1898
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -98,30 +98,33 @@
 #' fit <- cph(formula = Surv(time,event)~ X1+X2,data=dtS,y=TRUE,x=TRUE)
 #'
 #' ## compute the ATE at times 5, 6, 7, and 8 using X1 as the treatment variable
-#' ## only point estimate (argument se = FALSE)
-#' ateFit1a <- ate(fit, data = dtS, treatment = "X1", times = 5:8,
-#'                se = FALSE)
-#' \dontrun{
-#' ## standard error / confidence intervals computed using the influence function
-#' ## (argument se = TRUE and B = 0)
-#' ateFit1b <- ate(fit, data = dtS, treatment = "X1", times = 5:8,
-#'                se = TRUE, B = 0)
+#' ## standard error computed using the influence function
+#' ## confidence intervals / p-values based on asymptotic results
+#' ateFit1a <- ate(fit, data = dtS, treatment = "X1", times = 5:8)
+#' summary(ateFit1a)
 #' 
-#' ## same as before with in addition the confidence bands for the ATE
+#' \dontrun{
+#' ## same as before with in addition the confidence bands / adjusted p-values
 #' ## (argument band = TRUE)
-#' ateFit1c <- ate(fit, data = dtS, treatment = "X1", times = 5:8,
-#'                se = TRUE, band = TRUE, B = 0)
+#' ateFit1b <- ate(fit, data = dtS, treatment = "X1", times = 5:8,
+#'                 band = TRUE)
+#' summary(ateFit1b)
 #'
-#' ## standard error / confidence intervals computed using 100 boostrap samples
-#' ## (argument se = TRUE and B = 100) 
-#' ateFit1d <- ate(fit, data = dtS, treatment = "X1",
-#'                 times = 5:8, se = TRUE, B = 100)
-#' ## NOTE: for real applications 100 bootstrap samples is not enougth 
+#' ## by default bands/adjuste p-values computed separately for each treatment modality
+#' print(confint(ateFit1b, band = 1), quantile = TRUE)
+#' ## adjustment over all treatment and times using the band argument of confint
+#' print(confint(ateFit1b, band = 2), quantile = TRUE)
+#' 
+#' ## confidence intervals / p-values computed using 1000 boostrap samples
+#' ## (argument se = TRUE and B = 1000) 
+#' ateFit1c <- ate(fit, data = dtS, treatment = "X1",
+#'                 times = 5:8, se = TRUE, B = 1000)
+#' ## NOTE: for real applications 1000 bootstrap samples is not enough 
 #'
 #' ## same but using 2 cpus for generating and analyzing the boostrap samples
 #' ## (parallel computation, argument mc.cores = 2) 
-#' ateFit1e <- ate(fit, data = dtS, treatment = "X1",
-#'                 times = 5:8, se = TRUE, B = 100, mc.cores = 2)
+#' ateFit1d <- ate(fit, data = dtS, treatment = "X1",
+#'                 times = 5:8, se = TRUE, B = 1000, mc.cores = 2)
 #' }
 #'
 #' #### Survival settings without censoring ####
@@ -138,16 +141,13 @@
 #' ## compute the ATE using X1 as the treatment variable
 #' ## only point estimate (argument se = FALSE)
 #' ateFit1a <- ate(fit, data = dtB, treatment = "X1", se = FALSE)
-#'
+#' ateFit1a
+#' 
 #' \dontrun{
-#' ## standard error / confidence intervals computed using the influence function
+#' ## with confidence intervals
 #' ateFit1b <- ate(fit, data = dtB, treatment = "X1",
-#'                times = 5, ## just for having a nice output not used in computations
-#'                se = TRUE, B = 0)
-#'
-#' ## standard error / confidence intervals computed using 100 boostrap samples
-#' ateFit1d <- ate(fit, data = dtB, treatment = "X1",
-#'                 times = 5, se = TRUE, B = 100)
+#'                times = 5) ## just for having a nice output not used in computations
+#' ateFit1b
 #' 
 #' ## using the lava package
 #' ateLava <- estimate(fit, function(p, data){
@@ -164,43 +164,19 @@
 #' #### Competing risks settings               ####
 #' #### ATE with cause specific Cox regression ####
 #'
-#' \dontrun{
 #' ## generate data
 #' n <- 500
 #' set.seed(10)
 #' dt <- sampleData(n, outcome="competing.risks")
-#' dt$time <- round(dt$time,1)
 #' dt$X1 <- factor(rbinom(n, prob = c(0.2,0.3) , size = 2), labels = paste0("T",0:2))
 #'
 #' ## estimate cause specific Cox model
 #' fitCR <-  CSC(Hist(time,event)~ X1+X8,data=dt,cause=1)
 #' 
-#' ## compute the ATE at times 10, 15, 20 using X1 as the treatment variable
-#' ateFit2a <- ate(fitCR, data = dt, treatment = "X1", times = c(10,15,20),
-#'                 cause = 1, se = FALSE)
-#'
-#' ## standard error / confidence intervals computed using the influence function
-#' ## (argument se = TRUE and B = 0)
-#' ateFit2b <- ate(fitCR, data = dt, treatment = "X1", times = c(10,15,20),
-#'                 cause = 1, se = TRUE, B = 0)
-#'
-#' ## same as before with in addition the confidence bands for the ATE
-#' ## (argument band = TRUE)
-#' ateFit2c <- ate(fitCR, data = dt, treatment = "X1", times = c(10,15,20), 
-#'                cause = 1, se = TRUE, band = TRUE, B = 0)
-#' 
-#' ## standard error / confidence intervals computed using 100 boostrap samples
-#' ## (argument se = TRUE and B = 100) 
-#' ateFit2d <- ate(fitCR, data = dt, treatment = "X1", times = c(10,15,20), 
-#'                 cause = 1, se = TRUE, B = 100)
-#' ## NOTE: for real applications 100 bootstrap samples is not enougth 
-#'
-#' ## same but using 2 cpus for generating and analyzing the boostrap samples
-#' ## (parallel computation, argument mc.cores = 2) 
-#' ateFit2e <- ate(fitCR, data = dt, treatment = "X1", times = c(10,15,20), 
-#'                 cause = 1, se = TRUE, B = 100, mc.cores = 2)
-#'
-#' }
+#' ## compute the ATE at times 1, 5, 10 using X1 as the treatment variable
+#' ateFit2a <- ate(fitCR, data = dt, treatment = "X1", times = c(1,5,10),
+#'                 cause = 1, se = TRUE, band = TRUE)
+#' ateFit2a
 #' 
 #' #### Double robust estimator ####
 #' \dontrun{
@@ -292,7 +268,7 @@ ate <- function(event,
                 cause = NA,
                 landmark,
                 se = TRUE,
-                iid = FALSE,
+                iid = (B == 0) && (se || band),
                 known.nuisance = FALSE,
                 band = FALSE,
                 B = 0,
@@ -427,7 +403,7 @@ ate <- function(event,
             cat(" - Treatment variable: ",treatment," (",length(contrasts)," levels)\n",sep="")
 
             txt.parenthesis <- paste0("cause: ",cause)
-            if(length(level.states)>1){
+            if(length(setdiff(level.states,cause))>1){
                 txt.parenthesis <- paste0(txt.parenthesis,", competing risk(s): ",setdiff(level.states,cause))
             }
             if(any(n.censor>0)){
@@ -773,23 +749,26 @@ ate_initArgs <- function(object.event,
 
         info.censor <- SurvResponseVar(coxFormula(model.censor))
         censorVar.status <- info.censor$status
-        censorVar.time <- info.censor$time        
+        censorVar.time <- info.censor$time
         level.censoring <- unique(mydata[[censorVar.status]][model.censor$y[data.index,2]==1])
     }else{ ## G-formula or IPTW (no censoring)
         censorVar.status <- NA
         censorVar.time <- NA
-        level.censoring <- NA
+        
         
         if(inherits(model.event,"CauseSpecificCox")){
             test.censor <- model.event$response[,"status"] == 0        
             n.censor <- sapply(times, function(t){sum(test.censor * (model.event$response[,"time"] <= t))})
+            level.censoring <- attr(model.event$response,"cens.code")
         }else if(inherits(model.event,"coxph") || inherits(model.event,"cph") || inherits(model.event,"phreg")){ 
             censoringMF <- coxModelFrame(model.event)
             test.censor <- censoringMF$status == 0
             n.censor <- sapply(times, function(t){sum(test.censor * (censoringMF$stop <= t))})
+            level.censoring <- 0
         }else{ 
             n.censor <- 0
         }
+        if(all(n.censor==0)){level.censoring <- NA}
     }
 
     ## treatment
@@ -810,16 +789,18 @@ ate_initArgs <- function(object.event,
             cause <- model.event$theCause
         }
         if(is.null(product.limit)){product.limit <- TRUE}
+        level.states <- model.event$cause
     }else if(inherits(model.event,"coxph") || inherits(model.event,"cph") || inherits(model.event,"phreg")){
         responseVar <- SurvResponseVar(formula.event)
         eventVar.time <- responseVar$time
         eventVar.status <- responseVar$status
         if(is.na(cause)){ ## handle Surv(time,event > 0) ~ ...
-            if(any(model.event$y[data.index,2]==1)){
-                cause <- unique(mydata[[eventVar.status]][model.event$y[data.index,2]==1])
+            if(any(model.event$y[data.index,NCOL(model.event$y)]==1)){
+                cause <- unique(mydata[[eventVar.status]][model.event$y[data.index,NCOL(model.event$y)]==1])
             }
         }
         if(is.null(product.limit)){product.limit <- FALSE}
+        level.states <- 1
     }else if(inherits(object.event,"glm")){
         eventVar.time <- as.character(NA)
         eventVar.status <- all.vars(formula.event)[1]
@@ -827,6 +808,7 @@ ate_initArgs <- function(object.event,
             cause <- unique(mydata[[eventVar.status]][model.event$y[data.index]==1])
         }
         if(is.null(product.limit)){product.limit <- NA}
+        level.states <- 1
     }else { ## no outcome model
         if(identical(names(object.event),c("time","status"))){
             eventVar.time <- object.event[1]
@@ -838,24 +820,12 @@ ate_initArgs <- function(object.event,
             eventVar.time <- object.event[1]
             eventVar.status <- object.event[2]
         }
+        level.states <- setdiff(unique(mydata[[eventVar.status]]), level.censoring)
         if(is.na(cause)){
-            if(is.numeric(mydata[[eventVar.status]])){
-                if(n.censor>0){
-                    cause <- unique(mydata[[eventVar.status]][mydata[[censorVar.status]]==level.censoring])
-                }else{
-                    cause <- mydata[[eventVar.status]]
-                }
-            }else{
-                if(n.censor>0){
-                    cause <- levels(as.factor(mydata[[eventVar.status]][mydata[[censorVar.status]]==level.censoring]))
-                }else{
-                    cause <- levels(as.factor(mydata[[eventVar.status]]))
-                }
-            }
+            cause <- sort(level.states)[1]
         }
         if(is.null(product.limit)){product.limit <- NA}
     }
-    level.states <- setdiff(sort(unique(mydata[[eventVar.status]])), level.censoring)
 
     ## presence of time dependent covariates
     TD <- switch(class(object.event)[[1]],
@@ -1125,8 +1095,7 @@ ate_checkArgs <- function(object.event,
         if(!identical(censorVar.time,eventVar.time)){
             stop("The time variable should be the same in \'object.event\' and \'object.censor\' \n")
         }
-        level.censoring2 <- unique(mydata[[censorVar.status]][coxModelFrame(object.censor)$status == 0])
-        if(any(level.censoring2 == level.censoring)){
+        if(any(cause == level.censoring)){
             stop("The level indicating censoring should differ between the outcome model and the censoring model \n",
                  "maybe you have forgotten to set the event type == 0 in the censoring model \n")
         }

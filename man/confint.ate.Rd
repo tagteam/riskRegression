@@ -15,7 +15,7 @@
   seed = NA,
   ci = object$se,
   band = object$band,
-  p.value = FALSE,
+  p.value = TRUE,
   method.band = "maxT-simulation",
   alternative = "two.sided",
   bootci.method = "perc",

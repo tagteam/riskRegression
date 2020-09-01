@@ -159,6 +159,9 @@ which the cumulative incidences event probabilities are computed.}
 \item{product.limit}{If \code{TRUE} the survival is computed using the product limit estimator.
 Otherwise the exponential approximation is used (i.e. exp(-cumulative hazard)).}
 
+\item{diag}{when \code{FALSE} the hazard/cumlative hazard/survival for all observations at all times is computed,
+otherwise it is only computed for the i-th observation at the i-th time.}
+
 \item{landmark}{The starting time for the computation of the cumulative risk.}
 }
 \value{
