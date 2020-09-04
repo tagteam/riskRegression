@@ -648,6 +648,34 @@ test_that("[ate] Censoring, survival - check vs. manual calculations", {
 
 })
 
+## * [ate] IPCW logistic regression
+set.seed(10)
+n <- 500
+tau <- 1:5
+d <- sampleData(n, outcome = "competing.risks")
+d$Y <- (d$event == 1)*(d$time <= tau[3])
+d0 <- d[event!=0] ## remove censoring
+
+test_that("[ate] IPCW LR - no censoring", {
+    e0.wglm <- wglm(regressor.event = ~ X1+X2+X6, formula.censor = Surv(time,event==0) ~ X1,
+                    times = tau, data = d0)
+    e0.glm <- glm(Y ~ X1+X2+X6, family = binomial, data = d0)
+
+    eATE.wglm <- ate(e0.wglm, data = d0, treatment = "X1", times = tau, band = FALSE, verbose = FALSE)
+    eATE.glm <- ate(e0.glm, data = d0, treatment = "X1", times = tau[3], verbose = FALSE)
+    expect_equal(eATE.glm$meanRisk, eATE.wglm$meanRisk[time==tau[3]], tol = 1e-6)
+
+    eATE2.wglm <- ate(e0.wglm, data = d0, treatment = X1~X2, times = tau, band = FALSE, verbose = FALSE)
+    eATE2.glm <- ate(e0.glm, data = d0, treatment = X1~X2, times = tau[3], verbose = FALSE)
+    expect_equal(eATE2.glm$meanRisk, eATE2.wglm$meanRisk[time==tau[3]], tol = 1e-6)
+}
+
+## ** AIPTW
+e.wglm <- wglm(regressor.event = ~ X1,
+               formula.censor = Surv(time,event==0) ~ X1,
+               times = 1:5, data = d)
+e.CSC <- CSC(Hist(time,event)~X1,data=d)
+
 ## * [ate] Competing risk case
 cat("[ate] Competing risk case \n")
 

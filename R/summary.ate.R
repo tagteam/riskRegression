@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: okt 29 2019 (13:18) 
 ## Version: 
-## Last-Updated: aug 28 2020 (15:41) 
+## Last-Updated: sep  4 2020 (10:37) 
 ##           By: Brice Ozenne
-##     Update #: 77
+##     Update #: 79
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -78,8 +78,12 @@ summary.ate <- function(object,  estimator = object$estimator[1],
     }
     
     ## ** Display: specification of ate
-    cat("    Estimation of the Average Treatment Effect for cause ",object$cause," \n\n",sep="")
-
+    if(length(object$causes)>1){        
+        cat("    Estimation of the Average Treatment Effect for cause ",object$theCause," \n\n",sep="")
+    }else{
+        cat("    Estimation of the Average Treatment Effect \n\n",sep="")
+    }
+    
     if(!identical(short,TRUE)){
         cat("- Event of interest               : ",object$event,"=",object$cause,"\n", sep = "")
         if(!is.null(object$treatment)){

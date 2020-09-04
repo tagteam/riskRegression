@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: apr 11 2018 (17:05) 
 ## Version: 
-## Last-Updated: sep  1 2020 (10:36) 
+## Last-Updated: sep  4 2020 (17:56) 
 ##           By: Brice Ozenne
-##     Update #: 279
+##     Update #: 312
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -65,7 +65,11 @@ calcBootATE <- function(args, name.estimate, estimator.boot, n.obs, fct.pointEst
                 NULL
             }
         }else{
-            ls.package[[iModel]] <- utils::packageName(environment(args[[iModel]]$call[[1]]))
+            if(!is.null(environment(args[[iModel]]$call[[1]]))){
+                ls.package[[iModel]] <- utils::packageName(environment(args[[iModel]]$call[[1]]))
+            }else{
+                ls.package[[iModel]] <- NULL
+            }
         }
     }
 
@@ -92,19 +96,26 @@ calcBootATE <- function(args, name.estimate, estimator.boot, n.obs, fct.pointEst
 
                                         # {{{ warper
     warperBootATE <- function(index, args, estimator.boot, fct.pointEstimate, name.estimate, n.estimate){
+        
         ## models for the conditional mean
         for(iModel in c("object.event","object.treatment","object.censor")){
             if(!is.null(args[[iModel]])){
                 args[[iModel]]$call$data <- ls.data[[iModel]][index] ## resample dataset
                 args[[iModel]] <- try(eval(args[[iModel]]$call),silent=TRUE) ## refit  model
                 if ("try-error" %in% class(args[[iModel]])){
-                    iBoot <- paste0("Failed to fit model ",iModel," on the bootstrap sample", sep = "")
+                    iBoot <- c(paste0("Failed to fit model ",iModel," on the bootstrap sample", sep = ""),
+                               args[[iModel]]
+                               )
                     class(iBoot) <- "try-error"
                     return(iBoot)
                 }
             }
         }
         ## compute ate
+        args$mydata <- args$mydata[index]
+        if(any(args$data.index != 1:NROW(args$mydata))){
+            args$data.index <- which(index %in% args$data.index)
+        }
         iBoot <- try(do.call(fct.pointEstimate, args), silent = TRUE)
         ## export
         if(inherits(iBoot,"try-error")){ ## error handling
@@ -121,6 +132,14 @@ calcBootATE <- function(args, name.estimate, estimator.boot, n.obs, fct.pointEst
             return(setNames(do.call("c", ls.estimate), name.estimate))
         }
     }
+    ## warperBootATE(index = sample.int(n.obs,replace=TRUE),
+    ##               args = args,
+    ##               fct.pointEstimate = fct.pointEstimate,
+    ##               estimator.boot = estimator.boot,
+    ##               name.estimate = name.estimate,
+    ##               n.estimate = n.estimate)                                      
+                 
+
                                         # }}}
     ## bootstrap
     if(handler %in% c("snow","multicore")) {

@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: maj 27 2017 (11:46) 
 ## Version: 
-## last-updated: aug 20 2020 (11:34) 
+## last-updated: sep  4 2020 (10:30) 
 ##           By: Brice Ozenne
-##     Update #: 823
+##     Update #: 828
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -96,7 +96,6 @@ calcSeCox <- function(object, times, nTimes, type, diag,
         rm.list <- FALSE                
         factor <- attr(export, "factor")
     }
-    
     out <- list()
     if("se" %in% export){
         if("cumhazard" %in% type){out$cumhazard.se <- matrix(NA, nrow = new.n, ncol = nTimes)}
@@ -145,8 +144,8 @@ calcSeCox <- function(object, times, nTimes, type, diag,
 
         if("iid" %in% export){
             if("hazard" %in% type){out$hazard.iid <-  aperm(resCpp$IF_hazard, perm = c(1,3,2))}
-            if("cumhazard" %in% type){out$cumhazard.iid <-  aperm(resCpp$IF_cumhazard, perm = c(1,3,2))}
-            if("survival" %in% type){out$survival.iid <-  aperm(resCpp$IF_survival, perm = c(1,3,2))}
+            if("cumhazard" %in% type){out$cumhazard.iid <- aperm(resCpp$IF_cumhazard, perm = c(1,3,2))}
+            if("survival" %in% type){out$survival.iid <- aperm(resCpp$IF_survival, perm = c(1,3,2))}
         }
         if("se" %in% export){
             if("cumhazard" %in% type){out$cumhazard.se <- resCpp$SE_cumhazard}

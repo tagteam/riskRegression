@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: apr  5 2018 (17:01) 
 ## Version: 
-## Last-Updated: aug 31 2020 (15:05) 
+## Last-Updated: sep  4 2020 (18:27) 
 ##           By: Brice Ozenne
-##     Update #: 1282
+##     Update #: 1288
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -91,9 +91,15 @@ iidATE <- function(estimator,
             }
             
             if("AIPTW,AIPCW" %in% estimator){
-                attr(factor,"factor") <- c(attr(factor,"factor"),
-                                           list(AIPTW = colMultiply_cpp(Y.tau * iW.IPCW - F1.ctf.tau[[iC]], scale = -iW.IPTW2[,iC]))
-                                           )
+                if(inherits(object.event,"wglm")){
+                    attr(factor,"factor") <- c(attr(factor,"factor"),
+                                               list(AIPTW = colMultiply_cpp(iW.IPCW * (Y.tau - F1.ctf.tau[[iC]]), scale = -iW.IPTW2[,iC]))
+                                               )
+                }else{
+                    attr(factor,"factor") <- c(attr(factor,"factor"),
+                                               list(AIPTW = colMultiply_cpp(Y.tau * iW.IPCW - F1.ctf.tau[[iC]], scale = -iW.IPTW2[,iC]))
+                                               )
+                }
             }else if("AIPTW" %in% estimator){
                 attr(factor,"factor") <- c(attr(factor,"factor"),
                                            list(AIPTW = colMultiply_cpp(Y.tau - F1.ctf.tau[[iC]], scale = -iW.IPTW2[,iC]))
@@ -121,7 +127,11 @@ iidATE <- function(estimator,
     if(attr(estimator,"IPCW")){
         factor <- TRUE        
         for(iTime in 1:n.times){ ## iTime <- 1
-            attr(factor, "factor") <- lapply(1:n.contrasts, function(iC){cbind(-iW.IPTW[,iC]*iW.IPCW2[,iTime]*Y.tau[,iTime])})
+            if(inherits(object.event,"wglm")){
+                attr(factor, "factor") <- lapply(1:n.contrasts, function(iC){cbind(-iW.IPTW[,iC]*iW.IPCW2[,iTime]*(Y.tau[,iTime]-F1.ctf.tau[[iC]][,iTime]))})
+            }else{
+                attr(factor, "factor") <- lapply(1:n.contrasts, function(iC){cbind(-iW.IPTW[,iC]*iW.IPCW2[,iTime]*Y.tau[,iTime])})
+            }
             
             term.censoring <- attr(predictRisk(object.censor, newdata = mydata, times = c(0,time.jumpC)[index.obsSINDEXjumpC[,iTime]+1],
                                                diag = TRUE, product.limit = product.limit, average.iid = factor),"average.iid")

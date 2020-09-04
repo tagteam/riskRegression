@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Oct 23 2016 (08:53) 
 ## Version: 
-## last-updated: sep  1 2020 (11:49) 
+## last-updated: sep  4 2020 (16:18) 
 ##           By: Brice Ozenne
-##     Update #: 1898
+##     Update #: 1958
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -403,8 +403,8 @@ ate <- function(event,
             cat(" - Treatment variable: ",treatment," (",length(contrasts)," levels)\n",sep="")
 
             txt.parenthesis <- paste0("cause: ",cause)
-            if(length(setdiff(level.states,cause))>1){
-                txt.parenthesis <- paste0(txt.parenthesis,", competing risk(s): ",setdiff(level.states,cause))
+            if(length(setdiff(level.states,cause))>0){
+                txt.parenthesis <- paste0(txt.parenthesis,", competing risk(s): ",paste(setdiff(level.states,cause),collapse = " "))
             }
             if(any(n.censor>0)){
                 txt.parenthesis <- paste0(txt.parenthesis, ", censoring: ",level.censoring)
@@ -616,7 +616,8 @@ ate <- function(event,
                 riskComparison = pointEstimate$riskComparison,
                 iid = outIID,
                 event = eventVar.status,
-                cause = cause,
+                theCause = cause,
+                causes = level.states,
                 treatment = treatment,
                 contrasts = contrasts,
                 times = times,
@@ -700,7 +701,7 @@ ate_initArgs <- function(object.event,
     }else if(is.list(object.event) && all(sapply(object.event, function(iE){inherits(iE,"formula")}))){   ## list of formula
         formula.event <- object.event
         model.event <- CSC(object.event, data = mydata)
-    }else if(inherits(object.event,"glm") || inherits(object.event,"CauseSpecificCox")){ ## glm / CSC
+    }else if(inherits(object.event,"glm") ||inherits(object.event,"wglm") || inherits(object.event,"CauseSpecificCox")){ ## glm / CSC
         formula.event <- stats::formula(object.event)
         model.event <- object.event
     }else if(inherits(object.event,"coxph") || inherits(object.event,"cph") ||inherits(object.event,"phreg")){ ## Cox
@@ -742,7 +743,7 @@ ate_initArgs <- function(object.event,
     }
 
     ## ** identify event, treatment and censoring variables
-    if(inherits(model.censor,"coxph") || inherits(model.censor,"cph") || inherits(model.censor,"phreg")){ 
+    if(inherits(model.censor,"coxph") || inherits(model.censor,"cph") || inherits(model.censor,"phreg")){
         censoringMF <- coxModelFrame(model.censor)
         test.censor <- censoringMF$status == 1
         n.censor <- sapply(times, function(t){sum(test.censor * (censoringMF$stop <= t))})
@@ -765,8 +766,11 @@ ate_initArgs <- function(object.event,
             test.censor <- censoringMF$status == 0
             n.censor <- sapply(times, function(t){sum(test.censor * (censoringMF$stop <= t))})
             level.censoring <- 0
-        }else{ 
-            n.censor <- 0
+        }else if(inherits(model.event,"wglm")){
+            n.censor <- object.event$n.censor
+            level.censoring <- setdiff(unique(object.event$data[[object.event$var.outcome]]), object.event$causes)
+        }else{
+            n.censor <- rep(0,length(times))
         }
         if(all(n.censor==0)){level.censoring <- NA}
     }
@@ -806,10 +810,20 @@ ate_initArgs <- function(object.event,
         eventVar.status <- all.vars(formula.event)[1]
         if(is.na(cause)){ ## handle I(Y > 0) ~ ...
             cause <- unique(mydata[[eventVar.status]][model.event$y[data.index]==1])
+        }else{
+            cause <- NA
         }
         if(is.null(product.limit)){product.limit <- NA}
-        level.states <- 1
-    }else { ## no outcome model
+        level.states <- unique(mydata[[eventVar.status]])
+    }else if(inherits(object.event,"wglm")){
+        eventVar.time <- object.event$var.time
+        eventVar.status <- object.event$var.outcome
+        if(is.na(cause)){ ## handle I(Y > 0) ~ ...
+            cause <- object.event$theCause
+        }
+        level.states <- object.event$causes
+        if(is.null(product.limit)){product.limit <- (length(level.states)>1)}
+    }else{ ## no outcome model
         if(identical(names(object.event),c("time","status"))){
             eventVar.time <- object.event[1]
             eventVar.status <- object.event[2]
@@ -820,6 +834,7 @@ ate_initArgs <- function(object.event,
             eventVar.time <- object.event[1]
             eventVar.status <- object.event[2]
         }
+
         level.states <- setdiff(unique(mydata[[eventVar.status]]), level.censoring)
         if(is.na(cause)){
             cause <- sort(level.states)[1]
@@ -896,7 +911,7 @@ ate_initArgs <- function(object.event,
 
     ## term 3: 1(A=a)Y(tau) \int () dM
     if(any(estimator %in% c("AIPTW,AIPCW"))){
-        attr(estimator,"integral") <- TRUE
+        attr(estimator,"integral") <- !inherits(object.event,"wglm")
     }else{
         attr(estimator,"integral") <- FALSE
     }
@@ -930,9 +945,6 @@ ate_initArgs <- function(object.event,
                model.treatment = if(!is.null(model.treatment)){stats::nobs(model.treatment)}else{NA},
                model.censor = if(!is.null(model.censor)){stats::nobs(model.censor)}else{NA}
                )
-    if(is.null(data.index) && length(unique(stats::na.omit(n.obs)))==1){
-        data.index <- 1:n.obs["data"]
-    }
 
     ## ** store.iid
     if(is.null(store.iid)){
@@ -1013,6 +1025,9 @@ ate_checkArgs <- function(object.event,
     if(eventVar.status %in% names(mydata) == FALSE){
         stop("The data set does not seem to have a variable ",eventVar.status," (argument: object.event[2]). \n")
     }
+    if(inherits(object.event,"glm") && is.na(cause)){
+        stop("Argument \'cause\' should not be specified when using a glm model in argument \'object.event\'")
+    }
     if(length(cause)>1 || is.na(cause)){
         stop("Cannot guess which value of the variable \"",eventVar.status,"\" corresponds to the outcome of interest \n",
              "Please specify the argument \'cause\'. \n")
@@ -1056,8 +1071,12 @@ ate_checkArgs <- function(object.event,
         if (all(match(candidateMethods,options$method.predictRisk,nomatch=0)==0)){
             stop(paste("Could not find predictRisk S3-method for ",class(object.event),collapse=" ,"),sep="")
         }
-        if(inherits(object.event,"CauseSpecificCox") && (cause %in% object.event$causes == FALSE)){
+        if((inherits(object.event,"wglm") || inherits(object.event,"CauseSpecificCox")) && (cause %in% object.event$causes == FALSE)){
             stop("Argument \'cause\' does not match one of the available causes: ",paste(object.event$causes,collapse=" "),"\n")
+        }
+        if(inherits(object.event,"wglm") && (cause != object.event$theCause)){
+            stop("Argument \'cause\' does not match the one of \'object.event\' \n",
+                 "Consider re-fitting the model with appropriate cause.")
         }
         if(any(is.na(level.censoring)) && any(na.omit(level.censoring) == cause)){
             stop("The cause of interest must differ from the level indicating censoring (in the outcome model) \n")
@@ -1091,10 +1110,15 @@ ate_checkArgs <- function(object.event,
         if(!inherits(object.censor,"coxph") && !inherits(object.censor,"cph") && !inherits(object.censor,"phreg")){
             stop("Argument \'object.censor\' must be a Cox model \n")
         }
+        
+        if(inherits(object.event,"glm") && any(n.censor > 0) && all(e.GS$prior.weights==1)){
+            stop("Argument \'object.event\' should not be a standard logistic regression in presence of censoring \n")
+        }
 
         if(!identical(censorVar.time,eventVar.time)){
             stop("The time variable should be the same in \'object.event\' and \'object.censor\' \n")
         }
+        
         if(any(cause == level.censoring)){
             stop("The level indicating censoring should differ between the outcome model and the censoring model \n",
                  "maybe you have forgotten to set the event type == 0 in the censoring model \n")
@@ -1134,6 +1158,9 @@ ate_checkArgs <- function(object.event,
         if(!is.null(object.censor) && is.null(object.censor$call)){
             stop("Argument \'censor\' does not contain its own call, which is needed to refit the model in the bootstrap loop.")
         }
+        ## if(any(data.index != 1:na.omit(n.obs)[1])){
+        ##     stop("Argument \'data.index\' cannot be used when using bootstrap resampling \n")
+        ## }
         ## if((Sys.info()["sysname"] == "Windows") && (handler == "mclapply") && (mc.cores>1) ){
         ## stop("mclapply cannot perform parallel computations on Windows \n",
         ## "consider setting argument handler to \"foreach\" \n")
@@ -1170,7 +1197,6 @@ ate_checkArgs <- function(object.event,
                      "Set argument \'B\' to a positive integer to use a boostrap instead \n",sep="")
             }
         }
-
         if(!is.null(object.treatment) && stats::nobs(object.treatment)!=NROW(mydata)){ ## note: only check that the datasets have the same size
             stop("Argument \'treatment\' must be have been fitted using argument \'data\' for the functional delta method to work\n",
                  "(discrepancy found in number of rows) \n")
