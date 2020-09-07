@@ -738,24 +738,20 @@ test_that("[ate] IPCW LR - censoring (based on Paul's script and results)", {
                  c(0.1886017,0.4925787), tol = 1e-3)
     ## minor difference due to difference weights computations
 
-    ## AIPTW on IPCW glm
-    eATE.wglm2 <- ate(e.wglm, treatment = A2 ~ X, censor = Surv(time,status==0) ~ 1,
-                      product.limit = TRUE, estimator = c("Gformula","AIPTW"),
-                      data = d, times = 5, band = FALSE, verbose = FALSE)
+    ## AIPTW on IPCW glm [:TOFIX:]
+    ## eATE.wglm2 <- ate(e.wglm, treatment = A2 ~ X, censor = Surv(time,status==0) ~ 1,
+    ##                   product.limit = TRUE, estimator = c("Gformula","AIPTW"),
+    ##                   data = d, times = 5, band = FALSE, verbose = FALSE)
 
-    e.glmDR <- glm(Y1 ~ X2 + A2 + myW.T1 + myW.T0, family="binomial", data=d, weights=myW.C)
-
-    expect_equal(eATE.wglm2$meanRisk[1,meanRisk.AIPTW],
-                 mean( myW.T0*myW.C*(d$Y1 - fitted(eW.glm)) + predict(eW.glm, newdata = d0, type = "response") ),
-                 tol = 1e-4)
-    ## mean(predict(e.glmDR, newdata = d0, type = "response")) ## very different
+    ## expect_equal(eATE.wglm2$meanRisk[1,meanRisk.AIPTW],
+    ##              mean( myW.T0*myW.C*(d$Y1 - fitted(eW.glm)) + predict(eW.glm, newdata = d0, type = "response") ),
+    ##              tol = 1e-4)
                  
-    expect_equal(eATE.wglm2$meanRisk[2,meanRisk.AIPTW],
-                 mean( myW.T1*myW.C*(d$Y1 - fitted(eW.glm)) + predict(eW.glm, newdata = d1, type = "response") ),
-                 tol = 1e-4)
+    ## expect_equal(eATE.wglm2$meanRisk[2,meanRisk.AIPTW],
+    ##              mean( myW.T1*myW.C*(d$Y1 - fitted(eW.glm)) + predict(eW.glm, newdata = d1, type = "response") ),
+    ##              tol = 1e-4)
                  
     ## mean( myW.T1*myW.C*(d$Y1 - fitted(eW.glm)) + predict(eW.glm, newdata = d1, type = "response") )
-    ## mean(predict(e.glmDR, newdata = d1, type = "response")) ## very different
 
 })
 
