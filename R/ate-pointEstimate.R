@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: jun 27 2019 (10:43) 
 ## Version: 
-## Last-Updated: sep  4 2020 (15:44) 
+## Last-Updated: sep  7 2020 (11:39) 
 ##           By: Brice Ozenne
-##     Update #: 776
+##     Update #: 796
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -249,7 +249,7 @@ ATE_TI <- function(object.event,
             if(return.iid.nuisance){
                 factor <- TRUE
                 attr(factor,"factor") <- list()
-                
+
                 if(attr(estimator,"export.Gformula")){
                     attr(factor,"factor") <- c(attr(factor,"factor"),
                                                list(Gformula = matrix(1, nrow =  n.obs.contrasts[iC], ncol = 1))
@@ -269,6 +269,7 @@ ATE_TI <- function(object.event,
             }else{
                 factor <- FALSE
             }
+
             outRisk <- predictRisk(object.event, newdata = data.i, times = times,
                                    average.iid = factor, cause = cause,
                                    product.limit = product.limit)

@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Oct 23 2016 (08:53) 
 ## Version: 
-## last-updated: sep  4 2020 (16:18) 
+## last-updated: sep  7 2020 (13:31) 
 ##           By: Brice Ozenne
-##     Update #: 1958
+##     Update #: 1959
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -1111,7 +1111,7 @@ ate_checkArgs <- function(object.event,
             stop("Argument \'object.censor\' must be a Cox model \n")
         }
         
-        if(inherits(object.event,"glm") && any(n.censor > 0) && all(e.GS$prior.weights==1)){
+        if(inherits(object.event,"glm") && any(n.censor > 0) && all(object.event$prior.weights==1)){
             stop("Argument \'object.event\' should not be a standard logistic regression in presence of censoring \n")
         }
 

@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: sep  1 2020 (14:58) 
 ## Version: 
-## Last-Updated: sep  4 2020 (18:22) 
+## Last-Updated: sep  7 2020 (13:32) 
 ##           By: Brice Ozenne
-##     Update #: 257
+##     Update #: 272
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -36,6 +36,8 @@
 #' @return an object of class \code{"wglm"}.
 #'
 #' @examples
+#' library(survival)
+#' 
 #' set.seed(10)
 #' n <- 250
 #' tau <- 1:5
@@ -53,10 +55,10 @@
 #'                times = tau, data = d)
 #' @export
 wglm <- function(regressor.event, formula.censor, times, data, cause = NA,
-                 fitter = "coxph", product.limit = FALSE, ...){
+                 fitter = "coxph", product.limit = FALSE){
     
     tol <- 1e-12
-    varSurv <- riskRegression:::SurvResponseVar(formula.censor)
+    varSurv <- SurvResponseVar(formula.censor)
     newname <- paste0(varSurv$status,".",times)
     IPCW.newname <- paste0("IPCW.",times)
     n.times <- length(times)
@@ -99,13 +101,15 @@ wglm <- function(regressor.event, formula.censor, times, data, cause = NA,
                                  type = "survival", product.limit = product.limit)
             data[[IPCW.newname[[iTime]]]] <- (1-(recoverCensor==1)*(recoverTime<times[iTime]))/iPred[,1]
         
-            suppressWarnings(out$fit[[iTime]] <- do.call(stats::glm, list(formula = iFormula.glm, family = binomial(link = "logit"), data = data, weights = data[[IPCW.newname[[iTime]]]])))
+            suppressWarnings(out$fit[[iTime]] <- do.call(stats::glm, list(formula = iFormula.glm, family = stats::binomial(link = "logit"),
+                                                                          data = data, weights = data[[IPCW.newname[[iTime]]]])))
             ## Warning message:
             ##             In eval(family$initialize) : non-integer #successes in a binomial glm!
             out$fit[[iTime]]$time.prior.weights <- pmin(recoverTime, times[iTime]) - tol
         }else{
             IPCW.newname[[iTime]] <- NA
-            out$fit[[iTime]] <- do.call(stats::glm, list(formula = iFormula.glm, family = binomial(link = "logit"), data = data))
+            out$fit[[iTime]] <- do.call(stats::glm, list(formula = iFormula.glm,
+                                                         family = stats::binomial(link = "logit"), data = data))
         }
     }
 
@@ -142,7 +146,7 @@ coef.wglm <- function(object, times = NULL, simplifies = TRUE, ...){
     if(is.null(times)){
         times <- object$times
     }else{
-        if(any(times %in% x$times == FALSE)){
+        if(any(times %in% object$times == FALSE)){
             stop("Incorrect specification of argument \'times\' \n",
                  "Should be one of \"",paste0(times,collapse="\" \""),"\" \n")
             
@@ -161,7 +165,7 @@ summary.wglm <- function(object, print = TRUE, se = "robust", times = NULL, ...)
     if(is.null(times)){
         times <- object$times
     }else{
-        if(any(times %in% x$times == FALSE)){
+        if(any(times %in% object$times == FALSE)){
             stop("Incorrect specification of argument \'times\' \n",
                  "Should be one of \"",paste0(times,collapse="\" \""),"\" \n")
             
@@ -218,7 +222,7 @@ print.wglm <- function(object, times = NULL, ...){
     if(is.null(times)){
         times <- object$times
     }else{
-        if(any(times %in% x$times == FALSE)){
+        if(any(times %in% object$times == FALSE)){
             stop("Incorrect specification of argument \'times\' \n",
                  "Should be one of \"",paste0(times,collapse="\" \""),"\" \n")
             
@@ -252,7 +256,15 @@ print.wglm <- function(object, times = NULL, ...){
 }
 
 ## * score.wglm
-## same as in lava
+#' @title Score for IPCW Logistic Regressions
+#' @description Compute the first derivative of the log-likelihood for IPCW logistic regressions.
+#'
+#' @param x a wglm object.
+#' @param indiv [logical] should the individual score be output? Otherwise the total score (i.e. summed over all individuals will be output).
+#' @param times [numeric vector] time points at which the score should be output. 
+#' @param simplifies [logical] should the ouput be converted to a matrix when only one timepoint is requested. Otherwise will always return a list.
+#' @param ... Not used.
+#'
 #' @export
 score.wglm <- function(x, indiv = FALSE, times = NULL, simplifies = TRUE, ...){
     if(is.null(times)){
@@ -288,7 +300,13 @@ score.wglm <- function(x, indiv = FALSE, times = NULL, simplifies = TRUE, ...){
 }
 
 ## * information.wglm
-## same as in lava
+#' @title Information for IPCW Logistic Regressions
+#' @description Compute the information (i.e. opposit of the expectation of the second derivative of the log-likelihood) for IPCW logistic regressions.
+#'
+#' @param x a wglm object.
+#' @param times [numeric vector] time points at which the score should be output. 
+#' @param simplifies [logical] should the ouput be converted to a matrix when only one timepoint is requested. Otherwise will always return a list.
+#' @param ... Not used.
 #' @export
 information.wglm <- function(x, times = NULL, simplifies = TRUE, ...){
     if(is.null(times)){
@@ -323,6 +341,14 @@ information.wglm <- function(x, times = NULL, simplifies = TRUE, ...){
 }
 
 ## * iid.wglm
+#' @title IID for IPCW Logistic Regressions
+#' @description Compute the decomposition in iid elements of the ML estimor of IPCW logistic regressions.
+#'
+#' @param x a wglm object.
+#' @param times [numeric vector] time points at which the iid should be output. 
+#' @param simplifies [logical] should the ouput be converted to a matrix when only one timepoint is requested. Otherwise will always return a list.
+#' @param ... Not used.
+#' 
 #' @export
 iid.wglm <- function(x, times = NULL, simplifies = TRUE, ...){
     if(is.null(times)){
@@ -336,8 +362,8 @@ iid.wglm <- function(x, times = NULL, simplifies = TRUE, ...){
     }
     n.times <- length(times)
 
-    ls.score <- score(x, times = times, simplifies = FALSE, indiv = TRUE)
-    ls.info <- information(x, times = times, simplifies = FALSE)
+    ls.score <- lava::score(x, times = times, simplifies = FALSE, indiv = TRUE)
+    ls.info <- lava::information(x, times = times, simplifies = FALSE)
 
     out <- setNames(vector(mode = "list", length = n.times), times)
     for(iTime in 1:n.times){
@@ -407,10 +433,15 @@ iid.wglm <- function(x, times = NULL, simplifies = TRUE, ...){
 #' @export
 #' @rdname predictRisk
 #' @method predictRisk wglm
-predictRisk.wglm <- function(object, newdata, times = NULL, se = "robust",
+predictRisk.wglm <- function(object, newdata, times = NULL, 
                              product.limit = FALSE, diag = FALSE, iid = FALSE, average.iid = FALSE, ...){
 
-    se <- match.arg(se, c("robust","robust-wknown"))
+    dots <- list(...)
+    if(is.null(dots$e)){ ## hidden se argument
+        se <- "robust"
+    }else{
+        se <- match.arg(se, c("robust","robust-wknown"))
+    }
 
     ## ** extract information and normalize arguments
     if(is.null(times)){
@@ -453,7 +484,7 @@ predictRisk.wglm <- function(object, newdata, times = NULL, se = "robust",
                 }
             }
         }
-        n.factor <- NCOL(factor)
+        n.factor <- length(factor)
     }
 
     ## hidden argument: enable to ask for the prediction of Y==1 or Y==0
@@ -465,7 +496,7 @@ predictRisk.wglm <- function(object, newdata, times = NULL, se = "robust",
         attr(out,"iid") <- array(NA, dim = c(n.sample, n.times, n.newdata))
     }
     if(average.iid){
-        attr(out,"average.iid") <- lapply(n.factor, function(x){matrix(NA, nrow = n.sample, ncol = n.times)})
+        attr(out,"average.iid") <- lapply(1:n.factor, function(x){matrix(NA, nrow = n.sample, ncol = n.times)})
         if(!is.null(names(factor))){
             names(attr(out,"average.iid")) <- names(factor)
         }
