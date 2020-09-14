@@ -324,6 +324,29 @@
 ##'     ResPaquid
 ##'     plotROC(ResPaquid,time=5)
 ##' }
+##' \dontrun{
+##' # parallel options
+##' # by erikvona: Here is a generic example of using future
+##' # and doFuture, works great with the current version:
+##' library(riskRegression)
+##' library(future)
+##' library(foreach)
+##' library(doFuture)
+##' library(survival)
+##' # Register all available cores for parallel operation
+##' plan(multiprocess, workers = availableCores())
+##' registerDoFuture()
+##' trainSurv <- sampleData(400,outcome="survival")
+##' cox1 = coxph(Surv(time,event)~X1+X2+X7+X9,data=trainSurv,
+##'              y=TRUE, x = TRUE)
+##' # Bootstrapping on multiple cores
+##' x1 = Score(list("Cox(X1+X2+X7+X9)"=cox1),
+##'      formula=Surv(time,event)~1,data=trainSurv, times=c(5,8), 
+##'      parallel = "as.registered", split.method="bootcv",B=100)
+##' }
+##'
+##'
+##' 
 ##' @author Thomas A Gerds \email{tag@@biostat.ku.dk} and Paul Blanche \email{paul.blanche@@univ-ubs.fr}
 ##' @references
 ##'
@@ -397,7 +420,7 @@ Score.list <- function(object,
                        M,
                        seed,
                        trainseeds,
-                       parallel=c("no","multicore","snow"),
+                       parallel=c("no","multicore","snow","as.registered"),
                        ncpus=1,
                        cl=NULL,
                        progress.bar=3,
@@ -553,12 +576,12 @@ Score.list <- function(object,
             setnames(data,protected.names,paste0("protectedName.",protected.names))
         }
         data <- cbind(response,data)
-        N <- NROW(data)
+        N <- as.numeric(NROW(data))
         neworder <- data[,order(time,-status)]
         data.table::setorder(data,time,-status)
     }else{
         data <- cbind(response,data)
-        N <- NROW(data)
+        N <- as.numeric(NROW(data))
         neworder <- 1:N
     }
     ## add ID variable for merging purposes and because output has long format
@@ -585,7 +608,11 @@ Score.list <- function(object,
     if (split.method$internal.name!="noplan"){
         if (missing(parallel)) parallel <- "no"
         parallel <- match.arg(parallel)
-        if (ncpus<=1) {
+        ## Additionally, I'd like the process to be adjusted when a cluster is
+        ## passed or `as.registered` is specified to ignore the `ncpus` argument
+        ## (very counter-intuitive that when I'm setting up the cluster I still
+        ## need to specify ncpus > 1):
+        if (ncpus<=1 && is.null(cl) && parallel != "as.registered") {            
             parallel <- "no"
         }
         ## if (ncpus <- pmin(ncpus,parallel::detectCores()))
@@ -854,7 +881,7 @@ Score.list <- function(object,
         Brier=IPA=IBS=NULL
         looping <- !is.null(traindata)
         ## if (!looping) b=0
-        N <- NROW(testdata)
+        N <- as.numeric(NROW(testdata))
         # split data vertically into response and predictors X
         response <- testdata[,1:response.dim,with=FALSE]
         response[,ID:=testdata[["ID"]]]
