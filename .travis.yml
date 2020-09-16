@@ -8,5 +8,5 @@ sudo: required
 r_check_args: "--as-cran"
 cache: packages
 warnings_are_errors: true
-
- 
+r_github_packages:
+  - kkholst/mets
