@@ -23,6 +23,7 @@
   product.limit = TRUE,
   store.iid = "full",
   diag = FALSE,
+  max_time = NULL,
   ...
 )
 }
@@ -68,6 +69,9 @@ Can be \code{"full"} or \code{"minimal"}.}
 
 \item{diag}{[logical] when \code{FALSE} the absolute risk/survival for all observations at all times is computed,
 otherwise it is only computed for the i-th observation at the i-th time.}
+
+\item{max_time}{[numeric] maximum time of the response of the fitted data.  Only relevant if
+model \code{response} element has been removed}
 
 \item{...}{not used.}
 }
@@ -122,7 +126,7 @@ CSC.fit.s <- CSC(list(Hist(time,event)~ strata(X1)+X2+X9,
 predict(CSC.fit.s,cause=1,times=ttt,se=1L) ## note: absRisk>1 due to small number of observations
 
 ## using the cph function instead of coxph
-CSC.cph <- CSC(Hist(time,event)~ X1+X2,data=d, method = "breslow", fitter = "cph")#' 
+CSC.cph <- CSC(Hist(time,event)~ X1+X2,data=d, method = "breslow", fitter = "cph")#'
 predict(CSC.cph, newdata = d, cause = 2, times = ttt)
 
 ## landmark analysis
