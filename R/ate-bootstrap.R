@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: apr 11 2018 (17:05) 
 ## Version: 
-## Last-Updated: sep  4 2020 (17:56) 
+## Last-Updated: sep 16 2020 (12:04) 
 ##           By: Brice Ozenne
-##     Update #: 312
+##     Update #: 317
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -111,8 +111,13 @@ calcBootATE <- function(args, name.estimate, estimator.boot, n.obs, fct.pointEst
                 }
             }
         }
+
         ## compute ate
-        args$mydata <- args$mydata[index]
+        if(is.data.frame(args$mydata)){
+            args$mydata <- args$mydata[index,]
+        }else{
+            args$mydata <- args$mydata[index]
+        }
         if(any(args$data.index != 1:NROW(args$mydata))){
             args$data.index <- which(index %in% args$data.index)
         }
@@ -132,13 +137,6 @@ calcBootATE <- function(args, name.estimate, estimator.boot, n.obs, fct.pointEst
             return(setNames(do.call("c", ls.estimate), name.estimate))
         }
     }
-    ## warperBootATE(index = sample.int(n.obs,replace=TRUE),
-    ##               args = args,
-    ##               fct.pointEstimate = fct.pointEstimate,
-    ##               estimator.boot = estimator.boot,
-    ##               name.estimate = name.estimate,
-    ##               n.estimate = n.estimate)                                      
-                 
 
                                         # }}}
     ## bootstrap
