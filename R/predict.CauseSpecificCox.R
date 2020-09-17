@@ -135,6 +135,12 @@ predict.CauseSpecificCox <- function(object,
         setDT(newdata)
     }
 
+    if (missing(times)) {
+        times = object$times
+        if (is.null(times)) {
+            stop("times must be specified")
+        }
+    }
     ## ** prepare
     n.times <- length(times)
     if(object$fitter=="phreg"){newdata$entry <- 0}
