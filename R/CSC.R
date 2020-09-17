@@ -1,19 +1,19 @@
 #' Cause-specific Cox proportional hazard regression
-#' 
+#'
 #' Interface for fitting cause-specific Cox proportional hazard regression
 #' models in competing risk.
 #'
 #' The causes and their order
 #' are determined by \code{prodlim::getStates()} applied to the Hist object.
-#' @param formula Either a single \code{Hist} formula or a list of formulas. 
+#' @param formula Either a single \code{Hist} formula or a list of formulas.
 #' If it is a list it must contain as many \code{Hist} formulas as there are
 #' causes when \code{surv.type="hazard"} and exactly two formulas when \code{surv.type="survival"}.
 #' If it is a list the first formula is used for the cause of interest specific Cox regression
 #' and the other formula(s) either for the other cause specific Cox regression(s) or for the
 #' Cox regression of the combined event where each cause counts as event. Note that when only one
-#' formula is given the covariates enter in exactly the same way into all Cox regression analyses.  
+#' formula is given the covariates enter in exactly the same way into all Cox regression analyses.
 #' @param data A data in which to fit the models.
-#' @param cause The cause of interest. Defaults to the first cause (see Details). 
+#' @param cause The cause of interest. Defaults to the first cause (see Details).
 #' @param surv.type Either \code{"hazard"} (the default) or
 #' \code{"survival"}.  If \code{"hazard"} fit cause-specific Cox
 #' regression models for all causes.  If \code{"survival"} fit one
@@ -32,18 +32,18 @@
 #' B. Ozenne, A. L. Soerensen, T.H. Scheike, C.T. Torp-Pedersen,
 #' and T.A. Gerds. riskregression: Predicting the risk
 #' of an event using Cox regression models. R Journal, 9(2):440--460, 2017.
-#' 
+#'
 #' J Benichou and Mitchell H Gail. Estimates of absolute cause-specific risk
 #' in cohort studies. Biometrics, pages 813--826, 1990.
 #'
 #' T.A. Gerds, T.H. Scheike, and P.K. Andersen. Absolute risk regression for
 #' competing risks: Interpretation, link functions, and prediction. Statistics
 #' in Medicine, 31(29):3921--3930, 2012.
-#' 
+#'
 #' @seealso \code{\link{coxph}}
 #' @keywords survival
 #' @examples
-#' 
+#'
 ##' library(prodlim)
 ##' library(survival)
 ##' data(Melanoma)
@@ -56,13 +56,13 @@
 ##' library(Publish)
 ##' publish(fit1)
 ##' }
-##' 
-##' ## model hazard of all cause mortality instead of hazard of type 2 
+##'
+##' ## model hazard of all cause mortality instead of hazard of type 2
 ##' fit1a <- CSC(list(Hist(time,status)~sex+age,Hist(time,status)~invasion+epicel+log(thick)),
 ##'              data=Melanoma,
 ##'              surv.type="surv")
-##' 
-##' ## the predicted probabilities are similar 
+##'
+##' ## the predicted probabilities are similar
 ##' plot(predictRisk(fit1,times=500,cause=1,newdata=Melanoma),
 ##'      predictRisk(fit1a,times=500,cause=1,newdata=Melanoma))
 ##'
@@ -71,14 +71,14 @@
 ##'              data=Melanoma)
 ##' print(fit1b)
 ##' predict(fit1b,cause=1,times=100,newdata=Melanoma)
-##' 
+##'
 ##'
 ##' ## same formula for both causes
 ##' fit2 <- CSC(Hist(time,status)~invasion+epicel+age,
 ##'             data=Melanoma)
 ##' print(fit2)
 ##'
-##' ## combine a cause-specific Cox regression model for cause 2 
+##' ## combine a cause-specific Cox regression model for cause 2
 ##' ## and a Cox regression model for the event-free survival:
 ##' ## different formula for cause 2 and event-free survival
 ##' fit3 <- CSC(list(Hist(time,status)~sex+invasion+epicel+age,
@@ -86,7 +86,7 @@
 ##'             surv.type="surv",
 ##'             data=Melanoma)
 ##' print(fit3)
-##' 
+##'
 ##' ## same formula for both causes
 ##' fit4 <- CSC(Hist(time,status)~invasion+epicel+age,
 ##'             data=Melanoma,
@@ -100,12 +100,12 @@
 ##' print(fit5)
 ##'
 ##' ## sanity checks
-##' 
+##'
 ##' cox1 <- coxph(Surv(time,status==1)~invasion+epicel+age+strata(sex),data=Melanoma)
 ##' cox2 <- coxph(Surv(time,status!=0)~invasion+epicel+age+strata(sex),data=Melanoma)
 ##' all.equal(coef(cox1),coef(fit5$models[[1]]))
 ##' all.equal(coef(cox2),coef(fit5$models[[2]]))
-##' 
+##'
 ##' ## predictions
 ##' ##
 ##' ## surv.type = "hazard": predictions for both causes can be extracted
@@ -116,20 +116,20 @@
 ##' predictRisk(fit2,cause=2,newdata=Melanoma[c(17,99,108),],times=c(100,1000,10000))
 ##' predict(fit2,cause=1,newdata=Melanoma[c(17,99,108),],times=c(100,1000,10000))
 ##' predict(fit2,cause=2,newdata=Melanoma[c(17,99,108),],times=c(100,1000,10000))
-##' 
-##' ## surv.type = "surv" we need to change the cause of interest 
+##'
+##' ## surv.type = "surv" we need to change the cause of interest
 ##' library(survival)
 ##' fit5.2 <- CSC(Hist(time,status)~invasion+epicel+age+strata(sex),
 ##'             data=Melanoma,
 ##'             surv.type="surv",cause=2)
 ##' ## now this does not work
 ##' try(predictRisk(fit5.2,cause=1,newdata=Melanoma,times=4))
-##' 
+##'
 ##' ## but this does
 ##' predictRisk(fit5.2,cause=2,newdata=Melanoma,times=100)
 ##' predict(fit5.2,cause=2,newdata=Melanoma,times=100)
 ##' predict(fit5.2,cause=2,newdata=Melanoma[4,],times=100)
-##' 
+##'
 #' @export
 CSC <- function(formula,
                 data,
@@ -150,7 +150,7 @@ CSC <- function(formula,
     ## mf <- stats::model.frame(Rform, data = data, na.action = na.omit)
     ## response <- stats::model.response(mf)
     response <- eval(Rform[[2]],envir=data)
-    if (any(is.na(response))) 
+    if (any(is.na(response)))
         stop("Event history response may not contain missing values")
     time <- response[, "time"]
     status <- response[, "status"]
@@ -194,9 +194,9 @@ CSC <- function(formula,
     }
     else{
         if ((foundCause <- match(as.character(cause),causes,nomatch=0))==0)
-            stop(paste0("Cannot find all requested cause(s) ...\n\n", 
-                        "Requested cause(s): ", paste0(cause, collapse = ", "), 
-                        "\n Available causes: ", paste(causes, collapse = ", "), 
+            stop(paste0("Cannot find all requested cause(s) ...\n\n",
+                        "Requested cause(s): ", paste0(cause, collapse = ", "),
+                        "\n Available causes: ", paste(causes, collapse = ", "),
                         "\n"))
         else{
             theCause <- causes[foundCause]
@@ -231,7 +231,7 @@ CSC <- function(formula,
             if (x==1){
                 statusX <- 1*(event==causeX)
             }
-            else{ ## event-free status 
+            else{ ## event-free status
                 statusX <- response[,"status"]
             }
         }
@@ -277,7 +277,7 @@ CSC <- function(formula,
     }else{
         names(CoxModels) <- c(paste("Cause",theCause),"OverallSurvival")
     }
-    # }}}    
+    # }}}
     out <- list(call=call,
                 models=CoxModels,
                 response=response,

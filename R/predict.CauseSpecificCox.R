@@ -226,10 +226,17 @@ predict.CauseSpecificCox <- function(object,
     }
     valid.times <- times[ times<= max_time] ## prediction times before the event
     if(length(valid.times) == 0){
+        if (is.null(eTimes)) {
+            stop("eventTimes was removed from model, but no valid times")
+        }
         eventTimes <- eTimes[1] ## at least the first event
     }else{
         eventTimes <- eTimes[eTimes <= max(valid.times)] ## jump times before the last prediction time (that is before the last jump)
         if(length(eventTimes) == 0){eventTimes <- eTimes[1]} # at least the first event
+
+    }
+    if (is.null(eventTimes)) {
+        stop("eventTimes was removed from model - cannot predict")
     }
 
     ## order prediction times
