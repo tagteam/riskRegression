@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: aug 19 2020 (09:18) 
 ## Version: 
-## Last-Updated: aug 21 2020 (15:14) 
+## Last-Updated: sep 23 2020 (14:13) 
 ##           By: Brice Ozenne
-##     Update #: 62
+##     Update #: 66
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -159,12 +159,16 @@ anova.ate <- function(object,
     iid2cpp <- array(NA, dim = c(n.time, n.sample, n.allContrasts))
     statistic2cpp <- matrix(NA, nrow = n.time, ncol = n.allContrasts)
 
+    typeRisk <- object[[paste0(type,"Risk")]]
+    
     for(iC in 1:n.allContrasts){## iC <- 1
         ## *** gather information
         iC.A <- allContrasts[1,iC]
         iC.B <- allContrasts[2,iC]
-        beta[,iC] <- object$riskComparison[object$riskComparison$treatment.A == iC.A & object$riskComparison$treatment.B == iC.B, .SD, .SDcols = paste0(type,".",estimator)][[1]]
-        beta.se <- object$riskComparison[object$riskComparison$treatment.A == iC.A & object$riskComparison$treatment.B == iC.B, .SD, .SDcols = paste0(type,".",estimator,".se")][[1]]
+
+        iRowIndex <- which((typeRisk$estimator==estimator)*(typeRisk$A==iC.A)*(typeRisk$B==iC.B)==1)
+        beta[,iC] <- typeRisk[iRowIndex, .SD$estimate]
+        beta.se <- typeRisk[iRowIndex, .SD$se]
 
         iid.A <- object$iid[[estimator]][[iC.A]]
         iid.B <- object$iid[[estimator]][[iC.B]]
@@ -172,11 +176,13 @@ anova.ate <- function(object,
         if(type=="diff"){
             iid.AB <- iid.B-iid.A
         }else if(type=="ratio"){
-            risk.A <- object$meanRisk[object$meanRisk$treatment == iC.A, .SD, .SDcols = paste0("meanRisk.",estimator)]
-            risk.B <- object$meanRisk[object$meanRisk$treatment == iC.B, .SD, .SDcols = paste0("meanRisk.",estimator)]
+            iRowIndex <- which((meanRisk$estimator==estimator)*(meanRisk$treatment==iC.A)==1)
+            risk.A <- object$meanRisk[iRowIndex, .SD$estimate]
+            iRowIndex <- which((meanRisk$estimator==estimator)*(meanRisk$treatment==iC.B)==1)
+            risk.B <- object$meanRisk[iRowIndex, .SD$estimate]
+            
             iid.AB <- rowScale_cpp(iid.B, scale = risk.A)-rowScale_cpp(iid.A, scale = risk.B/risk.A^2)
         }
-        
         ## *** transformation
         beta.se <- transformSE(estimate = beta[,iC], se = beta.se, type = transform)
         statistic2cpp[,iC] <- transformT(estimate = beta[,iC], se = beta.se, null = null, type = transform)

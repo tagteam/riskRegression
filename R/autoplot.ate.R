@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: apr 28 2017 (14:19) 
 ## Version: 
-## last-updated: aug 21 2020 (15:07) 
+## last-updated: sep 23 2020 (14:05) 
 ##           By: Brice Ozenne
-##     Update #: 129
+##     Update #: 132
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -102,26 +102,14 @@ autoplot.ate <- function(object,
     }
 
     ## display
-    dataL <- copy(object$meanRisk)
+    dataL <- object$meanRisk[estimator,.SD,on="estimator"]
     dataL[,row := as.numeric(as.factor(.SD$treatment))]
-    dataL[,c("origin") := FALSE]
-    data.table::setnames(dataL, old = paste0("meanRisk.",estimator), new = "meanRisk")
-    
     if(ci){
-        data.table::setnames(dataL,
-                             old = c(paste0("meanRisk.",estimator,".lower"),paste0("meanRisk.",estimator,".upper")),
-                             new = c("lowerCI","upperCI"))
+        setnames(dataL, old = c("lower","upper"), new = c("lowerCI","upperCI"))
     }
-    if(band){
-        data.table::setnames(dataL,
-                             old = c(paste0("meanRisk.",estimator,".lowerBand"),paste0("meanRisk.",estimator,".upperBand")),
-                             new = c("lowerBand","upperBand"))
-    }
-    dataL <- dataL[, .SD, .SDcol = c("time","meanRisk","row","treatment", if(ci){c("lowerCI","upperCI")}, if(band){c("lowerBand","upperBand")})]
-    dataL[,c("origin") := TRUE]
-
+    
     gg.res <- predict2plot(dataL = dataL,
-                           name.outcome = "meanRisk", # must not contain space to avoid error in ggplot2
+                           name.outcome = "estimate", # must not contain space to avoid error in ggplot2
                            ci = ci, band = band,
                            group.by = "treatment",
                            conf.level = object$conf.level,

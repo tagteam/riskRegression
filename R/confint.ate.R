@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: maj 23 2018 (14:08) 
 ## Version: 
-## Last-Updated: sep  1 2020 (10:41) 
+## Last-Updated: sep 23 2020 (16:52) 
 ##           By: Brice Ozenne
-##     Update #: 774
+##     Update #: 840
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -125,15 +125,15 @@ confint.ate <- function(object,
                         diffRisk.transform = "none",
                         ratioRisk.transform = "none",
                         seed = NA,
-                        ci = object$se,
-                        band = object$band,
+                        ci = object$inference$se,
+                        band = object$inference$band,
                         p.value = TRUE,
                         method.band = "maxT-simulation",
                         alternative = "two.sided",
                         bootci.method = "perc",
                         ...){
 
-    if(object$se[[1]] == FALSE && object$band[[1]] == FALSE){
+    if(object$inference$se == FALSE && object$inference$band == FALSE){
         message("No confidence interval is computed \n",
                 "Set argument \'se\' to TRUE when calling the ate function \n")
         return(object)
@@ -214,10 +214,6 @@ confintBoot.ate <- function(object,
                             "perc" = 5,
                             "bca" = 5)
     
-    ## store arguments in the object
-    object$conf.level <- conf.level
-    object$bootci.method <- bootci.method
-
     ## real number of bootstrap samples
     test.NA <- !is.na(object$boot$t)
     test.Inf <- !is.infinite(object$boot$t)
@@ -298,32 +294,20 @@ confintBoot.ate <- function(object,
     dt.tempo <- data.table(name = name.estimate, mean = boot.mean, se = boot.se, boot.CI, p.value = boot.p)
     keep.col <- setdiff(names(dt.tempo),"name")
 
-
     for(iE in 1:length(object$estimator)){ ## iE <- 1
         iEstimator <- object$estimator[iE]
-        iVecNames.meanRisk <- paste0("meanRisk.",iEstimator,c(".boot",".se",".lower",".upper"))
-        iVecNames.diffRisk <- paste0("diff.",iEstimator,c(".boot",".se",".lower",".upper",".p.value"))
-        iVecNames.ratioRisk <- paste0("ratio.",iEstimator,c(".boot",".se",".lower",".upper",".p.value"))
 
-        iSubDT.ate <- dt.tempo[grep(paste0("^meanRisk:",iEstimator),dt.tempo$name),
-                               .SD,.SDcols = c("mean","se","lower","upper")]
-        object$meanRisk[,c(iVecNames.meanRisk) :=  iSubDT.ate]
+        object$meanRisk[,c("estimate.boot","se","lower","upper") :=  dt.tempo[grep("^mean.",name.estimate),.SD,.SDcols = c("mean","se","lower","upper")]]
+        object$diffRisk[,c("estimate.boot","se","lower","upper","p.value") :=  dt.tempo[grep("^difference.",name.estimate),.SD,.SDcols = c("mean","se","lower","upper","p.value")]]
+        object$ratioRisk[,c("estimate.boot","se","lower","upper","p.value") :=  dt.tempo[grep("^ratio.",name.estimate),.SD,.SDcols = c("mean","se","lower","upper","p.value")]]
 
-        iSubDT.diffAte <- dt.tempo[grep(paste0("diff:",iEstimator),dt.tempo$name),
-                                   .SD,.SDcols = c("mean","se","lower","upper","p.value")]
-        object$riskComparison[,c(iVecNames.diffRisk) :=  iSubDT.diffAte]
-
-        iSubDT.ratioAte <- dt.tempo[grep(paste0("ratio:",iEstimator),dt.tempo$name),
-                                   .SD,.SDcols = c("mean","se","lower","upper","p.value")]
-        object$riskComparison[,c(iVecNames.ratioRisk) :=  iSubDT.ratioAte]
     }
-    object$conf.level <- conf.level
-    object$ci <- TRUE
-    object$band <- FALSE
-    object$p.value <- TRUE
-    object$n.sim <- NA
-    object$method.band <- NA
-    object$alternative <- "two.sided"
+    object$inference$conf.level <- conf.level
+    object$inference$bootci.method <- bootci.method
+    object$inference$ci <- TRUE
+    object$inference$band <- FALSE
+    object$inference$p.value <- TRUE
+    object$inference$alternative <- "two.sided"
     return(object)    
 }
 
@@ -343,11 +327,6 @@ confintIID.ate <- function(object,
                            ratioRisk.transform,
                            seed){
 
-    if(object$se[[1]] == FALSE && object$band[[1]] == FALSE){
-        message("No confidence interval/band computed \n",
-                "Set argument \'se\' or argument \'band\' to TRUE when calling the ate function \n")
-        return(object)
-    }
     estimator <- object$estimator
     n.estimator <- length(estimator)
 
@@ -356,9 +335,6 @@ confintIID.ate <- function(object,
         stop("Cannot re-compute standard error or confidence bands without the iid decomposition \n",
              "Set argument \'iid\' to TRUE when calling the ate function \n")
     }
-    object$meanRisk.transform <- match.arg(meanRisk.transform, c("none","log","loglog","cloglog"))
-    object$diffRisk.transform <- match.arg(diffRisk.transform, c("none","atanh"))
-    object$ratioRisk.transform <- match.arg(ratioRisk.transform, c("none","log"))
     if(any(contrasts %in% object$contrasts == FALSE)){
         stop("Incorrect values for the argument \'contrasts\' \n",
              "Possible values: \"",paste(object$contrasts,collapse="\" \""),"\" \n")
@@ -372,10 +348,13 @@ confintIID.ate <- function(object,
             stop("Argument \'allContrasts\' must be a matrix with 2 rows \n")
         }
     }
-
+    meanRisk.transform <- match.arg(meanRisk.transform, c("none","log","loglog","cloglog"))
+    diffRisk.transform <- match.arg(diffRisk.transform, c("none","atanh"))
+    ratioRisk.transform <- match.arg(ratioRisk.transform, c("none","log"))
+                             
     
     ## ** prepare
-    times <- object$times
+    times <- object$eval.times
     n.times <- length(times)
     n.contrasts <- length(contrasts)
     if(is.null(allContrasts)){
@@ -395,27 +374,40 @@ confintIID.ate <- function(object,
         object$riskComparison[,c(indexRM.rC) := NULL]
     }
 
+    ## initialize for new values
+    object$meanRisk[,c("se") := as.numeric(NA)]
+    object$diffRisk[,c("se") := as.numeric(NA)]
+    object$ratioRisk[,c("se") := as.numeric(NA)]
+
+    if(ci){
+        object$meanRisk[,c("lower","upper") := as.numeric(NA)]
+        object$diffRisk[,c("lower","upper",if(p.value){"p.value"}) := as.numeric(NA)]
+        object$ratioRisk[,c("lower","upper",if(p.value){"p.value"}) := as.numeric(NA)]
+    }
+
+    if(band>0){
+        if(method.band %in% c("bonferroni","maxT-integration","maxT-simulation")){
+            object$meanRisk[,c("quantileBand","lowerBand","upperBand") := as.numeric(NA)]
+            object$diffRisk[,c("quantileBand","lowerBand","upperBand") := as.numeric(NA)]
+            object$ratioRisk[,c("quantileBand","lowerBand","upperBand") := as.numeric(NA)]
+        }
+        if(p.value){
+            object$diffRisk[,c("adj.p.value") := as.numeric(NA)]
+            object$ratioRisk[,c("adj.p.value") := as.numeric(NA)]
+        }
+    }
+    
     ## ** run
     for(iE in 1:n.estimator){ ## iE <- 1
         iEstimator <- estimator[iE]
         ## ** meanRisk
         ## cat("meanRisk \n")
-        ## initialize
-        object$meanRisk[,c(paste0("meanRisk.",iEstimator,".se")) := as.numeric(NA)]
-        if(ci){
-            name.ci <- paste0("meanRisk.",iEstimator,c(".lower",".upper"))
-            object$meanRisk[,c(name.ci) := as.list(rep(as.numeric(NA),length(name.ci)))]
-        }
-        if((band>0) && (method.band %in% c("bonferroni","maxT-integration","maxT-simulation"))){
-            name.band <- paste0("meanRisk.",iEstimator,c(".quantileBand",".lowerBand",".upperBand"))
-            object$meanRisk[,c(name.band) := as.list(rep(as.numeric(NA),length(name.band)))]
-        }
 
         ## reshape data
         estimate.mR <- matrix(NA, nrow = n.contrasts, ncol = n.times)
         iid.mR <- array(NA, dim = c(n.obs, n.times, n.contrasts))
         for(iC in 1:n.contrasts){ ## iC <- 1
-            estimate.mR[iC,] <- object$meanRisk[object$meanRisk[[1]]==contrasts[iC], .SD[[paste0("meanRisk.",iEstimator)]]]
+            estimate.mR[iC,] <- object$meanRisk[list(iEstimator,contrasts[iC]), .SD$estimate, on = c("estimator","treatment")]
             iid.mR[,,iC] <- object$iid[[iEstimator]][[contrasts[iC]]]
         }
         se.mR <- t(sqrt(apply(iid.mR^2, MARGIN = 2:3, sum)))
@@ -429,13 +421,13 @@ confintIID.ate <- function(object,
                                  alternative = "two.sided",
                                  n.sim = n.sim,
                                  seed = seed,
-                                 type = object$meanRisk.transform,
-                                 min.value = switch(object$meanRisk.transform,
+                                 type = meanRisk.transform,
+                                 min.value = switch(meanRisk.transform,
                                                     "none" = 0,
                                                     "log" = NULL,
                                                     "loglog" = NULL,
                                                     "cloglog" = NULL),
-                                 max.value = switch(object$meanRisk.transform,
+                                 max.value = switch(meanRisk.transform,
                                                     "none" = 1,
                                                     "log" = 1,
                                                     "loglog" = NULL,
@@ -446,43 +438,26 @@ confintIID.ate <- function(object,
                                  p.value = FALSE)
 
         ## store
-        for(iC in 1:n.contrasts){ ## iT <- 1
-            object$meanRisk[object$meanRisk[[1]] == contrasts[iC], c(paste0("meanRisk.",iEstimator,".se")) := se.mR[iC,]]
+        for(iC in 1:n.contrasts){ ## iC <- 2
+            iRowIndex <- which((object$meanRisk$estimator==iEstimator)*(object$meanRisk$treatment==contrasts[iC])==1)
+            
+            object$meanRisk[iRowIndex, c("se") := se.mR[iC,]]
             if(ci){
-                object$meanRisk[object$meanRisk[[1]] == contrasts[iC],
-                                c(name.ci) := list(CIBP.mR$lower[iC,],CIBP.mR$upper[iC,])]
+                object$meanRisk[iRowIndex, c("lower","upper") := list(CIBP.mR$lower[iC,],CIBP.mR$upper[iC,])]
             }
             if((band>0) && (method.band %in% c("bonferroni","maxT-integration","maxT-simulation"))){
-                object$meanRisk[object$meanRisk[[1]] == contrasts[iC],
-                                c(name.band) := list(CIBP.mR$quantileBand[iC],CIBP.mR$lowerBand[iC,],CIBP.mR$upperBand[iC,])]
+                object$meanRisk[iRowIndex, c("quantileBand","lowerBand","upperBand") := list(CIBP.mR$quantileBand[iC],CIBP.mR$lowerBand[iC,],CIBP.mR$upperBand[iC,])]
             }
         }
 
         ## ** diffRisk: se, CI/CB
         ## cat("diffRisk \n")
-        ## initialize
-        object$riskComparison[,c(paste0("diff.",iEstimator,".se")) := as.numeric(NA)]
-        if(ci){
-            name.ci <- paste0("diff.",iEstimator,c(".lower",".upper",if(p.value){".p.value"}))
-            object$riskComparison[,c(name.ci) := as.list(rep(as.numeric(NA),length(name.ci)))]
-        }
-        if(band>0){
-            name.band <- NULL
-            if(method.band %in% c("bonferroni","maxT-integration","maxT-simulation")){
-                name.band <- c(name.band,paste0("diff.",iEstimator,c(".quantileBand",".lowerBand",".upperBand")))
-            }
-            if(p.value){
-                name.band <- c(name.band, paste0("diff.",iEstimator,".adj.p.value"))
-            }
-            object$riskComparison[,c(name.band) := as.list(rep(as.numeric(NA),length(name.band)))]
-        }
 
         ## reshape data
         estimate.dR <- matrix(NA, nrow = n.allContrasts, ncol = n.times)
         iid.dR <- array(NA, dim = c(n.obs, n.times, n.allContrasts))
         for(iC in 1:n.allContrasts){ ## iC <- 1
-            estimate.dR[iC,] <- object$riskComparison[(object$riskComparison[[1]] == allContrasts[1,iC]) & (object$riskComparison[[2]] == allContrasts[2,iC]),
-                                                      .SD[[paste0("diff.",iEstimator)]]]
+            estimate.dR[iC,] <- object$diffRisk[list(iEstimator,allContrasts[1,iC],allContrasts[2,iC]), .SD$estimate, on = c("estimator","A","B")]
             iid.dR[,,iC] <- object$iid[[iEstimator]][[allContrasts[2,iC]]] - object$iid[[iEstimator]][[allContrasts[1,iC]]]
         }
         se.dR <- t(sqrt(apply(iid.dR^2, MARGIN = 2:3, sum)))
@@ -496,11 +471,11 @@ confintIID.ate <- function(object,
                                  alternative = alternative,
                                  n.sim = n.sim,
                                  seed = seed,
-                                 type = object$diffRisk.transform,
-                                 min.value = switch(object$diffRisk.transform,
+                                 type = diffRisk.transform,
+                                 min.value = switch(diffRisk.transform,
                                                     "none" = -1,
                                                     "atanh" = NULL),
-                                 max.value = switch(object$diffRisk.transform,
+                                 max.value = switch(diffRisk.transform,
                                                     "none" = 1,
                                                     "atanh" = NULL),
                                  ci = ci,
@@ -510,60 +485,37 @@ confintIID.ate <- function(object,
         
         ## store
         for(iC in 1:n.allContrasts){ ## iC <- 1
-            object$riskComparison[(object$riskComparison[[1]] == allContrasts[1,iC]) & (object$riskComparison[[2]] == allContrasts[2,iC]),
-                                  c(paste0("diff.",iEstimator,".se")) := se.dR[iC,]]
-
+            iRowIndex <- which((object$diffRisk$estimator==iEstimator)*(object$diffRisk$A==allContrasts[1,iC])*(object$diffRisk$B==allContrasts[2,iC])==1)
+            object$diffRisk[iRowIndex, c("se") := se.dR[iC,]]
             if(ci){
-                ## if(lower %in% names(CIBP.dR))
-                object$riskComparison[(object$riskComparison[[1]] == allContrasts[1,iC]) & (object$riskComparison[[2]] == allContrasts[2,iC]),
-                                      c(name.ci[1:2]) := list(CIBP.dR$lower[iC,],CIBP.dR$upper[iC,])]
+                object$diffRisk[iRowIndex, c("lower","upper") := list(CIBP.dR$lower[iC,],CIBP.dR$upper[iC,])]
                 if(p.value){
-                    object$riskComparison[(object$riskComparison[[1]] == allContrasts[1,iC]) & (object$riskComparison[[2]] == allContrasts[2,iC]),
-                                          c(utils::tail(name.ci,1)) := list(CIBP.dR$p.value[iC,])]
+                    object$diffRisk[iRowIndex, c("p.value") := CIBP.dR$p.value[iC,]]
                 }
             }
             if(band>0){
                 if(method.band %in% c("bonferroni","maxT-integration","maxT-simulation")){
-                    object$riskComparison[(object$riskComparison[[1]] == allContrasts[1,iC]) & (object$riskComparison[[2]] == allContrasts[2,iC]),
-                                          c(name.band[1:3]) := list(CIBP.dR$quantileBand[iC],CIBP.dR$lowerBand[iC,],CIBP.dR$upperBand[iC,])]
+                    object$diffRisk[iRowIndex, c("quantileBand","lowerBand","upperBand") := list(CIBP.dR$quantileBand[iC],CIBP.dR$lowerBand[iC,],CIBP.dR$upperBand[iC,])]
                 }
                 if(p.value){
-                    object$riskComparison[(object$riskComparison[[1]] == allContrasts[1,iC]) & (object$riskComparison[[2]] == allContrasts[2,iC]),
-                                          c(utils::tail(name.band,1)) := list(CIBP.dR$adj.p.value[iC,])]
+                    object$diffRisk[iRowIndex, c("adj.p.value") := CIBP.dR$adj.p.value[iC,]]
                 }
             }
         }
 
         ## ** ratioRisk: se, CI/CB
         ## cat("ratioRisk \n")
-        ## initialize
-        object$riskComparison[,c(paste0("ratio.",iEstimator,".se")) := as.numeric(NA)]
-        if(ci){
-            name.ci <- paste0("ratio.",iEstimator,c(".lower",".upper",if(p.value){".p.value"}))
-            object$riskComparison[,c(name.ci) := as.list(rep(as.numeric(NA),length(name.ci)))]
-        }
-        if(band>0){
-            name.band <- NULL
-            if(method.band %in% c("bonferroni","maxT-integration","maxT-simulation")){
-                name.band <- c(name.band,paste0("ratio.",iEstimator,c(".quantileBand",".lowerBand",".upperBand")))
-            }
-            if(p.value){
-                name.band <- c(name.band,paste0("ratio.",iEstimator,".adj.p.value"))
-            }
-            object$riskComparison[,c(name.band) := as.list(rep(as.numeric(NA),length(name.band)))]
-        }
 
         ## reshape data
         estimate.rR <- matrix(NA, nrow = n.allContrasts, ncol = n.times)
         iid.rR <- array(NA, dim = c(n.obs, n.times, n.allContrasts))
     
         for(iC in 1:n.allContrasts){ ## iC <- 1
-            estimate.rR[iC,] <- object$riskComparison[(object$riskComparison[[1]] == allContrasts[1,iC]) & (object$riskComparison[[2]] == allContrasts[2,iC]),
-                                                      .SD[[paste0("ratio.",iEstimator)]]]
+            estimate.rR[iC,] <- object$ratioRisk[list(iEstimator,allContrasts[1,iC],allContrasts[2,iC]), .SD$estimate, on = c("estimator","A","B")]
 
-            factor1 <- object$meanRisk[object$meanRisk[[1]] == allContrasts[1,iC],.SD[[paste0("meanRisk.",iEstimator)]]]
-            factor2 <- object$meanRisk[object$meanRisk[[1]] == allContrasts[2,iC],.SD[[paste0("meanRisk.",iEstimator)]]]
-            
+            factor1 <- object$meanRisk[list(iEstimator, allContrasts[1,iC]),.SD$estimate, on = c("estimator","treatment")]
+            factor2 <- object$meanRisk[list(iEstimator, allContrasts[2,iC]),.SD$estimate, on = c("estimator","treatment")]
+
             term1 <- rowMultiply_cpp(object$iid[[iEstimator]][[allContrasts[2,iC]]],
                                      scale = 1/factor1)
             term2 <- rowMultiply_cpp(object$iid[[iEstimator]][[allContrasts[1,iC]]],
@@ -571,7 +523,7 @@ confintIID.ate <- function(object,
             iid.rR[,,iC] <- term1 - term2
         }
         se.rR <- t(sqrt(apply(iid.rR^2, MARGIN = 2:3, sum)))
-    
+
         ## compute
         CIBP.rR <- transformCIBP(estimate = estimate.rR,
                                  se = se.rR,
@@ -581,8 +533,8 @@ confintIID.ate <- function(object,
                                  alternative = alternative,
                                  n.sim = n.sim,
                                  seed = seed,
-                                 type = object$ratioRisk.transform,
-                                 min.value = switch(object$ratioRisk.transform,
+                                 type = ratioRisk.transform,
+                                 min.value = switch(ratioRisk.transform,
                                                     "none" = 0,
                                                     "log" = NULL),
                                  max.value = NULL,
@@ -592,28 +544,23 @@ confintIID.ate <- function(object,
                                  p.value = p.value)
 
         ## store
-        for(iC in 1:n.allContrasts){ ## iT <- 1
-            object$riskComparison[(object$riskComparison[[1]] == allContrasts[1,iC]) & (object$riskComparison[[2]] == allContrasts[2,iC]),
-                                  c(paste0("ratio.",iEstimator,".se")) := se.rR[iC,]]
+        for(iC in 1:n.allContrasts){ ## iC <- 1
+            iRowIndex <- which((object$ratioRisk$estimator==iEstimator)*(object$ratioRisk$A==allContrasts[1,iC])*(object$ratioRisk$B==allContrasts[2,iC])==1)
 
+            object$ratioRisk[iRowIndex, c("se") := se.rR[iC,]]
             if(ci){
-                object$riskComparison[(object$riskComparison[[1]] == allContrasts[1,iC]) & (object$riskComparison[[2]] == allContrasts[2,iC]),
-                                      c(name.ci[1:2]) := list(CIBP.rR$lower[iC,],CIBP.rR$upper[iC,])]
+                object$ratioRisk[iRowIndex, c("lower","upper") := list(CIBP.rR$lower[iC,],CIBP.rR$upper[iC,])]
                 if(p.value){
-                    object$riskComparison[(object$riskComparison[[1]] == allContrasts[1,iC]) & (object$riskComparison[[2]] == allContrasts[2,iC]),
-                                          c(utils::tail(name.ci,1)) := list(CIBP.rR$p.value[iC,])]
+                    object$ratioRisk[iRowIndex, c("p.value") := CIBP.rR$p.value[iC,]]
                 }
             }
             if(band>0){
                 if(method.band %in% c("bonferroni","maxT-integration","maxT-simulation")){
-                    object$riskComparison[(object$riskComparison[[1]] == allContrasts[1,iC]) & (object$riskComparison[[2]] == allContrasts[2,iC]),
-                                          c(name.band[1:3]) := list(CIBP.rR$quantileBand[iC],CIBP.rR$lowerBand[iC,],CIBP.rR$upperBand[iC,])]
+                    object$ratioRisk[iRowIndex, c("quantileBand","lowerBand","upperBand") := list(CIBP.rR$quantileBand[iC],CIBP.rR$lowerBand[iC,],CIBP.rR$upperBand[iC,])]
                 }
                 if(p.value){
-                    object$riskComparison[(object$riskComparison[[1]] == allContrasts[1,iC]) & (object$riskComparison[[2]] == allContrasts[2,iC]),
-                                          c(utils::tail(name.band,1)) := list(CIBP.rR$adj.p.value[iC,])]
+                    object$ratioRisk[iRowIndex, c("adj.p.value") := CIBP.rR$adj.p.value[iC,]]
                 }
-
             }
         }
     }
@@ -621,13 +568,17 @@ confintIID.ate <- function(object,
     ## ** export
     object$allContrasts <- allContrasts
     attr(object$allContrasts,"contrasts") <- contrasts
-    object$conf.level <- conf.level
-    object$ci <- ci
-    object$band <- band
-    object$p.value <- p.value
-    object$n.sim <- n.sim
-    object$method.band <- method.band
-    object$alternative <- alternative
+    object$transform <- c("meanRisk" = meanRisk.transform,
+                          "diffRisk" = diffRisk.transform,
+                          "ratioRisk" = ratioRisk.transform)
+
+    object$inference$conf.level <- conf.level
+    object$inference$ci <- ci
+    object$inference$band <- band
+    object$inference$p.value <- p.value
+    object$inference$n.sim <- n.sim
+    object$inference$method.band <- method.band
+    object$inference$alternative <- alternative
     return(object)
 }
 

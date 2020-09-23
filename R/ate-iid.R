@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: apr  5 2018 (17:01) 
 ## Version: 
-## Last-Updated: sep  4 2020 (18:27) 
+## Last-Updated: sep 23 2020 (11:47) 
 ##           By: Brice Ozenne
-##     Update #: 1288
+##     Update #: 1293
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -24,7 +24,7 @@ iidATE <- function(estimator,
                    contrasts,
                    times,
                    cause,
-                   iid.Gformula,
+                   iid.GFORMULA,
                    iid.IPTW,
                    iid.AIPTW,
                    Y.tau,
@@ -269,8 +269,9 @@ iidATE <- function(estimator,
     
     ## ** export
     out <- list()
-    if(attr(estimator,"export.Gformula")){
-        out <- c(out, list(Gformula = iid.Gformula))
+
+    if(attr(estimator,"export.GFORMULA")){
+        out <- c(out, list(GFORMULA = iid.GFORMULA))
     }
     if(attr(estimator,"export.IPTW")){
         out <- c(out, list(IPTW = iid.IPTW))
@@ -284,7 +285,7 @@ iidATE <- function(estimator,
 ## * iidATE2 (same as iidATE but perform the average from the iid, less efficient but easier to understand)
 iidATE2 <- function(estimator,
                     contrasts,
-                    iid.Gformula,
+                    iid.GFORMULA,
                     iid.IPTW,
                     iid.AIPTW,
                     Y.tau,
@@ -456,8 +457,8 @@ iidATE2 <- function(estimator,
 
     ## ** export
     out <- list()
-    if(attr(estimator,"export.Gformula")){
-        out <- c(out, list(Gformula = iid.Gformula))
+    if(attr(estimator,"export.GFORMULA")){
+        out <- c(out, list(GFORMULA = iid.GFORMULA))
     }
     if(attr(estimator,"export.IPTW")){
         out <- c(out, list(IPTW = iid.IPTW))
