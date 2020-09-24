@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: apr 28 2017 (14:19) 
 ## Version: 
-## last-updated: sep 23 2020 (14:05) 
+## last-updated: sep 24 2020 (13:45) 
 ##           By: Brice Ozenne
-##     Update #: 132
+##     Update #: 139
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -28,7 +28,7 @@
 #' @param alpha [numeric, 0-1] Transparency of the confidence bands. Argument passed to \code{ggplot2::geom_ribbon}.
 #' @param smooth [logical] Should a smooth version of the risk function be plotted instead of a simple function?
 #' @param estimator [character] The type of estimator relative to which the risks should be displayed. 
-#' @param ... not used. Only for compatibility with the plot method.
+#' @param ... Additional parameters to cutomize the display.
 #' 
 #' @return Invisible. A list containing:
 #' \itemize{
@@ -60,6 +60,7 @@
 #'
 #' #### display #### 
 #' ggplot2::autoplot(ateFit)
+#' ggplot2::autoplot(ateFit, smooth = TRUE)
 #' outGG <- ggplot2::autoplot(ateFit, alpha = 0.1)
 #' 
 #' dd <- as.data.frame(outGG$data[treatment == 0])
@@ -71,8 +72,8 @@
 #' @export
 autoplot.ate <- function(object,
                          estimator = object$estimator[1],
-                         ci = object$ci,
-                         band = object$band,
+                         ci = object$inference$ci,
+                         band = object$inference$band,
                          plot = TRUE,
                          smooth = FALSE,
                          digits = 2,
@@ -82,11 +83,11 @@ autoplot.ate <- function(object,
     ## initialize and check
     estimator <- match.arg(estimator, choices =  object$estimator, several.ok = FALSE)
 
-    if(ci[[1]]==TRUE && (object$se[[1]]==FALSE || is.null(object$conf.level))){
+    if(ci[[1]]==TRUE && object$inference$ci[[1]]==FALSE){
         stop("argument \'ci\' cannot be TRUE when no standard error have been computed \n",
              "set arguments \'se\' and \'confint\' to TRUE when calling the ate function \n")
     }
-    if(band[[1]] && (object$band[[1]]==FALSE  || is.null(object$conf.level))){
+    if(band[[1]] && object$inference$band[[1]]==FALSE){
         stop("argument \'band\' cannot be TRUE when the quantiles for the confidence bands have not been computed \n",
              "set arguments \'band\' and \'confint\' to TRUE when calling the ate function \n")
     }
@@ -94,12 +95,12 @@ autoplot.ate <- function(object,
         stop("Invalid object. The prediction times must be strictly increasing \n")
     }
     
-    dots <- list(...)
-    if(length(dots)>0){
-        txt <- names(dots)
-        txt.s <- if(length(txt)>1){"s"}else{""}
-        stop("unknown argument",txt.s,": \"",paste0(txt,collapse="\" \""),"\" \n")
-    }
+    ## dots <- list(...)
+    ## if(length(dots)>0){
+    ##     txt <- names(dots)
+    ##     txt.s <- if(length(txt)>1){"s"}else{""}
+    ##     stop("unknown argument",txt.s,": \"",paste0(txt,collapse="\" \""),"\" \n")
+    ## }
 
     ## display
     dataL <- object$meanRisk[estimator,.SD,on="estimator"]
@@ -107,7 +108,9 @@ autoplot.ate <- function(object,
     if(ci){
         setnames(dataL, old = c("lower","upper"), new = c("lowerCI","upperCI"))
     }
-    
+    if(attr(object$estimator,"TD")){
+        dataL$time <- dataL$time + dataL$landmark
+    }
     gg.res <- predict2plot(dataL = dataL,
                            name.outcome = "estimate", # must not contain space to avoid error in ggplot2
                            ci = ci, band = band,
@@ -116,7 +119,8 @@ autoplot.ate <- function(object,
                            smooth = smooth,
                            alpha = alpha,
                            xlab = "time",
-                           ylab = "Average absolute risk")
+                           ylab = "Average absolute risk",
+                           ...)
   
     if(plot){
         print(gg.res$plot)

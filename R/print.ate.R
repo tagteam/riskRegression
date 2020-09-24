@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun  6 2016 (06:48) 
 ## Version: 
-## last-updated: sep 23 2020 (17:22) 
+## last-updated: sep 24 2020 (12:17) 
 ##           By: Brice Ozenne
-##     Update #: 498
+##     Update #: 516
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -36,7 +36,7 @@ print.ate <- function(x, estimator = x$estimator, ...){
 
     dots <- list(...)
 
-    estimator.print <- sapply(estimator,
+    estimator.print <- sapply(attr(estimator,"full"),
                               switch,
                               "GFORMULA" = "G-formula",
                               "GFORMULATD" = "G-formula with time-dependent covariates)",
@@ -60,7 +60,7 @@ print.ate <- function(x, estimator = x$estimator, ...){
         txt.cause <- ""
     }
     ## event variable
-    txt.eventvar <- paste0("cause: ",cause)
+    txt.eventvar <- paste0("cause: ",x$theCause)
     if(length(setdiff(cause,x$theCause))>0){
         txt.eventvar <- paste0(txt.eventvar,", competing risk(s): ",paste(setdiff(cause,x$theCause),collapse = " "))
     }
@@ -68,10 +68,12 @@ print.ate <- function(x, estimator = x$estimator, ...){
         txt.eventvar <- paste0(txt.eventvar, ", censoring: ",attr(x$theCause,"level.censoring"))
     }
     ## number at risk at the evaluation time
-    M.at.risk <- cbind("- Eval. time       "="number at risk",attr(x$eval.times,"n.at.risk"))
-    colnames(M.at.risk)[2] <- " :"
-    M.at.risk[,2] <- paste(as.character(M.at.risk[[2]]),"  ",sep="")
-
+    if(!is.na(x$variable["time"])){
+        M.at.risk <- cbind("- Eval. time       "="number at risk",attr(x$eval.times,"n.at.risk"))
+        colnames(M.at.risk)[2] <- " :"
+        M.at.risk[,2] <- paste(as.character(M.at.risk[[2]]),"  ",sep="")
+    }
+    
     ## statistical inference
     if(!is.na(x$inference$B) && !identical(x$inference$B,0)){
         bootci.method <- switch(x$inference$bootci.method,
@@ -113,9 +115,11 @@ print.ate <- function(x, estimator = x$estimator, ...){
     }
 
     cat(" - Event                : ",x$var["event"]," (",txt.eventvar,")\n",sep="")
-    cat(" - Time  [min;max]      : ",x$var["time"]," [",signif(attr(x$var,"range.time")[1],3),";",signif(attr(x$var,"range.time")[2], 3),"]\n",sep="")
-    print(M.at.risk, row.names = FALSE)
-
+    if(!is.na(x$var["time"])){
+        cat(" - Time  [min;max]      : ",x$var["time"]," [",signif(attr(x$var,"range.time")[1],3),";",signif(attr(x$var,"range.time")[2], 3),"]\n",sep="")
+        print(M.at.risk, row.names = FALSE)
+    }
+    
     cat("\n Estimation procedure \n")
     cat(" - Estimator",if(length(estimator.print)>1){"s"}else{" "},"           : ",paste(estimator.print, collapse = " "),"\n",sep="")
     if(test.inference){
@@ -124,26 +128,43 @@ print.ate <- function(x, estimator = x$estimator, ...){
     
     if(display.results){
         cat("\n Results \n")
-        dt.res <- cbind(x$diffRisk[,list(risk.A = formatCI(lower = min(estimate.A),upper = max(estimate.A)),
-                                         risk.B = formatCI(lower = min(estimate.B),upper = max(estimate.B)),
-                                         "difference (B-A)" = formatCI(lower = min(estimate),upper = max(estimate))),
-                                   by=c("A","B")],
-                        "ratio (B/A)" = x$ratioRisk[,list(ratio = formatCI(lower = min(estimate),upper = max(estimate))),
-                                                    by=c("A","B")]$ratio
-                        )
+        if(all(x$diffRisk[,.N,by=c("A","B")]$N==1)){
+            test.onerow <- TRUE
+            dt.res <- cbind(x$diffRisk[,list(risk.A = estimate.A,
+                                             risk.B = estimate.B,
+                                             "difference (B-A)" = estimate),
+                                       by=c("A","B")],
+                            "ratio (B/A)" = x$ratioRisk[,list(ratio = estimate),
+                                                        by=c("A","B")]$ratio
+                            )
+        }else{
+            test.onerow <- FALSE
+            dt.res <- cbind(x$diffRisk[,list(risk.A = formatCI(lower = min(estimate.A),upper = max(estimate.A)),
+                                             risk.B = formatCI(lower = min(estimate.B),upper = max(estimate.B)),
+                                             "difference (B-A)" = formatCI(lower = min(estimate),upper = max(estimate))),
+                                       by=c("A","B")],
+                            "ratio (B/A)" = x$ratioRisk[,list(ratio = formatCI(lower = min(estimate),upper = max(estimate))),
+                                                        by=c("A","B")]$ratio
+                            )
+        }
         if(!is.na(x$variable["treatment"])){
             setnames(dt.res, old = c("A","B"), new = paste(x$variable["treatment"], c("A","B"),sep="="))
         }else if(!is.na(x$variable["strata"])){
             setnames(dt.res, old = c("A","B"), new = paste(x$variable["strata"], c("A","B"),sep="="))
         }
-        cat(" - Standardized risks   :    [min;max]   \n")
+        if(test.onerow){
+            cat(" - Standardized risks   :                \n")
+        }else{
+            cat(" - Standardized risks   :    [min;max]   \n")
+        }        
         print(dt.res, row.names = FALSE)
+
         cat("\n")
-            
+        
         cat(" - Computation time     : ",x$computation.time$point," ",attr(x$computation.time$point,"units")," (point estimate)\n", sep="")
         if(!is.na(x$inference$B) && !identical(x$inference$B,0)){
-            cat("                          ",x$computation.time$bootstrap," ",attr(x$computation.time$bootstrap,"units")," (bootstrap)\n", sep="")
-        }else if(!is.null(x$iid) ||x$band || x$se){
+            cat("                          ",x$computation.time$bootstrap," ",attr(x$computation.time$bootstrap,"units")," (bootstrap)\n", sep="")            
+        }else if(!is.null(x$iid) ||x$inference$band || x$inference$se){
             cat("                          ",x$computation.time$iid," ",attr(x$computation.time$iid,"units")," (iid)\n", sep="")
         }
         cat("\n")

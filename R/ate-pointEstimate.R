@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: jun 27 2019 (10:43) 
 ## Version: 
-## Last-Updated: sep 23 2020 (11:46) 
+## Last-Updated: sep 24 2020 (12:13) 
 ##           By: Brice Ozenne
-##     Update #: 847
+##     Update #: 859
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -72,9 +72,9 @@ ATE_TI <- function(object.event,
     }
     
     if(attr(estimator,"export.AIPTW")){
-        out$meanRisk <- c(out$meanRisk,
-                      as.data.table(cbind(estimator = "AIPTW", expand.grid(time = times, treatment = contrasts), estimate = as.numeric(NA)))
-                      )
+        out$meanRisk <- rbind(out$meanRisk,
+                              as.data.table(cbind(estimator = "AIPTW", expand.grid(time = times, treatment = contrasts), estimate = as.numeric(NA)))
+                              )
         
         out$store$iid.AIPTW <- lapply(1:n.contrasts, function(iC){matrix(0, nrow = n.obs, ncol = n.times)})
         names(out$store$iid.AIPTW) <- contrasts
@@ -339,7 +339,6 @@ ATE_TI <- function(object.event,
             out$store$F1.jump <- F1.jump
             out$store$S.jump <- S.jump
             out$store$G.jump <- G.jump
-            out$storedLambda.jump <- dLambda.jump$hazard
             out$store$dM.jump <- dM.jump
 
             out$store$beforeEvent.jumpC <- beforeEvent.jumpC
@@ -349,7 +348,7 @@ ATE_TI <- function(object.event,
     }
 
     ## ** Compute risk comparisons
-    out[c("diffRisk","ratioRisk")] <- ATE_COMPARISONS(out$meanRisk, TD = FALSE)
+    out[c("diffRisk","ratioRisk")] <- ATE_COMPARISONS(out$meanRisk, TD = FALSE, allContrasts = utils::combn(contrasts, m = 2))
     
     ## ** Export
     return(out)            
@@ -404,14 +403,14 @@ ATE_TD <- function(object.event,
     }))
 
     ## ** Compute risk comparisons
-    out[c("diffRisk","ratioRisk")] <- ATE_COMPARISONS(out$meanRisk, TD = TRUE)
+    out[c("diffRisk","ratioRisk")] <- ATE_COMPARISONS(out$meanRisk, TD = TRUE, allContrasts = utils::combn(contrasts, m = 2))
     
     ## ** Export
     return(out)
 }
 
 ## * ATE_COMPARISONS: compute average risk for time dependent covariates (using G-formula)
-ATE_COMPARISONS <- function(data, TD){
+ATE_COMPARISONS <- function(data, TD, allContrasts){
     ## duplicate
     dataA <- copy(data)
     setnames(dataA, old = c("treatment","estimate"), new = c("A","estimate.A"))
@@ -425,13 +424,11 @@ ATE_COMPARISONS <- function(data, TD){
         mdata <- merge(dataA, dataB, by = c("estimator","time"), allow.cartesian = TRUE)
     }
 
-    ## trim
-    mdata <- mdata[mdata$A!=mdata$B] ## remove identity
+    ## trim (remove T0.T0 and T1.T0 when T0.T1 is already there)
+    mdata <- mdata[interaction(mdata$A,mdata$B) %in% interaction(allContrasts[1,],allContrasts[2,])]
     if(TD){
-        mdata <- mdata[!duplicated(mdata[,paste(sort(c(.SD$time, .SD$landmark, as.character(.SD$A), as.character(.SD$B))),collapse=""), by = 1:NROW(mdata)]$V1)] ## remove duplicates
         setcolorder(mdata, c("estimator","time","landmark","A","B","estimate.A","estimate.B"))
     }else{
-        mdata <- mdata[!duplicated(mdata[,paste(sort(c(.SD$time, as.character(.SD$A), as.character(.SD$B))),collapse=""), by = 1:NROW(mdata)]$V1)] ## remove duplicates
         setcolorder(mdata, c("estimator","time","A","B","estimate.A","estimate.B"))
     }
 

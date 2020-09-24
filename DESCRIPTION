@@ -55,6 +55,7 @@ Suggests:
     rpart,
     testthat,
     R.rsp,
+	scam,
     casebase
 Maintainer: Thomas Alexander Gerds <tag@biostat.ku.dk>
 Description: Implementation of the following methods for event history analysis.

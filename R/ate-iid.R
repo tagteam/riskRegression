@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: apr  5 2018 (17:01) 
 ## Version: 
-## Last-Updated: sep 23 2020 (11:47) 
+## Last-Updated: sep 24 2020 (11:42) 
 ##           By: Brice Ozenne
-##     Update #: 1293
+##     Update #: 1312
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -39,7 +39,6 @@ iidATE <- function(estimator,
                    S.jump,
                    G.jump,
                    dM.jump,
-                   dLambda.jump,
                    index.obsSINDEXjumpC,
                    eventVar.time,
                    time.jumpC,
@@ -67,30 +66,37 @@ iidATE <- function(estimator,
         ls.F1tau_F1t_SG <- lapply(1:n.times, function(iT){ls.F1tau_F1t[[iT]]/SG})
     }
 
+    test.IPTW <- attr(estimator,"IPTW")
+    test.IPCW <- attr(estimator,"IPCW")
+    any.IPTW <- "IPTW" %in% attr(estimator,"full")
+    any.IPTW.IPCW <- "IPTW,IPCW" %in% attr(estimator,"full")
+    any.AIPTW <- "AIPTW" %in% attr(estimator,"full")
+    any.AIPTW.AIPCW <- "AIPTW,AIPCW" %in% attr(estimator,"full")
+    
     ## ** Compute influence function relative to the prediction
     ## *** outcome model
     ## already done in ATE_TI (ate-pointEstimate.R)
 
     ## cat("Outcome (method=1) \n")
-    ## print(head(iid.AIPTW[[1]]))
-    
+    ## print(lapply(lapply(iid.AIPTW,abs),colSums))
+
     ## *** treatment model
-    if(attr(estimator,"IPTW")){
+    if(test.IPTW){
         for(iC in 1:n.contrasts){ ## iC <- 1
             factor <- TRUE
             attr(factor,"factor") <- list()
 
-            if("IPTW,IPCW" %in% estimator){
+            if(any.IPTW.IPCW){
                 attr(factor,"factor") <- c(attr(factor,"factor"),
                                            list(IPTW = colMultiply_cpp(Y.tau * iW.IPCW, scale = -iW.IPTW2[,iC]))
                                            )
-            }else if("IPTW" %in% estimator){
+            }else if(any.IPTW){
                 attr(factor,"factor") <- c(attr(factor,"factor"),
                                            list(IPTW = colMultiply_cpp(Y.tau, scale = -iW.IPTW2[,iC]))
                                            )
             }
             
-            if("AIPTW,AIPCW" %in% estimator){
+            if(any.AIPTW.AIPCW){
                 if(inherits(object.event,"wglm")){
                     attr(factor,"factor") <- c(attr(factor,"factor"),
                                                list(AIPTW = colMultiply_cpp(iW.IPCW * (Y.tau - F1.ctf.tau[[iC]]), scale = -iW.IPTW2[,iC]))
@@ -100,31 +106,30 @@ iidATE <- function(estimator,
                                                list(AIPTW = colMultiply_cpp(Y.tau * iW.IPCW - F1.ctf.tau[[iC]], scale = -iW.IPTW2[,iC]))
                                                )
                 }
-            }else if("AIPTW" %in% estimator){
+            }else if(any.AIPTW){
                 attr(factor,"factor") <- c(attr(factor,"factor"),
                                            list(AIPTW = colMultiply_cpp(Y.tau - F1.ctf.tau[[iC]], scale = -iW.IPTW2[,iC]))
                                            )
             }
-
             term.treatment <- attr(predictRisk(object.treatment,
                                                newdata = mydata,
                                                average.iid = factor,
                                                level = contrasts[iC]), "average.iid")
 
-            if(attr(estimator,"export.IPTW")){
+            if(any.IPTW || any.IPTW.IPCW){
                 iid.IPTW[[iC]] <- iid.IPTW[[iC]] + term.treatment[["IPTW"]]
             }
-            if(attr(estimator,"export.AIPTW")){
+            if(any.AIPTW || any.AIPTW.AIPCW){
                 iid.AIPTW[[iC]] <- iid.AIPTW[[iC]] + term.treatment[["AIPTW"]]
             }
         }
     }
     
     ## cat("Treatment (method=1) \n")
-    ## print(lapply(lapply(iid.IPTW,abs),colSums))
+    ## print(lapply(lapply(iid.AIPTW,abs),colSums))
 
     ## *** censoring model
-    if(attr(estimator,"IPCW")){
+    if(test.IPCW){
         factor <- TRUE        
         for(iTime in 1:n.times){ ## iTime <- 1
             if(inherits(object.event,"wglm")){
@@ -138,10 +143,10 @@ iidATE <- function(estimator,
 
             for(iC in 1:n.contrasts){ ## iGrid <- 1
                 ## - because predictRisk outputs the risk instead of the survival                 
-                if(attr(estimator,"export.IPTW")){
+                if(any.IPTW || any.IPTW.IPCW){
                     iid.IPTW[[iC]][,iTime] <- iid.IPTW[[iC]][,iTime] - term.censoring[[iC]]
                 }
-                if(attr(estimator,"export.AIPTW")){
+                if(any.AIPTW || any.AIPTW.AIPCW){
                     iid.AIPTW[[iC]][,iTime] <- iid.AIPTW[[iC]][,iTime] - term.censoring[[iC]]
                 }
             }
@@ -150,7 +155,7 @@ iidATE <- function(estimator,
     }
 
     ## cat("Censoring (method=1) \n")
-    ## print(sapply(lapply(iid.AIPTW,abs),colSums))
+    ## print(lapply(lapply(iid.AIPTW,abs),colSums))
 
     ## *** augmentation censoring term
     if(attr(estimator,"integral")){
@@ -325,6 +330,13 @@ iidATE2 <- function(estimator,
         ls.F1tau_F1t <- lapply(1:n.times, function(iT){-colCenter_cpp(F1.jump, center = F1.tau[,iT])})
     }
     
+    test.IPTW <- attr(estimator,"IPTW")
+    test.IPCW <- attr(estimator,"IPCW")
+    any.IPTW <- "IPTW" %in% attr(estimator,"full")
+    any.IPTW.IPCW <- "IPTW,IPCW" %in% attr(estimator,"full")
+    any.AIPTW <- "AIPTW" %in% attr(estimator,"full")
+    any.AIPTW.AIPCW <- "AIPTW,IPCW" %in% attr(estimator,"full")
+
     ## ** Compute influence function relative to the predictions
 
     ## *** outcome model
@@ -334,23 +346,23 @@ iidATE2 <- function(estimator,
     ## print(head(iid.AIPTW[[1]]))
 
     ## *** treatment model
-    if(attr(estimator,"IPTW")){
+    if(test.IPTW){
         
         for(iC in 1:n.contrasts){ ## iC <- 1
             for(iTau in 1:n.times){ ## iTau <- 1
 
-                if(attr(estimator,"export.IPTW")){
-                    if("IPTW" %in% estimator){
+                if(any.IPTW || any.IPTW.IPCW){
+                    if(any.IPTW){
                         iFactor <- - Y.tau[,iTau] * iW.IPTW2[,iC]
-                    }else if("IPTW,IPCW" %in% estimator){
+                    }else if(any.IPTW.IPCW){
                         iFactor <- - Y.tau[,iTau] * iW.IPCW[,iTau] * iW.IPTW2[,iC]
                     }
                     iid.IPTW[[iC]][,iTau] <- iid.IPTW[[iC]][,iTau] + rowMeans(rowMultiply_cpp(iid.nuisance.treatment[[iC]], scale = iFactor))
                 }
-                if(attr(estimator,"export.AIPTW")){
-                    if("AIPTW" %in% estimator){
+                if(any.AIPTW || any.AIPTW.AIPCW){
+                    if(any.AIPTW){
                         iFactor <- - (Y.tau[,iTau] - F1.ctf.tau[[iC]][,iTau]) * iW.IPTW2[,iC]
-                    }else if("AIPTW,AIPCW" %in% estimator){
+                    }else if(any.AIPTW.AIPCW){
                         iFactor <- - (Y.tau[,iTau] * iW.IPCW[,iTau] - F1.ctf.tau[[iC]][,iTau]) * iW.IPTW2[,iC]
                     }
                     iid.AIPTW[[iC]][,iTau] <- iid.AIPTW[[iC]][,iTau] + rowMeans(rowMultiply_cpp(iid.nuisance.treatment[[iC]], scale = iFactor))
@@ -363,14 +375,14 @@ iidATE2 <- function(estimator,
     ## print(head(iid.AIPTW[[1]]))
     
     ## *** censoring model
-    if(attr(estimator,"IPCW")){
+    if(test.IPCW){
 
         for(iTau in 1:n.times){ ## iTau <- 1
             for(iC in 1:n.contrasts){ ## iC <- 1
-                if(attr(estimator,"export.IPTW")){
+                if(any.IPTW || any.IPTW.IPCW){
                     iid.IPTW[[iC]][,iTau] <- iid.IPTW[[iC]][,iTau] + rowMeans(rowMultiply_cpp(iid.nuisance.censoring.diag[[iTau]][,1,], -iW.IPCW2[,iTau]*Y.tau[,iTau]*iW.IPTW[,iC]))
                 }
-                if(attr(estimator,"export.AIPTW")){
+                if(any.AIPTW || any.AIPTW.AIPCW){
                     iid.AIPTW[[iC]][,iTau] <- iid.AIPTW[[iC]][,iTau] + rowMeans(rowMultiply_cpp(iid.nuisance.censoring.diag[[iTau]][,1,], -iW.IPCW2[,iTau]*Y.tau[,iTau]*iW.IPTW[,iC]))
                 }
             }
