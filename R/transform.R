@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: maj 30 2018 (15:58) 
 ## Version: 
-## Last-Updated: aug 21 2020 (14:32) 
+## Last-Updated: sep 30 2020 (16:48) 
 ##           By: Brice Ozenne
-##     Update #: 437
+##     Update #: 446
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -510,7 +510,6 @@ transformCIBP <- function(estimate, se, iid, null,
         union(which(is.na(se)),
               which(is.nan(se)))
     )
-    
     if(length(indexNA)>0){
         if(ci){
             out$lower[indexNA] <- NA
@@ -519,19 +518,25 @@ transformCIBP <- function(estimate, se, iid, null,
                 out$p.value[indexNA] <- NA
             }
         }
-        if(band){ ## if cannot compute se at one time then remove confidence band at all times
-            indexNA2 <- union(
-                union(which(rowSums(is.na(estimate))>0),
-                      which(rowSums(is.nan(estimate))>0)),
-                union(which(rowSums(is.na(se))>0),
-                      which(rowSums(is.nan(se))>0))
-            )
-            out$quantileBand[indexNA2] <- NA
-            out$lowerBand[indexNA2,] <- NA
-            out$upperBand[indexNA2,] <- NA
+        if(band){
+            out$lowerBand[indexNA] <- NA
+            out$upperBand[indexNA] <- NA
             if(p.value){
-                out$adj.p.value[indexNA2,] <- NA
+                out$adj.p.value[indexNA] <- NA
             }
+            ## if cannot compute se at one time then remove confidence band at all times
+            ## indexNA2 <- union(
+            ##     union(which(rowSums(is.na(estimate))>0),
+            ##           which(rowSums(is.nan(estimate))>0)),
+            ##     union(which(rowSums(is.na(se))>0),
+            ##           which(rowSums(is.nan(se))>0))
+            ## )
+            ## out$quantileBand[indexNA2] <- NA
+            ## out$lowerBand[indexNA2,] <- NA
+            ## out$upperBand[indexNA2,] <- NA
+            ## if(p.value){
+            ##     out$adj.p.value[indexNA2,] <- NA
+            ## }
         }
     }
 

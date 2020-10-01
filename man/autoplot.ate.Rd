@@ -6,18 +6,29 @@
 \usage{
 \method{autoplot}{ate}(
   object,
+  type = "meanRisk",
+  first.derivative = FALSE,
   estimator = object$estimator[1],
-  ci = object$ci,
-  band = object$band,
+  ci = object$inference$ci,
+  band = object$inference$band,
   plot = TRUE,
   smooth = FALSE,
   digits = 2,
   alpha = NA,
+  ylab = NULL,
   ...
 )
 }
 \arguments{
 \item{object}{Object obtained with the function \code{ate}.}
+
+\item{type}{[character vector] what to displayed.
+Can be \code{"risk"} to display the risks specific to each treatment group,
+\code{"difference"} to display the difference in risks between treatment groups,
+or \code{"ratio"} to display the ratio of risks between treatment groups,.}
+
+\item{first.derivative}{[logical] If \code{TRUE}, display the first derivative over time of the risks/risk differences/risk ratios.
+(confidence intervals are obtained via simulation).}
 
 \item{estimator}{[character] The type of estimator relative to which the risks should be displayed.}
 
@@ -33,7 +44,9 @@
 
 \item{alpha}{[numeric, 0-1] Transparency of the confidence bands. Argument passed to \code{ggplot2::geom_ribbon}.}
 
-\item{...}{not used. Only for compatibility with the plot method.}
+\item{ylab}{[character] Label for the y axis.}
+
+\item{...}{Additional parameters to cutomize the display.}
 }
 \value{
 Invisible. A list containing:
@@ -65,10 +78,24 @@ ateFit <- ate(fit, data = dtS, treatment = "X1",
 
 #### display #### 
 ggplot2::autoplot(ateFit)
-outGG <- ggplot2::autoplot(ateFit, alpha = 0.1)
 
-dd <- as.data.frame(outGG$data[treatment == 0])
-outGG$plot + facet_wrap(~treatment, labeller = label_both)
+## customize plot
+outGG <- ggplot2::autoplot(ateFit, alpha = 0.1)
+outGG$plot + facet_wrap(~X1, labeller = label_both)
+
+
+## Looking at the difference after smoothing
+\dontrun{
+ggplot2::autoplot(ateFit, type = "diffRisk", smooth = TRUE)
+}
+
+## first derivative
+## (computation of the confidence intervals takes time)
+## (based on simulation - n.sim parameter)
+\dontrun{ 
+ggplot2::autoplot(ateFit, smooth = TRUE, first.derivative = TRUE,
+                  band = FALSE, type = "diffRisk")
+}
 }
 \seealso{
 \code{\link{ate}} to compute average risks.

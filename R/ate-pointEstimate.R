@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: jun 27 2019 (10:43) 
 ## Version: 
-## Last-Updated: sep 24 2020 (12:13) 
+## Last-Updated: okt  1 2020 (13:25) 
 ##           By: Brice Ozenne
-##     Update #: 859
+##     Update #: 863
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -432,6 +432,9 @@ ATE_COMPARISONS <- function(data, TD, allContrasts){
         setcolorder(mdata, c("estimator","time","A","B","estimate.A","estimate.B"))
     }
 
+    ## re-order by estimator
+    mdata <- mdata[order(factor(mdata$estimator, levels = unique(data$estimator)))]
+    
     ## compute stats
     out <- list(diffRisk = data.table::copy(mdata),
                 ratioRisk = data.table::copy(mdata))

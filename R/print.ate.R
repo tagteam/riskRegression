@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun  6 2016 (06:48) 
 ## Version: 
-## last-updated: sep 24 2020 (12:17) 
+## last-updated: okt  1 2020 (15:05) 
 ##           By: Brice Ozenne
-##     Update #: 516
+##     Update #: 520
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -21,6 +21,7 @@
 #' @name print.ate
 #' 
 #' @param x object obtained with function \code{ate}
+#' @param estimator [character] The type of estimator relative to which the risks should be output. 
 #' @param ... for internal use
 #'
 #' @seealso
@@ -130,20 +131,20 @@ print.ate <- function(x, estimator = x$estimator, ...){
         cat("\n Results \n")
         if(all(x$diffRisk[,.N,by=c("A","B")]$N==1)){
             test.onerow <- TRUE
-            dt.res <- cbind(x$diffRisk[,list(risk.A = estimate.A,
-                                             risk.B = estimate.B,
-                                             "difference (B-A)" = estimate),
+            dt.res <- cbind(x$diffRisk[,list(risk.A = .SD$estimate.A,
+                                             risk.B = .SD$estimate.B,
+                                             "difference (B-A)" = .SD$estimate),
                                        by=c("A","B")],
-                            "ratio (B/A)" = x$ratioRisk[,list(ratio = estimate),
+                            "ratio (B/A)" = x$ratioRisk[,list(ratio = .SD$estimate),
                                                         by=c("A","B")]$ratio
                             )
         }else{
             test.onerow <- FALSE
-            dt.res <- cbind(x$diffRisk[,list(risk.A = formatCI(lower = min(estimate.A),upper = max(estimate.A)),
-                                             risk.B = formatCI(lower = min(estimate.B),upper = max(estimate.B)),
-                                             "difference (B-A)" = formatCI(lower = min(estimate),upper = max(estimate))),
+            dt.res <- cbind(x$diffRisk[,list(risk.A = Publish::formatCI(lower = min(.SD$estimate.A),upper = max(.SD$estimate.A)),
+                                             risk.B = Publish::formatCI(lower = min(.SD$estimate.B),upper = max(.SD$estimate.B)),
+                                             "difference (B-A)" = Publish::formatCI(lower = min(.SD$estimate),upper = max(.SD$estimate))),
                                        by=c("A","B")],
-                            "ratio (B/A)" = x$ratioRisk[,list(ratio = formatCI(lower = min(estimate),upper = max(estimate))),
+                            "ratio (B/A)" = x$ratioRisk[,list(ratio = Publish::formatCI(lower = min(.SD$estimate),upper = max(.SD$estimate))),
                                                         by=c("A","B")]$ratio
                             )
         }
@@ -170,7 +171,7 @@ print.ate <- function(x, estimator = x$estimator, ...){
         cat("\n")
     }
     
-    return(NULL)
+    return(invisible(NULL))
 }
 
 

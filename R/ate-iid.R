@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: apr  5 2018 (17:01) 
 ## Version: 
-## Last-Updated: sep 24 2020 (11:42) 
+## Last-Updated: okt  1 2020 (13:44) 
 ##           By: Brice Ozenne
-##     Update #: 1312
+##     Update #: 1322
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -78,7 +78,7 @@ iidATE <- function(estimator,
     ## already done in ATE_TI (ate-pointEstimate.R)
 
     ## cat("Outcome (method=1) \n")
-    ## print(lapply(lapply(iid.AIPTW,abs),colSums))
+    ## print(sapply(lapply(iid.AIPTW,abs),colSums))
 
     ## *** treatment model
     if(test.IPTW){
@@ -126,7 +126,7 @@ iidATE <- function(estimator,
     }
     
     ## cat("Treatment (method=1) \n")
-    ## print(lapply(lapply(iid.AIPTW,abs),colSums))
+    ## print(sapply(lapply(iid.AIPTW,abs),colSums))
 
     ## *** censoring model
     if(test.IPCW){
@@ -155,7 +155,7 @@ iidATE <- function(estimator,
     }
 
     ## cat("Censoring (method=1) \n")
-    ## print(lapply(lapply(iid.AIPTW,abs),colSums))
+    ## print(sapply(lapply(iid.AIPTW,abs),colSums))
 
     ## *** augmentation censoring term
     if(attr(estimator,"integral")){
@@ -335,7 +335,7 @@ iidATE2 <- function(estimator,
     any.IPTW <- "IPTW" %in% attr(estimator,"full")
     any.IPTW.IPCW <- "IPTW,IPCW" %in% attr(estimator,"full")
     any.AIPTW <- "AIPTW" %in% attr(estimator,"full")
-    any.AIPTW.AIPCW <- "AIPTW,IPCW" %in% attr(estimator,"full")
+    any.AIPTW.AIPCW <- "AIPTW,AIPCW" %in% attr(estimator,"full")
 
     ## ** Compute influence function relative to the predictions
 
@@ -343,7 +343,7 @@ iidATE2 <- function(estimator,
     ## already done in ATE_TI (ate-pointEstimate.R)
 
     ## cat("Outcome (method=2) \n")
-    ## print(head(iid.AIPTW[[1]]))
+    ## print(sapply(lapply(iid.AIPTW,abs),colSums))
 
     ## *** treatment model
     if(test.IPTW){
@@ -372,7 +372,7 @@ iidATE2 <- function(estimator,
         }
     }
     ## cat("Treatment (method=2) \n")
-    ## print(head(iid.AIPTW[[1]]))
+    ## print(sapply(lapply(iid.AIPTW,abs),colSums))
     
     ## *** censoring model
     if(test.IPCW){

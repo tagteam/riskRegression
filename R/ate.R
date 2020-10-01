@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Oct 23 2016 (08:53) 
 ## Version: 
-## last-updated: sep 24 2020 (12:29) 
+## last-updated: okt  1 2020 (15:18) 
 ##           By: Brice Ozenne
-##     Update #: 2107
+##     Update #: 2124
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -85,6 +85,7 @@
 #' library(survival)
 #' library(rms)
 #' library(prodlim)
+#' library(data.table)
 #' set.seed(10)
 #' 
 #' #### Survival settings  ####
@@ -434,12 +435,12 @@ ate <- function(event,
         }
         if(attr(estimator,"TD")){
             attr(out$eval.times,"n.at.risk") <- dcast(cbind(times = paste0(times,"+",landmark),
-                                                            data[, .(pc = sapply(times+landmark, function(t){sum(.SD[[eventVar.time]]>=t)})), by = var.group]),
-                                                      value.var = "pc", formula = as.formula(paste0(treatment,"~times")))
+                                                            data[, list(pc = sapply(times+landmark, function(t){sum(.SD[[eventVar.time]]>=t)})), by = var.group]),
+                                                      value.var = "pc", formula = as.formula(paste0(var.group,"~times")))
         }else{
             attr(out$eval.times,"n.at.risk") <- dcast(cbind(times = times,
-                                                            data[, .(pc = sapply(times, function(t){sum(.SD[[eventVar.time]]>=t)})), by = var.group]),
-                                                      value.var = "pc", formula = as.formula(paste0(treatment,"~times")))
+                                                            data[, list(pc = sapply(times, function(t){sum(.SD[[eventVar.time]]>=t)})), by = var.group]),
+                                                      value.var = "pc", formula = as.formula(paste0(var.group,"~times")))
         }
     }
     
@@ -937,12 +938,12 @@ ate_initArgs <- function(object.event,
         attr(estimator.output,"export.AIPTW") <- FALSE
     }
     attr(estimator.output,"full") <- estimator
-    
+
     ## ** sample size
     n.obs <- c(data = NROW(mydata),
                model.event = if(!is.null(model.event)){stats::nobs(model.event)}else{NA},
                model.treatment = if(!is.null(model.treatment)){stats::nobs(model.treatment)}else{NA},
-               model.censor = if(!is.null(model.censor)){stats::nobs(model.censor)}else{NA}
+               model.censor = if(!is.null(model.censor)){coxN(model.censor)}else{NA}
                )
 
     ## ** store.iid

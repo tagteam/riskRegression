@@ -110,6 +110,7 @@ Use the g-formula/IPTW/double robust estimator to estimate the average treatment
 library(survival)
 library(rms)
 library(prodlim)
+library(data.table)
 set.seed(10)
 
 #### Survival settings  ####
@@ -129,6 +130,9 @@ fit <- cph(formula = Surv(time,event)~ X1+X2,data=dtS,y=TRUE,x=TRUE)
 ## confidence intervals / p-values based on asymptotic results
 ateFit1a <- ate(fit, data = dtS, treatment = "X1", times = 5:8)
 summary(ateFit1a)
+summary(ateFit1a, short = TRUE, type = "risk")
+summary(ateFit1a, short = TRUE, type = "difference")
+summary(ateFit1a, short = TRUE, type = "ratio")
 
 \dontrun{
 ## same as before with in addition the confidence bands / adjusted p-values
@@ -138,20 +142,22 @@ ateFit1b <- ate(fit, data = dtS, treatment = "X1", times = 5:8,
 summary(ateFit1b)
 
 ## by default bands/adjuste p-values computed separately for each treatment modality
-print(confint(ateFit1b, band = 1), quantile = TRUE)
-## adjustment over all treatment and times using the band argument of confint
-print(confint(ateFit1b, band = 2), quantile = TRUE)
+summary(confint(ateFit1b, band = 1),
+       se = FALSE, type = "difference", short = TRUE, quantile = TRUE)
+## adjustment over treatment and time using the band argument of confint
+summary(confint(ateFit1b, band = 2),
+       se = FALSE, type = "difference", short = TRUE, quantile = TRUE)
 
 ## confidence intervals / p-values computed using 1000 boostrap samples
 ## (argument se = TRUE and B = 1000) 
 ateFit1c <- ate(fit, data = dtS, treatment = "X1",
-                times = 5:8, se = TRUE, B = 1000)
-## NOTE: for real applications 1000 bootstrap samples is not enough 
+                times = 5:8, se = TRUE, B = 50)
+## NOTE: for real applications 50 bootstrap samples is not enough 
 
 ## same but using 2 cpus for generating and analyzing the boostrap samples
 ## (parallel computation, argument mc.cores = 2) 
 ateFit1d <- ate(fit, data = dtS, treatment = "X1",
-                times = 5:8, se = TRUE, B = 1000, mc.cores = 2)
+                times = 5:8, se = TRUE, B = 50, mc.cores = 2)
 }
 
 #### Survival settings without censoring ####
@@ -174,7 +180,7 @@ ateFit1a
 ## with confidence intervals
 ateFit1b <- ate(fit, data = dtB, treatment = "X1",
                times = 5) ## just for having a nice output not used in computations
-ateFit1b
+summary(ateFit1b, short = TRUE)
 
 ## using the lava package
 ateLava <- estimate(fit, function(p, data){
@@ -184,8 +190,6 @@ R.X10 <- expit(a + c * data[["X2"]])
 list(risk0=R.X10,risk1=R.X11,riskdiff=R.X11-R.X10)},
 average=TRUE)
 ateLava
-
-ateFit1b$meanRisk
 }
 
 #### Competing risks settings               ####
@@ -204,6 +208,7 @@ fitCR <-  CSC(Hist(time,event)~ X1+X8,data=dt,cause=1)
 ateFit2a <- ate(fitCR, data = dt, treatment = "X1", times = c(1,5,10),
                 cause = 1, se = TRUE, band = TRUE)
 ateFit2a
+as.data.table(ateFit2a)
 
 #### Double robust estimator ####
 \dontrun{
@@ -230,10 +235,11 @@ ateRobust <- ate(event = m.event,
 ateRobust3 <- ate(event = m.event,
                  treatment = m.treatment,
                  censor = m.censor,
-                 estimator = c("Gformula","IPTW","AIPTW"),
+                 estimator = c("GFORMULA","IPTW","AIPTW"),
                  data = dt, times = c(5:10), 
                  cause = 1, se = TRUE)
-ateRobust3$meanRisk[,.(meanRisk.Gformula,meanRisk.IPTW,meanRisk.AIPTW)]
+print(setkeyv(as.data.table(ateRobust3, type = "risk"),"time"))
+print(setkeyv(as.data.table(ateRobust3, type = "difference"),"time"))
 }
 
 #### time-dependent covariates ###
@@ -246,11 +252,11 @@ fitTD <- coxph(Surv(tstart, time, status) ~ celltype+karno + age + trt,
                data= vet2,x=1)
 set.seed(16)
 resVet <- ate(fitTD,formula=Hist(entry=tstart,time=time,event=status)~1,
-          data = vet2, treatment = "celltype", contrasts = NULL,
+          data = vet2, treatment = "celltype",
         times=5,verbose=1,
-        landmark = c(0,30,60,90), cause = 1, B = 10, se = 1,
+        landmark = c(0,30,60,90), cause = 1, B = 50, se = 1,
         band = FALSE, mc.cores=1)
-resVet
+summary(resVet)
 }
 
 \dontrun{
@@ -280,8 +286,10 @@ resTD
 }
 }
 \seealso{
-\code{\link{confint.ate}} to compute confidence intervals/bands.
-\code{\link{autoplot.ate}} to display the average risk.
+\code{\link{as.data.table}} to extract the estimates in a \code{data.table} object.
+\code{\link{autoplot.ate}} for a graphical representation the standardized risks.
+\code{\link{confint.ate}} to compute (pointwise/simultaneous) confidence intervals and (unadjusted/adjusted) p-values, possibly using a transformation.
+\code{\link{summary.ate}} for a table containing the standardized risks over time and treatment/strata.
 }
 \author{
 Brice Ozenne \email{broz@sund.ku.dk}

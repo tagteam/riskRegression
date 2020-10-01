@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: maj 23 2018 (14:08) 
 ## Version: 
-## Last-Updated: aug 19 2020 (17:07) 
+## Last-Updated: okt  1 2020 (09:47) 
 ##           By: Brice Ozenne
-##     Update #: 272
+##     Update #: 287
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -143,6 +143,7 @@ confint.predictCox <- function(object,
     }
 
     ## ** compute se, CI/CB
+    object$vcov <- setNames(vector(mode = "list", length = length(parm)), parm)
     for(iType in parm){
         if(iType=="cumhazard"){
             min.value <- switch(object$cumhazard.transform,
@@ -161,7 +162,6 @@ confint.predictCox <- function(object,
                                 "loglog" = NULL,
                                 "cloglog" = NULL)
         }
-        
         outCIBP <- transformCIBP(estimate = object[[iType]],
                                  se = object[[paste0(iType,".se")]],
                                  iid = object[[paste0(iType,".iid")]],
@@ -178,8 +178,20 @@ confint.predictCox <- function(object,
                                  alternative = "two.sided",
                                  p.value = FALSE)
         names(outCIBP) <- paste0(iType,".", names(outCIBP))
-
         object[names(outCIBP)] <- outCIBP
+
+        ## compute variance-covariance matrix
+        if(!is.null(object[[paste0(iType,".iid")]])){
+            n.obs <- NROW(object[[iType]])
+            n.times <- NCOL(object[[iType]])
+            object$vcov[[iType]] <- lapply(1:n.obs, function(iObs){
+                if(n.times==1){
+                    return(sum(object[[paste0(iType,".iid")]][,,iObs]^2))
+                }else{
+                    return(crossprod(object[[paste0(iType,".iid")]][,,iObs]))
+                }
+            })
+        }
     }
     
     ## ** export

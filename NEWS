@@ -1,3 +1,9 @@
+Version: 2020.10.01 (Brice - 2020/10/01)
+- modification of how ate stores the results: $riskComparison has been split in $diffRisk and $ratioRisk. Gformula is now refered as GFORMULA. Estimates for various estimators are now stores in different lines instead of columns.
+- modification of the print function for ate to make it shorter.
+- modification of the summary function for ate to have nicer looking tables. 
+- autoplot now support smoothing using monotone splines and can also display the first derivative of the spline.
+
 Version: 2020.08.21 (Brice - 2020/08/21)
 - calculation of the influence function is now more memory efficient in ate (argument store.iid="minimal")
 - confint.ate now can display adjusted p-values (argument p.value=TRUE) and perform one- or two-sided tests (argument alternative).

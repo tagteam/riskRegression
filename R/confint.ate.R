@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: maj 23 2018 (14:08) 
 ## Version: 
-## Last-Updated: sep 24 2020 (10:22) 
+## Last-Updated: okt  1 2020 (11:18) 
 ##           By: Brice Ozenne
-##     Update #: 846
+##     Update #: 865
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -79,7 +79,7 @@
 ##' #### average treatment effect ####
 ##' fit.ate <- ate(fit, treatment = "X1", times = 1:3, data = d,
 ##'                se = TRUE, iid = TRUE, band = TRUE)
-##' print(fit.ate, type = "meanRisk")
+##' summary(fit.ate)
 ##' dt.ate <- as.data.table(fit.ate)
 ##' 
 ##' ## manual calculation of se
@@ -89,7 +89,7 @@
 ##' term1 <- -out$survival.average.iid
 ##' term2 <- sweep(1-out$survival, MARGIN = 2, FUN = "-", STATS = colMeans(1-out$survival))
 ##' sqrt(colSums((term1 + term2/NROW(d))^2)) 
-##' ## fit.ate$meanRisk[treatment=="T0",meanRisk.Gformula.se]
+##' ## fit.ate$meanRisk[treatment=="T0",se]
 ##' 
 ##' ## note
 ##' out2 <- predictCox(fit, newdata = dd, se = TRUE, times = 1:3, iid = TRUE)
@@ -97,9 +97,9 @@
 ##' out$survival.average.iid[1,1]
 ##' 
 ##' ## check confidence intervals (no transformation)
-##' dt.ate[,.(lower = pmax(0,value + qnorm(0.025) * se),
+##' dt.ate[,.(lower = pmax(0,estimate + qnorm(0.025) * se),
 ##'           lower2 = lower,
-##'           upper = value + qnorm(0.975) * se,
+##'           upper = estimate + qnorm(0.975) * se,
 ##'           upper2 = upper)]
 ##' 
 ##' ## add confidence intervals computed on the log-log scale
@@ -107,11 +107,11 @@
 ##' outCI <- confint(fit.ate,
 ##'                  meanRisk.transform = "loglog", diffRisk.transform = "atanh",
 ##'                  ratioRisk.transform = "log")
-##' print(outCI, type = "meanRisk")
+##' summary(outCI, type = "risk", short = TRUE)
 ##' 
-##' dt.ate[type == "ate", newse := se/(value*log(value))]
-##' dt.ate[type == "ate", .(lower = exp(-exp(log(-log(value)) - 1.96 * newse)),
-##'                         upper = exp(-exp(log(-log(value)) + 1.96 * newse)))]
+##' dt.ate[type == "meanRisk", newse := se/(estimate*log(estimate))]
+##' dt.ate[type == "meanRisk", .(lower = exp(-exp(log(-log(estimate)) - 1.96 * newse)),
+##'                         upper = exp(-exp(log(-log(estimate)) + 1.96 * newse)))]
 
 ## * confint.ate (code)
 ##' @rdname confint.ate
@@ -364,14 +364,18 @@ confintIID.ate <- function(object,
     n.obs <- max(stats::na.omit(object$n[-1]))
 
     ## remove previous values
-    all.endings <- paste(paste0("\\.",c("se","lower","upper","p.value","quantileBand","lowerBand","upperBand","adj.p.value"),"$"),collapse = "|")
+    all.endings <- paste(c("se","lower","upper","p.value","quantileBand","lowerBand","upperBand","adj.p.value"),collapse="|")
     indexRM.mR <- grep(all.endings,names(object$meanRisk), value = TRUE)
-    indexRM.rC <- grep(all.endings,names(object$riskComparison), value = TRUE)
+    indexRM.dR <- grep(all.endings,names(object$diffRisk), value = TRUE)
+    indexRM.rR <- grep(all.endings,names(object$ratioRisk), value = TRUE)
     if(length(indexRM.mR)>0){
         object$meanRisk[,c(indexRM.mR) := NULL]
     }
-    if(length(indexRM.rC)>0){
-        object$riskComparison[,c(indexRM.rC) := NULL]
+    if(length(indexRM.dR)>0){
+        object$diffRisk[,c(indexRM.dR) := NULL]
+    }
+    if(length(indexRM.rR)>0){
+        object$ratioRisk[,c(indexRM.rR) := NULL]
     }
 
     ## initialize for new values
@@ -398,6 +402,9 @@ confintIID.ate <- function(object,
     }
     
     ## ** run
+    object$vcov <- list(meanRisk = setNames(vector(mode = "list", length = n.estimator), estimator),
+                        diffRisk = setNames(vector(mode = "list", length = n.estimator), estimator),
+                        ratioRisk = setNames(vector(mode = "list", length = n.estimator), estimator))
     for(iE in 1:n.estimator){ ## iE <- 1
         iEstimator <- estimator[iE]
         ## ** meanRisk
@@ -438,6 +445,7 @@ confintIID.ate <- function(object,
                                  p.value = FALSE)
 
         ## store
+        object$vcov$meanRisk[[iEstimator]] <- setNames(vector(mode = "list", length = n.contrasts), contrasts)
         for(iC in 1:n.contrasts){ ## iC <- 2
             iRowIndex <- which((object$meanRisk$estimator==iEstimator)*(object$meanRisk$treatment==contrasts[iC])==1)
             
@@ -448,7 +456,15 @@ confintIID.ate <- function(object,
             if((band>0) && (method.band %in% c("bonferroni","maxT-integration","maxT-simulation"))){
                 object$meanRisk[iRowIndex, c("quantileBand","lowerBand","upperBand") := list(CIBP.mR$quantileBand[iC],CIBP.mR$lowerBand[iC,],CIBP.mR$upperBand[iC,])]
             }
+            if(n.times==1){
+                object$vcov$meanRisk[[iEstimator]][[iC]] <- sum(iid.mR[,,iC]^2)
+            }else{
+                object$vcov$meanRisk[[iEstimator]][[iC]] <- crossprod(iid.mR[,,iC])
+            }
         }
+
+        
+        
 
         ## ** diffRisk: se, CI/CB
         ## cat("diffRisk \n")
@@ -484,6 +500,7 @@ confintIID.ate <- function(object,
                                  p.value = p.value)
         
         ## store
+        object$vcov$diffRisk[[iEstimator]] <- setNames(vector(mode = "list", length = n.allContrasts), interaction(allContrasts[1,],allContrasts[2,]))
         for(iC in 1:n.allContrasts){ ## iC <- 1
             iRowIndex <- which((object$diffRisk$estimator==iEstimator)*(object$diffRisk$A==allContrasts[1,iC])*(object$diffRisk$B==allContrasts[2,iC])==1)
             object$diffRisk[iRowIndex, c("se") := se.dR[iC,]]
@@ -500,6 +517,11 @@ confintIID.ate <- function(object,
                 if(p.value){
                     object$diffRisk[iRowIndex, c("adj.p.value") := CIBP.dR$adj.p.value[iC,]]
                 }
+            }
+            if(n.times==1){
+                object$vcov$diffRisk[[iEstimator]][[iC]] <- sum(iid.dR[,,iC]^2)
+            }else{
+                object$vcov$diffRisk[[iEstimator]][[iC]] <- crossprod(iid.dR[,,iC])
             }
         }
 
@@ -544,6 +566,7 @@ confintIID.ate <- function(object,
                                  p.value = p.value)
 
         ## store
+        object$vcov$ratioRisk[[iEstimator]] <- setNames(vector(mode = "list", length = n.allContrasts), interaction(allContrasts[1,],allContrasts[2,]))
         for(iC in 1:n.allContrasts){ ## iC <- 1
             iRowIndex <- which((object$ratioRisk$estimator==iEstimator)*(object$ratioRisk$A==allContrasts[1,iC])*(object$ratioRisk$B==allContrasts[2,iC])==1)
 
@@ -561,6 +584,11 @@ confintIID.ate <- function(object,
                 if(p.value){
                     object$ratioRisk[iRowIndex, c("adj.p.value") := CIBP.rR$adj.p.value[iC,]]
                 }
+            }
+            if(n.times==1){
+                object$vcov$ratioRisk[[iEstimator]][[iC]] <- sum(iid.rR[,,iC]^2)
+            }else{
+                object$vcov$ratioRisk[[iEstimator]][[iC]] <- crossprod(iid.rR[,,iC])
             }
         }
     }

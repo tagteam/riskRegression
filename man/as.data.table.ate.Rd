@@ -7,11 +7,7 @@
 \method{as.data.table}{ate}(
   x,
   estimator = x$estimator,
-  se = x$se,
-  ci = x$ci,
-  band = x$band,
-  quantileBand = x$band,
-  p.value = x$p.value,
+  type = c("risk", "difference", "ratio"),
   keep.rownames = FALSE,
   ...
 )
@@ -21,15 +17,10 @@
 
 \item{estimator}{[character] The type of estimator relative to which the estimates should be output.}
 
-\item{se}{[logical] Should the standard errors be output?}
-
-\item{ci}{[logical] Should the confidence intervals be output?}
-
-\item{band}{[logical] Should the confidence bands be output?}
-
-\item{quantileBand}{[logical] Should the quantiles for confidence bands be output?}
-
-\item{p.value}{[logical] Should the p-values/adjusted p-values be output?}
+\item{type}{[character vector] The type of risk to export.
+Can be \code{"risk"} to export the risks specific to each treatment group,
+\code{"difference"} to export the difference in risks between treatment groups,
+or \code{"ratio"} to export the ratio of risks between treatment groups,.}
 
 \item{keep.rownames}{Not used.}
 

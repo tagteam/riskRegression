@@ -13,8 +13,8 @@
   diffRisk.transform = "none",
   ratioRisk.transform = "none",
   seed = NA,
-  ci = object$se,
-  band = object$band,
+  ci = object$inference$se,
+  band = object$inference$band,
   p.value = TRUE,
   method.band = "maxT-simulation",
   alternative = "two.sided",
@@ -96,7 +96,7 @@ fit <- coxph(Surv(time,event)~X1 + strata(X2) + X6,
 #### average treatment effect ####
 fit.ate <- ate(fit, treatment = "X1", times = 1:3, data = d,
                se = TRUE, iid = TRUE, band = TRUE)
-print(fit.ate, type = "meanRisk")
+summary(fit.ate)
 dt.ate <- as.data.table(fit.ate)
 
 ## manual calculation of se
@@ -106,7 +106,7 @@ out <- predictCox(fit, newdata = dd, se = TRUE, times = 1:3, average.iid = TRUE)
 term1 <- -out$survival.average.iid
 term2 <- sweep(1-out$survival, MARGIN = 2, FUN = "-", STATS = colMeans(1-out$survival))
 sqrt(colSums((term1 + term2/NROW(d))^2)) 
-## fit.ate$meanRisk[treatment=="T0",meanRisk.Gformula.se]
+## fit.ate$meanRisk[treatment=="T0",se]
 
 ## note
 out2 <- predictCox(fit, newdata = dd, se = TRUE, times = 1:3, iid = TRUE)
@@ -114,9 +114,9 @@ mean(out2$survival.iid[1,1,])
 out$survival.average.iid[1,1]
 
 ## check confidence intervals (no transformation)
-dt.ate[,.(lower = pmax(0,value + qnorm(0.025) * se),
+dt.ate[,.(lower = pmax(0,estimate + qnorm(0.025) * se),
           lower2 = lower,
-          upper = value + qnorm(0.975) * se,
+          upper = estimate + qnorm(0.975) * se,
           upper2 = upper)]
 
 ## add confidence intervals computed on the log-log scale
@@ -124,11 +124,11 @@ dt.ate[,.(lower = pmax(0,value + qnorm(0.025) * se),
 outCI <- confint(fit.ate,
                  meanRisk.transform = "loglog", diffRisk.transform = "atanh",
                  ratioRisk.transform = "log")
-print(outCI, type = "meanRisk")
+summary(outCI, type = "risk", short = TRUE)
 
-dt.ate[type == "ate", newse := se/(value*log(value))]
-dt.ate[type == "ate", .(lower = exp(-exp(log(-log(value)) - 1.96 * newse)),
-                        upper = exp(-exp(log(-log(value)) + 1.96 * newse)))]
+dt.ate[type == "meanRisk", newse := se/(estimate*log(estimate))]
+dt.ate[type == "meanRisk", .(lower = exp(-exp(log(-log(estimate)) - 1.96 * newse)),
+                        upper = exp(-exp(log(-log(estimate)) + 1.96 * newse)))]
 }
 \author{
 Brice Ozenne

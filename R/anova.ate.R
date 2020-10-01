@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: aug 19 2020 (09:18) 
 ## Version: 
-## Last-Updated: sep 23 2020 (14:13) 
+## Last-Updated: okt  1 2020 (15:18) 
 ##           By: Brice Ozenne
-##     Update #: 66
+##     Update #: 67
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -176,9 +176,9 @@ anova.ate <- function(object,
         if(type=="diff"){
             iid.AB <- iid.B-iid.A
         }else if(type=="ratio"){
-            iRowIndex <- which((meanRisk$estimator==estimator)*(meanRisk$treatment==iC.A)==1)
+            iRowIndex <- which((object$meanRisk$estimator==estimator)*(object$meanRisk$treatment==iC.A)==1)
             risk.A <- object$meanRisk[iRowIndex, .SD$estimate]
-            iRowIndex <- which((meanRisk$estimator==estimator)*(meanRisk$treatment==iC.B)==1)
+            iRowIndex <- which((object$meanRisk$estimator==estimator)*(object$meanRisk$treatment==iC.B)==1)
             risk.B <- object$meanRisk[iRowIndex, .SD$estimate]
             
             iid.AB <- rowScale_cpp(iid.B, scale = risk.A)-rowScale_cpp(iid.A, scale = risk.B/risk.A^2)

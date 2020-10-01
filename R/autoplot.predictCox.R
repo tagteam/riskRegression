@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: feb 17 2017 (10:06) 
 ## Version: 
-## last-updated: sep 24 2020 (18:04) 
+## last-updated: okt  1 2020 (15:09) 
 ##           By: Brice Ozenne
-##     Update #: 905
+##     Update #: 978
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -28,13 +28,15 @@
 #' or \code{"survival"} the survival function.
 #' @param ci [logical] If \code{TRUE} display the confidence intervals for the predictions.
 #' @param band [logical] If \code{TRUE} display the confidence bands for the predictions.
-#' @param group.by [character] The grouping factor used to color the prediction curves. Can be \code{"row"}, \code{"strata"}, or \code{"covariates"}.
-#' @param reduce.data [logical] If \code{TRUE} only the covariates that does take indentical values for all observations are displayed.
 #' @param plot [logical] Should the graphic be plotted.
 #' @param digits [integer] Number of decimal places when displaying the values of the covariates in the caption.
-#' @param smooth [logical] Should a smooth version of the risk function be plotted instead of a simple function?
-#' @param ylab [character] Label for the y axis.
 #' @param alpha [numeric, 0-1] Transparency of the confidence bands. Argument passed to \code{ggplot2::geom_ribbon}.
+#' @param ylab [character] Label for the y axis.
+#' @param smooth [logical] Should a smooth version of the risk function be plotted instead of a simple function?
+#' @param first.derivative [logical] If \code{TRUE}, display the first derivative over time of the risks/risk differences/risk ratios.
+#' (confidence intervals are obtained via simulation).
+#' @param group.by [character] The grouping factor used to color the prediction curves. Can be \code{"row"}, \code{"strata"}, or \code{"covariates"}.
+#' @param reduce.data [logical] If \code{TRUE} only the covariates that does take indentical values for all observations are displayed.
 #' @param ... Additional parameters to cutomize the display.
 #'
 #' @return Invisible. A list containing:
@@ -65,6 +67,7 @@
 #' e.basehaz <- predictCox(m.cox)
 #' autoplot(e.basehaz, type = "cumhazard")
 #' autoplot(e.basehaz, type = "cumhazard", smooth = TRUE)
+#' autoplot(e.basehaz, type = "cumhazard", smooth = TRUE, first.derivative = TRUE)
 #'
 #' ## display baseline hazard with type of event 
 #' e.basehaz <- predictCox(m.cox, keep.newdata = TRUE)
@@ -102,6 +105,9 @@
 #'
 #' res2 <- autoplot(pred.cox.strata, type = "survival", group.by = "strata", plot = FALSE)
 #' res2$plot + facet_wrap(~strata, labeller = label_both) + theme(legend.position="bottom")
+#' 
+#' ## smooth version
+#' autoplot(pred.cox.strata, type = "survival", group.by = "strata", smooth = TRUE, ci = FALSE)
 
 ## * autoplot.predictCox (code)
 #' @rdname autoplot.predictCox
@@ -118,6 +124,7 @@ autoplot.predictCox <- function(object,
                                 group.by = "row",
                                 reduce.data = FALSE,
                                 ylab = NULL,
+                                first.derivative = FALSE,
                                  ...){
   
     ## initialize and check    
@@ -134,9 +141,15 @@ autoplot.predictCox <- function(object,
         type <- match.arg(type, possibleType)  
     }
     if(is.null(ylab)){
-        ylab <- switch(type,
-                        "cumhazard" = "cumulative hazard",
-                        "survival" = "survival")
+        if(first.derivative){
+            ylab <- switch(type,
+                           "cumhazard" = "instantaneous hazard",
+                           "survival" = "Derivative of the survival")
+        }else{
+            ylab <- switch(type,
+                           "cumhazard" = "cumulative hazard",
+                           "survival" = "survival")
+        }
     }
 
     group.by <- match.arg(group.by, c("row","covariates","strata"))
@@ -240,6 +253,12 @@ autoplot.predictCox <- function(object,
             }        
         }
         status <- NULL
+        if(first.derivative && ci){
+            if(is.null(object$vcov[[type]])){
+                stop("Set argument \'iid\' to TRUE when calling predictCox to be able to display confidence intervals for the first derivative of the ",type,".\n")
+            }
+            attr(first.derivative,"vcov") <- object$vcov[[type]]
+        }
     }
 
     dataL <- predict2melt(outcome = object[[type]], ci = ci, band = band,
@@ -266,6 +285,7 @@ autoplot.predictCox <- function(object,
                            smooth = smooth,
                            xlab = if(is.null(object$infoVar)){"time"}else{object$infoVar$time},
                            ylab = ylab,
+                           first.derivative = first.derivative,
                            ...
                            )
   
@@ -358,9 +378,15 @@ predict2melt <- function(outcome, name.outcome,
 predict2plot <- function(dataL, name.outcome,
                          ci, band, group.by, smooth,                        
                          conf.level, alpha, xlab, ylab,
-                         smoother = "scam", formula.smoother = NULL,
-                         size.estimate = 1.5, size.point = 3, size.ci = 1.1, size.band = 1.1){
+                         smoother = NULL, formula.smoother = NULL, first.derivative = FALSE,
+                         size.estimate = 1.5, size.point = 3, size.ci = 1.1, size.band = 1.1, n.sim = 250){
 
+    .GRP <- NULL ## [:: for CRAN CHECK::]
+
+    if(first.derivative && (smooth==FALSE)){
+        stop("Set argument \'smooth\' to TRUE when \'first.derivative\' is TRUE. \n")
+    }
+    
     dataL <- data.table::copy(dataL)
     ## duplicate observations to obtain step curves ####
     keep.cols <- unique(c("time",name.outcome,"row",group.by))
@@ -385,39 +411,78 @@ predict2plot <- function(dataL, name.outcome,
 
     ## smooth ####
     if(smooth){
-        if(smoother=="scam"){
-            requireNamespace("scam")
-            if(is.null(formula.smoother)){
-                tol <- 1e-12
-                if(all(dataL[,diff(.SD[[name.outcome]]),by="row"][[2]]>=-tol)){
+        
+        if(is.null(smoother)){
+            tol <- 1e-12
+            test.increasing <- all(na.omit(dataL[,diff(.SD[[name.outcome]]),by="row"][[2]])>=-tol)
+            test.decreasing <- all(na.omit(dataL[,diff(.SD[[name.outcome]]),by="row"][[2]])<=tol)
+            if(!requireNamespace("scam") || (test.increasing==FALSE && test.decreasing == FALSE)){
+                formula.smoother <- ~s(time)
+                smoother <- mgcv::gam
+            }else{ 
+                smoother <- function(formula, data){
+                    out <- try(do.call(scam::scam, args = list(formula = formula, data = data)))
+                    if(inherits(out,"try-error")){
+                        out <- do.call(mgcv::gam, args = list(formula = update(formula, ".~s(time)"), data = data))
+                    }
+                    return(out)
+                }
+                if(test.increasing){
                     formula.smoother <- ~s(time, bs = "mpi")
-                }else if(all(dataL[,diff(.SD[[name.outcome]]),by="row"][[2]]<=tol)){
+                }else if(test.decreasing){
                     formula.smoother <- ~s(time, bs = "mpd")
-                }else{
-                    stop("Non-monotonic values - cannot guess which type of spline to use. \n",
-                         "Argument \'formula.smoother\ needs to be specified.")
                 }
             }
         }
+        if(length(all.vars(formula.smoother))!=1){
+            stop("Argument \'formula.smoother\' must contain exactly one variable \n")
+        }
         ff <- update(as.formula(paste0(name.outcome,"~.")),formula.smoother)
-        browser()
-        m <- do.call(smoother, args = list(formula = ff,data = dataL[row==1]))
-        .Deriv(m)
-        
-        
-        dataL[, c(paste0(name.outcome,".smooth")) := do.call(smoother, args = list(formula = ff,data = .SD))$fitted, by = "row"]
-        if(ci){
-            ff <- update(as.formula("lowerCI~."),formula.smoother)
-            dataL[, c("lowerCI.smooth") := do.call(smoother, args = list(formula = ff,data = .SD))$fitted, by = "row"]
-            ff <- update(as.formula("upperCI~."),formula.smoother)
-            dataL[, c("upperCI.smooth") := do.call(smoother, args = list(formula = ff,data = .SD))$fitted, by = "row"]
+        if(first.derivative){
+            requireNamespace("numDeriv")
+
+            warper <- function(data){ ## data <- dataL[row==1]
+                iModel <- do.call(smoother, args = list(formula = ff, data = data))
+                return(numDeriv::grad(function(x){predict(iModel, newdata = data.frame(time = x), type = "response")}, x = data$time))
+            }
+
+            dataL[, c(paste0(name.outcome,".smooth")) := warper(.SD), by = "row"]
+            if(ci){
+                warperCI <- function(data, Sigma, n.sim){ ## data <- dataL[row==1] ; Sigma <- attr(first.derivative,"vcov")[[1]]
+                    ls.deriv <- lapply(1:n.sim, function(x){
+                        data2 <- data.table::copy(data)
+                        data2[, c(name.outcome) := mvtnorm::rmvnorm(1, mean = data[[name.outcome]], sigma = Sigma)[1,]]                        
+                        iModel <- try(do.call(smoother, args = list(formula = ff,data = data2)))
+                        if(inherits(iModel,"try-error")){
+                            return(rep(NA, length(data$time)))
+                        }else{
+                            return(numDeriv::grad(function(x){predict(iModel, newdata = data.frame(time = x), type = "response")}, x = data$time))
+                        }
+                    })
+                    M.CI <- apply(do.call(rbind,ls.deriv), 2, quantile, probs = c((1-conf.level)/2,1-(1-conf.level)/2), na.rm = TRUE)
+                    return(as.data.table(t(M.CI)))
+                }
+                dataL[, c("lowerCI.smooth","upperCI.smooth") := warperCI(.SD, Sigma = attr(first.derivative,"vcov")[[.GRP]], n.sim = n.sim), by = "row"]
+            }
+            if(band){
+                stop("Confidence bands are not available when argument \'first.derivative\' is TRUE \n")
+            }
+        }else{
+            dataL[, c(paste0(name.outcome,".smooth")) := do.call(smoother, args = list(formula = ff,data = .SD))$fitted, by = "row"]
+            if(ci){
+                ff <- update(as.formula("lowerCI~."),formula.smoother)
+                dataL[, c("lowerCI.smooth") := do.call(smoother, args = list(formula = ff,data = .SD))$fitted, by = "row"]
+                ff <- update(as.formula("upperCI~."),formula.smoother)
+                dataL[, c("upperCI.smooth") := do.call(smoother, args = list(formula = ff,data = .SD))$fitted, by = "row"]
+            }
+            if(band){
+                ff <- update(as.formula("lowerBand~."),formula.smoother)
+                dataL[, c("lowerBand.smooth") := do.call(smoother, args = list(formula = ff,data = .SD))$fitted, by = "row"]
+                ff <- update(as.formula("upperBand~."),formula.smoother)
+                dataL[, c("upperBand.smooth") := do.call(smoother, args = list(formula = ff,data = .SD))$fitted, by = "row"]
+            }
         }
-        if(band){
-            ff <- update(as.formula("lowerBand~."),formula.smoother)
-            dataL[, c("lowerBand.smooth") := do.call(smoother, args = list(formula = ff,data = .SD))$fitted, by = "row"]
-            ff <- update(as.formula("upperBand~."),formula.smoother)
-            dataL[, c("upperBand.smooth") := do.call(smoother, args = list(formula = ff,data = .SD))$fitted, by = "row"]
-        }
+        
     }
 
     ## display ####
@@ -437,13 +502,13 @@ predict2plot <- function(dataL, name.outcome,
             }
         }else{
             if(!is.na(alpha)){
-                gg.base <- gg.base + ggplot2::geom_rect(ggplot2::aes(xmin = time, xmax = timeRight, ymin = lowerBand, ymax = upperBand,
-                                                            fill = labelBand), linetype = 0, alpha = alpha)
+                gg.base <- gg.base + ggplot2::geom_rect(ggplot2::aes_string(xmin = "time", xmax = "timeRight", ymin = "lowerBand", ymax = "upperBand",
+                                                            fill = "labelBand"), linetype = 0, alpha = alpha)
                 gg.base <- gg.base + scale_fill_manual("", values="grey12")        
             }else{
-                gg.base <- gg.base + ggplot2::geom_segment(ggplot2::aes(x = time, y = lowerBand, xend = timeRight, yend = lowerBand, color = "band"),
+                gg.base <- gg.base + ggplot2::geom_segment(ggplot2::aes_string(x = "time", y = "lowerBand", xend = "timeRight", yend = "lowerBand", color = "\"band\""),
                                                            size = size.band)
-                gg.base <- gg.base + ggplot2::geom_segment(ggplot2::aes(x = time, y = upperBand, xend = timeRight, yend = upperBand, color = "band"),
+                gg.base <- gg.base + ggplot2::geom_segment(ggplot2::aes_string(x = "time", y = "upperBand", xend = "timeRight", yend = "upperBand", color = "\"band\""),
                                                            size = size.band)
             }
         }
@@ -464,14 +529,14 @@ predict2plot <- function(dataL, name.outcome,
             }
         }else{
             if(!is.na(alpha)){
-                gg.base <- gg.base + ggplot2::geom_errorbar(ggplot2::aes(x = time, ymin = lowerCI, ymax = upperCI, linetype = labelCI),
+                gg.base <- gg.base + ggplot2::geom_errorbar(ggplot2::aes_string(x = "time", ymin = "lowerCI", ymax = "upperCI", linetype = "labelCI"),
                                                             width = size.ci)
                 gg.base <- gg.base + ggplot2::scale_linetype_manual("",values=setNames(1,labelCI))
 
             }else{
-                gg.base <- gg.base + ggplot2::geom_segment(ggplot2::aes(x = time, y = lowerCI, xend = timeRight, yend = lowerCI, color = "ci"),
+                gg.base <- gg.base + ggplot2::geom_segment(ggplot2::aes_string(x = "time", y = "lowerCI", xend = "timeRight", yend = "lowerCI", color = "\"ci\""),
                                                            size = size.ci)
-                gg.base <- gg.base + ggplot2::geom_segment(ggplot2::aes(x = time, y = upperCI, xend = timeRight, yend = upperCI, color = "ci"),
+                gg.base <- gg.base + ggplot2::geom_segment(ggplot2::aes_string(x = "time", y = "upperCI", xend = "timeRight", yend = "upperCI", color = "\"ci\""),
                                                            size = size.ci)
             }
         }
@@ -535,52 +600,7 @@ predict2plot <- function(dataL, name.outcome,
     return(ls.export)
 }
 
-## * tempo
-.Deriv <- function(mod, n = 200, eps = 1e-7, newdata) {
-    if(isTRUE(all.equal(class(mod), "list")))
-        mod <- mod$gam
-    m.terms <- attr(terms(mod), "term.labels")
-    if(missing(newdata)) {
-        newD <- sapply(model.frame(mod)[, m.terms, drop = FALSE],
-                       function(x) seq(min(x), max(x), length = n))
-        names(newD) <- m.terms
-    } else {
-        newD <- newdata
-    }
-    X0 <- predict(mod, data.frame(newD), type = "lpmatrix")
-    newD <- newD + eps
-    X1 <- predict(mod, data.frame(newD), type = "lpmatrix")
-    Xp <- (X1 - X0) / eps
-    Xp.r <- NROW(Xp)
-    Xp.c <- NCOL(Xp)
-    ## dims of bs
-    bs.dims <- sapply(mod$smooth, "[[", "bs.dim") - 1
-    # number of smooth terms
-    t.labs <- attr(mod$terms, "term.labels")
-    nt <- length(t.labs)
-    ## list to hold the derivatives
-    lD <- vector(mode = "list", length = nt)
-    names(lD) <- t.labs
-    for(i in seq_len(nt)) {
-        Xi <- Xp * 0
-        want <- grep(t.labs[i], colnames(X1))
-        Xi[, want] <- Xp[, want]
-        df <- Xi %*% coef(mod)
-        df.sd <- rowSums(Xi %*% mod$Vp * Xi)^.5
-        lD[[i]] <- list(deriv = df, se.deriv = df.sd)
-        ## Xi <- Xp * 0 ##matrix(0, nrow = Xp.r, ncol = Xp.c)
-        ## J <- bs.dims[i]
-        ## Xi[,(i-1) * J + 1:J + 1] <- Xp[,(i-1) * J + 1:J +1]
-        ## df <- Xi %*% coef(mod)
-        ## df.sd <- rowSums(Xi %*% mod$Vp * Xi)^.5
-        ## lD[[i]] <- list(deriv = df, se.deriv = df.sd)
-    }
-    class(lD) <- "Deriv"
-    lD$gamModel <- mod
-    lD$eps <- eps
-    lD$eval <- newD - eps
-    return(lD)
-}
+
 
 #----------------------------------------------------------------------
 ### autoplot.predictCox.R ends here

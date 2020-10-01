@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: maj 23 2018 (14:08) 
 ## Version: 
-## Last-Updated: aug 19 2020 (17:07) 
+## Last-Updated: okt  1 2020 (09:48) 
 ##           By: Brice Ozenne
-##     Update #: 165
+##     Update #: 168
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -132,6 +132,19 @@ confint.predictCSC <- function(object,
     
     names(outCIBP) <- paste0("absRisk.", names(outCIBP))
     object[names(outCIBP)] <- outCIBP
+
+    ## compute variance-covariance matrix
+    if(!is.null(object[["absRisk.iid"]])){
+        n.obs <- NROW(object[["absRisk"]])
+        n.times <- NCOL(object[["absRisk"]])
+        object$vcov <- lapply(1:n.obs, function(iObs){
+            if(n.times==1){
+                return(sum(object[["absRisk.iid"]][,,iObs]^2))
+            }else{
+                return(crossprod(object[["absRisk.iid"]][,,iObs]))
+            }
+        })
+    }
     
     ## export
     object$conf.level <- level

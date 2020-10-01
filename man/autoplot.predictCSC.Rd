@@ -36,7 +36,7 @@
 
 \item{reduce.data}{[logical] If \code{TRUE} only the covariates that does take indentical values for all observations are displayed.}
 
-\item{...}{Not used. Only for compatibility with the plot method.}
+\item{...}{Additional parameters to cutomize the display.}
 }
 \value{
 Invisible. A list containing:
