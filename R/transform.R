@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: maj 30 2018 (15:58) 
 ## Version: 
-## Last-Updated: sep 30 2020 (16:48) 
+## Last-Updated: okt  2 2020 (14:02) 
 ##           By: Brice Ozenne
-##     Update #: 446
+##     Update #: 464
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -541,7 +541,47 @@ transformCIBP <- function(estimate, se, iid, null,
     }
 
     ## ** export
+    class(out) <- "transformCIBP"
     return(out)
+}
+
+## * as.data.table.transformCIBP
+#' @export
+as.data.table.transformCIBP <- function(x, keep.rownames = FALSE, ...){
+
+    ## add extra argument (should be of the correct size)
+    dots <- list(...)
+    x <- c(x,dots)
+
+    ## prepare
+    name.x <- names(x)
+    nameRow.x <- setdiff(names(x),"quantileBand")
+
+    n.endpoint <- NROW(x[[nameRow.x[1]]])
+    n.times <- NCOL(x[[nameRow.x[1]]])
+    if(any(sapply(dots,is.matrix)==FALSE)){
+        stop("Extra arguments must be matrices \n")
+    }
+    if(any(sapply(dots,NROW)!=n.endpoint)){
+        stop("Extra arguments must have ",n.endpoint," row(s) \n")
+    }
+    if(any(sapply(dots,NCOL)!=n.times)){
+        stop("Extra arguments must have ",n.times," column(s) \n")
+    }
+    
+    ## merge
+    dt <- NULL
+    for(iEndpoint in 1:n.endpoint){ ## iEndpoint <- 1
+        iDT <- as.data.table(lapply(x[nameRow.x], function(iE){iE[iEndpoint,]}))
+        if("quantileBand" %in% name.x){
+            iDT[,c("quantileBand") := x$quantileBand[iEndpoint]]
+        }
+        iDT[,c("row") := iEndpoint]
+        iDT[,c("time") := 1:.N]
+        dt <- rbind(dt, iDT)
+    }
+    setcolorder(dt, neworder = c("row","time",name.x))
+    return(dt)
 }
 
 ######################################################################

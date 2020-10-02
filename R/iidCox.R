@@ -335,7 +335,7 @@ iidCox.coxph <- function(object, newdata = NULL,
     
             ## tau.hazard
             if(is.null(tau.hazard)){
-                tau.hazard_strata <- object.time_strata[[iStrata]][object.status_strata[[iStrata]] == 1]
+                tau.hazard_strata <- unique(object.time_strata[[iStrata]][object.status_strata[[iStrata]] == 1])
                 if(!is.null(tau.max)){
                     tau.hazard_strata <- tau.hazard_strata[tau.hazard_strata<=tau.max]
                 }
@@ -353,7 +353,7 @@ iidCox.coxph <- function(object, newdata = NULL,
                 Etempo <- matrix(0, ncol = 1, nrow = nUtime1_strata-1)
             }
     
-            ## IF            
+            ## IF
             IFlambda_res <- IFlambda0_cpp(tau = tau.hazard_strata,
                                           IFbeta = out$IFbeta,
                                           newT = new.time, neweXb = new.eXb, newStatus = new.status, newIndexJump = new.indexJump[[iStrata]], newStrata = as.numeric(new.strata),

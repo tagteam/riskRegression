@@ -145,10 +145,8 @@ List IFlambda0_cpp(const NumericVector& tau, const arma::mat& IFbeta,
   int nTime1 = time1.size();
 
   // ** Prepare output
-  arma::mat IFlambda0(nObs, std::max(nTau,1));
-  arma::mat IFLambda0(nObs, std::max(nTau,1));
-  IFlambda0.fill(NA_REAL);
-  IFLambda0.fill(NA_REAL);
+  arma::mat IFlambda0;
+  arma::mat IFLambda0;
 
   arma::mat Elambda0(p, std::max(nTau,1), fill::zeros);
   arma::mat cumElambda0(p, std::max(nTau,1), fill::zeros);
@@ -185,6 +183,8 @@ List IFlambda0_cpp(const NumericVector& tau, const arma::mat& IFbeta,
 						  Named("time1") = time1
 						  ));
 	}else{
+	  IFlambda0.resize(nObs, std::max(nTau,1));
+	  IFLambda0.resize(nObs, std::max(nTau,1));
 	  IFlambda0.fill(0.0);
 	  IFLambda0.fill(0.0);
 	  return(List::create(Named("hazard") = IFlambda0,
@@ -245,6 +245,11 @@ List IFlambda0_cpp(const NumericVector& tau, const arma::mat& IFbeta,
   }
   
   // main loop
+  IFlambda0.resize(nObs, std::max(nTau,1));
+  IFLambda0.resize(nObs, std::max(nTau,1));
+  IFlambda0.fill(NA_REAL);
+  IFLambda0.fill(NA_REAL);
+
   if(iTau0>0){
     for(int iiTau=0 ; iiTau<iTau0; iiTau++){ // before the first event    
 	  IFlambda0.col(iiTau).zeros();
