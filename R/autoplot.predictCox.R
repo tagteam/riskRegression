@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: feb 17 2017 (10:06) 
 ## Version: 
-## last-updated: okt  1 2020 (15:09) 
+## last-updated: okt  2 2020 (11:06) 
 ##           By: Brice Ozenne
-##     Update #: 978
+##     Update #: 988
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -143,12 +143,12 @@ autoplot.predictCox <- function(object,
     if(is.null(ylab)){
         if(first.derivative){
             ylab <- switch(type,
-                           "cumhazard" = "instantaneous hazard",
-                           "survival" = "Derivative of the survival")
+                           "cumhazard" = if(object$baseline && object$nVar>0){"instantaneous baseline hazard"}else{"instantaneous hazard"},
+                           "survival" = if(object$baseline && object$nVar>0){"derivative of the baseline survival"}else{"derivative of the survival"})
         }else{
             ylab <- switch(type,
-                           "cumhazard" = "cumulative hazard",
-                           "survival" = "survival")
+                           "cumhazard" = if(object$baseline && object$nVar>0){"cumulative baseline hazard"}else{"cumulative hazard"},
+                           "survival" = if(object$baseline && object$nVar>0){"baseline survival"}else{"survival"})
         }
     }
 
