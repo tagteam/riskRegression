@@ -9,6 +9,8 @@
   parm = NULL,
   level = 0.95,
   n.sim = 10000,
+  contrasts = object$contrasts,
+  allContrasts = NULL,
   meanRisk.transform = "none",
   diffRisk.transform = "none",
   ratioRisk.transform = "none",
@@ -30,6 +32,10 @@
 \item{level}{[numeric, 0-1] Level of confidence.}
 
 \item{n.sim}{[integer, >0] the number of simulations used to compute the quantiles for the confidence bands and/or perform adjustment for multiple comparisons.}
+
+\item{contrasts}{[character vector] levels of the treatment variable for which the risks should be assessed and compared. Default is to consider all levels.}
+
+\item{allContrasts}{[2-row character matrix] levels of the treatment variable to be compared. Default is to consider all pairwise comparisons.}
 
 \item{meanRisk.transform}{[character] the transformation used to improve coverage
 of the confidence intervals for the mean risk in small samples.

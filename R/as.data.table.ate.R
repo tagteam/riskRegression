@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Mar  3 2017 (09:28) 
 ## Version: 
-## Last-Updated: okt  1 2020 (11:08) 
+## Last-Updated: okt  6 2020 (14:02) 
 ##           By: Brice Ozenne
-##     Update #: 182
+##     Update #: 183
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -40,7 +40,7 @@ as.data.table.ate <- function(x, estimator = x$estimator, type = c("risk","diffe
 
     if(!is.null(x$allContrasts)){
         allContrasts <- x$allContrasts
-        contrasts <- attr(allContrasts,"contrasts")
+        contrasts <- x$contrasts
     }else{
         contrasts <- x$contrasts
         allContrasts <- utils::combn(contrasts, m = 2)

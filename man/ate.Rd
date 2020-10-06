@@ -142,22 +142,32 @@ ateFit1b <- ate(fit, data = dtS, treatment = "X1", times = 5:8,
 summary(ateFit1b)
 
 ## by default bands/adjuste p-values computed separately for each treatment modality
-summary(confint(ateFit1b, band = 1),
-       se = FALSE, type = "difference", short = TRUE, quantile = TRUE)
+summary(ateFit1b, band = 1,
+         se = FALSE, type = "difference", short = TRUE, quantile = TRUE)
 ## adjustment over treatment and time using the band argument of confint
-summary(confint(ateFit1b, band = 2),
+summary(ateFit1b, band = 2,
        se = FALSE, type = "difference", short = TRUE, quantile = TRUE)
 
 ## confidence intervals / p-values computed using 1000 boostrap samples
 ## (argument se = TRUE and B = 1000) 
 ateFit1c <- ate(fit, data = dtS, treatment = "X1",
-                times = 5:8, se = TRUE, B = 50)
+                times = 5:8, se = TRUE, B = 50, handler = "mclapply")
 ## NOTE: for real applications 50 bootstrap samples is not enough 
 
 ## same but using 2 cpus for generating and analyzing the boostrap samples
 ## (parallel computation, argument mc.cores = 2) 
 ateFit1d <- ate(fit, data = dtS, treatment = "X1",
                 times = 5:8, se = TRUE, B = 50, mc.cores = 2)
+
+##
+fit <- cph(formula = Surv(time,event)~ X1+X2+rcs(X6),data=dtS,y=TRUE,x=TRUE)
+
+cl <- parallel::makeCluster(2)
+clusterEvalQ(cl, library(rms))
+
+ateFit1e <- ate(fit, data = dtS, treatment = "X1",
+                times = 5:8, se = TRUE, B = 50,
+                handler = "foreach", cl = cl)
 }
 
 #### Survival settings without censoring ####
@@ -207,7 +217,7 @@ fitCR <-  CSC(Hist(time,event)~ X1+X8,data=dt,cause=1)
 ## compute the ATE at times 1, 5, 10 using X1 as the treatment variable
 ateFit2a <- ate(fitCR, data = dt, treatment = "X1", times = c(1,5,10),
                 cause = 1, se = TRUE, band = TRUE)
-ateFit2a
+summary(ateFit2a)
 as.data.table(ateFit2a)
 
 #### Double robust estimator ####

@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: maj 30 2018 (15:58) 
 ## Version: 
-## Last-Updated: okt  2 2020 (14:02) 
+## Last-Updated: okt  6 2020 (15:15) 
 ##           By: Brice Ozenne
-##     Update #: 464
+##     Update #: 466
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -255,9 +255,11 @@ transformCIBP <- function(estimate, se, iid, null,
         n.test <- length(estimate)
     }
     n.contrast <- NROW(estimate)
-    method.band <- match.arg(method.band, choices = c(setdiff(p.adjust.methods,"none"),"maxT-integration","maxT-simulation"))
-    if(all((abs(se[!is.na(se)])<1e-12))){
-        method.band <- "bonferroni"
+    if(band){
+        method.band <- match.arg(method.band, choices = c(setdiff(p.adjust.methods,"none"),"maxT-integration","maxT-simulation"))
+        if(all((abs(se[!is.na(se)])<1e-12))){
+            method.band <- "bonferroni"
+        }
     }
     if(!is.na(seed)){set.seed(seed)}
     alternative <- match.arg(alternative, choices = c("two.sided","less","greater"))
@@ -277,38 +279,42 @@ transformCIBP <- function(estimate, se, iid, null,
     }
     
     ## influence function
-    if(band>0 && method.band %in% c("maxT-integration","maxT-simulation")){
-        iid <- transformIID(estimate = estimate,
-                            iid = iid,
-                            type = type)
+    if(band>0){
+        if(method.band %in% c("maxT-integration","maxT-simulation")){
+            iid <- transformIID(estimate = estimate,
+                                iid = iid,
+                                type = type)
+        }
     }
     
     ## ** normalize influence function and statistic
-    if(band>0 && method.band %in% c("maxT-integration","maxT-simulation")){
-        n.sample <- dim(iid)[1]
-        n.time <- dim(iid)[2]
+    if(band){
+        if(method.band %in% c("maxT-integration","maxT-simulation")){
+            n.sample <- dim(iid)[1]
+            n.time <- dim(iid)[2]
 
-        ## times with 0 variance (to be removed in further calculaltion as they introduce singularities)
-        index.keep <- which(colSums(abs(se)>1e-12, na.rm = TRUE)>0)[1]:NCOL(se)
-        iid.norm <- array(NA, dim = c(length(index.keep), dim(iid)[1], dim(iid)[3]))
-        for(iC in 1:n.contrast){ ## iC <- 1
-            if(length(index.keep)==1){
-                iid.norm[,,iC] <- t(iid[,index.keep,iC] / se[iC,index.keep])
-            }else{
-                iid.norm[,,iC] <- t(rowScale_cpp(iid[,index.keep,iC], scale = se[iC,index.keep]))
+            ## times with 0 variance (to be removed in further calculaltion as they introduce singularities)
+            index.keep <- which(colSums(abs(se)>1e-12, na.rm = TRUE)>0)[1]:NCOL(se)
+            iid.norm <- array(NA, dim = c(length(index.keep), dim(iid)[1], dim(iid)[3]))
+            for(iC in 1:n.contrast){ ## iC <- 1
+                if(length(index.keep)==1){
+                    iid.norm[,,iC] <- t(iid[,index.keep,iC] / se[iC,index.keep])
+                }else{
+                    iid.norm[,,iC] <- t(rowScale_cpp(iid[,index.keep,iC], scale = se[iC,index.keep]))
+                }
             }
-        }
-        if(band==1){
-            if(n.time==1){
-                rho <- lapply(diag(crossprod(iid.norm[1,,])),as.matrix)
-            }else{
-                rho <- lapply(1:n.contrast, function(iC){tcrossprod(iid.norm[,,iC])})
-            }
-        }else if(band == 2){
-            if(n.time==1){
-                rho <- crossprod(iid.norm[1,,])
-            }else{
-                rho <- tcrossprod(do.call(rbind,lapply(1:n.contrast, function(iC){iid.norm[,,iC]})))
+            if(band==1){
+                if(n.time==1){
+                    rho <- lapply(diag(crossprod(iid.norm[1,,])),as.matrix)
+                }else{
+                    rho <- lapply(1:n.contrast, function(iC){tcrossprod(iid.norm[,,iC])})
+                }
+            }else if(band == 2){
+                if(n.time==1){
+                    rho <- crossprod(iid.norm[1,,])
+                }else{
+                    rho <- tcrossprod(do.call(rbind,lapply(1:n.contrast, function(iC){iid.norm[,,iC]})))
+                }
             }
         }
     }

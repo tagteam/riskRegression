@@ -53,13 +53,13 @@ library(data.table)
 \dontrun{
 ## simulate data
 set.seed(12)
-n <- 300
+n <- 200
 dtS <- sampleData(n,outcome="survival")
 dtS$X12 <- LETTERS[as.numeric(as.factor(paste0(dtS$X1,dtS$X2)))]
 dtS <- dtS[dtS$X12!="D"]
 
 ## model fit
-fit <- cph(formula = Surv(time,event)~ X1+Z,data=dtS,y=TRUE,x=TRUE)
+fit <- cph(formula = Surv(time,event)~ X1+X6,data=dtS,y=TRUE,x=TRUE)
 seqTime <- 1:10
 ateFit <- ate(fit, data = dtS, treatment = "X1", contrasts = NULL,
               times = seqTime, B = 0, iid = TRUE, se = TRUE, verbose = TRUE, band = TRUE)
@@ -68,9 +68,9 @@ ateFit <- ate(fit, data = dtS, treatment = "X1", contrasts = NULL,
 autoplot(ateFit)
 
 ## inference (two sided)
-statistic <- ateFit$riskComparison$diff.Gformula/ateFit$riskComparison$diff.Gformula.se
-print(confint(ateFit, p.value = TRUE, method.band = "bonferroni"),type="diff")
-print(confint(ateFit, p.value = TRUE, method.band = "maxT-simulation"),type="diff")
+statistic <- ateFit$diffRisk$estimate/ateFit$diffRisk$se
+confint(ateFit, p.value = TRUE, method.band = "bonferroni")$diffRisk
+confint(ateFit, p.value = TRUE, method.band = "maxT-simulation")$diffRisk
 
 anova(ateFit, test = "KS")
 anova(ateFit, test = "CvM")
@@ -78,9 +78,9 @@ anova(ateFit, test = "sum")
 
 ## manual calculation (one sided)
 n.sim <- 1e4
-statistic <- ateFit$riskComparison[, diff.Gformula/diff.Gformula.se]
-iid.norm <- scale(ateFit$iid$Gformula[["1"]]-ateFit$iid$Gformula[["0"]],
-                  scale = ateFit$riskComparison$diff.Gformula.se)
+statistic <- ateFit$diffRisk[, estimate/se]
+iid.norm <- scale(ateFit$iid$GFORMULA[["1"]]-ateFit$iid$GFORMULA[["0"]],
+                  scale = ateFit$diffRisk$se)
 
 ls.out <- lapply(1:n.sim, function(iSim){
 iG <- rnorm(NROW(iid.norm))
@@ -101,19 +101,20 @@ dt.out[,.(max = mean(.SD$maxC>=0),
 n.sim <- 250
 stats.perm <- vector(mode = "list", length = n.sim)
 pb <- txtProgressBar(max = n.sim, style=3)
+treatVar <- ateFit$variables["treatment"]
 
 for(iSim in 1:n.sim){ ## iSim <- 1
 iData <- copy(dtS)
 iIndex <- sample.int(NROW(iData), replace = FALSE)
-iData[, c(ateFit$treatment) := .SD[[ateFit$treatment]][iIndex]]
+iData[, c(treatVar) := .SD[[treatVar]][iIndex]]
 
 iFit <- update(fit, data = iData)
-iAteSim <- ate(iFit, data = iData, treatment = ateFit$treatment,
+iAteSim <- ate(iFit, data = iData, treatment = treatVar,
                times = seqTime, verbose = FALSE)
-iStatistic <- iAteSim$riskComparison[,diff.Gformula/diff.Gformula.se]
-stats.perm[[iSim]] <- cbind(iAteSim$riskComparison[,.(max = max(iStatistic),
-                                                      L2 = sum(iStatistic^2),
-                                                      sum = sum(iStatistic))],
+iStatistic <- iAteSim$diffRisk[,estimate/se]
+stats.perm[[iSim]] <- cbind(iAteSim$diffRisk[,.(max = max(iStatistic),
+                                                L2 = sum(iStatistic^2),
+                                                sum = sum(iStatistic))],
                             sim = iSim)
 stats.perm[[iSim]]$maxC <- stats.perm[[iSim]]$max - max(statistic)
 stats.perm[[iSim]]$L2C <- stats.perm[[iSim]]$L2 - sum(statistic^2)

@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun  6 2016 (06:48) 
 ## Version: 
-## last-updated: okt  1 2020 (15:05) 
+## last-updated: okt  6 2020 (15:44) 
 ##           By: Brice Ozenne
-##     Update #: 520
+##     Update #: 523
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -76,7 +76,7 @@ print.ate <- function(x, estimator = x$estimator, ...){
     }
     
     ## statistical inference
-    if(!is.na(x$inference$B) && !identical(x$inference$B,0)){
+    if(x$inference$bootstrap){
         bootci.method <- switch(x$inference$bootci.method,
                                 "norm" = "Normal",
                                 "basic" = "Basic",
@@ -85,7 +85,7 @@ print.ate <- function(x, estimator = x$estimator, ...){
                                 "bca" = "BCa",
                                 "wald" = "Wald",
                                 "quantile" = "Percentile")
-        txt.inference <- paste(bootci.method," bootstrap based on ",x$inference$B," bootstrap samples\n",
+        txt.inference <- paste(bootci.method," bootstrap based on ",x$inference$n.bootstrap," bootstrap samples\n",
                                "                          that were drawn with replacement from the original data.\n",sep="")
         test.inference <- TRUE
     }else if(any(x$inference[,c("se","band","ci","p.value")]>0)){
@@ -163,7 +163,7 @@ print.ate <- function(x, estimator = x$estimator, ...){
         cat("\n")
         
         cat(" - Computation time     : ",x$computation.time$point," ",attr(x$computation.time$point,"units")," (point estimate)\n", sep="")
-        if(!is.na(x$inference$B) && !identical(x$inference$B,0)){
+        if(x$inference$bootstrap){
             cat("                          ",x$computation.time$bootstrap," ",attr(x$computation.time$bootstrap,"units")," (bootstrap)\n", sep="")            
         }else if(!is.null(x$iid) ||x$inference$band || x$inference$se){
             cat("                          ",x$computation.time$iid," ",attr(x$computation.time$iid,"units")," (iid)\n", sep="")

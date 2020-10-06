@@ -36,7 +36,7 @@ or \code{"ratio"} to display the ratio of risks between treatment groups,.}
 
 \item{digits}{[integer, >0] Number of digits.}
 
-\item{...}{passed to print}
+\item{...}{passed to confint}
 }
 \description{
 Summary average treatment effects.

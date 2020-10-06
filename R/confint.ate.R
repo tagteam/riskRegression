@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: maj 23 2018 (14:08) 
 ## Version: 
-## Last-Updated: okt  1 2020 (11:18) 
+## Last-Updated: okt  6 2020 (18:21) 
 ##           By: Brice Ozenne
-##     Update #: 865
+##     Update #: 974
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -24,6 +24,8 @@
 ##' @param parm not used. For compatibility with the generic method.
 ##' @param level [numeric, 0-1] Level of confidence.
 ##' @param n.sim [integer, >0] the number of simulations used to compute the quantiles for the confidence bands and/or perform adjustment for multiple comparisons.
+##' @param contrasts [character vector] levels of the treatment variable for which the risks should be assessed and compared. Default is to consider all levels.
+##' @param allContrasts [2-row character matrix] levels of the treatment variable to be compared. Default is to consider all pairwise comparisons.
 ##' @param meanRisk.transform [character] the transformation used to improve coverage
 ##' of the confidence intervals for the mean risk in small samples.
 ##' Can be \code{"none"}, \code{"log"}, \code{"loglog"}, \code{"cloglog"}.
@@ -121,6 +123,8 @@ confint.ate <- function(object,
                         parm = NULL,
                         level = 0.95,
                         n.sim = 1e4,
+                        contrasts = object$contrasts,
+                        allContrasts = NULL,
                         meanRisk.transform = "none",
                         diffRisk.transform = "none",
                         ratioRisk.transform = "none",
@@ -133,68 +137,123 @@ confint.ate <- function(object,
                         bootci.method = "perc",
                         ...){
 
+
+    ## ** check arguments
     if(object$inference$se == FALSE && object$inference$band == FALSE){
         message("No confidence interval is computed \n",
                 "Set argument \'se\' to TRUE when calling the ate function \n")
         return(object)
     }
+    if(any(contrasts %in% object$contrasts == FALSE)){
+        stop("Incorrect values for the argument \'contrasts\' \n",
+             "Possible values: \"",paste(object$contrasts,collapse="\" \""),"\" \n")
+    }
+    if(!is.null(allContrasts)){
+        if(any(allContrasts %in% object$contrasts == FALSE)){
+            stop("Incorrect values for the argument \'allContrasts\' \n",
+                 "Possible values: \"",paste(object$contrasts,collapse="\" \""),"\" \n")
+        }
+        if(!is.matrix(allContrasts) || NROW(allContrasts)!=2){
+            stop("Argument \'allContrasts\' must be a matrix with 2 rows \n")
+        }
+    }
+    meanRisk.transform <- match.arg(meanRisk.transform, c("none","log","loglog","cloglog"))
+    diffRisk.transform <- match.arg(diffRisk.transform, c("none","atanh"))
+    ratioRisk.transform <- match.arg(ratioRisk.transform, c("none","log"))
 
-    ## ** hard copy
-    ## needed otherwise meanRisk and riskComparison are modified in the original object
-    object$meanRisk <- data.table::copy(object$meanRisk)
-    object$riskComparison <- data.table::copy(object$riskComparison)
+    bootci.method <- match.arg(bootci.method, c("norm","basic","stud","perc","wald","quantile"))
+    bootstrap <- object$inference$bootstrap
+    
+    ## ** initialize
+    if(is.null(allContrasts)){
+        allContrasts <- utils::combn(contrasts, m = 2)
+    }
+
+    rm.col <- c("se","lower","upper","p.value","quantileBand","lowerBand","upperBand","adj.p.value")
+    out <- list(meanRisk = data.table::copy(object$meanRisk[,.SD,.SDcols = setdiff(names(object$meanRisk),rm.col)]),
+                diffRisk = data.table::copy(object$diffRisk[,.SD,.SDcols = setdiff(names(object$diffRisk),rm.col)]),
+                ratioRisk = data.table::copy(object$ratioRisk[,.SD,.SDcols = setdiff(names(object$ratioRisk),rm.col)]),
+                inference = object$inference,
+                inference.allContrasts = allContrasts,
+                inference.contrasts = contrasts,
+                transform = c("meanRisk" = meanRisk.transform,
+                              "diffRisk" = diffRisk.transform,
+                              "ratioRisk" = ratioRisk.transform))
+    out$inference["conf.level"] <- level
+    out$inference["ci"] <- ci
+    out$inference["p.value"] <- p.value
+    out$inference["alternative"] <- alternative
+    out$inference["band"] <- band
+    if(bootstrap){
+        out$inference["bootci.method"] <- bootci.method
+    }else if(band){
+        out$inference["method.band"] <- method.band
+        out$inference["n.sim"] <- n.sim
+    }
+    
+    out$meanRisk[,c("se") := as.numeric(NA)]
+    out$diffRisk[,c("se") := as.numeric(NA)]
+    out$ratioRisk[,c("se") := as.numeric(NA)]
+
+    if(ci){
+        out$meanRisk[,c("lower","upper") := as.numeric(NA)]
+        out$diffRisk[,c("lower","upper",if(p.value){"p.value"}) := as.numeric(NA)]
+        out$ratioRisk[,c("lower","upper",if(p.value){"p.value"}) := as.numeric(NA)]
+    }
+    if(band>0){
+        if(method.band %in% c("bonferroni","maxT-integration","maxT-simulation")){
+            out$meanRisk[,c("quantileBand","lowerBand","upperBand") := as.numeric(NA)]
+            out$diffRisk[,c("quantileBand","lowerBand","upperBand") := as.numeric(NA)]
+            out$ratioRisk[,c("quantileBand","lowerBand","upperBand") := as.numeric(NA)]
+        }
+        if(p.value){
+            out$diffRisk[,c("adj.p.value") := as.numeric(NA)]
+            out$ratioRisk[,c("adj.p.value") := as.numeric(NA)]
+        }
+    }
 
     ## ** compute CI
-    if(!is.null(object$boot)){
+    if(bootstrap){
         if(band && !identical(method.band,"none")){
             stop("Adjustment for multiple comparisons not implemented for the boostrap. \n")
         }
         if(!identical(alternative,"two.sided")){
             stop("Only two sided tests are implemented for the boostrap. \n")
         }
-        object <- confintBoot.ate(object,
-                                  bootci.method = bootci.method,
-                                  conf.level = level,
-                                  ...)
-
+        if(!identical(out$inference.contrasts,object$contrasts)){
+            stop("Argument \'contrast\' is not available when using boostrap. \n")
+        }
+        if(!identical(out$inference.allContrasts,utils::combn(object$contrasts, m = 2))){
+            stop("Argument \'allContrast\' is not available when using boostrap. \n")
+        }
+        out <- confintBoot.ate(object, out = out, seed = seed)
     }else{
-        object <- confintIID.ate(object,
-                                 n.sim = n.sim,
-                                 meanRisk.transform = meanRisk.transform,
-                                 diffRisk.transform = diffRisk.transform,
-                                 ratioRisk.transform = ratioRisk.transform,
-                                 seed = seed,
-                                 conf.level = level,
-                                 ci = ci,
-                                 band = band,
-                                 p.value = p.value,
-                                 method.band = method.band,
-                                 alternative = alternative,
-                                 ...)
+        out <- confintIID.ate(object, out = out, seed = seed)
     }
-    object$meanRisk[] ## ensure direct print
-    object$riskComparison[] ## ensure direct print
+    ## out$meanRisk[] ## ensure direct print
+    ## out$diffRisk[] ## ensure direct print
+    ## out$ratioRisk[] ## ensure direct print
 
     ## ** export
-    class(object) <- "ate"
-    return(object)
+    return(out)
 }
 
 ## * confintBoot.ate
-confintBoot.ate <- function(object,
-                            estimator,
-                            bootci.method,
-                            conf.level){
+confintBoot.ate <- function(object, out, seed){
 
-    valid.boot <- c("norm","basic","stud","perc","wald","quantile")
-    bootci.method <- match.arg(bootci.method, valid.boot)
-    ## normalize arguments
-    bootci.method <- tolower(bootci.method) ## convert to lower case
     name.estimate <- names(object$boot$t0)
     n.estimate <- length(name.estimate)
+    contrasts <- out$inference.contrasts
+    n.contrasts <- length(contrasts)
+    allContrasts <- out$inference.allContrasts
+    n.allContrasts <- NCOL(allContrasts)
+    collapse.allContrasts <- interaction(allContrasts[1,],allContrasts[2,])
     index <- 1:n.estimate
+    conf.level <- out$inference$conf.level
     alpha <- 1-conf.level
-    
+    bootci.method <- out$inference$bootci.method
+    p.value <- out$inference$p.value
+    ci <- out$inference$ci
     slot.boot.ci <- switch(bootci.method,
                            "norm" = "normal",
                            "basic" = "basic",
@@ -213,7 +272,7 @@ confintBoot.ate <- function(object,
                             "stud" = 5,
                             "perc" = 5,
                             "bca" = 5)
-    
+
     ## real number of bootstrap samples
     test.NA <- !is.na(object$boot$t)
     test.Inf <- !is.infinite(object$boot$t)
@@ -222,35 +281,38 @@ confintBoot.ate <- function(object,
     ## standard error
     boot.se <- sqrt(apply(object$boot$t, 2, var, na.rm = TRUE))
     boot.mean <- colMeans(object$boot$t, na.rm = TRUE)
-
+    
     ## confidence interval
-    try.CI <- try(ls.CI <- lapply(index, function(iP){ # iP <- 1        
-        if(n.boot[iP]==0){
-            return(c(lower = NA, upper = NA))
-        }else if(bootci.method == "wald"){
-            return(c(lower = as.double(object$boot$t0[iP] + qnorm(alpha/2) * boot.se[iP]),
-                     upper = as.double(object$boot$t0[iP] - qnorm(alpha/2) * boot.se[iP])
-                     ))
-        }else if(bootci.method == "quantile"){
-            return(c(lower = as.double(quantile(object$boot$t[,iP], probs = alpha/2, na.rm = TRUE)),
-                     upper = as.double(quantile(object$boot$t[,iP], probs = 1-(alpha/2), na.rm = TRUE))
-                     ))
-        }else{
-            out <- boot::boot.ci(object$boot,
-                                 conf = conf.level,
-                                 type = bootci.method,
-                                 index = iP)[[slot.boot.ci]][index.lowerCI:index.upperCI]
-            return(setNames(out,c("lower","upper")))
-        }    
-    }),silent=TRUE)
-    if (class(try.CI)[1]=="try-error"){
-        warning("Could not construct bootstrap confidence limits")
-        boot.CI <- matrix(rep(NA,2*length(index)),ncol=2)
-    } else{
-        boot.CI <- do.call(rbind,ls.CI)
+    if(ci){
+        try.CI <- try(ls.CI <- lapply(index, function(iP){ # iP <- 1        
+            if(n.boot[iP]==0){
+                return(c(lower = NA, upper = NA))
+            }else if(bootci.method == "wald"){
+                return(c(lower = as.double(object$boot$t0[iP] + qnorm(alpha/2) * boot.se[iP]),
+                         upper = as.double(object$boot$t0[iP] - qnorm(alpha/2) * boot.se[iP])
+                         ))
+            }else if(bootci.method == "quantile"){
+                return(c(lower = as.double(quantile(object$boot$t[,iP], probs = alpha/2, na.rm = TRUE)),
+                         upper = as.double(quantile(object$boot$t[,iP], probs = 1-(alpha/2), na.rm = TRUE))
+                         ))
+            }else{
+                out <- boot::boot.ci(object$boot,
+                                     conf = conf.level,
+                                     type = bootci.method,
+                                     index = iP)[[slot.boot.ci]][index.lowerCI:index.upperCI]
+                return(setNames(out,c("lower","upper")))
+            }    
+        }),silent=TRUE)
+        if (class(try.CI)[1]=="try-error"){
+            warning("Could not construct bootstrap confidence limits")
+            boot.CI <- matrix(rep(NA,2*length(index)),ncol=2)
+        } else{
+            boot.CI <- do.call(rbind,ls.CI)
+        }
     }
 
     ## pvalue
+    if(p.value){
     null <- setNames(rep(NA,length(name.estimate)),name.estimate)
     null[grep("^diff", name.estimate)] <- 0
     null[grep("^ratio", name.estimate)] <- 1
@@ -289,44 +351,68 @@ confintBoot.ate <- function(object,
             return(p.value)
         }
     })
+    }
     
-    ## group
-    dt.tempo <- data.table(name = name.estimate, mean = boot.mean, se = boot.se, boot.CI, p.value = boot.p)
-    keep.col <- setdiff(names(dt.tempo),"name")
+    ## store
+    vcov.meanRisk <- setNames(vector(mode = "list", length = length(object$estimator)), object$estimator)
+    vcov.diffRisk <- setNames(vector(mode = "list", length = length(object$estimator)), object$estimator)
+    vcov.ratioRisk <- setNames(vector(mode = "list", length = length(object$estimator)), object$estimator)
 
     for(iE in 1:length(object$estimator)){ ## iE <- 1
         iEstimator <- object$estimator[iE]
 
-        object$meanRisk[,c("estimate.boot","se","lower","upper") :=  dt.tempo[grep("^mean.",name.estimate),.SD,.SDcols = c("mean","se","lower","upper")]]
-        object$diffRisk[,c("estimate.boot","se","lower","upper","p.value") :=  dt.tempo[grep("^difference.",name.estimate),.SD,.SDcols = c("mean","se","lower","upper","p.value")]]
-        object$ratioRisk[,c("estimate.boot","se","lower","upper","p.value") :=  dt.tempo[grep("^ratio.",name.estimate),.SD,.SDcols = c("mean","se","lower","upper","p.value")]]
+        indexMean <- grep(paste0("^mean.",iEstimator),name.estimate)
+        indexDiff <- grep(paste0("^difference.",iEstimator),name.estimate)
+        indexRatio <- grep(paste0("^ratio.",iEstimator),name.estimate)
 
+        out$meanRisk[iEstimator, c("estimate.boot") :=  boot.mean[indexMean], on = "estimator"]
+        out$diffRisk[iEstimator, c("estimate.boot") :=  boot.mean[indexDiff], on = "estimator"]
+        out$ratioRisk[iEstimator, c("estimate.boot") :=  boot.mean[indexRatio], on = "estimator"]
+
+        out$meanRisk[iEstimator, c("se") :=  boot.se[indexMean], on = "estimator"]
+        out$diffRisk[iEstimator, c("se") :=  boot.se[indexDiff], on = "estimator"]
+        out$ratioRisk[iEstimator, c("se") :=  boot.se[indexRatio], on = "estimator"]
+        
+        vcov.meanRisk[[iEstimator]] <- setNames(lapply(contrasts, function(iC){ ## iC <- contrasts[1]
+            var(object$boot$t[,grep(paste0(iC,"$"),name.estimate[indexMean], value = TRUE),drop=FALSE])
+        }), contrasts)
+        vcov.diffRisk[[iEstimator]] <- setNames(lapply(collapse.allContrasts, function(iC){ ## iC <- collapse.allContrasts[1]
+            var(object$boot$t[,grep(paste0(iC,"$"),name.estimate[indexDiff], value = TRUE),drop=FALSE])
+        }), collapse.allContrasts)
+        vcov.ratioRisk[[iEstimator]] <- setNames(lapply(collapse.allContrasts, function(iC){ ## iC <- collapse.allContrasts[1]
+            var(object$boot$t[,grep(paste0(iC,"$"),name.estimate[indexRatio], value = TRUE),drop=FALSE])
+        }), collapse.allContrasts)
+        
+        
+        if(ci){
+            out$meanRisk[iEstimator, c("lower","upper") :=  list(boot.CI[indexMean,"lower"],boot.CI[indexMean,"upper"]), on = "estimator"]
+            out$diffRisk[iEstimator, c("lower","upper") :=  list(boot.CI[indexDiff,"lower"],boot.CI[indexDiff,"upper"]), on = "estimator"]
+            out$ratioRisk[iEstimator, c("lower","upper") :=  list(boot.CI[indexRatio,"lower"],boot.CI[indexRatio,"upper"]), on = "estimator"]
+        }
+
+        if(p.value){
+            out$diffRisk[iEstimator, c("p.value") :=  boot.p[indexDiff], on = "estimator"]
+            out$ratioRisk[iEstimator, c("p.value") :=  boot.p[indexRatio], on = "estimator"]
+        }
     }
-    object$inference$conf.level <- conf.level
-    object$inference$bootci.method <- bootci.method
-    object$inference$ci <- TRUE
-    object$inference$band <- FALSE
-    object$inference$p.value <- TRUE
-    object$inference$alternative <- "two.sided"
-    return(object)    
+    ## ** export
+    if(attr(object$estimator,"TD")){
+        setcolorder(out$meanRisk, neworder = c("estimator","time","landmark","treatment","estimate","estimate.boot","se","lower","upper"))
+        setcolorder(out$diffRisk, neworder = c("estimator","time","landmark","A","B","estimate.A","estimate.B","estimate","estimate.boot","se","lower","upper","p.value"))
+        setcolorder(out$ratioRisk, neworder = c("estimator","time","landmark","A","B","estimate.A","estimate.B","estimate","estimate.boot","se","lower","upper","p.value"))
+    }else{
+        setcolorder(out$meanRisk, neworder = c("estimator","time","treatment","estimate","estimate.boot","se","lower","upper"))
+        setcolorder(out$diffRisk, neworder = c("estimator","time","A","B","estimate.A","estimate.B","estimate","estimate.boot","se","lower","upper","p.value"))
+        setcolorder(out$ratioRisk, neworder = c("estimator","time","A","B","estimate.A","estimate.B","estimate","estimate.boot","se","lower","upper","p.value"))
+    }
+    data.table::setattr(out$meanRisk, name = "vcov", value = vcov.meanRisk)
+    data.table::setattr(out$diffRisk, name = "vcov", value = vcov.diffRisk)
+    data.table::setattr(out$ratioRisk, name = "vcov", value = vcov.ratioRisk)
+    return(out)    
 }
 
 ## * confintIID.ate 
-confintIID.ate <- function(object,
-                           contrasts = object$contrasts,
-                           allContrasts = NULL,
-                           conf.level,
-                           alternative,
-                           ci,
-                           band,
-                           p.value,                          
-                           method.band,
-                           n.sim,
-                           meanRisk.transform,
-                           diffRisk.transform,
-                           ratioRisk.transform,
-                           seed){
-
+confintIID.ate <- function(object, out, seed){
     estimator <- object$estimator
     n.estimator <- length(estimator)
 
@@ -335,76 +421,34 @@ confintIID.ate <- function(object,
         stop("Cannot re-compute standard error or confidence bands without the iid decomposition \n",
              "Set argument \'iid\' to TRUE when calling the ate function \n")
     }
-    if(any(contrasts %in% object$contrasts == FALSE)){
-        stop("Incorrect values for the argument \'contrasts\' \n",
-             "Possible values: \"",paste(object$contrasts,collapse="\" \""),"\" \n")
-    }
-    if(!is.null(allContrasts)){
-        if(any(allContrasts %in% object$contrasts == FALSE)){
-            stop("Incorrect values for the argument \'allContrasts\' \n",
-                 "Possible values: \"",paste(object$contrasts,collapse="\" \""),"\" \n")
-        }
-        if(!is.matrix(allContrasts) || NROW(allContrasts)!=2){
-            stop("Argument \'allContrasts\' must be a matrix with 2 rows \n")
-        }
-    }
-    meanRisk.transform <- match.arg(meanRisk.transform, c("none","log","loglog","cloglog"))
-    diffRisk.transform <- match.arg(diffRisk.transform, c("none","atanh"))
-    ratioRisk.transform <- match.arg(ratioRisk.transform, c("none","log"))
                              
     
     ## ** prepare
     times <- object$eval.times
     n.times <- length(times)
+    contrasts <- out$inference.contrasts
     n.contrasts <- length(contrasts)
-    if(is.null(allContrasts)){
-        allContrasts <- utils::combn(contrasts, m = 2)
-    }
+    allContrasts <- out$inference.allContrasts
     n.allContrasts <- NCOL(allContrasts)
+    collapse.allContrasts <- interaction(allContrasts[1,],allContrasts[2,])
     n.obs <- max(stats::na.omit(object$n[-1]))
+    conf.level <- out$inference$conf.level
+    alternative <- out$inference$alternative
+    ci <- out$inference$ci
+    band <- out$inference$band
+    method.band <- out$inference$method.band
+    p.value <- out$inference$p.value
+    n.sim <- out$inference$n.sim
 
-    ## remove previous values
-    all.endings <- paste(c("se","lower","upper","p.value","quantileBand","lowerBand","upperBand","adj.p.value"),collapse="|")
-    indexRM.mR <- grep(all.endings,names(object$meanRisk), value = TRUE)
-    indexRM.dR <- grep(all.endings,names(object$diffRisk), value = TRUE)
-    indexRM.rR <- grep(all.endings,names(object$ratioRisk), value = TRUE)
-    if(length(indexRM.mR)>0){
-        object$meanRisk[,c(indexRM.mR) := NULL]
-    }
-    if(length(indexRM.dR)>0){
-        object$diffRisk[,c(indexRM.dR) := NULL]
-    }
-    if(length(indexRM.rR)>0){
-        object$ratioRisk[,c(indexRM.rR) := NULL]
-    }
+    meanRisk.transform <- out$transform["meanRisk"]
+    diffRisk.transform <- out$transform["diffRisk"]
+    ratioRisk.transform <- out$transform["ratioRisk"]
 
-    ## initialize for new values
-    object$meanRisk[,c("se") := as.numeric(NA)]
-    object$diffRisk[,c("se") := as.numeric(NA)]
-    object$ratioRisk[,c("se") := as.numeric(NA)]
-
-    if(ci){
-        object$meanRisk[,c("lower","upper") := as.numeric(NA)]
-        object$diffRisk[,c("lower","upper",if(p.value){"p.value"}) := as.numeric(NA)]
-        object$ratioRisk[,c("lower","upper",if(p.value){"p.value"}) := as.numeric(NA)]
-    }
-
-    if(band>0){
-        if(method.band %in% c("bonferroni","maxT-integration","maxT-simulation")){
-            object$meanRisk[,c("quantileBand","lowerBand","upperBand") := as.numeric(NA)]
-            object$diffRisk[,c("quantileBand","lowerBand","upperBand") := as.numeric(NA)]
-            object$ratioRisk[,c("quantileBand","lowerBand","upperBand") := as.numeric(NA)]
-        }
-        if(p.value){
-            object$diffRisk[,c("adj.p.value") := as.numeric(NA)]
-            object$ratioRisk[,c("adj.p.value") := as.numeric(NA)]
-        }
-    }
+    vcov.meanRisk <- setNames(vector(mode = "list", length = length(object$estimator)), object$estimator)
+    vcov.diffRisk <- setNames(vector(mode = "list", length = length(object$estimator)), object$estimator)
+    vcov.ratioRisk <- setNames(vector(mode = "list", length = length(object$estimator)), object$estimator)
     
     ## ** run
-    object$vcov <- list(meanRisk = setNames(vector(mode = "list", length = n.estimator), estimator),
-                        diffRisk = setNames(vector(mode = "list", length = n.estimator), estimator),
-                        ratioRisk = setNames(vector(mode = "list", length = n.estimator), estimator))
     for(iE in 1:n.estimator){ ## iE <- 1
         iEstimator <- estimator[iE]
         ## ** meanRisk
@@ -445,21 +489,21 @@ confintIID.ate <- function(object,
                                  p.value = FALSE)
 
         ## store
-        object$vcov$meanRisk[[iEstimator]] <- setNames(vector(mode = "list", length = n.contrasts), contrasts)
+        vcov.meanRisk[[iEstimator]] <- setNames(vector(mode = "list", length = n.contrasts), contrasts)
         for(iC in 1:n.contrasts){ ## iC <- 2
-            iRowIndex <- which((object$meanRisk$estimator==iEstimator)*(object$meanRisk$treatment==contrasts[iC])==1)
+            iRowIndex <- which((out$meanRisk$estimator==iEstimator)*(out$meanRisk$treatment==contrasts[iC])==1)
             
-            object$meanRisk[iRowIndex, c("se") := se.mR[iC,]]
+            out$meanRisk[iRowIndex, c("se") := se.mR[iC,]]
             if(ci){
-                object$meanRisk[iRowIndex, c("lower","upper") := list(CIBP.mR$lower[iC,],CIBP.mR$upper[iC,])]
+                out$meanRisk[iRowIndex, c("lower","upper") := list(CIBP.mR$lower[iC,],CIBP.mR$upper[iC,])]
             }
             if((band>0) && (method.band %in% c("bonferroni","maxT-integration","maxT-simulation"))){
-                object$meanRisk[iRowIndex, c("quantileBand","lowerBand","upperBand") := list(CIBP.mR$quantileBand[iC],CIBP.mR$lowerBand[iC,],CIBP.mR$upperBand[iC,])]
+                out$meanRisk[iRowIndex, c("quantileBand","lowerBand","upperBand") := list(CIBP.mR$quantileBand[iC],CIBP.mR$lowerBand[iC,],CIBP.mR$upperBand[iC,])]
             }
             if(n.times==1){
-                object$vcov$meanRisk[[iEstimator]][[iC]] <- sum(iid.mR[,,iC]^2)
+                vcov.meanRisk[[iEstimator]][[iC]] <- sum(iid.mR[,,iC]^2)
             }else{
-                object$vcov$meanRisk[[iEstimator]][[iC]] <- crossprod(iid.mR[,,iC])
+                vcov.meanRisk[[iEstimator]][[iC]] <- crossprod(iid.mR[,,iC])
             }
         }
 
@@ -500,28 +544,28 @@ confintIID.ate <- function(object,
                                  p.value = p.value)
         
         ## store
-        object$vcov$diffRisk[[iEstimator]] <- setNames(vector(mode = "list", length = n.allContrasts), interaction(allContrasts[1,],allContrasts[2,]))
+        vcov.diffRisk[[iEstimator]] <- setNames(vector(mode = "list", length = n.allContrasts), collapse.allContrasts)
         for(iC in 1:n.allContrasts){ ## iC <- 1
-            iRowIndex <- which((object$diffRisk$estimator==iEstimator)*(object$diffRisk$A==allContrasts[1,iC])*(object$diffRisk$B==allContrasts[2,iC])==1)
-            object$diffRisk[iRowIndex, c("se") := se.dR[iC,]]
+            iRowIndex <- which((out$diffRisk$estimator==iEstimator)*(out$diffRisk$A==allContrasts[1,iC])*(out$diffRisk$B==allContrasts[2,iC])==1)
+            out$diffRisk[iRowIndex, c("se") := se.dR[iC,]]
             if(ci){
-                object$diffRisk[iRowIndex, c("lower","upper") := list(CIBP.dR$lower[iC,],CIBP.dR$upper[iC,])]
+                out$diffRisk[iRowIndex, c("lower","upper") := list(CIBP.dR$lower[iC,],CIBP.dR$upper[iC,])]
                 if(p.value){
-                    object$diffRisk[iRowIndex, c("p.value") := CIBP.dR$p.value[iC,]]
+                    out$diffRisk[iRowIndex, c("p.value") := CIBP.dR$p.value[iC,]]
                 }
             }
             if(band>0){
                 if(method.band %in% c("bonferroni","maxT-integration","maxT-simulation")){
-                    object$diffRisk[iRowIndex, c("quantileBand","lowerBand","upperBand") := list(CIBP.dR$quantileBand[iC],CIBP.dR$lowerBand[iC,],CIBP.dR$upperBand[iC,])]
+                    out$diffRisk[iRowIndex, c("quantileBand","lowerBand","upperBand") := list(CIBP.dR$quantileBand[iC],CIBP.dR$lowerBand[iC,],CIBP.dR$upperBand[iC,])]
                 }
                 if(p.value){
-                    object$diffRisk[iRowIndex, c("adj.p.value") := CIBP.dR$adj.p.value[iC,]]
+                    out$diffRisk[iRowIndex, c("adj.p.value") := CIBP.dR$adj.p.value[iC,]]
                 }
             }
             if(n.times==1){
-                object$vcov$diffRisk[[iEstimator]][[iC]] <- sum(iid.dR[,,iC]^2)
+                vcov.diffRisk[[iEstimator]][[iC]] <- sum(iid.dR[,,iC]^2)
             }else{
-                object$vcov$diffRisk[[iEstimator]][[iC]] <- crossprod(iid.dR[,,iC])
+                vcov.diffRisk[[iEstimator]][[iC]] <- crossprod(iid.dR[,,iC])
             }
         }
 
@@ -566,48 +610,38 @@ confintIID.ate <- function(object,
                                  p.value = p.value)
 
         ## store
-        object$vcov$ratioRisk[[iEstimator]] <- setNames(vector(mode = "list", length = n.allContrasts), interaction(allContrasts[1,],allContrasts[2,]))
+        vcov.ratioRisk[[iEstimator]] <- setNames(vector(mode = "list", length = n.allContrasts), collapse.allContrasts)
         for(iC in 1:n.allContrasts){ ## iC <- 1
-            iRowIndex <- which((object$ratioRisk$estimator==iEstimator)*(object$ratioRisk$A==allContrasts[1,iC])*(object$ratioRisk$B==allContrasts[2,iC])==1)
+            iRowIndex <- which((out$ratioRisk$estimator==iEstimator)*(out$ratioRisk$A==allContrasts[1,iC])*(out$ratioRisk$B==allContrasts[2,iC])==1)
 
-            object$ratioRisk[iRowIndex, c("se") := se.rR[iC,]]
+            out$ratioRisk[iRowIndex, c("se") := se.rR[iC,]]
             if(ci){
-                object$ratioRisk[iRowIndex, c("lower","upper") := list(CIBP.rR$lower[iC,],CIBP.rR$upper[iC,])]
+                out$ratioRisk[iRowIndex, c("lower","upper") := list(CIBP.rR$lower[iC,],CIBP.rR$upper[iC,])]
                 if(p.value){
-                    object$ratioRisk[iRowIndex, c("p.value") := CIBP.rR$p.value[iC,]]
+                    out$ratioRisk[iRowIndex, c("p.value") := CIBP.rR$p.value[iC,]]
                 }
             }
             if(band>0){
                 if(method.band %in% c("bonferroni","maxT-integration","maxT-simulation")){
-                    object$ratioRisk[iRowIndex, c("quantileBand","lowerBand","upperBand") := list(CIBP.rR$quantileBand[iC],CIBP.rR$lowerBand[iC,],CIBP.rR$upperBand[iC,])]
+                    out$ratioRisk[iRowIndex, c("quantileBand","lowerBand","upperBand") := list(CIBP.rR$quantileBand[iC],CIBP.rR$lowerBand[iC,],CIBP.rR$upperBand[iC,])]
                 }
                 if(p.value){
-                    object$ratioRisk[iRowIndex, c("adj.p.value") := CIBP.rR$adj.p.value[iC,]]
+                    out$ratioRisk[iRowIndex, c("adj.p.value") := CIBP.rR$adj.p.value[iC,]]
                 }
             }
             if(n.times==1){
-                object$vcov$ratioRisk[[iEstimator]][[iC]] <- sum(iid.rR[,,iC]^2)
+                vcov.ratioRisk[[iEstimator]][[iC]] <- sum(iid.rR[,,iC]^2)
             }else{
-                object$vcov$ratioRisk[[iEstimator]][[iC]] <- crossprod(iid.rR[,,iC])
+                vcov.ratioRisk[[iEstimator]][[iC]] <- crossprod(iid.rR[,,iC])
             }
         }
     }
 
     ## ** export
-    object$allContrasts <- allContrasts
-    attr(object$allContrasts,"contrasts") <- contrasts
-    object$transform <- c("meanRisk" = meanRisk.transform,
-                          "diffRisk" = diffRisk.transform,
-                          "ratioRisk" = ratioRisk.transform)
-
-    object$inference$conf.level <- conf.level
-    object$inference$ci <- ci
-    object$inference$band <- band
-    object$inference$p.value <- p.value
-    object$inference$n.sim <- n.sim
-    object$inference$method.band <- method.band
-    object$inference$alternative <- alternative
-    return(object)
+    data.table::setattr(out$meanRisk, name = "vcov", value = vcov.meanRisk)
+    data.table::setattr(out$diffRisk, name = "vcov", value = vcov.diffRisk)
+    data.table::setattr(out$ratioRisk, name = "vcov", value = vcov.ratioRisk)
+    return(out)
 }
 
 ######################################################################

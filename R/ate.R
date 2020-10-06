@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Oct 23 2016 (08:53) 
 ## Version: 
-## last-updated: okt  1 2020 (15:18) 
+## last-updated: okt  6 2020 (18:34) 
 ##           By: Brice Ozenne
-##     Update #: 2124
+##     Update #: 2148
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -117,22 +117,32 @@
 #' summary(ateFit1b)
 #'
 #' ## by default bands/adjuste p-values computed separately for each treatment modality
-#' summary(confint(ateFit1b, band = 1),
-#'        se = FALSE, type = "difference", short = TRUE, quantile = TRUE)
+#' summary(ateFit1b, band = 1,
+#'          se = FALSE, type = "difference", short = TRUE, quantile = TRUE)
 #' ## adjustment over treatment and time using the band argument of confint
-#' summary(confint(ateFit1b, band = 2),
+#' summary(ateFit1b, band = 2,
 #'        se = FALSE, type = "difference", short = TRUE, quantile = TRUE)
 #' 
 #' ## confidence intervals / p-values computed using 1000 boostrap samples
 #' ## (argument se = TRUE and B = 1000) 
 #' ateFit1c <- ate(fit, data = dtS, treatment = "X1",
-#'                 times = 5:8, se = TRUE, B = 50)
+#'                 times = 5:8, se = TRUE, B = 50, handler = "mclapply")
 #' ## NOTE: for real applications 50 bootstrap samples is not enough 
 #'
 #' ## same but using 2 cpus for generating and analyzing the boostrap samples
 #' ## (parallel computation, argument mc.cores = 2) 
 #' ateFit1d <- ate(fit, data = dtS, treatment = "X1",
 #'                 times = 5:8, se = TRUE, B = 50, mc.cores = 2)
+#'
+#' ##
+#' fit <- cph(formula = Surv(time,event)~ X1+X2+rcs(X6),data=dtS,y=TRUE,x=TRUE)
+#'
+#' cl <- parallel::makeCluster(2)
+#' clusterEvalQ(cl, library(rms))
+#' 
+#' ateFit1e <- ate(fit, data = dtS, treatment = "X1",
+#'                 times = 5:8, se = TRUE, B = 50,
+#'                 handler = "foreach", cl = cl)
 #' }
 #'
 #' #### Survival settings without censoring ####
@@ -182,7 +192,7 @@
 #' ## compute the ATE at times 1, 5, 10 using X1 as the treatment variable
 #' ateFit2a <- ate(fitCR, data = dt, treatment = "X1", times = c(1,5,10),
 #'                 cause = 1, se = TRUE, band = TRUE)
-#' ateFit2a
+#' summary(ateFit2a)
 #' as.data.table(ateFit2a)
 #' 
 #' #### Double robust estimator ####
@@ -418,9 +428,9 @@ ate <- function(event,
                 theCause = cause,
                 contrasts = contrasts,
                 computation.time = list("point" = NA, "iid" = NA, "bootstrap" = NA), 
-                inference = data.frame("se" = se, "iid" = iid, "band" = band, "B" = B, "ci" = FALSE, "p.value" = FALSE,
+                inference = data.frame("se" = se, "iid" = iid, "band" = band, "bootstrap" = B>0, "ci" = FALSE, "p.value" = FALSE,
                                        "conf.level" = NA, "alternative" = NA,
-                                       "bootci.method" = NA,
+                                       "bootci.method" = NA, "n.bootstrap" = if(B>0){B}else{NA},
                                        "method.band" = NA, "n.sim" = NA)
                 )
     attr(out$theCause,"cause") <- level.states
@@ -628,8 +638,8 @@ ate <- function(event,
                 cat(" - Confidence bands: ")
             }
         }
-        ## FIXME: odd to have confint read and return everything
-        out <- stats::confint(out, p.value = TRUE)
+        out[c("meanRisk","diffRisk","ratioRisk","inference","inference.allContrasts","inference.contrasts","transform")] <- stats::confint(out, p.value = TRUE)
+
         if(iid == FALSE){
             out$iid <- NULL
         }
@@ -1259,8 +1269,8 @@ ate_checkArgs <- function(object.event,
         freq.event <- tapply(data.status, data.strata, function(x){mean(x==cause)})
         count.event <- tapply(data.status, data.strata, function(x){sum(x==cause)})
 
-        if(any(freq.event < 0.01) || any(count.event < 5)  ){
-            warning("Rare event, possible violation of the positivity assumption \n")
+        if(any(count.event < 5)  ){
+            warning("Rare event \n")
         }
         if(any(mydata[[eventVar.time]]<0)){
             stop("The time to event variable should only take positive values \n")

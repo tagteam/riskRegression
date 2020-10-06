@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: apr 28 2017 (14:19) 
 ## Version: 
-## last-updated: okt  1 2020 (10:27) 
+## last-updated: okt  6 2020 (15:51) 
 ##           By: Brice Ozenne
-##     Update #: 164
+##     Update #: 166
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -160,7 +160,7 @@ autoplot.ate <- function(object,
         dataL$time <- dataL$time + dataL$landmark
     }
     if(first.derivative && ci){
-        attr(first.derivative,"vcov") <- object$vcov[[type]][[estimator]]
+        attr(first.derivative,"vcov") <- attr(object[[type]],"vcov")[[estimator]]
     }
     gg.res <- predict2plot(dataL = dataL,
                            name.outcome = "estimate", # must not contain space to avoid error in ggplot2

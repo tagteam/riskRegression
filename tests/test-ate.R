@@ -61,7 +61,7 @@ test_that("[ate] G-formula,survival - compare to fix values / explicit computati
     
     ateFit <- ate(fit, data = dtS, treatment = "X1", contrasts = NULL,
                   times = seqTime, band = FALSE, verbose = verbose)
-    dt.ateFit <- as.data.table(confint(ateFit, band = TRUE, p.value = FALSE))
+    dt.ateFit <- as.data.table(summary(ateFit, band = TRUE, p.value = FALSE, short = 2))
 
     ## point estimate
     expect_equal(dt.ateFit[level == "T0" & type == "meanRisk",estimate],
@@ -314,7 +314,7 @@ test_that("[ate] no censoring, survival - check vs. manual calculations", {
                   band = FALSE, product.limit = FALSE
                   )
     set.seed(15)
-    dt.ate1 <- as.data.table(confint(e.ate1, band = TRUE))
+    dt.ate1 <- as.data.table(summary(e.ate1, band = TRUE, short = 2))
     e.ate2 <- ate(data = dtS, times = tau,
                   event = e.S,
                   treatment = e.T,
@@ -324,7 +324,7 @@ test_that("[ate] no censoring, survival - check vs. manual calculations", {
                   band = FALSE, product.limit = FALSE
                   )
     set.seed(15)
-    dt.ate2 <- as.data.table(confint(e.ate2, band = TRUE))
+    dt.ate2 <- as.data.table(summary(e.ate2, band = TRUE, short = 2))
 
     expect_equal(dt.ate1[,.SD,.SDcols = names(dt.ate2)], dt.ate2, tol = 1e-8)
     
@@ -461,7 +461,7 @@ test_that("[ate] Censoring, survival - check vs. manual calculations", {
                   band = FALSE, product.limit = FALSE
                   )
     set.seed(15)
-    dt.ate1 <- as.data.table(confint(e.ate1, band = TRUE, p.value = TRUE))
+    dt.ate1 <- as.data.table(summary(e.ate1, band = TRUE, p.value = TRUE, short = 2))
     e.ate2 <- ate(data = dtS, times = tau,
                   event = e.S,
                   treatment = e.T,
@@ -472,7 +472,7 @@ test_that("[ate] Censoring, survival - check vs. manual calculations", {
                   band = FALSE, product.limit = FALSE
                   )
     set.seed(15)
-    dt.ate2 <- as.data.table(confint(e.ate2, band = TRUE, p.value = TRUE))
+    dt.ate2 <- as.data.table(summary(e.ate2, band = TRUE, p.value = TRUE, short = 2))
 
     expect_equal(dt.ate1[,.SD,.SDcols = names(dt.ate2)], dt.ate2, tol = 1e-8)
 
@@ -664,11 +664,17 @@ test_that("[ate] IPCW LR - no censoring", {
     ## this lead to small difference in the influence function and therefore in the standard error
     eATE.wglm <- ate(e0.wglm, data = d0, treatment = "X1", times = tau, band = FALSE, verbose = FALSE)
     eATE.glm <- ate(e0.glm, data = d0, treatment = "X1", times = tau[3], verbose = FALSE)
-    expect_equal(eATE.glm$meanRisk, eATE.wglm$meanRisk[time==tau[3]], tol = 1e-4) 
+    expect_equal(eATE.glm$meanRisk$estimate, eATE.wglm$meanRisk[time==tau[3],estimate], tol = 1e-4) 
+    expect_equal(eATE.glm$meanRisk$se, eATE.wglm$meanRisk[time==tau[3],se], tol = 1e-4) 
+    expect_equal(eATE.glm$meanRisk$lower, eATE.wglm$meanRisk[time==tau[3],lower], tol = 1e-4) 
+    expect_equal(eATE.glm$meanRisk$upper, eATE.wglm$meanRisk[time==tau[3],upper], tol = 1e-4) 
 
     eATE2.wglm <- ate(e0.wglm, data = d0, treatment = X1~X2, times = tau, band = FALSE, verbose = FALSE)
     eATE2.glm <- ate(e0.glm, data = d0, treatment = X1~X2, times = tau[3], verbose = FALSE)
-    expect_equal(eATE2.glm$meanRisk, eATE2.wglm$meanRisk[time==tau[3]], tol = 1e-4)
+    expect_equal(eATE2.glm$meanRisk$estimate, eATE2.wglm$meanRisk[time==tau[3],estimate], tol = 1e-4)
+    expect_equal(eATE2.glm$meanRisk$se, eATE2.wglm$meanRisk[time==tau[3],se], tol = 1e-4)
+    expect_equal(eATE2.glm$meanRisk$lower, eATE2.wglm$meanRisk[time==tau[3],lower], tol = 1e-4)
+    expect_equal(eATE2.glm$meanRisk$upper, eATE2.wglm$meanRisk[time==tau[3],upper], tol = 1e-4)
 })
 
 ## ** AIPTW
@@ -779,7 +785,7 @@ test_that("[ate] no censoring, competing risks - check vs. manual calculations",
                   band = FALSE, product.limit = FALSE
                   )
     set.seed(15)
-    dt.ate1 <- as.data.table(confint(e.ate1, band = TRUE, p.value = TRUE))
+    dt.ate1 <- as.data.table(summary(e.ate1, band = TRUE, p.value = TRUE, short = 2))
     e.ate2 <- ate(data = dtS, times = tau,
                   event = e.S,
                   treatment = e.T,
@@ -789,7 +795,7 @@ test_that("[ate] no censoring, competing risks - check vs. manual calculations",
                   iid = TRUE, product.limit = FALSE
                   )
     set.seed(15)
-    dt.ate2 <- as.data.table(confint(e.ate2, band = TRUE, p.value = TRUE))
+    dt.ate2 <- as.data.table(summary(e.ate2, band = TRUE, p.value = TRUE, short = 2))
 
     expect_equal(dt.ate1[,.SD,.SDcols = names(dt.ate2)],  dt.ate2)
 
@@ -920,7 +926,7 @@ test_that("[ate] Censoring, competing risks (surv.type=\"survival\") - check vs.
                   band = FALSE, product.limit = FALSE, cause = 1
                   )
     set.seed(15)
-    dt.ate1 <- as.data.table(confint(e.ate1, band = TRUE, p.value = TRUE))
+    dt.ate1 <- as.data.table(summary(e.ate1, band = TRUE, p.value = TRUE, short = 2))
     e.ate2 <- ate(data = dtS, times = tau,
                   event = e.S,
                   censor = e.C,
@@ -931,7 +937,7 @@ test_that("[ate] Censoring, competing risks (surv.type=\"survival\") - check vs.
                   band = FALSE, product.limit = FALSE, cause = 1
                   )
     set.seed(15)
-    dt.ate2 <- as.data.table(confint(e.ate2, band = TRUE, p.value = TRUE))
+    dt.ate2 <- as.data.table(summary(e.ate2, band = TRUE, p.value = TRUE, short = 2))
 
     expect_equal(dt.ate1, dt.ate2, tol = 1e-8)
     
@@ -1330,12 +1336,12 @@ test_that("[ate] Cox model/G-formula - one or several timepoints affects the res
     a1 <- ate(fit,data=d,treatment="X1",time=5, verbose = verbose)
     a2 <- ate(fit,data=d,treatment="X1",time=5:7, verbose = verbose)
 
-    expect_equal(a2$meanRisk[time==5,],
-                 a1$meanRisk[time==5,])
-    expect_equal(a2$diffRisk[time==5,],
-                 a1$diffRisk)
-    expect_equal(a2$ratioRisk[time==5,],
-                 a1$ratioRisk)
+    expect_equal(a2$meanRisk[time==5,.(estimate,se)],
+                 a1$meanRisk[time==5,.(estimate,se)])
+    expect_equal(a2$diffRisk[time==5,.(estimate,se)],
+                 a1$diffRisk[,.(estimate,se)])
+    expect_equal(a2$ratioRisk[time==5,.(estimate,se)],
+                 a1$ratioRisk[,.(estimate,se)])
 })
 
 ## ** Before the first jump or at the first jump
@@ -1415,4 +1421,26 @@ test_that("ate in presence of ties",{
     setkeyv(iDT, "X1")
     expect_equal(ateRobust$meanRisk$estimate, 1-iDT$survival, tol = 1e-7)
     expect_equal(ateRobust$meanRisk$se, iDT$survival.se, tol = 1e-7)
+})
+## ** Splines
+## Tag: 10/06/20 6:21 
+n <- 500
+set.seed(10)
+dt <- sampleData(n, outcome = "competing.risks")
+dt$X1 <- factor(rbinom(n, prob = c(0.4) , size = 1), labels = paste0("T",0:1))
+
+test_that("ate in presence of splines",{
+    m.event <-  CSC(Hist(time,event)~ X1+X2+X6+rms::rcs(X7,3),data=dt)
+
+    ate.1 <- ate(event = m.event,
+                 treatment = "X1",
+                 data = dt, times = 1:5, 
+                 cause = 1, product.limit = FALSE,
+                 verbose = verbose)
+
+    ate.2 <- ate(event = m.event,
+                 treatment = "X1",
+                 data = dt, times = 1:5, 
+                 cause = 1, product.limit = FALSE,
+                 verbose = verbose, B = 10)
 })

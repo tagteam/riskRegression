@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: okt 29 2019 (13:18) 
 ## Version: 
-## Last-Updated: sep 24 2020 (10:15) 
+## Last-Updated: okt  6 2020 (16:28) 
 ##           By: Brice Ozenne
-##     Update #: 194
+##     Update #: 204
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -31,7 +31,7 @@
 #' @param estimate.boot [logical] should the average estimate on the bootstrap samples be displayed?
 #' @param digits [integer, >0] Number of digits.
 #' @param short [logical] If \code{TRUE}, only displays the estimated risks.
-#' @param ... passed to print
+#' @param ... passed to confint
 #'
 #' @details to display confidence intervals/bands and p.value,
 #' the \code{confint} method needs to be applied on the object.
@@ -51,11 +51,19 @@ summary.ate <- function(object,  estimator = object$estimator[1], short = FALSE,
                         type = c("risk","difference"), se = object$inference$se, quantile = FALSE, estimate.boot = TRUE,
                         digits = 3,
                         ...){
+
     lower <- upper <- lowerBand <- upperBand <- NULL ## [:CRANcheck:] data.table
 
-    if(!is.null(object$allContrasts)){
-        allContrasts <- object$allContrasts
-        contrasts <- attr(allContrasts,"contrasts")
+    ## ** update confint
+    args.confint <- c("conf.level","n.sim","contrasts","allContrasts","meanRisk.transform","diffRisk.transform","ratioRisk.transform","seed",
+                      "ci","band","p.value","method.band","alternative","bootci.method")
+    if(any(args.confint %in% names(list(...)))){
+        object[c("meanRisk","diffRisk","ratioRisk","inference","inference.allContrasts","inference.contrasts","transform")] <- confint(object,...)
+    }
+        
+    if(!is.null(object$inference.allContrasts)){
+        allContrasts <- object$inference.allContrasts
+        contrasts <- object$inference.contrasts
     }else{
         contrasts <- object$contrasts
         allContrasts <- utils::combn(contrasts, m = 2)
@@ -75,7 +83,7 @@ summary.ate <- function(object,  estimator = object$estimator[1], short = FALSE,
                               "less" = "one-sided tests, alternative: less risk")
 
     ## ** Display: specification of ate
-    if(!short){
+    if(short==0){
         print(object, display.results = FALSE)
         if(object$inference$ci || object$inference$band || object$inference$p.value){
             index.transform <- which(object$transform!="none")
@@ -98,7 +106,7 @@ summary.ate <- function(object,  estimator = object$estimator[1], short = FALSE,
         }
     }
     
-    if(!short){
+    if(short==0){
         cat("\n Results: \n")
     }
     if(identical(type,"risk")){
@@ -118,7 +126,7 @@ summary.ate <- function(object,  estimator = object$estimator[1], short = FALSE,
         if(all(is.na(dt.tempo$time))){
             dt.tempo[,c("time") := NULL]
         }
-        if(object$inference$B>0 && !estimate.boot){
+        if(object$inference$bootstrap && !estimate.boot){
            dt.tempo[,c("estimate.boot") := NULL]
         }
         if(object$inference$ci){
@@ -136,20 +144,24 @@ summary.ate <- function(object,  estimator = object$estimator[1], short = FALSE,
         }
 
         ## display
-        if(short){
+        if(short == 1){
             cat(" - Standardized risk between time zero and 'time'\n",sep="")
-        }else{
+            cat("\n")        
+            print(dt.tempo, digits=digits, row.names = FALSE)
+            cat("\n")
+        }else if(short == 0){
             cat(" - Standardized risk between time zero and 'time', reported on the scale [0;1] (probability scale)\n",sep="")
             if(!is.na(object$variable["strata"])){
                 cat("   (average risk within strata)\n")
             }else{ 
                 cat("   (average risk if all subjects were treated with one treatment (",object$variable["treatment"],"))\n",sep="")
             }
+            cat("\n")        
+            print(dt.tempo, digits=digits, row.names = FALSE)
+            cat("\n")
         }
         
-        cat("\n")        
-        print(dt.tempo,digits=digits,row.names = FALSE,...)
-        cat("\n")
+        
     }else{
         ## ** difference or ratio
         ## prepare
@@ -174,7 +186,7 @@ summary.ate <- function(object,  estimator = object$estimator[1], short = FALSE,
         if(all(is.na(dt.tempo$time))){
             dt.tempo[,c("time") := NULL]
         }
-        if(object$inference$B>0 && !estimate.boot){
+        if(object$inference$bootstrap && !estimate.boot){
             dt.tempo[,c("estimate.boot") := NULL]
         }
         if(object$inference$ci){
@@ -193,8 +205,9 @@ summary.ate <- function(object,  estimator = object$estimator[1], short = FALSE,
 
         ## display
         if("difference" %in% type){
-            cat(" - Difference in standardized risk (B-A) between time zero and 'time' \n")
-            if(!short){
+            
+            if(short==0){
+                cat(" - Difference in standardized risk (B-A) between time zero and 'time' \n")
                 cat("                reported on the scale [-1;1] (difference between two probabilities)\n",sep="")
                 if(!is.na(object$variable["strata"])){
                     cat(" (difference between the average risk in two different strata)\n")
@@ -202,10 +215,18 @@ summary.ate <- function(object,  estimator = object$estimator[1], short = FALSE,
                     cat(" (difference between the average risk if all subjects were treated with one treatment (A),\n",
                         "                and the average risk if all subjects were treated with another treatment (B))\n")
                 }
+                cat("\n")
+                print(dt.tempo,digits=digits,row.names = FALSE)
+                cat("\n")
+            }else if(short==1){
+                cat(" - Difference in standardized risk (B-A) between time zero and 'time' \n")
+                cat("\n")
+                print(dt.tempo,digits=digits,row.names = FALSE)
+                cat("\n")
             }
         }else if("ratio" %in% type){
-            cat(" - Ratio of standardized risks (B/A) between time zero and 'time' \n")
-            if(!short){
+            if(short==0){
+                cat(" - Ratio of standardized risks (B/A) between time zero and 'time' \n")
                 cat("                reported on the scale ]0;1] (ratio of two probabilities)\n",sep="")
                 if(!is.na(object$variable["strata"])){
                     cat(" (ratio between the average risk in two different strata)\n")
@@ -213,15 +234,20 @@ summary.ate <- function(object,  estimator = object$estimator[1], short = FALSE,
                     cat(" (ratio between the average risk if all subjects were treated with one treatment (A),\n",
                         "           and the average risk if  all subjects were treated with another treatment (B))\n")
                 }
+                cat("\n")
+                print(dt.tempo,digits=digits,row.names = FALSE)
+                cat("\n")
+            }else if(short == 1){
+                cat(" - Ratio of standardized risks (B/A) between time zero and 'time' \n")
+                cat("\n")
+                print(dt.tempo,digits=digits,row.names = FALSE)
+                cat("\n")
             }
         }
-        cat("\n")
-        print(dt.tempo,digits=digits,row.names = FALSE,...)
-        cat("\n")
     }
 
     ## CI/Band
-    if(!short){
+    if(short == 0){
         if("difference" %in% type){
             cat(" estimate     : estimated difference in standardized risks \n")
         }else if("ratio" %in% type){
@@ -229,7 +255,7 @@ summary.ate <- function(object,  estimator = object$estimator[1], short = FALSE,
         }else{
             cat(" estimate     : estimated standardized risk \n")
         }
-        if(object$inference$B>0 && estimate.boot){
+        if(object$inference$bootstrap && estimate.boot){
             cat(" estimate.boot: average value over the bootstrap samples \n")
         }
         if(object$inference$ci){
