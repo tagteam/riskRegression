@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: jun 27 2019 (10:43) 
 ## Version: 
-## Last-Updated: okt  1 2020 (13:25) 
+## Last-Updated: okt 24 2020 (17:54) 
 ##           By: Brice Ozenne
-##     Update #: 863
+##     Update #: 870
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -24,6 +24,7 @@ ATE_TI <- function(object.event,
                    treatment,
                    strata,
                    contrasts,
+                   allContrasts,
                    times,
                    landmark,
                    cause,
@@ -348,7 +349,7 @@ ATE_TI <- function(object.event,
     }
 
     ## ** Compute risk comparisons
-    out[c("diffRisk","ratioRisk")] <- ATE_COMPARISONS(out$meanRisk, TD = FALSE, allContrasts = utils::combn(contrasts, m = 2))
+    out[c("diffRisk","ratioRisk")] <- ATE_COMPARISONS(out$meanRisk, TD = FALSE, allContrasts = allContrasts)
     
     ## ** Export
     return(out)            
@@ -360,6 +361,7 @@ ATE_TD <- function(object.event,
                    formula,
                    treatment,
                    contrasts,
+                   allContrasts,
                    times,
                    landmark,
                    cause,
@@ -403,8 +405,8 @@ ATE_TD <- function(object.event,
     }))
 
     ## ** Compute risk comparisons
-    out[c("diffRisk","ratioRisk")] <- ATE_COMPARISONS(out$meanRisk, TD = TRUE, allContrasts = utils::combn(contrasts, m = 2))
-    
+    out[c("diffRisk","ratioRisk")] <- ATE_COMPARISONS(out$meanRisk, TD = TRUE, allContrasts = allContrasts)
+
     ## ** Export
     return(out)
 }
@@ -418,19 +420,9 @@ ATE_COMPARISONS <- function(data, TD, allContrasts){
     setnames(dataB, old = c("treatment","estimate"), new = c("B","estimate.B"))
 
     ## perform all pairwise combinations
-    if(TD){
-        mdata <- merge(dataA, dataB, by = c("estimator","time","landmark"), allow.cartesian = TRUE)
-    }else{
-        mdata <- merge(dataA, dataB, by = c("estimator","time"), allow.cartesian = TRUE)
-    }
-
-    ## trim (remove T0.T0 and T1.T0 when T0.T1 is already there)
-    mdata <- mdata[interaction(mdata$A,mdata$B) %in% interaction(allContrasts[1,],allContrasts[2,])]
-    if(TD){
-        setcolorder(mdata, c("estimator","time","landmark","A","B","estimate.A","estimate.B"))
-    }else{
-        setcolorder(mdata, c("estimator","time","A","B","estimate.A","estimate.B"))
-    }
+    mdata <- do.call(rbind,apply(allContrasts, 2, function(iC){ merge(dataA[iC[1],.SD, on = "A"],dataB[iC[2],.SD, on = "B"],
+                                                                      by = c("estimator","time",if(TD){"landmark"}))
+    })) ## iC <- c("T0","T1")
 
     ## re-order by estimator
     mdata <- mdata[order(factor(mdata$estimator, levels = unique(data$estimator)))]

@@ -7,7 +7,7 @@
 \method{as.data.table}{ate}(
   x,
   estimator = x$estimator,
-  type = c("risk", "difference", "ratio"),
+  type = c("meanRisk", "diffRisk", "ratioRisk"),
   keep.rownames = FALSE,
   ...
 )
@@ -18,9 +18,9 @@
 \item{estimator}{[character] The type of estimator relative to which the estimates should be output.}
 
 \item{type}{[character vector] The type of risk to export.
-Can be \code{"risk"} to export the risks specific to each treatment group,
-\code{"difference"} to export the difference in risks between treatment groups,
-or \code{"ratio"} to export the ratio of risks between treatment groups,.}
+Can be \code{"meanRisk"} to export the risks specific to each treatment group,
+\code{"diffRisk"} to export the difference in risks between treatment groups,
+or \code{"ratioRisk"} to export the ratio of risks between treatment groups.}
 
 \item{keep.rownames}{Not used.}
 

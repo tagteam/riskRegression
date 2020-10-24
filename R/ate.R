@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Oct 23 2016 (08:53) 
 ## Version: 
-## last-updated: okt  6 2020 (18:34) 
+## last-updated: okt 24 2020 (18:14) 
 ##           By: Brice Ozenne
-##     Update #: 2148
+##     Update #: 2167
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -34,7 +34,8 @@
 #' @param data.index [numeric vector] Position of the observation in argument data relative to the dataset used to obtain the argument event, treatment, censor.
 #' Only necessary for the standard errors when computing the Average Treatment Effects on a subset of the data set. 
 #' @param formula For analyses with time-dependent covariates, the response formula. See examples.
-#' @param contrasts [character] The levels of the treatment variable to be compared.
+#' @param contrasts [character vector] levels of the treatment variable for which the risks should be assessed and compared. Default is to consider all levels.
+#' @param allContrasts [2-row character matrix] levels of the treatment variable to be compared. Default is to consider all pairwise comparisons.
 #' @param strata [character] Strata variable on which to compute the average risk.
 #' Incompatible with treatment. Experimental.
 #' 
@@ -58,16 +59,17 @@
 #' If it equals 0, then the influence function is used to compute Wald-type confidence intervals/bands.
 #' @param seed [integer, >0] sed number used to generate seeds for bootstrap
 #' and to achieve reproducible results.
-#' @param handler [character] Parallel handler for bootstrap.
-#' either \code{"foreach"}, \code{"mclapply"}, \code{"snow"} or \code{"multicore"}.
-#' if "foreach" use \code{doparallel} to create a cluster.
+#' @param handler [character] Parallel handler for bootstrap. 
+#' \code{"foreach"} is the default and the only option on Windows. It uses \code{parallel} to create a cluster.
+#' Other operating systems can use \code{"mclapply"}.
+#' This argument is ignored when \code{mc.cores=1} and \code{cl=NULL}.
 #' @param mc.cores [integer, >0] The number of cores to use,
 #' i.e., the upper limit for the number of child processes that run simultaneously.
-#' Passed to \code{parallel::mclapply} or \code{doparallel::registerdoparallel}.
+#' Passed to \code{parallel::mclapply} or \code{parallel::makeCluster}.
 #' The option is initialized from environment variable mc_cores if set.
-#' @param cl A parallel socket cluster used to perform cluster calculation in parallel.
-#' Output by \code{parallel::makeCluster}.
+#' @param cl A parallel socket cluster used to perform cluster calculation in parallel (output by \code{parallel::makeCluster}).
 #' The packages necessary to run the computations (e.g. riskRegression) must already be loaded on each worker.
+#' Only used when \code{handler="foreach"}.
 #' @param verbose [logical] If \code{TRUE} inform about estimated run time.
 #' @param ... passed to predictRisk
 #'
@@ -105,9 +107,9 @@
 #' ## confidence intervals / p-values based on asymptotic results
 #' ateFit1a <- ate(fit, data = dtS, treatment = "X1", times = 5:8)
 #' summary(ateFit1a)
-#' summary(ateFit1a, short = TRUE, type = "risk")
-#' summary(ateFit1a, short = TRUE, type = "difference")
-#' summary(ateFit1a, short = TRUE, type = "ratio")
+#' summary(ateFit1a, short = TRUE, type = "meanRisk")
+#' summary(ateFit1a, short = TRUE, type = "diffRisk")
+#' summary(ateFit1a, short = TRUE, type = "ratioRisk")
 #' 
 #' \dontrun{
 #' ## same as before with in addition the confidence bands / adjusted p-values
@@ -118,10 +120,10 @@
 #'
 #' ## by default bands/adjuste p-values computed separately for each treatment modality
 #' summary(ateFit1b, band = 1,
-#'          se = FALSE, type = "difference", short = TRUE, quantile = TRUE)
+#'          se = FALSE, type = "diffRisk", short = TRUE, quantile = TRUE)
 #' ## adjustment over treatment and time using the band argument of confint
 #' summary(ateFit1b, band = 2,
-#'        se = FALSE, type = "difference", short = TRUE, quantile = TRUE)
+#'        se = FALSE, type = "diffRisk", short = TRUE, quantile = TRUE)
 #' 
 #' ## confidence intervals / p-values computed using 1000 boostrap samples
 #' ## (argument se = TRUE and B = 1000) 
@@ -168,6 +170,7 @@
 #' summary(ateFit1b, short = TRUE)
 #' 
 #' ## using the lava package
+#' library(lava)
 #' ateLava <- estimate(fit, function(p, data){
 #' a <- p["(Intercept)"] ; b <- p["X11"] ; c <- p["X2"] ;
 #' R.X11 <- expit(a + b + c * data[["X2"]])
@@ -223,8 +226,8 @@
 #'                  estimator = c("GFORMULA","IPTW","AIPTW"),
 #'                  data = dt, times = c(5:10), 
 #'                  cause = 1, se = TRUE)
-#' print(setkeyv(as.data.table(ateRobust3, type = "risk"),"time"))
-#' print(setkeyv(as.data.table(ateRobust3, type = "difference"),"time"))
+#' print(setkeyv(as.data.table(ateRobust3, type = "meanRisk"),"time"))
+#' print(setkeyv(as.data.table(ateRobust3, type = "diffRisk"),"time"))
 #' }
 #' 
 #' #### time-dependent covariates ###
@@ -282,6 +285,7 @@ ate <- function(event,
                 estimator = NULL,
                 strata = NULL,
                 contrasts = NULL,
+                allContrasts = NULL,
                 times,
                 cause = NA,
                 landmark,
@@ -363,6 +367,7 @@ ate <- function(event,
                            treatment = treatment,
                            strata = strata,
                            contrasts = contrasts,
+                           allContrasts = allContrasts,
                            times = times,
                            cause = cause,
                            landmark = landmark,
@@ -412,6 +417,11 @@ ate <- function(event,
         }
         levels <- levels(data[[treatment]]) ## necessary to get the correct factor format in case that not all levels are in contrast
     }
+    if(is.null(allContrasts)){
+        allContrasts <- utils::combn(contrasts, m = 2)
+    }else if(any(contrasts %in% allContrasts == FALSE)){
+        contrasts <- contrasts[contrasts %in% allContrasts]
+    }
 
     ## object to be exported
     out <- list(meanRisk = NULL,
@@ -427,6 +437,7 @@ ate <- function(event,
                               strata = if(is.null(strata)){NA}else{strata}),
                 theCause = cause,
                 contrasts = contrasts,
+                allContrasts = allContrasts,
                 computation.time = list("point" = NA, "iid" = NA, "bootstrap" = NA), 
                 inference = data.frame("se" = se, "iid" = iid, "band" = band, "bootstrap" = B>0, "ci" = FALSE, "p.value" = FALSE,
                                        "conf.level" = NA, "alternative" = NA,
@@ -445,11 +456,13 @@ ate <- function(event,
         }
         if(attr(estimator,"TD")){
             attr(out$eval.times,"n.at.risk") <- dcast(cbind(times = paste0(times,"+",landmark),
-                                                            data[, list(pc = sapply(times+landmark, function(t){sum(.SD[[eventVar.time]]>=t)})), by = var.group]),
+                                                            data[data[[var.group]] %in% contrasts,
+                                                                 list(pc = sapply(times+landmark, function(t){sum(.SD[[eventVar.time]]>=t)})), by = var.group]),
                                                       value.var = "pc", formula = as.formula(paste0(var.group,"~times")))
         }else{
             attr(out$eval.times,"n.at.risk") <- dcast(cbind(times = times,
-                                                            data[, list(pc = sapply(times, function(t){sum(.SD[[eventVar.time]]>=t)})), by = var.group]),
+                                                            data[data[[var.group]] %in% contrasts,
+                                                                 list(pc = sapply(times, function(t){sum(.SD[[eventVar.time]]>=t)})), by = var.group]),
                                                       value.var = "pc", formula = as.formula(paste0(var.group,"~times")))
         }
     }
@@ -494,6 +507,7 @@ ate <- function(event,
                                  treatment=treatment,
                                  strata=strata,
                                  contrasts=contrasts,
+                                 allContrasts=allContrasts,
                                  levels=levels,
                                  times=times,
                                  cause=cause,
@@ -996,6 +1010,7 @@ ate_checkArgs <- function(object.event,
                           treatment,
                           strata,
                           contrasts,
+                          allContrasts,
                           times,
                           cause,
                           landmark,
@@ -1231,6 +1246,24 @@ ate_checkArgs <- function(object.event,
         }
     }else if(is.null(strata)){
         stop("The treatment variable must be specified using the argument \'treatment\' \n")
+    }
+
+    ## ** contrasts/allContrasts
+    if(!is.null(contrasts)){
+        if(any(contrasts %in% unique(mydata[[treatment]]) == FALSE)){
+            stop("Incorrect values for the argument \'contrasts\' \n",
+                 "Possible values: \"",paste(unique(mydata[[treatment]]),collapse="\" \""),"\" \n")
+        }
+    
+    }
+    if(!is.null(allContrasts)){
+        if(any(allContrasts %in% unique(mydata[[treatment]]) == FALSE)){
+            stop("Incorrect values for the argument \'allContrasts\' \n",
+                 "Possible values: \"",paste(unique(mydata[[treatment]]),collapse="\" \""),"\" \n")
+        }
+        if(!is.matrix(allContrasts) || NROW(allContrasts)!=2){
+            stop("Argument \'allContrasts\' must be a matrix with 2 rows \n")
+        }
     }
 
     ## ** strata

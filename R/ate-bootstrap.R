@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: apr 11 2018 (17:05) 
 ## Version: 
-## Last-Updated: sep 23 2020 (11:03) 
+## Last-Updated: okt 24 2020 (15:45) 
 ##           By: Brice Ozenne
-##     Update #: 329
+##     Update #: 336
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -132,86 +132,61 @@ calcBootATE <- function(args, n.obs, fct.pointEstimate, name.estimate,
     }
                                         # }}}
     ## bootstrap
-    if(handler %in% c("snow","multicore")) {
-                                        # {{{ use boot package
-        if(handler=="snow" && no.cl[[1]]==TRUE){ 
-            ## initialize CPU
-            cl <- parallel::makeCluster(mc.cores)
-            ## load packages
-            parallel::clusterCall(cl, function(x){sapply(x, library, character.only = TRUE)}, add.Package)
-            ## set seeds
-            parallel::clusterApply(cl, bootseeds, function(x){set.seed(x)})
-            ## check
-            ## clusterCall(cl, function(x){rnorm(5)})
-        }else{
-            ## set seeds
-            bootseeds <- sum(bootseeds)
-            set.seed(bootseeds)
-        }
-        ## run bootstrap
-        boot.object <- boot::boot(data = args$mydata,
-                                  R = B,
-                                  sim = "ordinary",
-                                  stpe = "indices",
-                                  strata = rep(1, n.obs),
-                                  parallel = handler,
-                                  ncpus = mc.cores,
-                                  cl = cl,
-                                  statistic = function(data, index, ...){
-                                      warperBootATE(index = index,
-                                                    args = args,
-                                                    fct.pointEstimate = fct.pointEstimate,
-                                                    name.estimate = name.estimate)                                      
-                                  })
-                                        # }}}
-    }else{
-
-        if (handler=="foreach"){ # [@TAG: removed mc.cores > 1]
+    if(no.cl && mc.cores == 1){
+        if(verbose){pb <- txtProgressBar(max = B, style = 3,width=30)}
+        boots <- lapply(1:B, FUN = function(b){
+            if(verbose>0){setTxtProgressBar(pb, b)}
+            set.seed(bootseeds[[b]])
+            warperBootATE(index = sample(1:n.obs, size = n.obs, replace = TRUE),
+                          args = args,
+                          fct.pointEstimate = fct.pointEstimate,
+                          name.estimate = name.estimate)                                      
+        })
+        if(verbose>0){close(pb)}
+    
+    }else if (handler=="foreach"){ # 
                                         # {{{ foreach
-            if(no.cl){
-                if(verbose>0){
-                    cl <- parallel::makeCluster(mc.cores, outfile = "")
-                }else{
-                    cl <- parallel::makeCluster(mc.cores)
-                }                
-            }           
-            doParallel::registerDoParallel(cl)
-            ## progress bar 
-            if(verbose){pb <- txtProgressBar(max = B, style = 3,width=30)}
-            b <- NULL ## [:forCRANcheck:] foreach
-            boots <- foreach::`%dopar%`(foreach::foreach(b = 1:B, .packages = add.Package, .export = add.Fct), { ## b <- 1
-                if(verbose>0){setTxtProgressBar(pb, b)}
-                set.seed(bootseeds[[b]])
-                warperBootATE(index = sample(1:n.obs, size = n.obs, replace = TRUE),
-                              args = args,
-                              fct.pointEstimate = fct.pointEstimate,
-                              name.estimate = name.estimate)                                      
-            })
-            if(verbose>0){close(pb)}
-            if(no.cl){parallel::stopCluster(cl)}
+        if(no.cl){
+            if(verbose>0){
+                cl <- parallel::makeCluster(mc.cores, outfile = "")
+            }else{
+                cl <- parallel::makeCluster(mc.cores)
+            }                
+        }           
+        doParallel::registerDoParallel(cl)
+        ## progress bar 
+        if(verbose){pb <- txtProgressBar(max = B, style = 3,width=30)}
+        b <- NULL ## [:forCRANcheck:] foreach
+        boots <- foreach::`%dopar%`(foreach::foreach(b = 1:B, .packages = add.Package, .export = add.Fct), { ## b <- 1
+            if(verbose>0){setTxtProgressBar(pb, b)}
+            set.seed(bootseeds[[b]])
+            warperBootATE(index = sample(1:n.obs, size = n.obs, replace = TRUE),
+                          args = args,
+                          fct.pointEstimate = fct.pointEstimate,
+                          name.estimate = name.estimate)                                      
+        })
+        if(verbose>0){close(pb)}
+        if(no.cl){parallel::stopCluster(cl)}
                                         # }}}
-        }else if(handler=="mclapply"){
+    }else if(handler=="mclapply"){
                                         # {{{ mclapply
-            boots <- parallel::mclapply(1:B, mc.cores = mc.cores, FUN = function(b){
-                set.seed(bootseeds[[b]])
-                warperBootATE(index = sample(1:n.obs, size = n.obs, replace = TRUE),
-                              args = args,
-                              fct.pointEstimate = fct.pointEstimate,
-                              name.estimate = name.estimate)                                      
-            })
-                                        # }}}
-        }
-                                        # {{{ convert to boot object
-        M.bootEstimate <- do.call(rbind,boots)
-            
-        if(all(is.na(M.bootEstimate))){
-            stop(paste0("Error in all bootstrap samples: ", attr(boots[[1]],"error")[1]))
-        }
-        colnames(M.bootEstimate) <- name.estimate
+        boots <- parallel::mclapply(1:B, mc.cores = mc.cores, FUN = function(b){
+            set.seed(bootseeds[[b]])
+            warperBootATE(index = sample(1:n.obs, size = n.obs, replace = TRUE),
+                          args = args,
+                          fct.pointEstimate = fct.pointEstimate,
+                          name.estimate = name.estimate)                                      
+        })
                                         # }}}
     }
-                                    
+
     ## output
+    M.bootEstimate <- do.call(rbind,boots)
+    if(all(is.na(M.bootEstimate))){
+        stop(paste0("Error in all bootstrap samples: ", attr(boots[[1]],"error")[1]))
+    }
+    colnames(M.bootEstimate) <- name.estimate
+
     return(list(boot = M.bootEstimate,
                 bootseeds = bootseeds))
 }

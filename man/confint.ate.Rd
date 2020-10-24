@@ -10,7 +10,7 @@
   level = 0.95,
   n.sim = 10000,
   contrasts = object$contrasts,
-  allContrasts = NULL,
+  allContrasts = object$allContrasts,
   meanRisk.transform = "none",
   diffRisk.transform = "none",
   ratioRisk.transform = "none",

@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun  6 2016 (06:48) 
 ## Version: 
-## last-updated: okt  6 2020 (15:44) 
+## last-updated: okt 24 2020 (16:44) 
 ##           By: Brice Ozenne
-##     Update #: 523
+##     Update #: 547
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -86,10 +86,10 @@ print.ate <- function(x, estimator = x$estimator, ...){
                                 "wald" = "Wald",
                                 "quantile" = "Percentile")
         txt.inference <- paste(bootci.method," bootstrap based on ",x$inference$n.bootstrap," bootstrap samples\n",
-                               "                          that were drawn with replacement from the original data.\n",sep="")
+                               "                that were drawn with replacement from the original data.\n",sep="")
         test.inference <- TRUE
     }else if(any(x$inference[,c("se","band","ci","p.value")]>0)){
-        txt.inference <- "decomposition in iid terms \n"
+        txt.inference <- "Gaussian approximation \n                where the variance is estimated via the influence function \n"
         test.inference <- TRUE
     }else{
         test.inference <- FALSE
@@ -118,13 +118,13 @@ print.ate <- function(x, estimator = x$estimator, ...){
     cat(" - Event                : ",x$var["event"]," (",txt.eventvar,")\n",sep="")
     if(!is.na(x$var["time"])){
         cat(" - Time  [min;max]      : ",x$var["time"]," [",signif(attr(x$var,"range.time")[1],3),";",signif(attr(x$var,"range.time")[2], 3),"]\n",sep="")
-        print(M.at.risk, row.names = FALSE)
+        print(M.at.risk, row.names = FALSE)        
     }
     
     cat("\n Estimation procedure \n")
-    cat(" - Estimator",if(length(estimator.print)>1){"s"}else{" "},"           : ",paste(estimator.print, collapse = " "),"\n",sep="")
+    cat(" - Estimator",if(length(estimator.print)>1){"s"}else{" "}," : ",paste(estimator.print, collapse = " "),"\n",sep="")
     if(test.inference){
-        cat(" - Statistical inference: ", txt.inference,sep="")
+        cat(" - Uncertainty: ", txt.inference,sep="")
     }
     
     if(display.results){

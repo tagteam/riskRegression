@@ -8,8 +8,8 @@
   object,
   estimator = object$estimator[1],
   short = FALSE,
-  type = c("risk", "difference"),
-  se = object$inference$se,
+  type = c("meanRisk", "diffRisk"),
+  se = FALSE,
   quantile = FALSE,
   estimate.boot = TRUE,
   digits = 3,
@@ -24,9 +24,9 @@
 \item{short}{[logical] If \code{TRUE}, only displays the estimated risks.}
 
 \item{type}{[character vector] what to displayed.
-Can be \code{"risk"} to display the risks specific to each treatment group,
-\code{"difference"} to display the difference in risks between treatment groups,
-or \code{"ratio"} to display the ratio of risks between treatment groups,.}
+Can be \code{"meanRisk"} to display the risks specific to each treatment group,
+\code{"diffRisk"} to display the difference in risks between treatment groups,
+or \code{"ratioRisk"} to display the ratio of risks between treatment groups,.}
 
 \item{se}{[logical] should the standard error of the risks be displayed?}
 

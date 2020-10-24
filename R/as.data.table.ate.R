@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Mar  3 2017 (09:28) 
 ## Version: 
-## Last-Updated: okt  6 2020 (14:02) 
+## Last-Updated: okt 24 2020 (18:11) 
 ##           By: Brice Ozenne
-##     Update #: 183
+##     Update #: 187
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -24,19 +24,19 @@
 #' @param keep.rownames Not used.
 #' @param estimator [character] The type of estimator relative to which the estimates should be output. 
 #' @param type [character vector] The type of risk to export.
-#' Can be \code{"risk"} to export the risks specific to each treatment group,
-#' \code{"difference"} to export the difference in risks between treatment groups,
-#' or \code{"ratio"} to export the ratio of risks between treatment groups,.
+#' Can be \code{"meanRisk"} to export the risks specific to each treatment group,
+#' \code{"diffRisk"} to export the difference in risks between treatment groups,
+#' or \code{"ratioRisk"} to export the ratio of risks between treatment groups.
 #' @param ... Not used.
 #'
 
 ## * as.data.table.ate (code)
 #' @rdname as.data.table.ate
 #' @export
-as.data.table.ate <- function(x, estimator = x$estimator, type = c("risk","difference","ratio"), keep.rownames = FALSE, ...){
+as.data.table.ate <- function(x, estimator = x$estimator, type = c("meanRisk","diffRisk","ratioRisk"), keep.rownames = FALSE, ...){
 
     estimator <- match.arg(estimator, choices =  x$estimator, several.ok = TRUE)
-    type <- match.arg(type, choices =  c("risk","difference","ratio"), several.ok = TRUE)
+    type <- match.arg(type, choices =  c("meanRisk","diffRisk","ratioRisk"), several.ok = TRUE)
 
     if(!is.null(x$allContrasts)){
         allContrasts <- x$allContrasts
@@ -47,7 +47,7 @@ as.data.table.ate <- function(x, estimator = x$estimator, type = c("risk","diffe
     }
 
     ## ** meanRisk
-    if("risk" %in% type){
+    if("meanRisk" %in% type){
         iIndexRow <- which((x$meanRisk$estimator %in% estimator) * (x$meanRisk$treatment %in% contrasts) == 1)
 
         meanRisk <- x$meanRisk[iIndexRow]
@@ -56,7 +56,7 @@ as.data.table.ate <- function(x, estimator = x$estimator, type = c("risk","diffe
                       time = x$meanRisk$time,
                       level = x$meanRisk$treatment,
                       x$meanRisk[,.SD,.SDcols = setdiff(names(x$meanRisk),c("estimator","time","treatment"))])
-        if(x$inference$p.value && any(type %in% c("difference","ratio"))){
+        if(x$inference$p.value && any(type %in% c("diffRisk","ratioRisk"))){
             out1$p.value <- as.numeric(NA)
             if(x$inference$band){
                 out1$adj.p.value <- as.numeric(NA)
@@ -68,7 +68,7 @@ as.data.table.ate <- function(x, estimator = x$estimator, type = c("risk","diffe
 
 
     ## ** diffRisk
-    if("difference" %in% type){
+    if("diffRisk" %in% type){
         iIndexRow <- which((x$diffRisk$estimator %in% estimator) * (interaction(x$diffRisk$A,x$diffRisk$B) %in% interaction(allContrasts[1,],allContrasts[2,])) == 1)
         diffRisk <- x$diffRisk[iIndexRow]
         out2 <- cbind(type = "diffRisk",
@@ -80,7 +80,7 @@ as.data.table.ate <- function(x, estimator = x$estimator, type = c("risk","diffe
         out2 <- NULL
     }
     ## ** ratioRisk
-    if("ratio" %in% type){
+    if("ratioRisk" %in% type){
         iIndexRow <- which((x$ratioRisk$estimator %in% estimator) * (interaction(x$ratioRisk$A,x$ratioRisk$B) %in% interaction(allContrasts[1,],allContrasts[2,])) == 1)
         ratioRisk <- x$ratioRisk[iIndexRow]
         out3 <- cbind(type = "ratioRisk",

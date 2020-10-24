@@ -14,6 +14,7 @@ ate(
   estimator = NULL,
   strata = NULL,
   contrasts = NULL,
+  allContrasts = NULL,
   times,
   cause = NA,
   landmark,
@@ -59,7 +60,9 @@ When using \code{estimator="AIPTW"} (double robust estimator), a model for the o
 \item{strata}{[character] Strata variable on which to compute the average risk.
 Incompatible with treatment. Experimental.}
 
-\item{contrasts}{[character] The levels of the treatment variable to be compared.}
+\item{contrasts}{[character vector] levels of the treatment variable for which the risks should be assessed and compared. Default is to consider all levels.}
+
+\item{allContrasts}{[2-row character matrix] levels of the treatment variable to be compared. Default is to consider all pairwise comparisons.}
 
 \item{times}{[numeric vector] Time points at which to evaluate average treatment effects.}
 
@@ -85,18 +88,19 @@ If it equals 0, then the influence function is used to compute Wald-type confide
 \item{seed}{[integer, >0] sed number used to generate seeds for bootstrap
 and to achieve reproducible results.}
 
-\item{handler}{[character] Parallel handler for bootstrap.
-either \code{"foreach"}, \code{"mclapply"}, \code{"snow"} or \code{"multicore"}.
-if "foreach" use \code{doparallel} to create a cluster.}
+\item{handler}{[character] Parallel handler for bootstrap. 
+\code{"foreach"} is the default and the only option on Windows. It uses \code{parallel} to create a cluster.
+Other operating systems can use \code{"mclapply"}.
+This argument is ignored when \code{mc.cores=1} and \code{cl=NULL}.}
 
 \item{mc.cores}{[integer, >0] The number of cores to use,
 i.e., the upper limit for the number of child processes that run simultaneously.
-Passed to \code{parallel::mclapply} or \code{doparallel::registerdoparallel}.
+Passed to \code{parallel::mclapply} or \code{parallel::makeCluster}.
 The option is initialized from environment variable mc_cores if set.}
 
-\item{cl}{A parallel socket cluster used to perform cluster calculation in parallel.
-Output by \code{parallel::makeCluster}.
-The packages necessary to run the computations (e.g. riskRegression) must already be loaded on each worker.}
+\item{cl}{A parallel socket cluster used to perform cluster calculation in parallel (output by \code{parallel::makeCluster}).
+The packages necessary to run the computations (e.g. riskRegression) must already be loaded on each worker.
+Only used when \code{handler="foreach"}.}
 
 \item{verbose}{[logical] If \code{TRUE} inform about estimated run time.}
 
@@ -130,9 +134,9 @@ fit <- cph(formula = Surv(time,event)~ X1+X2,data=dtS,y=TRUE,x=TRUE)
 ## confidence intervals / p-values based on asymptotic results
 ateFit1a <- ate(fit, data = dtS, treatment = "X1", times = 5:8)
 summary(ateFit1a)
-summary(ateFit1a, short = TRUE, type = "risk")
-summary(ateFit1a, short = TRUE, type = "difference")
-summary(ateFit1a, short = TRUE, type = "ratio")
+summary(ateFit1a, short = TRUE, type = "meanRisk")
+summary(ateFit1a, short = TRUE, type = "diffRisk")
+summary(ateFit1a, short = TRUE, type = "ratioRisk")
 
 \dontrun{
 ## same as before with in addition the confidence bands / adjusted p-values
@@ -143,10 +147,10 @@ summary(ateFit1b)
 
 ## by default bands/adjuste p-values computed separately for each treatment modality
 summary(ateFit1b, band = 1,
-         se = FALSE, type = "difference", short = TRUE, quantile = TRUE)
+         se = FALSE, type = "diffRisk", short = TRUE, quantile = TRUE)
 ## adjustment over treatment and time using the band argument of confint
 summary(ateFit1b, band = 2,
-       se = FALSE, type = "difference", short = TRUE, quantile = TRUE)
+       se = FALSE, type = "diffRisk", short = TRUE, quantile = TRUE)
 
 ## confidence intervals / p-values computed using 1000 boostrap samples
 ## (argument se = TRUE and B = 1000) 
@@ -193,6 +197,7 @@ ateFit1b <- ate(fit, data = dtB, treatment = "X1",
 summary(ateFit1b, short = TRUE)
 
 ## using the lava package
+library(lava)
 ateLava <- estimate(fit, function(p, data){
 a <- p["(Intercept)"] ; b <- p["X11"] ; c <- p["X2"] ;
 R.X11 <- expit(a + b + c * data[["X2"]])
@@ -248,8 +253,8 @@ ateRobust3 <- ate(event = m.event,
                  estimator = c("GFORMULA","IPTW","AIPTW"),
                  data = dt, times = c(5:10), 
                  cause = 1, se = TRUE)
-print(setkeyv(as.data.table(ateRobust3, type = "risk"),"time"))
-print(setkeyv(as.data.table(ateRobust3, type = "difference"),"time"))
+print(setkeyv(as.data.table(ateRobust3, type = "meanRisk"),"time"))
+print(setkeyv(as.data.table(ateRobust3, type = "diffRisk"),"time"))
 }
 
 #### time-dependent covariates ###

@@ -11,6 +11,7 @@
   estimator = object$estimator[1],
   ci = object$inference$ci,
   band = object$inference$band,
+  plot.type = "1",
   plot = TRUE,
   smooth = FALSE,
   digits = 2,
@@ -23,9 +24,9 @@
 \item{object}{Object obtained with the function \code{ate}.}
 
 \item{type}{[character vector] what to displayed.
-Can be \code{"risk"} to display the risks specific to each treatment group,
-\code{"difference"} to display the difference in risks between treatment groups,
-or \code{"ratio"} to display the ratio of risks between treatment groups,.}
+Can be \code{"meanRisk"} to display the risks specific to each treatment group,
+\code{"diffRisk"} to display the difference in risks between treatment groups,
+or \code{"ratioRisk"} to display the ratio of risks between treatment groups,.}
 
 \item{first.derivative}{[logical] If \code{TRUE}, display the first derivative over time of the risks/risk differences/risk ratios.
 (confidence intervals are obtained via simulation).}
@@ -35,6 +36,10 @@ or \code{"ratio"} to display the ratio of risks between treatment groups,.}
 \item{ci}{[logical] If \code{TRUE} display the confidence intervals for the average risks.}
 
 \item{band}{[logical] If \code{TRUE} display the confidence bands for the average risks.}
+
+\item{plot.type}{[character] Type of plot to be used.
+\code{plot.type="2"} is useful when looking simulateneous at all eventtimes.
+Otherwise use \code{plot.type="1"}.}
 
 \item{plot}{[logical] Should the graphic be plotted.}
 
@@ -72,11 +77,18 @@ seqTimes <- c(0,sort(dtS$time[dtS$event==1]),max(dtS$time))
 #### Cox model ####
 fit <- cph(formula = Surv(time,event)~ X1+X2,data=dtS,y=TRUE,x=TRUE)
 
-#### Average treatment effect ####
+#### plot.type = 1: for few timepoints ####
+ateFit <- ate(fit, data = dtS, treatment = "X1",
+              times = c(1,2,5,10), se = TRUE, band = TRUE)
+ggplot2::autoplot(ateFit)
+ggplot2::autoplot(ateFit, band = FALSE)
+ggplot2::autoplot(ateFit, type = "diffRisk")
+ggplot2::autoplot(ateFit, type = "ratioRisk")
+
+#### plot.type = 2: when looking at all jump times ####
 ateFit <- ate(fit, data = dtS, treatment = "X1",
               times = seqTimes, se = TRUE, band = TRUE)
 
-#### display #### 
 ggplot2::autoplot(ateFit)
 
 ## customize plot

@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: maj 23 2018 (14:08) 
 ## Version: 
-## Last-Updated: okt  6 2020 (18:21) 
+## Last-Updated: okt 24 2020 (17:45) 
 ##           By: Brice Ozenne
-##     Update #: 974
+##     Update #: 995
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -124,7 +124,7 @@ confint.ate <- function(object,
                         level = 0.95,
                         n.sim = 1e4,
                         contrasts = object$contrasts,
-                        allContrasts = NULL,
+                        allContrasts = object$allContrasts,
                         meanRisk.transform = "none",
                         diffRisk.transform = "none",
                         ratioRisk.transform = "none",
@@ -136,7 +136,6 @@ confint.ate <- function(object,
                         alternative = "two.sided",
                         bootci.method = "perc",
                         ...){
-
 
     ## ** check arguments
     if(object$inference$se == FALSE && object$inference$band == FALSE){
@@ -153,6 +152,10 @@ confint.ate <- function(object,
             stop("Incorrect values for the argument \'allContrasts\' \n",
                  "Possible values: \"",paste(object$contrasts,collapse="\" \""),"\" \n")
         }
+        if(any(interaction(allContrasts[1,],allContrasts[2,]) %in% interaction(object$allContrasts[1,],object$allContrasts[2,]) == FALSE)){
+            stop("Incorrect combinations for the argument \'allContrasts\' \n",
+                 "Possible combinations: \"",paste(interaction(object$allContrasts[1,],object$allContrasts[2,]),collapse="\" \""),"\" \n")
+        }
         if(!is.matrix(allContrasts) || NROW(allContrasts)!=2){
             stop("Argument \'allContrasts\' must be a matrix with 2 rows \n")
         }
@@ -165,11 +168,8 @@ confint.ate <- function(object,
     bootstrap <- object$inference$bootstrap
     
     ## ** initialize
-    if(is.null(allContrasts)){
-        allContrasts <- utils::combn(contrasts, m = 2)
-    }
-
     rm.col <- c("se","lower","upper","p.value","quantileBand","lowerBand","upperBand","adj.p.value")
+
     out <- list(meanRisk = data.table::copy(object$meanRisk[,.SD,.SDcols = setdiff(names(object$meanRisk),rm.col)]),
                 diffRisk = data.table::copy(object$diffRisk[,.SD,.SDcols = setdiff(names(object$diffRisk),rm.col)]),
                 ratioRisk = data.table::copy(object$ratioRisk[,.SD,.SDcols = setdiff(names(object$ratioRisk),rm.col)]),
@@ -223,7 +223,7 @@ confint.ate <- function(object,
         if(!identical(out$inference.contrasts,object$contrasts)){
             stop("Argument \'contrast\' is not available when using boostrap. \n")
         }
-        if(!identical(out$inference.allContrasts,utils::combn(object$contrasts, m = 2))){
+        if(!identical(out$inference.allContrasts,object$allContrasts)){
             stop("Argument \'allContrast\' is not available when using boostrap. \n")
         }
         out <- confintBoot.ate(object, out = out, seed = seed)
@@ -422,7 +422,6 @@ confintIID.ate <- function(object, out, seed){
              "Set argument \'iid\' to TRUE when calling the ate function \n")
     }
                              
-    
     ## ** prepare
     times <- object$eval.times
     n.times <- length(times)
