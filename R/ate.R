@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Oct 23 2016 (08:53) 
 ## Version: 
-## last-updated: okt 24 2020 (18:31) 
+## last-updated: okt 26 2020 (10:32) 
 ##           By: Brice Ozenne
-##     Update #: 2168
+##     Update #: 2169
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -138,11 +138,12 @@
 #' ateFit1d <- ate(fit, data = dtS, treatment = "X1",
 #'                 times = 5:8, se = TRUE, B = 50, mc.cores = 2)
 #'
-#' ##
+#' ## manually defining the cluster to be used
+#' ## useful when specific packages need to be loaded in each cluster
 #' fit <- cph(formula = Surv(time,event)~ X1+X2+rcs(X6),data=dtS,y=TRUE,x=TRUE)
 #'
 #' cl <- parallel::makeCluster(2)
-#' clusterEvalQ(cl, library(rms))
+#' parallel::clusterEvalQ(cl, library(rms))
 #' 
 #' ateFit1e <- ate(fit, data = dtS, treatment = "X1",
 #'                 times = 5:8, se = TRUE, B = 50,

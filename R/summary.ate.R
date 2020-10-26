@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: okt 29 2019 (13:18) 
 ## Version: 
-## Last-Updated: okt 24 2020 (17:38) 
+## Last-Updated: okt 26 2020 (09:39) 
 ##           By: Brice Ozenne
-##     Update #: 266
+##     Update #: 267
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -109,12 +109,12 @@ summary.ate <- function(object,  estimator = object$estimator[1], short = FALSE,
                 }
             }else if(object$inference$ci){
                 if(object$inference$alternative=="two.sided"){
-                    cat(" - Null hypothesis     : given two treatments (A,B) and specific timepoint, equal risks \n", sep ="")            
+                    cat(" - Null hypothesis     : given two treatments (A,B) and a specific timepoint, equal risks \n", sep ="")            
                 }else if(object$inference$alternative=="greater"){
-                    cat(" - Null hypothesis     : given two treatments (A,B) and specific timepoint, \n",
+                    cat(" - Null hypothesis     : given two treatments (A,B) and a specific timepoint, \n",
                         "                         risk under B is equal or smaller than the risk under A \n", sep ="")            
                 }else if(object$inference$alternative=="less"){
-                    cat(" - Null hypothesis     : given two treatments (A,B) and specific timepoint, \n",
+                    cat(" - Null hypothesis     : given two treatments (A,B) and a specific timepoint, \n",
                         "                         risk under B is equal or greater than the risk under A \n", sep ="")            
                 }
             }

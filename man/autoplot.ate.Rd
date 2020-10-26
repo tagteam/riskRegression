@@ -89,23 +89,26 @@ ggplot2::autoplot(ateFit, type = "ratioRisk")
 ateFit <- ate(fit, data = dtS, treatment = "X1",
               times = seqTimes, se = TRUE, band = TRUE)
 
-ggplot2::autoplot(ateFit)
+ggplot2::autoplot(ateFit, plot.type = "2")
 
 ## customize plot
-outGG <- ggplot2::autoplot(ateFit, alpha = 0.1)
+outGG <- ggplot2::autoplot(ateFit, plot.type = "2", alpha = 0.25)
 outGG$plot + facet_wrap(~X1, labeller = label_both)
 
 
 ## Looking at the difference after smoothing
 \dontrun{
-ggplot2::autoplot(ateFit, type = "diffRisk", smooth = TRUE)
+outGGS <- ggplot2::autoplot(ateFit, plot.type = "2", alpha = NA, smooth = TRUE)
+outGGS$plot + facet_wrap(~X1, labeller = label_both)
 }
 
 ## first derivative
 ## (computation of the confidence intervals takes time)
 ## (based on simulation - n.sim parameter)
 \dontrun{ 
-ggplot2::autoplot(ateFit, smooth = TRUE, first.derivative = TRUE,
+ggplot2::autoplot(ateFit, plot.type = "2", smooth = TRUE,
+                  band = FALSE, type = "diffRisk")
+ggplot2::autoplot(ateFit, plot.type = "2", smooth = TRUE, first.derivative = TRUE,
                   band = FALSE, type = "diffRisk")
 }
 }

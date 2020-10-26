@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: apr 28 2017 (14:19) 
 ## Version: 
-## last-updated: okt 24 2020 (18:26) 
+## last-updated: okt 26 2020 (09:57) 
 ##           By: Brice Ozenne
-##     Update #: 187
+##     Update #: 188
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -76,23 +76,26 @@
 #' ateFit <- ate(fit, data = dtS, treatment = "X1",
 #'               times = seqTimes, se = TRUE, band = TRUE)
 #'
-#' ggplot2::autoplot(ateFit)
+#' ggplot2::autoplot(ateFit, plot.type = "2")
 #' 
 #' ## customize plot
-#' outGG <- ggplot2::autoplot(ateFit, alpha = 0.1)
+#' outGG <- ggplot2::autoplot(ateFit, plot.type = "2", alpha = 0.25)
 #' outGG$plot + facet_wrap(~X1, labeller = label_both)
 #'
 #' 
 #' ## Looking at the difference after smoothing
 #' \dontrun{
-#' ggplot2::autoplot(ateFit, type = "diffRisk", smooth = TRUE)
+#' outGGS <- ggplot2::autoplot(ateFit, plot.type = "2", alpha = NA, smooth = TRUE)
+#' outGGS$plot + facet_wrap(~X1, labeller = label_both)
 #' }
 #' 
 #' ## first derivative
 #' ## (computation of the confidence intervals takes time)
 #' ## (based on simulation - n.sim parameter)
 #' \dontrun{ 
-#' ggplot2::autoplot(ateFit, smooth = TRUE, first.derivative = TRUE,
+#' ggplot2::autoplot(ateFit, plot.type = "2", smooth = TRUE,
+#'                   band = FALSE, type = "diffRisk")
+#' ggplot2::autoplot(ateFit, plot.type = "2", smooth = TRUE, first.derivative = TRUE,
 #'                   band = FALSE, type = "diffRisk")
 #' }
 
@@ -131,7 +134,9 @@ autoplot.ate <- function(object,
     if(any(rank(object$times) != 1:length(object$times))){
         stop("Invalid object. The prediction times must be strictly increasing \n")
     }
-    
+    if(first.derivative && plot.type == "1"){
+        stop("Argument \'first.derivative\' currently only implemented for plot.type=\"1\" \n")
+    }
     ## dots <- list(...)
     ## if(length(dots)>0){
     ##     txt <- names(dots)

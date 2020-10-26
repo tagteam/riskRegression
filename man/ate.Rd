@@ -107,8 +107,10 @@ Only used when \code{handler="foreach"}.}
 \item{...}{passed to predictRisk}
 }
 \description{
-Use the g-formula/IPTW/double robust estimator to estimate the average treatment
-    effect based on Cox regression with or without competing risks.
+Use the g-formula or the IPW or the double robust estimator
+to estimate the average treatment
+    effect (absolute risk difference or ratio)
+based on Cox regression with or without competing risks.
 }
 \examples{
 library(survival)
