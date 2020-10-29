@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: jun 27 2019 (10:43) 
 ## Version: 
-## Last-Updated: okt 24 2020 (17:54) 
+## Last-Updated: okt 29 2020 (18:33) 
 ##           By: Brice Ozenne
-##     Update #: 870
+##     Update #: 889
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -243,7 +243,7 @@ ATE_TI <- function(object.event,
 
         ## martingale for the censoring process
         ## at all times of jump of the censoring process
-        G.jump <- 1-predictRisk(object.censor, newdata = mydata, times = if(index.lastjumpC>0){c(0,time.jumpC[1:(index.lastjumpC-1)])}else{0},
+        G.jump <- 1-predictRisk(object.censor, newdata = mydata, times = if(index.lastjumpC>1){c(0,time.jumpC[1:(index.lastjumpC-1)])}else{0},
                                 product.limit = product.limit, iid = (method.iid==2)*return.iid.nuisance)
         
         if(return.iid.nuisance && (method.iid==2)){
@@ -260,8 +260,13 @@ ATE_TI <- function(object.event,
         dM.jump <- dN.jump - dLambda.jump$hazard
 
         ## integral
-        integrand <- dM.jump * beforeEvent.jumpC / (G.jump * S.jump)
-        integrand2 <- F1.jump * integrand
+        integrand <- matrix(0, nrow = n.obs, ncol = index.lastjumpC)
+        integrand2 <- matrix(0, nrow = n.obs, ncol = index.lastjumpC)
+        index.beforeEvent.jumpC <- which(beforeEvent.jumpC)
+        if(length(index.beforeEvent)>0){
+            integrand[index.beforeEvent.jumpC] <- dM.jump[index.beforeEvent.jumpC] / (G.jump[index.beforeEvent.jumpC] * S.jump[index.beforeEvent.jumpC])
+            integrand2[index.beforeEvent.jumpC] <- F1.jump[index.beforeEvent.jumpC] * integrand[index.beforeEvent.jumpC]
+        }
         integral <- rowCumSum(integrand)
         integral2 <- rowCumSum(integrand2)
         augTerm <- matrix(0, nrow = n.obs, ncol = n.times)

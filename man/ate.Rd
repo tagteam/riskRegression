@@ -165,11 +165,12 @@ ateFit1c <- ate(fit, data = dtS, treatment = "X1",
 ateFit1d <- ate(fit, data = dtS, treatment = "X1",
                 times = 5:8, se = TRUE, B = 50, mc.cores = 2)
 
-##
+## manually defining the cluster to be used
+## useful when specific packages need to be loaded in each cluster
 fit <- cph(formula = Surv(time,event)~ X1+X2+rcs(X6),data=dtS,y=TRUE,x=TRUE)
 
 cl <- parallel::makeCluster(2)
-clusterEvalQ(cl, library(rms))
+parallel::clusterEvalQ(cl, library(rms))
 
 ateFit1e <- ate(fit, data = dtS, treatment = "X1",
                 times = 5:8, se = TRUE, B = 50,

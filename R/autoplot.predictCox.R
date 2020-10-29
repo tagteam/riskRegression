@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: feb 17 2017 (10:06) 
 ## Version: 
-## last-updated: okt 26 2020 (09:53) 
+## last-updated: okt 27 2020 (15:48) 
 ##           By: Brice Ozenne
-##     Update #: 989
+##     Update #: 991
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -486,8 +486,8 @@ predict2plot <- function(dataL, name.outcome,
     }
 
     ## display ####
-    labelCI <- paste0(conf.level*100,"% confidence \n interval")
-    labelBand <- paste0(conf.level*100,"% confidence \n band")
+    labelCI <- paste0(conf.level*100,"% pointwise \n confidence interval")
+    labelBand <- paste0(conf.level*100,"% simulaneous \n confidence interval \n")
 
     gg.base <- ggplot2::ggplot(data = dataL, mapping = ggplot2::aes(group = row))
     if(band){ ## confidence band

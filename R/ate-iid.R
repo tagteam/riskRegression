@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: apr  5 2018 (17:01) 
 ## Version: 
-## Last-Updated: okt  1 2020 (13:44) 
+## Last-Updated: okt 29 2020 (16:42) 
 ##           By: Brice Ozenne
-##     Update #: 1322
+##     Update #: 1326
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -57,13 +57,29 @@ iidATE <- function(estimator,
     ## ** Precompute quantities
     tol <- 1e-12
     if(attr(estimator,"integral")){
-        SG <- S.jump*G.jump
         ls.F1tau_F1t <- lapply(1:n.times, function(iT){-colCenter_cpp(F1.jump, center = F1.tau[,iT])})
-        dM_SG <- dM.jump/SG
-        dM_SGG <- dM_SG/G.jump
-        ls.F1tau_F1t_dM_SGG <- lapply(1:n.times, function(iT){ls.F1tau_F1t[[iT]]*dM_SG/G.jump})
-        ls.F1tau_F1t_dM_SSG <- lapply(1:n.times, function(iT){ls.F1tau_F1t[[iT]]*dM_SG/S.jump})
-        ls.F1tau_F1t_SG <- lapply(1:n.times, function(iT){ls.F1tau_F1t[[iT]]/SG})
+
+        SG <- S.jump*G.jump
+        SGG <- SG*G.jump
+        SSG <- SG*S.jump
+
+        iSG <- matrix(0, nrow = NROW(SG), ncol = NCOL(SG))
+        iSGG <- matrix(0, nrow = NROW(SG), ncol = NCOL(SG))
+        iSSG <- matrix(0, nrow = NROW(SG), ncol = NCOL(SG))
+        index.beforeEvent.jumpC <- which(beforeEvent.jumpC)
+        if(length(index.beforeEvent.jumpC)>0){
+            iSG[index.beforeEvent.jumpC] <- 1/SG[index.beforeEvent.jumpC]
+            iSGG[index.beforeEvent.jumpC] <- 1/SGG[index.beforeEvent.jumpC]
+            iSSG[index.beforeEvent.jumpC] <- 1/SSG[index.beforeEvent.jumpC]
+        }
+        
+        dM_SG <- dM.jump * iSG
+        dM_SGG <- dM.jump * iSGG
+        dM_SSG <- dM.jump * iSSG
+        
+        ls.F1tau_F1t_SG <- lapply(1:n.times, function(iT){ls.F1tau_F1t[[iT]]*iSG})
+        ls.F1tau_F1t_dM_SGG <- lapply(1:n.times, function(iT){ls.F1tau_F1t[[iT]]*dM_SGG})
+        ls.F1tau_F1t_dM_SSG <- lapply(1:n.times, function(iT){ls.F1tau_F1t[[iT]]*dM_SSG})
     }
 
     test.IPTW <- attr(estimator,"IPTW")
@@ -181,7 +197,7 @@ iidATE <- function(estimator,
 
         term.intF1_tau <- attr(predictRisk(object.event, newdata = mydata, times = times, cause = cause,
                                            average.iid = factor, product.limit = product.limit),"average.iid")
-  
+
         for(iC in 1:n.contrasts){ ## iC <- 1
             iid.AIPTW[[iC]] <- iid.AIPTW[[iC]] + term.intF1_tau[[iC]]
         }
