@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: jun 27 2019 (10:43) 
 ## Version: 
-## Last-Updated: okt 29 2020 (18:33) 
+## Last-Updated: okt 30 2020 (10:38) 
 ##           By: Brice Ozenne
-##     Update #: 889
+##     Update #: 890
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -263,7 +263,7 @@ ATE_TI <- function(object.event,
         integrand <- matrix(0, nrow = n.obs, ncol = index.lastjumpC)
         integrand2 <- matrix(0, nrow = n.obs, ncol = index.lastjumpC)
         index.beforeEvent.jumpC <- which(beforeEvent.jumpC)
-        if(length(index.beforeEvent)>0){
+        if(length(index.beforeEvent.jumpC)>0){
             integrand[index.beforeEvent.jumpC] <- dM.jump[index.beforeEvent.jumpC] / (G.jump[index.beforeEvent.jumpC] * S.jump[index.beforeEvent.jumpC])
             integrand2[index.beforeEvent.jumpC] <- F1.jump[index.beforeEvent.jumpC] * integrand[index.beforeEvent.jumpC]
         }
