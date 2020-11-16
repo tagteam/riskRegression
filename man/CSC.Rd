@@ -7,7 +7,7 @@
 CSC(formula, data, cause, surv.type = "hazard", fitter = "coxph", ...)
 }
 \arguments{
-\item{formula}{Either a single \code{Hist} formula or a list of formulas. 
+\item{formula}{Either a single \code{Hist} formula or a list of formulas.
 If it is a list it must contain as many \code{Hist} formulas as there are
 causes when \code{surv.type="hazard"} and exactly two formulas when \code{surv.type="survival"}.
 If it is a list the first formula is used for the cause of interest specific Cox regression
@@ -60,12 +60,12 @@ library(Publish)
 publish(fit1)
 }
 
-## model hazard of all cause mortality instead of hazard of type 2 
+## model hazard of all cause mortality instead of hazard of type 2
 fit1a <- CSC(list(Hist(time,status)~sex+age,Hist(time,status)~invasion+epicel+log(thick)),
              data=Melanoma,
              surv.type="surv")
 
-## the predicted probabilities are similar 
+## the predicted probabilities are similar
 plot(predictRisk(fit1,times=500,cause=1,newdata=Melanoma),
      predictRisk(fit1a,times=500,cause=1,newdata=Melanoma))
 
@@ -81,7 +81,7 @@ fit2 <- CSC(Hist(time,status)~invasion+epicel+age,
             data=Melanoma)
 print(fit2)
 
-## combine a cause-specific Cox regression model for cause 2 
+## combine a cause-specific Cox regression model for cause 2
 ## and a Cox regression model for the event-free survival:
 ## different formula for cause 2 and event-free survival
 fit3 <- CSC(list(Hist(time,status)~sex+invasion+epicel+age,
@@ -120,7 +120,7 @@ predictRisk(fit2,cause=2,newdata=Melanoma[c(17,99,108),],times=c(100,1000,10000)
 predict(fit2,cause=1,newdata=Melanoma[c(17,99,108),],times=c(100,1000,10000))
 predict(fit2,cause=2,newdata=Melanoma[c(17,99,108),],times=c(100,1000,10000))
 
-## surv.type = "surv" we need to change the cause of interest 
+## surv.type = "surv" we need to change the cause of interest
 library(survival)
 fit5.2 <- CSC(Hist(time,status)~invasion+epicel+age+strata(sex),
             data=Melanoma,
