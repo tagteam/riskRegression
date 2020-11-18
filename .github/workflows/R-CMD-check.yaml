@@ -41,6 +41,9 @@ jobs:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
 
     steps:
+      - run: echo "REPOSITORY_NAME=$(echo '${{ github.repository }}' | awk -F '/' '{print $1}')" >> $GITHUB_ENV
+        shell: bash
+
       - uses: actions/checkout@v2
 
       - uses: r-lib/actions/setup-r@v1
@@ -130,6 +133,7 @@ jobs:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
           asset_path: ./*.zip
           asset_content_type: application/zip
+          asset_name: ${REPOSITORY_NAME}.zip
 
       - name: Upload Release Asset
         id: upload-release-asset 
@@ -140,4 +144,5 @@ jobs:
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
           asset_path: ./*.t*gz
+          asset_name: ${REPOSITORY_NAME}.tgz
 
