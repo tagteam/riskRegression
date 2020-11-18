@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: feb 27 2017 (10:47) 
 ## Version: 
-## last-updated: aug 20 2020 (14:02) 
+## last-updated: sep 24 2020 (14:30) 
 ##           By: Brice Ozenne
-##     Update #: 101
+##     Update #: 103
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -29,7 +29,7 @@
 #' @param digits [integer] Number of decimal places.
 #' @param smooth [logical] Should a smooth version of the risk function be plotted instead of a simple function?
 #' @param alpha [numeric, 0-1] Transparency of the confidence bands. Argument passed to \code{ggplot2::geom_ribbon}.
-#' @param ... Not used. Only for compatibility with the plot method.
+#' @param ... Additional parameters to cutomize the display.
 #' 
 #' @return Invisible. A list containing:
 #' \itemize{
@@ -104,12 +104,12 @@ autoplot.predictCSC <- function(object,
         stop("Invalid object. The prediction times must be strictly increasing \n")
     }
     
-    dots <- list(...)
-    if(length(dots)>0){
-        txt <- names(dots)
-        txt.s <- if(length(txt)>1){"s"}else{""}
-        stop("unknown argument",txt.s,": \"",paste0(txt,collapse="\" \""),"\" \n")
-    }
+    ## dots <- list(...)
+    ## if(length(dots)>0){
+    ##     txt <- names(dots)
+    ##     txt.s <- if(length(txt)>1){"s"}else{""}
+    ##     stop("unknown argument",txt.s,": \"",paste0(txt,collapse="\" \""),"\" \n")
+    ## }
     
 
     ## display
@@ -144,7 +144,8 @@ autoplot.predictCSC <- function(object,
                            alpha = alpha,
                            smooth = smooth,
                            xlab = "time",
-                           ylab = "absolute risk"
+                           ylab = "absolute risk",
+                           ...
                            )
       
   if(plot){

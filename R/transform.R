@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: maj 30 2018 (15:58) 
 ## Version: 
-## Last-Updated: aug 21 2020 (14:32) 
+## Last-Updated: okt  6 2020 (15:15) 
 ##           By: Brice Ozenne
-##     Update #: 437
+##     Update #: 466
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -255,9 +255,11 @@ transformCIBP <- function(estimate, se, iid, null,
         n.test <- length(estimate)
     }
     n.contrast <- NROW(estimate)
-    method.band <- match.arg(method.band, choices = c(setdiff(p.adjust.methods,"none"),"maxT-integration","maxT-simulation"))
-    if(all((abs(se[!is.na(se)])<1e-12))){
-        method.band <- "bonferroni"
+    if(band){
+        method.band <- match.arg(method.band, choices = c(setdiff(p.adjust.methods,"none"),"maxT-integration","maxT-simulation"))
+        if(all((abs(se[!is.na(se)])<1e-12))){
+            method.band <- "bonferroni"
+        }
     }
     if(!is.na(seed)){set.seed(seed)}
     alternative <- match.arg(alternative, choices = c("two.sided","less","greater"))
@@ -277,38 +279,42 @@ transformCIBP <- function(estimate, se, iid, null,
     }
     
     ## influence function
-    if(band>0 && method.band %in% c("maxT-integration","maxT-simulation")){
-        iid <- transformIID(estimate = estimate,
-                            iid = iid,
-                            type = type)
+    if(band>0){
+        if(method.band %in% c("maxT-integration","maxT-simulation")){
+            iid <- transformIID(estimate = estimate,
+                                iid = iid,
+                                type = type)
+        }
     }
     
     ## ** normalize influence function and statistic
-    if(band>0 && method.band %in% c("maxT-integration","maxT-simulation")){
-        n.sample <- dim(iid)[1]
-        n.time <- dim(iid)[2]
+    if(band){
+        if(method.band %in% c("maxT-integration","maxT-simulation")){
+            n.sample <- dim(iid)[1]
+            n.time <- dim(iid)[2]
 
-        ## times with 0 variance (to be removed in further calculaltion as they introduce singularities)
-        index.keep <- which(colSums(abs(se)>1e-12, na.rm = TRUE)>0)[1]:NCOL(se)
-        iid.norm <- array(NA, dim = c(length(index.keep), dim(iid)[1], dim(iid)[3]))
-        for(iC in 1:n.contrast){ ## iC <- 1
-            if(length(index.keep)==1){
-                iid.norm[,,iC] <- t(iid[,index.keep,iC] / se[iC,index.keep])
-            }else{
-                iid.norm[,,iC] <- t(rowScale_cpp(iid[,index.keep,iC], scale = se[iC,index.keep]))
+            ## times with 0 variance (to be removed in further calculaltion as they introduce singularities)
+            index.keep <- which(colSums(abs(se)>1e-12, na.rm = TRUE)>0)[1]:NCOL(se)
+            iid.norm <- array(NA, dim = c(length(index.keep), dim(iid)[1], dim(iid)[3]))
+            for(iC in 1:n.contrast){ ## iC <- 1
+                if(length(index.keep)==1){
+                    iid.norm[,,iC] <- t(iid[,index.keep,iC] / se[iC,index.keep])
+                }else{
+                    iid.norm[,,iC] <- t(rowScale_cpp(iid[,index.keep,iC], scale = se[iC,index.keep]))
+                }
             }
-        }
-        if(band==1){
-            if(n.time==1){
-                rho <- lapply(diag(crossprod(iid.norm[1,,])),as.matrix)
-            }else{
-                rho <- lapply(1:n.contrast, function(iC){tcrossprod(iid.norm[,,iC])})
-            }
-        }else if(band == 2){
-            if(n.time==1){
-                rho <- crossprod(iid.norm[1,,])
-            }else{
-                rho <- tcrossprod(do.call(rbind,lapply(1:n.contrast, function(iC){iid.norm[,,iC]})))
+            if(band==1){
+                if(n.time==1){
+                    rho <- lapply(diag(crossprod(iid.norm[1,,])),as.matrix)
+                }else{
+                    rho <- lapply(1:n.contrast, function(iC){tcrossprod(iid.norm[,,iC])})
+                }
+            }else if(band == 2){
+                if(n.time==1){
+                    rho <- crossprod(iid.norm[1,,])
+                }else{
+                    rho <- tcrossprod(do.call(rbind,lapply(1:n.contrast, function(iC){iid.norm[,,iC]})))
+                }
             }
         }
     }
@@ -510,7 +516,6 @@ transformCIBP <- function(estimate, se, iid, null,
         union(which(is.na(se)),
               which(is.nan(se)))
     )
-    
     if(length(indexNA)>0){
         if(ci){
             out$lower[indexNA] <- NA
@@ -519,24 +524,70 @@ transformCIBP <- function(estimate, se, iid, null,
                 out$p.value[indexNA] <- NA
             }
         }
-        if(band){ ## if cannot compute se at one time then remove confidence band at all times
-            indexNA2 <- union(
-                union(which(rowSums(is.na(estimate))>0),
-                      which(rowSums(is.nan(estimate))>0)),
-                union(which(rowSums(is.na(se))>0),
-                      which(rowSums(is.nan(se))>0))
-            )
-            out$quantileBand[indexNA2] <- NA
-            out$lowerBand[indexNA2,] <- NA
-            out$upperBand[indexNA2,] <- NA
+        if(band){
+            out$lowerBand[indexNA] <- NA
+            out$upperBand[indexNA] <- NA
             if(p.value){
-                out$adj.p.value[indexNA2,] <- NA
+                out$adj.p.value[indexNA] <- NA
             }
+            ## if cannot compute se at one time then remove confidence band at all times
+            ## indexNA2 <- union(
+            ##     union(which(rowSums(is.na(estimate))>0),
+            ##           which(rowSums(is.nan(estimate))>0)),
+            ##     union(which(rowSums(is.na(se))>0),
+            ##           which(rowSums(is.nan(se))>0))
+            ## )
+            ## out$quantileBand[indexNA2] <- NA
+            ## out$lowerBand[indexNA2,] <- NA
+            ## out$upperBand[indexNA2,] <- NA
+            ## if(p.value){
+            ##     out$adj.p.value[indexNA2,] <- NA
+            ## }
         }
     }
 
     ## ** export
+    class(out) <- "transformCIBP"
     return(out)
+}
+
+## * as.data.table.transformCIBP
+#' @export
+as.data.table.transformCIBP <- function(x, keep.rownames = FALSE, ...){
+
+    ## add extra argument (should be of the correct size)
+    dots <- list(...)
+    x <- c(x,dots)
+
+    ## prepare
+    name.x <- names(x)
+    nameRow.x <- setdiff(names(x),"quantileBand")
+
+    n.endpoint <- NROW(x[[nameRow.x[1]]])
+    n.times <- NCOL(x[[nameRow.x[1]]])
+    if(any(sapply(dots,is.matrix)==FALSE)){
+        stop("Extra arguments must be matrices \n")
+    }
+    if(any(sapply(dots,NROW)!=n.endpoint)){
+        stop("Extra arguments must have ",n.endpoint," row(s) \n")
+    }
+    if(any(sapply(dots,NCOL)!=n.times)){
+        stop("Extra arguments must have ",n.times," column(s) \n")
+    }
+    
+    ## merge
+    dt <- NULL
+    for(iEndpoint in 1:n.endpoint){ ## iEndpoint <- 1
+        iDT <- as.data.table(lapply(x[nameRow.x], function(iE){iE[iEndpoint,]}))
+        if("quantileBand" %in% name.x){
+            iDT[,c("quantileBand") := x$quantileBand[iEndpoint]]
+        }
+        iDT[,c("row") := iEndpoint]
+        iDT[,c("time") := 1:.N]
+        dt <- rbind(dt, iDT)
+    }
+    setcolorder(dt, neworder = c("row","time",name.x))
+    return(dt)
 }
 
 ######################################################################

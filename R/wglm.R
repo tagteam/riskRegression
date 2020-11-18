@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: sep  1 2020 (14:58) 
 ## Version: 
-## Last-Updated: sep  7 2020 (13:32) 
+## Last-Updated: sep 21 2020 (11:57) 
 ##           By: Brice Ozenne
-##     Update #: 272
+##     Update #: 273
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -307,6 +307,7 @@ score.wglm <- function(x, indiv = FALSE, times = NULL, simplifies = TRUE, ...){
 #' @param times [numeric vector] time points at which the score should be output. 
 #' @param simplifies [logical] should the ouput be converted to a matrix when only one timepoint is requested. Otherwise will always return a list.
 #' @param ... Not used.
+#' 
 #' @export
 information.wglm <- function(x, times = NULL, simplifies = TRUE, ...){
     if(is.null(times)){

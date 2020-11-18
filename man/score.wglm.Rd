@@ -4,7 +4,7 @@
 \alias{score.wglm}
 \title{Score for IPCW Logistic Regressions}
 \usage{
-score.wglm(x, indiv = FALSE, times = NULL, simplifies = TRUE, ...)
+\method{score}{wglm}(x, indiv = FALSE, times = NULL, simplifies = TRUE, ...)
 }
 \arguments{
 \item{x}{a wglm object.}

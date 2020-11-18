@@ -4,7 +4,7 @@
 \alias{iid.wglm}
 \title{IID for IPCW Logistic Regressions}
 \usage{
-iid.wglm(x, times = NULL, simplifies = TRUE, ...)
+\method{iid}{wglm}(x, times = NULL, simplifies = TRUE, ...)
 }
 \arguments{
 \item{x}{a wglm object.}

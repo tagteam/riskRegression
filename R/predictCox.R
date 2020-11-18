@@ -351,9 +351,11 @@ predictCox <- function(object,
         }
         add.list <- list(lastEventTime = etimes.max,
                          se = FALSE,
-                         band = FALSE,
+                         band = FALSE,                         
                          type = type,
-                         nTimes = nTimes)
+                         nTimes = nTimes,
+                         baseline = TRUE,
+                         nVar = nVar)
         if(keep.infoVar){
             add.list$infoVar <- infoVar
         }
@@ -614,7 +616,9 @@ predictCox <- function(object,
                        band = band,
                        type = type,
                        diag = diag,
-                       nTimes = nTimes)
+                       nTimes = nTimes,
+                       baseline = FALSE,
+                       nVar = nVar)
       if (keep.times==TRUE){
           add.list$times <- times
       }

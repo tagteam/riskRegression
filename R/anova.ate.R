@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: aug 19 2020 (09:18) 
 ## Version: 
-## Last-Updated: aug 21 2020 (15:14) 
+## Last-Updated: okt  6 2020 (16:05) 
 ##           By: Brice Ozenne
-##     Update #: 62
+##     Update #: 71
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -42,13 +42,13 @@
 ##' \dontrun{
 ##' ## simulate data
 ##' set.seed(12)
-##' n <- 300
+##' n <- 200
 ##' dtS <- sampleData(n,outcome="survival")
 ##' dtS$X12 <- LETTERS[as.numeric(as.factor(paste0(dtS$X1,dtS$X2)))]
 ##' dtS <- dtS[dtS$X12!="D"]
 ##'
 ##' ## model fit
-##' fit <- cph(formula = Surv(time,event)~ X1+Z,data=dtS,y=TRUE,x=TRUE)
+##' fit <- cph(formula = Surv(time,event)~ X1+X6,data=dtS,y=TRUE,x=TRUE)
 ##' seqTime <- 1:10
 ##' ateFit <- ate(fit, data = dtS, treatment = "X1", contrasts = NULL,
 ##'               times = seqTime, B = 0, iid = TRUE, se = TRUE, verbose = TRUE, band = TRUE)
@@ -57,9 +57,9 @@
 ##' autoplot(ateFit)
 ##' 
 ##' ## inference (two sided)
-##' statistic <- ateFit$riskComparison$diff.Gformula/ateFit$riskComparison$diff.Gformula.se
-##' print(confint(ateFit, p.value = TRUE, method.band = "bonferroni"),type="diff")
-##' print(confint(ateFit, p.value = TRUE, method.band = "maxT-simulation"),type="diff")
+##' statistic <- ateFit$diffRisk$estimate/ateFit$diffRisk$se
+##' confint(ateFit, p.value = TRUE, method.band = "bonferroni")$diffRisk
+##' confint(ateFit, p.value = TRUE, method.band = "maxT-simulation")$diffRisk
 ##'
 ##' anova(ateFit, test = "KS")
 ##' anova(ateFit, test = "CvM")
@@ -67,9 +67,9 @@
 ##'
 ##' ## manual calculation (one sided)
 ##' n.sim <- 1e4
-##' statistic <- ateFit$riskComparison[, diff.Gformula/diff.Gformula.se]
-##' iid.norm <- scale(ateFit$iid$Gformula[["1"]]-ateFit$iid$Gformula[["0"]],
-##'                   scale = ateFit$riskComparison$diff.Gformula.se)
+##' statistic <- ateFit$diffRisk[, estimate/se]
+##' iid.norm <- scale(ateFit$iid$GFORMULA[["1"]]-ateFit$iid$GFORMULA[["0"]],
+##'                   scale = ateFit$diffRisk$se)
 ##'
 ##' ls.out <- lapply(1:n.sim, function(iSim){
 ##' iG <- rnorm(NROW(iid.norm))
@@ -90,19 +90,20 @@
 ##' n.sim <- 250
 ##' stats.perm <- vector(mode = "list", length = n.sim)
 ##' pb <- txtProgressBar(max = n.sim, style=3)
+##' treatVar <- ateFit$variables["treatment"]
 ##' 
 ##' for(iSim in 1:n.sim){ ## iSim <- 1
 ##' iData <- copy(dtS)
 ##' iIndex <- sample.int(NROW(iData), replace = FALSE)
-##' iData[, c(ateFit$treatment) := .SD[[ateFit$treatment]][iIndex]]
+##' iData[, c(treatVar) := .SD[[treatVar]][iIndex]]
 ##'
 ##' iFit <- update(fit, data = iData)
-##' iAteSim <- ate(iFit, data = iData, treatment = ateFit$treatment,
+##' iAteSim <- ate(iFit, data = iData, treatment = treatVar,
 ##'                times = seqTime, verbose = FALSE)
-##' iStatistic <- iAteSim$riskComparison[,diff.Gformula/diff.Gformula.se]
-##' stats.perm[[iSim]] <- cbind(iAteSim$riskComparison[,.(max = max(iStatistic),
-##'                                                       L2 = sum(iStatistic^2),
-##'                                                       sum = sum(iStatistic))],
+##' iStatistic <- iAteSim$diffRisk[,estimate/se]
+##' stats.perm[[iSim]] <- cbind(iAteSim$diffRisk[,.(max = max(iStatistic),
+##'                                                 L2 = sum(iStatistic^2),
+##'                                                 sum = sum(iStatistic))],
 ##'                             sim = iSim)
 ##' stats.perm[[iSim]]$maxC <- stats.perm[[iSim]]$max - max(statistic)
 ##' stats.perm[[iSim]]$L2C <- stats.perm[[iSim]]$L2 - sum(statistic^2)
@@ -134,7 +135,7 @@ anova.ate <- function(object,
     type <- match.arg(type, choices = c("diff", "ratio"))
     null <- switch(type, "diff" = 0, "ratio" = 1)
     estimator <- match.arg(estimator, choices = object$estimator)
-    if(object$se==FALSE){
+    if(object$inference$se==FALSE){
         stop("Cannot perform the test without the standard errors \n",
              "Set argument \'se\' to TRUE when calling the ate function \n")
     }
@@ -143,10 +144,10 @@ anova.ate <- function(object,
              "Set argument \'iid\' to TRUE when calling the ate function \n")
     }
     if(is.null(transform)){
-        if(!is.null(object[[paste0(type,"Risk.transform")]])){
+        if(!is.null(object$transform[[paste0(type,"Risk")]])){
             transform <- "none"
         }else{
-            transform <- object[[paste0(type,"Risk.transform")]]
+            transform <- object$transform[[paste0(type,"Risk")]]
         }
     }
     n.sample <- NROW(object$iid[[1]][[1]])
@@ -159,12 +160,16 @@ anova.ate <- function(object,
     iid2cpp <- array(NA, dim = c(n.time, n.sample, n.allContrasts))
     statistic2cpp <- matrix(NA, nrow = n.time, ncol = n.allContrasts)
 
+    typeRisk <- object[[paste0(type,"Risk")]]
+    
     for(iC in 1:n.allContrasts){## iC <- 1
         ## *** gather information
         iC.A <- allContrasts[1,iC]
         iC.B <- allContrasts[2,iC]
-        beta[,iC] <- object$riskComparison[object$riskComparison$treatment.A == iC.A & object$riskComparison$treatment.B == iC.B, .SD, .SDcols = paste0(type,".",estimator)][[1]]
-        beta.se <- object$riskComparison[object$riskComparison$treatment.A == iC.A & object$riskComparison$treatment.B == iC.B, .SD, .SDcols = paste0(type,".",estimator,".se")][[1]]
+
+        iRowIndex <- which((typeRisk$estimator==estimator)*(typeRisk$A==iC.A)*(typeRisk$B==iC.B)==1)
+        beta[,iC] <- typeRisk[iRowIndex, .SD$estimate]
+        beta.se <- typeRisk[iRowIndex, .SD$se]
 
         iid.A <- object$iid[[estimator]][[iC.A]]
         iid.B <- object$iid[[estimator]][[iC.B]]
@@ -172,11 +177,13 @@ anova.ate <- function(object,
         if(type=="diff"){
             iid.AB <- iid.B-iid.A
         }else if(type=="ratio"){
-            risk.A <- object$meanRisk[object$meanRisk$treatment == iC.A, .SD, .SDcols = paste0("meanRisk.",estimator)]
-            risk.B <- object$meanRisk[object$meanRisk$treatment == iC.B, .SD, .SDcols = paste0("meanRisk.",estimator)]
+            iRowIndex <- which((object$meanRisk$estimator==estimator)*(object$meanRisk$treatment==iC.A)==1)
+            risk.A <- object$meanRisk[iRowIndex, .SD$estimate]
+            iRowIndex <- which((object$meanRisk$estimator==estimator)*(object$meanRisk$treatment==iC.B)==1)
+            risk.B <- object$meanRisk[iRowIndex, .SD$estimate]
+            
             iid.AB <- rowScale_cpp(iid.B, scale = risk.A)-rowScale_cpp(iid.A, scale = risk.B/risk.A^2)
         }
-        
         ## *** transformation
         beta.se <- transformSE(estimate = beta[,iC], se = beta.se, type = transform)
         statistic2cpp[,iC] <- transformT(estimate = beta[,iC], se = beta.se, null = null, type = transform)

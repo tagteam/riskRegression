@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: feb 17 2017 (10:06) 
 ## Version: 
-## last-updated: aug 31 2020 (17:13) 
+## last-updated: okt 27 2020 (15:48) 
 ##           By: Brice Ozenne
-##     Update #: 825
+##     Update #: 991
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -28,14 +28,16 @@
 #' or \code{"survival"} the survival function.
 #' @param ci [logical] If \code{TRUE} display the confidence intervals for the predictions.
 #' @param band [logical] If \code{TRUE} display the confidence bands for the predictions.
+#' @param plot [logical] Should the graphic be plotted.
+#' @param digits [integer] Number of decimal places when displaying the values of the covariates in the caption.
+#' @param alpha [numeric, 0-1] Transparency of the confidence bands. Argument passed to \code{ggplot2::geom_ribbon}.
+#' @param ylab [character] Label for the y axis.
+#' @param smooth [logical] Should a smooth version of the risk function be plotted instead of a simple function?
+#' @param first.derivative [logical] If \code{TRUE}, display the first derivative over time of the risks/risk differences/risk ratios.
+#' (confidence intervals are obtained via simulation).
 #' @param group.by [character] The grouping factor used to color the prediction curves. Can be \code{"row"}, \code{"strata"}, or \code{"covariates"}.
 #' @param reduce.data [logical] If \code{TRUE} only the covariates that does take indentical values for all observations are displayed.
-#' @param plot [logical] Should the graphic be plotted.
-#' @param digits [integer] Number of decimal places.
-#' @param smooth [logical] Should a smooth version of the risk function be plotted instead of a simple function?
-#' @param ylab [character] Label for the y axis.
-#' @param alpha [numeric, 0-1] Transparency of the confidence bands. Argument passed to \code{ggplot2::geom_ribbon}.
-#' @param ... Not used. Only for compatibility with the plot method.
+#' @param ... Additional parameters to cutomize the display.
 #'
 #' @return Invisible. A list containing:
 #' \itemize{
@@ -65,6 +67,7 @@
 #' e.basehaz <- predictCox(m.cox)
 #' autoplot(e.basehaz, type = "cumhazard")
 #' autoplot(e.basehaz, type = "cumhazard", smooth = TRUE)
+#' autoplot(e.basehaz, type = "cumhazard", smooth = TRUE, first.derivative = TRUE)
 #'
 #' ## display baseline hazard with type of event 
 #' e.basehaz <- predictCox(m.cox, keep.newdata = TRUE)
@@ -74,8 +77,10 @@
 #' pred.cox <- predictCox(m.cox, newdata = d[1:2,],
 #'   times = seqTau, type = "survival", keep.newdata = TRUE)
 #' autoplot(pred.cox)
+#' autoplot(pred.cox, smooth = TRUE)
 #' autoplot(pred.cox, group.by = "covariates")
 #' autoplot(pred.cox, group.by = "covariates", reduce.data = TRUE)
+#' 
 #' 
 #' ## predictions with confidence interval/bands
 #' pred.cox <- predictCox(m.cox, newdata = d[1:2,,drop=FALSE],
@@ -99,7 +104,10 @@
 #'                               time = seqTau, keep.newdata = TRUE, se = TRUE)
 #'
 #' res2 <- autoplot(pred.cox.strata, type = "survival", group.by = "strata", plot = FALSE)
-#' res2$plot + facet_wrap(~strata, labeller = label_both)
+#' res2$plot + facet_wrap(~strata, labeller = label_both) + theme(legend.position="bottom")
+#' 
+#' ## smooth version
+#' autoplot(pred.cox.strata, type = "survival", group.by = "strata", smooth = TRUE, ci = FALSE)
 
 ## * autoplot.predictCox (code)
 #' @rdname autoplot.predictCox
@@ -116,6 +124,7 @@ autoplot.predictCox <- function(object,
                                 group.by = "row",
                                 reduce.data = FALSE,
                                 ylab = NULL,
+                                first.derivative = FALSE,
                                  ...){
   
     ## initialize and check    
@@ -132,9 +141,15 @@ autoplot.predictCox <- function(object,
         type <- match.arg(type, possibleType)  
     }
     if(is.null(ylab)){
-        ylab <- switch(type,
-                        "cumhazard" = "cumulative hazard",
-                        "survival" = "survival")
+        if(first.derivative){
+            ylab <- switch(type,
+                           "cumhazard" = if(object$baseline && object$nVar>0){"instantaneous baseline hazard"}else{"instantaneous hazard"},
+                           "survival" = if(object$baseline && object$nVar>0){"derivative of the baseline survival"}else{"derivative of the survival"})
+        }else{
+            ylab <- switch(type,
+                           "cumhazard" = if(object$baseline && object$nVar>0){"cumulative baseline hazard"}else{"cumulative hazard"},
+                           "survival" = if(object$baseline && object$nVar>0){"baseline survival"}else{"survival"})
+        }
     }
 
     group.by <- match.arg(group.by, c("row","covariates","strata"))
@@ -160,12 +175,12 @@ autoplot.predictCox <- function(object,
     if(object$nTimes!= 0 && any(rank(object$times) != 1:length(object$times))){
         stop("Invalid object. The prediction times must be strictly increasing \n")
     }
-    dots <- list(...)
-    if(length(dots)>0){
-        txt <- names(dots)
-        txt.s <- if(length(txt)>1){"s"}else{""}
-        stop("unknown argument",txt.s,": \"",paste0(txt,collapse="\" \""),"\" \n")
-    }
+    ## dots <- list(...)
+    ## if(length(dots)>0){
+    ##     txt <- names(dots)
+    ##     txt.s <- if(length(txt)>1){"s"}else{""}
+    ##     stop("unknown argument",txt.s,": \"",paste0(txt,collapse="\" \""),"\" \n")
+    ## }
 
     ## reshape data
     if(!is.matrix(object[[type]])){
@@ -238,6 +253,12 @@ autoplot.predictCox <- function(object,
             }        
         }
         status <- NULL
+        if(first.derivative && ci){
+            if(is.null(object$vcov[[type]])){
+                stop("Set argument \'iid\' to TRUE when calling predictCox to be able to display confidence intervals for the first derivative of the ",type,".\n")
+            }
+            attr(first.derivative,"vcov") <- object$vcov[[type]]
+        }
     }
 
     dataL <- predict2melt(outcome = object[[type]], ci = ci, band = band,
@@ -263,7 +284,9 @@ autoplot.predictCox <- function(object,
                            alpha = alpha,
                            smooth = smooth,
                            xlab = if(is.null(object$infoVar)){"time"}else{object$infoVar$time},
-                           ylab = ylab
+                           ylab = ylab,
+                           first.derivative = first.derivative,
+                           ...
                            )
   
   if(plot){
@@ -354,9 +377,17 @@ predict2melt <- function(outcome, name.outcome,
 ## * predict2plot
 predict2plot <- function(dataL, name.outcome,
                          ci, band, group.by, smooth,                        
-                         conf.level, alpha, xlab, ylab){
+                         conf.level, alpha, xlab, ylab,
+                         smoother = NULL, formula.smoother = NULL, first.derivative = FALSE,
+                         size.estimate = 1.5, size.point = 3, size.ci = 1.1, size.band = 1.1, n.sim = 250){
 
-    lowerCI <- upperCI <- lowerBand <- upperBand <- timeRight <- NULL
+    .GRP <- NULL ## [:: for CRAN CHECK::]
+
+    if(first.derivative && (smooth==FALSE)){
+        stop("Set argument \'smooth\' to TRUE when \'first.derivative\' is TRUE. \n")
+    }
+    
+    dataL <- data.table::copy(dataL)
     ## duplicate observations to obtain step curves ####
     keep.cols <- unique(c("time",name.outcome,"row",group.by))
     if(ci){
@@ -367,8 +398,6 @@ predict2plot <- function(dataL, name.outcome,
     }
 
     ## set at t- the value of t-1
-    dtTempo <- copy(dataL)
-
     vec.outcome <- name.outcome
     if(ci){
         vec.outcome <- c(vec.outcome,"lowerCI","upperCI")
@@ -378,21 +407,87 @@ predict2plot <- function(dataL, name.outcome,
     }
     dataL[,c("timeRight") := c(.SD$time[2:.N]-1e-12,.SD$time[.N]+1e-12), by = "row"] 
 
+    dataL[,c(group.by) := as.factor(.SD[[group.by]])]
+
+    ## smooth ####
     if(smooth){
-        if(ci){
-            dataL[, c("lowerCI.smooth") := stats::loess(lowerCI ~ time, data = .SD)$fitted, by = "row"]
-            dataL[, c("upperCI.smooth") := stats::loess(upperCI ~ time, data = .SD)$fitted, by = "row"]
+        
+        if(is.null(smoother)){
+            tol <- 1e-12
+            test.increasing <- all(na.omit(dataL[,diff(.SD[[name.outcome]]),by="row"][[2]])>=-tol)
+            test.decreasing <- all(na.omit(dataL[,diff(.SD[[name.outcome]]),by="row"][[2]])<=tol)
+            if(!requireNamespace("scam") || (test.increasing==FALSE && test.decreasing == FALSE)){
+                formula.smoother <- ~s(time)
+                smoother <- mgcv::gam
+            }else{ 
+                smoother <- function(formula, data){
+                    out <- try(do.call(scam::scam, args = list(formula = formula, data = data)))
+                    if(inherits(out,"try-error")){
+                        out <- do.call(mgcv::gam, args = list(formula = update(formula, ".~s(time)"), data = data))
+                    }
+                    return(out)
+                }
+                if(test.increasing){
+                    formula.smoother <- ~s(time, bs = "mpi")
+                }else if(test.decreasing){
+                    formula.smoother <- ~s(time, bs = "mpd")
+                }
+            }
         }
-        if(band){
-            dataL[, c("lowerBand.smooth") := stats::loess(lowerBand ~ time, data = .SD)$fitted, by = "row"]
-            dataL[, c("upperBand.smooth") := stats::loess(upperBand ~ time, data = .SD)$fitted, by = "row"]
+        if(length(all.vars(formula.smoother))!=1){
+            stop("Argument \'formula.smoother\' must contain exactly one variable \n")
         }
+        ff <- update(as.formula(paste0(name.outcome,"~.")),formula.smoother)
+        if(first.derivative){
+            requireNamespace("numDeriv")
+
+            warper <- function(data){ ## data <- dataL[row==1]
+                iModel <- do.call(smoother, args = list(formula = ff, data = data))
+                return(numDeriv::grad(function(x){predict(iModel, newdata = data.frame(time = x), type = "response")}, x = data$time))
+            }
+
+            dataL[, c(paste0(name.outcome,".smooth")) := warper(.SD), by = "row"]
+            if(ci){
+                warperCI <- function(data, Sigma, n.sim){ ## data <- dataL[row==1] ; Sigma <- attr(first.derivative,"vcov")[[1]]
+                    ls.deriv <- lapply(1:n.sim, function(x){
+                        data2 <- data.table::copy(data)
+                        data2[, c(name.outcome) := mvtnorm::rmvnorm(1, mean = data[[name.outcome]], sigma = Sigma)[1,]]                        
+                        iModel <- try(do.call(smoother, args = list(formula = ff,data = data2)))
+                        if(inherits(iModel,"try-error")){
+                            return(rep(NA, length(data$time)))
+                        }else{
+                            return(numDeriv::grad(function(x){predict(iModel, newdata = data.frame(time = x), type = "response")}, x = data$time))
+                        }
+                    })
+                    M.CI <- apply(do.call(rbind,ls.deriv), 2, quantile, probs = c((1-conf.level)/2,1-(1-conf.level)/2), na.rm = TRUE)
+                    return(as.data.table(t(M.CI)))
+                }
+                dataL[, c("lowerCI.smooth","upperCI.smooth") := warperCI(.SD, Sigma = attr(first.derivative,"vcov")[[.GRP]], n.sim = n.sim), by = "row"]
+            }
+            if(band){
+                stop("Confidence bands are not available when argument \'first.derivative\' is TRUE \n")
+            }
+        }else{
+            dataL[, c(paste0(name.outcome,".smooth")) := do.call(smoother, args = list(formula = ff,data = .SD))$fitted, by = "row"]
+            if(ci){
+                ff <- update(as.formula("lowerCI~."),formula.smoother)
+                dataL[, c("lowerCI.smooth") := do.call(smoother, args = list(formula = ff,data = .SD))$fitted, by = "row"]
+                ff <- update(as.formula("upperCI~."),formula.smoother)
+                dataL[, c("upperCI.smooth") := do.call(smoother, args = list(formula = ff,data = .SD))$fitted, by = "row"]
+            }
+            if(band){
+                ff <- update(as.formula("lowerBand~."),formula.smoother)
+                dataL[, c("lowerBand.smooth") := do.call(smoother, args = list(formula = ff,data = .SD))$fitted, by = "row"]
+                ff <- update(as.formula("upperBand~."),formula.smoother)
+                dataL[, c("upperBand.smooth") := do.call(smoother, args = list(formula = ff,data = .SD))$fitted, by = "row"]
+            }
+        }
+        
     }
-    dataL[[group.by]] <- as.factor(dataL[[group.by]])
 
     ## display ####
-    labelCI <- paste0(conf.level*100,"% confidence \n interval")
-    labelBand <- paste0(conf.level*100,"% confidence \n band")
+    labelCI <- paste0(conf.level*100,"% pointwise \n confidence interval")
+    labelBand <- paste0(conf.level*100,"% simulaneous \n confidence interval \n")
 
     gg.base <- ggplot2::ggplot(data = dataL, mapping = ggplot2::aes(group = row))
     if(band){ ## confidence band
@@ -400,21 +495,21 @@ predict2plot <- function(dataL, name.outcome,
             if(!is.na(alpha)){
                 gg.base <- gg.base + ggplot2::geom_ribbon(ggplot2::aes_string(x = "time", ymin = "lowerBand.smooth", ymax = "upperBand.smooth"), alpha = alpha)
             }else{
-                gg.base <- gg.base + ggplot2::geom_smooth(eval(parse(text = paste0("ggplot2::aes(x = ","time",", y = ","lowerBand.smooth",", color = ",group.by,", linetype = \"band\")"))),
-                                                          se = FALSE, method = "loess", formula = y~x)
-                gg.base <- gg.base + ggplot2::geom_smooth(eval(parse(text = paste0("ggplot2::aes(x = ","time",", y = ","upperBand.smooth",", color = ",group.by,", linetype = \"band\")"))),
-                                                          se = FALSE, method = "loess", formula = y~x)
+                gg.base <- gg.base + ggplot2::geom_line(eval(parse(text = paste0("ggplot2::aes(x = ","time",", y = lowerBand.smooth, color = ",group.by,", linetype = \"band\")"))),
+                                                        size = size.band)
+                gg.base <- gg.base + ggplot2::geom_line(eval(parse(text = paste0("ggplot2::aes(x = ","time",", y = upperBand.smooth, color = ",group.by,", linetype = \"band\")"))),
+                                                        size = size.band)
             }
         }else{
             if(!is.na(alpha)){
-                gg.base <- gg.base + ggplot2::geom_rect(ggplot2::aes(xmin = time, xmax = timeRight, ymin = lowerBand, ymax = upperBand,
-                                                            fill = labelBand), linetype = 0, alpha = alpha)
+                gg.base <- gg.base + ggplot2::geom_rect(ggplot2::aes_string(xmin = "time", xmax = "timeRight", ymin = "lowerBand", ymax = "upperBand",
+                                                            fill = "labelBand"), linetype = 0, alpha = alpha)
                 gg.base <- gg.base + scale_fill_manual("", values="grey12")        
             }else{
-                gg.base <- gg.base + ggplot2::geom_segment(ggplot2::aes(x = time, y = lowerBand, xend = timeRight, yend = lowerBand, color = "band"),
-                                                           size = 1.2)
-                gg.base <- gg.base + ggplot2::geom_segment(ggplot2::aes(x = time, y = upperBand, xend = timeRight, yend = upperBand, color = "band"),
-                                                           size = 1.2)
+                gg.base <- gg.base + ggplot2::geom_segment(ggplot2::aes_string(x = "time", y = "lowerBand", xend = "timeRight", yend = "lowerBand", color = "\"band\""),
+                                                           size = size.band)
+                gg.base <- gg.base + ggplot2::geom_segment(ggplot2::aes_string(x = "time", y = "upperBand", xend = "timeRight", yend = "upperBand", color = "\"band\""),
+                                                           size = size.band)
             }
         }
     }
@@ -422,42 +517,45 @@ predict2plot <- function(dataL, name.outcome,
     if(ci){ ## confidence interval
         if(smooth){
             if(!is.na(alpha)){
-                gg.base <- gg.base + ggplot2::geom_errorbar(ggplot2::aes_string(x = "time", ymin = "lowerCI.smooth", ymax = "upperCI.smooth", linetype = "labelCI"), width = 1.2)
+                gg.base <- gg.base + ggplot2::geom_errorbar(ggplot2::aes_string(x = "time", ymin = "lowerCI.smooth", ymax = "upperCI.smooth", linetype = "labelCI"),
+                                                            width = size.ci)
                 gg.base <- gg.base + ggplot2::scale_linetype_manual("",values=setNames(1,labelCI))
             }else{
-                gg.base <- gg.base + ggplot2::geom_smooth(eval(parse(text = paste0("ggplot2::aes(x = ","time",", y = ","lowerCI.smooth",", color = ",group.by,", linetype = \"ci\")"))),
-                                                          se = FALSE, method = "loess", formula = y~x)
-                gg.base <- gg.base + ggplot2::geom_smooth(eval(parse(text = paste0("ggplot2::aes(x = ","time",", y = ","upperCI.smooth",", color = ",group.by,", linetype = \"ci\")"))),
-                                                          se = FALSE, method = "loess", formula = y~x)
+                gg.base <- gg.base + ggplot2::geom_line(eval(parse(text = paste0("ggplot2::aes(x = time, y = lowerCI.smooth, color = ",group.by,", linetype = \"ci\")"))),
+                                                        size = size.ci)
+                gg.base <- gg.base + ggplot2::geom_line(eval(parse(text = paste0("ggplot2::aes(x = time, y = upperCI.smooth, color = ",group.by,", linetype = \"ci\")"))),
+                                                        size = size.ci)
 
             }
         }else{
             if(!is.na(alpha)){
-                gg.base <- gg.base + ggplot2::geom_errorbar(ggplot2::aes(x = time, ymin = lowerCI, ymax = upperCI, linetype = labelCI), width = 1.2)
+                gg.base <- gg.base + ggplot2::geom_errorbar(ggplot2::aes_string(x = "time", ymin = "lowerCI", ymax = "upperCI", linetype = "labelCI"),
+                                                            width = size.ci)
                 gg.base <- gg.base + ggplot2::scale_linetype_manual("",values=setNames(1,labelCI))
 
             }else{
-                gg.base <- gg.base + ggplot2::geom_segment(ggplot2::aes(x = time, y = lowerCI, xend = timeRight, yend = lowerCI, color = "ci"),
-                                                           size = 1.2)
-                gg.base <- gg.base + ggplot2::geom_segment(ggplot2::aes(x = time, y = upperCI, xend = timeRight, yend = upperCI, color = "ci"),
-                                                           size = 1.2)
+                gg.base <- gg.base + ggplot2::geom_segment(ggplot2::aes_string(x = "time", y = "lowerCI", xend = "timeRight", yend = "lowerCI", color = "\"ci\""),
+                                                           size = size.ci)
+                gg.base <- gg.base + ggplot2::geom_segment(ggplot2::aes_string(x = "time", y = "upperCI", xend = "timeRight", yend = "upperCI", color = "\"ci\""),
+                                                           size = size.ci)
             }
         }
     }
     ## estimate
     if(smooth){
-        gg.base <- gg.base + ggplot2::geom_smooth(mapping = ggplot2::aes_string(x = "time", y = name.outcome, color = group.by),
-                                                  size = 1.5, se = FALSE, method = "loess", formula = y~x)
+        gg.base <- gg.base + ggplot2::geom_line(mapping = ggplot2::aes_string(x = "time", y = paste0(name.outcome,".smooth"), color = group.by),
+                                                size = size.estimate)
     }else{
-        gg.base <- gg.base + ggplot2::geom_segment(mapping = ggplot2::aes_string(x = "timeRight", y = name.outcome, xend = "time", yend = name.outcome, color = group.by), size = 1.5)
+        gg.base <- gg.base + ggplot2::geom_segment(mapping = ggplot2::aes_string(x = "timeRight", y = name.outcome, xend = "time", yend = name.outcome, color = group.by),
+                                                   size = size.estimate)
         if("status" %in% names(dataL)){
             dataL$status <- as.character(dataL$status)
             gg.base <- gg.base + ggplot2::geom_point(data = na.omit(dataL),
-                                                     mapping = ggplot2::aes_string(x = "time", y = name.outcome, color = group.by, shape = "status"), size = 3)
+                                                     mapping = ggplot2::aes_string(x = "time", y = name.outcome, color = group.by, shape = "status"), size = size.point)
             gg.base <- gg.base + ggplot2::scale_shape_manual(breaks = c(0,1), values=c(3,18), labels = c("censoring","event"))
         }else{
             gg.base <- gg.base + ggplot2::geom_point(data = dataL,
-                                                     mapping = ggplot2::aes_string(x = "time", y = name.outcome, color = group.by), size = 2)
+                                                     mapping = ggplot2::aes_string(x = "time", y = name.outcome, color = group.by), size = size.point)
         }
     }
     
@@ -501,6 +599,8 @@ predict2plot <- function(dataL, name.outcome,
     
     return(ls.export)
 }
+
+
 
 #----------------------------------------------------------------------
 ### autoplot.predictCox.R ends here
