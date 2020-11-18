@@ -10,6 +10,12 @@ init:
 install:
   ps: Bootstrap
 
+environment:
+  global:
+    R_REMOTES_NO_ERRORS_FROM_WARNINGS: true
+    _R_CHECK_FORCE_SUGGESTS_: 0
+    WARNINGS_ARE_ERRORS: 1
+
 cache:
   - C:\RLibrary
 
