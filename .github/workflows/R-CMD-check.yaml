@@ -97,7 +97,7 @@ jobs:
       - name: Check
         env:
           _R_CHECK_CRAN_INCOMING_: false
-        run: rcmdcheck::rcmdcheck(args = c("--no-manual", "--as-cran"), error_on = "warning", check_dir = "check")
+        run: rcmdcheck::rcmdcheck(args = c("--no-manual", "--as-cran", "--install-args=--build"), error_on = "warning", check_dir = "check")
         shell: Rscript {0}
 
       - name: Show testthat output
@@ -136,7 +136,7 @@ jobs:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
           asset_path: ./*.zip
           asset_content_type: application/zip
-          asset_name: ${REPOSITORY_NAME}.zip
+          asset_name: ${{ REPOSITORY_NAME }}-${{ runner.os }}-r${{ matrix.config.r }}.zip
 
       - name: Upload Release Asset
         id: upload-release-asset 
@@ -147,4 +147,4 @@ jobs:
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
           asset_path: ./*.t*gz
-          asset_name: ${REPOSITORY_NAME}.tgz
+          asset_name: ${{ REPOSITORY_NAME }}-${{ runner.os }}-r${{ matrix.config.r }}.tgz
