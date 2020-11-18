@@ -122,6 +122,7 @@ jobs:
           release_name: Release ${{ github.ref }}
           draft: false
           prerelease: false
+        continue-on-error: true
 
       - name: Upload Release Asset
         id: upload-release-asset-windows
