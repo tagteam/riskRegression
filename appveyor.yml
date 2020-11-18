@@ -16,6 +16,7 @@ cache:
 # Adapt as necessary starting from here
 
 build_script:
+  - Rscript -e "if (!requireNamespace('remotes')) {install.packages('remotes')}; remotes::install_github('cran/CoxBoost', upgrade = FALSE, force = FALSE)"
   - travis-tool.sh install_deps
 
 test_script:
