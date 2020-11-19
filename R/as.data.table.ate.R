@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Mar  3 2017 (09:28) 
 ## Version: 
-## Last-Updated: aug 21 2020 (10:49) 
+## Last-Updated: okt 24 2020 (18:11) 
 ##           By: Brice Ozenne
-##     Update #: 146
+##     Update #: 187
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -22,114 +22,82 @@
 #' 
 #' @param x object obtained with function \code{ate}
 #' @param keep.rownames Not used.
-#' @param se [logical] Should the standard errors be output?
-#' @param ci [logical] Should the confidence intervals be output?
-#' @param band [logical] Should the confidence bands be output?
-#' @param quantileBand [logical] Should the quantiles for confidence bands be output?
-#' @param p.value [logical] Should the p-values/adjusted p-values be output?
 #' @param estimator [character] The type of estimator relative to which the estimates should be output. 
+#' @param type [character vector] The type of risk to export.
+#' Can be \code{"meanRisk"} to export the risks specific to each treatment group,
+#' \code{"diffRisk"} to export the difference in risks between treatment groups,
+#' or \code{"ratioRisk"} to export the ratio of risks between treatment groups.
 #' @param ... Not used.
 #'
 
 ## * as.data.table.ate (code)
 #' @rdname as.data.table.ate
 #' @export
-as.data.table.ate <- function(x, estimator = x$estimator,
-                              se = x$se, ci = x$ci, band = x$band, quantileBand = x$band, p.value = x$p.value,
-                              keep.rownames = FALSE, ...){
+as.data.table.ate <- function(x, estimator = x$estimator, type = c("meanRisk","diffRisk","ratioRisk"), keep.rownames = FALSE, ...){
 
     estimator <- match.arg(estimator, choices =  x$estimator, several.ok = TRUE)
-    landmark <- all(attr(x$estimator,"full")=="GformulaTD")
-    col.time <- switch(as.character(landmark),
-                       "TRUE" = c("time","landmark"),
-                       "FALSE" = "time")
-    out <- NULL
-    allContrasts <- x$allContrasts
-    contrasts <- attr(allContrasts,"contrasts")
-    
-    meanRisk <- data.table::copy(x$meanRisk)
-    
-    ## ** which columns to keep    
-    keep.col <- NULL
-    if(x$se && se){
-        keep.col <- c(keep.col, "se")
-    }
-    if(x$ci && ci){
-        keep.col <- c(keep.col, "lower", "upper")
-        if(p.value){
-            keep.col <- c(keep.col, "p.value")
-            meanRisk[, c(paste0("meanRisk.",estimator,".p.value")) := as.numeric(NA)]
-        }
-    }
-    if(x$band && band){
-        if(x$method.band %in% c("bonferroni","maxT-integration","maxT-simulation")){
-            if(quantileBand){
-                keep.col <- c(keep.col, "quantileBand")
-            }        
-            keep.col <- c(keep.col, "lowerBand", "upperBand")
-        }        
-        if(p.value){
-            keep.col <- c(keep.col, "adj.p.value")
-            meanRisk[, c(paste0("meanRisk.",estimator,".adj.p.value")) := as.numeric(NA)]
-        }
-    }
-    for(iE in 1:length(estimator)){ ## iE <- 1
-        iEstimator <- estimator[iE]
+    type <- match.arg(type, choices =  c("meanRisk","diffRisk","ratioRisk"), several.ok = TRUE)
 
-        ## ** ate
-        out1 <- cbind(type = "ate",
-                      level = x$meanRisk[[1]],
-                      x$meanRisk[,.SD,.SDcols = col.time],
-                      value = x$meanRisk[[paste0("meanRisk.",iEstimator)]])
-        if(!is.null(x$boot)){
-            out1[,c("value.boot") := x$meanRisk[[paste0("meanRisk.",iEstimator,".boot")]]]
-        }
-        if(!is.null(keep.col)){
-            out1[, c(keep.col) := meanRisk[, .SD, .SDcols = paste0("meanRisk.",iEstimator,".",keep.col)]]
-        }
-        out1[, c("estimator") := iEstimator]
-        if(!is.null(contrasts)){
-            out1 <- out1[out1$level %in% contrasts]
-        }
-        
-        ## ** diff ate
-        out2 <- cbind(type = "diffAte",
-                      level = paste0(x$riskComparison[[1]],".",x$riskComparison[[2]]),
-                      x$riskComparison[,.SD,.SDcols = col.time],
-                      value = x$riskComparison[[paste0("diff.",iEstimator)]])
-        if(!is.null(x$boot)){
-            out2[,c("value.boot") := x$riskComparison[[paste0("diff.",iEstimator,".boot")]]]
-        }
-        if(!is.null(keep.col)){
-            out2[, c(keep.col) := x$riskComparison[, .SD, .SDcols = paste0("diff.",iEstimator,".",keep.col)]]
-        }
-        out2[, c("estimator") := iEstimator]
-        if(!is.null(allContrasts)){
-            out2 <- out2[out2$level %in% paste0(allContrasts[1,],".",allContrasts[2,])]
-        }
-    
-        ## ** ratio ate
-        out3 <- cbind(type = "ratioAte",
-                      level = paste0(x$riskComparison[[1]],".",x$riskComparison[[2]]),
-                      x$riskComparison[,.SD,.SDcols = col.time],
-                      value = x$riskComparison[[paste0("ratio.",iEstimator)]])
-        if(!is.null(x$boot)){
-            out3[,c("value.boot") := x$riskComparison[[paste0("ratio.",iEstimator,".boot")]]]
-        }
-        if(!is.null(keep.col)){
-            out3[, c(keep.col) := x$riskComparison[, .SD, .SDcols = paste0("ratio.",iEstimator,".",keep.col)]]
-        }
-        out3[, c("estimator") := iEstimator]
-        if(!is.null(allContrasts)){
-            out3 <- out3[out3$level %in% paste0(allContrasts[1,],".",allContrasts[2,])]
-        }
+    if(!is.null(x$allContrasts)){
+        allContrasts <- x$allContrasts
+        contrasts <- x$contrasts
+    }else{
+        contrasts <- x$contrasts
+        allContrasts <- utils::combn(contrasts, m = 2)
+    }
 
-        ## ** assemble
-        out <- rbind(out,rbind(out1,out2,out3))
+    ## ** meanRisk
+    if("meanRisk" %in% type){
+        iIndexRow <- which((x$meanRisk$estimator %in% estimator) * (x$meanRisk$treatment %in% contrasts) == 1)
+
+        meanRisk <- x$meanRisk[iIndexRow]
+        out1 <- cbind(type = "meanRisk",
+                      estimator = x$meanRisk$estimator,
+                      time = x$meanRisk$time,
+                      level = x$meanRisk$treatment,
+                      x$meanRisk[,.SD,.SDcols = setdiff(names(x$meanRisk),c("estimator","time","treatment"))])
+        if(x$inference$p.value && any(type %in% c("diffRisk","ratioRisk"))){
+            out1$p.value <- as.numeric(NA)
+            if(x$inference$band){
+                out1$adj.p.value <- as.numeric(NA)
+            }
+        }
+    }else{
+        out1 <- NULL
+    }
+
+
+    ## ** diffRisk
+    if("diffRisk" %in% type){
+        iIndexRow <- which((x$diffRisk$estimator %in% estimator) * (interaction(x$diffRisk$A,x$diffRisk$B) %in% interaction(allContrasts[1,],allContrasts[2,])) == 1)
+        diffRisk <- x$diffRisk[iIndexRow]
+        out2 <- cbind(type = "diffRisk",
+                      estimator = x$diffRisk$estimator,
+                      time = x$diffRisk$time,
+                      level = paste0(x$diffRisk$A,".",x$diffRisk$B),
+                      x$diffRisk[,.SD,.SDcols = setdiff(names(x$diffRisk),c("estimator","time","A","B","estimate.A","estimate.B"))])
+    }else{
+        out2 <- NULL
+    }
+    ## ** ratioRisk
+    if("ratioRisk" %in% type){
+        iIndexRow <- which((x$ratioRisk$estimator %in% estimator) * (interaction(x$ratioRisk$A,x$ratioRisk$B) %in% interaction(allContrasts[1,],allContrasts[2,])) == 1)
+        ratioRisk <- x$ratioRisk[iIndexRow]
+        out3 <- cbind(type = "ratioRisk",
+                      estimator = x$ratioRisk$estimator,
+                      time = x$ratioRisk$time,
+                      level = paste0(x$ratioRisk$A,".",x$ratioRisk$B),
+                      x$ratioRisk[,.SD,.SDcols = setdiff(names(x$ratioRisk),c("estimator","time","A","B","estimate.A","estimate.B"))])
+    }else{
+        out3 <- NULL
     }
     
-    ## export
-    return(out)
+    ## ** export
+    out <- rbind(out1,out2,out3)
+    if(all(is.na(out$time)) && is.na(x$variable["time"])){
+        out[,c("time") := NULL]
+    }
+    return(out[])
   
 }
 

@@ -2,7 +2,7 @@ Package: riskRegression
 Type: Package
 Title: Risk Regression Models and Prediction Scores for Survival Analysis with
     Competing Risks
-Version: 2020.09.07
+Version: 2020.10.29
 Authors@R: c(person("Thomas Alexander", "Gerds", role = c("aut", "cre"),
                     email = "tag@biostat.ku.dk"),
              person("Paul", "Blanche", role = "ctb"),
@@ -38,12 +38,14 @@ LinkingTo: Rcpp, RcppArmadillo
 Suggests:
     boot,
     smcfcs,
+    casebase,
     ipw,
-    SuperLearner,
     gbm,
     glmnetUtils,
     flexsurv, 
+    mgcv,
     mstate,
+    numDeriv,
     party,
     pec,
     penalized,
@@ -52,9 +54,11 @@ Suggests:
     randomForestSRC,
     rbenchmark,
     rpart,
-    testthat,
-    R.rsp,
-    casebase
+	scam,
+    smcfcs,
+    SuperLearner,
+	testthat,
+    R.rsp
 Maintainer: Thomas Alexander Gerds <tag@biostat.ku.dk>
 Description: Implementation of the following methods for event history analysis.
     Risk regression models for survival endpoints also in the presence of competing

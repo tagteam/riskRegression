@@ -4,12 +4,14 @@
 \alias{print.ate}
 \title{Print Average Treatment Effects}
 \usage{
-\method{print}{ate}(x, ...)
+\method{print}{ate}(x, estimator = x$estimator, ...)
 }
 \arguments{
 \item{x}{object obtained with function \code{ate}}
 
-\item{...}{passed to summary}
+\item{estimator}{[character] The type of estimator relative to which the risks should be output.}
+
+\item{...}{for internal use}
 }
 \description{
 Print average treatment effects.

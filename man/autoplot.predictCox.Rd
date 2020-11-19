@@ -16,6 +16,7 @@
   group.by = "row",
   reduce.data = FALSE,
   ylab = NULL,
+  first.derivative = FALSE,
   ...
 )
 }
@@ -36,7 +37,7 @@ or \code{"survival"} the survival function.}
 
 \item{smooth}{[logical] Should a smooth version of the risk function be plotted instead of a simple function?}
 
-\item{digits}{[integer] Number of decimal places.}
+\item{digits}{[integer] Number of decimal places when displaying the values of the covariates in the caption.}
 
 \item{alpha}{[numeric, 0-1] Transparency of the confidence bands. Argument passed to \code{ggplot2::geom_ribbon}.}
 
@@ -46,7 +47,10 @@ or \code{"survival"} the survival function.}
 
 \item{ylab}{[character] Label for the y axis.}
 
-\item{...}{Not used. Only for compatibility with the plot method.}
+\item{first.derivative}{[logical] If \code{TRUE}, display the first derivative over time of the risks/risk differences/risk ratios.
+(confidence intervals are obtained via simulation).}
+
+\item{...}{Additional parameters to cutomize the display.}
 }
 \value{
 Invisible. A list containing:
@@ -75,6 +79,7 @@ m.cox <- coxph(Surv(time,event)~ X1 + X2 + X3,
 e.basehaz <- predictCox(m.cox)
 autoplot(e.basehaz, type = "cumhazard")
 autoplot(e.basehaz, type = "cumhazard", smooth = TRUE)
+autoplot(e.basehaz, type = "cumhazard", smooth = TRUE, first.derivative = TRUE)
 
 ## display baseline hazard with type of event 
 e.basehaz <- predictCox(m.cox, keep.newdata = TRUE)
@@ -84,8 +89,10 @@ autoplot(e.basehaz, type = "cumhazard")
 pred.cox <- predictCox(m.cox, newdata = d[1:2,],
   times = seqTau, type = "survival", keep.newdata = TRUE)
 autoplot(pred.cox)
+autoplot(pred.cox, smooth = TRUE)
 autoplot(pred.cox, group.by = "covariates")
 autoplot(pred.cox, group.by = "covariates", reduce.data = TRUE)
+
 
 ## predictions with confidence interval/bands
 pred.cox <- predictCox(m.cox, newdata = d[1:2,,drop=FALSE],
@@ -109,7 +116,10 @@ pred.cox.strata <- predictCox(m.cox.strata, newdata = d[1:5,,drop=FALSE],
                               time = seqTau, keep.newdata = TRUE, se = TRUE)
 
 res2 <- autoplot(pred.cox.strata, type = "survival", group.by = "strata", plot = FALSE)
-res2$plot + facet_wrap(~strata, labeller = label_both)
+res2$plot + facet_wrap(~strata, labeller = label_both) + theme(legend.position="bottom")
+
+## smooth version
+autoplot(pred.cox.strata, type = "survival", group.by = "strata", smooth = TRUE, ci = FALSE)
 }
 \seealso{
 \code{\link{predictCox}} to compute cumulative hazard and survival based on a Cox model.

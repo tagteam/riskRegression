@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Mar  3 2017 (09:28) 
 ## Version: 
-## Last-Updated: jun  6 2020 (15:36) 
+## Last-Updated: okt  2 2020 (11:00) 
 ##           By: Brice Ozenne
-##     Update #: 142
+##     Update #: 147
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -35,6 +35,8 @@ as.data.table.predictCox <- function(x, keep.rownames = FALSE, se = TRUE,...){
     n.obs <- NROW(x[[x$type[1]]])
     if (!is.null(x$status)){
         nd <- x$status[,.SD,.SDcols = c("nevent","strata")]
+    }else if(x$baseline){
+        nd <- data.table::data.table(observation = 1:n.obs, strata = x$strata)
     }else{
         nd <- data.table::data.table(observation = 1:n.obs, x$newdata, strata = x$strata)
     }

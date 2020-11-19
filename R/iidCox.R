@@ -130,7 +130,7 @@ iidCox.coxph <- function(object, newdata = NULL,
       new.eXb <- object.eXb
       new.LPdata <- object.LPdata
     
-  }
+    }
     
     ## ** tests 
     store.iid <- match.arg(store.iid, c("minimal","full"))
@@ -335,7 +335,7 @@ iidCox.coxph <- function(object, newdata = NULL,
     
             ## tau.hazard
             if(is.null(tau.hazard)){
-                tau.hazard_strata <- object.time_strata[[iStrata]][object.status_strata[[iStrata]] == 1]
+                tau.hazard_strata <- unique(object.time_strata[[iStrata]][object.status_strata[[iStrata]] == 1])
                 if(!is.null(tau.max)){
                     tau.hazard_strata <- tau.hazard_strata[tau.hazard_strata<=tau.max]
                 }

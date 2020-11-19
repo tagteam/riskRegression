@@ -4,7 +4,7 @@
 \alias{information.wglm}
 \title{Information for IPCW Logistic Regressions}
 \usage{
-information.wglm(x, times = NULL, simplifies = TRUE, ...)
+\method{information}{wglm}(x, times = NULL, simplifies = TRUE, ...)
 }
 \arguments{
 \item{x}{a wglm object.}
