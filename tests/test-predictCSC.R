@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: maj 18 2017 (09:23) 
 ## Version: 
-## last-updated: aug 20 2020 (15:01) 
+## last-updated: nov 26 2020 (20:06) 
 ##           By: Brice Ozenne
-##     Update #: 289
+##     Update #: 298
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -1015,11 +1015,10 @@ e.cox <- coxph(Surv(time, event>0)~ strata(X1) + strata(X2), data = d, x = TRUE,
 test_that("predictSurv (type=survival)", {
     test <- predict(e.CSC, type = "survival", newdata = d.pred, times = seqTime,
                     product.limit = FALSE, iid = TRUE, se = TRUE, average.iid = TRUE,
-                    store.iid = "minimal")
-    GS <- predictCox(e.cox, newdata = d.pred, times = seqTime,
+                    store.iid = "minimal", keep.newdata = FALSE)
+    GS <- predictCox(e.cox, newdata = d.pred, times = seqTime, type = "survival",
                      iid = TRUE, se = TRUE, average.iid = TRUE)
-    
-    expect_equal(GS$survival,test$survival)
+    expect_equal(GS$survival, test$survival)
     expect_equal(GS$survival.se,test$survival.se)
     expect_equal(GS$survival.iid,test$survival.iid)
     expect_equal(GS$survival.average.iid,test$survival.average.iid)
@@ -1036,8 +1035,8 @@ test_that("predictSurv (type=survival)", {
         testPL$survival.iid2[iObs,,] <- testPL$survival.iid[iObs,,]*t(ratioSurv)
     }
     expect_equal(GSPL$survival,testPL$survival)
-    expect_equal(GSPL$survival.se, testPL$survival.se * ratioSurv)
-    expect_equal(GSPL$survival.iid,testPL$survival.iid2)
+    expect_equal(GSPL$survival.se[!is.infinite(ratioSurv)], (testPL$survival.se * ratioSurv)[!is.infinite(ratioSurv)])
+    expect_equal(GSPL$survival.iid[!is.nan(testPL$survival.iid2)],testPL$survival.iid2[!is.nan(testPL$survival.iid2)])
     expect_equal(apply(testPL$survival.iid,1:2,mean),
                  testPL$survival.average.iid)
 })
@@ -1067,8 +1066,8 @@ test_that("predictSurv (type=survival,diag)", {
         testPL$survival.iid2[iObs,,] <- testPL$survival.iid[iObs,,]*t(ratioSurv)
     }
     expect_equal(GSPL$survival,testPL$survival)
-    expect_equal(GSPL$survival.se, testPL$survival.se * ratioSurv)
-    expect_equal(GSPL$survival.iid,testPL$survival.iid2)
+    expect_equal(GSPL$survival.se[!is.infinite(ratioSurv)], (testPL$survival.se * ratioSurv)[!is.infinite(ratioSurv)])
+    expect_equal(GSPL$survival.iid[!is.nan(testPL$survival.iid2)],testPL$survival.iid2[!is.nan(testPL$survival.iid2)])
     expect_equal(apply(testPL$survival.iid,1:2,mean),
                  testPL$survival.average.iid)
 })
@@ -1162,9 +1161,9 @@ test_that("[predictCSC] for survival surv.type=\"survival\" (internal consistenc
     factor <- TRUE
     attr(factor,"factor") <- list(matrix(5, nrow = NROW(d), ncol = 1),
                                   matrix(1:NROW(d), nrow = NROW(d), ncol = 1))
-    test2 <- predict(e.CSC, type = "survival", times = tau,
-                     newdata = d, product.limit = FALSE, iid = FALSE, average.iid = factor)
-
+    test2 <- predict(e.CSC, type = "survival", times = tau, se = FALSE,
+                     newdata = d, product.limit = FALSE, iid = FALSE, average.iid = factor,
+                     store.iid = "minimal")
 
     expect_equal(GS$survival.average.iid,test$survival.average.iid)
     expect_equal(GS$survival.average.iid[,1],test$survival.average.iid[,1])
@@ -1363,6 +1362,47 @@ test_that("[predictCSC](strata)  - no event before prediction time",{
   
   prediction <- predict(fit.CSC, times = test.times, newdata = Melanoma[1,,drop = FALSE], cause = 1)
   expect_equal(as.double(prediction$absRisk), 0)
+})
+
+## *** fully stratified model
+## ** Fully stratified model and NAs
+
+set.seed(10)
+d <- sampleData(1e2)
+setkeyv(d, "time")
+d[X1==0,event := c(event[1:(.N-1)],0)]
+d[X1==1,event := c(event[1:(.N-1)],1)]
+tau <- c(d[,max(time),by="X1"][[2]],10000)
+
+test_that("After last event - fully stratified model",{
+    ## one strata variable
+    X <- unique(d[,"X1",drop=FALSE])
+
+    e.CSC <- CSC(Hist(time,event) ~ strata(X1), data = d)
+    ## plot(prodlim(Hist(time,event) ~ X1, data = d))
+    test1 <- as.data.table(predict(e.CSC, times = tau, newdata = X, se = TRUE, cause = 1))
+    test2 <- as.data.table(predict(e.CSC, times = tau, newdata = X, se = TRUE, cause = 2))
+
+    expect_equal(test1[strata == "X1=1" & times == 10000,absRisk], test1[strata == "X1=1" & times == d[X1==1,max(time)],absRisk], tol = 1e-6)
+    expect_equal(test1[strata == "X1=1" & times == 10000,absRisk] + test2[strata == "X1=1" & times == 10000,absRisk],1,tol = 1e-6)
+    expect_equal(test1[strata == "X1=1" & times == 10000,absRisk.se], test1[strata == "X1=1" & times == d[X1==1,max(time)],absRisk.se], tol = 1e-6)
+
+    expect_true(is.na(test1[strata == "X1=0" & times == 10000,absRisk]))
+    expect_true(is.na(test1[strata == "X1=0" & times == 10000,absRisk.se]))
+
+    ## two strata variables
+    X <- unique(d[,c("X1","X2"),drop=FALSE])
+    e2.CSC <- CSC(Hist(time,event) ~ strata(X1)+strata(X2), data = d)
+    ## plot(prodlim(Hist(time,event) ~ X1 + X2, data = d),cause =2)
+    
+    test1 <- as.data.table(predict(e2.CSC, times = tau, newdata = X, se = TRUE, cause = 1))
+    test2 <- as.data.table(predict(e2.CSC, times = tau, newdata = X, se = TRUE, cause = 2))
+    
+    expect_equal(test1[strata != "X1=0 X2=0" & times == 10000,absRisk] + test2[strata != "X1=0 X2=0" & times == 10000,absRisk], rep(1,3), tol = 1e-6)
+    expect_true(all(is.na(test1[strata == "X1=0 X2=0" & times == 10000,absRisk])))
+    expect_true(all(is.na(test1[strata == "X1=0 X2=0" & times == 10000,absRisk.se])))
+    expect_true(all(is.na(test2[strata == "X1=0 X2=0" & times == 10000,absRisk])))
+    expect_true(all(is.na(test2[strata == "X1=0 X2=0" & times == 10000,absRisk.se])))
 })
 
 ## ** Argument store.iid

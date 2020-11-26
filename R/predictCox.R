@@ -207,12 +207,25 @@ predictCox <- function(object,
     data.table::setkeyv(object.modelFrame, c("strata.num","stop","start","statusM1"))
 
     ## last event time in each strata
-    if(is.strata){
-        etimes.max <- object.modelFrame[, max(.SD$stop), by = "strata.num"][[2]]
+    if(!is.null(attr(times,"etimes.max"))){ ## specified by the user
+        etimes.max <- attr(times,"etimes.max")
+        attr(times,"etimes.max") <- NULL
+        attr(times.sorted,"etimes.max") <- etimes.max
+    }else if(is.strata){ ## based on the data
+        if(nVar==0){
+            iDTtempo <- object.modelFrame[, .SD[which.max(.SD$stop)], by = "strata.num"]
+            etimes.max <- iDTtempo[,if(.SD$status==1){1e12}else{.SD$stop}, by = "strata.num"][[2]]
+        }else{
+            etimes.max <- object.modelFrame[, max(.SD$stop), by = "strata.num"][[2]]
+        }
     }else{
-        etimes.max <- max(object.modelFrame[["stop"]])
+        if(nVar==0 && (utils::tail(object.modelFrame$status,1)==1)){ ## no covariates and ends by a death
+            etimes.max <- 1e12
+        }else{
+            etimes.max <- max(object.modelFrame[["stop"]])
+        }
     }
-    
+
     ## ** checks
     ## check user imputs 
     if(nTimes[1]>0 && any(is.na(times))){
@@ -503,25 +516,32 @@ predictCox <- function(object,
                 })
             }
         }
-      outSE <- calcSeCox(object,
-                         times = if(diag){times.sorted[oorder.times]}else{times.sorted},
-                         nTimes = nTimes,
-                         type = type,
-                         diag = diag,
-                         Lambda0 = Lambda0,
-                         object.n = object.n,
-                         object.time = object.modelFrame$stop,
-                         object.eXb = object.modelFrame$eXb,
-                         object.strata =  object.modelFrame$strata, 
-                         nStrata = nStrata,
-                         new.n = new.n,
-                         new.eXb = new.eXb,
-                         new.LPdata = new.LPdata,
-                         new.strata = new.strata,
-                         new.survival = if(diag){out$survival}else{out$survival[,order.times,drop=FALSE]},
-                         nVar = nVar, 
-                         export = export,
-                         store.iid = store.iid)
+        if(diag){
+            times2 <- times
+        }else{
+            times2 <- times.sorted
+        }
+        attr(times2,"etimes.max") <- attr(times.sorted,"etimes.max")
+        
+        outSE <- calcSeCox(object,
+                           times = times2,
+                           nTimes = nTimes,
+                           type = type,
+                           diag = diag,
+                           Lambda0 = Lambda0,
+                           object.n = object.n,
+                           object.time = object.modelFrame$stop,
+                           object.eXb = object.modelFrame$eXb,
+                           object.strata =  object.modelFrame$strata, 
+                           nStrata = nStrata,
+                           new.n = new.n,
+                           new.eXb = new.eXb,
+                           new.LPdata = new.LPdata,
+                           new.strata = new.strata,
+                           new.survival = if(diag){out$survival}else{out$survival[,order.times,drop=FALSE]},
+                           nVar = nVar, 
+                           export = export,
+                           store.iid = store.iid)
 
         ## restaure orginal time ordering
         if((iid+band)>0){
