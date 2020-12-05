@@ -10,12 +10,19 @@ init:
 install:
   ps: Bootstrap
 
+environment:
+  global:
+    R_REMOTES_NO_ERRORS_FROM_WARNINGS: true
+    _R_CHECK_FORCE_SUGGESTS_: 0
+    WARNINGS_ARE_ERRORS: 1
+
 cache:
   - C:\RLibrary
 
 # Adapt as necessary starting from here
 
 build_script:
+  - Rscript -e "if (!requireNamespace('remotes')) {install.packages('remotes', repos = 'http://cran.rstudio.com')}; remotes::install_github('cran/CoxBoost', upgrade = FALSE, force = FALSE)"
   - travis-tool.sh install_deps
 
 test_script:
