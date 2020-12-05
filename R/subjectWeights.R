@@ -147,6 +147,7 @@ subjectWeights.cox <- function(formula,data,method,args,lag=1){
 # {{{ reverse random forest
 #' @export 
 subjectWeights.forest <- function(formula,data,method,args,lag=1){
+    requireNamespace("randomForestSRC",quietly=FALSE)
     call <- match.call() ## needed for refit in crossvalidation loop
     EHF <- prodlim::EventHistory.frame(formula,
                                        data,
@@ -155,7 +156,6 @@ subjectWeights.forest <- function(formula,data,method,args,lag=1){
     wdata <- data.frame(cbind(unclass(EHF$event.history),EHF$design))
     ## wdata$status <- 1-wdata$status
     ## wform <- update(formula,"survival::Surv(time,status)~.")
-    ## require(randomForestSRC)
     stopifnot(NROW(na.omit(wdata))>0)
     if (missing(args) || is.null(args))
         args <- list(ntree=1000)

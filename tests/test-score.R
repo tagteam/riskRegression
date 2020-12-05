@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jan  4 2016 (14:30) 
 ## Version: 
-## last-updated: aug 20 2020 (16:24) 
-##           By: Brice Ozenne
-##     Update #: 141
+## last-updated: Dec  5 2020 (11:37) 
+##           By: Thomas Alexander Gerds
+##     Update #: 145
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -17,9 +17,7 @@
 library(testthat)
 library(survival)
 library(rms)
-library(pec)
 library(riskRegression)
-library(pROC)
 library(data.table)
 context("riskRegression")
 # {{{ "R squared/IPA"
@@ -109,15 +107,18 @@ if (class(try(riskRegression.test,silent=TRUE))[1]!="try-error"){
 # }}}
 # {{{ "competing risks outcome: check against pec"
 test_that("competing risks outcome: check against pec",{
-    set.seed(112)
-    d <- sampleData(43,outcome="competing.risks")
-    nd <- sampleData(43,outcome="competing.risks")
-    library(pec)
-    f <- FGR(Hist(time,event)~X1+X6,data=d,cause=1)
-    a <- pec::pec(list(f),data=nd,times=c(2,5),formula=Hist(time,event)~1,cens.model="marginal",exact=FALSE)
-    b <- Score(list(FGR=f),data=nd,formula=Hist(time,event)~1,cens.model="km",se.fit=FALSE,times=c(2,5),metrics="brier")
-    expect_equal(a$AppErr$Reference[-1],b$Brier$score[model=="Null model",Brier])
-    expect_equal(a$AppErr$FGR[-1],b$Brier$score[model=="FGR",Brier])
+    if (requireNamespace("pec",quietly=TRUE)){
+        message("Package pec not installed. Skip this test.")
+    }else{
+        set.seed(112)
+        d <- sampleData(43,outcome="competing.risks")
+        nd <- sampleData(43,outcome="competing.risks")
+        f <- FGR(Hist(time,event)~X1+X6,data=d,cause=1)
+        a <- pec::pec(list(f),data=nd,times=c(2,5),formula=Hist(time,event)~1,cens.model="marginal",exact=FALSE)
+        b <- Score(list(FGR=f),data=nd,formula=Hist(time,event)~1,cens.model="km",se.fit=FALSE,times=c(2,5),metrics="brier")
+        expect_equal(a$AppErr$Reference[-1],b$Brier$score[model=="Null model",Brier])
+        expect_equal(a$AppErr$FGR[-1],b$Brier$score[model=="FGR",Brier])
+    }
 })
 
 # }}}
@@ -193,55 +194,63 @@ test_that("survival outcome,Brier Score, external prediction",{
     expect_equal(b$Brier$score[,Brier],as.vector(unlist(a$AppErr)))
 })
 
-                                        # }}}
-                                        # {{{integrated Brier score
+# }}}
+# {{{integrated Brier score
 test_that("integrated Brier score",{
-    set.seed(18)
-    trainSurv <- sampleData(100,outcome="survival")
-    testSurv <- sampleData(40,outcome="survival")
-    library(pec)
-    cox1 = coxph(Surv(time,event)~X1+X2+X7+X9,data=trainSurv, y=TRUE, x = TRUE)
-    cox2 = coxph(Surv(time,event)~X3+X5+X6,data=trainSurv, y=TRUE, x = TRUE)
-    xs=Score(list("c1"=cox1,"c2"=cox2),
-             formula=Surv(time,event)~1,data=testSurv,conf.int=FALSE,
-             se.fit=FALSE,
-             summary="ibs",
-             times=sort(unique(testSurv$time)))
-    xp=pec(list("c1"=cox1,"c2"=cox2),
-           formula=Surv(time,event)~1,data=testSurv,
-           times=sort(unique(testSurv$time)))
-    a1 <- ibs(xp,times=sort(unique(testSurv$time)),models="c1")
-    b1 <- xs$Brier$score[model=="c1",IBS]
-    ## cbind(a1,b1)
-    expect_equal(as.numeric(c(a1,use.names=FALSE)),c(b1))
-})
-                                        # }}}
-
-                                        # {{{ "survival outcome uncensored"
-test_that("survival outcome uncensored",{
-    library(survival)
-    library(data.table)
-    library(randomForestSRC)
-    library(riskRegression)
-    library(prodlim)
-    set.seed(8)
-    d <- sampleData(100,outcome="survival")
-    d$event=1
-    cx=coxph(Surv(time,event)~X1+X2+X3+X4+X5+X6+X7+X8+X9+X10,d,x=TRUE)
-    rfx=rfsrc(Surv(time,event)~X1+X2+X3+X4+X5+X6+X7+X8+X9+X10,data=d,ntree=10)
-    out <- Score(list(Cox=cx,RF=rfx),
-                 data=d,
-                 metrics="brier",
+    if (requireNamespace("pec",quietly=TRUE)){
+        message("Package pec not installed. Skip this test.")
+    }else{
+        set.seed(18)
+        trainSurv <- sampleData(100,outcome="survival")
+        testSurv <- sampleData(40,outcome="survival")
+        library(pec)
+        cox1 = coxph(Surv(time,event)~X1+X2+X7+X9,data=trainSurv, y=TRUE, x = TRUE)
+        cox2 = coxph(Surv(time,event)~X3+X5+X6,data=trainSurv, y=TRUE, x = TRUE)
+        xs=Score(list("c1"=cox1,"c2"=cox2),
+                 formula=Surv(time,event)~1,data=testSurv,conf.int=FALSE,
+                 se.fit=FALSE,
                  summary="ibs",
-                 contrasts=FALSE,
-                 times=sort(unique(d$time)),
-                 formula=Hist(time,event)~1,
-                 se.fit=FALSE)
-    out
+                 times=sort(unique(testSurv$time)))
+        xp=pec(list("c1"=cox1,"c2"=cox2),
+               formula=Surv(time,event)~1,data=testSurv,
+               times=sort(unique(testSurv$time)))
+        a1 <- ibs(xp,times=sort(unique(testSurv$time)),models="c1")
+        b1 <- xs$Brier$score[model=="c1",IBS]
+        ## cbind(a1,b1)
+        expect_equal(as.numeric(c(a1,use.names=FALSE)),c(b1))
+    }
 })
-                                        # }}}
+# }}}
 
-                                        # {{{ "binary outcome: Brier"
+# {{{ "survival outcome uncensored"
+test_that("survival outcome uncensored",{
+    if (!requireNamespace("randomForestSRC",quietly=TRUE)){
+        message("Package randomForestSRC not installed. Skip this test.")
+    }else{
+        library(survival)
+        library(data.table)
+        library(randomForestSRC)
+        library(riskRegression)
+        library(prodlim)
+        set.seed(8)
+        d <- sampleData(100,outcome="survival")
+        d$event=1
+        cx=coxph(Surv(time,event)~X1+X2+X3+X4+X5+X6+X7+X8+X9+X10,d,x=TRUE)
+        rfx=rfsrc(Surv(time,event)~X1+X2+X3+X4+X5+X6+X7+X8+X9+X10,data=d,ntree=10)
+        out <- Score(list(Cox=cx,RF=rfx),
+                     data=d,
+                     metrics="brier",
+                     summary="ibs",
+                     contrasts=FALSE,
+                     times=sort(unique(d$time)),
+                     formula=Hist(time,event)~1,
+                     se.fit=FALSE)
+        out
+    }
+})
+# }}}
+
+# {{{ "binary outcome: Brier"
 test_that("binary outcome: Brier",{
     set.seed(47)
     D <- sampleData(n=47,outcome="binary")
@@ -262,108 +271,117 @@ test_that("binary outcome: Brier",{
     expect_equal(S1$Brier$score$Brier,S3$Brier$score$Brier)
     expect_equal(S2$Brier$score$Brier,S3$Brier$score$Brier)
 })
-                                        # }}}
-                                        # {{{ "binary outcome: AUC"
-test_that("binary outcome: AUC", {   
-    set.seed(17)
-    y <- rbinom(100, 1, .5)
-    x1 <- rnorm(100) + 1.5 * y
-    x2 <- rnorm(100) + .5 * y
-    x3 <- rnorm(100) + 2.5 * y
-    x <- data.frame(x1,x2,x3)
-    y <- as.factor(y)
-    r1 <- pROC::roc(y~x1)
-    r2 <- pROC::roc(y~x2)
-    r3 <- pROC::roc(y~x3)
-    procres <- pROC::roc.test(r1,r2)
-    d <- data.frame(x1,x2,x3,y)
-    ## Source(riskRegression)
-    scoreres <- Score(list(X1=~x1,X2=~x2,X3=~x3),formula=y~1,data=d,null.model=FALSE,cause="1")
-    ## Roc(list(X1=glm(y~x1,data=d,family='binomial'),X2=glm(y~x2,data=d,family='binomial'),X3=glm(y~x3,data=d,family='binomial')),formula=y~1,data=d)
-    scoreres <- Score(list(X1=glm(y~x1,data=d,family='binomial'),X2=glm(y~x2,data=d,family='binomial'),X3=glm(y~x3,data=d,family='binomial')),formula=y~1,data=d,null.model=FALSE,cause="1")
-    ## to avoid side effects of data.table features we check the following 
-    scoreres1 <- Score(list(X1=glm(y~x1,data=d,family='binomial'),X2=glm(y~x2,data=d,family='binomial'),X3=glm(y~x3,data=d,family='binomial')),formula=y~1,data=d,null.model=FALSE,metrics="auc",cause="1")
-    scoreres1a <- Score(list(X1=glm(y~x1,data=d,family='binomial'),X2=glm(y~x2,data=d,family='binomial'),X3=glm(y~x3,data=d,family='binomial')),formula=y~1,data=d,null.model=FALSE,metrics="auc",se.fit=0L,cause="1")
-    expect_equal(scoreres$AUC,scoreres1$AUC)
-    ## daim.auc <- daimres$AUC[,c("AUC","SD(DeLong)")]
-    score.auc <- as.data.frame(scoreres$AUC$score[,c("AUC","se"),with=FALSE])
-    ## rownames(score.auc) <- rownames(daim.auc)
-    ## colnames(score.auc) <- colnames(daim.auc)
-    ## expect_equal(daim.auc,score.auc)
-    expect_equal(scoreres$AUC$score[["AUC"]],c(r1$auc,r2$auc,r3$auc))
-    score.diff <- scoreres$AUC$contrasts[,c("delta.AUC","se","lower","upper","p"),with=FALSE]
-    ## daim.diff <- daimres$difference
-    ## expect_equal(daim.diff$"AUC Difference",-score.diff$delta.AUC)
-    ## expect_equal(daim.diff$"CI(lower)",-score.diff$upper)
-    ## expect_equal(daim.diff$"CI(upper)",-score.diff$lower)
-    ## expect_equal(daim.diff$"P.Value",score.diff$p)
+# }}}
+# {{{ "binary outcome: AUC"
+test_that("binary outcome: AUC", {
+    if (!requireNamespace("pROC",quietly=TRUE)){
+        message("Package pROC not installed. Skip this test. predictCSC.")
+    }else{
+        set.seed(17)
+        y <- rbinom(100, 1, .5)
+        x1 <- rnorm(100) + 1.5 * y
+        x2 <- rnorm(100) + .5 * y
+        x3 <- rnorm(100) + 2.5 * y
+        x <- data.frame(x1,x2,x3)
+        y <- as.factor(y)
+        r1 <- pROC::roc(y~x1)
+        r2 <- pROC::roc(y~x2)
+        r3 <- pROC::roc(y~x3)
+        procres <- pROC::roc.test(r1,r2)
+        d <- data.frame(x1,x2,x3,y)
+        ## Source(riskRegression)
+        scoreres <- Score(list(X1=~x1,X2=~x2,X3=~x3),formula=y~1,data=d,null.model=FALSE,cause="1")
+        ## Roc(list(X1=glm(y~x1,data=d,family='binomial'),X2=glm(y~x2,data=d,family='binomial'),X3=glm(y~x3,data=d,family='binomial')),formula=y~1,data=d)
+        scoreres <- Score(list(X1=glm(y~x1,data=d,family='binomial'),X2=glm(y~x2,data=d,family='binomial'),X3=glm(y~x3,data=d,family='binomial')),formula=y~1,data=d,null.model=FALSE,cause="1")
+        ## to avoid side effects of data.table features we check the following 
+        scoreres1 <- Score(list(X1=glm(y~x1,data=d,family='binomial'),X2=glm(y~x2,data=d,family='binomial'),X3=glm(y~x3,data=d,family='binomial')),formula=y~1,data=d,null.model=FALSE,metrics="auc",cause="1")
+        scoreres1a <- Score(list(X1=glm(y~x1,data=d,family='binomial'),X2=glm(y~x2,data=d,family='binomial'),X3=glm(y~x3,data=d,family='binomial')),formula=y~1,data=d,null.model=FALSE,metrics="auc",se.fit=0L,cause="1")
+        expect_equal(scoreres$AUC,scoreres1$AUC)
+        ## daim.auc <- daimres$AUC[,c("AUC","SD(DeLong)")]
+        score.auc <- as.data.frame(scoreres$AUC$score[,c("AUC","se"),with=FALSE])
+        ## rownames(score.auc) <- rownames(daim.auc)
+        ## colnames(score.auc) <- colnames(daim.auc)
+        ## expect_equal(daim.auc,score.auc)
+        expect_equal(scoreres$AUC$score[["AUC"]],c(r1$auc,r2$auc,r3$auc))
+        score.diff <- scoreres$AUC$contrasts[,c("delta.AUC","se","lower","upper","p"),with=FALSE]
+        ## daim.diff <- daimres$difference
+        ## expect_equal(daim.diff$"AUC Difference",-score.diff$delta.AUC)
+        ## expect_equal(daim.diff$"CI(lower)",-score.diff$upper)
+        ## expect_equal(daim.diff$"CI(upper)",-score.diff$lower)
+        ## expect_equal(daim.diff$"P.Value",score.diff$p)
+    }
 })
-                                        # }}}
-                                        # {{{ "Leave one out bootstrap: Number of models and time points"
+# }}}
+# {{{ "Leave one out bootstrap: Number of models and time points"
 if (class(try(riskRegression.test,silent=TRUE))[1]!="try-error"){
     test_that("Number of models and time points", {
-        library(pec)
-        data(GBSG2)
-        setDT(GBSG2)
-        ## fit1 <- coxph(Surv(time, cens)~horTh+age+menostat+tsize+pnodes+progrec+estrec, data = GBSG2, x = TRUE)
-        ## fit2 <- coxph(Surv(time, cens)~strata(horTh)+age+menostat+tsize+pnodes+progrec+estrec, data = GBSG2, x = TRUE)
-        fit1 <- cph(Surv(time, cens)~horTh+age+menostat+tsize+pnodes+progrec+estrec, data = GBSG2, x = TRUE,y=TRUE,surv=TRUE)
-        fit2 <- cph(Surv(time, cens)~strat(horTh)+age+menostat+tsize+pnodes+progrec+estrec, data = GBSG2, x = TRUE,y=TRUE,surv=TRUE)
-        GBSG2.test <- GBSG2
-        setorder(GBSG2.test,time,-cens)
-        ## predictCox(fit1,newdata=GBSG2.test,times=1000)
-        r1 <- Score(list(a=fit2),data=GBSG2.test,times=1000,formula=Surv(time,cens)~1,plots="cali")
-        set.seed(11)
-        R1 <- Score(list(a=fit2),data=GBSG2.test,times=1000,B=50,split.method="loob",formula=Surv(time,cens)~1,plots="cali")
-        setorder(GBSG2,time,cens)
-        ## setorder(GBSG2.test,age)
-        GBSG2 <- 7
-        r2 <- Score(list(a=fit2,b=fit1),data=GBSG2.test,times=c(100,500,2000,1000),formula=Surv(time,cens)~1,plots="cali")
-        set.seed(11)
-        R2 <- Score(list(a=fit2,b=fit1),data=GBSG2.test,times=c(1000),B=50,split.method="loob",formula=Surv(time,cens)~1,plots="cali")
-        ## r1$Calibration$plotframe
-        ## r2$Calibration$plotframe[times==1000&model=="a"]
-        ## r3 <- pec(list(a=fit2,b=fit1),data=GBSG2.test,exact=FALSE,times=c(1000),formula=Surv(time,cens)~1)
-        expect_equal(r1$Brier$score[model=="a"],r2$Brier$score[model=="a" & times==1000])
-        ## expect_equal(r1$AUC$score[model=="a"],r2$AUC$score[model=="a" & times==1000])
+        if (requireNamespace("pec",quietly=TRUE)){
+            message("Package pec not installed. Skip this test.")
+        }else{
+            library(pec)
+            data(GBSG2)
+            setDT(GBSG2)
+            ## fit1 <- coxph(Surv(time, cens)~horTh+age+menostat+tsize+pnodes+progrec+estrec, data = GBSG2, x = TRUE)
+            ## fit2 <- coxph(Surv(time, cens)~strata(horTh)+age+menostat+tsize+pnodes+progrec+estrec, data = GBSG2, x = TRUE)
+            fit1 <- cph(Surv(time, cens)~horTh+age+menostat+tsize+pnodes+progrec+estrec, data = GBSG2, x = TRUE,y=TRUE,surv=TRUE)
+            fit2 <- cph(Surv(time, cens)~strat(horTh)+age+menostat+tsize+pnodes+progrec+estrec, data = GBSG2, x = TRUE,y=TRUE,surv=TRUE)
+            GBSG2.test <- GBSG2
+            setorder(GBSG2.test,time,-cens)
+            ## predictCox(fit1,newdata=GBSG2.test,times=1000)
+            r1 <- Score(list(a=fit2),data=GBSG2.test,times=1000,formula=Surv(time,cens)~1,plots="cali")
+            set.seed(11)
+            R1 <- Score(list(a=fit2),data=GBSG2.test,times=1000,B=50,split.method="loob",formula=Surv(time,cens)~1,plots="cali")
+            setorder(GBSG2,time,cens)
+            ## setorder(GBSG2.test,age)
+            GBSG2 <- 7
+            r2 <- Score(list(a=fit2,b=fit1),data=GBSG2.test,times=c(100,500,2000,1000),formula=Surv(time,cens)~1,plots="cali")
+            set.seed(11)
+            R2 <- Score(list(a=fit2,b=fit1),data=GBSG2.test,times=c(1000),B=50,split.method="loob",formula=Surv(time,cens)~1,plots="cali")
+            ## r1$Calibration$plotframe
+            ## r2$Calibration$plotframe[times==1000&model=="a"]
+            ## r3 <- pec(list(a=fit2,b=fit1),data=GBSG2.test,exact=FALSE,times=c(1000),formula=Surv(time,cens)~1)
+            expect_equal(r1$Brier$score[model=="a"],r2$Brier$score[model=="a" & times==1000])
+            ## expect_equal(r1$AUC$score[model=="a"],r2$AUC$score[model=="a" & times==1000])
+        }
     })
-                                        # {{{ "Bootstrap cross validation
+    # {{{ "Bootstrap cross validation
     test_that("Number of models and time points", {
-        library(pec)
-        data(GBSG2)
-        setDT(GBSG2)
-        ## fit1 <- coxph(Surv(time, cens)~horTh+age+menostat+tsize+pnodes+progrec+estrec, data = GBSG2, x = TRUE)
-        ## fit2 <- coxph(Surv(time, cens)~strata(horTh)+age+menostat+tsize+pnodes+progrec+estrec, data = GBSG2, x = TRUE)
-        fit1 <- cph(Surv(time, cens)~horTh+age+menostat+tsize+pnodes+progrec+estrec, data = GBSG2, x = TRUE,y=TRUE,surv=TRUE)
-        fit2 <- cph(Surv(time, cens)~strat(horTh)+age+menostat+tsize+pnodes+progrec+estrec, data = GBSG2, x = TRUE,y=TRUE,surv=TRUE)
-        GBSG2.test <- GBSG2
-        setorder(GBSG2.test,time,-cens)
-        ## predictCox(fit1,newdata=GBSG2.test,times=1000)
-        r1 <- Score(list(a=fit2),data=GBSG2.test,times=1000,formula=Surv(time,cens)~1,plots="cali")
-        set.seed(11)
-        R1 <- Score(list(a=fit2),data=GBSG2.test,times=1000,B=50,split.method="bootcv",formula=Surv(time,cens)~1,plots="cali")
-        setorder(GBSG2,time,cens)
-        ## setorder(GBSG2.test,age)
-        GBSG2 <- 7
-        r2 <- Score(list(a=fit2,b=fit1),data=GBSG2.test,times=c(100,500,2000,1000),formula=Surv(time,cens)~1,plots="cali")
-        set.seed(11)
-        R2 <- Score(list(a=fit2,b=fit1),data=GBSG2.test,times=c(1000),B=50,split.method="bootcv",formula=Surv(time,cens)~1,plots="cali")
-        ## r1$Calibration$plotframe
-        ## r2$Calibration$plotframe[times==1000&model=="a"]
-        ## r3 <- pec(list(a=fit2,b=fit1),data=GBSG2.test,exact=FALSE,times=c(1000),formula=Surv(time,cens)~1)
-        expect_equal(r1$Brier$score[model=="a"],r2$Brier$score[model=="a" & times==1000])
-        ## expect_equal(r1$AUC$score[model=="a"],r2$AUC$score[model=="a" & times==1000])
+        if (requireNamespace("pec",quietly=TRUE)){
+            message("Package pec not installed. Skip this test.")
+        }else{
+            library(pec)
+            data(GBSG2)
+            setDT(GBSG2)
+            ## fit1 <- coxph(Surv(time, cens)~horTh+age+menostat+tsize+pnodes+progrec+estrec, data = GBSG2, x = TRUE)
+            ## fit2 <- coxph(Surv(time, cens)~strata(horTh)+age+menostat+tsize+pnodes+progrec+estrec, data = GBSG2, x = TRUE)
+            fit1 <- cph(Surv(time, cens)~horTh+age+menostat+tsize+pnodes+progrec+estrec, data = GBSG2, x = TRUE,y=TRUE,surv=TRUE)
+            fit2 <- cph(Surv(time, cens)~strat(horTh)+age+menostat+tsize+pnodes+progrec+estrec, data = GBSG2, x = TRUE,y=TRUE,surv=TRUE)
+            GBSG2.test <- GBSG2
+            setorder(GBSG2.test,time,-cens)
+            ## predictCox(fit1,newdata=GBSG2.test,times=1000)
+            r1 <- Score(list(a=fit2),data=GBSG2.test,times=1000,formula=Surv(time,cens)~1,plots="cali")
+            set.seed(11)
+            R1 <- Score(list(a=fit2),data=GBSG2.test,times=1000,B=50,split.method="bootcv",formula=Surv(time,cens)~1,plots="cali")
+            setorder(GBSG2,time,cens)
+            ## setorder(GBSG2.test,age)
+            GBSG2 <- 7
+            r2 <- Score(list(a=fit2,b=fit1),data=GBSG2.test,times=c(100,500,2000,1000),formula=Surv(time,cens)~1,plots="cali")
+            set.seed(11)
+            R2 <- Score(list(a=fit2,b=fit1),data=GBSG2.test,times=c(1000),B=50,split.method="bootcv",formula=Surv(time,cens)~1,plots="cali")
+            ## r1$Calibration$plotframe
+            ## r2$Calibration$plotframe[times==1000&model=="a"]
+            ## r3 <- pec(list(a=fit2,b=fit1),data=GBSG2.test,exact=FALSE,times=c(1000),formula=Surv(time,cens)~1)
+            expect_equal(r1$Brier$score[model=="a"],r2$Brier$score[model=="a" & times==1000])
+            ## expect_equal(r1$AUC$score[model=="a"],r2$AUC$score[model=="a" & times==1000])
+        }
     })
-                                        # }}}
-                                        # {{{ "LOOB: Number of models and time points"
+    # }}}
+    # {{{ "LOOB: Number of models and time points"
     test_that("LOOB: Number of models and time points", {   
         library(testthat)
         library(survival)
         library(rms)
-        library(pec)
         library(riskRegression)
-        library(pec)
-        library(pROC)
         library(data.table)
         data(GBSG2)
         setDT(GBSG2)

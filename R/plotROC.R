@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun 23 2016 (10:27) 
 ## Version: 
-## last-updated: Mar 19 2019 (12:17) 
+## last-updated: Dec  5 2020 (11:37) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 181
+##     Update #: 182
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -38,6 +38,7 @@
 ##' @examples
 ##' ## binary
 ##' set.seed(18)
+##' if (requireNamespace("randomForest",quietly=TRUE)){
 ##' library(randomForest)
 ##' library(prodlim)
 ##' bdl <- sampleData(40,outcome="binary")
@@ -55,6 +56,7 @@
 ##' xb3 <- Score(list("glm"=fb1,"rf"=fb2),y~1,data=bdl,
 ##'             plots="roc",B=3,split.method="bootcv",
 ##'             metrics=c("auc"))
+##' }
 ##' }
 ##' ## survival
 ##' set.seed(18)

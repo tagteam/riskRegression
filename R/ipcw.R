@@ -155,6 +155,7 @@ ipcw.none <- function(formula,data,method,args,times,subject.times,lag,what,keep
 # {{{ reverse Random Survival Forests
 ##' @export
 ipcw.rfsrc <- function(formula,data,method,args,times,subject.times,lag,what,keep){
+    requireNamespace("randomForestSRC",quietly=FALSE)
     if (missing(lag)) lag=1
     if (missing(what)) what=c("IPCW.times","IPCW.subject.times")
     call <- match.call() ## needed for refit in crossvalidation loop
@@ -166,7 +167,6 @@ ipcw.rfsrc <- function(formula,data,method,args,times,subject.times,lag,what,kee
     ## wdata <- as.data.frame(EHF)
     wdata$status <- 1-wdata$status
     wform <- update(formula,"Surv(time,status)~.")
-    ## require(randomForestSRC)
     stopifnot(NROW(na.omit(wdata))>0)
     if (missing(args) || is.null(args))
         ## args <- list(bootstrap="none",ntree=1000,nodesize=NROW(data)/2)
@@ -208,6 +208,7 @@ ipcw.rfsrc <- function(formula,data,method,args,times,subject.times,lag,what,kee
 }
 ##' @export
 ipcw.forest <- function(formula,data,method,args,times,subject.times,lag,what,keep){
+    requireNamespace("randomForestSRC",quietly=FALSE)
     if (missing(lag)) lag=1
     if (missing(what)) what=c("IPCW.times","IPCW.subject.times")
     call <- match.call() ## needed for refit in crossvalidation loop
@@ -218,7 +219,6 @@ ipcw.forest <- function(formula,data,method,args,times,subject.times,lag,what,ke
     wdata <- data.frame(cbind(unclass(EHF$event.history),EHF$design))
     ## wdata$status <- 1-wdata$status
     wform <- update(formula,"Surv(time,status)~.")
-    ## require(randomForestSRC)
     stopifnot(NROW(na.omit(wdata))>0)
     if (missing(args) || is.null(args))
         args <- list(ntree=1000)

@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: maj 23 2018 (14:08) 
 ## Version: 
-## Last-Updated: okt 24 2020 (17:45) 
-##           By: Brice Ozenne
-##     Update #: 995
+## Last-Updated: Dec  5 2020 (10:12) 
+##           By: Thomas Alexander Gerds
+##     Update #: 997
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -296,10 +296,14 @@ confintBoot.ate <- function(object, out, seed){
                          upper = as.double(quantile(object$boot$t[,iP], probs = 1-(alpha/2), na.rm = TRUE))
                          ))
             }else{
-                out <- boot::boot.ci(object$boot,
-                                     conf = conf.level,
-                                     type = bootci.method,
-                                     index = iP)[[slot.boot.ci]][index.lowerCI:index.upperCI]
+                if (requireNamespace("boot",quietly=TRUE)){
+                    out <- boot::boot.ci(object$boot,
+                                         conf = conf.level,
+                                         type = bootci.method,
+                                         index = iP)[[slot.boot.ci]][index.lowerCI:index.upperCI]
+                }else{
+                    stop("Package 'boot' requested to obtain confidence intervals, but not installed.")
+                }
                 return(setNames(out,c("lower","upper")))
             }    
         }),silent=TRUE)
@@ -343,10 +347,14 @@ confintBoot.ate <- function(object, out, seed){
                                    alternative = "two.sided",
                                    FUN.ci = function(p.value, sign.estimate, ...){ ## p.value <- 0.4
                                        side.CI <- c(index.lowerCI,index.upperCI)[2-sign.estimate]
-                                       boot::boot.ci(object$boot,
-                                                     conf = 1-p.value,
-                                                     type = bootci.method,
-                                                     index = iP)[[slot.boot.ci]][side.CI]
+                                       if (requireNamespace("boot",quietly=TRUE)){
+                                           boot::boot.ci(object$boot,
+                                                         conf = 1-p.value,
+                                                         type = bootci.method,
+                                                         index = iP)[[slot.boot.ci]][side.CI]
+                                       }else{
+                                           stop("Package 'boot' requested to obtain confidence intervals, but not installed.")
+                                       }
                                    })
             return(p.value)
         }

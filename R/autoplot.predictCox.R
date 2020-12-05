@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: feb 17 2017 (10:06) 
 ## Version: 
-## last-updated: okt 27 2020 (15:48) 
-##           By: Brice Ozenne
-##     Update #: 991
+## last-updated: Dec  5 2020 (10:50) 
+##           By: Thomas Alexander Gerds
+##     Update #: 992
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -411,12 +411,12 @@ predict2plot <- function(dataL, name.outcome,
 
     ## smooth ####
     if(smooth){
-        
+        requireNamespace("mgcv",quietly=FALSE)
         if(is.null(smoother)){
             tol <- 1e-12
             test.increasing <- all(na.omit(dataL[,diff(.SD[[name.outcome]]),by="row"][[2]])>=-tol)
             test.decreasing <- all(na.omit(dataL[,diff(.SD[[name.outcome]]),by="row"][[2]])<=tol)
-            if(!requireNamespace("scam") || (test.increasing==FALSE && test.decreasing == FALSE)){
+            if(!requireNamespace("scam",quietly=TRUE) || (test.increasing==FALSE && test.decreasing == FALSE)){
                 formula.smoother <- ~s(time)
                 smoother <- mgcv::gam
             }else{ 

@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: feb 28 2017 (09:52) 
 ## Version: 
-## last-updated: aug 11 2020 (11:07) 
-##           By: Brice Ozenne
-##     Update #: 20
+## last-updated: Dec  5 2020 (11:22) 
+##           By: Thomas Alexander Gerds
+##     Update #: 21
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -18,7 +18,6 @@
 ## * Settings
 library(testthat)
 library(riskRegression)
-library(pec)
 library(rms)
 library(survival)
 library(prodlim)

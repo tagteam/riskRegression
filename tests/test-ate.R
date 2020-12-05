@@ -6,7 +6,6 @@ library(rms)
 library(survival)
 library(testthat)
 library(data.table)
-library(ipw)
 library(lava)
 
 verbose <- FALSE
@@ -425,11 +424,13 @@ test_that("[ate] no censoring, survival - check vs. manual calculations", {
                  tol = 1e-6)
 
     ## compare to ipw package
-    ww <- ipwpoint(exposure=X1,family="binomial",link="logit",
-                   denominator=~X2,
-                   data=dtS)$ipw.weights
-    expect_equal(ww,
-                 dtCf[,1/pi[X1test==1], by = "time"][[2]])
+    if (requireNamespace("ipw",quietly=TRUE)){
+        ww <- ipwpoint(exposure=X1,family="binomial",link="logit",
+                       denominator=~X2,
+                       data=dtS)$ipw.weights
+        expect_equal(ww,
+                     dtCf[,1/pi[X1test==1], by = "time"][[2]])
+    }
 })
     
     
