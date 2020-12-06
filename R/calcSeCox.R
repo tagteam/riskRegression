@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: maj 27 2017 (11:46) 
 ## Version: 
-## last-updated: sep  4 2020 (10:30) 
+## last-updated: nov 26 2020 (19:26) 
 ##           By: Brice Ozenne
-##     Update #: 828
+##     Update #: 848
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -72,11 +72,11 @@ calcSeCox <- function(object, times, nTimes, type, diag,
                       nVar, export, store.iid){
 
     ## ** Computation of the influence function
-    if(is.null(object$iid)){
-        iid.object <- iidCox(object, tau.hazard = times, store.iid = store.iid, return.object = FALSE)
-    }else{
+    if(is.iidCox(object)){
         store.iid <- object$iid$store.iid
         iid.object <- selectJump(object$iid, times = times, type = type)
+    }else{
+        iid.object <- iidCox(object, tau.hazard = times, store.iid = store.iid, return.object = FALSE)
     }
 
     ## ** Prepare arguments

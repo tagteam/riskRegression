@@ -4,7 +4,7 @@
 #' @name predict.CauseSpecificCox
 #' @aliases predict.CauseSpecificCox
 #' @aliases predictBig.CauseSpecificCox
-#'
+#' 
 #' @param object The fitted cause specific Cox model
 #' @param newdata [data.frame or data.table]  Contain the values of the predictor variables
 #' defining subject specific predictions relative to each cause.
@@ -16,8 +16,8 @@
 #' @param type [character] Can be changed to \code{"survival"} if the event free survival should be output instead of the absolute risk.
 #' @param landmark [integer] The starting time for the computation of the cumulative risk.
 #' @param keep.times [logical] If \code{TRUE} add the evaluation times to the output.
-#' @param keep.newdata [logical] If \code{TRUE} add the value of the covariates used to make the prediction in the output list.
-#' @param keep.strata [logical] If \code{TRUE} add the value of the strata used to make the prediction in the output list.
+#' @param keep.newdata [logical] If \code{TRUE} add the value of the covariates used to make the prediction in the output list. 
+#' @param keep.strata [logical] If \code{TRUE} add the value of the strata used to make the prediction in the output list. 
 #' @param se [logical] If \code{TRUE} compute and add the standard errors to the output.
 #' @param band [logical] If \code{TRUE} compute and add the quantiles for the confidence bands to the output.
 #' @param iid [logical] If \code{TRUE} compute and add the influence function to the output.
@@ -27,38 +27,36 @@
 #' @param product.limit [logical]. If \code{TRUE} the survival is computed using the product limit estimator.
 #' Otherwise the exponential approximation is used (i.e. exp(-cumulative hazard)).
 #' @param store.iid [character] Implementation used to estimate the influence function and the standard error.
-#' Can be \code{"full"} or \code{"minimal"}.
+#' Can be \code{"full"} or \code{"minimal"}. 
 #' @param diag [logical] when \code{FALSE} the absolute risk/survival for all observations at all times is computed,
 #' otherwise it is only computed for the i-th observation at the i-th time.
-#' @param max_time [numeric] maximum time of the response of the fitted data.  Only relevant if
-#' model \code{response} element has been removed
 #' @param ... not used.
-#'
+#' 
 #' @author Brice Ozenne broz@@sund.ku.dk, Thomas A. Gerds
 #'     tag@@biostat.ku.dk
-#'
+#' 
 #' @details
 #' This function computes the absolute risk as given by formula 2 of (Ozenne et al., 2017).
 #' Confidence intervals and confidence bands can be computed using a first order von Mises expansion.
 #' See the section "Construction of the confidence intervals" in (Ozenne et al., 2017).
-#'
+#' 
 #' A detailed explanation about the meaning of the argument \code{store.iid} can be found
 #' in (Ozenne et al., 2017) Appendix B "Saving the influence functions".
-#'
+#' 
 #' Note: for Cox regression models with time varying
 #'     covariates it does not make sense to use this function, because
 #'     the predicted risk has to be a measurable function of the data
 #'     available at the time origin.
-#'
+#' 
 #' The iid decomposition is output using an array containing the value of the influence
 #' of each subject used to fit the object (dim 1),
 #' for each subject in newdata (dim 3),
 #' and each time (dim 2).
-#'
+#' 
 #' @seealso
 #' \code{\link{confint.predictCSC}} to compute confidence intervals/bands.
 #' \code{\link{autoplot.predictCSC}} to display the predictions.
-#'
+#' 
 #' @references
 #' Brice Ozenne, Anne Lyngholm Sorensen, Thomas Scheike, Christian Torp-Pedersen and Thomas Alexander Gerds.
 #' riskRegression: Predicting the Risk of an Event using Cox Regression Models.
@@ -94,11 +92,11 @@
 #' CSC.fit.s <- CSC(list(Hist(time,event)~ strata(X1)+X2+X9,
 #'  Hist(time,event)~ X2+strata(X4)+X8+X7),data=d, method = "breslow")
 #' predict(CSC.fit.s,cause=1,times=ttt,se=1L) ## note: absRisk>1 due to small number of observations
-#'
+#' 
 #' ## using the cph function instead of coxph
-#' CSC.cph <- CSC(Hist(time,event)~ X1+X2,data=d, method = "breslow", fitter = "cph")#'
+#' CSC.cph <- CSC(Hist(time,event)~ X1+X2,data=d, method = "breslow", fitter = "cph")#' 
 #' predict(CSC.cph, newdata = d, cause = 2, times = ttt)
-#'
+#' 
 #' ## landmark analysis
 #' T0 <- 1
 #' predCSC_afterT0 <- predict(CSC.fit, newdata = d, cause = 2, times = ttt[ttt>T0], landmark = T0)
@@ -125,59 +123,63 @@ predict.CauseSpecificCox <- function(object,
                                      product.limit = TRUE,
                                      store.iid = "full",
                                      diag = FALSE,
-                                     max_time = NULL,
                                      ...){
 
 
+    ## ** deal with specific case
+    if(type == "survival" && object$surv.type=="survival"){
+        predictor.cox <- if(product.limit){"predictCoxPL"}else{"predictCox"}
+        return(do.call(predictor.cox,
+                       args = list(object$models[["OverallSurvival"]], times = times, newdata = newdata, type = "survival",
+                                   keep.strata = keep.strata, keep.newdata = keep.newdata,
+                                   se = se, band = band, iid = iid, confint = confint, diag = diag,
+                                   average.iid = average.iid, store.iid = store.iid)
+                       ))
+    }
+    
+    ## ** prepare
     if(missing(newdata)){
         newdata <- eval(object$call$data)
     }else{
         setDT(newdata)
     }
-
-    if (missing(times)) {
-        times = object$times
-        if (is.null(times)) {
-            stop("times must be specified")
-        }
-    }
-    ## ** prepare
+    
     n.times <- length(times)
-    if(object$fitter=="phreg"){newdata$entry <- 0}
+    if(object$fitter=="phreg"){newdata$entry <- 0} 
     new.n <- NROW(newdata)
     ## if(data.table::is.data.table(newdata)){
     ## newdata <- data.table::copy(newdata)
     ## }else{
     ## newdata <- data.table::as.data.table(newdata)
     ## }
-
+    
     surv.type <- object$surv.type
     if (missing(cause)) {
         cause <- object$theCause
     }
     if (length(cause) > 1){
-        stop(paste0("Can only predict one cause. Provided are: ",
+        stop(paste0("Can only predict one cause. Provided are: ", 
                     paste(cause, collapse = ", "), sep = ""))
     }
-
+	
     ## causes
     # NOTE: cannot use only eventtimes of cause 1 otherwise wrong estimation of the survival in the absolute risk
     causes <- object$causes
     index.cause <- which(causes == cause)
     name.model <- names(object$models)
-
+    
     ## event times
     eTimes <- object$eventTimes
 
     ## ** check
     if (any(match(as.character(cause), causes, nomatch = 0)==0L))
-        stop(paste0("Cannot find all requested cause(s) ...\n\n",
-                    "Requested cause(s): ", paste0(cause, collapse = ", "),
-                    "\n Available causes: ", paste(causes, collapse = ", "),
+        stop(paste0("Cannot find all requested cause(s) ...\n\n", 
+                    "Requested cause(s): ", paste0(cause, collapse = ", "), 
+                    "\n Available causes: ", paste(causes, collapse = ", "), 
                     "\n"))
     if (surv.type == "survival") {
-        if (object$theCause != cause)
-            stop("Object can be used to predict cause ", object$theCause,
+        if (object$theCause != cause) 
+            stop("Object can be used to predict cause ", object$theCause, 
                  " but not ", cause, ".\nNote: the cause can be specified in CSC(...,cause=).")
     }
     if(any(is.na(times))){
@@ -186,10 +188,10 @@ predict.CauseSpecificCox <- function(object,
     if(length(landmark)!=1){
         stop("\'t0\' must have length one \n")
     }
-    if(!is.logical(diag)){
+    if(!is.logical(diag)){ 
         stop("Argument \'diag\' must be logical \n")
     }
-
+    type <- match.arg(type, c("absRisk","survival"))
     if(diag && NROW(newdata)!=n.times){
         stop("When argument \'diag\' is TRUE, the number of rows in \'newdata\' must equal the length of \'times\' \n")
     }
@@ -221,24 +223,9 @@ predict.CauseSpecificCox <- function(object,
     }
 
     ## relevant event times to use
-    if (is.null(max_time)) {
-        max_time = max(object$response[,"time"])
-    }
-    valid.times <- times[ times<= max_time] ## prediction times before the event
-    if(length(valid.times) == 0){
-        if (is.null(eTimes)) {
-            stop("eventTimes was removed from model, but no valid times")
-        }
-        eventTimes <- eTimes[1] ## at least the first event
-    }else{
-        eventTimes <- eTimes[eTimes <= max(valid.times)] ## jump times before the last prediction time (that is before the last jump)
-        if(length(eventTimes) == 0){eventTimes <- eTimes[1]} # at least the first event
-
-    }
-    if (is.null(eventTimes)) {
-        stop("eventTimes was removed from model - cannot predict")
-    }
-
+    eventTimes <- eTimes[eTimes <= max(times)] ## jump times before the last prediction time (that is before the last jump)
+    if(length(eventTimes) == 0){eventTimes <- eTimes[1]} # at least the first event
+    
     ## order prediction times
     otimes <- order(times)
     ootimes <- order(otimes)
@@ -256,79 +243,80 @@ predict.CauseSpecificCox <- function(object,
     M.etimes.max <- matrix(NA, nrow = new.n, ncol = nCause)
     ls.infoVar <- setNames(vector(mode = "list", length = nCause), name.model)
 
+    if(length(unlist(coef(object)))==0){
+        ## if there is not covariates (only strata) then set the last eventtime to \infty when the last observation is an event
+        ls.lastEventTime <- lapply(object$models, function(iM){ ## iM <- object$models[[1]]
+            iTempo <- predictCox(iM, times = 0, keep.infoVar = TRUE)
+            return(setNames(iTempo$lastEventTime, iTempo$infoVar$strata.levels))
+        })
+        if(length(unique(lapply(ls.lastEventTime,names)))<=1){
+            attr(eventTimes,"etimes.max") <- apply(do.call(rbind,ls.lastEventTime),2,max)
+        }
+    }
+    
     for(iterC in 1:nCause){ ## iterC <- 1
-
         ## when surv.type = "hazard" and iterC corresponds to the cause and no se/iid
         ## we could only compute cumhazard (i.e. not compute hazard).
         ## But since computing hazard has little impact on the performance it is done anyway
-        baseline = object$baselines[[iterC]]
-        if (is.null(baseline)) {
-            baseline <- predictCox(object$models[[iterC]],
-                                   centered = FALSE,
-                                   times = eventTimes,
-                                   newdata = NULL,
-                                   type = c("hazard","cumhazard"),
-                                   keep.strata = TRUE,
-                                   keep.times = TRUE,
-                                   se = FALSE,
-                                   keep.infoVar = TRUE)
-        }
+        baseline <- predictCox(object$models[[iterC]],
+                               centered = FALSE,
+                               times = eventTimes,
+                               newdata = NULL,
+                               type = c("hazard","cumhazard"), 
+                               keep.strata = TRUE,
+                               keep.times = TRUE,
+                               se = FALSE,
+                               keep.infoVar = TRUE)
         ls.infoVar[[iterC]] <- baseline$infoVar
 
         ## baseline hazard from the Cox model
         ls.cumhazard[[iterC]] <- matrix(baseline$cumhazard, byrow = FALSE, nrow = nEventTimes)
         ls.hazard[[iterC]] <- matrix(baseline$hazard, byrow = FALSE, nrow = nEventTimes)
-
+          
         ## linear predictor for the new observations
         M.eXb[,iterC] <- exp(coxLP(object$models[[iterC]], data = newdata, center = FALSE))
 
         ## strata for the new observations
-        strataTempo <- coxStrata(object$models[[iterC]], data = newdata,
-                                 sterms = ls.infoVar[[iterC]]$strata.sterms,
-                                 strata.vars = ls.infoVar[[iterC]]$stratavars,
+        strataTempo <- coxStrata(object$models[[iterC]], data = newdata, 
+                                 sterms = ls.infoVar[[iterC]]$strata.sterms, 
+                                 strata.vars = ls.infoVar[[iterC]]$stratavars, 
                                  strata.levels = ls.infoVar[[iterC]]$strata.levels)
         M.strata.num[,iterC] <- as.numeric(strataTempo) - 1
-        ## last time by strata
+        attr(M.strata.num,paste0("levels",iterC)) <- ls.infoVar[[iterC]]$strata.levels
+
+        ## last event time by strata
         M.etimes.max[,iterC] <- baseline$lastEventTime[M.strata.num[,iterC]+1]
     }
 
     ## ** compute CIF (aka absolute risk) or event-free survival
-    vec.etimes.max <- apply(M.etimes.max,1,min)
-
+    vec.etimes.max <- apply(M.etimes.max,1,max) ## take the max because if not censored for one cause and last event equal to 1 then we have the full curve
     if(type == "absRisk"){
-        outCpp <- predictCIF_cpp(hazard = ls.hazard,
-                                 cumhazard = ls.cumhazard,
-                                 eXb = M.eXb,
+        outCpp <- predictCIF_cpp(hazard = ls.hazard, 
+                                 cumhazard = ls.cumhazard, 
+                                 eXb = M.eXb, 
                                  strata = M.strata.num,
-                                 newtimes = if(diag){times}else{sort(times)},
-                                 etimes = eventTimes,
-                                 etimeMax = vec.etimes.max,
+                                 newtimes = if(diag){times}else{sort(times)}, 
+                                 etimes = eventTimes, 
+                                 etimeMax = vec.etimes.max, 
                                  t0 = landmark,
                                  nEventTimes = nEventTimes,
-                                 nNewTimes = n.times,
+                                 nNewTimes = n.times, 
                                  nData = new.n,
-                                 cause = index.cause - 1,
+                                 cause = index.cause - 1, 
                                  nCause = nCause,
                                  survtype = (surv.type=="survival"),
                                  productLimit = product.limit,
                                  diag = diag,
                                  exportSurv = (se || band || iid || average.iid))
 
-    }else if(object$surv.type=="survival"){ ## type=="survival"
-        predictor.cox <- if(product.limit){"predictCoxPL"}else{"predictCox"}
-        return(do.call(predictor.cox,
-                       args = list(object$models[["OverallSurvival"]], times = times, newdata = newdata, type = "survival",
-                                   keep.strata = keep.strata, keep.newdata = keep.newdata,
-                                   se = se, band = band, iid = iid, confint = confint, diag = diag,
-                                   average.iid = average.iid, store.iid = store.iid)
-                       ))
-    }else{ ## type == "survival" && object$surv.type=="hazard"
-
+    }else if(type == "survival" && object$surv.type=="hazard"){
+        attr(times,"etimes.max") <- attr(eventTimes,"etimes.max")
+        
         return(.predictSurv_CSC(object, times = times, newdata = newdata, ls.hazard = ls.hazard, eXb = M.eXb,
                                 etimes = eventTimes, etimeMax = vec.etimes.max, strata = M.strata.num,
                                 keep.times = keep.times, keep.strata = keep.strata, keep.newdata = keep.newdata,
-                                se = se, band = band, iid = iid,
-                                confint = confint, diag = diag, average.iid = average.iid,
+                                se = se, band = band, iid = iid, 
+                                confint = confint, diag = diag, average.iid = average.iid, 
                                 store.iid = store.iid, product.limit = product.limit))
     }
 
@@ -346,7 +334,7 @@ predict.CauseSpecificCox <- function(object,
                 new.LPdata[[iCause]] <- model.matrix(object$models[[iCause]], data = newdata)
             }else{
                 new.LPdata[[iCause]] <- matrix(0, ncol = 1, nrow = new.n)
-            }
+            }  
         }
 
         ## linear predictors
@@ -372,17 +360,17 @@ predict.CauseSpecificCox <- function(object,
                 })
             }
         }
-
+        
         out.seCSC <- calcSeCSC(object,
                                cif = outCpp$cif,
                                hazard = ls.hazard,
                                cumhazard = ls.cumhazard,
                                survival = outCpp$survival, ## survival at t-
                                object.time = eventTimes,
-                               object.maxtime = vec.etimes.max,
+                               object.maxtime = vec.etimes.max, 
                                eXb = M.eXb,
                                new.LPdata = new.LPdata,
-                               new.strata = M.strata.num,
+                               new.strata = M.strata.num,                               
                                times = if(diag){times}else{Utimes},
                                ls.infoVar = ls.infoVar,
                                new.n = new.n,
@@ -397,7 +385,7 @@ predict.CauseSpecificCox <- function(object,
         ootimes2 <- prodlim::sindex(jump.times = Utimes, eval.times = times)
         needOrder2 <- !identical(1:length(ootimes2),ootimes2)
     }
-
+    
     ## ** export
     ## gather all outputs
     if(needOrder && (diag == FALSE)){
@@ -405,7 +393,7 @@ predict.CauseSpecificCox <- function(object,
     }else{
         out <- list(absRisk = outCpp$cif) # reorder prediction times
     }
-
+    
     if(se+band){
         if(needOrder2 && (diag == FALSE)){
             out$absRisk.se <- out.seCSC$se[,ootimes2,drop=FALSE]
@@ -454,7 +442,7 @@ predict.CauseSpecificCox <- function(object,
     out$se <- se
     out$keep.times <- keep.times
     out$band <- band
-
+    
     class(out) <- "predictCSC"
 
     ## compute confidence interval
@@ -475,20 +463,23 @@ predict.CauseSpecificCox <- function(object,
 
 
 
-## * .predictSurv_CSC
+## * .predictSurv_CSCe
 .predictSurv_CSC <- function(object, times, newdata, type, ls.hazard, eXb, etimes, strata, etimeMax,
                              keep.times, keep.strata, keep.newdata,
                              se, band, iid, confint, diag, average.iid, store.iid, product.limit){
 
     if(!is.logical(diag)){
-        stop("Argument \'diag\' must be of type logical \n")
+        stop("Argument \'diag\' must be of type logical. \n")
     }
-
+    if(any(etimes<0)){
+        stop("Cannot handle negative event times. \n")
+    }
+        
     new.n <- NROW(newdata)
     n.times <- length(times)
     n.times2 <- ifelse(diag>0,1,n.times)
     nCause <- length(object$cause)
-    # n.sample <- NROW(object$response)
+    n.sample <- NROW(object$response)
 
     iid.save <- iid
     iid <- (iid || se)
@@ -498,7 +489,7 @@ predict.CauseSpecificCox <- function(object,
         }
     }
 
-    ## ** prepare output
+    ## ** prepare output        
     n.sample <- stats::nobs(object)
     out <- list(survival = NULL, survival.iid = NULL, survival.average.iid = NULL,
                 lastEventTime = NA,
@@ -507,35 +498,40 @@ predict.CauseSpecificCox <- function(object,
 
     out$survival <- matrix(1, nrow = new.n, ncol = n.times2)
 
-    ## ** compute survival
-    if(product.limit){
-        index.times <- prodlim::sindex(jump.times = etimes, eval.times = times)
+    ## ** prepare hazard
+    index.times <- prodlim::sindex(jump.times = etimes, eval.times = times)
+    if(!product.limit){
+        ls.cumhazard <- lapply(ls.hazard,function(iHazard){
+            colCumSum(iHazard)[index.times[index.times>0],,drop=FALSE]
+        })
+    }
 
-        for(iObs in 1:new.n){ ## iObs <- 1 ## iC <- 1
-            iStrata <- strata[iObs,]+1
-            if(diag){
-                if(times[iObs]>etimeMax[iObs]){
-                    out$survival[iObs,1] <- NA
-                }else if(index.times[iObs]>0){
+    ## ** get survival
+    for(iObs in 1:new.n){ ## iObs <- 1
+        if(diag){
+            if(times[iObs]>etimeMax[iObs]){
+                out$survival[iObs,1] <- NA
+            }else if(index.times[iObs]>0){
+                if(product.limit){
                     ihazard <- lapply(1:nCause, function(iC){ls.hazard[[iC]][1:index.times[iObs],strata[iObs,iC]+1]*eXb[iObs,iC]})
                     out$survival[iObs,1] <- prod(1-rowSums(do.call(cbind,ihazard)))
-                }
-            }else if(diag==0){
+                }else{
+                    iCumhazard <- sapply(1:nCause, function(iC){ls.cumhazard[[iC]][iObs,strata[iObs,iC]+1]*eXb[iObs,iC]})
+                    out$survival[iObs,1] <- exp(-sum(iCumhazard))
+                }                
+            }
+        }else if(diag==0){
+            if(product.limit){
                 ihazard <- lapply(1:nCause, function(iC){ls.hazard[[iC]][,strata[iObs,iC]+1]*eXb[iObs,iC]})
                 out$survival[iObs,index.times>0] <- cumprod(1-rowSums(do.call(cbind,ihazard)))[index.times[index.times>0]]
-                if(any(times > etimeMax[iObs])){
-                    out$survival[iObs,times > etimeMax[iObs]] <- NA
-                }
+            }else{
+                iCumhazard <- lapply(1:nCause, function(iC){ls.cumhazard[[iC]][,strata[iObs,iC]+1]*eXb[iObs,iC]})
+                out$survival[iObs,index.times>0] <- exp(-Reduce("+",iCumhazard))
+            }
+            if(any(times > etimeMax[iObs])){
+                out$survival[iObs,times > etimeMax[iObs]] <- NA
             }
         }
-    }else{
-        iCumHazard <- matrix(0, nrow = new.n, ncol = n.times2)
-        for(iC in 1:nCause){ ## iC <- 1
-            iCumHazard <- iCumHazard + predictCox(object$models[[iC]],
-                                                  newdata = newdata, times = times, diag = diag,
-                                                  type = "cumhazard")$cumhazard
-        }
-        out$survival <- exp(-iCumHazard)
     }
 
     ## ** update factor with survival
@@ -546,7 +542,7 @@ predict.CauseSpecificCox <- function(object,
         }else{
             test.list <- !is.list(factor)
             n.factor <- length(factor)
-
+                    
             for(iFactor in 1:n.factor){ ## iFactor <- 1
                 ## when only one column and diag = FALSE, use the same weights at all times
                 if((diag == FALSE) && (NCOL(factor[[iFactor]])==1) && (NCOL(factor[[iFactor]])==new.n) && (n.times > 1)){
@@ -564,7 +560,7 @@ predict.CauseSpecificCox <- function(object,
             attr(average.iid,"factor") <- factor
         }
     }
-
+    
     ## ** compute iid for survival
     if(iid || se || band || average.iid){
 
@@ -572,7 +568,7 @@ predict.CauseSpecificCox <- function(object,
             iIid <- array(0, dim = c(n.sample, n.times2, new.n))
         }
         if(average.iid){
-
+            
             if(is.null(factor)){
                 iAverageIid <- matrix(0, nrow = n.sample, ncol = n.times2)
             }else{
@@ -581,16 +577,18 @@ predict.CauseSpecificCox <- function(object,
         }
 
         tsurvival <- t(out$survival)
-
-        for(iC in 1:nCause){
+        
+        for(iC in 1:nCause){ ## iC <- 1
             resTempo <- predictCox(object$models[[iC]],
                                    newdata = newdata,
                                    times = times,
                                    diag = diag,
                                    iid = iid || se || band,
+                                   se = TRUE,
                                    average.iid = average.iid,
                                    store.iid = store.iid,
                                    type = "cumhazard")
+
             if(iid || se || band){
                 for(iObs in 1:n.sample){
                     iIid[iObs,,] <- iIid[iObs,,] - resTempo$cumhazard.iid[iObs,,] * tsurvival
@@ -624,7 +622,9 @@ predict.CauseSpecificCox <- function(object,
         out$times <- times
     }
     if (keep.strata[1]==TRUE){
-        out$strata <- unique(strata)
+        out$strata <- interaction(unique(lapply(1:nCause,function(iCause){
+            factor(strata[,iCause], levels = 0:(length(attr(strata,paste0("levels",iCause)))-1), labels = attr(strata,paste0("levels",iCause)))
+        })))
     }
     if( keep.newdata[1]==TRUE){
         out$newdata <- newdata
@@ -640,6 +640,6 @@ predict.CauseSpecificCox <- function(object,
     if(band[1] && iid[1]==FALSE){
         out[paste0(type,".iid")] <- NULL
     }
-
+    out$baseline <- FALSE
     return(out)
 }

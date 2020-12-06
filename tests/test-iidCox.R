@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: maj 18 2017 (09:23) 
 ## Version: 
-## last-updated: aug 11 2020 (11:07) 
+## last-updated: okt 30 2020 (14:19) 
 ##           By: Brice Ozenne
-##     Update #: 120
+##     Update #: 121
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -338,8 +338,8 @@ test_that("[iidCox] Compare to timereg on Melanoma dta",{
     timereg.iidLambda <- t(as.data.table(e.timereg$B.iid))
 
     expect_equal(unname(RR.iid$IFbeta),e.timereg$gamma.iid)
-    expect_equal(as.double(RR.iid$IFcumhazard[[1]]),
-                 as.double(timereg.iidLambda[,-1]))
+    expect_equal(as.double(RR.iid$IFcumhazard[[1]]), ## as.double(RR.iid$IFcumhazard[[1]])[c(1:4,206:209,411)]
+                 as.double(timereg.iidLambda[,-1])) ## as.double(timereg.iidLambda[,-1])[c(1:4,206:209,411)]
 })
 
 #----------------------------------------------------------------------

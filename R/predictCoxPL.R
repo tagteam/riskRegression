@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: sep  4 2017 (16:43) 
 ## Version: 
-## last-updated: jul 27 2020 (09:19) 
+## last-updated: nov 20 2020 (18:11) 
 ##           By: Brice Ozenne
-##     Update #: 158
+##     Update #: 169
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -180,9 +180,8 @@ predictCoxPL <- function(object,
                                         newdata = newdata[indexStrata.newdata,],
                                         times = all.times,
                                         type = "hazard")
-
-                lastEventTime.tempo <- res.tempo$lastEventTime[which(infoVar$strata.levels==Ustrata[iStrata])]
                 
+                lastEventTime.tempo <- original.res$lastEventTime[levels(Ustrata) == Ustrata[iStrata]]
                 if(0 %in% all.times){                    
                     hazard.tempo <- cbind(res.tempo$hazard,NA)
                     all.timesA <- c(all.times,lastEventTime.tempo + 1e-10)
@@ -190,7 +189,6 @@ predictCoxPL <- function(object,
                     hazard.tempo <- cbind(0,res.tempo$hazard,NA)
                     all.timesA <- c(0,all.times,lastEventTime.tempo + 1e-10)
                 }
-
                 if(original.res$diag){
                     index.jump <- prodlim::sindex(eval.times = times[indexStrata.newdata], jump.times = all.timesA)
                     original.res$survival[indexStrata.newdata,] <- cbind(sapply(1:length(indexStrata.newdata), function(iP){ # iP <- 16
@@ -211,12 +209,15 @@ predictCoxPL <- function(object,
                                     newdata = newdata,
                                     times = all.times,
                                     type = "hazard")
+
+            lastEventTime.tempo <- original.res$lastEventTime
+                
             if(0 %in% all.times){
                 hazard.tempo <- cbind(res.tempo$hazard,NA)
-                all.timesA <- c(all.times,res.tempo$lastEventTime+1e-10)
+                all.timesA <- c(all.times, lastEventTime.tempo + 1e-10)
             }else{
                 hazard.tempo <- cbind(0,res.tempo$hazard,NA)
-                all.timesA <- c(0,all.times,res.tempo$lastEventTime+1e-10)
+                all.timesA <- c(0,all.times, lastEventTime.tempo + 1e-10)
             }
 
             index.jump <- prodlim::sindex(eval.times = times, jump.times = all.timesA)
