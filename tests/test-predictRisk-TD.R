@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Sep  2 2017 (08:01) 
 ## Version: 
-## Last-Updated: Sep  4 2017 (11:40) 
+## Last-Updated: Dec  5 2020 (13:20) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 11
+##     Update #: 12
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -62,7 +62,7 @@ test_that("start stop CauseSpecificCox",{
     d <- rbindlist(list(d1,d2,d3))
     ## d[start>time,.(start,time,event)]
     fit <- CSC(list(Hist(time=time,event=event,entry=start)~X1+X4+log(X7)+X9),data=d)
-    riskRegression:::predictRisk.CSCTD(fit,newdata=d[c(17:32),],landmark=2:5,times=1)
+    expect_success(riskRegression:::predictRisk.CSCTD(fit,newdata=d[c(17:32),],landmark=2:5,times=1))
 })
 
 ######################################################################

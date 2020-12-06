@@ -44,8 +44,8 @@ test_that("Logistic risk regression",{
 # }}}
 # {{{ "Censoring model"
 test_that("Censoring model",{
-    f1 <- ARR(Hist(time,status)~thick+strata(invasion)+epicel,data=Melanoma,cens.model="cox",cause=1)
-    f1a <- ARR(Hist(time,status)~thick+strata(invasion)+epicel,data=Melanoma,cens.model="cox",cens.formula=~thick+strat(invasion)+epicel,cause=1)
-    f2 <- ARR(Hist(time,status)~sex+strata(invasion)+epicel,data=Melanoma,cens.model="cox",cens.formula=~logthick+age,cause=1)
+    expect_success(ARR(Hist(time,status)~thick+strata(invasion)+epicel,data=Melanoma,cens.model="cox",cause=1))
+    expect_success(ARR(Hist(time,status)~thick+strata(invasion)+epicel,data=Melanoma,cens.model="cox",cens.formula=~thick+strat(invasion)+epicel,cause=1))
+    expect_success(ARR(Hist(time,status)~sex+strata(invasion)+epicel,data=Melanoma,cens.model="cox",cens.formula=~logthick+age,cause=1))
 })
 # }}}

@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: apr 11 2018 (17:05) 
 ## Version: 
-## Last-Updated: okt 24 2020 (15:45) 
-##           By: Brice Ozenne
-##     Update #: 336
+## Last-Updated: Dec  6 2020 (08:47) 
+##           By: Thomas Alexander Gerds
+##     Update #: 340
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -35,8 +35,8 @@ calcBootATE <- function(args, n.obs, fct.pointEstimate, name.estimate,
         if(inherits(args[[iModel]]$call$data,"name")){
             data.tempo <- eval(args[[iModel]]$call$data)
             if(inherits(data.tempo,"function")){
-                stop("The dataset in argument \'",iModel,"\' has the same name has an existing R function \n",
-                     "This creates confusion - please rename the dataset \n")
+                stop("The dataset in argument \'",iModel,"\' has the same name has an existing R function.\n",
+                     "This creates confusion when we try to extract it from the call. Please rename the dataset.\n")
             }else{
                 ls.data[[iModel]] <- data.table::as.data.table(data.tempo)
             }
@@ -47,8 +47,8 @@ calcBootATE <- function(args, n.obs, fct.pointEstimate, name.estimate,
         if(inherits(args[[iModel]]$call$formula,"name")){
             formula.tempo <- eval(args[[iModel]]$call$formula)
             if(inherits(formula.tempo,"function")){
-                stop("The formula in argument \'",iModel,"\' has the same name has an existing R function \n",
-                     "This creates confusion - please rename the formula \n")
+                stop("The formula in argument \'",iModel,"\' has the same name has an existing R function.\n",
+                     "This creates confusion when we try to extract it from the call. Please rename the formula.\n")
             }else{
                 args[[iModel]]$call$formula <- formula.tempo
             }

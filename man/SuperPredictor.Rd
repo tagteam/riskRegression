@@ -32,11 +32,13 @@ Formula interface for SuperLearner::SuperLearner
 }
 \examples{
 \dontrun{
+if(requireNamespace("SuperLearner",quietly=TRUE)){
 library(SuperLearner)
 library(data.table)
 d = sampleData(338, outcome="binary")
 spfit = SuperPredictor(Y~X1+X2+X3+X4+X5+X6+X7+X8+X9+X10,data=d)
 predictRisk(spfit)
 x <- Score(list(spfit),data=d,formula=Y~1)
+}
 }
 }

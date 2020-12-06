@@ -62,6 +62,7 @@ Plot ROC curve
 \examples{
 ## binary
 set.seed(18)
+if (requireNamespace("randomForest",quietly=TRUE)){
 library(randomForest)
 library(prodlim)
 bdl <- sampleData(40,outcome="binary")
@@ -79,6 +80,7 @@ plotROC(xb,brier.in.legend=1L)
 xb3 <- Score(list("glm"=fb1,"rf"=fb2),y~1,data=bdl,
             plots="roc",B=3,split.method="bootcv",
             metrics=c("auc"))
+}
 }
 ## survival
 set.seed(18)

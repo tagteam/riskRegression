@@ -29,6 +29,7 @@ S3-wrapper for S4 function penalized
 library(prodlim)
 \dontrun{
 ## too slow
+if (requireNamespace("penalized",quietly=TRUE)){
 library(penalized)
 set.seed(8)
 d <- sampleData(200,outcome="binary")
@@ -44,8 +45,6 @@ predictRisk(fitlasso,newdata=newd)
 # predictRisk(fitnet,newdata=newd)
 Score(list(fitridge),data=newd,formula=Y~1)
 Score(list(fitridge),data=newd,formula=Y~1,split.method="bootcv",B=2)
-}
-\dontrun{
 data(nki70) ## S4 fit
 fitS4 <- penalized(Surv(time, event), penalized = nki70[,8:77],
                  unpenalized = ~ER+Age+Diam+N+Grade, data = nki70,
@@ -58,5 +57,5 @@ penS3 <- penalizedS3(Surv(time,event)~ER+pen(TSPYL5,Contig63649_RC)+pen(10:77)+N
 ## also this works
 penS3 <- penalizedS3(Surv(time,event)~ER+Age+pen(8:33)+Diam+pen(34:77)+N+Grade,
                     data=nki70, lambda1=1)
-}
+}}
 }

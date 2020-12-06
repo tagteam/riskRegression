@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: sep  4 2017 (10:38) 
 ## Version: 
-## last-updated: aug 20 2020 (15:58) 
-##           By: Brice Ozenne
-##     Update #: 163
+## last-updated: Dec  6 2020 (08:57) 
+##           By: Thomas Alexander Gerds
+##     Update #: 167
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -1068,39 +1068,9 @@ eS.coxph <- coxph(Surv(time, status) ~ x + strata(sex),
 eS.pred  <- predictCox(eS.coxph, newdata = dtStrata, times = 1:4,
                        se = TRUE, iid = TRUE, band = TRUE)
 eS.confint <- confint(eS.pred, seed = 10)
-eS.confint$survival.quantileBand
+# eS.confint$survival.quantileBand
 
 
-## ** Dependence on data
-cat("[predictCox] Dependence on data \n")
-data(Melanoma, package = "riskRegression")
-
-test_that("[predictCox] Dependence on data", {   
-  Melanoma$entry <- -abs(rnorm(NROW(Melanoma), mean = 1, sd = 1))
-  Melanoma2 <- Melanoma
-  
-  fit1 <- coxph(Surv(time, status>0)~strata(epicel)+age+strata(invasion)+sex+logthick, 
-                data = Melanoma2, x = TRUE, y = TRUE)
-  GS <- predictCox(fit1,newdata=Melanoma[1:10,],times=1000)
-  
-  Melanoma2 <- 7
-  
-  test <- predictCox(fit1,newdata=Melanoma[1:10,],times=1000)
-  expect_equal(GS,test)
-  
-  ## with delayed entry
-  Melanoma2 <- Melanoma
-  
-  fit1 <- coxph(Surv(entry ,time, status>0)~strata(epicel)+age+strata(invasion)+sex+logthick, 
-                data = Melanoma2, x = TRUE, y = TRUE)
-  GS <- predictCox(fit1,newdata=Melanoma[1:10,],times=1000)
-  
-  Melanoma2 <- 7
-  
-  test <- predictCox(fit1,newdata=Melanoma[1:10,],times=1000)
-  expect_equal(GS,test)
-
-})
 
 ## ** Store.iid argument
 cat("[predictCox] Check same result store.iid=minimal vs. full \n")

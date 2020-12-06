@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Aug 10 2017 (08:56) 
 ## Version: 
-## Last-Updated: Dec  5 2020 (11:40) 
+## Last-Updated: Dec  5 2020 (13:20) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 32
+##     Update #: 33
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -90,7 +90,7 @@ test_that("Prediction with CSC - categorical cause",{
     predictRisk(CSC.h$models[[1]], newdata = dn, times = c(5,10,15,20), cause = cause)
     predictRisk(CSC.s$models[[1]], newdata = dn, times = c(5,10,15,20), cause = cause)
     predictRisk(CSC.h$models[[2]], newdata = dn, times = c(5,10,15,20), cause = cause)
-    predictRisk(CSC.s$models[[2]], newdata = dn, times = c(5,10,15,20), cause = cause)
+    expect_success(predictRisk(CSC.s$models[[2]], newdata = dn, times = c(5,10,15,20), cause = cause))
 })
 
 ## * [predictRisk.glm] vs. lava

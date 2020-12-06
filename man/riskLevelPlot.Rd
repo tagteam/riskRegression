@@ -45,10 +45,11 @@ partyData <- function(N){
 d <- partyData(100)
 f <- glm(Fever~Age+Parasites,data=d,family="binomial")
 riskLevelPlot(f,Fever~Age+Parasites,d)
-library(randomForest)
-rf <- randomForest(Fever~Age+Parasites,data=d)
+if (requireNamespace("randomForest",quietly=TRUE)){
+rf <- randomForest::randomForest(Fever~Age+Parasites,data=d)
 riskLevelPlot(f,Fever~Age+Parasites,d)
 riskLevelPlot(rf,Fever~Age+Parasites,d)
+}
 
 # ---------- survival analysis --------------------
 

@@ -635,7 +635,9 @@ Score.list <- function(object,
                 warning("Cannot do multi-split test with AUC yet. Forced multi.split.test=FALSE")
                 multi.split.test=FALSE
             }else{
-                warning("Cannot do deal with conservative=FALSE when also multi.split.test=TRUE. Forced conservative=TRUE.")
+                if (se.fit==TRUE & conservative==FALSE){
+                    warning("Cannot do deal with conservative=FALSE when also multi.split.test=TRUE. Forced conservative=TRUE.")
+                }
                 conservative=TRUE
             }
         }
