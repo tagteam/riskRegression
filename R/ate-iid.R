@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: apr  5 2018 (17:01) 
 ## Version: 
-## Last-Updated: okt 29 2020 (16:42) 
+## Last-Updated: feb  4 2021 (19:14) 
 ##           By: Brice Ozenne
-##     Update #: 1326
+##     Update #: 1331
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -53,7 +53,7 @@ iidATE <- function(estimator,
     n.contrasts <- length(contrasts)
     grid <- expand.grid(tau = 1:n.times, contrast = 1:n.contrasts)
     n.grid <- NROW(grid)
-    
+
     ## ** Precompute quantities
     tol <- 1e-12
     if(attr(estimator,"integral")){

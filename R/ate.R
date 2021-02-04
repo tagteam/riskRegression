@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Oct 23 2016 (08:53) 
 ## Version: 
-## last-updated: okt 26 2020 (10:32) 
+## last-updated: feb  4 2021 (19:10) 
 ##           By: Brice Ozenne
-##     Update #: 2169
+##     Update #: 2183
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -685,6 +685,7 @@ ate_initArgs <- function(object.event,
                          product.limit,
                          store.iid){
 
+
     ## ** user-defined arguments
     ## times
     if(inherits(object.event,"glm") && missing(times)){
@@ -730,7 +731,7 @@ ate_initArgs <- function(object.event,
     }else if(inherits(object.treatment,"formula")){
         model.treatment <- do.call(stats::glm, args = list(formula = object.treatment, data = mydata, family = stats::binomial(link = "logit")))        
         formula.treatment <- object.treatment
-    }else if(inherits(object.treatment,"glm")){
+    }else if(inherits(object.treatment,"glm") || inherits(object.treatment,"nnet")){
         formula.treatment <- stats::formula(object.treatment)
         model.treatment <- object.treatment
     }else{
@@ -897,6 +898,12 @@ ate_initArgs <- function(object.event,
         if(any(estimator == "AIPTW") && any(n.censor>0)){
             estimator[estimator == "AIPTW"] <- "AIPTW,AIPCW"
         }
+        if(any(estimator == "G-FORMULA")){
+            estimator[estimator == "G-FORMULA"] <- "GFORMULA"
+        }
+        if(any(estimator == "G-FORMULATD")){
+            estimator[estimator == "G-FORMULATD"] <- "GFORMULA"
+        }
     }
 
     ## which terms are used by the estimator
@@ -977,6 +984,7 @@ ate_initArgs <- function(object.event,
     if(is.null(store.iid)){
         store.iid <- "minimal"
     }
+
 
     ## ** output
     return(list(object.event = model.event,

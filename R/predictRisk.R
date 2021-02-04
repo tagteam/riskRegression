@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun  6 2016 (09:02) 
 ## Version: 
-## last-updated: Dec  5 2020 (11:37) 
-##           By: Thomas Alexander Gerds
-##     Update #: 341
+## last-updated: feb  4 2021 (19:47) 
+##           By: Brice Ozenne
+##     Update #: 360
 #----------------------------------------------------------------------
 ## 
 ### Commentary:
@@ -310,7 +310,7 @@ predictRisk.multinom <- function(object, newdata, iid = FALSE, average.iid = FAL
     n.obs <- NROW(newdata)
     n.class <- length(object$lev)
     n.coef <- length(coef(object))
-    n.coefperY <- NROW(coef(object))
+    n.coefperY <- n.coef/(n.class-1)
     out <- predict(object, newdata = newdata, type = "probs")
 
     if(n.class == 2){
@@ -392,16 +392,27 @@ predictRisk.multinom <- function(object, newdata, iid = FALSE, average.iid = FAL
         eXbeta_rowSum <- rowSums(exp(Xbeta))
         colnames(Xbeta) <- object$lev
         
-
         if(average.iid){
             attr(out,"average.iid") <- lapply(factor, function(iFactor){
-                apply(iFactor, 2, function(iiFactor){
-                    iRes <- Reduce("+",lapply(object$lev[-1], function(iClass){ ## iClass <- "1"
-                        - iid.beta.level[[iClass]] %*% colMeans(colMultiply_cpp(newX, scale = iiFactor * exp(Xbeta[,iClass]+Xbeta[,level])/eXbeta_rowSum^2))
-                    }))
-                    if(which(level %in% object$lev)>1){
+                apply(iFactor, 2, function(iiFactor){ ## exp(XB_j)/(1+\sum_k exp(XB_j))
+                    
+                    if(level != object$lev[1]){
+                        ## if level l which is not the reference level:  exp(XB_l)/(1+\sum_j exp(XB_j))
+                        ## derivative of the numerator:  IF_l X exp(XB_l)/(1+\sum_j exp(XB_j))
+                        ## derivative of the denumerator: - \sum_k IF_k X exp(XB_k+XB_l)/(1+\sum_j exp(XB_j))^2                    
+                        iRes <- Reduce("+",lapply(object$lev[-1], function(iClass){ ## iClass <- "1"
+                            - iid.beta.level[[iClass]] %*% colMeans(colMultiply_cpp(newX, scale = iiFactor * exp(Xbeta[,iClass]+Xbeta[,level])/eXbeta_rowSum^2))
+                        }))
                         iRes <- iRes + iid.beta.level[[level]] %*% colMeans(colMultiply_cpp(newX, scale = iiFactor * exp(Xbeta[,level])/eXbeta_rowSum))
+                    }else{
+                        ## if reference level: 1/(1+\sum_j exp(XB_j))
+                        ## derivative of the numerator: 0 because the numerator is 1
+                        ## derivative of the denumerator: - \sum_k IF_k X exp(XB_k)/(1+\sum_j exp(XB_j))^2                    
+                        iRes <- Reduce("+",lapply(object$lev[-1], function(iClass){ ## iClass <- "1"
+                            - iid.beta.level[[iClass]] %*% colMeans(colMultiply_cpp(newX, scale = iiFactor * exp(Xbeta[,iClass])/eXbeta_rowSum^2))
+                        }))
                     }
+
                     return(iRes)
                 })
             })
