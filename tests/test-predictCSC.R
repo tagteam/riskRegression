@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: maj 18 2017 (09:23) 
 ## Version: 
-## last-updated: dec  6 2020 (10:42) 
+## last-updated: feb  4 2021 (23:23) 
 ##           By: Brice Ozenne
-##     Update #: 299
+##     Update #: 300
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -409,7 +409,7 @@ tmat <- trans.comprisk(2, names = c("0", "1", "2"))
 
 dL <- msprep(time = c(NA, "time", "time"),
              status = c(NA,"event1", "event2"),
-             data = d, keep = c("X1","X2","X16","Xcat2"),
+             data = as.data.frame(d), keep = c("X1","X2","X16","Xcat2"),
              trans = tmat)
 dL.exp <- expand.covs(dL,  c("X1","X2","X16","Xcat2"))
 
