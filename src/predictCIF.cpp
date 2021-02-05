@@ -67,7 +67,6 @@ List predictCIF_cpp(const std::vector<arma::mat>& hazard,
 	  iNNewTimes = nNewTimes;
 	  iNewTimes = newtimes;
 	}
-	
     for(int iterT=0 ; iterT<nEventTimes; iterT++){ // index of the time in the integral (event time number)
       // update position 
       while(iterP < iNNewTimes && iNewTimes[iterP]<etimes[iterT]){
@@ -121,7 +120,7 @@ List predictCIF_cpp(const std::vector<arma::mat>& hazard,
 	  }
 	  
       // update the integral
-      if(R_IsNA(t0)){	
+      if(R_IsNA(t0)){
         CIF_it += survival_it * hazard_it;
       }else{// [only for conditional CIF]
 
@@ -133,17 +132,15 @@ List predictCIF_cpp(const std::vector<arma::mat>& hazard,
         
         if(etimes[iterT] >= t0){ // not needed  iNewTimes[iterP]>=t0  because iNewTimes >= etimes see update position above 
           // Rcout << hazard_it << " ("<< iterP << ","<< etimes[iterT] << ","<< iNewTimes[iterP] << ")";
-	  CIF_it += survival_it * hazard_it / survival_it0;
+      	  CIF_it += survival_it * hazard_it / survival_it0;
         }
-        
       }
     }
     
-    
-    if(iterP < iNNewTimes){ // deal with prediction times before or equal to the last event 
+
+    if(iterP < iNNewTimes){ // deal with prediction times before or equal to etimeMax (last event)
      //> censored event are not in etimes thus prediction time after the last death and before the last censored event should be CIF_it and not NA
      //> prediction time exactly equal to the last event will not be assigned any value in the previous loop (because iNewTimes[iterP]<etimes[iterT]). It will be updated here.
-     
       for(int iterPP = iterP; iterPP<iNNewTimes ; iterPP++){
         if(iNewTimes[iterPP] <= etimeMax[iterI]){
           pred_CIF(iterI,iterPP) = CIF_it;  
@@ -153,7 +150,6 @@ List predictCIF_cpp(const std::vector<arma::mat>& hazard,
       }
       
     }
-    
     if(R_IsNA(t0) == false){ // before t0 fill with NA
       iterP = 0;
       while(iterP < nNewTimes && iNewTimes[iterP]<t0){

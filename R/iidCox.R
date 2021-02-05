@@ -144,7 +144,9 @@ iidCox.coxph <- function(object, newdata = NULL,
 
         need.order <- FALSE
         tau.oorder <- vector(mode = "list", length = nStrata)
+        etimes.max <- vector(mode = "numeric", length = nStrata)
         for(iStrata in 1:nStrata){
+            etimes.max[iStrata] <- attr(tau.hazard[[iStrata]],"etimes.max")
             need.order <- need.order + is.unsorted(tau.hazard[[is.unsorted]])
             tau.oorder[[iStrata]] <- order(order(tau.hazard[[iStrata]]))
             tau.hazard[[iStrata]] <- sort(tau.hazard[[iStrata]])
@@ -152,13 +154,16 @@ iidCox.coxph <- function(object, newdata = NULL,
         need.order <- (need.order>0)
     
     }else if(!is.null(tau.hazard)){
+        etimes.max <- attr(tau.hazard,"etimes.max")
+
         need.order <- is.unsorted(tau.hazard)
         tau.oorder <- lapply(1:nStrata, function(iS){order(order(tau.hazard))})
         tau.hazard <- sort(tau.hazard)
     }else{
+        etimes.max <- NULL        
         need.order <- FALSE
     }
-    
+
     ## ** Compute quantities of interest
   
     ## baseline hazard
@@ -166,7 +171,10 @@ iidCox.coxph <- function(object, newdata = NULL,
                           type = "hazard",
                           centered = FALSE,
                           keep.strata = TRUE)
-    
+    if(is.null(etimes.max)){
+        etimes.max <- lambda0$lastEventTime
+    }
+
     ## S0, E, jump times
     object.index_strata <- list() 
     object.order_strata <- list()
@@ -265,7 +273,7 @@ iidCox.coxph <- function(object, newdata = NULL,
                 obstime = new.time,
                 time = vector(mode = "list", length = nStrata),  # time at which the IF is assessed
                 etime1.min = rep(NA, nStrata),
-                etime.max = lambda0$lastEventTime,
+                etime.max = etimes.max,
                 indexObs = new.order,
                 store.iid = store.iid
                 )
@@ -359,12 +367,11 @@ iidCox.coxph <- function(object, newdata = NULL,
                                           newT = new.time, neweXb = new.eXb, newStatus = new.status, newIndexJump = new.indexJump[[iStrata]], newStrata = as.numeric(new.strata),
                                           S01 = Ecpp[[iStrata]]$S0,
                                           E1 = Etempo,
-                                          time1 = timeStrata, lastTime1 = Ecpp[[iStrata]]$Utime1[nUtime1_strata], # here lastTime1 will not correspond to timeStrata[length(timeStrata)] when there are censored observations
+                                          time1 = timeStrata, lastTime1 = etimes.max[iStrata],
                                           lambda0 = lambda0Strata,
                                           p = nVar, strata = iStrata,
                                           minimalExport = (store.iid=="minimal")
                                           )
-
             ## output
             if(length(tau.hazard_strata)==0){
                 tau.hazard_strata <- 0

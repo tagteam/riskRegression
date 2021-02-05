@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: sep  4 2017 (10:38) 
 ## Version: 
-## last-updated: Dec  6 2020 (08:57) 
+## last-updated: Dec  7 2020 (09:23) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 167
+##     Update #: 168
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -1198,6 +1198,60 @@ test_that("Deal with no event",{
     expect_true(all(predictCox(e.coxph)$survival==1))
     expect_true(all(predictCox(e.coxph, newdata = dt, times = 1:5)$cumhazard==0))
     expect_true(all(predictCox(e.coxph, newdata = dt, times = 1:5)$survival==1))
+})
+
+## ** Fully stratified model and NAs
+set.seed(10)
+d <- sampleData(1e2, outcome = "survival")
+setkeyv(d, "time")
+d[X1==0,event := c(event[1:(.N-1)],0)]
+d[X1==1,event := c(event[1:(.N-1)],1)]
+tau <- c(d[,max(time),by="X1"][[2]],10000)
+    
+
+test_that("After last event - fully stratified model",{
+    ## one strata variable
+    X <- unique(d[,"X1",drop=FALSE])
+
+    e.coxph <- coxph(Surv(time,event) ~ strata(X1), data = d, x = TRUE, y = TRUE)
+    
+    test <- as.data.table(predictCox(e.coxph, times = tau, newdata = X, se = TRUE))
+    expect_equal(test[strata == 1 & times == 10000,survival], test[strata == 1 & times == d[X1==1,max(time)],survival], tol = 1e-6)
+    expect_equal(test[strata == 1 & times == 10000,survival.se], test[strata == 1 & times == d[X1==1,max(time)],survival.se], tol = 1e-6)
+
+    expect_true(is.na(test[strata == 0 & times == 10000,survival]))
+    expect_true(is.na(test[strata == 0 & times == 10000,survival.se]))
+
+    test2 <- as.data.table(predictCoxPL(e.coxph, times = tau, newdata = X, se = TRUE))
+    expect_equal(test2[strata == 1 & times == 10000,survival], 0, tol = 1e-6)
+    expect_equal(test2[strata == 1 & times == 10000,survival.se], test2[strata == 1 & times == d[X1==1,max(time)],survival.se], tol = 1e-6)
+
+    expect_true(is.na(test2[strata == 0 & times == 10000,survival]))
+    expect_true(is.na(test2[strata == 0 & times == 10000,survival.se]))
+
+    ## two strata variables
+    X <- unique(d[,c("X1","X2"),drop=FALSE])
+    e2.coxph <- coxph(Surv(time,event) ~ strata(X1)+strata(X2), data = d, x = TRUE, y = TRUE)
+    
+    test <- as.data.table(predictCox(e2.coxph, times = tau, newdata = X, se = TRUE))
+    expect_equal(test[strata == "1, 0" & times == 10000,survival], test[strata == "1, 0" & times == d[X1==1 & X2 == 0,max(time)],survival])
+    expect_equal(test[strata == "1, 0" & times == 10000,survival.se], test[strata == "1, 0" & times == d[X1==1 & X2 == 0,max(time)],survival.se])
+
+    expect_equal(test[strata == "1, 0" & times == 10000,survival], test[strata == "1, 0" & times == d[X1==1 & X2 == 0,max(time)],survival])
+    expect_equal(test[strata == "1, 0" & times == 10000,survival.se], test[strata == "1, 0" & times == d[X1==1 & X2 == 0,max(time)],survival.se])
+    expect_equal(test[strata == "1, 1" & times == 10000,survival], test[strata == "1, 1" & times == d[X1==1 & X2 == 0,max(time)],survival])
+    expect_equal(test[strata == "1, 1" & times == 10000,survival.se], test[strata == "1, 1" & times == d[X1==1 & X2 == 0,max(time)],survival.se])
+
+    expect_true(all(is.na(test[strata %in% c("0, 0","0, 1") & times == 10000,survival])))
+    expect_true(all(is.na(test[strata %in% c("0, 0","0, 1") & times == 10000,survival.se])))
+
+    test2 <- as.data.table(predictCoxPL(e2.coxph, times = tau, newdata = X, se = TRUE))
+    expect_true(all(test2[strata %in% c("1, 0","1, 1") & times == 10000,survival]==0))
+    expect_true(all(!is.na(test2[strata %in% c("1, 0","1, 1") & times == 10000,survival.se])))
+
+    expect_true(all(is.na(test2[strata %in% c("0, 0","0, 1") & times == 10000,survival])))
+    expect_true(all(is.na(test2[strata %in% c("0, 0","0, 1") & times == 10000,survival.se])))
+
 })
 
 ## * [predictCox] Previous Bug

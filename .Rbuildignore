@@ -4,6 +4,7 @@ prepareData/
 ^.*\.so$
 ^README.org$
 ^vignettes/.*\.org$
+^vignettes/auto$
 ^vignettes/.*\.tex$
 ^vignettes/.*\.pdf$
 ^vignettes/.*\.bbl$
@@ -16,3 +17,8 @@ prepareData/
 ^appveyor\.yml$
 ^riskRegression\.Rproj$
 ^\.github$
+^bugs$
+^prepareData$
+^examples$
+^slowtests$
+

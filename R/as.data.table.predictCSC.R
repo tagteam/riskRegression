@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Mar  3 2017 (09:28) 
 ## Version: 
-## Last-Updated: jul  6 2018 (13:59) 
+## Last-Updated: nov 20 2020 (16:48) 
 ##           By: Brice Ozenne
-##     Update #: 47
+##     Update #: 49
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -29,7 +29,7 @@
 #' @export
 as.data.table.predictCSC <- function(x, keep.rownames = FALSE, se = TRUE, ...){
     times=NULL
-    
+
     n.obs <- NROW(x[["absRisk"]])
     nd <- data.table(observation = 1:n.obs)
     if (!is.null(x$newdata)){

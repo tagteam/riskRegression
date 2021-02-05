@@ -5,6 +5,18 @@ AUCijFun <- function(riskCase, riskControl) {
     .Call(`_riskRegression_AUCijFun`, riskCase, riskControl)
 }
 
+#' Apply cumsum in each row 
+#'
+#' @description Fast computation of influence function for Nelson-Aalen estimator of the censoring times
+#' @param time event times
+#' @param status binary 
+#' @return A square matrix where each column corresponds to a subject and each row to a time point. 
+NULL
+
+IC_Nelson_Aalen_cens_time <- function(time, status) {
+    .Call(`_riskRegression_IC_Nelson_Aalen_cens_time`, time, status)
+}
+
 baseHaz_cpp <- function(starttimes, stoptimes, status, eXb, strata, predtimes, emaxtimes, nPatients, nStrata, cause, Efron) {
     .Call(`_riskRegression_baseHaz_cpp`, starttimes, stoptimes, status, eXb, strata, predtimes, emaxtimes, nPatients, nStrata, cause, Efron)
 }

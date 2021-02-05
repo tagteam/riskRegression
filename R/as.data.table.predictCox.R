@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Mar  3 2017 (09:28) 
 ## Version: 
-## Last-Updated: okt  2 2020 (11:00) 
+## Last-Updated: nov 26 2020 (18:53) 
 ##           By: Brice Ozenne
-##     Update #: 147
+##     Update #: 151
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -31,7 +31,7 @@
 #' @export
 as.data.table.predictCox <- function(x, keep.rownames = FALSE, se = TRUE,...){
     times=NULL
-
+    
     n.obs <- NROW(x[[x$type[1]]])
     if (!is.null(x$status)){
         nd <- x$status[,.SD,.SDcols = c("nevent","strata")]
