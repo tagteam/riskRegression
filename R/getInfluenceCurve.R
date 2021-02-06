@@ -191,6 +191,8 @@ getInfluenceCurve.Brier <- function(t,
     }
 }
 
+
+## now using cpp function ../src/IC_Nelson_Aalen_cens_time.cpp
 getInfluenceCurve.NelsonAalen <- function(time,status){
     ##
     ## compute influence function for reverse Nelson-Aalen estimator
@@ -217,7 +219,6 @@ getInfluenceCurve.NelsonAalen <- function(time,status){
     # matrix with one column for each subject and one row for each time point
     hatMC <- do.call("cbind",lapply(1:n,function(i){
         (status[i]==0)*rep(c(0,1),c(i-1,n-i+1))*n/atrisk[i]-cumsum(c(hazardC[1:i], rep(0,(n-i)))*n/atrisk)
-        ## (status[i]==0)*(time[i]<=time)/Stilde[i]-cumsum(c(hazardC[0:i], rep(0,(n-i)))/Stilde)
     }))
     hatMC
 }

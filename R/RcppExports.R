@@ -8,9 +8,8 @@ AUCijFun <- function(riskCase, riskControl) {
 #' Apply cumsum in each row 
 #'
 #' @description Fast computation of influence function for Nelson-Aalen estimator of the censoring times
-#' @param time event times
-#' @param status binary 
-#' @return A square matrix where each column corresponds to a subject and each row to a time point. 
+#' @param time sorted vector of event times. Sorted according to time and -status so that events come first a tied times.
+#' @param status sorted vector of 0 = censored or 1 = event (any cause). Sorted according to time and -status so that events come first a tied times.
 NULL
 
 IC_Nelson_Aalen_cens_time <- function(time, status) {
