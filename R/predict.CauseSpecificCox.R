@@ -254,7 +254,6 @@ predict.CauseSpecificCox <- function(object,
     eventTimes <- eTimes[eTimes <= max(times)] ## jump times before the last prediction time (that is before the last jump)
     if(length(eventTimes) == 0){eventTimes <- eTimes[1]} # at least the first event
     
->>>>>>> 98eccecded87ee1d9d517868cae0a18440dc2f39
     ## order prediction times
     otimes <- order(times)
     ootimes <- order(otimes)
