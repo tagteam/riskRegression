@@ -23,10 +23,7 @@
   product.limit = TRUE,
   store.iid = "full",
   diag = FALSE,
-<<<<<<< HEAD
   max.time = NULL,
-=======
->>>>>>> 98eccecded87ee1d9d517868cae0a18440dc2f39
   ...
 )
 }
@@ -73,12 +70,8 @@ Can be \code{"full"} or \code{"minimal"}.}
 \item{diag}{[logical] when \code{FALSE} the absolute risk/survival for all observations at all times is computed,
 otherwise it is only computed for the i-th observation at the i-th time.}
 
-<<<<<<< HEAD
 \item{max.time}{[numeric] maximum time of the response of the fitted data.  Only relevant if
 model \code{response} element has been removed}
-
-=======
->>>>>>> 98eccecded87ee1d9d517868cae0a18440dc2f39
 \item{...}{not used.}
 }
 \description{
