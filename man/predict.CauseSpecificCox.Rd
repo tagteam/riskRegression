@@ -72,6 +72,7 @@ otherwise it is only computed for the i-th observation at the i-th time.}
 
 \item{max.time}{[numeric] maximum time of the response of the fitted data.  Only relevant if
 model \code{response} element has been removed}
+
 \item{...}{not used.}
 }
 \description{

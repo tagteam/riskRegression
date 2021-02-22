@@ -5,13 +5,18 @@ AUCijFun <- function(riskCase, riskControl) {
     .Call(`_riskRegression_AUCijFun`, riskCase, riskControl)
 }
 
-#' Apply cumsum in each row 
-#'
+#' @title Influence function for Nelson-Aalen estimator.
+#' 
 #' @description Fast computation of influence function for Nelson-Aalen estimator of the censoring times
 #' @param time sorted vector of event times. Sorted according to time and -status so that events come first a tied times.
 #' @param status sorted vector of 0 = censored or 1 = event (any cause). Sorted according to time and -status so that events come first a tied times.
-NULL
-
+#' @return A square matrix where each column corresponds to a subject and each row to a time point. 
+#' @author Thomas Alexander Gerds <tag@@biostat.ku.dk>
+#' @examples
+#' time = c(1,3,3,4)
+#' status = c(1,0,1,1)
+#' IC_Nelson_Aalen_cens_time(time,status)
+#' @export
 IC_Nelson_Aalen_cens_time <- function(time, status) {
     .Call(`_riskRegression_IC_Nelson_Aalen_cens_time`, time, status)
 }

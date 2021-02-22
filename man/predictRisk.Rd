@@ -37,6 +37,7 @@
 \alias{predictRisk.ranger}
 \alias{predictRisk.penfitS3}
 \alias{predictRisk.SuperPredictor}
+\alias{predictRisk.hal9001}
 \alias{predictRisk.singleEventCB}
 \alias{predictRisk.wglm}
 \title{Extrating predicting risks from regression models}
@@ -136,6 +137,8 @@ predictRisk(object, newdata, ...)
 \method{predictRisk}{gbm}(object, newdata, times, ...)
 
 \method{predictRisk}{flexsurvreg}(object, newdata, times, ...)
+
+\method{predictRisk}{hal9001}(object, newdata, times, cause, ...)
 
 \method{predictRisk}{singleEventCB}(object, newdata, times, cause, ...)
 
