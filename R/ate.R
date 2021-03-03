@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Oct 23 2016 (08:53) 
 ## Version: 
-## last-updated: feb  4 2021 (19:10) 
+## last-updated: mar  3 2021 (20:02) 
 ##           By: Brice Ozenne
-##     Update #: 2183
+##     Update #: 2202
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -890,8 +890,21 @@ ate_initArgs <- function(object.event,
         }else{
             estimator <- NA
         }
+        test.monotone <- FALSE
     }else{
         estimator <- toupper(estimator)
+
+        ## should montonicity constraint be enforced on estimators based on IPW
+        mestimator <- estimator
+        estimator <- gsub("MONOTONE","",estimator)
+        
+        index.westimator <- which(estimator %in% c("IPTW","IPTW,IPCW","AIPTW","AIPTW,AIPCW"))
+        if(length(index.westimator)>0){
+            test.monotone <- unique(grepl(pattern = "MONOTONE",mestimator[index.westimator]))
+        }else{
+            test.monotone <- FALSE
+        }
+        
         if(any(estimator == "IPTW") && any(n.censor>0)){
             estimator[estimator == "IPTW"] <- "IPTW,IPCW"
         }
@@ -915,6 +928,7 @@ ate_initArgs <- function(object.event,
                                       "AIPTW" = "AIPTW",
                                       "AIPTW,AIPCW" = "AIPTW"
                                       ))
+
     if(TD){
         attr(estimator.output,"TD") <- TRUE
     }else{
@@ -972,6 +986,7 @@ ate_initArgs <- function(object.event,
         attr(estimator.output,"export.AIPTW") <- FALSE
     }
     attr(estimator.output,"full") <- estimator
+    attr(estimator.output,"monotone") <- test.monotone
 
     ## ** sample size
     n.obs <- c(data = NROW(mydata),
@@ -1094,6 +1109,9 @@ ate_checkArgs <- function(object.event,
         if(is.null(object.censor)){
             stop("Using a ITPW/AIPTW estimator requires to specify a model for the censoring mechanism (argument \'censor\') in presence of right-censoring \n")
         }
+    }
+    if(length(attr(estimator,"monotone"))>1){
+        stop("monotonicity constrain should be request for all or none of the IPW estimators \n")
     }
     
     ## ** object.event

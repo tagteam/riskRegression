@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: feb 17 2017 (10:06) 
 ## Version: 
-## last-updated: Dec  5 2020 (10:50) 
-##           By: Thomas Alexander Gerds
-##     Update #: 992
+## last-updated: mar  2 2021 (10:05) 
+##           By: Brice Ozenne
+##     Update #: 1165
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -66,12 +66,14 @@
 #' ## display baseline hazard
 #' e.basehaz <- predictCox(m.cox)
 #' autoplot(e.basehaz, type = "cumhazard")
+#' autoplot(e.basehaz, type = "cumhazard", size.point = 0) ## without points
 #' autoplot(e.basehaz, type = "cumhazard", smooth = TRUE)
 #' autoplot(e.basehaz, type = "cumhazard", smooth = TRUE, first.derivative = TRUE)
 #'
 #' ## display baseline hazard with type of event 
 #' e.basehaz <- predictCox(m.cox, keep.newdata = TRUE)
 #' autoplot(e.basehaz, type = "cumhazard")
+#' autoplot(e.basehaz, type = "cumhazard", shape.point = c(3,NA))
 #'
 #' ## display predicted survival
 #' pred.cox <- predictCox(m.cox, newdata = d[1:2,],
@@ -80,6 +82,7 @@
 #' autoplot(pred.cox, smooth = TRUE)
 #' autoplot(pred.cox, group.by = "covariates")
 #' autoplot(pred.cox, group.by = "covariates", reduce.data = TRUE)
+#' autoplot(pred.cox, group.by = "X1", reduce.data = TRUE)
 #' 
 #' 
 #' ## predictions with confidence interval/bands
@@ -98,7 +101,7 @@
 #' pred.baseline <- predictCox(m.cox.strata, keep.newdata = TRUE, type = "survival")
 #' res <- autoplot(pred.baseline)
 #' res$plot + facet_wrap(~strata, labeller = label_both)
-#' 
+#'
 #' ## predictions
 #' pred.cox.strata <- predictCox(m.cox.strata, newdata = d[1:5,,drop=FALSE],
 #'                               time = seqTau, keep.newdata = TRUE, se = TRUE)
@@ -130,7 +133,8 @@ autoplot.predictCox <- function(object,
     ## initialize and check    
     possibleType <- c("cumhazard","survival")
     possibleType <- possibleType[possibleType %in% names(object)]
-
+    nVar.lp <- length(object$var.lp)
+        
     if(is.null(type)){
         if(length(possibleType) == 1){
             type <- possibleType
@@ -143,27 +147,44 @@ autoplot.predictCox <- function(object,
     if(is.null(ylab)){
         if(first.derivative){
             ylab <- switch(type,
-                           "cumhazard" = if(object$baseline && object$nVar>0){"instantaneous baseline hazard"}else{"instantaneous hazard"},
-                           "survival" = if(object$baseline && object$nVar>0){"derivative of the baseline survival"}else{"derivative of the survival"})
+                           "cumhazard" = if(object$baseline && nVar.lp>0){"instantaneous baseline hazard"}else{"instantaneous hazard"},
+                           "survival" = if(object$baseline && nVar.lp>0){"derivative of the baseline survival"}else{"derivative of the survival"})
         }else{
             ylab <- switch(type,
-                           "cumhazard" = if(object$baseline && object$nVar>0){"cumulative baseline hazard"}else{"cumulative hazard"},
-                           "survival" = if(object$baseline && object$nVar>0){"baseline survival"}else{"survival"})
+                           "cumhazard" = if(object$baseline && nVar.lp>0){"cumulative baseline hazard"}else{"cumulative hazard"},
+                           "survival" = if(object$baseline && nVar.lp>0){"baseline survival"}else{"survival"})
         }
     }
 
-    group.by <- match.arg(group.by, c("row","covariates","strata"))
+    if(length(group.by)>1){
+        stop("Argument \'group.by\' must have length 1.\n")
+    }
+    group.by <- match.arg(group.by, c("row","covariates","strata",object$var.lp,object$var.strata))
 
-    if((group.by[[1]] == "covariates") && ("newdata" %in% names(object)) == FALSE){
+    if(group.by[[1]] == "covariates" && ("newdata" %in% names(object)) == FALSE){
         stop("argument \'group.by\' cannot be \"covariates\" when newdata is missing in the object \n",
              "set argment \'keep.newdata\' to TRUE when calling the predictCox function \n")
     }
 
-    if(group.by[[1]] == "strata" && ("strata" %in% names(object) == FALSE)){
+    if(group.by[[1]] %in% c("strata") && ("strata" %in% names(object) == FALSE)){
         stop("argument \'group.by\' cannot be \"strata\" when strata is missing in the object \n",
              "set argment \'keep.strata\' to TRUE when calling the predictCox function \n")
     }
-  
+    if(group.by[[1]] %in% c(object$var.lp,object$var.strata) && ("newdata" %in% names(object) == FALSE)){
+        stop("argument \'group.by\' cannot be \"",group.by[[1]],"\" when newdata is missing in the object \n",
+             "set argment \'keep.newdata\' to TRUE when calling the predictCox function \n")
+    }
+    if(!is.null(object$newdata$strata) && !is.null(object$var.strata)){
+        if(any(object$var.strata %in% colnames(object$newdata))){
+            stop("cannot handle covariate \"",paste(object$var.strata[object$var.strata %in% colnames(object$newdata)],collapse ="\" \""),"\" as this name is used internally.\n",
+                 "consider refit the model using another name for the covariate. \n")
+        }
+        splitStrata <- do.call(rbind,strsplit(split = ",", x = as.character(object$newdata$strata), fixed = TRUE))
+        colnames(splitStrata) <- object$infoVar$stratavars.original
+        object$newdata <- cbind(object$newdata,splitStrata)
+    }
+        
+    
     if(ci[[1]]==TRUE && (object$se[[1]]==FALSE || is.null(object$conf.level))){
         stop("argument \'ci\' cannot be TRUE when no standard error have been computed \n",
              "set arguments \'se\' and \'confint\' to TRUE when calling the predictCox function \n")
@@ -212,7 +233,11 @@ autoplot.predictCox <- function(object,
             }
 
         }else{
-            strata <- unique(object[["strata"]])
+            index.unique <- !duplicated(object$strata)
+            strata <- object$strata[index.unique]
+            if(!is.null(attr(object$strata,"covariates"))){
+                attr(strata,"covariates") <- attr(object$strata,"covariates")[index.unique]
+            }
             n.strata <- length(strata)
             time <- unique(sort(object[["times"]])) 
             n.time <- length(time)
@@ -235,7 +260,6 @@ autoplot.predictCox <- function(object,
             object[[type]] <- type.tempo
             object[["strata"]] <- strata
             object[["times"]] <- time
-            group.by <- "strata"
         }
 
         newdata <- NULL
@@ -260,7 +284,6 @@ autoplot.predictCox <- function(object,
             attr(first.derivative,"vcov") <- object$vcov[[type]]
         }
     }
-
     dataL <- predict2melt(outcome = object[[type]], ci = ci, band = band,
                           outcome.lower = if(ci){object[[paste0(type,".lower")]]}else{NULL},
                           outcome.upper = if(ci){object[[paste0(type,".upper")]]}else{NULL},
@@ -274,6 +297,7 @@ autoplot.predictCox <- function(object,
                           group.by = group.by,
                           digits = digits
                           )
+
     ## display
     gg.res <- predict2plot(dataL = dataL,
                            name.outcome = type,
@@ -311,7 +335,6 @@ predict2melt <- function(outcome, name.outcome,
         time.names <- 1:n.time
     }    
     colnames(outcome) <- paste0(name.outcome,"_",time.names)
-    keep.cols <- unique(c("time",name.outcome,"row",group.by))
 
     ## merge outcome with CI and band ####
     pattern <- paste0(name.outcome,"_")
@@ -340,7 +363,6 @@ predict2melt <- function(outcome, name.outcome,
     }
     if(band){
         pattern <- c(pattern,"lowerBand_","upperBand_")
-        keep.cols <- c(keep.cols,"lowerBand","upperBand")
         
         colnames(outcome.lowerBand) <- paste0("lowerBand_",time.names)
         colnames(outcome.upperBand) <- paste0("upperBand_",time.names)
@@ -352,22 +374,38 @@ predict2melt <- function(outcome, name.outcome,
                                      outcome.lowerBand,outcome.upperBand)
                            )
 
-    ## merge with convariates ####
+    ## merge with covariates ####
     outcome[, row := 1:.N]
-    if(group.by == "covariates"){
+    keep.col <- "row"
+    if(!is.null(newdata)){ ## predicted survival/risk/average treatment effect
         cov.names <- names(newdata)
+
+        ## used individually
         newdata <- newdata[, (cov.names) := lapply(cov.names,function(col){
             if (is.numeric(.SD[[col]]))
-                paste0(col,"=",round(.SD[[col]],digits)) else paste0(col,"=",.SD[[col]])})]
-        outcome[, ("covariates") := interaction(newdata,sep = " ")]
-    }else if(group.by == "strata"){
-        outcome[, strata := strata]
+                round(.SD[[col]],digits) else .SD[[col]]})]
+        outcome <- cbind(outcome,newdata)
+
+        ## keep name of the covariate for when merging all covariates together
+        newdata <- newdata[, (cov.names) := lapply(cov.names,function(col){
+            paste0(col,"=",.SD[[col]])})]
+        outcome[, c("covariates") := interaction(newdata,sep = " ")]
+        
+        keep.col <- c(keep.col,if(!is.null(cov.names)){"covariates"},cov.names)
     }
-    
+
+    if(!is.null(strata)){ ##  baseline survival/risk
+        outcome[, strata := strata]
+        if(!is.null(attr(strata,"covariates"))){
+            outcome[,c(names(attr(strata,"covariates"))) := attr(strata,"covariates") ]
+        }
+        keep.col <- c(keep.col,"strata",names(attr(strata,"covariates")))
+    }
+
     ## reshape to long format ####
-    dataL <- melt(outcome, id.vars = union("row",group.by),
-                  measure = patterns(pattern),
-                  variable.name = "time", value.name = gsub("_","",pattern))
+    dataL <- data.table::melt(outcome, id.vars = keep.col,
+                              measure = patterns(pattern),
+                              variable.name = "time", value.name = gsub("_","",pattern))
 
     dataL[, time := as.numeric(as.character(factor(time, labels = time.names)))]
     dataL <- dataL[!is.na(dataL[[name.outcome]])]
@@ -379,23 +417,13 @@ predict2plot <- function(dataL, name.outcome,
                          ci, band, group.by, smooth,                        
                          conf.level, alpha, xlab, ylab,
                          smoother = NULL, formula.smoother = NULL, first.derivative = FALSE,
-                         size.estimate = 1.5, size.point = 3, size.ci = 1.1, size.band = 1.1, n.sim = 250){
+                         size.estimate = 1.5, size.point = 3, size.ci = 1.1, size.band = 1.1, shape.point = c(3,18), n.sim = 250){
 
     .GRP <- NULL ## [:: for CRAN CHECK::]
-
     if(first.derivative && (smooth==FALSE)){
         stop("Set argument \'smooth\' to TRUE when \'first.derivative\' is TRUE. \n")
     }
-    
     dataL <- data.table::copy(dataL)
-    ## duplicate observations to obtain step curves ####
-    keep.cols <- unique(c("time",name.outcome,"row",group.by))
-    if(ci){
-        keep.cols <- c(keep.cols,"lowerCI","upperCI")
-    }
-    if(band){
-        keep.cols <- c(keep.cols,"lowerBand","upperBand")
-    }
 
     ## set at t- the value of t-1
     vec.outcome <- name.outcome
@@ -552,7 +580,7 @@ predict2plot <- function(dataL, name.outcome,
             dataL$status <- as.character(dataL$status)
             gg.base <- gg.base + ggplot2::geom_point(data = na.omit(dataL),
                                                      mapping = ggplot2::aes_string(x = "time", y = name.outcome, color = group.by, shape = "status"), size = size.point)
-            gg.base <- gg.base + ggplot2::scale_shape_manual(breaks = c(0,1), values=c(3,18), labels = c("censoring","event"))
+            gg.base <- gg.base + ggplot2::scale_shape_manual(breaks = c(0,1), values = shape.point, labels = c("censoring","event"))
         }else{
             gg.base <- gg.base + ggplot2::geom_point(data = dataL,
                                                      mapping = ggplot2::aes_string(x = "time", y = name.outcome, color = group.by), size = size.point)

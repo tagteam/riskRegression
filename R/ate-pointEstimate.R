@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: jun 27 2019 (10:43) 
 ## Version: 
-## Last-Updated: feb  4 2021 (19:11) 
+## Last-Updated: mar  3 2021 (20:02) 
 ##           By: Brice Ozenne
-##     Update #: 895
+##     Update #: 911
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -295,7 +295,11 @@ ATE_TI <- function(object.event,
                 iIID.ate <- colMultiply_cpp(Y.tau, scale = iW.IPTW[,iC])
             }
             iATE <- colSums(iIID.ate)/n.obs
-            out$meanRisk[list("IPTW",contrasts[iC]), c("estimate") := iATE, on = c("estimator","treatment")]
+            if(attr(estimator,"monotone")){ ## ensure monotonicity over time (not accounted for in the standard error)
+                out$meanRisk[list("IPTW",contrasts[iC]), c("estimate") := .monotonize(iATE), on = c("estimator","treatment")]
+            }else{
+                out$meanRisk[list("IPTW",contrasts[iC]), c("estimate") := iATE, on = c("estimator","treatment")]
+            }
             out$store$iid.IPTW[[iC]][data.index,] <- out$store$iid.IPTW[[iC]][data.index,]  + rowCenter_cpp(iIID.ate, center = iATE)/n.obs
         }
         if(attr(estimator,"export.AIPTW")){
@@ -309,7 +313,11 @@ ATE_TI <- function(object.event,
                 iIID.ate <- F1.ctf.tau[[iC]] + colMultiply_cpp(Y.tau - F1.ctf.tau[[iC]], scale = iW.IPTW[,iC])
             }
             iATE <- colSums(iIID.ate)/n.obs
-            out$meanRisk[list("AIPTW",contrasts[iC]), c("estimate") := iATE, on = c("estimator","treatment")]
+            if(attr(estimator,"monotone")){ ## ensure monotonicity over time (not accounted for in the standard error)
+                out$meanRisk[list("AIPTW",contrasts[iC]), c("estimate") := .monotonize(iATE), on = c("estimator","treatment")]
+            }else{
+                out$meanRisk[list("AIPTW",contrasts[iC]), c("estimate") := iATE, on = c("estimator","treatment")]
+            }
             out$store$iid.AIPTW[[iC]][data.index,] <- out$store$iid.AIPTW[[iC]][data.index,] + rowCenter_cpp(iIID.ate, center = iATE)/n.obs
         }
     }
@@ -441,6 +449,21 @@ ATE_COMPARISONS <- function(data, TD, allContrasts){
     ## export
     return(out)
 }
+## * .monotonize: enforce monotone constrain over time
+## .monotonize(c(0.3708385, 0.4035446, 0.4346159, 0.4591131, 0.4844758, 0.4894976 ))
+## .monotonize(c(0.3708385, 0.4035446, 0.4346159, 0.4591131, 0.4844758, 0.47 ))
+## .monotonize(c(0.3708385, 0.37, 0.4346159, 0.4591131, 0.4844758, 0.4894976 ))
+## .monotonize(c(0.3708385, 0.4035446, 0.40, 0.4591131, 0.4844758, 0.4894976 ))
+## .monotonize(c(0.4, 0.35, 0.38, 0.37, 0.4844758, 0.4894976 ))
+.monotonize <- function(x){
+    if(length(x)==1){return(x)}
 
+    p <- length(x)
+    A <- matrix(0,p,p)
+    A[lower.tri(A, diag = TRUE)] <- 1
+
+    fit <- nnls::nnls(A = A, b = x)$fitted
+    return(fit)
+}
 ######################################################################
 ### ate-pointEstimate.R ends here

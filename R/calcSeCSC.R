@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: maj 27 2017 (21:23) 
 ## Version: 
-## last-updated: aug 11 2020 (10:54) 
+## last-updated: feb 24 2021 (22:10) 
 ##           By: Brice Ozenne
-##     Update #: 1085
+##     Update #: 1086
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -37,7 +37,7 @@
 #' @param new.n the number of new observations.
 #' @param cause the cause of interest.
 #' @param nCause the number of causes.
-#' @param nVar the number of variables that form the linear predictor in each Cox model
+#' @param nVar.lp the number of variables that form the linear predictor in each Cox model
 #' @param export can be "iid" to return the value of the influence function for each observation
 #'                      "se" to return the standard error for a given timepoint
 #' @param diag [logical] when \code{FALSE} the absolute risk/survival for all observations at all times is computed,
@@ -58,7 +58,7 @@
 #' @rdname calcSeCSC
 calcSeCSC <- function(object, cif, hazard, cumhazard, survival, object.time, object.maxtime,
                       eXb, new.LPdata, new.strata, times, surv.type, ls.infoVar,
-                      new.n, cause, nCause, nVar, export, store.iid, diag){
+                      new.n, cause, nCause, nVar.lp, export, store.iid, diag){
 
     status <- strata.num <- NULL ## [:CRANcheck:] data.table
                                         # {{{ influence function for each Cox model
@@ -129,7 +129,7 @@ calcSeCSC <- function(object, cif, hazard, cumhazard, survival, object.time, obj
                                        }),
                                        newdata_index = new.indexStrata,
                                        factor = factor, grid_strata = grid.strata,
-                                       nTau = nTimes, nNewObs = new.n, nSample = object.n, nStrata = new.n.strata, nCause = nCause, p = nVar,
+                                       nTau = nTimes, nNewObs = new.n, nSample = object.n, nStrata = new.n.strata, nCause = nCause, p = nVar.lp,
                                        theCause = cause-1, diag = diag, survtype = (surv.type=="survival"),
                                        exportSE = ("se" %in% export),  exportIF = ("iid" %in% export), exportIFmean = ("average.iid" %in% export),
                                        debug = 0)
@@ -171,7 +171,7 @@ calcSeCSC <- function(object, cif, hazard, cumhazard, survival, object.time, obj
                                   nJumpTime = nEtimes, JumpMax = object.maxtime,
                                   tau = times, tauIndex = sindex.times, nTau = nTimes,                                  
                                   nObs = object.n,
-                                  theCause = (cause-1), nCause = nCause, hazardType = (surv.type=="hazard"), nVar = nVar,
+                                  theCause = (cause-1), nCause = nCause, hazardType = (surv.type=="hazard"), nVar = nVar.lp,
                                   nNewObs = new.n, strata = new.strata,
                                   exportSE = "se" %in% export, exportIF = "iid" %in% export, exportIFsum = "average.iid" %in% export,
                                   diag = diag)
@@ -265,16 +265,16 @@ calcSeCSC <- function(object, cif, hazard, cumhazard, survival, object.time, obj
                 eXb1_S_eXbj <- vector(mode = "list", length = nCause)
                 eXb1_S_eXbj[all.cause] <- lapply(all.cause, function(iC){colMultiply_cpp(eXb1_S, ieXb[[iC]])})
                 
-                if(nVar[cause]>0){
-                    eXb1_S_X1 <- lapply(1:nVar[cause], function(iP){ colMultiply_cpp(eXb1_S, scale = iX[[cause]][,iP]) })
+                if(nVar.lp[cause]>0){
+                    eXb1_S_X1 <- lapply(1:nVar.lp[cause], function(iP){ colMultiply_cpp(eXb1_S, scale = iX[[cause]][,iP]) })
                 }else{
                     eXb1_S_X1 <- NULL
                 }
          
                 eXb1_S_Xj_eXbj <- vector(mode = "list", length = nCause)
                 for(iCause in all.cause){
-                    if(nVar[iCause]>0){
-                        eXb1_S_Xj_eXbj[[iCause]] <- lapply(1:nVar[iCause], function(iP){ colMultiply_cpp(eXb1_S_eXbj[[iCause]], scale = iX[[iCause]][,iP]) })
+                    if(nVar.lp[iCause]>0){
+                        eXb1_S_Xj_eXbj[[iCause]] <- lapply(1:nVar.lp[iCause], function(iP){ colMultiply_cpp(eXb1_S_eXbj[[iCause]], scale = iX[[iCause]][,iP]) })
                     }
                 }
 
@@ -352,7 +352,7 @@ calcSeCSC <- function(object, cif, hazard, cumhazard, survival, object.time, obj
                                              weight = iVN_time, factor = iMfactor,
                                              nJump = iiN.jump, subsetJump = iiIndex.jump,
                                              nCause = nCause, test_allCause = test_allCause, test_theCause = test_theCause,
-                                             nVar = nVar)
+                                             nVar = nVar.lp)
 
              
                         ## export

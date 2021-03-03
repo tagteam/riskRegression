@@ -338,7 +338,7 @@ predict.CauseSpecificCox <- function(object,
         }
 
         ## linear predictors
-        nVar <- unlist(lapply(ls.infoVar,function(m){
+        nVar.lp <- unlist(lapply(ls.infoVar,function(m){
             length(m$lpvars)
         }))
 
@@ -376,7 +376,7 @@ predict.CauseSpecificCox <- function(object,
                                new.n = new.n,
                                cause = index.cause,
                                nCause = nCause,
-                               nVar = nVar,
+                               nVar.lp = nVar.lp,
                                surv.type = surv.type,
                                export = export,
                                store.iid = store.iid,
@@ -425,7 +425,7 @@ predict.CauseSpecificCox <- function(object,
     if(keep.times){out$times <- times}
 
     all.covars <- unique(unlist(lapply(ls.infoVar, function(iI){
-        c(iI$lpvars.original, iI$strata.vars.original)
+        c(iI$lpvars.original, iI$stratavars.original)
     })))
     if(keep.newdata[[1]]==TRUE && length(all.covars)>0){
         out$newdata <- newdata[, all.covars, with = FALSE]

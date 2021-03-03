@@ -21,7 +21,7 @@ calcSeCox(
   new.LPdata,
   new.strata,
   new.survival,
-  nVar,
+  nVar.lp,
   export,
   store.iid
 )
@@ -64,7 +64,7 @@ otherwise it is only computed for the i-th observation at the i-th time.}
 
 \item{new.survival}{the survival evaluated for the new observations.}
 
-\item{nVar}{the number of variables that form the linear predictor.}
+\item{nVar.lp}{the number of variables that form the linear predictor.}
 
 \item{export}{can be "iid" to return the value of the influence function for each observation.
 "se" to return the standard error for a given timepoint.
