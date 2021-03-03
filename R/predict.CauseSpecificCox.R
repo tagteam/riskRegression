@@ -30,6 +30,8 @@
 #' Can be \code{"full"} or \code{"minimal"}. 
 #' @param diag [logical] when \code{FALSE} the absolute risk/survival for all observations at all times is computed,
 #' otherwise it is only computed for the i-th observation at the i-th time.
+#' @param max.time [numeric] maximum time of the response of the fitted data.  Only relevant if
+#' model \code{response} element has been removed
 #' @param ... not used.
 #' 
 #' @author Brice Ozenne broz@@sund.ku.dk, Thomas A. Gerds
@@ -99,8 +101,8 @@
 #' 
 #' ## landmark analysis
 #' T0 <- 1
-#' predCSC_afterT0 <- predict(CSC.fit, newdata = d, cause = 2, times = ttt[ttt>T0], landmark = T0)
-#' predCSC_afterT0
+#' predCSC.afterT0 <- predict(CSC.fit, newdata = d, cause = 2, times = ttt[ttt>T0], landmark = T0)
+#' predCSC.afterT0
 
 ## * predict.CauseSpecificCox (code)
 #' @rdname predict.CauseSpecificCox
@@ -123,6 +125,7 @@ predict.CauseSpecificCox <- function(object,
                                      product.limit = TRUE,
                                      store.iid = "full",
                                      diag = FALSE,
+                                     max.time = NULL,
                                      ...){
 
 
@@ -143,6 +146,14 @@ predict.CauseSpecificCox <- function(object,
     }else{
         setDT(newdata)
     }
+
+    if (missing(times)) {
+        times = object$times
+        if (is.null(times)) {
+            stop("times must be specified")
+        }
+    }
+    ## ** prepare
     
     n.times <- length(times)
     if(object$fitter=="phreg"){newdata$entry <- 0} 
@@ -223,6 +234,23 @@ predict.CauseSpecificCox <- function(object,
     }
 
     ## relevant event times to use
+    if (is.null(max.time)) {
+        max.time = max(object$response[,"time"])
+    }
+    valid.times <- times[ times<= max.time] ## prediction times before the event
+    if(length(valid.times) == 0){
+        if (is.null(eTimes)) {
+            stop("eventTimes was removed from model, but no valid times")
+        }
+        eventTimes <- eTimes[1] ## at least the first event
+    }else{
+        eventTimes <- eTimes[eTimes <= max(valid.times)] ## jump times before the last prediction time (that is before the last jump)
+        if(length(eventTimes) == 0){eventTimes <- eTimes[1]} # at least the first event
+
+    }
+    if (is.null(eventTimes)) {
+        stop("eventTimes was removed from model - cannot predict")
+    }
     eventTimes <- eTimes[eTimes <= max(times)] ## jump times before the last prediction time (that is before the last jump)
     if(length(eventTimes) == 0){eventTimes <- eTimes[1]} # at least the first event
     
@@ -458,9 +486,6 @@ predict.CauseSpecificCox <- function(object,
     ## export
     return(out)
 }
-
-
-
 
 
 ## * .predictSurv_CSCe

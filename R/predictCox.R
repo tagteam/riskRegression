@@ -338,7 +338,6 @@ predictCox <- function(object,
                            predtimes = times.sorted,
                            cause = 1,
                            Efron = (object.baseEstimator == "efron"))
-
     ## restaure strata levels
     Lambda0$strata <- factor(Lambda0$strata, levels = 0:(nStrata-1), labels = object.levelStrata)
   

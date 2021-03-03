@@ -24,7 +24,8 @@ getCensoringWeights <- function(formula,
                            method=cens.model)
                if (influence.curve==TRUE){
                    out <- c(out,
-                            list(IC=data[,getInfluenceCurve.KM(time=time,status=status)]))
+                            list(IC=data[,IC_Nelson_Aalen_cens_time(time=time,status=status)]))
+                   ## list(IC=data[,getInfluenceCurve.NelsonAalen(time=time,status=status)]))
                }
                out
            },"cox"={

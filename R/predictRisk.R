@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun  6 2016 (09:02) 
 ## Version: 
-## last-updated: feb  4 2021 (19:47) 
-##           By: Brice Ozenne
-##     Update #: 360
+## last-updated: Feb 22 2021 (09:46) 
+##           By: Thomas Alexander Gerds
+##     Update #: 366
 #----------------------------------------------------------------------
 ## 
 ### Commentary:
@@ -576,8 +576,14 @@ predictRisk.cox.aalen <- function(object,newdata,times,...){
 ##' @export
 ##' @rdname predictRisk
 ##' @method predictRisk coxph
-predictRisk.coxph <- function(object, newdata, times,
-                              product.limit = FALSE, diag = FALSE, iid = FALSE, average.iid = FALSE, ...){
+predictRisk.coxph <- function(object,
+                              newdata,
+                              times,
+                              product.limit = FALSE,
+                              diag = FALSE,
+                              iid = FALSE,
+                              average.iid = FALSE,
+                              ...){
     dots <- list(...)
     type <- dots$type ## hidden argument for ate
     store.iid <- dots$store ## hidden argument for ate
@@ -904,6 +910,12 @@ predictRisk.rfsrc <- function(object, newdata, times, cause, ...){
             if (is.character(cause)) cause <- as.numeric(cause)
             if (!is.numeric(cause)) stop("cause is not numeric")
             cif <- stats::predict(object,newdata=newdata,importance="none",...)$cif[,,cause,drop=TRUE]
+            # if necessary restore matrix format after dropping third dimension of array
+            if (NROW(newdata)==1) {
+                cif <- matrix(cif,nrow=1)
+            } else{
+                if (length(times)==1) cif <- matrix(cif,ncol=1)
+            }
             pos <- prodlim::sindex(jump.times=object$time.interest,eval.times=times)
             p <- cbind(0,cif)[,pos+1,drop=FALSE]
             if (NROW(p) != NROW(newdata) || NCOL(p) != length(times))
@@ -1297,6 +1309,38 @@ predictRisk.flexsurvreg <- function(object, newdata, times, ...) {
         stop("Prediction failed")
     1 - p
 }
+
+##' @export
+##' @rdname predictRisk
+##' @method predictRisk hal9001
+predictRisk.hal9001 <- function(object,
+                                newdata,
+                                times,
+                                cause,
+                                ...){
+    stopifnot(object$family=="cox")
+    info <- object$surv_info # blank Cox object obtained with riskRegression:::coxModelFrame
+    hal_pred <- predict(object,new_data=newdata)
+    L0 <- riskRegression:::baseHaz_cpp(starttimes = info$start,
+                                       stoptimes = info$stop,
+                                       status = info$status,
+                                       eXb = hal_pred,
+                                       strata = 1,
+                                       nPatients = NROW(info$stop),
+                                       nStrata = 1,
+                                       emaxtimes = max(info$stop),
+                                       predtimes = sort(unique(info$stop)),
+                                       cause = 1,
+                                       Efron = TRUE)
+    hal_Surv <- exp(-hal_pred%o%Lambda0$cumhazard)
+    where <- sindex(jump.times=info$stop,eval.times=times)
+    p <- cbind(0,1-hal_Surv)[,1+where]
+    if (NROW(p) != NROW(newdata) || NCOL(p) != length(times)) {
+        stop(paste("\nPrediction matrix has wrong dimensions:\nRequested newdata x times: ", NROW(newdata), " x ", length(times), "\nProvided prediction matrix: ", NROW(p), " x ", NCOL(p), "\n\n", sep = ""))
+    }
+    p
+}
+
 
 ## * predictRisk.singleEventCB
 ##' @export
