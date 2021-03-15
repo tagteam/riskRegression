@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: feb 17 2017 (10:06) 
 ## Version: 
-## last-updated: mar  2 2021 (10:05) 
+## last-updated: mar 14 2021 (17:15) 
 ##           By: Brice Ozenne
-##     Update #: 1165
+##     Update #: 1187
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -184,7 +184,6 @@ autoplot.predictCox <- function(object,
         object$newdata <- cbind(object$newdata,splitStrata)
     }
         
-    
     if(ci[[1]]==TRUE && (object$se[[1]]==FALSE || is.null(object$conf.level))){
         stop("argument \'ci\' cannot be TRUE when no standard error have been computed \n",
              "set arguments \'se\' and \'confint\' to TRUE when calling the predictCox function \n")
@@ -215,7 +214,7 @@ autoplot.predictCox <- function(object,
                         object[[type]] <- cbind(0,object[[type]])
                     }else if(type=="survival"){
                         object[[type]] <- cbind(1,object[[type]])
-                    }
+                    }                   
                     object$times <- c(0,object$times)
                     if(!is.null(object$newdata)){
                         object$newdata <- rbind(data.table(start = 0, stop = 0, status = NA, strata = 1, strata.num = 0, eXb = NA, statusM1 = NA, XXXindexXXX = NA),
@@ -223,8 +222,8 @@ autoplot.predictCox <- function(object,
                     }
                 }
                 if(object$lastEventTime %in% object$times == FALSE){
-                    object[[type]] <- cbind(object[[type]],utils::tail(object[[type]],1))
-                    object$times <- c(object$times,object$lastEventTime)
+                    object[[type]] <- cbind(object[[type]],object[[type]][length(object[[type]])])
+                    object$times <- c(object$times,pmin(object$lastEventTime,max(object$times)+1e-12))
                     if(!is.null(object$newdata)){
                         object$newdata <- rbind(data.table(start = 0, stop = object$lastEventTime, status = 0, strata = 1, strata.num = 0, eXb = NA, statusM1 = NA, XXXindexXXX = NA),
                                                 object$newdata)
@@ -333,7 +332,7 @@ predict2melt <- function(outcome, name.outcome,
         time.names <- times 
     }else{
         time.names <- 1:n.time
-    }    
+    }
     colnames(outcome) <- paste0(name.outcome,"_",time.names)
 
     ## merge outcome with CI and band ####

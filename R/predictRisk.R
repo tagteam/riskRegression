@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun  6 2016 (09:02) 
 ## Version: 
-## last-updated: Feb 22 2021 (09:46) 
-##           By: Thomas Alexander Gerds
-##     Update #: 366
+## last-updated: mar 15 2021 (22:31) 
+##           By: Brice Ozenne
+##     Update #: 367
 #----------------------------------------------------------------------
 ## 
 ### Commentary:
@@ -1321,7 +1321,7 @@ predictRisk.hal9001 <- function(object,
     stopifnot(object$family=="cox")
     info <- object$surv_info # blank Cox object obtained with riskRegression:::coxModelFrame
     hal_pred <- predict(object,new_data=newdata)
-    L0 <- riskRegression:::baseHaz_cpp(starttimes = info$start,
+    L0 <- riskRegression::baseHaz_cpp(starttimes = info$start,
                                        stoptimes = info$stop,
                                        status = info$status,
                                        eXb = hal_pred,

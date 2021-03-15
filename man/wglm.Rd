@@ -49,15 +49,68 @@ set.seed(10)
 n <- 250
 tau <- 1:5
 d <- sampleData(n, outcome = "competing.risks")
-d$Y <- (d$event == 1)*(d$time <= tau[3])
-d0 <- d[event!=0] ## remove censoring
+dFull <- d[event!=0] ## remove censoring
+dSurv <- d[event!=2] ## remove competing risk
 
-## no censoring
+#### no censoring ####
+## wglm
 e0.wglm <- wglm(regressor.event = ~ X1, formula.censor = Surv(time,event==0) ~ X1,
-               times = tau, data = d0)
-e0.glm <- glm(Y ~ X1, family = binomial, data = d0)
+               times = tau, data = dFull)
 
-## censoring
+## binreg
+if(require(mets)){
+e0.binreg <- binreg(formula = Event(time,event)~X1,
+                    time = tau[5], data = dFull)
+summary(e0.binreg)$coef
+summary(e0.wglm$fit[[5]])$coef
+## same
+}
+
+#### independent censoring (no competing risks) ####
+## wglm 
+e.wglm <- wglm(regressor.event = ~ X1-1, formula.censor = Surv(time,event==0) ~ 1,
+               times = tau, data = dSurv, product.limit = TRUE)
+
+## check weights
+e.KM <- predictCoxPL(coxph(Surv(time,event==0) ~ 1, data = dSurv),
+                     type = c("hazard","survival"))
+if(require(data.table)){
+dt.KM <- data.table::as.data.table(e.KM)
+dt.KM[times<=1 & hazard!=0, .(times, survival, weight=1/survival)]
+}
+table(e.wglm$data$IPCW.1)
+
+## binreg
+if(require(mets)){
+e2.binreg <- binreg(formula = Event(time,event)~X1-1,
+                   time = tau[1], data = dSurv, cens.code = 0, cause = 1)
+table(e2.binreg$cens.weights) ## fixed at prediction time
+
+## "by hand"  (does not match)
+X <-  model.matrix(~X1-1,dSurv)
+Y <-  dSurv$event
+w <-  e2.binreg$cens.weights[,1]
+p <- predict(e2.binreg, newdata = data.frame(X1=unique(dSurv$X1)))
+## solve the score equation
+sum(X[,1] * (w * Y - p[1,1]))
+sum(X[,2] * (w * Y - p[2,1]))
+}
+
+#### informative censoring (no competing risks) ####
 e.wglm <- wglm(regressor.event = ~ X1, formula.censor = Surv(time,event==0) ~ X1,
-               times = tau, data = d)
+               times = tau, data = dSurv)
+
+## by hand based on the weights
+X <-  data.frame(X1.0 = e.wglm$data$X1=="0", X1.1 = e.wglm$data$X1=="1")
+Y <-  as.data.frame(e.wglm$data)[,grep("event\\\\.", names(e.wglm$data))]
+w <-  as.data.frame(e.wglm$data)[,grep("IPCW\\\\.", names(e.wglm$data))]
+
+p.wglm <- rbind("0" = colSums( (w*Y)[X$X1.0,]) / colSums(w[X$X1.0,]),
+                "1" = colSums( (w*Y)[X$X1.1,]) / colSums(w[X$X1.1,]))
+log(p.wglm/(1-p.wglm)) - apply(coef(e.wglm),1,cumsum) ## same as wglm
+
+## solve the score equation
+sum(w[,1] * X[,1] * (Y[,1] - p.wglm[1,1]))
+sum(w[,1] * X[,2] * (Y[,1] - p.wglm[2,1]))
+
 }
