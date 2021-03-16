@@ -29,6 +29,8 @@ baseHaz_cpp(
 
 \item{strata}{a vector of integers (index of the strata for each observation).}
 
+\item{predtimes}{a vector of times (time at which to evaluate the hazard). Must be sorted.}
+
 \item{emaxtimes}{another vector of times, one per strata (last observation time in each strata).}
 
 \item{nPatients}{number of observations.}
@@ -38,8 +40,6 @@ baseHaz_cpp(
 \item{cause}{the status value corresponding to event.}
 
 \item{Efron}{whether Efron or Breslow estimator should be used in presence of ties.}
-
-\item{predtime}{a vector of times (time at which to evaluate the hazard). Must be sorted.}
 }
 \description{
 C++ function to estimate the baseline hazard from a Cox Model

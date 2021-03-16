@@ -35,7 +35,7 @@ structExport subset_structExport(const structExport& resAll,
 //' @param status a vector indicating  censoring or event. 
 //' @param eXb a numeric vector (exponential of the linear predictor).
 //' @param strata a vector of integers (index of the strata for each observation).
-//' @param predtime a vector of times (time at which to evaluate the hazard). Must be sorted.
+//' @param predtimes a vector of times (time at which to evaluate the hazard). Must be sorted.
 //' @param emaxtimes another vector of times, one per strata (last observation time in each strata).
 //' @param nPatients number of observations.
 //' @param nStrata number of strata 

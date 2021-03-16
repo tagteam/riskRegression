@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun  6 2016 (09:02) 
 ## Version: 
-## last-updated: mar 15 2021 (22:31) 
+## last-updated: mar 16 2021 (00:55) 
 ##           By: Brice Ozenne
-##     Update #: 367
+##     Update #: 368
 #----------------------------------------------------------------------
 ## 
 ### Commentary:
@@ -1332,7 +1332,7 @@ predictRisk.hal9001 <- function(object,
                                        predtimes = sort(unique(info$stop)),
                                        cause = 1,
                                        Efron = TRUE)
-    hal_Surv <- exp(-hal_pred%o%Lambda0$cumhazard)
+    hal_Surv <- exp(-hal_pred%o%L0$cumhazard)
     where <- sindex(jump.times=info$stop,eval.times=times)
     p <- cbind(0,1-hal_Surv)[,1+where]
     if (NROW(p) != NROW(newdata) || NCOL(p) != length(times)) {
