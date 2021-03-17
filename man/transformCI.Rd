@@ -14,7 +14,7 @@ transformCI(estimate, se, quantile, type, min.value, max.value)
 \item{quantile}{[numeric vector] quantile that will be multiplied to each column of \code{se}.}
 
 \item{type}{[character] the transforamtion.
-Can be \code{"log"}, \code{"loglog"}, \code{"cloglog"}, or \code{"atanh"} (Fisher transform).}
+Can be \code{"none"}, \code{"log"}, \code{"loglog"}, \code{"cloglog"}, or \code{"atanh"} (Fisher transform).}
 
 \item{min.value}{[numeric] if not \code{NULL} and the lower bound of the confidence interval is below \code{min},
 it will be set at \code{min}.}
