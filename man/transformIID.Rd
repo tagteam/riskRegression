@@ -12,7 +12,7 @@ transformIID(estimate, iid, type)
 \item{iid}{[numeric array] the standard error before transformation.}
 
 \item{type}{[character] the transforamtion.
-Can be \code{"log"}, \code{"loglog"}, \code{"cloglog"}, or \code{"atanh"} (Fisher transform).}
+Can be  \code{"none"}, \code{"log"}, \code{"loglog"}, \code{"cloglog"}, or \code{"atanh"} (Fisher transform).}
 }
 \description{
 Compute influence functions after transformation

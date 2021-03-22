@@ -21,6 +21,23 @@ IC_Nelson_Aalen_cens_time <- function(time, status) {
     .Call(`_riskRegression_IC_Nelson_Aalen_cens_time`, time, status)
 }
 
+#' @title C++ Fast Baseline Hazard Estimation
+#' @description C++ function to estimate the baseline hazard from a Cox Model
+#'
+#' @param starttimes a vector of times (begin at risk period). 
+#' @param stoptimes a vector of times (end at risk period). 
+#' @param status a vector indicating  censoring or event. 
+#' @param eXb a numeric vector (exponential of the linear predictor).
+#' @param strata a vector of integers (index of the strata for each observation).
+#' @param predtimes a vector of times (time at which to evaluate the hazard). Must be sorted.
+#' @param emaxtimes another vector of times, one per strata (last observation time in each strata).
+#' @param nPatients number of observations.
+#' @param nStrata number of strata 
+#' @param cause the status value corresponding to event.
+#' @param Efron whether Efron or Breslow estimator should be used in presence of ties.
+#' 
+#' @details WARNING stoptimes status eXb and strata must be sorted by strata, stoptimes, and status
+#' @export
 baseHaz_cpp <- function(starttimes, stoptimes, status, eXb, strata, predtimes, emaxtimes, nPatients, nStrata, cause, Efron) {
     .Call(`_riskRegression_baseHaz_cpp`, starttimes, stoptimes, status, eXb, strata, predtimes, emaxtimes, nPatients, nStrata, cause, Efron)
 }

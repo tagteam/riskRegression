@@ -14,7 +14,7 @@ transformT(estimate, se, null, type, alternative)
 \item{null}{[numeric] the value of the estimate (before transformation) under the null hypothesis.}
 
 \item{type}{[character] the transforamtion.
-Can be \code{"log"}, \code{"loglog"}, \code{"cloglog"}, or \code{"atanh"} (Fisher transform).}
+Can be \code{"none"}, \code{"log"}, \code{"loglog"}, \code{"cloglog"}, or \code{"atanh"} (Fisher transform).}
 
 \item{alternative}{[character] a character string specifying the alternative hypothesis,
 must be one of \code{"two.sided"} (default), \code{"greater"} or \code{"less"}.}

@@ -19,7 +19,8 @@ transformCIBP(
   method.band,
   n.sim,
   seed,
-  p.value
+  p.value,
+  df = NULL
 )
 }
 \arguments{
@@ -57,6 +58,8 @@ Can be any element of \code{p.adjust.methods} (e.g. \code{"holm"}), \code{"maxT-
 \item{seed}{[integer, >0] seed number set before performing simulations for the confidence bands.}
 
 \item{p.value}{[logical] should p-values and adjusted p-values be computed. Only active if \code{ci=TRUE} or \code{band>0}.}
+
+\item{df}{[integer, >0] optional. Degrees of freedom used for the student distribution of the test statistic. If not specified, use a normal distribution instead.}
 }
 \description{
 Compute confidence intervals/bands and p-values after a transformation
@@ -66,4 +69,38 @@ The iid decomposition must have dimensions [n.obs,time,n.prediction]
 while estimate and se must have dimensions [n.prediction,time].
 
 Single step max adjustment for multiple comparisons, i.e. accounting for the correlation between the test statistics but not for the ordering of the tests, can be performed setting the arguemnt \code{method.band} to \code{"maxT-integration"} or \code{"maxT-simulation"}. The former uses numerical integration (\code{pmvnorm} and \code{qmvnorm} to perform the adjustment while the latter using simulation. Both assume that the test statistics are jointly normally distributed.
+}
+\examples{
+set.seed(10)
+n <- 100
+X <- rnorm(n)
+
+res2sided <- transformCIBP(estimate = mean(X), se = cbind(sd(X)/sqrt(n)), null = 0,
+              type = "none", ci = TRUE, conf.level = 0.95, alternative = "two.sided",
+              min.value = NULL, max.value = NULL, band = FALSE,
+              p.value = TRUE, seed = 10, df = n-1)
+
+resLess <- transformCIBP(estimate = mean(X), se = cbind(sd(X)/sqrt(n)), null = 0,
+              type = "none", ci = TRUE, conf.level = 0.95, alternative = "less",
+              min.value = NULL, max.value = NULL, band = FALSE,
+              p.value = TRUE, seed = 10, df = n-1)
+
+resGreater <- transformCIBP(estimate = mean(X), se = cbind(sd(X)/sqrt(n)), null = 0,
+              type = "none", ci = TRUE, conf.level = 0.95, alternative = "greater",
+              min.value = NULL, max.value = NULL, band = FALSE,
+              p.value = TRUE, seed = 10, df = n-1)
+
+
+## comparison with t-test
+GS <- t.test(X, alternative = "two.sided")
+res2sided$p.value - GS$p.value
+unlist(res2sided[c("lower","upper")]) - GS$conf.int
+
+GS <- t.test(X, alternative = "less")
+resLess$p.value - GS$p.value
+unlist(resLess[c("lower","upper")]) - GS$conf.int
+
+GS <- t.test(X, alternative = "greater")
+resGreater$p.value - GS$p.value
+unlist(resGreater[c("lower","upper")]) - GS$conf.int
 }

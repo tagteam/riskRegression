@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun  6 2016 (09:02) 
 ## Version: 
-## last-updated: Mar 20 2021 (08:25) 
+## last-updated: Mar 22 2021 (17:12) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 370
+##     Update #: 371
 #----------------------------------------------------------------------
 ## 
 ### Commentary:
@@ -1319,7 +1319,7 @@ predictRisk.hal9001 <- function(object,
     stopifnot(object$family=="cox")
     info <- object$surv_info # blank Cox object obtained with riskRegression:::coxModelFrame
     hal_pred <- predict(object,new_data=newdata)
-    L0 <- riskRegression:::baseHaz_cpp(starttimes = info$start,
+    L0 <- riskRegression::baseHaz_cpp(starttimes = info$start,
                                        stoptimes = info$stop,
                                        status = info$status,
                                        eXb = hal_pred,
@@ -1330,7 +1330,7 @@ predictRisk.hal9001 <- function(object,
                                        predtimes = sort(unique(info$stop)),
                                        cause = 1,
                                        Efron = TRUE)
-    hal_Surv <- exp(-hal_pred%o%Lambda0$cumhazard)
+    hal_Surv <- exp(-hal_pred%o%L0$cumhazard)
     where <- sindex(jump.times=info$stop,eval.times=times)
     p <- cbind(0,1-hal_Surv)[,1+where]
     if (NROW(p) != NROW(newdata) || NCOL(p) != length(times)) {

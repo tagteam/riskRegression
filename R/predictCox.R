@@ -185,7 +185,7 @@ predictCox <- function(object,
     is.strata <- infoVar$is.strata
     object.levelStrata <- levels(object.modelFrame$strata) ## levels of the strata variable
     nStrata <- length(object.levelStrata) ## number of strata
-    nVar <- length(infoVar$lpvars) ## number of variables in the linear predictor
+    nVar.lp <- length(infoVar$lpvars) ## number of variables in the linear predictor
 
     ## ** normalize model frame
     ## convert strata to numeric
@@ -212,14 +212,14 @@ predictCox <- function(object,
         attr(times,"etimes.max") <- NULL
         attr(times.sorted,"etimes.max") <- etimes.max
     }else if(is.strata){ ## based on the data
-        if(nVar==0){
+        if(nVar.lp==0){
             iDTtempo <- object.modelFrame[, .SD[which.max(.SD$stop)], by = "strata.num"]
             etimes.max <- iDTtempo[,if(.SD$status==1){1e12}else{.SD$stop}, by = "strata.num"][[2]]
         }else{
             etimes.max <- object.modelFrame[, max(.SD$stop), by = "strata.num"][[2]]
         }
     }else{
-        if(nVar==0 && (utils::tail(object.modelFrame$status,1)==1)){ ## no covariates and ends by a death
+        if(nVar.lp==0 && (utils::tail(object.modelFrame$status,1)==1)){ ## no covariates and ends by a death
             etimes.max <- 1e12
         }else{
             etimes.max <- max(object.modelFrame[["stop"]])
@@ -367,7 +367,8 @@ predictCox <- function(object,
                          type = type,
                          nTimes = nTimes,
                          baseline = TRUE,
-                         nVar = nVar)
+                         var.lp = infoVar$lpvars.original,
+                         var.strata = infoVar$stratavars.original)
         if(keep.infoVar){
             add.list$infoVar <- infoVar
         }
@@ -481,7 +482,7 @@ predictCox <- function(object,
       }
     
     if(se[[1]] || band[[1]] || iid[[1]] || average.iid[[1]]){
-        if(nVar > 0){
+        if(nVar.lp > 0){
             ## use prodlim to get the design matrix
             new.LPdata <- prodlim::model.design(infoVar$lp.sterms,
                                                 data = newdata,
@@ -538,7 +539,7 @@ predictCox <- function(object,
                            new.LPdata = new.LPdata,
                            new.strata = new.strata,
                            new.survival = if(diag){out$survival}else{out$survival[,order.times,drop=FALSE]},
-                           nVar = nVar, 
+                           nVar.lp = nVar.lp, 
                            export = export,
                            store.iid = store.iid)
 
@@ -629,21 +630,22 @@ predictCox <- function(object,
         }      
     }
 
-      ## ** add information to the predictions
-      add.list <- list(lastEventTime = etimes.max,
-                       se = se,
-                       band = band,
-                       type = type,
-                       diag = diag,
-                       nTimes = nTimes,
-                       baseline = FALSE,
-                       nVar = nVar)
-      if (keep.times==TRUE){
-          add.list$times <- times
-      }
-      if (is.strata[1] && keep.strata[1]==TRUE){
-          add.list$strata <- new.strata
-      }
+        ## ** add information to the predictions
+        add.list <- list(lastEventTime = etimes.max,
+                         se = se,
+                         band = band,
+                         type = type,
+                         diag = diag,
+                         nTimes = nTimes,
+                         baseline = FALSE,
+                         var.lp = infoVar$lpvars.original,
+                         var.strata = infoVar$stratavars.original)
+        if (keep.times==TRUE){
+            add.list$times <- times
+        }
+        if (is.strata[1] && keep.strata[1]==TRUE){
+            add.list$strata <- new.strata
+        }
       
       if( keep.infoVar){
           add.list$infoVar <- infoVar

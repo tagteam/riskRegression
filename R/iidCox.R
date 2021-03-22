@@ -85,13 +85,13 @@ iidCox.coxph <- function(object, newdata = NULL,
     iInfo <- coxVarCov(object)
     object.modelFrame <- coxModelFrame(object)
     infoVar <- coxVariableName(object, model.frame = object.modelFrame)
-    nVar <- length(infoVar$lpvars)
+    nVar.lp <- length(infoVar$lpvars)
     nObs <- NROW(object.modelFrame)
     
     object.strata <- coxStrata(object, data = NULL, strata.vars = infoVar$stratavars)
     object.levelStrata <- levels(object.strata)
     object.eXb <- exp(coxLP(object, data = NULL, center = FALSE))
-    if(nVar>0){
+    if(nVar.lp>0){
         object.LPdata <- as.matrix(object.modelFrame[,.SD,.SDcols = infoVar$lpvars])
     }else{
         object.LPdata <- NULL
@@ -204,7 +204,7 @@ iidCox.coxph <- function(object, newdata = NULL,
 
         indexTempo <- object.index_strata[[iStrata]][object.order_strata[[iStrata]]]
         object.eXb_strata[[iStrata]] <- object.eXb[indexTempo]
-        if(nVar>0){
+        if(nVar.lp>0){
             object.LPdata_strata[[iStrata]] <- object.LPdata[indexTempo,,drop = FALSE]
         }else{
             object.LPdata_strata[[iStrata]] <- matrix(nrow = 0, ncol = 0)
@@ -218,7 +218,7 @@ iidCox.coxph <- function(object, newdata = NULL,
             new.order_strata[[iStrata]] <- order(new.time[new.index_strata[[iStrata]]])
       
             new.eXb_strata[[iStrata]] <- new.eXb[new.index_strata[[iStrata]][new.order_strata[[iStrata]]]]
-            if(nVar>0){
+            if(nVar.lp>0){
                 new.LPdata_strata[[iStrata]] <- new.LPdata[new.index_strata[[iStrata]][new.order_strata[[iStrata]]],,drop = FALSE]
             }else{
                 new.LPdata_strata[[iStrata]] <- matrix(nrow = 0, ncol = 0)
@@ -240,7 +240,7 @@ iidCox.coxph <- function(object, newdata = NULL,
                                       eventtime = object.time_strata[[iStrata]],
                                       eXb = object.eXb_strata[[iStrata]],
                                       X = object.LPdata_strata[[iStrata]],
-                                      p = nVar, add0 = TRUE)
+                                      p = nVar.lp, add0 = TRUE)
 
         new.indexJump[[iStrata]] <- prodlim::sindex(Ecpp[[iStrata]]$Utime1, new.time) - 1
         # if event/censoring is before the first event in the training dataset 
@@ -260,7 +260,7 @@ iidCox.coxph <- function(object, newdata = NULL,
     }
 
     ## ** Prepare output
-    out <- list(IFbeta = matrix(NA, nrow = nObs, ncol = nVar,
+    out <- list(IFbeta = matrix(NA, nrow = nObs, ncol = nVar.lp,
                                 dimnames = list(NULL, infoVar$lpvars)),  
                 IFhazard = NULL,
                 IFcumhazard = NULL,
@@ -300,7 +300,7 @@ iidCox.coxph <- function(object, newdata = NULL,
         new.indexJump_strata <- new.indexJump[[iStrata]][iSubset[iOrder]]
     
         ## IF
-        if(nVar > 0){
+        if(nVar.lp > 0){
             out$IFbeta[iSubset,] <- IFbeta_cpp(newT = new.time_strata[[iStrata]],
                                                neweXb = new.eXb_strata[[iStrata]],
                                                newX = new.LPdata_strata[[iStrata]],
@@ -310,7 +310,7 @@ iidCox.coxph <- function(object, newdata = NULL,
                                                E1 = Ecpp[[iStrata]]$E,
                                                time1 = Ecpp[[iStrata]]$Utime1,
                                                iInfo = iInfo,
-                                               p = nVar)[iOrderBack,,drop=FALSE]
+                                               p = nVar.lp)[iOrderBack,,drop=FALSE]
         }else{
             out$IFbeta[iSubset,] <- matrix(NA, ncol = 1, nrow = length(new.index_strata[[iStrata]]))
         }
@@ -355,7 +355,7 @@ iidCox.coxph <- function(object, newdata = NULL,
 
             ## E
             nUtime1_strata <- length(Ecpp[[iStrata]]$Utime1)
-            if(nVar > 0){
+            if(nVar.lp > 0){
                 Etempo <- Ecpp[[iStrata]]$E[-NROW(Ecpp[[iStrata]]$E),,drop = FALSE]
             }else{
                 Etempo <- matrix(0, ncol = 1, nrow = nUtime1_strata-1)
@@ -369,7 +369,7 @@ iidCox.coxph <- function(object, newdata = NULL,
                                           E1 = Etempo,
                                           time1 = timeStrata, lastTime1 = etimes.max[iStrata],
                                           lambda0 = lambda0Strata,
-                                          p = nVar, strata = iStrata,
+                                          p = nVar.lp, strata = iStrata,
                                           minimalExport = (store.iid=="minimal")
                                           )
             ## output
@@ -382,7 +382,7 @@ iidCox.coxph <- function(object, newdata = NULL,
                 out$time[[iStrata]] <- tau.hazard_strata
             }
             if(store.iid=="minimal"){
-                if(need.order && nVar>0){
+                if(need.order && nVar.lp>0){
                     out$calcIFhazard$Elambda0[[iStrata]] <- IFlambda_res$Elambda0[,tau.oorder[[iStrata]],drop=FALSE]
                     out$calcIFhazard$cumElambda0[[iStrata]] <- IFlambda_res$cumElambda0[,tau.oorder[[iStrata]],drop=FALSE]
                 }else{

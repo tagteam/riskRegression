@@ -26,18 +26,24 @@ structExport subset_structExport(const structExport& resAll,
                                  double emaxtimes,
                                  int nNew);
 
-//// Data used to fit the Cox model
-// stoptimes: event times. 
-// status: status 0/1
-// eXb: linear predictor 
-// strata: must begin at 0
-// data
-// emaxtimes: last event time in each strata
-// nPatients
-// nStrata
-//// For prediction
-// times_pred times at which we want to compute the hazard/survival. Must be sorted 
-//// WARNING stoptimes status eXb and strata must be sorted by strata, stoptimes, and status
+// * Documentation baseHaz_cpp
+//' @title C++ Fast Baseline Hazard Estimation
+//' @description C++ function to estimate the baseline hazard from a Cox Model
+//'
+//' @param starttimes a vector of times (begin at risk period). 
+//' @param stoptimes a vector of times (end at risk period). 
+//' @param status a vector indicating  censoring or event. 
+//' @param eXb a numeric vector (exponential of the linear predictor).
+//' @param strata a vector of integers (index of the strata for each observation).
+//' @param predtimes a vector of times (time at which to evaluate the hazard). Must be sorted.
+//' @param emaxtimes another vector of times, one per strata (last observation time in each strata).
+//' @param nPatients number of observations.
+//' @param nStrata number of strata 
+//' @param cause the status value corresponding to event.
+//' @param Efron whether Efron or Breslow estimator should be used in presence of ties.
+//' 
+//' @details WARNING stoptimes status eXb and strata must be sorted by strata, stoptimes, and status
+//' @export
 // [[Rcpp::export]]
 List baseHaz_cpp(const NumericVector& starttimes,
 		 const NumericVector& stoptimes,

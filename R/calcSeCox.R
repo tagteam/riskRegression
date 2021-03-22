@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: maj 27 2017 (11:46) 
 ## Version: 
-## last-updated: nov 26 2020 (19:26) 
+## last-updated: feb 24 2021 (22:10) 
 ##           By: Brice Ozenne
-##     Update #: 848
+##     Update #: 850
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -43,7 +43,7 @@
 #' @param new.LPdata the variables involved in the linear predictor for the new observations.
 #' @param new.strata the strata indicator for the new observations.
 #' @param new.survival the survival evaluated for the new observations.
-#' @param nVar the number of variables that form the linear predictor.
+#' @param nVar.lp the number of variables that form the linear predictor.
 #' @param export can be "iid" to return the value of the influence function for each observation.
 #'                      "se" to return the standard error for a given timepoint.
 #'                      "average.iid" to return the value of the average influence function over the observations for which the prediction was performed.
@@ -69,7 +69,7 @@
 calcSeCox <- function(object, times, nTimes, type, diag,
                       Lambda0, object.n, object.time, object.eXb, object.strata, nStrata,
                       new.n, new.eXb, new.LPdata, new.strata, new.survival, 
-                      nVar, export, store.iid){
+                      nVar.lp, export, store.iid){
 
     ## ** Computation of the influence function
     if(is.iidCox(object)){
@@ -137,7 +137,7 @@ calcSeCox <- function(object, times, nTimes, type, diag,
                                        newdata_index = lapply(1:nStrata,
                                                               function(iS){which(new.strata == iS)-1}),
                                        factor = factor,
-                                       nTau = nTimes, nNewObs = new.n, nSample = object.n, nStrata = nStrata, p = nVar,
+                                       nTau = nTimes, nNewObs = new.n, nSample = object.n, nStrata = nStrata, p = nVar.lp,
                                        diag = diag, exportSE = "se" %in% export, exportIF = "iid" %in% export, exportIFmean = "average.iid" %in% export,
                                        exportHazard = "hazard" %in% type, exportCumhazard = "cumhazard" %in% type, exportSurvival = "survival" %in% type,
                                        debug = 0)
@@ -167,11 +167,11 @@ calcSeCox <- function(object, times, nTimes, type, diag,
     }else if("iid" %in% export || "se" %in% export){
         ## ** method 2: using the influence function of the baseline hazard/baseline cumulative hazard
 
-        if(nVar>0){
+        if(nVar.lp>0){
             X_IFbeta_mat <- tcrossprod(iid.object$IFbeta, new.LPdata)
         }
         
-        if( diag || (nVar==0) ){
+        if( diag || (nVar.lp==0) ){
 
             for(iStrata in 1:nStrata){ ## iStrata <- 1
                 indexStrata <- which(new.strata==iStrata)
@@ -181,7 +181,7 @@ calcSeCox <- function(object, times, nTimes, type, diag,
                 ## compute iid
                 if("hazard" %in% type){
                     if (diag) {
-                        if(nVar==0){
+                        if(nVar.lp==0){
                             iIFhazard <- iid.object$IFhazard[[iStrata]][,indexStrata,drop=FALSE]
                         }else{
                             iIFhazard <- rowMultiply_cpp(iid.object$IFhazard[[iStrata]][,indexStrata,drop=FALSE] + rowMultiply_cpp(X_IFbeta_mat[,indexStrata,drop=FALSE],
@@ -189,14 +189,14 @@ calcSeCox <- function(object, times, nTimes, type, diag,
                                                          scale = new.eXb[indexStrata])
                         }
                     }else{
-                        ## nVar==0
+                        ## nVar.lp==0
                         iIFhazard <- iid.object$IFhazard[[iStrata]]
                         tiIFhazard <- t(iIFhazard)
                     }
                 }
                 if("cumhazard" %in% type || "survival" %in% type){
                     if (diag) {
-                        if(nVar==0){
+                        if(nVar.lp==0){
                             iIFcumhazard <- iid.object$IFcumhazard[[iStrata]][,indexStrata,drop=FALSE]
                         }else{
                             iIFcumhazard <- rowMultiply_cpp(iid.object$IFcumhazard[[iStrata]][,indexStrata,drop=FALSE] + rowMultiply_cpp(X_IFbeta_mat[,indexStrata,drop=FALSE], scale = Lambda0$cumhazard[[iStrata]][indexStrata]),
@@ -208,7 +208,7 @@ calcSeCox <- function(object, times, nTimes, type, diag,
                         }
 
                     }else{
-                        ## nVar == 0
+                        ## nVar.lp == 0
                         iIFcumhazard <- iid.object$IFcumhazard[[iStrata]]
                         tiIFcumhazard <- t(iIFcumhazard)
 
@@ -236,7 +236,7 @@ calcSeCox <- function(object, times, nTimes, type, diag,
                         if("cumhazard" %in% type){out$cumhazard.average.iid[,1] <- out$cumhazard.average.iid[,1] + rowSums(iIFcumhazard)/new.n}
                         if("survival" %in% type){out$survival.average.iid[,1] <- out$survival.average.iid[,1] + rowSums(iIFsurvival)/new.n}
                     }
-                }else{ ## nVar==0
+                }else{ ## nVar.lp==0
 
                     if("se" %in% export){
                         iSEcumhazard <- sqrt(colSums(iIFcumhazard^2))
@@ -265,7 +265,7 @@ calcSeCox <- function(object, times, nTimes, type, diag,
                 }
             }
 
-        }else{ ## nVar > 0
+        }else{ ## nVar.lp > 0
             for(iObs in 1:new.n){ ## iObs <- 1
                 iObs.strata <- new.strata[iObs]
 
@@ -332,7 +332,7 @@ calcSeCox <- function(object, times, nTimes, type, diag,
                                               nTimes = nTimes,
                                               nObs = object.n,
                                               nStrata = new.nStrata,
-                                              nVar = nVar,
+                                              nVar = nVar.lp,
                                               diag = diag,
                                               exportCumHazard = TRUE,
                                               exportSurvival = FALSE)
@@ -350,7 +350,7 @@ calcSeCox <- function(object, times, nTimes, type, diag,
                                                  nTimes = nTimes,
                                                  nObs = object.n,
                                                  nStrata = new.nStrata,
-                                                 nVar = nVar,
+                                                 nVar = nVar.lp,
                                                  diag = diag,
                                                  exportCumHazard = ("cumhazard" %in% type),
                                                  exportSurvival = ("survival" %in% type))

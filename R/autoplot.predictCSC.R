@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: feb 27 2017 (10:47) 
 ## Version: 
-## last-updated: sep 24 2020 (14:30) 
+## last-updated: feb 24 2021 (23:07) 
 ##           By: Brice Ozenne
-##     Update #: 103
+##     Update #: 109
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -81,7 +81,7 @@ autoplot.predictCSC <- function(object,
                                 ...){
   
     ## initialize and check
-    group.by <- match.arg(group.by, c("row","covariates","strata"))
+    group.by <- match.arg(group.by, c("row","covariates","strata", names(object$newdata)))
   
     if(group.by[[1]] == "covariates" && ("newdata" %in% names(object) == FALSE)){
         stop("argument \'group.by\' cannot be \"covariates\" when newdata is missing in the object \n",

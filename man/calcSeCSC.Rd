@@ -21,7 +21,7 @@ calcSeCSC(
   new.n,
   cause,
   nCause,
-  nVar,
+  nVar.lp,
   export,
   store.iid,
   diag
@@ -60,7 +60,7 @@ calcSeCSC(
 
 \item{nCause}{the number of causes.}
 
-\item{nVar}{the number of variables that form the linear predictor in each Cox model}
+\item{nVar.lp}{the number of variables that form the linear predictor in each Cox model}
 
 \item{export}{can be "iid" to return the value of the influence function for each observation
 "se" to return the standard error for a given timepoint}
