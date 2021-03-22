@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun  6 2016 (09:02) 
 ## Version: 
-## last-updated: Feb 22 2021 (09:46) 
+## last-updated: Mar 20 2021 (08:25) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 366
+##     Update #: 370
 #----------------------------------------------------------------------
 ## 
 ### Commentary:
@@ -913,9 +913,7 @@ predictRisk.rfsrc <- function(object, newdata, times, cause, ...){
             # if necessary restore matrix format after dropping third dimension of array
             if (NROW(newdata)==1) {
                 cif <- matrix(cif,nrow=1)
-            } else{
-                if (length(times)==1) cif <- matrix(cif,ncol=1)
-            }
+            } 
             pos <- prodlim::sindex(jump.times=object$time.interest,eval.times=times)
             p <- cbind(0,cif)[,pos+1,drop=FALSE]
             if (NROW(p) != NROW(newdata) || NCOL(p) != length(times))
