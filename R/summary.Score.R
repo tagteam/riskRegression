@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Dec 26 2019 (08:58) 
 ## Version: 
-## Last-Updated: Jun 14 2020 (07:48) 
+## Last-Updated: May  9 2021 (19:18) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 69
+##     Update #: 71
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -53,14 +53,12 @@ summary.Score <- function(object,
         if ("score"%in% tolower(what)){
             if ("upper"%in%names(object$AUC$score)){
                 tab.AUC <- object$AUC$score[(model %in% models),
-                                            data.table::data.table(Model=factor(c("Null model",as.character(model)),levels=fitted.models)[,drop=TRUE],
-                                                                   "AUC (%)"=c(Publish::pubformat(50.00,digits=digits),
-                                                                               Publish::formatCI(x=100*AUC,lower=100*lower,upper=100*upper,show.x=1,digits=digits)))]
+                                            data.table::data.table(Model=factor(as.character(model),levels=fitted.models)[,drop=TRUE],
+                                                                   "AUC (%)"=Publish::formatCI(x=100*AUC,lower=100*lower,upper=100*upper,show.x=1,digits=digits))]
             }else{
                 tab.AUC <- object$AUC$score[(model %in% models),
-                                            data.table::data.table(Model=factor(c("Null model",as.character(model)),levels=fitted.models)[,drop=TRUE],
-                                                                   "AUC (%)"=c(Publish::pubformat(50.00,digits=digits),
-                                                                               Publish::pubformat(x=100*AUC,digits=digits)))]
+                                            data.table::data.table(Model=factor(as.character(model),levels=fitted.models)[,drop=TRUE],
+                                                                   "AUC (%)"=Publish::pubformat(x=100*AUC,digits=digits))]
             }
             if ("upper"%in%names(object$Brier$score)){
                 if ("IPA"%in% names(object$Brier$score))
@@ -75,7 +73,6 @@ summary.Score <- function(object,
             }
             ## merging the two tables if there are two
             if (length(tab.Brier)>0) {
-                ## setnames(tab.Brier,"Brier","Brier (%)")
                 setkey(tab.Brier,Model)
                 if (length(tab.AUC)>0) {
                     setkey(tab.AUC,Model)

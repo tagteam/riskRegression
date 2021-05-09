@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Feb 23 2017 (11:15) 
 ## Version: 
-## last-updated: Jul  2 2020 (19:37) 
+## last-updated: May  9 2021 (19:08) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 380
+##     Update #: 381
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -213,7 +213,7 @@ plotCalibration <- function(x,
             }else{
                 stop(paste0("The requested models: ",
                             models,
-                            "\ndo not match the fitted models: ",
+                            "\ndo not all match the fitted models: ",
                             paste0(fitted.models,collapse=", ")))
             }
         }

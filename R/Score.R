@@ -1237,7 +1237,6 @@ Score.list <- function(object,
                 DT.b
             })
         }
-        browser()
         if (any(is.na(DT.B[["risk"]]))){
             missing.predictions <- DT.B[,list("Missing.values"=sum(is.na(risk))),by=byvars]
             warning("Missing values in the predicted risk. See `missing.predictions' in output list.")
