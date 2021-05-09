@@ -1,4 +1,5 @@
 # {{{ roxy header
+
 ##' Methods to score the predictive performance of risk markers and risk prediction models
 ##'
 ##' The function implements a toolbox for the risk prediction modeller:
@@ -394,6 +395,7 @@
 ##'
 ##' @export
 ##'
+
 # }}}
 # {{{ Score.list
 Score.list <- function(object,
@@ -424,6 +426,7 @@ Score.list <- function(object,
                        ncpus=1,
                        cl=NULL,
                        progress.bar=3,
+                       errorhandling="pass",
                        keep,
                        predictRisk.args,
                        debug=0L,
@@ -597,6 +600,7 @@ Score.list <- function(object,
     rm(response)
     # }}}
     # {{{ SplitMethod & parallel stuff
+
     if (!missing(seed)) {
         ## message("Random seed set to control split of data: seed=",seed)
         set.seed(seed)
@@ -649,6 +653,7 @@ Score.list <- function(object,
             warning("Cannot (not yet) do ROC analysis in combination with internal validation\n. Check devtools::install_github('tagteam/riskRegression') for progress.")
         }
     }
+
     # }}}
     # {{{ Checking the ability of the elements of object to predict risks
     # {{{ number of models and their labels
@@ -815,6 +820,7 @@ Score.list <- function(object,
     # }}}
     # -----------------Dealing with censored data outside the loop -----------------------
     # {{{
+
     if (response.type %in% c("survival","competing.risks")){
         if (cens.type=="rightCensored"){
             if (se.fit[1]>0L && ("AUC" %in% metrics) && (conservative[1]==TRUE)) {
@@ -870,6 +876,7 @@ Score.list <- function(object,
     } else{
         Weights <- NULL
     }
+
     # }}}
     # -----------------performance program----------------------
     # {{{ define getPerformanceData, setup data in long-format, response, pred, weights, model, times, loop
@@ -1150,7 +1157,9 @@ Score.list <- function(object,
     # }}}
     # -----------------crossvalidation performance---------------------
     # {{{
-    # {{{ bootstrap re-fitting
+
+    # {{{ bootstrap re-fitting and k-fold-CV
+
     if (split.method$internal.name%in%c("BootCv","LeaveOneOutBoot","crossval")){
         if (missing(trainseeds)||is.null(trainseeds)){
             if (!missing(seed)) set.seed(seed)
@@ -1172,7 +1181,7 @@ Score.list <- function(object,
         `%dopar%` <- foreach::`%dopar%`
         ## k-fold-CV
         if (split.method$internal.name == "crossval"){
-            DT.B <- rbindlist(foreach::foreach (b=1:B,.export=exports,.packages="data.table",.errorhandling="pass") %dopar%{ ## repetitions of k-fold to avoid Monte-Carlo error
+            DT.B <- rbindlist(foreach::foreach (b=1:B,.export=exports,.packages="data.table",.errorhandling=errorhandling) %dopar%{ ## repetitions of k-fold to avoid Monte-Carlo error
                 index.b <- split.method$index[,b] ## contains a sample of the numbers 1:k with replacement
                 if((B>1) && !is.null(progress.bar)){setTxtProgressBar(pb, b)}
                 DT.b <- rbindlist(lapply(1:split.method$k,function(fold){
@@ -1228,6 +1237,7 @@ Score.list <- function(object,
                 DT.b
             })
         }
+        browser()
         if (any(is.na(DT.B[["risk"]]))){
             missing.predictions <- DT.B[,list("Missing.values"=sum(is.na(risk))),by=byvars]
             warning("Missing values in the predicted risk. See `missing.predictions' in output list.")
@@ -1249,6 +1259,7 @@ Score.list <- function(object,
         ## ## Show format for the data in DT.B
         ## cat(paste("\nDT.B for method:", split.method$name, "\n"))
         ## print(DT.B)
+
         # }}}
         # {{{ Leave-one-out bootstrap
         ## start clause split.method$name=="LeaveOneOutBoot"
@@ -1796,6 +1807,7 @@ Score.list <- function(object,
         }
                                         # }}}
     }
+
                                         # }}}
                                         #------------------output-----------------------------------
                                         # {{{ enrich the output object
@@ -2178,28 +2190,33 @@ delongtest <-  function(risk,
     ## q2 <- 2 * auc^2/(1 + auc)
     ## aucvar <- (auc * (1 - auc) + (nCases - 1) * (q1 - auc^2) + (nControls - 1) * (q2 - auc^2))/(nCases * nControls)
     if (length(dolist)>0){
-        ncomp <- nauc * (nauc - 1)/2
+        ## browser()
+        ## ncomp <- nauc * (nauc - 1)/2
+        ncomp <- length(dolist)
         delta.AUC <- numeric(ncomp)
         se <- numeric(ncomp)
         model <- numeric(ncomp)
         reference <- numeric(ncomp)
         ctr <- 1
         Qnorm <- qnorm(1 - alpha/2)
-        for (i in 1:(nauc - 1)) {
-            for (j in (i + 1):nauc) {
-                delta.AUC[ctr] <- auc[j]-auc[i]
-                if (se.fit==TRUE){
-                    ## cor.auc[ctr] <- S[i, j]/sqrt(S[i, i] * S[j, j])
-                    LSL <- t(c(1, -1)) %*% S[c(j, i), c(j, i)] %*% c(1, -1)
-                    ## print(c(1/LSL,rms::matinv(LSL)))
-                    se[ctr] <- sqrt(LSL)
-                }
-                ## tmpz <- (delta.AUC[ctr]) %*% rms::matinv(LSL) %*% delta.AUC[ctr]
-                ## tmpz <- (delta.AUC[ctr]) %*% (1/LSL) %*% delta.AUC[ctr]
-                model[ctr] <- modelnames[j]
-                reference[ctr] <- modelnames[i]
-                ctr <- ctr + 1
+        for (d in dolist){
+            i <- d[1]
+            j <- d[2]
+            ## for (i in 1:(nauc - 1)) {
+            ## for (j in (i + 1):nauc) {
+            delta.AUC[ctr] <- auc[j]-auc[i]
+            if (se.fit==TRUE){
+                ## cor.auc[ctr] <- S[i, j]/sqrt(S[i, i] * S[j, j])
+                LSL <- t(c(1, -1)) %*% S[c(j, i), c(j, i)] %*% c(1, -1)
+                ## print(c(1/LSL,rms::matinv(LSL)))
+                se[ctr] <- sqrt(LSL)
             }
+            ## tmpz <- (delta.AUC[ctr]) %*% rms::matinv(LSL) %*% delta.AUC[ctr]
+            ## tmpz <- (delta.AUC[ctr]) %*% (1/LSL) %*% delta.AUC[ctr]
+            model[ctr] <- modelnames[j]
+            reference[ctr] <- modelnames[i]
+            ctr <- ctr + 1
+            ## }
         }
         if (se.fit[[1]]==TRUE||multi.split.test[[1]]==TRUE){
             deltaAUC <- data.table(model,reference,delta.AUC=as.vector(delta.AUC),se)

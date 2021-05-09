@@ -34,6 +34,7 @@
   ncpus = 1,
   cl = NULL,
   progress.bar = 3,
+  errorhandling = "pass",
   keep,
   predictRisk.args,
   debug = 0L,
