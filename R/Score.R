@@ -1444,7 +1444,6 @@ Score.list <- function(object,
                             }
                         }
                     }
-                    browser()
                     if (se.fit==1L){
                         auc.loob[,lower:=pmax(0,AUC-qnorm(1-alpha/2)*se)]
                         auc.loob[,upper:=pmin(1,AUC + qnorm(1-alpha/2)*se)]
