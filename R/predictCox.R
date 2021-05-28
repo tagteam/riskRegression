@@ -249,6 +249,9 @@ predictCox <- function(object,
     if(object.baseEstimator == "exact"){
         stop("Prediction with exact handling of ties is not implemented.\n")
     }
+    if(!is.null(object$call$tt)){
+        stop("predictCox does not know how to handle time varying effects.\n") 
+    }
     ## convergence issue
     if(!is.null(coef(object)) && any(is.na(coef(object)))){
         print(coef(object))

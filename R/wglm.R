@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: sep  1 2020 (14:58) 
 ## Version: 
-## Last-Updated: mar 15 2021 (22:31) 
+## Last-Updated: maj 28 2021 (14:14) 
 ##           By: Brice Ozenne
-##     Update #: 288
+##     Update #: 290
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -16,9 +16,9 @@
 ### Code:
 
 ## * wglm
-#' @title Logistic Regression Using IPCW 
+#' @title Logistic Regression Using IPCW (EXPERIMENTAL!!!)
 #' @description Logistic regression over multiple timepoints
-#' where right-censoring is handle using inverse probability of censoring weighting.
+#' where right-censoring is handle using inverse probability of censoring weighting. EXPERIMENTAL!!!
 #'
 #' @param regressor.event [formula] a formula with empty left hand side and the covariates for the logistic regression on the right hand side.
 #' @param formula.censor [formula] a formula used to fit the censoring model.
@@ -106,7 +106,6 @@
 #' sum(w[,1] * X[,1] * (Y[,1] - p.wglm[1,1]))
 #' sum(w[,1] * X[,2] * (Y[,1] - p.wglm[2,1]))
 #'
-#' @export
 wglm <- function(regressor.event, formula.censor, times, data, cause = NA,
                  fitter = "coxph", product.limit = FALSE){
     
@@ -185,18 +184,15 @@ wglm <- function(regressor.event, formula.censor, times, data, cause = NA,
 }
 
 ## * nobs.wglm
-#' @export
 nobs.wglm <- function(object, ...){
     return(object$n)
 }
 ## * formula.wglm
-#' @export
 formula.wglm <- function(x, ...){
     return(x$formula)
 }
 
 ## * coef.wglm
-#' @export
 coef.wglm <- function(object, times = NULL, simplifies = TRUE, ...){
     if(is.null(times)){
         times <- object$times
@@ -214,7 +210,6 @@ coef.wglm <- function(object, times = NULL, simplifies = TRUE, ...){
 }
 
 ## * summary.wglm
-#' @export
 summary.wglm <- function(object, print = TRUE, se = "robust", times = NULL, ...){
 
     se <- match.arg(se, c("robust","model-wknown","robust-wknown"))
@@ -274,7 +269,6 @@ summary.wglm <- function(object, print = TRUE, se = "robust", times = NULL, ...)
 }
 
 ## * print.wglm
-#' @export
 print.wglm <- function(x, times = NULL, ...){
     if(is.null(times)){
         times <- x$times
@@ -322,7 +316,6 @@ print.wglm <- function(x, times = NULL, ...){
 #' @param simplifies [logical] should the ouput be converted to a matrix when only one timepoint is requested. Otherwise will always return a list.
 #' @param ... Not used.
 #'
-#' @export
 score.wglm <- function(x, indiv = FALSE, times = NULL, simplifies = TRUE, ...){
     if(is.null(times)){
         times <- x$times
@@ -365,7 +358,6 @@ score.wglm <- function(x, indiv = FALSE, times = NULL, simplifies = TRUE, ...){
 #' @param simplifies [logical] should the ouput be converted to a matrix when only one timepoint is requested. Otherwise will always return a list.
 #' @param ... Not used.
 #' 
-#' @export
 information.wglm <- function(x, times = NULL, simplifies = TRUE, ...){
     if(is.null(times)){
         times <- x$times
@@ -407,7 +399,6 @@ information.wglm <- function(x, times = NULL, simplifies = TRUE, ...){
 #' @param simplifies [logical] should the ouput be converted to a matrix when only one timepoint is requested. Otherwise will always return a list.
 #' @param ... Not used.
 #' 
-#' @export
 iid.wglm <- function(x, times = NULL, simplifies = TRUE, ...){
     if(is.null(times)){
         times <- x$times
@@ -488,7 +479,6 @@ iid.wglm <- function(x, times = NULL, simplifies = TRUE, ...){
 
 
 ## * predictRisk.wglm
-#' @export
 #' @rdname predictRisk
 #' @method predictRisk wglm
 predictRisk.wglm <- function(object, newdata, times = NULL, 
