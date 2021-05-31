@@ -18,6 +18,7 @@
 ##' the p-values correspond to Wald tests based on standard errors obtained with an estimate of the influence function
 ##' as described in detail in the appendix of Blanche et al. (2015).
 ##' @title Score risk predictions
+##' @name Score
 ##' @aliases Score Score.list
 ##' @param object List of risk predictions (see details and examples).
 ##' @param formula A formula which identifies the outcome (left hand
@@ -120,7 +121,8 @@
 ##'  specify additional arguments for the function riskRegression::predictRisk.rfsrc which will pass
 ##'  these on to the function randomForestSRC::predict.rfsrc. A specific example in this case would be
 ##'  \code{list(rfsrc=list(na.action="na.impute"))}.
-##'
+##' @param errorhandling .
+##' 
 ##'  A more flexible approach is to write a new predictRisk S3-method. See Details.
 ##' @param debug Logical. If \code{TRUE} indicate landmark in progress of the program.
 ##' @param useEventTimes obsolete.
@@ -398,6 +400,7 @@
 
 # }}}
 # {{{ Score.list
+##' @rdname Score
 Score.list <- function(object,
                        formula,
                        data,

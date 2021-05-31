@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: sep  1 2020 (14:58) 
 ## Version: 
-## Last-Updated: maj 28 2021 (14:14) 
+## Last-Updated: May 29 2021 (10:24) 
 ##           By: Brice Ozenne
-##     Update #: 290
+##     Update #: 291
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -36,6 +36,7 @@
 #' @return an object of class \code{"wglm"}.
 #'
 #' @examples
+#' if(FALSE){ ## wglm is not exported
 #' library(survival)
 #' 
 #' set.seed(10)
@@ -105,7 +106,8 @@
 #' ## solve the score equation
 #' sum(w[,1] * X[,1] * (Y[,1] - p.wglm[1,1]))
 #' sum(w[,1] * X[,2] * (Y[,1] - p.wglm[2,1]))
-#'
+#' }
+#' 
 wglm <- function(regressor.event, formula.censor, times, data, cause = NA,
                  fitter = "coxph", product.limit = FALSE){
     

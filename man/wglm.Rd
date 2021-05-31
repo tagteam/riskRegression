@@ -2,7 +2,7 @@
 % Please edit documentation in R/wglm.R
 \name{wglm}
 \alias{wglm}
-\title{Logistic Regression Using IPCW}
+\title{Logistic Regression Using IPCW (EXPERIMENTAL!!!)}
 \usage{
 wglm(
   regressor.event,
@@ -34,7 +34,7 @@ an object of class \code{"wglm"}.
 }
 \description{
 Logistic regression over multiple timepoints
-where right-censoring is handle using inverse probability of censoring weighting.
+where right-censoring is handle using inverse probability of censoring weighting. EXPERIMENTAL!!!
 }
 \details{
 First, a Cox model is fitted (argument formula.censor)
@@ -43,6 +43,7 @@ Then, for each timepoint, a logistic regression is fitted with the appropriate c
 and where the outcome is the indicator of having experience the event of interest (argument cause) at or before the timepoint.
 }
 \examples{
+if(FALSE){ ## wglm is not exported
 library(survival)
 
 set.seed(10)
@@ -112,5 +113,6 @@ log(p.wglm/(1-p.wglm)) - apply(coef(e.wglm),1,cumsum) ## same as wglm
 ## solve the score equation
 sum(w[,1] * X[,1] * (Y[,1] - p.wglm[1,1]))
 sum(w[,1] * X[,2] * (Y[,1] - p.wglm[2,1]))
+}
 
 }
