@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Oct 23 2016 (08:53) 
 ## Version: 
-## last-updated: mar  3 2021 (20:02) 
+## last-updated: maj 28 2021 (14:48) 
 ##           By: Brice Ozenne
-##     Update #: 2202
+##     Update #: 2231
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -239,7 +239,7 @@
 #' fit <- coxph(Surv(time, status) ~ celltype+karno + age + trt, veteran)
 #' vet2 <- survSplit(Surv(time, status) ~., veteran,
 #'                        cut=c(60, 120), episode ="timegroup")
-#' fitTD <- coxph(Surv(tstart, time, status) ~ celltype+karno + age + trt,
+#' fitTD <- coxph(Surv(tstart, time, status) ~ celltype +karno + age + trt,
 #'                data= vet2,x=1)
 #' set.seed(16)
 #' resVet <- ate(fitTD,formula=Hist(entry=tstart,time=time,event=status)~1,
@@ -305,7 +305,8 @@ ate <- function(event,
                 ...){
 
     dots <- list(...)
-
+    call <- match.call()
+    
     ## ** initialize arguments
     if(is.data.table(data)){
         data <- data.table::copy(data)
@@ -362,7 +363,8 @@ ate <- function(event,
     }
     
     ## ** check consistency of the user arguments
-    check <- ate_checkArgs(object.event = object.event,
+    check <- ate_checkArgs(call = call,
+                           object.event = object.event,
                            object.censor = object.censor,
                            object.treatment = object.treatment,
                            mydata = data,
@@ -687,10 +689,6 @@ ate_initArgs <- function(object.event,
 
 
     ## ** user-defined arguments
-    ## times
-    if(inherits(object.event,"glm") && missing(times)){
-        times <- NA
-    }
     ## handler
     handler <- match.arg(handler, c("foreach","mclapply","snow","multicore"))
     ## data.index
@@ -723,7 +721,6 @@ ate_initArgs <- function(object.event,
         formula.event <- NULL
         model.event <- NULL
     }
-
     ## Treatment
     if(missing(object.treatment)){
         formula.treatment <- NULL
@@ -754,6 +751,12 @@ ate_initArgs <- function(object.event,
         model.censor <- NULL
     }
 
+    ## ** times
+    if(inherits(model.event,"glm") && missing(times)){
+        times <- NA
+    }
+
+    
     ## ** identify event, treatment and censoring variables
     if(inherits(model.censor,"coxph") || inherits(model.censor,"cph") || inherits(model.censor,"phreg")){
         censoringMF <- coxModelFrame(model.censor)
@@ -763,7 +766,7 @@ ate_initArgs <- function(object.event,
         info.censor <- SurvResponseVar(coxFormula(model.censor))
         censorVar.status <- info.censor$status
         censorVar.time <- info.censor$time
-        level.censoring <- unique(mydata[[censorVar.status]][model.censor$y[data.index,2]==1])
+        level.censoring <- unique(mydata[[censorVar.status]][model.censor$y[,2]==1])
     }else{ ## G-formula or IPTW (no censoring)
         censorVar.status <- NA
         censorVar.time <- NA
@@ -795,7 +798,7 @@ ate_initArgs <- function(object.event,
     }else if(is.character(object.treatment)){
         treatment <- object.treatment
     }
-    
+
     ## event
     if(inherits(model.event,"CauseSpecificCox")){
         responseVar <- SurvResponseVar(formula.event)
@@ -811,17 +814,17 @@ ate_initArgs <- function(object.event,
         eventVar.time <- responseVar$time
         eventVar.status <- responseVar$status
         if(is.na(cause)){ ## handle Surv(time,event > 0) ~ ...
-            if(any(model.event$y[data.index,NCOL(model.event$y)]==1)){
-                cause <- unique(mydata[[eventVar.status]][model.event$y[data.index,NCOL(model.event$y)]==1])
+            if(any(model.event$y[,NCOL(model.event$y)]==1)){
+                cause <- unique(mydata[[eventVar.status]][model.event$y[,NCOL(model.event$y)]==1])
             }
         }
         if(is.null(product.limit)){product.limit <- FALSE}
         level.states <- 1
-    }else if(inherits(object.event,"glm")){
+    }else if(inherits(model.event,"glm")){
         eventVar.time <- as.character(NA)
         eventVar.status <- all.vars(formula.event)[1]
         if(is.na(cause)){ ## handle I(Y > 0) ~ ...
-            cause <- unique(mydata[[eventVar.status]][model.event$y[data.index]==1])
+            cause <- unique(stats::model.frame(model.event)[[eventVar.status]][model.event$y==1])
         }else{
             cause <- NA
         }
@@ -846,7 +849,6 @@ ate_initArgs <- function(object.event,
             eventVar.time <- object.event[1]
             eventVar.status <- object.event[2]
         }
-
         level.states <- setdiff(unique(mydata[[eventVar.status]]), level.censoring)
         if(is.na(cause)){
             cause <- sort(level.states)[1]
@@ -1028,7 +1030,8 @@ ate_initArgs <- function(object.event,
 }
 
 ## * ate_checkArgs
-ate_checkArgs <- function(object.event,
+ate_checkArgs <- function(call,
+                          object.event,
                           object.treatment,
                           object.censor,
                           mydata,
@@ -1133,6 +1136,9 @@ ate_checkArgs <- function(object.event,
         if(any(is.na(coef(object.event)))){
             stop("Cannot handle missing values in the model coefficients (event) \n")
         }
+        if(!is.null(treatment) && identical(eventVar.status, treatment)){
+            stop("The treatment variable has the same name as the event variable. \n")
+        }
     }
     
     ## ** object.treatment    
@@ -1233,12 +1239,12 @@ ate_checkArgs <- function(object.event,
         if(length(unique(stats::na.omit(n.obs[-1])))>1){
             stop("Arguments \'",paste(names(stats::na.omit(n.obs[-1])), collapse ="\' "),"\' must be fitted using the same number of observations \n")
         }
-
-        if(is.null(data.index)){
-            stop("Incompatible number of observations between argument \'data\' and the datasets from argument(s) \'",paste(names(stats::na.omit(n.obs[-1])), collapse ="\' "),"\' \n",
+        test.data.index <- any(data.index %in% 1:max(n.obs[-1],na.rm = TRUE) == FALSE)
+        if(is.null(data.index) || (is.null(call$data.index) && test.data.index)){
+            stop("Incompatible number of observations between argument \'data\' and the dataset from argument(s) \'",paste(names(stats::na.omit(n.obs[-1])), collapse ="\' "),"\' \n",
                  "Consider specifying argument \'data.index\' \n \n")
         }
-        if(!is.numeric(data.index) || any(duplicated(data.index)) || any(is.na(data.index)) || any(data.index %in% 1:max(n.obs[-1],na.rm = TRUE) == FALSE)){
+        if(!is.numeric(data.index) || any(duplicated(data.index)) || any(is.na(data.index)) || test.data.index){
             stop("Incorrect specification of argument \'data.index\' \n",
                  "Must be a vector of integers between 0 and ",max(n.obs[-1],na.rm = TRUE)," \n")
         }

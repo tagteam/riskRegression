@@ -266,7 +266,7 @@ library(survival)
 fit <- coxph(Surv(time, status) ~ celltype+karno + age + trt, veteran)
 vet2 <- survSplit(Surv(time, status) ~., veteran,
                        cut=c(60, 120), episode ="timegroup")
-fitTD <- coxph(Surv(tstart, time, status) ~ celltype+karno + age + trt,
+fitTD <- coxph(Surv(tstart, time, status) ~ celltype +karno + age + trt,
                data= vet2,x=1)
 set.seed(16)
 resVet <- ate(fitTD,formula=Hist(entry=tstart,time=time,event=status)~1,
