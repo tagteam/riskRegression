@@ -393,9 +393,9 @@
 #' intuitive measure useful for evaluating risk prediction models. Diagnostic
 #' and Prognostic Research, 2(1):7, 2018.
 ##'
+##' @export Score.list
 ##' @export
 ##'
-
 # }}}
 # {{{ Score.list
 Score.list <- function(object,

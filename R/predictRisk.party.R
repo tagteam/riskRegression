@@ -31,6 +31,7 @@ predictRisk.Ctree <- function (object, newdata, times, ...) {
     requireNamespace("party")
     N <- NROW(newdata)
     NT <- length(times)
+    data.table::setDF(newdata)
     survObj <- party::treeresponse(object$ctree, newdata=newdata)
     p <- do.call("rbind", lapply(survObj,function(x){
         predictRisk(x, newdata=newdata[1,,drop=FALSE], times=times)

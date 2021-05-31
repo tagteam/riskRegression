@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun  6 2016 (09:02) 
 ## Version: 
-## last-updated: Mar 22 2021 (17:12) 
+## last-updated: May 24 2021 (11:37) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 371
+##     Update #: 376
 #----------------------------------------------------------------------
 ## 
 ### Commentary:
@@ -794,9 +794,10 @@ predict.survfit <- function(object,newdata,times,bytimes=TRUE,type="cuminc",fill
     else
         if (is.data.frame(newdata))
             npat <- nrow(newdata)
-        else stop("If argument `newdata' is supplied it must be a dataframe." )
+    else stop("If argument `newdata' is supplied it must be a dataframe." )
     ntimes <- length(times)
-    sfit <- summary(object,times=times)
+    maxtime <- max(object$time)
+    sfit <- summary(object,times=pmin(times,maxtime))
     if (is.na(fill))
         Fill <- function(x,len){x[1:len]}
     else if (fill=="last")
@@ -818,7 +819,7 @@ predict.survfit <- function(object,newdata,times,bytimes=TRUE,type="cuminc",fill
             stop("Not all strata defining variables occur in newdata.")
         ## FIXME there are different ways to build strata levels
         ## how can we test which one was used???
-        stratdat <- newdata[,covars,drop=FALSE]
+        stratdat <- lapply(covars,function(x)newdata[[x]])
         names(stratdat) <- covars
         NewStratVerb <- survival::strata(stratdat)
         NewStrat <- interaction(stratdat,sep=" ")
