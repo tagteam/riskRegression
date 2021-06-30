@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Aug  9 2017 (10:36) 
 ## Version: 
-## Last-Updated: Jun  6 2021 (17:46) 
+## Last-Updated: Jun 30 2021 (08:05) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 169
+##     Update #: 170
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -271,48 +271,6 @@ IPA.glm <- function(object,formula,newdata,...){
     out
 }
 
-##' @export
-IPA.rfsrc <- function(object,formula,newdata,...){
-    IPA=model=Variable=IPA.drop=Brier=NULL
-    ## this is a modification of drop1
-    stopifnot(object$family=="class")
-    Terms <- stats::terms(object)
-    ## tl <- attr(Terms, "term.labels")
-    scope <- stats::drop.scope(object)
-    ns <- length(scope)
-    n0 <- stats::nobs(object, use.fallback = TRUE)
-    env <- environment(object$formula)
-    leaveOneOut <- lapply(scope,function(var){
-        varfit <- stats::update(object, as.formula(paste("~ . -", var)), 
-                                evaluate = FALSE)
-        varfit <- eval(varfit, envir = env)
-        nnew <- stats::nobs(varfit, use.fallback = TRUE)
-        if (all(is.finite(c(n0, nnew))) && nnew[[1]] != n0)
-            stop("number of rows in use has changed: remove missing values?")
-        varfit
-    })
-    names(leaveOneOut) <- scope
-    if (missing(newdata)) newdata=eval(object$call$data)
-    if (missing(formula)) formula=object$formula
-    r2 <- Score(c("Full model"=list(object),leaveOneOut),
-                formula=formula,
-                data=newdata,
-                contrasts=FALSE,
-                conf.int=FALSE,
-                metrics="brier",
-                summary="IPA",
-                ...)$Brier$score
-    ## r2[,IPA:=100*IPA]
-    ## r2 <- r2[model!="Null model"]
-    data.table::setnames(r2,"model","Variable")
-    r2[,IPA.drop:=IPA[Variable=="Full model"]-IPA]
-    ## r2 <- r2[Variable!="Full model"]
-    out <- as.data.frame(r2[,data.table::data.table(Variable,Brier,IPA,IPA.drop)])
-    class(out) <- c("IPA",class(out))
-    out
-} 
-
-IPA.rfsrc <- IPA.glm
 #' @export
 rsquared <- IPA
 #' @export
