@@ -23,8 +23,6 @@ getCensoringWeights <- function(formula,
                            IPCW.subject.times=IPCW.subject.times,
                            method=cens.model)
                if (influence.curve==TRUE){
-                   print("a")
-                   saveRDS(data,file="~/tmp/dd.rds")
                    out <- c(out,
                             list(IC=IC_Nelson_Aalen_cens_time(time=data$time,status=data$status)))
                    ## list(IC=data[,getInfluenceCurve.NelsonAalen(time=time,status=status)]))
