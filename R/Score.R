@@ -867,7 +867,15 @@ Score.list <- function(object,
         if ("pseudo" %in% cens.method){
             if (cens.type[1]=="rightCensored"
                 && (response.type %in% c("survival","competing.risks"))){
-                margForm <- update(formula,paste(".~1"))
+                # need to communicate the censoring code of the event variable
+                # produced by Hist via model.frame in case of competing risks
+                if (response.type=="competing.risks"){
+                    censcode <- data[status==0,event[1]]
+                    margForm <- Hist(time,event,cens.code=censcode)~1
+                }else{
+                    censcode <- data[status==0,status[1]]
+                    margForm <- update(formula,".~1")
+                }
                 margFit <- prodlim::prodlim(margForm,data=data)
                 ## position.cause is the result of match(cause, states)
                 jack <- data.table(ID=data[["ID"]],
@@ -1261,7 +1269,6 @@ Score.list <- function(object,
         ## ## Show format for the data in DT.B
         ## cat(paste("\nDT.B for method:", split.method$name, "\n"))
         ## print(DT.B)
-
         # }}}
         # {{{ Leave-one-out bootstrap
         ## start clause split.method$name=="LeaveOneOutBoot"

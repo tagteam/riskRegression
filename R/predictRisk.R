@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun  6 2016 (09:02) 
 ## Version: 
-## last-updated: May 24 2021 (11:37) 
+## last-updated: Jun  3 2021 (13:04) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 376
+##     Update #: 378
 #----------------------------------------------------------------------
 ## 
 ### Commentary:
@@ -896,8 +896,9 @@ predictRisk.ranger <- function(object, newdata, times, cause, ...){
 ##' @method predictRisk rfsrc
 predictRisk.rfsrc <- function(object, newdata, times, cause, ...){
     if (missing(times)||is.null(times)){
-        p <- as.numeric(stats::predict(object,newdata=newdata,importance="none",...)$predicted[,2,drop=TRUE])
-        ## class(p) <- "predictRisk"
+        p <- stats::predict(object,newdata=newdata,importance="none",...)$predicted
+        if (NCOL(p)>1)
+        p <- as.numeric(p[,2,drop=TRUE])
         p
     }else{
         if (object$family=="surv") {
