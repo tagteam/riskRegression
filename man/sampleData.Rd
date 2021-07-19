@@ -20,6 +20,8 @@ competing risks response}
 
 \item{formula}{Specify regression coefficients}
 
+\item{intercept}{For binary outcome the intercept of the logistic regression.}
+
 \item{n.intervals}{\code{sampleDataTD} only: the maximum number of episodes in which the covariates are updated.}
 }
 \value{
