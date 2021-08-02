@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Jul 21 2021 (08:59) 
 ## Version: 
-## Last-Updated: Jul 21 2021 (10:16) 
+## Last-Updated: Jul 27 2021 (09:07) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 10
+##     Update #: 16
 #----------------------------------------------------------------------
 ## 
 ### Commentary:
@@ -27,16 +27,31 @@ data(pbc)
 pbc <- na.omit(pbc)
 
 # this works
-s <- synthesize(Surv(time)~age+sex+protime,data=pbc,verbose=FALSE)
+s <- synthesize(Surv(time,status)~age+sex+protime,data=pbc,verbose=FALSE)
 sim(s,10)
 
 # Task 1: learning categorical variables
-# this should work
-s <- synthesize(Surv(time)~age+sex+edema+protime,data=pbc)
+# remaining problem: line 310 in synthesize.R
+#  reg_formula = time.event.0 ~ age + sex + edema + protime
+#  coef(G)[-1]/G$scale = age sexf edema0.5 edema1 protime
+#  there are 2 coefficients, one for each contrast defined by the categorical variable
+#  edema=0.5/edema=0 and one for edema=1/edema=0.
+#  there are several ideas to fix this without the dummy
+#  variables (p-1 dummy 0-1 variables are used to parametrize a categorical with p levels).
+#  the dummy variables are created in lines 238-239 of synthesize.R
+#  to fix the problem quickly, we can try to modify object$M such that the
+#  regressions of the time variables are conditioning on edema0.5 and
+#  edema1 instead of edema.
+pbc$event <- pbc$status!=0
+synthesize(Surv(time,event)~sex+edema,data=pbc)
+
+s <- synthesize(Surv(time,status)~age+sex+edema+protime,data=pbc)
+sim(s,10)
 
 # Task 2: learning log transformations
 # this should work 
-s <- synthesize(Surv(time)~age+sex+edema+log(protime),data=pbc)
+s <- synthesize(Surv(time,status)~age+sex+log(protime),data=pbc)
+d <- sim(s,10)
 
 # Task 3: learning structural equations from data
 # when (new option) recursiv is TRUE we want that the following formula is
@@ -45,7 +60,7 @@ s <- synthesize(Surv(time)~age+sex+edema+log(protime),data=pbc)
 ## age~sex
 ## edema~age+sex
 ## protime~edema+age+sex
-s <- synthesize(Surv(time)~protime+edema+age+sex,data=pbc,recursive=TRUE)
+s <- synthesize(Surv(time,status)~protime+edema+age+sex,data=pbc,recursive=TRUE)
 
 
 
