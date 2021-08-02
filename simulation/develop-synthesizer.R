@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Jul 21 2021 (08:59)
 ## Version:
-## Last-Updated: Jul 27 2021 (09:07)
+## Last-Updated: Aug  2 2021 (13:26)
 ##           By: Thomas Alexander Gerds
-##     Update #: 16
+##     Update #: 18
 #----------------------------------------------------------------------
 ##
 ### Commentary:
@@ -42,7 +42,7 @@ sim(s,10)
 #  to fix the problem quickly, we can try to modify object$M such that the
 #  regressions of the time variables are conditioning on edema0.5 and
 #  edema1 instead of edema.
-pbc$event <- pbc$status!=0
+pbc$event <- 1*(pbc$status!=0)
 synthesize(Surv(time,event)~sex+edema,data=pbc)
 
 s <- synthesize(Surv(time,status)~age+sex+edema+protime,data=pbc)
@@ -50,8 +50,13 @@ sim(s,10)
 
 # Task 2: learning log transformations
 # this should work
-s <- synthesize(Surv(time,status)~age+sex+log(protime),data=pbc)
-d <- sim(s,10)
+s <- synthesize(Surv(time,event)~age+sex+log(protime),data=pbc)
+d <- sim(s,1000)
+d$time <- as.numeric(d$time)
+
+fit <- coxph(Surv(time,event)~age+sex+log(protime),data=pbc)
+fit.s <- coxph(Surv(time,event)~age+sex+logprotime,data=d)
+cbind(coef(fit),coef(fit.s))
 
 # Task 3: learning structural equations from data
 # when (new option) recursiv is TRUE we want that the following formula is
@@ -60,7 +65,19 @@ d <- sim(s,10)
 ## age~sex
 ## edema~age+sex
 ## protime~edema+age+sex
-s <- synthesize(Surv(time,status)~protime+edema+age+sex,data=pbc,recursive=TRUE)
+s <- synthesize(Surv(time,status)~protime+age+sex,data=pbc,recursive=TRUE)
+
+d <- sim(s,1000)
+d$time <- as.numeric(d$time)
+
+fit <- coxph(Surv(time,event)~age+sex+log(protime),data=pbc)
+fit.s <- coxph(Surv(time,event)~age+sex+logprotime,data=d)
+cbind(coef(fit),coef(fit.s))
+
+fit.protime <- glm(protime~age+sex+protime,data=pbc)
+fit.protime.s <- glm(protime~age+sex+protime,data=d)
+cbind(coef(fit.protime),coef(fit.protime.s))
+
 
 
 
