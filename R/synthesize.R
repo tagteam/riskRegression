@@ -1,11 +1,18 @@
 ### synthesize.R ---
 #----------------------------------------------------------------------
+<<<<<<< HEAD
 ## Author: Vilde Hansteen Ung & Thomas Alexander Gerds
 ## Created: Apr 28 2021 (09:04)
 ## Version:
 ## Last-Updated: Jul 21 2021 (10:10)
+=======
+## Author: Johan Sebastian Ohlendorff & Vilde Hansteen Ung & Thomas Alexander Gerds
+## Created: Apr 28 2021 (09:04)
+## Version:
+## Last-Updated: Jul 27 2021 (09:07) 
+>>>>>>> ce0adfebaddb41edfd567da8562d05cdea96f1d7
 ##           By: Thomas Alexander Gerds
-##     Update #: 32
+##     Update #: 52
 #----------------------------------------------------------------------
 ##
 ### Commentary:
@@ -100,12 +107,21 @@ synthesize.formula <- function(object, # a formula object Surv(time,event) or Hi
                                data,
                                covariates, # either 'lava' or 'empirical'
                                max.levels=10,
+<<<<<<< HEAD
                                verbose=TRUE,
                                recursive=FALSE,
                                ...){
     requireNamespace("lava",quietly=FALSE)
     requireNamespace("Publish",quietly=FALSE)
     #requireNamespace("formula.tools",quietly=FALSE)
+=======
+                               verbose=FALSE,
+                               recursive=FALSE,
+                               ...){
+    requireNamespace("lava",quietly=TRUE)
+    # requireNamespace("Publish",quietly=TRUE)
+    # requireNamespace("formula.tools",quietly=FALSE)
+>>>>>>> ce0adfebaddb41edfd567da8562d05cdea96f1d7
     # time to event outcome
     tt <- all.vars(update(object,".~1"))
     # covariates
@@ -205,11 +221,21 @@ synthesize.formula <- function(object, # a formula object Surv(time,event) or Hi
         et.formula <- formula(paste0(tt[[1]]," ~ min(",paste(paste0("time.event.",events,"=",events),collapse=", "),")"))
         object <- lava::eventTime(object,et.formula, tt[[2]])
     }
+<<<<<<< HEAD
+=======
+    
+>>>>>>> ce0adfebaddb41edfd567da8562d05cdea96f1d7
     # call the next method, now the class of object is 'lvm' :)
     synthesize(object=object,data=data,verbose=verbose,...)
 }
 
+<<<<<<< HEAD
 synthesize.lvm <- function(object, data, verbose,...){
+=======
+#' @export synthesize.lvm
+#' @export
+synthesize.lvm <- function(object, data, verbose=FALSE,...){
+>>>>>>> ce0adfebaddb41edfd567da8562d05cdea96f1d7
 
     # note: will be a problem if there are NAs in data, should check at beginning of function
     if(anyNA(data)){stop("There should not be NAs in data.")}
@@ -241,7 +267,10 @@ synthesize.lvm <- function(object, data, verbose,...){
             }
         }
     }
+<<<<<<< HEAD
 
+=======
+>>>>>>> ce0adfebaddb41edfd567da8562d05cdea96f1d7
     # define latent event time variables
     # note: will be a problem if there are several eventTime variables. Should loop through all these
     has.eventTime <- length(object$attributes$eventHistory)>0
@@ -253,9 +282,19 @@ synthesize.lvm <- function(object, data, verbose,...){
         }
     }
 
+<<<<<<< HEAD
   # Estimate coefficients
   for(var in dimnames(object$M)[[1]]){
     var_formula <- as.formula(paste0("~", var))
+=======
+    # Set distributions:
+    # 1. normal
+    # 2. binomial
+    # 3. weibull
+    # 4. 
+    for(var in dimnames(object$M)[[1]]){
+        var_formula <- as.formula(paste0("~", var))
+>>>>>>> ce0adfebaddb41edfd567da8562d05cdea96f1d7
 
     if("gaussian" %in% attributes(object$attributes$distribution[[var]])$family){
         lava::distribution(object,var_formula) <- lava::normal.lvm(mean=mean(data[[var]]),
@@ -280,17 +319,26 @@ synthesize.lvm <- function(object, data, verbose,...){
         lava::distribution(object, var_formula) <- lava::coxWeibull.lvm(scale=exp(-G$coef["(Intercept)"]/G$scale),shape=1/G$scale)
     }
     else if(var %in% names(object$attributes$nordinal)){
+<<<<<<< HEAD
         num_cat <- object$attributes$nordinal[[var]] #what is levels is NULL?
         cat_probs <- vector(mode="numeric", length=num_cat-1)
 
         for(i in 1:(num_cat-1)){
           cat_probs[i] <- mean(data[[var]] == levels(data[[var]])[i+1])
+=======
+        num_cat <- object$attributes$nordinal[[var]] #what if levels is NULL?
+        cat_probs <- vector(mode="numeric", length=num_cat-1)
+
+        for(i in 1:(num_cat-1)){
+            cat_probs[i] <- mean(data[[var]] == levels(data[[var]])[i+1])
+>>>>>>> ce0adfebaddb41edfd567da8562d05cdea96f1d7
         }
         object <- lava::categorical(object,
                                     var_formula,
                                     labels=levels(data[[var]]),
                                     K=num_cat,
                                     p=cat_probs
+<<<<<<< HEAD
         )
     }
   }
@@ -311,6 +359,30 @@ synthesize.lvm <- function(object, data, verbose,...){
     }
     else if (length(covariates) > 0) {
       covariates <- paste(covariates, collapse = "+")
+=======
+                                    )
+    }
+    }
+    # Estimate regression coefficients in real data 
+    # and add them to the lvm object using lava::regression
+    for(var in dimnames(object$M)[[1]]){
+        covariates <- dimnames(object$M)[[2]][object$M[,var] == 1]
+        if (has.eventTime && length(dimnames(object$M)[[2]][object$M[,timename] == 1]) != 0
+            && length(covariates)==0
+            && "weibull" %in% attributes(object$attributes$distribution[[var]])$family){
+            covariates <- dimnames(object$M)[[2]][object$M[,timename] == 1]
+            covariates <- paste(covariates, collapse = "+")
+            response <- paste(object$attributes$eventHistory[[timename]]$names, collapse = ",")
+            status_ind <- object$attributes$eventHistory[[timename]]$events[which(object$attributes$eventHistory[[timename]]$latentTimes %in% var)]
+            response <- paste0(response, "==", status_ind)
+            surv_formula <- as.formula(paste0("Surv(", response, ")~", covariates))
+            G <- survreg(surv_formula, data = data)
+            reg_formula <- as.formula(paste0(var, "~", covariates))
+            lava::regression(object, reg_formula) <- -coef(G)[-1]/G$scale
+        }
+        else if (length(covariates) > 0) {
+            covariates <- paste(covariates, collapse = "+")
+>>>>>>> ce0adfebaddb41edfd567da8562d05cdea96f1d7
 
       reg_formula <- as.formula(paste0(var, "~", covariates))
 

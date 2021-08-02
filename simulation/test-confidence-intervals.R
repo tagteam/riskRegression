@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Jul 20 2021 (16:19) 
 ## Version: 
-## Last-Updated: Jul 21 2021 (10:02) 
+## Last-Updated: Jul 23 2021 (10:33) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 4
+##     Update #: 6
 #----------------------------------------------------------------------
 ## 
 ### Commentary:
@@ -26,13 +26,21 @@ library(survival)
 library(riskRegression)
 data(pbc)
 
+# synthesize binary outcome data
+mb <- synthesize(treat~log(bili)+log(protime)+edema+sex+age,data=pbc,na.rm=TRUE)
+
+# synthesize survival outcome data
+ms <- synthesize(Hist(time,status!=0)~log(bili)+log(protime)+edema+sex+age,data=pbc,na.rm=TRUE)
+
+# synthesize competing risk outcome data
+mc <- synthesize(Hist(time,status)~log(bili)+log(protime)+edema+sex+age,data=pbc,na.rm=TRUE)
+
 ## Setting 1: learn/test
 ## --------------------------------------------------------------------
 
 ## We have a dataset for building the risk prediction model (learndata)
 ## and a second dataset for estimating the prediction performance (testdata).
-
-
+learndata <- 
 x <- Score
 
 

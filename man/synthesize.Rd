@@ -6,9 +6,6 @@
 \usage{
 synthesize(object, data, ...)
 }
-\arguments{
-\item{...}{}
-}
 \value{
 lava object
 }
@@ -45,7 +42,7 @@ set.seed(8)
 d <- sim(u_synt,n=1000)
 fit_sim <- coxph(Surv(time,status==1)~age+sex+logbili,data=d)
 fit_real <- coxph(Surv(time,status==1)~age+sex+logbili,data=pbc)
-# compare estimated log-hazard ratios between simulated and real data 
+# compare estimated log-hazard ratios between simulated and real data
 cbind(coef(fit_sim),coef(fit_real))
 
 data(pbc)
