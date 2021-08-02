@@ -1,23 +1,23 @@
-### develop-synthesizer.R --- 
+### develop-synthesizer.R ---
 #----------------------------------------------------------------------
 ## Author: Thomas Alexander Gerds
-## Created: Jul 21 2021 (08:59) 
-## Version: 
-## Last-Updated: Jul 27 2021 (09:07) 
+## Created: Jul 21 2021 (08:59)
+## Version:
+## Last-Updated: Jul 27 2021 (09:07)
 ##           By: Thomas Alexander Gerds
 ##     Update #: 16
 #----------------------------------------------------------------------
-## 
+##
 ### Commentary:
 ##
 ##  Working document for the collaboration between
 ##  Johan Sebastian Ohlendorff and Thomas Alexander Gerds.
 ##
-## In this document we develop the functionality of the data synthesizer. 
-## 
+## In this document we develop the functionality of the data synthesizer.
+##
 ### Change Log:
 #----------------------------------------------------------------------
-## 
+##
 ### Code:
 
 library(riskRegression)
@@ -49,7 +49,7 @@ s <- synthesize(Surv(time,status)~age+sex+edema+protime,data=pbc)
 sim(s,10)
 
 # Task 2: learning log transformations
-# this should work 
+# this should work
 s <- synthesize(Surv(time,status)~age+sex+log(protime),data=pbc)
 d <- sim(s,10)
 
