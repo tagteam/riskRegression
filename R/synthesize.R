@@ -389,6 +389,7 @@ synthesize.lvm <- function(object, data, verbose=FALSE,logtrans = c(),...){
         }
         else if ("categorical" %in% m$attributes$type[[var]]){
             stop("not implemented")
+            # man kan godt angive regression() ~ c(1,2), men hvad betyder koefficienterne på højre side?
         }
         else if (var %in% logtrans){
           #we don't do anything on the original scale
