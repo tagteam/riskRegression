@@ -53,6 +53,7 @@ sim(s,10)
 s <- synthesize(Surv(time,event)~age+sex+log(protime),data=pbc)
 d <- sim(s,1000)
 d$time <- as.numeric(d$time)
+d$event <- 1*(d$status!=0)
 
 fit <- coxph(Surv(time,event)~age+sex+log(protime),data=pbc)
 fit.s <- coxph(Surv(time,event)~age+sex+logprotime,data=d)
@@ -69,10 +70,7 @@ s <- synthesize(Surv(time,status)~protime+age+sex,data=pbc,recursive=TRUE)
 
 d <- sim(s,1000)
 d$time <- as.numeric(d$time)
-
-fit <- coxph(Surv(time,event)~age+sex+log(protime),data=pbc)
-fit.s <- coxph(Surv(time,event)~age+sex+logprotime,data=d)
-cbind(coef(fit),coef(fit.s))
+d$event <- 1*(d$status!=0)
 
 fit.protime <- glm(protime~age+sex+protime,data=pbc)
 fit.protime.s <- glm(protime~age+sex+protime,data=d)

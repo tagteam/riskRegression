@@ -347,12 +347,12 @@ synthesize.lvm <- function(object, data, verbose=FALSE,logtrans = c(),...){
         #include event time variables and fit the regression model
         for (latvar in object$attributes$eventHistory[[timename]]$latentTime){
             latvar_formula <- as.formula(paste0("~", latvar))
-            lava::distribution(sim_model, latvar_formula) <- lava::coxWeibull.lvm()
             status_ind <- object$attributes$eventHistory[[timename]]$events[which(object$attributes$eventHistory[[timename]]$latentTimes %in% latvar)]
             response <- paste0(response1, "==", status_ind)
             surv_formula <- as.formula(paste0("Surv(", response, ")~", covariates))
             G <- survreg(surv_formula, data = data)
             reg_formula <- as.formula(paste0(latvar, "~", covariates))
+            lava::distribution(sim_model, latvar_formula) <- lava::coxWeibull.lvm(scale=exp(-G$coef["(Intercept)"]/G$scale),shape=1/G$scale)
             lava::regression(sim_model, reg_formula) <- -coef(G)[-1]/G$scale
         }
 
@@ -373,11 +373,16 @@ synthesize.lvm <- function(object, data, verbose=FALSE,logtrans = c(),...){
         # 2. logistic regression
         # 2. multinomial logistic regression
         if("gaussian" %in% attributes(object$attributes$distribution[[var]])$family) {
-          lava::regression(sim_model,reg_formula)<-coef(lm(reg_formula,data=data))[-1]
+          fit <- lm(reg_formula,data=data)
+          lava::distribution(sim_model,as.formula(paste0("~", var))) <- lava::normal.lvm(mean = coef(fit[1]), sd = summary(fit)$sigma)
+          lava::regression(sim_model,reg_formula)<-coef(fit)[-1]
         }
         else if ("binomial" %in% attributes(object$attributes$distribution[[var]])$family){
           # correct link function?
-          lava::regression(sim_model,reg_formula)<-coef(glm(reg_formula,data=data,family="binomial"))[-1]
+          fit <- glm(reg_formula,data=data,family="binomial")
+          lava::regression(sim_model,reg_formula)<-coef(fit)[-1]
+          # does this do the correct thing?
+          lava::intercept(object, all.vars(reg_formula)[1])<-coef(fit)[1]
         }
         else if (var %in% logtrans){
           #we don't do anything on the original scale
