@@ -182,12 +182,14 @@ synthesize.formula <- function(object, # a formula object Surv(time,event) or Hi
         cv2 <- cv[2:length(cv)]
         #lacks implementation in case it is categorical
         #needs multinomial logistic regression to be implemented
-        if (!is.numeric(pbc[[cv[1]]])){
-          stop("not implemented")
+        if (categorize(cv[1]) == 1){
+          warning("not implemented")
+          object <- lava::categorical(object, cv[1], K=length(unique(data[[cv[1]]])))
         }
-        else {
-          regression(object) <- as.formula(paste0(cv[1],"~",paste(cv2,collapse = "+")))
+        else if (categorize(cv[1]) == 2){
+          lava::distribution(object,cv[1]) <- lava::binomial.lvm()
         }
+        regression(object) <- as.formula(paste0(cv[1],"~",paste(cv2,collapse = "+")))
         cv <- cv2
       }
     }
@@ -371,7 +373,7 @@ synthesize.lvm <- function(object, data, verbose=FALSE,logtrans = c(),...){
         # we have three types of regression to deal with now. Either
         # 1. linear regression
         # 2. logistic regression
-        # 2. multinomial logistic regression
+        # 3. multinomial logistic regression
         if("gaussian" %in% attributes(object$attributes$distribution[[var]])$family) {
           fit <- lm(reg_formula,data=data)
           lava::distribution(sim_model,as.formula(paste0("~", var))) <- lava::normal.lvm(mean = coef(fit[1]), sd = summary(fit)$sigma)
@@ -380,15 +382,19 @@ synthesize.lvm <- function(object, data, verbose=FALSE,logtrans = c(),...){
         else if ("binomial" %in% attributes(object$attributes$distribution[[var]])$family){
           # correct link function?
           fit <- glm(reg_formula,data=data,family="binomial")
+          lava::distribution(sim_model,as.formula(paste0("~", var))) <- lava::binomial.lvm()
           lava::regression(sim_model,reg_formula)<-coef(fit)[-1]
           # does this do the correct thing?
-          lava::intercept(object, all.vars(reg_formula)[1])<-coef(fit)[1]
+          lava::intercept(sim_model, all.vars(reg_formula)[1])<-coef(fit)[1]
+        }
+        else if ("categorical" %in% m$attributes$type[[var]]){
+            stop("not implemented")
         }
         else if (var %in% logtrans){
           #we don't do anything on the original scale
         }
         else {
-          stop("Multinomial logistic regression and other types of regresion are not implemented (yet)")
+          stop("unkown type of regression")
         }
     }
     return(sim_model)
