@@ -104,93 +104,93 @@ synthesize.formula <- function(object, # a formula object Surv(time,event) or Hi
                                recursive=FALSE,
                                ...){
     requireNamespace("lava",quietly=TRUE)
-    # requireNamespace("Publish",quietly=TRUE)
-    # requireNamespace("formula.tools",quietly=FALSE)
     # time to event outcome
     tt <- all.vars(update(object,".~1"))
     # covariates
-    #vv <- get.vars(formula(delete.response(terms(object))))
-    #vv <- all.vars(formula(delete.response(terms(object))))
-    vv <- attr(terms(formula(delete.response(terms(object)))),"term.labels")
-    vv1 <- all.vars(formula(delete.response(terms(object))))
-    s <- ""
-    # can be done more nicely
+    vv <- all.vars(formula(delete.response(terms(object))))
+    vv.withtrans <- attr(terms(formula(delete.response(terms(object)))),"term.labels")
+
+    # could be done more easily if the order of the covariates is not important, but it might be due to recursive
+    # potentially being set to TRUE
+    # this changes the formula to be logtransformed
+    form.string <- ""
     hasLog <- FALSE
     for (i in 1:length(vv)){
-      if (vv[i]==vv1[i]){
-        if (s == ""){
-          s <- vv[i]
+      if (vv[i]==vv.withtrans[i]){
+        if (form.string == ""){
+          form.string <- vv[i]
         }
         else {
-          s <- paste(s, "+",vv[i])
+          form.string <- paste(form.string, "+",vv[i])
         }
       }
       else {
-        if (s == ""){
-          data[[paste0("log",vv1[i])]] <- log(data[[vv1[i]]])
-          s <-paste0("log",vv1[i])
+        if (form.string == ""){
+          data[[paste0("log",vv[i])]] <- log(data[[vv[i]]])
+          form.string <-paste0("log",vv[i])
           hasLog <- TRUE
         }
         else {
-          data[[paste0("log",vv1[i])]] <- log(data[[vv1[i]]])
-          s <- paste(s,"+",paste0("log",vv1[i]))
+          data[[paste0("log",vv[i])]] <- log(data[[vv[i]]])
+          form.string <- paste(form.string,"+",paste0("log",vv[i]))
           hasLog <- TRUE
         }
       }
     }
-    s <- as.formula(paste0("~",s))
-    object <- update(object,s)
+    object <- update(object,as.formula(paste0("~",form.string)))
     # add all variables
     object <- lava::lvm(object)
     # check if covariates are categorical
     if (hasLog){
-      vv <-c(vv1[vv==vv1],paste0("log",vv1[vv!=vv1]))
+      #include transformed variables in model
+      for (v in vv[vv!=vv.withtrans]){
+        transform(object,as.formula(paste0(v,"~log",v))) <- function(x){exp(x)}
+      }
+      vv1 <- vv
+      vv <-c(vv[vv==vv.withtrans],paste0("log",vv[vv!=vv.withtrans]))
     }
 
-    is.categorical <- sapply(vv,function(v){
+    #returns categorical values
+    # 0=numeric, 1=categorical with more levels, 2=binary
+    categorize <- function(v){
         is.cat <- is.factor(data[[v]])
-        if (is.cat==FALSE)
-            if (nu <- length(unique(data[[v]]))<max.levels){
-                is.cat <- TRUE
-                nu <- length(unique(data[[v]]))
-            }
-            else
-                is.cat <- FALSE
-        else
-            nu <- length(levels(data[[v]]))
+        nu <- length(unique(data[[v]]))
+        if (!is.cat) {is.cat <- (nu < max.levels)}
         is.bin <- nu==2
-        is.bin+is.cat # 0=numeric, 1=categorical with more levels, 2=binary
-    })
-    for (v in vv[is.categorical==2]){
-        # make into factor
+        return(is.bin+is.cat)
+    }
+
+    # specify distributions of covariates in the lava object
+    for (v in vv){
+      if (categorize(v) == 2){
         data[[v]] <- factor(data[[v]])
         lava::distribution(object,v) <- lava::binomial.lvm()
-    }
-    for (v in vv[is.categorical==1]){
-        # make into factor
+      }
+      else if (categorize(v) == 1){
         data[[v]] <- factor(data[[v]])
-        #distribution(object,v) <- categorical.lvm() #categorical.lvm not found
         object <- lava::categorical(object, v, K=length(unique(data[[v]])))
-    }
-    for (v in vv[is.categorical==0]){
+      }
+      else {
         lava::distribution(object,v) <- lava::normal.lvm()
-    }
-
-    if (recursive){
-      #don't change original covariates
-      cv <- vv
-      while (length(cv) > 1) {
-        cv2 <- cv[2:length(cv)]
-
-        if (!is.numeric(pbc[[cv[1]]])){
-          #lacks implementation in case it is categorical
-          stop("not implemented")
-        }
-        regression(object) <- as.formula(paste0(paste0(cv[1],"~"),paste(cv2,collapse = "+")))
-        cv <- cv2
       }
     }
 
+    # include recursive structure of covariates if true
+    if (recursive){
+      cv <- vv
+      while (length(cv) > 1) {
+        cv2 <- cv[2:length(cv)]
+        #lacks implementation in case it is categorical
+        #needs multinomial logistic regression to be implemented
+        if (!is.numeric(pbc[[cv[1]]])){
+          stop("not implemented")
+        }
+        else {
+          regression(object) <- as.formula(paste0(cv[1],"~",paste(cv2,collapse = "+")))
+        }
+        cv <- cv2
+      }
+    }
 
     # outcome
     # binary/continuous outcome
@@ -206,13 +206,13 @@ synthesize.formula <- function(object, # a formula object Surv(time,event) or Hi
         object <- lava::eventTime(object,et.formula, tt[[2]])
     }
     # call the next method, now the class of object is 'lvm' :)
-    synthesize(object=object,data=data,verbose=verbose,...)
+    synthesize(object=object,data=data,verbose=verbose,logtrans=vv1[vv1!=vv],...)
 }
 
 
 #' @export synthesize.lvm
 #' @export
-synthesize.lvm <- function(object, data, verbose=FALSE,...){
+synthesize.lvm <- function(object, data, verbose=FALSE,logtrans = c(),...){
 
     # note: will be a problem if there are NAs in data, should check at beginning of function
     if(anyNA(data)){stop("There should not be NAs in data.")}
@@ -231,139 +231,163 @@ synthesize.lvm <- function(object, data, verbose=FALSE,...){
     # dichotomize categorical variables
     # should not do this if the cat. variable is not in lvm.object
     # note: name of dich. variables must correspond with names used in lava::regression formulas outside synthesize-func.
-    for(var in colnames(data)[grepl('factor|character', sapply(data, class))]){
-        if(!any(grepl(var,  dimnames(object$M)[[1]]))){
 
-        } else  if (length(levels(data[[var]]))==2){
+  dichotomized_variables <- c()
 
-        } else {
-            for(lvl in levels(data[[var]])[-1]){
-                data[[paste0(var, lvl)]] <- 1*(data[[var]] == lvl)
-                formula <- as.formula(paste0(var, lvl,"~",var))
-                lava::transform(object, formula) <- function(x){1*(x==lvl)}
-            }
-        }
+  sim_model <- lava::lvm()
+
+
+  for(var in colnames(data)[grepl('factor|character', sapply(data, class))]){
+    if(!any(grepl(var,  dimnames(object$M)[[1]]))){
+      warning("should not dichotimize if the cat. variable is not in lvm.object")
+    } else  if (length(levels(data[[var]]))==2){
+
+    } else {
+      dichotomized_variables <- c(dichotomized_variables, var)
+      for(lvl in levels(data[[var]])[-1]){
+        data[[paste0(var, lvl)]] <- 1*(data[[var]] == lvl)
+        formula <- as.formula(paste0(var, lvl,"~",var))
+        lava::transform(sim_model, formula) <- function(x){1*(x==lvl)}
+      }
     }
+  }
+
+
+
+    latent_vars <- endogenous(object)
+
+    # Set distributions:
+    # 1. normal
+    # 2. binomial
+    # 3. categorical
+    # deal with exogenous variables (which are without covariates)
+    for(var in exogenous(object)){
+      var_formula <- as.formula(paste0("~", var))
+      #continous
+      if("gaussian" %in% attributes(object$attributes$distribution[[var]])$family){
+        lava::distribution(sim_model,var_formula) <- lava::normal.lvm(mean=mean(data[[var]]),
+                                                                   sd=sd(data[[var]]))
+      }
+      #binary
+      else if("binomial" %in% attributes(object$attributes$distribution[[var]])$family){
+        lava::distribution(sim_model, var_formula) <- lava::binomial.lvm(p=mean(factor(data[[var]])==levels(factor(data[[var]]))[2]))
+      }
+      #categorical
+      else if(var %in% names(object$attributes$nordinal)){
+        num_cat <- object$attributes$nordinal[[var]] #what if levels is NULL?
+        cat_probs <- vector(mode="numeric", length=num_cat-1)
+
+        for(i in 1:(num_cat-1)){
+          cat_probs[i] <- mean(data[[var]] == levels(data[[var]])[i+1])
+        }
+        sim_model <- lava::categorical(sim_model,
+                                    var_formula,
+                                    labels=levels(data[[var]]),
+                                    K=num_cat,
+                                    p=cat_probs
+        )
+      }
+      else {
+        stop("Error. Distribution not supported!")
+      }
+    }
+
+    make_dichotomized_string <- function(var){
+      s<- ""
+      for(lvl in levels(data[[var]])[-1]){
+        if (s == ""){
+          s <- paste0(var,lvl)
+        }
+        else {
+          s<- paste0(s, " + ", var, lvl)
+        }
+      }
+      return(s)
+    }
+
+    # get covariates as string and include dichotomized variables instead of the original ones
+    get_covariates <- function(obj, v, dichotomized_variables) {
+      covariates <- dimnames(obj$M)[[2]][obj$M[,v] == 1]
+      if (length(covariates) == 0){
+        return("1")
+      }
+      else {
+        s <- ""
+        for (var in covariates){
+          if (var %in% dichotomized_variables){
+            if (s == ""){
+              s <- make_dichotomized_string(var)
+            }
+            else {
+              s <- paste0(s,"+",make_dichotomized_string(var))
+            }
+          }
+          else {
+            if (s == ""){
+              s <- var
+            }
+            else {
+              s <- paste0(s,"+",var)
+            }
+          }
+        }
+        return(s)
+      }
+    }
+
+
     # define latent event time variables
     # note: will be a problem if there are several eventTime variables. Should loop through all these
     has.eventTime <- length(object$attributes$eventHistory)>0
     if (has.eventTime){
         timename <- names(object$attributes$eventHistory)
+        covariates <- get_covariates(object,timename,dichotomized_variables)
+        response1 <- paste(object$attributes$eventHistory[[timename]]$names, collapse = ",")
+
+        #include event time variables and fit the regression model
         for (latvar in object$attributes$eventHistory[[timename]]$latentTime){
             latvar_formula <- as.formula(paste0("~", latvar))
-            lava::distribution(object, latvar_formula) <- lava::coxWeibull.lvm()
-        }
-    }
-
-    # Set distributions:
-    # 1. normal
-    # 2. binomial
-    # 3. weibull
-    # 4.
-    for(var in dimnames(object$M)[[1]]){
-        var_formula <- as.formula(paste0("~", var))
-
-    if("gaussian" %in% attributes(object$attributes$distribution[[var]])$family){
-        lava::distribution(object,var_formula) <- lava::normal.lvm(mean=mean(data[[var]]),
-                                                                   sd=sd(data[[var]]))
-    }
-    else if("binomial" %in% attributes(object$attributes$distribution[[var]])$family){
-        lava::distribution(object, var_formula) <- lava::binomial.lvm(p=mean(factor(data[[var]])==levels(factor(data[[var]]))[2]))
-    }
-    else if(has.eventTime && "weibull" %in% attributes(object$attributes$distribution[[var]])$family){
-        covariates <- dimnames(object$M)[[2]][object$M[,var] == 1]
-        response <- paste(object$attributes$eventHistory[[timename]]$names, collapse = ",")
-        status_ind <- object$attributes$eventHistory[[timename]]$events[which(object$attributes$eventHistory[[timename]]$latentTimes %in% var)]
-        response <- paste0(response, "==", status_ind)
-        #timename <- names(object$attributes$eventHistory)
-        if(length(covariates) == 0){
-            surv_formula <- as.formula(paste0("Surv(", response,")", "~1"))
-        } else{
-            covariates <- paste(covariates, collapse = "+")
-            surv_formula <- as.formula(paste0("Surv(", response,")", "~", covariates))
-        }
-        G <- survreg(surv_formula, data = data)
-        lava::distribution(object, var_formula) <- lava::coxWeibull.lvm(scale=exp(-G$coef["(Intercept)"]/G$scale),shape=1/G$scale)
-    }
-    else if(var %in% names(object$attributes$nordinal)){
-        num_cat <- object$attributes$nordinal[[var]] #what if levels is NULL?
-        cat_probs <- vector(mode="numeric", length=num_cat-1)
-
-        for(i in 1:(num_cat-1)){
-            cat_probs[i] <- mean(data[[var]] == levels(data[[var]])[i+1])
-        }
-        object <- lava::categorical(object,
-                                    var_formula,
-                                    labels=levels(data[[var]]),
-                                    K=num_cat,
-                                    p=cat_probs
-                                    )
-    }
-    }
-    # Estimate regression coefficients in real data
-    # and add them to the lvm object using lava::regression
-    browser()
-    for(var in dimnames(object$M)[[1]]){
-        covariates <- dimnames(object$M)[[2]][object$M[,var] == 1]
-        if (has.eventTime && length(dimnames(object$M)[[2]][object$M[,timename] == 1]) != 0
-            && length(covariates)==0
-            && "weibull" %in% attributes(object$attributes$distribution[[var]])$family){
-            covariates <- dimnames(object$M)[[2]][object$M[,timename] == 1]
-            covariates <- paste(covariates, collapse = "+")
-            response <- paste(object$attributes$eventHistory[[timename]]$names, collapse = ",")
-            status_ind <- object$attributes$eventHistory[[timename]]$events[which(object$attributes$eventHistory[[timename]]$latentTimes %in% var)]
-            response <- paste0(response, "==", status_ind)
+            lava::distribution(sim_model, latvar_formula) <- lava::coxWeibull.lvm()
+            status_ind <- object$attributes$eventHistory[[timename]]$events[which(object$attributes$eventHistory[[timename]]$latentTimes %in% latvar)]
+            response <- paste0(response1, "==", status_ind)
             surv_formula <- as.formula(paste0("Surv(", response, ")~", covariates))
             G <- survreg(surv_formula, data = data)
-            reg_formula <- as.formula(paste0(var, "~", covariates))
-            lava::regression(object, reg_formula) <- -coef(G)[-1]/G$scale
+            reg_formula <- as.formula(paste0(latvar, "~", covariates))
+            lava::regression(sim_model, reg_formula) <- -coef(G)[-1]/G$scale
         }
-        else if (length(covariates) > 0) {
-            covariates <- paste(covariates, collapse = "+")
 
-      reg_formula <- as.formula(paste0(var, "~", covariates))
-
-      # lava::regression depends on response variable type
-      # if variable has a specified distribution, do:
-      if(var %in% names(object$attributes$distribution)){
-          if("gaussian" %in% attributes(object$attributes$distribution[[var]])$family) {
-              lava::regression(object,reg_formula)<-coef(lm(reg_formula,data=data))[-1]
-          } else if ("binomial" %in% attributes(object$attributes$distribution[[var]])$family){
-              #browser()
-              lava::regression(object,reg_formula)<-coef(glm(reg_formula,data=data,family="binomial"))[-1]
-              lava::intercept(object, all.vars(reg_formula)[1])<-coef(glm(reg_formula,data=data,family="binomial"))[1]
-          } else if ("weibull" %in% attributes(object$attributes$distribution[[var]])$family)
-          {
-              if(length(covariates) == 0){
-                  #reg_formula <- as.formula(paste0(var,"~", "1"))
-                  #is anything needed here?
-              }
-              else{
-                  if (has.eventTime){
-                      response <- paste(object$attributes$eventHistory[[timename]]$names, collapse = ",")
-                      status_ind <- object$attributes$eventHistory[[timename]]$events[which(object$attributes$eventHistory[[timename]]$latentTimes %in% var)]
-                      response <- paste0(response, "==", status_ind)
-                      surv_formula <- as.formula(paste0("Surv(", response, ")~", covariates))
-                      G <- survreg(surv_formula, data = data)
-                      reg_formula <- as.formula(paste0(var, "~", covariates))
-                      lava::regression(object, reg_formula) <- -coef(G)[-1]/G$scale
-                  }
-              }
-          }
-          # if variable does not have a specified distribution, then:
-      } else if (!(class(data[[var]]) == "numeric") & length(levels(factor(data[[var]]))) == 2) #variable is binary
-      {
-          lava::regression(object,reg_formula) <- coef(glm(reg_formula,data=data,family="binomial"))[-1]
-      } else if (class(data[[var]]) == "numeric") #variable is continous
-      {
-          lava::regression(object,reg_formula) <- coef(lm(reg_formula,data=data))[-1]
-      }
-      #what if variable is categorical?
+        #calculate time and status afterwards
+        events <- object$attributes$eventHistory$time$events
+        et.formula <- formula(paste0(timename," ~ min(",paste(paste0("time.event.",events,"=",events),collapse=", "),")"))
+        sim_model <- lava::eventTime(sim_model,et.formula, object$attributes$eventHistory$time$names[2])
     }
-  }
-    return(object)
-  }
 
+    # Estimate regression coefficients in real data
+    # and add them to the lvm object using lava::regression
+    '%!in%' <- function(x,y)!('%in%'(x,y))
+    for(var in latent_vars[latent_vars %!in% object$attributes$eventHistory$time$names]){
+        covariates <- get_covariates(object,var,dichotomized_variables)
+        reg_formula <- as.formula(paste0(var, "~", covariates))
+        # we have three types of regression to deal with now. Either
+        # 1. linear regression
+        # 2. logistic regression
+        # 2. multinomial logistic regression
+        if("gaussian" %in% attributes(object$attributes$distribution[[var]])$family) {
+          lava::regression(sim_model,reg_formula)<-coef(lm(reg_formula,data=data))[-1]
+        }
+        else if ("binomial" %in% attributes(object$attributes$distribution[[var]])$family){
+          # correct link function?
+          lava::regression(sim_model,reg_formula)<-coef(glm(reg_formula,data=data,family="binomial"))[-1]
+        }
+        else if (var %in% logtrans){
+          #we don't do anything on the original scale
+        }
+        else {
+          stop("Multinomial logistic regression and other types of regresion are not implemented (yet)")
+        }
+    }
+    return(sim_model)
+  }
 
 #----------------------------------------------------------------------
 ### synthesize.R ends here
