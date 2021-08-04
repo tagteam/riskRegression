@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jan  4 2016 (09:43) 
 ## Version: 
-## last-updated: Jul  8 2021 (07:59) 
-##           By: Thomas Alexander Gerds
-##     Update #: 47
+## last-updated: aug  4 2021 (15:19) 
+##           By: Brice Ozenne
+##     Update #: 48
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -29,7 +29,7 @@
 ##' @param intercept For binary outcome the intercept of the logistic regression.
 ##' @usage
 ##' sampleData(n,outcome="competing.risks",
-##' formula= ~ f(X1,2)+f(X2,-0.033)+f(X3,0.4)+f(X6,.1)+f(X7,-.1)+f(X8,.5)+f(X9,-1))
+##' formula= ~ f(X1,2)+f(X2,-0.033)+f(X3,0.4)+f(X6,.1)+f(X7,-.1)+f(X8,.5)+f(X9,-1),intercept=0)
 ##' sampleDataTD(n,n.intervals=5,outcome="competing.risks",
 ##' formula= ~ f(X1,2)+f(X2,-0.033)+f(X3,0.4)+f(X6,.1)+f(X7,-.1)+f(X8,.5)+f(X9,-1))
 ##' @return Simulated data as data.table with n rows and the following columns:
