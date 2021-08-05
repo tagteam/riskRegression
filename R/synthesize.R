@@ -108,38 +108,21 @@ synthesize.formula <- function(object, # a formula object Surv(time,event) or Hi
     tt <- all.vars(update(object,".~1"))
     # covariates
     vv <- all.vars(formula(delete.response(terms(object))))
+    fml <- paste(vv,collapse = "+")
     vv.withtrans <- attr(terms(formula(delete.response(terms(object)))),"term.labels")
-
+    logtrans <- vv[vv!=vv.withtrans]
     # could be done more easily if the order of the covariates is not important, but it might be due to recursive
     # potentially being set to TRUE
     # this changes the formula to be logtransformed
-    form.string <- ""
-    hasLog <- FALSE
-    for (i in 1:length(vv)){
-      if (vv[i]==vv.withtrans[i]){
-        if (form.string == ""){
-          form.string <- vv[i]
-        }
-        else {
-          form.string <- paste(form.string, "+",vv[i])
-        }
-      }
-      else {
-        if (form.string == ""){
-          data[[paste0("log",vv[i])]] <- log(data[[vv[i]]])
-          form.string <-paste0("log",vv[i])
-          hasLog <- TRUE
-        }
-        else {
-          data[[paste0("log",vv[i])]] <- log(data[[vv[i]]])
-          form.string <- paste(form.string,"+",paste0("log",vv[i]))
-          hasLog <- TRUE
-        }
-      }
+    hasLog <- length(logtrans)>0
+    for (v in logtrans){
+      data[[paste0("log",v)]] <- log(data[[v]])
+      s<-paste0("log",v)
+      fml <- gsub(v,s,fml)
     }
-    object <- update(object,as.formula(paste0("~",form.string)))
-    # add all variables
+    object <- update(object,as.formula(paste0("~",fml)))
     object <- lava::lvm(object)
+
     # check if covariates are categorical
     if (hasLog){
       #include transformed variables in model
@@ -230,31 +213,7 @@ synthesize.lvm <- function(object, data, verbose=FALSE,logtrans = c(),...){
         #     data <- data[,dimnames(object$M)[[1]],drop=FALSE]
     }
 
-    # dichotomize categorical variables
-    # should not do this if the cat. variable is not in lvm.object
-    # note: name of dich. variables must correspond with names used in lava::regression formulas outside synthesize-func.
-
-  dichotomized_variables <- c()
-
-  sim_model <- lava::lvm()
-
-
-  for(var in colnames(data)[grepl('factor|character', sapply(data, class))]){
-    if(!any(grepl(var,  dimnames(object$M)[[1]]))){
-      warning("should not dichotimize if the cat. variable is not in lvm.object")
-    } else  if (length(levels(data[[var]]))==2){
-
-    } else {
-      dichotomized_variables <- c(dichotomized_variables, var)
-      for(lvl in levels(data[[var]])[-1]){
-        data[[paste0(var, lvl)]] <- 1*(data[[var]] == lvl)
-        formula <- as.formula(paste0(var, lvl,"~",var))
-        lava::transform(sim_model, formula) <- function(x){1*(x==lvl)}
-      }
-    }
-  }
-
-
+    sim_model <- lava::lvm()
 
     latent_vars <- endogenous(object)
 
@@ -294,17 +253,25 @@ synthesize.lvm <- function(object, data, verbose=FALSE,logtrans = c(),...){
       }
     }
 
-    make_dichotomized_string <- function(var){
-      s<- ""
-      for(lvl in levels(data[[var]])[-1]){
-        if (s == ""){
-          s <- paste0(var,lvl)
-        }
-        else {
-          s<- paste0(s, " + ", var, lvl)
+    # dichotomize categorical variables
+    # should not do this if the cat. variable is not in lvm.object
+    # note: name of dich. variables must correspond with names used in lava::regression formulas outside synthesize-func.
+    dichotomized_variables <- c()
+
+    for(var in colnames(data)[grepl('factor|character', sapply(data, class))]){
+      if(!any(grepl(var,  dimnames(object$M)[[1]]))){
+
+      } else if (length(levels(data[[var]]))>2){
+        dichotomized_variables <- c(dichotomized_variables, var)
+        for(lvl in levels(data[[var]])[-1]){
+          data[[paste0(var, lvl)]] <- 1*(data[[var]] == lvl)
+          formula <- as.formula(paste0(var, lvl,"~",var))
+          sim_model <- local({
+            l <- lvl
+            lava::transform(sim_model, formula) <- function(x){1*(x==l)}
+            l<-sim_model})
         }
       }
-      return(s)
     }
 
     # get covariates as string and include dichotomized variables instead of the original ones
@@ -314,29 +281,15 @@ synthesize.lvm <- function(object, data, verbose=FALSE,logtrans = c(),...){
         return("1")
       }
       else {
-        s <- ""
-        for (var in covariates){
-          if (var %in% dichotomized_variables){
-            if (s == ""){
-              s <- make_dichotomized_string(var)
-            }
-            else {
-              s <- paste0(s,"+",make_dichotomized_string(var))
-            }
-          }
-          else {
-            if (s == ""){
-              s <- var
-            }
-            else {
-              s <- paste0(s,"+",var)
-            }
-          }
+        fml <- paste(covariates,collapse = "+")
+        for (var in dichotomized_variables){
+          lvl <- paste0(var,levels(data[[var]])[-1])
+          cv <- paste0(lvl,collapse = "+")
+          fml <- gsub(var,cv,fml)
         }
-        return(s)
+        return(fml)
       }
     }
-
 
     # define latent event time variables
     # note: will be a problem if there are several eventTime variables. Should loop through all these
@@ -376,16 +329,15 @@ synthesize.lvm <- function(object, data, verbose=FALSE,logtrans = c(),...){
         # 3. multinomial logistic regression
         if("gaussian" %in% attributes(object$attributes$distribution[[var]])$family) {
           fit <- lm(reg_formula,data=data)
-          lava::distribution(sim_model,as.formula(paste0("~", var))) <- lava::normal.lvm(mean = coef(fit[1]), sd = summary(fit)$sigma)
           lava::regression(sim_model,reg_formula)<-coef(fit)[-1]
+          lava::distribution(sim_model,as.formula(paste0("~", var))) <- lava::normal.lvm(mean = coef(fit[1]), sd = summary(fit)$sigma)
         }
         else if ("binomial" %in% attributes(object$attributes$distribution[[var]])$family){
           # correct link function?
           fit <- glm(reg_formula,data=data,family="binomial")
-          lava::distribution(sim_model,as.formula(paste0("~", var))) <- lava::binomial.lvm()
+          p0<-exp(coef(fit)[1])/(1+exp(coef(fit)[1]))
+          lava::distribution(sim_model,as.formula(paste0("~", var))) <- lava::binomial.lvm(p=p0)
           lava::regression(sim_model,reg_formula)<-coef(fit)[-1]
-          # does this do the correct thing?
-          lava::intercept(sim_model, all.vars(reg_formula)[1])<-coef(fit)[1]
         }
         # browser()
         # else if ("categorical" %in% object$attributes$type[[var]]){
