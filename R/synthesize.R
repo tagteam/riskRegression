@@ -126,9 +126,6 @@ synthesize.formula <- function(object, # a formula object Surv(time,event) or Hi
     # check if covariates are categorical
     if (hasLog){
       #include transformed variables in model
-      for (v in vv[vv!=vv.withtrans]){
-        transform(object,as.formula(paste0(v,"~log",v))) <- function(x){exp(x)}
-      }
       vv1 <- vv
       vv <-c(vv[vv==vv.withtrans],paste0("log",vv[vv!=vv.withtrans]))
     }
@@ -191,14 +188,13 @@ synthesize.formula <- function(object, # a formula object Surv(time,event) or Hi
         object <- lava::eventTime(object,et.formula, tt[[2]])
     }
     # call the next method, now the class of object is 'lvm' :)
-    synthesize(object=object,data=data,verbose=verbose,logtrans=vv1[vv1!=vv],...)
+    synthesize(object=object,data=data,verbose=verbose,logtrans=logtrans,...)
 }
 
 
 #' @export synthesize.lvm
 #' @export
 synthesize.lvm <- function(object, data, verbose=FALSE,logtrans = c(),...){
-
     # note: will be a problem if there are NAs in data, should check at beginning of function
     if(anyNA(data)){stop("There should not be NAs in data.")}
 
@@ -239,7 +235,7 @@ synthesize.lvm <- function(object, data, verbose=FALSE,logtrans = c(),...){
         cat_probs <- vector(mode="numeric", length=num_cat-1)
 
         for(i in 1:(num_cat-1)){
-          cat_probs[i] <- mean(data[[var]] == levels(data[[var]])[i+1])
+          cat_probs[i] <- mean(data[[var]] == levels(data[[var]])[i])
         }
         sim_model <- lava::categorical(sim_model,
                                     var_formula,
@@ -269,7 +265,7 @@ synthesize.lvm <- function(object, data, verbose=FALSE,logtrans = c(),...){
           sim_model <- local({
             l <- lvl
             lava::transform(sim_model, formula) <- function(x){1*(x==l)}
-            l<-sim_model})
+            return(sim_model)})
         }
       }
     }
@@ -290,7 +286,6 @@ synthesize.lvm <- function(object, data, verbose=FALSE,logtrans = c(),...){
         return(fml)
       }
     }
-
     # define latent event time variables
     # note: will be a problem if there are several eventTime variables. Should loop through all these
     has.eventTime <- length(object$attributes$eventHistory)>0
@@ -339,11 +334,6 @@ synthesize.lvm <- function(object, data, verbose=FALSE,logtrans = c(),...){
           lava::distribution(sim_model,as.formula(paste0("~", var))) <- lava::binomial.lvm(p=p0)
           lava::regression(sim_model,reg_formula)<-coef(fit)[-1]
         }
-        # browser()
-        # else if ("categorical" %in% object$attributes$type[[var]]){
-        #     stop("not implemented")
-        #     # man kan godt angive regression() ~ c(1,2), men hvad betyder koefficienterne på højre side?
-        # }
         else if (var %in% logtrans){
           #we don't do anything on the original scale
         }
@@ -351,6 +341,11 @@ synthesize.lvm <- function(object, data, verbose=FALSE,logtrans = c(),...){
           stop("unkown type of regression")
         }
     }
+    #transform logtransformed covariates back
+    for (v in logtrans){
+      transform(sim_model,as.formula(paste0(v,"~log",v))) <- function(x){exp(x)}
+    }
+
     return(sim_model)
   }
 

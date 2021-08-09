@@ -53,7 +53,6 @@ sim(s,10)
 s <- synthesize(Surv(time,event)~age+sex+log(protime),data=pbc)
 d <- sim(s,1000)
 d$time <- as.numeric(d$time)
-d$event <- 1*(d$status!=0)
 
 fit <- coxph(Surv(time,event)~age+sex+log(protime),data=pbc)
 fit.s <- coxph(Surv(time,event)~age+sex+logprotime,data=d)
