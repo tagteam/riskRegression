@@ -325,7 +325,7 @@ synthesize.lvm <- function(object, data, verbose=FALSE,logtrans = c(),...){
         if("gaussian" %in% attributes(object$attributes$distribution[[var]])$family) {
           fit <- lm(reg_formula,data=data)
           lava::regression(sim_model,reg_formula)<-coef(fit)[-1]
-          lava::distribution(sim_model,as.formula(paste0("~", var))) <- lava::normal.lvm(mean = coef(fit[1]), sd = summary(fit)$sigma)
+          lava::distribution(sim_model,as.formula(paste0("~", var))) <- lava::normal.lvm(mean = coef(fit)[1], sd = summary(fit)$sigma)
         }
         else if ("binomial" %in% attributes(object$attributes$distribution[[var]])$family){
           # correct link function?
