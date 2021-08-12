@@ -28,6 +28,7 @@ data(pbc)
 pbc <- na.omit(pbc)
 pbc$treat <- 1*(pbc$trt==2)
 pbc$event <- 1*(pbc$status!=0)
+source("~/riskRegression/R/synthesize.R")
 
 # synthesize binary outcome data
 mb <- synthesize(treat~log(bili)+log(protime)+edema+sex+age,data=pbc,na.rm=TRUE)

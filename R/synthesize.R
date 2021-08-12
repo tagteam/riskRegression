@@ -163,7 +163,7 @@ synthesize.formula <- function(object, # a formula object Surv(time,event) or Hi
         #lacks implementation in case it is categorical
         #needs multinomial logistic regression to be implemented
         if (categorize(cv[1]) == 1){
-          warning("not implemented")
+          warning("Categorical variables not fully tested for recursive")
           object <- lava::categorical(object, cv[1], K=length(unique(data[[cv[1]]])))
         }
         else if (categorize(cv[1]) == 2){
@@ -336,6 +336,17 @@ synthesize.lvm <- function(object, data, verbose=FALSE,logtrans = c(),...){
         }
         else if (var %in% logtrans){
           #we don't do anything on the original scale
+        }
+        #case: categorical
+        else if (var %in% dichotomized_variables){
+          warning("Synthesize untested for categorical variables")
+          for(lvl in levels(data[[var]])[-1]){
+            reg_formula <- as.formula(paste0(var, lvl, "~", covariates))
+            fit <- glm(reg_formula,data=data,family="binomial")
+            p0<-exp(coef(fit)[1])/(1+exp(coef(fit)[1]))
+            lava::distribution(sim_model,as.formula(paste0("~", var))) <- lava::binomial.lvm(p=p0)
+            lava::regression(sim_model,reg_formula)<-coef(fit)[-1]
+          }
         }
         else {
           stop("unkown type of regression")
