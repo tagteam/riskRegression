@@ -311,7 +311,7 @@ synthesize.lvm <- function(object, data, verbose=FALSE,logtrans = c(),...){
         et.formula <- formula(paste0(timename," ~ min(",paste(paste0("time.event.",events,"=",events),collapse=", "),")"))
         sim_model <- lava::eventTime(sim_model,et.formula, object$attributes$eventHistory$time$names[2])
     }
-
+    browser()
     # Estimate regression coefficients in real data
     # and add them to the lvm object using lava::regression
     '%!in%' <- function(x,y)!('%in%'(x,y))
@@ -322,12 +322,7 @@ synthesize.lvm <- function(object, data, verbose=FALSE,logtrans = c(),...){
         # 1. linear regression
         # 2. logistic regression
         # 3. multinomial logistic regression
-        if("gaussian" %in% attributes(object$attributes$distribution[[var]])$family) {
-          fit <- lm(reg_formula,data=data)
-          lava::regression(sim_model,reg_formula)<-coef(fit)[-1]
-          lava::distribution(sim_model,as.formula(paste0("~", var))) <- lava::normal.lvm(mean = coef(fit)[1], sd = summary(fit)$sigma)
-        }
-        else if ("binomial" %in% attributes(object$attributes$distribution[[var]])$family){
+        if ("binomial" %in% attributes(object$attributes$distribution[[var]])$family){
           # correct link function?
           fit <- glm(reg_formula,data=data,family="binomial")
           p0<-exp(coef(fit)[1])/(1+exp(coef(fit)[1]))
@@ -348,8 +343,11 @@ synthesize.lvm <- function(object, data, verbose=FALSE,logtrans = c(),...){
             lava::regression(sim_model,reg_formula)<-coef(fit)[-1]
           }
         }
+        # case normal; previous code didn't capture the case where the attribute was gaussian (only gaussian(identity))
         else {
-          stop("unkown type of regression")
+          fit <- lm(reg_formula,data=data)
+          lava::regression(sim_model,reg_formula)<-coef(fit)[-1]
+          lava::distribution(sim_model,as.formula(paste0("~", var))) <- lava::normal.lvm(mean = coef(fit)[1], sd = summary(fit)$sigma)
         }
     }
     #transform logtransformed covariates back
