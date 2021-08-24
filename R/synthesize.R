@@ -127,7 +127,7 @@ synthesize.formula <- function(object, # a formula object Surv(time,event) or Hi
     if (hasLog){
       #include transformed variables in model
       vv1 <- vv
-      vv <-c(vv[vv==vv.withtrans],paste0("log",vv[vv!=vv.withtrans]))
+      vv <-gsub("[(]|[)]","",vv.withtrans)
     }
 
     #returns categorical values
@@ -155,6 +155,7 @@ synthesize.formula <- function(object, # a formula object Surv(time,event) or Hi
       }
     }
 
+
     # include recursive structure of covariates if true
     if (recursive){
       cv <- vv
@@ -177,9 +178,17 @@ synthesize.formula <- function(object, # a formula object Surv(time,event) or Hi
     # outcome
     # binary/continuous outcome
     if (length(tt)==1){
+        len.tt <- length(unique(data[[tt[[1]]]]))
         is.binary <- length(unique(data[[tt[[1]]]]))==2
-        if (is.binary){
+        if (len.tt == 2){
             lava::distribution(object,tt[[1]]) <- lava::binomial.lvm()
+        }
+        else if (len.tt > 2 && len.tt < max.levels){
+          warning("Categorical responses are not supported (yet).")
+          object <- lava::categorical(object, tt[1], K=len.tt)
+        }
+        else {
+          lava::distribution(object,tt[[1]]) <- lava::normal.lvm()
         }
     }else{
         # event time outcome
@@ -262,6 +271,7 @@ synthesize.lvm <- function(object, data, verbose=FALSE,logtrans = c(),...){
         for(lvl in levels(data[[var]])[-1]){
           data[[paste0(var, lvl)]] <- 1*(data[[var]] == lvl)
           formula <- as.formula(paste0(var, lvl,"~",var))
+          # updates the formula in a local environment; otherwise the lvl will be tied to the last value of lvl in the for loop
           sim_model <- local({
             l <- lvl
             lava::transform(sim_model, formula) <- function(x){1*(x==l)}
@@ -311,11 +321,10 @@ synthesize.lvm <- function(object, data, verbose=FALSE,logtrans = c(),...){
         et.formula <- formula(paste0(timename," ~ min(",paste(paste0("time.event.",events,"=",events),collapse=", "),")"))
         sim_model <- lava::eventTime(sim_model,et.formula, object$attributes$eventHistory$time$names[2])
     }
-    browser()
+
     # Estimate regression coefficients in real data
     # and add them to the lvm object using lava::regression
-    '%!in%' <- function(x,y)!('%in%'(x,y))
-    for(var in latent_vars[latent_vars %!in% object$attributes$eventHistory$time$names]){
+    for(var in latent_vars[!(latent_vars %in% object$attributes$eventHistory$time$names)]){
         covariates <- get_covariates(object,var,dichotomized_variables)
         reg_formula <- as.formula(paste0(var, "~", covariates))
         # we have three types of regression to deal with now. Either
@@ -328,6 +337,11 @@ synthesize.lvm <- function(object, data, verbose=FALSE,logtrans = c(),...){
           p0<-exp(coef(fit)[1])/(1+exp(coef(fit)[1]))
           lava::distribution(sim_model,as.formula(paste0("~", var))) <- lava::binomial.lvm(p=p0)
           lava::regression(sim_model,reg_formula)<-coef(fit)[-1]
+        }
+        else if ("gaussian"%in% attributes(object$attributes$distribution[[var]])$family){
+          fit <- lm(reg_formula,data=data)
+          lava::regression(sim_model,reg_formula)<-coef(fit)[-1]
+          lava::distribution(sim_model,as.formula(paste0("~", var))) <- lava::normal.lvm(mean = coef(fit)[1], sd = summary(fit)$sigma)
         }
         else if (var %in% logtrans){
           #we don't do anything on the original scale
@@ -345,9 +359,7 @@ synthesize.lvm <- function(object, data, verbose=FALSE,logtrans = c(),...){
         }
         # case normal; previous code didn't capture the case where the attribute was gaussian (only gaussian(identity))
         else {
-          fit <- lm(reg_formula,data=data)
-          lava::regression(sim_model,reg_formula)<-coef(fit)[-1]
-          lava::distribution(sim_model,as.formula(paste0("~", var))) <- lava::normal.lvm(mean = coef(fit)[1], sd = summary(fit)$sigma)
+          stop("Distribution is not supported.")
         }
     }
     #transform logtransformed covariates back
