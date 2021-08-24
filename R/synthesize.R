@@ -343,9 +343,6 @@ synthesize.lvm <- function(object, data, verbose=FALSE,logtrans = c(),...){
           lava::regression(sim_model,reg_formula)<-coef(fit)[-1]
           lava::distribution(sim_model,as.formula(paste0("~", var))) <- lava::normal.lvm(mean = coef(fit)[1], sd = summary(fit)$sigma)
         }
-        else if (var %in% logtrans){
-          #we don't do anything on the original scale
-        }
         #case: categorical
         else if (var %in% dichotomized_variables){
           warning("Synthesize untested for categorical variables")
