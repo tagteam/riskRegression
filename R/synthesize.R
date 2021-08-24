@@ -104,14 +104,18 @@ synthesize.formula <- function(object, # a formula object Surv(time,event) or Hi
                                recursive=FALSE,
                                ...){
     requireNamespace("lava",quietly=TRUE)
+
     # time to event outcome
     tt <- all.vars(update(object,".~1"))
+
     # covariates
     vv <- all.vars(formula(delete.response(terms(object))))
     fml <- paste(vv,collapse = "+")
     vv.withtrans <- attr(terms(formula(delete.response(terms(object)))),"term.labels")
     logtrans <- vv[vv!=vv.withtrans]
-    # could be done more easily if the order of the covariates is not important, but it might be due to recursive
+
+    # could be done more easily if the order of the covariates is not important,
+    # but it might be due to recursive
     # potentially being set to TRUE
     # this changes the formula to be logtransformed
     hasLog <- length(logtrans)>0
@@ -155,8 +159,7 @@ synthesize.formula <- function(object, # a formula object Surv(time,event) or Hi
       }
     }
 
-
-    # include recursive structure of covariates if true
+    # include recursive structure of covariates if requested
     if (recursive){
       cv <- vv
       while (length(cv) > 1) {
@@ -229,16 +232,17 @@ synthesize.lvm <- function(object, data, verbose=FALSE,logtrans = c(),...){
     # deal with exogenous variables (which are without covariates)
     for(var in exogenous(object)){
       var_formula <- as.formula(paste0("~", var))
-      #continous
+
+      #case: gaussian
       if("gaussian" %in% attributes(object$attributes$distribution[[var]])$family){
         lava::distribution(sim_model,var_formula) <- lava::normal.lvm(mean=mean(data[[var]]),
                                                                    sd=sd(data[[var]]))
       }
-      #binary
+      #case: binary
       else if("binomial" %in% attributes(object$attributes$distribution[[var]])$family){
         lava::distribution(sim_model, var_formula) <- lava::binomial.lvm(p=mean(factor(data[[var]])==levels(factor(data[[var]]))[2]))
       }
-      #categorical
+      #case: categorical
       else if(var %in% names(object$attributes$nordinal)){
         num_cat <- object$attributes$nordinal[[var]] #what if levels is NULL?
         cat_probs <- vector(mode="numeric", length=num_cat-1)
@@ -265,7 +269,7 @@ synthesize.lvm <- function(object, data, verbose=FALSE,logtrans = c(),...){
 
     for(var in colnames(data)[grepl('factor|character', sapply(data, class))]){
       if(!any(grepl(var,  dimnames(object$M)[[1]]))){
-
+          #variable not in lvm object
       } else if (length(levels(data[[var]]))>2){
         dichotomized_variables <- c(dichotomized_variables, var)
         for(lvl in levels(data[[var]])[-1]){
@@ -296,6 +300,7 @@ synthesize.lvm <- function(object, data, verbose=FALSE,logtrans = c(),...){
         return(fml)
       }
     }
+
     # define latent event time variables
     # note: will be a problem if there are several eventTime variables. Should loop through all these
     has.eventTime <- length(object$attributes$eventHistory)>0
@@ -332,12 +337,12 @@ synthesize.lvm <- function(object, data, verbose=FALSE,logtrans = c(),...){
         # 2. logistic regression
         # 3. multinomial logistic regression
         if ("binomial" %in% attributes(object$attributes$distribution[[var]])$family){
-          # correct link function?
           fit <- glm(reg_formula,data=data,family="binomial")
           p0<-exp(coef(fit)[1])/(1+exp(coef(fit)[1]))
           lava::distribution(sim_model,as.formula(paste0("~", var))) <- lava::binomial.lvm(p=p0)
           lava::regression(sim_model,reg_formula)<-coef(fit)[-1]
         }
+        # case: gaussian
         else if ("gaussian"%in% attributes(object$attributes$distribution[[var]])$family){
           fit <- lm(reg_formula,data=data)
           lava::regression(sim_model,reg_formula)<-coef(fit)[-1]
@@ -354,11 +359,11 @@ synthesize.lvm <- function(object, data, verbose=FALSE,logtrans = c(),...){
             lava::regression(sim_model,reg_formula)<-coef(fit)[-1]
           }
         }
-        # case normal; previous code didn't capture the case where the attribute was gaussian (only gaussian(identity))
         else {
           stop("Distribution is not supported.")
         }
     }
+
     #transform logtransformed covariates back
     for (v in logtrans){
       transform(sim_model,as.formula(paste0(v,"~log",v))) <- function(x){exp(x)}
