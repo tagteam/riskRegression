@@ -1,23 +1,23 @@
-### develop-synthesizer.R --- 
+### develop-synthesizer.R ---
 #----------------------------------------------------------------------
 ## Author: Thomas Alexander Gerds
 ## Created: Jul 21 2021 (08:59) 
 ## Version: 
-## Last-Updated: Aug  2 2021 (15:27) 
+## Last-Updated: Aug 27 2021 (13:33) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 19
+##     Update #: 20
 #----------------------------------------------------------------------
-## 
+##
 ### Commentary:
 ##
 ##  Working document for the collaboration between
 ##  Johan Sebastian Ohlendorff and Thomas Alexander Gerds.
 ##
-## In this document we develop the functionality of the data synthesizer. 
-## 
+## In this document we develop the functionality of the data synthesizer.
+##
 ### Change Log:
 #----------------------------------------------------------------------
-## 
+##
 ### Code:
 
 library(riskRegression)
@@ -51,7 +51,7 @@ s <- synthesize(Surv(time,status)~age+sex+edema+protime,data=pbc)
 sim(s,10)
 
 # Task 2: learning log transformations
-# this should work 
+# this should work
 s <- synthesize(Surv(time,event)~age+sex+log(protime),data=pbc)
 d <- sim(s,1000)
 d$time <- as.numeric(d$time)
@@ -71,10 +71,7 @@ s <- synthesize(Surv(time,status)~protime+age+sex,data=pbc,recursive=TRUE)
 
 d <- sim(s,1000)
 d$time <- as.numeric(d$time)
-
-fit <- coxph(Surv(time,event)~age+sex+log(protime),data=pbc)
-fit.s <- coxph(Surv(time,event)~age+sex+logprotime,data=d)
-cbind(coef(fit),coef(fit.s))
+d$event <- 1*(d$status!=0)
 
 fit.protime <- glm(protime~age+sex+protime,data=pbc)
 fit.protime.s <- glm(protime~age+sex+protime,data=d)
