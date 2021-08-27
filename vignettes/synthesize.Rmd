@@ -1,0 +1,95 @@
+---
+title: "Synthesize"
+author: "Johan Sebastian Ohlendorff"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Vignette Title}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+## Introduction
+
+This vignette demonstrates how the function synthesize can be used to make an estimated lava object (this is our way of working with structural equation models) based on a formula in R. This can then be used to simulate data that should be similar to the data that we used to estimate the lava object with. There are 3 kinds of responses that can be used in the synthesize object:
+
+- A survival-type response, i.e. either a response of the form `Surv(time,event)` or `Hist(time, event)`.
+- A categorical response (for now only binary responses are supported corresponding to logistic regression).
+- A normal/gaussian response. 
+
+We first consider an example of the case where the response is a survival-type response. 
+
+## Survival repsonse
+We consider the survival case and load the PBC dataset and remove missing data:
+```{r}
+library(riskRegression)
+library(survival)
+library(lava)
+head(pbc)
+pbc <- na.omit(pbc)
+```
+
+There are two kinds of survival responses we can consider; one with competing risks outcome and one without. We first consider how to use synthesize normal survival outcome. In this case we need to make the event variable binary, i.e.
+```{r}
+pbc$event <- 1*(pbc$status!=0)
+```
+Now we can synthesize a lava object:
+```{r}
+ms <- synthesize(Hist(time,event)~log(bili)+log(protime)+edema+sex+age,data=pbc)
+ms
+```
+
+Essentially what this does is thet 
+
+The interpretation of the output is that 
+
+synthesize survival outcome data
+
+
+
+Note the various macros within the `vignette` section of the metadata block above. These are required in order to instruct R how to build the vignette. Note that you should change the `title` field and the `\VignetteIndexEntry` to match the title of your vignette.
+
+## Styles
+
+The `html_vignette` template includes a basic CSS theme. To override this theme you can specify your own CSS in the document metadata as follows:
+
+    output: 
+      rmarkdown::html_vignette:
+        css: mystyles.css
+
+## Figures
+
+The figure sizes have been customised so that you can easily put two images side-by-side. 
+
+```{r, fig.show='hold'}
+plot(1:10)
+plot(10:1)
+```
+
+You can enable figure captions by `fig_caption: yes` in YAML:
+
+    output:
+      rmarkdown::html_vignette:
+        fig_caption: yes
+
+Then you can use the chunk option `fig.cap = "Your figure caption."` in **knitr**.
+
+## More Examples
+
+You can write math expressions, e.g. $Y = X\beta + \epsilon$, footnotes^[A footnote here.], and tables, e.g. using `knitr::kable()`.
+
+```{r, echo=FALSE, results='asis'}
+knitr::kable(head(mtcars, 10))
+```
+
+Also a quote using `>`:
+
+> "He who gives up [code] safety for [code] speed deserves neither."
+([via](https://twitter.com/hadleywickham/status/504368538874703872))
