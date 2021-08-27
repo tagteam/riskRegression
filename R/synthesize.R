@@ -3,9 +3,9 @@
 ## Author: Johan Sebastian Ohlendorff & Vilde Hansteen Ung & Thomas Alexander Gerds
 ## Created: Apr 28 2021 (09:04)
 ## Version:
-## Last-Updated: Jul 27 2021 (09:07) 
+## Last-Updated: Aug  2 2021 (15:27) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 52
+##     Update #: 59
 #----------------------------------------------------------------------
 ##
 ### Commentary:
@@ -260,7 +260,8 @@ synthesize.lvm <- function(object, data, verbose=FALSE,...){
     # 2. binomial
     # 3. weibull
     # 4. 
-    for(var in dimnames(object$M)[[1]]){
+    ## for(var in dimnames(object$M)[[1]]){
+    for(var in c("time.event.1")){
         var_formula <- as.formula(paste0("~", var))
 
     if("gaussian" %in% attributes(object$attributes$distribution[[var]])$family){
@@ -303,6 +304,17 @@ synthesize.lvm <- function(object, data, verbose=FALSE,...){
     # Estimate regression coefficients in real data 
     # and add them to the lvm object using lava::regression
     for(var in dimnames(object$M)[[1]]){
+        # Find covariates that have an effect on var
+    if (var %in% object$attributes$eventHistory$time$latentTimes) {
+        # variable is a latent time and should inherit covariates
+        # from real data time variable
+        timevar <- 
+        covariates <- dimnames(object$M)[[2]][object$M[,var] == 1]
+        
+    }else{
+        covariates <- dimnames(object$M)[[2]][object$M[,var] == 1]
+    }
+
         covariates <- dimnames(object$M)[[2]][object$M[,var] == 1]
         if (has.eventTime && length(dimnames(object$M)[[2]][object$M[,timename] == 1]) != 0
             && length(covariates)==0
@@ -322,46 +334,46 @@ synthesize.lvm <- function(object, data, verbose=FALSE,...){
 
       reg_formula <- as.formula(paste0(var, "~", covariates))
 
-      # lava::regression depends on response variable type
-      # if variable has a specified distribution, do:
-      if(var %in% names(object$attributes$distribution)){
-          if("gaussian" %in% attributes(object$attributes$distribution[[var]])$family) {
-              lava::regression(object,reg_formula)<-coef(lm(reg_formula,data=data))[-1]
-          } else if ("binomial" %in% attributes(object$attributes$distribution[[var]])$family){
-              #browser()
-              lava::regression(object,reg_formula)<-coef(glm(reg_formula,data=data,family="binomial"))[-1]
-              lava::intercept(object, all.vars(reg_formula)[1])<-coef(glm(reg_formula,data=data,family="binomial"))[1]
-          } else if ("weibull" %in% attributes(object$attributes$distribution[[var]])$family)
-          {
-              if(length(covariates) == 0){
-                  #reg_formula <- as.formula(paste0(var,"~", "1"))
-                  #is anything needed here?
-              }
-              else{
-                  if (has.eventTime){
-                      response <- paste(object$attributes$eventHistory[[timename]]$names, collapse = ",")
-                      status_ind <- object$attributes$eventHistory[[timename]]$events[which(object$attributes$eventHistory[[timename]]$latentTimes %in% var)]
-                      response <- paste0(response, "==", status_ind)
-                      surv_formula <- as.formula(paste0("Surv(", response, ")~", covariates))
-                      G <- survreg(surv_formula, data = data)
-                      reg_formula <- as.formula(paste0(var, "~", covariates))
-                      lava::regression(object, reg_formula) <- -coef(G)[-1]/G$scale
-                  }
-              }
-          }
-          # if variable does not have a specified distribution, then:
-      } else if (!(class(data[[var]]) == "numeric") & length(levels(factor(data[[var]]))) == 2) #variable is binary
-      {
-          lava::regression(object,reg_formula) <- coef(glm(reg_formula,data=data,family="binomial"))[-1]
-      } else if (class(data[[var]]) == "numeric") #variable is continous
-      {
-          lava::regression(object,reg_formula) <- coef(lm(reg_formula,data=data))[-1]
-      }
-      #what if variable is categorical?
+            # lava::regression depends on response variable type
+            # if variable has a specified distribution, do:
+            if(var %in% names(object$attributes$distribution)){
+                if("gaussian" %in% attributes(object$attributes$distribution[[var]])$family) {
+                    lava::regression(object,reg_formula)<-coef(lm(reg_formula,data=data))[-1]
+                } else if ("binomial" %in% attributes(object$attributes$distribution[[var]])$family){
+                    #browser()
+                    lava::regression(object,reg_formula)<-coef(glm(reg_formula,data=data,family="binomial"))[-1]
+                    lava::intercept(object, all.vars(reg_formula)[1])<-coef(glm(reg_formula,data=data,family="binomial"))[1]
+                } else if ("weibull" %in% attributes(object$attributes$distribution[[var]])$family)
+                {
+                    if(length(covariates) == 0){
+                        #reg_formula <- as.formula(paste0(var,"~", "1"))
+                        #is anything needed here?
+                    }
+                    else{
+                        if (has.eventTime){
+                            response <- paste(object$attributes$eventHistory[[timename]]$names, collapse = ",")
+                            status_ind <- object$attributes$eventHistory[[timename]]$events[which(object$attributes$eventHistory[[timename]]$latentTimes %in% var)]
+                            response <- paste0(response, "==", status_ind)
+                            surv_formula <- as.formula(paste0("Surv(", response, ")~", covariates))
+                            G <- survreg(surv_formula, data = data)
+                            reg_formula <- as.formula(paste0(var, "~", covariates))
+                            lava::regression(object, reg_formula) <- -coef(G)[-1]/G$scale
+                        }
+                    }
+                }
+                # if variable does not have a specified distribution, then:
+            } else if (!(class(data[[var]]) == "numeric") & length(levels(factor(data[[var]]))) == 2) #variable is binary
+            {
+                lava::regression(object,reg_formula) <- coef(glm(reg_formula,data=data,family="binomial"))[-1]
+            } else if (class(data[[var]]) == "numeric") #variable is continous
+            {
+                lava::regression(object,reg_formula) <- coef(lm(reg_formula,data=data))[-1]
+            }
+            #what if variable is categorical?
+        }
     }
-  }
     return(object)
-  }
+}
 
 
 #----------------------------------------------------------------------
