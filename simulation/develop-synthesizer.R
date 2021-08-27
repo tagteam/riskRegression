@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Jul 21 2021 (08:59) 
 ## Version: 
-## Last-Updated: Aug  2 2021 (13:26) 
+## Last-Updated: Aug  2 2021 (15:27) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 18
+##     Update #: 19
 #----------------------------------------------------------------------
 ## 
 ### Commentary:
@@ -43,7 +43,9 @@ sim(s,10)
 #  regressions of the time variables are conditioning on edema0.5 and
 #  edema1 instead of edema.
 pbc$event <- 1*(pbc$status!=0)
+
 synthesize(Surv(time,event)~sex+edema,data=pbc)
+synthesize(Surv(dummy,event)~sex+edema,data=pbc)
 
 s <- synthesize(Surv(time,status)~age+sex+edema+protime,data=pbc)
 sim(s,10)

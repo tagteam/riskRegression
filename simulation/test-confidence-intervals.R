@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Jul 20 2021 (16:19) 
 ## Version: 
-## Last-Updated: Aug  2 2021 (13:49) 
+## Last-Updated: Aug  2 2021 (15:27) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 12
+##     Update #: 13
 #----------------------------------------------------------------------
 ## 
 ### Commentary:
@@ -27,12 +27,13 @@ library(riskRegression)
 data(pbc)
 pbc <- na.omit(pbc)
 pbc$treat <- 1*(pbc$trt==2)
+pbc$event <- 1*(pbc$status!=0)
     
 # synthesize binary outcome data
 mb <- synthesize(treat~log(bili)+log(protime)+edema+sex+age,data=pbc,na.rm=TRUE)
 
 # synthesize survival outcome data
-ms <- synthesize(Hist(time,status!=0)~log(bili)+log(protime)+edema+sex+age,data=pbc,na.rm=TRUE)
+ms <- synthesize(Hist(time,event)~log(bili)+log(protime)+edema+sex+age,data=pbc,na.rm=TRUE)
 
 # synthesize competing risk outcome data
 mc <- synthesize(Hist(time,status)~log(bili)+log(protime)+edema+sex+age,data=pbc,na.rm=TRUE)
