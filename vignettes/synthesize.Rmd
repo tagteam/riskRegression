@@ -40,9 +40,11 @@ X_2 &\sim X_3 + \dots + X_k \\
 X_{k-1} &\sim X_k \\
 \end{align*}
 
-Synthesize then estimates these estimates by maximum likelihood estimation. We consider a few examples of our function. We first consider an example of the case where the response is a survival-type response. 
+Synthesize then estimates by maximum likelihood estimation. We consider a few examples of our function. We first consider an example of the case where the response is a survival-type response. 
 
 ## Survival repsonse
+
+### Survival outcome case
 We consider first the outcome survival case and load the Melanoma data set (please include all the variables in the data set in the model (otherwise synthesize might not work as intended)):
 ```{r}
 library(riskRegression)
@@ -69,7 +71,7 @@ corresponding to whether the patient survived (0) or not (1). Now we can synthes
 ms <- synthesize(Surv(time,eventBin)~log(thick)+sex+age+invasion,data=Melanoma)
 summary(ms)
 ```
-In this case, a Weibull survival model is used to model the censorship time and uncensored lifetime with the given covariates. The model then specifies that the censored survival time and the indicator for wheher the data was censored or not is given deterministically. Under Exogeonous variables, we find the distributions for the covariates. Further down in "Regression parameters", we find the estimated parameters the regression (we note that the parameters for covariates are not as easily found). 
+In this case, a Weibull survival model is used to model the censorship time and uncensored lifetime with the given covariates. The model then specifies that the censored survival time and the indicator for whether the data was censored or not is given deterministically. Under Exogeonous variables, we find the distributions for the covariates. Further down in "Regression parameters", we find the estimated parameters the regression (we note that the parameters for covariates are not as easily found). 
 
 Let us consider a basic use case scenario where we simulate:
 ```{r}
@@ -79,10 +81,31 @@ fit <- coxph(Surv(time,eventBin)~log(thick)+sex+age+invasion,data=Melanoma)
 fit.s <- coxph(Surv(time,eventBin)~log(thick)+sex+age+invasion,data=d)
 
 res <- as.data.frame(cbind(coef(fit),coef(fit.s)))
-colnames(res) <- c("Model from original data", "Model from simulated data")
+colnames(res) <- c("Parameters of the model from original data", "Parameters of the model from simulated data")
 knitr::kable(res)
 ```
 First we simulate from our estimated model, then we fit a corresponding model to the data and the simulated data. Hopefully the numbers between the 2 columns should be very similar which they are.
+
+### Competing risk case
+Let us now consider how to do the same with the competing risk case. In the instance, we don't make a binary event variable:
+```{r}
+ms.comp <- synthesize(Surv(time,status)~log(thick)+sex+age+invasion,data=Melanoma)
+summary(ms.comp)
+```
+This gives the same as before except that the model of survival is changed. Here a Weibull survival model is used to model the censorship time, uncensored lifetime and death from other causes with the given covariates.
+
+Let us again consider a basic use case scenario where we simulate (the competing risk model should correspond to several Cox regression models; corresponding to modeling the intensity for the case where the patient died from something else):
+```{r}
+set.seed(15)
+d <- sim(ms.comp,10000)
+fit.comp <- coxph(Surv(time,status==2)~log(thick)+sex+age+invasion,data=Melanoma)
+fit.comp.s <- coxph(Surv(time,status==2)~log(thick)+sex+age+invasion,data=d)
+
+res <- as.data.frame(cbind(coef(fit.comp),coef(fit.comp.s)))
+colnames(res) <- c("Parameters of the model from original data", "Parameters of the model from simulated data")
+knitr::kable(res)
+```
+
 
 ### Including recursion
 
@@ -101,13 +124,28 @@ Here we see that (in the sense of formulas)
 ```{r}
 set.seed(15)
 d <- sim(ms.rec,10000)
-fit <- coxph(Surv(time,eventBin)~log(thick)+sex+age+invasion,data=Melanoma)
-fit.s <- coxph(Surv(time,eventBin)~log(thick)+sex+age+invasion,data=d)
+fit.rec.s <- coxph(Surv(time,eventBin)~log(thick)+sex+age+invasion,data=d)
 
-res <- as.data.frame(cbind(coef(fit),coef(fit.s)))
-colnames(res) <- c("Model from original data", "Model from simulated data")
+res <- as.data.frame(cbind(coef(fit),coef(fit.rec.s),coef(fit.s)))
+colnames(res) <- c("Parameters of the model from original data", "Parameters of the model from simulated data of the recursive model","Parameters of the model from simulated of the non-recursive model")
 knitr::kable(res)
 ```
+
+The coefficents of the model with the simulated data from the recursive model are not particularly close to the original data. Perhaps this model models the data worse than the non-recursive model.
+
+We could also check one of the other relationships in the recursive model, i.e `logthick ~ sex + age + invasion`:
+```{r}
+set.seed(15)
+d <- sim(ms.rec,10000)
+fit.rec.alt <- lm(log(thick)~sex+age+invasion,data=Melanoma)
+fit.rec.alt.s <- lm(log(thick) ~ sex + age + invasion, data= d)
+
+res <- as.data.frame(cbind(coef(fit.rec.alt),coef(fit.rec.alt.s)))
+colnames(res) <- c("Parameters of the model (with formula: logthick ~ sex + age + invasion) from original data", "Parameters of the model (with formula: logthick ~ sex + age + invasion) from simulated data")
+knitr::kable(res)
+
+```
+The parameters look to be quite close to each other.
 
 ## A linear/logistic regression model
 To make a simple linear regression model (the dataset `cars` is a included in R), we do:
@@ -124,7 +162,7 @@ fit <- lm(dist ~ speed, data = cars)
 fit.s <- lm(dist ~ speed, data = d)
 
 res <- as.data.frame(cbind(coef(fit),coef(fit.s)))
-colnames(res) <- c("Model from original data", "Model from simulated data")
+colnames(res) <- c("Parameters of the model from original data", "Parameters of the model from simulated data")
 knitr::kable(res)
 ```
 
@@ -151,7 +189,7 @@ fit <- glm(admit ~ gre + gpa + factor(rank), data = UCLA.dat)
 fit.s <- glm(admit ~ gre + gpa + rank, data = d)
 
 res <- as.data.frame(cbind(coef(fit),coef(fit.s)))
-colnames(res) <- c("Model from original data", "Model from simulated data")
+colnames(res) <- c("Parameters of the model from original data", "Parameters of the model from simulated data")
 knitr::kable(res)
 ```
 
