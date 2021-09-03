@@ -122,7 +122,7 @@
 ##'  these on to the function randomForestSRC::predict.rfsrc. A specific example in this case would be
 ##'  \code{list(rfsrc=list(na.action="na.impute"))}.
 ##' @param errorhandling .
-##' 
+##'
 ##'  A more flexible approach is to write a new predictRisk S3-method. See Details.
 ##' @param debug Logical. If \code{TRUE} indicate landmark in progress of the program.
 ##' @param useEventTimes obsolete.
@@ -344,12 +344,12 @@
 ##'              y=TRUE, x = TRUE)
 ##' # Bootstrapping on multiple cores
 ##' x1 = Score(list("Cox(X1+X2+X7+X9)"=cox1),
-##'      formula=Surv(time,event)~1,data=trainSurv, times=c(5,8), 
+##'      formula=Surv(time,event)~1,data=trainSurv, times=c(5,8),
 ##'      parallel = "as.registered", split.method="bootcv",B=100)
 ##' }
 ##'
 ##'
-##' 
+##'
 ##' @author Thomas A Gerds \email{tag@@biostat.ku.dk} and Paul Blanche \email{paul.blanche@@univ-ubs.fr}
 ##' @references
 ##'
@@ -619,7 +619,7 @@ Score.list <- function(object,
         ## passed or `as.registered` is specified to ignore the `ncpus` argument
         ## (very counter-intuitive that when I'm setting up the cluster I still
         ## need to specify ncpus > 1):
-        if (ncpus<=1 && is.null(cl) && parallel != "as.registered") {            
+        if (ncpus<=1 && is.null(cl) && parallel != "as.registered") {
             parallel <- "no"
         }
         ## if (ncpus <- pmin(ncpus,parallel::detectCores()))
@@ -2173,12 +2173,16 @@ delongtest <-  function(risk,
     V01 <- matrix(0, nrow = nControls, ncol = nauc)
     tmn <- t(riskcontrols)
     tmp <- t(riskcases)
-    for (i in 1:nCases) {
-        V10[i, ] <- rowSums(tmn < tmp[, i]) + 0.5 * rowSums(tmn == tmp[, i])
-    }
-    for (i in 1:nControls) {
-        V01[i, ] <- rowSums(tmp > tmn[, i]) + 0.5 * rowSums(tmp == tmn[, i])
-    }
+    V10 <- rowSumsAlt1(V10,tmn,tmp)
+    V01 <- rowSumsAlt2(V01,tmn,tmp)
+
+    #browser()
+    #for (i in 1:nCases) {
+    #    V10[i, ] <- rowSums(tmn < tmp[, i]) + 0.5 * rowSums(tmn == tmp[, i])
+    #}
+    #for (i in 1:nControls) {
+    #    V01[i, ] <- rowSums(tmp > tmn[, i]) + 0.5 * rowSums(tmp == tmn[, i])
+    #}
     V10 <- V10/nControls
     V01 <- V01/nCases
     W10 <- cov(V10)
