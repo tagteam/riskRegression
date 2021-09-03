@@ -131,7 +131,54 @@ colnames(res) <- c("Parameters of the model from original data", "Parameters of 
 knitr::kable(res)
 ```
 
-The coefficents of the model with the simulated data from the recursive model are not particularly close to the original data. Perhaps this model models the data worse than the non-recursive model.
+The coefficients of the model with the simulated data from the recursive model are not particularly close to the original data. Let us simulate to see if these differences are systematic:
+
+```{r}
+library(ggplot2)
+library(gridExtra)
+
+make.boxplot.simulation <- function(object, object.rec, data, sample.sizes, n.sim){
+  #Copare to model from original data
+  coef.compare <- coef(coxph(Surv(time,eventBin)~log(thick)+sex+age+invasion,data=data))
+  
+  # make dataframe with columnnames of the form: parameters, sample.size, recursion
+  df <- data.frame(matrix(ncol = length(coef.compare)+2, nrow = 0))
+  column.names <- c(names(coef.compare),"sample.size", "recursive")
+  colnames(df) <- column.names
+  
+  #simulate
+  for (sample.size in sample.sizes){
+    for (i in 1:n.sim){
+      d <- sim(object, sample.size)
+      coeff <- coef(coxph(Surv(time,eventBin)~log(thick)+sex+age+invasion,data=d))
+      df[nrow(df)+1,] <- c(coeff,sample.size,"non recursive")
+      
+      d.rec <- sim(object.rec, sample.size)
+      coeff.rec <- coef(coxph(Surv(time,eventBin)~log(thick)+sex+age+invasion,data=d.rec))
+      df[nrow(df)+1,] <- c(coeff.rec,sample.size,"recursive")
+    }
+  }
+
+  #make variables of the correct type; otherwise ggplot doesn't understand
+  for (c in names(df)[0:length(coef.compare)]){
+    df[[c]] <- as.numeric(df[[c]])
+  }
+  df$sample.size <- as.factor(df$sample.size)
+  df$recursive <- as.factor(df$recursive)
+  
+  ggplot(df, aes(x=sample.size, y=age, fill=recursive)) +geom_boxplot() + geom_hline(yintercept =coef.compare[["age"]])
+  
+  #plots <- c()
+  
+  #for (c in names(df)[0:length(coef.compare)]){
+  #  plots <- c(plots,ggplot(df, aes(x=sample.size, y=c, fill=recursive)) +geom_boxplot() + geom_hline(yintercept =coef.compare[[c]]))
+  #}
+  #do.call("grid.arrange", c(plots, ncol=length(coef.compare)))
+}
+
+make.boxplot.simulation(ms,ms.rec, Melanoma, c(100,200,500,1000),1000)
+```
+
 
 We could also check one of the other relationships in the recursive model, i.e `logthick ~ sex + age + invasion`:
 ```{r}
