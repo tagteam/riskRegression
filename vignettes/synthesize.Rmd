@@ -3,6 +3,7 @@ title: "Synthesize"
 author: "Johan Sebastian Ohlendorff"
 date: "`r Sys.Date()`"
 output: rmarkdown::html_vignette
+bibliography: ReferencesSynthesize.bib
 vignette: >
   %\VignetteIndexEntry{Vignette Title}
   %\VignetteEngine{knitr::rmarkdown}
@@ -18,78 +19,225 @@ knitr::opts_chunk$set(
 
 ## Introduction
 
-This vignette demonstrates how the function synthesize can be used to make an estimated lava object (this is our way of working with structural equation models) based on a formula in R. This can then be used to simulate data that should be similar to the data that we used to estimate the lava object with. There are 3 kinds of responses that can be used in the synthesize object:
+This vignette demonstrates how the function synthesize can be used to make an estimated lava object [@lava, see the next section] based on a formula in R. This can then be used to simulate data that should be similar to the data that we used to estimate the lava object with. There are 3 kinds of responses that can be used in the synthesize object:
 
 - A survival-type response, i.e. either a response of the form `Surv(time,event)` or `Hist(time, event)`.
 - A categorical response (for now only binary responses are supported corresponding to logistic regression).
 - A normal/gaussian response. 
 
-We first consider an example of the case where the response is a survival-type response. 
+We first give a mathematical specification of the model assumed for the data:
+
+### Introduction to the model
+Assume first that we are not dealing with survival data. For a general input formula `y ~ x1 + ... + xk`, with `recursive = FALSE`, we assume the following model for the data $(Y_i,X_{1i},\dots, X_{ki})_{i=1, \dots n}$ (the observations are assumed iid). The response variable $Y$ is assumed to have a linear predictor $\eta ^T \bf{X}$ (either in the case of a logistic regression model or a linear model). The covariates $X_i$ are assumed to each have their own distribution, depending on the type of variable that they are. Continuous variables variables are assumed to be gaussian, i.e. if the $j$'th covariate is continuous then $X_j \sim N(\mu_j, \sigma^2_j)$ - with categorical/binary variables a similar assumption is made.
+
+In the case of survival outcome data, we change the above setup to the data $(T_i, \Delta_i,X_{1i},\dots, X_{ki})_{i=1, \dots n}$ (this is assumed to be iid) where $T_i$ is the right-censored lifetime, $\Delta_i$ is the indicator telling us whether $T_i$ is uncensored or censored. Then the model is that the uncensored lifetime and censorship times follow a Weibull model (this is such that we can simulate survival data) with the same linear predictor as before. The covariates have also the same assumption as before. With competetive risks, a similar setup is made to this one.
+
+With `recursive = TRUE`, we allow a type of structural equation models that states that we should also include the relationships with the covariates (indicating the corresponding formulas in R):
+\begin{align*}
+X_1 &\sim X_2 + \dots + X_k \\
+X_2 &\sim X_3 + \dots + X_k \\
+... \\
+X_{k-1} &\sim X_k \\
+\end{align*}
+
+Synthesize then estimates by maximum likelihood estimation. We consider a few examples of our function. We first consider an example of the case where the response is a survival-type response. 
 
 ## Survival repsonse
-We consider the survival case and load the PBC dataset and remove missing data:
+
+### Survival outcome case
+We consider first the outcome survival case and load the Melanoma data set (please include all the variables in the data set in the model (otherwise synthesize might not work as intended)):
 ```{r}
 library(riskRegression)
 library(survival)
 library(lava)
-head(pbc)
-pbc <- na.omit(pbc)
+data("Melanoma")
+Melanoma <- subset(Melanoma, select = c("time","status","thick","sex","age","invasion"))
+knitr::kable(head(Melanoma))
 ```
+The data concerns the survival of patients after an operation. We consider the variables of the dataset:
+- `time` meaning the censored lifetime.
+- `status` indicating whether the person died from the disease, 0 means censored, 1 means death by melanoma, and 2 means that the patient died from other causes. 
+- `thick` meaning the thickness of the tumor (in mm).
+- `sex` meaning the sex of the patient (M/F).
+- `age` meaning the age of the patient at the time of operation.
+- `invasion` meaning the level of invasion.
 
-There are two kinds of survival responses we can consider; one with competing risks outcome and one without. We first consider how to use synthesize normal survival outcome. In this case we need to make the event variable binary, i.e.
+There are two kinds of survival responses we can consider; one with competing risks outcome and one without. We first consider how to use synthesize survival outcome, but the other case is the same; we just don't use the line below. In this case we need to make the event variable binary, i.e.
 ```{r}
-pbc$event <- 1*(pbc$status!=0)
+Melanoma$eventBin <- 1*(Melanoma$status!=0)
 ```
-Now we can synthesize a lava object:
+corresponding to whether the patient survived (0) or not (1). Now we can synthesize a lava object (note that it is possible to specify how many unique values a variable can have to be considered either categorical or normal with `max.levels` (if not specified, it is 10)):
 ```{r}
-ms <- synthesize(Hist(time,event)~log(bili)+log(protime)+edema+sex+age,data=pbc)
-ms
+ms <- synthesize(Surv(time,eventBin)~log(thick)+sex+age+invasion,data=Melanoma)
+summary(ms)
+```
+In this case, a Weibull survival model is used to model the censorship time and uncensored lifetime with the given covariates. The model then specifies that the censored survival time and the indicator for whether the data was censored or not is given deterministically. Under Exogeonous variables, we find the distributions for the covariates. Further down in "Regression parameters", we find the estimated parameters the regression (we note that the parameters for covariates are not as easily found). 
+
+Let us consider a basic use case scenario where we simulate:
+```{r}
+set.seed(15)
+d <- sim(ms,10000)
+fit <- coxph(Surv(time,eventBin)~log(thick)+sex+age+invasion,data=Melanoma)
+fit.s <- coxph(Surv(time,eventBin)~log(thick)+sex+age+invasion,data=d)
+
+res <- as.data.frame(cbind(coef(fit),coef(fit.s)))
+colnames(res) <- c("Parameters of the model from original data", "Parameters of the model from simulated data")
+knitr::kable(res)
+```
+First we simulate from our estimated model, then we fit a corresponding model to the data and the simulated data. Hopefully the numbers between the 2 columns should be very similar which they are.
+
+### Competing risk case
+Let us now consider how to do the same with the competing risk case. In the instance, we don't make a binary event variable:
+```{r}
+ms.comp <- synthesize(Surv(time,status)~log(thick)+sex+age+invasion,data=Melanoma)
+summary(ms.comp)
+```
+This gives the same as before except that the model of survival is changed. Here a Weibull survival model is used to model the censorship time, uncensored lifetime and death from other causes with the given covariates.
+
+Let us again consider a basic use case scenario where we simulate (the competing risk model should correspond to several Cox regression models; corresponding to modeling the intensity for the case where the patient died from something else):
+```{r}
+set.seed(15)
+d <- sim(ms.comp,10000)
+fit.comp <- coxph(Surv(time,status==2)~log(thick)+sex+age+invasion,data=Melanoma)
+fit.comp.s <- coxph(Surv(time,status==2)~log(thick)+sex+age+invasion,data=d)
+
+res <- as.data.frame(cbind(coef(fit.comp),coef(fit.comp.s)))
+colnames(res) <- c("Parameters of the model from original data", "Parameters of the model from simulated data")
+knitr::kable(res)
 ```
 
-Essentially what this does is thet 
 
-The interpretation of the output is that 
+### Including recursion
 
-synthesize survival outcome data
+If we specify that we want to have recursion then, we:
+```{r}
+ms.rec <- synthesize(Surv(time,eventBin)~log(thick)+sex+age+invasion,data=Melanoma,recursive = TRUE)
+ms.rec
+```
+Here we see that (in the sense of formulas)
+\begin{align*}
+\verb|logthick| \ &\verb|~| \  \verb|sex + age + invasion| \\
+\verb|sex| \ &\verb|~| \ \verb|age + invasion| \\
+\verb|age| \ &\verb|~| \ \verb|invasion|
+\end{align*}
+ in addition to what we had before. We could simulate again:
+```{r}
+set.seed(15)
+d <- sim(ms.rec,10000)
+fit.rec.s <- coxph(Surv(time,eventBin)~log(thick)+sex+age+invasion,data=d)
 
-
-
-Note the various macros within the `vignette` section of the metadata block above. These are required in order to instruct R how to build the vignette. Note that you should change the `title` field and the `\VignetteIndexEntry` to match the title of your vignette.
-
-## Styles
-
-The `html_vignette` template includes a basic CSS theme. To override this theme you can specify your own CSS in the document metadata as follows:
-
-    output: 
-      rmarkdown::html_vignette:
-        css: mystyles.css
-
-## Figures
-
-The figure sizes have been customised so that you can easily put two images side-by-side. 
-
-```{r, fig.show='hold'}
-plot(1:10)
-plot(10:1)
+res <- as.data.frame(cbind(coef(fit),coef(fit.rec.s),coef(fit.s)))
+colnames(res) <- c("Parameters of the model from original data", "Parameters of the model from simulated data of the recursive model","Parameters of the model from simulated of the non-recursive model")
+knitr::kable(res)
 ```
 
-You can enable figure captions by `fig_caption: yes` in YAML:
+The coefficients of the model with the simulated data from the recursive model are not particularly close to the original data. Let us simulate to see if these differences are systematic:
 
-    output:
-      rmarkdown::html_vignette:
-        fig_caption: yes
+```{r,warning=FALSE}
+library(ggplot2)
+#library(gridExtra)
 
-Then you can use the chunk option `fig.cap = "Your figure caption."` in **knitr**.
+make.boxplot.simulation <- function(object, object.rec, data, sample.sizes, n.sim){
+  #Copare to model from original data
+  coef.compare <- coef(coxph(Surv(time,eventBin)~log(thick)+sex+age+invasion,data=data))
+  
+  # make dataframe with columnnames of the form: parameters, sample.size, recursion
+  df <- data.frame(matrix(ncol = length(coef.compare)+2, nrow = 0))
+  column.names <- c(names(coef.compare),"sample.size", "recursive")
+  colnames(df) <- column.names
+  
+  #simulate
+  for (sample.size in sample.sizes){
+    for (i in 1:n.sim){
+      d <- sim(object, sample.size)
+      coeff <- coef(coxph(Surv(time,eventBin)~log(thick)+sex+age+invasion,data=d))
+      df[nrow(df)+1,] <- c(coeff,sample.size,"non recursive")
+      
+      d.rec <- sim(object.rec, sample.size)
+      coeff.rec <- coef(coxph(Surv(time,eventBin)~log(thick)+sex+age+invasion,data=d.rec))
+      df[nrow(df)+1,] <- c(coeff.rec,sample.size,"recursive")
+    }
+  }
 
-## More Examples
+  #make variables of the correct type; otherwise ggplot doesn't understand
+  for (c in names(df)[0:length(coef.compare)]){
+    df[[c]] <- as.numeric(df[[c]])
+  }
+  df$sample.size <- as.factor(df$sample.size)
+  df$recursive <- as.factor(df$recursive)
+  
+  ggplot(df, aes(x=sample.size, y=age, fill=recursive)) +geom_boxplot() + geom_hline(yintercept =coef.compare[["age"]])
+  
+  #plots <- c()
+  
+  #for (c in names(df)[0:length(coef.compare)]){
+  #  plots <- c(plots,ggplot(df, aes(x=sample.size, y=c, fill=recursive)) +geom_boxplot() + geom_hline(yintercept =coef.compare[[c]]))
+  #}
+  #do.call("grid.arrange", c(plots, ncol=length(coef.compare)))
+}
 
-You can write math expressions, e.g. $Y = X\beta + \epsilon$, footnotes^[A footnote here.], and tables, e.g. using `knitr::kable()`.
+make.boxplot.simulation(ms,ms.rec, Melanoma, c(100,200,500,1000),1000)
+```
+Which looks pretty reasonable.
 
-```{r, echo=FALSE, results='asis'}
-knitr::kable(head(mtcars, 10))
+We could also check one of the other relationships in the recursive model, i.e `logthick ~ sex + age + invasion`:
+```{r}
+set.seed(15)
+d <- sim(ms.rec,10000)
+fit.rec.alt <- lm(log(thick)~sex+age+invasion,data=Melanoma)
+fit.rec.alt.s <- lm(log(thick) ~ sex + age + invasion, data= d)
+
+res <- as.data.frame(cbind(coef(fit.rec.alt),coef(fit.rec.alt.s)))
+colnames(res) <- c("Parameters of the model (with formula: logthick ~ sex + age + invasion) from original data", "Parameters of the model (with formula: logthick ~ sex + age + invasion) from simulated data")
+knitr::kable(res)
+
+```
+The parameters look to be quite close to each other.
+
+## A linear/logistic regression model
+To make a simple linear regression model (the dataset `cars` is a included in R), we do:
+```{r}
+data(cars)
+m.cars <- synthesize(dist ~ speed, data=cars)
+summary(m.cars)
+```
+The cars dataset consists of a number of observations of the speed of cars and their stopping distances. Checking that the model makes sense is another matter, and we will not consider it here. This example is just to show that it is simple to use synthesize when the response variable is not of survival type, but we could simulate as before:
+```{r}
+set.seed(15)
+d <- sim(m.cars,10000)
+fit <- lm(dist ~ speed, data = cars)
+fit.s <- lm(dist ~ speed, data = d)
+
+res <- as.data.frame(cbind(coef(fit),coef(fit.s)))
+colnames(res) <- c("Parameters of the model from original data", "Parameters of the model from simulated data")
+knitr::kable(res)
 ```
 
-Also a quote using `>`:
+Finally for a binary response, we could make a logistic regression which is done the same way as the linear regresion. We first find some data online suited for logistic regression:
+```{r}
+UCLA.dat <- read.csv("https://stats.idre.ucla.edu/stat/data/binary.csv")
+knitr::kable(head(UCLA.dat))
+```
+The dataset has the variables:
+- `admit` indicating whether a student was admitted as graduates to UCLA.
+- `gre` indicating the students GRE score.
+- `gpa` indicating what the student's grade point average was.
+- `rank` indicating the rank of their undergraduate school.
 
-> "He who gives up [code] safety for [code] speed deserves neither."
-([via](https://twitter.com/hadleywickham/status/504368538874703872))
+A logistic regression could then try to model whether students were admitted by using the other variables in the dataset via:
+```{r}
+UCLA.syn <- synthesize(admit ~ gre + gpa + rank, data = UCLA.dat)
+```
+We could again make a simulation analysis similar to the ones before:
+```{r}
+set.seed(15)
+d <- sim(UCLA.syn,10000)
+fit <- glm(admit ~ gre + gpa + factor(rank), data = UCLA.dat)
+fit.s <- glm(admit ~ gre + gpa + rank, data = d)
+
+res <- as.data.frame(cbind(coef(fit),coef(fit.s)))
+colnames(res) <- c("Parameters of the model from original data", "Parameters of the model from simulated data")
+knitr::kable(res)
+```
+
+## References
