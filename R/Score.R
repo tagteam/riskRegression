@@ -2178,11 +2178,11 @@ delongtest <-  function(risk,
         tmp <- t(riskcases)
         V10 <- rowSumsAlt1(V10,tmn,tmp)
         V01 <- rowSumsAlt2(V01,tmn,tmp)
-        V10 <- V10/nControls
-        V01 <- V01/nCases
+        #V10 <- V10/nControls
+        #V01 <- V01/nCases
         W10 <- cov(V10)
         W01 <- cov(V01)
-        S <- W10/nCases + W01/nControls
+        S <- W10/(nCases*nControls^2) + W01/(nControls*nCases^2)
         se.auc <- sqrt(diag(S))
         score[,se:=se.auc]
         score[,lower:=pmax(0,AUC-qnorm(1-alpha/2)*se)]
