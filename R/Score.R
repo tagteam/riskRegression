@@ -2176,14 +2176,24 @@ delongtest <-  function(risk,
         V01 <- matrix(0, nrow = nControls, ncol = nauc)
         tmn <- t(riskcontrols)
         tmp <- t(riskcases)
-        V10 <- rowSumsAlt1(V10,tmn,tmp)
-        V01 <- rowSumsAlt2(V01,tmn,tmp)
-        #V10 <- V10/nControls
-        #V01 <- V01/nCases
-        W10 <- cov(V10)
-        W01 <- cov(V01)
-        S <- W10/(nCases*nControls^2) + W01/(nControls*nCases^2)
-        se.auc <- sqrt(diag(S))
+        #old method
+        if (keep.vcov || length(dolist) > 0) {
+          V10 <- rowSumsAlt1(V10,tmn,tmp)
+          V01 <- rowSumsAlt2(V01,tmn,tmp)
+          #for (i in 1:nCases) {
+          #    V10[i, ] <- rowSums(tmn < tmp[, i]) + 0.5 * rowSums(tmn == tmp[, i])
+          #}
+          #for (i in 1:nControls) {
+          #    V01[i, ] <- rowSums(tmp > tmn[, i]) + 0.5 * rowSums(tmp == tmn[, i])
+          #}
+          W10 <- cov(V10)
+          W01 <- cov(V01)
+          S <- W10/(nCases*nControls^2) + W01/(nControls*nCases^2)
+          se.auc <- sqrt(diag(S))
+        }
+        else {
+          se.auc <- delongtestHelper(nauc,nCases,nControls,tmn,tmp)
+        }
         score[,se:=se.auc]
         score[,lower:=pmax(0,AUC-qnorm(1-alpha/2)*se)]
         score[,upper:=pmin(1,AUC+qnorm(1-alpha/2)*se)]
