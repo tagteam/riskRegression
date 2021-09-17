@@ -34,7 +34,7 @@ vec calculateMidrank(vec z){
   vec tk(m,fill::zeros);
   for (i = 0; i < m; i++){
     k = index[i];
-    tk[k] = t[i];
+    tk[k] = t[i]+1;
   }
   return tk;
 }
@@ -63,12 +63,23 @@ NumericMatrix calculateDelongCovarianceFast(NumericMatrix Xs, NumericMatrix Ys){
     NumericVector Yy = Ys(_,r);
     vec Xr = as<vec>(Xx);
     vec Yr = as<vec>(Yy);
+
+    Rcout << "Xr" << Xr << "\n\n\n";
+    /*std::cout << "Yr\n";
+    Yr.print();
+    std::cout << "\n\n\n\n\n\n\n";*/
     // concatenate
     vec Zr = join_cols(Xr,Yr);
     // calculate midranks
     vec TZr = calculateMidrank(Zr);
+    //std::cout << "tzr\n";
+    //TZr.print();
     vec TXr = calculateMidrank(Xr);
+    Rcout << "TXr" << TXr << "\n\n\n";
     vec TYr = calculateMidrank(Yr);
+    //std::cout << "tyr\n";
+    //TYr.print();
+    //std::cout << "\n\n\n\n\n\n\n";
     for (int i = 0; i < m; i++){
       // FIgure out how Xr is ordered compared to Zr ???
       //?1=TZr[i];
@@ -84,7 +95,8 @@ NumericMatrix calculateDelongCovarianceFast(NumericMatrix Xs, NumericMatrix Ys){
     }
   }
   mat S(k,k);
-  for (int r = 0; r < k; r++){
+  // can be done more effectively
+  /*for (int r = 0; r < k; r++){
     for (int s = 0; s < k; s++){
       double s10, s01 = 0.0;
       for (int i = 0; i < m; i++){
@@ -94,8 +106,12 @@ NumericMatrix calculateDelongCovarianceFast(NumericMatrix Xs, NumericMatrix Ys){
         s01 += (V01(r,j)-theta[r])*(V01(s,j)-theta[s]);
       }
       S(r,s)=s10/((double) (m-1))+ s01/(double(n-1));
+      // inprincple also S(s,r) could be specified here
     }
-  }
+  }*/
+  mat s10 = arma::cov(V10.t()).t();
+  mat s01 = arma::cov(V01.t()).t();
+  S = s01/((double) m)+s10/((double) n);
   return wrap(S);
 }
 
