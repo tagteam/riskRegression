@@ -163,6 +163,14 @@ rowCumProd <- function(x) {
     .Call(`_riskRegression_rowCumProd`, x)
 }
 
+rowSumsAlt1 <- function(V, tmn, tmp) {
+    .Call(`_riskRegression_rowSumsAlt1`, V, tmn, tmp)
+}
+
+rowSumsAlt2 <- function(V, tmn, tmp) {
+    .Call(`_riskRegression_rowSumsAlt2`, V, tmn, tmp)
+}
+
 #' Apply crossprod and rowSums
 #'
 #' @description Fast computation of crossprod(rowSums(X),Y)

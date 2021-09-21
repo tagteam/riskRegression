@@ -398,6 +398,32 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// rowSumsAlt1
+NumericMatrix rowSumsAlt1(NumericMatrix V, NumericMatrix tmn, NumericMatrix tmp);
+RcppExport SEXP _riskRegression_rowSumsAlt1(SEXP VSEXP, SEXP tmnSEXP, SEXP tmpSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< NumericMatrix >::type V(VSEXP);
+    Rcpp::traits::input_parameter< NumericMatrix >::type tmn(tmnSEXP);
+    Rcpp::traits::input_parameter< NumericMatrix >::type tmp(tmpSEXP);
+    rcpp_result_gen = Rcpp::wrap(rowSumsAlt1(V, tmn, tmp));
+    return rcpp_result_gen;
+END_RCPP
+}
+// rowSumsAlt2
+NumericMatrix rowSumsAlt2(NumericMatrix V, NumericMatrix tmn, NumericMatrix tmp);
+RcppExport SEXP _riskRegression_rowSumsAlt2(SEXP VSEXP, SEXP tmnSEXP, SEXP tmpSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< NumericMatrix >::type V(VSEXP);
+    Rcpp::traits::input_parameter< NumericMatrix >::type tmn(tmnSEXP);
+    Rcpp::traits::input_parameter< NumericMatrix >::type tmp(tmpSEXP);
+    rcpp_result_gen = Rcpp::wrap(rowSumsAlt2(V, tmn, tmp));
+    return rcpp_result_gen;
+END_RCPP
+}
 // rowSumsCrossprod
 NumericMatrix rowSumsCrossprod(NumericMatrix X, NumericMatrix Y, bool transposeY);
 RcppExport SEXP _riskRegression_rowSumsCrossprod(SEXP XSEXP, SEXP YSEXP, SEXP transposeYSEXP) {
@@ -550,6 +576,8 @@ static const R_CallMethodDef CallEntries[] = {
     {"_riskRegression_predictCIF_cpp", (DL_FUNC) &_riskRegression_predictCIF_cpp, 17},
     {"_riskRegression_rowCumSum", (DL_FUNC) &_riskRegression_rowCumSum, 1},
     {"_riskRegression_rowCumProd", (DL_FUNC) &_riskRegression_rowCumProd, 1},
+    {"_riskRegression_rowSumsAlt1", (DL_FUNC) &_riskRegression_rowSumsAlt1, 3},
+    {"_riskRegression_rowSumsAlt2", (DL_FUNC) &_riskRegression_rowSumsAlt2, 3},
     {"_riskRegression_rowSumsCrossprod", (DL_FUNC) &_riskRegression_rowSumsCrossprod, 3},
     {"_riskRegression_colCenter_cpp", (DL_FUNC) &_riskRegression_colCenter_cpp, 2},
     {"_riskRegression_rowCenter_cpp", (DL_FUNC) &_riskRegression_rowCenter_cpp, 2},
