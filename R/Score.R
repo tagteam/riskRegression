@@ -2159,38 +2159,41 @@ delongtest <-  function(risk,
                         se.fit,
                         keep.vcov) {
     cov=lower=upper=p=AUC=se=lower=upper=NULL
-    Cases <- response == cause
-    Controls <- response != cause
-    nControls <- sum(!Cases)
-    nCases <- sum(Cases)
-    ## if (nbCases==0 || nbControls ==0 || length(unique(risk))==1) return(rep(0,n))
-    nauc <- ncol(risk)
     auc <- score[["AUC"]]
+    nauc <- ncol(risk)
     modelnames <- score[["model"]]
-    riskcontrols <- as.matrix(risk[Controls,])
-    riskcases <- as.matrix(risk[Cases,])
-    V10 <- matrix(0, nrow = nCases, ncol = nauc)
-    V01 <- matrix(0, nrow = nControls, ncol = nauc)
-    tmn <- t(riskcontrols)
-    tmp <- t(riskcases)
-    V10 <- rowSumsAlt1(V10,tmn,tmp)
-    V01 <- rowSumsAlt2(V01,tmn,tmp)
-
-    #browser()
-    #for (i in 1:nCases) {
-    #    V10[i, ] <- rowSums(tmn < tmp[, i]) + 0.5 * rowSums(tmn == tmp[, i])
-    #}
-    #for (i in 1:nControls) {
-    #    V01[i, ] <- rowSums(tmp > tmn[, i]) + 0.5 * rowSums(tmp == tmn[, i])
-    #}
-    V10 <- V10/nControls
-    V01 <- V01/nCases
-    W10 <- cov(V10)
-    W01 <- cov(V01)
-    S <- W10/nCases + W01/nControls
-    se.auc <- sqrt(diag(S))
     score <- data.table(model=colnames(risk),AUC=auc)
     if (se.fit==1L){
+        browser()
+        Cases <- response == cause
+        Controls <- response != cause
+        nControls <- sum(!Cases)
+        nCases <- sum(Cases)
+        ## if (nbCases==0 || nbControls ==0 || length(unique(risk))==1) return(rep(0,n))
+        riskcontrols <- as.matrix(risk[Controls,])
+        riskcases <- as.matrix(risk[Cases,])
+        V10 <- matrix(0, nrow = nCases, ncol = nauc)
+        V01 <- matrix(0, nrow = nControls, ncol = nauc)
+        tmn <- t(riskcontrols)
+        tmp <- t(riskcases)
+        #old method
+        if (keep.vcov || length(dolist) > 0) {
+          V10 <- rowSumsAlt1(V10,tmn,tmp)
+          V01 <- rowSumsAlt2(V01,tmn,tmp)
+          #for (i in 1:nCases) {
+          #    V10[i, ] <- rowSums(tmn < tmp[, i]) + 0.5 * rowSums(tmn == tmp[, i])
+          #}
+          #for (i in 1:nControls) {
+          #    V01[i, ] <- rowSums(tmp > tmn[, i]) + 0.5 * rowSums(tmp == tmn[, i])
+          #}
+          W10 <- cov(V10)
+          W01 <- cov(V01)
+          S <- W10/(nCases*nControls^2) + W01/(nControls*nCases^2)
+          se.auc <- sqrt(diag(S))
+        }
+        else {
+          se.auc <- delongtestHelper(nauc,nCases,nControls,tmn,tmp)
+        }
         score[,se:=se.auc]
         score[,lower:=pmax(0,AUC-qnorm(1-alpha/2)*se)]
         score[,upper:=pmin(1,AUC+qnorm(1-alpha/2)*se)]
@@ -2211,6 +2214,7 @@ delongtest <-  function(risk,
         model <- numeric(ncomp)
         reference <- numeric(ncomp)
         ctr <- 1
+
         Qnorm <- qnorm(1 - alpha/2)
         for (d in dolist){
             i <- d[1]
@@ -2218,7 +2222,7 @@ delongtest <-  function(risk,
             ## for (i in 1:(nauc - 1)) {
             ## for (j in (i + 1):nauc) {
             delta.AUC[ctr] <- auc[j]-auc[i]
-            if (se.fit==TRUE){
+            if (se.fit[[1]]){
                 ## cor.auc[ctr] <- S[i, j]/sqrt(S[i, i] * S[j, j])
                 LSL <- t(c(1, -1)) %*% S[c(j, i), c(j, i)] %*% c(1, -1)
                 ## print(c(1/LSL,rms::matinv(LSL)))
@@ -2231,23 +2235,24 @@ delongtest <-  function(risk,
             ctr <- ctr + 1
             ## }
         }
-        if (se.fit[[1]]==TRUE||multi.split.test[[1]]==TRUE){
-            deltaAUC <- data.table(model,reference,delta.AUC=as.vector(delta.AUC),se)
-        }else{
-            deltaAUC <- data.table(model,reference,delta.AUC=as.vector(delta.AUC))
-        }
-        if (se.fit==TRUE){
-            deltaAUC[,lower:=delta.AUC-Qnorm*se]
-            deltaAUC[,upper:=delta.AUC+Qnorm*se]
-        }
-        if (se.fit[[1]]==TRUE||multi.split.test[[1]]==TRUE){
-            deltaAUC[,p:=2*pnorm(abs(delta.AUC)/se,lower.tail=FALSE)]
+        deltaAUC <- data.table(model,reference,delta.AUC=as.vector(delta.AUC))
+        if (se.fit[[1]]){
+          deltaAUC[,se:=se]
+          deltaAUC[,lower:=delta.AUC-Qnorm*se]
+          deltaAUC[,upper:=delta.AUC+Qnorm*se]
+          deltaAUC[,p:=2*pnorm(abs(delta.AUC)/se,lower.tail=FALSE)]
         }
         out <- list(score = score, contrasts = deltaAUC)
+        ##if (se.fit[[1]]==TRUE||multi.split.test[[1]]==TRUE){
+        ##    deltaAUC <- data.table(model,reference,delta.AUC=as.vector(delta.AUC),se)
+        ##}else{
+        ##    deltaAUC <- data.table(model,reference,delta.AUC=as.vector(delta.AUC))
+        ##}
     }else{
         out <- list(score = score, contrasts = NULL)
     }
-    if (keep.vcov) {
+    ## should only be kept if se.fit is true
+    if (keep.vcov && se.fit[[1]]==TRUE) {
         out <- c(out,list(vcov=S))
     }
     out
