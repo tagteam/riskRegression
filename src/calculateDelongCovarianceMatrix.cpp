@@ -6,6 +6,7 @@ using namespace arma;
 // C++ functions for calculating the asymptotic covariance matrix for the delongtest function.
 
 // calculates midrank
+// [[Rcpp::export]]
 vec calculateMidrank(vec z){
   int m = z.size();
   vec wtemp = sort(z);
@@ -46,6 +47,7 @@ vec calculateMidrank(vec z){
 // we note here that pointers and references should be used in order
 // to make efficient use of the memory
 // [[Rcpp::export]]
+
 NumericMatrix calculateDelongCovarianceFast(NumericMatrix Xs, NumericMatrix Ys){
   int m = Xs.nrow();
   int n = Ys.nrow();
@@ -64,19 +66,24 @@ NumericMatrix calculateDelongCovarianceFast(NumericMatrix Xs, NumericMatrix Ys){
     vec Xr = as<vec>(Xx);
     vec Yr = as<vec>(Yy);
 
-    Rcout << "Xr" << Xr << "\n\n\n";
+    //Rcout << "Xr" << Xr << "\n\n\n";
     /*std::cout << "Yr\n";
-    Yr.print();
-    std::cout << "\n\n\n\n\n\n\n";*/
+    */
+    //Rcout << "Yr" << Yr << "\n\n\n";
+    //Yr.print();
+    //std::cout << "\n\n\n\n\n\n\n";*/
     // concatenate
     vec Zr = join_cols(Xr,Yr);
+    //Rcout << "zr" << Zr << "\n\n\n";
     // calculate midranks
     vec TZr = calculateMidrank(Zr);
+    //Rcout << "TZr" << TZr << "\n\n\n";
     //std::cout << "tzr\n";
     //TZr.print();
     vec TXr = calculateMidrank(Xr);
-    Rcout << "TXr" << TXr << "\n\n\n";
+    //Rcout << "TXr" << TXr << "\n\n\n";
     vec TYr = calculateMidrank(Yr);
+    //Rcout << "TYr" << TXr << "\n\n\n";
     //std::cout << "tyr\n";
     //TYr.print();
     //std::cout << "\n\n\n\n\n\n\n";
@@ -87,31 +94,43 @@ NumericMatrix calculateDelongCovarianceFast(NumericMatrix Xs, NumericMatrix Ys){
       V10(r,i)=(TZr[i]-TXr[i])/((double) n);
       theta[r]+=TZr[i];
     }
+    //Rcout << "r: " << r << "\n" << "V10" << V10.t() << "\n\n\n";
     theta[r]=theta[r]/(double (m*n))-(double) (m+1)/(2*n);
+    //Rcout << "r, theta" << r <<  theta;
     for (int j = 0; j < n; j++){
       // FIgure out how Yr is ordered compared to Zr ???
       //?2=TZr[m+j];
-      V01(r,j)=1.0-(TZr[j]-TYr[j])/((double) m);
+      V01(r,j)=1.0-(TZr[j+m]-TYr[j])/((double) m);
     }
+    //Rcout << "r: " << r << "\n" <<"V01" << V01.t()  << "\n\n\n";
   }
   mat S(k,k);
   // can be done more effectively
   /*for (int r = 0; r < k; r++){
     for (int s = 0; s < k; s++){
       double s10, s01 = 0.0;
-      for (int i = 0; i < m; i++){
-        s10+=(V10(r,i)-theta[r])*(V10(s,i)-theta[s]);
+      for (int i = 0; i < m ; i++){
+        s10 += (V10(r,i)-theta[r])*(V10(s,i)-theta[s]);
       }
+      Rcout << "s10 " << s10 << "\n";
       for (int j = 0; j < n; j++){
         s01 += (V01(r,j)-theta[r])*(V01(s,j)-theta[s]);
       }
+      Rcout << "s01 " << s01 << "\n";
       S(r,s)=s10/((double) (m-1))+ s01/(double(n-1));
+      Rcout << "result" << S(r,s) << "\n";
       // inprincple also S(s,r) could be specified here
     }
-  }*/
-  mat s10 = arma::cov(V10.t()).t();
-  mat s01 = arma::cov(V01.t()).t();
-  S = s01/((double) m)+s10/((double) n);
+  }
+  Rcout << "S is: " << S;*/
+
+  mat s10 = arma::cov(V10.t());
+  //Rcout << "s10" << s10 << "\n";
+  mat s01 = arma::cov(V01.t());
+  //Rcout << "s01" << s01 << "\n";
+  //Rcout << "m is " << m << "\n";
+  //Rcout << "n is " << n << "\n";
+  S = s01/((double) n)+s10/((double) m);
   return wrap(S);
 }
 
