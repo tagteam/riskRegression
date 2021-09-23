@@ -58,6 +58,22 @@ calcAIFsurv_cpp <- function(ls_IFcumhazard, IFbeta, cumhazard0, survival, eXb, X
     .Call(`_riskRegression_calcAIFsurv_cpp`, ls_IFcumhazard, IFbeta, cumhazard0, survival, eXb, X, prevStrata, ls_indexStrata, factor, nTimes, nObs, nStrata, nVar, diag, exportCumHazard, exportSurvival)
 }
 
+calculateDelongCovarianceFast <- function(Xs, Ys) {
+    .Call(`_riskRegression_calculateDelongCovarianceFast`, Xs, Ys)
+}
+
+calculateDelongDiagonal <- function(nauc, nCases, nControls, tmn, tmp) {
+    .Call(`_riskRegression_calculateDelongDiagonal`, nauc, nCases, nControls, tmn, tmp)
+}
+
+rowSumsAlt1 <- function(V, tmn, tmp) {
+    .Call(`_riskRegression_rowSumsAlt1`, V, tmn, tmp)
+}
+
+rowSumsAlt2 <- function(V, tmn, tmp) {
+    .Call(`_riskRegression_rowSumsAlt2`, V, tmn, tmp)
+}
+
 #' Apply cumsum in each column 
 #'
 #' @description Fast computation of apply(x,2,cumsum)
@@ -161,14 +177,6 @@ rowCumSum <- function(x) {
 #' @export
 rowCumProd <- function(x) {
     .Call(`_riskRegression_rowCumProd`, x)
-}
-
-rowSumsAlt1 <- function(V, tmn, tmp) {
-    .Call(`_riskRegression_rowSumsAlt1`, V, tmn, tmp)
-}
-
-rowSumsAlt2 <- function(V, tmn, tmp) {
-    .Call(`_riskRegression_rowSumsAlt2`, V, tmn, tmp)
 }
 
 #' Apply crossprod and rowSums

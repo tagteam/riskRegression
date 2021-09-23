@@ -2164,7 +2164,6 @@ delongtest <-  function(risk,
     modelnames <- score[["model"]]
     score <- data.table(model=colnames(risk),AUC=auc)
     if (se.fit==1L){
-        browser()
         Cases <- response == cause
         Controls <- response != cause
         nControls <- sum(!Cases)
