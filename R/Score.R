@@ -2186,7 +2186,11 @@ delongtest <-  function(risk,
           ##W01 <- cov(V01)
           #S <- W10/(nCases*nControls^2) + W01/(nControls*nCases^2)
           ##S <- W10/nCases + W01/nControls
-          # new method
+
+          # new method, uses a fast implementation of delongs covariance matrix
+          # Fast Implementation of DeLong’s Algorithm for Comparing the Areas Under Correlated Receiver Operating Characteristic Curves
+          # article can be found here:
+          # https://ieeexplore.ieee.org/document/6851192
           S <- calculateDelongCovarianceFast(riskcases,riskcontrols)
           se.auc <- sqrt(diag(S))
         }
