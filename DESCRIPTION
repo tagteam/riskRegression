@@ -11,6 +11,7 @@ Authors@R: c(person("Thomas Alexander", "Gerds", role = c("aut", "cre"),
              person("Nikolaj", "Tollenaar", role = "ctb"),
              person("John", "Muschelli", role = "ctb"),
              person("Ulla Brasch", "Mogensen", role = "ctb"),
+             person("Johan Sebastian", "Ohlendorff", role = "aut", email = "johan.ohlendorff@sund.ku.dk"),
              person("Brice", "Ozenne", role = "aut", email = "broz@sund.ku.dk", comment = c(ORCID = "0000-0001-9694-2956")))
 Depends:
     R (>= 3.5.0),
