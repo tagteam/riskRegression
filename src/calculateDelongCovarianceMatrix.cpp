@@ -80,7 +80,8 @@ NumericMatrix calculateDelongCovarianceFast(NumericMatrix& Xs, NumericMatrix& Ys
     }
   }
   mat S(k,k);
-  double s10, s01;
+  // revert to old method as the new method makes a small numerical error
+  /*double s10, s01;
   for (int r = 0; r < k; r++){
     for (int s = r; s < k; s++){
       s10 = 0.0;
@@ -94,10 +95,10 @@ NumericMatrix calculateDelongCovarianceFast(NumericMatrix& Xs, NumericMatrix& Ys
       S(r,s)=s10/((double) n*(m-1))+ s01/((double) m*(n-1));
       S(s,r)=S(r,s);
     }
-  }
+  }*/
   // old method
-  /*mat s101 = arma::cov(V10.t());
-  mat s011 = arma::cov(V01.t());
-  S = s01/((double) n)+s10/((double) m);*/
+  mat s10 = arma::cov(V10.t());
+  mat s01 = arma::cov(V01.t());
+  S = s01/((double) n)+s10/((double) m);
   return wrap(S);
 }
