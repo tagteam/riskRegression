@@ -53,7 +53,7 @@ NumericMatrix calculateDelongCovarianceFast(NumericMatrix& Xs, NumericMatrix& Ys
   mat V10(k,m);
   mat V01(k,n);
   //can be used for more efficient computation of cov. matrix, but that code isn't working
-  vec theta(k,fill::zeros);
+  //vec theta(k,fill::zeros);
   for (int r = 0; r < k; r++){
     // Make them into armadillo vectors; might be an inefficient and superfluous operation
     // strangely enough we cannot write Xr = as<vec>(Xs(_,r))
@@ -72,9 +72,9 @@ NumericMatrix calculateDelongCovarianceFast(NumericMatrix& Xs, NumericMatrix& Ys
     vec TYr = calculateMidrank(Yr);
     for (int i = 0; i < m; i++){
       V10(r,i)=(TZr[i]-TXr[i])/((double) n);
-      theta[r]+=TZr[i];
+      //theta[r]+=TZr[i];
     }
-    theta[r]=theta[r]/(double (m*n))-(double) (m+1)/(2*n);
+    //theta[r]=theta[r]/(double (m*n))-(double) (m+1)/(2*n);
     for (int j = 0; j < n; j++){
       V01(r,j)=1.0-(TZr[j+m]-TYr[j])/((double) m);
     }
