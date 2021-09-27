@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun  6 2016 (06:48) 
 ## Version: 
-## last-updated: okt 24 2020 (16:44) 
+## last-updated: sep 27 2021 (19:57) 
 ##           By: Brice Ozenne
-##     Update #: 547
+##     Update #: 550
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -42,7 +42,9 @@ print.ate <- function(x, estimator = x$estimator, ...){
                               "GFORMULA" = "G-formula",
                               "GFORMULATD" = "G-formula with time-dependent covariates)",
                               "IPTW,IPCW" = "Inverse probability of treatment weighting",
-                              "AIPTW,AIPCW" = "Augmented estimator")
+                              "IPTW" = "Inverse probability of treatment weighting",
+                              "AIPTW,AIPCW" = "Augmented estimator",
+                              "AIPTW" = "Augmented estimator")
 
 
     ## ** prepare

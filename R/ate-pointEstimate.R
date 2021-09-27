@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: jun 27 2019 (10:43) 
 ## Version: 
-## Last-Updated: mar  3 2021 (20:02) 
+## Last-Updated: sep 27 2021 (19:54) 
 ##           By: Brice Ozenne
-##     Update #: 911
+##     Update #: 918
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -84,7 +84,7 @@ ATE_TI <- function(object.event,
     ## ** compute event indicators
     if(attr(estimator,"IPTW")){
         ## *** indicator for the outcome of interest stopped at time tau
-        if(inherits(object.event,"glm")){
+        if(inherits(object.event,"glm") || (is.null(object.event) && is.null(object.censor))){
             time.before.tau <- cbind(mydata[[eventVar.status]])
         }else{
             time.before.tau <- sapply(times, function(tau){mydata[[eventVar.time]] <= tau})
