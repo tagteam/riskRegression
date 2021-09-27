@@ -6,6 +6,22 @@
 \usage{
 synthesize(object, data, ...)
 }
+\arguments{
+\item{object}{Specification of the synthesizing model structures. Either a \code{formula} or a \code{lvm} object. See examples.}
+
+\item{data}{Data to be synthesized.}
+
+\item{...}{Not used yet.}
+
+\item{recursive}{DESCRIBE ME}
+
+\item{max.levels}{Integer used to guess which variables are categorical. When set to \code{10}, the default,
+variables with less than 10 unique values in data are treated as categorical.}
+
+\item{logtrans}{Vector of covariate names that should be log-transformed.}
+
+\item{verbose}{Logical. If \code{TRUE} then more messages and warnings are provided.}
+}
 \value{
 lava object
 }
