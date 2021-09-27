@@ -147,7 +147,6 @@ synthesize.formula <- function(object, # a formula object Surv(time,event) or Hi
         is.bin <- nu==2
         return(is.bin+is.cat)
     }
-
     # specify distributions of covariates in the lava object
     for (v in vv){
       if (categorize(v) == 2){
@@ -232,7 +231,6 @@ synthesize.lvm <- function(object,
     sim_model <- lava::lvm()
 
     latent_vars <- endogenous(object)
-
     # Set distributions:
     # 1. normal
     # 2. binomial
@@ -322,6 +320,7 @@ synthesize.lvm <- function(object,
             status_ind <- object$attributes$eventHistory[[timename]]$events[which(object$attributes$eventHistory[[timename]]$latentTimes %in% latvar)]
             response <- paste0(response1, "==", status_ind)
             surv_formula <- as.formula(paste0("Surv(", response, ")~", covariates))
+            if (class(status_ind) != "numeric") {stop("event or status variable has to be numeric")}
             G <- survreg(surv_formula, data = data)
             reg_formula <- as.formula(paste0(latvar, "~", covariates))
             lava::distribution(sim_model, latvar_formula) <- lava::coxWeibull.lvm(scale=exp(-G$coef["(Intercept)"]/G$scale),shape=1/G$scale)
