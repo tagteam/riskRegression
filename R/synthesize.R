@@ -225,7 +225,7 @@ synthesize.lvm <- function(object,
       }
     }
     printvar <- paste(missing.var,collapse = ", ")
-    if (nNAs > 0) {stop(paste0("There should not be NAs in data. The following variables have NAs: \n ",printvar))}
+    if (nNAs > 0) {stop(paste0("There should not be NAs for the variables in the model. The following variables have NAs: \n ",printvar))}
 
     # Check if all variables in data also occur in object
     if(!all(others <- (names(data) %in% dimnames(object$M)[[1]]))){
