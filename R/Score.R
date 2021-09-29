@@ -2166,36 +2166,15 @@ delongtest <-  function(risk,
     if (se.fit==1L){
         Cases <- response == cause
         Controls <- response != cause
-        ##nControls <- sum(!Cases)
-        ##nCases <- sum(Cases)
-        ## if (nbCases==0 || nbControls ==0 || length(unique(risk))==1) return(rep(0,n))
         riskcontrols <- as.matrix(risk[Controls,])
         riskcases <- as.matrix(risk[Cases,])
-        ##V10 <- matrix(0, nrow = nCases, ncol = nauc)
-        ##V01 <- matrix(0, nrow = nControls, ncol = nauc)
-        ##tmn <- t(riskcontrols)
-        ##tmp <- t(riskcases)
-        #old method
-        if (keep.vcov || length(dolist) > 0) {
-          ##V10 <- rowSumsAlt1(V10,tmn,tmp)
-          ##V01 <- rowSumsAlt2(V01,tmn,tmp)
-          ##V10 <- V10/nControls
-          #V##01 <- V01/nCases
-          ##W10 <- cov(V10)
-          ##W01 <- cov(V01)
-          #S <- W10/(nCases*nControls^2) + W01/(nControls*nCases^2)
-          ##S <- W10/nCases + W01/nControls
 
-          # new method, uses a fast implementation of delongs covariance matrix
-          # Fast Implementation of DeLong’s Algorithm for Comparing the Areas Under Correlated Receiver Operating Characteristic Curves
-          # article can be found here:
-          # https://ieeexplore.ieee.org/document/6851192
-          S <- calculateDelongCovarianceFast(riskcases,riskcontrols)
-          se.auc <- sqrt(diag(S))
-        }
-        else {
-          se.auc <- calculateDelongDiagonal(nauc,nCases,nControls,tmn,tmp)
-        }
+        # new method, uses a fast implementation of delongs covariance matrix
+        # Fast Implementation of DeLong’s Algorithm for Comparing the Areas Under Correlated Receiver Operating Characteristic Curves
+        # article can be found here:
+        # https://ieeexplore.ieee.org/document/6851192
+        S <- calculateDelongCovarianceFast(riskcases,riskcontrols)
+        se.auc <- sqrt(diag(S))
         score[,se:=se.auc]
         score[,lower:=pmax(0,AUC-qnorm(1-alpha/2)*se)]
         score[,upper:=pmin(1,AUC+qnorm(1-alpha/2)*se)]

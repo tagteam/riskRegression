@@ -73,6 +73,7 @@ summary(ms)
 ```
 In this case, a Weibull survival model is used to model the censorship time and uncensored lifetime with the given covariates. The model then specifies that the censored survival time and the indicator for whether the data was censored or not is given deterministically. Under Exogeonous variables, we find the distributions for the covariates. Further down in "Regression parameters", we find the estimated parameters the regression (we note that the parameters for covariates are not as easily found). 
 
+
 Let us consider a basic use case scenario where we simulate:
 ```{r}
 set.seed(15)
@@ -178,6 +179,7 @@ make.boxplot.simulation <- function(object, object.rec, data, sample.sizes, n.si
 
 make.boxplot.simulation(ms,ms.rec, Melanoma, c(100,200,500,1000),1000)
 ```
+
 Which looks pretty reasonable.
 
 We could also check one of the other relationships in the recursive model, i.e `logthick ~ sex + age + invasion`:

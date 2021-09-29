@@ -3,7 +3,7 @@
 ## Author: Johan Sebastian Ohlendorff & Vilde Hansteen Ung & Thomas Alexander Gerds
 ## Created: Apr 28 2021 (09:04)
 ## Version:
-## Last-Updated: Sep 27 2021 (10:54) 
+## Last-Updated: Sep 27 2021 (10:54)
 ##           By: Thomas Alexander Gerds
 ##     Update #: 64
 #----------------------------------------------------------------------
@@ -215,7 +215,17 @@ synthesize.lvm <- function(object,
                            verbose=FALSE,
                            ...){
     # note: will be a problem if there are NAs in data, should check at beginning of function
-    if(anyNA(data)){stop("There should not be NAs in data.")}
+    var.model <- colnames(object$M)
+    nNAs <- 0
+    missing.var <- c()
+    for (var in var.model){
+      if(anyNA(data[[var]]) && nNAs < 21){
+        nNAs <- nNAs + 1
+        missing.var <- c(missing.var, var)
+      }
+    }
+    printvar <- paste(missing.var,collapse = ", ")
+    if (nNAs > 0) {stop(paste0("There should not be NAs in data. The following variables have NAs: \n ",printvar))}
 
     # Check if all variables in data also occur in object
     if(!all(others <- (names(data) %in% dimnames(object$M)[[1]]))){
@@ -274,6 +284,10 @@ synthesize.lvm <- function(object,
     dichotomized_variables <- c()
 
     for(var in colnames(data)[grepl('factor|character', sapply(data, class))]){
+        #fix factors with weird characters including binary
+        #note: we do not fix formulas and weirdly named variables
+        lvls <- make.names(levels(data[[var]]))
+        levels(data[[var]]) <- lvls
         if(!any(grepl(var,  dimnames(object$M)[[1]]))){
             #variable not in lvm object
         } else if (length(levels(data[[var]]))>2){
@@ -332,7 +346,6 @@ synthesize.lvm <- function(object,
         et.formula <- formula(paste0(timename," ~ min(",paste(paste0("time.event.",events,"=",events),collapse=", "),")"))
         sim_model <- lava::eventTime(sim_model,et.formula, object$attributes$eventHistory$time$names[2])
     }
-
     # Estimate regression coefficients in real data
     # and add them to the lvm object using lava::regression
     for(var in latent_vars[!(latent_vars %in% object$attributes$eventHistory$time$names)]){
