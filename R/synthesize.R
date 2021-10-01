@@ -214,33 +214,49 @@ synthesize.lvm <- function(object,
                            logtrans = NULL,
                            verbose=FALSE,
                            ...){
-    # note: will be a problem if there are NAs in data, should check at beginning of function
-    var.model <- colnames(object$M)
-    nNAs <- 0
-    missing.var <- c()
-    for (var in var.model){
-      if(anyNA(data[[var]]) && nNAs < 21){
-        nNAs <- nNAs + 1
-        missing.var <- c(missing.var, var)
-      }
-    }
-    printvar <- paste(missing.var,collapse = ", ")
-    if (nNAs > 0) {stop(paste0("There should not be NAs for the variables in the model. The following variables have NAs: \n ",printvar))}
-
     # Check if all variables in data also occur in object
     if(!all(others <- (names(data) %in% dimnames(object$M)[[1]]))){
-        if (verbose)
-            warning("Some variables in dataset are not in object (or the names don't match).\n These variables are not synthesized:\n",
-                    paste0(names(data)[!others],collapse="\n"))
-        # if(data.table::is.data.table(object))
-        #     data <- data[,dimnames(object$M)[[1]],with=FALSE]
-        # else
-        #     data <- data[,dimnames(object$M)[[1]],drop=FALSE]
+      if (verbose)
+        warning("Some variables in dataset are not in object (or the names don't match).\n These variables are not synthesized:\n",
+                paste0(names(data)[!others],collapse="\n"))
+      # if(data.table::is.data.table(object))
+      #     data <- data[,dimnames(object$M)[[1]],with=FALSE]
+      # else
+      #     data <- data[,dimnames(object$M)[[1]],drop=FALSE]
+    }
+
+    # note: will be a problem if there are NAs in data, should check at beginning of function
+    var.model <- colnames(object$M)
+    ismissingvar <- sapply(var.model, function(x) {anyNA(data[[x]])})
+    if (any(ismissingvar)) {
+      missing.var <- names(ismissingvar[ismissingvar])
+      printvar <- paste(missing.var[1:min(length(missing.var),20)],collapse = ", ")
+      stop(paste0("There should not be NAs for the variables in the model. The following variables have NAs: \n ",printvar))
     }
 
     sim_model <- lava::lvm()
 
     latent_vars <- endogenous(object)
+    # should check variables
+
+    # should check factors
+
+    #could be outside function?
+    #categorize <- function(v){
+    #  is.cat <- is.factor(data[[v]])
+    #  nu <- length(unique(data[[v]]))
+    #  if (!is.cat) {is.cat <- (nu < 10)}
+    #  is.bin <- nu==2
+    #  return(is.bin+is.cat)
+    #}
+    #for (v in var.model){
+    #  #ignore transformed variables
+    #  if (categorize(v) != 0 && !is.null(data[[v]])){
+    #    data[[v]] <- factor(data[[v]])
+    #  }
+    #  #remove null data from model
+    #}
+
     # Set distributions:
     # 1. normal
     # 2. binomial
