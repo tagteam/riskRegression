@@ -14,7 +14,9 @@
 #----------------------------------------------------------------------
 ##
 ### Code:
-##' Synthesizing survival data
+##' Synthesizes survival data (also works for linear models and generalized linear models).
+##' The idea is to be able to simulate new data sets that mimic the original data.
+##' See the vignette \code{vignette("synthesize",package = "riskRegression")} for more details.
 ##'
 ##' The simulation engine is: lava.
 ##' @title Cooking and synthesizing survival data
@@ -33,6 +35,7 @@
 ##' library(survival)
 ##' library(lava)
 ##' u <- lvm()
+##' pbc$protimegrp <- cut(c(unlist(pbc$protime)), c(-Inf,10,11,Inf), labels=c("0","1","2"))
 ##' distribution(u,~sex) <- binomial.lvm()
 ##' distribution(u,~age) <- normal.lvm()
 ##' distribution(u,~trt) <- binomial.lvm()
@@ -40,16 +43,13 @@
 ##' distribution(u,~logprotime) <- normal.lvm()
 ##' u <-eventTime(u,time~min(time.cens=0,time.transplant=1,time.death=2), "status")
 ##' lava::regression(u,logbili~age+sex) <- 1
-##' lava::regression(u,protimegrp1~age+sex+logbili) <- 1
-##' lava::regression(u,protimegrp2~age+sex+logbili) <- 1
-##' lava::regression(u,stage3~age+sex+protimegrp1+protimegrp2+logbili) <- 1
-##' lava::regression(u,stage4~age+sex+protimegrp1+protimegrp2+logbili) <- 1
-##' lava::regression(u,time.transplant~sex+age+logbili+protimegrp1+protimegrp2+stage3+stage4) <- 1
-##' lava::regression(u,time.death~sex+age+logbili+protimegrp1+protimegrp2+stage3+stage4) <- 1
+##' lava::regression(u,protimegrp~age+sex+logbili) <- 1
+##' lava::regression(u,stage~age+sex+protimegrp+logbili) <- 1
+##' lava::regression(u,time.transplant~sex+age+logbili+protime+stage) <- 1
+##' lava::regression(u,time.death~sex+age+logbili+protime+stage) <- 1
 ##' lava::regression(u,time.cens~1) <- 1
-##' u <- categorical(u,~stage,labels=c("1/2","3","4"), K=3)
+##' u <- categorical(u,~stage,labels=c("1","2","3","4"), K=4)
 ##' transform(u,protime~logprotime) <- function(x){exp(x)}
-##' transform(u,protimegrp~protime) <- function(x){cut(c(unlist(x)), c(-Inf,10,11,Inf), labels=c("0","1","2"))}
 ##' u_synt <- synthesize(object=u, data=na.omit(pbc))
 ##' set.seed(8)
 ##' d <- sim(u_synt,n=1000)
@@ -124,6 +124,9 @@ synthesize.formula <- function(object, # a formula object Surv(time,event) or Hi
     # this changes the formula to be logtransformed
     hasLog <- length(logtrans)>0
     for (v in logtrans){
+      if (is.null(data[[v]])){
+        stop(paste0("Covariate ",v," is not in data set. Remove it from the formula or add it to the data, then try again."))
+      }
       data[[paste0("log",v)]] <- log(data[[v]])
       s<-paste0("log",v)
       fml <- gsub(v,s,fml)
@@ -138,22 +141,16 @@ synthesize.formula <- function(object, # a formula object Surv(time,event) or Hi
       vv <-gsub("[(]|[)]","",vv.withtrans)
     }
 
-    #returns categorical values
-    # 0=numeric, 1=categorical with more levels, 2=binary
-    categorize <- function(v){
-        is.cat <- is.factor(data[[v]])
-        nu <- length(unique(data[[v]]))
-        if (!is.cat) {is.cat <- (nu < max.levels)}
-        is.bin <- nu==2
-        return(is.bin+is.cat)
-    }
     # specify distributions of covariates in the lava object
     for (v in vv){
-      if (categorize(v) == 2){
+      if (is.null(data[[v]])){
+        stop(paste0("Covariate ",v," is not in data set. Remove it from the formula or add it to the data, then try again."))
+      }
+      else if (categorize(v,max.levels,data) == 2){
         data[[v]] <- factor(data[[v]])
         lava::distribution(object,v) <- lava::binomial.lvm()
       }
-      else if (categorize(v) == 1){
+      else if (categorize(v,max.levels,data) == 1){
         data[[v]] <- factor(data[[v]])
         object <- lava::categorical(object, v, K=length(unique(data[[v]])))
       }
@@ -180,9 +177,12 @@ synthesize.formula <- function(object, # a formula object Surv(time,event) or Hi
         cv <- cv2
       }
     }
-
     # outcome
     # binary/continuous outcome
+    if(is.null(data[[tt[1]]]) || is.null(data[[tt[2]]])){
+      stop("Response variable not in data set. Add it to the data, then try again.")
+    }
+
     if (length(tt)==1){
         len.tt <- length(unique(data[[tt[[1]]]]))
         is.binary <- length(unique(data[[tt[[1]]]]))==2
@@ -203,7 +203,7 @@ synthesize.formula <- function(object, # a formula object Surv(time,event) or Hi
         object <- lava::eventTime(object,et.formula, tt[[2]])
     }
     # call the next method, now the class of object is 'lvm' :)
-    synthesize(object=object,data=data,verbose=verbose,logtrans=logtrans,...)
+    synthesize(object=object,data=data,verbose=verbose,fromFormula = TRUE,logtrans=logtrans,...)
 }
 
 
@@ -211,22 +211,59 @@ synthesize.formula <- function(object, # a formula object Surv(time,event) or Hi
 #' @export
 synthesize.lvm <- function(object,
                            data,
+                           max.levels = 10,
                            logtrans = NULL,
                            verbose=FALSE,
+                           fromFormula=FALSE,
                            ...){
-    # Check if all variables in data also occur in object
+    if (fromFormula && verbose){
+      warning("fromFormula should be set to false if you did not specify a formula")
+    }
+    # Check if all variables in data also occur in objezct
+    # here we need to remove them if they are not
     if(!all(others <- (names(data) %in% dimnames(object$M)[[1]]))){
       if (verbose)
         warning("Some variables in dataset are not in object (or the names don't match).\n These variables are not synthesized:\n",
                 paste0(names(data)[!others],collapse="\n"))
       # if(data.table::is.data.table(object))
       #     data <- data[,dimnames(object$M)[[1]],with=FALSE]
-      # else
+      # elsesub("log","",logtrans)
       #     data <- data[,dimnames(object$M)[[1]],drop=FALSE]
     }
+    # check whether variables in model are in data set
+    if (!fromFormula && !all(object$attributes$eventHistory$time$names %in% names(data))) {
+      stop("Time or status variable could not be found in data set.")
+    }
+    var.model <- colnames(object$M)
+    # should deal with transformations check if non transformed are in data and if not add them
+    # use grep to find transformed variables
+
+    # should check group transform
+    # if (any(grepl("grp|group",var.model))) {
+    #   stop("")
+    # }
+
+    # should check logtransform in data and add if necessary
+    if (!fromFormula && is.null(logtrans) && any(grepl("log",var.model))){
+      #these have log in front
+      trans <- var.model[grepl("log",var.model)]
+      #log trans dont have log in front
+      logtrans <- sub("log","",trans)
+      for (v in logtrans){
+        if (is.null(data[[v]])){
+          stop(paste0("Could not find the variable: ", v, "in the data"))
+        }
+        else {
+          data[[paste0("log",v)]] <- log(data[[v]])
+        }
+      }
+    }
+
 
     # note: will be a problem if there are NAs in data, should check at beginning of function
-    var.model <- colnames(object$M)
+
+    # find intersection between variables in model with variables in data (these are the actual variables of the lava object)
+    var.model <- intersect(var.model,names(data))
     ismissingvar <- sapply(var.model, function(x) {anyNA(data[[x]])})
     if (any(ismissingvar)) {
       missing.var <- names(ismissingvar[ismissingvar])
@@ -236,26 +273,22 @@ synthesize.lvm <- function(object,
 
     sim_model <- lava::lvm()
 
+    has.eventTime <- length(object$attributes$eventHistory)>0
+    if (has.eventTime){
+      timename <- names(object$attributes$eventHistory)
+    }
+
     latent_vars <- endogenous(object)
-    # should check variables
+    # should check factors in object are factors in data. If not, transform them
+    if (!fromFormula){
+      for (v in var.model){
+        #ignore transformed variables do not take the variables from the event history model
+        if (!(v %in% object$attributes$eventHistory[[timename]]$names) && categorize(v,max.levels,data) != 0){
+          data[[v]] <- factor(data[[v]])
+        }
+      }
+    }
 
-    # should check factors
-
-    #could be outside function?
-    #categorize <- function(v){
-    #  is.cat <- is.factor(data[[v]])
-    #  nu <- length(unique(data[[v]]))
-    #  if (!is.cat) {is.cat <- (nu < 10)}
-    #  is.bin <- nu==2
-    #  return(is.bin+is.cat)
-    #}
-    #for (v in var.model){
-    #  #ignore transformed variables
-    #  if (categorize(v) != 0 && !is.null(data[[v]])){
-    #    data[[v]] <- factor(data[[v]])
-    #  }
-    #  #remove null data from model
-    #}
 
     # Set distributions:
     # 1. normal
@@ -278,7 +311,6 @@ synthesize.lvm <- function(object,
         else if(var %in% names(object$attributes$nordinal)){
             num_cat <- object$attributes$nordinal[[var]] #what if levels is NULL?
             cat_probs <- vector(mode="numeric", length=num_cat-1)
-
             for(i in 1:(num_cat-1)){
                 cat_probs[i] <- mean(data[[var]] == levels(data[[var]])[i])
             }
@@ -294,6 +326,7 @@ synthesize.lvm <- function(object,
         }
     }
 
+
     # dichotomize categorical variables
     # should not do this if the cat. variable is not in lvm.object
     # note: name of dich. variables must correspond with names used in lava::regression formulas outside synthesize-func.
@@ -302,8 +335,8 @@ synthesize.lvm <- function(object,
     for(var in colnames(data)[grepl('factor|character', sapply(data, class))]){
         #fix factors with weird characters including binary
         #note: we do not fix formulas and weirdly named variables
-        lvls <- make.names(levels(data[[var]]))
-        levels(data[[var]]) <- lvls
+        # lvls <- make.names(levels(data[[var]]))
+        # levels(data[[var]]) <- lvls
         if(!any(grepl(var,  dimnames(object$M)[[1]]))){
             #variable not in lvm object
         } else if (length(levels(data[[var]]))>2){
@@ -321,6 +354,9 @@ synthesize.lvm <- function(object,
     }
     # get covariates as string and include dichotomized variables instead of the original ones
     get_covariates <- function(obj, v, dichotomized_variables) {
+        if (!(v %in% dimnames(obj$M)[[2]])){
+          return("1")
+        }
         covariates <- dimnames(obj$M)[[2]][obj$M[,v] == 1]
         if (length(covariates) == 0){
             return("1")
@@ -340,12 +376,14 @@ synthesize.lvm <- function(object,
     # note: will be a problem if there are several eventTime variables. Should loop through all these
     has.eventTime <- length(object$attributes$eventHistory)>0
     if (has.eventTime){
-        timename <- names(object$attributes$eventHistory)
         covariates <- get_covariates(object,timename,dichotomized_variables)
         response1 <- paste(object$attributes$eventHistory[[timename]]$names, collapse = ",")
 
         #include event time variables and fit the regression model
         for (latvar in object$attributes$eventHistory[[timename]]$latentTime){
+            if (!fromFormula){
+              covariates <- get_covariates(object,latvar,dichotomized_variables)
+            }
             latvar_formula <- as.formula(paste0("~", latvar))
             status_ind <- object$attributes$eventHistory[[timename]]$events[which(object$attributes$eventHistory[[timename]]$latentTimes %in% latvar)]
             response <- paste0(response1, "==", status_ind)
@@ -358,9 +396,17 @@ synthesize.lvm <- function(object,
         }
 
         #calculate time and status afterwards
-        events <- object$attributes$eventHistory$time$events
-        et.formula <- formula(paste0(timename," ~ min(",paste(paste0("time.event.",events,"=",events),collapse=", "),")"))
-        sim_model <- lava::eventTime(sim_model,et.formula, object$attributes$eventHistory$time$names[2])
+        events <- object$attributes$eventHistory[[timename]]$events
+        if (!fromFormula){
+          cens <- object$attributes$eventHistory[[timename]]$latentTime
+          et.formula <- formula(paste0(timename," ~ min(",paste0(cens,collapse=", "),")"))
+          sim_model <- lava::eventTime(sim_model,et.formula, object$attributes$eventHistory[[timename]]$names[2])
+        }
+        else {
+          et.formula <- formula(paste0(timename," ~ min(",paste(paste0("time.event.",events,"=",events),collapse=", "),")"))
+          sim_model <- lava::eventTime(sim_model,et.formula, object$attributes$eventHistory[[timename]]$names[2])
+        }
+
     }
     # Estimate regression coefficients in real data
     # and add them to the lvm object using lava::regression
@@ -377,26 +423,29 @@ synthesize.lvm <- function(object,
             lava::distribution(sim_model,as.formula(paste0("~", var))) <- lava::binomial.lvm(p=p0)
             lava::regression(sim_model,reg_formula)<-coef(fit)[-1]
         }
+        #case: categorical
+        else if (var %in% dichotomized_variables){
+          if (verbose) warning("Synthesize untested for categorical variables")
+          for(lvl in levels(data[[var]])[-1]){
+            reg_formula <- as.formula(paste0(var, lvl, "~", covariates))
+            fit <- glm(reg_formula,data=data,family="binomial")
+            p0<-exp(coef(fit)[1])/(1+exp(coef(fit)[1]))
+            lava::distribution(sim_model,as.formula(paste0("~", var))) <- lava::binomial.lvm(p=p0)
+            lava::regression(sim_model,reg_formula)<-coef(fit)[-1]
+          }
+        }
+        # ignore them
+        else if (var %in% object$attributes$eventHistory[[timename]]$latentTime){}
         # case: gaussian
-        else if ("gaussian"%in% attributes(object$attributes$distribution[[var]])$family){
+        else {
             fit <- lm(reg_formula,data=data)
             lava::regression(sim_model,reg_formula)<-coef(fit)[-1]
             lava::distribution(sim_model,as.formula(paste0("~", var))) <- lava::normal.lvm(mean = coef(fit)[1], sd = summary(fit)$sigma)
         }
-        #case: categorical
-        else if (var %in% dichotomized_variables){
-            warning("Synthesize untested for categorical variables")
-            for(lvl in levels(data[[var]])[-1]){
-                reg_formula <- as.formula(paste0(var, lvl, "~", covariates))
-                fit <- glm(reg_formula,data=data,family="binomial")
-                p0<-exp(coef(fit)[1])/(1+exp(coef(fit)[1]))
-                lava::distribution(sim_model,as.formula(paste0("~", var))) <- lava::binomial.lvm(p=p0)
-                lava::regression(sim_model,reg_formula)<-coef(fit)[-1]
-            }
-        }
-        else {
-            stop("Distribution is not supported.")
-        }
+
+        #else {if ("gaussian"%in% attributes(object$attributes$distribution[[var]])$family){
+        #    stop("Distribution is not supported.")
+        #}
     }
 
     #transform logtransformed covariates back
@@ -405,6 +454,16 @@ synthesize.lvm <- function(object,
     }
 
     return(sim_model)
+}
+
+#returns categorical values
+# 0=numeric, 1=categorical with more levels, 2=binary
+categorize <- function(v,max.levels,data){
+  is.cat <- is.factor(data[[v]])
+  nu <- length(unique(data[[v]]))
+  if (!is.cat) {is.cat <- (nu < max.levels)}
+  is.bin <- nu==2
+  return(is.bin+is.cat)
 }
 
 #----------------------------------------------------------------------

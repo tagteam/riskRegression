@@ -26,7 +26,9 @@ variables with less than 10 unique values in data are treated as categorical.}
 lava object
 }
 \description{
-Synthesizing survival data
+Synthesizes survival data (also works for linear models and generalized linear models).
+The idea is to be able to simulate new data sets that mimic the original data.
+See the vignette \code{vignette("synthesize",package = "riskRegression")} for more details.
 }
 \details{
 The simulation engine is: lava.
@@ -36,6 +38,7 @@ The simulation engine is: lava.
 library(survival)
 library(lava)
 u <- lvm()
+pbc$protimegrp <- cut(c(unlist(pbc$protime)), c(-Inf,10,11,Inf), labels=c("0","1","2"))
 distribution(u,~sex) <- binomial.lvm()
 distribution(u,~age) <- normal.lvm()
 distribution(u,~trt) <- binomial.lvm()
@@ -43,16 +46,13 @@ distribution(u,~logbili) <- normal.lvm()
 distribution(u,~logprotime) <- normal.lvm()
 u <-eventTime(u,time~min(time.cens=0,time.transplant=1,time.death=2), "status")
 lava::regression(u,logbili~age+sex) <- 1
-lava::regression(u,protimegrp1~age+sex+logbili) <- 1
-lava::regression(u,protimegrp2~age+sex+logbili) <- 1
-lava::regression(u,stage3~age+sex+protimegrp1+protimegrp2+logbili) <- 1
-lava::regression(u,stage4~age+sex+protimegrp1+protimegrp2+logbili) <- 1
-lava::regression(u,time.transplant~sex+age+logbili+protimegrp1+protimegrp2+stage3+stage4) <- 1
-lava::regression(u,time.death~sex+age+logbili+protimegrp1+protimegrp2+stage3+stage4) <- 1
+lava::regression(u,protimegrp~age+sex+logbili) <- 1
+lava::regression(u,stage~age+sex+protimegrp+logbili) <- 1
+lava::regression(u,time.transplant~sex+age+logbili+protime+stage) <- 1
+lava::regression(u,time.death~sex+age+logbili+protime+stage) <- 1
 lava::regression(u,time.cens~1) <- 1
-u <- categorical(u,~stage,labels=c("1/2","3","4"), K=3)
+u <- categorical(u,~stage,labels=c("1","2","3","4"), K=4)
 transform(u,protime~logprotime) <- function(x){exp(x)}
-transform(u,protimegrp~protime) <- function(x){cut(c(unlist(x)), c(-Inf,10,11,Inf), labels=c("0","1","2"))}
 u_synt <- synthesize(object=u, data=na.omit(pbc))
 set.seed(8)
 d <- sim(u_synt,n=1000)
