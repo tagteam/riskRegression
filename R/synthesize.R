@@ -54,7 +54,7 @@
 ##' set.seed(8)
 ##' d <- sim(u_synt,n=1000)
 ##' fit_sim <- coxph(Surv(time,status==1)~age+sex+logbili,data=d)
-##' fit_real <- coxph(Surv(time,status==1)~age+sex+logbili,data=pbc)
+##' fit_real <- coxph(Surv(time,status==1)~age+sex+log(bili),data=pbc)
 ##' # compare estimated log-hazard ratios between simulated and real data
 ##' cbind(coef(fit_sim),coef(fit_real))
 ##'
