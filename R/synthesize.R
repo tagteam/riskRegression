@@ -3,9 +3,9 @@
 ## Author: Johan Sebastian Ohlendorff & Vilde Hansteen Ung & Thomas Alexander Gerds
 ## Created: Apr 28 2021 (09:04)
 ## Version:
-## Last-Updated: Sep 27 2021 (10:54)
+## Last-Updated: Oct  2 2021 (12:51) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 64
+##     Update #: 65
 #----------------------------------------------------------------------
 ##
 ### Commentary:
@@ -20,6 +20,7 @@
 ##'
 ##' The simulation engine is: lava.
 ##' @title Cooking and synthesizing survival data
+##' @aliases synthesize.formula synthesize.lvm 
 ##' @param object Specification of the synthesizing model structures. Either a \code{formula} or a \code{lvm} object. See examples.
 ##' @param data Data to be synthesized.
 ##' @param recursive DESCRIBE ME
