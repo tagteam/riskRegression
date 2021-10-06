@@ -4,7 +4,7 @@ library(timereg)
 library(prodlim)
 library(survival)
 context("Binomial regression")
-data(Melanoma)
+data(Melanoma, package = "riskRegression")
 # {{{ "Absolute risk regression"
 test_that("Absolute risk regression",{
     set.seed(17)
@@ -44,8 +44,9 @@ test_that("Logistic risk regression",{
 # }}}
 # {{{ "Censoring model"
 test_that("Censoring model",{
-    expect_success(ARR(Hist(time,status)~thick+strata(invasion)+epicel,data=Melanoma,cens.model="cox",cause=1))
-    expect_success(ARR(Hist(time,status)~thick+strata(invasion)+epicel,data=Melanoma,cens.model="cox",cens.formula=~thick+strat(invasion)+epicel,cause=1))
-    expect_success(ARR(Hist(time,status)~sex+strata(invasion)+epicel,data=Melanoma,cens.model="cox",cens.formula=~logthick+age,cause=1))
+    ## NOTE: expect_error with regexp=NA tests no error 
+    expect_error(ARR(Hist(time,status)~thick+strata(invasion)+epicel,data=Melanoma,cens.model="cox",cause=1), regexp = NA) 
+    expect_error(ARR(Hist(time,status)~thick+strata(invasion)+epicel,data=Melanoma,cens.model="cox",cens.formula=~thick+strat(invasion)+epicel,cause=1), regexp = NA)
+    expect_error(ARR(Hist(time,status)~sex+strata(invasion)+epicel,data=Melanoma,cens.model="cox",cens.formula=~logthick+age,cause=1), regexp = NA)
 })
 # }}}
