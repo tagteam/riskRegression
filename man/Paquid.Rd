@@ -19,7 +19,7 @@ The data have been first made publicly available via the package timeROC.
 \description{
 PAQUID is a prospective cohort study initiated in 1988 in South Western
 France to explore functional and cerebral ageing. This sample includes
-n=2561 subjects. Data contains a time-to-event, a type of event and 
+n=2561 subjects. Data contains a time-to-event, a type of event and
 two cognitive scores measured at baseline.
 }
 \examples{
