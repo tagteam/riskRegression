@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: maj 18 2017 (09:23) 
 ## Version: 
-## last-updated: okt  7 2021 (17:49) 
+## last-updated: okt  7 2021 (20:02) 
 ##           By: Brice Ozenne
-##     Update #: 122
+##     Update #: 123
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -328,7 +328,6 @@ test_that("[iidCox] lambda - strata",{
 
 ## ** Melanoma data
 cat("[iidCox] compare to timereg - Melanoma \n")
-if(FALSE){ ## do not work on all plateforms
 data(Melanoma, package = "riskRegression")
 
 test_that("[iidCox] Compare to timereg on Melanoma dta",{
@@ -342,6 +341,5 @@ test_that("[iidCox] Compare to timereg on Melanoma dta",{
     expect_equal(as.double(RR.iid$IFcumhazard[[1]]), ## as.double(RR.iid$IFcumhazard[[1]])[c(1:4,206:209,411)]
                  as.double(timereg.iidLambda[,-1])) ## as.double(timereg.iidLambda[,-1])[c(1:4,206:209,411)]
 })
-}
 #----------------------------------------------------------------------
 ### test-iidCox.R ends here
