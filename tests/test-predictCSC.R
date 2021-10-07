@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: maj 18 2017 (09:23) 
 ## Version: 
-## last-updated: okt  7 2021 (17:52) 
+## last-updated: okt  7 2021 (18:17) 
 ##           By: Brice Ozenne
-##     Update #: 305
+##     Update #: 306
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -880,7 +880,7 @@ test_that("[predictCSC] diag no strata", {
                  test5$absRisk.average.iid[[2]][,1])
 
 })
-}
+
 
 test_that("[predictCSC] diag strata", {
     eS.CSC <- CSC(Hist(time, event) ~ strata(X1) + X6, data = dt)
@@ -937,7 +937,7 @@ test_that("[predictCSC] diag strata", {
     expect_equal(rowMeans(rowMultiply_cpp(GS.iid.diag, 1:length(dt$time))),
                  test5$absRisk.average.iid[[2]][,1])
 })
-
+}
 
 ## * [predictCSC] Average iid
 cat("[predictCSC] Average iid \n")
