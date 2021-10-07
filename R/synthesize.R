@@ -22,7 +22,7 @@
 ##' @title Cooking and synthesizing survival data
 ##' @param object Specification of the synthesizing model structures. Either a \code{formula} or a \code{lvm} object. See examples.
 ##' @param data Data to be synthesized.
-##' @param recursive DESCRIBE ME
+##' @param recursive Let covariates recursively depend on each other.
 ##' @param max.levels Integer used to guess which variables are categorical. When set to \code{10}, the default,
 ##'                   variables with less than 10 unique values in data are treated as categorical.
 ##' @param logtrans Vector of covariate names that should be log-transformed.
