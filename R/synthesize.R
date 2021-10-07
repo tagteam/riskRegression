@@ -3,9 +3,9 @@
 ## Author: Johan Sebastian Ohlendorff & Vilde Hansteen Ung & Thomas Alexander Gerds
 ## Created: Apr 28 2021 (09:04)
 ## Version:
-## Last-Updated: Sep 27 2021 (10:54)
+## Last-Updated: Oct  7 2021 (16:09) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 64
+##     Update #: 66
 #----------------------------------------------------------------------
 ##
 ### Commentary:
@@ -20,6 +20,7 @@
 ##'
 ##' The simulation engine is: lava.
 ##' @title Cooking and synthesizing survival data
+##' @aliases synthesize.formula synthesize.lvm 
 ##' @param object Specification of the synthesizing model structures. Either a \code{formula} or a \code{lvm} object. See examples.
 ##' @param data Data to be synthesized.
 ##' @param recursive Let covariates recursively depend on each other.
@@ -42,16 +43,29 @@
 ##' distribution(u,~protime) <- normal.lvm()
 ##' u <-eventTime(u,time~min(time.cens=0,time.transplant=1,time.death=2), "status")
 ##' lava::regression(u,logbili~age+sex) <- 1
+<<<<<<< HEAD
 ##' lava::regression(u,time.transplant~sex+age+logbili+protime) <- 1
 ##' lava::regression(u,time.death~sex+age+logbili+protime) <- 1
+=======
+##' lava::regression(u,protimegrp~age+sex+logbili) <- 1
+##' lava::regression(u,stage~age+sex+protimegrp+logbili) <- 1
+##' lava::regression(u,time.transplant~sex) <- 1
+##' lava::regression(u,time.death~sex+age+logbili+protime+stage) <- 1
+>>>>>>> 9af2c968b5b432bb9a05260e33331127cee425d1
 ##' lava::regression(u,time.cens~1) <- 1
 ##' transform(u,logbili~bili) <- function(x){log(x)}
 ##' u_synt <- synthesize(object=u, data=na.omit(pbc))
 ##' set.seed(8)
 ##' d <- sim(u_synt,n=1000)
+<<<<<<< HEAD
 ##' # note: synthesize may relabel status variable
 ##' fit_sim <- coxph(Surv(time,status==2)~age+sex+logbili,data=d)
 ##' fit_real <- coxph(Surv(time,status==1)~age+sex+log(bili),data=pbc)
+=======
+##' table(d$status)
+##' fit_sim <- coxph(Surv(time,status==2)~age+sex+logbili,data=d)
+##' fit_real <- coxph(Surv(time,status==1)~age+sex+log(bili),data=na.omit(pbc))
+>>>>>>> 9af2c968b5b432bb9a05260e33331127cee425d1
 ##' # compare estimated log-hazard ratios between simulated and real data
 ##' cbind(coef(fit_sim),coef(fit_real))
 ##'
