@@ -78,10 +78,11 @@ m.cox <- coxph(Surv(time,event)~ X1 + X2 + X3,
 ## display baseline hazard
 e.basehaz <- predictCox(m.cox)
 autoplot(e.basehaz, type = "cumhazard")
+\dontrun{
 autoplot(e.basehaz, type = "cumhazard", size.point = 0) ## without points
 autoplot(e.basehaz, type = "cumhazard", smooth = TRUE)
 autoplot(e.basehaz, type = "cumhazard", smooth = TRUE, first.derivative = TRUE)
-
+}
 ## display baseline hazard with type of event 
 e.basehaz <- predictCox(m.cox, keep.newdata = TRUE)
 autoplot(e.basehaz, type = "cumhazard")
@@ -91,11 +92,12 @@ autoplot(e.basehaz, type = "cumhazard", shape.point = c(3,NA))
 pred.cox <- predictCox(m.cox, newdata = d[1:2,],
   times = seqTau, type = "survival", keep.newdata = TRUE)
 autoplot(pred.cox)
+\dontrun{
 autoplot(pred.cox, smooth = TRUE)
 autoplot(pred.cox, group.by = "covariates")
 autoplot(pred.cox, group.by = "covariates", reduce.data = TRUE)
 autoplot(pred.cox, group.by = "X1", reduce.data = TRUE)
-
+}
 
 ## predictions with confidence interval/bands
 pred.cox <- predictCox(m.cox, newdata = d[1:2,,drop=FALSE],
@@ -122,7 +124,9 @@ res2 <- autoplot(pred.cox.strata, type = "survival", group.by = "strata", plot =
 res2$plot + facet_wrap(~strata, labeller = label_both) + theme(legend.position="bottom")
 
 ## smooth version
+\dontrun{
 autoplot(pred.cox.strata, type = "survival", group.by = "strata", smooth = TRUE, ci = FALSE)
+}
 }
 \seealso{
 \code{\link{predictCox}} to compute cumulative hazard and survival based on a Cox model.
