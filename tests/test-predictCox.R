@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: sep  4 2017 (10:38) 
 ## Version: 
-## last-updated: Feb  6 2021 (10:14) 
-##           By: Thomas Alexander Gerds
-##     Update #: 169
+## last-updated: okt  7 2021 (12:13) 
+##           By: Brice Ozenne
+##     Update #: 172
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -47,9 +47,10 @@ test_that("baseline hazard (no strata): compare to survival::basehaz",{
 
   ## consistency cph coxph
   ## possible differences due to different fit - coef(fit.coxph)-coef(fit.cph)
-  expect_equal(predictCox(fit.cph),
-               predictCox(fit.coxph, centered = TRUE), 
+  expect_equal(predictCox(fit.cph, centered = FALSE),
+               predictCox(fit.coxph, centered = FALSE), 
                tolerance = 100*max(abs(coef(fit.coxph)-coef(fit.cph))))
+  ## note centered = TRUE will no give same results as coxph do not center all variables
 })
 
 ## ** Number of events
@@ -1262,7 +1263,7 @@ e.coxph <- coxph(Surv(time, event) ~ X1+ X6 , data = dt, y = TRUE, x = TRUE)
 e.coxph$coefficients[] <- as.numeric(NA)
 
 test_that("Return error when coef contains NA", {
-    expect_error(predictCox(e.coxph, newdata = dt, times = 1))
+    expect_error(capture.output(predictCox(e.coxph, newdata = dt, times = 1)))
 })
 
 ## ** average.iid
@@ -1289,15 +1290,21 @@ test_that("Cox - output of average.iid should not depend on other arguments", {
 
 test_that("Standard error after atanh transformation", {
     set.seed(10)
-    x <- rnorm(1e2)
-    y <- rnorm(1e2)
+    n <- 1e2
+    x <- rnorm(n)
+    y <- rnorm(n)
 
-    rho <- cor.test(x,y)$estimate
+    e.test <- cor.test(x,y)
+    rho <- e.test$estimate
     rho.se <- (1-rho^2)
+
     
-    
-    expect_equal(1, as.double(transformSE(estimate = rho, se = rho.se, type = "atanh")),
-                 tol = 1e-5)
+    e.trans <- transformCIBP(estimate = 0.5, se = cbind(1), null = 0,
+                             type = "atanh", ci = TRUE, conf.level = 0.95, alternative = "two.sided",
+                             min.value = NULL, max.value = NULL, band = FALSE,
+                             p.value = TRUE, seed = 10, df = Inf)
+    expect_equal(abs(atanh(0.5)-atanh(e.trans$lower)),abs(atanh(0.5)-atanh(e.trans$upper)), tol = 1e-6)
+    expect_equal(as.double((atanh(0.5)-atanh(e.trans$lower)))/qnorm(0.975),1/(1-0.5^2), tol = 1e-6)
 })
 
 

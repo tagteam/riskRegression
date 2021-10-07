@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Aug 10 2017 (08:56) 
 ## Version: 
-## Last-Updated: Dec  5 2020 (13:20) 
-##           By: Thomas Alexander Gerds
-##     Update #: 33
+## Last-Updated: okt  7 2021 (12:17) 
+##           By: Brice Ozenne
+##     Update #: 34
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -17,6 +17,7 @@
 library(riskRegression)
 library(testthat)
 library(rms)
+library(randomForestSRC)
 library(survival)
 library(data.table)
 library(lava)
