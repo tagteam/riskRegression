@@ -35,21 +35,17 @@
 ##' library(survival)
 ##' library(lava)
 ##' u <- lvm()
-##' pbc$protimegrp <- cut(c(unlist(pbc$protime)), c(-Inf,10,11,Inf), labels=c("0","1","2"))
 ##' distribution(u,~sex) <- binomial.lvm()
 ##' distribution(u,~age) <- normal.lvm()
 ##' distribution(u,~trt) <- binomial.lvm()
 ##' distribution(u,~logbili) <- normal.lvm()
-##' distribution(u,~logprotime) <- normal.lvm()
+##' distribution(u,~protime) <- normal.lvm()
 ##' u <-eventTime(u,time~min(time.cens=0,time.transplant=1,time.death=2), "status")
 ##' lava::regression(u,logbili~age+sex) <- 1
-##' lava::regression(u,protimegrp~age+sex+logbili) <- 1
-##' lava::regression(u,stage~age+sex+protimegrp+logbili) <- 1
-##' lava::regression(u,time.transplant~sex+age+logbili+protime+stage) <- 1
-##' lava::regression(u,time.death~sex+age+logbili+protime+stage) <- 1
+##' lava::regression(u,time.transplant~sex+age+logbili+protime) <- 1
+##' lava::regression(u,time.death~sex+age+logbili+protime) <- 1
 ##' lava::regression(u,time.cens~1) <- 1
-##' u <- categorical(u,~stage,labels=c("1","2","3","4"), K=4)
-##' transform(u,protime~logprotime) <- function(x){exp(x)}
+##' transform(u,logbili~bili) <- function(x){log(x)}
 ##' u_synt <- synthesize(object=u, data=na.omit(pbc))
 ##' set.seed(8)
 ##' d <- sim(u_synt,n=1000)
@@ -391,8 +387,9 @@ synthesize.lvm <- function(object,
             if (class(status_ind) != "numeric") {stop("event or status variable has to be numeric")}
             G <- survreg(surv_formula, data = data)
             reg_formula <- as.formula(paste0(latvar, "~", covariates))
-            lava::distribution(sim_model, latvar_formula) <- lava::coxWeibull.lvm(scale=exp(-G$coef["(Intercept)"]/G$scale),shape=1/G$scale)
+            lava::distribution(sim_model, latvar_formula) <- lava::coxWeibull.lvm(scale=exp(-coef(G)["(Intercept)"]/G$scale),shape=1/G$scale)
             lava::regression(sim_model, reg_formula) <- -coef(G)[-1]/G$scale
+
         }
 
         #calculate time and status afterwards
