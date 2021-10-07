@@ -5,6 +5,7 @@ library(data.table)
 library(riskRegression)
 library(survival)
 library(rms)
+library(mets)
 
 verbose <- FALSE
 calcIterm <- function(factor, iid, indexJump, iid.outsideI){
@@ -655,37 +656,63 @@ test_that("[ate] Censoring, survival - check vs. manual calculations", {
 })
 
 ## * [ate] IPCW logistic regression
+
+## ** no censoring
 set.seed(10)
 n <- 500
 tau <- 1:5
 d <- sampleData(n, outcome = "competing.risks")
 d$Y <- (d$event == 1)*(d$time <= tau[3])
 d0 <- d[event!=0] ## remove censoring
+d0.0 <- copy(d0)[,X1 := factor(0,levels = levels(X1))]
+d0.1 <- copy(d0)[,X1 := factor(1,levels = levels(X1))]
+
+e.T <- glm(X1~X2+X6,family="binomial",data=d0)
+myW.T0 <- (d0$X1=="0")/(1-predict(e.T, type = "response"))
+myW.T1 <- (d0$X1=="1")/predict(e.T, type = "response")
 
 test_that("[ate] IPCW LR - no censoring", {
-    e0.wglm <- wglm(regressor.event = ~ X1+X2+X6, formula.censor = Surv(time,event==0) ~ X1,
+    e0.wglm <- wglm(regressor.event = ~ X1+X2+X6, formula.censor = Surv(time,event==0) ~ 1,
                     times = tau, data = d0)
     e0.glm <- glm(Y ~ X1+X2+X6, family = binomial, data = d0)
-
+    
     ## NOTE difference between wglm and glm is that lava:::information.glm uses numerical derivatives
     ## while information.wglm uses explicit formula
     ## this lead to small difference in the influence function and therefore in the standard error
     eATE.wglm <- ate(e0.wglm, data = d0, treatment = "X1", times = tau, band = FALSE, verbose = FALSE)
     eATE.glm <- ate(e0.glm, data = d0, treatment = "X1", times = tau[3], verbose = FALSE)
+    ## e0.mets <- logitATE(Y~X1+X2+X6, treat.model=X1~X2+X6, data = d)
+    ## eATE.boot <- ate(e0.glm, data = d0, treatment = "X1", times = tau[3], verbose = FALSE, B = 1000)
+    ## confint(eATE.boot)$meanRisk$se ## 0.02535254 0.06612763
+    ## confint(eATE.boot)$diffRisk$se ## 0.06984537
     expect_equal(eATE.glm$meanRisk$estimate, eATE.wglm$meanRisk[time==tau[3],estimate], tol = 1e-4) 
     expect_equal(eATE.glm$meanRisk$se, eATE.wglm$meanRisk[time==tau[3],se], tol = 1e-4) 
     expect_equal(eATE.glm$meanRisk$lower, eATE.wglm$meanRisk[time==tau[3],lower], tol = 1e-4) 
     expect_equal(eATE.glm$meanRisk$upper, eATE.wglm$meanRisk[time==tau[3],upper], tol = 1e-4) 
 
-    eATE2.wglm <- ate(e0.wglm, data = d0, treatment = X1~X2, times = tau, band = FALSE, verbose = FALSE)
-    eATE2.glm <- ate(e0.glm, data = d0, treatment = X1~X2, times = tau[3], verbose = FALSE)
+    expect_equal(mean(predictRisk(e0.glm, newdata = d0.0)), eATE.glm$meanRisk$estimate[1], tol = 1e-5) 
+    expect_equal(mean(predictRisk(e0.glm, newdata = d0.1)), eATE.glm$meanRisk$estimate[2], tol = 1e-5)
+
+    ## eATE.mets <- logitATE(Event(time,event)~X1+X2+X6, data = d, cause = 1, time = tau[3], treat.model = X1~1)
+    ## coef(eATE.mets)
+    ## coef(e0.glm)
+    ## not the same!!
+    ## coef(e0.wglm)
+
+    eATE2.wglm <- ate(e0.wglm, data = d0, treatment = X1~X2+X6, times = tau, band = FALSE, verbose = FALSE)
+    eATE2.glm <- ate(e0.glm, data = d0, treatment = X1~X2+X6, times = tau[3], verbose = FALSE)
+    ## e.mets <- logitATE(Y~X1+X2+X6, treat.model=X1~X2, data = d)
     expect_equal(eATE2.glm$meanRisk$estimate, eATE2.wglm$meanRisk[time==tau[3],estimate], tol = 1e-4)
     expect_equal(eATE2.glm$meanRisk$se, eATE2.wglm$meanRisk[time==tau[3],se], tol = 1e-4)
     expect_equal(eATE2.glm$meanRisk$lower, eATE2.wglm$meanRisk[time==tau[3],lower], tol = 1e-4)
     expect_equal(eATE2.glm$meanRisk$upper, eATE2.wglm$meanRisk[time==tau[3],upper], tol = 1e-4)
+
+    ## A (Y-f_a) / pi + f_a = AY/pi - (A/pi-1) f_a
+    expect_equal(mean( myW.T0 * d0$Y - (myW.T0-1) * predictRisk(e0.glm, newdata = d0.0)), eATE2.glm$meanRisk$estimate[1], tol = 1e-5) 
+    expect_equal(mean( myW.T1 * d0$Y - (myW.T1-1) * predictRisk(e0.glm, newdata = d0.1)), eATE2.glm$meanRisk$estimate[2], tol = 1e-5)
 })
 
-## ** AIPTW
+## ** censoring
 ## *** data
 d <- data.frame("Ytrue" = c(0, 0, 1, 1, 1, 0, 1, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 1, 0, 1, 0, 0, 1, 1, 1, 1, 0, 1, 1, 0, 1, 0, 0, 1, 0, 1, 1, 0, 1, 0, 0, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 0, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 0, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 0, 1, 1, 1, 0, 0, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 0, 0, 0, 1, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 0, 1, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0), 
            "status" = c(2, 2, 0, 1, 1, 0, 1, 0, 0, 2, 2, 0, 0, 1, 0, 1, 2, 0, 2, 1, 2, 1, 2, 0, 1, 1, 0, 1, 2, 0, 1, 2, 1, 0, 0, 1, 2, 1, 1, 0, 1, 2, 2, 1, 0, 1, 0, 0, 2, 0, 1, 1, 0, 0, 1, 0, 1, 1, 2, 0, 0, 1, 1, 1, 1, 1, 1, 0, 2, 1, 1, 0, 1, 1, 1, 1, 2, 1, 1, 1, 0, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 0, 2, 1, 1, 1, 1, 1, 1, 1, 1, 0, 2, 0, 1, 1, 1, 1, 2, 1, 1, 1, 0, 2, 2, 1, 0, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 2, 0, 0, 2, 1, 2, 1, 1, 1, 1, 1, 1, 2, 2, 0, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 2, 1, 0, 1, 1, 2, 0, 2, 2, 1, 0, 1, 2, 0, 1, 2, 0, 2, 2, 0, 2, 0, 1, 0, 1, 0, 1, 2, 2, 0, 2, 2, 2, 0, 2, 2, 1, 1, 0, 2, 2, 1, 1, 1, 1, 2, 0, 1, 0, 2, 1, 0, 0, 2, 2, 2, 1, 2, 0, 1, 2, 1, 1, 2, 0, 0, 2, 1, 2, 0, 0, 2, 2, 2, 1, 1, 0, 0, 0, 2, 1, 2, 2, 2, 2, 1, 2, 2, 1, 2, 2, 2, 2, 2, 2, 2, 1), 
@@ -733,12 +760,13 @@ test_that("[ate] IPCW LR - censoring (based on Paul's script and results)", {
     ## censoring:
     ## IPCW model
     suppressWarnings(eW.glm <- glm(Y1~X2+A2,family="binomial",data=d, weights = myW.C))
-
     e.wglm <- wglm(regressor.event = ~ X2+A2,
                    formula.censor = Surv(time,status==0) ~ 1,
                    times = 5, data = d, product.limit = TRUE)
-
     
+    ## e.mets <- logitIPCW(Event(time,status)~X2+A2, data = d, cause = 1, time = 5, cens.model=~1)
+    ## expect_equal(as.double(coef(e.mets)), as.double(coef(e.wglm)), tol = 1e-3)
+
     ## G-formula on IPCW glm
     eATE.wglm <- ate(e.wglm, data = d, treatment = "A2", times = 5, band = FALSE, verbose = FALSE)
 
@@ -750,17 +778,35 @@ test_that("[ate] IPCW LR - censoring (based on Paul's script and results)", {
                  c(0.1886021,0.4925792), tol = 1e-3)
     ## minor difference due to difference weights computations
 
+    ## eATE.mets <- logitIPCWATE(Event(time,status)~X2+A2, data = d, cause = 1, time = 5, treat.model = A2~1, cens.model=~1)
+    ## expect_equal(as.double(coef(eATE.mets)), as.double(coef(e.wglm)), tol = 1e-3)
+    ## expect_equivalent(summary(eATE.mets)$ateG[2:1,"Estimate"],unlist(confint(eATE.wglm)$meanRisk[,"estimate"]), tol = 1e-4)
+    ## expect_equivalent(summary(eATE.mets)$ateG[2:1,"Std.Err"],unlist(confint(eATE.wglm)$meanRisk[,"se"]), tol = 1e-2)
+    ## some difference in standard error
+    
     ## AIPTW on IPCW glm
-    eATE.wglm2 <- ate(e.wglm, treatment = A2 ~ X, censor = Surv(time,status==0) ~ 1,
+    eATE2.wglm <- ate(e.wglm, treatment = A2 ~ X, censor = Surv(time,status==0) ~ 1,
                       product.limit = TRUE, estimator = c("Gformula","AIPTW"),
                       data = d, times = 5, band = FALSE, verbose = FALSE)
-
+    ## eATE2.wglm$diffRisk
+    ##    estimator time A estimate.A B estimate.B  estimate         se      lower
+    ## 1:  GFORMULA    5 0  0.1886021 1  0.4925629 0.3039607 0.06488501 0.17678846
+    ## 2:     AIPTW    5 0  0.2460310 1  0.4591394 0.2131084 0.07828391 0.05967479
+    ##        upper      p.value
+    ## 1: 0.4311330 2.804980e-06
+    ## 2: 0.3665421 6.483893e-03
     
-    expect_equal(eATE.wglm2$meanRisk[estimator == "AIPTW",estimate],
-                 c(mean( myW.T0*myW.C*(d$Y1 - fitted(eW.glm)) + predict(eW.glm, newdata = d0, type = "response") ),
-                   mean( myW.T1*myW.C*(d$Y1 - fitted(eW.glm)) + predict(eW.glm, newdata = d1, type = "response") )),
+    expect_equal(eATE2.wglm$meanRisk[estimator == "AIPTW",estimate],
+                 c(mean( myW.T0*myW.C*d$Y1 - (myW.T0 - 1) * predict(eW.glm, newdata = d0, type = "response") ),
+                   mean( myW.T1*myW.C*d$Y1 - (myW.T1 - 1) * predict(eW.glm, newdata = d1, type = "response") )),
                  tol = 1e-4)
     ## minor difference due to difference weights computations
+
+    ## eATE2.mets <- logitIPCWATE(Event(time,status)~X2+A2, data = d, cause = 1, time = 5, treat.model = A2~X, cens.model=~1)
+    ## expect_equal(as.double(coef(eATE2.mets)), as.double(coef(e.wglm)), tol = 1e-3)
+    ## expect_equivalent(summary(eATE2.mets)$ateG[2:1,"Estimate"],unlist(confint(eATE2.wglm)$meanRisk[4:3,"estimate"]), tol = 1e-4)
+    ## expect_equivalent(summary(eATE.mets)$ateG[2:1,"Std.Err"],unlist(confint(eATE.wglm)$meanRisk[,"se"]), tol = 1e-2)
+    ## big difference in estimate and se. Not sure why.
 
 })
 
