@@ -3,9 +3,9 @@
 ## Author: Johan Sebastian Ohlendorff & Vilde Hansteen Ung & Thomas Alexander Gerds
 ## Created: Apr 28 2021 (09:04)
 ## Version:
-## Last-Updated: Oct  2 2021 (12:51) 
+## Last-Updated: Oct  7 2021 (16:09) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 65
+##     Update #: 66
 #----------------------------------------------------------------------
 ##
 ### Commentary:
@@ -46,7 +46,7 @@
 ##' lava::regression(u,logbili~age+sex) <- 1
 ##' lava::regression(u,protimegrp~age+sex+logbili) <- 1
 ##' lava::regression(u,stage~age+sex+protimegrp+logbili) <- 1
-##' lava::regression(u,time.transplant~sex+age+logbili+protime+stage) <- 1
+##' lava::regression(u,time.transplant~sex) <- 1
 ##' lava::regression(u,time.death~sex+age+logbili+protime+stage) <- 1
 ##' lava::regression(u,time.cens~1) <- 1
 ##' u <- categorical(u,~stage,labels=c("1","2","3","4"), K=4)
@@ -54,8 +54,9 @@
 ##' u_synt <- synthesize(object=u, data=na.omit(pbc))
 ##' set.seed(8)
 ##' d <- sim(u_synt,n=1000)
-##' fit_sim <- coxph(Surv(time,status==1)~age+sex+logbili,data=d)
-##' fit_real <- coxph(Surv(time,status==1)~age+sex+log(bili),data=pbc)
+##' table(d$status)
+##' fit_sim <- coxph(Surv(time,status==2)~age+sex+logbili,data=d)
+##' fit_real <- coxph(Surv(time,status==1)~age+sex+log(bili),data=na.omit(pbc))
 ##' # compare estimated log-hazard ratios between simulated and real data
 ##' cbind(coef(fit_sim),coef(fit_real))
 ##'

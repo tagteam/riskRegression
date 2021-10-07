@@ -2,6 +2,8 @@
 % Please edit documentation in R/synthesize.R
 \name{synthesize}
 \alias{synthesize}
+\alias{synthesize.formula}
+\alias{synthesize.lvm}
 \title{Cooking and synthesizing survival data}
 \usage{
 synthesize(object, data, ...)

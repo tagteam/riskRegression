@@ -8,7 +8,8 @@
 sampleData(n,outcome="competing.risks",
 formula= ~ f(X1,2)+f(X2,-0.033)+f(X3,0.4)+f(X6,.1)+f(X7,-.1)+f(X8,.5)+f(X9,-1))
 sampleDataTD(n,n.intervals=5,outcome="competing.risks",
-formula= ~ f(X1,2)+f(X2,-0.033)+f(X3,0.4)+f(X6,.1)+f(X7,-.1)+f(X8,.5)+f(X9,-1))
+formula= ~ f(X1,2)+f(X2,-0.033)+f(X3,0.4)+f(X6,.1)+f(X7,-.1)+f(X8,.5)+f(X9,-1),
+intercept=0)
 }
 \arguments{
 \item{n}{Sample size}
