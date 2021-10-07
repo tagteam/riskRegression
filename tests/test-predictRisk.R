@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Aug 10 2017 (08:56) 
 ## Version: 
-## Last-Updated: okt  7 2021 (12:17) 
+## Last-Updated: okt  7 2021 (13:51) 
 ##           By: Brice Ozenne
-##     Update #: 34
+##     Update #: 36
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -91,7 +91,8 @@ test_that("Prediction with CSC - categorical cause",{
     predictRisk(CSC.h$models[[1]], newdata = dn, times = c(5,10,15,20), cause = cause)
     predictRisk(CSC.s$models[[1]], newdata = dn, times = c(5,10,15,20), cause = cause)
     predictRisk(CSC.h$models[[2]], newdata = dn, times = c(5,10,15,20), cause = cause)
-    expect_success(predictRisk(CSC.s$models[[2]], newdata = dn, times = c(5,10,15,20), cause = cause))
+    ## NOTE: expect_error with regexp=NA tests no error 
+    expect_error(predictRisk(CSC.s$models[[2]], newdata = dn, times = c(5,10,15,20), cause = cause), regexp=NA)
 })
 
 ## * [predictRisk.glm] vs. lava

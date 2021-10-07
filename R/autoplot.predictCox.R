@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: feb 17 2017 (10:06) 
 ## Version: 
-## last-updated: mar 14 2021 (17:15) 
+## last-updated: okt  7 2021 (13:39) 
 ##           By: Brice Ozenne
-##     Update #: 1187
+##     Update #: 1188
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -66,10 +66,11 @@
 #' ## display baseline hazard
 #' e.basehaz <- predictCox(m.cox)
 #' autoplot(e.basehaz, type = "cumhazard")
+#' \dontrun{
 #' autoplot(e.basehaz, type = "cumhazard", size.point = 0) ## without points
 #' autoplot(e.basehaz, type = "cumhazard", smooth = TRUE)
 #' autoplot(e.basehaz, type = "cumhazard", smooth = TRUE, first.derivative = TRUE)
-#'
+#' }
 #' ## display baseline hazard with type of event 
 #' e.basehaz <- predictCox(m.cox, keep.newdata = TRUE)
 #' autoplot(e.basehaz, type = "cumhazard")
@@ -79,11 +80,12 @@
 #' pred.cox <- predictCox(m.cox, newdata = d[1:2,],
 #'   times = seqTau, type = "survival", keep.newdata = TRUE)
 #' autoplot(pred.cox)
+#' \dontrun{
 #' autoplot(pred.cox, smooth = TRUE)
 #' autoplot(pred.cox, group.by = "covariates")
 #' autoplot(pred.cox, group.by = "covariates", reduce.data = TRUE)
 #' autoplot(pred.cox, group.by = "X1", reduce.data = TRUE)
-#' 
+#' }
 #' 
 #' ## predictions with confidence interval/bands
 #' pred.cox <- predictCox(m.cox, newdata = d[1:2,,drop=FALSE],
@@ -110,7 +112,9 @@
 #' res2$plot + facet_wrap(~strata, labeller = label_both) + theme(legend.position="bottom")
 #' 
 #' ## smooth version
+#' \dontrun{
 #' autoplot(pred.cox.strata, type = "survival", group.by = "strata", smooth = TRUE, ci = FALSE)
+#' }
 
 ## * autoplot.predictCox (code)
 #' @rdname autoplot.predictCox
