@@ -164,11 +164,11 @@ synthesize.formula <- function(object, # a formula object Surv(time,event) or Hi
         cv2 <- cv[2:length(cv)]
         #lacks implementation in case it is categorical
         #needs multinomial logistic regression to be implemented
-        if (categorize(cv[1]) == 1){
+        if (categorize(cv[1],max.levels,data) == 1){
           warning("Categorical variables not fully tested for recursive")
           object <- lava::categorical(object, cv[1], K=length(unique(data[[cv[1]]])))
         }
-        else if (categorize(cv[1]) == 2){
+        else if (categorize(cv[1],max.levels,data) == 2){
           lava::distribution(object,cv[1]) <- lava::binomial.lvm()
         }
         regression(object) <- as.formula(paste0(cv[1],"~",paste(cv2,collapse = "+")))
@@ -177,7 +177,12 @@ synthesize.formula <- function(object, # a formula object Surv(time,event) or Hi
     }
     # outcome
     # binary/continuous outcome
-    if(is.null(data[[tt[1]]]) || is.null(data[[tt[2]]])){
+    if (length(tt) > 1){
+      if(is.null(data[[tt[1]]]) || is.null(data[[tt[2]]])) {
+        stop("Response variable not in data set. Add it to the data, then try again.")
+      }
+    }
+    else if (is.null(data[[tt[1]]])) {
       stop("Response variable not in data set. Add it to the data, then try again.")
     }
 
@@ -434,7 +439,7 @@ synthesize.lvm <- function(object,
           }
         }
         # ignore them
-        else if (var %in% object$attributes$eventHistory[[timename]]$latentTime){}
+        else if (has.eventTime && var %in% object$attributes$eventHistory[[timename]]$latentTime){}
         # case: gaussian
         else {
             fit <- lm(reg_formula,data=data)
