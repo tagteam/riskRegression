@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: sep  1 2020 (14:58) 
 ## Version: 
-## Last-Updated: aug  4 2021 (17:16) 
+## Last-Updated: okt  8 2021 (17:19) 
 ##           By: Brice Ozenne
-##     Update #: 311
+##     Update #: 332
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -163,8 +163,8 @@ wglm <- function(regressor.event, formula.censor, times, data, cause = NA,
             iPred <- predictRisk(object.censor, diag = TRUE, newdata = data, times = pmin(recoverTime, times[iTime]) - tol,
                                  type = "survival", product.limit = product.limit)
             data[[IPCW.newname[[iTime]]]] <- ifelse(data[[obs.newname[iTime]]],1/iPred[,1],0)
-            suppressWarnings(out$fit[[iTime]] <- do.call(stats::glm, list(formula = iFormula.glm, family = stats::binomial(link = "logit"),
-                                                                          data = data, weights = data[[IPCW.newname[[iTime]]]])))
+            out$fit[[iTime]] <- do.call(stats::glm, list(formula = iFormula.glm, family = stats::quasibinomial(link = "logit"),
+                                                                          data = data, weights = data[[IPCW.newname[[iTime]]]]))
             ## Warning message:
             ##             In eval(family$initialize) : non-integer #successes in a binomial glm!
 
@@ -268,8 +268,8 @@ summary.wglm <- function(object, print = TRUE, se = "robust", times = NULL, ...)
         suppressWarnings(out[[iTime]] <- summary(object$fit[[iTime2]])$coef)
         if(se %in% c("robust","robust-wknown")){
             out[[iTime]][,"Std. Error"] <- sqrt(diag(crossprod(object.iid[[iTime]])))
-            out[[iTime]][,"z value"] <- out[[iTime]][,"Estimate"]/out[[iTime]][,"Std. Error"]
-            out[[iTime]][,"Pr(>|z|)"] <- 2*(1-pnorm(abs(out[[iTime]][,"z value"])))
+            out[[iTime]][,3] <- out[[iTime]][,"Estimate"]/out[[iTime]][,"Std. Error"] ## name change from z to t stat when using quasibinomial instead binomial
+            out[[iTime]][,4] <- 2*(1-pnorm(abs(out[[iTime]][,3])))
         }
         if(print){
             cat("----------------------------------------------------------------------------------\n")
@@ -453,7 +453,7 @@ iid.wglm <- function(x, times = NULL, simplifies = TRUE, ...){
         ##                  - n(\int W(0)) X(O) d\pi(0,\beta)/d\beta d\Prob_h(O)) * (d\beta(\Prob_h)/d\Prob_h)
         ##                  + n\int W(0) X(O) (Y(O) - \pi(O)) d(d\Prob_n(O)/dh)
         ## \Prob_h = (1-h)\Prob + h \delta_{O_i}
-        ## dS(\Prob_h)/dh|h = 0 = n\int IF_{W_O}(O_i) X(O) (Y(O) - \pi(O)) d\Prob_h(O) \IF_\eta(O_i)
+        ## dS(\Prob_h)/dh|h = 0 = n\int IF_{W_O}(O_i) X(O) (Y(O) - \pi(O)) d\Prob_h(O) 
         ##                        + dS/d\beta IF_\beta(O_i)
         ##                        + (-S + S_i) where S=0 (since it is at ML)
         ## IF_\beta(O_i) = (S_i + n\int IF_{W_O}(O_i) X(O) (Y(O) - \pi(O)) d\Prob_h(O)) / (-dS/d\beta)
@@ -470,7 +470,7 @@ iid.wglm <- function(x, times = NULL, simplifies = TRUE, ...){
             iPred <- predictRisk(x$cox, diag = TRUE, newdata = x$data, times = iObject$time.prior.weights,
                                  type = "survival", product.limit = FALSE, average.iid = factor, store.iid = "minimal")
         }
-        
+
         ## ** assemble uncertainty
         ## (S+dS/dW)/I
         if(x$n.censor[iTime]>0){
@@ -497,7 +497,6 @@ iid.wglm <- function(x, times = NULL, simplifies = TRUE, ...){
         return(out)
     }
 }
-
 
 ## * predictRisk.wglm
 #' @rdname predictRisk
