@@ -3,7 +3,7 @@
 ## Author: Johan Sebastian Ohlendorff & Vilde Hansteen Ung & Thomas Alexander Gerds
 ## Created: Apr 28 2021 (09:04)
 ## Version:
-## Last-Updated: Oct  7 2021 (16:09) 
+## Last-Updated: Oct  7 2021 (16:09)
 ##           By: Thomas Alexander Gerds
 ##     Update #: 66
 #----------------------------------------------------------------------
@@ -20,10 +20,10 @@
 ##'
 ##' The simulation engine is: lava.
 ##' @title Cooking and synthesizing survival data
-##' @aliases synthesize.formula synthesize.lvm 
+##' @aliases synthesize.formula synthesize.lvm
 ##' @param object Specification of the synthesizing model structures. Either a \code{formula} or a \code{lvm} object. See examples.
 ##' @param data Data to be synthesized.
-##' @param recursive DESCRIBE ME
+##' @param recursive Let covariates recursively depend on each other.
 ##' @param max.levels Integer used to guess which variables are categorical. When set to \code{10}, the default,
 ##'                   variables with less than 10 unique values in data are treated as categorical.
 ##' @param logtrans Vector of covariate names that should be log-transformed.
@@ -36,27 +36,23 @@
 ##' library(survival)
 ##' library(lava)
 ##' u <- lvm()
-##' pbc$protimegrp <- cut(c(unlist(pbc$protime)), c(-Inf,10,11,Inf), labels=c("0","1","2"))
 ##' distribution(u,~sex) <- binomial.lvm()
 ##' distribution(u,~age) <- normal.lvm()
 ##' distribution(u,~trt) <- binomial.lvm()
 ##' distribution(u,~logbili) <- normal.lvm()
-##' distribution(u,~logprotime) <- normal.lvm()
+##' distribution(u,~protime) <- normal.lvm()
 ##' u <-eventTime(u,time~min(time.cens=0,time.transplant=1,time.death=2), "status")
 ##' lava::regression(u,logbili~age+sex) <- 1
-##' lava::regression(u,protimegrp~age+sex+logbili) <- 1
-##' lava::regression(u,stage~age+sex+protimegrp+logbili) <- 1
-##' lava::regression(u,time.transplant~sex) <- 1
-##' lava::regression(u,time.death~sex+age+logbili+protime+stage) <- 1
+##' lava::regression(u,time.transplant~sex+age+logbili+protime) <- 1
+##' lava::regression(u,time.death~sex+age+logbili+protime) <- 1
 ##' lava::regression(u,time.cens~1) <- 1
-##' u <- categorical(u,~stage,labels=c("1","2","3","4"), K=4)
-##' transform(u,protime~logprotime) <- function(x){exp(x)}
+##' transform(u,logbili~bili) <- function(x){log(x)}
 ##' u_synt <- synthesize(object=u, data=na.omit(pbc))
 ##' set.seed(8)
 ##' d <- sim(u_synt,n=1000)
-##' table(d$status)
+##' # note: synthesize may relabel status variable
 ##' fit_sim <- coxph(Surv(time,status==2)~age+sex+logbili,data=d)
-##' fit_real <- coxph(Surv(time,status==1)~age+sex+log(bili),data=na.omit(pbc))
+##' fit_real <- coxph(Surv(time,status==1)~age+sex+log(bili),data=pbc)
 ##' # compare estimated log-hazard ratios between simulated and real data
 ##' cbind(coef(fit_sim),coef(fit_real))
 ##'
@@ -168,11 +164,11 @@ synthesize.formula <- function(object, # a formula object Surv(time,event) or Hi
         cv2 <- cv[2:length(cv)]
         #lacks implementation in case it is categorical
         #needs multinomial logistic regression to be implemented
-        if (categorize(cv[1]) == 1){
+        if (categorize(cv[1],max.levels,data) == 1){
           warning("Categorical variables not fully tested for recursive")
           object <- lava::categorical(object, cv[1], K=length(unique(data[[cv[1]]])))
         }
-        else if (categorize(cv[1]) == 2){
+        else if (categorize(cv[1],max.levels,data) == 2){
           lava::distribution(object,cv[1]) <- lava::binomial.lvm()
         }
         regression(object) <- as.formula(paste0(cv[1],"~",paste(cv2,collapse = "+")))
@@ -181,7 +177,12 @@ synthesize.formula <- function(object, # a formula object Surv(time,event) or Hi
     }
     # outcome
     # binary/continuous outcome
-    if(is.null(data[[tt[1]]]) || is.null(data[[tt[2]]])){
+    if (length(tt) > 1){
+      if(is.null(data[[tt[1]]]) || is.null(data[[tt[2]]])) {
+        stop("Response variable not in data set. Add it to the data, then try again.")
+      }
+    }
+    else if (is.null(data[[tt[1]]])) {
       stop("Response variable not in data set. Add it to the data, then try again.")
     }
 
@@ -393,8 +394,9 @@ synthesize.lvm <- function(object,
             if (class(status_ind) != "numeric") {stop("event or status variable has to be numeric")}
             G <- survreg(surv_formula, data = data)
             reg_formula <- as.formula(paste0(latvar, "~", covariates))
-            lava::distribution(sim_model, latvar_formula) <- lava::coxWeibull.lvm(scale=exp(-G$coef["(Intercept)"]/G$scale),shape=1/G$scale)
+            lava::distribution(sim_model, latvar_formula) <- lava::coxWeibull.lvm(scale=exp(-coef(G)["(Intercept)"]/G$scale),shape=1/G$scale)
             lava::regression(sim_model, reg_formula) <- -coef(G)[-1]/G$scale
+
         }
 
         #calculate time and status afterwards
@@ -437,7 +439,7 @@ synthesize.lvm <- function(object,
           }
         }
         # ignore them
-        else if (var %in% object$attributes$eventHistory[[timename]]$latentTime){}
+        else if (has.eventTime && var %in% object$attributes$eventHistory[[timename]]$latentTime){}
         # case: gaussian
         else {
             fit <- lm(reg_formula,data=data)
