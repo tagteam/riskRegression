@@ -1,6 +1,7 @@
 library(testthat)
 context("Cause-specific Cox regression")
 library(riskRegression)
+library(pec)
 library(rms)
 library(survival)
 library(prodlim)

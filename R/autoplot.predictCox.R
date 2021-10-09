@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: feb 17 2017 (10:06) 
 ## Version: 
-## last-updated: mar 14 2021 (17:15) 
+## last-updated: okt  7 2021 (20:55) 
 ##           By: Brice Ozenne
-##     Update #: 1187
+##     Update #: 1189
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -66,16 +66,21 @@
 #' ## display baseline hazard
 #' e.basehaz <- predictCox(m.cox)
 #' autoplot(e.basehaz, type = "cumhazard")
+#' \dontrun{
 #' autoplot(e.basehaz, type = "cumhazard", size.point = 0) ## without points
 #' autoplot(e.basehaz, type = "cumhazard", smooth = TRUE)
 #' autoplot(e.basehaz, type = "cumhazard", smooth = TRUE, first.derivative = TRUE)
-#'
-#' ## display baseline hazard with type of event 
+#' }
+#' 
+#' ## display baseline hazard with type of event
+#' \dontrun{
 #' e.basehaz <- predictCox(m.cox, keep.newdata = TRUE)
 #' autoplot(e.basehaz, type = "cumhazard")
 #' autoplot(e.basehaz, type = "cumhazard", shape.point = c(3,NA))
+#' }
 #'
 #' ## display predicted survival
+#' \dontrun{
 #' pred.cox <- predictCox(m.cox, newdata = d[1:2,],
 #'   times = seqTau, type = "survival", keep.newdata = TRUE)
 #' autoplot(pred.cox)
@@ -83,17 +88,20 @@
 #' autoplot(pred.cox, group.by = "covariates")
 #' autoplot(pred.cox, group.by = "covariates", reduce.data = TRUE)
 #' autoplot(pred.cox, group.by = "X1", reduce.data = TRUE)
-#' 
+#' }
 #' 
 #' ## predictions with confidence interval/bands
+#' \dontrun{
 #' pred.cox <- predictCox(m.cox, newdata = d[1:2,,drop=FALSE],
 #'   times = seqTau, type = "survival", band = TRUE, se = TRUE, keep.newdata = TRUE)
 #' res <- autoplot(pred.cox, ci = TRUE, band = TRUE, plot = FALSE)
 #' res$plot + facet_wrap(~row)
 #' res2 <- autoplot(pred.cox, ci = TRUE, band = TRUE, alpha = 0.1, plot = FALSE)
 #' res2$plot + facet_wrap(~row)
-#'
+#' }
+#' 
 #' #### Stratified Cox model ####
+#' \dontrun{
 #' m.cox.strata <- coxph(Surv(time,event)~ strata(X1) + strata(X2) + X3 + X4,
 #'                       data = d, x = TRUE, y = TRUE)
 #'
@@ -111,6 +119,7 @@
 #' 
 #' ## smooth version
 #' autoplot(pred.cox.strata, type = "survival", group.by = "strata", smooth = TRUE, ci = FALSE)
+#' }
 
 ## * autoplot.predictCox (code)
 #' @rdname autoplot.predictCox

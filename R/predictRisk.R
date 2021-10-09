@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun  6 2016 (09:02) 
 ## Version: 
-## last-updated: Jun  3 2021 (13:04) 
-##           By: Thomas Alexander Gerds
-##     Update #: 378
+## last-updated: okt  8 2021 (15:53) 
+##           By: Brice Ozenne
+##     Update #: 399
 #----------------------------------------------------------------------
 ## 
 ### Commentary:
@@ -250,10 +250,16 @@ predictRisk.glm <- function(object, newdata, iid = FALSE, average.iid = FALSE,..
                 n.factor <- NCOL(factor)
             }
 
-            ## ** compute influence function of the coefficients using lava
-            iid.beta <- lava::iid(object)
-
-            newX <- model.matrix(stats::formula(object), newdata)
+            ## ** compute influence function of the coefficients using wglm (more accurate than lava)
+            ## iid.beta <- lava::iid(object)
+            wobject <- list(times = "1", fit = list("1"=object))
+            class(wobject) <- "wglm"
+            object.score <- lava::score(wobject, times = "1", simplifies = FALSE, indiv = TRUE)
+            object.info <- lava::information(wobject, times = "1", simplifies = FALSE)
+            iid.beta <- object.score[["1"]] %*% solve(object.info[["1"]])
+            
+            ff.rhs <- stats::delete.response(stats::terms(stats::formula(object)))
+            newX <- model.matrix(ff.rhs, newdata)
             Xbeta <- predict(object, type = "link", newdata = newdata, se = FALSE)
             
             ## ** chain rule
@@ -272,7 +278,7 @@ predictRisk.glm <- function(object, newdata, iid = FALSE, average.iid = FALSE,..
                 attr(out,"iid") <- iid.beta %*% t(colMultiply_cpp(newX, scale = exp(-Xbeta)/(1+exp(-Xbeta))^2))
             }
         }
-
+        
         ## ** set correct level
         ## hidden argument: enable to ask for the prediction of Y==1 or Y==0
         level <- list(...)$level
@@ -300,12 +306,13 @@ predictRisk.glm <- function(object, newdata, iid = FALSE, average.iid = FALSE,..
                 }                
             }
         }
+        ## print(sum(abs(attr(out,"average.iid")[[1]])))        
         return(out)
     } else {
         stop("Currently only the binomial family is implemented for predicting a status from a glm object.")
     }
 }
-## * predictRisk.multinom
+## * predictRisk.multinomQ
 predictRisk.multinom <- function(object, newdata, iid = FALSE, average.iid = FALSE,...){
     n.obs <- NROW(newdata)
     n.class <- length(object$lev)

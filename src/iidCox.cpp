@@ -289,8 +289,10 @@ List IFlambda0_cpp(const NumericVector& tau, const arma::mat& IFbeta,
 		if(tau[iiTau]==time1[Vindex_tau_time1[iiTau]] && time1[Vindex_tau_time1[iiTau]] <= newT[iObs]){
 		  IFlambda0(iObs,iiTau) -= neweXb[iObs] * lambda0_iS0[Vindex_tau_time1[iiTau]];
 		}
+		if(index_newT_time1>=0){ // must be after the first event (otherwise contribution of 0)
 		IFLambda0(iObs,iiTau) -= neweXb[iObs] * cumLambda0_iS0[min(Vindex_tau_time1[iiTau],index_newT_time1)];
-
+		}
+		
         // third term
         if(newT[iObs]<=tau[iiTau]){
           if(newT[iObs]==tau[iiTau]){

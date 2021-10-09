@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: sep  1 2020 (14:58) 
 ## Version: 
-## Last-Updated: May 29 2021 (10:24) 
+## Last-Updated: okt  8 2021 (17:19) 
 ##           By: Brice Ozenne
-##     Update #: 291
+##     Update #: 332
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -36,7 +36,6 @@
 #' @return an object of class \code{"wglm"}.
 #'
 #' @examples
-#' if(FALSE){ ## wglm is not exported
 #' library(survival)
 #' 
 #' set.seed(10)
@@ -70,17 +69,19 @@
 #'                      type = c("hazard","survival"))
 #' if(require(data.table)){
 #' dt.KM <- data.table::as.data.table(e.KM)
-#' dt.KM[times<=1 & hazard!=0, .(times, survival, weight=1/survival)]
+#' dt.KM[times<=tau[1] & hazard!=0, .(times, survival, weight=1/survival)]
 #' }
-#' table(e.wglm$data$IPCW.1)
+#' table(e.wglm$data$XX_IPCW.1_XX)
 #'
 #' ## binreg
 #' if(require(mets)){
 #' e2.binreg <- binreg(formula = Event(time,event)~X1-1,
 #'                    time = tau[1], data = dSurv, cens.code = 0, cause = 1)
 #' table(e2.binreg$cens.weights) ## fixed at prediction time
+#' }
 #' 
-#' ## "by hand"  (does not match)
+#' ## "by hand"
+#' if(FALSE){
 #' X <-  model.matrix(~X1-1,dSurv)
 #' Y <-  dSurv$event
 #' w <-  e2.binreg$cens.weights[,1]
@@ -95,6 +96,7 @@
 #'                times = tau, data = dSurv)
 #'
 #' ## by hand based on the weights
+#' if(FALSE){
 #' X <-  data.frame(X1.0 = e.wglm$data$X1=="0", X1.1 = e.wglm$data$X1=="1")
 #' Y <-  as.data.frame(e.wglm$data)[,grep("event\\.", names(e.wglm$data))]
 #' w <-  as.data.frame(e.wglm$data)[,grep("IPCW\\.", names(e.wglm$data))]
@@ -107,20 +109,26 @@
 #' sum(w[,1] * X[,1] * (Y[,1] - p.wglm[1,1]))
 #' sum(w[,1] * X[,2] * (Y[,1] - p.wglm[2,1]))
 #' }
-#' 
+#'
+#' @export
 wglm <- function(regressor.event, formula.censor, times, data, cause = NA,
                  fitter = "coxph", product.limit = FALSE){
     
     tol <- 1e-12
     varSurv <- SurvResponseVar(formula.censor)
-    newname <- paste0(varSurv$status,".",times)
-    IPCW.newname <- paste0("IPCW.",times)
+    newname <- paste0("XX_",varSurv$status,".",times,"_XX")
+    obs.newname <- paste0("XX_observed.",times,"_XX")
+    IPCW.newname <- paste0("XX_IPCW.",times,"_XX")
     n.times <- length(times)
     
     ## ** check arguments
     fitter <- match.arg(fitter,c("coxph","cph","phreg"))
     if(any(newname %in% names(data))){
         stop("Argument \'data\' should not have a column named \"",paste0(newname[newname %in% names(data)],collapse="\" \""),"\"\n",
+             "This name is used internally \n.")
+    }
+    if(any(obs.newname %in% names(data))){
+        stop("Argument \'data\' should not have a column named \"",paste0(obs.newname[obs.newname %in% names(data)],collapse="\" \""),"\"\n",
              "This name is used internally \n.")
     }
     if(any(IPCW.newname %in% names(data))){
@@ -132,7 +140,7 @@ wglm <- function(regressor.event, formula.censor, times, data, cause = NA,
     }
 
     ## ** fit censoring model
-    object.censor <- do.call(fitter, list(formula = formula.censor,data = data, x=TRUE,y=TRUE))
+    object.censor <- do.call(fitter, list(formula = formula.censor, data = data, x=TRUE,y=TRUE))
 
     ## ** extract information
     recoverCensor <- object.censor$y[,"status"]
@@ -149,15 +157,21 @@ wglm <- function(regressor.event, formula.censor, times, data, cause = NA,
     for(iTime in 1:n.times){
         iFormula.glm <- update(regressor.event, paste0(newname[iTime],"~."))
         data[[newname[iTime]]] <- (data[[varSurv$status]]==cause)*(recoverTime<=times[iTime])
+        data[[obs.newname[iTime]]] <- (1-(recoverCensor==1)*(recoverTime<=times[iTime])) ## equivalent to status>0 or eventtime>tau
 
         if(n.censor[iTime]>0){
             iPred <- predictRisk(object.censor, diag = TRUE, newdata = data, times = pmin(recoverTime, times[iTime]) - tol,
                                  type = "survival", product.limit = product.limit)
-            data[[IPCW.newname[[iTime]]]] <- (1-(recoverCensor==1)*(recoverTime<times[iTime]))/iPred[,1]
-            suppressWarnings(out$fit[[iTime]] <- do.call(stats::glm, list(formula = iFormula.glm, family = stats::binomial(link = "logit"),
-                                                                          data = data, weights = data[[IPCW.newname[[iTime]]]])))
+            data[[IPCW.newname[[iTime]]]] <- ifelse(data[[obs.newname[iTime]]],1/iPred[,1],0)
+            out$fit[[iTime]] <- do.call(stats::glm, list(formula = iFormula.glm, family = stats::quasibinomial(link = "logit"),
+                                                                          data = data, weights = data[[IPCW.newname[[iTime]]]]))
             ## Warning message:
             ##             In eval(family$initialize) : non-integer #successes in a binomial glm!
+
+            ## alternative not suitable when adding the influence function
+            ## iData <- as.data.frame(data)[data[[obs.newname[iTime]]]==1,,drop=FALSE]
+            ## suppressWarnings(out$fit[[iTime]] <- do.call(stats::glm, list(formula = iFormula.glm, family = stats::binomial(link = "logit"),
+            ##                                                               data = iData, weights = iData[[IPCW.newname[[iTime]]]])))
             out$fit[[iTime]]$time.prior.weights <- pmin(recoverTime, times[iTime]) - tol
         }else{
             IPCW.newname[[iTime]] <- NA
@@ -186,15 +200,18 @@ wglm <- function(regressor.event, formula.censor, times, data, cause = NA,
 }
 
 ## * nobs.wglm
+#' @export
 nobs.wglm <- function(object, ...){
     return(object$n)
 }
 ## * formula.wglm
+#' @export
 formula.wglm <- function(x, ...){
     return(x$formula)
 }
 
 ## * coef.wglm
+#' @export
 coef.wglm <- function(object, times = NULL, simplifies = TRUE, ...){
     if(is.null(times)){
         times <- object$times
@@ -212,6 +229,7 @@ coef.wglm <- function(object, times = NULL, simplifies = TRUE, ...){
 }
 
 ## * summary.wglm
+#' @export
 summary.wglm <- function(object, print = TRUE, se = "robust", times = NULL, ...){
 
     se <- match.arg(se, c("robust","model-wknown","robust-wknown"))
@@ -250,12 +268,12 @@ summary.wglm <- function(object, print = TRUE, se = "robust", times = NULL, ...)
         suppressWarnings(out[[iTime]] <- summary(object$fit[[iTime2]])$coef)
         if(se %in% c("robust","robust-wknown")){
             out[[iTime]][,"Std. Error"] <- sqrt(diag(crossprod(object.iid[[iTime]])))
-            out[[iTime]][,"z value"] <- out[[iTime]][,"Estimate"]/out[[iTime]][,"Std. Error"]
-            out[[iTime]][,"Pr(>|z|)"] <- 2*(1-pnorm(abs(out[[iTime]][,"z value"])))
+            out[[iTime]][,3] <- out[[iTime]][,"Estimate"]/out[[iTime]][,"Std. Error"] ## name change from z to t stat when using quasibinomial instead binomial
+            out[[iTime]][,4] <- 2*(1-pnorm(abs(out[[iTime]][,3])))
         }
         if(print){
             cat("----------------------------------------------------------------------------------\n")
-            cat("  > time: ",times[iTime],"\n",sep="")
+            cat("  - time: ",times[iTime],"\n",sep="")
             if(!is.na(eval(object$name.IPCW[[iTime2]]))){                
                 print(as.call(list(quote(glm),eval(object$fit[[iTime2]]$call$formula),family = quote(binomial(link="logit")), weights = eval(object$name.IPCW[[iTime2]]))))
             }else{
@@ -271,6 +289,7 @@ summary.wglm <- function(object, print = TRUE, se = "robust", times = NULL, ...)
 }
 
 ## * print.wglm
+#' @export
 print.wglm <- function(x, times = NULL, ...){
     if(is.null(times)){
         times <- x$times
@@ -302,7 +321,7 @@ print.wglm <- function(x, times = NULL, ...){
             x$fit[[iTime2]]$call <- as.call(list(quote(glm),eval(x$fit[[iTime2]]$call$formula),family = quote(binomial(link="logit"))))
         }
         cat("----------------------------------------------------------------------------------\n")
-        cat("  > time: ",times[iTime],"\n",sep="")
+        cat("  - time: ",times[iTime],"\n",sep="")
         print(x$fit[[iTime2]])
         cat("----------------------------------------------------------------------------------\n")
     }
@@ -398,7 +417,7 @@ information.wglm <- function(x, times = NULL, simplifies = TRUE, ...){
 #'
 #' @param x a wglm object.
 #' @param times [numeric vector] time points at which the iid should be output. 
-#' @param simplifies [logical] should the ouput be converted to a matrix when only one timepoint is requested. Otherwise will always return a list.
+#' @param simplifies [logical] should the ouput be converted to a matrix when only one timepoint is requested. Otherwise will always return a list.
 #' @param ... Not used.
 #' 
 iid.wglm <- function(x, times = NULL, simplifies = TRUE, ...){
@@ -434,7 +453,7 @@ iid.wglm <- function(x, times = NULL, simplifies = TRUE, ...){
         ##                  - n(\int W(0)) X(O) d\pi(0,\beta)/d\beta d\Prob_h(O)) * (d\beta(\Prob_h)/d\Prob_h)
         ##                  + n\int W(0) X(O) (Y(O) - \pi(O)) d(d\Prob_n(O)/dh)
         ## \Prob_h = (1-h)\Prob + h \delta_{O_i}
-        ## dS(\Prob_h)/dh|h = 0 = n\int IF_{W_O}(O_i) X(O) (Y(O) - \pi(O)) d\Prob_h(O) \IF_\eta(O_i)
+        ## dS(\Prob_h)/dh|h = 0 = n\int IF_{W_O}(O_i) X(O) (Y(O) - \pi(O)) d\Prob_h(O) 
         ##                        + dS/d\beta IF_\beta(O_i)
         ##                        + (-S + S_i) where S=0 (since it is at ML)
         ## IF_\beta(O_i) = (S_i + n\int IF_{W_O}(O_i) X(O) (Y(O) - \pi(O)) d\Prob_h(O)) / (-dS/d\beta)
@@ -449,9 +468,9 @@ iid.wglm <- function(x, times = NULL, simplifies = TRUE, ...){
             factor <- TRUE        
             attr(factor,"factor") <- lapply(apply(colMultiply_cpp(X, (Y - pi)), 2, list), function(iVec){cbind(iVec[[1]])})
             iPred <- predictRisk(x$cox, diag = TRUE, newdata = x$data, times = iObject$time.prior.weights,
-                                 type = "survival", product.limit = FALSE, average.iid = factor, store.iid = "full")
+                                 type = "survival", product.limit = FALSE, average.iid = factor, store.iid = "minimal")
         }
-        
+
         ## ** assemble uncertainty
         ## (S+dS/dW)/I
         if(x$n.censor[iTime]>0){
@@ -479,10 +498,10 @@ iid.wglm <- function(x, times = NULL, simplifies = TRUE, ...){
     }
 }
 
-
 ## * predictRisk.wglm
 #' @rdname predictRisk
 #' @method predictRisk wglm
+#' @export
 predictRisk.wglm <- function(object, newdata, times = NULL, 
                              product.limit = FALSE, diag = FALSE, iid = FALSE, average.iid = FALSE, ...){
 

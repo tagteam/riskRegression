@@ -43,7 +43,6 @@ Then, for each timepoint, a logistic regression is fitted with the appropriate c
 and where the outcome is the indicator of having experience the event of interest (argument cause) at or before the timepoint.
 }
 \examples{
-if(FALSE){ ## wglm is not exported
 library(survival)
 
 set.seed(10)
@@ -77,17 +76,19 @@ e.KM <- predictCoxPL(coxph(Surv(time,event==0) ~ 1, data = dSurv),
                      type = c("hazard","survival"))
 if(require(data.table)){
 dt.KM <- data.table::as.data.table(e.KM)
-dt.KM[times<=1 & hazard!=0, .(times, survival, weight=1/survival)]
+dt.KM[times<=tau[1] & hazard!=0, .(times, survival, weight=1/survival)]
 }
-table(e.wglm$data$IPCW.1)
+table(e.wglm$data$XX_IPCW.1_XX)
 
 ## binreg
 if(require(mets)){
 e2.binreg <- binreg(formula = Event(time,event)~X1-1,
                    time = tau[1], data = dSurv, cens.code = 0, cause = 1)
 table(e2.binreg$cens.weights) ## fixed at prediction time
+}
 
-## "by hand"  (does not match)
+## "by hand"
+if(FALSE){
 X <-  model.matrix(~X1-1,dSurv)
 Y <-  dSurv$event
 w <-  e2.binreg$cens.weights[,1]
@@ -102,6 +103,7 @@ e.wglm <- wglm(regressor.event = ~ X1, formula.censor = Surv(time,event==0) ~ X1
                times = tau, data = dSurv)
 
 ## by hand based on the weights
+if(FALSE){
 X <-  data.frame(X1.0 = e.wglm$data$X1=="0", X1.1 = e.wglm$data$X1=="1")
 Y <-  as.data.frame(e.wglm$data)[,grep("event\\\\.", names(e.wglm$data))]
 w <-  as.data.frame(e.wglm$data)[,grep("IPCW\\\\.", names(e.wglm$data))]

@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Oct 23 2016 (08:53) 
 ## Version: 
-## last-updated: maj 28 2021 (14:48) 
+## last-updated: okt  6 2021 (17:52) 
 ##           By: Brice Ozenne
-##     Update #: 2231
+##     Update #: 2270
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -752,10 +752,9 @@ ate_initArgs <- function(object.event,
     }
 
     ## ** times
-    if(inherits(model.event,"glm") && missing(times)){
+    if(missing(times) && (inherits(model.event,"glm") || (inherits(model.treatment,"glm") && is.null(model.event) && is.null(model.censor)))){
         times <- NA
     }
-
     
     ## ** identify event, treatment and censoring variables
     if(inherits(model.censor,"coxph") || inherits(model.censor,"cph") || inherits(model.censor,"phreg")){
@@ -815,7 +814,12 @@ ate_initArgs <- function(object.event,
         eventVar.status <- responseVar$status
         if(is.na(cause)){ ## handle Surv(time,event > 0) ~ ...
             if(any(model.event$y[,NCOL(model.event$y)]==1)){
-                cause <- unique(mydata[[eventVar.status]][model.event$y[,NCOL(model.event$y)]==1])
+                modeldata <- try(eval(model.event$call$data), silent = TRUE)
+                if(inherits(modeldata,"try-error")){
+                    cause <- unique(mydata[[eventVar.status]][model.event$y[,NCOL(model.event$y)]==1])
+                }else{
+                    cause <- unique(modeldata[[eventVar.status]][model.event$y[,NCOL(model.event$y)]==1])
+                }
             }
         }
         if(is.null(product.limit)){product.limit <- FALSE}
@@ -845,9 +849,18 @@ ate_initArgs <- function(object.event,
         }else if(identical(names(object.event),c("status","time"))){
             eventVar.status <- object.event[1]
             eventVar.time <- object.event[2]
-        }else{            
+        }else if(length(object.event)==2){            
             eventVar.time <- object.event[1]
             eventVar.status <- object.event[2]
+        }else if(length(object.event)==1){
+            eventVar.time <- NA
+            eventVar.status <- object.event[1]
+            if(is.na(cause)){
+                if(any(mydata[[eventVar.status]] %in% 0:2 == FALSE)){
+                    stop("The event variable must be an integer variable taking value 0, 1, or 2. \n")
+                }
+                cause <- 1
+            }
         }
         level.states <- setdiff(unique(mydata[[eventVar.status]]), level.censoring)
         if(is.na(cause)){
@@ -906,7 +919,7 @@ ate_initArgs <- function(object.event,
         }else{
             test.monotone <- FALSE
         }
-        
+
         if(any(estimator == "IPTW") && any(n.censor>0)){
             estimator[estimator == "IPTW"] <- "IPTW,IPCW"
         }
@@ -1001,7 +1014,6 @@ ate_initArgs <- function(object.event,
     if(is.null(store.iid)){
         store.iid <- "minimal"
     }
-
 
     ## ** output
     return(list(object.event = model.event,
