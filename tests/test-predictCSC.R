@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: maj 18 2017 (09:23) 
 ## Version: 
-## last-updated: Feb  6 2021 (10:14) 
-##           By: Thomas Alexander Gerds
-##     Update #: 304
+## last-updated: okt  7 2021 (20:02) 
+##           By: Brice Ozenne
+##     Update #: 309
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -414,6 +414,7 @@ dL <- msprep(time = c(NA, "time", "time"),
 dL.exp <- expand.covs(dL,  c("X1","X2","X16","Xcat2"))
 
 ## ** No covariates
+
 test_that("predict.CSC (no covariates): compare to mstate",{
     newdata <- data.frame(NA)
     newdata.L <- data.frame(trans = c(1, 2), strata = c(1, 2))
@@ -880,6 +881,7 @@ test_that("[predictCSC] diag no strata", {
 
 })
 
+
 test_that("[predictCSC] diag strata", {
     eS.CSC <- CSC(Hist(time, event) ~ strata(X1) + X6, data = dt)
 
@@ -935,7 +937,6 @@ test_that("[predictCSC] diag strata", {
     expect_equal(rowMeans(rowMultiply_cpp(GS.iid.diag, 1:length(dt$time))),
                  test5$absRisk.average.iid[[2]][,1])
 })
-
 
 ## * [predictCSC] Average iid
 cat("[predictCSC] Average iid \n")

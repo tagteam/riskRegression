@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: maj 23 2018 (14:08) 
 ## Version: 
-## Last-Updated: Dec  5 2020 (10:12) 
-##           By: Thomas Alexander Gerds
-##     Update #: 997
+## Last-Updated: okt  8 2021 (14:35) 
+##           By: Brice Ozenne
+##     Update #: 1004
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -24,6 +24,7 @@
 ##' @param parm not used. For compatibility with the generic method.
 ##' @param level [numeric, 0-1] Level of confidence.
 ##' @param n.sim [integer, >0] the number of simulations used to compute the quantiles for the confidence bands and/or perform adjustment for multiple comparisons.
+##' @param estimator [character] The type of estimator relative to which the estimates should be displayed. 
 ##' @param contrasts [character vector] levels of the treatment variable for which the risks should be assessed and compared. Default is to consider all levels.
 ##' @param allContrasts [2-row character matrix] levels of the treatment variable to be compared. Default is to consider all pairwise comparisons.
 ##' @param meanRisk.transform [character] the transformation used to improve coverage
@@ -123,6 +124,7 @@ confint.ate <- function(object,
                         parm = NULL,
                         level = 0.95,
                         n.sim = 1e4,
+                        estimator = object$estimator,
                         contrasts = object$contrasts,
                         allContrasts = object$allContrasts,
                         meanRisk.transform = "none",
@@ -160,6 +162,8 @@ confint.ate <- function(object,
             stop("Argument \'allContrasts\' must be a matrix with 2 rows \n")
         }
     }
+    estimator <- match.arg(estimator, object$estimator, several.ok = TRUE)
+    
     meanRisk.transform <- match.arg(meanRisk.transform, c("none","log","loglog","cloglog"))
     diffRisk.transform <- match.arg(diffRisk.transform, c("none","atanh"))
     ratioRisk.transform <- match.arg(ratioRisk.transform, c("none","log"))
@@ -226,9 +230,9 @@ confint.ate <- function(object,
         if(!identical(out$inference.allContrasts,object$allContrasts)){
             stop("Argument \'allContrast\' is not available when using boostrap. \n")
         }
-        out <- confintBoot.ate(object, out = out, seed = seed)
+        out <- confintBoot.ate(object, estimator = estimator, out = out, seed = seed)
     }else{
-        out <- confintIID.ate(object, out = out, seed = seed)
+        out <- confintIID.ate(object, estimator = estimator, out = out, seed = seed)
     }
     ## out$meanRisk[] ## ensure direct print
     ## out$diffRisk[] ## ensure direct print
@@ -239,7 +243,7 @@ confint.ate <- function(object,
 }
 
 ## * confintBoot.ate
-confintBoot.ate <- function(object, out, seed){
+confintBoot.ate <- function(object, estimator, out, seed){
 
     name.estimate <- names(object$boot$t0)
     n.estimate <- length(name.estimate)
@@ -362,12 +366,12 @@ confintBoot.ate <- function(object, out, seed){
     }
     
     ## store
-    vcov.meanRisk <- setNames(vector(mode = "list", length = length(object$estimator)), object$estimator)
-    vcov.diffRisk <- setNames(vector(mode = "list", length = length(object$estimator)), object$estimator)
-    vcov.ratioRisk <- setNames(vector(mode = "list", length = length(object$estimator)), object$estimator)
+    vcov.meanRisk <- setNames(vector(mode = "list", length = length(estimator)), estimator)
+    vcov.diffRisk <- setNames(vector(mode = "list", length = length(estimator)), estimator)
+    vcov.ratioRisk <- setNames(vector(mode = "list", length = length(estimator)), estimator)
 
-    for(iE in 1:length(object$estimator)){ ## iE <- 1
-        iEstimator <- object$estimator[iE]
+    for(iE in 1:length(estimator)){ ## iE <- 1
+        iEstimator <- estimator[iE]
 
         indexMean <- grep(paste0("^mean.",iEstimator),name.estimate)
         indexDiff <- grep(paste0("^difference.",iEstimator),name.estimate)
@@ -420,8 +424,7 @@ confintBoot.ate <- function(object, out, seed){
 }
 
 ## * confintIID.ate 
-confintIID.ate <- function(object, out, seed){
-    estimator <- object$estimator
+confintIID.ate <- function(object, estimator, out, seed){
     n.estimator <- length(estimator)
 
     ## ** check arguments
@@ -451,9 +454,9 @@ confintIID.ate <- function(object, out, seed){
     diffRisk.transform <- out$transform["diffRisk"]
     ratioRisk.transform <- out$transform["ratioRisk"]
 
-    vcov.meanRisk <- setNames(vector(mode = "list", length = length(object$estimator)), object$estimator)
-    vcov.diffRisk <- setNames(vector(mode = "list", length = length(object$estimator)), object$estimator)
-    vcov.ratioRisk <- setNames(vector(mode = "list", length = length(object$estimator)), object$estimator)
+    vcov.meanRisk <- setNames(vector(mode = "list", length = length(estimator)), estimator)
+    vcov.diffRisk <- setNames(vector(mode = "list", length = length(estimator)), estimator)
+    vcov.ratioRisk <- setNames(vector(mode = "list", length = length(estimator)), estimator)
     
     ## ** run
     for(iE in 1:n.estimator){ ## iE <- 1

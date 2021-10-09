@@ -81,11 +81,14 @@ fit <- cph(formula = Surv(time,event)~ X1+X2,data=dtS,y=TRUE,x=TRUE)
 ateFit <- ate(fit, data = dtS, treatment = "X1",
               times = c(1,2,5,10), se = TRUE, band = TRUE)
 ggplot2::autoplot(ateFit)
+\dontrun{
 ggplot2::autoplot(ateFit, band = FALSE)
 ggplot2::autoplot(ateFit, type = "diffRisk")
 ggplot2::autoplot(ateFit, type = "ratioRisk")
+}
 
 #### plot.type = 2: when looking at all jump times ####
+\dontrun{
 ateFit <- ate(fit, data = dtS, treatment = "X1",
               times = seqTimes, se = TRUE, band = TRUE)
 
@@ -97,15 +100,12 @@ outGG$plot + facet_wrap(~X1, labeller = label_both)
 
 
 ## Looking at the difference after smoothing
-\dontrun{
 outGGS <- ggplot2::autoplot(ateFit, plot.type = "2", alpha = NA, smooth = TRUE)
 outGGS$plot + facet_wrap(~X1, labeller = label_both)
-}
 
 ## first derivative
 ## (computation of the confidence intervals takes time)
 ## (based on simulation - n.sim parameter)
-\dontrun{ 
 ggplot2::autoplot(ateFit, plot.type = "2", smooth = TRUE,
                   band = FALSE, type = "diffRisk")
 ggplot2::autoplot(ateFit, plot.type = "2", smooth = TRUE, first.derivative = TRUE,

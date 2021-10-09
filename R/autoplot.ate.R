@@ -1,11 +1,11 @@
-### autoplot.ate.R --- 
+ ### autoplot.ate.R --- 
 #----------------------------------------------------------------------
 ## author: Brice Ozenne
 ## created: apr 28 2017 (14:19) 
 ## Version: 
-## last-updated: nov 12 2020 (19:35) 
+## last-updated: okt  7 2021 (20:54) 
 ##           By: Brice Ozenne
-##     Update #: 189
+##     Update #: 191
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -68,11 +68,14 @@
 #' ateFit <- ate(fit, data = dtS, treatment = "X1",
 #'               times = c(1,2,5,10), se = TRUE, band = TRUE)
 #' ggplot2::autoplot(ateFit)
+#' \dontrun{
 #' ggplot2::autoplot(ateFit, band = FALSE)
 #' ggplot2::autoplot(ateFit, type = "diffRisk")
 #' ggplot2::autoplot(ateFit, type = "ratioRisk")
-#'
+#' }
+#' 
 #' #### plot.type = 2: when looking at all jump times ####
+#' \dontrun{
 #' ateFit <- ate(fit, data = dtS, treatment = "X1",
 #'               times = seqTimes, se = TRUE, band = TRUE)
 #'
@@ -84,15 +87,12 @@
 #'
 #' 
 #' ## Looking at the difference after smoothing
-#' \dontrun{
 #' outGGS <- ggplot2::autoplot(ateFit, plot.type = "2", alpha = NA, smooth = TRUE)
 #' outGGS$plot + facet_wrap(~X1, labeller = label_both)
-#' }
 #' 
 #' ## first derivative
 #' ## (computation of the confidence intervals takes time)
 #' ## (based on simulation - n.sim parameter)
-#' \dontrun{ 
 #' ggplot2::autoplot(ateFit, plot.type = "2", smooth = TRUE,
 #'                   band = FALSE, type = "diffRisk")
 #' ggplot2::autoplot(ateFit, plot.type = "2", smooth = TRUE, first.derivative = TRUE,
