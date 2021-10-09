@@ -42,11 +42,3 @@ test_that("Logistic risk regression",{
 })
 
 # }}}
-# {{{ "Censoring model"
-test_that("Censoring model",{
-    ## NOTE: expect_error with regexp=NA tests no error 
-    expect_error(ARR(Hist(time,status)~thick+strata(invasion)+epicel,data=Melanoma,cens.model="cox",cause=1), regexp = NA) 
-    expect_error(ARR(Hist(time,status)~thick+strata(invasion)+epicel,data=Melanoma,cens.model="cox",cens.formula=~thick+strat(invasion)+epicel,cause=1), regexp = NA)
-    expect_error(ARR(Hist(time,status)~sex+strata(invasion)+epicel,data=Melanoma,cens.model="cox",cens.formula=~logthick+age,cause=1), regexp = NA)
-})
-# }}}

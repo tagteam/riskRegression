@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jan  4 2016 (09:43) 
 ## Version: 
-## last-updated: aug  4 2021 (15:19) 
-##           By: Brice Ozenne
-##     Update #: 48
+## last-updated: Oct  8 2021 (13:13) 
+##           By: Thomas Alexander Gerds
+##     Update #: 49
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -31,7 +31,8 @@
 ##' sampleData(n,outcome="competing.risks",
 ##' formula= ~ f(X1,2)+f(X2,-0.033)+f(X3,0.4)+f(X6,.1)+f(X7,-.1)+f(X8,.5)+f(X9,-1),intercept=0)
 ##' sampleDataTD(n,n.intervals=5,outcome="competing.risks",
-##' formula= ~ f(X1,2)+f(X2,-0.033)+f(X3,0.4)+f(X6,.1)+f(X7,-.1)+f(X8,.5)+f(X9,-1))
+##' formula= ~ f(X1,2)+f(X2,-0.033)+f(X3,0.4)+f(X6,.1)+f(X7,-.1)+f(X8,.5)+f(X9,-1),
+##' intercept=0)
 ##' @return Simulated data as data.table with n rows and the following columns:
 ##' Y (binary outcome), time (non-binary outcome), event (non-binary outcome), X1-X5 (binary predictors), X6-X10 (continous predictors)
 ##' @seealso lvm
@@ -41,7 +42,10 @@
 ##' sampleData(10,outcome="competing.risks")
 ##' @export 
 ##' @author Thomas A. Gerds <tag@@biostat.ku.dk>
-sampleData <- function(n,outcome="competing.risks",formula= ~ f(X1,2) + f(X2,-0.033) + f(X3,0.4) + f(X6,.1) + f(X7,-.1) + f(X8,.5) + f(X9,-1),intercept=0){
+sampleData <- function(n,
+                       outcome="competing.risks",
+                       formula= ~ f(X1,2) + f(X2,-0.033) + f(X3,0.4) + f(X6,.1) + f(X7,-.1) + f(X8,.5) + f(X9,-1),
+                       intercept=0){
     X1=X2=X3=X4=X5=NULL
     outcome <- match.arg(outcome,c("survival","competing.risks","binary"))
     m <- lava::lvm()

@@ -430,7 +430,7 @@ cox1 = coxph(Surv(time,event)~X1+X2+X7+X9,data=trainSurv,
              y=TRUE, x = TRUE)
 # Bootstrapping on multiple cores
 x1 = Score(list("Cox(X1+X2+X7+X9)"=cox1),
-     formula=Surv(time,event)~1,data=trainSurv, times=c(5,8), 
+     formula=Surv(time,event)~1,data=trainSurv, times=c(5,8),
      parallel = "as.registered", split.method="bootcv",B=100)
 }
 

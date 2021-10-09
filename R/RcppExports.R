@@ -58,6 +58,10 @@ calcAIFsurv_cpp <- function(ls_IFcumhazard, IFbeta, cumhazard0, survival, eXb, X
     .Call(`_riskRegression_calcAIFsurv_cpp`, ls_IFcumhazard, IFbeta, cumhazard0, survival, eXb, X, prevStrata, ls_indexStrata, factor, nTimes, nObs, nStrata, nVar, diag, exportCumHazard, exportSurvival)
 }
 
+calculateDelongCovarianceFast <- function(Xs, Ys) {
+    .Call(`_riskRegression_calculateDelongCovarianceFast`, Xs, Ys)
+}
+
 #' Apply cumsum in each column 
 #'
 #' @description Fast computation of apply(x,2,cumsum)
