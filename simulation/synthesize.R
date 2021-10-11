@@ -3,9 +3,9 @@
 ## Author: Johan Sebastian Ohlendorff & Vilde Hansteen Ung & Thomas Alexander Gerds
 ## Created: Apr 28 2021 (09:04)
 ## Version:
-## Last-Updated: Oct  7 2021 (16:09)
+## Last-Updated: Oct 10 2021 (18:19) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 66
+##     Update #: 70
 #----------------------------------------------------------------------
 ##
 ### Commentary:
@@ -281,7 +281,7 @@ synthesize.lvm <- function(object,
       timename <- names(object$attributes$eventHistory)
     }
 
-    latent_vars <- endogenous(object)
+    latent_vars <- lava::endogenous(object)
     # should check factors in object are factors in data. If not, transform them
     if (!fromFormula){
       for (v in var.model){
@@ -298,7 +298,7 @@ synthesize.lvm <- function(object,
     # 2. binomial
     # 3. categorical
     # deal with exogenous variables (which are without covariates)
-    for(var in exogenous(object)){
+    for(var in lava::exogenous(object)){
         var_formula <- as.formula(paste0("~", var))
 
         #case: gaussian
@@ -385,14 +385,14 @@ synthesize.lvm <- function(object,
         #include event time variables and fit the regression model
         for (latvar in object$attributes$eventHistory[[timename]]$latentTime){
             if (!fromFormula){
-              covariates <- get_covariates(object,latvar,dichotomized_variables)
+                covariates <- get_covariates(object,latvar,dichotomized_variables)
             }
             latvar_formula <- as.formula(paste0("~", latvar))
             status_ind <- object$attributes$eventHistory[[timename]]$events[which(object$attributes$eventHistory[[timename]]$latentTimes %in% latvar)]
             response <- paste0(response1, "==", status_ind)
             surv_formula <- as.formula(paste0("Surv(", response, ")~", covariates))
             if (class(status_ind) != "numeric") {stop("event or status variable has to be numeric")}
-            G <- survreg(surv_formula, data = data)
+            G <- survival::survreg(surv_formula, data = data)
             reg_formula <- as.formula(paste0(latvar, "~", covariates))
             lava::distribution(sim_model, latvar_formula) <- lava::coxWeibull.lvm(scale=exp(-coef(G)["(Intercept)"]/G$scale),shape=1/G$scale)
             lava::regression(sim_model, reg_formula) <- -coef(G)[-1]/G$scale
