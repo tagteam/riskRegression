@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: sep  1 2020 (14:58) 
 ## Version: 
-## Last-Updated: okt  8 2021 (17:19) 
+## Last-Updated: okt 11 2021 (13:17) 
 ##           By: Brice Ozenne
-##     Update #: 332
+##     Update #: 357
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -16,7 +16,7 @@
 ### Code:
 
 ## * wglm
-#' @title Logistic Regression Using IPCW (EXPERIMENTAL!!!)
+#' @title Logistic Regression Using IPCW
 #' @description Logistic regression over multiple timepoints
 #' where right-censoring is handle using inverse probability of censoring weighting. EXPERIMENTAL!!!
 #'
@@ -163,16 +163,13 @@ wglm <- function(regressor.event, formula.censor, times, data, cause = NA,
             iPred <- predictRisk(object.censor, diag = TRUE, newdata = data, times = pmin(recoverTime, times[iTime]) - tol,
                                  type = "survival", product.limit = product.limit)
             data[[IPCW.newname[[iTime]]]] <- ifelse(data[[obs.newname[iTime]]],1/iPred[,1],0)
-            out$fit[[iTime]] <- do.call(stats::glm, list(formula = iFormula.glm, family = stats::quasibinomial(link = "logit"),
-                                                                          data = data, weights = data[[IPCW.newname[[iTime]]]]))
+            out$fit[[iTime]] <- suppressWarnings(do.call(stats::glm, list(formula = iFormula.glm, family = stats::binomial(link = "logit"),
+                                                                          data = data, weights = data[[IPCW.newname[[iTime]]]])))
             ## Warning message:
             ##             In eval(family$initialize) : non-integer #successes in a binomial glm!
 
-            ## alternative not suitable when adding the influence function
-            ## iData <- as.data.frame(data)[data[[obs.newname[iTime]]]==1,,drop=FALSE]
-            ## suppressWarnings(out$fit[[iTime]] <- do.call(stats::glm, list(formula = iFormula.glm, family = stats::binomial(link = "logit"),
-            ##                                                               data = iData, weights = iData[[IPCW.newname[[iTime]]]])))
             out$fit[[iTime]]$time.prior.weights <- pmin(recoverTime, times[iTime]) - tol
+            out$fit[[iTime]]$prior.weights2 <- ifelse(data[[obs.newname[iTime]]],1/iPred[,1]^2,0)
         }else{
             IPCW.newname[[iTime]] <- NA
             out$fit[[iTime]] <- do.call(stats::glm, list(formula = iFormula.glm,
@@ -336,9 +333,13 @@ print.wglm <- function(x, times = NULL, ...){
 #' @param times [numeric vector] time points at which the score should be output. 
 #' @param simplifies [logical] should the ouput be converted to a matrix when only one timepoint is requested. Otherwise will always return a list.
 #' @param ... Not used.
-#'
+#' @export
 score.wglm <- function(x, indiv = FALSE, times = NULL, simplifies = TRUE, ...){
-    if(is.null(times)){
+    if(inherits(x,"glm") && !inherits(x,"wglm")){
+        x <- list(fit = list("1" = x),
+                  times = "1")
+        times <- "1"
+    }else if(is.null(times)){
         times <- x$times
     }else{
         if(any(times %in% x$times == FALSE)){
@@ -378,9 +379,13 @@ score.wglm <- function(x, indiv = FALSE, times = NULL, simplifies = TRUE, ...){
 #' @param times [numeric vector] time points at which the score should be output. 
 #' @param simplifies [logical] should the ouput be converted to a matrix when only one timepoint is requested. Otherwise will always return a list.
 #' @param ... Not used.
-#' 
+#' @export
 information.wglm <- function(x, times = NULL, simplifies = TRUE, ...){
-    if(is.null(times)){
+    if(inherits(x,"glm") && !inherits(x,"wglm")){
+        x <- list(fit = list("1" = x),
+                  times = "1")
+        times <- "1"
+    }else if(is.null(times)){
         times <- x$times
     }else{
         if(any(times %in% x$times == FALSE)){
@@ -417,11 +422,17 @@ information.wglm <- function(x, times = NULL, simplifies = TRUE, ...){
 #'
 #' @param x a wglm object.
 #' @param times [numeric vector] time points at which the iid should be output. 
-#' @param simplifies [logical] should the ouput be converted to a matrix when only one timepoint is requested. Otherwise will always return a list.
+#' @param simplifies [logical] should the ouput be converted to a matrix when only one timepoint is requested. Otherwise will always return a list.
 #' @param ... Not used.
-#' 
+#' @export
 iid.wglm <- function(x, times = NULL, simplifies = TRUE, ...){
-    if(is.null(times)){
+    if(inherits(x,"glm") && !inherits(x,"wglm")){
+        x <- list(fit = list("1" = x),
+                  times = "1",
+                  n.censor = 0)
+        times <- "1"
+        class(x) <- append("wglm",class(x))
+    }else if(is.null(times)){
         times <- x$times
     }else{
         if(any(times %in% x$times == FALSE)){
@@ -431,7 +442,6 @@ iid.wglm <- function(x, times = NULL, simplifies = TRUE, ...){
         }
     }
     n.times <- length(times)
-
     ls.score <- lava::score(x, times = times, simplifies = FALSE, indiv = TRUE)
     ls.info <- lava::information(x, times = times, simplifies = FALSE)
 
@@ -461,12 +471,13 @@ iid.wglm <- function(x, times = NULL, simplifies = TRUE, ...){
         ## NOTE: IF_{W_O}(O_i) = dW(O,\eta)/d\eta \IF_\eta(O_i)
         if(x$n.censor[iTime]>0){
             n.obs <- stats::nobs(iObject)
+            W2 <- iObject$prior.weights2
             X <- stats::model.matrix(iObject)
             pi <- stats::predict(iObject, type = "response")
             Y <- iObject$y
 
             factor <- TRUE        
-            attr(factor,"factor") <- lapply(apply(colMultiply_cpp(X, (Y - pi)), 2, list), function(iVec){cbind(iVec[[1]])})
+            attr(factor,"factor") <- lapply(apply(colMultiply_cpp(X, -W2*(Y - pi)), 2, list), function(iVec){cbind(iVec[[1]])})
             iPred <- predictRisk(x$cox, diag = TRUE, newdata = x$data, times = iObject$time.prior.weights,
                                  type = "survival", product.limit = FALSE, average.iid = factor, store.iid = "minimal")
         }
