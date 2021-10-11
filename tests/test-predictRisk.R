@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Aug 10 2017 (08:56) 
 ## Version: 
-## Last-Updated: okt  7 2021 (13:51) 
-##           By: Brice Ozenne
-##     Update #: 36
+## Last-Updated: Oct  9 2021 (10:15) 
+##           By: Thomas Alexander Gerds
+##     Update #: 37
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -21,21 +21,6 @@ library(randomForestSRC)
 library(survival)
 library(data.table)
 library(lava)
-
-## * SuperLearner
-cat("[predictRisk.SuperPredictor] \n")
-test_that("wrap the SuperLearner", {
-    if (!requireNamespace("SuperLearner",quietly=TRUE)){
-        message("Package SuperLearner not installed. Skip this test.")
-    }else{
-        library(SuperLearner)
-        d <- sampleData(139,outcome="binary")
-        sl = SuperLearner(Y = d$Y,
-                          X = d[,c("X1","X2","X3","X4","X5","X6","X7","X8","X9","X10"),with=0L],
-                          family = binomial(),
-                          SL.library = "SL.glm")
-    }
-})
 
 ## * rfsrc
 cat("[predictRisk.rfsrc]  \n")
@@ -107,11 +92,9 @@ fit <- glm(formula = Y ~ X1+X2, data=dt, family = "binomial")
 
 ## ** iid
 test_that("[predictRisk.glm] compare to lava",{
-
     e.RR <- predictRisk(fit, newdata = dt, iid = TRUE, average.iid = FALSE)
     e.RR.iid <- attr(e.RR,"iid")
     attr(e.RR,"iid") <- NULL
-
     e.lava <- estimate(fit, function(p, data){
         a <- p["(Intercept)"] ; b <- p["X11"] ; c <- p["X21"] ;
         return(expit(a + b * (data[["X1"]]=="1") + c * (data[["X2"]]=="1")))
@@ -119,64 +102,50 @@ test_that("[predictRisk.glm] compare to lava",{
     ## check point estimate
     expect_equal(e.RR, predict(fit, newdata = dt, type = "response"))
     expect_equal(unname(e.RR), unname(e.lava$coef))
-
     ## check variance
-    expect_equal(unname(crossprod(e.RR.iid)), unname(e.lava$vcov))
+    expect_equal(unname(crossprod(e.RR.iid)), unname(e.lava$vcov),tol=0.001)
 })
 
 ## ** average.iid 
 test_that("[predictRisk.glm] compare to lava (average.iid, no factor)",{
-
     ## no factor
     e.RR0 <- predictRisk(fit, newdata = dt, iid = TRUE, average.iid = FALSE)
-    
     e.RR <- predictRisk(fit, newdata = dt, iid = TRUE, average.iid = TRUE)
     e.RR.average.iid <- attr(e.RR,"average.iid")
     attr(e.RR,"average.iid") <- NULL
-
     e.lava <- estimate(fit, function(p, data){
         a <- p["(Intercept)"] ; b <- p["X11"] ; c <- p["X21"] ;
         eXb <- expit(a + b * (data[["X1"]]=="1") + c * (data[["X2"]]=="1"))
         return(list(risk = eXb))},
         average=TRUE)
-
     ## check point estimate
     expect_equal(unname(mean(e.RR)), unname(e.lava$coef))
-
     ## check iid
     expect_equal(unname(rowMeans(attr(e.RR0,"iid"))), unname(e.RR.average.iid[,1]))
-
     ## check variance
     expect_equal(unname(sum((e.RR.average.iid + (e.RR-mean(e.RR))/NROW(e.RR))^2)), unname(e.lava$vcov)[1,1])
 })
 
 ## ** average.iid with factor
 test_that("[predictGLM] compare to lava (average.iid, factor)",{
-
     factor <- TRUE
     attr(factor,"factor") <- matrix(1:NROW(dt), ncol = 1)
-    
     e.RR0 <- predictRisk(fit, newdata = dt, iid = TRUE, average.iid = FALSE)
-    
     e.RR <- predictRisk(fit, newdata = dt, average.iid = factor)
     e.RR.average.iid <- attr(e.RR,"average.iid")
     attr(e.RR,"average.iid") <- NULL
     e.RR <- e.RR * (1:NROW(dt))
-    
     e.lava <- estimate(fit, function(p, data){
         a <- p["(Intercept)"] ; b <- p["X11"] ; c <- p["X21"] ;
         eXb <- expit(a + b * (data[["X1"]]=="1") + c * (data[["X2"]]=="1"))
         return(list(risk = eXb*(1:NROW(data))))},
         average=TRUE)
-
     ## check point estimate
     expect_equal(unname(mean(e.RR)), unname(e.lava$coef))
-
     ## check iid
     expect_equal(unname(rowMeans(rowMultiply_cpp(attr(e.RR0,"iid"), scale = 1:NROW(dt)))), unname(e.RR.average.iid[[1]])[,1])
-
     ## check variance
-    expect_equal(unname(sum((e.RR.average.iid[[1]] + (e.RR-mean(e.RR))/NROW(e.RR))^2)), unname(e.lava$vcov)[1,1])
+    expect_equal(unname(sum((e.RR.average.iid[[1]] + (e.RR-mean(e.RR))/NROW(e.RR))^2)), unname(e.lava$vcov)[1,1],tolerance=0.001)
 })
 
 

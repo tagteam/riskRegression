@@ -1,4 +1,5 @@
 examples/
+simulation/
 prepareData/
 ^.*\.o$
 ^.*\.so$
@@ -20,5 +21,6 @@ prepareData/
 ^bugs$
 ^prepareData$
 ^examples$
+^simulation$
 ^slowtests$
 

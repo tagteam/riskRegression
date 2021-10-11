@@ -16,7 +16,7 @@ A data frame with 205 observations on the following 12 variables.
 \item{ulcer}{a factor with levels \code{not present} \code{present}}
 \item{thick}{tumour thickness (in 1/100 mm)}
 \item{sex}{a factor with levels \code{Female} \code{Male}}
-\item{age}{age at operation (years)} 
+\item{age}{age at operation (years)}
 \item{logthick}{tumour thickness on log-scale}
 }
 }

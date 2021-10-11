@@ -205,6 +205,18 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// calculateDelongCovarianceFast
+NumericMatrix calculateDelongCovarianceFast(NumericMatrix& Xs, NumericMatrix& Ys);
+RcppExport SEXP _riskRegression_calculateDelongCovarianceFast(SEXP XsSEXP, SEXP YsSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< NumericMatrix& >::type Xs(XsSEXP);
+    Rcpp::traits::input_parameter< NumericMatrix& >::type Ys(YsSEXP);
+    rcpp_result_gen = Rcpp::wrap(calculateDelongCovarianceFast(Xs, Ys));
+    return rcpp_result_gen;
+END_RCPP
+}
 // colCumSum
 NumericMatrix colCumSum(NumericMatrix x);
 RcppExport SEXP _riskRegression_colCumSum(SEXP xSEXP) {
@@ -543,6 +555,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_riskRegression_calcSeCif2_cpp", (DL_FUNC) &_riskRegression_calcSeCif2_cpp, 24},
     {"_riskRegression_calcSeMinimalCox_cpp", (DL_FUNC) &_riskRegression_calcSeMinimalCox_cpp, 33},
     {"_riskRegression_calcAIFsurv_cpp", (DL_FUNC) &_riskRegression_calcAIFsurv_cpp, 16},
+    {"_riskRegression_calculateDelongCovarianceFast", (DL_FUNC) &_riskRegression_calculateDelongCovarianceFast, 2},
     {"_riskRegression_colCumSum", (DL_FUNC) &_riskRegression_colCumSum, 1},
     {"_riskRegression_colCumProd", (DL_FUNC) &_riskRegression_colCumProd, 1},
     {"_riskRegression_colSumsCrossprod", (DL_FUNC) &_riskRegression_colSumsCrossprod, 3},
