@@ -123,14 +123,16 @@ synthesize.formula <- function(object, # a formula object Surv(time,event) or Hi
     hasLog <- length(logtrans)>0
     for (v in logtrans){
       if (is.null(data[[v]])){
-        stop(paste0("Covariate ",v," is not in data set. Remove it from the formula or add it to the data, then try again."))
+        if (verbose) warning(paste0("Covariate ",v," is not in data set. Removing it from the formula."))
+        fml <- gsub(paste0("[+]",v),"",fml)
+        vv <- logtrans[logtrans!=v]
       }
-      data[[paste0("log",v)]] <- log(data[[v]])
-      s<-paste0("log",v)
-      fml <- gsub(v,s,fml)
+      else {
+        data[[paste0("log",v)]] <- log(data[[v]])
+        s<-paste0("log",v)
+        fml <- gsub(v,s,fml)
+      }
     }
-    object <- update(object,as.formula(paste0("~",fml)))
-    object <- lava::lvm(object)
 
     # check if covariates are categorical
     if (hasLog){
@@ -139,10 +141,16 @@ synthesize.formula <- function(object, # a formula object Surv(time,event) or Hi
       vv <-gsub("[(]|[)]","",vv.withtrans)
     }
 
+    # object <- update(object,as.formula(paste0("~",fml)))
+    # object <- lava::lvm(object)
+    object <- lvm()
+
     # specify distributions of covariates in the lava object
     for (v in vv){
       if (is.null(data[[v]])){
-        stop(paste0("Covariate ",v," is not in data set. Remove it from the formula or add it to the data, then try again."))
+        if(verbose) warning(paste0("Covariate ",v," is not in data set. Removing it from the formula"))
+        fml <- gsub(paste0("[+]",v),"",fml)
+        vv <- vv[vv!=v]
       }
       else if (categorize(v,max.levels,data) == 2){
         data[[v]] <- factor(data[[v]])
@@ -156,6 +164,10 @@ synthesize.formula <- function(object, # a formula object Surv(time,event) or Hi
         lava::distribution(object,v) <- lava::normal.lvm()
       }
     }
+    if (length(vv)==0) {
+      stop("All covariates were not found.")
+    }
+
 
     # include recursive structure of covariates if requested
     if (recursive){
@@ -177,16 +189,8 @@ synthesize.formula <- function(object, # a formula object Surv(time,event) or Hi
     }
     # outcome
     # binary/continuous outcome
-    if (length(tt) > 1){
-      if(is.null(data[[tt[1]]]) || is.null(data[[tt[2]]])) {
-        stop("Response variable not in data set. Add it to the data, then try again.")
-      }
-    }
-    else if (is.null(data[[tt[1]]])) {
-      stop("Response variable not in data set. Add it to the data, then try again.")
-    }
-
     if (length(tt)==1){
+        if (is.null(data[[tt[1]]])){stop("Response variable not in data set. Add it to the data, then try again.")}
         len.tt <- length(unique(data[[tt[[1]]]]))
         is.binary <- length(unique(data[[tt[[1]]]]))==2
         if (len.tt == 2){
@@ -201,6 +205,9 @@ synthesize.formula <- function(object, # a formula object Surv(time,event) or Hi
         }
     }else{
         # event time outcome
+        if(is.null(data[[tt[1]]]) || is.null(data[[tt[2]]])) {
+          stop("Response variable not in data set. Add it to the data, then try again.")
+        }
         events <- sort(unique(data[[tt[[2]]]]))
         et.formula <- formula(paste0(tt[[1]]," ~ min(",paste(paste0("time.event.",events,"=",events),collapse=", "),")"))
         object <- lava::eventTime(object,et.formula, tt[[2]])
@@ -218,20 +225,11 @@ synthesize.lvm <- function(object,
                            logtrans = NULL,
                            verbose=FALSE,
                            fromFormula=FALSE,
+                           fixNames = FALSE,
                            ...){
+
     if (fromFormula && verbose){
       warning("fromFormula should be set to false if you did not specify a formula")
-    }
-    # Check if all variables in data also occur in objezct
-    # here we need to remove them if they are not
-    if(!all(others <- (names(data) %in% dimnames(object$M)[[1]]))){
-      if (verbose)
-        warning("Some variables in dataset are not in object (or the names don't match).\n These variables are not synthesized:\n",
-                paste0(names(data)[!others],collapse="\n"))
-      # if(data.table::is.data.table(object))
-      #     data <- data[,dimnames(object$M)[[1]],with=FALSE]
-      # elsesub("log","",logtrans)
-      #     data <- data[,dimnames(object$M)[[1]],drop=FALSE]
     }
     # check whether variables in model are in data set
     if (!fromFormula && !all(object$attributes$eventHistory$time$names %in% names(data))) {
@@ -262,13 +260,26 @@ synthesize.lvm <- function(object,
       }
     }
 
+    # Check if all variables in data also occur in object
+    # here we need to remove them if they are not
+    if(!all(others <- (names(data) %in% dimnames(object$M)[[1]]))){
+      if (verbose)
+        warning("Some variables in dataset are not in object (or the names don't match).\n These variables are not synthesized:\n",
+                paste0(names(data)[!others],collapse="\n"))
+      # if(data.table::is.data.table(object))
+      #     data <- data[,dimnames(object$M)[[1]],with=FALSE]
+      # elsesub("log","",logtrans)
+      #     data <- data[,dimnames(object$M)[[1]],drop=FALSE]
+    }
+
+
 
     # note: will be a problem if there are NAs in data, should check at beginning of function
 
     # find intersection between variables in model with variables in data (these are the actual variables of the lava object)
     var.model <- intersect(var.model,names(data))
     ismissingvar <- sapply(var.model, function(x) {anyNA(data[[x]])})
-    if (any(ismissingvar)) {
+    if (any(ismissingvar )) {
       missing.var <- names(ismissingvar[ismissingvar])
       printvar <- paste(missing.var[1:min(length(missing.var),20)],collapse = ", ")
       stop(paste0("There should not be NAs for the variables in the model. The following variables have NAs: \n ",printvar))
@@ -279,6 +290,9 @@ synthesize.lvm <- function(object,
     has.eventTime <- length(object$attributes$eventHistory)>0
     if (has.eventTime){
       timename <- names(object$attributes$eventHistory)
+    }
+    else {
+      timename <- NULL
     }
 
     latent_vars <- endogenous(object)
@@ -291,7 +305,6 @@ synthesize.lvm <- function(object,
         }
       }
     }
-
 
     # Set distributions:
     # 1. normal
@@ -334,12 +347,14 @@ synthesize.lvm <- function(object,
     # should not do this if the cat. variable is not in lvm.object
     # note: name of dich. variables must correspond with names used in lava::regression formulas outside synthesize-func.
     dichotomized_variables <- c()
-
     for(var in colnames(data)[grepl('factor|character', sapply(data, class))]){
         #fix factors with weird characters including binary
         #note: we do not fix formulas and weirdly named variables
-        # lvls <- make.names(levels(data[[var]]))
-        # levels(data[[var]]) <- lvls
+        #  can give problems if synthesized directly from lvm
+        if (fromFormula || fixNames){
+          lvls <- make.names(levels(data[[var]]))
+          levels(data[[var]]) <- lvls
+        }
         if(!any(grepl(var,  dimnames(object$M)[[1]]))){
             #variable not in lvm object
         } else if (length(levels(data[[var]]))>2){
@@ -398,19 +413,17 @@ synthesize.lvm <- function(object,
             lava::regression(sim_model, reg_formula) <- -coef(G)[-1]/G$scale
 
         }
-
         #calculate time and status afterwards
         events <- object$attributes$eventHistory[[timename]]$events
         if (!fromFormula){
           cens <- object$attributes$eventHistory[[timename]]$latentTime
-          et.formula <- formula(paste0(timename," ~ min(",paste0(cens,collapse=", "),")"))
+          et.formula <- formula(paste0(timename," ~ min(",paste0(cens,"=",events,collapse=", "),")"))
           sim_model <- lava::eventTime(sim_model,et.formula, object$attributes$eventHistory[[timename]]$names[2])
         }
         else {
           et.formula <- formula(paste0(timename," ~ min(",paste(paste0("time.event.",events,"=",events),collapse=", "),")"))
           sim_model <- lava::eventTime(sim_model,et.formula, object$attributes$eventHistory[[timename]]$names[2])
         }
-
     }
     # Estimate regression coefficients in real data
     # and add them to the lvm object using lava::regression
