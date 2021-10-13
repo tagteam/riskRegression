@@ -251,6 +251,8 @@ synthesize.lvm <- function(object,
           if(verbose) warning(paste0("Could not find the variable: ", v, "in the data"))
           object <- rmvar(object,v)
           object <- rmvar(object,paste0("log",v))
+          trans <- trans[trans!=paste0("log",v)]
+          logtrans <- logtrans[logtrans!=v]
         }
         else {
           data[[paste0("log",v)]] <- log(data[[v]])
