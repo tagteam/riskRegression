@@ -51,7 +51,7 @@
 ##' set.seed(8)
 ##' d <- sim(u_synt,n=1000)
 ##' # note: synthesize may relabel status variable
-##' fit_sim <- coxph(Surv(time,status==2)~age+sex+logbili,data=d)
+##' fit_sim <- coxph(Surv(time,status==1)~age+sex+logbili,data=d)
 ##' fit_real <- coxph(Surv(time,status==1)~age+sex+log(bili),data=pbc)
 ##' # compare estimated log-hazard ratios between simulated and real data
 ##' cbind(coef(fit_sim),coef(fit_real))
@@ -141,9 +141,8 @@ synthesize.formula <- function(object, # a formula object Surv(time,event) or Hi
       vv <-gsub("[(]|[)]","",vv.withtrans)
     }
 
-    # object <- update(object,as.formula(paste0("~",fml)))
-    # object <- lava::lvm(object)
-    object <- lvm()
+    object <- update(object,as.formula(paste0("~",fml)))
+    object <- lava::lvm(object)
 
     # specify distributions of covariates in the lava object
     for (v in vv){
@@ -151,6 +150,7 @@ synthesize.formula <- function(object, # a formula object Surv(time,event) or Hi
         if(verbose) warning(paste0("Covariate ",v," is not in data set. Removing it from the formula"))
         fml <- gsub(paste0("[+]",v),"",fml)
         vv <- vv[vv!=v]
+        object <- rmvar(object,v)
       }
       else if (categorize(v,max.levels,data) == 2){
         data[[v]] <- factor(data[[v]])
@@ -164,10 +164,6 @@ synthesize.formula <- function(object, # a formula object Surv(time,event) or Hi
         lava::distribution(object,v) <- lava::normal.lvm()
       }
     }
-    if (length(vv)==0) {
-      stop("All covariates were not found.")
-    }
-
 
     # include recursive structure of covariates if requested
     if (recursive){
@@ -227,7 +223,6 @@ synthesize.lvm <- function(object,
                            fromFormula=FALSE,
                            fixNames = FALSE,
                            ...){
-
     if (fromFormula && verbose){
       warning("fromFormula should be set to false if you did not specify a formula")
     }
