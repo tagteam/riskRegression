@@ -9,6 +9,7 @@
   parm = NULL,
   level = 0.95,
   n.sim = 10000,
+  estimator = object$estimator,
   contrasts = object$contrasts,
   allContrasts = object$allContrasts,
   meanRisk.transform = "none",
@@ -32,6 +33,8 @@
 \item{level}{[numeric, 0-1] Level of confidence.}
 
 \item{n.sim}{[integer, >0] the number of simulations used to compute the quantiles for the confidence bands and/or perform adjustment for multiple comparisons.}
+
+\item{estimator}{[character] The type of estimator relative to which the estimates should be displayed.}
 
 \item{contrasts}{[character vector] levels of the treatment variable for which the risks should be assessed and compared. Default is to consider all levels.}
 

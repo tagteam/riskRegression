@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: maj 18 2017 (09:23) 
 ## Version: 
-## last-updated: okt 30 2020 (14:19) 
+## last-updated: okt  7 2021 (20:02) 
 ##           By: Brice Ozenne
-##     Update #: 121
+##     Update #: 123
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -341,6 +341,5 @@ test_that("[iidCox] Compare to timereg on Melanoma dta",{
     expect_equal(as.double(RR.iid$IFcumhazard[[1]]), ## as.double(RR.iid$IFcumhazard[[1]])[c(1:4,206:209,411)]
                  as.double(timereg.iidLambda[,-1])) ## as.double(timereg.iidLambda[,-1])[c(1:4,206:209,411)]
 })
-
 #----------------------------------------------------------------------
 ### test-iidCox.R ends here

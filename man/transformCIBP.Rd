@@ -40,7 +40,7 @@ must be one of \code{"two.sided"} (default), \code{"greater"} or \code{"less"}.}
 \item{ci}{[logical] should confidence intervals be computed.}
 
 \item{type}{[character] the transforamtion.
-Can be \code{"log"}, \code{"loglog"}, \code{"cloglog"}, or \code{"atanh"} (Fisher transform).}
+Can be \code{"log"}, \code{"loglog"}, \code{"cloglog"}, or \code{"atanh"} (Fisher transform), or \code{"atanh2"} (modified Fisher transform for [0-1] variable).}
 
 \item{min.value}{[numeric] if not \code{NULL} and the lower bound of the confidence interval is below \code{min},
 it will be set at \code{min}.}
@@ -103,4 +103,5 @@ unlist(resLess[c("lower","upper")]) - GS$conf.int
 GS <- t.test(X, alternative = "greater")
 resGreater$p.value - GS$p.value
 unlist(resGreater[c("lower","upper")]) - GS$conf.int
+
 }

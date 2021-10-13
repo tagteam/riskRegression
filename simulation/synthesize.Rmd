@@ -19,7 +19,12 @@ knitr::opts_chunk$set(
 
 ## Introduction
 
-This vignette demonstrates how the function synthesize can be used to make an estimated lava object [@lava, see the next section] based on a formula in R. This can then be used to simulate data that should be similar to the data that we used to estimate the lava object with. There are 3 kinds of responses that can be used in the synthesize object:
+This vignette demonstrates how the function synthesize can be used to
+make an estimated lava object [@lava, see the next section] based on a
+formula in R. This can then be used to simulate data that should be
+similar to the data that we used to estimate the lava object
+with. There are 3 kinds of responses that can be used in the
+synthesize object:
 
 - A survival-type response, i.e. either a response of the form `Surv(time,event)` or `Hist(time, event)`.
 - A categorical response (for now only binary responses are supported corresponding to logistic regression).
@@ -71,7 +76,14 @@ corresponding to whether the patient survived (0) or not (1). Now we can synthes
 ms <- synthesize(Surv(time,eventBin)~log(thick)+sex+age+invasion,data=Melanoma)
 summary(ms)
 ```
-In this case, a Weibull survival model is used to model the censorship time and uncensored lifetime with the given covariates. The model then specifies that the censored survival time and the indicator for whether the data was censored or not is given deterministically. Under Exogeonous variables, we find the distributions for the covariates. Further down in "Regression parameters", we find the estimated parameters the regression (we note that the parameters for covariates are not as easily found). 
+In this case, a Weibull survival model is used to model the censorship
+time and uncensored lifetime with the given covariates. The model then
+specifies that the censored survival time and the indicator for
+whether the data was censored or not is given deterministically. Under
+Exogeonous variables, we find the distributions for the
+covariates. Further down in "Regression parameters", we find the
+estimated parameters the regression (we note that the parameters for
+covariates are not as easily found).
 
 
 Let us consider a basic use case scenario where we simulate:

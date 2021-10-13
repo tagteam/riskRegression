@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: jun 27 2019 (10:43) 
 ## Version: 
-## Last-Updated: mar  3 2021 (20:02) 
+## Last-Updated: okt  7 2021 (11:03) 
 ##           By: Brice Ozenne
-##     Update #: 911
+##     Update #: 931
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -84,7 +84,7 @@ ATE_TI <- function(object.event,
     ## ** compute event indicators
     if(attr(estimator,"IPTW")){
         ## *** indicator for the outcome of interest stopped at time tau
-        if(inherits(object.event,"glm")){
+        if(inherits(object.event,"glm") || (is.null(object.event) && is.null(object.censor))){
             time.before.tau <- cbind(mydata[[eventVar.status]])
         }else{
             time.before.tau <- sapply(times, function(tau){mydata[[eventVar.time]] <= tau})
@@ -192,15 +192,9 @@ ATE_TI <- function(object.event,
                                                )
                 }
                 if(attr(estimator,"export.AIPTW")){
-                    if(inherits(object.event,"wglm") && attr(estimator,"IPCW")){
-                        attr(factor,"factor") <- c(attr(factor,"factor"),
-                                                   list(AIPTW = 1-colMultiply_cpp(iW.IPCW,iW.IPTW[ls.index.strata[[iC]],iC]))
-                                                   )
-                    }else{
-                        attr(factor,"factor") <- c(attr(factor,"factor"),
-                                                   list(AIPTW = cbind(1-iW.IPTW[ls.index.strata[[iC]],iC]))
-                                                   )
-                    }
+                    attr(factor,"factor") <- c(attr(factor,"factor"),
+                                               list(AIPTW = cbind(1-iW.IPTW[ls.index.strata[[iC]],iC]))
+                                               )
                 }
             }else{
                 factor <- FALSE
@@ -289,6 +283,7 @@ ATE_TI <- function(object.event,
             }
         }
         if(attr(estimator,"export.IPTW")){
+
             if(attr(estimator,"IPCW")){
                 iIID.ate <- colMultiply_cpp(iW.IPCW * Y.tau, scale = iW.IPTW[,iC])
             }else{
@@ -305,7 +300,7 @@ ATE_TI <- function(object.event,
         if(attr(estimator,"export.AIPTW")){
             if(attr(estimator,"IPCW")){
                 if(inherits(object.event,"wglm")){
-                    iIID.ate <- F1.ctf.tau[[iC]] + colMultiply_cpp(iW.IPCW * (Y.tau - F1.ctf.tau[[iC]]), scale = iW.IPTW[,iC])
+                    iIID.ate <- F1.ctf.tau[[iC]] + colMultiply_cpp(iW.IPCW * Y.tau - F1.ctf.tau[[iC]], scale = iW.IPTW[,iC])
                 }else{
                     iIID.ate <- F1.ctf.tau[[iC]] + colMultiply_cpp(iW.IPCW * Y.tau - F1.ctf.tau[[iC]] + augTerm, scale = iW.IPTW[,iC])
                 }

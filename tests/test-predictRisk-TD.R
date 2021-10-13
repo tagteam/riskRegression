@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Sep  2 2017 (08:01) 
 ## Version: 
-## Last-Updated: Dec  5 2020 (13:20) 
-##           By: Thomas Alexander Gerds
-##     Update #: 12
+## Last-Updated: okt  7 2021 (12:17) 
+##           By: Brice Ozenne
+##     Update #: 13
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -18,6 +18,7 @@ library(riskRegression)
 library(testthat)
 library(timereg)
 library(survival)
+
 test_that("start stop Cox: basehaz vs timereg",{
     data(veteran)
     ## remove ties
@@ -62,7 +63,8 @@ test_that("start stop CauseSpecificCox",{
     d <- rbindlist(list(d1,d2,d3))
     ## d[start>time,.(start,time,event)]
     fit <- CSC(list(Hist(time=time,event=event,entry=start)~X1+X4+log(X7)+X9),data=d)
-    expect_success(riskRegression:::predictRisk.CSCTD(fit,newdata=d[c(17:32),],landmark=2:5,times=1))
+    ## NOTE: expect_error with regexp=NA tests no error 
+    expect_error(riskRegression:::predictRisk.CSCTD(fit,newdata=d[c(17:32),],landmark=2:5,times=1), regexp = NA)
 })
 
 ######################################################################
