@@ -235,7 +235,20 @@ synthesize.lvm <- function(object,
     var.model <- colnames(object$M)
     # should deal with transformations check if non transformed are in data and if not add them
     # use grep to find transformed variables
-
+    has.eventTime <- length(object$attributes$eventHistory)>0
+    if (has.eventTime){
+      timename <- names(object$attributes$eventHistory)
+      timeplusevent <- object$attributes$eventHistory[[timename]]$names
+      if (!(timeplusevent[1] %in% names(data)) || !(timeplusevent[2] %in% names(data))) {
+        if (verbose) warning("time/status not found. Removing it")
+        object <- rmvar(object,timeplusevent[1])
+        object <- rmvar(object,timeplusevent[2])
+      }
+    }
+    else {
+      timename <- NULL
+      timeplusevent <- NULL
+    }
     # should check group transform
     # if (any(grepl("grp|group",var.model))) {
     #   stop("")
@@ -278,6 +291,7 @@ synthesize.lvm <- function(object,
       #we have checked the logtransformed
       miss <- dimnames(object$M)[[1]][!others]
       if (length(logtrans) > 0) miss <- intersect(trans,intersect(logtrans,miss))
+      if (has.eventTime) miss <- setdiff(miss, object$attributes$eventHistory[[timename]]$latentTimes)
       for (v in miss){
         object <- rmvar(object,v)
       }
@@ -297,13 +311,7 @@ synthesize.lvm <- function(object,
 
     sim_model <- lava::lvm()
 
-    has.eventTime <- length(object$attributes$eventHistory)>0
-    if (has.eventTime){
-      timename <- names(object$attributes$eventHistory)
-    }
-    else {
-      timename <- NULL
-    }
+
 
     latent_vars <- endogenous(object)
     # should check factors in object are factors in data. If not, transform them
