@@ -3,9 +3,9 @@
 ## Author: Johan Sebastian Ohlendorff & Vilde Hansteen Ung & Thomas Alexander Gerds
 ## Created: Apr 28 2021 (09:04)
 ## Version:
-## Last-Updated: Oct 10 2021 (18:19) 
+## Last-Updated: Oct  7 2021 (16:09)
 ##           By: Thomas Alexander Gerds
-##     Update #: 70
+##     Update #: 66
 #----------------------------------------------------------------------
 ##
 ### Commentary:
@@ -223,6 +223,8 @@ synthesize.lvm <- function(object,
                            fromFormula=FALSE,
                            fixNames = FALSE,
                            ...){
+
+
     if (fromFormula && verbose){
       warning("fromFormula should be set to false if you did not specify a formula")
     }
@@ -238,7 +240,6 @@ synthesize.lvm <- function(object,
     # if (any(grepl("grp|group",var.model))) {
     #   stop("")
     # }
-
     # should check logtransform in data and add if necessary
     if (!fromFormula && is.null(logtrans) && any(grepl("log",var.model))){
       #these have log in front
@@ -246,8 +247,10 @@ synthesize.lvm <- function(object,
       #log trans dont have log in front
       logtrans <- sub("log","",trans)
       for (v in logtrans){
-        if (is.null(data[[v]])){
-          stop(paste0("Could not find the variable: ", v, "in the data"))
+        if (is.null(data[[v]]) && is.null(data[[paste0("log",v)]]) ){
+          if(verbose) warning(paste0("Could not find the variable: ", v, "in the data"))
+          object <- rmvar(object,v)
+          object <- rmvar(objet,paste0("log",v))
         }
         else {
           data[[paste0("log",v)]] <- log(data[[v]])
@@ -257,7 +260,7 @@ synthesize.lvm <- function(object,
 
     # Check if all variables in data also occur in object
     # here we need to remove them if they are not
-    if(!all(others <- (names(data) %in% dimnames(object$M)[[1]]))){
+    if(!all(others <- names(data) %in% dimnames(object$M)[[1]])){
       if (verbose)
         warning("Some variables in dataset are not in object (or the names don't match).\n These variables are not synthesized:\n",
                 paste0(names(data)[!others],collapse="\n"))
@@ -266,12 +269,22 @@ synthesize.lvm <- function(object,
       # elsesub("log","",logtrans)
       #     data <- data[,dimnames(object$M)[[1]],drop=FALSE]
     }
+    #check if variables in model are in data
 
-
+    if (!all(others <- dimnames(object$M)[[1]] %in% names(data))){
+      if (verbose) warning("Some variables in object are not in dataset (or the names don't match).\n These variables are not synthesized:\n",paste0(dimnames(object$M)[[1]][!others],collapse="\n"))
+      #we have checked the logtransformed
+      miss <- dimnames(object$M)[[1]][!others]
+      if (length(logtrans) > 0) miss <- intersect(trans,intersect(logtrans,miss))
+      for (v in miss){
+        object <- rmvar(object,v)
+      }
+    }
 
     # note: will be a problem if there are NAs in data, should check at beginning of function
 
     # find intersection between variables in model with variables in data (these are the actual variables of the lava object)
+    var.model <- colnames(object$M)
     var.model <- intersect(var.model,names(data))
     ismissingvar <- sapply(var.model, function(x) {anyNA(data[[x]])})
     if (any(ismissingvar )) {
@@ -290,7 +303,7 @@ synthesize.lvm <- function(object,
       timename <- NULL
     }
 
-    latent_vars <- lava::endogenous(object)
+    latent_vars <- endogenous(object)
     # should check factors in object are factors in data. If not, transform them
     if (!fromFormula){
       for (v in var.model){
@@ -306,7 +319,7 @@ synthesize.lvm <- function(object,
     # 2. binomial
     # 3. categorical
     # deal with exogenous variables (which are without covariates)
-    for(var in lava::exogenous(object)){
+    for(var in exogenous(object)){
         var_formula <- as.formula(paste0("~", var))
 
         #case: gaussian
@@ -395,14 +408,14 @@ synthesize.lvm <- function(object,
         #include event time variables and fit the regression model
         for (latvar in object$attributes$eventHistory[[timename]]$latentTime){
             if (!fromFormula){
-                covariates <- get_covariates(object,latvar,dichotomized_variables)
+              covariates <- get_covariates(object,latvar,dichotomized_variables)
             }
             latvar_formula <- as.formula(paste0("~", latvar))
             status_ind <- object$attributes$eventHistory[[timename]]$events[which(object$attributes$eventHistory[[timename]]$latentTimes %in% latvar)]
             response <- paste0(response1, "==", status_ind)
             surv_formula <- as.formula(paste0("Surv(", response, ")~", covariates))
             if (class(status_ind) != "numeric") {stop("event or status variable has to be numeric")}
-            G <- survival::survreg(surv_formula, data = data)
+            G <- survreg(surv_formula, data = data)
             reg_formula <- as.formula(paste0(latvar, "~", covariates))
             lava::distribution(sim_model, latvar_formula) <- lava::coxWeibull.lvm(scale=exp(-coef(G)["(Intercept)"]/G$scale),shape=1/G$scale)
             lava::regression(sim_model, reg_formula) <- -coef(G)[-1]/G$scale
