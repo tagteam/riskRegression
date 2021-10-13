@@ -223,6 +223,8 @@ synthesize.lvm <- function(object,
                            fromFormula=FALSE,
                            fixNames = FALSE,
                            ...){
+
+
     if (fromFormula && verbose){
       warning("fromFormula should be set to false if you did not specify a formula")
     }
@@ -238,7 +240,6 @@ synthesize.lvm <- function(object,
     # if (any(grepl("grp|group",var.model))) {
     #   stop("")
     # }
-
     # should check logtransform in data and add if necessary
     if (!fromFormula && is.null(logtrans) && any(grepl("log",var.model))){
       #these have log in front
@@ -246,8 +247,10 @@ synthesize.lvm <- function(object,
       #log trans dont have log in front
       logtrans <- sub("log","",trans)
       for (v in logtrans){
-        if (is.null(data[[v]])){
-          stop(paste0("Could not find the variable: ", v, "in the data"))
+        if (is.null(data[[v]]) && is.null(data[[paste0("log",v)]]) ){
+          if(verbose) warning(paste0("Could not find the variable: ", v, "in the data"))
+          object <- rmvar(object,v)
+          object <- rmvar(objet,paste0("log",v))
         }
         else {
           data[[paste0("log",v)]] <- log(data[[v]])
@@ -257,7 +260,7 @@ synthesize.lvm <- function(object,
 
     # Check if all variables in data also occur in object
     # here we need to remove them if they are not
-    if(!all(others <- (names(data) %in% dimnames(object$M)[[1]]))){
+    if(!all(others <- names(data) %in% dimnames(object$M)[[1]])){
       if (verbose)
         warning("Some variables in dataset are not in object (or the names don't match).\n These variables are not synthesized:\n",
                 paste0(names(data)[!others],collapse="\n"))
@@ -266,12 +269,22 @@ synthesize.lvm <- function(object,
       # elsesub("log","",logtrans)
       #     data <- data[,dimnames(object$M)[[1]],drop=FALSE]
     }
+    #check if variables in model are in data
 
-
+    if (!all(others <- dimnames(object$M)[[1]] %in% names(data))){
+      if (verbose) warning("Some variables in object are not in dataset (or the names don't match).\n These variables are not synthesized:\n",paste0(dimnames(object$M)[[1]][!others],collapse="\n"))
+      #we have checked the logtransformed
+      miss <- dimnames(object$M)[[1]][!others]
+      if (length(logtrans) > 0) miss <- intersect(trans,intersect(logtrans,miss))
+      for (v in miss){
+        object <- rmvar(object,v)
+      }
+    }
 
     # note: will be a problem if there are NAs in data, should check at beginning of function
 
     # find intersection between variables in model with variables in data (these are the actual variables of the lava object)
+    var.model <- colnames(object$M)
     var.model <- intersect(var.model,names(data))
     ismissingvar <- sapply(var.model, function(x) {anyNA(data[[x]])})
     if (any(ismissingvar )) {
