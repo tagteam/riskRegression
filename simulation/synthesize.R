@@ -250,7 +250,7 @@ synthesize.lvm <- function(object,
         if (is.null(data[[v]]) && is.null(data[[paste0("log",v)]]) ){
           if(verbose) warning(paste0("Could not find the variable: ", v, "in the data"))
           object <- rmvar(object,v)
-          object <- rmvar(objet,paste0("log",v))
+          object <- rmvar(object,paste0("log",v))
         }
         else {
           data[[paste0("log",v)]] <- log(data[[v]])
