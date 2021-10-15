@@ -21,7 +21,7 @@ knitr::opts_chunk$set(
 
 This vignette demonstrates how the function synthesize can be used to
 make an estimated lava object [@lava, see the next section] based on a
-formula in R. This can then be used to simulate data that should be
+formula in R (or a lava object). This can then be used to simulate data that should be
 similar to the data that we used to estimate the lava object
 with. There are 3 kinds of responses that can be used in the
 synthesize object:
@@ -33,9 +33,9 @@ synthesize object:
 We first give a mathematical specification of the model assumed for the data:
 
 ### Introduction to the model
-Assume first that we are not dealing with survival data. For a general input formula `y ~ x1 + ... + xk`, with `recursive = FALSE`, we assume the following model for the data $(Y_i,X_{1i},\dots, X_{ki})_{i=1, \dots n}$ (the observations are assumed iid). The response variable $Y$ is assumed to have a linear predictor $\eta ^T \bf{X}$ (either in the case of a logistic regression model or a linear model). The covariates $X_i$ are assumed to each have their own distribution, depending on the type of variable that they are. Continuous variables variables are assumed to be gaussian, i.e. if the $j$'th covariate is continuous then $X_j \sim N(\mu_j, \sigma^2_j)$ - with categorical/binary variables a similar assumption is made.
+Assume first that we are not dealing with survival data. For a general input formula `y ~ x1 + ... + xk`, with `recursive = FALSE`, we assume the following model for the data $(Y_i,X_{1i},\dots, X_{ki})_{i=1, \dots n}$ (the observations are assumed iid). The response variable $Y$ is assumed to have a linear predictor $\eta ^T \bf{X}$ (either in the case of a logistic regression model or a linear model). The covariates $X_i$ are assumed to each have their own distribution, depending on the type of variable that they are. Continuous variables variables are assumed to be Gaussian, i.e. if the $j$'th covariate is continuous then $X_j \sim N(\mu_j, \sigma^2_j)$ - with categorical/binary variables a similar assumption is made.
 
-In the case of survival outcome data, we change the above setup to the data $(T_i, \Delta_i,X_{1i},\dots, X_{ki})_{i=1, \dots n}$ (this is assumed to be iid) where $T_i$ is the right-censored lifetime, $\Delta_i$ is the indicator telling us whether $T_i$ is uncensored or censored. Then the model is that the uncensored lifetime and censorship times follow a Weibull model (this is such that we can simulate survival data) with the same linear predictor as before. The covariates have also the same assumption as before. With competetive risks, a similar setup is made to this one.
+In the case of survival outcome data, we change the above setup to the data $(T_i, \Delta_i,X_{1i},\dots, X_{ki})_{i=1, \dots n}$ (this is assumed to be iid) where $T_i$ is the right-censored lifetime, $\Delta_i$ is the indicator telling us whether $T_i$ is uncensored or censored. Then the model is that the uncensored lifetime and censorship times follow a Weibull model (this is such that we can simulate survival data) with the same linear predictor as before. The covariates have also the same assumption as before. With competitive risks, a similar setup is made to this one.
 
 With `recursive = TRUE`, we allow a type of structural equation models that states that we should also include the relationships with the covariates (indicating the corresponding formulas in R):
 \begin{align*}
@@ -44,6 +44,7 @@ X_2 &\sim X_3 + \dots + X_k \\
 ... \\
 X_{k-1} &\sim X_k \\
 \end{align*}
+When you specify a lava object rather than a formula, the idea is that you can specify these relationships yourself.
 
 Synthesize then estimates by maximum likelihood estimation. We consider a few examples of our function. We first consider an example of the case where the response is a survival-type response. 
 
@@ -59,7 +60,7 @@ data("Melanoma")
 Melanoma <- subset(Melanoma, select = c("time","status","thick","sex","age","invasion"))
 knitr::kable(head(Melanoma))
 ```
-The data concerns the survival of patients after an operation. We consider the variables of the dataset:
+The data concerns the survival of patients after an operation. We consider the variables of the data set:
 - `time` meaning the censored lifetime.
 - `status` indicating whether the person died from the disease, 0 means censored, 1 means death by melanoma, and 2 means that the patient died from other causes. 
 - `thick` meaning the thickness of the tumor (in mm).
@@ -120,7 +121,7 @@ knitr::kable(res)
 ```
 
 
-### Including recursion
+### Including recursion (and specifying the model manually)
 
 If we specify that we want to have recursion then, we:
 ```{r}
@@ -206,16 +207,58 @@ colnames(res) <- c("Parameters of the model (with formula: logthick ~ sex + age 
 knitr::kable(res)
 
 ```
-The parameters look to be quite close to each other.
+The parameters look to be quite close to each other. In view of the above discussion, we could also have specified that:
+$$
+\begin{align*}
+\verb|logthick| \ &\verb|~| \  \verb|sex + age + invasion| \\
+\verb|age| \ &\verb|~| \ \verb|invasion|
+\end{align*}
+$$
+Here we have to specify this with a lava object rather than a formula, since this can't be done with a formula:
+```{r}
+library(lava)
+u <- lvm()
+# specify covariate
+distribution(u,~sex) <- binomial.lvm() #specify binary covariate
+distribution(u,~age) <- normal.lvm() #specify continuous covariate
+distribution(u,~logthick) <- normal.lvm() #note: remove paranthesis around log
+categorical(u,K=3) <- "invasion" #specify categorical covariate
+#include event time, so it knows it is the survival case
+u <-eventTime(u,time~min(time.cens=0,time.death=1,time.other=2), "status")
+#specify regression relationships
+lava::regression(u,logthick~sex+age+invasion) <- 1
+lava::regression(u,age~invasion) <- 1
+#specify relationships for censored variables (could also change them)
+lava::regression(u,time.other~logthick+sex+age+invasion) <- 1
+lava::regression(u,time.death~logthick+sex+age+invasion) <- 1
+lava::regression(u,time.cens~logthick+sex+age+invasion) <- 1
+#finally synthesize object 
+u_synt <- synthesize(u,data=Melanoma)
+
+#do a simulation study
+d <- sim(u_synt,10000)
+fit.rec.alt <- lm(log(thick)~sex+age+invasion,data=Melanoma)
+fit.rec.alt.s <- lm(logthick ~ sex + age + invasion, data= d)
+res <- as.data.frame(cbind(coef(fit.rec.alt),coef(fit.rec.alt.s)))
+colnames(res) <- c("Parameters of the model from original data", "Parameters of the model from simulated data")
+knitr::kable(res)
+```
+
+### Other parameters of note for the synthesize function
+We also have the parameters:
+
+- **logtrans**/**fromFormula**. This should not be specified by the user, unless you know what you are doing. Primarily used for internal use in synthesize.
+- **fixNames**. Fix the names of problematic covariates. Try this if you discover that your factors have names with odd characters in them.
+- **verbose**. This gives detailed messages of potential problems. Could be useful, if synthesize does not work as you expect.
 
 ## A linear/logistic regression model
-To make a simple linear regression model (the dataset `cars` is a included in R), we do:
+To make a simple linear regression model (the data set `cars` is a included in R), we do:
 ```{r}
 data(cars)
 m.cars <- synthesize(dist ~ speed, data=cars)
 summary(m.cars)
 ```
-The cars dataset consists of a number of observations of the speed of cars and their stopping distances. Checking that the model makes sense is another matter, and we will not consider it here. This example is just to show that it is simple to use synthesize when the response variable is not of survival type, but we could simulate as before:
+The cars data set consists of a number of observations of the speed of cars and their stopping distances. Checking that the model makes sense is another matter, and we will not consider it here. This example is just to show that it is simple to use synthesize when the response variable is not of survival type, but we could simulate as before:
 ```{r}
 set.seed(15)
 d <- sim(m.cars,10000)
@@ -227,7 +270,7 @@ colnames(res) <- c("Parameters of the model from original data", "Parameters of 
 knitr::kable(res)
 ```
 
-Finally for a binary response, we could make a logistic regression which is done the same way as the linear regresion. We first find some data online suited for logistic regression:
+Finally for a binary response, we could make a logistic regression which is done the same way as the linear regression. We first find some data online suited for logistic regression:
 ```{r}
 UCLA.dat <- read.csv("https://stats.idre.ucla.edu/stat/data/binary.csv")
 knitr::kable(head(UCLA.dat))

@@ -26,8 +26,10 @@
 ##' @param recursive Let covariates recursively depend on each other.
 ##' @param max.levels Integer used to guess which variables are categorical. When set to \code{10}, the default,
 ##'                   variables with less than 10 unique values in data are treated as categorical.
-##' @param logtrans Vector of covariate names that should be log-transformed.
 ##' @param verbose Logical. If \code{TRUE} then more messages and warnings are provided.
+##' @param logtrans Vector of covariate names that should be log-transformed. This is primarily for internal use.
+##' @param fromFormula Indicates whether synthesize.lvm has been called from synthesize.formula. This is primarily for internal use.
+##' @param fixNames Fix possible problematic covariate names. This is primarily for internal use.
 ##' @param ... Not used yet.
 ##' @return lava object
 ##' @seealso lvm
@@ -35,6 +37,16 @@
 ##' # pbc data
 ##' library(survival)
 ##' library(lava)
+##' data(pbc)
+##' pbc <- na.omit(pbc[,c("time","status","sex","age","bili")])
+##' pbc$logbili <- log(pbc$bili)
+##' v_synt <- synthesize(object=Surv(time,status)~sex+age+logbili,data=pbc)
+##' d <- sim(v_synt,1000)
+##' fit_sim <- coxph(Surv(time,status==1)~age+sex+logbili,data=d)
+##' fit_real <- coxph(Surv(time,status==1)~age+sex+logbili,data=pbc)
+##' # compare estimated log-hazard ratios between simulated and real data
+##' cbind(coef(fit_sim),coef(fit_real))
+##'
 ##' u <- lvm()
 ##' distribution(u,~sex) <- binomial.lvm()
 ##' distribution(u,~age) <- normal.lvm()
@@ -53,16 +65,6 @@
 ##' # note: synthesize may relabel status variable
 ##' fit_sim <- coxph(Surv(time,status==1)~age+sex+logbili,data=d)
 ##' fit_real <- coxph(Surv(time,status==1)~age+sex+log(bili),data=pbc)
-##' # compare estimated log-hazard ratios between simulated and real data
-##' cbind(coef(fit_sim),coef(fit_real))
-##'
-##' data(pbc)
-##' pbc <- na.omit(pbc[,c("time","status","sex","age","bili")])
-##' pbc$logbili <- log(pbc$bili)
-##' v_synt <- synthesize(object=Surv(time,status)~sex+age+logbili,data=pbc)
-##' d <- sim(v_synt,1000)
-##' fit_sim <- coxph(Surv(time,status==1)~age+sex+logbili,data=d)
-##' fit_real <- coxph(Surv(time,status==1)~age+sex+logbili,data=pbc)
 ##' # compare estimated log-hazard ratios between simulated and real data
 ##' cbind(coef(fit_sim),coef(fit_real))
 ##'

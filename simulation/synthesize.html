@@ -1,0 +1,1090 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+<meta name="author" content="Johan Sebastian Ohlendorff" />
+
+<meta name="date" content="2021-10-15" />
+
+<title>Synthesize</title>
+
+<script src="data:application/javascript;base64,Ly8gUGFuZG9jIDIuOSBhZGRzIGF0dHJpYnV0ZXMgb24gYm90aCBoZWFkZXIgYW5kIGRpdi4gV2UgcmVtb3ZlIHRoZSBmb3JtZXIgKHRvCi8vIGJlIGNvbXBhdGlibGUgd2l0aCB0aGUgYmVoYXZpb3Igb2YgUGFuZG9jIDwgMi44KS4KZG9jdW1lbnQuYWRkRXZlbnRMaXN0ZW5lcignRE9NQ29udGVudExvYWRlZCcsIGZ1bmN0aW9uKGUpIHsKICB2YXIgaHMgPSBkb2N1bWVudC5xdWVyeVNlbGVjdG9yQWxsKCJkaXYuc2VjdGlvbltjbGFzcyo9J2xldmVsJ10gPiA6Zmlyc3QtY2hpbGQiKTsKICB2YXIgaSwgaCwgYTsKICBmb3IgKGkgPSAwOyBpIDwgaHMubGVuZ3RoOyBpKyspIHsKICAgIGggPSBoc1tpXTsKICAgIGlmICghL15oWzEtNl0kL2kudGVzdChoLnRhZ05hbWUpKSBjb250aW51ZTsgIC8vIGl0IHNob3VsZCBiZSBhIGhlYWRlciBoMS1oNgogICAgYSA9IGguYXR0cmlidXRlczsKICAgIHdoaWxlIChhLmxlbmd0aCA+IDApIGgucmVtb3ZlQXR0cmlidXRlKGFbMF0ubmFtZSk7CiAgfQp9KTsK"></script>
+
+<style type="text/css">
+  code{white-space: pre-wrap;}
+  span.smallcaps{font-variant: small-caps;}
+  span.underline{text-decoration: underline;}
+  div.column{display: inline-block; vertical-align: top; width: 50%;}
+  div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+  ul.task-list{list-style: none;}
+    </style>
+
+
+<style type="text/css">
+  code {
+    white-space: pre;
+  }
+  .sourceCode {
+    overflow: visible;
+  }
+</style>
+<style type="text/css" data-origin="pandoc">
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+    color: #aaaaaa;
+  }
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+code span.at { color: #7d9029; } /* Attribute */
+code span.bn { color: #40a070; } /* BaseN */
+code span.bu { } /* BuiltIn */
+code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+code span.ch { color: #4070a0; } /* Char */
+code span.cn { color: #880000; } /* Constant */
+code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+code span.dt { color: #902000; } /* DataType */
+code span.dv { color: #40a070; } /* DecVal */
+code span.er { color: #ff0000; font-weight: bold; } /* Error */
+code span.ex { } /* Extension */
+code span.fl { color: #40a070; } /* Float */
+code span.fu { color: #06287e; } /* Function */
+code span.im { } /* Import */
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+code span.op { color: #666666; } /* Operator */
+code span.ot { color: #007020; } /* Other */
+code span.pp { color: #bc7a00; } /* Preprocessor */
+code span.sc { color: #4070a0; } /* SpecialChar */
+code span.ss { color: #bb6688; } /* SpecialString */
+code span.st { color: #4070a0; } /* String */
+code span.va { color: #19177c; } /* Variable */
+code span.vs { color: #4070a0; } /* VerbatimString */
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+
+</style>
+<script>
+// apply pandoc div.sourceCode style to pre.sourceCode instead
+(function() {
+  var sheets = document.styleSheets;
+  for (var i = 0; i < sheets.length; i++) {
+    if (sheets[i].ownerNode.dataset["origin"] !== "pandoc") continue;
+    try { var rules = sheets[i].cssRules; } catch (e) { continue; }
+    for (var j = 0; j < rules.length; j++) {
+      var rule = rules[j];
+      // check if there is a div.sourceCode rule
+      if (rule.type !== rule.STYLE_RULE || rule.selectorText !== "div.sourceCode") continue;
+      var style = rule.style.cssText;
+      // check if color or background-color is set
+      if (rule.style.color === '' && rule.style.backgroundColor === '') continue;
+      // replace div.sourceCode by a pre.sourceCode rule
+      sheets[i].deleteRule(j);
+      sheets[i].insertRule('pre.sourceCode{' + style + '}', j);
+    }
+  }
+})();
+</script>
+
+
+
+<style type="text/css">
+/* for pandoc --citeproc since 2.11 */
+div.csl-bib-body { }
+div.csl-entry {
+  clear: both;
+}
+.hanging div.csl-entry {
+  margin-left:2em;
+  text-indent:-2em;
+}
+div.csl-left-margin {
+  min-width:2em;
+  float:left;
+}
+div.csl-right-inline {
+  margin-left:2em;
+  padding-left:1em;
+}
+div.csl-indent {
+  margin-left: 2em;
+}
+</style>
+
+<link rel="stylesheet" href="data:text/css,body%20%7B%0Abackground%2Dcolor%3A%20%23fff%3B%0Amargin%3A%201em%20auto%3B%0Amax%2Dwidth%3A%20700px%3B%0Aoverflow%3A%20visible%3B%0Apadding%2Dleft%3A%202em%3B%0Apadding%2Dright%3A%202em%3B%0Afont%2Dfamily%3A%20%22Open%20Sans%22%2C%20%22Helvetica%20Neue%22%2C%20Helvetica%2C%20Arial%2C%20sans%2Dserif%3B%0Afont%2Dsize%3A%2014px%3B%0Aline%2Dheight%3A%201%2E35%3B%0A%7D%0A%23TOC%20%7B%0Aclear%3A%20both%3B%0Amargin%3A%200%200%2010px%2010px%3B%0Apadding%3A%204px%3B%0Awidth%3A%20400px%3B%0Aborder%3A%201px%20solid%20%23CCCCCC%3B%0Aborder%2Dradius%3A%205px%3B%0Abackground%2Dcolor%3A%20%23f6f6f6%3B%0Afont%2Dsize%3A%2013px%3B%0Aline%2Dheight%3A%201%2E3%3B%0A%7D%0A%23TOC%20%2Etoctitle%20%7B%0Afont%2Dweight%3A%20bold%3B%0Afont%2Dsize%3A%2015px%3B%0Amargin%2Dleft%3A%205px%3B%0A%7D%0A%23TOC%20ul%20%7B%0Apadding%2Dleft%3A%2040px%3B%0Amargin%2Dleft%3A%20%2D1%2E5em%3B%0Amargin%2Dtop%3A%205px%3B%0Amargin%2Dbottom%3A%205px%3B%0A%7D%0A%23TOC%20ul%20ul%20%7B%0Amargin%2Dleft%3A%20%2D2em%3B%0A%7D%0A%23TOC%20li%20%7B%0Aline%2Dheight%3A%2016px%3B%0A%7D%0Atable%20%7B%0Amargin%3A%201em%20auto%3B%0Aborder%2Dwidth%3A%201px%3B%0Aborder%2Dcolor%3A%20%23DDDDDD%3B%0Aborder%2Dstyle%3A%20outset%3B%0Aborder%2Dcollapse%3A%20collapse%3B%0A%7D%0Atable%20th%20%7B%0Aborder%2Dwidth%3A%202px%3B%0Apadding%3A%205px%3B%0Aborder%2Dstyle%3A%20inset%3B%0A%7D%0Atable%20td%20%7B%0Aborder%2Dwidth%3A%201px%3B%0Aborder%2Dstyle%3A%20inset%3B%0Aline%2Dheight%3A%2018px%3B%0Apadding%3A%205px%205px%3B%0A%7D%0Atable%2C%20table%20th%2C%20table%20td%20%7B%0Aborder%2Dleft%2Dstyle%3A%20none%3B%0Aborder%2Dright%2Dstyle%3A%20none%3B%0A%7D%0Atable%20thead%2C%20table%20tr%2Eeven%20%7B%0Abackground%2Dcolor%3A%20%23f7f7f7%3B%0A%7D%0Ap%20%7B%0Amargin%3A%200%2E5em%200%3B%0A%7D%0Ablockquote%20%7B%0Abackground%2Dcolor%3A%20%23f6f6f6%3B%0Apadding%3A%200%2E25em%200%2E75em%3B%0A%7D%0Ahr%20%7B%0Aborder%2Dstyle%3A%20solid%3B%0Aborder%3A%20none%3B%0Aborder%2Dtop%3A%201px%20solid%20%23777%3B%0Amargin%3A%2028px%200%3B%0A%7D%0Adl%20%7B%0Amargin%2Dleft%3A%200%3B%0A%7D%0Adl%20dd%20%7B%0Amargin%2Dbottom%3A%2013px%3B%0Amargin%2Dleft%3A%2013px%3B%0A%7D%0Adl%20dt%20%7B%0Afont%2Dweight%3A%20bold%3B%0A%7D%0Aul%20%7B%0Amargin%2Dtop%3A%200%3B%0A%7D%0Aul%20li%20%7B%0Alist%2Dstyle%3A%20circle%20outside%3B%0A%7D%0Aul%20ul%20%7B%0Amargin%2Dbottom%3A%200%3B%0A%7D%0Apre%2C%20code%20%7B%0Abackground%2Dcolor%3A%20%23f7f7f7%3B%0Aborder%2Dradius%3A%203px%3B%0Acolor%3A%20%23333%3B%0Awhite%2Dspace%3A%20pre%2Dwrap%3B%20%0A%7D%0Apre%20%7B%0Aborder%2Dradius%3A%203px%3B%0Amargin%3A%205px%200px%2010px%200px%3B%0Apadding%3A%2010px%3B%0A%7D%0Apre%3Anot%28%5Bclass%5D%29%20%7B%0Abackground%2Dcolor%3A%20%23f7f7f7%3B%0A%7D%0Acode%20%7B%0Afont%2Dfamily%3A%20Consolas%2C%20Monaco%2C%20%27Courier%20New%27%2C%20monospace%3B%0Afont%2Dsize%3A%2085%25%3B%0A%7D%0Ap%20%3E%20code%2C%20li%20%3E%20code%20%7B%0Apadding%3A%202px%200px%3B%0A%7D%0Adiv%2Efigure%20%7B%0Atext%2Dalign%3A%20center%3B%0A%7D%0Aimg%20%7B%0Abackground%2Dcolor%3A%20%23FFFFFF%3B%0Apadding%3A%202px%3B%0Aborder%3A%201px%20solid%20%23DDDDDD%3B%0Aborder%2Dradius%3A%203px%3B%0Aborder%3A%201px%20solid%20%23CCCCCC%3B%0Amargin%3A%200%205px%3B%0A%7D%0Ah1%20%7B%0Amargin%2Dtop%3A%200%3B%0Afont%2Dsize%3A%2035px%3B%0Aline%2Dheight%3A%2040px%3B%0A%7D%0Ah2%20%7B%0Aborder%2Dbottom%3A%204px%20solid%20%23f7f7f7%3B%0Apadding%2Dtop%3A%2010px%3B%0Apadding%2Dbottom%3A%202px%3B%0Afont%2Dsize%3A%20145%25%3B%0A%7D%0Ah3%20%7B%0Aborder%2Dbottom%3A%202px%20solid%20%23f7f7f7%3B%0Apadding%2Dtop%3A%2010px%3B%0Afont%2Dsize%3A%20120%25%3B%0A%7D%0Ah4%20%7B%0Aborder%2Dbottom%3A%201px%20solid%20%23f7f7f7%3B%0Amargin%2Dleft%3A%208px%3B%0Afont%2Dsize%3A%20105%25%3B%0A%7D%0Ah5%2C%20h6%20%7B%0Aborder%2Dbottom%3A%201px%20solid%20%23ccc%3B%0Afont%2Dsize%3A%20105%25%3B%0A%7D%0Aa%20%7B%0Acolor%3A%20%230033dd%3B%0Atext%2Ddecoration%3A%20none%3B%0A%7D%0Aa%3Ahover%20%7B%0Acolor%3A%20%236666ff%3B%20%7D%0Aa%3Avisited%20%7B%0Acolor%3A%20%23800080%3B%20%7D%0Aa%3Avisited%3Ahover%20%7B%0Acolor%3A%20%23BB00BB%3B%20%7D%0Aa%5Bhref%5E%3D%22http%3A%22%5D%20%7B%0Atext%2Ddecoration%3A%20underline%3B%20%7D%0Aa%5Bhref%5E%3D%22https%3A%22%5D%20%7B%0Atext%2Ddecoration%3A%20underline%3B%20%7D%0A%0Acode%20%3E%20span%2Ekw%20%7B%20color%3A%20%23555%3B%20font%2Dweight%3A%20bold%3B%20%7D%20%0Acode%20%3E%20span%2Edt%20%7B%20color%3A%20%23902000%3B%20%7D%20%0Acode%20%3E%20span%2Edv%20%7B%20color%3A%20%2340a070%3B%20%7D%20%0Acode%20%3E%20span%2Ebn%20%7B%20color%3A%20%23d14%3B%20%7D%20%0Acode%20%3E%20span%2Efl%20%7B%20color%3A%20%23d14%3B%20%7D%20%0Acode%20%3E%20span%2Ech%20%7B%20color%3A%20%23d14%3B%20%7D%20%0Acode%20%3E%20span%2Est%20%7B%20color%3A%20%23d14%3B%20%7D%20%0Acode%20%3E%20span%2Eco%20%7B%20color%3A%20%23888888%3B%20font%2Dstyle%3A%20italic%3B%20%7D%20%0Acode%20%3E%20span%2Eot%20%7B%20color%3A%20%23007020%3B%20%7D%20%0Acode%20%3E%20span%2Eal%20%7B%20color%3A%20%23ff0000%3B%20font%2Dweight%3A%20bold%3B%20%7D%20%0Acode%20%3E%20span%2Efu%20%7B%20color%3A%20%23900%3B%20font%2Dweight%3A%20bold%3B%20%7D%20%0Acode%20%3E%20span%2Eer%20%7B%20color%3A%20%23a61717%3B%20background%2Dcolor%3A%20%23e3d2d2%3B%20%7D%20%0A" type="text/css" />
+
+
+
+
+</head>
+
+<body>
+
+
+
+
+<h1 class="title toc-ignore">Synthesize</h1>
+<h4 class="author">Johan Sebastian Ohlendorff</h4>
+<h4 class="date">2021-10-15</h4>
+
+
+
+<div id="introduction" class="section level2">
+<h2>Introduction</h2>
+<p>This vignette demonstrates how the function synthesize can be used to make an estimated lava object <span class="citation">(Holst and Budtz-Jørgensen 2013, see the next section)</span> based on a formula in R (or a lava object). This can then be used to simulate data that should be similar to the data that we used to estimate the lava object with. There are 3 kinds of responses that can be used in the synthesize object:</p>
+<ul>
+<li>A survival-type response, i.e. either a response of the form <code>Surv(time,event)</code> or <code>Hist(time, event)</code>.</li>
+<li>A categorical response (for now only binary responses are supported corresponding to logistic regression).</li>
+<li>A normal/gaussian response.</li>
+</ul>
+<p>We first give a mathematical specification of the model assumed for the data:</p>
+<div id="introduction-to-the-model" class="section level3">
+<h3>Introduction to the model</h3>
+<p>Assume first that we are not dealing with survival data. For a general input formula <code>y ~ x1 + ... + xk</code>, with <code>recursive = FALSE</code>, we assume the following model for the data <span class="math inline">\((Y_i,X_{1i},\dots, X_{ki})_{i=1, \dots n}\)</span> (the observations are assumed iid). The response variable <span class="math inline">\(Y\)</span> is assumed to have a linear predictor <span class="math inline">\(\eta ^T \bf{X}\)</span> (either in the case of a logistic regression model or a linear model). The covariates <span class="math inline">\(X_i\)</span> are assumed to each have their own distribution, depending on the type of variable that they are. Continuous variables variables are assumed to be Gaussian, i.e. if the <span class="math inline">\(j\)</span>’th covariate is continuous then <span class="math inline">\(X_j \sim N(\mu_j, \sigma^2_j)\)</span> - with categorical/binary variables a similar assumption is made.</p>
+<p>In the case of survival outcome data, we change the above setup to the data <span class="math inline">\((T_i, \Delta_i,X_{1i},\dots, X_{ki})_{i=1, \dots n}\)</span> (this is assumed to be iid) where <span class="math inline">\(T_i\)</span> is the right-censored lifetime, <span class="math inline">\(\Delta_i\)</span> is the indicator telling us whether <span class="math inline">\(T_i\)</span> is uncensored or censored. Then the model is that the uncensored lifetime and censorship times follow a Weibull model (this is such that we can simulate survival data) with the same linear predictor as before. The covariates have also the same assumption as before. With competitive risks, a similar setup is made to this one.</p>
+<p>With <code>recursive = TRUE</code>, we allow a type of structural equation models that states that we should also include the relationships with the covariates (indicating the corresponding formulas in R): <span class="math display">\[\begin{align*}
+X_1 &amp;\sim X_2 + \dots + X_k \\
+X_2 &amp;\sim X_3 + \dots + X_k \\
+... \\
+X_{k-1} &amp;\sim X_k \\
+\end{align*}\]</span> When you specify a lava object rather than a formula, the idea is that you can specify these relationships yourself.</p>
+<p>Synthesize then estimates by maximum likelihood estimation. We consider a few examples of our function. We first consider an example of the case where the response is a survival-type response.</p>
+</div>
+</div>
+<div id="survival-repsonse" class="section level2">
+<h2>Survival repsonse</h2>
+<div id="survival-outcome-case" class="section level3">
+<h3>Survival outcome case</h3>
+<p>We consider first the outcome survival case and load the Melanoma data set (please include all the variables in the data set in the model (otherwise synthesize might not work as intended)):</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(riskRegression)</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; riskRegression version 2021.08.27</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(survival)</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(lava)</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="fu">data</span>(<span class="st">&quot;Melanoma&quot;</span>)</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>Melanoma <span class="ot">&lt;-</span> <span class="fu">subset</span>(Melanoma, <span class="at">select =</span> <span class="fu">c</span>(<span class="st">&quot;time&quot;</span>,<span class="st">&quot;status&quot;</span>,<span class="st">&quot;thick&quot;</span>,<span class="st">&quot;sex&quot;</span>,<span class="st">&quot;age&quot;</span>,<span class="st">&quot;invasion&quot;</span>))</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>knitr<span class="sc">::</span><span class="fu">kable</span>(<span class="fu">head</span>(Melanoma))</span></code></pre></div>
+<table>
+<thead>
+<tr class="header">
+<th align="right">time</th>
+<th align="right">status</th>
+<th align="right">thick</th>
+<th align="left">sex</th>
+<th align="right">age</th>
+<th align="left">invasion</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="right">10</td>
+<td align="right">2</td>
+<td align="right">6.76</td>
+<td align="left">Male</td>
+<td align="right">76</td>
+<td align="left">level.1</td>
+</tr>
+<tr class="even">
+<td align="right">30</td>
+<td align="right">2</td>
+<td align="right">0.65</td>
+<td align="left">Male</td>
+<td align="right">56</td>
+<td align="left">level.0</td>
+</tr>
+<tr class="odd">
+<td align="right">35</td>
+<td align="right">0</td>
+<td align="right">1.34</td>
+<td align="left">Male</td>
+<td align="right">41</td>
+<td align="left">level.1</td>
+</tr>
+<tr class="even">
+<td align="right">99</td>
+<td align="right">2</td>
+<td align="right">2.90</td>
+<td align="left">Female</td>
+<td align="right">71</td>
+<td align="left">level.0</td>
+</tr>
+<tr class="odd">
+<td align="right">185</td>
+<td align="right">1</td>
+<td align="right">12.08</td>
+<td align="left">Male</td>
+<td align="right">52</td>
+<td align="left">level.2</td>
+</tr>
+<tr class="even">
+<td align="right">204</td>
+<td align="right">1</td>
+<td align="right">4.84</td>
+<td align="left">Male</td>
+<td align="right">28</td>
+<td align="left">level.2</td>
+</tr>
+</tbody>
+</table>
+<p>The data concerns the survival of patients after an operation. We consider the variables of the data set: - <code>time</code> meaning the censored lifetime. - <code>status</code> indicating whether the person died from the disease, 0 means censored, 1 means death by melanoma, and 2 means that the patient died from other causes. - <code>thick</code> meaning the thickness of the tumor (in mm). - <code>sex</code> meaning the sex of the patient (M/F). - <code>age</code> meaning the age of the patient at the time of operation. - <code>invasion</code> meaning the level of invasion.</p>
+<p>There are two kinds of survival responses we can consider; one with competing risks outcome and one without. We first consider how to use synthesize survival outcome, but the other case is the same; we just don’t use the line below. In this case we need to make the event variable binary, i.e.</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>Melanoma<span class="sc">$</span>eventBin <span class="ot">&lt;-</span> <span class="dv">1</span><span class="sc">*</span>(Melanoma<span class="sc">$</span>status<span class="sc">!=</span><span class="dv">0</span>)</span></code></pre></div>
+<p>corresponding to whether the patient survived (0) or not (1). Now we can synthesize a lava object (note that it is possible to specify how many unique values a variable can have to be considered either categorical or normal with <code>max.levels</code> (if not specified, it is 10)):</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>ms <span class="ot">&lt;-</span> <span class="fu">synthesize</span>(<span class="fu">Surv</span>(time,eventBin)<span class="sc">~</span><span class="fu">log</span>(thick)<span class="sc">+</span>sex<span class="sc">+</span>age<span class="sc">+</span>invasion,<span class="at">data=</span>Melanoma)</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(ms)</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Event History Model</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;                                                                    </span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  logthick ~ 1                                                      </span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  sex ~ 1                                                           </span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  age ~ 1                                                           </span></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  invasion ~ 1                                                      </span></span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  invasionlevel.1 ~ 1                                               </span></span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  invasionlevel.2 ~ 1                                               </span></span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  time.event.0 ~ logthick+sex+age+invasionlevel.1+invasionlevel.2   </span></span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  time.event.1 ~ logthick+sex+age+invasionlevel.1+invasionlevel.2   </span></span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  thick ~ 1                                                         </span></span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  time = min(time.event.0,time.event.1)                             </span></span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;                                                </span></span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  gaussian(identity)                            </span></span>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  binomial(logit)                               </span></span>
+<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  gaussian(identity)                            </span></span>
+<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  Normal                                        </span></span>
+<span id="cb3-20"><a href="#cb3-20" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  Normal                                        </span></span>
+<span id="cb3-21"><a href="#cb3-21" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  Normal                                        </span></span>
+<span id="cb3-22"><a href="#cb3-22" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  weibull(3.28973843778156,1.3454006220448e-12) </span></span>
+<span id="cb3-23"><a href="#cb3-23" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  weibull(1.07811120252437,1.39017006112292e-05)</span></span>
+<span id="cb3-24"><a href="#cb3-24" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  Normal                                        </span></span>
+<span id="cb3-25"><a href="#cb3-25" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  eventBin := {0,1}                             </span></span>
+<span id="cb3-26"><a href="#cb3-26" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb3-27"><a href="#cb3-27" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Latent Variable Model</span></span>
+<span id="cb3-28"><a href="#cb3-28" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;                                                                                                                   </span></span>
+<span id="cb3-29"><a href="#cb3-29" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;   time.event.0 ~ logthick+sex+age+invasionlevel.1+invasionlevel.2   weibull(3.28973843778156,1.3454006220448e-12) </span></span>
+<span id="cb3-30"><a href="#cb3-30" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;   time.event.1 ~ logthick+sex+age+invasionlevel.1+invasionlevel.2   weibull(1.07811120252437,1.39017006112292e-05)</span></span>
+<span id="cb3-31"><a href="#cb3-31" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;   time ~ 1                                                          deterministic                                 </span></span>
+<span id="cb3-32"><a href="#cb3-32" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;   eventBin ~ 1                                                      deterministic                                 </span></span>
+<span id="cb3-33"><a href="#cb3-33" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb3-34"><a href="#cb3-34" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Exogenous variables:                                    </span></span>
+<span id="cb3-35"><a href="#cb3-35" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;   logthick        gaussian(identity)</span></span>
+<span id="cb3-36"><a href="#cb3-36" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;   sex             binomial(logit)   </span></span>
+<span id="cb3-37"><a href="#cb3-37" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;   age             gaussian(identity)</span></span>
+<span id="cb3-38"><a href="#cb3-38" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;   invasion        categorical       </span></span>
+<span id="cb3-39"><a href="#cb3-39" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb3-40"><a href="#cb3-40" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb3-41"><a href="#cb3-41" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Transformations:</span></span>
+<span id="cb3-42"><a href="#cb3-42" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Variable: invasionlevel.1</span></span>
+<span id="cb3-43"><a href="#cb3-43" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Transformation: (invasion) -&gt; function(x){1*(x==l)}</span></span>
+<span id="cb3-44"><a href="#cb3-44" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; &lt;bytecode: 0x55e5d7572090&gt;</span></span>
+<span id="cb3-45"><a href="#cb3-45" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; &lt;environment: 0x55e5d8f37170&gt;</span></span>
+<span id="cb3-46"><a href="#cb3-46" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb3-47"><a href="#cb3-47" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Variable: invasionlevel.2</span></span>
+<span id="cb3-48"><a href="#cb3-48" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Transformation: (invasion) -&gt; function(x){1*(x==l)}</span></span>
+<span id="cb3-49"><a href="#cb3-49" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; &lt;bytecode: 0x55e5d7572090&gt;</span></span>
+<span id="cb3-50"><a href="#cb3-50" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; &lt;environment: 0x55e5d534e4a0&gt;</span></span>
+<span id="cb3-51"><a href="#cb3-51" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb3-52"><a href="#cb3-52" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Variable: thick</span></span>
+<span id="cb3-53"><a href="#cb3-53" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Transformation: (logthick) -&gt; function(x){exp(x)}</span></span>
+<span id="cb3-54"><a href="#cb3-54" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; &lt;bytecode: 0x55e5d75c2c80&gt;</span></span>
+<span id="cb3-55"><a href="#cb3-55" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; &lt;environment: 0x55e5d75c6078&gt;</span></span>
+<span id="cb3-56"><a href="#cb3-56" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb3-57"><a href="#cb3-57" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb3-58"><a href="#cb3-58" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Number of free parameters: 6</span></span>
+<span id="cb3-59"><a href="#cb3-59" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb3-60"><a href="#cb3-60" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Regression parameters:</span></span>
+<span id="cb3-61"><a href="#cb3-61" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;                    logthick           sex                 age               </span></span>
+<span id="cb3-62"><a href="#cb3-62" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;    invasionlevel.1                                                          </span></span>
+<span id="cb3-63"><a href="#cb3-63" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;    invasionlevel.2                                                          </span></span>
+<span id="cb3-64"><a href="#cb3-64" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;    time.event.0    -0.318643834513418 -0.0776388491446359 0.0196939928479098</span></span>
+<span id="cb3-65"><a href="#cb3-65" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;    time.event.1    0.652000348575146  0.413256970892376   0.021652176514945 </span></span>
+<span id="cb3-66"><a href="#cb3-66" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;    time                                                                     </span></span>
+<span id="cb3-67"><a href="#cb3-67" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;    eventBin                                                                 </span></span>
+<span id="cb3-68"><a href="#cb3-68" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;    thick                                                                    </span></span>
+<span id="cb3-69"><a href="#cb3-69" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;                    invasion invasionlevel.1    invasionlevel.2   time.event.0</span></span>
+<span id="cb3-70"><a href="#cb3-70" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;    invasionlevel.1                                                           </span></span>
+<span id="cb3-71"><a href="#cb3-71" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;    invasionlevel.2                                                           </span></span>
+<span id="cb3-72"><a href="#cb3-72" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;    time.event.0             0.3138087669356    0.394940160043624             </span></span>
+<span id="cb3-73"><a href="#cb3-73" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;    time.event.1             0.0215905215765561 -0.20363392501418             </span></span>
+<span id="cb3-74"><a href="#cb3-74" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;    time                                                                      </span></span>
+<span id="cb3-75"><a href="#cb3-75" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;    eventBin                                                                  </span></span>
+<span id="cb3-76"><a href="#cb3-76" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;    thick                                                                     </span></span>
+<span id="cb3-77"><a href="#cb3-77" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;                    time.event.1 time eventBin thick</span></span>
+<span id="cb3-78"><a href="#cb3-78" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;    invasionlevel.1                                 </span></span>
+<span id="cb3-79"><a href="#cb3-79" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;    invasionlevel.2                                 </span></span>
+<span id="cb3-80"><a href="#cb3-80" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;    time.event.0                                    </span></span>
+<span id="cb3-81"><a href="#cb3-81" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;    time.event.1                                    </span></span>
+<span id="cb3-82"><a href="#cb3-82" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;    time                                            </span></span>
+<span id="cb3-83"><a href="#cb3-83" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;    eventBin                                        </span></span>
+<span id="cb3-84"><a href="#cb3-84" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;    thick                                           </span></span>
+<span id="cb3-85"><a href="#cb3-85" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Covariance parameters:</span></span>
+<span id="cb3-86"><a href="#cb3-86" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;                    invasionlevel.1 invasionlevel.2 time.event.0 time.event.1</span></span>
+<span id="cb3-87"><a href="#cb3-87" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;    invasionlevel.1 0                                                        </span></span>
+<span id="cb3-88"><a href="#cb3-88" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;    invasionlevel.2                 0                                        </span></span>
+<span id="cb3-89"><a href="#cb3-89" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;    time.event.0                                    *                        </span></span>
+<span id="cb3-90"><a href="#cb3-90" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;    time.event.1                                                 *           </span></span>
+<span id="cb3-91"><a href="#cb3-91" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;    time                                                                     </span></span>
+<span id="cb3-92"><a href="#cb3-92" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;    eventBin                                                                 </span></span>
+<span id="cb3-93"><a href="#cb3-93" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;    thick                                                                    </span></span>
+<span id="cb3-94"><a href="#cb3-94" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;                    time eventBin thick</span></span>
+<span id="cb3-95"><a href="#cb3-95" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;    invasionlevel.1                    </span></span>
+<span id="cb3-96"><a href="#cb3-96" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;    invasionlevel.2                    </span></span>
+<span id="cb3-97"><a href="#cb3-97" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;    time.event.0                       </span></span>
+<span id="cb3-98"><a href="#cb3-98" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;    time.event.1                       </span></span>
+<span id="cb3-99"><a href="#cb3-99" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;    time            0                  </span></span>
+<span id="cb3-100"><a href="#cb3-100" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;    eventBin             0             </span></span>
+<span id="cb3-101"><a href="#cb3-101" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;    thick                         0    </span></span>
+<span id="cb3-102"><a href="#cb3-102" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Intercept parameters:</span></span>
+<span id="cb3-103"><a href="#cb3-103" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;     invasionlevel.1 invasionlevel.2 time.event.0 time.event.1 time eventBin</span></span>
+<span id="cb3-104"><a href="#cb3-104" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;     0               0               *            *            0    0       </span></span>
+<span id="cb3-105"><a href="#cb3-105" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;     thick</span></span>
+<span id="cb3-106"><a href="#cb3-106" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;     0    </span></span>
+<span id="cb3-107"><a href="#cb3-107" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Additional parameters:</span></span>
+<span id="cb3-108"><a href="#cb3-108" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;     invasion:0|1 invasion:1|2</span></span>
+<span id="cb3-109"><a href="#cb3-109" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;               NA           NA</span></span></code></pre></div>
+<p>In this case, a Weibull survival model is used to model the censorship time and uncensored lifetime with the given covariates. The model then specifies that the censored survival time and the indicator for whether the data was censored or not is given deterministically. Under Exogeonous variables, we find the distributions for the covariates. Further down in “Regression parameters,” we find the estimated parameters the regression (we note that the parameters for covariates are not as easily found).</p>
+<p>Let us consider a basic use case scenario where we simulate:</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">15</span>)</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>d <span class="ot">&lt;-</span> <span class="fu">sim</span>(ms,<span class="dv">10000</span>)</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>fit <span class="ot">&lt;-</span> <span class="fu">coxph</span>(<span class="fu">Surv</span>(time,eventBin)<span class="sc">~</span><span class="fu">log</span>(thick)<span class="sc">+</span>sex<span class="sc">+</span>age<span class="sc">+</span>invasion,<span class="at">data=</span>Melanoma)</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>fit.s <span class="ot">&lt;-</span> <span class="fu">coxph</span>(<span class="fu">Surv</span>(time,eventBin)<span class="sc">~</span><span class="fu">log</span>(thick)<span class="sc">+</span>sex<span class="sc">+</span>age<span class="sc">+</span>invasion,<span class="at">data=</span>d)</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>res <span class="ot">&lt;-</span> <span class="fu">as.data.frame</span>(<span class="fu">cbind</span>(<span class="fu">coef</span>(fit),<span class="fu">coef</span>(fit.s)))</span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a><span class="fu">colnames</span>(res) <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">&quot;Parameters of the model from original data&quot;</span>, <span class="st">&quot;Parameters of the model from simulated data&quot;</span>)</span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>knitr<span class="sc">::</span><span class="fu">kable</span>(res)</span></code></pre></div>
+<table>
+<colgroup>
+<col width="15%" />
+<col width="41%" />
+<col width="42%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th align="left"></th>
+<th align="right">Parameters of the model from original data</th>
+<th align="right">Parameters of the model from simulated data</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">log(thick)</td>
+<td align="right">0.6523092</td>
+<td align="right">0.6209176</td>
+</tr>
+<tr class="even">
+<td align="left">sexMale</td>
+<td align="right">0.4197023</td>
+<td align="right">0.4701277</td>
+</tr>
+<tr class="odd">
+<td align="left">age</td>
+<td align="right">0.0203366</td>
+<td align="right">0.0210737</td>
+</tr>
+<tr class="even">
+<td align="left">invasionlevel.1</td>
+<td align="right">0.0255019</td>
+<td align="right">0.0020205</td>
+</tr>
+<tr class="odd">
+<td align="left">invasionlevel.2</td>
+<td align="right">-0.1696852</td>
+<td align="right">-0.2110866</td>
+</tr>
+</tbody>
+</table>
+<p>First we simulate from our estimated model, then we fit a corresponding model to the data and the simulated data. Hopefully the numbers between the 2 columns should be very similar which they are.</p>
+</div>
+<div id="competing-risk-case" class="section level3">
+<h3>Competing risk case</h3>
+<p>Let us now consider how to do the same with the competing risk case. In the instance, we don’t make a binary event variable:</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>ms.comp <span class="ot">&lt;-</span> <span class="fu">synthesize</span>(<span class="fu">Surv</span>(time,status)<span class="sc">~</span><span class="fu">log</span>(thick)<span class="sc">+</span>sex<span class="sc">+</span>age<span class="sc">+</span>invasion,<span class="at">data=</span>Melanoma)</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(ms.comp)</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Event History Model</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;                                                                    </span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  logthick ~ 1                                                      </span></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  sex ~ 1                                                           </span></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  age ~ 1                                                           </span></span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  invasion ~ 1                                                      </span></span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  invasionlevel.1 ~ 1                                               </span></span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  invasionlevel.2 ~ 1                                               </span></span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  time.event.0 ~ logthick+sex+age+invasionlevel.1+invasionlevel.2   </span></span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  time.event.1 ~ logthick+sex+age+invasionlevel.1+invasionlevel.2   </span></span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  time.event.2 ~ logthick+sex+age+invasionlevel.1+invasionlevel.2   </span></span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  thick ~ 1                                                         </span></span>
+<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  time = min(time.event.0,time.event.1,time.event.2)                </span></span>
+<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;                                                 </span></span>
+<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  gaussian(identity)                             </span></span>
+<span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  binomial(logit)                                </span></span>
+<span id="cb5-19"><a href="#cb5-19" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  gaussian(identity)                             </span></span>
+<span id="cb5-20"><a href="#cb5-20" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  Normal                                         </span></span>
+<span id="cb5-21"><a href="#cb5-21" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  Normal                                         </span></span>
+<span id="cb5-22"><a href="#cb5-22" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  Normal                                         </span></span>
+<span id="cb5-23"><a href="#cb5-23" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  weibull(3.28973843778156,1.3454006220448e-12)  </span></span>
+<span id="cb5-24"><a href="#cb5-24" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  weibull(1.17622019666639,6.35825230307105e-06) </span></span>
+<span id="cb5-25"><a href="#cb5-25" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  weibull(0.803396168782057,2.01787089333425e-06)</span></span>
+<span id="cb5-26"><a href="#cb5-26" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  Normal                                         </span></span>
+<span id="cb5-27"><a href="#cb5-27" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  status := {0,1,2}                              </span></span>
+<span id="cb5-28"><a href="#cb5-28" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb5-29"><a href="#cb5-29" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Latent Variable Model</span></span>
+<span id="cb5-30"><a href="#cb5-30" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;                                                                                                                    </span></span>
+<span id="cb5-31"><a href="#cb5-31" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;   time.event.0 ~ logthick+sex+age+invasionlevel.1+invasionlevel.2   weibull(3.28973843778156,1.3454006220448e-12)  </span></span>
+<span id="cb5-32"><a href="#cb5-32" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;   time.event.1 ~ logthick+sex+age+invasionlevel.1+invasionlevel.2   weibull(1.17622019666639,6.35825230307105e-06) </span></span>
+<span id="cb5-33"><a href="#cb5-33" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;   time.event.2 ~ logthick+sex+age+invasionlevel.1+invasionlevel.2   weibull(0.803396168782057,2.01787089333425e-06)</span></span>
+<span id="cb5-34"><a href="#cb5-34" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;   time ~ 1                                                          deterministic                                  </span></span>
+<span id="cb5-35"><a href="#cb5-35" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;   status ~ 1                                                        deterministic                                  </span></span>
+<span id="cb5-36"><a href="#cb5-36" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb5-37"><a href="#cb5-37" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Exogenous variables:                                    </span></span>
+<span id="cb5-38"><a href="#cb5-38" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;   logthick        gaussian(identity)</span></span>
+<span id="cb5-39"><a href="#cb5-39" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;   sex             binomial(logit)   </span></span>
+<span id="cb5-40"><a href="#cb5-40" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;   age             gaussian(identity)</span></span>
+<span id="cb5-41"><a href="#cb5-41" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;   invasion        categorical       </span></span>
+<span id="cb5-42"><a href="#cb5-42" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb5-43"><a href="#cb5-43" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb5-44"><a href="#cb5-44" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Transformations:</span></span>
+<span id="cb5-45"><a href="#cb5-45" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Variable: invasionlevel.1</span></span>
+<span id="cb5-46"><a href="#cb5-46" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Transformation: (invasion) -&gt; function(x){1*(x==l)}</span></span>
+<span id="cb5-47"><a href="#cb5-47" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; &lt;bytecode: 0x55e5d7572090&gt;</span></span>
+<span id="cb5-48"><a href="#cb5-48" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; &lt;environment: 0x55e5d57d94f8&gt;</span></span>
+<span id="cb5-49"><a href="#cb5-49" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb5-50"><a href="#cb5-50" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Variable: invasionlevel.2</span></span>
+<span id="cb5-51"><a href="#cb5-51" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Transformation: (invasion) -&gt; function(x){1*(x==l)}</span></span>
+<span id="cb5-52"><a href="#cb5-52" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; &lt;bytecode: 0x55e5d7572090&gt;</span></span>
+<span id="cb5-53"><a href="#cb5-53" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; &lt;environment: 0x55e5d5c5dba8&gt;</span></span>
+<span id="cb5-54"><a href="#cb5-54" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb5-55"><a href="#cb5-55" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Variable: thick</span></span>
+<span id="cb5-56"><a href="#cb5-56" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Transformation: (logthick) -&gt; function(x){exp(x)}</span></span>
+<span id="cb5-57"><a href="#cb5-57" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; &lt;bytecode: 0x55e5d75c2c80&gt;</span></span>
+<span id="cb5-58"><a href="#cb5-58" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; &lt;environment: 0x55e5d7f561d8&gt;</span></span>
+<span id="cb5-59"><a href="#cb5-59" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb5-60"><a href="#cb5-60" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb5-61"><a href="#cb5-61" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Number of free parameters: 8</span></span>
+<span id="cb5-62"><a href="#cb5-62" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb5-63"><a href="#cb5-63" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Regression parameters:</span></span>
+<span id="cb5-64"><a href="#cb5-64" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;                    logthick           sex                 age               </span></span>
+<span id="cb5-65"><a href="#cb5-65" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;    invasionlevel.1                                                          </span></span>
+<span id="cb5-66"><a href="#cb5-66" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;    invasionlevel.2                                                          </span></span>
+<span id="cb5-67"><a href="#cb5-67" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;    time.event.0    -0.318643834513418 -0.0776388491446359 0.0196939928479098</span></span>
+<span id="cb5-68"><a href="#cb5-68" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;    time.event.1    0.682679950463671  0.454692747786625   0.0127196289081087</span></span>
+<span id="cb5-69"><a href="#cb5-69" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;    time.event.2    0.546409838381085  0.114534556503001   0.0790604815044245</span></span>
+<span id="cb5-70"><a href="#cb5-70" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;    time                                                                     </span></span>
+<span id="cb5-71"><a href="#cb5-71" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;    status                                                                   </span></span>
+<span id="cb5-72"><a href="#cb5-72" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;    thick                                                                    </span></span>
+<span id="cb5-73"><a href="#cb5-73" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;                    invasion invasionlevel.1   invasionlevel.2   time.event.0</span></span>
+<span id="cb5-74"><a href="#cb5-74" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;    invasionlevel.1                                                          </span></span>
+<span id="cb5-75"><a href="#cb5-75" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;    invasionlevel.2                                                          </span></span>
+<span id="cb5-76"><a href="#cb5-76" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;    time.event.0             0.3138087669356   0.394940160043624             </span></span>
+<span id="cb5-77"><a href="#cb5-77" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;    time.event.1             0.372010299360017 0.147298715153487             </span></span>
+<span id="cb5-78"><a href="#cb5-78" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;    time.event.2             -1.47743376634468 -2.21858043901433             </span></span>
+<span id="cb5-79"><a href="#cb5-79" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;    time                                                                     </span></span>
+<span id="cb5-80"><a href="#cb5-80" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;    status                                                                   </span></span>
+<span id="cb5-81"><a href="#cb5-81" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;    thick                                                                    </span></span>
+<span id="cb5-82"><a href="#cb5-82" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;                    time.event.1 time.event.2 time status thick</span></span>
+<span id="cb5-83"><a href="#cb5-83" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;    invasionlevel.1                                            </span></span>
+<span id="cb5-84"><a href="#cb5-84" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;    invasionlevel.2                                            </span></span>
+<span id="cb5-85"><a href="#cb5-85" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;    time.event.0                                               </span></span>
+<span id="cb5-86"><a href="#cb5-86" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;    time.event.1                                               </span></span>
+<span id="cb5-87"><a href="#cb5-87" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;    time.event.2                                               </span></span>
+<span id="cb5-88"><a href="#cb5-88" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;    time                                                       </span></span>
+<span id="cb5-89"><a href="#cb5-89" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;    status                                                     </span></span>
+<span id="cb5-90"><a href="#cb5-90" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;    thick                                                      </span></span>
+<span id="cb5-91"><a href="#cb5-91" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Covariance parameters:</span></span>
+<span id="cb5-92"><a href="#cb5-92" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;                    invasionlevel.1 invasionlevel.2 time.event.0 time.event.1</span></span>
+<span id="cb5-93"><a href="#cb5-93" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;    invasionlevel.1 0                                                        </span></span>
+<span id="cb5-94"><a href="#cb5-94" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;    invasionlevel.2                 0                                        </span></span>
+<span id="cb5-95"><a href="#cb5-95" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;    time.event.0                                    *                        </span></span>
+<span id="cb5-96"><a href="#cb5-96" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;    time.event.1                                                 *           </span></span>
+<span id="cb5-97"><a href="#cb5-97" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;    time.event.2                                                             </span></span>
+<span id="cb5-98"><a href="#cb5-98" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;    time                                                                     </span></span>
+<span id="cb5-99"><a href="#cb5-99" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;    status                                                                   </span></span>
+<span id="cb5-100"><a href="#cb5-100" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;    thick                                                                    </span></span>
+<span id="cb5-101"><a href="#cb5-101" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;                    time.event.2 time status thick</span></span>
+<span id="cb5-102"><a href="#cb5-102" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;    invasionlevel.1                               </span></span>
+<span id="cb5-103"><a href="#cb5-103" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;    invasionlevel.2                               </span></span>
+<span id="cb5-104"><a href="#cb5-104" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;    time.event.0                                  </span></span>
+<span id="cb5-105"><a href="#cb5-105" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;    time.event.1                                  </span></span>
+<span id="cb5-106"><a href="#cb5-106" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;    time.event.2    *                             </span></span>
+<span id="cb5-107"><a href="#cb5-107" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;    time                         0                </span></span>
+<span id="cb5-108"><a href="#cb5-108" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;    status                            0           </span></span>
+<span id="cb5-109"><a href="#cb5-109" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;    thick                                    0    </span></span>
+<span id="cb5-110"><a href="#cb5-110" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Intercept parameters:</span></span>
+<span id="cb5-111"><a href="#cb5-111" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;     invasionlevel.1 invasionlevel.2 time.event.0 time.event.1 time.event.2 time</span></span>
+<span id="cb5-112"><a href="#cb5-112" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;     0               0               *            *            *            0   </span></span>
+<span id="cb5-113"><a href="#cb5-113" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;     status thick</span></span>
+<span id="cb5-114"><a href="#cb5-114" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;     0      0    </span></span>
+<span id="cb5-115"><a href="#cb5-115" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Additional parameters:</span></span>
+<span id="cb5-116"><a href="#cb5-116" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;     invasion:0|1 invasion:1|2</span></span>
+<span id="cb5-117"><a href="#cb5-117" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;               NA           NA</span></span></code></pre></div>
+<p>This gives the same as before except that the model of survival is changed. Here a Weibull survival model is used to model the censorship time, uncensored lifetime and death from other causes with the given covariates.</p>
+<p>Let us again consider a basic use case scenario where we simulate (the competing risk model should correspond to several Cox regression models; corresponding to modeling the intensity for the case where the patient died from something else):</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">15</span>)</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>d <span class="ot">&lt;-</span> <span class="fu">sim</span>(ms.comp,<span class="dv">10000</span>)</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>fit.comp <span class="ot">&lt;-</span> <span class="fu">coxph</span>(<span class="fu">Surv</span>(time,status<span class="sc">==</span><span class="dv">2</span>)<span class="sc">~</span><span class="fu">log</span>(thick)<span class="sc">+</span>sex<span class="sc">+</span>age<span class="sc">+</span>invasion,<span class="at">data=</span>Melanoma)</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>fit.comp.s <span class="ot">&lt;-</span> <span class="fu">coxph</span>(<span class="fu">Surv</span>(time,status<span class="sc">==</span><span class="dv">2</span>)<span class="sc">~</span><span class="fu">log</span>(thick)<span class="sc">+</span>sex<span class="sc">+</span>age<span class="sc">+</span>invasion,<span class="at">data=</span>d)</span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>res <span class="ot">&lt;-</span> <span class="fu">as.data.frame</span>(<span class="fu">cbind</span>(<span class="fu">coef</span>(fit.comp),<span class="fu">coef</span>(fit.comp.s)))</span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a><span class="fu">colnames</span>(res) <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">&quot;Parameters of the model from original data&quot;</span>, <span class="st">&quot;Parameters of the model from simulated data&quot;</span>)</span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>knitr<span class="sc">::</span><span class="fu">kable</span>(res)</span></code></pre></div>
+<table>
+<colgroup>
+<col width="15%" />
+<col width="41%" />
+<col width="42%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th align="left"></th>
+<th align="right">Parameters of the model from original data</th>
+<th align="right">Parameters of the model from simulated data</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">log(thick)</td>
+<td align="right">0.4772507</td>
+<td align="right">0.5994931</td>
+</tr>
+<tr class="even">
+<td align="left">sexMale</td>
+<td align="right">0.2172497</td>
+<td align="right">-0.0132351</td>
+</tr>
+<tr class="odd">
+<td align="left">age</td>
+<td align="right">0.0909115</td>
+<td align="right">0.0811947</td>
+</tr>
+<tr class="even">
+<td align="left">invasionlevel.1</td>
+<td align="right">-1.4081637</td>
+<td align="right">-1.4283281</td>
+</tr>
+<tr class="odd">
+<td align="left">invasionlevel.2</td>
+<td align="right">-2.1192395</td>
+<td align="right">-2.4465589</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div id="including-recursion-and-specifying-the-model-manually" class="section level3">
+<h3>Including recursion (and specifying the model manually)</h3>
+<p>If we specify that we want to have recursion then, we:</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>ms.rec <span class="ot">&lt;-</span> <span class="fu">synthesize</span>(<span class="fu">Surv</span>(time,eventBin)<span class="sc">~</span><span class="fu">log</span>(thick)<span class="sc">+</span>sex<span class="sc">+</span>age<span class="sc">+</span>invasion,<span class="at">data=</span>Melanoma,<span class="at">recursive =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>ms.rec</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Event History Model</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;                                                                    </span></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  invasion ~ 1                                                      </span></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  invasionlevel.1 ~ 1                                               </span></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  invasionlevel.2 ~ 1                                               </span></span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  time.event.0 ~ invasionlevel.1+invasionlevel.2+logthick+sex+age   </span></span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  logthick ~ invasionlevel.1+invasionlevel.2+sex+age                </span></span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  sex ~ invasionlevel.1+invasionlevel.2+age                         </span></span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  age ~ invasionlevel.1+invasionlevel.2                             </span></span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  time.event.1 ~ invasionlevel.1+invasionlevel.2+logthick+sex+age   </span></span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  thick ~ 1                                                         </span></span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  time = min(time.event.0,time.event.1)                             </span></span>
+<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;                                                </span></span>
+<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  Normal                                        </span></span>
+<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  Normal                                        </span></span>
+<span id="cb7-18"><a href="#cb7-18" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  Normal                                        </span></span>
+<span id="cb7-19"><a href="#cb7-19" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  weibull(3.28973843778156,1.3454006220448e-12) </span></span>
+<span id="cb7-20"><a href="#cb7-20" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  gaussian(identity)                            </span></span>
+<span id="cb7-21"><a href="#cb7-21" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  binomial(logit)                               </span></span>
+<span id="cb7-22"><a href="#cb7-22" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  gaussian(identity)                            </span></span>
+<span id="cb7-23"><a href="#cb7-23" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  weibull(1.07811120252437,1.39017006112292e-05)</span></span>
+<span id="cb7-24"><a href="#cb7-24" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  Normal                                        </span></span>
+<span id="cb7-25"><a href="#cb7-25" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  eventBin := {0,1}                             </span></span>
+<span id="cb7-26"><a href="#cb7-26" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb7-27"><a href="#cb7-27" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Latent Variable Model</span></span>
+<span id="cb7-28"><a href="#cb7-28" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;                                                                                                                   </span></span>
+<span id="cb7-29"><a href="#cb7-29" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;   time.event.0 ~ invasionlevel.1+invasionlevel.2+logthick+sex+age   weibull(3.28973843778156,1.3454006220448e-12) </span></span>
+<span id="cb7-30"><a href="#cb7-30" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;   logthick ~ invasionlevel.1+invasionlevel.2+sex+age                gaussian(identity)                            </span></span>
+<span id="cb7-31"><a href="#cb7-31" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;   sex ~ invasionlevel.1+invasionlevel.2+age                         binomial(logit)                               </span></span>
+<span id="cb7-32"><a href="#cb7-32" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;   age ~ invasionlevel.1+invasionlevel.2                             gaussian(identity)                            </span></span>
+<span id="cb7-33"><a href="#cb7-33" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;   time.event.1 ~ invasionlevel.1+invasionlevel.2+logthick+sex+age   weibull(1.07811120252437,1.39017006112292e-05)</span></span>
+<span id="cb7-34"><a href="#cb7-34" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;   time ~ 1                                                          deterministic                                 </span></span>
+<span id="cb7-35"><a href="#cb7-35" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;   eventBin ~ 1                                                      deterministic                                 </span></span>
+<span id="cb7-36"><a href="#cb7-36" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb7-37"><a href="#cb7-37" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Exogenous variables:                             </span></span>
+<span id="cb7-38"><a href="#cb7-38" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;   invasion        categorical</span></span>
+<span id="cb7-39"><a href="#cb7-39" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb7-40"><a href="#cb7-40" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Transformations:                                   </span></span>
+<span id="cb7-41"><a href="#cb7-41" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;   invasionlevel.1 ~ invasion       </span></span>
+<span id="cb7-42"><a href="#cb7-42" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;   invasionlevel.2 ~ invasion       </span></span>
+<span id="cb7-43"><a href="#cb7-43" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;   thick ~ logthick</span></span></code></pre></div>
+<p>Here we see that (in the sense of formulas) <span class="math display">\[\begin{align*}
+\verb|logthick| \ &amp;\verb|~| \  \verb|sex + age + invasion| \\
+\verb|sex| \ &amp;\verb|~| \ \verb|age + invasion| \\
+\verb|age| \ &amp;\verb|~| \ \verb|invasion|
+\end{align*}\]</span> in addition to what we had before. We could simulate again:</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">15</span>)</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>d <span class="ot">&lt;-</span> <span class="fu">sim</span>(ms.rec,<span class="dv">10000</span>)</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>fit.rec.s <span class="ot">&lt;-</span> <span class="fu">coxph</span>(<span class="fu">Surv</span>(time,eventBin)<span class="sc">~</span><span class="fu">log</span>(thick)<span class="sc">+</span>sex<span class="sc">+</span>age<span class="sc">+</span>invasion,<span class="at">data=</span>d)</span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>res <span class="ot">&lt;-</span> <span class="fu">as.data.frame</span>(<span class="fu">cbind</span>(<span class="fu">coef</span>(fit),<span class="fu">coef</span>(fit.rec.s),<span class="fu">coef</span>(fit.s)))</span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a><span class="fu">colnames</span>(res) <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">&quot;Parameters of the model from original data&quot;</span>, <span class="st">&quot;Parameters of the model from simulated data of the recursive model&quot;</span>,<span class="st">&quot;Parameters of the model from simulated of the non-recursive model&quot;</span>)</span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>knitr<span class="sc">::</span><span class="fu">kable</span>(res)</span></code></pre></div>
+<table>
+<colgroup>
+<col width="8%" />
+<col width="22%" />
+<col width="34%" />
+<col width="34%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th align="left"></th>
+<th align="right">Parameters of the model from original data</th>
+<th align="right">Parameters of the model from simulated data of the recursive model</th>
+<th align="right">Parameters of the model from simulated of the non-recursive model</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">log(thick)</td>
+<td align="right">0.6523092</td>
+<td align="right">0.6010587</td>
+<td align="right">0.6209176</td>
+</tr>
+<tr class="even">
+<td align="left">sexMale</td>
+<td align="right">0.4197023</td>
+<td align="right">0.3749823</td>
+<td align="right">0.4701277</td>
+</tr>
+<tr class="odd">
+<td align="left">age</td>
+<td align="right">0.0203366</td>
+<td align="right">0.0195071</td>
+<td align="right">0.0210737</td>
+</tr>
+<tr class="even">
+<td align="left">invasionlevel.1</td>
+<td align="right">0.0255019</td>
+<td align="right">0.0736283</td>
+<td align="right">0.0020205</td>
+</tr>
+<tr class="odd">
+<td align="left">invasionlevel.2</td>
+<td align="right">-0.1696852</td>
+<td align="right">-0.0840969</td>
+<td align="right">-0.2110866</td>
+</tr>
+</tbody>
+</table>
+<p>The coefficients of the model with the simulated data from the recursive model are not particularly close to the original data. Let us simulate to see if these differences are systematic:</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggplot2)</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Attaching package: &#39;ggplot2&#39;</span></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; The following object is masked from &#39;package:lava&#39;:</span></span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;     vars</span></span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a><span class="co">#library(gridExtra)</span></span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>make.boxplot.simulation <span class="ot">&lt;-</span> <span class="cf">function</span>(object, object.rec, data, sample.sizes, n.sim){</span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a>  <span class="co">#Copare to model from original data</span></span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a>  coef.compare <span class="ot">&lt;-</span> <span class="fu">coef</span>(<span class="fu">coxph</span>(<span class="fu">Surv</span>(time,eventBin)<span class="sc">~</span><span class="fu">log</span>(thick)<span class="sc">+</span>sex<span class="sc">+</span>age<span class="sc">+</span>invasion,<span class="at">data=</span>data))</span>
+<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a>  <span class="co"># make dataframe with columnnames of the form: parameters, sample.size, recursion</span></span>
+<span id="cb9-14"><a href="#cb9-14" aria-hidden="true" tabindex="-1"></a>  df <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="fu">matrix</span>(<span class="at">ncol =</span> <span class="fu">length</span>(coef.compare)<span class="sc">+</span><span class="dv">2</span>, <span class="at">nrow =</span> <span class="dv">0</span>))</span>
+<span id="cb9-15"><a href="#cb9-15" aria-hidden="true" tabindex="-1"></a>  column.names <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="fu">names</span>(coef.compare),<span class="st">&quot;sample.size&quot;</span>, <span class="st">&quot;recursive&quot;</span>)</span>
+<span id="cb9-16"><a href="#cb9-16" aria-hidden="true" tabindex="-1"></a>  <span class="fu">colnames</span>(df) <span class="ot">&lt;-</span> column.names</span>
+<span id="cb9-17"><a href="#cb9-17" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb9-18"><a href="#cb9-18" aria-hidden="true" tabindex="-1"></a>  <span class="co">#simulate</span></span>
+<span id="cb9-19"><a href="#cb9-19" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (sample.size <span class="cf">in</span> sample.sizes){</span>
+<span id="cb9-20"><a href="#cb9-20" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>n.sim){</span>
+<span id="cb9-21"><a href="#cb9-21" aria-hidden="true" tabindex="-1"></a>      d <span class="ot">&lt;-</span> <span class="fu">sim</span>(object, sample.size)</span>
+<span id="cb9-22"><a href="#cb9-22" aria-hidden="true" tabindex="-1"></a>      coeff <span class="ot">&lt;-</span> <span class="fu">coef</span>(<span class="fu">coxph</span>(<span class="fu">Surv</span>(time,eventBin)<span class="sc">~</span><span class="fu">log</span>(thick)<span class="sc">+</span>sex<span class="sc">+</span>age<span class="sc">+</span>invasion,<span class="at">data=</span>d))</span>
+<span id="cb9-23"><a href="#cb9-23" aria-hidden="true" tabindex="-1"></a>      df[<span class="fu">nrow</span>(df)<span class="sc">+</span><span class="dv">1</span>,] <span class="ot">&lt;-</span> <span class="fu">c</span>(coeff,sample.size,<span class="st">&quot;non recursive&quot;</span>)</span>
+<span id="cb9-24"><a href="#cb9-24" aria-hidden="true" tabindex="-1"></a>      </span>
+<span id="cb9-25"><a href="#cb9-25" aria-hidden="true" tabindex="-1"></a>      d.rec <span class="ot">&lt;-</span> <span class="fu">sim</span>(object.rec, sample.size)</span>
+<span id="cb9-26"><a href="#cb9-26" aria-hidden="true" tabindex="-1"></a>      coeff.rec <span class="ot">&lt;-</span> <span class="fu">coef</span>(<span class="fu">coxph</span>(<span class="fu">Surv</span>(time,eventBin)<span class="sc">~</span><span class="fu">log</span>(thick)<span class="sc">+</span>sex<span class="sc">+</span>age<span class="sc">+</span>invasion,<span class="at">data=</span>d.rec))</span>
+<span id="cb9-27"><a href="#cb9-27" aria-hidden="true" tabindex="-1"></a>      df[<span class="fu">nrow</span>(df)<span class="sc">+</span><span class="dv">1</span>,] <span class="ot">&lt;-</span> <span class="fu">c</span>(coeff.rec,sample.size,<span class="st">&quot;recursive&quot;</span>)</span>
+<span id="cb9-28"><a href="#cb9-28" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb9-29"><a href="#cb9-29" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb9-30"><a href="#cb9-30" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-31"><a href="#cb9-31" aria-hidden="true" tabindex="-1"></a>  <span class="co">#make variables of the correct type; otherwise ggplot doesn&#39;t understand</span></span>
+<span id="cb9-32"><a href="#cb9-32" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (c <span class="cf">in</span> <span class="fu">names</span>(df)[<span class="dv">0</span><span class="sc">:</span><span class="fu">length</span>(coef.compare)]){</span>
+<span id="cb9-33"><a href="#cb9-33" aria-hidden="true" tabindex="-1"></a>    df[[c]] <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(df[[c]])</span>
+<span id="cb9-34"><a href="#cb9-34" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb9-35"><a href="#cb9-35" aria-hidden="true" tabindex="-1"></a>  df<span class="sc">$</span>sample.size <span class="ot">&lt;-</span> <span class="fu">as.factor</span>(df<span class="sc">$</span>sample.size)</span>
+<span id="cb9-36"><a href="#cb9-36" aria-hidden="true" tabindex="-1"></a>  df<span class="sc">$</span>recursive <span class="ot">&lt;-</span> <span class="fu">as.factor</span>(df<span class="sc">$</span>recursive)</span>
+<span id="cb9-37"><a href="#cb9-37" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb9-38"><a href="#cb9-38" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(df, <span class="fu">aes</span>(<span class="at">x=</span>sample.size, <span class="at">y=</span>age, <span class="at">fill=</span>recursive)) <span class="sc">+</span><span class="fu">geom_boxplot</span>() <span class="sc">+</span> <span class="fu">geom_hline</span>(<span class="at">yintercept =</span>coef.compare[[<span class="st">&quot;age&quot;</span>]])</span>
+<span id="cb9-39"><a href="#cb9-39" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb9-40"><a href="#cb9-40" aria-hidden="true" tabindex="-1"></a>  <span class="co">#plots &lt;- c()</span></span>
+<span id="cb9-41"><a href="#cb9-41" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb9-42"><a href="#cb9-42" aria-hidden="true" tabindex="-1"></a>  <span class="co">#for (c in names(df)[0:length(coef.compare)]){</span></span>
+<span id="cb9-43"><a href="#cb9-43" aria-hidden="true" tabindex="-1"></a>  <span class="co">#  plots &lt;- c(plots,ggplot(df, aes(x=sample.size, y=c, fill=recursive)) +geom_boxplot() + geom_hline(yintercept =coef.compare[[c]]))</span></span>
+<span id="cb9-44"><a href="#cb9-44" aria-hidden="true" tabindex="-1"></a>  <span class="co">#}</span></span>
+<span id="cb9-45"><a href="#cb9-45" aria-hidden="true" tabindex="-1"></a>  <span class="co">#do.call(&quot;grid.arrange&quot;, c(plots, ncol=length(coef.compare)))</span></span>
+<span id="cb9-46"><a href="#cb9-46" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb9-47"><a href="#cb9-47" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-48"><a href="#cb9-48" aria-hidden="true" tabindex="-1"></a><span class="fu">make.boxplot.simulation</span>(ms,ms.rec, Melanoma, <span class="fu">c</span>(<span class="dv">100</span>,<span class="dv">200</span>,<span class="dv">500</span>,<span class="dv">1000</span>),<span class="dv">1000</span>)</span></code></pre></div>
+<p><img src="data:image/png;base64,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" /><!-- --></p>
+<p>Which looks pretty reasonable.</p>
+<p>We could also check one of the other relationships in the recursive model, i.e <code>logthick ~ sex + age + invasion</code>:</p>
+<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">15</span>)</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>d <span class="ot">&lt;-</span> <span class="fu">sim</span>(ms.rec,<span class="dv">10000</span>)</span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>fit.rec.alt <span class="ot">&lt;-</span> <span class="fu">lm</span>(<span class="fu">log</span>(thick)<span class="sc">~</span>sex<span class="sc">+</span>age<span class="sc">+</span>invasion,<span class="at">data=</span>Melanoma)</span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>fit.rec.alt.s <span class="ot">&lt;-</span> <span class="fu">lm</span>(<span class="fu">log</span>(thick) <span class="sc">~</span> sex <span class="sc">+</span> age <span class="sc">+</span> invasion, <span class="at">data=</span> d)</span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>res <span class="ot">&lt;-</span> <span class="fu">as.data.frame</span>(<span class="fu">cbind</span>(<span class="fu">coef</span>(fit.rec.alt),<span class="fu">coef</span>(fit.rec.alt.s)))</span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a><span class="fu">colnames</span>(res) <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">&quot;Parameters of the model (with formula: logthick ~ sex + age + invasion) from original data&quot;</span>, <span class="st">&quot;Parameters of the model (with formula: logthick ~ sex + age + invasion) from simulated data&quot;</span>)</span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>knitr<span class="sc">::</span><span class="fu">kable</span>(res)</span></code></pre></div>
+<table>
+<colgroup>
+<col width="8%" />
+<col width="45%" />
+<col width="46%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th align="left"></th>
+<th align="right">Parameters of the model (with formula: logthick ~ sex + age + invasion) from original data</th>
+<th align="right">Parameters of the model (with formula: logthick ~ sex + age + invasion) from simulated data</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">(Intercept)</td>
+<td align="right">-0.1921147</td>
+<td align="right">-0.2135037</td>
+</tr>
+<tr class="even">
+<td align="left">sexMale</td>
+<td align="right">0.2503798</td>
+<td align="right">0.2606225</td>
+</tr>
+<tr class="odd">
+<td align="left">age</td>
+<td align="right">0.0006898</td>
+<td align="right">0.0012674</td>
+</tr>
+<tr class="even">
+<td align="left">invasionlevel.1</td>
+<td align="right">1.0884677</td>
+<td align="right">1.0820244</td>
+</tr>
+<tr class="odd">
+<td align="left">invasionlevel.2</td>
+<td align="right">1.8999117</td>
+<td align="right">1.9094321</td>
+</tr>
+</tbody>
+</table>
+<p>The parameters look to be quite close to each other. In view of the above discussion, we could also have specified that: <span class="math display">\[
+\begin{align*}
+\verb|logthick| \ &amp;\verb|~| \  \verb|sex + age + invasion| \\
+\verb|age| \ &amp;\verb|~| \ \verb|invasion|
+\end{align*}
+\]</span> Here we have to specify this with a lava object rather than a formula, since this can’t be done with a formula:</p>
+<div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(lava)</span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>u <span class="ot">&lt;-</span> <span class="fu">lvm</span>()</span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a><span class="co"># specify covariate</span></span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a><span class="fu">distribution</span>(u,<span class="sc">~</span>sex) <span class="ot">&lt;-</span> <span class="fu">binomial.lvm</span>() <span class="co">#specify binary covariate</span></span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a><span class="fu">distribution</span>(u,<span class="sc">~</span>age) <span class="ot">&lt;-</span> <span class="fu">normal.lvm</span>() <span class="co">#specify continuous covariate</span></span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a><span class="fu">distribution</span>(u,<span class="sc">~</span>logthick) <span class="ot">&lt;-</span> <span class="fu">normal.lvm</span>() <span class="co">#note: remove paranthesis around log</span></span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a><span class="fu">categorical</span>(u,<span class="at">K=</span><span class="dv">3</span>) <span class="ot">&lt;-</span> <span class="st">&quot;invasion&quot;</span> <span class="co">#specify categorical covariate</span></span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a><span class="co">#include event time, so it knows it is the survival case</span></span>
+<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a>u <span class="ot">&lt;-</span><span class="fu">eventTime</span>(u,time<span class="sc">~</span><span class="fu">min</span>(<span class="at">time.cens=</span><span class="dv">0</span>,<span class="at">time.death=</span><span class="dv">1</span>,<span class="at">time.other=</span><span class="dv">2</span>), <span class="st">&quot;status&quot;</span>)</span>
+<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a><span class="co">#specify regression relationships</span></span>
+<span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a>lava<span class="sc">::</span><span class="fu">regression</span>(u,logthick<span class="sc">~</span>sex<span class="sc">+</span>age<span class="sc">+</span>invasion) <span class="ot">&lt;-</span> <span class="dv">1</span></span>
+<span id="cb11-12"><a href="#cb11-12" aria-hidden="true" tabindex="-1"></a>lava<span class="sc">::</span><span class="fu">regression</span>(u,age<span class="sc">~</span>invasion) <span class="ot">&lt;-</span> <span class="dv">1</span></span>
+<span id="cb11-13"><a href="#cb11-13" aria-hidden="true" tabindex="-1"></a><span class="co">#specify relationships for censored variables (could also change them)</span></span>
+<span id="cb11-14"><a href="#cb11-14" aria-hidden="true" tabindex="-1"></a>lava<span class="sc">::</span><span class="fu">regression</span>(u,time.other<span class="sc">~</span>logthick<span class="sc">+</span>sex<span class="sc">+</span>age<span class="sc">+</span>invasion) <span class="ot">&lt;-</span> <span class="dv">1</span></span>
+<span id="cb11-15"><a href="#cb11-15" aria-hidden="true" tabindex="-1"></a>lava<span class="sc">::</span><span class="fu">regression</span>(u,time.death<span class="sc">~</span>logthick<span class="sc">+</span>sex<span class="sc">+</span>age<span class="sc">+</span>invasion) <span class="ot">&lt;-</span> <span class="dv">1</span></span>
+<span id="cb11-16"><a href="#cb11-16" aria-hidden="true" tabindex="-1"></a>lava<span class="sc">::</span><span class="fu">regression</span>(u,time.cens<span class="sc">~</span>logthick<span class="sc">+</span>sex<span class="sc">+</span>age<span class="sc">+</span>invasion) <span class="ot">&lt;-</span> <span class="dv">1</span></span>
+<span id="cb11-17"><a href="#cb11-17" aria-hidden="true" tabindex="-1"></a><span class="co">#finally synthesize object </span></span>
+<span id="cb11-18"><a href="#cb11-18" aria-hidden="true" tabindex="-1"></a>u_synt <span class="ot">&lt;-</span> <span class="fu">synthesize</span>(u,<span class="at">data=</span>Melanoma)</span>
+<span id="cb11-19"><a href="#cb11-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-20"><a href="#cb11-20" aria-hidden="true" tabindex="-1"></a><span class="co">#do a simulation study</span></span>
+<span id="cb11-21"><a href="#cb11-21" aria-hidden="true" tabindex="-1"></a>d <span class="ot">&lt;-</span> <span class="fu">sim</span>(u_synt,<span class="dv">10000</span>)</span>
+<span id="cb11-22"><a href="#cb11-22" aria-hidden="true" tabindex="-1"></a>fit.rec.alt <span class="ot">&lt;-</span> <span class="fu">lm</span>(<span class="fu">log</span>(thick)<span class="sc">~</span>sex<span class="sc">+</span>age<span class="sc">+</span>invasion,<span class="at">data=</span>Melanoma)</span>
+<span id="cb11-23"><a href="#cb11-23" aria-hidden="true" tabindex="-1"></a>fit.rec.alt.s <span class="ot">&lt;-</span> <span class="fu">lm</span>(logthick <span class="sc">~</span> sex <span class="sc">+</span> age <span class="sc">+</span> invasion, <span class="at">data=</span> d)</span>
+<span id="cb11-24"><a href="#cb11-24" aria-hidden="true" tabindex="-1"></a>res <span class="ot">&lt;-</span> <span class="fu">as.data.frame</span>(<span class="fu">cbind</span>(<span class="fu">coef</span>(fit.rec.alt),<span class="fu">coef</span>(fit.rec.alt.s)))</span>
+<span id="cb11-25"><a href="#cb11-25" aria-hidden="true" tabindex="-1"></a><span class="fu">colnames</span>(res) <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">&quot;Parameters of the model from original data&quot;</span>, <span class="st">&quot;Parameters of the model from simulated data&quot;</span>)</span>
+<span id="cb11-26"><a href="#cb11-26" aria-hidden="true" tabindex="-1"></a>knitr<span class="sc">::</span><span class="fu">kable</span>(res)</span></code></pre></div>
+<table>
+<colgroup>
+<col width="15%" />
+<col width="41%" />
+<col width="42%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th align="left"></th>
+<th align="right">Parameters of the model from original data</th>
+<th align="right">Parameters of the model from simulated data</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">(Intercept)</td>
+<td align="right">-0.1921147</td>
+<td align="right">-0.1979190</td>
+</tr>
+<tr class="even">
+<td align="left">sexMale</td>
+<td align="right">0.2503798</td>
+<td align="right">0.2669204</td>
+</tr>
+<tr class="odd">
+<td align="left">age</td>
+<td align="right">0.0006898</td>
+<td align="right">0.0008435</td>
+</tr>
+<tr class="even">
+<td align="left">invasionlevel.1</td>
+<td align="right">1.0884677</td>
+<td align="right">1.0804548</td>
+</tr>
+<tr class="odd">
+<td align="left">invasionlevel.2</td>
+<td align="right">1.8999117</td>
+<td align="right">1.8818789</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div id="other-parameters-of-note-for-the-synthesize-function" class="section level3">
+<h3>Other parameters of note for the synthesize function</h3>
+<p>We also have the parameters:</p>
+<ul>
+<li><strong>logtrans</strong>/<strong>fromFormula</strong>. This should not be specified by the user, unless you know what you are doing. Primarily used for internal use in synthesize.</li>
+<li><strong>fixNames</strong>. Fix the names of problematic covariates. Try this if you discover that your factors have names with odd characters in them.</li>
+<li><strong>verbose</strong>. This gives detailed messages of potential problems. Could be useful, if synthesize does not work as you expect.</li>
+</ul>
+</div>
+</div>
+<div id="a-linearlogistic-regression-model" class="section level2">
+<h2>A linear/logistic regression model</h2>
+<p>To make a simple linear regression model (the data set <code>cars</code> is a included in R), we do:</p>
+<div class="sourceCode" id="cb12"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="fu">data</span>(cars)</span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>m.cars <span class="ot">&lt;-</span> <span class="fu">synthesize</span>(dist <span class="sc">~</span> speed, <span class="at">data=</span>cars)</span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(m.cars)</span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Latent Variable Model</span></span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;                                    </span></span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;   dist ~ speed   gaussian(identity)</span></span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Exogenous variables:                                 </span></span>
+<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;   speed        gaussian(identity)</span></span>
+<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb12-11"><a href="#cb12-11" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb12-12"><a href="#cb12-12" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Number of free parameters: 0</span></span>
+<span id="cb12-13"><a href="#cb12-13" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb12-14"><a href="#cb12-14" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Regression parameters:</span></span>
+<span id="cb12-15"><a href="#cb12-15" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;         speed            dist</span></span>
+<span id="cb12-16"><a href="#cb12-16" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;    dist 3.93240875912408     </span></span>
+<span id="cb12-17"><a href="#cb12-17" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Covariance parameters:</span></span>
+<span id="cb12-18"><a href="#cb12-18" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;         dist            </span></span>
+<span id="cb12-19"><a href="#cb12-19" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;    dist 236.531688564477</span></span>
+<span id="cb12-20"><a href="#cb12-20" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Intercept parameters:</span></span>
+<span id="cb12-21"><a href="#cb12-21" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;     dist             </span></span>
+<span id="cb12-22"><a href="#cb12-22" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;     -17.5790948905109</span></span></code></pre></div>
+<p>The cars data set consists of a number of observations of the speed of cars and their stopping distances. Checking that the model makes sense is another matter, and we will not consider it here. This example is just to show that it is simple to use synthesize when the response variable is not of survival type, but we could simulate as before:</p>
+<div class="sourceCode" id="cb13"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">15</span>)</span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>d <span class="ot">&lt;-</span> <span class="fu">sim</span>(m.cars,<span class="dv">10000</span>)</span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>fit <span class="ot">&lt;-</span> <span class="fu">lm</span>(dist <span class="sc">~</span> speed, <span class="at">data =</span> cars)</span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>fit.s <span class="ot">&lt;-</span> <span class="fu">lm</span>(dist <span class="sc">~</span> speed, <span class="at">data =</span> d)</span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a>res <span class="ot">&lt;-</span> <span class="fu">as.data.frame</span>(<span class="fu">cbind</span>(<span class="fu">coef</span>(fit),<span class="fu">coef</span>(fit.s)))</span>
+<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a><span class="fu">colnames</span>(res) <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">&quot;Parameters of the model from original data&quot;</span>, <span class="st">&quot;Parameters of the model from simulated data&quot;</span>)</span>
+<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a>knitr<span class="sc">::</span><span class="fu">kable</span>(res)</span></code></pre></div>
+<table>
+<colgroup>
+<col width="12%" />
+<col width="43%" />
+<col width="44%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th align="left"></th>
+<th align="right">Parameters of the model from original data</th>
+<th align="right">Parameters of the model from simulated data</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">(Intercept)</td>
+<td align="right">-17.579095</td>
+<td align="right">-17.522952</td>
+</tr>
+<tr class="even">
+<td align="left">speed</td>
+<td align="right">3.932409</td>
+<td align="right">3.913718</td>
+</tr>
+</tbody>
+</table>
+<p>Finally for a binary response, we could make a logistic regression which is done the same way as the linear regression. We first find some data online suited for logistic regression:</p>
+<div class="sourceCode" id="cb14"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>UCLA.dat <span class="ot">&lt;-</span> <span class="fu">read.csv</span>(<span class="st">&quot;https://stats.idre.ucla.edu/stat/data/binary.csv&quot;</span>)</span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>knitr<span class="sc">::</span><span class="fu">kable</span>(<span class="fu">head</span>(UCLA.dat))</span></code></pre></div>
+<table>
+<thead>
+<tr class="header">
+<th align="right">admit</th>
+<th align="right">gre</th>
+<th align="right">gpa</th>
+<th align="right">rank</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="right">0</td>
+<td align="right">380</td>
+<td align="right">3.61</td>
+<td align="right">3</td>
+</tr>
+<tr class="even">
+<td align="right">1</td>
+<td align="right">660</td>
+<td align="right">3.67</td>
+<td align="right">3</td>
+</tr>
+<tr class="odd">
+<td align="right">1</td>
+<td align="right">800</td>
+<td align="right">4.00</td>
+<td align="right">1</td>
+</tr>
+<tr class="even">
+<td align="right">1</td>
+<td align="right">640</td>
+<td align="right">3.19</td>
+<td align="right">4</td>
+</tr>
+<tr class="odd">
+<td align="right">0</td>
+<td align="right">520</td>
+<td align="right">2.93</td>
+<td align="right">4</td>
+</tr>
+<tr class="even">
+<td align="right">1</td>
+<td align="right">760</td>
+<td align="right">3.00</td>
+<td align="right">2</td>
+</tr>
+</tbody>
+</table>
+<p>The dataset has the variables: - <code>admit</code> indicating whether a student was admitted as graduates to UCLA. - <code>gre</code> indicating the students GRE score. - <code>gpa</code> indicating what the student’s grade point average was. - <code>rank</code> indicating the rank of their undergraduate school.</p>
+<p>A logistic regression could then try to model whether students were admitted by using the other variables in the dataset via:</p>
+<div class="sourceCode" id="cb15"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>UCLA.syn <span class="ot">&lt;-</span> <span class="fu">synthesize</span>(admit <span class="sc">~</span> gre <span class="sc">+</span> gpa <span class="sc">+</span> rank, <span class="at">data =</span> UCLA.dat)</span></code></pre></div>
+<p>We could again make a simulation analysis similar to the ones before:</p>
+<div class="sourceCode" id="cb16"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">15</span>)</span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a>d <span class="ot">&lt;-</span> <span class="fu">sim</span>(UCLA.syn,<span class="dv">10000</span>)</span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a>fit <span class="ot">&lt;-</span> <span class="fu">glm</span>(admit <span class="sc">~</span> gre <span class="sc">+</span> gpa <span class="sc">+</span> <span class="fu">factor</span>(rank), <span class="at">data =</span> UCLA.dat)</span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a>fit.s <span class="ot">&lt;-</span> <span class="fu">glm</span>(admit <span class="sc">~</span> gre <span class="sc">+</span> gpa <span class="sc">+</span> rank, <span class="at">data =</span> d)</span>
+<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a>res <span class="ot">&lt;-</span> <span class="fu">as.data.frame</span>(<span class="fu">cbind</span>(<span class="fu">coef</span>(fit),<span class="fu">coef</span>(fit.s)))</span>
+<span id="cb16-7"><a href="#cb16-7" aria-hidden="true" tabindex="-1"></a><span class="fu">colnames</span>(res) <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">&quot;Parameters of the model from original data&quot;</span>, <span class="st">&quot;Parameters of the model from simulated data&quot;</span>)</span>
+<span id="cb16-8"><a href="#cb16-8" aria-hidden="true" tabindex="-1"></a>knitr<span class="sc">::</span><span class="fu">kable</span>(res)</span></code></pre></div>
+<table>
+<colgroup>
+<col width="13%" />
+<col width="42%" />
+<col width="43%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th align="left"></th>
+<th align="right">Parameters of the model from original data</th>
+<th align="right">Parameters of the model from simulated data</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">(Intercept)</td>
+<td align="right">-0.2589102</td>
+<td align="right">-0.2386168</td>
+</tr>
+<tr class="even">
+<td align="left">gre</td>
+<td align="right">0.0004296</td>
+<td align="right">0.0004115</td>
+</tr>
+<tr class="odd">
+<td align="left">gpa</td>
+<td align="right">0.1555350</td>
+<td align="right">0.1506983</td>
+</tr>
+<tr class="even">
+<td align="left">factor(rank)2</td>
+<td align="right">-0.1623653</td>
+<td align="right">-0.1487875</td>
+</tr>
+<tr class="odd">
+<td align="left">factor(rank)3</td>
+<td align="right">-0.2905705</td>
+<td align="right">-0.2885793</td>
+</tr>
+<tr class="even">
+<td align="left">factor(rank)4</td>
+<td align="right">-0.3230264</td>
+<td align="right">-0.3190638</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div id="references" class="section level2 unnumbered">
+<h2 class="unnumbered">References</h2>
+<div id="refs" class="references csl-bib-body hanging-indent">
+<div id="ref-lava" class="csl-entry">
+Holst, Klaus Kähler, and Esben Budtz-Jørgensen. 2013. <span>“Linear Latent Variable Models: The Lava-Package.”</span> <em>Computational Statistics</em> 28 (4): 1385–1452. <a href="https://doi.org/10.1007/s00180-012-0344-y">https://doi.org/10.1007/s00180-012-0344-y</a>.
+</div>
+</div>
+</div>
+
+
+
+<!-- code folding -->
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>
