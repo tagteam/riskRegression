@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Mar  3 2017 (09:28) 
 ## Version: 
-## Last-Updated: nov 26 2020 (18:53) 
+## Last-Updated: okt 22 2021 (17:51) 
 ##           By: Brice Ozenne
-##     Update #: 151
+##     Update #: 169
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -50,17 +50,17 @@ as.data.table.predictCox <- function(x, keep.rownames = FALSE, se = TRUE,...){
         if (!is.null(nd)){
             out <- cbind(nd,out)
         }
-    }else{
-        if(x$diag){
+    }else{        
+        if(x$diag || identical(as.character(x$type),"lp")){
             n.times <- 1
         }else{
             n.times <- length(x$times)
-        }
+        }        
         out <- data.table::rbindlist(lapply(1:n.times,function(tt){
             ndtt=copy(nd)
-            if(x$diag){
+            if(x$diag && length(x$times)>0){
                 nd[,times:=x$times]
-            }else{
+            }else if(length(x$times)>0){
                 nd[,times:=x$times[[tt]]]
             }
             for (name in x$type){
@@ -101,7 +101,7 @@ as.data.table.predictCox <- function(x, keep.rownames = FALSE, se = TRUE,...){
                 nd <- cbind(nd,tyc)
             }
             nd   
-        }))    
+        }))
     }
     
     return(out)

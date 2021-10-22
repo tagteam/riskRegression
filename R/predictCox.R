@@ -232,8 +232,14 @@ predictCox <- function(object,
         stop("Missing (NA) values in argument \'times\' are not allowed.\n")
     }
     type <- tolower(type)
-    if(any(type %in% c("hazard","cumhazard","survival") == FALSE)){
-        stop("type can only be \"hazard\", \"cumhazard\" or/and \"survival\" \n") 
+    if(any(type %in% c("lp","hazard","cumhazard","survival") == FALSE)){
+        stop("type can only be \"lp\", \"hazard\", \"cumhazard\" or/and \"survival\" \n") 
+    }
+    if(is.null(newdata) && "lp" %in% type){
+        stop("Cannot evaluate the linear predictor when argument \'lp\' is missing. \n")
+    }
+    if(length(times)>1 && "lp" %in% type){
+        stop("Cannot evaluate the linear predictor when there are multiple timepoints. \n")
     }
     ## predictCox is not compatible with all coxph/cph object (i.e. only handle only simple cox models)
     if(!is.null(object$weights) && !all(object$weights==1)){
@@ -263,7 +269,7 @@ predictCox <- function(object,
         stop("Argument 'newdata' is missing. Cannot compute standard errors in this case.")
     }
     if(!is.null(newdata)){
-        if(missing(times) || nTimes[1]==0){
+        if(nTimes[1]==0 && !identical(as.character(type),"lp")){
             stop("Time points at which to evaluate the predictions are missing \n")
         }
         if(!is.vector(times)){
@@ -387,17 +393,20 @@ predictCox <- function(object,
       ## newdata <- copy(newdata)
       setDT(newdata)
 
-      new.eXb <- exp(coxLP(object, data = newdata, center = FALSE))
-
-      new.strata <- coxStrata(object, data = newdata, 
-                              sterms = infoVar$strata.sterms, 
-                              strata.vars = infoVar$stratavars, 
-                              strata.levels = infoVar$strata.levels)
+        Xb <- coxLP(object, data = newdata, center = FALSE)
+        if ("lp" %in% type){
+            out$lp <- cbind(Xb)
+        }
+        new.eXb <- exp(Xb)
+        new.strata <- coxStrata(object, data = newdata, 
+                                sterms = infoVar$strata.sterms, 
+                                strata.vars = infoVar$stratavars, 
+                                strata.levels = infoVar$strata.levels)
 
       new.levelStrata <- levels(droplevels(new.strata))
 
       ## *** subject specific hazard
-      if (is.strata==FALSE){
+      if (is.strata==FALSE && !identical(as.character(type),"lp")){
           if(diag){
               if(needOrder){
                   iTimes <- prodlim::sindex(jump.times = Lambda0$times, eval.times = times.sorted[oorder.times])
@@ -429,7 +438,7 @@ predictCox <- function(object,
               }
           }              
            
-      }else{ 
+      }else if(!identical(as.character(type),"lp")){ 
           ## initialization
           if ("hazard" %in% type){
               out$hazard <- matrix(0, nrow = new.n, ncol = nTimes*(1-diag)+diag)
@@ -548,6 +557,9 @@ predictCox <- function(object,
 
         ## restaure orginal time ordering
         if((iid+band)>0){
+            if ("lp" %in% type){
+                out$lp.iid <- outSE$lp.iid
+            }
             if ("hazard" %in% type){
                 if (needOrder[1] && (diag[1] == FALSE))
                     out$hazard.iid <- outSE$hazard.iid[,oorder.times,,drop=0L]
@@ -568,6 +580,9 @@ predictCox <- function(object,
             }
         }
         if(average.iid == TRUE){
+            if("lp" %in% type){
+                out$lp.average.iid <- outSE$lp.average.iid
+            }
             if ("hazard" %in% type){
                 if (needOrder && (diag[1] == FALSE)){
                     if(is.list(outSE$hazard.average.iid)){
@@ -616,6 +631,9 @@ predictCox <- function(object,
 
         }
         if((se+band)>0){
+            if("lp" %in% type){
+                out$lp.se <- outSE$lp.se
+            }
             if ("cumhazard" %in% type){
                 if (needOrder && (diag[1] == FALSE)){
                     out$cumhazard.se <- outSE$cumhazard.se[,oorder.times,drop=0L]
@@ -660,7 +678,7 @@ predictCox <- function(object,
       out[names(add.list)] <- add.list
       class(out) <- "predictCox"
 
-      ## ** confidence intervals/bands
+        ## ** confidence intervals/bands
       if(confint){
           out <- stats::confint(out)
       }

@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: maj 23 2018 (14:08) 
 ## Version: 
-## Last-Updated: okt  1 2020 (09:47) 
+## Last-Updated: okt 22 2021 (17:48) 
 ##           By: Brice Ozenne
-##     Update #: 287
+##     Update #: 314
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -86,7 +86,7 @@ confint.predictCox <- function(object,
                                survival.transform = "loglog",
                                seed = NA,
                                ...){
-    
+
     if(object$se[[1]] == FALSE && object$band[[1]] == FALSE){
         message("No confidence interval/band computed \n",
                 "Set argument \'se\' or argument \'band\' to TRUE when calling the predictCox function \n")
@@ -102,7 +102,7 @@ confint.predictCox <- function(object,
     }
     
     if(is.null(parm)){
-        parm <- intersect(c("survival","cumhazard"),names(object))
+        parm <- intersect(c("lp","survival","cumhazard"),names(object))
     }else if(any(parm %in% c("cumhazard","survival") == FALSE)){
         txt <- parm[parm %in% c("cumhazard","survival") == FALSE]
         txt2 <- paste0("\"",paste0(txt, collapse = "\" \""),"\"")
@@ -117,6 +117,10 @@ confint.predictCox <- function(object,
              "set argument \'parm\' to ",txt2," when calling the predictCox function \n")
     }
 
+    if("lp" %in% parm){
+        object$lp.transform <- "none"
+    }
+    
     if("cumhazard" %in% parm){
         object$cumhazard.transform <- match.arg(cumhazard.transform, c("none","log"))
         if(object$band[[1]] && is.null(object$cumhazard.se)){
@@ -145,33 +149,43 @@ confint.predictCox <- function(object,
     ## ** compute se, CI/CB
     object$vcov <- setNames(vector(mode = "list", length = length(parm)), parm)
     for(iType in parm){
-        if(iType=="cumhazard"){
-            min.value <- switch(object$cumhazard.transform,
+        if(iType=="lp"){
+            iMin.value <- NULL
+            iMax.value <- NULL
+            if(object$band[[1]]){
+                iIID <- array(object[[paste0(iType,".iid")]], dim = c(NROW(object[[paste0(iType,".iid")]]),1,NCOL(object[[paste0(iType,".iid")]])))
+            }else{
+                iIID <- NULL
+            }
+        }else if(iType=="cumhazard"){
+            iMin.value <- switch(object$cumhazard.transform,
                                 "none" = 0,
                                 "log" = NULL)
-            max.value <- NULL
+            iMax.value <- NULL
+            iIID <- object[[paste0(iType,".iid")]]
         }else if(iType=="survival"){
-            min.value <- switch(object$survival.transform,
+            iMin.value <- switch(object$survival.transform,
                                 "none" = 0,
                                 "log" = NULL,
                                 "loglog" = NULL,
                                 "cloglog" = NULL)
-            max.value <- switch(object$survival.transform,
+            iMax.value <- switch(object$survival.transform,
                                 "none" = 1,
                                 "log" = 1,
                                 "loglog" = NULL,
                                 "cloglog" = NULL)
+            iIID <- object[[paste0(iType,".iid")]]
         }
         outCIBP <- transformCIBP(estimate = object[[iType]],
                                  se = object[[paste0(iType,".se")]],
-                                 iid = object[[paste0(iType,".iid")]],
+                                 iid = iIID,
                                  null = NA,
                                  conf.level = level,
                                  n.sim = n.sim,
                                  seed = seed,
                                  type = object[[paste0(iType,".transform")]],
-                                 min.value = min.value,
-                                 max.value = max.value,
+                                 min.value = iMin.value,
+                                 max.value = iMax.value,
                                  ci = object$se,
                                  band = object$band,
                                  method.band = "maxT-simulation",
@@ -179,21 +193,20 @@ confint.predictCox <- function(object,
                                  p.value = FALSE)
         names(outCIBP) <- paste0(iType,".", names(outCIBP))
         object[names(outCIBP)] <- outCIBP
-
+        
         ## compute variance-covariance matrix
         if(!is.null(object[[paste0(iType,".iid")]])){
             n.obs <- NROW(object[[iType]])
             n.times <- NCOL(object[[iType]])
             object$vcov[[iType]] <- lapply(1:n.obs, function(iObs){
                 if(n.times==1){
-                    return(sum(object[[paste0(iType,".iid")]][,,iObs]^2))
+                    return(sum(iIID[,,iObs]^2))
                 }else{
-                    return(crossprod(object[[paste0(iType,".iid")]][,,iObs]))
+                    return(crossprod(iIID[,,iObs]))
                 }
             })
         }
     }
-    
     ## ** export
     object$conf.level <- level
     return(object)

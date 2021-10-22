@@ -35,7 +35,7 @@ coxVariableName <- function(object, model.frame){
     n.specials <- length(unlist(ls.specials))
     
     n.xterms <- length(attr(xterms,"term.labels"))
-    
+
     ## ** linear predictor
     if(n.xterms>n.specials){
         out$lpvars <- names(coef(object)) ##attr(xterms.lp, "term.labels") not ok for categorical variables with coxph
@@ -207,7 +207,6 @@ coxModelFrame.coxph <- function(object, center = FALSE){
         }
     }
  
-
     ## ** add x
     if(NCOL(object[["x"]])!=0){
         if(center){
@@ -215,6 +214,9 @@ coxModelFrame.coxph <- function(object, center = FALSE){
         }else{
             dt <- as.data.table(object[["x"]])
         }        
+        if(any(names(dt) != names(coef(object))) && NCOL(dt) == length(coef(object))){
+            colnames(dt) <- names(coef(object))
+        }
     }else{
         dt <- NULL
     }
@@ -484,7 +486,6 @@ coxLP.phreg <- function(object, data, center){
     n.varLP <- length(coef)
 
     if(n.varLP>0){
-
         if(is.null(data)){ ## training dataset
             X <- object$X
         }else{
