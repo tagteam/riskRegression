@@ -503,5 +503,64 @@ categorize <- function(v,max.levels,data){
   return(is.bin+is.cat)
 }
 
+#' @export synthesizeLTMLE
+#' @export
+synthesizeLTMLE <- function(data,
+                           A, #can be a list, but is a single value here the precise A values ordered
+                           L, #should be a list of lists list indicating the different time variables for a specific covariate
+                           W, #initial list of covariates 
+                           Y, #List of list, where
+                           time.points, #number of time points 
+                           max.levels = 10,
+                           ...){
+    # A0 ~ W
+    u <- synthesize(paste(A[1],"~",paste(W,collapse = "+")),data=data)
+    #At ~ Lt + W 
+    #yt ~ Lt + At + W
+    synList <- foreach::foreach (i = 1:time.points) %do% {
+      # remove relevant observations
+      YVarToUse <- foreach::foreach (y = Y,.combine="rbind") %do% {
+        y[i]
+      }
+      LVarToUse <- foreach::foreach (l = L,.combine="rbind") %do% {
+        l[i]
+      }
+      #AVarToUse <- foreach::foreach (a = A,.combine="rbind") %do% {
+      #  a[i]
+      #}
+      
+      #remove censored data points, i.e. those with NAs
+      dataUse <- na.omit(data[,c(YVarToUse,LVarToUse,W,A[i+1])])
+      
+      #do the synthetizations 
+      As <- synthesize(paste(A[i+1],"~",paste(c(LVarToUse,W),collapse = "+")),data=dataUse)
+      Ys <- foreach::foreach (y = Y) %do% {
+        synthesize(paste(y[i],"~",paste(c(LVarToUse,A[i+1],W),collapse = "+")),data=dataUse)
+      }
+      
+      list(As=As,Ys=Ys)
+    }
+    out <- list(u,synList)
+    class(out) <- c("lavaTMLE",class(out))
+    out
+}
+
+#' @export sim.lavaLTMLE
+#' @export
+sim.lavaLTMLE <- function(object, n=1000) {
+  A0Wsim <- sim(object[[1]],n)
+  #n.now <- n
+  res <- foreach::foreach (i = 1:length(object[[2]]),.combine="cbind") %do%{
+    temp <- foreach::foreach (k = object[[2]][[i]],.combine="cbind") %do% {
+      sim(object[[2]][[i]],n=n)
+    }
+    # take out the responses which have zeroes 
+    data <- temp[,-1] 
+    temp
+  }
+  res <- cbind(A0Wsim,res)
+  res
+}
+
 #----------------------------------------------------------------------
 ### synthesize.R ends here
