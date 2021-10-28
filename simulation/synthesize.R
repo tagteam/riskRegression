@@ -536,11 +536,11 @@ synthesizeLTMLE <- function(data,
           truerows <- truerows & data[k] == 0
         }
         prevtruerows <- truerows
-        dataUse <- data[,c(YVarToUse,LVarToUse,W,A[i+1])][truerows,]
+        dataUse <- data[,c(YVarToUse,LVarToUse,W,A[i+1],A[i])][truerows,]
       }
       else {
         prevtruerows <- rep(TRUE,nrow(data))
-        dataUse <- data[,c(YVarToUse,LVarToUse,W,A[i+1])]
+        dataUse <- data[,c(YVarToUse,LVarToUse,W,A[i+1],A[i])]
       }
       add_reg <- function(var, covar,object){
         reg_formula <- as.formula(paste(var,"~",paste(covar,collapse = "+")))
@@ -560,11 +560,14 @@ synthesizeLTMLE <- function(data,
       }
       for(l in L){
         #for now only supports binary covariates 
-        var <- l[i]
-        var_formula <- as.formula(paste0("~", var))
-        lava::distribution(u, var_formula) <- lava::binomial.lvm(p=mean(factor(data[[var]])==levels(factor(data[[var]]))[2]))
+        # new version
+        u<-add_reg(l[i],c(A[i],W),u)
+        # old version 
+        # var <- l[i]
+        # var_formula <- as.formula(paste0("~", var))
+        # lava::distribution(u, var_formula) <- lava::binomial.lvm(p=mean(factor(data[[var]])==levels(factor(data[[var]]))[2]))
       }
-    
+
     }
     out <- list(u,A=A,L=L,W=W,Y=Y,time.points=time.points)
     class(out) <- c("lavaLTMLE")
