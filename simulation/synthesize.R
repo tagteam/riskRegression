@@ -514,10 +514,9 @@ synthesizeLTMLE <- function(data,
                            max.levels = 10,
                            ...){
     # A0 ~ W
-    u <- synthesize(paste(A[1],"~",paste(W,collapse = "+")),data=data)
-    #At ~ Lt + W 
-    #yt ~ Lt + At + W
-    synList <- foreach::foreach (i = 1:time.points) %do% {
+    u <- synthesize(as.formula(paste(A[1],"~",paste(W,collapse = "+"))),data=data)
+    
+    for (i in 1:time.points) {
       # remove relevant observations
       YVarToUse <- foreach::foreach (y = Y,.combine="rbind") %do% {
         y[i]
@@ -528,38 +527,81 @@ synthesizeLTMLE <- function(data,
       #AVarToUse <- foreach::foreach (a = A,.combine="rbind") %do% {
       #  a[i]
       #}
-      
-      #remove censored data points, i.e. those with NAs
-      dataUse <- na.omit(data[,c(YVarToUse,LVarToUse,W,A[i+1])])
-      
-      #do the synthetizations 
-      As <- synthesize(paste(A[i+1],"~",paste(c(LVarToUse,W),collapse = "+")),data=dataUse)
-      Ys <- foreach::foreach (y = Y) %do% {
-        synthesize(paste(y[i],"~",paste(c(LVarToUse,A[i+1],W),collapse = "+")),data=dataUse)
+      #remove censored data points, i.e. those with NAs, change 
+      if (i>1) { YVarBefore <- foreach::foreach (y = Y,.combine="rbind") %do% {
+        y[i-1]
       }
-      
-      list(As=As,Ys=Ys)
+        truerows <- rep(TRUE,nrow(data)) & prevtruerows
+        for (k in YVarBefore){
+          truerows <- truerows & data[k] == 0
+        }
+        prevtruerows <- truerows
+        dataUse <- data[,c(YVarToUse,LVarToUse,W,A[i+1])][truerows,]
+      }
+      else {
+        prevtruerows <- rep(TRUE,nrow(data))
+        dataUse <- data[,c(YVarToUse,LVarToUse,W,A[i+1])]
+      }
+      add_reg <- function(var, covar,object){
+        reg_formula <- as.formula(paste(var,"~",paste(covar,collapse = "+")))
+        fit <- glm(reg_formula,data=dataUse,family="binomial")
+        p0<-exp(coef(fit)[1])/(1+exp(coef(fit)[1]))
+        lava::distribution(object,as.formula(paste0("~", var))) <- lava::binomial.lvm(p=p0)
+        lava::regression(object,reg_formula)<-coef(fit)[-1]
+        object
+      }
+      # Lt ~ At-1 + W , for now Lt ~ 1
+      #At ~ Lt + W 
+      #yt ~ Lt + At + W
+
+      u<-add_reg(A[i+1],c(LVarToUse,W),u)
+      for (y in Y){
+        u<-add_reg(y[i],c(LVarToUse,A[i+1],W),u)
+      }
+      for(l in L){
+        #for now only supports binary covariates 
+        var <- l[i]
+        var_formula <- as.formula(paste0("~", var))
+        lava::distribution(u, var_formula) <- lava::binomial.lvm(p=mean(factor(data[[var]])==levels(factor(data[[var]]))[2]))
+      }
+    
     }
-    out <- list(u,synList)
-    class(out) <- c("lavaTMLE",class(out))
+    out <- list(u,A=A,L=L,W=W,Y=Y,time.points=time.points)
+    class(out) <- c("lavaLTMLE")
     out
 }
 
 #' @export sim.lavaLTMLE
 #' @export
 sim.lavaLTMLE <- function(object, n=1000) {
-  A0Wsim <- sim(object[[1]],n)
-  #n.now <- n
-  res <- foreach::foreach (i = 1:length(object[[2]]),.combine="cbind") %do%{
-    temp <- foreach::foreach (k = object[[2]][[i]],.combine="cbind") %do% {
-      sim(object[[2]][[i]],n=n)
-    }
-    # take out the responses which have zeroes 
-    data <- temp[,-1] 
-    temp
+  #simulate object 
+  tempSim <- sim(object[[1]],n)
+  #remove censored observations afterwards
+  time.points <- object$time.points
+  vars <- object[c(2,3,4,5)]
+  not_ended <- rep(TRUE,n)
+  for (y in vars$Y) {
+    not_ended = not_ended & tempSim[y[1]] == 0
   }
-  res <- cbind(A0Wsim,res)
-  res
+  for (i in 2:time.points){
+    #censor
+    YVarToUse <- foreach::foreach (y = vars$Y,.combine="rbind") %do% {
+      y[i]
+    }
+    LVarToUse <- foreach::foreach (l = vars$L,.combine="rbind") %do% {
+      l[i]
+    }
+    a <- vars$A[i+1]
+    data_temp <- data.frame(tempSim[,c(YVarToUse,LVarToUse,a)])
+    data_temp[!not_ended,] <- NA
+    tempSim[,c(YVarToUse,LVarToUse,a)] <- data_temp
+      
+    #calculate new censors (ended observations)
+    for (y in vars$Y) {
+      not_ended = not_ended & tempSim[y[i]] == 0
+    }
+  }
+  tempSim
 }
 
 #----------------------------------------------------------------------
