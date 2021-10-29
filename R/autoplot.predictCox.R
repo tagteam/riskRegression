@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: feb 17 2017 (10:06) 
 ## Version: 
-## last-updated: okt  7 2021 (20:55) 
+## last-updated: okt 29 2021 (15:04) 
 ##           By: Brice Ozenne
-##     Update #: 1189
+##     Update #: 1272
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -111,7 +111,7 @@
 #' res$plot + facet_wrap(~strata, labeller = label_both)
 #'
 #' ## predictions
-#' pred.cox.strata <- predictCox(m.cox.strata, newdata = d[1:5,,drop=FALSE],
+#' pred.cox.strata <- predictCox(m.cox.strata, newdata = d[1:3,,drop=FALSE],
 #'                               time = seqTau, keep.newdata = TRUE, se = TRUE)
 #'
 #' res2 <- autoplot(pred.cox.strata, type = "survival", group.by = "strata", plot = FALSE)
@@ -119,6 +119,23 @@
 #' 
 #' ## smooth version
 #' autoplot(pred.cox.strata, type = "survival", group.by = "strata", smooth = TRUE, ci = FALSE)
+#' }
+#' 
+#' #### Cox model with splines ####
+#' \dontrun{
+#' require(splines)
+#' m.cox.spline <- coxph(Surv(time,event)~ X1 + X2 + ns(X6,4),
+#'                 data = d, x = TRUE, y = TRUE)
+#' grid <- data.frame(X1 = factor(0,0:1), X2 = factor(0,0:1), X6 = seq(min(d$X6),max(d$X6), length.out = 100))
+#' pred.spline <- predictCox(m.cox.spline, newdata = grid, keep.newdata = TRUE,
+#'                           se = TRUE, band = TRUE, centered = TRUE, type = "lp")
+#' autoplot(pred.spline, group.by = "X6")
+#' autoplot(pred.spline, group.by = "X6", alpha = 0.5)
+#' 
+#' grid2 <- data.frame(X1 = factor(1,0:1), X2 = factor(0,0:1), X6 = seq(min(d$X6),max(d$X6), length.out = 100))
+#' pred.spline <- predictCox(m.cox.spline, newdata = rbind(grid,grid2), keep.newdata = TRUE,
+#'                           se = TRUE, band = TRUE, centered = TRUE, type = "lp")
+#' autoplot(pred.spline, group.by = c("X6","X1"), alpha = 0.5, plot = FALSE)$plot + facet_wrap(~X1)
 #' }
 
 ## * autoplot.predictCox (code)
@@ -130,7 +147,7 @@ autoplot.predictCox <- function(object,
                                 ci = object$se,
                                 band = object$band,
                                 plot = TRUE,
-                                smooth = FALSE,
+                                smooth = NULL,
                                 digits = 2,
                                 alpha = NA,
                                 group.by = "row",
@@ -140,7 +157,7 @@ autoplot.predictCox <- function(object,
                                  ...){
   
     ## initialize and check    
-    possibleType <- c("cumhazard","survival")
+    possibleType <- c("cumhazard","survival","lp")
     possibleType <- possibleType[possibleType %in% names(object)]
     nVar.lp <- length(object$var.lp)
         
@@ -153,6 +170,13 @@ autoplot.predictCox <- function(object,
     }else{
         type <- match.arg(type, possibleType)  
     }
+    if(is.null(smooth)){
+        if(type == "lp"){
+            smooth <- 0.5
+        }else{
+            smooth <- FALSE
+        }
+    }
     if(is.null(ylab)){
         if(first.derivative){
             ylab <- switch(type,
@@ -160,15 +184,21 @@ autoplot.predictCox <- function(object,
                            "survival" = if(object$baseline && nVar.lp>0){"derivative of the baseline survival"}else{"derivative of the survival"})
         }else{
             ylab <- switch(type,
+                           "lp" = "linear predictor",
                            "cumhazard" = if(object$baseline && nVar.lp>0){"cumulative baseline hazard"}else{"cumulative hazard"},
                            "survival" = if(object$baseline && nVar.lp>0){"baseline survival"}else{"survival"})
         }
     }
 
-    if(length(group.by)>1){
-        stop("Argument \'group.by\' must have length 1.\n")
+    if(type=="lp"){
+        group.by <- match.arg(group.by, object$var.lp, several.ok = TRUE)
+    }else{
+        if(length(group.by)>1){
+            stop("Argument \'group.by\' must have length 1.\n")
+        }
+        group.by <- match.arg(group.by, c("row","covariates","strata",object$var.lp,object$var.strata))
     }
-    group.by <- match.arg(group.by, c("row","covariates","strata",object$var.lp,object$var.strata))
+    
 
     if(group.by[[1]] == "covariates" && ("newdata" %in% names(object)) == FALSE){
         stop("argument \'group.by\' cannot be \"covariates\" when newdata is missing in the object \n",
@@ -211,58 +241,98 @@ autoplot.predictCox <- function(object,
     ##     stop("unknown argument",txt.s,": \"",paste0(txt,collapse="\" \""),"\" \n")
     ## }
 
-    ## reshape data
-    if(!is.matrix(object[[type]])){
-        
-        ## baseline hazard/survival
-        if(is.null(object[["strata"]])){
-            object[[type]] <- rbind(object[[type]])
-            if(object$nTimes==0){
-                if(0 %in% object$times == FALSE){
-                    if(type=="cumhazard"){
-                        object[[type]] <- cbind(0,object[[type]])
-                    }else if(type=="survival"){
-                        object[[type]] <- cbind(1,object[[type]])
-                    }                   
-                    object$times <- c(0,object$times)
-                    if(!is.null(object$newdata)){
-                        object$newdata <- rbind(data.table(start = 0, stop = 0, status = NA, strata = 1, strata.num = 0, eXb = NA, statusM1 = NA, XXXindexXXX = NA),
-                                                object$newdata)
-                    }
-                }
-                if(object$lastEventTime %in% object$times == FALSE){
-                    object[[type]] <- cbind(object[[type]],object[[type]][length(object[[type]])])
-                    object$times <- c(object$times,pmin(object$lastEventTime,max(object$times)+1e-12))
-                    if(!is.null(object$newdata)){
-                        object$newdata <- rbind(data.table(start = 0, stop = object$lastEventTime, status = 0, strata = 1, strata.num = 0, eXb = NA, statusM1 = NA, XXXindexXXX = NA),
-                                                object$newdata)
-                    }
-                }
-            }
+    ## ** reshape data
+    if(type == "lp"){
+        if(first.derivative){
+            stop("Argument \'first.derivative\' should be FALSE when argument \'type\' equals \"lp\". \n")
+        }
+        if(length(object$var.lp)==0){
+            stop("No covariate in the linear predictor so nothing to display.\n")
+        }
+        if(group.by[1] %in% object$var.lp == FALSE){
+            stop("The first element of argument \'group.by\' should refer to one of the covariates: \"",paste(object$var.lp, collapse= "\" \""),"\".\n")
+        }
+        if("time" %in% group.by){
+            stop("The argument \'group.by\' should not contain \"time\" as this name is used internally.\n")
+        }
+        if("row" %in% group.by){
+            stop("The argument \'group.by\' should not contain \"row\" as this name is used internally.\n")
+        }
+        if("lowerCI" %in% group.by){
+            stop("The argument \'group.by\' should not contain \"lowerCI\" as this name is used internally.\n")
+        }
+        if("upperCI" %in% group.by){
+            stop("The argument \'group.by\' should not contain \"upperCI\" as this name is used internally.\n")
+        }
+        dataL <- data.table::as.data.table(object)
+        dataL$lp.smooth <- dataL$lp
+        dataL[["time"]] <- dataL[[group.by[1]]]
+        dataL[["row"]] <- 1
+        if(ci){
+            data.table::setnames(dataL, old = c("lp.lower","lp.upper"), new = c("lowerCI","upperCI"))
+            dataL$lowerCI.smooth <- dataL$lowerCI
+            dataL$upperCI.smooth <- dataL$upperCI
+        }
+        if(band){
+            data.table::setnames(dataL, old = c("lp.lowerBand","lp.upperBand"), new = c("lowerBand","upperBand"))
+            dataL$lowerBand.smooth <- dataL$lowerBand
+            dataL$upperBand.smooth <- dataL$upperBand
+        }
+        object$infoVar$time <- group.by[1]
+        group.by <- if(length(group.by[-1])==0){"row"}else{group.by[-1]}
+    }else{
 
-        }else{
-            index.unique <- !duplicated(object$strata)
-            strata <- object$strata[index.unique]
-            if(!is.null(attr(object$strata,"covariates"))){
-                attr(strata,"covariates") <- attr(object$strata,"covariates")[index.unique]
-            }
-            n.strata <- length(strata)
-            time <- unique(sort(object[["times"]])) 
-            n.time <- length(time)
-            type.tempo <- matrix(NA, nrow = n.strata, ncol = n.time)
+        if(!is.matrix(object[[type]])){
+        
+            ## baseline hazard/survival
+            if(is.null(object[["strata"]])){
+                object[[type]] <- rbind(object[[type]])
+                if(object$nTimes==0){
+                    if(0 %in% object$times == FALSE){
+                        if(type=="cumhazard"){
+                            object[[type]] <- cbind(0,object[[type]])
+                        }else if(type=="survival"){
+                            object[[type]] <- cbind(1,object[[type]])
+                        }                   
+                        object$times <- c(0,object$times)
+                        if(!is.null(object$newdata)){
+                            object$newdata <- rbind(data.table(start = 0, stop = 0, status = NA, strata = 1, strata.num = 0, eXb = NA, statusM1 = NA, XXXindexXXX = NA),
+                                                    object$newdata)
+                        }
+                    }
+                    if(object$lastEventTime %in% object$times == FALSE){
+                        object[[type]] <- cbind(object[[type]],object[[type]][length(object[[type]])])
+                        object$times <- c(object$times,pmin(object$lastEventTime,max(object$times)+1e-12))
+                        if(!is.null(object$newdata)){
+                            object$newdata <- rbind(data.table(start = 0, stop = object$lastEventTime, status = 0, strata = 1, strata.num = 0, eXb = NA, statusM1 = NA, XXXindexXXX = NA),
+                                                    object$newdata)
+                        }
+                    }
+                }
+
+            }else{
+                index.unique <- !duplicated(object$strata)
+                strata <- object$strata[index.unique]
+                if(!is.null(attr(object$strata,"covariates"))){
+                    attr(strata,"covariates") <- attr(object$strata,"covariates")[index.unique]
+                }
+                n.strata <- length(strata)
+                time <- unique(sort(object[["times"]])) 
+                n.time <- length(time)
+                type.tempo <- matrix(NA, nrow = n.strata, ncol = n.time)
 
             init <- switch(type,
                            "cumhazard" = 0,
                            "survival" = 1)
 
-            for(iStrata in 1:n.strata){ ## iStrata <- 1
-                index.strata <- which(object[["strata"]]==strata[iStrata])
-                type.tempo[iStrata,]  <- stats::approx(x = object[["times"]][index.strata],
-                                                       y = object[[type]][index.strata],
-                                                       yleft = init,
-                                                       yright = NA,
-                                                       xout = time,
-                                                       method = "constant")$y
+                for(iStrata in 1:n.strata){ ## iStrata <- 1
+                    index.strata <- which(object[["strata"]]==strata[iStrata])
+                    type.tempo[iStrata,]  <- stats::approx(x = object[["times"]][index.strata],
+                                                           y = object[[type]][index.strata],
+                                                           yleft = init,
+                                                           yright = NA,
+                                                           xout = time,
+                                                           method = "constant")$y
                 
             }
             object[[type]] <- type.tempo
@@ -270,43 +340,45 @@ autoplot.predictCox <- function(object,
             object[["times"]] <- time
         }
 
-        newdata <- NULL
-        if(object$nTimes==0){
-            status <- object$newdata
-        }else{
-            status <- NULL
-        }
-    }else{
-        newdata <- data.table::copy(object$newdata) ## can be NULL
-        if(!is.null(newdata) && reduce.data[[1]]==TRUE){
-            test <- unlist(newdata[,lapply(.SD, function(col){length(unique(col))==1})])
-            if(any(test)){
-                newdata[, (names(test)[test]):=NULL]
-            }        
-        }
-        status <- NULL
-        if(first.derivative && ci){
-            if(is.null(object$vcov[[type]])){
-                stop("Set argument \'iid\' to TRUE when calling predictCox to be able to display confidence intervals for the first derivative of the ",type,".\n")
+            newdata <- NULL
+            if(object$nTimes==0){
+                status <- object$newdata
+            }else{
+                status <- NULL
             }
-            attr(first.derivative,"vcov") <- object$vcov[[type]]
+        }else{
+            newdata <- data.table::copy(object$newdata) ## can be NULL
+            if(!is.null(newdata) && reduce.data[[1]]==TRUE){
+                test <- unlist(newdata[,lapply(.SD, function(col){length(unique(col))==1})])
+                if(any(test)){
+                    newdata[, (names(test)[test]):=NULL]
+                }        
+            }
+            status <- NULL
+            if(first.derivative && ci){
+                if(is.null(object$vcov[[type]])){
+                    stop("Set argument \'iid\' to TRUE when calling predictCox to be able to display confidence intervals for the first derivative of the ",type,".\n")
+                }
+                attr(first.derivative,"vcov") <- object$vcov[[type]]
+            }
         }
-    }
-    dataL <- predict2melt(outcome = object[[type]], ci = ci, band = band,
-                          outcome.lower = if(ci){object[[paste0(type,".lower")]]}else{NULL},
-                          outcome.upper = if(ci){object[[paste0(type,".upper")]]}else{NULL},
-                          outcome.lowerBand = if(band){object[[paste0(type,".lowerBand")]]}else{NULL},
-                          outcome.upperBand = if(band){object[[paste0(type,".upperBand")]]}else{NULL},
-                          newdata = newdata,
-                          status = status,
-                          strata = object$strata,
-                          times = object$times,
-                          name.outcome = type,
-                          group.by = group.by,
-                          digits = digits
-                          )
 
-    ## display
+        dataL <- predict2melt(outcome = object[[type]], ci = ci, band = band,
+                              outcome.lower = if(ci){object[[paste0(type,".lower")]]}else{NULL},
+                              outcome.upper = if(ci){object[[paste0(type,".upper")]]}else{NULL},
+                              outcome.lowerBand = if(band){object[[paste0(type,".lowerBand")]]}else{NULL},
+                              outcome.upperBand = if(band){object[[paste0(type,".upperBand")]]}else{NULL},
+                              newdata = newdata,
+                              status = status,
+                              strata = object$strata,
+                              times = object$times,
+                              name.outcome = type,
+                              group.by = group.by,
+                              digits = digits
+                              )
+    }
+    
+    ## ** display
     gg.res <- predict2plot(dataL = dataL,
                            name.outcome = type,
                            ci = ci,
@@ -321,9 +393,9 @@ autoplot.predictCox <- function(object,
                            ...
                            )
   
-  if(plot){
-    print(gg.res$plot)
-  }
+    if(plot){
+        print(gg.res$plot)
+    }
   
     return(invisible(gg.res))
 }
@@ -362,7 +434,6 @@ predict2melt <- function(outcome, name.outcome,
         outcome <- cbind(outcome, M.status)
         pattern <- c(pattern,"status")
     }
-
     if(ci){
         pattern <- c(pattern,"lowerCI_","upperCI_")
     
@@ -426,7 +497,7 @@ predict2plot <- function(dataL, name.outcome,
                          conf.level, alpha, xlab, ylab,
                          smoother = NULL, formula.smoother = NULL, first.derivative = FALSE,
                          size.estimate = 1.5, size.point = 3, size.ci = 1.1, size.band = 1.1, shape.point = c(3,18), n.sim = 250){
-
+    
     .GRP <- NULL ## [:: for CRAN CHECK::]
     if(first.derivative && (smooth==FALSE)){
         stop("Set argument \'smooth\' to TRUE when \'first.derivative\' is TRUE. \n")
@@ -441,12 +512,12 @@ predict2plot <- function(dataL, name.outcome,
     if(band){
         vec.outcome <- c(vec.outcome,"lowerBand","upperBand")
     }
-    dataL[,c("timeRight") := c(.SD$time[2:.N]-1e-12,.SD$time[.N]+1e-12), by = "row"] 
-
+    group.by2 <- unique(c(group.by,"row"))
+    dataL[,c("timeRight") := c(.SD$time[2:.N]-1e-12,.SD$time[.N]+1e-12), by = group.by2] 
     dataL[,c(group.by) := as.factor(.SD[[group.by]])]
-
+    
     ## smooth ####
-    if(smooth){
+    if(smooth>=1){
         requireNamespace("mgcv",quietly=FALSE)
         if(is.null(smoother)){
             tol <- 1e-12
@@ -527,19 +598,23 @@ predict2plot <- function(dataL, name.outcome,
 
     gg.base <- ggplot2::ggplot(data = dataL, mapping = ggplot2::aes(group = row))
     if(band){ ## confidence band
-        if(smooth){
+        if(smooth>0){
             if(!is.na(alpha)){
-                gg.base <- gg.base + ggplot2::geom_ribbon(ggplot2::aes_string(x = "time", ymin = "lowerBand.smooth", ymax = "upperBand.smooth"), alpha = alpha)
+                gg.base <- gg.base + ggplot2::geom_ribbon(eval(parse(text = paste0(
+                                                                         "ggplot2::aes(x = time, ymin = lowerBand.smooth, ymax = upperBand.smooth, group = ",group.by,")"))),
+                                                          alpha = alpha)
             }else{
-                gg.base <- gg.base + ggplot2::geom_line(eval(parse(text = paste0("ggplot2::aes(x = ","time",", y = lowerBand.smooth, color = ",group.by,", linetype = \"band\")"))),
+                gg.base <- gg.base + ggplot2::geom_line(eval(parse(text = paste0(
+                                                                       "ggplot2::aes(x = time, y = lowerBand.smooth, group = ",group.by,", color = ",group.by,", linetype = \"band\")"))),
                                                         size = size.band)
-                gg.base <- gg.base + ggplot2::geom_line(eval(parse(text = paste0("ggplot2::aes(x = ","time",", y = upperBand.smooth, color = ",group.by,", linetype = \"band\")"))),
+                gg.base <- gg.base + ggplot2::geom_line(eval(parse(text = paste0(
+                                                                       "ggplot2::aes(x = time, y = upperBand.smooth, group = ",group.by, ", color = ",group.by,", linetype = \"band\")"))),
                                                         size = size.band)
             }
         }else{
             if(!is.na(alpha)){
                 gg.base <- gg.base + ggplot2::geom_rect(ggplot2::aes_string(xmin = "time", xmax = "timeRight", ymin = "lowerBand", ymax = "upperBand",
-                                                            fill = "labelBand"), linetype = 0, alpha = alpha)
+                                                                            fill = "labelBand"), linetype = 0, alpha = alpha)
                 gg.base <- gg.base + scale_fill_manual("", values="grey12")        
             }else{
                 gg.base <- gg.base + ggplot2::geom_segment(ggplot2::aes_string(x = "time", y = "lowerBand", xend = "timeRight", yend = "lowerBand", color = "\"band\""),
@@ -549,17 +624,18 @@ predict2plot <- function(dataL, name.outcome,
             }
         }
     }
-    
     if(ci){ ## confidence interval
-        if(smooth){
+        if(smooth>0){
             if(!is.na(alpha)){
                 gg.base <- gg.base + ggplot2::geom_errorbar(ggplot2::aes_string(x = "time", ymin = "lowerCI.smooth", ymax = "upperCI.smooth", linetype = "labelCI"),
                                                             width = size.ci)
                 gg.base <- gg.base + ggplot2::scale_linetype_manual("",values=setNames(1,labelCI))
             }else{
-                gg.base <- gg.base + ggplot2::geom_line(eval(parse(text = paste0("ggplot2::aes(x = time, y = lowerCI.smooth, color = ",group.by,", linetype = \"ci\")"))),
+                gg.base <- gg.base + ggplot2::geom_line(eval(parse(text = paste0(
+                                                                       "ggplot2::aes(x = time, y = lowerCI.smooth, group = ",group.by,", color = ",group.by,", linetype = \"ci\")"))),
                                                         size = size.ci)
-                gg.base <- gg.base + ggplot2::geom_line(eval(parse(text = paste0("ggplot2::aes(x = time, y = upperCI.smooth, color = ",group.by,", linetype = \"ci\")"))),
+                gg.base <- gg.base + ggplot2::geom_line(eval(parse(text = paste0(
+                                                                       "ggplot2::aes(x = time, y = upperCI.smooth, group = ",group.by,", color = ",group.by,", linetype = \"ci\")"))),
                                                         size = size.ci)
 
             }
@@ -578,8 +654,8 @@ predict2plot <- function(dataL, name.outcome,
         }
     }
     ## estimate
-    if(smooth){
-        gg.base <- gg.base + ggplot2::geom_line(mapping = ggplot2::aes_string(x = "time", y = paste0(name.outcome,".smooth"), color = group.by),
+    if(smooth>0){
+        gg.base <- gg.base + ggplot2::geom_line(mapping = ggplot2::aes_string(x = "time", y = paste0(name.outcome,".smooth"), group = group.by, color = group.by),
                                                 size = size.estimate)
     }else{
         gg.base <- gg.base + ggplot2::geom_segment(mapping = ggplot2::aes_string(x = "timeRight", y = name.outcome, xend = "time", yend = name.outcome, color = group.by),
@@ -603,7 +679,7 @@ predict2plot <- function(dataL, name.outcome,
         uniqueObs <- unique(dataL$row)
 
         if(length(uniqueObs)==1){
-            gg.base <- gg.base + ggplot2::scale_color_discrete(guide=FALSE)
+            gg.base <- gg.base + ggplot2::scale_color_discrete(guide="none")
         }
     }
 
@@ -627,8 +703,10 @@ predict2plot <- function(dataL, name.outcome,
                                              group = ggplot2::guide_legend(order = 3)
                                              )
     }
-    gg.base <- gg.base + ggplot2::xlab(xlab) + ggplot2::ylab(ylab) + ggplot2::coord_cartesian(xlim = c(0,max(dataL$timeRight)))
-    
+    gg.base <- gg.base + ggplot2::xlab(xlab) + ggplot2::ylab(ylab)
+    if(name.outcome != "lp"){
+        gg.base <- gg.base + ggplot2::coord_cartesian(xlim = c(0,max(dataL$timeRight)))
+    }
     ## export
     ls.export <- list(plot = gg.base,
                       data = dataL)

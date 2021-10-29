@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: maj 23 2018 (14:08) 
 ## Version: 
-## Last-Updated: okt 22 2021 (17:48) 
+## Last-Updated: okt 29 2021 (14:12) 
 ##           By: Brice Ozenne
-##     Update #: 314
+##     Update #: 329
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -152,32 +152,42 @@ confint.predictCox <- function(object,
         if(iType=="lp"){
             iMin.value <- NULL
             iMax.value <- NULL
+            iEstimate <- matrix(object[[iType]], nrow = 1)
+            if(object$se[[1]]){
+                iSe <- matrix(object[[paste0(iType,".se")]], nrow = 1)
+            }else{
+                iSe <- NULL
+            }
             if(object$band[[1]]){
-                iIID <- array(object[[paste0(iType,".iid")]], dim = c(NROW(object[[paste0(iType,".iid")]]),1,NCOL(object[[paste0(iType,".iid")]])))
+                iIID <- array(object[[paste0(iType,".iid")]], dim = c(NROW(object[[paste0(iType,".iid")]]),NCOL(object[[paste0(iType,".iid")]]),1))
             }else{
                 iIID <- NULL
             }
         }else if(iType=="cumhazard"){
             iMin.value <- switch(object$cumhazard.transform,
-                                "none" = 0,
-                                "log" = NULL)
+                                 "none" = 0,
+                                 "log" = NULL)
             iMax.value <- NULL
+            iEstimate <- object[[iType]]
+            iSe <- object[[paste0(iType,".se")]]
             iIID <- object[[paste0(iType,".iid")]]
         }else if(iType=="survival"){
             iMin.value <- switch(object$survival.transform,
-                                "none" = 0,
-                                "log" = NULL,
-                                "loglog" = NULL,
-                                "cloglog" = NULL)
+                                 "none" = 0,
+                                 "log" = NULL,
+                                 "loglog" = NULL,
+                                 "cloglog" = NULL)
             iMax.value <- switch(object$survival.transform,
-                                "none" = 1,
-                                "log" = 1,
-                                "loglog" = NULL,
-                                "cloglog" = NULL)
+                                 "none" = 1,
+                                 "log" = 1,
+                                 "loglog" = NULL,
+                                 "cloglog" = NULL)
+            iEstimate <- object[[iType]]
+            iSe <- object[[paste0(iType,".se")]]
             iIID <- object[[paste0(iType,".iid")]]
         }
-        outCIBP <- transformCIBP(estimate = object[[iType]],
-                                 se = object[[paste0(iType,".se")]],
+        outCIBP <- transformCIBP(estimate = iEstimate,
+                                 se = iSe,
                                  iid = iIID,
                                  null = NA,
                                  conf.level = level,
@@ -194,19 +204,36 @@ confint.predictCox <- function(object,
         names(outCIBP) <- paste0(iType,".", names(outCIBP))
         object[names(outCIBP)] <- outCIBP
         
-        ## compute variance-covariance matrix
+        ## ** restaure dimensions
+        if(iType=="lp"){
+            if(object$se[[1]]){
+                object$lp.lower <- matrix(object$lp.lower, ncol = 1)
+                object$lp.upper <- matrix(object$lp.upper, ncol = 1)
+            }
+            if(object$band[[1]]){
+                object$lp.lowerBand <- matrix(object$lp.lowerBand, ncol = 1)
+                object$lp.upperBand <- matrix(object$lp.upperBand, ncol = 1)
+            }
+        }
+        
+        ## ** compute variance-covariance matrix
         if(!is.null(object[[paste0(iType,".iid")]])){
             n.obs <- NROW(object[[iType]])
             n.times <- NCOL(object[[iType]])
             object$vcov[[iType]] <- lapply(1:n.obs, function(iObs){
                 if(n.times==1){
-                    return(sum(iIID[,,iObs]^2))
+                    if(iType=="lp"){
+                        return(sum(iIID[,iObs,]^2))
+                    }else{
+                        return(sum(iIID[,,iObs]^2))
+                    }
                 }else{
                     return(crossprod(iIID[,,iObs]))
                 }
             })
         }
     }
+
     ## ** export
     object$conf.level <- level
     return(object)

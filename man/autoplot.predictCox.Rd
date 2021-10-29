@@ -10,7 +10,7 @@
   ci = object$se,
   band = object$band,
   plot = TRUE,
-  smooth = FALSE,
+  smooth = NULL,
   digits = 2,
   alpha = NA,
   group.by = "row",
@@ -123,7 +123,7 @@ res <- autoplot(pred.baseline)
 res$plot + facet_wrap(~strata, labeller = label_both)
 
 ## predictions
-pred.cox.strata <- predictCox(m.cox.strata, newdata = d[1:5,,drop=FALSE],
+pred.cox.strata <- predictCox(m.cox.strata, newdata = d[1:3,,drop=FALSE],
                               time = seqTau, keep.newdata = TRUE, se = TRUE)
 
 res2 <- autoplot(pred.cox.strata, type = "survival", group.by = "strata", plot = FALSE)
@@ -131,6 +131,23 @@ res2$plot + facet_wrap(~strata, labeller = label_both) + theme(legend.position="
 
 ## smooth version
 autoplot(pred.cox.strata, type = "survival", group.by = "strata", smooth = TRUE, ci = FALSE)
+}
+
+#### Cox model with splines ####
+\dontrun{
+require(splines)
+m.cox.spline <- coxph(Surv(time,event)~ X1 + X2 + ns(X6,4),
+                data = d, x = TRUE, y = TRUE)
+grid <- data.frame(X1 = factor(0,0:1), X2 = factor(0,0:1), X6 = seq(min(d$X6),max(d$X6), length.out = 100))
+pred.spline <- predictCox(m.cox.spline, newdata = grid, keep.newdata = TRUE,
+                          se = TRUE, band = TRUE, centered = TRUE, type = "lp")
+autoplot(pred.spline, group.by = "X6")
+autoplot(pred.spline, group.by = "X6", alpha = 0.5)
+
+grid2 <- data.frame(X1 = factor(1,0:1), X2 = factor(0,0:1), X6 = seq(min(d$X6),max(d$X6), length.out = 100))
+pred.spline <- predictCox(m.cox.spline, newdata = rbind(grid,grid2), keep.newdata = TRUE,
+                          se = TRUE, band = TRUE, centered = TRUE, type = "lp")
+autoplot(pred.spline, group.by = c("X6","X1"), alpha = 0.5, plot = FALSE)$plot + facet_wrap(~X1)
 }
 }
 \seealso{

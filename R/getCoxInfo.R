@@ -405,8 +405,13 @@ coxLP.cph <- function(object, data, center){
         }
     
     }else{ ## new dataset
-      
-        Xb <- stats::predict(object, newdata = as.data.frame(data), type = "lp")
+        if(all(object$Design$assume %in% c("category","asis","interaction","strata"))){
+            Xb <- stats::predict(object, newdata = as.data.frame(data), type = "lp")
+        }else{ ## does not work with splines
+            X <- model.matrix(object, data = data)
+            Xb <- as.vector(X %*% coef)
+        }
+        
       
       if(center == FALSE){
         Xb <- Xb + sum(coxCenter(object)*coef)
@@ -1060,9 +1065,45 @@ reconstructData <- function(object){
 #' @method model.matrix cph
 model.matrix.cph <- function(object, data){
 
-    M <- survival_model.matrix(object, data)[,object$mmcolnames,drop=FALSE]
-    colnames(M) <- colnames(object[["x"]])
-    return(M)
+    if(all(object$Design$assume %in% c("category","asis","interaction","strata"))){
+        out <- predict(object, newdata = data, type = "x")
+
+        ## put back rms names
+        colnames(out) <- object$Design$colnames[match(object$Design$mmcolnames,colnames(out))]
+    }else{
+        type.special <- setdiff(object$Design$assume,c("category","asis","interaction","strata"))
+        name.special <- attr(object$terms,"term.labels")[object$Design$assume %in% type.special]
+        ## warning("Special operator(s) in the formula: ",paste(name.special,collapse = ", "),".\n",
+        ##         "Associated type: \"",paste(type.special,collapse = "\" \""),"\". \n",
+        ##         "If it is a spline term, consider using survival::coxph instead of rms::cph. \n")
+
+        ## set categorical variables to their appropriate level
+        if(any(object$Design$assume=="category")){ 
+            for(iVar in object$Design$name[object$Design$assume=="category"]){
+                if(!is.factor(data[[iVar]]) || any(sort(levels(data[[iVar]])) != sort(object$Design$parms[[iVar]])) ){
+                    data[[iVar]] <- factor(data[[iVar]], levels=object$Design$parms[[iVar]])
+                }
+            }
+        }
+
+        ## borrowed from survival::coxph
+        mf <- stats::model.frame(object)
+        Terms <- stats::delete.response(terms(mf))
+        out <- model.matrix(Terms, data)
+
+        ## remove intercept
+        out <- out[,attr(out,"assign")!=0,drop=FALSE]
+
+        ## put back rms names
+        if(!is.null(attr(object$Design$mmcolnames,"alt"))){
+            colnames(out) <- object$Design$colnames[match(attr(object$Design$mmcolnames,"alt"),colnames(out))]
+        }else{
+            colnames(out) <- object$Design$colnames[match(object$Design$mmcolnames,colnames(out))]
+        }
+        ## add strata if possible
+        try(attr(out,"strata") <- attr(predict(object, newdata = data, type = "x"),"strata"), silent = TRUE)
+    }
+    return(out)
     
 }
 
@@ -1077,23 +1118,18 @@ model.matrix.cph <- function(object, data){
 #' @method model.matrix phreg
 model.matrix.phreg <- function(object, data){
     special <- c("strata", "cluster")
-    Terms <- terms(coxFormula(object), special, data = data)
-    
+    Terms <- stats::delete.response(attr(object$model.frame, "terms"))
+
     ## remove specials
-    if (!is.null(attributes(Terms)$specials$cluster)) {
+    if (length(attributes(Terms)$specials$cluster)>0) {
         ts <- survival::untangle.specials(Terms, "cluster")
         Terms <- Terms[-ts$terms]
     }
-    if (!is.null(stratapos <- attributes(Terms)$specials$strata)) {
+    if (length(attributes(Terms)$specials$strata)>0) {
         ts <- survival::untangle.specials(Terms, "strata")
         Terms <- Terms[-ts$terms]
     }
     attr(Terms,"intercept") <- 1 ## keep intercept to have the same behavior with and without categorical variables 
-
-    missing.var <- setdiff(all.vars(update(object$formula,".~1")), names(data))
-    if(length(missing.var)>0){
-        data[, c(missing.var) := as.list(object$model.frame[1,1][,missing.var])]
-    }
     X <- model.matrix(Terms, data)
     return(X[,setdiff(colnames(X),"(Intercept)"),drop=FALSE])
 }
