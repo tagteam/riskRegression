@@ -2,7 +2,7 @@
 % Please edit documentation in R/wglm.R
 \name{wglm}
 \alias{wglm}
-\title{Logistic Regression Using IPCW (EXPERIMENTAL!!!)}
+\title{Logistic Regression Using IPCW}
 \usage{
 wglm(
   regressor.event,

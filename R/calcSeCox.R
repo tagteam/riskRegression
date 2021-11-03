@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: maj 27 2017 (11:46) 
 ## Version: 
-## last-updated: feb 24 2021 (22:10) 
+## last-updated: okt 22 2021 (18:26) 
 ##           By: Brice Ozenne
-##     Update #: 850
+##     Update #: 860
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -111,9 +111,44 @@ calcSeCox <- function(object, times, nTimes, type, diag,
         if("survival" %in% type){out$survival.average.iid <- matrix(0, nrow = object.n, ncol = nTimes)}
     }
 
+    ## ** Linear predictor
+    if("lp" %in% type || (store.iid[[1]]=="full" && nVar.lp>0 && ("iid" %in% export || "se" %in% export))){
+        X_IFbeta_mat <- tcrossprod(iid.object$IFbeta, new.LPdata)
+    }
+    
+    if("lp" %in% type){
+        if("iid" %in% export){
+            if(nVar.lp>0){
+                out$lp.iid <- X_IFbeta_mat
+            }else{
+                out$lp.iid <- matrix(0, nrow = object.n, ncol = new.n)
+            }
+        }
+        if("se" %in% export){
+            if(nVar.lp>0){
+                out$lp.se <- cbind(colSums(X_IFbeta_mat^2))
+            }else{
+                out$lp.se <- matrix(0, nrow = length(new.n), ncol = 1)
+            }
+        }
+        if("average.iid" %in% export){
+            if(nVar.lp>0){
+                out$lp.average.iid <- rowMeans(X_IFbeta_mat)
+            }else{
+                out$lp.average.iid <- rep(0, times = length(object.n))
+            }
+        }
+        
+        if(length(type)==1){ ## do not look at anything else like survival or hazard
+            return(out)
+        }
+    }
+
+    ## ** hazard / cumulative hazard / survival
+
     if(store.iid[[1]] == "minimal"){
 
-        ## ** method 1: minimal storage of the influence function
+        ## *** method 1: minimal storage of the influence function
         resCpp <- calcSeMinimalCox_cpp(seqTau = times,
                                        newSurvival = if("survival" %in% type){new.survival}else{new.survival <- matrix(NA)},
                                        hazard0 = if("hazard" %in% type){Lambda0$hazard}else{list(NA)},
@@ -165,12 +200,8 @@ calcSeCox <- function(object, times, nTimes, type, diag,
 
                                         # }}}
     }else if("iid" %in% export || "se" %in% export){
-        ## ** method 2: using the influence function of the baseline hazard/baseline cumulative hazard
 
-        if(nVar.lp>0){
-            X_IFbeta_mat <- tcrossprod(iid.object$IFbeta, new.LPdata)
-        }
-        
+        ## *** method 2: using the influence function of the baseline hazard/baseline cumulative hazard
         if( diag || (nVar.lp==0) ){
 
             for(iStrata in 1:nStrata){ ## iStrata <- 1
@@ -301,7 +332,7 @@ calcSeCox <- function(object, times, nTimes, type, diag,
     
 
     }else if("average.iid" %in% export){ ## fast average over observations
-        ## ** method 3: computation of the average influence function
+        ## *** method 3: computation of the average influence function
 
         ## prepare strata 
         new.Ustrata <- sort(unique(new.strata))
