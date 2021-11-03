@@ -154,7 +154,22 @@ predictCox <- function(object,
                        diag = FALSE,
                        average.iid = FALSE,
                        store.iid = "full"){
-  
+
+    call <- match.call()
+    ## centering
+    if(!is.null(newdata)){
+        if(inherits(centered,"data.frame")){
+            df.reference <- centered
+            centered2 <- TRUE ## for the linear predictor of the hazard
+        }else{
+            df.reference <- NULL
+            centered2 <- centered ## for the linear predictor of the hazard
+        }
+        centered <- TRUE ## for the linear predictor of the baseline hazard
+    }else{
+        centered2 <- FALSE
+    }
+    
     ## ** Extract elements from object
     if (missing(times)) {
         nTimes <- 0
@@ -232,8 +247,14 @@ predictCox <- function(object,
         stop("Missing (NA) values in argument \'times\' are not allowed.\n")
     }
     type <- tolower(type)
-    if(any(type %in% c("hazard","cumhazard","survival") == FALSE)){
-        stop("type can only be \"hazard\", \"cumhazard\" or/and \"survival\" \n") 
+    if(any(type %in% c("lp","hazard","cumhazard","survival") == FALSE)){
+        stop("type can only be \"lp\", \"hazard\", \"cumhazard\" or/and \"survival\" \n") 
+    }
+    if(is.null(newdata) && "lp" %in% type){
+        stop("Cannot evaluate the linear predictor when argument \'lp\' is missing. \n")
+    }
+    if(length(times)>1 && "lp" %in% type){
+        stop("Cannot evaluate the linear predictor when there are multiple timepoints. \n")
     }
     ## predictCox is not compatible with all coxph/cph object (i.e. only handle only simple cox models)
     if(!is.null(object$weights) && !all(object$weights==1)){
@@ -254,7 +275,6 @@ predictCox <- function(object,
     }
     ## convergence issue
     if(!is.null(coef(object)) && any(is.na(coef(object)))){
-        print(coef(object))
         stop("Incorrect object",
              "One or several model parameters have been estimated to be NA \n")
     }
@@ -263,7 +283,7 @@ predictCox <- function(object,
         stop("Argument 'newdata' is missing. Cannot compute standard errors in this case.")
     }
     if(!is.null(newdata)){
-        if(missing(times) || nTimes[1]==0){
+        if(nTimes[1]==0 && !identical(as.character(type),"lp")){
             stop("Time points at which to evaluate the predictions are missing \n")
         }
         if(!is.vector(times)){
@@ -358,7 +378,7 @@ predictCox <- function(object,
         if (keep.times==FALSE){
             Lambda0$times <- NULL
         }
-        if (keep.strata[[1]]==FALSE ||(is.null(match.call()$keep.strata) && !is.strata)){
+        if (keep.strata[[1]]==FALSE ||(is.null(call$keep.strata) && !is.strata)){
             Lambda0$strata <- NULL
         }
         if( keep.newdata[1]==TRUE){
@@ -387,17 +407,23 @@ predictCox <- function(object,
       ## newdata <- copy(newdata)
       setDT(newdata)
 
-      new.eXb <- exp(coxLP(object, data = newdata, center = FALSE))
-
-      new.strata <- coxStrata(object, data = newdata, 
-                              sterms = infoVar$strata.sterms, 
-                              strata.vars = infoVar$stratavars, 
-                              strata.levels = infoVar$strata.levels)
+        Xb <- coxLP(object, data = newdata, center = FALSE)
+        if ("lp" %in% type){
+            out$lp <- cbind(Xb)
+            lp.iid <- centered2 ## when ask for centered then we need the iid for exporting the correct se
+        }else{
+            lp.iid <- FALSE
+        }
+        new.eXb <- exp(Xb)
+        new.strata <- coxStrata(object, data = newdata, 
+                                sterms = infoVar$strata.sterms, 
+                                strata.vars = infoVar$stratavars, 
+                                strata.levels = infoVar$strata.levels)
 
       new.levelStrata <- levels(droplevels(new.strata))
 
       ## *** subject specific hazard
-      if (is.strata==FALSE){
+      if (is.strata==FALSE && !identical(as.character(type),"lp")){
           if(diag){
               if(needOrder){
                   iTimes <- prodlim::sindex(jump.times = Lambda0$times, eval.times = times.sorted[oorder.times])
@@ -429,7 +455,7 @@ predictCox <- function(object,
               }
           }              
            
-      }else{ 
+      }else if(!identical(as.character(type),"lp")){ 
           ## initialization
           if ("hazard" %in% type){
               out$hazard <- matrix(0, nrow = new.n, ncol = nTimes*(1-diag)+diag)
@@ -486,14 +512,15 @@ predictCox <- function(object,
     
     if(se[[1]] || band[[1]] || iid[[1]] || average.iid[[1]]){
         if(nVar.lp > 0){
-            ## use prodlim to get the design matrix
-            new.LPdata <- prodlim::model.design(infoVar$lp.sterms,
-                                                data = newdata,
-                                                specialsFactor = TRUE,
-                                                dropIntercept = TRUE)$design
+            ## get the (new) design matrix
+            new.LPdata <- model.matrix(object, data = newdata)
             if(NROW(new.LPdata)!=NROW(newdata)){
-                stop("NROW of the design matrix and newdata differ \n",
-                     "maybe because newdata contains NA values \n")
+                stop("NROW of the design matrix and newdata differ. \n",
+                     "Maybe because newdata contains NA values \n")
+            }
+            if(any(sort(colnames(new.LPdata))!=sort(names(coef(object))))){
+                stop("Names of the design matrix and model parameters differ. \n",
+                     "Possible error in model.matrix due to special operator in the formula. \n")
             }
         }else{
             new.LPdata <- matrix(0, ncol = 1, nrow = new.n)
@@ -508,7 +535,7 @@ predictCox <- function(object,
         }
 
         ## Computation of the influence function and/or the standard error
-        export <- c("iid"[(iid+band)>0],"se"[(se+band)>0],"average.iid"[average.iid==TRUE])
+        export <- c("iid"[(iid+band+lp.iid)>0],"se"[(se+band)>0],"average.iid"[average.iid==TRUE])
         if(!is.null(attr(average.iid,"factor"))){
             if(diag){
                 attr(export,"factor") <- attr(average.iid,"factor")
@@ -548,6 +575,9 @@ predictCox <- function(object,
 
         ## restaure orginal time ordering
         if((iid+band)>0){
+            if ("lp" %in% type){
+                out$lp.iid <- outSE$lp.iid
+            }
             if ("hazard" %in% type){
                 if (needOrder[1] && (diag[1] == FALSE))
                     out$hazard.iid <- outSE$hazard.iid[,oorder.times,,drop=0L]
@@ -568,6 +598,9 @@ predictCox <- function(object,
             }
         }
         if(average.iid == TRUE){
+            if("lp" %in% type){
+                out$lp.average.iid <- outSE$lp.average.iid
+            }
             if ("hazard" %in% type){
                 if (needOrder && (diag[1] == FALSE)){
                     if(is.list(outSE$hazard.average.iid)){
@@ -616,6 +649,9 @@ predictCox <- function(object,
 
         }
         if((se+band)>0){
+            if("lp" %in% type){
+                out$lp.se <- outSE$lp.se
+            }
             if ("cumhazard" %in% type){
                 if (needOrder && (diag[1] == FALSE)){
                     out$cumhazard.se <- outSE$cumhazard.se[,oorder.times,drop=0L]
@@ -633,6 +669,48 @@ predictCox <- function(object,
         }      
     }
 
+        ## ** substract reference
+        if("lp" %in% type && centered2){
+            if(is.null(df.reference)){
+                data <- try(eval(object$call$data), silent = TRUE)
+                if(inherits(data,"try-error")){
+                    stop("Could not evaluate the dataset used to fit the model to define a reference level. \n",
+                         "Set argument \'centered\' to FALSE or to a data.frame definining the reference level. \n")
+                }
+                var.original <- infoVar$lpvars.original
+                
+                ls.ref <- lapply(var.original, function(iVar){
+                    if(is.numeric(data[[iVar]])){
+                        return(unname(mean(data[[iVar]])))
+                    }else if(is.factor(data[[iVar]])){
+                        return(unname(factor(levels(data[[iVar]])[1],levels(data[[iVar]]))))
+                    }else if(is.character(data[[iVar]])){
+                        return(unname(sort(unique(data[[iVar]])[1])))
+                    }
+                })
+                df.reference <- as.data.frame(setNames(ls.ref,var.original))
+            }
+
+            ls.args <- as.list(call)[-1]
+            ls.args$newdata <- df.reference
+            ls.args$centered <- FALSE
+            ls.args$type <- "lp"
+            ls.args$se <- (se+band>0)
+            ls.args$iid <- (iid+se+band>0)
+            ls.args$band <- FALSE
+            ls.args$confint <- FALSE
+            outRef <- do.call(predictCox, args = ls.args)
+
+            out$lp <- out$lp - as.double(outRef$lp)
+            if(band[1] || se[1]){
+                out$lp.se <- cbind(sqrt(colSums(colCenter_cpp(outSE$lp.iid, outRef$lp.iid)^2))) ## use outSe$lp.iid instead of out$lp.iid for when not exporting the iid
+            }
+            if(band[1] || iid[1]){
+                out$lp.iid <- colCenter_cpp(out$lp.iid, outRef$lp.iid)
+            }
+            
+        }
+        
         ## ** add information to the predictions
         add.list <- list(lastEventTime = etimes.max,
                          se = se,
@@ -660,7 +738,7 @@ predictCox <- function(object,
       out[names(add.list)] <- add.list
       class(out) <- "predictCox"
 
-      ## ** confidence intervals/bands
+        ## ** confidence intervals/bands
       if(confint){
           out <- stats::confint(out)
       }
