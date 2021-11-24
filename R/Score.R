@@ -1053,7 +1053,7 @@ Score.list <- function(object,
                       dolist=dolist,Q=probs,ROC=FALSE,MC=Weights$IC)
         if (response.type=="competing.risks") {
             input <- c(input,list(cause=cause,states=states))
-        }
+        } 
         # {{{ collect data for summary statistics
         for (s in summary){
             if (s=="risks") {
@@ -1449,7 +1449,7 @@ Score.list <- function(object,
                                     aucDT[,IF.AUC0:=NULL]
                                     auc.loob[model==mod&times==t,se:= sd(aucDT[model==mod&times==t,IF.AUC])/sqrt(N)]
                                     auc.loob[model==mod&times==t,se.conservative:=sd(aucDT[model==mod&times==t,IF.AUC.conservative])/sqrt(N)]
-                                    ## testSE <- sqrt(sum(ic[["ic"]]^2))/N
+                                    ## testSE <- sqweightsrt(sum(ic[["ic"]]^2))/N
                                 }
                             }
                         }
@@ -1585,6 +1585,15 @@ Score.list <- function(object,
                                                                se=sd(residuals)/sqrt(N),
                                                                se.conservative=sd(residuals)/sqrt(N)),by=byvars]
                             }else{
+                                #for small values of B, there is the problem that 
+                                #some individuals might be zero times out of the bag
+                                #this means that DT.B, which should have a number of rows
+                                # that is a multiple of the 
+                                #amount of observations in the data, does not fulfill this.
+                                #the calculations in getInfluenceCurve.Brier cannot accomodate this (for now). 
+                                if (nrow(DT.B) %% nrow(data) != 0){
+                                  stop("B has chosen to be to be a higher number. Influence function cannot be calculated otherwise.")
+                                }
                                 DT.B[,IF.Brier:=getInfluenceCurve.Brier(t=times[1],
                                                                         time=time,
                                                                         IC0,
