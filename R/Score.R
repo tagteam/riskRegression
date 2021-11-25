@@ -1539,7 +1539,7 @@ Score.list <- function(object,
                         ## REMOVE ME
                         ## Ib <- Ib[order(data$ID)]
                         if (any(Ib==0)) {
-                            warning("Some subjects are never out of bag.\nResults are unreliable until You increase the number of bootstrap replications (argument 'B').")
+                            stop("Some subjects are never out of bag.\n You should increase the number of bootstrap replications (argument 'B').")
                             Ib.include <- Ib!=0
                             Ib <- Ib[Ib.include]
                             ## don't subset residuals, they are only
@@ -1591,21 +1591,22 @@ Score.list <- function(object,
                                 # that is a multiple of the 
                                 #amount of observations in the data, does not fulfill this.
                                 #the calculations in getInfluenceCurve.Brier cannot accomodate this (for now). 
-                                if (nrow(DT.B) %% nrow(data) != 0){
-                                  stop("B has chosen to be to be a higher number. Influence function cannot be calculated otherwise.")
-                                }
+                                
+                               
                                 DT.B[,IF.Brier:=getInfluenceCurve.Brier(t=times[1],
-                                                                        time=time,
-                                                                        IC0,
-                                                                        residuals=residuals,
-                                                                        WTi=WTi,
-                                                                        Wt=Wt,
-                                                                        IC.G=Weights$IC,
-                                                                        cens.model=cens.model,
-                                                                        nth.times=nth.times[1]),by=byvars]
+                                                                          time=time,
+                                                                          IC0,
+                                                                          residuals=residuals,
+                                                                          WTi=WTi,
+                                                                          Wt=Wt,
+                                                                          IC.G=Weights$IC,
+                                                                          cens.model=cens.model,
+                                                                          nth.times=nth.times[1]),by=byvars]
                                 score.loob <- DT.B[,data.table(Brier=sum(residuals)/N,
-                                                               se=sd(IF.Brier)/sqrt(N),
-                                                               se.conservative=sd(IC0)/sqrt(N)),by=byvars]
+                                                                 se=sd(IF.Brier)/sqrt(N),
+                                                                 se.conservative=sd(IC0)/sqrt(N)),by=byvars]
+                                
+                                
                             }
                         }else{
                             ## either conservative == TRUE or binary or uncensored
