@@ -2197,7 +2197,6 @@ delongtest <-  function(risk,
     ## q2 <- 2 * auc^2/(1 + auc)
     ## aucvar <- (auc * (1 - auc) + (nCases - 1) * (q1 - auc^2) + (nControls - 1) * (q2 - auc^2))/(nCases * nControls)
     if (length(dolist)>0){
-        ## browser()
         ## ncomp <- nauc * (nauc - 1)/2
         ncomp <- length(dolist)
         delta.AUC <- numeric(ncomp)
@@ -2209,22 +2208,23 @@ delongtest <-  function(risk,
         Qnorm <- qnorm(1 - alpha/2)
         for (d in dolist){
             i <- d[1]
-            j <- d[2]
             ## for (i in 1:(nauc - 1)) {
             ## for (j in (i + 1):nauc) {
-            delta.AUC[ctr] <- auc[j]-auc[i]
-            if (se.fit[[1]]){
+            for (j in d[-1]) {
+              delta.AUC[ctr] <- auc[j]-auc[i]
+              if (se.fit[[1]]){
                 ## cor.auc[ctr] <- S[i, j]/sqrt(S[i, i] * S[j, j])
                 LSL <- t(c(1, -1)) %*% S[c(j, i), c(j, i)] %*% c(1, -1)
                 ## print(c(1/LSL,rms::matinv(LSL)))
                 se[ctr] <- sqrt(LSL)
+              }
+              ## tmpz <- (delta.AUC[ctr]) %*% rms::matinv(LSL) %*% delta.AUC[ctr]
+              ## tmpz <- (delta.AUC[ctr]) %*% (1/LSL) %*% delta.AUC[ctr]
+              model[ctr] <- modelnames[j]
+              reference[ctr] <- modelnames[i]
+              ctr <- ctr + 1
+              ## }
             }
-            ## tmpz <- (delta.AUC[ctr]) %*% rms::matinv(LSL) %*% delta.AUC[ctr]
-            ## tmpz <- (delta.AUC[ctr]) %*% (1/LSL) %*% delta.AUC[ctr]
-            model[ctr] <- modelnames[j]
-            reference[ctr] <- modelnames[i]
-            ctr <- ctr + 1
-            ## }
         }
         deltaAUC <- data.table(model,reference,delta.AUC=as.vector(delta.AUC))
         if (se.fit[[1]]){
