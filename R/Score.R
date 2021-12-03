@@ -1053,7 +1053,7 @@ Score.list <- function(object,
                       dolist=dolist,Q=probs,ROC=FALSE,MC=Weights$IC)
         if (response.type=="competing.risks") {
             input <- c(input,list(cause=cause,states=states))
-        }
+        } 
         # {{{ collect data for summary statistics
         for (s in summary){
             if (s=="risks") {
@@ -1449,7 +1449,7 @@ Score.list <- function(object,
                                     aucDT[,IF.AUC0:=NULL]
                                     auc.loob[model==mod&times==t,se:= sd(aucDT[model==mod&times==t,IF.AUC])/sqrt(N)]
                                     auc.loob[model==mod&times==t,se.conservative:=sd(aucDT[model==mod&times==t,IF.AUC.conservative])/sqrt(N)]
-                                    ## testSE <- sqrt(sum(ic[["ic"]]^2))/N
+                                    ## testSE <- sqweightsrt(sum(ic[["ic"]]^2))/N
                                 }
                             }
                         }
@@ -1539,7 +1539,7 @@ Score.list <- function(object,
                         ## REMOVE ME
                         ## Ib <- Ib[order(data$ID)]
                         if (any(Ib==0)) {
-                            warning("Some subjects are never out of bag.\nResults are unreliable until You increase the number of bootstrap replications (argument 'B').")
+                            stop("Some subjects are never out of bag.\n You should increase the number of bootstrap replications (argument 'B').")
                             Ib.include <- Ib!=0
                             Ib <- Ib[Ib.include]
                             ## don't subset residuals, they are only
@@ -1585,18 +1585,28 @@ Score.list <- function(object,
                                                                se=sd(residuals)/sqrt(N),
                                                                se.conservative=sd(residuals)/sqrt(N)),by=byvars]
                             }else{
+                                #for small values of B, there is the problem that 
+                                #some individuals might be zero times out of the bag
+                                #this means that DT.B, which should have a number of rows
+                                # that is a multiple of the 
+                                #amount of observations in the data, does not fulfill this.
+                                #the calculations in getInfluenceCurve.Brier cannot accomodate this (for now). 
+                                
+                               
                                 DT.B[,IF.Brier:=getInfluenceCurve.Brier(t=times[1],
-                                                                        time=time,
-                                                                        IC0,
-                                                                        residuals=residuals,
-                                                                        WTi=WTi,
-                                                                        Wt=Wt,
-                                                                        IC.G=Weights$IC,
-                                                                        cens.model=cens.model,
-                                                                        nth.times=nth.times[1]),by=byvars]
+                                                                          time=time,
+                                                                          IC0,
+                                                                          residuals=residuals,
+                                                                          WTi=WTi,
+                                                                          Wt=Wt,
+                                                                          IC.G=Weights$IC,
+                                                                          cens.model=cens.model,
+                                                                          nth.times=nth.times[1]),by=byvars]
                                 score.loob <- DT.B[,data.table(Brier=sum(residuals)/N,
-                                                               se=sd(IF.Brier)/sqrt(N),
-                                                               se.conservative=sd(IC0)/sqrt(N)),by=byvars]
+                                                                 se=sd(IF.Brier)/sqrt(N),
+                                                                 se.conservative=sd(IC0)/sqrt(N)),by=byvars]
+                                
+                                
                             }
                         }else{
                             ## either conservative == TRUE or binary or uncensored
@@ -2188,7 +2198,6 @@ delongtest <-  function(risk,
     ## q2 <- 2 * auc^2/(1 + auc)
     ## aucvar <- (auc * (1 - auc) + (nCases - 1) * (q1 - auc^2) + (nControls - 1) * (q2 - auc^2))/(nCases * nControls)
     if (length(dolist)>0){
-        ## browser()
         ## ncomp <- nauc * (nauc - 1)/2
         ncomp <- length(dolist)
         delta.AUC <- numeric(ncomp)
@@ -2200,22 +2209,23 @@ delongtest <-  function(risk,
         Qnorm <- qnorm(1 - alpha/2)
         for (d in dolist){
             i <- d[1]
-            j <- d[2]
             ## for (i in 1:(nauc - 1)) {
             ## for (j in (i + 1):nauc) {
-            delta.AUC[ctr] <- auc[j]-auc[i]
-            if (se.fit[[1]]){
+            for (j in d[-1]) {
+              delta.AUC[ctr] <- auc[j]-auc[i]
+              if (se.fit[[1]]){
                 ## cor.auc[ctr] <- S[i, j]/sqrt(S[i, i] * S[j, j])
                 LSL <- t(c(1, -1)) %*% S[c(j, i), c(j, i)] %*% c(1, -1)
                 ## print(c(1/LSL,rms::matinv(LSL)))
                 se[ctr] <- sqrt(LSL)
+              }
+              ## tmpz <- (delta.AUC[ctr]) %*% rms::matinv(LSL) %*% delta.AUC[ctr]
+              ## tmpz <- (delta.AUC[ctr]) %*% (1/LSL) %*% delta.AUC[ctr]
+              model[ctr] <- modelnames[j]
+              reference[ctr] <- modelnames[i]
+              ctr <- ctr + 1
+              ## }
             }
-            ## tmpz <- (delta.AUC[ctr]) %*% rms::matinv(LSL) %*% delta.AUC[ctr]
-            ## tmpz <- (delta.AUC[ctr]) %*% (1/LSL) %*% delta.AUC[ctr]
-            model[ctr] <- modelnames[j]
-            reference[ctr] <- modelnames[i]
-            ctr <- ctr + 1
-            ## }
         }
         deltaAUC <- data.table(model,reference,delta.AUC=as.vector(delta.AUC))
         if (se.fit[[1]]){
