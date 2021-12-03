@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun  6 2016 (09:02) 
 ## Version: 
-## last-updated: okt  8 2021 (15:53) 
+## last-updated: nov  5 2021 (16:24) 
 ##           By: Brice Ozenne
-##     Update #: 399
+##     Update #: 416
 #----------------------------------------------------------------------
 ## 
 ### Commentary:
@@ -312,8 +312,8 @@ predictRisk.glm <- function(object, newdata, iid = FALSE, average.iid = FALSE,..
         stop("Currently only the binomial family is implemented for predicting a status from a glm object.")
     }
 }
-## * predictRisk.multinomQ
-predictRisk.multinom <- function(object, newdata, iid = FALSE, average.iid = FALSE,...){
+## * predictRisk.multinom
+predictRisk.multinom <- function(object, newdata, iid = FALSE, average.iid = FALSE, cause = NULL, ...){
     n.obs <- NROW(newdata)
     n.class <- length(object$lev)
     n.coef <- length(coef(object))
@@ -328,6 +328,13 @@ predictRisk.multinom <- function(object, newdata, iid = FALSE, average.iid = FAL
     ## ** set correct level
     ## hidden argument: enable to ask for the prediction of a specific level
     level <- list(...)$level
+    if(!is.null(cause)){
+        if(is.null(level)){
+            level <- cause
+        }else if(!identical(cause,level)){
+            stop("Argument \'cause\' and argument \'level\' should take the same value. \n")
+        }
+    }
     if(!is.null(level)){
         if(length(level)>1){
             stop("Argument \'level\' must have length 1 \n")
@@ -437,7 +444,8 @@ predictRisk.multinom <- function(object, newdata, iid = FALSE, average.iid = FAL
             }
         }
     }
-
+    
+    ## ** export    
     return(out)
 }
 ## * predictRisk.formula

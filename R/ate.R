@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Oct 23 2016 (08:53) 
 ## Version: 
-## last-updated: okt  6 2021 (17:52) 
+## last-updated: nov  5 2021 (16:22) 
 ##           By: Brice Ozenne
-##     Update #: 2270
+##     Update #: 2291
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -711,7 +711,7 @@ ate_initArgs <- function(object.event,
     }else if(is.list(object.event) && all(sapply(object.event, function(iE){inherits(iE,"formula")}))){   ## list of formula
         formula.event <- object.event
         model.event <- CSC(object.event, data = mydata)
-    }else if(inherits(object.event,"glm") ||inherits(object.event,"wglm") || inherits(object.event,"CauseSpecificCox")){ ## glm / CSC
+    }else if(inherits(object.event,"glm") || inherits(object.event,"multinom") ||inherits(object.event,"wglm") || inherits(object.event,"CauseSpecificCox")){ ## glm / CSC
         formula.event <- stats::formula(object.event)
         model.event <- object.event
     }else if(inherits(object.event,"coxph") || inherits(object.event,"cph") ||inherits(object.event,"phreg")){ ## Cox
@@ -721,6 +721,7 @@ ate_initArgs <- function(object.event,
         formula.event <- NULL
         model.event <- NULL
     }
+
     ## Treatment
     if(missing(object.treatment)){
         formula.treatment <- NULL
@@ -752,7 +753,7 @@ ate_initArgs <- function(object.event,
     }
 
     ## ** times
-    if(missing(times) && (inherits(model.event,"glm") || (inherits(model.treatment,"glm") && is.null(model.event) && is.null(model.censor)))){
+    if(missing(times) && ((inherits(model.event,"glm") || inherits(model.event,"multinom")) || (inherits(model.treatment,"glm") && is.null(model.event) && is.null(model.censor)))){
         times <- NA
     }
     
@@ -824,13 +825,15 @@ ate_initArgs <- function(object.event,
         }
         if(is.null(product.limit)){product.limit <- FALSE}
         level.states <- 1
-    }else if(inherits(model.event,"glm")){
+    }else if(inherits(model.event,"glm") || inherits(model.event,"multinom")){
         eventVar.time <- as.character(NA)
         eventVar.status <- all.vars(formula.event)[1]
         if(is.na(cause)){ ## handle I(Y > 0) ~ ...
-            cause <- unique(stats::model.frame(model.event)[[eventVar.status]][model.event$y==1])
-        }else{
-            cause <- NA
+            if(inherits(model.event,"glm")){
+                cause <- unique(stats::model.frame(model.event)[[eventVar.status]][model.event$y==1])
+            }else if(inherits(model.event,"multinom")){
+                stop("Argument \'cause\' should be specified for \"multinom\" objects. \n")
+            }
         }
         if(is.null(product.limit)){product.limit <- FALSE}
         level.states <- unique(mydata[[eventVar.status]])
@@ -1133,7 +1136,7 @@ ate_checkArgs <- function(call,
     if(!is.null(object.event)){
         candidateMethods <- paste("predictRisk",class(object.event),sep=".")
         if (all(match(candidateMethods,options$method.predictRisk,nomatch=0)==0)){
-            stop(paste("Could not find predictRisk S3-method for ",class(object.event),collapse=" ,"),sep="")
+            stop(paste("Could not find predictRisk S3-method for ",paste(class(object.event),collapse=", "),sep=""))
         }
         if((inherits(object.event,"wglm") || inherits(object.event,"CauseSpecificCox")) && (cause %in% object.event$causes == FALSE)){
             stop("Argument \'cause\' does not match one of the available causes: ",paste(object.event$causes,collapse=" "),"\n")
