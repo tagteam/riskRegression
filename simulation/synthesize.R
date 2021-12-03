@@ -3,9 +3,9 @@
 ## Author: Johan Sebastian Ohlendorff & Vilde Hansteen Ung & Thomas Alexander Gerds
 ## Created: Apr 28 2021 (09:04)
 ## Version:
-## Last-Updated: Oct  7 2021 (16:09)
+## Last-Updated: Nov 18 2021 (09:22) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 66
+##     Update #: 68
 #----------------------------------------------------------------------
 ##
 ### Commentary:
@@ -506,13 +506,13 @@ categorize <- function(v,max.levels,data){
 #' @export synthesizeLTMLE
 #' @export
 synthesizeLTMLE <- function(data,
-                           A, #can be a list, but is a single value here the precise A values ordered
-                           L, #should be a list of lists list indicating the different time variables for a specific covariate
-                           W, #initial list of covariates 
-                           Y, #List of list, where
-                           time.points, #number of time points 
-                           max.levels = 10,
-                           ...){
+                            A, #can be a list, but is a single value here. the A values are ordered
+                            L, #should be a list of lists where each list indicates the different time variables for a specific covariate
+                            W, #initial list of covariates 
+                            Y, #List of list, where
+                            time.points, #number of time points 
+                            max.levels = 10,
+                            ...){
     # A0 ~ W
     u <- synthesize(as.formula(paste(A[1],"~",paste(W,collapse = "+"))),data=data)
     

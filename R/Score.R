@@ -714,7 +714,7 @@ Score.list <- function(object,
     if (do.resample){
         nix <- lapply(1:length(object),function(f){
             fit <- object[[f]]
-            if(is.null(fit$call))
+            if("try-error"==class(try(fit$call,silent=TRUE))[[1]]||is.null(fit$call))
                 stop(paste("model",names(object)[f],"does not have a call argument."))
         })
     }
@@ -1730,6 +1730,7 @@ Score.list <- function(object,
                     cv.score <- data.table::rbindlist(lapply(crossval,function(x){x[[m]]$score}))
                     if (se.fit==TRUE){
                         bootcv.score <- cv.score[,data.table::data.table(mean(.SD[[m]],na.rm=TRUE),
+                                                                         se=sd(.SD[[m]],na.rm=TRUE),
                                                                          lower=quantile(.SD[[m]],alpha/2,na.rm=TRUE),
                                                                          upper=quantile(.SD[[m]],(1-alpha/2),na.rm=TRUE)),by=byvars,.SDcols=m]
                         data.table::setnames(bootcv.score,c(byvars,m,"lower","upper"))
