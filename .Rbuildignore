@@ -24,3 +24,6 @@ prepareData/
 ^simulation$
 ^slowtests$
 
+^_pkgdown\.yml$
+^docs$
+^pkgdown$
