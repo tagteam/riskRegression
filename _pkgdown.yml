@@ -30,6 +30,7 @@ reference:
   - starts_with("coef")
   - starts_with("iid")
   - "influenceTest"
+  - "IC_Nelson_Aalen_cens_time"
   - "IPA"
   - "splitStrataVar"
   - "getSplitMethod"
@@ -50,6 +51,7 @@ reference:
   desc: Plotting methods for models and model diagnostics.
   contents:
   - matches("[Pp]lot")
+
 - title: Utility Functions
 - contents:
   - "discreteRoot"
@@ -58,6 +60,7 @@ reference:
   - starts_with("row")
   - starts_with("slice")
   - starts_with("print")
+
 - title: Data Simulation & Example Datasets
 - contents:
   - reconstructData
@@ -66,3 +69,7 @@ reference:
   - simMelanoma
   - Melanoma
   - Paquid
+
+- title: internal
+- contents:
+  - SmcFcs
