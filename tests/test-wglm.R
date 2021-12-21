@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: Dec 21 2021 (11:04) 
 ## Version: 
-## Last-Updated: Dec 21 2021 (12:40) 
+## Last-Updated: Dec 21 2021 (16:46) 
 ##           By: Brice Ozenne
-##     Update #: 15
+##     Update #: 16
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -63,8 +63,6 @@ test_that("wglm - censoring",{
     ## check weights
     e.KM <- as.data.table(predictCoxPL(coxph(Surv(time,event==0) ~ 1, data = dSurv),
                                        type = c("hazard","survival")))
-    dt.KM[times<=tau[1] & hazard!=0, .(times, survival, weight=1/survival)]
-    table(e.wglm$data$XX_IPCW.1_XX)
 
     ## ate
     test.ate <- ate(test, data = dSurv, times = tau, treatment = "X1", verbose = FALSE)
