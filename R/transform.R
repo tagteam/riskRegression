@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: maj 30 2018 (15:58) 
 ## Version: 
-## Last-Updated: okt  4 2021 (20:04) 
+## Last-Updated: Dec 21 2021 (12:30) 
 ##           By: Brice Ozenne
-##     Update #: 494
+##     Update #: 524
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -212,6 +212,7 @@ transformT <- function(estimate, se, null, type, alternative){
     }else if(type == "atanh2"){
         statistic <- ( atanh(2*(estimate - null)) )/se
     }
+    statistic[estimate==null] <- 0 ## deal with 0 estimate with 0 variance
 
     return(statistic)
 }
@@ -307,7 +308,7 @@ transformCIBP <- function(estimate, se, iid, null,
     }
     if(!is.na(seed)){set.seed(seed)}
     alternative <- match.arg(alternative, choices = c("two.sided","less","greater"))
-    
+
     ## ** transformation
     ## standard error
     se <- transformSE(estimate = estimate,
@@ -337,8 +338,8 @@ transformCIBP <- function(estimate, se, iid, null,
             n.sample <- dim(iid)[1]
             n.time <- dim(iid)[2]
 
-            ## times with 0 variance (to be removed in further calculaltion as they introduce singularities)
-            index.keep <- which(colSums(abs(se)>1e-12, na.rm = TRUE)>0)[1]:NCOL(se)
+            ## times with 0 variance (to be removed in further calculation as they introduce singularities)
+            index.keep <- which(colSums(abs(se)>1e-12, na.rm = TRUE)>0)[1]:utils::tail(which(colSums(abs(se)>1e-12, na.rm = TRUE)>0),1)
             iid.norm <- array(NA, dim = c(length(index.keep), dim(iid)[1], dim(iid)[3]))
             for(iC in 1:n.contrast){ ## iC <- 1
                 if(length(index.keep)==1){
@@ -397,6 +398,7 @@ transformCIBP <- function(estimate, se, iid, null,
                                                type = type,
                                                min.value = min.value,
                                                max.value = max.value)
+
         if(p.value){
             if(alternative == "two.sided"){
                 if(is.null(df)){
@@ -442,7 +444,8 @@ transformCIBP <- function(estimate, se, iid, null,
             if(method.band == "maxT-integration"){
                 if(band == 1){
                     for(iC in 1:n.contrast){ ## iC <- 1
-                        resQ <- mvtnorm::qmvnorm(p = conf.level, mean = rep(0, n.test),
+
+                        resQ <- mvtnorm::qmvnorm(p = conf.level, mean = rep(0, NCOL(rho[[iC]])),
                                                  sigma = rho[[iC]], tail = switch(alternative,
                                                                                   "two.sided" = "both.tails",
                                                                                   "less" = "upper.tail", ## 'upper.tail' gives x with P[X > x] = p = P[x < X < Inf]
@@ -459,7 +462,10 @@ transformCIBP <- function(estimate, se, iid, null,
                         }
                     }
                 }else if(band == 2){
-                    resQ <- mvtnorm::qmvnorm(p = conf.level, mean = rep(0, n.test),
+                    if(any(is.na(rho)) && any(se==0)){
+                        rho <- rho[se>0,se>0,drop=FALSE]
+                    }
+                    resQ <- mvtnorm::qmvnorm(p = conf.level, mean = rep(0, NCOL(rho)),
                                              cor = rho, tail = switch(alternative,
                                                                       "two.sided" = "both.tails",
                                                                       "less" = "upper.tail", ## 'upper.tail' gives x with P[X > x] = p = P[x < X < Inf]
@@ -517,9 +523,10 @@ transformCIBP <- function(estimate, se, iid, null,
         }
 
         if(p.value){
+            out$adj.p.value <- matrix(NA, nrow = n.contrast, ncol = NCOL(estimate))
+
             if(method.band %in% p.adjust.methods){
                 if(band == 1){
-                    out$adj.p.value <- matrix(NA, nrow = n.contrast, ncol = NCOL(estimate))
                     for(iC in 1:NROW(out[["p.value"]])){
                         out[["adj.p.value"]][iC,] <- stats::p.adjust(out[["p.value"]][iC,], method = method.band)
                     }
@@ -527,52 +534,66 @@ transformCIBP <- function(estimate, se, iid, null,
                     out[["adj.p.value"]] <- stats::p.adjust(out[["p.value"]], method = method.band)
                 }
             }else if(method.band == "maxT-integration"){
-                out$adj.p.value <- matrix(NA, nrow = n.contrast, ncol = NCOL(estimate))
 
                 if(band == 1){
                     for(iC in 1:n.contrast){ ## iC <- 2
-                        out$adj.p.value[iC,] <- sapply(statistic[iC,], function(iT){
+                        iN.test <- NCOL(rho[[iC]])
+
+                        out$adj.p.value[iC,index.keep] <-  sapply(statistic[iC,index.keep], function(iT){ ## iT
                             if(alternative=="two.sided"){
-                                return(1-mvtnorm::pmvnorm(lower=rep(-abs(iT),n.test), upper=rep(abs(iT),n.test),
-                                                          mean=rep(0, n.test), sigma = rho[[iC]]))
+                                return(1-mvtnorm::pmvnorm(lower=rep(-abs(iT), iN.test), upper=rep(abs(iT), iN.test),
+                                                          mean=rep(0, iN.test), sigma = rho[[iC]]))
                             }else if(alternative=="greater"){
-                                return(1-mvtnorm::pmvnorm(lower=rep(-Inf,n.test), upper=rep(iT,n.test),
-                                                          mean=rep(0, n.test), sigma = rho[[iC]]))
+                                return(1-mvtnorm::pmvnorm(lower=rep(-Inf, iN.test), upper=rep(iT, iN.test),
+                                                          mean=rep(0, iN.test), sigma = rho[[iC]]))
                             }else if(alternative=="less"){
-                                return(1-mvtnorm::pmvnorm(lower=rep(iT,n.test), upper=rep(Inf,n.test),
-                                                          mean=rep(0, n.test), sigma = rho[[iC]]))
+                                return(1-mvtnorm::pmvnorm(lower=rep(iT, iN.test), upper=rep(Inf, iN.test),
+                                                          mean=rep(0, iN.test), sigma = rho[[iC]]))
                             }
                         })
+
+                        if(length(index.keep)>0 && all(out$p.value[iC,-index.keep]==1)){
+                            out$adj.p.value[iC,-index.keep] <- out$p.value[iC,-index.keep]
+                        }
                     }
                 }else if(band == 2){
                     for(iC in 1:n.contrast){ ## iC <- 2
-                        out$adj.p.value[iC,] <- sapply(statistic[iC,], function(iT){
+                        iN.test <- NCOL(rho[[iC]])
+
+                        out$adj.p.value[iC,index.keep] <- sapply(statistic[iC,index.keep], function(iT){
                             if(alternative=="two.sided"){
-                                return(1-mvtnorm::pmvnorm(lower=rep(-abs(iT),n.test), upper=rep(abs(iT),n.test),
-                                                          mean=rep(0, n.test), sigma = rho))
+                                return(1-mvtnorm::pmvnorm(lower=rep(-abs(iT), iN.test), upper=rep(abs(iT), iN.test),
+                                                          mean=rep(0, iN.test), sigma = rho))
                             }else if(alternative=="greater"){
-                                return(1-mvtnorm::pmvnorm(lower=rep(-Inf,n.test), upper=rep(iT,n.test),
-                                                          mean=rep(0, n.test), sigma = rho))
+                                return(1-mvtnorm::pmvnorm(lower=rep(-Inf, iN.test), upper=rep(iT,n.test),
+                                                          mean=rep(0, iN.test), sigma = rho))
                             }else if(alternative=="less"){
-                                return(1-mvtnorm::pmvnorm(lower=rep(iT,n.test), upper=rep(Inf,n.test),
-                                                          mean=rep(0, n.test), sigma = rho))
+                                return(1-mvtnorm::pmvnorm(lower=rep(iT, iN.test), upper=rep(Inf, iN.test),
+                                                          mean=rep(0, iN.test), sigma = rho))
                             }
                         })
+
+                        if(length(index.keep)>0 && all(out$p.value[iC,-index.keep]==1)){
+                            out$adj.p.value[iC,-index.keep] <- out$p.value[iC,-index.keep]
+                        }
                     }
                 }
             }else if(method.band == "maxT-simulation"){
-                out$adj.p.value <- pProcess_cpp(nSample = n.sample,
-                                                nContrast = n.contrast,
-                                                nTime = n.time,
-                                                nSim = n.sim,
-                                                value = statistic,
-                                                iid =  iid.norm,
-                                                alternative = switch(alternative,
-                                                                     "two.sided" = 3,
-                                                                     "greater" = 2,
-                                                                     "less" = 1),
-                                                global = (band == 2)                             
-                                                )
+                out$adj.p.value[,index.keep] <- pProcess_cpp(nSample = n.sample,
+                                                             nContrast = n.contrast,
+                                                             nTime = length(index.keep),
+                                                             nSim = n.sim,
+                                                             value = statistic[,index.keep,drop=FALSE],
+                                                             iid =  iid.norm,
+                                                             alternative = switch(alternative,
+                                                                                  "two.sided" = 3,
+                                                                                  "greater" = 2,
+                                                                                  "less" = 1),
+                                                             global = (band == 2)                             
+                                                             )
+                if(length(index.keep)>0 && all(out$p.value[,-index.keep]==1)){
+                    out$adj.p.value[,-index.keep] <- out$p.value[,-index.keep]
+                }
             }
         }
 

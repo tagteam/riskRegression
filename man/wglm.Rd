@@ -34,7 +34,7 @@ an object of class \code{"wglm"}.
 }
 \description{
 Logistic regression over multiple timepoints
-where right-censoring is handle using inverse probability of censoring weighting. EXPERIMENTAL!!!
+where right-censoring is handle using inverse probability of censoring weighting.
 }
 \details{
 First, a Cox model is fitted (argument formula.censor)
@@ -53,68 +53,29 @@ dFull <- d[event!=0] ## remove censoring
 dSurv <- d[event!=2] ## remove competing risk
 
 #### no censoring ####
-## wglm
-e0.wglm <- wglm(regressor.event = ~ X1, formula.censor = Surv(time,event==0) ~ X1,
-               times = tau, data = dFull)
+e.wglm <- wglm(regressor.event = ~ X1, formula.censor = Surv(time,event==0) ~ 1,
+               times = tau, data = dFull, product.limit = TRUE)
+e.wglm ## same as a logistic regression
 
-## binreg
-if(require(mets)){
-e0.binreg <- binreg(formula = Event(time,event)~X1,
-                    time = tau[5], data = dFull)
-summary(e0.binreg)$coef
-summary(e0.wglm$fit[[5]])$coef
-## same
-}
+summary(ate(e.wglm, data = dFull, times = tau, treatment = "X1", verbose = FALSE))
 
-#### independent censoring (no competing risks) ####
-## wglm 
-e.wglm <- wglm(regressor.event = ~ X1-1, formula.censor = Surv(time,event==0) ~ 1,
+#### right-censoring ####
+## no covariante in the censoring model (independent censoring)
+eC.wglm <- wglm(regressor.event = ~ X1, formula.censor = Surv(time,event==0) ~ 1,
                times = tau, data = dSurv, product.limit = TRUE)
+eC.wglm
 
-## check weights
-e.KM <- predictCoxPL(coxph(Surv(time,event==0) ~ 1, data = dSurv),
-                     type = c("hazard","survival"))
-if(require(data.table)){
-dt.KM <- data.table::as.data.table(e.KM)
-dt.KM[times<=tau[1] & hazard!=0, .(times, survival, weight=1/survival)]
-}
-table(e.wglm$data$XX_IPCW.1_XX)
+## with covariates in the censoring model
+eC2.wglm <- wglm(regressor.event = ~ X1 + X8,
+                formula.censor = Surv(time,event==0) ~ X1*X8,
+                 times = tau, data = dSurv)
+eC2.wglm
 
-## binreg
-if(require(mets)){
-e2.binreg <- binreg(formula = Event(time,event)~X1-1,
-                   time = tau[1], data = dSurv, cens.code = 0, cause = 1)
-table(e2.binreg$cens.weights) ## fixed at prediction time
-}
-
-## "by hand"
-if(FALSE){
-X <-  model.matrix(~X1-1,dSurv)
-Y <-  dSurv$event
-w <-  e2.binreg$cens.weights[,1]
-p <- predict(e2.binreg, newdata = data.frame(X1=unique(dSurv$X1)))
-## solve the score equation
-sum(X[,1] * (w * Y - p[1,1]))
-sum(X[,2] * (w * Y - p[2,1]))
-}
-
-#### informative censoring (no competing risks) ####
-e.wglm <- wglm(regressor.event = ~ X1, formula.censor = Surv(time,event==0) ~ X1,
-               times = tau, data = dSurv)
-
-## by hand based on the weights
-if(FALSE){
-X <-  data.frame(X1.0 = e.wglm$data$X1=="0", X1.1 = e.wglm$data$X1=="1")
-Y <-  as.data.frame(e.wglm$data)[,grep("event\\\\.", names(e.wglm$data))]
-w <-  as.data.frame(e.wglm$data)[,grep("IPCW\\\\.", names(e.wglm$data))]
-
-p.wglm <- rbind("0" = colSums( (w*Y)[X$X1.0,]) / colSums(w[X$X1.0,]),
-                "1" = colSums( (w*Y)[X$X1.1,]) / colSums(w[X$X1.1,]))
-log(p.wglm/(1-p.wglm)) - apply(coef(e.wglm),1,cumsum) ## same as wglm
-
-## solve the score equation
-sum(w[,1] * X[,1] * (Y[,1] - p.wglm[1,1]))
-sum(w[,1] * X[,2] * (Y[,1] - p.wglm[2,1]))
-}
+#### Competing risks ####
+## here Kaplan-Meier as censoring model
+eCR.wglm <- wglm(regressor.event = ~ X1,
+                 formula.censor = Surv(time,event==0) ~ strata(X1),
+                 times = tau, data = d, cause = 1, product.limit = TRUE)
+eCR.wglm
 
 }

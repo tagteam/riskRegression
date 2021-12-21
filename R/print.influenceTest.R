@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: jun  1 2018 (13:35) 
 ## Version: 
-## Last-Updated: Jan  6 2020 (09:00) 
-##           By: Thomas Alexander Gerds
-##     Update #: 46
+## Last-Updated: Dec 21 2021 (12:28) 
+##           By: Brice Ozenne
+##     Update #: 47
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -56,12 +56,12 @@ print.influenceTest <- function(x, digits = 3, ...){
 
     ## x$se
     if(!is.null(x$conf.level)){
-        dt.tempo[, c("conf.interval") := paste0("[",lower," ; ",upper,"]")]
+        dt.tempo[, c("conf.interval") := paste0("[",round(lower,digits)," ; ",round(upper,digits),"]")]
         dt.tempo[,c("lower","upper") := NULL]
         order.col <- c(order.col,"conf.interval","p.value")
     }
     if(x$band[[1]] && !is.null(x$conf.level)){
-        dt.tempo[, c("conf.band") := paste0("[",lowerBand," ; ",upperBand,"]")]
+        dt.tempo[, c("conf.band") := paste0("[",round(lowerBand,digits)," ; ",round(upperBand,digits),"]")]
         dt.tempo[,c("lowerBand","upperBand") := NULL]
         order.col <- c(order.col,"quantileBand","conf.band")
     }

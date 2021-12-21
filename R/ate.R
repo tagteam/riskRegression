@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Oct 23 2016 (08:53) 
 ## Version: 
-## last-updated: nov  5 2021 (16:22) 
+## last-updated: Dec 21 2021 (12:14) 
 ##           By: Brice Ozenne
-##     Update #: 2291
+##     Update #: 2295
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -182,6 +182,8 @@
 #' average=TRUE)
 #' ateLava
 #' }
+#'
+#' ## see wglm for handling right-censoring with glm
 #' 
 #' #### Competing risks settings               ####
 #' #### ATE with cause specific Cox regression ####
