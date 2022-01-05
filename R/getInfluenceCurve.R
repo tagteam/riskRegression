@@ -79,7 +79,7 @@ getInfluenceCurve.AUC.competing.risks <- function(t,n,time,risk,Cases,Controls1,
     colSumshtij1[Cases] <- rowSums(htij1)
     colSumshtij2 <- rep(0,n) # initialise at 0
     colSumshtij2[Cases] <- rowSums(htij2) 
-    rowSumshtij1 <- rep(0,n) # initialize at 0
+    rowSumshtij1 <- rep(0,n) # match(time,unique(time))initialize at 0
     rowSumshtij1[Controls1] <- colSums(htij1)
     rowSumshtij2 <- rep(0,n) # initialize at 0
     rowSumshtij2[Controls2] <- colSums(htij2)
@@ -100,9 +100,16 @@ getInfluenceCurve.AUC.competing.risks <- function(t,n,time,risk,Cases,Controls1,
     T2 <- rowSumsCrossprod(htij2,1+MC.Ti.cases,0)
     ## T2 <- colSums(crossprod(htij2,1+MC.Ti.cases))
     ## in case of ties need to expand MC to match the dimension of fi1t
-    MC.all <- MC[match(time,unique(time)),]
-    ## T3 <- colSums((ht*(1-2*F01t)/(F01t*(1-F01t)))*(fi1t*(1+MC)-F01t))
-    T3 <- colSums((ht*(1-2*F01t)/(F01t*(1-F01t)))*(fi1t*(1+MC.all)-F01t))
+    # data does not have ties, this saves memory 
+    if (all(match(time,unique(time)) != 1:ncol(MC))) {
+        MC <- MC[match(time,unique(time)),]
+    }
+    #MC.all <- MC[match(time,unique(time)),]
+    #should be quicker
+    #T3 <- ht*(1-2*F01t)/(F01t*(1-F01t))*colSums(fi1t*(1+MC)-F01t)
+    T3 <- ht*(1-2*F01t)/(F01t*(1-F01t))*colSums(fi1t*(1+MC))-ht*(1-2*F01t)/(F01t*(1-F01t))*nrow(MC)*F01t
+    #T3 <- colSums((ht*(1-2*F01t)/(F01t*(1-F01t)))*(fi1t*(1+MC)-F01t))
+    #T3 <- colSums((ht*(1-2*F01t)/(F01t*(1-F01t)))*(fi1t*(1+MC.all)-F01t))
     Term.ijlk <- ((T1 + T2) - n^2*ht - n*T3)/(F01t*(1-F01t))
     # we compute \frac{1}{n}\sum_{i=1}^n \sum_{j=1}^n \sum_{k=1}^n \Psi_{ijkl}(t)
     # Q1 <- sapply(1:n,function(i)sum(htij1*(1+MC.t[i])))
@@ -183,8 +190,16 @@ getInfluenceCurve.Brier <- function(t,
         hit2=(time<=t)*residuals ## equation (8) 
         Brier <- mean(residuals)
         if (!is.null(IC.G)){
-            Int0tdMCsurEffARisk <- rbind(0,IC.G)[1+prodlim::sindex(jump.times=unique(time),eval.times=t),,drop=FALSE]
-            IF.Brier <- hit1+hit2-Brier + mean(hit1)*Int0tdMCsurEffARisk + colMeans(IC.G*hit2)
+            if (prodlim::sindex(jump.times=unique(time),eval.times=t) > 1){
+                Int0tdMCsurEffARisk <- IC.G[prodlim::sindex(jump.times=unique(time),eval.times=t),,drop=FALSE]
+                IF.Brier <- hit1+hit2-Brier + mean(hit1)*Int0tdMCsurEffARisk+ colMeans(IC.G*hit2)
+            }
+            else {
+                Int0tdMCsurEffARisk <- rep(0,ncol(IC.G))
+                IF.Brier <- hit1+hit2-Brier + colMeans(IC.G*hit2)
+            }
+            #Int0tdMCsurEffARisk <- rbind(0,IC.G)[1+prodlim::sindex(jump.times=unique(time),eval.times=t),,drop=FALSE]
+            
         }else{# uncensored
             IF.Brier <- hit1+hit2-Brier
         }
