@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: sep  4 2017 (16:43) 
 ## Version: 
-## last-updated: nov 20 2020 (18:11) 
+## last-updated: Dec 20 2021 (12:24) 
 ##           By: Brice Ozenne
-##     Update #: 169
+##     Update #: 172
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -233,6 +233,10 @@ predictCoxPL <- function(object,
     }
 
     ## ** export
+    if(any(na.omit(as.double(original.res$survival))>1) || any(na.omit(as.double(original.res$survival))<0)){
+        warning("Estimated survival outside the range [0,1]. \n",
+                "Consider using predictCox instead of predictCoxPL. \n") 
+    }
     return(original.res)
     
     

@@ -1192,7 +1192,8 @@ Score.list <- function(object,
         `%dopar%` <- foreach::`%dopar%`
         ## k-fold-CV
         if (split.method$internal.name == "crossval"){
-            DT.B <- rbindlist(foreach::foreach (b=1:B,.export=exports,.packages="data.table",.errorhandling=errorhandling) %dopar%{ ## repetitions of k-fold to avoid Monte-Carlo error
+            DT.B <- rbindlist(foreach::foreach (b=1:B,.export=exports,.packages="data.table",.errorhandling=errorhandling) %dopar%{
+                ## repetitions of k-fold to avoid Monte-Carlo error
                 index.b <- split.method$index[,b] ## contains a sample of the numbers 1:k with replacement
                 if((B>1) && !is.null(progress.bar)){setTxtProgressBar(pb, b)}
                 DT.b <- rbindlist(lapply(1:split.method$k,function(fold){
@@ -1272,7 +1273,7 @@ Score.list <- function(object,
         # }}}
         # {{{ Leave-one-out bootstrap
         ## start clause split.method$name=="LeaveOneOutBoot"
-        if (split.method$name=="LeaveOneOutBoot" | split.method$internal.name =="crossval"){  ## Testing if the crossval works in this loop
+        if (split.method$name=="LeaveOneOutBoot" | split.method$internal.name =="crossval"){
             ## if (split.method$name=="LeaveOneOutBoot" ){
             crossvalPerf <- lapply(metrics,function(m){
                 # {{{ AUC LOOB
@@ -1337,32 +1338,53 @@ Score.list <- function(object,
                         for (mod in mlevs){
                             Ib <- matrix(0, sum(cases.index), sum(controls.index))
                             auc <- matrix(0, sum(cases.index), sum(controls.index))
-                            for (u in 1:B){## cannot use b as running index because b==b does not work in data.table
-                                ## test <- DT.B[model==mod&times==t&b==u]
-                                oob <- match(1:N,unique(split.method$index[,u]),nomatch=0)==0
-                                ## to use the cpp function AUCijFun we
-                                ## need a vector of length equal to the number of cases (which.cases) for the current time point
-                                ## which has arbitrary values in places where subjects are inbag and the predicted risks
-                                ## for those out-of-bag. need another vector for controls.
-                                riskset <- data.table::data.table(ID=1:N,casecontrol=cc.status,oob=oob)
-                                data.table::setkey(riskset,ID)
-                                if (is.null(t)){
-                                    oob.risk <- DT.B[model==mod&b==u,data.table::data.table(ID,risk)]
-                                }else{
-                                    oob.risk <- DT.B[model==mod&times==t&b==u,data.table::data.table(ID,risk)]
+                            if (split.method$internal.name=="crossval"){
+                                warning("Cannot yet calculate AUC in this case. Use split.method 'loob' or 'bootcv' instead.")
+                                for (u in 1:B){## cannot use b as running index because b==b does not work in data.table
+                                    riskset <- data.table::data.table(ID=1:N,casecontrol=cc.status,oob=oob)
+                                    data.table::setkey(riskset,ID)
+                                    if (response.type=="binary"){
+                                        oob.risk <- DT.B[model==mod&b==u,data.table::data.table(ID,risk)]
+                                    }else{
+                                        oob.risk <- DT.B[model==mod&times==t&b==u,data.table::data.table(ID,risk)]
+                                    }
+                                    data.table::setkey(oob.risk,ID)
+                                    riskset <- oob.risk[riskset]
+                                    riskset[is.na(risk),risk:=-9]
+                                    Ib.ij <- outer((cases.index*oob)[which.cases],(controls.index*oob)[which.controls],"*")
+                                    auc.ij <- AUCijFun(riskset[casecontrol=="case",risk],riskset[casecontrol=="control",risk])*Ib.ij
+                                    auc <- auc+auc.ij
+                                    auc <- (auc*weightMatrix)/Ib
                                 }
-                                data.table::setkey(oob.risk,ID)
-                                riskset <- oob.risk[riskset]
-                                riskset[is.na(risk),risk:=-9]
-                                Ib.ij <- outer((cases.index*oob)[which.cases],(controls.index*oob)[which.controls],"*")
-                                auc.ij <- AUCijFun(riskset[casecontrol=="case",risk],riskset[casecontrol=="control",risk])*Ib.ij
-                                ## Ib.ij is 1 when the pair out of bag
-                                ## print(head(oob))
-                                ## print(auc.ij[1:5,1:5])
-                                auc <- auc+auc.ij
-                                Ib <- Ib + Ib.ij
+                            }else{
+                                for (u in 1:B){## cannot use b as running index because b==b does not work in data.table
+                                    ## test <- DT.B[model==mod&times==t&b==u]
+                                    # when B is too low it may happen that some subjects are never oob
+                                    oob <- match(1:N,unique(split.method$index[,u]),nomatch=0)==0
+                                    ## to use the cpp function AUCijFun we
+                                    ## need a vector of length equal to the number of cases (which.cases) for the current time point
+                                    ## which has arbitrary values in places where subjects are inbag and the predicted risks
+                                    ## for those out-of-bag. need another vector for controls.
+                                    riskset <- data.table::data.table(ID=1:N,casecontrol=cc.status,oob=oob)
+                                    data.table::setkey(riskset,ID)
+                                    if (response.type=="binary"){
+                                        oob.risk <- DT.B[model==mod&b==u,data.table::data.table(ID,risk)]
+                                    }else{
+                                        oob.risk <- DT.B[model==mod&times==t&b==u,data.table::data.table(ID,risk)]
+                                    }
+                                    data.table::setkey(oob.risk,ID)
+                                    riskset <- oob.risk[riskset]
+                                    riskset[is.na(risk),risk:=-9]
+                                    Ib.ij <- outer((cases.index*oob)[which.cases],(controls.index*oob)[which.controls],"*")
+                                    auc.ij <- AUCijFun(riskset[casecontrol=="case",risk],riskset[casecontrol=="control",risk])*Ib.ij
+                                    ## Ib.ij is 1 when the pair out of bag
+                                    ## print(head(oob))
+                                    ## print(auc.ij[1:5,1:5])
+                                    auc <- auc+auc.ij
+                                    Ib <- Ib + Ib.ij
+                                }
+                                auc <- (auc*weightMatrix)/Ib
                             }
-                            auc <- (auc*weightMatrix)/Ib
                             # FIXME: why are there NA's?
                             auc[is.na(auc)] <- 0
                             ## Leave-one-pair-out bootstrap estimate of AUC
@@ -1743,7 +1765,7 @@ Score.list <- function(object,
                                                                          se=sd(.SD[[m]],na.rm=TRUE),
                                                                          lower=quantile(.SD[[m]],alpha/2,na.rm=TRUE),
                                                                          upper=quantile(.SD[[m]],(1-alpha/2),na.rm=TRUE)),by=byvars,.SDcols=m]
-                        data.table::setnames(bootcv.score,c(byvars,m,"lower","upper"))
+                        data.table::setnames(bootcv.score,c(byvars,m,"se","lower","upper"))
                     }else{
                         bootcv.score <- cv.score[,data.table::data.table(mean(.SD[[m]],na.rm=TRUE)),by=byvars,.SDcols=m]
                         data.table::setnames(bootcv.score,c(byvars,m))

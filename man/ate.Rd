@@ -210,6 +210,8 @@ average=TRUE)
 ateLava
 }
 
+## see wglm for handling right-censoring with glm
+
 #### Competing risks settings               ####
 #### ATE with cause specific Cox regression ####
 
