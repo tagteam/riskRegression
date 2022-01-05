@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jan  4 2016 (14:30) 
 ## Version: 
-## last-updated: Dec  6 2020 (09:27) 
+## last-updated: Jan  5 2022 (07:18) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 147
+##     Update #: 149
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -203,5 +203,21 @@ test_that("binary outcome: AUC", {
     }
 })
 # }}}
+
+library(survival)
+library(riskRegression)
+library(rms)
+data(pbc)
+pbc <- na.omit(pbc)
+pbc$time=pbc$time+rnorm(nrow(pbc),sd=.1)
+a <- cph(Surv(time,status!=0)~age+edema+sex+log(bili),data=pbc,surv=TRUE,y=1,x=1)
+b <- cph(Surv(time,status!=0)~age+edema+sex+log(bili)+log(protime)+log(albumin),data=pbc,surv=TRUE,y=1,x=1)
+set.seed(17)
+x <- Score(list(a,b),data=pbc,formula=Surv(time,status!=1)~1,cause=1,times=c(1000),metrics=c("auc"))
+r <- pec(list(a,b),data=pbc,start=NULL,Surv(time,status!=1)~1,times=c(100,500,1000),exact=FALSE)
+u <- with(pbc,timeROC(T=time,delta=status!=0,marker=1-predictSurvProb(a,times=1500,newdata=pbc),cause=1,times=1500,iid=TRUE))
+u2 <- with(pbc,timeROC(T=time,delta=status!=0,marker=1-predictSurvProb(b,times=1500,newdata=pbc),cause=1,times=c(1500)))
+v <- Score(list(a,b),data=pbc,formula=Surv(time,status!=0)~1,times=c(500,1500),metrics=c("AUC"))
+
 #----------------------------------------------------------------------
 ### test-Score.R ends here

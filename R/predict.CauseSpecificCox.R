@@ -456,7 +456,10 @@ predict.CauseSpecificCox <- function(object,
         c(iI$lpvars.original, iI$stratavars.original)
     })))
     if(keep.newdata[[1]]==TRUE && length(all.covars)>0){
-        out$newdata <- newdata[, all.covars, with = FALSE]
+        if (data.table::is.data.table(newdata))
+            out$newdata <- newdata[, all.covars, with = FALSE]
+        else
+            out$newdata <- newdata[, all.covars,drop=FALSE]
     }
     if(keep.strata==TRUE){
         allStrata <- unique(unlist(lapply(ls.infoVar,"[[","stratavars.original")))
