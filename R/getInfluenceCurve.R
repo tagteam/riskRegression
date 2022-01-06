@@ -32,7 +32,9 @@ getInfluenceCurve.AUC.survival <- function(t,n,time,risk,Cases,Controls,ipcwCont
         MC <- MC[match(time,unique(time)),]
     }
     #T3 <- colSums(hathtstar*(vectTisupt + (fi1t*(1+MC)-F01t)/F01t))
-    T3 <- hathtstar*sum(vectTisupt) + hathtstar/F01t * (T3CalculationHelper(fi1t,MC)-nrow(MC)*F01t)
+    #T3 <- hathtstar*sum(vectTisupt) + hathtstar/F01t * (T3CalculationHelper(fi1t,MC)-nrow(MC)*F01t)
+    T3 <- hathtstar*(sum(vectTisupt) + 1/F01t * T3CalculationHelper(fi1t,MC)-nrow(MC))
+    
     Term.ijak <- (T1-T3)/(F01t*St)
     Term.ikaj <- (rowSumshtij1 - n*hathtstar)/(F01t*St)
     Term.jkai <-  (colSumshtij1 - n*hathtstar*(vectTisupt+(1/F01t)*(fi1t-F01t)))/(F01t*St)
