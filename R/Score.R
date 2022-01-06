@@ -2176,8 +2176,9 @@ delongtest <-  function(risk,
     score <- data.table(model=colnames(risk),AUC=auc)
     if (se.fit==1L){
         Cases <- response == cause
-        Controls <- response != cause
-        riskcontrols <- as.matrix(risk[Controls,])
+        #Controls <- response != cause
+        #riskcontrols <- as.matrix(risk[Controls,])
+        riskcontrols <- as.matrix(risk[!Cases,])
         riskcases <- as.matrix(risk[Cases,])
 
         # new method, uses a fast implementation of delongs covariance matrix
