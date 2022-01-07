@@ -81,3 +81,9 @@ NumericMatrix htijCalculationHelper(NumericVector mcase, NumericVector mcontrol,
   }
   return ans;
 }
+
+// [[Rcpp::export]]
+NumericMatrix rowSumsCrossprodSpec(arma::mat &X, arma::mat &Y){
+  return(wrap(arma::sum(X,1).t()*(Y+1)));
+}
+

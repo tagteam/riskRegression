@@ -22,7 +22,7 @@ getInfluenceCurve.AUC.survival <- function(t,n,time,risk,Cases,Controls,ipcwCont
     vectTisupt <- n*Controls/sum(Controls)
     # Integral_0^T_i dMC_k/S for i %in% Cases
     MC.Ti.cases <- MC[sindex(eval.times=time[Cases],jump.times=unique(time)),,drop=FALSE]
-    T1 <- rowSumsCrossprod(htij1,1+MC.Ti.cases,0)/n
+    T1 <- rowSumsCrossprodSpec(htij1,MC.Ti.cases)/n
     ## print(system.time(T1 <- colSums(crossprod(htij1,1+MC.Ti.cases))/n))
     ## the matrix MC has as many rows as there are unique time points
     ## and as many colums as there are subjects
@@ -107,9 +107,12 @@ getInfluenceCurve.AUC.competing.risks <- function(t,n,time,risk,Cases,Controls1,
     MC.t <- MC[prodlim::sindex(eval.times=t,jump.times=unique(time)),,drop=TRUE]
     ## MC.t <- rbind(0,MC)[1+prodlim::sindex(eval.times=t,jump.times=unique(time),strict=1),,drop=TRUE]
     # we compute \frac{1}{n}\sum{i=1}^n \sum{j=1}^n \sum{l=1}^n \Psi{ijkl}(t)
-    T1 <- rowSumsCrossprod(htij1,1+MC.Ti.cases,0)
+    #browser()
+    #T1 <- rowSumsCrossprod(htij1,1+MC.Ti.cases,0)
+    T1 <- rowSumsCrossprodSpec(htij1,MC.Ti.cases)
     ## T1 <- colSums(crossprod(htij1,1+MC.Ti.cases))
-    T2 <- rowSumsCrossprod(htij2,1+MC.Ti.cases,0)
+    #T2 <- rowSumsCrossprod(htij2,1+MC.Ti.cases,0)
+    T2 <- rowSumsCrossprodSpec(htij2,MC.Ti.cases)
     ## T2 <- colSums(crossprod(htij2,1+MC.Ti.cases))
     ## in case of ties need to expand MC to match the dimension of fi1t
     # data does not have ties, this saves memory 
