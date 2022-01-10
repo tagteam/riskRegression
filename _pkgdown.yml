@@ -1,0 +1,75 @@
+url: ~
+template:
+  bootstrap: 5
+
+reference:
+- title: Regression Modeling
+- subtitle: Model Fitting
+  desc:
+- contents:
+  - "riskRegression"
+  - "riskRegression.options"
+  - "CSC"
+  - "Cforest"
+  - "Ctree"
+  - "FGR"
+  - "penalizedS3"
+  - "selectCox"
+  - "ipcw"
+  - "SuperPredictor"
+  - "wglm"
+- subtitle: Model Utilities
+  desc: Extract model components or calculate associated measures.
+  contents:
+  - starts_with("anova.ate")
+  - "ate"
+  - "baseHaz_cpp"
+  - "boot2pvalue"
+  - starts_with("cox")
+  - starts_with("calcSe")
+  - starts_with("coef")
+  - starts_with("iid")
+  - "influenceTest"
+  - "IC_Nelson_Aalen_cens_time"
+  - "IPA"
+  - "splitStrataVar"
+  - "getSplitMethod"
+  - starts_with("information")
+  - starts_with("predict")
+  - matches("[Ss]core")
+  - "selectJump"
+  - "SurvResponseVar"
+  - "subjectWeights"
+  - "subsetIndex"
+  - "terms.phreg"
+  - "transformCIBP"
+  - starts_with("confint")
+  - starts_with("model.matrix")
+  - starts_with("summary")
+  - reconstructData
+- subtitle: Visualisation
+  desc: Plotting methods for models and model diagnostics.
+  contents:
+  - matches("[Pp]lot")
+
+- title: Utility Functions
+- contents:
+  - "discreteRoot"
+  - starts_with("as.data.table")
+  - starts_with("col")
+  - starts_with("row")
+  - starts_with("slice")
+  - starts_with("print")
+
+- title: Data Simulation & Example Datasets
+- contents:
+  - reconstructData
+  - matches("[Ss]ampleData")
+  - simActiveSurveillance
+  - simMelanoma
+  - Melanoma
+  - Paquid
+
+- title: internal
+- contents:
+  - SmcFcs
