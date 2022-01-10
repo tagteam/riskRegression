@@ -1277,6 +1277,7 @@ Score.list <- function(object,
             crossvalPerf <- lapply(metrics,function(m){
                 # {{{ AUC LOOB
                 if (m=="AUC"){
+                    # initializing output
                     if (response.type=="binary")
                         auc.loob <- data.table(model=mlevs)
                     else
@@ -1287,6 +1288,7 @@ Score.list <- function(object,
                     if (se.fit==TRUE){
                         aucDT <- NULL
                     }
+                    ## preparation of outcome status at time horizon(s)
                     if (response.type=="binary"){
                         NT <- 1
                     }
@@ -1317,6 +1319,7 @@ Score.list <- function(object,
                                 cc.status[controls.index] <- "control"
                             }
                         }
+                        # censoring weights
                         if (cens.type=="rightCensored"){
                             ## IPCW
                             weights.cases <- cases.index/Weights$IPCW.subject.times
@@ -1711,8 +1714,7 @@ Score.list <- function(object,
 
             }}
         if (split.method$name=="BootCv"){
-            ## | split.method$internal.name=="crossval"){
-                                        # {{{ bootcv
+            # {{{ bootcv
             if (parallel=="snow") exports <- c("DT.B","N.b","cens.model","multi.split.test") else exports <- NULL
             if (!is.null(progress.bar)){
                 if (!(progress.bar %in% c(1,2,3))) progress.bar <- 3
@@ -1794,8 +1796,8 @@ Score.list <- function(object,
         if (!is.null(progress.bar)){
             cat("\n")
         }
-                                        # }}}
-                                        # {{{ collect data for plotRisk
+        # }}}
+        # {{{ collect data for plotRisk
         if ("risks"%in% summary){
             crossvalPerf[["risks"]]$score <- DT.B[,{
                 c(.SD[1,Response.names,with=FALSE],
