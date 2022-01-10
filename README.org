@@ -17,6 +17,10 @@ install_github("tagteam/riskRegression")
 The following references provide the methodological framework for the
 features of riskRegression.
 
+0. T.A. Gerds and M.W. Kattan (2021).
+   Medical Risk Prediction Models: With Ties to Machine Learning (1st ed.)
+   Chapman and Hall/CRC https://doi.org/10.1201/9781138384484
+
 1. T.A. Gerds and M. Schumacher. Consistent estimation of the expected Brier
     score in general survival models with right-censored event times.
     Biometrical Journal, 48(6):1029--1040, 2006.
