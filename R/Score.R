@@ -856,7 +856,7 @@ theCall <- match.call()
             if (cens.type=="uncensored"){
                 cens.method <- "none"
                 cens.model <- "none"
-                if ("auc" %in% metrics){
+                if ("AUC" %in% metrics){
                     if (se.fit==TRUE) {
                         warning("Standard error for AUC with uncensored time-to-event outcome not yet implemented.")
                         se.fit <- FALSE
@@ -893,7 +893,7 @@ theCall <- match.call()
     }
 
     # }}}
-# {{{ define function 'getPerformanceData' to setup level-1 data in long-format
+    # {{{ define function 'getPerformanceData' to setup level-1 data in long-format
     # {{{ header
     getPerformanceData <- function(testdata,
                                    testweights,
@@ -1027,7 +1027,7 @@ theCall <- match.call()
     }
     # }}}
     # }}}
-# {{{ define function 'computePerformance' to evaluate performance 
+    # {{{ define function 'computePerformance' to evaluate performance 
     computePerformance <- function(DT,
                                    N,
                                    se.fit,
@@ -1144,8 +1144,9 @@ theCall <- match.call()
         out
     }
     # }}}
-# {{{ Nosplit performance: external data (hopefully not apparent) 
+    # {{{ Nosplit performance: external data (hopefully not apparent) 
     missing.predictions <- "Don't know yet"
+    off.predictions <- "Don't know yet"
     if (split.method$internal.name %in% c("noplan",".632+")){
         DT <- getPerformanceData(testdata=data,
                                  testweights=Weights,
@@ -1156,6 +1157,12 @@ theCall <- match.call()
             warning("Missing values in the predicted risk. See `missing.predictions' in output list.")
         }else{
             missing.predictions <- "None"
+        }
+        if (("Brier"%in% metrics)&& (max(DT[["risk"]])>1 || min(DT[["risk"]])<0)){
+            off.predictions <- DT[,list("negative.values"=sum(risk<0),"values.above.1"=sum(risk>1)),by=byvars]
+            warning("Values off the scale (either negative or above 100%) in the predicted risk. See `off.predictions' in output list.")
+        }else{
+            off.predictions <- "None"
         }
         noSplit <- computePerformance(DT,
                                       N=N,
@@ -1168,7 +1175,7 @@ theCall <- match.call()
         if (debug) message("computed apparent performance")
     }
     # }}}
-# {{{ Crossvalidation
+    # {{{ Crossvalidation
     # {{{ bootstrap re-fitting and k-fold-CV
 
     if (split.method$internal.name%in%c("BootCv","LeaveOneOutBoot","crossval")){
@@ -1259,11 +1266,11 @@ theCall <- match.call()
         if (any(is.na(DT.B[["risk"]]))){
             missing.predictions <- DT.B[,list("Missing.values"=sum(is.na(risk))),by=byvars]
             warning("Missing values in the predicted risk. See `missing.predictions' in output list.")
-        }else missing.predictions <- NULL
-        if (("brier"%in% metrics)&& (max(DT.B[["risk"]])>1 || min(DT.B[["risk"]])<0)){
+        }
+        if (("Brier"%in% metrics)&& (max(DT.B[["risk"]])>1 || min(DT.B[["risk"]])<0)){
             off.predictions <- DT.B[,list("negative.values"=sum(risk<0),"values.above.1"=sum(risk>1)),by=byvars]
             warning("Values off the scale (either negative or above 100%) in the predicted risk. See `off.predictions' in output list.")
-        }else off.predictions <- NULL
+        }
         ## FIXME: subset influence curves
         ## case se.fit=1 we need only p-values for multi-split tests
         ## se.fit.cv <- se.fit*2

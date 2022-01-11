@@ -733,7 +733,7 @@ predictCox <- function(object,
       }
       all.covars <- c(infoVar$stratavars.original,infoVar$lpvars.original)
         if( keep.newdata[1]==TRUE && length(all.covars)>0){
-            if (data.table::is.data.table(new.strata))
+            if (data.table::is.data.table(newdata))
                 add.list$newdata <- newdata[, all.covars, with = FALSE]
             else
                 add.list$newdata <- newdata[, all.covars, drop=FALSE]

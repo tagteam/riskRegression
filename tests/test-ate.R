@@ -406,7 +406,7 @@ test_that("[ate] no censoring, survival - check vs. manual calculations", {
                      "quantileBand" = c(1.962359, 1.973331, 1.915003), 
                      "adj.p.value" = c(0.0007, 0.0296, 0.0056), 
                      "estimator" = c("GFORMULA", "IPTW", "AIPTW"))
-    expect_equal(GS, dt.ate1[type == "diffRisk",.(estimate,se,lower,upper,p.value,quantileBand,adj.p.value,estimator)],
+    expect_equal(GS, dt.ate1[type == "diffRisk",.(estimate,se,lower,upper,p.value,quantileBand,adj.p.value,estimator=as.character(estimator))],
                  tol = 1e-6)
 
     GS <- data.table("estimate" = c(1.801584, 1.693110, 1.720496), 
@@ -417,8 +417,8 @@ test_that("[ate] no censoring, survival - check vs. manual calculations", {
                      "quantileBand" = c(1.971454, 1.969537, 1.952972), 
                      "adj.p.value" = c(0.0118, 0.0832, 0.0246), 
                      "estimator" = c("GFORMULA", "IPTW", "AIPTW"))
-    expect_equal(GS, dt.ate1[type == "ratioRisk",.(estimate,se,lower,upper,p.value,quantileBand,adj.p.value,estimator)],
-                 tol = 1e-6)
+    GS1 <- dt.ate1[type == "ratioRisk",.(estimate,se,lower,upper,p.value,quantileBand,adj.p.value,estimator=as.character(estimator))]
+    expect_equal(GS, GS1, tol = 1e-6)
 
     ## compare to ipw package
     if (requireNamespace("ipw",quietly=TRUE)){
@@ -628,7 +628,7 @@ test_that("[ate] Censoring, survival - check vs. manual calculations", {
                      "quantileBand" = c(1.965073, 1.948196, 1.931335), 
                      "adj.p.value" = c(0.0122, 0.0079, 0.0007), 
                      "estimator" = c("GFORMULA", "IPTW", "AIPTW"))
-    expect_equal(GS, dt.ate1[type == "diffRisk",.(estimate,se,lower,upper,p.value,quantileBand,adj.p.value,estimator)],
+    expect_equal(GS, dt.ate1[type == "diffRisk",.(estimate,se,lower,upper,p.value,quantileBand,adj.p.value,estimator=as.character(estimator))],
                  tol = 1e-6)
 
     GS <- data.table("estimate" = c(1.810468, 2.029110, 2.052019), 
@@ -639,7 +639,7 @@ test_that("[ate] Censoring, survival - check vs. manual calculations", {
                      "quantileBand" = c(1.961192, 1.959446, 1.952883), 
                      "adj.p.value" = c(0.0392, 0.0459, 0.0129), 
                      "estimator" = c("GFORMULA", "IPTW", "AIPTW"))
-    expect_equal(GS,dt.ate1[type == "ratioRisk",.(estimate,se,lower,upper,p.value,quantileBand,adj.p.value,estimator)],
+    expect_equal(GS,dt.ate1[type == "ratioRisk",.(estimate,se,lower,upper,p.value,quantileBand,adj.p.value,estimator=as.character(estimator))],
                  tol = 1e-6)
 
 })
@@ -926,7 +926,7 @@ test_that("[ate] no censoring, competing risks - check vs. manual calculations",
                      "adj.p.value" = c(0.2235, 0.2291, 0.1376), 
                      "estimator" = c("GFORMULA", "IPTW", "AIPTW"))
 
-    expect_equal(GS, dt.ate1[type == "diffRisk",.(estimate,se,lower,upper,p.value,quantileBand,adj.p.value,estimator)],
+    expect_equal(GS, dt.ate1[type == "diffRisk",.(estimate,se,lower,upper,p.value,quantileBand,adj.p.value,estimator=as.character(estimator))],
                  tol = 1e-6)
 
     GS <- data.table("estimate" = c(3.999770, 3.187715, 6.052789), 
@@ -937,7 +937,7 @@ test_that("[ate] no censoring, competing risks - check vs. manual calculations",
                      "quantileBand" = c(1.971403, 1.958227, 1.974396), 
                      "adj.p.value" = c(0.1872, 0.3072, 0.1973), 
                      "estimator" = c("GFORMULA", "IPTW", "AIPTW"))
-    expect_equal(GS, dt.ate1[type == "ratioRisk",.(estimate,se,lower,upper,p.value,quantileBand,adj.p.value,estimator)],
+    expect_equal(GS, dt.ate1[type == "ratioRisk",.(estimate,se,lower,upper,p.value,quantileBand,adj.p.value,estimator=as.character(estimator))],
                  tol = 1e-6)
 
 })
@@ -1138,7 +1138,7 @@ test_that("[ate] Censoring, competing risks (surv.type=\"survival\") - check vs.
                      "quantileBand" = c(1.958676, 1.963257, 1.952228), 
                      "adj.p.value" = c(0.1177, 0.2880, 0.0331), 
                      "estimator" = c("GFORMULA", "IPTW", "AIPTW"))
-    expect_equal(GS, dt.ate1[type == "diffRisk",.(estimate,se,lower,upper,p.value,quantileBand,adj.p.value,estimator)],
+    expect_equal(GS, dt.ate1[type == "diffRisk",.(estimate,se,lower,upper,p.value,quantileBand,adj.p.value,estimator=as.character(estimator))],
                  tol = 1e-6)
 
     GS <- data.table("estimate" = c(3.102436, 1.555969, 3.371188), 
@@ -1149,7 +1149,7 @@ test_that("[ate] Censoring, competing risks (surv.type=\"survival\") - check vs.
                      "quantileBand" = c(1.955519, 1.941080, 1.992390), 
                      "adj.p.value" = c(0.1553, 0.3178, 0.0605), 
                      "estimator" = c("GFORMULA", "IPTW", "AIPTW"))
-    expect_equal(GS, dt.ate1[type == "ratioRisk",.(estimate,se,lower,upper,p.value,quantileBand,adj.p.value,estimator)],
+    expect_equal(GS, dt.ate1[type == "ratioRisk",.(estimate,se,lower,upper,p.value,quantileBand,adj.p.value,estimator=as.character(estimator))],
                  tol = 1e-6)
 
 })
@@ -1385,6 +1385,7 @@ test_that("ate double robust estimator works with multiple timepoint",{
                      )
     test <- as.data.table(e.ateRR)
     test <- test[order(factor(test$type, levels = unique(test$type)),test$time)]
+    test$estimator <- as.character(test$estimator)
     expect_equal(test, GS, tol = 1e-4)
     e.ateRR <- ate(event = CSC(Hist(time,event) ~ X1 + X2 + X3, data = dtS),
                    treatment = "X1",
