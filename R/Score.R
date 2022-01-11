@@ -121,10 +121,10 @@
 ##'  specify additional arguments for the function riskRegression::predictRisk.rfsrc which will pass
 ##'  these on to the function randomForestSRC::predict.rfsrc. A specific example in this case would be
 ##'  \code{list(rfsrc=list(na.action="na.impute"))}.
-##' @param errorhandling .
 ##'
 ##'  A more flexible approach is to write a new predictRisk S3-method. See Details.
-##' @param debug Logical. If \code{TRUE} indicate landmark in progress of the program.
+##' @param errorhandling Argument passed as \code{.errorhandling} to foreach. Default is \code{"pass"}.
+##' @param debug Logical. If \code{TRUE} indicate landmarks in progress of the program.
 ##' @param useEventTimes obsolete.
 ##' @param nullModel obsolete.
 ##' @param censMethod obsolete.
@@ -893,7 +893,7 @@ theCall <- match.call()
     }
 
     # }}}
-# {{{ define getPerformanceData, setup data in long-format, response, pred, weights, model, times, loop
+# {{{ define function 'getPerformanceData' to setup level-1 data in long-format
     # {{{ header
     getPerformanceData <- function(testdata,
                                    testweights,
@@ -1027,7 +1027,7 @@ theCall <- match.call()
     }
     # }}}
     # }}}
-# {{{ define function to evaluate performance 
+# {{{ define function 'computePerformance' to evaluate performance 
     computePerformance <- function(DT,
                                    N,
                                    se.fit,
@@ -1182,12 +1182,15 @@ theCall <- match.call()
         }
         if (parallel=="snow") exports <- c("data","split.method","Weights","N","trainseeds") else exports <- NULL
         if (!is.null(progress.bar)){
-            message("Running crossvalidation ...")
+            message("Running crossvalidation algorithm")
             if (!(progress.bar %in% c(1,2,3))) progress.bar <- 3
-            if (B==1 && split.method$internal.name == "crossval")
+            if (B==1 && split.method$internal.name == "crossval"){
+                message(paste0("Fitting the models in ",split.method$k," learning datasets, then predicting the risks in validation datasets"))
                 pb <- txtProgressBar(max = split.method$k, style = progress.bar,width=20)
-            else
+            } else{
+                message(paste0("Fitting the models in ",B," learning datasets, then predicting the risks in validation datasets"))
                 pb <- txtProgressBar(max = B, style = progress.bar,width=20)
+            }
         }
         `%dopar%` <- foreach::`%dopar%`
         ## k-fold-CV
@@ -1198,7 +1201,9 @@ theCall <- match.call()
                 DT.b <- rbindlist(lapply(1:split.method$k,function(fold){
                     traindata=data[index.b!=fold]
                     testids <- index.b==fold # (1:N)[index.b!=fold]
-                    if((B==1) && !is.null(progress.bar)){setTxtProgressBar(pb, fold)}
+                    if((B==1) && !is.null(progress.bar)){
+                        setTxtProgressBar(pb, fold)
+                    }
                     ## NOTE: subset.data.table preserves order ## So we need to use subset??
                     testdata <- subset(data,testids)
                     if (cens.type=="rightCensored"){
@@ -1223,7 +1228,7 @@ theCall <- match.call()
                 DT.b
             })
         }else{# either LeaveOneOutBoot or BootCv
-            DT.B <- rbindlist(foreach::foreach (b=1:B,.export=exports,.packages="data.table",.errorhandling="pass") %dopar%{
+            DT.B <- rbindlist(foreach::foreach (b=1:B,.export=exports,.packages="data.table",.errorhandling=errorhandling) %dopar%{
                 if(!is.null(progress.bar)){setTxtProgressBar(pb, b)}
                 ## DT.B <- rbindlist(lapply(1:B,function(b){
                 traindata=data[split.method$index[,b]]
@@ -1248,10 +1253,17 @@ theCall <- match.call()
                 DT.b
             })
         }
+        if (!is.null(progress.bar)){
+            cat("\n")
+        }
         if (any(is.na(DT.B[["risk"]]))){
             missing.predictions <- DT.B[,list("Missing.values"=sum(is.na(risk))),by=byvars]
             warning("Missing values in the predicted risk. See `missing.predictions' in output list.")
-        }
+        }else missing.predictions <- NULL
+        if (("brier"%in% metrics)&& (max(DT.B[["risk"]])>1 || min(DT.B[["risk"]])<0)){
+            off.predictions <- DT.B[,list("negative.values"=sum(risk<0),"values.above.1"=sum(risk>1)),by=byvars]
+            warning("Values off the scale (either negative or above 100%) in the predicted risk. See `off.predictions' in output list.")
+        }else off.predictions <- NULL
         ## FIXME: subset influence curves
         ## case se.fit=1 we need only p-values for multi-split tests
         ## se.fit.cv <- se.fit*2
@@ -1273,6 +1285,12 @@ theCall <- match.call()
         # {{{ Leave-one-out bootstrap
         ## start clause split.method$name=="LeaveOneOutBoot"
         if (split.method$name=="LeaveOneOutBoot" | split.method$internal.name =="crossval"){  ## Testing if the crossval works in this loop
+            message(paste0("Calculating the performance metrics in long format\nlevel-1 data with ",
+                           NROW(DT.B),
+                           " rows.",
+                           ifelse(NROW(DT.B)>1000000,
+                                  " This may take a while ...",
+                                  " This should be fast ...")))
             ## if (split.method$name=="LeaveOneOutBoot" ){
             crossvalPerf <- lapply(metrics,function(m){
                 # {{{ AUC LOOB
@@ -1702,30 +1720,19 @@ theCall <- match.call()
             names(crossvalPerf) <- metrics
             # }}}
         } ## end clause split.method$name=="LeaveOneOutBoot"
-        if (FALSE) {  ## Dropping this for now, trying BootCv method below
-            if (split.method$internal.name=="crossval"){
-                N <- splitMethod$N # sample size
-                k <- splitMethod$k # k-fold cross validation
-                B <- splitMethod$B # number of times we repeat k-fold
-                ## here we need a "copy" of the split.method$name=="LeaveOneOutBoot" clause (see above)
-                ## and then fix possible bugs/problems which could be related to ordering of data and similar
-                ## if it turns out that there are almost no bugs, then it may make sense to use the LeaveOneOutBoot clause
-                ## also for k-fold ...
-
-            }}
         if (split.method$name=="BootCv"){
             # {{{ bootcv
             if (parallel=="snow") exports <- c("DT.B","N.b","cens.model","multi.split.test") else exports <- NULL
             if (!is.null(progress.bar)){
                 if (!(progress.bar %in% c(1,2,3))) progress.bar <- 3
-                pb <- txtProgressBar(max = B, style = progress.bar,width=20)
+                pb1 <- txtProgressBar(max = B, style = progress.bar,width=20)
+                message(paste0("Calculating the performance metrics in ",B," validation data sets"))
             }
-            crossval <- foreach(j=1:B,.export=exports,.packages="data.table",.errorhandling="pass") %dopar%{
-                ## crossval <- lapply(1:B,function(j){
+            crossval <- foreach::foreach(j=1:B,.export=exports,.packages="data.table",.errorhandling=errorhandling) %dopar%{
                 DT.b <- DT.B[b==j]
                 N.b <- length(unique(DT.b[["ID"]]))
                 if(!is.null(progress.bar)){
-                    setTxtProgressBar(pb, j)
+                    setTxtProgressBar(pb1, j)
                 }
                 computePerformance(DT.b,
                                    N=N.b,
@@ -1736,6 +1743,9 @@ theCall <- match.call()
                                    keep.residuals=FALSE,
                                    keep.vcov=FALSE)
             }
+            if (!is.null(progress.bar)){
+                cat("\n")
+            }
             crossvalPerf <- lapply(metrics,function(m){
                 ## score
                 if (length(crossval[[1]][[m]]$score)>0){
@@ -1745,7 +1755,7 @@ theCall <- match.call()
                                                                          se=sd(.SD[[m]],na.rm=TRUE),
                                                                          lower=quantile(.SD[[m]],alpha/2,na.rm=TRUE),
                                                                          upper=quantile(.SD[[m]],(1-alpha/2),na.rm=TRUE)),by=byvars,.SDcols=m]
-                        data.table::setnames(bootcv.score,c(byvars,m,"lower","upper"))
+                        data.table::setnames(bootcv.score,c(byvars,m,"se","lower","upper"))
                     }else{
                         bootcv.score <- cv.score[,data.table::data.table(mean(.SD[[m]],na.rm=TRUE)),by=byvars,.SDcols=m]
                         data.table::setnames(bootcv.score,c(byvars,m))
@@ -1793,9 +1803,6 @@ theCall <- match.call()
                     crossvalPerf[["Brier"]][["score"]][,IPA:=1-Brier/Brier[model=="Null model"],by=times]
             }
         }
-        if (!is.null(progress.bar)){
-            cat("\n")
-        }
         # }}}
         # {{{ collect data for plotRisk
         if ("risks"%in% summary){
@@ -1807,8 +1814,8 @@ theCall <- match.call()
             crossvalPerf[["risks"]]$score[,model:=factor(model,levels=mlevs,mlabels)]
             setcolorder(crossvalPerf[["risks"]]$score,c("ID",byvars,Response.names,"risk","sd.risk"))
         }
-                                        # }}}
-                                        # {{{ collect data for calibration plots
+        # }}}
+        # {{{ collect data for calibration plots
         if ("Calibration" %in% plots){
             if (keep.residuals[[1]]==TRUE && split.method$name[[1]]=="LeaveOneOutBoot"){
                 crossvalPerf[["Calibration"]]$plotframe <- crossvalPerf$Brier$Residuals[model!=0,]
@@ -1827,7 +1834,7 @@ theCall <- match.call()
             if (cens.type=="rightCensored")
                 crossvalPerf[["Calibration"]]$plotframe <- merge(jack,crossvalPerf[["Calibration"]]$plotframe,by=c("ID","times"))
         }
-                                        # }}}
+        # }}}
     }
 
                                         # }}}
@@ -1885,6 +1892,7 @@ theCall <- match.call()
                             plots=plots,
                             summary=summary,
                             missing.predictions=missing.predictions,
+                            off.predictions=off.predictions,
                             call=theCall))
     for (p in c(plots)){
         output[[p]]$plotmethod <- p

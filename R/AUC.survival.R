@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Jan 11 2022 (17:06) 
 ## Version: 
-## Last-Updated: Jan 11 2022 (17:06) 
+## Last-Updated: Jan 11 2022 (17:23) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 1
+##     Update #: 2
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -40,6 +40,10 @@ AUC.survival <- function(DT,MC,se.fit,conservative,cens.model,keep.vcov=FALSE,mu
         output <- list(ROC=aucDT[nodups,c("model","times","risk","TPR","FPR"),with=FALSE])
     }else{
         output <- NULL
+    }
+    AireTrap <- function(FP,TP,N){
+        N <- length(FP)
+        sum((FP-c(0,FP[-N]))*((c(0,TP[-N])+TP)/2))
     }
     score <- aucDT[nodups,list(AUC=AireTrap(FPR,TPR)),by=list(model,times)]
     data.table::setkey(score,model,times)
