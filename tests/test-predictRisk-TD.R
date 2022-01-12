@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Sep  2 2017 (08:01) 
 ## Version: 
-## Last-Updated: okt  7 2021 (12:17) 
-##           By: Brice Ozenne
-##     Update #: 13
+## Last-Updated: Jan 12 2022 (09:04) 
+##           By: Thomas Alexander Gerds
+##     Update #: 14
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -20,7 +20,6 @@ library(timereg)
 library(survival)
 
 test_that("start stop Cox: basehaz vs timereg",{
-    data(veteran)
     ## remove ties
     set.seed(17)
     veteran$jtime <- veteran$time+rnorm(NROW(veteran),mean=0,sd=0.001)

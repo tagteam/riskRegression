@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: maj 18 2017 (09:23) 
 ## Version: 
-## last-updated: okt  7 2021 (20:02) 
-##           By: Brice Ozenne
-##     Update #: 309
+## last-updated: Jan 12 2022 (10:05) 
+##           By: Thomas Alexander Gerds
+##     Update #: 317
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -16,6 +16,7 @@
 ### Code:
 
 ## * Settings
+if (FALSE){
 library(riskRegression)
 library(testthat)
 library(data.table)
@@ -162,7 +163,6 @@ test_that("[predictCSC]: compare to mstate",{
                      )
     }
 })
-
 
 test_that("[predict.CSC] check absolute risks add up to one",{
     for(iData in 1:2){
@@ -414,7 +414,6 @@ dL <- msprep(time = c(NA, "time", "time"),
 dL.exp <- expand.covs(dL,  c("X1","X2","X16","Xcat2"))
 
 ## ** No covariates
-
 test_that("predict.CSC (no covariates): compare to mstate",{
     newdata <- data.frame(NA)
     newdata.L <- data.frame(trans = c(1, 2), strata = c(1, 2))
@@ -463,7 +462,6 @@ test_that("predict.CSC (no covariates): compare to mstate",{
     expect_equal(as.double(pred.RR2a$absRisk.se),pred.probtrans[,"se2"], tol = 5e-3)    
     expect_equal(as.double(pred.RR2b$absRisk.se),pred.probtrans[,"se2"], tol = 5e-3)    
 })
-
 ## ** With covariates
 test_that("predict.CSC (covariates): compare to mstate",{
     for(iX in 0:1){
@@ -513,6 +511,7 @@ test_that("predict.CSC (covariates): compare to mstate",{
         expect_equal(as.double(pred.RR2b$absRisk.se),pred.probtrans[,"se2"], tol = 1e-2)
         ## }else{
         ##     expect_equal(as.double(pred.RR1a$absRisk.se),pred.probtrans[,"se2"], tol = 1e-1)
+
         ##     expect_equal(as.double(pred.RR1b$absRisk.se),pred.probtrans[,"se2"], tol = 1e-1)
         ##     expect_equal(as.double(pred.RR1c$absRisk.se),pred.probtrans[,"se3"], tol = 1e-1)
         ##     expect_equal(as.double(pred.RR1d$absRisk.se),pred.probtrans[,"se3"], tol = 1e-1)
@@ -521,8 +520,7 @@ test_that("predict.CSC (covariates): compare to mstate",{
         ## }
     }
 })
-
-## ** Strata 
+## ** Strata
 test_that("predict.CSC (strata): compare to mstate",{
 
     newdata <- data.frame(X1 = 0, X2 = 0, X16 = 0)
@@ -587,9 +585,8 @@ test_that("predict.CSC (strata): compare to mstate",{
 
     expect_equal(pred.RR2a_strata$absRisk,pred.RR2a$absRisk)
     expect_equal(pred.RR2b_strata$absRisk,pred.RR2b$absRisk)
-
-
 })
+
 ## ** Vs. fixed values
 set.seed(10)
 n <- 300
@@ -1504,6 +1501,6 @@ if(FALSE){
     # this also creates a problem when computing the suvival using the product limit estimator 
 }
 
-
+}
 #----------------------------------------------------------------------
 ### test-predictCSC.R ends here

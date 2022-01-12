@@ -1154,13 +1154,15 @@ theCall <- match.call()
                                  trainseed=NULL)
         if (any(is.na(DT[["risk"]]))){
             missing.predictions <- DT[,list("Missing.values"=sum(is.na(risk))),by=byvars]
-            warning("Missing values in the predicted risk. See `missing.predictions' in output list.")
+            missing.predictions[,model:=factor(model,levels=mlevs,mlabels)]
+            warning("Missing values in the predicted risks. See `missing.predictions' in output list.")
         }else{
             missing.predictions <- "None"
         }
         if (("Brier"%in% metrics)&& (max(DT[["risk"]])>1 || min(DT[["risk"]])<0)){
             off.predictions <- DT[,list("negative.values"=sum(risk<0),"values.above.1"=sum(risk>1)),by=byvars]
-            warning("Values off the scale (either negative or above 100%) in the predicted risk. See `off.predictions' in output list.")
+            off.predictions[,model:=factor(model,levels=mlevs,mlabels)]
+            warning("Predicted values off the probability scale (negative or above 100%). See `off.predictions' in output list.\nOnly a problem for the Brier score, You can stop this warning by setting metrics='auc'.")
         }else{
             off.predictions <- "None"
         }
