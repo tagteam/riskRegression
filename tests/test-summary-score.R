@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Apr 12 2020 (07:48) 
 ## Version: 
-## Last-Updated: Jul 19 2021 (08:40) 
+## Last-Updated: Jan 12 2022 (10:11) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 5
+##     Update #: 6
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -43,50 +43,32 @@ for (y in c("binary","survival","competing.risks")){
     x <- Score(list(model.1=f1,model.2=f2),formula=ff,data=d2)
     xa <- Score(list(model.1=f1,model.2=f2),formula=ff,data=d2,metric="auc")
     xb <- Score(list(model.1=f1,model.2=f2),formula=ff,data=d2,metric="brier")
-    print(x)
-    summary(x)
-    summary(x,what="contrast")
-    summary(x,what="score")
-    print(xa)
-    summary(xa)
-    summary(xa,what="contrast")
-    summary(xa,what="score")
-    print(xb)
-    summary(xb)
-    summary(xb,what="contrast")
-    summary(xb,what="score")
+    for (X in list(x,xa,xb)){
+        suppressMessages(expect_output(print(X)))
+        expect_output(print(summary(X)))
+        expect_output(print(summary(X,what="contrast")))
+        expect_output(print(summary(X,what="score")))
+    }
     # without null with se
     x <- Score(list(model.1=f1,model.2=f2),formula=ff,data=d2,null.model=0L)
     xa <- Score(list(model.1=f1,model.2=f2),formula=ff,data=d2,metric="auc",null.model=0L)
     xb <- Score(list(model.1=f1,model.2=f2),formula=ff,data=d2,metric="brier",null.model=0L)
-    print(x)
-    summary(x)
-    summary(x,what="contrast")
-    summary(x,what="score")
-    print(xa)
-    summary(xa)
-    summary(xa,what="contrast")
-    summary(xa,what="score")
-    print(xb)
-    summary(xb)
-    summary(xb,what="contrast")
-    summary(xb,what="score")
+    for (X in list(x,xa,xb)){
+        suppressMessages(expect_output(print(X)))
+        expect_output(print(summary(X)))
+        expect_output(print(summary(X,what="contrast")))
+        expect_output(print(summary(X,what="score")))
+    }
     # without null without se
     x <- Score(list(model.1=f1,model.2=f2),formula=ff,data=d2,null.model=0L,se.fit=0L)
     xa <- Score(list(model.1=f1,model.2=f2),formula=ff,data=d2,metric="auc",null.model=0L,se.fit=0L)
     xb <- Score(list(model.1=f1,model.2=f2),formula=ff,data=d2,metric="brier",null.model=0L,se.fit=0L)
-    print(x)
-    summary(x)
-    summary(x,what="contrast")
-    summary(x,what="score")
-    print(xa)
-    summary(xa)
-    summary(xa,what="contrast")
-    summary(xa,what="score")
-    print(xb)
-    summary(xb)
-    summary(xb,what="contrast")
-    summary(xb,what="score")
+    for (X in list(x,xa,xb)){
+        suppressMessages(expect_output(print(X)))
+        expect_output(print(summary(X)))
+        expect_output(print(summary(X,what="contrast")))
+        expect_output(print(summary(X,what="score")))
+    }
 }
 # }}}
 

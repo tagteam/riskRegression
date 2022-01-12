@@ -135,6 +135,22 @@ IFlambda0_cpp <- function(tau, IFbeta, newT, neweXb, newStatus, newStrata, newIn
     .Call(`_riskRegression_IFlambda0_cpp`, tau, IFbeta, newT, neweXb, newStatus, newStrata, newIndexJump, S01, E1, time1, lastTime1, lambda0, p, strata, minimalExport)
 }
 
+columnMeanWeight <- function(A, x) {
+    .Call(`_riskRegression_columnMeanWeight`, A, x)
+}
+
+T3CalculationHelper <- function(x, A) {
+    .Call(`_riskRegression_T3CalculationHelper`, x, A)
+}
+
+htijCalculationHelper <- function(mcase, mcontrol, wcase, wcontrol, n, nrows, ncols) {
+    .Call(`_riskRegression_htijCalculationHelper`, mcase, mcontrol, wcase, wcontrol, n, nrows, ncols)
+}
+
+rowSumsCrossprodSpec <- function(X, Y) {
+    .Call(`_riskRegression_rowSumsCrossprodSpec`, X, Y)
+}
+
 predictCIF_cpp <- function(hazard, cumhazard, eXb, strata, newtimes, etimes, etimeMax, t0, nEventTimes, nNewTimes, nData, cause, nCause, survtype, productLimit, diag, exportSurv) {
     .Call(`_riskRegression_predictCIF_cpp`, hazard, cumhazard, eXb, strata, newtimes, etimes, etimeMax, t0, nEventTimes, nNewTimes, nData, cause, nCause, survtype, productLimit, diag, exportSurv)
 }

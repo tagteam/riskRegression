@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Aug 10 2017 (08:56) 
 ## Version: 
-## Last-Updated: Oct  9 2021 (10:15) 
+## Last-Updated: Jan 11 2022 (18:24) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 37
+##     Update #: 38
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -24,22 +24,23 @@ library(lava)
 
 ## * rfsrc
 cat("[predictRisk.rfsrc]  \n")
-test_that("Additional arguments: example with imputation of missing data", {
-    if (!requireNamespace("randomForestSRC",quietly=TRUE)){
-        message("Package randomForestSRC not installed. Skip this test.")
-    }else{
-        data(pbc,package="survival")
-        set.seed(10)
-        forest <- rfsrc(Surv(time,status)~chol+age+sex,data=pbc,ntree=10,nsplit=10)
-        ## no specification
-        expect_error(Score(list(forest),formula=Hist(time,status)~1,data=pbc,conf.int=FALSE,metrics="brier",cens.model="km"))
-        ## correct specification
-        expect_output(print(Score(list(forest),formula=Hist(time,status)~1,data=pbc,conf.int=FALSE,metrics="brier",cens.model="km",predictRisk.args=list("rfsrc"=list(na.action="na.impute")))))
-        ## wrong specification
-        expect_error(print(Score(list(forest),formula=Hist(time,status)~1,data=pbc,conf.int=FALSE,metrics="brier",cens.model="km",predictRisk.args=list("randomForestSRC"=list(na.action="na.impute")))))
-    }
-})
-
+if (FALSE){
+    test_that("Additional arguments: example with imputation of missing data", {
+        if (!requireNamespace("randomForestSRC",quietly=TRUE)){
+            message("Package randomForestSRC not installed. Skip this test.")
+        }else{
+            u <- get(data(pbc,package="survival"))
+            set.seed(10)
+            forest <- rfsrc(Surv(time,status)~chol+age+sex,data=u,ntree=10,nsplit=10,trace=1)
+            ## no specification
+            expect_error(Score(list(forest),formula=Hist(time,status)~1,data=pbc,conf.int=FALSE,metrics="brier",cens.model="km"))
+            ## correct specification
+            expect_output(print(Score(list(forest),formula=Hist(time,status)~1,data=pbc,conf.int=FALSE,metrics="brier",cens.model="km",predictRisk.args=list("rfsrc"=list(na.action="na.impute")))))
+            ## wrong specification
+            expect_error(print(Score(list(forest),formula=Hist(time,status)~1,data=pbc,conf.int=FALSE,metrics="brier",cens.model="km",predictRisk.args=list("randomForestSRC"=list(na.action="na.impute")))))
+        }
+    })
+}
 ## * predictCox/predictCSC - to be reorganized (there is no clear test in this section)
 cat("[predictRisk.CauseSpecificCox] \n")
 test_that("Prediction with CSC - categorical cause",{

@@ -6,11 +6,12 @@ getInfluenceCurve.AUC.survival <- function(t,n,time,risk,Cases,Controls,ipcwCont
     nbCases <- sum(Cases)
     nbControls <- sum(Controls)
     if (nbCases==0 || nbControls ==0 || length(unique(risk))==1) return(rep(0,n))
-    mcase <- matrix(risk[Cases],nrow=nbCases,ncol=nbControls)
-    mcontrol <- matrix(risk[Controls],nrow=nbCases,ncol=nbControls,byrow=TRUE)
-    wcase <- matrix(ipcwCases[Cases],nrow=nbCases,ncol=nbControls)
-    wcontrol <- matrix(ipcwControls[Controls],nrow=nbCases,ncol=nbControls,byrow=TRUE)
-    htij1 <- (1*(mcase>mcontrol)+.5*(mcase==mcontrol))*wcase*wcontrol*n*n
+    # mcase <- matrix(risk[Cases],nrow=nbCases,ncol=nbControls)
+    # mcontrol <- matrix(risk[Controls],nrow=nbCases,ncol=nbControls,byrow=TRUE)
+    # wcase <- matrix(ipcwCases[Cases],nrow=nbCases,ncol=nbControls)
+    # wcontrol <- matrix(ipcwControls[Controls],nrow=nbCases,ncol=nbControls,byrow=TRUE)
+    #htij1 <- (1*(mcase>mcontrol)+.5*(mcase==mcontrol))*wcase*wcontrol*n*n
+    htij1 <- htijCalculationHelper(risk[Cases],risk[Controls],ipcwCases[Cases],ipcwControls[Controls],n,nbCases,nbControls)
     ht <- (sum(htij1))/(n*n)
     fi1t <- Cases*ipcwCases*n
     colSumshtij1 <- rep(0,n) # initialise at 0
@@ -21,14 +22,19 @@ getInfluenceCurve.AUC.survival <- function(t,n,time,risk,Cases,Controls,ipcwCont
     vectTisupt <- n*Controls/sum(Controls)
     # Integral_0^T_i dMC_k/S for i %in% Cases
     MC.Ti.cases <- MC[sindex(eval.times=time[Cases],jump.times=unique(time)),,drop=FALSE]
-    T1 <- rowSumsCrossprod(htij1,1+MC.Ti.cases,0)/n
+    T1 <- rowSumsCrossprodSpec(htij1,MC.Ti.cases)/n
     ## print(system.time(T1 <- colSums(crossprod(htij1,1+MC.Ti.cases))/n))
     ## the matrix MC has as many rows as there are unique time points
     ## and as many colums as there are subjects
     ## in case of ties need to expand MC to match the dimension of fi1t
-    MC.all <- MC[match(time,unique(time)),]
-    ## T3 <- colSums(hathtstar*(vectTisupt + (fi1t*(1+MC)-F01t)/F01t))
-    T3 <- colSums(hathtstar*(vectTisupt + (fi1t*(1+MC.all)-F01t)/F01t))
+    #MC.all <- MC
+    if (all(match(time,unique(time)) != 1:ncol(MC))) {
+        MC <- MC[match(time,unique(time)),]
+    }
+    #T3 <- colSums(hathtstar*(vectTisupt + (fi1t*(1+MC)-F01t)/F01t))
+    #T3 <- hathtstar*sum(vectTisupt) + hathtstar/F01t * (T3CalculationHelper(fi1t,MC)-nrow(MC)*F01t)
+    T3 <- hathtstar*(sum(vectTisupt) + 1/F01t * T3CalculationHelper(fi1t,MC)-nrow(MC))
+    
     Term.ijak <- (T1-T3)/(F01t*St)
     Term.ikaj <- (rowSumshtij1 - n*hathtstar)/(F01t*St)
     Term.jkai <-  (colSumshtij1 - n*hathtstar*(vectTisupt+(1/F01t)*(fi1t-F01t)))/(F01t*St)
@@ -63,23 +69,29 @@ getInfluenceCurve.AUC.competing.risks <- function(t,n,time,risk,Cases,Controls1,
     nbControls1 <- sum(Controls1)
     nbControls2 <- sum(Controls2)
     if (nbCases==0 || (nbControls1 + nbControls2) ==0  || length(unique(risk))==1) return(rep(0,n))
-    mcase1 <- matrix(risk[Cases],nrow=nbCases,ncol=nbControls1)
-    mcase2 <- matrix(risk[Cases],nrow=nbCases,ncol=nbControls2)
-    mcontrol1 <- matrix(risk[Controls1],nrow=nbCases,ncol=nbControls1,byrow=TRUE)
-    mcontrol2 <- matrix(risk[Controls2],nrow=nbCases,ncol=nbControls2,byrow=TRUE)
-    wcase1 <- matrix(ipcwCases[Cases],nrow=nbCases,ncol=nbControls1)
-    wcase2 <- matrix(ipcwCases[Cases],nrow=nbCases,ncol=nbControls2)
-    wcontrol1 <- matrix(ipcwControls1[Controls1],nrow=nbCases,ncol=nbControls1,byrow=TRUE)
-    wcontrol2 <- matrix(ipcwControls2[Controls2],nrow=nbCases,ncol=nbControls2,byrow=TRUE)
-    htij1 <- (1*(mcase1>mcontrol1)+.5*(mcase1==mcontrol1))*wcase1*wcontrol1*n*n
-    htij2 <- (1*(mcase2>mcontrol2) + .5*(mcase2==mcontrol2))*wcase2*wcontrol2*n*n
+    # #a(i,j)=a(i,j')
+    # mcase1 <- matrix(risk[Cases],nrow=nbCases,ncol=nbControls1)
+    # mcase2 <- matrix(risk[Cases],nrow=nbCases,ncol=nbControls2)
+    # #a(i,j) = a(i',j)
+    # mcontrol1 <- matrix(risk[Controls1],nrow=nbCases,ncol=nbControls1,byrow=TRUE)
+    # mcontrol2 <- matrix(risk[Controls2],nrow=nbCases,ncol=nbControls2,byrow=TRUE)
+    # wcase1 <- matrix(ipcwCases[Cases],nrow=nbCases,ncol=nbControls1)
+    # wcase2 <- matrix(ipcwCases[Cases],nrow=nbCases,ncol=nbControls2)
+    # wcontrol1 <- matrix(ipcwControls1[Controls1],nrow=nbCases,ncol=nbControls1,byrow=TRUE)
+    # wcontrol2 <- matrix(ipcwControls2[Controls2],nrow=nbCases,ncol=nbControls2,byrow=TRUE)
+    #htij1 <- (1*(mcase1>mcontrol1)+.5*(mcase1==mcontrol1))*wcase1*wcontrol1*n*n
+    #htij1<-htijCalculationHelper(mcase1,mcontrol1,wcase1,wcontrol1,n)
+    htij1<-htijCalculationHelper(risk[Cases],risk[Controls1],ipcwCases[Cases],ipcwControls1[Controls1],n,nbCases,nbControls1)
+    #htij2 <- (1*(mcase2>mcontrol2) + .5*(mcase2==mcontrol2))*wcase2*wcontrol2*n*n
+    htij2<-htijCalculationHelper(risk[Cases],risk[Controls2],ipcwCases[Cases],ipcwControls2[Controls2],n,nbCases,nbControls2)
+    #htij2<-htijCalculationHelper(mcase2,mcontrol2,wcase2,wcontrol2,n)
     ht <- (sum(htij1)+sum(htij2))/(n*n)
     fi1t <- Cases*ipcwCases*n
     colSumshtij1 <- rep(0,n) # initialise at 0
     colSumshtij1[Cases] <- rowSums(htij1)
     colSumshtij2 <- rep(0,n) # initialise at 0
     colSumshtij2[Cases] <- rowSums(htij2) 
-    rowSumshtij1 <- rep(0,n) # initialize at 0
+    rowSumshtij1 <- rep(0,n) # match(time,unique(time))initialize at 0
     rowSumshtij1[Controls1] <- colSums(htij1)
     rowSumshtij2 <- rep(0,n) # initialize at 0
     rowSumshtij2[Controls2] <- colSums(htij2)
@@ -95,14 +107,23 @@ getInfluenceCurve.AUC.competing.risks <- function(t,n,time,risk,Cases,Controls1,
     MC.t <- MC[prodlim::sindex(eval.times=t,jump.times=unique(time)),,drop=TRUE]
     ## MC.t <- rbind(0,MC)[1+prodlim::sindex(eval.times=t,jump.times=unique(time),strict=1),,drop=TRUE]
     # we compute \frac{1}{n}\sum{i=1}^n \sum{j=1}^n \sum{l=1}^n \Psi{ijkl}(t)
-    T1 <- rowSumsCrossprod(htij1,1+MC.Ti.cases,0)
+    #browser()
+    #T1 <- rowSumsCrossprod(htij1,1+MC.Ti.cases,0)
+    T1 <- rowSumsCrossprodSpec(htij1,MC.Ti.cases)
     ## T1 <- colSums(crossprod(htij1,1+MC.Ti.cases))
-    T2 <- rowSumsCrossprod(htij2,1+MC.Ti.cases,0)
+    #T2 <- rowSumsCrossprod(htij2,1+MC.Ti.cases,0)
+    T2 <- rowSumsCrossprodSpec(htij2,MC.Ti.cases)
     ## T2 <- colSums(crossprod(htij2,1+MC.Ti.cases))
     ## in case of ties need to expand MC to match the dimension of fi1t
-    MC.all <- MC[match(time,unique(time)),]
-    ## T3 <- colSums((ht*(1-2*F01t)/(F01t*(1-F01t)))*(fi1t*(1+MC)-F01t))
-    T3 <- colSums((ht*(1-2*F01t)/(F01t*(1-F01t)))*(fi1t*(1+MC.all)-F01t))
+    # data does not have ties, this saves memory 
+    if (all(match(time,unique(time)) != 1:ncol(MC))) {
+        MC <- MC[match(time,unique(time)),]
+    }
+    #MC.all <- MC[match(time,unique(time)),]
+    #should be quicker
+    #T3 <- ht*(1-2*F01t)/(F01t*(1-F01t))*colSums(fi1t*(1+MC))-ht*(1-2*F01t)/(F01t*(1-F01t))*nrow(MC)*F01t
+    T3 <- ht*(1-2*F01t)/(F01t*(1-F01t))*T3CalculationHelper(fi1t,MC)-ht*(1-2*F01t)/(F01t*(1-F01t))*nrow(MC)*F01t
+    #T3 <- colSums((ht*(1-2*F01t)/(F01t*(1-F01t)))*(fi1t*(1+MC.all)-F01t))
     Term.ijlk <- ((T1 + T2) - n^2*ht - n*T3)/(F01t*(1-F01t))
     # we compute \frac{1}{n}\sum_{i=1}^n \sum_{j=1}^n \sum_{k=1}^n \Psi_{ijkl}(t)
     # Q1 <- sapply(1:n,function(i)sum(htij1*(1+MC.t[i])))
@@ -183,8 +204,17 @@ getInfluenceCurve.Brier <- function(t,
         hit2=(time<=t)*residuals ## equation (8) 
         Brier <- mean(residuals)
         if (!is.null(IC.G)){
-            Int0tdMCsurEffARisk <- rbind(0,IC.G)[1+prodlim::sindex(jump.times=unique(time),eval.times=t),,drop=FALSE]
-            IF.Brier <- hit1+hit2-Brier + mean(hit1)*Int0tdMCsurEffARisk + colMeans(IC.G*hit2)
+            if (prodlim::sindex(jump.times=unique(time),eval.times=t) > 1){
+                #Int0tdMCsurEffARisk <- IC.G[prodlim::sindex(jump.times=unique(time),eval.times=t),,drop=FALSE]
+                #IF.Brier <- hit1+hit2-Brier + mean(hit1)*Int0tdMCsurEffARisk+ colMeans(IC.G*hit2)
+                IF.Brier <- hit1+hit2-Brier + mean(hit1)*IC.G[prodlim::sindex(jump.times=unique(time),eval.times=t),,drop=FALSE]+ columnMeanWeight(IC.G,hit2)
+            }
+            else {
+                #Int0tdMCsurEffARisk <- rep(0,ncol(IC.G))
+                IF.Brier <- hit1+hit2-Brier + colMeans(IC.G*hit2)
+            }
+            #Int0tdMCsurEffARisk <- rbind(0,IC.G)[1+prodlim::sindex(jump.times=unique(time),eval.times=t),,drop=FALSE]
+            
         }else{# uncensored
             IF.Brier <- hit1+hit2-Brier
         }

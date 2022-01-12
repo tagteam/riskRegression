@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Aug 23 2016 (17:07) 
 ## Version: 
-## last-updated: Dec  5 2020 (12:38) 
+## last-updated: Jan 12 2022 (10:13) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 15
+##     Update #: 16
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -29,7 +29,6 @@ test_that("boxplot.Score",{
     ## d <- rbindlist(list(d,d,d))
     Qe <- d[time<5.1,quantile(diffba,probs=c(0.05,0.25,0.5,0.75,0.95),type=1)]
     Qef <- d[time>=5.1,quantile(diffba,probs=c(0.05,0.25,0.5,0.75,0.95),type=1)]
-
     ## [ERROR: * cannot open the connection]
     binCase <- Score(list(a=d$a,b=d$b),formula=Y~1,data=d,summary="riskQuantile",null.model=FALSE,plots=NULL,metrics=NULL)
     survCase <- Score(list(a=d$a,b=d$b),formula=Surv(time,status)~1,times=5.1,data=d,summary="riskQuantile",probs=c(0.05,0.25,0.5,0.75,0.95),null.model=FALSE,plots=NULL,metrics=NULL)
