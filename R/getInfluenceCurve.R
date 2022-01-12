@@ -122,7 +122,8 @@ getInfluenceCurve.AUC.competing.risks <- function(t,n,time,risk,Cases,Controls1,
     #MC.all <- MC[match(time,unique(time)),]
     #should be quicker
     #T3 <- ht*(1-2*F01t)/(F01t*(1-F01t))*colSums(fi1t*(1+MC))-ht*(1-2*F01t)/(F01t*(1-F01t))*nrow(MC)*F01t
-    T3 <- ht*(1-2*F01t)/(F01t*(1-F01t))*T3CalculationHelper(fi1t,MC)-ht*(1-2*F01t)/(F01t*(1-F01t))*nrow(MC)*F01t
+    #T3 <- ht*(1-2*F01t)/(F01t*(1-F01t))*T3CalculationHelper(fi1t,MC)-ht*(1-2*F01t)/(F01t*(1-F01t))*nrow(MC)*F01t
+    T3 <- ht*(1-2*F01t)/(F01t*(1-F01t))*(T3CalculationHelper(fi1t,MC)-nrow(MC)*F01t)
     #T3 <- colSums((ht*(1-2*F01t)/(F01t*(1-F01t)))*(fi1t*(1+MC.all)-F01t))
     Term.ijlk <- ((T1 + T2) - n^2*ht - n*T3)/(F01t*(1-F01t))
     # we compute \frac{1}{n}\sum_{i=1}^n \sum_{j=1}^n \sum_{k=1}^n \Psi_{ijkl}(t)
@@ -199,19 +200,19 @@ getInfluenceCurve.Brier <- function(t,
         IF.Brier
     }else{
         ## Blanche et al. 2015 (joint models) web appendix equation (14)
-        Yt <- 1*(time<=t)
         hit1=(time>t)*residuals ## equation (7)
         hit2=(time<=t)*residuals ## equation (8) 
         Brier <- mean(residuals)
         if (!is.null(IC.G)){
-            if (prodlim::sindex(jump.times=unique(time),eval.times=t) > 1){
+            ind <- prodlim::sindex(jump.times=unique(time),eval.times=t)
+            if (ind > 1){
                 #Int0tdMCsurEffARisk <- IC.G[prodlim::sindex(jump.times=unique(time),eval.times=t),,drop=FALSE]
                 #IF.Brier <- hit1+hit2-Brier + mean(hit1)*Int0tdMCsurEffARisk+ colMeans(IC.G*hit2)
-                IF.Brier <- hit1+hit2-Brier + mean(hit1)*IC.G[prodlim::sindex(jump.times=unique(time),eval.times=t),,drop=FALSE]+ columnMeanWeight(IC.G,hit2)
+                IF.Brier <- residuals-Brier + mean(hit1)*IC.G[ind,,drop=FALSE]+ columnMeanWeight(IC.G,hit2)
             }
             else {
                 #Int0tdMCsurEffARisk <- rep(0,ncol(IC.G))
-                IF.Brier <- hit1+hit2-Brier + colMeans(IC.G*hit2)
+                IF.Brier <- residuals-Brier + colMeans(IC.G*hit2)
             }
             #Int0tdMCsurEffARisk <- rbind(0,IC.G)[1+prodlim::sindex(jump.times=unique(time),eval.times=t),,drop=FALSE]
             
