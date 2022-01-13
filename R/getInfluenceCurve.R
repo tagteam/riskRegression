@@ -130,7 +130,7 @@ getInfluenceCurve.AUC.competing.risks <- function(t,n,time,risk,Cases,Controls1,
     # Q1 <- sapply(1:n,function(i)sum(htij1*(1+MC.t[i])))
     Q1 <- sum(htij1)*(1+MC.t)
     ## Q2 <- colSums(crossprod(t(htij2),(1+MC.Ti.controls2)))
-    Q2 <- colSumsCrossprod(htij2,(1+MC.Ti.controls2),0)
+    Q2 <- colSumsCrossprodSpec(htij2,MC.Ti.controls2)
     Term.ijkl <- ((Q1 + Q2) - n^2*ht)/(F01t*(1-F01t))
     # we compute \frac{1}{n}\sum_{j=1}^n \sum_{k=1}^n \sum_{l=1}^n \Psi_{ijkl}(t)
     Term.jkli <-((colSumshtij1 + colSumshtij2)*n - n^2*ht - ( ht*n^2*(1-2*F01t) / (F01t*(1-F01t)) ) *(fi1t - F01t) )/(F01t*(1-F01t))

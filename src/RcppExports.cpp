@@ -419,6 +419,18 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// colSumsCrossprodSpec
+NumericMatrix colSumsCrossprodSpec(arma::mat& X, arma::mat& Y);
+RcppExport SEXP _riskRegression_colSumsCrossprodSpec(SEXP XSEXP, SEXP YSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::mat& >::type X(XSEXP);
+    Rcpp::traits::input_parameter< arma::mat& >::type Y(YSEXP);
+    rcpp_result_gen = Rcpp::wrap(colSumsCrossprodSpec(X, Y));
+    return rcpp_result_gen;
+END_RCPP
+}
 // predictCIF_cpp
 List predictCIF_cpp(const std::vector<arma::mat>& hazard, const std::vector<arma::mat>& cumhazard, const arma::mat& eXb, const arma::mat& strata, const std::vector<double>& newtimes, const std::vector<double>& etimes, const std::vector<double>& etimeMax, double t0, int nEventTimes, int nNewTimes, int nData, int cause, int nCause, bool survtype, bool productLimit, bool diag, bool exportSurv);
 RcppExport SEXP _riskRegression_predictCIF_cpp(SEXP hazardSEXP, SEXP cumhazardSEXP, SEXP eXbSEXP, SEXP strataSEXP, SEXP newtimesSEXP, SEXP etimesSEXP, SEXP etimeMaxSEXP, SEXP t0SEXP, SEXP nEventTimesSEXP, SEXP nNewTimesSEXP, SEXP nDataSEXP, SEXP causeSEXP, SEXP nCauseSEXP, SEXP survtypeSEXP, SEXP productLimitSEXP, SEXP diagSEXP, SEXP exportSurvSEXP) {
@@ -622,6 +634,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_riskRegression_T3CalculationHelper", (DL_FUNC) &_riskRegression_T3CalculationHelper, 2},
     {"_riskRegression_htijCalculationHelper", (DL_FUNC) &_riskRegression_htijCalculationHelper, 7},
     {"_riskRegression_rowSumsCrossprodSpec", (DL_FUNC) &_riskRegression_rowSumsCrossprodSpec, 2},
+    {"_riskRegression_colSumsCrossprodSpec", (DL_FUNC) &_riskRegression_colSumsCrossprodSpec, 2},
     {"_riskRegression_predictCIF_cpp", (DL_FUNC) &_riskRegression_predictCIF_cpp, 17},
     {"_riskRegression_rowCumSum", (DL_FUNC) &_riskRegression_rowCumSum, 1},
     {"_riskRegression_rowCumProd", (DL_FUNC) &_riskRegression_rowCumProd, 1},

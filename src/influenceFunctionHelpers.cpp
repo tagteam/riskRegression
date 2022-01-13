@@ -59,6 +59,11 @@ NumericMatrix rowSumsCrossprodSpec(arma::mat &X, arma::mat &Y){
   return(wrap(arma::sum(X,1).t()*(Y+1)));
 }
 
+// [[Rcpp::export]]
+NumericMatrix colSumsCrossprodSpec(arma::mat &X, arma::mat &Y){
+  return(wrap(arma::sum(X,0)*(Y+1)));
+}
+
 // arma::mat htijCalculation(arma::vec &mcase, arma::vec &mcontrol,arma::vec &wcase,arma::vec &wcontrol,int n, int nrows, int ncols){
 //   arma::mat ans(nrows,ncols);
 //   for (int j = 0; j < ncols; j++){
