@@ -199,7 +199,7 @@ getInfluenceCurve.Brier <- function(t,
         IF.Brier
     }else{
         ## Blanche et al. 2015 (joint models) web appendix equation (14)
-        Yt <- 1*(time<=t)
+        ## Yt <- 1*(time<=t)
         hit1=(time>t)*residuals ## equation (7)
         hit2=(time<=t)*residuals ## equation (8) 
         Brier <- mean(residuals)

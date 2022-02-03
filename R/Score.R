@@ -1591,7 +1591,7 @@ theCall <- match.call()
                         ## REMOVE ME
                         ## Ib <- Ib[order(data$ID)]
                         if (any(Ib==0)) {
-                            stop("Some subjects are never out of bag.\n You should increase the number of bootstrap replications (argument 'B').")
+                            warning("Some subjects are never out of bag.\n You should increase the number of bootstrap replications (argument 'B').")
                             Ib.include <- Ib!=0
                             Ib <- Ib[Ib.include]
                             ## don't subset residuals, they are only
