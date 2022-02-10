@@ -42,6 +42,45 @@ getInfluenceCurve.AUC.survival <- function(t,n,time,risk,Cases,Controls,ipcwCont
     (Term.ijak + Term.ikaj + Term.jkai)/(n)
 }
 
+# uncensored data  for survival case
+getInfluenceCurve.AUC.survivalUncensored <- function(t,n,time,risk,Cases,Controls,ipcwControls,ipcwCases,MC){
+    if (is.unsorted(time)) {
+        ord <- order(time)
+        time <- time[ord]
+        risk <- risk[ord]
+    }
+    maxIndex <- max(which(time <= t))
+    muP <- 1/n^2 * maxIndex * (n-maxIndex)
+    nuP <- 0
+    for (i in 1:maxIndex){
+        for (j in (maxIndex+1):n){
+            nuP <- nuP + 1*(risk[i] > risk[j])
+        }
+    }
+    nuP <- 1/n^2 * nuP
+    # muP <- 0
+    # nuP <- 0
+    # for (i in 1:n){
+    #     for (j in 1:n){
+    #         muP <- muP + 1*(time[i] <= t & time[j] > t)
+    #         nuP <- nuP + 1*(risk[i] > risk[j] & time[i] <= t & time[j] > t)
+    #     }
+    # }
+    # muP <- 1/n^2 * muP
+    # nuP <- 1/n^2 * nuP
+    PTgreaterthantau <- mean(time>t)
+    IC <- rep(NA,n)
+    for (i in 1:n){
+        if (time[i] <= t){
+            IC[i] <- (mean(time > t & risk < risk[i])*muP-PTgreaterthantau*nuP)/(muP^2) 
+        }
+        else {
+            # which way, what happens if risk = ?
+            IC[i] <- (mean(time <= t & risk > risk[i])*muP-(1-PTgreaterthantau)*nuP)/(muP^2)
+        }
+    }
+    IC
+}
 
 ## NTC <- NCOL(MC.Ti.cases)
 ## T1 <- numeric(NTC)

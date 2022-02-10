@@ -856,12 +856,12 @@ theCall <- match.call()
             if (cens.type=="uncensored"){
                 cens.method <- "none"
                 cens.model <- "none"
-                if ("AUC" %in% metrics){
-                    if (se.fit==TRUE) {
-                        warning("Standard error for AUC with uncensored time-to-event outcome not yet implemented.")
-                        se.fit <- FALSE
-                    }
-                }
+                # if ("AUC" %in% metrics){
+                #     if (se.fit==TRUE) {
+                #         #warning("Standard error for AUC with uncensored time-to-event outcome not yet implemented.")
+                #         #se.fit <- FALSE
+                #     }
+                # }
                 Weights <- NULL
             }
             else{
