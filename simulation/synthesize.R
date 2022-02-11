@@ -226,7 +226,6 @@ synthesize.lvm <- function(object,
                            fixNames = FALSE,
                            ...){
 
-
     if (fromFormula && verbose){
       warning("fromFormula should be set to false if you did not specify a formula")
     }
@@ -331,20 +330,24 @@ synthesize.lvm <- function(object,
     # 2. binomial
     # 3. categorical
     # deal with exogenous variables (which are without covariates)
+    labels <- list()
+    categorical.vars <- c()
     for(var in exogenous(object)){
         var_formula <- as.formula(paste0("~", var))
-
         #case: gaussian
+
         if("gaussian" %in% attributes(object$attributes$distribution[[var]])$family){
             lava::distribution(sim_model,var_formula) <- lava::normal.lvm(mean=mean(data[[var]]),
                                                                           sd=sd(data[[var]]))
         }
         #case: binary
         else if("binomial" %in% attributes(object$attributes$distribution[[var]])$family){
+            labels[[var]] <- levels(data[[var]])
             lava::distribution(sim_model, var_formula) <- lava::binomial.lvm(p=mean(factor(data[[var]])==levels(factor(data[[var]]))[2]))
         }
         #case: categorical
         else if(var %in% names(object$attributes$nordinal)){
+            categorical.vars <- c(categorical.vars, var)
             num_cat <- object$attributes$nordinal[[var]] #what if levels is NULL?
             cat_probs <- vector(mode="numeric", length=num_cat-1)
             for(i in 1:(num_cat-1)){
@@ -362,7 +365,7 @@ synthesize.lvm <- function(object,
         }
     }
 
-
+    
     # dichotomize categorical variables
     # should not do this if the cat. variable is not in lvm.object
     # note: name of dich. variables must correspond with names used in lava::regression formulas outside synthesize-func.
@@ -371,9 +374,15 @@ synthesize.lvm <- function(object,
         #fix factors with weird characters including binary
         #note: we do not fix formulas and weirdly named variables
         #  can give problems if synthesized directly from lvm
+        # don't change 0/1 variables even if they are factors
         if (fromFormula || fixNames){
-          lvls <- make.names(levels(data[[var]]))
-          levels(data[[var]]) <- lvls
+          # remove warning, i.e. don't compare if the number of levels is greater than 2
+          if (length(levels(data[[var]])) ==2 && all(levels(data[[var]]) == c("0","1"))){
+          }
+          else {
+            lvls <- make.names(levels(data[[var]]))
+            levels(data[[var]]) <- lvls
+          }
         }
         if(!any(grepl(var,  dimnames(object$M)[[1]]))){
             #variable not in lvm object
@@ -445,6 +454,7 @@ synthesize.lvm <- function(object,
           sim_model <- lava::eventTime(sim_model,et.formula, object$attributes$eventHistory[[timename]]$names[2])
         }
     }
+
     # Estimate regression coefficients in real data
     # and add them to the lvm object using lava::regression
     for(var in latent_vars[!(latent_vars %in% object$attributes$eventHistory$time$names)]){
@@ -455,6 +465,8 @@ synthesize.lvm <- function(object,
         # 2. logistic regression
         # 3. multinomial logistic regression
         if ("binomial" %in% attributes(object$attributes$distribution[[var]])$family){
+            # might also lack levels here
+            labels[[var]] <- levels(data[[var]])
             fit <- glm(reg_formula,data=data,family="binomial")
             p0<-exp(coef(fit)[1])/(1+exp(coef(fit)[1]))
             lava::distribution(sim_model,as.formula(paste0("~", var))) <- lava::binomial.lvm(p=p0)
@@ -462,6 +474,7 @@ synthesize.lvm <- function(object,
         }
         #case: categorical
         else if (var %in% dichotomized_variables){
+          categorical.vars <- c(categorical.vars, var)
           if (verbose) warning("Synthesize untested for categorical variables")
           for(lvl in levels(data[[var]])[-1]){
             reg_formula <- as.formula(paste0(var, lvl, "~", covariates))
@@ -489,8 +502,9 @@ synthesize.lvm <- function(object,
     for (v in logtrans){
         transform(sim_model,as.formula(paste0(v,"~log",v))) <- function(x){exp(x)}
     }
-
-    return(sim_model)
+    res <- list(lava.object = sim_model, labels = labels, categories = categorical.vars)
+    class(res) <- "synth"
+    return(res)
 }
 
 #returns categorical values
@@ -501,6 +515,29 @@ categorize <- function(v,max.levels,data){
   if (!is.cat) {is.cat <- (nu < max.levels)}
   is.bin <- nu==2
   return(is.bin+is.cat)
+}
+
+#' @export sim.synth
+#' @export
+sim.synth <- function(object, n= 200, original.form=FALSE, ...){
+  lava.object <- object$lava.object
+  res <- lava::sim(lava.object,n,...)
+  labels <- object$labels
+  for (var in names(labels)){
+    res[[var]] <- factor(res[[var]])
+    levels(res[[var]]) <- labels[[var]]
+  }
+  # remove variables that would not be in the original data set 
+  if (original.form){
+    categories <- object$categories
+    if (length(grep("time.event",names(res))) != 0L){
+      res <- res[,-grep("time.event",names(res))]
+    }
+    for (c in categories) {
+      res <- res[,-grep(c,names(res))[-1]]
+    }
+  }
+  res
 }
 
 #' @export synthesizeLTMLE
