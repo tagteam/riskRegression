@@ -42,6 +42,47 @@ getInfluenceCurve.AUC.survival <- function(t,n,time,risk,Cases,Controls,ipcwCont
     (Term.ijak + Term.ikaj + Term.jkai)/(n)
 }
 
+getInfluenceCurve.AUC.survival.Censored <- function(t,n,time,risk,Cases,Controls,GTiminus,Gtau){
+    IF <- rep(NA,n)
+    
+    # get the notation right
+    tau <- t
+    # The probability Q(tilde{T} > tau)
+    PTgreaterthantau <- mean(time > tau)
+    # The integral \int 1_{t \leq \tau, Delta = 1}/ G(t-) dP(t)
+    int1 <-  mean(Cases/( GTiminus))
+    # mu_tau(P) estimate
+    mutauP <- int1 * PTgreaterthantau
+    # Influence function of numerator (assume that G(T > tau) is put outside)
+    #The probability Q(X < Xi, tilde{T} > τ) estimated empirically
+    Pprob <- rep(NA,n)
+    for (i in 1:n){
+        Pprob[i] <- mean(risk < risk[i] & time > tau)
+    }
+    nutauP <- rep(NA,n)
+    for (i in 1:n){
+        nutauP[i] <- mean(1*(Cases==TRUE) * Pprob[i] / GTiminus)
+    }
+    for (i in 1:n){
+        if (Controls[i]){
+            #The probability Q(X < Xi, tilde{T} > τ) estimated empirically / G(tilde{T}_i-)
+            inum <- Pprob[i] / GTiminus[i]
+            iden <- PTgreaterthantau / GTiminus[i]
+        }
+        else {
+            # Use the empirical measure for the third term
+            inum <- mean(1*(risk[i] < risk & Cases)/( GTiminus))
+            iden <- int1
+        }
+        # For now assume that add1 and add2 = 0 (these are the martingale terms)
+        add1 <- 0
+        add2 <- 0
+        IF[i] <- ((inum+add1)*mutauP- nutauP[i]*(iden+add2))/(mutauP^2)
+    }
+    IF
+}
+
+
 # uncensored data  for survival case
 getInfluenceCurve.AUC.survivalUncensored <- function(t,n,time,risk,Cases,Controls,ipcwControls,ipcwCases,MC){
     if (is.unsorted(time)) {

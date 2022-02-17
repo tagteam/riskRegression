@@ -72,15 +72,23 @@ AUC.survival <- function(DT,MC,se.fit,conservative,cens.model,keep.vcov=FALSE,mu
             # se.score[,se:=se.auc]
         }
         else {
-            aucDT[,IF.AUC:=getInfluenceCurve.AUC.survival(t=times[1],
+            aucDT[,IF.AUC:=getInfluenceCurve.AUC.survival.Censored(t=times[1],
                                                           n=N,
                                                           time=time,
                                                           risk=risk,
                                                           Cases=Cases,
                                                           Controls=Controls,
-                                                          ipcwControls=ipcwControls,
-                                                          ipcwCases=ipcwCases,
-                                                          MC=MC), by=list(model,times)]
+                                                          GTiminus = WTi,
+                                                          Gtau = Wt[1]), by=list(model,times)]
+            # aucDT[,IF.AUC:=getInfluenceCurve.AUC.survival(t=times[1],
+            #                                                        n=N,
+            #                                                        time=time,
+            #                                                        risk=risk,
+            #                                                        Cases=Cases,
+            #                                                        Controls=Controls,
+            #                                                        ipcwControls=ipcwControls,
+            #                                                        ipcwCases=ipcwCases,
+            #                                                        MC=MC), by=list(model,times)]
             
         }
         se.score <- aucDT[,list(se=sd(IF.AUC)/sqrt(N)),by=list(model,times)]
