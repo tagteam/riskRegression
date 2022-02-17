@@ -44,7 +44,6 @@ getInfluenceCurve.AUC.survival <- function(t,n,time,risk,Cases,Controls,ipcwCont
 
 getInfluenceCurve.AUC.survival.Censored <- function(t,n,time,risk,Cases,Controls,GTiminus,Gtau){
     IF <- rep(NA,n)
-    
     # get the notation right
     tau <- t
     # The probability Q(tilde{T} > tau)
@@ -59,25 +58,23 @@ getInfluenceCurve.AUC.survival.Censored <- function(t,n,time,risk,Cases,Controls
     for (i in 1:n){
         Pprob[i] <- mean(risk < risk[i] & time > tau)
     }
-    nutauP <- rep(NA,n)
+    nutauP <-  mean(1*(Cases) * Pprob / GTiminus)
+    #debug from here
     for (i in 1:n){
-        nutauP[i] <- mean(1*(Cases==TRUE) * Pprob[i] / GTiminus)
-    }
-    for (i in 1:n){
-        if (Controls[i]){
+        if (Cases[i]){
             #The probability Q(X < Xi, tilde{T} > τ) estimated empirically / G(tilde{T}_i-)
-            inum <- Pprob[i] / GTiminus[i]
-            iden <- PTgreaterthantau / GTiminus[i]
+            inum <- Pprob[i] / (GTiminus[i]*Gtau)
+            iden <- PTgreaterthantau / (GTiminus[i]*Gtau)
         }
         else {
             # Use the empirical measure for the third term
-            inum <- mean(1*(risk[i] < risk & Cases)/( GTiminus))
-            iden <- int1
+            inum <- mean(1*(risk[i] < risk & Cases)/( GTiminus)) * 1/Gtau
+            iden <- int1/Gtau
         }
         # For now assume that add1 and add2 = 0 (these are the martingale terms)
         add1 <- 0
         add2 <- 0
-        IF[i] <- ((inum+add1)*mutauP- nutauP[i]*(iden+add2))/(mutauP^2)
+        IF[i] <- ((inum+add1)*mutauP- nutauP*(iden+add2))/(mutauP^2)
     }
     IF
 }

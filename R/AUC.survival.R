@@ -51,35 +51,42 @@ AUC.survival <- function(DT,MC,se.fit,conservative,cens.model,keep.vcov=FALSE,mu
         ## compute influence function
         ## data.table::setorder(aucDT,model,times,time,-status)
         data.table::setorder(aucDT,model,times,ID)
-        if (all(aucDT$status==1)){
-            aucDT[,IF.AUC:=getInfluenceCurve.AUC.survivalUncensored(t=times[1],
-                                                          n=N,
-                                                          time=time,
-                                                          risk=risk,
-                                                          Cases=Cases,
-                                                          Controls=Controls,
-                                                          ipcwControls=ipcwControls,
-                                                          ipcwCases=ipcwCases,
-                                                          MC=MC), by=list(model,times)]
-            # how one can use delongdelong in this case, does not work yet
-            # risk <- matrix(aucDT$risk,ncol=length(unique(aucDT$model)),nrow=N)
-            # Cases <- aucDT$Cases[1:N]
-            # riskcontrols <- as.matrix(risk[!Cases,])
-            # riskcases <- as.matrix(risk[Cases,])
-            # S <- calculateDelongCovarianceFast(riskcases,riskcontrols)
-            # se.auc <- sqrt(diag(S))
-            # se.score <- unique(aucDT[,data.table(model,times)])
-            # se.score[,se:=se.auc]
-        }
-        else {
-            aucDT[,IF.AUC:=getInfluenceCurve.AUC.survival.Censored(t=times[1],
-                                                          n=N,
-                                                          time=time,
-                                                          risk=risk,
-                                                          Cases=Cases,
-                                                          Controls=Controls,
-                                                          GTiminus = WTi,
-                                                          Gtau = Wt[1]), by=list(model,times)]
+        aucDT[,IF.AUC:=getInfluenceCurve.AUC.survival.Censored(t=times[1],
+                                                               n=N,
+                                                               time=time,
+                                                               risk=risk,
+                                                               Cases=Cases,
+                                                               Controls=Controls,
+                                                               GTiminus = WTi,
+                                                               Gtau = Wt[1]), by=list(model,times)]
+        # aucDT[,IF.AUC:=getInfluenceCurve.AUC.survival(t=times[1],
+        #                                               n=N,
+        #                                               time=time,
+        #                                               risk=risk,
+        #                                               Cases=Cases,
+        #                                               Controls=Controls,
+        #                                               ipcwControls=ipcwControls,
+        #                                               ipcwCases=ipcwCases,
+        #                                               MC=MC), by=list(model,times)]
+        
+        #     # aucDT[,IF.AUC:=getInfluenceCurve.AUC.survivalUncensored(t=times[1],
+        #     #                                               n=N,
+        #     #                                               time=time,
+        #     #                                               risk=risk,
+        #     #                                               Cases=Cases,
+        #     #                                               Controls=Controls,
+        #     #                                               ipcwControls=ipcwControls,
+        #     #                                               ipcwCases=ipcwCases,
+        #     #                                               MC=MC), by=list(model,times)]
+        #     # how one can use delongdelong in this case, does not work yet
+        #     # risk <- matrix(aucDT$risk,ncol=length(unique(aucDT$model)),nrow=N)
+        #     # Cases <- aucDT$Cases[1:N]
+        #     # riskcontrols <- as.matrix(risk[!Cases,])
+        #     # riskcases <- as.matrix(risk[Cases,])
+        #     # S <- calculateDelongCovarianceFast(riskcases,riskcontrols)
+        #     # se.auc <- sqrt(diag(S))
+        #     # se.score <- unique(aucDT[,data.table(model,times)])
+        #     # se.score[,se:=se.auc]
             # aucDT[,IF.AUC:=getInfluenceCurve.AUC.survival(t=times[1],
             #                                                        n=N,
             #                                                        time=time,
@@ -89,8 +96,6 @@ AUC.survival <- function(DT,MC,se.fit,conservative,cens.model,keep.vcov=FALSE,mu
             #                                                        ipcwControls=ipcwControls,
             #                                                        ipcwCases=ipcwCases,
             #                                                        MC=MC), by=list(model,times)]
-            
-        }
         se.score <- aucDT[,list(se=sd(IF.AUC)/sqrt(N)),by=list(model,times)]
         
         
