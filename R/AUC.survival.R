@@ -45,12 +45,15 @@ AUC.survival <- function(DT,MC,se.fit,conservative,cens.model,keep.vcov=FALSE,mu
         N <- length(FP)
         sum((FP-c(0,FP[-N]))*((c(0,TP[-N])+TP)/2))
     }
+    
     score <- aucDT[nodups,list(AUC=AireTrap(FPR,TPR)),by=list(model,times)]
     data.table::setkey(score,model,times)
+    aucDT <- merge(score,aucDT,all=TRUE)
     if (se.fit[[1]]==1L || multi.split.test[[1]]==TRUE){
         ## compute influence function
         ## data.table::setorder(aucDT,model,times,time,-status)
         data.table::setorder(aucDT,model,times,ID)
+        browser()
         aucDT[,IF.AUC:=getInfluenceCurve.AUC.survival.Censored(t=times[1],
                                                                n=N,
                                                                time=time,
@@ -58,7 +61,7 @@ AUC.survival <- function(DT,MC,se.fit,conservative,cens.model,keep.vcov=FALSE,mu
                                                                Cases=Cases,
                                                                Controls=Controls,
                                                                GTiminus = WTi,
-                                                               Gtau = Wt[1]), by=list(model,times)]
+                                                               Gtau = Wt[1], MC = MC, AUC=AUC[1]), by=list(model,times)]
         # aucDT[,IF.AUC:=getInfluenceCurve.AUC.survival(t=times[1],
         #                                               n=N,
         #                                               time=time,

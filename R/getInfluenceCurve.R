@@ -42,7 +42,8 @@ getInfluenceCurve.AUC.survival <- function(t,n,time,risk,Cases,Controls,ipcwCont
     (Term.ijak + Term.ikaj + Term.jkai)/(n)
 }
 
-getInfluenceCurve.AUC.survival.Censored <- function(t,n,time,risk,Cases,Controls,GTiminus,Gtau){
+
+getInfluenceCurve.AUC.survival.Censored <- function(t,n,time,risk,Cases,Controls,GTiminus,Gtau,MC, AUC){
     IF <- rep(NA,n)
     # get the notation right
     tau <- t
@@ -53,13 +54,16 @@ getInfluenceCurve.AUC.survival.Censored <- function(t,n,time,risk,Cases,Controls
     # mu_tau(P) estimate
     mutauP <- int1 * PTgreaterthantau
     # Influence function of numerator (assume that G(T > tau) is put outside)
-    #The probability Q(X < Xi, tilde{T} > τ) estimated empirically
+    #The probability P(X < Xi, tilde{T} > τ) estimated empirically
     Pprob <- rep(NA,n)
     for (i in 1:n){
         Pprob[i] <- mean(risk < risk[i] & time > tau)
     }
-    nutauP <-  mean(1*(Cases) * Pprob / GTiminus)
-    #debug from here
+    # nutauP <-  mean(1*(Cases) * Pprob / GTiminus)
+    browser()
+    #Saved in another DT
+    nutauP <- AUC * mutauP
+    firsthit <- sindex(jump.times=time,eval.times=tau)
     for (i in 1:n){
         if (Cases[i]){
             #The probability Q(X < Xi, tilde{T} > τ) estimated empirically / G(tilde{T}_i-)
@@ -71,9 +75,28 @@ getInfluenceCurve.AUC.survival.Censored <- function(t,n,time,risk,Cases,Controls
             inum <- mean(1*(risk[i] < risk & Cases)/( GTiminus)) * 1/Gtau
             iden <- int1/Gtau
         }
-        # For now assume that add1 and add2 = 0 (these are the martingale terms)
-        add1 <- 0
-        add2 <- 0
+        # For now assume that add1 and add2 = 0 (these are the martingale terms, ideally without MC, also needs a fix for ties)
+        if (!is.null(MC)){
+            if (i > firsthit){
+                j <- firsthit
+            }
+            else {
+                j <- i
+            }
+            if (i == 1){
+                vecNAIC <- rep(MC[i,i], n)
+            }
+            else {
+                vecNAIC <- c(MC[1:(i-1),i], rep(MC[i,i], n-i+1)) 
+            }
+            add1 <- 1/Gtau * (mean( (1*(Cases) * Pprob*vecNAIC) / GTiminus)+MC[j,i]*nutauP)
+            add2 <- PTgreaterthantau/Gtau * (mean( (1*(Cases) *vecNAIC) / GTiminus)+MC[j,i]*int1)
+        }
+        else {
+            add1 <- 0 
+            add2 <- 0
+        }
+        
         IF[i] <- ((inum+add1)*mutauP- nutauP*(iden+add2))/(mutauP^2)
     }
     IF
