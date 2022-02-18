@@ -60,7 +60,6 @@ getInfluenceCurve.AUC.survival.Censored <- function(t,n,time,risk,Cases,Controls
         Pprob[i] <- mean(risk < risk[i] & time > tau)
     }
     # nutauP <-  mean(1*(Cases) * Pprob / GTiminus)
-    browser()
     #Saved in another DT
     nutauP <- AUC * mutauP
     firsthit <- sindex(jump.times=time,eval.times=tau)
@@ -83,13 +82,16 @@ getInfluenceCurve.AUC.survival.Censored <- function(t,n,time,risk,Cases,Controls
             else {
                 j <- i
             }
+            # if (i==3){
+            #     browser()
+            # }
             if (i == 1){
-                vecNAIC <- rep(MC[i,i], n)
+                vecNAIC <- c(0,rep(MC[i,i], n-1))
             }
             else {
-                vecNAIC <- c(MC[1:(i-1),i], rep(MC[i,i], n-i+1)) 
+                vecNAIC <- c(0,MC[1:(i-1),i], rep(MC[i,i], n-i)) 
             }
-            add1 <- 1/Gtau * (mean( (1*(Cases) * Pprob*vecNAIC) / GTiminus)+MC[j,i]*nutauP)
+            add1 <- 1/Gtau * (mean( (1*(Cases) * Pprob*vecNAIC) / GTiminus))+MC[j,i]*nutauP
             add2 <- PTgreaterthantau/Gtau * (mean( (1*(Cases) *vecNAIC) / GTiminus)+MC[j,i]*int1)
         }
         else {

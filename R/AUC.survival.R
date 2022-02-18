@@ -53,7 +53,7 @@ AUC.survival <- function(DT,MC,se.fit,conservative,cens.model,keep.vcov=FALSE,mu
         ## compute influence function
         ## data.table::setorder(aucDT,model,times,time,-status)
         data.table::setorder(aucDT,model,times,ID)
-        browser()
+        # browser()
         aucDT[,IF.AUC:=getInfluenceCurve.AUC.survival.Censored(t=times[1],
                                                                n=N,
                                                                time=time,
@@ -62,7 +62,7 @@ AUC.survival <- function(DT,MC,se.fit,conservative,cens.model,keep.vcov=FALSE,mu
                                                                Controls=Controls,
                                                                GTiminus = WTi,
                                                                Gtau = Wt[1], MC = MC, AUC=AUC[1]), by=list(model,times)]
-        # aucDT[,IF.AUC:=getInfluenceCurve.AUC.survival(t=times[1],
+        # aucDT[,IF.AUC2:=getInfluenceCurve.AUC.survival(t=times[1],
         #                                               n=N,
         #                                               time=time,
         #                                               risk=risk,
