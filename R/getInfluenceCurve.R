@@ -43,63 +43,62 @@ getInfluenceCurve.AUC.survival <- function(t,n,time,risk,Cases,Controls,ipcwCont
 }
 
 
-getInfluenceCurve.AUC.survival.Censored <- function(t,n,time,risk,Cases,Controls,GTiminus,Gtau,MC, AUC){
+getInfluenceCurve.AUC.survival.Censored <- function(t,n,time,risk,Cases,Controls,GTiminus,Gtau,MC, AUC, discardNAIC = FALSE){
     IF <- rep(NA,n)
     # get the notation right
     tau <- t
-    # The probability Q(tilde{T} > tau)
-    PTgreaterthantau <- mean(time > tau)
-    # The integral \int 1_{t \leq \tau, Delta = 1}/ G(t-) dP(t)
-    int1 <-  mean(Cases/( GTiminus))
-    # mu_tau(P) estimate
-    mutauP <- int1 * PTgreaterthantau
-    # Influence function of numerator (assume that G(T > tau) is put outside)
-    #The probability P(X < Xi, tilde{T} > τ) estimated empirically
-    Pprob <- rep(NA,n)
-    for (i in 1:n){
-        Pprob[i] <- mean(risk < risk[i] & time > tau)
-    }
-    # nutauP <-  mean(1*(Cases) * Pprob / GTiminus)
-    #Saved in another DT
+    mu1hat <- mean(time > tau)
+    mutauP <- (mu1hat / Gtau) * mean(Cases/( GTiminus))
     nutauP <- AUC * mutauP
+    
+    nu1hat <- rep(NA,n)
+    for (i in 1:n){
+        nu1hat[i] <- mean(risk < risk[i] & time > tau)
+    }
+    # without using the AUC values, we can estimate nutauP as follows
+    # nutauP <-  mean(1*(Cases) * nu1hat / GTiminus)
+    
     firsthit <- sindex(jump.times=time,eval.times=tau)
     for (i in 1:n){
+        # First terms of IF_{num}_i and IF_{den}_i
         if (Cases[i]){
-            #The probability Q(X < Xi, tilde{T} > τ) estimated empirically / G(tilde{T}_i-)
-            inum <- Pprob[i] / (GTiminus[i]*Gtau)
-            iden <- PTgreaterthantau / (GTiminus[i]*Gtau)
+            firstterm.num <- (nu1hat[i]) / (GTiminus[i]*Gtau)
+            firstterm.den <- mu1hat / (GTiminus[i]*Gtau)
+        }
+        else if (Controls[i]){
+            nu2hati <- mean(1*(risk[i] < risk & Cases)/( GTiminus))
+            firstterm.num <-  nu2hati * 1/Gtau
+            firstterm.den <- mutauP / mu1hat
         }
         else {
-            # Use the empirical measure for the third term
-            inum <- mean(1*(risk[i] < risk & Cases)/( GTiminus)) * 1/Gtau
-            iden <- int1/Gtau
+            firstterm.num <-  0
+            firstterm.den <- 0
         }
-        # For now assume that add1 and add2 = 0 (these are the martingale terms, ideally without MC, also needs a fix for ties)
-        if (!is.null(MC)){
+        # The two last terms of IF_{num}_i and IF_{den}_i
+        if (!is.null(MC) && !discardNAIC){
             if (i > firsthit){
                 j <- firsthit
             }
             else {
                 j <- i
             }
-            # if (i==3){
-            #     browser()
-            # }
             if (i == 1){
-                vecNAIC <- c(0,rep(MC[i,i], n-1))
+                fihat <- c(0,rep(MC[i,i], n-1))
             }
             else {
-                vecNAIC <- c(0,MC[1:(i-1),i], rep(MC[i,i], n-i)) 
+                fihat <- c(0,MC[1:(i-1),i], rep(MC[i,i], n-i)) 
             }
-            add1 <- 1/Gtau * (mean( (1*(Cases) * Pprob*vecNAIC) / GTiminus))+MC[j,i]*nutauP
-            add2 <- PTgreaterthantau/Gtau * (mean( (1*(Cases) *vecNAIC) / GTiminus)+MC[j,i]*int1)
+            fihattau <- MC[j,i]
+            nu3hati <- mean( (1*(Cases) * nu1hat*fihat) / GTiminus)
+            ICNAterms.num <- fihattau * nutauP + 1/Gtau * nu3hati
+            mu2hat <- mean( (1*(Cases) *fihat) / GTiminus)
+            ICNAterms.den <-  fihattau * mutauP +mu1hat/Gtau * mu2hat
         }
         else {
-            add1 <- 0 
-            add2 <- 0
+            ICNAterms.num <- 0 
+            ICNAterms.den <- 0
         }
-        
-        IF[i] <- ((inum+add1)*mutauP- nutauP*(iden+add2))/(mutauP^2)
+        IF[i] <- ((firstterm.num+ICNAterms.num)*mutauP- nutauP*(firstterm.den+ICNAterms.den))/(mutauP^2)
     }
     IF
 }
