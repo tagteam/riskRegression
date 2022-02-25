@@ -840,13 +840,24 @@ theCall <- match.call()
                     cens.model <- "KaplanMeier"
                 }
             }
-            Weights <- getCensoringWeights(formula=formula,
-                                           data=data,
-                                           times=times,
-                                           cens.model=cens.model,
-                                           response.type=response.type,
-                                           ## FIXME: need conservative formula for AUC
-                                           influence.curve=(se.fit[[1]]==TRUE && (conservative[[1]]==0L || ("AUC" %in% metrics))))
+            if (response.type == "survival" && ("AUC" %in% metrics) && (cens.model[[1]]=="KaplanMeier")){
+              Weights <- getCensoringWeights(formula=formula,
+                                             data=data,
+                                             times=times,
+                                             cens.model=cens.model,
+                                             response.type=response.type,
+                                             influence.curve=FALSE)
+            }
+            else {
+              Weights <- getCensoringWeights(formula=formula,
+                                             data=data,
+                                             times=times,
+                                             cens.model=cens.model,
+                                             response.type=response.type,
+                                             ## FIXME: need conservative formula for AUC
+                                             influence.curve=(se.fit[[1]]==TRUE && (conservative[[1]]==0L || ("AUC" %in% metrics))))
+              
+            }
             ##
             ## if cens.model is marginal then IC is a matrix (ntimes,newdata)
             ## if cens.model is Cox then IC is an array (nlearn, ntimes, newdata)

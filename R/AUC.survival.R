@@ -53,24 +53,29 @@ AUC.survival <- function(DT,MC,se.fit,conservative,cens.model,keep.vcov=FALSE,mu
         ## compute influence function
         ## data.table::setorder(aucDT,model,times,time,-status)
         data.table::setorder(aucDT,model,times,ID)
-        # browser()
-        aucDT[,IF.AUC:=getInfluenceCurve.AUC.survival.Censored(t=times[1],
-                                                               n=N,
-                                                               time=time,
-                                                               risk=risk,
-                                                               Cases=Cases,
-                                                               Controls=Controls,
-                                                               GTiminus = WTi,
-                                                               Gtau = Wt[1], MC = MC, AUC=AUC[1]), by=list(model,times)]
-        # aucDT[,IF.AUC:=getInfluenceCurve.AUC.survival(t=times[1],
-        #                                               n=N,
-        #                                               time=time,
-        #                                               risk=risk,
-        #                                               Cases=Cases,
-        #                                               Controls=Controls,
-        #                                               ipcwControls=ipcwControls,
-        #                                               ipcwCases=ipcwCases,
-        #                                               MC=MC), by=list(model,times)]
+        # aucDT[,IF.AUC:=getInfluenceCurve.AUC.survival.Censored(t=times[1],
+        #                                                        n=N,
+        #                                                        time=time,
+        #                                                        risk=risk,
+        #                                                        Cases=Cases,
+        #                                                        Controls=Controls,
+        #                                                        GTiminus = WTi,
+        #                                                        Gtau = Wt[1], MC = MC, AUC=AUC[1]), by=list(model,times)]
+        if (cens.model == "KaplanMeier"){
+            aucDT[,IF.AUC:=getInfluenceFunctionAUCSurvival(time,status,times[1],risk,WTi,Wt[1],AUC[1]), by=list(model,times)]
+        }
+        else {
+            aucDT[,IF.AUC:=getInfluenceCurve.AUC.survival(t=times[1],
+                                                           n=N,
+                                                           time=time,
+                                                           risk=risk,
+                                                           Cases=Cases,
+                                                           Controls=Controls,
+                                                           ipcwControls=ipcwControls,
+                                                           ipcwCases=ipcwCases,
+                                                           MC=MC), by=list(model,times)]
+        }
+        
         # aucDT[,IF.AUC:=getInfluenceCurve.AUC.survival.Censored(t=times[1],
         #                                                         n=N,
         #                                                         time=time,
