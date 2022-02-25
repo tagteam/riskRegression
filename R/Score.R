@@ -840,7 +840,7 @@ theCall <- match.call()
                     cens.model <- "KaplanMeier"
                 }
             }
-            if (response.type == "survival" && ("AUC" %in% metrics) && (cens.model[[1]]=="KaplanMeier")){
+            if ((conservative[1]==TRUE)&& response.type == "survival" && ("AUC" %in% metrics) && (cens.model[[1]]=="KaplanMeier")){
               Weights <- getCensoringWeights(formula=formula,
                                              data=data,
                                              times=times,
