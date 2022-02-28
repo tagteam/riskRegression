@@ -43,6 +43,107 @@ getInfluenceCurve.AUC.survival <- function(t,n,time,risk,Cases,Controls,ipcwCont
 }
 
 
+getInfluenceCurve.AUC.survival.Censored <- function(t,n,time,risk,Cases,Controls,GTiminus,Gtau,MC, AUC, discardNAIC = FALSE){
+    IF <- rep(NA,n)
+    # get the notation right
+    tau <- t
+    mu1hat <- mean(time > tau)
+    mutauP <- (mu1hat / Gtau) * mean(Cases/( GTiminus))
+    nutauP <- AUC * mutauP
+    
+    nu1hat <- rep(NA,n)
+    for (i in 1:n){
+        nu1hat[i] <- mean(risk < risk[i] & time > tau)
+    }
+    # without using the AUC values, we can estimate nutauP as follows
+    # nutauP <-  mean(1*(Cases) * nu1hat / GTiminus)
+    
+    firsthit <- sindex(jump.times=time,eval.times=tau)
+    for (i in 1:n){
+        # First terms of IF_{num}_i and IF_{den}_i
+        if (Cases[i]){
+            firstterm.num <- (nu1hat[i]) / (GTiminus[i]*Gtau)
+            firstterm.den <- mu1hat / (GTiminus[i]*Gtau)
+        }
+        else if (Controls[i]){
+            nu2hati <- mean(1*(risk[i] < risk & Cases)/( GTiminus))
+            firstterm.num <-  nu2hati * 1/Gtau
+            firstterm.den <- mutauP / mu1hat
+        }
+        else {
+            firstterm.num <-  0
+            firstterm.den <- 0
+        }
+        # The two last terms of IF_{num}_i and IF_{den}_i
+        if (!is.null(MC) && !discardNAIC){
+            if (i > firsthit){
+                j <- firsthit
+            }
+            else {
+                j <- i
+            }
+            if (i == 1){
+                fihat <- c(0,rep(MC[i,i], n-1))
+            }
+            else {
+                fihat <- c(0,MC[1:(i-1),i], rep(MC[i,i], n-i)) 
+            }
+            fihattau <- MC[j,i]
+            nu3hati <- mean( (1*(Cases) * nu1hat*fihat) / GTiminus)
+            ICNAterms.num <- fihattau * nutauP + 1/Gtau * nu3hati
+            mu2hat <- mean( (1*(Cases) *fihat) / GTiminus)
+            ICNAterms.den <-  fihattau * mutauP +mu1hat/Gtau * mu2hat
+        }
+        else {
+            ICNAterms.num <- 0 
+            ICNAterms.den <- 0
+        }
+        IF[i] <- ((firstterm.num+ICNAterms.num)*mutauP- nutauP*(firstterm.den+ICNAterms.den))/(mutauP^2)
+    }
+    IF
+}
+
+
+# uncensored data  for survival case
+getInfluenceCurve.AUC.survivalUncensored <- function(t,n,time,risk,Cases,Controls,ipcwControls,ipcwCases,MC){
+    if (is.unsorted(time)) {
+        ord <- order(time)
+        time <- time[ord]
+        risk <- risk[ord]
+    }
+    maxIndex <- max(which(time <= t))
+    muP <- 1/n^2 * maxIndex * (n-maxIndex)
+    nuP <- 0
+    for (i in 1:maxIndex){
+        for (j in (maxIndex+1):n){
+            nuP <- nuP + 1*(risk[i] > risk[j])
+        }
+    }
+    nuP <- 1/n^2 * nuP
+    # muP <- 0
+    # nuP <- 0
+    # for (i in 1:n){
+    #     for (j in 1:n){
+    #         muP <- muP + 1*(time[i] <= t & time[j] > t)
+    #         nuP <- nuP + 1*(risk[i] > risk[j] & time[i] <= t & time[j] > t)
+    #     }
+    # }
+    # muP <- 1/n^2 * muP
+    # nuP <- 1/n^2 * nuP
+    PTgreaterthantau <- mean(time>t)
+    IC <- rep(NA,n)
+    for (i in 1:n){
+        if (time[i] <= t){
+            IC[i] <- (mean(time > t & risk < risk[i])*muP-PTgreaterthantau*nuP)/(muP^2) 
+        }
+        else {
+            # which way, what happens if risk = ?
+            IC[i] <- (mean(time <= t & risk > risk[i])*muP-(1-PTgreaterthantau)*nuP)/(muP^2)
+        }
+    }
+    IC
+}
+
 ## NTC <- NCOL(MC.Ti.cases)
 ## T1 <- numeric(NTC)
 ## for (j in 1:NTC){
@@ -122,14 +223,15 @@ getInfluenceCurve.AUC.competing.risks <- function(t,n,time,risk,Cases,Controls1,
     #MC.all <- MC[match(time,unique(time)),]
     #should be quicker
     #T3 <- ht*(1-2*F01t)/(F01t*(1-F01t))*colSums(fi1t*(1+MC))-ht*(1-2*F01t)/(F01t*(1-F01t))*nrow(MC)*F01t
-    T3 <- ht*(1-2*F01t)/(F01t*(1-F01t))*T3CalculationHelper(fi1t,MC)-ht*(1-2*F01t)/(F01t*(1-F01t))*nrow(MC)*F01t
+    #T3 <- ht*(1-2*F01t)/(F01t*(1-F01t))*T3CalculationHelper(fi1t,MC)-ht*(1-2*F01t)/(F01t*(1-F01t))*nrow(MC)*F01t
+    T3 <- ht*(1-2*F01t)/(F01t*(1-F01t))*(T3CalculationHelper(fi1t,MC)-nrow(MC)*F01t)
     #T3 <- colSums((ht*(1-2*F01t)/(F01t*(1-F01t)))*(fi1t*(1+MC.all)-F01t))
     Term.ijlk <- ((T1 + T2) - n^2*ht - n*T3)/(F01t*(1-F01t))
     # we compute \frac{1}{n}\sum_{i=1}^n \sum_{j=1}^n \sum_{k=1}^n \Psi_{ijkl}(t)
     # Q1 <- sapply(1:n,function(i)sum(htij1*(1+MC.t[i])))
     Q1 <- sum(htij1)*(1+MC.t)
     ## Q2 <- colSums(crossprod(t(htij2),(1+MC.Ti.controls2)))
-    Q2 <- colSumsCrossprod(htij2,(1+MC.Ti.controls2),0)
+    Q2 <- colSumsCrossprodSpec(htij2,MC.Ti.controls2)
     Term.ijkl <- ((Q1 + Q2) - n^2*ht)/(F01t*(1-F01t))
     # we compute \frac{1}{n}\sum_{j=1}^n \sum_{k=1}^n \sum_{l=1}^n \Psi_{ijkl}(t)
     Term.jkli <-((colSumshtij1 + colSumshtij2)*n - n^2*ht - ( ht*n^2*(1-2*F01t) / (F01t*(1-F01t)) ) *(fi1t - F01t) )/(F01t*(1-F01t))
@@ -199,19 +301,19 @@ getInfluenceCurve.Brier <- function(t,
         IF.Brier
     }else{
         ## Blanche et al. 2015 (joint models) web appendix equation (14)
-        ## Yt <- 1*(time<=t)
         hit1=(time>t)*residuals ## equation (7)
         hit2=(time<=t)*residuals ## equation (8) 
         Brier <- mean(residuals)
         if (!is.null(IC.G)){
-            if (prodlim::sindex(jump.times=unique(time),eval.times=t) > 1){
+            ind <- prodlim::sindex(jump.times=unique(time),eval.times=t)
+            if (ind > 1){
                 #Int0tdMCsurEffARisk <- IC.G[prodlim::sindex(jump.times=unique(time),eval.times=t),,drop=FALSE]
                 #IF.Brier <- hit1+hit2-Brier + mean(hit1)*Int0tdMCsurEffARisk+ colMeans(IC.G*hit2)
-                IF.Brier <- hit1+hit2-Brier + mean(hit1)*IC.G[prodlim::sindex(jump.times=unique(time),eval.times=t),,drop=FALSE]+ columnMeanWeight(IC.G,hit2)
+                IF.Brier <- residuals-Brier + mean(hit1)*IC.G[ind,,drop=FALSE]+ columnMeanWeight(IC.G,hit2)
             }
             else {
                 #Int0tdMCsurEffARisk <- rep(0,ncol(IC.G))
-                IF.Brier <- hit1+hit2-Brier + colMeans(IC.G*hit2)
+                IF.Brier <- residuals-Brier + colMeans(IC.G*hit2)
             }
             #Int0tdMCsurEffARisk <- rbind(0,IC.G)[1+prodlim::sindex(jump.times=unique(time),eval.times=t),,drop=FALSE]
             

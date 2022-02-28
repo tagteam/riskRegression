@@ -151,6 +151,10 @@ rowSumsCrossprodSpec <- function(X, Y) {
     .Call(`_riskRegression_rowSumsCrossprodSpec`, X, Y)
 }
 
+colSumsCrossprodSpec <- function(X, Y) {
+    .Call(`_riskRegression_colSumsCrossprodSpec`, X, Y)
+}
+
 predictCIF_cpp <- function(hazard, cumhazard, eXb, strata, newtimes, etimes, etimeMax, t0, nEventTimes, nNewTimes, nData, cause, nCause, survtype, productLimit, diag, exportSurv) {
     .Call(`_riskRegression_predictCIF_cpp`, hazard, cumhazard, eXb, strata, newtimes, etimes, etimeMax, t0, nEventTimes, nNewTimes, nData, cause, nCause, survtype, productLimit, diag, exportSurv)
 }
