@@ -123,7 +123,7 @@ predictRisk(object, newdata, ...)
   newdata,
   times,
   cause,
-  product.limit = TRUE,
+  product.limit = FALSE,
   diag = FALSE,
   iid = FALSE,
   average.iid = FALSE,
@@ -264,12 +264,14 @@ psurv <- predictRisk(fitCox,newdata=valdat,times=seq(0,60,12))
 ## one column for each of the 5 time points
 ## one row for each validation set individual
 
+\dontrun{
+if ((requireNamespace("randomForestSRC",quietly=TRUE))){
 # Do the same for a randomSurvivalForest model
-# library(randomForestSRC)
-# rsfmodel <- rfsrc(Surv(time,event)~X1+X2,data=learndat)
-# prsfsurv=predictRisk(rsfmodel,newdata=valdat,times=seq(0,60,12))
-# plot(psurv,prsfsurv)
-
+library(randomForestSRC)
+rsfmodel <- rfsrc(Surv(time,event)~X1+X2,data=learndat)
+prsfsurv=predictRisk(rsfmodel,newdata=valdat,times=seq(0,60,12))
+plot(psurv,prsfsurv)
+}}
 ## Cox with ridge option
 f1 <- coxph(Surv(time,event)~X1+X2,data=learndat,x=TRUE,y=TRUE)
 f2 <- coxph(Surv(time,event)~ridge(X1)+ridge(X2),data=learndat,x=TRUE,y=TRUE)

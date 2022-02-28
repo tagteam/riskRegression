@@ -395,19 +395,16 @@
 #' intuitive measure useful for evaluating risk prediction models. Diagnostic
 #' and Prognostic Research, 2(1):7, 2018.
 ##'
-##' @export Score.list
 ##' @export
-##'
 # }}}
-
-
-##' @export
 Score <- function(object,...){
     UseMethod("Score",object=object)
 }
 
 # {{{ Score.list
 ##' @rdname Score
+##' @export Score.list
+##' @export
 Score.list <- function(object,
                        formula,
                        data,

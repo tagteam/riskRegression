@@ -147,7 +147,7 @@ subjectWeights.cox <- function(formula,data,method,args,lag=1){
 # {{{ reverse random forest
 #' @export 
 subjectWeights.forest <- function(formula,data,method,args,lag=1){
-    requireNamespace("randomForestSRC",quietly=FALSE)
+    if (!(requireNamespace("randomForestSRC",quietly=TRUE))){stop("Namespace of library randomForestSRC is not available. Likely because the package is not installed.")}
     call <- match.call() ## needed for refit in crossvalidation loop
     EHF <- prodlim::EventHistory.frame(formula,
                                        data,

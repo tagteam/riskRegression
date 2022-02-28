@@ -155,7 +155,7 @@ ipcw.none <- function(formula,data,method,args,times,subject.times,lag,what,keep
 # {{{ reverse Random Survival Forests
 ##' @export
 ipcw.rfsrc <- function(formula,data,method,args,times,subject.times,lag,what,keep){
-    requireNamespace("randomForestSRC",quietly=FALSE)
+    if (!(requireNamespace("randomForestSRC",quietly=TRUE))){stop("Namespace of library randomForestSRC is not available. Likely because the package is not installed.")}
     if (missing(lag)) lag=1
     if (missing(what)) what=c("IPCW.times","IPCW.subject.times")
     call <- match.call() ## needed for refit in crossvalidation loop
@@ -208,7 +208,7 @@ ipcw.rfsrc <- function(formula,data,method,args,times,subject.times,lag,what,kee
 }
 ##' @export
 ipcw.forest <- function(formula,data,method,args,times,subject.times,lag,what,keep){
-    requireNamespace("randomForestSRC",quietly=FALSE)
+    if (!(requireNamespace("randomForestSRC",quietly=TRUE))){stop("Namespace of library randomForestSRC is not available. Likely because the package is not installed.")}
     if (missing(lag)) lag=1
     if (missing(what)) what=c("IPCW.times","IPCW.subject.times")
     call <- match.call() ## needed for refit in crossvalidation loop
