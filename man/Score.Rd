@@ -40,11 +40,6 @@ Score(object, ...)
   keep,
   predictRisk.args,
   debug = 0L,
-  useEventTimes,
-  nullModel,
-  censMethod,
-  censModel,
-  splitMethod,
   ...
 )
 }

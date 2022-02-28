@@ -1,0 +1,193 @@
+* Random number generator
+
+#+BEGIN_SRC R  :results output :exports results  :session *R* :cache yes  
+set.seed(437)
+rnorm(10)
+library(randomForestSRC)
+library(riskRegression)
+d1 <- sampleData(400,outcome="binary")
+d2 <- sampleData(8,outcome="binary")
+d1[,Y1:=factor(Y)]
+d2[,Y1:=factor(Y)]
+f1 <- rfsrc(Y~X6+X8,data=d1,ntree=20,seed=8)
+f2 <- rfsrc(Y1~X6+X8,data=d1,ntree=20,seed=8)
+cbind(predictRisk(f1,newdata=d2),
+      predictRisk(f2,newdata=d2))
+#+END_SRC  
+
+#+RESULTS[(2022-02-28 08:20:08) 57b0946c63f9d4ad9ae1c4db981d35ba785600f3]:
+#+begin_example
+ [1]  0.23630223  0.15216646 -2.12051503  1.71561258 -0.54577729 -1.00068632 -0.62728864  0.70002892 -0.01634136
+[10] -0.65199661
+          [,1] [,2]
+[1,] 0.6795635 0.75
+[2,] 0.9250000 1.00
+[3,] 0.6816468 0.55
+[4,] 0.8050794 0.80
+[5,] 0.9458730 1.00
+[6,] 0.9086310 0.85
+[7,] 0.7186310 0.60
+[8,] 0.6154167 0.70
+#+end_example
+  
+* Binary outcome
+** train/test
+#+ATTR_LATEX: :options otherkeywords={}, deletekeywords={}
+#+BEGIN_SRC R  :results output   :exports both  :session *R* :cache yes  
+library(riskRegression)
+library(randomForestSRC)
+set.seed(437)
+d1 <- sampleData(400,outcome="binary")
+d2 <- sampleData(400,outcome="binary")
+d1[,Y:=factor(Y,levels=c("0","1"),labels=c("0","1"))]
+f1 <- glm(Y~X6+X8,data=d1,family="binomial")
+f2 <- rfsrc(Y~X6+X8,data=d1,ntree=20)
+x <- Score(list(f1,f2),data=d2,formula=Y~1)
+x$AUC$score
+x$AUC$contrast
+x$Brier$score
+x$Brier$contrast
+summary(x)
+#+END_SRC  
+
+#+RESULTS[(2022-02-28 17:25:11) f82c242b96d1b86317951cbef74c321e43810e45]:
+#+begin_example
+   model       AUC         se     lower     upper
+1:   glm 0.7654191 0.02347783 0.7194034 0.8114348
+2: rfsrc 0.6705793 0.02676845 0.6181141 0.7230445
+   model reference   delta.AUC         se      lower       upper             p
+1: rfsrc       glm -0.09483987 0.02237202 -0.1386882 -0.05099152 0.00002242997
+        model     Brier          se     lower     upper
+1: Null model 0.2499938 0.000125155 0.2497485 0.2502390
+2:        glm 0.1972324 0.009086058 0.1794241 0.2150408
+3:      rfsrc 0.2575562 0.014508168 0.2291208 0.2859917
+   model  reference delta.Brier         se       lower       upper                 p
+1:   glm Null model -0.05276132 0.00907563 -0.07054923 -0.03497341 0.000000006117429
+2: rfsrc Null model  0.00756250 0.01449431 -0.02084583  0.03597083 0.601839955376216
+3: rfsrc        glm  0.06032382 0.01156594  0.03765499  0.08299264 0.000000183179960
+$score
+        Model          AUC (%)        Brier (%)
+1: Null model             <
+25.0 [25.0;25.0]
+2:        glm 76.5 [71.9;81.1] 19.7 [17.9;21.5]
+3:      rfsrc 67.1 [61.8;72.3] 25.8 [22.9;28.6]
+
+$contrasts
+   Model  Reference     delta AUC (%) p-value  delta Brier (%) p-value
+1:   glm Null model                           -5.3 [-7.1;-3.5]  <0.001
+2: rfsrc Null model                             0.8 [-2.1;3.6]  0.6018
+3: rfsrc        glm -9.5 [-13.9;-5.1] < 0.001    6.0 [3.8;8.3]  <0.001
+#+end_example
+
+* Survival outcome
+
+#+ATTR_LATEX: :options otherkeywords={}, deletekeywords={}
+#+BEGIN_SRC R  :results output   :exports both  :session *R* :cache yes  
+library(riskRegression)
+library(survival)
+library(randomForestSRC)
+set.seed(437)
+d1 <- sampleData(400,outcome="survival")
+d2 <- sampleData(400,outcome="survival")
+f1 <- coxph(Surv(time,event)~X6+X8,data=d1,x=1,y=1)
+f2 <- rfsrc(Surv(time,event)~X6+X8,data=d1,ntree=20)
+x <- Score(list(f1,f2),data=d2,formula=Hist(time,event)~1,times=4)
+x$AUC$score
+x$AUC$contrast
+x$Brier$score
+x$Brier$contrast
+summary(x)
+#+END_SRC  
+
+#+RESULTS[(2022-02-28 17:25:03) b6990cc8ed0513a55e653658532bd6514176903e]:
+#+begin_example
+   model times       AUC         se     lower     upper
+1: coxph     4 0.8303843 0.02304733 0.7852123 0.8755562
+2: rfsrc     4 0.8193625 0.02360513 0.7730973 0.8656277
+   times model reference   delta.AUC          se       lower       upper         p
+1:     4 rfsrc     coxph -0.01102177 0.008192133 -0.02707805 0.005034519 0.1784933
+        model times     Brier          se se.conservative     lower     upper
+1: Null model     4 0.2358949 0.006024314     0.007096405 0.2240874 0.2477023
+2:      coxph     4 0.1600460 0.011276478     0.011580266 0.1379446 0.1821475
+3:      rfsrc     4 0.1685350 0.012104447     0.012432797 0.1448107 0.1922593
+   times model  reference  delta.Brier          se         lower       upper                     p
+1:     4 coxph Null model -0.075848823 0.010251091 -0.0959405923 -0.05575705 0.0000000000001371133
+2:     4 rfsrc Null model -0.067359856 0.011103580 -0.0891224719 -0.04559724 0.0000000013072840468
+3:     4 rfsrc      coxph  0.008488967 0.003889524  0.0008656395  0.01611229 0.0290711300375879333
+$score
+   times      Model          AUC (%)        Brier (%)
+1:     4 Null model             50.0 23.6 [22.4;24.8]
+2:     4      coxph 83.0 [78.5;87.6] 16.0 [13.8;18.2]
+3:     4      rfsrc 81.9 [77.3;86.6] 16.9 [14.5;19.2]
+
+$contrasts
+   times Model Reference   delta AUC (%) p-value delta Brier (%) p-value
+1:     4 rfsrc     coxph -1.1 [-2.7;0.5]  0.1785   0.8 [0.1;1.6] 0.02907
+#+end_example
+
+* Competing risks
+
+#+ATTR_LATEX: :options otherkeywords={}, deletekeywords={}
+#+BEGIN_SRC R  :results output   :exports both  :session *R* :cache yes  
+library(riskRegression)
+library(randomForestSRC)
+library(survival)
+set.seed(437)
+d1 <- sampleData(400)
+d2 <- sampleData(400)
+f1 <- CSC(Hist(time,event)~X1+X6+X8,data=d1)
+## sum(predictRisk(f1,newdata=d2,cause=1,times=4)>1)
+## max(predict(f1,newdata=d2,cause=1,times=4,product.limit=TRUE)$absRisk)
+f2 <- rfsrc(Surv(time,event)~X6+X8,data=d1,ntree=20)
+x <- Score(list(f1,f2),data=d2,formula=Hist(time,event)~1,times=4,cause=1)
+x$AUC$score
+x$AUC$contrast
+x$Brier$score
+x$Brier$contrast
+summary(x)
+#+END_SRC  
+
+#+RESULTS[(2022-02-28 17:24:29) 887da23e8c60da897494ca8c56c1c0f86826cafb]:
+#+begin_example
+              model times       AUC         se     lower     upper
+1: CauseSpecificCox     4 0.8095098 0.02271505 0.7649891 0.8540305
+2:            rfsrc     4 0.7661967 0.02517430 0.7168560 0.8155374
+   times model        reference   delta.AUC         se      lower      upper           p
+1:     4 rfsrc CauseSpecificCox -0.04331305 0.01417498 -0.0710955 -0.0155306 0.002246115
+              model times     Brier          se se.conservative     lower     upper
+1:       Null model     4 0.2261134 0.007605349     0.008167184 0.2112072 0.2410196
+2: CauseSpecificCox     4 0.1646879 0.011742959     0.011973933 0.1416721 0.1877037
+3:            rfsrc     4 0.1856435 0.012470915     0.012721334 0.1612010 0.2100861
+   times            model        reference delta.Brier          se       lower       upper                p
+1:     4 CauseSpecificCox       Null model -0.06142547 0.010435294 -0.08187828 -0.04097267 0.00000000394891
+2:     4            rfsrc       Null model -0.04046983 0.010533142 -0.06111441 -0.01982525 0.00012196508635
+3:     4            rfsrc CauseSpecificCox  0.02095564 0.005554764  0.01006851  0.03184278 0.00016158528331
+$score
+   times            Model          AUC (%)        Brier (%)
+1:     4       Null model             50.0 22.6 [21.1;24.1]
+2:     4 CauseSpecificCox 81.0 [76.5;85.4] 16.5 [14.2;18.8]
+3:     4            rfsrc 76.6 [71.7;81.6] 18.6 [16.1;21.0]
+
+$contrasts
+   times Model        Reference    delta AUC (%)  p-value delta Brier (%) p-value
+1:     4 rfsrc CauseSpecificCox -4.3 [-7.1;-1.6] 0.002246   2.1 [1.0;3.2] < 0.001
+#+end_example
+
+
+#+TITLE: Use of the Score function
+#+Author: Thomas Alexander Gerds
+#+Date: 
+#+EMAIL: tag@biostat.ku.dk
+#+LANGUAGE:  en
+#+OPTIONS: H:3 num:t toc:nil \n:nil @:t ::t |:t ^:t -:t f:t *:t <:t
+#+OPTIONS: TeX:t LaTeX:t skip:nil d:nil todo:t pri:nil tags:not-in-toc author:nil
+#+LaTeX_CLASS: org-article
+#+LaTeX_HEADER:\usepackage{authblk}
+#+LaTeX_HEADER:\usepackage{natbib}
+#+LaTeX_HEADER:\usepackage[table,usenames,dvipsnames]{xcolor}
+#+LaTeX_HEADER:\definecolor{lightGray}{gray}{0.98}
+#+LaTeX_HEADER:\definecolor{medioGray}{gray}{0.83}
+#+LaTeX_HEADER:\author{Thomas Alexander Gerds}
+#+LaTeX_HEADER:\affil{Department of Biostatistics, University of Copenhagen}
+#+setupfile:~/emacs-genome/snps/org-templates/setup-all-purpose.org
+# #+superman-export-target: pdf

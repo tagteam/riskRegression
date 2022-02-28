@@ -877,7 +877,7 @@ Score.list <- function(object,
         DT <- getPerformanceData(testdata=data,
                                  testweights=Weights,
                                  traindata=NULL,
-                                 trainseed=NULL,response.type=response.type,response.dim=response.dim,times=times,debug=debug,labels=mlevs,predictRisk.args=predictRisk.args,nullobject=nullobject,cens.type=cens.type,object=object,object.classes=object.classes,NT=NT)
+                                 trainseed=NULL,response.type=response.type,response.dim=response.dim,times=times,cause=cause,debug=debug,labels=mlevs,predictRisk.args=predictRisk.args,nullobject=nullobject,cens.type=cens.type,object=object,object.classes=object.classes,NT=NT)
         if (any(is.na(DT[["risk"]]))){
             missing.predictions <- DT[,list("Missing.values"=sum(is.na(risk))),by=byvars]
             missing.predictions[,model:=factor(model,levels=mlevs,mlabels)]
@@ -898,6 +898,8 @@ Score.list <- function(object,
                                       NF=NF,
                                       models=list(levels=mlevs,labels=mlabels),
                                       response.type=response.type,
+                                      cause=cause,
+                                      states=states,
                                       alpha=alpha,
                                       se.fit=se.fit,
                                       conservative=conservative,
@@ -1504,6 +1506,8 @@ Score.list <- function(object,
                                    NF=NF,
                                    models=list(levels=mlevs,labels=mlabels),
                                    response.type=response.type,
+                                   cause=cause,
+                                   states=states,
                                    alpha=alpha,
                                    se.fit=FALSE,
                                    conservative=TRUE, ## cannot subset IC yet
