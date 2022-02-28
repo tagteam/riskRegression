@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun  6 2016 (09:02) 
 ## Version: 
-## last-updated: Feb 27 2022 (08:52) 
+## last-updated: Feb 28 2022 (17:22) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 418
+##     Update #: 419
 #----------------------------------------------------------------------
 ## 
 ### Commentary:
@@ -991,7 +991,7 @@ predictRisk.ARR <- function(object,newdata,times,cause,...){
 ##' @rdname predictRisk
 ##' @method predictRisk CauseSpecificCox
 predictRisk.CauseSpecificCox <- function (object, newdata, times, cause,
-                                          product.limit = FALSE, diag = FALSE, iid = FALSE, average.iid = FALSE, ...) {
+                                          product.limit = TRUE, diag = FALSE, iid = FALSE, average.iid = FALSE, ...) {
     dots <- list(...)
     type <- dots$type
     if(is.null(type)){
