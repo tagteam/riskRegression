@@ -1,7 +1,6 @@
 library(testthat)
 context("Cause-specific Cox regression")
 library(riskRegression)
-library(pec)
 library(rms)
 library(survival)
 library(prodlim)
@@ -34,20 +33,22 @@ test_that("CSC vs prodlim",{
     ## lines(sort(unique(Melanoma$time)),pb[2,],lty=3,col=2)
 })
 
-test_that("predictSurv",{
-    set.seed(17)
-    d <- prodlim::SimSurv(100)
-    f <- coxph(Surv(time,status)~X1+X2,data=d,x=TRUE,y=TRUE)
-    h <- cph(Surv(time,status)~X1+X2,data=d,surv=TRUE,x=TRUE,y=TRUE)
-    af <- predictRisk(f,newdata=d[c(17,88,3),],times=c(0,1,8.423,100,1000))
-    bf <- 1-predictSurvProb(f,newdata=d[c(17,88,3),],times=c(0,1,8.423,100,1000))
-    expect_equal(unname(af),unname(bf),tolerance = 1e-8)
-    ah <- predictRisk(h,newdata=d[c(17,88,3),],times=c(0,1,8.423,100,1000))
-    bh <- 1-predictSurvProb(h,newdata=d[c(17,88,3),],times=c(0,1,8.423,100,1000))
-    colnames(bh) <- NULL
-    expect_equal(unname(ah),unname(bh),tolerance = 1e-8)
-})
-
+if (requireNamespace("pec",quietly=TRUE)){
+    library(pec)
+    test_that("predictSurv",{
+        set.seed(17)
+        d <- prodlim::SimSurv(100)
+        f <- coxph(Surv(time,status)~X1+X2,data=d,x=TRUE,y=TRUE)
+        h <- cph(Surv(time,status)~X1+X2,data=d,surv=TRUE,x=TRUE,y=TRUE)
+        af <- predictRisk(f,newdata=d[c(17,88,3),],times=c(0,1,8.423,100,1000))
+        bf <- 1-predictSurvProb(f,newdata=d[c(17,88,3),],times=c(0,1,8.423,100,1000))
+        expect_equal(unname(af),unname(bf),tolerance = 1e-8)
+        ah <- predictRisk(h,newdata=d[c(17,88,3),],times=c(0,1,8.423,100,1000))
+        bh <- 1-predictSurvProb(h,newdata=d[c(17,88,3),],times=c(0,1,8.423,100,1000))
+        colnames(bh) <- NULL
+        expect_equal(unname(ah),unname(bh),tolerance = 1e-8)
+    })
+}
 test_that("Cox models",{
     set.seed(17)
     d <- prodlim::SimCompRisk(100)

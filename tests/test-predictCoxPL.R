@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: jun 21 2018 (15:10) 
 ## Version: 
-## Last-Updated: aug 12 2020 (11:56) 
-##           By: Brice Ozenne
-##     Update #: 23
+## Last-Updated: Jan 12 2022 (11:29) 
+##           By: Thomas Alexander Gerds
+##     Update #: 25
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -54,10 +54,10 @@ set.seed(10)
 dt <- sampleData(50, outcome = "survival")[,.(time,event,X1,X2,X6)]
 
 test_that("[predictCoxPL] diag no strata", {
-    e.coxph <- coxph(Surv(time, event) ~ X1*X6, data = dt, y = TRUE, x = TRUE)
+    e.coxph <- coxph(Surv(time, event) ~ X1*X6, data = dt, y = TRUE, x = TRUE,)
 
     GS0 <- predictCox(e.coxph, newdata = dt, times = dt$time, iid = TRUE, average.iid = TRUE, se = FALSE)
-    GS <- predictCoxPL(e.coxph, newdata = dt, times = dt$time, iid = TRUE, average.iid = TRUE, se = FALSE)
+    suppressWarnings(GS <- predictCoxPL(e.coxph, newdata = dt, times = dt$time, iid = TRUE, average.iid = TRUE, se = FALSE))
     test <- predictCoxPL(e.coxph, newdata = dt, times = dt$time, iid = TRUE, average.iid = TRUE, se = FALSE, diag = TRUE)
 
     ## check hazard/survival
@@ -79,7 +79,7 @@ test_that("[predictCoxPL] diag strata", {
     eS.coxph <- coxph(Surv(time, event) ~ strata(X1) + X6, data = dt, y = TRUE, x = TRUE)
 
     GS0 <- predictCox(eS.coxph, newdata = dt, times = dt$time, iid = TRUE, average.iid = TRUE, se = FALSE)
-    GS <- predictCoxPL(eS.coxph, newdata = dt, times = dt$time, iid = TRUE, average.iid = TRUE, se = FALSE)
+    suppressWarnings(GS <- predictCoxPL(eS.coxph, newdata = dt, times = dt$time, iid = TRUE, average.iid = TRUE, se = FALSE))
     test <- predictCoxPL(eS.coxph, newdata = dt, times = dt$time, iid = TRUE, average.iid = TRUE, se = FALSE, diag = TRUE)
 
     ## check hazard/survival

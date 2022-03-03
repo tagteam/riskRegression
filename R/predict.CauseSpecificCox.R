@@ -487,6 +487,15 @@ predict.CauseSpecificCox <- function(object,
         out["absRisk.iid"] <- NULL
     }
     ## export
+    if(any(na.omit(as.double(out$absRisk))>1) || any(na.omit(as.double(out$absRisk))<0)){
+        if(product.limit){
+            warning("Estimated risk outside the range [0,1].\n",
+                    "Consider setting the argument \'product.limit\' to FALSE. \n")
+        }else{
+            warning("Estimated risk outside the range [0,1].\n",
+                    "Possible cause: incorrect extrapolation, i.e., time and/or covariates used for the prediction differ from those used to fit the Cox models.\n")
+        }
+    }
     return(out)
 }
 

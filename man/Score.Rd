@@ -5,6 +5,8 @@
 \alias{Score.list}
 \title{Score risk predictions}
 \usage{
+Score(object, ...)
+
 \method{Score}{list}(
   object,
   formula,
@@ -38,16 +40,13 @@
   keep,
   predictRisk.args,
   debug = 0L,
-  useEventTimes,
-  nullModel,
-  censMethod,
-  censModel,
-  splitMethod,
   ...
 )
 }
 \arguments{
 \item{object}{List of risk predictions (see details and examples).}
+
+\item{...}{Named list containging additional arguments that are passed on to the \code{predictRisk} methods corresponding to object. See examples.}
 
 \item{formula}{A formula which identifies the outcome (left hand
     side). E.g., \code{Y ~ 1} for binary and \code{Hist(time,status) ~ 1} for time-to-event outcome.
@@ -164,9 +163,7 @@ randomly splitting (bootstrapping) the data during cross-validation.}
 
 \item{progress.bar}{Style for \code{txtProgressBar}. Can be 1,2,3 see \code{help(txtProgressBar)} or NULL to avoid the progress bar.}
 
-\item{errorhandling}{.
-
- A more flexible approach is to write a new predictRisk S3-method. See Details.}
+\item{errorhandling}{Argument passed as \code{.errorhandling} to foreach. Default is \code{"pass"}.}
 
 \item{keep}{list of characters (not case sensitive) which determines additional output.
 \code{"residuals"} provides Brier score residuals and
@@ -174,14 +171,16 @@ randomly splitting (bootstrapping) the data during cross-validation.}
 \code{"vcov"} provides the variance-covariance matrix of the estimated parameters.}
 
 \item{predictRisk.args}{A list of argument-lists to control how risks are predicted.
-The names of the lists should be the S3-classes of the \code{object}.
-The argument-lists are then passed on to the S3-class specific predictRisk method.
-For example, if your object contains one or several random forest model fitted with the function randomForestSRC::rfsrc then you can
-specify additional arguments for the function riskRegression::predictRisk.rfsrc which will pass
-these on to the function randomForestSRC::predict.rfsrc. A specific example in this case would be
-\code{list(rfsrc=list(na.action="na.impute"))}.}
+ The names of the lists should be the S3-classes of the \code{object}.
+ The argument-lists are then passed on to the S3-class specific predictRisk method.
+ For example, if your object contains one or several random forest model fitted with the function randomForestSRC::rfsrc then you can
+ specify additional arguments for the function riskRegression::predictRisk.rfsrc which will pass
+ these on to the function randomForestSRC::predict.rfsrc. A specific example in this case would be
+ \code{list(rfsrc=list(na.action="na.impute"))}.
 
-\item{debug}{Logical. If \code{TRUE} indicate landmark in progress of the program.}
+ A more flexible approach is to write a new predictRisk S3-method. See Details.}
+
+\item{debug}{Logical. If \code{TRUE} indicate landmarks in progress of the program.}
 
 \item{useEventTimes}{obsolete.}
 
@@ -192,8 +191,6 @@ these on to the function randomForestSRC::predict.rfsrc. A specific example in t
 \item{censModel}{obsolete.}
 
 \item{splitMethod}{obsolete.}
-
-\item{...}{Named list containging additional arguments that are passed on to the \code{predictRisk} methods corresponding to object. See examples.}
 }
 \value{
 List with scores and assessments of contrasts, i.e.,

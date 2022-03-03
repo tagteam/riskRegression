@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jan  4 2016 (14:30) 
 ## Version: 
-## last-updated: Jan 12 2022 (09:59) 
+## last-updated: Feb 27 2022 (09:45) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 157
+##     Update #: 160
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -62,7 +62,7 @@ test_that("binary outcome: robustness against order of data set",{
 # }}}
 # {{{ "survival outcome, Brier Score, external prediction"
 test_that("survival outcome,Brier Score, external prediction",{
-    if (requireNamespace("pec",quietly=FALSE)){
+    if (!requireNamespace("pec",quietly=FALSE)){
         message("Package pec not installed. Skip this test.")
         q <- p <- 1
     }else{    
@@ -90,7 +90,7 @@ test_that("survival outcome,Brier Score, external prediction",{
 # }}}
 # {{{integrated Brier score
 test_that("integrated Brier score",{
-    if (requireNamespace("pec",quietly=TRUE)){
+    if (!requireNamespace("pec",quietly=TRUE)){
         message("Package pec not installed. Skip this test.")
         p <- q <- 1
     }else{

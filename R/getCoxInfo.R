@@ -405,12 +405,13 @@ coxLP.cph <- function(object, data, center){
         }
     
     }else{ ## new dataset
-        if(all(object$Design$assume %in% c("category","asis","interaction","strata"))){
-            Xb <- stats::predict(object, newdata = as.data.frame(data), type = "lp")
-        }else{ ## does not work with splines
-            X <- model.matrix(object, data = data)
-            Xb <- as.vector(X %*% coef)
-        }
+        ## if(all(object$Design$assume %in% c("category","asis","interaction","strata"))){
+        ## if(!("rcspline" %in% object$Design$assume)){
+        Xb <- stats::predict(object, newdata = as.data.frame(data), type = "lp")
+        ## }else{ ## does not work with splines
+        ## X <- model.matrix(object, data = data)
+        ## Xb <- as.vector(X %*% coef)
+        ## }
         
       
       if(center == FALSE){

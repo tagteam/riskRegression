@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: feb 17 2017 (10:06) 
 ## Version: 
-## last-updated: okt 29 2021 (15:04) 
-##           By: Brice Ozenne
-##     Update #: 1272
+## last-updated: Jan  5 2022 (08:04) 
+##           By: Thomas Alexander Gerds
+##     Update #: 1273
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -126,13 +126,15 @@
 #' require(splines)
 #' m.cox.spline <- coxph(Surv(time,event)~ X1 + X2 + ns(X6,4),
 #'                 data = d, x = TRUE, y = TRUE)
-#' grid <- data.frame(X1 = factor(0,0:1), X2 = factor(0,0:1), X6 = seq(min(d$X6),max(d$X6), length.out = 100))
+#' grid <- data.frame(X1 = factor(0,0:1), X2 = factor(0,0:1),
+#'                    X6 = seq(min(d$X6),max(d$X6), length.out = 100))
 #' pred.spline <- predictCox(m.cox.spline, newdata = grid, keep.newdata = TRUE,
 #'                           se = TRUE, band = TRUE, centered = TRUE, type = "lp")
 #' autoplot(pred.spline, group.by = "X6")
 #' autoplot(pred.spline, group.by = "X6", alpha = 0.5)
 #' 
-#' grid2 <- data.frame(X1 = factor(1,0:1), X2 = factor(0,0:1), X6 = seq(min(d$X6),max(d$X6), length.out = 100))
+#' grid2 <- data.frame(X1 = factor(1,0:1), X2 = factor(0,0:1),
+#'                     X6 = seq(min(d$X6),max(d$X6), length.out = 100))
 #' pred.spline <- predictCox(m.cox.spline, newdata = rbind(grid,grid2), keep.newdata = TRUE,
 #'                           se = TRUE, band = TRUE, centered = TRUE, type = "lp")
 #' autoplot(pred.spline, group.by = c("X6","X1"), alpha = 0.5, plot = FALSE)$plot + facet_wrap(~X1)

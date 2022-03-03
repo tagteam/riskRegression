@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: maj 18 2017 (09:23) 
 ## Version: 
-## last-updated: Jan 12 2022 (10:05) 
+## last-updated: Jan 12 2022 (11:23) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 317
+##     Update #: 318
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -16,7 +16,6 @@
 ### Code:
 
 ## * Settings
-if (FALSE){
 library(riskRegression)
 library(testthat)
 library(data.table)
@@ -1499,8 +1498,6 @@ if(FALSE){
     rev(unique(eXB)[2]/cumsum(rev(eXB))) # no hazard over 1
 
     # this also creates a problem when computing the suvival using the product limit estimator 
-}
-
 }
 #----------------------------------------------------------------------
 ### test-predictCSC.R ends here

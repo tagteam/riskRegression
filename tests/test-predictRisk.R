@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Aug 10 2017 (08:56) 
 ## Version: 
-## Last-Updated: Jan 11 2022 (18:24) 
+## Last-Updated: Feb 27 2022 (09:10) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 38
+##     Update #: 39
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -17,7 +17,6 @@
 library(riskRegression)
 library(testthat)
 library(rms)
-library(randomForestSRC)
 library(survival)
 library(data.table)
 library(lava)
@@ -29,6 +28,7 @@ if (FALSE){
         if (!requireNamespace("randomForestSRC",quietly=TRUE)){
             message("Package randomForestSRC not installed. Skip this test.")
         }else{
+            library(randomForestSRC)
             u <- get(data(pbc,package="survival"))
             set.seed(10)
             forest <- rfsrc(Surv(time,status)~chol+age+sex,data=u,ntree=10,nsplit=10,trace=1)

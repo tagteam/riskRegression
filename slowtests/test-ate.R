@@ -820,30 +820,30 @@ test_that("[ate] no censoring, competing risks - check vs. manual calculations",
     e.T <- glm(X1f ~ X2, data = dtS, family = binomial(link = "logit")) ## dtS$X1
 
     ## automatic calculation
-    e.ate1 <- ate(data = dtS, times = tau,
+    suppressWarnings(e.ate1 <- ate(data = dtS, times = tau,
                   event = e.S,
                   treatment = e.T,
                   estimator = c("Gformula","IPTW","AIPTW"),
                   verbose = FALSE, cause = 1,
                   band = FALSE, product.limit = FALSE
-                  )
+                  ))
     set.seed(15)
     dt.ate1 <- as.data.table(summary(e.ate1, band = TRUE, p.value = TRUE, short = 2))
-    e.ate2 <- ate(data = dtS, times = tau,
+    suppressWarnings(e.ate2 <- ate(data = dtS, times = tau,
                   event = e.S,
                   treatment = e.T,
                   method.iid = 2,
                   estimator = c("Gformula","IPTW","AIPTW"),
                   verbose = FALSE, cause = 1,
                   iid = TRUE, product.limit = FALSE
-                  )
+                  ))
     set.seed(15)
     dt.ate2 <- as.data.table(summary(e.ate2, band = TRUE, p.value = TRUE, short = 2))
 
     expect_equal(dt.ate1[,.SD,.SDcols = names(dt.ate2)],  dt.ate2)
 
     ## manual calculation
-    dtCf <- do.call(rbind,lapply(levels(dtS$X1f), function(iT){ ## iT <- "0"
+    suppressWarnings(dtCf <- do.call(rbind,lapply(levels(dtS$X1f), function(iT){ ## iT <- "0"
         iDT <- data.table::copy(dtS[,.(event,time,Y,X1,X2,X3,X6)])
         iDT[, X1f := factor(iT,levels(dtS$X1f))]
         iDT[, X1test := iT==as.character(X1)]
@@ -866,7 +866,7 @@ test_that("[ate] no censoring, competing risks - check vs. manual calculations",
         iDT[, iid.AIPTW := iid.AIPTW + rowMeans(rowMultiply_cpp(iPred.risk$absRisk.iid[,1,], scale = 1-X1test/pi))]
 
         return(iDT)        
-    }))
+    })))
 
     ## check estimate
     expect_equal(dtCf[,mean(r),by="X1f"][[2]],
@@ -960,17 +960,17 @@ test_that("[ate] Censoring, competing risks (surv.type=\"survival\") - check vs.
     e.C <- coxph(Surv(time, event == 0) ~ X1f + X2, data = dtS, x = TRUE, y = TRUE)
     
     ## automatic calculation
-    e.ate1 <- ate(data = dtS, times = tau,
+    suppressWarnings(e.ate1 <- ate(data = dtS, times = tau,
                   event = e.S,
                   treatment = e.T,
                   censor = e.C,
                   estimator = c("Gformula","IPTW","AIPTW"),
                   verbose = FALSE,
                   band = FALSE, product.limit = FALSE, cause = 1
-                  )
+                  ))
     set.seed(15)
     dt.ate1 <- as.data.table(summary(e.ate1, band = TRUE, p.value = TRUE, short = 2))
-    e.ate2 <- ate(data = dtS, times = tau,
+    suppressWarnings(e.ate2 <- ate(data = dtS, times = tau,
                   event = e.S,
                   censor = e.C,
                   treatment = e.T,
@@ -978,7 +978,7 @@ test_that("[ate] Censoring, competing risks (surv.type=\"survival\") - check vs.
                   estimator = c("Gformula","IPTW","AIPTW"),
                   verbose = FALSE,
                   band = FALSE, product.limit = FALSE, cause = 1
-                  )
+                  ))
     set.seed(15)
     dt.ate2 <- as.data.table(summary(e.ate2, band = TRUE, p.value = TRUE, short = 2))
 
@@ -1171,16 +1171,16 @@ test_that("[ate] Censoring, competing risks (surv.type=\"hazard\") - check vs. m
     e.C <- coxph(Surv(time, event == 0) ~ X1f + X2, data = dtS, x = TRUE, y = TRUE)
     
     ## automatic calculation
-    e.ate1 <- ate(data = dtS, times = tau,
+    suppressWarnings(e.ate1 <- ate(data = dtS, times = tau,
                   event = e.S,
                   treatment = e.T,
                   censor = e.C,
                   estimator = c("Gformula","IPTW","AIPTW"),
                   verbose = FALSE,
                   iid = TRUE, product.limit = FALSE, cause = 1
-                  )
+                  ))
     dt.ate1 <- as.data.table(e.ate1)
-    e.ate2 <- ate(data = dtS, times = tau,
+    suppressWarnings(e.ate2 <- ate(data = dtS, times = tau,
                   event = e.S,
                   censor = e.C,
                   treatment = e.T,
@@ -1188,7 +1188,7 @@ test_that("[ate] Censoring, competing risks (surv.type=\"hazard\") - check vs. m
                   estimator = c("Gformula","IPTW","AIPTW"),
                   verbose = FALSE,
                   iid = TRUE, product.limit = FALSE, cause = 1
-                  )
+                  ))
     dt.ate2 <- as.data.table(e.ate2)
 
     expect_equal(dt.ate1, dt.ate2, tol = 1e-8)

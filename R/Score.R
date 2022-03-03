@@ -408,6 +408,8 @@ Score <- function(object,...){
 
 # {{{ Score.list
 ##' @rdname Score
+##' @export Score.list
+##' @export 
 Score.list <- function(object,
                        formula,
                        data,
@@ -440,38 +442,13 @@ Score.list <- function(object,
                        keep,
                        predictRisk.args,
                        debug=0L,
-                       useEventTimes,
-                       nullModel,
-                       censMethod,
-                       censModel,
-                       splitMethod,
                        ...){
-    if (!missing(useEventTimes)) {
-        warning("(Spelling of) argument 'useEventTimes' is obsolete and will be disabled in future versions of this function.\nUse 'use.event.times' instead.")
-        use.event.times <- useEventTimes
-    }
-    if (!missing(nullModel)) {
-        warning("(Spelling of) argument 'nullModel' is obsolete and will be disabled in future versions of this function.\nUse 'null.model' instead.")
-        null.model <- nullModel
-    }
-    if (!missing(splitMethod)) {
-        warning("(Spelling of) argument 'splitMethod' is obsolete and will be disabled in future versions of this function.\nUse 'split.method' instead.")
-        split.method <- splitMethod
-    }
-    if (!missing(censMethod)) {
-        warning("(Spelling of) argument 'censMethod' is obsolete and will be disabled in future versions of this function.\nUse 'cens.method' instead.")
-        cens.method <- censMethod
-    }
-    if (!missing(censModel)) {
-        warning("(Spelling of) argument 'censModel' is obsolete and will be disabled in future versions of this function.\nUse 'cens.model' instead.")
-        cens.model <- censModel
-    }
 
     se.conservative=IPCW=IF.AUC.conservative=IF.AUC0=IF.AUC=IC0=Brier=AUC=casecontrol=se=nth.times=time=status=ID=WTi=risk=IF.Brier=lower=upper=crossval=b=time=status=model=reference=p=model=pseudovalue=ReSpOnSe=residuals=event=j=NULL
 
     # }}}
-theCall <- match.call()
-# {{{ decide about metrics and plots
+    theCall <- match.call()
+    # {{{ decide about metrics and plots
 
     ## Metrics <- lapply(metrics,grep,c("AUC","Brier"),ignore.case=TRUE,value=TRUE)
     plots[grep("^box",plots,ignore.case=TRUE)] <- "boxplot"
@@ -840,7 +817,9 @@ theCall <- match.call()
                     cens.model <- "KaplanMeier"
                 }
             }
-            if ((conservative[1]==TRUE)&& response.type == "survival" && ("AUC" %in% metrics) && (cens.model[[1]]=="KaplanMeier")){
+                        browser
+
+            if (response.type == "survival" && ("AUC" %in% metrics) && (cens.model[[1]]=="KaplanMeier")){
               Weights <- getCensoringWeights(formula=formula,
                                              data=data,
                                              times=times,
@@ -904,257 +883,6 @@ theCall <- match.call()
     }
 
     # }}}
-    # {{{ define function 'getPerformanceData' to setup level-1 data in long-format
-    # {{{ header
-    getPerformanceData <- function(testdata,
-                                   testweights,
-                                   traindata=NULL,
-                                   trainseed=NULL){
-        ID=NULL
-        # inherit everything else from parent frame: object, nullobject, NF, NT, times, cause, response.type, etc.
-        Brier=IPA=IBS=NULL
-        looping <- !is.null(traindata)
-        ## if (!looping) b=0
-        N <- as.numeric(NROW(testdata))
-        # split data vertically into response and predictors X
-        response <- testdata[,1:response.dim,with=FALSE]
-        response[,ID:=testdata[["ID"]]]
-        setkey(response,ID)
-        X <- testdata[,-c(1:response.dim),with=FALSE]
-        ## restore sanity
-        setnames(X,sub("^protectedName.","",names(X)))
-        if (debug) if (looping) message(paste0("Loop round: ",b))
-        if (debug) message("extracted test set and prepared output object")
-        # }}}
-        # {{{ collect pred as long format data.table
-        args <- switch(response.type,"binary"={list(newdata=X)},
-                       "survival"={list(newdata=X,times=times)},
-                       "competing.risks"={list(newdata=X,times=times,cause=cause)},
-                       stop("Unknown response.type."))
-        ## remove our cbinded response (see above) from traindata to avoid clash when model uses Hist(time,status)
-        ## where status has 0,1,2 but now event history response has status=0,1
-        ## the original response is still there
-        if(!is.null(traindata)){
-            trainX <- traindata[,-c(1:response.dim),with=FALSE]
-            ## restore sanity
-            setnames(trainX,sub("^protectedName.","",names(trainX)))
-            ## trainX <- copy(traindata)
-            trainX[,ID:=NULL]
-        }
-        pred <- data.table::rbindlist(lapply(mlevs, function(f){
-            ## add object specific arguments to predictRisk methods
-            if (f[1]>0 && (length(extra.args <- unlist(lapply(object.classes[[f]],function(cc){predictRisk.args[[cc]]})))>0)){
-                args <- c(args,extra.args)
-            }
-            ## predictions given as numeric values
-            if (f[1]!=0 && any(c("integer","factor","numeric","matrix") %in% object.classes[[f]])){
-                ## sort predictions by ID
-                if (!is.null(dim(object[[f]]))) {## input matrix
-                    if (response.type=="binary"){
-                        p <- do.call("predictRisk", c(list(object=c(object[[f]])),args))[neworder]
-                    }else{
-                        if(!is.null(include.times)){ ## remove columns at times beyond max time
-                            p <- c(do.call("predictRisk",c(list(object=object[[f]][,include.times,drop=FALSE]),args))[neworder,])
-                        } else{
-                            p <- c(do.call("predictRisk",c(list(object=object[[f]]),args))[neworder,])
-                        }
-                    }
-                }
-                else{ ## either binary or only one time point
-                    p <- do.call("predictRisk", c(list(object=object[[f]]),args))[neworder]
-                }
-            }else{
-                # predictions given as model which needs training in crossvalidation loops
-                if (looping){
-                    set.seed(trainseed)
-                    if (f==0) model.f=nullobject[[1]] else model.f=object[[f]]
-                    model.f$call$data <- trainX
-                    # browser(skipCalls = 1)
-                    trained.model <- try(eval(model.f$call),silent=TRUE)
-                    if ("try-error" %in% class(trained.model)){
-                        message(paste0("Failed to fit model ",f,ifelse(looping,paste0(" in cross-validation step ",b)),":"))
-                        try(eval(model.f$call),silent=FALSE)
-                        stop()
-                    }
-                } else{
-                    if (f==0)
-                        trained.model <- nullobject[[1]]
-                    else
-                        trained.model <- object[[f]]
-                }
-                p <- c(do.call("predictRisk", c(list(object=trained.model),args)))
-                if (f[1]==0 && (response.type[1]!="binary")) {## glm predicts the same value for all subjects
-                    p <- rep(p,rep(N,NT))
-                }
-            }
-            if (response.type%in%c("survival","competing.risks")){
-                out <- data.table(ID=testdata[["ID"]],model=f,risk=p,times=rep(times,rep(N,NT)))
-                setkey(out,model,times,ID)
-                out
-            } else {
-                out <- data.table(ID=testdata[["ID"]],model=f,risk=p)
-                setkey(out,model,ID)
-                out
-            }
-        }))
-        if (debug) message("trained the model(s) and extracted the predictions")
-        # }}}
-        # {{{ merge with Weights (IPCW inner loop)
-        if (response.type %in% c("survival","competing.risks")){
-            if (cens.type=="rightCensored"){
-                Weights <- testweights
-                ## add subject specific weights
-                response[,WTi:=Weights$IPCW.subject.times]
-            } else {
-                if (cens.type=="uncensored"){
-                    Weights <- list(IPCW.times=rep(1,NT),IPCW.subject.times=matrix(1,ncol=NT,nrow=N))
-                    Weights$method <- "marginal"
-                    response[,WTi:=1]
-                } else{
-                    stop("Cannot handle this type of censoring.")
-                }
-            }
-            ## add time point specific weights
-            if (Weights$method=="marginal"){
-                Wt <- data.table(times=times,Wt=Weights$IPCW.times)
-                ## OBS: many digits in times may cause merge problems
-                pred <- merge(pred,Wt,by=c("times"))
-            }else{
-                Wt <- data.table(times=rep(times,rep(N,NT)),
-                                 Wt=c(Weights$IPCW.times),
-                                 ID=testdata$ID)
-                pred <- merge(pred,Wt,by=c("ID","times"))
-            }
-            if (debug) message("merged the weights with input for performance metrics")
-        } else {
-            ## if (response.type=="binary")
-            Weights <- NULL
-        }
-        if (debug) message("added weights to predictions")
-        # }}}
-        # {{{ merge with response
-        DT=merge(response,pred,by="ID")
-        DT
-    }
-    # }}}
-    # }}}
-    # {{{ define function 'computePerformance' to evaluate performance 
-    computePerformance <- function(DT,
-                                   N,
-                                   se.fit,
-                                   conservative,
-                                   cens.model,
-                                   multi.split.test,
-                                   keep.residuals,
-                                   keep.vcov){
-        IPA=IBS=Brier=NULL
-        # inherit everything else from parent frame: summary, metrics, plots, alpha, probs, dolist, et
-        out <- vector(mode="list",
-                      length=length(c(summary,metrics,plots)))
-        names(out) <- c(summary,metrics,plots)
-        input <- list(DT=DT,
-                      N=N,
-                      NT=NT,
-                      NF=NF,
-                      alpha=alpha,
-                      se.fit=se.fit,
-                      conservative=conservative,
-                      cens.model=cens.model,
-                      multi.split.test=multi.split.test,
-                      keep.residuals=keep.residuals,
-                      keep.vcov=keep.vcov,
-                      ## DT.residuals=DT.residuals,
-                      dolist=dolist,Q=probs,ROC=FALSE,MC=Weights$IC)
-        if (response.type=="competing.risks") {
-            input <- c(input,list(cause=cause,states=states))
-        } 
-        # {{{ collect data for summary statistics
-        for (s in summary){
-            if (s=="risks") {
-                out[[s]] <- list(score=copy(input$DT)[,model:=factor(model,levels=mlevs,mlabels)],
-                                 contrasts=NULL)
-            } else{
-                out[[s]] <- do.call(paste(s,response.type,sep="."),input)
-                if (NROW(out[[s]]$score)>0){
-                    out[[s]]$score[,model:=factor(model,levels=mlevs,mlabels)]
-                }
-                if (NROW(out[[s]]$contrasts)>0){
-                    out[[s]]$contrasts[,model:=factor(model,levels=mlevs,mlabels)]
-                    out[[s]]$contrasts[,reference:=factor(reference,levels=mlevs,mlabels)]
-                }
-            }
-        }
-        # }}}
-        # {{{ collect data for calibration plots
-        if ("Calibration" %in% plots){
-            if (response.type[[1]]=="binary" || cens.type[[1]]=="uncensored")
-                out[["Calibration"]]$plotframe <- DT[model!=0]
-            else{
-                out[["Calibration"]]$plotframe <- merge(jack,DT[model!=0],by=c("ID","times"))
-            }
-            out[["Calibration"]]$plotframe[,model:=factor(model,levels=mlevs,mlabels)]
-        }
-        # }}}
-        ## make sure that Brier score comes first, so that we can remove the null.model afterwards
-        for (m in sort(metrics,decreasing=TRUE)){
-            if (m=="AUC" && ("ROC" %in% plots)){
-                input <- replace(input, "ROC",TRUE)
-                ## call AUC method
-                out[[m]] <- do.call(paste(m,response.type,sep="."),input)
-                out[["ROC"]]$plotframe <- out[[m]]$ROC
-                out[["ROC"]]$plotframe[,model:=factor(model,levels=mlevs,mlabels)]
-                out[[m]]$ROC <- NULL
-            }else{
-                input <- replace(input, "ROC",FALSE)
-                ## call Brier or AUC method
-                out[[m]] <- do.call(paste(m,response.type,sep="."),input)
-            }
-            if (!is.null(out[[m]]$score)){
-                out[[m]]$score[,model:=factor(model,levels=mlevs,mlabels)]
-            }
-            ## set model and reference in model comparison results
-            if (!is.null(out[[m]]$contrasts)>0){
-                out[[m]]$contrasts[,model:=factor(model,levels=mlevs,mlabels)]
-                out[[m]]$contrasts[,reference:=factor(reference,levels=mlevs,mlabels)]
-            }
-        }
-        ## summary should be after metrics because IBS and IPA/R^2 depends on Brier score
-        if (ibs){
-            Dint <- function(x,y,range,na.omit=FALSE){
-                if (is.null(range)) range=c(x[1],x[length(x)])
-                ##   integrate a step function f with
-                ##   values y=f(x) between range[1] and range[2]
-                start <- max(range[1],min(x))
-                Stop <- min(range[2],max(x))
-                if ((Stop-start)<=0)
-                    return(0)
-                else{
-                    Y=y[x>=start & x<Stop]
-                    X=x[x>=start & x<Stop]
-                    if (na.omit){
-                        X=X[!is.na(Y)]
-                        Y=Y[!is.na(Y)]
-                    } else if (any(is.na(Y))|| any(is.na(X))){
-                        return(NA)
-                    }
-                    return(1/(Stop-start) * sum(Y*diff(c(X,Stop))))
-                }
-            }
-            if (response.type!="binary"){
-                out[["Brier"]][["score"]][,IBS:=sapply(times,function(t){
-                    Dint(x=c(0,times),y=c(0,Brier),range=c(0,t))
-                }),by=c("model")]
-            }
-        }
-        if (ipa == TRUE){
-            if (response.type=="binary")
-                out[["Brier"]][["score"]][,IPA:=1-Brier/Brier[model=="Null model"]]
-            else
-                out[["Brier"]][["score"]][,IPA:=1-Brier/Brier[model=="Null model"],by=times]
-        }
-        out
-    }
-    # }}}
     # {{{ Nosplit performance: external data (hopefully not apparent) 
     missing.predictions <- "Don't know yet"
     off.predictions <- "Don't know yet"
@@ -1162,7 +890,21 @@ theCall <- match.call()
         DT <- getPerformanceData(testdata=data,
                                  testweights=Weights,
                                  traindata=NULL,
-                                 trainseed=NULL)
+                                 trainseed=NULL,
+                                 response.type=response.type,
+                                 response.dim=response.dim,
+                                 times=times,
+                                 cause=cause,
+                                 neworder=neworder,
+                                 debug=debug,
+                                 labels=mlevs,
+                                 predictRisk.args=predictRisk.args,
+                                 nullobject=nullobject,
+                                 cens.type=cens.type,
+                                 object=object,
+                                 object.classes=object.classes,
+                                 NT=NT
+)
         if (any(is.na(DT[["risk"]]))){
             missing.predictions <- DT[,list("Missing.values"=sum(is.na(risk))),by=byvars]
             missing.predictions[,model:=factor(model,levels=mlevs,mlabels)]
@@ -1179,12 +921,19 @@ theCall <- match.call()
         }
         noSplit <- computePerformance(DT,
                                       N=N,
+                                      NT=NT,
+                                      NF=NF,
+                                      models=list(levels=mlevs,labels=mlabels),
+                                      response.type=response.type,
+                                      cause=cause,
+                                      states=states,
+                                      alpha=alpha,
                                       se.fit=se.fit,
                                       conservative=conservative,
                                       cens.model,
                                       multi.split.test=multi.split.test,
                                       keep.residuals=keep.residuals,
-                                      keep.vcov=keep.vcov)
+                                      keep.vcov=keep.vcov,dolist=dolist,probs=probs,metrics=metrics,plots=plots,summary=summary,ROC=FALSE,MC=Weights$IC)
         if (debug) message("computed apparent performance")
     }
     # }}}
@@ -1215,7 +964,8 @@ theCall <- match.call()
         `%dopar%` <- foreach::`%dopar%`
         ## k-fold-CV
         if (split.method$internal.name == "crossval"){
-            DT.B <- rbindlist(foreach::foreach (b=1:B,.export=exports,.packages="data.table",.errorhandling=errorhandling) %dopar%{ ## repetitions of k-fold to avoid Monte-Carlo error
+            DT.B <- rbindlist(foreach::foreach (b=1:B,.export=exports,.packages="data.table",.errorhandling=errorhandling) %dopar%{
+                ## repetitions of k-fold to avoid Monte-Carlo error
                 index.b <- split.method$index[,b] ## contains a sample of the numbers 1:k with replacement
                 if((B>1) && !is.null(progress.bar)){setTxtProgressBar(pb, b)}
                 DT.b <- rbindlist(lapply(1:split.method$k,function(fold){
@@ -1241,7 +991,20 @@ theCall <- match.call()
                     DT.fold <- getPerformanceData(testdata=testdata,
                                                   testweights=testweights,
                                                   traindata=traindata,
-                                                  trainseed=trainseeds[[(b-1)*split.method$k+fold]])
+                                                  trainseed=trainseeds[[(b-1)*split.method$k+fold]],
+                                                  response.type=response.type,
+                                                  response.dim=response.dim,
+                                                  times=times,
+                                                  cause=cause,
+                                                  neworder=NULL,
+                                                  debug=debug,
+                                                  labels=mlevs,
+                                                  predictRisk.args=predictRisk.args,
+                                                  nullobject=nullobject,
+                                                  cens.type=cens.type,
+                                                  object=object,
+                                                  object.classes=object.classes,
+                                                  NT=NT)
                     return(DT.fold)
                 }))
                 DT.b[,b:=b]
@@ -1268,7 +1031,20 @@ theCall <- match.call()
                 DT.b <- getPerformanceData(testdata=testdata,
                                            testweights=testweights,
                                            traindata=traindata,
-                                           trainseed=trainseeds[[b]])
+                                           trainseed=trainseeds[[b]],
+                                           response.type=response.type,
+                                           response.dim=response.dim,
+                                           times=times,
+                                           cause=cause,
+                                           neworder=NULL,
+                                           debug=debug,
+                                           labels=mlevs,
+                                           predictRisk.args=predictRisk.args,
+                                           nullobject=nullobject,
+                                           cens.type=cens.type,
+                                           object=object,
+                                           object.classes=object.classes,
+                                           NT=NT)
                 DT.b[,b:=b]
                 DT.b
             })
@@ -1378,32 +1154,53 @@ theCall <- match.call()
                         for (mod in mlevs){
                             Ib <- matrix(0, sum(cases.index), sum(controls.index))
                             auc <- matrix(0, sum(cases.index), sum(controls.index))
-                            for (u in 1:B){## cannot use b as running index because b==b does not work in data.table
-                                ## test <- DT.B[model==mod&times==t&b==u]
-                                oob <- match(1:N,unique(split.method$index[,u]),nomatch=0)==0
-                                ## to use the cpp function AUCijFun we
-                                ## need a vector of length equal to the number of cases (which.cases) for the current time point
-                                ## which has arbitrary values in places where subjects are inbag and the predicted risks
-                                ## for those out-of-bag. need another vector for controls.
-                                riskset <- data.table::data.table(ID=1:N,casecontrol=cc.status,oob=oob)
-                                data.table::setkey(riskset,ID)
-                                if (is.null(t)){
-                                    oob.risk <- DT.B[model==mod&b==u,data.table::data.table(ID,risk)]
-                                }else{
-                                    oob.risk <- DT.B[model==mod&times==t&b==u,data.table::data.table(ID,risk)]
+                            if (split.method$internal.name=="crossval"){
+                                warning("Cannot yet calculate AUC in this case. Use split.method 'loob' or 'bootcv' instead.")
+                                for (u in 1:B){## cannot use b as running index because b==b does not work in data.table
+                                    riskset <- data.table::data.table(ID=1:N,casecontrol=cc.status,oob=oob)
+                                    data.table::setkey(riskset,ID)
+                                    if (response.type=="binary"){
+                                        oob.risk <- DT.B[model==mod&b==u,data.table::data.table(ID,risk)]
+                                    }else{
+                                        oob.risk <- DT.B[model==mod&times==t&b==u,data.table::data.table(ID,risk)]
+                                    }
+                                    data.table::setkey(oob.risk,ID)
+                                    riskset <- oob.risk[riskset]
+                                    riskset[is.na(risk),risk:=-9]
+                                    Ib.ij <- outer((cases.index*oob)[which.cases],(controls.index*oob)[which.controls],"*")
+                                    auc.ij <- AUCijFun(riskset[casecontrol=="case",risk],riskset[casecontrol=="control",risk])*Ib.ij
+                                    auc <- auc+auc.ij
+                                    auc <- (auc*weightMatrix)/Ib
                                 }
-                                data.table::setkey(oob.risk,ID)
-                                riskset <- oob.risk[riskset]
-                                riskset[is.na(risk),risk:=-9]
-                                Ib.ij <- outer((cases.index*oob)[which.cases],(controls.index*oob)[which.controls],"*")
-                                auc.ij <- AUCijFun(riskset[casecontrol=="case",risk],riskset[casecontrol=="control",risk])*Ib.ij
-                                ## Ib.ij is 1 when the pair out of bag
-                                ## print(head(oob))
-                                ## print(auc.ij[1:5,1:5])
-                                auc <- auc+auc.ij
-                                Ib <- Ib + Ib.ij
+                            }else{
+                                for (u in 1:B){## cannot use b as running index because b==b does not work in data.table
+                                    ## test <- DT.B[model==mod&times==t&b==u]
+                                    # when B is too low it may happen that some subjects are never oob
+                                    oob <- match(1:N,unique(split.method$index[,u]),nomatch=0)==0
+                                    ## to use the cpp function AUCijFun we
+                                    ## need a vector of length equal to the number of cases (which.cases) for the current time point
+                                    ## which has arbitrary values in places where subjects are inbag and the predicted risks
+                                    ## for those out-of-bag. need another vector for controls.
+                                    riskset <- data.table::data.table(ID=1:N,casecontrol=cc.status,oob=oob)
+                                    data.table::setkey(riskset,ID)
+                                    if (response.type=="binary"){
+                                        oob.risk <- DT.B[model==mod&b==u,data.table::data.table(ID,risk)]
+                                    }else{
+                                        oob.risk <- DT.B[model==mod&times==t&b==u,data.table::data.table(ID,risk)]
+                                    }
+                                    data.table::setkey(oob.risk,ID)
+                                    riskset <- oob.risk[riskset]
+                                    riskset[is.na(risk),risk:=-9]
+                                    Ib.ij <- outer((cases.index*oob)[which.cases],(controls.index*oob)[which.controls],"*")
+                                    auc.ij <- AUCijFun(riskset[casecontrol=="case",risk],riskset[casecontrol=="control",risk])*Ib.ij
+                                    ## Ib.ij is 1 when the pair out of bag
+                                    ## print(head(oob))
+                                    ## print(auc.ij[1:5,1:5])
+                                    auc <- auc+auc.ij
+                                    Ib <- Ib + Ib.ij
+                                }
+                                auc <- (auc*weightMatrix)/Ib
                             }
-                            auc <- (auc*weightMatrix)/Ib
                             # FIXME: why are there NA's?
                             auc[is.na(auc)] <- 0
                             ## Leave-one-pair-out bootstrap estimate of AUC
@@ -1580,7 +1377,7 @@ theCall <- match.call()
                         ## REMOVE ME
                         ## Ib <- Ib[order(data$ID)]
                         if (any(Ib==0)) {
-                            stop("Some subjects are never out of bag.\n You should increase the number of bootstrap replications (argument 'B').")
+                            warning("Some subjects are never out of bag.\n You should increase the number of bootstrap replications (argument 'B').")
                             Ib.include <- Ib!=0
                             Ib <- Ib[Ib.include]
                             ## don't subset residuals, they are only
@@ -1756,12 +1553,19 @@ theCall <- match.call()
                 }
                 computePerformance(DT.b,
                                    N=N.b,
+                                   NT=NT,
+                                   NF=NF,
+                                   models=list(levels=mlevs,labels=mlabels),
+                                   response.type=response.type,
+                                   cause=cause,
+                                   states=states,
+                                   alpha=alpha,
                                    se.fit=FALSE,
                                    conservative=TRUE, ## cannot subset IC yet
                                    cens.model=cens.model,
                                    multi.split.test=multi.split.test,
                                    keep.residuals=FALSE,
-                                   keep.vcov=FALSE)
+                                   keep.vcov=FALSE,dolist=dolist,probs=probs,metrics=metrics,plots=plots,summary=summary,ROC=FALSE,MC=Weights$IC)
             }
             if (!is.null(progress.bar)){
                 cat("\n")
@@ -1926,10 +1730,6 @@ theCall <- match.call()
     output
     # }}}
 }
-
-
-
-
 
 
 
