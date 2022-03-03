@@ -817,7 +817,9 @@ Score.list <- function(object,
                     cens.model <- "KaplanMeier"
                 }
             }
-            if ((conservative[1]==TRUE)&& response.type == "survival" && ("AUC" %in% metrics) && (cens.model[[1]]=="KaplanMeier")){
+                        browser
+
+            if (response.type == "survival" && ("AUC" %in% metrics) && (cens.model[[1]]=="KaplanMeier")){
               Weights <- getCensoringWeights(formula=formula,
                                              data=data,
                                              times=times,
@@ -888,7 +890,21 @@ Score.list <- function(object,
         DT <- getPerformanceData(testdata=data,
                                  testweights=Weights,
                                  traindata=NULL,
-                                 trainseed=NULL,response.type=response.type,response.dim=response.dim,times=times,cause=cause,debug=debug,labels=mlevs,predictRisk.args=predictRisk.args,nullobject=nullobject,cens.type=cens.type,object=object,object.classes=object.classes,NT=NT)
+                                 trainseed=NULL,
+                                 response.type=response.type,
+                                 response.dim=response.dim,
+                                 times=times,
+                                 cause=cause,
+                                 neworder=neworder,
+                                 debug=debug,
+                                 labels=mlevs,
+                                 predictRisk.args=predictRisk.args,
+                                 nullobject=nullobject,
+                                 cens.type=cens.type,
+                                 object=object,
+                                 object.classes=object.classes,
+                                 NT=NT
+)
         if (any(is.na(DT[["risk"]]))){
             missing.predictions <- DT[,list("Missing.values"=sum(is.na(risk))),by=byvars]
             missing.predictions[,model:=factor(model,levels=mlevs,mlabels)]
@@ -976,7 +992,19 @@ Score.list <- function(object,
                                                   testweights=testweights,
                                                   traindata=traindata,
                                                   trainseed=trainseeds[[(b-1)*split.method$k+fold]],
-                                                  response.type=response.type,response.dim=response.dim,debug=debug)
+                                                  response.type=response.type,
+                                                  response.dim=response.dim,
+                                                  times=times,
+                                                  cause=cause,
+                                                  neworder=NULL,
+                                                  debug=debug,
+                                                  labels=mlevs,
+                                                  predictRisk.args=predictRisk.args,
+                                                  nullobject=nullobject,
+                                                  cens.type=cens.type,
+                                                  object=object,
+                                                  object.classes=object.classes,
+                                                  NT=NT)
                     return(DT.fold)
                 }))
                 DT.b[,b:=b]
@@ -1004,7 +1032,19 @@ Score.list <- function(object,
                                            testweights=testweights,
                                            traindata=traindata,
                                            trainseed=trainseeds[[b]],
-                                           response.type=response.type,response.dim=response.dim,debug=debug)
+                                           response.type=response.type,
+                                           response.dim=response.dim,
+                                           times=times,
+                                           cause=cause,
+                                           neworder=NULL,
+                                           debug=debug,
+                                           labels=mlevs,
+                                           predictRisk.args=predictRisk.args,
+                                           nullobject=nullobject,
+                                           cens.type=cens.type,
+                                           object=object,
+                                           object.classes=object.classes,
+                                           NT=NT)
                 DT.b[,b:=b]
                 DT.b
             })

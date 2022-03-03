@@ -91,7 +91,7 @@ d1 <- sampleData(400,outcome="survival")
 d2 <- sampleData(400,outcome="survival")
 f1 <- coxph(Surv(time,event)~X6+X8,data=d1,x=1,y=1)
 f2 <- rfsrc(Surv(time,event)~X6+X8,data=d1,ntree=20)
-x <- Score(list(f1,f2),data=d2,formula=Hist(time,event)~1,times=4)
+x <- Score(list(f1,f2),data=d2,formula=Hist(time,event)~1,times=4,conservative=1L)
 x$AUC$score
 x$AUC$contrast
 x$Brier$score

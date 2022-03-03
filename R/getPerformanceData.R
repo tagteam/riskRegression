@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Feb 27 2022 (09:12) 
 ## Version: 
-## Last-Updated: Feb 28 2022 (17:32) 
+## Last-Updated: Mar  1 2022 (12:00) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 2
+##     Update #: 4
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -20,6 +20,7 @@ getPerformanceData <- function(testdata,
                                trainseed=NULL,
                                response.type,
                                response.dim,
+                               neworder,
                                debug,
                                times,
                                cause,
@@ -73,11 +74,11 @@ getPerformanceData <- function(testdata,
                 if (response.type=="binary"){
                     p <- do.call("predictRisk", c(list(object=c(object[[f]])),args))[neworder]
                 }else{
-                    if(!is.null(include.times)){ ## remove columns at times beyond max time
-                        p <- c(do.call("predictRisk",c(list(object=object[[f]][,include.times,drop=FALSE]),args))[neworder,])
-                    } else{
-                        p <- c(do.call("predictRisk",c(list(object=object[[f]]),args))[neworder,])
-                    }
+                    ## if(!is.null(include.times)){ ## remove columns at times beyond max time
+                    ## p <- c(do.call("predictRisk",c(list(object=object[[f]][,include.times,drop=FALSE]),args))[neworder,])
+                    ## } else{
+                    p <- c(do.call("predictRisk",c(list(object=object[[f]]),args))[neworder,])
+                    ## }
                 }
             }
             else{ ## either binary or only one time point
