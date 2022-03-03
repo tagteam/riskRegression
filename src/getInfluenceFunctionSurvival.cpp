@@ -1,50 +1,26 @@
 // [[Rcpp::depends(RcppArmadillo)]]
+// [[Rcpp::plugins(openmp)]]
+#include <unistd.h>
 #include <RcppArmadillo.h>
 
 using namespace Rcpp;
 using namespace arma;
 
-// IntegerVector orderNumericVector(NumericVector& x) {
-//   if (is_true(any(duplicated(x)))) {
-//     Rf_warning("There are duplicates in 'x'; order not guaranteed to match that of R's base::order");
-//   }
-//   NumericVector sorted = clone(x).sort();
-//   return match(sorted, x);
-// }
-
-// online copy-paste of binary search 
-int search(NumericVector& array, int start_idx, int end_idx, double search_val) {
-  
-  if( start_idx == end_idx )
-    return array[start_idx] <= search_val ? start_idx : -1;
-  
-  int mid_idx = start_idx + (end_idx - start_idx) / 2;
-  
-  if( search_val < array[mid_idx] )
-    return search( array, start_idx, mid_idx, search_val );
-  
-  int ret = search( array, mid_idx+1, end_idx, search_val );
-  return ret == -1 ? mid_idx : ret;
-}
-
 // Calculate influence function for survival case with Nelson-Aalen censoring.
 // [[Rcpp::export]]
 NumericVector getInfluenceFunctionAUCSurvival(NumericVector time,
-                                              NumericVector status, 
+                                              NumericVector status,
                                               double tau,
                                               NumericVector risk,
                                               NumericVector GTiminus,
-                                              double Gtau, 
+                                              double Gtau,
                                               double auc) {
-  
-  int n = time.size();
-  //use binary search, it is faster!
-  // int firsthit = 0;
-  // while (firsthit < n-1 && time[firsthit+1] <= tau) {
-  //   firsthit++;
-  // }
-  int firsthit = search(time,0,n-1,tau);
 
+  int n = time.size();
+  // find first index such that k such that tau[k] <= tau but tau[k+1] > tau
+  auto lower = std::lower_bound(time.begin(), time.end(), tau);
+  int firsthit = std::distance(time.begin(), lower)-1;
+  // Calculate \hat{mu}_\tau(P),\hat{mu}_1, \hat{nu}_\tau(P) and \hat{nu}_1 (see formulas)
   NumericVector ic(n);
   double mutauP = 0;
   for (int i = 0; i <= firsthit; i++){
@@ -52,42 +28,43 @@ NumericVector getInfluenceFunctionAUCSurvival(NumericVector time,
       mutauP += 1.0/GTiminus[i];
     }
   }
+
   double mu1hat = double ((n-(firsthit+1))) / n;
-  // Rcout << "mu1hat: " << mu1hat << "\n";
   mutauP = mu1hat / Gtau * (mutauP / n);
   double nutauP = auc*mutauP;
-  arma::vec nu1hat(n);
-  
-  for (int i = 0; i < n;i++){
-    double temp1 = 0;
-    for (int j = firsthit+1; j < n; j++){
-      if (risk[j] < risk[i]){
-        temp1+=1.0;
-      }
-    }
-    nu1hat[i] = temp1/n;
-  }
-  // Rcout << firsthit << "firsthit";
-  //   
-  // for (int i = 0; i < n;i++){
-  //   double temp1 = 0;
-  //   Rcout << "i is " << i << "\n";
-  //   for (int j = firsthit+1; j < n; j++){
-  //     if (risk[order[j]-1] < risk[i]){
-  //       Rcout << order[j] -1 << "\n";
-  //       temp1+=1.0;
-  //     }
-  //     else {
-  //       break;
-  //     }
-  //   }
-  //   nu1hat[i] = temp1/n;
-  // }
-  // 
-  // Rcout << nu1hat << "\n";
-  
+  NumericVector nu1hat(n);
 
-  // Rcout << "nu1hat is " << nu1hat << "\n";
+  // copy values from risk[firsthit+1:(n-1)] and sort them
+  NumericVector risk1 = risk[Range(firsthit+1,n-1)];
+  std::sort(risk1.begin(),risk1.end());
+
+  for (int i = 0; i < n;i++){
+    int j = 0;
+    while (risk1[j] < risk[i] && j < risk1.length()){
+      j++;
+    }
+    nu1hat[i] = ((double) j)/n;
+  }
+
+  LogicalVector logicalIndex(n);
+  for (int i = 0; i <= firsthit; i++){
+    logicalIndex[i] = (status[i] ==1);
+  }
+  // subset relevant vectors
+  NumericVector risk2 = risk[logicalIndex];
+  NumericVector GTiminus2 = GTiminus[logicalIndex];
+  // get ordering according to risk2
+  IntegerVector order(risk2.length());
+  std::iota(order.begin(), order.end(), 0);
+  std::sort(order.begin(), order.end(),
+            [&](int x, int y) { return risk2[x] < risk2[y]; });
+  // reorder according to rodering of risk2
+  risk2 = risk2[order];
+  GTiminus2 = GTiminus2[order];
+
+  // Thomas code from IC of Nelson-Aalen estimator
+  //initialize first time point t=0 with data of subject i=0
+
   arma::uvec sindex(n,fill::zeros);
   arma::vec utime=unique(time);
   int nu=utime.size();
@@ -95,8 +72,7 @@ NumericVector getInfluenceFunctionAUCSurvival(NumericVector time,
   arma::vec Cens(nu,fill::zeros);
   arma::vec hazardC(nu,fill::zeros);
   arma::vec MC_term2(nu,fill::zeros);
-  // Thomas code from IC of Nelson-Aalen estimator
-  //initialize first time point t=0 with data of subject i=0
+
   int t=0;
   double Y = (double) n;
   atrisk[0]=Y;
@@ -124,16 +100,12 @@ NumericVector getInfluenceFunctionAUCSurvival(NumericVector time,
     }
   }
   MC_term2 = arma::cumsum(MC_term2);
-  
-  
-  // Rcout << "firsthit is " << firsthit;
-  // Rcout << "sindex is: " << sindex << "\n";
-  // main loop, here is the problem
+
   double nu3hati1 = 0;
   double mu2hat1 = 0;
-  
   double nu3hati2 = 0;
   double mu2hat2 = 0;
+
   for (int k = 1; k <= firsthit;k++){
     if (status[k] == 1){
       nu3hati2 += nu1hat[k] / GTiminus[k];
@@ -143,21 +115,18 @@ NumericVector getInfluenceFunctionAUCSurvival(NumericVector time,
   double nu3hati, mu2hat;
   for (int i=0;i<n;i++){
     double firstTermNum, firstTermDen;
-    // Rcout << "cases: "<< cases;
     if (time[i] <= tau && status[i] == 1){
       firstTermNum = nu1hat[i] / (GTiminus[i]*Gtau);
       firstTermDen = mu1hat / (GTiminus[i]*Gtau);
     }
     else if (time[i] > tau){
       double nu2hati = 0;
-      for (int j = 0; j <= firsthit;j++){
-        if (risk[i] < risk[j] && status[j] == 1){
-          // Rcout << "j is " << j << "\n";
-          nu2hati += 1.0/GTiminus[j];
-        }
+      int j = risk2.length()-1;
+      while (j >= 0 && risk[i] < risk2[j]){
+        nu2hati += 1.0/GTiminus2[j];
+        j--;
       }
       nu2hati = 1.0/n * nu2hati;
-      // Rcout << "nu2hati" << nu2hati << "\n";
       firstTermNum =  nu2hati * 1.0/Gtau;
       firstTermDen =  mutauP / mu1hat;
     }
@@ -165,22 +134,19 @@ NumericVector getInfluenceFunctionAUCSurvival(NumericVector time,
       firstTermNum =  0;
       firstTermDen = 0;
     }
-    // Rcout << "firstTermNum: " << firstTermNum << " and firstTermDen "<< firstTermDen << "\n";
     double fihattau = (1-status[i])*n/atrisk[sindex[i]]- MC_term2[sindex[i]];
-    
+
     if (i==0){
       nu3hati = nu3hati1;
       mu2hat = mu2hat1;
       nu3hati = 1.0 / n * nu3hati;
       mu2hat = 1.0 / n * mu2hat;
-      // Rcout << "nu3hati3 is " << 0 << "\n";
     }
     else if (i==1){
       nu3hati = nu3hati1+nu3hati2*fihattau;
       mu2hat = mu2hat1+mu2hat2*fihattau;
       nu3hati = 1.0 / n * nu3hati;
       mu2hat = 1.0 / n * mu2hat;
-      // Rcout << "nu3hati3 is " << nu3hati3 << "\n";
     }
     if (i>1 && (i-1 <= firsthit)){
       if (status[i-1] == 1){
@@ -194,14 +160,8 @@ NumericVector getInfluenceFunctionAUCSurvival(NumericVector time,
       nu3hati = 1.0 / n * nu3hati;
       mu2hat = 1.0 / n * mu2hat;
     }
-    
-    // Rcout << "nu3hati " << nu3hati << "\n";
-    // Rcout << "mu2hat " << mu2hat << "\n";
-    // Rcout << "fihattau " << fihattau << "\n";
-    // Rcout << "nutauP " << nutauP << "\n";
     double icnaTermsNum = fihattau * nutauP + (1.0/Gtau) * nu3hati;
     double icnaTermsDen = fihattau * mutauP +mu1hat/Gtau * mu2hat;
-    // Rcout << "icnaTermsNum: " << icnaTermsNum << "\n"; //<< " and icnaTermsDen"<< icnaTermsDen << "\n";
     ic[i] = ((firstTermNum+icnaTermsNum)*mutauP- nutauP*(firstTermDen+icnaTermsDen))/(mutauP*mutauP);
   }
   return ic;
