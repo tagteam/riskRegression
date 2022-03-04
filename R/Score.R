@@ -409,7 +409,7 @@ Score <- function(object,...){
 # {{{ Score.list
 ##' @rdname Score
 ##' @export Score.list
-##' @export 
+##' @export
 Score.list <- function(object,
                        formula,
                        data,
@@ -817,7 +817,6 @@ Score.list <- function(object,
                     cens.model <- "KaplanMeier"
                 }
             }
-
             if (response.type == "survival" && ("AUC" %in% metrics) && (cens.model[[1]]=="KaplanMeier")){
               Weights <- getCensoringWeights(formula=formula,
                                              data=data,
@@ -834,7 +833,7 @@ Score.list <- function(object,
                                              response.type=response.type,
                                              ## FIXME: need conservative formula for AUC
                                              influence.curve=(se.fit[[1]]==TRUE && (conservative[[1]]==0L || ("AUC" %in% metrics))))
-              
+
             }
             ##
             ## if cens.model is marginal then IC is a matrix (ntimes,newdata)
@@ -882,7 +881,7 @@ Score.list <- function(object,
     }
 
     # }}}
-    # {{{ Nosplit performance: external data (hopefully not apparent) 
+    # {{{ Nosplit performance: external data (hopefully not apparent)
     missing.predictions <- "Don't know yet"
     off.predictions <- "Don't know yet"
     if (split.method$internal.name %in% c("noplan",".632+")){
@@ -1422,14 +1421,14 @@ Score.list <- function(object,
                                                                se=sd(residuals)/sqrt(N),
                                                                se.conservative=sd(residuals)/sqrt(N)),by=byvars]
                             }else{
-                                #for small values of B, there is the problem that 
+                                #for small values of B, there is the problem that
                                 #some individuals might be zero times out of the bag
                                 #this means that DT.B, which should have a number of rows
-                                # that is a multiple of the 
+                                # that is a multiple of the
                                 #amount of observations in the data, does not fulfill this.
-                                #the calculations in getInfluenceCurve.Brier cannot accomodate this (for now). 
-                                
-                               
+                                #the calculations in getInfluenceCurve.Brier cannot accomodate this (for now).
+
+
                                 DT.B[,IF.Brier:=getInfluenceCurve.Brier(t=times[1],
                                                                           time=time,
                                                                           IC0,
@@ -1442,8 +1441,8 @@ Score.list <- function(object,
                                 score.loob <- DT.B[,data.table(Brier=sum(residuals)/N,
                                                                  se=sd(IF.Brier)/sqrt(N),
                                                                  se.conservative=sd(IC0)/sqrt(N)),by=byvars]
-                                
-                                
+
+
                             }
                         }else{
                             ## either conservative == TRUE or binary or uncensored
