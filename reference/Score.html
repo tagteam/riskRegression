@@ -10,7 +10,7 @@
     
     <a class="navbar-brand me-2" href="../index.html">riskRegression</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2022.02.28</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2022.03.04</small>
 
     
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -224,16 +224,6 @@ randomly splitting (bootstrapping) the data during cross-validation.</p></dd>
 <p>A more flexible approach is to write a new predictRisk S3-method. See Details.</p></dd>
 <dt>debug</dt>
 <dd><p>Logical. If <code>TRUE</code> indicate landmarks in progress of the program.</p></dd>
-<dt>useEventTimes</dt>
-<dd><p>obsolete.</p></dd>
-<dt>nullModel</dt>
-<dd><p>obsolete.</p></dd>
-<dt>censMethod</dt>
-<dd><p>obsolete.</p></dd>
-<dt>censModel</dt>
-<dd><p>obsolete.</p></dd>
-<dt>splitMethod</dt>
-<dd><p>obsolete.</p></dd>
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
@@ -561,7 +551,50 @@ and Prognostic Research, 2(1):7, 2018.</p>
 <span class="r-in"><span class="co"># compare models on test data</span></span>
 <span class="r-in"><span class="fu">Score</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="st">"Cox(X1+X2+X7+X9)"</span><span class="op">=</span><span class="va">cox1</span>,<span class="st">"Cox(X3+X5+X6)"</span><span class="op">=</span><span class="va">cox2</span><span class="op">)</span>,</span>
 <span class="r-in">      formula<span class="op">=</span><span class="fu"><a href="https://rdrr.io/pkg/survival/man/Surv.html" class="external-link">Surv</a></span><span class="op">(</span><span class="va">time</span>,<span class="va">event</span><span class="op">)</span><span class="op">~</span><span class="fl">1</span>,data<span class="op">=</span><span class="va">testSurv</span>,conf.int<span class="op">=</span><span class="cn">TRUE</span>,times<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">5</span>,<span class="fl">8</span><span class="op">)</span><span class="op">)</span></span>
-<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error in rowSumsCrossprodSpec(htij1, MC.Ti.cases):</span> Not compatible with requested type: [type=NULL; target=double].</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Metric AUC:</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Results by model:</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>               model times  AUC lower upper</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1: Cox(X1+X2+X7+X9)     5 65.9  46.6  85.2</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2: Cox(X1+X2+X7+X9)     8 69.3  49.2  89.4</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3:    Cox(X3+X5+X6)     5 74.3  57.9  90.7</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 4:    Cox(X3+X5+X6)     8 77.5  57.9  97.1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Results of model comparisons:</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    times         model        reference delta.AUC lower upper   p</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1:     5 Cox(X3+X5+X6) Cox(X1+X2+X7+X9)       8.4 -20.1  36.9 0.6</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2:     8 Cox(X3+X5+X6) Cox(X1+X2+X7+X9)       8.2 -25.9  42.4 0.6</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> NOTE: Values are multiplied by 100 and given in %.</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> NOTE: The higher AUC the better.</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Metric Brier:</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Results by model:</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>               model times Brier lower upper</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1:       Null model     5  23.2  19.0  27.4</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2:       Null model     8  24.4  21.5  27.2</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3: Cox(X1+X2+X7+X9)     5  22.6  15.8  29.4</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 4: Cox(X1+X2+X7+X9)     8  22.7  14.5  31.0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 5:    Cox(X3+X5+X6)     5  22.0  13.9  30.1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 6:    Cox(X3+X5+X6)     8  20.0   9.8  30.1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Results of model comparisons:</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    times            model        reference delta.Brier lower upper         p</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1:     5 Cox(X1+X2+X7+X9)       Null model        -0.6  -8.3   7.1 0.8822806</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2:     5    Cox(X3+X5+X6)       Null model        -1.2 -10.6   8.2 0.8002223</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3:     5    Cox(X3+X5+X6) Cox(X1+X2+X7+X9)        -0.6 -12.6  11.4 0.9177163</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 4:     8 Cox(X1+X2+X7+X9)       Null model        -1.6  -9.4   6.1 0.6798489</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 5:     8    Cox(X3+X5+X6)       Null model        -4.4 -14.7   5.8 0.3990817</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 6:     8    Cox(X3+X5+X6) Cox(X1+X2+X7+X9)        -2.8 -18.3  12.7 0.7259326</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> NOTE: Values are multiplied by 100 and given in %.</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> NOTE: The lower Brier the better.</span>
 <span class="r-in"></span>
 <span class="r-in"><span class="co"># crossvalidation models in traindata</span></span>
 <span class="r-in"><span class="kw">if</span> <span class="op">(</span><span class="cn">FALSE</span><span class="op">)</span> <span class="op">{</span></span>
@@ -648,7 +681,7 @@ and Prognostic Research, 2(1):7, 2018.</p>
 
 
     <footer><div class="pkgdown-footer-left">
-  <p></p><p>Developed by Thomas Alexander Gerds, Brice Ozenne.</p>
+  <p></p><p>Developed by Thomas Alexander Gerds, Johan Sebastian Ohlendorff, Brice Ozenne.</p>
 </div>
 
 <div class="pkgdown-footer-right">

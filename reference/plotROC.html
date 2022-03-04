@@ -10,7 +10,7 @@
     
     <a class="navbar-brand me-2" href="../index.html">riskRegression</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2022.02.28</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2022.03.04</small>
 
     
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -145,9 +145,8 @@ axis, lines, legend, addtable2plot. See <code><a href="https://rdrr.io/pkg/prodl
 <span class="r-in"><span class="va">fs2</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/survival/man/coxph.html" class="external-link">coxph</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/survival/man/Surv.html" class="external-link">Surv</a></span><span class="op">(</span><span class="va">time</span>,<span class="va">event</span><span class="op">)</span><span class="op">~</span><span class="va">X1</span><span class="op">+</span><span class="va">X2</span><span class="op">+</span><span class="va">X9</span>,data<span class="op">=</span><span class="va">sdl</span>,x<span class="op">=</span><span class="cn">TRUE</span><span class="op">)</span></span>
 <span class="r-in"><span class="va">xs</span> <span class="op">&lt;-</span> <span class="fu"><a href="Score.html">Score</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>model1<span class="op">=</span><span class="va">fs1</span>,model2<span class="op">=</span><span class="va">fs2</span><span class="op">)</span>,<span class="fu"><a href="https://rdrr.io/pkg/prodlim/man/Hist.html" class="external-link">Hist</a></span><span class="op">(</span><span class="va">time</span>,<span class="va">event</span><span class="op">)</span><span class="op">~</span><span class="fl">1</span>,data<span class="op">=</span><span class="va">sdt</span>,</span>
 <span class="r-in">            times<span class="op">=</span><span class="fl">5</span>,plots<span class="op">=</span><span class="st">"roc"</span>,metrics<span class="op">=</span><span class="st">"auc"</span><span class="op">)</span></span>
-<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error in rowSumsCrossprodSpec(htij1, MC.Ti.cases):</span> Not compatible with requested type: [type=NULL; target=double].</span>
 <span class="r-in"><span class="fu">plotROC</span><span class="op">(</span><span class="va">xs</span><span class="op">)</span></span>
-<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error in plotROC(xs):</span> object 'xs' not found</span>
+<span class="r-plt img"><img src="plotROC-2.png" alt="" width="700" height="433"></span>
 <span class="r-in"><span class="co">## competing risks</span></span>
 <span class="r-in"><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">Melanoma</span><span class="op">)</span></span>
 <span class="r-in"><span class="va">f1</span> <span class="op">&lt;-</span> <span class="fu"><a href="CSC.html">CSC</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/prodlim/man/Hist.html" class="external-link">Hist</a></span><span class="op">(</span><span class="va">time</span>,<span class="va">status</span><span class="op">)</span><span class="op">~</span><span class="va">age</span><span class="op">+</span><span class="va">sex</span><span class="op">+</span><span class="va">epicel</span><span class="op">+</span><span class="va">ulcer</span>,data<span class="op">=</span><span class="va">Melanoma</span><span class="op">)</span></span>
@@ -155,7 +154,7 @@ axis, lines, legend, addtable2plot. See <code><a href="https://rdrr.io/pkg/prodl
 <span class="r-in"><span class="va">x</span> <span class="op">&lt;-</span> <span class="fu"><a href="Score.html">Score</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>model1<span class="op">=</span><span class="va">f1</span>,model2<span class="op">=</span><span class="va">f2</span><span class="op">)</span>,<span class="fu"><a href="https://rdrr.io/pkg/prodlim/man/Hist.html" class="external-link">Hist</a></span><span class="op">(</span><span class="va">time</span>,<span class="va">status</span><span class="op">)</span><span class="op">~</span><span class="fl">1</span>,data<span class="op">=</span><span class="va">Melanoma</span>,</span>
 <span class="r-in">            cause<span class="op">=</span><span class="fl">1</span>,times<span class="op">=</span><span class="fl">5</span><span class="op">*</span><span class="fl">365.25</span>,plots<span class="op">=</span><span class="st">"roc"</span>,metrics<span class="op">=</span><span class="st">"auc"</span><span class="op">)</span></span>
 <span class="r-in"><span class="fu">plotROC</span><span class="op">(</span><span class="va">x</span><span class="op">)</span></span>
-<span class="r-plt img"><img src="plotROC-2.png" alt="" width="700" height="433"></span>
+<span class="r-plt img"><img src="plotROC-3.png" alt="" width="700" height="433"></span>
 </code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc"><h2>On this page</h2>
@@ -163,7 +162,7 @@ axis, lines, legend, addtable2plot. See <code><a href="https://rdrr.io/pkg/prodl
 
 
     <footer><div class="pkgdown-footer-left">
-  <p></p><p>Developed by Thomas Alexander Gerds, Brice Ozenne.</p>
+  <p></p><p>Developed by Thomas Alexander Gerds, Johan Sebastian Ohlendorff, Brice Ozenne.</p>
 </div>
 
 <div class="pkgdown-footer-right">

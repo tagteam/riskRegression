@@ -10,7 +10,7 @@
     
     <a class="navbar-brand me-2" href="../index.html">riskRegression</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2022.02.28</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2022.03.04</small>
 
     
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -135,9 +135,8 @@ barplot, legend. See <code><a href="https://rdrr.io/pkg/prodlim/man/SmartControl
 <span class="r-in"><span class="va">cox2</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/pkg/survival/man/coxph.html" class="external-link">coxph</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/survival/man/Surv.html" class="external-link">Surv</a></span><span class="op">(</span><span class="va">time</span>,<span class="va">event</span><span class="op">)</span><span class="op">~</span><span class="va">X3</span><span class="op">+</span><span class="va">X5</span><span class="op">+</span><span class="va">X6</span>,data<span class="op">=</span><span class="va">learndat</span>,x<span class="op">=</span><span class="cn">TRUE</span><span class="op">)</span></span>
 <span class="r-in"><span class="va">xs</span><span class="op">=</span><span class="fu"><a href="Score.html">Score</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="st">"Cox(X1+X2+X7+X9)"</span><span class="op">=</span><span class="va">cox1</span>,<span class="st">"Cox(X3+X5+X6)"</span><span class="op">=</span><span class="va">cox2</span><span class="op">)</span>,formula<span class="op">=</span><span class="fu"><a href="https://rdrr.io/pkg/survival/man/Surv.html" class="external-link">Surv</a></span><span class="op">(</span><span class="va">time</span>,<span class="va">event</span><span class="op">)</span><span class="op">~</span><span class="fl">1</span>,</span>
 <span class="r-in">         data<span class="op">=</span><span class="va">testdat</span>,summary<span class="op">=</span><span class="st">"risks"</span>,null.model<span class="op">=</span><span class="fl">0L</span>,times<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">3</span>,<span class="fl">5</span>,<span class="fl">6</span><span class="op">)</span><span class="op">)</span></span>
-<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error in rowSumsCrossprodSpec(htij1, MC.Ti.cases):</span> Not compatible with requested type: [type=NULL; target=double].</span>
 <span class="r-in"><span class="fu">plotRisk</span><span class="op">(</span><span class="va">xs</span>,times<span class="op">=</span><span class="fl">5</span><span class="op">)</span></span>
-<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error in plotRisk(xs, times = 5):</span> object 'xs' not found</span>
+<span class="r-plt img"><img src="plotRisk-2.png" alt="" width="700" height="433"></span>
 <span class="r-in"><span class="co">## competing risk</span></span>
 <span class="r-in"><span class="kw">if</span> <span class="op">(</span><span class="cn">FALSE</span><span class="op">)</span> <span class="op">{</span></span>
 <span class="r-in"><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va">prodlim</span><span class="op">)</span></span>
@@ -158,7 +157,7 @@ barplot, legend. See <code><a href="https://rdrr.io/pkg/prodlim/man/SmartControl
 
 
     <footer><div class="pkgdown-footer-left">
-  <p></p><p>Developed by Thomas Alexander Gerds, Brice Ozenne.</p>
+  <p></p><p>Developed by Thomas Alexander Gerds, Johan Sebastian Ohlendorff, Brice Ozenne.</p>
 </div>
 
 <div class="pkgdown-footer-right">
