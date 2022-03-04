@@ -817,7 +817,6 @@ Score.list <- function(object,
                     cens.model <- "KaplanMeier"
                 }
             }
-                        browser
 
             if (response.type == "survival" && ("AUC" %in% metrics) && (cens.model[[1]]=="KaplanMeier")){
               Weights <- getCensoringWeights(formula=formula,
