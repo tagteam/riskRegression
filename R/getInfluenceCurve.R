@@ -15,7 +15,7 @@ getInfluenceCurve.AUC.survival <- function(t,n,time,risk,Cases,Controls,ipcwCont
     ht <- (sum(htij1))/(n*n)
     fi1t <- Cases*ipcwCases*n
     colSumshtij1 <- rep(0,n) # initialise at 0
-    colSumshtij1[Cases] <- rowSums(htij1) 
+    colSumshtij1[Cases] <- rowSums(htij1)
     rowSumshtij1 <- rep(0,n) # initialize at 0
     rowSumshtij1[Controls] <- colSums(htij1)
     hathtstar <- (sum(htij1))/(n*n)
@@ -34,7 +34,7 @@ getInfluenceCurve.AUC.survival <- function(t,n,time,risk,Cases,Controls,ipcwCont
     #T3 <- colSums(hathtstar*(vectTisupt + (fi1t*(1+MC)-F01t)/F01t))
     #T3 <- hathtstar*sum(vectTisupt) + hathtstar/F01t * (T3CalculationHelper(fi1t,MC)-nrow(MC)*F01t)
     T3 <- hathtstar*(sum(vectTisupt) + 1/F01t * T3CalculationHelper(fi1t,MC)-nrow(MC))
-    
+
     Term.ijak <- (T1-T3)/(F01t*St)
     Term.ikaj <- (rowSumshtij1 - n*hathtstar)/(F01t*St)
     Term.jkai <-  (colSumshtij1 - n*hathtstar*(vectTisupt+(1/F01t)*(fi1t-F01t)))/(F01t*St)
@@ -50,14 +50,14 @@ getInfluenceCurve.AUC.survival.Censored <- function(t,n,time,risk,Cases,Controls
     mu1hat <- mean(time > tau)
     mutauP <- (mu1hat / Gtau) * mean(Cases/( GTiminus))
     nutauP <- AUC * mutauP
-    
+
     nu1hat <- rep(NA,n)
     for (i in 1:n){
         nu1hat[i] <- mean(risk < risk[i] & time > tau)
     }
     # without using the AUC values, we can estimate nutauP as follows
     # nutauP <-  mean(1*(Cases) * nu1hat / GTiminus)
-    
+
     firsthit <- sindex(jump.times=time,eval.times=tau)
     for (i in 1:n){
         # First terms of IF_{num}_i and IF_{den}_i
@@ -86,7 +86,7 @@ getInfluenceCurve.AUC.survival.Censored <- function(t,n,time,risk,Cases,Controls
                 fihat <- c(0,rep(MC[i,i], n-1))
             }
             else {
-                fihat <- c(0,MC[1:(i-1),i], rep(MC[i,i], n-i)) 
+                fihat <- c(0,MC[1:(i-1),i], rep(MC[i,i], n-i))
             }
             fihattau <- MC[j,i]
             nu3hati <- mean( (1*(Cases) * nu1hat*fihat) / GTiminus)
@@ -95,13 +95,119 @@ getInfluenceCurve.AUC.survival.Censored <- function(t,n,time,risk,Cases,Controls
             ICNAterms.den <-  fihattau * mutauP +mu1hat/Gtau * mu2hat
         }
         else {
-            ICNAterms.num <- 0 
+            ICNAterms.num <- 0
             ICNAterms.den <- 0
         }
         IF[i] <- ((firstterm.num+ICNAterms.num)*mutauP- nutauP*(firstterm.den+ICNAterms.den))/(mutauP^2)
     }
     IF
 }
+
+getInfluenceCurve.AUC.Competing.Risks.Test <- function(t,n,time,status,risk,GTiminus,Gtau,MC, AUC){
+    IF <- rep(NA,n)
+    browser()
+    #replicate MC values
+    tau <- t
+    CasesSurvival <- time <= t & status == 1
+    ControlsSurvival <- time > t
+    mu1hat <- mean(time > tau)
+    mutauPsurvival <- (mu1hat / Gtau) * mean(1*(CasesSurvival)/( GTiminus))
+    mutauP <- mutauPsurvival + mean(1*(CasesSurvival)/( GTiminus))*mean(1*(time <= t & status == 2)/( GTiminus))
+    nutauP <- AUC*mutauP
+
+    nu1hat <- rep(NA,n)
+    for (i in 1:n){
+        nu1hat[i] <- mean(risk < risk[i] & time > tau)
+    }
+    # without using the AUC values, we can estimate nutauP as follows
+    nutauPsurvival <- 1/Gtau *  mean(1*(CasesSurvival) * nu1hat / GTiminus)
+    # counter <- 0
+    # for (i in 1:n){
+    #     if (time[i] <= t & status[i] ==1 ){
+    #         counter2 <- 0
+    #         for (j in 1:n){
+    #             if (time[j] <= t & status[j]==2 & risk[j] < risk[i]){
+    #                 counter2 <- counter2 + 1/GTiminus[j]
+    #             }
+    #         }
+    #         counter <- counter + 1/GTiminus[i] * counter2
+    #     }
+    # }
+    # nutauP1 <- nutauPsurvival + 1/n^2 * counter
+    # assertthat::are_equal(nutauP,nutauP1)
+    firsthit <- sindex(jump.times=time,eval.times=tau)
+    for (i in 1:n){
+        # First terms of IF_{num}_i and IF_{den}_i
+        if (CasesSurvival[i]){
+            firstterm.num <- (nu1hat[i]) / (GTiminus[i]*Gtau)
+            firstterm.den <- mu1hat / (GTiminus[i]*Gtau)
+            nu2hati <- 0
+            mu12hati <- mean(1*(time <= t & status == 2)/( GTiminus)) * 1/GTiminus[i]
+            nu12hati <- mean(1*(risk[i] > risk & time <= t & status == 2)/( GTiminus)) * 1/GTiminus[i]
+        }
+        else if (ControlsSurvival[i]){
+            mu12hati <- 0
+            nu12hati <- 0
+            nu2hati <- mean(1*(risk[i] < risk & CasesSurvival)/( GTiminus))
+            firstterm.num <-  nu2hati * 1/Gtau
+            firstterm.den <- mutauP / mu1hat
+        }
+        else {
+            mu12hati <- 0
+            nu12hati <- 0
+            nu2hati <- 0
+            firstterm.num <-  0
+            firstterm.den <- 0
+        }
+        # The two last terms of IF_{num}_i and IF_{den}_i
+        if (i > firsthit){
+            j <- firsthit
+        }
+        else {
+            j <- i
+        }
+        if (i == 1){
+            fihat <- c(0,rep(MC[i,i], n-1))
+        }
+        else {
+            fihat <- c(0,MC[1:(i-1),i], rep(MC[i,i], n-i))
+        }
+        fihattau <- MC[j,i]
+        nu3hati <- mean( (1*(CasesSurvival) * nu1hat*fihat) / GTiminus)
+        ICNAterms.num <- fihattau * nutauPsurvival + 1/Gtau * nu3hati
+        mu2hat <- mean( (1*(CasesSurvival) *fihat) / GTiminus)
+        ICNAterms.den <-  fihattau * mutauPsurvival +mu1hat/Gtau * mu2hat
+        counternu11hat2 <- 0
+        counternu13hat2 <- 0
+        countermu11hat2 <- 0
+        countermu13hat2 <- 0
+        for (k in 1:n){
+            counternu13hat <- 0
+            counternu11hat <- 0
+            countermu13hat <- 0
+            countermu11hat <- 0
+            for (j in 1:n){
+                #fihat[j]
+                counternu13hat <- counternu13hat + 1*(risk[k] > risk[j] & time[j] <= t & status[j] == 2 ) * 1/GTiminus[j]
+                counternu11hat <- counternu11hat + 1*(risk[k] > risk[j] & time[j] <= t & status[j] == 2 ) * (fihat[j]-1)/GTiminus[j]
+                countermu13hat <- countermu13hat + 1*(time[j] <= t & status[j] == 2 ) * 1/GTiminus[j]
+                countermu11hat <- countermu11hat + 1*(time[j] <= t & status[j] == 2 ) * (fihat[j]-1)/GTiminus[j]
+            }
+            counternu11hat2 <- counternu11hat2 + 1*(CasesSurvival[k])/GTiminus[k] * counternu11hat
+            counternu13hat2 <- counternu13hat2 + 1*(CasesSurvival[k])/GTiminus[k] * (fihat[k]-1)* counternu13hat
+            countermu11hat2 <- countermu11hat2 + 1*(CasesSurvival[k])/GTiminus[k] * countermu11hat
+            countermu13hat2 <- countermu13hat2 + 1*(CasesSurvival[k])/GTiminus[k] * (fihat[k]-1)* countermu13hat
+        }
+        nu11hati <- counternu11hat2 / n^2
+        nu13hati <- counternu13hat2 / n^2
+        mu11hati <-countermu11hat2 / n^2
+        mu13hati <-countermu13hat2 / n^2
+        IF[i] <- ((firstterm.num+ICNAterms.num-2*nutauPsurvival+1*(time[i] <= tau & status[i] == 2)*mean(1*(risk[i] < risk & CasesSurvival)/( GTiminus))/GTiminus[i] + nu11hati+nu12hati+nu13hati)*mutauP- nutauP*(firstterm.den+ICNAterms.den-2*mutauPsurvival+1*(time[i] <= tau & status[i] == 2)*mean(1*(CasesSurvival)/( GTiminus))/GTiminus[i] + mu11hati+mu12hati+mu13hati ))/(mutauP^2)
+    }
+    IF
+}
+
+
 
 
 # uncensored data  for survival case
@@ -134,7 +240,7 @@ getInfluenceCurve.AUC.survivalUncensored <- function(t,n,time,risk,Cases,Control
     IC <- rep(NA,n)
     for (i in 1:n){
         if (time[i] <= t){
-            IC[i] <- (mean(time > t & risk < risk[i])*muP-PTgreaterthantau*nuP)/(muP^2) 
+            IC[i] <- (mean(time > t & risk < risk[i])*muP-PTgreaterthantau*nuP)/(muP^2)
         }
         else {
             # which way, what happens if risk = ?
@@ -191,12 +297,12 @@ getInfluenceCurve.AUC.competing.risks <- function(t,n,time,risk,Cases,Controls1,
     colSumshtij1 <- rep(0,n) # initialise at 0
     colSumshtij1[Cases] <- rowSums(htij1)
     colSumshtij2 <- rep(0,n) # initialise at 0
-    colSumshtij2[Cases] <- rowSums(htij2) 
+    colSumshtij2[Cases] <- rowSums(htij2)
     rowSumshtij1 <- rep(0,n) # match(time,unique(time))initialize at 0
     rowSumshtij1[Controls1] <- colSums(htij1)
     rowSumshtij2 <- rep(0,n) # initialize at 0
     rowSumshtij2[Controls2] <- colSums(htij2)
-    hathtstar <- (sum(htij1))/(n*n)  
+    hathtstar <- (sum(htij1))/(n*n)
     vectTisupt <- n*Controls1/nbControls1
     # Integral_0^T_i dMC_k/S for i %in% Cases
     MC.Ti.cases <- MC[sindex(eval.times=time[Cases],jump.times=unique(time),),,drop=FALSE]
@@ -216,7 +322,7 @@ getInfluenceCurve.AUC.competing.risks <- function(t,n,time,risk,Cases,Controls1,
     T2 <- rowSumsCrossprodSpec(htij2,MC.Ti.cases)
     ## T2 <- colSums(crossprod(htij2,1+MC.Ti.cases))
     ## in case of ties need to expand MC to match the dimension of fi1t
-    # data does not have ties, this saves memory 
+    # data does not have ties, this saves memory
     if (all(match(time,unique(time)) != 1:ncol(MC))) {
         MC <- MC[match(time,unique(time)),]
     }
@@ -265,30 +371,30 @@ getInfluenceCurve.Brier <- function(t,
                                     cens.model,
                                     nth.times=NULL){
     ##
-    ## Compute influence function of Brier score estimator using weights of the reverse Cox model 
+    ## Compute influence function of Brier score estimator using weights of the reverse Cox model
     ## This function evaluates the part of influence function which is related to the IPCW weights
     ## The other part is IC0.
-    ## 
-    ## \frac{1}{n}\sum_{i=1}^n 
-    ## m_{t,n}^{(1)}(X_i) 
-    ## [\frac{I_{T_i\leq t}\Delta_i}{G^2(T_i\vert Z_i)}IF_G(T_i,X_k; X_i)+\frac{I_{T_i>t}}{G^2(t|Z_i)}IF_G(t,X_k; X_i)] 
-    ## with 
-    ## IF_G(t,X_k; X_i)=-\exp(-\Lambda(t\vert Z_i))IF_{\Lambda}(t,X_k; X_i) 
+    ##
+    ## \frac{1}{n}\sum_{i=1}^n
+    ## m_{t,n}^{(1)}(X_i)
+    ## [\frac{I_{T_i\leq t}\Delta_i}{G^2(T_i\vert Z_i)}IF_G(T_i,X_k; X_i)+\frac{I_{T_i>t}}{G^2(t|Z_i)}IF_G(t,X_k; X_i)]
+    ## with
+    ## IF_G(t,X_k; X_i)=-\exp(-\Lambda(t\vert Z_i))IF_{\Lambda}(t,X_k; X_i)
     ##
     ## IC_G(t,z;x_k) is an array with dimension (nlearn=N, gtimes, newdata)
     ## where gtimes = subject.times (Weights$IC$IC.subject) or times (Weights$IC$IC.times)
     ## and subject.times=Y[(((Y<=max(times))*status)==1)]
     ##
     ## don't square the weights because they will be multiplied with the
-    ## residuals that are already weighted 
-    ## 
+    ## residuals that are already weighted
+    ##
     N <- length(residuals)
     if (cens.model=="cox") {## Cox regression
         ic.weights <- matrix(0,N,N)
         k=0 ## counts subject-times with event before t
         for (i in 1:N){
             if (residuals[i]>0){
-                if (time[i]<=t){ ## min(T,C)<=t, note that (residuals==0) => (status==0)  
+                if (time[i]<=t){ ## min(T,C)<=t, note that (residuals==0) => (status==0)
                     k=k+1
                     ic.weights[i,] <- IC.G$IC.subject[i,k,]/(WTi[i])
                 }else{## min(T,C)>t
@@ -302,7 +408,7 @@ getInfluenceCurve.Brier <- function(t,
     }else{
         ## Blanche et al. 2015 (joint models) web appendix equation (14)
         hit1=(time>t)*residuals ## equation (7)
-        hit2=(time<=t)*residuals ## equation (8) 
+        hit2=(time<=t)*residuals ## equation (8)
         Brier <- mean(residuals)
         if (!is.null(IC.G)){
             ind <- prodlim::sindex(jump.times=unique(time),eval.times=t)
@@ -316,7 +422,7 @@ getInfluenceCurve.Brier <- function(t,
                 IF.Brier <- residuals-Brier + colMeans(IC.G*hit2)
             }
             #Int0tdMCsurEffARisk <- rbind(0,IC.G)[1+prodlim::sindex(jump.times=unique(time),eval.times=t),,drop=FALSE]
-            
+
         }else{# uncensored
             IF.Brier <- hit1+hit2-Brier
         }
@@ -356,14 +462,14 @@ getInfluenceCurve.NelsonAalen <- function(time,status){
     hatMC
 }
 
-getInfluenceCurve.NelsonAalen.slow <- function(time,status){    
+getInfluenceCurve.NelsonAalen.slow <- function(time,status){
     time <- time[order(time)]
-    status <- status[order(time)] 
+    status <- status[order(time)]
     n <- length(time)
     mat.data<-cbind(time,as.numeric(status==0))
     colnames(mat.data)<-c("T","indic.Cens")
     # compute the empirical survival function corresponding to the counting process 1(\tilde{eta}=0, \tilde{T}<=t)
-    hatSdeltaCensTc<-1-cumsum(mat.data[,c("indic.Cens")])/n  
+    hatSdeltaCensTc<-1-cumsum(mat.data[,c("indic.Cens")])/n
     # Build the matrix required for computing  dM_C(u) for all time u (all observed times \tilde{T}_i)
     temp1 <- cbind(mat.data[,c("T","indic.Cens")],1-(1:n)/n,hatSdeltaCensTc)
     temp1 <- rbind(c(0,0,1,1),temp1) # Add the first row corresponding to time t=0
@@ -374,7 +480,7 @@ getInfluenceCurve.NelsonAalen.slow <- function(time,status){
     temp1<-cbind(temp1,c(0,lambdaC))
     colnames(temp1)[ncol(temp1)]<-"lambdaC"
     # Cumulative hazard of censoring
-    LambdaC<-cumsum(lambdaC)         
+    LambdaC<-cumsum(lambdaC)
     # Add the column of the cumulative hazard function of the censoring (equal to 0 at time t=0)
     temp1 <- cbind(temp1,c(0,LambdaC))
     colnames(temp1)[ncol(temp1)]<-"LambdaC"
@@ -384,10 +490,10 @@ getInfluenceCurve.NelsonAalen.slow <- function(time,status){
     hatMC<-matrix(NA,n,n)
     for (i in 1:n){
         hatMC[,i] <-temp2[i,2]*as.numeric(temp2[i,1]<=temp2[,"T"])- c(temp2[0:i,"LambdaC"], rep(temp2[i,6],(n-i)))
-    }  
+    }
     # In order to draw martingale paths
     #matplot(mat.data[,"T"],hatMC,type="l")
-    #lines(mat.data[,"T"],rowMeans(hatMC),lwd=5)  
+    #lines(mat.data[,"T"],rowMeans(hatMC),lwd=5)
     # Compute d \hat{M}_{C_i} (u) for all time u (all observed times \tilde{T}_i)
     dhatMC<-rbind(hatMC[1,],hatMC[-1,]-hatMC[-nrow(hatMC),])
     # Compute d \hat{M}_{C_i} (u)/(S_{\tilde{T}}(u)) for all time u (all observed times \tilde{T}_i)
@@ -398,15 +504,15 @@ getInfluenceCurve.NelsonAalen.slow <- function(time,status){
         v/c(1,1-(1:(n-1))/n)      # c(1,1-(1:(n-1))/n) is the at risk probability (S_{\tilde{T}}(u))
     }
     # apply the function for each column (corresponding to the
-    # vector M_{C_i}(u)  for all time u (all observed times \tilde{T}_i), 
+    # vector M_{C_i}(u)  for all time u (all observed times \tilde{T}_i),
     # time \tilde{T}_i corresponds to the i-th row of the matrix)
     dhatMCdivST<-apply(dhatMC,2,MulhatSTc)
     # Compute \int_0^{\tilde{T}_j} d{ \hat{M}_{C_l} (u) } / (S_{\tilde{T}}(u)) for each subject l, we compute for all time \tilde{T}_j.
     # l=column, j=row
-    MatInt0TcidhatMCksurEff<-apply(dhatMCdivST,2,cumsum)  # (Remark : on of the row corresponds to the previous step...) 
+    MatInt0TcidhatMCksurEff<-apply(dhatMCdivST,2,cumsum)  # (Remark : on of the row corresponds to the previous step...)
     ## colnames(MatInt0TcidhatMCksurEff)<-paste("M_{C_",1:length(time),"}",sep="")
-    ## rownames(MatInt0TcidhatMCksurEff)<-time  
-    return(MatInt0TcidhatMCksurEff)  
+    ## rownames(MatInt0TcidhatMCksurEff)<-time
+    return(MatInt0TcidhatMCksurEff)
 }
 
 
