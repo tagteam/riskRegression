@@ -125,11 +125,6 @@
 ##'  A more flexible approach is to write a new predictRisk S3-method. See Details.
 ##' @param errorhandling Argument passed as \code{.errorhandling} to foreach. Default is \code{"pass"}.
 ##' @param debug Logical. If \code{TRUE} indicate landmarks in progress of the program.
-##' @param useEventTimes obsolete.
-##' @param nullModel obsolete.
-##' @param censMethod obsolete.
-##' @param censModel obsolete.
-##' @param splitMethod obsolete.
 ##' @param ... Named list containging additional arguments that are passed on to the \code{predictRisk} methods corresponding to object. See examples.
 ##' @return List with scores and assessments of contrasts, i.e.,
 ##'     tests and confidence limits for performance and difference in performance (AUC and Brier),
@@ -817,7 +812,7 @@ Score.list <- function(object,
                     cens.model <- "KaplanMeier"
                 }
             }
-            if (response.type == "survival" && ("AUC" %in% metrics) && (cens.model[[1]]=="KaplanMeier")){
+            if (split.method$name=="none" && response.type == "survival" && ("AUC" %in% metrics) && (cens.model[[1]]=="KaplanMeier")){
               Weights <- getCensoringWeights(formula=formula,
                                              data=data,
                                              times=times,
@@ -910,8 +905,8 @@ Score.list <- function(object,
         }else{
             missing.predictions <- "None"
         }
-        if (("Brier"%in% metrics)&& (max(DT[["risk"]])>1 || min(DT[["risk"]])<0)){
-            off.predictions <- DT[,list("negative.values"=sum(risk<0),"values.above.1"=sum(risk>1)),by=byvars]
+        if (("Brier"%in% metrics) && (any(is.na(DT[["risk"]]))|| (max(DT[["risk"]])>1 || min(DT[["risk"]])<0))){
+            off.predictions <- DT[,list("missing.values"=sum(is.na(risk)),"negative.values"=sum(risk<0,na.rm=TRUE),"values.above.1"=sum(risk>1,na.rm=TRUE)),by=byvars]
             off.predictions[,model:=factor(model,levels=mlevs,mlabels)]
             warning("Predicted values off the probability scale (negative or above 100%). See `off.predictions' in output list.\nOnly a problem for the Brier score, You can stop this warning by setting metrics='auc'.")
         }else{
@@ -923,6 +918,9 @@ Score.list <- function(object,
                                       NF=NF,
                                       models=list(levels=mlevs,labels=mlabels),
                                       response.type=response.type,
+                                      times=times,
+                                      jack=jack,
+                                      cens.type=cens.type,
                                       cause=cause,
                                       states=states,
                                       alpha=alpha,
@@ -931,7 +929,16 @@ Score.list <- function(object,
                                       cens.model,
                                       multi.split.test=multi.split.test,
                                       keep.residuals=keep.residuals,
-                                      keep.vcov=keep.vcov,dolist=dolist,probs=probs,metrics=metrics,plots=plots,summary=summary,ROC=FALSE,MC=Weights$IC)
+                                      keep.vcov=keep.vcov,
+                                      dolist=dolist,
+                                      probs=probs,
+                                      metrics=metrics,
+                                      plots=plots,
+                                      summary=summary,
+                                      ibs=ibs,
+                                      ipa=ipa,
+                                      ROC=FALSE,
+                                      MC=Weights$IC)
         if (debug) message("computed apparent performance")
     }
     # }}}
@@ -1555,15 +1562,27 @@ Score.list <- function(object,
                                    NF=NF,
                                    models=list(levels=mlevs,labels=mlabels),
                                    response.type=response.type,
+                                   times=times,
+                                   jack=jack,
+                                   cens.type=cens.type,
                                    cause=cause,
                                    states=states,
                                    alpha=alpha,
                                    se.fit=FALSE,
-                                   conservative=TRUE, ## cannot subset IC yet
+                                   conservative=TRUE,
                                    cens.model=cens.model,
                                    multi.split.test=multi.split.test,
                                    keep.residuals=FALSE,
-                                   keep.vcov=FALSE,dolist=dolist,probs=probs,metrics=metrics,plots=plots,summary=summary,ROC=FALSE,MC=Weights$IC)
+                                   keep.vcov=FALSE,
+                                   dolist=dolist,
+                                   probs=probs,
+                                   metrics=metrics,
+                                   plots=plots,
+                                   summary=summary,
+                                   ibs=ibs,
+                                   ipa=ipa,
+                                   ROC=FALSE,
+                                   MC=Weights$IC)
             }
             if (!is.null(progress.bar)){
                 cat("\n")

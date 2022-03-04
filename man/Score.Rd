@@ -181,16 +181,6 @@ randomly splitting (bootstrapping) the data during cross-validation.}
  A more flexible approach is to write a new predictRisk S3-method. See Details.}
 
 \item{debug}{Logical. If \code{TRUE} indicate landmarks in progress of the program.}
-
-\item{useEventTimes}{obsolete.}
-
-\item{nullModel}{obsolete.}
-
-\item{censMethod}{obsolete.}
-
-\item{censModel}{obsolete.}
-
-\item{splitMethod}{obsolete.}
 }
 \value{
 List with scores and assessments of contrasts, i.e.,

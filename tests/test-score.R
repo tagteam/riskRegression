@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jan  4 2016 (14:30) 
 ## Version: 
-## last-updated: Feb 27 2022 (09:45) 
+## last-updated: Mar  4 2022 (18:39) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 160
+##     Update #: 168
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -69,8 +69,9 @@ test_that("survival outcome,Brier Score, external prediction",{
         ## generate simulated data
         set.seed(130971)
         n <- 100
-        dat <- SimSurv(n)
-        dat <- dat[order(dat$time,-dat$status),]
+        dat <- sampleData(n,outcome="survival")
+        dat[,status:=event]
+        setorder(dat,time,-status)
         ## define models
         ## Models <- list("Cox.X1" = coxph(Surv(time,status)~X1,data=dat,y=TRUE),
         Models <- list(
@@ -78,7 +79,8 @@ test_that("survival outcome,Brier Score, external prediction",{
             "runif" = matrix(runif(n),ncol=1),"another.runif" = matrix(runif(n),ncol=1))
         ModelsR <- lapply(Models,function(x)1-x)
         ## training error
-        a <- pec(Models,formula = Surv(time,status)~X1+X2,data=dat,times= c(5),exact=FALSE,start=NULL,verbose=TRUE)
+        library(prodlim)
+        a <- pec::pec(Models,formula = Surv(time,status)~X1+X2,data=dat,times= c(5),exact=FALSE,start=NULL,verbose=TRUE)
         ## compare models
         b <- Score(ModelsR,formula = Surv(time,status)~X1+X2,data=dat,times= c(5),se.fit=FALSE)
         q <- b$Brier$score[,Brier]
@@ -100,16 +102,17 @@ test_that("integrated Brier score",{
         library(pec)
         cox1 = coxph(Surv(time,event)~X1+X2+X7+X9,data=trainSurv, y=TRUE, x = TRUE)
         cox2 = coxph(Surv(time,event)~X3+X5+X6,data=trainSurv, y=TRUE, x = TRUE)
-        xs=Score(list("c1"=cox1,"c2"=cox2),
-                 formula=Surv(time,event)~1,data=testSurv,conf.int=FALSE,
-                 se.fit=FALSE,
-                 summary="ibs",
-                 times=sort(unique(testSurv$time)))
-        xp=pec(list("c1"=cox1,"c2"=cox2),
+        suppressWarnings(xs <- Score(list("c1"=cox1,"c2"=cox2),
+                                  formula=Surv(time,event)~1,data=testSurv,conf.int=FALSE,
+                                  se.fit=FALSE,
+                                  summary="ibs",
+                                  times=sort(unique(testSurv$time))))
+        library(prodlim)
+        xp=pec::pec(list("c1"=cox1,"c2"=cox2),
                formula=Surv(time,event)~1,data=testSurv,
                times=sort(unique(testSurv$time)))
-        a1 <- ibs(xp,times=sort(unique(testSurv$time)),models="c1")
-        b1 <- xs$Brier$score[model=="c1",IBS]
+        a1 <- as.numeric(ibs(xp,times=sort(unique(testSurv$time)),models="c1"))
+        b1 <- xs$Brier$score[model=="c1"][["IBS"]]
         ## cbind(a1,b1)
         q <- as.numeric(c(a1,use.names=FALSE))
         p <- c(b1)

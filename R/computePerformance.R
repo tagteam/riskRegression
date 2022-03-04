@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Feb 27 2022 (09:12) 
 ## Version: 
-## Last-Updated: Feb 28 2022 (17:34) 
+## Last-Updated: Mar  4 2022 (18:10) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 4
+##     Update #: 10
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -20,6 +20,9 @@ computePerformance <- function(DT,
                                NF=NF,
                                models,
                                response.type,
+                               times,
+                               jack,
+                               cens.type,
                                cause,
                                states,
                                alpha,
@@ -34,11 +37,11 @@ computePerformance <- function(DT,
                                metrics,
                                plots,
                                summary,
+                               ibs,
+                               ipa,
                                ROC=FALSE,
                                MC){
-    IPA=IBS=Brier=NULL
-    ibs <- "ibs"%in%summary
-    ipa <- "ipa"%in%summary
+    IPA=IBS=Brier=model=reference=NULL
     # inherit everything else from parent frame: summary, metrics, plots, alpha, probs, dolist, et
     out <- vector(mode="list",
                   length=length(c(summary,metrics,plots)))
@@ -143,7 +146,7 @@ computePerformance <- function(DT,
         else
             out[["Brier"]][["score"]][,IPA:=1-Brier/Brier[model=="Null model"],by=times]
     }
-    out
+    out[]
 }
 
 

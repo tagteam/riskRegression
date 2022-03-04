@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Aug  9 2017 (10:36) 
 ## Version: 
-## Last-Updated: Jun 30 2021 (08:05) 
+## Last-Updated: Mar  4 2022 (17:52) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 170
+##     Update #: 181
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -253,18 +253,21 @@ IPA.glm <- function(object,formula,newdata,...){
     names(leaveOneOut) <- scope
     if (missing(newdata)) newdata=eval(object$call$data)
     if (missing(formula)) formula=object$formula
-    r2 <- Score(c("Full model"=list(object),leaveOneOut),
+    x <- Score(c("Full model"=list(object),leaveOneOut),
                 formula=formula,
                 data=newdata,
                 contrasts=FALSE,
                 conf.int=FALSE,
                 metrics="brier",
                 summary="IPA",
-                ...)$Brier$score
+               ...)
+    # need to copy to avoid error:
+    #"It appears that at some earlier point, names of this data.table have been reassigned."
+    r2 <- copy(x$Brier$score)
     ## r2[,IPA:=100*IPA]
     ## r2 <- r2[model!="Null model"]
     data.table::setnames(r2,"model","Variable")
-    r2[,IPA.drop:=IPA[Variable=="Full model"]-IPA]
+    set(r2,i=NULL,j="IPA.drop",value=r2[Variable=="Full model",IPA]-r2[["IPA"]])
     ## r2 <- r2[Variable!="Full model"]
     out <- as.data.frame(r2[,data.table::data.table(Variable,Brier,IPA,IPA.drop)])
     class(out) <- c("IPA",class(out))
