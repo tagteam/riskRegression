@@ -956,7 +956,7 @@ SurvResponseVar <- function(formula){
     names(ls.formula) <- c("operator",all.input)
     
     for(iArg in 1:length(ls.formula)){ ## iArg <- 3
-        if(inherits(x=ls.formula[[iArg]],what="character")){
+        if(inherits(x=ls.formula[[iArg]],what="name")){
             ls.formula[[iArg]] <- deparse(ls.formula[[iArg]])
         }else if(inherits(x=ls.formula[[iArg]],what="call")){
             xx <- as.character(ls.formula[[iArg]])[2]
