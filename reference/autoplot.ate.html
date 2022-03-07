@@ -129,9 +129,26 @@ Otherwise use <code>plot.type="1"</code>.</p></dd>
 <span class="r-in"><span class="co">#### plot.type = 1: for few timepoints ####</span></span>
 <span class="r-in"><span class="va">ateFit</span> <span class="op">&lt;-</span> <span class="fu"><a href="ate.html">ate</a></span><span class="op">(</span><span class="va">fit</span>, data <span class="op">=</span> <span class="va">dtS</span>, treatment <span class="op">=</span> <span class="st">"X1"</span>,</span>
 <span class="r-in">              times <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>,<span class="fl">2</span>,<span class="fl">5</span>,<span class="fl">10</span><span class="op">)</span>, se <span class="op">=</span> <span class="cn">TRUE</span>, band <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
-<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error in match(x, table, nomatch = 0L):</span> 'match' requires vector arguments</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  Input variables </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  - Treatment            : X1 (2 levels: "0" "1")</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  - Event                : event (cause: 1, censoring: 0)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  - Time  [min;max]      : time [0.64;15.7]</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  - Eval. time          :  1  2  5 10</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>       number at risk 0   83 77 45  7</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>       number at risk 1   12  9  4  3</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  Estimation procedure </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  - Estimator  : G-formula</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  - Uncertainty: Gaussian approximation </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>                 where the variance is estimated via the influence function </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  Processing</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  - Prepare influence function: outcome done </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  - Point estimation: done </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  - Decomposition iid: done</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  - Confidence intervals / bands: done</span>
 <span class="r-in"><span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/autoplot.html" class="external-link">autoplot</a></span><span class="op">(</span><span class="va">ateFit</span><span class="op">)</span></span>
-<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error in ggplot2::autoplot(ateFit):</span> object 'ateFit' not found</span>
+<span class="r-plt img"><img src="autoplot.ate-1.png" alt="" width="700" height="433"></span>
 <span class="r-in"><span class="kw">if</span> <span class="op">(</span><span class="cn">FALSE</span><span class="op">)</span> <span class="op">{</span></span>
 <span class="r-in"><span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/autoplot.html" class="external-link">autoplot</a></span><span class="op">(</span><span class="va">ateFit</span>, band <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span class="r-in"><span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/autoplot.html" class="external-link">autoplot</a></span><span class="op">(</span><span class="va">ateFit</span>, type <span class="op">=</span> <span class="st">"diffRisk"</span><span class="op">)</span></span>
