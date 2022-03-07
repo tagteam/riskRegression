@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: maj 19 2017 (16:01) 
 ## Version: 
-## last-updated: aug 19 2020 (09:17) 
-##           By: Brice Ozenne
-##     Update #: 184
+## last-updated: Mar  7 2022 (07:04) 
+##           By: Thomas Alexander Gerds
+##     Update #: 185
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -200,7 +200,7 @@ influenceTest.default <- function(object,
                                   ...){
     
     ## ** check arguments
-    if(class(object)=="predictCox"){
+    if(inherits(x=object,what="predictCox")){
         if(object$type!=object2$type){
             stop("Cannot compare different types of prediction \n")
         }
@@ -209,7 +209,7 @@ influenceTest.default <- function(object,
             stop("Cannot analyse simulatenously several types of predictions \n",
                  "here: \"",paste0(type,collapse ="\" \""),"\"\n")
         }
-    }else if(class(object)=="predictCSC"){
+    }else if(inherits(x=object,what="predictCSC")){
         type <- "absRisk"
     }else{
         stop("Can only deal with object of class \'predictCox\' or \'predictCSC\'")

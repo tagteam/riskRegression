@@ -874,11 +874,11 @@ coxVarCov.phreg <- function(object){
 #' }
 SurvResponseVar <- function(formula){
 
-    if(class(formula)=="call"){
+    if(inherits(x=formula,what="call")){
         formula <- eval(formula)
     }
     
-    if(class(formula)=="list"){
+    if(inherits(x=formula,what="list")){
         if(any(unlist(lapply(formula,class))!="formula")){
             stop("When a list, the elements of argument \'formula\' must all be a formula \n")
         }
@@ -956,9 +956,9 @@ SurvResponseVar <- function(formula){
     names(ls.formula) <- c("operator",all.input)
     
     for(iArg in 1:length(ls.formula)){ ## iArg <- 3
-        if(class(ls.formula[[iArg]]) == "name"){
+        if(inherits(x=ls.formula[[iArg]],what="character")){
             ls.formula[[iArg]] <- deparse(ls.formula[[iArg]])
-        }else if(class(ls.formula[[iArg]]) == "call"){
+        }else if(inherits(x=ls.formula[[iArg]],what="call")){
             xx <- as.character(ls.formula[[iArg]])[2]
             attr(xx,"call") <- deparse(ls.formula[[iArg]])
             ls.formula[[iArg]] <- xx
