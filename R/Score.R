@@ -691,7 +691,7 @@ Score.list <- function(object,
     if (do.resample){
         nix <- lapply(1:length(object),function(f){
             fit <- object[[f]]
-            if("try-error"==class(try(fit$call,silent=TRUE))[[1]]||is.null(fit$call))
+            if(inherits(x=try(fit$call,silent=TRUE),what="try-error")||is.null(fit$call))
                 stop(paste("model",names(object)[f],"does not have a call argument."))
         })
     }

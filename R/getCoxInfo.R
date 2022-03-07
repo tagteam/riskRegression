@@ -451,7 +451,7 @@ coxLP.coxph <- function(object, data, center){
         
         Xb <- try(rowSums(stats::predict(object, newdata = as.data.frame(data), 
                                          type = "terms")), silent = TRUE)
-        if("try-error" %in% class(Xb)){ ## Fix an error when the dataset used to fit the object is removed from the global environment
+        if(inherits(x=Xb,what="try-error")){ ## Fix an error when the dataset used to fit the object is removed from the global environment
           ## survival:::predict.coxph search for it and read (at least) the status variable
           txt <- paste0("survival::predict.coxph returns the following error:\n",
                         as.character(Xb),

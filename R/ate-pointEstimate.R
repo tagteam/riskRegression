@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: jun 27 2019 (10:43) 
 ## Version: 
-## Last-Updated: okt  7 2021 (11:03) 
-##           By: Brice Ozenne
-##     Update #: 931
+## Last-Updated: Mar  7 2022 (08:35) 
+##           By: Thomas Alexander Gerds
+##     Update #: 932
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -382,7 +382,7 @@ ATE_TD <- function(object.event,
     response <- eval(formula[[2]],envir=mydata)
     time <- response[,"time"]
     entry <- response[,"entry"]
-    if(class(object.event)[[1]]=="coxph"){
+    if(inherits(x=object.event,what="coxph")){
         riskhandler <- "predictRisk.coxphTD"
     }else{
         riskhandler <- "predictRisk.CSCTD"

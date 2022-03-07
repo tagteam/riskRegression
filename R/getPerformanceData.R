@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Feb 27 2022 (09:12) 
 ## Version: 
-## Last-Updated: Mar  4 2022 (18:28) 
+## Last-Updated: Mar  7 2022 (08:33) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 9
+##     Update #: 10
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -92,7 +92,7 @@ getPerformanceData <- function(testdata,
                 model.f$call$data <- trainX
                 # browser(skipCalls = 1)
                 trained.model <- try(eval(model.f$call),silent=TRUE)
-                if ("try-error" %in% class(trained.model)){
+                if (inherits(x=trained.model,what="try-error")){
                     message(paste0("Failed to train the following model:"))
                     try(eval(model.f$call),silent=FALSE)
                     stop()
