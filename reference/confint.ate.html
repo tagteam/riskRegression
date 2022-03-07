@@ -10,7 +10,7 @@
     
     <a class="navbar-brand me-2" href="../index.html">riskRegression</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2022.03.04</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2022.03.06</small>
 
     
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -299,79 +299,11 @@ p-value are obtained using test inversion method
 <span class="r-in"><span class="co">#### average treatment effect ####</span></span>
 <span class="r-in"><span class="va">fit.ate</span> <span class="op">&lt;-</span> <span class="fu"><a href="ate.html">ate</a></span><span class="op">(</span><span class="va">fit</span>, treatment <span class="op">=</span> <span class="st">"X1"</span>, times <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">3</span>, data <span class="op">=</span> <span class="va">d</span>,</span>
 <span class="r-in">               se <span class="op">=</span> <span class="cn">TRUE</span>, iid <span class="op">=</span> <span class="cn">TRUE</span>, band <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  Input variables </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  - Treatment            : X1 (3 levels: "T0" "T1" "T2")</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  - Event                : event (cause: 1, censoring: 0)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  - Time  [min;max]      : time [0.499;20.6]</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  - Eval. time           :  1  2  3</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>       number at risk T0   10 10 10</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>       number at risk T1   29 24 23</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>       number at risk T2   28 24 20</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  Estimation procedure </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  - Estimator  : G-formula</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  - Uncertainty: Gaussian approximation </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>                 where the variance is estimated via the influence function </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  Processing</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  - Prepare influence function: outcome done </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  - Point estimation: done </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  - Decomposition iid: done</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  - Confidence intervals / bands: done</span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error in match(x, table, nomatch = 0L):</span> 'match' requires vector arguments</span>
 <span class="r-in"><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">fit.ate</span><span class="op">)</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>      Average treatment effect </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  - Treatment            : X1 (3 levels: "T0" "T1" "T2")</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  - Event                : event (cause: 1, censoring: 0)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  - Time  [min;max]      : time [0.499;20.6]</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  - Eval. time           :  1  2  3</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>       number at risk T0   10 10 10</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>       number at risk T1   29 24 23</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>       number at risk T2   28 24 20</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  Estimation procedure </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  - Estimator  : G-formula</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  - Uncertainty: Gaussian approximation </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>                 where the variance is estimated via the influence function </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  Testing procedure</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  - Null hypothesis     : given two treatments (A,B), equal risks at all timepoints </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  - Confidence level    : 0.95</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  - Multiple comparisons: single-step max-T adjustment computed using 10000 simulations</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  Results: </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  - Difference in standardized risk (B-A) between time zero and 'time' </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>                 reported on the scale [-1;1] (difference between two probabilities)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  (difference in average risks when treating all subjects with the experimental treatment (B),</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>                                 vs. treating all subjects with the reference treatment (A))</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  time X1=A risk(X1=A) X1=B risk(X1=B) difference           ci p.value</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     1   T0     0.0339   T1     0.0472    0.01332 [-0.02;0.05]   0.411</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     2   T0     0.1352   T1     0.1826    0.04739 [-0.07;0.17]   0.431</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     3   T0     0.1703   T1     0.2267    0.05642 [-0.08;0.20]   0.432</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     1   T0     0.0339   T2     0.0420    0.00815 [-0.02;0.03]   0.506</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     2   T0     0.1352   T2     0.1645    0.02933 [-0.07;0.12]   0.545</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     3   T0     0.1703   T2     0.2054    0.03511 [-0.08;0.15]   0.551</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     1   T1     0.0472   T2     0.0420   -0.00518 [-0.04;0.03]   0.764</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     2   T1     0.1826   T2     0.1645   -0.01806 [-0.13;0.10]   0.759</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     3   T1     0.2267   T2     0.2054   -0.02131 [-0.16;0.11]   0.758</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  simultaneous ci adjusted p.value</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     [-0.02;0.05]            0.504</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     [-0.08;0.18]            0.525</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     [-0.10;0.21]            0.526</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     [-0.02;0.03]            0.590</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     [-0.07;0.13]            0.630</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     [-0.09;0.16]            0.636</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     [-0.04;0.03]            0.811</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     [-0.14;0.10]            0.806</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     [-0.16;0.12]            0.805</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  difference      : estimated difference in standardized risks </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  ci              : pointwise confidence intervals </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  p.value         : (unadjusted) p-value </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  simultaneous ci : simulatenous confidence intervals over time</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  adjusted p.value: p-value adjusted for multiple comparisons over time</span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error in h(simpleError(msg, call)):</span> error in evaluating the argument 'object' in selecting a method for function 'summary': object 'fit.ate' not found</span>
 <span class="r-in"><span class="va">dt.ate</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://Rdatatable.gitlab.io/data.table/reference/as.data.table.html" class="external-link">as.data.table</a></span><span class="op">(</span><span class="va">fit.ate</span><span class="op">)</span></span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error in as.data.table(fit.ate):</span> object 'fit.ate' not found</span>
 <span class="r-in"></span>
 <span class="r-in"><span class="co">## manual calculation of se</span></span>
 <span class="r-in"><span class="va">dd</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://Rdatatable.gitlab.io/data.table/reference/copy.html" class="external-link">copy</a></span><span class="op">(</span><span class="va">d</span><span class="op">)</span></span>
@@ -395,151 +327,22 @@ p-value are obtained using test inversion method
 <span class="r-in">          lower2 <span class="op">=</span> <span class="va">lower</span>,</span>
 <span class="r-in">          upper <span class="op">=</span> <span class="va">estimate</span> <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">qnorm</a></span><span class="op">(</span><span class="fl">0.975</span><span class="op">)</span> <span class="op">*</span> <span class="va">se</span>,</span>
 <span class="r-in">          upper2 <span class="op">=</span> <span class="va">upper</span><span class="op">)</span><span class="op">]</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>          lower      lower2      upper     upper2</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  1: 0.00000000  0.00000000 0.08401352 0.08401352</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  2: 0.02590437  0.02590437 0.24449544 0.24449544</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  3: 0.04767637  0.04767637 0.29293567 0.29293567</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  4: 0.00000000  0.00000000 0.10199266 0.10199266</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  5: 0.06587254  0.06587254 0.29931345 0.29931345</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  6: 0.09787653  0.09787653 0.35557496 0.35557496</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  7: 0.00000000  0.00000000 0.08763162 0.08763162</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  8: 0.07373281  0.07373281 0.25532659 0.25532659</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  9: 0.10169224  0.10169224 0.30914481 0.30914481</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 10: 0.00000000 -0.01843023 0.04508014 0.04508014</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 11: 0.00000000 -0.07044632 0.16523250 0.16523250</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 12: 0.00000000 -0.08418721 0.19702666 0.19702666</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 13: 0.00000000 -0.01583434 0.03212551 0.03212551</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 14: 0.00000000 -0.06563720 0.12429679 0.12429679</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 15: 0.00000000 -0.08028787 0.15051289 0.15051289</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 16: 0.00000000 -0.03892565 0.02856692 0.02856692</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 17: 0.00000000 -0.13355386 0.09742727 0.09742727</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 18: 0.00000000 -0.15680088 0.11418644 0.11418644</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 19: 0.21268856  0.21268856 2.57350940 2.57350940</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 20: 0.31415598  0.31415598 2.38692575 2.38692575</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 21: 0.35840663  0.35840663 2.30416217 2.30416217</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 22: 0.32511683  0.32511683 2.15548849 2.15548849</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 23: 0.39528481  0.39528481 2.03858823 2.03858823</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 24: 0.42753998  0.42753998 1.98480606 1.98480606</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 25: 0.23798475  0.23798475 1.54265349 1.54265349</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 26: 0.31071769  0.31071769 1.49142922 1.49142922</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 27: 0.34410983  0.34410983 1.46793427 1.46793427</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>          lower      lower2      upper     upper2</span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error in eval(expr, envir, enclos):</span> object 'dt.ate' not found</span>
 <span class="r-in"></span>
 <span class="r-in"><span class="co">## add confidence intervals computed on the log-log scale</span></span>
 <span class="r-in"><span class="co">## and backtransformed</span></span>
 <span class="r-in"><span class="va">outCI</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/confint.html" class="external-link">confint</a></span><span class="op">(</span><span class="va">fit.ate</span>,</span>
 <span class="r-in">                 meanRisk.transform <span class="op">=</span> <span class="st">"loglog"</span>, diffRisk.transform <span class="op">=</span> <span class="st">"atanh"</span>,</span>
 <span class="r-in">                 ratioRisk.transform <span class="op">=</span> <span class="st">"log"</span><span class="op">)</span></span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error in h(simpleError(msg, call)):</span> error in evaluating the argument 'object' in selecting a method for function 'confint': object 'fit.ate' not found</span>
 <span class="r-in"><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">outCI</span>, type <span class="op">=</span> <span class="st">"risk"</span>, short <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>                        Length Class      Mode     </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> meanRisk               10     data.table list     </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> diffRisk               15     data.table list     </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> ratioRisk              15     data.table list     </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> inference              12     data.frame list     </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> inference.allContrasts  6     -none-     character</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> inference.contrasts     3     -none-     character</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> transform               3     -none-     character</span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error in h(simpleError(msg, call)):</span> error in evaluating the argument 'object' in selecting a method for function 'summary': object 'outCI' not found</span>
 <span class="r-in"></span>
 <span class="r-in"><span class="va">dt.ate</span><span class="op">[</span><span class="va">type</span> <span class="op">==</span> <span class="st">"meanRisk"</span>, <span class="va">newse</span> <span class="op">:=</span> <span class="va">se</span><span class="op">/</span><span class="op">(</span><span class="va">estimate</span><span class="op">*</span><span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">log</a></span><span class="op">(</span><span class="va">estimate</span><span class="op">)</span><span class="op">)</span><span class="op">]</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>          type estimator time level     estimate         se       lower</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  1:  meanRisk  GFORMULA    1    T0  0.033897209 0.02557002  0.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  2:  meanRisk  GFORMULA    2    T0  0.135199903 0.05576405  0.02590437</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  3:  meanRisk  GFORMULA    3    T0  0.170306018 0.06256730  0.04767637</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  4:  meanRisk  GFORMULA    1    T1  0.047222167 0.02794464  0.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  5:  meanRisk  GFORMULA    2    T1  0.182592994 0.05955234  0.06587254</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  6:  meanRisk  GFORMULA    3    T1  0.226725745 0.06574061  0.09787653</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  7:  meanRisk  GFORMULA    1    T2  0.042042798 0.02326003  0.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  8:  meanRisk  GFORMULA    2    T2  0.164529699 0.04632579  0.07373281</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  9:  meanRisk  GFORMULA    3    T2  0.205418524 0.05292254  0.10169224</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 10:  diffRisk  GFORMULA    1 T0.T1  0.013324958 0.01620192 -0.01843023</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 11:  diffRisk  GFORMULA    2 T0.T1  0.047393091 0.06012325 -0.07044632</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 12:  diffRisk  GFORMULA    3 T0.T1  0.056419727 0.07173955 -0.08418721</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 13:  diffRisk  GFORMULA    1 T0.T2  0.008145589 0.01223488 -0.01583434</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 14:  diffRisk  GFORMULA    2 T0.T2  0.029329797 0.04845344 -0.06563720</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 15:  diffRisk  GFORMULA    3 T0.T2  0.035112506 0.05887883 -0.08028787</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 16:  diffRisk  GFORMULA    1 T1.T2 -0.005179369 0.01721781 -0.03892565</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 17:  diffRisk  GFORMULA    2 T1.T2 -0.018063295 0.05892484 -0.13355386</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 18:  diffRisk  GFORMULA    3 T1.T2 -0.021307221 0.06913069 -0.15680088</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 19: ratioRisk  GFORMULA    1 T0.T1  1.393098981 0.60226128  0.21268856</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 20: ratioRisk  GFORMULA    2 T0.T1  1.350540868 0.52877752  0.31415598</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 21: ratioRisk  GFORMULA    3 T0.T1  1.331284402 0.49637533  0.35840663</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 22: ratioRisk  GFORMULA    1 T0.T2  1.240302659 0.46694013  0.32511683</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 23: ratioRisk  GFORMULA    2 T0.T2  1.216936521 0.41921776  0.39528481</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 24: ratioRisk  GFORMULA    3 T0.T2  1.206173022 0.39726905  0.42753998</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 25: ratioRisk  GFORMULA    1 T1.T2  0.890319121 0.33282978  0.23798475</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 26: ratioRisk  GFORMULA    2 T1.T2  0.901073451 0.30120746  0.31071769</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 27: ratioRisk  GFORMULA    3 T1.T2  0.906022049 0.28669518  0.34410983</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>          type estimator time level     estimate         se       lower</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>          upper quantileBand   lowerBand  upperBand   p.value adj.p.value</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  1: 0.08401352     2.200264  0.00000000 0.09015800        NA          NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  2: 0.24449544     2.200264  0.01250425 0.25789556        NA          NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  3: 0.29293567     2.200264  0.03264143 0.30797061        NA          NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  4: 0.10199266     2.273745  0.00000000 0.11076116        NA          NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  5: 0.29931345     2.273745  0.04718615 0.31799984        NA          NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  6: 0.35557496     2.273745  0.07724837 0.37620312        NA          NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  7: 0.08763162     2.314972  0.00000000 0.09588910        NA          NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  8: 0.25532659     2.314972  0.05728680 0.27177260        NA          NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  9: 0.30914481     2.314972  0.08290433 0.32793271        NA          NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 10: 0.04508014     2.134070 -0.02125108 0.04790099 0.4108318      0.5042</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 11: 0.16523250     2.134070 -0.08091413 0.17570032 0.4305414      0.5251</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 12: 0.19702666     2.134070 -0.09667749 0.20951695 0.4316026      0.5258</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 13: 0.03212551     2.089872 -0.01742375 0.03371492 0.5055595      0.5898</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 14: 0.12429679     2.089872 -0.07193169 0.13059129 0.5449669      0.6296</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 15: 0.15051289     2.089872 -0.08793671 0.15816172 0.5509401      0.6359</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 16: 0.02856692     2.039855 -0.04030120 0.02994247 0.7635559      0.8107</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 17: 0.09742727     2.039855 -0.13826142 0.10213483 0.7591874      0.8062</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 18: 0.11418644     2.039855 -0.16232380 0.11970936 0.7579176      0.8050</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 19: 2.57350940     1.989982  0.19460974 2.59158822 0.5139464      0.5270</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 20: 2.38692575     1.989982  0.29828302 2.40279872 0.5073773      0.5204</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 21: 2.30416217     1.989982  0.34350632 2.31906248 0.5045122      0.5167</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 22: 2.15548849     1.986203  0.31286476 2.16774056 0.6068097      0.6111</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 23: 2.03858823     1.986203  0.38428493 2.04958811 0.6048216      0.6097</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 24: 1.98480606     1.986203  0.41711602 1.99523003 0.6037776      0.6083</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 25: 1.54265349     1.928798  0.24835759 1.53228066 0.7417472      0.7423</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 26: 1.49142922     1.928798  0.32010500 1.48204191 0.7425841      0.7434</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 27: 1.46793427     1.928798  0.35304486 1.45899924 0.7430648      0.7442</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>          upper quantileBand   lowerBand  upperBand   p.value adj.p.value</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>          newse</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  1: -0.2228858</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  2: -0.2061250</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  3: -0.2075417</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  4: -0.1938390</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  5: -0.1917959</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  6: -0.1953866</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  7: -0.1745771</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  8: -0.1560207</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  9: -0.1627800</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 10:         NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 11:         NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 12:         NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 13:         NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 14:         NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 15:         NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 16:         NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 17:         NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 18:         NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 19:         NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 20:         NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 21:         NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 22:         NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 23:         NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 24:         NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 25:         NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 26:         NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 27:         NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>          newse</span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error in eval(expr, envir, enclos):</span> object 'dt.ate' not found</span>
 <span class="r-in"><span class="va">dt.ate</span><span class="op">[</span><span class="va">type</span> <span class="op">==</span> <span class="st">"meanRisk"</span>, <span class="fu">.</span><span class="op">(</span>lower <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">exp</a></span><span class="op">(</span><span class="op">-</span><span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">exp</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">log</a></span><span class="op">(</span><span class="op">-</span><span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">log</a></span><span class="op">(</span><span class="va">estimate</span><span class="op">)</span><span class="op">)</span> <span class="op">-</span> <span class="fl">1.96</span> <span class="op">*</span> <span class="va">newse</span><span class="op">)</span><span class="op">)</span>,</span>
 <span class="r-in">                        upper <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">exp</a></span><span class="op">(</span><span class="op">-</span><span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">exp</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">log</a></span><span class="op">(</span><span class="op">-</span><span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">log</a></span><span class="op">(</span><span class="va">estimate</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span> <span class="fl">1.96</span> <span class="op">*</span> <span class="va">newse</span><span class="op">)</span><span class="op">)</span><span class="op">)</span><span class="op">]</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>          lower     upper</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1: 0.005308092 0.1123030</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2: 0.049930563 0.2629084</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3: 0.070036723 0.3077237</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 4: 0.011517821 0.1239456</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 5: 0.084038215 0.3110947</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 6: 0.113440244 0.3635412</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 7: 0.011538684 0.1053196</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 8: 0.086275187 0.2646901</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 9: 0.113322713 0.3165183</span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error in eval(expr, envir, enclos):</span> object 'dt.ate' not found</span>
 </code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc"><h2>On this page</h2>

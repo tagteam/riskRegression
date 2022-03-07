@@ -16,7 +16,7 @@ based on Cox regression with or without competing risks."><!-- mathjax --><scrip
     
     <a class="navbar-brand me-2" href="../index.html">riskRegression</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2022.03.04</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2022.03.06</small>
 
     
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -199,119 +199,15 @@ and Thomas Alexander Gerds <a href="mailto:tag@biostat.ku.dk">tag@biostat.ku.dk<
 <span class="r-in"><span class="co">## standard error computed using the influence function</span></span>
 <span class="r-in"><span class="co">## confidence intervals / p-values based on asymptotic results</span></span>
 <span class="r-in"><span class="va">ateFit1a</span> <span class="op">&lt;-</span> <span class="fu">ate</span><span class="op">(</span><span class="va">fit</span>, data <span class="op">=</span> <span class="va">dtS</span>, treatment <span class="op">=</span> <span class="st">"X1"</span>, times <span class="op">=</span> <span class="fl">5</span><span class="op">:</span><span class="fl">8</span><span class="op">)</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  Input variables </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  - Treatment            : X1 (3 levels: "T0" "T1" "T2")</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  - Event                : event (cause: 1, censoring: 0)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  - Time  [min;max]      : time [0.6;15.7]</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  - Eval. time           :  5  6  7  8</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>       number at risk T0   16 13 10  7</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>       number at risk T1   26 21 18 11</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>       number at risk T2    7  3  3  1</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  Estimation procedure </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  - Estimator  : G-formula</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  - Uncertainty: Gaussian approximation </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>                 where the variance is estimated via the influence function </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  Processing</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  - Prepare influence function: outcome done </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  - Point estimation: done </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  - Decomposition iid: done</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  - Confidence intervals: done</span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error in match(x, table, nomatch = 0L):</span> 'match' requires vector arguments</span>
 <span class="r-in"><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">ateFit1a</span><span class="op">)</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>      Average treatment effect </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  - Treatment            : X1 (3 levels: "T0" "T1" "T2")</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  - Event                : event (cause: 1, censoring: 0)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  - Time  [min;max]      : time [0.6;15.7]</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  - Eval. time           :  5  6  7  8</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>       number at risk T0   16 13 10  7</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>       number at risk T1   26 21 18 11</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>       number at risk T2    7  3  3  1</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  Estimation procedure </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  - Estimator  : G-formula</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  - Uncertainty: Gaussian approximation </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>                 where the variance is estimated via the influence function </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  Testing procedure</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  - Null hypothesis     : given two treatments (A,B) and a specific timepoint, equal risks </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  - Confidence level    : 0.95</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  Results: </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  - Difference in standardized risk (B-A) between time zero and 'time' </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>                 reported on the scale [-1;1] (difference between two probabilities)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  (difference in average risks when treating all subjects with the experimental treatment (B),</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>                                 vs. treating all subjects with the reference treatment (A))</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  time X1=A risk(X1=A) X1=B risk(X1=B) difference           ci p.value</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     5   T0      0.472   T1      0.389    -0.0825 [-0.25;0.09]   0.341</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     6   T0      0.550   T1      0.461    -0.0896 [-0.27;0.09]   0.341</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     7   T0      0.609   T1      0.516    -0.0930 [-0.28;0.10]   0.339</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     8   T0      0.641   T1      0.547    -0.0941 [-0.29;0.10]   0.338</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     5   T0      0.472   T2      0.448    -0.0239 [-0.26;0.21]   0.841</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     6   T0      0.550   T2      0.525    -0.0256 [-0.28;0.22]   0.841</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     7   T0      0.609   T2      0.583    -0.0263 [-0.28;0.23]   0.841</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     8   T0      0.641   T2      0.615    -0.0264 [-0.29;0.23]   0.841</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     5   T1      0.389   T2      0.448     0.0586 [-0.17;0.29]   0.612</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     6   T1      0.461   T2      0.525     0.0639 [-0.18;0.31]   0.611</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     7   T1      0.516   T2      0.583     0.0667 [-0.19;0.32]   0.609</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     8   T1      0.547   T2      0.615     0.0677 [-0.19;0.33]   0.608</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  difference      : estimated difference in standardized risks </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  ci              : pointwise confidence intervals </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  p.value         : (unadjusted) p-value </span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error in h(simpleError(msg, call)):</span> error in evaluating the argument 'object' in selecting a method for function 'summary': object 'ateFit1a' not found</span>
 <span class="r-in"><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">ateFit1a</span>, short <span class="op">=</span> <span class="cn">TRUE</span>, type <span class="op">=</span> <span class="st">"meanRisk"</span><span class="op">)</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  - Standardized risk between time zero and 'time'</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  time X1  risk          ci</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     5 T0 0.472 [0.33;0.62]</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     6 T0 0.550 [0.40;0.70]</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     7 T0 0.609 [0.46;0.76]</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     8 T0 0.641 [0.49;0.79]</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     5 T1 0.389 [0.26;0.52]</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     6 T1 0.461 [0.33;0.59]</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     7 T1 0.516 [0.38;0.66]</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     8 T1 0.547 [0.41;0.69]</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     5 T2 0.448 [0.25;0.65]</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     6 T2 0.525 [0.31;0.74]</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     7 T2 0.583 [0.36;0.80]</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     8 T2 0.615 [0.39;0.84]</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error in h(simpleError(msg, call)):</span> error in evaluating the argument 'object' in selecting a method for function 'summary': object 'ateFit1a' not found</span>
 <span class="r-in"><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">ateFit1a</span>, short <span class="op">=</span> <span class="cn">TRUE</span>, type <span class="op">=</span> <span class="st">"diffRisk"</span><span class="op">)</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  - Difference in standardized risk (B-A) between time zero and 'time' </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  time X1=A X1=B difference           ci p.value</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     5   T0   T1    -0.0825 [-0.25;0.09]   0.341</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     6   T0   T1    -0.0896 [-0.27;0.09]   0.341</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     7   T0   T1    -0.0930 [-0.28;0.10]   0.339</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     8   T0   T1    -0.0941 [-0.29;0.10]   0.338</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     5   T0   T2    -0.0239 [-0.26;0.21]   0.841</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     6   T0   T2    -0.0256 [-0.28;0.22]   0.841</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     7   T0   T2    -0.0263 [-0.28;0.23]   0.841</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     8   T0   T2    -0.0264 [-0.29;0.23]   0.841</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     5   T1   T2     0.0586 [-0.17;0.29]   0.612</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     6   T1   T2     0.0639 [-0.18;0.31]   0.611</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     7   T1   T2     0.0667 [-0.19;0.32]   0.609</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     8   T1   T2     0.0677 [-0.19;0.33]   0.608</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error in h(simpleError(msg, call)):</span> error in evaluating the argument 'object' in selecting a method for function 'summary': object 'ateFit1a' not found</span>
 <span class="r-in"><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">ateFit1a</span>, short <span class="op">=</span> <span class="cn">TRUE</span>, type <span class="op">=</span> <span class="st">"ratioRisk"</span><span class="op">)</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  - Ratio of standardized risks (B/A) between time zero and 'time' </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  time X1=A X1=B ratio          ci p.value</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     5   T0   T1 0.825 [0.50;1.15]   0.293</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     6   T0   T1 0.837 [0.53;1.14]   0.295</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     7   T0   T1 0.847 [0.56;1.14]   0.299</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     8   T0   T1 0.853 [0.58;1.13]   0.301</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     5   T0   T2 0.949 [0.46;1.43]   0.838</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     6   T0   T2 0.953 [0.51;1.40]   0.839</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     7   T0   T2 0.957 [0.54;1.37]   0.839</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     8   T0   T2 0.959 [0.56;1.36]   0.839</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     5   T1   T2 1.150 [0.54;1.76]   0.628</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     6   T1   T2 1.139 [0.58;1.69]   0.624</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     7   T1   T2 1.129 [0.62;1.64]   0.622</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     8   T1   T2 1.124 [0.63;1.61]   0.620</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error in h(simpleError(msg, call)):</span> error in evaluating the argument 'object' in selecting a method for function 'summary': object 'ateFit1a' not found</span>
 <span class="r-in"></span>
 <span class="r-in"><span class="kw">if</span> <span class="op">(</span><span class="cn">FALSE</span><span class="op">)</span> <span class="op">{</span></span>
 <span class="r-in"><span class="co">## same as before with in addition the confidence bands / adjusted p-values</span></span>
@@ -489,7 +385,7 @@ and Thomas Alexander Gerds <a href="mailto:tag@biostat.ku.dk">tag@biostat.ku.dk<
 <span class="r-out co"><span class="r-pr">#&gt;</span>  X1=A X1=B    risk.A    risk.B difference (B-A) ratio (B/A)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     0    1 0.5853676 0.9444428        0.3590752    1.613418</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  - Computation time     : 0.01030111 secs (point estimate)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  - Computation time     : 0.01058149 secs (point estimate)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-in"></span>
 <span class="r-in"><span class="kw">if</span> <span class="op">(</span><span class="cn">FALSE</span><span class="op">)</span> <span class="op">{</span></span>
@@ -526,137 +422,11 @@ and Thomas Alexander Gerds <a href="mailto:tag@biostat.ku.dk">tag@biostat.ku.dk<
 <span class="r-in"><span class="co">## compute the ATE at times 1, 5, 10 using X1 as the treatment variable</span></span>
 <span class="r-in"><span class="va">ateFit2a</span> <span class="op">&lt;-</span> <span class="fu">ate</span><span class="op">(</span><span class="va">fitCR</span>, data <span class="op">=</span> <span class="va">dt</span>, treatment <span class="op">=</span> <span class="st">"X1"</span>, times <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>,<span class="fl">5</span>,<span class="fl">10</span><span class="op">)</span>,</span>
 <span class="r-in">                cause <span class="op">=</span> <span class="fl">1</span>, se <span class="op">=</span> <span class="cn">TRUE</span>, band <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  Input variables </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  - Treatment            : X1 (3 levels: "T0" "T1" "T2")</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  - Event                : event (cause: 1, competing risk(s): 2, censoring: 0)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  - Time  [min;max]      : time [0.0839;19.1]</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  - Eval. time           :   1   5 10</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>       number at risk T0   263 106 12</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>       number at risk T1   160  57 11</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>       number at risk T2    26  15  3</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  Estimation procedure </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  - Estimator  : G-formula</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  - Uncertainty: Gaussian approximation </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>                 where the variance is estimated via the influence function </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  Processing</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  - Prepare influence function: outcome done </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  - Point estimation: done </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  - Decomposition iid: done</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  - Confidence intervals / bands: done</span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error in match(x, table, nomatch = 0L):</span> 'match' requires vector arguments</span>
 <span class="r-in"><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">ateFit2a</span><span class="op">)</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>      Average treatment effect for cause 1 </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  - Treatment            : X1 (3 levels: "T0" "T1" "T2")</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  - Event                : event (cause: 1, competing risk(s): 2, censoring: 0)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  - Time  [min;max]      : time [0.0839;19.1]</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  - Eval. time           :   1   5 10</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>       number at risk T0   263 106 12</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>       number at risk T1   160  57 11</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>       number at risk T2    26  15  3</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  Estimation procedure </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  - Estimator  : G-formula</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  - Uncertainty: Gaussian approximation </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>                 where the variance is estimated via the influence function </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  Testing procedure</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  - Null hypothesis     : given two treatments (A,B), equal risks at all timepoints </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  - Confidence level    : 0.95</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  - Multiple comparisons: single-step max-T adjustment computed using 10000 simulations</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  Results: </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  - Difference in standardized risk (B-A) between time zero and 'time' </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>                 reported on the scale [-1;1] (difference between two probabilities)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  (difference in average risks when treating all subjects with the experimental treatment (B),</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>                                 vs. treating all subjects with the reference treatment (A))</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  time X1=A risk(X1=A) X1=B risk(X1=B) difference           ci p.value</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     1   T0     0.0673   T1     0.0681   8.72e-04 [-0.02;0.02]   0.926</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     5   T0     0.3744   T1     0.3743  -2.52e-05 [-0.08;0.08]   1.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    10   T0     0.5017   T1     0.4935  -8.21e-03 [-0.10;0.09]   0.867</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     1   T0     0.0673   T2     0.0523  -1.49e-02 [-0.05;0.02]   0.355</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     5   T0     0.3744   T2     0.3063  -6.81e-02 [-0.22;0.09]   0.388</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    10   T0     0.5017   T2     0.4253  -7.64e-02 [-0.27;0.12]   0.434</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     1   T1     0.0681   T2     0.0523  -1.58e-02 [-0.05;0.02]   0.346</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     5   T1     0.3743   T2     0.3063  -6.80e-02 [-0.23;0.09]   0.404</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    10   T1     0.4935   T2     0.4253  -6.82e-02 [-0.27;0.13]   0.498</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  simultaneous ci adjusted p.value</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     [-0.02;0.02]            0.987</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     [-0.09;0.09]            1.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     [-0.11;0.09]            0.953</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     [-0.05;0.02]            0.419</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     [-0.23;0.10]            0.454</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     [-0.28;0.13]            0.507</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     [-0.05;0.02]            0.409</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     [-0.24;0.10]            0.472</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     [-0.28;0.14]            0.581</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  difference      : estimated difference in standardized risks </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  ci              : pointwise confidence intervals </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  p.value         : (unadjusted) p-value </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  simultaneous ci : simulatenous confidence intervals over time</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  adjusted p.value: p-value adjusted for multiple comparisons over time</span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error in h(simpleError(msg, call)):</span> error in evaluating the argument 'object' in selecting a method for function 'summary': object 'ateFit2a' not found</span>
 <span class="r-in"><span class="fu"><a href="https://Rdatatable.gitlab.io/data.table/reference/as.data.table.html" class="external-link">as.data.table</a></span><span class="op">(</span><span class="va">ateFit2a</span><span class="op">)</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>          type estimator time level      estimate          se       lower</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  1:  meanRisk  GFORMULA    1    T0  6.725075e-02 0.012050231  0.04363273</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  2:  meanRisk  GFORMULA    5    T0  3.743564e-01 0.027863621  0.31974466</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  3:  meanRisk  GFORMULA   10    T0  5.017158e-01 0.032588024  0.43784440</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  4:  meanRisk  GFORMULA    1    T1  6.812318e-02 0.012567904  0.04349054</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  5:  meanRisk  GFORMULA    5    T1  3.743311e-01 0.034694830  0.30633052</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  6:  meanRisk  GFORMULA   10    T1  4.935039e-01 0.039653201  0.41578504</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  7:  meanRisk  GFORMULA    1    T2  5.232115e-02 0.018006403  0.01702925</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  8:  meanRisk  GFORMULA    5    T2  3.062972e-01 0.075452662  0.15841267</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  9:  meanRisk  GFORMULA   10    T2  4.253305e-01 0.093198889  0.24266407</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 10:  diffRisk  GFORMULA    1 T0.T1  8.724303e-04 0.009441589 -0.01763274</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 11:  diffRisk  GFORMULA    5 T0.T1 -2.520916e-05 0.041528106 -0.08141880</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 12:  diffRisk  GFORMULA   10 T0.T1 -8.211865e-03 0.049084017 -0.10441477</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 13:  diffRisk  GFORMULA    1 T0.T2 -1.492961e-02 0.016145110 -0.04657344</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 14:  diffRisk  GFORMULA    5 T0.T2 -6.805918e-02 0.078813390 -0.22253059</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 15:  diffRisk  GFORMULA   10 T0.T2 -7.638522e-02 0.097706198 -0.26788585</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 16:  diffRisk  GFORMULA    1 T1.T2 -1.580204e-02 0.016761368 -0.04865371</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 17:  diffRisk  GFORMULA    5 T1.T2 -6.803397e-02 0.081442901 -0.22765912</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 18:  diffRisk  GFORMULA   10 T1.T2 -6.817335e-02 0.100625523 -0.26539576</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 19: ratioRisk  GFORMULA    1 T0.T1  1.012973e+00 0.141191244  0.73624304</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 20: ratioRisk  GFORMULA    5 T0.T1  9.999327e-01 0.110929211  0.78251540</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 21: ratioRisk  GFORMULA   10 T0.T1  9.836324e-01 0.097205064  0.79311401</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 22: ratioRisk  GFORMULA    1 T0.T2  7.780009e-01 0.234968184  0.31747172</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 23: ratioRisk  GFORMULA    5 T0.T2  8.181968e-01 0.206945429  0.41259122</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 24: ratioRisk  GFORMULA   10 T0.T2  8.477520e-01 0.191990382  0.47145777</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 25: ratioRisk  GFORMULA    1 T1.T2  7.680373e-01 0.237987611  0.30159016</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 26: ratioRisk  GFORMULA    5 T1.T2  8.182519e-01 0.211754010  0.40322167</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 27: ratioRisk  GFORMULA   10 T1.T2  8.618585e-01 0.199975344  0.46991406</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>          type estimator time level      estimate          se       lower</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>          upper quantileBand   lowerBand  upperBand   p.value adj.p.value</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  1: 0.09086877     2.317771  0.03932108 0.09518043        NA          NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  2: 0.42896804     2.317771  0.30977486 0.43893784        NA          NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  3: 0.56558711     2.317771  0.42618418 0.57724733        NA          NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  4: 0.09275582     2.300197  0.03921453 0.09703183        NA          NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  5: 0.44233176     2.300197  0.29452621 0.45413608        NA          NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  6: 0.57122274     2.300197  0.40229373 0.58471405        NA          NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  7: 0.08761305     2.173021  0.01319285 0.09144944        NA          NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  8: 0.45418167     2.173021  0.14233695 0.47025739        NA          NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  9: 0.60799700     2.173021  0.22280739 0.62785368        NA          NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 10: 0.01937760     2.077331 -0.01874087 0.02048573 0.9263779      0.9866</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 11: 0.08136838     2.077331 -0.08629282 0.08624240 0.9995157      1.0000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 12: 0.08799104     2.077331 -0.11017560 0.09375187 0.8671323      0.9528</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 13: 0.01671423     2.100121 -0.04883630 0.01897708 0.3551148      0.4188</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 14: 0.08641222     2.100121 -0.23357685 0.09745849 0.3878360      0.4544</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 15: 0.11511541     2.100121 -0.28158008 0.12880964 0.4343411      0.5071</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 16: 0.01704964     2.101442 -0.05102508 0.01942101 0.3458009      0.4095</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 17: 0.09159118     2.101442 -0.23918153 0.10311359 0.4035162      0.4725</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 18: 0.12904905     2.101442 -0.27963209 0.14328538 0.4980915      0.5807</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 19: 1.28970255     2.090655  0.71779060 1.30815499 0.9267926      0.9851</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 20: 1.21734992     2.090655  0.76801794 1.23184738 0.9995156      1.0000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 21: 1.17415086     2.090655  0.78041017 1.18685470 0.8662829      0.9563</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 22: 1.23853008     2.011050  0.30546805 1.25053374 0.3447585      0.3916</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 23: 1.22380239     2.011050  0.40201913 1.23437448 0.3796681      0.4292</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 24: 1.22404624     2.011050  0.46164968 1.23385433 0.4277790      0.4786</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 25: 1.23448445     2.024729  0.28617680 1.24989782 0.3297171      0.3747</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 26: 1.23328214     2.024729  0.38950734 1.24699647 0.3907278      0.4408</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 27: 1.25380300     2.024729  0.45696257 1.26675448 0.4896959      0.5518</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>          upper quantileBand   lowerBand  upperBand   p.value adj.p.value</span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error in as.data.table(ateFit2a):</span> object 'ateFit2a' not found</span>
 <span class="r-in"></span>
 <span class="r-in"><span class="co">#### Double robust estimator ####</span></span>
 <span class="r-in"><span class="kw">if</span> <span class="op">(</span><span class="cn">FALSE</span><span class="op">)</span> <span class="op">{</span></span>
