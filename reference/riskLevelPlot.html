@@ -10,7 +10,7 @@
     
     <a class="navbar-brand me-2" href="../index.html">riskRegression</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2022.03.08</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2022.03.09</small>
 
     
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -97,12 +97,13 @@
 <span class="r-in"><span class="va">f</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/glm.html" class="external-link">glm</a></span><span class="op">(</span><span class="va">Fever</span><span class="op">~</span><span class="va">Age</span><span class="op">+</span><span class="va">Parasites</span>,data<span class="op">=</span><span class="va">d</span>,family<span class="op">=</span><span class="st">"binomial"</span><span class="op">)</span></span>
 <span class="r-in"><span class="fu">riskLevelPlot</span><span class="op">(</span><span class="va">f</span>,<span class="va">Fever</span><span class="op">~</span><span class="va">Age</span><span class="op">+</span><span class="va">Parasites</span>,<span class="va">d</span><span class="op">)</span></span>
 <span class="r-plt img"><img src="riskLevelPlot-1.png" alt="" width="700" height="433"></span>
-<span class="r-in"><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"randomForest"</span>,quietly<span class="op">=</span><span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span><span class="op">{</span></span>
+<span class="r-in"><span class="kw">if</span> <span class="op">(</span><span class="cn">FALSE</span><span class="op">)</span> <span class="op">{</span></span>
+<span class="r-in"><span class="kw">if</span> <span class="op">(</span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">require</a></span><span class="op">(</span><span class="st"><a href="https://www.stat.berkeley.edu/~breiman/RandomForests/" class="external-link">"randomForest"</a></span>,quietly<span class="op">=</span><span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span><span class="op">{</span></span>
 <span class="r-in"><span class="va">rf</span> <span class="op">&lt;-</span> <span class="fu">randomForest</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/randomForest/man/randomForest.html" class="external-link">randomForest</a></span><span class="op">(</span><span class="va">Fever</span><span class="op">~</span><span class="va">Age</span><span class="op">+</span><span class="va">Parasites</span>,data<span class="op">=</span><span class="va">d</span><span class="op">)</span></span>
 <span class="r-in"><span class="fu">riskLevelPlot</span><span class="op">(</span><span class="va">f</span>,<span class="va">Fever</span><span class="op">~</span><span class="va">Age</span><span class="op">+</span><span class="va">Parasites</span>,<span class="va">d</span><span class="op">)</span></span>
 <span class="r-in"><span class="fu">riskLevelPlot</span><span class="op">(</span><span class="va">rf</span>,<span class="va">Fever</span><span class="op">~</span><span class="va">Age</span><span class="op">+</span><span class="va">Parasites</span>,<span class="va">d</span><span class="op">)</span></span>
 <span class="r-in"><span class="op">}</span></span>
-<span class="r-plt img"><img src="riskLevelPlot-2.png" alt="" width="700" height="433"></span>
+<span class="r-in"><span class="op">}</span></span>
 <span class="r-in"></span>
 <span class="r-in"><span class="co"># ---------- survival analysis --------------------</span></span>
 <span class="r-in"></span>
@@ -120,7 +121,7 @@
 <span class="r-in"><span class="co"># --choose a time horizon for the predictions and plot the risks</span></span>
 <span class="r-in"><span class="va">timeHorizon</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">floor</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/median.html" class="external-link">median</a></span><span class="op">(</span><span class="va">sdat</span><span class="op">$</span><span class="va">time</span><span class="op">)</span><span class="op">)</span></span>
 <span class="r-in"><span class="fu">riskLevelPlot</span><span class="op">(</span><span class="va">cox</span>, <span class="va">survForm</span>, data <span class="op">=</span> <span class="va">sdat</span>, horizon <span class="op">=</span> <span class="va">timeHorizon</span><span class="op">)</span></span>
-<span class="r-plt img"><img src="riskLevelPlot-3.png" alt="" width="700" height="433"></span>
+<span class="r-plt img"><img src="riskLevelPlot-2.png" alt="" width="700" height="433"></span>
 <span class="r-in"></span>
 <span class="r-in"><span class="co"># ---------- competing risks --------------------</span></span>
 <span class="r-in"></span>
@@ -138,7 +139,7 @@
 <span class="r-in"><span class="co"># -- choose a time horizon and plot the risk for a given cause</span></span>
 <span class="r-in"><span class="va">timeHorizon</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">floor</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/median.html" class="external-link">median</a></span><span class="op">(</span><span class="va">crdat</span><span class="op">$</span><span class="va">time</span><span class="op">)</span><span class="op">)</span></span>
 <span class="r-in"><span class="fu">riskLevelPlot</span><span class="op">(</span><span class="va">csCox</span>, <span class="va">crForm</span>, data <span class="op">=</span> <span class="va">crdat</span>, horizon <span class="op">=</span> <span class="va">timeHorizon</span>, cause <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
-<span class="r-plt img"><img src="riskLevelPlot-4.png" alt="" width="700" height="433"></span>
+<span class="r-plt img"><img src="riskLevelPlot-3.png" alt="" width="700" height="433"></span>
 <span class="r-in"></span>
 </code></pre></div>
     </div>

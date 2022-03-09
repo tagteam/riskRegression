@@ -16,7 +16,7 @@ argument. See predictRisk."><!-- mathjax --><script src="https://cdnjs.cloudflar
     
     <a class="navbar-brand me-2" href="../index.html">riskRegression</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2022.03.08</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2022.03.09</small>
 
     
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -739,6 +739,7 @@ model (FGR) is specific to one of the causes.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [3,] 0.07654315 0.281073 0.4322176 0.689776</span>
 <span class="r-in"></span>
 <span class="r-in"><span class="co">## simulate learning and validation data</span></span>
+<span class="r-in"><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">10</span><span class="op">)</span></span>
 <span class="r-in"><span class="va">learndat</span> <span class="op">&lt;-</span> <span class="fu"><a href="sampleData.html">sampleData</a></span><span class="op">(</span><span class="fl">100</span>,outcome<span class="op">=</span><span class="st">"survival"</span><span class="op">)</span></span>
 <span class="r-in"><span class="va">valdat</span> <span class="op">&lt;-</span> <span class="fu"><a href="sampleData.html">sampleData</a></span><span class="op">(</span><span class="fl">100</span>,outcome<span class="op">=</span><span class="st">"survival"</span><span class="op">)</span></span>
 <span class="r-in"><span class="co">## use the learning data to fit a Cox model</span></span>
@@ -752,14 +753,24 @@ model (FGR) is specific to one of the causes.</p>
 <span class="r-in"><span class="co">## one column for each of the 5 time points</span></span>
 <span class="r-in"><span class="co">## one row for each validation set individual</span></span>
 <span class="r-in"></span>
-<span class="r-in"><span class="kw">if</span> <span class="op">(</span><span class="cn">FALSE</span><span class="op">)</span> <span class="op">{</span></span>
-<span class="r-in"><span class="kw">if</span> <span class="op">(</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"randomForestSRC"</span>,quietly<span class="op">=</span><span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span><span class="op">)</span><span class="op">{</span></span>
+<span class="r-in"><span class="kw">if</span> <span class="op">(</span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">require</a></span><span class="op">(</span><span class="st"><a href="https://luminwin.github.io/randomForestSRC/" class="external-link">"randomForestSRC"</a></span>,quietly<span class="op">=</span><span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span><span class="op">{</span></span>
 <span class="r-in"><span class="co"># Do the same for a randomSurvivalForest model</span></span>
 <span class="r-in"><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://luminwin.github.io/randomForestSRC/" class="external-link">randomForestSRC</a></span><span class="op">)</span></span>
 <span class="r-in"><span class="va">rsfmodel</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://luminwin.github.io/randomForestSRC//reference/rfsrc.html" class="external-link">rfsrc</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/survival/man/Surv.html" class="external-link">Surv</a></span><span class="op">(</span><span class="va">time</span>,<span class="va">event</span><span class="op">)</span><span class="op">~</span><span class="va">X1</span><span class="op">+</span><span class="va">X2</span>,data<span class="op">=</span><span class="va">learndat</span><span class="op">)</span></span>
 <span class="r-in"><span class="va">prsfsurv</span><span class="op">=</span><span class="fu">predictRisk</span><span class="op">(</span><span class="va">rsfmodel</span>,newdata<span class="op">=</span><span class="va">valdat</span>,times<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="fl">0</span>,<span class="fl">60</span>,<span class="fl">12</span><span class="op">)</span><span class="op">)</span></span>
 <span class="r-in"><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">psurv</span>,<span class="va">prsfsurv</span><span class="op">)</span></span>
-<span class="r-in"><span class="op">}</span><span class="op">}</span></span>
+<span class="r-in"><span class="op">}</span></span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  randomForestSRC 3.0.2 </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  Type rfsrc.news() to see new features, changes, and bug fixes. </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Attaching package: ‘randomForestSRC’</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> The following object is masked from ‘package:Hmisc’:</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>     impute</span>
+<span class="r-plt img"><img src="predictRisk-1.png" alt="" width="700" height="433"></span>
 <span class="r-in"><span class="co">## Cox with ridge option</span></span>
 <span class="r-in"><span class="va">f1</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/survival/man/coxph.html" class="external-link">coxph</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/survival/man/Surv.html" class="external-link">Surv</a></span><span class="op">(</span><span class="va">time</span>,<span class="va">event</span><span class="op">)</span><span class="op">~</span><span class="va">X1</span><span class="op">+</span><span class="va">X2</span>,data<span class="op">=</span><span class="va">learndat</span>,x<span class="op">=</span><span class="cn">TRUE</span>,y<span class="op">=</span><span class="cn">TRUE</span><span class="op">)</span></span>
 <span class="r-in"><span class="va">f2</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/survival/man/coxph.html" class="external-link">coxph</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/survival/man/Surv.html" class="external-link">Surv</a></span><span class="op">(</span><span class="va">time</span>,<span class="va">event</span><span class="op">)</span><span class="op">~</span><span class="fu"><a href="https://rdrr.io/pkg/survival/man/ridge.html" class="external-link">ridge</a></span><span class="op">(</span><span class="va">X1</span><span class="op">)</span><span class="op">+</span><span class="fu"><a href="https://rdrr.io/pkg/survival/man/ridge.html" class="external-link">ridge</a></span><span class="op">(</span><span class="va">X2</span><span class="op">)</span>,data<span class="op">=</span><span class="va">learndat</span>,x<span class="op">=</span><span class="cn">TRUE</span>,y<span class="op">=</span><span class="cn">TRUE</span><span class="op">)</span></span>
@@ -781,54 +792,58 @@ model (FGR) is specific to one of the causes.</p>
 <span class="r-in"><span class="va">test</span> <span class="op">&lt;-</span> <span class="fu">prodlim</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/prodlim/man/SimCompRisk.html" class="external-link">SimCompRisk</a></span><span class="op">(</span><span class="fl">10</span><span class="op">)</span></span>
 <span class="r-in"><span class="va">cox.fit</span>  <span class="op">&lt;-</span> <span class="fu"><a href="CSC.html">CSC</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/prodlim/man/Hist.html" class="external-link">Hist</a></span><span class="op">(</span><span class="va">time</span>,<span class="va">cause</span><span class="op">)</span><span class="op">~</span><span class="va">X1</span><span class="op">+</span><span class="va">X2</span>,data<span class="op">=</span><span class="va">train</span><span class="op">)</span></span>
 <span class="r-in"><span class="fu">predictRisk</span><span class="op">(</span><span class="va">cox.fit</span>,newdata<span class="op">=</span><span class="va">test</span>,times<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="fl">1</span><span class="op">:</span><span class="fl">10</span><span class="op">)</span>,cause<span class="op">=</span><span class="fl">1</span><span class="op">)</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>              [,1]        [,2]       [,3]       [,4]       [,5]       [,6]</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [1,] 0.003336186 0.006815801 0.01619852 0.02672988 0.04254840 0.06207469</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [2,] 0.031154093 0.062123978 0.14073384 0.21892189 0.31623402 0.40920676</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [3,] 0.002135486 0.004370331 0.01041397 0.01724860 0.02764812 0.04069547</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [4,] 0.015269678 0.031098095 0.07285185 0.11851646 0.18515067 0.26350414</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [5,] 0.071858689 0.141485382 0.30494285 0.45213411 0.61501518 0.74365714</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [6,] 0.008438974 0.017143504 0.04034630 0.06571777 0.10222401 0.14483683</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [7,] 0.019114164 0.038834445 0.09045024 0.14615640 0.22589234 0.31715015</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [8,] 0.012909266 0.026116995 0.06098177 0.09834693 0.15043127 0.20869101</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [9,] 0.088712245 0.169974894 0.35189416 0.49656435 0.62685981 0.70423405</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [10,] 0.014431815 0.029407277 0.06897824 0.11238172 0.17598556 0.25122048</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>             [,7]       [,8]       [,9]     [,10]</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [1,] 0.10014146 0.11107754 0.11107754 0.1566170</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [2,] 0.52199267 0.54231411 0.54231411 0.5854577</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [3,] 0.06697324 0.07473752 0.07473752 0.1084884</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [4,] 0.40501038 0.44254884 0.44254884 0.5868296</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [5,] 0.85808309 0.87165494 0.87165494 0.8886527</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [6,] 0.21937006 0.23879428 0.23879428 0.3087464</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [7,] 0.47403469 0.51371708 0.51371708 0.6569501</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [8,] 0.30273776 0.32546337 0.32546337 0.3987820</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [9,] 0.74636289 0.74893384 0.74893384 0.7499682</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [10,] 0.38857610 0.42539186 0.42539186 0.5688372</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>Estimated risk outside the range [0,1].</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> Consider setting the argument 'product.limit' to FALSE. </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>              [,1]        [,2]       [,3]       [,4]         [,5]          [,6]</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [1,] 0.060925019 0.138115468 0.30236286 0.64449007 8.005128e-01  8.237021e-01</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [2,] 0.006037461 0.014193259 0.03419550 0.10284323 1.978162e-01  2.805524e-01</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [3,] 0.003191593 0.007516745 0.01819969 0.05582595 1.108280e-01  1.626683e-01</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [4,] 0.015648123 0.036557067 0.08660631 0.24395192 4.243269e-01  5.437357e-01</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [5,] 0.002553959 0.006017449 0.01458557 0.04493843 8.985686e-02  1.329390e-01</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [6,] 0.001554050 0.003663836 0.00889582 0.02759876 5.581385e-02  8.362255e-02</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [7,] 0.018723837 0.043654421 0.10286428 0.28385587 4.791026e-01  5.971486e-01</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [8,] 0.003401655 0.008010404 0.01938791 0.05938405 1.176139e-01  1.721808e-01</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [9,] 0.997546550 0.999983679 0.99996182 0.98130180 4.775497e+04 -3.141522e+10</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [10,] 0.029887814 0.069584226 0.16326192 0.42840066 6.617114e-01  7.658594e-01</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>                [,7]          [,8]         [,9]        [,10]</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [1,]  8.254477e-01  8.257360e-01 8.257355e-01 8.257355e-01</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [2,]  3.227614e-01  4.292551e-01 4.576714e-01 4.576714e-01</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [3,]  1.910386e-01  2.719822e-01 2.975026e-01 2.975026e-01</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [4,]  5.910351e-01  6.685163e-01 6.786097e-01 6.786097e-01</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [5,]  1.568834e-01  2.270828e-01 2.500091e-01 2.500091e-01</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [6,]  9.945378e-02  1.478750e-01 1.645617e-01 1.645617e-01</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [7,]  6.400288e-01  7.009005e-01 7.067675e-01 7.067675e-01</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [8,]  2.018910e-01  2.858988e-01 3.120755e-01 3.120755e-01</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [9,] -1.741312e+13 -7.457606e+19 6.031716e+21 6.031716e+21</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [10,]  7.931248e-01  8.170147e-01 8.174198e-01 8.174198e-01</span>
 <span class="r-in"></span>
 <span class="r-in"><span class="co">## with strata</span></span>
 <span class="r-in"><span class="va">cox.fit2</span>  <span class="op">&lt;-</span> <span class="fu"><a href="CSC.html">CSC</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/prodlim/man/Hist.html" class="external-link">Hist</a></span><span class="op">(</span><span class="va">time</span>,<span class="va">cause</span><span class="op">)</span><span class="op">~</span><span class="fu"><a href="https://rdrr.io/pkg/survival/man/strata.html" class="external-link">strata</a></span><span class="op">(</span><span class="va">X1</span><span class="op">)</span><span class="op">+</span><span class="va">X2</span>,<span class="fu"><a href="https://rdrr.io/pkg/prodlim/man/Hist.html" class="external-link">Hist</a></span><span class="op">(</span><span class="va">time</span>,<span class="va">cause</span><span class="op">)</span><span class="op">~</span><span class="va">X1</span><span class="op">+</span><span class="va">X2</span><span class="op">)</span>,data<span class="op">=</span><span class="va">train</span><span class="op">)</span></span>
 <span class="r-in"><span class="fu">predictRisk</span><span class="op">(</span><span class="va">cox.fit2</span>,newdata<span class="op">=</span><span class="va">test</span>,times<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="fl">1</span><span class="op">:</span><span class="fl">10</span><span class="op">)</span>,cause<span class="op">=</span><span class="fl">1</span><span class="op">)</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>              [,1]        [,2]        [,3]       [,4]       [,5]       [,6]</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [1,] 0.003408683 0.006817084 0.014309898 0.01918373 0.03858482 0.07252045</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [2,] 0.031858033 0.062417019 0.125586702 0.16409076 0.29136919 0.45125305</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [3,] 0.002183560 0.004372607 0.009202652 0.01235594 0.02508376 0.04776776</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [4,] 0.014921141 0.031035493 0.076679322 0.13563418 0.19232139 0.24677922</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [5,] 0.070581243 0.141808469 0.320150086 0.50265176 0.63413772 0.72648490</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [6,] 0.008612007 0.017146262 0.035664275 0.04755050 0.09280959 0.16678930</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [7,] 0.018683356 0.038764611 0.095183187 0.16690843 0.23453254 0.29813092</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [8,] 0.013172600 0.026136611 0.053982039 0.07166659 0.13690221 0.23793972</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [9,] 0.091973643 0.173528151 0.323325921 0.40329682 0.59785720 0.71952743</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [10,] 0.014101554 0.029346853 0.072605636 0.12867447 0.18281979 0.23507918</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>             [,7]       [,8]       [,9]      [,10]</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [1,] 0.11733823 0.11733823 0.11733823 0.11733823</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [2,] 0.56711144 0.56711144 0.56711144 0.56711144</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [3,] 0.07887777 0.07887777 0.07887777 0.07887777</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [4,] 0.38320640 0.44483827 0.44483827 0.60016503</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [5,] 0.85495833 0.87963912 0.87963912 0.89157834</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [6,] 0.25269590 0.25269590 0.25269590 0.25269590</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [7,] 0.45111926 0.51696557 0.51696557 0.66986176</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [8,] 0.34430205 0.34430205 0.34430205 0.34430205</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [9,] 0.74198812 0.74198812 0.74198812 0.74198812</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [10,] 0.36717403 0.42747770 0.42747770 0.58216010</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>Estimated risk outside the range [0,1].</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> Consider setting the argument 'product.limit' to FALSE. </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>              [,1]        [,2]         [,3]          [,4]         [,5]</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [1,] 0.072586407 0.168696192   0.31265089  6.050270e-01 7.676545e-01</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [2,] 0.007734322 0.018808896   0.03787941  9.599336e-02 1.667991e-01</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [3,] 0.004167656 0.010159795   0.02055377  5.292348e-02 9.394628e-02</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [4,] 0.019472645 0.046974649   0.09319121  2.242281e-01 3.641000e-01</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [5,] 0.003357321 0.008188850   0.01658335  4.285496e-02 7.644662e-02</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [6,] 0.002073380 0.005061519   0.01026654  2.668310e-02 4.797018e-02</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [7,] 0.023170905 0.055753344   0.11008313  2.606417e-01 4.146607e-01</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [8,] 0.004433492 0.010805901   0.02185354  5.620342e-02 9.960880e-02</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [9,] 0.000000000 0.000000000 -21.19845909 -1.842136e+05 4.256642e+09</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [10,] 0.000000000 0.000000000   0.13944839  5.153491e-01 7.682436e-01</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>               [,6]          [,7]          [,8]         [,9]        [,10]</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [1,] 8.228113e-01  8.237733e-01  8.237658e-01 8.237658e-01 8.237658e-01</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [2,] 2.924986e-01  3.268432e-01  4.324168e-01 4.324168e-01 4.324168e-01</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [3,] 1.731061e-01  1.966401e-01  2.766072e-01 2.766072e-01 2.766072e-01</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [4,] 5.516624e-01  5.892990e-01  6.689271e-01 6.689271e-01 6.689271e-01</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [5,] 1.424972e-01  1.625031e-01  2.319949e-01 2.319949e-01 2.319949e-01</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [6,] 9.108613e-02  1.045311e-01  1.528625e-01 1.528625e-01 1.528625e-01</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [7,] 6.033759e-01  6.373550e-01  7.001843e-01 7.001843e-01 7.001843e-01</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [8,] 1.828501e-01  2.074456e-01  2.904135e-01 2.904135e-01 2.904135e-01</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [9,] 4.256642e+09 -1.653785e+11 -5.702895e+14 5.390852e+16 5.390852e+16</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [10,] 7.682436e-01  8.030798e-01  8.237775e-01 8.233801e-01 8.233801e-01</span>
 <span class="r-in"></span>
 </code></pre></div>
     </div>

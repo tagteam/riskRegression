@@ -10,7 +10,7 @@
     
     <a class="navbar-brand me-2" href="../index.html">riskRegression</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2022.03.08</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2022.03.09</small>
 
     
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -115,6 +115,7 @@
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/therneau/survival" class="external-link">survival</a></span><span class="op">)</span></span>
 <span class="r-in"><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va">prodlim</span><span class="op">)</span></span>
+<span class="r-in"><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">10</span><span class="op">)</span></span>
 <span class="r-in"><span class="va">d</span><span class="op">=</span><span class="fu"><a href="sampleData.html">sampleData</a></span><span class="op">(</span><span class="fl">100</span>,outcome<span class="op">=</span><span class="st">"survival"</span><span class="op">)</span></span>
 <span class="r-in"><span class="va">nd</span><span class="op">=</span><span class="fu"><a href="sampleData.html">sampleData</a></span><span class="op">(</span><span class="fl">100</span>,outcome<span class="op">=</span><span class="st">"survival"</span><span class="op">)</span></span>
 <span class="r-in"><span class="va">f1</span><span class="op">=</span><span class="fu"><a href="https://rdrr.io/pkg/survival/man/coxph.html" class="external-link">coxph</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/survival/man/Surv.html" class="external-link">Surv</a></span><span class="op">(</span><span class="va">time</span>,<span class="va">event</span><span class="op">)</span><span class="op">~</span><span class="va">X1</span><span class="op">+</span><span class="va">X6</span><span class="op">+</span><span class="va">X8</span>,data<span class="op">=</span><span class="va">d</span>,x<span class="op">=</span><span class="cn">TRUE</span>,y<span class="op">=</span><span class="cn">TRUE</span><span class="op">)</span></span>

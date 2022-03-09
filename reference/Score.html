@@ -10,7 +10,7 @@
     
     <a class="navbar-brand me-2" href="../index.html">riskRegression</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2022.03.08</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2022.03.09</small>
 
     
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -436,6 +436,7 @@ and Prognostic Research, 2(1):7, 2018.</p>
 <span class="r-in"></span>
 <span class="r-in"><span class="co"># cross-validation</span></span>
 <span class="r-in"><span class="kw">if</span> <span class="op">(</span><span class="cn">FALSE</span><span class="op">)</span> <span class="op">{</span></span>
+<span class="r-in">    <span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">10</span><span class="op">)</span></span>
 <span class="r-in">    <span class="va">learndat</span><span class="op">=</span><span class="fu"><a href="sampleData.html">sampleData</a></span><span class="op">(</span><span class="fl">400</span>,outcome<span class="op">=</span><span class="st">"binary"</span><span class="op">)</span></span>
 <span class="r-in">    <span class="va">lr1a</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/glm.html" class="external-link">glm</a></span><span class="op">(</span><span class="va">Y</span><span class="op">~</span><span class="va">X6</span>,data<span class="op">=</span><span class="va">learndat</span>,family<span class="op">=</span><span class="va">binomial</span><span class="op">)</span></span>
 <span class="r-in">    <span class="va">lr2a</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/glm.html" class="external-link">glm</a></span><span class="op">(</span><span class="va">Y</span><span class="op">~</span><span class="va">X7</span><span class="op">+</span><span class="va">X8</span><span class="op">+</span><span class="va">X9</span>,data<span class="op">=</span><span class="va">learndat</span>,family<span class="op">=</span><span class="va">binomial</span><span class="op">)</span></span>
@@ -663,6 +664,7 @@ and Prognostic Research, 2(1):7, 2018.</p>
 <span class="r-in"><span class="co"># Register all available cores for parallel operation</span></span>
 <span class="r-in"><span class="fu"><a href="https://future.futureverse.org/reference/plan.html" class="external-link">plan</a></span><span class="op">(</span><span class="va">multiprocess</span>, workers <span class="op">=</span> <span class="fu"><a href="https://future.futureverse.org/reference/re-exports.html" class="external-link">availableCores</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
 <span class="r-in"><span class="fu">registerDoFuture</span><span class="op">(</span><span class="op">)</span></span>
+<span class="r-in"><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">10</span><span class="op">)</span></span>
 <span class="r-in"><span class="va">trainSurv</span> <span class="op">&lt;-</span> <span class="fu"><a href="sampleData.html">sampleData</a></span><span class="op">(</span><span class="fl">400</span>,outcome<span class="op">=</span><span class="st">"survival"</span><span class="op">)</span></span>
 <span class="r-in"><span class="va">cox1</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/pkg/survival/man/coxph.html" class="external-link">coxph</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/survival/man/Surv.html" class="external-link">Surv</a></span><span class="op">(</span><span class="va">time</span>,<span class="va">event</span><span class="op">)</span><span class="op">~</span><span class="va">X1</span><span class="op">+</span><span class="va">X2</span><span class="op">+</span><span class="va">X7</span><span class="op">+</span><span class="va">X9</span>,data<span class="op">=</span><span class="va">trainSurv</span>,</span>
 <span class="r-in">             y<span class="op">=</span><span class="cn">TRUE</span>, x <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>

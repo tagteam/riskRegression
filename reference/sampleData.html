@@ -10,7 +10,7 @@
     
     <a class="navbar-brand me-2" href="../index.html">riskRegression</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2022.03.08</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2022.03.09</small>
 
     
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -92,64 +92,65 @@ X1-X5 (binary predictors), X6-X10 (continous predictors)</p>
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span class="fu">sampleData</span><span class="op">(</span><span class="fl">10</span>,outcome<span class="op">=</span><span class="st">"binary"</span><span class="op">)</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>           X6       X7          X8         X9        X10 X1 X2 X3 X4 X5 Y</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  1: 46.82367 67.24533  0.76601117  1.3039815 -1.5953831  0  0  1  0  0 0</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  2: 77.69055 61.02286 -1.25070514 -0.2387592 -0.3046539  1  0  0  1  0 1</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  3: 47.43607 68.04548 -1.93934626  0.6812340  0.4854172  0  0  1  0  1 0</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  4: 45.74745 69.19576 -2.08930856  1.5028794 -1.2190607  0  0  1  1  0 0</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  5: 47.23630 67.74454  0.41779689  0.4520591  1.3879925  0  1  1  1  1 0</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  6: 83.33275 63.70914  0.44404509 -0.1358663 -1.4756768  0  0  1  0  0 1</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  7: 39.19116 63.04737 -0.14412019  0.7608121 -0.2618844  0  1  0  0  1 0</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  8: 67.81334 64.13697  0.09318769 -0.7907372  0.1239023  0  1  0  1  1 1</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  9: 66.32582 57.58020  0.71205220  1.5738184 -1.3145448  0  1  0  0  1 0</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 10: 65.49821 58.47139 -1.44213677  1.8802128 -0.0988130  0  0  1  1  1 0</span>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">10</span><span class="op">)</span></span>
+<span class="r-in"><span class="fu">sampleData</span><span class="op">(</span><span class="fl">10</span>,outcome<span class="op">=</span><span class="st">"binary"</span><span class="op">)</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>           X6       X7          X8         X9         X10 X1 X2 X3 X4 X5 Y</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  1: 78.24189 63.93171 -0.02881534 -1.4355144 -0.37366156  0  0  1  1  1 1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  2: 71.03536 55.48894  0.23252515  0.3620872 -0.68755543  0  0  0  0  0 1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  3: 52.78187 62.66448 -0.30120868 -1.7590868 -0.87215883  0  0  1  0  0 1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  4: 68.44117 56.77053 -0.67761458 -0.3245440 -0.10176101  0  1  0  0  1 1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  5: 41.30520 61.45494  0.65522764 -0.6515630 -0.25378053  0  0  0  0  0 0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  6: 65.71383 53.81203 -0.40063755  1.0865514 -1.85374045  0  0  1  0  0 1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  7: 38.54359 57.71912 -0.33455657 -0.7625449 -0.07794607  0  1  1  0  0 0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  8: 44.27332 55.84839  1.36795395 -0.8286625  0.96856634  0  1  0  0  0 1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  9: 56.72245 61.70058  2.13776710  0.8344739  0.18492596  0  0  1  0  1 0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 10: 37.65096 65.33188  0.50581926 -0.9676520 -1.37994358  0  0  0  1  0 0</span>
 <span class="r-in"><span class="fu">sampleData</span><span class="op">(</span><span class="fl">10</span>,outcome<span class="op">=</span><span class="st">"survival"</span><span class="op">)</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>            X6       X7         X8         X9        X10 X1 X2 X3 X4 X5</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  1: 105.34595 58.19687 -2.3673196  1.1758264 -0.2662620  0  0  0  1  1</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  2:  90.71622 50.04183  0.7468906  0.1840539  0.9415957  0  1  0  0  1</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  3:  59.69159 60.70045 -1.3214394  0.8982531  0.6179547  0  0  0  0  1</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  4:  26.55609 55.80982 -0.1839103 -0.4361993  0.2406645  0  0  0  0  0</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  5:  44.86785 64.13566  0.3702102  0.9412698 -0.2811275  0  0  1  1  1</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  6:  70.93943 59.31365  0.4427237 -1.4587915 -0.1273632  0  0  1  1  0</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  7:  44.41888 60.26168  0.3243719  1.6640414  1.4109850  0  1  0  0  0</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  8:  69.23317 59.13929 -0.2946856 -0.1398363  2.1002374  0  1  0  0  0</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  9:  78.25618 62.90142 -1.0414508  0.7459810 -0.1347690  0  0  0  0  1</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 10:  62.46170 67.39584 -1.8278110  0.2303515 -1.7317539  0  0  1  0  0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>           X6       X7         X8          X9         X10 X1 X2 X3 X4 X5</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  1: 54.13344 51.62334  1.4292128 -0.48136561 -1.28015460  0  0  0  0  1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  2: 56.25199 53.97407  0.6334359  0.20288178  1.12886823  0  0  0  0  1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  3: 77.32657 50.18374 -1.9968156 -0.03173974 -0.46413453  0  0  0  0  1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  4: 47.02909 67.35376 -0.6818322 -1.19558030 -0.31576021  0  1  0  0  1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  5: 46.99982 61.86236 -0.4600555  0.62368124  0.92429315  0  0  1  0  1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  6: 25.18474 65.32940 -0.9830692 -0.91480448  0.07714472  0  0  0  1  0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  7: 69.13245 62.65325  0.4953317  0.24875801  1.03992361  0  0  0  1  0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  8: 77.25009 60.50992  0.7258175 -1.06262279  0.74188621  0  1  0  1  0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  9: 42.00603 66.68891  0.6672987 -0.36398225  1.25554486  0  0  1  1  0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 10: 36.29999 60.43617  0.9547864 -1.20699485  0.95091897  0  1  1  0  0</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>      eventtime  censtime       time event</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  1:  2.1584938 12.291536  2.1584938     1</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  2:  0.7952726  7.687468  0.7952726     1</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  3:  9.6945964 13.932777  9.6945964     1</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  4: 48.0137416  7.058650  7.0586503     0</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  5: 55.3383918 11.390308 11.3903079     0</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  6:  2.2579616 15.292583  2.2579616     1</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  7: 23.5150791  9.408254  9.4082539     0</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  8:  2.3798579  7.207902  2.3798579     1</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  9: 12.2951520  2.611471  2.6114709     0</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 10: 12.1308164 16.270998 12.1308164     1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  1:  2.6426569  5.690865  2.6426569     1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  2:  6.1908753  8.129396  6.1908753     1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  3:  4.6347317  9.417940  4.6347317     1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  4:  0.8593716  9.400349  0.8593716     1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  5: 15.7908326  5.212969  5.2129689     0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  6: 70.0259799 11.620008 11.6200077     0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  7:  8.6180977  5.198544  5.1985435     0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  8:  2.1205189  1.332360  1.3323596     0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  9: 20.8842121  6.326926  6.3269260     0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 10:  2.2870935  7.264675  2.2870935     1</span>
 <span class="r-in"><span class="fu">sampleData</span><span class="op">(</span><span class="fl">10</span>,outcome<span class="op">=</span><span class="st">"competing.risks"</span><span class="op">)</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>           X6       X7          X8          X9        X10 X1 X2 X3 X4 X5</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  1: 70.95693 69.90523 -0.11716037 -1.60872843 -0.8276721  0  0  0  0  1</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  2: 48.44728 60.88304 -0.92216042  0.75254134 -0.6963852  0  0  0  1  1</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  3: 45.47900 60.71565  0.30189182 -0.93065381  1.9186075  0  1  0  0  1</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  4: 64.37623 63.43177  1.35253949 -0.41297456 -0.7568721  1  0  0  0  1</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  5: 76.89589 54.65964  0.93818152 -0.58867640  1.4836873  0  1  0  1  0</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  6: 36.21012 58.08425  0.27056390 -0.72435849 -0.1764810  0  1  0  1  0</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  7: 55.36911 63.40905  1.27362824 -0.35314014  1.5612745  0  0  0  0  1</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  8: 52.17097 65.28943 -1.16935075 -0.72582011 -1.4857048  0  0  0  0  0</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  9: 68.56586 61.42335  0.08619538 -0.02632572 -0.5342470  0  0  0  0  0</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 10: 59.30486 57.85724 -0.58657058 -0.15254579 -0.2432629  0  0  1  0  0</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     eventtime1 eventtime2  censtime       time event</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  1:  5.0641127  15.504000  6.941363  5.0641127     1</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  2: 61.5754692  12.371662 13.492984 12.3716622     2</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  3: 18.1930468  12.201308 14.666782 12.2013077     2</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  4:  0.8187567   6.553765  9.042609  0.8187567     1</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  5:  1.8570417   9.563060  4.970838  1.8570417     1</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  6: 14.1247074   4.960097 10.476599  4.9600967     2</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  7:  6.8519327   9.906128  8.926625  6.8519327     1</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  8:  4.2771898   6.811277  8.223740  4.2771898     1</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  9:  3.6496208   5.146281  3.941413  3.6496208     1</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 10:  9.0028432   4.160078  9.114821  4.1600785     2</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>           X6       X7          X8         X9        X10 X1 X2 X3 X4 X5</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  1: 84.07671 58.60588 -0.32922472  0.1418803  1.2155138  0  0  1  1  1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  2: 71.16636 53.66634 -0.28282162  1.2617151  0.3308765  0  0  0  0  1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  3: 72.93123 58.75426  0.43242913 -0.4315003  1.3902751  0  1  0  1  1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  4: 65.92734 60.08994 -0.30760710 -1.8227126  0.8720470  0  1  0  0  1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  5: 67.63678 61.88536 -0.05663631  0.3525440 -1.0808170  0  0  0  0  0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  6: 58.16175 63.98004  0.73351542 -1.3484514  0.4958216  0  0  0  1  0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  7: 61.38877 55.79661  0.09731162  0.7076883  1.0526276  0  0  1  0  1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  8: 54.63180 48.97264  1.63089174 -0.4108909 -1.2746500  0  0  0  0  1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  9: 54.60517 54.35972  0.56061070 -0.4460452 -0.1936667  0  0  0  1  1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 10: 75.42856 53.29345  1.32956476 -1.0411563 -1.2950836  1  0  0  1  1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     eventtime1 eventtime2  censtime      time event</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  1:  1.0392993  14.346374 11.789377 1.0392993     1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  2:  0.9393134   5.160939  7.372990 0.9393134     1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  3:  1.5912116  10.397899  4.299037 1.5912116     1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  4:  3.6640553  14.591833 12.606763 3.6640553     1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  5: 14.7176760   7.647145 16.262451 7.6471451     2</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  6:  4.3279139  14.089344  5.350291 4.3279139     1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  7: 11.2254895   3.944821  7.463531 3.9448210     2</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  8:  6.4158478   4.095935  5.463787 4.0959352     2</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  9:  8.1103217  11.218448 16.068604 8.1103217     1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 10:  0.1623599   4.589312  2.823758 0.1623599     1</span>
 </code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc"><h2>On this page</h2>
