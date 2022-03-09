@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Jan 11 2022 (17:06)
 ## Version:
-## Last-Updated: Jan 11 2022 (17:23)
+## Last-Updated: Mar  8 2022 (19:17) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 2
+##     Update #: 3
 #----------------------------------------------------------------------
 ##
 ### Commentary:
@@ -53,20 +53,20 @@ AUC.survival <- function(DT,MC,se.fit,conservative,cens.model,keep.vcov=FALSE,mu
         ## compute influence function
         ## data.table::setorder(aucDT,model,times,time,-status)
         data.table::setorder(aucDT,model,times,ID)
-        if (cens.model == "KaplanMeier" || cens.model == "none"){
-            aucDT[,IF.AUC:=getInfluenceFunctionAUCSurvival(time,status,times[1],risk,WTi,Wt[1],AUC[1]), by=list(model,times)]
-        }
-        else {
-            aucDT[,IF.AUC:=getInfluenceCurve.AUC.survival(t=times[1],
-                                                           n=N,
-                                                           time=time,
-                                                           risk=risk,
-                                                           Cases=Cases,
-                                                           Controls=Controls,
-                                                           ipcwControls=ipcwControls,
-                                                           ipcwCases=ipcwCases,
-                                                           MC=MC), by=list(model,times)]
-        }
+        ## if (cens.model == "KaplanMeier" || cens.model == "none"){
+        ## aucDT[,IF.AUC:=getInfluenceFunctionAUCSurvival(time,status,times[1],risk,WTi,Wt[1],AUC[1]), by=list(model,times)]
+        ## }
+        ## else {
+        aucDT[,IF.AUC:=getInfluenceCurve.AUC.survival(t=times[1],
+                                                      n=N,
+                                                      time=time,
+                                                      risk=risk,
+                                                      Cases=Cases,
+                                                      Controls=Controls,
+                                                      ipcwControls=ipcwControls,
+                                                      ipcwCases=ipcwCases,
+                                                      MC=MC), by=list(model,times)]
+        ## }
         se.score <- aucDT[,list(se=sd(IF.AUC)/sqrt(N)),by=list(model,times)]
 
         data.table::setkey(se.score,model,times)
