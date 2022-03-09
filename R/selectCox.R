@@ -18,14 +18,10 @@
 #' http://www.jstatsoft.org/v50/i11/.
 #' @keywords survival
 #' @examples
-#' if (requireNamespace("pec",quietly=TRUE)){
-#' library(pec)
-##' library(prodlim)
-#' data(GBSG2)
 #' library(survival)
-#' f <- selectCox(Surv(time,cens)~horTh+age+menostat+tsize+tgrade+pnodes+progrec+estrec ,
-#' 	       data=GBSG2)
-#' }
+#' set.seed(74)
+#' d <- sampleData(89,outcome="survival")
+#' f <- selectCox(Surv(time,event)~X1+X2+X3+X4+X6+X7+X8+X9, data=d)
 #' 
 #' @export 
 selectCox <- function(formula,data,rule="aic"){

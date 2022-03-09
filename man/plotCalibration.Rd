@@ -157,7 +157,8 @@ locally at the predicted risk.
 }
 \examples{
 library(prodlim)
-# binary 
+# binary
+set.seed(10)
 db=sampleData(100,outcome="binary")
 fb1=glm(Y~X1+X5+X7,data=db,family="binomial")
 fb2=glm(Y~X1+X3+X6+X7,data=db,family="binomial")

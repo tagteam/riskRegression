@@ -275,8 +275,8 @@ predictCox <- function(object,
     }
     ## convergence issue
     if(!is.null(coef(object)) && any(is.na(coef(object)))){
-        stop("Incorrect object",
-             "One or several model parameters have been estimated to be NA \n")
+        print(coef(object))
+        stop("One or several parameters of the regression model have no value, i.e., a value 'NA'.\n")
     }
     ## prediction 
     if (missing(newdata) && (se || iid || average.iid)){

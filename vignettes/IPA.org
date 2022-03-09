@@ -12,7 +12,7 @@
 * Introduction
 
 This vignette demonstrates how our software calculates the index of
-prediction accuracy [fn:2]. We distinguish three settings:
+prediction accuracy[fn:2][fn:4]. We distinguish three settings:
 
 - uncensored binary outcome
 - right censored survival outcome (no competing risks)
@@ -45,20 +45,21 @@ cat("\nPublish:")
 packageVersion("Publish")
 #+END_SRC
 
-#+RESULTS[<2020-02-08 09:07:55> f47684812cfced1ee3e11c1d127ff83471a909ef]:
+#+RESULTS[(2022-03-09 08:39:17) f47684812cfced1ee3e11c1d127ff83471a909ef]:
 #+begin_example
 data.table:
-[1] ‘1.12.2’
+[1] ‘1.14.2’
 
 survival:
-[1] ‘2.44.1.1’
+[1] ‘3.2.13’
 
 riskRegression:
-[1] ‘2020.2.5’
+[1] ‘2022.3.8’
 
 Publish:
-[1] ‘2019.12.4’
+[1] ‘2020.12.23’
 #+end_example
+
 
 * Data
 
@@ -104,7 +105,7 @@ lrfit.inc <- glm(Y1~age+lpsaden+ppb5+lmax+ct1+diaggs+erg.status,data=astrain,fam
 publish(lrfit.inc,org=TRUE)
 #+END_SRC
 
-#+RESULTS[<2020-02-08 09:07:56> 4ad587463242261d838b316f44356bc6b6112649]:
+#+RESULTS[(2022-03-09 08:39:17) 4ad587463242261d838b316f44356bc6b6112649]:
 :results:
 | Variable   | Units | OddsRatio | CI.95       | p-value |
 |------------+-------+-----------+-------------+---------|
@@ -121,6 +122,7 @@ publish(lrfit.inc,org=TRUE)
 |            | pos   |      3.66 | [1.90;7.02] | <0.0001 |
 :end:
 
+
 Based on these models we predict the risk of progression within one
 year in the validation set.
 
@@ -131,7 +133,7 @@ astest[,risk.inc:=100*predictRisk(lrfit.inc,newdata=astest)]
 publish(head(astest[,-c(8,9)]),digits=1,org=TRUE)
 #+END_SRC
 
-#+RESULTS[<2020-02-08 09:07:56> 1b832f895d12a85feea8e807fa4ca3edced723a1]:
+#+RESULTS[(2022-03-09 08:39:17) 1b832f895d12a85feea8e807fa4ca3edced723a1]:
 :results:
 |  age | lpsaden | ppb5 | lmax | ct1 | diaggs | erg.status |  Y1 | risk.ex | risk.inc |
 |------+---------+------+------+-----+--------+------------+-----+---------+----------|
@@ -142,6 +144,7 @@ publish(head(astest[,-c(8,9)]),digits=1,org=TRUE)
 | 55.6 |    -3.5 |  2.8 |  3.0 | cT1 | 3/3    | neg        | 0.0 |    21.9 |     11.8 |
 | 71.1 |    -2.6 |  3.3 |  3.7 | cT1 | 3/3    | neg        | 0.0 |    15.0 |      9.5 |
 :end:
+
 
 To calculate the Index of Prediction Accuracy (IPA) we call the
 =Score= function as follows on a list which includes the two logistic
@@ -154,7 +157,7 @@ X1 <- Score(list("Exclusive ERG"=lrfit.ex,"Inclusive ERG"=lrfit.inc),data=astest
 X1
 #+END_SRC
 
-#+RESULTS[<2020-02-08 09:07:56> 2bcd79c4cca9a135621f7e88a43adbe243da55d5]:
+#+RESULTS[(2022-03-09 08:39:17) 2bcd79c4cca9a135621f7e88a43adbe243da55d5]:
 #+begin_example
 
 Metric Brier:
@@ -166,10 +169,10 @@ Results by model:
 2: Exclusive ERG  14.8 2.7
 3: Inclusive ERG  14.1 7.3
 
-NOTE: Values are multiplied by 100 and given in % (use print(...,percent=FALSE) to avoid this.
-
+NOTE: Values are multiplied by 100 and given in %.
 NOTE: The lower Brier the better, the higher IPA the better.
 #+end_example
+
 
 Both logistic regression models have a lower Brier score than the
 =Null model= which ignores all predictor variables. Hence, both models
@@ -192,7 +195,7 @@ model and IPA of the model where the variable is omitted.
 IPA(lrfit.inc,newdata=astest)
 #+END_SRC
 
-#+RESULTS[<2020-02-08 09:07:56> 0a14f54e5393497b5ed8baf2e0ffce5d57ed4e7f]:
+#+RESULTS[(2022-03-09 08:39:18) 0a14f54e5393497b5ed8baf2e0ffce5d57ed4e7f]:
 #+begin_example
      Variable Brier IPA IPA.drop
 1: Null model  15.2 0.0      7.3
@@ -205,8 +208,10 @@ IPA(lrfit.inc,newdata=astest)
 8:     diaggs  14.6 4.4      2.9
 9: erg.status  14.8 2.7      4.6
 
-NOTE: Values are multiplied by 100 and given in % (use print(...,percent=FALSE) to avoid this.
-NOTE: IPA.drop = IPA(Full model) - IPA.
+NOTE: Values are multiplied by 100 and given in %.
+NOTE: The higher IPA the better.
+NOTE: IPA.drop = IPA(Full model) - IPA. The higher the drop
+the more important is the variable for the full model.
 #+end_example
 
 * IPA for right censored survival outcome 
@@ -226,7 +231,7 @@ coxfit.inc <- coxph(Surv(time,event!=0)~age+lpsaden+ppb5+lmax+ct1+diaggs+erg.sta
 publish(coxfit.inc,org=TRUE)
 #+END_SRC
 
-#+RESULTS[<2020-02-08 09:07:57> ab47285b61012d2bca8c73e0eb087b9e08233abe]:
+#+RESULTS[(2022-03-09 08:39:18) ab47285b61012d2bca8c73e0eb087b9e08233abe]:
 :results:
 | Variable   | Units | HazardRatio | CI.95       | p-value |
 |------------+-------+-------------+-------------+---------|
@@ -253,7 +258,7 @@ astest[,risk.inc:=100*predictRisk(coxfit.inc,newdata=astest,times=3)]
 publish(head(astest[,-c(8,9)]),digits=1,org=TRUE)
 #+END_SRC
 
-#+RESULTS[<2020-02-08 09:07:57> 5bcf6350ff6f463c8beb576216fb983d9574bfa1]:
+#+RESULTS[(2022-03-09 08:39:19) 5bcf6350ff6f463c8beb576216fb983d9574bfa1]:
 :results:
 |  age | lpsaden | ppb5 | lmax | ct1 | diaggs | erg.status |  Y1 | risk.ex | risk.inc |
 |------+---------+------+------+-----+--------+------------+-----+---------+----------|
@@ -264,6 +269,7 @@ publish(head(astest[,-c(8,9)]),digits=1,org=TRUE)
 | 55.6 |    -3.5 |  2.8 |  3.0 | cT1 | 3/3    | neg        | 0.0 |    41.5 |     35.5 |
 | 71.1 |    -2.6 |  3.3 |  3.7 | cT1 | 3/3    | neg        | 0.0 |    65.5 |     57.5 |
 :end:
+
 
 To calculate the Index of Prediction Accuracy (IPA) we call the
 =Score= function as follows on a list which includes the two Cox 
@@ -276,7 +282,7 @@ X2 <- Score(list("Exclusive ERG"=coxfit.ex,"Inclusive ERG"=coxfit.inc),data=aste
 X2
 #+END_SRC
 
-#+RESULTS[<2020-02-08 09:07:57> 7d2e02fc1a5cd4dca72e69d8a94326dfcb717594]:
+#+RESULTS[(2022-03-09 08:39:19) 7d2e02fc1a5cd4dca72e69d8a94326dfcb717594]:
 #+begin_example
 
 Metric Brier:
@@ -288,8 +294,7 @@ Results by model:
 2: Exclusive ERG     3  22.4  6.4
 3: Inclusive ERG     3  19.9 17.1
 
-NOTE: Values are multiplied by 100 and given in % (use print(...,percent=FALSE) to avoid this.
-
+NOTE: Values are multiplied by 100 and given in %.
 NOTE: The lower Brier the better, the higher IPA the better.
 #+end_example
 
@@ -307,7 +312,7 @@ model and IPA of the model where the variable is omitted.
 IPA(coxfit.inc,newdata=astest,times=3)
 #+END_SRC
 
-#+RESULTS[<2020-02-08 09:07:57> f4b18b24db785e34b067d3c4ce6c02234098476e]:
+#+RESULTS[(2022-03-09 08:39:19) f4b18b24db785e34b067d3c4ce6c02234098476e]:
 #+begin_example
      Variable times Brier  IPA IPA.drop
 1: Null model     3  24.0  0.0     17.1
@@ -320,9 +325,15 @@ IPA(coxfit.inc,newdata=astest,times=3)
 8:     diaggs     3  20.8 13.0      4.1
 9: erg.status     3  22.4  6.4     10.7
 
-NOTE: Values are multiplied by 100 and given in % (use print(...,percent=FALSE) to avoid this.
-NOTE: IPA.drop = IPA(Full model) - IPA.
+NOTE: Values are multiplied by 100 and given in %.
+NOTE: The higher IPA the better.
+NOTE: IPA.drop = IPA(Full model) - IPA. The higher the drop
+the more important is the variable for the full model.
+Warning message:
+In `[.data.table`(r2, , `:=`(IPA.drop, IPA[Variable == "Full model"] -  :
+  Invalid .internal.selfref detected and fixed by taking a (shallow) copy of the data.table so that := can add this new column by reference. At an earlier point, this data.table has been copied by R (or was created manually using structure() or similar). Avoid names<- and attr<- which in R currently (and oddly) may copy the whole data.table. Use set* syntax instead to avoid copying: ?set, ?setnames and ?setattr. If this message doesn't help, please report your use case to the data.table issue tracker so the root cause can be fixed or this message improved.
 #+end_example
+
 
 * IPA for right censored time to event outcome with competing risks
 :PROPERTIES:
@@ -341,7 +352,7 @@ cscfit.inc <- CSC(Hist(time,event)~age+lpsaden+ppb5+lmax+ct1+diaggs+erg.status,d
 publish(cscfit.inc)
 #+END_SRC
 
-#+RESULTS[<2020-02-08 09:07:57> b0817074933de144121448371b80edfbf281c9da]:
+#+RESULTS[(2022-03-09 08:39:19) b0817074933de144121448371b80edfbf281c9da]:
 #+begin_example
    Variable Units                1                2 
         age       1.04 [1.00;1.09] 1.01 [0.95;1.07] 
@@ -357,6 +368,7 @@ publish(cscfit.inc)
               pos 2.20 [1.56;3.11] 1.20 [0.71;2.04]
 #+end_example
 
+
 Based on these models we predict the risk of progression in presence
 of the competing risk of death within 3 years in the validation set.
 
@@ -367,7 +379,7 @@ astest[,risk.inc:=100*predictRisk(cscfit.inc,newdata=astest,times=3,cause=1)]
 publish(head(astest[,-c(8,9)]),digits=1,org=TRUE)
 #+END_SRC
 
-#+RESULTS[<2020-02-08 09:07:57> 841985da41439efcbff01b0901042c38e91abda3]:
+#+RESULTS[(2022-03-09 08:39:19) 841985da41439efcbff01b0901042c38e91abda3]:
 :results:
 |  age | lpsaden | ppb5 | lmax | ct1 | diaggs | erg.status |  Y1 | risk.ex | risk.inc |
 |------+---------+------+------+-----+--------+------------+-----+---------+----------|
@@ -378,6 +390,7 @@ publish(head(astest[,-c(8,9)]),digits=1,org=TRUE)
 | 55.6 |    -3.5 |  2.8 |  3.0 | cT1 | 3/3    | neg        | 0.0 |    26.3 |     19.9 |
 | 71.1 |    -2.6 |  3.3 |  3.7 | cT1 | 3/3    | neg        | 0.0 |    51.8 |     42.2 |
 :end:
+
 
 To calculate the Index of Prediction Accuracy (IPA) we call the
 =Score= function as follows on a list which includes the two sets of
@@ -393,7 +406,7 @@ X3 <- Score(list("Exclusive ERG"=cscfit.ex,
 X3
 #+END_SRC
 
-#+RESULTS[<2020-02-08 09:07:57> 262eb718c337234dcf3f7891b3d3d55254f3b16c]:
+#+RESULTS[(2022-03-09 08:39:19) 262eb718c337234dcf3f7891b3d3d55254f3b16c]:
 #+begin_example
 
 Metric Brier:
@@ -405,10 +418,10 @@ Results by model:
 2: Exclusive ERG     3  23.2  5.0
 3: Inclusive ERG     3  20.2 17.5
 
-NOTE: Values are multiplied by 100 and given in % (use print(...,percent=FALSE) to avoid this.
-
+NOTE: Values are multiplied by 100 and given in %.
 NOTE: The lower Brier the better, the higher IPA the better.
 #+end_example
+
 
 It is sometimes interesting to compare the predictor variables
 according to how much they contribute to the prediction
@@ -425,7 +438,7 @@ IPA of the model where the variable is omitted.
 IPA(cscfit.inc,newdata=astest,times=3)
 #+END_SRC
 
-#+RESULTS[<2020-02-08 09:07:58> 3c35cfc9e150c201ca36c34c13353d76b053d7ba]:
+#+RESULTS[(2022-03-09 08:39:20) 3c35cfc9e150c201ca36c34c13353d76b053d7ba]:
 #+begin_example
      Variable times Brier  IPA IPA.drop
 1: Null model     3  24.5  0.0     17.5
@@ -438,10 +451,13 @@ IPA(cscfit.inc,newdata=astest,times=3)
 8:     diaggs     3  20.8 14.8      2.8
 9: erg.status     3  23.2  5.0     12.5
 
-NOTE: Values are multiplied by 100 and given in % (use print(...,percent=FALSE) to avoid this.
-NOTE: IPA.drop = IPA(Full model) - IPA.
+NOTE: Values are multiplied by 100 and given in %.
+NOTE: The higher IPA the better.
+NOTE: IPA.drop = IPA(Full model) - IPA. The higher the drop
+the more important is the variable for the full model.
 #+end_example
 
 [fn:2] Michael W Kattan and Thomas A Gerds. The index of prediction accuracy: An intuitive measure useful for evaluating risk prediction models. Diagnostic and Prognostic Research, 2(1):7, 2018.
 [fn:3] Brice Ozenne, Anne Lyngholm S{\o }rensen, Thomas Scheike, Christian Torp-Pedersen, and Thomas Alexander Gerds. riskregression: Predicting the risk of an event using Cox regression models. R Journal, 9(2):440--460, 2017.
+[fn:4] Thomas A Gerds and Michael W Kattan. Medical Risk Prediction: With Ties to Machine Learning. Chapman and Hall/CRC, 2021.
 

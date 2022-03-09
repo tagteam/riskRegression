@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Feb 23 2017 (11:15) 
 ## Version: 
-## last-updated: Jun 29 2021 (11:50) 
+## last-updated: Mar  9 2022 (15:48) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 383
+##     Update #: 384
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -94,7 +94,8 @@
 ##'     \code{\link{SmartControl}}.
 ##' @examples
 ##' library(prodlim)
-##' # binary 
+##' # binary
+##' set.seed(10)
 ##' db=sampleData(100,outcome="binary")
 ##' fb1=glm(Y~X1+X5+X7,data=db,family="binomial")
 ##' fb2=glm(Y~X1+X3+X6+X7,data=db,family="binomial")

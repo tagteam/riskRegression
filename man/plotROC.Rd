@@ -62,7 +62,7 @@ Plot ROC curve
 \examples{
 ## binary
 set.seed(18)
-if (requireNamespace("randomForest",quietly=TRUE)){
+if (require("randomForest",quietly=TRUE)){
 library(randomForest)
 library(prodlim)
 bdl <- sampleData(40,outcome="binary")

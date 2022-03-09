@@ -71,6 +71,7 @@ Plot Brier score curves
 # survival
 library(survival)
 library(prodlim)
+set.seed(10)
 ds1=sampleData(40,outcome="survival")
 ds2=sampleData(40,outcome="survival")
 f1 <- coxph(Surv(time,event)~X1+X3+X5+X7+X9,data=ds1,x=TRUE)

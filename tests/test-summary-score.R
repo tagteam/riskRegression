@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Apr 12 2020 (07:48) 
 ## Version: 
-## Last-Updated: Jan 12 2022 (10:11) 
+## Last-Updated: Mar  9 2022 (15:45) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 6
+##     Update #: 7
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -22,6 +22,7 @@ context("riskRegression")
 # {{{ "binary"
 for (y in c("binary","survival","competing.risks")){
     print(y)
+    set.seed(10)
     d1 <- sampleData(n=112,outcome=y)
     d2 <- sampleData(n=80,outcome=y)
     if (y=="binary"){

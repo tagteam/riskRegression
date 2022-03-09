@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun  6 2016 (09:02) 
 ## Version: 
-## last-updated: Feb 28 2022 (17:22) 
+## last-updated: Mar  9 2022 (15:49) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 419
+##     Update #: 423
 #----------------------------------------------------------------------
 ## 
 ### Commentary:
@@ -122,6 +122,7 @@
 #' predictRisk(sfit,newdata=d[1:3,],times=c(1,3,5,10))
 #' 
 #' ## simulate learning and validation data
+#' set.seed(10)
 #' learndat <- sampleData(100,outcome="survival")
 #' valdat <- sampleData(100,outcome="survival")
 #' ## use the learning data to fit a Cox model
@@ -135,14 +136,13 @@
 #' ## one column for each of the 5 time points
 #' ## one row for each validation set individual
 #'
-#' \dontrun{
-#' if ((requireNamespace("randomForestSRC",quietly=TRUE))){
+#' if (require("randomForestSRC",quietly=TRUE)){
 #' # Do the same for a randomSurvivalForest model
 #' library(randomForestSRC)
 #' rsfmodel <- rfsrc(Surv(time,event)~X1+X2,data=learndat)
 #' prsfsurv=predictRisk(rsfmodel,newdata=valdat,times=seq(0,60,12))
 #' plot(psurv,prsfsurv)
-#' }}
+#' }
 #' ## Cox with ridge option
 #' f1 <- coxph(Surv(time,event)~X1+X2,data=learndat,x=TRUE,y=TRUE)
 #' f2 <- coxph(Surv(time,event)~ridge(X1)+ridge(X2),data=learndat,x=TRUE,y=TRUE)
@@ -488,7 +488,7 @@ predictRisk.lrm <- function(object,newdata,...){
 ##' @rdname predictRisk
 ##' @method predictRisk rpart
 predictRisk.rpart <- function(object,newdata,...){
-    requireNamespace("rpart",quietly=FALSE)
+  requireNamespace("rpart",quietly=FALSE)
   p <- as.numeric(stats::predict(object,newdata=newdata))
   p
 }
@@ -1040,7 +1040,7 @@ predictRisk.CauseSpecificCox <- function (object, newdata, times, cause,
 ##' library(prodlim)
 ##' \dontrun{
 ##' ## too slow
-##' if (requireNamespace("penalized",quietly=TRUE)){
+##' if (require("penalized",quietly=TRUE)){
 ##' library(penalized)
 ##' set.seed(8)
 ##' d <- sampleData(200,outcome="binary")

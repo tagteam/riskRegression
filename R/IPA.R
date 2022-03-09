@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Aug  9 2017 (10:36) 
 ## Version: 
-## Last-Updated: Mar  4 2022 (17:52) 
+## Last-Updated: Mar  9 2022 (08:32) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 181
+##     Update #: 182
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -167,7 +167,7 @@ IPA.CauseSpecificCox <- function(object,formula,newdata,times,cause,...){
     if (missing(formula)) formula=eval(object$call$formula)
     ## CSC may have two formulas
     if (is.list(formula)) formula=formula[[1]]
-    r2 <- Score(c("Full model"=list(object),leaveOneOut),
+    x <- Score(c("Full model"=list(object),leaveOneOut),
                 formula=formula,
                 data=newdata,
                 times=times,
@@ -177,7 +177,8 @@ IPA.CauseSpecificCox <- function(object,formula,newdata,times,cause,...){
                 metrics="brier",
                 cens.model="km",
                 summary="IPA",
-                ...)$Brier$score
+                ...)
+    r2 <- copy(x$Brier$score)
     ## r2[,IPA:=100*IPA]
     ## r2 <- r2[model!="Null model"]
     data.table::setnames(r2,"model","Variable")

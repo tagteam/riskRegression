@@ -69,6 +69,7 @@ Plot of time-dependent AUC curves
 \examples{
 library(survival)
 library(prodlim)
+set.seed(10)
 d=sampleData(100,outcome="survival")
 nd=sampleData(100,outcome="survival")
 f1=coxph(Surv(time,event)~X1+X6+X8,data=d,x=TRUE,y=TRUE)

@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Dec  6 2020 (09:25) 
 ## Version: 
-## Last-Updated: Feb 27 2022 (09:25) 
+## Last-Updated: Mar  9 2022 (08:27) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 6
+##     Update #: 7
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -27,27 +27,22 @@ test_that("survival outcome: robustness against order of data set",{
     f1 <- coxph(Surv(time,event)~X1+X5+X8,data=d, x = TRUE, y = TRUE)
     f2 <- coxph(Surv(time,event)~X2+X6+X9+X10,data=d, x = TRUE, y = TRUE)
     f3 <- cbind(d$X8,d$X8,d$X8)
-    s1 <- Score(list(f1,f2,f3),formula=Surv(time,event)~1,data=d,times=c(3,5,10),conf.int=TRUE)
-    s1b <- Score(list(f1,f2,f3),formula=Surv(time,event)~1,data=d,times=c(3,5,10),conf.int=.95,metrics="auc")
+    s1 <- Score(list(f1,f2,f3),formula=Surv(time,event)~1,data=d,times=c(3,5,10),conf.int=TRUE,metrics="auc")
     setkey(d,X4)
     f3 <- cbind(d$X8,d$X8,d$X8)
-    s2 <- Score(list(f1,f2,f3),formula=Surv(time,event)~1,data=d,times=c(3,5,10),conf.int=.95)
-    s2b <- Score(list(f1,f2,f3),formula=Surv(time,event)~1,data=d,times=c(3,5,10),conf.int=.95,metrics="auc")
+    s2 <- Score(list(f1,f2,f3),formula=Surv(time,event)~1,data=d,times=c(3,5,10),conf.int=.95,metrics="auc")
     setorder(d,time,-event)
     f3 <- cbind(d$X8,d$X8,d$X8)
-    s3 <- Score(list(f1,f2,f3),formula=Surv(time,event)~1,data=d,times=c(3,5,10),conf.int=.95)
-    s3b <- Score(list(f1,f2,f3),formula=Surv(time,event)~1,data=d,times=c(3,5,10),conf.int=.95,metrics="auc")
+    s3 <- Score(list(f1,f2,f3),formula=Surv(time,event)~1,data=d,times=c(3,5,10),conf.int=.95,metrics="auc")
     s1$call$conf.int <- .95
     expect_equal(s1,s2)
     expect_equal(s1,s3)
-    expect_equal(s1$AUC,s1b$AUC)
-    expect_equal(s2$AUC,s2b$AUC)
-    expect_equal(s3$AUC,s3b$AUC)
 })
 # }}}
+
 # {{{ "competing risks outcome: check against pec"
 test_that("competing risks outcome: check against pec",{
-    if (requireNamespace("pec",quietly=TRUE)){
+    if (!requireNamespace("pec",quietly=TRUE)){
         message("Package pec not installed. Skip this test.")
     }else{
         set.seed(112)
@@ -69,16 +64,16 @@ test_that("competing risks outcome: robustness against order of data set",{
     f1 <- CSC(Hist(time,event)~X1+X5+X8,data=d)
     f2 <- FGR(Hist(time,event)~X2+X6+X9+X10,data=d,cause=1)
     f3 <- cbind(d$X8,d$X8,d$X8)
-    s1 <- Score(list(f1,f2,f3),formula=Hist(time,event)~1,data=d,times=c(3,5,10),conf.int=TRUE,cause=1)
-    s1b <- Score(list(f1,f2,f3),formula=Hist(time,event)~1,data=d,times=c(3,5,10),conf.int=.95,cause=1,metrics="auc")
+    suppressWarnings(s1 <- Score(list(f1,f2,f3),formula=Hist(time,event)~1,data=d,times=c(3,5,9),conf.int=TRUE,cause=1))
+    s1b <- Score(list(f1,f2,f3),formula=Hist(time,event)~1,data=d,times=c(3,5,9),conf.int=.95,cause=1,metrics="auc")
     setkey(d,X4)
     f3 <- cbind(d$X8,d$X8,d$X8)
-    s2 <- Score(list(f1,f2,f3),formula=Hist(time,event)~1,data=d,times=c(3,5,10),conf.int=.95,cause=1)
-    s2b <- Score(list(f1,f2,f3),formula=Hist(time,event)~1,data=d,times=c(3,5,10),conf.int=.95,cause=1,metrics="auc")
+    suppressWarnings(s2 <- Score(list(f1,f2,f3),formula=Hist(time,event)~1,data=d,times=c(3,5,9),conf.int=.95,cause=1))
+    s2b <- Score(list(f1,f2,f3),formula=Hist(time,event)~1,data=d,times=c(3,5,9),conf.int=.95,cause=1,metrics="auc")
     setorder(d,time,-event)
     f3 <- cbind(d$X8,d$X8,d$X8)
-    s3 <- Score(list(f1,f2,f3),formula=Hist(time,event)~1,data=d,times=c(3,5,10),conf.int=.95,cause=1)
-    s3b <- Score(list(f1,f2,f3),formula=Hist(time,event)~1,data=d,times=c(3,5,10),conf.int=.95,cause=1,metrics="auc")
+    suppressWarnings(s3 <- Score(list(f1,f2,f3),formula=Hist(time,event)~1,data=d,times=c(3,5,9),conf.int=.95,cause=1))
+    s3b <- Score(list(f1,f2,f3),formula=Hist(time,event)~1,data=d,times=c(3,5,9),conf.int=.95,cause=1,metrics="auc")
     s1$call$conf.int <- .95
     expect_equal(s1,s2)
     expect_equal(s1,s3)
@@ -87,6 +82,7 @@ test_that("competing risks outcome: robustness against order of data set",{
     expect_equal(s3$AUC,s3b$AUC)
 })
 # }}}
+
 # {{{ "survival outcome: Brier Score pec vs Score"
 if (requireNamespace("pec",quietly=TRUE)){
     test_that("survival outcome: Brier Score pec vs Score",{
@@ -95,62 +91,63 @@ if (requireNamespace("pec",quietly=TRUE)){
         d <- sampleData(43,outcome="survival")
         f1 <- coxph(Surv(time,event)~X1+X5+X8,data=d, x = TRUE, y = TRUE)
         f2 <- coxph(Surv(time,event)~X2+X6+X9+X10,data=d, x = TRUE, y = TRUE)
-        p1 <- pec(list(f1,f2),formula=Surv(time,event)~1,data=d,times=c(3,5,10),exact=FALSE,start=NULL)
-        s1 <- Score(list(f1,f2),formula=Surv(time,event)~1,data=d,times=c(3,5,10),conf.int=FALSE,metrics="brier")
+        p1 <- pec(list(f1,f2),formula=Surv(time,event)~1,data=d,times=c(3,5,9),exact=FALSE,start=NULL)
+        s1 <- Score(list(f1,f2),formula=Surv(time,event)~1,data=d,times=c(3,5,9),conf.int=FALSE,metrics="brier")
         expect_equal(p1$AppErr$coxph,s1$Brier$score[model=="coxph",Brier])
         expect_equal(p1$AppErr$coxph.1,s1$Brier$score[model=="coxph.1",Brier])
         expect_equal(p1$AppErr$Reference,s1$Brier$score[model=="Null model",Brier])
     })
 }
 # }}}
+
 # {{{ "survival outcome: matrix input"
 test_that("survival outcome: matrix input",{
     set.seed(112)
     dtrain <- sampleData(43,outcome="survival")
     dtest <- sampleData(4,outcome="survival")
     f1 <- coxph(Surv(time,event)~X1+X5+X8,data=dtrain, x = TRUE, y = TRUE)
-    f2 <- predictRisk(f1,newdata=dtest,times=c(3,5,10))
-    s1 <- Score(list(f1,f2),formula=Surv(time,event)~1,data=dtest,times=c(3,5,10),conf.int=FALSE,null.model=0L,metrics="brier")
+    f2 <- predictRisk(f1,newdata=dtest,times=c(1:2))
+    s1 <- Score(list(f1,f2),formula=Surv(time,event)~1,data=dtest,times=c(1:2),conf.int=FALSE,null.model=0L,metrics="brier")
     expect_equal(s1$Brier$score[model=="coxph",Brier],s1$Brier$score[model=="matrix",Brier])
 })
 
 # }}}
 # {{{ "Leave one out bootstrap: Number of models and time points"
 test_that("Number of models and time points", {
-    if (requireNamespace("pec",quietly=TRUE)){
+    if (!requireNamespace("pec",quietly=TRUE)){
         message("Package pec not installed. Skip this test.")
     }else{
-        if (requireNamespace("pec",quietly=TRUE)){
-            library(pec)
-            data(GBSG2)
-            setDT(GBSG2)
-            ## fit1 <- coxph(Surv(time, cens)~horTh+age+menostat+tsize+pnodes+progrec+estrec, data = GBSG2, x = TRUE)
-            ## fit2 <- coxph(Surv(time, cens)~strata(horTh)+age+menostat+tsize+pnodes+progrec+estrec, data = GBSG2, x = TRUE)
-            fit1 <- cph(Surv(time, cens)~horTh+age+menostat+tsize+pnodes+progrec+estrec, data = GBSG2, x = TRUE,y=TRUE,surv=TRUE)
-            fit2 <- cph(Surv(time, cens)~strat(horTh)+age+menostat+tsize+pnodes+progrec+estrec, data = GBSG2, x = TRUE,y=TRUE,surv=TRUE)
-            GBSG2.test <- GBSG2
-            setorder(GBSG2.test,time,-cens)
-            ## predictCox(fit1,newdata=GBSG2.test,times=1000)
-            r1 <- Score(list(a=fit2),data=GBSG2.test,times=1000,formula=Surv(time,cens)~1,plots="cali")
-            set.seed(11)
-            R1 <- Score(list(a=fit2),data=GBSG2.test,times=1000,B=50,split.method="loob",formula=Surv(time,cens)~1,plots="cali")
-            setorder(GBSG2,time,cens)
-            ## setorder(GBSG2.test,age)
-            GBSG2 <- 7
-            r2 <- Score(list(a=fit2,b=fit1),data=GBSG2.test,times=c(100,500,2000,1000),formula=Surv(time,cens)~1,plots="cali")
-            set.seed(11)
-            R2 <- Score(list(a=fit2,b=fit1),data=GBSG2.test,times=c(1000),B=50,split.method="loob",formula=Surv(time,cens)~1,plots="cali")
-            ## r1$Calibration$plotframe
-            ## r2$Calibration$plotframe[times==1000&model=="a"]
-            ## r3 <- pec(list(a=fit2,b=fit1),data=GBSG2.test,exact=FALSE,times=c(1000),formula=Surv(time,cens)~1)
-            expect_equal(r1$Brier$score[model=="a"],r2$Brier$score[model=="a" & times==1000])
-            ## expect_equal(r1$AUC$score[model=="a"],r2$AUC$score[model=="a" & times==1000])
-        }
+        library(pec)
+        data(GBSG2)
+        setDT(GBSG2)
+        ## fit1 <- coxph(Surv(time, cens)~horTh+age+menostat+tsize+pnodes+progrec+estrec, data = GBSG2, x = TRUE)
+        ## fit2 <- coxph(Surv(time, cens)~strata(horTh)+age+menostat+tsize+pnodes+progrec+estrec, data = GBSG2, x = TRUE)
+        fit1 <- cph(Surv(time, cens)~horTh+age+menostat+tsize+pnodes+progrec+estrec, data = GBSG2, x = TRUE,y=TRUE,surv=TRUE)
+        fit2 <- cph(Surv(time, cens)~strat(horTh)+age+menostat+tsize+pnodes+progrec+estrec, data = GBSG2, x = TRUE,y=TRUE,surv=TRUE)
+        GBSG2.test <- GBSG2
+        setorder(GBSG2.test,time,-cens)
+        ## predictCox(fit1,newdata=GBSG2.test,times=1000)
+        r1 <- Score(list(a=fit2),data=GBSG2.test,times=1000,formula=Surv(time,cens)~1,plots="cali")
+        set.seed(11)
+        R1 <- Score(list(a=fit2),data=GBSG2.test,times=1000,B=50,split.method="loob",formula=Surv(time,cens)~1,plots="cali")
+        setorder(GBSG2,time,cens)
+        ## setorder(GBSG2.test,age)
+        GBSG2 <- 7
+        r2 <- Score(list(a=fit2,b=fit1),data=GBSG2.test,times=c(100,500,2000,1000),formula=Surv(time,cens)~1,plots="cali")
+        set.seed(11)
+        R2 <- Score(list(a=fit2,b=fit1),data=GBSG2.test,times=c(1000),B=50,split.method="loob",formula=Surv(time,cens)~1,plots="cali")
+        ## r1$Calibration$plotframe
+        ## r2$Calibration$plotframe[times==1000&model=="a"]
+        ## r3 <- pec(list(a=fit2,b=fit1),data=GBSG2.test,exact=FALSE,times=c(1000),formula=Surv(time,cens)~1)
+        expect_equal(as.numeric(r1$Brier$score[model=="a"]),
+                     as.numeric(r2$Brier$score[model=="a" & times==1000]))
+        ## expect_equal(r1$AUC$score[model=="a"],r2$AUC$score[model=="a" & times==1000])
     }
 })
+
 # {{{ "Bootstrap cross validation
 test_that("Number of models and time points", {
-    if (requireNamespace("pec",quietly=TRUE)){
+    if (!requireNamespace("pec",quietly=TRUE)){
         message("Package pec not installed. Skip this test.")
     }else{
         library(pec)
@@ -175,11 +172,12 @@ test_that("Number of models and time points", {
         ## r1$Calibration$plotframe
         ## r2$Calibration$plotframe[times==1000&model=="a"]
         ## r3 <- pec(list(a=fit2,b=fit1),data=GBSG2.test,exact=FALSE,times=c(1000),formula=Surv(time,cens)~1)
-        expect_equal(r1$Brier$score[model=="a"],r2$Brier$score[model=="a" & times==1000])
+        expect_equal(as.numeric(r1$Brier$score[model=="a"]),as.numeric(r2$Brier$score[model=="a" & times==1000]))
         ## expect_equal(r1$AUC$score[model=="a"],r2$AUC$score[model=="a" & times==1000])
     }
 })
 # }}}
+
 # {{{ "LOOB: Number of models and time points"
 test_that("LOOB: Number of models and time points", {   
     library(testthat)

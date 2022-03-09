@@ -299,6 +299,7 @@ Score(markers,formula=Y~1,data=testdat,metrics=c("auc"))
 
 # cross-validation
 \dontrun{
+    set.seed(10)
     learndat=sampleData(400,outcome="binary")
     lr1a = glm(Y~X6,data=learndat,family=binomial)
     lr2a = glm(Y~X7+X8+X9,data=learndat,family=binomial)
@@ -412,6 +413,7 @@ library(survival)
 # Register all available cores for parallel operation
 plan(multiprocess, workers = availableCores())
 registerDoFuture()
+set.seed(10)
 trainSurv <- sampleData(400,outcome="survival")
 cox1 = coxph(Surv(time,event)~X1+X2+X7+X9,data=trainSurv,
              y=TRUE, x = TRUE)

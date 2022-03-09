@@ -9,7 +9,7 @@ using namespace arma;
 // Calculate influence function for survival case with Nelson-Aalen censoring.
 // Author: Johan Sebastian Ohlendorff
 // [[Rcpp::export]]
-NumericVector getInfluenceFunctionAUCSurvival(NumericVector time,
+NumericVector getInfluenceFunctionAUCSurvival(NumericVector time, 
                                               NumericVector status,
                                               double tau,
                                               NumericVector risk,

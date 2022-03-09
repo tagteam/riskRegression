@@ -5,6 +5,7 @@ library(testthat)
 
 
 test_that("loob survival",{
+    set.seed(10)
     learndat=sampleData(200,outcome="survival")
     cox1a = coxph(Surv(time,event)~X6,data=learndat,x=TRUE,y=TRUE)
     cox2a = coxph(Surv(time,event)~X7+X8+X9,data=learndat,x=TRUE,y=TRUE)
@@ -20,7 +21,8 @@ test_that("loob survival",{
 })
 
 if(FALSE){ ## [:failed test:]
-test_that("bootcv survival (multi.state.test)",{
+    test_that("bootcv survival (multi.state.test)",{
+        set.seed(10)
     learndat=sampleData(200,outcome="survival")
     learndat[,eventtime:=NULL]
     learndat[,censtime:=NULL]

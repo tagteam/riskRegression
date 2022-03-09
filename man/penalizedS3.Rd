@@ -29,7 +29,7 @@ S3-wrapper for S4 function penalized
 library(prodlim)
 \dontrun{
 ## too slow
-if (requireNamespace("penalized",quietly=TRUE)){
+if (require("penalized",quietly=TRUE)){
 library(penalized)
 set.seed(8)
 d <- sampleData(200,outcome="binary")

@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: sep  4 2017 (10:38) 
 ## Version: 
-## last-updated: okt  7 2021 (12:13) 
-##           By: Brice Ozenne
-##     Update #: 172
+## last-updated: Mar  9 2022 (15:49) 
+##           By: Thomas Alexander Gerds
+##     Update #: 173
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -1258,6 +1258,7 @@ test_that("After last event - fully stratified model",{
 ## * [predictCox] Previous Bug
 cat("[predictCox] Previous bug \n")
 ## ** Some coef are NA
+set.seed(10)
 dt <- sampleData(5e2, outcome = "survival")
 e.coxph <- coxph(Surv(time, event) ~ X1+ X6 , data = dt, y = TRUE, x = TRUE)
 e.coxph$coefficients[] <- as.numeric(NA)

@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Mar  6 2019 (18:22) 
 ## Version: 
-## Last-Updated: Dec  5 2020 (11:40) 
+## Last-Updated: Mar  9 2022 (15:49) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 8
+##     Update #: 10
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -26,9 +26,10 @@
 ##' @param ... passed to SuperLearner::SuperLearner
 ##' @examples
 ##' \dontrun{
-##' if(requireNamespace("SuperLearner",quietly=TRUE)){
+##' if(require("SuperLearner",quietly=TRUE)){
 ##' library(SuperLearner)
 ##' library(data.table)
+##' set.seed(10)
 ##' d = sampleData(338, outcome="binary")
 ##' spfit = SuperPredictor(Y~X1+X2+X3+X4+X5+X6+X7+X8+X9+X10,data=d)
 ##' predictRisk(spfit)
