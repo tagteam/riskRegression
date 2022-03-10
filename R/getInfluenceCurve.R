@@ -103,9 +103,16 @@ getInfluenceCurve.AUC.survival.Censored <- function(t,n,time,risk,Cases,Controls
     IF
 }
 
-getInfluenceCurve.AUC.Competing.Risks.Test <- function(t,n,time,status,risk,GTiminus,Gtau,MC, AUC){
+getInfluenceCurve.AUC.Competing.Risks.Test <- function(t,
+                                                       n,
+                                                       time,
+                                                       status,
+                                                       risk,
+                                                       GTiminus,
+                                                       Gtau,
+                                                       MC,
+                                                       AUC){
     IF <- rep(NA,n)
-    browser()
     #replicate MC values
     tau <- t
     CasesSurvival <- time <= t & status == 1

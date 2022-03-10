@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Jan 11 2022 (17:06) 
 ## Version: 
-## Last-Updated: Jan 11 2022 (17:23) 
+## Last-Updated: Mar  8 2022 (11:28) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 2
+##     Update #: 12
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -68,17 +68,14 @@ AUC.competing.risks <- function(DT,MC,se.fit,conservative,cens.model,keep.vcov=F
                                                ipcwCases=ipcwCases,
                                                MC=MC)
             }else{
-                getInfluenceCurve.AUC.competing.risks(t=times[1],
-                                                      n=N,
-                                                      time=time,
-                                                      risk=risk,
-                                                      ipcwControls1=ipcwControls1,
-                                                      ipcwControls2=ipcwControls2,
-                                                      ipcwCases=ipcwCases,
-                                                      Cases=Cases,
-                                                      Controls1=Controls1,
-                                                      Controls2=Controls2,
-                                                      MC=MC)
+                if (a){
+                    print("et")
+                    getInfluenceCurve.AUC.competing.risks(t=times[1],n=N,time=time,risk=risk,ipcwControls1=ipcwControls1,ipcwControls2=ipcwControls2,ipcwCases=ipcwCases,Cases=Cases,Controls1=Controls1,Controls2=Controls2,MC=MC)
+                }
+                else{
+                    print("to")
+                    getInfluenceCurve.AUC.Competing.Risks.Test(t=times[1],n=N,time=time,status=status*event,risk=risk,GTiminus=WTi,Gtau=Wt[1],MC=MC,AUC=score$AUC)
+                }
             }
         }, by=list(model,times)]
         se.score <- aucDT[,list(se=sd(IF.AUC)/sqrt(N)),by=list(model,times)]
