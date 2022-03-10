@@ -138,24 +138,22 @@ getInfluenceCurve.AUC.Competing.Risks.Test <- function(t,n,time,status,risk,GTim
     firsthit <- sindex(jump.times=time,eval.times=tau)
     for (i in 1:n){
         # First terms of IF_{num}_i and IF_{den}_i
+        nu2hati <- mean(1*(risk[i] < risk & CasesSurvival)/( GTiminus))
         if (CasesSurvival[i]){
             firstterm.num <- (nu1hat[i]) / (GTiminus[i]*Gtau)
             firstterm.den <- mu1hat / (GTiminus[i]*Gtau)
-            nu2hati <- 0
             mu12hati <- mean(1*(time <= t & status == 2)/( GTiminus)) * 1/GTiminus[i]
             nu12hati <- mean(1*(risk[i] > risk & time <= t & status == 2)/( GTiminus)) * 1/GTiminus[i]
         }
         else if (ControlsSurvival[i]){
             mu12hati <- 0
             nu12hati <- 0
-            nu2hati <- mean(1*(risk[i] < risk & CasesSurvival)/( GTiminus))
             firstterm.num <-  nu2hati * 1/Gtau
             firstterm.den <- mutauP / mu1hat
         }
         else {
             mu12hati <- 0
             nu12hati <- 0
-            nu2hati <- 0
             firstterm.num <-  0
             firstterm.den <- 0
         }
@@ -202,7 +200,7 @@ getInfluenceCurve.AUC.Competing.Risks.Test <- function(t,n,time,status,risk,GTim
         nu13hati <- counternu13hat2 / n^2
         mu11hati <-countermu11hat2 / n^2
         mu13hati <-countermu13hat2 / n^2
-        IF[i] <- ((firstterm.num+ICNAterms.num-2*nutauPsurvival+1*(time[i] <= tau & status[i] == 2)*mean(1*(risk[i] < risk & CasesSurvival)/( GTiminus))/GTiminus[i] + nu11hati+nu12hati+nu13hati)*mutauP- nutauP*(firstterm.den+ICNAterms.den-2*mutauPsurvival+1*(time[i] <= tau & status[i] == 2)*mean(1*(CasesSurvival)/( GTiminus))/GTiminus[i] + mu11hati+mu12hati+mu13hati ))/(mutauP^2)
+        IF[i] <- ((firstterm.num+ICNAterms.num-2*nutauPsurvival+1*(time[i] <= tau & status[i] == 2)*nu2hati/GTiminus[i] + nu11hati+nu12hati+nu13hati)*mutauP- nutauP*(firstterm.den+ICNAterms.den-2*mutauPsurvival+1*(time[i] <= tau & status[i] == 2)*mean(1*(CasesSurvival)/( GTiminus))/GTiminus[i] + mu11hati+mu12hati+mu13hati ))/(mutauP^2)
     }
     IF
 }
