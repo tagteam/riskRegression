@@ -18,7 +18,7 @@ NumericVector getInfluenceFunctionAUCSurvival(NumericVector time,
                                               double auc) {
 
   int n = time.size();
-  // find first index such that k such that tau[k] <= tau but tau[k+1] > tau
+  // find first index such that k such that time[k] <= tau but time[k+1] > tau
   auto lower = std::lower_bound(time.begin(), time.end(), tau);
   int firsthit = std::distance(time.begin(), lower)-1;
   // Calculate \hat{mu}_\tau(P),\hat{mu}_1, \hat{nu}_\tau(P) and \hat{nu}_1 (see formulas)
@@ -29,10 +29,13 @@ NumericVector getInfluenceFunctionAUCSurvival(NumericVector time,
       mutauP += 1.0/GTiminus[i];
     }
   }
+  double mu2hat2 = mutauP;
 
   double mu1hat = double ((n-(firsthit+1))) / n;
   mutauP = mu1hat / Gtau * (mutauP / n);
   double nutauP = auc*mutauP;
+  double nu3hati2 = nutauP * Gtau*n;
+
   NumericVector nu1hat(n);
 
   // copy values from risk[firsthit+1:(n-1)] and sort them
@@ -104,16 +107,18 @@ NumericVector getInfluenceFunctionAUCSurvival(NumericVector time,
 
   double nu3hati1 = 0;
   double mu2hat1 = 0;
-  double nu3hati2 = 0;
-  double mu2hat2 = 0;
-
-  for (int k = 1; k <= firsthit;k++){
-    if (status[k] == 1){
-      nu3hati2 += nu1hat[k] / GTiminus[k];
-      mu2hat2 += 1.0 / GTiminus[k];
-    }
-  }
   double nu3hati, mu2hat;
+  int tieIter = 0;
+  // can do while loops together
+  while ((time[tieIter] == time[0]) & (tieIter < n)) {
+    if ((time[tieIter] <= tau) & (status[tieIter]==1)){
+      nu3hati2 -= nu1hat[tieIter] / GTiminus[tieIter];
+      mu2hat2 -= 1.0 / GTiminus[tieIter];
+    }
+    tieIter++;
+  }
+  int upperTie = tieIter-1;
+
   for (int i=0;i<n;i++){
     double firstTermNum, firstTermDen;
     if (time[i] <= tau && status[i] == 1){
@@ -136,33 +141,24 @@ NumericVector getInfluenceFunctionAUCSurvival(NumericVector time,
       firstTermDen = 0;
     }
     double fihattau = (1-status[i])*n/atrisk[sindex[i]]- MC_term2[sindex[i]];
-
-    if (i==0){
-      nu3hati = nu3hati1;
-      mu2hat = mu2hat1;
-      nu3hati = 1.0 / n * nu3hati;
-      mu2hat = 1.0 / n * mu2hat;
-    }
-    else if (i==1){
-      nu3hati = nu3hati1+nu3hati2*fihattau;
-      mu2hat = mu2hat1+mu2hat2*fihattau;
-      nu3hati = 1.0 / n * nu3hati;
-      mu2hat = 1.0 / n * mu2hat;
-    }
-    if (i>1 && (i-1 <= firsthit)){
-      if (status[i-1] == 1){
-        nu3hati1 -= nu1hat[i-1] * (MC_term2[sindex[i-1]-1]) / GTiminus[i-1];
-        mu2hat1 -= (MC_term2[sindex[i-1]-1]) / GTiminus[i-1];
-        nu3hati2 -= nu1hat[i-1] / GTiminus[i-1];
-        mu2hat2 -= 1.0 / GTiminus[i-1];
+    nu3hati = 1.0 / n * (nu3hati1+fihattau*nu3hati2);
+    mu2hat = 1.0 / n * (mu2hat1+fihattau*mu2hat2);
+    if (upperTie <= i){
+      int tieIter = i+1;
+      while ((time[tieIter] == time[i+1]) & (tieIter < n)) {
+        if ((time[tieIter] <= tau) & (status[tieIter]==1)){
+          nu3hati1 -= nu1hat[tieIter] * (MC_term2[sindex[i]]) / GTiminus[tieIter];
+          mu2hat1 -= (MC_term2[sindex[i]]) / GTiminus[tieIter];
+          nu3hati2 -= nu1hat[tieIter] / GTiminus[tieIter];
+          mu2hat2 -= 1.0 / GTiminus[tieIter];
+        }
+        tieIter++;
       }
-      nu3hati = nu3hati1+nu3hati2*fihattau;
-      mu2hat = mu2hat1+mu2hat2*fihattau;
-      nu3hati = 1.0 / n * nu3hati;
-      mu2hat = 1.0 / n * mu2hat;
+      upperTie = tieIter-1;
     }
+
     double icnaTermsNum = fihattau * nutauP + (1.0/Gtau) * nu3hati;
-    double icnaTermsDen = fihattau * mutauP +mu1hat/Gtau * mu2hat;
+    double icnaTermsDen = fihattau * mutauP + mu1hat/Gtau * mu2hat;
     ic[i] = ((firstTermNum+icnaTermsNum)*mutauP- nutauP*(firstTermDen+icnaTermsDen))/(mutauP*mutauP);
   }
   return ic;
