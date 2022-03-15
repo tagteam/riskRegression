@@ -127,6 +127,10 @@ getInfluenceFunctionAUCSurvival <- function(time, status, tau, risk, GTiminus, G
     .Call(`_riskRegression_getInfluenceFunctionAUCSurvival`, time, status, tau, risk, GTiminus, Gtau, auc)
 }
 
+getInfluenceFunctionAUCCompetingRisk <- function(time, status, tau, risk, GTiminus, Gtau, auc) {
+    .Call(`_riskRegression_getInfluenceFunctionAUCCompetingRisk`, time, status, tau, risk, GTiminus, Gtau, auc)
+}
+
 calcE_cpp <- function(eventtime, status, eXb, X, p, add0) {
     .Call(`_riskRegression_calcE_cpp`, eventtime, status, eXb, X, p, add0)
 }

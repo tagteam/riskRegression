@@ -1,6 +1,4 @@
 // [[Rcpp::depends(RcppArmadillo)]]
-// [[Rcpp::plugins(openmp)]]
-#include <unistd.h>
 #include <RcppArmadillo.h>
 
 using namespace Rcpp;
