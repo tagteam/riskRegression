@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun  6 2016 (09:02) 
 ## Version: 
-## last-updated: Mar  9 2022 (15:49) 
-##           By: Thomas Alexander Gerds
-##     Update #: 423
+## last-updated: mar 21 2022 (10:11) 
+##           By: Brice Ozenne
+##     Update #: 425
 #----------------------------------------------------------------------
 ## 
 ### Commentary:
@@ -259,11 +259,18 @@ predictRisk.glm <- function(object, newdata, iid = FALSE, average.iid = FALSE,..
             object.score <- lava::score(wobject, times = "1", simplifies = FALSE, indiv = TRUE)
             object.info <- lava::information(wobject, times = "1", simplifies = FALSE)
             iid.beta <- object.score[["1"]] %*% solve(object.info[["1"]])
-            
+
             ff.rhs <- stats::delete.response(stats::terms(stats::formula(object)))
             newX <- model.matrix(ff.rhs, newdata)
             Xbeta <- predict(object, type = "link", newdata = newdata, se = FALSE)
-            
+
+            if(!identical(colnames(iid.beta),colnames(newX))){
+                warning("Mismatch between the column names of the design matrix and the iid. \n",
+                        "Difference: \"",paste(union(setdiff(colnames(iid.beta),colnames(newX)), setdiff(colnames(newX),colnames(iid.beta))),collapse = "\" \""),"\" \n",
+                        "Could be due to a factor variable with an empty level. \n")
+                newX <- newX[,colnames(iid.beta),drop=FALSE]
+            }
+
             ## ** chain rule
             if(average.iid){
                 attr(out,"average.iid") <- lapply(factor, function(iFactor){
