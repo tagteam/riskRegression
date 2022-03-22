@@ -184,7 +184,7 @@ getInfluenceCurve.AUC.Competing.Risks.Test <- function(t,
         nu13hati <- counternu13hat2 / n^2
         mu11hati <-mu3hat * mean(1*(status == 2 & time <= tau)*(fihat-1)/GTiminus)
         mu13hati <-mean(1*(CasesSurvival)*(fihat-1)/GTiminus) *mu4hat
-        IF[i] <- ((firstterm.num+(fihattau-2)*nutauPsurv + 1/Gtau * nu3hati + nu11hati+nu12hati+nu13hati)*mutauP- nutauP*(firstterm.den+1/Gtau * mu2hat + (fihattau0-2)*mu1hat*mu3hat / Gtau + mu11hati+mu12hati+mu13hati ))/(mutauP^2)
+        IF[i] <- ((firstterm.num+(fihattau-2)*nutauPsurv + 1/Gtau * nu3hati + nu11hati+nu13hati)*mutauP- nutauP*(firstterm.den+1/Gtau * mu2hat + (fihattau-2)*mu1hat*mu3hat / Gtau + mu11hati+mu13hati ))/(mutauP^2)
     }
     IF
 }
