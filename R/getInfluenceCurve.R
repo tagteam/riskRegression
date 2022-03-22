@@ -118,8 +118,10 @@ getInfluenceCurve.AUC.Competing.Risks.Test <- function(t,
     CasesSurvival <- time <= t & status == 1
     ControlsSurvival <- time > t
     mu1hat <- mean(time > tau)
-    mutauPsurvival <- (mu1hat / Gtau) * mean(1*(CasesSurvival)/( GTiminus))
-    mutauP <- mutauPsurvival + mean(1*(CasesSurvival)/( GTiminus))*mean(1*(time <= t & status == 2)/( GTiminus))
+    mu3hat <-  mean(1*(CasesSurvival)/( GTiminus))
+    mu4hat <-  mean(1*(time <= t & status == 2)/( GTiminus))
+    mutauPsurv <- (mu1hat / Gtau) *mu3hat
+    mutauP <- mutauPsurv + mu3hat*mu4hat
     nutauP <- AUC*mutauP
 
     nu1hat <- rep(NA,n)
@@ -127,40 +129,25 @@ getInfluenceCurve.AUC.Competing.Risks.Test <- function(t,
         nu1hat[i] <- mean(risk < risk[i] & time > tau)
     }
     # without using the AUC values, we can estimate nutauP as follows
-    nutauPsurvival <- 1/Gtau *  mean(1*(CasesSurvival) * nu1hat / GTiminus)
-    # counter <- 0
-    # for (i in 1:n){
-    #     if (time[i] <= t & status[i] ==1 ){
-    #         counter2 <- 0
-    #         for (j in 1:n){
-    #             if (time[j] <= t & status[j]==2 & risk[j] < risk[i]){
-    #                 counter2 <- counter2 + 1/GTiminus[j]
-    #             }
-    #         }
-    #         counter <- counter + 1/GTiminus[i] * counter2
-    #     }
-    # }
-    # nutauP1 <- nutauPsurvival + 1/n^2 * counter
-    # assertthat::are_equal(nutauP,nutauP1)
+    nutauPsurv <- 1/Gtau *  mean(1*(CasesSurvival) * nu1hat / GTiminus)
     firsthit <- sindex(jump.times=time,eval.times=tau)
     for (i in 1:n){
         # First terms of IF_{num}_i and IF_{den}_i
         nu2hati <- mean(1*(risk[i] < risk & CasesSurvival)/( GTiminus))
+        # take care of terms with indicator functions in front
         if (CasesSurvival[i]){
-            firstterm.num <- (nu1hat[i]) / (GTiminus[i]*Gtau)
-            firstterm.den <- mu1hat / (GTiminus[i]*Gtau)
-            mu12hati <- mean(1*(time <= t & status == 2)/( GTiminus)) * 1/GTiminus[i]
-            nu12hati <- mean(1*(risk[i] > risk & time <= t & status == 2)/( GTiminus)) * 1/GTiminus[i]
+            firstterm.num <- (nu1hat[i]) / (GTiminus[i]*Gtau) +  mean(1*(risk[i] > risk & time <= t & status == 2)/( GTiminus)) * 1/GTiminus[i]
+            firstterm.den <- mu1hat / (GTiminus[i]*Gtau) + mu4hat * 1/GTiminus[i]
         }
         else if (ControlsSurvival[i]){
-            mu12hati <- 0
-            nu12hati <- 0
             firstterm.num <-  nu2hati * 1/Gtau
             firstterm.den <- mutauP / mu1hat
         }
+        else if (time[i] <= tau & status[i] == 2){
+            firstterm.num <-  nu2hati * 1/GTiminus[i]
+            firstterm.den <- 1/GTiminus[i]*mu3hat
+        }
         else {
-            mu12hati <- 0
-            nu12hati <- 0
             firstterm.num <-  0
             firstterm.den <- 0
         }
@@ -179,35 +166,25 @@ getInfluenceCurve.AUC.Competing.Risks.Test <- function(t,
         }
         fihattau <- MC[j,i]
         nu3hati <- mean( (1*(CasesSurvival) * nu1hat*fihat) / GTiminus)
-        ICNAterms.num <- fihattau * nutauPsurvival + 1/Gtau * nu3hati
         mu2hat <- mean( (1*(CasesSurvival) *fihat) / GTiminus)
-        ICNAterms.den <-  fihattau * mutauPsurvival +mu1hat/Gtau * mu2hat
+        ICNAterms.den <-  fihattau * mutauPsurv+mu1hat/Gtau * mu2hat
         counternu11hat2 <- 0
         counternu13hat2 <- 0
-        countermu11hat2 <- 0
-        countermu13hat2 <- 0
         for (k in 1:n){
             counternu13hat <- 0
             counternu11hat <- 0
-            countermu13hat <- 0
-            countermu11hat <- 0
             for (j in 1:n){
-                #fihat[j]
                 counternu13hat <- counternu13hat + 1*(risk[k] > risk[j] & time[j] <= t & status[j] == 2 ) * 1/GTiminus[j]
                 counternu11hat <- counternu11hat + 1*(risk[k] > risk[j] & time[j] <= t & status[j] == 2 ) * (fihat[j]-1)/GTiminus[j]
-                countermu13hat <- countermu13hat + 1*(time[j] <= t & status[j] == 2 ) * 1/GTiminus[j]
-                countermu11hat <- countermu11hat + 1*(time[j] <= t & status[j] == 2 ) * (fihat[j]-1)/GTiminus[j]
             }
             counternu11hat2 <- counternu11hat2 + 1*(CasesSurvival[k])/GTiminus[k] * counternu11hat
             counternu13hat2 <- counternu13hat2 + 1*(CasesSurvival[k])/GTiminus[k] * (fihat[k]-1)* counternu13hat
-            countermu11hat2 <- countermu11hat2 + 1*(CasesSurvival[k])/GTiminus[k] * countermu11hat
-            countermu13hat2 <- countermu13hat2 + 1*(CasesSurvival[k])/GTiminus[k] * (fihat[k]-1)* countermu13hat
         }
         nu11hati <- counternu11hat2 / n^2
         nu13hati <- counternu13hat2 / n^2
-        mu11hati <-countermu11hat2 / n^2
-        mu13hati <-countermu13hat2 / n^2
-        IF[i] <- ((firstterm.num+ICNAterms.num-2*nutauPsurvival+1*(time[i] <= tau & status[i] == 2)*nu2hati/GTiminus[i] + nu11hati+nu12hati+nu13hati)*mutauP- nutauP*(firstterm.den+ICNAterms.den-2*mutauPsurvival+1*(time[i] <= tau & status[i] == 2)*mean(1*(CasesSurvival)/( GTiminus))/GTiminus[i] + mu11hati+mu12hati+mu13hati ))/(mutauP^2)
+        mu11hati <-mu3hat * mean(1*(status == 2 & time <= tau)*(fihat-1)/GTiminus)
+        mu13hati <-mean(1*(CasesSurvival)*(fihat-1)/GTiminus) *mu4hat
+        IF[i] <- ((firstterm.num+(fihattau-2)*nutauPsurv + 1/Gtau * nu3hati + nu11hati+nu12hati+nu13hati)*mutauP- nutauP*(firstterm.den+1/Gtau * mu2hat + (fihattau0-2)*mu1hat*mu3hat / Gtau + mu11hati+mu12hati+mu13hati ))/(mutauP^2)
     }
     IF
 }
@@ -433,6 +410,39 @@ getInfluenceCurve.Brier <- function(t,
         }
         IF.Brier
     }
+}
+
+getInfluenceCurve.Brier.New <- function(tau,time,risk,status,MC,GTiminus,Brier,cens.model) {
+    browser()
+    #unfinished
+    if (cens.model == "cox"){
+        n <- length(time)
+        IC <- rep(NA,n)
+        for (i in 1:n){
+            #fix
+            IC.C.term <- 0
+            IC[i] <- 1*(time[i] <= tau & status[i] == 1 )* (1-2*risk[i]) * 1/GTiminus[i] + IC.C.term + risk[i]^2 - Brier
+        }
+        IC
+    }
+    else {
+        # no covariates
+        n <- length(time)
+        IC <- rep(NA,n)
+        for (i in 1:n){
+            if (i == 1){
+                fihat <- c(0,rep(MC[i,i], n-1))
+            }
+            else {
+                fihat <- c(0,MC[1:(i-1),i], rep(MC[i,i], n-i))
+            }
+            IC.C.term <- mean( 1*(time <= tau & status == 1 )*(1-2*risk)*fihat / GTiminus )
+            # IC.C.term <- 0
+            IC[i] <- 1*(time[i] <= tau & status[i] == 1 )* (1-2*risk[i]) * 1/GTiminus[i] + IC.C.term + risk[i]^2 - Brier
+        }
+        IC
+    }
+
 }
 
 
