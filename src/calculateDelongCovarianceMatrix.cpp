@@ -47,8 +47,6 @@ vec calculateMidrank(vec& z){
 NumericMatrix calculateDelongCovarianceFast(NumericMatrix& Xs, NumericMatrix& Ys){
   int m = Xs.nrow();
   int n = Ys.nrow();
-
-  assert(Xs.ncol()==Ys.ncol());
   int k = Xs.ncol();
   mat V10(k,m);
   mat V01(k,n);
