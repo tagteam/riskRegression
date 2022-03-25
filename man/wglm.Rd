@@ -11,7 +11,8 @@ wglm(
   data,
   cause = NA,
   fitter = "coxph",
-  product.limit = FALSE
+  product.limit = FALSE,
+  ...
 )
 }
 \arguments{
@@ -44,9 +45,10 @@ and where the outcome is the indicator of having experience the event of interes
 }
 \examples{
 library(survival)
-
-set.seed(10)
 n <- 250
+
+## > time to event data
+set.seed(10)
 tau <- 1:5
 d <- sampleData(n, outcome = "competing.risks")
 dFull <- d[event!=0] ## remove censoring
@@ -78,4 +80,25 @@ eCR.wglm <- wglm(regressor.event = ~ X1,
                  times = tau, data = d, cause = 1, product.limit = TRUE)
 eCR.wglm
 
+## > binary data
+set.seed(11)
+X1 <- rbinom(n, prob = 0.5, size = 1) ## confounder (gene A)
+E <- rbinom(n, prob = 0.5, size = 1) ## exposure
+Y <- rbinom(n, prob = 1/(1+exp(-2*X1)), size = 1) ## outcome (those with gene A are likely to die)
+C <- rbinom(n, prob = 1/(1+exp(-2*E+2*X1)), size = 1) ## censoring (those with gene A are less likely to leave the study)
+df <- data.frame(E=E,X1=X1,Y=Y)
+df$Y.obs <- df$Y
+df$Y.obs[which(C==1)] <- NA
+df$time <- 1+!is.na(df$Y.obs)
+df$event <- 0
+df$event[!is.na(df$Y.obs)] <- (1-df$Y.obs[!is.na(df$Y.obs)])+1
+
+e.oracle <- glm(Y~E+X1, data = df[1:sum(C),],family = binomial) ## random sample
+e.cc <- glm(Y.obs~E, data = df[which(C==0),],family = binomial) ## WRONG
+e.wglm <- wglm(event~E, Surv(NA,event==0) ~ E*X1, times = NA,
+               data = df, cause = 1, fitter = "glm")
+## same estimate slitly different standard error
+e2.wglm <- wglm(event~E, Surv(time,event==0) ~ strata(E)+strata(X1),
+                times = 2, data = df, cause = 1,
+                product.limit = TRUE, ties = "breslow") 
 }
