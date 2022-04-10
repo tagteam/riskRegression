@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Dec  6 2020 (09:25) 
 ## Version: 
-## Last-Updated: Mar  9 2022 (08:27) 
+## Last-Updated: Mar 23 2022 (06:22) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 7
+##     Update #: 8
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -15,6 +15,7 @@
 ## 
 ### Code:
 library(testthat)
+library(prodlim)
 library(survival)
 library(rms)
 library(riskRegression)

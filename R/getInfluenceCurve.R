@@ -208,7 +208,6 @@ getInfluenceCurve.AUC.competing.risks <- function(t,n,time,risk,Cases,Controls1,
     MC.t <- MC[prodlim::sindex(eval.times=t,jump.times=unique(time)),,drop=TRUE]
     ## MC.t <- rbind(0,MC)[1+prodlim::sindex(eval.times=t,jump.times=unique(time),strict=1),,drop=TRUE]
     # we compute \frac{1}{n}\sum{i=1}^n \sum{j=1}^n \sum{l=1}^n \Psi{ijkl}(t)
-    #browser()
     #T1 <- rowSumsCrossprod(htij1,1+MC.Ti.cases,0)
     T1 <- rowSumsCrossprodSpec(htij1,MC.Ti.cases)
     ## T1 <- colSums(crossprod(htij1,1+MC.Ti.cases))

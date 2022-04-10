@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jan  4 2016 (14:30) 
 ## Version: 
-## last-updated: Mar  4 2022 (18:39) 
+## last-updated: Apr 10 2022 (07:54) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 168
+##     Update #: 169
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -20,6 +20,13 @@ library(rms)
 library(riskRegression)
 library(data.table)
 context("riskRegression")
+
+# {{{ Missing values
+test_that("Missing values in data", {
+    d <- data.frame(time=c(1,2,3,NA,5,6),event=c(1,NA,1,0,NA,0),X=c(1,3,1,NA,9,-8))
+    expect_error(Score(list(d$X),data=d,times=3,formula=Hist(time,event)~1,metrics="auc"))
+}
+# }}}
 # {{{ "R squared/IPA"
 test_that("R squared/IPA", { 
     set.seed(112)

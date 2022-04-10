@@ -442,7 +442,7 @@ Score.list <- function(object,
                        ...){
 
     se.conservative=IPCW=IF.AUC.conservative=IF.AUC0=IF.AUC=IC0=Brier=AUC=casecontrol=se=nth.times=time=status=ID=WTi=risk=IF.Brier=lower=upper=crossval=b=time=status=model=reference=p=model=pseudovalue=ReSpOnSe=residuals=event=j=NULL
-
+    
     # }}}
     theCall <- match.call()
     # {{{ decide about metrics and plots
@@ -518,6 +518,9 @@ Score.list <- function(object,
                             data=data,
                             cause=cause,
                             vars=responsevars)
+    if (any(is.na(response))) stop("Missing values in response.
+Delete missing values *before* calling `Score', if this is reasonable,
+c.f., Chapter 7, Section 5 in Gerds & Kattan 2021. Medical risk prediction models. ")
     response.dim <- NCOL(response)
     response.type <- attr(response,"model")
     if (response.type %in% c("survival","competing.risks")){
@@ -800,8 +803,7 @@ Score.list <- function(object,
         NT <- 1
     }
     # }}}
-# {{{ Dealing with censored data outside the loop
-
+    # {{{ Dealing with censored data outside the loop
     if (response.type %in% c("survival","competing.risks")){
         if (cens.type=="rightCensored"){
             if (se.fit[1]>0L && ("AUC" %in% metrics) && (conservative[1]==TRUE)) {
@@ -815,21 +817,21 @@ Score.list <- function(object,
                 }
             }
             ## if (split.method$name=="none" && response.type == "survival" && ("AUC" %in% metrics) && (cens.model[[1]]=="KaplanMeier")){
-              ## Weights <- getCensoringWeights(formula=formula,
-                                             ## data=data,
-                                             ## times=times,
-                                             ## cens.model=cens.model,
-                                             ## response.type=response.type,
-                                             ## influence.curve=FALSE)
+            ## Weights <- getCensoringWeights(formula=formula,
+            ## data=data,
+            ## times=times,
+            ## cens.model=cens.model,
+            ## response.type=response.type,
+            ## influence.curve=FALSE)
             ## }
             ## else {
-              Weights <- getCensoringWeights(formula=formula,
-                                             data=data,
-                                             times=times,
-                                             cens.model=cens.model,
-                                             response.type=response.type,
-                                             ## FIXME: need conservative formula for AUC
-                                             influence.curve=(se.fit[[1]]==TRUE && (conservative[[1]]==0L || ("AUC" %in% metrics))))
+            Weights <- getCensoringWeights(formula=formula,
+                                           data=data,
+                                           times=times,
+                                           cens.model=cens.model,
+                                           response.type=response.type,
+                                           ## FIXME: need conservative formula for AUC
+                                           influence.curve=(se.fit[[1]]==TRUE && (conservative[[1]]==0L || ("AUC" %in% metrics))))
 
             ## }
             ## --------------------------
@@ -1437,8 +1439,6 @@ Score.list <- function(object,
                                 # that is a multiple of the
                                 #amount of observations in the data, does not fulfill this.
                                 #the calculations in getInfluenceCurve.Brier cannot accomodate this (for now).
-
-
                                 DT.B[,IF.Brier:=getInfluenceCurve.Brier(t=times[1],
                                                                           time=time,
                                                                           IC0,
