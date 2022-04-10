@@ -9,7 +9,7 @@ vec calculateMidrank(vec& z){
   int m = z.size();
   vec wtemp = sort(z);
   uvec index = sort_index(z);
-  vec w(z.size()+1);
+  vec w(m+1);
   for (int i = 0; i <m;i++ ){
     w[i]=wtemp[i];
   }
@@ -47,20 +47,21 @@ vec calculateMidrank(vec& z){
 NumericMatrix calculateDelongCovarianceFast(NumericMatrix& Xs, NumericMatrix& Ys){
   int m = Xs.nrow();
   int n = Ys.nrow();
+  if (Xs.ncol()!=Ys.ncol()){
+    stop("Incompatible matrix dimensions.");
+  }
   int k = Xs.ncol();
   mat V10(k,m);
   mat V01(k,n);
   //can be used for more efficient computation of cov. matrix, but that code isn't working
-  //vec theta(k,fill::zeros);
   for (int r = 0; r < k; r++){
     // Make them into armadillo vectors; might be an inefficient and superfluous operation
     // strangely enough we cannot write Xr = as<vec>(Xs(_,r))
+    // for now it seems to work well enough
     NumericVector Xx = Xs(_,r);
     NumericVector Yy = Ys(_,r);
     vec Xr = as<vec>(Xx);
     vec Yr = as<vec>(Yy);
-    // help debugging:
-    //Rcout << "Xr: " << Xr << "\n\n\n";
 
     // concatenate
     vec Zr = join_cols(Xr,Yr);
@@ -70,31 +71,12 @@ NumericMatrix calculateDelongCovarianceFast(NumericMatrix& Xs, NumericMatrix& Ys
     vec TYr = calculateMidrank(Yr);
     for (int i = 0; i < m; i++){
       V10(r,i)=(TZr[i]-TXr[i])/((double) n);
-      //theta[r]+=TZr[i];
     }
-    //theta[r]=theta[r]/(double (m*n))-(double) (m+1)/(2*n);
     for (int j = 0; j < n; j++){
       V01(r,j)=1.0-(TZr[j+m]-TYr[j])/((double) m);
     }
   }
   mat S(k,k);
-  // revert to old method as the new method makes a small numerical error
-  /*double s10, s01;
-  for (int r = 0; r < k; r++){
-    for (int s = r; s < k; s++){
-      s10 = 0.0;
-      s01 = 0.0;
-      for (int i = 0; i < m ; i++){
-        s10 += (V10(r,i)-theta[r])*(V10(s,i)-theta[s]);
-      }
-      for (int j = 0; j < n; j++){
-        s01 += (V01(r,j)-theta[r])*(V01(s,j)-theta[s]);
-      }
-      S(r,s)=s10/((double) n*(m-1))+ s01/((double) m*(n-1));
-      S(s,r)=S(r,s);
-    }
-  }*/
-  // old method
   mat s10 = arma::cov(V10.t());
   mat s01 = arma::cov(V01.t());
   S = s01/((double) n)+s10/((double) m);
