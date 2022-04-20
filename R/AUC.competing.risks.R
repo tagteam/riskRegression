@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Jan 11 2022 (17:06) 
 ## Version: 
-## Last-Updated: Mar  8 2022 (11:28) 
+## Last-Updated: Apr 20 2022 (13:46) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 12
+##     Update #: 18
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -68,14 +68,18 @@ AUC.competing.risks <- function(DT,MC,se.fit,conservative,cens.model,keep.vcov=F
                                                ipcwCases=ipcwCases,
                                                MC=MC)
             }else{
-                if (a){
-                    print("et")
-                    getInfluenceCurve.AUC.competing.risks(t=times[1],n=N,time=time,risk=risk,ipcwControls1=ipcwControls1,ipcwControls2=ipcwControls2,ipcwCases=ipcwCases,Cases=Cases,Controls1=Controls1,Controls2=Controls2,MC=MC)
-                }
-                else{
-                    print("to")
-                    getInfluenceCurve.AUC.Competing.Risks.Test(t=times[1],n=N,time=time,status=status*event,risk=risk,GTiminus=WTi,Gtau=Wt[1],MC=MC,AUC=score$AUC)
-                }
+                paul = list(t=times[1],n=N,time=time,risk=risk,ipcwControls1=ipcwControls1,ipcwControls2=ipcwControls2,ipcwCases=ipcwCases,Cases=Cases,Controls1=Controls1,Controls2=Controls2,MC=MC)
+                saveRDS(paul,file = "~/tmp/args-paul.rds")
+                johan = list(t=times[1],n=N,time=time,status=status*event,risk=risk,GTiminus=WTi,Gtau=Wt[1],MC=MC,AUC=score$AUC)
+                saveRDS(johan,file = "~/tmp/args-johan.rds")
+                ## if (a){
+                    ## print("et")
+                getInfluenceCurve.AUC.competing.risks(t=times[1],n=N,time=time,risk=risk,ipcwControls1=ipcwControls1,ipcwControls2=ipcwControls2,ipcwCases=ipcwCases,Cases=Cases,Controls1=Controls1,Controls2=Controls2,MC=MC)
+                ## }
+                ## else{
+                    ## print("to")
+                    ## getInfluenceCurve.AUC.Competing.Risks.Test(t=times[1],n=N,time=time,status=status*event,risk=risk,GTiminus=WTi,Gtau=Wt[1],MC=MC,AUC=score$AUC)
+                ## }
             }
         }, by=list(model,times)]
         se.score <- aucDT[,list(se=sd(IF.AUC)/sqrt(N)),by=list(model,times)]
