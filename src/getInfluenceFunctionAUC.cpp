@@ -162,20 +162,18 @@ NumericVector getInfluenceFunctionAUCSurvival(NumericVector time,
   return ic;
 }
 
-// Calculate influence function for competing risk case with Nelson-Aalen censoring.
+// Calculate influence function for competing risk case/survival case with Nelson-Aalen censoring.
 // Author: Johan Sebastian Ohlendorff
 // [[Rcpp::export]]
-NumericVector getInfluenceFunctionAUCCompetingRisk(NumericVector time,
-                                                   NumericVector status,
-                                                   double tau,
-                                                   NumericVector risk,
-                                                   NumericVector GTiminus,
-                                                   double Gtau,
-                                                   double auc,
-                                                   NumericVector statusCensoring,
-                                                   bool conservative) {
-
-
+NumericVector getInfluenceFunctionAUC(NumericVector time,
+                                      NumericVector status,
+                                      double tau,
+                                      NumericVector risk,
+                                      NumericVector GTiminus,
+                                      double Gtau,
+                                      double auc,
+                                      bool conservative,
+                                      bool survival) {
   // Thomas code from IC of Nelson-Aalen estimator
   //initialize first time point t=0 with data of subject i=0
   int n = time.size();
@@ -192,13 +190,13 @@ NumericVector getInfluenceFunctionAUCCompetingRisk(NumericVector time,
 
   if (!conservative){
     atrisk[0]=Y;
-    Cens[0]=(1-statusCensoring[0]);
+    Cens[0]=(1-(status[0] != 0));
     hazardC[0]=Cens[0]/Y;
     MC_term2[0]+=hazardC[0];
     //loop through time points until last subject i=(n-1)
     for (int i=1;i<=n;i++) {
       if (i<n && time[i]==time[i-1]){// these are tied values
-        Cens[t] +=(1-statusCensoring[i]);
+        Cens[t] +=(1-(status[i] != 0));
         Y-=1;
         sindex[i]=t;    // index pointer from subject i to unique time point t
       }else{
@@ -211,7 +209,7 @@ NumericVector getInfluenceFunctionAUCCompetingRisk(NumericVector time,
           sindex[i]=t;    // index pointer from subject i to unique time point t
           Y-=1;
           atrisk[t]=Y;
-          Cens[t]=(1-statusCensoring[i]);
+          Cens[t]=(1-(status[i] != 0));
         }
       }
     }
@@ -336,7 +334,7 @@ NumericVector getInfluenceFunctionAUCCompetingRisk(NumericVector time,
         fihattau = - MC_term2[sindex[j]];
       }
       else {
-        fihattau =  (1-statusCensoring[i])*n/atrisk[sindex[i]]- MC_term2[sindex[i]];
+        fihattau =  (1-(status[i] != 0))*n/atrisk[sindex[i]]- MC_term2[sindex[i]];
       }
       // fast calculation of eq10 and eq17
       eq10part = 1.0 / n * (eq10part1+fihattau*eq10part2);
@@ -364,44 +362,52 @@ NumericVector getInfluenceFunctionAUCCompetingRisk(NumericVector time,
       double eq12part = 0;
       double eq14part = 0;
       // one should be able to do this more efficiently
-      for (int k = 0; k <= firsthit; k++){
-        if ((time[k] <= tau) && (status[k] ==1)){
-          double temp1 = 0;
-          double temp2 = 0;
-          for (int j = 0; j <= firsthit; j++){
-            if ((risk[k] > risk[j]) && (status[j] == 2)){
-              double fval = 0;
-              if (sindex[j] == 0){
-                fval = 0;
+      if (!survival){
+        for (int k = 0; k <= firsthit; k++){
+          if ((time[k] <= tau) && (status[k] ==1)){
+            double temp1 = 0;
+            double temp2 = 0;
+            for (int j = 0; j <= firsthit; j++){
+              if ((risk[k] > risk[j]) && (status[j] == 2)){
+                double fval = 0;
+                if (sindex[j] == 0){
+                  fval = 0;
+                }
+                if (utime[sindex[j]] <= time[i]){
+                  fval = - MC_term2[sindex[j]];
+                }
+                else {
+                  fval = (1-(status[i] != 0))*n/atrisk[sindex[i]]- MC_term2[sindex[i]];
+                }
+                temp1 += (fval-1.0)/GTiminus[j];
+                temp2 += 1.0/GTiminus[j];
               }
-              if (utime[sindex[j]] <= time[i]){
-                fval = - MC_term2[sindex[j]];
-              }
-              else {
-                fval = (1-statusCensoring[i])*n/atrisk[sindex[i]]- MC_term2[sindex[i]];
-              }
-              temp1 += (fval-1.0)/GTiminus[j];
-              temp2 += 1.0/GTiminus[j];
             }
+            eq12part += 1.0/GTiminus[k] * temp1;
+            double fval = 0;
+            if (sindex[k] == 0){
+              fval = 0;
+            }
+            if (utime[sindex[k]] <= time[i]){
+              fval = - MC_term2[sindex[k]];
+            }
+            else {
+              fval = (1-(status[i] != 0))*n/atrisk[sindex[i]]- MC_term2[sindex[i]];
+            }
+            eq14part += (fval-1.0)/GTiminus[k] * temp2;
           }
-          eq12part += 1.0/GTiminus[k] * temp1;
-          double fval = 0;
-          if (sindex[k] == 0){
-            fval = 0;
-          }
-          if (utime[sindex[k]] <= time[i]){
-            fval = - MC_term2[sindex[k]];
-          }
-          else {
-            fval = (1-statusCensoring[i])*n/atrisk[sindex[i]]- MC_term2[sindex[i]];
-          }
-          eq14part += (fval-1.0)/GTiminus[k] * temp2;
         }
+        eq12 = 1.0 / (double (n*n)) * eq12part;
+        eq14 = 1.0 / (double (n*n)) * eq14part;
+        eq19 = F1tau * (eq19part - F2tau);
+        eq21 = F2tau * (eq17part - F1tau);
       }
-      eq12 = 1.0 / (double (n*n)) * eq12part;
-      eq14 = 1.0 / (double (n*n)) * eq14part;
-      eq19 = F1tau * (eq19part - F2tau);
-      eq21 = F2tau * (eq17part - F1tau);
+      else {
+        eq12 = 0;
+        eq14 = 0;
+        eq19 = 0;
+        eq21 = 0;
+      }
     }
     else {
       fihattau = 0;

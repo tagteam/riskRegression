@@ -71,7 +71,7 @@ AUC.competing.risks <- function(DT,MC,se.fit,conservative,cens.model,keep.vcov=F
             }else{
                 # getInfluenceCurve.AUC.competing.risks(t=times[1],n=N,time=time,risk=risk,ipcwControls1=ipcwControls1,ipcwControls2=ipcwControls2,ipcwCases=ipcwCases,Cases=Cases,Controls1=Controls1,Controls2=Controls2,MC=MC)
                 # thomas.fast(t=times[1],n=N,time=time,status=status*event,risk=risk,GTiminus=WTi,Gtau=Wt[1],MC=MC,AUC=score$AUC)
-                getInfluenceFunctionAUCCompetingRisk(time,status*event,times[1],risk,WTi,Wt[1],score$AUC,status,FALSE)
+                getInfluenceFunctionAUC(time,status*event,times[1],risk,WTi,Wt[1],score$AUC,FALSE,FALSE)
             }
         }, by=list(model,times)]
         se.score <- aucDT[,list(se=sd(IF.AUC)/sqrt(N)),by=list(model,times)]
