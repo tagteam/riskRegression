@@ -53,24 +53,14 @@ AUC.competing.risks <- function(DT,MC,se.fit,conservative,cens.model,keep.vcov=F
     score <- aucDT[nodups,list(AUC=AireTrap(FPR,TPR)),by=list(model,times)]
     data.table::setkey(score,model,times)
     if (se.fit[[1]]==1L || multi.split.test[[1]]==TRUE){
-        # browser()
         ## compute influence function
         ## data.table::setorder(aucDT,model,times,time,-status)
         data.table::setorder(aucDT,model,times,ID)
         aucDT[,IF.AUC:={
             if (sum(Controls2)==0){
-                getInfluenceCurve.AUC.survival(t=times[1],
-                                               n=N,
-                                               time=time,
-                                               risk=risk,
-                                               Cases=Cases,
-                                               Controls=Controls1,
-                                               ipcwControls=ipcwControls1,
-                                               ipcwCases=ipcwCases,
-                                               MC=MC)
-            }else{
-                # getInfluenceCurve.AUC.competing.risks(t=times[1],n=N,time=time,risk=risk,ipcwControls1=ipcwControls1,ipcwControls2=ipcwControls2,ipcwCases=ipcwCases,Cases=Cases,Controls1=Controls1,Controls2=Controls2,MC=MC)
-                # thomas.fast(t=times[1],n=N,time=time,status=status*event,risk=risk,GTiminus=WTi,Gtau=Wt[1],MC=MC,AUC=score$AUC)
+                getInfluenceFunctionAUC(time,status*event,times[1],risk,WTi,Wt[1],score$AUC,FALSE,TRUE)
+            }
+            else {
                 getInfluenceFunctionAUC(time,status*event,times[1],risk,WTi,Wt[1],score$AUC,FALSE,FALSE)
             }
         }, by=list(model,times)]
