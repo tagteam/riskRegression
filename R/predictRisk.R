@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun  6 2016 (09:02) 
 ## Version: 
-## last-updated: Feb 28 2022 (17:22) 
+## last-updated: Apr 28 2022 (11:07) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 419
+##     Update #: 423
 #----------------------------------------------------------------------
 ## 
 ### Commentary:
@@ -885,10 +885,10 @@ predictRisk.ranger <- function(object, newdata, times, cause, ...){
     newdata <- subset(newdata,select=xvars)
     if (missing(times)||is.null(times)){
         if (object$treetype=="Classification") {
-          pred <- stats::predict(object,data=newdata,predict.all=TRUE,...)$predictions
-          p <- rowMeans(pred == 2)
+            pred <- stats::predict(object,data=newdata,predict.all=TRUE,...)$predictions
+            p <- rowMeans(pred == 2)
         } else {
-          p <- stats::predict(object,data=newdata,importance="none",...)$predictions[,2,drop=TRUE]
+            p <- stats::predict(object,data=newdata,importance="none",...)$predictions[,2,drop=TRUE]
         }
         if (length(p) != NROW(newdata))
             stop(paste("\nPrediction vector has wrong length:\nRequested length of newdata: ",NROW(newdata)," \nProvided prediction vector: ",length(p),"\n\n",sep=""))
@@ -897,7 +897,10 @@ predictRisk.ranger <- function(object, newdata, times, cause, ...){
         if (object$treetype=="Survival") {
             ptemp <- 1-stats::predict(object,data=newdata,...)$survival
             pos <- prodlim::sindex(jump.times=ranger::timepoints(object),eval.times=times)
-            p <- cbind(1,ptemp)[,pos+1,drop=FALSE]
+            if (NROW(newdata) == 1)
+                p <- matrix(c(1,ptemp),nrow = 1)[,pos+1,drop=FALSE]
+            else
+                p <- cbind(1,ptemp)[,pos+1,drop=FALSE]
             if (NROW(p) != NROW(newdata) || NCOL(p) != length(times))
                 stop(paste("\nPrediction matrix has wrong dimensions:\nRequested newdata x times: ",NROW(newdata)," x ",length(times),"\nProvided prediction matrix: ",NROW(p)," x ",NCOL(p),"\n\n",sep=""))
             p
