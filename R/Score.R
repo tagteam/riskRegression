@@ -817,7 +817,7 @@ Score.list <- function(object,
                     cens.model <- "KaplanMeier"
                 }
             }
-            if (response.type == "survival" && ("AUC" %in% metrics) && (cens.model[[1]]=="KaplanMeier") && split.method$internal.name %in% c("noplan",".632+")){
+            if ((response.type == "survival" || response.type == "competing.risks") && ("AUC" %in% metrics) && (cens.model[[1]]=="KaplanMeier") && split.method$internal.name %in% c("noplan",".632+")){
               Weights <- getCensoringWeights(formula=formula,
                                              data=data,
                                              times=times,

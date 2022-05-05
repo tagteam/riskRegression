@@ -52,16 +52,18 @@ AUC.competing.risks <- function(DT,MC,se.fit,conservative,cens.model,keep.vcov=F
     }
     score <- aucDT[nodups,list(AUC=AireTrap(FPR,TPR)),by=list(model,times)]
     data.table::setkey(score,model,times)
+    aucDT <- merge(score,aucDT,all=TRUE)
     if (se.fit[[1]]==1L || multi.split.test[[1]]==TRUE){
         ## compute influence function
         ## data.table::setorder(aucDT,model,times,time,-status)
         data.table::setorder(aucDT,model,times,ID)
         aucDT[,IF.AUC:={
             if (sum(Controls2)==0){
-                getInfluenceFunctionAUC(time,status*event,times[1],risk,WTi,Wt[1],score$AUC,FALSE,TRUE)
+                getInfluenceFunctionAUC(time,status*event,times[1],risk,WTi,Wt[1],AUC[1],FALSE,TRUE)
             }
             else {
-                getInfluenceFunctionAUC(time,status*event,times[1],risk,WTi,Wt[1],score$AUC,FALSE,FALSE)
+                # getInfluenceFunctionAUCConservative(time,status*event,times[1],risk,WTi,Wt[1],score$AUC,FALSE)
+                getInfluenceFunctionAUC(time,status*event,times[1],risk,WTi,Wt[1],AUC[1],FALSE,FALSE)
             }
         }, by=list(model,times)]
         se.score <- aucDT[,list(se=sd(IF.AUC)/sqrt(N)),by=list(model,times)]
