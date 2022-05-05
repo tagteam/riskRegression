@@ -123,12 +123,8 @@ sampleMaxProcess_cpp <- function(nSample, nContrast, nSim, value, iid, alternati
     .Call(`_riskRegression_sampleMaxProcess_cpp`, nSample, nContrast, nSim, value, iid, alternative, type, global)
 }
 
-getInfluenceFunctionAUCSurvival <- function(time, status, tau, risk, GTiminus, Gtau, auc) {
-    .Call(`_riskRegression_getInfluenceFunctionAUCSurvival`, time, status, tau, risk, GTiminus, Gtau, auc)
-}
-
-getInfluenceFunctionAUCCompetingRisk <- function(time, status, tau, risk, GTiminus, Gtau, auc) {
-    .Call(`_riskRegression_getInfluenceFunctionAUCCompetingRisk`, time, status, tau, risk, GTiminus, Gtau, auc)
+getInfluenceFunctionAUC <- function(time, status, tau, risk, GTiminus, Gtau, auc, conservative, survival) {
+    .Call(`_riskRegression_getInfluenceFunctionAUC`, time, status, tau, risk, GTiminus, Gtau, auc, conservative, survival)
 }
 
 calcE_cpp <- function(eventtime, status, eXb, X, p, add0) {
