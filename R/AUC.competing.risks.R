@@ -1,18 +1,18 @@
-### AUC.competing.risks.R --- 
+### AUC.competing.risks.R ---
 #----------------------------------------------------------------------
 ## Author: Thomas Alexander Gerds
-## Created: Jan 11 2022 (17:06) 
-## Version: 
-## Last-Updated: Apr 20 2022 (13:46) 
+## Created: Jan 11 2022 (17:06)
+## Version:
+## Last-Updated: Apr 20 2022 (13:46)
 ##           By: Thomas Alexander Gerds
 ##     Update #: 18
 #----------------------------------------------------------------------
-## 
-### Commentary: 
-## 
+##
+### Commentary:
+##
 ### Change Log:
 #----------------------------------------------------------------------
-## 
+##
 ### Code:
 
 AUC.competing.risks <- function(DT,MC,se.fit,conservative,cens.model,keep.vcov=FALSE,multi.split.test,alpha,N,NT,NF,dolist,cause,states,ROC,...){
@@ -58,28 +58,10 @@ AUC.competing.risks <- function(DT,MC,se.fit,conservative,cens.model,keep.vcov=F
         data.table::setorder(aucDT,model,times,ID)
         aucDT[,IF.AUC:={
             if (sum(Controls2)==0){
-                getInfluenceCurve.AUC.survival(t=times[1],
-                                               n=N,
-                                               time=time,
-                                               risk=risk,
-                                               Cases=Cases,
-                                               Controls=Controls1,
-                                               ipcwControls=ipcwControls1,
-                                               ipcwCases=ipcwCases,
-                                               MC=MC)
-            }else{
-                paul = list(t=times[1],n=N,time=time,risk=risk,ipcwControls1=ipcwControls1,ipcwControls2=ipcwControls2,ipcwCases=ipcwCases,Cases=Cases,Controls1=Controls1,Controls2=Controls2,MC=MC)
-                saveRDS(paul,file = "~/tmp/args-paul.rds")
-                johan = list(t=times[1],n=N,time=time,status=status*event,risk=risk,GTiminus=WTi,Gtau=Wt[1],MC=MC,AUC=score$AUC)
-                saveRDS(johan,file = "~/tmp/args-johan.rds")
-                ## if (a){
-                    ## print("et")
-                getInfluenceCurve.AUC.competing.risks(t=times[1],n=N,time=time,risk=risk,ipcwControls1=ipcwControls1,ipcwControls2=ipcwControls2,ipcwCases=ipcwCases,Cases=Cases,Controls1=Controls1,Controls2=Controls2,MC=MC)
-                ## }
-                ## else{
-                    ## print("to")
-                    ## getInfluenceCurve.AUC.Competing.Risks.Test(t=times[1],n=N,time=time,status=status*event,risk=risk,GTiminus=WTi,Gtau=Wt[1],MC=MC,AUC=score$AUC)
-                ## }
+                getInfluenceFunctionAUC(time,status*event,times[1],risk,WTi,Wt[1],score$AUC,FALSE,TRUE)
+            }
+            else {
+                getInfluenceFunctionAUC(time,status*event,times[1],risk,WTi,Wt[1],score$AUC,FALSE,FALSE)
             }
         }, by=list(model,times)]
         se.score <- aucDT[,list(se=sd(IF.AUC)/sqrt(N)),by=list(model,times)]

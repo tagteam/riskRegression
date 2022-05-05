@@ -86,6 +86,7 @@ getInfluenceCurve.AUC.survival.Censored <- function(t,n,time,risk,Cases,Controls
                 fihat <- c(0,rep(MC[i,i], n-1))
             }
             else {
+                browser()
                 fihat <- c(0,MC[1:(i-1),i], rep(MC[i,i], n-i))
             }
             fihattau <- MC[j,i]
@@ -184,6 +185,22 @@ getInfluenceCurve.AUC.Competing.Risks.Test <- function(t,
         nu13hati <- counternu13hat2 / n^2
         mu11hati <-mu3hat * mean(1*(status == 2 & time <= tau)*(fihat-1)/GTiminus)
         mu13hati <-mean(1*(CasesSurvival)*(fihat-1)/GTiminus) *mu4hat
+        if (i==5){
+            print("IFnu: ")
+            print(firstterm.num+(fihattau-2)*nutauPsurv + 1/Gtau * nu3hati + nu11hati+nu13hati)
+            print("IFmu: ")
+            print(firstterm.den+1/Gtau * mu2hat + (fihattau-2)*mu1hat*mu3hat / Gtau + mu11hati+mu13hati)
+            print("mutau ")
+            print(mutauP)
+            print("nutau ")
+            print(nutauP)
+            print("AUC")
+            print(nutauP/mutauP)
+            print("fihat")
+            print(fihat)
+            print("fihattau")
+            print(fihattau)
+        }
         IF[i] <- ((firstterm.num+(fihattau-2)*nutauPsurv + 1/Gtau * nu3hati + nu11hati+nu13hati)*mutauP- nutauP*(firstterm.den+1/Gtau * mu2hat + (fihattau-2)*mu1hat*mu3hat / Gtau + mu11hati+mu13hati ))/(mutauP^2)
     }
     IF
@@ -341,6 +358,122 @@ getInfluenceCurve.Brier1 <- function(t,time,Yt,residuals,MC){
     ## if (length(dim(MC))==3) browser()
     Int0tdMCsurEffARisk <- MC[prodlim::sindex(jump.times=unique(time),eval.times=t),,drop=FALSE]
     IF.Brier=hit1+hit2-Brier + mean(hit1)*Int0tdMCsurEffARisk + colMeans(MC*hit2)
+}
+
+getInfluenceCurve.AUC.Competing.Risks.Slow <- function(t,
+                   n,
+                   time,
+                   status,
+                   risk,
+                   GTiminus,
+                   Gtau,
+                   MC,
+                   AUC){
+    requireNamespace("foreach")
+    IF <- rep(NA,n)
+    tau <- t
+    X <- risk
+    ## the factor of equation 9 that does not depend
+    ## on subject i
+    eq9.term <- foreach(i=1:n,.combine=sum)%do%{
+        foreach(j=1:n,.combine=sum)%do%{
+            (time[j] > tau & time[i]<=tau & status[i]==1 & X[j] < X[i])/GTiminus[i]
+        }
+    }/(n^2)
+    ## the factor of equation 16 that does not depend
+    ## on subject i
+    eq16.term <- foreach(i=1:n,.combine=sum)%do%{
+        foreach(j=1:n,.combine=sum)%do%{
+            (time[j] > tau & time[i]<=tau & status[i]==1)/GTiminus[i]
+        }
+    }/(n^2)
+    # mu1 <- foreach(i=1:n,.combine=sum)%do%{
+    #     foreach(j=1:n,.combine=sum)%do%{
+    #         as.numeric(time[i]<= tau & status[i]==1 & (time[j] > tau | status[j] == 2))
+    #     }
+    # }/(n^2)
+    # nu1 <- mu1*AUC
+    # this is temporary
+    mu1hat <- mean(time > tau)
+    mu3hat <-  mean(1*(time <= tau & status == 1)/( GTiminus))
+    mu4hat <-  mean(1*(time <= t & status == 2)/( GTiminus))
+    mutauPsurv <- (mu1hat / Gtau) *mu3hat
+    mu1 <- mutauPsurv + mu3hat*mu4hat
+    nu1 <- AUC*mu1
+
+    for (i in 1:n){
+        if (i==5){
+            browser()
+        }
+        ## the influence function of the reverse Nelson-Aalen estimator
+        ## evaluated at all unique times
+        fihat <- MC[,i]
+        fihattau <- fihat[sindex(eval.times=tau,jump.times=sort(unique(time)))]
+        # equation 8
+        eq8 <- as.numeric(time[i] <= tau & status[i] == 1)/(GTiminus[i]*Gtau) * mean(X<X[i]&time>tau)
+        # equation 9
+        eq9 <- (fihattau-2)/Gtau * eq9.term
+        # equation 10  (check if fihat[k] is fihat[T_k])
+        eq10 <- 1/Gtau * foreach(k=1:n,.combine=sum)%do%{
+            foreach(j=1:n,.combine=sum)%do%{
+                (time[j] > tau & time[k]<=tau & status[k]==1 & X[j] < X[k])*fihat[k]/GTiminus[k]
+            }
+        }/(n^2)
+        ## equation 11
+        eq11 <- (as.numeric(time[i]<=tau & status[i]==2)/GTiminus[i] + (time[i]>tau)/Gtau) * foreach(j=1:n,.combine=sum)%do%{
+            (time[j]<=tau & status[j]==1 & X[i] < X[j])/GTiminus[j]
+        }/n
+        ## equation 12 (check if fihat[k] is fihat[T_k])
+        eq12 <- foreach(k=1:n,.combine=sum)%do%{
+            foreach(j=1:n,.combine=sum)%do%{
+                (time[j] <= tau & status[j]==1 & time[k]<=tau & status[k]==2 & X[j] > X[k])*(fihat[k]-1)/(GTiminus[k]*GTiminus[j])
+            }
+        }/(n^2)
+        ## equation 13 (maybe X[i]<X[j]?)
+        eq13 <- as.numeric(time[i]<=tau & status[i]==1)/GTiminus[i] * foreach(j=1:n,.combine=sum)%do%{
+            (time[j]<=tau & status[j]==2 & X[i] > X[j])/GTiminus[j]
+        }/n
+        ## equation 14 (check if fihat[j] is fihat[T_j])
+        eq14 <- foreach(k=1:n,.combine=sum)%do%{
+            foreach(j=1:n,.combine=sum)%do%{
+                (time[j] <= tau & status[j]==1 & time[k]<=tau & status[k]==2 & X[j] > X[k])*(fihat[j]-1)/(GTiminus[k]*GTiminus[j])
+            }
+        }/(n^2)
+        IFnu <- eq8+eq9+eq10+eq11+eq12+eq13+eq14
+        # equation 15
+        eq15 <- as.numeric(time[i] <= tau & status[i] == 1)/(GTiminus[i]*Gtau) * mean(time>tau)
+        # equation 16
+        eq16 <- (fihattau-2)/Gtau * eq16.term # looks ok?
+        # equation 17  (check if fihat[k] is fihat[T_k])
+        eq17 <- 1/Gtau * foreach(k=1:n,.combine=sum)%do%{
+            foreach(j=1:n,.combine=sum)%do%{
+                (time[j] > tau & time[k]<=tau & status[k]==1)*fihat[k]/GTiminus[k]
+            }
+        }/(n^2)
+        ## equation 18
+        eq18 <- (as.numeric(time[i]<=tau & status[i]==2)/GTiminus[i] + (time[i]>tau)/Gtau) * foreach(j=1:n,.combine=sum)%do%{
+            (time[j]<=tau & status[j]==1)/GTiminus[j]
+        }/n
+        ## equation 19 (check if fihat[k] is fihat[T_k])
+        eq19 <- foreach(k=1:n,.combine=sum)%do%{
+            foreach(j=1:n,.combine=sum)%do%{
+                (time[j] <= tau & status[j]==1 & time[k]<=tau & status[k]==2 )*(fihat[k]-1)/(GTiminus[k]*GTiminus[j])
+            }
+        }/(n^2)
+        ## equation 20
+        eq20 <- as.numeric(time[i]<=tau & status[i]==1)/GTiminus[i] * foreach(j=1:n,.combine=sum)%do%{
+            (time[j]<=tau & status[j]==2 )/GTiminus[j]
+        }/n
+        ## equation 21 (check if fihat[j] is fihat[T_j])
+        eq21 <- foreach(k=1:n,.combine=sum)%do%{
+            foreach(j=1:n,.combine=sum)%do%{
+                (time[j] <= tau & status[j]==1 & time[k]<=tau & status[k]==2)*(fihat[j]-1)/(GTiminus[k]*GTiminus[j])
+            }
+        }/(n^2)
+        IFmu <- eq15+eq16+eq17+eq18+eq19+eq20+eq21
+        IF[i] <- (IFnu * mu1 - nu1 * IFmu)/(mu1^2)
+    }
+    IF
 }
 
 getInfluenceCurve.Brier <- function(t,
@@ -549,5 +682,3 @@ getInfluenceCurve.KM <- function(time,status){
     })
     do.call("cbind",out)
 }
-
-

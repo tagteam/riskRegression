@@ -55,6 +55,7 @@ AUC.survival <- function(DT,MC,se.fit,conservative,cens.model,keep.vcov=FALSE,mu
         data.table::setorder(aucDT,model,times,ID)
         if (cens.model == "KaplanMeier" || cens.model == "none"){
             aucDT[,IF.AUC:=getInfluenceFunctionAUCSurvival(time,status,times[1],risk,WTi,Wt[1],AUC[1]), by=list(model,times)]
+            # aucDT[,IF.AUC:=getInfluenceFunctionAUC(time,status,times[1],risk,WTi,Wt[1],score$AUC,FALSE,TRUE), by=list(model,times)]
         }
         else {
             aucDT[,IF.AUC:=getInfluenceCurve.AUC.survival(t=times[1],
@@ -66,6 +67,7 @@ AUC.survival <- function(DT,MC,se.fit,conservative,cens.model,keep.vcov=FALSE,mu
                                                            ipcwControls=ipcwControls,
                                                            ipcwCases=ipcwCases,
                                                            MC=MC), by=list(model,times)]
+
         }
         se.score <- aucDT[,list(se=sd(IF.AUC)/sqrt(N)),by=list(model,times)]
 
