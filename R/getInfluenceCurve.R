@@ -546,7 +546,6 @@ getInfluenceCurve.Brier <- function(t,
 }
 
 getInfluenceCurve.Brier.New <- function(tau,time,risk,status,MC,GTiminus,Brier,cens.model) {
-    browser()
     #unfinished
     if (cens.model == "cox"){
         n <- length(time)
@@ -563,19 +562,14 @@ getInfluenceCurve.Brier.New <- function(tau,time,risk,status,MC,GTiminus,Brier,c
         n <- length(time)
         IC <- rep(NA,n)
         for (i in 1:n){
-            if (i == 1){
-                fihat <- c(0,rep(MC[i,i], n-1))
-            }
-            else {
-                fihat <- c(0,MC[1:(i-1),i], rep(MC[i,i], n-i))
-            }
+            fihat <- MC[,i]
+            fihatTminus <- c(0,fihat[-length(fihat)])
             IC.C.term <- mean( 1*(time <= tau & status == 1 )*(1-2*risk)*fihat / GTiminus )
             # IC.C.term <- 0
             IC[i] <- 1*(time[i] <= tau & status[i] == 1 )* (1-2*risk[i]) * 1/GTiminus[i] + IC.C.term + risk[i]^2 - Brier
         }
         IC
     }
-
 }
 
 
