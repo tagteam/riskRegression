@@ -682,3 +682,62 @@ getInfluenceCurve.KM <- function(time,status){
     })
     do.call("cbind",out)
 }
+
+#Gtau should now instead be G(tau | X_i) for i = 1, ..., n
+#GTiminus should now instead be G(\tilde{T}_i | X_i) for i = 1, ..., n
+getInfluenceCurve.AUC.covariates <- function(t,n,time,status,risk,GTiminus,Gtau,AUC){
+    X <- risk
+    #estimate int 1{X_i > x, t' > tau} dP(t',x)/G(tau | x')
+    int1nu <- rep(NA,n)
+    #estimate int 1{t' > tau} dP(t',x)/G(tau | x')
+    int1mu <- mean(1*(time > tau)/(Gtau))
+    #estimate int 1{X_i < x, t <= tau} dP(t,1,x)/G(t | x)
+    int2nu <- rep(NA,n)
+    #estimate int 1{t <= tau} dP(t,1,x)/G(t | x)
+    int2mu <- mean(1*(time <= tau & status == 1)/(GTiminus))
+    #estimate int 1{X_i > x, t <= tau} dP(t,1,x)/G(t | x)
+    int3nu <- rep(NA,n)
+    #estimate int 1{t <= tau} dP(t,1,x)/G(t | x)
+    int3mu <-mean(1*(time <= tau & status == 2)/(GTiminus))
+
+    for (i in 1:n){
+        int1nu[i] <- mean(1*(X[i] > X & time > tau)/(Gtau))
+        int2nu[i] <- mean(1*(X[i] < X & time <= tau & status == 1)/(GTiminus))
+        int3nu[i] <- mean(1*(X[i] > X & time <= tau & status == 2)/(GTiminus))
+    }
+
+    ic <- rep(NA,n)
+    #main loop
+    fhat.tau <- rep(0,n)
+    fhat.Ti <- rep(0,n)
+    mu1 <- int2mu * int1mu + int2mu*int3mu
+    nu1 <- AUC*mu1
+    for (i in 1:n){
+        #calculate fhat(\tilde{T}_i,X_i) for i = 1, ..., n
+
+        #calculate fhat(tau,X_i) for i = 1, ..., n
+
+        term1nu <- 1*(time[i] <= tau & status[i] == 1)/GTiminus[i] * int1nu[i]
+        term2nu <- mean(int1nu * 1*(time <= tau & status == 1) * (fhat.Ti-1)/GTiminus)
+        term3nu <- 1*(time[i] > tau)/Gtau[i] * int2nu[i]
+        term4nu <- mean(int2nu * 1*(time > tau) * (fhat.tau-1)/Gtau)
+        term5nu <- 1*(time[i] <= tau & status[i] == 2)/GTiminus[i] * int2nu[i]
+        term6nu <- mean(int2nu * 1*(time <= tau & status == 2) * (fhat.Ti-1)/GTiminus)
+        term7nu <- 1*(time[i] <= tau & status[i] == 1)/GTiminus[i] * int3nu[i]
+        term8nu <- mean(int3nu * 1*(time <= tau & status == 1) * (fhat.Ti-1)/GTiminus)
+        IFnu <- term1nu+term2nu+term3nu+term4nu+term5nu+term6nu+term7nu+term8nu
+
+        intmu <- mean(1*(time <= tau & status == 1) * (fhat.Ti-1)/GTiminus)
+        term1mu <- 1*(time[i] <= tau & status[i] == 1)/GTiminus[i] * int1mu
+        term2mu <- int1mu * intmu
+        term3mu <- 1*(time[i] > tau)/Gtau[i] * int2mu
+        term4mu <- int2mu * mean(1*(time > tau) * (fhat.tau-1)/Gtau)
+        term5mu <- 1*(time[i] <= tau & status[i] == 2)/GTiminus[i] * int2mu
+        term6mu <- int2mu * mean(1*(time <= tau & status == 2) * (fhat.Ti-1)/GTiminus)
+        term7mu <- 1*(time[i] <= tau & status[i] == 1)/GTiminus[i] * int3mu
+        term8mu <- int3mu*intmu
+        IFmu <- term1mu+term2mu+term3mu+term4mu+term5mu+term6mu+term7mu+term8mu
+        IF[i] <- (IFnu * mu1 - nu1 * IFmu)/(mu1^2)
+    }
+    IF
+}
