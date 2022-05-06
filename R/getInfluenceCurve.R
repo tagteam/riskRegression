@@ -685,7 +685,8 @@ getInfluenceCurve.KM <- function(time,status){
 
 #Gtau should now instead be G(tau | X_i) for i = 1, ..., n
 #GTiminus should now instead be G(\tilde{T}_i | X_i) for i = 1, ..., n
-getInfluenceCurve.AUC.covariates <- function(t,n,time,status,risk,GTiminus,Gtau,AUC){
+getInfluenceCurve.AUC.covariates.conservative <- function(t,n,time,status,risk,GTiminus,Gtau,AUC){
+    tau <- t
     X <- risk
     #estimate int 1{X_i > x, t' > tau} dP(t',x)/G(tau | x')
     int1nu <- rep(NA,n)
@@ -737,7 +738,7 @@ getInfluenceCurve.AUC.covariates <- function(t,n,time,status,risk,GTiminus,Gtau,
         term7mu <- 1*(time[i] <= tau & status[i] == 1)/GTiminus[i] * int3mu
         term8mu <- int3mu*intmu
         IFmu <- term1mu+term2mu+term3mu+term4mu+term5mu+term6mu+term7mu+term8mu
-        IF[i] <- (IFnu * mu1 - nu1 * IFmu)/(mu1^2)
+        ic[i] <- (IFnu * mu1 - nu1 * IFmu)/(mu1^2)
     }
-    IF
+    ic
 }
