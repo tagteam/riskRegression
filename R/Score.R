@@ -818,8 +818,9 @@ Score.list <- function(object,
             }
             if ((se.fit[[1]]>0L) && ("AUC" %in% metrics) && (cens.model[[1]]=="cox")){
                 if (!(split.method$name %in% c("LeaveOneOutBoot","BootCv"))){
-                    warning("Cannot (not yet) estimate standard errors for AUC with Cox IPCW.\nTherefore, force cens.model to be marginal.")
-                    cens.model <- "KaplanMeier"
+                    warning("Cannot (fully) estimate standard errors for AUC with Cox IPCW.\nTherefore, force conservative to be true")
+                    # cens.model <- "KaplanMeier"
+                    conservative[1] <- TRUE
                 }
             }
             if ((response.type == "survival" || response.type == "competing.risks") && ("AUC" %in% metrics) && (cens.model[[1]]=="KaplanMeier") && split.method$internal.name %in% c("noplan",".632+")){
@@ -837,7 +838,7 @@ Score.list <- function(object,
                                              cens.model=cens.model,
                                              response.type=response.type,
                                              ## FIXME: need conservative formula for AUC
-                                             influence.curve=(se.fit[[1]]==TRUE && (conservative[[1]]==0L || ("AUC" %in% metrics))))
+                                             influence.curve=(se.fit[[1]]==TRUE && (conservative[[1]]==0L || "Brier" %in% metrics)))
 
             }
             ##
