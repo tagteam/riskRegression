@@ -305,6 +305,12 @@ resTD <- ate(cscTD,formula=Hist(entry=start,time=time,event=event)~1,
 resTD
 }
 }
+\references{
+Brice Maxime Hugues Ozenne, Thomas Harder Scheike, Laila Staerk, and Thomas
+   Alexander Gerds. On the estimation of average treatment effects with right-
+   censored time to event outcome and competing risks. Biometrical Journal, 62
+   (3):751--763, 2020.
+}
 \seealso{
 \code{\link{as.data.table}} to extract the estimates in a \code{data.table} object.
 \code{\link{autoplot.ate}} for a graphical representation the standardized risks.
