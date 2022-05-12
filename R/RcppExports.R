@@ -127,6 +127,14 @@ getInfluenceFunctionAUC <- function(time, status, tau, risk, GTiminus, Gtau, auc
     .Call(`_riskRegression_getInfluenceFunctionAUC`, time, status, tau, risk, GTiminus, Gtau, auc, conservative, survival)
 }
 
+getInfluenceFunctionAUCConservative <- function(time, status, tau, risk, GTiminus, Gtau, auc, survival) {
+    .Call(`_riskRegression_getInfluenceFunctionAUCConservative`, time, status, tau, risk, GTiminus, Gtau, auc, survival)
+}
+
+getInfluenceFunctionBrierKMCensoring <- function(tau, time, risk, status, GTiminus, brier) {
+    .Call(`_riskRegression_getInfluenceFunctionBrierKMCensoring`, tau, time, risk, status, GTiminus, brier)
+}
+
 calcE_cpp <- function(eventtime, status, eXb, X, p, add0) {
     .Call(`_riskRegression_calcE_cpp`, eventtime, status, eXb, X, p, add0)
 }

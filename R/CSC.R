@@ -21,7 +21,7 @@
 #' also a Cox regression model for event-free survival.
 #' @param fitter Routine to fit the Cox regression models.
 #' If \code{coxph} use \code{survival::coxph} else use \code{rms::cph}.
-#' @param ... Arguments given to \code{coxph}.
+#' @param ... Arguments given to \code{fitter}, e.g., \code{coxph}.
 #' @return \item{models }{a list with the fitted (cause-specific) Cox
 #' regression objects} \item{response }{the event history response }
 #' \item{eventTimes }{the sorted (unique) event times } \item{surv.type }{the
