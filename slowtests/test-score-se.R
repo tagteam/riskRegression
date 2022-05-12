@@ -3,7 +3,7 @@ devtools::load_all()
 library(riskRegression)
 library(testthat)
 library(cmprsk)
-test_that("AUC, covariates in censoring, competing risk",{
+test_that("AUC, covariates in censoring, competing risk, also an example of hal9001 implementation",{
   set.seed(18)
   trainCR.comprisk <- sampleData(200,outcome="competing.risks")
   testCR.comprisk <- sampleData(500,outcome="competing.risks")

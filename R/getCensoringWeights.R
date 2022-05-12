@@ -80,6 +80,7 @@ getCensoringWeights <- function(formula,
                # does not work
                # info <- fit$surv_info
                hal_pred <- predict(fit,new_data=x.surv)
+               ## FIXME: really need subject.times only where events occur before times
                Y.use.predict <- Y-min(diff(c(0,unique(Y))))/2
                L0.subject.times <- riskRegression::baseHaz_cpp(starttimes = 0,
                                                                stoptimes = Y.use.predict,
@@ -106,8 +107,8 @@ getCensoringWeights <- function(formula,
                        cause = 1,
                        Efron = TRUE
                    )
-               IPCW.subject.times <- c(exp(-hal_pred%o%L0.subject.times$cumhazard)[1,])
-               IPCW.times <- c(exp(-hal_pred%o%L0.times$cumhazard))
+               IPCW.subject.times <- exp(-hal_pred * L0.subject.times$cumhazard)
+               IPCW.times <- exp(-hal_pred * L0.times$cumhazard)
                out <- list(IPCW.times=IPCW.times,IPCW.subject.times=IPCW.subject.times,method=cens.model)
            },
            {
