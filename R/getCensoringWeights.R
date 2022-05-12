@@ -108,7 +108,13 @@ getCensoringWeights <- function(formula,
                        Efron = TRUE
                    )
                IPCW.subject.times <- exp(-hal_pred * L0.subject.times$cumhazard)
-               IPCW.times <- exp(-hal_pred * L0.times$cumhazard)
+               if (length(times)==1){
+                   IPCW.times <- exp(-hal_pred * L0.times$cumhazard)
+               }
+               else {
+                   IPCW.times <- exp(-hal_pred %o% L0.times$cumhazard)
+                   colnames(IPCW.times) <- times
+               }
                out <- list(IPCW.times=IPCW.times,IPCW.subject.times=IPCW.subject.times,method=cens.model)
            },
            {
