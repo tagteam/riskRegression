@@ -32,33 +32,33 @@ cox2 = coxph(Surv(time,event)~X1+X2+X7,data=trainCR.survival,x=TRUE)
 cox3 = coxph(Surv(time,event)~X1,data=trainCR.survival,x=TRUE)
 test_that("Brier score SE against old implementation, no covariates in censoring, competing risk",{
   y<-Score(list("CSC(X1+X2+X7+X9)"=csc1,"CSC(X1+X2)"=csc2,"CSC(X1)"=csc3),
-           formula=Hist(time,event)~1,data=testCR,se.fit=1L,times=c(4),metrics="Brier")
+           formula=Hist(time,event)~1,data=testCR.comprisk,se.fit=1L,times=c(4),metrics="Brier")
   z<-Score(list("CSC(X1+X2+X7+X9)"=csc1,"CSC(X1+X2)"=csc2,"CSC(X1)"=csc3),
-           formula=Hist(time,event)~1,data=testCR,se.fit=1L,times=c(4),metrics="Brier",old.ic.method = TRUE)
+           formula=Hist(time,event)~1,data=testCR.comprisk,se.fit=1L,times=c(4),metrics="Brier",old.ic.method = TRUE)
   expect_equal(y$Brier$score$se,z$Brier$score$se,tolerance = 1e-4)
 })
 
 test_that("Brier score SE against old implementation, no covariates in censoring, survival",{
   y<-Score(list("cox(X1+X2+X7+X9)"=cox1,"cox(X1+X2)"=cox2,"cox(X1)"=cox3),
-           formula=Hist(time,event)~1,data=testCR,se.fit=1L,times=c(4),metrics="Brier")
+           formula=Hist(time,event)~1,data=testCR.survival,se.fit=1L,times=c(4),metrics="Brier")
   z<-Score(list("cox(X1+X2+X7+X9)"=cox1,"cox(X1+X2)"=cox2,"cox(X1)"=cox3),
-           formula=Hist(time,event)~1,data=testCR,se.fit=1L,times=c(4),metrics="Brier",old.ic.method = TRUE)
+           formula=Hist(time,event)~1,data=testCR.survival,se.fit=1L,times=c(4),metrics="Brier",old.ic.method = TRUE)
   expect_equal(y$Brier$score$se,z$Brier$score$se,tolerance = 1e-4)
 })
 
 test_that("AUC SE against old implementation, no covariates in censoring, competing risk",{
   y<-Score(list("CSC(X1+X2+X7+X9)"=csc1,"CSC(X1+X2)"=csc2,"CSC(X1)"=csc3),
-           formula=Hist(time,event)~1,data=testCR,se.fit=1L,times=c(4),metrics="AUC")
+           formula=Hist(time,event)~1,data=testCR.comprisk,se.fit=1L,times=c(4),metrics="AUC")
   z<-Score(list("CSC(X1+X2+X7+X9)"=csc1,"CSC(X1+X2)"=csc2,"CSC(X1)"=csc3),
-           formula=Hist(time,event)~1,data=testCR,se.fit=1L,times=c(4),metrics="AUC",old.ic.method = TRUE)
+           formula=Hist(time,event)~1,data=testCR.comprisk,se.fit=1L,times=c(4),metrics="AUC",old.ic.method = TRUE)
   expect_equal(y$AUC$score$se,z$AUC$score$se)
 })
 
 test_that("AUC SE against old implementation, no covariates in censoring, survival",{
   y<-Score(list("cox(X1+X2+X7+X9)"=cox1,"cox(X1+X2)"=cox2,"cox(X1)"=cox3),
-           formula=Hist(time,event)~1,data=testCR,se.fit=1L,times=c(4),metrics="AUC")
+           formula=Hist(time,event)~1,data=testCR.survival,se.fit=1L,times=c(4),metrics="AUC")
   z<-Score(list("cox(X1+X2+X7+X9)"=cox1,"cox(X1+X2)"=cox2,"cox(X1)"=cox3),
-           formula=Hist(time,event)~1,data=testCR,se.fit=1L,times=c(4),metrics="AUC",old.ic.method = TRUE)
+           formula=Hist(time,event)~1,data=testCR.survival,se.fit=1L,times=c(4),metrics="AUC",old.ic.method = TRUE)
   expect_equal(y$AUC$score$se,z$AUC$score$se)
 })
 
