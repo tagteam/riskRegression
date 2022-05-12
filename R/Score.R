@@ -498,7 +498,7 @@ Score.list <- function(object,
         cens.model <- "KaplanMeier"
     } else{
         if (length(attr(terms(formula),"factors"))>0){
-            cens.model <- "cox"
+            # cens.model <- "cox"
         } else{
             cens.model <- "KaplanMeier"
         }

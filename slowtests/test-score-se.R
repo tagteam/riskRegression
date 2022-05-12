@@ -11,6 +11,8 @@ test_that("AUC, covariates in censoring, competing risk",{
   csc2 = CSC(Hist(time,event)~X1+X2+X7,data=trainCR.comprisk)
   x<-Score(list("CSC(X1+X2+X7+X9)"=csc1,"CSC(X1+X2)"=csc2),
            formula=Hist(time,event)~X2+X7,data=testCR.comprisk,se.fit=1L,times=c(4),metrics="AUC",conservative = TRUE)
+  y<-Score(list("CSC(X1+X2+X7+X9)"=csc1,"CSC(X1+X2)"=csc2),
+           formula=Hist(time,event)~X2+X7,data=testCR.comprisk,se.fit=1L,times=c(4),metrics="AUC",cens.model="hal9001",conservative = TRUE)
   expect_output(print(x))
 })
 
