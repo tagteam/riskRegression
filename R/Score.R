@@ -808,12 +808,12 @@ Score.list <- function(object,
 
     if (response.type %in% c("survival","competing.risks")){
         if (cens.type=="rightCensored"){
-            if (se.fit[1]>0L && ("AUC" %in% metrics) && (conservative[1]==TRUE) && (old.ic.method[1]==TRUE)) {
+            if (se.fit[1]>0L && ("AUC" %in% metrics) && (conservative[1]) && (old.ic.method[1]==TRUE)) {
                 ## FIXME: need conservative formula for AUC
                 warning("Cannot do conservative==TRUE with old AUC method. Therefore, force old.ic.method to be FALSE.")
                 old.ic.method[1] <- FALSE
             }
-            if ((se.fit[[1]]>0L) && ("AUC" %in% metrics) && (cens.model[[1]]=="cox")){
+            if ((se.fit[[1]]>0L) && ("AUC" %in% metrics) && (cens.model[[1]]=="cox") && (!conservative[1])){
                 if (!(split.method$name %in% c("LeaveOneOutBoot","BootCv"))){
                     warning("Cannot (fully) estimate standard errors for AUC with Cox IPCW.\nTherefore, force conservative to be true")
                     # cens.model <- "KaplanMeier"
