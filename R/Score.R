@@ -447,6 +447,7 @@ Score.list <- function(object,
                        keep,
                        predictRisk.args,
                        debug=0L,
+                       old.ic.method=FALSE,
                        ...){
 
     se.conservative=IPCW=IF.AUC.conservative=IF.AUC0=IF.AUC=IC0=Brier=AUC=casecontrol=se=nth.times=time=status=ID=WTi=risk=IF.Brier=lower=upper=crossval=b=time=status=model=reference=p=model=pseudovalue=ReSpOnSe=residuals=event=j=NULL
@@ -502,7 +503,7 @@ Score.list <- function(object,
         cens.model <- "KaplanMeier"
     } else{
         if (length(attr(terms(formula),"factors"))>0){
-            cens.model <- "cox"
+            # cens.model <- "cox"
         } else{
             cens.model <- "KaplanMeier"
         }
@@ -812,36 +813,25 @@ Score.list <- function(object,
 
     if (response.type %in% c("survival","competing.risks")){
         if (cens.type=="rightCensored"){
-            if (se.fit[1]>0L && ("AUC" %in% metrics) && (conservative[1]==TRUE)) {
+            if (se.fit[1]>0L && ("AUC" %in% metrics) && (conservative[1]) && (old.ic.method[1]==TRUE)) {
                 ## FIXME: need conservative formula for AUC
-                warning("Cannot do conservative==TRUE with AUC yet.")
+                warning("Cannot do conservative==TRUE with old AUC method. Therefore, force old.ic.method to be FALSE.")
+                old.ic.method[1] <- FALSE
             }
-            if ((se.fit[[1]]>0L) && ("AUC" %in% metrics) && (cens.model[[1]]=="cox")){
+            if ((se.fit[[1]]>0L) && ("AUC" %in% metrics) && (cens.model[[1]]=="cox") && (!conservative[1])){
                 if (!(split.method$name %in% c("LeaveOneOutBoot","BootCv"))){
                     warning("Cannot (fully) estimate standard errors for AUC with Cox IPCW.\nTherefore, force conservative to be true")
                     # cens.model <- "KaplanMeier"
                     conservative[1] <- TRUE
                 }
             }
-            if ((response.type == "survival" || response.type == "competing.risks") && ("AUC" %in% metrics) && (cens.model[[1]]=="KaplanMeier") && split.method$internal.name %in% c("noplan",".632+")){
-              Weights <- getCensoringWeights(formula=formula,
-                                             data=data,
-                                             times=times,
-                                             cens.model=cens.model,
-                                             response.type=response.type,
-                                             influence.curve=FALSE)
-            }
-            else {
-              Weights <- getCensoringWeights(formula=formula,
-                                             data=data,
-                                             times=times,
-                                             cens.model=cens.model,
-                                             response.type=response.type,
-                                             ## FIXME: need conservative formula for AUC
-                                             influence.curve=(se.fit[[1]]==TRUE && (conservative[[1]]==0L || "Brier" %in% metrics)))
-
-            }
-            ##
+            Weights <- getCensoringWeights(formula=formula,
+                                         data=data,
+                                         times=times,
+                                         cens.model=cens.model,
+                                         response.type=response.type,
+                                         influence.curve=(se.fit[[1]]==TRUE && ((cens.type=="rightCensored" && "Brier" %in% metrics) || old.ic.method)))
+            ##split.method$internal.name %in% c("noplan",".632+")
             ## if cens.model is marginal then IC is a matrix (ntimes,newdata)
             ## if cens.model is Cox then IC is an array (nlearn, ntimes, newdata)
             ## IC is an array with dimension (nlearn, times, newdata)
@@ -937,7 +927,7 @@ Score.list <- function(object,
                                       cens.model,
                                       multi.split.test=multi.split.test,
                                       keep.residuals=keep.residuals,
-                                      keep.vcov=keep.vcov,dolist=dolist,probs=probs,metrics=metrics,plots=plots,summary=summary,ROC=FALSE,MC=Weights$IC)
+                                      keep.vcov=keep.vcov,dolist=dolist,probs=probs,metrics=metrics,plots=plots,summary=summary,ROC=FALSE,MC=Weights$IC,old.ic.method)
         if (debug) message("computed apparent performance")
     }
     # }}}

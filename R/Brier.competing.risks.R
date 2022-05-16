@@ -1,21 +1,21 @@
-### Brier.competing.risks.R --- 
+### Brier.competing.risks.R ---
 #----------------------------------------------------------------------
 ## Author: Thomas Alexander Gerds
-## Created: Jan 11 2022 (17:04) 
-## Version: 
-## Last-Updated: Jan 11 2022 (17:04) 
+## Created: Jan 11 2022 (17:04)
+## Version:
+## Last-Updated: Jan 11 2022 (17:04)
 ##           By: Thomas Alexander Gerds
 ##     Update #: 1
 #----------------------------------------------------------------------
-## 
-### Commentary: 
-## 
+##
+### Commentary:
+##
 ### Change Log:
 #----------------------------------------------------------------------
-## 
+##
 ### Code:
 
-Brier.competing.risks <- function(DT,MC,se.fit,conservative,cens.model,keep.vcov=FALSE,multi.split.test,alpha,N,NT,NF,dolist,keep.residuals=FALSE,cause,states,...){
+Brier.competing.risks <- function(DT,MC,se.fit,conservative,cens.model,keep.vcov=FALSE,multi.split.test,alpha,N,NT,NF,dolist,keep.residuals=FALSE,cause,states,old.ic.method,...){
     IC0=nth.times=ID=time=times=event=Brier=raw.Residuals=risk=residuals=WTi=Wt=status=setorder=model=IF.Brier=data.table=sd=lower=qnorm=se=upper=NULL
     ## compute 0/1 outcome:
     thecause <- match(cause,states,nomatch=0)
@@ -35,23 +35,37 @@ Brier.competing.risks <- function(DT,MC,se.fit,conservative,cens.model,keep.vcov
             score <- DT[,data.table(Brier=sum(residuals)/N,
                                     se=sd(IC0)/sqrt(N)),by=list(model,times)]
         }else{
+            # browser()
             if (cens.model=="none"){
                 DT[,IF.Brier:=residuals]
                 score <- DT[,data.table(Brier=sum(residuals)/N,
                                         se=sd(residuals)/sqrt(N),
                                         se.conservative=sd(residuals)),by=list(model,times)]
             }else{
-                DT[,IF.Brier:=getInfluenceCurve.Brier(t=times[1],
-                                                      time=time,
-                                                      IC0,
-                                                      residuals=residuals,
-                                                      WTi=WTi,
-                                                      Wt=Wt,
-                                                      IC.G=MC,
-                                                      cens.model=cens.model,
-                                                      nth.times=nth.times[1]),by=list(model,times)]
+                if (old.ic.method){
+                    DT[,IF.Brier:=getInfluenceCurve.Brier(t=times[1],
+                                                          time=time,
+                                                          IC0,
+                                                          residuals=residuals,
+                                                          WTi=WTi,
+                                                          Wt=Wt,
+                                                          IC.G=MC,
+                                                          cens.model=cens.model,
+                                                          nth.times=nth.times[1]),by=list(model,times)]
+                }
+                else {
+                    DT[,IF.Brier:=getInfluenceCurve.Brier.New(times[1],
+                                                              time,
+                                                              risk,
+                                                              status*event,
+                                                              MC,
+                                                              WTi,
+                                                              sum(residuals)/N,
+                                                              cens.model),by=list(model,times)]
+                }
                 score <- DT[,data.table(Brier=sum(residuals)/N,
                                         se=sd(IF.Brier)/sqrt(N),
+                                        # se=sd(IF.Brier2)/sqrt(N),
                                         se.conservative=sd(IC0)/sqrt(N)),by=list(model,times)]
             }
         }

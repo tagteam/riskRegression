@@ -15,7 +15,7 @@
 ##
 ### Code:
 
-AUC.competing.risks <- function(DT,MC,se.fit,conservative,cens.model,keep.vcov=FALSE,multi.split.test,alpha,N,NT,NF,dolist,cause,states,ROC,...){
+AUC.competing.risks <- function(DT,MC,se.fit,conservative,cens.model,keep.vcov=FALSE,multi.split.test,alpha,N,NT,NF,dolist,cause,states,ROC,old.ic.method,...){
     ID=model=times=risk=Cases=time=status=event=Controls1=Controls2=TPR=FPR=WTi=Wt=ipcwControls1=ipcwControls2=ipcwCases=IF.AUC=lower=se=upper=AUC=NULL
     aucDT <- DT[model>0]
     dolist <- dolist[sapply(dolist,function(do){match("0",do,nomatch=0L)})==0]
@@ -57,19 +57,48 @@ AUC.competing.risks <- function(DT,MC,se.fit,conservative,cens.model,keep.vcov=F
         ## compute influence function
         ## data.table::setorder(aucDT,model,times,time,-status)
         data.table::setorder(aucDT,model,times,ID)
-        if (cens.model == "cox"){
-            aucDT[,IF.AUC:=getInfluenceCurve.AUC.covariates.conservative(times[1],N,time,status*event,risk,WTi,Wt,AUC[1]), by=list(model,times)]
+        if (cens.model == "KaplanMeier" || cens.model == "none"){
+            if (old.ic.method){
+                aucDT[,IF.AUC:={
+                    if (sum(Controls2)==0){
+                        getInfluenceCurve.AUC.survival(t=times[1],
+                                                       n=N,
+                                                       time=time,
+                                                       risk=risk,
+                                                       Cases=Cases,
+                                                       Controls=Controls1,
+                                                       ipcwControls=ipcwControls1,
+                                                       ipcwCases=ipcwCases,
+                                                       MC=MC)
+                    }else{
+                        getInfluenceCurve.AUC.competing.risks(t=times[1],
+                                                              n=N,
+                                                              time=time,
+                                                              risk=risk,
+                                                              ipcwControls1=ipcwControls1,
+                                                              ipcwControls2=ipcwControls2,
+                                                              ipcwCases=ipcwCases,
+                                                              Cases=Cases,
+                                                              Controls1=Controls1,
+                                                              Controls2=Controls2,
+                                                              MC=MC)
+                    }
+                }, by=list(model,times)]
+            }
+            else {
+                aucDT[,IF.AUC:={
+                    if (sum(Controls2)==0){
+                        getInfluenceFunctionAUC(time,status*event,times[1],risk,WTi,Wt[1],AUC[1],FALSE,TRUE)
+                    }
+                    else {
+                        # getInfluenceFunctionAUCConservative(time,status*event,times[1],risk,WTi,Wt[1],score$AUC,FALSE)
+                        getInfluenceFunctionAUC(time,status*event,times[1],risk,WTi,Wt[1],AUC[1],FALSE,FALSE)
+                    }
+                }, by=list(model,times)]
+            }
         }
         else {
-            aucDT[,IF.AUC:={
-                if (sum(Controls2)==0){
-                    getInfluenceFunctionAUC(time,status*event,times[1],risk,WTi,Wt[1],AUC[1],FALSE,TRUE)
-                }
-                else {
-                    # getInfluenceFunctionAUCConservative(time,status*event,times[1],risk,WTi,Wt[1],score$AUC,FALSE)
-                    getInfluenceFunctionAUC(time,status*event,times[1],risk,WTi,Wt[1],AUC[1],FALSE,FALSE)
-                }
-            }, by=list(model,times)]
+            aucDT[,IF.AUC:=getInfluenceCurve.AUC.covariates.conservative(times[1],N,time,status*event,risk,WTi,Wt,AUC[1]), by=list(model,times)]
         }
         se.score <- aucDT[,list(se=sd(IF.AUC)/sqrt(N)),by=list(model,times)]
         data.table::setkey(se.score,model,times)
