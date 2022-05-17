@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun  6 2016 (09:02) 
 ## Version: 
-## last-updated: May 17 2022 (13:52) 
+## last-updated: May 17 2022 (13:58) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 437
+##     Update #: 438
 #----------------------------------------------------------------------
 ## 
 ### Commentary:
@@ -1361,8 +1361,20 @@ predictRisk.Hal9001 <- function(object,
                                 cause,
                                 ...){
     stopifnot(object$family=="cox")
-    info <- object$surv_info # blank Cox object obtained with riskRegression:::coxModelFrame
-    hal_pred <- predict(object$fit,new_data=newdata)
+    # convert covariates to dummy variables
+    newdata$dummy.time=rep(1,NROW(newdata))
+    newdata$dummy.event=rep(1,NROW(newdata))
+    rhs <- as.formula(delete.response(object$terms))
+    dummy.formula=stats::update.formula(rhs,"Hist(dummy.time,dummy.event)~.")
+    EHF <- prodlim::EventHistory.frame(formula=dummy.formula,
+                                       data=newdata,
+                                       specials = NULL,
+                                       unspecialsDesign=TRUE)
+    newdata$dummy.time = NULL
+    newdata$dummy.event = NULL
+    # blank Cox object obtained with riskRegression:::coxModelFrame
+    info <- object$surv_info
+    hal_pred <- predict(object$fit,new_data=EHF$design)
     L0 <- riskRegression::baseHaz_cpp(starttimes = info$start,
                                       stoptimes = info$stop,
                                       status = info$status,
