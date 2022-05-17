@@ -93,20 +93,7 @@ getCensoringWeights <- function(formula,
                                                                predtimes = Y.use.predict,
                                                                cause = 1,
                                                                Efron = TRUE)
-               L0.times <-
-                   riskRegression::baseHaz_cpp(
-                       starttimes = 0,
-                       stoptimes = times,
-                       status = status,
-                       eXb = hal_pred,
-                       strata = 1,
-                       nPatients = NROW(times),
-                       nStrata = 1,
-                       emaxtimes = max(times),
-                       predtimes = times,
-                       cause = 1,
-                       Efron = TRUE
-                   )
+               ## L0.times <- L0.subject.times[sindex]
                IPCW.subject.times <- exp(-hal_pred * L0.subject.times$cumhazard)
                if (length(times)==1){
                    IPCW.times <- exp(-hal_pred * L0.times$cumhazard)

@@ -37,7 +37,7 @@
 \alias{predictRisk.ranger}
 \alias{predictRisk.penfitS3}
 \alias{predictRisk.SuperPredictor}
-\alias{predictRisk.hal9001}
+\alias{predictRisk.Hal9001}
 \alias{predictRisk.singleEventCB}
 \alias{predictRisk.wglm}
 \title{Extrating predicting risks from regression models}

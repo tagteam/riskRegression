@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun  6 2016 (09:02) 
 ## Version: 
-## last-updated: Apr 28 2022 (11:07) 
+## last-updated: May 17 2022 (13:52) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 423
+##     Update #: 437
 #----------------------------------------------------------------------
 ## 
 ### Commentary:
@@ -1194,9 +1194,8 @@ predictRisk.penfitS3 <- function(object,
             args <- list(penfit,penalized=pen,unpenalized=unpen,data=newdata,...)
         #modelframe <- stats::model.frame(formula=formula,data=data,na.action=na.fail)
     }else{
-
-        newdata$dummy.time=1
-        newdata$dummy.event=1
+        newdata$dummy.time=rep(1,NROW(newdata))
+        newdata$dummy.event=rep(1,NROW(newdata))
         dummy.formula=stats::update.formula(rhs,"Hist(dummy.time,dummy.event)~.")
         EHF <- prodlim::EventHistory.frame(formula=dummy.formula,
                                            data=newdata,
@@ -1330,28 +1329,51 @@ predictRisk.flexsurvreg <- function(object, newdata, times, ...) {
     1 - p
 }
 
+Hal9001 <- function(formula,data,...){
+    requireNamespace("hal9001")
+    EHF = EventHistory.frame(formula,data,unspecialsDesign = TRUE,specials = NULL)
+    stopifnot(attr(EHF$event.history,"model")[[1]] == "survival")
+    # blank Cox object needed for predictions
+    bl_cph <- coxph(Surv(time,event)~1,data=d,x=1,y=1)
+    bl_obj <- coxModelFrame(bl_cph)[]
+    bl_obj[,strata.num:=0]
+    data.table::setorder(bl_obj, strata.num,stop,start,-status)
+    hal_fit <- hal9001::fit_hal(X = EHF$design,
+                                Y = EHF$event.history,
+                                family = "cox",
+                                return_lasso = TRUE,
+                                yolo = FALSE,
+                                ...)
+    out = list(fit = hal_fit,
+               surv_info = bl_obj,
+               call = match.call(),
+               terms = terms(formula))
+    class(out) = "Hal9001"
+    out
+}
+
 ##' @export
 ##' @rdname predictRisk
 ##' @method predictRisk hal9001
-predictRisk.hal9001 <- function(object,
+predictRisk.Hal9001 <- function(object,
                                 newdata,
                                 times,
                                 cause,
                                 ...){
     stopifnot(object$family=="cox")
     info <- object$surv_info # blank Cox object obtained with riskRegression:::coxModelFrame
-    hal_pred <- predict(object,new_data=newdata)
+    hal_pred <- predict(object$fit,new_data=newdata)
     L0 <- riskRegression::baseHaz_cpp(starttimes = info$start,
-                                       stoptimes = info$stop,
-                                       status = info$status,
-                                       eXb = hal_pred,
-                                       strata = 1,
-                                       nPatients = NROW(info$stop),
-                                       nStrata = 1,
-                                       emaxtimes = max(info$stop),
-                                       predtimes = sort(unique(info$stop)),
-                                       cause = 1,
-                                       Efron = TRUE)
+                                      stoptimes = info$stop,
+                                      status = info$status,
+                                      eXb = hal_pred,
+                                      strata = 1,
+                                      nPatients = NROW(info$stop),
+                                      nStrata = 1,
+                                      emaxtimes = max(info$stop),
+                                      predtimes = sort(unique(info$stop)),
+                                      cause = 1,
+                                      Efron = TRUE)
     hal_Surv <- exp(-hal_pred%o%L0$cumhazard)
     where <- sindex(jump.times=info$stop,eval.times=times)
     p <- cbind(0,1-hal_Surv)[,1+where]
@@ -1406,6 +1428,64 @@ predictRisk.singleEventCB <- function(object, newdata, times, cause, ...) {
 }
 
 
+GrpSurv <- function(formula,data,...){
+    requireNamespace("grpreg")
+    EHF = EventHistory.frame(formula,data,unspecialsDesign = TRUE,specials = NULL)
+    fit = grpsurv(X = EHF$design,y = EHF$event.history,...)
+    fit = list(fit = fit,terms = terms(formula),call=match.call())
+    class(fit) = c("GrpSurv",class(fit))
+    fit
+}
+
+predictRisk.GrpSurv <- function(object, newdata, times, cause, ...){
+    newdata$dummy.time=rep(1,NROW(newdata))
+    newdata$dummy.event=rep(1,NROW(newdata))
+    rhs <- as.formula(delete.response(object$terms))
+    dummy.formula=stats::update.formula(rhs,"Hist(dummy.time,dummy.event)~.")
+    EHF <- prodlim::EventHistory.frame(formula=dummy.formula,
+                                       data=newdata,
+                                       specials = NULL,
+                                       unspecialsDesign=TRUE)
+    newdata$dummy.time = NULL
+    newdata$dummy.event = NULL
+    p <- predict(object$fit, EHF$design, type="survival")
+    p <- 1-sapply(p,function(f)f(times))
+    if (length(times) == 1){
+        p = cbind(p)
+    }else(p = t(p))
+    if (NROW(p) != NROW(newdata) || NCOL(p) != length(times)) {
+        stop(paste("\nPrediction matrix has wrong dimensions:\nRequested newdata x times: ", NROW(newdata), " x ", length(times), "\nProvided prediction matrix: ", NROW(p), " x ", NCOL(p), "\n\n", sep = ""))
+    }
+    p
+}
+
+XgbSurv <- function(formula,data,...){
+    requireNamespace(c("survXgboost","xgboost"))
+    EHF = EventHistory.frame(formula,data,unspecialsDesign = TRUE,specials = NULL)
+    fit = xgb.train.surv(data = EHF$design,label = ifelse(EHF$event.history[,2] == 1, EHF$event.history[,1], -EHF$event.history[,1]),...)
+    fit = list(fit = fit,terms = terms(formula),call=match.call())
+    class(fit) = c("XgbSurv",class(fit))
+    fit
+}
+
+predictRisk.XgbSurv <- function(object, newdata, times, cause, ...){
+    newdata$dummy.time=rep(1,NROW(newdata))
+    newdata$dummy.event=rep(1,NROW(newdata))
+    rhs <- as.formula(delete.response(object$terms))
+    dummy.formula=stats::update.formula(rhs,"Hist(dummy.time,dummy.event)~.")
+    EHF <- prodlim::EventHistory.frame(formula=dummy.formula,
+                                       data=newdata,
+                                       specials = NULL,
+                                       unspecialsDesign=TRUE)
+    newdata$dummy.time = NULL
+    newdata$dummy.event = NULL
+    p <-predict(object = object$fit, newdata = EHF$design, type = "surv", times = times)
+    p <- 1-p
+    if (NROW(p) != NROW(newdata) || NCOL(p) != length(times)) {
+        stop(paste("\nPrediction matrix has wrong dimensions:\nRequested newdata x times: ", NROW(newdata), " x ", length(times), "\nProvided prediction matrix: ", NROW(p), " x ", NCOL(p), "\n\n", sep = ""))
+    }
+    p
+}
 #----------------------------------------------------------------------
 ### predictRisk.R ends here
 
