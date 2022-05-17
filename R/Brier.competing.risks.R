@@ -54,14 +54,12 @@ Brier.competing.risks <- function(DT,MC,se.fit,conservative,cens.model,keep.vcov
                                                           nth.times=nth.times[1]),by=list(model,times)]
                 }
                 else {
-                    DT[,IF.Brier:=getInfluenceCurve.Brier.New(times[1],
+                    DT[,IF.Brier:=getInfluenceFunctionBrierKMCensoring(times[1],
                                                               time,
                                                               risk,
                                                               status*event,
-                                                              MC,
                                                               WTi,
-                                                              sum(residuals)/N,
-                                                              cens.model),by=list(model,times)]
+                                                              sum(residuals)/N),by=list(model,times)]
                 }
                 score <- DT[,data.table(Brier=sum(residuals)/N,
                                         se=sd(IF.Brier)/sqrt(N),

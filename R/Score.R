@@ -820,12 +820,13 @@ Score.list <- function(object,
                     conservative[1] <- TRUE
                 }
             }
+            getIC <- se.fit[[1]] && !conservative[[1]] && (((cens.model!="KaplanMeier" && cens.model!="none") && "Brier" %in% metrics) || old.ic.method)
             Weights <- getCensoringWeights(formula=formula,
-                                         data=data,
-                                         times=times,
-                                         cens.model=cens.model,
-                                         response.type=response.type,
-                                         influence.curve=(se.fit[[1]]==TRUE && ((cens.type=="rightCensored" && "Brier" %in% metrics) || old.ic.method)))
+                                           data=data,
+                                           times=times,
+                                           cens.model=cens.model,
+                                           response.type=response.type,
+                                           influence.curve=getIC)
             ##split.method$internal.name %in% c("noplan",".632+")
             ## if cens.model is marginal then IC is a matrix (ntimes,newdata)
             ## if cens.model is Cox then IC is an array (nlearn, ntimes, newdata)

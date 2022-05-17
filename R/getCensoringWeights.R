@@ -80,8 +80,9 @@ getCensoringWeights <- function(formula,
                surv_info$status <- wdata[["status"]]
                fit$surv_info <- surv_info
                ## need G(Ti-|Xi) only for i where status=1 && Ti < max(times)
-               IPCW.subject.times <- diag(1-predictRisk(fit,x.surv,wdata[["time"]],1))
+               IPCW.subject.times <- diag(1-predictRisk(fit,x.surv,c(0,surv_info$stop[-length(surv_info$stop)]),1)) #computational problem and should be the limit from the left
                IPCW.times <- 1-predictRisk(fit,x.surv,times,1)
+               #generic method
                out <- list(IPCW.times=IPCW.times,IPCW.subject.times=IPCW.subject.times,method=cens.model)
            },
            {
