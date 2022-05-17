@@ -40,6 +40,7 @@ Score(object, ...)
   keep,
   predictRisk.args,
   debug = 0L,
+  old.ic.method = FALSE,
   ...
 )
 }
@@ -435,6 +436,11 @@ x1 = Score(list("Cox(X1+X2+X7+X9)"=cox1),
 
 }
 \references{
+Thomas A. Gerds and Michael W. Kattan (2021).
+Medical Risk Prediction Models: With Ties to Machine Learning (1st ed.)
+Chapman and Hall/CRC
+https://doi.org/10.1201/9781138384484
+
 Ulla B. Mogensen, Hemant Ishwaran, Thomas A. Gerds (2012).
 Evaluating Random Forests for Survival Analysis Using Prediction Error
 Curves. Journal of Statistical Software, 50(11), 1-23. URL

@@ -28,7 +28,7 @@ also a Cox regression model for event-free survival.}
 \item{fitter}{Routine to fit the Cox regression models.
 If \code{coxph} use \code{survival::coxph} else use \code{rms::cph}.}
 
-\item{...}{Arguments given to \code{coxph}.}
+\item{...}{Arguments given to \code{fitter}, e.g., \code{coxph}.}
 }
 \value{
 \item{models }{a list with the fitted (cause-specific) Cox

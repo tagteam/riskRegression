@@ -1,5 +1,5 @@
 #AUC with censoring covariates example
-devtools::load_all()
+## devtools::load_all()
 library(riskRegression)
 library(testthat)
 library(cmprsk)
@@ -29,18 +29,19 @@ test_that("Brier score SE against old implementation, no covariates in censoring
            formula=Hist(time,event)~1,data=testCR.comprisk,se.fit=1L,times=c(4),metrics="Brier")
   z<-Score(list("CSC(X1+X2+X7+X9)"=csc1,"CSC(X1+X2)"=csc2),
            formula=Hist(time,event)~1,data=testCR.comprisk,se.fit=1L,times=c(4),metrics="Brier",old.ic.method = TRUE)
+  expect_equal(y$Brier$score$Brier,z$Brier$score$Brier,tolerance = 1e-8)
   expect_equal(y$Brier$score$se,z$Brier$score$se,tolerance = 1e-4)
 })
 
 test_that("Brier score SE against old implementation, no covariates in censoring, survival",{
   trainCR.survival <- sampleData(200,outcome="survival")
-  testCR.survival <- sampleData(5000,outcome="survival")
+  testCR.survival <- sampleData(10000,outcome="survival")
   cox1 = coxph(Surv(time,event)~X1+X2+X7+X9,data=trainCR.survival,x=TRUE)
   cox2 = coxph(Surv(time,event)~X1+X2+X7,data=trainCR.survival,x=TRUE)
-  y<-Score(list("cox(X1+X2+X7+X9)"=cox1,"cox(X1+X2)"=cox2),
-           formula=Hist(time,event)~1,data=testCR.survival,se.fit=1L,times=c(4),metrics="Brier")
-  z<-Score(list("cox(X1+X2+X7+X9)"=cox1,"cox(X1+X2)"=cox2),
-           formula=Hist(time,event)~1,data=testCR.survival,se.fit=1L,times=c(4),metrics="Brier",old.ic.method = TRUE)
+system.time(y<-Score(list("cox(X1+X2+X7+X9)"=cox1,"cox(X1+X2)"=cox2),
+           formula=Hist(time,event)~1,data=testCR.survival,se.fit=1L,times=c(4),metrics="Brier"))
+system.time( z<-Score(list("cox(X1+X2+X7+X9)"=cox1,"cox(X1+X2)"=cox2),
+           formula=Hist(time,event)~1,data=testCR.survival,se.fit=1L,times=c(4),metrics="Brier",old.ic.method = TRUE))
   expect_equal(y$Brier$score$se,z$Brier$score$se,tolerance = 1e-4)
 })
 
