@@ -72,36 +72,16 @@ getCensoringWeights <- function(formula,
                covariates.data <- wdata[,..vv]
                x.surv <- model.matrix(formula.covariates,data=wdata)
                y.surv <- Surv(wdata$time,wdata$status)
-               Y <- data[["time"]]
-               status <- data[["status"]]
                ## fit Cox model for censoring times
                fit<-hal9001::fit_hal(X=x.surv,Y=y.surv,family="cox",yolo=FALSE)
+               surv_info <- list()
+               surv_info$start <- 0
+               surv_info$stop <- wdata[["time"]]
+               surv_info$status <- wdata[["status"]]
+               fit$surv_info <- surv_info
                ## need G(Ti-|Xi) only for i where status=1 && Ti < max(times)
-               # does not work
-               # info <- fit$surv_info
-               hal_pred <- predict(fit,new_data=x.surv)
-               ## FIXME: really need subject.times only where events occur before times
-               Y.use.predict <- Y-min(diff(c(0,unique(Y))))/2
-               L0.subject.times <- riskRegression::baseHaz_cpp(starttimes = 0,
-                                                               stoptimes = Y.use.predict,
-                                                               status = status,
-                                                               eXb = hal_pred,
-                                                               strata = 1,
-                                                               nPatients = NROW(Y.use.predict),
-                                                               nStrata = 1,
-                                                               emaxtimes = max(Y.use.predict),
-                                                               predtimes = Y.use.predict,
-                                                               cause = 1,
-                                                               Efron = TRUE)
-               ## L0.times <- L0.subject.times[sindex]
-               IPCW.subject.times <- exp(-hal_pred * L0.subject.times$cumhazard)
-               if (length(times)==1){
-                   IPCW.times <- exp(-hal_pred * L0.times$cumhazard)
-               }
-               else {
-                   IPCW.times <- exp(-hal_pred %o% L0.times$cumhazard)
-                   colnames(IPCW.times) <- times
-               }
+               IPCW.subject.times <- diag(1-predictRisk(fit,x.surv,wdata[["time"]],1))
+               IPCW.times <- 1-predictRisk(fit,x.surv,times,1)
                out <- list(IPCW.times=IPCW.times,IPCW.subject.times=IPCW.subject.times,method=cens.model)
            },
            {
