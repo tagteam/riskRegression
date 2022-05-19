@@ -36,7 +36,6 @@ getInfluenceCurveHelper <- function(time,status,tau,risk,GTiminus,Gtau,AUC){
         denAUC <- mean(1*(time <= tau & status == 1)/GTiminus)*mean(time > tau)/Gtau + mean(1*(time <= tau & status == 1)/GTiminus)*mean(1*(time <= tau & status == 2)/GTiminus)
         AUC.noties <- (numAUC)/(denAUC)
         AUC.ties.part<-(numAUCties)/denAUC
-        browser()
         IF.noties <- getInfluenceFunctionAUC(time,status,tau,risk,GTiminus,Gtau,AUC.noties,FALSE,FALSE,FALSE)
         IF.ties <- getInfluenceFunctionAUC(time,status,tau,risk,GTiminus,Gtau,AUC.ties.part,FALSE,TRUE,FALSE)
         IF.noties+0.5*IF.ties
