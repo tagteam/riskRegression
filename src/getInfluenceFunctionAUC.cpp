@@ -15,6 +15,7 @@ NumericVector getInfluenceFunctionAUC(NumericVector time,
                                       double Gtau,
                                       double auc,
                                       bool conservative,
+                                      bool tiedValues,
                                       bool survival) {
   // Thomas' code from IC of Nelson-Aalen estimator
   //initialize first time point t=0 with data of subject i=0
@@ -96,13 +97,31 @@ NumericVector getInfluenceFunctionAUC(NumericVector time,
   // copy values from risk[firsthit+1:(n-1)] and sort them
   NumericVector risk1 = risk[Range(firsthit+1,n-1)];
   std::sort(risk1.begin(),risk1.end());
-  for (int i = 0; i < n;i++){
-    int j = 0;
-    while (risk1[j] < risk[i] && j < risk1.length()){
-      j++;
+  if (!tiedValues){
+    for (int i = 0; i <= firsthit;i++){
+      int j = 0;
+      while (risk1[j] < risk[i] && j < risk1.length()){
+        j++;
+      }
+      Probnu[i] = ((double) j)/n;
     }
-    Probnu[i] = ((double) j)/n;
   }
+  else {
+    for (int i = 0; i <= firsthit;i++){
+      int j = 0;
+      for (int k = firsthit+1; k<n;k++){
+        if (risk[k]==risk[i]){
+          j++;
+        }
+      }
+      //P(X = X_i, tilde{T_i} > tau)
+      Probnu[i] = ((double) j)/n;
+      // if (Probnu[i]!=0){
+      //   Rcout << Probnu[i] << "\n";
+      // }
+    }
+  }
+
 
   // F_1(tau) = int 1_{t \leq tau} 1/ hat{G(t-)} dP(t,1) = Q(T_i <= tau, Delta_i = 1)
   // F_2(tau) = int 1_{t \leq tau} 1/ hat{G(t-)} dP(t,2) = Q(T_i <= tau, Delta_i = 2)
@@ -126,27 +145,56 @@ NumericVector getInfluenceFunctionAUC(NumericVector time,
   NumericVector eq1314part(firsthit+1);
   NumericVector eq1112part(n);
   int begginingIndexEq1112;
-  if (!survival){
-    for (int i = 0; i <= firsthit;i++){
-      int j = 0;
-      while (j < risk3.length()  && risk[i] > risk3[j]){
-        eq1314part[i] += 1.0/GTiminus3[j];
-        j++;
+  if (!tiedValues){
+    if (!survival){
+      for (int i = 0; i <= firsthit;i++){
+        int j = 0;
+        while (j < risk3.length()  && risk[i] > risk3[j]){
+          eq1314part[i] += 1.0/GTiminus3[j];
+          j++;
+        }
       }
+      begginingIndexEq1112 = 0;
     }
-    begginingIndexEq1112 = 0;
+    else {
+      begginingIndexEq1112 = firsthit+1;
+    }
   }
   else {
-    begginingIndexEq1112 = firsthit+1;
-  }
-
-  for (int i = begginingIndexEq1112; i < n;i++){
-    int j = risk2.length()-1;
-    while (j >= 0 && risk[i] < risk2[j]){
-      eq1112part[i] += 1.0/GTiminus2[j];
-      j--;
+    if (!survival){
+      for (int i = 0; i <= firsthit;i++){
+        for (int k = 0; k <= firsthit; k++){
+          if (risk[k]==risk[i] && k!=i){
+            eq1314part[i]+= 1.0/GTiminus[k];
+          }
+        }
+      }
+      begginingIndexEq1112 = 0;
+    }
+    else {
+      begginingIndexEq1112 = firsthit+1;
     }
   }
+  if (!tiedValues){
+    for (int i = begginingIndexEq1112; i < n;i++){
+      int j = risk2.length()-1;
+      while (j >= 0 && risk[i] < risk2[j]){
+        eq1112part[i] += 1.0/GTiminus2[j];
+        j--;
+      }
+    }
+  }
+  else {
+    for (int i = begginingIndexEq1112; i < n;i++){
+      for (int j = 0; j <= firsthit; j++){
+        if (risk[i]==risk[j] && j!=i){
+          eq1112part[i] += 1.0/GTiminus[j];
+        }
+      }
+    }
+  }
+
+
 
   double eq10part1, eq12part1,eq14part1,eq17part1,eq19part1 = 0;
   double eq10part2 = n*eq9term;
@@ -243,6 +291,18 @@ NumericVector getInfluenceFunctionAUC(NumericVector time,
       eq11 = eq18 = 0;
     }
     double IFnu = eq8+eq9+eq10+eq11+eq12+eq13+eq14;
+    // Rcout << "eq8: " << eq8 <<"\n";
+    // Rcout << "eq9: " << eq9 <<"\n";
+    // Rcout << "eq10: " << eq10 <<"\n";
+    // Rcout << "eq11: " << eq11 <<"\n";
+    // Rcout << "eq12: " << eq12 <<"\n";
+    // Rcout << "eq13: " << eq13 <<"\n";
+    // Rcout << "eq14: " << eq14 <<"\n";
+    // Rcout << "eq15: " << eq15 <<"\n";
+    // Rcout << "eq16: " << eq16 <<"\n";
+    // if (IFnu!=0){
+    //   Rcout << IFnu;
+    // }
     double IFmu = eq15+eq16+eq17+eq18+eq19+eq20+eq21;
     ic[i] = (IFnu * mu1 - IFmu * nu1)/(mu1*mu1);
   }
