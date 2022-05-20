@@ -1441,9 +1441,9 @@ predictRisk.singleEventCB <- function(object, newdata, times, cause, ...) {
 
 
 GrpSurv <- function(formula,data,...){
-    requireNamespace("grpreg")
+    requireNamespace(c("grpreg","prodlim"))
     EHF = EventHistory.frame(formula,data,unspecialsDesign = TRUE,specials = NULL)
-    fit = grpsurv(X = EHF$design,y = EHF$event.history,...)
+    fit = grpreg::grpsurv(X = EHF$design,y = EHF$event.history,...)
     fit = list(fit = fit,terms = terms(formula),call=match.call())
     class(fit) = c("GrpSurv",class(fit))
     fit
@@ -1472,9 +1472,9 @@ predictRisk.GrpSurv <- function(object, newdata, times, cause, ...){
 }
 
 XgbSurv <- function(formula,data,...){
-    requireNamespace(c("survXgboost","xgboost"))
+    requireNamespace(c("survXgboost","xgboost","prodlim"))
     EHF = EventHistory.frame(formula,data,unspecialsDesign = TRUE,specials = NULL)
-    fit = xgb.train.surv(data = EHF$design,label = ifelse(EHF$event.history[,2] == 1, EHF$event.history[,1], -EHF$event.history[,1]),...)
+    fit = survXgboost::xgb.train.surv(data = EHF$design,label = ifelse(EHF$event.history[,2] == 1, EHF$event.history[,1], -EHF$event.history[,1]),...)
     fit = list(fit = fit,terms = terms(formula),call=match.call())
     class(fit) = c("XgbSurv",class(fit))
     fit

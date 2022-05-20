@@ -818,14 +818,14 @@ Score.list <- function(object,
                 warning("Cannot do conservative==TRUE with old AUC method. Therefore, force old.ic.method to be FALSE.")
                 old.ic.method[1] <- FALSE
             }
-            if ((se.fit[[1]]>0L) && ("AUC" %in% metrics) && (cens.model[[1]]=="cox") && (!conservative[1])){
-                if (!(split.method$name %in% c("LeaveOneOutBoot","BootCv"))){
-                    warning("Cannot (fully) estimate standard errors for AUC with Cox IPCW.\nTherefore, force conservative to be true")
-                    # cens.model <- "KaplanMeier"
-                    conservative[1] <- TRUE
-                }
-            }
-            getIC <- se.fit[[1]] && !conservative[[1]] && (((cens.model!="KaplanMeier" && cens.model!="none") && "Brier" %in% metrics) || old.ic.method)
+            # if ((se.fit[[1]]>0L) && ("AUC" %in% metrics) && (cens.model[[1]]=="cox") && (!conservative[1])){
+            #     if (!(split.method$name %in% c("LeaveOneOutBoot","BootCv"))){
+            #         warning("Cannot (fully) estimate standard errors for AUC with Cox IPCW.\nTherefore, force conservative to be true")
+            #         # cens.model <- "KaplanMeier"
+            #         conservative[1] <- TRUE
+            #     }
+            # }
+            getIC <- se.fit[[1]] && !conservative[[1]] && old.ic.method
             Weights <- getCensoringWeights(formula=formula,
                                            data=data,
                                            times=times,
@@ -928,7 +928,7 @@ Score.list <- function(object,
                                       cens.model,
                                       multi.split.test=multi.split.test,
                                       keep.residuals=keep.residuals,
-                                      keep.vcov=keep.vcov,dolist=dolist,probs=probs,metrics=metrics,plots=plots,summary=summary,ROC=FALSE,MC=Weights$IC,old.ic.method)
+                                      keep.vcov=keep.vcov,dolist=dolist,probs=probs,metrics=metrics,plots=plots,summary=summary,ROC=FALSE,MC=Weights$IC,old.ic.method,IC.data=Weights$IC.data)
         if (debug) message("computed apparent performance")
     }
     # }}}
