@@ -15,6 +15,33 @@
 ##
 ### Code:
 
+getInfluenceCurveHelper <- function(time,status,tau,risk,GTiminus,Gtau,AUC){
+    if (length(unique(risk))==length(risk)){
+        getInfluenceFunctionAUC(time,status,tau,risk,GTiminus,Gtau,AUC,FALSE,FALSE,FALSE)
+    }
+    else {
+        n <- length(time)
+        nutauParti<-rep(NA,n)
+        nutauParti.ties <-rep(NA,n)
+        nutauParticomp <-rep(NA,n)
+        nutauParticomp.ties <-rep(NA,n)
+        for (i in 1:n){
+            nutauParti[i] <- mean(1*(risk > risk[i] & time <= tau & status == 1)/GTiminus)
+            riskTies <- risk
+            riskTies[i] <- -1
+            nutauParti.ties[i] <- mean(1*(riskTies == risk[i] & time <= tau & status == 1)/GTiminus)
+        }
+        numAUC <- mean(nutauParti * 1*(time > tau)/Gtau) + mean(nutauParti * 1*(time <= tau & status == 2)/GTiminus)
+        numAUCties <- mean(nutauParti.ties * 1*(time > tau)/Gtau) + mean(nutauParti.ties * 1*(time <= tau & status == 2)/GTiminus)
+        denAUC <- mean(1*(time <= tau & status == 1)/GTiminus)*mean(time > tau)/Gtau + mean(1*(time <= tau & status == 1)/GTiminus)*mean(1*(time <= tau & status == 2)/GTiminus)
+        AUC.noties <- (numAUC)/(denAUC)
+        AUC.ties.part<-(numAUCties)/denAUC
+        IF.noties <- getInfluenceFunctionAUC(time,status,tau,risk,GTiminus,Gtau,AUC.noties,FALSE,FALSE,FALSE)
+        IF.ties <- getInfluenceFunctionAUC(time,status,tau,risk,GTiminus,Gtau,AUC.ties.part,FALSE,TRUE,FALSE)
+        IF.noties+0.5*IF.ties
+    }
+}
+
 AUC.competing.risks <- function(DT,MC,se.fit,conservative,cens.model,keep.vcov=FALSE,multi.split.test,alpha,N,NT,NF,dolist,cause,states,ROC,old.ic.method,...){
     ID=model=times=risk=Cases=time=status=event=Controls1=Controls2=TPR=FPR=WTi=Wt=ipcwControls1=ipcwControls2=ipcwCases=IF.AUC=lower=se=upper=AUC=NULL
     aucDT <- DT[model>0]
@@ -84,17 +111,21 @@ AUC.competing.risks <- function(DT,MC,se.fit,conservative,cens.model,keep.vcov=F
                                                               MC=MC)
                     }
                 }, by=list(model,times)]
+                # aucDT[,IF.AUC:=getInfluenceCurve.AUC.slow(times[1],N,time,status*event,risk,WTi,Wt[1],MC,AUC[1],FALSE)+0.5*getInfluenceCurve.AUC.slow(times[1],N,time,status*event,risk,WTi,Wt[1],MC,AUC[1],TRUE), by=list(model,times)]
+                # browser()
             }
             else {
                 aucDT[,IF.AUC:={
                     if (sum(Controls2)==0){
-                        getInfluenceFunctionAUC(time,status*event,times[1],risk,WTi,Wt[1],AUC[1],FALSE,TRUE)
+                        getInfluenceCurveHelper(time,status*event,times[1],risk,WTi,Wt[1],AUC[1])
                     }
                     else {
                         # getInfluenceFunctionAUCConservative(time,status*event,times[1],risk,WTi,Wt[1],score$AUC,FALSE)
-                        getInfluenceFunctionAUC(time,status*event,times[1],risk,WTi,Wt[1],AUC[1],FALSE,FALSE)
+                        getInfluenceCurveHelper(time,status*event,times[1],risk,WTi,Wt[1],AUC[1])#+0.5*getInfluenceFunctionAUC(time,status*event,times[1],risk,WTi,Wt[1],AUC[1],FALSE,TRUE,FALSE)
                     }
                 }, by=list(model,times)]
+                # shoud be zero with cont. covariates, the ties part that is
+                # browser()
             }
         }
         else {

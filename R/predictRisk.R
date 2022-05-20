@@ -1,30 +1,30 @@
-### predictRisk.R --- 
+### predictRisk.R ---
 #----------------------------------------------------------------------
 ## author: Thomas Alexander Gerds
-## created: Jun  6 2016 (09:02) 
-## Version: 
-## last-updated: May 17 2022 (13:58) 
+## created: Jun  6 2016 (09:02)
+## Version:
+## last-updated: May 17 2022 (13:58)
 ##           By: Thomas Alexander Gerds
 ##     Update #: 438
 #----------------------------------------------------------------------
-## 
+##
 ### Commentary:
 #
 # methods for extracting predictions from various objects
-# 
+#
 ### Change Log:
 #----------------------------------------------------------------------
-## 
+##
 ### Code:
 # --------------------------------------------------------------------
-#' @title Extrating predicting risks from regression models 
-#' 
-#' @description Extract event probabilities from fitted regression models and machine learning objects. 
+#' @title Extrating predicting risks from regression models
+#'
+#' @description Extract event probabilities from fitted regression models and machine learning objects.
 #' The function predictRisk is a generic function, meaning that it invokes
 #' specifically designed functions depending on the 'class' of the first
 #' argument. See \code{\link{predictRisk}}.
 #' @name predictRisk
-#' 
+#'
 #' @aliases predictRisk predictRisk.CauseSpecificCox
 #' predictRisk.riskRegression predictRisk.FGR
 #' predictRisk.prodlim predictRisk.rfsrc predictRisk.aalen
@@ -36,7 +36,7 @@
 #' predictRisk.lrm predictRisk.glm
 #' predictRisk.rpart predictRisk.gbm
 #' predictRisk.flexsurvreg
-#' 
+#'
 #' @param object A fitted model from which to extract predicted event
 #' probabilities.
 #' @param newdata A data frame containing predictor variable combinations for
@@ -52,15 +52,15 @@
 #' Otherwise the exponential approximation is used (i.e. exp(-cumulative hazard)).
 #' @param landmark The starting time for the computation of the cumulative risk.
 #' @param \dots Additional arguments that are passed on to the current method.
-#' 
+#'
 #' @return For binary outcome a vector with predicted risks. For survival outcome with and without
 #' competing risks
 #' a matrix with as many rows as \code{NROW(newdata)} and as many
 #' columns as \code{length(times)}. Each entry is a probability and in
 #' rows the values should be increasing.
-#' 
+#'
 #' @author Thomas A. Gerds \email{tag@@biostat.ku.dk}
-#' 
+#'
 #' @details
 #' In uncensored binary outcome data there is no need to choose a time point.
 #'
@@ -75,10 +75,10 @@
 #' subject characterized by X. Depending on the model it may or not be possible
 #' to predict the risk of all causes in a competing risks setting. For example. a
 #' cause-specific Cox (CSC) object allows to predict both cases whereas a Fine-Gray regression
-#' model (FGR) is specific to one of the causes. 
-#' 
+#' model (FGR) is specific to one of the causes.
+#'
 #' @keywords survival
-#' 
+#'
 #' @examples
 #' ## binary outcome
 #' library(rms)
@@ -93,7 +93,7 @@
 #' sl = SuperLearner(Y = d$Y, X = d[,-1], family = binomial(),
 #'       SL.library = c("SL.mean", "SL.glmnet", "SL.randomForest"))
 #'}
-#' 
+#'
 #' ## survival outcome
 #' # generate survival data
 #' library(prodlim)
@@ -107,8 +107,8 @@
 #' # or via survival
 #' library(survival)
 #' coxphmodel <- coxph(Surv(time,event)~X1+X2,data=d,x=TRUE,y=TRUE)
-#' 
-#' # Extract predicted survival probabilities 
+#'
+#' # Extract predicted survival probabilities
 #' # at selected time-points:
 #' ttt <- quantile(d$time)
 #' # for selected predictor values:
@@ -116,11 +116,11 @@
 #' # as follows
 #' predictRisk(cphmodel,newdata=ndat,times=ttt)
 #' predictRisk(coxphmodel,newdata=ndat,times=ttt)
-#' 
+#'
 #' # stratified cox model
 #' sfit <- coxph(Surv(time,event)~strata(X1)+X2,data=d,x=TRUE,y=TRUE)
 #' predictRisk(sfit,newdata=d[1:3,],times=c(1,3,5,10))
-#' 
+#'
 #' ## simulate learning and validation data
 #' learndat <- sampleData(100,outcome="survival")
 #' valdat <- sampleData(100,outcome="survival")
@@ -154,9 +154,9 @@
 #'      xlab="Unpenalized predicted survival chance at 10",
 #'      ylab="Ridge predicted survival chance at 10")
 #'}
-#' 
+#'
 #' ## competing risks
-#' 
+#'
 #' library(survival)
 #' library(riskRegression)
 #' library(prodlim)
@@ -169,7 +169,7 @@
 #' cox.fit2  <- CSC(list(Hist(time,cause)~strata(X1)+X2,Hist(time,cause)~X1+X2),data=train)
 #' predictRisk(cox.fit2,newdata=test,times=seq(1:10),cause=1)
 #'
-#' @export 
+#' @export
 predictRisk <- function(object,newdata,...){
     UseMethod("predictRisk",object)
 }
@@ -259,11 +259,11 @@ predictRisk.glm <- function(object, newdata, iid = FALSE, average.iid = FALSE,..
             object.score <- lava::score(wobject, times = "1", simplifies = FALSE, indiv = TRUE)
             object.info <- lava::information(wobject, times = "1", simplifies = FALSE)
             iid.beta <- object.score[["1"]] %*% solve(object.info[["1"]])
-            
+
             ff.rhs <- stats::delete.response(stats::terms(stats::formula(object)))
             newX <- model.matrix(ff.rhs, newdata)
             Xbeta <- predict(object, type = "link", newdata = newdata, se = FALSE)
-            
+
             ## ** chain rule
             if(average.iid){
                 attr(out,"average.iid") <- lapply(factor, function(iFactor){
@@ -280,7 +280,7 @@ predictRisk.glm <- function(object, newdata, iid = FALSE, average.iid = FALSE,..
                 attr(out,"iid") <- iid.beta %*% t(colMultiply_cpp(newX, scale = exp(-Xbeta)/(1+exp(-Xbeta))^2))
             }
         }
-        
+
         ## ** set correct level
         ## hidden argument: enable to ask for the prediction of Y==1 or Y==0
         level <- list(...)$level
@@ -302,13 +302,13 @@ predictRisk.glm <- function(object, newdata, iid = FALSE, average.iid = FALSE,..
                     if(is.list(attr(out,"average.iid"))){
                         attr(out,"average.iid") <- lapply(attr(out,"average.iid"), function(iIID){-iIID})
                         names(attr(out,"average.iid")) <- names(factor)
-                    }else{                        
+                    }else{
                         attr(out,"average.iid") <- - attr(out,"average.iid")
                     }
-                }                
+                }
             }
         }
-        ## print(sum(abs(attr(out,"average.iid")[[1]])))        
+        ## print(sum(abs(attr(out,"average.iid")[[1]])))
         return(out)
     } else {
         stop("Currently only the binomial family is implemented for predicting a status from a glm object.")
@@ -348,7 +348,7 @@ predictRisk.multinom <- function(object, newdata, iid = FALSE, average.iid = FAL
     }else if(iid || average.iid){
         stop("Argument \'level\' must be specified when exporting the iid decomposition")
     }
-        
+
     if(iid || average.iid){
         ## ** prepare average.iid
         if(average.iid){
@@ -388,7 +388,7 @@ predictRisk.multinom <- function(object, newdata, iid = FALSE, average.iid = FAL
         ## \prod_i \prod_k p_k(X_i)^y_{ki}
         ## > Log-likelihood
         ## \sum_i \sum_k y_{ki}\log(p_k(X_i)) = \sum_i \sum_k>1 y_{ki}\log(p_k(X_i)) + (1-\sum_k>1 y_{ki})\log(p_1(X_i))
-        ##                                     = \sum_i \sum_k>1 y_{ki}\log(p_k(X_i)/p_1(X_i)) + log(p_1(X_i)) 
+        ##                                     = \sum_i \sum_k>1 y_{ki}\log(p_k(X_i)/p_1(X_i)) + log(p_1(X_i))
         ##                                     = \sum_i \sum_k>1 y_{ki} X_i \beta_k - log(1 + \sum_k>1 exp(X_i \beta_k))
         ## LL <- prod(out^Y)
         ## ll <- rowSums(Y[,-1,drop=FALSE] * Xbeta) - log(1 + rowSums(eXbeta))
@@ -401,21 +401,21 @@ predictRisk.multinom <- function(object, newdata, iid = FALSE, average.iid = FAL
         iid.beta <- score %*% informationM1
         iid.beta.level <- lapply(2:n.class, function(iClass){iid.beta[,(iClass-2) * n.coefperY + 1:n.coefperY,drop=FALSE]})
         names(iid.beta.level) <- object$lev[-1]
-        
+
         ## ** chain rule
         newX <- model.matrix(stats::formula(object), newdata)
         Xbeta <- cbind(0,newX %*% t(beta))
         eXbeta_rowSum <- rowSums(exp(Xbeta))
         colnames(Xbeta) <- object$lev
-        
+
         if(average.iid){
             attr(out,"average.iid") <- lapply(factor, function(iFactor){
                 apply(iFactor, 2, function(iiFactor){ ## exp(XB_j)/(1+\sum_k exp(XB_j))
-                    
+
                     if(level != object$lev[1]){
                         ## if level l which is not the reference level:  exp(XB_l)/(1+\sum_j exp(XB_j))
                         ## derivative of the numerator:  IF_l X exp(XB_l)/(1+\sum_j exp(XB_j))
-                        ## derivative of the denumerator: - \sum_k IF_k X exp(XB_k+XB_l)/(1+\sum_j exp(XB_j))^2                    
+                        ## derivative of the denumerator: - \sum_k IF_k X exp(XB_k+XB_l)/(1+\sum_j exp(XB_j))^2
                         iRes <- Reduce("+",lapply(object$lev[-1], function(iClass){ ## iClass <- "1"
                             - iid.beta.level[[iClass]] %*% colMeans(colMultiply_cpp(newX, scale = iiFactor * exp(Xbeta[,iClass]+Xbeta[,level])/eXbeta_rowSum^2))
                         }))
@@ -423,7 +423,7 @@ predictRisk.multinom <- function(object, newdata, iid = FALSE, average.iid = FAL
                     }else{
                         ## if reference level: 1/(1+\sum_j exp(XB_j))
                         ## derivative of the numerator: 0 because the numerator is 1
-                        ## derivative of the denumerator: - \sum_k IF_k X exp(XB_k)/(1+\sum_j exp(XB_j))^2                    
+                        ## derivative of the denumerator: - \sum_k IF_k X exp(XB_k)/(1+\sum_j exp(XB_j))^2
                         iRes <- Reduce("+",lapply(object$lev[-1], function(iClass){ ## iClass <- "1"
                             - iid.beta.level[[iClass]] %*% colMeans(colMultiply_cpp(newX, scale = iiFactor * exp(Xbeta[,iClass])/eXbeta_rowSum^2))
                         }))
@@ -432,7 +432,7 @@ predictRisk.multinom <- function(object, newdata, iid = FALSE, average.iid = FAL
                     return(iRes)
                 })
             })
-                
+
             if(is.null(attr(average.iid,"factor"))){
                 attr(out,"average.iid") <- attr(out,"average.iid")[[1]]
             }
@@ -446,8 +446,8 @@ predictRisk.multinom <- function(object, newdata, iid = FALSE, average.iid = FAL
             }
         }
     }
-    
-    ## ** export    
+
+    ## ** export
     return(out)
 }
 ## * predictRisk.formula
@@ -588,7 +588,7 @@ predictRisk.cox.aalen <- function(object,newdata,times,...){
     1-p
 }
 
-    
+
 ## * predictRisk.coxph
 ##' @export
 ##' @rdname predictRisk
@@ -604,7 +604,7 @@ predictRisk.coxph <- function(object,
     dots <- list(...)
     type <- dots$type ## hidden argument for ate
     store.iid <- dots$store ## hidden argument for ate
-    
+
     if(product.limit){
         outPred <- predictCoxPL(object=object,
                                 newdata=newdata,
@@ -935,7 +935,7 @@ predictRisk.rfsrc <- function(object, newdata, times, cause, ...){
             # if necessary restore matrix format after dropping third dimension of array
             if (NROW(newdata)==1) {
                 cif <- matrix(cif,nrow=1)
-            } 
+            }
             pos <- prodlim::sindex(jump.times=object$time.interest,eval.times=times)
             p <- cbind(0,cif)[,pos+1,drop=FALSE]
             if (NROW(p) != NROW(newdata) || NCOL(p) != length(times))
@@ -1001,7 +1001,7 @@ predictRisk.CauseSpecificCox <- function (object, newdata, times, cause,
         type <- "absRisk"
     }
     store.iid <- dots$store.iid
-    
+
     outPred <- predict(object=object,
                        newdata=newdata,
                        times=times,
@@ -1138,7 +1138,7 @@ penalizedS3 <- function(formula,
     ## the left hand side of response
     fitS4 <- switch(type,"ridge"={
         do.call(penalized::penalized,c(args,list(lambda1=0, lambda2=lambda2)))
-    }, 
+    },
     "lasso"={
         do.call(penalized::penalized,c(args,list(lambda1=lambda1, lambda2=0)))
     },
@@ -1220,9 +1220,9 @@ predictRisk.penfitS3 <- function(object,
     p
 }
 
-##' @title SmcFcs 
+##' @title SmcFcs
 ##' @description TODO
-##' 
+##'
 ##' @param formula TODO
 ##' @param data TODO
 ##' @param m TODO
@@ -1230,7 +1230,7 @@ predictRisk.penfitS3 <- function(object,
 ##' @param fitter TODO
 ##' @param fit.formula TODO
 ##' @param ... TODO
-##' 
+##'
 ##' # @export
 SmcFcs  <- function(formula,data,m=5,method,fitter="glm",fit.formula,...){
     requireNamespace("smcfcs",quietly=FALSE)
@@ -1303,10 +1303,10 @@ predictRisk.gbm <- function(object, newdata, times, ...) {
     traindata <-  gbm::reconstructGBMdata(object)
     p <- matrix(0, NROW(newdata), length(times))
     xb.train <- predict(object ,newdata = traindata, n.trees = n.trees)
-    H2 <- gbm::basehaz.gbm(t = traindata[, as.character(object$call$formula[[2]][[2]])], 
-                           delta = traindata[, as.character(object$call$formula[[2]][[3]])], 
+    H2 <- gbm::basehaz.gbm(t = traindata[, as.character(object$call$formula[[2]][[2]])],
+                           delta = traindata[, as.character(object$call$formula[[2]][[3]])],
                            f.x = xb.train, t.eval = times)
-    xb.test <- predict(object, newdata = newdata , n.trees = n.trees ) 
+    xb.test <- predict(object, newdata = newdata , n.trees = n.trees )
     for (i in 1:length(times)) p[,i] <- exp(-H2[i] * exp(xb.test))
     p[,times==0] <- 1
     1 - p
@@ -1324,7 +1324,7 @@ predictRisk.flexsurvreg <- function(object, newdata, times, ...) {
     for (i in 1:NROW(newdata)){
         p[i,] <- sm[[i]][,2]
     }
-    if (NROW(p) != NROW(newdata) || NCOL(p) != length(times)) 
+    if (NROW(p) != NROW(newdata) || NCOL(p) != length(times))
         stop("Prediction failed")
     1 - p
 }
@@ -1334,7 +1334,7 @@ Hal9001 <- function(formula,data,...){
     EHF = EventHistory.frame(formula,data,unspecialsDesign = TRUE,specials = NULL)
     stopifnot(attr(EHF$event.history,"model")[[1]] == "survival")
     # blank Cox object needed for predictions
-    bl_cph <- coxph(Surv(time,event)~1,data=d,x=1,y=1)
+    bl_cph <- coxph(Surv(time,status)~1,data=data,x=1,y=1)
     bl_obj <- coxModelFrame(bl_cph)[]
     bl_obj[,strata.num:=0]
     data.table::setorder(bl_obj, strata.num,stop,start,-status)

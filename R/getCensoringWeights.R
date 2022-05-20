@@ -64,28 +64,18 @@ getCensoringWeights <- function(formula,
                    out <- c(out,list(IC=IC))
                }
            },
-           "hal9001"={
+           {
                vv <- all.vars(formula(delete.response(terms(formula))))
-               formula.covariates<-as.formula(paste0("~",paste0(paste(vv,collapse = "+"),"-1")))
+               new.formula<-as.formula(paste0("Surv(time,status)",paste0("~",paste0(paste(vv,collapse = "+")))))
                wdata <- copy(data)
                wdata[,status:=1-status]
-               covariates.data <- wdata[,..vv]
-               x.surv <- model.matrix(formula.covariates,data=wdata)
-               y.surv <- Surv(wdata$time,wdata$status)
-               ## fit Cox model for censoring times
-               fit<-hal9001::fit_hal(X=x.surv,Y=y.surv,family="cox",yolo=FALSE)
-               surv_info <- list()
-               surv_info$start <- 0
-               surv_info$stop <- wdata[["time"]]
-               surv_info$status <- wdata[["status"]]
-               fit$surv_info <- surv_info
-               ## need G(Ti-|Xi) only for i where status=1 && Ti < max(times)
-               IPCW.subject.times <- diag(1-predictRisk(fit,x.surv,wdata[["time"]],1))
-               IPCW.times <- 1-predictRisk(fit,x.surv,times,1)
+               input <- list(formula=new.formula,data=wdata)
+               fit <- do.call(cens.model,input)
+               # fit<-Hal9001(new.formula,wdata)
+               times.data.minus <- c(0,wdata$time[-length(wdata$time)]) #have to compute the weights for T_i minus not just Ti
+               IPCW.subject.times <- diag(1-predictRisk(fit,wdata,times.data.minus,1)) #computational problem with predictRisk
+               IPCW.times <- 1-predictRisk(fit,wdata,times,1)
                out <- list(IPCW.times=IPCW.times,IPCW.subject.times=IPCW.subject.times,method=cens.model)
-           },
-           {
-               stop("IPCW works only for nuisance model obtained with Kaplan-Meier (marginal) or Cox regression (cox).")
            })
     out$dim <- ifelse(cens.model=="cox",1,0)
     out
