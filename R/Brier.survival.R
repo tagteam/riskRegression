@@ -15,7 +15,7 @@
 ##
 ### Code:
 
-Brier.survival <- function(DT,MC,se.fit,conservative,cens.model,keep.vcov=FALSE,multi.split.test,alpha,N,NT,NF,dolist,keep.residuals=FALSE,old.ic.method,...){
+Brier.survival <- function(DT,MC,se.fit,conservative,cens.model,keep.vcov=FALSE,multi.split.test,alpha,N,NT,NF,dolist,keep.residuals=FALSE,old.ic.method,IC.data,...){
     IC0=IPCW=nth.times=ID=time=times=raw.Residuals=risk=Brier=residuals=WTi=Wt=status=setorder=model=IF.Brier=data.table=sd=lower=qnorm=se=upper=NULL
     ## compute 0/1 outcome:
     DT[time<=times & status==1,residuals:=(1-risk)^2/WTi]
@@ -36,7 +36,7 @@ Brier.survival <- function(DT,MC,se.fit,conservative,cens.model,keep.vcov=FALSE,
                 score <- DT[,data.table(Brier=sum(residuals)/N,
                                         se=sd(residuals)/sqrt(N),
                                         se.conservative=sd(residuals)),by=list(model,times)]
-            }else{
+            }else if (cens.model=="KaplanMeier"){
                 DT[,Brier := sum(residuals)/N,by=list(model,times)]
                 if (old.ic.method){
                     DT[,IF.Brier:=getInfluenceCurve.Brier(t=times[1],
@@ -56,6 +56,11 @@ Brier.survival <- function(DT,MC,se.fit,conservative,cens.model,keep.vcov=FALSE,
                 score <- DT[,data.table(Brier=sum(residuals)/N,
                                         se=sd(IF.Brier)/sqrt(N),
                                         se.conservative=sd(IC0)/sqrt(N)),by=list(model,times)]
+            }
+            else {
+                DT[,IF.Brier:=getInfluenceCurve.Brier.covariates(times[1],time,risk,status,WTi,Wt,sum(residuals)/N,IC.data), by=list(model,times)]
+                score <- DT[,data.table(Brier=sum(residuals)/N,
+                                        se=sd(IF.Brier)/sqrt(N)),by=list(model,times)]
             }
         }
         if (se.fit==TRUE){

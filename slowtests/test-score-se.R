@@ -34,6 +34,7 @@ test_that("Brier score SE against old implementation, no covariates in censoring
 })
 
 test_that("Brier score SE against old implementation, no covariates in censoring, survival",{
+  set.seed(18)
   trainCR.survival <- sampleData(200,outcome="survival")
   testCR.survival <- sampleData(10000,outcome="survival")
   cox1 = coxph(Surv(time,event)~X1+X2+X7+X9,data=trainCR.survival,x=TRUE)

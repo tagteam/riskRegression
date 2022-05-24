@@ -36,7 +36,8 @@ computePerformance <- function(DT,
                                summary,
                                ROC=FALSE,
                                MC,
-                               old.ic.method){
+                               old.ic.method,
+                               IC.data){
     IPA=IBS=Brier=NULL
     ibs <- "ibs"%in%summary
     ipa <- "ipa"%in%summary
@@ -56,7 +57,7 @@ computePerformance <- function(DT,
                   keep.residuals=keep.residuals,
                   keep.vcov=keep.vcov,
                   ## DT.residuals=DT.residuals,
-                  dolist=dolist,Q=probs,ROC=FALSE,MC=MC,old.ic.method=old.ic.method)
+                  dolist=dolist,Q=probs,ROC=FALSE,MC=MC,old.ic.method=old.ic.method,IC.data=IC.data)
     if (response.type=="competing.risks") {
         input <- c(input,list(cause=cause,states=states))
     }
