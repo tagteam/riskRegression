@@ -1,5 +1,5 @@
 #AUC with censoring covariates example
-devtools::load_all()
+## devtools::load_all()
 library(riskRegression)
 library(testthat)
 library(cmprsk)

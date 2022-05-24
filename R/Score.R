@@ -1165,8 +1165,8 @@ Score.list <- function(object,
         # }}}
     }
 
-                                        # }}}
-# {{{ the output object
+    # }}}
+    # {{{ the output object
     if (split.method$internal.name=="noplan"){
         if (keep.residuals==TRUE){
             noSplit$Brier$residuals[,model:=factor(model,levels=mlevs,mlabels)]
