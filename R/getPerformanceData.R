@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Feb 27 2022 (09:12) 
 ## Version: 
-## Last-Updated: Mar  7 2022 (08:33) 
+## Last-Updated: May 31 2022 (11:47) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 10
+##     Update #: 11
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -35,7 +35,6 @@ getPerformanceData <- function(testdata,
     # inherit everything else from parent frame: object, nullobject, NF, NT, times, cause, response.type, etc.
     Brier=IPA=IBS=NULL
     looping <- !is.null(traindata)
-    ## if (!looping) b=0
     N <- as.numeric(NROW(testdata))
     # split data vertically into response and predictors X
     response <- testdata[,1:response.dim,with=FALSE]
@@ -44,7 +43,6 @@ getPerformanceData <- function(testdata,
     X <- testdata[,-c(1:response.dim),with=FALSE]
     ## restore sanity
     setnames(X,sub("^protectedName.","",names(X)))
-    ## if (debug) if (looping) message(paste0("Loop round: ",b))
     if (debug) message("extracted test set and prepared output object")
     # }}}
     # {{{ collect pred as long format data.table

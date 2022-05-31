@@ -138,7 +138,7 @@ predictRisk(object, newdata, ...)
 
 \method{predictRisk}{flexsurvreg}(object, newdata, times, ...)
 
-\method{predictRisk}{hal9001}(object, newdata, times, cause, ...)
+\method{predictRisk}{Hal9001}(object, newdata, times, cause, ...)
 
 \method{predictRisk}{singleEventCB}(object, newdata, times, cause, ...)
 

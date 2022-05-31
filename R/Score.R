@@ -1085,7 +1085,30 @@ if (split.method$internal.name%in%c("BootCv","LeaveOneOutBoot","crossval")){
                               " This may take a while ...",
                               " This should be fast ...")))
         if (split.method$name=="LeaveOneOutBoot" ){
-            crossvalPerf <- lapply(metrics, function(m){crossvalPerf.loob(m,times,mlevs,se.fit,response.type,NT,Response,cens.type,Weights,split.method,N,B,DT.B,data,dolist,alpha,byvars,mlabels,ipa,keep.residuals,conservative,cens.model,response.dim,ID))}
+            crossvalPerf <- lapply(metrics, function(m){crossvalPerf.loob(m,
+                                                                          times,
+                                                                          mlevs,
+                                                                          se.fit,
+                                                                          response.type,
+                                                                          NT,
+                                                                          Response,
+                                                                          cens.type,
+                                                                          Weights,
+                                                                          split.method,
+                                                                          N,
+                                                                          B,
+                                                                          DT.B,
+                                                                          data,
+                                                                          dolist,
+                                                                          alpha,
+                                                                          byvars,
+                                                                          mlabels,
+                                                                          ipa,
+                                                                          keep.residuals,
+                                                                          conservative,
+                                                                          cens.model,
+                                                                          response.dim,
+                                                                          ID)})
         }
         ## if (split.method$name=="LeaveOneOutBoot" ){
         names(crossvalPerf) <- metrics

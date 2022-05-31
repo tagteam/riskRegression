@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun  6 2016 (09:02)
 ## Version:
-## last-updated: May 31 2022 (11:41) 
+## last-updated: May 31 2022 (11:52) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 439
+##     Update #: 440
 #----------------------------------------------------------------------
 ##
 ### Commentary:
@@ -1361,7 +1361,7 @@ Hal9001 <- function(formula,data,...){
 
 ##' @export
 ##' @rdname predictRisk
-##' @method predictRisk hal9001
+##' @method predictRisk Hal9001
 predictRisk.Hal9001 <- function(object,
                                 newdata,
                                 times,
