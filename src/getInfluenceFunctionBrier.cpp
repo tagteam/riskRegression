@@ -6,7 +6,7 @@ using namespace arma;
 
 // Calculate influence function for competing risk case/survival case with Nelson-Aalen censoring.
 // Author: Johan Sebastian Ohlendorff
-// [[Rcpp::export]]
+// [[Rcpp::export(rng=false)]]
 NumericVector getInfluenceFunctionBrierKMCensoring(double tau,
                                                    NumericVector time,
                                                    NumericVector risk,
@@ -64,7 +64,7 @@ NumericVector getInfluenceFunctionBrierKMCensoring(double tau,
   }
   int tieIter = 0;
   // can do while loops together
-  while ((time[tieIter] == time[0]) && (tieIter < n)) {
+  while ((tieIter < n) && (time[tieIter] == time[0])) {
     if ((time[tieIter] <= tau) && (status[tieIter]==1)){
       icpart2 -= (1.0-2.0*risk[tieIter]) / GTiminus[tieIter];
     }
@@ -95,7 +95,7 @@ NumericVector getInfluenceFunctionBrierKMCensoring(double tau,
       icterm = 1.0 / n * (icpart1+fihattau*icpart2);
       if (upperTie <= i){
         int tieIter = i+1;
-        while ((time[tieIter] == time[i+1]) && (tieIter < n)) {
+        while ((tieIter < n) && (time[tieIter] == time[i+1])) {
           if ((time[tieIter] <= tau) && (status[tieIter]==1)){
             icpart1 -= (1.0-2.0*risk[tieIter])*(MC_term2[sindex[i]]) / GTiminus[tieIter];
             icpart2 -= (1.0-2.0*risk[tieIter]) / GTiminus[tieIter];
