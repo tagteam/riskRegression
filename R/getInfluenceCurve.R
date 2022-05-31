@@ -15,7 +15,7 @@ getInfluenceCurve.AUC.survival <- function(t,n,time,risk,Cases,Controls,ipcwCont
     ht <- (sum(htij1))/(n*n)
     fi1t <- Cases*ipcwCases*n
     colSumshtij1 <- rep(0,n) # initialise at 0
-    colSumshtij1[Cases] <- rowSums(htij1) 
+    colSumshtij1[Cases] <- rowSums(htij1)
     rowSumshtij1 <- rep(0,n) # initialize at 0
     rowSumshtij1[Controls] <- colSums(htij1)
     hathtstar <- (sum(htij1))/(n*n)
@@ -34,7 +34,7 @@ getInfluenceCurve.AUC.survival <- function(t,n,time,risk,Cases,Controls,ipcwCont
     #T3 <- colSums(hathtstar*(vectTisupt + (fi1t*(1+MC)-F01t)/F01t))
     #T3 <- hathtstar*sum(vectTisupt) + hathtstar/F01t * (T3CalculationHelper(fi1t,MC)-nrow(MC)*F01t)
     T3 <- hathtstar*(sum(vectTisupt) + 1/F01t * T3CalculationHelper(fi1t,MC)-nrow(MC))
-    
+
     Term.ijak <- (T1-T3)/(F01t*St)
     Term.ikaj <- (rowSumshtij1 - n*hathtstar)/(F01t*St)
     Term.jkai <-  (colSumshtij1 - n*hathtstar*(vectTisupt+(1/F01t)*(fi1t-F01t)))/(F01t*St)
@@ -42,107 +42,6 @@ getInfluenceCurve.AUC.survival <- function(t,n,time,risk,Cases,Controls,ipcwCont
     (Term.ijak + Term.ikaj + Term.jkai)/(n)
 }
 
-
-getInfluenceCurve.AUC.survival.Censored <- function(t,n,time,risk,Cases,Controls,GTiminus,Gtau,MC, AUC, discardNAIC = FALSE){
-    IF <- rep(NA,n)
-    # get the notation right
-    tau <- t
-    mu1hat <- mean(time > tau)
-    mutauP <- (mu1hat / Gtau) * mean(Cases/( GTiminus))
-    nutauP <- AUC * mutauP
-    
-    nu1hat <- rep(NA,n)
-    for (i in 1:n){
-        nu1hat[i] <- mean(risk < risk[i] & time > tau)
-    }
-    # without using the AUC values, we can estimate nutauP as follows
-    # nutauP <-  mean(1*(Cases) * nu1hat / GTiminus)
-    
-    firsthit <- sindex(jump.times=time,eval.times=tau)
-    for (i in 1:n){
-        # First terms of IF_{num}_i and IF_{den}_i
-        if (Cases[i]){
-            firstterm.num <- (nu1hat[i]) / (GTiminus[i]*Gtau)
-            firstterm.den <- mu1hat / (GTiminus[i]*Gtau)
-        }
-        else if (Controls[i]){
-            nu2hati <- mean(1*(risk[i] < risk & Cases)/( GTiminus))
-            firstterm.num <-  nu2hati * 1/Gtau
-            firstterm.den <- mutauP / mu1hat
-        }
-        else {
-            firstterm.num <-  0
-            firstterm.den <- 0
-        }
-        # The two last terms of IF_{num}_i and IF_{den}_i
-        if (!is.null(MC) && !discardNAIC){
-            if (i > firsthit){
-                j <- firsthit
-            }
-            else {
-                j <- i
-            }
-            if (i == 1){
-                fihat <- c(0,rep(MC[i,i], n-1))
-            }
-            else {
-                fihat <- c(0,MC[1:(i-1),i], rep(MC[i,i], n-i)) 
-            }
-            fihattau <- MC[j,i]
-            nu3hati <- mean( (1*(Cases) * nu1hat*fihat) / GTiminus)
-            ICNAterms.num <- fihattau * nutauP + 1/Gtau * nu3hati
-            mu2hat <- mean( (1*(Cases) *fihat) / GTiminus)
-            ICNAterms.den <-  fihattau * mutauP +mu1hat/Gtau * mu2hat
-        }
-        else {
-            ICNAterms.num <- 0 
-            ICNAterms.den <- 0
-        }
-        IF[i] <- ((firstterm.num+ICNAterms.num)*mutauP- nutauP*(firstterm.den+ICNAterms.den))/(mutauP^2)
-    }
-    IF
-}
-
-
-# uncensored data  for survival case
-getInfluenceCurve.AUC.survivalUncensored <- function(t,n,time,risk,Cases,Controls,ipcwControls,ipcwCases,MC){
-    if (is.unsorted(time)) {
-        ord <- order(time)
-        time <- time[ord]
-        risk <- risk[ord]
-    }
-    maxIndex <- max(which(time <= t))
-    muP <- 1/n^2 * maxIndex * (n-maxIndex)
-    nuP <- 0
-    for (i in 1:maxIndex){
-        for (j in (maxIndex+1):n){
-            nuP <- nuP + 1*(risk[i] > risk[j])
-        }
-    }
-    nuP <- 1/n^2 * nuP
-    # muP <- 0
-    # nuP <- 0
-    # for (i in 1:n){
-    #     for (j in 1:n){
-    #         muP <- muP + 1*(time[i] <= t & time[j] > t)
-    #         nuP <- nuP + 1*(risk[i] > risk[j] & time[i] <= t & time[j] > t)
-    #     }
-    # }
-    # muP <- 1/n^2 * muP
-    # nuP <- 1/n^2 * nuP
-    PTgreaterthantau <- mean(time>t)
-    IC <- rep(NA,n)
-    for (i in 1:n){
-        if (time[i] <= t){
-            IC[i] <- (mean(time > t & risk < risk[i])*muP-PTgreaterthantau*nuP)/(muP^2) 
-        }
-        else {
-            # which way, what happens if risk = ?
-            IC[i] <- (mean(time <= t & risk > risk[i])*muP-(1-PTgreaterthantau)*nuP)/(muP^2)
-        }
-    }
-    IC
-}
 
 ## NTC <- NCOL(MC.Ti.cases)
 ## T1 <- numeric(NTC)
@@ -191,12 +90,12 @@ getInfluenceCurve.AUC.competing.risks <- function(t,n,time,risk,Cases,Controls1,
     colSumshtij1 <- rep(0,n) # initialise at 0
     colSumshtij1[Cases] <- rowSums(htij1)
     colSumshtij2 <- rep(0,n) # initialise at 0
-    colSumshtij2[Cases] <- rowSums(htij2) 
+    colSumshtij2[Cases] <- rowSums(htij2)
     rowSumshtij1 <- rep(0,n) # match(time,unique(time))initialize at 0
     rowSumshtij1[Controls1] <- colSums(htij1)
     rowSumshtij2 <- rep(0,n) # initialize at 0
     rowSumshtij2[Controls2] <- colSums(htij2)
-    hathtstar <- (sum(htij1))/(n*n)  
+    hathtstar <- (sum(htij1))/(n*n)
     vectTisupt <- n*Controls1/nbControls1
     # Integral_0^T_i dMC_k/S for i %in% Cases
     MC.Ti.cases <- MC[sindex(eval.times=time[Cases],jump.times=unique(time),),,drop=FALSE]
@@ -215,7 +114,7 @@ getInfluenceCurve.AUC.competing.risks <- function(t,n,time,risk,Cases,Controls1,
     T2 <- rowSumsCrossprodSpec(htij2,MC.Ti.cases)
     ## T2 <- colSums(crossprod(htij2,1+MC.Ti.cases))
     ## in case of ties need to expand MC to match the dimension of fi1t
-    # data does not have ties, this saves memory 
+    # data does not have ties, this saves memory
     if (all(match(time,unique(time)) != 1:ncol(MC))) {
         MC <- MC[match(time,unique(time)),]
     }
@@ -264,30 +163,30 @@ getInfluenceCurve.Brier <- function(t,
                                     cens.model,
                                     nth.times=NULL){
     ##
-    ## Compute influence function of Brier score estimator using weights of the reverse Cox model 
+    ## Compute influence function of Brier score estimator using weights of the reverse Cox model
     ## This function evaluates the part of influence function which is related to the IPCW weights
     ## The other part is IC0.
-    ## 
-    ## \frac{1}{n}\sum_{i=1}^n 
-    ## m_{t,n}^{(1)}(X_i) 
-    ## [\frac{I_{T_i\leq t}\Delta_i}{G^2(T_i\vert Z_i)}IF_G(T_i,X_k; X_i)+\frac{I_{T_i>t}}{G^2(t|Z_i)}IF_G(t,X_k; X_i)] 
-    ## with 
-    ## IF_G(t,X_k; X_i)=-\exp(-\Lambda(t\vert Z_i))IF_{\Lambda}(t,X_k; X_i) 
+    ##
+    ## \frac{1}{n}\sum_{i=1}^n
+    ## m_{t,n}^{(1)}(X_i)
+    ## [\frac{I_{T_i\leq t}\Delta_i}{G^2(T_i\vert Z_i)}IF_G(T_i,X_k; X_i)+\frac{I_{T_i>t}}{G^2(t|Z_i)}IF_G(t,X_k; X_i)]
+    ## with
+    ## IF_G(t,X_k; X_i)=-\exp(-\Lambda(t\vert Z_i))IF_{\Lambda}(t,X_k; X_i)
     ##
     ## IC_G(t,z;x_k) is an array with dimension (nlearn=N, gtimes, newdata)
     ## where gtimes = subject.times (Weights$IC$IC.subject) or times (Weights$IC$IC.times)
     ## and subject.times=Y[(((Y<=max(times))*status)==1)]
     ##
     ## don't square the weights because they will be multiplied with the
-    ## residuals that are already weighted 
-    ## 
+    ## residuals that are already weighted
+    ##
     N <- length(residuals)
     if (cens.model=="cox") {## Cox regression
         ic.weights <- matrix(0,N,N)
         k=0 ## counts subject-times with event before t
         for (i in 1:N){
             if (residuals[i]>0){
-                if (time[i]<=t){ ## min(T,C)<=t, note that (residuals==0) => (status==0)  
+                if (time[i]<=t){ ## min(T,C)<=t, note that (residuals==0) => (status==0)
                     k=k+1
                     ic.weights[i,] <- IC.G$IC.subject[i,k,]/(WTi[i])
                 }else{## min(T,C)>t
@@ -301,7 +200,7 @@ getInfluenceCurve.Brier <- function(t,
     }else{
         ## Blanche et al. 2015 (joint models) web appendix equation (14)
         hit1=(time>t)*residuals ## equation (7)
-        hit2=(time<=t)*residuals ## equation (8) 
+        hit2=(time<=t)*residuals ## equation (8)
         Brier <- mean(residuals)
         if (!is.null(IC.G)){
             ind <- prodlim::sindex(jump.times=unique(time),eval.times=t)
@@ -315,14 +214,13 @@ getInfluenceCurve.Brier <- function(t,
                 IF.Brier <- residuals-Brier + colMeans(IC.G*hit2)
             }
             #Int0tdMCsurEffARisk <- rbind(0,IC.G)[1+prodlim::sindex(jump.times=unique(time),eval.times=t),,drop=FALSE]
-            
+
         }else{# uncensored
             IF.Brier <- hit1+hit2-Brier
         }
         IF.Brier
     }
 }
-
 
 ## now using cpp function ../src/IC_Nelson_Aalen_cens_time.cpp
 getInfluenceCurve.NelsonAalen <- function(time,status){
@@ -355,14 +253,14 @@ getInfluenceCurve.NelsonAalen <- function(time,status){
     hatMC
 }
 
-getInfluenceCurve.NelsonAalen.slow <- function(time,status){    
+getInfluenceCurve.NelsonAalen.slow <- function(time,status){
     time <- time[order(time)]
-    status <- status[order(time)] 
+    status <- status[order(time)]
     n <- length(time)
     mat.data<-cbind(time,as.numeric(status==0))
     colnames(mat.data)<-c("T","indic.Cens")
     # compute the empirical survival function corresponding to the counting process 1(\tilde{eta}=0, \tilde{T}<=t)
-    hatSdeltaCensTc<-1-cumsum(mat.data[,c("indic.Cens")])/n  
+    hatSdeltaCensTc<-1-cumsum(mat.data[,c("indic.Cens")])/n
     # Build the matrix required for computing  dM_C(u) for all time u (all observed times \tilde{T}_i)
     temp1 <- cbind(mat.data[,c("T","indic.Cens")],1-(1:n)/n,hatSdeltaCensTc)
     temp1 <- rbind(c(0,0,1,1),temp1) # Add the first row corresponding to time t=0
@@ -373,7 +271,7 @@ getInfluenceCurve.NelsonAalen.slow <- function(time,status){
     temp1<-cbind(temp1,c(0,lambdaC))
     colnames(temp1)[ncol(temp1)]<-"lambdaC"
     # Cumulative hazard of censoring
-    LambdaC<-cumsum(lambdaC)         
+    LambdaC<-cumsum(lambdaC)
     # Add the column of the cumulative hazard function of the censoring (equal to 0 at time t=0)
     temp1 <- cbind(temp1,c(0,LambdaC))
     colnames(temp1)[ncol(temp1)]<-"LambdaC"
@@ -383,10 +281,10 @@ getInfluenceCurve.NelsonAalen.slow <- function(time,status){
     hatMC<-matrix(NA,n,n)
     for (i in 1:n){
         hatMC[,i] <-temp2[i,2]*as.numeric(temp2[i,1]<=temp2[,"T"])- c(temp2[0:i,"LambdaC"], rep(temp2[i,6],(n-i)))
-    }  
+    }
     # In order to draw martingale paths
     #matplot(mat.data[,"T"],hatMC,type="l")
-    #lines(mat.data[,"T"],rowMeans(hatMC),lwd=5)  
+    #lines(mat.data[,"T"],rowMeans(hatMC),lwd=5)
     # Compute d \hat{M}_{C_i} (u) for all time u (all observed times \tilde{T}_i)
     dhatMC<-rbind(hatMC[1,],hatMC[-1,]-hatMC[-nrow(hatMC),])
     # Compute d \hat{M}_{C_i} (u)/(S_{\tilde{T}}(u)) for all time u (all observed times \tilde{T}_i)
@@ -397,15 +295,15 @@ getInfluenceCurve.NelsonAalen.slow <- function(time,status){
         v/c(1,1-(1:(n-1))/n)      # c(1,1-(1:(n-1))/n) is the at risk probability (S_{\tilde{T}}(u))
     }
     # apply the function for each column (corresponding to the
-    # vector M_{C_i}(u)  for all time u (all observed times \tilde{T}_i), 
+    # vector M_{C_i}(u)  for all time u (all observed times \tilde{T}_i),
     # time \tilde{T}_i corresponds to the i-th row of the matrix)
     dhatMCdivST<-apply(dhatMC,2,MulhatSTc)
     # Compute \int_0^{\tilde{T}_j} d{ \hat{M}_{C_l} (u) } / (S_{\tilde{T}}(u)) for each subject l, we compute for all time \tilde{T}_j.
     # l=column, j=row
-    MatInt0TcidhatMCksurEff<-apply(dhatMCdivST,2,cumsum)  # (Remark : on of the row corresponds to the previous step...) 
+    MatInt0TcidhatMCksurEff<-apply(dhatMCdivST,2,cumsum)  # (Remark : on of the row corresponds to the previous step...)
     ## colnames(MatInt0TcidhatMCksurEff)<-paste("M_{C_",1:length(time),"}",sep="")
-    ## rownames(MatInt0TcidhatMCksurEff)<-time  
-    return(MatInt0TcidhatMCksurEff)  
+    ## rownames(MatInt0TcidhatMCksurEff)<-time
+    return(MatInt0TcidhatMCksurEff)
 }
 
 
@@ -428,4 +326,187 @@ getInfluenceCurve.KM <- function(time,status){
     do.call("cbind",out)
 }
 
+#Gtau should now instead be G(tau | X_i) for i = 1, ..., n
+#GTiminus should now instead be G(\tilde{T}_i | X_i) for i = 1, ..., n
+getInfluenceCurve.AUC.covariates.conservative <- function(t,n,time,status,risk,GTiminus,Gtau,AUC){
+    tau <- t
+    X <- risk
+    #estimate int 1{X_i > x, t' > tau} dP(t',x)/G(tau | x')
+    int1nu <- rep(NA,n)
+    #estimate int 1{t' > tau} dP(t',x)/G(tau | x')
+    int1mu <- mean(1*(time > tau)/(Gtau))
+    #estimate int 1{X_i < x, t <= tau} dP(t,1,x)/G(t | x)
+    int2nu <- rep(NA,n)
+    #estimate int 1{t <= tau} dP(t,1,x)/G(t | x)
+    int2mu <- mean(1*(time <= tau & status == 1)/(GTiminus))
+    #estimate int 1{X_i > x, t <= tau} dP(t,1,x)/G(t | x)
+    int3nu <- rep(NA,n)
+    #estimate int 1{t <= tau} dP(t,1,x)/G(t | x)
+    int3mu <-mean(1*(time <= tau & status == 2)/(GTiminus))
 
+    for (i in 1:n){
+        int1nu[i] <- mean(1*(X[i] > X & time > tau)/(Gtau))
+        int2nu[i] <- mean(1*(X[i] < X & time <= tau & status == 1)/(GTiminus))
+        int3nu[i] <- mean(1*(X[i] > X & time <= tau & status == 2)/(GTiminus))
+    }
+
+    ic <- rep(NA,n)
+    #main loop
+    fhat.tau <- rep(0,n)
+    fhat.Ti <- rep(0,n)
+    mu1 <- int2mu * int1mu + int2mu*int3mu
+    nu1 <- AUC*mu1
+    for (i in 1:n){
+        #calculate fhat(\tilde{T}_i,X_i) for i = 1, ..., n
+
+        #calculate fhat(tau,X_i) for i = 1, ..., n
+
+        term1nu <- 1*(time[i] <= tau & status[i] == 1)/GTiminus[i] * int1nu[i]
+        term2nu <- mean(int1nu * 1*(time <= tau & status == 1) * (fhat.Ti-1)/GTiminus)
+        term3nu <- 1*(time[i] > tau)/Gtau[i] * int2nu[i]
+        term4nu <- mean(int2nu * 1*(time > tau) * (fhat.tau-1)/Gtau)
+        term5nu <- 1*(time[i] <= tau & status[i] == 2)/GTiminus[i] * int2nu[i]
+        term6nu <- mean(int2nu * 1*(time <= tau & status == 2) * (fhat.Ti-1)/GTiminus)
+        term7nu <- 1*(time[i] <= tau & status[i] == 1)/GTiminus[i] * int3nu[i]
+        term8nu <- mean(int3nu * 1*(time <= tau & status == 1) * (fhat.Ti-1)/GTiminus)
+        IFnu <- term1nu+term2nu+term3nu+term4nu+term5nu+term6nu+term7nu+term8nu
+
+        intmu <- mean(1*(time <= tau & status == 1) * (fhat.Ti-1)/GTiminus)
+        term1mu <- 1*(time[i] <= tau & status[i] == 1)/GTiminus[i] * int1mu
+        term2mu <- int1mu * intmu
+        term3mu <- 1*(time[i] > tau)/Gtau[i] * int2mu
+        term4mu <- int2mu * mean(1*(time > tau) * (fhat.tau-1)/Gtau)
+        term5mu <- 1*(time[i] <= tau & status[i] == 2)/GTiminus[i] * int2mu
+        term6mu <- int2mu * mean(1*(time <= tau & status == 2) * (fhat.Ti-1)/GTiminus)
+        term7mu <- 1*(time[i] <= tau & status[i] == 1)/GTiminus[i] * int3mu
+        term8mu <- int3mu*intmu
+        IFmu <- term1mu+term2mu+term3mu+term4mu+term5mu+term6mu+term7mu+term8mu
+        ic[i] <- (IFnu * mu1 - nu1 * IFmu)/(mu1^2)
+    }
+    ic
+}
+
+calculatefihat <- function(i,IC.data,X,prob.risk,status,time,tau){
+    # if(i==4){
+    #     browser()
+    # }
+    n <- length(time)
+    ic <- rep(0,n)
+    indeces <- which(X==X[i])
+    sind1 <- prodlim::sindex(time,time[i])+1
+    sind2 <- prodlim::sindex(time,tau)+1
+    ic.tau <- rep(0,n)
+    ic.tau.calculated <- FALSE
+    #need to get data set somehow
+    inv.weights <- (1-predictRisk(IC.data$fit.time,IC.data$wdata[i],IC.data$wdata$time[i],1))*(1-predictRisk(IC.data$fit.cens,IC.data$wdata[i],IC.data$wdata$time[i],1))*prob.risk[i]
+    other.weights <- (1-predictRisk(IC.data$fit.time,IC.data$wdata[i],IC.data$wdata$time[indeces],1))*(1-predictRisk(IC.data$fit.cens,IC.data$wdata[i],IC.data$wdata$time[indeces],1))*prob.risk[indeces]
+    integralterm <- 0
+    for (j in indeces){
+        if (j < sind1){
+            if (status[j] == 0){
+                k <- which(indeces==j)
+                integralterm <- integralterm + 1/n * 1/(other.weights[k]^2)
+            }
+            ic[j] <- - integralterm
+        }
+        else {
+            ic[j] <- 1/inv.weights[j]-integralterm
+        }
+        if (j >= sind2 && !ic.tau.calculated){
+            ic.tau.calculated <- TRUE
+            ic.tau[indeces] <- ic[j]
+        }
+    }
+    list(ic=ic,ic.tau=ic.tau)
+}
+
+getInfluenceCurve.Brier.covariates <- function(tau,time,risk,status,GTiminus,Gtau,Brier,IC.data) {
+    n <- length(time)
+    fhat.Ti <- rep(0,n)
+
+    prob.risk <- rep(NA,n)
+    for (i in 1:n){
+        prob.risk[i] <- mean(risk==risk[i])
+    }
+
+    IC <- rep(NA,n)
+    for (i in 1:n){
+        #calculate fhat(\tilde{T}_i-,X_i) for i = 1, ..., n
+        dat <- calculatefihat(i,IC.data,risk,prob.risk,status,time,tau)
+        ## FIXME: Need to evaluate at tilde{T_i}- and not tilde{T_i}
+        fhat.Ti <- dat$ic
+        IC.C.term <- mean( 1*(time <= tau & status == 1 )*(1-2*risk)*fhat.Ti / GTiminus )
+        # IC.C.term <- 0
+        IC[i] <- 1*(time[i] <= tau & status[i] == 1 )* (1-2*risk[i]) * 1/GTiminus[i] + IC.C.term + risk[i]^2 - Brier
+    }
+    IC
+}
+
+## Does not support ties yet
+getInfluenceCurve.AUC.covariates <- function(t,n,time,status,risk,GTiminus,Gtau,AUC,IC.data){
+    tau <- t
+    X <- risk
+    #estimate int 1{X_i > x, t' > tau} dP(t',x)/G(tau | x')
+    int1nu <- rep(NA,n)
+    #estimate int 1{t' > tau} dP(t',x)/G(tau | x')
+    int1mu <- mean(1*(time > tau)/(Gtau))
+    #estimate int 1{X_i < x, t <= tau} dP(t,1,x)/G(t | x)
+    int2nu <- rep(NA,n)
+    #estimate int 1{t <= tau} dP(t,1,x)/G(t | x)
+    int2mu <- mean(1*(time <= tau & status == 1)/(GTiminus))
+    #estimate int 1{X_i > x, t <= tau} dP(t,1,x)/G(t | x)
+    int3nu <- rep(NA,n)
+    #estimate int 1{t <= tau} dP(t,1,x)/G(t | x)
+    int3mu <-mean(1*(time <= tau & status == 2)/(GTiminus))
+
+    for (i in 1:n){
+        int1nu[i] <- mean(1*(X[i] > X & time > tau)/(Gtau))
+        int2nu[i] <- mean(1*(X[i] < X & time <= tau & status == 1)/(GTiminus))
+        int3nu[i] <- mean(1*(X[i] > X & time <= tau & status == 2)/(GTiminus))
+    }
+
+    ic <- rep(NA,n)
+    #main loop
+    fhat.tau <- rep(0,n)
+    fhat.Ti <- rep(0,n)
+    mu1 <- int2mu * int1mu + int2mu*int3mu
+    nu1 <- AUC*mu1
+    #P(X=X_i)
+    prob.risk <- rep(NA,n)
+    for (i in 1:n){
+        prob.risk[i] <- mean(risk==risk[i])
+    }
+    for (i in 1:n){
+        #calculate fhat(\tilde{T}_i-,X_i) for i = 1, ..., n
+        dat <- calculatefihat(i,IC.data,risk,prob.risk,status,time,tau)
+        ## FIXME, need to evaluate at T_i- not T_i
+        fhat.Ti <- dat$ic
+        fhat.tau <- dat$ic.tau
+        if ( !all(!is.na(fhat.Ti)) || !all(!is.na(fhat.tau)) ){
+            browser()
+        }
+        # #calculate fhat(tau,X_i) for i = 1, ..., n
+        term1nu <- 1*(time[i] <= tau & status[i] == 1)/GTiminus[i] * int1nu[i]
+        term2nu <- mean(int1nu * 1*(time <= tau & status == 1) * (fhat.Ti-1)/GTiminus)
+        term3nu <- 1*(time[i] > tau)/Gtau[i] * int2nu[i]
+        term4nu <- mean(int2nu * 1*(time > tau) * (fhat.tau-1)/Gtau)
+        term5nu <- 1*(time[i] <= tau & status[i] == 2)/GTiminus[i] * int2nu[i]
+        term6nu <- mean(int2nu * 1*(time <= tau & status == 2) * (fhat.Ti-1)/GTiminus)
+        term7nu <- 1*(time[i] <= tau & status[i] == 1)/GTiminus[i] * int3nu[i]
+        term8nu <- mean(int3nu * 1*(time <= tau & status == 1) * (fhat.Ti-1)/GTiminus)
+        IFnu <- term1nu+term2nu+term3nu+term4nu+term5nu+term6nu+term7nu+term8nu
+
+        intmu <- mean(1*(time <= tau & status == 1) * (fhat.Ti-1)/GTiminus)
+        term1mu <- 1*(time[i] <= tau & status[i] == 1)/GTiminus[i] * int1mu
+        term2mu <- int1mu * intmu
+        term3mu <- 1*(time[i] > tau)/Gtau[i] * int2mu
+        term4mu <- int2mu * mean(1*(time > tau) * (fhat.tau-1)/Gtau)
+        term5mu <- 1*(time[i] <= tau & status[i] == 2)/GTiminus[i] * int2mu
+        term6mu <- int2mu * mean(1*(time <= tau & status == 2) * (fhat.Ti-1)/GTiminus)
+        term7mu <- 1*(time[i] <= tau & status[i] == 1)/GTiminus[i] * int3mu
+        term8mu <- int3mu*intmu
+        IFmu <- term1mu+term2mu+term3mu+term4mu+term5mu+term6mu+term7mu+term8mu
+        ic[i] <- (IFnu * mu1 - nu1 * IFmu)/(mu1^2)
+    }
+    ic
+}

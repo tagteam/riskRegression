@@ -1,18 +1,18 @@
-### computePerformance.R --- 
+### computePerformance.R ---
 #----------------------------------------------------------------------
 ## Author: Thomas Alexander Gerds
-## Created: Feb 27 2022 (09:12) 
-## Version: 
-## Last-Updated: Mar  4 2022 (18:10) 
+## Created: Feb 27 2022 (09:12)
+## Version:
+## Last-Updated: May 31 2022 (11:40) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 10
+##     Update #: 12
 #----------------------------------------------------------------------
-## 
-### Commentary: 
-## 
+##
+### Commentary:
+##
 ### Change Log:
 #----------------------------------------------------------------------
-## 
+##
 ### Code:
 computePerformance <- function(DT,
                                N,
@@ -40,8 +40,12 @@ computePerformance <- function(DT,
                                ibs,
                                ipa,
                                ROC=FALSE,
-                               MC){
-    IPA=IBS=Brier=model=reference=NULL
+                               MC,
+                               old.ic.method,
+                               IC.data){
+    IPA=IBS=Brier=NULL
+    ibs <- "ibs"%in%summary
+    ipa <- "ipa"%in%summary
     # inherit everything else from parent frame: summary, metrics, plots, alpha, probs, dolist, et
     out <- vector(mode="list",
                   length=length(c(summary,metrics,plots)))
@@ -58,7 +62,7 @@ computePerformance <- function(DT,
                   keep.residuals=keep.residuals,
                   keep.vcov=keep.vcov,
                   ## DT.residuals=DT.residuals,
-                  dolist=dolist,Q=probs,ROC=FALSE,MC=MC)
+                  dolist=dolist,Q=probs,ROC=FALSE,MC=MC,old.ic.method=old.ic.method,IC.data=IC.data)
     if (response.type=="competing.risks") {
         input <- c(input,list(cause=cause,states=states))
     }

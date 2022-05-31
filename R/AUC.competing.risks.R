@@ -1,21 +1,51 @@
-### AUC.competing.risks.R --- 
+### AUC.competing.risks.R ---
 #----------------------------------------------------------------------
 ## Author: Thomas Alexander Gerds
-## Created: Jan 11 2022 (17:06) 
-## Version: 
-## Last-Updated: Mar 28 2022 (09:18) 
+## Created: Jan 11 2022 (17:06)
+## Version:
+## Last-Updated: May 31 2022 (11:37) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 4
+##     Update #: 19
 #----------------------------------------------------------------------
-## 
-### Commentary: 
-## 
+##
+### Commentary:
+##
 ### Change Log:
 #----------------------------------------------------------------------
-## 
+##
 ### Code:
 
-AUC.competing.risks <- function(DT,MC,se.fit,conservative,cens.model,keep.vcov=FALSE,multi.split.test,alpha,N,NT,NF,dolist,cause,states,ROC,...){
+getInfluenceCurveHelper <- function(time,status,tau,risk,GTiminus,Gtau,AUC){
+    urisk <- unique(risk)
+    if (length(urisk)==length(risk)){
+        getInfluenceFunctionAUC(time,status,tau,risk,GTiminus,Gtau,AUC,FALSE,FALSE,FALSE)
+    }
+    else {
+        n <- length(time)
+        # nutauParti<-rep(NA,n)
+        nutauParti.ties <-rep(NA,n)
+        for (val in urisk){
+            indexes <- which(risk==val)
+            nutauParti.ties[indexes] <- mean(1*(risk == val & time <= tau & status == 1)/GTiminus)-1*(risk[indexes] == val & time[indexes]<= tau & status[indexes] == 1)/(n*GTiminus[indexes])
+        }
+        # for (i in 1:n){
+        #     nutauParti[i] <- mean(1*(risk > risk[i] & time <= tau & status == 1)/GTiminus)
+        #     riskTies <- risk
+        #     riskTies[i] <- -1
+        #     nutauParti.ties[i] <- mean(1*(riskTies == risk[i] & time <= tau & status == 1)/GTiminus)
+        # }
+        # numAUC <- mean(nutauParti * 1*(time > tau)/Gtau) + mean(nutauParti * 1*(time <= tau & status == 2)/GTiminus)
+        numAUCties <- mean(nutauParti.ties * 1*(time > tau)/Gtau) + mean(nutauParti.ties * 1*(time <= tau & status == 2)/GTiminus)
+        denAUC <- mean(1*(time <= tau & status == 1)/GTiminus)*mean(time > tau)/Gtau + mean(1*(time <= tau & status == 1)/GTiminus)*mean(1*(time <= tau & status == 2)/GTiminus)
+        AUC.ties.part<-(numAUCties)/denAUC
+        AUC.noties <- AUC-0.5*AUC.ties.part
+        IF.noties <- getInfluenceFunctionAUC(time,status,tau,risk,GTiminus,Gtau,AUC.noties,FALSE,FALSE,FALSE)
+        IF.ties <- getInfluenceFunctionAUC(time,status,tau,risk,GTiminus,Gtau,AUC.ties.part,FALSE,TRUE,FALSE)
+        IF.noties+0.5*IF.ties
+    }
+}
+
+AUC.competing.risks <- function(DT,MC,se.fit,conservative,cens.model,keep.vcov=FALSE,multi.split.test,alpha,N,NT,NF,dolist,cause,states,ROC,old.ic.method,IC.data,...){
     ID=model=times=risk=Cases=time=status=event=Controls1=Controls2=TPR=FPR=WTi=Wt=ipcwControls1=ipcwControls2=ipcwCases=IF.AUC=lower=se=upper=AUC=NULL
     aucDT <- DT[model>0]
     dolist <- dolist[sapply(dolist,function(do){match("0",do,nomatch=0L)})==0]
@@ -52,35 +82,64 @@ AUC.competing.risks <- function(DT,MC,se.fit,conservative,cens.model,keep.vcov=F
     }
     score <- aucDT[nodups,list(AUC=AireTrap(FPR,TPR)),by=list(model,times)]
     data.table::setkey(score,model,times)
+    aucDT <- merge(score,aucDT,all=TRUE)
     if (se.fit[[1]]==1L || multi.split.test[[1]]==TRUE){
         ## compute influence function
         ## data.table::setorder(aucDT,model,times,time,-status)
         data.table::setorder(aucDT,model,times,ID)
-        aucDT[,IF.AUC:={
-            if (sum(Controls2)==0){
-                getInfluenceCurve.AUC.survival(t=times[1],
-                                               n=N,
-                                               time=time,
-                                               risk=risk,
-                                               Cases=Cases,
-                                               Controls=Controls1,
-                                               ipcwControls=ipcwControls1,
-                                               ipcwCases=ipcwCases,
-                                               MC=MC)
-            }else{
-                getInfluenceCurve.AUC.competing.risks(t=times[1],
-                                                      n=N,
-                                                      time=time,
-                                                      risk=risk,
-                                                      ipcwControls1=ipcwControls1,
-                                                      ipcwControls2=ipcwControls2,
-                                                      ipcwCases=ipcwCases,
-                                                      Cases=Cases,
-                                                      Controls1=Controls1,
-                                                      Controls2=Controls2,
-                                                      MC=MC)
+        if (cens.model == "KaplanMeier" || cens.model == "none"){
+            if (old.ic.method){
+                aucDT[,IF.AUC:={
+                    if (sum(Controls2)==0){
+                        getInfluenceCurve.AUC.survival(t=times[1],
+                                                       n=N,
+                                                       time=time,
+                                                       risk=risk,
+                                                       Cases=Cases,
+                                                       Controls=Controls1,
+                                                       ipcwControls=ipcwControls1,
+                                                       ipcwCases=ipcwCases,
+                                                       MC=MC)
+                    }else{
+                        getInfluenceCurve.AUC.competing.risks(t=times[1],
+                                                              n=N,
+                                                              time=time,
+                                                              risk=risk,
+                                                              ipcwControls1=ipcwControls1,
+                                                              ipcwControls2=ipcwControls2,
+                                                              ipcwCases=ipcwCases,
+                                                              Cases=Cases,
+                                                              Controls1=Controls1,
+                                                              Controls2=Controls2,
+                                                              MC=MC)
+                    }
+                }, by=list(model,times)]
+                # aucDT[,IF.AUC:=getInfluenceCurve.AUC.slow(times[1],N,time,status*event,risk,WTi,Wt[1],MC,AUC[1],FALSE)+0.5*getInfluenceCurve.AUC.slow(times[1],N,time,status*event,risk,WTi,Wt[1],MC,AUC[1],TRUE), by=list(model,times)]
+                # browser()
             }
-        }, by=list(model,times)]
+            else {
+                aucDT[,IF.AUC:={
+                    if (sum(Controls2)==0){
+                        getInfluenceCurveHelper(time,status*event,times[1],risk,WTi,Wt[1],AUC[1])
+                    }
+                    else {
+                        # getInfluenceFunctionAUCConservative(time,status*event,times[1],risk,WTi,Wt[1],score$AUC,FALSE)
+                        getInfluenceCurveHelper(time,status*event,times[1],risk,WTi,Wt[1],AUC[1])#+0.5*getInfluenceFunctionAUC(time,status*event,times[1],risk,WTi,Wt[1],AUC[1],FALSE,TRUE,FALSE)
+                    }
+                }, by=list(model,times)]
+                # shoud be zero with cont. covariates, the ties part that is
+                # browser()
+            }
+        }
+        else {
+            # for now does not support ties
+            if (conservative){
+                aucDT[,IF.AUC:=getInfluenceCurve.AUC.covariates.conservative(times[1],N,time,status*event,risk,WTi,Wt,AUC[1]), by=list(model,times)]
+            }
+            else {
+                aucDT[,IF.AUC:=getInfluenceCurve.AUC.covariates(times[1],N,time,status*event,risk,WTi,Wt,AUC[1],IC.data), by=list(model,times)]
+            }
+        }
         se.score <- aucDT[,list(se=sd(IF.AUC)/sqrt(N)),by=list(model,times)]
         data.table::setkey(se.score,model,times)
         score <- score[se.score]

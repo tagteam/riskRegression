@@ -1,18 +1,18 @@
-### plotAUC.R --- 
+### plotAUC.R ---
 #----------------------------------------------------------------------
 ## author: Thomas Alexander Gerds
 ## created: Jun 23 2016 (09:19) 
 ## Version: 
-## last-updated: Mar  9 2022 (15:49) 
+## last-updated: May 31 2022 (11:43) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 82
+##     Update #: 85
 #----------------------------------------------------------------------
-## 
-### Commentary: 
-## 
+##
+### Commentary:
+##
 ### Change Log:
 #----------------------------------------------------------------------
-## 
+##
 ### Code:
 ##' Plot of time-dependent AUC curves
 ##'
@@ -37,6 +37,7 @@
 #' @param legend Logical. If \code{TRUE} draw legend.
 #' @param ... Used for additional control of the subroutines: plot,
 ##' @examples
+##' set.seed(9)
 ##' library(survival)
 ##' library(prodlim)
 ##' set.seed(10)
@@ -48,9 +49,9 @@
 ##' data=nd, metrics="auc", null.model=FALSE, times=seq(3:10))
 ##' aucgraph <- plotAUC(xx)
 ##' plotAUC(xx,conf.int=TRUE)
-##' ## difference between 
+##' ## difference between
 ##' plotAUC(xx,which="contrasts",conf.int=TRUE)
-##' 
+##'
 #'
 #' @export
 plotAUC <- function(x,
@@ -77,7 +78,7 @@ plotAUC <- function(x,
     pframe <- switch(which,"score"={copy(x$AUC$score)},"contrasts"={copy(x$AUC$contrasts)},{stop("argument 'which' has to be either 'score' for AUC or 'contrasts' for differences in AUC.")})
     if (length(pframe$times)<2) stop(paste("Need at least two time points for plotting time-dependent AUC. Object has only ",length(pframe$times),"times"))
     if (!missing(models)) pframe <- pframe[model %in% models]
-    
+
     if (which=="score"){
         mm <- unique(pframe$model)
         pframe[is.na(se)&times==0,lower:=0]
@@ -109,7 +110,10 @@ plotAUC <- function(x,
             ylim <- c(0.5,1)
             axis2.DefaultArgs <- list(side=2,las=2,at=seq(0,ylim[2],ylim[2]/4),mgp=c(4,1,0))
         } else{
-            ylim <- c(floor(10*min(pframe$lower))/10,ceiling(10*max(pframe$upper))/10)
+            if (is.null(pframe$lower) || all(is.na(pframe$lower)))
+                ylim <- c(-1,1)
+            else
+                ylim <- c(floor(10*min(pframe$lower))/10,ceiling(10*max(pframe$upper))/10)
             yat <- seq(ylim[1],ylim[2],0.05)
             ## this is a strange behaviour of R: seq(-0.6,.1,0.05)
             ## [1] -6.000000e-01 -5.500000e-01 -5.000000e-01 -4.500000e-01 -4.000000e-01 -3.500000e-01 -3.000000e-01 -2.500000e-01
@@ -141,7 +145,7 @@ plotAUC <- function(x,
                                      forced=list("plot"=list(axes=FALSE),
                                                  "axis1"=list(side=1)),
                                      verbose=TRUE)
-    
+
     if (which=="score"){
         ## AUC
         do.call("plot",control$plot)

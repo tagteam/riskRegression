@@ -1,18 +1,18 @@
-### plotBrier.R --- 
+### plotBrier.R ---
 #----------------------------------------------------------------------
 ## author: Thomas Alexander Gerds
-## created: Feb 23 2017 (11:07) 
-## Version: 
-## last-updated: Mar  9 2022 (15:49) 
+## created: Feb 23 2017 (11:07)
+## Version:
+## last-updated: May 31 2022 (11:43) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 74
+##     Update #: 75
 #----------------------------------------------------------------------
-## 
-### Commentary: 
-## 
+##
+### Commentary:
+##
 ### Change Log:
 #----------------------------------------------------------------------
-## 
+##
 ### Code:
 ##' Plot Brier score curves
 ##' @title Plot Brier curve
@@ -40,7 +40,7 @@
 ##' # survival
 ##' library(survival)
 ##' library(prodlim)
-##' set.seed(10)
+##' set.seed(7)
 ##' ds1=sampleData(40,outcome="survival")
 ##' ds2=sampleData(40,outcome="survival")
 ##' f1 <- coxph(Surv(time,event)~X1+X3+X5+X7+X9,data=ds1,x=TRUE)
@@ -49,7 +49,7 @@
 ##' plotBrier(xscore)
 #' @export
 #'
-#' 
+#'
 plotBrier <- function(x,
                       models,
                       which="score",
@@ -165,7 +165,7 @@ plotBrier <- function(x,
                                      forced=list("plot"=list(axes=FALSE),
                                                  "axis1"=list(side=1)),
                                      verbose=TRUE)
-                                     
+
                                      if (which%in%c("score","ipa")){
                                          ## Brier
                                          do.call("plot",control$plot)

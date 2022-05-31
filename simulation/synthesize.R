@@ -3,9 +3,9 @@
 ## Author: Johan Sebastian Ohlendorff & Vilde Hansteen Ung & Thomas Alexander Gerds
 ## Created: Apr 28 2021 (09:04)
 ## Version:
-## Last-Updated: Nov 18 2021 (09:22) 
+## Last-Updated: Mar 17 2022 (11:23) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 68
+##     Update #: 75
 #----------------------------------------------------------------------
 ##
 ### Commentary:
@@ -28,8 +28,7 @@
 ##'                   variables with less than 10 unique values in data are treated as categorical.
 ##' @param verbose Logical. If \code{TRUE} then more messages and warnings are provided.
 ##' @param logtrans Vector of covariate names that should be log-transformed. This is primarily for internal use.
-##' @param fromFormula Indicates whether synthesize.lvm has been called from synthesize.formula. This is primarily for internal use.
-##' @param fixNames Fix possible problematic covariate names. This is primarily for internal use.
+##' @param fix.names Fix possible problematic covariate names. 
 ##' @param ... Not used yet.
 ##' @return lava object
 ##' @seealso lvm
@@ -211,7 +210,9 @@ synthesize.formula <- function(object, # a formula object Surv(time,event) or Hi
         object <- lava::eventTime(object,et.formula, tt[[2]])
     }
     # call the next method, now the class of object is 'lvm' :)
-    synthesize(object=object,data=data,verbose=verbose,fromFormula = TRUE,logtrans=logtrans,...)
+    attr(x=object,which="from.formula") <- TRUE
+    out <- synthesize(object=object,data=data,verbose=verbose,logtrans=logtrans,...)
+    out
 }
 
 
@@ -222,15 +223,15 @@ synthesize.lvm <- function(object,
                            max.levels = 10,
                            logtrans = NULL,
                            verbose=FALSE,
-                           fromFormula=FALSE,
-                           fixNames = FALSE,
+                           from.formula=FALSE,
+                           fix.names = FALSE,
                            ...){
-
-    if (fromFormula && verbose){
-      warning("fromFormula should be set to false if you did not specify a formula")
+    from.formula <- length(attr(object,"from.formula"))>0
+    if (from.formula && verbose){
+      warning("from.formula should be set to false if you did not specify a formula")
     }
     # check whether variables in model are in data set
-    if (!fromFormula && !all(object$attributes$eventHistory$time$names %in% names(data))) {
+    if (!from.formula && !all(object$attributes$eventHistory$time$names %in% names(data))) {
       stop("Time or status variable could not be found in data set.")
     }
     var.model <- colnames(object$M)
@@ -255,7 +256,7 @@ synthesize.lvm <- function(object,
     #   stop("")
     # }
     # should check logtransform in data and add if necessary
-    if (!fromFormula && is.null(logtrans) && any(grepl("log",var.model))){
+    if (!from.formula && is.null(logtrans) && any(grepl("log",var.model))){
       #these have log in front
       trans <- var.model[grepl("log",var.model)]
       #log trans dont have log in front
@@ -316,7 +317,7 @@ synthesize.lvm <- function(object,
 
     latent_vars <- endogenous(object)
     # should check factors in object are factors in data. If not, transform them
-    if (!fromFormula){
+    if (!from.formula){
       for (v in var.model){
         #ignore transformed variables do not take the variables from the event history model
         if (!(v %in% object$attributes$eventHistory[[timename]]$names) && categorize(v,max.levels,data) != 0){
@@ -375,7 +376,7 @@ synthesize.lvm <- function(object,
         #note: we do not fix formulas and weirdly named variables
         #  can give problems if synthesized directly from lvm
         # don't change 0/1 variables even if they are factors
-        if (fromFormula || fixNames){
+        if (from.formula || fix.names){
           # remove warning, i.e. don't compare if the number of levels is greater than 2
           if (length(levels(data[[var]])) ==2 && all(levels(data[[var]]) == c("0","1"))){
           }
@@ -428,7 +429,7 @@ synthesize.lvm <- function(object,
 
         #include event time variables and fit the regression model
         for (latvar in object$attributes$eventHistory[[timename]]$latentTime){
-            if (!fromFormula){
+            if (!from.formula){
               covariates <- get_covariates(object,latvar,dichotomized_variables)
             }
             latvar_formula <- as.formula(paste0("~", latvar))
@@ -444,7 +445,7 @@ synthesize.lvm <- function(object,
         }
         #calculate time and status afterwards
         events <- object$attributes$eventHistory[[timename]]$events
-        if (!fromFormula){
+        if (!from.formula){
           cens <- object$attributes$eventHistory[[timename]]$latentTime
           et.formula <- formula(paste0(timename," ~ min(",paste0(cens,"=",events,collapse=", "),")"))
           sim_model <- lava::eventTime(sim_model,et.formula, object$attributes$eventHistory[[timename]]$names[2])
@@ -519,25 +520,26 @@ categorize <- function(v,max.levels,data){
 
 #' @export sim.synth
 #' @export
-sim.synth <- function(object, n= 200, original.form=FALSE, ...){
-  lava.object <- object$lava.object
-  res <- lava::sim(lava.object,n,...)
-  labels <- object$labels
-  for (var in names(labels)){
-    res[[var]] <- factor(res[[var]])
-    levels(res[[var]]) <- labels[[var]]
-  }
-  # remove variables that would not be in the original data set 
-  if (original.form){
-    categories <- object$categories
-    if (length(grep("time.event",names(res))) != 0L){
-      res <- res[,-grep("time.event",names(res))]
+sim.synth <- function(object, n= 200, drop.latent=FALSE, ...){
+    lava.object <- object$lava.object
+    res <- lava::sim(lava.object,n,...)
+    labels <- object$labels
+    for (var in names(labels)){
+        res[[var]] <- factor(res[[var]])
+        levels(res[[var]]) <- labels[[var]]
     }
-    for (c in categories) {
-      res <- res[,-grep(c,names(res))[-1]]
+    # remove variables that would not be in the original data set 
+    if (drop.latent){
+        # remove latent times
+        if (length(lava.object$attributes$eventHistory$time$latentTimes)>0)
+            res <- res[,-match(lava.object$attributes$eventHistory$time$latentTimes,names(res),nomatch=0)]
+        # remove dummy variables
+        categories <- object$categories
+        for (c in categories) {
+            res <- res[,-grep(c,names(res))[-1]]
+        }
     }
-  }
-  res
+    res
 }
 
 #' @export synthesizeLTMLE
