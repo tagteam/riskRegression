@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun 23 2016 (09:19) 
 ## Version: 
-## last-updated: Mar  3 2019 (20:02) 
+## last-updated: May 24 2022 (07:53) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 81
+##     Update #: 83
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -108,7 +108,10 @@ plotAUC <- function(x,
             ylim <- c(0.5,1)
             axis2.DefaultArgs <- list(side=2,las=2,at=seq(0,ylim[2],ylim[2]/4),mgp=c(4,1,0))
         } else{
-            ylim <- c(floor(10*min(pframe$lower))/10,ceiling(10*max(pframe$upper))/10)
+            if (is.null(pframe$lower) || all(is.na(pframe$lower)))
+                ylim <- c(-1,1)
+            else
+                ylim <- c(floor(10*min(pframe$lower))/10,ceiling(10*max(pframe$upper))/10)
             yat <- seq(ylim[1],ylim[2],0.05)
             ## this is a strange behaviour of R: seq(-0.6,.1,0.05)
             ## [1] -6.000000e-01 -5.500000e-01 -5.000000e-01 -4.500000e-01 -4.000000e-01 -3.500000e-01 -3.000000e-01 -2.500000e-01

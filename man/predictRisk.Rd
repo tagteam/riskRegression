@@ -187,7 +187,7 @@ columns as \code{length(times)}. Each entry is a probability and in
 rows the values should be increasing.
 }
 \description{
-Extract event probabilities from fitted regression models and machine learning objects. 
+Extract event probabilities from fitted regression models and machine learning objects.
 The function predictRisk is a generic function, meaning that it invokes
 specifically designed functions depending on the 'class' of the first
 argument. See \code{\link{predictRisk}}.
@@ -237,7 +237,7 @@ cphmodel <- cph(Surv(time,event)~X1+X2,data=d,surv=TRUE,x=TRUE,y=TRUE)
 library(survival)
 coxphmodel <- coxph(Surv(time,event)~X1+X2,data=d,x=TRUE,y=TRUE)
 
-# Extract predicted survival probabilities 
+# Extract predicted survival probabilities
 # at selected time-points:
 ttt <- quantile(d$time)
 # for selected predictor values:
