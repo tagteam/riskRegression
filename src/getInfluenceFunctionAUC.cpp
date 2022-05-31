@@ -103,7 +103,7 @@ NumericVector getInfluenceFunctionAUC(NumericVector time,
   if (!tiedValues){
     for (int i = 0; i <= firsthit;i++){
       int j = 0;
-      while (risk1[j] < risk[i] && j < risk1.length()){
+      while (j < risk1.length() && risk1[j] < risk[i]){
         j++;
       }
       Probnu[i] = ((double) j)/n;
@@ -128,7 +128,7 @@ NumericVector getInfluenceFunctionAUC(NumericVector time,
 
   // F_1(tau) = int 1_{t \leq tau} 1/ hat{G(t-)} dP(t,1) = Q(T_i <= tau, Delta_i = 1)
   // F_2(tau) = int 1_{t \leq tau} 1/ hat{G(t-)} dP(t,2) = Q(T_i <= tau, Delta_i = 2)
-  double F1tau, F2tau, eq9term = 0;
+  double F1tau = 0, F2tau = 0, eq9term = 0;
   for (int i = 0; i <= firsthit; i++){
     if (status[i] == 1){
       F1tau += 1.0/GTiminus[i];
@@ -199,7 +199,7 @@ NumericVector getInfluenceFunctionAUC(NumericVector time,
 
 
 
-  double eq10part1, eq12part1,eq14part1,eq17part1,eq19part1 = 0;
+  double eq10part1 = 0, eq12part1 = 0,eq14part1 = 0,eq17part1 = 0,eq19part1 = 0;
   double eq10part2 = n*eq9term;
   double eq12part2 = (nu1-1.0/(Gtau) * eq9term)*n*n;
   double eq14part2 = eq12part2;
@@ -207,7 +207,7 @@ NumericVector getInfluenceFunctionAUC(NumericVector time,
   double eq19part2 = n*F2tau;
   int tieIter = 0;
   // can do while loops together
-  while ((time[tieIter] == time[0]) && (tieIter < n)) {
+  while ((tieIter < n) && (time[tieIter] == time[0])) {
     if ((time[tieIter] <= tau) && (status[tieIter]==1)){
       eq10part2 -= Probnu[tieIter] / GTiminus[tieIter];
       eq14part2 -= eq1314part[tieIter] / GTiminus[tieIter];
@@ -220,15 +220,10 @@ NumericVector getInfluenceFunctionAUC(NumericVector time,
     tieIter++;
   }
   int upperTie = tieIter-1;
-  double eq8, eq9, eq10, eq11,eq12,eq13,eq14, eq15, eq16,eq17,eq18,eq19,eq20,eq21, fihattau,j,eq1721part;
+  double eq8{}, eq9{}, eq10{}, eq11{},eq12{},eq13{},eq14{}, eq15{}, eq16{},eq17{},eq18{},eq19{},eq20{},eq21{}, fihattau{},eq1721part{};
   for (int i = 0; i<n; i++){
     if (!conservative){
-      if (i > firsthit){
-        j = firsthit;
-      }
-      else {
-        j = i;
-      }
+      int const j = i > firsthit ? firsthit : i;
       if (utime[sindex[j]] < time[i]){
         fihattau = - MC_term2[sindex[j]];
       }
@@ -245,7 +240,7 @@ NumericVector getInfluenceFunctionAUC(NumericVector time,
       eq21 = F2tau * (eq1721part - F1tau);
       if (upperTie <= i){
         int tieIter = i+1;
-        while ((time[tieIter] == time[i+1]) && (tieIter < n)) {
+        while ((tieIter < n) && (time[tieIter] == time[i+1])) {
           if ((time[tieIter] <= tau) && (status[tieIter]==1)){
             eq10part1 -= Probnu[tieIter] * (MC_term2[sindex[i]]) / GTiminus[tieIter];
             eq14part1 -= eq1314part[tieIter] * (MC_term2[sindex[i]]+1.0) / GTiminus[tieIter];
@@ -312,15 +307,15 @@ NumericVector getInfluenceFunctionAUC(NumericVector time,
   return ic;
 }
 
-// [[Rcpp::export]]
-NumericVector getInfluenceFunctionAUCConservative(NumericVector time,
-                                      NumericVector status,
-                                      double tau,
-                                      NumericVector risk,
-                                      NumericVector GTiminus,
-                                      double Gtau,
-                                      double auc,
-                                      bool survival) {
+// [[Rcpp::export(rng=false)]]
+NumericVector getInfluenceFunctionAUCConservative(const NumericVector time,
+                                      const NumericVector status,
+                                      const double tau,
+                                      const NumericVector risk,
+                                      const NumericVector GTiminus,
+                                      const double Gtau,
+                                      const double auc,
+                                      const bool survival) {
   // Thomas' code from IC of Nelson-Aalen estimator
   //initialize first time point t=0 with data of subject i=0
   int n = time.size();
@@ -374,7 +369,7 @@ NumericVector getInfluenceFunctionAUCConservative(NumericVector time,
 
   // F_1(tau) = int 1_{t \leq tau} 1/ hat{G(t-)} dP(t,1) = Q(T_i <= tau, Delta_i = 1)
   // F_2(tau) = int 1_{t \leq tau} 1/ hat{G(t-)} dP(t,2) = Q(T_i <= tau, Delta_i = 2)
-  double F1tau, F2tau, eq9term = 0;
+  double F1tau = 0, F2tau = 0, eq9term = 0;
   for (int i = 0; i <= firsthit; i++){
     if (status[i] == 1){
       F1tau += 1.0/GTiminus[i];

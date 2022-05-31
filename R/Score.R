@@ -913,7 +913,7 @@ c.f., Chapter 7, Section 5 in Gerds & Kattan 2021. Medical risk prediction model
         }else{
             off.predictions <- "None"
         }
-        noSplit <- computePerformance(DT,
+        noSplit <- computePerformance(DT=DT,
                                       N=N,
                                       NT=NT,
                                       NF=NF,
@@ -930,7 +930,7 @@ c.f., Chapter 7, Section 5 in Gerds & Kattan 2021. Medical risk prediction model
                                       cens.model,
                                       multi.split.test=multi.split.test,
                                       keep.residuals=keep.residuals,
-                                      keep.vcov=keep.vcov,dolist=dolist,probs=probs,metrics=metrics,plots=plots,summary=summary,ROC=FALSE,MC=Weights$IC,old.ic.method,IC.data=Weights$IC.data)
+                                      keep.vcov=keep.vcov,dolist=dolist,probs=probs,metrics=metrics,plots=plots,summary=summary,ROC=FALSE,MC=Weights$IC,old.ic.method=old.ic.method,IC.data=Weights$IC.data)
         if (debug) message("computed apparent performance")
     }
     # }}}
@@ -1128,7 +1128,7 @@ if (split.method$internal.name%in%c("BootCv","LeaveOneOutBoot","crossval")){
             if(!is.null(progress.bar)){
                 setTxtProgressBar(pb1, j)
             }
-            computePerformance(DT.b,
+            computePerformance(DT=DT.b,
                                N=N.b,
                                NT=NT,
                                NF=NF,
