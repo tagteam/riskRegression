@@ -401,10 +401,11 @@ calculatefihat <- function(i,IC.data,X,prob.risk,status,time,tau){
     inv.weights <- (1-predictRisk(IC.data$fit.time,IC.data$wdata[i],IC.data$wdata$time[i],1))*(1-predictRisk(IC.data$fit.cens,IC.data$wdata[i],IC.data$wdata$time[i],1))*prob.risk[i]
     other.weights <- (1-predictRisk(IC.data$fit.time,IC.data$wdata[i],IC.data$wdata$time[indeces],1))*(1-predictRisk(IC.data$fit.cens,IC.data$wdata[i],IC.data$wdata$time[indeces],1))*prob.risk[indeces]
     integralterm <- 0
+    k <- 1
     for (j in indices){
         if (j < sind1){
             if (status[j] == 0){
-                k <- which(indices==j)
+                # k <- which(indices==j)
                 integralterm <- integralterm + 1/n * 1/(other.weights[k]^2)
             }
             ic[j] <- - integralterm
@@ -417,6 +418,7 @@ calculatefihat <- function(i,IC.data,X,prob.risk,status,time,tau){
             ic.tau[indices] <- ic[j]
         }
     }
+    k <- k + 1
     list(ic=ic,ic.tau=ic.tau)
 }
 
