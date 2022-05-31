@@ -71,7 +71,7 @@ NumericVector getInfluenceFunctionBrierKMCensoring(double tau,
     tieIter++;
   }
   int upperTie = tieIter-1;
-  double icterm, fihattau,firstterm;
+  double icterm{}, fihattau{},firstterm{};
   int j;
   if (firsthit==-1){
     for (int i = 0; i<n; i++){
