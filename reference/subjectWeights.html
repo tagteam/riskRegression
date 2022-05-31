@@ -12,7 +12,7 @@ probability of censoring weights."><!-- mathjax --><script src="https://cdnjs.cl
     
     <a class="navbar-brand me-2" href="../index.html">riskRegression</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2022.03.22</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2022.05.31</small>
 
     
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -384,11 +384,12 @@ order to get the <code>weights</code> in the right order for some choices of
 <span class="r-out co"><span class="r-pr">#&gt;</span>         logtest &lt;- -2 * (f$loglik[1] - f$loglik[2])</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>         R2.max &lt;- 1 - exp(2 * f$loglik[1]/n)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>         R2 &lt;- (1 - exp(-logtest/n))/R2.max</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         r2m &lt;- R2Measures(logtest, nvar, n, nevent)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>         P &lt;- 1 - pchisq(logtest, nvar)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>         gindex &lt;- GiniMd(f$linear.predictors)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>         dxy &lt;- dxy.cens(f$linear.predictors, Y, type = "hazard")["Dxy"]</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         stats &lt;- c(n, nevent, logtest, nvar, P, f$score, 1 - pchisq(f$score, nvar), R2, dxy, gindex, exp(gindex))</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         names(stats) &lt;- c("Obs", "Events", "Model L.R.", "d.f.", "P", "Score", "Score P", "R2", "Dxy", "g", "gr")</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         stats &lt;- c(n, nevent, logtest, nvar, P, f$score, 1 - pchisq(f$score, nvar), R2, r2m, dxy, gindex, exp(gindex))</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         names(stats) &lt;- c("Obs", "Events", "Model L.R.", "d.f.", "P", "Score", "Score P", "R2", names(r2m), "Dxy", "g", "gr")</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     }</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     else {</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>         stats &lt;- c(n, nevent)</span>
@@ -521,7 +522,7 @@ order to get the <code>weights</code> in the right order for some choices of
 </div>
 
 <div class="pkgdown-footer-right">
-  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.2.</p>
+  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.3.</p>
 </div>
 
     </footer></div>

@@ -10,7 +10,7 @@
     
     <a class="navbar-brand me-2" href="../index.html">riskRegression</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2022.03.22</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2022.05.31</small>
 
     
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -84,6 +84,7 @@
   <span class="va">keep</span>,
   <span class="va">predictRisk.args</span>,
   debug <span class="op">=</span> <span class="fl">0L</span>,
+  old.ic.method <span class="op">=</span> <span class="cn">FALSE</span>,
   <span class="va">...</span>
 <span class="op">)</span></code></pre></div>
     </div>
@@ -308,7 +309,11 @@ riskRegression:::getSplitMethod("bootcv",B=10,N=17,M=.7)$index
     </div>
     <div class="section level2">
     <h2 id="references">References<a class="anchor" aria-label="anchor" href="#references"></a></h2>
-    <p>Ulla B. Mogensen, Hemant Ishwaran, Thomas A. Gerds (2012).
+    <p>Thomas A. Gerds and Michael W. Kattan (2021).
+Medical Risk Prediction Models: With Ties to Machine Learning (1st ed.)
+Chapman and Hall/CRC
+https://doi.org/10.1201/9781138384484</p>
+<p>Ulla B. Mogensen, Hemant Ishwaran, Thomas A. Gerds (2012).
 Evaluating Random Forests for Survival Analysis Using Prediction Error
 Curves. Journal of Statistical Software, 50(11), 1-23. URL
 http://www.jstatsoft.org/v50/i11/.</p>
@@ -358,81 +363,21 @@ and Prognostic Research, 2(1):7, 2018.</p>
 <span class="r-in"><span class="va">lr1</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/glm.html" class="external-link">glm</a></span><span class="op">(</span><span class="va">Y</span><span class="op">~</span><span class="va">X1</span><span class="op">+</span><span class="va">X2</span><span class="op">+</span><span class="va">X7</span><span class="op">+</span><span class="va">X9</span>,data<span class="op">=</span><span class="va">learndat</span>,family<span class="op">=</span><span class="va">binomial</span><span class="op">)</span></span>
 <span class="r-in"><span class="va">lr2</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/glm.html" class="external-link">glm</a></span><span class="op">(</span><span class="va">Y</span><span class="op">~</span><span class="va">X3</span><span class="op">+</span><span class="va">X5</span>,data<span class="op">=</span><span class="va">learndat</span>,family<span class="op">=</span><span class="va">binomial</span><span class="op">)</span></span>
 <span class="r-in"><span class="fu">Score</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="st">"LR(X1+X2+X7+X9)"</span><span class="op">=</span><span class="va">lr1</span>,<span class="st">"LR(X3+X5)"</span><span class="op">=</span><span class="va">lr2</span><span class="op">)</span>,formula<span class="op">=</span><span class="va">Y</span><span class="op">~</span><span class="fl">1</span>,data<span class="op">=</span><span class="va">testdat</span><span class="op">)</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Metric AUC:</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Results by model:</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>              model  AUC lower upper</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1: LR(X1+X2+X7+X9) 60.7  42.3  79.1</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2:       LR(X3+X5) 44.2  26.9  61.6</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Results of model comparisons:</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>        model       reference delta.AUC lower upper   p</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1: LR(X3+X5) LR(X1+X2+X7+X9)     -16.4 -38.2   5.3 0.1</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> NOTE: Values are multiplied by 100 and given in %.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> NOTE: The higher AUC the better.</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Metric Brier:</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Results by model:</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>              model Brier lower upper</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1:      Null model  24.9  24.2  25.7</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2: LR(X1+X2+X7+X9)  27.9  19.0  36.8</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3:       LR(X3+X5)  25.4  24.0  26.9</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Results of model comparisons:</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>              model       reference delta.Brier lower upper         p</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1: LR(X1+X2+X7+X9)      Null model         3.0  -5.9  11.8 0.5124805</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2:       LR(X3+X5)      Null model         0.5  -0.4   1.4 0.2747143</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3:       LR(X3+X5) LR(X1+X2+X7+X9)        -2.5 -11.1   6.2 0.5778617</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> NOTE: Values are multiplied by 100 and given in %.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> NOTE: The lower Brier the better.</span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error in computePerformance(DT, N = N, NT = NT, NF = NF, models = list(levels = mlevs,     labels = mlabels), response.type = response.type, times = times,     jack = jack, cens.type = cens.type, cause = cause, states = states,     alpha = alpha, se.fit = se.fit, conservative = conservative,     cens.model, multi.split.test = multi.split.test, keep.residuals = keep.residuals,     keep.vcov = keep.vcov, dolist = dolist, probs = probs, metrics = metrics,     plots = plots, summary = summary, ROC = FALSE, MC = Weights$IC,     old.ic.method, IC.data = Weights$IC.data):</span> argument "old.ic.method" is missing, with no default</span>
 <span class="r-in"></span>
 <span class="r-in"><span class="co">## ROC curve and calibration plot</span></span>
 <span class="r-in"><span class="va">xb</span><span class="op">=</span><span class="fu">Score</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="st">"LR(X1+X2+X7+X9)"</span><span class="op">=</span><span class="va">lr1</span>,<span class="st">"LR(X3+X5+X6)"</span><span class="op">=</span><span class="va">lr2</span><span class="op">)</span>,formula<span class="op">=</span><span class="va">Y</span><span class="op">~</span><span class="fl">1</span>,</span>
 <span class="r-in">         data<span class="op">=</span><span class="va">testdat</span>,plots<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"calibration"</span>,<span class="st">"ROC"</span><span class="op">)</span><span class="op">)</span></span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error in computePerformance(DT, N = N, NT = NT, NF = NF, models = list(levels = mlevs,     labels = mlabels), response.type = response.type, times = times,     jack = jack, cens.type = cens.type, cause = cause, states = states,     alpha = alpha, se.fit = se.fit, conservative = conservative,     cens.model, multi.split.test = multi.split.test, keep.residuals = keep.residuals,     keep.vcov = keep.vcov, dolist = dolist, probs = probs, metrics = metrics,     plots = plots, summary = summary, ROC = FALSE, MC = Weights$IC,     old.ic.method, IC.data = Weights$IC.data):</span> argument "old.ic.method" is missing, with no default</span>
 <span class="r-in"><span class="kw">if</span> <span class="op">(</span><span class="cn">FALSE</span><span class="op">)</span> <span class="fu"><a href="plotROC.html">plotROC</a></span><span class="op">(</span><span class="va">xb</span><span class="op">)</span></span>
 <span class="r-in"><span class="fu"><a href="plotCalibration.html">plotCalibration</a></span><span class="op">(</span><span class="va">xb</span><span class="op">)</span></span>
-<span class="r-plt img"><img src="Score-1.png" alt="" width="700" height="433"></span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error in plotCalibration(xb):</span> object 'xb' not found</span>
 <span class="r-in"></span>
 <span class="r-in"></span>
 <span class="r-in"><span class="co">## compute AUC for a list of continuous markers</span></span>
 <span class="r-in"><span class="va">markers</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">as.list</a></span><span class="op">(</span><span class="va">testdat</span><span class="op">[</span>,<span class="fu">.</span><span class="op">(</span><span class="va">X6</span>,<span class="va">X7</span>,<span class="va">X8</span>,<span class="va">X9</span>,<span class="va">X10</span><span class="op">)</span><span class="op">]</span><span class="op">)</span></span>
 <span class="r-in"><span class="fu">Score</span><span class="op">(</span><span class="va">markers</span>,formula<span class="op">=</span><span class="va">Y</span><span class="op">~</span><span class="fl">1</span>,data<span class="op">=</span><span class="va">testdat</span>,metrics<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"auc"</span><span class="op">)</span><span class="op">)</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Metric AUC:</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Results by model:</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    model  AUC lower upper</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1:    X6 86.7  75.3  98.2</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2:    X7 38.6  20.7  56.5</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3:    X8 46.4  27.7  65.0</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 4:    X9 35.3  17.9  52.8</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 5:   X10 46.4  27.8  65.0</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Results of model comparisons:</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     model reference delta.AUC lower upper     p</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  1:    X7        X6     -48.1 -69.7 -26.6 1e-05</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  2:    X8        X6     -40.4 -63.6 -17.1 7e-04</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  3:    X9        X6     -51.4 -73.3 -29.4 4e-06</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  4:   X10        X6     -40.4 -61.8 -18.9 2e-04</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  5:    X8        X7       7.8 -17.0  32.6 5e-01</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  6:    X9        X7      -3.3 -26.6  20.1 8e-01</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  7:   X10        X7       7.8 -17.4  32.9 5e-01</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  8:    X9        X8     -11.0 -34.8  12.7 4e-01</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  9:   X10        X8       0.0 -27.4  27.4 1e+00</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 10:   X10        X9      11.0 -12.1  34.2 4e-01</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> NOTE: Values are multiplied by 100 and given in %.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> NOTE: The higher AUC the better.</span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error in computePerformance(DT, N = N, NT = NT, NF = NF, models = list(levels = mlevs,     labels = mlabels), response.type = response.type, times = times,     jack = jack, cens.type = cens.type, cause = cause, states = states,     alpha = alpha, se.fit = se.fit, conservative = conservative,     cens.model, multi.split.test = multi.split.test, keep.residuals = keep.residuals,     keep.vcov = keep.vcov, dolist = dolist, probs = probs, metrics = metrics,     plots = plots, summary = summary, ROC = FALSE, MC = Weights$IC,     old.ic.method, IC.data = Weights$IC.data):</span> argument "old.ic.method" is missing, with no default</span>
 <span class="r-in"></span>
 <span class="r-in"><span class="co"># cross-validation</span></span>
 <span class="r-in"><span class="kw">if</span> <span class="op">(</span><span class="cn">FALSE</span><span class="op">)</span> <span class="op">{</span></span>
@@ -487,51 +432,9 @@ and Prognostic Research, 2(1):7, 2018.</p>
 <span class="r-in"><span class="va">cox2</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/pkg/survival/man/coxph.html" class="external-link">coxph</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/survival/man/Surv.html" class="external-link">Surv</a></span><span class="op">(</span><span class="va">time</span>,<span class="va">event</span><span class="op">)</span><span class="op">~</span><span class="va">X3</span><span class="op">+</span><span class="va">X5</span><span class="op">+</span><span class="va">X6</span>,data<span class="op">=</span><span class="va">trainSurv</span>, y<span class="op">=</span><span class="cn">TRUE</span>, x <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span class="r-in"><span class="va">xs</span><span class="op">=</span><span class="fu">Score</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="st">"Cox(X1+X2+X7+X9)"</span><span class="op">=</span><span class="va">cox1</span>,<span class="st">"Cox(X3+X5+X6)"</span><span class="op">=</span><span class="va">cox2</span><span class="op">)</span>,</span>
 <span class="r-in">         formula<span class="op">=</span><span class="fu"><a href="https://rdrr.io/pkg/survival/man/Surv.html" class="external-link">Surv</a></span><span class="op">(</span><span class="va">time</span>,<span class="va">event</span><span class="op">)</span><span class="op">~</span><span class="fl">1</span>,data<span class="op">=</span><span class="va">testSurv</span>,conf.int<span class="op">=</span><span class="cn">FALSE</span>,times<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">5</span>,<span class="fl">8</span><span class="op">)</span><span class="op">)</span></span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error in computePerformance(DT, N = N, NT = NT, NF = NF, models = list(levels = mlevs,     labels = mlabels), response.type = response.type, times = times,     jack = jack, cens.type = cens.type, cause = cause, states = states,     alpha = alpha, se.fit = se.fit, conservative = conservative,     cens.model, multi.split.test = multi.split.test, keep.residuals = keep.residuals,     keep.vcov = keep.vcov, dolist = dolist, probs = probs, metrics = metrics,     plots = plots, summary = summary, ROC = FALSE, MC = Weights$IC,     old.ic.method, IC.data = Weights$IC.data):</span> argument "old.ic.method" is missing, with no default</span>
 <span class="r-in"><span class="va">xs</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Metric AUC:</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Results by model:</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>               model times  AUC</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1: Cox(X1+X2+X7+X9)     5 65.9</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2: Cox(X1+X2+X7+X9)     8 69.3</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3:    Cox(X3+X5+X6)     5 74.3</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 4:    Cox(X3+X5+X6)     8 77.5</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Results of model comparisons:</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    times         model        reference delta.AUC</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1:     5 Cox(X3+X5+X6) Cox(X1+X2+X7+X9)       8.4</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2:     8 Cox(X3+X5+X6) Cox(X1+X2+X7+X9)       8.2</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> NOTE: Values are multiplied by 100 and given in %.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> NOTE: The higher AUC the better.</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Metric Brier:</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Results by model:</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>               model times Brier</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1:       Null model     5  23.2</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2:       Null model     8  24.4</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3: Cox(X1+X2+X7+X9)     5  22.6</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 4: Cox(X1+X2+X7+X9)     8  22.7</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 5:    Cox(X3+X5+X6)     5  22.0</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 6:    Cox(X3+X5+X6)     8  20.0</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Results of model comparisons:</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    times            model        reference delta.Brier</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1:     5 Cox(X1+X2+X7+X9)       Null model        -0.6</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2:     5    Cox(X3+X5+X6)       Null model        -1.2</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3:     5    Cox(X3+X5+X6) Cox(X1+X2+X7+X9)        -0.6</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 4:     8 Cox(X1+X2+X7+X9)       Null model        -1.6</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 5:     8    Cox(X3+X5+X6)       Null model        -4.4</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 6:     8    Cox(X3+X5+X6) Cox(X1+X2+X7+X9)        -2.8</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> NOTE: Values are multiplied by 100 and given in %.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> NOTE: The lower Brier the better.</span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error in eval(expr, envir, enclos):</span> object 'xs' not found</span>
 <span class="r-in"></span>
 <span class="r-in"></span>
 <span class="r-in"><span class="co"># Integrated Brier score</span></span>
@@ -552,50 +455,7 @@ and Prognostic Research, 2(1):7, 2018.</p>
 <span class="r-in"><span class="co"># compare models on test data</span></span>
 <span class="r-in"><span class="fu">Score</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="st">"Cox(X1+X2+X7+X9)"</span><span class="op">=</span><span class="va">cox1</span>,<span class="st">"Cox(X3+X5+X6)"</span><span class="op">=</span><span class="va">cox2</span><span class="op">)</span>,</span>
 <span class="r-in">      formula<span class="op">=</span><span class="fu"><a href="https://rdrr.io/pkg/survival/man/Surv.html" class="external-link">Surv</a></span><span class="op">(</span><span class="va">time</span>,<span class="va">event</span><span class="op">)</span><span class="op">~</span><span class="fl">1</span>,data<span class="op">=</span><span class="va">testSurv</span>,conf.int<span class="op">=</span><span class="cn">TRUE</span>,times<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">5</span>,<span class="fl">8</span><span class="op">)</span><span class="op">)</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Metric AUC:</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Results by model:</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>               model times  AUC lower upper</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1: Cox(X1+X2+X7+X9)     5 65.9  46.6  85.2</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2: Cox(X1+X2+X7+X9)     8 69.3  49.2  89.4</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3:    Cox(X3+X5+X6)     5 74.3  57.9  90.7</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 4:    Cox(X3+X5+X6)     8 77.5  57.9  97.1</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Results of model comparisons:</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    times         model        reference delta.AUC lower upper   p</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1:     5 Cox(X3+X5+X6) Cox(X1+X2+X7+X9)       8.4 -20.1  36.9 0.6</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2:     8 Cox(X3+X5+X6) Cox(X1+X2+X7+X9)       8.2 -25.9  42.4 0.6</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> NOTE: Values are multiplied by 100 and given in %.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> NOTE: The higher AUC the better.</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Metric Brier:</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Results by model:</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>               model times Brier lower upper</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1:       Null model     5  23.2  19.0  27.4</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2:       Null model     8  24.4  21.5  27.2</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3: Cox(X1+X2+X7+X9)     5  22.6  15.8  29.4</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 4: Cox(X1+X2+X7+X9)     8  22.7  14.5  31.0</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 5:    Cox(X3+X5+X6)     5  22.0  13.9  30.1</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 6:    Cox(X3+X5+X6)     8  20.0   9.8  30.1</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Results of model comparisons:</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    times            model        reference delta.Brier lower upper         p</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1:     5 Cox(X1+X2+X7+X9)       Null model        -0.6  -8.3   7.1 0.8822806</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2:     5    Cox(X3+X5+X6)       Null model        -1.2 -10.6   8.2 0.8002223</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3:     5    Cox(X3+X5+X6) Cox(X1+X2+X7+X9)        -0.6 -12.6  11.4 0.9177163</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 4:     8 Cox(X1+X2+X7+X9)       Null model        -1.6  -9.4   6.1 0.6798489</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 5:     8    Cox(X3+X5+X6)       Null model        -4.4 -14.7   5.8 0.3990817</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 6:     8    Cox(X3+X5+X6) Cox(X1+X2+X7+X9)        -2.8 -18.3  12.7 0.7259326</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> NOTE: Values are multiplied by 100 and given in %.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> NOTE: The lower Brier the better.</span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error in computePerformance(DT, N = N, NT = NT, NF = NF, models = list(levels = mlevs,     labels = mlabels), response.type = response.type, times = times,     jack = jack, cens.type = cens.type, cause = cause, states = states,     alpha = alpha, se.fit = se.fit, conservative = conservative,     cens.model, multi.split.test = multi.split.test, keep.residuals = keep.residuals,     keep.vcov = keep.vcov, dolist = dolist, probs = probs, metrics = metrics,     plots = plots, summary = summary, ROC = FALSE, MC = Weights$IC,     old.ic.method, IC.data = Weights$IC.data):</span> argument "old.ic.method" is missing, with no default</span>
 <span class="r-in"></span>
 <span class="r-in"><span class="co"># crossvalidation models in traindata</span></span>
 <span class="r-in"><span class="kw">if</span> <span class="op">(</span><span class="cn">FALSE</span><span class="op">)</span> <span class="op">{</span></span>
@@ -687,7 +547,7 @@ and Prognostic Research, 2(1):7, 2018.</p>
 </div>
 
 <div class="pkgdown-footer-right">
-  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.2.</p>
+  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.3.</p>
 </div>
 
     </footer></div>
