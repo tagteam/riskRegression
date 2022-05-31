@@ -1,18 +1,18 @@
-### test-summary-score.R --- 
+### test-summary-score.R ---
 #----------------------------------------------------------------------
 ## Author: Thomas Alexander Gerds
-## Created: Apr 12 2020 (07:48) 
-## Version: 
-## Last-Updated: Jan 12 2022 (10:11) 
+## Created: Apr 12 2020 (07:48)
+## Version:
+## Last-Updated: Jan 12 2022 (10:11)
 ##           By: Thomas Alexander Gerds
 ##     Update #: 6
 #----------------------------------------------------------------------
-## 
-### Commentary: 
-## 
+##
+### Commentary:
+##
 ### Change Log:
 #----------------------------------------------------------------------
-## 
+##
 ### Code:
 library(testthat)
 library(survival)
@@ -22,6 +22,7 @@ context("riskRegression")
 # {{{ "binary"
 for (y in c("binary","survival","competing.risks")){
     print(y)
+    set.seed(2)
     d1 <- sampleData(n=112,outcome=y)
     d2 <- sampleData(n=80,outcome=y)
     if (y=="binary"){
