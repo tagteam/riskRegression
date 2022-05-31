@@ -325,23 +325,6 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// getInfluenceFunctionAUCConservative
-NumericVector getInfluenceFunctionAUCConservative(const NumericVector time, const NumericVector status, const double tau, const NumericVector risk, const NumericVector GTiminus, const double Gtau, const double auc, const bool survival);
-RcppExport SEXP _riskRegression_getInfluenceFunctionAUCConservative(SEXP timeSEXP, SEXP statusSEXP, SEXP tauSEXP, SEXP riskSEXP, SEXP GTiminusSEXP, SEXP GtauSEXP, SEXP aucSEXP, SEXP survivalSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::traits::input_parameter< const NumericVector >::type time(timeSEXP);
-    Rcpp::traits::input_parameter< const NumericVector >::type status(statusSEXP);
-    Rcpp::traits::input_parameter< const double >::type tau(tauSEXP);
-    Rcpp::traits::input_parameter< const NumericVector >::type risk(riskSEXP);
-    Rcpp::traits::input_parameter< const NumericVector >::type GTiminus(GTiminusSEXP);
-    Rcpp::traits::input_parameter< const double >::type Gtau(GtauSEXP);
-    Rcpp::traits::input_parameter< const double >::type auc(aucSEXP);
-    Rcpp::traits::input_parameter< const bool >::type survival(survivalSEXP);
-    rcpp_result_gen = Rcpp::wrap(getInfluenceFunctionAUCConservative(time, status, tau, risk, GTiminus, Gtau, auc, survival));
-    return rcpp_result_gen;
-END_RCPP
-}
 // getInfluenceFunctionBrierKMCensoring
 NumericVector getInfluenceFunctionBrierKMCensoring(double tau, NumericVector time, NumericVector risk, NumericVector status, NumericVector GTiminus, double brier);
 RcppExport SEXP _riskRegression_getInfluenceFunctionBrierKMCensoring(SEXP tauSEXP, SEXP timeSEXP, SEXP riskSEXP, SEXP statusSEXP, SEXP GTiminusSEXP, SEXP brierSEXP) {
@@ -681,7 +664,6 @@ static const R_CallMethodDef CallEntries[] = {
     {"_riskRegression_pProcess_cpp", (DL_FUNC) &_riskRegression_pProcess_cpp, 8},
     {"_riskRegression_sampleMaxProcess_cpp", (DL_FUNC) &_riskRegression_sampleMaxProcess_cpp, 8},
     {"_riskRegression_getInfluenceFunctionAUC", (DL_FUNC) &_riskRegression_getInfluenceFunctionAUC, 10},
-    {"_riskRegression_getInfluenceFunctionAUCConservative", (DL_FUNC) &_riskRegression_getInfluenceFunctionAUCConservative, 8},
     {"_riskRegression_getInfluenceFunctionBrierKMCensoring", (DL_FUNC) &_riskRegression_getInfluenceFunctionBrierKMCensoring, 6},
     {"_riskRegression_calcE_cpp", (DL_FUNC) &_riskRegression_calcE_cpp, 6},
     {"_riskRegression_IFbeta_cpp", (DL_FUNC) &_riskRegression_IFbeta_cpp, 10},
