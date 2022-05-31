@@ -67,6 +67,7 @@ plotAUC(
 Plot of time-dependent AUC curves
 }
 \examples{
+set.seed(9)
 library(survival)
 library(prodlim)
 d=sampleData(100,outcome="survival")
@@ -77,7 +78,7 @@ xx=Score(list("X1+X6+X8"=f1,"X2+X5+X9"=f2), formula=Surv(time,event)~1,
 data=nd, metrics="auc", null.model=FALSE, times=seq(3:10))
 aucgraph <- plotAUC(xx)
 plotAUC(xx,conf.int=TRUE)
-## difference between 
+## difference between
 plotAUC(xx,which="contrasts",conf.int=TRUE)
 
 
