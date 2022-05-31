@@ -101,7 +101,7 @@ iidCox.coxph <- function(object, newdata = NULL,
     ## ** Extract new observations
     if(!is.null(newdata)){
     
-        if("data.frame" %in% class(newdata) == FALSE){
+        if(!inherits(x=newdata,what="data.frame")){
             stop("class of \'newdata\' must inherit from data.frame \n")
         }
     

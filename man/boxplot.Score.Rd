@@ -67,6 +67,7 @@ Retrospective boxplots of risk quantiles conditional on outcome
 # binary outcome
 library(data.table)
 library(prodlim)
+set.seed(10)
 db=sampleData(40,outcome="binary")
 fitconv=glm(Y~X3+X5,data=db,family=binomial)
 fitnew=glm(Y~X1+X3+X5+X6+X7,data=db,family=binomial)

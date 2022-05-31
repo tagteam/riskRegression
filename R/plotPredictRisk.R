@@ -104,7 +104,7 @@ plotPredictRisk <- function(x,
     if(missing(times)){
         # formula
         formula <- eval(x$call$formula)
-        if (match("formula",class(formula),nomatch=0)==0)
+        if (!inherits(x=formula,what="formula"))
             stop("Argument formula is missing.")
         # find data
         data <- eval(x$call$data)

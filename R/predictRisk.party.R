@@ -5,7 +5,7 @@
 ##' @return list with two elements: ctree and call
 ##' @seealso Cforest
 ##' @examples
-##' if (requireNamespace("party",quietly=TRUE)){
+##' if (require("party",quietly=TRUE)){
 ##' library(prodlim)
 ##' library(party)
 ##' library(survival)
@@ -15,7 +15,6 @@
 ##' f <- Ctree(Surv(time,status)~X1+X2,data=d)
 ##' predictRisk(f,newdata=nd,times=c(3,8))
 ##' }
-##' 
 ##' 
 ##' @author Thomas A. Gerds <tag@@biostat.ku.dk>
 ##' @export 

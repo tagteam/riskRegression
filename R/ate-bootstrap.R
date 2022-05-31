@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: apr 11 2018 (17:05) 
 ## Version: 
-## Last-Updated: Dec  6 2020 (08:47) 
+## Last-Updated: Mar  7 2022 (08:36) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 340
+##     Update #: 343
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -101,7 +101,7 @@ calcBootATE <- function(args, n.obs, fct.pointEstimate, name.estimate,
             if(!is.null(args[[iModel]])){
                 args[[iModel]]$call$data <- ls.data[[iModel]][index] ## resample dataset
                 args[[iModel]] <- try(eval(args[[iModel]]$call),silent=TRUE) ## refit  model
-                if ("try-error" %in% class(args[[iModel]])){
+                if (inherits(x=args[[iModel]],what="try-error")){
                     iBoot <- c(paste0("Failed to fit model ",iModel," on the bootstrap sample", sep = ""),
                                args[[iModel]]
                                )
@@ -122,7 +122,7 @@ calcBootATE <- function(args, n.obs, fct.pointEstimate, name.estimate,
         }
         iBoot <- try(do.call(fct.pointEstimate, args), silent = TRUE)
         ## export
-        if(inherits(iBoot,"try-error")){ ## error handling
+        if(inherits(x=iBoot,what="try-error")){ ## error handling
             out <- rep(NA, length(name.estimate), name.estimate)
             attr(out,"error") <- iBoot
             return(out)        

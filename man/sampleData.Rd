@@ -37,6 +37,7 @@ Simulate data with binary outcome and 10 covariates.
 For the actual lava::regression parameters see the function definition.
 }
 \examples{
+set.seed(10)
 sampleData(10,outcome="binary")
 sampleData(10,outcome="survival")
 sampleData(10,outcome="competing.risks")

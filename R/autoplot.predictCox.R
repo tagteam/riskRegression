@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: feb 17 2017 (10:06) 
 ## Version: 
-## last-updated: Jan  5 2022 (08:04) 
+## last-updated: Mar  7 2022 (08:31) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 1273
+##     Update #: 1275
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -531,7 +531,7 @@ predict2plot <- function(dataL, name.outcome,
             }else{ 
                 smoother <- function(formula, data){
                     out <- try(do.call(scam::scam, args = list(formula = formula, data = data)))
-                    if(inherits(out,"try-error")){
+                    if(inherits(x=out,what="try-error")){
                         out <- do.call(mgcv::gam, args = list(formula = update(formula, ".~s(time)"), data = data))
                     }
                     return(out)
@@ -562,7 +562,7 @@ predict2plot <- function(dataL, name.outcome,
                         data2 <- data.table::copy(data)
                         data2[, c(name.outcome) := mvtnorm::rmvnorm(1, mean = data[[name.outcome]], sigma = Sigma)[1,]]                        
                         iModel <- try(do.call(smoother, args = list(formula = ff,data = data2)))
-                        if(inherits(iModel,"try-error")){
+                        if(inherits(x=iModel,what="try-error")){
                             return(rep(NA, length(data$time)))
                         }else{
                             return(numDeriv::grad(function(x){predict(iModel, newdata = data.frame(time = x), type = "response")}, x = data$time))

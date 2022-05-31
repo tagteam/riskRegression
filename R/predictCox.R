@@ -275,8 +275,8 @@ predictCox <- function(object,
     }
     ## convergence issue
     if(!is.null(coef(object)) && any(is.na(coef(object)))){
-        stop("Incorrect object",
-             "One or several model parameters have been estimated to be NA \n")
+        print(coef(object))
+        stop("One or several parameters of the regression model have no value, i.e., a value 'NA'.\n")
     }
     ## prediction 
     if (missing(newdata) && (se || iid || average.iid)){
@@ -673,7 +673,7 @@ predictCox <- function(object,
         if("lp" %in% type && centered2){
             if(is.null(df.reference)){
                 data <- try(eval(object$call$data), silent = TRUE)
-                if(inherits(data,"try-error")){
+                if(inherits(x=data,what="try-error")){
                     stop("Could not evaluate the dataset used to fit the model to define a reference level. \n",
                          "Set argument \'centered\' to FALSE or to a data.frame definining the reference level. \n")
                 }

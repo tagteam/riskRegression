@@ -71,7 +71,7 @@ plot.riskRegression <- function(x,
         plot.times <- x$eventTimes
     else
         plot.times <- x$timeVaryingEffects$coef[,"time"]
-    if (class(x)=="predictedRisk")
+    if (inherits(x=x,what="predictedRisk"))
         Y <- split(x$risk,1:NROW(x$risk))
     else{
         if (missing(newdata)){

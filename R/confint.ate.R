@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: maj 23 2018 (14:08) 
 ## Version: 
-## Last-Updated: okt  8 2021 (14:35) 
-##           By: Brice Ozenne
-##     Update #: 1004
+## Last-Updated: Mar  7 2022 (08:28) 
+##           By: Thomas Alexander Gerds
+##     Update #: 1005
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -311,7 +311,7 @@ confintBoot.ate <- function(object, estimator, out, seed){
                 return(setNames(out,c("lower","upper")))
             }    
         }),silent=TRUE)
-        if (class(try.CI)[1]=="try-error"){
+        if (inherits(x=(try.CI),what="try-error")){
             warning("Could not construct bootstrap confidence limits")
             boot.CI <- matrix(rep(NA,2*length(index)),ncol=2)
         } else{

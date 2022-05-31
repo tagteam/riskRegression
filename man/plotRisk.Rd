@@ -67,6 +67,7 @@ Two rival prediction models are applied to the same data.
 \examples{
 library(prodlim)
 ## uncensored
+set.seed(10)
 learndat = sampleData(40,outcome="binary")
 testdat = sampleData(40,outcome="binary")
 lr1 = glm(Y~X1+X2+X7+X9,data=learndat,family="binomial")
@@ -76,6 +77,7 @@ xb=Score(list("LR(X1+X2+X7+X9)"=lr1,"LR(X3+X5+X6)"=lr2),formula=Y~1,
 plotRisk(xb)
 ## survival
 library(survival)
+set.seed(10)
 learndat = sampleData(40,outcome="survival")
 testdat = sampleData(40,outcome="survival")
 cox1 = coxph(Surv(time,event)~X1+X2+X7+X9,data=learndat,x=TRUE)

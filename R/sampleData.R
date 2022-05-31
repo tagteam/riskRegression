@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jan  4 2016 (09:43) 
 ## Version: 
-## last-updated: Oct  9 2021 (10:28) 
+## last-updated: Mar  9 2022 (15:45) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 52
+##     Update #: 53
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -38,6 +38,7 @@
 ##' X1-X5 (binary predictors), X6-X10 (continous predictors)
 ##' @seealso lvm
 ##' @examples
+##' set.seed(10)
 ##' sampleData(10,outcome="binary")
 ##' sampleData(10,outcome="survival")
 ##' sampleData(10,outcome="competing.risks")

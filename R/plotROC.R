@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun 23 2016 (10:27) 
 ## Version: 
-## last-updated: Dec  5 2020 (11:37) 
+## last-updated: Mar  9 2022 (14:33) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 182
+##     Update #: 184
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -38,7 +38,7 @@
 ##' @examples
 ##' ## binary
 ##' set.seed(18)
-##' if (requireNamespace("randomForest",quietly=TRUE)){
+##' if (require("randomForest",quietly=TRUE)){
 ##' library(randomForest)
 ##' library(prodlim)
 ##' bdl <- sampleData(40,outcome="binary")
@@ -50,7 +50,7 @@
 ##' xb <- Score(list("glm"=fb1,"rf"=fb2),y~1,data=bdt,
 ##'             plots="roc",metrics=c("auc","brier"))
 ##' plotROC(xb,brier.in.legend=1L)
-##'
+##' 
 ##' # with cross-validation
 ##' \dontrun{
 ##' xb3 <- Score(list("glm"=fb1,"rf"=fb2),y~1,data=bdl,

@@ -143,7 +143,7 @@ CSC <- function(formula,
     surv.type <- match.arg(surv.type,c("hazard","survival"))
     # }}}
     # {{{ formulae & response
-    if (class(formula)=="formula") formula <- list(formula)
+    if (inherits(x=formula,what="formula")) formula <- list(formula)
     call <- match.call()
     # get outcome information from formula
     Rform <- update(formula[[1]],".~1")

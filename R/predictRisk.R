@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun  6 2016 (09:02)
 ## Version:
-## last-updated: May 17 2022 (13:58)
+## last-updated: May 31 2022 (11:52) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 438
+##     Update #: 440
 #----------------------------------------------------------------------
 ##
 ### Commentary:
@@ -122,6 +122,7 @@
 #' predictRisk(sfit,newdata=d[1:3,],times=c(1,3,5,10))
 #'
 #' ## simulate learning and validation data
+#' set.seed(10)
 #' learndat <- sampleData(100,outcome="survival")
 #' valdat <- sampleData(100,outcome="survival")
 #' ## use the learning data to fit a Cox model
@@ -135,14 +136,13 @@
 #' ## one column for each of the 5 time points
 #' ## one row for each validation set individual
 #'
-#' \dontrun{
-#' if ((requireNamespace("randomForestSRC",quietly=TRUE))){
+#' if (require("randomForestSRC",quietly=TRUE)){
 #' # Do the same for a randomSurvivalForest model
 #' library(randomForestSRC)
 #' rsfmodel <- rfsrc(Surv(time,event)~X1+X2,data=learndat)
 #' prsfsurv=predictRisk(rsfmodel,newdata=valdat,times=seq(0,60,12))
 #' plot(psurv,prsfsurv)
-#' }}
+#' }
 #' ## Cox with ridge option
 #' f1 <- coxph(Surv(time,event)~X1+X2,data=learndat,x=TRUE,y=TRUE)
 #' f2 <- coxph(Surv(time,event)~ridge(X1)+ridge(X2),data=learndat,x=TRUE,y=TRUE)
@@ -263,6 +263,13 @@ predictRisk.glm <- function(object, newdata, iid = FALSE, average.iid = FALSE,..
             ff.rhs <- stats::delete.response(stats::terms(stats::formula(object)))
             newX <- model.matrix(ff.rhs, newdata)
             Xbeta <- predict(object, type = "link", newdata = newdata, se = FALSE)
+
+            if(!identical(colnames(iid.beta),colnames(newX))){
+                warning("Mismatch between the column names of the design matrix and the iid. \n",
+                        "Difference: \"",paste(union(setdiff(colnames(iid.beta),colnames(newX)), setdiff(colnames(newX),colnames(iid.beta))),collapse = "\" \""),"\" \n",
+                        "Could be due to a factor variable with an empty level. \n")
+                newX <- newX[,colnames(iid.beta),drop=FALSE]
+            }
 
             ## ** chain rule
             if(average.iid){
@@ -488,7 +495,7 @@ predictRisk.lrm <- function(object,newdata,...){
 ##' @rdname predictRisk
 ##' @method predictRisk rpart
 predictRisk.rpart <- function(object,newdata,...){
-    requireNamespace("rpart",quietly=FALSE)
+  requireNamespace("rpart",quietly=FALSE)
   p <- as.numeric(stats::predict(object,newdata=newdata))
   p
 }
@@ -1043,7 +1050,7 @@ predictRisk.CauseSpecificCox <- function (object, newdata, times, cause,
 ##' library(prodlim)
 ##' \dontrun{
 ##' ## too slow
-##' if (requireNamespace("penalized",quietly=TRUE)){
+##' if (require("penalized",quietly=TRUE)){
 ##' library(penalized)
 ##' set.seed(8)
 ##' d <- sampleData(200,outcome="binary")
@@ -1354,7 +1361,7 @@ Hal9001 <- function(formula,data,...){
 
 ##' @export
 ##' @rdname predictRisk
-##' @method predictRisk hal9001
+##' @method predictRisk Hal9001
 predictRisk.Hal9001 <- function(object,
                                 newdata,
                                 times,

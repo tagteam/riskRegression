@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Feb 27 2022 (09:12) 
 ## Version: 
-## Last-Updated: Mar  1 2022 (12:00) 
+## Last-Updated: May 31 2022 (11:47) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 4
+##     Update #: 11
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -31,11 +31,10 @@ getPerformanceData <- function(testdata,
                                object,
                                object.classes,
                                NT){
-    ID=NULL
+    ID=model=NULL
     # inherit everything else from parent frame: object, nullobject, NF, NT, times, cause, response.type, etc.
     Brier=IPA=IBS=NULL
     looping <- !is.null(traindata)
-    ## if (!looping) b=0
     N <- as.numeric(NROW(testdata))
     # split data vertically into response and predictors X
     response <- testdata[,1:response.dim,with=FALSE]
@@ -44,7 +43,6 @@ getPerformanceData <- function(testdata,
     X <- testdata[,-c(1:response.dim),with=FALSE]
     ## restore sanity
     setnames(X,sub("^protectedName.","",names(X)))
-    if (debug) if (looping) message(paste0("Loop round: ",b))
     if (debug) message("extracted test set and prepared output object")
     # }}}
     # {{{ collect pred as long format data.table
@@ -92,8 +90,8 @@ getPerformanceData <- function(testdata,
                 model.f$call$data <- trainX
                 # browser(skipCalls = 1)
                 trained.model <- try(eval(model.f$call),silent=TRUE)
-                if ("try-error" %in% class(trained.model)){
-                    message(paste0("Failed to fit model ",f,ifelse(looping,paste0(" in cross-validation step ",b)),":"))
+                if (inherits(x=trained.model,what="try-error")){
+                    message(paste0("Failed to train the following model:"))
                     try(eval(model.f$call),silent=FALSE)
                     stop()
                 }
@@ -125,12 +123,12 @@ getPerformanceData <- function(testdata,
         if (cens.type=="rightCensored"){
             Weights <- testweights
             ## add subject specific weights
-            response[,WTi:=Weights$IPCW.subject.times]
+            set(response,j="WTi",value=Weights$IPCW.subject.times)
         } else {
             if (cens.type=="uncensored"){
                 Weights <- list(IPCW.times=rep(1,NT),IPCW.subject.times=matrix(1,ncol=NT,nrow=N))
                 Weights$method <- "marginal"
-                response[,WTi:=1]
+                set(response,j="WTi",value=1)
             } else{
                 stop("Cannot handle this type of censoring.")
             }

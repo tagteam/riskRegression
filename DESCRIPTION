@@ -5,6 +5,7 @@ Title: Risk Regression Models and Prediction Scores for Survival Analysis with
 Version: 2022.05.31
 Authors@R: c(person("Thomas Alexander", "Gerds", role = c("aut", "cre"),
                     email = "tag@biostat.ku.dk"),
+             person("Johan Sebastian", "Ohlendorff", role = "aut"),
              person("Paul", "Blanche", role = "ctb"),
              person("Rikke", "Mortensen", role = "ctb"),
              person("Marvin", "Wright", role = "ctb"),

@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Mar 13 2017 (16:53) 
 ## Version: 
-## Last-Updated: Feb  7 2020 (19:20) 
+## Last-Updated: Mar  9 2022 (15:49) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 160
+##     Update #: 161
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -43,6 +43,7 @@
 ##' @examples
 ##' library(prodlim)
 ##' ## uncensored
+##' set.seed(10)
 ##' learndat = sampleData(40,outcome="binary")
 ##' testdat = sampleData(40,outcome="binary")
 ##' lr1 = glm(Y~X1+X2+X7+X9,data=learndat,family="binomial")
@@ -52,6 +53,7 @@
 ##' plotRisk(xb)
 ##' ## survival
 ##' library(survival)
+##' set.seed(10)
 ##' learndat = sampleData(40,outcome="survival")
 ##' testdat = sampleData(40,outcome="survival")
 ##' cox1 = coxph(Surv(time,event)~X1+X2+X7+X9,data=learndat,x=TRUE)

@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Oct 23 2016 (08:53) 
 ## Version: 
-## last-updated: May 10 2022 (18:35) 
+## last-updated: May 31 2022 (11:43) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 2297
+##     Update #: 2298
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -827,7 +827,7 @@ ate_initArgs <- function(object.event,
         if(is.na(cause)){ ## handle Surv(time,event > 0) ~ ...
             if(any(model.event$y[,NCOL(model.event$y)]==1)){
                 modeldata <- try(eval(model.event$call$data), silent = TRUE)
-                if(inherits(modeldata,"try-error")){
+                if(inherits(x=modeldata,what="try-error")){
                     cause <- unique(mydata[[eventVar.status]][model.event$y[,NCOL(model.event$y)]==1])
                 }else{
                     cause <- unique(modeldata[[eventVar.status]][model.event$y[,NCOL(model.event$y)]==1])

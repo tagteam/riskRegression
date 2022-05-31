@@ -42,8 +42,7 @@ getResponse <- function(formula,cause,data,vars){
             data.table::setattr(response,"model","continuous")
             attr(response,"event") <- NULL
         }
-    }
-    else{
+    } else{
         responseNames <- all.names(formula)
         if (responseNames[2] %in% c("Surv","Hist")){
             ## case 4,5

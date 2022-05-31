@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun 23 2016 (09:19) 
 ## Version: 
-## last-updated: May 31 2022 (11:23) 
+## last-updated: May 31 2022 (11:43) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 84
+##     Update #: 85
 #----------------------------------------------------------------------
 ##
 ### Commentary:
@@ -40,6 +40,7 @@
 ##' set.seed(9)
 ##' library(survival)
 ##' library(prodlim)
+##' set.seed(10)
 ##' d=sampleData(100,outcome="survival")
 ##' nd=sampleData(100,outcome="survival")
 ##' f1=coxph(Surv(time,event)~X1+X6+X8,data=d,x=TRUE,y=TRUE)
