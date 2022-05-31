@@ -55,7 +55,6 @@ NumericVector getInfluenceFunctionBrierKMCensoring(double tau,
   // find first index such that k such that tau[k] <= tau but tau[k+1] > tau
   auto lower = std::upper_bound(time.begin(), time.end(), tau);
   int firsthit = std::distance(time.begin(), lower) -1;
-
   double icpart1 = 0;
   double icpart2 = 0;
   for (int i = 0; i <= firsthit; i++){
@@ -74,7 +73,13 @@ NumericVector getInfluenceFunctionBrierKMCensoring(double tau,
   int upperTie = tieIter-1;
   double icterm, fihattau,firstterm;
   int j;
-  for (int i = 0; i<n; i++){
+  if (firsthit==-1){
+    for (int i = 0; i<n; i++){
+      ic[i] = risk[i]*risk[i]-brier;
+    }
+  }
+  else {
+    for (int i = 0; i<n; i++){
       if (i > firsthit){
         j = firsthit;
       }
@@ -106,6 +111,7 @@ NumericVector getInfluenceFunctionBrierKMCensoring(double tau,
         firstterm = 0.0;
       }
       ic[i] = firstterm + icterm + risk[i]*risk[i]-brier;
+    }
   }
   return ic;
 }

@@ -1,18 +1,18 @@
-### plotAUC.R --- 
+### plotAUC.R ---
 #----------------------------------------------------------------------
 ## author: Thomas Alexander Gerds
 ## created: Jun 23 2016 (09:19) 
 ## Version: 
-## last-updated: May 24 2022 (07:53) 
+## last-updated: May 31 2022 (11:23) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 83
+##     Update #: 84
 #----------------------------------------------------------------------
-## 
-### Commentary: 
-## 
+##
+### Commentary:
+##
 ### Change Log:
 #----------------------------------------------------------------------
-## 
+##
 ### Code:
 ##' Plot of time-dependent AUC curves
 ##'
@@ -37,6 +37,7 @@
 #' @param legend Logical. If \code{TRUE} draw legend.
 #' @param ... Used for additional control of the subroutines: plot,
 ##' @examples
+##' set.seed(9)
 ##' library(survival)
 ##' library(prodlim)
 ##' d=sampleData(100,outcome="survival")
@@ -47,9 +48,9 @@
 ##' data=nd, metrics="auc", null.model=FALSE, times=seq(3:10))
 ##' aucgraph <- plotAUC(xx)
 ##' plotAUC(xx,conf.int=TRUE)
-##' ## difference between 
+##' ## difference between
 ##' plotAUC(xx,which="contrasts",conf.int=TRUE)
-##' 
+##'
 #'
 #' @export
 plotAUC <- function(x,
@@ -76,7 +77,7 @@ plotAUC <- function(x,
     pframe <- switch(which,"score"={copy(x$AUC$score)},"contrasts"={copy(x$AUC$contrasts)},{stop("argument 'which' has to be either 'score' for AUC or 'contrasts' for differences in AUC.")})
     if (length(pframe$times)<2) stop(paste("Need at least two time points for plotting time-dependent AUC. Object has only ",length(pframe$times),"times"))
     if (!missing(models)) pframe <- pframe[model %in% models]
-    
+
     if (which=="score"){
         mm <- unique(pframe$model)
         pframe[is.na(se)&times==0,lower:=0]
@@ -143,7 +144,7 @@ plotAUC <- function(x,
                                      forced=list("plot"=list(axes=FALSE),
                                                  "axis1"=list(side=1)),
                                      verbose=TRUE)
-    
+
     if (which=="score"){
         ## AUC
         do.call("plot",control$plot)

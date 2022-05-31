@@ -62,6 +62,9 @@ NumericVector getInfluenceFunctionAUC(NumericVector time,
   // find first index such that k such that tau[k] <= tau but tau[k+1] > tau
   auto lower = std::upper_bound(time.begin(), time.end(), tau);
   int firsthit = std::distance(time.begin(), lower) -1;
+  if (firsthit == -1){
+    firsthit = 0;
+  }
   LogicalVector logicalIndex(n);
   LogicalVector logicalIndex2(n);
   for (int i = 0; i <= firsthit; i++){
