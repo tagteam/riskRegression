@@ -392,7 +392,7 @@ calculatefihat <- function(i,IC.data,X,prob.risk,status,time,tau){
     # }
     n <- length(time)
     ic <- rep(0,n)
-    indeces <- which(X==X[i])
+    indices <- which(X==X[i])
     sind1 <- prodlim::sindex(time,time[i])+1
     sind2 <- prodlim::sindex(time,tau)+1
     ic.tau <- rep(0,n)
@@ -401,10 +401,11 @@ calculatefihat <- function(i,IC.data,X,prob.risk,status,time,tau){
     inv.weights <- (1-predictRisk(IC.data$fit.time,IC.data$wdata[i],IC.data$wdata$time[i],1))*(1-predictRisk(IC.data$fit.cens,IC.data$wdata[i],IC.data$wdata$time[i],1))*prob.risk[i]
     other.weights <- (1-predictRisk(IC.data$fit.time,IC.data$wdata[i],IC.data$wdata$time[indeces],1))*(1-predictRisk(IC.data$fit.cens,IC.data$wdata[i],IC.data$wdata$time[indeces],1))*prob.risk[indeces]
     integralterm <- 0
-    for (j in indeces){
+    k <- 1
+    for (j in indices){
         if (j < sind1){
             if (status[j] == 0){
-                k <- which(indeces==j)
+                # k <- which(indices==j)
                 integralterm <- integralterm + 1/n * 1/(other.weights[k]^2)
             }
             ic[j] <- - integralterm
@@ -414,9 +415,10 @@ calculatefihat <- function(i,IC.data,X,prob.risk,status,time,tau){
         }
         if (j >= sind2 && !ic.tau.calculated){
             ic.tau.calculated <- TRUE
-            ic.tau[indeces] <- ic[j]
+            ic.tau[indices] <- ic[j]
         }
     }
+    k <- k + 1
     list(ic=ic,ic.tau=ic.tau)
 }
 
