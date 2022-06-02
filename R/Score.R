@@ -824,7 +824,7 @@ c.f., Chapter 7, Section 5 in Gerds & Kattan 2021. Medical risk prediction model
             #         conservative[1] <- TRUE
             #     }
             # }
-            getIC <- se.fit[[1]] && !conservative[[1]] && old.ic.method
+            getIC <- (se.fit[[1]] && !conservative[[1]] && old.ic.method) || split.method$name == "LeaveOneOutBoot"
             Weights <- getCensoringWeights(formula=formula,
                                            data=data,
                                            times=times,
