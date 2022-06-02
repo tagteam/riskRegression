@@ -305,12 +305,11 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// getInfluenceFunctionAUC
-NumericVector getInfluenceFunctionAUC(NumericVector time, NumericVector status, double tau, NumericVector risk, NumericVector GTiminus, double Gtau, double auc, bool conservative, bool tiedValues, bool survival);
-RcppExport SEXP _riskRegression_getInfluenceFunctionAUC(SEXP timeSEXP, SEXP statusSEXP, SEXP tauSEXP, SEXP riskSEXP, SEXP GTiminusSEXP, SEXP GtauSEXP, SEXP aucSEXP, SEXP conservativeSEXP, SEXP tiedValuesSEXP, SEXP survivalSEXP) {
+// getInfluenceFunctionAUCKMCensoring
+NumericVector getInfluenceFunctionAUCKMCensoring(NumericVector time, NumericVector status, double tau, NumericVector risk, NumericVector GTiminus, double Gtau, double auc, bool tiedValues);
+RcppExport SEXP _riskRegression_getInfluenceFunctionAUCKMCensoring(SEXP timeSEXP, SEXP statusSEXP, SEXP tauSEXP, SEXP riskSEXP, SEXP GTiminusSEXP, SEXP GtauSEXP, SEXP aucSEXP, SEXP tiedValuesSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< NumericVector >::type time(timeSEXP);
     Rcpp::traits::input_parameter< NumericVector >::type status(statusSEXP);
     Rcpp::traits::input_parameter< double >::type tau(tauSEXP);
@@ -318,10 +317,8 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< NumericVector >::type GTiminus(GTiminusSEXP);
     Rcpp::traits::input_parameter< double >::type Gtau(GtauSEXP);
     Rcpp::traits::input_parameter< double >::type auc(aucSEXP);
-    Rcpp::traits::input_parameter< bool >::type conservative(conservativeSEXP);
     Rcpp::traits::input_parameter< bool >::type tiedValues(tiedValuesSEXP);
-    Rcpp::traits::input_parameter< bool >::type survival(survivalSEXP);
-    rcpp_result_gen = Rcpp::wrap(getInfluenceFunctionAUC(time, status, tau, risk, GTiminus, Gtau, auc, conservative, tiedValues, survival));
+    rcpp_result_gen = Rcpp::wrap(getInfluenceFunctionAUCKMCensoring(time, status, tau, risk, GTiminus, Gtau, auc, tiedValues));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -330,7 +327,6 @@ NumericVector getInfluenceFunctionBrierKMCensoring(double tau, NumericVector tim
 RcppExport SEXP _riskRegression_getInfluenceFunctionBrierKMCensoring(SEXP tauSEXP, SEXP timeSEXP, SEXP riskSEXP, SEXP statusSEXP, SEXP GTiminusSEXP, SEXP brierSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< double >::type tau(tauSEXP);
     Rcpp::traits::input_parameter< NumericVector >::type time(timeSEXP);
     Rcpp::traits::input_parameter< NumericVector >::type risk(riskSEXP);
@@ -663,7 +659,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_riskRegression_quantileProcess_cpp", (DL_FUNC) &_riskRegression_quantileProcess_cpp, 7},
     {"_riskRegression_pProcess_cpp", (DL_FUNC) &_riskRegression_pProcess_cpp, 8},
     {"_riskRegression_sampleMaxProcess_cpp", (DL_FUNC) &_riskRegression_sampleMaxProcess_cpp, 8},
-    {"_riskRegression_getInfluenceFunctionAUC", (DL_FUNC) &_riskRegression_getInfluenceFunctionAUC, 10},
+    {"_riskRegression_getInfluenceFunctionAUCKMCensoring", (DL_FUNC) &_riskRegression_getInfluenceFunctionAUCKMCensoring, 8},
     {"_riskRegression_getInfluenceFunctionBrierKMCensoring", (DL_FUNC) &_riskRegression_getInfluenceFunctionBrierKMCensoring, 6},
     {"_riskRegression_calcE_cpp", (DL_FUNC) &_riskRegression_calcE_cpp, 6},
     {"_riskRegression_IFbeta_cpp", (DL_FUNC) &_riskRegression_IFbeta_cpp, 10},

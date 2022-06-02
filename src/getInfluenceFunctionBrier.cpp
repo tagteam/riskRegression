@@ -6,7 +6,7 @@ using namespace arma;
 
 // Calculate influence function for competing risk case/survival case with Nelson-Aalen censoring.
 // Author: Johan Sebastian Ohlendorff
-// [[Rcpp::export]]
+// [[Rcpp::export(rng = false)]]
 NumericVector getInfluenceFunctionBrierKMCensoring(double tau,
                                                    NumericVector time,
                                                    NumericVector risk,

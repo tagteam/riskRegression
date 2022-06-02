@@ -398,7 +398,7 @@ calculatefihat <- function(i,IC.data,X,prob.risk,status,time,tau){
     ic.tau <- rep(0,n)
     ic.tau.calculated <- FALSE
     #need to get data set somehow
-    inv.weights <- (1-predictRisk(IC.data$fit.time,IC.data$wdata[i],IC.data$wdata$time[i],1))*(1-predictRisk(IC.data$fit.cens,IC.data$wdata[i],IC.data$wdata$time[i],1))*prob.risk[i]
+    inv.weights <- (1-predictRisk(object=IC.data$fit.time,newdata=IC.data$wdata[i],times=IC.data$wdata$time[i],cause=1))*(1-predictRisk(IC.data$fit.cens,IC.data$wdata[i],IC.data$wdata$time[i],1))*prob.risk[i]
     other.weights <- (1-predictRisk(IC.data$fit.time,IC.data$wdata[i],IC.data$wdata$time[indeces],1))*(1-predictRisk(IC.data$fit.cens,IC.data$wdata[i],IC.data$wdata$time[indeces],1))*prob.risk[indeces]
     integralterm <- 0
     k <- 1
