@@ -1,12 +1,12 @@
 // [[Rcpp::depends(RcppArmadillo)]]
-#include <RcppArmadillo.h>
+#include "arma-wrap.h"
 
 using namespace Rcpp;
 using namespace arma;
 
 // Calculate influence function for competing risk case/survival case with Nelson-Aalen censoring.
 // Author: Johan Sebastian Ohlendorff
-// [[Rcpp::export(rng = false)]]
+// [[Rcpp::export]]
 NumericVector getInfluenceFunctionBrierKMCensoring(double tau,
                                                    NumericVector time,
                                                    NumericVector risk,

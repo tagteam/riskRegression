@@ -1,5 +1,5 @@
 // [[Rcpp::depends(RcppArmadillo)]]
-#include <RcppArmadillo.h>
+#include "arma-wrap.h"
 using namespace Rcpp;
 using namespace arma;
 // C++ functions for calculating the asymptotic covariance matrix for the delongtest function.

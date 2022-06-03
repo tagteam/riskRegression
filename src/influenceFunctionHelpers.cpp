@@ -1,5 +1,5 @@
 // [[Rcpp::depends(RcppArmadillo)]]
-#include <RcppArmadillo.h>
+#include "arma-wrap.h"
 using namespace Rcpp;
 
 // Same as colMeans(A*b) for a matrrix A and vector b
