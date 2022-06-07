@@ -387,9 +387,8 @@ getInfluenceCurve.AUC.covariates.conservative <- function(t,n,time,status,risk,G
 }
 
 calculatefihat <- function(i,IC.data,X,prob.risk,status,time,tau){
-    # if(i==4){
-    #     browser()
-    # }
+    Stimes <- IC.data$Stimes
+    Gtimes <- IC.data$Gtimes
     n <- length(time)
     ic <- rep(0,n)
     indices <- which(X==X[i])
@@ -397,28 +396,33 @@ calculatefihat <- function(i,IC.data,X,prob.risk,status,time,tau){
     sind2 <- prodlim::sindex(time,tau)+1
     ic.tau <- rep(0,n)
     ic.tau.calculated <- FALSE
-    #need to get data set somehow
-    inv.weights <- (1-predictRisk(IC.data$fit.time,IC.data$wdata[i],IC.data$wdata$time[i],1))*(1-predictRisk(IC.data$fit.cens,IC.data$wdata[i],IC.data$wdata$time[i],1))*prob.risk[i]
-    other.weights <- (1-predictRisk(IC.data$fit.time,IC.data$wdata[i],IC.data$wdata$time[indeces],1))*(1-predictRisk(IC.data$fit.cens,IC.data$wdata[i],IC.data$wdata$time[indeces],1))*prob.risk[indeces]
-    integralterm <- 0
-    k <- 1
-    for (j in indices){
-        if (j < sind1){
-            if (status[j] == 0){
-                # k <- which(indices==j)
-                integralterm <- integralterm + 1/n * 1/(other.weights[k]^2)
+    integraltermPrev <- 0
+    integraltermCurr <- 0
+    l <- 1 
+    while (l <= length(indices)){
+        if (indices[l] < sind1){
+            tieIter <- l+1
+            if (status[indices[l]] == 0){
+                integraltermCurr <- integraltermCurr + 1/n * 1/((Stimes[indices[l]]*Gtimes[indices[l]]*prob.risk[indices[l]])^2)
             }
-            ic[j] <- - integralterm
+            while (tieIter <= length(indices) && time[indices[l]] == time[indices[tieIter]]){
+                if (status[indices[tieIter]] == 0){
+                    integraltermCurr <- integraltermCurr +1/n * 1/((Stimes[indices[tieIter]]*Gtimes[indices[tieIter]]*prob.risk[indices[tieIter]])^2)
+                }
+                tieIter <- tieIter + 1
+            }
+            ic[indices[l]:indices[tieIter-1]] <- -integraltermPrev
+            integraltermPrev <- integraltermCurr
         }
         else {
-            ic[j] <- 1/inv.weights[j]-integralterm
+            ic[indices[l]] <- 1/(Stimes[indices[l]]*Gtimes[indices[l]]*prob.risk[indices[l]])-integraltermCurr
         }
-        if (j >= sind2 && !ic.tau.calculated){
+        if (indices[l] >= sind2 && !ic.tau.calculated){
             ic.tau.calculated <- TRUE
-            ic.tau[indices] <- ic[j]
+            ic.tau[indices] <- ifelse(indices[l] < sind1, - integraltermCurr, 1/(Stimes[indices[l]]*Gtimes[indices[l]]*prob.risk[indices[l]])-integraltermCurr)
         }
+        l <- ifelse(indices[l] < sind1, tieIter, l + 1)
     }
-    k <- k + 1
     list(ic=ic,ic.tau=ic.tau)
 }
 
@@ -435,7 +439,6 @@ getInfluenceCurve.Brier.covariates <- function(tau,time,risk,status,GTiminus,Gta
     for (i in 1:n){
         #calculate fhat(\tilde{T}_i-,X_i) for i = 1, ..., n
         dat <- calculatefihat(i,IC.data,risk,prob.risk,status,time,tau)
-        ## FIXME: Need to evaluate at tilde{T_i}- and not tilde{T_i}
         fhat.Ti <- dat$ic
         IC.C.term <- mean( 1*(time <= tau & status == 1 )*(1-2*risk)*fhat.Ti / GTiminus )
         # IC.C.term <- 0
@@ -444,7 +447,6 @@ getInfluenceCurve.Brier.covariates <- function(tau,time,risk,status,GTiminus,Gta
     IC
 }
 
-## Does not support ties yet
 getInfluenceCurve.AUC.covariates <- function(t,n,time,status,risk,GTiminus,Gtau,AUC,IC.data){
     tau <- t
     X <- risk
@@ -467,7 +469,10 @@ getInfluenceCurve.AUC.covariates <- function(t,n,time,status,risk,GTiminus,Gtau,
         int3nu[i] <- mean(1*(X[i] > X & time <= tau & status == 2)/(GTiminus))
     }
 
-    ic <- rep(NA,n)
+    ic <- rep(0,n)
+    if (any(Gtau == 0) || any(GTiminus == 0)) {
+        stop("Some censoring weights are 0. Pick another censoring model or retry with a larger data set.")
+    }
     #main loop
     fhat.tau <- rep(0,n)
     fhat.Ti <- rep(0,n)
@@ -481,12 +486,9 @@ getInfluenceCurve.AUC.covariates <- function(t,n,time,status,risk,GTiminus,Gtau,
     for (i in 1:n){
         #calculate fhat(\tilde{T}_i-,X_i) for i = 1, ..., n
         dat <- calculatefihat(i,IC.data,risk,prob.risk,status,time,tau)
-        ## FIXME, need to evaluate at T_i- not T_i
         fhat.Ti <- dat$ic
         fhat.tau <- dat$ic.tau
-        if ( !all(!is.na(fhat.Ti)) || !all(!is.na(fhat.tau)) ){
-            browser()
-        }
+        # if (any(fhat.Ti != 0) || any(fhat.tau != 0)) browser()
         # #calculate fhat(tau,X_i) for i = 1, ..., n
         term1nu <- 1*(time[i] <= tau & status[i] == 1)/GTiminus[i] * int1nu[i]
         term2nu <- mean(int1nu * 1*(time <= tau & status == 1) * (fhat.Ti-1)/GTiminus)

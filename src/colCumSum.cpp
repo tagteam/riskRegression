@@ -1,5 +1,5 @@
 // [[Rcpp::depends(RcppArmadillo)]]
-#include <RcppArmadillo.h>
+#include "arma-wrap.h"
 using namespace Rcpp;
 
 //' Apply cumsum in each column 
