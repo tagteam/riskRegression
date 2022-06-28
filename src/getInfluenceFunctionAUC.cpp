@@ -161,7 +161,9 @@ NumericVector getInfluenceFunctionAUCKMCensoring(NumericVector time,
       i = tieIter;
     }
   }
-  
+  // Rcout << "Probnu: " << Probnu << "\n";
+  // Rcout << "eq1314part: " << eq1314part << "\n";
+  // Rcout << "eq1112part: " << eq1112part << "\n\n";
   // F_1(tau) = int 1_{t \leq tau} 1/ hat{G(t-)} dP(t,1) = Q(T_i <= tau, Delta_i = 1)
   // F_2(tau) = int 1_{t \leq tau} 1/ hat{G(t-)} dP(t,2) = Q(T_i <= tau, Delta_i = 2)
   double F1tau = 0, F2tau = 0, eq9term = 0;
@@ -201,6 +203,12 @@ NumericVector getInfluenceFunctionAUCKMCensoring(NumericVector time,
     }
     tieIter++;
   }
+  // Rcout << "eq10part2: " << eq10part2 << "\n";
+  // Rcout << "eq14part2: " << eq14part2 << "\n";
+  // Rcout << "eq17part2: " << eq17part2 << "\n";
+  // Rcout << "eq12part2: " << eq12part2 << "\n";
+  // Rcout << "eq19part2: " << eq19part2 << "\n";
+  
   int upperTie = tieIter-1;
   double eq8{}, eq9{}, eq10{}, eq11{},eq12{},eq13{},eq14{}, eq15{}, eq16{},eq17{},eq18{},eq19{},eq20{},eq21{}, fihattau{},eq1721part{};
   for (int i = 0; i<n; i++){
@@ -240,6 +248,20 @@ NumericVector getInfluenceFunctionAUCKMCensoring(NumericVector time,
       }
       upperTie = tieIter-1;
     }
+    if (i >= 7){
+      Rcout << "eq10part1: " << eq10part1 << "\n";
+      Rcout << "eq14part1: " << eq14part1 << "\n";
+      Rcout << "eq17part1: " << eq17part1 << "\n";
+      Rcout << "eq12part1: " << eq12part1 << "\n";
+      Rcout << "eq19part1: " << eq19part1 << "\n\n";
+      
+      Rcout << "eq10part2: " << eq10part2 << "\n";
+      Rcout << "eq14part2: " << eq14part2 << "\n";
+      Rcout << "eq17part2: " << eq17part2 << "\n";
+      Rcout << "eq12part2: " << eq12part2 << "\n";
+      Rcout << "eq19part2: " << eq19part2 << "\n\n";
+    }
+    
     else {
       fihattau = eq10 = eq17 = 0;
       eq12 = eq14 = 1.0/(Gtau) * eq9term-nu1;
@@ -272,5 +294,6 @@ NumericVector getInfluenceFunctionAUCKMCensoring(NumericVector time,
     double IFmu = eq15+eq16+eq17+eq18+eq19+eq20+eq21;
     ic[i] = (IFnu * mu1 - IFmu * nu1)/(mu1*mu1);
   }
+  Rcout << "ic is: " << ic << "\n";
   return ic;
 }
