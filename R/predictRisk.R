@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun  6 2016 (09:02)
 ## Version:
-## last-updated: May 31 2022 (11:52) 
+## last-updated: Jun 16 2022 (17:54) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 440
+##     Update #: 441
 #----------------------------------------------------------------------
 ##
 ### Commentary:
@@ -928,7 +928,7 @@ predictRisk.rfsrc <- function(object, newdata, times, cause, ...){
         p <- as.numeric(p[,2,drop=TRUE])
         p
     }else{
-        if (object$family=="surv") {
+        if (object$family[[1]]=="surv") {
             ptemp <- 1-stats::predict(object,newdata=newdata,importance="none",...)$survival
             pos <- prodlim::sindex(jump.times=object$time.interest,eval.times=times)
             p <- cbind(1,ptemp)[,pos+1,drop=FALSE]
