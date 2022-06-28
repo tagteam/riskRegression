@@ -103,6 +103,7 @@ NumericVector getInfluenceFunctionAUCKMCensoring(NumericVector time,
       jPrev = jCurr;
       valPrev = valCurr;
     }
+    // problem here!
     valCurr = valPrev = 0;
     i = n-1;
     while (i >= 0){
@@ -161,9 +162,10 @@ NumericVector getInfluenceFunctionAUCKMCensoring(NumericVector time,
       i = tieIter;
     }
   }
-  // Rcout << "Probnu: " << Probnu << "\n";
-  // Rcout << "eq1314part: " << eq1314part << "\n";
-  // Rcout << "eq1112part: " << eq1112part << "\n\n";
+  // Rcout << "Probnu: " << Probnu << "\n\n";
+  // Rcout << "eq1314part: " << eq1314part << "\n\n";
+  // Rcout << "eq1112part: " << eq1112part << "\n\n\n";
+  
   // F_1(tau) = int 1_{t \leq tau} 1/ hat{G(t-)} dP(t,1) = Q(T_i <= tau, Delta_i = 1)
   // F_2(tau) = int 1_{t \leq tau} 1/ hat{G(t-)} dP(t,2) = Q(T_i <= tau, Delta_i = 2)
   double F1tau = 0, F2tau = 0, eq9term = 0;
@@ -203,12 +205,7 @@ NumericVector getInfluenceFunctionAUCKMCensoring(NumericVector time,
     }
     tieIter++;
   }
-  // Rcout << "eq10part2: " << eq10part2 << "\n";
-  // Rcout << "eq14part2: " << eq14part2 << "\n";
-  // Rcout << "eq17part2: " << eq17part2 << "\n";
-  // Rcout << "eq12part2: " << eq12part2 << "\n";
-  // Rcout << "eq19part2: " << eq19part2 << "\n";
-  
+
   int upperTie = tieIter-1;
   double eq8{}, eq9{}, eq10{}, eq11{},eq12{},eq13{},eq14{}, eq15{}, eq16{},eq17{},eq18{},eq19{},eq20{},eq21{}, fihattau{},eq1721part{};
   for (int i = 0; i<n; i++){
@@ -219,7 +216,6 @@ NumericVector getInfluenceFunctionAUCKMCensoring(NumericVector time,
     else {
       fihattau =  (1-(status[i] != 0))*n/atrisk[sindex[i]]- MC_term2[sindex[i]];
     }
-    // fast calculation of eq10 and eq17
     eq10 = 1.0 / (Gtau*n) * (eq10part1+fihattau*eq10part2);
     eq12 = 1.0 / (n*n) * (eq12part1+(fihattau-1)*eq12part2);
     eq14 = 1.0 / (n*n) * (eq14part1+(fihattau-1)*eq14part2);
@@ -227,7 +223,9 @@ NumericVector getInfluenceFunctionAUCKMCensoring(NumericVector time,
     eq17 = Probmu / Gtau * eq1721part;
     eq19 = F1tau * (1.0 / n * (eq19part1+fihattau*eq19part2) - F2tau);
     eq21 = F2tau * (eq1721part - F1tau);
-    if (upperTie <= i){
+    
+    // fast calculation of eq10 and eq17
+    if (upperTie == i){
       int tieIter = i+1;
       while ((tieIter < n) && (time[tieIter] == time[i+1])) {
         if ((time[tieIter] <= tau) && (status[tieIter]==1)){
@@ -247,25 +245,6 @@ NumericVector getInfluenceFunctionAUCKMCensoring(NumericVector time,
         tieIter++;
       }
       upperTie = tieIter-1;
-    }
-    if (i >= 7){
-      Rcout << "eq10part1: " << eq10part1 << "\n";
-      Rcout << "eq14part1: " << eq14part1 << "\n";
-      Rcout << "eq17part1: " << eq17part1 << "\n";
-      Rcout << "eq12part1: " << eq12part1 << "\n";
-      Rcout << "eq19part1: " << eq19part1 << "\n\n";
-      
-      Rcout << "eq10part2: " << eq10part2 << "\n";
-      Rcout << "eq14part2: " << eq14part2 << "\n";
-      Rcout << "eq17part2: " << eq17part2 << "\n";
-      Rcout << "eq12part2: " << eq12part2 << "\n";
-      Rcout << "eq19part2: " << eq19part2 << "\n\n";
-    }
-    
-    else {
-      fihattau = eq10 = eq17 = 0;
-      eq12 = eq14 = 1.0/(Gtau) * eq9term-nu1;
-      eq19 = eq21 = -F1tau * F2tau;
     }
     if ((time[i] <= tau) && (status[i] == 1)){
       eq8 = 1.0/(GTiminus[i]*Gtau)*Probnu[i];
@@ -292,8 +271,8 @@ NumericVector getInfluenceFunctionAUCKMCensoring(NumericVector time,
     }
     double IFnu = eq8+eq9+eq10+eq11+eq12+eq13+eq14;
     double IFmu = eq15+eq16+eq17+eq18+eq19+eq20+eq21;
+
     ic[i] = (IFnu * mu1 - IFmu * nu1)/(mu1*mu1);
   }
-  Rcout << "ic is: " << ic << "\n";
   return ic;
 }
