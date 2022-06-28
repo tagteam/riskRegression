@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Feb 27 2022 (09:12)
 ## Version:
-## Last-Updated: May 31 2022 (11:40) 
+## Last-Updated: Jun 24 2022 (16:34) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 12
+##     Update #: 15
 #----------------------------------------------------------------------
 ##
 ### Commentary:
@@ -44,8 +44,8 @@ computePerformance <- function(DT,
                                old.ic.method,
                                IC.data){
     IPA=IBS=Brier=NULL
-    ibs <- "ibs"%in%summary
-    ipa <- "ipa"%in%summary
+    ## ibs <- "ibs"%in%summary
+    ## ipa <- "ipa"%in%summary
     # inherit everything else from parent frame: summary, metrics, plots, alpha, probs, dolist, et
     out <- vector(mode="list",
                   length=length(c(summary,metrics,plots)))

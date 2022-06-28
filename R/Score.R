@@ -930,7 +930,18 @@ c.f., Chapter 7, Section 5 in Gerds & Kattan 2021. Medical risk prediction model
                                       cens.model,
                                       multi.split.test=multi.split.test,
                                       keep.residuals=keep.residuals,
-                                      keep.vcov=keep.vcov,dolist=dolist,probs=probs,metrics=metrics,plots=plots,summary=summary,ROC=FALSE,MC=Weights$IC,old.ic.method=old.ic.method,IC.data=Weights$IC.data)
+                                      keep.vcov=keep.vcov,
+                                      dolist=dolist,
+                                      probs=probs,
+                                      metrics=metrics,
+                                      plots=plots,
+                                      summary=summary,
+                                      ibs=ibs,
+                                      ipa = ipa,
+                                      ROC=FALSE,
+                                      MC=Weights$IC,
+                                      old.ic.method=old.ic.method,
+                                      IC.data=Weights$IC.data)
         if (debug) message("computed apparent performance")
     }
     # }}}

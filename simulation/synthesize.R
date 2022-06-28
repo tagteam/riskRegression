@@ -3,9 +3,9 @@
 ## Author: Johan Sebastian Ohlendorff & Vilde Hansteen Ung & Thomas Alexander Gerds
 ## Created: Apr 28 2021 (09:04)
 ## Version:
-## Last-Updated: Mar 17 2022 (11:23) 
+## Last-Updated: Jun 17 2022 (10:25) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 75
+##     Update #: 76
 #----------------------------------------------------------------------
 ##
 ### Commentary:
@@ -312,8 +312,6 @@ synthesize.lvm <- function(object,
     }
 
     sim_model <- lava::lvm()
-
-
 
     latent_vars <- endogenous(object)
     # should check factors in object are factors in data. If not, transform them
