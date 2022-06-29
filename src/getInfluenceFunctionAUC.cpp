@@ -79,13 +79,7 @@ NumericVector getInfluenceFunctionAUCKMCensoring(NumericVector time,
     int jCurr = 0, jPrev = 0, i = 0;
     double valCurr = 0, valPrev = 0;
     while (i < n){
-      int tieIter = i+1;
-      if (time[ordering[i]] > tau){
-        jCurr++;
-      }
-      else if (time[ordering[i]] <= tau && status[ordering[i]] == 2){
-        valCurr += 1.0/(GTiminus[ordering[i]]);
-      }
+      int tieIter = i;
       while (tieIter < n && risk[ordering[tieIter]]==risk[ordering[i]]){
         if (time[ordering[tieIter]] > tau){
           jCurr++;
@@ -107,10 +101,7 @@ NumericVector getInfluenceFunctionAUCKMCensoring(NumericVector time,
     valCurr = valPrev = 0;
     i = n-1;
     while (i >= 0){
-      int tieIter = i-1;
-      if (time[ordering[i]] <= tau && status[ordering[i]] == 1){
-        valCurr += 1.0/(GTiminus[ordering[i]]);
-      }
+      int tieIter = i;
       while (tieIter >= 0 && risk[ordering[tieIter]]==risk[ordering[i]]){
         if (time[ordering[tieIter]] <= tau && status[ordering[tieIter]] == 1){
           valCurr += 1.0/(GTiminus[ordering[tieIter]]);
@@ -129,16 +120,7 @@ NumericVector getInfluenceFunctionAUCKMCensoring(NumericVector time,
     while (i < n){
       int jProbnu = 0;
       double jPart1112 = 0, jPart1314 = 0;
-      if (time[ordering[i]] > tau){
-        jProbnu++;
-      }
-      else if (time[ordering[i]] <= tau && status[ordering[i]] == 2){
-        jPart1314+=1.0/(GTiminus[ordering[i]]);
-      }
-      else if (time[ordering[i]] <= tau && status[ordering[i]] == 1){
-        jPart1112+=1.0/(GTiminus[ordering[i]]);
-      }
-      int tieIter = i+1;
+      int tieIter = i;
       while (tieIter < n && risk[ordering[tieIter]]==risk[ordering[i]]){
         if (time[ordering[tieIter]] > tau){
           jProbnu++;
