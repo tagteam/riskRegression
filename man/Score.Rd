@@ -178,10 +178,13 @@ randomly splitting (bootstrapping) the data during cross-validation.}
  specify additional arguments for the function riskRegression::predictRisk.rfsrc which will pass
  these on to the function randomForestSRC::predict.rfsrc. A specific example in this case would be
  \code{list(rfsrc=list(na.action="na.impute"))}.
+ 
 
  A more flexible approach is to write a new predictRisk S3-method. See Details.}
 
 \item{debug}{Logical. If \code{TRUE} indicate landmarks in progress of the program.}
+
+\item{old.ic.method}{Uses an older implementation for the calculation of standard errors for AUC and Brier score. Is set to \code{FALSE} by default.}
 }
 \value{
 List with scores and assessments of contrasts, i.e.,

@@ -44,6 +44,8 @@ Suggests:
     ipw,
     gbm,
     flexsurv, 
+    grpreg,
+    hal9001,
     mgcv,
     mstate,
     nnls,
@@ -57,6 +59,7 @@ Suggests:
     rpart,
     scam,
     SuperLearner,
+    survXgboost,
     testthat,
     R.rsp
 Maintainer: Thomas Alexander Gerds <tag@biostat.ku.dk>
@@ -74,7 +77,7 @@ Description: Implementation of the following methods for event history analysis.
     the risk prediction models on one part of each split and then summarizes and
     compares the performance across splits.
 License: GPL (>= 2)
-RoxygenNote: 7.1.2
+RoxygenNote: 7.2.0
 VignetteBuilder: R.rsp
 Encoding: UTF-8
 URL: https://github.com/tagteam/riskRegression
