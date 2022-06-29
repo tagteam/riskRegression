@@ -44,6 +44,7 @@ computePerformance <- function(DT,
                                old.ic.method,
                                IC.data){
     IPA=IBS=Brier=NULL
+    model = reference = NULL
     ## ibs <- "ibs"%in%summary
     ## ipa <- "ipa"%in%summary
     # inherit everything else from parent frame: summary, metrics, plots, alpha, probs, dolist, et

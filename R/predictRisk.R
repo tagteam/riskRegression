@@ -1338,7 +1338,8 @@ predictRisk.flexsurvreg <- function(object, newdata, times, ...) {
 
 Hal9001 <- function(formula,data,...){
     requireNamespace("hal9001")
-    EHF = EventHistory.frame(formula,data,unspecialsDesign = TRUE,specials = NULL)
+    strata.num = start = status = NULL
+    EHF = prodlim::EventHistory.frame(formula,data,unspecialsDesign = TRUE,specials = NULL)
     stopifnot(attr(EHF$event.history,"model")[[1]] == "survival")
     # blank Cox object needed for predictions
     bl_cph <- coxph(Surv(time,status)~1,data=data,x=1,y=1)
@@ -1449,7 +1450,7 @@ predictRisk.singleEventCB <- function(object, newdata, times, cause, ...) {
 
 GrpSurv <- function(formula,data,...){
     requireNamespace(c("grpreg","prodlim"))
-    EHF = EventHistory.frame(formula,data,unspecialsDesign = TRUE,specials = NULL)
+    EHF = prodlim::EventHistory.frame(formula,data,unspecialsDesign = TRUE,specials = NULL)
     fit = grpreg::grpsurv(X = EHF$design,y = EHF$event.history,...)
     fit = list(fit = fit,terms = terms(formula),call=match.call())
     class(fit) = c("GrpSurv",class(fit))
@@ -1480,7 +1481,7 @@ predictRisk.GrpSurv <- function(object, newdata, times, cause, ...){
 
 XgbSurv <- function(formula,data,...){
     requireNamespace(c("survXgboost","xgboost","prodlim"))
-    EHF = EventHistory.frame(formula,data,unspecialsDesign = TRUE,specials = NULL)
+    EHF = prodlim::EventHistory.frame(formula,data,unspecialsDesign = TRUE,specials = NULL)
     fit = survXgboost::xgb.train.surv(data = EHF$design,label = ifelse(EHF$event.history[,2] == 1, EHF$event.history[,1], -EHF$event.history[,1]),...)
     fit = list(fit = fit,terms = terms(formula),call=match.call())
     class(fit) = c("XgbSurv",class(fit))
