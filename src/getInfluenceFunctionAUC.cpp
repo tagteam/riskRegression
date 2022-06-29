@@ -112,7 +112,7 @@ NumericVector getInfluenceFunctionAUCKMCensoring(NumericVector time,
         valCurr += 1.0/(GTiminus[ordering[i]]);
       }
       while (tieIter >= 0 && risk[ordering[tieIter]]==risk[ordering[i]]){
-        if (time[ordering[tieIter]] <= tau && status[ordering[i]] == 1){
+        if (time[ordering[tieIter]] <= tau && status[ordering[tieIter]] == 1){
           valCurr += 1.0/(GTiminus[ordering[tieIter]]);
         }
         tieIter--;
