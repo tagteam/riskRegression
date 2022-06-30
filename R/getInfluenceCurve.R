@@ -426,21 +426,36 @@ calculatefihat <- function(i,IC.data,X,prob.risk,status,time,tau){
     list(ic=ic,ic.tau=ic.tau)
 }
 
-getInfluenceCurve.Brier.covariates <- function(tau,time,risk,status,GTiminus,Gtau,Brier,IC.data) {
+calculateWeightsFihat <- function(i,IC.data,X,status,time,tau){
+  n <- length(time)
+  wdata <- IC.data$wdata
+  fit <- IC.data$fit.cens
+  fit.time <- IC.data$fit.time
+  #covariatei <- wdata[i,]
+  sind <- prodlim::sindex(time,tau)
+  #Gtimes <- diag(1-predictRisk(fit,covariatei,wdata$time,1))
+  Gtimes <- (1-predictRisk(fit,wdata,wdata$time,1))[i,]
+  GTiminus <- c(1,Gtimes[1:(n-1)])
+  Gtau <- Gtimes[sind]
+  Stimes <- (1-predictRisk(fit.time,wdata,wdata$time,1))[i,]
+  jumps <- diff(c(1,Gtimes))
+  #ic <- 1*(time[i] <= time & status == 1)/(Gtimes[i]*Stimes[i]) - cumsum(1*(time <= time[i])/(Gtimes*Stimes*GTiminus) *jumps)
+  ic <- 1*(time[i] <= time & status == 1)/(Gtimes[i]*Stimes[i]) + cumsum(1*(time <= time[i])/(Gtimes^2*Stimes) *jumps)
+  list(ic=ic,Gtau = Gtau, GTiminus = GTiminus)
+}
+
+
+getInfluenceCurve.Brier.covariates <- function(tau,time,risk,status,Brier,IC.data) {
     n <- length(time)
     fhat.Ti <- rep(0,n)
-
-    prob.risk <- rep(NA,n)
-    for (i in 1:n){
-        prob.risk[i] <- mean(risk==risk[i])
-    }
-
     IC <- rep(NA,n)
     for (i in 1:n){
+        
         #calculate fhat(\tilde{T}_i-,X_i) for i = 1, ..., n
-        dat <- calculatefihat(i,IC.data,risk,prob.risk,status,time,tau)
+        dat <- calculateWeightsFihat(i,IC.data,risk,status,time,tau)
         fhat.Ti <- dat$ic
-        IC.C.term <- mean( 1*(time <= tau & status == 1 )*(1-2*risk)*fhat.Ti / GTiminus )
+        GTiminus <- dat$GTiminus
+        IC.C.term <- (1-2*risk[i])*mean( 1*(time <= tau & status == 1 )*fhat.Ti / GTiminus )
         # IC.C.term <- 0
         IC[i] <- 1*(time[i] <= tau & status[i] == 1 )* (1-2*risk[i]) * 1/GTiminus[i] + IC.C.term + risk[i]^2 - Brier
     }
