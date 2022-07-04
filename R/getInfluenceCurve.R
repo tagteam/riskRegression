@@ -493,11 +493,13 @@ getInfluenceCurve.Brier.covariates <- function(tau,time,risk,status,GTiminus,Bri
   ## (1-2R(\tau |Z_i))\left(\frac{I(\tilde{T}_i \leq \tau, \Delta_i = 0)}{G(\tilde{T}_i|Z_i)S(\tilde{T}_i|Z_i)}(S(\tau|Z_i)-S(\tilde{T}_i|Z_i))-\int_0^{\tilde{T}_i \wedge \tau} \frac{(S(\tau|Z_i)-S(s|Z_i))}{G(s|Z_i)^2S(s|Z_i)^2}P(ds,0|Z_i)\right)
   ## $$
   term <- Stimes^2*Gtimes^2*prob.risk
-  if (time[min(which(term==0))] <= tau){
-    stop("Please select a lower value(s) of time")
+  NAs <- which(term==0)
+  if (time[min(NAs)] <= tau){
+    stop("Please select (a) lower value(s) of time")
   }
+  ind <- ifelse(term == 0,0,1*(status == 0 & time <= tau)/(Gtimes*Stimes))
   for (i in 1:n){
-    IC.C.term <- (1-2*risk[i])*(1*(status[i] == 0 & time[i] <= tau)/(Gtimes[i]*Stimes[i])-
+    IC.C.term <- (1-2*risk[i])*(ind[i]-
                                   1/n * sum( ((Stau[i]-Stimes) / term) [time <= tau & time <= time[i] & status == 1 & risk == risk[i]]))
     # IC.C.term <- 0
     IC[i] <- 1*(time[i] <= tau & status[i] == 1 )* (1-2*risk[i]) * 1/GTiminus[i] + IC.C.term + risk[i]^2 - Brier
