@@ -70,7 +70,19 @@ IC_{\Brier}(\tilde{T}_i,\Delta_i,X_i;\tau) &= \partial_{\varepsilon} \int \frac{
 &- \int R\left(\tau | x\right)^2 dP(x)
 - \int 1_{\{t \leqslant \tau\}}(1-2 R(\tau \mid x)) \frac{dP(t,1,x)}{G(t-|x)}
 \end{align*}
-The last term that is subtracted is the Brier score. As for the estimation, we have
+The last term that is subtracted is the Brier score. Then using that 
+$$
+ f_i(t,z) = \frac{\mathbbm{1}_{\{\tilde{T_i} \leq t, \Delta_i = 0\}} \delta_{Z_i}(z)}{G(\tilde{T_i}|Z_i)S(\tilde{T_i}|Z_i)} -\int_0^{\tilde{T}_i \wedge t} \frac{ \delta_{Z_i}(z)dP(s,0 | z)}{G(s|Z_i)^2S(s|Z_i)^2}
+$$
+we see that by splitting the double integral into two parts that and that $\int f(z) \delta_{Z_i}(z) dz = f(Z_i)$
+\begin{align*}
+\int 1_{\{t \leqslant \tau\}}(1-2 R(\tau \mid x)) f_i(t-,x) \frac{dP(t,1,x)}{G(t-|x)} &= (1-2 R(\tau \mid X_i)) \int 1_{\{t \leqslant \tau\}}\tilde{f}_i(t-) \frac{dP(t,1)}{G(t-|X_i)}
+\end{align*}
+where $\tilde{f}_i(t) =\frac{\mathbbm{1}_{\{\tilde{T_i} \leq t, \Delta_i = 0\}} }{G(\tilde{T_i}|Z_i)S(\tilde{T_i}|Z_i)} -\int_0^{\tilde{T}_i \wedge t} \frac{ dP(s,0 | Z_i)}{G(s|Z_i)^2S(s|Z_i)^2}$. Rewriting $\tilde{f}_i(t)$ a bit, we get 
+$$
+\tilde{f}_i(t) =\frac{\mathbbm{1}_{\{\tilde{T_i} \leq t, \Delta_i = 0\}} }{G(\tilde{T_i}|Z_i)S(\tilde{T_i}|Z_i)} +\int_0^{\tilde{T}_i \wedge t} \frac{ S(s|Z_i) G(ds | Z_i)}{G(s|Z_i)^2S(s|Z_i)^2} = \frac{\mathbbm{1}_{\{\tilde{T_i} \leq t, \Delta_i = 0\}} }{G(\tilde{T_i}|Z_i)S(\tilde{T_i}|Z_i)} +\int_0^{\tilde{T}_i \wedge t} \frac{ 1}{G(s|Z_i)S(s|Z_i)}  \frac{G(ds | Z_i)}{G(s|Z_i)}
+$$
+As for the estimation, we have
 \begin{align*}
 IC_{\Brier}(\tilde{T}_i,\Delta_i,X_i;\tau) 
 &=   1_{\{\tilde{T}_i \leqslant \tau, \Delta_i=1\}}(1-2 R(\tau \mid X_i)) \frac{1}{\hat{G}(\tilde{T}_i- | X_i)}  \\
@@ -78,4 +90,6 @@ IC_{\Brier}(\tilde{T}_i,\Delta_i,X_i;\tau)
 &- \int R\left(\tau | x\right)^2 d\emp(x)
 - \int 1_{\{t \leqslant \tau\}}(1-2 R(\tau \mid x)) \frac{d\emp(t,1,x)}{\hat{G}(t-|x)}
 \end{align*}
+Then using that 
+
 

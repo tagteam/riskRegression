@@ -79,8 +79,8 @@ getCensoringWeights <- function(formula,
                new.formula<-as.formula(paste0("Surv(time,event==1)",paste0("~",paste0(paste(vv,collapse = "+")))))
                input <- list(formula=new.formula,data=wdata)
                fit.time <- do.call(cens.model,input)
-               IC.data <- list(Stimes = diag(1-predictRisk(fit.time,wdata,wdata$time,1)), Gtimes=diag(1-predictRisk(fit,wdata,wdata$time,1)))
-               # IC.data <- list(fit.time=fit.time,fit.cens=fit,wdata=wdata)
+               # IC.data <- list(Stimes = diag(1-predictRisk(fit.time,wdata,wdata$time,1)), Gtimes=diag(1-predictRisk(fit,wdata,wdata$time,1)))
+               IC.data <- list(fit.time=fit.time,fit.cens=fit,wdata=wdata)
 
                # fit<-Hal9001(new.formula,wdata)
                times.data.minus <- c(0,wdata$time[-length(wdata$time)]) #have to compute the weights for T_i minus not just Ti
