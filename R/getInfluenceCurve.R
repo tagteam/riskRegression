@@ -386,43 +386,47 @@ getInfluenceCurve.AUC.covariates.conservative <- function(t,n,time,status,risk,G
     ic
 }
 
-calculatefihat <- function(i,IC.data,X,prob.risk,status,time,tau){
-    Stimes <- IC.data$Stimes
-    Gtimes <- IC.data$Gtimes
+calculatefihat <- function(i,IC.data,X,prob.risk,status,time,tau,Stimes,Gtimes){
     n <- length(time)
+    risk <- X
     ic <- rep(0,n)
-    indices <- which(X==X[i])
-    sind1 <- prodlim::sindex(time,time[i])+1
-    sind2 <- prodlim::sindex(time,tau)+1
-    ic.tau <- rep(0,n)
-    ic.tau.calculated <- FALSE
-    integraltermPrev <- 0
-    integraltermCurr <- 0
-    l <- 1 
-    while (l <= length(indices)){
-        if (indices[l] < sind1){
-            tieIter <- l+1
-            if (status[indices[l]] == 0){
-                integraltermCurr <- integraltermCurr + 1/n * 1/((Stimes[indices[l]]*Gtimes[indices[l]]*prob.risk[indices[l]])^2)
-            }
-            while (tieIter <= length(indices) && time[indices[l]] == time[indices[tieIter]]){
-                if (status[indices[tieIter]] == 0){
-                    integraltermCurr <- integraltermCurr +1/n * 1/((Stimes[indices[tieIter]]*Gtimes[indices[tieIter]]*prob.risk[indices[tieIter]])^2)
-                }
-                tieIter <- tieIter + 1
-            }
-            ic[indices[l]:indices[tieIter-1]] <- -integraltermPrev
-            integraltermPrev <- integraltermCurr
-        }
-        else {
-            ic[indices[l]] <- 1/(Stimes[indices[l]]*Gtimes[indices[l]]*prob.risk[indices[l]])-integraltermCurr
-        }
-        if (indices[l] >= sind2 && !ic.tau.calculated){
-            ic.tau.calculated <- TRUE
-            ic.tau[indices] <- ifelse(indices[l] < sind1, - integraltermCurr, 1/(Stimes[indices[l]]*Gtimes[indices[l]]*prob.risk[indices[l]])-integraltermCurr)
-        }
-        l <- ifelse(indices[l] < sind1, tieIter, l + 1)
+    for (j in 2:n){
+      t <- sindex(time,time[j]-1e-10)
+      ic[j] <- 1*(time[i] <= time[t] & status[i] == 0 & risk[i]==risk[j])/(Gtimes[i]*Stimes[i]*prob.risk[i]) + 
+        1*(risk[i]==risk[j])*sum(1*(risk==risk[j] & time <= time[i] & time <= time[t] & status == 0)/(Gtimes^2*Stimes^2*prob.risk^2))
     }
+    # indices <- which(X==X[i])
+    # sind1 <- prodlim::sindex(time,time[i])+1
+    # sind2 <- prodlim::sindex(time,tau)+1
+    ic.tau <- rep(0,n)
+    # ic.tau.calculated <- FALSE
+    # integraltermPrev <- 0
+    # integraltermCurr <- 0
+    # l <- 1 
+    # while (l <= length(indices)){
+    #     if (indices[l] < sind1){
+    #         tieIter <- l+1
+    #         if (status[indices[l]] == 0){
+    #             integraltermCurr <- integraltermCurr + 1/n * 1/((Stimes[indices[l]]*Gtimes[indices[l]]*prob.risk[indices[l]])^2)
+    #         }
+    #         while (tieIter <= length(indices) && time[indices[l]] == time[indices[tieIter]]){
+    #             if (status[indices[tieIter]] == 0){
+    #                 integraltermCurr <- integraltermCurr +1/n * 1/((Stimes[indices[tieIter]]*Gtimes[indices[tieIter]]*prob.risk[indices[tieIter]])^2)
+    #             }
+    #             tieIter <- tieIter + 1
+    #         }
+    #         ic[indices[l]:indices[tieIter-1]] <- -integraltermPrev
+    #         integraltermPrev <- integraltermCurr
+    #     }
+    #     else {
+    #         ic[indices[l]] <- 1/(Stimes[indices[l]]*Gtimes[indices[l]]*prob.risk[indices[l]])-integraltermCurr
+    #     }
+    #     if (indices[l] >= sind2 && !ic.tau.calculated){
+    #         ic.tau.calculated <- TRUE
+    #         ic.tau[indices] <- ifelse(indices[l] < sind1, - integraltermCurr, 1/(Stimes[indices[l]]*Gtimes[indices[l]]*prob.risk[indices[l]])-integraltermCurr)
+    #     }
+    #     l <- ifelse(indices[l] < sind1, tieIter, l + 1)
+    # }
     list(ic=ic,ic.tau=ic.tau)
 }
 
@@ -445,22 +449,62 @@ calculateWeightsFihat <- function(i,IC.data,X,status,time,tau){
 }
 
 
-getInfluenceCurve.Brier.covariates <- function(tau,time,risk,status,Brier,IC.data) {
+getInfluenceCurve.Brier.covariates.2 <- function(tau,time,risk,status,GTiminus,Brier,IC.data) {
     n <- length(time)
     fhat.Ti <- rep(0,n)
     IC <- rep(NA,n)
+    prob.risk <- rep(NA,n)
+    for (i in 1:n){
+      prob.risk[i] <- mean(risk==risk[i])
+    }
+    wdata <- IC.data$wdata
+    Gtimes <- diag(1-predictRisk(IC.data$fit.cens,wdata,wdata$time,1))
+    Stimes <- diag(1-predictRisk(IC.data$fit.time,wdata,wdata$time,1))
+    
     for (i in 1:n){
         
         #calculate fhat(\tilde{T}_i-,X_i) for i = 1, ..., n
-        dat <- calculateWeightsFihat(i,IC.data,risk,status,time,tau)
+        # dat <- calculateWeightsFihat(i,IC.data,risk,status,time,tau)
+        dat <- calculatefihat(i,IC.data,risk,prob.risk,status,time,tau,Stimes,Gtimes)
         fhat.Ti <- dat$ic
-        GTiminus <- dat$GTiminus
-        IC.C.term <- (1-2*risk[i])*mean( 1*(time <= tau & status == 1 )*fhat.Ti / GTiminus )
+        # GTiminus <- dat$GTiminus
+        # IC.C.term <- (1-2*risk[i])*mean( 1*(time <= tau & status == 1 )*fhat.Ti / GTiminus )
+        IC.C.term <- mean( 1*(time <= tau & status == 1 )*fhat.Ti*(1-2*risk) / GTiminus )
         # IC.C.term <- 0
         IC[i] <- 1*(time[i] <= tau & status[i] == 1 )* (1-2*risk[i]) * 1/GTiminus[i] + IC.C.term + risk[i]^2 - Brier
     }
     IC
 }
+
+#NOTE: Requires covariates to be discrete
+getInfluenceCurve.Brier.covariates <- function(tau,time,risk,status,GTiminus,Brier,IC.data) {
+  n <- length(time)
+  fhat.Ti <- rep(0,n)
+  IC <- rep(NA,n)
+  prob.risk <- rep(NA,n)
+  for (i in 1:n){
+    prob.risk[i] <- mean(risk==risk[i])
+  }
+  Gtimes <- IC.data$Gtimes
+  Stimes <- IC.data$Stimes
+  Stau <- IC.data$Stau
+  ## term involving f_i(t,z) is 
+  ## $$
+  ## (1-2R(\tau |Z_i))\left(\frac{I(\tilde{T}_i \leq \tau, \Delta_i = 0)}{G(\tilde{T}_i|Z_i)S(\tilde{T}_i|Z_i)}(S(\tau|Z_i)-S(\tilde{T}_i|Z_i))-\int_0^{\tilde{T}_i \wedge \tau} \frac{(S(\tau|Z_i)-S(s|Z_i))}{G(s|Z_i)^2S(s|Z_i)^2}P(ds,0|Z_i)\right)
+  ## $$
+  term <- Stimes^2*Gtimes^2*prob.risk
+  if (time[min(which(term==0))] <= tau){
+    stop("Please select a lower value(s) of time")
+  }
+  for (i in 1:n){
+    IC.C.term <- (1-2*risk[i])*(1*(status[i] == 0 & time[i] <= tau)/(Gtimes[i]*Stimes[i])-
+                                  1/n * sum( ((Stau[i]-Stimes) / term) [time <= tau & time <= time[i] & status == 1 & risk == risk[i]]))
+    # IC.C.term <- 0
+    IC[i] <- 1*(time[i] <= tau & status[i] == 1 )* (1-2*risk[i]) * 1/GTiminus[i] + IC.C.term + risk[i]^2 - Brier
+  }
+  IC
+}
+
 
 getInfluenceCurve.AUC.covariates <- function(t,n,time,status,risk,GTiminus,Gtau,AUC,IC.data){
     tau <- t

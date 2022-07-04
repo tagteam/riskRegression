@@ -79,7 +79,7 @@ Brier.competing.risks <- function(DT,MC,se.fit,conservative,cens.model,keep.vcov
                                                         nth.times=nth.times[1]),by=list(model,times)]
                 }
                 else {
-                  DT[,IF.Brier:=getInfluenceCurve.Brier.covariates(times[1],time,risk,status,sum(residuals)/N,IC.data), by=list(model,times)]
+                  DT[,IF.Brier:=getInfluenceCurve.Brier.covariates(times[1],time,risk,status,WTi,sum(residuals)/N,IC.data), by=list(model,times)]
                 }
                 score <- DT[,data.table(Brier=sum(residuals)/N,
                                         se=sd(IF.Brier)/sqrt(N)),by=list(model,times)]

@@ -68,6 +68,20 @@ getCensoringWeights <- function(formula,
                    ## IC <- predictCox(fit, iid = TRUE,newdata = wdata,times = c(subject.times,times),type = "survival")$survival.iid
                    out <- c(out,list(IC=IC))
                }
+           }, "discrete"={
+             vv <- all.vars(formula(delete.response(terms(formula))))
+             new.formula<-as.formula(paste0("Surv(time,status)",paste0("~",paste0(paste(vv,collapse = "+")))))
+             wdata <- copy(data)
+             wdata[,status:=1-status]
+             fit <- prodlim::prodlim(new.formula, data=wdata,x=TRUE)
+             new.formula<-as.formula(paste0("Surv(time,event==1)",paste0("~",paste0(paste(vv,collapse = "+")))))
+             input <- list(formula=new.formula,data=wdata)
+             fit.time <- prodlim::prodlim(new.formula, data=wdata,x=TRUE)
+             IC.data <- list(Stimes=diag(1-predictRisk(fit.time,wdata,wdata$time,1)),Gtimes=diag(1-predictRisk(fit,wdata,wdata$time,1)),Stau = c(1-predictRisk(fit.time,wdata,times,1)))
+             times.data.minus <- c(0,wdata$time[-length(wdata$time)]) #have to compute the weights for T_i minus not just Ti
+             IPCW.subject.times <- diag(1-predictRisk(fit,wdata,times.data.minus,1)) #computational problem with predictRisk
+             IPCW.times <- c(1-predictRisk(fit,wdata,times,1))
+             out <- list(IPCW.times=IPCW.times,IPCW.subject.times=IPCW.subject.times,method=cens.model,IC.data=IC.data)
            },
            {
                vv <- all.vars(formula(delete.response(terms(formula))))
