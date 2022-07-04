@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: May 16 2022 (08:10) 
 ## Version: 
-## Last-Updated: May 17 2022 (20:14) 
+## Last-Updated: Jun 29 2022 (16:56) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 4
+##     Update #: 5
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -64,7 +64,7 @@ set.seed(8)
 library(hal9001)
 d <- sampleData(200,outcome = "survival")
 nd <- sampleData(71,outcome = "survival")
-f1 <- hal(Surv(time,event)~X1+X2+X3+X4+X5+X6+X7+X8+X9+X10,data = d,lambda = .1,group = c(1,1,rep(2,8)))
+f1 <- Hal9001(Surv(time,event)~X1+X2+X3+X4+X5+X6+X7+X8+X9+X10,data = d,lambda = 0.1)
 f2 <- coxph(Surv(time,event)~X1+X2+X3+X4+X5+X6+X7+X8+X9+X10,data = d,x = 1,y = 1)
 p <- predictRisk(object = f1,newdata = nd,times = c(5,10))
 x <- Score(list(grpsurv = f1,cox = f2),

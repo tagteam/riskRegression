@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun  6 2016 (09:02)
 ## Version:
-## last-updated: Jun 16 2022 (17:54) 
+## last-updated: Jun 29 2022 (16:54) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 441
+##     Update #: 449
 #----------------------------------------------------------------------
 ##
 ### Commentary:
@@ -1336,22 +1336,24 @@ predictRisk.flexsurvreg <- function(object, newdata, times, ...) {
     1 - p
 }
 
-Hal9001 <- function(formula,data,...){
+Hal9001 <- function(formula,data,lambda,...){
     requireNamespace("hal9001")
     strata.num = start = status = NULL
     EHF = prodlim::EventHistory.frame(formula,data,unspecialsDesign = TRUE,specials = NULL)
     stopifnot(attr(EHF$event.history,"model")[[1]] == "survival")
     # blank Cox object needed for predictions
+    data = data.frame(cbind(EHF$event.history,EHF$design))
     bl_cph <- coxph(Surv(time,status)~1,data=data,x=1,y=1)
     bl_obj <- coxModelFrame(bl_cph)[]
     bl_obj[,strata.num:=0]
     data.table::setorder(bl_obj, strata.num,stop,start,-status)
-    hal_fit <- hal9001::fit_hal(X = EHF$design,
-                                Y = EHF$event.history,
-                                family = "cox",
-                                return_lasso = TRUE,
-                                yolo = FALSE,
-                                ...)
+    hal_fit <- do.call(hal9001::fit_hal,list(X = EHF$design,
+                                             Y = EHF$event.history,
+                                             family = "cox",
+                                             return_lasso = TRUE,
+                                             yolo = FALSE,
+                                             lambda = lambda,
+                                             ...))
     out = list(fit = hal_fit,
                surv_info = bl_obj,
                call = match.call(),
