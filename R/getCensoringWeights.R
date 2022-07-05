@@ -70,17 +70,36 @@ getCensoringWeights <- function(formula,
                }
            }, "discrete"={
              vv <- all.vars(formula(delete.response(terms(formula))))
+             mod.frame<-model.frame(paste0("~",paste0(paste(vv,collapse = "+"))),data=data)
+             u.levels <- unique(mod.frame)
+             n <- length(data$time)
+             prob.risk <- rep(NA,n)
+             have.same.covariate <- list()
+             for (i in 1:nrow(u.levels)){
+               wheres <- rep(NA,n)
+               for (j in 1:n){
+                 if (all(mod.frame[j,]==u.levels[i,])){
+                   wheres[j] <- TRUE
+                   
+                 }
+                 else {
+                   wheres[j] <- FALSE
+                 }
+               }
+               prob.risk[wheres] <- sum(wheres)/n
+               for (j in 1:n){
+                 if (wheres[j]){
+                   have.same.covariate[[j]] <- wheres
+                 }
+               }
+             }
              new.formula<-as.formula(paste0("Surv(time,status)",paste0("~",paste0(paste(vv,collapse = "+")))))
              wdata <- copy(data)
-             wdata[,status:=1-status]
-             fit <- prodlim::prodlim(new.formula, data=wdata,x=TRUE)
-             new.formula<-as.formula(paste0("Surv(time,event==1)",paste0("~",paste0(paste(vv,collapse = "+")))))
-             input <- list(formula=new.formula,data=wdata)
-             fit.time <- prodlim::prodlim(new.formula, data=wdata,x=TRUE)
-             IC.data <- list(Stimes=diag(1-predictRisk(fit.time,wdata,wdata$time,1)),Gtimes=diag(1-predictRisk(fit,wdata,wdata$time,1)),Stau = c(1-predictRisk(fit.time,wdata,times,1)))
-             times.data.minus <- c(0,wdata$time[-length(wdata$time)]) #have to compute the weights for T_i minus not just Ti
-             IPCW.subject.times <- diag(1-predictRisk(fit,wdata,times.data.minus,1)) #computational problem with predictRisk
-             IPCW.times <- c(1-predictRisk(fit,wdata,times,1))
+             fit.cens <- prodlim::prodlim(new.formula, data=wdata,reverse=TRUE)
+             fit.time <- prodlim::prodlim(new.formula, data=wdata)
+             IC.data <- list(Stimes=prodlim::predictSurvIndividual(fit.time,lag=0),Gtimes=prodlim::predictSurvIndividual(fit.cens,lag=0), Stau = c(1-predictRisk(fit.time,wdata,times,1)), prob.risk=prob.risk,have.same.covariate=have.same.covariate)
+             IPCW.subject.times <- prodlim::predictSurvIndividual(fit.cens,lag=1) #computational problem with predictRisk
+             IPCW.times <- predict(fit.cens,newdata=data,times=times,level.chaos=1,mode="matrix",type="surv")
              out <- list(IPCW.times=IPCW.times,IPCW.subject.times=IPCW.subject.times,method=cens.model,IC.data=IC.data)
            },
            {

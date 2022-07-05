@@ -212,6 +212,23 @@ derivative for the functional
 
 Similar corrections hold for the denominator. In the code, terms (1-7) are now termed (8-14) and (8-14) are now termed (15-21). Note that $P(X < X_i, \tilde{T} > \tau) = \int 1_{\{t > \tau, x < X_i\}} dP(t,x)$.
 
+### Notes on the case with covariates
+- Term (2), (5) and (7) (and also (9), (12), and (14)) may be evaluated by noting the following
+$$
+\scriptstyle
+\int_X \int_0^\tau H(x)f_i(t-,x) \frac{P(dt,k,x)}{G(t-|x)} = H(X_i)\left(\frac{I(\tilde{T}_i \leq \tau, \Delta_i = 0)}{G(\tilde{T}_i|X_i)S(\tilde{T}_i|X_i)}(F_k(\tau|X_i)-F_k(\tilde{T}_i|X_i))-\int_0^{\tilde{T}_i \wedge \tau} \frac{(F_k(\tau|X_i)-F_k(s|X_i))}{G(s|X_i)^2S(s|X_i)^2}P(ds,0|X_i)\right)
+$$
+where $H$ is an arbitrary function of $x$ (but not $t$!), $k \in \{1,2\}$ and $F_k$ is the subdistribution function for cause $k$.
+- For Term (3) (and similarly (10)), we can use that  
+$$
+\begin{aligned}
+\scriptstyle
+\int_ X\int H(x')  1_{\{t' > \tau\}} f_i(\tau, x')\frac{P(dt',dx')}{G(\tau | x')}&=\frac{H(X_i)}{G(\tau | X_i)} P(\tilde{T} > \tau | X_i)\left(\frac{I(\tilde{T}_i \leq \tau, \Delta_i = 0)}{G(\tilde{T}_i|X_i)S(\tilde{T}_i|X_i)}-\int_0^{\tilde{T}_i \wedge \tau} \frac{1}{G(s|X_i)^2S(s|X_i)^2}P(ds,0|X_i)\right) \\
+&=H(X_i) S(\tau | X_i)\left(\frac{I(\tilde{T}_i \leq \tau, \Delta_i = 0)}{G(\tilde{T}_i|X_i)S(\tilde{T}_i|X_i)}-\int_0^{\tilde{T}_i \wedge \tau} \frac{1}{G(s|X_i)^2S(s|X_i)^2}P(ds,0|X_i)\right) \\
+\end{aligned}
+$$
+where $H$ is again an arbitrary function.
+
 ## Estimation 
 We estimate as follows: 
 \begin{align}
