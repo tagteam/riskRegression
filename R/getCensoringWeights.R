@@ -29,11 +29,17 @@ getCensoringWeights <- function(formula,
                }
                out
            },"cox"={
-               sFormula <- update(formula,"Surv(time,status)~.")
-               #this needs to be reconsidered with competing risk data!
-               tFormula <- update(formula,"Surv(time,event==1)~.")
+               sFormula <- update(formula,"Surv(time,status == 0)~.")
+               tFormula <- update(formula,"Surv(time,status != 0)~.")
                wdata <- copy(data)
-               wdata[,status:=1-status]
+               if (length(unique(wdata$event)) > 2){
+                 FormulaCSC <- update(formula,"Hist(time,protectedName.event)~.")
+                 fitCSC <- CSC(FormulaCSC, wdata[,-"status"],1)
+               }
+               else {
+                 fitCSC <- NULL
+               }
+               # wdata[,status:=1-status]
                Y <- data[["time"]]
                status <- data[["status"]]
                ## fit Cox model for censoring times
@@ -41,7 +47,7 @@ getCensoringWeights <- function(formula,
                args$surv <- TRUE
                fit <- do.call(rms::cph,c(list(sFormula,data=wdata),args))
                fit.time <- do.call(rms::cph,c(list(tFormula,data=wdata),args))
-               IC.data <- list(Stimes = as.numeric(rms::survest(fit.time,times=Y,what='parallel')), Gtimes=as.numeric(rms::survest(fit,times=Y,what='parallel')),wdata=wdata,fit.time=fit.time,fit.cens=fit)
+               IC.data <- list(wdata=wdata,fit.time=fit.time,fit.cens=fit,fitCSC=fitCSC)
 
                ## need G(Ti-|Xi) only for i where status=1 && Ti < max(times)
                if (length(times)==1){

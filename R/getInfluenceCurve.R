@@ -216,7 +216,8 @@ getInfluenceCurve.Brier <- function(t,
             #Int0tdMCsurEffARisk <- rbind(0,IC.G)[1+prodlim::sindex(jump.times=unique(time),eval.times=t),,drop=FALSE]
 
         }else{# uncensored
-            IF.Brier <- hit1+hit2-Brier
+            IF.Brier <- hit1+hit2-Brier> trainCR.comprisk <- sampleData(700,outcome="survival")
+
         }
         IF.Brier
     }
@@ -460,7 +461,6 @@ getInfluenceCurve.Brier.covariates.2 <- function(tau,time,risk,status,GTiminus,B
     wdata <- IC.data$wdata
     Gtimes <- diag(1-predictRisk(IC.data$fit.cens,wdata,wdata$time,1))
     Stimes <- diag(1-predictRisk(IC.data$fit.time,wdata,wdata$time,1))
-    
     for (i in 1:n){
         
         #calculate fhat(\tilde{T}_i-,X_i) for i = 1, ..., n
@@ -481,45 +481,36 @@ getInfluenceCurve.Brier.covariates.2 <- function(tau,time,risk,status,GTiminus,B
 getInfluenceCurve.Brier.covariates <- function(tau,time,risk,status,GTiminus,Brier,IC.data) {
   n <- length(time)
   IC <- rep(NA,n)
-  # prob.risk <- rep(NA,n)
-  # for (i in 1:n){
-  #   prob.risk[i] <- mean(risk==risk[i])
-  # }
-  # Gtimes <- IC.data$Gtimes
-  # Stimes <- IC.data$Stimes
   fit.time <- IC.data$fit.time
   fit.cens <- IC.data$fit.cens
   wdata<-IC.data$wdata
-  Stau <- rms::survest(fit.time,newdata=wdata,times=tau,se.fit=FALSE)$surv
-  Stau <- unname(Stau)
-  # prob.risk <- IC.data$prob.risk
-  # have.same.covariate <- IC.data$have.same.covariate
   ## term involving f_i(t,z) is 
   ## $$
   ## (1-2R(\tau |Z_i))\left(\frac{I(\tilde{T}_i \leq \tau, \Delta_i = 0)}{G(\tilde{T}_i|Z_i)S(\tilde{T}_i|Z_i)}(S(\tilde{T}_i|Z_i)-S(\tau|Z_i))-\int_0^{\tilde{T}_i \wedge \tau} \frac{(S(s|Z_i)-S(\tau|Z_i))}{G(s|Z_i)^2S(s|Z_i)^2}P(ds,0|Z_i)\right)
   ## $$
-  # term <- Stimes*Gtimes
-  # NAs <- which(term==0)
-  # if (length(NAs) > 0 && time[min(NAs)] <= tau){
-  #   stop("Please select (a) lower value(s) of time")
-  # }
-  # ind <- ifelse(term == 0,0,1*(status == 0 & time <= tau)/(Gtimes*Stimes))
-  # Competing risk
-  # if (length(unique(status)) > 2){
-  #   for (i in 1:n){
-  #     Stimes[i] <- 1-mean(1*(time <= time[i] & status == 1)/GTiminus [have.same.covariate[[i]]])
-  #     Stau[i] <- 1-mean(1*(time <= tau & status == 1)/GTiminus [have.same.covariate[[i]]])
-  #   }
-  # }
+  predCens <- predictCox(fit.cens, time,newdata = wdata)
+  Gtimes <- predCens$survival
+  cumhazardCXi <- predCens$cumhazard
+  Stimes <- predictCox(fit.time, time,newdata = wdata)$survival
+  is.comprisk <- !is.null(IC.data$fitCSC)
+  if (is.comprisk){
+    fitCSC <- IC.data$fitCSC
+    F1 <- predictRisk(fitCSC,newdata=wdata,times=time,cause=1)
+    F1tau <- c(predictRisk(fitCSC,newdata=wdata,times=tau,cause=1))
+  }
+  else {
+    Stau <- rms::survest(fit.time,newdata=wdata,times=tau,se.fit=FALSE)$surv
+    Stau <- unname(Stau)
+  }
   for (i in 1:n){
-    predCens <- predictCox(fit.cens, time,newdata = wdata[i,])
-    Gtimes <- predCens$survival
-    cumhazardCXi <- predCens$cumhazard
-    Stimes <- predictCox(fit.time, time,newdata = wdata[i,])$survival
-    
-    jumps <- diff(c(0,cumhazardCXi))
-    # mean or sum?
-    IC.C.term <- (1-2*risk[i])*(1*(status[i] == 0 & time[i] <= tau)/(Gtimes[i]*Stimes[i])*(Stimes[i]-Stau[i])-sum( 1*(time <= tau & time <= time[i])*((Stimes-Stau[i])*jumps / (Gtimes*Stimes))))
+    cum <- cumhazardCXi[i,]
+    jumps <- diff(c(0,cum))
+    if (!is.comprisk){
+      IC.C.term <- (1-2*risk[i])*(1*(status[i] == 0 & time[i] <= tau)/(Gtimes[i,i]*Stimes[i,i])*(Stimes[i,i]-Stau[i])-sum( 1*(time <= tau & time <= time[i])*((Stimes[i,]-Stau[i])*jumps / (Gtimes[i,]*Stimes[i,]))))
+    }
+    else {
+      IC.C.term <- (1-2*risk[i])*(1*(status[i] == 0 & time[i] <= tau)/(Gtimes[i,i]*Stimes[i,i])*(F1tau[i]-F1[i,i])-sum( 1*(time <= tau & time <= time[i])*((F1tau[i]-F1[i,])*jumps / (Gtimes[i,]*Stimes[i,]))))
+    }
     # IC.C.term <- 0
     IC[i] <- 1*(time[i] <= tau & status[i] == 1 )* (1-2*risk[i]) * 1/GTiminus[i] + IC.C.term + risk[i]^2 - Brier
   }
