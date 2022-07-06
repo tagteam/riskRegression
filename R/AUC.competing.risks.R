@@ -97,18 +97,19 @@ AUC.competing.risks <- function(DT,MC,se.fit,conservative,cens.model,keep.vcov=F
                         getInfluenceCurveHelper(time,status*event,times[1],risk,WTi,Wt[1],AUC[1])#+0.5*getInfluenceFunctionAUC(time,status*event,times[1],risk,WTi,Wt[1],AUC[1],FALSE,TRUE,FALSE)
                     }
                 }, by=list(model,times)]
-                # shoud be zero with cont. covariates, the ties part that is
-                # browser()
+                # should be zero with cont. covariates, the ties part that is
             }
         }
         else {
-            # for now does not support ties
-            if (conservative){
-                aucDT[,IF.AUC:=getInfluenceCurve.AUC.covariates.conservative(times[1],N,time,status*event,risk,WTi,Wt,AUC[1]), by=list(model,times)]
-            }
-            else {
-                aucDT[,IF.AUC:=getInfluenceCurve.AUC.covariates(times[1],N,time,status*event,risk,WTi,Wt,AUC[1],IC.data), by=list(model,times)]
-            }
+            warning("Switching to conservative SE. General case not yet implemented. \n")
+            aucDT[,IF.AUC:=getInfluenceCurve.AUC.covariates.conservative(times[1],N,time,status*event,risk,WTi,Wt,AUC[1]), by=list(model,times)]
+              # for now does not support ties
+          
+            # if (conservative){
+            # }
+            # else {
+            #     aucDT[,IF.AUC:=getInfluenceCurve.AUC.covariates(times[1],N,time,status*event,risk,WTi,Wt,AUC[1],IC.data), by=list(model,times)]
+            # }
         }
         se.score <- aucDT[,list(se=sd(IF.AUC)/sqrt(N)),by=list(model,times)]
         data.table::setkey(se.score,model,times)
