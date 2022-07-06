@@ -330,7 +330,6 @@ NumericVector getInfluenceFunctionBrierKMCensoring(double tau, NumericVector tim
 RcppExport SEXP _riskRegression_getInfluenceFunctionBrierKMCensoring(SEXP tauSEXP, SEXP timeSEXP, SEXP riskSEXP, SEXP statusSEXP, SEXP GTiminusSEXP, SEXP brierSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< double >::type tau(tauSEXP);
     Rcpp::traits::input_parameter< NumericVector >::type time(timeSEXP);
     Rcpp::traits::input_parameter< NumericVector >::type risk(riskSEXP);

@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Mar 13 2017 (16:53) 
 ## Version: 
-## Last-Updated: Mar  9 2022 (15:49) 
+## Last-Updated: Jul  6 2022 (07:54) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 161
+##     Update #: 162
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -144,9 +144,13 @@ plotRisk <- function(x,
         }else{ ## competing risks
             R <- pframe[model==modelnames[1],
             {
-                r <- event # 1,2,3,4? ...
-                r[time>times] <- max(event)+1
-                r-1
+                # respect the event of interest
+                r <- "competing.risk"
+                r[event == x$cause] <- "event"
+                r[status == 0] <- "censored"
+                r[time>times] <- "event-free"
+                r <- as.numeric(as.character(factor(r,levels = c("event","competing.risk","event-free","censored"),labels = c(0,1,2,3))))
+                r
             }]
         }
     }
@@ -174,7 +178,7 @@ plotRisk <- function(x,
     nR <- length(unique(R))
     if (x$response.type=="competing.risks") nCR <- nR-3
     Rfactor <- factor(R,
-                      levels=sort(unique(R)),
+                      levels=x$sort(unique(R)),
                       labels=switch(x$response.type,
                                     "binary"={c("event-free","event")},
                                     "survival"={c("right-censored","event","event-free")},
