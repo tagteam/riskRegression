@@ -3,9 +3,9 @@
 ## Author: Johan Sebastian Ohlendorff & Vilde Hansteen Ung & Thomas Alexander Gerds
 ## Created: Apr 28 2021 (09:04)
 ## Version:
-## Last-Updated: Jul  5 2022 (17:30) 
+## Last-Updated: Jul  6 2022 (13:35) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 80
+##     Update #: 82
 #----------------------------------------------------------------------
 ##
 ### Commentary:
@@ -501,8 +501,8 @@ synthesize.lvm <- function(object,
     for (v in logtrans){
         transform(sim_model,as.formula(paste0(v,"~log",v))) <- function(x){exp(x)}
     }
-    res <- list(lava.object = sim_model, labels = labels, categories = categorical.vars)
-    class(res) <- "synth"
+    res <- list(lava.object = sim_model,labels = labels,categories = categorical.vars)
+    class(res) <- c("synth",class(res))
     return(res)
 }
 
