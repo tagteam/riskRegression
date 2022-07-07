@@ -3,9 +3,9 @@
 ## Author: Johan Sebastian Ohlendorff & Vilde Hansteen Ung & Thomas Alexander Gerds
 ## Created: Apr 28 2021 (09:04)
 ## Version:
-## Last-Updated: Jul  7 2022 (13:59) 
+## Last-Updated: Jul  7 2022 (14:34) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 90
+##     Update #: 92
 #----------------------------------------------------------------------
 ##
 ### Commentary:
@@ -46,7 +46,7 @@
 ##' pbc <- na.omit(pbc[,c("time","status","sex","age","bili")])
 ##' pbc$logbili <- log(pbc$bili)
 ##' v_synt <- synthesize(object=Surv(time,status)~sex+age+logbili,data=pbc)
-##' d <- sim(v_synt,1000)
+##' d <- simsynth(v_synt,1000)
 ##' fit_sim <- coxph(Surv(time,status==1)~age+sex+logbili,data=d)
 ##' fit_real <- coxph(Surv(time,status==1)~age+sex+logbili,data=pbc)
 ##' # compare estimated log-hazard ratios between simulated and real data
@@ -520,77 +520,6 @@ categorize <- function(v,max.levels,data){
   if (!is.cat) {is.cat <- (nu < max.levels)}
   is.bin <- nu==2
   return(is.bin+is.cat)
-}
-
-
-#' @export synthesizeLTMLE
-synthesizeLTMLE <- function(data,
-                            A, #can be a list, but is a single value here. the A values are ordered
-                            L, #should be a list of lists where each list indicates the different time variables for a specific covariate
-                            W, #initial list of covariates 
-                            Y, #List of list, where
-                            time.points, #number of time points 
-                            max.levels = 10,
-                            ...){
-    # A0 ~ W
-    u <- synthesize(as.formula(paste(A[1],"~",paste(W,collapse = "+"))),data=data)
-    
-    for (i in 1:time.points) {
-      # remove relevant observations
-      YVarToUse <- foreach::foreach (y = Y,.combine="rbind") %do% {
-        y[i]
-      }
-      LVarToUse <- foreach::foreach (l = L,.combine="rbind") %do% {
-        l[i]
-      }
-      #AVarToUse <- foreach::foreach (a = A,.combine="rbind") %do% {
-      #  a[i]
-      #}
-      #remove censored data points, i.e. those with NAs, change 
-      if (i>1) { YVarBefore <- foreach::foreach (y = Y,.combine="rbind") %do% {
-        y[i-1]
-      }
-        truerows <- rep(TRUE,nrow(data)) & prevtruerows
-        for (k in YVarBefore){
-          truerows <- truerows & data[k] == 0
-        }
-        prevtruerows <- truerows
-        dataUse <- data[,c(YVarToUse,LVarToUse,W,A[i+1],A[i])][truerows,]
-      }
-      else {
-        prevtruerows <- rep(TRUE,nrow(data))
-        dataUse <- data[,c(YVarToUse,LVarToUse,W,A[i+1],A[i])]
-      }
-      add_reg <- function(var, covar,object){
-        reg_formula <- as.formula(paste(var,"~",paste(covar,collapse = "+")))
-        fit <- glm(reg_formula,data=dataUse,family="binomial")
-        p0<-exp(coef(fit)[1])/(1+exp(coef(fit)[1]))
-        lava::distribution(object,as.formula(paste0("~", var))) <- lava::binomial.lvm(p=p0)
-        lava::regression(object,reg_formula)<-coef(fit)[-1]
-        object
-      }
-      # Lt ~ At-1 + W , for now Lt ~ 1
-      #At ~ Lt + W 
-      #yt ~ Lt + At + W
-
-      u<-add_reg(A[i+1],c(LVarToUse,W),u)
-      for (y in Y){
-        u<-add_reg(y[i],c(LVarToUse,A[i+1],W),u)
-      }
-      for(l in L){
-        #for now only supports binary covariates 
-        # new version
-        u<-add_reg(l[i],c(A[i],W),u)
-        # old version 
-        # var <- l[i]
-        # var_formula <- as.formula(paste0("~", var))
-        # lava::distribution(u, var_formula) <- lava::binomial.lvm(p=mean(factor(data[[var]])==levels(factor(data[[var]]))[2]))
-      }
-
-    }
-    out <- list(u,A=A,L=L,W=W,Y=Y,time.points=time.points)
-    class(out) <- c("lavaLTMLE")
-    out
 }
 
 

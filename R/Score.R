@@ -497,7 +497,7 @@ Score.list <- function(object,
     }
 
     # }}}
-# {{{ censoring model arguments
+    # {{{ censoring model arguments
     if (length(grep("^km|^kaplan|^marg",cens.model,ignore.case=TRUE))>0){
         cens.model <- "KaplanMeier"
     } else{
@@ -508,7 +508,7 @@ Score.list <- function(object,
         }
     }
     # }}}
-# {{{ Response
+    # {{{ Response
     if (missing(formula)){stop("Argument formula is missing.")}
     formula.names <- try(all.names(formula),silent=TRUE)
     if (!(formula.names[1]=="~")
@@ -557,10 +557,10 @@ c.f., Chapter 7, Section 5 in Gerds & Kattan 2021. Medical risk prediction model
     ## but first rename to avoid problems with pre-existing variables with same name(s)
     ## data[,eval(responsevars):=NULL]
     ## data have to be ordered when ipcw is called
+    if ("event" %in% names(data)){
+        setnames(data,"event","protectedName.event")
+    }
     if (response.type=="binary"){
-        if ("event" %in% names(data)){
-            setnames(data,"event","protectedName.event")
-        }
         data[,event:=factor(ReSpOnSe,
                             levels=1:(length(states)+1),
                             labels=c(states,"event-free"))]

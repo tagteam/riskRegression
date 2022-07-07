@@ -32,12 +32,15 @@ getCensoringWeights <- function(formula,
                sFormula <- update(formula,"Surv(time,status == 0)~.")
                tFormula <- update(formula,"Surv(time,status != 0)~.")
                wdata <- copy(data)
-               if (length(unique(wdata$event)) > 2){
-                 FormulaCSC <- update(formula,"Hist(time,protectedName.event)~.")
-                 fitCSC <- CSC(FormulaCSC, wdata[,-"status"],1)
+               if (length(unique(wdata[["event"]])) > 2){
+                   wdata[,event2 := as.numeric(event)]
+                   wdata[status == 0,event2 := 0]
+                   FormulaCSC <- update(formula,"Hist(time,event2)~.")
+                   suppressWarnings(fitCSC <- CSC(formula = FormulaCSC, data = wdata))
+                   wdata[,event2 := NULL]
                }
                else {
-                 fitCSC <- NULL
+                   fitCSC <- NULL
                }
                # wdata[,status:=1-status]
                Y <- data[["time"]]

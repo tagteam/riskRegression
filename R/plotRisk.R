@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Mar 13 2017 (16:53) 
 ## Version: 
-## Last-Updated: Jul  7 2022 (13:16) 
+## Last-Updated: Jul  7 2022 (14:11) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 168
+##     Update #: 169
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -178,7 +178,7 @@ plotRisk <- function(x,
     nR <- length(unique(R))
     if (x$response.type=="competing.risks") nCR <- nR-3
     Rfactor <- factor(R,
-                      levels=x$sort(unique(R)),
+                      levels=sort(unique(R)),
                       labels=switch(x$response.type,
                                     "binary"={c("event-free","event")},
                                     "survival"={c("right-censored","event","event-free")},

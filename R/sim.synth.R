@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Jul  7 2022 (13:33) 
 ## Version: 
-## Last-Updated: Jul  7 2022 (13:59) 
+## Last-Updated: Jul  7 2022 (14:26) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 3
+##     Update #: 9
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -15,7 +15,6 @@
 ## 
 ### Code:
 
-#' @export sim.synth
 #' @title Simulating from a synthesized object
 #'
 #' @description Simulating from a synthesized object
@@ -23,7 +22,13 @@
 #' @param n sample size
 #' @param drop.latent if \code{TRUE} remove the latent event times from the resulting data set.
 #' @param ... additional arguments passed on to \code{lava::sim}
-sim.synth <- function(object, n= 200, drop.latent=FALSE, ...){
+#' @export simsynth
+#' @examples
+#' library(survival)
+#' m=synthesize(Surv(time,status)~sex+age+bili,data=pbc)
+#' simsynth(m,10,drop.latent=TRUE)
+#' 
+simsynth <- function(object, n= 200, drop.latent=FALSE, ...){
     lava.object <- object$lava.object
     res <- lava::sim(lava.object,n,...)
     labels <- object$labels

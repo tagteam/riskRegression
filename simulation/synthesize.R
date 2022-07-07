@@ -3,9 +3,9 @@
 ## Author: Johan Sebastian Ohlendorff & Vilde Hansteen Ung & Thomas Alexander Gerds
 ## Created: Apr 28 2021 (09:04)
 ## Version:
-## Last-Updated: Jun 17 2022 (10:25) 
+## Last-Updated: Jul  7 2022 (14:34) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 76
+##     Update #: 77
 #----------------------------------------------------------------------
 ##
 ### Commentary:
@@ -40,7 +40,7 @@
 ##' pbc <- na.omit(pbc[,c("time","status","sex","age","bili")])
 ##' pbc$logbili <- log(pbc$bili)
 ##' v_synt <- synthesize(object=Surv(time,status)~sex+age+logbili,data=pbc)
-##' d <- sim(v_synt,1000)
+##' d <- simsynth(v_synt,1000)
 ##' fit_sim <- coxph(Surv(time,status==1)~age+sex+logbili,data=d)
 ##' fit_real <- coxph(Surv(time,status==1)~age+sex+logbili,data=pbc)
 ##' # compare estimated log-hazard ratios between simulated and real data

@@ -30,11 +30,17 @@ variables with less than 10 unique values in data are treated as categorical.}
 lava object
 }
 \description{
+Fit parametric regression models to the outcome distribution and optionally
+also parametric regression models for the joint distribution of the predictors
+structural equation models. 
+Then the function \code{sim.synth} can be called on the  resulting object to
+to simulate from the parametric model based on the machinery of the \code{lava} package
+}
+\details{
 Synthesizes survival data (also works for linear models and generalized linear models).
 The idea is to be able to simulate new data sets that mimic the original data.
 See the vignette \code{vignette("synthesize",package = "riskRegression")} for more details.
-}
-\details{
+
 The simulation engine is: lava.
 }
 \examples{
@@ -45,7 +51,7 @@ data(pbc)
 pbc <- na.omit(pbc[,c("time","status","sex","age","bili")])
 pbc$logbili <- log(pbc$bili)
 v_synt <- synthesize(object=Surv(time,status)~sex+age+logbili,data=pbc)
-d <- sim(v_synt,1000)
+d <- simsynth(v_synt,1000)
 fit_sim <- coxph(Surv(time,status==1)~age+sex+logbili,data=d)
 fit_real <- coxph(Surv(time,status==1)~age+sex+logbili,data=pbc)
 # compare estimated log-hazard ratios between simulated and real data
