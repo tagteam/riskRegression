@@ -216,7 +216,7 @@ getInfluenceCurve.Brier <- function(t,
             #Int0tdMCsurEffARisk <- rbind(0,IC.G)[1+prodlim::sindex(jump.times=unique(time),eval.times=t),,drop=FALSE]
 
         }else{# uncensored
-            IF.Brier <- hit1+hit2-Brier> trainCR.comprisk <- sampleData(700,outcome="survival")
+            IF.Brier <- hit1+hit2-Brier
 
         }
         IF.Brier
