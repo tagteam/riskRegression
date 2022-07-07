@@ -3,9 +3,9 @@
 ## Author: Johan Sebastian Ohlendorff & Vilde Hansteen Ung & Thomas Alexander Gerds
 ## Created: Apr 28 2021 (09:04)
 ## Version:
-## Last-Updated: Jul  6 2022 (13:35) 
+## Last-Updated: Jul  7 2022 (13:10) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 82
+##     Update #: 84
 #----------------------------------------------------------------------
 ##
 ### Commentary:
@@ -517,7 +517,6 @@ categorize <- function(v,max.levels,data){
 }
 
 #' @export sim.synth
-#' @export
 sim.synth <- function(object, n= 200, drop.latent=FALSE, ...){
     lava.object <- object$lava.object
     res <- lava::sim(lava.object,n,...)
@@ -541,7 +540,6 @@ sim.synth <- function(object, n= 200, drop.latent=FALSE, ...){
 }
 
 #' @export synthesizeLTMLE
-#' @export
 synthesizeLTMLE <- function(data,
                             A, #can be a list, but is a single value here. the A values are ordered
                             L, #should be a list of lists where each list indicates the different time variables for a specific covariate
