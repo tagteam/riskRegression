@@ -216,7 +216,8 @@ getInfluenceCurve.Brier <- function(t,
             #Int0tdMCsurEffARisk <- rbind(0,IC.G)[1+prodlim::sindex(jump.times=unique(time),eval.times=t),,drop=FALSE]
 
         }else{# uncensored
-            IF.Brier <- hit1+hit2-Brier
+            IF.Brier <- hit1+hit2-Brier> trainCR.comprisk <- sampleData(700,outcome="survival")
+
         }
         IF.Brier
     }
@@ -386,129 +387,40 @@ getInfluenceCurve.AUC.covariates.conservative <- function(t,n,time,status,risk,G
     ic
 }
 
-calculatefihat <- function(i,IC.data,X,prob.risk,status,time,tau,Stimes,Gtimes){
-    n <- length(time)
-    risk <- X
-    ic <- rep(0,n)
-    for (j in 2:n){
-      t <- sindex(time,time[j]-1e-10)
-      ic[j] <- 1*(time[i] <= time[t] & status[i] == 0 & risk[i]==risk[j])/(Gtimes[i]*Stimes[i]*prob.risk[i]) + 
-        1*(risk[i]==risk[j])*sum(1*(risk==risk[j] & time <= time[i] & time <= time[t] & status == 0)/(Gtimes^2*Stimes^2*prob.risk^2))
-    }
-    # indices <- which(X==X[i])
-    # sind1 <- prodlim::sindex(time,time[i])+1
-    # sind2 <- prodlim::sindex(time,tau)+1
-    ic.tau <- rep(0,n)
-    # ic.tau.calculated <- FALSE
-    # integraltermPrev <- 0
-    # integraltermCurr <- 0
-    # l <- 1 
-    # while (l <= length(indices)){
-    #     if (indices[l] < sind1){
-    #         tieIter <- l+1
-    #         if (status[indices[l]] == 0){
-    #             integraltermCurr <- integraltermCurr + 1/n * 1/((Stimes[indices[l]]*Gtimes[indices[l]]*prob.risk[indices[l]])^2)
-    #         }
-    #         while (tieIter <= length(indices) && time[indices[l]] == time[indices[tieIter]]){
-    #             if (status[indices[tieIter]] == 0){
-    #                 integraltermCurr <- integraltermCurr +1/n * 1/((Stimes[indices[tieIter]]*Gtimes[indices[tieIter]]*prob.risk[indices[tieIter]])^2)
-    #             }
-    #             tieIter <- tieIter + 1
-    #         }
-    #         ic[indices[l]:indices[tieIter-1]] <- -integraltermPrev
-    #         integraltermPrev <- integraltermCurr
-    #     }
-    #     else {
-    #         ic[indices[l]] <- 1/(Stimes[indices[l]]*Gtimes[indices[l]]*prob.risk[indices[l]])-integraltermCurr
-    #     }
-    #     if (indices[l] >= sind2 && !ic.tau.calculated){
-    #         ic.tau.calculated <- TRUE
-    #         ic.tau[indices] <- ifelse(indices[l] < sind1, - integraltermCurr, 1/(Stimes[indices[l]]*Gtimes[indices[l]]*prob.risk[indices[l]])-integraltermCurr)
-    #     }
-    #     l <- ifelse(indices[l] < sind1, tieIter, l + 1)
-    # }
-    list(ic=ic,ic.tau=ic.tau)
-}
-
-calculateWeightsFihat <- function(i,IC.data,X,status,time,tau){
-  n <- length(time)
-  wdata <- IC.data$wdata
-  fit <- IC.data$fit.cens
-  fit.time <- IC.data$fit.time
-  #covariatei <- wdata[i,]
-  sind <- prodlim::sindex(time,tau)
-  #Gtimes <- diag(1-predictRisk(fit,covariatei,wdata$time,1))
-  Gtimes <- (1-predictRisk(fit,wdata,wdata$time,1))[i,]
-  GTiminus <- c(1,Gtimes[1:(n-1)])
-  Gtau <- Gtimes[sind]
-  Stimes <- (1-predictRisk(fit.time,wdata,wdata$time,1))[i,]
-  jumps <- diff(c(1,Gtimes))
-  #ic <- 1*(time[i] <= time & status == 1)/(Gtimes[i]*Stimes[i]) - cumsum(1*(time <= time[i])/(Gtimes*Stimes*GTiminus) *jumps)
-  ic <- 1*(time[i] <= time & status == 1)/(Gtimes[i]*Stimes[i]) + cumsum(1*(time <= time[i])/(Gtimes^2*Stimes) *jumps)
-  list(ic=ic,Gtau = Gtau, GTiminus = GTiminus)
-}
-
-
-getInfluenceCurve.Brier.covariates.2 <- function(tau,time,risk,status,GTiminus,Brier,IC.data) {
-    n <- length(time)
-    fhat.Ti <- rep(0,n)
-    IC <- rep(NA,n)
-    prob.risk <- rep(NA,n)
-    for (i in 1:n){
-      prob.risk[i] <- mean(risk==risk[i])
-    }
-    wdata <- IC.data$wdata
-    Gtimes <- diag(1-predictRisk(IC.data$fit.cens,wdata,wdata$time,1))
-    Stimes <- diag(1-predictRisk(IC.data$fit.time,wdata,wdata$time,1))
-    
-    for (i in 1:n){
-        
-        #calculate fhat(\tilde{T}_i-,X_i) for i = 1, ..., n
-        # dat <- calculateWeightsFihat(i,IC.data,risk,status,time,tau)
-        dat <- calculatefihat(i,IC.data,risk,prob.risk,status,time,tau,Stimes,Gtimes)
-        fhat.Ti <- dat$ic
-        # GTiminus <- dat$GTiminus
-        # IC.C.term <- (1-2*risk[i])*mean( 1*(time <= tau & status == 1 )*fhat.Ti / GTiminus )
-        IC.C.term <- mean( 1*(time <= tau & status == 1 )*fhat.Ti*(1-2*risk) / GTiminus )
-        # IC.C.term <- 0
-        IC[i] <- 1*(time[i] <= tau & status[i] == 1 )* (1-2*risk[i]) * 1/GTiminus[i] + IC.C.term + risk[i]^2 - Brier
-    }
-    IC
-}
-
-#NOTE: Requires covariates to be discrete
+#NOTE: Requires cox model for censoring (and time)!
 getInfluenceCurve.Brier.covariates <- function(tau,time,risk,status,GTiminus,Brier,IC.data) {
   n <- length(time)
   IC <- rep(NA,n)
-  # prob.risk <- rep(NA,n)
-  # for (i in 1:n){
-  #   prob.risk[i] <- mean(risk==risk[i])
-  # }
-  Gtimes <- IC.data$Gtimes
-  Stimes <- IC.data$Stimes
-  Stau <- IC.data$Stau
-  prob.risk <- IC.data$prob.risk
-  have.same.covariate <- IC.data$have.same.covariate
+  fit.time <- IC.data$fit.time
+  fit.cens <- IC.data$fit.cens
+  wdata<-IC.data$wdata
   ## term involving f_i(t,z) is 
   ## $$
   ## (1-2R(\tau |Z_i))\left(\frac{I(\tilde{T}_i \leq \tau, \Delta_i = 0)}{G(\tilde{T}_i|Z_i)S(\tilde{T}_i|Z_i)}(S(\tilde{T}_i|Z_i)-S(\tau|Z_i))-\int_0^{\tilde{T}_i \wedge \tau} \frac{(S(s|Z_i)-S(\tau|Z_i))}{G(s|Z_i)^2S(s|Z_i)^2}P(ds,0|Z_i)\right)
   ## $$
-  term <- Stimes^2*Gtimes^2*prob.risk
-  NAs <- which(term==0)
-  if (time[min(NAs)] <= tau){
-    stop("Please select (a) lower value(s) of time")
+  predCens <- predictCox(fit.cens, time,newdata = wdata)
+  Gtimes <- predCens$survival
+  cumhazardCXi <- predCens$cumhazard
+  Stimes <- predictCox(fit.time, time,newdata = wdata)$survival
+  is.comprisk <- !is.null(IC.data$fitCSC)
+  if (is.comprisk){
+    fitCSC <- IC.data$fitCSC
+    F1 <- predictRisk(fitCSC,newdata=wdata,times=time,cause=1)
+    F1tau <- c(predictRisk(fitCSC,newdata=wdata,times=tau,cause=1))
   }
-  ind <- ifelse(term == 0,0,1*(status == 0 & time <= tau)/(Gtimes*Stimes))
-  # Competing risk
-  if (length(unique(status)) > 2){
-    for (i in 1:n){
-      Stimes[i] <- 1-mean(1*(time <= time[i] & status == 1)/GTiminus [have.same.covariate[[i]]])
-      Stau[i] <- 1-mean(1*(time <= tau & status == 1)/GTiminus [have.same.covariate[[i]]])
-    }
+  else {
+    Stau <- rms::survest(fit.time,newdata=wdata,times=tau,se.fit=FALSE)$surv
+    Stau <- unname(Stau)
   }
   for (i in 1:n){
-    IC.C.term <- (1-2*risk[i])*(ind[i]*(Stimes[i]-Stau[i])-
-                                  1/n * sum( ((Stimes-Stau[i]) / term) [time <= tau & time <= time[i] & status == 1 & have.same.covariate[[i]]]))
+    cum <- cumhazardCXi[i,]
+    jumps <- diff(c(0,cum))
+    if (!is.comprisk){
+      IC.C.term <- (1-2*risk[i])*(1*(status[i] == 0 & time[i] <= tau)/(Gtimes[i,i]*Stimes[i,i])*(Stimes[i,i]-Stau[i])-sum( 1*(time <= tau & time <= time[i])*((Stimes[i,]-Stau[i])*jumps / (Gtimes[i,]*Stimes[i,]))))
+    }
+    else {
+      IC.C.term <- (1-2*risk[i])*(1*(status[i] == 0 & time[i] <= tau)/(Gtimes[i,i]*Stimes[i,i])*(F1tau[i]-F1[i,i])-sum( 1*(time <= tau & time <= time[i])*((F1tau[i]-F1[i,])*jumps / (Gtimes[i,]*Stimes[i,]))))
+    }
     # IC.C.term <- 0
     IC[i] <- 1*(time[i] <= tau & status[i] == 1 )* (1-2*risk[i]) * 1/GTiminus[i] + IC.C.term + risk[i]^2 - Brier
   }
@@ -547,35 +459,62 @@ getInfluenceCurve.AUC.covariates <- function(t,n,time,status,risk,GTiminus,Gtau,
     fhat.Ti <- rep(0,n)
     mu1 <- int2mu * int1mu + int2mu*int3mu
     nu1 <- AUC*mu1
-    #P(X=X_i)
-    prob.risk <- rep(NA,n)
-    for (i in 1:n){
-        prob.risk[i] <- mean(risk==risk[i])
+    
+    fit.time <- IC.data$fit.time
+    fit.cens <- IC.data$fit.cens
+    wdata<-IC.data$wdata
+    ## term involving f_i(t,z) is 
+    ## $$
+    ## (1-2R(\tau |Z_i))\left(\frac{I(\tilde{T}_i \leq \tau, \Delta_i = 0)}{G(\tilde{T}_i|Z_i)S(\tilde{T}_i|Z_i)}(S(\tilde{T}_i|Z_i)-S(\tau|Z_i))-\int_0^{\tilde{T}_i \wedge \tau} \frac{(S(s|Z_i)-S(\tau|Z_i))}{G(s|Z_i)^2S(s|Z_i)^2}P(ds,0|Z_i)\right)
+    ## $$
+    predCens <- predictCox(fit.cens, time,newdata = wdata)
+    Gtimes <- predCens$survival
+    cumhazardCXi <- predCens$cumhazard
+    Stimes <- predictCox(fit.time, time,newdata = wdata)$survival
+    is.comprisk <- !is.null(IC.data$fitCSC)
+    Stau <- unname(rms::survest(fit.time,newdata=wdata,times=tau,se.fit=FALSE)$surv)
+    if (is.comprisk){
+      fitCSC <- IC.data$fitCSC
+      F1 <- predictRisk(fitCSC,newdata=wdata,times=time,cause=1)
+      F1tau <- c(predictRisk(fitCSC,newdata=wdata,times=tau,cause=1))
+      F2 <- predictRisk(fitCSC,newdata=wdata,times=time,cause=2)
+      F2tau <- c(predictRisk(fitCSC,newdata=wdata,times=tau,cause=2))
     }
+    else {
+    }
+    
     for (i in 1:n){
-        #calculate fhat(\tilde{T}_i-,X_i) for i = 1, ..., n
-        dat <- calculatefihat(i,IC.data,risk,prob.risk,status,time,tau)
-        fhat.Ti <- dat$ic
-        fhat.tau <- dat$ic.tau
+        cum <- cumhazardCXi[i,]
+        jumps <- diff(c(0,cum))
+        
         # if (any(fhat.Ti != 0) || any(fhat.tau != 0)) browser()
         # #calculate fhat(tau,X_i) for i = 1, ..., n
         term1nu <- 1*(time[i] <= tau & status[i] == 1)/GTiminus[i] * int1nu[i]
-        term2nu <- mean(int1nu * 1*(time <= tau & status == 1) * (fhat.Ti-1)/GTiminus)
+        if (!is.comprisk){
+          term2nu <- int1nu[i] * (1*(status[i] == 0 & time[i] <= tau)/(Gtimes[i,i]*Stimes[i,i])*(Stimes[i,i]-Stau[i])-sum( 1*(time <= tau & time <= time[i])*((Stimes[i,]-Stau[i])*jumps / (Gtimes[i,]*Stimes[i,])))) -mean(int1nu * 1*(time <= tau & status == 1) * 1/GTiminus)
+          term6nu <- 0
+          term8nu <- int3nu[i] * (1*(status[i] == 0 & time[i] <= tau)/(Gtimes[i,i]*Stimes[i,i])*(Stimes[i,i]-Stau[i])-sum( 1*(time <= tau & time <= time[i])*((Stimes[i,]-Stau[i])*jumps / (Gtimes[i,]*Stimes[i,])))) -mean(int3nu * 1*(time <= tau & status == 1) * 1/GTiminus)
+          intmu <- 1*(status[i] == 0 & time[i] <= tau)/(Gtimes[i,i]*Stimes[i,i])*(Stimes[i,i]-Stau[i])-sum( 1*(time <= tau & time <= time[i])*((Stimes[i,]-Stau[i])*jumps / (Gtimes[i,]*Stimes[i,])))- mean(1*(time <= tau & status == 1) * 1/GTiminus)
+          term6mu <- 0
+        }
+        else {
+          term2nu <- int1nu[i] * (1*(status[i] == 0 & time[i] <= tau)/(Gtimes[i,i]*Stimes[i,i])*(F1tau[i]-F1[i,i])-sum( 1*(time <= tau & time <= time[i])*((F1tau[i]-F1[i,])*jumps / (Gtimes[i,]*Stimes[i,])))) -mean(int1nu * 1*(time <= tau & status == 1) * 1/GTiminus)
+          term6nu <- int2nu[i] * (1*(status[i] == 0 & time[i] <= tau)/(Gtimes[i,i]*Stimes[i,i])*(F2tau[i]-F2[i,i])-sum( 1*(time <= tau & time <= time[i])*((F2tau[i]-F2[i,])*jumps / (Gtimes[i,]*Stimes[i,])))) -mean(int2nu * 1*(time <= tau & status == 2) * 1/GTiminus)
+          term8nu <- int3nu[i] * (1*(status[i] == 0 & time[i] <= tau)/(Gtimes[i,i]*Stimes[i,i])*(F1tau[i]-F1[i,i])-sum( 1*(time <= tau & time <= time[i])*((F1tau[i]-F1[i,])*jumps / (Gtimes[i,]*Stimes[i,])))) -mean(int3nu * 1*(time <= tau & status == 1) * 1/GTiminus)
+          intmu <- 1*(status[i] == 0 & time[i] <= tau)/(Gtimes[i,i]*Stimes[i,i])*(F1tau[i]-F1[i,i])-sum( 1*(time <= tau & time <= time[i])*((F1tau[i]-F1[i,])*jumps / (Gtimes[i,]*Stimes[i,])))- mean(1*(time <= tau & status == 1) * 1/GTiminus)
+          term6mu <- int2mu * (1*(status[i] == 0 & time[i] <= tau)/(Gtimes[i,i]*Stimes[i,i])*(F2tau[i]-F2[i,i])-sum( 1*(time <= tau & time <= time[i])*((F2tau[i]-F2[i,])*jumps / (Gtimes[i,]*Stimes[i,])))- mean(1*(time <= tau & status == 2) * 1/GTiminus))
+        }
         term3nu <- 1*(time[i] > tau)/Gtau[i] * int2nu[i]
-        term4nu <- mean(int2nu * 1*(time > tau) * (fhat.tau-1)/Gtau)
+        term4nu <- int2nu[i] * Stau[i]*(1*(status[i] == 0 & time[i] <= tau)/(Gtimes[i,i]*Stimes[i,i])-sum( 1*(time <= tau & time <= time[i])*jumps / (Gtimes[i,]*Stimes[i,]))) - mean(int2nu * 1*(time > tau) * 1/Gtau)
         term5nu <- 1*(time[i] <= tau & status[i] == 2)/GTiminus[i] * int2nu[i]
-        term6nu <- mean(int2nu * 1*(time <= tau & status == 2) * (fhat.Ti-1)/GTiminus)
         term7nu <- 1*(time[i] <= tau & status[i] == 1)/GTiminus[i] * int3nu[i]
-        term8nu <- mean(int3nu * 1*(time <= tau & status == 1) * (fhat.Ti-1)/GTiminus)
         IFnu <- term1nu+term2nu+term3nu+term4nu+term5nu+term6nu+term7nu+term8nu
 
-        intmu <- mean(1*(time <= tau & status == 1) * (fhat.Ti-1)/GTiminus)
         term1mu <- 1*(time[i] <= tau & status[i] == 1)/GTiminus[i] * int1mu
         term2mu <- int1mu * intmu
         term3mu <- 1*(time[i] > tau)/Gtau[i] * int2mu
-        term4mu <- int2mu * mean(1*(time > tau) * (fhat.tau-1)/Gtau)
+        term4mu <- int2mu*(Stau[i]*(1*(status[i] == 0 & time[i] <= tau)/(Gtimes[i,i]*Stimes[i,i])-sum( 1*(time <= tau & time <= time[i])*jumps / (Gtimes[i,]*Stimes[i,]))) - mean(1*(time > tau) * 1/Gtau))
         term5mu <- 1*(time[i] <= tau & status[i] == 2)/GTiminus[i] * int2mu
-        term6mu <- int2mu * mean(1*(time <= tau & status == 2) * (fhat.Ti-1)/GTiminus)
         term7mu <- 1*(time[i] <= tau & status[i] == 1)/GTiminus[i] * int3mu
         term8mu <- int3mu*intmu
         IFmu <- term1mu+term2mu+term3mu+term4mu+term5mu+term6mu+term7mu+term8mu
