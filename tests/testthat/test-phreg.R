@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: feb 28 2017 (09:52) 
 ## Version: 
-## last-updated: okt  7 2021 (20:01) 
-##           By: Brice Ozenne
-##     Update #: 29
+## last-updated: Jul  7 2022 (17:18) 
+##           By: Thomas Alexander Gerds
+##     Update #: 30
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -42,13 +42,13 @@ test_that("survival - no strata", {
     m.cph <- cph(Surv(eventtime,event)~X1+X2,data=d, x = TRUE, y = TRUE)
     ## slight difference in estimated coefficients: coef(m.phreg) - coef(m.cph)
     
-    expect_equal(predictCox(m.phreg, center = FALSE),predictCox(m.coxph, center = FALSE), tol = 1e-8)
-    expect_equal(predictCox(m.phreg, center = TRUE),predictCox(m.cph, center = TRUE), tol = 1e-4)
+    expect_equal(predictCox(m.phreg, center = FALSE),predictCox(m.coxph, center = FALSE), tolerance = 1e-8)
+    expect_equal(predictCox(m.phreg, center = TRUE),predictCox(m.cph, center = TRUE), tolerance = 1e-4)
 
     pred.phreg <- predictCox(m.phreg, newdata = d, time = 1:5, se = TRUE)
     pred.coxph <- predictCox(m.coxph, newdata = d, time = 1:5, se = TRUE)
     
-    expect_equal(pred.phreg$survival, pred.coxph$survival, tol = 1e-8)
+    expect_equal(pred.phreg$survival, pred.coxph$survival, tolerance = 1e-8)
 })
 
 test_that("survival - one strata variable", {
@@ -57,17 +57,17 @@ test_that("survival - one strata variable", {
     mS.cph <- cph(Surv(eventtime,event)~X1+X2+strat(group),data=d, x = TRUE, y = TRUE)
     ## slight difference in estimated coefficients: coef(mS.phreg) - coef(mS.cph)
     
-    expect_equal(predictCox(mS.phreg, center = FALSE),predictCox(mS.coxph, center = FALSE), tol = 1e-8)
-    expect_equal(predictCox(mS.phreg, center = TRUE)[c("cumhazard","survival")],predictCox(mS.cph, center = TRUE)[c("cumhazard","survival")], tol = 1e-4)
+    expect_equal(predictCox(mS.phreg, center = FALSE),predictCox(mS.coxph, center = FALSE), tolerance = 1e-8)
+    expect_equal(predictCox(mS.phreg, center = TRUE)[c("cumhazard","survival")],predictCox(mS.cph, center = TRUE)[c("cumhazard","survival")], tolerance = 1e-4)
 
     predS.phreg <- predictCox(mS.phreg, newdata = d, time = 1:5, se = TRUE)
     predS.coxph <- predictCox(mS.coxph, newdata = d, time = 1:5, se = TRUE)
-    expect_equal(predS.phreg$survival, predS.coxph$survival, tol = 1e-8)
+    expect_equal(predS.phreg$survival, predS.coxph$survival, tolerance = 1e-8)
 
     ## bug in previous version, could not create design matrix when group had only one value
     predS.phreg <- predictCox(mS.phreg, newdata = d[group==0], time = 1:5, se = TRUE)
     predS.coxph <- predictCox(mS.coxph, newdata = d[group==0], time = 1:5, se = TRUE)
-    expect_equal(predS.phreg$survival, predS.coxph$survival, tol = 1e-8)
+    expect_equal(predS.phreg$survival, predS.coxph$survival, tolerance = 1e-8)
 
 })
 
@@ -81,16 +81,16 @@ test_that("survival - several strata variables", {
 
     expect_equal(predictCox(mS.phreg, center = FALSE)[c("cumhazard","survival")],
                  predictCox(mS.coxph, center = FALSE)[c("cumhazard","survival")],
-                 tol = 1e-8)
+                 tolerance = 1e-8)
 
     ## FAIL BECAUSE DIFFERENT ORDERING OF THE STRATA
     ## expect_equal(predictCox(mS.phreg, center = TRUE)[c("cumhazard","survival")],
     ##              predictCox(mS.cph, center = TRUE)[c("cumhazard","survival")],
-    ##              tol = 1e-4)
+    ##              tolerance = 1e-4)
 
     predS.phreg <- predictCox(mS.phreg, newdata = d, time = 1:5, se = TRUE)
     predS.coxph <- predictCox(mS.coxph, newdata = d, time = 1:5, se = TRUE)
-    expect_equal(predS.phreg$survival, predS.coxph$survival, tol = 1e-8)
+    expect_equal(predS.phreg$survival, predS.coxph$survival, tolerance = 1e-8)
 
 
 })
@@ -112,7 +112,7 @@ test_that("competing risk - no strata", {
     expect_equal(class(m.phreg$models[[1]]),"phreg")
     pred.phreg <- predict(m.phreg, newdata = d, times = 1:5, cause = 1, se = TRUE)
     pred.coxph <- predict(m.coxph, newdata = d, times = 1:5, cause = 1, se = TRUE)
-    expect_equal(pred.phreg,pred.coxph, tol = 1e-8)
+    expect_equal(pred.phreg,pred.coxph, tolerance = 1e-8)
 })
 
 test_that("competing risk - one strata variable", {
@@ -124,7 +124,7 @@ test_that("competing risk - one strata variable", {
     expect_equal(class(mS.phreg$models[[1]]),"phreg")
     predS.phreg <- predict(mS.phreg, newdata = d, times = 1:5, cause = 1, se = TRUE)
     predS.coxph <- predict(mS.coxph, newdata = d, times = 1:5, cause = 1, se = TRUE)
-    expect_equal(predS.phreg,predS.coxph, tol = 1e-3)
+    expect_equal(predS.phreg,predS.coxph, tolerance = 1e-3)
 })
 
 test_that("competing risk - several strata variables", {
@@ -135,7 +135,7 @@ test_that("competing risk - several strata variables", {
     expect_equal(class(mS.phreg$models[[1]]),"phreg")
     predS.phreg <- predict(mS.phreg, newdata = d, times = 1:5, cause = 1, se = TRUE)
     predS.coxph <- predict(mS.coxph, newdata = d, times = 1:5, cause = 1, se = TRUE)
-    expect_equal(predS.phreg,predS.coxph, tol = 1e-3)
+    expect_equal(predS.phreg,predS.coxph, tolerance = 1e-3)
 
 })
 ##----------------------------------------------------------------------

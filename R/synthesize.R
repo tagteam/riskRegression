@@ -3,9 +3,9 @@
 ## Author: Johan Sebastian Ohlendorff & Vilde Hansteen Ung & Thomas Alexander Gerds
 ## Created: Apr 28 2021 (09:04)
 ## Version:
-## Last-Updated: Jul  7 2022 (14:34) 
+## Last-Updated: Jul  7 2022 (17:28) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 92
+##     Update #: 94
 #----------------------------------------------------------------------
 ##
 ### Commentary:
@@ -104,6 +104,8 @@ synthesize <- function(object, data,...){
 
 ##' @export synthesize.formula
 ##' @export
+#' @rdname synthesize
+#' @method synthesize formula
 synthesize.formula <- function(object, # a formula object Surv(time,event) or Hist(time,event)
                                data,
                                recursive=FALSE,
@@ -222,12 +224,13 @@ synthesize.formula <- function(object, # a formula object Surv(time,event) or Hi
 
 #' @export synthesize.lvm
 #' @export
+#' @rdname synthesize
+#' @method synthesize lvm
 synthesize.lvm <- function(object,
                            data,
                            max.levels = 10,
                            logtrans = NULL,
                            verbose=FALSE,
-                           from.formula=FALSE,
                            fix.names = FALSE,
                            ...){
     from.formula <- length(attr(object,"from.formula"))>0

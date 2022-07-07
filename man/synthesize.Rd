@@ -7,6 +7,25 @@
 \title{Cooking and synthesizing survival data}
 \usage{
 synthesize(object, data, ...)
+
+\method{synthesize}{formula}(
+  object,
+  data,
+  recursive = FALSE,
+  max.levels = 10,
+  verbose = FALSE,
+  ...
+)
+
+\method{synthesize}{lvm}(
+  object,
+  data,
+  max.levels = 10,
+  logtrans = NULL,
+  verbose = FALSE,
+  fix.names = FALSE,
+  ...
+)
 }
 \arguments{
 \item{object}{Specification of the synthesizing model structures. Either a \code{formula} or a \code{lvm} object. See examples.}

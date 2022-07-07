@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun  6 2016 (09:02)
 ## Version:
-## last-updated: Jun 29 2022 (16:54) 
+## last-updated: Jul  7 2022 (17:33) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 449
+##     Update #: 450
 #----------------------------------------------------------------------
 ##
 ### Commentary:
@@ -1481,33 +1481,33 @@ predictRisk.GrpSurv <- function(object, newdata, times, cause, ...){
     p
 }
 
-XgbSurv <- function(formula,data,...){
-    requireNamespace(c("survXgboost","xgboost","prodlim"))
-    EHF = prodlim::EventHistory.frame(formula,data,unspecialsDesign = TRUE,specials = NULL)
-    fit = survXgboost::xgb.train.surv(data = EHF$design,label = ifelse(EHF$event.history[,2] == 1, EHF$event.history[,1], -EHF$event.history[,1]),...)
-    fit = list(fit = fit,terms = terms(formula),call=match.call())
-    class(fit) = c("XgbSurv",class(fit))
-    fit
-}
+## XgbSurv <- function(formula,data,...){
+    ## requireNamespace(c("survXgboost","xgboost","prodlim"))
+    ## EHF = prodlim::EventHistory.frame(formula,data,unspecialsDesign = TRUE,specials = NULL)
+    ## fit = survXgboost::xgb.train.surv(data = EHF$design,label = ifelse(EHF$event.history[,2] == 1, EHF$event.history[,1], -EHF$event.history[,1]),...)
+    ## fit = list(fit = fit,terms = terms(formula),call=match.call())
+    ## class(fit) = c("XgbSurv",class(fit))
+    ## fit
+## }
 
-predictRisk.XgbSurv <- function(object, newdata, times, cause, ...){
-    newdata$dummy.time=rep(1,NROW(newdata))
-    newdata$dummy.event=rep(1,NROW(newdata))
-    rhs <- as.formula(delete.response(object$terms))
-    dummy.formula=stats::update.formula(rhs,"Hist(dummy.time,dummy.event)~.")
-    EHF <- prodlim::EventHistory.frame(formula=dummy.formula,
-                                       data=newdata,
-                                       specials = NULL,
-                                       unspecialsDesign=TRUE)
-    newdata$dummy.time = NULL
-    newdata$dummy.event = NULL
-    p <-predict(object = object$fit, newdata = EHF$design, type = "surv", times = times)
-    p <- 1-p
-    if (NROW(p) != NROW(newdata) || NCOL(p) != length(times)) {
-        stop(paste("\nPrediction matrix has wrong dimensions:\nRequested newdata x times: ", NROW(newdata), " x ", length(times), "\nProvided prediction matrix: ", NROW(p), " x ", NCOL(p), "\n\n", sep = ""))
-    }
-    p
-}
+## predictRisk.XgbSurv <- function(object, newdata, times, cause, ...){
+    ## newdata$dummy.time=rep(1,NROW(newdata))
+    ## newdata$dummy.event=rep(1,NROW(newdata))
+    ## rhs <- as.formula(delete.response(object$terms))
+    ## dummy.formula=stats::update.formula(rhs,"Hist(dummy.time,dummy.event)~.")
+    ## EHF <- prodlim::EventHistory.frame(formula=dummy.formula,
+                                       ## data=newdata,
+                                       ## specials = NULL,
+                                       ## unspecialsDesign=TRUE)
+    ## newdata$dummy.time = NULL
+    ## newdata$dummy.event = NULL
+    ## p <-predict(object = object$fit, newdata = EHF$design, type = "surv", times = times)
+    ## p <- 1-p
+    ## if (NROW(p) != NROW(newdata) || NCOL(p) != length(times)) {
+        ## stop(paste("\nPrediction matrix has wrong dimensions:\nRequested newdata x times: ", NROW(newdata), " x ", length(times), "\nProvided prediction matrix: ", NROW(p), " x ", NCOL(p), "\n\n", sep = ""))
+    ## }
+    ## p
+## }
 #----------------------------------------------------------------------
 ### predictRisk.R ends here
 
