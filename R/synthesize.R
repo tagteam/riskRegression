@@ -3,9 +3,9 @@
 ## Author: Johan Sebastian Ohlendorff & Vilde Hansteen Ung & Thomas Alexander Gerds
 ## Created: Apr 28 2021 (09:04)
 ## Version:
-## Last-Updated: Jul  7 2022 (13:10) 
+## Last-Updated: Jul  7 2022 (13:59) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 84
+##     Update #: 90
 #----------------------------------------------------------------------
 ##
 ### Commentary:
@@ -20,7 +20,13 @@
 ##'
 ##' The simulation engine is: lava.
 ##' @title Cooking and synthesizing survival data
-##' @aliases synthesize.formula synthesize.lvm
+##' @description Fit parametric regression models to the outcome distribution and optionally
+##' also parametric regression models for the joint distribution of the predictors
+##' structural equation models. 
+##' Then the function \code{sim.synth} can be called on the  resulting object to
+##' to simulate from the parametric model based on the machinery of the \code{lava} package
+
+##' @aliases synthesize.formula synthesize.lvm 
 ##' @param object Specification of the synthesizing model structures. Either a \code{formula} or a \code{lvm} object. See examples.
 ##' @param data Data to be synthesized.
 ##' @param recursive Let covariates recursively depend on each other.
@@ -151,7 +157,7 @@ synthesize.formula <- function(object, # a formula object Surv(time,event) or Hi
         if(verbose) warning(paste0("Covariate ",v," is not in data set. Removing it from the formula"))
         fml <- gsub(paste0("[+]",v),"",fml)
         vv <- vv[vv!=v]
-        object <- rmvar(object,v)
+        object <- lava::rmvar(object,v)
       }
       else if (categorize(v,max.levels,data) == 2){
         data[[v]] <- factor(data[[v]])
@@ -243,8 +249,8 @@ synthesize.lvm <- function(object,
       timeplusevent <- object$attributes$eventHistory[[timename]]$names
       if (!(timeplusevent[1] %in% names(data)) || !(timeplusevent[2] %in% names(data))) {
         if (verbose) warning("time/status not found. Removing it")
-        object <- rmvar(object,timeplusevent[1])
-        object <- rmvar(object,timeplusevent[2])
+        object <- lava::rmvar(object,timeplusevent[1])
+        object <- lava::rmvar(object,timeplusevent[2])
       }
     }
     else {
@@ -264,8 +270,8 @@ synthesize.lvm <- function(object,
       for (v in logtrans){
         if (is.null(data[[v]]) && is.null(data[[paste0("log",v)]]) ){
           if(verbose) warning(paste0("Could not find the variable: ", v, "in the data"))
-          object <- rmvar(object,v)
-          object <- rmvar(object,paste0("log",v))
+          object <- lava::rmvar(object,v)
+          object <- lava::rmvar(object,paste0("log",v))
           trans <- trans[trans!=paste0("log",v)]
           logtrans <- logtrans[logtrans!=v]
         }
@@ -295,7 +301,7 @@ synthesize.lvm <- function(object,
       if (length(logtrans) > 0) miss <- intersect(trans,intersect(logtrans,miss))
       if (has.eventTime) miss <- setdiff(miss, object$attributes$eventHistory[[timename]]$latentTimes)
       for (v in miss){
-        object <- rmvar(object,v)
+        object <- lava::rmvar(object,v)
       }
     }
 
@@ -516,28 +522,6 @@ categorize <- function(v,max.levels,data){
   return(is.bin+is.cat)
 }
 
-#' @export sim.synth
-sim.synth <- function(object, n= 200, drop.latent=FALSE, ...){
-    lava.object <- object$lava.object
-    res <- lava::sim(lava.object,n,...)
-    labels <- object$labels
-    for (var in names(labels)){
-        res[[var]] <- factor(res[[var]])
-        levels(res[[var]]) <- labels[[var]]
-    }
-    # remove variables that would not be in the original data set 
-    if (drop.latent){
-        # remove latent times
-        if (length(lava.object$attributes$eventHistory$time$latentTimes)>0)
-            res <- res[,-match(lava.object$attributes$eventHistory$time$latentTimes,names(res),nomatch=0)]
-        # remove dummy variables
-        categories <- object$categories
-        for (c in categories) {
-            res <- res[,-grep(c,names(res))[-1]]
-        }
-    }
-    res
-}
 
 #' @export synthesizeLTMLE
 synthesizeLTMLE <- function(data,
@@ -609,36 +593,6 @@ synthesizeLTMLE <- function(data,
     out
 }
 
-sim.lavaLTMLE <- function(object, n=1000) {
-  #simulate object 
-  tempSim <- lava::sim(object[[1]],n)
-  #remove censored observations afterwards
-  time.points <- object$time.points
-  vars <- object[c(2,3,4,5)]
-  not_ended <- rep(TRUE,n)
-  for (y in vars$Y) {
-    not_ended = not_ended & tempSim[y[1]] == 0
-  }
-  for (i in 2:time.points){
-    #censor
-    YVarToUse <- foreach::foreach (y = vars$Y,.combine="rbind") %do% {
-      y[i]
-    }
-    LVarToUse <- foreach::foreach (l = vars$L,.combine="rbind") %do% {
-      l[i]
-    }
-    a <- vars$A[i+1]
-    data_temp <- data.frame(tempSim[,c(YVarToUse,LVarToUse,a)])
-    data_temp[!not_ended,] <- NA
-    tempSim[,c(YVarToUse,LVarToUse,a)] <- data_temp
-      
-    #calculate new censors (ended observations)
-    for (y in vars$Y) {
-      not_ended = not_ended & tempSim[y[i]] == 0
-    }
-  }
-  tempSim
-}
 
 #----------------------------------------------------------------------
 ### synthesize.R ends here

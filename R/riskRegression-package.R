@@ -85,10 +85,10 @@ NULL
 #' @importFrom mets phreg
 #' @importFrom ggplot2 autoplot aes aes_string element_blank element_line element_rect geom_errorbar geom_line geom_point geom_ribbon ggplot labs guide_legend guides scale_colour_manual scale_color_continuous scale_fill_manual scale_linetype_manual scale_y_continuous theme theme_bw "%+replace%"  unit xlab  ylab
 #' @importFrom survival Surv strata coxph survreg
-#' @importFrom lava iid information score transform<- exogenous endogenous regression<-
+#' @importFrom lava sim iid information score transform<- exogenous endogenous regression<-
 #' @importFrom data.table data.table set dcast setkeyv setDT as.data.table copy data.table is.data.table melt rbindlist setnames setorder setcolorder setkey ":=" ".N" ".SD"
 #' @importFrom prodlim Hist dimColor prodlim
-#' @importFrom foreach "%dopar%" foreach
+#' @importFrom foreach "%dopar%" foreach "%do%"
 #' @importFrom cmprsk predict.crr
 #' @importFrom timereg comp.risk Event
 #' @importFrom prodlim Hist jackknife prodlim sindex
