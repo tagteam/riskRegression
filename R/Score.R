@@ -121,10 +121,12 @@
 ##'  specify additional arguments for the function riskRegression::predictRisk.rfsrc which will pass
 ##'  these on to the function randomForestSRC::predict.rfsrc. A specific example in this case would be
 ##'  \code{list(rfsrc=list(na.action="na.impute"))}.
+##'  
 ##'
 ##'  A more flexible approach is to write a new predictRisk S3-method. See Details.
 ##' @param errorhandling Argument passed as \code{.errorhandling} to foreach. Default is \code{"pass"}.
 ##' @param debug Logical. If \code{TRUE} indicate landmarks in progress of the program.
+##' @param old.ic.method Uses an older implementation for the calculation of standard errors for AUC and Brier score. Is set to \code{FALSE} by default.
 ##' @param ... Named list containging additional arguments that are passed on to the \code{predictRisk} methods corresponding to object. See examples.
 ##' @return List with scores and assessments of contrasts, i.e.,
 ##'     tests and confidence limits for performance and difference in performance (AUC and Brier),
@@ -824,7 +826,7 @@ c.f., Chapter 7, Section 5 in Gerds & Kattan 2021. Medical risk prediction model
             #         conservative[1] <- TRUE
             #     }
             # }
-            getIC <- se.fit[[1]] && !conservative[[1]] && old.ic.method
+            getIC <- (se.fit[[1]] && !conservative[[1]] && old.ic.method) || split.method$name == "LeaveOneOutBoot"
             Weights <- getCensoringWeights(formula=formula,
                                            data=data,
                                            times=times,
@@ -930,7 +932,18 @@ c.f., Chapter 7, Section 5 in Gerds & Kattan 2021. Medical risk prediction model
                                       cens.model,
                                       multi.split.test=multi.split.test,
                                       keep.residuals=keep.residuals,
-                                      keep.vcov=keep.vcov,dolist=dolist,probs=probs,metrics=metrics,plots=plots,summary=summary,ROC=FALSE,MC=Weights$IC,old.ic.method=old.ic.method,IC.data=Weights$IC.data)
+                                      keep.vcov=keep.vcov,
+                                      dolist=dolist,
+                                      probs=probs,
+                                      metrics=metrics,
+                                      plots=plots,
+                                      summary=summary,
+                                      ibs=ibs,
+                                      ipa = ipa,
+                                      ROC=FALSE,
+                                      MC=Weights$IC,
+                                      old.ic.method=old.ic.method,
+                                      IC.data=Weights$IC.data)
         if (debug) message("computed apparent performance")
     }
     # }}}

@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Mar 13 2017 (16:53) 
 ## Version: 
-## Last-Updated: Jul  6 2022 (07:54) 
+## Last-Updated: Jul  7 2022 (13:16) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 162
+##     Update #: 168
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -145,7 +145,7 @@ plotRisk <- function(x,
             R <- pframe[model==modelnames[1],
             {
                 # respect the event of interest
-                r <- "competing.risk"
+                r <- rep("competing.risk",.N)
                 r[event == x$cause] <- "event"
                 r[status == 0] <- "censored"
                 r[time>times] <- "event-free"

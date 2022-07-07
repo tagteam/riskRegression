@@ -68,6 +68,39 @@ getCensoringWeights <- function(formula,
                    ## IC <- predictCox(fit, iid = TRUE,newdata = wdata,times = c(subject.times,times),type = "survival")$survival.iid
                    out <- c(out,list(IC=IC))
                }
+           }, "discrete"={
+             vv <- all.vars(formula(delete.response(terms(formula))))
+             mod.frame<-model.frame(paste0("~",paste0(paste(vv,collapse = "+"))),data=data)
+             u.levels <- unique(mod.frame)
+             n <- length(data$time)
+             prob.risk <- rep(NA,n)
+             have.same.covariate <- list()
+             for (i in 1:nrow(u.levels)){
+               wheres <- rep(NA,n)
+               for (j in 1:n){
+                 if (all(mod.frame[j,]==u.levels[i,])){
+                   wheres[j] <- TRUE
+                   
+                 }
+                 else {
+                   wheres[j] <- FALSE
+                 }
+               }
+               prob.risk[wheres] <- sum(wheres)/n
+               for (j in 1:n){
+                 if (wheres[j]){
+                   have.same.covariate[[j]] <- wheres
+                 }
+               }
+             }
+             new.formula<-as.formula(paste0("Surv(time,status)",paste0("~",paste0(paste(vv,collapse = "+")))))
+             wdata <- copy(data)
+             fit.cens <- prodlim::prodlim(new.formula, data=wdata,reverse=TRUE)
+             fit.time <- prodlim::prodlim(new.formula, data=wdata)
+             IC.data <- list(Stimes=prodlim::predictSurvIndividual(fit.time,lag=0),Gtimes=prodlim::predictSurvIndividual(fit.cens,lag=0), Stau = c(1-predictRisk(fit.time,wdata,times,1)), prob.risk=prob.risk,have.same.covariate=have.same.covariate)
+             IPCW.subject.times <- prodlim::predictSurvIndividual(fit.cens,lag=1) #computational problem with predictRisk
+             IPCW.times <- predict(fit.cens,newdata=data,times=times,level.chaos=1,mode="matrix",type="surv")
+             out <- list(IPCW.times=IPCW.times,IPCW.subject.times=IPCW.subject.times,method=cens.model,IC.data=IC.data)
            },
            {
                vv <- all.vars(formula(delete.response(terms(formula))))
@@ -79,7 +112,7 @@ getCensoringWeights <- function(formula,
                new.formula<-as.formula(paste0("Surv(time,event==1)",paste0("~",paste0(paste(vv,collapse = "+")))))
                input <- list(formula=new.formula,data=wdata)
                fit.time <- do.call(cens.model,input)
-               # IC.data <- list(Stimes = diag(1-predictRisk(fit.time,wdata,wdata$time,1)), Gtimes=diag(1-predictRisk(fit,wdata,wdata$time,1)), fit.time=fit.time)
+               # IC.data <- list(Stimes = diag(1-predictRisk(fit.time,wdata,wdata$time,1)), Gtimes=diag(1-predictRisk(fit,wdata,wdata$time,1)))
                IC.data <- list(fit.time=fit.time,fit.cens=fit,wdata=wdata)
 
                # fit<-Hal9001(new.formula,wdata)

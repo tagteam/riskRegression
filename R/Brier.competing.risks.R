@@ -24,7 +24,7 @@ Brier.competing.risks <- function(DT,MC,se.fit,conservative,cens.model,keep.vcov
     DT[time<=times & status==1 & event!=thecause,residuals:=(risk)^2/WTi]
     DT[time<=times & status==0,residuals:=0]
     DT[time>times,residuals:=(risk)^2/Wt]
-    ## deal with censored observations before t
+    ## deal with censored observations before 
     DT[time<=times & status==0,residuals:=0]
     if (se.fit[[1]]==1L || multi.split.test[[1]]==TRUE){
         ## data.table::setorder(DT,model,times,time,-status)
@@ -67,7 +67,20 @@ Brier.competing.risks <- function(DT,MC,se.fit,conservative,cens.model,keep.vcov
                                         se.conservative=sd(IC0)/sqrt(N)),by=list(model,times)]
             }
             else {
-                DT[,IF.Brier:=getInfluenceCurve.Brier.covariates(times[1],time,risk,status,WTi,Wt,sum(residuals)/N,IC.data), by=list(model,times)]
+                if (old.ic.method){
+                  DT[,IF.Brier:=getInfluenceCurve.Brier(t=times[1],
+                                                        time=time,
+                                                        IC0,
+                                                        residuals=residuals,
+                                                        WTi=WTi,
+                                                        Wt=Wt,
+                                                        IC.G=MC,
+                                                        cens.model=cens.model,
+                                                        nth.times=nth.times[1]),by=list(model,times)]
+                }
+                else {
+                  DT[,IF.Brier:=getInfluenceCurve.Brier.covariates(times[1],time,risk,status,WTi,sum(residuals)/N,IC.data), by=list(model,times)]
+                }
                 score <- DT[,data.table(Brier=sum(residuals)/N,
                                         se=sd(IF.Brier)/sqrt(N)),by=list(model,times)]
             }

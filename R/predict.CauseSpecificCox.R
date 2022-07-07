@@ -318,6 +318,7 @@ predict.CauseSpecificCox <- function(object,
 
     ## ** compute CIF (aka absolute risk) or event-free survival
     vec.etimes.max <- apply(M.etimes.max,1,max) ## take the max because if not censored for one cause and last event equal to 1 then we have the full curve
+    ncores <- parallel::detectCores()
     if(type == "absRisk"){
         outCpp <- predictCIF_cpp(hazard = ls.hazard, 
                                  cumhazard = ls.cumhazard, 
@@ -335,7 +336,8 @@ predict.CauseSpecificCox <- function(object,
                                  survtype = (surv.type=="survival"),
                                  productLimit = product.limit,
                                  diag = diag,
-                                 exportSurv = (se || band || iid || average.iid))
+                                 exportSurv = (se || band || iid || average.iid),
+                                 nCores = ncores)
 
     }else if(type == "survival" && object$surv.type=="hazard"){
         attr(times,"etimes.max") <- attr(eventTimes,"etimes.max")

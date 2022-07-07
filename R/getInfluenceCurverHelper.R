@@ -1,7 +1,7 @@
 getInfluenceCurveHelper <- function(time,status,tau,risk,GTiminus,Gtau,AUC){
   urisk <- unique(risk)
   if (length(urisk)==length(risk)){
-    getInfluenceFunctionAUC(time,status,tau,risk,GTiminus,Gtau,AUC,FALSE,FALSE,FALSE)
+    getInfluenceFunctionAUCKMCensoring(time,status,tau,risk,GTiminus,Gtau,AUC,FALSE)
   }
   else {
     n <- length(time)
@@ -22,8 +22,8 @@ getInfluenceCurveHelper <- function(time,status,tau,risk,GTiminus,Gtau,AUC){
     denAUC <- mean(1*(time <= tau & status == 1)/GTiminus)*mean(time > tau)/Gtau + mean(1*(time <= tau & status == 1)/GTiminus)*mean(1*(time <= tau & status == 2)/GTiminus)
     AUC.ties.part<-(numAUCties)/denAUC
     AUC.noties <- AUC-0.5*AUC.ties.part
-    IF.noties <- getInfluenceFunctionAUC(time,status,tau,risk,GTiminus,Gtau,AUC.noties,FALSE,FALSE,FALSE)
-    IF.ties <- getInfluenceFunctionAUC(time,status,tau,risk,GTiminus,Gtau,AUC.ties.part,FALSE,TRUE,FALSE)
+    IF.noties <- getInfluenceFunctionAUCKMCensoring(time,status,tau,risk,GTiminus,Gtau,AUC.noties,FALSE)
+    IF.ties <- getInfluenceFunctionAUCKMCensoring(time,status,tau,risk,GTiminus,Gtau,AUC.ties.part,TRUE)
     IF.noties+0.5*IF.ties
   }
 }

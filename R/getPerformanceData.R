@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Feb 27 2022 (09:12) 
 ## Version: 
-## Last-Updated: May 31 2022 (11:47) 
+## Last-Updated: Jul  5 2022 (17:41) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 11
+##     Update #: 12
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -85,10 +85,10 @@ getPerformanceData <- function(testdata,
         }else{
             # predictions given as model which needs training in crossvalidation loops
             if (looping){
+                # browser(skipCalls = 1)
                 set.seed(trainseed)
                 if (f==0) model.f=nullobject[[1]] else model.f=object[[f]]
                 model.f$call$data <- trainX
-                # browser(skipCalls = 1)
                 trained.model <- try(eval(model.f$call),silent=TRUE)
                 if (inherits(x=trained.model,what="try-error")){
                     message(paste0("Failed to train the following model:"))

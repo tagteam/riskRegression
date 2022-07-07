@@ -3,9 +3,9 @@
 ## Author: Johan Sebastian Ohlendorff & Vilde Hansteen Ung & Thomas Alexander Gerds
 ## Created: Apr 28 2021 (09:04)
 ## Version:
-## Last-Updated: Jun 17 2022 (10:25) 
+## Last-Updated: Jul  7 2022 (13:10) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 76
+##     Update #: 84
 #----------------------------------------------------------------------
 ##
 ### Commentary:
@@ -501,8 +501,8 @@ synthesize.lvm <- function(object,
     for (v in logtrans){
         transform(sim_model,as.formula(paste0(v,"~log",v))) <- function(x){exp(x)}
     }
-    res <- list(lava.object = sim_model, labels = labels, categories = categorical.vars)
-    class(res) <- "synth"
+    res <- list(lava.object = sim_model,labels = labels,categories = categorical.vars)
+    class(res) <- c("synth",class(res))
     return(res)
 }
 
@@ -517,7 +517,6 @@ categorize <- function(v,max.levels,data){
 }
 
 #' @export sim.synth
-#' @export
 sim.synth <- function(object, n= 200, drop.latent=FALSE, ...){
     lava.object <- object$lava.object
     res <- lava::sim(lava.object,n,...)
@@ -541,7 +540,6 @@ sim.synth <- function(object, n= 200, drop.latent=FALSE, ...){
 }
 
 #' @export synthesizeLTMLE
-#' @export
 synthesizeLTMLE <- function(data,
                             A, #can be a list, but is a single value here. the A values are ordered
                             L, #should be a list of lists where each list indicates the different time variables for a specific covariate
@@ -611,11 +609,9 @@ synthesizeLTMLE <- function(data,
     out
 }
 
-#' @export sim.lavaLTMLE
-#' @export
 sim.lavaLTMLE <- function(object, n=1000) {
   #simulate object 
-  tempSim <- sim(object[[1]],n)
+  tempSim <- lava::sim(object[[1]],n)
   #remove censored observations afterwards
   time.points <- object$time.points
   vars <- object[c(2,3,4,5)]

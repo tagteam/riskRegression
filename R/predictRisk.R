@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun  6 2016 (09:02)
 ## Version:
-## last-updated: May 31 2022 (11:52) 
+## last-updated: Jun 29 2022 (16:54) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 440
+##     Update #: 449
 #----------------------------------------------------------------------
 ##
 ### Commentary:
@@ -928,7 +928,7 @@ predictRisk.rfsrc <- function(object, newdata, times, cause, ...){
         p <- as.numeric(p[,2,drop=TRUE])
         p
     }else{
-        if (object$family=="surv") {
+        if (object$family[[1]]=="surv") {
             ptemp <- 1-stats::predict(object,newdata=newdata,importance="none",...)$survival
             pos <- prodlim::sindex(jump.times=object$time.interest,eval.times=times)
             p <- cbind(1,ptemp)[,pos+1,drop=FALSE]
@@ -1336,21 +1336,24 @@ predictRisk.flexsurvreg <- function(object, newdata, times, ...) {
     1 - p
 }
 
-Hal9001 <- function(formula,data,...){
+Hal9001 <- function(formula,data,lambda,...){
     requireNamespace("hal9001")
-    EHF = EventHistory.frame(formula,data,unspecialsDesign = TRUE,specials = NULL)
+    strata.num = start = status = NULL
+    EHF = prodlim::EventHistory.frame(formula,data,unspecialsDesign = TRUE,specials = NULL)
     stopifnot(attr(EHF$event.history,"model")[[1]] == "survival")
     # blank Cox object needed for predictions
+    data = data.frame(cbind(EHF$event.history,EHF$design))
     bl_cph <- coxph(Surv(time,status)~1,data=data,x=1,y=1)
     bl_obj <- coxModelFrame(bl_cph)[]
     bl_obj[,strata.num:=0]
     data.table::setorder(bl_obj, strata.num,stop,start,-status)
-    hal_fit <- hal9001::fit_hal(X = EHF$design,
-                                Y = EHF$event.history,
-                                family = "cox",
-                                return_lasso = TRUE,
-                                yolo = FALSE,
-                                ...)
+    hal_fit <- do.call(hal9001::fit_hal,list(X = EHF$design,
+                                             Y = EHF$event.history,
+                                             family = "cox",
+                                             return_lasso = TRUE,
+                                             yolo = FALSE,
+                                             lambda = lambda,
+                                             ...))
     out = list(fit = hal_fit,
                surv_info = bl_obj,
                call = match.call(),
@@ -1449,7 +1452,7 @@ predictRisk.singleEventCB <- function(object, newdata, times, cause, ...) {
 
 GrpSurv <- function(formula,data,...){
     requireNamespace(c("grpreg","prodlim"))
-    EHF = EventHistory.frame(formula,data,unspecialsDesign = TRUE,specials = NULL)
+    EHF = prodlim::EventHistory.frame(formula,data,unspecialsDesign = TRUE,specials = NULL)
     fit = grpreg::grpsurv(X = EHF$design,y = EHF$event.history,...)
     fit = list(fit = fit,terms = terms(formula),call=match.call())
     class(fit) = c("GrpSurv",class(fit))
@@ -1480,7 +1483,7 @@ predictRisk.GrpSurv <- function(object, newdata, times, cause, ...){
 
 XgbSurv <- function(formula,data,...){
     requireNamespace(c("survXgboost","xgboost","prodlim"))
-    EHF = EventHistory.frame(formula,data,unspecialsDesign = TRUE,specials = NULL)
+    EHF = prodlim::EventHistory.frame(formula,data,unspecialsDesign = TRUE,specials = NULL)
     fit = survXgboost::xgb.train.surv(data = EHF$design,label = ifelse(EHF$event.history[,2] == 1, EHF$event.history[,1], -EHF$event.history[,1]),...)
     fit = list(fit = fit,terms = terms(formula),call=match.call())
     class(fit) = c("XgbSurv",class(fit))

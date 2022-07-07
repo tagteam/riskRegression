@@ -123,8 +123,8 @@ sampleMaxProcess_cpp <- function(nSample, nContrast, nSim, value, iid, alternati
     .Call(`_riskRegression_sampleMaxProcess_cpp`, nSample, nContrast, nSim, value, iid, alternative, type, global)
 }
 
-getInfluenceFunctionAUC <- function(time, status, tau, risk, GTiminus, Gtau, auc, conservative, tiedValues, survival) {
-    .Call(`_riskRegression_getInfluenceFunctionAUC`, time, status, tau, risk, GTiminus, Gtau, auc, conservative, tiedValues, survival)
+getInfluenceFunctionAUCKMCensoring <- function(time, status, tau, risk, GTiminus, Gtau, auc, tiedValues) {
+    .Call(`_riskRegression_getInfluenceFunctionAUCKMCensoring`, time, status, tau, risk, GTiminus, Gtau, auc, tiedValues)
 }
 
 getInfluenceFunctionBrierKMCensoring <- function(tau, time, risk, status, GTiminus, brier) {
@@ -163,8 +163,8 @@ colSumsCrossprodSpec <- function(X, Y) {
     .Call(`_riskRegression_colSumsCrossprodSpec`, X, Y)
 }
 
-predictCIF_cpp <- function(hazard, cumhazard, eXb, strata, newtimes, etimes, etimeMax, t0, nEventTimes, nNewTimes, nData, cause, nCause, survtype, productLimit, diag, exportSurv) {
-    .Call(`_riskRegression_predictCIF_cpp`, hazard, cumhazard, eXb, strata, newtimes, etimes, etimeMax, t0, nEventTimes, nNewTimes, nData, cause, nCause, survtype, productLimit, diag, exportSurv)
+predictCIF_cpp <- function(hazard, cumhazard, eXb, strata, newtimes, etimes, etimeMax, t0, nEventTimes, nNewTimes, nData, cause, nCause, survtype, productLimit, diag, exportSurv, nCores) {
+    .Call(`_riskRegression_predictCIF_cpp`, hazard, cumhazard, eXb, strata, newtimes, etimes, etimeMax, t0, nEventTimes, nNewTimes, nData, cause, nCause, survtype, productLimit, diag, exportSurv, nCores)
 }
 
 #' Apply cumsum in each row 
