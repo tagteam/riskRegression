@@ -1,29 +1,37 @@
-library(survival)
+### lids-newsletter-riskRegression.R --- 
+#----------------------------------------------------------------------
+## Author: Thomas Alexander Gerds & Johan Sebastian Ohlendorff
+## This R file illustrates in full details the R code shown in the newsletter. 
+library(survival) # for using the pbc data set 
 library(data.table)
-library(riskRegression)
-library(lava)
-library(rms)
+library(riskRegression) # for using the Score function, synthesize function and various plot functions
+library(lava) # necessary for the synthesize function
+library(rms) # for using the rcs function
 library(prodlim)
-library(randomForestSRC)
+library(randomForestSRC) # for using random survival forests.
 data(pbc,package="survival")
 setDT(pbc)
 pbc <- na.omit(pbc)
 pbc$logbili <- log(pbc$bili)
 set.seed(7)
 
+# simulate training data based on real data (i.e. synthesize new data)
 pbc_alike <- synthesize(object=Surv(time,status)~ sex + age + logbili + chol + hepato + spiders + protime + albumin + platelet + trig + trt + ast,data=pbc)
-d <- sim.synth(pbc_alike,n=400,seed=7)
+d <- simsynth(pbc_alike,n=400,seed=7)
 
+# train the models on training data (uses splines in m1)
 m1 <- CSC(Hist(time,status)~sex+rcs(age)+rcs(logbili)+rcs(protime)+hepato+rcs(chol)+spiders,data=d,fitter="cph")
 m2 <- rfsrc(Surv(time,status)~sex+age+logbili+chol+hepato+spiders+protime+albumin+platelet+trig+trt+ast,data=d,fitter="cph",cause=2,seed=9)
 
-nd <- sim.synth(pbc_alike,3000,seed=28)
+# simulate test data and evaluate risk prediction models on test data 
+nd <- simsynth(pbc_alike,3000,seed=28)
 x <- Score(list("CSC"=m1,"FOREST"=m2),
            data=nd, formula=Hist(time,status)~1,
            cause=2, time=(0:5)*365.25,
            summary="risks",plots=c("calibration","Roc"))
 summary(x, times=3*365.25, what="score")
 
+# figures shown in newsletter 
 plotRisk(x,times=3*365.25,models=c("FOREST","CSC"))
 plotBrier(x)
 plotAUC(x) # not shown

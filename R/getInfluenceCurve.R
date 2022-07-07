@@ -480,9 +480,7 @@ getInfluenceCurve.AUC.covariates <- function(t,n,time,status,risk,GTiminus,Gtau,
       F2 <- predictRisk(fitCSC,newdata=wdata,times=time,cause=2)
       F2tau <- c(predictRisk(fitCSC,newdata=wdata,times=tau,cause=2))
     }
-    else {
-    }
-    
+
     for (i in 1:n){
         cum <- cumhazardCXi[i,]
         jumps <- diff(c(0,cum))

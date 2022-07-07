@@ -25,7 +25,6 @@
 ##' structural equation models. 
 ##' Then the function \code{sim.synth} can be called on the  resulting object to
 ##' to simulate from the parametric model based on the machinery of the \code{lava} package
-
 ##' @aliases synthesize.formula synthesize.lvm 
 ##' @param object Specification of the synthesizing model structures. Either a \code{formula} or a \code{lvm} object. See examples.
 ##' @param data Data to be synthesized.
@@ -57,16 +56,15 @@
 ##' distribution(u,~age) <- normal.lvm()
 ##' distribution(u,~trt) <- binomial.lvm()
 ##' distribution(u,~logbili) <- normal.lvm()
-##' distribution(u,~protime) <- normal.lvm()
 ##' u <-eventTime(u,time~min(time.cens=0,time.transplant=1,time.death=2), "status")
 ##' lava::regression(u,logbili~age+sex) <- 1
-##' lava::regression(u,time.transplant~sex+age+logbili+protime) <- 1
-##' lava::regression(u,time.death~sex+age+logbili+protime) <- 1
+##' lava::regression(u,time.transplant~sex+age+logbili) <- 1
+##' lava::regression(u,time.death~sex+age+logbili) <- 1
 ##' lava::regression(u,time.cens~1) <- 1
 ##' transform(u,logbili~bili) <- function(x){log(x)}
 ##' u_synt <- synthesize(object=u, data=na.omit(pbc))
 ##' set.seed(8)
-##' d <- sim(u_synt,n=1000)
+##' d <- simsynth(u_synt,n=1000)
 ##' # note: synthesize may relabel status variable
 ##' fit_sim <- coxph(Surv(time,status==1)~age+sex+logbili,data=d)
 ##' fit_real <- coxph(Surv(time,status==1)~age+sex+log(bili),data=pbc)
@@ -85,12 +83,12 @@
 ##' lava::regression(b,time.death~age+rx+resid.ds) <- 1
 ##' b<-eventTime(b,futime~min(time.cens=0,time.death=1), "fustat")
 ##' b_synt <- synthesize(object = b, data = ovarian)
-##' D <- sim(b_synt,1000)
+##' D <- simsynth(b_synt,1000)
 ##' fit_real <- coxph(Surv(futime,fustat)~age+rx+resid.ds, data=ovarian)
 ##' fit_sim <- coxph(Surv(futime,fustat)~age+rx+resid.ds, data=D)
 ##' cbind(coef(fit_sim),coef(fit_real))
 ##' w_synt <- synthesize(object=Surv(futime,fustat)~age+rx+resid.ds, data=ovarian)
-##' D <- sim(w_synt,1000)
+##' D <- simsynth(w_synt,1000)
 ##' fit_sim <- coxph(Surv(futime,fustat==1)~age+rx+resid.ds,data=D)
 ##' fit_real <- coxph(Surv(futime,fustat==1)~age+rx+resid.ds,data=ovarian)
 ##' # compare estimated log-hazard ratios between simulated and real data

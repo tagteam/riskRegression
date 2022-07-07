@@ -29,6 +29,7 @@ getCensoringWeights <- function(formula,
                }
                out
            },"cox"={
+               event = event2 = NULL
                sFormula <- update(formula,"Surv(time,status == 0)~.")
                tFormula <- update(formula,"Surv(time,status != 0)~.")
                wdata <- copy(data)
