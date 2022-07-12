@@ -3,9 +3,9 @@
 ## Author: Johan Sebastian Ohlendorff & Vilde Hansteen Ung & Thomas Alexander Gerds
 ## Created: Apr 28 2021 (09:04)
 ## Version:
-## Last-Updated: Jul  7 2022 (17:28) 
+## Last-Updated: Jul 12 2022 (11:19) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 94
+##     Update #: 95
 #----------------------------------------------------------------------
 ##
 ### Commentary:
@@ -441,7 +441,7 @@ synthesize.lvm <- function(object,
             status_ind <- object$attributes$eventHistory[[timename]]$events[which(object$attributes$eventHistory[[timename]]$latentTimes %in% latvar)]
             response <- paste0(response1, "==", status_ind)
             surv_formula <- as.formula(paste0("Surv(", response, ")~", covariates))
-            if (class(status_ind) != "numeric") {stop("event or status variable has to be numeric")}
+            if (!(inherits(status_ind,"numeric"))) {stop("event or status variable has to be numeric")}
             G <- survreg(surv_formula, data = data)
             reg_formula <- as.formula(paste0(latvar, "~", covariates))
             lava::distribution(sim_model, latvar_formula) <- lava::coxWeibull.lvm(scale=exp(-coef(G)["(Intercept)"]/G$scale),shape=1/G$scale)
