@@ -102,7 +102,7 @@ AUC.competing.risks <- function(DT,MC,se.fit,conservative,cens.model,keep.vcov=F
         }
         else {
             # warning("Switching to conservative SE. General case not yet implemented. \n")
-            aucDT[,IF.AUC:=getInfluenceCurve.AUC.covariates.conservative(times[1],N,time,status*event,risk,WTi,Wt,AUC[1]), by=list(model,times)]
+            # aucDT[,IF.AUC:=getInfluenceCurve.AUC.covariates.conservative(times[1],N,time,status*event,risk,WTi,Wt,AUC[1]), by=list(model,times)]
               # for now does not support ties
           
             if (conservative){
