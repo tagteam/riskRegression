@@ -257,9 +257,9 @@ predictCox <- function(object,
         stop("Cannot evaluate the linear predictor when there are multiple timepoints. \n")
     }
     ## predictCox is not compatible with all coxph/cph object (i.e. only handle only simple cox models)
-    if(!is.null(object$weights) && !all(object$weights==1)){
-        stop("predictCox does not know how to handle Cox models fitted with weights \n")
-    }
+    ## if(!is.null(object$weights) && !all(object$weights==1)){
+        ## stop("predictCox does not know how to handle Cox models fitted with weights \n")
+    ## }
     if(!is.null(object$naive.var)){
         stop("predictCox does not know how to handle fraitly \n") 
     }
