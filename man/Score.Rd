@@ -40,6 +40,7 @@ Score(object, ...)
   keep,
   predictRisk.args,
   debug = 0L,
+  old.ic.method = FALSE,
   ...
 )
 }
@@ -177,10 +178,13 @@ randomly splitting (bootstrapping) the data during cross-validation.}
  specify additional arguments for the function riskRegression::predictRisk.rfsrc which will pass
  these on to the function randomForestSRC::predict.rfsrc. A specific example in this case would be
  \code{list(rfsrc=list(na.action="na.impute"))}.
+ 
 
  A more flexible approach is to write a new predictRisk S3-method. See Details.}
 
 \item{debug}{Logical. If \code{TRUE} indicate landmarks in progress of the program.}
+
+\item{old.ic.method}{Uses an older implementation for the calculation of standard errors for AUC and Brier score. Is set to \code{FALSE} by default.}
 }
 \value{
 List with scores and assessments of contrasts, i.e.,
@@ -427,6 +431,11 @@ x1 = Score(list("Cox(X1+X2+X7+X9)"=cox1),
 
 }
 \references{
+Thomas A. Gerds and Michael W. Kattan (2021).
+Medical Risk Prediction Models: With Ties to Machine Learning (1st ed.)
+Chapman and Hall/CRC
+https://doi.org/10.1201/9781138384484
+
 Ulla B. Mogensen, Hemant Ishwaran, Thomas A. Gerds (2012).
 Evaluating Random Forests for Survival Analysis Using Prediction Error
 Curves. Journal of Statistical Software, 50(11), 1-23. URL

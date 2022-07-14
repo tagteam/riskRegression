@@ -3,9 +3,9 @@
 ## Author: Johan Sebastian Ohlendorff & Vilde Hansteen Ung & Thomas Alexander Gerds
 ## Created: Apr 28 2021 (09:04)
 ## Version:
-## Last-Updated: Jul  7 2022 (14:34) 
+## Last-Updated: Jul 12 2022 (11:19) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 77
+##     Update #: 95
 #----------------------------------------------------------------------
 ##
 ### Commentary:
@@ -20,7 +20,12 @@
 ##'
 ##' The simulation engine is: lava.
 ##' @title Cooking and synthesizing survival data
-##' @aliases synthesize.formula synthesize.lvm
+##' @description Fit parametric regression models to the outcome distribution and optionally
+##' also parametric regression models for the joint distribution of the predictors
+##' structural equation models. 
+##' Then the function \code{sim.synth} can be called on the  resulting object to
+##' to simulate from the parametric model based on the machinery of the \code{lava} package
+##' @aliases synthesize.formula synthesize.lvm 
 ##' @param object Specification of the synthesizing model structures. Either a \code{formula} or a \code{lvm} object. See examples.
 ##' @param data Data to be synthesized.
 ##' @param recursive Let covariates recursively depend on each other.
@@ -51,16 +56,15 @@
 ##' distribution(u,~age) <- normal.lvm()
 ##' distribution(u,~trt) <- binomial.lvm()
 ##' distribution(u,~logbili) <- normal.lvm()
-##' distribution(u,~protime) <- normal.lvm()
 ##' u <-eventTime(u,time~min(time.cens=0,time.transplant=1,time.death=2), "status")
 ##' lava::regression(u,logbili~age+sex) <- 1
-##' lava::regression(u,time.transplant~sex+age+logbili+protime) <- 1
-##' lava::regression(u,time.death~sex+age+logbili+protime) <- 1
+##' lava::regression(u,time.transplant~sex+age+logbili) <- 1
+##' lava::regression(u,time.death~sex+age+logbili) <- 1
 ##' lava::regression(u,time.cens~1) <- 1
 ##' transform(u,logbili~bili) <- function(x){log(x)}
 ##' u_synt <- synthesize(object=u, data=na.omit(pbc))
 ##' set.seed(8)
-##' d <- sim(u_synt,n=1000)
+##' d <- simsynth(u_synt,n=1000)
 ##' # note: synthesize may relabel status variable
 ##' fit_sim <- coxph(Surv(time,status==1)~age+sex+logbili,data=d)
 ##' fit_real <- coxph(Surv(time,status==1)~age+sex+log(bili),data=pbc)
@@ -79,12 +83,12 @@
 ##' lava::regression(b,time.death~age+rx+resid.ds) <- 1
 ##' b<-eventTime(b,futime~min(time.cens=0,time.death=1), "fustat")
 ##' b_synt <- synthesize(object = b, data = ovarian)
-##' D <- sim(b_synt,1000)
+##' D <- simsynth(b_synt,1000)
 ##' fit_real <- coxph(Surv(futime,fustat)~age+rx+resid.ds, data=ovarian)
 ##' fit_sim <- coxph(Surv(futime,fustat)~age+rx+resid.ds, data=D)
 ##' cbind(coef(fit_sim),coef(fit_real))
 ##' w_synt <- synthesize(object=Surv(futime,fustat)~age+rx+resid.ds, data=ovarian)
-##' D <- sim(w_synt,1000)
+##' D <- simsynth(w_synt,1000)
 ##' fit_sim <- coxph(Surv(futime,fustat==1)~age+rx+resid.ds,data=D)
 ##' fit_real <- coxph(Surv(futime,fustat==1)~age+rx+resid.ds,data=ovarian)
 ##' # compare estimated log-hazard ratios between simulated and real data
@@ -100,6 +104,8 @@ synthesize <- function(object, data,...){
 
 ##' @export synthesize.formula
 ##' @export
+#' @rdname synthesize
+#' @method synthesize formula
 synthesize.formula <- function(object, # a formula object Surv(time,event) or Hist(time,event)
                                data,
                                recursive=FALSE,
@@ -151,7 +157,7 @@ synthesize.formula <- function(object, # a formula object Surv(time,event) or Hi
         if(verbose) warning(paste0("Covariate ",v," is not in data set. Removing it from the formula"))
         fml <- gsub(paste0("[+]",v),"",fml)
         vv <- vv[vv!=v]
-        object <- rmvar(object,v)
+        object <- lava::rmvar(object,v)
       }
       else if (categorize(v,max.levels,data) == 2){
         data[[v]] <- factor(data[[v]])
@@ -218,12 +224,13 @@ synthesize.formula <- function(object, # a formula object Surv(time,event) or Hi
 
 #' @export synthesize.lvm
 #' @export
+#' @rdname synthesize
+#' @method synthesize lvm
 synthesize.lvm <- function(object,
                            data,
                            max.levels = 10,
                            logtrans = NULL,
                            verbose=FALSE,
-                           from.formula=FALSE,
                            fix.names = FALSE,
                            ...){
     from.formula <- length(attr(object,"from.formula"))>0
@@ -243,8 +250,8 @@ synthesize.lvm <- function(object,
       timeplusevent <- object$attributes$eventHistory[[timename]]$names
       if (!(timeplusevent[1] %in% names(data)) || !(timeplusevent[2] %in% names(data))) {
         if (verbose) warning("time/status not found. Removing it")
-        object <- rmvar(object,timeplusevent[1])
-        object <- rmvar(object,timeplusevent[2])
+        object <- lava::rmvar(object,timeplusevent[1])
+        object <- lava::rmvar(object,timeplusevent[2])
       }
     }
     else {
@@ -264,8 +271,8 @@ synthesize.lvm <- function(object,
       for (v in logtrans){
         if (is.null(data[[v]]) && is.null(data[[paste0("log",v)]]) ){
           if(verbose) warning(paste0("Could not find the variable: ", v, "in the data"))
-          object <- rmvar(object,v)
-          object <- rmvar(object,paste0("log",v))
+          object <- lava::rmvar(object,v)
+          object <- lava::rmvar(object,paste0("log",v))
           trans <- trans[trans!=paste0("log",v)]
           logtrans <- logtrans[logtrans!=v]
         }
@@ -295,7 +302,7 @@ synthesize.lvm <- function(object,
       if (length(logtrans) > 0) miss <- intersect(trans,intersect(logtrans,miss))
       if (has.eventTime) miss <- setdiff(miss, object$attributes$eventHistory[[timename]]$latentTimes)
       for (v in miss){
-        object <- rmvar(object,v)
+        object <- lava::rmvar(object,v)
       }
     }
 
@@ -434,7 +441,7 @@ synthesize.lvm <- function(object,
             status_ind <- object$attributes$eventHistory[[timename]]$events[which(object$attributes$eventHistory[[timename]]$latentTimes %in% latvar)]
             response <- paste0(response1, "==", status_ind)
             surv_formula <- as.formula(paste0("Surv(", response, ")~", covariates))
-            if (class(status_ind) != "numeric") {stop("event or status variable has to be numeric")}
+            if (!(inherits(status_ind,"numeric"))) {stop("event or status variable has to be numeric")}
             G <- survreg(surv_formula, data = data)
             reg_formula <- as.formula(paste0(latvar, "~", covariates))
             lava::distribution(sim_model, latvar_formula) <- lava::coxWeibull.lvm(scale=exp(-coef(G)["(Intercept)"]/G$scale),shape=1/G$scale)
@@ -501,8 +508,8 @@ synthesize.lvm <- function(object,
     for (v in logtrans){
         transform(sim_model,as.formula(paste0(v,"~log",v))) <- function(x){exp(x)}
     }
-    res <- list(lava.object = sim_model, labels = labels, categories = categorical.vars)
-    class(res) <- "synth"
+    res <- list(lava.object = sim_model,labels = labels,categories = categorical.vars)
+    class(res) <- c("synth",class(res))
     return(res)
 }
 
@@ -516,133 +523,6 @@ categorize <- function(v,max.levels,data){
   return(is.bin+is.cat)
 }
 
-#' @export sim.synth
-#' @export
-sim.synth <- function(object, n= 200, drop.latent=FALSE, ...){
-    lava.object <- object$lava.object
-    res <- lava::sim(lava.object,n,...)
-    labels <- object$labels
-    for (var in names(labels)){
-        res[[var]] <- factor(res[[var]])
-        levels(res[[var]]) <- labels[[var]]
-    }
-    # remove variables that would not be in the original data set 
-    if (drop.latent){
-        # remove latent times
-        if (length(lava.object$attributes$eventHistory$time$latentTimes)>0)
-            res <- res[,-match(lava.object$attributes$eventHistory$time$latentTimes,names(res),nomatch=0)]
-        # remove dummy variables
-        categories <- object$categories
-        for (c in categories) {
-            res <- res[,-grep(c,names(res))[-1]]
-        }
-    }
-    res
-}
-
-#' @export synthesizeLTMLE
-#' @export
-synthesizeLTMLE <- function(data,
-                            A, #can be a list, but is a single value here. the A values are ordered
-                            L, #should be a list of lists where each list indicates the different time variables for a specific covariate
-                            W, #initial list of covariates 
-                            Y, #List of list, where
-                            time.points, #number of time points 
-                            max.levels = 10,
-                            ...){
-    # A0 ~ W
-    u <- synthesize(as.formula(paste(A[1],"~",paste(W,collapse = "+"))),data=data)
-    
-    for (i in 1:time.points) {
-      # remove relevant observations
-      YVarToUse <- foreach::foreach (y = Y,.combine="rbind") %do% {
-        y[i]
-      }
-      LVarToUse <- foreach::foreach (l = L,.combine="rbind") %do% {
-        l[i]
-      }
-      #AVarToUse <- foreach::foreach (a = A,.combine="rbind") %do% {
-      #  a[i]
-      #}
-      #remove censored data points, i.e. those with NAs, change 
-      if (i>1) { YVarBefore <- foreach::foreach (y = Y,.combine="rbind") %do% {
-        y[i-1]
-      }
-        truerows <- rep(TRUE,nrow(data)) & prevtruerows
-        for (k in YVarBefore){
-          truerows <- truerows & data[k] == 0
-        }
-        prevtruerows <- truerows
-        dataUse <- data[,c(YVarToUse,LVarToUse,W,A[i+1],A[i])][truerows,]
-      }
-      else {
-        prevtruerows <- rep(TRUE,nrow(data))
-        dataUse <- data[,c(YVarToUse,LVarToUse,W,A[i+1],A[i])]
-      }
-      add_reg <- function(var, covar,object){
-        reg_formula <- as.formula(paste(var,"~",paste(covar,collapse = "+")))
-        fit <- glm(reg_formula,data=dataUse,family="binomial")
-        p0<-exp(coef(fit)[1])/(1+exp(coef(fit)[1]))
-        lava::distribution(object,as.formula(paste0("~", var))) <- lava::binomial.lvm(p=p0)
-        lava::regression(object,reg_formula)<-coef(fit)[-1]
-        object
-      }
-      # Lt ~ At-1 + W , for now Lt ~ 1
-      #At ~ Lt + W 
-      #yt ~ Lt + At + W
-
-      u<-add_reg(A[i+1],c(LVarToUse,W),u)
-      for (y in Y){
-        u<-add_reg(y[i],c(LVarToUse,A[i+1],W),u)
-      }
-      for(l in L){
-        #for now only supports binary covariates 
-        # new version
-        u<-add_reg(l[i],c(A[i],W),u)
-        # old version 
-        # var <- l[i]
-        # var_formula <- as.formula(paste0("~", var))
-        # lava::distribution(u, var_formula) <- lava::binomial.lvm(p=mean(factor(data[[var]])==levels(factor(data[[var]]))[2]))
-      }
-
-    }
-    out <- list(u,A=A,L=L,W=W,Y=Y,time.points=time.points)
-    class(out) <- c("lavaLTMLE")
-    out
-}
-
-#' @export sim.lavaLTMLE
-#' @export
-sim.lavaLTMLE <- function(object, n=1000) {
-  #simulate object 
-  tempSim <- sim(object[[1]],n)
-  #remove censored observations afterwards
-  time.points <- object$time.points
-  vars <- object[c(2,3,4,5)]
-  not_ended <- rep(TRUE,n)
-  for (y in vars$Y) {
-    not_ended = not_ended & tempSim[y[1]] == 0
-  }
-  for (i in 2:time.points){
-    #censor
-    YVarToUse <- foreach::foreach (y = vars$Y,.combine="rbind") %do% {
-      y[i]
-    }
-    LVarToUse <- foreach::foreach (l = vars$L,.combine="rbind") %do% {
-      l[i]
-    }
-    a <- vars$A[i+1]
-    data_temp <- data.frame(tempSim[,c(YVarToUse,LVarToUse,a)])
-    data_temp[!not_ended,] <- NA
-    tempSim[,c(YVarToUse,LVarToUse,a)] <- data_temp
-      
-    #calculate new censors (ended observations)
-    for (y in vars$Y) {
-      not_ended = not_ended & tempSim[y[i]] == 0
-    }
-  }
-  tempSim
-}
 
 #----------------------------------------------------------------------
 ### synthesize.R ends here

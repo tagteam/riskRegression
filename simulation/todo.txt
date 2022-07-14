@@ -1,0 +1,4 @@
+- Implement IF for AUC with covariates
+- Fix IF for Brier with covariates (discrete covariates).
+- Consider what difference does using f_i(t,x) instead of f_i(t-,x) in the integrals involving f_i?
+- Implement methods for cross-validation.

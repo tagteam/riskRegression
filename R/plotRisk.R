@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Mar 13 2017 (16:53) 
 ## Version: 
-## Last-Updated: Mar  9 2022 (15:49) 
+## Last-Updated: Jul  7 2022 (14:11) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 161
+##     Update #: 169
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -144,9 +144,13 @@ plotRisk <- function(x,
         }else{ ## competing risks
             R <- pframe[model==modelnames[1],
             {
-                r <- event # 1,2,3,4? ...
-                r[time>times] <- max(event)+1
-                r-1
+                # respect the event of interest
+                r <- rep("competing.risk",.N)
+                r[event == x$cause] <- "event"
+                r[status == 0] <- "censored"
+                r[time>times] <- "event-free"
+                r <- as.numeric(as.character(factor(r,levels = c("event","competing.risk","event-free","censored"),labels = c(0,1,2,3))))
+                r
             }]
         }
     }

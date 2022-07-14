@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Jan 11 2022 (17:06)
 ## Version:
-## Last-Updated: Mar  8 2022 (19:17) 
+## Last-Updated: May 31 2022 (11:44) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 3
+##     Update #: 9
 #----------------------------------------------------------------------
 ##
 ### Commentary:
@@ -15,7 +15,7 @@
 ##
 ### Code:
 
-AUC.survival <- function(DT,MC,se.fit,conservative,cens.model,keep.vcov=FALSE,multi.split.test,alpha,N,NT,NF,dolist,ROC,...){
+AUC.survival <- function(DT,MC,se.fit,conservative,cens.model,keep.vcov=FALSE,multi.split.test,alpha,N,NT,NF,dolist,ROC,old.ic.method,IC.data,...){
     ID=model=times=risk=Cases=time=status=Controls=TPR=FPR=WTi=Wt=ipcwControls=ipcwCases=IF.AUC=lower=se=upper=AUC=NULL
     cause <- 1
     aucDT <- DT[model>0]
@@ -45,7 +45,6 @@ AUC.survival <- function(DT,MC,se.fit,conservative,cens.model,keep.vcov=FALSE,mu
         N <- length(FP)
         sum((FP-c(0,FP[-N]))*((c(0,TP[-N])+TP)/2))
     }
-
     score <- aucDT[nodups,list(AUC=AireTrap(FPR,TPR)),by=list(model,times)]
     data.table::setkey(score,model,times)
     aucDT <- merge(score,aucDT,all=TRUE)
@@ -53,20 +52,32 @@ AUC.survival <- function(DT,MC,se.fit,conservative,cens.model,keep.vcov=FALSE,mu
         ## compute influence function
         ## data.table::setorder(aucDT,model,times,time,-status)
         data.table::setorder(aucDT,model,times,ID)
-        ## if (cens.model == "KaplanMeier" || cens.model == "none"){
-        ## aucDT[,IF.AUC:=getInfluenceFunctionAUCSurvival(time,status,times[1],risk,WTi,Wt[1],AUC[1]), by=list(model,times)]
-        ## }
-        ## else {
-        aucDT[,IF.AUC:=getInfluenceCurve.AUC.survival(t=times[1],
-                                                      n=N,
-                                                      time=time,
-                                                      risk=risk,
-                                                      Cases=Cases,
-                                                      Controls=Controls,
-                                                      ipcwControls=ipcwControls,
-                                                      ipcwCases=ipcwCases,
-                                                      MC=MC), by=list(model,times)]
-        ## }
+        if (cens.model == "KaplanMeier" || cens.model == "none"){
+            if (!old.ic.method){
+                #0.5*getInfluenceFunctionAUC(time,status,times[1],risk,WTi,Wt[1],AUC[1],FALSE,TRUE,FALSE)
+                aucDT[,IF.AUC:=getInfluenceCurveHelper(time,status,times[1],risk,WTi,Wt[1],AUC[1]), by=list(model,times)]
+            }
+            else {
+                aucDT[,IF.AUC:=getInfluenceCurve.AUC.survival(t=times[1],
+                                                               n=N,
+                                                               time=time,
+                                                               risk=risk,
+                                                               Cases=Cases,
+                                                               Controls=Controls,
+                                                               ipcwControls=ipcwControls,
+                                                               ipcwCases=ipcwCases,
+                                                               MC=MC), by=list(model,times)]
+            }
+        }
+        else {
+            # warning("Switching to conservative SE. General case not yet implemented.")
+            if (!conservative){
+                aucDT[,IF.AUC:=getInfluenceCurve.AUC.covariates(times[1],N,time,status,risk,WTi,Wt,AUC[1],IC.data), by=list(model,times)]
+            }
+            else {
+              aucDT[,IF.AUC:=getInfluenceCurve.AUC.covariates.conservative(times[1],N,time,status,risk,WTi,Wt,AUC[1]), by=list(model,times)]
+            }
+        }
         se.score <- aucDT[,list(se=sd(IF.AUC)/sqrt(N)),by=list(model,times)]
 
         data.table::setkey(se.score,model,times)

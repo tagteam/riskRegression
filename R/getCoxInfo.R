@@ -895,7 +895,7 @@ SurvResponseVar <- function(formula){
             return(ls.formula[[1]])
         }
         
-    }else if(class(formula)!= "formula"){
+    }else if(!inherits(formula,"formula")){
         stop("Argument \'formula\' can either be a formula or a list of formula \n")
     }
 

@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Oct 23 2016 (08:53) 
 ## Version: 
-## last-updated: Mar  9 2022 (15:49) 
+## last-updated: May 31 2022 (11:43) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 2297
+##     Update #: 2298
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -78,6 +78,15 @@
 #' @author Brice Ozenne \email{broz@@sund.ku.dk}
 #' and Thomas Alexander Gerds \email{tag@@biostat.ku.dk}
 #'
+#' @references
+#'
+#' Brice Maxime Hugues Ozenne, Thomas Harder Scheike, Laila Staerk, and Thomas
+#'    Alexander Gerds. On the estimation of average treatment effects with right-
+#'    censored time to event outcome and competing risks. Biometrical Journal, 62
+#'    (3):751--763, 2020.
+#' 
+#'
+#' 
 #' @seealso
 #' \code{\link{as.data.table}} to extract the estimates in a \code{data.table} object.
 #' \code{\link{autoplot.ate}} for a graphical representation the standardized risks.
