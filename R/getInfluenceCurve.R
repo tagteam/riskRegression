@@ -427,6 +427,41 @@ getInfluenceCurve.Brier.covariates <- function(tau,time,risk,status,GTiminus,Bri
   IC
 }
 
+getInfluenceCurve.Brier.covariates.use.squared <- function(tau,time,residuals,risk,status,GTiminus,Gtau,IC.data) {
+  n <- length(time)
+  IC <- rep(NA,n)
+  fit.time <- IC.data$fit.time
+  fit.cens <- IC.data$fit.cens
+  wdata<-IC.data$wdata
+  Brier <- mean(residuals)
+  predCens <- predictCox(fit.cens, time,newdata = wdata)
+  Gtimes <- predCens$survival
+  cumhazardCXi <- predCens$cumhazard
+  Stimes <- predictCox(fit.time, time,newdata = wdata)$survival
+  is.comprisk <- !is.null(IC.data$fitCSC)
+  Stau <- rms::survest(fit.time,newdata=wdata,times=tau,se.fit=FALSE)$surv
+  Stau <- unname(Stau)
+  if (is.comprisk){
+    fitCSC <- IC.data$fitCSC
+    F1 <- predictRisk(fitCSC,newdata=wdata,times=time,cause=1)
+    F1tau <- c(predictRisk(fitCSC,newdata=wdata,times=tau,cause=1))
+  }
+  for (i in 1:n){
+    cum <- cumhazardCXi[i,]
+    jumps <- diff(c(0,cum))
+    IC.C.term.part <- risk[i]^2 * Stau[i] * (1*(status[i] == 0 & time[i] <= tau)/(Gtimes[i,i]*Stimes[i,i])-sum( 1*(time <= tau & time <= time[i])*jumps / (Gtimes[i,]*Stimes[i,])))
+    if (!is.comprisk){
+      IC.C.term <- IC.C.term.part+ (1-risk[i])^2*(1*(status[i] == 0 & time[i] <= tau)/(Gtimes[i,i]*Stimes[i,i])*(Stimes[i,i]-Stau[i])-sum( 1*(time <= tau & time <= time[i])*((Stimes[i,]-Stau[i])*jumps / (Gtimes[i,]*Stimes[i,]))))
+    }
+    else {
+      IC.C.term <- IC.C.term.part + (1-risk[i])^2*(1*(status[i] == 0 & time[i] <= tau)/(Gtimes[i,i]*Stimes[i,i])*(F1tau[i]-F1[i,i])-sum( 1*(time <= tau & time <= time[i])*((F1tau[i]-F1[i,])*jumps / (Gtimes[i,]*Stimes[i,]))))
+    }
+    # IC.C.term <- 0
+    IC[i] <- residuals[i]-Brier + IC.C.term
+  }
+  IC
+}
+
 
 getInfluenceCurve.AUC.covariates <- function(t,n,time,status,risk,GTiminus,Gtau,AUC,IC.data){
     tau <- t
