@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: maj 18 2017 (09:23) 
 ## Version: 
-## last-updated: Jan 12 2022 (11:23) 
-##           By: Thomas Alexander Gerds
-##     Update #: 318
+## last-updated: jul 14 2022 (15:11) 
+##           By: Brice Ozenne
+##     Update #: 322
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -1465,6 +1465,7 @@ test_that("[predictCSC]: iid minimal - strata", {
 ## is over 1, probably because of the small sample size.
 ## I don't know if this is an issue.
 if(FALSE){
+    
     set.seed(5)
     d <- sampleData(80,outcome="comp")
     d[event==0,event:=1] # remove censoring
@@ -1477,23 +1478,25 @@ if(FALSE){
 
     #### investigate how come we get absRisk > 1
     # since absRisk = int hazard1 * survival
-    # it is possible if survival > 1
-    #                or hazard(1) > 1
+    # it is possible when survival > 1 or hazard(1) > 1
     
     ## restrict to the first strata and simplify the model
     ## to see if we can get an hazard > 1
     dt <- d[X1==1]
-    setkeyv(dt, "time")
+    data.table::setkeyv(dt, "time")
     m.coxph <- coxph(Surv(time,event>=1)~X2, data = dt, x = TRUE, ties = "breslow")
 
-    # compute baseline hazard
-    as.data.table(predictCox(m.coxph, centered = TRUE, type = "hazard")) # automatic
-    rev(1/cumsum(rev(eXB))) # manual
+    eXB <- exp(predictCox(m.coxph, newdata = dt, type = "lp")$lp)
+    ## compute baseline hazard
+    GS <- data.table::as.data.table(predictCox(m.coxph, type = c("hazard","cumhazard"))) # automatic
+    GS$hazard - rev(1/cumsum(rev(eXB)))
 
-    # normally they are normalized such that they are at most one:
-    rev(rev(eXB)/cumsum(rev(eXB)))
+    ## compute hazard (normally they are normalized such that they are at most one)
+    rev(eXB/cumsum(rev(eXB)))
+    
 
-    # but this does not work for new observations
+    ## but this does not work for new observations
+    ## or for timepoints after death of a current observations
     rev(unique(eXB)[1]/cumsum(rev(eXB))) # ok
     rev(unique(eXB)[2]/cumsum(rev(eXB))) # no hazard over 1
 

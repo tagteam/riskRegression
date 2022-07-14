@@ -209,7 +209,6 @@ predictCox <- function(object,
     ## linear predictor
     ## if we predict the hazard for newdata then there is no need to center the covariates
     object.modelFrame[,c("eXb") := exp(coxLP(object, data = NULL, center = if(is.null(newdata)){centered}else{FALSE}))]
-
     ## add linear predictor and remove useless columns
     rm.name <- setdiff(names(object.modelFrame),c("start","stop","status","eXb","strata","strata.num"))
     if(length(rm.name)>0){
@@ -251,7 +250,7 @@ predictCox <- function(object,
         stop("type can only be \"lp\", \"hazard\", \"cumhazard\" or/and \"survival\" \n") 
     }
     if(is.null(newdata) && "lp" %in% type){
-        stop("Cannot evaluate the linear predictor when argument \'lp\' is missing. \n")
+        stop("Cannot evaluate the linear predictor when argument \'newdata\' is missing. \n")
     }
     if(length(times)>1 && "lp" %in% type){
         stop("Cannot evaluate the linear predictor when there are multiple timepoints. \n")
