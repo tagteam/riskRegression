@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: maj 18 2017 (09:23) 
 ## Version: 
-## last-updated: jul 14 2022 (15:11) 
+## last-updated: jul 19 2022 (10:24) 
 ##           By: Brice Ozenne
-##     Update #: 322
+##     Update #: 324
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -1459,6 +1459,30 @@ test_that("[predictCSC]: iid minimal - strata", {
     expect_equal(res1bis$absRisk.iid,res2$absRisk.iid)
     expect_equal(res1bis$absRisk.average.iid, apply(res2$absRisk.iid,1:2,mean))
 })
+
+## ** CSC with of surv type
+## BUG REPORT FROM Jul 19, 2022 8:46:19 AM, Thomas Alexander Gerds: 
+cat("[predictCSC] Argument \'surv.type\' \n")
+
+data(Melanoma)
+Melanoma$id=1:nrow(Melanoma)
+Melanoma$status[196:205]=3
+
+test_that("[predictCSC]: surv.type", {
+    fit2 <- CSC(Hist(time,status)~invasion+epicel+age, data=Melanoma,
+                surv.type="surv",cause=2)
+
+    r2 <- predictRisk(fit2,cause=2,newdata=Melanoma,times=1000)
+
+
+    Melanoma$status[196:205]=1
+    fitGS <- CSC(Hist(time,status)~invasion+epicel+age, data=Melanoma,
+                 surv.type="surv",cause=2)
+
+    rGS <- predictRisk(fitGS,cause=2,newdata=Melanoma,times=1000)
+    expect_equal(r2,rGS, tol = 1e-6)
+})
+
 ## * [predictCSC] Possible issue (estimated absolute risk over 1)
 ## this section does not perform any tests
 ## but show an example where the estimated absolute risk

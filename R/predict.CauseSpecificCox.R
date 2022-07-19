@@ -263,13 +263,17 @@ predict.CauseSpecificCox <- function(object,
     new.n <- NROW(newdata)
     nEventTimes <- length(eventTimes)
     nCause <- length(causes)
-
-    ls.hazard <- vector(mode = "list", length = nCause)
-    ls.cumhazard <- vector(mode = "list", length = nCause)
-    M.eXb <- matrix(NA, nrow = new.n, ncol = nCause)
-    M.strata.num <- matrix(NA, nrow = new.n, ncol = nCause)
-    M.etimes.max <- matrix(NA, nrow = new.n, ncol = nCause)
-    ls.infoVar <- setNames(vector(mode = "list", length = nCause), name.model)
+    if(object$surv.type=="survival"){
+        nModel <- 2
+    }else{
+        nModel <- length(causes)
+    }
+    ls.hazard <- vector(mode = "list", length = nModel)
+    ls.cumhazard <- vector(mode = "list", length = nModel)
+    M.eXb <- matrix(NA, nrow = new.n, ncol = nModel)
+    M.strata.num <- matrix(NA, nrow = new.n, ncol = nModel)
+    M.etimes.max <- matrix(NA, nrow = new.n, ncol = nModel)
+    ls.infoVar <- setNames(vector(mode = "list", length = nModel), name.model)
 
     if(length(unlist(coef(object)))==0){
         ## if there is not covariates (only strata) then set the last eventtime to \infty when the last observation is an event
@@ -281,8 +285,8 @@ predict.CauseSpecificCox <- function(object,
             attr(eventTimes,"etimes.max") <- apply(do.call(rbind,ls.lastEventTime),2,max)
         }
     }
-    
-    for(iterC in 1:nCause){ ## iterC <- 1
+
+    for(iterC in 1:nModel){ ## iterC <- 1
         ## when surv.type = "hazard" and iterC corresponds to the cause and no se/iid
         ## we could only compute cumhazard (i.e. not compute hazard).
         ## But since computing hazard has little impact on the performance it is done anyway
@@ -332,7 +336,7 @@ predict.CauseSpecificCox <- function(object,
                                  nNewTimes = n.times, 
                                  nData = new.n,
                                  cause = index.cause - 1, 
-                                 nCause = nCause,
+                                 nCause = nModel,
                                  survtype = (surv.type=="survival"),
                                  productLimit = product.limit,
                                  diag = diag,
@@ -358,7 +362,7 @@ predict.CauseSpecificCox <- function(object,
 
         ## design matrix
         new.LPdata <- list()
-        for(iCause in 1:nCause){ ## iCause <- 1
+        for(iCause in 1:nModel){ ## iCause <- 1
             infoVar <- ls.infoVar[[iCause]]
             if(length(infoVar$lpvars) > 0){
                 new.LPdata[[iCause]] <- model.matrix(object$models[[iCause]], data = newdata)
@@ -405,7 +409,7 @@ predict.CauseSpecificCox <- function(object,
                                ls.infoVar = ls.infoVar,
                                new.n = new.n,
                                cause = index.cause,
-                               nCause = nCause,
+                               nCause = nModel,
                                nVar.lp = nVar.lp,
                                surv.type = surv.type,
                                export = export,
