@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: maj 27 2017 (21:23) 
 ## Version: 
-## last-updated: feb 24 2021 (22:10) 
+## last-updated: jul 29 2022 (18:29) 
 ##           By: Brice Ozenne
-##     Update #: 1086
+##     Update #: 1166
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -92,7 +92,7 @@ calcSeCSC <- function(object, cif, hazard, cumhazard, survival, object.time, obj
         which(new.Ustrata==iStrata) - 1
     })
 
-    if(store.iid == "minimal"){
+    if(store.iid == "minimal" && all(cif<1)){
         ## {{{ method = "minimal"
         ## factor
         if(is.null(attr(export,"factor"))){
@@ -159,12 +159,14 @@ calcSeCSC <- function(object, cif, hazard, cumhazard, survival, object.time, obj
             attr(new.LPdata[[iCause]],"contrasts") <- NULL
         }
 
-        if("iid" %in% export || "se" %in% export){
+        if("iid" %in% export || "se" %in% export || any(cif>1)){
+
             out <- calcSeCif2_cpp(ls_IFbeta = lapply(object$models, function(x){x$iid$IFbeta}),
                                   ls_X = new.LPdata,
                                   ls_cumhazard = cumhazard,
                                   ls_hazard = hazard[[cause]],
                                   survival = survival,
+                                  cif = cif,
                                   ls_IFcumhazard = lapply(object$models, function(x){x$iid$IFcumhazard}),
                                   ls_IFhazard = object$models[[cause]]$iid$IFhazard,
                                   eXb = eXb,
@@ -174,7 +176,7 @@ calcSeCSC <- function(object, cif, hazard, cumhazard, survival, object.time, obj
                                   theCause = (cause-1), nCause = nCause, hazardType = (surv.type=="hazard"), nVar = nVar.lp,
                                   nNewObs = new.n, strata = new.strata,
                                   exportSE = "se" %in% export, exportIF = "iid" %in% export, exportIFsum = "average.iid" %in% export,
-                                  diag = diag)
+                                  diag = diag, cif1 = any(cif>1))
             if("iid" %in% export){
                 out$iid <- aperm(out$iid, c(2,3,1))
             }
@@ -340,6 +342,7 @@ calcSeCSC <- function(object, cif, hazard, cumhazard, survival, object.time, obj
                             iMfactor <- matrix(factor[[iFactor]][iIndex_obs,iFactor2], nrow = iN_activobs, ncol = iiN.jump, byrow = FALSE)
                             iVN_time <- rep(iN_activobs, iiN.jump)
                         }
+
                         iAIF <- calcAICcif_R(hazard0_cause = ihazard0_cause,
                                              cumhazard0 = iCumhazard0,
                                              IFhazard0_cause = iIFhazard0_cause,
@@ -353,8 +356,7 @@ calcSeCSC <- function(object, cif, hazard, cumhazard, survival, object.time, obj
                                              nJump = iiN.jump, subsetJump = iiIndex.jump,
                                              nCause = nCause, test_allCause = test_allCause, test_theCause = test_theCause,
                                              nVar = nVar.lp)
-
-             
+                        
                         ## export
                         if(diag==TRUE){
                             out[[iFactor]][,1] <- out[[iFactor]][,1] + rowSums(iAIF[,iSindexV.times,drop=FALSE])/iN_obs * iPrevalence
@@ -404,9 +406,10 @@ calcAICcif_R <- function(hazard0_cause,
                          nJump, subsetJump,
                          nCause, test_allCause, test_theCause,
                          nVar){
-    
+        
     ## term 1
     iAIF <- rowMultiply_cpp(IFhazard0_cause[,subsetJump,drop=FALSE], scale = colSums(eXb1_S[,subsetJump,drop=FALSE] * factor) / weight)
+
     for(iCause in 1:nCause){
 
         ## term 3
@@ -437,7 +440,7 @@ calcAICcif_R <- function(hazard0_cause,
             iAIF <- iAIF + IFbeta[[iCause]] %*% rowMultiply_cpp(E.tempo, scale = hazard0_cause[subsetJump])
         }
     }
-    
+
     ## accumulate over time
     return(rowCumSum(iAIF))
 
