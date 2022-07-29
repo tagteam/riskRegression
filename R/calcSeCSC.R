@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: maj 27 2017 (21:23) 
 ## Version: 
-## last-updated: jul 29 2022 (18:29) 
+## last-updated: jul 29 2022 (18:34) 
 ##           By: Brice Ozenne
-##     Update #: 1166
+##     Update #: 1167
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -176,7 +176,7 @@ calcSeCSC <- function(object, cif, hazard, cumhazard, survival, object.time, obj
                                   theCause = (cause-1), nCause = nCause, hazardType = (surv.type=="hazard"), nVar = nVar.lp,
                                   nNewObs = new.n, strata = new.strata,
                                   exportSE = "se" %in% export, exportIF = "iid" %in% export, exportIFsum = "average.iid" %in% export,
-                                  diag = diag, cif1 = any(cif>1))
+                                  diag = diag)
             if("iid" %in% export){
                 out$iid <- aperm(out$iid, c(2,3,1))
             }

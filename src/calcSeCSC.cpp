@@ -358,7 +358,7 @@ List calcSeCif2_cpp(const std::vector<arma::mat>& ls_IFbeta, const std::vector<a
 					int nObs,  
 					int theCause, int nCause, bool hazardType, arma::vec nVar,
 					int nNewObs, NumericMatrix strata,
-					bool exportSE, bool exportIF, bool exportIFsum, bool diag, bool cif1){
+					bool exportSE, bool exportIF, bool exportIFsum, bool diag){
 
   arma::mat X_IFbeta;
 
