@@ -45,8 +45,8 @@ test_that("wglm - no censoring",{
     test.ate <- ate(test, data = dFull, times = tau, treatment = "X1", verbose = FALSE)
     GS.ate <- logitATE(formula = Event(time,event)~X1 + X8,
                        time = tau[5], data = dFull, treat.model = X1~1)
-    expect_equal(test.ate$diffRisk[5,estimate], GS.ate$difriskG, tolerance = 1e-5)
-    expect_equal(test.ate$diffRisk[5,se], GS.ate$se.difriskG, tolerance = 1e-5)
+    expect_equivalent(test.ate$diffRisk[5,estimate], GS.ate$difriskG, tolerance = 1e-5)
+    expect_equivalent(test.ate$diffRisk[5,se], GS.ate$se.difriskG, tolerance = 1e-5)
 })
 
 ## * right censoring (but no competing risks)
@@ -68,8 +68,8 @@ test_that("wglm - censoring",{
     test.ate <- ate(test, data = dSurv, times = tau, treatment = "X1", verbose = FALSE)
     GS.ate <- suppressWarnings(logitATE(formula = Event(time,event)~X1 + X8, cens.model = ~1, cens.code = 0, cause = 1,
                                         time = tau[5], data = dSurv, treat.model = X1~1))
-    expect_equal(test.ate$diffRisk[5,estimate], GS.ate$difriskG, tolerance = 1e-5)
-    expect_equal(test.ate$diffRisk[5,se], GS.ate$se.difriskG, tolerance = 1e-5)
+    expect_equivalent(test.ate$diffRisk[5,estimate], GS.ate$difriskG, tolerance = 1e-5)
+    expect_equivalent(test.ate$diffRisk[5,se], GS.ate$se.difriskG, tolerance = 1e-5)
 
     #### stratified censoring model ####
     test <- wglm(regressor.event = ~ X1 + X8, formula.censor = Surv(time,event==0) ~ X1,
@@ -108,8 +108,8 @@ test_that("wglm - competing risks",{
     test.ate <- ate(test, data = d, times = tau, treatment = "X1", verbose = FALSE)
     GS.ate <- suppressWarnings(logitATE(formula = Event(time,event)~X1 + X8, cens.model = ~1, cens.code = 0, cause = 1,
                                         time = tau[5], data = d, treat.model = X1~1))
-    expect_equal(test.ate$diffRisk[5,estimate], GS.ate$difriskG, tolerance = 1e-5)
-    expect_equal(test.ate$diffRisk[5,se], GS.ate$se.difriskG, tolerance = 1e-5)
+    expect_equivalent(test.ate$diffRisk[5,estimate], GS.ate$difriskG, tolerance = 1e-5)
+    expect_equivalent(test.ate$diffRisk[5,se], GS.ate$se.difriskG, tolerance = 1e-5)
 
     #### stratified censoring model ####
     test <- wglm(regressor.event = ~ X1 + X8, formula.censor = Surv(time,event==0) ~ X1,

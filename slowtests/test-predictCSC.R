@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: maj 18 2017 (09:23) 
 ## Version: 
-## last-updated: jul 14 2022 (15:11) 
+## last-updated: Aug  1 2022 (11:45) 
 ##           By: Brice Ozenne
-##     Update #: 322
+##     Update #: 334
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -1170,6 +1170,121 @@ test_that("[predictCSC] for survival surv.type=\"survival\" (internal consistenc
                  test2$survival.average.iid[[2]][,1])
 })
 
+## * [predictCSC] Estimated absolute risk over 1
+
+## ** from Vi Friday 22-07-29 at 13:09
+
+## *** simulate data
+require(data.table)
+require(lava)
+require(riskRegression)
+
+simData <- function(n, sd = 1){
+  m <- lava::lvm(~ X)
+  lava::distribution(m, ~ X) <- lava::normal.lvm(mu = 0, sd = sd)
+  lava::transform(m, X_2 ~ X) <- function(x){x ^ 2}
+  lava::distribution(m, ~ Y) <- lava::binomial.lvm(p = 0.25)
+  lava::distribution(m, ~ t0) <- lava::coxWeibull.lvm(scale = 2/100)
+  lava::distribution(m, ~ t1) <- lava::coxWeibull.lvm(scale = 1/100)
+  lava::distribution(m, ~ t2) <- lava::coxWeibull.lvm(scale = 0.5/100)
+  lava::regression(m, t1 ~ X + X_2 + Y + X * Y) <- c(0.75, 1, 0.5, -0.1)
+  lava::regression(m, t2 ~ X) <- c(0.25)
+  m <- lava::eventTime(m, time ~ min(t0 = 0, t1 = 1, t2 = 2), 'status')
+  
+  simdat <- lava::sim(m, n)
+  
+  data.table::setDT(simdat)
+  simdat[, -c('t0', 't1', 't2', 'X_2')]
+}
+
+## set.seed(1)
+## dt <- simData(50, sd = 1)[,.(time,status,X,Y)]
+
+dt <- data.table("time" = c(0.614, 0.704, 0.71, 0.758, 0.936, 1.11, 1.13, 1.147, 1.384, 1.586, 1.727, 1.804, 1.865, 1.922, 2.026, 2.04, 2.165, 2.229, 2.444, 2.639, 2.725, 2.772, 2.833, 2.927, 2.928, 3.052, 3.067, 3.13, 3.183, 3.411, 3.693, 3.796, 4.098, 4.348, 4.491, 4.565, 4.766, 4.834, 4.88, 5.124, 5.555, 5.609, 6.009, 7.009, 7.183, 7.239, 7.741, 8.254, 8.418, 10.579), 
+           "status" = c(1, 1, 1, 1, 1, 0, 0, 1, 1, 0, 0, 1, 0, 0, 1, 2, 1, 2, 1, 1, 0, 0, 0, 1, 1, 1, 0, 2, 1, 0, 1, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 2, 1, 0, 0, 0, 1, 0), 
+           "X" = c(1.764, -1.905, 1.324, 1.474, -2.592, 1.578, 0.596, 1.111, 0.38, -1.919, 0.865, 0.678, 1.092, 0.677, 0.568, -0.193, -0.43, 0.278, -0.156, 1.314, 0.045, 0.763, -0.389, 1.593, -1.168, 0.345, 0.164, -0.923, 1.155, -0.11, -2.129, -1.363, -0.169, -0.715, -0.811, -0.069, -0.146, -0.573, -0.008, 0.612, -0.823, -0.636, -0.164, -0.057, 0.307, -1.174, 0.616, 0.129, -0.924, -0.195))
+dt$X2 <- dt$X^2
+dt[,c("X","X2") := .(X-mean(X),X2-mean(X2))]
+
+index.obs <- 5
+dtPred <- dt[index.obs]
+## ggplot(dt,aes(time,X)) + geom_point()
+e.CSC <- CSC(Hist(time, status) ~ X + X2, data = dt)
+
+## *** issue
+if(FALSE){
+    ls.beta <- coef(e.CSC)
+
+    e.riskPL <- predict(e.CSC, newdata = dtPred, times = 5, cause = 1, product.limit = TRUE)$absRisk
+    e.riskPL
+
+    e.survPL <- predictCoxPL(e.CSC$models[[1]], newdata = dtPred, times = 5)$survival
+    e.survPL
+
+    eXb1 <- exp(cbind(dt$X,dt$X2) %*% ls.beta[[1]])
+    lambda01 <-  (dt$status==1) / rev(cumsum(rev(eXb1))) ## one hazard is bigger than 1!
+    ## range(predictCox(e.CSC$models[[1]], type = "hazard")$hazard - lambda01)
+    dt$status[49]/sum(eXb1[49:50])
+
+    e.riskEXP <- predict(e.CSC, newdata = dtPred, times = dt$time, cause = 1, product.limit = FALSE)$absRisk
+    e.riskEXP
+
+    eXb2 <- exp(cbind(dt$X,dt$X2) %*% ls.beta[[2]])
+    lambda02 <- (dt$status==2) / rev(cumsum(rev(eXb2)))
+    ## range(predictCox(e.CSC$models[[2]], type = "hazard")$hazard - lambda02)
+
+    St <- exp(-cumsum(eXb1[index.obs]*lambda01-eXb2[index.obs]*lambda02))
+    ## range(St - predict(e.CSC, newdata = dtPred, type = "survival", product.limit = FALSE, times = dt$time)$survival)
+    StM1 <- c(1,St[1:(length(St)-1)])
+
+    risk <- cumsum(lambda01*eXb1[index.obs] * StM1)
+    range(risk - e.predEXP$absRisk)
+}
+
+## *** tentative fix
+test_that("product.limit=-1",{
+    eFIX.riskEXP <- predict(e.CSC, newdata = dtPred, times = dt$time, cause = 1,
+                            se = TRUE, iid = TRUE, product.limit = -1)
+
+    GS <- structure(c(0.132050275998517, 0.274110503238186, 0.397566794786161, 
+                      0.508203384443532, 0.610377243723005, 0.610377243723005, 0.610377243723005, 
+                      0.73909177290503, 0.840418036467214, 0.840418036467214, 0.840418036467214, 
+                      0.921770849343348, 0.921770849343348, 0.921770849343348, 0.986517721864252, 
+                      0.986517721864252, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
+                      1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1), dim = c(1L, 50L))
+
+    ## cap risks at 1
+    expect_equal(eFIX.riskEXP$absRisk, GS, tol = 1e-6)
+    expect_true(max(eFIX.riskEXP$absRisk)<=1)
+
+    ## corresponding se=0
+    expect_true(all(abs(eFIX.riskEXP$absRisk.se[eFIX.riskEXP$absRisk==1])<1e-6))
+    ## corresponding IF=0
+    expect_true(all(abs(eFIX.riskEXP$absRisk.iid[,eFIX.riskEXP$absRisk==1,1])<1e-6))
+    
+    ## check correct  averaging (via C++)
+    eALL.riskEXP <- predict(e.CSC, newdata = dt, times = dt$time[25], cause = 1,
+                            se = TRUE, iid = TRUE, average.iid = TRUE, product.limit = -1)
+    expect_equal(rowMeans(eALL.riskEXP$absRisk.iid[,1,]), eALL.riskEXP$absRisk.average.iid[,1], tol = 1e-6)
+
+    ## check correct  averaging (only R, single obs)
+    eALL2.riskEXP <- predict(e.CSC, newdata = dtPred, times = dt$time[25], cause = 1,
+                             average.iid = TRUE, product.limit = -1)
+    expect_true(max(abs(eALL2.riskEXP$absRisk.average.iid))<1e-6)
+
+    ## check correct  averaging (only R, all)
+    eALL2.riskEXP <- predict(e.CSC, newdata = dt, times = dt$time[25], cause = 1,
+                             average.iid = TRUE, product.limit = -1)
+    expect_equal(eALL.riskEXP$absRisk.average.iid, eALL2.riskEXP$absRisk.average.iid, tol = 1e-6)
+
+    ## check correct  averaging (many timepoints)
+    eALL.MriskEXP <- predict(e.CSC, newdata = dt, times = dt$time, cause = 1,
+                             se = TRUE, iid = TRUE, average.iid = TRUE, product.limit = -1)
+    eALL2.MriskEXP <- predict(e.CSC, newdata = dt, times = dt$time, cause = 1,
+                              average.iid = TRUE, product.limit = -1)
+    expect_equal(eALL.MriskEXP$absRisk.average.iid, eALL2.MriskEXP$absRisk.average.iid,tol=1e-6)
+})
+
 ## * [predictCSC] Miscelaneous
 ## ** Confidence bands vs. timereg
 cat("[predictCSC] Confidence band vs. timereg \n")
@@ -1459,48 +1574,29 @@ test_that("[predictCSC]: iid minimal - strata", {
     expect_equal(res1bis$absRisk.iid,res2$absRisk.iid)
     expect_equal(res1bis$absRisk.average.iid, apply(res2$absRisk.iid,1:2,mean))
 })
-## * [predictCSC] Possible issue (estimated absolute risk over 1)
-## this section does not perform any tests
-## but show an example where the estimated absolute risk
-## is over 1, probably because of the small sample size.
-## I don't know if this is an issue.
-if(FALSE){
-    
-    set.seed(5)
-    d <- sampleData(80,outcome="comp")
-    d[event==0,event:=1] # remove censoring
-    ttt <- sort(unique(d[X1==1,time]))
 
-    CSC.fit.s <- CSC(list(Hist(time,event)~ strata(X1)+X2+X9,
-                          Hist(time,event)~ X2+strata(X4)+X8+X7),data=d)
-    predict(CSC.fit.s,newdata=d[X1==1][1],cause=1,times=ttt,se=1L) # NA values due to absolute risk over 1
-    predict(CSC.fit.s,newdata=d[X1==1][1],product.limit = FALSE,cause=1,times=ttt,se=1L) # NA values due to absolute risk over 1
+## ** CSC with of surv type
+## BUG REPORT FROM Jul 19, 2022 8:46:19 AM, Thomas Alexander Gerds: 
+cat("[predictCSC] Argument \'surv.type\' \n")
 
-    #### investigate how come we get absRisk > 1
-    # since absRisk = int hazard1 * survival
-    # it is possible when survival > 1 or hazard(1) > 1
-    
-    ## restrict to the first strata and simplify the model
-    ## to see if we can get an hazard > 1
-    dt <- d[X1==1]
-    data.table::setkeyv(dt, "time")
-    m.coxph <- coxph(Surv(time,event>=1)~X2, data = dt, x = TRUE, ties = "breslow")
+data(Melanoma)
+Melanoma$id=1:nrow(Melanoma)
+Melanoma$status[196:205]=3
 
-    eXB <- exp(predictCox(m.coxph, newdata = dt, type = "lp")$lp)
-    ## compute baseline hazard
-    GS <- data.table::as.data.table(predictCox(m.coxph, type = c("hazard","cumhazard"))) # automatic
-    GS$hazard - rev(1/cumsum(rev(eXB)))
+test_that("[predictCSC]: surv.type", {
+    fit2 <- CSC(Hist(time,status)~invasion+epicel+age, data=Melanoma,
+                surv.type="surv",cause=2)
 
-    ## compute hazard (normally they are normalized such that they are at most one)
-    rev(eXB/cumsum(rev(eXB)))
-    
+    r2 <- predictRisk(fit2,cause=2,newdata=Melanoma,times=1000)
 
-    ## but this does not work for new observations
-    ## or for timepoints after death of a current observations
-    rev(unique(eXB)[1]/cumsum(rev(eXB))) # ok
-    rev(unique(eXB)[2]/cumsum(rev(eXB))) # no hazard over 1
 
-    # this also creates a problem when computing the suvival using the product limit estimator 
-}
+    Melanoma$status[196:205]=1
+    fitGS <- CSC(Hist(time,status)~invasion+epicel+age, data=Melanoma,
+                 surv.type="surv",cause=2)
+
+    rGS <- predictRisk(fitGS,cause=2,newdata=Melanoma,times=1000)
+    expect_equal(r2,rGS, tol = 1e-6)
+})
+
 #----------------------------------------------------------------------
 ### test-predictCSC.R ends here

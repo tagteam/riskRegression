@@ -131,7 +131,7 @@ predict.CauseSpecificCox <- function(object,
 
     ## ** deal with specific case
     if(type == "survival" && object$surv.type=="survival"){
-        predictor.cox <- if(product.limit){"predictCoxPL"}else{"predictCox"}
+        predictor.cox <- if(product.limit>0){"predictCoxPL"}else{"predictCox"}
         return(do.call(predictor.cox,
                        args = list(object$models[["OverallSurvival"]], times = times, newdata = newdata, type = "survival",
                                    keep.strata = keep.strata, keep.newdata = keep.newdata,
@@ -263,13 +263,17 @@ predict.CauseSpecificCox <- function(object,
     new.n <- NROW(newdata)
     nEventTimes <- length(eventTimes)
     nCause <- length(causes)
-
-    ls.hazard <- vector(mode = "list", length = nCause)
-    ls.cumhazard <- vector(mode = "list", length = nCause)
-    M.eXb <- matrix(NA, nrow = new.n, ncol = nCause)
-    M.strata.num <- matrix(NA, nrow = new.n, ncol = nCause)
-    M.etimes.max <- matrix(NA, nrow = new.n, ncol = nCause)
-    ls.infoVar <- setNames(vector(mode = "list", length = nCause), name.model)
+    if(object$surv.type=="survival"){
+        nModel <- 2
+    }else{
+        nModel <- length(causes)
+    }
+    ls.hazard <- vector(mode = "list", length = nModel)
+    ls.cumhazard <- vector(mode = "list", length = nModel)
+    M.eXb <- matrix(NA, nrow = new.n, ncol = nModel)
+    M.strata.num <- matrix(NA, nrow = new.n, ncol = nModel)
+    M.etimes.max <- matrix(NA, nrow = new.n, ncol = nModel)
+    ls.infoVar <- setNames(vector(mode = "list", length = nModel), name.model)
 
     if(length(unlist(coef(object)))==0){
         ## if there is not covariates (only strata) then set the last eventtime to \infty when the last observation is an event
@@ -281,8 +285,8 @@ predict.CauseSpecificCox <- function(object,
             attr(eventTimes,"etimes.max") <- apply(do.call(rbind,ls.lastEventTime),2,max)
         }
     }
-    
-    for(iterC in 1:nCause){ ## iterC <- 1
+
+    for(iterC in 1:nModel){ ## iterC <- 1
         ## when surv.type = "hazard" and iterC corresponds to the cause and no se/iid
         ## we could only compute cumhazard (i.e. not compute hazard).
         ## But since computing hazard has little impact on the performance it is done anyway
@@ -332,9 +336,9 @@ predict.CauseSpecificCox <- function(object,
                                  nNewTimes = n.times, 
                                  nData = new.n,
                                  cause = index.cause - 1, 
-                                 nCause = nCause,
+                                 nCause = nModel,
                                  survtype = (surv.type=="survival"),
-                                 productLimit = product.limit,
+                                 productLimit = product.limit>0,
                                  diag = diag,
                                  exportSurv = (se || band || iid || average.iid),
                                  nCores = ncores)
@@ -347,7 +351,7 @@ predict.CauseSpecificCox <- function(object,
                                 keep.times = keep.times, keep.strata = keep.strata, keep.newdata = keep.newdata,
                                 se = se, band = band, iid = iid, 
                                 confint = confint, diag = diag, average.iid = average.iid, 
-                                store.iid = store.iid, product.limit = product.limit))
+                                store.iid = store.iid, product.limit = product.limit>0))
     }
 
     ## ** compute standard error for CIF
@@ -358,7 +362,7 @@ predict.CauseSpecificCox <- function(object,
 
         ## design matrix
         new.LPdata <- list()
-        for(iCause in 1:nCause){ ## iCause <- 1
+        for(iCause in 1:nModel){ ## iCause <- 1
             infoVar <- ls.infoVar[[iCause]]
             if(length(infoVar$lpvars) > 0){
                 new.LPdata[[iCause]] <- model.matrix(object$models[[iCause]], data = newdata)
@@ -390,9 +394,15 @@ predict.CauseSpecificCox <- function(object,
                 })
             }
         }
-        
+
+        if(product.limit < 0){ ## disregard uncertainty when CIF>1
+            check.cif <- outCpp$cif
+        }else{  ## usual computation of the uncertainty even when CIF>1
+            check.cif <- 0*outCpp$cif
+        }
+
         out.seCSC <- calcSeCSC(object,
-                               cif = outCpp$cif,
+                               cif = check.cif,
                                hazard = ls.hazard,
                                cumhazard = ls.cumhazard,
                                survival = outCpp$survival, ## survival at t-
@@ -405,7 +415,7 @@ predict.CauseSpecificCox <- function(object,
                                ls.infoVar = ls.infoVar,
                                new.n = new.n,
                                cause = index.cause,
-                               nCause = nCause,
+                               nCause = nModel,
                                nVar.lp = nVar.lp,
                                surv.type = surv.type,
                                export = export,
@@ -416,8 +426,7 @@ predict.CauseSpecificCox <- function(object,
         needOrder2 <- !identical(1:length(ootimes2),ootimes2)
     }
     
-    ## ** export
-    ## gather all outputs
+    ## ** gather all outputs
     if(needOrder && (diag == FALSE)){
         out <- list(absRisk = outCpp$cif[,ootimes,drop=FALSE]) # reorder prediction times
     }else{
@@ -478,7 +487,22 @@ predict.CauseSpecificCox <- function(object,
     
     class(out) <- "predictCSC"
 
-    ## compute confidence interval
+    ## ** take care of prediction above 1
+    if(product.limit<0 && any(out$absRisk>1)){
+        index.above1 <- which(out$absRisk>1)
+        ## if(iid+band){
+        ##     index2.above1 <- which(out$absRisk>1, arr.ind = TRUE)
+        ##     for(iObs in 1:NROW(index2.above1)){
+        ##         out$absRisk.iid[,index2.above1[iObs,2],index2.above1[iObs,1]] <- 0
+        ##     }
+        ## }
+        ## if(se+band){
+        ##     out$absRisk.se[index.above1] <- 0
+        ## }        
+        out$absRisk[index.above1] <- 1
+    }
+
+    ## ** compute confidence interval
     if(confint){
         out <- stats::confint(out)
     }
@@ -488,7 +512,8 @@ predict.CauseSpecificCox <- function(object,
     if(band[[1]] && iid[[1]]==FALSE){
         out["absRisk.iid"] <- NULL
     }
-    ## export
+
+    ## ** export
     if(any(na.omit(as.double(out$absRisk))>1) || any(na.omit(as.double(out$absRisk))<0)){
         if(product.limit){
             warning("Estimated risk outside the range [0,1].\n",
