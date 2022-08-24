@@ -66,53 +66,37 @@ crossvalPerf.loob.AUC <- function(times,mlevs,se.fit,response.type,NT,Response,c
     for (mod in mlevs){
       Ib <- matrix(0, sum(cases.index), sum(controls.index))
       auc <- matrix(0, sum(cases.index), sum(controls.index))
-      if (split.method$internal.name=="crossval"){
-        warning("Cannot yet calculate AUC in this case. Use split.method 'loob' or 'bootcv' instead.")
-        for (u in 1:B){## cannot use b as running index because b==b does not work in data.table
-          riskset <- data.table::data.table(ID=1:N,casecontrol=cc.status,oob=oob)
-          data.table::setkey(riskset,ID)
-          if (response.type=="binary"){
-            oob.risk <- DT.B[model==mod&b==u,data.table::data.table(ID,risk)]
-          }else{
-            oob.risk <- DT.B[model==mod&times==t&b==u,data.table::data.table(ID,risk)]
-          }
-          data.table::setkey(oob.risk,ID)
-          riskset <- oob.risk[riskset]
-          riskset[is.na(risk),risk:=-9]
-          Ib.ij <- outer((cases.index*oob)[which.cases],(controls.index*oob)[which.controls],"*")
-          auc.ij <- AUCijFun(riskset[casecontrol=="case",risk],riskset[casecontrol=="control",risk])*Ib.ij
-          auc <- auc+auc.ij
-          auc <- (auc*weightMatrix)/Ib
+      # if (split.method$internal.name=="crossval"){
+      #   # stop("Cannot yet calculate AUC in this case. Use split.method 'loob' or 'bootcv' instead.")
+      # }
+      for (u in 1:B){## cannot use b as running index because b==b does not work in data.table
+        ## test <- DT.B[model==mod&times==t&b==u]
+        # when B is too low it may happen that some subjects are never oob
+        oob <- match(1:N,unique(split.method$index[,u]),nomatch=0)==0
+        ## to use the cpp function AUCijFun we
+        ## need a vector of length equal to the number of cases (which.cases) for the current time point
+        ## which has arbitrary values in places where subjects are inbag and the predicted risks
+        ## for those out-of-bag. need another vector for controls.
+        riskset <- data.table::data.table(ID=1:N,casecontrol=cc.status,oob=oob)
+        data.table::setkey(riskset,ID)
+        if (response.type=="binary"){
+          oob.risk <- DT.B[model==mod&b==u,data.table::data.table(ID,risk)]
+        }else{
+          oob.risk <- DT.B[model==mod&times==t&b==u,data.table::data.table(ID,risk)]
         }
-      }else{
-        for (u in 1:B){## cannot use b as running index because b==b does not work in data.table
-          ## test <- DT.B[model==mod&times==t&b==u]
-          # when B is too low it may happen that some subjects are never oob
-          oob <- match(1:N,unique(split.method$index[,u]),nomatch=0)==0
-          ## to use the cpp function AUCijFun we
-          ## need a vector of length equal to the number of cases (which.cases) for the current time point
-          ## which has arbitrary values in places where subjects are inbag and the predicted risks
-          ## for those out-of-bag. need another vector for controls.
-          riskset <- data.table::data.table(ID=1:N,casecontrol=cc.status,oob=oob)
-          data.table::setkey(riskset,ID)
-          if (response.type=="binary"){
-            oob.risk <- DT.B[model==mod&b==u,data.table::data.table(ID,risk)]
-          }else{
-            oob.risk <- DT.B[model==mod&times==t&b==u,data.table::data.table(ID,risk)]
-          }
-          data.table::setkey(oob.risk,ID)
-          riskset <- oob.risk[riskset]
-          riskset[is.na(risk),risk:=-9]
-          Ib.ij <- outer((cases.index*oob)[which.cases],(controls.index*oob)[which.controls],"*")
-          auc.ij <- AUCijFun(riskset[casecontrol=="case",risk],riskset[casecontrol=="control",risk])*Ib.ij
-          ## Ib.ij is 1 when the pair out of bag
-          ## print(head(oob))
-          ## print(auc.ij[1:5,1:5])
-          auc <- auc+auc.ij
-          Ib <- Ib + Ib.ij
-        }
-        auc <- (auc*weightMatrix)/Ib
+        data.table::setkey(oob.risk,ID)
+        riskset <- oob.risk[riskset]
+        riskset[is.na(risk),risk:=-9]
+        Ib.ij <- outer((cases.index*oob)[which.cases],(controls.index*oob)[which.controls],"*")
+        auc.ij <- AUCijFun(riskset[casecontrol=="case",risk],riskset[casecontrol=="control",risk])*Ib.ij
+        ## Ib.ij is 1 when the pair out of bag
+        ## print(head(oob))
+        ## print(auc.ij[1:5,1:5])
+        auc <- auc+auc.ij
+        Ib <- Ib + Ib.ij
       }
+      auc <- (auc*weightMatrix)/Ib
+        
       # FIXME: why are there NA's?
       auc[is.na(auc)] <- 0
       ## Leave-one-pair-out bootstrap estimate of AUC
@@ -258,9 +242,8 @@ crossvalPerf.loob.AUC <- function(times,mlevs,se.fit,response.type,NT,Response,c
   return(output)
 }
 
-crossvalPerf.loob.Brier <- function(times,mlevs,se.fit,response.type,NT,Response,cens.type,Weights,split.method,N,B,DT.B,data,dolist,alpha,byvars,mlabels,ipa,keep.residuals,conservative,cens.model,response.dim,ID){
-  status <- residuals <- risk <- WTi <- event <- cause <- ReSpOnSe <- Brier <- IC0 <- nth.times <- IF.Brier <- lower <- se <- upper <- model <- NF <- IPCW <- response <- reference <- NULL
-  
+crossvalPerf.loob.Brier <- function(times,mlevs,se.fit,response.type,NT,Response,cens.type,Weights,split.method,N,B,DT.B,data,dolist,alpha,byvars,mlabels,ipa,keep.residuals,conservative,cens.model,response.dim,ID,cause){
+  status <- residuals <- risk <- WTi <- event <- ReSpOnSe <- Brier <- IC0 <- nth.times <- IF.Brier <- lower <- se <- upper <- model <- NF <- IPCW <- response <- reference <- NULL
   ## sum across bootstrap samples where subject i is out of bag
   if (cens.type=="rightCensored"){
     if (response.type=="survival"){
@@ -446,12 +429,12 @@ crossvalPerf.loob.Brier <- function(times,mlevs,se.fit,response.type,NT,Response
   return(output)
 }
 
-crossvalPerf.loob <- function(m,times,mlevs,se.fit,response.type,NT,Response,cens.type,Weights,split.method,N,B,DT.B,data,dolist,alpha,byvars,mlabels,ipa,keep.residuals,conservative,cens.model,response.dim,ID) {
+crossvalPerf.loob <- function(m,times,mlevs,se.fit,response.type,NT,Response,cens.type,Weights,split.method,N,B,DT.B,data,dolist,alpha,byvars,mlabels,ipa,keep.residuals,conservative,cens.model,response.dim,ID,cause) {
   if (m=="AUC"){
     return(crossvalPerf.loob.AUC(times,mlevs,se.fit,response.type,NT,Response,cens.type,Weights,split.method,N,B,DT.B,data,dolist,alpha,byvars,mlabels,conservative,cens.model))
   }
   if (m=="Brier"){
-    return(crossvalPerf.loob.Brier(times,mlevs,se.fit,response.type,NT,Response,cens.type,Weights,split.method,N,B,DT.B,data,dolist,alpha,byvars,mlabels,ipa,keep.residuals,conservative,cens.model,response.dim,ID))
+    return(crossvalPerf.loob.Brier(times,mlevs,se.fit,response.type,NT,Response,cens.type,Weights,split.method,N,B,DT.B,data,dolist,alpha,byvars,mlabels,ipa,keep.residuals,conservative,cens.model,response.dim,ID,cause))
   }
 }
 

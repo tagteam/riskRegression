@@ -21,6 +21,7 @@ Brier.survival <- function(DT,MC,se.fit,conservative,cens.model,keep.vcov=FALSE,
     DT[time<=times & status==1,residuals:=(1-risk)^2/WTi]
     DT[time<=times & status==0,residuals:=0]
     DT[time>times,residuals:=(risk)^2/Wt]
+    
     if (se.fit[[1]]==1L || multi.split.test[[1]]==TRUE){
         ## data.table::setorder(DT,model,times,time,-status)
         data.table::setorder(DT,model,times,ID)
@@ -48,18 +49,23 @@ Brier.survival <- function(DT,MC,se.fit,conservative,cens.model,keep.vcov=FALSE,
                                                           IC.G=MC,
                                                           cens.model=cens.model,
                                                           nth.times=nth.times[1]),by=list(model,times)]
+                  DT[,IF.Brier2 := 0]
                 }
                 else {
-                    # DT[,IF.Brier2 := getInfluenceCurve.Brier.New(tau=times[1],time=time,risk=risk,status = status,MC=MC,GTiminus=WTi,Brier=Brier[1],cens.model=cens.model),by=list(model,times)]
-                    DT[,IF.Brier := getInfluenceFunctionBrierKMCensoring(times[1],time,risk,status,WTi,Brier[1]),by=list(model,times)]
+                    browser()
+                    DT[,IF.Brier := getInfluenceFunctionBrierKMCensoringUseSquared(times[1],time,residuals,status),by=list(model,times)]
+                    # DT[,IF.Brier := getInfluenceFunctionBrierKMCensoring(times[1],time,risk,status,WTi,Brier[1]),by=list(model,times)]
                 }
                 score <- DT[,data.table(Brier=sum(residuals)/N,
+                                        #se2  = sd(IF.Brier2)/sqrt(N),
                                         se=sd(IF.Brier)/sqrt(N),
                                         se.conservative=sd(IC0)/sqrt(N)),by=list(model,times)]
             }
             else {
                 if (!old.ic.method){
+                  browser()
                   DT[,IF.Brier:=getInfluenceCurve.Brier.covariates(times[1],time,risk,status,WTi,sum(residuals)/N,IC.data), by=list(model,times)]
+                  DT[,IF.Brier2:=getInfluenceCurve.Brier.covariates.use.squared(times[1],time,residuals,risk,status,WTi,Wt,IC.data), by=list(model,times)]
                 }
                 else {
                   DT[,IF.Brier:=getInfluenceCurve.Brier(t=times[1],
