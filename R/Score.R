@@ -830,7 +830,7 @@ c.f., Chapter 7, Section 5 in Gerds & Kattan 2021. Medical risk prediction model
             #   warning("New implementation not finished with other cases than the discrete case. \n  Therefore, force old.ic.method to be true ")
             #   old.ic.method=TRUE
             # }
-            getIC <- (se.fit[[1]] && !conservative[[1]] && old.ic.method) || split.method$name == "LeaveOneOutBoot"
+            getIC <- se.fit[[1]] && ((!conservative[[1]] && old.ic.method) || ((split.method$name == "LeaveOneOutBoot" || split.method$internal.name == "crossval") && "AUC" %in% metrics))
             Weights <- getCensoringWeights(formula=formula,
                                            data=data,
                                            times=times,
@@ -1002,6 +1002,7 @@ if (split.method$internal.name%in%c("BootCv","LeaveOneOutBoot","crossval")){
                 }
                 ## predicted risks of model trained without this fold
                 ## evaluated and added to this fold
+                
                 DT.fold <- getPerformanceData(testdata=testdata,
                                               testweights=testweights,
                                               traindata=traindata,
@@ -1101,32 +1102,31 @@ if (split.method$internal.name%in%c("BootCv","LeaveOneOutBoot","crossval")){
                        ifelse(NROW(DT.B)>1000000,
                               " This may take a while ...",
                               " This should be fast ...")))
-        if (split.method$name=="LeaveOneOutBoot" ){
-            crossvalPerf <- lapply(metrics, function(m){crossvalPerf.loob(m,
-                                                                          times,
-                                                                          mlevs,
-                                                                          se.fit,
-                                                                          response.type,
-                                                                          NT,
-                                                                          Response,
-                                                                          cens.type,
-                                                                          Weights,
-                                                                          split.method,
-                                                                          N,
-                                                                          B,
-                                                                          DT.B,
-                                                                          data,
-                                                                          dolist,
-                                                                          alpha,
-                                                                          byvars,
-                                                                          mlabels,
-                                                                          ipa,
-                                                                          keep.residuals,
-                                                                          conservative,
-                                                                          cens.model,
-                                                                          response.dim,
-                                                                          ID)})
-        }
+      crossvalPerf <- lapply(metrics, function(m){crossvalPerf.loob(m,
+                                                                    times,
+                                                                    mlevs,
+                                                                    se.fit,
+                                                                    response.type,
+                                                                    NT,
+                                                                    Response,
+                                                                    cens.type,
+                                                                    Weights,
+                                                                    split.method,
+                                                                    N,
+                                                                    B,
+                                                                    DT.B,
+                                                                    data,
+                                                                    dolist,
+                                                                    alpha,
+                                                                    byvars,
+                                                                    mlabels,
+                                                                    ipa,
+                                                                    keep.residuals,
+                                                                    conservative,
+                                                                    cens.model,
+                                                                    response.dim,
+                                                                    ID,
+                                                                    cause)})
         ## if (split.method$name=="LeaveOneOutBoot" ){
         names(crossvalPerf) <- metrics
         # }}}
@@ -1171,7 +1171,9 @@ if (split.method$internal.name%in%c("BootCv","LeaveOneOutBoot","crossval")){
                                ibs=ibs,
                                ipa=ipa,
                                ROC=FALSE,
-                               MC=Weights$IC)
+                               MC=Weights$IC,
+                               old.ic.method=TRUE,
+                               Weights$IC.data)
         }
         if (!is.null(progress.bar)){
             cat("\n")
@@ -1276,6 +1278,11 @@ if (split.method$internal.name%in%c("BootCv","LeaveOneOutBoot","crossval")){
                             missing.predictions=missing.predictions,
                             off.predictions=off.predictions,
                             call=theCall))
+    # remove null model from AUC
+    if (!is.null(output$AUC) && null.model){
+      output$AUC$score <- output$AUC$score[model!="Null model"]
+      output$AUC$contrasts <- output$AUC$contrasts[reference!="Null model"]
+    }
     for (p in c(plots)){
         output[[p]]$plotmethod <- p
         class(output[[p]]) <- paste0("score",p)

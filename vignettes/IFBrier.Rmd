@@ -124,3 +124,24 @@ $$
 $$
 
 
+## Not expanding the paranthesis
+We can also derive the Brier score as:
+\begin{align*}
+\sum_{\delta = 0, 1} \int\left\{1_{\{ t \leq \tau \}}-R(\tau \mid x)\right\}^{2} W_\tau(z; G) P(d t, \delta, d x)
+\end{align*}
+with $W_\tau(z; G) = \frac{\delta I(t \leq \tau)}{G(t-|x)} +  \frac{I(t > \tau)}{G(\tau |x)}$. Taking the Gateaux derivative yields,
+\begin{align*}
+& I( \tilde{T}_i \leq \tau, \Delta_i=1)\frac{(1-R(\tau \mid X_i)) ^{2}}{G(\tilde{T}_i- | X_i)} + I( \tilde{T}_i > \tau)\frac{R(\tau \mid X_i) ^{2}}{G(\tau | X_i)} \\
+&-Brier \\
+&+ \int I(t \leq \tau)(1-R(\tau | x))^2 \frac{f_i(t-,x)}{G(t-|x)}P(dt,1,dx) \\
+&+ \int I(t > \tau)R(\tau | x) ^2 \frac{f_i(\tau,x)}{G(\tau|x)}P(dt,dx)
+\end{align*}
+Whenever the censoring does not depend on covariates, the two last integrals are easy to estimate. However, when the censoring does depend on the covariates, we can use the tricks mentioned in IFAUC.pdf to get that,
+\begin{align*}
+&\int I(t > \tau)R(\tau | x) ^2 \frac{f_i(\tau,x)}{G(\tau|x)}P(dt,dx) + \int I(t \leq \tau)(1-R(\tau | x))^2 \frac{f_i(t-,x)}{G(t-|x)}P(dt,1,dx) \\
+&= R(\tau | X_i)^2 S(\tau | X_i)\left(\frac{I(\tilde{T}_i \leq \tau, \Delta_i = 0)}{G(\tilde{T}_i|X_i)S(\tilde{T}_i|X_i)}-\int_0^{\tilde{T}_i \wedge \tau} \frac{1}{G(s|X_i)^2S(s|X_i)^2}P(ds,0|X_i)\right) \\
+&+ (1-R(\tau|X_i))^2 \left(\frac{I(\tilde{T}_i \leq \tau, \Delta_i = 0)}{G(\tilde{T}_i|X_i)S(\tilde{T}_i|X_i)}(F_1(\tau|X_i)-F_1(\tilde{T}_i|X_i))-\int_0^{\tilde{T}_i \wedge \tau} \frac{(F_1(\tau|X_i)-F_1(s|X_i))}{G(s|X_i)^2S(s|X_i)^2}P(ds,0|X_i)\right) \\
+&= R(\tau | X_i)^2 S(\tau | X_i)\left(\frac{I(\tilde{T}_i \leq \tau, \Delta_i = 0)}{G(\tilde{T}_i|X_i)S(\tilde{T}_i|X_i)}-\int_0^{\tilde{T}_i \wedge \tau} \frac{1}{G(s|X_i)S(s|X_i)}\Lambda_C(ds|X_i)\right) \\
+&+ (1-R(\tau|X_i))^2 \left(\frac{I(\tilde{T}_i \leq \tau, \Delta_i = 0)}{G(\tilde{T}_i|X_i)S(\tilde{T}_i|X_i)}(F_1(\tau|X_i)-F_1(\tilde{T}_i|X_i))-\int_0^{\tilde{T}_i \wedge \tau} \frac{(F_1(\tau|X_i)-F_1(s|X_i))}{G(s|X_i)S(s|X_i)}\Lambda_C(ds|X_i)\right)
+\end{align*}
+
