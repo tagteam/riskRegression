@@ -145,31 +145,39 @@ plotAUC <- function(x,
                                      forced=list("plot"=list(axes=FALSE),
                                                  "axis1"=list(side=1)),
                                      verbose=TRUE)
-
+    do.call("plot",control$plot)
     if (which=="score"){
-        ## AUC
-        do.call("plot",control$plot)
-        pframe[,{thisline <- control$line
-            thisline$col=thisline$col[[as.character(model[1])]]
-            thisline$lwd=thisline$lwd[[as.character(model[1])]]
-            thisline$lty=thisline$lty[[as.character(model[1])]]
-            thisline$pch=thisline$pch[[as.character(model[1])]]
-            thisline$type=thisline$type[[as.character(model[1])]]
-            thisline$x=times
-            thisline$y=AUC
-            do.call("lines",thisline)},by=model]
+      ## AUC
+      # not a very nice solution but this fixes the problem with the plot
+      model.list <- unique(pframe[["model"]])
+      times <- unique(pframe[["times"]])
+      for (mod in model.list){
+        thisline <- control$line
+        thisline$col=thisline$col[[as.character(mod)]]
+        thisline$lwd=thisline$lwd[[as.character(mod)]]
+        thisline$lty=thisline$lty[[as.character(mod)]]
+        thisline$pch=thisline$pch[[as.character(mod)]]
+        thisline$type=thisline$type[[as.character(mod)]]
+        thisline$x=times
+        thisline$y=pframe[model==mod][["AUC"]]
+        do.call("lines",thisline)
+      }
     }else{
         ## delta AUC
-        do.call("plot",control$plot)
-        pframe[,{thisline <- control$line;
-            thisline$col=thisline$col[[as.character(contrast[1])]];
-            thisline$lwd=thisline$lwd[[as.character(contrast[1])]];
-            thisline$lty=thisline$lty[[as.character(contrast[1])]];
-            thisline$pch=thisline$pch[[as.character(contrast[1])]];
-            thisline$type=thisline$type[[as.character(contrast[1])]];
-            thisline$x=times;
-            thisline$y=delta.AUC;
-            do.call("lines",thisline)},by=contrast]
+        # not a very nice solution but this fixes the problem with the plot
+        contrast.list <- unique(pframe[["contrast"]])
+        times <- unique(pframe[["times"]])
+        for (con in contrast.list){
+          thisline <- control$line
+          thisline$col=thisline$col[[as.character(con)]]
+          thisline$lwd=thisline$lwd[[as.character(con)]]
+          thisline$lty=thisline$lty[[as.character(con)]]
+          thisline$pch=thisline$pch[[as.character(con)]]
+          thisline$type=thisline$type[[as.character(con)]]
+          thisline$x=times
+          thisline$y=pframe[contrast==con][["delta.AUC"]]
+          do.call("lines",thisline)
+        }
     }
     ## legend
     if (!(is.logical(legend[[1]]) && legend[[1]]==FALSE)){
