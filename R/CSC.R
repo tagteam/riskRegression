@@ -251,7 +251,15 @@ CSC <- function(formula,
             survresponse <- "survival::Surv(time, status)"
         else
             survresponse <- "survival::Surv(entry, time, status)"
-        formulaXX <- update(formula[[x]],paste0(survresponse,"~."))
+        ## check whether right hand side of formula includes ~.
+        if (grepl("\\.", paste0(format(formula[[x]])))){
+          formulaXX <- as.formula(paste0(survresponse,"~."))
+        }
+        else {
+          formulaXX <- update(formula[[x]],paste0(survresponse,"~."))
+        }
+        # previous
+        # formulaXX <- update(formula[[x]],paste0(survresponse,"~."))
         ## as.formula(paste(survresponse,
         ## as.character(delete.response(terms.formula(formulaX)))[[2]],
         ## sep="~"))
