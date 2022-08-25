@@ -1278,6 +1278,11 @@ if (split.method$internal.name%in%c("BootCv","LeaveOneOutBoot","crossval")){
                             missing.predictions=missing.predictions,
                             off.predictions=off.predictions,
                             call=theCall))
+    # remove null model from AUC
+    if (!is.null(output$AUC) && null.model){
+      output$AUC$score <- output$AUC$score[model!="Null model"]
+      output$AUC$contrasts <- output$AUC$contrasts[reference!="Null model"]
+    }
     for (p in c(plots)){
         output[[p]]$plotmethod <- p
         class(output[[p]]) <- paste0("score",p)
