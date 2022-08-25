@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Dec  6 2020 (09:25) 
 ## Version: 
-## Last-Updated: May 31 2022 (11:43) 
+## Last-Updated: Aug 23 2022 (13:36) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 8
+##     Update #: 9
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -152,6 +152,9 @@ test_that("Number of models and time points", {
         message("Package pec not installed. Skip this test.")
     }else{
         library(pec)
+        library(survival)
+        library(rms)
+        library(data.table)
         data(GBSG2)
         setDT(GBSG2)
         ## fit1 <- coxph(Surv(time, cens)~horTh+age+menostat+tsize+pnodes+progrec+estrec, data = GBSG2, x = TRUE)
@@ -162,18 +165,17 @@ test_that("Number of models and time points", {
         setorder(GBSG2.test,time,-cens)
         ## predictCox(fit1,newdata=GBSG2.test,times=1000)
         r1 <- Score(list(a=fit2),data=GBSG2.test,times=1000,formula=Surv(time,cens)~1,plots="cali")
-        set.seed(11)
-        R1 <- Score(list(a=fit2),data=GBSG2.test,times=1000,B=50,split.method="bootcv",formula=Surv(time,cens)~1,plots="cali")
+        R1 <- Score(list(a=fit2),data=GBSG2.test,seed = 11,times=1000,B=50,split.method="bootcv",formula=Surv(time,cens)~1,plots="cali")
         setorder(GBSG2,time,cens)
         ## setorder(GBSG2.test,age)
         GBSG2 <- 7
         r2 <- Score(list(a=fit2,b=fit1),data=GBSG2.test,times=c(100,500,2000,1000),formula=Surv(time,cens)~1,plots="cali")
-        set.seed(11)
-        R2 <- Score(list(a=fit2,b=fit1),data=GBSG2.test,times=c(1000),B=50,split.method="bootcv",formula=Surv(time,cens)~1,plots="cali")
+        R2 <- Score(list(a=fit2,b=fit1),seed = 11,data=GBSG2.test,times=c(1000),B=50,split.method="bootcv",formula=Surv(time,cens)~1,plots="cali")
         ## r1$Calibration$plotframe
         ## r2$Calibration$plotframe[times==1000&model=="a"]
         ## r3 <- pec(list(a=fit2,b=fit1),data=GBSG2.test,exact=FALSE,times=c(1000),formula=Surv(time,cens)~1)
         expect_equal(as.numeric(r1$Brier$score[model=="a"]),as.numeric(r2$Brier$score[model=="a" & times==1000]))
+        expect_equal(as.numeric(R1$Brier$score[model=="a"]),as.numeric(R2$Brier$score[model=="a" & times==1000]))
         ## expect_equal(r1$AUC$score[model=="a"],r2$AUC$score[model=="a" & times==1000])
     }
 })
