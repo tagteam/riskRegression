@@ -830,7 +830,7 @@ c.f., Chapter 7, Section 5 in Gerds & Kattan 2021. Medical risk prediction model
             #   warning("New implementation not finished with other cases than the discrete case. \n  Therefore, force old.ic.method to be true ")
             #   old.ic.method=TRUE
             # }
-            getIC <- se.fit[[1]] && ((!conservative[[1]] && old.ic.method) || split.method$name == "LeaveOneOutBoot" || split.method$internal.name == "crossval")
+            getIC <- se.fit[[1]] && ((!conservative[[1]] && old.ic.method) || ((split.method$name == "LeaveOneOutBoot" || split.method$internal.name == "crossval") && "AUC" %in% metrics))
             Weights <- getCensoringWeights(formula=formula,
                                            data=data,
                                            times=times,

@@ -325,17 +325,30 @@ crossvalPerf.loob.Brier <- function(times,mlevs,se.fit,response.type,NT,Response
         # that is a multiple of the
         #amount of observations in the data, does not fulfill this.
         #the calculations in getInfluenceCurve.Brier cannot accomodate this (for now).
-
-
-        DT.B[,IF.Brier:=getInfluenceCurve.Brier(t=times[1],
-                                                time=time,
-                                                IC0,
-                                                residuals=residuals,
-                                                WTi=WTi,
-                                                Wt=Wt,
-                                                IC.G=Weights$IC,
-                                                cens.model=cens.model,
-                                                nth.times=nth.times[1]),by=byvars]
+        if (response.type == "survival"){
+          DT.B[,status0:=status]
+        }
+        else {
+          DT.B[,status0:=status*event]
+        }
+        if (cens.model == "KaplanMeier"){
+          DT.B[,IF.Brier:=getInfluenceFunctionBrierKMCensoringUseSquared(times[1],time,residuals,status0),by= byvars]
+        }
+        else {
+          DT[,IF.Brier:=getInfluenceCurve.Brier.covariates(times[1],time,risk,status0,WTi,sum(residuals)/N,IC.data), by=byvars]
+        }
+        
+        # old method
+        # DT.B[,IF.Brier:=getInfluenceCurve.Brier(t=times[1],
+        #                                         time=time,
+        #                                         IC0,
+        #                                         residuals=residuals,
+        #                                         WTi=WTi,
+        #                                         Wt=Wt,
+        #                                         IC.G=Weights$IC,
+        #                                         cens.model=cens.model,
+        #                                         nth.times=nth.times[1]),by=byvars]
+        
         score.loob <- DT.B[,data.table(Brier=sum(residuals)/N,
                                        se=sd(IF.Brier)/sqrt(N),
                                        se.conservative=sd(IC0)/sqrt(N)),by=byvars]

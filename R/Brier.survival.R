@@ -52,7 +52,6 @@ Brier.survival <- function(DT,MC,se.fit,conservative,cens.model,keep.vcov=FALSE,
                   DT[,IF.Brier2 := 0]
                 }
                 else {
-                    browser()
                     DT[,IF.Brier := getInfluenceFunctionBrierKMCensoringUseSquared(times[1],time,residuals,status),by=list(model,times)]
                     # DT[,IF.Brier := getInfluenceFunctionBrierKMCensoring(times[1],time,risk,status,WTi,Brier[1]),by=list(model,times)]
                 }
