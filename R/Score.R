@@ -447,6 +447,7 @@ Score.list <- function(object,
                        predictRisk.args,
                        debug=0L,
                        old.ic.method=FALSE,
+                       cv.aggregate = "meanRisk", #otherwise dont average over risk
                        ...){
 
     se.conservative=IPCW=IF.AUC.conservative=IF.AUC0=IF.AUC=IC0=Brier=AUC=casecontrol=se=nth.times=time=status=ID=WTi=risk=IF.Brier=lower=upper=crossval=b=time=status=model=reference=p=model=pseudovalue=ReSpOnSe=residuals=event=j=NULL
@@ -830,7 +831,7 @@ c.f., Chapter 7, Section 5 in Gerds & Kattan 2021. Medical risk prediction model
             #   warning("New implementation not finished with other cases than the discrete case. \n  Therefore, force old.ic.method to be true ")
             #   old.ic.method=TRUE
             # }
-            getIC <- se.fit[[1]] && ((!conservative[[1]] && old.ic.method) || ((split.method$name == "LeaveOneOutBoot" || split.method$internal.name == "crossval") && "AUC" %in% metrics))
+            getIC <- se.fit[[1]] && !conservative[[1]] && old.ic.method
             Weights <- getCensoringWeights(formula=formula,
                                            data=data,
                                            times=times,
@@ -933,7 +934,7 @@ c.f., Chapter 7, Section 5 in Gerds & Kattan 2021. Medical risk prediction model
                                       alpha=alpha,
                                       se.fit=se.fit,
                                       conservative=conservative,
-                                      cens.model,
+                                      cens.model=cens.model,
                                       multi.split.test=multi.split.test,
                                       keep.residuals=keep.residuals,
                                       keep.vcov=keep.vcov,
@@ -1114,34 +1115,47 @@ if (split.method$internal.name%in%c("BootCv","LeaveOneOutBoot","crossval")){
                        ifelse(NROW(DT.B)>1000000,
                               " This may take a while ...",
                               " This should be fast ...")))
-      crossvalPerf <- lapply(metrics, function(m){crossvalPerf.loob(m,
-                                                                    times,
-                                                                    mlevs,
-                                                                    se.fit,
-                                                                    response.type,
-                                                                    NT,
-                                                                    Response,
-                                                                    cens.type,
-                                                                    Weights,
-                                                                    split.method,
-                                                                    N,
-                                                                    B,
-                                                                    DT.B,
-                                                                    data,
-                                                                    dolist,
-                                                                    alpha,
-                                                                    byvars,
-                                                                    mlabels,
-                                                                    ipa,
-                                                                    keep.residuals,
-                                                                    conservative,
-                                                                    cens.model,
-                                                                    response.dim,
-                                                                    ID,
-                                                                    cause)})
-        ## if (split.method$name=="LeaveOneOutBoot" ){
-        names(crossvalPerf) <- metrics
-        # }}}
+      if (cv.aggregate == "meanRisk"){
+        if (response.type != "binary"){
+          DT.B <- DT.B[,cbind(.SD[1],data.table(risk=mean(risk))),
+                       keyby=list(ID,model,times),
+                       .SDcols=setdiff(names(DT.B),c("risk","ID","b","model","times"))]
+        }
+        else {
+          DT.B <- DT.B[,cbind(.SD[1],data.table(risk=mean(risk))),
+                       keyby=list(ID,model),
+                       .SDcols=setdiff(names(DT.B),c("risk","ID","b","model"))]
+        }
+      }
+      crossvalPerf <- computePerformance(DT=DT.B,
+                                         N=nrow(DT.B),
+                                         NT=NT,
+                                         NF=NF,
+                                         models=list(levels=mlevs,labels=mlabels),
+                                         response.type=response.type,
+                                         times=times,
+                                         jack=jack,
+                                         cens.type=cens.type,
+                                         cause=cause,
+                                         states=states,
+                                         alpha=alpha,
+                                         se.fit=se.fit,
+                                         conservative=conservative,
+                                         cens.model=cens.model,
+                                         multi.split.test=multi.split.test,
+                                         keep.residuals=keep.residuals,
+                                         keep.vcov=keep.vcov,
+                                         dolist=dolist,
+                                         probs=probs,
+                                         metrics=metrics,
+                                         plots=plots,
+                                         summary=summary,
+                                         ibs=ibs,
+                                         ipa = ipa,
+                                         ROC=FALSE,
+                                         MC=Weights$IC,
+                                         old.ic.method=old.ic.method,
+                                         IC.data=Weights$IC.data)
     } ## end clause split.method$name=="LeaveOneOutBoot"
     if (split.method$name=="BootCv"){
         # {{{ bootcv
@@ -1185,7 +1199,7 @@ if (split.method$internal.name%in%c("BootCv","LeaveOneOutBoot","crossval")){
                                ROC=FALSE,
                                MC=Weights$IC,
                                old.ic.method=TRUE,
-                               Weights$IC.data)
+                               IC.data=Weights$IC.data)
         }
         if (!is.null(progress.bar)){
             cat("\n")
