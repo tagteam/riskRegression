@@ -978,7 +978,7 @@ if (split.method$internal.name%in%c("BootCv","LeaveOneOutBoot","crossval")){
     `%dopar%` <- foreach::`%dopar%`
     ## k-fold-CV
     if (split.method$internal.name == "crossval"){
-        DT.B <- rbindlist(foreach::foreach (b=1:B,.export=exports,.packages="data.table",.errorhandling=errorhandling) %dopar%{
+        DT.B <- foreach::foreach (b=1:B,.export=exports,.packages="data.table",.errorhandling=errorhandling) %dopar%{
             ## repetitions of k-fold to avoid Monte-Carlo error
             index.b <- split.method$index[,b] ## contains a sample of the numbers 1:k with replacement
             if((B>1) && !is.null(progress.bar)){setTxtProgressBar(pb, b)}
@@ -1002,7 +1002,6 @@ if (split.method$internal.name%in%c("BootCv","LeaveOneOutBoot","crossval")){
                 }
                 ## predicted risks of model trained without this fold
                 ## evaluated and added to this fold
-                
                 DT.fold <- getPerformanceData(testdata=testdata,
                                               testweights=testweights,
                                               traindata=traindata,
@@ -1024,9 +1023,9 @@ if (split.method$internal.name%in%c("BootCv","LeaveOneOutBoot","crossval")){
             }))
             DT.b[,b:=b]
             DT.b
-        })
+        }
     }else{# either LeaveOneOutBoot or BootCv
-        DT.B <- rbindlist(foreach::foreach (b=1:B,.export=exports,.packages="data.table",.errorhandling=errorhandling) %dopar%{
+        DT.B <- foreach::foreach (b=1:B,.export=exports,.packages="data.table",.errorhandling=errorhandling) %dopar%{
             if(!is.null(progress.bar)){setTxtProgressBar(pb, b)}
             ## DT.B <- rbindlist(lapply(1:B,function(b){
             traindata=data[split.method$index[,b]]
@@ -1062,8 +1061,21 @@ if (split.method$internal.name%in%c("BootCv","LeaveOneOutBoot","crossval")){
                                        NT=NT)
             DT.b[,b:=b]
             DT.b
-        })
+        }
     }
+    trycombine <- try(DT.B <- rbindlist(DT.B),silent=TRUE)
+    if (inherits(trycombine,"try-error")){
+      # error handling (because rbindlist is useless at reporting errors)
+      for (b in 1:B){
+        if ("error" %in% class(DT.B[[b]]) || "simpleError" %in% "error" %in% class(DT.B[[b]])){
+          stop(paste0("Errors occured in training models for crossvalidation. \n ", "Error found in iteration b = ",b,": \n ", DT.B[[b]]))
+        }
+      }
+    }
+    else if (nrow(DT.B)==0){
+      stop("All training models failed. ")
+    }
+    
     if (!is.null(progress.bar)){
         cat("\n")
     }
@@ -1279,10 +1291,10 @@ if (split.method$internal.name%in%c("BootCv","LeaveOneOutBoot","crossval")){
                             off.predictions=off.predictions,
                             call=theCall))
     # remove null model from AUC
-    if (!is.null(output$AUC) && null.model){
-      output$AUC$score <- output$AUC$score[model!="Null model"]
-      output$AUC$contrasts <- output$AUC$contrasts[reference!="Null model"]
-    }
+    # if (!is.null(output$AUC) && null.model){
+    #   output$AUC$score <- output$AUC$score[model!="Null model"]
+    #   output$AUC$contrasts <- output$AUC$contrasts[reference!="Null model"]
+    # }
     for (p in c(plots)){
         output[[p]]$plotmethod <- p
         class(output[[p]]) <- paste0("score",p)
