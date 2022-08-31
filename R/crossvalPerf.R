@@ -266,7 +266,22 @@ crossvalPerf.loob.Brier <- function(times,mlevs,se.fit,response.type,NT,Response
   ## for each individual sum the residuals of the bootstraps where this individual is out-of-bag
   ## divide by number of times out-off-bag later
   ## DT.B <- DT.B[,data.table::data.table(residuals=sum(residuals)),by=c(byvars,"ID")]
-  DT.B <- DT.B[,data.table::data.table(risk=mean(risk),residuals=sum(residuals)),by=c(byvars,"ID")]
+  getNbk <- function(b,k){
+    sum(split.method$index[,b] == k)
+  }
+  if (se.fit){
+    message("Calculating the third term of the influence function for Brier. This might take a while ...")
+    pb <- txtProgressBar(min = 1, max = N, style =31, width=20)
+    `%dopar%` <- foreach::`%dopar%`
+    IF.terms <-foreach::foreach(k=1:N,.combine="rbind") %dopar% {
+      setTxtProgressBar(pb, k)
+      temp <- DT.B[,data.table::data.table(IF.term=mean(residuals*getNbk(b,k))),by=c(byvars,"ID")] 
+      temp <- temp[,data.table::data.table(IF.term=mean(IF.term)), by=byvars]
+      temp[,ID:=k]
+      temp
+    }
+  }
+  DT.B <- DT.B[,data.table::data.table(residuals=sum(residuals)),by=c(byvars,"ID")] 
   ## get denominator
   if (split.method$name=="LeaveOneOutBoot"){
     Ib <- split.method$B-tabulate(unlist(apply(split.method$index,2,unique)))
@@ -292,17 +307,16 @@ crossvalPerf.loob.Brier <- function(times,mlevs,se.fit,response.type,NT,Response
   DT.B[,Brier:=mean(residuals),by=byvars]
   ## standard error via influence function
   if (se.fit==1L){
+    DT.B <- merge(DT.B,IF.terms)
+    m <- split.method$M
+    DT.B[,IC0:=residuals-(m+1)*Brier+IF.term,by=byvars]
     ## influence function when censoring model is known or data are uncensored
-    DT.B[,IC0:=residuals-Brier]
-    ## se.brier <- DT.B[,list(se=sd(IC0, na.rm=TRUE)/sqrt(N)),by=byvars]
-    ## DT.B[,Brier:=NULL]
-    if (cens.type[1]=="rightCensored" && conservative[1]!=TRUE){
+    if (cens.type[1]=="rightCensored" && !conservative[1]){
       ## this is a new DT.B
       DT.B <- cbind(data[,1:response.dim,with=FALSE],DT.B)
       DT.B[,nth.times:=as.numeric(factor(times))]
       WW <- data.table(ID=1:N,WTi=Weights$IPCW.subject.times,key="ID")
       DT.B <- merge(WW,DT.B,by=ID)
-      ## DT.B[,WTi:=rep(Weights$IPCW.subject.times,NF+length(nullobject))]
       if (Weights$method=="marginal"){
         Wt <- data.table(times=times,Wt=Weights$IPCW.times)
         ## OBS: many digits in times may cause merge problems
@@ -332,30 +346,18 @@ crossvalPerf.loob.Brier <- function(times,mlevs,se.fit,response.type,NT,Response
           DT.B[,status0:=status*event]
         }
         if (cens.model == "KaplanMeier"){
-          DT.B[,IF.Brier:=getInfluenceFunctionBrierKMCensoringUseSquared(times[1],time,residuals,status0),by= byvars]
+          DT.B[,IF.Brier:=IC0+getInfluenceFunctionBrierCVCensoringKM(times[1],time,residuals,status0),by= byvars]
         }
         else {
-          DT[,IF.Brier:=getInfluenceCurve.Brier.covariates(times[1],time,risk,status0,WTi,sum(residuals)/N,IC.data), by=byvars]
+          stop("Only KaplanMeier censoring works with crossvalidated Brier score for now ")
         }
-        
-        # old method
-        # DT.B[,IF.Brier:=getInfluenceCurve.Brier(t=times[1],
-        #                                         time=time,
-        #                                         IC0,
-        #                                         residuals=residuals,
-        #                                         WTi=WTi,
-        #                                         Wt=Wt,
-        #                                         IC.G=Weights$IC,
-        #                                         cens.model=cens.model,
-        #                                         nth.times=nth.times[1]),by=byvars]
         
         score.loob <- DT.B[,data.table(Brier=sum(residuals)/N,
                                        se=sd(IF.Brier)/sqrt(N),
                                        se.conservative=sd(IC0)/sqrt(N)),by=byvars]
-
-
       }
-    }else{
+    }
+    else{
       ## either conservative == TRUE or binary or uncensored
       score.loob <- DT.B[,data.table(Brier=sum(residuals)/N,se=sd(IC0)/sqrt(N)),
                          by=byvars]
