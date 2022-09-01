@@ -2,7 +2,7 @@
 title: Derivation of the Influence Function for AUC for competing risk data and survival
   data
 author: "Johan Sebastian Ohlendorff & Thomas Alexander Gerds"
-date: '2022-06-07'
+date: '2022-01-09'
 output:
   pdf_document: default
   html_document:
@@ -45,6 +45,53 @@ knitr::opts_chunk$set(echo = TRUE)
 \newcommand{\hatifmu}{\ensuremath{\mathrm{\widehat{IF}}_{\mu}}}
 \newcommand{\ifmuc}{\ensuremath{\mathrm{IF}^1_{\mu}}}
 \newcommand{\hatifmuc}{\ensuremath{\mathrm{\widehat{IF}}^1_{\mu}}}
+
+<!-- for use with Rikkes paper -->
+\newcommand{\AUCO}{\hat{\theta}^{(1,1)}_{\tau,m}}
+\newcommand{\AUCObin}{\ensuremath{\hat{\theta}^{(1,1)}_{m}}}
+\newcommand{\auc}{\widehat{\text{auc}}}
+\newcommand{\aucO}{\theta_{\tau,m}}
+\newcommand{\D}{\mathrm{d}}
+\newcommand{\Db}{D^*_{m,b}}
+\newcommand{\E}{\mathbb{E}}
+\newcommand{\G}{\hat G_n}
+\newcommand{\g}{\hat{\mathbb{G}}}
+\newcommand{\II}{\mathcal{I}}
+\newcommand{\I}[1]{\II_{\{#1\}}}
+\newcommand{\Ibi}{\I{N_i^b=0}}
+\newcommand{\Ibj}{\I{N_j^b=0}}
+\newcommand{\Ibk}{\I{N_k^b=0}}
+\newcommand{\IC}{\text{IF}}
+\newcommand{\Isi}{\I{N_i=0}}
+\newcommand{\LL}{\{\I{\T_{m+1}\leq \tau}-\R(Z_{m+1})\}^2}
+\newcommand{\Lbi}{\{\I{\T_i\leq \tau}-\Rb(Z_i)\}^2}
+\newcommand{\Li}{\{\I{\T_i\leq \tau}-\R(Z_i)\}^2}
+\newcommand{\Lj}{\{\I{\T_j\leq \tau}-\R(Z_j)\}^2}
+\newcommand{\loo}{leave-one-out bootstrap }
+\newcommand{\lpo}{leave-pair-out bootstrap }
+\newcommand{\Lt}{\ensuremath{L_t}}
+\newcommand{\M}{\ensuremath{\omega_{\tau,m}}}
+\newcommand{\m}{\hat{\omega}^{(1)}_{\tau,m}}
+\newcommand{\mbin}{\hat{\omega}^{(1)}_{m}}
+\newcommand{\MU}{\ensuremath{\hat{\mu}^{(1)}_{\tau,m}}}
+\newcommand{\p}{\ensuremath{\P_n}}
+\newcommand{\PSI}{\ensuremath{\hat{\psi}^{(1)}_{m}}}
+\renewcommand{\P}{\ensuremath{\mathrm{P}}}
+\newcommand{\PEK}{\ensuremath{P_{\epsilon,k}}}
+\newcommand{\Qej}{\ensuremath{Q_{n,\epsilon,j}}}
+\newcommand{\RR}{\ensuremath{R_{\tau}}}
+\newcommand{\R}{\ensuremath{\RR(D_m)}}
+\newcommand{\Rb}{\ensuremath{\RR(D_{m,b}^*)}}
+\newcommand{\Rbi}{\ensuremath{R(D_{m,b}^*)}}
+\newcommand{\T}{\ensuremath{\tilde{T}}}
+\newcommand{\V}{\text{Var}}
+\newcommand{\X}{\ensuremath{\tilde{X}}}
+\newcommand{\XX}{X}
+\newcommand{\W}{W_\tau}
+\newcommand{\Wi}{\W(X_i,\hat G_n)}
+\newcommand{\Wk}{\W(X_k,\hat G_n)}
+\newcommand{\WWi}{\mathcal{W}_{T_i}(Z_i)}
+\newcommand{\WWj}{\mathcal{W}_t(Z_j)}
 
 ## Introduction 
 
@@ -301,3 +348,92 @@ return $\hat{\mu}^{(i)}$ for each $i = 1, \ldots, n$ \;
 The idea is that but we keep on adding and subtracting the terms with tied values in the event times. Then we do not need to calculate a sum for each $i$.
 
 On the other hand, efficient calculation of some of the estimates can be done for example by sorting the risks $X$ in (1) for the integral there.
+
+## Cross-validation
+
+### Binary case
+Our cross-validation algorithm repeatedly splits the dataset \(D_n\) of size $n$
+into training and validation datasets as follows. Let \(B\) be a large
+integer. For each \(b=1,\ldots,B\) we draw a bootstrap dataset
+\(\Db=\{X_{b,1}^*,\ldots,X_{b,m}^*\}\) of size \(m\) with
+replacement from the data \(D_n\). For \(i=1,\ldots,n\) let \(N_i^b\) be
+the number of times subject \(i\) is included in \(\Db\). In step
+\(b\) of the cross-validation algorithm the bootstrap dataset \(\Db\)
+is used for training. We apply \(R \) to \(\Db\) to obtain the
+prediction model \(\Rbi\). All subjects \(i\) for which \(N_i^b=0\) are
+out-of-bag and we let these subjects form the validation dataset of step \(b\). First let us construct the influence function in this case with binary data, $X=(Y,Z)$. In this case, we consider estimation of the functional (i.e. the definition of the AUC in cross-validation)
+
+In this section we extend the ideas from the previous
+section and define a \lpo IPCW estimator of AUC.
+The AUC can be written as
+\begin{align*}
+  \text{AUC}(D_m)&=\E_{X_{m+1},X_{m+2}}\Big[\I{\RR(D_m)(Z_{m+1})>\RR(D_m)(Z_{m+2})}\big\vert Y_{m+1} = 1, Y_{m+2} = 0, D_m\Big] \\
+  &=\frac{\E_{X_{m+1},X_{m+2}}\Big[\I{\R(Z_{m+1})>\R(Z_{m+2})} \I{Y_{m+1} = 1}\I{Y_{m+2} = 0}\big\vert D_m\Big]}
+  {\E_{X_{m+1}}\Big[\I{Y_{m+1} = 1}\Big]\E_{X_{m+2}}\Big[\I{Y_{m+2} = 0}\Big]} 
+\end{align*}
+With the notation 
+\begin{equation*}
+  \Theta_{m}(Z_{m+1},Z_{m+2})=\E_{D_m}\big[\I{\R(Z_{m+1})>\R(Z_{m+2})}\big\vert Z_{m+1},Z_{m+2}\big],
+\end{equation*}
+the expected parameter \(\theta_{m} =\E_{D_n}\big[\text{AUC}(D_n)\big] \) can then be written as 
+\begin{align}
+  \theta_{m} &=\E_{D_m}\left[\frac{\E_{X_{m+1},X_{m+2}}\Big[\I{\R(Z_{m+1})>\R(Z_{m+2})} \I{Y_{m+1} = 1}\I{Y_{m+2} = 0}\big\vert D_m\Big]}
+  {\E_{X_{m+1}}\Big[\I{Y_{m+1} = 1}\Big]\E_{X_{m+2}}\Big[\I{Y_{m+2} = 0}\Big]}\right]\nonumber\\
+  &=\frac{\E_{X_{m+1},X_{m+2}}\left[\Theta_{m}(Z_{m+1},Z_{m+2})\I{Y_{m+1} = 1}\I{Y_{m+2} = 0}\right]}
+  {\E_{X_{m+1}}\Big[\I{Y_{m+1} = 1}\Big]\E_{X_{m+2}}\Big[\I{Y_{m+2} = 0}\Big]}=\frac{\mathcal{A}_{\tau,m}}{\mathcal{B}_{\tau}}
+\end{align}
+
+As before, let \(\Db\) be a bootstrap sample drawn with replacement
+from \(D_m\), and let \(\Rbi\) be a prediction modeling algorithm trained in
+\(\Db\). The idea of the \lpo estimator is to evaluate the concordance
+of predicted risks obtained from \(\Rbi\) for all pairs of subjects
+\((i,j)\) for which both subject \(i\) and subject \(j\) is out-of-bag   
+\begin{equation*}
+  \I{\Rbi(Z_i)>\Rbi(Z_j)}\Ibi\Ibj
+\end{equation*}  
+The contribution of pair \((i,j)\) to the \lpo estimator is the average
+concordance over all bootstrap samples for which both \(i\) and \(j\) are
+out-of-bag 
+\begin{equation}
+\label{eq:lpo}
+  \hat{\Theta}^{(1,1)}_{m}(Z_{i},Z_{j})=\frac{\sum_{b=1}^{B}\I{\Rbi(Z_{i})>\Rbi(Z_{j})}\Ibi\Ibj}{\sum_{b=1}^{B}\Ibi\Ibj}
+\end{equation}
+In the case of no censoring, the \lpo estimate of \(\aucO\) is obtained
+by inserting \(\hat{\Theta}^{(1,1)}_{m}\) in
+$\theta_m$ and replacing the expectations by empirical means 
+\begin{equation*}
+  \frac{1}{n^2}\frac{1}{\hat{\mathcal{B}}_\tau}\sum_{i=1}^n\sum_{j=1}^n\hat{\Theta}^{(1,1)}_{m}(Z_{i},Z_{j})\I{Y_i=1}\I{Y_j=0},
+\end{equation*}
+with
+\(\hat{\mathcal{B}}_\tau=n^{-2}\big[\sum_{i=1}^n\I{Y_i=1}\big]\big[\sum_{j=1}^n\I{Y_j=0}\big]\).
+
+### Influence function 
+
+The influence function of the functional
+\(\nu_{m}(\P)=\mu_{m}\) in the direction
+\(x_k=(t_k,\delta_k,z_k)\) is given by 
+\begin{align*}
+  \IC_{\nu}(m;x_k)&=\frac{\partial}{\partial\epsilon}\nu_{m}(\P_{\epsilon,k})\Big\vert_{\epsilon=0}\\
+  &=\frac{1}{\eta(\P)}\frac{\partial}{\partial\epsilon}\Bigg[\int\int\Bigg(\int\cdots\int\I{\RR(\{x_i\}_{i=1}^m)(z_{m+1})>\RR(\{x_i\}_{i=1}^m)(z_{m+2})}\prod_{i=1}^m\P_{\epsilon,k}(\D x_i)\Bigg)\\
+  &\hspace{0.7cm}\P_{\epsilon,k}(\D x_{m+1})\P_{\epsilon,k}(\D x_{m+2})\Bigg]\Bigg\vert_{\epsilon=0}
+  -\frac{\partial}{\partial\epsilon}\frac{\eta(\P_{\epsilon,k})}{\eta(\P)}\nu_{m}(\P)\Big\vert_{\epsilon=0}
+\end{align*}
+It follows that
+\begin{align*}
+  \IC_{\nu}(m;x_k)&=\frac{1}{\eta(\P)}\int\Theta_{m}(z_k,z_{m+2})\P(\D x_{m+2})-\nu_{m}(\P) \\
+  &+\frac{1}{\eta(\P)}\int\Theta_{m}(z_{m+1},z_k) \P(\D x_{m+1})-\nu_{m}(\P)\\
+  &+\frac{1}{\eta(\P)}\int\int\frac{\partial}{\partial\epsilon}\int\cdots\int\I{\RR(\{x_i\}_{i=1}^m)(z_{m+1})>\RR(\{x_i\}_{i=1}^m)(z_{m+2})}\prod_{i=1}^m\P_{\epsilon,k}(\D x_i)\\
+  &\hspace{0.3cm}\P(\D x_{m+1})\P(\D x_{m+2})\Big\vert_{\epsilon=0}\\
+  &-\frac{\partial}{\partial\epsilon}\frac{\nu_{m}(\P)}{\eta(\P)}\eta(\P_{\epsilon,k})\Big\vert_{\epsilon=0}
+\end{align*}
+Hence, after some calculations, 
+\begin{align*}
+  &\IC_{\nu}(m;x_k)=\frac{1}{\eta(\P)}\Big[\int\Theta_{m}(z_{m+1},z_k)\P(\D x_{m+1})\\
+  &\hspace{3cm}+\int\Theta_{m}(z_k,z_{m+2})\P(\D x_{m+2})\Big]-m\, \nu_{m}(\P)\\
+  &+\frac{1}{\eta(P)}\int\int\sum_{j=1}^m \int\cdots\int\I{\RR(\{x_i\}_{i=1}^m)(z_{m+1})>\RR(\{x_i\}_{i=1}^m)(z_{m+2})}\delta_{x_k}(x_j)\prod_{i\neq j}\P(\D x_i)\\
+  &\hspace{0.4cm}\P(\D x_{m+1})\P(\D x_{m+2})\\
+  &-\frac{\nu_{m}(\P)}{\eta(\P)}\Big[\I{y_k=1}\Big]
+  \Big[\int \I{y_{m+2}=0}\P(\D x_{m+2})\Big]\\
+  &-\frac{\nu_{n}(\P)}{\eta(\P)}\Big[\int \I{y_{m+1}=1}\P(\D x_{m+1})\Big]
+  \Big[\I{y_k=0}\Big]
+\end{align*}

@@ -1,7 +1,7 @@
 ---
 title: "Influence function calculation for Brier score for event time data"
 author: "Johan Sebastian Ohlendorff & Thomas Alexander Gerds"
-date: "2022-06-07"
+date: "2022-01-09"
 output:
   pdf_document: default
   word_document: default
@@ -41,7 +41,7 @@ header-includes: \usepackage{graphicx, verbatim, fancyvrb, setspace, xspace, col
 \newcommand{\ifmuc}{\ensuremath{\mathrm{IF}^1_{\mu}}}
 \newcommand{\hatifmuc}{\ensuremath{\mathrm{\widehat{IF}}^1_{\mu}}}
 
-% for use with Rikkes paper
+<!-- for use with Rikkes paper -->
 \newcommand{\AUCO}{\hat{\theta}^{(1,1)}_{\tau,m}}
 \newcommand{\auc}{\widehat{\text{auc}}}
 \newcommand{\aucO}{\theta_{\tau,m}}
