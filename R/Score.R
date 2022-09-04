@@ -452,8 +452,8 @@ Score.list <- function(object,
     se.conservative=IPCW=IF.AUC.conservative=IF.AUC0=IF.AUC=IC0=Brier=AUC=casecontrol=se=nth.times=time=status=ID=WTi=risk=IF.Brier=lower=upper=crossval=b=time=status=model=reference=p=model=pseudovalue=ReSpOnSe=residuals=event=j=NULL
     
     # }}}
-    theCall <- match.call()
-    # {{{ decide about metrics and plots
+theCall <- match.call()
+# {{{ decide about metrics and plots
 
     ## Metrics <- lapply(metrics,grep,c("AUC","Brier"),ignore.case=TRUE,value=TRUE)
     plots[grep("^box",plots,ignore.case=TRUE)] <- "boxplot"
@@ -497,7 +497,7 @@ Score.list <- function(object,
     }
 
     # }}}
-    # {{{ censoring model arguments
+# {{{ censoring model arguments
     if (length(grep("^km|^kaplan|^marg",cens.model,ignore.case=TRUE))>0){
         cens.model <- "KaplanMeier"
     } else{
@@ -508,7 +508,7 @@ Score.list <- function(object,
         }
     }
     # }}}
-    # {{{ Response
+# {{{ Response
     if (missing(formula)){stop("Argument formula is missing.")}
     formula.names <- try(all.names(formula),silent=TRUE)
     if (!(formula.names[1]=="~")
@@ -811,7 +811,7 @@ c.f., Chapter 7, Section 5 in Gerds & Kattan 2021. Medical risk prediction model
         NT <- 1
     }
     # }}}
-    # {{{ Dealing with censored data outside the loop
+# {{{ Dealing with censored data outside the loop
     if (response.type %in% c("survival","competing.risks")){
         if (cens.type=="rightCensored"){
             if (se.fit[1]>0L && ("AUC" %in% metrics) && (conservative[1]) && (old.ic.method[1]==TRUE)) {
@@ -883,7 +883,7 @@ c.f., Chapter 7, Section 5 in Gerds & Kattan 2021. Medical risk prediction model
     }
 
     # }}}
-    # {{{ Nosplit performance: external data (hopefully not apparent)
+# {{{ Nosplit performance: external data (hopefully not apparent)
     missing.predictions <- "Don't know yet"
     off.predictions <- "Don't know yet"
     if (split.method$internal.name %in% c("noplan",".632+")){
@@ -951,8 +951,8 @@ c.f., Chapter 7, Section 5 in Gerds & Kattan 2021. Medical risk prediction model
         if (debug) message("computed apparent performance")
     }
     # }}}
-    # {{{ Crossvalidation
-    # {{{ bootstrap re-fitting and k-fold-CV
+# {{{ Crossvalidation
+# {{{ bootstrap re-fitting and k-fold-CV
 
 if (split.method$internal.name%in%c("BootCv","LeaveOneOutBoot","crossval")){
     if (missing(trainseeds)||is.null(trainseeds)){
