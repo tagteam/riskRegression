@@ -264,7 +264,7 @@ NumericVector getInfluenceFunctionAUCKMCensoringCVPart(NumericVector time,
                                                        double tau,
                                                        NumericVector GTiminus,
                                                        double Gtau,
-                                                       NumericMatrix auc,
+                                                       NumericMatrix thetahat,
                                                        double nu1tauPm) {
   // Thomas' code from IC of Nelson-Aalen estimator
   //initialize first time point t=0 with data of subject i=0
@@ -320,13 +320,13 @@ NumericVector getInfluenceFunctionAUCKMCensoringCVPart(NumericVector time,
   for (int i = 0; i < n; i++){
     for (int j = 0; j < n; j++){
       if (time[j] > tau){
-        int1[i] += auc(i,j) / Gtau;
+        int1[i] += thetahat(i,j) / Gtau;
       }
       else if ((time[j] <= tau) && (status[j] == 1)){
-        int2[i] += auc(i,j) / GTiminus[j];
+        int2[i] += thetahat(i,j) / GTiminus[j];
       }
       else if ((time[j] <= tau) && (status[j] == 2)){
-        int3[i] += auc(i,j) / GTiminus[j];
+        int3[i] += thetahat(i,j) / GTiminus[j];
       } 
     }
     int1[i]=int1[i]/((double) n); 
