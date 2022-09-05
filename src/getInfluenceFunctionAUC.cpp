@@ -258,3 +258,187 @@ NumericVector getInfluenceFunctionAUCKMCensoring(NumericVector time,
   }
   return ic;
 }
+
+NumericVector getInfluenceFunctionAUCKMCensoringCVPart(NumericVector time,
+                                                       NumericVector status,
+                                                       double tau,
+                                                       NumericVector GTiminus,
+                                                       double Gtau,
+                                                       NumericMatrix auc,
+                                                       double nu1tauPm) {
+  // Thomas' code from IC of Nelson-Aalen estimator
+  //initialize first time point t=0 with data of subject i=0
+  int n = time.size();
+  NumericVector ic(n);
+  arma::uvec sindex(n,fill::zeros);
+  arma::vec utime=unique(time);
+  int nu=utime.size();
+  arma::vec atrisk(nu);
+  arma::vec Cens(nu,fill::zeros);
+  arma::vec hazardC(nu,fill::zeros);
+  arma::vec MC_term2(nu,fill::zeros);
+  int t=0;
+  double Y = (double) n;
+  atrisk[0]=Y;
+  Cens[0]=(1-(status[0] != 0));
+  hazardC[0]=Cens[0]/Y;
+  MC_term2[0]+=hazardC[0];
+  //loop through time points until last subject i=(n-1)
+  for (int i=1;i<=n;i++) {
+    if (i<n && time[i]==time[i-1]){// these are tied values
+      Cens[t] +=(1-(status[i] != 0));
+      Y-=1;
+      sindex[i]=t;    // index pointer from subject i to unique time point t
+    }else{
+      utime[t]=time[i-1];
+      hazardC[t]=Cens[t]/atrisk[t];
+      MC_term2[t]=hazardC[t]*n/atrisk[t];
+      //initialize next time point with data of current subject i
+      if (i<n){
+        t++;
+        sindex[i]=t;    // index pointer from subject i to unique time point t
+        Y-=1;
+        atrisk[t]=Y;
+        Cens[t]=(1-(status[i] != 0));
+      }
+    }
+  }
+  MC_term2 = arma::cumsum(MC_term2);
+  
+  // find first index such that k such that tau[k] <= tau but tau[k+1] > tau
+  auto lower = std::upper_bound(time.begin(), time.end(), tau);
+  int firsthit = std::distance(time.begin(), lower) -1;
+  if (firsthit == -1){
+    firsthit = 0;
+  }
+  
+  // P(tilde{T_i} > tau)
+  double Probmu = double ((n-(firsthit+1))) / n;
+  NumericVector int1(n); // this is int \Theta(X_i, x) 1*(t > tau) / G(tau) dP(t,x) 
+  NumericVector int2(n);  // int \Theta(x,X_i ) 1*(t <= tau) / G(t-) dP(t,1,x) 
+  NumericVector int3(n);  // int \Theta(X_i,x) 1*(t <= tau) / G(t-) dP(t,2,x) 
+  for (int i = 0; i < n; i++){
+    for (int j = 0; j < n; j++){
+      if (time[j] > tau){
+        int1[i] += auc(i,j) / Gtau;
+      }
+      else if ((time[j] <= tau) && (status[j] == 1)){
+        int2[i] += auc(i,j) / GTiminus[j];
+      }
+      else if ((time[j] <= tau) && (status[j] == 2)){
+        int3[i] += auc(i,j) / GTiminus[j];
+      } 
+    }
+    int1[i]=int1[i]/((double) n); 
+  }
+  // F_1(tau) = int 1_{t \leq tau} 1/ hat{G(t-)} dP(t,1) = Q(T_i <= tau, Delta_i = 1)
+  // F_2(tau) = int 1_{t \leq tau} 1/ hat{G(t-)} dP(t,2) = Q(T_i <= tau, Delta_i = 2)
+  double F1tau = 0, F2tau = 0, eq9term = 0;
+  for (int i = 0; i <= firsthit; i++){
+    if (status[i] == 1){
+      F1tau += 1.0/GTiminus[i];
+      eq9term += int1[i]/GTiminus[i];
+    }
+    else if (status[i] == 2){
+      F2tau += 1.0/GTiminus[i];
+    }
+  }
+  eq9term = eq9term / n;
+  F1tau = F1tau / ((double) n);
+  F2tau = F2tau / ((double) n);
+  
+  double eq16term = Probmu * F1tau;
+  double mu1 = F1tau * Probmu / Gtau + F1tau*F2tau;
+  double nu1 = nu1tauPm;
+  double eq10part1{}, eq12part1{},eq14part1{},eq17part1{},eq19part1{};
+  double eq10part2 = n*eq9term;
+  double eq12part2 = (nu1-1.0/(Gtau) * eq9term)*n*n;
+  double eq14part2 = eq12part2;
+  double eq17part2 = n*F1tau;
+  double eq19part2 = n*F2tau;
+  int tieIter = 0;
+  // can do while loops together
+  while ((tieIter < n) && (time[tieIter] == time[0])) {
+    if ((time[tieIter] <= tau) && (status[tieIter]==1)){
+      eq10part2 -= int1[tieIter] / GTiminus[tieIter];
+      eq14part2 -= int3[tieIter] / GTiminus[tieIter];
+      eq17part2 -= 1.0 / GTiminus[tieIter];
+    }
+    else if  ((time[tieIter] <= tau) && (status[tieIter]==2)){
+      eq12part2 -= int2[tieIter] / GTiminus[tieIter];
+      eq19part2 -= 1.0 / GTiminus[tieIter];
+    }
+    tieIter++;
+  }
+  
+  int upperTie = tieIter-1;
+  double eq8{}, eq9{}, eq10{}, eq11{},eq12{},eq13{},eq14{}, eq15{}, eq16{},eq17{},eq18{},eq19{},eq20{},eq21{}, fihattau{},eq1721part{};
+  for (int i = 0; i<n; i++){
+    int const j = i > firsthit ? firsthit : i;
+    if (utime[sindex[j]] < time[i]){
+      fihattau = - MC_term2[sindex[j]];
+    }
+    else {
+      fihattau =  (1-(status[i] != 0))*n/atrisk[sindex[i]]- MC_term2[sindex[i]];
+    }
+    eq10 = 1.0 / (Gtau*n) * (eq10part1+fihattau*eq10part2);
+    eq12 = 1.0 / (n*n) * (eq12part1+(fihattau-1)*eq12part2);
+    eq14 = 1.0 / (n*n) * (eq14part1+(fihattau-1)*eq14part2);
+    eq1721part = 1.0 / n * (eq17part1+fihattau*eq17part2);
+    eq17 = Probmu / Gtau * eq1721part;
+    eq19 = F1tau * (1.0 / n * (eq19part1+fihattau*eq19part2) - F2tau);
+    eq21 = F2tau * (eq1721part - F1tau);
+    
+    // fast calculation of eq10 and eq17
+    if (upperTie == i){
+      int tieIter = i+1;
+      while ((tieIter < n) && (time[tieIter] == time[i+1])) {
+        if ((time[tieIter] <= tau) && (status[tieIter]==1)){
+          eq10part1 -= int1[tieIter] * (MC_term2[sindex[i]]) / GTiminus[tieIter];
+          eq14part1 -= int3[tieIter] * (MC_term2[sindex[i]]+1.0) / GTiminus[tieIter];
+          eq17part1 -= (MC_term2[sindex[i]]) / GTiminus[tieIter];
+          eq10part2 -= int1[tieIter] / GTiminus[tieIter];
+          eq14part2 -= int3[tieIter] / GTiminus[tieIter];
+          eq17part2 -= 1.0 / GTiminus[tieIter];
+        }
+        else if ((time[tieIter] <= tau) && (status[tieIter]==2)){
+          eq12part1 -= int2[tieIter] * (MC_term2[sindex[i]]+1.0) / GTiminus[tieIter];
+          eq19part1 -= (MC_term2[sindex[i]]) / GTiminus[tieIter];
+          eq12part2 -= int2[tieIter] / GTiminus[tieIter];
+          eq19part2 -= 1.0 / GTiminus[tieIter];
+        }
+        tieIter++;
+      }
+      upperTie = tieIter-1;
+    }
+    if ((time[i] <= tau) && (status[i] == 1)){
+      eq8 = 1.0/(GTiminus[i]*Gtau)*int1[i];
+      eq15 = 1.0/(GTiminus[i]*Gtau)*Probmu;
+      eq13 = 1.0/ (n*GTiminus[i]) * int3[i];
+      eq20 = 1.0/GTiminus[i] * F2tau;
+    }
+    else {
+      eq8 = eq13 = eq15 = eq20 = 0;
+    }
+    eq9 = (fihattau - 2.0)/Gtau * eq9term;
+    eq16 = (fihattau - 2.0)/Gtau * eq16term;
+    
+    if ((time[i] <= tau) & (status[i] == 2)){
+      eq11 = 1.0 / (n*GTiminus[i]) * int2[i];
+      eq18 = 1.0 / (GTiminus[i]) * F1tau;
+    }
+    else if (time[i] > tau){
+      eq11 = 1.0 / (n*Gtau) * int2[i];
+      eq18 = 1.0 / (Gtau) * F1tau;
+    }
+    else {
+      eq11 = eq18 = 0;
+    }
+    double IFnu = eq8+eq9+eq10+eq11+eq12+eq13+eq14;
+    double IFmu = eq15+eq16+eq17+eq18+eq19+eq20+eq21;
+    
+    ic[i] = (IFnu * mu1 - IFmu * nu1)/(mu1*mu1);
+  }
+  return ic;
+}
+

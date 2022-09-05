@@ -229,7 +229,7 @@ So calculations for $\nu_\tau^1 (Q)$ can now be done using the above. This yield
 	&+ \left(\frac{1_{ \{ \tilde{T_i} \leq \tau, \Delta_i = 2\}} }{G(\tilde{T_i} - | X_i)} +  \frac{1_{ \{ \tilde{T_i} > \tau \}} }{G(\tau | X_i )}\right) \int 1_{\{X_i<x, t \leqslant \tau\}}  \frac{ d P (t, 1, x)}{G(t- | x)}\\
 	&+ \iint 1_{\{x' < x, t \leqslant \tau\}} \frac{ d P (t, 1, x)}{G(t- | x)} 1_{\{t^{\prime} \leqslant \tau\}}(f_i(t'-,x')-1) \frac{dP(t',2,x') }{G(t'- | x')} \\
 	&+ \frac{1_{\{\tilde{T}_{i} \leqslant \tau, \Delta_i = 1\}}}{G(\tilde{T}_{i}- | X_i)}\int 1_{\{X_i > x', t^{\prime} \leqslant \tau\}}  \frac{d P\left(t^{\prime},2, \xj\right)}{G(t'- | x')} \\
-	&+ \iint 1_{\{x > x', t^{\prime} \leqslant \tau\}}  \frac{d P\left(t^{\prime},2, \xj\right)}{G(t'- |x')}  1_{\{t \leqslant \tau\}}\frac{\left[f_i(t-,x)-1\right]dP(t,1,x)}{G(t-| x)}
+	&+ \iint 1_{\{x > x', t^{\prime} \leqslant \tau\}}  \frac{d P(dx') \I{\delta'=2}}{G(t'- |x')}  1_{\{t \leqslant \tau\}}\frac{\left[f_i(t-,x)-1\right]dP(t,1,x)}{G(t-| x)}
 \end{align}
 Next, the denominator is
 \begin{align}
@@ -247,6 +247,7 @@ derivative for the functional
 \begin{equation*}
 	\ifauc(Z_i,\tau)=\frac{\ifnu(\Zi;\tau)  \mu_{\tau}(Q) - \nu_{\tau}(Q)  \ifmu(\Zi;\tau)} {\mu_{\tau}(Q)^2}
 \end{equation*}
+Note that the terms involving 1 actually cancel each other out in the final calculation.
 
 ### Some simpler cases 
 - Whenever we have survival data instead of competing risk data, the terms corresponding to $\Delta=2$ can be set to zero, i.e. term 5-7 and 12-14. Also, the first part of 4 and 11 is set to zero.
@@ -415,25 +416,62 @@ The influence function of the functional
 \begin{align*}
   \IC_{\nu}(m;x_k)&=\frac{\partial}{\partial\epsilon}\nu_{m}(\P_{\epsilon,k})\Big\vert_{\epsilon=0}\\
   &=\frac{1}{\eta(\P)}\frac{\partial}{\partial\epsilon}\Bigg[\int\int\Bigg(\int\cdots\int\I{\RR(\{x_i\}_{i=1}^m)(z_{m+1})>\RR(\{x_i\}_{i=1}^m)(z_{m+2})}\prod_{i=1}^m\P_{\epsilon,k}(\D x_i)\Bigg)\\
-  &\hspace{0.7cm}\P_{\epsilon,k}(\D x_{m+1})\P_{\epsilon,k}(\D x_{m+2})\Bigg]\Bigg\vert_{\epsilon=0}
+  &\hspace{0.7cm} \I{y_{m+1}=1,y_{m+2}=0}\P_{\epsilon,k}(\D x_{m+1})\P_{\epsilon,k}(\D x_{m+2})\Bigg]\Bigg\vert_{\epsilon=0}
   -\frac{\partial}{\partial\epsilon}\frac{\eta(\P_{\epsilon,k})}{\eta(\P)}\nu_{m}(\P)\Big\vert_{\epsilon=0}
 \end{align*}
 It follows that
 \begin{align*}
-  \IC_{\nu}(m;x_k)&=\frac{1}{\eta(\P)}\int\Theta_{m}(z_k,z_{m+2})\P(\D x_{m+2})-\nu_{m}(\P) \\
-  &+\frac{1}{\eta(\P)}\int\Theta_{m}(z_{m+1},z_k) \P(\D x_{m+1})-\nu_{m}(\P)\\
+  \IC_{\nu}(m;x_k)&=\frac{1}{\eta(\P)}\int\Theta_{m}(z_k,z_{m+2})\I{y_{k}=1,y_{m+2}=0}\P(\D x_{m+2})-\nu_{m}(\P) \\
+  &+\frac{1}{\eta(\P)}\int\Theta_{m}(z_{m+1},z_k) \I{y_{m+1}=1,y_{k}=0}\P(\D x_{m+1})-\nu_{m}(\P)\\
   &+\frac{1}{\eta(\P)}\int\int\frac{\partial}{\partial\epsilon}\int\cdots\int\I{\RR(\{x_i\}_{i=1}^m)(z_{m+1})>\RR(\{x_i\}_{i=1}^m)(z_{m+2})}\prod_{i=1}^m\P_{\epsilon,k}(\D x_i)\\
-  &\hspace{0.3cm}\P(\D x_{m+1})\P(\D x_{m+2})\Big\vert_{\epsilon=0}\\
+  &\hspace{0.3cm}\I{y_{m+1}=1,y_{m+2}=0} \P(\D x_{m+1})\P(\D x_{m+2})\Big\vert_{\epsilon=0}\\
   &-\frac{\partial}{\partial\epsilon}\frac{\nu_{m}(\P)}{\eta(\P)}\eta(\P_{\epsilon,k})\Big\vert_{\epsilon=0}
 \end{align*}
 Hence, after some calculations, 
 \begin{align*}
-  &\IC_{\nu}(m;x_k)=\frac{1}{\eta(\P)}\Big[\int\Theta_{m}(z_{m+1},z_k)\P(\D x_{m+1})\\
-  &\hspace{3cm}+\int\Theta_{m}(z_k,z_{m+2})\P(\D x_{m+2})\Big]-m\, \nu_{m}(\P)\\
+  &\IC_{\nu}(m;x_k)=\frac{1}{\eta(\P)}\Big[\int\Theta_{m}(z_{m+1},z_k)\I{y_{k}=1,y_{m+2}=0}\P(\D x_{m+1})\\
+  &\hspace{3cm}+\int\Theta_{m}(z_k,z_{m+2})\I{y_{m+1}=1,y_{k}=0}\P(\D x_{m+2})\Big]-m\, \nu_{m}(\P)\\
   &+\frac{1}{\eta(P)}\int\int\sum_{j=1}^m \int\cdots\int\I{\RR(\{x_i\}_{i=1}^m)(z_{m+1})>\RR(\{x_i\}_{i=1}^m)(z_{m+2})}\delta_{x_k}(x_j)\prod_{i\neq j}\P(\D x_i)\\
-  &\hspace{0.4cm}\P(\D x_{m+1})\P(\D x_{m+2})\\
+  &\hspace{0.4cm}\I{y_{m+1}=1,y_{m+2}=0}\P(\D x_{m+1})\P(\D x_{m+2})\\
   &-\frac{\nu_{m}(\P)}{\eta(\P)}\Big[\I{y_k=1}\Big]
   \Big[\int \I{y_{m+2}=0}\P(\D x_{m+2})\Big]\\
   &-\frac{\nu_{n}(\P)}{\eta(\P)}\Big[\int \I{y_{m+1}=1}\P(\D x_{m+1})\Big]
   \Big[\I{y_k=0}\Big]
 \end{align*}
+
+## Survival and Competing risk cases (and more generally)
+We note that we may actually use our results from the test-train section on any functional, $\phi(D_m)_\tau$ defined in the test-train situation. Then the influence function of the function  $\Phi_\tau := \mathbb{E}_{D_m} [\phi(D_m)_\tau]$ from the test-train situation as follows by finding the Gateaux derivative for observation $i$
+
+$$
+\int \cdots \int \text{IC}_{\phi(D_m)_\tau}^i P(dx_1) \cdots P(dx_m) + \sum_{j=1}^m  \int \cdots \int \phi(D_m)_\tau \delta_{x_j}(x_k) \prod_{i \neq j} P(dx_i) - m \Phi_\tau 
+$$
+
+The idea is now to interchange the order of integration (both terms), so that we may use leave-one-out bootstrap estimates. Indeed, for the most general case (competing risk case), we get that 
+\begin{align*}
+\frac{\ifnu(\Zi;\tau,m)\mu_\tau(P) - \nu^{1}_{\tau,m}(P) \ifmu(\Zi;\tau)}{\mu_\tau(P)^2 }+ \frac{\nu^{2}_{\tau, m} }{\mu_\tau (P)} - m \Phi_\tau 
+\end{align*}
+where 
+\begin{align*}
+\nu^{1}_{\tau, m}(P)&= \iint \Theta_m(x,x' )1_{\{t \leqslant \tau,  t^{\prime}>\tau\}} \frac{P(dx) \I{\delta=1}}{G(t- | z)} \frac{P(dx')}{G\left(\tau | z' \right)} \\ 
+&\quad + \iint  \Theta_m(x,x' ) 1_{\{t \leqslant \tau, t' \leqslant \tau \}} \frac{P(dx) \I{\delta=1}}{G(t-|z)} \frac{P(dx')\I{\delta'=2}}{G(t'- | z')}
+\end{align*}
+and similarly defined 
+\begin{align*}
+\nu^{2}_{\tau, m}&= \iint \sum_{j=1}^m \Theta_m(x,x' )^{(j,k)} 1_{\{t \leqslant \tau,  t^{\prime}>\tau\}} \frac{P(dx) \I{\delta=1}}{G(t- | z)} \frac{P(dx')}{G\left(\tau | z' \right)} \\ 
+&\quad + \iint  \sum_{j=1}^m \Theta_m(x,x' )^{(j,k)} 1_{\{t \leqslant \tau, t' \leqslant \tau \}} \frac{P(dx) \I{\delta=1}}{G(t-|z)} \frac{P(dx')\I{\delta'=2}}{G(t'- | z')}
+\end{align*}
+where 
+$$
+\Theta_m(x,x' )^{(j,k)} = \int \dots \int \I{R(D_m)(z) > R(D_m)(z')} \delta_{x_j}(x_k) \prod_{i \neq j} P(dx_i)
+$$
+Note that $\mu_{\tau}(P)$ is defined precisely as before (and hence also $\ifmu$ is the same), but we must redefine, $\ifnu$
+\begin{align*}
+	\ifnu(\Zi;\tau,m) &= \frac{1_{\{\tilde{T}_i \leqslant \tau, \Delta_i = 1\}}}{G(\tilde{T_i}- | Z_i)}\int  \Theta_m(X_i,x') 1_{\{t^{\prime}>\tau\}} \frac{P(dx')}{G(\tau | z')} \\
+	&+\int 1_{\{t \leqslant \tau\}} \int  \Theta_m(x,x') 1_{\{t^{\prime}>\tau\}} \frac{P(dx')}{G(\tau | z')} \frac{\left[f_i(t-,z   )-1\right] P(dx) \I{\delta=1}} {G(t- | z)}  \\
+	&+ \iint  \Theta_m(x,x')  1_{\{t \leqslant \tau\}}  \frac{P(dx) \I{\delta=1}}{G(t- | z)} \frac{1_{\{t^{\prime}>\tau\}}\left[f_i(\tau,z')-1\right]P(dx')}{G(\tau | z')}  \\
+	&+ \left(\frac{1_{ \{ \tilde{T_i} \leq \tau, \Delta_i = 2\}} }{G(\tilde{T_i} - | Z_i)} +  \frac{1_{ \{ \tilde{T_i} > \tau \}} }{G(\tau | Z_i )}\right) \int \Theta_m(x,X_i )1_{\{t \leqslant \tau\}}  \frac{P(dx) \I{\delta=1}}{G(t- | x)}\\
+	&+ \iint \Theta_m(x,x') 1_{\{t \leqslant \tau\}} \frac{P(dx) \I{\delta=1}}{G(t- | z)} 1_{\{t^{\prime} \leqslant \tau\}}(f_i(t'-,z')-1) \frac{P(dx') \I{\delta'=2}}{G(t'- | z')} \\
+	&+ \frac{1_{\{\tilde{T}_{i} \leqslant \tau, \Delta_i = 1\}}}{G(\tilde{T}_{i}- | Z_i)}\int \Theta_m(X_i,x') 1_{\{t^{\prime} \leqslant \tau\}}  \frac{P (dx') \I{\delta'=2}}{G(t'- | z')} \\
+	&+ \iint \Theta_m(x,x') 1_{\{t^{\prime} \leqslant \tau\}}  \frac{P(dx')\I{\delta=2}}{G(t'- |z')}  1_{\{t \leqslant \tau\}}\frac{\left[f_i(t-,z)-1\right]P(dx)\I{\delta=1}}{G(t-| z)}
+\end{align*}
+The functional can also be found as $\frac{\nu^{1}_{\tau,m}(P)}{\mu_\tau (P)}$, and the functional and the terms in its influence function can be estimated in mostly the same way as Brier. Most likely, we don't need the ones here as well.
