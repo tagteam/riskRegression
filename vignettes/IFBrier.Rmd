@@ -47,6 +47,7 @@ header-includes: \usepackage{graphicx, verbatim, fancyvrb, setspace, xspace, col
 \newcommand{\aucO}{\theta_{\tau,m}}
 \newcommand{\D}{\mathrm{d}}
 \newcommand{\Db}{D^*_{m,b}}
+\newcommand{\Dm}{D_{m}}
 \newcommand{\E}{\mathbb{E}}
 \renewcommand{\G}{\hat G_n}
 \newcommand{\g}{\hat{\mathbb{G}}}
@@ -57,10 +58,10 @@ header-includes: \usepackage{graphicx, verbatim, fancyvrb, setspace, xspace, col
 \newcommand{\Ibk}{\I{N_k^b=0}}
 \newcommand{\IC}{\text{IF}}
 \newcommand{\Isi}{\I{N_i=0}}
-\newcommand{\LL}{\{\I{\T_{m+1}\leq \tau}-\R(Z_{m+1})\}^2}
-\newcommand{\Lbi}{\{\I{\T_i\leq \tau}-\Rb(Z_i)\}^2}
-\newcommand{\Li}{\{\I{\T_i\leq \tau}-\R(Z_i)\}^2}
-\newcommand{\Lj}{\{\I{\T_j\leq \tau}-\R(Z_j)\}^2}
+\newcommand{\LL}{\{\I{\T_{m+1}\leq \tau}-\R(X_{m+1})\}^2}
+\newcommand{\Lbi}{\{\I{\T_i\leq \tau}-\Rb(X_i)\}^2}
+\newcommand{\Li}{\{\I{\T_i\leq \tau}-\R(X_i)\}^2}
+\newcommand{\Lj}{\{\I{\T_j\leq \tau}-\R(X_j)\}^2}
 \newcommand{\loo}{leave-one-out bootstrap }
 \newcommand{\lpo}{leave-pair-out bootstrap }
 \newcommand{\Lt}{\ensuremath{L_t}}
@@ -84,8 +85,8 @@ header-includes: \usepackage{graphicx, verbatim, fancyvrb, setspace, xspace, col
 \newcommand{\W}{W_\tau}
 \newcommand{\Wi}{\W(X_i,\hat G_n)}
 \newcommand{\Wk}{\W(X_k,\hat G_n)}
-\newcommand{\WWi}{\mathcal{W}_{T_i}(Z_i)}
-\newcommand{\WWj}{\mathcal{W}_t(Z_j)}
+\newcommand{\WWi}{\mathcal{W}_{T_i}(X_i)}
+\newcommand{\WWj}{\mathcal{W}_t(X_j)}
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
@@ -99,7 +100,7 @@ event of interest occurred, and \(D=2\) that a competing risk
 occurred. As in the survival setting we let \(Q\) denote the joint
 probability measure of the uncensored data, \((T,D,X)\sim Q\), and $P$
 the joint probability measure of the right censored data
-$Z=(\tilde{T},\Delta,X) \sim P$ now with $\Delta=D 1_{\{T \leq C\}}$
+$O=(\tilde{T},\Delta,X) \sim P$ now with $\Delta=D 1_{\{T \leq C\}}$
 taking values in the set \(\{0,1,2\}\). We are interested in the
 following definition of the time-dependent discrimination measure for
 cause 1. We can easily calculate the influence function for the Brier score, which can be written as: 
@@ -200,7 +201,7 @@ Whenever the censoring does not depend on covariates, the two last integrals are
 Our cross-validation algorithm repeatedly splits the dataset \(D_n\)
 of size $n$ into training and validation datasets as follows. Let
 \(B\) be a large integer. For each \(b=1,\ldots,B\) we draw a
-bootstrap dataset \(\Db=\{X_{b,1}^*,\ldots,X_{b,m}^*\}\) of size
+bootstrap dataset \(\Db=\{O_{b,1}^*,\ldots,O_{b,m}^*\}\) of size
 \(m\le n\) with or without replacement from the data \(D_n\). For
 \(i=1,\ldots,n\) let \(N_i^b\) be the number of times subject \(i\) is
 included in \(\Db\). For subsampling bootstrap (without replacement),
@@ -212,78 +213,79 @@ subjects form the validation dataset of step \(b\).
 
 We now calculate the influence function in the case with binary
 outcome data \((Y\in \{0,1\}\). In this case, we consider the
-following functional, i.e., the expected Brier score of the model
-\(R\) on average across all possible training datasets of size
-\(m\). The expectation is taken with respect \begin{align*}
-\psi_{m}(P)&=\int\left(\int\cdots\int\left\{y_{m+1}-R(\{x_i\}_{i=1}^m)(z_{m+1})\right\}^2
-I(x_{m+1} \notin \{x_i\}_{i=1}^m)\prod_{i=1}^m P(d x_i)\right) P(d
-x_{m+1}) \end{align*}
+following functional which describes the expected Brier score of the model
+\(R\) on average across all possible training datasets \(D_m\) of size
+\(m\). The expectation is taken with respect to the data of subject \(m+1\):
+\begin{align*}
+\psi_{m}(P)&=\int\left(\int\cdots\int\left\{y_{m+1}-R(\Dm)(x_{m+1})\right\}^2
+\prod_{i=1}^m P(d o_i)\right) P(d
+o_{m+1}) \end{align*}
 
 for some sample size $m < n$. Let 
 \begin{equation*}
-  \omega_{m} (Y_{m+1},Z_{m+1})=\mathbb{E}_{D_m} [(Y_{m+1}-R(D_m)(Z_{m+1}))^2 | Y_{m+1}, Z_{m+1}] 
+  \omega_{m} (Y_{m+1},X_{m+1})=\mathbb{E}_{D_m} [(Y_{m+1}-R(D_m)(X_{m+1}))^2 | Y_{m+1}, X_{m+1}] 
 \end{equation*}
-because then $\psi_{m}(P) = \mathbb{E}_{X_{m+1}}[\omega_{m} (Y_{m+1},Z_{m+1})]$. For estimating $\omega_{\tau,m}$, we propose to use leave one-out bootstrap estimation:
+because then $\psi_{m}(P) = \mathbb{E}_{O_{m+1}}[\omega_{m} (Y_{m+1},X_{m+1})]$. For estimating $\omega_{\tau,m}$, we propose to use leave one-out bootstrap estimation:
 \begin{equation*}
-  \hat{\omega}_{m} (Y_i,Z_i)=\frac{\sum_{b=1}^B (Y_{i}-R(D_m)(Z_{i}))^2I(N_i^b=0) }{\sum_{b=1}^B I(N_i^b=0)}
+  \hat{\omega}_{m} (Y_i,X_i)=\frac{\sum_{b=1}^B (Y_{i}-R(D_m)(X_{i}))^2I(N_i^b=0) }{\sum_{b=1}^B I(N_i^b=0)}
 \end{equation*}
 Finally, the Brier score may then be estimated by leave one-out bootstrap estimation as ´
 \begin{equation*}
-  \PSI=\frac{1}{n}\sum_{i=1}^n\hat{\omega}_{m} (Y_i,Z_i)
+  \PSI=\frac{1}{n}\sum_{i=1}^n\hat{\omega}_{m} (Y_i,X_i)
 \end{equation*}
 Finally, we also want standard errors of the estimates. For this, we consider the influence function by taking the Gateaux derivative and get: 
-\begin{align*} 
-  \IC_{\psi}(m;x_k)&=\frac{\partial}{\partial\epsilon}\psi_{m}(P_{\epsilon,k})\Big\vert_{\epsilon=0} \\
-  &= \int \frac{\partial}{\partial\epsilon} \left(\int\cdots\int\left\{y_{m+1}-R(\{x_i\}_{i=1}^m)(z_{m+1})\right\}^2 I(x_{m+1} \notin \{x_i\}_{i=1}^m)\prod_{i=1}^m \PEK (d x_i)\right) \PEK(d x_{m+1}) \Big\vert_{\epsilon=0} \\
-  &= \int \frac{\partial}{\partial\epsilon} \left(\int\cdots\int\left\{y_{m+1}-R(\{x_i\}_{i=1}^m)(z_{m+1})\right\}^2 I(x_{m+1} \notin \{x_i\}_{i=1}^m)\prod_{i=1}^m \PEK (d x_i)\right) \Big\vert_{\epsilon=0}  P(d x_{m+1}) \\
-  &+  \int \left(\int\cdots\int\left\{y_{m+1}-R(\{x_i\}_{i=1}^m)(z_{m+1})\right\}^2 I(x_{m+1} \notin \{x_i\}_{i=1}^m)\prod_{i=1}^m P (d x_i)\right) \frac{\partial}{\partial\epsilon} \PEK(d x_{m+1}) \Big\vert_{\epsilon=0}  \\
-  &= \int \sum_{j=1}^m \left(\int\cdots\int\left\{y_{m+1}-R(\{x_i\}_{i=1}^m)(z_{m+1})\right\}^2 I(x_{m+1} \notin \{x_i\}_{i=1}^m) \delta_{x_k}(x_j) \prod_{i \neq j} (d x_i)\right)  P(d x_{m+1})  - m \psi_{m}(P) \\ %notation???
-  &+ \omega_{m} (Y_{k},Z_{k})-\psi_{m}(P) \\
-  &= \omega_{m} (Y_{k},Z_{k})-(m+1) \psi_{m}(P) \\
-  &+\int \sum_{j=1}^m \left(\int\cdots\int\left\{y_{m+1}-R(\{x_i\}_{i=1}^m)(z_{m+1})\right\}^2 I(x_{m+1} \notin \{x_i\}_{i=1}^m) \delta_{x_k}(x_j) \prod_{i \neq j} (d x_i)\right)  P(d x_{m+1}) 
-\end{align*}
+\begin{align} 
+  \IC_{\psi}(m;o_k)&=\frac{\partial}{\partial\epsilon}\psi_{m}(P_{\epsilon,k})\Big\vert_{\epsilon=0} \\
+  &= \int \frac{\partial}{\partial\epsilon} \left(\int\cdots\int\left\{y_{m+1}-R(\Dm)(x_{m+1})\right\}^2 \prod_{i=1}^m \PEK (d o_i)\right) \PEK(d o_{m+1}) \Big\vert_{\epsilon=0} \\
+  &= \int \frac{\partial}{\partial\epsilon} \left(\int\cdots\int\left\{y_{m+1}-R(\Dm)(x_{m+1})\right\}^2 \prod_{i=1}^m \PEK (d o_i)\right) \Big\vert_{\epsilon=0}  P(d o_{m+1}) \\
+  &+  \int \left(\int\cdots\int\left\{y_{m+1}-R(\Dm)(x_{m+1})\right\}^2 \prod_{i=1}^m P (d o_i)\right) \frac{\partial}{\partial\epsilon} \PEK(d o_{m+1}) \Big\vert_{\epsilon=0}  \\
+  &= \int \sum_{j=1}^m \left(\int\cdots\int\left\{y_{m+1}-R(\Dm)(x_{m+1})\right\}^2  \delta_{o_k}(o_j) \prod_{i \neq j} (d o_i)\right)  P(d o_{m+1})  - m \psi_{m}(P) \\ %notation???
+  &+ \omega_{m} (Y_{k},X_{k})-\psi_{m}(P) \\
+  &= \omega_{m} (Y_{k},X_{k})-(m+1) \psi_{m}(P) \\
+  &+\int \sum_{j=1}^m \left(\int\cdots\int\left\{y_{m+1}-R(\Dm)(x_{m+1})\right\}^2  \delta_{o_k}(o_j) \prod_{i \neq j} (d o_i)\right)  P(d o_{m+1}) 
+\end{align}
 wherein we used the product rule of differentiation. For estimating the influence function, we suggest the estimator:
 \begin{align*}
-  \widehat{\IC}_{\psi}(m;X_k)&=\mbin (Y_k,Z_k)-(m+1)\, \PSI +\frac{1}{n} \sum_{i=1}^n\frac{\sum_b \{Y_i-\Rbi (Z_i)\}^2 \Ibi N_k^b}{\sum_b\Ibi} % is the last part estimated correctly?
+  \widehat{\IC}_{\psi}(m;O_k)&=\mbin (Y_k,X_k)-(m+1)\, \PSI +\frac{1}{n} \sum_{i=1}^n\frac{\sum_b \{Y_i-\Rbi (X_i)\}^2 \Ibi N_k^b}{\sum_b\Ibi} % is the last part estimated correctly?
 \end{align*}
 
 ### Survival and competing risk case
-Let us now try to expand this to the case with (right-censored) survival data, i.e. $X=(T, \Delta, Z)$ and let $\bar{X} = (\tilde{T},Z)$ denote the true event time, i.e. $T=\min\{\tilde{T}, C\}$ and $\Delta = I(T\leq C)$, where $C$ is the censoring time. Also let $Y_i = I(\tilde{T} \leq \tau)$ (or $T$, depending on whichever is the most appropriate), where $\tau$ be some prespecified time point and \(\G\) be an estimate of the censoring
-distribution \(G\) based on \(D_n\). Then we are concerned with the functional $\mu_{\tau, m}$ 
+Let us now try to expand this to the case with (right-censored) survival data, i.e. $O=(T, \Delta, X)$ and let $\bar{O} = (\tilde{T},X)$ denote the true event time, i.e. $T=\min\{\tilde{T}, C\}$ and $\Delta = I(T\leq C)$, where $C$ is the censoring time. Also let $Y_i = I(\tilde{T} \leq \tau)$ (or $T$, depending on whichever is the most appropriate), where $\tau$ be some prespecified time point and \(\G\) be an estimate of the censoring
+distribution \(G\) based on \(D_n\).  Then we are concerned with the functional $\mu_{\tau, m}$ 
 \begin{equation*}
-  \mu_{\tau,m}=\E_{\X_{m+1}}\big[\E_{D_{m}}\big[\LL\big|\T_{m+1},Z_{m+1}\big]\big]
+  \mu_{\tau,m}=\E_{O_{m+1}}\big[\E_{D_{m}}\big[\LL\big|\T_{m+1},X_{m+1}\big]\big]
 \end{equation*} 
 By rewriting the above above a bit (i.e. by using standard tricks when rewriting in terms of the observed data), it can be shown that this quantity can be defined in terms of the observed data, i.e. it can be expressed as the value of
 a statistical functional \(\psi_{\tau,m}:\mathcal{P}\to [0,1]\)
 \begin{align*}
-  \psi_{\tau,m}(\P)&=\int\left(\int\cdots\int\left\{\I{u_{m+1}\leq\tau}-\RR(\{x_i\}_{i=1}^m)(z_{m+1})\right\}^2 I(x_{m+1} \notin \{x_i\}_{i=1}^m) \prod_{i=1}^m\P(\D x_i)\right)\\
-   &\qquad\qquad\times\W(x_{m+1},\kappa_{\tau,z_{m+1}}(\P))\P(\D x_{m+1})\\&=\mu_{\tau,m}.
+  \psi_{\tau,m}(\P)&=\int\left(\int\cdots\int\left\{\I{u_{m+1}\leq\tau}-\RR(\Dm)(x_{m+1})\right\}^2  \prod_{i=1}^m\P(\D o_i)\right)\\
+   &\qquad\qquad\times\W(o_{m+1},\kappa_{\tau,x_{m+1}}(\P))\P(\D o_{m+1})\\&=\mu_{\tau,m}.
 \end{align*}
 with 
 \begin{align*}
-  \Wi=\frac{\I{T_i\leq \tau}\Delta_i}{\G(T_i\vert Z_i)}+\frac{\I{T_i>\tau}}{\G(\tau\vert Z_i)}
+  \Wi=\frac{\I{T_i\leq \tau}\Delta_i}{\G(T_i\vert X_i)}+\frac{\I{T_i>\tau}}{\G(\tau\vert X_i)}
 \end{align*} 
 then this can be estimated in much the same way as before, i.e. as 
 \begin{equation*}
-  \MU=\frac{1}{n}\sum_{i=1}^n\m(T_i,Z_i)\Wi 
+  \MU=\frac{1}{n}\sum_{i=1}^n\m(T_i,X_i)\Wi 
 \end{equation*}
 Here, we redefine that 
 \begin{equation*}
-  \m(\T_i,Z_i)=\frac{\sum_{b=1}^B\Lbi\Ibi}{\sum_{b=1}^B\I{N_i^b=0}}
+  \m(\T_i,X_i)=\frac{\sum_{b=1}^B\Lbi\Ibi}{\sum_{b=1}^B\I{N_i^b=0}}
 \end{equation*}
 In much the same way as before, we may find the the influence function of $\psi_{\tau,m}(\P)$ to be almost the same as before with an additional term corresponding to the fact that the censoring distribution has to be estimated, i.e. 
 \begin{align*} 
-  \IC_{\psi}(\tau,m;x_k)&=\M(t_k,z_k)\W(x_k,\kappa_{\tau,z_{m+1}}(\P))-(m+1)\, \mu_{\tau,m}\\
-  &+\int\Big[\sum_{j=1}^m \int\cdots\int\{\I{t_{m+1}\leq\tau}-\RR(\{x_i\}_{i=1}^n)(z_{m+1})\}^2 I(x_{m+1} \notin \{x_i\}_{i=1}^m) \delta_{x_k}(x_j)\prod_{i\neq j}\P(\D x_i)\Big]\W(x_{m+1},\kappa_{\tau,z_{m+1}}(\P))\P(\D x_{m+1})
+  \IC_{\psi}(\tau,m;o_k)&=\M(t_k,x_k)\W(o_k,\kappa_{\tau,x_{m+1}}(\P))-(m+1)\, \mu_{\tau,m}\\
+  &+\int\Big[\sum_{j=1}^m \int\cdots\int\{\I{t_{m+1}\leq\tau}-\RR(\{o_i\}_{i=1}^n)(x_{m+1})\}^2  \delta_{o_k}(o_j)\prod_{i\neq j}\P(\D o_i)\Big]\W(o_{m+1},\kappa_{\tau,x_{m+1}}(\P))\P(\D o_{m+1})
   \\
-  &+\int\M(t_{m+1},z_{m+1})\left[\frac{\I{t_{m+1}\leq \tau}\delta_{m+1}}{G(t_{m+1}-\vert z_{m+1})} f_k(t_{m+1},z_{m+1})
-  +\frac{\I{t_{m+1}>\tau}}{G(\tau\vert z_{m+1})}f_k(\tau,z_{m+1}) \right]\P(\D x_{m+1}) \\
+  &+\int\M(t_{m+1},x_{m+1})\left[\frac{\I{t_{m+1}\leq \tau}\delta_{m+1}}{G(t_{m+1}-\vert x_{m+1})} f_k(t_{m+1},x_{m+1})
+  +\frac{\I{t_{m+1}>\tau}}{G(\tau\vert x_{m+1})}f_k(\tau,x_{m+1}) \right]\P(\D o_{m+1}) \\
 \end{align*}
 This can then be estimated in much the same way as before
 \begin{align*}
-  \widehat{\IC}_{\psi}(\tau,m;X_k)&=\m(T_k,Z_k)\W(X_k,\G)-(m+1)\, \MU \\
-  &+\frac{1}{n} \sum_{i=1}^n\frac{\sum_b \{\I{T_i\leq \tau}-\Rb(Z_i)\}^2 \Ibi N_k^b}{\sum_b\Ibi}\W(X_i,\G)\\
-  &+\frac{1}{n}\sum_{i=1}^n\m(T_i,Z_i)\left[\frac{\I{T_i\leq\tau}\Delta_i}{\G(T_i-\vert Z_i)}\hat{f_k} (T_i-,Z_i)
-  +\frac{\I{T_i>\tau}}{\G (\tau\vert Z_i)}\hat{f_k} (\tau ,Z_i)\right]
+  \widehat{\IC}_{\psi}(\tau,m;O_k)&=\m(T_k,X_k)\W(O_k,\G)-(m+1)\, \MU \\
+  &+\frac{1}{n} \sum_{i=1}^n\frac{\sum_b \{\I{T_i\leq \tau}-\Rb(X_i)\}^2 \Ibi N_k^b}{\sum_b\Ibi}\W(O_i,\G)\\
+  &+\frac{1}{n}\sum_{i=1}^n\m(T_i,X_i)\left[\frac{\I{T_i\leq\tau}\Delta_i}{\G(T_i-\vert X_i)}\hat{f_k} (T_i-,X_i)
+  +\frac{\I{T_i>\tau}}{\G (\tau\vert X_i)}\hat{f_k} (\tau ,X_i)\right]
 \end{align*}
 Here the last term corresponds to the censoring being unknown. 
