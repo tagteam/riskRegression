@@ -48,7 +48,7 @@ header-includes: \usepackage{graphicx, verbatim, fancyvrb, setspace, xspace, col
 \newcommand{\D}{\mathrm{d}}
 \newcommand{\Db}{D^*_{m,b}}
 \newcommand{\E}{\mathbb{E}}
-\newcommand{\G}{\hat G_n}
+\renewcommand{\G}{\hat G_n}
 \newcommand{\g}{\hat{\mathbb{G}}}
 \newcommand{\II}{\mathcal{I}}
 \newcommand{\I}[1]{\II_{\{#1\}}}
@@ -197,20 +197,27 @@ Whenever the censoring does not depend on covariates, the two last integrals are
 ## IF with cross-validation
 
 ### Binary case
-Our cross-validation algorithm repeatedly splits the dataset \(D_n\) of size $n$
-into training and validation datasets as follows. Let \(B\) be a large
-integer. For each \(b=1,\ldots,B\) we draw a bootstrap dataset
-\(\Db=\{X_{b,1}^*,\ldots,X_{b,m}^*\}\) of size \(m\) with
-replacement from the data \(D_n\). For \(i=1,\ldots,n\) let \(N_i^b\) be
-the number of times subject \(i\) is included in \(\Db\). In step
-\(b\) of the cross-validation algorithm the bootstrap dataset \(\Db\)
-is used for training. We apply \(R \) to \(\Db\) to obtain the
-prediction model \(\Rbi\). All subjects \(i\) for which \(N_i^b=0\) are
-out-of-bag and we let these subjects form the validation dataset of step \(b\). First let us construct the influence function in this case with binary data, $X=(Y,Z)$. In this case, we consider estimation of the functional (i.e. the definition of the Brier score in cross-validation)
+Our cross-validation algorithm repeatedly splits the dataset \(D_n\)
+of size $n$ into training and validation datasets as follows. Let
+\(B\) be a large integer. For each \(b=1,\ldots,B\) we draw a
+bootstrap dataset \(\Db=\{X_{b,1}^*,\ldots,X_{b,m}^*\}\) of size
+\(m\le n\) with or without replacement from the data \(D_n\). For
+\(i=1,\ldots,n\) let \(N_i^b\) be the number of times subject \(i\) is
+included in \(\Db\). For subsampling bootstrap (without replacement),
+\(N_i^b\) is either 0 or 1. In step \(b\) of the cross-validation
+algorithm the bootstrap dataset \(\Db\) is used for training. We apply
+\(R \) to \(\Db\) to obtain the prediction model \(\Rbi\). All
+subjects \(i\) for which \(N_i^b=0\) are out-of-bag and we let these
+subjects form the validation dataset of step \(b\). 
 
-\begin{align*}
-  \psi_{m}(P)&=\int\left(\int\cdots\int\left\{y_{m+1}-R(\{x_i\}_{i=1}^m)(z_{m+1})\right\}^2 I(x_{m+1} \notin \{x_i\}_{i=1}^m)\prod_{i=1}^m P(d x_i)\right) P(d x_{m+1}) 
-\end{align*}
+We now calculate the influence function in the case with binary
+outcome data \((Y\in \{0,1\}\). In this case, we consider the
+following functional, i.e., the expected Brier score of the model
+\(R\) on average across all possible training datasets of size
+\(m\). The expectation is taken with respect \begin{align*}
+\psi_{m}(P)&=\int\left(\int\cdots\int\left\{y_{m+1}-R(\{x_i\}_{i=1}^m)(z_{m+1})\right\}^2
+I(x_{m+1} \notin \{x_i\}_{i=1}^m)\prod_{i=1}^m P(d x_i)\right) P(d
+x_{m+1}) \end{align*}
 
 for some sample size $m < n$. Let 
 \begin{equation*}
