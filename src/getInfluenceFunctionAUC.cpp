@@ -259,12 +259,15 @@ NumericVector getInfluenceFunctionAUCKMCensoring(NumericVector time,
   return ic;
 }
 
+// [[Rcpp::export(rng = false)]]
 NumericVector getInfluenceFunctionAUCKMCensoringCVPart(NumericVector time,
                                                        NumericVector status,
                                                        double tau,
                                                        NumericVector GTiminus,
                                                        double Gtau,
                                                        NumericMatrix thetahat,
+                                                       IntegerVector whichControls,
+                                                       IntegerVector whichCases,
                                                        double nu1tauPm) {
   // Thomas' code from IC of Nelson-Aalen estimator
   //initialize first time point t=0 with data of subject i=0
@@ -317,16 +320,45 @@ NumericVector getInfluenceFunctionAUCKMCensoringCVPart(NumericVector time,
   NumericVector int1(n); // this is int \Theta(X_i, x) 1*(t > tau) / G(tau) dP(t,x) 
   NumericVector int2(n);  // int \Theta(x,X_i ) 1*(t <= tau) / G(t-) dP(t,1,x) 
   NumericVector int3(n);  // int \Theta(X_i,x) 1*(t <= tau) / G(t-) dP(t,2,x) 
+  int noControlsI = 0;
+  int noCasesI = 0;
+  bool isCaseControlsI = true; // will have to be fixed ... 
   for (int i = 0; i < n; i++){
+    // keep track of indexing
+    int iValue = 0;
+    if (time[i] > tau){
+      iValue = whichControls[noControlsI];
+      noControlsI++;
+    }
+    else if ((time[i] <= tau) && (status[i] == 1)){
+      iValue = whichCases[noCasesI];
+      noCasesI++;
+    }
+    else if ((time[i] <= tau) && (status[i] == 2)){
+      iValue = whichControls[noControlsI];
+      noControlsI++;
+    } 
+    else {
+      isCaseControlsI = false;
+    }
+    int noControlsJ = 0;
+    int noCasesJ = 0;
     for (int j = 0; j < n; j++){
+      int jValue = 0;
       if (time[j] > tau){
-        int1[i] += thetahat(i,j) / Gtau;
+        jValue = whichControls[noControlsJ];
+        int1[i] += isCaseControlsI ? thetahat(iValue,jValue) / Gtau: 0;
+        noControlsJ++;
       }
       else if ((time[j] <= tau) && (status[j] == 1)){
-        int2[i] += thetahat(i,j) / GTiminus[j];
+        jValue = whichCases[noCasesJ];
+        int2[i] += isCaseControlsI ? thetahat(jValue,iValue) / GTiminus[j]: 0;
+        noCasesJ++;
       }
       else if ((time[j] <= tau) && (status[j] == 2)){
-        int3[i] += thetahat(i,j) / GTiminus[j];
+        jValue = whichControls[noControlsJ];
+        int3[i] += isCaseControlsI ? thetahat(iValue,jValue) / GTiminus[j] : 0;
+        noControlsJ++;
       } 
     }
     int1[i]=int1[i]/((double) n); 
@@ -441,4 +473,73 @@ NumericVector getInfluenceFunctionAUCKMCensoringCVPart(NumericVector time,
   }
   return ic;
 }
+
+// [[Rcpp::export(rng = false)]]
+NumericVector getInfluenceFunctionAUCBinaryCVPart(NumericVector Y,
+                                                  NumericMatrix thetahat,
+                                                  IntegerVector whichControls,
+                                                  IntegerVector whichCases,
+                                                  double nu1tauPm) {
+  // Thomas' code from IC of Nelson-Aalen estimator
+  //initialize first time point t=0 with data of subject i=0
+  int n = Y.size();
+  NumericVector ic(n);
+  // Q(Y = 1)
+  double q1 = ((double) whichCases.size())/((double ) n );
+  // Q(Y=0) = 1- Q(Y=1)
+  double q0 = 1-q1;
+  double mu1 = q0 * q1;
+  NumericVector int1(n); // this is int \Theta(X_i, x) 1*(y=0) dP(y,x) 
+  NumericVector int2(n);  // int \Theta(x,X_i ) 1*(y=1) dP(y,x) 
+  int noControlsI = 0;
+  int noCasesI = 0;
+  bool caseI = false;
+  for (int i = 0; i < n; i++){
+    // keep track of indexing
+    int iValue = 0;
+    if (Y[i]==0){
+      iValue = noControlsI;
+      noControlsI++;
+    }
+    else {
+      iValue = noCasesI;
+      noCasesI++;
+      caseI = true;
+    }
+    int noControlsJ = 0;
+    int noCasesJ = 0;
+    int jValue = 0;
+    for (int j = 0; j < n; j++){
+      if (Y[j] == 0){
+        jValue = noControlsJ;// unsure ...
+        int1[i] += caseI ? thetahat(iValue,jValue) : 0;
+        noControlsJ++;
+      }
+      else {
+        jValue = noCasesJ;
+        int2[i] +=  !caseI ? thetahat(jValue,iValue) : 0;
+        noCasesJ++;
+      }
+    }
+    int1[i]=int1[i]/((double) n); 
+    int2[i]=int2[i]/((double) n); 
+  }
+
+  for (int i = 0; i<n; i++){
+    double IFnu = 0;
+    double IFmu = 0;
+    if (Y[i]==0){
+      IFnu = int2[i];
+      IFmu = q0;
+    }
+    else {
+      IFnu = int1[i];
+      IFmu = q1;
+    }
+    
+    ic[i] = (IFnu * mu1 - IFmu * nu1tauPm)/(mu1*mu1);
+  }
+  return ic;
+}
+
 
