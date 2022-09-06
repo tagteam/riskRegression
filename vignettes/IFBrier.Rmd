@@ -58,7 +58,7 @@ header-includes: \usepackage{graphicx, verbatim, fancyvrb, setspace, xspace, col
 \newcommand{\Ibk}{\I{N_k^b=0}}
 \newcommand{\IC}{\text{IF}}
 \newcommand{\Isi}{\I{N_i=0}}
-\newcommand{\LL}{\{\I{\T_{m+1}\leq \tau}-\R(X_{m+1})\}^2}
+\newcommand{\LL}{\{\I{\T_{0}\leq \tau}-\R(X_{0})\}^2}
 \newcommand{\Lbi}{\{\I{\T_i\leq \tau}-\Rb(X_i)\}^2}
 \newcommand{\Li}{\{\I{\T_i\leq \tau}-\R(X_i)\}^2}
 \newcommand{\Lj}{\{\I{\T_j\leq \tau}-\R(X_j)\}^2}
@@ -215,17 +215,17 @@ We now calculate the influence function in the case with binary
 outcome data \((Y\in \{0,1\}\). In this case, we consider the
 following functional which describes the expected Brier score of the model
 \(R\) on average across all possible training datasets \(D_m\) of size
-\(m\). The expectation is taken with respect to the data of subject \(m+1\):
+\(m\). The expectation is taken with respect to the data of subject \(0\):
 \begin{align*}
-\psi_{m}(P)&=\int\left(\int\cdots\int\left\{y_{m+1}-R(\Dm)(x_{m+1})\right\}^2
+\psi_{m}(P)&=\int\left(\int\cdots\int\left\{y_{0}-R(\Dm)(x_{0})\right\}^2
 \prod_{i=1}^m P(d o_i)\right) P(d
-o_{m+1}) \end{align*}
+o_{0}) \end{align*}
 
 for some sample size $m < n$. Let 
 \begin{equation*}
-  \omega_{m} (Y_{m+1},X_{m+1})=\mathbb{E}_{D_m} [(Y_{m+1}-R(D_m)(X_{m+1}))^2 | Y_{m+1}, X_{m+1}] 
+  \omega_{m} (Y_{0},X_{0})=\mathbb{E}_{D_m} [(Y_{0}-R(D_m)(X_{0}))^2 | Y_{0}, X_{0}] 
 \end{equation*}
-because then $\psi_{m}(P) = \mathbb{E}_{O_{m+1}}[\omega_{m} (Y_{m+1},X_{m+1})]$. For estimating $\omega_{\tau,m}$, we propose to use leave one-out bootstrap estimation:
+because then $\psi_{m}(P) = \mathbb{E}_{O_{0}}[\omega_{m} (Y_{0},X_{0})]$. For estimating $\omega_{\tau,m}$, we propose to use leave one-out bootstrap estimation:
 \begin{equation*}
   \hat{\omega}_{m} (Y_i,X_i)=\frac{\sum_{b=1}^B (Y_{i}-R(D_m)(X_{i}))^2I(N_i^b=0) }{\sum_{b=1}^B I(N_i^b=0)}
 \end{equation*}
@@ -236,13 +236,13 @@ Finally, the Brier score may then be estimated by leave one-out bootstrap estima
 Finally, we also want standard errors of the estimates. For this, we consider the influence function by taking the Gateaux derivative and get: 
 \begin{align} 
   \IC_{\psi}(m;o_k)&=\frac{\partial}{\partial\epsilon}\psi_{m}(P_{\epsilon,k})\Big\vert_{\epsilon=0} \\
-  &= \int \frac{\partial}{\partial\epsilon} \left(\int\cdots\int\left\{y_{m+1}-R(\Dm)(x_{m+1})\right\}^2 \prod_{i=1}^m \PEK (d o_i)\right) \PEK(d o_{m+1}) \Big\vert_{\epsilon=0} \\
-  &= \int \frac{\partial}{\partial\epsilon} \left(\int\cdots\int\left\{y_{m+1}-R(\Dm)(x_{m+1})\right\}^2 \prod_{i=1}^m \PEK (d o_i)\right) \Big\vert_{\epsilon=0}  P(d o_{m+1}) \\
-  &+  \int \left(\int\cdots\int\left\{y_{m+1}-R(\Dm)(x_{m+1})\right\}^2 \prod_{i=1}^m P (d o_i)\right) \frac{\partial}{\partial\epsilon} \PEK(d o_{m+1}) \Big\vert_{\epsilon=0}  \\
-  &= \int \sum_{j=1}^m \left(\int\cdots\int\left\{y_{m+1}-R(\Dm)(x_{m+1})\right\}^2  \delta_{o_k}(o_j) \prod_{i \neq j} (d o_i)\right)  P(d o_{m+1})  - m \psi_{m}(P) \\ %notation???
+  &= \int \frac{\partial}{\partial\epsilon} \left(\int\cdots\int\left\{y_{0}-R(\Dm)(x_{0})\right\}^2 \prod_{i=1}^m \PEK (d o_i)\right) \PEK(d o_{0}) \Big\vert_{\epsilon=0} \\
+  &= \int \frac{\partial}{\partial\epsilon} \left(\int\cdots\int\left\{y_{0}-R(\Dm)(x_{0})\right\}^2 \prod_{i=1}^m \PEK (d o_i)\right) \Big\vert_{\epsilon=0}  P(d o_{0}) \\
+  &+  \int \left(\int\cdots\int\left\{y_{0}-R(\Dm)(x_{0})\right\}^2 \prod_{i=1}^m P (d o_i)\right) \frac{\partial}{\partial\epsilon} \PEK(d o_{0}) \Big\vert_{\epsilon=0}  \\
+  &= \int \sum_{j=1}^m \left(\int\cdots\int\left\{y_{0}-R(\Dm)(x_{0})\right\}^2  \delta_{o_k}(o_j) \prod_{i \neq j} (d o_i)\right)  P(d o_{0})  - m \psi_{m}(P) \\ %notation???
   &+ \omega_{m} (Y_{k},X_{k})-\psi_{m}(P) \\
   &= \omega_{m} (Y_{k},X_{k})-(m+1) \psi_{m}(P) \\
-  &+\int \sum_{j=1}^m \left(\int\cdots\int\left\{y_{m+1}-R(\Dm)(x_{m+1})\right\}^2  \delta_{o_k}(o_j) \prod_{i \neq j} (d o_i)\right)  P(d o_{m+1}) 
+  &+\int \sum_{j=1}^m \left(\int\cdots\int\left\{y_{0}-R(\Dm)(x_{0})\right\}^2  \delta_{o_k}(o_j) \prod_{i \neq j} (d o_i)\right)  P(d o_{0}) 
 \end{align}
 wherein we used the product rule of differentiation. For estimating the influence function, we suggest the estimator:
 \begin{align*}
@@ -253,13 +253,13 @@ wherein we used the product rule of differentiation. For estimating the influenc
 Let us now try to expand this to the case with (right-censored) survival data, i.e. $O=(T, \Delta, X)$ and let $\bar{O} = (\tilde{T},X)$ denote the true event time, i.e. $T=\min\{\tilde{T}, C\}$ and $\Delta = I(T\leq C)$, where $C$ is the censoring time. Also let $Y_i = I(\tilde{T} \leq \tau)$ (or $T$, depending on whichever is the most appropriate), where $\tau$ be some prespecified time point and \(\G\) be an estimate of the censoring
 distribution \(G\) based on \(D_n\).  Then we are concerned with the functional $\mu_{\tau, m}$ 
 \begin{equation*}
-  \mu_{\tau,m}=\E_{O_{m+1}}\big[\E_{D_{m}}\big[\LL\big|\T_{m+1},X_{m+1}\big]\big]
+  \mu_{\tau,m}=\E_{O_{0}}\big[\E_{D_{m}}\big[\LL\big|\T_{0},X_{0}\big]\big]
 \end{equation*} 
 By rewriting the above above a bit (i.e. by using standard tricks when rewriting in terms of the observed data), it can be shown that this quantity can be defined in terms of the observed data, i.e. it can be expressed as the value of
 a statistical functional \(\psi_{\tau,m}:\mathcal{P}\to [0,1]\)
 \begin{align*}
-  \psi_{\tau,m}(\P)&=\int\left(\int\cdots\int\left\{\I{u_{m+1}\leq\tau}-\RR(\Dm)(x_{m+1})\right\}^2  \prod_{i=1}^m\P(\D o_i)\right)\\
-   &\qquad\qquad\times\W(o_{m+1},\kappa_{\tau,x_{m+1}}(\P))\P(\D o_{m+1})\\&=\mu_{\tau,m}.
+  \psi_{\tau,m}(\P)&=\int\left(\int\cdots\int\left\{\I{u_{0}\leq\tau}-\RR(\Dm)(x_{0})\right\}^2  \prod_{i=1}^m\P(\D o_i)\right)\\
+   &\qquad\qquad\times\W(o_{0},\kappa_{\tau,x_{0}}(\P))\P(\D o_{0})\\&=\mu_{\tau,m}.
 \end{align*}
 with 
 \begin{align*}
@@ -275,11 +275,11 @@ Here, we redefine that
 \end{equation*}
 In much the same way as before, we may find the the influence function of $\psi_{\tau,m}(\P)$ to be almost the same as before with an additional term corresponding to the fact that the censoring distribution has to be estimated, i.e. 
 \begin{align*} 
-  \IC_{\psi}(\tau,m;o_k)&=\M(t_k,x_k)\W(o_k,\kappa_{\tau,x_{m+1}}(\P))-(m+1)\, \mu_{\tau,m}\\
-  &+\int\Big[\sum_{j=1}^m \int\cdots\int\{\I{t_{m+1}\leq\tau}-\RR(\{o_i\}_{i=1}^n)(x_{m+1})\}^2  \delta_{o_k}(o_j)\prod_{i\neq j}\P(\D o_i)\Big]\W(o_{m+1},\kappa_{\tau,x_{m+1}}(\P))\P(\D o_{m+1})
+  \IC_{\psi}(\tau,m;o_k)&=\M(t_k,x_k)\W(o_k,\kappa_{\tau,x_{0}}(\P))-(m+1)\, \mu_{\tau,m}\\
+  &+\int\Big[\sum_{j=1}^m \int\cdots\int\{\I{t_{0}\leq\tau}-\RR(\{o_i\}_{i=1}^n)(x_{0})\}^2  \delta_{o_k}(o_j)\prod_{i\neq j}\P(\D o_i)\Big]\W(o_{0},\kappa_{\tau,x_{0}}(\P))\P(\D o_{0})
   \\
-  &+\int\M(t_{m+1},x_{m+1})\left[\frac{\I{t_{m+1}\leq \tau}\delta_{m+1}}{G(t_{m+1}-\vert x_{m+1})} f_k(t_{m+1},x_{m+1})
-  +\frac{\I{t_{m+1}>\tau}}{G(\tau\vert x_{m+1})}f_k(\tau,x_{m+1}) \right]\P(\D o_{m+1}) \\
+  &+\int\M(t_{0},x_{0})\left[\frac{\I{t_{0}\leq \tau}\delta_{0}}{G(t_{0}-\vert x_{0})} f_k(t_{0},x_{0})
+  +\frac{\I{t_{0}>\tau}}{G(\tau\vert x_{0})}f_k(\tau,x_{0}) \right]\P(\D o_{0}) \\
 \end{align*}
 This can then be estimated in much the same way as before
 \begin{align*}
