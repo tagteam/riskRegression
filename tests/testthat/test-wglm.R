@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: Dec 21 2021 (11:04) 
 ## Version: 
-## Last-Updated: Jul  7 2022 (17:18) 
-##           By: Thomas Alexander Gerds
-##     Update #: 17
+## Last-Updated: sep  6 2022 (16:39) 
+##           By: Brice Ozenne
+##     Update #: 18
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -38,8 +38,8 @@ test_that("wglm - no censoring",{
     GS <- suppressWarnings(logitIPCW(formula = Event(time,event)~X1 + X8,
                                      time = tau[5], data = dFull))
 
-    expect_equal(coef(test, time = tau[5]), summary(GS)$coef[,"Estimate"], tolerance = 1e-5)
-    expect_equal(summary(test, print = FALSE)[[5]][,"Std. Error"], summary(GS)$coef[,"Std.Err"], tolerance = 1e-5)
+    expect_equivalent(coef(test, time = tau[5]), summary(GS)$coef[,"Estimate"], tolerance = 1e-5)
+    expect_equivalent(summary(test, print = FALSE)[[5]][,"Std. Error"], summary(GS)$coef[,"Std.Err"], tolerance = 1e-5)
  
     ## ate
     test.ate <- ate(test, data = dFull, times = tau, treatment = "X1", verbose = FALSE)
@@ -57,8 +57,8 @@ test_that("wglm - censoring",{
     GS <- suppressWarnings(logitIPCW(formula = Event(time,event)~X1 + X8,
                                      cens.model = ~1,
                                      time = tau[5], data = dSurv, cens.code = 0, cause = 1))
-    expect_equal(coef(test, time = tau[5]), summary(GS)$coef[,"Estimate"], tolerance = 1e-5)
-    expect_equal(summary(test, print = FALSE)[[5]][,"Std. Error"], summary(GS)$coef[,"Std.Err"], tolerance = 1e-5)
+    expect_equivalent(coef(test, time = tau[5]), summary(GS)$coef[,"Estimate"], tolerance = 1e-5)
+    expect_equivalent(summary(test, print = FALSE)[[5]][,"Std. Error"], summary(GS)$coef[,"Std.Err"], tolerance = 1e-5)
 
     ## check weights
     e.KM <- as.data.table(predictCoxPL(coxph(Surv(time,event==0) ~ 1, data = dSurv),
@@ -78,7 +78,7 @@ test_that("wglm - censoring",{
                                      cens.model = ~X1,
                                      time = tau[5], data = dSurv, cens.code = 0, cause = 1))
 
-    expect_equal(coef(test, time = tau[5]), summary(GS)$coef[,"Estimate"], tolerance = 1e-5)
+    expect_equivalent(coef(test, time = tau[5]), summary(GS)$coef[,"Estimate"], tolerance = 1e-5)
     ## expect_equal(summary(test, print = FALSE)[[5]][,"Std. Error"], summary(GS)$coef[,"Std.Err"], tolerance = 1e-5)
 
     #### censoring model with continuous covariate ####
@@ -88,7 +88,7 @@ test_that("wglm - censoring",{
                     cens.model = ~X1+X8,
                     time = tau[5], data = dSurv, cens.code = 0, cause = 1))
 
-    expect_equal(coef(test, time = tau[5]), summary(GS)$coef[,"Estimate"], tolerance = 1e-5)
+    expect_equivalent(coef(test, time = tau[5]), summary(GS)$coef[,"Estimate"], tolerance = 1e-5)
     ## expect_equal(summary(test, print = FALSE)[[5]][,"Std. Error"], summary(GS)$coef[,"Std.Err"], tolerance = 1e-5)
 
 })
@@ -101,8 +101,8 @@ test_that("wglm - competing risks",{
     GS <- suppressWarnings(logitIPCW(formula = Event(time,event) ~ X1 + X8,
                     cens.model = ~1,
                     time = tau[5], data = d, cens.code = 0, cause = 1))
-    expect_equal(coef(test, time = tau[5]), summary(GS)$coef[,"Estimate"], tolerance = 1e-5)
-    expect_equal(summary(test, print = FALSE)[[5]][,"Std. Error"], summary(GS)$coef[,"Std.Err"], tolerance = 1e-5)
+    expect_equivalent(coef(test, time = tau[5]), summary(GS)$coef[,"Estimate"], tolerance = 1e-5)
+    expect_equivalent(summary(test, print = FALSE)[[5]][,"Std. Error"], summary(GS)$coef[,"Std.Err"], tolerance = 1e-5)
 
     ## ate
     test.ate <- ate(test, data = d, times = tau, treatment = "X1", verbose = FALSE)
@@ -118,7 +118,7 @@ test_that("wglm - competing risks",{
                     cens.model = ~X1,
                     time = tau[5], data = d, cens.code = 0, cause = 1))
 
-    expect_equal(coef(test, time = tau[5]), summary(GS)$coef[,"Estimate"], tolerance = 1e-5)
+    expect_equivalent(coef(test, time = tau[5]), summary(GS)$coef[,"Estimate"], tolerance = 1e-5)
     ## expect_equal(summary(test, print = FALSE)[[5]][,"Std. Error"], summary(GS)$coef[,"Std.Err"], tolerance = 1e-5)
 
     #### censoring model with continuous covariate ####
@@ -128,7 +128,7 @@ test_that("wglm - competing risks",{
                     cens.model = ~X1+X8,
                     time = tau[5], data = d, cens.code = 0, cause = 1))
 
-    expect_equal(coef(test, time = tau[5]), summary(GS)$coef[,"Estimate"], tolerance = 1e-5)
+    expect_equivalent(coef(test, time = tau[5]), summary(GS)$coef[,"Estimate"], tolerance = 1e-5)
     ## expect_equal(summary(test, print = FALSE)[[5]][,"Std. Error"], summary(GS)$coef[,"Std.Err"], tolerance = 1e-5)
 })
 
