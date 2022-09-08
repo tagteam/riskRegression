@@ -68,9 +68,7 @@ crossvalPerf.loob.AUC <- function(times,mlevs,se.fit,response.type,NT,Response,c
     for (mod in mlevs){
       Ib <- matrix(0, sum(cases.index), sum(controls.index))
       auc <- matrix(0, sum(cases.index), sum(controls.index))
-      w.list <- foreach::foreach(k = 1:N) %do% {
-        matrix(0, sum(cases.index), sum(controls.index))
-      }
+      w.list <- replicate(N,matrix(0, sum(cases.index), sum(controls.index)),simplify=F)
       # if (split.method$internal.name=="crossval"){
       #   # stop("Cannot yet calculate AUC in this case. Use split.method 'loob' or 'bootcv' instead.")
       # }
@@ -91,9 +89,9 @@ crossvalPerf.loob.AUC <- function(times,mlevs,se.fit,response.type,NT,Response,c
         }
         data.table::setkey(oob.risk,ID)
         riskset <- oob.risk[riskset]
-        riskset[is.na(risk),risk:=-9]
+        riskset[is.na(risk),risk:=-1]
         Ib.ij <- outer((cases.index*oob)[which.cases],(controls.index*oob)[which.controls],"*")
-        auc.ij <- AUCijFun(riskset[casecontrol=="case",risk],riskset[casecontrol=="control",risk])*Ib.ij
+        auc.ij <- AUCijFun(riskset[casecontrol=="case",risk],riskset[casecontrol=="control",risk])*Ib.ij #case > control
         ## Ib.ij is 1 when the pair out of bag
         ## print(head(oob))
         ## print(auc.ij[1:5,1:5])
@@ -129,9 +127,11 @@ crossvalPerf.loob.AUC <- function(times,mlevs,se.fit,response.type,NT,Response,c
           else {
             status0 <- data[["status"]]
           }
+          # assumes no ties in risk
           ic <- getInfluenceFunctionAUCKMCensoringCVPart(data[["time"]],status0,t,Weights$IPCW.subject.times, Weights$IPCW.times[s], thetahat,which.controls,which.cases,nu1tauPm) + 1/(N^2*Phi) * cross.term - m*aucLPO 
         }
         else {
+          # assumes no ties in risk
           ic <- getInfluenceFunctionAUCBinaryCVPart(data[["ReSpOnSe"]], thetahat,which.controls,which.cases,nu1tauPm) + 1/(N^2*Phi) * cross.term - m*aucLPO 
         }
         id.cases <- data[["ID"]][cc.status=="case"]
@@ -235,19 +235,46 @@ crossvalPerf.loob.Brier <- function(times,mlevs,se.fit,response.type,NT,Response
   ## divide by number of times out-off-bag later
   ## DT.B <- DT.B[,data.table::data.table(residuals=sum(residuals)),by=c(byvars,"ID")]
   getNbk <- function(b,k){
-    sum(split.method$index[,b] == k)
+    res <- vector(mode ="integer", length = length(b))
+    for (i in 1:length(b)){
+      res[i] <- sum(split.method$index[,b[i]] == k)
+    }
+    res
   }
   if (se.fit){
     message("Calculating the third term of the influence function for Brier. This might take a while ...")
     pb <- txtProgressBar(min = 1, max = N, style =31, width=20)
-    `%dopar%` <- foreach::`%dopar%`
-    IF.terms <-foreach::foreach(k=1:N,.combine="rbind") %dopar% {
+    w.list <- list()
+    for (k in 1:N){
+      # if (response.type == "binary"){
+      #   for (mod in mlevs){
+      #     temp.data.table <- DT.B[model == mod]
+      #     a <- doSomething(temp.data.table$residuals, temp.data.table$b,temp.data.table$ID)
+      #   }
+      # }
+      # else {
+      #   
+      # }
+      # for ()
       setTxtProgressBar(pb, k)
-      temp <- DT.B[,data.table::data.table(IF.term=mean(residuals*getNbk(b,k))),by=c(byvars,"ID")] 
+      # doSomething <- function(res,b,ID){
+      #   browser()
+      # }
+      # temp <- DT.B[,IF.term:=doSomething(residuals,b,ID),by=byvars]
+      temp <- DT.B[,data.table::data.table(IF.term=mean(residuals*getNbk(b,k))),by=c(byvars,"ID")]
       temp <- temp[,data.table::data.table(IF.term=mean(IF.term)), by=byvars]
       temp[,ID:=k]
-      temp
+      w.list[[k]] <- temp
     }
+    IF.terms <- do.call("rbind",w.list)
+    # `%dopar%` <- foreach::`%dopar%`
+    # IF.terms <-foreach::foreach(k=1:N,.combine="rbind") %dopar% {
+    #   setTxtProgressBar(pb, k)
+    #   temp <- DT.B[,data.table::data.table(IF.term=mean(residuals*getNbk(b,k))),by=c(byvars,"ID")]
+    #   temp <- temp[,data.table::data.table(IF.term=mean(IF.term)), by=byvars]
+    #   temp[,ID:=k]
+    #   temp
+    # }
   }
   DT.B <- DT.B[,data.table::data.table(residuals=sum(residuals)),by=c(byvars,"ID")] 
   ## get denominator

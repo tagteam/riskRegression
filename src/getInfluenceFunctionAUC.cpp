@@ -322,44 +322,43 @@ NumericVector getInfluenceFunctionAUCKMCensoringCVPart(NumericVector time,
   NumericVector int3(n);  // int \Theta(X_i,x) 1*(t <= tau) / G(t-) dP(t,2,x) 
   int noControlsI = 0;
   int noCasesI = 0;
-  bool isCaseControlsI = true; // will have to be fixed ... 
+  bool isCaseI = false; 
   for (int i = 0; i < n; i++){
     // keep track of indexing
     int iValue = 0;
     if (time[i] > tau){
-      iValue = whichControls[noControlsI];
+      iValue = noControlsI;
       noControlsI++;
     }
     else if ((time[i] <= tau) && (status[i] == 1)){
-      iValue = whichCases[noCasesI];
+      iValue = noCasesI;
       noCasesI++;
+      isCaseI = true;
     }
     else if ((time[i] <= tau) && (status[i] == 2)){
-      iValue = whichControls[noControlsI];
+      iValue = noControlsI;
       noControlsI++;
     } 
-    else {
-      isCaseControlsI = false;
-    }
-    int noControlsJ = 0;
-    int noCasesJ = 0;
-    for (int j = 0; j < n; j++){
-      int jValue = 0;
-      if (time[j] > tau){
-        jValue = whichControls[noControlsJ];
-        int1[i] += isCaseControlsI ? thetahat(iValue,jValue) / Gtau: 0;
+    if (isCaseI){
+      int noControlsJ = 0;
+      for (int j = 0; j < n; j++){
+        if (time[j] > tau){
+          int1[i] += thetahat(iValue,noControlsJ) / Gtau;
+        }
+        else if ((time[j] <= tau) && (status[j] == 2)){
+          int3[i] += thetahat(iValue,noControlsJ) / GTiminus[j] ;
+        } 
         noControlsJ++;
       }
-      else if ((time[j] <= tau) && (status[j] == 1)){
-        jValue = whichCases[noCasesJ];
-        int2[i] += isCaseControlsI ? thetahat(jValue,iValue) / GTiminus[j]: 0;
+    }
+    else {
+      int noCasesJ = 0;
+      for (int j = 0; j < n; j++){
+        if ((time[j] <= tau) && (status[j] == 1)){
+          int2[i] += (1-thetahat(noCasesJ,iValue)) / GTiminus[j];
+        }
         noCasesJ++;
       }
-      else if ((time[j] <= tau) && (status[j] == 2)){
-        jValue = whichControls[noControlsJ];
-        int3[i] += isCaseControlsI ? thetahat(iValue,jValue) / GTiminus[j] : 0;
-        noControlsJ++;
-      } 
     }
     int1[i]=int1[i]/((double) n); 
   }
@@ -509,16 +508,22 @@ NumericVector getInfluenceFunctionAUCBinaryCVPart(NumericVector Y,
     int noControlsJ = 0;
     int noCasesJ = 0;
     int jValue = 0;
-    for (int j = 0; j < n; j++){
-      if (Y[j] == 0){
-        jValue = noControlsJ;// unsure ...
-        int1[i] += caseI ? thetahat(iValue,jValue) : 0;
-        noControlsJ++;
+    if (caseI){
+      for (int j = 0; j < n; j++){
+        if (Y[j] == 0){
+          jValue = noControlsJ;// unsure ...
+          int1[i] += thetahat(iValue,jValue);
+          noControlsJ++;
+        }
       }
-      else {
-        jValue = noCasesJ;
-        int2[i] +=  !caseI ? thetahat(jValue,iValue) : 0;
-        noCasesJ++;
+    }
+    else {
+      for (int j = 0; j < n; j++){
+        if (Y[j] == 1){
+          jValue = noCasesJ;
+          int2[i] += 1-thetahat(jValue,iValue);
+          noCasesJ++;
+        }
       }
     }
     int1[i]=int1[i]/((double) n); 
