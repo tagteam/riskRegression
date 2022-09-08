@@ -252,7 +252,10 @@ CSC <- function(formula,
         else
             survresponse <- "survival::Surv(entry, time, status)"
         ## check whether right hand side of formula includes ~.
-        if (grepl("\\.", paste0(format(formula[[x]])))){
+        fm <- paste0(format(formula[[x]]),collapse = '')
+        begin.index <- gregexpr(pattern = "~", fm)[[1]][[1]]
+        check.covariates <- substr(fm,begin.index,nchar(fm))
+        if (check.covariates == "~." || check.covariates == "~ ."){
           formulaXX <- as.formula(paste0(survresponse,"~."))
         }
         else {
