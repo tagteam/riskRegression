@@ -242,31 +242,31 @@ crossvalPerf.loob.Brier <- function(times,mlevs,se.fit,response.type,NT,Response
     res
   }
   if (se.fit){
-    message("Calculating the third term of the influence function for Brier. This might take a while ...")
-    pb <- txtProgressBar(min = 1, max = N, style =31, width=20)
-    w.list <- list()
-    for (k in 1:N){
-      # if (response.type == "binary"){
-      #   for (mod in mlevs){
-      #     temp.data.table <- DT.B[model == mod]
-      #     a <- doSomething(temp.data.table$residuals, temp.data.table$b,temp.data.table$ID)
-      #   }
-      # }
-      # else {
-      #   
-      # }
-      # for ()
-      setTxtProgressBar(pb, k)
-      # doSomething <- function(res,b,ID){
-      #   browser()
-      # }
-      # temp <- DT.B[,IF.term:=doSomething(residuals,b,ID),by=byvars]
-      temp <- DT.B[,data.table::data.table(IF.term=mean(residuals*getNbk(b,k))),by=c(byvars,"ID")]
-      temp <- temp[,data.table::data.table(IF.term=mean(IF.term)), by=byvars]
-      temp[,ID:=k]
-      w.list[[k]] <- temp
-    }
-    IF.terms <- do.call("rbind",w.list)
+    # message("Calculating the third term of the influence function for Brier. This might take a while ...")
+    # pb <- txtProgressBar(min = 1, max = N, style =31, width=20)
+    # w.list <- list()
+    # for (k in 1:N){
+    #   # if (response.type == "binary"){
+    #   #   for (mod in mlevs){
+    #   #     temp.data.table <- DT.B[model == mod]
+    #   #     a <- doSomething(temp.data.table$residuals, temp.data.table$b,temp.data.table$ID)
+    #   #   }
+    #   # }
+    #   # else {
+    #   #   
+    #   # }
+    #   # for ()
+    #   setTxtProgressBar(pb, k)
+    #   # doSomething <- function(res,b,ID){
+    #   #   browser()
+    #   # }
+    #   # temp <- DT.B[,IF.term:=doSomething(residuals,b,ID),by=byvars]
+    #   temp <- DT.B[,data.table::data.table(IF.term=mean(residuals*getNbk(b,k))),by=c(byvars,"ID")]
+    #   temp <- temp[,data.table::data.table(IF.term=mean(IF.term)), by=byvars]
+    #   temp[,ID:=k]
+    #   w.list[[k]] <- temp
+    # }
+    # IF.terms <- do.call("rbind",w.list)
     # `%dopar%` <- foreach::`%dopar%`
     # IF.terms <-foreach::foreach(k=1:N,.combine="rbind") %dopar% {
     #   setTxtProgressBar(pb, k)
@@ -302,9 +302,11 @@ crossvalPerf.loob.Brier <- function(times,mlevs,se.fit,response.type,NT,Response
   DT.B[,Brier:=mean(residuals),by=byvars]
   ## standard error via influence function
   if (se.fit==1L){
-    DT.B <- merge(DT.B,IF.terms)
+    # DT.B <- merge(DT.B,IF.terms)
     m <- split.method$M
-    DT.B[,IC0:=residuals-(m+1)*Brier+IF.term,by=byvars]
+    # DT.B[,IC0:=residuals-(m+1)*Brier+IF.term,by=byvars]
+    DT.B[,IC0:=residuals-m*Brier,by=byvars]
+    
     ## influence function when censoring model is known or data are uncensored
     if (cens.type[1]=="rightCensored" && !conservative[1]){
       ## this is a new DT.B
