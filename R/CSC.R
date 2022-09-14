@@ -164,7 +164,7 @@ CSC <- function(formula,
             entry <- NULL
         }
     }
-    if (any(entry>time)) stop("entry > time detected. Entry into the study must come first.")
+    if (any(entry>time)) stop("entry > time detected. Entry time into the study must be strictly greater than outcome time.")
     ## remove event history variables from data
     if(any((this <- match(all.vars(Rform),names(data),nomatch=0))>0)){
         if (data.table::is.data.table(data))
@@ -218,13 +218,6 @@ CSC <- function(formula,
         } else{
             causeX <- theCause
         }
-        ## EHF <- prodlim::EventHistory.frame(formula=formula[[x]],data=data,unspecialsDesign=FALSE,specialsFactor=FALSE,specials="strata",stripSpecials="strata",stripArguments=list("strata"=NULL),specialsDesign=FALSE)
-        ## if (is.null(EHF$strata))
-        ## covData <- cbind(EHF$design)
-        ## else
-        ## covData <- cbind(EHF$design,EHF$strata)
-        ## time <- as.numeric(EHF$event.history[, "time",drop=TRUE])
-        ## event <- prodlim::getEvent(EHF$event.history)
         if (surv.type=="hazard"){
             statusX <- as.numeric(event==causeX)
         }else{
@@ -252,7 +245,7 @@ CSC <- function(formula,
         else
             survresponse <- "survival::Surv(entry, time, status)"
         ## check whether right hand side of formula includes ~.
-        if (grepl("\\.", paste0(format(formula[[x]])))){
+        if (grepl("\\.", format(formula[[x]])[[1]])){
           formulaXX <- as.formula(paste0(survresponse,"~."))
         }
         else {
