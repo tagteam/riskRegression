@@ -59,7 +59,6 @@ Suggests:
     rpart,
     scam,
     SuperLearner,
-    survXgboost,
     testthat,
     R.rsp
 Maintainer: Thomas Alexander Gerds <tag@biostat.ku.dk>

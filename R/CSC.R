@@ -246,7 +246,7 @@ CSC <- function(formula,
             survresponse <- "survival::Surv(entry, time, status)"
         ## check whether right hand side of formula includes ~.
         allvars <- all.vars(formula[[x]])
-        if (any(grepl("^\\.$",allvars)))
+        if (any(grepl("^\\.$",allvars))){
           formulaXX <- as.formula(paste0(survresponse,"~."))
         }
         else {
