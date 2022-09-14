@@ -1,10 +1,14 @@
 ---
 title: "Influence function calculation for Brier score for event time data"
 author: "Johan Sebastian Ohlendorff & Thomas Alexander Gerds"
-date: '2022-06-07'
-output: pdf_document
-header-includes: \usepackage{graphicx, verbatim, fancyvrb, setspace, xspace, colortbl, longtable, amsmath, caption, xfrac, float, mathabx,bbm,algorithm2e}
+date: "2022-01-09"
+output:
+  pdf_document: default
+  word_document: default
+header-includes: \usepackage{graphicx, verbatim, fancyvrb, setspace, xspace, colortbl,
+  longtable, amsmath, caption, xfrac, float, mathabx,bbm,algorithm2e}
 ---
+
 
 
 \newcommand{\Xj}{\ensuremath{X^{\prime}}}
@@ -37,6 +41,52 @@ header-includes: \usepackage{graphicx, verbatim, fancyvrb, setspace, xspace, col
 \newcommand{\ifmuc}{\ensuremath{\mathrm{IF}^1_{\mu}}}
 \newcommand{\hatifmuc}{\ensuremath{\mathrm{\widehat{IF}}^1_{\mu}}}
 
+<!-- for use with Rikkes paper -->
+\newcommand{\AUCO}{\hat{\theta}^{(1,1)}_{\tau,m}}
+\newcommand{\auc}{\widehat{\text{auc}}}
+\newcommand{\aucO}{\theta_{\tau,m}}
+\newcommand{\D}{\mathrm{d}}
+\newcommand{\Db}{D^*_{m,b}}
+\newcommand{\Dm}{D_{m}}
+\newcommand{\E}{\mathbb{E}}
+\renewcommand{\G}{\hat G_n}
+\newcommand{\g}{\hat{\mathbb{G}}}
+\newcommand{\II}{\mathcal{I}}
+\newcommand{\I}[1]{\II_{\{#1\}}}
+\newcommand{\Ibi}{\I{N_i^b=0}}
+\newcommand{\Ibj}{\I{N_j^b=0}}
+\newcommand{\Ibk}{\I{N_k^b=0}}
+\newcommand{\IC}{\text{IF}}
+\newcommand{\Isi}{\I{N_i=0}}
+\newcommand{\LL}{\{\I{\T_{0}\leq \tau}-\R(X_{0})\}^2}
+\newcommand{\Lbi}{\{\I{\T_i\leq \tau}-\Rb(X_i)\}^2}
+\newcommand{\Li}{\{\I{\T_i\leq \tau}-\R(X_i)\}^2}
+\newcommand{\Lj}{\{\I{\T_j\leq \tau}-\R(X_j)\}^2}
+\newcommand{\loo}{leave-one-out bootstrap }
+\newcommand{\lpo}{leave-pair-out bootstrap }
+\newcommand{\Lt}{\ensuremath{L_t}}
+\newcommand{\M}{\ensuremath{\omega_{\tau,m}}}
+\newcommand{\m}{\hat{\omega}^{(1)}_{\tau,m}}
+\newcommand{\mbin}{\hat{\omega}^{(1)}_{m}}
+\newcommand{\MU}{\ensuremath{\hat{\mu}^{(1)}_{\tau,m}}}
+\newcommand{\p}{\ensuremath{\P_n}}
+\newcommand{\PSI}{\ensuremath{\hat{\psi}^{(1)}_{m}}}
+\renewcommand{\P}{\ensuremath{\mathrm{P}}}
+\newcommand{\PEK}{\ensuremath{P_{\epsilon,k}}}
+\newcommand{\Qej}{\ensuremath{Q_{n,\epsilon,j}}}
+\newcommand{\RR}{\ensuremath{R_{\tau}}}
+\newcommand{\R}{\ensuremath{\RR(D_m)}}
+\newcommand{\Rb}{\ensuremath{\RR(D_{m,b}^*)}}
+\newcommand{\Rbi}{\ensuremath{R(D_{m,b}^*)}}
+\newcommand{\T}{\ensuremath{\tilde{T}}}
+\newcommand{\V}{\text{Var}}
+\newcommand{\X}{\ensuremath{\tilde{X}}}
+\newcommand{\XX}{X}
+\newcommand{\W}{W_\tau}
+\newcommand{\Wi}{\W(X_i,\hat G_n)}
+\newcommand{\Wk}{\W(X_k,\hat G_n)}
+\newcommand{\WWi}{\mathcal{W}_{T_i}(X_i)}
+\newcommand{\WWj}{\mathcal{W}_t(X_j)}
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
@@ -50,7 +100,7 @@ event of interest occurred, and \(D=2\) that a competing risk
 occurred. As in the survival setting we let \(Q\) denote the joint
 probability measure of the uncensored data, \((T,D,X)\sim Q\), and $P$
 the joint probability measure of the right censored data
-$Z=(\tilde{T},\Delta,X) \sim P$ now with $\Delta=D 1_{\{T \leq C\}}$
+$O=(\tilde{T},\Delta,X) \sim P$ now with $\Delta=D 1_{\{T \leq C\}}$
 taking values in the set \(\{0,1,2\}\). We are interested in the
 following definition of the time-dependent discrimination measure for
 cause 1. We can easily calculate the influence function for the Brier score, which can be written as: 
@@ -145,3 +195,97 @@ Whenever the censoring does not depend on covariates, the two last integrals are
 &+ (1-R(\tau|X_i))^2 \left(\frac{I(\tilde{T}_i \leq \tau, \Delta_i = 0)}{G(\tilde{T}_i|X_i)S(\tilde{T}_i|X_i)}(F_1(\tau|X_i)-F_1(\tilde{T}_i|X_i))-\int_0^{\tilde{T}_i \wedge \tau} \frac{(F_1(\tau|X_i)-F_1(s|X_i))}{G(s|X_i)S(s|X_i)}\Lambda_C(ds|X_i)\right)
 \end{align*}
 
+## IF with cross-validation
+
+### Binary case
+Our cross-validation algorithm repeatedly splits the dataset \(D_n\)
+of size $n$ into training and validation datasets as follows. Let
+\(B\) be a large integer. For each \(b=1,\ldots,B\) we draw a
+bootstrap dataset \(\Db=\{O_{b,1}^*,\ldots,O_{b,m}^*\}\) of size
+\(m\le n\) with or without replacement from the data \(D_n\). For
+\(i=1,\ldots,n\) let \(N_i^b\) be the number of times subject \(i\) is
+included in \(\Db\). For subsampling bootstrap (without replacement),
+\(N_i^b\) is either 0 or 1. In step \(b\) of the cross-validation
+algorithm the bootstrap dataset \(\Db\) is used for training. We apply
+\(R \) to \(\Db\) to obtain the prediction model \(\Rbi\). All
+subjects \(i\) for which \(N_i^b=0\) are out-of-bag and we let these
+subjects form the validation dataset of step \(b\). 
+
+We now calculate the influence function in the case with binary
+outcome data \((Y\in \{0,1\}\). In this case, we consider the
+following functional which describes the expected Brier score of the model
+\(R\) on average across all possible training datasets \(D_m\) of size
+\(m\). The expectation is taken with respect to the data of subject \(0\):
+\begin{align*}
+\psi_{m}(P)&=\int\left(\int\cdots\int\left\{y_{0}-R(\Dm)(x_{0})\right\}^2
+\prod_{i=1}^m P(d o_i)\right) P(d
+o_{0}) \end{align*}
+
+for some sample size $m < n$. Let 
+\begin{equation*}
+  \omega_{m} (Y_{0},X_{0})=\mathbb{E}_{D_m} [(Y_{0}-R(D_m)(X_{0}))^2 | Y_{0}, X_{0}] 
+\end{equation*}
+because then $\psi_{m}(P) = \mathbb{E}_{O_{0}}[\omega_{m} (Y_{0},X_{0})]$. For estimating $\omega_{\tau,m}$, we propose to use leave one-out bootstrap estimation:
+\begin{equation*}
+  \hat{\omega}_{m} (Y_i,X_i)=\frac{\sum_{b=1}^B (Y_{i}-R(D_m)(X_{i}))^2I(N_i^b=0) }{\sum_{b=1}^B I(N_i^b=0)}
+\end{equation*}
+Finally, the Brier score may then be estimated by leave one-out bootstrap estimation as ´
+\begin{equation*}
+  \PSI=\frac{1}{n}\sum_{i=1}^n\hat{\omega}_{m} (Y_i,X_i)
+\end{equation*}
+Finally, we also want standard errors of the estimates. For this, we consider the influence function by taking the Gateaux derivative and get: 
+\begin{align} 
+  \IC_{\psi}(m;o_k)&=\frac{\partial}{\partial\epsilon}\psi_{m}(P_{\epsilon,k})\Big\vert_{\epsilon=0} \\
+  &= \int \frac{\partial}{\partial\epsilon} \left(\int\cdots\int\left\{y_{0}-R(\Dm)(x_{0})\right\}^2 \prod_{i=1}^m \PEK (d o_i)\right) \PEK(d o_{0}) \Big\vert_{\epsilon=0} \\
+  &= \int \frac{\partial}{\partial\epsilon} \left(\int\cdots\int\left\{y_{0}-R(\Dm)(x_{0})\right\}^2 \prod_{i=1}^m \PEK (d o_i)\right) \Big\vert_{\epsilon=0}  P(d o_{0}) \\
+  &+  \int \left(\int\cdots\int\left\{y_{0}-R(\Dm)(x_{0})\right\}^2 \prod_{i=1}^m P (d o_i)\right) \frac{\partial}{\partial\epsilon} \PEK(d o_{0}) \Big\vert_{\epsilon=0}  \\
+  &= \int \sum_{j=1}^m \left(\int\cdots\int\left\{y_{0}-R(\Dm)(x_{0})\right\}^2  \delta_{o_k}(o_j) \prod_{i \neq j} (d o_i)\right)  P(d o_{0})  - m \psi_{m}(P) \\ %notation???
+  &+ \omega_{m} (Y_{k},X_{k})-\psi_{m}(P) \\
+  &= \omega_{m} (Y_{k},X_{k})-(m+1) \psi_{m}(P) \\
+  &+\int \sum_{j=1}^m \left(\int\cdots\int\left\{y_{0}-R(\Dm)(x_{0})\right\}^2  \delta_{o_k}(o_j) \prod_{i \neq j} (d o_i)\right)  P(d o_{0}) 
+\end{align}
+wherein we used the product rule of differentiation. For estimating the influence function, we suggest the estimator:
+\begin{align*}
+  \widehat{\IC}_{\psi}(m;O_k)&=\mbin (Y_k,X_k)-(m+1)\, \PSI +\frac{1}{n} \sum_{i=1}^n\frac{\sum_b \{Y_i-\Rbi (X_i)\}^2 \Ibi N_k^b}{\sum_b\Ibi} % is the last part estimated correctly?
+\end{align*}
+
+### Survival and competing risk case
+Let us now try to expand this to the case with (right-censored) survival data, i.e. $O=(T, \Delta, X)$ and let $\bar{O} = (\tilde{T},X)$ denote the true event time, i.e. $T=\min\{\tilde{T}, C\}$ and $\Delta = I(T\leq C)$, where $C$ is the censoring time. Also let $Y_i = I(\tilde{T} \leq \tau)$ (or $T$, depending on whichever is the most appropriate), where $\tau$ be some prespecified time point and \(\G\) be an estimate of the censoring
+distribution \(G\) based on \(D_n\).  Then we are concerned with the functional $\mu_{\tau, m}$ 
+\begin{equation*}
+  \mu_{\tau,m}=\E_{O_{0}}\big[\E_{D_{m}}\big[\LL\big|\T_{0},X_{0}\big]\big]
+\end{equation*} 
+By rewriting the above above a bit (i.e. by using standard tricks when rewriting in terms of the observed data), it can be shown that this quantity can be defined in terms of the observed data, i.e. it can be expressed as the value of
+a statistical functional \(\psi_{\tau,m}:\mathcal{P}\to [0,1]\)
+\begin{align*}
+  \psi_{\tau,m}(\P)&=\int\left(\int\cdots\int\left\{\I{u_{0}\leq\tau}-\RR(\Dm)(x_{0})\right\}^2  \prod_{i=1}^m\P(\D o_i)\right)\\
+   &\qquad\qquad\times\W(o_{0},\kappa_{\tau,x_{0}}(\P))\P(\D o_{0})\\&=\mu_{\tau,m}.
+\end{align*}
+with 
+\begin{align*}
+  \Wi=\frac{\I{T_i\leq \tau}\Delta_i}{\G(T_i\vert X_i)}+\frac{\I{T_i>\tau}}{\G(\tau\vert X_i)}
+\end{align*} 
+then this can be estimated in much the same way as before, i.e. as 
+\begin{equation*}
+  \MU=\frac{1}{n}\sum_{i=1}^n\m(T_i,X_i)\Wi 
+\end{equation*}
+Here, we redefine that 
+\begin{equation*}
+  \m(\T_i,X_i)=\frac{\sum_{b=1}^B\Lbi\Ibi}{\sum_{b=1}^B\I{N_i^b=0}}
+\end{equation*}
+In much the same way as before, we may find the the influence function of $\psi_{\tau,m}(\P)$ to be almost the same as before with an additional term corresponding to the fact that the censoring distribution has to be estimated, i.e. 
+\begin{align*} 
+  \IC_{\psi}(\tau,m;o_k)&=\M(t_k,x_k)\W(o_k,\kappa_{\tau,x_{0}}(\P))-(m+1)\, \mu_{\tau,m}\\
+  &+\int\Big[\sum_{j=1}^m \int\cdots\int\{\I{t_{0}\leq\tau}-\RR(\{o_i\}_{i=1}^n)(x_{0})\}^2  \delta_{o_k}(o_j)\prod_{i\neq j}\P(\D o_i)\Big]\W(o_{0},\kappa_{\tau,x_{0}}(\P))\P(\D o_{0})
+  \\
+  &+\int\M(t_{0},x_{0})\left[\frac{\I{t_{0}\leq \tau}\delta_{0}}{G(t_{0}-\vert x_{0})} f_k(t_{0},x_{0})
+  +\frac{\I{t_{0}>\tau}}{G(\tau\vert x_{0})}f_k(\tau,x_{0}) \right]\P(\D o_{0}) \\
+\end{align*}
+This can then be estimated in much the same way as before
+\begin{align*}
+  \widehat{\IC}_{\psi}(\tau,m;O_k)&=\m(T_k,X_k)\W(O_k,\G)-(m+1)\, \MU \\
+  &+\frac{1}{n} \sum_{i=1}^n\frac{\sum_b \{\I{T_i\leq \tau}-\Rb(X_i)\}^2 \Ibi N_k^b}{\sum_b\Ibi}\W(O_i,\G)\\
+  &+\frac{1}{n}\sum_{i=1}^n\m(T_i,X_i)\left[\frac{\I{T_i\leq\tau}\Delta_i}{\G(T_i-\vert X_i)}\hat{f_k} (T_i-,X_i)
+  +\frac{\I{T_i>\tau}}{\G (\tau\vert X_i)}\hat{f_k} (\tau ,X_i)\right]
+\end{align*}
+Here the last term corresponds to the censoring being unknown. 
