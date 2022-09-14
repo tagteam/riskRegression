@@ -41,7 +41,6 @@ Score(object, ...)
   predictRisk.args,
   debug = 0L,
   old.ic.method = FALSE,
-  cv.aggregate = "meanRisk",
   ...
 )
 }

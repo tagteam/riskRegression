@@ -49,7 +49,7 @@ Brier.survival <- function(DT,MC,se.fit,conservative,cens.model,keep.vcov=FALSE,
                                                           IC.G=MC,
                                                           cens.model=cens.model,
                                                           nth.times=nth.times[1]),by=list(model,times)]
-                  DT[,IF.Brier2 := 0]
+                  # DT[,IF.Brier2 := 0]
                 }
                 else {
                     DT[,IF.Brier := getInfluenceFunctionBrierKMCensoringUseSquared(times[1],time,residuals,status),by=list(model,times)]
@@ -63,7 +63,7 @@ Brier.survival <- function(DT,MC,se.fit,conservative,cens.model,keep.vcov=FALSE,
             else {
                 if (!old.ic.method){
                   DT[,IF.Brier:=getInfluenceCurve.Brier.covariates(times[1],time,risk,status,WTi,sum(residuals)/N,IC.data), by=list(model,times)]
-                  DT[,IF.Brier2:=getInfluenceCurve.Brier.covariates.use.squared(times[1],time,residuals,risk,status,WTi,Wt,IC.data), by=list(model,times)]
+                  # DT[,IF.Brier2:=getInfluenceCurve.Brier.covariates.use.squared(times[1],time,residuals,risk,status,WTi,Wt,IC.data), by=list(model,times)]
                 }
                 else {
                   DT[,IF.Brier:=getInfluenceCurve.Brier(t=times[1],
