@@ -68,7 +68,7 @@ crossvalPerf.loob.AUC <- function(times,mlevs,se.fit,response.type,NT,Response,c
     for (mod in mlevs){
       Ib <- matrix(0, sum(cases.index), sum(controls.index))
       auc <- matrix(0, sum(cases.index), sum(controls.index))
-      w.list <- replicate(N,matrix(0, sum(cases.index), sum(controls.index)),simplify=F)
+      w.list <- replicate(N,matrix(0, sum(cases.index), sum(controls.index)),simplify=FALSE)
       # if (split.method$internal.name=="crossval"){
       #   # stop("Cannot yet calculate AUC in this case. Use split.method 'loob' or 'bootcv' instead.")
       # }
