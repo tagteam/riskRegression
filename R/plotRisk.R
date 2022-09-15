@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Mar 13 2017 (16:53) 
 ## Version: 
-## Last-Updated: Jul  7 2022 (14:11) 
+## Last-Updated: Sep 15 2022 (15:04) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 169
+##     Update #: 179
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -142,19 +142,19 @@ plotRisk <- function(x,
                 r
             }]
         }else{ ## competing risks
-            R <- pframe[model==modelnames[1],
-            {
-                # respect the event of interest
-                r <- rep("competing.risk",.N)
-                r[event == x$cause] <- "event"
-                r[status == 0] <- "censored"
-                r[time>times] <- "event-free"
-                r <- as.numeric(as.character(factor(r,levels = c("event","competing.risk","event-free","censored"),labels = c(0,1,2,3))))
-                r
+            states <- x$states
+            if (x$response.type=="competing.risks") nCR <- length(states)-1
+            # sort such that censored, event-free, current cause, cr1, cr2, ...
+            if(x$cause != states[[1]]) states <- c(x$cause,states[cause != states])
+            the_competing_risks <- states[x$cause != states]
+            R <- pframe[model==modelnames[1],{
+                ee = event
+                ee[time>times] = -1
+                ee[status == 0] = 0
+                ee
             }]
         }
     }
-    ## pframe[,model:=factor(model)]
     m1 <- levels(pframe$model)[[1]]
     m2 <- levels(pframe$model)[[2]]
     if (missing(xlab)) xlab <- paste0("Risk (%, ",modelnames[1],")")
@@ -176,16 +176,21 @@ plotRisk <- function(x,
         R <- R[which]
     }
     nR <- length(unique(R))
-    if (x$response.type=="competing.risks") nCR <- nR-3
+    levs = sort(unique(R))
+    labs = switch(x$response.type,
+                  "binary"={c("event-free","event")},
+                  "survival"={c("right-censored","event","event-free")},
+                  "competing.risks"={
+                      ll = levs
+                      for (l in ll[ll>1])
+                          ll[ll == l] = paste0("competing-risk",l)
+                      ll[ll == -1] = "event-free"
+                      ll[ll == 0] = "censored"
+                      ll[ll == 1] = "event"
+                      ll})
     Rfactor <- factor(R,
-                      levels=sort(unique(R)),
-                      labels=switch(x$response.type,
-                                    "binary"={c("event-free","event")},
-                                    "survival"={c("right-censored","event","event-free")},
-                                    "competing.risks"={if (nR==4)
-                                                           c("event","competing-risk","right-censored","event-free")
-                                                       else
-                                                           c("event",paste0("competing-risk",1:nCR),"right-censored","event-free")}))
+                      levels=levs,
+                      labels=labs)
     if (missing(col)){
         colcode <- switch(x$response.type,
                           "binary"={c("#52da58","red")},
@@ -219,9 +224,9 @@ plotRisk <- function(x,
                           "survival"={paste0(c("Censored","Event","No event")," (n=",c(sum(R==0),sum(R==1),sum(R==2)),")")},
                           "competing.risks"={
                               if (nCR==1){
-                                  paste0(c("Event","Competing risk","Censored","No event")," (n=",c(sum(R==0),sum(R==1),sum(R==2),sum(R==3)),")")
+                                  paste0(c("Event","Competing risk","Censored","No event")," (n=",c(sum(R==1),sum(R==2),sum(R==0),sum(R==-1)),")")
                               }else{
-                                  paste0(c("Event",paste0("Competing risk ",1:nCR),"Censored","No event")," (n=",sapply(1:nR,function(r){sum(R==r)}),")")
+                                  paste0(c("Event",paste0("Competing risk ",1:nCR),"Censored","No event")," (n=",c(sum(R==1),sapply(1:nCR,function(r){sum(R==1+r)}),sum(R==0),sum(R==-1)),")")
                               }
                           })
     legend.DefaultArgs <- list(legend=this.legend,
