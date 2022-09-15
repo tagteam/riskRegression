@@ -96,16 +96,16 @@ crossvalPerf.loob.AUC <- function(times,mlevs,se.fit,response.type,NT,Response,c
         ## print(head(oob))
         ## print(auc.ij[1:5,1:5])
         auc <- auc+auc.ij
-        if (se.fit[[1]]){
-          for (k in 1:N){
-            w.list[[k]] <- w.list[[k]] + auc.ij * getNbk(u,k)
-          }
-        }
+        # if (se.fit[[1]]){
+        #   for (k in 1:N){
+        #     w.list[[k]] <- w.list[[k]] + auc.ij * getNbk(u,k)
+        #   }
+        # }
         Ib <- Ib + Ib.ij
       }
       if (se.fit[[1]]){
         thetahat <- auc / Ib
-        cross.term <- sapply(w.list,"sum")
+        # cross.term <- sapply(w.list,"sum")
       }
       auc <- (auc*weightMatrix)/Ib
       # FIXME: why are there NA's?
@@ -128,11 +128,11 @@ crossvalPerf.loob.AUC <- function(times,mlevs,se.fit,response.type,NT,Response,c
             status0 <- data[["status"]]
           }
           # assumes no ties in risk
-          ic <- getInfluenceFunctionAUCKMCensoringCVPart(data[["time"]],status0,t,Weights$IPCW.subject.times, Weights$IPCW.times[s], thetahat,which.controls,which.cases,nu1tauPm) + 1/(N^2*Phi) * cross.term - m*aucLPO 
+          ic <- getInfluenceFunctionAUCKMCensoringCVPart(data[["time"]],status0,t,Weights$IPCW.subject.times, Weights$IPCW.times[s], thetahat,which.controls,which.cases,nu1tauPm) + aucLPO - m*aucLPO #should say 1/(N^2*Phi) * cross.term instead of the first aucLPO
         }
         else {
           # assumes no ties in risk
-          ic <- getInfluenceFunctionAUCBinaryCVPart(data[["ReSpOnSe"]], thetahat,which.controls,which.cases,nu1tauPm) + 1/(N^2*Phi) * cross.term - m*aucLPO 
+          ic <- getInfluenceFunctionAUCBinaryCVPart(data[["ReSpOnSe"]], thetahat,which.controls,which.cases,nu1tauPm) + aucLPO - m*aucLPO #should say 1/(N^2*Phi) * cross.term instead of the first aucLPO
         }
         id.cases <- data[["ID"]][cc.status=="case"]
         id.controls <- data[["ID"]][cc.status=="control"]
