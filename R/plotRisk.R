@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Mar 13 2017 (16:53) 
 ## Version: 
-## Last-Updated: Sep 15 2022 (15:04) 
+## Last-Updated: Sep 15 2022 (16:21) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 179
+##     Update #: 192
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -72,7 +72,7 @@
 ##' m2 = CSC(Hist(time,event)~X2+X7+X9,data=learndat,cause=1)
 ##' xcr=Score(list("FGR"=m1,"CSC"=m2),formula=Hist(time,event)~1,
 ##'          data=testdat,summary="risks",null.model=0L,times=c(3,5))
-##' plotRisk(xcr,times=1)
+##' plotRisk(xcr,times=3)
 ##' }
 ##' @export 
 ##' @author Thomas A. Gerds <tag@@biostat.ku.dk>
@@ -145,12 +145,10 @@ plotRisk <- function(x,
             states <- x$states
             if (x$response.type=="competing.risks") nCR <- length(states)-1
             # sort such that censored, event-free, current cause, cr1, cr2, ...
-            if(x$cause != states[[1]]) states <- c(x$cause,states[cause != states])
-            the_competing_risks <- states[x$cause != states]
             R <- pframe[model==modelnames[1],{
                 ee = event
-                ee[time>times] = -1
                 ee[status == 0] = 0
+                ee[time>times] = -1
                 ee
             }]
         }
@@ -214,8 +212,8 @@ plotRisk <- function(x,
         }
         pchcode <- pch
     }
-    pch=as.numeric(as.character(factor(Rfactor,labels=pchcode)))
-    col=as.character(factor(Rfactor,labels=colcode))
+    pch=as.numeric(as.character(factor(Rfactor,labels=pchcode[1:nR])))
+    col=as.character(factor(Rfactor,labels=colcode[1:nR]))
     # {{{ smart argument control
     plot.DefaultArgs <- list(x=0,y=0,type = "n",ylim = ylim,xlim = xlim,ylab=ylab,xlab=xlab)
     axis1.DefaultArgs <- list(side=1,las=1,at=seq(xlim[1],xlim[2],(xlim[2]-xlim[1])/4))
@@ -229,6 +227,16 @@ plotRisk <- function(x,
                                   paste0(c("Event",paste0("Competing risk ",1:nCR),"Censored","No event")," (n=",c(sum(R==1),sapply(1:nCR,function(r){sum(R==1+r)}),sum(R==0),sum(R==-1)),")")
                               }
                           })
+    if (x$response.type == "survival") {
+            message("Counts of events and censored are evaluated at the prediction time horizon (times=",times,"):\n",
+                    paste(paste(this.legend),collapse = "\n"))
+    }
+    if (x$response.type == "competing.risks") {
+            if(x$cause != states[[1]]) states <- c(x$cause,states[cause != states])
+            message("Counts of events and censored are evaluated at the prediction time horizon (times=",times,"):\n\n",
+                    paste(this.legend,collapse = "\n"),"\n\nwhere the event type values (",paste(states,collapse = ", "),") in the data correspond to labels:\n Event, ",ifelse(nCR == 1,"Competing risk",paste0("Competing risk ",1:nCR,collapse = ", "))
+                    )
+    }
     legend.DefaultArgs <- list(legend=this.legend,
                                pch=pchcode,
                                col=colcode,
