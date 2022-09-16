@@ -5,6 +5,7 @@ using namespace Rcpp;
 using namespace arma;
 
 // Calculate influence function for competing risk case/survival case with Nelson-Aalen censoring.
+// Equation lines correspond to the document influenceFunctionAUC.pdf in riskRegressionStudy
 // Author: Johan Sebastian Ohlendorff
 // [[Rcpp::export(rng = false)]]
 NumericVector getInfluenceFunctionAUCKMCensoring(NumericVector time,
@@ -15,8 +16,20 @@ NumericVector getInfluenceFunctionAUCKMCensoring(NumericVector time,
                                                  double Gtau,
                                                  double auc,
                                                  bool tiedValues) {
-  // Thomas' code from IC of Nelson-Aalen estimator
-  //initialize first time point t=0 with data of subject i=0
+  // check if any of the vectors have NAs and also that the vectors have the same lengths
+  checkNAs(time, GET_VARIABLE_NAME(time));
+  checkNAs(status, GET_VARIABLE_NAME(status));
+  checkNAs(tau, GET_VARIABLE_NAME(tau));
+  checkNAs(risk,GET_VARIABLE_NAME(risk));
+  checkNAs(GTiminus,GET_VARIABLE_NAME(GTiminus));
+  checkNAs(Gtau,GET_VARIABLE_NAME(Gtau));
+  checkNAs(auc, GET_VARIABLE_NAME(auc));
+  compareLengths(time,status);
+  compareLengths(status,risk); 
+  compareLengths(risk,GTiminus);
+  
+  // Thomas' code from IC of Nelson-Aalen estimator, i.e. calculate the influence function of the hazard
+  // initialize first time point t=0 with data of subject i=0
   int n = time.size();
   NumericVector ic(n);
   arma::uvec sindex(n,fill::zeros);
@@ -70,11 +83,13 @@ NumericVector getInfluenceFunctionAUCKMCensoring(NumericVector time,
   NumericVector eq1112part(n);
   // int 1*(X_i > x, t <= tau) / G(t-) dP(t,2,x) 
   NumericVector eq1314part(n);
-  // risk ordering 
+  // risk ordering, i.e. order according to risk 
   IntegerVector ordering(n);
   std::iota(ordering.begin(), ordering.end(), 0);
   std::sort(ordering.begin(), ordering.end(),
             [&](int x, int y) { return risk[x] < risk[y]; });
+  // efficient computation of eq1112part and eq1314part by using the ordering of risk
+  // the integrals differ if we are trying to compute the part concerning ties in risk
   if (!tiedValues){
     int jCurr = 0, jPrev = 0, i = 0;
     double valCurr = 0, valPrev = 0;
@@ -97,7 +112,6 @@ NumericVector getInfluenceFunctionAUCKMCensoring(NumericVector time,
       jPrev = jCurr;
       valPrev = valCurr;
     }
-    // problem here!
     valCurr = valPrev = 0;
     i = n-1;
     while (i >= 0){
@@ -269,6 +283,16 @@ NumericVector getInfluenceFunctionAUCKMCensoringCVPart(NumericVector time,
                                                        IntegerVector whichControls,
                                                        IntegerVector whichCases,
                                                        double nu1tauPm) {
+  // check for NAs and equal lengths of vectors
+  checkNAs(time, GET_VARIABLE_NAME(time));
+  checkNAs(status, GET_VARIABLE_NAME(status));
+  checkNAs(tau, GET_VARIABLE_NAME(tau));
+  checkNAs(GTiminus, GET_VARIABLE_NAME(GTiminus));
+  checkNAs(Gtau, GET_VARIABLE_NAME(Gtau));
+  // should also check matrix for NAs and the IntegerVectors
+  compareLengths(time,status);
+  compareLengths(status,GTiminus); 
+
   // Thomas' code from IC of Nelson-Aalen estimator
   //initialize first time point t=0 with data of subject i=0
   int n = time.size();
@@ -479,6 +503,11 @@ NumericVector getInfluenceFunctionAUCBinaryCVPart(NumericVector Y,
                                                   IntegerVector whichControls,
                                                   IntegerVector whichCases,
                                                   double nu1tauPm) {
+  
+  // check for NAs and equal lengths of vectors
+  checkNAs(Y, GET_VARIABLE_NAME(Y));
+  checkNAs(nu1tauPm, GET_VARIABLE_NAME(nu1tauPm));
+
   // Thomas' code from IC of Nelson-Aalen estimator
   //initialize first time point t=0 with data of subject i=0
   int n = Y.size();
