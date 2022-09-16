@@ -13,6 +13,17 @@ NumericVector getInfluenceFunctionBrierKMCensoring(double tau,
                                                    NumericVector status,
                                                    NumericVector GTiminus,
                                                    double brier) {
+  // check if any of the vectors have NAs and also that the vectors have the same lengths
+  checkNAs(time, GET_VARIABLE_NAME(time));
+  checkNAs(status, GET_VARIABLE_NAME(status));
+  checkNAs(tau, GET_VARIABLE_NAME(tau));
+  checkNAs(risk,GET_VARIABLE_NAME(risk));
+  checkNAs(GTiminus,GET_VARIABLE_NAME(GTiminus));
+  checkNAs(brier, GET_VARIABLE_NAME(brier));
+  compareLengths(time,status);
+  compareLengths(status,risk); 
+  compareLengths(risk,GTiminus);
+  
   // Thomas' code from IC of Nelson-Aalen estimator
   //initialize first time point t=0 with data of subject i=0
   int n = time.size();

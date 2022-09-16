@@ -9,6 +9,13 @@ NumericVector getInfluenceFunctionBrierCVCensoringKM(double tau,
                                                      NumericVector time,
                                                      NumericVector residuals,
                                                      NumericVector status) {
+  checkNAs(time, GET_VARIABLE_NAME(time));
+  checkNAs(status, GET_VARIABLE_NAME(status));
+  checkNAs(residuals, GET_VARIABLE_NAME(residuals));
+  checkNAs(tau, GET_VARIABLE_NAME(tau));
+  compareLengths(time,status);
+  compareLengths(status,residuals); 
+
   // Thomas' code from IC of Nelson-Aalen estimator
   //initialize first time point t=0 with data of subject i=0
   int n = time.size();
