@@ -1,5 +1,4 @@
 # {{{ roxy header
-
 ##' Methods to score the predictive performance of risk markers and risk prediction models
 ##'
 ##' The function implements a toolbox for the risk prediction modeller:
@@ -897,7 +896,8 @@ c.f., Chapter 7, Section 5 in Gerds & Kattan 2021. Medical risk prediction model
                              cause=cause,
                              neworder=neworder,
                              debug=debug,
-                             labels=mlevs,
+                             levs=mlevs,
+                             labels=mlabels,
                              predictRisk.args=predictRisk.args,
                              nullobject=nullobject,
                              cens.type=cens.type,
@@ -1013,7 +1013,8 @@ c.f., Chapter 7, Section 5 in Gerds & Kattan 2021. Medical risk prediction model
                                         cause=cause,
                                         neworder=NULL,
                                         debug=debug,
-                                        labels=mlevs,
+                                        levs = mlevs,
+                                        labels=mlabels,
                                         predictRisk.args=predictRisk.args,
                                         nullobject=nullobject,
                                         cens.type=cens.type,
@@ -1053,7 +1054,8 @@ c.f., Chapter 7, Section 5 in Gerds & Kattan 2021. Medical risk prediction model
                                    cause=cause,
                                    neworder=NULL,
                                    debug=debug,
-                                   labels=mlevs,
+                                   levs = mlevs,
+                                   labels=mlabels,
                                    predictRisk.args=predictRisk.args,
                                    nullobject=nullobject,
                                    cens.type=cens.type,
