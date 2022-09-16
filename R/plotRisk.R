@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Mar 13 2017 (16:53) 
 ## Version: 
-## Last-Updated: Jul  7 2022 (14:11) 
+## Last-Updated: Sep 15 2022 (16:21) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 169
+##     Update #: 192
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -72,7 +72,7 @@
 ##' m2 = CSC(Hist(time,event)~X2+X7+X9,data=learndat,cause=1)
 ##' xcr=Score(list("FGR"=m1,"CSC"=m2),formula=Hist(time,event)~1,
 ##'          data=testdat,summary="risks",null.model=0L,times=c(3,5))
-##' plotRisk(xcr,times=1)
+##' plotRisk(xcr,times=3)
 ##' }
 ##' @export 
 ##' @author Thomas A. Gerds <tag@@biostat.ku.dk>
@@ -142,19 +142,17 @@ plotRisk <- function(x,
                 r
             }]
         }else{ ## competing risks
-            R <- pframe[model==modelnames[1],
-            {
-                # respect the event of interest
-                r <- rep("competing.risk",.N)
-                r[event == x$cause] <- "event"
-                r[status == 0] <- "censored"
-                r[time>times] <- "event-free"
-                r <- as.numeric(as.character(factor(r,levels = c("event","competing.risk","event-free","censored"),labels = c(0,1,2,3))))
-                r
+            states <- x$states
+            if (x$response.type=="competing.risks") nCR <- length(states)-1
+            # sort such that censored, event-free, current cause, cr1, cr2, ...
+            R <- pframe[model==modelnames[1],{
+                ee = event
+                ee[status == 0] = 0
+                ee[time>times] = -1
+                ee
             }]
         }
     }
-    ## pframe[,model:=factor(model)]
     m1 <- levels(pframe$model)[[1]]
     m2 <- levels(pframe$model)[[2]]
     if (missing(xlab)) xlab <- paste0("Risk (%, ",modelnames[1],")")
@@ -176,16 +174,21 @@ plotRisk <- function(x,
         R <- R[which]
     }
     nR <- length(unique(R))
-    if (x$response.type=="competing.risks") nCR <- nR-3
+    levs = sort(unique(R))
+    labs = switch(x$response.type,
+                  "binary"={c("event-free","event")},
+                  "survival"={c("right-censored","event","event-free")},
+                  "competing.risks"={
+                      ll = levs
+                      for (l in ll[ll>1])
+                          ll[ll == l] = paste0("competing-risk",l)
+                      ll[ll == -1] = "event-free"
+                      ll[ll == 0] = "censored"
+                      ll[ll == 1] = "event"
+                      ll})
     Rfactor <- factor(R,
-                      levels=sort(unique(R)),
-                      labels=switch(x$response.type,
-                                    "binary"={c("event-free","event")},
-                                    "survival"={c("right-censored","event","event-free")},
-                                    "competing.risks"={if (nR==4)
-                                                           c("event","competing-risk","right-censored","event-free")
-                                                       else
-                                                           c("event",paste0("competing-risk",1:nCR),"right-censored","event-free")}))
+                      levels=levs,
+                      labels=labs)
     if (missing(col)){
         colcode <- switch(x$response.type,
                           "binary"={c("#52da58","red")},
@@ -209,8 +212,8 @@ plotRisk <- function(x,
         }
         pchcode <- pch
     }
-    pch=as.numeric(as.character(factor(Rfactor,labels=pchcode)))
-    col=as.character(factor(Rfactor,labels=colcode))
+    pch=as.numeric(as.character(factor(Rfactor,labels=pchcode[1:nR])))
+    col=as.character(factor(Rfactor,labels=colcode[1:nR]))
     # {{{ smart argument control
     plot.DefaultArgs <- list(x=0,y=0,type = "n",ylim = ylim,xlim = xlim,ylab=ylab,xlab=xlab)
     axis1.DefaultArgs <- list(side=1,las=1,at=seq(xlim[1],xlim[2],(xlim[2]-xlim[1])/4))
@@ -219,11 +222,21 @@ plotRisk <- function(x,
                           "survival"={paste0(c("Censored","Event","No event")," (n=",c(sum(R==0),sum(R==1),sum(R==2)),")")},
                           "competing.risks"={
                               if (nCR==1){
-                                  paste0(c("Event","Competing risk","Censored","No event")," (n=",c(sum(R==0),sum(R==1),sum(R==2),sum(R==3)),")")
+                                  paste0(c("Event","Competing risk","Censored","No event")," (n=",c(sum(R==1),sum(R==2),sum(R==0),sum(R==-1)),")")
                               }else{
-                                  paste0(c("Event",paste0("Competing risk ",1:nCR),"Censored","No event")," (n=",sapply(1:nR,function(r){sum(R==r)}),")")
+                                  paste0(c("Event",paste0("Competing risk ",1:nCR),"Censored","No event")," (n=",c(sum(R==1),sapply(1:nCR,function(r){sum(R==1+r)}),sum(R==0),sum(R==-1)),")")
                               }
                           })
+    if (x$response.type == "survival") {
+            message("Counts of events and censored are evaluated at the prediction time horizon (times=",times,"):\n",
+                    paste(paste(this.legend),collapse = "\n"))
+    }
+    if (x$response.type == "competing.risks") {
+            if(x$cause != states[[1]]) states <- c(x$cause,states[cause != states])
+            message("Counts of events and censored are evaluated at the prediction time horizon (times=",times,"):\n\n",
+                    paste(this.legend,collapse = "\n"),"\n\nwhere the event type values (",paste(states,collapse = ", "),") in the data correspond to labels:\n Event, ",ifelse(nCR == 1,"Competing risk",paste0("Competing risk ",1:nCR,collapse = ", "))
+                    )
+    }
     legend.DefaultArgs <- list(legend=this.legend,
                                pch=pchcode,
                                col=colcode,
