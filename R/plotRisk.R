@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Mar 13 2017 (16:53) 
 ## Version: 
-## Last-Updated: Sep 15 2022 (16:21) 
+## Last-Updated: Sep 16 2022 (19:46) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 192
+##     Update #: 194
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -89,7 +89,7 @@ plotRisk <- function(x,
                      preclipse=0,
                      preclipse.shade=FALSE,
                      ...){
-    model=ReSpOnSe=risk=status=event=NULL
+    model = ReSpOnSe = risk = status = event = cause = NULL
     if (is.null(x$risks$score)) stop("No predicted risks in object. You should set summary='risks' when calling Score.")
     if (!is.null(x$null.model)){
         pframe <- x$risks$score[model!=x$null.model]

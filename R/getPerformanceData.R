@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Feb 27 2022 (09:12) 
 ## Version: 
-## Last-Updated: Sep 16 2022 (08:18) 
+## Last-Updated: Sep 16 2022 (19:44) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 24
+##     Update #: 25
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -32,7 +32,7 @@ getPerformanceData <- function(testdata,
                                object,
                                object.classes,
                                NT){
-    ID=model=NULL
+    ID=model = risk = NULL
     # inherit everything else from parent frame: object, nullobject, NF, NT, times, cause, response.type, etc.
     Brier=IPA=IBS=NULL
     looping <- !is.null(traindata)
@@ -120,10 +120,10 @@ getPerformanceData <- function(testdata,
     if (any(is.na(pred$risk))) {
         pred[,model:=factor(model,levels=levs,labels)]
         if (response.type[1] == "binary"){
-            print(pred[is.na(risk),.("sum(NA)" = .N),by = list(model)])
+            print(pred[is.na(risk),data.table::data.table("sum(NA)" = .N),by = list(model)])
             stop("Missing values in predicted risk detected.")
         } else
-            print(pred[is.na(risk),.("sum(NA)" = .N),by = list(model,times)])
+            print(pred[is.na(risk),data.table::data.table("sum(NA)" = .N),by = list(model,times)])
         stop("Missing values in predicted risk detected.")
     }
     if (debug) message("trained the model(s) and extracted the predictions")

@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jan  4 2016 (14:30) 
 ## Version: 
-## last-updated: Jul  7 2022 (14:50) 
+## last-updated: Sep 16 2022 (19:26) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 170
+##     Update #: 171
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -109,16 +109,19 @@ test_that("integrated Brier score",{
         library(pec)
         cox1 = coxph(Surv(time,event)~X1+X2+X7+X9,data=trainSurv, y=TRUE, x = TRUE)
         cox2 = coxph(Surv(time,event)~X3+X5+X6,data=trainSurv, y=TRUE, x = TRUE)
+        ttt = sort(unique(testSurv$time))
+        # remove last obs to avoid NA predictions
+        ttt = ttt[-length(ttt)]
         suppressWarnings(xs <- Score(list("c1"=cox1,"c2"=cox2),
-                                  formula=Surv(time,event)~1,data=testSurv,conf.int=FALSE,
-                                  se.fit=FALSE,
-                                  summary="ibs",
-                                  times=sort(unique(testSurv$time))))
+                                     formula=Surv(time,event)~1,data=testSurv,conf.int=FALSE,
+                                     se.fit=FALSE,
+                                     summary="ibs",
+                                     times=ttt))
         library(prodlim)
         xp=pec::pec(list("c1"=cox1,"c2"=cox2),
-               formula=Surv(time,event)~1,data=testSurv,
-               times=sort(unique(testSurv$time)))
-        a1 <- as.numeric(ibs(xp,times=sort(unique(testSurv$time)),models="c1"))
+                    formula=Surv(time,event)~1,data=testSurv,
+                    times=ttt)
+        a1 <- as.numeric(ibs(xp,times=ttt,models="c1"))
         b1 <- xs$Brier$score[model=="c1"][["IBS"]]
         ## cbind(a1,b1)
         q <- as.numeric(c(a1,use.names=FALSE))
