@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: maj 18 2017 (09:23) 
 ## Version: 
-## last-updated: Sep 17 2022 (06:57) 
+## last-updated: Sep 17 2022 (10:00) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 337
+##     Update #: 338
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -878,7 +878,9 @@ test_that("[predictCSC] diag no strata", {
 
 
 test_that("[predictCSC] diag strata", {
-    eS.CSC <- CSC(Hist(time, event) ~ strata(X1) + X6, data = dt)
+set.seed(10)
+dt <- sampleData(75, outcome = "competing.risks")[,.(time,event,X1,X2,X6)]
+eS.CSC <- CSC(Hist(time, event) ~ strata(X1) + X6, data = dt)
 
     GS <- predict(eS.CSC, newdata = dt, times = dt$time, se = TRUE, iid = TRUE, average.iid = TRUE, cause = 1)
     test <- predict(eS.CSC, newdata = dt, times = dt$time,
