@@ -16,8 +16,8 @@ test_that("AUC censored data: order",{
     suppressWarnings(b <- Score(list(fit),data=Melanoma,Surv(time,status!=0)~invasion+epicel+logthick,cens.model="marginal",metric="Auc"))
     suppressWarnings(B <- Score(list(fit),data=Melanoma,Surv(time,status!=0)~invasion+epicel+logthick,cens.model="cox",metric="Auc"))
     a$call <- b$call <- A$call <- B$call <- NULL
-    expect_equal(A,B)
-    expect_equal(a,b)
+    expect_equal(ignore_attr=TRUE,A,B)
+    expect_equal(ignore_attr=TRUE,a,b)
 })
 # }}}
 

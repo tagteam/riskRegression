@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Mar 13 2017 (16:53) 
 ## Version: 
-## Last-Updated: Sep 16 2022 (19:46) 
+## Last-Updated: Sep 17 2022 (08:56) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 194
+##     Update #: 228
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -130,26 +130,58 @@ plotRisk <- function(x,
     modelnames <- models
     pframe[,model:=factor(model,levels=models)]
     data.table::setkey(pframe,model)
+    states <- x$states
+    cause <- x$cause
+    # order according to current cause of interest
+    states <- c(cause,states[cause != states])
     if (x$response.type=="binary"){
-        R <- pframe[model==modelnames[1],ReSpOnSe]
+        Rfactor <- factor(pframe[model==modelnames[1],ReSpOnSe],levels = states,labels = c("Event","No event"))
     }
     else{
         if  (x$response.type=="survival"){
-            R <- pframe[model==modelnames[1],
+            Rfactor <- pframe[model==modelnames[1],
             {
-                r <- status # 0,1
-                r[time>times] <- 2
+                r <- factor(status,levels = c(0,1),labels = c("No event","Censored","Event"))
+                r[time>times] <- "No event"
                 r
             }]
         }else{ ## competing risks
-            states <- x$states
-            if (x$response.type=="competing.risks") nCR <- length(states)-1
-            # sort such that censored, event-free, current cause, cr1, cr2, ...
-            R <- pframe[model==modelnames[1],{
-                ee = event
-                ee[status == 0] = 0
-                ee[time>times] = -1
-                ee
+            nCR <- length(states)-1
+            # sort such that event-free, censored, current cause, cr1, cr2, ...
+            Rfactor <- pframe[model==modelnames[1],{
+                # need to use x$states as object$states is always sorted no matter the cause of interest
+                if (any(status == 0)){
+                    r = factor(as.character(event),levels = 0:(nCR+2),labels = c("No event",x$states,"Censored"))
+                } else{
+                    r = factor(as.character(event),levels = 0:(nCR+1),labels = c("No event",x$states))
+                }
+                ## r[status == 0] = "Censored"
+                r[time>times] = "No event"
+                # check if all states are anonymous numbers
+                if (suppressWarnings(sum(is.na(as.numeric(states))) == 0)){
+                    if (nCR == 1){
+                        if (any(status == 0))
+                            r = factor(r,
+                                       levels = c("No event","Censored",states),
+                                       labels = c("No event","Censored","Event","Competing risk"))
+                        else
+                            r = factor(r,
+                                       levels = c("No event",states),
+                                       labels = c("No event","Event","Competing risk"))
+                    }else{
+                        if (any(status == 0))
+                            r = factor(r,
+                                       levels = c("No event","Censored",states),
+                                       labels = c("No event","Censored","Event",paste0("Competing risk ",1:nCR)))
+                        else
+                            r = factor(r,
+                                       levels = c("No event",states),
+                                       labels = c("No event","Event",paste0("Competing risk ",1:nCR)))
+                    }
+                } else{
+                    r = factor(r,levels = c("No event","Censored",states))
+                }
+                r
             }]
         }
     }
@@ -171,29 +203,15 @@ plotRisk <- function(x,
                               100*quantile(diff,preclipse)),"%"))
         pred.m1 <- pred.m1[which]
         pred.m2 <- pred.m2[which]
-        R <- R[which]
+        Rfactor <- Rfactor[which]
     }
-    nR <- length(unique(R))
-    levs = sort(unique(R))
-    labs = switch(x$response.type,
-                  "binary"={c("event-free","event")},
-                  "survival"={c("right-censored","event","event-free")},
-                  "competing.risks"={
-                      ll = levs
-                      for (l in ll[ll>1])
-                          ll[ll == l] = paste0("competing-risk",l)
-                      ll[ll == -1] = "event-free"
-                      ll[ll == 0] = "censored"
-                      ll[ll == 1] = "event"
-                      ll})
-    Rfactor <- factor(R,
-                      levels=levs,
-                      labels=labs)
+    nR <- length(unique(Rfactor))
+    Rnum <- as.numeric(Rfactor)
     if (missing(col)){
         colcode <- switch(x$response.type,
                           "binary"={c("#52da58","red")},
-                          "survival"={c("gray55","red","#52da58")},
-                          "competing.risks"={c("red",rep("purple",nCR),"gray55","#52da58")})
+                          "survival"={c("#52da58","gray55","red")},
+                          "competing.risks"={c("#52da58","gray55","red",rep("purple",nCR))})
     }else{
         if (nR!=length(col)){
             warning(paste0("Need exactly ",nR," colors (argument col) in the following order: ",paste0(levels(Rfactor),collapse=", ")))
@@ -203,12 +221,11 @@ plotRisk <- function(x,
     if (missing(pch)){
         pchcode <- switch(x$response.type,
                           "binary"={c(1,16)},
-                          "survival"={c(8,16,1)},
-                          "competing.risks"={c(16,rep(17,nCR),8,1)})
+                          "survival"={c(1,8,16)},
+                          "competing.risks"={c(1,8,16,rep(17,nCR))})
     } else{
         if (nR!=length(pch)){
-            warning(paste0("Need exactly ",nR," symbols (argument pch) in the following order: ",paste0(labels(Rfactor),
-                                                                                                        collapse=", ")))
+            warning(paste0("Need exactly ",nR," symbols (argument pch) in the following order: ",paste0(labels(Rfactor),collapse=", ")))
         }
         pchcode <- pch
     }
@@ -218,24 +235,15 @@ plotRisk <- function(x,
     plot.DefaultArgs <- list(x=0,y=0,type = "n",ylim = ylim,xlim = xlim,ylab=ylab,xlab=xlab)
     axis1.DefaultArgs <- list(side=1,las=1,at=seq(xlim[1],xlim[2],(xlim[2]-xlim[1])/4))
     axis2.DefaultArgs <- list(side=2,las=2,at=seq(xlim[1],xlim[2],(xlim[2]-xlim[1])/4),mgp=c(4,1,0))
-    this.legend <- switch(x$response.type,"binary"={paste0(c("No event","Event")," (n=",c(sum(R==0),sum(R==1)),")")},
-                          "survival"={paste0(c("Censored","Event","No event")," (n=",c(sum(R==0),sum(R==1),sum(R==2)),")")},
-                          "competing.risks"={
-                              if (nCR==1){
-                                  paste0(c("Event","Competing risk","Censored","No event")," (n=",c(sum(R==1),sum(R==2),sum(R==0),sum(R==-1)),")")
-                              }else{
-                                  paste0(c("Event",paste0("Competing risk ",1:nCR),"Censored","No event")," (n=",c(sum(R==1),sapply(1:nCR,function(r){sum(R==1+r)}),sum(R==0),sum(R==-1)),")")
-                              }
-                          })
+    this.legend <- paste0(levels(Rfactor)," (n=",sapply(levels(Rfactor),function(x){sum(Rfactor == x)}),")")
     if (x$response.type == "survival") {
-            message("Counts of events and censored are evaluated at the prediction time horizon (times=",times,"):\n",
-                    paste(paste(this.legend),collapse = "\n"))
+        message("Counts of events and censored are evaluated at the prediction time horizon (times=",times,"):\n",
+                paste(paste(this.legend),collapse = "\n"))
     }
     if (x$response.type == "competing.risks") {
-            if(x$cause != states[[1]]) states <- c(x$cause,states[cause != states])
-            message("Counts of events and censored are evaluated at the prediction time horizon (times=",times,"):\n\n",
-                    paste(this.legend,collapse = "\n"),"\n\nwhere the event type values (",paste(states,collapse = ", "),") in the data correspond to labels:\n Event, ",ifelse(nCR == 1,"Competing risk",paste0("Competing risk ",1:nCR,collapse = ", "))
-                    )
+        message("Counts of events and censored are evaluated at the prediction time horizon (times=",times,"):\n\n",
+                paste(this.legend,collapse = "\n"),"\n\nwhere the event type values (",paste(states,collapse = ", "),") in the data correspond to labels:\n Event, ",ifelse(nCR == 1,"Competing risk",paste0("Competing risk ",1:nCR,collapse = ", "))
+                )
     }
     legend.DefaultArgs <- list(legend=this.legend,
                                pch=pchcode,

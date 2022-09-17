@@ -12,22 +12,22 @@ test_that("CSC vs prodlim",{
     B <- CSC(Hist(time,status)~1,data=Melanoma)
     pB <- predictRisk(B,times=sort(unique(Melanoma$time)),newdata=nd[1,,drop=FALSE],cause=1)
     pA <- predictRisk(A,times=sort(unique(Melanoma$time)),newdata=nd[1,,drop=FALSE],cause=1)
-    expect_equal(c(pB),pA,tolerance=1e3)
+    expect_equal(ignore_attr=TRUE,c(pB),pA,tolerance=1e3)
     a <- prodlim(Hist(time,status)~sex,data=Melanoma)
     b <- CSC(Hist(time,status)~strat(sex),data=Melanoma,fitter="cph")
     c <- CSC(Hist(time,status)~strat(sex),data=Melanoma,surv.type="survival",fitter="cph")
     pa <- predictRisk(a,times=c(0,10,100,1000,2000),newdata=nd,cause=1)
     pb <- predictRisk(b,times=c(0,10,100,1000,2000),newdata=nd,cause=1)
     pc <- predictRisk(c,times=c(0,10,100,1000,2000),newdata=nd,cause=1)
-    expect_equal(c(pb),c(pa),tolerance=0.1)
-    expect_equal(c(pb),c(pc),tolerance=0.00000001)
+    expect_equal(ignore_attr=TRUE,c(pb),c(pa),tolerance=0.1)
+    expect_equal(ignore_attr=TRUE,c(pb),c(pc),tolerance=0.00000001)
 #     pd <- predictEventProb(c,times=c(0,10,100,1000,2000),newdata=nd,cause=1)
-#     expect_equal(c(pc),c(pd),tolerance=0.00000001)
+#     expect_equal(ignore_attr=TRUE,c(pc),c(pd),tolerance=0.00000001)
     u <- CSC(Hist(time,status)~strat(sex)+age+invasion,data=Melanoma,fitter="cph")
     v <- CSC(Hist(time,status)~strat(sex)+age+invasion,data=Melanoma,surv.type="survival",fitter="cph")
     pu <- predictRisk(u,times=c(0,10,100,1000,2000),newdata=Melanoma[c(17,84),],cause=1)
     pv <- predictRisk(v,times=c(0,10,100,1000,2000),newdata=Melanoma[c(17,84),],cause=1)
-    expect_equal(c(pu),c(pv),tolerance=0.1)
+    expect_equal(ignore_attr=TRUE,c(pu),c(pv),tolerance=0.1)
     ## plot(a,cause=1,ylim=c(0,.5),confint=FALSE)
     ## lines(sort(unique(Melanoma$time)),pb[1,],lty=3)
     ## lines(sort(unique(Melanoma$time)),pb[2,],lty=3,col=2)
@@ -42,11 +42,11 @@ if (requireNamespace("pec",quietly=TRUE)){
         h <- cph(Surv(time,status)~X1+X2,data=d,surv=TRUE,x=TRUE,y=TRUE)
         af <- predictRisk(f,newdata=d[c(17,88,3),],times=c(0,1,8.423,100,1000))
         bf <- 1-predictSurvProb(f,newdata=d[c(17,88,3),],times=c(0,1,8.423,100,1000))
-        expect_equal(unname(af),unname(bf),tolerance = 1e-8)
+        expect_equal(ignore_attr=TRUE,unname(af),unname(bf),tolerance = 1e-8)
         ah <- predictRisk(h,newdata=d[c(17,88,3),],times=c(0,1,8.423,100,1000))
         bh <- 1-predictSurvProb(h,newdata=d[c(17,88,3),],times=c(0,1,8.423,100,1000))
         colnames(bh) <- NULL
-        expect_equal(unname(ah),unname(bh),tolerance = 1e-8)
+        expect_equal(ignore_attr=TRUE,unname(ah),unname(bh),tolerance = 1e-8)
     })
 }
 test_that("Cox models",{
@@ -57,9 +57,9 @@ test_that("Cox models",{
     a1 <- coxph(Surv(time,event==1)~X1+X2,data=d)
     a2 <- coxph(Surv(time,event==2)~X1+X2,data=d)
     A2 <- coxph(Surv(time,event!=0)~X1+X2,data=d)
-    expect_equal(coef(a$models[[1]]),coef(a1),tolerance = 1e-8)
-    expect_equal(coef(a$models[[2]]),coef(a2),tolerance = 1e-8)
-    expect_equal(coef(A$models[[2]]),coef(A2),tolerance = 1e-8)
+    expect_equal(ignore_attr=TRUE,coef(a$models[[1]]),coef(a1),tolerance = 1e-8)
+    expect_equal(ignore_attr=TRUE,coef(a$models[[2]]),coef(a2),tolerance = 1e-8)
+    expect_equal(ignore_attr=TRUE,coef(A$models[[2]]),coef(A2),tolerance = 1e-8)
 })
 
 test_that("strata",{
@@ -70,9 +70,9 @@ test_that("strata",{
     a1 <- coxph(Surv(time,event==1)~strata(X1)+X2,data=d)
     a2 <- coxph(Surv(time,event==2)~strata(X1)+X2,data=d)
     A2 <- coxph(Surv(time,event!=0)~strata(X1)+X2,data=d)
-    expect_equal(coef(a$models[[1]]),coef(a1),tolerance = 1e-8)
-    expect_equal(coef(a$models[[2]]),coef(a2),tolerance = 1e-8)
-    expect_equal(coef(A$models[[2]]),coef(A2),tolerance = 1e-8)
+    expect_equal(ignore_attr=TRUE,coef(a$models[[1]]),coef(a1),tolerance = 1e-8)
+    expect_equal(ignore_attr=TRUE,coef(a$models[[2]]),coef(a2),tolerance = 1e-8)
+    expect_equal(ignore_attr=TRUE,coef(A$models[[2]]),coef(A2),tolerance = 1e-8)
 })
 
 test_that("strat and strata",{
@@ -82,7 +82,7 @@ test_that("strat and strata",{
     b <- CSC(Hist(time,status)~strata(sex)+age+invasion+logthick+strata(epicel)+strata(ulcer),data=Melanoma,fitter="coxph")
     pa <- predictRisk(a,times=c(0,100,1000,4000),newdata=Melanoma[c(17,77,188),],cause=2)
     pb <- predictRisk(b,times=c(0,100,1000,4000),newdata=Melanoma[c(17,77,188),],cause=2)
-    expect_equal(pa,pb,tolerance=1e-6)
+    expect_equal(ignore_attr=TRUE,pa,pb,tolerance=1e-6)
 })
 
 # test_that("CSC many character valued causes",{
@@ -91,7 +91,7 @@ test_that("strat and strata",{
 #     d$event <- as.character(factor(d$event,labels=c("a","b","c")))
 #     m1 <- CSC(Hist(time,event)~strat(X1)+X2,data=d,fitter="cph")
 #     m2 <- CSC(Hist(time,event)~strata(X1)+X2,data=d,surv.type="surv",cause="b")
-#     expect_equal(round(coef(m1$models[[2]])[[1]],6),0.535059)
+#     expect_equal(ignore_attr=TRUE,round(coef(m1$models[[2]])[[1]],6),0.535059)
 # })
 
 

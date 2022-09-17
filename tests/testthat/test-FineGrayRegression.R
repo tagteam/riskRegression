@@ -12,7 +12,7 @@ test_that("Formula interface",{
     ## remove call
     b <- b[-match("call",names(b))]
     class(b) <- "crr"
-    expect_equal(a$crrFit,b)
+    expect_equal(ignore_attr=TRUE,a$crrFit,b)
 })
 if(FALSE){
     test_that("Functions of time",{
@@ -36,8 +36,8 @@ if(FALSE){
         class(b) <- "crr"
         e <- e[-match("call",names(e))]
         class(e) <- "crr"
-        expect_equivalent(a$crrFit,b)
-        expect_equivalent(a$crrFit,e)
+        expect_equal(ignore_attr=TRUE,,a$crrFit,b)
+        expect_equal(ignore_attr=TRUE,,a$crrFit,e)
     })
 }
 ## expect_true(length(coef(ee))==4)

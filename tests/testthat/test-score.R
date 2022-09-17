@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jan  4 2016 (14:30) 
 ## Version: 
-## last-updated: Sep 16 2022 (19:26) 
+## last-updated: Sep 17 2022 (07:00) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 171
+##     Update #: 172
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -36,8 +36,8 @@ test_that("R squared/IPA", {
     r1 <- rsquared(f1,newdata=d)
     r2 <- IPA(f2,newdata=d)
     full <- Score(list(f1=f1,f2=f2),formula=Y~1,data=d,conf.int=TRUE,summary=c("RR"),plots="ROC")
-    expect_equal(r1$IPA.drop[1],full$Brier$score[model=="f1",IPA])
-    expect_equal(r2$IPA[2],full$Brier$score[model=="f2",IPA])
+    expect_equal(ignore_attr=TRUE,r1$IPA.drop[1],full$Brier$score[model=="f1",IPA])
+    expect_equal(ignore_attr=TRUE,r2$IPA[2],full$Brier$score[model=="f2",IPA])
 })
 # }}}
 
@@ -58,13 +58,13 @@ test_that("binary outcome: robustness against order of data set",{
     f3 <- d$X8
     s3 <- Score(list(f1,f2,f3),formula=Y~1,data=d,conf.int=.95,metrics="auc")
     s3b <- Score(list(f1,f2,f3),formula=Y~1,data=d,conf.int=.95,metrics="auc")
-    ## lapply(names(s1),function(n){print(n);expect_equal(s1[[n]],s3[[n]])})
+    ## lapply(names(s1),function(n){print(n);expect_equal(ignore_attr=TRUE,s1[[n]],s3[[n]])})
     s1$call$conf.int <- .95
-    expect_equal(s1,s2)
-    expect_equal(s1,s3)
-    expect_equal(s1$AUC,s1b$AUC)
-    expect_equal(s2$AUC,s2b$AUC)
-    expect_equal(s3$AUC,s3b$AUC)
+    expect_equal(ignore_attr=TRUE,s1,s2)
+    expect_equal(ignore_attr=TRUE,s1,s3)
+    expect_equal(ignore_attr=TRUE,s1$AUC,s1b$AUC)
+    expect_equal(ignore_attr=TRUE,s2$AUC,s2b$AUC)
+    expect_equal(ignore_attr=TRUE,s3$AUC,s3b$AUC)
 })
 # }}}
 # {{{ "survival outcome, Brier Score, external prediction"
@@ -93,7 +93,7 @@ test_that("survival outcome,Brier Score, external prediction",{
         q <- b$Brier$score[,Brier]
         p <- as.vector(unlist(a$AppErr))
     }
-    expect_equal(q,p)
+    expect_equal(ignore_attr=TRUE,q,p)
 })
 
 # }}}
@@ -127,7 +127,7 @@ test_that("integrated Brier score",{
         q <- as.numeric(c(a1,use.names=FALSE))
         p <- c(b1)
     }
-    expect_equal(p,q)
+    expect_equal(ignore_attr=TRUE,p,q)
 })
 # }}}
 
@@ -147,7 +147,7 @@ test_that("survival outcome uncensored",{
         cx=coxph(Surv(time,event)~X1+X2+X3+X4+X5+X6+X7+X8+X9+X10,d,x=TRUE)
         cx1=cph(Surv(time,event)~X1+X2+X3+X4+X5+X6+X7+X8+X9+X10,d,x=TRUE,y=TRUE)
         out <- Score(list(Cox=cx,Cph=cx1),data=d,metrics="brier",summary="ibs",contrasts=FALSE,times=1:8,formula=Hist(time,event)~1,se.fit=FALSE)
-        expect_equal(100*out$Brier$score[model=="Cox"]$IBS,100*out$Brier$score[model=="Cph"]$IBS,tolerance=0.001)
+        expect_equal(ignore_attr=TRUE,100*out$Brier$score[model=="Cox"]$IBS,100*out$Brier$score[model=="Cph"]$IBS,tolerance=0.001)
     }
 })
 # }}}
@@ -163,15 +163,15 @@ test_that("binary outcome: Brier",{
     S1 <- Score(list(X6=glm(Y~X6,data=D,family='binomial'),X9=glm(Y~X9,data=D,family='binomial'),X10=glm(Y~X10,data=D,family='binomial')),formula=Y~1,data=D,null.model=FALSE,metrics="brier",cause="1")
     S2 <- Score(list(X6=glm(Y~X6,data=D,family='binomial'),X9=glm(Y~X9,data=D,family='binomial'),X10=glm(Y~X10,data=D,family='binomial')),formula=Y~1,data=D,null.model=FALSE,metrics=c("auc","brier"),cause="1")
     S3 <- Score(list(X6=glm(Y~X6,data=D,family='binomial'),X9=glm(Y~X9,data=D,family='binomial'),X10=glm(Y~X10,data=D,family='binomial')),formula=Y~1,data=D,null.model=FALSE,metrics=c("auc","brier"),se.fit=FALSE,cause="1")
-    expect_equal(s1,S1)
-    expect_equal(s2,S2)
-    expect_equal(s3,S3)
-    expect_equal(s1$Brier,s2$Brier)
-    expect_equal(s1$Brier$score$Brier,s3$Brier$score$Brier)
-    expect_equal(s2$Brier$score$Brier,s3$Brier$score$Brier)
-    expect_equal(S1$Brier,S2$Brier)
-    expect_equal(S1$Brier$score$Brier,S3$Brier$score$Brier)
-    expect_equal(S2$Brier$score$Brier,S3$Brier$score$Brier)
+    expect_equal(ignore_attr=TRUE,s1,S1)
+    expect_equal(ignore_attr=TRUE,s2,S2)
+    expect_equal(ignore_attr=TRUE,s3,S3)
+    expect_equal(ignore_attr=TRUE,s1$Brier,s2$Brier)
+    expect_equal(ignore_attr=TRUE,s1$Brier$score$Brier,s3$Brier$score$Brier)
+    expect_equal(ignore_attr=TRUE,s2$Brier$score$Brier,s3$Brier$score$Brier)
+    expect_equal(ignore_attr=TRUE,S1$Brier,S2$Brier)
+    expect_equal(ignore_attr=TRUE,S1$Brier$score$Brier,S3$Brier$score$Brier)
+    expect_equal(ignore_attr=TRUE,S2$Brier$score$Brier,S3$Brier$score$Brier)
 })
 # }}}
 # {{{ "binary outcome: AUC"
@@ -198,19 +198,19 @@ test_that("binary outcome: AUC", {
         ## to avoid side effects of data.table features we check the following 
         scoreres1 <- Score(list(X1=glm(y~x1,data=d,family='binomial'),X2=glm(y~x2,data=d,family='binomial'),X3=glm(y~x3,data=d,family='binomial')),formula=y~1,data=d,null.model=FALSE,metrics="auc",cause="1")
         scoreres1a <- Score(list(X1=glm(y~x1,data=d,family='binomial'),X2=glm(y~x2,data=d,family='binomial'),X3=glm(y~x3,data=d,family='binomial')),formula=y~1,data=d,null.model=FALSE,metrics="auc",se.fit=0L,cause="1")
-        expect_equal(scoreres$AUC,scoreres1$AUC)
+        expect_equal(ignore_attr=TRUE,scoreres$AUC,scoreres1$AUC)
         ## daim.auc <- daimres$AUC[,c("AUC","SD(DeLong)")]
         score.auc <- as.data.frame(scoreres$AUC$score[,c("AUC","se"),with=FALSE])
         ## rownames(score.auc) <- rownames(daim.auc)
         ## colnames(score.auc) <- colnames(daim.auc)
-        ## expect_equal(daim.auc,score.auc)
-        expect_equal(scoreres$AUC$score[["AUC"]],c(r1$auc,r2$auc,r3$auc))
+        ## expect_equal(ignore_attr=TRUE,daim.auc,score.auc)
+        expect_equal(ignore_attr=TRUE,scoreres$AUC$score[["AUC"]],c(r1$auc,r2$auc,r3$auc))
         score.diff <- scoreres$AUC$contrasts[,c("delta.AUC","se","lower","upper","p"),with=FALSE]
         ## daim.diff <- daimres$difference
-        ## expect_equal(daim.diff$"AUC Difference",-score.diff$delta.AUC)
-        ## expect_equal(daim.diff$"CI(lower)",-score.diff$upper)
-        ## expect_equal(daim.diff$"CI(upper)",-score.diff$lower)
-        ## expect_equal(daim.diff$"P.Value",score.diff$p)
+        ## expect_equal(ignore_attr=TRUE,daim.diff$"AUC Difference",-score.diff$delta.AUC)
+        ## expect_equal(ignore_attr=TRUE,daim.diff$"CI(lower)",-score.diff$upper)
+        ## expect_equal(ignore_attr=TRUE,daim.diff$"CI(upper)",-score.diff$lower)
+        ## expect_equal(ignore_attr=TRUE,daim.diff$"P.Value",score.diff$p)
     }
 })
 # }}}

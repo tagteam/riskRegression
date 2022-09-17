@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: sep  4 2017 (10:38) 
 ## Version: 
-## last-updated: Jul  7 2022 (17:18) 
+## last-updated: Sep 17 2022 (06:57) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 174
+##     Update #: 175
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -38,16 +38,16 @@ fit.cph <- cph(Surv(time,status == 1) ~ thick + invasion + ici, data = Melanoma,
 ## ** Compare to survival::basehaz
 test_that("baseline hazard (no strata): compare to survival::basehaz",{
   ## vs basehaz
-  expect_equal(predictCox(fit.coxph, centered = FALSE)$cumhazard, 
+  expect_equal(ignore_attr=TRUE,predictCox(fit.coxph, centered = FALSE)$cumhazard, 
                survival::basehaz(fit.coxph, centered = FALSE)$hazard, tolerance = 1e-8)
-  expect_equal(predictCox(fit.coxph, centered = TRUE)$cumhazard, 
+  expect_equal(ignore_attr=TRUE,predictCox(fit.coxph, centered = TRUE)$cumhazard, 
                survival::basehaz(fit.coxph, centered = TRUE)$hazard, tolerance = 1e-8)
-  expect_equal(predictCox(fit.cph)$cumhazard, 
+  expect_equal(ignore_attr=TRUE,predictCox(fit.cph)$cumhazard, 
                survival::basehaz(fit.cph)$hazard, tolerance = 1e-8)
 
   ## consistency cph coxph
   ## possible differences due to different fit - coef(fit.coxph)-coef(fit.cph)
-  expect_equal(predictCox(fit.cph, centered = FALSE),
+  expect_equal(ignore_attr=TRUE,predictCox(fit.cph, centered = FALSE),
                predictCox(fit.coxph, centered = FALSE), 
                tolerance = 100*max(abs(coef(fit.coxph)-coef(fit.cph))))
   ## note centered = TRUE will no give same results as coxph do not center all variables
@@ -60,10 +60,10 @@ test_that("baseline hazard (no strata): number of events",{
     GS.alltime <- sort(unique(Melanoma$time))
     
     RR.coxph <- predictCox(fit.coxph)
-    expect_equal(RR.coxph$times, GS.alltime)
+    expect_equal(ignore_attr=TRUE,RR.coxph$times, GS.alltime)
 
     RR.cph <- predictCox(fit.cph)
-    expect_equal(RR.cph$times, GS.alltime)
+    expect_equal(ignore_attr=TRUE,RR.cph$times, GS.alltime)
 })
 
 ## * [predictCox] Baseline hazard (strata)
@@ -80,15 +80,15 @@ fitS.cph <- cph(Surv(time,status == 1) ~ thick + strat(invasion) + strat(ici), d
 test_that("baseline hazard (strata): compare to survival::basehaz",{
 
   ## vs basehaz
-  expect_equal(predictCox(fitS.coxph, centered = FALSE)$cumhazard, 
+  expect_equal(ignore_attr=TRUE,predictCox(fitS.coxph, centered = FALSE)$cumhazard, 
                basehaz(fitS.coxph, centered = FALSE)$hazard, tolerance = 1e-8)
-  expect_equal(predictCox(fitS.coxph, centered = TRUE)$cumhazard, 
+  expect_equal(ignore_attr=TRUE,predictCox(fitS.coxph, centered = TRUE)$cumhazard, 
                basehaz(fitS.coxph, centered = TRUE)$hazard, tolerance = 1e-8)
-  expect_equal(predictCox(fitS.cph)$cumhazard, 
+  expect_equal(ignore_attr=TRUE,predictCox(fitS.cph)$cumhazard, 
                basehaz(fitS.cph)$hazard, tolerance = 1e-8)
-  expect_equal(predictCox(fitS.coxph, keep.strata = TRUE)$strata, 
+  expect_equal(ignore_attr=TRUE,predictCox(fitS.coxph, keep.strata = TRUE)$strata, 
                basehaz(fitS.coxph)$strata)
-  expect_equal(predictCox(fitS.cph, keep.strata = TRUE)$strata, 
+  expect_equal(ignore_attr=TRUE,predictCox(fitS.cph, keep.strata = TRUE)$strata, 
                basehaz(fitS.cph)$strata)
 
   ## consistency cph coxph
@@ -108,7 +108,7 @@ test_that("baseline hazard (strata): number of events",{
     RR.coxph <- predictCox(fitS.coxph)
     test.alltime <- tapply(RR.coxph$times, RR.coxph$strata, function(x){x})
 
-    expect_equal(unname(GS.alltime),unname(test.alltime))
+    expect_equal(ignore_attr=TRUE,unname(GS.alltime),unname(test.alltime))
 
 
     GS.alltime <- tapply(Melanoma$time, interaction(Melanoma$invasion,Melanoma$ici),
@@ -117,7 +117,7 @@ test_that("baseline hazard (strata): number of events",{
     RR.cph <- predictCox(fitS.cph)
     test.alltime <- tapply(RR.cph$times, RR.cph$strata, function(x){x})
 
-    expect_equal(unname(GS.alltime),unname(test.alltime))
+    expect_equal(ignore_attr=TRUE,unname(GS.alltime),unname(test.alltime))
 })
 
 ## * [predictCox] Baseline hazard with time varying covariates (no strata)
@@ -137,11 +137,11 @@ fit.cphTV <- cph(Surv(start, stop, event) ~ x, data = dt.TV, x = TRUE, y = TRUE)
 ## ** Compare to survival::basehaz
 test_that("baseline hazard (no strata, time varying): compare to survival::basehaz",{
 
-    expect_equal(suppressWarnings(predictCox(fit.coxphTV, centered = FALSE)$cumhazard), 
+    expect_equal(ignore_attr=TRUE,suppressWarnings(predictCox(fit.coxphTV, centered = FALSE)$cumhazard), 
                  basehaz(fit.coxphTV, centered = FALSE)$hazard, tolerance = 1e-8)
-    expect_equal(suppressWarnings(predictCox(fit.coxphTV, centered = TRUE)$cumhazard), 
+    expect_equal(ignore_attr=TRUE,suppressWarnings(predictCox(fit.coxphTV, centered = TRUE)$cumhazard), 
                  basehaz(fit.coxphTV, centered = TRUE)$hazard, tolerance = 1e-8)
-    expect_equal(suppressWarnings(predictCox(fit.cphTV)$cumhazard), 
+    expect_equal(ignore_attr=TRUE,suppressWarnings(predictCox(fit.cphTV)$cumhazard), 
                  basehaz(fit.cphTV)$hazard, tolerance = 1e-8)
   
 })
@@ -166,19 +166,19 @@ fitS2.cphTV <- cph(Surv(start, stop, event) ~ strat(randomS) + x, data = dtS.TV,
 test_that("baseline hazard (strata, time varying): compare to survival::basehaz",{
 
     ## strata defined by S
-    expect_equal(suppressWarnings(predictCox(fitS1.coxphTV, centered = FALSE)$cumhazard), 
+    expect_equal(ignore_attr=TRUE,suppressWarnings(predictCox(fitS1.coxphTV, centered = FALSE)$cumhazard), 
                  basehaz(fitS1.coxphTV, centered = FALSE)$hazard, tolerance = 1e-8)
-    expect_equal(suppressWarnings(predictCox(fitS1.coxphTV, centered = TRUE)$cumhazard), 
+    expect_equal(ignore_attr=TRUE,suppressWarnings(predictCox(fitS1.coxphTV, centered = TRUE)$cumhazard), 
                  basehaz(fitS1.coxphTV, centered = TRUE)$hazard, tolerance = 1e-8)
-    expect_equal(suppressWarnings(predictCox(fitS1.cphTV)$cumhazard), 
+    expect_equal(ignore_attr=TRUE,suppressWarnings(predictCox(fitS1.cphTV)$cumhazard), 
                  basehaz(fitS1.cphTV)$hazard, tolerance = 1e-8)
 
     ## strata defined by randomS
-    expect_equal(suppressWarnings(predictCox(fitS2.coxphTV, centered = FALSE)$cumhazard), 
+    expect_equal(ignore_attr=TRUE,suppressWarnings(predictCox(fitS2.coxphTV, centered = FALSE)$cumhazard), 
                  basehaz(fitS2.coxphTV, centered = FALSE)$hazard, tolerance = 1e-8)
-    expect_equal(suppressWarnings(predictCox(fitS2.coxphTV, centered = TRUE)$cumhazard), 
+    expect_equal(ignore_attr=TRUE,suppressWarnings(predictCox(fitS2.coxphTV, centered = TRUE)$cumhazard), 
                  basehaz(fitS2.coxphTV, centered = TRUE)$hazard, tolerance = 1e-8)
-    expect_equal(suppressWarnings(predictCox(fitS2.cphTV)$cumhazard), 
+    expect_equal(ignore_attr=TRUE,suppressWarnings(predictCox(fitS2.cphTV)$cumhazard), 
                  basehaz(fitS2.cphTV)$hazard, tolerance = 1e-8)
 
 })
@@ -208,8 +208,8 @@ e.timereg <- cox.aalen(Surv(time, event) ~ prop(X1) + prop(X6) + prop(X1*X6),
 
 test_that("[predictCox] - consistency of hazard/cumhazard/survival",{
   predRR <- predictCox(e.coxph, type = c("hazard","cumhazard","survival"), times = sort(dt$time), newdata = dt)
-  expect_equal(predRR$hazard[,-1], t(apply(predRR$cumhazard,1,diff)), tolerance = 1e-8)
-  expect_equal(predRR$survival, exp(-predRR$cumhazard), tolerance = 1e-8)
+  expect_equal(ignore_attr=TRUE,predRR$hazard[,-1], t(apply(predRR$cumhazard,1,diff)), tolerance = 1e-8)
+  expect_equal(ignore_attr=TRUE,predRR$survival, exp(-predRR$cumhazard), tolerance = 1e-8)
 })
 
 ## ** One time
@@ -229,7 +229,7 @@ predRR1.loglog <- confint(predRR1, survival.transform = "loglog", seed = 10,
 test_that("[predictCox] compare survival and survival.se coxph/cph (1 fixed time)",{
     res.cph <- predictCox(e.cph, newdata = dt, times = 10,
                           se = TRUE, iid = TRUE, band = TRUE, confint = FALSE)
-    expect_equal(as.data.table(predRR1),
+    expect_equal(ignore_attr=TRUE,as.data.table(predRR1),
                  as.data.table(res.cph),
                  tolerance = 1e-3)
 
@@ -238,12 +238,12 @@ test_that("[predictCox] compare survival and survival.se coxph/cph (1 fixed time
 ## *** Test vs. timereg
 test_that("[predictCox] compare survival and survival.se to timereg (1 fixed time)",{
     ## punctual estimate
-    expect_equal(as.double(predRR1$survival), as.double(predGS$S0))
-    expect_equal(as.double(predRR2$survival), as.double(predGS$S0))
+    expect_equal(ignore_attr=TRUE,as.double(predRR1$survival), as.double(predGS$S0))
+    expect_equal(ignore_attr=TRUE,as.double(predRR2$survival), as.double(predGS$S0))
 
     ## standard error
-    expect_equal(as.double(predRR1$survival.se), as.double(predGS$se.S0))
-    expect_equal(as.double(predRR2$survival.se), as.double(predGS$se.S0))
+    expect_equal(ignore_attr=TRUE,as.double(predRR1$survival.se), as.double(predGS$se.S0))
+    expect_equal(ignore_attr=TRUE,as.double(predRR2$survival.se), as.double(predGS$se.S0))
 })
 
 ## *** Test vs. known result
@@ -261,7 +261,7 @@ test_that("[confint.predictCox] compare to known values (1 fixed time, no transf
                      "survival.upperBand" = c(0.370304, 0.063527))
 
     ## butils::object2script(as.data.table(predRR1.none)[6:7,names(GS),with=FALSE], digit = 6)
-    expect_equal(as.data.table(predRR1.none)[6:7,names(GS),with=FALSE], GS, tolerance = 1e-4, scale = 1)
+    expect_equal(ignore_attr=TRUE,as.data.table(predRR1.none)[6:7,names(GS),with=FALSE], GS, tolerance = 1e-4, scale = 1)
 })
 
 test_that("[confint.predictCox] compare to known values (1 fixed time, log log transformation)",{
@@ -275,7 +275,7 @@ test_that("[confint.predictCox] compare to known values (1 fixed time, log log t
                      "survival.lowerBand" = c(0.05368, 0.00022), 
                      "survival.upperBand" = c(0.39115, 0.13183))
     ## butils::object2script(as.data.table(predRR1.loglog)[6:7,names(GS),with=FALSE], digit = 5)
-    expect_equal(as.data.table(predRR1.loglog)[6:7,names(GS),with=FALSE],
+    expect_equal(ignore_attr=TRUE,as.data.table(predRR1.loglog)[6:7,names(GS),with=FALSE],
                  GS, tolerance = 1e-4, scale = 1)
 })
 
@@ -299,7 +299,7 @@ predRR1.loglog <- confint(predRR1, survival.transform = "loglog", seed = 10, n.s
 test_that("[predictCox] compare survival and survival.se coxph/cph (eventtimes)",{
     res.cph <- predictCox(e.cph, newdata = dt, times = vec.time,
                           se = TRUE, iid = TRUE, band = TRUE, confint = FALSE)
-    expect_equal(as.data.table(predRR1),
+    expect_equal(ignore_attr=TRUE,as.data.table(predRR1),
                  as.data.table(res.cph),
                  tolerance = 1e-3)
 
@@ -307,12 +307,12 @@ test_that("[predictCox] compare survival and survival.se coxph/cph (eventtimes)"
 ## *** Test vs. timereg
 test_that("[predictCox] compare survival and survival.se to timereg (eventtimes)",{
     ## punctual estimate
-    expect_equal(as.double(predRR1$survival), as.double(predGS$S0))
-    expect_equal(as.double(predRR2$survival), as.double(predGS$S0))
+    expect_equal(ignore_attr=TRUE,as.double(predRR1$survival), as.double(predGS$S0))
+    expect_equal(ignore_attr=TRUE,as.double(predRR2$survival), as.double(predGS$S0))
 
     ## standard error
-    expect_equal(as.double(predRR1$survival.se), as.double(predGS$se.S0))
-    expect_equal(as.double(predRR2$survival.se), as.double(predGS$se.S0))
+    expect_equal(ignore_attr=TRUE,as.double(predRR1$survival.se), as.double(predGS$se.S0))
+    expect_equal(ignore_attr=TRUE,as.double(predRR2$survival.se), as.double(predGS$se.S0))
 })
 
 ## *** Test vs. known result
@@ -330,7 +330,7 @@ test_that("[confint.predictCox] compare to known values (eventtimes, no transfor
                      "survival.upperBand" = c(1, 1))
 
     ## butils::object2script(as.data.table(predRR1.none)[6:7,names(GS),with=FALSE], digit = 6)
-    expect_equal(as.data.table(predRR1.none)[6:7,names(GS),with=FALSE], GS, tolerance = 1e-4, scale = 1)
+    expect_equal(ignore_attr=TRUE,as.data.table(predRR1.none)[6:7,names(GS),with=FALSE], GS, tolerance = 1e-4, scale = 1)
 })
 
 test_that("[confint.predictCox] compare to known values (eventtimes, log log transformation)",{
@@ -344,7 +344,7 @@ test_that("[confint.predictCox] compare to known values (eventtimes, log log tra
                      "survival.lowerBand" = c(0.88353, 0.71525), 
                      "survival.upperBand" = c(0.99961, 0.99911))
     ## butils::object2script(as.data.table(predRR1.loglog)[6:7,names(GS),with=FALSE], digit = 5)
-    expect_equal(as.data.table(predRR1.loglog)[6:7,names(GS),with=FALSE],
+    expect_equal(ignore_attr=TRUE,as.data.table(predRR1.loglog)[6:7,names(GS),with=FALSE],
                  GS, tolerance = 1e-4, scale = 1)
 })
 
@@ -366,9 +366,9 @@ test_that("[predictCox] after the last event",{
     predRR <- predictCox(e.coxph, type = c("hazard","cumhazard","survival"),
                          times = vec.time, newdata = dt)
     M.true <- matrix(c(FALSE, FALSE, TRUE), nrow = NROW(dt), ncol = 3, byrow = TRUE)
-    expect_equal(is.na(predRR$hazard), M.true)
-    expect_equal(is.na(predRR$cumhazard), M.true)
-    expect_equal(is.na(predRR$survival), M.true)
+    expect_equal(ignore_attr=TRUE,is.na(predRR$hazard), M.true)
+    expect_equal(ignore_attr=TRUE,is.na(predRR$cumhazard), M.true)
+    expect_equal(ignore_attr=TRUE,is.na(predRR$survival), M.true)
 
 })    
 
@@ -432,13 +432,13 @@ test_that("[predictCox] - sorted vs. unsorted times (no strata)",{
     predRR1 <- predictCox(e.coxph, newdata = dt, times = vec.time, se = TRUE)
     predRR2 <- predictCox(e.coxph, newdata = dt, times = vec.time_sort, se = TRUE)
 
-    expect_equal(predRR1$survival[,index.sort],
+    expect_equal(ignore_attr=TRUE,predRR1$survival[,index.sort],
                  predRR2$survival)
 
-    expect_equal(predRR1$survival.se[,index.sort],
+    expect_equal(ignore_attr=TRUE,predRR1$survival.se[,index.sort],
                  predRR2$survival.se)
 
-    expect_equal(predRR1$time[index.sort],
+    expect_equal(ignore_attr=TRUE,predRR1$time[index.sort],
                  predRR2$time)
 
 })
@@ -452,13 +452,13 @@ test_that("[predictCox] - fast iid average (no strata)",{
     predRR.GS <- predictCox(e.coxph, times = dt$time[1:5], iid = TRUE, newdata = dt,
                             type = c("hazard","cumhazard","survival"))
 
-    expect_equal(apply(predRR.GS$hazard.iid, MARGIN = 1:2,mean),
+    expect_equal(ignore_attr=TRUE,apply(predRR.GS$hazard.iid, MARGIN = 1:2,mean),
                  predRR.av$hazard.average.iid, tolerance = 1e-8)
 
-    expect_equal(apply(predRR.GS$cumhazard.iid, MARGIN = 1:2,mean),
+    expect_equal(ignore_attr=TRUE,apply(predRR.GS$cumhazard.iid, MARGIN = 1:2,mean),
                  predRR.av$cumhazard.average.iid, tolerance = 1e-8)
 
-    expect_equal(apply(predRR.GS$survival.iid, MARGIN = 1:2,mean),
+    expect_equal(ignore_attr=TRUE,apply(predRR.GS$survival.iid, MARGIN = 1:2,mean),
                  predRR.av$survival.average.iid, tolerance = 1e-8)
 
     ## weighted average
@@ -475,23 +475,23 @@ test_that("[predictCox] - fast iid average (no strata)",{
         })
     }
 
-    expect_equal(predRR.av$hazard.average.iid[,order(dt$time[1:5])]*5,
+    expect_equal(ignore_attr=TRUE,predRR.av$hazard.average.iid[,order(dt$time[1:5])]*5,
                  predRR.av2$hazard.average.iid[[1]],
                  tolerance = 1e-8)
-    expect_equal(predRR.av$cumhazard.average.iid[,order(dt$time[1:5])]*5,
+    expect_equal(ignore_attr=TRUE,predRR.av$cumhazard.average.iid[,order(dt$time[1:5])]*5,
                  predRR.av2$cumhazard.average.iid[[1]],
                  tolerance = 1e-8)
-    expect_equal(predRR.av$survival.average.iid[,order(dt$time[1:5])]*5,
+    expect_equal(ignore_attr=TRUE,predRR.av$survival.average.iid[,order(dt$time[1:5])]*5,
                  predRR.av2$survival.average.iid[[1]],
                  tolerance = 1e-8)
 
-    expect_equal(calcGS(predRR.GS$hazard.iid)[,order(dt$time[1:5])],
+    expect_equal(ignore_attr=TRUE,calcGS(predRR.GS$hazard.iid)[,order(dt$time[1:5])],
                  predRR.av2$hazard.average.iid[[2]],
                  tolerance = 1e-8)
-    expect_equal(calcGS(predRR.GS$cumhazard.iid)[,order(dt$time[1:5])],
+    expect_equal(ignore_attr=TRUE,calcGS(predRR.GS$cumhazard.iid)[,order(dt$time[1:5])],
                  predRR.av2$cumhazard.average.iid[[2]],
                  tolerance = 1e-8)
-    expect_equal(calcGS(predRR.GS$survival.iid)[,order(dt$time[1:5])],
+    expect_equal(ignore_attr=TRUE,calcGS(predRR.GS$survival.iid)[,order(dt$time[1:5])],
                  predRR.av2$survival.average.iid[[2]],
                  tolerance = 1e-8)
 })
@@ -522,22 +522,22 @@ test_that("[predictCox] compare survival and survival.se to timereg/cph (categor
     ## fixed time
     predGS <- predict(e.timereg, newdata = dt, times = 10)
     predRR1 <- predictCox(e.coxph, newdata = dt, times = 10, se = TRUE)
-    expect_equal(as.double(predRR1$survival), as.double(predGS$S0))
-    expect_equal(as.double(predRR1$survival.se), as.double(predGS$se.S0))
+    expect_equal(ignore_attr=TRUE,as.double(predRR1$survival), as.double(predGS$S0))
+    expect_equal(ignore_attr=TRUE,as.double(predRR1$survival.se), as.double(predGS$se.S0))
 
     predCPH <- predictCox(e.cph, newdata = dt, times = 10, se = TRUE)
-    expect_equal(as.double(predRR1$survival), as.double(predCPH$survival), tolerance = 1e-3)
-    expect_equal(as.double(predRR1$survival.se), as.double(predCPH$survival.se), tolerance = 1e-3)
+    expect_equal(ignore_attr=TRUE,as.double(predRR1$survival), as.double(predCPH$survival), tolerance = 1e-3)
+    expect_equal(ignore_attr=TRUE,as.double(predRR1$survival.se), as.double(predCPH$survival.se), tolerance = 1e-3)
 
     ## event time
     predGS <- predict(e.timereg, newdata = dt, times = sort(dt$time))
     predRR1 <- predictCox(e.coxph, newdata = dt, times = sort(dt$time), se = TRUE)
-    expect_equal(as.double(predRR1$survival), as.double(predGS$S0))
-    expect_equal(as.double(predRR1$survival.se), as.double(predGS$se.S0))
+    expect_equal(ignore_attr=TRUE,as.double(predRR1$survival), as.double(predGS$S0))
+    expect_equal(ignore_attr=TRUE,as.double(predRR1$survival.se), as.double(predGS$se.S0))
 
     predCPH <- predictCox(e.cph, newdata = dt, times = sort(dt$time), se = TRUE)
-    expect_equal(as.double(predRR1$survival), as.double(predCPH$survival), tolerance = 1e-3)
-    expect_equal(as.double(predRR1$survival.se), as.double(predCPH$survival.se), tolerance = 1e-3)
+    expect_equal(ignore_attr=TRUE,as.double(predRR1$survival), as.double(predCPH$survival), tolerance = 1e-3)
+    expect_equal(ignore_attr=TRUE,as.double(predRR1$survival.se), as.double(predCPH$survival.se), tolerance = 1e-3)
 })
 
 
@@ -587,7 +587,7 @@ test_that("[predictCox] compare survival and survival.se coxph/cph (1 fixed time
     set.seed(10)
     res.cph <- predictCox(eS.cph, newdata = dtStrata, times = 4,
                           se = TRUE, iid = TRUE, band = TRUE, confint = FALSE)
-    expect_equal(as.data.table(predRR1),
+    expect_equal(ignore_attr=TRUE,as.data.table(predRR1),
                  as.data.table(res.cph),
                  tolerance = 1e-3)
 
@@ -597,10 +597,10 @@ test_that("[predictCox] compare survival and survival.se coxph/cph (1 fixed time
 ## *** Test vs. timereg
 test_that("[predictCox] compare survival and survival.se to timereg (1 fixed time, strata)",{
     ## punctual estimate
-    expect_equal(as.double(predRR1$survival), as.double(predGS$S0))
+    expect_equal(ignore_attr=TRUE,as.double(predRR1$survival), as.double(predGS$S0))
 
     ## standard error
-    expect_equal(as.double(predRR1$survival.se), as.double(predGS$se.S0))
+    expect_equal(ignore_attr=TRUE,as.double(predRR1$survival.se), as.double(predGS$se.S0))
 })
 
 
@@ -619,7 +619,7 @@ test_that("[confint.predictCox] compare to known values (1 fixed time, no transf
                      "survival.upperBand" = c(0.934062, 0.768048))
 
     ## butils::object2script(as.data.table(predRR1.none)[6:7,names(GS),with=FALSE], digit = 6)
-    expect_equal(as.data.table(predRR1.none)[6:7,names(GS),with=FALSE], GS, tolerance = 1e-4, scale = 1)
+    expect_equal(ignore_attr=TRUE,as.data.table(predRR1.none)[6:7,names(GS),with=FALSE], GS, tolerance = 1e-4, scale = 1)
 })
 
 test_that("[confint.predictCox] compare to known values (1 fixed time, log log transformation, strata)",{
@@ -633,7 +633,7 @@ test_that("[confint.predictCox] compare to known values (1 fixed time, log log t
                      "survival.lowerBand" = c(0.57849, 0.25722), 
                      "survival.upperBand" = c(0.89408, 0.72953))
     ## butils::object2script(as.data.table(predRR1.loglog)[6:7,names(GS),with=FALSE], digit = 5)
-    expect_equal(as.data.table(predRR1.loglog)[6:7,names(GS),with=FALSE],
+    expect_equal(ignore_attr=TRUE,as.data.table(predRR1.loglog)[6:7,names(GS),with=FALSE],
                  GS, tolerance = 1e-4, scale = 1)
 })
 
@@ -657,7 +657,7 @@ test_that("[predictCox] compare survival and survival.se coxph/cph (eventtime, s
     set.seed(10)
     res.cph <- predictCox(eS.cph, newdata = dtStrata, times = vec.time,
                           se = TRUE, iid = TRUE, band = TRUE, confint = FALSE)
-    expect_equal(as.data.table(predRR1),
+    expect_equal(ignore_attr=TRUE,as.data.table(predRR1),
                  as.data.table(res.cph),
                  tolerance = 1e-3)
 
@@ -666,10 +666,10 @@ test_that("[predictCox] compare survival and survival.se coxph/cph (eventtime, s
 ## *** Test vs. timereg
 test_that("[predictCox] compare survival and survival.se to timereg (eventtimes, strata)",{
     ## punctual estimate
-    expect_equal(as.double(predRR1$survival), as.double(predGS$S0))
+    expect_equal(ignore_attr=TRUE,as.double(predRR1$survival), as.double(predGS$S0))
 
     ## standard error
-    expect_equal(as.double(predRR1$survival.se), as.double(predGS$se.S0))
+    expect_equal(ignore_attr=TRUE,as.double(predRR1$survival.se), as.double(predGS$se.S0))
 })
 
 ## *** Test vs. known result
@@ -687,7 +687,7 @@ test_that("[confint.predictCox] compare to known values (eventtimes, no transfor
                      "survival.upperBand" = c(1, 1))
 
     ## butils::object2script(as.data.table(predRR1.none)[135:136,names(GS),with=FALSE], digit = 6)
-    expect_equal(as.data.table(predRR1.none)[135:136,names(GS),with=FALSE], GS, tolerance = 1e-4, scale = 1)
+    expect_equal(ignore_attr=TRUE,as.data.table(predRR1.none)[135:136,names(GS),with=FALSE], GS, tolerance = 1e-4, scale = 1)
 })
 
 test_that("[confint.predictCox] compare to known values (eventtimes, log log transformation, strata)",{
@@ -701,7 +701,7 @@ test_that("[confint.predictCox] compare to known values (eventtimes, log log tra
                      "survival.lowerBand" = c(0.97391, 0.83119), 
                      "survival.upperBand" = c(0.99898, 0.9997))
     ## butils::object2script(as.data.table(predRR1.loglog)[135:136,names(GS),with=FALSE], digit = 5)
-    expect_equal(as.data.table(predRR1.loglog)[135:136,names(GS),with=FALSE],
+    expect_equal(ignore_attr=TRUE,as.data.table(predRR1.loglog)[135:136,names(GS),with=FALSE],
                  GS, tolerance = 1e-4, scale = 1)
 })
 
@@ -755,13 +755,13 @@ test_that("[predictCox] - iid average",{
     predRR.GS <- predictCox(eS.coxph, times = seqTime, iid = TRUE, newdata = dtStrata,
                             type = c("hazard","cumhazard","survival"))
 
-    expect_equal(apply(predRR.GS$hazard.iid, MARGIN = 1:2,mean),
+    expect_equal(ignore_attr=TRUE,apply(predRR.GS$hazard.iid, MARGIN = 1:2,mean),
                  predRR.av$hazard.average.iid, tolerance = 1e-8)
 
-    expect_equal(apply(predRR.GS$cumhazard.iid, MARGIN = 1:2,mean),
+    expect_equal(ignore_attr=TRUE,apply(predRR.GS$cumhazard.iid, MARGIN = 1:2,mean),
                  predRR.av$cumhazard.average.iid, tolerance = 1e-8)
 
-    expect_equal(apply(predRR.GS$survival.iid, MARGIN = 1:2,mean),
+    expect_equal(ignore_attr=TRUE,apply(predRR.GS$survival.iid, MARGIN = 1:2,mean),
                  predRR.av$survival.average.iid, tolerance = 1e-8)
 
     ## weighted average
@@ -778,23 +778,23 @@ test_that("[predictCox] - iid average",{
         })
     }
 
-    expect_equal(predRR.av$hazard.average.iid[,order(seqTime)]*5,
+    expect_equal(ignore_attr=TRUE,predRR.av$hazard.average.iid[,order(seqTime)]*5,
                  predRR.av2$hazard.average.iid[[1]],
                  tolerance = 1e-8)
-    expect_equal(predRR.av$cumhazard.average.iid[,order(seqTime)]*5,
+    expect_equal(ignore_attr=TRUE,predRR.av$cumhazard.average.iid[,order(seqTime)]*5,
                  predRR.av2$cumhazard.average.iid[[1]],
                  tolerance = 1e-8)
-    expect_equal(predRR.av$survival.average.iid[,order(seqTime)]*5,
+    expect_equal(ignore_attr=TRUE,predRR.av$survival.average.iid[,order(seqTime)]*5,
                  predRR.av2$survival.average.iid[[1]],
                  tolerance = 1e-8)
 
-    expect_equal(calcGS(predRR.GS$hazard.iid)[,order(seqTime)],
+    expect_equal(ignore_attr=TRUE,calcGS(predRR.GS$hazard.iid)[,order(seqTime)],
                  predRR.av2$hazard.average.iid[[2]],
                  tolerance = 1e-8)
-    expect_equal(calcGS(predRR.GS$cumhazard.iid)[,order(seqTime)],
+    expect_equal(ignore_attr=TRUE,calcGS(predRR.GS$cumhazard.iid)[,order(seqTime)],
                  predRR.av2$cumhazard.average.iid[[2]],
                  tolerance = 1e-8)
-    expect_equal(calcGS(predRR.GS$survival.iid)[,order(seqTime)],
+    expect_equal(ignore_attr=TRUE,calcGS(predRR.GS$survival.iid)[,order(seqTime)],
                  predRR.av2$survival.average.iid[[2]],
                  tolerance = 1e-8)
 })
@@ -818,7 +818,7 @@ confint.pred2 <- confint(fit.pred, survival.transform = "loglog", n.sim = n.sim)
 
 ## ** standard errors
 test_that("[predictCox] consistency  iid se", {
-    expect_equal(fit.pred$survival.se[1,],
+    expect_equal(ignore_attr=TRUE,fit.pred$survival.se[1,],
                  sqrt(colSums(fit.pred$survival.iid[,,1]^2))
                  )
 })
@@ -826,16 +826,16 @@ test_that("[predictCox] consistency  iid se", {
 ## ** confidence intervals / bands computed on the original scale
 test_that("[confint.predictCox] manual computation on ci", {
     ## orignial scale
-    expect_equal(confint.pred1$survival.lower,
+    expect_equal(ignore_attr=TRUE,confint.pred1$survival.lower,
                  fit.pred$survival + qnorm(0.025) * fit.pred$survival.se)
-    expect_equal(as.double(confint.pred1$survival.upper),
+    expect_equal(ignore_attr=TRUE,as.double(confint.pred1$survival.upper),
                  pmin(1,fit.pred$survival + qnorm(0.975) * fit.pred$survival.se))
 
     ## loglog scale
     newse <- fit.pred$survival.se/(-fit.pred$survival*log(fit.pred$survival))
-    expect_equal(confint.pred2$survival.lower,
+    expect_equal(ignore_attr=TRUE,confint.pred2$survival.lower,
                  exp(-exp(log(-log(fit.pred$survival)) + qnorm(0.975) * newse)))
-    expect_equal(confint.pred2$survival.upper,
+    expect_equal(ignore_attr=TRUE,confint.pred2$survival.upper,
                  exp(-exp(log(-log(fit.pred$survival)) + qnorm(0.025) * newse)))
 })
 
@@ -854,22 +854,22 @@ test_that("[predictCox] diag no strata", {
                         se = FALSE, iid = FALSE, average.iid = TRUE, diag = TRUE)
 
     ## estimates
-    expect_equal(dt$time, as.double(test$time))
-    expect_equal(diag(GS$cumhazard), as.double(test$cumhazard))
-    expect_equal(diag(GS$survival), as.double(test$survival))
+    expect_equal(ignore_attr=TRUE,dt$time, as.double(test$time))
+    expect_equal(ignore_attr=TRUE,diag(GS$cumhazard), as.double(test$cumhazard))
+    expect_equal(ignore_attr=TRUE,diag(GS$survival), as.double(test$survival))
 
     ## se
-    expect_equal(diag(GS$cumhazard.se), test$cumhazard.se[,1])
-    expect_equal(diag(GS$survival.se), test$survival.se[,1])
+    expect_equal(ignore_attr=TRUE,diag(GS$cumhazard.se), test$cumhazard.se[,1])
+    expect_equal(ignore_attr=TRUE,diag(GS$survival.se), test$survival.se[,1])
     
     ## iid
     GS.iid.diag <- do.call(cbind,lapply(1:NROW(dt),
                                         function(iN){GS$survival.iid[,iN,iN]}))
-    expect_equal(GS.iid.diag, test$survival.iid[,1,])
+    expect_equal(ignore_attr=TRUE,GS.iid.diag, test$survival.iid[,1,])
 
     ## average.iid
-    expect_equal(rowMeans(GS.iid.diag), test2$survival.average.iid[,1])
-    expect_equal(test$survival.average.iid, test2$survival.average.iid)
+    expect_equal(ignore_attr=TRUE,rowMeans(GS.iid.diag), test2$survival.average.iid[,1])
+    expect_equal(ignore_attr=TRUE,test$survival.average.iid, test2$survival.average.iid)
 
     ## average.iid with factor - diag=FALSE
     average.iid <- TRUE
@@ -878,8 +878,8 @@ test_that("[predictCox] diag no strata", {
     test3 <- predictCox(e.coxph, newdata = dt, times = dt$time,
                         se = FALSE, iid = FALSE, average.iid = average.iid, diag = FALSE)
 
-    expect_equal(rowMultiply_cpp(GS$survival.average.iid, scale = 1:length(dt$time)), test3$survival.average.iid[[1]])
-    expect_equal(apply(GS$survival.iid, 1:2, function(x){sum(x * (1:length(dt$time)))/length(x)}),
+    expect_equal(ignore_attr=TRUE,rowMultiply_cpp(GS$survival.average.iid, scale = 1:length(dt$time)), test3$survival.average.iid[[1]])
+    expect_equal(ignore_attr=TRUE,apply(GS$survival.iid, 1:2, function(x){sum(x * (1:length(dt$time)))/length(x)}),
                  test3$survival.average.iid[[2]])
 
     ## average.iid with factor - diag=FALSE, time varying factor
@@ -888,7 +888,7 @@ test_that("[predictCox] diag no strata", {
     test4 <- predictCox(e.coxph, newdata = dt, times = dt$time,
                         se = FALSE, iid = FALSE, average.iid = average.iid, diag = FALSE)
     ## iObs <- 1    
-    expect_equal(do.call(rbind,lapply(1:NROW(dt), function(iObs){rowMeans(GS$survival.iid[iObs,,] * t(attr(average.iid,"factor")[[1]]))})),
+    expect_equal(ignore_attr=TRUE,do.call(rbind,lapply(1:NROW(dt), function(iObs){rowMeans(GS$survival.iid[iObs,,] * t(attr(average.iid,"factor")[[1]]))})),
                  test4$survival.average.iid[[1]])
 
 
@@ -900,8 +900,8 @@ test_that("[predictCox] diag no strata", {
                         se = FALSE, iid = FALSE, average.iid = average.iid, diag = TRUE)
 
     
-    expect_equal(5*test$survival.average.iid, test5$survival.average.iid[[1]])
-    expect_equal(rowMeans(rowMultiply_cpp(GS.iid.diag, 1:length(dt$time))),
+    expect_equal(ignore_attr=TRUE,5*test$survival.average.iid, test5$survival.average.iid[[1]])
+    expect_equal(ignore_attr=TRUE,rowMeans(rowMultiply_cpp(GS.iid.diag, 1:length(dt$time))),
                  test5$survival.average.iid[[2]][,1])
     
 })
@@ -916,18 +916,18 @@ test_that("[predictCox] diag strata", {
                        se = FALSE, iid = FALSE, average.iid = TRUE, diag = TRUE)
 
     ## estimate
-    expect_equal(dt$time, as.double(test$time))
-    expect_equal(diag(GS$cumhazard), as.double(test$cumhazard))
-    expect_equal(diag(GS$survival), as.double(test$survival))
+    expect_equal(ignore_attr=TRUE,dt$time, as.double(test$time))
+    expect_equal(ignore_attr=TRUE,diag(GS$cumhazard), as.double(test$cumhazard))
+    expect_equal(ignore_attr=TRUE,diag(GS$survival), as.double(test$survival))
 
     ## iid
     GS.iid.diag <- do.call(cbind,lapply(1:NROW(dt),
                                         function(iN){GS$survival.iid[,iN,iN]}))
-    expect_equal(GS.iid.diag, test$survival.iid[,1,])
+    expect_equal(ignore_attr=TRUE,GS.iid.diag, test$survival.iid[,1,])
 
     ## average.iid
-    expect_equal(rowMeans(GS.iid.diag), test2$survival.average.iid[,1])
-    expect_equal(test$survival.average.iid, test2$survival.average.iid)
+    expect_equal(ignore_attr=TRUE,rowMeans(GS.iid.diag), test2$survival.average.iid[,1])
+    expect_equal(ignore_attr=TRUE,test$survival.average.iid, test2$survival.average.iid)
 
     ## average.iid with factor - diag=FALSE
     average.iid <- TRUE
@@ -936,8 +936,8 @@ test_that("[predictCox] diag strata", {
     test3 <- predictCox(eS.coxph, newdata = dt, times = dt$time,
                         se = FALSE, iid = FALSE, average.iid = average.iid, diag = FALSE)
 
-    expect_equal(rowMultiply_cpp(GS$survival.average.iid, scale = 1:length(dt$time)), test3$survival.average.iid[[1]])
-    expect_equal(apply(GS$survival.iid, 1:2, function(x){sum(x * (1:length(dt$time)))/length(x)}),
+    expect_equal(ignore_attr=TRUE,rowMultiply_cpp(GS$survival.average.iid, scale = 1:length(dt$time)), test3$survival.average.iid[[1]])
+    expect_equal(ignore_attr=TRUE,apply(GS$survival.iid, 1:2, function(x){sum(x * (1:length(dt$time)))/length(x)}),
                  test3$survival.average.iid[[2]])
 
     ## average.iid with factor - diag=FALSE, time varying factor
@@ -945,7 +945,7 @@ test_that("[predictCox] diag strata", {
     attr(average.iid,"factor") <- list(matrix(rnorm(NROW(dt)*length(dt$time)), nrow = NROW(dt), ncol = length(dt$time)))
     test4 <- predictCox(eS.coxph, newdata = dt, times = dt$time,
                         se = FALSE, iid = FALSE, average.iid = average.iid, diag = FALSE)
-    expect_equal(do.call(rbind,lapply(1:NROW(dt), function(iObs){rowMeans(GS$survival.iid[iObs,,] * t(attr(average.iid,"factor")[[1]]))})),
+    expect_equal(ignore_attr=TRUE,do.call(rbind,lapply(1:NROW(dt), function(iObs){rowMeans(GS$survival.iid[iObs,,] * t(attr(average.iid,"factor")[[1]]))})),
                  test4$survival.average.iid[[1]])
 
 
@@ -957,8 +957,8 @@ test_that("[predictCox] diag strata", {
                         se = FALSE, iid = FALSE, average.iid = average.iid, diag = TRUE)
 
     
-    expect_equal(5*test$survival.average.iid, test5$survival.average.iid[[1]])
-    expect_equal(rowMeans(rowMultiply_cpp(GS.iid.diag, 1:length(dt$time))),
+    expect_equal(ignore_attr=TRUE,5*test$survival.average.iid, test5$survival.average.iid[[1]])
+    expect_equal(ignore_attr=TRUE,rowMeans(rowMultiply_cpp(GS.iid.diag, 1:length(dt$time))),
                  test5$survival.average.iid[[2]][,1])
 
 })
@@ -1023,7 +1023,7 @@ test_that("[predictCox] Quantile for the confidence band of the cumhazard", {
                                                        global = FALSE, 
                                                        confLevel = 0.95)
 
-    expect_equal(pred.band2,ref)
+    expect_equal(ignore_attr=TRUE,pred.band2,ref)
 
 
     ## note confint is removing the first column since the standard error is 0
@@ -1039,8 +1039,8 @@ test_that("[predictCox] Quantile for the confidence band of the cumhazard", {
     ## should not set transform to NA because at time 0 se=0 so the log-transform fails
     pred.confint <- confint(predRR, n.sim = n.sim, seed = 10,
                             cumhazard.transform = "none")
-    expect_equal(pred.confint$cumhazard.quantileBand, pred.band2.no0)
-    expect_equal(pred.confint$cumhazard.quantileBand, ref)
+    expect_equal(ignore_attr=TRUE,pred.confint$cumhazard.quantileBand, pred.band2.no0)
+    expect_equal(ignore_attr=TRUE,pred.confint$cumhazard.quantileBand, ref)
 
 })
 
@@ -1100,24 +1100,24 @@ test_that("[predictCox] store.iid = minimal vs. full - no strata", {
     res2 <- predictCox(m.coxph, times = seqTime, newdata = newdata,
                        type = c("cumhazard", "survival"),
                        store.iid = "full", se = TRUE, iid = TRUE)
-    expect_equal(res1$cumhazard.se,res2$cumhazard.se)
-    expect_equal(res1$survival.se,res2$survival.se)
-    expect_equal(res1$cumhazard.iid,res2$cumhazard.iid)
-    expect_equal(res1$survival.iid,res2$survival.iid)
-    expect_equal(res1$cumhazard.average.iid, apply(res2$cumhazard.iid,1:2,mean))
-    expect_equal(res1$survival.average.iid, apply(res2$survival.iid,1:2,mean))
+    expect_equal(ignore_attr=TRUE,res1$cumhazard.se,res2$cumhazard.se)
+    expect_equal(ignore_attr=TRUE,res1$survival.se,res2$survival.se)
+    expect_equal(ignore_attr=TRUE,res1$cumhazard.iid,res2$cumhazard.iid)
+    expect_equal(ignore_attr=TRUE,res1$survival.iid,res2$survival.iid)
+    expect_equal(ignore_attr=TRUE,res1$cumhazard.average.iid, apply(res2$cumhazard.iid,1:2,mean))
+    expect_equal(ignore_attr=TRUE,res1$survival.average.iid, apply(res2$survival.iid,1:2,mean))
 
     ## pre-store
     m2.coxph <- iidCox(m.coxph, store.iid = "minimal")
     res1bis <- predictCox(m2.coxph, times = seqTime, newdata = newdata,
                           type = c("cumhazard", "survival"),
                           se = TRUE, iid = TRUE, average.iid = TRUE) 
-    expect_equal(res1bis$cumhazard.se,res2$cumhazard.se)
-    expect_equal(res1bis$survival.se,res2$survival.se)
-    expect_equal(res1bis$cumhazard.iid,res2$cumhazard.iid)
-    expect_equal(res1bis$survival.iid,res2$survival.iid)
-    expect_equal(res1bis$cumhazard.average.iid, apply(res2$cumhazard.iid,1:2,mean))
-    expect_equal(res1bis$survival.average.iid, apply(res2$survival.iid,1:2,mean))
+    expect_equal(ignore_attr=TRUE,res1bis$cumhazard.se,res2$cumhazard.se)
+    expect_equal(ignore_attr=TRUE,res1bis$survival.se,res2$survival.se)
+    expect_equal(ignore_attr=TRUE,res1bis$cumhazard.iid,res2$cumhazard.iid)
+    expect_equal(ignore_attr=TRUE,res1bis$survival.iid,res2$survival.iid)
+    expect_equal(ignore_attr=TRUE,res1bis$cumhazard.average.iid, apply(res2$cumhazard.iid,1:2,mean))
+    expect_equal(ignore_attr=TRUE,res1bis$survival.average.iid, apply(res2$survival.iid,1:2,mean))
     
 })
 
@@ -1135,24 +1135,24 @@ test_that("[predictCox] store.iid = minimal vs. full - strata", {
     res2 <- predictCox(m.coxph, times = seqTime, newdata = newdata,
                        type = c("cumhazard", "survival"),
                        store.iid = "full", se = TRUE, iid = TRUE)
-    expect_equal(res1$cumhazard.se,res2$cumhazard.se)
-    expect_equal(res1$survival.se,res2$survival.se)
-    expect_equal(res1$cumhazard.iid,res2$cumhazard.iid)
-    expect_equal(res1$survival.iid,res2$survival.iid)
-    expect_equal(res1$cumhazard.average.iid, apply(res2$cumhazard.iid,1:2,mean))
-    expect_equal(res1$survival.average.iid, apply(res2$survival.iid,1:2,mean))
+    expect_equal(ignore_attr=TRUE,res1$cumhazard.se,res2$cumhazard.se)
+    expect_equal(ignore_attr=TRUE,res1$survival.se,res2$survival.se)
+    expect_equal(ignore_attr=TRUE,res1$cumhazard.iid,res2$cumhazard.iid)
+    expect_equal(ignore_attr=TRUE,res1$survival.iid,res2$survival.iid)
+    expect_equal(ignore_attr=TRUE,res1$cumhazard.average.iid, apply(res2$cumhazard.iid,1:2,mean))
+    expect_equal(ignore_attr=TRUE,res1$survival.average.iid, apply(res2$survival.iid,1:2,mean))
 
     ## pre store
     m2.coxph <- iidCox(m.coxph, store.iid = "minimal")
     res1bis <- predictCox(m2.coxph, times = seqTime, newdata = newdata,
                        type = c("cumhazard", "survival"),
                        se = TRUE, iid = TRUE, average.iid = TRUE) 
-    expect_equal(res1bis$cumhazard.se,res2$cumhazard.se)
-    expect_equal(res1bis$survival.se,res2$survival.se)
-    expect_equal(res1bis$cumhazard.iid,res2$cumhazard.iid)
-    expect_equal(res1bis$survival.iid,res2$survival.iid)
-    expect_equal(res1bis$cumhazard.average.iid, apply(res2$cumhazard.iid,1:2,mean))
-    expect_equal(res1bis$survival.average.iid, apply(res2$survival.iid,1:2,mean))
+    expect_equal(ignore_attr=TRUE,res1bis$cumhazard.se,res2$cumhazard.se)
+    expect_equal(ignore_attr=TRUE,res1bis$survival.se,res2$survival.se)
+    expect_equal(ignore_attr=TRUE,res1bis$cumhazard.iid,res2$cumhazard.iid)
+    expect_equal(ignore_attr=TRUE,res1bis$survival.iid,res2$survival.iid)
+    expect_equal(ignore_attr=TRUE,res1bis$cumhazard.average.iid, apply(res2$cumhazard.iid,1:2,mean))
+    expect_equal(ignore_attr=TRUE,res1bis$survival.average.iid, apply(res2$survival.iid,1:2,mean))
 })
 
 ## ** Weigthed cox
@@ -1180,7 +1180,7 @@ data(Melanoma, package = "riskRegression")
 fit.coxph <- coxph(Surv(time,status == 1) ~ thick*age, data = Melanoma, y = TRUE, x = TRUE)
 
 test_that("Deal with negative/NA time points",{
-    expect_equal(unname(predictCox(fit.coxph, times = -1, newdata = Melanoma)$survival),
+    expect_equal(ignore_attr=TRUE,unname(predictCox(fit.coxph, times = -1, newdata = Melanoma)$survival),
                  matrix(1,nrow = NROW(Melanoma), ncol = 1))
 
     expect_error(predictCox(fit.coxph, times = c(1,2,NA), newdata = Melanoma))
@@ -1217,15 +1217,15 @@ test_that("After last event - fully stratified model",{
     e.coxph <- coxph(Surv(time,event) ~ strata(X1), data = d, x = TRUE, y = TRUE)
     
     test <- as.data.table(predictCox(e.coxph, times = tau, newdata = X, se = TRUE))
-    expect_equal(test[strata == 1 & times == 10000,survival], test[strata == 1 & times == d[X1==1,max(time)],survival], tolerance = 1e-6)
-    expect_equal(test[strata == 1 & times == 10000,survival.se], test[strata == 1 & times == d[X1==1,max(time)],survival.se], tolerance = 1e-6)
+    expect_equal(ignore_attr=TRUE,test[strata == 1 & times == 10000,survival], test[strata == 1 & times == d[X1==1,max(time)],survival], tolerance = 1e-6)
+    expect_equal(ignore_attr=TRUE,test[strata == 1 & times == 10000,survival.se], test[strata == 1 & times == d[X1==1,max(time)],survival.se], tolerance = 1e-6)
 
     expect_true(is.na(test[strata == 0 & times == 10000,survival]))
     expect_true(is.na(test[strata == 0 & times == 10000,survival.se]))
 
     test2 <- as.data.table(predictCoxPL(e.coxph, times = tau, newdata = X, se = TRUE))
-    expect_equal(test2[strata == 1 & times == 10000,survival], 0, tolerance = 1e-6)
-    expect_equal(test2[strata == 1 & times == 10000,survival.se], test2[strata == 1 & times == d[X1==1,max(time)],survival.se], tolerance = 1e-6)
+    expect_equal(ignore_attr=TRUE,test2[strata == 1 & times == 10000,survival], 0, tolerance = 1e-6)
+    expect_equal(ignore_attr=TRUE,test2[strata == 1 & times == 10000,survival.se], test2[strata == 1 & times == d[X1==1,max(time)],survival.se], tolerance = 1e-6)
 
     expect_true(is.na(test2[strata == 0 & times == 10000,survival]))
     expect_true(is.na(test2[strata == 0 & times == 10000,survival.se]))
@@ -1235,13 +1235,13 @@ test_that("After last event - fully stratified model",{
     e2.coxph <- coxph(Surv(time,event) ~ strata(X1)+strata(X2), data = d, x = TRUE, y = TRUE)
     
     test <- as.data.table(predictCox(e2.coxph, times = tau, newdata = X, se = TRUE))
-    expect_equal(test[strata == "1, 0" & times == 10000,survival], test[strata == "1, 0" & times == d[X1==1 & X2 == 0,max(time)],survival])
-    expect_equal(test[strata == "1, 0" & times == 10000,survival.se], test[strata == "1, 0" & times == d[X1==1 & X2 == 0,max(time)],survival.se])
+    expect_equal(ignore_attr=TRUE,test[strata == "1, 0" & times == 10000,survival], test[strata == "1, 0" & times == d[X1==1 & X2 == 0,max(time)],survival])
+    expect_equal(ignore_attr=TRUE,test[strata == "1, 0" & times == 10000,survival.se], test[strata == "1, 0" & times == d[X1==1 & X2 == 0,max(time)],survival.se])
 
-    expect_equal(test[strata == "1, 0" & times == 10000,survival], test[strata == "1, 0" & times == d[X1==1 & X2 == 0,max(time)],survival])
-    expect_equal(test[strata == "1, 0" & times == 10000,survival.se], test[strata == "1, 0" & times == d[X1==1 & X2 == 0,max(time)],survival.se])
-    expect_equal(test[strata == "1, 1" & times == 10000,survival], test[strata == "1, 1" & times == d[X1==1 & X2 == 0,max(time)],survival])
-    expect_equal(test[strata == "1, 1" & times == 10000,survival.se], test[strata == "1, 1" & times == d[X1==1 & X2 == 0,max(time)],survival.se])
+    expect_equal(ignore_attr=TRUE,test[strata == "1, 0" & times == 10000,survival], test[strata == "1, 0" & times == d[X1==1 & X2 == 0,max(time)],survival])
+    expect_equal(ignore_attr=TRUE,test[strata == "1, 0" & times == 10000,survival.se], test[strata == "1, 0" & times == d[X1==1 & X2 == 0,max(time)],survival.se])
+    expect_equal(ignore_attr=TRUE,test[strata == "1, 1" & times == 10000,survival], test[strata == "1, 1" & times == d[X1==1 & X2 == 0,max(time)],survival])
+    expect_equal(ignore_attr=TRUE,test[strata == "1, 1" & times == 10000,survival.se], test[strata == "1, 1" & times == d[X1==1 & X2 == 0,max(time)],survival.se])
 
     expect_true(all(is.na(test[strata %in% c("0, 0","0, 1") & times == 10000,survival])))
     expect_true(all(is.na(test[strata %in% c("0, 0","0, 1") & times == 10000,survival.se])))
@@ -1280,7 +1280,7 @@ test_that("Cox - output of average.iid should not depend on other arguments", {
     out1 <- predictCox(fit, newdata = d[1:5], times = 1:3, average.iid = TRUE)
     out2 <- predictCox(fit, newdata = d[1:5], times = 1:3, se = TRUE, average.iid = TRUE)
 
-    expect_equal(out1$survival.average.iid,out2$survival.average.iid, tolerance = 1e-8)
+    expect_equal(ignore_attr=TRUE,out1$survival.average.iid,out2$survival.average.iid, tolerance = 1e-8)
 })    
 
 
@@ -1304,8 +1304,8 @@ test_that("Standard error after atanh transformation", {
                              type = "atanh", ci = TRUE, conf.level = 0.95, alternative = "two.sided",
                              min.value = NULL, max.value = NULL, band = FALSE,
                              p.value = TRUE, seed = 10, df = Inf)
-    expect_equal(abs(atanh(0.5)-atanh(e.trans$lower)),abs(atanh(0.5)-atanh(e.trans$upper)), tolerance = 1e-6)
-    expect_equal(as.double((atanh(0.5)-atanh(e.trans$lower)))/qnorm(0.975),1/(1-0.5^2), tolerance = 1e-6)
+    expect_equal(ignore_attr=TRUE,abs(atanh(0.5)-atanh(e.trans$lower)),abs(atanh(0.5)-atanh(e.trans$upper)), tolerance = 1e-6)
+    expect_equal(ignore_attr=TRUE,as.double((atanh(0.5)-atanh(e.trans$lower)))/qnorm(0.975),1/(1-0.5^2), tolerance = 1e-6)
 })
 
 
@@ -1336,20 +1336,20 @@ test_that("Cox - iid/se should not depend on other arguments", {
     out6 <- predictCox(fit, newdata = d[1:5], times = sort(seqTau),
                        se = TRUE, iid = TRUE, average.iid = TRUE, store.iid = "minimal")
 
-    expect_equal(out1$survival.iid[,order(seqTau),],out2$survival.iid)
-    expect_equal(out1$survival.se[,order(seqTau)],out2$survival.se)
-    expect_equal(out1$survival.average.iid[,order(seqTau)],out2$survival.average.iid)
+    expect_equal(ignore_attr=TRUE,out1$survival.iid[,order(seqTau),],out2$survival.iid)
+    expect_equal(ignore_attr=TRUE,out1$survival.se[,order(seqTau)],out2$survival.se)
+    expect_equal(ignore_attr=TRUE,out1$survival.average.iid[,order(seqTau)],out2$survival.average.iid)
 
-    expect_equal(out2$survival.average.iid,out4$survival.average.iid)
-    expect_equal(out3$survival.average.iid[,order(seqTau)],out4$survival.average.iid)
+    expect_equal(ignore_attr=TRUE,out2$survival.average.iid,out4$survival.average.iid)
+    expect_equal(ignore_attr=TRUE,out3$survival.average.iid[,order(seqTau)],out4$survival.average.iid)
 
-    expect_equal(out5$survival.iid[,order(seqTau),],out6$survival.iid)
-    expect_equal(out5$survival.se[,order(seqTau)],out6$survival.se)
-    expect_equal(out5$survival.average.iid[,order(seqTau)],out6$survival.average.iid)
+    expect_equal(ignore_attr=TRUE,out5$survival.iid[,order(seqTau),],out6$survival.iid)
+    expect_equal(ignore_attr=TRUE,out5$survival.se[,order(seqTau)],out6$survival.se)
+    expect_equal(ignore_attr=TRUE,out5$survival.average.iid[,order(seqTau)],out6$survival.average.iid)
 
-    expect_equal(out2$survival.iid,out6$survival.iid)
-    expect_equal(out2$survival.se,out6$survival.se)
-    expect_equal(out2$survival.average.iid,out6$survival.average.iid)
+    expect_equal(ignore_attr=TRUE,out2$survival.iid,out6$survival.iid)
+    expect_equal(ignore_attr=TRUE,out2$survival.se,out6$survival.se)
+    expect_equal(ignore_attr=TRUE,out2$survival.average.iid,out6$survival.average.iid)
 })    
 
 ## ** iidCox is working when stopped early
@@ -1366,8 +1366,8 @@ test_that("iidCox - stopped early", {
     GS <- predictCox(m.cox, newdata = dt, times = seqJump[1:5], average.iid = TRUE)
     test1 <- predictCox(m2.cox, newdata = dt, times = seqJump[1:5], average.iid = TRUE)
     test2 <- predictCox(m3.cox, newdata = dt, times = seqJump[1:5], average.iid = TRUE)
-    expect_equal(GS$survival.average.iid,test1$survival.average.iid)
-    expect_equal(GS$survival.average.iid,test2$survival.average.iid)
+    expect_equal(ignore_attr=TRUE,GS$survival.average.iid,test1$survival.average.iid)
+    expect_equal(ignore_attr=TRUE,GS$survival.average.iid,test2$survival.average.iid)
 })
 
 #----------------------------------------------------------------------

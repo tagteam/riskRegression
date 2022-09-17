@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: maj 18 2017 (09:23) 
 ## Version: 
-## last-updated: Jul  7 2022 (17:18) 
+## last-updated: Sep 17 2022 (07:00) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 124
+##     Update #: 125
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -51,29 +51,29 @@ iid.coxph <-  iidCox(coxph.fit, return.object = FALSE)
 
 test_that("[iidCox] consistency coxph,cph",{
     iid.cph <-  iidCox(cph.fit, return.object = FALSE)
-    expect_equal(iid.cph, iid.coxph)
+    expect_equal(ignore_attr=TRUE,iid.cph, iid.coxph)
 })
 
 test_that("[iidCox] consistency with manual specification of newdata and times",{
     iid.test <- iidCox(coxph.fit, newdata = dt, tau.hazard = iid.coxph$time[[1]], return.object = FALSE)
-    expect_equal(iid.coxph, iid.test)
+    expect_equal(ignore_attr=TRUE,iid.coxph, iid.test)
 
     new.order <- sample.int(length(iid.coxph$time[[1]]))
     iid.test <- iidCox(coxph.fit, newdata = dt, tau.hazard = iid.coxph$time[[1]][new.order], return.object = FALSE)
-    expect_equal(iid.coxph$IFhazard[[1]], iid.test$IFhazard[[1]][,colnames(iid.coxph$IFhazard[[1]])])
-    expect_equal(iid.coxph$IFcumhazard[[1]], iid.test$IFcumhazard[[1]][,colnames(iid.coxph$IFcumhazard[[1]])])
-    expect_equal(iid.coxph$IFbeta, iid.coxph$IFbeta)
+    expect_equal(ignore_attr=TRUE,iid.coxph$IFhazard[[1]], iid.test$IFhazard[[1]][,colnames(iid.coxph$IFhazard[[1]])])
+    expect_equal(ignore_attr=TRUE,iid.coxph$IFcumhazard[[1]], iid.test$IFcumhazard[[1]][,colnames(iid.coxph$IFcumhazard[[1]])])
+    expect_equal(ignore_attr=TRUE,iid.coxph$IFbeta, iid.coxph$IFbeta)
 })
 
 test_that("[iidCox] cumsum(iid hazard) = iid cumhazard",{
     M.test <- t(apply(iid.coxph$IFhazard[[1]], 1, cumsum))
-    expect_equal(M.test, iid.coxph$IFcumhazard[[1]])
+    expect_equal(ignore_attr=TRUE,M.test, iid.coxph$IFcumhazard[[1]])
 })
 
 test_that("[iidCox] iid hazard = 0 at non event times and NA after last observation",{
     iid.test <- iidCox(coxph.fit, tau.hazard = sort(c(dt$time,c(0.1,1,5,8,12,25))), return.object = FALSE)
 
-    expect_equal(iid.test$IFhazard[[1]][,as.character(iid.coxph$time[[1]])],
+    expect_equal(ignore_attr=TRUE,iid.test$IFhazard[[1]][,as.character(iid.coxph$time[[1]])],
                  iid.coxph$IFhazard[[1]])
 
     vec.noEventTime <- setdiff(iid.test$time[[1]],dt[event==1,time])
@@ -86,7 +86,7 @@ test_that("[iidCox] iid hazard = 0 at non event times and NA after last observat
     ## additional tests
     ## compatibility IFhazard, IFcumhazard
     M.test <- t(apply(iid.test$IFhazard[[1]], 1, cumsum))
-    expect_equal(M.test, iid.test$IFcumhazard[[1]])
+    expect_equal(ignore_attr=TRUE,M.test, iid.test$IFcumhazard[[1]])
 
     ## iid cumHazard[lastEvent+] =  cumHazard[lastEvent]
     vec.time <- intersect(iid.test$time[[1]][iid.test$time[[1]]>timeLastEvent],
@@ -101,8 +101,8 @@ test_that("[iidCox] iid hazard = 0 at non event times and NA after last observat
 ##                   return.object = FALSE)
 ##     test <- riskRegression:::selectJump(iid.coxph, times = seqTest, type = c("hazard","cumhazard"))
 
-##     expect_equal(unname(GS$IFhazard[[1]]),unname(test$IFhazard[[1]]))
-##     expect_equal(unname(GS$IFcumhazard[[1]]),unname(test$IFcumhazard[[1]]))
+##     expect_equal(ignore_attr=TRUE,unname(GS$IFhazard[[1]]),unname(test$IFhazard[[1]]))
+##     expect_equal(ignore_attr=TRUE,unname(GS$IFcumhazard[[1]]),unname(test$IFcumhazard[[1]]))
 ## })
 
 ## ** Empty strata
@@ -116,26 +116,26 @@ e.coxph <- coxph(Surv(time, event) ~ strata(X1), data = dtS,
                  x = TRUE, y = TRUE)
 test_that("[iidCox] empty strata", {
     test <- iidCox(e.coxph, tau.max = 1)
-    expect_equal(test$iid$time[[1]],0)
-    expect_equal(test$iid$time[[2]],c(0.2,0.6,0.9))
-    expect_equal(test$iid$time[[3]],0)
+    expect_equal(ignore_attr=TRUE,test$iid$time[[1]],0)
+    expect_equal(ignore_attr=TRUE,test$iid$time[[2]],c(0.2,0.6,0.9))
+    expect_equal(ignore_attr=TRUE,test$iid$time[[3]],0)
 
-    expect_equal(unname(test$iid$IFhazard[[1]]), matrix(0, nrow = NROW(dtS), ncol = 1))
+    expect_equal(ignore_attr=TRUE,unname(test$iid$IFhazard[[1]]), matrix(0, nrow = NROW(dtS), ncol = 1))
     GS <- cbind("0.2" = c(0, 0, 0, -0.00173611, 0.03993056, 0, 0, -0.00173611, 0, 0, 0, 0, -0.00173611, -0.00173611, -0.00173611, 0, -0.00173611, 0, 0, 0, 0, -0.00173611, -0.00173611, -0.00173611, 0, 0, 0, -0.00173611, -0.00173611, -0.00173611, 0, -0.00173611, 0, -0.00173611, -0.00173611, -0.00173611, -0.00173611, 0, 0, -0.00173611, 0, 0, -0.00173611, 0, 0, -0.00173611, -0.00173611, -0.00173611, 0, -0.00173611), 
                 "0.6" = c(0, 0, 0, -0.00189036, 0, 0, 0, -0.00189036, 0, 0, 0, 0, -0.00189036, -0.00189036, -0.00189036, 0, -0.00189036, 0, 0, 0, 0, -0.00189036, -0.00189036, -0.00189036, 0, 0, 0, -0.00189036, -0.00189036, -0.00189036, 0, -0.00189036, 0, -0.00189036, -0.00189036, -0.00189036, -0.00189036, 0, 0, -0.00189036, 0, 0, -0.00189036, 0, 0, -0.00189036, 0.0415879, -0.00189036, 0, -0.00189036), 
                 "0.9" = c(0, 0, 0, -0.00206612, 0, 0, 0, -0.00206612, 0, 0, 0, 0, -0.00206612, -0.00206612, -0.00206612, 0, -0.00206612, 0, 0, 0, 0, 0.04338843, -0.00206612, -0.00206612, 0, 0, 0, -0.00206612, -0.00206612, -0.00206612, 0, -0.00206612, 0, -0.00206612, -0.00206612, -0.00206612, -0.00206612, 0, 0, -0.00206612, 0, 0, -0.00206612, 0, 0, -0.00206612, 0, -0.00206612, 0, -0.00206612))
-    expect_equal(test$iid$IFhazard[[2]], GS, tolerance = 1e-6)
-    expect_equal(unname(test$iid$IFhazard[[3]]), matrix(0, nrow = NROW(dtS), ncol = 1))
+    expect_equal(ignore_attr=TRUE,test$iid$IFhazard[[2]], GS, tolerance = 1e-6)
+    expect_equal(ignore_attr=TRUE,unname(test$iid$IFhazard[[3]]), matrix(0, nrow = NROW(dtS), ncol = 1))
 
-    expect_equal(unname(test$iid$IFcumhazard[[1]]), matrix(0, nrow = NROW(dtS), ncol = 1))
+    expect_equal(ignore_attr=TRUE,unname(test$iid$IFcumhazard[[1]]), matrix(0, nrow = NROW(dtS), ncol = 1))
     GS <- cbind("0.2" = c(0, 0, 0, -0.00173611, 0.03993056, 0, 0, -0.00173611, 0, 0, 0, 0, -0.00173611, -0.00173611, -0.00173611, 0, -0.00173611, 0, 0, 0, 0, -0.00173611, -0.00173611, -0.00173611, 0, 0, 0, -0.00173611, -0.00173611, -0.00173611, 0, -0.00173611, 0, -0.00173611, -0.00173611, -0.00173611, -0.00173611, 0, 0, -0.00173611, 0, 0, -0.00173611, 0, 0, -0.00173611, -0.00173611, -0.00173611, 0, -0.00173611), 
                 "0.6" = c(0, 0, 0, -0.00362647, 0.03993056, 0, 0, -0.00362647, 0, 0, 0, 0, -0.00362647, -0.00362647, -0.00362647, 0, -0.00362647, 0, 0, 0, 0, -0.00362647, -0.00362647, -0.00362647, 0, 0, 0, -0.00362647, -0.00362647, -0.00362647, 0, -0.00362647, 0, -0.00362647, -0.00362647, -0.00362647, -0.00362647, 0, 0, -0.00362647, 0, 0, -0.00362647, 0, 0, -0.00362647, 0.03985179, -0.00362647, 0, -0.00362647), 
                 "0.9" = c(0, 0, 0, -0.00569259, 0.03993056, 0, 0, -0.00569259, 0, 0, 0, 0, -0.00569259, -0.00569259, -0.00569259, 0, -0.00569259, 0, 0, 0, 0, 0.03976196, -0.00569259, -0.00569259, 0, 0, 0, -0.00569259, -0.00569259, -0.00569259, 0, -0.00569259, 0, -0.00569259, -0.00569259, -0.00569259, -0.00569259, 0, 0, -0.00569259, 0, 0, -0.00569259, 0, 0, -0.00569259, 0.03985179, -0.00569259, 0, -0.00569259))
-    expect_equal(test$iid$IFcumhazard[[2]], GS, tolerance = 1e-6)
-    expect_equal(unname(test$iid$IFcumhazard[[3]]), matrix(0, nrow = NROW(dtS), ncol = 1))
+    expect_equal(ignore_attr=TRUE,test$iid$IFcumhazard[[2]], GS, tolerance = 1e-6)
+    expect_equal(ignore_attr=TRUE,unname(test$iid$IFcumhazard[[3]]), matrix(0, nrow = NROW(dtS), ncol = 1))
 
-    expect_equal(test$iid$etime.max, c(11.4,14.8,9.2))
-    ## expect_equal(test$iid$indexObs,order(dtS$time))
+    expect_equal(ignore_attr=TRUE,test$iid$etime.max, c(11.4,14.8,9.2))
+    ## expect_equal(ignore_attr=TRUE,test$iid$indexObs,order(dtS$time))
 })
 
 ## * Compare to timereg
@@ -193,15 +193,15 @@ IFlambda_GS <- t(as.data.table(e.timereg$B.iid))
  
 ## *** Tests
 test_that("[iidCox] beta - no strata, no interaction, continuous",{
-    expect_equal(unname(IF.coxph$IFbeta),e.timereg$gamma.iid)
-    expect_equal(unname(IF.coxph$IFbeta[order(dt$time),]),unname(IF.coxph_sort$IFbeta))
-    expect_equal(unname(IFminimal.coxph$IFbeta),e.timereg$gamma.iid)
+    expect_equal(ignore_attr=TRUE,unname(IF.coxph$IFbeta),e.timereg$gamma.iid)
+    expect_equal(ignore_attr=TRUE,unname(IF.coxph$IFbeta[order(dt$time),]),unname(IF.coxph_sort$IFbeta))
+    expect_equal(ignore_attr=TRUE,unname(IFminimal.coxph$IFbeta),e.timereg$gamma.iid)
 })
 
 test_that("[iidCox] lambda - no strata, no interaction, continuous",{
-    expect_equal(as.double(IF.coxph$IFcumhazard[[1]]), as.double(IFlambda_GS[,-1]))
-    expect_equal(IF.coxph$IFcumhazard[[1]][order(dt$time),], IF.coxph_sort$IFcumhazard[[1]])
-    expect_equal(IFminimal.coxph$IFcumhazard[[1]], NULL)
+    expect_equal(ignore_attr=TRUE,as.double(IF.coxph$IFcumhazard[[1]]), as.double(IFlambda_GS[,-1]))
+    expect_equal(ignore_attr=TRUE,IF.coxph$IFcumhazard[[1]][order(dt$time),], IF.coxph_sort$IFcumhazard[[1]])
+    expect_equal(ignore_attr=TRUE,IFminimal.coxph$IFcumhazard[[1]], NULL)
 })
   
 
@@ -219,10 +219,10 @@ IFlambda_GS <- t(as.data.table(e.timereg$B.iid))
 
 ## *** Tests
 test_that("[iidCox] beta - no strata, interactions, continuous",{
-    expect_equal(unname(IF.coxph$IFbeta),e.timereg$gamma.iid)
+    expect_equal(ignore_attr=TRUE,unname(IF.coxph$IFbeta),e.timereg$gamma.iid)
 })
 test_that("[iidCox] lambda - no strata, interactions, continuous",{
-    expect_equal(as.double(IF.coxph$IFcumhazard[[1]]), as.double(IFlambda_GS[,-1]))
+    expect_equal(ignore_attr=TRUE,as.double(IF.coxph$IFcumhazard[[1]]), as.double(IFlambda_GS[,-1]))
 })
 
 
@@ -255,11 +255,11 @@ IF.coxph <- iidCox(e.coxph, keep.times = FALSE, return.object = FALSE)
 
 ## *** Tests
 test_that("[iidCox] beta - no strata, interactions, categorical",{
-    expect_equal(unname(IF.coxph$IFbeta),e.timereg$gamma.iid)
+    expect_equal(ignore_attr=TRUE,unname(IF.coxph$IFbeta),e.timereg$gamma.iid)
 })
   
 test_that("[iidCox] lambda - no strata, interactions, categorical",{
-    expect_equal(as.double(IF.coxph$IFcumhazard[[1]]),
+    expect_equal(ignore_attr=TRUE,as.double(IF.coxph$IFcumhazard[[1]]),
                  as.double(IFlambda_GS[,-1]))
 })
 
@@ -299,7 +299,7 @@ IF.coxph <- iidCox(e.coxph, return.object = FALSE)
 
 ## *** Tests
 test_that("[iidCox] beta - strata",{
-    expect_equal(unname(IF.coxph$IFbeta),e.timereg$gamma.iid)
+    expect_equal(ignore_attr=TRUE,unname(IF.coxph$IFbeta),e.timereg$gamma.iid)
 })
   
 test_that("[iidCox] lambda - strata",{
@@ -337,8 +337,8 @@ test_that("[iidCox] Compare to timereg on Melanoma dta",{
     RR.iid <- iidCox(e.coxph, return.object = FALSE)
     timereg.iidLambda <- t(as.data.table(e.timereg$B.iid))
 
-    expect_equal(unname(RR.iid$IFbeta),e.timereg$gamma.iid)
-    expect_equal(as.double(RR.iid$IFcumhazard[[1]]), ## as.double(RR.iid$IFcumhazard[[1]])[c(1:4,206:209,411)]
+    expect_equal(ignore_attr=TRUE,unname(RR.iid$IFbeta),e.timereg$gamma.iid)
+    expect_equal(ignore_attr=TRUE,as.double(RR.iid$IFcumhazard[[1]]), ## as.double(RR.iid$IFcumhazard[[1]])[c(1:4,206:209,411)]
                  as.double(timereg.iidLambda[,-1])) ## as.double(timereg.iidLambda[,-1])[c(1:4,206:209,411)]
 })
 #----------------------------------------------------------------------

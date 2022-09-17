@@ -29,8 +29,8 @@ test_that("Brier score SE against old implementation, no covariates in censoring
            formula=Hist(time,event)~1,data=testCR.comprisk,se.fit=1L,times=c(4),metrics="Brier")
   z<-Score(list("CSC(X1+X2+X7+X9)"=csc1,"CSC(X1+X2)"=csc2),
            formula=Hist(time,event)~1,data=testCR.comprisk,se.fit=1L,times=c(4),metrics="Brier",old.ic.method = TRUE)
-  expect_equal(y$Brier$score$Brier,z$Brier$score$Brier,tolerance = 1e-8)
-  expect_equal(y$Brier$score$se,z$Brier$score$se,tolerance = 1e-4)
+  expect_equal(ignore_attr=TRUE,y$Brier$score$Brier,z$Brier$score$Brier,tolerance = 1e-8)
+  expect_equal(ignore_attr=TRUE,y$Brier$score$se,z$Brier$score$se,tolerance = 1e-4)
 })
 
 test_that("Brier score SE against old implementation, no covariates in censoring, survival",{
@@ -43,7 +43,7 @@ system.time(y<-Score(list("cox(X1+X2+X7+X9)"=cox1,"cox(X1+X2)"=cox2),
            formula=Hist(time,event)~1,data=testCR.survival,se.fit=1L,times=c(4),metrics="Brier"))
 system.time( z<-Score(list("cox(X1+X2+X7+X9)"=cox1,"cox(X1+X2)"=cox2),
            formula=Hist(time,event)~1,data=testCR.survival,se.fit=1L,times=c(4),metrics="Brier",old.ic.method = TRUE))
-  expect_equal(y$Brier$score$se,z$Brier$score$se,tolerance = 1e-4)
+  expect_equal(ignore_attr=TRUE,y$Brier$score$se,z$Brier$score$se,tolerance = 1e-4)
 })
 
 test_that("AUC SE against old implementation, no covariates in censoring, competing risk",{
@@ -56,7 +56,7 @@ test_that("AUC SE against old implementation, no covariates in censoring, compet
            formula=Hist(time,event)~1,data=testCR.comprisk,se.fit=1L,times=c(4),metrics="AUC")
   z<-Score(list("CSC(X1+X2+X7+X9)"=csc1,"CSC(X1+X2)"=csc2),
            formula=Hist(time,event)~1,data=testCR.comprisk,se.fit=1L,times=c(4),metrics="AUC",old.ic.method = TRUE)
-  expect_equal(y$AUC$score$se,z$AUC$score$se,tolerance = 1e-5)
+  expect_equal(ignore_attr=TRUE,y$AUC$score$se,z$AUC$score$se,tolerance = 1e-5)
 })
 
 test_that("AUC SE against old implementation, no covariates in censoring, survival",{
@@ -69,5 +69,5 @@ test_that("AUC SE against old implementation, no covariates in censoring, surviv
            formula=Hist(time,event)~1,data=testCR.survival,se.fit=1L,times=c(4),metrics="AUC")
   z<-Score(list("cox(X1+X2+X7+X9)"=cox1,"cox(X1+X2)"=cox2),
            formula=Hist(time,event)~1,data=testCR.survival,se.fit=1L,times=c(4),metrics="AUC",old.ic.method = TRUE)
-  expect_equal(y$AUC$score$se,z$AUC$score$se,tolerance = 1e-5)
+  expect_equal(ignore_attr=TRUE,y$AUC$score$se,z$AUC$score$se,tolerance = 1e-5)
 })

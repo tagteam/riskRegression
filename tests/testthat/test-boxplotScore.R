@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Aug 23 2016 (17:07) 
 ## Version: 
-## last-updated: Jan 12 2022 (10:13) 
+## last-updated: Sep 17 2022 (07:02) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 16
+##     Update #: 17
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -32,8 +32,8 @@ test_that("boxplot.Score",{
     ## [ERROR: * cannot open the connection]
     binCase <- Score(list(a=d$a,b=d$b),formula=Y~1,data=d,summary="riskQuantile",null.model=FALSE,plots=NULL,metrics=NULL)
     survCase <- Score(list(a=d$a,b=d$b),formula=Surv(time,status)~1,times=5.1,data=d,summary="riskQuantile",probs=c(0.05,0.25,0.5,0.75,0.95),null.model=FALSE,plots=NULL,metrics=NULL)
-    expect_equal(as.numeric(unlist(survCase$riskQuantile$contrasts[cause=="event",5:9,with=FALSE])),as.numeric(Qe))
-    expect_equal(as.numeric(unlist(survCase$riskQuantile$contrasts[cause=="event-free",5:9,with=FALSE])),as.numeric(Qef))    
+    expect_equal(ignore_attr=TRUE,as.numeric(unlist(survCase$riskQuantile$contrasts[cause=="event",5:9,with=FALSE])),as.numeric(Qe))
+    expect_equal(ignore_attr=TRUE,as.numeric(unlist(survCase$riskQuantile$contrasts[cause=="event-free",5:9,with=FALSE])),as.numeric(Qef))    
 })
 
 # }}}
@@ -41,10 +41,10 @@ test_that("boxplot.Score",{
 test_that("getQuantile",{
     x <- 0:5
     Fx <- cumsum(rep(1,length(x)))/length(x)
-    expect_equal(riskRegression:::getQuantile(x=x,Fx=Fx,Q=seq(0,1,.25)),
+    expect_equal(ignore_attr=TRUE,riskRegression:::getQuantile(x=x,Fx=Fx,Q=seq(0,1,.25)),
                  as.numeric(quantile(0:5,type=1,probs=seq(0,1,.25))))
     qseq <- runif(8,0,1)
-    expect_equal(riskRegression:::getQuantile(x=x,Fx=Fx,Q=qseq),
+    expect_equal(ignore_attr=TRUE,riskRegression:::getQuantile(x=x,Fx=Fx,Q=qseq),
                  as.numeric(quantile(0:5,type=1,probs=qseq)))
 })
 # }}}
