@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: Dec 21 2021 (11:04) 
 ## Version: 
-## Last-Updated: Sep 17 2022 (07:02) 
+## Last-Updated: Sep 17 2022 (10:43) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 20
+##     Update #: 21
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -45,6 +45,7 @@ test_that("wglm - no censoring",{
     test.ate <- ate(test, data = dFull, times = tau, treatment = "X1", verbose = FALSE)
     GS.ate <- logitATE(formula = Event(time,event)~X1 + X8,
                        time = tau[5], data = dFull, treat.model = X1~1)
+    expect_equal(ignore_attr=TRUE,test.ate$diffRisk[5,estimate], GS.ate$difriskG, tolerance = 1e-5)
     expect_equal(ignore_attr=TRUE,test.ate$diffRisk[5,estimate], GS.ate$difriskG, tolerance = 1e-5)
     expect_equal(ignore_attr=TRUE,test.ate$diffRisk[5,se], GS.ate$se.difriskG, tolerance = 1e-5)
 })
