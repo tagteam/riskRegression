@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Mar 13 2017 (16:53) 
 ## Version: 
-## Last-Updated: Sep 17 2022 (08:56) 
+## Last-Updated: Sep 17 2022 (09:13) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 228
+##     Update #: 230
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -135,13 +135,13 @@ plotRisk <- function(x,
     # order according to current cause of interest
     states <- c(cause,states[cause != states])
     if (x$response.type=="binary"){
-        Rfactor <- factor(pframe[model==modelnames[1],ReSpOnSe],levels = states,labels = c("Event","No event"))
+        Rfactor <- factor(pframe[model==modelnames[1],ReSpOnSe],levels = rev(states),labels = c("No event","Event"))
     }
     else{
         if  (x$response.type=="survival"){
             Rfactor <- pframe[model==modelnames[1],
             {
-                r <- factor(status,levels = c(0,1),labels = c("No event","Censored","Event"))
+                r <- factor(status,levels = c(-1,0,1),labels = c("No event","Censored","Event"))
                 r[time>times] <- "No event"
                 r
             }]
