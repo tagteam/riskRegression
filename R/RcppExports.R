@@ -143,10 +143,6 @@ getInfluenceFunctionBrierKMCensoringUseSquared <- function(tau, time, residuals,
     .Call(`_riskRegression_getInfluenceFunctionBrierKMCensoringUseSquared`, tau, time, residuals, status)
 }
 
-getInfluenceFunctionBrierCVCensoringKM <- function(tau, time, residuals, status) {
-    .Call(`_riskRegression_getInfluenceFunctionBrierCVCensoringKM`, tau, time, residuals, status)
-}
-
 calcE_cpp <- function(eventtime, status, eXb, X, p, add0) {
     .Call(`_riskRegression_calcE_cpp`, eventtime, status, eXb, X, p, add0)
 }

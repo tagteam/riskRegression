@@ -127,6 +127,7 @@ NumericVector getInfluenceFunctionBrierKMCensoring(double tau,
   return ic;
 }
 
+// Should be used with loob estimates
 // [[Rcpp::export(rng=false)]]
 NumericVector getInfluenceFunctionBrierKMCensoringUseSquared(double tau,
                                                              NumericVector time,
