@@ -9,7 +9,6 @@ output:
     df_print: paged
   word_document: default
 header-includes: \usepackage{graphicx, verbatim, fancyvrb, setspace, xspace, colortbl, longtable, amsmath, caption, xfrac, float, mathabx,bbm,algorithm2e}
-
 ---
 
 ```{r setup, include=FALSE}
@@ -403,68 +402,55 @@ In the case of no censoring, the \lpo estimate of \(\aucO\) is obtained
 by inserting \(\hat{\Theta}^{(1,1)}_{m}\) in
 $\theta_m$ and replacing the expectations by empirical means 
 \begin{equation*}
-  \frac{1}{n^2}\frac{1}{\hat{\mathcal{B}}_\tau}\sum_{i=1}^n\sum_{j=1}^n\hat{\Theta}^{(1,1)}_{m}(Z_{i},Z_{j})\I{Y_i=1}\I{Y_j=0},
+  \frac{1}{n^2}\frac{1}{\hat{\mathcal{B}}}\sum_{i=1}^n\sum_{j=1}^n\hat{\Theta}^{(1,1)}_{m}(Z_{i},Z_{j})\I{Y_i=1}\I{Y_j=0},
 \end{equation*}
 with
-\(\hat{\mathcal{B}}_\tau=n^{-2}\big[\sum_{i=1}^n\I{Y_i=1}\big]\big[\sum_{j=1}^n\I{Y_j=0}\big]\).
+\(\hat{\mathcal{B}}=n^{-2}\big[\sum_{i=1}^n\I{Y_i=1}\big]\big[\sum_{j=1}^n\I{Y_j=0}\big]\).
 
-### Influence function 
+### Influence function (generally)
+We note that we may actually use our results from the test-train section on any functional, $\phi(D_m)_\tau$ defined in the test-train situation. Then the influence function of the function  $\Phi_\tau := \mathbb{E}_{D_m} [\phi(D_m)_\tau]$ (with $\tau$ removed from the notation if we are in the binary sitaution) from the test-train situation as follows by finding the Gateaux derivative for observation $i$
 
-The influence function of the functional
-\(\nu_{m}(\P)=\mu_{m}\) in the direction
-\(x_k=(t_k,\delta_k,z_k)\) is given by 
-\begin{align*}
-  \IC_{\nu}(m;x_k)&=\frac{\partial}{\partial\epsilon}\nu_{m}(\P_{\epsilon,k})\Big\vert_{\epsilon=0}\\
-  &=\frac{1}{\eta(\P)}\frac{\partial}{\partial\epsilon}\Bigg[\int\int\Bigg(\int\cdots\int\I{\RR(\{x_i\}_{i=1}^m)(z_{m+1})>\RR(\{x_i\}_{i=1}^m)(z_{m+2})}\prod_{i=1}^m\P_{\epsilon,k}(\D x_i)\Bigg)\\
-  &\hspace{0.7cm} \I{y_{m+1}=1,y_{m+2}=0}\P_{\epsilon,k}(\D x_{m+1})\P_{\epsilon,k}(\D x_{m+2})\Bigg]\Bigg\vert_{\epsilon=0}
-  -\frac{\partial}{\partial\epsilon}\frac{\eta(\P_{\epsilon,k})}{\eta(\P)}\nu_{m}(\P)\Big\vert_{\epsilon=0}
-\end{align*}
-It follows that
-\begin{align*}
-  \IC_{\nu}(m;x_k)&=\frac{1}{\eta(\P)}\int\Theta_{m}(z_k,z_{m+2})\I{y_{k}=1,y_{m+2}=0}\P(\D x_{m+2})-\nu_{m}(\P) \\
-  &+\frac{1}{\eta(\P)}\int\Theta_{m}(z_{m+1},z_k) \I{y_{m+1}=1,y_{k}=0}\P(\D x_{m+1})-\nu_{m}(\P)\\
-  &+\frac{1}{\eta(\P)}\int\int\frac{\partial}{\partial\epsilon}\int\cdots\int\I{\RR(\{x_i\}_{i=1}^m)(z_{m+1})>\RR(\{x_i\}_{i=1}^m)(z_{m+2})}\prod_{i=1}^m\P_{\epsilon,k}(\D x_i)\\
-  &\hspace{0.3cm}\I{y_{m+1}=1,y_{m+2}=0} \P(\D x_{m+1})\P(\D x_{m+2})\Big\vert_{\epsilon=0}\\
-  &-\frac{\partial}{\partial\epsilon}\frac{\nu_{m}(\P)}{\eta(\P)}\eta(\P_{\epsilon,k})\Big\vert_{\epsilon=0}
-\end{align*}
-Hence, after some calculations, 
+$$
+\int \cdots \int \text{IC}_{\phi(D_m)_\tau}^i P(dx_1) \cdots P(dx_m) + \sum_{j=1}^m  \int \cdots \int \phi(D_m)_\tau \delta_{x_j}(x_k) \prod_{i \neq j} P(dx_i) - m \Phi_\tau 
+$$
+
+Then using that approximately, we have that 
+$$
+\int \cdots \int \phi(D_m)_\tau \delta_{x_j}(x_k) \prod_{i \neq j} P(dx_i) \approx  \int \cdots \int \phi(D_m)_\tau P(dx_j)\prod_{i \neq j} P(dx_i) := \Phi_\tau 
+$$
+i.e. we use the expected value as an approximation of the actual value (this is ok assuming that the variance of the LHS is not too large, i.e. the error from assuming this may be determined by using Chebyshevs inequality (and other concentration inequalities), so that the variance of the LHS goes to zero, when  $m, n \rightarrow \infty$ (in the appropriate manner)!, i.e. the difference is $o_p(1)$; otherwise we may try to show that $\frac{1}{\sqrt{n}}\sum_k [\int \cdots \int \phi(D_m)_\tau \delta_{x_j}(x_k) \prod_{i \neq j} P(dx_i) -  \int \cdots \int \phi(D_m)_\tau P(dx_j)\prod_{i \neq j} P(dx_i))] = o_p(1)$, so that the influence function with these terms removed is actually the influence function and not an approximation), so we have the Gateux derivative 
+
+$$
+\int \cdots \int \text{IC}_{\phi(D_m)_\tau}^i P(dx_1) \cdots P(dx_m)
+$$
+
+and we know $$\text{IC}_{\phi(D_m)_\tau}^i$$ from the train-test situation.  Thus, by interchanging the integrals, we get after some calculations, 
 \begin{align*}
   &\IC_{\nu}(m;x_k)=\frac{1}{\eta(\P)}\Big[\int\Theta_{m}(z_{m+1},z_k)\I{y_{k}=1,y_{m+2}=0}\P(\D x_{m+1})\\
-  &\hspace{3cm}+\int\Theta_{m}(z_k,z_{m+2})\I{y_{m+1}=1,y_{k}=0}\P(\D x_{m+2})\Big]-m\, \nu_{m}(\P)\\
-  &+\frac{1}{\eta(P)}\int\int\sum_{j=1}^m \int\cdots\int\I{\RR(\{x_i\}_{i=1}^m)(z_{m+1})>\RR(\{x_i\}_{i=1}^m)(z_{m+2})}\delta_{x_k}(x_j)\prod_{i\neq j}\P(\D x_i)\\
-  &\hspace{0.4cm}\I{y_{m+1}=1,y_{m+2}=0}\P(\D x_{m+1})\P(\D x_{m+2})\\
+  &\hspace{3cm}+\int\Theta_{m}(z_k,z_{m+2})\I{y_{m+1}=1,y_{k}=0}\P(\D x_{m+2})\Big]\\
   &-\frac{\nu_{m}(\P)}{\eta(\P)}\Big[\I{y_k=1}\Big]
   \Big[\int \I{y_{m+2}=0}\P(\D x_{m+2})\Big]\\
   &-\frac{\nu_{n}(\P)}{\eta(\P)}\Big[\int \I{y_{m+1}=1}\P(\D x_{m+1})\Big]
   \Big[\I{y_k=0}\Big]
 \end{align*}
 
-## Survival and Competing risk cases (and more generally)
-We note that we may actually use our results from the test-train section on any functional, $\phi(D_m)_\tau$ defined in the test-train situation. Then the influence function of the function  $\Phi_\tau := \mathbb{E}_{D_m} [\phi(D_m)_\tau]$ from the test-train situation as follows by finding the Gateaux derivative for observation $i$
+### Estimating the Influence function
+We suggest to estimate the influence function by
+\begin{align*}
+  &\hat{\IC}_{\nu}(\tau,m;X_k)=\frac{1}{n}\frac{1}{\hat{\mathcal{B}}} \Bigg[\sum_{i=1}^n\hat{\Theta}^{(1,1)}_{m}(Z_i,Z_k)\I{Y_i=1,Y_k= 0}
+  +\sum_{j=1}^n\hat{\Theta}^{(1,1)}_{m}(Z_k,Z_j)\I{Y_k=1,Y_j = 0} \Bigg]\\
+      &-\frac{\AUCObin}{\hat{\mathcal{B}}} \Bigg[\I{Y_k = 1}\Bigg]
+  \Bigg[\frac{1}{n}\sum_{j=1}^n \I{Y_j = 0}\Bigg]\\
+  &-\frac{\AUCObin}{\hat{\mathcal{B}}_{\tau}}\Bigg[\frac{1}{n}\sum_{i=1}^n \I{Y_i = 1} \Bigg]
+  \Bigg[\I{Y_k = 0}\Bigg]
+\end{align*}
 
-$$
-\int \cdots \int \text{IC}_{\phi(D_m)_\tau}^i P(dx_1) \cdots P(dx_m) + \sum_{j=1}^m  \int \cdots \int \phi(D_m)_\tau \delta_{x_j}(x_k) \prod_{i \neq j} P(dx_i) - m \Phi_\tau 
-$$
-
-The idea is now to interchange the order of integration (both terms), so that we may use leave-one-out bootstrap estimates. Indeed, for the most general case (competing risk case), we get that 
+## Survival and Competing risk cases
+The idea is the same as before. Let $\nu^{1}_{\tau,m}(P)$ be the numerator of the cross-validated AUC. Then, for the most general case (competing risk case), we get that 
 \begin{align*}
-\frac{\ifnu(\Zi;\tau,m)\mu_\tau(P) - \nu^{1}_{\tau,m}(P) \ifmu(\Zi;\tau)}{\mu_\tau(P)^2 }+ \frac{\nu^{2}_{\tau, m} }{\mu_\tau (P)} - m \Phi_\tau 
+\frac{\ifnu(\Zi;\tau,m)\mu_\tau(P) - \nu^{1}_{\tau,m}(P) \ifmu(\Zi;\tau)}{\mu_\tau(P)^2 }
 \end{align*}
-where 
-\begin{align*}
-\nu^{1}_{\tau, m}(P)&= \iint \Theta_m(x,x' )1_{\{t \leqslant \tau,  t^{\prime}>\tau\}} \frac{P(dx) \I{\delta=1}}{G(t- | z)} \frac{P(dx')}{G\left(\tau | z' \right)} \\ 
-&\quad + \iint  \Theta_m(x,x' ) 1_{\{t \leqslant \tau, t' \leqslant \tau \}} \frac{P(dx) \I{\delta=1}}{G(t-|z)} \frac{P(dx')\I{\delta'=2}}{G(t'- | z')}
-\end{align*}
-and similarly defined 
-\begin{align*}
-\nu^{2}_{\tau, m}&= \iint \sum_{j=1}^m \Theta_m(x,x' )^{(j,k)} 1_{\{t \leqslant \tau,  t^{\prime}>\tau\}} \frac{P(dx) \I{\delta=1}}{G(t- | z)} \frac{P(dx')}{G\left(\tau | z' \right)} \\ 
-&\quad + \iint  \sum_{j=1}^m \Theta_m(x,x' )^{(j,k)} 1_{\{t \leqslant \tau, t' \leqslant \tau \}} \frac{P(dx) \I{\delta=1}}{G(t-|z)} \frac{P(dx')\I{\delta'=2}}{G(t'- | z')}
-\end{align*}
-where 
-$$
-\Theta_m(x,x' )^{(j,k)} = \int \dots \int \I{R(D_m)(z) > R(D_m)(z')} \delta_{x_j}(x_k) \prod_{i \neq j} P(dx_i)
-$$
-Note that $\mu_{\tau}(P)$ is defined precisely as before (and hence also $\ifmu$ is the same), but we must redefine, $\ifnu$
+Note that $\mu_{\tau}(P)$ is defined precisely as before (and also $\ifmu$ is the same, because they are constants in terms of $(x_1,...,x_m)$), but we must redefine, $\ifnu$
 \begin{align*}
 	\ifnu(\Zi;\tau,m) &= \frac{1_{\{\tilde{T}_i \leqslant \tau, \Delta_i = 1\}}}{G(\tilde{T_i}- | Z_i)}\int  \Theta_m(X_i,x') 1_{\{t^{\prime}>\tau\}} \frac{P(dx')}{G(\tau | z')} \\
 	&+\int 1_{\{t \leqslant \tau\}} \int  \Theta_m(x,x') 1_{\{t^{\prime}>\tau\}} \frac{P(dx')}{G(\tau | z')} \frac{\left[f_i(t-,z   )-1\right] P(dx) \I{\delta=1}} {G(t- | z)}  \\
@@ -474,4 +460,3 @@ Note that $\mu_{\tau}(P)$ is defined precisely as before (and hence also $\ifmu$
 	&+ \frac{1_{\{\tilde{T}_{i} \leqslant \tau, \Delta_i = 1\}}}{G(\tilde{T}_{i}- | Z_i)}\int \Theta_m(X_i,x') 1_{\{t^{\prime} \leqslant \tau\}}  \frac{P (dx') \I{\delta'=2}}{G(t'- | z')} \\
 	&+ \iint \Theta_m(x,x') 1_{\{t^{\prime} \leqslant \tau\}}  \frac{P(dx')\I{\delta=2}}{G(t'- |z')}  1_{\{t \leqslant \tau\}}\frac{\left[f_i(t-,z)-1\right]P(dx)\I{\delta=1}}{G(t-| z)}
 \end{align*}
-The functional can also be found as $\frac{\nu^{1}_{\tau,m}(P)}{\mu_\tau (P)}$, and the functional and the terms in its influence function can be estimated in mostly the same way as Brier. Most likely, we don't need the ones here as well.

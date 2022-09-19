@@ -49,7 +49,7 @@ header-includes: \usepackage{graphicx, verbatim, fancyvrb, setspace, xspace, col
 \newcommand{\Db}{D^*_{m,b}}
 \newcommand{\Dm}{D_{m}}
 \newcommand{\E}{\mathbb{E}}
-\renewcommand{\G}{\hat G_n}
+\newcommand{\G}{\hat G_n}
 \newcommand{\g}{\hat{\mathbb{G}}}
 \newcommand{\II}{\mathcal{I}}
 \newcommand{\I}[1]{\II_{\{#1\}}}
@@ -239,14 +239,19 @@ Finally, we also want standard errors of the estimates. For this, we consider th
   &= \int \frac{\partial}{\partial\epsilon} \left(\int\cdots\int\left\{y_{0}-R(\Dm)(x_{0})\right\}^2 \prod_{i=1}^m \PEK (d o_i)\right) \PEK(d o_{0}) \Big\vert_{\epsilon=0} \\
   &= \int \frac{\partial}{\partial\epsilon} \left(\int\cdots\int\left\{y_{0}-R(\Dm)(x_{0})\right\}^2 \prod_{i=1}^m \PEK (d o_i)\right) \Big\vert_{\epsilon=0}  P(d o_{0}) \\
   &+  \int \left(\int\cdots\int\left\{y_{0}-R(\Dm)(x_{0})\right\}^2 \prod_{i=1}^m P (d o_i)\right) \frac{\partial}{\partial\epsilon} \PEK(d o_{0}) \Big\vert_{\epsilon=0}  \\
-  &= \int \sum_{j=1}^m \left(\int\cdots\int\left\{y_{0}-R(\Dm)(x_{0})\right\}^2  \delta_{o_k}(o_j) \prod_{i \neq j} (d o_i)\right)  P(d o_{0})  - m \psi_{m}(P) \\ %notation???
+  &= \int \sum_{j=1}^m \left(\int\cdots\int\left\{y_{0}-R(\Dm)(x_{0})\right\}^2  \delta_{o_k}(o_j) \prod_{i \neq j} P(d o_i)\right)  P(d o_{0})  - m \psi_{m}(P) \\ %notation???
   &+ \omega_{m} (Y_{k},X_{k})-\psi_{m}(P) \\
   &= \omega_{m} (Y_{k},X_{k})-(m+1) \psi_{m}(P) \\
-  &+\int \sum_{j=1}^m \left(\int\cdots\int\left\{y_{0}-R(\Dm)(x_{0})\right\}^2  \delta_{o_k}(o_j) \prod_{i \neq j} (d o_i)\right)  P(d o_{0}) 
+  &+\int \sum_{j=1}^m \left(\int\cdots\int\left\{y_{0}-R(\Dm)(x_{0})\right\}^2  \delta_{o_k}(o_j) \prod_{i \neq j} P(d o_i)\right)  P(d o_{0}) 
 \end{align}
-wherein we used the product rule of differentiation. For estimating the influence function, we suggest the estimator:
+wherein we used the product rule of differentiation. Note we use the approximation that $$\int \sum_{j=1}^m \left(\int\cdots\int\left\{y_{0}-R(\Dm)(x_{0})\right\}^2  \delta_{o_k}(o_j) \prod_{i \neq j} (d o_i)\right)  P(d o_{0})  \approx m\psi_{m}(P)$$
+Then
+\begin{equation*}
+\IC_{\psi}(m;o_k) = \omega_{m} (Y_{k},X_{k}) - \psi_{m}(P)
+\end{equation*}
+For estimating the influence function, we suggest the estimator:
 \begin{align*}
-  \widehat{\IC}_{\psi}(m;O_k)&=\mbin (Y_k,X_k)-(m+1)\, \PSI +\frac{1}{n} \sum_{i=1}^n\frac{\sum_b \{Y_i-\Rbi (X_i)\}^2 \Ibi N_k^b}{\sum_b\Ibi} % is the last part estimated correctly?
+  \widehat{\IC}_{\psi}(m;O_k)&=\mbin (Y_k,X_k)-\PSI
 \end{align*}
 
 ### Survival and competing risk case
@@ -279,13 +284,19 @@ In much the same way as before, we may find the the influence function of $\psi_
   &+\int\Big[\sum_{j=1}^m \int\cdots\int\{\I{t_{0}\leq\tau}-\RR(\{o_i\}_{i=1}^n)(x_{0})\}^2  \delta_{o_k}(o_j)\prod_{i\neq j}\P(\D o_i)\Big]\W(o_{0},\kappa_{\tau,x_{0}}(\P))\P(\D o_{0})
   \\
   &+\int\M(t_{0},x_{0})\left[\frac{\I{t_{0}\leq \tau}\delta_{0}}{G(t_{0}-\vert x_{0})} f_k(t_{0},x_{0})
-  +\frac{\I{t_{0}>\tau}}{G(\tau\vert x_{0})}f_k(\tau,x_{0}) \right]\P(\D o_{0}) \\
+  +\frac{\I{t_{0}>\tau}}{G(\tau\vert x_{0})}f_k(\tau,x_{0}) \right]\P(\D o_{0}) 
 \end{align*}
+We can use the approximation that $\int\Big[\sum_{j=1}^m \int\cdots\int\{\I{t_{0}\leq\tau}-\RR(\{o_i\}_{i=1}^n)(x_{0})\}^2  \delta_{o_k}(o_j)\prod_{i\neq j}\P(\D o_i)\Big]\W(o_{0},\kappa_{\tau,x_{0}}(\P))\P(\D o_{0}) \approx m\mu_{\tau,m}$. Then approximately, 
+\begin{align*} 
+  \IC_{\psi}(\tau,m;o_k)&\approx \M(t_k,x_k)\W(o_k,\kappa_{\tau,x_{0}}(\P))-\, \mu_{\tau,m}\\
+  &+\int\M(t_{0},x_{0})\left[\frac{\I{t_{0}\leq \tau}\delta_{0}}{G(t_{0}-\vert x_{0})} f_k(t_{0},x_{0})
+  +\frac{\I{t_{0}>\tau}}{G(\tau\vert x_{0})}f_k(\tau,x_{0}) \right]\P(\D o_{0}) 
+\end{align*}
+This approximation can be justified in the sense that influence functions should have mean zero. 
 This can then be estimated in much the same way as before
 \begin{align*}
-  \widehat{\IC}_{\psi}(\tau,m;O_k)&=\m(T_k,X_k)\W(O_k,\G)-(m+1)\, \MU \\
-  &+\frac{1}{n} \sum_{i=1}^n\frac{\sum_b \{\I{T_i\leq \tau}-\Rb(X_i)\}^2 \Ibi N_k^b}{\sum_b\Ibi}\W(O_i,\G)\\
+  \widehat{\IC}_{\psi}(\tau,m;O_k)&=\m(T_k,X_k)\W(O_k,\G)-\, \MU \\
   &+\frac{1}{n}\sum_{i=1}^n\m(T_i,X_i)\left[\frac{\I{T_i\leq\tau}\Delta_i}{\G(T_i-\vert X_i)}\hat{f_k} (T_i-,X_i)
   +\frac{\I{T_i>\tau}}{\G (\tau\vert X_i)}\hat{f_k} (\tau ,X_i)\right]
 \end{align*}
-Here the last term corresponds to the censoring being unknown. 
+Here the last term corresponds to the censoring being unknown. Note that this corresponds exactly to estimating as the train-validation case situation with the residuals now being the cross-validated residuals $\m(T_k,X_k)\W(O_k,\G)$.
