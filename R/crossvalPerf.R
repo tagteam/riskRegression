@@ -37,8 +37,11 @@ crossvalPerf.loob.AUC <- function(times,mlevs,se.fit,response.type,NT,Response,c
       else{ ## competing risks
         ## event of interest before times
         ## the following indices have to be logical!!!
-        cases.index <- Response[,time<=t & status==1]
-        controls.index <- Response[,time>t | status==2]
+        # Response[,status0:=status*event]
+        cases.index <- Response[,time<=t & event==1]
+        controls.index1 <- Response[,time>t]
+        controls.index2 <-  Response[,event==2 & time <= t]
+        controls.index <- controls.index1 | controls.index2
         cc.status <- factor(rep("censored",N),levels=c("censored","case","control"))
         cc.status[cases.index] <- "case"
         cc.status[controls.index] <- "control"
@@ -48,10 +51,19 @@ crossvalPerf.loob.AUC <- function(times,mlevs,se.fit,response.type,NT,Response,c
     if (cens.type=="rightCensored"){ #this maybe does not work with competing risks
       ## IPCW
       weights.cases <- cases.index/Weights$IPCW.subject.times
-      if (Weights$method=="marginal"){
-        weights.controls <- controls.index/Weights$IPCW.times[s]
-      }else{
-        weights.controls <- controls.index/Weights$IPCW.times[,s]
+      if (response.type == "survival"){
+        if (Weights$method=="marginal"){
+          weights.controls <- controls.index/Weights$IPCW.times[s]
+        }else{
+          weights.controls <- controls.index/Weights$IPCW.times[,s]
+        }
+      }
+      else {
+        if (Weights$method=="marginal"){
+          weights.controls <- 1/Weights$IPCW.times[s] * controls.index2  + 1/Weights$IPCW.subject.times * controls.index1
+        }else{
+          weights.controls <- controls.index/Weights$IPCW.times[,s]*controls.index2 +  1/Weights$IPCW.subject.times * controls.index1
+        }
       }
       weightMatrix <- outer(weights.cases[cases.index], weights.controls[controls.index], "*")
     }else{ ## uncensored
