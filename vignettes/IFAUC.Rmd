@@ -460,3 +460,17 @@ Note that $\mu_{\tau}(P)$ is defined precisely as before (and also $\ifmu$ is th
 	&+ \frac{1_{\{\tilde{T}_{i} \leqslant \tau, \Delta_i = 1\}}}{G(\tilde{T}_{i}- | Z_i)}\int \Theta_m(X_i,x') 1_{\{t^{\prime} \leqslant \tau\}}  \frac{P (dx') \I{\delta'=2}}{G(t'- | z')} \\
 	&+ \iint \Theta_m(x,x') 1_{\{t^{\prime} \leqslant \tau\}}  \frac{P(dx')\I{\delta=2}}{G(t'- |z')}  1_{\{t \leqslant \tau\}}\frac{\left[f_i(t-,z)-1\right]P(dx)\I{\delta=1}}{G(t-| z)}
 \end{align*}
+We can remove the ones, and rewrite this to be
+\begin{align}
+	\ifnu(\Zi;\tau,m) &= \frac{1_{\{\tilde{T}_i \leqslant \tau, \Delta_i = 1\}}}{G(\tilde{T_i}- | Z_i)}\int  \Theta_m(X_i,x') \left(1_{\{t^{\prime}>\tau\}} \frac{1}{G(\tau | z')}+  1_{\{t^{\prime} \leqslant \tau\}}  \frac{\I{\delta'=2}}{G(t'- | z')}\right) P(dx') \\
+	&+\iint  \Theta_m(x,x') \left(1_{\{t^{\prime}>\tau\}} \frac{1}{G(\tau | z')}+  1_{\{t^{\prime} \leqslant \tau\}}  \frac{\I{\delta'=2}}{G(t'- | z')}\right) P(dx')  1_{\{t \leqslant \tau\}} \frac{f_i(t-,z   )P(dx) \I{\delta=1}}{G(t- | z)}  \\
+	&+ \iint  \Theta_m(x,x')  1_{\{t \leqslant \tau\}}  \frac{P(dx) \I{\delta=1}}{G(t- | z)} \left( \frac{1_{\{t^{\prime}>\tau\}} f_i(\tau,z')}{G(\tau | z')} + 1_{\{t^{\prime} \leqslant \tau\}}f_i(t'-,z') \frac{\I{\delta'=2}}{G(t'- | z')} \right)P(dx')\\
+	&+ \left(\frac{1_{ \{ \tilde{T_i} \leq \tau, \Delta_i = 2\}} }{G(\tilde{T_i} - | Z_i)} +  \frac{1_{ \{ \tilde{T_i} > \tau \}} }{G(\tau | Z_i )}\right) \int \Theta_m(x,X_i )1_{\{t \leqslant \tau\}}  \frac{P(dx) \I{\delta=1}}{G(t- | x)}
+\end{align}
+Similarly for the denominator, we need to do this, so
+\begin{align}
+	\ifmu(\Zi;\tau) &= \frac{1_{\{\tilde{T}_i \leqslant \tau, \Delta_i = 1\}}}{G(\tilde{T_i}- | Z_i)}\int   \left(1_{\{t^{\prime}>\tau\}} \frac{1}{G(\tau | z')}+  1_{\{t^{\prime} \leqslant \tau\}}  \frac{\I{\delta'=2}}{G(t'- | z')}\right) P(dx') \\
+	&+\int \left(1_{\{t^{\prime}>\tau\}} \frac{1}{G(\tau | z')}+  1_{\{t^{\prime} \leqslant \tau\}}  \frac{\I{\delta'=2}}{G(t'- | z')}\right) P(dx') \int 1_{\{t \leqslant \tau\}} \frac{f_i(t-,z   )P(dx) \I{\delta=1}}{G(t- | z)}  \\
+	&+ \int  1_{\{t \leqslant \tau\}}  \frac{P(dx) \I{\delta=1}}{G(t- | z)} \int \left( \frac{1_{\{t^{\prime}>\tau\}} f_i(\tau,z')}{G(\tau | z')} + 1_{\{t^{\prime} \leqslant \tau\}}f_i(t'-,z') \frac{\I{\delta'=2}}{G(t'- | z')} \right)P(dx')\\
+	&+ \left(\frac{1_{ \{ \tilde{T_i} \leq \tau, \Delta_i = 2\}} }{G(\tilde{T_i} - | Z_i)} +  \frac{1_{ \{ \tilde{T_i} > \tau \}} }{G(\tau | Z_i )}\right) \int 1_{\{t \leqslant \tau\}}  \frac{P(dx) \I{\delta=1}}{G(t- | x)}
+\end{align}

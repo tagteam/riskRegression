@@ -254,7 +254,7 @@ NumericVector getInfluenceFunctionAUCKMCensoring(NumericVector time,
     eq9 = (fihattau - 2.0)/Gtau * eq9term;
     eq16 = (fihattau - 2.0)/Gtau * eq16term;
     
-    if ((time[i] <= tau) & (status[i] == 2)){
+    if ((time[i] <= tau) && (status[i] == 2)){
       eq11 = 1.0 / (n*GTiminus[i]) * eq1112part[i];
       eq18 = 1.0 / (GTiminus[i]) * F1tau;
     }
@@ -279,9 +279,7 @@ NumericVector getInfluenceFunctionAUCKMCensoringCVPart(NumericVector time,
                                                        double tau,
                                                        NumericVector GTiminus,
                                                        double Gtau,
-                                                       NumericMatrix thetahat,
-                                                       IntegerVector whichControls,
-                                                       IntegerVector whichCases,
+                                                       NumericMatrix aucMat,
                                                        double nu1tauPm) {
   // check for NAs and equal lengths of vectors
   checkNAs(time, GET_VARIABLE_NAME(time));
@@ -289,9 +287,10 @@ NumericVector getInfluenceFunctionAUCKMCensoringCVPart(NumericVector time,
   checkNAs(tau, GET_VARIABLE_NAME(tau));
   checkNAs(GTiminus, GET_VARIABLE_NAME(GTiminus));
   checkNAs(Gtau, GET_VARIABLE_NAME(Gtau));
+  
   // should also check matrix for NAs and the IntegerVectors
   compareLengths(time,status);
-  compareLengths(status,GTiminus); 
+  compareLengths(status,GTiminus);
 
   // Thomas' code from IC of Nelson-Aalen estimator
   //initialize first time point t=0 with data of subject i=0
@@ -331,103 +330,76 @@ NumericVector getInfluenceFunctionAUCKMCensoringCVPart(NumericVector time,
     }
   }
   MC_term2 = arma::cumsum(MC_term2);
-  
+
   // find first index such that k such that tau[k] <= tau but tau[k+1] > tau
   auto lower = std::upper_bound(time.begin(), time.end(), tau);
   int firsthit = std::distance(time.begin(), lower) -1;
   if (firsthit == -1){
     firsthit = 0;
   }
-  
+
   // P(tilde{T_i} > tau)
   double Probmu = double ((n-(firsthit+1))) / n;
-  NumericVector int1(n); // this is int \Theta(X_i, x) 1*(t > tau) / G(tau) dP(t,x) 
-  NumericVector int2(n);  // int \Theta(x,X_i ) 1*(t <= tau) / G(t-) dP(t,1,x) 
-  NumericVector int3(n);  // int \Theta(X_i,x) 1*(t <= tau) / G(t-) dP(t,2,x) 
-  int noControlsI = 0;
-  int noCasesI = 0;
-  bool isCaseI = false; 
+  //this is the one theta_m(X_i,x), varies over cases
+  NumericVector int1 = rowSums(aucMat) / ((double) n); // this is \frac{1}{G(\tilde{T_i}- | Z_i)}\int  \Theta_m(X_i,x') \left(1_{\{t^{\prime}>\tau\}} \frac{1}{G(\tau | z')} + I(delta = 2)/ G(tilde(T_i)-) \right) P(dx')ordered according to cases
+  // this is the one with theta_m(x,X_i), varies over controls
+  NumericVector int2 = colSums(aucMat) / ((double) n); //  \int  \Theta_m(x,X_i)  1_{\{t \leqslant \tau\}}  \frac{P(dx) \I{\delta=1}}{G(t- | z)}\left( \frac{1_{\{T_i>\tau\}}}{G(\tau | Z_i)} + 1_{\{T_i leqslant \tau\}} \frac{\I{\Delta_i=2}}{G(T_i - | Z_i)} \right) ordered according to controls
+  // int1mu = int (1_{t \leq tau} 1(delta = 2)/ hat{G(t-)} + 1_{t > tau} / G(tau)) dP(z) = Q(T_i <= tau, Delta_i = 2 | T_i > tau), also int2mu
+  // int2mu = int 1_{t \leq tau} 1/ hat{G(t-)} dP(t,1) = Q(T_i <= tau, Delta_i = 1)
+  double int1mu = 0, int2mu = 0, eq32part2 = 0, eq33part2 = 0, eq33term1part = 0;
+  int numberOfCases = 0;
+  int numberOfControls = 0;
   for (int i = 0; i < n; i++){
-    // keep track of indexing
-    int iValue = 0;
-    if (time[i] > tau){
-      iValue = noControlsI;
-      noControlsI++;
+    if (time[i] <= tau && status[i] == 1){
+      int2mu += 1.0/GTiminus[i];
+      eq32part2 += int1[numberOfCases];
+      numberOfCases++;
     }
-    else if ((time[i] <= tau) && (status[i] == 1)){
-      iValue = noCasesI;
-      noCasesI++;
-      isCaseI = true;
+    else if (time[i] <= tau && status[i] == 2){
+      int1mu += 1.0/GTiminus[i];
+      eq33part2+=int2[numberOfControls];
+      numberOfControls++;
     }
-    else if ((time[i] <= tau) && (status[i] == 2)){
-      iValue = noControlsI;
-      noControlsI++;
-    } 
-    if (isCaseI){
-      int noControlsJ = 0;
-      for (int j = 0; j < n; j++){
-        if (time[j] > tau){
-          int1[i] += thetahat(iValue,noControlsJ) / Gtau;
-        }
-        else if ((time[j] <= tau) && (status[j] == 2)){
-          int3[i] += thetahat(iValue,noControlsJ) / GTiminus[j] ;
-        } 
-        noControlsJ++;
-      }
-    }
-    else {
-      int noCasesJ = 0;
-      for (int j = 0; j < n; j++){
-        if ((time[j] <= tau) && (status[j] == 1)){
-          int2[i] += (1-thetahat(noCasesJ,iValue)) / GTiminus[j];
-        }
-        noCasesJ++;
-      }
-    }
-    int1[i]=int1[i]/((double) n); 
-  }
-  // F_1(tau) = int 1_{t \leq tau} 1/ hat{G(t-)} dP(t,1) = Q(T_i <= tau, Delta_i = 1)
-  // F_2(tau) = int 1_{t \leq tau} 1/ hat{G(t-)} dP(t,2) = Q(T_i <= tau, Delta_i = 2)
-  double F1tau = 0, F2tau = 0, eq9term = 0;
-  for (int i = 0; i <= firsthit; i++){
-    if (status[i] == 1){
-      F1tau += 1.0/GTiminus[i];
-      eq9term += int1[i]/GTiminus[i];
-    }
-    else if (status[i] == 2){
-      F2tau += 1.0/GTiminus[i];
+    else if (time[i] > tau){
+      eq33term1part+=int2[numberOfControls];
+      numberOfControls++;
     }
   }
-  eq9term = eq9term / n;
-  F1tau = F1tau / ((double) n);
-  F2tau = F2tau / ((double) n);
+  int1mu = int1mu / ((double) n) + Probmu / Gtau;
+  int2mu = int2mu / ((double) n);
+  eq33term1part = eq33term1part / ((double) n*n);
   
-  double eq16term = Probmu * F1tau;
-  double mu1 = F1tau * Probmu / Gtau + F1tau*F2tau;
+  double mu1 = int1mu*int2mu;
   double nu1 = nu1tauPm;
-  double eq10part1{}, eq12part1{},eq14part1{},eq17part1{},eq19part1{};
-  double eq10part2 = n*eq9term;
-  double eq12part2 = (nu1-1.0/(Gtau) * eq9term)*n*n;
-  double eq14part2 = eq12part2;
-  double eq17part2 = n*F1tau;
-  double eq19part2 = n*F2tau;
+  
+  double eq32part1{}, eq33part1{}, eq36part1{}, eq37part1{}, eq33term1{}, eq33term2{}, eq37term1{}, eq37term2{};
+  double eq36part2 = n*int2mu; //36 was previously 17 // note need to initialize values?
+  double eq37part2 = n*int1mu;
   int tieIter = 0;
+  int tieIterCases = 0;
+  int tieIterControls = 0;
   // can do while loops together
   while ((tieIter < n) && (time[tieIter] == time[0])) {
     if ((time[tieIter] <= tau) && (status[tieIter]==1)){
-      eq10part2 -= int1[tieIter] / GTiminus[tieIter];
-      eq14part2 -= int3[tieIter] / GTiminus[tieIter];
-      eq17part2 -= 1.0 / GTiminus[tieIter];
+      eq32part2 -= int1[tieIterCases];
+      eq36part2 -= 1.0 / GTiminus[tieIter];
+      tieIterCases++;
     }
-    else if  ((time[tieIter] <= tau) && (status[tieIter]==2)){
-      eq12part2 -= int2[tieIter] / GTiminus[tieIter];
-      eq19part2 -= 1.0 / GTiminus[tieIter];
+    else if ((time[tieIter] <= tau) && (status[tieIter]==2)){ 
+      eq33part2 -= int2[tieIterControls];
+      eq37part2 -= 1.0 / GTiminus[tieIter];
+      tieIterControls ++;
+    }
+    else if (time[tieIter] > tau){
+      tieIterControls ++;
     }
     tieIter++;
   }
-  
+
   int upperTie = tieIter-1;
-  double eq8{}, eq9{}, eq10{}, eq11{},eq12{},eq13{},eq14{}, eq15{}, eq16{},eq17{},eq18{},eq19{},eq20{},eq21{}, fihattau{},eq1721part{};
+  numberOfCases = 0;
+  numberOfControls = 0;
+  double eq31{}, eq32{}, eq33{}, eq34{}, eq35{}, eq36{}, eq37{}, eq38{}, fihattau{};
   for (int i = 0; i<n; i++){
     int const j = i > firsthit ? firsthit : i;
     if (utime[sindex[j]] < time[i]){
@@ -436,144 +408,57 @@ NumericVector getInfluenceFunctionAUCKMCensoringCVPart(NumericVector time,
     else {
       fihattau =  (1-(status[i] != 0))*n/atrisk[sindex[i]]- MC_term2[sindex[i]];
     }
-    eq10 = 1.0 / (Gtau*n) * (eq10part1+fihattau*eq10part2);
-    eq12 = 1.0 / (n*n) * (eq12part1+(fihattau-1)*eq12part2);
-    eq14 = 1.0 / (n*n) * (eq14part1+(fihattau-1)*eq14part2);
-    eq1721part = 1.0 / n * (eq17part1+fihattau*eq17part2);
-    eq17 = Probmu / Gtau * eq1721part;
-    eq19 = F1tau * (1.0 / n * (eq19part1+fihattau*eq19part2) - F2tau);
-    eq21 = F2tau * (eq1721part - F1tau);
+    if (time[i] <= tau && status[i] == 1){
+      eq31 = int1[numberOfCases];
+      eq34 = 0;
+      eq35 = 1.0 / GTiminus[i] * int1mu;
+      eq38 = 0;
+      numberOfCases++;
+    }
+    else if ((time[i] <= tau && status[i] == 2) || time[i] > tau){
+      eq31 = 0;
+      eq34 = int2[numberOfControls];
+      eq35 = 0;
+      eq38 = (time[i] > tau) ? 1.0 / Gtau * int2mu : 1.0/GTiminus[i] * int2mu;
+      numberOfControls++;
+    }
     
-    // fast calculation of eq10 and eq17
+    eq32 = 1.0 / (n*n) * (eq32part1+fihattau*eq32part2);
+    eq36 = int2mu * 1.0 / (n*n) * (eq36part1+fihattau*eq36part2);
+    eq33term1 = fihattau / Gtau * eq33term1part;
+    eq33term2 = 1.0 / (n*n) * (eq33part1+fihattau*eq33part2);
+    eq33 = eq33term1 + eq33term2;
+    eq37term1 = fihattau / Gtau * Probmu * int2mu;
+    eq37term2 = 1.0 / (n) * (eq37part1+fihattau*eq37part2) * int2mu;
+    eq37 = eq37term1 + eq37term2;
     if (upperTie == i){
       int tieIter = i+1;
       while ((tieIter < n) && (time[tieIter] == time[i+1])) {
         if ((time[tieIter] <= tau) && (status[tieIter]==1)){
-          eq10part1 -= int1[tieIter] * (MC_term2[sindex[i]]) / GTiminus[tieIter];
-          eq14part1 -= int3[tieIter] * (MC_term2[sindex[i]]+1.0) / GTiminus[tieIter];
-          eq17part1 -= (MC_term2[sindex[i]]) / GTiminus[tieIter];
-          eq10part2 -= int1[tieIter] / GTiminus[tieIter];
-          eq14part2 -= int3[tieIter] / GTiminus[tieIter];
-          eq17part2 -= 1.0 / GTiminus[tieIter];
+          tieIterCases++;
+          eq32part1 -= int1[tieIterCases] * (MC_term2[sindex[i]]);
+          eq32part2 -= int1[tieIterCases];
+          eq36part1 -= (MC_term2[sindex[i]]) / GTiminus[tieIter];
+          eq36part2 -= 1.0 / GTiminus[tieIter];
         }
         else if ((time[tieIter] <= tau) && (status[tieIter]==2)){
-          eq12part1 -= int2[tieIter] * (MC_term2[sindex[i]]+1.0) / GTiminus[tieIter];
-          eq19part1 -= (MC_term2[sindex[i]]) / GTiminus[tieIter];
-          eq12part2 -= int2[tieIter] / GTiminus[tieIter];
-          eq19part2 -= 1.0 / GTiminus[tieIter];
+          tieIterControls++;
+          eq33part1 -= int2[tieIterControls] * (MC_term2[sindex[i]]);
+          eq33part2 -= int2[tieIterControls];
+          eq37part1 -= (MC_term2[sindex[i]]) / GTiminus[tieIter];
+          eq37part2 -= 1.0 / GTiminus[tieIter];
+        }
+        else if (time[tieIter] > tau){
+          tieIterControls ++;
         }
         tieIter++;
       }
       upperTie = tieIter-1;
     }
-    if ((time[i] <= tau) && (status[i] == 1)){
-      eq8 = 1.0/(GTiminus[i]*Gtau)*int1[i];
-      eq15 = 1.0/(GTiminus[i]*Gtau)*Probmu;
-      eq13 = 1.0/ (n*GTiminus[i]) * int3[i];
-      eq20 = 1.0/GTiminus[i] * F2tau;
-    }
-    else {
-      eq8 = eq13 = eq15 = eq20 = 0;
-    }
-    eq9 = (fihattau - 2.0)/Gtau * eq9term;
-    eq16 = (fihattau - 2.0)/Gtau * eq16term;
-    
-    if ((time[i] <= tau) & (status[i] == 2)){
-      eq11 = 1.0 / (n*GTiminus[i]) * int2[i];
-      eq18 = 1.0 / (GTiminus[i]) * F1tau;
-    }
-    else if (time[i] > tau){
-      eq11 = 1.0 / (n*Gtau) * int2[i];
-      eq18 = 1.0 / (Gtau) * F1tau;
-    }
-    else {
-      eq11 = eq18 = 0;
-    }
-    double IFnu = eq8+eq9+eq10+eq11+eq12+eq13+eq14;
-    double IFmu = eq15+eq16+eq17+eq18+eq19+eq20+eq21;
-    
+    double IFnu = eq31+eq32+eq33+eq34;
+    double IFmu = eq35+eq36+eq37+eq38;
+
     ic[i] = (IFnu * mu1 - IFmu * nu1)/(mu1*mu1);
   }
   return ic;
 }
-
-// [[Rcpp::export(rng = false)]]
-NumericVector getInfluenceFunctionAUCBinaryCVPart(NumericVector Y,
-                                                  NumericMatrix thetahat,
-                                                  IntegerVector whichControls,
-                                                  IntegerVector whichCases,
-                                                  double nu1tauPm) {
-  
-  // check for NAs and equal lengths of vectors
-  checkNAs(Y, GET_VARIABLE_NAME(Y));
-  checkNAs(nu1tauPm, GET_VARIABLE_NAME(nu1tauPm));
-
-  // Thomas' code from IC of Nelson-Aalen estimator
-  //initialize first time point t=0 with data of subject i=0
-  int n = Y.size();
-  NumericVector ic(n);
-  // Q(Y = 1)
-  double q1 = ((double) whichCases.size())/((double ) n );
-  // Q(Y=0) = 1- Q(Y=1)
-  double q0 = 1-q1;
-  double mu1 = q0 * q1;
-  NumericVector int1(n); // this is int \Theta(X_i, x) 1*(y=0) dP(y,x) 
-  NumericVector int2(n);  // int \Theta(x,X_i ) 1*(y=1) dP(y,x) 
-  int noControlsI = 0;
-  int noCasesI = 0;
-  bool caseI = false;
-  for (int i = 0; i < n; i++){
-    // keep track of indexing
-    int iValue = 0;
-    if (Y[i]==0){
-      iValue = noControlsI;
-      noControlsI++;
-    }
-    else {
-      iValue = noCasesI;
-      noCasesI++;
-      caseI = true;
-    }
-    int noControlsJ = 0;
-    int noCasesJ = 0;
-    int jValue = 0;
-    if (caseI){
-      for (int j = 0; j < n; j++){
-        if (Y[j] == 0){
-          jValue = noControlsJ;// unsure ...
-          int1[i] += thetahat(iValue,jValue);
-          noControlsJ++;
-        }
-      }
-    }
-    else {
-      for (int j = 0; j < n; j++){
-        if (Y[j] == 1){
-          jValue = noCasesJ;
-          int2[i] += 1-thetahat(jValue,iValue);
-          noCasesJ++;
-        }
-      }
-    }
-    int1[i]=int1[i]/((double) n); 
-    int2[i]=int2[i]/((double) n); 
-  }
-
-  for (int i = 0; i<n; i++){
-    double IFnu = 0;
-    double IFmu = 0;
-    if (Y[i]==0){
-      IFnu = int2[i];
-      IFmu = q0;
-    }
-    else {
-      IFnu = int1[i];
-      IFmu = q1;
-    }
-    
-    ic[i] = (IFnu * mu1 - IFmu * nu1tauPm)/(mu1*mu1);
-  }
-  return ic;
-}
-
-

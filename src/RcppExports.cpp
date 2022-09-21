@@ -324,8 +324,8 @@ BEGIN_RCPP
 END_RCPP
 }
 // getInfluenceFunctionAUCKMCensoringCVPart
-NumericVector getInfluenceFunctionAUCKMCensoringCVPart(NumericVector time, NumericVector status, double tau, NumericVector GTiminus, double Gtau, NumericMatrix thetahat, IntegerVector whichControls, IntegerVector whichCases, double nu1tauPm);
-RcppExport SEXP _riskRegression_getInfluenceFunctionAUCKMCensoringCVPart(SEXP timeSEXP, SEXP statusSEXP, SEXP tauSEXP, SEXP GTiminusSEXP, SEXP GtauSEXP, SEXP thetahatSEXP, SEXP whichControlsSEXP, SEXP whichCasesSEXP, SEXP nu1tauPmSEXP) {
+NumericVector getInfluenceFunctionAUCKMCensoringCVPart(NumericVector time, NumericVector status, double tau, NumericVector GTiminus, double Gtau, NumericMatrix aucMat, double nu1tauPm);
+RcppExport SEXP _riskRegression_getInfluenceFunctionAUCKMCensoringCVPart(SEXP timeSEXP, SEXP statusSEXP, SEXP tauSEXP, SEXP GTiminusSEXP, SEXP GtauSEXP, SEXP aucMatSEXP, SEXP nu1tauPmSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::traits::input_parameter< NumericVector >::type time(timeSEXP);
@@ -333,25 +333,9 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< double >::type tau(tauSEXP);
     Rcpp::traits::input_parameter< NumericVector >::type GTiminus(GTiminusSEXP);
     Rcpp::traits::input_parameter< double >::type Gtau(GtauSEXP);
-    Rcpp::traits::input_parameter< NumericMatrix >::type thetahat(thetahatSEXP);
-    Rcpp::traits::input_parameter< IntegerVector >::type whichControls(whichControlsSEXP);
-    Rcpp::traits::input_parameter< IntegerVector >::type whichCases(whichCasesSEXP);
+    Rcpp::traits::input_parameter< NumericMatrix >::type aucMat(aucMatSEXP);
     Rcpp::traits::input_parameter< double >::type nu1tauPm(nu1tauPmSEXP);
-    rcpp_result_gen = Rcpp::wrap(getInfluenceFunctionAUCKMCensoringCVPart(time, status, tau, GTiminus, Gtau, thetahat, whichControls, whichCases, nu1tauPm));
-    return rcpp_result_gen;
-END_RCPP
-}
-// getInfluenceFunctionAUCBinaryCVPart
-NumericVector getInfluenceFunctionAUCBinaryCVPart(NumericVector Y, NumericMatrix thetahat, IntegerVector whichControls, IntegerVector whichCases, double nu1tauPm);
-RcppExport SEXP _riskRegression_getInfluenceFunctionAUCBinaryCVPart(SEXP YSEXP, SEXP thetahatSEXP, SEXP whichControlsSEXP, SEXP whichCasesSEXP, SEXP nu1tauPmSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::traits::input_parameter< NumericVector >::type Y(YSEXP);
-    Rcpp::traits::input_parameter< NumericMatrix >::type thetahat(thetahatSEXP);
-    Rcpp::traits::input_parameter< IntegerVector >::type whichControls(whichControlsSEXP);
-    Rcpp::traits::input_parameter< IntegerVector >::type whichCases(whichCasesSEXP);
-    Rcpp::traits::input_parameter< double >::type nu1tauPm(nu1tauPmSEXP);
-    rcpp_result_gen = Rcpp::wrap(getInfluenceFunctionAUCBinaryCVPart(Y, thetahat, whichControls, whichCases, nu1tauPm));
+    rcpp_result_gen = Rcpp::wrap(getInfluenceFunctionAUCKMCensoringCVPart(time, status, tau, GTiminus, Gtau, aucMat, nu1tauPm));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -707,8 +691,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_riskRegression_pProcess_cpp", (DL_FUNC) &_riskRegression_pProcess_cpp, 8},
     {"_riskRegression_sampleMaxProcess_cpp", (DL_FUNC) &_riskRegression_sampleMaxProcess_cpp, 8},
     {"_riskRegression_getInfluenceFunctionAUCKMCensoring", (DL_FUNC) &_riskRegression_getInfluenceFunctionAUCKMCensoring, 8},
-    {"_riskRegression_getInfluenceFunctionAUCKMCensoringCVPart", (DL_FUNC) &_riskRegression_getInfluenceFunctionAUCKMCensoringCVPart, 9},
-    {"_riskRegression_getInfluenceFunctionAUCBinaryCVPart", (DL_FUNC) &_riskRegression_getInfluenceFunctionAUCBinaryCVPart, 5},
+    {"_riskRegression_getInfluenceFunctionAUCKMCensoringCVPart", (DL_FUNC) &_riskRegression_getInfluenceFunctionAUCKMCensoringCVPart, 7},
     {"_riskRegression_getInfluenceFunctionBrierKMCensoring", (DL_FUNC) &_riskRegression_getInfluenceFunctionBrierKMCensoring, 6},
     {"_riskRegression_getInfluenceFunctionBrierKMCensoringUseSquared", (DL_FUNC) &_riskRegression_getInfluenceFunctionBrierKMCensoringUseSquared, 4},
     {"_riskRegression_calcE_cpp", (DL_FUNC) &_riskRegression_calcE_cpp, 6},

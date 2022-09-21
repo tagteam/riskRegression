@@ -45,7 +45,7 @@ crossvalPerf.loob.AUC <- function(times,mlevs,se.fit,response.type,NT,Response,c
       }
     }
     # censoring weights
-    if (cens.type=="rightCensored"){
+    if (cens.type=="rightCensored"){ #this maybe does not work with competing risks
       ## IPCW
       weights.cases <- cases.index/Weights$IPCW.subject.times
       if (Weights$method=="marginal"){
@@ -65,7 +65,6 @@ crossvalPerf.loob.AUC <- function(times,mlevs,se.fit,response.type,NT,Response,c
     for (mod in mlevs){
       Ib <- matrix(0, sum(cases.index), sum(controls.index))
       auc <- matrix(0, sum(cases.index), sum(controls.index))
-      w.list <- replicate(N,matrix(0, sum(cases.index), sum(controls.index)),simplify=F)
       # if (split.method$internal.name=="crossval"){
       #   # stop("Cannot yet calculate AUC in this case. Use split.method 'loob' or 'bootcv' instead.")
       # }
@@ -106,15 +105,20 @@ crossvalPerf.loob.AUC <- function(times,mlevs,se.fit,response.type,NT,Response,c
       }else{
         auc.loob[times==t&model==mod,AUC:=aucLPO]
       }
-      browser()
       if (se.fit==1L){
         id.cases <- data[["ID"]][cc.status=="case"]
         id.controls <- data[["ID"]][cc.status=="control"]
         id.censored <- data[["ID"]][cc.status=="censored"]
         if (response.type != "binary"){
-          # assumes no ties in risk
+          if (response.type == "survival"){
+            data[,status0:=status]
+          }
+          else {
+            data[,status0:=status*event]
+          }
           this.aucDT <- data.table(model=mod,times=t,ID = c(id.cases,id.controls,id.censored))
-          ic <- getInfluenceFunctionAUCKMCensoringCVPart(data[["time"]],status0,t,Weights$IPCW.subject.times, Weights$IPCW.times[s], thetahat,which.controls,which.cases,nu1tauPm)
+          aucDT <- rbindlist(list(aucDT,this.aucDT),use.names=TRUE,fill=TRUE)
+          ic <- getInfluenceFunctionAUCKMCensoringCVPart(data[["time"]],data[["status0"]],t,Weights$IPCW.subject.times, Weights$IPCW.times[s], auc,nu1tauPm)
           data.table::setkey(aucDT,model,times, ID)
           aucDT[model==mod&times==t, IF.AUC:=ic]
           auc.loob[model==mod&times==t,se:= sd(aucDT[model==mod&times==t,IF.AUC])/sqrt(N)]
@@ -125,6 +129,7 @@ crossvalPerf.loob.AUC <- function(times,mlevs,se.fit,response.type,NT,Response,c
           ic0 <- (1/(Phi*N))*c(ic0Case, ic0Control) #relates to the numerator in the AUC
           # assumes no ties in risk
           this.aucDT <- data.table(model=mod,ID = c(id.cases,id.controls), IF.AUC0 = ic0)
+          aucDT <- rbindlist(list(aucDT,this.aucDT),use.names=TRUE,fill=TRUE)
           icPhi <- (aucLPO/Phi)*(weights.cases*(1/N)*sum(weights.controls)+weights.controls*(1/N)*sum(weights.controls)) # relates to the denominator in the AUC
           data.table::setkey(aucDT,model,ID)
           aucDT[model==mod,IF.AUC:=ic0-icPhi]
@@ -450,10 +455,7 @@ crossvalPerf.loob.Brier <- function(times,mlevs,se.fit,response.type,NT,Response
   DT.B[,Brier:=mean(residuals),by=byvars]
   ## standard error via influence function
   if (se.fit==1L){
-    # DT.B <- merge(DT.B,IF.terms)
-    m <- split.method$M
-    # DT.B[,IC0:=residuals-(m+1)*Brier+IF.term,by=byvars]
-    DT.B[,IC0:=residuals-m*Brier,by=byvars]
+    DT.B[,IC0:=residuals-Brier,by=byvars]
     
     ## influence function when censoring model is known or data are uncensored
     if (cens.type[1]=="rightCensored" && !conservative[1]){
@@ -491,7 +493,7 @@ crossvalPerf.loob.Brier <- function(times,mlevs,se.fit,response.type,NT,Response
           DT.B[,status0:=status*event]
         }
         if (cens.model == "KaplanMeier"){
-          DT.B[,IF.Brier:=IC0+getInfluenceFunctionBrierCVCensoringKM(times[1],time,residuals,status0),by= byvars]
+          DT.B[,IF.Brier:=getInfluenceFunctionBrierKMCensoringUseSquared(times[1],time,residuals,status0),by= byvars]
         }
         else {
           stop("Only KaplanMeier censoring works with crossvalidated Brier score for now ")
