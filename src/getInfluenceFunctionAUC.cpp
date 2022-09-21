@@ -254,7 +254,7 @@ NumericVector getInfluenceFunctionAUCKMCensoring(NumericVector time,
     eq9 = (fihattau - 2.0)/Gtau * eq9term;
     eq16 = (fihattau - 2.0)/Gtau * eq16term;
     
-    if ((time[i] <= tau) & (status[i] == 2)){
+    if ((time[i] <= tau) && (status[i] == 2)){
       eq11 = 1.0 / (n*GTiminus[i]) * eq1112part[i];
       eq18 = 1.0 / (GTiminus[i]) * F1tau;
     }
@@ -478,7 +478,7 @@ NumericVector getInfluenceFunctionAUCKMCensoringCVPart(NumericVector time,
     eq9 = (fihattau - 2.0)/Gtau * eq9term;
     eq16 = (fihattau - 2.0)/Gtau * eq16term;
     
-    if ((time[i] <= tau) & (status[i] == 2)){
+    if ((time[i] <= tau) && (status[i] == 2)){
       eq11 = 1.0 / (n*GTiminus[i]) * int2[i];
       eq18 = 1.0 / (GTiminus[i]) * F1tau;
     }
