@@ -23,7 +23,6 @@ AUC.competing.risks <- function(DT,MC,se.fit,conservative,cens.model,keep.vcov=F
     aucDT[,ipcwControls1:=1/(Wt*N)]
     aucDT[,ipcwControls2:=1/(WTi*N)]
     aucDT[,ipcwCases:=1/(WTi*N)]
-    aucDT[,ipcwControls2:=1/(WTi*N)]
     ## order data
     data.table::setorder(aucDT,model,times,-risk)
     ## identify cases and controls

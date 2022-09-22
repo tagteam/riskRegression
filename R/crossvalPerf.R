@@ -60,9 +60,9 @@ crossvalPerf.loob.AUC <- function(times,mlevs,se.fit,response.type,NT,Response,c
       }
       else {
         if (Weights$method=="marginal"){
-          weights.controls <- 1/Weights$IPCW.times[s] * controls.index2  + 1/Weights$IPCW.subject.times * controls.index1
+          weights.controls <- 1/Weights$IPCW.times[s] * controls.index1  + 1/Weights$IPCW.subject.times * controls.index2
         }else{
-          weights.controls <- controls.index/Weights$IPCW.times[,s]*controls.index2 +  1/Weights$IPCW.subject.times * controls.index1
+          weights.controls <- controls.index/Weights$IPCW.times[,s]*controls.index1 +  1/Weights$IPCW.subject.times * controls.index2
         }
       }
       weightMatrix <- outer(weights.cases[cases.index], weights.controls[controls.index], "*")

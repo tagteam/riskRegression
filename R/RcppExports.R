@@ -417,3 +417,7 @@ sliceScalePointer_cpp <- function(X, M) {
     invisible(.Call(`_riskRegression_sliceScalePointer_cpp`, X, M))
 }
 
+getInfluenceFunctionAUCKMCensoring2 <- function(time, status, tau, risk, GTiminus, Gtau, auc, tiedValues) {
+    .Call(`_riskRegression_getInfluenceFunctionAUCKMCensoring2`, time, status, tau, risk, GTiminus, Gtau, auc, tiedValues)
+}
+

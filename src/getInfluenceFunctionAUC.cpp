@@ -352,7 +352,6 @@ NumericVector getInfluenceFunctionAUCKMCensoringCVPart(NumericVector time,
   for (int i = 0; i < n; i++){
     if (time[i] <= tau && status[i] == 1){
       int2mu += 1.0/GTiminus[i];
-      eq32part2 += int1[numberOfCases];
       numberOfCases++;
     }
     else if (time[i] <= tau && status[i] == 2){
@@ -367,26 +366,33 @@ NumericVector getInfluenceFunctionAUCKMCensoringCVPart(NumericVector time,
   }
   int1mu = int1mu / ((double) n) + Probmu / Gtau;
   int2mu = int2mu / ((double) n);
-  eq33term1part = eq33term1part / ((double) n*n);
-  
+  eq33term1part = eq33term1part / ((double) n);
+  eq32part2 = n*n*nu1tauPm;
+  eq33part2 *= n;
+  // Rcout << "eq32part2 should be " << eq32part2 << "\n";
+  // Rcout << "eq33term1part is " << eq33term1part << "\n";
   double mu1 = int1mu*int2mu;
   double nu1 = nu1tauPm;
+  // Rcout << "maybe" << n*n*nu1;
+  // Rcout << "eq33part2 is now " << eq33part2 << "\n";
   
   double eq32part1{}, eq33part1{}, eq36part1{}, eq37part1{}, eq33term1{}, eq33term2{}, eq37term1{}, eq37term2{};
   double eq36part2 = n*int2mu; //36 was previously 17 // note need to initialize values?
-  double eq37part2 = n*int1mu;
+  // Rcout << eq36part2;
+  double eq37part2 = n*(int1mu-Probmu / Gtau);
   int tieIter = 0;
   int tieIterCases = 0;
   int tieIterControls = 0;
   // can do while loops together
   while ((tieIter < n) && (time[tieIter] == time[0])) {
     if ((time[tieIter] <= tau) && (status[tieIter]==1)){
-      eq32part2 -= int1[tieIterCases];
+      // Rcout << "tieIterCases " << tieIterCases << "\n";
+      eq32part2 -= n*int1[tieIterCases];
       eq36part2 -= 1.0 / GTiminus[tieIter];
       tieIterCases++;
     }
     else if ((time[tieIter] <= tau) && (status[tieIter]==2)){ 
-      eq33part2 -= int2[tieIterControls];
+      eq33part2 -= n*int2[tieIterControls];
       eq37part2 -= 1.0 / GTiminus[tieIter];
       tieIterControls ++;
     }
@@ -408,6 +414,7 @@ NumericVector getInfluenceFunctionAUCKMCensoringCVPart(NumericVector time,
     else {
       fihattau =  (1-(status[i] != 0))*n/atrisk[sindex[i]]- MC_term2[sindex[i]];
     }
+    //Rcout << "fihat is " << fihattau << "\n";
     if (time[i] <= tau && status[i] == 1){
       eq31 = int1[numberOfCases];
       eq34 = 0;
@@ -422,31 +429,44 @@ NumericVector getInfluenceFunctionAUCKMCensoringCVPart(NumericVector time,
       eq38 = (time[i] > tau) ? 1.0 / Gtau * int2mu : 1.0/GTiminus[i] * int2mu;
       numberOfControls++;
     }
-    
+    else {
+      eq31=eq34=eq35=eq38=0;
+    }
+    // Rcout << "eq32part1 " << n*n*eq32part1 << "\n";
+    // Rcout << "eq32part2 " << n*n*eq32part2 << "\n";
     eq32 = 1.0 / (n*n) * (eq32part1+fihattau*eq32part2);
-    eq36 = int2mu * 1.0 / (n*n) * (eq36part1+fihattau*eq36part2);
-    eq33term1 = fihattau / Gtau * eq33term1part;
+    eq33term1 = fihattau * eq33term1part;
+    // Rcout << "eq33term1 is " << eq33term1 << "\n";
     eq33term2 = 1.0 / (n*n) * (eq33part1+fihattau*eq33part2);
+    // Rcout << "eq33term2 is " << eq33term2 << "\n";
+    // Rcout << "eq33part1 " << eq33part1 << "\n";
+    // Rcout << "eq33part2 " << eq33part2 << "\n";
     eq33 = eq33term1 + eq33term2;
+    
+    // Rcout << "eq36part1 is " << eq36part1 << "\n";
+    // Rcout << "eq36part2 is " << eq36part2 << "\n";
+    eq36 = int1mu * 1.0 / (n) * (eq36part1+fihattau*eq36part2);
     eq37term1 = fihattau / Gtau * Probmu * int2mu;
     eq37term2 = 1.0 / (n) * (eq37part1+fihattau*eq37part2) * int2mu;
     eq37 = eq37term1 + eq37term2;
+    
     if (upperTie == i){
       int tieIter = i+1;
       while ((tieIter < n) && (time[tieIter] == time[i+1])) {
         if ((time[tieIter] <= tau) && (status[tieIter]==1)){
-          tieIterCases++;
-          eq32part1 -= int1[tieIterCases] * (MC_term2[sindex[i]]);
-          eq32part2 -= int1[tieIterCases];
+          // Rcout << "tieIterCases " << tieIterCases << "\n";
+          eq32part1 -= n*int1[tieIterCases] * (MC_term2[sindex[i]]);
+          eq32part2 -= n*int1[tieIterCases];
           eq36part1 -= (MC_term2[sindex[i]]) / GTiminus[tieIter];
           eq36part2 -= 1.0 / GTiminus[tieIter];
+          tieIterCases++;
         }
         else if ((time[tieIter] <= tau) && (status[tieIter]==2)){
-          tieIterControls++;
-          eq33part1 -= int2[tieIterControls] * (MC_term2[sindex[i]]);
-          eq33part2 -= int2[tieIterControls];
+          eq33part1 -= n*int2[tieIterControls] * (MC_term2[sindex[i]]);
+          eq33part2 -= n*int2[tieIterControls];
           eq37part1 -= (MC_term2[sindex[i]]) / GTiminus[tieIter];
           eq37part2 -= 1.0 / GTiminus[tieIter];
+          tieIterControls++;
         }
         else if (time[tieIter] > tau){
           tieIterControls ++;
@@ -455,6 +475,16 @@ NumericVector getInfluenceFunctionAUCKMCensoringCVPart(NumericVector time,
       }
       upperTie = tieIter-1;
     }
+    // Rcout << "iteration i = " << i << "\n";
+    // // Rcout << "eq31 should be: " << eq31 << "\n";
+    // // Rcout << "eq32 should be: " << eq32 << "\n";
+    // Rcout << "eq33 should be: " << eq33 << "\n";
+    // Rcout << "eq34 should be: " << eq34 << "\n";
+    // Rcout << "eq35 should be: " << eq35 << "\n";
+    // Rcout << "eq36 should be: " << eq36 << "\n";
+    // Rcout << "eq37 should be: " << eq37 << "\n";
+    // Rcout << "eq38 should be: " << eq38 << "\n";
+    
     double IFnu = eq31+eq32+eq33+eq34;
     double IFmu = eq35+eq36+eq37+eq38;
 
