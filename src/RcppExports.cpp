@@ -674,23 +674,6 @@ BEGIN_RCPP
     return R_NilValue;
 END_RCPP
 }
-// getInfluenceFunctionAUCKMCensoring2
-NumericVector getInfluenceFunctionAUCKMCensoring2(NumericVector time, NumericVector status, double tau, NumericVector risk, NumericVector GTiminus, double Gtau, double auc, bool tiedValues);
-RcppExport SEXP _riskRegression_getInfluenceFunctionAUCKMCensoring2(SEXP timeSEXP, SEXP statusSEXP, SEXP tauSEXP, SEXP riskSEXP, SEXP GTiminusSEXP, SEXP GtauSEXP, SEXP aucSEXP, SEXP tiedValuesSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::traits::input_parameter< NumericVector >::type time(timeSEXP);
-    Rcpp::traits::input_parameter< NumericVector >::type status(statusSEXP);
-    Rcpp::traits::input_parameter< double >::type tau(tauSEXP);
-    Rcpp::traits::input_parameter< NumericVector >::type risk(riskSEXP);
-    Rcpp::traits::input_parameter< NumericVector >::type GTiminus(GTiminusSEXP);
-    Rcpp::traits::input_parameter< double >::type Gtau(GtauSEXP);
-    Rcpp::traits::input_parameter< double >::type auc(aucSEXP);
-    Rcpp::traits::input_parameter< bool >::type tiedValues(tiedValuesSEXP);
-    rcpp_result_gen = Rcpp::wrap(getInfluenceFunctionAUCKMCensoring2(time, status, tau, risk, GTiminus, Gtau, auc, tiedValues));
-    return rcpp_result_gen;
-END_RCPP
-}
 
 static const R_CallMethodDef CallEntries[] = {
     {"_riskRegression_AUCijFun", (DL_FUNC) &_riskRegression_AUCijFun, 2},
@@ -733,7 +716,6 @@ static const R_CallMethodDef CallEntries[] = {
     {"_riskRegression_sliceMultiplyPointer_cpp", (DL_FUNC) &_riskRegression_sliceMultiplyPointer_cpp, 2},
     {"_riskRegression_sliceScale_cpp", (DL_FUNC) &_riskRegression_sliceScale_cpp, 2},
     {"_riskRegression_sliceScalePointer_cpp", (DL_FUNC) &_riskRegression_sliceScalePointer_cpp, 2},
-    {"_riskRegression_getInfluenceFunctionAUCKMCensoring2", (DL_FUNC) &_riskRegression_getInfluenceFunctionAUCKMCensoring2, 8},
     {NULL, NULL, 0}
 };
 
