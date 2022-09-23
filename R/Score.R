@@ -808,7 +808,7 @@ c.f., Chapter 7, Section 5 in Gerds & Kattan 2021. Medical risk prediction model
     # {{{ Dealing with censored data outside the loop
     if (response.type %in% c("survival","competing.risks")){
         if (cens.type=="rightCensored"){
-            if (se.fit[1]>0L && ("AUC" %in% metrics) && (conservative[[1]])) {
+            if (se.fit[1]>0L && ("AUC" %in% metrics)) {
                 ## FIXME: need conservative formula for AUC
                 if (conservative[[1]]){
                   warning("Cannot do conservative for AUC. Therefore, force conservative to be FALSE.")
@@ -886,7 +886,8 @@ c.f., Chapter 7, Section 5 in Gerds & Kattan 2021. Medical risk prediction model
                                  cause=cause,
                                  neworder=neworder,
                                  debug=debug,
-                                 labels=mlevs,
+                                 levs=mlevs,
+                                 labels=mlabels,
                                  predictRisk.args=predictRisk.args,
                                  nullobject=nullobject,
                                  cens.type=cens.type,
@@ -1000,7 +1001,8 @@ if (split.method$internal.name%in%c("BootCv","LeaveOneOutBoot","crossval")){
                                               cause=cause,
                                               neworder=NULL,
                                               debug=debug,
-                                              labels=mlevs,
+                                              levs=mlevs,
+                                              labels=mlabels,
                                               predictRisk.args=predictRisk.args,
                                               nullobject=nullobject,
                                               cens.type=cens.type,
@@ -1040,7 +1042,8 @@ if (split.method$internal.name%in%c("BootCv","LeaveOneOutBoot","crossval")){
                                        cause=cause,
                                        neworder=NULL,
                                        debug=debug,
-                                       labels=mlevs,
+                                       levs=mlevs,
+                                       labels=mlabels,
                                        predictRisk.args=predictRisk.args,
                                        nullobject=nullobject,
                                        cens.type=cens.type,
