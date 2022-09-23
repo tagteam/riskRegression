@@ -56,24 +56,7 @@ AUC.survival <- function(DT,MC,se.fit,conservative,cens.model,keep.vcov=FALSE,mu
             aucDT[,IF.AUC:=getInfluenceCurveHelper(time,status,times[1],risk,WTi,Wt[1],AUC[1]), by=list(model,times)]
         }
         else {
-          aucDT[,IF.AUC:=getInfluenceCurve.AUC.survival(t=times[1],
-                                                        n=N,
-                                                        time=time,
-                                                        risk=risk,
-                                                        Cases=Cases,
-                                                        Controls=Controls,
-                                                        ipcwControls=ipcwControls,
-                                                        ipcwCases=ipcwCases,
-                                                        MC=MC), by=list(model,times)]
-          
-            # warning("Switching to conservative SE. General case not yet implemented.")
-            # not tested implementations 
-            # if (!conservative){
-            #     aucDT[,IF.AUC:=getInfluenceCurve.AUC.covariates(times[1],N,time,status,risk,WTi,Wt,AUC[1],IC.data), by=list(model,times)]
-            # }
-            # else {
-            #   aucDT[,IF.AUC:=getInfluenceCurve.AUC.covariates.conservative(times[1],N,time,status,risk,WTi,Wt,AUC[1]), by=list(model,times)]
-            # }
+          stop("Censoring model not yet implemented. ")
         }
         se.score <- aucDT[,list(se=sd(IF.AUC)/sqrt(N)),by=list(model,times)]
 

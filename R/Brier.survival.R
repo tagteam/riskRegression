@@ -47,22 +47,7 @@ Brier.survival <- function(DT,MC,se.fit,conservative,cens.model,keep.vcov=FALSE,
                                       se.conservative=sd(IC0)/sqrt(N)),by=list(model,times)]
             }
             else {
-                # if (!old.ic.method){
-                #   browser()
-                #   # DT[,IF.Brier:=getInfluenceCurve.Brier.covariates(times[1],time,risk,status,WTi,sum(residuals)/N,IC.data), by=list(model,times)]
-                #   # DT[,IF.Brier2:=getInfluenceCurve.Brier.covariates.use.squared(times[1],time,residuals,risk,status,WTi,Wt,IC.data), by=list(model,times)]
-                # }
-                DT[,IF.Brier:=getInfluenceCurve.Brier(t=times[1],
-                                                    time=time,
-                                                    IC0,
-                                                    residuals=residuals,
-                                                    WTi=WTi,
-                                                    Wt=Wt,
-                                                    IC.G=MC,
-                                                    cens.model=cens.model,
-                                                    nth.times=nth.times[1]),by=list(model,times)]
-                score <- DT[,data.table(Brier=sum(residuals)/N,
-                                        se=sd(IF.Brier)/sqrt(N)),by=list(model,times)]
+              stop("Censoring model not yet implemented. ")
             }
         }
         if (se.fit==TRUE){
