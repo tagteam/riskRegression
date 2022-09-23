@@ -448,7 +448,7 @@ Score.list <- function(object,
                        ...){
 
     se.conservative=IPCW=IF.AUC.conservative=IF.AUC0=IF.AUC=IC0=Brier=AUC=casecontrol=se=nth.times=time=status=ID=WTi=risk=IF.Brier=lower=upper=crossval=b=time=status=model=reference=p=model=pseudovalue=ReSpOnSe=residuals=event=j=NULL
-    
+
     # }}}
     theCall <- match.call()
     # {{{ decide about metrics and plots
@@ -1123,8 +1123,6 @@ if (split.method$internal.name%in%c("BootCv","LeaveOneOutBoot","crossval")){
                                                                     cause)})
       names(crossvalPerf) <- metrics
     }
-
-     ## end clause split.method$name=="LeaveOneOutBoot"
     if (split.method$name=="BootCv"){
         # {{{ bootcv
         if (parallel=="snow") exports <- c("DT.B","N.b","cens.model","multi.split.test") else exports <- NULL
