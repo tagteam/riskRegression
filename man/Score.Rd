@@ -40,7 +40,6 @@ Score(object, ...)
   keep,
   predictRisk.args,
   debug = 0L,
-  old.ic.method = FALSE,
   ...
 )
 }
@@ -183,8 +182,6 @@ randomly splitting (bootstrapping) the data during cross-validation.}
  A more flexible approach is to write a new predictRisk S3-method. See Details.}
 
 \item{debug}{Logical. If \code{TRUE} indicate landmarks in progress of the program.}
-
-\item{old.ic.method}{Uses an older implementation for the calculation of standard errors for AUC and Brier score. Is set to \code{FALSE} by default.}
 }
 \value{
 List with scores and assessments of contrasts, i.e.,
