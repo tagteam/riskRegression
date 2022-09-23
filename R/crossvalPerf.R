@@ -2,7 +2,7 @@
 
 crossvalPerf.loob.AUC <- function(times,mlevs,se.fit,response.type,NT,Response,cens.type,Weights,split.method,N,B,DT.B,data,dolist,alpha,byvars,mlabels,conservative,cens.model) {
   # initializing output
-  AUC <- ReSpOnSe <- status <- ID <- model <- b <- risk <- casecontrol <- IF.AUC <- IF.AUC0 <- se <- IF.AUC.conservative <- se.conservative <- lower <- upper <- NF <- reference  <-  NULL
+  AUC <- ReSpOnSe <- status <- ID <- model <- b <- risk <- casecontrol <- IF.AUC <- IF.AUC0 <- se <- IF.AUC.conservative <- se.conservative <- lower <- upper <- NF <- reference  <-  event <- status0 <- NULL
   if (response.type=="binary")
     auc.loob <- data.table(model=mlevs)
   else
@@ -122,18 +122,65 @@ crossvalPerf.loob.AUC <- function(times,mlevs,se.fit,response.type,NT,Response,c
         id.controls <- data[["ID"]][cc.status=="control"]
         id.censored <- data[["ID"]][cc.status=="censored"]
         if (response.type != "binary"){
-          if (response.type == "survival"){
-            data[,status0:=status]
+          if (cens.model == "KaplanMeier" || cens.model == "none"){
+            if (response.type == "survival"){
+              data[,status0:=status]
+            }
+            else {
+              data[,status0:=status*event]
+            }
+            this.aucDT <- data.table(model=mod,times=t,ID = c(id.cases,id.controls,id.censored))
+            aucDT <- rbindlist(list(aucDT,this.aucDT),use.names=TRUE,fill=TRUE)
+            ic <- getInfluenceFunctionAUCKMCensoringCVPart(data[["time"]],data[["status0"]],t,Weights$IPCW.subject.times, Weights$IPCW.times[s], auc,nu1tauPm)
+            data.table::setkey(aucDT,model,times, ID)
+            aucDT[model==mod&times==t, IF.AUC:=ic]
+            auc.loob[model==mod&times==t,se:= sd(aucDT[model==mod&times==t,IF.AUC])/sqrt(N)]
           }
           else {
-            data[,status0:=status*event]
+            ic0Case <- rowSums(auc)
+            ic0Control <- colSums(auc)
+            ic0 <- (1/(Phi*N))*c(ic0Case, ic0Control)-2*aucLPO
+            this.aucDT <- data.table(model=mod,times=t,ID = c(id.cases,id.controls,id.censored), IF.AUC0 = c(ic0, rep(-2*aucLPO,length(id.censored))))
+            aucDT <- rbindlist(list(aucDT,this.aucDT),use.names=TRUE,fill=TRUE)
+            ic.weights <- matrix(0,N,N)
+              if (cens.type[1]=="rightCensored" && (conservative[1]==FALSE)) {
+                ## ## Influence function for G - i.e. censoring survival distribution
+                if  (cens.model=="cox"){
+                  k=0 ## counts subject-times with event before t
+                  for (i in 1:N){
+                    if (i %in% id.cases){
+                      k=k+1
+                      ic.weights[i,] <- Weights$IC$IC.subject[i,k,]/(Weights$IPCW.subject.times[i])
+                    }else{
+                      if (i %in% id.controls){ ## min(T,C)>t
+                        ic.weights[i,] <- Weights$IC$IC.times[i,s,]/(Weights$IPCW.times[i,s])
+                      }
+                    }
+                  }
+                }
+                ## ## Part of influence function related to Weights
+                ic.weightsCase <- as.numeric(rowSumsCrossprod(as.matrix(rowSums(auc)), ic.weights[which.cases,], 0))
+                ic.weightsControl <- as.numeric(rowSumsCrossprod(as.matrix(colSums(auc)), ic.weights[which.controls,], 0))
+                ic.weightsCC <- (1/(Phi*N^2))*(ic.weightsCase+ic.weightsControl)
+              }
+              ## ## Part of influence function related to Phi
+              ## icPhiCase <- colMeans(ic.weights[which.cases,])
+              icPhiCase <- as.numeric(rowSumsCrossprod(as.matrix(weights.cases[which.cases]),ic.weights[which.cases,],0))
+              icPhiControl <- as.numeric(rowSumsCrossprod(as.matrix(weights.controls[which.controls]),ic.weights[which.controls,],0))
+              icPhi <- (aucLPO/Phi)*((weights.cases-(1/N)*icPhiCase)*(1/N)*sum(weights.controls)+(weights.controls-(1/N)*icPhiControl)*(1/N)*sum(weights.cases)) - 2*aucLPO
+              ## ## Combine all parts of influence function
+              ## ic1 <- data.table(ID=data[["ID"]], "ic.weightsCC" = ic.weightsCC, "icPhi" = icPhi)
+              data.table::setkey(aucDT,model,times,ID)
+              if(conservative==TRUE){
+                aucDT[model==mod&times==t, IF.AUC:=IF.AUC0-icPhi]
+              }else{
+                aucDT[model==mod&times==t, IF.AUC:=IF.AUC0-ic.weightsCC-icPhi]
+                aucDT[model==mod&times==t, IF.AUC.conservative:=IF.AUC0-icPhi]
+              }
+              aucDT[,IF.AUC0:=NULL]
+              auc.loob[model==mod&times==t,se:= sd(aucDT[model==mod&times==t,IF.AUC])/sqrt(N)]
+              auc.loob[model==mod&times==t,se.conservative:=sd(aucDT[model==mod&times==t,IF.AUC.conservative])/sqrt(N)]
           }
-          this.aucDT <- data.table(model=mod,times=t,ID = c(id.cases,id.controls,id.censored))
-          aucDT <- rbindlist(list(aucDT,this.aucDT),use.names=TRUE,fill=TRUE)
-          ic <- getInfluenceFunctionAUCKMCensoringCVPart(data[["time"]],data[["status0"]],t,Weights$IPCW.subject.times, Weights$IPCW.times[s], auc,nu1tauPm)
-          data.table::setkey(aucDT,model,times, ID)
-          aucDT[model==mod&times==t, IF.AUC:=ic]
-          auc.loob[model==mod&times==t,se:= sd(aucDT[model==mod&times==t,IF.AUC])/sqrt(N)]
         }
         else {
           ic0Case <- rowSums(auc)
@@ -146,9 +193,6 @@ crossvalPerf.loob.AUC <- function(times,mlevs,se.fit,response.type,NT,Response,c
           data.table::setkey(aucDT,model,ID)
           aucDT[model==mod,IF.AUC:=ic0-icPhi]
           auc.loob[model==mod,se:=sd(aucDT[["IF.AUC"]])/sqrt(N)]
-          data.table::setkey(aucDT,model, ID)
-          aucDT[model==mod, IF.AUC:=ic]
-          auc.loob[model==mod,se:= sd(aucDT[model==mod,IF.AUC])/sqrt(N)]
         }
       }
     }
@@ -508,7 +552,15 @@ crossvalPerf.loob.Brier <- function(times,mlevs,se.fit,response.type,NT,Response
           DT.B[,IF.Brier:=getInfluenceFunctionBrierKMCensoringUseSquared(times[1],time,residuals,status0),by= byvars]
         }
         else {
-          stop("Only KaplanMeier censoring works with crossvalidated Brier score for now ")
+          DT.B[,IF.Brier:=getInfluenceCurve.Brier(t=times[1],
+                                                  time=time,
+                                                  IC0,
+                                                  residuals=residuals,
+                                                  WTi=WTi,
+                                                  Wt=Wt,
+                                                  IC.G=Weights$IC,
+                                                  cens.model=cens.model,
+                                                  nth.times=nth.times[1]),by=byvars]
         }
         
         score.loob <- DT.B[,data.table(Brier=sum(residuals)/N,

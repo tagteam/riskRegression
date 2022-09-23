@@ -131,10 +131,6 @@ getInfluenceFunctionAUCKMCensoringCVPart <- function(time, status, tau, GTiminus
     .Call(`_riskRegression_getInfluenceFunctionAUCKMCensoringCVPart`, time, status, tau, GTiminus, Gtau, aucMat, nu1tauPm)
 }
 
-getInfluenceFunctionBrierKMCensoring <- function(tau, time, risk, status, GTiminus, brier) {
-    .Call(`_riskRegression_getInfluenceFunctionBrierKMCensoring`, tau, time, risk, status, GTiminus, brier)
-}
-
 getInfluenceFunctionBrierKMCensoringUseSquared <- function(tau, time, residuals, status) {
     .Call(`_riskRegression_getInfluenceFunctionBrierKMCensoringUseSquared`, tau, time, residuals, status)
 }

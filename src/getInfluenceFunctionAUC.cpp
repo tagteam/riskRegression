@@ -5,7 +5,8 @@ using namespace Rcpp;
 using namespace arma;
 
 // Calculate influence function for competing risk case/survival case with Nelson-Aalen censoring.
-// Equation lines correspond to the document influenceFunctionAUC.pdf in riskRegressionStudy
+// Equation lines correspond to the document influenceFunctionAUC.pdf in riskRegressionStudy, see
+// https://github.com/eestet75/riskRegressionStudy/blob/master/PicsForImplementation/AUCtraintestKM.png
 // Author: Johan Sebastian Ohlendorff
 // [[Rcpp::export(rng = false)]]
 NumericVector getInfluenceFunctionAUCKMCensoring(NumericVector time,
@@ -36,37 +37,9 @@ NumericVector getInfluenceFunctionAUCKMCensoring(NumericVector time,
   arma::vec utime=unique(time);
   int nu=utime.size();
   arma::vec atrisk(nu);
-  arma::vec Cens(nu,fill::zeros);
-  arma::vec hazardC(nu,fill::zeros);
   arma::vec MC_term2(nu,fill::zeros);
-  int t=0;
-  double Y = (double) n;
-  atrisk[0]=Y;
-  Cens[0]=(1-(status[0] != 0));
-  hazardC[0]=Cens[0]/Y;
-  MC_term2[0]+=hazardC[0];
-  //loop through time points until last subject i=(n-1)
-  for (int i=1;i<=n;i++) {
-    if (i<n && time[i]==time[i-1]){// these are tied values
-      Cens[t] +=(1-(status[i] != 0));
-      Y-=1;
-      sindex[i]=t;    // index pointer from subject i to unique time point t
-    }else{
-      utime[t]=time[i-1];
-      hazardC[t]=Cens[t]/atrisk[t];
-      MC_term2[t]=hazardC[t]*n/atrisk[t];
-      //initialize next time point with data of current subject i
-      if (i<n){
-        t++;
-        sindex[i]=t;    // index pointer from subject i to unique time point t
-        Y-=1;
-        atrisk[t]=Y;
-        Cens[t]=(1-(status[i] != 0));
-      }
-    }
-  }
-  MC_term2 = arma::cumsum(MC_term2);
-
+  getInfluenceFunctionKM(time,status,atrisk,MC_term2,sindex,utime);
+  
   // find first index such that k such that tau[k] <= tau but tau[k+1] > tau
   auto lower = std::upper_bound(time.begin(), time.end(), tau);
   int firsthit = std::distance(time.begin(), lower) -1;
@@ -273,6 +246,7 @@ NumericVector getInfluenceFunctionAUCKMCensoring(NumericVector time,
   return ic;
 }
 
+// see https://github.com/eestet75/riskRegressionStudy/blob/master/PicsForImplementation/crossvalAUC.png
 // [[Rcpp::export(rng = false)]]
 NumericVector getInfluenceFunctionAUCKMCensoringCVPart(NumericVector time,
                                                        NumericVector status,
@@ -292,44 +266,14 @@ NumericVector getInfluenceFunctionAUCKMCensoringCVPart(NumericVector time,
   compareLengths(time,status);
   compareLengths(status,GTiminus);
 
-  // Thomas' code from IC of Nelson-Aalen estimator
-  //initialize first time point t=0 with data of subject i=0
   int n = time.size();
   NumericVector ic(n);
   arma::uvec sindex(n,fill::zeros);
   arma::vec utime=unique(time);
   int nu=utime.size();
   arma::vec atrisk(nu);
-  arma::vec Cens(nu,fill::zeros);
-  arma::vec hazardC(nu,fill::zeros);
   arma::vec MC_term2(nu,fill::zeros);
-  int t=0;
-  double Y = (double) n;
-  atrisk[0]=Y;
-  Cens[0]=(1-(status[0] != 0));
-  hazardC[0]=Cens[0]/Y;
-  MC_term2[0]+=hazardC[0];
-  //loop through time points until last subject i=(n-1)
-  for (int i=1;i<=n;i++) {
-    if (i<n && time[i]==time[i-1]){// these are tied values
-      Cens[t] +=(1-(status[i] != 0));
-      Y-=1;
-      sindex[i]=t;    // index pointer from subject i to unique time point t
-    }else{
-      utime[t]=time[i-1];
-      hazardC[t]=Cens[t]/atrisk[t];
-      MC_term2[t]=hazardC[t]*n/atrisk[t];
-      //initialize next time point with data of current subject i
-      if (i<n){
-        t++;
-        sindex[i]=t;    // index pointer from subject i to unique time point t
-        Y-=1;
-        atrisk[t]=Y;
-        Cens[t]=(1-(status[i] != 0));
-      }
-    }
-  }
-  MC_term2 = arma::cumsum(MC_term2);
+  getInfluenceFunctionKM(time,status,atrisk,MC_term2,sindex,utime);
 
   // find first index such that k such that tau[k] <= tau but tau[k+1] > tau
   auto lower = std::upper_bound(time.begin(), time.end(), tau);

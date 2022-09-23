@@ -339,21 +339,6 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// getInfluenceFunctionBrierKMCensoring
-NumericVector getInfluenceFunctionBrierKMCensoring(double tau, NumericVector time, NumericVector risk, NumericVector status, NumericVector GTiminus, double brier);
-RcppExport SEXP _riskRegression_getInfluenceFunctionBrierKMCensoring(SEXP tauSEXP, SEXP timeSEXP, SEXP riskSEXP, SEXP statusSEXP, SEXP GTiminusSEXP, SEXP brierSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::traits::input_parameter< double >::type tau(tauSEXP);
-    Rcpp::traits::input_parameter< NumericVector >::type time(timeSEXP);
-    Rcpp::traits::input_parameter< NumericVector >::type risk(riskSEXP);
-    Rcpp::traits::input_parameter< NumericVector >::type status(statusSEXP);
-    Rcpp::traits::input_parameter< NumericVector >::type GTiminus(GTiminusSEXP);
-    Rcpp::traits::input_parameter< double >::type brier(brierSEXP);
-    rcpp_result_gen = Rcpp::wrap(getInfluenceFunctionBrierKMCensoring(tau, time, risk, status, GTiminus, brier));
-    return rcpp_result_gen;
-END_RCPP
-}
 // getInfluenceFunctionBrierKMCensoringUseSquared
 NumericVector getInfluenceFunctionBrierKMCensoringUseSquared(double tau, NumericVector time, NumericVector residuals, NumericVector status);
 RcppExport SEXP _riskRegression_getInfluenceFunctionBrierKMCensoringUseSquared(SEXP tauSEXP, SEXP timeSEXP, SEXP residualsSEXP, SEXP statusSEXP) {
@@ -692,7 +677,6 @@ static const R_CallMethodDef CallEntries[] = {
     {"_riskRegression_sampleMaxProcess_cpp", (DL_FUNC) &_riskRegression_sampleMaxProcess_cpp, 8},
     {"_riskRegression_getInfluenceFunctionAUCKMCensoring", (DL_FUNC) &_riskRegression_getInfluenceFunctionAUCKMCensoring, 8},
     {"_riskRegression_getInfluenceFunctionAUCKMCensoringCVPart", (DL_FUNC) &_riskRegression_getInfluenceFunctionAUCKMCensoringCVPart, 7},
-    {"_riskRegression_getInfluenceFunctionBrierKMCensoring", (DL_FUNC) &_riskRegression_getInfluenceFunctionBrierKMCensoring, 6},
     {"_riskRegression_getInfluenceFunctionBrierKMCensoringUseSquared", (DL_FUNC) &_riskRegression_getInfluenceFunctionBrierKMCensoringUseSquared, 4},
     {"_riskRegression_calcE_cpp", (DL_FUNC) &_riskRegression_calcE_cpp, 6},
     {"_riskRegression_IFbeta_cpp", (DL_FUNC) &_riskRegression_IFbeta_cpp, 10},

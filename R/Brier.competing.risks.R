@@ -15,7 +15,7 @@
 ##
 ### Code:
 
-Brier.competing.risks <- function(DT,MC,se.fit,conservative,cens.model,keep.vcov=FALSE,multi.split.test,alpha,N,NT,NF,dolist,keep.residuals=FALSE,cause,states,old.ic.method,IC.data,...){
+Brier.competing.risks <- function(DT,MC,se.fit,conservative,cens.model,keep.vcov=FALSE,multi.split.test,alpha,N,NT,NF,dolist,keep.residuals=FALSE,cause,states,IC.data,...){
     IC0=nth.times=ID=time=times=event=Brier=raw.Residuals=risk=residuals=WTi=Wt=status=setorder=model=IF.Brier=data.table=sd=lower=qnorm=se=upper=NULL
     ## compute 0/1 outcome:
     thecause <- match(cause,states,nomatch=0)
@@ -42,45 +42,23 @@ Brier.competing.risks <- function(DT,MC,se.fit,conservative,cens.model,keep.vcov
                                         se=sd(residuals)/sqrt(N),
                                         se.conservative=sd(residuals)),by=list(model,times)]
             }else if (cens.model=="KaplanMeier"){
-                if (old.ic.method){
-                    DT[,IF.Brier:=getInfluenceCurve.Brier(t=times[1],
-                                                          time=time,
-                                                          IC0,
-                                                          residuals=residuals,
-                                                          WTi=WTi,
-                                                          Wt=Wt,
-                                                          IC.G=MC,
-                                                          cens.model=cens.model,
-                                                          nth.times=nth.times[1]),by=list(model,times)]
-                }
-                else {
-                    DT[,IF.Brier:=getInfluenceFunctionBrierKMCensoring(times[1],
-                                                              time,
-                                                              risk,
-                                                              status*event,
-                                                              WTi,
-                                                              sum(residuals)/N),by=list(model,times)]
-                }
-                score <- DT[,data.table(Brier=sum(residuals)/N,
-                                        se=sd(IF.Brier)/sqrt(N),
-                                        # se=sd(IF.Brier2)/sqrt(N),
-                                        se.conservative=sd(IC0)/sqrt(N)),by=list(model,times)]
+              DT[,IF.Brier := getInfluenceFunctionBrierKMCensoringUseSquared(times[1],time,residuals,status),by=list(model,times)]
+              score <- DT[,data.table(Brier=sum(residuals)/N,
+                                      se=sd(IF.Brier)/sqrt(N),
+                                      # se=sd(IF.Brier2)/sqrt(N),
+                                      se.conservative=sd(IC0)/sqrt(N)),by=list(model,times)]
             }
             else {
-                if (old.ic.method){
-                  DT[,IF.Brier:=getInfluenceCurve.Brier(t=times[1],
-                                                        time=time,
-                                                        IC0,
-                                                        residuals=residuals,
-                                                        WTi=WTi,
-                                                        Wt=Wt,
-                                                        IC.G=MC,
-                                                        cens.model=cens.model,
-                                                        nth.times=nth.times[1]),by=list(model,times)]
-                }
-                else {
-                  DT[,IF.Brier:=getInfluenceCurve.Brier.covariates(times[1],time,risk,status*event,WTi,sum(residuals)/N,IC.data), by=list(model,times)]
-                }
+              DT[,IF.Brier:=getInfluenceCurve.Brier(t=times[1],
+                                                    time=time,
+                                                    IC0,
+                                                    residuals=residuals,
+                                                    WTi=WTi,
+                                                    Wt=Wt,
+                                                    IC.G=MC,
+                                                    cens.model=cens.model,
+                                                    nth.times=nth.times[1]),by=list(model,times)]
+                # DT[,IF.Brier:=getInfluenceCurve.Brier.covariates(times[1],time,risk,status*event,WTi,sum(residuals)/N,IC.data), by=list(model,times)]
                 score <- DT[,data.table(Brier=sum(residuals)/N,
                                         se=sd(IF.Brier)/sqrt(N)),by=list(model,times)]
             }
