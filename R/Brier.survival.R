@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Jan 11 2022 (17:04)
 ## Version:
-## Last-Updated: Jan 11 2022 (17:04)
+## Last-Updated: Sep 23 2022 (11:34) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 1
+##     Update #: 2
 #----------------------------------------------------------------------
 ##
 ### Commentary:
@@ -62,7 +62,6 @@ Brier.survival <- function(DT,MC,se.fit,conservative,cens.model,keep.vcov=FALSE,
             }
             else {
                 if (!old.ic.method){
-                  browser()
                   DT[,IF.Brier:=getInfluenceCurve.Brier.covariates(times[1],time,risk,status,WTi,sum(residuals)/N,IC.data), by=list(model,times)]
                   DT[,IF.Brier2:=getInfluenceCurve.Brier.covariates.use.squared(times[1],time,residuals,risk,status,WTi,Wt,IC.data), by=list(model,times)]
                 }

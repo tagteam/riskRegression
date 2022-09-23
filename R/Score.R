@@ -126,7 +126,6 @@
 ##'  A more flexible approach is to write a new predictRisk S3-method. See Details.
 ##' @param errorhandling Argument passed as \code{.errorhandling} to foreach. Default is \code{"pass"}.
 ##' @param debug Logical. If \code{TRUE} indicate landmarks in progress of the program.
-##' @param old.ic.method Uses an older implementation for the calculation of standard errors for AUC and Brier score. Is set to \code{FALSE} by default.
 ##' @param ... Named list containging additional arguments that are passed on to the \code{predictRisk} methods corresponding to object. See examples.
 ##' @return List with scores and assessments of contrasts, i.e.,
 ##'     tests and confidence limits for performance and difference in performance (AUC and Brier),
@@ -446,11 +445,10 @@ Score.list <- function(object,
                        keep,
                        predictRisk.args,
                        debug=0L,
-                       old.ic.method=FALSE,
-                       cv.aggregate = "meanRisk", #otherwise dont average over risk
                        ...){
 
     se.conservative=IPCW=IF.AUC.conservative=IF.AUC0=IF.AUC=IC0=Brier=AUC=casecontrol=se=nth.times=time=status=ID=WTi=risk=IF.Brier=lower=upper=crossval=b=time=status=model=reference=p=model=pseudovalue=ReSpOnSe=residuals=event=j=NULL
+    cv.aggregate = "NONE"
     
     # }}}
     theCall <- match.call()
@@ -1115,77 +1113,77 @@ if (split.method$internal.name%in%c("BootCv","LeaveOneOutBoot","crossval")){
                        ifelse(NROW(DT.B)>1000000,
                               " This may take a while ...",
                               " This should be fast ...")))
-      if (cv.aggregate == "meanRisk"){
-        if (response.type == "survival"){
-          avvars=c("WTi","Wt","time","status")
-        }
-        else if (response.type == "competing.risks"){
-          avvars=c("WTi","Wt","time","status","event")
+        if (cv.aggregate == "meanRisk"){
+            if (response.type == "survival"){
+                avvars=c("WTi","Wt","time","status")
+            }
+            else if (response.type == "competing.risks"){
+                avvars=c("WTi","Wt","time","status","event")
+            }
+            else {
+                avvars =c("ReSpOnSe")
+            }
+            DT.B <- DT.B[,cbind(.SD[1],data.table(risk=mean(risk))),
+                         keyby=c("ID",byvars),
+                         .SDcols=avvars]
+            crossvalPerf <- computePerformance(DT=DT.B,
+                                               N=nrow(DT.B),
+                                               NT=NT,
+                                               NF=NF,
+                                               models=list(levels=mlevs,labels=mlabels),
+                                               response.type=response.type,
+                                               times=times,
+                                               jack=jack,
+                                               cens.type=cens.type,
+                                               cause=cause,
+                                               states=states,
+                                               alpha=alpha,
+                                               se.fit=se.fit,
+                                               conservative=conservative,
+                                               cens.model=cens.model,
+                                               multi.split.test=multi.split.test,
+                                               keep.residuals=keep.residuals,
+                                               keep.vcov=keep.vcov,
+                                               dolist=dolist,
+                                               probs=probs,
+                                               metrics=metrics,
+                                               plots=plots,
+                                               summary=summary,
+                                               ibs=ibs,
+                                               ipa = ipa,
+                                               ROC=FALSE,
+                                               MC=Weights$IC,
+                                               old.ic.method=old.ic.method,
+                                               IC.data=Weights$IC.data)
         }
         else {
-          avvars =c("ReSpOnSe")
+            crossvalPerf <- lapply(metrics, function(m){crossvalPerf.loob(m,
+                                                                          times,
+                                                                          mlevs,
+                                                                          se.fit,
+                                                                          response.type,
+                                                                          NT,
+                                                                          Response,
+                                                                          cens.type,
+                                                                          Weights,
+                                                                          split.method,
+                                                                          N,
+                                                                          B,
+                                                                          DT.B,
+                                                                          data,
+                                                                          dolist,
+                                                                          alpha,
+                                                                          byvars,
+                                                                          mlabels,
+                                                                          ipa,
+                                                                          keep.residuals,
+                                                                          conservative,
+                                                                          cens.model,
+                                                                          response.dim,
+                                                                          ID,
+                                                                          cause)})
         }
-        DT.B <- DT.B[,cbind(.SD[1],data.table(risk=mean(risk))),
-                     keyby=c("ID",byvars),
-                     .SDcols=avvars]
-        crossvalPerf <- computePerformance(DT=DT.B,
-                                           N=nrow(DT.B),
-                                           NT=NT,
-                                           NF=NF,
-                                           models=list(levels=mlevs,labels=mlabels),
-                                           response.type=response.type,
-                                           times=times,
-                                           jack=jack,
-                                           cens.type=cens.type,
-                                           cause=cause,
-                                           states=states,
-                                           alpha=alpha,
-                                           se.fit=se.fit,
-                                           conservative=conservative,
-                                           cens.model=cens.model,
-                                           multi.split.test=multi.split.test,
-                                           keep.residuals=keep.residuals,
-                                           keep.vcov=keep.vcov,
-                                           dolist=dolist,
-                                           probs=probs,
-                                           metrics=metrics,
-                                           plots=plots,
-                                           summary=summary,
-                                           ibs=ibs,
-                                           ipa = ipa,
-                                           ROC=FALSE,
-                                           MC=Weights$IC,
-                                           old.ic.method=old.ic.method,
-                                           IC.data=Weights$IC.data)
-      }
-      else {
-        crossvalPerf <- lapply(metrics, function(m){crossvalPerf.loob(m,
-                                                                      times,
-                                                                      mlevs,
-                                                                      se.fit,
-                                                                      response.type,
-                                                                      NT,
-                                                                      Response,
-                                                                      cens.type,
-                                                                      Weights,
-                                                                      split.method,
-                                                                      N,
-                                                                      B,
-                                                                      DT.B,
-                                                                      data,
-                                                                      dolist,
-                                                                      alpha,
-                                                                      byvars,
-                                                                      mlabels,
-                                                                      ipa,
-                                                                      keep.residuals,
-                                                                      conservative,
-                                                                      cens.model,
-                                                                      response.dim,
-                                                                      ID,
-                                                                      cause)})
-      }
-      names(crossvalPerf) <- metrics
+        names(crossvalPerf) <- metrics
     } ## end clause split.method$name=="LeaveOneOutBoot"
     if (split.method$name=="BootCv"){
         # {{{ bootcv
