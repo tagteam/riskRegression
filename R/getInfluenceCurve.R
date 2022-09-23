@@ -1,3 +1,60 @@
+getInfluenceCurve.AUC.cox <- function(t,time,event, WTi, Wt, risk, ID, MC, nth.times){
+  n <- length(time)
+  cases.index <- time<=t & event==1
+  controls.index1 <- time>t
+  controls.index2 <-  event==2 & time <= t
+  controls.index <- controls.index1 | controls.index2
+  
+  cc.status <- factor(rep("censored",n),levels=c("censored","case","control"))
+  cc.status[cases.index] <- "case"
+  cc.status[controls.index] <- "control"
+  
+  id.cases <- ID[cc.status=="case"]
+  id.controls <- ID[cc.status=="control"]
+  id.censored <- ID[cc.status=="censored"]
+  
+  weights.cases <- cases.index/WTi
+  weights.controls <- 1/Wt * controls.index1  + 1/WTi * controls.index2
+  weightMatrix <- outer(weights.cases[cases.index], weights.controls[controls.index], "*")
+  Phi <- (1/n^2)*sum(weights.cases[cases.index])*sum(weights.controls[controls.index])
+  which.cases <- (1:n)[cases.index]
+  which.controls <- (1:n)[controls.index]
+  auc <- AUCijFun(risk[which.cases],risk[which.controls])
+  auc <- auc*weightMatrix
+  auc[is.na(auc)] <- 0
+  nu1tauPm <- (1/n^2)*sum(auc)
+  aucLPO <- nu1tauPm*(1/Phi)
+  ic0Case <- rowSums(auc)
+  ic0Control <- colSums(auc)
+  ic0 <- (1/(Phi*n))*c(ic0Case, ic0Control)-2*aucLPO
+  aucDT <- data.table(ID = c(id.cases,id.controls,id.censored), IF.AUC0 = c(ic0, rep(-2*aucLPO,length(id.censored))))
+  ic.weights <- matrix(0,n,n)
+  k=0 ## counts subject-times with event before t
+  for (i in 1:n){
+    if (i %in% id.cases){
+      k=k+1
+      ic.weights[i,] <- MC$IC.subject[i,k,]/WTi[i]
+    }else{
+      if (i %in% id.controls){ ## min(T,C)>t
+        ic.weights[i,] <- MC$IC.times[i,nth.times,]/Wt[i]
+      }
+    }
+  }
+  ## ## Part of influence function related to Weights
+  ic.weightsCase <- as.numeric(rowSumsCrossprod(as.matrix(rowSums(auc)), ic.weights[which.cases,], 0))
+  ic.weightsControl <- as.numeric(rowSumsCrossprod(as.matrix(colSums(auc)), ic.weights[which.controls,], 0))
+  ic.weightsCC <- (1/(Phi*n^2))*(ic.weightsCase+ic.weightsControl)
+  ## ## Part of influence function related to Phi
+  ## icPhiCase <- colMeans(ic.weights[which.cases,])
+  icPhiCase <- as.numeric(rowSumsCrossprod(as.matrix(weights.cases[which.cases]),ic.weights[which.cases,],0))
+  icPhiControl <- as.numeric(rowSumsCrossprod(as.matrix(weights.controls[which.controls]),ic.weights[which.controls,],0))
+  icPhi <- (aucLPO/Phi)*((weights.cases-(1/n)*icPhiCase)*(1/n)*sum(weights.controls)+(weights.controls-(1/n)*icPhiControl)*(1/n)*sum(weights.cases)) - 2*aucLPO
+  ## ## Combine all parts of influence function
+  ## ic1 <- data.table(ID=data[["ID"]], "ic.weightsCC" = ic.weightsCC, "icPhi" = icPhi)
+  data.table::setkey(aucDT,ID)
+  aucDT[["IF.AUC0"]]-ic.weightsCC-icPhi
+}
+
 getInfluenceCurve.Brier1 <- function(t,time,Yt,residuals,MC){
     hit1=(Yt==0)*residuals
     hit2=(Yt==1)*residuals

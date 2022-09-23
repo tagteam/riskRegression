@@ -814,10 +814,10 @@ c.f., Chapter 7, Section 5 in Gerds & Kattan 2021. Medical risk prediction model
                   warning("Cannot do conservative for AUC. Therefore, force conservative to be FALSE.")
                   conservative[[1]] <- FALSE
                 }
-                else if (cens.model[[1]] == "cox" && !(split.method$name %in% c("LeaveOneOutBoot","BootCv"))){
-                  warning("Cannot (not yet) estimate standard errors for AUC with Cox IPCW.\nTherefore, force cens.model to be marginal.")
-                  cens.model <- "KaplanMeier"
-                }
+                # else if (cens.model[[1]] == "cox" && !(split.method$name %in% c("LeaveOneOutBoot","BootCv"))){
+                #   warning("Cannot (not yet) estimate standard errors for AUC with Cox IPCW.\nTherefore, force cens.model to be marginal.")
+                #   cens.model <- "KaplanMeier"
+                # }
             }
             getIC <- se.fit[[1]] && !conservative[[1]] && cens.model != "KaplanMeier"
             Weights <- getCensoringWeights(formula=formula,

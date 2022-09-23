@@ -59,6 +59,9 @@ AUC.competing.risks <- function(DT,MC,se.fit,conservative,cens.model,keep.vcov=F
       if (cens.model == "KaplanMeier" || cens.model == "none"){
         aucDT[,IF.AUC:=getInfluenceCurveHelper(time,status*event,times[1],risk,WTi,Wt[1],AUC[1]), by=list(model,times)]
       }
+      else if (cens.model == "cox"){
+        aucDT[,IF.AUC:=getInfluenceCurve.AUC.cox(times[1],time,status*event, WTi, Wt, risk, ID, MC, nth.times[1]), by=list(model,times)]
+      }
       else {
         stop("Censoring model not yet implemented. ")
       }
