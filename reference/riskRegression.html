@@ -4,7 +4,7 @@ The main difference is one marks variables in the formula that should have a
 time-dependent effect whereas in comp.risk one marks variables that
 should have a time constant (proportional) effect."><title>Risk Regression
 Fits a regression model for the risk of an event -- allowing for competing
-risks. — riskRegression • riskRegression</title><script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no"><link href="../deps/bootstrap-5.1.0/bootstrap.min.css" rel="stylesheet"><script src="../deps/bootstrap-5.1.0/bootstrap.bundle.min.js"></script><!-- Font Awesome icons --><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/all.min.css" integrity="sha256-mmgLkCYLUQbXn0B1SRqzHar6dCnv9oZFPEC1g1cwlkk=" crossorigin="anonymous"><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/v4-shims.min.css" integrity="sha256-wZjR52fzng1pJHwx4aV2AO3yyTOXrcDW7jBpJtTwVxw=" crossorigin="anonymous"><!-- bootstrap-toc --><script src="https://cdn.rawgit.com/afeld/bootstrap-toc/v1.0.1/dist/bootstrap-toc.min.js"></script><!-- headroom.js --><script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/headroom.min.js" integrity="sha256-AsUX4SJE1+yuDu5+mAVzJbuYNPHj/WroHuZ8Ir/CkE0=" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/jQuery.headroom.min.js" integrity="sha256-ZX/yNShbjqsohH1k95liqY9Gd8uOiE1S4vZc+9KQ1K4=" crossorigin="anonymous"></script><!-- clipboard.js --><script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.6/clipboard.min.js" integrity="sha256-inc5kl9MA1hkeYUt+EC3BhlIgyp/2jDIyBLS6k3UxPI=" crossorigin="anonymous"></script><!-- search --><script src="https://cdnjs.cloudflare.com/ajax/libs/fuse.js/6.4.6/fuse.js" integrity="sha512-zv6Ywkjyktsohkbp9bb45V6tEMoWhzFzXis+LrMehmJZZSys19Yxf1dopHx7WzIKxr5tK2dVcYmaCk2uqdjF4A==" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/autocomplete.js/0.38.0/autocomplete.jquery.min.js" integrity="sha512-GU9ayf+66Xx2TmpxqJpliWbT5PiGYxpaG8rfnBEk1LL8l1KGkRShhngwdXK1UgqhAzWpZHSiYPc09/NwDQIGyg==" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/mark.js/8.11.1/mark.min.js" integrity="sha512-5CYOlHXGh6QpOFA/TeTylKLWfB3ftPsde7AnmhuitiTX4K5SqCLBeKro6sPS8ilsz1Q4NRx3v8Ko2IBiszzdww==" crossorigin="anonymous"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Risk Regression
+risks. — riskRegression • riskRegression</title><script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no"><link href="../deps/bootstrap-5.1.3/bootstrap.min.css" rel="stylesheet"><script src="../deps/bootstrap-5.1.3/bootstrap.bundle.min.js"></script><!-- Font Awesome icons --><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/all.min.css" integrity="sha256-mmgLkCYLUQbXn0B1SRqzHar6dCnv9oZFPEC1g1cwlkk=" crossorigin="anonymous"><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/v4-shims.min.css" integrity="sha256-wZjR52fzng1pJHwx4aV2AO3yyTOXrcDW7jBpJtTwVxw=" crossorigin="anonymous"><!-- bootstrap-toc --><script src="https://cdn.rawgit.com/afeld/bootstrap-toc/v1.0.1/dist/bootstrap-toc.min.js"></script><!-- headroom.js --><script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/headroom.min.js" integrity="sha256-AsUX4SJE1+yuDu5+mAVzJbuYNPHj/WroHuZ8Ir/CkE0=" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/jQuery.headroom.min.js" integrity="sha256-ZX/yNShbjqsohH1k95liqY9Gd8uOiE1S4vZc+9KQ1K4=" crossorigin="anonymous"></script><!-- clipboard.js --><script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.6/clipboard.min.js" integrity="sha256-inc5kl9MA1hkeYUt+EC3BhlIgyp/2jDIyBLS6k3UxPI=" crossorigin="anonymous"></script><!-- search --><script src="https://cdnjs.cloudflare.com/ajax/libs/fuse.js/6.4.6/fuse.js" integrity="sha512-zv6Ywkjyktsohkbp9bb45V6tEMoWhzFzXis+LrMehmJZZSys19Yxf1dopHx7WzIKxr5tK2dVcYmaCk2uqdjF4A==" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/autocomplete.js/0.38.0/autocomplete.jquery.min.js" integrity="sha512-GU9ayf+66Xx2TmpxqJpliWbT5PiGYxpaG8rfnBEk1LL8l1KGkRShhngwdXK1UgqhAzWpZHSiYPc09/NwDQIGyg==" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/mark.js/8.11.1/mark.min.js" integrity="sha512-5CYOlHXGh6QpOFA/TeTylKLWfB3ftPsde7AnmhuitiTX4K5SqCLBeKro6sPS8ilsz1Q4NRx3v8Ko2IBiszzdww==" crossorigin="anonymous"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Risk Regression
 Fits a regression model for the risk of an event -- allowing for competing
 risks. — riskRegression"><meta property="og:description" content="This is a wrapper for the function comp.risk from the timereg package.
 The main difference is one marks variables in the formula that should have a
@@ -20,7 +20,7 @@ should have a time constant (proportional) effect."><!-- mathjax --><script src=
     
     <a class="navbar-brand me-2" href="../index.html">riskRegression</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2022.05.31</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2022.09.13</small>
 
     
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -30,6 +30,13 @@ should have a time constant (proportional) effect."><!-- mathjax --><script src=
     <div id="navbar" class="collapse navbar-collapse ms-3">
       <ul class="navbar-nav me-auto"><li class="active nav-item">
   <a class="nav-link" href="../reference/index.html">Reference</a>
+</li>
+<li class="nav-item dropdown">
+  <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown" role="button" aria-expanded="false" aria-haspopup="true" id="dropdown-articles">Articles</a>
+  <div class="dropdown-menu" aria-labelledby="dropdown-articles">
+    <a class="dropdown-item" href="../articles/IFAUC.html">Derivation of the Influence Function for AUC for competing risk data and survival data</a>
+    <a class="dropdown-item" href="../articles/IFBrier.html">Influence function calculation for Brier score for event time data</a>
+  </div>
 </li>
       </ul><form class="form-inline my-2 my-lg-0" role="search">
         <input type="search" class="form-control me-sm-2" aria-label="Toggle navigation" name="search-input" data-search-index="../search.json" id="search-input" placeholder="Search for" autocomplete="off"></form>
@@ -63,19 +70,19 @@ should have a time constant (proportional) effect.</p>
 
     <div class="section level2">
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="fu">riskRegression</span><span class="op">(</span>
-  <span class="va">formula</span>,
-  <span class="va">data</span>,
-  <span class="va">times</span>,
-  link <span class="op">=</span> <span class="st">"relative"</span>,
-  <span class="va">cause</span>,
-  conf.int <span class="op">=</span> <span class="cn">TRUE</span>,
-  <span class="va">cens.model</span>,
-  <span class="va">cens.formula</span>,
-  max.iter <span class="op">=</span> <span class="fl">50</span>,
-  conservative <span class="op">=</span> <span class="cn">TRUE</span>,
-  <span class="va">...</span>
-<span class="op">)</span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">riskRegression</span><span class="op">(</span></span>
+<span>  <span class="va">formula</span>,</span>
+<span>  <span class="va">data</span>,</span>
+<span>  <span class="va">times</span>,</span>
+<span>  link <span class="op">=</span> <span class="st">"relative"</span>,</span>
+<span>  <span class="va">cause</span>,</span>
+<span>  conf.int <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  <span class="va">cens.model</span>,</span>
+<span>  <span class="va">cens.formula</span>,</span>
+<span>  max.iter <span class="op">=</span> <span class="fl">50</span>,</span>
+<span>  conservative <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  <span class="va">...</span></span>
+<span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div class="section level2">
@@ -84,37 +91,58 @@ should have a time constant (proportional) effect.</p>
 <dd><p>Formula where the left hand side specifies the event
 history event.history and the right hand side the linear predictor.  See
 examples.</p></dd>
+
+
 <dt>data</dt>
 <dd><p>The data for fitting the model in which includes all
 the variables included in formula.</p></dd>
+
+
 <dt>times</dt>
 <dd><p>Vector of times. For each time point in <code>times</code>
 estimate the baseline risk and the timevarying coefficients.</p></dd>
+
+
 <dt>link</dt>
 <dd><p><code>"relative"</code> for the absolute risk regression
 model.  <code>"logistic"</code> for the logistic risk regression model.
 <code>"prop"</code> for the Fine-Gray regression model.</p></dd>
+
+
 <dt>cause</dt>
 <dd><p>The cause of interest.</p></dd>
+
+
 <dt>conf.int</dt>
 <dd><p>If <code>TRUE</code> return the iid decomposition, that
 can be used to construct confidence bands for predictions.</p></dd>
+
+
 <dt>cens.model</dt>
 <dd><p>Specified the model for the (conditional)
 censoring distribution used for deriving weights (IFPW). Defaults
 to "KM" (the Kaplan-Meier method ignoring covariates) alternatively
 it may be "Cox" (Cox regression).</p></dd>
+
+
 <dt>cens.formula</dt>
 <dd><p>Right hand side of the formula used for fitting
 the censoring model.  If not specified the right hand side of
 <code>formula</code> is used.</p></dd>
+
+
 <dt>max.iter</dt>
 <dd><p>Maximal number of iterations.</p></dd>
+
+
 <dt>conservative</dt>
 <dd><p>If <code>TRUE</code> use variance formula that ignores the contribution
 by the estimate of the inverse of the probability of censoring weights</p></dd>
+
+
 <dt>...</dt>
 <dd><p>Further arguments passed to <code>comp.risk</code></p></dd>
+
 </dl></div>
     <div class="section level2">
     <h2 id="references">References<a class="anchor" aria-label="anchor" href="#references"></a></h2>
@@ -135,19 +163,19 @@ Springer.</p>
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"></span>
-<span class="r-in"><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va">prodlim</span><span class="op">)</span></span>
-<span class="r-in"><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">Melanoma</span>,package<span class="op">=</span><span class="st">"riskRegression"</span><span class="op">)</span></span>
-<span class="r-in"><span class="co">## tumor thickness on the log-scale</span></span>
-<span class="r-in"><span class="va">Melanoma</span><span class="op">$</span><span class="va">logthick</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">log</a></span><span class="op">(</span><span class="va">Melanoma</span><span class="op">$</span><span class="va">thick</span><span class="op">)</span></span>
-<span class="r-in"></span>
-<span class="r-in"><span class="co"># Single binary factor</span></span>
-<span class="r-in"></span>
-<span class="r-in"><span class="co">## absolute risk regression</span></span>
-<span class="r-in"><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/therneau/survival" class="external-link">survival</a></span><span class="op">)</span></span>
-<span class="r-in"><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va">prodlim</span><span class="op">)</span></span>
-<span class="r-in"><span class="va">fit.arr</span> <span class="op">&lt;-</span> <span class="fu">ARR</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/prodlim/man/Hist.html" class="external-link">Hist</a></span><span class="op">(</span><span class="va">time</span>,<span class="va">status</span><span class="op">)</span><span class="op">~</span><span class="va">sex</span>,data<span class="op">=</span><span class="va">Melanoma</span>,cause<span class="op">=</span><span class="fl">1</span><span class="op">)</span></span>
-<span class="r-in"><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">fit.arr</span><span class="op">)</span></span>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va">prodlim</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">Melanoma</span>,package<span class="op">=</span><span class="st">"riskRegression"</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="co">## tumor thickness on the log-scale</span></span></span>
+<span class="r-in"><span><span class="va">Melanoma</span><span class="op">$</span><span class="va">logthick</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">log</a></span><span class="op">(</span><span class="va">Melanoma</span><span class="op">$</span><span class="va">thick</span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># Single binary factor</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co">## absolute risk regression</span></span></span>
+<span class="r-in"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/therneau/survival" class="external-link">survival</a></span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va">prodlim</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">fit.arr</span> <span class="op">&lt;-</span> <span class="fu">ARR</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/prodlim/man/Hist.html" class="external-link">Hist</a></span><span class="op">(</span><span class="va">time</span>,<span class="va">status</span><span class="op">)</span><span class="op">~</span><span class="va">sex</span>,data<span class="op">=</span><span class="va">Melanoma</span>,cause<span class="op">=</span><span class="fl">1</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">fit.arr</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Competing risks regression model </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> IPCW weights: marginal Kaplan-Meier for the censoring distribution.</span>
@@ -160,25 +188,25 @@ Springer.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Note: The coefficients (Coef) are absolute risk ratios </span>
-<span class="r-in"><span class="co"># show predicted cumulative incidences</span></span>
-<span class="r-in"><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">fit.arr</span>,col<span class="op">=</span><span class="fl">3</span><span class="op">:</span><span class="fl">4</span>,newdata<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>sex<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Female"</span>,<span class="st">"Male"</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
+<span class="r-in"><span><span class="co"># show predicted cumulative incidences</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">fit.arr</span>,col<span class="op">=</span><span class="fl">3</span><span class="op">:</span><span class="fl">4</span>,newdata<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>sex<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Female"</span>,<span class="st">"Male"</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-plt img"><img src="riskRegression-1.png" alt="" width="700" height="433"></span>
-<span class="r-in"></span>
-<span class="r-in"><span class="co">## compare with non-parametric Aalen-Johansen estimate</span></span>
-<span class="r-in"><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va">prodlim</span><span class="op">)</span></span>
-<span class="r-in"><span class="va">fit.aj</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/prodlim/man/prodlim.html" class="external-link">prodlim</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/prodlim/man/Hist.html" class="external-link">Hist</a></span><span class="op">(</span><span class="va">time</span>,<span class="va">status</span><span class="op">)</span><span class="op">~</span><span class="va">sex</span>,data<span class="op">=</span><span class="va">Melanoma</span><span class="op">)</span></span>
-<span class="r-in"><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">fit.aj</span>,conf.int<span class="op">=</span><span class="cn">FALSE</span><span class="op">)</span></span>
-<span class="r-in"><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">fit.arr</span>,add<span class="op">=</span><span class="cn">TRUE</span>,col<span class="op">=</span><span class="fl">3</span><span class="op">:</span><span class="fl">4</span>,newdata<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>sex<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Female"</span>,<span class="st">"Male"</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co">## compare with non-parametric Aalen-Johansen estimate</span></span></span>
+<span class="r-in"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va">prodlim</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">fit.aj</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/prodlim/man/prodlim.html" class="external-link">prodlim</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/prodlim/man/Hist.html" class="external-link">Hist</a></span><span class="op">(</span><span class="va">time</span>,<span class="va">status</span><span class="op">)</span><span class="op">~</span><span class="va">sex</span>,data<span class="op">=</span><span class="va">Melanoma</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">fit.aj</span>,conf.int<span class="op">=</span><span class="cn">FALSE</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">fit.arr</span>,add<span class="op">=</span><span class="cn">TRUE</span>,col<span class="op">=</span><span class="fl">3</span><span class="op">:</span><span class="fl">4</span>,newdata<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>sex<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Female"</span>,<span class="st">"Male"</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-plt img"><img src="riskRegression-2.png" alt="" width="700" height="433"></span>
-<span class="r-in"></span>
-<span class="r-in"><span class="co">## with time-dependent effect</span></span>
-<span class="r-in"><span class="va">fit.tarr</span> <span class="op">&lt;-</span> <span class="fu">ARR</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/prodlim/man/Hist.html" class="external-link">Hist</a></span><span class="op">(</span><span class="va">time</span>,<span class="va">status</span><span class="op">)</span><span class="op">~</span><span class="fu"><a href="https://rdrr.io/pkg/survival/man/strata.html" class="external-link">strata</a></span><span class="op">(</span><span class="va">sex</span><span class="op">)</span>,data<span class="op">=</span><span class="va">Melanoma</span>,cause<span class="op">=</span><span class="fl">1</span><span class="op">)</span></span>
-<span class="r-in"><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">fit.tarr</span>,newdata<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>sex<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Female"</span>,<span class="st">"Male"</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co">## with time-dependent effect</span></span></span>
+<span class="r-in"><span><span class="va">fit.tarr</span> <span class="op">&lt;-</span> <span class="fu">ARR</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/prodlim/man/Hist.html" class="external-link">Hist</a></span><span class="op">(</span><span class="va">time</span>,<span class="va">status</span><span class="op">)</span><span class="op">~</span><span class="fu"><a href="https://rdrr.io/pkg/survival/man/strata.html" class="external-link">strata</a></span><span class="op">(</span><span class="va">sex</span><span class="op">)</span>,data<span class="op">=</span><span class="va">Melanoma</span>,cause<span class="op">=</span><span class="fl">1</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">fit.tarr</span>,newdata<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>sex<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Female"</span>,<span class="st">"Male"</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-plt img"><img src="riskRegression-3.png" alt="" width="700" height="433"></span>
-<span class="r-in"></span>
-<span class="r-in"><span class="co">## logistic risk regression</span></span>
-<span class="r-in"><span class="va">fit.lrr</span> <span class="op">&lt;-</span> <span class="fu">LRR</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/prodlim/man/Hist.html" class="external-link">Hist</a></span><span class="op">(</span><span class="va">time</span>,<span class="va">status</span><span class="op">)</span><span class="op">~</span><span class="va">sex</span>,data<span class="op">=</span><span class="va">Melanoma</span>,cause<span class="op">=</span><span class="fl">1</span><span class="op">)</span></span>
-<span class="r-in"><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">fit.lrr</span><span class="op">)</span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co">## logistic risk regression</span></span></span>
+<span class="r-in"><span><span class="va">fit.lrr</span> <span class="op">&lt;-</span> <span class="fu">LRR</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/prodlim/man/Hist.html" class="external-link">Hist</a></span><span class="op">(</span><span class="va">time</span>,<span class="va">status</span><span class="op">)</span><span class="op">~</span><span class="va">sex</span>,data<span class="op">=</span><span class="va">Melanoma</span>,cause<span class="op">=</span><span class="fl">1</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">fit.lrr</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> riskRegression: Competing risks regression model </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
@@ -218,16 +246,16 @@ Springer.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Note: The values exp(Coef) are odds ratios </span>
-<span class="r-in"></span>
-<span class="r-in"></span>
-<span class="r-in"><span class="co"># Single continuous factor</span></span>
-<span class="r-in"></span>
-<span class="r-in"><span class="co">## tumor thickness on the log-scale</span></span>
-<span class="r-in"><span class="va">Melanoma</span><span class="op">$</span><span class="va">logthick</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">log</a></span><span class="op">(</span><span class="va">Melanoma</span><span class="op">$</span><span class="va">thick</span><span class="op">)</span></span>
-<span class="r-in"></span>
-<span class="r-in"><span class="co">## absolute risk regression </span></span>
-<span class="r-in"><span class="va">fit2.arr</span> <span class="op">&lt;-</span> <span class="fu">ARR</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/prodlim/man/Hist.html" class="external-link">Hist</a></span><span class="op">(</span><span class="va">time</span>,<span class="va">status</span><span class="op">)</span><span class="op">~</span><span class="va">logthick</span>,data<span class="op">=</span><span class="va">Melanoma</span>,cause<span class="op">=</span><span class="fl">1</span><span class="op">)</span></span>
-<span class="r-in"><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">fit2.arr</span><span class="op">)</span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># Single continuous factor</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co">## tumor thickness on the log-scale</span></span></span>
+<span class="r-in"><span><span class="va">Melanoma</span><span class="op">$</span><span class="va">logthick</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">log</a></span><span class="op">(</span><span class="va">Melanoma</span><span class="op">$</span><span class="va">thick</span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co">## absolute risk regression </span></span></span>
+<span class="r-in"><span><span class="va">fit2.arr</span> <span class="op">&lt;-</span> <span class="fu">ARR</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/prodlim/man/Hist.html" class="external-link">Hist</a></span><span class="op">(</span><span class="va">time</span>,<span class="va">status</span><span class="op">)</span><span class="op">~</span><span class="va">logthick</span>,data<span class="op">=</span><span class="va">Melanoma</span>,cause<span class="op">=</span><span class="fl">1</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">fit2.arr</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Competing risks regression model </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> IPCW weights: marginal Kaplan-Meier for the censoring distribution.</span>
@@ -240,20 +268,20 @@ Springer.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Note: The coefficients (Coef) are absolute risk ratios </span>
-<span class="r-in"><span class="co"># show predicted cumulative incidences</span></span>
-<span class="r-in"><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">fit2.arr</span>,col<span class="op">=</span><span class="fl">1</span><span class="op">:</span><span class="fl">5</span>,newdata<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>logthick<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/stats/quantile.html" class="external-link">quantile</a></span><span class="op">(</span><span class="va">Melanoma</span><span class="op">$</span><span class="va">logthick</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
+<span class="r-in"><span><span class="co"># show predicted cumulative incidences</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">fit2.arr</span>,col<span class="op">=</span><span class="fl">1</span><span class="op">:</span><span class="fl">5</span>,newdata<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>logthick<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/stats/quantile.html" class="external-link">quantile</a></span><span class="op">(</span><span class="va">Melanoma</span><span class="op">$</span><span class="va">logthick</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-plt img"><img src="riskRegression-4.png" alt="" width="700" height="433"></span>
-<span class="r-in"></span>
-<span class="r-in"><span class="co">## comparison with nearest neighbor non-parametric Aalen-Johansen estimate</span></span>
-<span class="r-in"><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va">prodlim</span><span class="op">)</span></span>
-<span class="r-in"><span class="va">fit2.aj</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/prodlim/man/prodlim.html" class="external-link">prodlim</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/prodlim/man/Hist.html" class="external-link">Hist</a></span><span class="op">(</span><span class="va">time</span>,<span class="va">status</span><span class="op">)</span><span class="op">~</span><span class="va">logthick</span>,data<span class="op">=</span><span class="va">Melanoma</span><span class="op">)</span></span>
-<span class="r-in"><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">fit2.aj</span>,conf.int<span class="op">=</span><span class="cn">FALSE</span>,newdata<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>logthick<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/stats/quantile.html" class="external-link">quantile</a></span><span class="op">(</span><span class="va">Melanoma</span><span class="op">$</span><span class="va">logthick</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
-<span class="r-in"><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">fit2.arr</span>,add<span class="op">=</span><span class="cn">TRUE</span>,col<span class="op">=</span><span class="fl">1</span><span class="op">:</span><span class="fl">5</span>,lty<span class="op">=</span><span class="fl">3</span>,newdata<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>logthick<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/stats/quantile.html" class="external-link">quantile</a></span><span class="op">(</span><span class="va">Melanoma</span><span class="op">$</span><span class="va">logthick</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co">## comparison with nearest neighbor non-parametric Aalen-Johansen estimate</span></span></span>
+<span class="r-in"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va">prodlim</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">fit2.aj</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/prodlim/man/prodlim.html" class="external-link">prodlim</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/prodlim/man/Hist.html" class="external-link">Hist</a></span><span class="op">(</span><span class="va">time</span>,<span class="va">status</span><span class="op">)</span><span class="op">~</span><span class="va">logthick</span>,data<span class="op">=</span><span class="va">Melanoma</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">fit2.aj</span>,conf.int<span class="op">=</span><span class="cn">FALSE</span>,newdata<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>logthick<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/stats/quantile.html" class="external-link">quantile</a></span><span class="op">(</span><span class="va">Melanoma</span><span class="op">$</span><span class="va">logthick</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">fit2.arr</span>,add<span class="op">=</span><span class="cn">TRUE</span>,col<span class="op">=</span><span class="fl">1</span><span class="op">:</span><span class="fl">5</span>,lty<span class="op">=</span><span class="fl">3</span>,newdata<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>logthick<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/stats/quantile.html" class="external-link">quantile</a></span><span class="op">(</span><span class="va">Melanoma</span><span class="op">$</span><span class="va">logthick</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-plt img"><img src="riskRegression-5.png" alt="" width="700" height="433"></span>
-<span class="r-in"></span>
-<span class="r-in"><span class="co">## logistic risk regression</span></span>
-<span class="r-in"><span class="va">fit2.lrr</span> <span class="op">&lt;-</span> <span class="fu">LRR</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/prodlim/man/Hist.html" class="external-link">Hist</a></span><span class="op">(</span><span class="va">time</span>,<span class="va">status</span><span class="op">)</span><span class="op">~</span><span class="va">logthick</span>,data<span class="op">=</span><span class="va">Melanoma</span>,cause<span class="op">=</span><span class="fl">1</span><span class="op">)</span></span>
-<span class="r-in"><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">fit2.lrr</span><span class="op">)</span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co">## logistic risk regression</span></span></span>
+<span class="r-in"><span><span class="va">fit2.lrr</span> <span class="op">&lt;-</span> <span class="fu">LRR</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/prodlim/man/Hist.html" class="external-link">Hist</a></span><span class="op">(</span><span class="va">time</span>,<span class="va">status</span><span class="op">)</span><span class="op">~</span><span class="va">logthick</span>,data<span class="op">=</span><span class="va">Melanoma</span>,cause<span class="op">=</span><span class="fl">1</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">fit2.lrr</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> riskRegression: Competing risks regression model </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
@@ -293,15 +321,15 @@ Springer.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Note: The values exp(Coef) are odds ratios </span>
-<span class="r-in"></span>
-<span class="r-in"><span class="co">## change model for censoring weights</span></span>
-<span class="r-in"><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://hbiostat.org/R/rms/" class="external-link">rms</a></span><span class="op">)</span></span>
-<span class="r-in"><span class="va">fit2a.lrr</span> <span class="op">&lt;-</span> <span class="fu">LRR</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/prodlim/man/Hist.html" class="external-link">Hist</a></span><span class="op">(</span><span class="va">time</span>,<span class="va">status</span><span class="op">)</span><span class="op">~</span><span class="va">logthick</span>,</span>
-<span class="r-in">                 data<span class="op">=</span><span class="va">Melanoma</span>,</span>
-<span class="r-in">                 cause<span class="op">=</span><span class="fl">1</span>,</span>
-<span class="r-in">                 cens.model<span class="op">=</span><span class="st">"cox"</span>,</span>
-<span class="r-in">                 cens.formula<span class="op">=</span><span class="op">~</span><span class="va">sex</span><span class="op">+</span><span class="va">epicel</span><span class="op">+</span><span class="va">ulcer</span><span class="op">+</span><span class="va">age</span><span class="op">+</span><span class="va">logthick</span><span class="op">)</span></span>
-<span class="r-in"><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">fit2a.lrr</span><span class="op">)</span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co">## change model for censoring weights</span></span></span>
+<span class="r-in"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://hbiostat.org/R/rms/" class="external-link">rms</a></span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">fit2a.lrr</span> <span class="op">&lt;-</span> <span class="fu">LRR</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/prodlim/man/Hist.html" class="external-link">Hist</a></span><span class="op">(</span><span class="va">time</span>,<span class="va">status</span><span class="op">)</span><span class="op">~</span><span class="va">logthick</span>,</span></span>
+<span class="r-in"><span>                 data<span class="op">=</span><span class="va">Melanoma</span>,</span></span>
+<span class="r-in"><span>                 cause<span class="op">=</span><span class="fl">1</span>,</span></span>
+<span class="r-in"><span>                 cens.model<span class="op">=</span><span class="st">"cox"</span>,</span></span>
+<span class="r-in"><span>                 cens.formula<span class="op">=</span><span class="op">~</span><span class="va">sex</span><span class="op">+</span><span class="va">epicel</span><span class="op">+</span><span class="va">ulcer</span><span class="op">+</span><span class="va">age</span><span class="op">+</span><span class="va">logthick</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">fit2a.lrr</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> riskRegression: Competing risks regression model </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
@@ -341,25 +369,25 @@ Springer.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Note: The values exp(Coef) are odds ratios </span>
-<span class="r-in"></span>
-<span class="r-in"><span class="co">##  compare prediction performance</span></span>
-<span class="r-in"><span class="fu"><a href="Score.html">Score</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>ARR<span class="op">=</span><span class="va">fit2.arr</span>,AJ<span class="op">=</span><span class="va">fit2.aj</span>,LRR<span class="op">=</span><span class="va">fit2.lrr</span><span class="op">)</span>,formula<span class="op">=</span><span class="fu"><a href="https://rdrr.io/pkg/prodlim/man/Hist.html" class="external-link">Hist</a></span><span class="op">(</span><span class="va">time</span>,<span class="va">status</span><span class="op">)</span><span class="op">~</span><span class="fl">1</span>,data<span class="op">=</span><span class="va">Melanoma</span><span class="op">)</span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co">##  compare prediction performance</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="Score.html">Score</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>ARR<span class="op">=</span><span class="va">fit2.arr</span>,AJ<span class="op">=</span><span class="va">fit2.aj</span>,LRR<span class="op">=</span><span class="va">fit2.lrr</span><span class="op">)</span>,formula<span class="op">=</span><span class="fu"><a href="https://rdrr.io/pkg/prodlim/man/Hist.html" class="external-link">Hist</a></span><span class="op">(</span><span class="va">time</span>,<span class="va">status</span><span class="op">)</span><span class="op">~</span><span class="fl">1</span>,data<span class="op">=</span><span class="va">Melanoma</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Metric AUC:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Results by model:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>    model times  AUC lower upper</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1:   ARR  2006 60.0  50.6  69.4</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2:    AJ  2006 72.6  64.2  81.0</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3:   LRR  2006 73.8  65.6  82.1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1:   ARR  2006 60.0  55.5  64.5</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2:    AJ  2006 72.6  64.4  80.8</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3:   LRR  2006 73.8  65.7  82.0</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Results of model comparisons:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    times model reference delta.AUC lower upper    p</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1:  2006    AJ       ARR      12.6   0.9  24.3 0.03</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2:  2006   LRR       ARR      13.8   2.2  25.4 0.02</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3:  2006   LRR        AJ       1.2  -0.5   3.0 0.18</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    times model reference delta.AUC lower upper     p</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1:  2006    AJ       ARR      12.6   5.1  20.1 9e-04</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2:  2006   LRR       ARR      13.8   6.4  21.2 3e-04</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3:  2006   LRR        AJ       1.2  -0.5   2.9 2e-01</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> NOTE: Values are multiplied by 100 and given in %.</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> NOTE: The higher AUC the better.</span>
@@ -370,40 +398,40 @@ Springer.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>         model times Brier lower upper</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 1: Null model  2006  17.7  14.5  20.9</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2:        ARR  2006  68.9  62.9  74.9</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2:        ARR  2006  68.9  62.7  75.1</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 3:         AJ  2006  15.9  13.0  18.7</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 4:        LRR  2006  34.8  31.3  38.3</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 4:        LRR  2006  34.8  30.8  38.8</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Results of model comparisons:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>    times model  reference delta.Brier lower upper            p</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1:  2006   ARR Null model        51.2  42.3  60.1 2.264348e-29</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2:  2006    AJ Null model        -1.9  -3.7  -0.1 4.166371e-02</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3:  2006   LRR Null model        17.1  11.1  23.1 1.911113e-08</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 4:  2006    AJ        ARR       -53.1 -61.2 -44.9 3.872201e-37</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 5:  2006   LRR        ARR       -34.1 -38.0 -30.1 9.205808e-64</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 6:  2006   LRR         AJ        19.0  14.1  23.9 3.765408e-14</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1:  2006   ARR Null model        51.2  42.1  60.2 1.450243e-28</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2:  2006    AJ Null model        -1.9  -3.8   0.0 5.625981e-02</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3:  2006   LRR Null model        17.1  10.8  23.4 9.686666e-08</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 4:  2006    AJ        ARR       -53.1 -61.3 -44.8 1.933028e-36</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 5:  2006   LRR        ARR       -34.1 -38.2 -29.9 1.252371e-58</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 6:  2006   LRR         AJ        19.0  13.9  24.1 2.958862e-13</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> NOTE: Values are multiplied by 100 and given in %.</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> NOTE: The lower Brier the better.</span>
-<span class="r-in"></span>
-<span class="r-in"></span>
-<span class="r-in"><span class="co"># multiple regression</span></span>
-<span class="r-in"><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/tagteam/riskRegression" class="external-link">riskRegression</a></span><span class="op">)</span></span>
-<span class="r-in"><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va">prodlim</span><span class="op">)</span></span>
-<span class="r-in"><span class="co"># absolute risk model</span></span>
-<span class="r-in"><span class="va">multi.arr</span> <span class="op">&lt;-</span> <span class="fu">ARR</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/prodlim/man/Hist.html" class="external-link">Hist</a></span><span class="op">(</span><span class="va">time</span>,<span class="va">status</span><span class="op">)</span><span class="op">~</span><span class="va">logthick</span><span class="op">+</span><span class="va">sex</span><span class="op">+</span><span class="va">age</span><span class="op">+</span><span class="va">ulcer</span>,data<span class="op">=</span><span class="va">Melanoma</span>,cause<span class="op">=</span><span class="fl">1</span><span class="op">)</span></span>
-<span class="r-in"></span>
-<span class="r-in"><span class="co"># stratified model allowing different baseline risk for the two gender</span></span>
-<span class="r-in"><span class="va">multi.arr</span> <span class="op">&lt;-</span> <span class="fu">ARR</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/prodlim/man/Hist.html" class="external-link">Hist</a></span><span class="op">(</span><span class="va">time</span>,<span class="va">status</span><span class="op">)</span><span class="op">~</span><span class="va">thick</span><span class="op">+</span><span class="fu"><a href="https://rdrr.io/pkg/survival/man/strata.html" class="external-link">strata</a></span><span class="op">(</span><span class="va">sex</span><span class="op">)</span><span class="op">+</span><span class="va">age</span><span class="op">+</span><span class="va">ulcer</span>,data<span class="op">=</span><span class="va">Melanoma</span>,cause<span class="op">=</span><span class="fl">1</span><span class="op">)</span></span>
-<span class="r-in"></span>
-<span class="r-in"><span class="co"># stratify by a continuous variable: strata(age)</span></span>
-<span class="r-in"><span class="va">multi.arr</span> <span class="op">&lt;-</span> <span class="fu">ARR</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/prodlim/man/Hist.html" class="external-link">Hist</a></span><span class="op">(</span><span class="va">time</span>,<span class="va">status</span><span class="op">)</span><span class="op">~</span><span class="fu">tp</span><span class="op">(</span><span class="va">thick</span>,power<span class="op">=</span><span class="fl">0</span><span class="op">)</span><span class="op">+</span><span class="fu"><a href="https://rdrr.io/pkg/survival/man/strata.html" class="external-link">strata</a></span><span class="op">(</span><span class="va">age</span><span class="op">)</span><span class="op">+</span><span class="va">sex</span><span class="op">+</span><span class="va">ulcer</span>,</span>
-<span class="r-in">                 data<span class="op">=</span><span class="va">Melanoma</span>,</span>
-<span class="r-in">                 cause<span class="op">=</span><span class="fl">1</span><span class="op">)</span></span>
-<span class="r-in"></span>
-<span class="r-in"><span class="va">fit.arr2a</span> <span class="op">&lt;-</span> <span class="fu">ARR</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/prodlim/man/Hist.html" class="external-link">Hist</a></span><span class="op">(</span><span class="va">time</span>,<span class="va">status</span><span class="op">)</span><span class="op">~</span><span class="fu">tp</span><span class="op">(</span><span class="va">thick</span>,power<span class="op">=</span><span class="fl">1</span><span class="op">)</span>,data<span class="op">=</span><span class="va">Melanoma</span>,cause<span class="op">=</span><span class="fl">1</span><span class="op">)</span></span>
-<span class="r-in"><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">fit.arr2a</span><span class="op">)</span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># multiple regression</span></span></span>
+<span class="r-in"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/tagteam/riskRegression" class="external-link">riskRegression</a></span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va">prodlim</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="co"># absolute risk model</span></span></span>
+<span class="r-in"><span><span class="va">multi.arr</span> <span class="op">&lt;-</span> <span class="fu">ARR</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/prodlim/man/Hist.html" class="external-link">Hist</a></span><span class="op">(</span><span class="va">time</span>,<span class="va">status</span><span class="op">)</span><span class="op">~</span><span class="va">logthick</span><span class="op">+</span><span class="va">sex</span><span class="op">+</span><span class="va">age</span><span class="op">+</span><span class="va">ulcer</span>,data<span class="op">=</span><span class="va">Melanoma</span>,cause<span class="op">=</span><span class="fl">1</span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># stratified model allowing different baseline risk for the two gender</span></span></span>
+<span class="r-in"><span><span class="va">multi.arr</span> <span class="op">&lt;-</span> <span class="fu">ARR</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/prodlim/man/Hist.html" class="external-link">Hist</a></span><span class="op">(</span><span class="va">time</span>,<span class="va">status</span><span class="op">)</span><span class="op">~</span><span class="va">thick</span><span class="op">+</span><span class="fu"><a href="https://rdrr.io/pkg/survival/man/strata.html" class="external-link">strata</a></span><span class="op">(</span><span class="va">sex</span><span class="op">)</span><span class="op">+</span><span class="va">age</span><span class="op">+</span><span class="va">ulcer</span>,data<span class="op">=</span><span class="va">Melanoma</span>,cause<span class="op">=</span><span class="fl">1</span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># stratify by a continuous variable: strata(age)</span></span></span>
+<span class="r-in"><span><span class="va">multi.arr</span> <span class="op">&lt;-</span> <span class="fu">ARR</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/prodlim/man/Hist.html" class="external-link">Hist</a></span><span class="op">(</span><span class="va">time</span>,<span class="va">status</span><span class="op">)</span><span class="op">~</span><span class="fu">tp</span><span class="op">(</span><span class="va">thick</span>,power<span class="op">=</span><span class="fl">0</span><span class="op">)</span><span class="op">+</span><span class="fu"><a href="https://rdrr.io/pkg/survival/man/strata.html" class="external-link">strata</a></span><span class="op">(</span><span class="va">age</span><span class="op">)</span><span class="op">+</span><span class="va">sex</span><span class="op">+</span><span class="va">ulcer</span>,</span></span>
+<span class="r-in"><span>                 data<span class="op">=</span><span class="va">Melanoma</span>,</span></span>
+<span class="r-in"><span>                 cause<span class="op">=</span><span class="fl">1</span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="va">fit.arr2a</span> <span class="op">&lt;-</span> <span class="fu">ARR</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/prodlim/man/Hist.html" class="external-link">Hist</a></span><span class="op">(</span><span class="va">time</span>,<span class="va">status</span><span class="op">)</span><span class="op">~</span><span class="fu">tp</span><span class="op">(</span><span class="va">thick</span>,power<span class="op">=</span><span class="fl">1</span><span class="op">)</span>,data<span class="op">=</span><span class="va">Melanoma</span>,cause<span class="op">=</span><span class="fl">1</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">fit.arr2a</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> riskRegression: Competing risks regression model </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
@@ -447,8 +475,8 @@ Springer.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Note:The coeffient(s) for the following variable(s)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> thick are interpreted as per factor unit multiplied by time^power.</span>
-<span class="r-in"><span class="va">fit.arr2b</span> <span class="op">&lt;-</span> <span class="fu">ARR</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/prodlim/man/Hist.html" class="external-link">Hist</a></span><span class="op">(</span><span class="va">time</span>,<span class="va">status</span><span class="op">)</span><span class="op">~</span><span class="fu">timevar</span><span class="op">(</span><span class="va">thick</span><span class="op">)</span>,data<span class="op">=</span><span class="va">Melanoma</span>,cause<span class="op">=</span><span class="fl">1</span><span class="op">)</span></span>
-<span class="r-in"><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">fit.arr2b</span><span class="op">)</span></span>
+<span class="r-in"><span><span class="va">fit.arr2b</span> <span class="op">&lt;-</span> <span class="fu">ARR</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/prodlim/man/Hist.html" class="external-link">Hist</a></span><span class="op">(</span><span class="va">time</span>,<span class="va">status</span><span class="op">)</span><span class="op">~</span><span class="fu">timevar</span><span class="op">(</span><span class="va">thick</span><span class="op">)</span>,data<span class="op">=</span><span class="va">Melanoma</span>,cause<span class="op">=</span><span class="fl">1</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">fit.arr2b</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> riskRegression: Competing risks regression model </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
@@ -481,10 +509,10 @@ Springer.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Time constant regression coefficients:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> No covariates with time-constant coefficients specified.</span>
-<span class="r-in"></span>
-<span class="r-in"><span class="co">## logistic risk model</span></span>
-<span class="r-in"><span class="va">fit.lrr</span> <span class="op">&lt;-</span> <span class="fu">LRR</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/prodlim/man/Hist.html" class="external-link">Hist</a></span><span class="op">(</span><span class="va">time</span>,<span class="va">status</span><span class="op">)</span><span class="op">~</span><span class="va">thick</span>,data<span class="op">=</span><span class="va">Melanoma</span>,cause<span class="op">=</span><span class="fl">1</span><span class="op">)</span></span>
-<span class="r-in"><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">fit.lrr</span><span class="op">)</span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co">## logistic risk model</span></span></span>
+<span class="r-in"><span><span class="va">fit.lrr</span> <span class="op">&lt;-</span> <span class="fu">LRR</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/prodlim/man/Hist.html" class="external-link">Hist</a></span><span class="op">(</span><span class="va">time</span>,<span class="va">status</span><span class="op">)</span><span class="op">~</span><span class="va">thick</span>,data<span class="op">=</span><span class="va">Melanoma</span>,cause<span class="op">=</span><span class="fl">1</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">fit.lrr</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> riskRegression: Competing risks regression model </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
@@ -524,25 +552,25 @@ Springer.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Note: The values exp(Coef) are odds ratios </span>
-<span class="r-in"></span>
-<span class="r-in"></span>
-<span class="r-in"></span>
-<span class="r-in"></span>
-<span class="r-in"></span>
-<span class="r-in"><span class="co">## nearest neighbor non-parametric Aalen-Johansen estimate</span></span>
-<span class="r-in"><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va">prodlim</span><span class="op">)</span></span>
-<span class="r-in"><span class="va">fit.aj</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/prodlim/man/prodlim.html" class="external-link">prodlim</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/prodlim/man/Hist.html" class="external-link">Hist</a></span><span class="op">(</span><span class="va">time</span>,<span class="va">status</span><span class="op">)</span><span class="op">~</span><span class="va">thick</span>,data<span class="op">=</span><span class="va">Melanoma</span><span class="op">)</span></span>
-<span class="r-in"><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">fit.aj</span>,conf.int<span class="op">=</span><span class="cn">FALSE</span><span class="op">)</span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co">## nearest neighbor non-parametric Aalen-Johansen estimate</span></span></span>
+<span class="r-in"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va">prodlim</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">fit.aj</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/prodlim/man/prodlim.html" class="external-link">prodlim</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/prodlim/man/Hist.html" class="external-link">Hist</a></span><span class="op">(</span><span class="va">time</span>,<span class="va">status</span><span class="op">)</span><span class="op">~</span><span class="va">thick</span>,data<span class="op">=</span><span class="va">Melanoma</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">fit.aj</span>,conf.int<span class="op">=</span><span class="cn">FALSE</span><span class="op">)</span></span></span>
 <span class="r-plt img"><img src="riskRegression-6.png" alt="" width="700" height="433"></span>
-<span class="r-in"></span>
-<span class="r-in"><span class="co"># prediction performance</span></span>
-<span class="r-in"><span class="va">x</span> <span class="op">&lt;-</span> <span class="fu"><a href="Score.html">Score</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="va">fit.arr2a</span>,<span class="va">fit.arr2b</span>,<span class="va">fit.lrr</span><span class="op">)</span>,</span>
-<span class="r-in">             data<span class="op">=</span><span class="va">Melanoma</span>,</span>
-<span class="r-in">             formula<span class="op">=</span><span class="fu"><a href="https://rdrr.io/pkg/prodlim/man/Hist.html" class="external-link">Hist</a></span><span class="op">(</span><span class="va">time</span>,<span class="va">status</span><span class="op">)</span><span class="op">~</span><span class="fl">1</span>,</span>
-<span class="r-in">             cause<span class="op">=</span><span class="fl">1</span>,</span>
-<span class="r-in">             split.method<span class="op">=</span><span class="st">"none"</span><span class="op">)</span></span>
-<span class="r-in"></span>
-<span class="r-in"></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># prediction performance</span></span></span>
+<span class="r-in"><span><span class="va">x</span> <span class="op">&lt;-</span> <span class="fu"><a href="Score.html">Score</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="va">fit.arr2a</span>,<span class="va">fit.arr2b</span>,<span class="va">fit.lrr</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>             data<span class="op">=</span><span class="va">Melanoma</span>,</span></span>
+<span class="r-in"><span>             formula<span class="op">=</span><span class="fu"><a href="https://rdrr.io/pkg/prodlim/man/Hist.html" class="external-link">Hist</a></span><span class="op">(</span><span class="va">time</span>,<span class="va">status</span><span class="op">)</span><span class="op">~</span><span class="fl">1</span>,</span></span>
+<span class="r-in"><span>             cause<span class="op">=</span><span class="fl">1</span>,</span></span>
+<span class="r-in"><span>             split.method<span class="op">=</span><span class="st">"none"</span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span></span></span>
 </code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc"><h2>On this page</h2>
@@ -554,7 +582,7 @@ Springer.</p>
 </div>
 
 <div class="pkgdown-footer-right">
-  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.3.</p>
+  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.6.</p>
 </div>
 
     </footer></div>

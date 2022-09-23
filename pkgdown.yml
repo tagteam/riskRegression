@@ -1,6 +1,8 @@
 pandoc: 2.7.3
-pkgdown: 2.0.3
+pkgdown: 2.0.6
 pkgdown_sha: ~
-articles: {}
-last_built: 2022-06-01T10:03Z
+articles:
+  IFAUC: IFAUC.html
+  IFBrier: IFBrier.html
+last_built: 2022-09-23T15:45Z
 

@@ -4,6 +4,15 @@
     <loc>/404.html</loc>
   </url>
   <url>
+    <loc>/articles/IFAUC.html</loc>
+  </url>
+  <url>
+    <loc>/articles/IFBrier.html</loc>
+  </url>
+  <url>
+    <loc>/articles/index.html</loc>
+  </url>
+  <url>
     <loc>/authors.html</loc>
   </url>
   <url>
@@ -316,6 +325,9 @@
     <loc>/reference/simMelanoma.html</loc>
   </url>
   <url>
+    <loc>/reference/simsynth.html</loc>
+  </url>
+  <url>
     <loc>/reference/sliceMultiply_cpp.html</loc>
   </url>
   <url>
@@ -341,6 +353,9 @@
   </url>
   <url>
     <loc>/reference/summary.riskRegression.html</loc>
+  </url>
+  <url>
+    <loc>/reference/synthesize.html</loc>
   </url>
   <url>
     <loc>/reference/terms.phreg.html</loc>
