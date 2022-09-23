@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Jan 11 2022 (17:06)
 ## Version:
-## Last-Updated: May 31 2022 (11:37) 
+## Last-Updated: Sep 16 2022 (08:18) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 19
+##     Update #: 23
 #----------------------------------------------------------------------
 ##
 ### Commentary:
@@ -53,63 +53,32 @@ AUC.competing.risks <- function(DT,MC,se.fit,conservative,cens.model,keep.vcov=F
     data.table::setkey(score,model,times)
     aucDT <- merge(score,aucDT,all=TRUE)
     if (se.fit[[1]]==1L || multi.split.test[[1]]==TRUE){
-        ## compute influence function
-        ## data.table::setorder(aucDT,model,times,time,-status)
-        data.table::setorder(aucDT,model,times,ID)
+      ## compute influence function
+      ## data.table::setorder(aucDT,model,times,time,-status)
+      data.table::setorder(aucDT,model,times,ID)
       if (cens.model == "KaplanMeier" || cens.model == "none"){
         aucDT[,IF.AUC:=getInfluenceCurveHelper(time,status*event,times[1],risk,WTi,Wt[1],AUC[1]), by=list(model,times)]
       }
+      else if (cens.model == "cox"){
+        aucDT[,IF.AUC:=getInfluenceCurve.AUC.cox(times[1],time,status*event, WTi, Wt, risk, ID, MC, nth.times[1]), by=list(model,times)]
+      }
       else {
-        aucDT[,IF.AUC:={
-          if (sum(Controls2)==0){
-            getInfluenceCurve.AUC.survival(t=times[1],
-                                           n=N,
-                                           time=time,
-                                           risk=risk,
-                                           Cases=Cases,
-                                           Controls=Controls1,
-                                           ipcwControls=ipcwControls1,
-                                           ipcwCases=ipcwCases,
-                                           MC=MC)
-          }else{
-            getInfluenceCurve.AUC.competing.risks(t=times[1],
-                                                  n=N,
-                                                  time=time,
-                                                  risk=risk,
-                                                  ipcwControls1=ipcwControls1,
-                                                  ipcwControls2=ipcwControls2,
-                                                  ipcwCases=ipcwCases,
-                                                  Cases=Cases,
-                                                  Controls1=Controls1,
-                                                  Controls2=Controls2,
-                                                  MC=MC)
-          }
-        }, by=list(model,times)]
-            # warning("Switching to conservative SE. General case not yet implemented. \n")
-            # aucDT[,IF.AUC:=getInfluenceCurve.AUC.covariates.conservative(times[1],N,time,status*event,risk,WTi,Wt,AUC[1]), by=list(model,times)]
-              # for now does not support ties
-          
-            # if (conservative){
-            #   aucDT[,IF.AUC:=getInfluenceCurve.AUC.covariates.conservative(times[1],N,time,status*event,risk,WTi,Wt,AUC[1]), by=list(model,times)]
-            # }
-            # else {
-            #     aucDT[,IF.AUC:=getInfluenceCurve.AUC.covariates(times[1],N,time,status*event,risk,WTi,Wt,AUC[1],IC.data), by=list(model,times)]
-            # }
-        }
-        se.score <- aucDT[,list(se=sd(IF.AUC)/sqrt(N)),by=list(model,times)]
-        data.table::setkey(se.score,model,times)
-        score <- score[se.score]
-        if (se.fit==1L){
-            score[,lower:=pmax(0,AUC-qnorm(1-alpha/2)*se)]
-            score[,upper:=pmin(1,AUC+qnorm(1-alpha/2)*se)]
-        }else{
-            score[,se:=NULL]
-        }
-        data.table::setkey(aucDT,model,times)
-        aucDT <- aucDT[score]
-        if (keep.vcov){
-            output <- c(output,list(vcov=getVcov(aucDT,"IF.AUC",times=TRUE)))
-        }
+        stop("Censoring model not yet implemented. ")
+      }
+      se.score <- aucDT[,list(se=sd(IF.AUC)/sqrt(N)),by=list(model,times)]
+      data.table::setkey(se.score,model,times)
+      score <- score[se.score]
+      if (se.fit==1L){
+        score[,lower:=pmax(0,AUC-qnorm(1-alpha/2)*se)]
+        score[,upper:=pmin(1,AUC+qnorm(1-alpha/2)*se)]
+      }else{
+        score[,se:=NULL]
+      }
+      data.table::setkey(aucDT,model,times)
+      aucDT <- aucDT[score]
+      if (keep.vcov){
+        output <- c(output,list(vcov=getVcov(aucDT,"IF.AUC",times=TRUE)))
+      }
     }
     ## add score to object
     output <- c(list(score=score),output)

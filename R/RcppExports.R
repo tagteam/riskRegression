@@ -46,8 +46,8 @@ calcSeMinimalCSC_cpp <- function(seqTau, newSurvival, hazard0, cumhazard0, newX,
     .Call(`_riskRegression_calcSeMinimalCSC_cpp`, seqTau, newSurvival, hazard0, cumhazard0, newX, neweXb, IFbeta, Ehazard0, cumEhazard0, hazard_iS0, cumhazard_iS0, delta_iS0, sample_eXb, sample_time, indexJumpSample_time, jump_time, isJump_time1, jump2jump, firstTime1theCause, lastSampleTime, newdata_index, factor, grid_strata, nTau, nNewObs, nSample, nStrata, nCause, p, theCause, diag, survtype, exportSE, exportIF, exportIFmean, debug)
 }
 
-calcSeCif2_cpp <- function(ls_IFbeta, ls_X, ls_cumhazard, ls_hazard, survival, cif, ls_IFcumhazard, ls_IFhazard, eXb, nJumpTime, JumpMax, tau, tauIndex, nTau, nObs, theCause, nCause, hazardType, nVar, nNewObs, strata, exportSE, exportIF, exportIFsum, diag) {
-    .Call(`_riskRegression_calcSeCif2_cpp`, ls_IFbeta, ls_X, ls_cumhazard, ls_hazard, survival, cif, ls_IFcumhazard, ls_IFhazard, eXb, nJumpTime, JumpMax, tau, tauIndex, nTau, nObs, theCause, nCause, hazardType, nVar, nNewObs, strata, exportSE, exportIF, exportIFsum, diag)
+calcSeCif2_cpp <- function(ls_IFbeta, ls_X, ls_cumhazard, ls_hazard, survival, ls_IFcumhazard, ls_IFhazard, eXb, nJumpTime, JumpMax, tau, tauIndex, nTau, nObs, theCause, nCause, hazardType, nVar, nNewObs, strata, exportSE, exportIF, exportIFsum, diag) {
+    .Call(`_riskRegression_calcSeCif2_cpp`, ls_IFbeta, ls_X, ls_cumhazard, ls_hazard, survival, ls_IFcumhazard, ls_IFhazard, eXb, nJumpTime, JumpMax, tau, tauIndex, nTau, nObs, theCause, nCause, hazardType, nVar, nNewObs, strata, exportSE, exportIF, exportIFsum, diag)
 }
 
 calcSeMinimalCox_cpp <- function(seqTau, newSurvival, hazard0, cumhazard0, newX, neweXb, IFbeta, Ehazard0, cumEhazard0, hazard_iS0, cumhazard_iS0, delta_iS0, sample_eXb, sample_time, indexJumpSample_time, jump_time, indexJumpTau, lastSampleTime, newdata_index, factor, nTau, nNewObs, nSample, nStrata, p, diag, exportSE, exportIF, exportIFmean, exportHazard, exportCumhazard, exportSurvival, debug) {
@@ -167,8 +167,8 @@ colSumsCrossprodSpec <- function(X, Y) {
     .Call(`_riskRegression_colSumsCrossprodSpec`, X, Y)
 }
 
-predictCIF_cpp <- function(hazard, cumhazard, eXb, strata, newtimes, etimes, etimeMax, t0, nEventTimes, nNewTimes, nData, cause, nCause, survtype, productLimit, diag, exportSurv, nCores) {
-    .Call(`_riskRegression_predictCIF_cpp`, hazard, cumhazard, eXb, strata, newtimes, etimes, etimeMax, t0, nEventTimes, nNewTimes, nData, cause, nCause, survtype, productLimit, diag, exportSurv, nCores)
+predictCIF_cpp <- function(hazard, cumhazard, eXb, strata, newtimes, etimes, etimeMax, t0, nEventTimes, nNewTimes, nData, cause, nCause, survtype, productLimit, diag, exportSurv) {
+    .Call(`_riskRegression_predictCIF_cpp`, hazard, cumhazard, eXb, strata, newtimes, etimes, etimeMax, t0, nEventTimes, nNewTimes, nData, cause, nCause, survtype, productLimit, diag, exportSurv)
 }
 
 #' Apply cumsum in each row 

@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Feb 27 2022 (09:12) 
 ## Version: 
-## Last-Updated: Jul  5 2022 (17:41) 
+## Last-Updated: Sep 16 2022 (19:44) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 12
+##     Update #: 25
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -24,6 +24,7 @@ getPerformanceData <- function(testdata,
                                debug,
                                times,
                                cause,
+                               levs,
                                labels,
                                predictRisk.args,
                                nullobject,
@@ -31,7 +32,7 @@ getPerformanceData <- function(testdata,
                                object,
                                object.classes,
                                NT){
-    ID=model=NULL
+    ID=model = risk = NULL
     # inherit everything else from parent frame: object, nullobject, NF, NT, times, cause, response.type, etc.
     Brier=IPA=IBS=NULL
     looping <- !is.null(traindata)
@@ -60,7 +61,7 @@ getPerformanceData <- function(testdata,
         ## trainX <- copy(traindata)
         trainX[,ID:=NULL]
     }
-    pred <- data.table::rbindlist(lapply(labels, function(f){
+    pred <- data.table::rbindlist(lapply(levs, function(f){
         ## add object specific arguments to predictRisk methods
         if (f[1]>0 && (length(extra.args <- unlist(lapply(object.classes[[f]],function(cc){predictRisk.args[[cc]]})))>0)){
             args <- c(args,extra.args)
@@ -116,6 +117,15 @@ getPerformanceData <- function(testdata,
             out
         }
     }))
+    if (any(is.na(pred$risk))) {
+        pred[,model:=factor(model,levels=levs,labels)]
+        if (response.type[1] == "binary"){
+            print(pred[is.na(risk),data.table::data.table("sum(NA)" = .N),by = list(model)])
+            stop("Missing values in predicted risk detected.")
+        } else
+            print(pred[is.na(risk),data.table::data.table("sum(NA)" = .N),by = list(model,times)])
+        stop("Missing values in predicted risk detected.")
+    }
     if (debug) message("trained the model(s) and extracted the predictions")
     # }}}
     # {{{ merge with Weights (IPCW inner loop)

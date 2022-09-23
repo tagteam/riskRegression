@@ -1,145 +1,58 @@
-## IMPORTANT : data have to be ordered by time (and for ties by reverse status,
-## such that events (status=1,2,...) come before censored (status=0))
-getInfluenceCurve.AUC.survival <- function(t,n,time,risk,Cases,Controls,ipcwControls,ipcwCases,MC){
-    F01t <- sum(ipcwCases)
-    St <- sum(ipcwControls)
-    nbCases <- sum(Cases)
-    nbControls <- sum(Controls)
-    if (nbCases==0 || nbControls ==0 || length(unique(risk))==1) return(rep(0,n))
-    # mcase <- matrix(risk[Cases],nrow=nbCases,ncol=nbControls)
-    # mcontrol <- matrix(risk[Controls],nrow=nbCases,ncol=nbControls,byrow=TRUE)
-    # wcase <- matrix(ipcwCases[Cases],nrow=nbCases,ncol=nbControls)
-    # wcontrol <- matrix(ipcwControls[Controls],nrow=nbCases,ncol=nbControls,byrow=TRUE)
-    #htij1 <- (1*(mcase>mcontrol)+.5*(mcase==mcontrol))*wcase*wcontrol*n*n
-    htij1 <- htijCalculationHelper(risk[Cases],risk[Controls],ipcwCases[Cases],ipcwControls[Controls],n,nbCases,nbControls)
-    ht <- (sum(htij1))/(n*n)
-    fi1t <- Cases*ipcwCases*n
-    colSumshtij1 <- rep(0,n) # initialise at 0
-    colSumshtij1[Cases] <- rowSums(htij1)
-    rowSumshtij1 <- rep(0,n) # initialize at 0
-    rowSumshtij1[Controls] <- colSums(htij1)
-    hathtstar <- (sum(htij1))/(n*n)
-    vectTisupt <- n*Controls/sum(Controls)
-    # Integral_0^T_i dMC_k/S for i %in% Cases
-    MC.Ti.cases <- MC[sindex(eval.times=time[Cases],jump.times=unique(time)),,drop=FALSE]
-    T1 <- rowSumsCrossprodSpec(htij1,MC.Ti.cases)/n
-    ## print(system.time(T1 <- colSums(crossprod(htij1,1+MC.Ti.cases))/n))
-    ## the matrix MC has as many rows as there are unique time points
-    ## and as many colums as there are subjects
-    ## in case of ties need to expand MC to match the dimension of fi1t
-    #MC.all <- MC
-    if (all(match(time,unique(time)) != 1:ncol(MC))) {
-        MC <- MC[match(time,unique(time)),]
+getInfluenceCurve.AUC.cox <- function(t,time,event, WTi, Wt, risk, ID, MC, nth.times){
+  n <- length(time)
+  cases.index <- time<=t & event==1
+  controls.index1 <- time>t
+  controls.index2 <-  event==2 & time <= t
+  controls.index <- controls.index1 | controls.index2
+  
+  cc.status <- factor(rep("censored",n),levels=c("censored","case","control"))
+  cc.status[cases.index] <- "case"
+  cc.status[controls.index] <- "control"
+  
+  id.cases <- ID[cc.status=="case"]
+  id.controls <- ID[cc.status=="control"]
+  id.censored <- ID[cc.status=="censored"]
+  
+  weights.cases <- cases.index/WTi
+  weights.controls <- 1/Wt * controls.index1  + 1/WTi * controls.index2
+  weightMatrix <- outer(weights.cases[cases.index], weights.controls[controls.index], "*")
+  Phi <- (1/n^2)*sum(weights.cases[cases.index])*sum(weights.controls[controls.index])
+  which.cases <- (1:n)[cases.index]
+  which.controls <- (1:n)[controls.index]
+  auc <- AUCijFun(risk[which.cases],risk[which.controls])
+  auc <- auc*weightMatrix
+  auc[is.na(auc)] <- 0
+  nu1tauPm <- (1/n^2)*sum(auc)
+  aucLPO <- nu1tauPm*(1/Phi)
+  ic0Case <- rowSums(auc)
+  ic0Control <- colSums(auc)
+  ic0 <- (1/(Phi*n))*c(ic0Case, ic0Control)-2*aucLPO
+  aucDT <- data.table(ID = c(id.cases,id.controls,id.censored), IF.AUC0 = c(ic0, rep(-2*aucLPO,length(id.censored))))
+  ic.weights <- matrix(0,n,n)
+  k=0 ## counts subject-times with event before t
+  for (i in 1:n){
+    if (i %in% id.cases){
+      k=k+1
+      ic.weights[i,] <- MC$IC.subject[i,k,]/WTi[i]
+    }else{
+      if (i %in% id.controls){ ## min(T,C)>t
+        ic.weights[i,] <- MC$IC.times[i,nth.times,]/Wt[i]
+      }
     }
-    #T3 <- colSums(hathtstar*(vectTisupt + (fi1t*(1+MC)-F01t)/F01t))
-    #T3 <- hathtstar*sum(vectTisupt) + hathtstar/F01t * (T3CalculationHelper(fi1t,MC)-nrow(MC)*F01t)
-    T3 <- hathtstar*(sum(vectTisupt) + 1/F01t * T3CalculationHelper(fi1t,MC)-nrow(MC))
-
-    Term.ijak <- (T1-T3)/(F01t*St)
-    Term.ikaj <- (rowSumshtij1 - n*hathtstar)/(F01t*St)
-    Term.jkai <-  (colSumshtij1 - n*hathtstar*(vectTisupt+(1/F01t)*(fi1t-F01t)))/(F01t*St)
-    ## the influence function according to Blanche et al. 2013, DOI: 10.1002/sim.5958, Statistics in Medicine, Appendix A
-    (Term.ijak + Term.ikaj + Term.jkai)/(n)
-}
-
-
-## NTC <- NCOL(MC.Ti.cases)
-## T1 <- numeric(NTC)
-## for (j in 1:NTC){
-## T1[j] <- sum(cprod(htij1,(1+MC.Ti.cases[,j,drop=FALSE]),0,1,0)/n)
-## }
-## system.time(T1a <- sapply(1:NCOL(MC.Ti.cases),function(j){sum(cprod(htij1,(1+MC.Ti.cases[,j,drop=FALSE]),0,1,0)/n)}))
-## system.time(T1 <- colSums(crossprod(htij1,1+MC.Ti.cases))/n)
-## system.time(T1 <- (crossprod(crossprod(one,t(htij1)),1+MC.Ti.cases))/n)
-## A <- big.matrix(NROW(htij1),NCOL(htij1))
-## A[,] <- htij1
-## B <- big.matrix(NROW(MC.Ti.cases),NCOL(MC.Ti.cases))
-## B[,] <- 1+MC.Ti.cases
-## T1 <- t(A)%*%B
-## T1 <- cprod(htij1,1+MC.Ti.cases,1,1,0)/n
-## system.time(T1 <- cprod(htij1,1+MC.Ti.cases,1,1,0)/n)
-## system.time(T1b <- cprod(A,1+MC.Ti.cases,1,0,0)/n)
-
-
-## IMPORTANT : data have to be ordered by time (and for ties by reverse status)
-getInfluenceCurve.AUC.competing.risks <- function(t,n,time,risk,Cases,Controls1,Controls2,ipcwControls1,ipcwControls2,ipcwCases,MC){
-    F01t <- sum(ipcwCases)
-    ## 1-F01t <- sum(ipcwControls1+ipcwControls2)
-    nbCases <- sum(Cases)
-    nbControls1 <- sum(Controls1)
-    nbControls2 <- sum(Controls2)
-    if (nbCases==0 || (nbControls1 + nbControls2) ==0  || length(unique(risk))==1) return(rep(0,n))
-    # #a(i,j)=a(i,j')
-    # mcase1 <- matrix(risk[Cases],nrow=nbCases,ncol=nbControls1)
-    # mcase2 <- matrix(risk[Cases],nrow=nbCases,ncol=nbControls2)
-    # #a(i,j) = a(i',j)
-    # mcontrol1 <- matrix(risk[Controls1],nrow=nbCases,ncol=nbControls1,byrow=TRUE)
-    # mcontrol2 <- matrix(risk[Controls2],nrow=nbCases,ncol=nbControls2,byrow=TRUE)
-    # wcase1 <- matrix(ipcwCases[Cases],nrow=nbCases,ncol=nbControls1)
-    # wcase2 <- matrix(ipcwCases[Cases],nrow=nbCases,ncol=nbControls2)
-    # wcontrol1 <- matrix(ipcwControls1[Controls1],nrow=nbCases,ncol=nbControls1,byrow=TRUE)
-    # wcontrol2 <- matrix(ipcwControls2[Controls2],nrow=nbCases,ncol=nbControls2,byrow=TRUE)
-    #htij1 <- (1*(mcase1>mcontrol1)+.5*(mcase1==mcontrol1))*wcase1*wcontrol1*n*n
-    #htij1<-htijCalculationHelper(mcase1,mcontrol1,wcase1,wcontrol1,n)
-    htij1<-htijCalculationHelper(risk[Cases],risk[Controls1],ipcwCases[Cases],ipcwControls1[Controls1],n,nbCases,nbControls1)
-    #htij2 <- (1*(mcase2>mcontrol2) + .5*(mcase2==mcontrol2))*wcase2*wcontrol2*n*n
-    htij2<-htijCalculationHelper(risk[Cases],risk[Controls2],ipcwCases[Cases],ipcwControls2[Controls2],n,nbCases,nbControls2)
-    #htij2<-htijCalculationHelper(mcase2,mcontrol2,wcase2,wcontrol2,n)
-    ht <- (sum(htij1)+sum(htij2))/(n*n)
-    fi1t <- Cases*ipcwCases*n
-    colSumshtij1 <- rep(0,n) # initialise at 0
-    colSumshtij1[Cases] <- rowSums(htij1)
-    colSumshtij2 <- rep(0,n) # initialise at 0
-    colSumshtij2[Cases] <- rowSums(htij2)
-    rowSumshtij1 <- rep(0,n) # match(time,unique(time))initialize at 0
-    rowSumshtij1[Controls1] <- colSums(htij1)
-    rowSumshtij2 <- rep(0,n) # initialize at 0
-    rowSumshtij2[Controls2] <- colSums(htij2)
-    hathtstar <- (sum(htij1))/(n*n)
-    vectTisupt <- n*Controls1/nbControls1
-    # Integral_0^T_i dMC_k/S for i %in% Cases
-    MC.Ti.cases <- MC[sindex(eval.times=time[Cases],jump.times=unique(time),),,drop=FALSE]
-    ## MC.Ti.cases <- rbind(0,MC)[1+prodlim::sindex(eval.times=time[Cases],jump.times=unique(time),strict=1),,drop=FALSE]
-    # Integral_0^T_i dMC_k/S for i %in% Controls 2
-    MC.Ti.controls2 <- MC[sindex(eval.times=time[Controls2],jump.times=unique(time)),,drop=FALSE]
-    ## MC.Ti.controls2 <- rbind(0,MC)[1+prodlim::sindex(eval.times=time[Controls2],jump.times=unique(time),strict=1),,drop=FALSE]
-    # Integral_0^t dMC_k/S for all i
-    MC.t <- MC[prodlim::sindex(eval.times=t,jump.times=unique(time)),,drop=TRUE]
-    ## MC.t <- rbind(0,MC)[1+prodlim::sindex(eval.times=t,jump.times=unique(time),strict=1),,drop=TRUE]
-    # we compute \frac{1}{n}\sum{i=1}^n \sum{j=1}^n \sum{l=1}^n \Psi{ijkl}(t)
-    #T1 <- rowSumsCrossprod(htij1,1+MC.Ti.cases,0)
-    T1 <- rowSumsCrossprodSpec(htij1,MC.Ti.cases)
-    ## T1 <- colSums(crossprod(htij1,1+MC.Ti.cases))
-    #T2 <- rowSumsCrossprod(htij2,1+MC.Ti.cases,0)
-    T2 <- rowSumsCrossprodSpec(htij2,MC.Ti.cases)
-    ## T2 <- colSums(crossprod(htij2,1+MC.Ti.cases))
-    ## in case of ties need to expand MC to match the dimension of fi1t
-    # data does not have ties, this saves memory
-    if (all(match(time,unique(time)) != 1:ncol(MC))) {
-        MC <- MC[match(time,unique(time)),]
-    }
-    #MC.all <- MC[match(time,unique(time)),]
-    #should be quicker
-    #T3 <- ht*(1-2*F01t)/(F01t*(1-F01t))*colSums(fi1t*(1+MC))-ht*(1-2*F01t)/(F01t*(1-F01t))*nrow(MC)*F01t
-    #T3 <- ht*(1-2*F01t)/(F01t*(1-F01t))*T3CalculationHelper(fi1t,MC)-ht*(1-2*F01t)/(F01t*(1-F01t))*nrow(MC)*F01t
-    T3 <- ht*(1-2*F01t)/(F01t*(1-F01t))*(T3CalculationHelper(fi1t,MC)-nrow(MC)*F01t)
-    #T3 <- colSums((ht*(1-2*F01t)/(F01t*(1-F01t)))*(fi1t*(1+MC.all)-F01t))
-    Term.ijlk <- ((T1 + T2) - n^2*ht - n*T3)/(F01t*(1-F01t))
-    # we compute \frac{1}{n}\sum_{i=1}^n \sum_{j=1}^n \sum_{k=1}^n \Psi_{ijkl}(t)
-    # Q1 <- sapply(1:n,function(i)sum(htij1*(1+MC.t[i])))
-    Q1 <- sum(htij1)*(1+MC.t)
-    ## Q2 <- colSums(crossprod(t(htij2),(1+MC.Ti.controls2)))
-    Q2 <- colSumsCrossprodSpec(htij2,MC.Ti.controls2)
-    Term.ijkl <- ((Q1 + Q2) - n^2*ht)/(F01t*(1-F01t))
-    # we compute \frac{1}{n}\sum_{j=1}^n \sum_{k=1}^n \sum_{l=1}^n \Psi_{ijkl}(t)
-    Term.jkli <-((colSumshtij1 + colSumshtij2)*n - n^2*ht - ( ht*n^2*(1-2*F01t) / (F01t*(1-F01t)) ) *(fi1t - F01t) )/(F01t*(1-F01t))
-    # we compute \frac{1}{n}\sum{i=1}^n \sum{k=1}^n \sum{l=1}^n \Psi{ijkl}(t)
-    Term.iklj<-((rowSumshtij1 + rowSumshtij2)*n - n^2*ht)/(F01t*(1-F01t))
-    ## the influence function according to Blanche et al. 2013, DOI: 10.1002/sim.5958, Statistics in Medicine, Appendix A
-    ## print(list(Term.jkli,Term.iklj,Term.ijkl,Term.ijlk))
-    ## print(rbind(Term.jkli, Term.iklj, Term.ijkl, Term.ijlk))
-    ## print((Term.jkli + Term.iklj + Term.ijkl + Term.ijlk)/(n*n))
-    (Term.jkli + Term.iklj + Term.ijkl + Term.ijlk)/(n*n)
+  }
+  ## ## Part of influence function related to Weights
+  ic.weightsCase <- as.numeric(rowSumsCrossprod(as.matrix(rowSums(auc)), ic.weights[which.cases,], 0))
+  ic.weightsControl <- as.numeric(rowSumsCrossprod(as.matrix(colSums(auc)), ic.weights[which.controls,], 0))
+  ic.weightsCC <- (1/(Phi*n^2))*(ic.weightsCase+ic.weightsControl)
+  ## ## Part of influence function related to Phi
+  ## icPhiCase <- colMeans(ic.weights[which.cases,])
+  icPhiCase <- as.numeric(rowSumsCrossprod(as.matrix(weights.cases[which.cases]),ic.weights[which.cases,],0))
+  icPhiControl <- as.numeric(rowSumsCrossprod(as.matrix(weights.controls[which.controls]),ic.weights[which.controls,],0))
+  icPhi <- (aucLPO/Phi)*((weights.cases-(1/n)*icPhiCase)*(1/n)*sum(weights.controls)+(weights.controls-(1/n)*icPhiControl)*(1/n)*sum(weights.cases)) - 2*aucLPO
+  ## ## Combine all parts of influence function
+  ## ic1 <- data.table(ID=data[["ID"]], "ic.weightsCC" = ic.weightsCC, "icPhi" = icPhi)
+  data.table::setkey(aucDT,ID)
+  aucDT[["IF.AUC0"]]-ic.weightsCC-icPhi
 }
 
 getInfluenceCurve.Brier1 <- function(t,time,Yt,residuals,MC){

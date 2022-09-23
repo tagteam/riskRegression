@@ -96,7 +96,7 @@ m1 = FGR(Hist(time,event)~X2+X7+X9,data=learndat,cause=1)
 m2 = CSC(Hist(time,event)~X2+X7+X9,data=learndat,cause=1)
 xcr=Score(list("FGR"=m1,"CSC"=m2),formula=Hist(time,event)~1,
          data=testdat,summary="risks",null.model=0L,times=c(3,5))
-plotRisk(xcr,times=1)
+plotRisk(xcr,times=3)
 }
 }
 \author{

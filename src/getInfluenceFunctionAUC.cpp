@@ -46,7 +46,7 @@ NumericVector getInfluenceFunctionAUCKMCensoring(NumericVector time,
   if (firsthit == -1){
     firsthit = 0;
   }
-
+  
   // P(tilde{T_i} > tau)
   double Probmu = double ((n-(firsthit+1))) / n;
   // If ties = TRUE, there are equalities for X in the below
@@ -174,7 +174,7 @@ NumericVector getInfluenceFunctionAUCKMCensoring(NumericVector time,
     }
     tieIter++;
   }
-
+  
   int upperTie = tieIter-1;
   double eq8{}, eq9{}, eq10{}, eq11{},eq12{},eq13{},eq14{}, eq15{}, eq16{},eq17{},eq18{},eq19{},eq20{},eq21{}, fihattau{},eq1721part{};
   for (int i = 0; i<n; i++){
@@ -240,7 +240,7 @@ NumericVector getInfluenceFunctionAUCKMCensoring(NumericVector time,
     }
     double IFnu = eq8+eq9+eq10+eq11+eq12+eq13+eq14;
     double IFmu = eq15+eq16+eq17+eq18+eq19+eq20+eq21;
-
+    
     ic[i] = (IFnu * mu1 - IFmu * nu1)/(mu1*mu1);
   }
   return ic;
@@ -265,7 +265,7 @@ NumericVector getInfluenceFunctionAUCKMCensoringCVPart(NumericVector time,
   // should also check matrix for NAs and the IntegerVectors
   compareLengths(time,status);
   compareLengths(status,GTiminus);
-
+  
   int n = time.size();
   NumericVector ic(n);
   arma::uvec sindex(n,fill::zeros);
@@ -274,14 +274,14 @@ NumericVector getInfluenceFunctionAUCKMCensoringCVPart(NumericVector time,
   arma::vec atrisk(nu);
   arma::vec MC_term2(nu,fill::zeros);
   getInfluenceFunctionKM(time,status,atrisk,MC_term2,sindex,utime);
-
+  
   // find first index such that k such that tau[k] <= tau but tau[k+1] > tau
   auto lower = std::upper_bound(time.begin(), time.end(), tau);
   int firsthit = std::distance(time.begin(), lower) -1;
   if (firsthit == -1){
     firsthit = 0;
   }
-
+  
   // P(tilde{T_i} > tau)
   double Probmu = double ((n-(firsthit+1))) / n;
   //this is the one theta_m(X_i,x), varies over cases
@@ -345,7 +345,7 @@ NumericVector getInfluenceFunctionAUCKMCensoringCVPart(NumericVector time,
     }
     tieIter++;
   }
-
+  
   int upperTie = tieIter-1;
   numberOfCases = 0;
   numberOfControls = 0;
@@ -431,7 +431,7 @@ NumericVector getInfluenceFunctionAUCKMCensoringCVPart(NumericVector time,
     
     double IFnu = eq31+eq32+eq33+eq34;
     double IFmu = eq35+eq36+eq37+eq38;
-
+    
     ic[i] = (IFnu * mu1 - IFmu * nu1)/(mu1*mu1);
   }
   return ic;

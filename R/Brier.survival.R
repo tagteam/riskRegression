@@ -47,12 +47,7 @@ Brier.survival <- function(DT,MC,se.fit,conservative,cens.model,keep.vcov=FALSE,
                                       se.conservative=sd(IC0)/sqrt(N)),by=list(model,times)]
             }
             else {
-                # if (!old.ic.method){
-                #   browser()
-                #   # DT[,IF.Brier:=getInfluenceCurve.Brier.covariates(times[1],time,risk,status,WTi,sum(residuals)/N,IC.data), by=list(model,times)]
-                #   # DT[,IF.Brier2:=getInfluenceCurve.Brier.covariates.use.squared(times[1],time,residuals,risk,status,WTi,Wt,IC.data), by=list(model,times)]
-                # }
-                DT[,IF.Brier:=getInfluenceCurve.Brier(t=times[1],
+              DT[,IF.Brier:=getInfluenceCurve.Brier(t=times[1],
                                                     time=time,
                                                     IC0,
                                                     residuals=residuals,
@@ -61,8 +56,10 @@ Brier.survival <- function(DT,MC,se.fit,conservative,cens.model,keep.vcov=FALSE,
                                                     IC.G=MC,
                                                     cens.model=cens.model,
                                                     nth.times=nth.times[1]),by=list(model,times)]
-                score <- DT[,data.table(Brier=sum(residuals)/N,
-                                        se=sd(IF.Brier)/sqrt(N)),by=list(model,times)]
+              score <- DT[,data.table(Brier=sum(residuals)/N,
+                                      #se2  = sd(IF.Brier2)/sqrt(N),
+                                      se=sd(IF.Brier)/sqrt(N),
+                                      se.conservative=sd(IC0)/sqrt(N)),by=list(model,times)]
             }
         }
         if (se.fit==TRUE){

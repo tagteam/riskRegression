@@ -1,5 +1,5 @@
 // [[Rcpp::depends(RcppArmadillo)]]
-#include "arma-wrap.h"
+#include <RcppArmadillo.h>
 
 using namespace Rcpp;
 using namespace arma;
@@ -22,14 +22,9 @@ List predictCIF_cpp(const std::vector<arma::mat>& hazard,
                     bool survtype,
                     bool productLimit,
                     bool diag,
-                    bool exportSurv,
-                    int nCores){
+                    bool exportSurv){
   
   arma::mat pred_CIF;
-  bool ist0na = R_IsNA(t0);
-  if (!ist0na){
-    nCores = 1;
-  }
   if (diag) {	
     pred_CIF.resize(nData, 1);
   }else{
@@ -43,30 +38,29 @@ List predictCIF_cpp(const std::vector<arma::mat>& hazard,
     pred_Surv.fill(0.0);
   }
   
-  // double hazard_it; // hazard for the cause of interest at time t for individual i
-  // double hazard_tempo; // hazard for the cause of interest at time t for individual i
-  // double survival_it; // overall survival at time t for individual i
-  // double CIF_it;// cumulative incidence at time t for individual i
+  double hazard_it; // hazard for the cause of interest at time t for individual i
+  double hazard_tempo; // hazard for the cause of interest at time t for individual i
+  double survival_it; // overall survival at time t for individual i
+  double CIF_it;// cumulative incidence at time t for individual i
   double survival_it0=1;// survival at time t0 for individual i
-  // int iterP; // index of the prediction time
-  // rowvec strataI(nCause);
+  int iterP; // index of the prediction time
+  rowvec strataI(nCause);
   
-  #if defined(_OPENMP)  
-    #pragma omp parallel num_threads(nCores)
-    #pragma omp for
-  #endif
+  int iNNewTimes;
+  vector<double> iNewTimes;
+  if(diag){
+    iNewTimes.resize(1);
+  }
+  
   for(int iterI=0 ; iterI<nData; iterI++){ // index of the patient
-    // if(iterI % 100 == 0)
-    //   R_CheckUserInterrupt();
-    // 
-    double CIF_it = 0;
-    int iterP = 0;
-    double survival_it = 1;
-    rowvec strataI = strata.row(iterI);
-    int iNNewTimes;
-    vector<double> iNewTimes;
+    R_CheckUserInterrupt();
+    
+    CIF_it = 0;
+    iterP = 0;
+    survival_it = 1;
+    strataI = strata.row(iterI);
+    
     if(diag){
-      iNewTimes.resize(1);
       iNNewTimes = 1;
       iNewTimes[0] = newtimes[iterI];
     }else{
@@ -89,7 +83,7 @@ List predictCIF_cpp(const std::vector<arma::mat>& hazard,
       } 
       
       // get hazard for the cause of interest
-      double hazard_it = hazard[cause](iterT,strataI[cause])*eXb(iterI,cause);
+      hazard_it = hazard[cause](iterT,strataI[cause])*eXb(iterI,cause);
       
       // sum all cumhazard for all causes times the linear predictor and then take the exponential
       if(iterT>0){ // it is survival at t- which is computed i.e. the survival at the previous eventtime (censoring does not affect survival)
@@ -99,7 +93,7 @@ List predictCIF_cpp(const std::vector<arma::mat>& hazard,
           if(survtype){ // product limit 
             survival_it *= (1-eXb(iterI,1)*hazard[1](iterT-1,strataI[1]));
           }else{	    
-            double hazard_tempo = 0;
+            hazard_tempo = 0;
             for(int iterC=0 ; iterC<nCause; iterC++){
               hazard_tempo += eXb(iterI,iterC)*hazard[iterC](iterT-1,strataI[iterC]);
             }
@@ -126,7 +120,7 @@ List predictCIF_cpp(const std::vector<arma::mat>& hazard,
       }
       
       // update the integral
-      if(ist0na){
+      if(R_IsNA(t0)){
         CIF_it += survival_it * hazard_it;
       }else{// [only for conditional CIF]
         
@@ -156,7 +150,7 @@ List predictCIF_cpp(const std::vector<arma::mat>& hazard,
       }
       
     }
-    if(!ist0na){ // before t0 fill with NA
+    if(R_IsNA(t0) == false){ // before t0 fill with NA
       iterP = 0;
       while(iterP < nNewTimes && iNewTimes[iterP]<t0){
         pred_CIF(iterI,iterP) = NA_REAL;
