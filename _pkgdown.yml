@@ -67,6 +67,8 @@ reference:
   - matches("[Ss]ampleData")
   - simActiveSurveillance
   - simMelanoma
+  - simsynth
+  - synthesize
   - Melanoma
   - Paquid
 
