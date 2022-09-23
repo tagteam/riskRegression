@@ -17,9 +17,9 @@ test_that("Brier score censored data order",{
     b <- Score(list(fit),data=Melanoma,Surv(time,status!=0)~invasion+epicel+logthick,cens.model="marginal",metric="Brier")
     B <- Score(list(fit),data=Melanoma,Surv(time,status!=0)~invasion+epicel+logthick,cens.model="cox",metric="Brier")
     a$call <- b$call <- A$call <- B$call <- NULL
-    ## expect_error(expect_equal(a,b,tolerance = .002))
-    expect_equal(a,b,tolerance = .02)
-    expect_equal(A,B,tolerance=.02)
+    ## expect_error(expect_equal(ignore_attr=TRUE,a,b,tolerance = .002))
+    expect_equal(ignore_attr=TRUE,a,b,tolerance = .02)
+    expect_equal(ignore_attr=TRUE,A,B,tolerance=.02)
 })
 
 # }}}

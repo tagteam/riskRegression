@@ -15,15 +15,15 @@ test_that("Absolute risk regression",{
     f4 <- ARR(Hist(time,event)~X1+X2+strata(X8),data=d,cause=1)    
     f5 <- timereg::comp.risk(Event(time,event)~ const(X1)+const(X2)+X8,data=d,cause=1,model="rcif")
     f6 <- timereg::comp.risk(Event(time,event)~ const(X1)+const(X2)+X8,data=d,cause=1,model="rcif2")
-    expect_equal(as.numeric(f1$timeConstantEffects$coef),c(f3$gamma))
-    expect_equal(as.numeric(f4$timeConstantEffects$coef),c(f6$gamma))
+    expect_equal(ignore_attr=TRUE,as.numeric(f1$timeConstantEffects$coef),c(f3$gamma))
+    expect_equal(ignore_attr=TRUE,as.numeric(f4$timeConstantEffects$coef),c(f6$gamma))
     d[,X4:=factor(X4)]
     system.time(A <- ARR(Hist(time,event)~X1+X3+X4,data=d,cause=1))
     ## system.time(B <- timereg::comp.risk(Event(time,event)~ const(factor(X1))+ const(factor(X3)),data=d,cause=1,model="rcif"))
     system.time(B <- timereg::comp.risk(Event(time,event)~ const(X1)+ const(X3)+const(X4),data=d,cause=1,model="rcif2"))
     ## head(A$timeVaryingEffects$coef)
     ## head(B$cum)
-    expect_equal(as.numeric(A$timeConstantEffects$coef),c(B$gamma))    
+    expect_equal(ignore_attr=TRUE,as.numeric(A$timeConstantEffects$coef),c(B$gamma))    
 })
 
 # }}}
@@ -33,12 +33,12 @@ test_that("Logistic risk regression",{
     d <- prodlim::SimCompRisk(100)
     a <- LRR(Hist(time,event)~X1+X2,data=d,cause=1)
     b <- timereg::comp.risk(Event(time,event)~ const(X1)+const(X2),data=d,cause=1,model="logistic2")
-    expect_equal(as.numeric(a$timeConstantEffects$coef),c(b$gamma))
+    expect_equal(ignore_attr=TRUE,as.numeric(a$timeConstantEffects$coef),c(b$gamma))
     A <- LRR(Hist(time,event)~X1+strata(X2),data=d,cause=1)
     B <- timereg::comp.risk(Event(time,event)~ const(X1)+X2,data=d,cause=1,model="logistic2")
     ## head(A$timeVaryingEffects$coef)
     ## head(B$cum)
-    expect_equal(as.numeric(A$timeConstantEffects$coef),c(B$gamma))    
+    expect_equal(ignore_attr=TRUE,as.numeric(A$timeConstantEffects$coef),c(B$gamma))    
 })
 
 # }}}

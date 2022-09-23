@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Aug 10 2017 (08:56) 
 ## Version: 
-## Last-Updated: Feb 27 2022 (09:10) 
+## Last-Updated: Sep 17 2022 (07:02) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 39
+##     Update #: 40
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -101,10 +101,10 @@ test_that("[predictRisk.glm] compare to lava",{
         return(expit(a + b * (data[["X1"]]=="1") + c * (data[["X2"]]=="1")))
     })
     ## check point estimate
-    expect_equal(e.RR, predict(fit, newdata = dt, type = "response"))
-    expect_equal(unname(e.RR), unname(e.lava$coef))
+    expect_equal(ignore_attr=TRUE,e.RR, predict(fit, newdata = dt, type = "response"))
+    expect_equal(ignore_attr=TRUE,unname(e.RR), unname(e.lava$coef))
     ## check variance
-    expect_equal(unname(crossprod(e.RR.iid)), unname(e.lava$vcov),tol=0.001)
+    expect_equal(ignore_attr=TRUE,unname(crossprod(e.RR.iid)), unname(e.lava$vcov),tol=0.001)
 })
 
 ## ** average.iid 
@@ -120,11 +120,11 @@ test_that("[predictRisk.glm] compare to lava (average.iid, no factor)",{
         return(list(risk = eXb))},
         average=TRUE)
     ## check point estimate
-    expect_equal(unname(mean(e.RR)), unname(e.lava$coef))
+    expect_equal(ignore_attr=TRUE,unname(mean(e.RR)), unname(e.lava$coef))
     ## check iid
-    expect_equal(unname(rowMeans(attr(e.RR0,"iid"))), unname(e.RR.average.iid[,1]))
+    expect_equal(ignore_attr=TRUE,unname(rowMeans(attr(e.RR0,"iid"))), unname(e.RR.average.iid[,1]))
     ## check variance
-    expect_equal(unname(sum((e.RR.average.iid + (e.RR-mean(e.RR))/NROW(e.RR))^2)), unname(e.lava$vcov)[1,1])
+    expect_equal(ignore_attr=TRUE,unname(sum((e.RR.average.iid + (e.RR-mean(e.RR))/NROW(e.RR))^2)), unname(e.lava$vcov)[1,1])
 })
 
 ## ** average.iid with factor
@@ -142,11 +142,11 @@ test_that("[predictGLM] compare to lava (average.iid, factor)",{
         return(list(risk = eXb*(1:NROW(data))))},
         average=TRUE)
     ## check point estimate
-    expect_equal(unname(mean(e.RR)), unname(e.lava$coef))
+    expect_equal(ignore_attr=TRUE,unname(mean(e.RR)), unname(e.lava$coef))
     ## check iid
-    expect_equal(unname(rowMeans(rowMultiply_cpp(attr(e.RR0,"iid"), scale = 1:NROW(dt)))), unname(e.RR.average.iid[[1]])[,1])
+    expect_equal(ignore_attr=TRUE,unname(rowMeans(rowMultiply_cpp(attr(e.RR0,"iid"), scale = 1:NROW(dt)))), unname(e.RR.average.iid[[1]])[,1])
     ## check variance
-    expect_equal(unname(sum((e.RR.average.iid[[1]] + (e.RR-mean(e.RR))/NROW(e.RR))^2)), unname(e.lava$vcov)[1,1],tolerance=0.001)
+    expect_equal(ignore_attr=TRUE,unname(sum((e.RR.average.iid[[1]] + (e.RR-mean(e.RR))/NROW(e.RR))^2)), unname(e.lava$vcov)[1,1],tolerance=0.001)
 })
 
 

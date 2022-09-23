@@ -70,45 +70,45 @@ test_that("[ate] G-formula,survival - compare to fix values / explicit computati
     dt.ateFit <- as.data.table(summary(ateFit, band = TRUE, p.value = FALSE, short = 2))
 
     ## point estimate
-    expect_equal(dt.ateFit[level == "T0" & type == "meanRisk",estimate],
+    expect_equal(ignore_attr=TRUE,dt.ateFit[level == "T0" & type == "meanRisk",estimate],
                  c(0.05842145, 0.46346908, 0.66107744),
                  tol = 1e-6)
-    expect_equal(dt.ateFit[level == "T0" & type == "meanRisk",lower],
+    expect_equal(ignore_attr=TRUE,dt.ateFit[level == "T0" & type == "meanRisk",lower],
                  c(0.0000000, 0.2756147, 0.4670461),
                  tol = 1e-6)
-    expect_equal(dt.ateFit[level == "T0" & type == "meanRisk",upper],
+    expect_equal(ignore_attr=TRUE,dt.ateFit[level == "T0" & type == "meanRisk",upper],
                  c(0.1178148, 0.6513235, 0.8551088),
                  tol = 1e-6)
 
-    expect_equal(dt.ateFit[level == "T0.T1" & type == "diffRisk",estimate],
+    expect_equal(ignore_attr=TRUE,dt.ateFit[level == "T0.T1" & type == "diffRisk",estimate],
                  c(0.0006541715, 0.0037795576, 0.0040931551),
                  tol = 1e-6)
-    expect_equal(dt.ateFit[level == "T0.T1" & type == "diffRisk",lower],
+    expect_equal(ignore_attr=TRUE,dt.ateFit[level == "T0.T1" & type == "diffRisk",lower],
                  c(-0.04241346, -0.24364096, -0.26383983),
                  tol = 1e-6)
-    expect_equal(dt.ateFit[level == "T0.T1" & type == "diffRisk",upper],
+    expect_equal(ignore_attr=TRUE,dt.ateFit[level == "T0.T1" & type == "diffRisk",upper],
                  c(0.0437218, 0.2512001, 0.2720261),
                  tol = 1e-6)
-    expect_equal(dt.ateFit[level == "T0.T1" & type == "diffRisk", lowerBand],
+    expect_equal(ignore_attr=TRUE,dt.ateFit[level == "T0.T1" & type == "diffRisk", lowerBand],
                  c(-0.04230655, -0.24302677, -0.26317472),
                  tol = 1e-6)
-    expect_equal(dt.ateFit[level == "T0.T1" & type == "diffRisk", upperBand],
+    expect_equal(ignore_attr=TRUE,dt.ateFit[level == "T0.T1" & type == "diffRisk", upperBand],
                  c(0.04361489, 0.25058589, 0.27136103),
                  tol = 1e-6)
 
-    expect_equal(dt.ateFit[level == "T0.T1" & type == "ratioRisk",estimate],
+    expect_equal(ignore_attr=TRUE,dt.ateFit[level == "T0.T1" & type == "ratioRisk",estimate],
                  c(1.011197, 1.008155, 1.006192),
                  tol = 1e-6)
-    expect_equal(dt.ateFit[level == "T0.T1" & type == "ratioRisk",lower],
+    expect_equal(ignore_attr=TRUE,dt.ateFit[level == "T0.T1" & type == "ratioRisk",lower],
                  c(0.2745873, 0.4723104, 0.5997906),
                  tol = 1e-6)
-    expect_equal(dt.ateFit[level == "T0.T1" & type == "ratioRisk",upper],
+    expect_equal(ignore_attr=TRUE,dt.ateFit[level == "T0.T1" & type == "ratioRisk",upper],
                  c(1.747808, 1.543999, 1.412593),
                  tol = 1e-6)
-    expect_equal(dt.ateFit[level == "T0.T1" & type == "ratioRisk", lowerBand],
+    expect_equal(ignore_attr=TRUE,dt.ateFit[level == "T0.T1" & type == "ratioRisk", lowerBand],
                  c(0.26976028, 0.46879896, 0.5971274),
                  tol = 1e-6)
-    expect_equal(dt.ateFit[level == "T0.T1" & type == "ratioRisk", upperBand],
+    expect_equal(ignore_attr=TRUE,dt.ateFit[level == "T0.T1" & type == "ratioRisk", upperBand],
                  c(1.75263463, 1.5475109, 1.41525588),
                  tol = 1e-6)
 
@@ -130,8 +130,8 @@ test_that("[ate] G-formula,survival - compare to fix values / explicit computati
         ATE.lower <- ATE[[iT]]+ qnorm(0.025) * ATE.se
         ATE.upper <- ATE[[iT]] + qnorm(0.975) * ATE.se
 
-        expect_equal(pmax(0,ATE.lower), dt.ateFit[level == iT,lower])
-        expect_equal(pmin(1,ATE.upper), dt.ateFit[level == iT,upper])
+        expect_equal(ignore_attr=TRUE,pmax(0,ATE.lower), dt.ateFit[level == iT,lower])
+        expect_equal(ignore_attr=TRUE,pmin(1,ATE.upper), dt.ateFit[level == iT,upper])
     }
 
     ## difference in risk
@@ -141,26 +141,26 @@ test_that("[ate] G-formula,survival - compare to fix values / explicit computati
     diffATE.lower <- diffATE + qnorm(0.025) * diffATE.se
     diffATE.upper <- diffATE + qnorm(0.975) * diffATE.se
 
-    expect_equal(diffATE.lower, dt.ateFit[level == "T0.T1" & type == "diffRisk", lower])
-    expect_equal(diffATE.lower, c(-0.04241346, -0.24364096, -0.26383983), tol = 1e-6)
+    expect_equal(ignore_attr=TRUE,diffATE.lower, dt.ateFit[level == "T0.T1" & type == "diffRisk", lower])
+    expect_equal(ignore_attr=TRUE,diffATE.lower, c(-0.04241346, -0.24364096, -0.26383983), tol = 1e-6)
 
-    expect_equal(diffATE.upper, dt.ateFit[level == "T0.T1" & type == "diffRisk", upper])
-    expect_equal(diffATE.upper, c(0.0437218, 0.2512001, 0.2720261), tol = 1e-6)
+    expect_equal(ignore_attr=TRUE,diffATE.upper, dt.ateFit[level == "T0.T1" & type == "diffRisk", upper])
+    expect_equal(ignore_attr=TRUE,diffATE.upper, c(0.0437218, 0.2512001, 0.2720261), tol = 1e-6)
 
     ## ratio of the risks
     ratioATE <- ATE[["T1"]]/ATE[["T0"]]
     ratioATE.iid <- rowScale_cpp(ATE.iid[["T1"]],ATE[["T0"]])-rowMultiply_cpp(ATE.iid[["T0"]], ATE[["T1"]]/ATE[["T0"]]^2)
-    expect_equal(unname(ATE.iid[["T1"]]),unname(ateFit$iid$GFORMULA$T1))
+    expect_equal(ignore_attr=TRUE,unname(ATE.iid[["T1"]]),unname(ateFit$iid$GFORMULA$T1))
 
     ratioATE.se <- sqrt(rowSums(ratioATE.iid^2))
     ratioATE.se <- sqrt(colSums(ratioATE.iid^2))
     ratioATE.lower <- ratioATE + qnorm(0.025) * ratioATE.se
     ratioATE.upper <- ratioATE + qnorm(0.975) * ratioATE.se
     
-    expect_equal(ratioATE.lower, dt.ateFit[level == "T0.T1" & type == "ratioRisk", lower])
-    expect_equal(ratioATE.lower, c(0.2745873, 0.47231036, 0.59979056), tol = 1e-6)
-    expect_equal(ratioATE.upper, dt.ateFit[level == "T0.T1" & type == "ratioRisk", upper])
-    expect_equal(ratioATE.upper, c(1.7478076, 1.5439995, 1.41259273))
+    expect_equal(ignore_attr=TRUE,ratioATE.lower, dt.ateFit[level == "T0.T1" & type == "ratioRisk", lower])
+    expect_equal(ignore_attr=TRUE,ratioATE.lower, c(0.2745873, 0.47231036, 0.59979056), tol = 1e-6)
+    expect_equal(ignore_attr=TRUE,ratioATE.upper, dt.ateFit[level == "T0.T1" & type == "ratioRisk", upper])
+    expect_equal(ignore_attr=TRUE,ratioATE.upper, c(1.7478076, 1.5439995, 1.41259273))
 })
 
 ## ** strata argument
@@ -183,8 +183,8 @@ test_that("[ate] G-formula,survival - strata argument",{
     GS.se <- as.data.table(outPred)[,.SD[1],by = "X1"]
     setkeyv(GS.se, cols = "X1")
 
-    expect_equal(1-GS.se$survival, dt.outATE[type=="meanRisk",estimate])
-    expect_equal(GS.se$survival.se, dt.outATE[type=="meanRisk",se])
+    expect_equal(ignore_attr=TRUE,1-GS.se$survival, dt.outATE[type=="meanRisk",estimate])
+    expect_equal(ignore_attr=TRUE,GS.se$survival.se, dt.outATE[type=="meanRisk",se])
 
     ## Stratified Cox model
     e.coxph <- coxph(Surv(time, event) ~ strata(X1), data = dtS,
@@ -203,9 +203,9 @@ test_that("[ate] G-formula,survival - strata argument",{
     GS.se <- as.data.table(outPred)[,.SD[1],by = "X1"]
     setkeyv(GS.se, cols = "X1")
 
-    expect_equal(1-GS.se$survival, dt.outATE[type == "meanRisk",estimate])
-    expect_equal(GS.se$survival.se, dt.outATE[type == "meanRisk",se])
-    expect_equal(GS.se$survival.se, dt.outATE[type == "meanRisk",se])
+    expect_equal(ignore_attr=TRUE,1-GS.se$survival, dt.outATE[type == "meanRisk",estimate])
+    expect_equal(ignore_attr=TRUE,GS.se$survival.se, dt.outATE[type == "meanRisk",se])
+    expect_equal(ignore_attr=TRUE,GS.se$survival.se, dt.outATE[type == "meanRisk",se])
 })    
 
 
@@ -237,9 +237,9 @@ test_that("[ate] logistic regression - compare to lava",{
         R.X10 <- lava::expit(a + c * (data[["X2"]]=="1"))
         list(risk0=R.X10,risk1=R.X11,riskdiff=R.X11-R.X10)},
         average=TRUE)
-    expect_equal(unname(e.lava$coef), dt.ate[type %in% c("meanRisk","diffRisk"),estimate],tolerance=0.001)
-    expect_equal(unname(e.lava$vcov[1:2,1:2]), unname(crossprod(do.call(cbind,e.ate$iid$GFORMULA))),tolerance=0.001)
-    expect_equal(unname(sqrt(diag(e.lava$vcov))), c(dt.ate[type %in% c("meanRisk","diffRisk"),se]),tolerance=0.001)
+    expect_equal(ignore_attr=TRUE,unname(e.lava$coef), dt.ate[type %in% c("meanRisk","diffRisk"),estimate],tolerance=0.001)
+    expect_equal(ignore_attr=TRUE,unname(e.lava$vcov[1:2,1:2]), unname(crossprod(do.call(cbind,e.ate$iid$GFORMULA))),tolerance=0.001)
+    expect_equal(ignore_attr=TRUE,unname(sqrt(diag(e.lava$vcov))), c(dt.ate[type %in% c("meanRisk","diffRisk"),se]),tolerance=0.001)
     ## AIPTW
     e.ate2 <- ate(fitY,
                   treatment = fitT,
@@ -266,9 +266,9 @@ test_that("[ate] logistic regression - compare to lava",{
     nuisanceT.iid <- rowMultiply_cpp(iid.pi, scale = (-1)^(dtBC$X1=="1")*dtBC$X1test*(dtBC$Y-dtBC$r)/dtBC$pi^2)
     dtBC$AnuisanceT.iid <- c(rowMeans(nuisanceT.iid[,dtBC$X1=="0"]),rowMeans(nuisanceT.iid[,dtBC$X1=="1"]))
     ## global
-    expect_equal(dtBC[, mean(ate), by = "X1"][[2]],
+    expect_equal(ignore_attr=TRUE,dtBC[, mean(ate), by = "X1"][[2]],
                  dt.ate2[type=="meanRisk",estimate])
-    expect_equal(dtBC[, sqrt(sum( (ate.iid+AnuisanceY.iid+AnuisanceT.iid)^2 )), by = "X1"][[2]],
+    expect_equal(ignore_attr=TRUE,dtBC[, sqrt(sum( (ate.iid+AnuisanceY.iid+AnuisanceT.iid)^2 )), by = "X1"][[2]],
                  dt.ate2[type=="meanRisk",se])
     ## butils:::object2script(dt.ate2)
     ## GS <- data.table("type" = c("ate", "ate", "diffAte", "ratioAte"), 
@@ -322,7 +322,7 @@ test_that("[ate] no censoring, survival - check vs. manual calculations", {
     set.seed(15)
     dt.ate2 <- as.data.table(summary(e.ate2, band = TRUE, short = 2))
 
-    expect_equal(dt.ate1[,.SD,.SDcols = names(dt.ate2)], dt.ate2, tol = 1e-8)
+    expect_equal(ignore_attr=TRUE,dt.ate1[,.SD,.SDcols = names(dt.ate2)], dt.ate2, tol = 1e-8)
     
     ## manual calculation
     dtCf <- do.call(rbind,lapply(levels(dtS$X1f), function(iT){ ## iT <- "0"
@@ -350,50 +350,50 @@ test_that("[ate] no censoring, survival - check vs. manual calculations", {
     }))
     
     ## check estimate
-    expect_equal(dtCf[,mean(r),by="X1f"][[2]],
+    expect_equal(ignore_attr=TRUE,dtCf[,mean(r),by="X1f"][[2]],
                  dt.ate1[estimator == "GFORMULA" & type == "meanRisk",estimate])
-    expect_equal(c(0.43356267, 0.78109942),
+    expect_equal(ignore_attr=TRUE,c(0.43356267, 0.78109942),
                  dt.ate1[estimator == "GFORMULA" & type == "meanRisk",estimate],
                  tol = 1e-6)
 
-    expect_equal(dtCf[,mean(X1test*Y/pi),by="X1f"][[2]],
+    expect_equal(ignore_attr=TRUE,dtCf[,mean(X1test*Y/pi),by="X1f"][[2]],
                  dt.ate1[estimator == "IPTW" & type == "meanRisk",estimate])
-    expect_equal(c(0.44100313, 0.74666667),
+    expect_equal(ignore_attr=TRUE,c(0.44100313, 0.74666667),
                  dt.ate1[estimator == "IPTW" & type == "meanRisk",estimate],
                  tol = 1e-6)
 
-    expect_equal(dtCf[,mean(X1test*(event==1)*(time<=tau)/pi + r*(1-X1test/pi)),by="X1f"][[2]],
+    expect_equal(ignore_attr=TRUE,dtCf[,mean(X1test*(event==1)*(time<=tau)/pi + r*(1-X1test/pi)),by="X1f"][[2]],
                  dt.ate1[estimator == "AIPTW" & type == "meanRisk",estimate])
-    expect_equal(c(0.44729274, 0.76956544),
+    expect_equal(ignore_attr=TRUE,c(0.44729274, 0.76956544),
                  dt.ate1[estimator == "AIPTW" & type == "meanRisk",estimate],
                  tol = 1e-6)
 
     ## check influence function
-    expect_equal(unname(do.call(rbind,e.ate1$iid[["GFORMULA"]])[,1]),
+    expect_equal(ignore_attr=TRUE,unname(do.call(rbind,e.ate1$iid[["GFORMULA"]])[,1]),
                  unname(dtCf$iid.Gformula))
 
-    expect_equal(unname(do.call(rbind,e.ate1$iid[["IPTW"]])[,1]),
+    expect_equal(ignore_attr=TRUE,unname(do.call(rbind,e.ate1$iid[["IPTW"]])[,1]),
                  unname(dtCf$iid.IPTW))
 
-    expect_equal(unname(do.call(rbind,e.ate1$iid[["AIPTW"]])[,1]),
+    expect_equal(ignore_attr=TRUE,unname(do.call(rbind,e.ate1$iid[["AIPTW"]])[,1]),
                  unname(dtCf$iid.AIPTW))
 
     ## check standard error
-    expect_equal(sqrt(dtCf[,sum(iid.Gformula^2),by="X1f"][[2]]),
+    expect_equal(ignore_attr=TRUE,sqrt(dtCf[,sum(iid.Gformula^2),by="X1f"][[2]]),
                  dt.ate1[estimator == "GFORMULA" & type == "meanRisk",se])
-    expect_equal(c(0.07227568, 0.09615608),
+    expect_equal(ignore_attr=TRUE,c(0.07227568, 0.09615608),
                  dt.ate1[estimator == "GFORMULA" & type == "meanRisk",se],
                  tol = 1e-6)
 
-    expect_equal(sqrt(dtCf[,sum(iid.IPTW^2),by="X1f"][[2]]),
+    expect_equal(ignore_attr=TRUE,sqrt(dtCf[,sum(iid.IPTW^2),by="X1f"][[2]]),
                  dt.ate1[estimator == "IPTW" & type == "meanRisk",se])
-    expect_equal(c(0.07837068, 0.12110765),
+    expect_equal(ignore_attr=TRUE,c(0.07837068, 0.12110765),
                  dt.ate1[estimator == "IPTW" & type == "meanRisk",se],
                  tol = 1e-6)
 
-    expect_equal(sqrt(dtCf[,sum(iid.AIPTW^2),by="X1f"][[2]]),
+    expect_equal(ignore_attr=TRUE,sqrt(dtCf[,sum(iid.AIPTW^2),by="X1f"][[2]]),
                  dt.ate1[estimator == "AIPTW" & type == "meanRisk",se])
-    expect_equal(c(0.07701387, 0.10447564),
+    expect_equal(ignore_attr=TRUE,c(0.07701387, 0.10447564),
                  dt.ate1[estimator == "AIPTW" & type == "meanRisk",se],
                  tol = 1e-6)
 
@@ -406,7 +406,7 @@ test_that("[ate] no censoring, survival - check vs. manual calculations", {
                      "quantileBand" = c(1.962359, 1.973331, 1.915003), 
                      "adj.p.value" = c(0.0007, 0.0296, 0.0056), 
                      "estimator" = c("GFORMULA", "IPTW", "AIPTW"))
-    expect_equal(GS, dt.ate1[type == "diffRisk",.(estimate,se,lower,upper,p.value,quantileBand,adj.p.value,estimator=as.character(estimator))],
+    expect_equal(ignore_attr=TRUE,GS, dt.ate1[type == "diffRisk",.(estimate,se,lower,upper,p.value,quantileBand,adj.p.value,estimator=as.character(estimator))],
                  tol = 1e-6)
 
     GS <- data.table("estimate" = c(1.801584, 1.693110, 1.720496), 
@@ -418,14 +418,14 @@ test_that("[ate] no censoring, survival - check vs. manual calculations", {
                      "adj.p.value" = c(0.0118, 0.0832, 0.0246), 
                      "estimator" = c("GFORMULA", "IPTW", "AIPTW"))
     GS1 <- dt.ate1[type == "ratioRisk",.(estimate,se,lower,upper,p.value,quantileBand,adj.p.value,estimator=as.character(estimator))]
-    expect_equal(GS, GS1, tol = 1e-6)
+    expect_equal(ignore_attr=TRUE,GS, GS1, tol = 1e-6)
 
     ## compare to ipw package
     if (requireNamespace("ipw",quietly=TRUE)){
         ww <- ipw::ipwpoint(exposure=X1,family="binomial",link="logit",
                        denominator=~X2,
                        data=dtS)$ipw.weights
-        expect_equal(ww,
+        expect_equal(ignore_attr=TRUE,ww,
                      dtCf[,1/pi[X1test==1], by = "time"][[2]])
     }
 })
@@ -472,7 +472,7 @@ test_that("[ate] Censoring, survival - check vs. manual calculations", {
     set.seed(15)
     dt.ate2 <- as.data.table(summary(e.ate2, band = TRUE, p.value = TRUE, short = 2))
 
-    expect_equal(dt.ate1[,.SD,.SDcols = names(dt.ate2)], dt.ate2, tol = 1e-8)
+    expect_equal(ignore_attr=TRUE,dt.ate1[,.SD,.SDcols = names(dt.ate2)], dt.ate2, tol = 1e-8)
 
     ## ## manual calculation ## ##
     iPred.Cens <- predictCox(e.C, newdata = dtS, times = pmin(tau,dtS$time-1e-10), type = "survival", iid = TRUE)
@@ -572,50 +572,50 @@ test_that("[ate] Censoring, survival - check vs. manual calculations", {
     }))
 
     ## check estimate
-    expect_equal(dtCf[,mean(r),by="X1f"][[2]],
+    expect_equal(ignore_attr=TRUE,dtCf[,mean(r),by="X1f"][[2]],
                  dt.ate1[estimator == "GFORMULA" & type == "meanRisk",estimate])
-    expect_equal(c(0.38160373, 0.69088127),
+    expect_equal(ignore_attr=TRUE,c(0.38160373, 0.69088127),
                  dt.ate1[estimator == "GFORMULA" & type == "meanRisk",estimate],
                  tol = 1e-6)
 
-    expect_equal(dtCf[,mean(X1test*Y*C/(pi*G)),by="X1f"][[2]],
+    expect_equal(ignore_attr=TRUE,dtCf[,mean(X1test*Y*C/(pi*G)),by="X1f"][[2]],
                  dt.ate1[estimator == "IPTW" & type == "meanRisk",estimate])
-    expect_equal(c(0.37314136, 0.75714469),
+    expect_equal(ignore_attr=TRUE,c(0.37314136, 0.75714469),
                  dt.ate1[estimator == "IPTW" & type == "meanRisk",estimate],
                  tol = 1e-6)
 
-    expect_equal(dtCf[,mean(X1test*Y*C/(pi*G) + r*(1-X1test/pi) + I*X1test/pi),by="X1f"][[2]],
+    expect_equal(ignore_attr=TRUE,dtCf[,mean(X1test*Y*C/(pi*G) + r*(1-X1test/pi) + I*X1test/pi),by="X1f"][[2]],
                  dt.ate1[estimator == "AIPTW" & type == "meanRisk",estimate])
-    expect_equal(c(0.37667566, 0.77294549),
+    expect_equal(ignore_attr=TRUE,c(0.37667566, 0.77294549),
                  dt.ate1[estimator == "AIPTW" & type == "meanRisk",estimate],
                  tol = 1e-6)
 
     ## check influence function
-    expect_equal(unname(do.call(rbind,e.ate1$iid[["GFORMULA"]])[,1]),
+    expect_equal(ignore_attr=TRUE,unname(do.call(rbind,e.ate1$iid[["GFORMULA"]])[,1]),
                  dtCf$iid.Gformula)
 
-    expect_equal(unname(do.call(rbind,e.ate1$iid[["IPTW"]])[,1]),
+    expect_equal(ignore_attr=TRUE,unname(do.call(rbind,e.ate1$iid[["IPTW"]])[,1]),
                  dtCf$iid.IPTW)
 
-    expect_equal(unname(do.call(rbind,e.ate1$iid[["AIPTW"]])[,1]),
+    expect_equal(ignore_attr=TRUE,unname(do.call(rbind,e.ate1$iid[["AIPTW"]])[,1]),
                  dtCf$iid.AIPTW)
 
     ## check standard errors
-    expect_equal(dtCf[,sqrt(sum(iid.Gformula^2)), by = "X1f"][[2]],
+    expect_equal(ignore_attr=TRUE,dtCf[,sqrt(sum(iid.Gformula^2)), by = "X1f"][[2]],
                  dt.ate1[estimator == "GFORMULA" & type == "meanRisk",se])
-    expect_equal(c(0.069586, 0.1201558),
+    expect_equal(ignore_attr=TRUE,c(0.069586, 0.1201558),
                  dt.ate1[estimator == "GFORMULA" & type == "meanRisk",se],
                  tol = 1e-6)
 
-    expect_equal(dtCf[,sqrt(sum(iid.IPTW^2)), by = "X1f"][[2]],
+    expect_equal(ignore_attr=TRUE,dtCf[,sqrt(sum(iid.IPTW^2)), by = "X1f"][[2]],
                  dt.ate1[estimator == "IPTW" & type == "meanRisk",se])
-    expect_equal(c(0.07693792, 0.12423590),
+    expect_equal(ignore_attr=TRUE,c(0.07693792, 0.12423590),
                  dt.ate1[estimator == "IPTW" & type == "meanRisk",se],
                  tol = 1e-6)
 
-    expect_equal(dtCf[,sqrt(sum(iid.AIPTW^2)), by = "X1f"][[2]],
+    expect_equal(ignore_attr=TRUE,dtCf[,sqrt(sum(iid.AIPTW^2)), by = "X1f"][[2]],
                  dt.ate1[estimator == "AIPTW" & type == "meanRisk",se])
-    expect_equal(c(0.07484163, 0.10880191),
+    expect_equal(ignore_attr=TRUE,c(0.07484163, 0.10880191),
                  dt.ate1[estimator == "AIPTW" & type == "meanRisk",se],
                  tol = 1e-6)
 
@@ -628,7 +628,7 @@ test_that("[ate] Censoring, survival - check vs. manual calculations", {
                      "quantileBand" = c(1.965073, 1.948196, 1.931335), 
                      "adj.p.value" = c(0.0122, 0.0079, 0.0007), 
                      "estimator" = c("GFORMULA", "IPTW", "AIPTW"))
-    expect_equal(GS, dt.ate1[type == "diffRisk",.(estimate,se,lower,upper,p.value,quantileBand,adj.p.value,estimator=as.character(estimator))],
+    expect_equal(ignore_attr=TRUE,GS, dt.ate1[type == "diffRisk",.(estimate,se,lower,upper,p.value,quantileBand,adj.p.value,estimator=as.character(estimator))],
                  tol = 1e-6)
 
     GS <- data.table("estimate" = c(1.810468, 2.029110, 2.052019), 
@@ -639,7 +639,7 @@ test_that("[ate] Censoring, survival - check vs. manual calculations", {
                      "quantileBand" = c(1.961192, 1.959446, 1.952883), 
                      "adj.p.value" = c(0.0392, 0.0459, 0.0129), 
                      "estimator" = c("GFORMULA", "IPTW", "AIPTW"))
-    expect_equal(GS,dt.ate1[type == "ratioRisk",.(estimate,se,lower,upper,p.value,quantileBand,adj.p.value,estimator=as.character(estimator))],
+    expect_equal(ignore_attr=TRUE,GS,dt.ate1[type == "ratioRisk",.(estimate,se,lower,upper,p.value,quantileBand,adj.p.value,estimator=as.character(estimator))],
                  tol = 1e-6)
 
 })
@@ -674,13 +674,13 @@ test_that("[ate] IPCW LR - no censoring", {
     ## eATE.boot <- ate(e0.glm, data = d0, treatment = "X1", times = tau[3], verbose = FALSE, B = 1000)
     ## confint(eATE.boot)$meanRisk$se ## 0.02535254 0.06612763
     ## confint(eATE.boot)$diffRisk$se ## 0.06984537
-    expect_equal(eATE.glm$meanRisk$estimate, eATE.wglm$meanRisk[time==tau[3],estimate], tol = 1e-4) 
-    expect_equal(eATE.glm$meanRisk$se, eATE.wglm$meanRisk[time==tau[3],se], tol = 1e-4) 
-    expect_equal(eATE.glm$meanRisk$lower, eATE.wglm$meanRisk[time==tau[3],lower], tol = 1e-4) 
-    expect_equal(eATE.glm$meanRisk$upper, eATE.wglm$meanRisk[time==tau[3],upper], tol = 1e-4) 
+    expect_equal(ignore_attr=TRUE,eATE.glm$meanRisk$estimate, eATE.wglm$meanRisk[time==tau[3],estimate], tol = 1e-4) 
+    expect_equal(ignore_attr=TRUE,eATE.glm$meanRisk$se, eATE.wglm$meanRisk[time==tau[3],se], tol = 1e-4) 
+    expect_equal(ignore_attr=TRUE,eATE.glm$meanRisk$lower, eATE.wglm$meanRisk[time==tau[3],lower], tol = 1e-4) 
+    expect_equal(ignore_attr=TRUE,eATE.glm$meanRisk$upper, eATE.wglm$meanRisk[time==tau[3],upper], tol = 1e-4) 
 
-    expect_equal(mean(predictRisk(e0.glm, newdata = d0.0)), eATE.glm$meanRisk$estimate[1], tol = 1e-5) 
-    expect_equal(mean(predictRisk(e0.glm, newdata = d0.1)), eATE.glm$meanRisk$estimate[2], tol = 1e-5)
+    expect_equal(ignore_attr=TRUE,mean(predictRisk(e0.glm, newdata = d0.0)), eATE.glm$meanRisk$estimate[1], tol = 1e-5) 
+    expect_equal(ignore_attr=TRUE,mean(predictRisk(e0.glm, newdata = d0.1)), eATE.glm$meanRisk$estimate[2], tol = 1e-5)
 
     ## eATE.mets <- logitATE(Event(time,event)~X1+X2+X6, data = d, cause = 1, time = tau[3], treat.model = X1~1)
     ## coef(eATE.mets)
@@ -691,14 +691,14 @@ test_that("[ate] IPCW LR - no censoring", {
     eATE2.wglm <- ate(e0.wglm, data = d0, treatment = X1~X2+X6, times = tau, band = FALSE, verbose = FALSE)
     eATE2.glm <- ate(e0.glm, data = d0, treatment = X1~X2+X6, times = tau[3], verbose = FALSE)
     ## e.mets <- logitATE(Y~X1+X2+X6, treat.model=X1~X2, data = d)
-    expect_equal(eATE2.glm$meanRisk$estimate, eATE2.wglm$meanRisk[time==tau[3],estimate], tol = 1e-4)
-    expect_equal(eATE2.glm$meanRisk$se, eATE2.wglm$meanRisk[time==tau[3],se], tol = 1e-4)
-    expect_equal(eATE2.glm$meanRisk$lower, eATE2.wglm$meanRisk[time==tau[3],lower], tol = 1e-4)
-    expect_equal(eATE2.glm$meanRisk$upper, eATE2.wglm$meanRisk[time==tau[3],upper], tol = 1e-4)
+    expect_equal(ignore_attr=TRUE,eATE2.glm$meanRisk$estimate, eATE2.wglm$meanRisk[time==tau[3],estimate], tol = 1e-4)
+    expect_equal(ignore_attr=TRUE,eATE2.glm$meanRisk$se, eATE2.wglm$meanRisk[time==tau[3],se], tol = 1e-4)
+    expect_equal(ignore_attr=TRUE,eATE2.glm$meanRisk$lower, eATE2.wglm$meanRisk[time==tau[3],lower], tol = 1e-4)
+    expect_equal(ignore_attr=TRUE,eATE2.glm$meanRisk$upper, eATE2.wglm$meanRisk[time==tau[3],upper], tol = 1e-4)
 
     ## A (Y-f_a) / pi + f_a = AY/pi - (A/pi-1) f_a
-    expect_equal(mean( myW.T0 * d0$Y - (myW.T0-1) * predictRisk(e0.glm, newdata = d0.0)), eATE2.glm$meanRisk$estimate[1], tol = 1e-5) 
-    expect_equal(mean( myW.T1 * d0$Y - (myW.T1-1) * predictRisk(e0.glm, newdata = d0.1)), eATE2.glm$meanRisk$estimate[2], tol = 1e-5)
+    expect_equal(ignore_attr=TRUE,mean( myW.T0 * d0$Y - (myW.T0-1) * predictRisk(e0.glm, newdata = d0.0)), eATE2.glm$meanRisk$estimate[1], tol = 1e-5) 
+    expect_equal(ignore_attr=TRUE,mean( myW.T1 * d0$Y - (myW.T1-1) * predictRisk(e0.glm, newdata = d0.1)), eATE2.glm$meanRisk$estimate[2], tol = 1e-5)
 })
 
 ## ** censoring
@@ -739,11 +739,11 @@ test_that("[ate] IPCW LR - censoring (based on Paul's script and results)", {
     e.glm <- glm(Ytrue~X+A2,family="binomial",data=d)
     eATE.wglm <- ate(e.glm, data = d, treatment = "A2", band = FALSE, verbose = FALSE)
 
-    expect_equal(mean(predictRisk(e.glm, newdata = d0)),
+    expect_equal(ignore_attr=TRUE,mean(predictRisk(e.glm, newdata = d0)),
                  0.2468305, tol = 1e-5)
-    expect_equal(mean(predictRisk(e.glm, newdata = d1)),
+    expect_equal(ignore_attr=TRUE,mean(predictRisk(e.glm, newdata = d1)),
                  0.4593332, tol = 1e-5)
-    expect_equal(eATE.wglm$meanRisk$estimate,
+    expect_equal(ignore_attr=TRUE,eATE.wglm$meanRisk$estimate,
                  c(0.2468305,0.4593332), tol = 1e-5)
 
     ## censoring:
@@ -754,23 +754,23 @@ test_that("[ate] IPCW LR - censoring (based on Paul's script and results)", {
                    times = 5, data = d, product.limit = TRUE)
     
     ## e.mets <- logitIPCW(Event(time,status)~X2+A2, data = d, cause = 1, time = 5, cens.model=~1)
-    ## expect_equal(as.double(coef(e.mets)), as.double(coef(e.wglm)), tol = 1e-3)
+    ## expect_equal(ignore_attr=TRUE,as.double(coef(e.mets)), as.double(coef(e.wglm)), tol = 1e-3)
 
     ## G-formula on IPCW glm
     eATE.wglm <- ate(e.wglm, data = d, treatment = "A2", times = 5, band = FALSE, verbose = FALSE)
 
-    expect_equal(mean(predictRisk(eW.glm, newdata = d0)), 0.1886021, tol = 1e-5) 
-    expect_equal(mean(predictRisk(eW.glm, newdata = d1)), 0.4925792, tol = 1e-5)
+    expect_equal(ignore_attr=TRUE,mean(predictRisk(eW.glm, newdata = d0)), 0.1886021, tol = 1e-5) 
+    expect_equal(ignore_attr=TRUE,mean(predictRisk(eW.glm, newdata = d1)), 0.4925792, tol = 1e-5)
     ## minor difference due to coxph using Newton Raphson instead of explicit formulae
     
-    expect_equal(eATE.wglm$meanRisk$estimate,
+    expect_equal(ignore_attr=TRUE,eATE.wglm$meanRisk$estimate,
                  c(0.1886021,0.4925792), tol = 1e-3)
     ## minor difference due to difference weights computations
 
     ## eATE.mets <- logitIPCWATE(Event(time,status)~X2+A2, data = d, cause = 1, time = 5, treat.model = A2~1, cens.model=~1)
-    ## expect_equal(as.double(coef(eATE.mets)), as.double(coef(e.wglm)), tol = 1e-3)
-    ## expect_equivalent(summary(eATE.mets)$ateG[2:1,"Estimate"],unlist(confint(eATE.wglm)$meanRisk[,"estimate"]), tol = 1e-4)
-    ## expect_equivalent(summary(eATE.mets)$ateG[2:1,"Std.Err"],unlist(confint(eATE.wglm)$meanRisk[,"se"]), tol = 1e-2)
+    ## expect_equal(ignore_attr=TRUE,as.double(coef(eATE.mets)), as.double(coef(e.wglm)), tol = 1e-3)
+    ## expect_equal(ignore_attr=TRUE,summary(eATE.mets)$ateG[2:1,"Estimate"],unlist(confint(eATE.wglm)$meanRisk[,"estimate"]), tol = 1e-4)
+    ## expect_equal(ignore_attr=TRUE,summary(eATE.mets)$ateG[2:1,"Std.Err"],unlist(confint(eATE.wglm)$meanRisk[,"se"]), tol = 1e-2)
     ## some difference in standard error
     
     ## AIPTW on IPCW glm
@@ -785,16 +785,16 @@ test_that("[ate] IPCW LR - censoring (based on Paul's script and results)", {
     ## 1: 0.4311330 2.804980e-06
     ## 2: 0.3665421 6.483893e-03
     
-    expect_equal(eATE2.wglm$meanRisk[estimator == "AIPTW",estimate],
+    expect_equal(ignore_attr=TRUE,eATE2.wglm$meanRisk[estimator == "AIPTW",estimate],
                  c(mean( myW.T0*myW.C*d$Y1 - (myW.T0 - 1) * predict(eW.glm, newdata = d0, type = "response") ),
                    mean( myW.T1*myW.C*d$Y1 - (myW.T1 - 1) * predict(eW.glm, newdata = d1, type = "response") )),
                  tol = 1e-4)
     ## minor difference due to difference weights computations
 
     ## eATE2.mets <- logitIPCWATE(Event(time,status)~X2+A2, data = d, cause = 1, time = 5, treat.model = A2~X, cens.model=~1)
-    ## expect_equal(as.double(coef(eATE2.mets)), as.double(coef(e.wglm)), tol = 1e-3)
-    ## expect_equivalent(summary(eATE2.mets)$ateG[2:1,"Estimate"],unlist(confint(eATE2.wglm)$meanRisk[4:3,"estimate"]), tol = 1e-4)
-    ## expect_equivalent(summary(eATE.mets)$ateG[2:1,"Std.Err"],unlist(confint(eATE.wglm)$meanRisk[,"se"]), tol = 1e-2)
+    ## expect_equal(ignore_attr=TRUE,as.double(coef(eATE2.mets)), as.double(coef(e.wglm)), tol = 1e-3)
+    ## expect_equal(ignore_attr=TRUE,summary(eATE2.mets)$ateG[2:1,"Estimate"],unlist(confint(eATE2.wglm)$meanRisk[4:3,"estimate"]), tol = 1e-4)
+    ## expect_equal(ignore_attr=TRUE,summary(eATE.mets)$ateG[2:1,"Std.Err"],unlist(confint(eATE.wglm)$meanRisk[,"se"]), tol = 1e-2)
     ## big difference in estimate and se. Not sure why.
 
 })
@@ -840,7 +840,7 @@ test_that("[ate] no censoring, competing risks - check vs. manual calculations",
     set.seed(15)
     dt.ate2 <- as.data.table(summary(e.ate2, band = TRUE, p.value = TRUE, short = 2))
 
-    expect_equal(dt.ate1[,.SD,.SDcols = names(dt.ate2)],  dt.ate2)
+    expect_equal(ignore_attr=TRUE,dt.ate1[,.SD,.SDcols = names(dt.ate2)],  dt.ate2)
 
     ## manual calculation
     suppressWarnings(dtCf <- do.call(rbind,lapply(levels(dtS$X1f), function(iT){ ## iT <- "0"
@@ -869,50 +869,50 @@ test_that("[ate] no censoring, competing risks - check vs. manual calculations",
     })))
 
     ## check estimate
-    expect_equal(dtCf[,mean(r),by="X1f"][[2]],
+    expect_equal(ignore_attr=TRUE,dtCf[,mean(r),by="X1f"][[2]],
                  dt.ate1[estimator == "GFORMULA" & type == "meanRisk",estimate])
-    expect_equal(c(0.09315393, 0.37259431),
+    expect_equal(ignore_attr=TRUE,c(0.09315393, 0.37259431),
                  dt.ate1[estimator == "GFORMULA" & type == "meanRisk",estimate],
                  tol = 1e-6)
 
-    expect_equal(dtCf[,mean(X1test*Y/pi),by="X1f"][[2]],
+    expect_equal(ignore_attr=TRUE,dtCf[,mean(X1test*Y/pi),by="X1f"][[2]],
                  dt.ate1[estimator == "IPTW" & type == "meanRisk",estimate])
-    expect_equal(c(0.08405157, 0.26793249),
+    expect_equal(ignore_attr=TRUE,c(0.08405157, 0.26793249),
                  dt.ate1[estimator == "IPTW" & type == "meanRisk",estimate],
                  tol = 1e-6)
 
-    expect_equal(dtCf[,mean(X1test*(event==1)*(time<=tau)/pi + r*(1-X1test/pi)),by="X1f"][[2]],
+    expect_equal(ignore_attr=TRUE,dtCf[,mean(X1test*(event==1)*(time<=tau)/pi + r*(1-X1test/pi)),by="X1f"][[2]],
                  dt.ate1[estimator == "AIPTW" & type == "meanRisk",estimate])
-    expect_equal(c(0.07847289, 0.47497984),
+    expect_equal(ignore_attr=TRUE,c(0.07847289, 0.47497984),
                  dt.ate1[estimator == "AIPTW" & type == "meanRisk",estimate],
                  tol = 1e-6)
 
     ## check influence function
-    expect_equal(unname(do.call(rbind,e.ate1$iid[["GFORMULA"]])[,1]),
+    expect_equal(ignore_attr=TRUE,unname(do.call(rbind,e.ate1$iid[["GFORMULA"]])[,1]),
                  unname(dtCf$iid.Gformula))
 
-    expect_equal(unname(do.call(rbind,e.ate1$iid[["IPTW"]])[,1]),
+    expect_equal(ignore_attr=TRUE,unname(do.call(rbind,e.ate1$iid[["IPTW"]])[,1]),
                  unname(dtCf$iid.IPTW))
 
-    expect_equal(unname(do.call(rbind,e.ate1$iid[["AIPTW"]])[,1]),
+    expect_equal(ignore_attr=TRUE,unname(do.call(rbind,e.ate1$iid[["AIPTW"]])[,1]),
                  unname(dtCf$iid.AIPTW))
 
     ## check standard error
-    expect_equal(sqrt(dtCf[,sum(iid.Gformula^2),by="X1f"][[2]]),
+    expect_equal(ignore_attr=TRUE,sqrt(dtCf[,sum(iid.Gformula^2),by="X1f"][[2]]),
                  dt.ate1[estimator == "GFORMULA" & type == "meanRisk",se])
-    expect_equal(c(0.0315163, 0.2407176),
+    expect_equal(ignore_attr=TRUE,c(0.0315163, 0.2407176),
                  dt.ate1[estimator == "GFORMULA" & type == "meanRisk",se],
                  tol = 1e-6)
 
-    expect_equal(sqrt(dtCf[,sum(iid.IPTW^2),by="X1f"][[2]]),
+    expect_equal(ignore_attr=TRUE,sqrt(dtCf[,sum(iid.IPTW^2),by="X1f"][[2]]),
                  dt.ate1[estimator == "IPTW" & type == "meanRisk",se])
-    expect_equal(c(0.03282852, 0.15183527),
+    expect_equal(ignore_attr=TRUE,c(0.03282852, 0.15183527),
                  dt.ate1[estimator == "IPTW" & type == "meanRisk",se],
                  tol = 1e-6)
 
-    expect_equal(sqrt(dtCf[,sum(iid.AIPTW^2),by="X1f"][[2]]),
+    expect_equal(ignore_attr=TRUE,sqrt(dtCf[,sum(iid.AIPTW^2),by="X1f"][[2]]),
                  dt.ate1[estimator == "AIPTW" & type == "meanRisk",se])
-    expect_equal(c(0.03109236, 0.27245093),
+    expect_equal(ignore_attr=TRUE,c(0.03109236, 0.27245093),
                  dt.ate1[estimator == "AIPTW" & type == "meanRisk",se],
                  tol = 1e-6)
     
@@ -926,7 +926,7 @@ test_that("[ate] no censoring, competing risks - check vs. manual calculations",
                      "adj.p.value" = c(0.2235, 0.2291, 0.1376), 
                      "estimator" = c("GFORMULA", "IPTW", "AIPTW"))
 
-    expect_equal(GS, dt.ate1[type == "diffRisk",.(estimate,se,lower,upper,p.value,quantileBand,adj.p.value,estimator=as.character(estimator))],
+    expect_equal(ignore_attr=TRUE,GS, dt.ate1[type == "diffRisk",.(estimate,se,lower,upper,p.value,quantileBand,adj.p.value,estimator=as.character(estimator))],
                  tol = 1e-6)
 
     GS <- data.table("estimate" = c(3.999770, 3.187715, 6.052789), 
@@ -937,7 +937,7 @@ test_that("[ate] no censoring, competing risks - check vs. manual calculations",
                      "quantileBand" = c(1.971403, 1.958227, 1.974396), 
                      "adj.p.value" = c(0.1872, 0.3072, 0.1973), 
                      "estimator" = c("GFORMULA", "IPTW", "AIPTW"))
-    expect_equal(GS, dt.ate1[type == "ratioRisk",.(estimate,se,lower,upper,p.value,quantileBand,adj.p.value,estimator=as.character(estimator))],
+    expect_equal(ignore_attr=TRUE,GS, dt.ate1[type == "ratioRisk",.(estimate,se,lower,upper,p.value,quantileBand,adj.p.value,estimator=as.character(estimator))],
                  tol = 1e-6)
 
 })
@@ -982,7 +982,7 @@ test_that("[ate] Censoring, competing risks (surv.type=\"survival\") - check vs.
     set.seed(15)
     dt.ate2 <- as.data.table(summary(e.ate2, band = TRUE, p.value = TRUE, short = 2))
 
-    expect_equal(dt.ate1, dt.ate2, tol = 1e-8)
+    expect_equal(ignore_attr=TRUE,dt.ate1, dt.ate2, tol = 1e-8)
     
     ## ## manual calculation ## ##
     iPred.Cens <- predictCox(e.C, newdata = dtS, times = pmin(tau,dtS$time-1e-10), type = "survival", iid = TRUE)
@@ -1082,50 +1082,50 @@ test_that("[ate] Censoring, competing risks (surv.type=\"survival\") - check vs.
     }))
 
     ## check estimate
-    expect_equal(dtCf[,mean(r),by="X1f"][[2]],
+    expect_equal(ignore_attr=TRUE,dtCf[,mean(r),by="X1f"][[2]],
                  dt.ate1[estimator == "GFORMULA" & type == "meanRisk",estimate])
-    expect_equal(c(0.32111469, 0.99623763),
+    expect_equal(ignore_attr=TRUE,c(0.32111469, 0.99623763),
                  dt.ate1[estimator == "GFORMULA" & type == "meanRisk",estimate],
                  tol = 1e-6)
 
-    expect_equal(dtCf[,mean(X1test*Y*C/(pi*G)),by="X1f"][[2]],
+    expect_equal(ignore_attr=TRUE,dtCf[,mean(X1test*Y*C/(pi*G)),by="X1f"][[2]],
                  dt.ate1[estimator == "IPTW" & type == "meanRisk",estimate])
-    expect_equal(c(0.31871273, 0.49590715),
+    expect_equal(ignore_attr=TRUE,c(0.31871273, 0.49590715),
                  dt.ate1[estimator == "IPTW" & type == "meanRisk",estimate],
                  tol = 1e-6)
 
-    expect_equal(dtCf[,mean(X1test*Y*C/(pi*G) + r*(1-X1test/pi) + I*X1test/pi),by="X1f"][[2]],
+    expect_equal(ignore_attr=TRUE,dtCf[,mean(X1test*Y*C/(pi*G) + r*(1-X1test/pi) + I*X1test/pi),by="X1f"][[2]],
                  dt.ate1[estimator == "AIPTW" & type == "meanRisk",estimate])
-    expect_equal(c(0.29549588, 0.9961723),
+    expect_equal(ignore_attr=TRUE,c(0.29549588, 0.9961723),
                  dt.ate1[estimator == "AIPTW" & type == "meanRisk",estimate],
                  tol = 1e-6)
     
     ## check influence function
-    expect_equal(unname(do.call(rbind,e.ate1$iid[["GFORMULA"]])[,1]),
+    expect_equal(ignore_attr=TRUE,unname(do.call(rbind,e.ate1$iid[["GFORMULA"]])[,1]),
                  dtCf$iid.Gformula)
 
-    expect_equal(unname(do.call(rbind,e.ate1$iid[["IPTW"]])[,1]),
+    expect_equal(ignore_attr=TRUE,unname(do.call(rbind,e.ate1$iid[["IPTW"]])[,1]),
                  dtCf$iid.IPTW)
     
-    expect_equal(unname(do.call(rbind,e.ate1$iid[["AIPTW"]])[,1]),
+    expect_equal(ignore_attr=TRUE,unname(do.call(rbind,e.ate1$iid[["AIPTW"]])[,1]),
                  dtCf$iid.AIPTW)
 
     ## check standard errors
-    expect_equal(dtCf[,sqrt(sum(iid.Gformula^2)), by = "X1f"][[2]],
+    expect_equal(ignore_attr=TRUE,dtCf[,sqrt(sum(iid.Gformula^2)), by = "X1f"][[2]],
                  dt.ate1[estimator == "GFORMULA" & type == "meanRisk",se])
-    expect_equal(c(0.05007538, 0.42597332),
+    expect_equal(ignore_attr=TRUE,c(0.05007538, 0.42597332),
                  dt.ate1[estimator == "GFORMULA" & type == "meanRisk",se],
                  tol = 1e-6)
 
-    expect_equal(dtCf[,sqrt(sum(iid.IPTW^2)), by = "X1f"][[2]],
+    expect_equal(ignore_attr=TRUE,dtCf[,sqrt(sum(iid.IPTW^2)), by = "X1f"][[2]],
                  dt.ate1[estimator == "IPTW" & type == "meanRisk",se])
-    expect_equal(c(0.04961228, 0.15883446),
+    expect_equal(ignore_attr=TRUE,c(0.04961228, 0.15883446),
                  dt.ate1[estimator == "IPTW" & type == "meanRisk",se],
                  tol = 1e-6)
 
-    expect_equal(dtCf[,sqrt(sum(iid.AIPTW^2)), by = "X1f"][[2]],
+    expect_equal(ignore_attr=TRUE,dtCf[,sqrt(sum(iid.AIPTW^2)), by = "X1f"][[2]],
                  dt.ate1[estimator == "AIPTW" & type == "meanRisk",se])
-    expect_equal(c(0.04803356, 0.316899),
+    expect_equal(ignore_attr=TRUE,c(0.04803356, 0.316899),
                  dt.ate1[estimator == "AIPTW" & type == "meanRisk",se],
                  tol = 1e-6)
     
@@ -1138,7 +1138,7 @@ test_that("[ate] Censoring, competing risks (surv.type=\"survival\") - check vs.
                      "quantileBand" = c(1.958676, 1.963257, 1.952228), 
                      "adj.p.value" = c(0.1177, 0.2880, 0.0331), 
                      "estimator" = c("GFORMULA", "IPTW", "AIPTW"))
-    expect_equal(GS, dt.ate1[type == "diffRisk",.(estimate,se,lower,upper,p.value,quantileBand,adj.p.value,estimator=as.character(estimator))],
+    expect_equal(ignore_attr=TRUE,GS, dt.ate1[type == "diffRisk",.(estimate,se,lower,upper,p.value,quantileBand,adj.p.value,estimator=as.character(estimator))],
                  tol = 1e-6)
 
     GS <- data.table("estimate" = c(3.102436, 1.555969, 3.371188), 
@@ -1149,7 +1149,7 @@ test_that("[ate] Censoring, competing risks (surv.type=\"survival\") - check vs.
                      "quantileBand" = c(1.955519, 1.941080, 1.992390), 
                      "adj.p.value" = c(0.1553, 0.3178, 0.0605), 
                      "estimator" = c("GFORMULA", "IPTW", "AIPTW"))
-    expect_equal(GS, dt.ate1[type == "ratioRisk",.(estimate,se,lower,upper,p.value,quantileBand,adj.p.value,estimator=as.character(estimator))],
+    expect_equal(ignore_attr=TRUE,GS, dt.ate1[type == "ratioRisk",.(estimate,se,lower,upper,p.value,quantileBand,adj.p.value,estimator=as.character(estimator))],
                  tol = 1e-6)
 
 })
@@ -1191,7 +1191,7 @@ test_that("[ate] Censoring, competing risks (surv.type=\"hazard\") - check vs. m
                   ))
     dt.ate2 <- as.data.table(e.ate2)
 
-    expect_equal(dt.ate1, dt.ate2, tol = 1e-8)
+    expect_equal(ignore_attr=TRUE,dt.ate1, dt.ate2, tol = 1e-8)
 })
 
 ## * [ate] Landmark analysis (time varying covariates)
@@ -1213,14 +1213,14 @@ test_that("[ate] landmark analyses", {
     setkeyv(dt.resVet,c("type","level"))
     
     GS <- c(0.01773158, 0.02092285, 0.01489588, 0.02981096, 0.04098041, 0.04821725, 0.03463358, 0.06846231, 0.05589160, 0.06564467, 0.04741838, 0.09298832, 0.02633366, 0.03103968, 0.02217127, 0.04416996)
-    expect_equal(dt.resVet[type=="meanRisk",estimate], GS, tol = 1e-6)
+    expect_equal(ignore_attr=TRUE,dt.resVet[type=="meanRisk",estimate], GS, tol = 1e-6)
 
     GS <- c(0.02324883, 0.0272944, 0.01973769, 0.03865134, 0.03816002, 0.04472182, 0.0325225, 0.06317735, 0.00860208, 0.01011683, 0.00727539, 0.014359, 0.01491119, 0.01742742, 0.0127848, 0.02452601, -0.01464675, -0.01717757, -0.01246231, -0.02429234, -0.02955794, -0.03460499, -0.02524711, -0.04881836)
-    expect_equal(dt.resVet[type=="diffRisk",estimate], GS, tol = 1e-6)
+    expect_equal(ignore_attr=TRUE,dt.resVet[type=="diffRisk",estimate], GS, tol = 1e-6)
     
     
     GS <- c(2.31115372, 2.30452621, 2.32504339, 2.29654787, 3.15209352, 3.13746333, 3.18332093, 3.11926569, 1.48512762, 1.4835302, 1.488416, 1.48166834, 1.36386147, 1.3614353, 1.36914474, 1.3582411, 0.64259145, 0.64374629, 0.64016698, 0.64517198, 0.47115595, 0.47284384, 0.46756706, 0.47500549)
-    expect_equal(dt.resVet[type=="ratioRisk",estimate], GS, tol = 1e-6)
+    expect_equal(ignore_attr=TRUE,dt.resVet[type=="ratioRisk",estimate], GS, tol = 1e-6)
 
 })
 ## * [ate] Case only
@@ -1268,8 +1268,8 @@ test_that("Case only ate", {
                     )
 
     
-    expect_equal(as.data.table(e.ateC)$estimate, e2.ateC, tol = 1e-6)
-    expect_equal(as.data.table(e.ateC)$se, e2.se.ateC, tol = 1e-5)
+    expect_equal(ignore_attr=TRUE,as.data.table(e.ateC)$estimate, e2.ateC, tol = 1e-6)
+    expect_equal(ignore_attr=TRUE,as.data.table(e.ateC)$se, e2.se.ateC, tol = 1e-5)
 })
 
 ## * [ate] Miscellaneous
@@ -1292,7 +1292,7 @@ test_that("[ate] Cox model/G-formula - precompute iid", {
                 treatment = "X1", data = d, times = 1:5, cause = 1,
                 verbose = FALSE)
 
-    expect_equal(as.data.table(test), as.data.table(GS))
+    expect_equal(ignore_attr=TRUE,as.data.table(test), as.data.table(GS))
 })
 ## ** Ate using list of formulae
 
@@ -1334,11 +1334,11 @@ test_that("[ate] Cox model/G-formula - one or several timepoints affects the res
     a1 <- ate(fit,data=d,treatment="X1",time=5, verbose = FALSE)
     a2 <- ate(fit,data=d,treatment="X1",time=5:7, verbose = FALSE)
 
-    expect_equal(a2$meanRisk[time==5,.(estimate,se)],
+    expect_equal(ignore_attr=TRUE,a2$meanRisk[time==5,.(estimate,se)],
                  a1$meanRisk[time==5,.(estimate,se)])
-    expect_equal(a2$diffRisk[time==5,.(estimate,se)],
+    expect_equal(ignore_attr=TRUE,a2$diffRisk[time==5,.(estimate,se)],
                  a1$diffRisk[,.(estimate,se)])
-    expect_equal(a2$ratioRisk[time==5,.(estimate,se)],
+    expect_equal(ignore_attr=TRUE,a2$ratioRisk[time==5,.(estimate,se)],
                  a1$ratioRisk[,.(estimate,se)])
 })
 
@@ -1386,7 +1386,7 @@ test_that("ate double robust estimator works with multiple timepoint",{
     test <- as.data.table(e.ateRR)
     test <- test[order(factor(test$type, levels = unique(test$type)),test$time)]
     test$estimator <- as.character(test$estimator)
-    expect_equal(test, GS, tol = 1e-4)
+    expect_equal(ignore_attr=TRUE,test, GS, tol = 1e-4)
     e.ateRR <- ate(event = CSC(Hist(time,event) ~ X1 + X2 + X3, data = dtS),
                    treatment = "X1",
                    data = dtS, times = 3:4, verbose = FALSE, cause = 1
@@ -1412,8 +1412,8 @@ test_that("ate in presence of ties",{
                         times = 1, se = TRUE, type = "survival", keep.newdata = TRUE)
     iDT <- as.data.table(iPred)
     setkeyv(iDT, "X1")
-    expect_equal(ateRobust$meanRisk$estimate, 1-iDT$survival, tol = 1e-7)
-    expect_equal(ateRobust$meanRisk$se, iDT$survival.se, tol = 1e-7)
+    expect_equal(ignore_attr=TRUE,ateRobust$meanRisk$estimate, 1-iDT$survival, tol = 1e-7)
+    expect_equal(ignore_attr=TRUE,ateRobust$meanRisk$se, iDT$survival.se, tol = 1e-7)
 })
 
 
@@ -1444,8 +1444,8 @@ test_that("no error", { ## firs censoring happens at 1 which used to cause probl
                        times=0.9,
                        se=TRUE, verbose = FALSE, 
                        estimator="AIPTW")
-    expect_equal(as.data.table(testBefore1)$estimate, c(0.5701832, 0.6732129, 0.1030297, 1.1806959), tol = 1e-6)
-    expect_equal(as.data.table(testBefore1)$se, c(0.02590195, 0.02512034, 0.02773938, 0.05370323), tol = 1e-6)
+    expect_equal(ignore_attr=TRUE,as.data.table(testBefore1)$estimate, c(0.5701832, 0.6732129, 0.1030297, 1.1806959), tol = 1e-6)
+    expect_equal(ignore_attr=TRUE,as.data.table(testBefore1)$se, c(0.02590195, 0.02512034, 0.02773938, 0.05370323), tol = 1e-6)
     ## for times > 1 used to return an error
     testAfter1 <- ate(event = e.outcome, 
                       treatment = e.treatment,
@@ -1455,7 +1455,7 @@ test_that("no error", { ## firs censoring happens at 1 which used to cause probl
                       se=TRUE, verbose = FALSE,
                       estimator="AIPTW")
     ## for times > 1 it returns NaN only
-    expect_equal(as.data.table(testAfter1)$estimate, c(0.60287336, 0.69921301, 0.09633966, 1.15980082), tol = 1e-6)
-    expect_equal(as.data.table(testAfter1)$se, c(0.02559758, 0.02458960, 0.02724511, 0.04936567), tol = 1e-6)
+    expect_equal(ignore_attr=TRUE,as.data.table(testAfter1)$estimate, c(0.60287336, 0.69921301, 0.09633966, 1.15980082), tol = 1e-6)
+    expect_equal(ignore_attr=TRUE,as.data.table(testAfter1)$se, c(0.02559758, 0.02458960, 0.02724511, 0.04936567), tol = 1e-6)
 })
 

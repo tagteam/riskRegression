@@ -49,7 +49,19 @@ Brier.competing.risks <- function(DT,MC,se.fit,conservative,cens.model,keep.vcov
                                       se.conservative=sd(IC0)/sqrt(N)),by=list(model,times)]
             }
             else {
-              stop("Censoring model not yet implemented. ")
+              DT[,IF.Brier:=getInfluenceCurve.Brier(t=times[1],
+                                                    time=time,
+                                                    IC0,
+                                                    residuals=residuals,
+                                                    WTi=WTi,
+                                                    Wt=Wt,
+                                                    IC.G=MC,
+                                                    cens.model=cens.model,
+                                                    nth.times=nth.times[1]),by=list(model,times)]
+              score <- DT[,data.table(Brier=sum(residuals)/N,
+                                      #se2  = sd(IF.Brier2)/sqrt(N),
+                                      se=sd(IF.Brier)/sqrt(N),
+                                      se.conservative=sd(IC0)/sqrt(N)),by=list(model,times)]
             }
         }
         if (se.fit==TRUE){

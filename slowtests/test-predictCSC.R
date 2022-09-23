@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: maj 18 2017 (09:23) 
 ## Version: 
-## last-updated: Aug  1 2022 (11:45) 
-##           By: Brice Ozenne
-##     Update #: 334
+## last-updated: Sep 17 2022 (10:00) 
+##           By: Thomas Alexander Gerds
+##     Update #: 338
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -59,34 +59,34 @@ test_that("[predictCSC] (no strata, data=df1): compare to manual estimation",{
     pred.exp2 <- predict(CSC.exp, times = 1:10, newdata = data.frame(NA), cause = 1, product.limit = TRUE) 
     CSC.prodlim <- CSC(Hist(time,event) ~ 1, data = df1, surv.type = "survival", method = "breslow")
     pred.prodlim <- predict(CSC.prodlim, times = 1:10, newdata = data.frame(NA), cause = 1, product.limit = TRUE)  
-    expect_equal(pred.prodlim,pred.exp2)
+    expect_equal(ignore_attr=TRUE,pred.prodlim,pred.exp2)
     CSC.prodlimE <- CSC(Hist(time,event) ~ 1, data = df1, surv.type = "survival", method = "efron")
     pred.prodlimE <- predict(CSC.prodlimE, times = 1:10, newdata = data.frame(NA), cause = 1, product.limit = TRUE)  
 
     ## test baseline hazard
     lambda1 <- lambda2 <- 1/seq(20,2,by = -2)
     lambda2E <- predictCox(CSC.prodlimE$models[[2]], type = "hazard")$hazard
-    expect_equal(predictCox(CSC.exp$models[[1]], type = "hazard")$hazard,
+    expect_equal(ignore_attr=TRUE,predictCox(CSC.exp$models[[1]], type = "hazard")$hazard,
                  lambda1)
-    expect_equal(predictCox(CSC.exp$models[[2]], type = "hazard")$hazard,
+    expect_equal(ignore_attr=TRUE,predictCox(CSC.exp$models[[2]], type = "hazard")$hazard,
                  lambda2)
-    expect_equal(predictCox(CSC.prodlim$models[[1]], type = "hazard")$hazard,
+    expect_equal(ignore_attr=TRUE,predictCox(CSC.prodlim$models[[1]], type = "hazard")$hazard,
                  lambda1)
-    expect_equal(predictCox(CSC.prodlim$models[[2]], type = "hazard")$hazard,
+    expect_equal(ignore_attr=TRUE,predictCox(CSC.prodlim$models[[2]], type = "hazard")$hazard,
                  lambda1+lambda2)
-    expect_equal(basehaz(CSC.prodlimE$models[[2]])$hazard,
+    expect_equal(ignore_attr=TRUE,basehaz(CSC.prodlimE$models[[2]])$hazard,
                  cumsum(lambda2E)
                  )
 
     ## test absolute risk
     survival <- c(1,exp(cumsum(-lambda1-lambda2)))[1:10]
-    expect_equal(as.double(pred.exp$absRisk),
+    expect_equal(ignore_attr=TRUE,as.double(pred.exp$absRisk),
                  cumsum(lambda1*survival))
     survival <- c(1,cumprod(1-(lambda1+lambda2)))[1:10]
-    expect_equal(as.double(pred.prodlim$absRisk),
+    expect_equal(ignore_attr=TRUE,as.double(pred.prodlim$absRisk),
                  cumsum(lambda1*survival))
     survival <- c(1,cumprod(1-lambda2E))[1:10]
-    expect_equal(as.double(pred.prodlimE$absRisk),
+    expect_equal(ignore_attr=TRUE,as.double(pred.prodlimE$absRisk),
                  cumsum(lambda1*survival))
 })
 
@@ -96,36 +96,36 @@ test_that("[predictCSC] (no strata, data=df1): compare to manual estimation",{
     pred.exp2 <- predict(CSC.exp, times = 1:10, newdata = data.frame(NA), cause = 1, product.limit = TRUE)  
     CSC.prodlim <- CSC(Hist(time,event) ~ 1, data = df2, surv.type = "survival", method = "breslow")
     pred.prodlim <- predict(CSC.prodlim, times = 1:10, newdata = data.frame(NA), cause = 1, product.limit = TRUE)  
-    expect_equal(pred.exp2, pred.prodlim)
+    expect_equal(ignore_attr=TRUE,pred.exp2, pred.prodlim)
     CSC.prodlimE <- CSC(Hist(time,event) ~ 1, data = df2, surv.type = "survival", method = "efron")
     pred.prodlimE <- predict(CSC.prodlimE, times = 1:10, newdata = data.frame(NA), cause = 1, product.limit = TRUE)  
     ## test baseline hazard
     lambda1 <- 1/seq(19,1,by = -2)
     lambda2 <- 1/seq(20,2,by = -2)
     lambda2E <- as.data.table(predictCox(CSC.prodlimE$models[[2]], type = "hazard"))
-    expect_equal(predictCox(CSC.exp$models[[1]], times = 1:10, type = "hazard")$hazard,
+    expect_equal(ignore_attr=TRUE,predictCox(CSC.exp$models[[1]], times = 1:10, type = "hazard")$hazard,
                  lambda1)
-    expect_equal(predictCox(CSC.exp$models[[2]], times = -0.1 + 1:10, type = "hazard")$hazard,
+    expect_equal(ignore_attr=TRUE,predictCox(CSC.exp$models[[2]], times = -0.1 + 1:10, type = "hazard")$hazard,
                  lambda2)
-    expect_equal(predictCox(CSC.prodlim$models[[1]], times = 1:10, type = "hazard")$hazard,
+    expect_equal(ignore_attr=TRUE,predictCox(CSC.prodlim$models[[1]], times = 1:10, type = "hazard")$hazard,
                  lambda1)
-    expect_equal(predictCox(CSC.prodlim$models[[2]], type = "hazard")$hazard,
+    expect_equal(ignore_attr=TRUE,predictCox(CSC.prodlim$models[[2]], type = "hazard")$hazard,
                  as.double(rbind(lambda2,lambda1)))
-    expect_equal(basehaz(CSC.prodlimE$models[[2]])$hazard,
+    expect_equal(ignore_attr=TRUE,basehaz(CSC.prodlimE$models[[2]])$hazard,
                  cumsum(lambda2E$hazard)
                  )
     ## test absolute risk
     vec.lambda <- cumsum(as.double(rbind(lambda2,lambda1)))
     survival <- exp(-matrix(vec.lambda, ncol = 2, byrow = TRUE)[,1])
-    expect_equal(as.double(pred.exp$absRisk),
+    expect_equal(ignore_attr=TRUE,as.double(pred.exp$absRisk),
                  cumsum(lambda1*survival))
     vec.lambda <- as.double(rbind(lambda2,lambda1))
     survival <- matrix(cumprod(1-vec.lambda), ncol = 2, byrow = TRUE)[,1]
-    expect_equal(as.double(pred.prodlim$absRisk),
+    expect_equal(ignore_attr=TRUE,as.double(pred.prodlim$absRisk),
                  cumsum(lambda1*survival))
     vec.lambda <-lambda2E$hazard
     survival <- matrix(cumprod(1-vec.lambda), ncol = 2, byrow = TRUE)[,1]
-    expect_equal(as.double(pred.prodlimE$absRisk),
+    expect_equal(ignore_attr=TRUE,as.double(pred.prodlimE$absRisk),
                  cumsum(lambda1*survival))
 })
 
@@ -157,7 +157,7 @@ test_that("[predictCSC]: compare to mstate",{
                            cause = 1,
                            se = FALSE,
                            product.limit = TRUE)
-        expect_equal(pred.probtrans[,"pstate2"],
+        expect_equal(ignore_attr=TRUE,pred.probtrans[,"pstate2"],
                      as.double(pred.RR$absRisk)
                      )
     }
@@ -178,7 +178,7 @@ test_that("[predict.CSC] check absolute risks add up to one",{
         surv.prodlim <- cumprod(1-as.double(hazAll))
         haz1.prodlim <- predict(CSC.exp, times = seqTimes, newdata = newdata, cause = 1, product.limit = TRUE)  
         haz2.prodlim <- predict(CSC.exp, times = seqTimes, newdata = newdata, cause = 2, product.limit = TRUE)  
-        expect_equal(surv.prodlim+as.double(haz1.prodlim$absRisk)+as.double(haz2.prodlim$absRisk),rep(1,nTimes))
+        expect_equal(ignore_attr=TRUE,surv.prodlim+as.double(haz1.prodlim$absRisk)+as.double(haz2.prodlim$absRisk),rep(1,nTimes))
     }
 })
 
@@ -191,7 +191,7 @@ test_that("[predict.CSC] (strata): compare to manual estimation",{
 
     CSC.prodlim <- CSC(Hist(time,event) ~ strata(grp), data = dfS, surv.type = "survival", method = "breslow")
     pred.prodlim <- predict(CSC.prodlim, times = 1:10, newdata = data.frame(grp = 1:3), cause = 1, product.limit = TRUE)  
-    expect_equal(pred.exp2,pred.prodlim)
+    expect_equal(ignore_attr=TRUE,pred.exp2,pred.prodlim)
     
     CSC.prodlimE <- CSC(Hist(time,event) ~ strata(grp), data = dfS, surv.type = "survival", method = "efron")
     pred.prodlimE <- predict(CSC.prodlimE, times = 1:10, newdata = data.frame(grp = 1:3), cause = 1, product.limit = TRUE)  
@@ -199,16 +199,16 @@ test_that("[predict.CSC] (strata): compare to manual estimation",{
     ## baseline
     baseline1 <- as.data.table(predictCox(CSC.exp$models[[1]], type = "hazard"))
     lambda1 <- baseline1[strata=="grp=1",hazard]
-    expect_equal(lambda1, 1/seq(20,2,by = -2))
+    expect_equal(ignore_attr=TRUE,lambda1, 1/seq(20,2,by = -2))
 
     baseline2 <- as.data.table(predictCox(CSC.exp$models[[1]], type = "hazard"))
     lambda2 <- baseline2[strata=="grp=1",hazard]
-    expect_equal(lambda2, 1/seq(20,2,by = -2))
+    expect_equal(ignore_attr=TRUE,lambda2, 1/seq(20,2,by = -2))
         
     baseline1E <- as.data.table(predictCox(CSC.prodlimE$models[[1]], type = "hazard"))
     lambda1E.1 <- baseline1E[strata=="grp=1",hazard]
     lambda1E.2 <- baseline1E[strata=="grp=2",hazard]
-    expect_equal(lambda1E.1, 1/seq(20,2,by = -2))
+    expect_equal(ignore_attr=TRUE,lambda1E.1, 1/seq(20,2,by = -2))
 
     baseline2E <- as.data.table(predictCox(CSC.prodlimE$models[[2]], type = "hazard"))
     lambda2E.1 <- baseline2E[strata=="grp=1",hazard]
@@ -217,28 +217,28 @@ test_that("[predict.CSC] (strata): compare to manual estimation",{
         
     ## test absolute risk
     survival <- c(1,exp(cumsum(-lambda1-lambda2)))[1:10]
-    expect_equal(as.double(pred.exp$absRisk[1,]),
+    expect_equal(ignore_attr=TRUE,as.double(pred.exp$absRisk[1,]),
                  cumsum(lambda1*survival))
-    expect_equal(as.double(pred.exp$absRisk[1,]),
+    expect_equal(ignore_attr=TRUE,as.double(pred.exp$absRisk[1,]),
                  as.double(pred.exp$absRisk[2,]))
-    expect_equal(as.double(pred.exp$absRisk[1,]),
+    expect_equal(ignore_attr=TRUE,as.double(pred.exp$absRisk[1,]),
                  as.double(pred.exp$absRisk[3,]))
 
     survival <- c(1,cumprod(1-(lambda1+lambda2)))[1:10]
-    expect_equal(as.double(pred.prodlim$absRisk[1,]),
+    expect_equal(ignore_attr=TRUE,as.double(pred.prodlim$absRisk[1,]),
                  cumsum(lambda1*survival))
-    expect_equal(as.double(pred.prodlim$absRisk[1,]),
+    expect_equal(ignore_attr=TRUE,as.double(pred.prodlim$absRisk[1,]),
                  as.double(pred.prodlim$absRisk[2,]))
-    expect_equal(as.double(pred.prodlim$absRisk[1,]),
+    expect_equal(ignore_attr=TRUE,as.double(pred.prodlim$absRisk[1,]),
                  as.double(pred.prodlim$absRisk[3,]))
 
     survival <- c(1,cumprod(1-lambda2E.1))[1:10]
-    expect_equal(as.double(pred.prodlimE$absRisk[pred.prodlimE$strata=="grp=1"]),
+    expect_equal(ignore_attr=TRUE,as.double(pred.prodlimE$absRisk[pred.prodlimE$strata=="grp=1"]),
                  cumsum(lambda1E.1*survival))
     survival <- c(1,cumprod(1-lambda2E.2))[1:10]
-    expect_equal(as.double(pred.prodlimE$absRisk[pred.prodlimE$strata=="grp=2"]),
+    expect_equal(ignore_attr=TRUE,as.double(pred.prodlimE$absRisk[pred.prodlimE$strata=="grp=2"]),
                  cumsum(lambda1E.2*survival))    
-    expect_equal(as.double(pred.prodlimE$absRisk[1,]),
+    expect_equal(ignore_attr=TRUE,as.double(pred.prodlimE$absRisk[1,]),
                  as.double(pred.prodlimE$absRisk[3,]))
 })
 
@@ -267,15 +267,15 @@ test_that("[predict.CSC] (risk factor, strata): compare to manual estimation",{
     for(iX1 in 0:1){
         newdata <- data.frame(X1=iX1)
         pred.exp <- predict(CSC.exp, times = 1:10, newdata = newdata, cause = 1, product.limit = FALSE)  
-        expect_equal(as.double(pred.exp$absRisk),
+        expect_equal(ignore_attr=TRUE,as.double(pred.exp$absRisk),
                      calcCIF(CSC.exp, X = as.matrix(newdata))
                      )
         pred.prodlim <- predict(CSC.prodlim, times = 1:10, newdata = newdata, cause = 1, product.limit = TRUE)
-        expect_equal(as.double(pred.prodlim$absRisk),
+        expect_equal(ignore_attr=TRUE,as.double(pred.prodlim$absRisk),
                      calcCIF(CSC.prodlim, X = as.matrix(newdata))
                      )
         pred.prodlimE <- predict(CSC.prodlimE, times = 1:10, newdata = newdata, cause = 1, product.limit = TRUE)  
-        expect_equal(as.double(pred.prodlimE$absRisk),
+        expect_equal(ignore_attr=TRUE,as.double(pred.prodlimE$absRisk),
                      calcCIF(CSC.prodlimE, X = as.matrix(newdata))
                      )
     }
@@ -312,17 +312,17 @@ test_that("[predict.CSC] - compare to manual estimation",{
     for(iX1 in 0:1){ # iX1 <- 0
         newdata <- data.frame(X1=iX1)
         pred.exp <- predict(CSC.exp, times = sort(unique(df2$time)), newdata = newdata, cause = 1, product.limit = FALSE)  
-        expect_equal(as.double(pred.exp$absRisk),
+        expect_equal(ignore_attr=TRUE,as.double(pred.exp$absRisk),
                      calcCIF(CSC.exp, X = as.matrix(newdata))
                      )
     
         pred.prodlim <- predict(CSC.prodlim, times = sort(unique(df2$time)), newdata = newdata, cause = 1, product.limit = TRUE)  
-        expect_equal(as.double(pred.prodlim$absRisk),
+        expect_equal(ignore_attr=TRUE,as.double(pred.prodlim$absRisk),
                      calcCIF(CSC.prodlim, X = as.matrix(newdata))
                      )
 
         pred.prodlimE <- predict(CSC.prodlimE, times = sort(unique(df2$time)), newdata = newdata, cause = 1, product.limit = TRUE)  
-        expect_equal(as.double(pred.prodlimE$absRisk),
+        expect_equal(ignore_attr=TRUE,as.double(pred.prodlimE$absRisk),
                      calcCIF(CSC.prodlimE, X = as.matrix(newdata))
                      )
     }
@@ -355,7 +355,7 @@ test_that("[predict.CSC]: compare to mstate",{
                 pred.probtrans <- probtrans(pred.msfit,0)[[1]]
             )
             pred.RR <- predict(CSC.exp, times = pred.probtrans[,"time"], newdata = newdata, cause = 1, product.limit = TRUE)
-            expect_equal(pred.probtrans[,"pstate2"],
+            expect_equal(ignore_attr=TRUE,pred.probtrans[,"pstate2"],
                          as.double(pred.RR$absRisk)
                          )
         }
@@ -383,7 +383,7 @@ test_that("[predict.CSC]: check absolute risks add up to one",{
             haz1.prodlim <- predict(CSC.exp, times = seqTimes, newdata = newdata, cause = 1, product.limit = TRUE)  
             haz2.prodlim <- predict(CSC.exp, times = seqTimes, newdata = newdata, cause = 2, product.limit = TRUE)  
 
-            expect_equal(surv.prodlim+as.double(haz1.prodlim$absRisk)+as.double(haz2.prodlim$absRisk),rep(1,nTimes))
+            expect_equal(ignore_attr=TRUE,surv.prodlim+as.double(haz1.prodlim$absRisk)+as.double(haz2.prodlim$absRisk),rep(1,nTimes))
         }
     }
 })
@@ -446,20 +446,20 @@ test_that("predict.CSC (no covariates): compare to mstate",{
                         keep.newdata = FALSE, se = TRUE, product.limit = FALSE)
 
 
-    expect_equal(as.double(pred.RR1a$absRisk),pred.probtrans[,"pstate2"])
-    expect_equal(as.double(pred.RR1b$absRisk),pred.probtrans[,"pstate2"], tol = 5e-3)
-    expect_equal(as.double(pred.RR1c$absRisk),pred.probtrans[,"pstate3"])
-    expect_equal(as.double(pred.RR1d$absRisk),pred.probtrans[,"pstate3"], tol = 5e-2)
-    expect_equal(as.double(pred.RR2a$absRisk),pred.probtrans[,"pstate2"])
-    expect_equal(as.double(pred.RR2b$absRisk),pred.probtrans[,"pstate2"], tol = 5e-3)
+    expect_equal(ignore_attr=TRUE,as.double(pred.RR1a$absRisk),pred.probtrans[,"pstate2"])
+    expect_equal(ignore_attr=TRUE,as.double(pred.RR1b$absRisk),pred.probtrans[,"pstate2"], tol = 5e-3)
+    expect_equal(ignore_attr=TRUE,as.double(pred.RR1c$absRisk),pred.probtrans[,"pstate3"])
+    expect_equal(ignore_attr=TRUE,as.double(pred.RR1d$absRisk),pred.probtrans[,"pstate3"], tol = 5e-2)
+    expect_equal(ignore_attr=TRUE,as.double(pred.RR2a$absRisk),pred.probtrans[,"pstate2"])
+    expect_equal(ignore_attr=TRUE,as.double(pred.RR2b$absRisk),pred.probtrans[,"pstate2"], tol = 5e-3)
 
     # quantile(as.double(pred.RR1a$absRisk.se) - pred.probtrans[,"se2"])
-    expect_equal(as.double(pred.RR1a$absRisk.se),pred.probtrans[,"se2"], tol = 5e-3)
-    expect_equal(as.double(pred.RR1b$absRisk.se),pred.probtrans[,"se2"], tol = 5e-3)
-    expect_equal(as.double(pred.RR1c$absRisk.se),pred.probtrans[,"se3"], tol = 5e-3)
-    expect_equal(as.double(pred.RR1d$absRisk.se),pred.probtrans[,"se3"], tol = 5e-3)
-    expect_equal(as.double(pred.RR2a$absRisk.se),pred.probtrans[,"se2"], tol = 5e-3)    
-    expect_equal(as.double(pred.RR2b$absRisk.se),pred.probtrans[,"se2"], tol = 5e-3)    
+    expect_equal(ignore_attr=TRUE,as.double(pred.RR1a$absRisk.se),pred.probtrans[,"se2"], tol = 5e-3)
+    expect_equal(ignore_attr=TRUE,as.double(pred.RR1b$absRisk.se),pred.probtrans[,"se2"], tol = 5e-3)
+    expect_equal(ignore_attr=TRUE,as.double(pred.RR1c$absRisk.se),pred.probtrans[,"se3"], tol = 5e-3)
+    expect_equal(ignore_attr=TRUE,as.double(pred.RR1d$absRisk.se),pred.probtrans[,"se3"], tol = 5e-3)
+    expect_equal(ignore_attr=TRUE,as.double(pred.RR2a$absRisk.se),pred.probtrans[,"se2"], tol = 5e-3)    
+    expect_equal(ignore_attr=TRUE,as.double(pred.RR2b$absRisk.se),pred.probtrans[,"se2"], tol = 5e-3)    
 })
 ## ** With covariates
 test_that("predict.CSC (covariates): compare to mstate",{
@@ -491,31 +491,31 @@ test_that("predict.CSC (covariates): compare to mstate",{
                              keep.newdata = FALSE, se = TRUE, product.limit = TRUE)
         pred.RR2b <- predict(CSC.RR2, newdata, cause = 1, time = pred.probtrans[,"time"],
                              keep.newdata = FALSE, se = TRUE, product.limit = FALSE)
-        expect_equal(as.double(pred.RR1a$absRisk),pred.probtrans[,"pstate2"])
-        expect_equal(as.double(pred.RR1b$absRisk),pred.probtrans[,"pstate2"], tol = 5e-3)
-        expect_equal(as.double(pred.RR1c$absRisk),pred.probtrans[,"pstate3"])
-        expect_equal(as.double(pred.RR1d$absRisk),pred.probtrans[,"pstate3"], tol = 1e-2)
-        expect_equal(as.double(pred.RR2a$absRisk),pred.probtrans[,"pstate2"], tol = 1e-2)
-        expect_equal(as.double(pred.RR2b$absRisk),pred.probtrans[,"pstate2"], tol = 1e-1)
+        expect_equal(ignore_attr=TRUE,as.double(pred.RR1a$absRisk),pred.probtrans[,"pstate2"])
+        expect_equal(ignore_attr=TRUE,as.double(pred.RR1b$absRisk),pred.probtrans[,"pstate2"], tol = 5e-3)
+        expect_equal(ignore_attr=TRUE,as.double(pred.RR1c$absRisk),pred.probtrans[,"pstate3"])
+        expect_equal(ignore_attr=TRUE,as.double(pred.RR1d$absRisk),pred.probtrans[,"pstate3"], tol = 1e-2)
+        expect_equal(ignore_attr=TRUE,as.double(pred.RR2a$absRisk),pred.probtrans[,"pstate2"], tol = 1e-2)
+        expect_equal(ignore_attr=TRUE,as.double(pred.RR2b$absRisk),pred.probtrans[,"pstate2"], tol = 1e-1)
         #if(iX==0){
         # quantile(as.double(pred.RR1a$absRisk.se) - pred.probtrans[,"se2"])
         # quantile(as.double(pred.RR1c$absRisk.se) - pred.probtrans[,"se3"])
-        expect_equal(as.double(pred.RR1a$absRisk.se),pred.probtrans[,"se2"], tol = 1e-2)
-        expect_equal(as.double(pred.RR1b$absRisk.se),pred.probtrans[,"se2"], tol = 1e-2)
+        expect_equal(ignore_attr=TRUE,as.double(pred.RR1a$absRisk.se),pred.probtrans[,"se2"], tol = 1e-2)
+        expect_equal(ignore_attr=TRUE,as.double(pred.RR1b$absRisk.se),pred.probtrans[,"se2"], tol = 1e-2)
         if(iX==0){
-            expect_equal(as.double(pred.RR1c$absRisk.se),pred.probtrans[,"se3"], tol = 1e-2)
-            expect_equal(as.double(pred.RR1d$absRisk.se),pred.probtrans[,"se3"], tol = 1e-2)
+            expect_equal(ignore_attr=TRUE,as.double(pred.RR1c$absRisk.se),pred.probtrans[,"se3"], tol = 1e-2)
+            expect_equal(ignore_attr=TRUE,as.double(pred.RR1d$absRisk.se),pred.probtrans[,"se3"], tol = 1e-2)
         }
-        expect_equal(as.double(pred.RR2a$absRisk.se),pred.probtrans[,"se2"], tol = 1e-2)    
-        expect_equal(as.double(pred.RR2b$absRisk.se),pred.probtrans[,"se2"], tol = 1e-2)
+        expect_equal(ignore_attr=TRUE,as.double(pred.RR2a$absRisk.se),pred.probtrans[,"se2"], tol = 1e-2)    
+        expect_equal(ignore_attr=TRUE,as.double(pred.RR2b$absRisk.se),pred.probtrans[,"se2"], tol = 1e-2)
         ## }else{
-        ##     expect_equal(as.double(pred.RR1a$absRisk.se),pred.probtrans[,"se2"], tol = 1e-1)
+        ##     expect_equal(ignore_attr=TRUE,as.double(pred.RR1a$absRisk.se),pred.probtrans[,"se2"], tol = 1e-1)
 
-        ##     expect_equal(as.double(pred.RR1b$absRisk.se),pred.probtrans[,"se2"], tol = 1e-1)
-        ##     expect_equal(as.double(pred.RR1c$absRisk.se),pred.probtrans[,"se3"], tol = 1e-1)
-        ##     expect_equal(as.double(pred.RR1d$absRisk.se),pred.probtrans[,"se3"], tol = 1e-1)
-        ##     expect_equal(as.double(pred.RR2a$absRisk.se),pred.probtrans[,"se2"], tol = 1e-1)    
-        ##     expect_equal(as.double(pred.RR2b$absRisk.se),pred.probtrans[,"se2"], tol = 1e-1)
+        ##     expect_equal(ignore_attr=TRUE,as.double(pred.RR1b$absRisk.se),pred.probtrans[,"se2"], tol = 1e-1)
+        ##     expect_equal(ignore_attr=TRUE,as.double(pred.RR1c$absRisk.se),pred.probtrans[,"se3"], tol = 1e-1)
+        ##     expect_equal(ignore_attr=TRUE,as.double(pred.RR1d$absRisk.se),pred.probtrans[,"se3"], tol = 1e-1)
+        ##     expect_equal(ignore_attr=TRUE,as.double(pred.RR2a$absRisk.se),pred.probtrans[,"se2"], tol = 1e-1)    
+        ##     expect_equal(ignore_attr=TRUE,as.double(pred.RR2b$absRisk.se),pred.probtrans[,"se2"], tol = 1e-1)
         ## }
     }
 })
@@ -571,10 +571,10 @@ test_that("predict.CSC (strata): compare to mstate",{
     pred.RR1d_strata <- predict(CSC.RR1_strata, cbind(newdata,grp=1), cause = 2, time = pred.probtrans[,"time"],
                          keep.newdata = FALSE, se = TRUE, product.limit = FALSE)
 
-    expect_equal(pred.RR1a_strata$absRisk,pred.RR1a$absRisk)
-    expect_equal(pred.RR1b_strata$absRisk,pred.RR1b$absRisk)
-    expect_equal(pred.RR1c_strata$absRisk,pred.RR1c$absRisk)
-    expect_equal(pred.RR1d_strata$absRisk,pred.RR1d$absRisk)
+    expect_equal(ignore_attr=TRUE,pred.RR1a_strata$absRisk,pred.RR1a$absRisk)
+    expect_equal(ignore_attr=TRUE,pred.RR1b_strata$absRisk,pred.RR1b$absRisk)
+    expect_equal(ignore_attr=TRUE,pred.RR1c_strata$absRisk,pred.RR1c$absRisk)
+    expect_equal(ignore_attr=TRUE,pred.RR1d_strata$absRisk,pred.RR1d$absRisk)
 
     CSC.RR2_strata<- CSC(Hist(time,event)~X1+X2+X16+strata(grp), data = d2, surv.type = "survival", method = "breslow")
     pred.RR2a_strata <- predict(CSC.RR2_strata, cbind(newdata,grp=1), cause = 1, time = pred.probtrans[,"time"],
@@ -582,8 +582,8 @@ test_that("predict.CSC (strata): compare to mstate",{
     pred.RR2b_strata <- predict(CSC.RR2_strata, cbind(newdata,grp=1), cause = 1, time = pred.probtrans[,"time"],
                                 keep.newdata = FALSE, se = TRUE, product.limit = FALSE)
 
-    expect_equal(pred.RR2a_strata$absRisk,pred.RR2a$absRisk)
-    expect_equal(pred.RR2b_strata$absRisk,pred.RR2b$absRisk)
+    expect_equal(ignore_attr=TRUE,pred.RR2a_strata$absRisk,pred.RR2a$absRisk)
+    expect_equal(ignore_attr=TRUE,pred.RR2b_strata$absRisk,pred.RR2b$absRisk)
 })
 
 ## ** Vs. fixed values
@@ -616,8 +616,8 @@ test_that("[predictCSC] vs. fixed values",{
     ##        "absRisk" = c(0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.010614, 0.008321, 0.000000, 0.005059, 0.033321, 0.010614, 0.008321, 0.000000, 0.005059, 0.033321, 0.187045, 0.149948, 0.024562, 0.094195, 0.208568, 0.285231, 0.232052, 0.047504, 0.148967, 0.320621, 0.532564, 0.455475, 0.127580, 0.315670, 0.471993, 0.592726, 0.516242, 0.341738, 0.368635, 0.694506, NA, NA, 0.804087, NA, NA, NA, NA, NA, NA, NA), 
     ##        "absRisk.se" = c(0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.010671, 0.008392, 0.000000, 0.005145, 0.021735, 0.010671, 0.008392, 0.000000, 0.005145, 0.021735, 0.045082, 0.037994, 0.013808, 0.026548, 0.060483, 0.053248, 0.046578, 0.021627, 0.034699, 0.079498, 0.075317, 0.072541, 0.047915, 0.062280, 0.085417, 0.076575, 0.076338, 0.087346, 0.069072, 0.159006, NA, NA, 0.145491, NA, NA, NA, NA, NA, NA, NA))
                          
-    expect_equal(as.data.table(Event1.S)$absRisk, GS$absRisk, tolerance = 1e-5)
-    expect_equal(as.data.table(Event1.S)$absRisk.se, GS$absRisk.se, tolerance = 1e-5)
+    expect_equal(ignore_attr=TRUE,as.data.table(Event1.S)$absRisk, GS$absRisk, tolerance = 1e-5)
+    expect_equal(ignore_attr=TRUE,as.data.table(Event1.S)$absRisk.se, GS$absRisk.se, tolerance = 1e-5)
     
     ## cause 2
     Event2.S <- predict(CSC.S, newdata = df.S[1:5,], times = seqTime, cause = 2,
@@ -637,8 +637,8 @@ test_that("[predictCSC] vs. fixed values",{
     ##                  "absRisk" = c(0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.015510, 0.015342, 0.028621, 0.014982, 0.000000, 0.114820, 0.115596, 0.028621, 0.115825, 0.000000, 0.133554, 0.135236, 0.065157, 0.136670, 0.000000, 0.258482, 0.280051, 0.201121, 0.314747, 0.185563, 0.301218, 0.336703, 0.368645, 0.398416, 0.185563, NA, NA, 0.368645, NA, NA, NA, NA, NA, NA, NA), 
     ##                  "absRisk.se" = c(0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.015393, 0.015250, 0.027535, 0.014981, 0.000000, 0.040650, 0.041823, 0.027535, 0.044450, 0.000000, 0.043741, 0.045308, 0.044233, 0.048753, 0.000000, 0.058568, 0.064056, 0.082396, 0.076642, 0.085257, 0.064560, 0.071313, 0.108398, 0.087042, 0.085257, NA, NA, 0.108398, NA, NA, NA, NA, NA, NA, NA))
 
-    expect_equal(as.data.table(Event2.S)$absRisk, GS$absRisk, tolerance = 1e-5)
-    expect_equal(as.data.table(Event2.S)$absRisk.se, GS$absRisk.se, tolerance = 1e-5)
+    expect_equal(ignore_attr=TRUE,as.data.table(Event2.S)$absRisk, GS$absRisk, tolerance = 1e-5)
+    expect_equal(ignore_attr=TRUE,as.data.table(Event2.S)$absRisk.se, GS$absRisk.se, tolerance = 1e-5)
 
 })
 
@@ -680,13 +680,13 @@ suppressWarnings(
 test_that("predict.CSC (Melanoma): compare to mstate",{
 
     pred.RR1 <- predict(cfit1, newdata = newdata, time = pred.probtrans[,"time"], cause = 1, product.limit = TRUE) 
-    expect_equal(as.double(pred.probtrans[,"pstate2"]),as.double(pred.RR1$absRisk))
+    expect_equal(ignore_attr=TRUE,as.double(pred.probtrans[,"pstate2"]),as.double(pred.RR1$absRisk))
 
     pred.RR2 <- predict(cfit1, newdata = newdata, time = pred.probtrans[,"time"], cause = 1, product.limit = FALSE) 
-    expect_equal(as.double(pred.probtrans[,"pstate2"]),as.double(pred.RR2$absRisk), tol = 5e-3)
+    expect_equal(ignore_attr=TRUE,as.double(pred.probtrans[,"pstate2"]),as.double(pred.RR2$absRisk), tol = 5e-3)
 
     pred.RR3 <- predict(cfit2, newdata = newdata, time = pred.probtrans[,"time"], cause = 1, product.limit = FALSE) 
-    expect_equal(as.double(pred.probtrans[,"pstate2"]),as.double(pred.RR3$absRisk), tol = 1e-1)
+    expect_equal(ignore_attr=TRUE,as.double(pred.probtrans[,"pstate2"]),as.double(pred.RR3$absRisk), tol = 1e-1)
 })
 
 ## * [predictCSC] Conditional absolute risk
@@ -705,26 +705,26 @@ CSC.fit <- CSC(Hist(time,event)~ X1+X2,data=d, method = "breslow")
 test_that("[predictCSC]: Conditional CIF identical to CIF before first event", {
   pred <- predict(CSC.fit, newdata = d, cause = 2, times = ttt)
   predC <- predict(CSC.fit, newdata = d, cause = 2, times = ttt, landmark = min(d$time)-1e-5)
-  expect_equal(pred, predC)
+  expect_equal(ignore_attr=TRUE,pred, predC)
 
   pred <- predict(CSC.fit, newdata = d2, cause = 2, times = ttt)
   predC <- predict(CSC.fit, newdata = d2, cause = 2, times = ttt, landmark = min(d$time)-1e-5)
-  expect_equal(pred, predC)
+  expect_equal(ignore_attr=TRUE,pred, predC)
 })
 
 ## ** after the last observation
 test_that("[predictCSC]: Conditional CIF is NA after the last observation", {
   predC <- predict(CSC.fit, newdata = d, cause = 2, times = ttt, landmark = max(d$time)+1)
-  expect_equal(all(is.na(predC$absRisk)), TRUE)
+  expect_equal(ignore_attr=TRUE,all(is.na(predC$absRisk)), TRUE)
   
   predC <- predict(CSC.fit, newdata = d2, cause = 2, times = ttt, landmark = max(d$time)+1)
-  expect_equal(all(is.na(predC$absRisk)), TRUE)
+  expect_equal(ignore_attr=TRUE,all(is.na(predC$absRisk)), TRUE)
   
   t0 <- mean(range(d$time))
   ttt0 <- c(t0,ttt)
   predC <- predict(CSC.fit, newdata = d, cause = 2, times = ttt0, landmark = t0)
-  expect_equal(all(is.na(predC$absRisk[,ttt0<t0])), TRUE)
-  expect_equal(all(!is.na(predC$absRisk[,ttt0>=t0])), TRUE)
+  expect_equal(ignore_attr=TRUE,all(is.na(predC$absRisk[,ttt0<t0])), TRUE)
+  expect_equal(ignore_attr=TRUE,all(!is.na(predC$absRisk[,ttt0>=t0])), TRUE)
 })
 
 ## ** at the last event
@@ -733,11 +733,11 @@ test_that("[predictCSC] Value of the conditional CIF | at the last event", {
     
     predC_auto <- predict(CSC.fit, newdata = d2[1:5,], cause = 2, times = tau, landmark = tau, product.limit = FALSE)
     pred <- as.data.table(predictCox(CSC.fit$models[[2]], times = tau, newdata = d2[1:5,], type = "hazard"))
-    expect_equal(as.double(predC_auto$absRisk),pred$hazard)
+    expect_equal(ignore_attr=TRUE,as.double(predC_auto$absRisk),pred$hazard)
 
     predC_auto <- predict(CSC.fit, newdata = d2[1:5,], cause = 2, times = tau, landmark = tau, product.limit = TRUE)
     pred <- as.data.table(predictCox(CSC.fit$models[[2]], times = tau, newdata = d2[1:5,], type = "hazard"))
-    expect_equal(as.double(predC_auto$absRisk),pred$hazard)
+    expect_equal(ignore_attr=TRUE,as.double(predC_auto$absRisk),pred$hazard)
 })
 
 
@@ -758,7 +758,7 @@ test_that("[predictCSC] conditional CIF vs. manual calculation", {
   predC_manuel[,seq(1,indexT0-1)] <- NA
   
   predC_auto <- predict(CSC.fit, newdata = d2, cause = 2, times = sttt, landmark = sttt[indexT0], product.limit = FALSE)
-  expect_equal(predC_auto$absRisk,predC_manuel)
+  expect_equal(ignore_attr=TRUE,predC_auto$absRisk,predC_manuel)
   # predC_auto$absRisk - predC_manuel
 
   # product.limit = TRUE
@@ -774,7 +774,7 @@ test_that("[predictCSC] conditional CIF vs. manual calculation", {
   predC_manuel[,seq(1,indexT0-1)] <- NA
   
   predC_auto <- predict(CSC.fit, newdata = d2, cause = 2, times = sttt, landmark = sttt[indexT0], product.limit = TRUE)
-  expect_equal(predC_auto$absRisk,predC_manuel)
+  expect_equal(ignore_attr=TRUE,predC_auto$absRisk,predC_manuel)
   # predC_auto$absRisk-predC_manuel
 })
 
@@ -801,8 +801,8 @@ test_that("[predictCSC] conditional CIF vs. fixed values",{
                    "strata" = c("X1=0 X3=0", "X1=0 X3=0", "X1=0 X3=0", "X1=0 X3=0", "X1=0 X3=0", "X1=0 X3=0", "X1=0 X3=0", "X1=0 X3=0", "X1=0 X3=0", "X1=0 X3=0", "X1=0 X3=0", "X1=0 X3=0", "X1=0 X3=0", "X1=0 X3=0", "X1=0 X3=0", "X1=0 X3=0", "X1=0 X3=0", "X1=0 X3=0", "X1=0 X3=0", "X1=0 X3=0", "X1=0 X3=0", "X1=0 X3=0", "X1=0 X3=0", "X1=0 X3=0", "X1=0 X3=0", "X1=0 X3=0", "X1=0 X3=0", "X1=0 X3=0", "X1=0 X3=0", "X1=0 X3=0", "X1=0 X3=0", "X1=0 X3=0", "X1=0 X3=0", "X1=0 X3=0", "X1=0 X3=0", "X1=0 X3=0", "X1=0 X3=0", "X1=0 X3=0", "X1=0 X3=0", "X1=0 X3=0", "X1=0 X3=0", "X1=0 X3=0", "X1=0 X3=0", "X1=0 X3=0", "X1=0 X3=0", "X1=0 X3=0", "X1=0 X3=0", "X1=0 X3=0", "X1=0 X3=0", "X1=0 X3=0"), 
                    "absRisk" = c(NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, 0.193716, 0.321904, 0.323271, 0.158113, 0.148124, 0.258450, 0.422776, 0.423841, 0.212179, 0.197920, 0.344406, 0.547189, 0.546861, 0.285912, 0.264501, 0.405789, 0.628009, 0.625925, 0.340374, 0.312468, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA))
 
-    expect_equal(as.data.table(p1)$absRisk, GS$absRisk, tolerance = 1e-5)
-    expect_equal(as.data.table(p1)$absRisk.se, GS$absRisk.se, tolerance = 1e-5)
+    expect_equal(ignore_attr=TRUE,as.data.table(p1)$absRisk, GS$absRisk, tolerance = 1e-5)
+    expect_equal(ignore_attr=TRUE,as.data.table(p1)$absRisk.se, GS$absRisk.se, tolerance = 1e-5)
 
   
   expect_error(predict(CSC.fitS, newdata = d2[1:10,], times = seqTime, landmark = 1,
@@ -821,26 +821,25 @@ test_that("[predictCSC] diag no strata", {
     e.CSC <- CSC(Hist(time, event) ~ X1*X6, data = dt)
 
     GS <- predict(e.CSC, newdata = dt, times = dt$time, se = TRUE, iid = TRUE, average.iid = TRUE, cause = 1)
-    test <- predict(e.CSC, newdata = dt, times = dt$time,
-                    se = TRUE, iid = TRUE, average.iid = TRUE, diag = TRUE, cause = 1)
+  test <- predict(e.CSC, newdata = dt, times = dt$time, se = TRUE, iid = TRUE, average.iid = TRUE, diag = TRUE,cause = 1)
     test2 <- predict(e.CSC, newdata = dt, times = dt$time,
                      se = FALSE, iid = FALSE, average.iid = TRUE, diag = TRUE, cause = 1)
     
     ## estimates
-    expect_equal(dt$time, as.double(test$time))
-    expect_equal(diag(GS$absRisk), as.double(test$absRisk))
+    expect_equal(ignore_attr=TRUE,dt$time, as.double(test$time))
+    expect_equal(ignore_attr=TRUE,diag(GS$absRisk), as.double(test$absRisk))
 
     ## se
-    expect_equal(diag(GS$absRisk.se), test$absRisk.se[,1])
+    expect_equal(ignore_attr=TRUE,diag(GS$absRisk.se), test$absRisk.se[,1])
     
     ## iid
     GS.iid.diag <- do.call(cbind,lapply(1:NROW(dt),
                                         function(iN){GS$absRisk.iid[,iN,iN]}))
-    expect_equal(GS.iid.diag, test$absRisk.iid[,1,])
+    expect_equal(ignore_attr=TRUE,GS.iid.diag, test$absRisk.iid[,1,])
 
     ## average.iid
-    expect_equal(rowMeans(GS.iid.diag), test$absRisk.average.iid[,1])
-    expect_equal(test$absRisk.average.iid, test2$absRisk.average.iid)
+    expect_equal(ignore_attr=TRUE,rowMeans(GS.iid.diag), test$absRisk.average.iid[,1])
+    expect_equal(ignore_attr=TRUE,test$absRisk.average.iid, test2$absRisk.average.iid)
 
     ## average.iid with factor - diag=FALSE
     average.iid <- TRUE
@@ -850,8 +849,8 @@ test_that("[predictCSC] diag no strata", {
     test3 <- predict(e.CSC, newdata = dt, times = dt$time,
                      se = FALSE, iid = FALSE, average.iid = average.iid, diag = FALSE, cause = 1)
 
-    expect_equal(5*GS$absRisk.average.iid, test3$absRisk.average.iid[[1]])
-    expect_equal(apply(GS$absRisk.iid, 1:2, function(x){sum(x * (1:length(dt$time)))/length(x)}),
+    expect_equal(ignore_attr=TRUE,5*GS$absRisk.average.iid, test3$absRisk.average.iid[[1]])
+    expect_equal(ignore_attr=TRUE,apply(GS$absRisk.iid, 1:2, function(x){sum(x * (1:length(dt$time)))/length(x)}),
                  test3$absRisk.average.iid[[2]])
 
     ## average.iid with factor - diag=FALSE, time varying factor
@@ -860,7 +859,7 @@ test_that("[predictCSC] diag no strata", {
     test4 <- predict(e.CSC, newdata = dt, times = dt$time, cause = 1,
                      se = FALSE, iid = FALSE, average.iid = average.iid, diag = FALSE)
     ## iObs <- 1
-    expect_equal(do.call(rbind,lapply(1:NROW(dt), function(iObs){rowMeans(GS$absRisk.iid[iObs,,] * t(attr(average.iid,"factor")[[1]]))})),
+    expect_equal(ignore_attr=TRUE,do.call(rbind,lapply(1:NROW(dt), function(iObs){rowMeans(GS$absRisk.iid[iObs,,] * t(attr(average.iid,"factor")[[1]]))})),
                  test4$absRisk.average.iid[[1]])
 
     ## average.iid with factor - diag=TRUE
@@ -871,15 +870,17 @@ test_that("[predictCSC] diag no strata", {
                      se = FALSE, iid = FALSE, average.iid = average.iid, diag = TRUE)
 
     
-    expect_equal(5*test$absRisk.average.iid, test5$absRisk.average.iid[[1]])
-    expect_equal(rowMeans(rowMultiply_cpp(GS.iid.diag, 1:length(dt$time))),
+    expect_equal(ignore_attr=TRUE,5*test$absRisk.average.iid, test5$absRisk.average.iid[[1]])
+    expect_equal(ignore_attr=TRUE,rowMeans(rowMultiply_cpp(GS.iid.diag, 1:length(dt$time))),
                  test5$absRisk.average.iid[[2]][,1])
 
 })
 
 
 test_that("[predictCSC] diag strata", {
-    eS.CSC <- CSC(Hist(time, event) ~ strata(X1) + X6, data = dt)
+set.seed(10)
+dt <- sampleData(75, outcome = "competing.risks")[,.(time,event,X1,X2,X6)]
+eS.CSC <- CSC(Hist(time, event) ~ strata(X1) + X6, data = dt)
 
     GS <- predict(eS.CSC, newdata = dt, times = dt$time, se = TRUE, iid = TRUE, average.iid = TRUE, cause = 1)
     test <- predict(eS.CSC, newdata = dt, times = dt$time,
@@ -888,20 +889,20 @@ test_that("[predictCSC] diag strata", {
                      se = FALSE, iid = FALSE, average.iid = TRUE, diag = TRUE, cause = 1)
     
     ## estimates
-    expect_equal(dt$time, as.double(test$time))
-    expect_equal(diag(GS$absRisk), as.double(test$absRisk))
+    expect_equal(ignore_attr=TRUE,dt$time, as.double(test$time))
+    expect_equal(ignore_attr=TRUE,diag(GS$absRisk), as.double(test$absRisk))
 
     ## se
-    expect_equal(diag(GS$absRisk.se), test$absRisk.se[,1])
+    expect_equal(ignore_attr=TRUE,diag(GS$absRisk.se), test$absRisk.se[,1])
 
     ## iid
     GS.iid.diag <- do.call(cbind,lapply(1:NROW(dt),
                                         function(iN){GS$absRisk.iid[,iN,iN]}))
-    expect_equal(GS.iid.diag, test$absRisk.iid[,1,])
+    expect_equal(ignore_attr=TRUE,GS.iid.diag, test$absRisk.iid[,1,])
 
     ## average.iid
-    expect_equal(rowMeans(GS.iid.diag), test$absRisk.average.iid[,1])
-    expect_equal(test$absRisk.average.iid, test2$absRisk.average.iid)
+    expect_equal(ignore_attr=TRUE,rowMeans(GS.iid.diag), test$absRisk.average.iid[,1])
+    expect_equal(ignore_attr=TRUE,test$absRisk.average.iid, test2$absRisk.average.iid)
 
     ## average.iid with factor - diag=FALSE
     average.iid <- TRUE
@@ -910,8 +911,8 @@ test_that("[predictCSC] diag strata", {
     test3 <- predict(eS.CSC, newdata = dt, times = dt$time,
                      se = FALSE, iid = FALSE, average.iid = average.iid, diag = FALSE, cause = 1)
 
-    expect_equal(5*GS$absRisk.average.iid, test3$absRisk.average.iid[[1]])
-    expect_equal(apply(GS$absRisk.iid, 1:2, function(x){sum(x * (1:length(dt$time)))/length(x)}),
+    expect_equal(ignore_attr=TRUE,5*GS$absRisk.average.iid, test3$absRisk.average.iid[[1]])
+    expect_equal(ignore_attr=TRUE,apply(GS$absRisk.iid, 1:2, function(x){sum(x * (1:length(dt$time)))/length(x)}),
                  test3$absRisk.average.iid[[2]])
 
     ## average.iid with factor - diag=FALSE, time varying factor
@@ -919,7 +920,7 @@ test_that("[predictCSC] diag strata", {
     attr(average.iid,"factor") <- list(matrix(rnorm(NROW(dt)*length(dt$time)), nrow = NROW(dt), ncol = length(dt$time)))
     test4 <- predict(eS.CSC, newdata = dt, times = dt$time, cause = 1,
                      se = FALSE, iid = FALSE, average.iid = average.iid, diag = FALSE)
-    expect_equal(do.call(rbind,lapply(1:NROW(dt), function(iObs){rowMeans(GS$absRisk.iid[iObs,,] * t(attr(average.iid,"factor")[[1]]))})),
+    expect_equal(ignore_attr=TRUE,do.call(rbind,lapply(1:NROW(dt), function(iObs){rowMeans(GS$absRisk.iid[iObs,,] * t(attr(average.iid,"factor")[[1]]))})),
                  test4$absRisk.average.iid[[1]])
 
     ## average.iid with factor - diag=TRUE
@@ -929,8 +930,8 @@ test_that("[predictCSC] diag strata", {
     test5 <- predict(eS.CSC, newdata = dt, times = dt$time, cause = 1,
                      se = FALSE, iid = FALSE, average.iid = average.iid, diag = TRUE)
 
-    expect_equal(5*test$absRisk.average.iid, test5$absRisk.average.iid[[1]])
-    expect_equal(rowMeans(rowMultiply_cpp(GS.iid.diag, 1:length(dt$time))),
+    expect_equal(ignore_attr=TRUE,5*test$absRisk.average.iid, test5$absRisk.average.iid[[1]])
+    expect_equal(ignore_attr=TRUE,rowMeans(rowMultiply_cpp(GS.iid.diag, 1:length(dt$time))),
                  test5$absRisk.average.iid[[2]][,1])
 })
 
@@ -958,17 +959,17 @@ test_that("iid average - non parametric (hazard)", {
         res2 <- predict(m.CSC, times = seqTime, newdata = d,
                         cause = 1, average.iid = TRUE)
 
-        expect_equal(res1$absRisk.average.iid,res2$absRisk.average.iid)
+        expect_equal(ignore_attr=TRUE,res1$absRisk.average.iid,res2$absRisk.average.iid)
         expect_true(all(res1$absRisk.average.iid[,1]==0))
         expect_true(all(is.na(res1$absRisk.average.iid[,length(seqTime)])))
 
-        expect_equal(apply(res1$absRisk.iid,1:2,mean),
+        expect_equal(ignore_attr=TRUE,apply(res1$absRisk.iid,1:2,mean),
                      res2$absRisk.average.iid)
         
         ## compare to fixed value    
         ## d[time==min(time),]
         ## levels(predictCox(m.CSC$models[[1]])$strata)
-        expect_equal(res1$absRisk.iid[, index.firstEvent,obs.firstEvent],
+        expect_equal(ignore_attr=TRUE,res1$absRisk.iid[, index.firstEvent,obs.firstEvent],
                      iidCox(m.CSC$models[[1]], return.object = FALSE)$IFhazard[[strata.firstEvent]][,1])
     }
 })
@@ -985,11 +986,11 @@ test_that("iid average - semi parametric", {
         GS3 <- res1$absRisk.average.iid
         GS23 <- res1$absRisk.average.iid
         
-        expect_equal(res1$absRisk.average.iid,res2$absRisk.average.iid)
+        expect_equal(ignore_attr=TRUE,res1$absRisk.average.iid,res2$absRisk.average.iid)
         expect_true(all(res1$absRisk.average.iid[,1]==0))
         expect_true(all(is.na(res1$absRisk.average.iid[,length(seqTime)])))
 
-        expect_equal(apply(res1$absRisk.iid,1:2,mean),
+        expect_equal(ignore_attr=TRUE,apply(res1$absRisk.iid,1:2,mean),
                      res2$absRisk.average.iid)
 
     }
@@ -1015,10 +1016,10 @@ test_that("predictSurv (type=survival)", {
                     store.iid = "minimal", keep.newdata = FALSE)
     GS <- predictCox(e.cox, newdata = d.pred, times = seqTime, type = "survival",
                      iid = TRUE, se = TRUE, average.iid = TRUE)
-    expect_equal(GS$survival, test$survival)
-    expect_equal(GS$survival.se,test$survival.se)
-    expect_equal(GS$survival.iid,test$survival.iid)
-    expect_equal(GS$survival.average.iid,test$survival.average.iid)
+    expect_equal(ignore_attr=TRUE,GS$survival, test$survival)
+    expect_equal(ignore_attr=TRUE,GS$survival.se,test$survival.se)
+    expect_equal(ignore_attr=TRUE,GS$survival.iid,test$survival.iid)
+    expect_equal(ignore_attr=TRUE,GS$survival.average.iid,test$survival.average.iid)
 
     testPL <- predict(e.CSC, type = "survival", newdata = d.pred, times = seqTime,
                       product.limit = TRUE, iid = TRUE, se = TRUE, average.iid = TRUE,
@@ -1031,10 +1032,10 @@ test_that("predictSurv (type=survival)", {
     for(iObs in 1:NROW(d)){
         testPL$survival.iid2[iObs,,] <- testPL$survival.iid[iObs,,]*t(ratioSurv)
     }
-    expect_equal(GSPL$survival,testPL$survival)
-    expect_equal(GSPL$survival.se[!is.infinite(ratioSurv)], (testPL$survival.se * ratioSurv)[!is.infinite(ratioSurv)])
-    expect_equal(GSPL$survival.iid[!is.nan(testPL$survival.iid2)],testPL$survival.iid2[!is.nan(testPL$survival.iid2)])
-    expect_equal(apply(testPL$survival.iid,1:2,mean),
+    expect_equal(ignore_attr=TRUE,GSPL$survival,testPL$survival)
+    expect_equal(ignore_attr=TRUE,GSPL$survival.se[!is.infinite(ratioSurv)], (testPL$survival.se * ratioSurv)[!is.infinite(ratioSurv)])
+    expect_equal(ignore_attr=TRUE,GSPL$survival.iid[!is.nan(testPL$survival.iid2)],testPL$survival.iid2[!is.nan(testPL$survival.iid2)])
+    expect_equal(ignore_attr=TRUE,apply(testPL$survival.iid,1:2,mean),
                  testPL$survival.average.iid)
 })
 
@@ -1046,10 +1047,10 @@ test_that("predictSurv (type=survival,diag)", {
     GS <- predictCox(e.cox, newdata = d.pred, times = d.pred$time,
                      diag = TRUE, iid = TRUE, se = TRUE, average.iid = TRUE)
 
-    expect_equal(GS$survival,test$survival)
-    expect_equal(GS$survival.se,test$survival.se)
-    expect_equal(GS$survival.iid,test$survival.iid)
-    expect_equal(GS$survival.average.iid,test$survival.average.iid)
+    expect_equal(ignore_attr=TRUE,GS$survival,test$survival)
+    expect_equal(ignore_attr=TRUE,GS$survival.se,test$survival.se)
+    expect_equal(ignore_attr=TRUE,GS$survival.iid,test$survival.iid)
+    expect_equal(ignore_attr=TRUE,GS$survival.average.iid,test$survival.average.iid)
 
     testPL <- predict(e.CSC, type = "survival", newdata = d.pred, times = d.pred$time,
                       diag = TRUE, product.limit = TRUE, iid = TRUE, se = TRUE, average.iid = TRUE,
@@ -1062,10 +1063,10 @@ test_that("predictSurv (type=survival,diag)", {
     for(iObs in 1:NROW(d)){
         testPL$survival.iid2[iObs,,] <- testPL$survival.iid[iObs,,]*t(ratioSurv)
     }
-    expect_equal(GSPL$survival,testPL$survival)
-    expect_equal(GSPL$survival.se[!is.infinite(ratioSurv)], (testPL$survival.se * ratioSurv)[!is.infinite(ratioSurv)])
-    expect_equal(GSPL$survival.iid[!is.nan(testPL$survival.iid2)],testPL$survival.iid2[!is.nan(testPL$survival.iid2)])
-    expect_equal(apply(testPL$survival.iid,1:2,mean),
+    expect_equal(ignore_attr=TRUE,GSPL$survival,testPL$survival)
+    expect_equal(ignore_attr=TRUE,GSPL$survival.se[!is.infinite(ratioSurv)], (testPL$survival.se * ratioSurv)[!is.infinite(ratioSurv)])
+    expect_equal(ignore_attr=TRUE,GSPL$survival.iid[!is.nan(testPL$survival.iid2)],testPL$survival.iid2[!is.nan(testPL$survival.iid2)])
+    expect_equal(ignore_attr=TRUE,apply(testPL$survival.iid,1:2,mean),
                  testPL$survival.average.iid)
 })
 
@@ -1079,19 +1080,19 @@ test_that("[predictCSC] vs. predictCox (no strata) - surv.type=\"survival\"",{
                     newdata = d.pred, product.limit = FALSE, iid = TRUE, average.iid = TRUE, se = TRUE, cause = 1)
     GS <- predictCox(e.CSC$models[["OverallSurvival"]],times = jumpTime,
                      newdata = d.pred, iid = TRUE, average.iid = TRUE, se = TRUE)
-    expect_equal(GS$survival,test$survival)
-    expect_equal(GS$survival.se,test$survival.se)
-    expect_equal(GS$survival.iid,test$survival.iid)
-    expect_equal(GS$survival.average.iid,test$survival.average.iid)
+    expect_equal(ignore_attr=TRUE,GS$survival,test$survival)
+    expect_equal(ignore_attr=TRUE,GS$survival.se,test$survival.se)
+    expect_equal(ignore_attr=TRUE,GS$survival.iid,test$survival.iid)
+    expect_equal(ignore_attr=TRUE,GS$survival.average.iid,test$survival.average.iid)
 
     test <- predict(e.CSC, type = "survival", times = jumpTime,
                     newdata = d.pred, product.limit = TRUE, iid = TRUE, average.iid = TRUE, se = TRUE)
     GS <- predictCoxPL(e.CSC$models[["OverallSurvival"]],times = jumpTime,
                        newdata = d.pred, iid = TRUE, average.iid = TRUE, se = TRUE)
-    expect_equal(GS$survival,test$survival)
-    expect_equal(GS$survival.se,test$survival.se)
-    expect_equal(GS$survival.iid,test$survival.iid)
-    expect_equal(GS$survival.average.iid,test$survival.average.iid)
+    expect_equal(ignore_attr=TRUE,GS$survival,test$survival)
+    expect_equal(ignore_attr=TRUE,GS$survival.se,test$survival.se)
+    expect_equal(ignore_attr=TRUE,GS$survival.iid,test$survival.iid)
+    expect_equal(ignore_attr=TRUE,GS$survival.average.iid,test$survival.average.iid)
 })
 
 test_that("[predictCSC] vs. predictCox (strata) - surv.type=\"survival\"",{
@@ -1102,19 +1103,19 @@ test_that("[predictCSC] vs. predictCox (strata) - surv.type=\"survival\"",{
                     newdata = d.pred, product.limit = FALSE, iid = TRUE, average.iid = TRUE, se = TRUE)
     GS <- predictCox(e.CSC$models[["OverallSurvival"]], type = "survival", times = jumpTime,
                      newdata = d.pred, iid = TRUE, average.iid = TRUE, se = TRUE)
-    expect_equal(GS$survival,test$survival)
-    expect_equal(GS$survival.se,test$survival.se)
-    expect_equal(GS$survival.iid,test$survival.iid)
-    expect_equal(GS$survival.average.iid,test$survival.average.iid)
+    expect_equal(ignore_attr=TRUE,GS$survival,test$survival)
+    expect_equal(ignore_attr=TRUE,GS$survival.se,test$survival.se)
+    expect_equal(ignore_attr=TRUE,GS$survival.iid,test$survival.iid)
+    expect_equal(ignore_attr=TRUE,GS$survival.average.iid,test$survival.average.iid)
 
     test <- predict(e.CSC, type = "survival", times = jumpTime,
                     newdata = d.pred, product.limit = TRUE, iid = TRUE, average.iid = TRUE, se = TRUE)
     GS <- predictCoxPL(e.CSC$models[["OverallSurvival"]], type = "survival", times = jumpTime,
                        newdata = d.pred, iid = TRUE, average.iid = TRUE, se = TRUE)
-    expect_equal(GS$survival,test$survival)
-    expect_equal(GS$survival.se,test$survival.se)
-    expect_equal(GS$survival.iid,test$survival.iid)
-    expect_equal(GS$survival.average.iid,test$survival.average.iid)
+    expect_equal(ignore_attr=TRUE,GS$survival,test$survival)
+    expect_equal(ignore_attr=TRUE,GS$survival.se,test$survival.se)
+    expect_equal(ignore_attr=TRUE,GS$survival.iid,test$survival.iid)
+    expect_equal(ignore_attr=TRUE,GS$survival.average.iid,test$survival.average.iid)
     
     ## different strata for each cause
     e.CSC <- CSC(list(Hist(time, event)~ X6 + strata(X1),
@@ -1125,19 +1126,19 @@ test_that("[predictCSC] vs. predictCox (strata) - surv.type=\"survival\"",{
                     newdata = d.pred, product.limit = FALSE, iid = TRUE, average.iid = TRUE, se = TRUE)
     GS <- predictCox(e.CSC$models[["OverallSurvival"]], type = "survival", times = jumpTime,
                        newdata = d.pred, iid = TRUE, average.iid = TRUE, se = TRUE)
-    expect_equal(GS$survival,test$survival)
-    expect_equal(GS$survival.se,test$survival.se)
-    expect_equal(GS$survival.iid,test$survival.iid)
-    expect_equal(GS$survival.average.iid,test$survival.average.iid)
+    expect_equal(ignore_attr=TRUE,GS$survival,test$survival)
+    expect_equal(ignore_attr=TRUE,GS$survival.se,test$survival.se)
+    expect_equal(ignore_attr=TRUE,GS$survival.iid,test$survival.iid)
+    expect_equal(ignore_attr=TRUE,GS$survival.average.iid,test$survival.average.iid)
 
     test <- predict(e.CSC, type = "survival", times = jumpTime,
                     newdata = d.pred, product.limit = TRUE, iid = TRUE, average.iid = TRUE, se = TRUE)
     GS <- predictCoxPL(e.CSC$models[["OverallSurvival"]], type = "survival", times = jumpTime,
                        newdata = d.pred, iid = TRUE, average.iid = TRUE, se = TRUE)
-    expect_equal(GS$survival,test$survival)
-    expect_equal(GS$survival.se,test$survival.se)
-    expect_equal(GS$survival.iid,test$survival.iid)
-    expect_equal(GS$survival.average.iid,test$survival.average.iid)
+    expect_equal(ignore_attr=TRUE,GS$survival,test$survival)
+    expect_equal(ignore_attr=TRUE,GS$survival.se,test$survival.se)
+    expect_equal(ignore_attr=TRUE,GS$survival.iid,test$survival.iid)
+    expect_equal(ignore_attr=TRUE,GS$survival.average.iid,test$survival.average.iid)
 
 })
 ## ** type=hazard
@@ -1162,11 +1163,11 @@ test_that("[predictCSC] for survival surv.type=\"survival\" (internal consistenc
                      newdata = d, product.limit = FALSE, iid = FALSE, average.iid = factor,
                      store.iid = "minimal")
 
-    expect_equal(GS$survival.average.iid,test$survival.average.iid)
-    expect_equal(GS$survival.average.iid[,1],test$survival.average.iid[,1])
-    expect_equal(5*GS$survival.average.iid[,1],test2$survival.average.iid[[1]][,1])
+    expect_equal(ignore_attr=TRUE,GS$survival.average.iid,test$survival.average.iid)
+    expect_equal(ignore_attr=TRUE,GS$survival.average.iid[,1],test$survival.average.iid[,1])
+    expect_equal(ignore_attr=TRUE,5*GS$survival.average.iid[,1],test2$survival.average.iid[[1]][,1])
 
-    expect_equal(rowMeans(rowMultiply_cpp(GS$survival.iid[,1,],1:NROW(d))),
+    expect_equal(ignore_attr=TRUE,rowMeans(rowMultiply_cpp(GS$survival.iid[,1,],1:NROW(d))),
                  test2$survival.average.iid[[2]][,1])
 })
 
@@ -1254,7 +1255,7 @@ test_that("product.limit=-1",{
                       1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1), dim = c(1L, 50L))
 
     ## cap risks at 1
-    expect_equal(eFIX.riskEXP$absRisk, GS, tol = 1e-6)
+    expect_equal(ignore_attr=TRUE,eFIX.riskEXP$absRisk, GS, tol = 1e-6)
     expect_true(max(eFIX.riskEXP$absRisk)<=1)
 
     ## corresponding se=0
@@ -1265,7 +1266,7 @@ test_that("product.limit=-1",{
     ## check correct  averaging (via C++)
     eALL.riskEXP <- predict(e.CSC, newdata = dt, times = dt$time[25], cause = 1,
                             se = TRUE, iid = TRUE, average.iid = TRUE, product.limit = -1)
-    expect_equal(rowMeans(eALL.riskEXP$absRisk.iid[,1,]), eALL.riskEXP$absRisk.average.iid[,1], tol = 1e-6)
+    expect_equal(ignore_attr=TRUE,rowMeans(eALL.riskEXP$absRisk.iid[,1,]), eALL.riskEXP$absRisk.average.iid[,1], tol = 1e-6)
 
     ## check correct  averaging (only R, single obs)
     eALL2.riskEXP <- predict(e.CSC, newdata = dtPred, times = dt$time[25], cause = 1,
@@ -1275,14 +1276,14 @@ test_that("product.limit=-1",{
     ## check correct  averaging (only R, all)
     eALL2.riskEXP <- predict(e.CSC, newdata = dt, times = dt$time[25], cause = 1,
                              average.iid = TRUE, product.limit = -1)
-    expect_equal(eALL.riskEXP$absRisk.average.iid, eALL2.riskEXP$absRisk.average.iid, tol = 1e-6)
+    expect_equal(ignore_attr=TRUE,eALL.riskEXP$absRisk.average.iid, eALL2.riskEXP$absRisk.average.iid, tol = 1e-6)
 
     ## check correct  averaging (many timepoints)
     eALL.MriskEXP <- predict(e.CSC, newdata = dt, times = dt$time, cause = 1,
                              se = TRUE, iid = TRUE, average.iid = TRUE, product.limit = -1)
     eALL2.MriskEXP <- predict(e.CSC, newdata = dt, times = dt$time, cause = 1,
                               average.iid = TRUE, product.limit = -1)
-    expect_equal(eALL.MriskEXP$absRisk.average.iid, eALL2.MriskEXP$absRisk.average.iid,tol=1e-6)
+    expect_equal(ignore_attr=TRUE,eALL.MriskEXP$absRisk.average.iid, eALL2.MriskEXP$absRisk.average.iid,tol=1e-6)
 })
 
 ## * [predictCSC] Miscelaneous
@@ -1356,14 +1357,14 @@ test_that("Prediction with CSC - sorted vs. unsorted times",{
   fit.CSC <- CSC(Hist(time,status) ~ thick, data = Melanoma)
   predictionUNS <- predict(fit.CSC, times = times2[newOrder], newdata = Melanoma, cause = 1, keep.times = FALSE)
   predictionS <- predict(fit.CSC, times = times2, newdata = Melanoma, cause = 1, keep.times = FALSE)
-  expect_equal(predictionS$absRisk, predictionUNS$absRisk[,order(newOrder)])
+  expect_equal(ignore_attr=TRUE,predictionS$absRisk, predictionUNS$absRisk[,order(newOrder)])
 })
 
 test_that("Prediction with CSC (strata) - sorted vs. unsorted times",{
   fit.CSC <- CSC(Hist(time,status) ~ thick + strat(invasion), data = Melanoma)
   predictionUNS <- predict(fit.CSC, times = times2[newOrder], newdata = Melanoma, cause = 1)
   predictionS <- predict(fit.CSC, times = times2, newdata = Melanoma, cause = 1)
-  expect_equal(predictionS$absRisk, predictionUNS$absRisk[,order(newOrder)])
+  expect_equal(ignore_attr=TRUE,predictionS$absRisk, predictionUNS$absRisk[,order(newOrder)])
 })
 
 
@@ -1381,7 +1382,7 @@ test_that("[predictCSC] output of average.iid should not depend on other argumen
     out2 <- predict(fit, newdata = d[1:5], times = 1:3, se = TRUE, average.iid = TRUE, cause = 1)
 
     test_that("output of average.iid should not depend on other arguments", {
-        expect_equal(out1$survival.average.iid,out2$survival.average.iid, tol = 1e-8)
+        expect_equal(ignore_attr=TRUE,out1$survival.average.iid,out2$survival.average.iid, tol = 1e-8)
     })
 })
 
@@ -1398,7 +1399,7 @@ test_that("[predictCSC] prediction after storing iid", {
     res <- predict(cfit1,newdata=Melanoma[1,,drop=FALSE],cause=1,
                    times=4,se=TRUE,band=TRUE)
     
-    expect_equal(GS,res)
+    expect_equal(ignore_attr=TRUE,GS,res)
 })
 
 ## ** Prediction first/NA/negative/last event
@@ -1416,14 +1417,14 @@ test_that("[predictCSC] (no strata): NA after last event",{
   test.times <- max(Melanoma$time) + c(-1e-1,0,1e-1)
   
   prediction <- predict(fit.CSC, times = test.times, newdata = Melanoma[1,,drop = FALSE], cause = 1)
-  expect_equal(as.vector(is.na(prediction$absRisk)), c(FALSE, FALSE, TRUE))
+  expect_equal(ignore_attr=TRUE,as.vector(is.na(prediction$absRisk)), c(FALSE, FALSE, TRUE))
 })
 
 test_that("[predictCSC] (no strata): no event before prediction time",{
   test.times <- min(Melanoma$time)-1e-5
   
   prediction <- predict(fit.CSC, times = test.times, newdata = Melanoma[1,,drop = FALSE], cause = 1)
-  expect_equal(as.double(prediction$absRisk), 0)
+  expect_equal(ignore_attr=TRUE,as.double(prediction$absRisk), 0)
 })
 
 test_that("[predictCSC] (no strata): beyond last event time / negative timepoints / NA in timepoints",{
@@ -1433,9 +1434,9 @@ test_that("[predictCSC] (no strata): beyond last event time / negative timepoint
     prediction.1 <- predict(fit.CSC, times = test.times.1, newdata = newd, cause = 1)
     test.times.2 <- c(10,300,5000)
     prediction.2 <- predict(fit.CSC, times = test.times.2, newdata = newd, cause = 1)
-    expect_equal(prediction.1$absRisk[,3],prediction.2$absRisk[,3])
+    expect_equal(ignore_attr=TRUE,prediction.1$absRisk[,3],prediction.2$absRisk[,3])
 
-    expect_equal(unname(predict(fit.CSC, times = -1, newdata = newd, cause = 1)$absRisk),
+    expect_equal(ignore_attr=TRUE,unname(predict(fit.CSC, times = -1, newdata = newd, cause = 1)$absRisk),
                  matrix(0,nrow = nrow(newd), ncol = 1))
 
     expect_error(predict(fit.CSC, times = c(test.times,NA), newdata = newd, cause = 1))
@@ -1463,9 +1464,9 @@ test_that("[predictCSC](strata): NA after last event",{
     test.times <- sort(unlist(dt.times[Ttempo, .(beforeLastTime, LastTime, afterLastTime)]))
     
     prediction <- predict(fit.CSC, times = test.times, newdata = data.test, cause = 1)
-    expect_equal(unname(is.na(prediction$absRisk[Ttempo,])), c(FALSE, FALSE, TRUE))
-    expect_equal(unname(is.na(prediction$absRisk[Ttempo,])), c(FALSE, FALSE, TRUE))
-    expect_equal(unname(is.na(prediction$absRisk[Ttempo,])), c(FALSE, FALSE, TRUE))
+    expect_equal(ignore_attr=TRUE,unname(is.na(prediction$absRisk[Ttempo,])), c(FALSE, FALSE, TRUE))
+    expect_equal(ignore_attr=TRUE,unname(is.na(prediction$absRisk[Ttempo,])), c(FALSE, FALSE, TRUE))
+    expect_equal(ignore_attr=TRUE,unname(is.na(prediction$absRisk[Ttempo,])), c(FALSE, FALSE, TRUE))
   }
 })
 
@@ -1473,7 +1474,7 @@ test_that("[predictCSC](strata)  - no event before prediction time",{
   test.times <- min(Melanoma$time)-1e-5
   
   prediction <- predict(fit.CSC, times = test.times, newdata = Melanoma[1,,drop = FALSE], cause = 1)
-  expect_equal(as.double(prediction$absRisk), 0)
+  expect_equal(ignore_attr=TRUE,as.double(prediction$absRisk), 0)
 })
 
 ## *** fully stratified model
@@ -1495,9 +1496,9 @@ test_that("After last event - fully stratified model",{
     test1 <- as.data.table(predict(e.CSC, times = tau, newdata = X, se = TRUE, cause = 1))
     test2 <- as.data.table(predict(e.CSC, times = tau, newdata = X, se = TRUE, cause = 2))
 
-    expect_equal(test1[strata == "X1=1" & times == 10000,absRisk], test1[strata == "X1=1" & times == d[X1==1,max(time)],absRisk], tol = 1e-6)
-    expect_equal(test1[strata == "X1=1" & times == 10000,absRisk] + test2[strata == "X1=1" & times == 10000,absRisk],1,tol = 1e-6)
-    expect_equal(test1[strata == "X1=1" & times == 10000,absRisk.se], test1[strata == "X1=1" & times == d[X1==1,max(time)],absRisk.se], tol = 1e-6)
+    expect_equal(ignore_attr=TRUE,test1[strata == "X1=1" & times == 10000,absRisk], test1[strata == "X1=1" & times == d[X1==1,max(time)],absRisk], tol = 1e-6)
+    expect_equal(ignore_attr=TRUE,test1[strata == "X1=1" & times == 10000,absRisk] + test2[strata == "X1=1" & times == 10000,absRisk],1,tol = 1e-6)
+    expect_equal(ignore_attr=TRUE,test1[strata == "X1=1" & times == 10000,absRisk.se], test1[strata == "X1=1" & times == d[X1==1,max(time)],absRisk.se], tol = 1e-6)
 
     expect_true(is.na(test1[strata == "X1=0" & times == 10000,absRisk]))
     expect_true(is.na(test1[strata == "X1=0" & times == 10000,absRisk.se]))
@@ -1510,7 +1511,7 @@ test_that("After last event - fully stratified model",{
     test1 <- as.data.table(predict(e2.CSC, times = tau, newdata = X, se = TRUE, cause = 1))
     test2 <- as.data.table(predict(e2.CSC, times = tau, newdata = X, se = TRUE, cause = 2))
     
-    expect_equal(test1[strata != "X1=0 X2=0" & times == 10000,absRisk] + test2[strata != "X1=0 X2=0" & times == 10000,absRisk], rep(1,3), tol = 1e-6)
+    expect_equal(ignore_attr=TRUE,test1[strata != "X1=0 X2=0" & times == 10000,absRisk] + test2[strata != "X1=0 X2=0" & times == 10000,absRisk], rep(1,3), tol = 1e-6)
     expect_true(all(is.na(test1[strata == "X1=0 X2=0" & times == 10000,absRisk])))
     expect_true(all(is.na(test1[strata == "X1=0 X2=0" & times == 10000,absRisk.se])))
     expect_true(all(is.na(test2[strata == "X1=0 X2=0" & times == 10000,absRisk])))
@@ -1537,18 +1538,18 @@ test_that("[predictCSC]: iid minimal - no strata", {
                     cause = 1,
                     store.iid = "full", se = TRUE, iid = TRUE)
 
-    expect_equal(res1$absRisk.se,res2$absRisk.se)
-    expect_equal(res1$absRisk.iid,res2$absRisk.iid)
-    expect_equal(res1$absRisk.average.iid, apply(res2$absRisk.iid,1:2,mean))
+    expect_equal(ignore_attr=TRUE,res1$absRisk.se,res2$absRisk.se)
+    expect_equal(ignore_attr=TRUE,res1$absRisk.iid,res2$absRisk.iid)
+    expect_equal(ignore_attr=TRUE,res1$absRisk.average.iid, apply(res2$absRisk.iid,1:2,mean))
 
     m2.CSC <- iidCox(m.CSC, store.iid = "minimal")
     res1bis <- predict(m2.CSC, times = seqTime, newdata = newdata,
                     cause = 1,
                     se = TRUE, iid = TRUE, average.iid = TRUE)
     
-    expect_equal(res1bis$absRisk.se,res2$absRisk.se)
-    expect_equal(res1bis$absRisk.iid,res2$absRisk.iid)
-    expect_equal(res1bis$absRisk.average.iid, apply(res2$absRisk.iid,1:2,mean))
+    expect_equal(ignore_attr=TRUE,res1bis$absRisk.se,res2$absRisk.se)
+    expect_equal(ignore_attr=TRUE,res1bis$absRisk.iid,res2$absRisk.iid)
+    expect_equal(ignore_attr=TRUE,res1bis$absRisk.average.iid, apply(res2$absRisk.iid,1:2,mean))
 })
 
 m.CSC <- CSC(Hist(time, event) ~ strata(X1)+X6, data = d)
@@ -1561,18 +1562,18 @@ test_that("[predictCSC]: iid minimal - strata", {
                     cause = 1,
                     store.iid = "full", se = TRUE, iid = TRUE)
 
-    expect_equal(res1$absRisk.se,res2$absRisk.se)
-    expect_equal(res1$absRisk.iid,res2$absRisk.iid)
-    expect_equal(res1$absRisk.average.iid, apply(res2$absRisk.iid,1:2,mean))
+    expect_equal(ignore_attr=TRUE,res1$absRisk.se,res2$absRisk.se)
+    expect_equal(ignore_attr=TRUE,res1$absRisk.iid,res2$absRisk.iid)
+    expect_equal(ignore_attr=TRUE,res1$absRisk.average.iid, apply(res2$absRisk.iid,1:2,mean))
 
     m2.CSC <- iidCox(m.CSC, store.iid = "minimal")
     res1bis <- predict(m2.CSC, times = seqTime, newdata = newdata,
                     cause = 1,
                     se = TRUE, iid = TRUE, average.iid = TRUE)
     
-    expect_equal(res1bis$absRisk.se,res2$absRisk.se)
-    expect_equal(res1bis$absRisk.iid,res2$absRisk.iid)
-    expect_equal(res1bis$absRisk.average.iid, apply(res2$absRisk.iid,1:2,mean))
+    expect_equal(ignore_attr=TRUE,res1bis$absRisk.se,res2$absRisk.se)
+    expect_equal(ignore_attr=TRUE,res1bis$absRisk.iid,res2$absRisk.iid)
+    expect_equal(ignore_attr=TRUE,res1bis$absRisk.average.iid, apply(res2$absRisk.iid,1:2,mean))
 })
 
 ## ** CSC with of surv type
@@ -1595,7 +1596,7 @@ test_that("[predictCSC]: surv.type", {
                  surv.type="surv",cause=2)
 
     rGS <- predictRisk(fitGS,cause=2,newdata=Melanoma,times=1000)
-    expect_equal(r2,rGS, tol = 1e-6)
+    expect_equal(ignore_attr=TRUE,r2,rGS, tol = 1e-6)
 })
 
 #----------------------------------------------------------------------

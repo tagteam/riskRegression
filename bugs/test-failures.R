@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Dec  6 2020 (08:39) 
 ## Version: 
-## Last-Updated: Dec  6 2020 (08:59) 
+## Last-Updated: Sep 17 2022 (07:02) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 3
+##     Update #: 4
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -58,7 +58,7 @@ test_that("[predictCox] Dependence on data", {
     Melanoma2 <- 7
   
     test <- predictCox(fit1,newdata=Melanoma[1:10,],times=1000)
-    expect_equal(GS,test)
+    expect_equal(ignore_attr=TRUE,GS,test)
   
     ## with delayed entry
     ## BROZ: fails
@@ -71,7 +71,7 @@ test_that("[predictCox] Dependence on data", {
         Melanoma2 <- 7
         
         test <- predictCox(fit1,newdata=Melanoma[1:10,],times=1000)
-        expect_equal(GS,test)
+        expect_equal(ignore_attr=TRUE,GS,test)
     }
 })
 

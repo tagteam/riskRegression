@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Dec  6 2020 (09:25) 
 ## Version: 
-## Last-Updated: Aug 23 2022 (13:36) 
+## Last-Updated: Sep 17 2022 (07:02) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 9
+##     Update #: 10
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -36,8 +36,8 @@ test_that("survival outcome: robustness against order of data set",{
     f3 <- cbind(d$X8,d$X8,d$X8)
     s3 <- Score(list(f1,f2,f3),formula=Surv(time,event)~1,data=d,times=c(3,5,10),conf.int=.95,metrics="auc")
     s1$call$conf.int <- .95
-    expect_equal(s1,s2)
-    expect_equal(s1,s3)
+    expect_equal(ignore_attr=TRUE,s1,s2)
+    expect_equal(ignore_attr=TRUE,s1,s3)
 })
 # }}}
 
@@ -52,8 +52,8 @@ test_that("competing risks outcome: check against pec",{
         f <- FGR(Hist(time,event)~X1+X6,data=d,cause=1)
         a <- pec::pec(list(f),data=nd,times=c(2,5),formula=Hist(time,event)~1,cens.model="marginal",exact=FALSE)
         b <- Score(list(FGR=f),data=nd,formula=Hist(time,event)~1,cens.model="km",se.fit=FALSE,times=c(2,5),metrics="brier")
-        expect_equal(a$AppErr$Reference[-1],b$Brier$score[model=="Null model",Brier])
-        expect_equal(a$AppErr$FGR[-1],b$Brier$score[model=="FGR",Brier])
+        expect_equal(ignore_attr=TRUE,a$AppErr$Reference[-1],b$Brier$score[model=="Null model",Brier])
+        expect_equal(ignore_attr=TRUE,a$AppErr$FGR[-1],b$Brier$score[model=="FGR",Brier])
     }
 })
 
@@ -76,11 +76,11 @@ test_that("competing risks outcome: robustness against order of data set",{
     suppressWarnings(s3 <- Score(list(f1,f2,f3),formula=Hist(time,event)~1,data=d,times=c(3,5,9),conf.int=.95,cause=1))
     s3b <- Score(list(f1,f2,f3),formula=Hist(time,event)~1,data=d,times=c(3,5,9),conf.int=.95,cause=1,metrics="auc")
     s1$call$conf.int <- .95
-    expect_equal(s1,s2)
-    expect_equal(s1,s3)
-    expect_equal(s1$AUC,s1b$AUC)
-    expect_equal(s2$AUC,s2b$AUC)
-    expect_equal(s3$AUC,s3b$AUC)
+    expect_equal(ignore_attr=TRUE,s1,s2)
+    expect_equal(ignore_attr=TRUE,s1,s3)
+    expect_equal(ignore_attr=TRUE,s1$AUC,s1b$AUC)
+    expect_equal(ignore_attr=TRUE,s2$AUC,s2b$AUC)
+    expect_equal(ignore_attr=TRUE,s3$AUC,s3b$AUC)
 })
 # }}}
 
@@ -94,9 +94,9 @@ if (requireNamespace("pec",quietly=TRUE)){
         f2 <- coxph(Surv(time,event)~X2+X6+X9+X10,data=d, x = TRUE, y = TRUE)
         p1 <- pec(list(f1,f2),formula=Surv(time,event)~1,data=d,times=c(3,5,9),exact=FALSE,start=NULL)
         s1 <- Score(list(f1,f2),formula=Surv(time,event)~1,data=d,times=c(3,5,9),conf.int=FALSE,metrics="brier")
-        expect_equal(p1$AppErr$coxph,s1$Brier$score[model=="coxph",Brier])
-        expect_equal(p1$AppErr$coxph.1,s1$Brier$score[model=="coxph.1",Brier])
-        expect_equal(p1$AppErr$Reference,s1$Brier$score[model=="Null model",Brier])
+        expect_equal(ignore_attr=TRUE,p1$AppErr$coxph,s1$Brier$score[model=="coxph",Brier])
+        expect_equal(ignore_attr=TRUE,p1$AppErr$coxph.1,s1$Brier$score[model=="coxph.1",Brier])
+        expect_equal(ignore_attr=TRUE,p1$AppErr$Reference,s1$Brier$score[model=="Null model",Brier])
     })
 }
 # }}}
@@ -109,7 +109,7 @@ test_that("survival outcome: matrix input",{
     f1 <- coxph(Surv(time,event)~X1+X5+X8,data=dtrain, x = TRUE, y = TRUE)
     f2 <- predictRisk(f1,newdata=dtest,times=c(1:2))
     s1 <- Score(list(f1,f2),formula=Surv(time,event)~1,data=dtest,times=c(1:2),conf.int=FALSE,null.model=0L,metrics="brier")
-    expect_equal(s1$Brier$score[model=="coxph",Brier],s1$Brier$score[model=="matrix",Brier])
+    expect_equal(ignore_attr=TRUE,s1$Brier$score[model=="coxph",Brier],s1$Brier$score[model=="matrix",Brier])
 })
 
 # }}}
@@ -140,9 +140,9 @@ test_that("Number of models and time points", {
         ## r1$Calibration$plotframe
         ## r2$Calibration$plotframe[times==1000&model=="a"]
         ## r3 <- pec(list(a=fit2,b=fit1),data=GBSG2.test,exact=FALSE,times=c(1000),formula=Surv(time,cens)~1)
-        expect_equal(as.numeric(r1$Brier$score[model=="a"]),
+        expect_equal(ignore_attr=TRUE,as.numeric(r1$Brier$score[model=="a"]),
                      as.numeric(r2$Brier$score[model=="a" & times==1000]))
-        ## expect_equal(r1$AUC$score[model=="a"],r2$AUC$score[model=="a" & times==1000])
+        ## expect_equal(ignore_attr=TRUE,r1$AUC$score[model=="a"],r2$AUC$score[model=="a" & times==1000])
     }
 })
 
@@ -174,9 +174,9 @@ test_that("Number of models and time points", {
         ## r1$Calibration$plotframe
         ## r2$Calibration$plotframe[times==1000&model=="a"]
         ## r3 <- pec(list(a=fit2,b=fit1),data=GBSG2.test,exact=FALSE,times=c(1000),formula=Surv(time,cens)~1)
-        expect_equal(as.numeric(r1$Brier$score[model=="a"]),as.numeric(r2$Brier$score[model=="a" & times==1000]))
-        expect_equal(as.numeric(R1$Brier$score[model=="a"]),as.numeric(R2$Brier$score[model=="a" & times==1000]))
-        ## expect_equal(r1$AUC$score[model=="a"],r2$AUC$score[model=="a" & times==1000])
+        expect_equal(ignore_attr=TRUE,as.numeric(r1$Brier$score[model=="a"]),as.numeric(r2$Brier$score[model=="a" & times==1000]))
+        expect_equal(ignore_attr=TRUE,as.numeric(R1$Brier$score[model=="a"]),as.numeric(R2$Brier$score[model=="a" & times==1000]))
+        ## expect_equal(ignore_attr=TRUE,r1$AUC$score[model=="a"],r2$AUC$score[model=="a" & times==1000])
     }
 })
 # }}}
@@ -200,10 +200,10 @@ test_that("LOOB: Number of models and time points", {
     setorder(GBSG2,time,cens)
     set.seed(138)
     b <- Score(list(fit2=fit2,fit1=fit1),cens.model = "cox",data = GBSG2,times = c(1000,2000),metric = "brier",null.model = FALSE,contrast = FALSE,B=40,split.method="looboot",formula = Surv(time, cens)~horTh,se.fit=0L) 
-    expect_equal(a$Brier$score[model=="fit1"&times==2000],b$Brier$score[model=="fit1"&times==2000])
-    expect_equal(a$Brier$score[model=="fit1"&times==1000],b$Brier$score[model=="fit1"&times==1000])
-    expect_equal(a$Brier$score[model=="fit2"&times==2000],b$Brier$score[model=="fit2"&times==2000])
-    expect_equal(a$Brier$score[model=="fit2"&times==1000],b$Brier$score[model=="fit2"&times==1000])
+    expect_equal(ignore_attr=TRUE,a$Brier$score[model=="fit1"&times==2000],b$Brier$score[model=="fit1"&times==2000])
+    expect_equal(ignore_attr=TRUE,a$Brier$score[model=="fit1"&times==1000],b$Brier$score[model=="fit1"&times==1000])
+    expect_equal(ignore_attr=TRUE,a$Brier$score[model=="fit2"&times==2000],b$Brier$score[model=="fit2"&times==2000])
+    expect_equal(ignore_attr=TRUE,a$Brier$score[model=="fit2"&times==1000],b$Brier$score[model=="fit2"&times==1000])
     B <- 50
     setorder(GBSG2,time,-cens)
     set.seed(138)
@@ -217,15 +217,15 @@ test_that("LOOB: Number of models and time points", {
     set.seed(138)
     A2 <- Score(list(fit2=fit2,fit1=fit1),cens.model = "cox",data = GBSG2,times = c(365.25*4,300,1000),metric = "brier",null.model = FALSE,contrast = FALSE,B=B,split.method="looboot",formula = Surv(time, cens)~horTh)
     ## print(A2$Brier$score[model=="fit1"&times==365.25*4])
-    expect_equal(A$Brier$score[model=="fit1"&times==365.25*4],
+    expect_equal(ignore_attr=TRUE,A$Brier$score[model=="fit1"&times==365.25*4],
                  A2$Brier$score[model=="fit1"&times==365.25*4])
-    expect_equal(A$Brier$score[model=="fit1"&times==1000],
+    expect_equal(ignore_attr=TRUE,A$Brier$score[model=="fit1"&times==1000],
                  A2$Brier$score[model=="fit1"&times==1000])
-    expect_equal(A$Brier$score[model=="fit2"&times==1000],
+    expect_equal(ignore_attr=TRUE,A$Brier$score[model=="fit2"&times==1000],
                  A2$Brier$score[model=="fit2"&times==1000])
-    expect_equal(A1$Brier$score[model=="fit1"&times==365.25*4],
+    expect_equal(ignore_attr=TRUE,A1$Brier$score[model=="fit1"&times==365.25*4],
                  A2$Brier$score[model=="fit1"&times==365.25*4])
-    expect_equal(A1$Brier$score[model=="fit1"&times==365.25*4],
+    expect_equal(ignore_attr=TRUE,A1$Brier$score[model=="fit1"&times==365.25*4],
                  A$Brier$score[model=="fit1"&times==365.25*4])
 })
 
@@ -238,14 +238,14 @@ test_that("vcov AUC",{
     f1 <- glm(Y~X1+X5+X8,data=d, family="binomial")
     f2 <- glm(Y~X2+X6+X9+X10,data=d, family="binomial")
     test <- Score(list(f1,f2),keep="vcov",formula=Y~1,data=d,conf.int=TRUE,summary=c("RR"),plots="ROC")
-    expect_equal(dim(test$AUC$vcov),c(2,2))
+    expect_equal(ignore_attr=TRUE,dim(test$AUC$vcov),c(2,2))
     ## survival
     set.seed(112)
     d <- sampleData(112,outcome="survival")
     f1 <- coxph(Surv(time,event)~X1+X5+X8,data=d, x=TRUE,y=TRUE)
     f2 <- coxph(Surv(time,event)~X2+X6+X9+X10,data=d, x=TRUE,y=TRUE)
     test <- Score(list(a=f1,f2),times=c(5,7),keep="vcov",formula=Surv(time,event)~1,data=d,conf.int=TRUE,metrics=c("brier","auc"))
-    expect_equal(dim(test$AUC$vcov),c(4,4))
+    expect_equal(ignore_attr=TRUE,dim(test$AUC$vcov),c(4,4))
 })
 # }}}
 
@@ -269,10 +269,10 @@ test_that("loob binary",{
     try(stopCluster(mycl),silent=TRUE)
     set.seed(5)
     loob.se1 <- Score(list("LR1"=lr1a,"LR2"=lr2a),formula=Y~1,data=learndat,split.method="loob",B=100,se.fit=FALSE)
-    expect_equal(loob.se0$AUC$contrasts$delta,loob.se0b$AUC$contrasts$delta)
-    expect_equal(loob.se0$AUC$contrasts$delta,loob.se0a$AUC$contrasts$delta)
-    expect_equal(loob.se0$AUC$contrasts$delta,loob.se1$AUC$contrasts$delta)
-    expect_equal(loob.se0$Brier$contrasts$delta,loob.se1$Brier$contrasts$delta)
+    expect_equal(ignore_attr=TRUE,loob.se0$AUC$contrasts$delta,loob.se0b$AUC$contrasts$delta)
+    expect_equal(ignore_attr=TRUE,loob.se0$AUC$contrasts$delta,loob.se0a$AUC$contrasts$delta)
+    expect_equal(ignore_attr=TRUE,loob.se0$AUC$contrasts$delta,loob.se1$AUC$contrasts$delta)
+    expect_equal(ignore_attr=TRUE,loob.se0$Brier$contrasts$delta,loob.se1$Brier$contrasts$delta)
 })
 
 test_that("bootcv binary (multi.state.test)",{
@@ -293,12 +293,12 @@ test_that("bootcv binary (multi.state.test)",{
     for (i in 1:4)
         for (j in 2:4) 
             for (m in c("Brier"))
-                expect_equal(bootcv[[i]][[m]]$contrasts$delta,bootcv[[j]][[m]]$contrasts$delta)
+                expect_equal(ignore_attr=TRUE,bootcv[[i]][[m]]$contrasts$delta,bootcv[[j]][[m]]$contrasts$delta)
     ## lower, upper
-    expect_equal(bootcv[[2]][["Brier"]]$contrasts[,.(lower,upper)],bootcv[[4]][["Brier"]]$contrasts[,.(lower,upper)])
+    expect_equal(ignore_attr=TRUE,bootcv[[2]][["Brier"]]$contrasts[,.(lower,upper)],bootcv[[4]][["Brier"]]$contrasts[,.(lower,upper)])
     ## p-value (does not work yet)
     ## for (m in c("AUC","Brier")){
-    ## expect_equal(bootcv[[3]][[m]]$contrasts[,.(p)],bootcv[[4]][[m]]$contrasts[,.(p)])
+    ## expect_equal(ignore_attr=TRUE,bootcv[[3]][[m]]$contrasts[,.(p)],bootcv[[4]][[m]]$contrasts[,.(p)])
     ## }
 })
 
@@ -326,7 +326,7 @@ if (requireNamespace("pec",quietly=TRUE)){
                                  formula=Hist(time,status)~1,
                                  cause=1, B=10,split.method="none"))
         nix <- lapply(1:4,function(m){
-            expect_equal(new$Brier$score[model==names(new$models)[m]][["Brier"]],
+            expect_equal(ignore_attr=TRUE,new$Brier$score[model==names(new$models)[m]][["Brier"]],
                          old$AppErr[[names(old$AppErr)[[m]]]])})
     })
 }
