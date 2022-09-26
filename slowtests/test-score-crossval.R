@@ -34,7 +34,7 @@ test_that("test Score function with cross-validated AUC and Brier, B = 2",{
 # loob
 test_that("test Score function with leave one out bootstrap AUC and Brier, B = 100",{
   set.seed(18)
-  train = sampleData(400,outcome="binary")
+  train = sampleData(4000,outcome="binary")
   glm1 = glm(Y~X1+X2+X7+X9,data=train,family="binomial")
   glm2 = glm(Y~X3+X5+X6,data=train,family="binomial")
   x1 = Score(list("glm(X1+X2+X7+X9)"=glm1,"glm(X3+X5+X6)"=glm2),
@@ -132,7 +132,7 @@ test_that("test Score function with cross-validated AUC and Brier, B = 2",{
 # loob
 test_that("test Score function with leave one out bootstrap AUC and Brier, B = 100",{
   set.seed(18)
-  trainCR.comprisk <- sampleData(400,outcome="competing.risks")
+  trainCR.comprisk <- sampleData(4000,outcome="competing.risks")
   csc1 = CSC(Hist(time,event)~X1+X2+X7+X9,data=trainCR.comprisk)
   csc2 = CSC(Hist(time,event)~X3+X5+X6,data=trainCR.comprisk)
   x1<-Score(list("CSC(X1+X2+X7+X9)"=csc1,"CSC(X3+X5+X6)"=csc2),
