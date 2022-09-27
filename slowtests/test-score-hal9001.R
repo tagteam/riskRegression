@@ -17,18 +17,19 @@ test_that("Score is working with hal for survival data",{
 test_that("Score is working with hal for competing risk data",{
   set.seed(18)
   trainCR.comprisk <- sampleData(200,outcome="competing.risks") ## censoring does not depend on covariates
+  testCR.comprisk <- sampleData(500,outcome="competing.risks") ## censoring does not depend on covariates
   cox1 = coxph(Surv(time,event)~X1+X2+X7+X9,data=trainCR.comprisk,x=TRUE)
   cox2 = coxph(Surv(time,event)~X1+X2+X7,data=trainCR.comprisk,x=TRUE)
-  x<-Score(list("CSC(X1+X2+X7+X9)"=csc1,"CSC(X1+X2)"=csc2),
+  x<-Score(list("CSC(X1+X2+X7+X9)"=cox1,"CSC(X1+X2)"=cox2),
            formula=Hist(time,event)~X1+X2,data=testCR.comprisk,se.fit=1L,times=c(4),cens.model="Hal9001")
   expect_output(print(x))
 })
 
 test_that("Score is working with hal for survival data / crossval",{ ## should also work with cvk and bootcv?
   set.seed(18)
-  trainCR.comprisk <- sampleData(400,outcome="competing.risks")
-  csc1 = CSC(Hist(time,event)~X1+X2+X7+X9,data=trainCR.comprisk)
-  csc2 = CSC(Hist(time,event)~X3+X5+X6,data=trainCR.comprisk)
+  trainCR.comprisk <- sampleData(400,outcome="competing.risks") ## censoring does not depend on covariates
+  cox1 = coxph(Surv(time,event)~X1+X2+X7+X9,data=trainCR.comprisk,x=TRUE)
+  cox2 = coxph(Surv(time,event)~X1+X2+X7,data=trainCR.comprisk,x=TRUE)
   x<-Score(list("cox(X1+X2+X7+X9)"=cox1,"cox(X1+X2)"=cox2),
            formula=Surv(time,event)~X1+X2,data=trainCR.comprisk,conf.int=TRUE,times=4,
            split.method="loob",B=100,cens.model = "Hal9001") 
