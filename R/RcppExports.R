@@ -5,22 +5,6 @@ AUCijFun <- function(riskCase, riskControl) {
     .Call(`_riskRegression_AUCijFun`, riskCase, riskControl)
 }
 
-#' @title Influence function for Nelson-Aalen estimator.
-#' 
-#' @description Fast computation of influence function for Nelson-Aalen estimator of the censoring times
-#' @param time sorted vector of event times. Sorted according to time and -status so that events come first a tied times.
-#' @param status sorted vector of 0 = censored or 1 = event (any cause). Sorted according to time and -status so that events come first a tied times.
-#' @return A square matrix where each column corresponds to a subject and each row to a time point. 
-#' @author Thomas Alexander Gerds <tag@@biostat.ku.dk>
-#' @examples
-#' time = c(1,3,3,4)
-#' status = c(1,0,1,1)
-#' IC_Nelson_Aalen_cens_time(time,status)
-#' @export
-IC_Nelson_Aalen_cens_time <- function(time, status) {
-    .Call(`_riskRegression_IC_Nelson_Aalen_cens_time`, time, status)
-}
-
 #' @title C++ Fast Baseline Hazard Estimation
 #' @description C++ function to estimate the baseline hazard from a Cox Model
 #'
@@ -145,26 +129,6 @@ IFbeta_cpp <- function(newT, neweXb, newX, newStatus, newIndexJump, S01, E1, tim
 
 IFlambda0_cpp <- function(tau, IFbeta, newT, neweXb, newStatus, newStrata, newIndexJump, S01, E1, time1, lastTime1, lambda0, p, strata, minimalExport) {
     .Call(`_riskRegression_IFlambda0_cpp`, tau, IFbeta, newT, neweXb, newStatus, newStrata, newIndexJump, S01, E1, time1, lastTime1, lambda0, p, strata, minimalExport)
-}
-
-columnMeanWeight <- function(A, x) {
-    .Call(`_riskRegression_columnMeanWeight`, A, x)
-}
-
-T3CalculationHelper <- function(x, A) {
-    .Call(`_riskRegression_T3CalculationHelper`, x, A)
-}
-
-htijCalculationHelper <- function(mcase, mcontrol, wcase, wcontrol, n, nrows, ncols) {
-    .Call(`_riskRegression_htijCalculationHelper`, mcase, mcontrol, wcase, wcontrol, n, nrows, ncols)
-}
-
-rowSumsCrossprodSpec <- function(X, Y) {
-    .Call(`_riskRegression_rowSumsCrossprodSpec`, X, Y)
-}
-
-colSumsCrossprodSpec <- function(X, Y) {
-    .Call(`_riskRegression_colSumsCrossprodSpec`, X, Y)
 }
 
 predictCIF_cpp <- function(hazard, cumhazard, eXb, strata, newtimes, etimes, etimeMax, t0, nEventTimes, nNewTimes, nData, cause, nCause, survtype, productLimit, diag, exportSurv) {

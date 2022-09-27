@@ -1,5 +1,6 @@
 // [[Rcpp::depends(RcppArmadillo)]]
 #include "arma-wrap.h"
+#include "IC-Nelson-Aalen-cens-time.h"
 
 using namespace Rcpp;
 using namespace arma;
