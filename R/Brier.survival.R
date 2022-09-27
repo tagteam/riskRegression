@@ -30,7 +30,8 @@ Brier.survival <- function(DT,MC,se.fit,conservative,cens.model,keep.vcov=FALSE,
         if (conservative==TRUE){
             score <- DT[,data.table(Brier=sum(residuals)/N,
                                     se=sd(IC0)/sqrt(N)),by=list(model,times)]
-            setnames(DT,"IC0","IF.Brier")
+            DT[,IF.Brier := IC0]
+            #setnames(DT,"IC0","IF.Brier")
         }else{
             if (cens.model=="none"){
                 DT[,IF.Brier:=residuals]
@@ -46,7 +47,7 @@ Brier.survival <- function(DT,MC,se.fit,conservative,cens.model,keep.vcov=FALSE,
                                       se=sd(IF.Brier)/sqrt(N),
                                       se.conservative=sd(IC0)/sqrt(N)),by=list(model,times)]
             }
-            else {
+            else if (cens.model == "cox") {
               DT[,IF.Brier:=getInfluenceCurve.Brier(t=times[1],
                                                     time=time,
                                                     IC0,
@@ -60,6 +61,9 @@ Brier.survival <- function(DT,MC,se.fit,conservative,cens.model,keep.vcov=FALSE,
                                       #se2  = sd(IF.Brier2)/sqrt(N),
                                       se=sd(IF.Brier)/sqrt(N),
                                       se.conservative=sd(IC0)/sqrt(N)),by=list(model,times)]
+            }
+            else {
+              stop("Not implemented. ")
             }
         }
         if (se.fit==TRUE){

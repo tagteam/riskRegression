@@ -505,6 +505,13 @@ Score.list <- function(object,
             cens.model <- "KaplanMeier"
         }
     }
+    ### 
+    if (cens.model != "cox" && cens.model != "none" && cens.model != "KaplanMeier" && !conservative[[1]]){
+      warning("For this model, we can't calculate the IF of the Survival function of the censoring distribution. \n Therefore, force conservative = TRUE")
+      conservative[[1]] <- TRUE
+    }  
+  
+    
     # }}}
     # {{{ Response
     if (missing(formula)){stop("Argument formula is missing.")}
@@ -808,17 +815,6 @@ c.f., Chapter 7, Section 5 in Gerds & Kattan 2021. Medical risk prediction model
     # {{{ Dealing with censored data outside the loop
     if (response.type %in% c("survival","competing.risks")){
         if (cens.type=="rightCensored"){
-            if (se.fit[1]>0L && ("AUC" %in% metrics)) {
-                ## FIXME: need conservative formula for AUC
-                if (conservative[[1]]){
-                  warning("Cannot do conservative for AUC. Therefore, force conservative to be FALSE.")
-                  conservative[[1]] <- FALSE
-                }
-                # else if (cens.model[[1]] == "cox" && !(split.method$name %in% c("LeaveOneOutBoot","BootCv"))){
-                #   warning("Cannot (not yet) estimate standard errors for AUC with Cox IPCW.\nTherefore, force cens.model to be marginal.")
-                #   cens.model <- "KaplanMeier"
-                # }
-            }
             getIC <- se.fit[[1]] && !conservative[[1]] && cens.model != "KaplanMeier"
             Weights <- getCensoringWeights(formula=formula,
                                            data=data,
@@ -835,12 +831,6 @@ c.f., Chapter 7, Section 5 in Gerds & Kattan 2021. Medical risk prediction model
             if (cens.type=="uncensored"){
                 cens.method <- "none"
                 cens.model <- "none"
-                # if ("AUC" %in% metrics){
-                #     if (se.fit==TRUE) {
-                #         #warning("Standard error for AUC with uncensored time-to-event outcome not yet implemented.")
-                #         #se.fit <- FALSE
-                #     }
-                # }
                 Weights <- NULL
             }
             else{

@@ -34,6 +34,7 @@ Brier.competing.risks <- function(DT,MC,se.fit,conservative,cens.model,keep.vcov
         if (conservative){
             score <- DT[,data.table(Brier=sum(residuals)/N,
                                     se=sd(IC0)/sqrt(N)),by=list(model,times)]
+            DT[,IF.Brier := IC0]
         }else{
             # browser()
             if (cens.model=="none"){
@@ -48,7 +49,7 @@ Brier.competing.risks <- function(DT,MC,se.fit,conservative,cens.model,keep.vcov
                                       # se=sd(IF.Brier2)/sqrt(N),
                                       se.conservative=sd(IC0)/sqrt(N)),by=list(model,times)]
             }
-            else {
+            else if (cens.model == "cox"){
               DT[,IF.Brier:=getInfluenceCurve.Brier(t=times[1],
                                                     time=time,
                                                     IC0,
@@ -62,6 +63,9 @@ Brier.competing.risks <- function(DT,MC,se.fit,conservative,cens.model,keep.vcov
                                       #se2  = sd(IF.Brier2)/sqrt(N),
                                       se=sd(IF.Brier)/sqrt(N),
                                       se.conservative=sd(IC0)/sqrt(N)),by=list(model,times)]
+            }
+            else {
+              stop("Not implemented. ")
             }
         }
         if (se.fit==TRUE){

@@ -1336,7 +1336,7 @@ predictRisk.flexsurvreg <- function(object, newdata, times, ...) {
     1 - p
 }
 
-Hal9001 <- function(formula,data,lambda,...){
+Hal9001 <- function(formula,data,lambda=NULL,...){
     requireNamespace("hal9001")
     strata.num = start = status = NULL
     EHF = prodlim::EventHistory.frame(formula,data,unspecialsDesign = TRUE,specials = NULL)
