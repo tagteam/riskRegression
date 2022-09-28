@@ -112,17 +112,42 @@ crossvalPerf.loob.AUC <- function(times,mlevs,se.fit,response.type,NT,Response,c
       nu1tauPm <- (1/N^2)*sum(auc)
       ## Leave-one-pair-out bootstrap estimate of AUC
       aucLPO <- nu1tauPm*(1/Phi)
+      # following section should be cleaned up(!!!)
       if (is.null(t)){
-        auc.loob[model==mod,AUC:=aucLPO]
+        if (mod == 0){
+          auc.loob[model==mod,AUC:=0.5]
+        }
+        else {
+          auc.loob[model==mod,AUC:=aucLPO]
+        }
       }else{
-        auc.loob[times==t&model==mod,AUC:=aucLPO]
+        if (mod == 0){
+          auc.loob[times==t&model==mod,AUC:=0.5] # how do I make this simpler?
+        }
+        else {
+          auc.loob[times==t&model==mod,AUC:=aucLPO]
+        }
       }
-      if (se.fit==1L){
+      if (se.fit==1L && mod != 0){
         id.cases <- data[["ID"]][cc.status=="case"]
         id.controls <- data[["ID"]][cc.status=="control"]
         id.censored <- data[["ID"]][cc.status=="censored"]
         if (response.type != "binary"){
-          if (cens.model == "KaplanMeier" || cens.model == "none"){
+          if (conservative[[1]] || cens.model == "none"){
+            ic0Case <- rowSums(auc)
+            ic0Control <- colSums(auc)
+            ic0 <- (1/(Phi*N))*c(ic0Case, ic0Control)
+            this.aucDT <- data.table(model=mod,times=t,ID = c(id.cases,id.controls,id.censored), IF.AUC0 = c(ic0, rep(-2*aucLPO,length(id.censored))))
+            aucDT <- rbindlist(list(aucDT,this.aucDT),use.names=TRUE,fill=TRUE)
+            icPhi <- (aucLPO/Phi)*((weights.cases)*(1/N)*sum(weights.controls)+(weights.controls)*(1/N)*sum(weights.cases))
+            ## ## Combine all parts of influence function
+            ## ic1 <- data.table(ID=data[["ID"]], "ic.weightsCC" = ic.weightsCC, "icPhi" = icPhi)
+            data.table::setkey(aucDT,model,times,ID)
+            aucDT[model==mod&times==t, IF.AUC:=IF.AUC0-icPhi]
+            aucDT[,IF.AUC0:=NULL]
+            auc.loob[model==mod&times==t,se:= sd(aucDT[model==mod&times==t,IF.AUC])/sqrt(N)]
+          }
+          else if (cens.model == "KaplanMeier"){
             if (response.type == "survival"){
               data[,status0:=status]
             }
@@ -136,50 +161,48 @@ crossvalPerf.loob.AUC <- function(times,mlevs,se.fit,response.type,NT,Response,c
             aucDT[model==mod&times==t, IF.AUC:=ic]
             auc.loob[model==mod&times==t,se:= sd(aucDT[model==mod&times==t,IF.AUC])/sqrt(N)]
           }
-          else {
+          else if (cens.model=="cox" && !conservative[[1]]) {
             ic0Case <- rowSums(auc)
             ic0Control <- colSums(auc)
-            ic0 <- (1/(Phi*N))*c(ic0Case, ic0Control)-2*aucLPO
-            this.aucDT <- data.table(model=mod,times=t,ID = c(id.cases,id.controls,id.censored), IF.AUC0 = c(ic0, rep(-2*aucLPO,length(id.censored))))
+            ic0 <- (1/(Phi*N))*c(ic0Case, ic0Control)
+            this.aucDT <- data.table(model=mod,times=t,ID = c(id.cases,id.controls,id.censored), IF.AUC0 = c(ic0, rep(0,length(id.censored))))
             aucDT <- rbindlist(list(aucDT,this.aucDT),use.names=TRUE,fill=TRUE)
             ic.weights <- matrix(0,N,N)
-              if (cens.type[1]=="rightCensored" && (conservative[1]==FALSE)) {
-                ## ## Influence function for G - i.e. censoring survival distribution
-                if  (cens.model=="cox"){
-                  k=0 ## counts subject-times with event before t
-                  for (i in 1:N){
-                    if (i %in% id.cases){
-                      k=k+1
-                      ic.weights[i,] <- Weights$IC$IC.subject[i,k,]/(Weights$IPCW.subject.times[i])
-                    }else{
-                      if (i %in% id.controls){ ## min(T,C)>t
-                        ic.weights[i,] <- Weights$IC$IC.times[i,s,]/(Weights$IPCW.times[i,s])
-                      }
-                    }
-                  }
+            ## ## Influence function for G - i.e. censoring survival distribution
+            k=0
+            for (i in 1:N){
+              if (i %in% id.cases){
+                k=k+1
+                ic.weights[i,] <- Weights$IC$IC.subject[i,k,]/Weights$IPCW.subject.times[i]
+              }
+              else if (i %in% id.controls){ 
+                if (Response[["time"]][i] > t){## min(T,C)>t
+                  ic.weights[i,] <- Weights$IC$IC.times[i,s,]/Weights$IPCW.times[i,s]
                 }
-                ## ## Part of influence function related to Weights
-                ic.weightsCase <- as.numeric(rowSumsCrossprod(as.matrix(rowSums(auc)), ic.weights[which.cases,], 0))
-                ic.weightsControl <- as.numeric(rowSumsCrossprod(as.matrix(colSums(auc)), ic.weights[which.controls,], 0))
-                ic.weightsCC <- (1/(Phi*N^2))*(ic.weightsCase+ic.weightsControl)
+                else { ## min(T,C)<= t and status == 2
+                  k=k+1
+                  ic.weights[i,] <- Weights$IC$IC.subject[i,k,]/Weights$IPCW.subject.times[i]
+                }
               }
-              ## ## Part of influence function related to Phi
-              ## icPhiCase <- colMeans(ic.weights[which.cases,])
-              icPhiCase <- as.numeric(rowSumsCrossprod(as.matrix(weights.cases[which.cases]),ic.weights[which.cases,],0))
-              icPhiControl <- as.numeric(rowSumsCrossprod(as.matrix(weights.controls[which.controls]),ic.weights[which.controls,],0))
-              icPhi <- (aucLPO/Phi)*((weights.cases-(1/N)*icPhiCase)*(1/N)*sum(weights.controls)+(weights.controls-(1/N)*icPhiControl)*(1/N)*sum(weights.cases)) - 2*aucLPO
-              ## ## Combine all parts of influence function
-              ## ic1 <- data.table(ID=data[["ID"]], "ic.weightsCC" = ic.weightsCC, "icPhi" = icPhi)
-              data.table::setkey(aucDT,model,times,ID)
-              if(conservative==TRUE){
-                aucDT[model==mod&times==t, IF.AUC:=IF.AUC0-icPhi]
-              }else{
-                aucDT[model==mod&times==t, IF.AUC:=IF.AUC0-ic.weightsCC-icPhi]
-                aucDT[model==mod&times==t, IF.AUC.conservative:=IF.AUC0-icPhi]
-              }
-              aucDT[,IF.AUC0:=NULL]
-              auc.loob[model==mod&times==t,se:= sd(aucDT[model==mod&times==t,IF.AUC])/sqrt(N)]
-              auc.loob[model==mod&times==t,se.conservative:=sd(aucDT[model==mod&times==t,IF.AUC.conservative])/sqrt(N)]
+            }
+            
+            ## ## Part of influence function related to Weights
+            ic.weightsCase <- as.numeric(rowSumsCrossprod(as.matrix(rowSums(auc)), ic.weights[which.cases,], 0))
+            ic.weightsControl <- as.numeric(rowSumsCrossprod(as.matrix(colSums(auc)), ic.weights[which.controls,], 0))
+            ic.weightsCC <- (1/(Phi*N^2))*(ic.weightsCase+ic.weightsControl)
+            ## ## Part of influence function related to Phi
+            ## icPhiCase <- colMeans(ic.weights[which.cases,])
+            icPhiCase <- as.numeric(rowSumsCrossprod(as.matrix(weights.cases[which.cases]),ic.weights[which.cases,],0))
+            icPhiControl <- as.numeric(rowSumsCrossprod(as.matrix(weights.controls[which.controls]),ic.weights[which.controls,],0))
+            icPhi <- (aucLPO/Phi)*((weights.cases-(1/N)*icPhiCase)*(1/N)*sum(weights.controls)+(weights.controls-(1/N)*icPhiControl)*(1/N)*sum(weights.cases))
+            ## ## Combine all parts of influence function
+            ## ic1 <- data.table(ID=data[["ID"]], "ic.weightsCC" = ic.weightsCC, "icPhi" = icPhi)
+            data.table::setkey(aucDT,model,times,ID)
+            aucDT[model==mod&times==t, IF.AUC:=IF.AUC0-ic.weightsCC-icPhi]
+            auc.loob[model==mod&times==t,se:= sd(aucDT[model==mod&times==t,IF.AUC])/sqrt(N)]
+          }
+          else {
+            stop("Censoring not implemented for cross-validation. ") ##perhaps use a conservative fit here?
           }
         }
         else {
@@ -193,6 +216,25 @@ crossvalPerf.loob.AUC <- function(times,mlevs,se.fit,response.type,NT,Response,c
           data.table::setkey(aucDT,model,ID)
           aucDT[model==mod,IF.AUC:=ic0-icPhi]
           auc.loob[model==mod,se:=sd(aucDT[["IF.AUC"]])/sqrt(N)]
+        }
+      }
+      else if (se.fit==1L && mod == 0){
+        id.cases <- data[["ID"]][cc.status=="case"]
+        id.controls <- data[["ID"]][cc.status=="control"]
+        id.censored <- data[["ID"]][cc.status=="censored"]
+        if (!is.null(t)){
+          this.aucDT <- data.table(model=mod,times=t,ID = c(id.cases,id.controls,id.censored))
+          aucDT <- rbindlist(list(aucDT,this.aucDT),use.names=TRUE,fill=TRUE)
+          data.table::setkey(aucDT,model,times,ID)
+          aucDT[model==mod&times==t, IF.AUC:=0]
+          auc.loob[model==mod&times==t,se:= 0]
+        }
+        else {
+          this.aucDT <- data.table(model=mod,ID = c(id.cases,id.controls,id.censored))
+          aucDT <- rbindlist(list(aucDT,this.aucDT),use.names=TRUE,fill=TRUE)
+          data.table::setkey(aucDT,model,ID)
+          aucDT[model==mod, IF.AUC:=0]
+          auc.loob[model==mod,se:= 0]
         }
       }
     }
@@ -343,21 +385,19 @@ crossvalPerf.loob.Brier <- function(times,mlevs,se.fit,response.type,NT,Response
         if (cens.model == "KaplanMeier") {
           DT[,IF.Brier := getInfluenceFunctionBrierKMCensoringUseSquared(times[1],time,residuals,status0),by=byvars]
         }
+        else if (cens.model == "cox"){
+          DT.B[,IF.Brier:=getInfluenceCurve.Brier(t=times[1],
+                                                  time=time,
+                                                  IC0,
+                                                  residuals=residuals,
+                                                  WTi=WTi,
+                                                  Wt=Wt,
+                                                  IC.G=Weights$IC,
+                                                  cens.model=cens.model,
+                                                  nth.times=nth.times[1]),by=byvars]
+        }
         else {
-          if (is.null(Weights$IC)){
-            stop("IF for Brier with loob does not yet work with covariates. Use older implementation with old.ic.method=TRUE") #FIXME need a cv formula with covariates 
-          }
-          else {
-            DT.B[,IF.Brier:=getInfluenceCurve.Brier(t=times[1],
-                                                    time=time,
-                                                    IC0,
-                                                    residuals=residuals,
-                                                    WTi=WTi,
-                                                    Wt=Wt,
-                                                    IC.G=Weights$IC,
-                                                    cens.model=cens.model,
-                                                    nth.times=nth.times[1]),by=byvars]
-          }
+          stop("Censoring method not implemented for cross-validation. ")
         }
         
         score.loob <- DT.B[,data.table(Brier=sum(residuals)/N,
@@ -478,13 +518,6 @@ crossvalPerf.loob.Brier <- function(times,mlevs,se.fit,response.type,NT,Response
   ## for each individual sum the residuals of the bootstraps where this individual is out-of-bag
   ## divide by number of times out-off-bag later
   ## DT.B <- DT.B[,data.table::data.table(residuals=sum(residuals)),by=c(byvars,"ID")]
-  getNbk <- function(b,k){
-    res <- vector(mode ="integer", length = length(b))
-    for (i in 1:length(b)){
-      res[i] <- sum(split.method$index[,b[i]] == k)
-    }
-    res
-  }
   DT.B <- DT.B[,data.table::data.table(residuals=sum(residuals)),by=c(byvars,"ID")] 
   ## get denominator
   if (split.method$name=="LeaveOneOutBoot"){
@@ -530,50 +563,39 @@ crossvalPerf.loob.Brier <- function(times,mlevs,se.fit,response.type,NT,Response
                          ID=data$ID)
         DT.B <- merge(DT.B,Wt,by=c("ID","times"))
       }
-      if (cens.type=="uncensored"){
-        DT.B[,IF.Brier:= residuals]
-        score.loob <- DT.B[,data.table(Brier=sum(residuals)/N,
-                                       se=sd(residuals)/sqrt(N),
-                                       se.conservative=sd(residuals)/sqrt(N)),by=byvars]
-      }else{
-        #for small values of B, there is the problem that
-        #some individuals might be zero times out of the bag
-        #this means that DT.B, which should have a number of rows
-        # that is a multiple of the
-        #amount of observations in the data, does not fulfill this.
-        #the calculations in getInfluenceCurve.Brier cannot accomodate this (for now).
-        if (response.type == "survival"){
-          DT.B[,status0:=status]
-        }
-        else {
-          DT.B[,status0:=status*event]
-        }
-        if (cens.model == "KaplanMeier"){
-          DT.B[,IF.Brier:=getInfluenceFunctionBrierKMCensoringUseSquared(times[1],time,residuals,status0),by= byvars]
-        }
-        else {
-          DT.B[,IF.Brier:=getInfluenceCurve.Brier(t=times[1],
-                                                  time=time,
-                                                  IC0,
-                                                  residuals=residuals,
-                                                  WTi=WTi,
-                                                  Wt=Wt,
-                                                  IC.G=Weights$IC,
-                                                  cens.model=cens.model,
-                                                  nth.times=nth.times[1]),by=byvars]
-        }
-        
-        score.loob <- DT.B[,data.table(Brier=sum(residuals)/N,
-                                       se=sd(IF.Brier)/sqrt(N),
-                                       se.conservative=sd(IC0)/sqrt(N)),by=byvars]
+      #for small values of B, there is the problem that
+      #some individuals might be zero times out of the bag
+      #this means that DT.B, which should have a number of rows
+      # that is a multiple of the
+      #amount of observations in the data, does not fulfill this.
+      #the calculations in getInfluenceCurve.Brier cannot accomodate this (for now).
+      if (response.type == "survival"){
+        DT.B[,status0:=status]
+      }
+      else {
+        DT.B[,status0:=status*event]
+      }
+      if (cens.model == "KaplanMeier"){
+        DT.B[,IF.Brier:=getInfluenceFunctionBrierKMCensoringUseSquared(times[1],time,residuals,status0),by= byvars]
+      }
+      else {
+        DT.B[,IF.Brier:=getInfluenceCurve.Brier(t=times[1],
+                                                time=time,
+                                                IC0,
+                                                residuals=residuals,
+                                                WTi=WTi,
+                                                Wt=Wt,
+                                                IC.G=Weights$IC,
+                                                cens.model=cens.model,
+                                                nth.times=nth.times[1]),by=byvars]
       }
     }
-    else{
+    else {
       ## either conservative == TRUE or binary or uncensored
-      score.loob <- DT.B[,data.table(Brier=sum(residuals)/N,se=sd(IC0)/sqrt(N)),
-                         by=byvars]
-      setnames(DT.B,"IC0","IF.Brier")
+      DT.B[,IF.Brier := IC0]
     }
+    score.loob <- DT.B[,data.table(Brier=sum(residuals)/N,se=sd(IF.Brier)/sqrt(N)),
+                       by=byvars]
     score.loob[,lower:=pmax(0,Brier-qnorm(1-alpha/2)*se)]
     score.loob[,upper:=pmin(1,Brier + qnorm(1-alpha/2)*se)]
   } else{

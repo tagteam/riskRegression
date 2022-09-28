@@ -16,7 +16,7 @@
 ### Code:
 
 AUC.competing.risks <- function(DT,MC,se.fit,conservative,cens.model,keep.vcov=FALSE,multi.split.test,alpha,N,NT,NF,dolist,cause,states,ROC,IC.data,...){
-    ID=model=times=risk=Cases=time=status=event=Controls1=Controls2=TPR=FPR=WTi=Wt=ipcwControls1=ipcwControls2=ipcwCases=IF.AUC=lower=se=upper=AUC=NULL
+    ID=model=times=risk=Cases=time=status=event=Controls1=Controls2=TPR=FPR=WTi=Wt=ipcwControls1=ipcwControls2=ipcwCases=IF.AUC=lower=se=upper=AUC=nth.times=NULL
     aucDT <- DT[model>0]
     dolist <- dolist[sapply(dolist,function(do){match("0",do,nomatch=0L)})==0]
     ## assign Weights before ordering
@@ -53,11 +53,19 @@ AUC.competing.risks <- function(DT,MC,se.fit,conservative,cens.model,keep.vcov=F
     data.table::setkey(score,model,times)
     aucDT <- merge(score,aucDT,all=TRUE)
     if (se.fit[[1]]==1L || multi.split.test[[1]]==TRUE){
+      aucDT[,nth.times:=as.numeric(factor(times))]
+      
       ## compute influence function
       ## data.table::setorder(aucDT,model,times,time,-status)
       data.table::setorder(aucDT,model,times,ID)
-      if (cens.model == "KaplanMeier" || cens.model == "none"){
+      if (conservative[[1]]){
+        aucDT[,IF.AUC:=getInfluenceCurve.AUC.conservative(times[1],time,status*event, WTi, Wt, risk, ID), by=list(model,times)]
+      }
+      else if (cens.model == "KaplanMeier" || cens.model == "none"){
         aucDT[,IF.AUC:=getInfluenceCurveHelper(time,status*event,times[1],risk,WTi,Wt[1],AUC[1]), by=list(model,times)]
+      }
+      else if (cens.model == "cox"){
+        aucDT[,IF.AUC:=getInfluenceCurve.AUC.cox(times[1],time,status*event, WTi, Wt, risk, ID, MC, nth.times[1]), by=list(model,times)]
       }
       else {
         stop("Censoring model not yet implemented. ")

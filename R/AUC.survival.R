@@ -16,7 +16,7 @@
 ### Code:
 
 AUC.survival <- function(DT,MC,se.fit,conservative,cens.model,keep.vcov=FALSE,multi.split.test,alpha,N,NT,NF,dolist,ROC,IC.data,...){
-    ID=model=times=risk=Cases=time=status=Controls=TPR=FPR=WTi=Wt=ipcwControls=ipcwCases=IF.AUC=lower=se=upper=AUC=NULL
+    ID=model=times=risk=Cases=time=status=Controls=TPR=FPR=WTi=Wt=ipcwControls=ipcwCases=IF.AUC=lower=se=upper=AUC=nth.times=NULL
     cause <- 1
     aucDT <- DT[model>0]
     ## remove null model comparisons
@@ -49,11 +49,18 @@ AUC.survival <- function(DT,MC,se.fit,conservative,cens.model,keep.vcov=FALSE,mu
     data.table::setkey(score,model,times)
     aucDT <- merge(score,aucDT,all=TRUE)
     if (se.fit[[1]]==1L || multi.split.test[[1]]==TRUE){
+        aucDT[,nth.times:=as.numeric(factor(times))]
         ## compute influence function
         ## data.table::setorder(aucDT,model,times,time,-status)
         data.table::setorder(aucDT,model,times,ID)
-        if (cens.model == "KaplanMeier" || cens.model == "none"){
+        if (conservative[[1]]){
+          aucDT[,IF.AUC:=getInfluenceCurve.AUC.conservative(times[1],time,status, WTi, Wt, risk, ID), by=list(model,times)]
+        }
+        else if (cens.model == "KaplanMeier" || cens.model == "none"){
             aucDT[,IF.AUC:=getInfluenceCurveHelper(time,status,times[1],risk,WTi,Wt[1],AUC[1]), by=list(model,times)]
+        }
+        else if (cens.model == "cox"){
+          aucDT[,IF.AUC:=getInfluenceCurve.AUC.cox(times[1],time,status, WTi, Wt, risk, ID, MC, nth.times[1]), by=list(model,times)]
         }
         else {
           stop("Censoring model not yet implemented. ")

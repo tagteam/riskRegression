@@ -23,8 +23,12 @@ getCensoringWeights <- function(formula,
                            IPCW.subject.times=IPCW.subject.times,
                            method=cens.model,IC.data=NULL)
                if (influence.curve==TRUE){
-                   out <- c(out,
-                            list(IC=IC_Nelson_Aalen_cens_time(time=data$time,status=data$status)))
+                  #Should not have to calculate IF for Nelson-AAlen
+                  out <- c(out,
+                           list(IC=NULL))
+                  
+                   # out <- c(out,
+                   #          list(IC=IC_Nelson_Aalen_cens_time(time=data$time,status=data$status)))
                    ## list(IC=data[,getInfluenceCurve.NelsonAalen(time=time,status=status)]))
                }
                out
@@ -50,8 +54,8 @@ getCensoringWeights <- function(formula,
                args <- list(x=TRUE,y=TRUE,eps=0.000001)
                args$surv <- TRUE
                fit <- do.call(rms::cph,c(list(sFormula,data=wdata),args))
-               fit.time <- do.call(rms::cph,c(list(tFormula,data=wdata),args))
-               IC.data <- list(wdata=wdata,fit.time=fit.time,fit.cens=fit,fitCSC=fitCSC)
+               # fit.time <- do.call(rms::cph,c(list(tFormula,data=wdata),args))
+               IC.data <- NULL #list(wdata=wdata,fit.time=fit.time,fit.cens=fit,fitCSC=fitCSC)
 
                ## need G(Ti-|Xi) only for i where status=1 && Ti < max(times)
                if (length(times)==1){
@@ -115,15 +119,31 @@ getCensoringWeights <- function(formula,
              # out <- list(IPCW.times=IPCW.times,IPCW.subject.times=IPCW.subject.times,method=cens.model,IC.data=IC.data)
            },
            {
+               warning("Using other models (than Cox) for getting the censoring weights is under construction.  ")
                vv <- all.vars(formula(delete.response(terms(formula))))
                new.formula<-as.formula(paste0("Surv(time,status)",paste0("~",paste0(paste(vv,collapse = "+")))))
                wdata <- copy(data)
                wdata[,status:=1-status]
                input <- list(formula=new.formula,data=wdata)
+               message("Fitting censoring model to data ...", appendLF = FALSE)
                fit <- do.call(cens.model,input)
-               new.formula<-as.formula(paste0("Surv(time,event==1)",paste0("~",paste0(paste(vv,collapse = "+")))))
-               input <- list(formula=new.formula,data=wdata)
-               fit.time <- do.call(cens.model,input)
+               message("done!")
+               if (influence.curve){
+                 if (is.null(data[["event"]])){
+                   new.formula<-as.formula(paste0("Surv(time,status==1)",paste0("~",paste0(paste(vv,collapse = "+")))))
+                 }
+                 else {
+                   new.formula<-as.formula(paste0("Surv(time,event==1)",paste0("~",paste0(paste(vv,collapse = "+")))))
+                 }
+                 input <- list(formula=new.formula,data=wdata)
+                 message("Fitting time model to data ...", appendLF = FALSE)
+                 fit.time <- do.call(cens.model,input)
+                 message("done!")
+               }
+               else {
+                 fit.time <- NULL
+               }
+               
                # IC.data <- list(Stimes = diag(1-predictRisk(fit.time,wdata,wdata$time,1)), Gtimes=diag(1-predictRisk(fit,wdata,wdata$time,1)))
                IC.data <- list(fit.time=fit.time,fit.cens=fit,wdata=wdata)
 

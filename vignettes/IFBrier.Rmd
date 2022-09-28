@@ -105,94 +105,25 @@ taking values in the set \(\{0,1,2\}\). We are interested in the
 following definition of the time-dependent discrimination measure for
 cause 1. We can easily calculate the influence function for the Brier score, which can be written as: 
 \begin{align*}
-& \int\left\{1_{\{ t \leq \tau \}}-R(\tau \mid x)\right\}^{2} Q(d t, d x)\\
-&=\int 1_{\{t \leqslant \tau\}}-21_{\{t \leqslant \tau\}} R(\tau \mid x)+R(\tau \mid x)^{2} Q(d t, d x) \\
-&= \int 1_{\{t \leqslant \tau\}}(1-2 R(\tau \mid x)) Q(d t, d x)+\int R(\tau \mid x)^{2} Q(d x) \\
-&=\int \frac{1_{\{t \leqslant \tau\}}}{G(t- |x)}(1-2 R(\tau \mid x)) P(d t, 1, d x) + \int R\left(\tau | x\right)^2 P(d x)
+\sum_{\delta = 0, 1, 2} \int\left\{1_{\{ t \leq \tau, \delta = 1\}}-R(\tau \mid x)\right\}^{2} W_\tau(z; G) P(d t, \delta, d x)
 \end{align*}
-We find
+with $W_\tau(z; G) = \frac{I(t \leq \tau, \delta = 1)}{G(t-|x)} + \frac{I(t \leq \tau, \delta=2)}{G(t-|x)} +  \frac{I(t > \tau)}{G(\tau |x)}$. Taking the Gateaux derivative yields,
 \begin{align*}
-IC_{\Brier}(\tilde{T}_i,\Delta_i,X_i;\tau) &= \partial_{\varepsilon} \int \frac{1_{\{t \leqslant \tau\}}}{G(t- |x)}(1-2 R(\tau \mid x)) P_{\varepsilon}(d t, 1, d x) +\partial_{\varepsilon} \int R\left(\tau | x\right)^2 P_{\varepsilon}(d x) \\&=
-\int 1_{\{t \leqslant \tau \}}(1-2 R(\tau \mid x)) \frac{d(\delta_{\left\{\tilde{T}_{i}, \Delta_i,X_i\right\}})(t, 1, x)+dP(t,1,x)\left[f_i(t-,x)-1\right]}{G(t- |x)} \\
-&+ \int R\left(\tau | x\right)^2 (\delta_{\left\{\tilde{T}_{i}, \Delta_i,X_i\right\}}-P) \\
-&=   1_{\{\tilde{T}_i \leqslant \tau, \Delta_i=1\}}(1-2 R(\tau \mid X_i)) \frac{1}{G(\tilde{T}_i- | X_i)}  \\
-&+  \int 1_{\{t \leqslant \tau\}}(1-2 R(\tau \mid x)) f_i(t-,x) \frac{dP(t,1,x)}{G(t-|x)} + R\left(\tau | X_i \right)^2 \\
-&- \int R\left(\tau | x\right)^2 dP(x)
-- \int 1_{\{t \leqslant \tau\}}(1-2 R(\tau \mid x)) \frac{dP(t,1,x)}{G(t-|x)}
-\end{align*}
-The last term that is subtracted is the Brier score. Then using that 
-$$
- f_i(t,x) = \frac{\mathbbm{1}_{\{\tilde{T_i} \leq t, \Delta_i = 0\}} \delta_{X_i}(x)}{G(\tilde{T_i}|X_i)S(\tilde{T_i}|X_i)} -\int_0^{\tilde{T}_i \wedge t} \frac{ \delta_{X_i}(x)dP(s,0 | x)}{G(s|X_i)^2S(s|X_i)^2}
-$$
-we see that (plugging in $f(t,x)$ instead of $f(t-,x)$!)
-$$
-\begin{aligned}
-\int_X \int_0^\tau(1-2R(\tau|x))f_i(t-,x) \frac{P(dt,1,x)}{G(t-|x)} &= \int_X \int_0^\tau(1-2R(\tau|x))\left[\frac{\mathbbm{1}_{\{\tilde{T_i} \leq t, \Delta_i = 0\}} \delta_{X_i}(x)}{G(\tilde{T_i}|X_i)S(\tilde{T_i}|X_i)} -\int_0^{\tilde{T}_i \wedge t} \frac{ \delta_{X_i}(x)P(ds,0 | x)}{G(s|X_i)^2S(s|X_i)^2}\right] \frac{P(dt,1,x)}{G(t-|x)} \\
-&= \int_0^\tau(1-2R(\tau|X_i))\left[\frac{\mathbbm{1}_{\{\tilde{T_i} \leq t, \Delta_i = 0\}} }{G(\tilde{T_i}|X_i)S(\tilde{T_i}|X_i)} -\int_0^{\tilde{T}_i \wedge t} \frac{ P(ds,0 | X_i)}{G(s|X_i)^2S(s|X_i)^2}\right] \frac{P(dt,1 | X_i)}{G(t-|X_i)} \\
-&= (i) - (ii)
-\end{aligned}
-$$
-where 
-$$
-\begin{aligned}
-(i) &=\int_0^\tau(1-2R(\tau|X_i))\frac{\mathbbm{1}_{\{\tilde{T_i} \leq t, \Delta_i = 0\}} }{G(\tilde{T_i}|X_i)S(\tilde{T_i}|X_i)} \frac{P(dt,1 | X_i)}{G(t-|X_i)} \\
-&= (1-2R(\tau|X_i))\frac{\mathbbm{1}_{\{\tilde{T}_i \leq \tau,\Delta_i = 0\}} }{G(\tilde{T_i}|X_i)S(\tilde{T_i}|X_i)} \int_{\tilde{T}_i}^\tau \frac{P(dt,1 | X_i)}{G(t-|X_i)} \\
-&= (1-2R(\tau|X_i))\frac{\mathbbm{1}_{\{\tilde{T}_i \leq \tau,\Delta_i = 0\}} }{G(\tilde{T_i}|X_i)S(\tilde{T_i}|X_i)} (F_1(\tau|X_i)-F_1(\tilde{T}_i|X_i))
-\end{aligned}
-$$
-
-Similarly, we have
-$$
-\begin{aligned}
-(ii) &=(1-2R(\tau|X_i))\int_0^\tau\int_0^{\tilde{T}_i \wedge t} \frac{ P(ds,0 | X_i)}{G(s|X_i)^2S(s|X_i)^2} \frac{P(dt,1 | X_i)}{G(t-|X_i)} \\
-\end{aligned}
-$$
-If $\tilde{T}_i > \tau$, then this can be written as 
-$$
-\begin{aligned}
-(ii) &=(1-2R(\tau|X_i))\int_0^\tau\int_s^{\tau} \frac{ P(dt,1 | X_i)}{G(t-|X_i)} \frac{P(ds,0 | X_i)}{G(s|X_i)^2S(s|X_i)^2} \\
-&= (1-2R(\tau|X_i))\int_0^\tau(F_1(\tau|X_i)-F_1(s|X_i)) \frac{P(ds,0 | X_i)}{G(s|X_i)^2S(s|X_i)^2} 
-\end{aligned}
-$$
-On the other hand, if $\tilde{T}_i \leq \tau$, then
-$$
-\begin{aligned}
-(ii) &=(1-2R(\tau|X_i))\int_0^{\tilde{T}_i}\int_s^{\tau} \frac{ P(dt,1 | X_i)}{G(t-|X_i)} \frac{P(ds,0 | X_i)}{G(s|X_i)^2S(s|X_i)^2}  \\
-&= (1-2R(\tau|X_i))\int_0^{\tilde{T}_i}(F_1(\tau|X_i)-F_1(s|X_i)) \frac{P(ds,0 | X_i)}{G(s|X_i)^2S(s|X_i)^2} 
-\end{aligned}
-$$
-Thus 
-$$
-\begin{aligned}
-(ii) 
-&= (1-2R(\tau|X_i))\int_0^{\tilde{T}_i \wedge \tau}(F_1(\tau|X_i)-F_1(s|X_i)) \frac{P(ds,0 | X_i)}{G(s|X_i)^2S(s|X_i)^2} 
-\end{aligned}
-$$
-Hence, 
-$$
-(i)-(ii) = (1-2R(\tau |X_i))\left(\frac{I(\tilde{T}_i \leq \tau, \Delta_i = 0)}{G(\tilde{T}_i|X_i)S(\tilde{T}_i|X_i)}(F_1(\tau|X_i)-F_1(\tilde{T}_i|X_i))-\int_0^{\tilde{T}_i \wedge \tau} \frac{(F_1(\tau|X_i)-F_1(s|X_i))}{G(s|X_i)^2S(s|X_i)^2}P(ds,0|X_i)\right)
-$$
-
-
-## Not expanding the paranthesis
-We can also derive the Brier score as:
-\begin{align*}
-\sum_{\delta = 0, 1} \int\left\{1_{\{ t \leq \tau \}}-R(\tau \mid x)\right\}^{2} W_\tau(z; G) P(d t, \delta, d x)
-\end{align*}
-with $W_\tau(z; G) = \frac{\delta I(t \leq \tau)}{G(t-|x)} +  \frac{I(t > \tau)}{G(\tau |x)}$. Taking the Gateaux derivative yields,
-\begin{align*}
-& I( \tilde{T}_i \leq \tau, \Delta_i=1)\frac{(1-R(\tau \mid X_i)) ^{2}}{G(\tilde{T}_i- | X_i)} + I( \tilde{T}_i > \tau)\frac{R(\tau \mid X_i) ^{2}}{G(\tau | X_i)} \\
+& I( \tilde{T}_i \leq \tau, \Delta_i=1)\frac{(1-R(\tau \mid X_i)) ^{2}}{G(\tilde{T}_i- | X_i)} + I( \tilde{T}_i \leq \tau, \Delta_i=2)\frac{R(\tau \mid X_i) ^{2}}{G(\tilde{T}_i- | X_i)} + I( \tilde{T}_i > \tau)\frac{R(\tau \mid X_i) ^{2}}{G(\tau | X_i)} \\
 &-Brier \\
 &+ \int I(t \leq \tau)(1-R(\tau | x))^2 \frac{f_i(t-,x)}{G(t-|x)}P(dt,1,dx) \\
+&+ \int I(t \leq \tau)R(\tau | x) ^2 \frac{f_i(t-,x)}{G(t-|x)}P(dt,2,dx) \\
 &+ \int I(t > \tau)R(\tau | x) ^2 \frac{f_i(\tau,x)}{G(\tau|x)}P(dt,dx)
 \end{align*}
-Whenever the censoring does not depend on covariates, the two last integrals are easy to estimate. However, when the censoring does depend on the covariates, we can use the tricks mentioned in IFAUC.pdf to get that,
+Whenever the censoring does not depend on covariates, the two last integrals are easy to estimate. However, when the censoring does depend on the covariates, we can use the tricks mentioned in IFAUC.pdf (see also there to find the definition of $f_i(t,x)$) to get that,
 \begin{align*}
-&\int I(t > \tau)R(\tau | x) ^2 \frac{f_i(\tau,x)}{G(\tau|x)}P(dt,dx) + \int I(t \leq \tau)(1-R(\tau | x))^2 \frac{f_i(t-,x)}{G(t-|x)}P(dt,1,dx) \\
+&\int I(t > \tau)R(\tau | x) ^2 \frac{f_i(\tau,x)}{G(\tau|x)}P(dt,dx) + \int I(t \leq \tau)(1-R(\tau | x))^2 \frac{f_i(t-,x)}{G(t-|x)}P(dt,1,dx) + \int I(t \leq \tau)R(\tau | x) ^2 \frac{f_i(t-,x)}{G(t-|x)}P(dt,2,dx) \\
 &= R(\tau | X_i)^2 S(\tau | X_i)\left(\frac{I(\tilde{T}_i \leq \tau, \Delta_i = 0)}{G(\tilde{T}_i|X_i)S(\tilde{T}_i|X_i)}-\int_0^{\tilde{T}_i \wedge \tau} \frac{1}{G(s|X_i)^2S(s|X_i)^2}P(ds,0|X_i)\right) \\
 &+ (1-R(\tau|X_i))^2 \left(\frac{I(\tilde{T}_i \leq \tau, \Delta_i = 0)}{G(\tilde{T}_i|X_i)S(\tilde{T}_i|X_i)}(F_1(\tau|X_i)-F_1(\tilde{T}_i|X_i))-\int_0^{\tilde{T}_i \wedge \tau} \frac{(F_1(\tau|X_i)-F_1(s|X_i))}{G(s|X_i)^2S(s|X_i)^2}P(ds,0|X_i)\right) \\
+&+ R(\tau|X_i)^2 \left(\frac{I(\tilde{T}_i \leq \tau, \Delta_i = 0)}{G(\tilde{T}_i|X_i)S(\tilde{T}_i|X_i)}(F_2(\tau|X_i)-F_2(\tilde{T}_i|X_i))-\int_0^{\tilde{T}_i \wedge \tau} \frac{(F_2(\tau|X_i)-F_2(s|X_i))}{G(s|X_i)^2S(s|X_i)^2}P(ds,0|X_i)\right) \\
 &= R(\tau | X_i)^2 S(\tau | X_i)\left(\frac{I(\tilde{T}_i \leq \tau, \Delta_i = 0)}{G(\tilde{T}_i|X_i)S(\tilde{T}_i|X_i)}-\int_0^{\tilde{T}_i \wedge \tau} \frac{1}{G(s|X_i)S(s|X_i)}\Lambda_C(ds|X_i)\right) \\
-&+ (1-R(\tau|X_i))^2 \left(\frac{I(\tilde{T}_i \leq \tau, \Delta_i = 0)}{G(\tilde{T}_i|X_i)S(\tilde{T}_i|X_i)}(F_1(\tau|X_i)-F_1(\tilde{T}_i|X_i))-\int_0^{\tilde{T}_i \wedge \tau} \frac{(F_1(\tau|X_i)-F_1(s|X_i))}{G(s|X_i)S(s|X_i)}\Lambda_C(ds|X_i)\right)
+&+ (1-R(\tau|X_i))^2 \left(\frac{I(\tilde{T}_i \leq \tau, \Delta_i = 0)}{G(\tilde{T}_i|X_i)S(\tilde{T}_i|X_i)}(F_1(\tau|X_i)-F_1(\tilde{T}_i|X_i))-\int_0^{\tilde{T}_i \wedge \tau} \frac{(F_1(\tau|X_i)-F_1(s|X_i))}{G(s|X_i)S(s|X_i)}\Lambda_C(ds|X_i)\right) \\
+&+ R(\tau|X_i)^2 \left(\frac{I(\tilde{T}_i \leq \tau, \Delta_i = 0)}{G(\tilde{T}_i|X_i)S(\tilde{T}_i|X_i)}(F_2(\tau|X_i)-F_2(\tilde{T}_i|X_i))-\int_0^{\tilde{T}_i \wedge \tau} \frac{(F_2(\tau|X_i)-F_2(s|X_i))}{G(s|X_i)S(s|X_i)}\Lambda_C(ds|X_i)\right) 
 \end{align*}
 
 ## IF with cross-validation
@@ -299,4 +230,10 @@ This can then be estimated in much the same way as before
   &+\frac{1}{n}\sum_{i=1}^n\m(T_i,X_i)\left[\frac{\I{T_i\leq\tau}\Delta_i}{\G(T_i-\vert X_i)}\hat{f_k} (T_i-,X_i)
   +\frac{\I{T_i>\tau}}{\G (\tau\vert X_i)}\hat{f_k} (\tau ,X_i)\right]
 \end{align*}
-Here the last term corresponds to the censoring being unknown. Note that this corresponds exactly to estimating as the train-validation case situation with the residuals now being the cross-validated residuals $\m(T_k,X_k)\W(O_k,\G)$.
+Here the last term corresponds to the censoring being unknown. Note that this corresponds exactly to estimating as the train-validation case situation with the residuals now being the cross-validated residuals $\m(T_k,X_k)\W(O_k,\G)$. This is for the survival case; for the competing risk case, we would use 
+\begin{align*}
+  \widehat{\IC}_{\psi}(\tau,m;O_k)&=\m(T_k,X_k)\W(O_k,\G)-\, \MU \\
+  &+\frac{1}{n}\sum_{i=1}^n\m(T_i,X_i)\left[\frac{\I{T_i\leq\tau, \Delta_i = 1}}{\G(T_i-\vert X_i)}\hat{f_k} (T_i-,X_i) + \frac{\I{T_i\leq\tau, \Delta_i = 2}}{\G(T_i-\vert X_i)}\hat{f_k} (T_i-,X_i)
+  +\frac{\I{T_i>\tau}}{\G (\tau\vert X_i)}\hat{f_k} (\tau ,X_i)\right]
+\end{align*}
+as an estimator. 
