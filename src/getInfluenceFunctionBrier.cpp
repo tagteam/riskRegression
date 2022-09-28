@@ -35,7 +35,7 @@ NumericVector getInfluenceFunctionBrierKMCensoringUseSquared(double tau,
   double icpart2 = 0;
   double icpart = 0;
   for (int i = 0; i < n; i++){
-    if ((status[i] == 1 || status[i] == 2) && time[i] <= tau){
+    if (status[i] != 0 && time[i] <= tau){
       icpart2 += residuals[i];
     }
     else if (time[i] > tau){
@@ -47,7 +47,7 @@ NumericVector getInfluenceFunctionBrierKMCensoringUseSquared(double tau,
   int tieIter = 0;
   // can do while loops together
   while ((tieIter < n) && (time[tieIter] == time[0])) {
-    if ((time[tieIter] <= tau) && (status[tieIter]==1 || status[tieIter]==2)){
+    if (time[tieIter] <= tau && status[tieIter]!=0){
       icpart2 -= residuals[tieIter];
     }
     tieIter++;
@@ -76,7 +76,7 @@ NumericVector getInfluenceFunctionBrierKMCensoringUseSquared(double tau,
     if (upperTie == i){
       int tieIter = i+1;
       while ((tieIter < n) && (time[tieIter] == time[i+1])) {
-        if ((time[tieIter] <= tau) && (status[tieIter]==1 || status[tieIter]==2)){
+        if (time[tieIter] <= tau && status[tieIter]!=0){
           icpart1 -= residuals[tieIter]*MC_term2[sindex[i]];
           icpart2 -= residuals[tieIter];
         }
