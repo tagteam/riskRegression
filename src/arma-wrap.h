@@ -2,7 +2,7 @@
 #include <omp.h>
 #endif
 
-#include <math.h>       /* isnan */
+#include <cmath>       /* isnan */
 
 #ifndef ARMA_WRAP_H
 #define ARMA_WRAP_H
