@@ -12,7 +12,7 @@ void checkNAs(Rcpp::NumericVector& vec, std::string var_name){
 
 void checkNAs(double val, std::string var_name){
   if (std::isnan(val)){
-    Rcpp::stop("Missing values in variable %i. ", var_name);
+    Rcpp::stop("Variable %i is NA. ", var_name);
   }
 }
 
