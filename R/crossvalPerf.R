@@ -136,7 +136,7 @@ crossvalPerf.loob.AUC <- function(times,mlevs,se.fit,response.type,NT,Response,c
             aucDT[model==mod&times==t, IF.AUC:=ic]
             auc.loob[model==mod&times==t,se:= sd(aucDT[model==mod&times==t,IF.AUC])/sqrt(N)]
           }
-          else if (cens.model=="cox") {
+          else if (cens.model=="cox" && !conservative[[1]]) {
             ic0Case <- rowSums(auc)
             ic0Control <- colSums(auc)
             ic0 <- (1/(Phi*N))*c(ic0Case, ic0Control)-2*aucLPO

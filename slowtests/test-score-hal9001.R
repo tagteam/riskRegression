@@ -21,7 +21,7 @@ test_that("Score is working with hal for competing risk data",{
   cox1 = coxph(Surv(time,event)~X1+X2+X7+X9,data=trainCR.comprisk,x=TRUE)
   cox2 = coxph(Surv(time,event)~X1+X2+X7,data=trainCR.comprisk,x=TRUE)
   x<-Score(list("CSC(X1+X2+X7+X9)"=cox1,"CSC(X1+X2)"=cox2),
-           formula=Hist(time,event)~X1+X2,data=testCR.comprisk,se.fit=1L,times=c(4),cens.model="Hal9001")
+           formula=Hist(time,event)~X1+X2,data=testCR.comprisk,se.fit=1L,times=c(4),cens.model="Hal9001",conservative = TRUE)
   expect_output(print(x))
 })
 
@@ -32,7 +32,7 @@ test_that("Score is working with hal for survival data / crossval",{ ## should a
   cox2 = coxph(Surv(time,event)~X1+X2+X7,data=trainCR.comprisk,x=TRUE)
   x<-Score(list("cox(X1+X2+X7+X9)"=cox1,"cox(X1+X2)"=cox2),
            formula=Surv(time,event)~X1+X2,data=trainCR.comprisk,conf.int=TRUE,times=4,
-           split.method="loob",B=100,cens.model = "Hal9001") 
+           split.method="loob",B=100,cens.model = "Hal9001",conservative = TRUE) 
   expect_output(print(x))
 })
 
@@ -44,7 +44,7 @@ test_that("Score is working with hal for competing risk data / crossval",{
   csc2 = CSC(Hist(time,event)~X3+X5+X6,data=trainCR.comprisk)
   x<-Score(list("CSC(X1+X2+X7+X9)"=csc1,"CSC(X3+X5+X6)"=csc2),
             formula=Hist(time,event)~X1+X2,data=trainCR.comprisk,conf.int=TRUE,times=4,
-            split.method="loob",B=100,cens.model = "Hal9001") 
+            split.method="loob",B=100,cens.model = "Hal9001",conservative = TRUE) 
   expect_output(print(x))
 })
 
