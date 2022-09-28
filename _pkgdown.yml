@@ -30,7 +30,6 @@ reference:
   - starts_with("coef")
   - starts_with("iid")
   - "influenceTest"
-  - "IC_Nelson_Aalen_cens_time"
   - "IPA"
   - "splitStrataVar"
   - "getSplitMethod"
