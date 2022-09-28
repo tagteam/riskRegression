@@ -112,12 +112,23 @@ crossvalPerf.loob.AUC <- function(times,mlevs,se.fit,response.type,NT,Response,c
       nu1tauPm <- (1/N^2)*sum(auc)
       ## Leave-one-pair-out bootstrap estimate of AUC
       aucLPO <- nu1tauPm*(1/Phi)
+      # following section should be cleaned up(!!!)
       if (is.null(t)){
-        auc.loob[model==mod,AUC:=aucLPO]
+        if (mod == 0){
+          auc.loob[model==mod,AUC:=0.5]
+        }
+        else {
+          auc.loob[model==mod,AUC:=aucLPO]
+        }
       }else{
-        auc.loob[times==t&model==mod,AUC:=aucLPO]
+        if (mod == 0){
+          auc.loob[times==t&model==mod,AUC:=0.5] # how do I make this simpler?
+        }
+        else {
+          auc.loob[times==t&model==mod,AUC:=aucLPO]
+        }
       }
-      if (se.fit==1L){
+      if (se.fit==1L && mod != 0){
         id.cases <- data[["ID"]][cc.status=="case"]
         id.controls <- data[["ID"]][cc.status=="control"]
         id.censored <- data[["ID"]][cc.status=="censored"]
@@ -153,8 +164,8 @@ crossvalPerf.loob.AUC <- function(times,mlevs,se.fit,response.type,NT,Response,c
           else if (cens.model=="cox" && !conservative[[1]]) {
             ic0Case <- rowSums(auc)
             ic0Control <- colSums(auc)
-            ic0 <- (1/(Phi*N))*c(ic0Case, ic0Control)-2*aucLPO
-            this.aucDT <- data.table(model=mod,times=t,ID = c(id.cases,id.controls,id.censored), IF.AUC0 = c(ic0, rep(-2*aucLPO,length(id.censored))))
+            ic0 <- (1/(Phi*N))*c(ic0Case, ic0Control)
+            this.aucDT <- data.table(model=mod,times=t,ID = c(id.cases,id.controls,id.censored), IF.AUC0 = c(ic0, rep(0,length(id.censored))))
             aucDT <- rbindlist(list(aucDT,this.aucDT),use.names=TRUE,fill=TRUE)
             ic.weights <- matrix(0,N,N)
             ## ## Influence function for G - i.e. censoring survival distribution
@@ -183,7 +194,7 @@ crossvalPerf.loob.AUC <- function(times,mlevs,se.fit,response.type,NT,Response,c
             ## icPhiCase <- colMeans(ic.weights[which.cases,])
             icPhiCase <- as.numeric(rowSumsCrossprod(as.matrix(weights.cases[which.cases]),ic.weights[which.cases,],0))
             icPhiControl <- as.numeric(rowSumsCrossprod(as.matrix(weights.controls[which.controls]),ic.weights[which.controls,],0))
-            icPhi <- (aucLPO/Phi)*((weights.cases-(1/N)*icPhiCase)*(1/N)*sum(weights.controls)+(weights.controls-(1/N)*icPhiControl)*(1/N)*sum(weights.cases)) - 2*aucLPO
+            icPhi <- (aucLPO/Phi)*((weights.cases-(1/N)*icPhiCase)*(1/N)*sum(weights.controls)+(weights.controls-(1/N)*icPhiControl)*(1/N)*sum(weights.cases))
             ## ## Combine all parts of influence function
             ## ic1 <- data.table(ID=data[["ID"]], "ic.weightsCC" = ic.weightsCC, "icPhi" = icPhi)
             data.table::setkey(aucDT,model,times,ID)
@@ -205,6 +216,25 @@ crossvalPerf.loob.AUC <- function(times,mlevs,se.fit,response.type,NT,Response,c
           data.table::setkey(aucDT,model,ID)
           aucDT[model==mod,IF.AUC:=ic0-icPhi]
           auc.loob[model==mod,se:=sd(aucDT[["IF.AUC"]])/sqrt(N)]
+        }
+      }
+      else if (se.fit==1L && mod == 0){
+        id.cases <- data[["ID"]][cc.status=="case"]
+        id.controls <- data[["ID"]][cc.status=="control"]
+        id.censored <- data[["ID"]][cc.status=="censored"]
+        if (!is.null(t)){
+          this.aucDT <- data.table(model=mod,times=t,ID = c(id.cases,id.controls,id.censored))
+          aucDT <- rbindlist(list(aucDT,this.aucDT),use.names=TRUE,fill=TRUE)
+          data.table::setkey(aucDT,model,times,ID)
+          aucDT[model==mod&times==t, IF.AUC:=0]
+          auc.loob[model==mod&times==t,se:= 0]
+        }
+        else {
+          this.aucDT <- data.table(model=mod,ID = c(id.cases,id.controls,id.censored))
+          aucDT <- rbindlist(list(aucDT,this.aucDT),use.names=TRUE,fill=TRUE)
+          data.table::setkey(aucDT,model,ID)
+          aucDT[model==mod, IF.AUC:=0]
+          auc.loob[model==mod,se:= 0]
         }
       }
     }
