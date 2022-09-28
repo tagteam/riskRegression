@@ -506,9 +506,15 @@ Score.list <- function(object,
         }
     }
     ### 
-    if (cens.model != "cox" && cens.model != "none" && cens.model != "KaplanMeier" && !conservative[[1]]){
-      warning("For this model, we can't calculate the IF of the Survival function of the censoring distribution. \n Therefore, force conservative = TRUE")
-      conservative[[1]] <- TRUE
+    if (cens.model != "cox" && cens.model != "none" && cens.model != "KaplanMeier"){
+      if (!conservative[[1]]){
+        warning("For this model, we can't calculate the IF of the Survival function of the censoring distribution. \n Therefore, force conservative = TRUE")
+        conservative[[1]] <- TRUE
+      }
+      passed.args <- names(as.list(match.call())[-1])
+      if ("split.method" %in% passed.args){
+        stop("Cross validation does not work with custom models for the censoring. ")
+      }
     }  
   
     
