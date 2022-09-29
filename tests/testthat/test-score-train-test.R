@@ -27,7 +27,7 @@ test.train.test <- function(){
       input.m2 <- append(list(formula = as.formula(paste0(typ$response,"~X3+X5+X6"))), input.m)
       m1 <- do.call(typ$model, input.m1)
       m2 <- do.call(typ$model, input.m2)
-      input.score <- list(object =list("m(X1+X2+X7+X9)"=m1,"m(X3+X5+X6)"=m2), formula = as.formula(paste0(typ$response,"~1")),data=test.data,conf.int=TRUE)
+      input.score <- list(object =list("m(X1+X2+X7+X9)"=m1,"m(X3+X5+X6)"=m2), formula = as.formula(paste0(typ$response,"~1")),data=test.data,conf.int=TRUE,progress.bar=NULL)
       if (typ$data != "binary"){
         cat("with formula=Hist(time,event) ~ 1 and conservative = FALSE \n")
         input.score[["conservative"]] <- FALSE #check dependence on covariates

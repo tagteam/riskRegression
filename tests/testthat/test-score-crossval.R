@@ -32,7 +32,7 @@ test.cross <- function(){
       input.m2 <- append(list(formula = as.formula(paste0(typ$response,"~X3+X5+X6"))), input.m)
       m1 <- do.call(typ$model, input.m1)
       m2 <- do.call(typ$model, input.m2)
-      input.score <- list(object =list("m(X1+X2+X7+X9)"=m1,"m(X3+X5+X6)"=m2), formula = as.formula(paste0(typ$response,"~1")),data=train.data,conf.int=TRUE,split.method=split$name,B=split$B)
+      input.score <- list(object =list("m(X1+X2+X7+X9)"=m1,"m(X3+X5+X6)"=m2), formula = as.formula(paste0(typ$response,"~1")),data=train.data,conf.int=TRUE,split.method=split$name,B=split$B,progress.bar=NULL)
       if (split$name!="cv5"){
         input.score[["M"]] <- M
       }
