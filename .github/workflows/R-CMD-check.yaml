@@ -57,9 +57,10 @@ jobs:
           r-version: ${{ matrix.config.r }}
           http-user-agent: ${{ matrix.config.http-user-agent }}
           
-      - uses: r-lib/actions/check-r-package@v1
+      - uses: r-lib/actions/setup-r-dependencies@v2
         with:
-          error-on: '"error"'
+          extra-packages: any::rcmdcheck
+          needs: check
       
       - uses: r-lib/actions/setup-pandoc@v1
 
