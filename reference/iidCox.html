@@ -10,7 +10,7 @@
     
     <a class="navbar-brand me-2" href="../index.html">riskRegression</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2022.09.28</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2022.09.29</small>
 
     
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -201,7 +201,7 @@ The R Journal (2017) 9:2, pages 440-460.</p>
 <span class="r-in"><span><span class="va">m.cox</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/survival/man/coxph.html" class="external-link">coxph</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/survival/man/Surv.html" class="external-link">Surv</a></span><span class="op">(</span><span class="va">eventtime</span>, <span class="va">event</span><span class="op">)</span> <span class="op">~</span> <span class="va">X1</span><span class="op">+</span><span class="va">X6</span>, data <span class="op">=</span> <span class="va">d</span>, y <span class="op">=</span> <span class="cn">TRUE</span>, x <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/system.time.html" class="external-link">system.time</a></span><span class="op">(</span><span class="va">IF.cox</span> <span class="op">&lt;-</span> <span class="fu">iidCox</span><span class="op">(</span><span class="va">m.cox</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>    user  system elapsed </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   0.009   0.000   0.008 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    0.01    0.00    0.01 </span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="va">IF.cox.all</span> <span class="op">&lt;-</span> <span class="fu">iidCox</span><span class="op">(</span><span class="va">m.cox</span>, tau.hazard <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/sort.html" class="external-link">sort</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">7</span>,<span class="va">d</span><span class="op">$</span><span class="va">eventtime</span><span class="op">)</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">IF.cox.beta</span> <span class="op">&lt;-</span> <span class="fu">iidCox</span><span class="op">(</span><span class="va">m.cox</span>, baseline.iid <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></span>
