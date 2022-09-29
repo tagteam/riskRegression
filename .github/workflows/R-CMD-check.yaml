@@ -56,7 +56,11 @@ jobs:
         with:
           r-version: ${{ matrix.config.r }}
           http-user-agent: ${{ matrix.config.http-user-agent }}
-
+          
+      - uses: r-lib/actions/check-r-package@v1
+        with:
+          error-on: '"error"'
+      
       - uses: r-lib/actions/setup-pandoc@v1
 
       - name: Query dependencies
