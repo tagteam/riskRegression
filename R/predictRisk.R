@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun  6 2016 (09:02)
 ## Version:
-## last-updated: Jul  7 2022 (17:33) 
+## last-updated: Oct  2 2022 (13:17) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 450
+##     Update #: 451
 #----------------------------------------------------------------------
 ##
 ### Commentary:
@@ -532,67 +532,66 @@ predictRisk.matrix <- function(object,newdata,times,cause,...){
 ##' @export
 ##' @rdname predictRisk
 ##' @method predictRisk aalen
+##' # aalen model
+##' library(timereg)
+##' data(sTRACE)
+##' out <- aalen(Surv(time, status==9) ~ sex + diabetes + chf + vf,
+##'              data=sTRACE, max.time=7, n.sim=0, resample.iid=1)
+##' predictRisk.aalen(object=out, newdata=sTRACE[1:5,], times=c(1, 2, 3))
 predictRisk.aalen <- function(object,newdata,times,...){
-    ## require(timereg)
-    stop("FIXME")
-    time.coef <- data.frame(object$cum)
-    ntime <- nrow(time.coef)
-    objecttime <- time.coef[,1,drop=TRUE]
-    ntimevars <- ncol(time.coef)-2
-    covanames <- names(time.coef)[-(1:2)]
-    notfound <- match(covanames,names(newdata),nomatch=0)==0
-    if (any(notfound))
-        stop("\nThe following predictor variables:\n\n",
-             paste(covanames[notfound],collapse=","),
-             "\n\nwere not found in newdata, which only provides the following variables:\n\n",
-             paste(names(newdata),collapse=","),
-             "\n\n")
-    time.vars <- cbind(1,newdata[,names(time.coef)[-(1:2)],drop=FALSE])
-    nobs <- nrow(newdata)
-    ## hazard <- .C("survest_cox_aalen",
-                 ## timehazard=double(ntime*nobs),
-                 ## as.double(unlist(time.coef[,-1])),
-                 ## as.double(unlist(time.vars)),
-                 ## as.integer(ntimevars+1),
-                 ## as.integer(nobs),
-                 ## as.integer(ntime),PACKAGE="pec")$timehazard
-    hazard <- matrix(hazard,ncol=ntime,nrow=nobs,dimnames=list(1:nobs,paste("TP",1:ntime,sep="")))
-    surv <- pmin(exp(-hazard),1)
-    if (missing(times)) times <- sort(unique(objecttime))
-    p <- surv[,prodlim::sindex(jump.times=objecttime,eval.times=times)]
-    if (NROW(p) != NROW(newdata) || NCOL(p) != length(times))
-        stop(paste("\nPrediction matrix has wrong dimensions:\nRequested newdata x times: ",NROW(newdata)," x ",length(times),"\nProvided prediction matrix: ",NROW(p)," x ",NCOL(p),"\n\n",sep=""))
-    1-p
+  if (is.null(object$B.iid)) {
+    stop("Need resample.iid=1 when fitting the aalen model to make",
+         " predictions. Please re-fit the aalen model with resample.idd=1.")
+  }
+  
+  out <- timereg::predict.aalen(object=object,
+                                newdata=newdata,
+                                times=times,
+                                se=FALSE,
+                                ...)$S0
+  return(1 - out)
 }
 
 ## * predictRisk.cox.aalen
 ##' @export
 ##' @rdname predictRisk
 ##' @method predictRisk cox.aalen
+##' # cox.aalen model
+##' library(timereg)
+##' data(sTRACE)
+##' out <- cox.aalen(Surv(time,status==9) ~ prop(age) + prop(sex) +
+##'                  prop(diabetes) + chf + vf,
+##'                  data=sTRACE, max.time=7, n.sim=0, resample.iid=1)
+##' predictRisk.cox.aalen(object=out, newdata=sTRACE[1:5,], times=c(1, 2, 3))
+
 predictRisk.cox.aalen <- function(object,newdata,times,...){
-    #  require(timereg)
-    ##  The time-constant effects first
-    stop("FIXME")
-    const <- c(object$gamma)
-    names(const) <- substr(dimnames(object$gamma)[[1]],6,nchar(dimnames(object$gamma)[[1]])-1)
-    constant.part <- t(newdata[,names(const)])*const
-    constant.part <- exp(colSums(constant.part))
-    ##  Then extract the time-varying effects
-    time.coef <- data.frame(object$cum)
-    ntime <- nrow(time.coef)
-    objecttime <- time.coef[,1,drop=TRUE]
-    ntimevars <- ncol(time.coef)-2
-    time.vars <- cbind(1,newdata[,names(time.coef)[-(1:2)],drop=FALSE])
-    nobs <- nrow(newdata)
-    ## time.part <- .C("survest_cox_aalen",timehazard=double(ntime*nobs),as.double(unlist(time.coef[,-1])),as.double(unlist(time.vars)),as.integer(ntimevars+1),as.integer(nobs),as.integer(ntime),PACKAGE="pec")$timehazard
-    time.part <- matrix(time.part,ncol=ntime,nrow=nobs)
-    ## dimnames=list(1:nobs,paste("TP",1:ntime,sep="")))
-    surv <- pmin(exp(-time.part*constant.part),1)
-    if (missing(times)) times <- sort(unique(objecttime))
-    p <- surv[,prodlim::sindex(objecttime,times)]
-    if (NROW(p) != NROW(newdata) || NCOL(p) != length(times))
-        stop(paste("\nPrediction matrix has wrong dimensions:\nRequested newdata x times: ",NROW(newdata)," x ",length(times),"\nProvided prediction matrix: ",NROW(p)," x ",NCOL(p),"\n\n",sep=""))
-    1-p
+    out <- timereg::predict.cox.aalen(object=object,
+                                      newdata=newdata,
+                                      times=times,
+                                      se=FALSE,
+                                      ...)$S0
+    return(1 - out)
+}
+
+
+## * predictRisk.comp.risk
+##' @export
+##' @rdname predictRisk
+##' @method predictRisk comp.risk
+# comp.risk model
+##'
+##' library(timereg)
+##' data(bmt)
+##' add <- comp.risk(Event(time, cause) ~ platelet + age + tcell, data=bmt, cause=1)
+##' ndata <- data.frame(platelet=c(1, 0, 0), age=c(0, 1, 0), tcell=c(0, 0, 1))
+##' predictRisk.comp.risk(object=add, newdata=ndata, times=c(1, 2, 3))
+predictRisk.comp.risk <- function(object, newdata, times, ...) {
+  out <- timereg::predict.comprisk(object=object,
+                                   newdata=newdata,
+                                   times=times,
+                                   se=FALSE,
+                                   ...)$P1
+  return(out)
 }
 
 
