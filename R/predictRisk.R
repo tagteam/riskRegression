@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun  6 2016 (09:02)
 ## Version:
-## last-updated: Oct  2 2022 (13:17) 
+## last-updated: Oct  2 2022 (15:30) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 451
+##     Update #: 457
 #----------------------------------------------------------------------
 ##
 ### Commentary:
@@ -155,6 +155,20 @@
 #'      ylab="Ridge predicted survival chance at 10")
 #'}
 #'
+##' # aalen model
+##' library(timereg)
+##' data(sTRACE)
+##' out <- aalen(Surv(time, status==9) ~ sex + diabetes + chf + vf,
+##'              data=sTRACE, max.time=7, n.sim=0, resample.iid=1)
+##' print(methods(predictRisk))
+##' predictRisk(object=out, newdata=sTRACE[1:5,], times=c(1, 2, 3))
+##' # cox.aalen model
+##' library(timereg)
+##' data(sTRACE)
+##' out <- cox.aalen(Surv(time,status==9) ~ prop(age) + prop(sex) +
+##'                  prop(diabetes) + chf + vf,
+##'                  data=sTRACE, max.time=7, n.sim=0, resample.iid=1)
+##' predictRisk(object=out, newdata=sTRACE[1:5,], times=c(1, 2, 3))
 #' ## competing risks
 #'
 #' library(survival)
@@ -169,6 +183,14 @@
 #' cox.fit2  <- CSC(list(Hist(time,cause)~strata(X1)+X2,Hist(time,cause)~X1+X2),data=train)
 #' predictRisk(cox.fit2,newdata=test,times=seq(1:10),cause=1)
 #'
+# comp.risk model
+##'
+##' library(timereg)
+##' data(bmt)
+##' add <- comp.risk(Event(time, cause) ~ platelet + age + tcell, data=bmt, cause=1)
+##' ndata <- data.frame(platelet=c(1, 0, 0), age=c(0, 1, 0), tcell=c(0, 0, 1))
+##' predictRisk(object=add, newdata=ndata, times=c(1, 2, 3))
+#' 
 #' @export
 predictRisk <- function(object,newdata,...){
     UseMethod("predictRisk",object)
@@ -532,12 +554,6 @@ predictRisk.matrix <- function(object,newdata,times,cause,...){
 ##' @export
 ##' @rdname predictRisk
 ##' @method predictRisk aalen
-##' # aalen model
-##' library(timereg)
-##' data(sTRACE)
-##' out <- aalen(Surv(time, status==9) ~ sex + diabetes + chf + vf,
-##'              data=sTRACE, max.time=7, n.sim=0, resample.iid=1)
-##' predictRisk.aalen(object=out, newdata=sTRACE[1:5,], times=c(1, 2, 3))
 predictRisk.aalen <- function(object,newdata,times,...){
   if (is.null(object$B.iid)) {
     stop("Need resample.iid=1 when fitting the aalen model to make",
@@ -556,14 +572,6 @@ predictRisk.aalen <- function(object,newdata,times,...){
 ##' @export
 ##' @rdname predictRisk
 ##' @method predictRisk cox.aalen
-##' # cox.aalen model
-##' library(timereg)
-##' data(sTRACE)
-##' out <- cox.aalen(Surv(time,status==9) ~ prop(age) + prop(sex) +
-##'                  prop(diabetes) + chf + vf,
-##'                  data=sTRACE, max.time=7, n.sim=0, resample.iid=1)
-##' predictRisk.cox.aalen(object=out, newdata=sTRACE[1:5,], times=c(1, 2, 3))
-
 predictRisk.cox.aalen <- function(object,newdata,times,...){
     out <- timereg::predict.cox.aalen(object=object,
                                       newdata=newdata,
@@ -574,18 +582,11 @@ predictRisk.cox.aalen <- function(object,newdata,times,...){
 }
 
 
-## * predictRisk.comp.risk
+## * predictRisk.comprisk
 ##' @export
 ##' @rdname predictRisk
-##' @method predictRisk comp.risk
-# comp.risk model
-##'
-##' library(timereg)
-##' data(bmt)
-##' add <- comp.risk(Event(time, cause) ~ platelet + age + tcell, data=bmt, cause=1)
-##' ndata <- data.frame(platelet=c(1, 0, 0), age=c(0, 1, 0), tcell=c(0, 0, 1))
-##' predictRisk.comp.risk(object=add, newdata=ndata, times=c(1, 2, 3))
-predictRisk.comp.risk <- function(object, newdata, times, ...) {
+##' @method predictRisk comprisk
+predictRisk.comprisk <- function(object, newdata, times, ...) {
   out <- timereg::predict.comprisk(object=object,
                                    newdata=newdata,
                                    times=times,
