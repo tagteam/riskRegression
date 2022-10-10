@@ -149,24 +149,7 @@ crossvalPerf.loob.AUC <- function(times,mlevs,se.fit,response.type,NT,Response,c
         }
         aucDT <- rbindlist(list(aucDT,this.aucDT),use.names=TRUE,fill=TRUE)
         if (cens.model == "cox" && !conservative[[1]] && mod != 0){
-          ic.weights <- matrix(0,N,N)
-          ## ## Influence function for G - i.e. censoring survival distribution
-          k=0
-          for (i in 1:N){
-            if (i %in% id.cases){
-              k=k+1
-              ic.weights[i,] <- Weights$IC$IC.subject[i,k,]/Weights$IPCW.subject.times[i]
-            }
-            else if (i %in% id.controls){ 
-              if (Response[["time"]][i] > t){## min(T,C)>t
-                ic.weights[i,] <- Weights$IC$IC.times[i,s,]/Weights$IPCW.times[i,s]
-              }
-              else { ## min(T,C)<= t and status == 2
-                k=k+1
-                ic.weights[i,] <- Weights$IC$IC.subject[i,k,]/Weights$IPCW.subject.times[i]
-              }
-            }
-          }
+          ic.weights <- Weights$IC[[s]]
           ## ## Part of influence function related to Weights
           ic.weightsCase <- as.numeric(rowSumsCrossprod(as.matrix(ic0Case), ic.weights[cases.index,], 0))
           ic.weightsControl <- as.numeric(rowSumsCrossprod(as.matrix(ic0Control), ic.weights[controls.index,], 0))

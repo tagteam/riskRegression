@@ -62,23 +62,7 @@ getInfluenceCurve.AUC.cox <- function(t,time,event, WTi, Wt, risk, ID, MC, nth.t
   # ic0Control <- colSums(auc)
   ic0 <- (1/(Phi*n))*c(ic0Case, ic0Control)-2*aucLPO
   aucDT <- data.table(ID = c(id.cases,id.controls,id.censored), IF.AUC0 = c(ic0, rep(-2*aucLPO,length(id.censored))))
-  ic.weights <- matrix(0,n,n)
-  k=0 ## counts subject-times with event before t
-  for (i in 1:n){
-    if (i %in% id.cases){
-      k=k+1
-      ic.weights[i,] <- MC$IC.subject[i,k,]/WTi[i]
-    }
-    else if (i %in% id.controls){ 
-      if (time[i] > t){## min(T,C)>t
-        ic.weights[i,] <- MC$IC.times[i,nth.times,]/Wt[i]
-      }
-      else { ## min(T,C)<= t and status == 2
-        k=k+1
-        ic.weights[i,] <- MC$IC.subject[i,k,]/WTi[i]
-      }
-    }
-  }
+  ic.weights <- MC[[nth.times]]
   ## ## Part of influence function related to Weights
   ic.weightsCase <- as.numeric(rowSumsCrossprod(as.matrix(ic0Case), ic.weights[cases.index,], 0))
   ic.weightsControl <- as.numeric(rowSumsCrossprod(as.matrix(ic0Control), ic.weights[controls.index,], 0))
@@ -174,18 +158,7 @@ getInfluenceCurve.Brier <- function(t,
     ##
     N <- length(residuals)
     if (cens.model=="cox") {## Cox regression
-        ic.weights <- matrix(0,N,N)
-        k=0 ## counts subject-times with event before t
-        for (i in 1:N){
-            if (residuals[i]>0){
-                if (time[i]<=t){ ## min(T,C)<=t, note that (residuals==0) => (status==0)
-                    k=k+1
-                    ic.weights[i,] <- IC.G$IC.subject[i,k,]/(WTi[i])
-                }else{## min(T,C)>t
-                    ic.weights[i,] <- IC.G$IC.times[i,nth.times,]/(Wt[i])
-                }
-            }
-        }
+        ic.weights <- IC.G[[nth.times]]
         IF.Brier <- ic.weights*residuals
         IF.Brier <- IC0-colMeans(IF.Brier)
         IF.Brier
