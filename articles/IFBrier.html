@@ -102,7 +102,9 @@
 &amp;= R(\tau | X_i)^2 S(\tau | X_i)\left(\frac{I(\tilde{T}_i \leq \tau, \Delta_i = 0)}{G(\tilde{T}_i|X_i)S(\tilde{T}_i|X_i)}-\int_0^{\tilde{T}_i \wedge \tau} \frac{1}{G(s|X_i)S(s|X_i)}\Lambda_C(ds|X_i)\right) \\
 &amp;+ (1-R(\tau|X_i))^2 \left(\frac{I(\tilde{T}_i \leq \tau, \Delta_i = 0)}{G(\tilde{T}_i|X_i)S(\tilde{T}_i|X_i)}(F_1(\tau|X_i)-F_1(\tilde{T}_i|X_i))-\int_0^{\tilde{T}_i \wedge \tau} \frac{(F_1(\tau|X_i)-F_1(s|X_i))}{G(s|X_i)S(s|X_i)}\Lambda_C(ds|X_i)\right) \\
 &amp;+ R(\tau|X_i)^2 \left(\frac{I(\tilde{T}_i \leq \tau, \Delta_i = 0)}{G(\tilde{T}_i|X_i)S(\tilde{T}_i|X_i)}(F_2(\tau|X_i)-F_2(\tilde{T}_i|X_i))-\int_0^{\tilde{T}_i \wedge \tau} \frac{(F_2(\tau|X_i)-F_2(s|X_i))}{G(s|X_i)S(s|X_i)}\Lambda_C(ds|X_i)\right) 
-\end{align*}\]</span></p>
+\end{align*}\]</span> Here we used that <span class="math display">\[
+ f_i(t,z) = \frac{\mathbbm{1}_{\{\tilde{T_i} \leq t, \Delta_i = 0\}} \delta_{Z_i}(z)}{G(\tilde{T_i}|Z_i)S(\tilde{T_i}|Z_i)} -\int_0^{\tilde{T}_i \wedge t} \frac{ \delta_{Z_i}(z)dP(s,0 | z)}{G(s|Z_i)^2S(s|Z_i)^2}
+\]</span></p>
 </div>
 <div class="section level2">
 <h2 id="if-with-cross-validation">IF with cross-validation<a class="anchor" aria-label="anchor" href="#if-with-cross-validation"></a>
