@@ -70,48 +70,56 @@ getCensoringWeights <- function(formula,
                subject.times <- Y[(((Y<=max(times))*status)==1)]
                ## TRY TO CORRECT LARGE WEIGHTS
                warn.weights <- FALSE
+               f <- function(x) { ### HAVE TO NOT DIVIDE BY ZERO
+                 if (x==0){
+                   1
+                 }
+                 else {
+                   1/x
+                 }
+               }
                ### FOR THE SUBJECT WEIGHTS
-               # for (t.ind in 1:length(times)){
-               #   number.of.censorings <- 0
-               #   upperTie <- 0
-               #   for (i in 1:length(Y)){
-               #     newcensorings <- 0
-               #     if (i > upperTie){
-               #       tieIter <- i
-               #       while(Y[tieIter] == Y[i] && tieIter < length(Y)){
-               #         if (status[tieIter] == 0 && Y[i] < times[t.ind]){
-               #           newcensorings <- newcensorings + 1
-               #         }
-               #         tieIter <- tieIter + 1
-               #       }
-               #       upperTie <- tieIter - 1
-               #     }
-               #     if (Y[i] <= times[t.ind] && status[i] != 0){
-               #       if (1/IPCW.subject.times[i] > number.of.censorings){ ### THIS IS TYPICALLY TRUE FOR THE FIRST OBSERVATION!
-               #         warn.weights <- TRUE
-               #         IPCW.subject.times[i] <- 1/number.of.censorings
-               #       }
-               #     }
-               #     number.of.censorings <- number.of.censorings + newcensorings
-               #   }
-               #   ## FOR THE WEIGHTS GTAU
-               #   for (i in 1:length(Y)){
-               #     if (length(times)==1){
-               #       if (1/IPCW.times[i] > number.of.censorings){ ### THIS IS TYPICALLY TRUE FOR THE FIRST OBSERVATION!
-               #         warn.weights <- TRUE
-               #         IPCW.times[i] <- 1/number.of.censorings
-               #       }
-               #     } else{
-               #       if (1/IPCW.times[i,t.ind] > number.of.censorings){ ### THIS IS TYPICALLY TRUE FOR THE FIRST OBSERVATION!
-               #         warn.weights <- TRUE
-               #         IPCW.times[i,t.ind] <- 1/number.of.censorings
-               #       }
-               #     }
-               #   }
-               # }
-               # if (warn.weights){
-               #   warning("Some inverse censoring weights were found to be large.")
-               # }
+               for (t.ind in 1:length(times)){
+                 number.of.censorings <- 0
+                 upperTie <- 0
+                 for (i in 1:length(Y)){
+                   newcensorings <- 0
+                   if (i > upperTie){
+                     tieIter <- i
+                     while(Y[tieIter] == Y[i] && tieIter < length(Y)){
+                       if (status[tieIter] == 0 && Y[i] < times[t.ind]){
+                         newcensorings <- newcensorings + 1
+                       }
+                       tieIter <- tieIter + 1
+                     }
+                     upperTie <- tieIter - 1
+                   }
+                   if (Y[i] <= times[t.ind] && status[i] != 0){
+                     if (IPCW.subject.times[i] < f(number.of.censorings)){ ### THIS IS TYPICALLY TRUE FOR THE FIRST OBSERVATION!
+                       warn.weights <- TRUE
+                       IPCW.subject.times[i] <- f(number.of.censorings)
+                     }
+                   }
+                   number.of.censorings <- number.of.censorings + newcensorings
+                 }
+                 ## FOR THE WEIGHTS GTAU
+                 for (i in 1:length(Y)){
+                   if (length(times)==1){
+                     if (IPCW.times[i] < f(number.of.censorings)){ ### THIS IS TYPICALLY TRUE FOR THE FIRST OBSERVATION!
+                       warn.weights <- TRUE
+                       IPCW.times[i] <- f(number.of.censorings)
+                     }
+                   } else{
+                     if (IPCW.times[i,t.ind] < f(number.of.censorings)){ ### THIS IS TYPICALLY TRUE FOR THE FIRST OBSERVATION!
+                       warn.weights <- TRUE
+                       IPCW.times[i,t.ind] <- f(number.of.censorings)
+                     }
+                   }
+                 }
+               }
+               if (warn.weights){
+                 warning("Some inverse censoring weights were found to be large.")
+               }
                
                out <- list(IPCW.times=IPCW.times,IPCW.subject.times=IPCW.subject.times,method=cens.model,IC.data=IC.data)
                if (influence.curve==TRUE){
