@@ -31,6 +31,7 @@
 \alias{predictRisk.numeric}
 \alias{predictRisk.formula}
 \alias{predictRisk.BinaryTree}
+\alias{predictRisk.comprisk}
 \alias{predictRisk.coxphTD}
 \alias{predictRisk.CSCTD}
 \alias{predictRisk.coxph.penal}
@@ -71,6 +72,8 @@ predictRisk(object, newdata, ...)
 \method{predictRisk}{aalen}(object, newdata, times, ...)
 
 \method{predictRisk}{cox.aalen}(object, newdata, times, ...)
+
+\method{predictRisk}{comprisk}(object, newdata, times, ...)
 
 \method{predictRisk}{coxph}(
   object,
@@ -284,6 +287,20 @@ plot(predictRisk(f1,newdata=valdat,times=10),
      ylab="Ridge predicted survival chance at 10")
 }
 
+# aalen model
+library(timereg)
+data(sTRACE)
+out <- aalen(Surv(time, status==9) ~ sex + diabetes + chf + vf,
+             data=sTRACE, max.time=7, n.sim=0, resample.iid=1)
+print(methods(predictRisk))
+predictRisk(object=out, newdata=sTRACE[1:5,], times=c(1, 2, 3))
+# cox.aalen model
+library(timereg)
+data(sTRACE)
+out <- cox.aalen(Surv(time,status==9) ~ prop(age) + prop(sex) +
+                 prop(diabetes) + chf + vf,
+                 data=sTRACE, max.time=7, n.sim=0, resample.iid=1)
+predictRisk(object=out, newdata=sTRACE[1:5,], times=c(1, 2, 3))
 ## competing risks
 
 library(survival)
@@ -297,6 +314,13 @@ predictRisk(cox.fit,newdata=test,times=seq(1:10),cause=1)
 ## with strata
 cox.fit2  <- CSC(list(Hist(time,cause)~strata(X1)+X2,Hist(time,cause)~X1+X2),data=train)
 predictRisk(cox.fit2,newdata=test,times=seq(1:10),cause=1)
+
+
+library(timereg)
+data(bmt)
+add <- comp.risk(Event(time, cause) ~ platelet + age + tcell, data=bmt, cause=1)
+ndata <- data.frame(platelet=c(1, 0, 0), age=c(0, 1, 0), tcell=c(0, 0, 1))
+predictRisk(object=add, newdata=ndata, times=c(1, 2, 3))
 
 }
 \author{
