@@ -158,9 +158,9 @@ getInfluenceCurve.Brier <- function(t,
     ##
     N <- length(residuals)
     if (cens.model=="cox") {## Cox regression
-        ic.weights <- IC.G[[nth.times]]
-        IF.Brier <- ic.weights*residuals
-        IF.Brier <- IC0-colMeans(IF.Brier)
+        ic.weights <- IC.G[[nth.times]] ## (i,j)'th entry is f_j(tilde{T}_i-;X_i)/G(tilde{T}_i|X_i) when delta_i != 0 and time_i <= tau; otherwise it is f_j(tau-;X_i)/G(tau | X_i)  
+        IF.Brier <- ic.weights*residuals ## (i,j)'th entry is f_j(tilde{T}_i-;X_i)/G(tilde{T}_i|X_i)res_i when delta_i != 0 and time_i <= tau; otherwise it is f_j(tau-;X_i)/G(tau | X_i) res_i, where res_i is the i'th residual 
+        IF.Brier <- IC0-colMeans(IF.Brier) ## therefore the j'th value colMeans(IF.Brier) should be 1/n sum_i (f_j(tilde{T}_i-;X_i)/G(tilde{T}_i|X_i)res_i I(delta_j!=0, tilde{T}_j <= tau) + f_j(tau-;X_i)/G(tau | X_i) res_i I(\tilde{T}_j > tau)
         IF.Brier
     }else{
         stop("Use C++ function instead. ")
