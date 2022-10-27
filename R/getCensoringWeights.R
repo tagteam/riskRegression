@@ -221,8 +221,8 @@ getCensoringWeights <- function(formula,
                IC.data <- list(fit.time=fit.time,fit.cens=fit,wdata=wdata)
 
                # fit<-Hal9001(new.formula,wdata)
-               times.data.minus <- c(0,wdata$time[-length(wdata$time)]) #have to compute the weights for T_i minus not just Ti
-               IPCW.subject.times <- diag(1-predictRisk(fit,wdata,times.data.minus,1)) #computational problem with predictRisk
+               # times.data.minus <- c(0,wdata$time[-length(wdata$time)]) #have to compute the weights for T_i minus not just Ti
+               IPCW.subject.times <- diag(1-predictRisk(fit,wdata,wdata$time,1)) #computational problem with predictRisk
                IPCW.times <- 1-predictRisk(fit,wdata,times,1)
                out <- list(IPCW.times=IPCW.times,IPCW.subject.times=IPCW.subject.times,method=cens.model,IC.data=IC.data)
            })

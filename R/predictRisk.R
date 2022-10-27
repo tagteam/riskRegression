@@ -1405,6 +1405,72 @@ predictRisk.Hal9001 <- function(object,
     p
 }
 
+coxnet <- function(formula,data,lambda=NULL, cv=TRUE,nfolds = 10,...){
+  requireNamespace(c("glmnet","prodlim"))
+  strata.num = start = status = NULL
+  EHF = prodlim::EventHistory.frame(formula,data,unspecialsDesign = TRUE,specials = NULL)
+  stopifnot(attr(EHF$event.history,"model")[[1]] == "survival")
+  # blank Cox object needed for predictions
+  data = data.frame(cbind(EHF$event.history,EHF$design))
+  bl_cph <- coxph(Surv(time,status)~1,data=data,x=1,y=1)
+  bl_obj <- coxModelFrame(bl_cph)[]
+  bl_obj[,strata.num:=0]
+  data.table::setorder(bl_obj, strata.num,stop,start,-status)
+  if (!cv){
+    fit <- glmnet::glmnet(x=EHF$design,y=EHF$event.history, lambda=lambda,family="cox")
+  }
+  else {
+    fit <- glmnet::cv.glmnet(x=EHF$design,y=EHF$event.history, lambda=lambda,nfolds=nfolds,type.measure = "deviance", family="cox")
+  }
+  out = list(fit = fit,
+             surv_info = bl_obj,
+             call = match.call(),
+             terms = terms(formula))
+  class(out) = "coxnet"
+  out
+}
+
+##' @export
+predictRisk.coxnet <- function(object,newdata,times,lambda=NULL,...) {
+  require("glmnet")
+  # convert covariates to dummy variables
+  newdata$dummy.time=rep(1,NROW(newdata))
+  newdata$dummy.event=rep(1,NROW(newdata))
+  rhs <- as.formula(delete.response(object$terms))
+  dummy.formula=stats::update.formula(rhs,"Hist(dummy.time,dummy.event)~.")
+  EHF <- prodlim::EventHistory.frame(formula=dummy.formula,
+                                     data=newdata,
+                                     specials = NULL,
+                                     unspecialsDesign=TRUE)
+  newdata$dummy.time = NULL
+  newdata$dummy.event = NULL
+  # blank Cox object obtained with riskRegression:::coxModelFrame
+  info <- object$surv_info
+  if (class(object$fit) == "cv.glmnet"){
+    coxnet_pred <- c(exp(predict(object$fit,newx=EHF$design,type = "link", s="lambda.min")))
+  }
+  else {
+    coxnet_pred <- c(exp(predict(object$fit,newx=EHF$design,type = "link", s=lambda)))
+  }
+  L0 <- riskRegression::baseHaz_cpp(starttimes = info$start,
+                                    stoptimes = info$stop,
+                                    status = info$status,
+                                    eXb = coxnet_pred,
+                                    strata = 1,
+                                    nPatients = NROW(info$stop),
+                                    nStrata = 1,
+                                    emaxtimes = max(info$stop),
+                                    predtimes = sort(unique(info$stop)),
+                                    cause = 1,
+                                    Efron = TRUE)
+  coxnetSurv <- exp(-coxnet_pred%o%L0$cumhazard)
+  where <- sindex(jump.times=info$stop,eval.times=times)
+  p <- cbind(0,1-coxnetSurv)[,1+where]
+  if (NROW(p) != NROW(newdata) || NCOL(p) != length(times)) {
+    stop(paste("\nPrediction matrix has wrong dimensions:\nRequested newdata x times: ", NROW(newdata), " x ", length(times), "\nProvided prediction matrix: ", NROW(p), " x ", NCOL(p), "\n\n", sep = ""))
+  }
+  p
+}
 
 ## * predictRisk.singleEventCB
 ##' @export
