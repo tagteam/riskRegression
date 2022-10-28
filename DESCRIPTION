@@ -41,7 +41,6 @@ Suggests:
     boot,
     smcfcs,
     casebase,
-    ipw,
     gbm,
     flexsurv, 
     grpreg,
