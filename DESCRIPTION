@@ -60,7 +60,7 @@ Suggests:
     scam,
     SuperLearner,
     testthat,
-    R.rsp, 
+    R.rsp
 Maintainer: Thomas Alexander Gerds <tag@biostat.ku.dk>
 Description: Implementation of the following methods for event history analysis.
     Risk regression models for survival endpoints also in the presence of competing
