@@ -87,6 +87,11 @@
 #' nd <- sampleData(80,outcome="binary")
 #' fit <- lrm(Y~X1+X8,data=d)
 #' predictRisk(fit,newdata=nd)
+#' 
+#' # GLMnet example
+#' fit <- GLMnet(Y~X1+X8,data=d) ## Uses CV as default
+#' predictRisk(fit,newdata=nd)
+#' 
 #'\dontrun{
 #' library(SuperLearner)
 #' set.seed(1)
@@ -135,7 +140,17 @@
 #' ## This is a matrix with event probabilities (1-survival)
 #' ## one column for each of the 5 time points
 #' ## one row for each validation set individual
-#'
+#' 
+#' # Use GLMnet to predict survvival probabilities
+#' fitGLMnet <- GLMnet(Surv(time,event)~X1+X8,data=learndat) ## Use CV as standard.
+#' psurv <- predictRisk(fitGLMnet,newdata=valdat,times=seq(0,60,12))
+#' 
+#' # Use hal9001 as an example
+#' \dontrun{
+#' fitHAL <- Hal9001(Surv(time,event)~X1+X8,data=learndat) ## Use CV as standard.
+#' psurv <- predictRisk(fitHAL,newdata=valdat,times=seq(0,60,12))
+#' }
+#' 
 #' if (require("randomForestSRC",quietly=TRUE)){
 #' # Do the same for a randomSurvivalForest model
 #' library(randomForestSRC)
@@ -1336,32 +1351,6 @@ predictRisk.flexsurvreg <- function(object, newdata, times, ...) {
     1 - p
 }
 
-Hal9001 <- function(formula,data,lambda=NULL,...){
-    requireNamespace("hal9001")
-    strata.num = start = status = NULL
-    EHF = prodlim::EventHistory.frame(formula,data,unspecialsDesign = TRUE,specials = NULL)
-    stopifnot(attr(EHF$event.history,"model")[[1]] == "survival")
-    # blank Cox object needed for predictions
-    data = data.frame(cbind(EHF$event.history,EHF$design))
-    bl_cph <- coxph(Surv(time,status)~1,data=data,x=1,y=1)
-    bl_obj <- coxModelFrame(bl_cph)[]
-    bl_obj[,strata.num:=0]
-    data.table::setorder(bl_obj, strata.num,stop,start,-status)
-    hal_fit <- do.call(hal9001::fit_hal,list(X = EHF$design,
-                                             Y = EHF$event.history,
-                                             family = "cox",
-                                             return_lasso = TRUE,
-                                             yolo = FALSE,
-                                             lambda = lambda,
-                                             ...))
-    out = list(fit = hal_fit,
-               surv_info = bl_obj,
-               call = match.call(),
-               terms = terms(formula))
-    class(out) = "Hal9001"
-    out
-}
-
 ##' @export
 ##' @rdname predictRisk
 ##' @method predictRisk Hal9001
@@ -1405,57 +1394,38 @@ predictRisk.Hal9001 <- function(object,
     p
 }
 
-GLMnet <- function(formula,data,lambda=NULL, cv=TRUE,nfolds = 10, type.measure = "deviance",...){
-  requireNamespace(c("glmnet","prodlim"))
-  tt <- all.vars(update(formula,".~1"))
-  if (length(tt) != 1){
-    strata.num = start = status = NULL
-    EHF = prodlim::EventHistory.frame(formula,data,unspecialsDesign = TRUE,specials = NULL)
-    stopifnot(attr(EHF$event.history,"model")[[1]] == "survival")
-    # blank Cox object needed for predictions
-    data = data.frame(cbind(EHF$event.history,EHF$design))
-    bl_cph <- coxph(Surv(time,status)~1,data=data,x=1,y=1)
-    bl_obj <- coxModelFrame(bl_cph)[]
-    bl_obj[,strata.num:=0]
-    data.table::setorder(bl_obj, strata.num,stop,start,-status)
-    if (!cv){
-      fit <- glmnet::glmnet(x=EHF$design,y=EHF$event.history, lambda=lambda,family="cox")
-    }
-    else {
-      fit <- glmnet::cv.glmnet(x=EHF$design,y=EHF$event.history, lambda=lambda,nfolds=nfolds,type.measure = "deviance", family="cox")
-    }
-  }
-  else {
-    bl_obj=terms=NULL
-    y  <- data[[tt[1]]]
-    x <- model.matrix(formula, data=data)
-    if (!cv){
-      fit <- glmnet::glmnet(x=x,y=y, lambda=lambda,family="binomial")
-    }
-    else {
-      fit <- glmnet::cv.glmnet(x=x,y=y, lambda=lambda,nfolds=nfolds,type.measure =type.measure, family="binomial")
-    }
-  }
-  out = list(fit = fit,
-             surv_info = bl_obj,
-             call = match.call(),
-             terms = terms(formula))
-  class(out) = "GLMnet"
-  out
-}
-
+## * predictRisk.GLMnet
+##' @rdname predictRisk
+##' @method predictRisk GLMnet
 ##' @export
-predictRisk.GLMnet <- function(object,newdata,times,lambda=NULL,...) {
-  require("glmnet")
-  requireNamespace("prodlim")
+predictRisk.GLMnet <- function(object,newdata,times,...) {
+  rest <- list(...)
+  lambda=cv=NULL
+  # library(glmnet)
+  # requireNamespace(c("prodlim","glmnet"))
+  # predict.cv.glmnet <- utils::getFromNamespace("predict.cv.glmnet","glmnet")
+  # predict.glmnet <- utils::getFromNamespace("predict.glmnet","glmnet")
   rhs <- as.formula(delete.response(object$terms))
   if (is.null(object$surv_info)){
     xnew <- model.matrix(rhs,data=newdata)
-    if (inherits(object$fit, "cv.glmnet")){
+    if (is.null(rest$lambda) && object$cv){
       p <- predict(object$fit,newx=xnew,type = "response", s="lambda.min")
     }
+    else if (is.null(rest$lambda) && !object$cv){
+      if (length(object$lambda) == 1){
+        p <- predict(object$fit,newx=xnew,type = "response", s=object$lambda)
+      }
+      else {
+        stop("Object fitted with multiple lambdas. You must pick one lambda for predictRisk!")
+      }
+    }
     else {
-      p <- predict(object$fit,newx=xnew,type = "response", s=lambda)
+      if (all(rest$lambda %in% object$lambda)){
+        p <- predict(object$fit,newx=xnew,type = "response", s=rest$lambda)
+      }
+      else {
+        stop("The fitted model was not fitted with one of the lambdas that was specified in predictRisk. ")
+      }
     }
   }
   else {
@@ -1471,11 +1441,24 @@ predictRisk.GLMnet <- function(object,newdata,times,lambda=NULL,...) {
     newdata$dummy.event = NULL
     # blank Cox object obtained with riskRegression:::coxModelFrame
     info <- object$surv_info
-    if (inherits(object$fit, "cv.glmnet")){
+    if (is.null(rest$lambda) && object$cv){
       coxnet_pred <- c(exp(predict(object$fit,newx=EHF$design,type = "link", s="lambda.min")))
     }
+    else if (is.null(rest$lambda) && !object$cv){
+      if (length(object$lambda) == 1){
+        coxnet_pred <- c(exp(predict(object$fit,newx=EHF$design,type = "link", s=object$lambda)))
+      }
+      else {
+        stop("Object fitted with multiple lambdas. You must pick one lambda for predictRisk!")
+      }
+    }
     else {
-      coxnet_pred <- c(exp(predict(object$fit,newx=EHF$design,type = "link", s=lambda)))
+      if (all(rest$lambda %in% object$lambda)){
+        coxnet_pred <- c(exp(predict(object$fit,newx=EHF$design,type = "link", s=rest$lambda)))
+      }
+      else {
+        stop("The fitted model was not fitted with one of the lambdas that was specified in predictRisk. ")
+      }
     }
     L0 <- riskRegression::baseHaz_cpp(starttimes = info$start,
                                       stoptimes = info$stop,

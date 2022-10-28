@@ -41,6 +41,7 @@ Suggests:
     boot,
     smcfcs,
     casebase,
+    glmnet,
     gbm,
     flexsurv, 
     grpreg,
@@ -59,7 +60,7 @@ Suggests:
     scam,
     SuperLearner,
     testthat,
-    R.rsp
+    R.rsp, 
 Maintainer: Thomas Alexander Gerds <tag@biostat.ku.dk>
 Description: Implementation of the following methods for event history analysis.
     Risk regression models for survival endpoints also in the presence of competing
@@ -75,7 +76,7 @@ Description: Implementation of the following methods for event history analysis.
     the risk prediction models on one part of each split and then summarizes and
     compares the performance across splits.
 License: GPL (>= 2)
-RoxygenNote: 7.2.0
+RoxygenNote: 7.2.1
 VignetteBuilder: R.rsp
 Encoding: UTF-8
 URL: https://github.com/tagteam/riskRegression

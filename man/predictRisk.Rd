@@ -39,6 +39,7 @@
 \alias{predictRisk.penfitS3}
 \alias{predictRisk.SuperPredictor}
 \alias{predictRisk.Hal9001}
+\alias{predictRisk.GLMnet}
 \alias{predictRisk.singleEventCB}
 \alias{predictRisk.wglm}
 \title{Extrating predicting risks from regression models}
@@ -143,6 +144,8 @@ predictRisk(object, newdata, ...)
 
 \method{predictRisk}{Hal9001}(object, newdata, times, cause, ...)
 
+\method{predictRisk}{GLMnet}(object, newdata, times, ...)
+
 \method{predictRisk}{singleEventCB}(object, newdata, times, cause, ...)
 
 \method{predictRisk}{wglm}(
@@ -219,6 +222,11 @@ d <- sampleData(80,outcome="binary")
 nd <- sampleData(80,outcome="binary")
 fit <- lrm(Y~X1+X8,data=d)
 predictRisk(fit,newdata=nd)
+
+# GLMnet example
+fit <- GLMnet(Y~X1+X8,data=d) ## Uses CV as default
+predictRisk(fit,newdata=nd)
+
 \dontrun{
 library(SuperLearner)
 set.seed(1)
@@ -267,6 +275,16 @@ psurv <- predictRisk(fitCox,newdata=valdat,times=seq(0,60,12))
 ## This is a matrix with event probabilities (1-survival)
 ## one column for each of the 5 time points
 ## one row for each validation set individual
+
+# Use GLMnet to predict survvival probabilities
+fitGLMnet <- GLMnet(Surv(time,event)~X1+X8,data=learndat) ## Use CV as standard.
+psurv <- predictRisk(fitGLMnet,newdata=valdat,times=seq(0,60,12))
+
+# Use hal9001 as an example
+\dontrun{
+fitHAL <- Hal9001(Surv(time,event)~X1+X8,data=learndat) ## Use CV as standard.
+psurv <- predictRisk(fitHAL,newdata=valdat,times=seq(0,60,12))
+}
 
 if (require("randomForestSRC",quietly=TRUE)){
 # Do the same for a randomSurvivalForest model
