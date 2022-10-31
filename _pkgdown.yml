@@ -18,6 +18,8 @@ reference:
   - "ipcw"
   - "SuperPredictor"
   - "wglm"
+  - "GLMnet"
+  - "Hal9001"
 - subtitle: Model Utilities
   desc: Extract model components or calculate associated measures.
   contents:
