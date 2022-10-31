@@ -10,7 +10,7 @@
     
     <a class="navbar-brand me-2" href="../index.html">riskRegression</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2022.09.29</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2022.10.28</small>
 
     
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -564,6 +564,232 @@ and Prognostic Research, 2(1):7, 2018.</p>
 <span class="r-in"><span><span class="va">testSurv</span> <span class="op">&lt;-</span> <span class="fu"><a href="sampleData.html">sampleData</a></span><span class="op">(</span><span class="fl">40</span>,outcome<span class="op">=</span><span class="st">"survival"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">cox1</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/pkg/survival/man/coxph.html" class="external-link">coxph</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/survival/man/Surv.html" class="external-link">Surv</a></span><span class="op">(</span><span class="va">time</span>,<span class="va">event</span><span class="op">)</span><span class="op">~</span><span class="va">X1</span><span class="op">+</span><span class="va">X2</span><span class="op">+</span><span class="va">X7</span><span class="op">+</span><span class="va">X9</span>,data<span class="op">=</span><span class="va">trainSurv</span>, y<span class="op">=</span><span class="cn">TRUE</span>, x <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">cox2</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/pkg/survival/man/coxph.html" class="external-link">coxph</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/survival/man/Surv.html" class="external-link">Surv</a></span><span class="op">(</span><span class="va">time</span>,<span class="va">event</span><span class="op">)</span><span class="op">~</span><span class="va">X3</span><span class="op">+</span><span class="va">X5</span><span class="op">+</span><span class="va">X6</span>,data<span class="op">=</span><span class="va">trainSurv</span>, y<span class="op">=</span><span class="cn">TRUE</span>, x <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">x</span><span class="op">=</span><span class="fu">Score</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="st">"Cox(X1+X2+X7+X9)"</span><span class="op">=</span><span class="va">cox1</span>,<span class="st">"Cox(X3+X5+X6)"</span><span class="op">=</span><span class="va">cox2</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>         formula<span class="op">=</span><span class="fu"><a href="https://rdrr.io/pkg/survival/man/Surv.html" class="external-link">Surv</a></span><span class="op">(</span><span class="va">time</span>,<span class="va">event</span><span class="op">)</span><span class="op">~</span><span class="fl">1</span>,data<span class="op">=</span><span class="va">testSurv</span>,conf.int<span class="op">=</span><span class="cn">FALSE</span>,times<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">5</span>,<span class="fl">8</span><span class="op">)</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="co">## Use Cox to estimate censoring weights</span></span></span>
+<span class="r-in"><span><span class="va">y</span><span class="op">=</span><span class="fu">Score</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="st">"Cox(X1+X2+X7+X9)"</span><span class="op">=</span><span class="va">cox1</span>,<span class="st">"Cox(X3+X5+X6)"</span><span class="op">=</span><span class="va">cox2</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>         formula<span class="op">=</span><span class="fu"><a href="https://rdrr.io/pkg/survival/man/Surv.html" class="external-link">Surv</a></span><span class="op">(</span><span class="va">time</span>,<span class="va">event</span><span class="op">)</span><span class="op">~</span><span class="va">X1</span><span class="op">+</span><span class="va">X8</span>,data<span class="op">=</span><span class="va">testSurv</span>,conf.int<span class="op">=</span><span class="cn">FALSE</span>,times<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">5</span>,<span class="fl">8</span><span class="op">)</span><span class="op">)</span> </span></span>
+<span class="r-in"><span><span class="co">## Use GLMnet to estimate censoring weights</span></span></span>
+<span class="r-in"><span><span class="va">z</span><span class="op">=</span><span class="fu">Score</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="st">"Cox(X1+X2+X7+X9)"</span><span class="op">=</span><span class="va">cox1</span>,<span class="st">"Cox(X3+X5+X6)"</span><span class="op">=</span><span class="va">cox2</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>         formula<span class="op">=</span><span class="fu"><a href="https://rdrr.io/pkg/survival/man/Surv.html" class="external-link">Surv</a></span><span class="op">(</span><span class="va">time</span>,<span class="va">event</span><span class="op">)</span><span class="op">~</span><span class="va">X1</span><span class="op">+</span><span class="va">X8</span>,cens.model <span class="op">=</span> <span class="st">"GLMnet"</span>,data<span class="op">=</span><span class="va">testSurv</span>,</span></span>
+<span class="r-in"><span>         conf.int<span class="op">=</span><span class="cn">FALSE</span>,times<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">5</span>,<span class="fl">8</span><span class="op">)</span><span class="op">)</span> </span></span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>For this model, we can't calculate the IF of the Survival function of the censoring distribution. </span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span>  Therefore, force conservative = TRUE</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>Using other models (than Cox) for getting the censoring weights is under construction.  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Fitting censoring model to data ...</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Loading required namespace: glmnet</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> done!</span>
+<span class="r-in"><span><span class="co">## Use hal9001 to estimate censoring weights</span></span></span>
+<span class="r-in"><span><span class="va">w</span><span class="op">=</span><span class="fu">Score</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="st">"Cox(X1+X2+X7+X9)"</span><span class="op">=</span><span class="va">cox1</span>,<span class="st">"Cox(X3+X5+X6)"</span><span class="op">=</span><span class="va">cox2</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>         formula<span class="op">=</span><span class="fu"><a href="https://rdrr.io/pkg/survival/man/Surv.html" class="external-link">Surv</a></span><span class="op">(</span><span class="va">time</span>,<span class="va">event</span><span class="op">)</span><span class="op">~</span><span class="va">X1</span><span class="op">+</span><span class="va">X8</span>,cens.model <span class="op">=</span> <span class="st">"Hal9001"</span>,data<span class="op">=</span><span class="va">testSurv</span>,</span></span>
+<span class="r-in"><span>         conf.int<span class="op">=</span><span class="cn">FALSE</span>,times<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">5</span>,<span class="fl">8</span><span class="op">)</span><span class="op">)</span> </span></span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>For this model, we can't calculate the IF of the Survival function of the censoring distribution. </span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span>  Therefore, force conservative = TRUE</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>Using other models (than Cox) for getting the censoring weights is under construction.  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Fitting censoring model to data ...</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Loading required namespace: hal9001</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>from glmnet C++ code (error code -48); Convergence for 48th lambda value not reached after maxit=100000 iterations; solutions for larger lambdas returned</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>from glmnet C++ code (error code -50); Convergence for 50th lambda value not reached after maxit=100000 iterations; solutions for larger lambdas returned</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>from glmnet C++ code (error code -46); Convergence for 46th lambda value not reached after maxit=100000 iterations; solutions for larger lambdas returned</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>from glmnet C++ code (error code -53); Convergence for 53th lambda value not reached after maxit=100000 iterations; solutions for larger lambdas returned</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>from glmnet C++ code (error code -64); Convergence for 64th lambda value not reached after maxit=100000 iterations; solutions for larger lambdas returned</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>from glmnet C++ code (error code -57); Convergence for 57th lambda value not reached after maxit=100000 iterations; solutions for larger lambdas returned</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>from glmnet C++ code (error code -50); Convergence for 50th lambda value not reached after maxit=100000 iterations; solutions for larger lambdas returned</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>from glmnet C++ code (error code -50); Convergence for 50th lambda value not reached after maxit=100000 iterations; solutions for larger lambdas returned</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>from glmnet C++ code (error code -47); Convergence for 47th lambda value not reached after maxit=100000 iterations; solutions for larger lambdas returned</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>from glmnet C++ code (error code -54); Convergence for 54th lambda value not reached after maxit=100000 iterations; solutions for larger lambdas returned</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>from glmnet C++ code (error code -48); Convergence for 48th lambda value not reached after maxit=100000 iterations; solutions for larger lambdas returned</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> done!</span>
+<span class="r-in"><span><span class="va">x</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Metric AUC:</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Results by model:</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>               model times  AUC</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1: Cox(X1+X2+X7+X9)     5 65.9</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2: Cox(X1+X2+X7+X9)     8 69.3</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3:    Cox(X3+X5+X6)     5 74.3</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 4:    Cox(X3+X5+X6)     8 77.5</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Results of model comparisons:</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    times         model        reference delta.AUC</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1:     5 Cox(X3+X5+X6) Cox(X1+X2+X7+X9)       8.4</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2:     8 Cox(X3+X5+X6) Cox(X1+X2+X7+X9)       8.2</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> NOTE: Values are multiplied by 100 and given in %.</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> NOTE: The higher AUC the better.</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Metric Brier:</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Results by model:</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>               model times Brier</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1:       Null model     5  23.2</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2:       Null model     8  24.4</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3: Cox(X1+X2+X7+X9)     5  22.6</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 4: Cox(X1+X2+X7+X9)     8  22.7</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 5:    Cox(X3+X5+X6)     5  22.0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 6:    Cox(X3+X5+X6)     8  20.0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Results of model comparisons:</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    times            model        reference delta.Brier</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1:     5 Cox(X1+X2+X7+X9)       Null model        -0.6</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2:     5    Cox(X3+X5+X6)       Null model        -1.2</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3:     5    Cox(X3+X5+X6) Cox(X1+X2+X7+X9)        -0.6</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 4:     8 Cox(X1+X2+X7+X9)       Null model        -1.6</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 5:     8    Cox(X3+X5+X6)       Null model        -4.4</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 6:     8    Cox(X3+X5+X6) Cox(X1+X2+X7+X9)        -2.8</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> NOTE: Values are multiplied by 100 and given in %.</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> NOTE: The lower Brier the better.</span>
+<span class="r-in"><span><span class="va">y</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Metric AUC:</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Results by model:</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>               model times  AUC</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1: Cox(X1+X2+X7+X9)     5 65.4</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2: Cox(X1+X2+X7+X9)     8 70.1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3:    Cox(X3+X5+X6)     5 74.4</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 4:    Cox(X3+X5+X6)     8 76.1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Results of model comparisons:</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    times         model        reference delta.AUC</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1:     5 Cox(X3+X5+X6) Cox(X1+X2+X7+X9)       9.0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2:     8 Cox(X3+X5+X6) Cox(X1+X2+X7+X9)       6.1</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> NOTE: Values are multiplied by 100 and given in %.</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> NOTE: The higher AUC the better.</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Metric Brier:</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Results by model:</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>               model times Brier</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1:       Null model     5  23.1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2:       Null model     8  23.8</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3: Cox(X1+X2+X7+X9)     5  22.8</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 4: Cox(X1+X2+X7+X9)     8  21.9</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 5:    Cox(X3+X5+X6)     5  21.8</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 6:    Cox(X3+X5+X6)     8  20.4</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Results of model comparisons:</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    times            model        reference delta.Brier</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1:     5 Cox(X1+X2+X7+X9)       Null model        -0.3</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2:     5    Cox(X3+X5+X6)       Null model        -1.3</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3:     5    Cox(X3+X5+X6) Cox(X1+X2+X7+X9)        -1.0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 4:     8 Cox(X1+X2+X7+X9)       Null model        -1.9</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 5:     8    Cox(X3+X5+X6)       Null model        -3.4</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 6:     8    Cox(X3+X5+X6) Cox(X1+X2+X7+X9)        -1.5</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> NOTE: Values are multiplied by 100 and given in %.</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> NOTE: The lower Brier the better.</span>
+<span class="r-in"><span><span class="va">z</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Metric AUC:</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Results by model:</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>               model times  AUC</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1: Cox(X1+X2+X7+X9)     5 65.9</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2: Cox(X1+X2+X7+X9)     8 69.3</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3:    Cox(X3+X5+X6)     5 74.3</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 4:    Cox(X3+X5+X6)     8 77.6</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Results of model comparisons:</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    times         model        reference delta.AUC</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1:     5 Cox(X3+X5+X6) Cox(X1+X2+X7+X9)       8.4</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2:     8 Cox(X3+X5+X6) Cox(X1+X2+X7+X9)       8.3</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> NOTE: Values are multiplied by 100 and given in %.</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> NOTE: The higher AUC the better.</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Metric Brier:</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Results by model:</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>               model times Brier</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1:       Null model     5  23.1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2:       Null model     8  24.0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3: Cox(X1+X2+X7+X9)     5  22.6</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 4: Cox(X1+X2+X7+X9)     8  22.4</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 5:    Cox(X3+X5+X6)     5  21.9</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 6:    Cox(X3+X5+X6)     8  19.7</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Results of model comparisons:</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    times            model        reference delta.Brier</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1:     5 Cox(X1+X2+X7+X9)       Null model        -0.6</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2:     5    Cox(X3+X5+X6)       Null model        -1.2</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3:     5    Cox(X3+X5+X6) Cox(X1+X2+X7+X9)        -0.6</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 4:     8 Cox(X1+X2+X7+X9)       Null model        -1.6</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 5:     8    Cox(X3+X5+X6)       Null model        -4.4</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 6:     8    Cox(X3+X5+X6) Cox(X1+X2+X7+X9)        -2.8</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> NOTE: Values are multiplied by 100 and given in %.</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> NOTE: The lower Brier the better.</span>
+<span class="r-in"><span><span class="va">w</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Metric AUC:</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Results by model:</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>               model times  AUC</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1: Cox(X1+X2+X7+X9)     5 65.9</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2: Cox(X1+X2+X7+X9)     8 69.3</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3:    Cox(X3+X5+X6)     5 74.3</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 4:    Cox(X3+X5+X6)     8 77.6</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Results of model comparisons:</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    times         model        reference delta.AUC</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1:     5 Cox(X3+X5+X6) Cox(X1+X2+X7+X9)       8.4</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2:     8 Cox(X3+X5+X6) Cox(X1+X2+X7+X9)       8.3</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> NOTE: Values are multiplied by 100 and given in %.</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> NOTE: The higher AUC the better.</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Metric Brier:</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Results by model:</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>               model times Brier</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1:       Null model     5  23.1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2:       Null model     8  24.0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3: Cox(X1+X2+X7+X9)     5  22.6</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 4: Cox(X1+X2+X7+X9)     8  22.4</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 5:    Cox(X3+X5+X6)     5  21.9</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 6:    Cox(X3+X5+X6)     8  19.7</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Results of model comparisons:</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    times            model        reference delta.Brier</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1:     5 Cox(X1+X2+X7+X9)       Null model        -0.6</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2:     5    Cox(X3+X5+X6)       Null model        -1.2</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3:     5    Cox(X3+X5+X6) Cox(X1+X2+X7+X9)        -0.6</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 4:     8 Cox(X1+X2+X7+X9)       Null model        -1.6</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 5:     8    Cox(X3+X5+X6)       Null model        -4.4</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 6:     8    Cox(X3+X5+X6) Cox(X1+X2+X7+X9)        -2.8</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> NOTE: Values are multiplied by 100 and given in %.</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> NOTE: The lower Brier the better.</span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="cn">FALSE</span><span class="op">)</span> <span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/therneau/survival" class="external-link">survival</a></span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://hbiostat.org/R/rms/" class="external-link">rms</a></span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va">prodlim</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">18</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">trainSurv</span> <span class="op">&lt;-</span> <span class="fu"><a href="sampleData.html">sampleData</a></span><span class="op">(</span><span class="fl">100</span>,outcome<span class="op">=</span><span class="st">"survival"</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">testSurv</span> <span class="op">&lt;-</span> <span class="fu"><a href="sampleData.html">sampleData</a></span><span class="op">(</span><span class="fl">40</span>,outcome<span class="op">=</span><span class="st">"survival"</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">cox1</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/pkg/survival/man/coxph.html" class="external-link">coxph</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/survival/man/Surv.html" class="external-link">Surv</a></span><span class="op">(</span><span class="va">time</span>,<span class="va">event</span><span class="op">)</span><span class="op">~</span><span class="va">X1</span><span class="op">+</span><span class="va">X2</span><span class="op">+</span><span class="va">X7</span><span class="op">+</span><span class="va">X9</span>,data<span class="op">=</span><span class="va">trainSurv</span>, y<span class="op">=</span><span class="cn">TRUE</span>, x <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">cox2</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/pkg/survival/man/coxph.html" class="external-link">coxph</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/survival/man/Surv.html" class="external-link">Surv</a></span><span class="op">(</span><span class="va">time</span>,<span class="va">event</span><span class="op">)</span><span class="op">~</span><span class="va">X3</span><span class="op">+</span><span class="va">X5</span><span class="op">+</span><span class="va">X6</span>,data<span class="op">=</span><span class="va">trainSurv</span>, y<span class="op">=</span><span class="cn">TRUE</span>, x <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">xs</span><span class="op">=</span><span class="fu">Score</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="st">"Cox(X1+X2+X7+X9)"</span><span class="op">=</span><span class="va">cox1</span>,<span class="st">"Cox(X3+X5+X6)"</span><span class="op">=</span><span class="va">cox2</span><span class="op">)</span>,</span></span>
 <span class="r-in"><span>         formula<span class="op">=</span><span class="fu"><a href="https://rdrr.io/pkg/survival/man/Surv.html" class="external-link">Surv</a></span><span class="op">(</span><span class="va">time</span>,<span class="va">event</span><span class="op">)</span><span class="op">~</span><span class="fl">1</span>,data<span class="op">=</span><span class="va">testSurv</span>,conf.int<span class="op">=</span><span class="cn">FALSE</span>,times<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">5</span>,<span class="fl">8</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">xs</span></span></span>
@@ -611,7 +837,6 @@ and Prognostic Research, 2(1):7, 2018.</p>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> NOTE: Values are multiplied by 100 and given in %.</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> NOTE: The lower Brier the better.</span>
-<span class="r-in"><span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Integrated Brier score</span></span></span>
 <span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="cn">FALSE</span><span class="op">)</span> <span class="op">{</span></span></span>
