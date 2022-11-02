@@ -39,7 +39,6 @@ getInfluenceCurve.AUC.cox <- function(t,time,event, WTi, Wt, risk, ID, MC, nth.t
   weights.controls <- 1/Wt * controls.index1  + 1/WTi * controls.index2
   w.cases <-weights.cases[cases.index]
   w.controls <- weights.controls[controls.index]
-  weightMatrix <- outer(w.cases, w.controls, "*")
   Phi <- (1/n^2)*sum(w.cases)*sum(w.controls)
   n.cases <- sum(cases.index)
   n.controls <- sum(controls.index)
@@ -47,15 +46,7 @@ getInfluenceCurve.AUC.cox <- function(t,time,event, WTi, Wt, risk, ID, MC, nth.t
   risk.controls <- risk[controls.index]
   ic0Case <- rep(0,n.cases)
   ic0Control <- rep(0,n.controls)
-  for (i in 1:n.controls){
-    ic0Case <- ic0Case + (1*(risk.cases > risk.controls[i])+0.5*1*(risk.cases == risk.controls[i]))*w.cases*w.controls[i]
-  }
-  for (i in 1:n.cases){
-    ic0Control <- ic0Control + (1*(risk.cases[i] > risk.controls)+0.5*1*(risk.cases[i] == risk.controls))*w.cases[i]*w.controls
-  }
-  # auc <- AUCijFun(risk.cases,risk.controls)
-  # auc <- auc*weightMatrix
-  # auc[is.na(auc)] <- 0
+  calculateIC0CaseControl(ic0Case,ic0Control,risk.cases,risk.controls,w.cases,w.controls)
   nu1tauPm <- (1/n^2)*sum(ic0Case)
   aucLPO <- nu1tauPm*(1/Phi)
   # ic0Case <- rowSums(auc)
@@ -97,7 +88,6 @@ getInfluenceCurve.AUC.conservative <- function(t,time,event, WTi, Wt, risk, ID){
   weights.controls <- 1/Wt * controls.index1  + 1/WTi * controls.index2
   w.cases <-weights.cases[cases.index]
   w.controls <- weights.controls[controls.index]
-  weightMatrix <- outer(w.cases, w.controls, "*")
   Phi <- (1/n^2)*sum(w.cases)*sum(w.controls)
   n.cases <- sum(cases.index)
   n.controls <- sum(controls.index)
@@ -105,15 +95,7 @@ getInfluenceCurve.AUC.conservative <- function(t,time,event, WTi, Wt, risk, ID){
   risk.controls <- risk[controls.index]
   ic0Case <- rep(0,n.cases)
   ic0Control <- rep(0,n.controls)
-  for (i in 1:n.controls){
-    ic0Case <- ic0Case + (1*(risk.cases > risk.controls[i])+0.5*1*(risk.cases == risk.controls[i]))*w.cases*w.controls[i]
-  }
-  for (i in 1:n.cases){
-    ic0Control <- ic0Control + (1*(risk.cases[i] > risk.controls)+0.5*1*(risk.cases[i] == risk.controls))*w.cases[i]*w.controls
-  }
-  # auc <- AUCijFun(risk.cases,risk.controls)
-  # auc <- auc*weightMatrix
-  # auc[is.na(auc)] <- 0
+  calculateIC0CaseControl(ic0Case,ic0Control,risk.cases,risk.controls,w.cases,w.controls)
   nu1tauPm <- (1/n^2)*sum(ic0Case)
   aucLPO <- nu1tauPm*(1/Phi)
   # ic0Case <- rowSums(auc)

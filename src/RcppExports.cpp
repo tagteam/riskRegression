@@ -205,6 +205,21 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// calculateIC0CaseControl
+void calculateIC0CaseControl(NumericVector ic0Case, NumericVector ic0Control, NumericVector riskCases, NumericVector riskControls, NumericVector wCases, NumericVector wControls);
+RcppExport SEXP _riskRegression_calculateIC0CaseControl(SEXP ic0CaseSEXP, SEXP ic0ControlSEXP, SEXP riskCasesSEXP, SEXP riskControlsSEXP, SEXP wCasesSEXP, SEXP wControlsSEXP) {
+BEGIN_RCPP
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< NumericVector >::type ic0Case(ic0CaseSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type ic0Control(ic0ControlSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type riskCases(riskCasesSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type riskControls(riskControlsSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type wCases(wCasesSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type wControls(wControlsSEXP);
+    calculateIC0CaseControl(ic0Case, ic0Control, riskCases, riskControls, wCases, wControls);
+    return R_NilValue;
+END_RCPP
+}
 // colCumSum
 NumericMatrix colCumSum(NumericMatrix x);
 RcppExport SEXP _riskRegression_colCumSum(SEXP xSEXP) {
@@ -589,6 +604,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_riskRegression_calcSeMinimalCox_cpp", (DL_FUNC) &_riskRegression_calcSeMinimalCox_cpp, 33},
     {"_riskRegression_calcAIFsurv_cpp", (DL_FUNC) &_riskRegression_calcAIFsurv_cpp, 16},
     {"_riskRegression_calculateDelongCovarianceFast", (DL_FUNC) &_riskRegression_calculateDelongCovarianceFast, 2},
+    {"_riskRegression_calculateIC0CaseControl", (DL_FUNC) &_riskRegression_calculateIC0CaseControl, 6},
     {"_riskRegression_colCumSum", (DL_FUNC) &_riskRegression_colCumSum, 1},
     {"_riskRegression_colCumProd", (DL_FUNC) &_riskRegression_colCumProd, 1},
     {"_riskRegression_colSumsCrossprod", (DL_FUNC) &_riskRegression_colSumsCrossprod, 3},

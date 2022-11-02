@@ -46,6 +46,10 @@ calculateDelongCovarianceFast <- function(Xs, Ys) {
     .Call(`_riskRegression_calculateDelongCovarianceFast`, Xs, Ys)
 }
 
+calculateIC0CaseControl <- function(ic0Case, ic0Control, riskCases, riskControls, wCases, wControls) {
+    invisible(.Call(`_riskRegression_calculateIC0CaseControl`, ic0Case, ic0Control, riskCases, riskControls, wCases, wControls))
+}
+
 #' Apply cumsum in each column 
 #'
 #' @description Fast computation of apply(x,2,cumsum)
