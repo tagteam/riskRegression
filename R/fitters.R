@@ -43,7 +43,7 @@ Hal9001 <- function(formula,data,lambda=NULL,...){
 #' @param data The data on which to fit the model. 
 #' @param lambda The tuning parameters for GLMnet. If set to NULL, then it the parameters are chosen for you.
 #' @param cv Whether to use cross-validation or not. Default is TRUE.
-#' @param alpha The elasticnet mixing parameter - is not used by cross-validation. See the ?glmnet for more details.
+#' @param alpha The elasticnet mixing parameter. See the ?glmnet for more details.
 #' @param nfolds Number of folds for cross-validation. Default is 10.
 #' @param type.measure loss to use for cross-validation. Default is deviance.
 #' @param \dots Additional arguments that are passed on to the glmnet.
@@ -62,10 +62,10 @@ GLMnet <- function(formula,data,lambda=NULL, cv=TRUE,alpha = 1,nfolds = 10, type
     bl_obj[,strata.num:=0]
     data.table::setorder(bl_obj, strata.num,stop,start,-status)
     if (!cv){
-      fit <- glmnet::glmnet(x=EHF$design,y=EHF$event.history, lambda=lambda, alpha= alpha,family="cox")
+      fit <- glmnet::glmnet(x=EHF$design,y=EHF$event.history, lambda=lambda, alpha= alpha,family="cox", ...)
     }
     else {
-      fit <- glmnet::cv.glmnet(x=EHF$design,y=EHF$event.history, lambda=lambda,nfolds=nfolds,type.measure = "deviance", family="cox")
+      fit <- glmnet::cv.glmnet(x=EHF$design,y=EHF$event.history, lambda=lambda,nfolds=nfolds,type.measure = type.measure, alpha=alpha,family="cox",...)
       lambda <- fit$lambda
     }
   }
@@ -74,10 +74,10 @@ GLMnet <- function(formula,data,lambda=NULL, cv=TRUE,alpha = 1,nfolds = 10, type
     y  <- data[[tt[1]]]
     x <- model.matrix(formula, data=data)
     if (!cv){
-      fit <- glmnet::glmnet(x=x,y=y, lambda=lambda,alpha=alpha,family="binomial")
+      fit <- glmnet::glmnet(x=x,y=y, lambda=lambda,alpha=alpha,family="binomial",...)
     }
     else {
-      fit <- glmnet::cv.glmnet(x=x,y=y, lambda=lambda,nfolds=nfolds,type.measure =type.measure, family="binomial")
+      fit <- glmnet::cv.glmnet(x=x,y=y, lambda=lambda,nfolds=nfolds,type.measure =type.measure, alpha=alpha, family="binomial",...)
       lambda <- fit$lambda
     }
   }

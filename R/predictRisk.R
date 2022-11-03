@@ -1386,7 +1386,7 @@ predictRisk.Hal9001 <- function(object,
                                       cause = 1,
                                       Efron = TRUE)
     hal_Surv <- exp(-hal_pred%o%L0$cumhazard)
-    where <- sindex(jump.times=info$stop,eval.times=times)
+    where <- sindex(jump.times=unique(info$stop),eval.times=times)
     p <- cbind(0,1-hal_Surv)[,1+where]
     if (NROW(p) != NROW(newdata) || NCOL(p) != length(times)) {
         stop(paste("\nPrediction matrix has wrong dimensions:\nRequested newdata x times: ", NROW(newdata), " x ", length(times), "\nProvided prediction matrix: ", NROW(p), " x ", NCOL(p), "\n\n", sep = ""))
@@ -1472,7 +1472,7 @@ predictRisk.GLMnet <- function(object,newdata,times,...) {
                                       cause = 1,
                                       Efron = TRUE)
     coxnetSurv <- exp(-coxnet_pred%o%L0$cumhazard)
-    where <- sindex(jump.times=info$stop,eval.times=times)
+    where <- sindex(jump.times=unique(info$stop),eval.times=times)
     p <- cbind(0,1-coxnetSurv)[,1+where]
     if (NROW(p) != NROW(newdata) || NCOL(p) != length(times)) {
       stop(paste("\nPrediction matrix has wrong dimensions:\nRequested newdata x times: ", NROW(newdata), " x ", length(times), "\nProvided prediction matrix: ", NROW(p), " x ", NCOL(p), "\n\n", sep = ""))

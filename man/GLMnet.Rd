@@ -24,7 +24,7 @@ GLMnet(
 
 \item{cv}{Whether to use cross-validation or not. Default is TRUE.}
 
-\item{alpha}{The elasticnet mixing parameter - is not used by cross-validation. See the ?glmnet for more details.}
+\item{alpha}{The elasticnet mixing parameter. See the ?glmnet for more details.}
 
 \item{nfolds}{Number of folds for cross-validation. Default is 10.}
 
