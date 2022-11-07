@@ -112,9 +112,9 @@ $$
 $$
 Here we used IPCW with $W_\tau(z; G) = \frac{I(t \leq \tau, \delta = 1)}{G(t-|x)} + \frac{I(t \leq \tau, \delta=2)}{G(t-|x)} +  \frac{I(t > \tau)}{G(\tau |x)}$.
 
-In the situation with cross-validation, it will be of interest to estimate $\mathbb{E}_{D_m}[\text{Brier}_{R, D_m}]$ or $\mathbb{E}_{D_m}[\text{Brier}_{R, D_m, \tau}]$, i.e. the expected performance of the model over all data sets of size $m$. 
+In the situation with cross-validation, it will be of interest to estimate $\mathbb{E}_{D_m}[\text{Brier}_{R, D_m}]$ or $\mathbb{E}_{D_m}[\text{Brier}_{R, D_m, \tau}]$, i.e. the expected performance of the model over all training data sets of size $m$. 
 
-In the below sections, we will suggest some estimators of the Brier score and their asymptotic variances (by using influence functions). Also, we will calculate the efficient influence function.
+In the below sections, we will suggest some estimators of the Brier score and their asymptotic variances (by using influence functions). Also, we will calculate the efficient influence function for the Brier score.
 
 ## Estimators of the Brier score
 When we are dealing with the Brier score for binary data, we can consider the Brier score as a functional of the probability measure $P$. Plugging in the empirical measure $\mathbb{P}_n$ instead of $P$, we get
@@ -125,7 +125,7 @@ By the functional delta method, one can derive the influence function of the abo
 $$
 \text{IF}_{\widehat{\text{Brier}}_{R, D_m}}(Y_i,X_i) = (Y_i-R (D_m)(X_i))^2 - \text{Brier}_{R, D_m}
 $$
-This is also the efficient influence function (because the estimator is fully nonparametric). One can estimate this consistently by
+This is also the efficient influence function. One can estimate this consistently by
 $$
 \hat{\text{IF}}_{\widehat{\text{Brier}}_{R, D_m}}(Y_i,X_i) = (Y_i-R(D_m)(X_i))^2 - \widehat{\text{Brier}}_{R, D_m}
 $$
@@ -148,9 +148,9 @@ $$
 &+  \frac{I(t > \tau)}{G(\tau)}\text{IF}_{\hat{\Lambda}_C}(\tau)(\tilde{T}_i, \Delta_i)
 \end{aligned}
 $$
-where $\text{IF}_{\hat{\Lambda}_C}(t)$ is the influence function of the cumulative hazard at time $t$ of the Kaplan-Meier estimator of the censoring. We can estimate the influence function of the estimator, by plugging in $\hat{G}_\text{KM}$ for $G$, $\hat{\text{IF}}_{\hat{\Lambda}_C}(t)(\tilde{T}_i, \Delta_i)$ for $\text{IF}_{\hat{\Lambda}_C}(t)(\tilde{T}_i, \Delta_i)$ and $\mathbb{P}_n$ for $P$ and of course, the Brier score with this estimator.
+where $\text{IF}_{\hat{\Lambda}_C}(t)$ is the influence function of the cumulative hazard of the censoring at time $t$ of the Kaplan-Meier estimator of the censoring. We can estimate the influence function of the estimator, by plugging in $\hat{G}_\text{KM}$ for $G$, $\hat{\text{IF}}_{\hat{\Lambda}_C}(t)(\tilde{T}_i, \Delta_i)$ for $\text{IF}_{\hat{\Lambda}_C}(t)(\tilde{T}_i, \Delta_i)$ and $\mathbb{P}_n$ for $P$ and of course, the Brier score with this estimator.
 
-In a similar manner, we can also derive the influence function, when we instead try to estimate $G$ by a Cox model. Then,
+In a similar manner, we can also derive the influence function, when we instead try to estimate $G$ by a Cox model. Then the estimator is
 $$
 \begin{aligned}
 \widecheck{\text{Brier}}_{R, D_m, \tau} =  \int (I(t \leq \tau, d= 1)-R(D_m)(x))^2 W_\tau(z; \hat{G}_{\text{Cox}}) \mathbb{P}_n(dz) = \frac{1}{n} \sum_{i=1}^n (I(\tilde{T}_i \leq \tau, \Delta_i = 1)-R_{\tau}(D_m)(X_i))^2 W_\tau(Z_i; \hat{G}_{\text{Cox}})
@@ -183,7 +183,7 @@ $$
 &+  \frac{I(t > \tau)}{\hat{G}_{\text{Cox}}(\tau | x)}\hat{\text{IF}}_{\hat{\Lambda}_C}(\tau, x)(\tilde{T}_i, \Delta_i, X_i)
 \end{aligned}
 $$
-Here is $\hat{\text{IF}}_{\hat{\Lambda}_C}(t ,x)$ is the estimated influence function of the cumulative hazard when estimated by a Cox regression at time $t$ given covariate $x$.
+Here is $\hat{\text{IF}}_{\hat{\Lambda}_C}(t ,x)$ is the estimated influence function of the cumulative hazard of the censoring when estimated by a Cox regression at time $t$ given covariate $x$.
 
 ## Calculation of the efficient influence function for event type data
 Taking the Gateaux derivative of the Brier score written as a functional of $P$ and $G$ yields,
@@ -204,15 +204,15 @@ Here we have that
 $$
 \text{IF}_{\Lambda_C}(t ,x)(\tilde{T}_i, \Delta_i, X_i) = \frac{\mathbbm{1}_{\{\tilde{T_i} \leq t, \Delta_i = 0\}} \delta_{X_i}(x)}{G(\tilde{T_i}|X_i)S(\tilde{T_i}|X_i)} -\int_0^{\tilde{T}_i \wedge t} \frac{ \delta_{Z_i}(z)dP(s,0 | X_i)}{G(s|X_i)^2S(s|X_i)^2}
 $$
-which is the efficient influence function of the cumulative hazard of the censoring. This is in general not a proper function of $x$. However, when both the outcome and the censoring does not depend on the covariates, one can see that this influence function coincides with the one for Kaplan-Meier censoring. In general though, our estimators are not efficient. Using the properties of the dirac measure yield that,
+which is the efficient influence function of the cumulative hazard of the censoring. This is in general not a proper function of $x$. However, when both the outcome and the censoring does not depend on the covariates, one can see that the efficient influence function of the Brier score coincides with the estimator of the Brier when we use Kaplan-Meier censoring. In general though, our estimators are not efficient. Using the properties of the dirac measure yield that the last term in the EIF is:
 \begin{align*}
 &\int I(t > \tau)R_\tau(D_m)(x) ^2 \frac{\text{IF}_{\Lambda_C}(\tau ,x)(\tilde{T}_i, \Delta_i, X_i)}{G(\tau|x)}P(dt,dx) + \int I(t \leq \tau)(1-R_\tau(D_m)(x))^2 \frac{\text{IF}_{\Lambda_C}(t- ,x)(\tilde{T}_i, \Delta_i, X_i)}{G(t-|x)}P(dt,1,dx) \\ &+ \int I(t \leq \tau)R_\tau(D_m)(x) ^2 \frac{\text{IF}_{\Lambda_C}(t- ,x)(\tilde{T}_i, \Delta_i, X_i)}{G(t-|x)}P(dt,2,dx) \\
 &= R_\tau(D_m)(X_i)^2 S(\tau | X_i)\left(\frac{I(\tilde{T}_i \leq \tau, \Delta_i = 0)}{G(\tilde{T}_i|X_i)S(\tilde{T}_i|X_i)}-\int_0^{\tilde{T}_i \wedge \tau} \frac{1}{G(s|X_i)^2S(s|X_i)^2}P(ds,0|X_i)\right) \\
-&+ (1-R(\tau|X_i))^2 \left(\frac{I(\tilde{T}_i \leq \tau, \Delta_i = 0)}{G(\tilde{T}_i|X_i)S(\tilde{T}_i|X_i)}(F_1(\tau|X_i)-F_1(\tilde{T}_i|X_i))-\int_0^{\tilde{T}_i \wedge \tau} \frac{(F_1(\tau|X_i)-F_1(s|X_i))}{G(s|X_i)^2S(s|X_i)^2}P(ds,0|X_i)\right) \\
-&+ R(\tau|X_i)^2 \left(\frac{I(\tilde{T}_i \leq \tau, \Delta_i = 0)}{G(\tilde{T}_i|X_i)S(\tilde{T}_i|X_i)}(F_2(\tau|X_i)-F_2(\tilde{T}_i|X_i))-\int_0^{\tilde{T}_i \wedge \tau} \frac{(F_2(\tau|X_i)-F_2(s|X_i))}{G(s|X_i)^2S(s|X_i)^2}P(ds,0|X_i)\right) \\
+&+ (1-R_\tau(D_m)(X_i))^2 \left(\frac{I(\tilde{T}_i \leq \tau, \Delta_i = 0)}{G(\tilde{T}_i|X_i)S(\tilde{T}_i|X_i)}(F_1(\tau|X_i)-F_1(\tilde{T}_i|X_i))-\int_0^{\tilde{T}_i \wedge \tau} \frac{(F_1(\tau|X_i)-F_1(s|X_i))}{G(s|X_i)^2S(s|X_i)^2}P(ds,0|X_i)\right) \\
+&+ R_\tau(D_m)(X_i)^2 \left(\frac{I(\tilde{T}_i \leq \tau, \Delta_i = 0)}{G(\tilde{T}_i|X_i)S(\tilde{T}_i|X_i)}(F_2(\tau|X_i)-F_2(\tilde{T}_i|X_i))-\int_0^{\tilde{T}_i \wedge \tau} \frac{(F_2(\tau|X_i)-F_2(s|X_i))}{G(s|X_i)^2S(s|X_i)^2}P(ds,0|X_i)\right) \\
 &= R_\tau(D_m)(X_i)^2 S(\tau | X_i)\left(\frac{I(\tilde{T}_i \leq \tau, \Delta_i = 0)}{G(\tilde{T}_i|X_i)S(\tilde{T}_i|X_i)}-\int_0^{\tilde{T}_i \wedge \tau} \frac{1}{G(s|X_i)S(s|X_i)}\Lambda_C(ds|X_i)\right) \\
-&+ (1-R(\tau|X_i))^2 \left(\frac{I(\tilde{T}_i \leq \tau, \Delta_i = 0)}{G(\tilde{T}_i|X_i)S(\tilde{T}_i|X_i)}(F_1(\tau|X_i)-F_1(\tilde{T}_i|X_i))-\int_0^{\tilde{T}_i \wedge \tau} \frac{(F_1(\tau|X_i)-F_1(s|X_i))}{G(s|X_i)S(s|X_i)}\Lambda_C(ds|X_i)\right) \\
-&+ R(\tau|X_i)^2 \left(\frac{I(\tilde{T}_i \leq \tau, \Delta_i = 0)}{G(\tilde{T}_i|X_i)S(\tilde{T}_i|X_i)}(F_2(\tau|X_i)-F_2(\tilde{T}_i|X_i))-\int_0^{\tilde{T}_i \wedge \tau} \frac{(F_2(\tau|X_i)-F_2(s|X_i))}{G(s|X_i)S(s|X_i)}\Lambda_C(ds|X_i)\right) 
+&+ (1-R_\tau(D_m)(X_i))^2 \left(\frac{I(\tilde{T}_i \leq \tau, \Delta_i = 0)}{G(\tilde{T}_i|X_i)S(\tilde{T}_i|X_i)}(F_1(\tau|X_i)-F_1(\tilde{T}_i|X_i))-\int_0^{\tilde{T}_i \wedge \tau} \frac{(F_1(\tau|X_i)-F_1(s|X_i))}{G(s|X_i)S(s|X_i)}\Lambda_C(ds|X_i)\right) \\
+&+ R_\tau(D_m)(X_i)^2 \left(\frac{I(\tilde{T}_i \leq \tau, \Delta_i = 0)}{G(\tilde{T}_i|X_i)S(\tilde{T}_i|X_i)}(F_2(\tau|X_i)-F_2(\tilde{T}_i|X_i))-\int_0^{\tilde{T}_i \wedge \tau} \frac{(F_2(\tau|X_i)-F_2(s|X_i))}{G(s|X_i)S(s|X_i)}\Lambda_C(ds|X_i)\right) 
 \end{align*}
 where $\Lambda_C$ is the cumulative hazard of the censoring and $F_1$ and $F_2$ are the subdistribution functions (or risk functions) of event 1 and 2.
 
