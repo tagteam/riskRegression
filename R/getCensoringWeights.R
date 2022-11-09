@@ -40,22 +40,21 @@ getCensoringWeights <- function(formula,
                if (length(unique(wdata[["event"]])) > 2){
                    wdata[,event2 := as.numeric(event)]
                    wdata[status == 0,event2 := 0]
-                   FormulaCSC <- update(formula,"Hist(time,event2)~.")
-                   suppressWarnings(fitCSC <- CSC(formula = FormulaCSC, data = wdata))
+                   # FormulaCSC <- update(formula,"Hist(time,event2)~.")
+                   # suppressWarnings(fitCSC <- CSC(formula = FormulaCSC, data = wdata))
                    wdata[,event2 := NULL]
                }
-               else {
-                   fitCSC <- NULL
-               }
+               # else {
+               #     fitCSC <- NULL
+               # }
                # wdata[,status:=1-status]
                Y <- data[["time"]]
                status <- data[["status"]]
                ## fit Cox model for censoring times
-               args <- list(x=TRUE,y=TRUE,eps=0.000001)
+               args <- list(x=TRUE,y=TRUE,eps=0.000001,linear.predictors=TRUE)
                args$surv <- TRUE
                fit <- do.call(rms::cph,c(list(sFormula,data=wdata),args))
                # fit.time <- do.call(rms::cph,c(list(tFormula,data=wdata),args))
-               IC.data <- NULL #list(wdata=wdata,fit.time=fit.time,fit.cens=fit,fitCSC=fitCSC)
 
                ## need G(Ti-|Xi) only for i where status=1 && Ti < max(times)
                if (length(times)==1){
@@ -68,13 +67,18 @@ getCensoringWeights <- function(formula,
                # times.data.minus <- c(0,Y[-length(Y)])
                incrementsOfTime <- diff(sort(Y))
                minimumIncrement <- min(incrementsOfTime[incrementsOfTime > 0]) #need > 0 in case of ties
-               IPCW.subject.times <- as.numeric(rms::survest(fit,times=Y-minimumIncrement/2,what='parallel'))
+               IPCW.subject.times <- as.numeric(rms::survest(fit,newdata=wdata,times=Y-minimumIncrement/2,what='parallel',se.fit=FALSE)) #Y-minimumIncrement/2
                # subject.times <- Y[(((Y<=max(times))*status)==1)]
                
-               out <- list(IPCW.times=IPCW.times,IPCW.subject.times=IPCW.subject.times,method=cens.model,IC.data=IC.data)
+               out <- list(IPCW.times=IPCW.times,IPCW.subject.times=IPCW.subject.times,method=cens.model)
                if (influence.curve==TRUE){
                    ## IC is an array with dimension (nlearn, times, newdata)
                    ##                           IC_G(t,z;x_k)
+                   # IC.subject=predictCox(fit, iid = TRUE,
+                   #                     newdata = wdata,
+                   #                     times = Y-minimumIncrement/2,
+                   #                     type = "cumhazard")$cumhazard.iid*NROW(data) ## we want the influence function   survival.iid*n
+                   # 
                    IC.subject=predictCox(fit, iid = TRUE,
                                          newdata = wdata,
                                          times = Y-minimumIncrement/2,
@@ -92,14 +96,11 @@ getCensoringWeights <- function(formula,
                      for (i in 1:N){
                        if (Y[i]<=times[t.ind] && status[i] != 0){ ## min(T,C)<=t, note that (residuals==0) => (status==0)
                          # k=k+1
-                         ic.weights[i,] <- IC.subject[i,1,]
+                         #ic.weights[i,] <- IC.subject[,i,i]
+                         ic.weights[i,] <- IC.subject[,1,i]
+                         
                        }else if (Y[i] > times[t.ind]){## min(T,C)>t
-                         if (length(times) == 1){
-                           ic.weights[i,] <- IC.times[i,t.ind,]
-                         }
-                         else {
-                           ic.weights[i,] <- IC.times[i,t.ind,]
-                         }
+                         ic.weights[i,] <- IC.times[,t.ind,i]
                        }
                      }
                      IC.weights[[t.ind]] <- ic.weights
@@ -107,39 +108,79 @@ getCensoringWeights <- function(formula,
                    out <- c(out,list(IC=IC.weights))
                }
            }, "discrete"={
-             stop("Do not use discrete option.")
-             # vv <- all.vars(formula(delete.response(terms(formula))))
-             # mod.frame<-model.frame(paste0("~",paste0(paste(vv,collapse = "+"))),data=data)
-             # u.levels <- unique(mod.frame)
-             # n <- length(data$time)
-             # prob.risk <- rep(NA,n)
-             # have.same.covariate <- list()
-             # for (i in 1:nrow(u.levels)){
-             #   wheres <- rep(NA,n)
-             #   for (j in 1:n){
-             #     if (all(mod.frame[j,]==u.levels[i,])){
-             #       wheres[j] <- TRUE
-             #       
-             #     }
-             #     else {
-             #       wheres[j] <- FALSE
-             #     }
-             #   }
-             #   prob.risk[wheres] <- sum(wheres)/n
-             #   for (j in 1:n){
-             #     if (wheres[j]){
-             #       have.same.covariate[[j]] <- wheres
-             #     }
-             #   }
+             event = event2 = NULL
+             sFormula <- update(formula,"Surv(time,status == 0)~.")
+             tFormula <- update(formula,"Surv(time,status != 0)~.")
+             wdata <- copy(data)
+             if (length(unique(wdata[["event"]])) > 2){
+               wdata[,event2 := as.numeric(event)]
+               wdata[status == 0,event2 := 0]
+               # FormulaCSC <- update(formula,"Hist(time,event2)~.")
+               # suppressWarnings(fitCSC <- CSC(formula = FormulaCSC, data = wdata))
+               wdata[,event2 := NULL]
+             }
+             # else {
+             #   fitCSC <- NULL
              # }
-             # new.formula<-as.formula(paste0("Surv(time,status)",paste0("~",paste0(paste(vv,collapse = "+")))))
-             # wdata <- copy(data)
-             # fit.cens <- prodlim::prodlim(new.formula, data=wdata,reverse=TRUE)
-             # fit.time <- prodlim::prodlim(new.formula, data=wdata)
-             # IC.data <- list(Stimes=prodlim::predictSurvIndividual(fit.time,lag=0),Gtimes=prodlim::predictSurvIndividual(fit.cens,lag=0), Stau = c(1-predictRisk(fit.time,wdata,times,1)), prob.risk=prob.risk,have.same.covariate=have.same.covariate)
-             # IPCW.subject.times <- prodlim::predictSurvIndividual(fit.cens,lag=1) #computational problem with predictRisk
-             # IPCW.times <- predict(fit.cens,newdata=data,times=times,level.chaos=1,mode="matrix",type="surv")
-             # out <- list(IPCW.times=IPCW.times,IPCW.subject.times=IPCW.subject.times,method=cens.model,IC.data=IC.data)
+             vv <- all.vars(formula(delete.response(terms(formula))))
+             mod.frame<-model.frame(paste0("~",paste0(paste(vv,collapse = "+"))),data=data)
+             new.formula<-as.formula(paste0("Surv(time,status)",paste0("~",paste0(paste(vv,collapse = "+")))))
+             fit.cens <- prodlim::prodlim(new.formula, data=data,reverse=TRUE)
+             IPCW.subject.times <- prodlim::predictSurvIndividual(fit.cens,lag=1) #computational problem with predictRisk
+             IPCW.times <- predict(fit.cens,newdata=data,times=times,level.chaos=1,mode="matrix",type="surv")
+             if (influence.curve){
+               if (length(unique(data[["time"]])) != length(data[["time"]])){
+                 stop("The SEs for the Discrete does not work with ties in time (yet).")
+               }
+               incrementsOfTime <- diff(sort(data[["time"]]))
+               minimumIncrement <- min(incrementsOfTime[incrementsOfTime > 0]) #need > 0 in case of ties
+               u.levels <- unique(mod.frame)
+               Y <- data[["time"]]
+               status <- data[["status"]]
+               wheres.list <- list()
+               data.list <- list()
+               IC <- list()
+               n<-nrow(data)
+               for (i in 1:nrow(u.levels)){
+                 wheres <- NULL
+                 for (j in 1:n){
+                   if (all(mod.frame[j,]==u.levels[i,])){
+                     wheres <- c(wheres,j)
+                   }
+                 }
+                 wheres.list[[i]] <- wheres
+                 data.list[[i]] <- data[wheres,]
+                 tempdat <- data[wheres,]
+                 IC[[i]] <- IC_Nelson_Aalen_cens_time(time=tempdat$time,status=tempdat$status)/(length(wheres) / n)
+               }
+               IC.weights <- list()
+               for (t.ind in 1:length(times)){
+                 ic.weights <- matrix(0,n,n)  ## (i,j)'th entry is f_j(tilde{T}_i-;X_i)/G(tilde{T}_i|X_i) when delta_i != 0 and time_i <= tau; otherwise it is f_j(tau-;X_i)/G(tau | X_i)  
+                 for (i in 1:n){
+                   ## determine which strata observation i is in.
+                   for (j in 1:nrow(u.levels)){
+                     if (all(mod.frame[i,]==u.levels[j,])){
+                       break
+                     }
+                   }
+                   ic.temp <- rep(0,n)
+                   if (Y[i]<=times[t.ind] && status[i] != 0){ ### STUPID MISTAKE!!!!!
+                     place.in.wheres <- sindex(wheres.list[[j]],i)
+                     ic.temp[wheres.list[[j]]] <- IC[[j]][place.in.wheres,]
+                     ic.weights[i,] <- ic.temp
+                   }else if (Y[i] > times[t.ind]){## min(T,C)>t
+                     place.times <- sindex(data.list[[j]][["time"]],times[t.ind])
+                     ic.temp[wheres.list[[j]]] <- IC[[j]][place.times,]
+                     ic.weights[i,] <- ic.temp
+                   }
+                 }
+                 IC.weights[[t.ind]] <- ic.weights
+               }
+             }
+             else {
+               IC.weights <- NULL
+             }
+             out <- list(IPCW.times=IPCW.times,IPCW.subject.times=IPCW.subject.times,method=cens.model,IC=IC.weights)
            },
            {
                warning("Using other models (than Cox) for getting the censoring weights is under construction.  ")

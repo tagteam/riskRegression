@@ -532,7 +532,7 @@ Score.list <- function(object,
         }
     }
     ### 
-    if (cens.model != "cox" && cens.model != "none" && cens.model != "KaplanMeier"){
+    if (cens.model != "cox" && cens.model != "none" && cens.model != "KaplanMeier" && cens.model != "discrete"){
       if (!conservative[[1]]){
         warning("For this model, we can't calculate the IF of the Survival function of the censoring distribution. \n Therefore, force conservative = TRUE")
         conservative[[1]] <- TRUE

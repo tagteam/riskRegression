@@ -37,7 +37,7 @@ Brier.competing.risks <- function(DT,MC,se.fit,conservative,cens.model,keep.vcov
         else if (cens.model=="KaplanMeier"){
           DT[,IF.Brier := getInfluenceFunctionBrierKMCensoringUseSquared(times[1],time,residuals,status),by=list(model,times)]
         }
-        else if (cens.model == "cox"){
+        else if (cens.model == "cox" || cens.model == "discrete"){
           DT[,IF.Brier:=getInfluenceCurve.Brier(t=times[1],
                                                 time=time,
                                                 IC0,
