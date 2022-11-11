@@ -40,22 +40,28 @@ getInfluenceCurve.AUC <- function(t,time,event, WTi, Wt, risk, ID, MC, nth.times
   w.cases <-weights.cases[cases.index]
   w.controls <- weights.controls[controls.index]
   Phi <- (1/n^2)*sum(w.cases)*sum(w.controls) ## mu_(tau)(Q) in document
-  n.cases <- sum(cases.index)
-  n.controls <- sum(controls.index)
-  risk.cases <- risk[cases.index]
-  risk.controls <- risk[controls.index]
-  
-  ic0Case <- rep(0,n.cases)
-  ic0Control <- rep(0,n.controls)
-  calculateIC0CaseControl(ic0Case,ic0Control,risk.cases,risk.controls,w.cases,w.controls)
-  ## For case k icCase is W_k * sum_i I(R_k > R_i) R_i, where the sum is over controls
-  ## For control k ic0Control is W_k * sum_i I(R_i > R_k) W_i, where the sum is over cases
+  ic0Case <- rep(0,n)
+  ic0Control <- rep(0,n)
+  weights <- weights.cases+weights.controls
+  calculateIC0CaseControl(ic0Case,ic0Control,risk,cases.index,controls.index,weights)
+  ic0Case <- ic0Case[cases.index]*w.cases
+  ic0Control <- ic0Control[controls.index]*w.controls
+  ## For case k icCase is W_k * sum_i (I(R_k > R_i) + 0.5 I(R_k == R_i)) W_i, where the sum is over controls
+  ## For control k ic0Control is W_k * sum_i (I(R_i > R_k) + 0.5 I(R_k == R_i)) W_i, where the sum is over cases
   ## This was previously 
   # auc <- AUCijFun(risk.cases,risk.controls)
   # auc <- auc*weightMatrix
   # auc[is.na(auc)] <- 0
   # ic0Case <- rowSums(auc)
   # ic0Control <- colSums(auc)
+  
+  # n.cases <- sum(cases.index)
+  # n.controls <- sum(controls.index)
+  # risk.cases <- risk[cases.index]
+  # risk.controls <- risk[controls.index]
+  # ic0Case <- rep(0,n.cases)
+  # ic0Control <- rep(0,n.controls)
+  # calculateIC0CaseControl(ic0Case,ic0Control,risk.cases,risk.controls,w.cases,w.controls)
   
   ## Note that the first and fourth term in IF_nu/mu(Q) is IF.AUC0 in the below
   nu1tauPm <- (1/n^2)*sum(ic0Case)
@@ -125,7 +131,6 @@ getInfluenceCurve.Brier <- function(t,
     }
 }
 
-#NOTE: Requires cox model for censoring (and time)!
 getInfluenceCurve.Brier.covariates <- function(tau,time,risk,status,GTiminus,Brier,IC.data) {
   n <- length(time)
   IC <- rep(NA,n)

@@ -218,17 +218,17 @@ BEGIN_RCPP
 END_RCPP
 }
 // calculateIC0CaseControl
-void calculateIC0CaseControl(NumericVector ic0Case, NumericVector ic0Control, NumericVector riskCases, NumericVector riskControls, NumericVector wCases, NumericVector wControls);
-RcppExport SEXP _riskRegression_calculateIC0CaseControl(SEXP ic0CaseSEXP, SEXP ic0ControlSEXP, SEXP riskCasesSEXP, SEXP riskControlsSEXP, SEXP wCasesSEXP, SEXP wControlsSEXP) {
+void calculateIC0CaseControl(NumericVector ic0Case, NumericVector ic0Control, NumericVector risk, LogicalVector isCase, LogicalVector isControl, NumericVector weight);
+RcppExport SEXP _riskRegression_calculateIC0CaseControl(SEXP ic0CaseSEXP, SEXP ic0ControlSEXP, SEXP riskSEXP, SEXP isCaseSEXP, SEXP isControlSEXP, SEXP weightSEXP) {
 BEGIN_RCPP
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< NumericVector >::type ic0Case(ic0CaseSEXP);
     Rcpp::traits::input_parameter< NumericVector >::type ic0Control(ic0ControlSEXP);
-    Rcpp::traits::input_parameter< NumericVector >::type riskCases(riskCasesSEXP);
-    Rcpp::traits::input_parameter< NumericVector >::type riskControls(riskControlsSEXP);
-    Rcpp::traits::input_parameter< NumericVector >::type wCases(wCasesSEXP);
-    Rcpp::traits::input_parameter< NumericVector >::type wControls(wControlsSEXP);
-    calculateIC0CaseControl(ic0Case, ic0Control, riskCases, riskControls, wCases, wControls);
+    Rcpp::traits::input_parameter< NumericVector >::type risk(riskSEXP);
+    Rcpp::traits::input_parameter< LogicalVector >::type isCase(isCaseSEXP);
+    Rcpp::traits::input_parameter< LogicalVector >::type isControl(isControlSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type weight(weightSEXP);
+    calculateIC0CaseControl(ic0Case, ic0Control, risk, isCase, isControl, weight);
     return R_NilValue;
 END_RCPP
 }

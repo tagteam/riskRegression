@@ -2,54 +2,56 @@
 using namespace Rcpp;
 
 // This should calculate
-// ic0Case_i = \sum_j I(R_i > R_j)*wControls_j*wCases_i where the sum is taken over controls
-// ic0Controls_i = \sum_j I(R_j > R_i)*wCases_j*wControls_i where the sum is taken over cases
+// ic0Case_i = sum_i (I(R_k > R_i) + 0.5 I(R_k == R_i)) Weights_i, where the sum is over controls and i any index
+// ic0Controls_i = \sum_j W_k * sum_i (I(R_i > R_k) + 0.5 I(R_k == R_i)) Weights_i where the sum is taken over cases and i any index
 // [[Rcpp::export]]
-void calculateIC0CaseControl(NumericVector ic0Case, NumericVector ic0Control, NumericVector riskCases, NumericVector riskControls, NumericVector wCases, NumericVector wControls) {
-  int nCases = ic0Case.size();
-  int nControls = ic0Control.size();
-  
-  for (int x = 0; x<nCases; x++){
-    // LogicalVector log1 = riskCases[x] > riskControls;
-    // LogicalVector log2 = riskCases[x] == riskControls;
-    // NumericVector vec = (as<NumericVector>(log1)+0.5*as<NumericVector>(log2))*wControls;
-    NumericVector vec(nControls);
-    for (int y=0;y < nControls;y++){
-      if (riskCases[x] > riskControls[y]){
-        vec[y] = wControls[y];
+void calculateIC0CaseControl(NumericVector ic0Case, NumericVector ic0Control, NumericVector risk, LogicalVector isCase, LogicalVector isControl, NumericVector weight){
+  int n = risk.size();
+  IntegerVector ordering(n);
+  std::iota(ordering.begin(), ordering.end(), 0);
+  std::sort(ordering.begin(), ordering.end(),
+            [&](int x, int y) { return risk[x] < risk[y]; });
+  double valCurr{}, valPrev{};
+  int i = n-1;
+  while (i >= 0){
+    int tieIter = i;
+    while (tieIter >= 0 && risk[ordering[tieIter]]==risk[ordering[i]]){
+      if (isCase[ordering[tieIter]]){
+        valCurr += weight[ordering[tieIter]]; // should set something with valPrev up here
       }
-      else if (riskCases[x] == riskControls[y]){
-        vec[y] = 0.5*wControls[y];
+      tieIter--;
+    } 
+    for (int l = i; l > tieIter;l--){
+      if (isCase[ordering[l]]){
+        ic0Control[ordering[l]] = 0.5*(valPrev+valCurr - weight[ordering[l]]);   // valPrev+0.5*(valCurr - weight[ordering[l]] - valPrev); //valPrev
+      }
+      else {
+        ic0Control[ordering[l]] = 0.5*(valPrev+valCurr); // valPrev+0.5*(valCurr-valPrev); //valPrev
       }
     }
-    ic0Case[x] = wCases[x]*sum(vec);
-    ic0Control += wCases[x]*vec;
+    i = tieIter;
+    valPrev = valCurr;
+  }
+  
+  valCurr = valPrev = 0;
+  i = 0;
+  while (i < n){
+    int tieIter = i;
+    while (tieIter < n && risk[ordering[tieIter]]==risk[ordering[i]]){
+      if (isControl[ordering[tieIter]]){
+        valCurr += weight[ordering[tieIter]];
+      }
+      tieIter++;
+    } 
+    for (int l = i; l < tieIter;l++){
+      if (isControl[ordering[l]]){
+        ic0Case[ordering[l]] = 0.5*(valPrev+valCurr - weight[ordering[l]]);
+      }
+      else {
+        ic0Case[ordering[l]] = 0.5*(valPrev+valCurr);
+      }
+    }
+    i = tieIter;
+    valPrev = valCurr;
   }
 }
-
-// older version
-// void calculateIC0CaseControl(NumericVector ic0Case, NumericVector ic0Control, NumericVector riskCases, NumericVector riskControls, NumericVector wCases, NumericVector wControls) {
-//   int nCases = ic0Case.size();
-//   int nControls = ic0Control.size();
-//   for (int i = 0; i< nControls; i++){
-//     for (int j = 0; j < nCases; j++){
-//       if (riskCases[j] > riskControls[i]){
-//         ic0Case[j] += wCases[j]*wControls[i];
-//       }
-//       else if (riskCases[j] == riskControls[i]){
-//         ic0Case[j] += 0.5*wCases[j]*wControls[i];
-//       }
-//     }
-//   }
-//   
-//   for (int i = 0; i< nCases; i++){
-//     for (int j = 0; j < nControls; j++){
-//       if (riskCases[i] > riskControls[j]){
-//         ic0Control[j] += wCases[i]*wControls[j];
-//       }
-//       else if (riskCases[i] == riskControls[j]){
-//         ic0Control[j] += 0.5*wCases[i]*wControls[j];
-//       }
-//     }
-//   }
-// }
