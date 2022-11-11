@@ -62,10 +62,6 @@ calculateDelongCovarianceFast <- function(Xs, Ys) {
     .Call(`_riskRegression_calculateDelongCovarianceFast`, Xs, Ys)
 }
 
-calculateIC0CaseControl <- function(ic0Case, ic0Control, risk, isCase, isControl, weight) {
-    invisible(.Call(`_riskRegression_calculateIC0CaseControl`, ic0Case, ic0Control, risk, isCase, isControl, weight))
-}
-
 #' Apply cumsum in each column 
 #'
 #' @description Fast computation of apply(x,2,cumsum)
@@ -127,8 +123,12 @@ sampleMaxProcess_cpp <- function(nSample, nContrast, nSim, value, iid, alternati
     .Call(`_riskRegression_sampleMaxProcess_cpp`, nSample, nContrast, nSim, value, iid, alternative, type, global)
 }
 
-getInfluenceFunctionAUCKMCensoring <- function(time, status, tau, risk, GTiminus, Gtau, auc, tiedValues) {
-    .Call(`_riskRegression_getInfluenceFunctionAUCKMCensoring`, time, status, tau, risk, GTiminus, Gtau, auc, tiedValues)
+getIC0AUC <- function(time, status, tau, risk, GTiminus, Gtau, auc) {
+    .Call(`_riskRegression_getIC0AUC`, time, status, tau, risk, GTiminus, Gtau, auc)
+}
+
+getInfluenceFunctionAUCKMCensoringTerm <- function(time, status, tau, ic0Case, ic0Controls, weights, firsthit, muCase, muControls, nu1, Gtau, auc) {
+    .Call(`_riskRegression_getInfluenceFunctionAUCKMCensoringTerm`, time, status, tau, ic0Case, ic0Controls, weights, firsthit, muCase, muControls, nu1, Gtau, auc)
 }
 
 getInfluenceFunctionAUCKMCensoringCVPart <- function(time, status, tau, GTiminus, Gtau, aucMat, nu1tauPm) {

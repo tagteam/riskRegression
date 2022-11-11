@@ -5,41 +5,19 @@
 using namespace Rcpp;
 using namespace arma;
 
-// Calculate influence function for competing risk case/survival case with Nelson-Aalen censoring.
-// Equation lines correspond to the document influenceFunctionAUC.pdf in riskRegressionStudy, see
-// https://github.com/eestet75/riskRegressionStudy/blob/master/PicsForImplementation/AUCtraintestKM.png
-// Author: Johan Sebastian Ohlendorff
+// part of IFAUC without the influence function from the censoring
+// author: Johan Sebastian Ohlendorff
 // [[Rcpp::export(rng = false)]]
-NumericVector getInfluenceFunctionAUCKMCensoring(NumericVector time,
-                                                 NumericVector status,
-                                                 double tau,
-                                                 NumericVector risk,
-                                                 NumericVector GTiminus,
-                                                 double Gtau,
-                                                 double auc,
-                                                 bool tiedValues) {
-  // check if any of the vectors have NAs and also that the vectors have the same lengths
-  checkNAs(time, GET_VARIABLE_NAME(time));
-  checkNAs(status, GET_VARIABLE_NAME(status));
-  checkNAs(tau, GET_VARIABLE_NAME(tau));
-  checkNAs(risk,GET_VARIABLE_NAME(risk));
-  checkNAs(GTiminus,GET_VARIABLE_NAME(GTiminus));
-  checkNAs(Gtau,GET_VARIABLE_NAME(Gtau));
-  checkNAs(auc, GET_VARIABLE_NAME(auc));
-  compareLengths(time,status);
-  compareLengths(status,risk); 
-  compareLengths(risk,GTiminus);
-  
-  // Thomas' code from IC of Nelson-Aalen estimator, i.e. calculate the influence function of the hazard
-  // initialize first time point t=0 with data of subject i=0
+List getIC0AUC(NumericVector time,
+                        NumericVector status,
+                        double tau,
+                        NumericVector risk,
+                        NumericVector GTiminus,
+                        NumericVector Gtau,
+                        double auc) {
   int n = time.size();
-  NumericVector ic(n);
-  arma::uvec sindex(n,fill::zeros);
-  arma::vec utime=unique(time);
-  int nu=utime.size();
-  arma::vec atrisk(nu);
-  arma::vec MC_term2(nu,fill::zeros);
-  getInfluenceFunctionKM(time,status,atrisk,MC_term2,sindex,utime);
+  NumericVector ic0(n), ic0Case(n), ic0Control(n), weights(n);
+  double muCase{}, muControls{}, nu{};
   
   // find first index such that k such that tau[k] <= tau but tau[k+1] > tau
   auto lower = std::upper_bound(time.begin(), time.end(), tau);
@@ -47,137 +25,155 @@ NumericVector getInfluenceFunctionAUCKMCensoring(NumericVector time,
   if (firsthit == -1){
     firsthit = 0;
   }
-  
-  // P(tilde{T_i} > tau)
-  double Probmu = double ((n-(firsthit+1))) / n;
-  // If ties = TRUE, there are equalities for X in the below
-  //P(X < X_i, tilde{T_i} > tau)
-  NumericVector Probnu(n);
-  // int 1*(X_i < x, t <= tau) / G(t-) dP(t,1,x) 
-  NumericVector eq1112part(n);
-  // int 1*(X_i > x, t <= tau) / G(t-) dP(t,2,x) 
-  NumericVector eq1314part(n);
-  // risk ordering, i.e. order according to risk 
+
+  // calculate weights W_t(G;Z_i) = I(status_i != 0, time <= tau) 1/G(Ti-|Xi) + I(time > tau) 1/G(Ti-|Xi) 
+  // also calculate muCase = sum_i W_t(G;Z_i) over cases and muControls = sum_i W_t(G;Z_i) over controls
+  for (int i = 0; i <= firsthit; i++){
+    if(status[i] == 1){ // case
+      weights[i] = 1.0/GTiminus[i];
+      muCase += weights[i];
+    }
+    else if (status[i] == 2){ // control
+      weights[i] = 1.0/GTiminus[i];
+      muControls += weights[i];
+    }
+  }
+  for (int i = firsthit + 1; i < n; i++){ // control
+    weights[i] = 1.0/Gtau[i];
+    muControls += weights[i];
+  }
+  double mu = muCase*muControls / (double (n*n));
+  nu = auc * mu;
+
   IntegerVector ordering(n);
   std::iota(ordering.begin(), ordering.end(), 0);
   std::sort(ordering.begin(), ordering.end(),
             [&](int x, int y) { return risk[x] < risk[y]; });
-  // efficient computation of eq1112part and eq1314part by using the ordering of risk
-  // the integrals differ if we are trying to compute the part concerning ties in risk
-  if (!tiedValues){
-    int jCurr = 0, jPrev = 0, i = 0;
-    double valCurr = 0, valPrev = 0;
-    while (i < n){
-      int tieIter = i;
-      while (tieIter < n && risk[ordering[tieIter]]==risk[ordering[i]]){
-        if (time[ordering[tieIter]] > tau){
-          jCurr++;
-        }
-        else if (time[ordering[tieIter]] <= tau && status[ordering[tieIter]] == 2){
-          valCurr += 1.0/(GTiminus[ordering[tieIter]]);
-        }
-        tieIter++;
+  double valCurr{}, valPrev{};
+  int i = n-1;
+  while (i >= 0){
+    int tieIter = i;
+    while (tieIter >= 0 && risk[ordering[tieIter]]==risk[ordering[i]]){
+      if (time[ordering[tieIter]] <= tau && status[ordering[tieIter]] == 1){
+        valCurr += weights[ordering[tieIter]]; // should set something with valPrev up here
       }
-      for (int l = i; l < tieIter;l++){
-        Probnu[ordering[l]] = ((double) jPrev)/n;
-        eq1314part[ordering[l]] = valPrev;
+      tieIter--;
+    } 
+    for (int l = i; l > tieIter;l--){
+      if (time[ordering[l]] <= tau && status[ordering[l]] == 1){
+        ic0Control[ordering[l]] = 0.5*(valPrev+valCurr - weights[ordering[l]]);   // valPrev+0.5*(valCurr - weight[ordering[l]] - valPrev); //valPrev
       }
-      i = tieIter;
-      jPrev = jCurr;
-      valPrev = valCurr;
+      else {
+        ic0Control[ordering[l]] = 0.5*(valPrev+valCurr); // valPrev+0.5*(valCurr-valPrev); //valPrev
+      }
     }
-    valCurr = valPrev = 0;
-    i = n-1;
-    while (i >= 0){
-      int tieIter = i;
-      while (tieIter >= 0 && risk[ordering[tieIter]]==risk[ordering[i]]){
-        if (time[ordering[tieIter]] <= tau && status[ordering[tieIter]] == 1){
-          valCurr += 1.0/(GTiminus[ordering[tieIter]]);
-        }
-        tieIter--;
-      } 
-      for (int l = i; l > tieIter;l--){
-        eq1112part[ordering[l]] = valPrev;
-      }
-      i = tieIter;
-      valPrev = valCurr;
-    }
+    i = tieIter;
+    valPrev = valCurr;
   }
-  else {
-    int i = 0;
-    while (i < n){
-      int jProbnu = 0;
-      double jPart1112 = 0, jPart1314 = 0;
-      int tieIter = i;
-      while (tieIter < n && risk[ordering[tieIter]]==risk[ordering[i]]){
-        if (time[ordering[tieIter]] > tau){
-          jProbnu++;
-        }
-        else if (time[ordering[tieIter]] <= tau && status[ordering[tieIter]] == 2){
-          jPart1314+=1.0/(GTiminus[ordering[tieIter]]);
-        }
-        else if (time[ordering[tieIter]] <= tau && status[ordering[tieIter]] == 1){
-          jPart1112+=1.0/(GTiminus[ordering[tieIter]]);
-        }
-        tieIter++;
-      }
-      for (int l = i; l < tieIter;l++){
-        int ownWeightProbnu = time[ordering[l]] > tau ? 1 : 0;
-        Probnu[ordering[l]] = ((double) jProbnu-ownWeightProbnu)/n;
-        double ownWeight1314 = time[ordering[l]] <= tau && status[ordering[l]] == 2 ? 1.0/(((double) n)*GTiminus[ordering[l]]) : 0;
-        eq1314part[ordering[l]] = jPart1314 - ownWeight1314;
-        double ownWeight1112 = time[ordering[l]] <= tau && status[ordering[l]] == 1 ? 1.0/(((double) n)*GTiminus[ordering[l]]) : 0;
-        eq1112part[ordering[l]] = jPart1112 - ownWeight1112;
-      }
-      i = tieIter;
-    }
-  }
-  // Rcout << "Probnu: " << Probnu << "\n\n";
-  // Rcout << "eq1314part: " << eq1314part << "\n\n";
-  // Rcout << "eq1112part: " << eq1112part << "\n\n\n";
   
-  // F_1(tau) = int 1_{t \leq tau} 1/ hat{G(t-)} dP(t,1) = Q(T_i <= tau, Delta_i = 1)
-  // F_2(tau) = int 1_{t \leq tau} 1/ hat{G(t-)} dP(t,2) = Q(T_i <= tau, Delta_i = 2)
-  double F1tau = 0, F2tau = 0, eq9term = 0;
-  for (int i = 0; i <= firsthit; i++){
-    if (status[i] == 1){
-      F1tau += 1.0/GTiminus[i];
-      eq9term += Probnu[i]/GTiminus[i];
+  valCurr = valPrev = 0;
+  i = 0;
+  while (i < n){
+    int tieIter = i;
+    while (tieIter < n && risk[ordering[tieIter]]==risk[ordering[i]]){
+      if ((time[ordering[tieIter]] <= tau && status[ordering[tieIter]] == 2) || time[ordering[tieIter]] > tau){
+        valCurr += weights[ordering[tieIter]];
+      }
+      tieIter++;
+    } 
+    for (int l = i; l < tieIter;l++){
+      if ((time[ordering[l]] <= tau && status[ordering[l]] == 2) || time[ordering[l]] > tau){
+        ic0Case[ordering[l]] = 0.5*(valPrev+valCurr - weights[ordering[l]]);
+      }
+      else {
+        ic0Case[ordering[l]] = 0.5*(valPrev+valCurr);
+      }
     }
-    else if (status[i] == 2){
-      F2tau += 1.0/GTiminus[i];
-    }
+    i = tieIter;
+    valPrev = valCurr;
   }
-  eq9term = eq9term / n;
-  F1tau = F1tau / ((double) n);
-  F2tau = F2tau / ((double) n);
+  // Rcout << "ic0Case: " << ic0Case << "\n";
+  // Rcout << "ic0Control: " << ic0Control << "\n";
   
-  double eq16term = Probmu * F1tau;
-  double mu1 = F1tau * Probmu / Gtau + F1tau*F2tau;
-  double nu1 = auc * mu1;
-  double eq10part1{}, eq12part1{},eq14part1{},eq17part1{},eq19part1{};
-  double eq10part2 = n*eq9term;
-  double eq12part2 = (nu1-1.0/(Gtau) * eq9term)*n*n;
-  double eq14part2 = eq12part2;
-  double eq17part2 = n*F1tau;
-  double eq19part2 = n*F2tau;
+  double IF0num{}, IF0den{};
+  for (int i = 0; i < n; i++){
+    if (time[i] <= tau && status[i] == 1){ // case
+      IF0num = weights[i] / (double (n)) * ic0Case[i];
+      IF0den = weights[i] / (double (n)) * muControls;
+    }
+    else if ((time[i] <= tau && status[i] == 2) || (time[i] > tau)){ // control
+      IF0num = weights[i] / (double (n)) * ic0Control[i];
+      IF0den = weights[i] / (double (n)) * muCase;
+    }
+    else {
+      IF0num = IF0den = 0;
+    }
+    ic0[i] = (IF0num * mu - IF0den * nu)/(mu*mu);
+  }
+  return(List::create(Named("ic0") = ic0,
+                      Named("ic0Case") = ic0Case,
+                      Named("ic0Control") = ic0Control,
+                      Named("weights") = weights,
+                      Named("muCase") = muCase,
+                      Named("muControls") = muControls,
+                      Named("nu") = nu,
+                      Named("firsthit")=firsthit));
+}
+
+// calculate the term corresponding to KM censoring
+// author: Johan Sebastian Ohlendorff
+// [[Rcpp::export(rng = false)]]
+NumericVector getInfluenceFunctionAUCKMCensoringTerm(NumericVector time,
+                                                     NumericVector status,
+                                                     double tau,
+                                                     NumericVector ic0Case,
+                                                     NumericVector ic0Controls,
+                                                     NumericVector weights,
+                                                     int firsthit,
+                                                     double muCase,
+                                                     double muControls,
+                                                     double nu1,
+                                                     double Gtau,
+                                                     double auc) {
+  // Thomas' code from IC of Nelson-Aalen estimator, i.e. calculate the influence function of the hazard
+  // initialize first time point t=0 with data of subject i=0
+  int n = time.size();
+  NumericVector icpart(n);
+  arma::uvec sindex(n,fill::zeros);
+  arma::vec utime=unique(time);
+  int nu=utime.size();
+  arma::vec atrisk(nu);
+  arma::vec MC_term2(nu,fill::zeros);
+  getInfluenceFunctionKM(time,status,atrisk,MC_term2,sindex,utime);
+  double term2numpart1{}, term2denpart1{};
+  double term2numpart2 = nu1 * (double (n*n)); //{}, term3num{}, term2denpart2{}, term3den{};
+  double term2denpart2 = muCase;
+  double term3numpart1{}, term3denpart1{};
+  double sumPartNum{};
+  for (int i = firsthit + 1; i < n; i++){ // control with time > t
+    sumPartNum += ic0Controls[i];
+  }
+  sumPartNum /= Gtau;
+  double sumPartDen = double ((n-(firsthit+1)))/Gtau;
+  double term3numpart2 = nu1 * (double (n*n)) - sumPartNum; //{}, term3num{}, term2denpart2{}, term3den{};
+  double term3denpart2 = muControls - sumPartDen;
+  double mu = muCase*muControls / (n*n);
   int tieIter = 0;
   // can do while loops together
   while ((tieIter < n) && (time[tieIter] == time[0])) {
     if ((time[tieIter] <= tau) && (status[tieIter]==1)){
-      eq10part2 -= Probnu[tieIter] / GTiminus[tieIter];
-      eq14part2 -= eq1314part[tieIter] / GTiminus[tieIter];
-      eq17part2 -= 1.0 / GTiminus[tieIter];
+      term2numpart2 -= ic0Case[tieIter] * weights[tieIter]; 
+      term2denpart2 -= weights[tieIter]; 
     }
     else if  ((time[tieIter] <= tau) && (status[tieIter]==2)){
-      eq12part2 -= eq1112part[tieIter] / GTiminus[tieIter];
-      eq19part2 -= 1.0 / GTiminus[tieIter];
+      term3numpart2 -= ic0Controls[tieIter] * weights[tieIter]; 
+      term3denpart2 -= weights[tieIter]; 
     }
     tieIter++;
   }
   
   int upperTie = tieIter-1;
-  double eq8{}, eq9{}, eq10{}, eq11{},eq12{},eq13{},eq14{}, eq15{}, eq16{},eq17{},eq18{},eq19{},eq20{},eq21{}, fihattau{},eq1721part{};
+  double term2num{}, term3num{}, term2den{}, term3den{}, fihattau{};
   for (int i = 0; i<n; i++){
     int const j = i > firsthit ? firsthit : i;
     if (utime[sindex[j]] < time[i]){
@@ -186,66 +182,45 @@ NumericVector getInfluenceFunctionAUCKMCensoring(NumericVector time,
     else {
       fihattau =  (1-(status[i] != 0))*n/atrisk[sindex[i]]- MC_term2[sindex[i]];
     }
-    eq10 = 1.0 / (Gtau*n) * (eq10part1+fihattau*eq10part2);
-    eq12 = 1.0 / (n*n) * (eq12part1+(fihattau-1)*eq12part2);
-    eq14 = 1.0 / (n*n) * (eq14part1+(fihattau-1)*eq14part2);
-    eq1721part = 1.0 / n * (eq17part1+fihattau*eq17part2);
-    eq17 = Probmu / Gtau * eq1721part;
-    eq19 = F1tau * (1.0 / n * (eq19part1+fihattau*eq19part2) - F2tau);
-    eq21 = F2tau * (eq1721part - F1tau);
-    
+    term2num = 1.0 / (n*n) * (term2numpart1+fihattau*term2numpart2); // is wrong?
+    term2den = 1.0 / (n*n) * (term2denpart1+fihattau*term2denpart2)*muControls; // ok
+    term3num = 1.0 / (n*n) * (term3numpart1+fihattau*term3numpart2+fihattau*sumPartNum); // is ok 
+    term3den = 1.0 / (n*n) * (term3denpart1+fihattau*term3denpart2+fihattau*sumPartDen)*muCase; // is ok 
+    // Rcout << term2num << "\n";
+    // Rcout << term2den<< "\n\n";
+    // Rcout << term3num<< "\n";
+    // Rcout << term3den<< "\n";
     // fast calculation of eq10 and eq17
     if (upperTie == i){
       int tieIter = i+1;
       while ((tieIter < n) && (time[tieIter] == time[i+1])) {
         if ((time[tieIter] <= tau) && (status[tieIter]==1)){
-          eq10part1 -= Probnu[tieIter] * (MC_term2[sindex[i]]) / GTiminus[tieIter];
-          eq14part1 -= eq1314part[tieIter] * (MC_term2[sindex[i]]+1.0) / GTiminus[tieIter];
-          eq17part1 -= (MC_term2[sindex[i]]) / GTiminus[tieIter];
-          eq10part2 -= Probnu[tieIter] / GTiminus[tieIter];
-          eq14part2 -= eq1314part[tieIter] / GTiminus[tieIter];
-          eq17part2 -= 1.0 / GTiminus[tieIter];
+          term2numpart1 -= ic0Case[tieIter] * (MC_term2[sindex[i]]) * weights[tieIter]; 
+          term2denpart1 -= (MC_term2[sindex[i]]) * weights[tieIter]; 
+          term2numpart2 -= ic0Case[tieIter] * weights[tieIter]; 
+          term2denpart2 -= weights[tieIter]; 
         }
         else if ((time[tieIter] <= tau) && (status[tieIter]==2)){
-          eq12part1 -= eq1112part[tieIter] * (MC_term2[sindex[i]]+1.0) / GTiminus[tieIter];
-          eq19part1 -= (MC_term2[sindex[i]]) / GTiminus[tieIter];
-          eq12part2 -= eq1112part[tieIter] / GTiminus[tieIter];
-          eq19part2 -= 1.0 / GTiminus[tieIter];
+          term3numpart1 -= ic0Controls[tieIter]* MC_term2[sindex[i]]*weights[tieIter]; 
+          term3denpart1 -= weights[tieIter] * MC_term2[sindex[i]]; 
+          term3numpart2 -= ic0Controls[tieIter]*weights[tieIter]; 
+          term3denpart2 -= weights[tieIter]; 
         }
         tieIter++;
       }
       upperTie = tieIter-1;
     }
-    if ((time[i] <= tau) && (status[i] == 1)){
-      eq8 = 1.0/(GTiminus[i]*Gtau)*Probnu[i];
-      eq15 = 1.0/(GTiminus[i]*Gtau)*Probmu;
-      eq13 = 1.0/ (n*GTiminus[i]) * eq1314part[i];
-      eq20 = 1.0/GTiminus[i] * F2tau;
-    }
-    else {
-      eq8 = eq13 = eq15 = eq20 = 0;
-    }
-    eq9 = (fihattau - 2.0)/Gtau * eq9term;
-    eq16 = (fihattau - 2.0)/Gtau * eq16term;
+    double IFnum = term2num+term3num;
+    double IFden = term2den+term3den;
     
-    if ((time[i] <= tau) && (status[i] == 2)){
-      eq11 = 1.0 / (n*GTiminus[i]) * eq1112part[i];
-      eq18 = 1.0 / (GTiminus[i]) * F1tau;
-    }
-    else if (time[i] > tau){
-      eq11 = 1.0 / (n*Gtau) * eq1112part[i];
-      eq18 = 1.0 / (Gtau) * F1tau;
-    }
-    else {
-      eq11 = eq18 = 0;
-    }
-    double IFnu = eq8+eq9+eq10+eq11+eq12+eq13+eq14;
-    double IFmu = eq15+eq16+eq17+eq18+eq19+eq20+eq21;
-    
-    ic[i] = (IFnu * mu1 - IFmu * nu1)/(mu1*mu1);
+    icpart[i] = (IFnum * mu - IFden * nu1)/(mu*mu);
   }
-  return ic;
+  return icpart;
 }
+
+
+
+
 
 // see https://github.com/eestet75/riskRegressionStudy/blob/master/PicsForImplementation/crossvalAUC.png
 // [[Rcpp::export(rng = false)]]

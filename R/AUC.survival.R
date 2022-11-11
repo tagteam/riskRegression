@@ -53,21 +53,7 @@ AUC.survival <- function(DT,MC,se.fit,conservative,cens.model,keep.vcov=FALSE,mu
         ## compute influence function
         ## data.table::setorder(aucDT,model,times,time,-status)
         data.table::setorder(aucDT,model,times,ID)
-        if (conservative[[1]]){
-          aucDT[,IF.AUC:=getInfluenceCurve.AUC(times[1],time,status, WTi, Wt, risk, ID, NULL, nth.times[1]), by=list(model,times)]
-        }
-        else if (cens.model == "KaplanMeier" || cens.model == "none"){
-            aucDT[,IF.AUC:=getInfluenceCurveHelper(time,status,times[1],risk,WTi,Wt[1],AUC[1]), by=list(model,times)]
-        }
-        else if (cens.model == "cox"){
-          aucDT[,IF.AUC:=getInfluenceCurve.AUC(times[1],time,status, WTi, Wt, risk, ID, MC, nth.times[1]), by=list(model,times)]
-        }
-        else if (cens.model == "discrete"){
-          aucDT[,IF.AUC:=getInfluenceCurve.AUC(times[1],time,status, WTi, Wt, risk, ID, MC, nth.times[1]), by=list(model,times)]
-        }
-        else {
-          stop("Censoring model not yet implemented. ")
-        }
+        aucDT[,IF.AUC:=getInfluenceCurve.AUC(times[1],time,status, WTi, Wt, risk, MC, AUC[1], nth.times[1], conservative[[1]], cens.model), by=list(model,times)]
         se.score <- aucDT[,list(se=sd(IF.AUC)/sqrt(N)),by=list(model,times)]
 
         data.table::setkey(se.score,model,times)

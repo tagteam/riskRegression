@@ -1,96 +1,48 @@
-getInfluenceCurveHelper <- function(time,status,tau,risk,GTiminus,Gtau,AUC){
-  urisk <- unique(risk)
-  if (length(urisk)==length(risk)){
-    getInfluenceFunctionAUCKMCensoring(time,status,tau,risk,GTiminus,Gtau,AUC,FALSE)
+getInfluenceCurve.AUC <- function(t,time,event, WTi, Wt, risk, MC, auc, nth.times, conservative, cens.model){
+  conservativeIFcalculation <- getIC0AUC(time,event,t,risk,WTi,Wt,auc)
+  if (conservative[[1]] || cens.model[[1]] == "none"){
+    conservativeIFcalculation[["ic0"]]
   }
   else {
-    n <- length(time)
-    nutauParti.ties <-rep(NA,n)
-    for (val in urisk){
-      indexes <- which(risk==val)
-      nutauParti.ties[indexes] <- mean(1*(risk == val & time <= tau & status == 1)/GTiminus)-1*(risk[indexes] == val & time[indexes]<= tau & status[indexes] == 1)/(n*GTiminus[indexes])
+    if (cens.model == "KaplanMeier"){
+      conservativeIFcalculation[["ic0"]]+getInfluenceFunctionAUCKMCensoringTerm(time,event,t,conservativeIFcalculation[["ic0Case"]],
+                                                                                conservativeIFcalculation[["ic0Control"]], conservativeIFcalculation[["weights"]],
+                                                                                conservativeIFcalculation[["firsthit"]],conservativeIFcalculation[["muCase"]],
+                                                                                conservativeIFcalculation[["muControls"]], conservativeIFcalculation[["nu"]], Wt[1], auc)
     }
-    numAUCties <- mean(nutauParti.ties * 1*(time > tau)/Gtau) + mean(nutauParti.ties * 1*(time <= tau & status == 2)/GTiminus)
-    denAUC <- mean(1*(time <= tau & status == 1)/GTiminus)*mean(time > tau)/Gtau + mean(1*(time <= tau & status == 1)/GTiminus)*mean(1*(time <= tau & status == 2)/GTiminus)
-    AUC.ties.part<-(numAUCties)/denAUC
-    AUC.noties <- AUC-0.5*AUC.ties.part
-    IF.noties <- getInfluenceFunctionAUCKMCensoring(time,status,tau,risk,GTiminus,Gtau,AUC.noties,FALSE)
-    IF.ties <- getInfluenceFunctionAUCKMCensoring(time,status,tau,risk,GTiminus,Gtau,AUC.ties.part,TRUE)
-    IF.noties+0.5*IF.ties
+    else if (cens.model == "cox" || cens.model == "discrete"){
+      ## should be rewritten to C++ sometime soon
+      n <- length(time)
+      ic0Case <- conservativeIFcalculation[["ic0Case"]]
+      ic0Control <- conservativeIFcalculation[["ic0Control"]]
+      Phi <- conservativeIFcalculation[["muCase"]] * conservativeIFcalculation[["muControls"]] / (n*n)
+      weights <- conservativeIFcalculation[["weights"]]
+      aucLPO <- auc
+      cases.index <- time<=t & event==1
+      controls.index1 <- time>t
+      controls.index2 <-  event==2 & time <= t
+      controls.index <- controls.index1 | controls.index2
+      w.cases <- weights[cases.index]
+      w.controls <- weights[controls.index]
+      ic0Case <- ic0Case[cases.index]*w.cases
+      ic0Control <- ic0Control[controls.index]*w.controls
+      
+      ic.weights <- MC[[nth.times]] ## load IF from Censoring weights
+      ## Part of influence function related to Weights
+      ic.weightsCase <- as.numeric(rowSumsCrossprod(as.matrix(ic0Case), ic.weights[cases.index,], 0)) ## part of second term
+      ic.weightsControl <- as.numeric(rowSumsCrossprod(as.matrix(ic0Control), ic.weights[controls.index,], 0)) ## part of third term
+      ic.weightsCC <- (1/(Phi*n^2))*(ic.weightsCase+ic.weightsControl)
+      ## Note that the first and fourth term in IF_mu*nu(Q)/mu(Q)^2 = AUC_tau / mu(Q) * IF_mu is IF.AUC0 in the below
+      ## ## Part of influence function related to Phi, i.e. mu(Q) 
+      icPhiCase <- as.numeric(rowSumsCrossprod(as.matrix(w.cases),ic.weights[cases.index,],0)) ## part of second term
+      icPhiControl <- as.numeric(rowSumsCrossprod(as.matrix(w.controls),ic.weights[controls.index,],0))## part of third term
+      icPhi <- (aucLPO/Phi)*(((1/n)*icPhiCase)*(1/n)*sum(w.controls)+((1/n)*icPhiControl)*(1/n)*sum(w.cases))
+      conservativeIFcalculation[["ic0"]]+ic.weightsCC-icPhi
+    }
+    else {
+      stop("Censoring model not yet implemented. ")
+    }
   }
-}
-
-getInfluenceCurve.AUC <- function(t,time,event, WTi, Wt, risk, ID, MC, nth.times){
-  n <- length(time)
-  cases.index <- time<=t & event==1
-  controls.index1 <- time>t
-  controls.index2 <-  event==2 & time <= t
-  controls.index <- controls.index1 | controls.index2
-  
-  cc.status <- factor(rep("censored",n),levels=c("censored","case","control"))
-  cc.status[cases.index] <- "case"
-  cc.status[controls.index] <- "control"
-  
-  id.cases <- ID[cc.status=="case"]
-  id.controls <- ID[cc.status=="control"]
-  id.censored <- ID[cc.status=="censored"]
-  
-  weights.cases <- cases.index/WTi
-  weights.controls <- 1/Wt * controls.index1  + 1/WTi * controls.index2
-  w.cases <-weights.cases[cases.index]
-  w.controls <- weights.controls[controls.index]
-  Phi <- (1/n^2)*sum(w.cases)*sum(w.controls) ## mu_(tau)(Q) in document
-  ic0Case <- rep(0,n)
-  ic0Control <- rep(0,n)
-  weights <- weights.cases+weights.controls
-  calculateIC0CaseControl(ic0Case,ic0Control,risk,cases.index,controls.index,weights)
-  ic0Case <- ic0Case[cases.index]*w.cases
-  ic0Control <- ic0Control[controls.index]*w.controls
-  ## For case k icCase is W_k * sum_i (I(R_k > R_i) + 0.5 I(R_k == R_i)) W_i, where the sum is over controls
-  ## For control k ic0Control is W_k * sum_i (I(R_i > R_k) + 0.5 I(R_k == R_i)) W_i, where the sum is over cases
-  ## This was previously 
-  # auc <- AUCijFun(risk.cases,risk.controls)
-  # auc <- auc*weightMatrix
-  # auc[is.na(auc)] <- 0
-  # ic0Case <- rowSums(auc)
-  # ic0Control <- colSums(auc)
-  
-  # n.cases <- sum(cases.index)
-  # n.controls <- sum(controls.index)
-  # risk.cases <- risk[cases.index]
-  # risk.controls <- risk[controls.index]
-  # ic0Case <- rep(0,n.cases)
-  # ic0Control <- rep(0,n.controls)
-  # calculateIC0CaseControl(ic0Case,ic0Control,risk.cases,risk.controls,w.cases,w.controls)
-  
-  ## Note that the first and fourth term in IF_nu/mu(Q) is IF.AUC0 in the below
-  nu1tauPm <- (1/n^2)*sum(ic0Case)
-  aucLPO <- nu1tauPm*(1/Phi)
-  ic0 <- (1/(Phi*n))*c(ic0Case, ic0Control)
-  aucDT <- data.table(ID = c(id.cases,id.controls,id.censored), IF.AUC0 = c(ic0, rep(0,length(id.censored))))
-  
-  ic.weights <- MC[[nth.times]] ## load IF from Censoring weights
-  if (!is.null(ic.weights)){
-    ## ## Part of influence function related to Weights
-    ic.weightsCase <- as.numeric(rowSumsCrossprod(as.matrix(ic0Case), ic.weights[cases.index,], 0)) ## part of second term
-    ic.weightsControl <- as.numeric(rowSumsCrossprod(as.matrix(ic0Control), ic.weights[controls.index,], 0)) ## part of third term
-    ic.weightsCC <- (1/(Phi*n^2))*(ic.weightsCase+ic.weightsControl)
-    
-    ## Note that the first and fourth term in IF_mu*nu(Q)/mu(Q)^2 = AUC_tau / mu(Q) * IF_mu is IF.AUC0 in the below
-    ## ## Part of influence function related to Phi, i.e. mu(Q) 
-    icPhiCase <- as.numeric(rowSumsCrossprod(as.matrix(w.cases),ic.weights[cases.index,],0)) ## part of second term
-    icPhiControl <- as.numeric(rowSumsCrossprod(as.matrix(w.controls),ic.weights[controls.index,],0))## part of third term
-    icPhi <- (aucLPO/Phi)*((weights.cases+(1/n)*icPhiCase)*(1/n)*sum(weights.controls)+(weights.controls+(1/n)*icPhiControl)*(1/n)*sum(weights.cases))
-  }
-  else { ## conservative
-    ic.weightsCC <- rep(0,n)
-    ## ## Part of influence function related to Phi, i.e. mu(Q) 
-    icPhi <- (aucLPO/Phi)*((weights.cases)*(1/n)*sum(weights.controls)+(weights.controls)*(1/n)*sum(weights.cases))
-  }
-
-  ## ## Combine all parts of influence function
-  data.table::setkey(aucDT,ID)
-  aucDT[["IF.AUC0"]]+ic.weightsCC-icPhi
 }
 
 getInfluenceCurve.Brier <- function(t,
