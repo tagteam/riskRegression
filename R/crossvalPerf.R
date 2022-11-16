@@ -290,7 +290,7 @@ crossvalPerf.loob.Brier <- function(times,mlevs,se.fit,response.type,NT,Response
     DT.B[,IC0:=residuals-Brier]
     ## se.brier <- DT.B[,list(se=sd(IC0, na.rm=TRUE)/sqrt(N)),by=byvars]
     ## DT.B[,Brier:=NULL]
-    if (cens.type[1]=="rightCensored" && conservative[1]!=TRUE){
+    if (cens.type[1]=="rightCensored"){
       ## this is a new DT.B
       DT.B <- cbind(data[,1:response.dim,with=FALSE],DT.B)
       DT.B[,nth.times:=as.numeric(factor(times))]
@@ -329,7 +329,7 @@ crossvalPerf.loob.Brier <- function(times,mlevs,se.fit,response.type,NT,Response
                                               residuals=residuals,
                                               WTi=WTi,
                                               Wt=Wt,
-                                              IC.G=MC,
+                                              IC.G=Weights$IC,
                                               cens.model=cens.model,
                                               conservative = conservative,
                                               nth.times=nth.times[1],
@@ -338,7 +338,7 @@ crossvalPerf.loob.Brier <- function(times,mlevs,se.fit,response.type,NT,Response
                                        se=sd(IF.Brier)/sqrt(N)),by=byvars]
       }
     }else{
-      ## either conservative == TRUE or binary or uncensored
+      ## either binary or uncensored
       score.loob <- DT.B[,data.table(Brier=sum(residuals)/N,se=sd(IC0)/sqrt(N)),
                          by=byvars]
       setnames(DT.B,"IC0","IF.Brier")
