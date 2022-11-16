@@ -73,12 +73,13 @@ getCensoringWeights <- function(formula,
                
                out <- list(IPCW.times=IPCW.times,IPCW.subject.times=IPCW.subject.times,method=cens.model)
                if (influence.curve==TRUE){
+                   TiMinus = Y-minimumIncrement/2
                    if (!saveCoxMemory){
                      ## IC is an array with dimension (nlearn, times, newdata)
                      ##                           IC_G(t,z;x_k)
                      IC.subject=predictCox(fit, iid = TRUE,
                                            newdata = wdata,
-                                           times = Y-minimumIncrement/2,
+                                           times = TiMinus,
                                            diag=TRUE,
                                            type = "cumhazard")$cumhazard.iid*NROW(data) ## we want the influence function   survival.iid*n
                      IC.times=predictCox(fit, iid = TRUE,
@@ -104,94 +105,12 @@ getCensoringWeights <- function(formula,
                      IC <- list(saveCoxMemory = saveCoxMemory, IC.weights = IC.weights)
                    }
                    else {
-                     IC <- list(saveCoxMemory = saveCoxMemory,fit=fit,wdata=wdata)
+                     IC <- list(saveCoxMemory = saveCoxMemory,fit=fit,wdata=wdata, TiMinus = TiMinus)
                    }
-                   # weights <- c(2,1.3,1,rep(0,nrow(wdata)-5),2,1)
-                   # m<-predictCoxWeights(fit, diag=TRUE,
-                   #                   newdata = wdata,
-                   #                   times = Y-minimumIncrement/2,weights=weights)
-                   # m2 <- rowSums(IC.subject[,1,] %*% weights)
-                   # weights <- c(0,2,0,rep(0,nrow(wdata)-3))
-                   # m1<-predictCoxWeights(fit, diag=FALSE,
-                   #                      newdata = wdata,
-                   #                      times = times,weights=weights)
-                   # m12 <- rowSums(IC.times[,1,] %*% weights)
                    out <- c(out,list(IC=IC))
                }
            }, "discrete"={
-             event = event2 = NULL
-             sFormula <- update(formula,"Surv(time,status == 0)~.")
-             tFormula <- update(formula,"Surv(time,status != 0)~.")
-             wdata <- copy(data)
-             if (length(unique(wdata[["event"]])) > 2){
-               wdata[,event2 := as.numeric(event)]
-               wdata[status == 0,event2 := 0]
-               # FormulaCSC <- update(formula,"Hist(time,event2)~.")
-               # suppressWarnings(fitCSC <- CSC(formula = FormulaCSC, data = wdata))
-               wdata[,event2 := NULL]
-             }
-             # else {
-             #   fitCSC <- NULL
-             # }
-             vv <- all.vars(formula(delete.response(terms(formula))))
-             mod.frame<-model.frame(paste0("~",paste0(paste(vv,collapse = "+"))),data=data)
-             new.formula<-as.formula(paste0("Surv(time,status)",paste0("~",paste0(paste(vv,collapse = "+")))))
-             fit.cens <- prodlim::prodlim(new.formula, data=data,reverse=TRUE)
-             IPCW.subject.times <- prodlim::predictSurvIndividual(fit.cens,lag=1) #computational problem with predictRisk
-             IPCW.times <- predict(fit.cens,newdata=data,times=times,level.chaos=1,mode="matrix",type="surv")
-             if (influence.curve){
-               if (length(unique(data[["time"]])) != length(data[["time"]])){
-                 stop("The SEs for the Discrete does not work with ties in time (yet).")
-               }
-               incrementsOfTime <- diff(sort(data[["time"]]))
-               minimumIncrement <- min(incrementsOfTime[incrementsOfTime > 0]) #need > 0 in case of ties
-               u.levels <- unique(mod.frame)
-               Y <- data[["time"]]
-               status <- data[["status"]]
-               wheres.list <- list()
-               data.list <- list()
-               IC <- list()
-               n<-nrow(data)
-               for (i in 1:nrow(u.levels)){
-                 wheres <- NULL
-                 for (j in 1:n){
-                   if (all(mod.frame[j,]==u.levels[i,])){
-                     wheres <- c(wheres,j)
-                   }
-                 }
-                 wheres.list[[i]] <- wheres
-                 data.list[[i]] <- data[wheres,]
-                 tempdat <- data[wheres,]
-                 IC[[i]] <- IC_Nelson_Aalen_cens_time(time=tempdat$time,status=tempdat$status)/(length(wheres) / n)
-               }
-               IC.weights <- list()
-               for (t.ind in 1:length(times)){
-                 ic.weights <- matrix(0,n,n)  ## (i,j)'th entry is f_j(tilde{T}_i-;X_i)/G(tilde{T}_i|X_i) when delta_i != 0 and time_i <= tau; otherwise it is f_j(tau-;X_i)/G(tau | X_i)  
-                 for (i in 1:n){
-                   ## determine which strata observation i is in.
-                   for (j in 1:nrow(u.levels)){
-                     if (all(mod.frame[i,]==u.levels[j,])){
-                       break
-                     }
-                   }
-                   ic.temp <- rep(0,n)
-                   if (Y[i]<=times[t.ind] && status[i] != 0){ ### STUPID MISTAKE!!!!!
-                     place.in.wheres <- sindex(wheres.list[[j]],i)
-                     ic.temp[wheres.list[[j]]] <- IC[[j]][place.in.wheres,]
-                     ic.weights[i,] <- ic.temp
-                   }else if (Y[i] > times[t.ind]){## min(T,C)>t
-                     place.times <- sindex(data.list[[j]][["time"]],times[t.ind])
-                     ic.temp[wheres.list[[j]]] <- IC[[j]][place.times,]
-                     ic.weights[i,] <- ic.temp
-                   }
-                 }
-                 IC.weights[[t.ind]] <- ic.weights
-               }
-             }
-             else {
-               IC.weights <- NULL
-             }
-             out <- list(IPCW.times=IPCW.times,IPCW.subject.times=IPCW.subject.times,method=cens.model,IC=IC.weights)
+             stop("Use stratification with Cox instead. ")
            },
            {
                warning("Using other models (than Cox) for getting the censoring weights is under construction.  ")

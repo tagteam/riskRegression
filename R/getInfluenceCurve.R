@@ -40,12 +40,13 @@ getInfluenceCurve.AUC <- function(t,time,event, WTi, Wt, risk, MC, auc, nth.time
       else {
         wdata <- MC[[3]]
         fit <- MC[[2]]
+        TiMinus <- MC[[4]]
         ic0beforet <- ic0CaseOld*weights*cases.index+ic0ControlOld*weights*controls.index2
         ic0aftert <- ic0ControlOld*weights*controls.index1
-        ic.weightsCC <- (1/(Phi*n^2))*(predictCoxWeights(fit, diag=TRUE,newdata = wdata, times = wdata$time,weights=ic0beforet)+predictCoxWeights(fit, diag=FALSE,newdata = wdata,times = t,weights=ic0aftert))
+        ic.weightsCC <- (1/(Phi*n^2))*(predictCoxWeights(fit, diag=TRUE,newdata = wdata, times = TiMinus,weights=ic0beforet)+predictCoxWeights(fit, diag=FALSE,newdata = wdata,times = t,weights=ic0aftert))
         weightsbeforet <- (cases.index)*weights*(1/n)*sum(w.controls)+ (controls.index2)*weights*(1/n)*sum(w.cases)
         weightsaftert <- (controls.index1)*weights*(1/n)*sum(w.cases)
-        icPhiBeforet <- predictCoxWeights(fit, diag=TRUE,newdata = wdata, times = wdata$time,weights=weightsbeforet)
+        icPhiBeforet <- predictCoxWeights(fit, diag=TRUE,newdata = wdata, times = TiMinus,weights=weightsbeforet)
         icPhiAftert <- predictCoxWeights(fit, diag=FALSE,newdata = wdata, times = t,weights=weightsaftert)
         icPhi <- (aucLPO/Phi)*((icPhiBeforet+icPhiAftert)*(1/n))
       }
@@ -99,9 +100,10 @@ getInfluenceCurve.Brier <- function(t,
         else {
           wdata <- IC.G[[3]]
           fit <- IC.G[[2]]
+          TiMinus <- IC.G[[4]]
           res1 <- (time <= t & event != 0)*residuals
           res2 <- (time > t)*residuals
-          IF.Brier <- IC0 + (predictCoxWeights(fit,newdata = wdata,times = wdata$time,diag=TRUE,weights=res1) + predictCoxWeights(fit,newdata = wdata,times = t,diag=FALSE,weights=res2))/N
+          IF.Brier <- IC0 + (predictCoxWeights(fit,newdata = wdata,times = TiMinus,diag=TRUE,weights=res1) + predictCoxWeights(fit,newdata = wdata,times = t,diag=FALSE,weights=res2))/N
         }
         IF.Brier
     }else if (cens.model[[1]] == "KaplanMeier"){
