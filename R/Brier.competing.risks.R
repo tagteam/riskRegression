@@ -31,26 +31,17 @@ Brier.competing.risks <- function(DT,MC,se.fit,conservative,cens.model,keep.vcov
         data.table::setorder(DT,model,times,ID)
         DT[,nth.times:=as.numeric(factor(times))]
         DT[,IC0:=residuals-mean(residuals),by=list(model,times)]
-        if (conservative || cens.model == "none"){
-            DT[,IF.Brier:=IC0]
-        }
-        else if (cens.model=="KaplanMeier"){
-          DT[,IF.Brier := getInfluenceFunctionBrierKMCensoringUseSquared(times[1],time,residuals,status),by=list(model,times)]
-        }
-        else if (cens.model == "cox" || cens.model == "discrete"){
-          DT[,IF.Brier:=getInfluenceCurve.Brier(t=times[1],
-                                                time=time,
-                                                IC0,
-                                                residuals=residuals,
-                                                WTi=WTi,
-                                                Wt=Wt,
-                                                IC.G=MC,
-                                                cens.model=cens.model,
-                                                nth.times=nth.times[1]),by=list(model,times)]
-        }
-        else {
-          stop("Not implemented. ")
-        }
+        DT[,IF.Brier:=getInfluenceCurve.Brier(t=times[1],
+                                              time=time,
+                                              IC0,
+                                              residuals=residuals,
+                                              WTi=WTi,
+                                              Wt=Wt,
+                                              IC.G=MC,
+                                              cens.model=cens.model,
+                                              conservative = conservative,
+                                              nth.times=nth.times[1],
+                                              event = status*event),by=list(model,times)]
         score <- DT[,data.table(Brier=sum(residuals)/N,
                                 se=sd(IF.Brier)/sqrt(N)),by=list(model,times)]
         if (se.fit==TRUE){

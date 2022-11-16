@@ -27,34 +27,21 @@ Brier.survival <- function(DT,MC,se.fit,conservative,cens.model,keep.vcov=FALSE,
         data.table::setorder(DT,model,times,ID)
         DT[,nth.times:=as.numeric(factor(times))]
         DT[,IC0:=residuals-mean(residuals),by=list(model,times)]
-        if (conservative==TRUE || cens.model == "none"){
-          score <- DT[,data.table(Brier=sum(residuals)/N,
-                                  se=sd(IC0)/sqrt(N)),by=list(model,times)]
-          DT[,IF.Brier := IC0]
-          #setnames(DT,"IC0","IF.Brier")
-        }else if (cens.model=="KaplanMeier"){
-          DT[,IF.Brier := getInfluenceFunctionBrierKMCensoringUseSquared(times[1],time,residuals,status),by=list(model,times)]
-        }
-        else if (cens.model == "cox"||cens.model == "discrete") {
-          DT[,IF.Brier:=getInfluenceCurve.Brier(t=times[1],
-                                                time=time,
-                                                IC0,
-                                                residuals=residuals,
-                                                WTi=WTi,
-                                                Wt=Wt,
-                                                IC.G=MC,
-                                                cens.model=cens.model,
-                                                nth.times=nth.times[1]),by=list(model,times)]
-        }
-        else {
-          stop("Not implemented. ")
-        }
+        DT[,IF.Brier:=getInfluenceCurve.Brier(t=times[1],
+                                              time=time,
+                                              IC0,
+                                              residuals=residuals,
+                                              WTi=WTi,
+                                              Wt=Wt,
+                                              IC.G=MC,
+                                              cens.model=cens.model,
+                                              conservative = conservative,
+                                              nth.times=nth.times[1],
+                                              event = status),by=list(model,times)]
         score <- DT[,data.table(Brier=sum(residuals)/N,
                                 se=sd(IF.Brier)/sqrt(N)),by=list(model,times)]
-        if (se.fit==TRUE){
-            score[,lower:=pmax(0,Brier-qnorm(1-alpha/2)*se)]
-            score[,upper:=pmin(1,Brier + qnorm(1-alpha/2)*se)]
-        }
+        score[,lower:=pmax(0,Brier-qnorm(1-alpha/2)*se)]
+        score[,upper:=pmin(1,Brier + qnorm(1-alpha/2)*se)]
     }else{
         ## no se.fit
         score <- DT[,data.table(Brier=sum(residuals)/N),by=list(model,times)]

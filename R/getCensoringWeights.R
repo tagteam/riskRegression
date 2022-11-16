@@ -4,7 +4,8 @@ getCensoringWeights <- function(formula,
                                 times,
                                 cens.model,
                                 response.type,
-                                influence.curve=FALSE){
+                                influence.curve=FALSE,
+                                saveCoxMemory){
     if((cens.model != "KaplanMeier")){
         if (length(attr(terms(formula),"factors"))==0){
             cens.model <- "marginal"
@@ -72,40 +73,50 @@ getCensoringWeights <- function(formula,
                
                out <- list(IPCW.times=IPCW.times,IPCW.subject.times=IPCW.subject.times,method=cens.model)
                if (influence.curve==TRUE){
-                   ## IC is an array with dimension (nlearn, times, newdata)
-                   ##                           IC_G(t,z;x_k)
-                   # IC.subject=predictCox(fit, iid = TRUE,
-                   #                     newdata = wdata,
-                   #                     times = Y-minimumIncrement/2,
-                   #                     type = "cumhazard")$cumhazard.iid*NROW(data) ## we want the influence function   survival.iid*n
-                   # 
-                   IC.subject=predictCox(fit, iid = TRUE,
+                   if (!saveCoxMemory){
+                     ## IC is an array with dimension (nlearn, times, newdata)
+                     ##                           IC_G(t,z;x_k)
+                     IC.subject=predictCox(fit, iid = TRUE,
+                                           newdata = wdata,
+                                           times = Y-minimumIncrement/2,
+                                           diag=TRUE,
+                                           type = "cumhazard")$cumhazard.iid*NROW(data) ## we want the influence function   survival.iid*n
+                     IC.times=predictCox(fit, iid = TRUE,
                                          newdata = wdata,
-                                         times = Y-minimumIncrement/2,
-                                         diag=TRUE,
-                                         type = "cumhazard")$cumhazard.iid*NROW(data) ## we want the influence function   survival.iid*n
-                   IC.times=predictCox(fit, iid = TRUE,
-                                       newdata = wdata,
-                                       times = times,
-                                       type = "cumhazard")$cumhazard.iid*NROW(data)
-                   IC.weights <- list()
-                   for (t.ind in 1:length(times)){
-                     N <- length(Y)
-                     ic.weights <- matrix(0,N,N)  ## (i,j)'th entry is f_j(tilde{T}_i-;X_i)/G(tilde{T}_i|X_i) when delta_i != 0 and time_i <= tau; otherwise it is f_j(tau-;X_i)/G(tau | X_i)  
-                     # k=0 ## counts subject-times with event before t
-                     for (i in 1:N){
-                       if (Y[i]<=times[t.ind] && status[i] != 0){ ## min(T,C)<=t, note that (residuals==0) => (status==0)
-                         # k=k+1
-                         #ic.weights[i,] <- IC.subject[,i,i]
-                         ic.weights[i,] <- IC.subject[,1,i]
-                         
-                       }else if (Y[i] > times[t.ind]){## min(T,C)>t
-                         ic.weights[i,] <- IC.times[,t.ind,i]
+                                         times = times,
+                                         type = "cumhazard")$cumhazard.iid*NROW(data)
+                     IC.weights <- list()
+                     for (t.ind in 1:length(times)){
+                       N <- length(Y)
+                       ic.weights <- matrix(0,N,N)  ## (i,j)'th entry is f_j(tilde{T}_i-;X_i)/G(tilde{T}_i|X_i) when delta_i != 0 and time_i <= tau; otherwise it is f_j(tau-;X_i)/G(tau | X_i)
+                       # k=0 ## counts subject-times with event before t
+                       for (i in 1:N){
+                         if (Y[i]<=times[t.ind] && status[i] != 0){ ## min(T,C)<=t, note that (residuals==0) => (status==0)
+                           # k=k+1
+                           ic.weights[i,] <- IC.subject[,1,i]
+                           
+                         }else if (Y[i] > times[t.ind]){## min(T,C)>t
+                           ic.weights[i,] <- IC.times[,t.ind,i]
+                         }
                        }
+                       IC.weights[[t.ind]] <- ic.weights
                      }
-                     IC.weights[[t.ind]] <- ic.weights
+                     IC <- list(saveCoxMemory = saveCoxMemory, IC.weights = IC.weights)
                    }
-                   out <- c(out,list(IC=IC.weights))
+                   else {
+                     IC <- list(saveCoxMemory = saveCoxMemory,fit=fit,wdata=wdata)
+                   }
+                   # weights <- c(2,1.3,1,rep(0,nrow(wdata)-5),2,1)
+                   # m<-predictCoxWeights(fit, diag=TRUE,
+                   #                   newdata = wdata,
+                   #                   times = Y-minimumIncrement/2,weights=weights)
+                   # m2 <- rowSums(IC.subject[,1,] %*% weights)
+                   # weights <- c(0,2,0,rep(0,nrow(wdata)-3))
+                   # m1<-predictCoxWeights(fit, diag=FALSE,
+                   #                      newdata = wdata,
+                   #                      times = times,weights=weights)
+                   # m12 <- rowSums(IC.times[,1,] %*% weights)
+                   out <- c(out,list(IC=IC))
                }
            }, "discrete"={
              event = event2 = NULL

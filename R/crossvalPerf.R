@@ -149,7 +149,10 @@ crossvalPerf.loob.AUC <- function(times,mlevs,se.fit,response.type,NT,Response,c
         }
         aucDT <- rbindlist(list(aucDT,this.aucDT),use.names=TRUE,fill=TRUE)
         if (cens.model == "cox" && !conservative[[1]] && mod != 0){
-          ic.weights <- Weights$IC[[s]]
+          if (Weights$IC$saveCoxMemory){
+            stop("saveCoxMemory option not implemented for cv yet.")
+          }
+          ic.weights <- Weights$IC[[2]][[s]]
           ## ## Part of influence function related to Weights
           ic.weightsCase <- as.numeric(rowSumsCrossprod(as.matrix(ic0Case), ic.weights[cases.index,], 0))
           ic.weightsControl <- as.numeric(rowSumsCrossprod(as.matrix(ic0Control), ic.weights[controls.index,], 0))
@@ -306,9 +309,7 @@ crossvalPerf.loob.Brier <- function(times,mlevs,se.fit,response.type,NT,Response
       }
       if (cens.type=="uncensored"){
         DT.B[,IF.Brier:= residuals]
-        score.loob <- DT.B[,data.table(Brier=sum(residuals)/N,
-                                       se=sd(residuals)/sqrt(N),
-                                       se.conservative=sd(residuals)/sqrt(N)),by=byvars]
+        score.loob <- DT.B[,data.table(Brier=sum(residuals)/N,se=sd(residuals)/sqrt(N)),by=byvars]
       }else{
         #for small values of B, there is the problem that
         #some individuals might be zero times out of the bag
@@ -322,29 +323,19 @@ crossvalPerf.loob.Brier <- function(times,mlevs,se.fit,response.type,NT,Response
         else {
           DT.B[,status0:=status*event]
         }
-        if (cens.model == "KaplanMeier") {
-          DT[,IF.Brier := getInfluenceFunctionBrierKMCensoringUseSquared(times[1],time,residuals,status0),by=byvars]
-        }
-        else if (cens.model == "cox"){
-          DT.B[,IF.Brier:=getInfluenceCurve.Brier(t=times[1],
-                                                  time=time,
-                                                  IC0,
-                                                  residuals=residuals,
-                                                  WTi=WTi,
-                                                  Wt=Wt,
-                                                  IC.G=Weights$IC,
-                                                  cens.model=cens.model,
-                                                  nth.times=nth.times[1]),by=byvars]
-        }
-        else {
-          stop("Censoring method not implemented for cross-validation. ")
-        }
-        
+        DT[,IF.Brier:=getInfluenceCurve.Brier(t=times[1],
+                                              time=time,
+                                              IC0,
+                                              residuals=residuals,
+                                              WTi=WTi,
+                                              Wt=Wt,
+                                              IC.G=MC,
+                                              cens.model=cens.model,
+                                              conservative = conservative,
+                                              nth.times=nth.times[1],
+                                              event = status0),by=list(model,times)]
         score.loob <- DT.B[,data.table(Brier=sum(residuals)/N,
-                                       se=sd(IF.Brier)/sqrt(N),
-                                       se.conservative=sd(IC0)/sqrt(N)),by=byvars]
-        
-        
+                                       se=sd(IF.Brier)/sqrt(N)),by=byvars]
       }
     }else{
       ## either conservative == TRUE or binary or uncensored

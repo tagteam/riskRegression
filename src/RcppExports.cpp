@@ -358,16 +358,16 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// getInfluenceFunctionBrierKMCensoringUseSquared
-NumericVector getInfluenceFunctionBrierKMCensoringUseSquared(double tau, NumericVector time, NumericVector residuals, NumericVector status);
-RcppExport SEXP _riskRegression_getInfluenceFunctionBrierKMCensoringUseSquared(SEXP tauSEXP, SEXP timeSEXP, SEXP residualsSEXP, SEXP statusSEXP) {
+// getInfluenceFunctionBrierKMCensoringTerm
+NumericVector getInfluenceFunctionBrierKMCensoringTerm(double tau, NumericVector time, NumericVector residuals, NumericVector status);
+RcppExport SEXP _riskRegression_getInfluenceFunctionBrierKMCensoringTerm(SEXP tauSEXP, SEXP timeSEXP, SEXP residualsSEXP, SEXP statusSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::traits::input_parameter< double >::type tau(tauSEXP);
     Rcpp::traits::input_parameter< NumericVector >::type time(timeSEXP);
     Rcpp::traits::input_parameter< NumericVector >::type residuals(residualsSEXP);
     Rcpp::traits::input_parameter< NumericVector >::type status(statusSEXP);
-    rcpp_result_gen = Rcpp::wrap(getInfluenceFunctionBrierKMCensoringUseSquared(tau, time, residuals, status));
+    rcpp_result_gen = Rcpp::wrap(getInfluenceFunctionBrierKMCensoringTerm(tau, time, residuals, status));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -612,6 +612,40 @@ BEGIN_RCPP
     return R_NilValue;
 END_RCPP
 }
+// weightedAverageIFCumhazard_cpp
+NumericVector weightedAverageIFCumhazard_cpp(const arma::vec& seqTau, const std::vector< arma::vec >& cumhazard0, const arma::mat& newX, const arma::vec& neweXb, const arma::mat& IFbeta, const std::vector< arma::mat >& cumEhazard0, const std::vector< arma::vec >& cumhazard_iS0, const arma::mat& delta_iS0, const arma::mat& sample_eXb, const arma::vec& sample_time, const std::vector< arma::uvec>& indexJumpSample_time, const std::vector< arma::vec>& jump_time, const std::vector< arma::uvec >& indexJumpTau, const arma::vec& lastSampleTime, const std::vector< arma::uvec>& newdata_index, const std::vector<arma::mat>& factor, int nTau, int nNewObs, int nSample, int nStrata, int p, bool diag, int debug, const arma::vec& weights);
+RcppExport SEXP _riskRegression_weightedAverageIFCumhazard_cpp(SEXP seqTauSEXP, SEXP cumhazard0SEXP, SEXP newXSEXP, SEXP neweXbSEXP, SEXP IFbetaSEXP, SEXP cumEhazard0SEXP, SEXP cumhazard_iS0SEXP, SEXP delta_iS0SEXP, SEXP sample_eXbSEXP, SEXP sample_timeSEXP, SEXP indexJumpSample_timeSEXP, SEXP jump_timeSEXP, SEXP indexJumpTauSEXP, SEXP lastSampleTimeSEXP, SEXP newdata_indexSEXP, SEXP factorSEXP, SEXP nTauSEXP, SEXP nNewObsSEXP, SEXP nSampleSEXP, SEXP nStrataSEXP, SEXP pSEXP, SEXP diagSEXP, SEXP debugSEXP, SEXP weightsSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const arma::vec& >::type seqTau(seqTauSEXP);
+    Rcpp::traits::input_parameter< const std::vector< arma::vec >& >::type cumhazard0(cumhazard0SEXP);
+    Rcpp::traits::input_parameter< const arma::mat& >::type newX(newXSEXP);
+    Rcpp::traits::input_parameter< const arma::vec& >::type neweXb(neweXbSEXP);
+    Rcpp::traits::input_parameter< const arma::mat& >::type IFbeta(IFbetaSEXP);
+    Rcpp::traits::input_parameter< const std::vector< arma::mat >& >::type cumEhazard0(cumEhazard0SEXP);
+    Rcpp::traits::input_parameter< const std::vector< arma::vec >& >::type cumhazard_iS0(cumhazard_iS0SEXP);
+    Rcpp::traits::input_parameter< const arma::mat& >::type delta_iS0(delta_iS0SEXP);
+    Rcpp::traits::input_parameter< const arma::mat& >::type sample_eXb(sample_eXbSEXP);
+    Rcpp::traits::input_parameter< const arma::vec& >::type sample_time(sample_timeSEXP);
+    Rcpp::traits::input_parameter< const std::vector< arma::uvec>& >::type indexJumpSample_time(indexJumpSample_timeSEXP);
+    Rcpp::traits::input_parameter< const std::vector< arma::vec>& >::type jump_time(jump_timeSEXP);
+    Rcpp::traits::input_parameter< const std::vector< arma::uvec >& >::type indexJumpTau(indexJumpTauSEXP);
+    Rcpp::traits::input_parameter< const arma::vec& >::type lastSampleTime(lastSampleTimeSEXP);
+    Rcpp::traits::input_parameter< const std::vector< arma::uvec>& >::type newdata_index(newdata_indexSEXP);
+    Rcpp::traits::input_parameter< const std::vector<arma::mat>& >::type factor(factorSEXP);
+    Rcpp::traits::input_parameter< int >::type nTau(nTauSEXP);
+    Rcpp::traits::input_parameter< int >::type nNewObs(nNewObsSEXP);
+    Rcpp::traits::input_parameter< int >::type nSample(nSampleSEXP);
+    Rcpp::traits::input_parameter< int >::type nStrata(nStrataSEXP);
+    Rcpp::traits::input_parameter< int >::type p(pSEXP);
+    Rcpp::traits::input_parameter< bool >::type diag(diagSEXP);
+    Rcpp::traits::input_parameter< int >::type debug(debugSEXP);
+    Rcpp::traits::input_parameter< const arma::vec& >::type weights(weightsSEXP);
+    rcpp_result_gen = Rcpp::wrap(weightedAverageIFCumhazard_cpp(seqTau, cumhazard0, newX, neweXb, IFbeta, cumEhazard0, cumhazard_iS0, delta_iS0, sample_eXb, sample_time, indexJumpSample_time, jump_time, indexJumpTau, lastSampleTime, newdata_index, factor, nTau, nNewObs, nSample, nStrata, p, diag, debug, weights));
+    return rcpp_result_gen;
+END_RCPP
+}
 
 static const R_CallMethodDef CallEntries[] = {
     {"_riskRegression_AUCijFun", (DL_FUNC) &_riskRegression_AUCijFun, 2},
@@ -631,7 +665,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_riskRegression_getIC0AUC", (DL_FUNC) &_riskRegression_getIC0AUC, 7},
     {"_riskRegression_getInfluenceFunctionAUCKMCensoringTerm", (DL_FUNC) &_riskRegression_getInfluenceFunctionAUCKMCensoringTerm, 12},
     {"_riskRegression_getInfluenceFunctionAUCKMCensoringCVPart", (DL_FUNC) &_riskRegression_getInfluenceFunctionAUCKMCensoringCVPart, 7},
-    {"_riskRegression_getInfluenceFunctionBrierKMCensoringUseSquared", (DL_FUNC) &_riskRegression_getInfluenceFunctionBrierKMCensoringUseSquared, 4},
+    {"_riskRegression_getInfluenceFunctionBrierKMCensoringTerm", (DL_FUNC) &_riskRegression_getInfluenceFunctionBrierKMCensoringTerm, 4},
     {"_riskRegression_calcE_cpp", (DL_FUNC) &_riskRegression_calcE_cpp, 6},
     {"_riskRegression_IFbeta_cpp", (DL_FUNC) &_riskRegression_IFbeta_cpp, 10},
     {"_riskRegression_IFlambda0_cpp", (DL_FUNC) &_riskRegression_IFlambda0_cpp, 15},
@@ -649,6 +683,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_riskRegression_sliceMultiplyPointer_cpp", (DL_FUNC) &_riskRegression_sliceMultiplyPointer_cpp, 2},
     {"_riskRegression_sliceScale_cpp", (DL_FUNC) &_riskRegression_sliceScale_cpp, 2},
     {"_riskRegression_sliceScalePointer_cpp", (DL_FUNC) &_riskRegression_sliceScalePointer_cpp, 2},
+    {"_riskRegression_weightedAverageIFCumhazard_cpp", (DL_FUNC) &_riskRegression_weightedAverageIFCumhazard_cpp, 24},
     {NULL, NULL, 0}
 };
 

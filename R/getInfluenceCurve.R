@@ -1,20 +1,19 @@
-getInfluenceCurve.AUC <- function(t,time,event, WTi, Wt, risk, MC, auc, nth.times, conservative, cens.model){
+getInfluenceCurve.AUC <- function(t,time,event, WTi, Wt, risk, MC, auc, nth.times, conservative, cens.model, one.step = FALSE, cv = FALSE){
   conservativeIFcalculation <- getIC0AUC(time,event,t,risk,WTi,Wt,auc)
   if (conservative[[1]] || cens.model[[1]] == "none"){
     conservativeIFcalculation[["ic0"]]
   }
   else {
-    if (cens.model == "KaplanMeier"){
+    if (cens.model[[1]] == "KaplanMeier"){
       conservativeIFcalculation[["ic0"]]+getInfluenceFunctionAUCKMCensoringTerm(time,event,t,conservativeIFcalculation[["ic0Case"]],
                                                                                 conservativeIFcalculation[["ic0Control"]], conservativeIFcalculation[["weights"]],
                                                                                 conservativeIFcalculation[["firsthit"]],conservativeIFcalculation[["muCase"]],
                                                                                 conservativeIFcalculation[["muControls"]], conservativeIFcalculation[["nu"]], Wt[1], auc)
     }
-    else if (cens.model == "cox" || cens.model == "discrete"){
-      ## should be rewritten to C++ sometime soon
+    else if (cens.model[[1]] == "cox" || cens.model[[1]] == "discrete"){
       n <- length(time)
-      ic0Case <- conservativeIFcalculation[["ic0Case"]]
-      ic0Control <- conservativeIFcalculation[["ic0Control"]]
+      ic0CaseOld <- conservativeIFcalculation[["ic0Case"]]
+      ic0ControlOld <- conservativeIFcalculation[["ic0Control"]]
       Phi <- conservativeIFcalculation[["muCase"]] * conservativeIFcalculation[["muControls"]] / (n*n)
       weights <- conservativeIFcalculation[["weights"]]
       aucLPO <- auc
@@ -24,19 +23,32 @@ getInfluenceCurve.AUC <- function(t,time,event, WTi, Wt, risk, MC, auc, nth.time
       controls.index <- controls.index1 | controls.index2
       w.cases <- weights[cases.index]
       w.controls <- weights[controls.index]
-      ic0Case <- ic0Case[cases.index]*w.cases
-      ic0Control <- ic0Control[controls.index]*w.controls
-      
-      ic.weights <- MC[[nth.times]] ## load IF from Censoring weights
-      ## Part of influence function related to Weights
-      ic.weightsCase <- as.numeric(rowSumsCrossprod(as.matrix(ic0Case), ic.weights[cases.index,], 0)) ## part of second term
-      ic.weightsControl <- as.numeric(rowSumsCrossprod(as.matrix(ic0Control), ic.weights[controls.index,], 0)) ## part of third term
-      ic.weightsCC <- (1/(Phi*n^2))*(ic.weightsCase+ic.weightsControl)
-      ## Note that the first and fourth term in IF_mu*nu(Q)/mu(Q)^2 = AUC_tau / mu(Q) * IF_mu is IF.AUC0 in the below
-      ## ## Part of influence function related to Phi, i.e. mu(Q) 
-      icPhiCase <- as.numeric(rowSumsCrossprod(as.matrix(w.cases),ic.weights[cases.index,],0)) ## part of second term
-      icPhiControl <- as.numeric(rowSumsCrossprod(as.matrix(w.controls),ic.weights[controls.index,],0))## part of third term
-      icPhi <- (aucLPO/Phi)*(((1/n)*icPhiCase)*(1/n)*sum(w.controls)+((1/n)*icPhiControl)*(1/n)*sum(w.cases))
+      ic0Case <- ic0CaseOld[cases.index]*w.cases
+      ic0Control <- ic0ControlOld[controls.index]*w.controls
+      if (!MC$saveCoxMemory){
+        ic.weights <- MC[[2]][[nth.times]] ## load IF from Censoring weights
+        ## Part of influence function related to Weights
+        ic.weightsCase <- as.numeric(rowSumsCrossprod(as.matrix(ic0Case), ic.weights[cases.index,], 0)) ## part of second term
+        ic.weightsControl <- as.numeric(rowSumsCrossprod(as.matrix(ic0Control), ic.weights[controls.index,], 0)) ## part of third term
+        ic.weightsCC <- (1/(Phi*n^2))*(ic.weightsCase+ic.weightsControl)
+        ## Note that the first and fourth term in IF_mu*nu(Q)/mu(Q)^2 = AUC_tau / mu(Q) * IF_mu is IF.AUC0 in the below
+        ## ## Part of influence function related to Phi, i.e. mu(Q) 
+        icPhiCase <- as.numeric(rowSumsCrossprod(as.matrix(w.cases),ic.weights[cases.index,],0)) ## part of second term
+        icPhiControl <- as.numeric(rowSumsCrossprod(as.matrix(w.controls),ic.weights[controls.index,],0))## part of third term
+        icPhi <- (aucLPO/Phi)*(((1/n)*icPhiCase)*(1/n)*sum(w.controls)+((1/n)*icPhiControl)*(1/n)*sum(w.cases))
+      }
+      else {
+        wdata <- MC[[3]]
+        fit <- MC[[2]]
+        ic0beforet <- ic0CaseOld*weights*cases.index+ic0ControlOld*weights*controls.index2
+        ic0aftert <- ic0ControlOld*weights*controls.index1
+        ic.weightsCC <- (1/(Phi*n^2))*(predictCoxWeights(fit, diag=TRUE,newdata = wdata, times = wdata$time,weights=ic0beforet)+predictCoxWeights(fit, diag=FALSE,newdata = wdata,times = t,weights=ic0aftert))
+        weightsbeforet <- (cases.index)*weights*(1/n)*sum(w.controls)+ (controls.index2)*weights*(1/n)*sum(w.cases)
+        weightsaftert <- (controls.index1)*weights*(1/n)*sum(w.cases)
+        icPhiBeforet <- predictCoxWeights(fit, diag=TRUE,newdata = wdata, times = wdata$time,weights=weightsbeforet)
+        icPhiAftert <- predictCoxWeights(fit, diag=FALSE,newdata = wdata, times = t,weights=weightsaftert)
+        icPhi <- (aucLPO/Phi)*((icPhiBeforet+icPhiAftert)*(1/n))
+      }
       conservativeIFcalculation[["ic0"]]+ic.weightsCC-icPhi
     }
     else {
@@ -53,7 +65,10 @@ getInfluenceCurve.Brier <- function(t,
                                     Wt,
                                     IC.G,
                                     cens.model,
-                                    nth.times=NULL){
+                                    nth.times=NULL,
+                                    conservative,
+                                    event,
+                                    one.step = FALSE){
     ##
     ## Compute influence function of Brier score estimator using weights of the reverse Cox model
     ## This function evaluates the part of influence function which is related to the IPCW weights
@@ -73,56 +88,31 @@ getInfluenceCurve.Brier <- function(t,
     ## residuals that are already weighted
     ##
     N <- length(residuals)
-    if (cens.model=="cox" || cens.model == "discrete") {## Cox regression
-        ic.weights <- IC.G[[nth.times]] ## (i,j)'th entry is f_j(tilde{T}_i-;X_i)/G(tilde{T}_i|X_i) when delta_i != 0 and time_i <= tau; otherwise it is f_j(tau-;X_i)/G(tau | X_i)  
-        IF.Brier <- ic.weights*residuals ## (i,j)'th entry is f_j(tilde{T}_i-;X_i)/G(tilde{T}_i|X_i)res_i when delta_i != 0 and time_i <= tau; otherwise it is f_j(tau-;X_i)/G(tau | X_i) res_i, where res_i is the i'th residual 
-        IF.Brier <- IC0+colMeans(IF.Brier) ## therefore the j'th value colMeans(IF.Brier) should be 1/n sum_i (f_j(tilde{T}_i-;X_i)/G(tilde{T}_i|X_i)res_i I(delta_j!=0, tilde{T}_j <= tau) + f_j(tau-;X_i)/G(tau | X_i) res_i I(\tilde{T}_j > tau)
-        IF.Brier
-    }else{
-        stop("Use C++ function instead. ")
+    if (conservative[[1]] || cens.model[[1]] == "none"){
+      IC0
     }
-}
-
-getInfluenceCurve.Brier.covariates <- function(tau,time,risk,status,GTiminus,Brier,IC.data) {
-  n <- length(time)
-  IC <- rep(NA,n)
-  fit.time <- IC.data$fit.time
-  fit.cens <- IC.data$fit.cens
-  wdata<-IC.data$wdata
-  ## term involving f_i(t,z) is 
-  ## $$
-  ## (1-2R(\tau |Z_i))\left(\frac{I(\tilde{T}_i \leq \tau, \Delta_i = 0)}{G(\tilde{T}_i|Z_i)S(\tilde{T}_i|Z_i)}(S(\tilde{T}_i|Z_i)-S(\tau|Z_i))-\int_0^{\tilde{T}_i \wedge \tau} \frac{(S(s|Z_i)-S(\tau|Z_i))}{G(s|Z_i)^2S(s|Z_i)^2}P(ds,0|Z_i)\right)
-  ## $$
-  predCens <- predictCox(fit.cens, time,newdata = wdata)
-  Gtimes <- predCens$survival
-  cumhazardCXi <- predCens$cumhazard
-  Stimes <- predictCox(fit.time, time,newdata = wdata)$survival
-  is.comprisk <- !is.null(IC.data$fitCSC)
-  if (is.comprisk){
-    fitCSC <- IC.data$fitCSC
-    F1 <- predictRisk(fitCSC,newdata=wdata,times=time,cause=1)
-    F1tau <- c(predictRisk(fitCSC,newdata=wdata,times=tau,cause=1))
-  }
-  else {
-    Stau <- rms::survest(fit.time,newdata=wdata,times=tau,se.fit=FALSE)$surv
-    Stau <- unname(Stau)
-  }
-  for (i in 1:n){
-    cum <- cumhazardCXi[i,]
-    jumps <- diff(c(0,cum))
-    if (!is.comprisk){
-      IC.C.term <- (1-2*risk[i])*(1*(status[i] == 0 & time[i] <= tau)/(Gtimes[i,i]*Stimes[i,i])*(Stimes[i,i]-Stau[i])-sum( 1*(time <= tau & time <= time[i])*((Stimes[i,]-Stau[i])*jumps / (Gtimes[i,]*Stimes[i,]))))
+    else if (cens.model[[1]]=="cox" || cens.model[[1]] == "discrete") {## Cox regression
+        if (!IC.G$saveCoxMemory){
+          ic.weights <- IC.G[[2]][[nth.times]]
+          IF.Brier <- IC0+as.numeric(rowSumsCrossprod(as.matrix(residuals),ic.weights,0)) / N
+        }
+        else {
+          wdata <- IC.G[[3]]
+          fit <- IC.G[[2]]
+          res1 <- (time <= t & event != 0)*residuals
+          res2 <- (time > t)*residuals
+          IF.Brier <- IC0 + (predictCoxWeights(fit,newdata = wdata,times = wdata$time,diag=TRUE,weights=res1) + predictCoxWeights(fit,newdata = wdata,times = t,diag=FALSE,weights=res2))/N
+        }
+        IF.Brier
+    }else if (cens.model[[1]] == "KaplanMeier"){
+        IC0 + getInfluenceFunctionBrierKMCensoringTerm(t,time,residuals,event)
     }
     else {
-      IC.C.term <- (1-2*risk[i])*(1*(status[i] == 0 & time[i] <= tau)/(Gtimes[i,i]*Stimes[i,i])*(F1tau[i]-F1[i,i])-sum( 1*(time <= tau & time <= time[i])*((F1tau[i]-F1[i,])*jumps / (Gtimes[i,]*Stimes[i,]))))
+      stop("Non conservative options with cens.model not being a Cox model or KaplanMeier are not implemented. ")
     }
-    # IC.C.term <- 0
-    IC[i] <- 1*(time[i] <= tau & status[i] == 1 )* (1-2*risk[i]) * 1/GTiminus[i] + IC.C.term + risk[i]^2 - Brier
-  }
-  IC
 }
 
-getInfluenceCurve.Brier.covariates.use.squared <- function(tau,time,residuals,risk,status,GTiminus,Gtau,IC.data) {
+getInfluenceCurve.Brier.covariates <- function(tau,time,residuals,risk,status,GTiminus,Gtau,IC.data) {
   n <- length(time)
   IC <- rep(NA,n)
   fit.time <- IC.data$fit.time
@@ -152,12 +142,12 @@ getInfluenceCurve.Brier.covariates.use.squared <- function(tau,time,residuals,ri
       IC.C.term <- IC.C.term.part + (1-risk[i])^2*(1*(status[i] == 0 & time[i] <= tau)/(Gtimes[i,i]*Stimes[i,i])*(F1tau[i]-F1[i,i])-sum( 1*(time <= tau & time <= time[i])*((F1tau[i]-F1[i,])*jumps / (Gtimes[i,]*Stimes[i,]))))
     }
     # IC.C.term <- 0
-    IC[i] <- residuals[i]-Brier + IC.C.term
+    IC[i] <- IC.C.term
   }
   IC
 }
 
-getInfluenceCurve.AUC.covariates <- function(t,n,time,status,risk,GTiminus,Gtau,AUC,IC.data){
+getInfluenceCurve.AUC.covariates <- function(t,n,time,status,risk,GTiminus,Gtau,AUC,IC.data){ ## needs to be fixed later
     tau <- t
     X <- risk
     #estimate int 1{X_i > x, t' > tau} dP(t',x)/G(tau | x')

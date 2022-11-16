@@ -9,7 +9,7 @@ using namespace arma;
 // see https://github.com/eestet75/riskRegressionStudy/blob/master/PicsForImplementation/BrierTrainTest.png
 // Should be used with loob estimates and generally 
 // [[Rcpp::export(rng=false)]]
-NumericVector getInfluenceFunctionBrierKMCensoringUseSquared(double tau,
+NumericVector getInfluenceFunctionBrierKMCensoringTerm(double tau,
                                                              NumericVector time,
                                                              NumericVector residuals,
                                                              NumericVector status) {
@@ -19,7 +19,7 @@ NumericVector getInfluenceFunctionBrierKMCensoringUseSquared(double tau,
   checkNAs(status, GET_VARIABLE_NAME(status));
 
   int n = time.size();
-  NumericVector ic(n);
+  NumericVector ictermvec(n);
   arma::uvec sindex(n,fill::zeros);
   arma::vec utime=unique(time);
   int nu=utime.size();
@@ -43,7 +43,6 @@ NumericVector getInfluenceFunctionBrierKMCensoringUseSquared(double tau,
     }
   }
   icpart = icpart / ( (double) n);
-  double brier = mean(residuals);
   int tieIter = 0;
   // can do while loops together
   while ((tieIter < n) && (time[tieIter] == time[0])) {
@@ -84,7 +83,7 @@ NumericVector getInfluenceFunctionBrierKMCensoringUseSquared(double tau,
       }
       upperTie = tieIter-1;
     }
-    ic[i] = residuals[i] - brier + icterm+icterm2;
+    ictermvec[i]=icterm+icterm2;
   }
-  return ic;
+  return ictermvec;
 }

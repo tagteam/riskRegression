@@ -135,8 +135,8 @@ getInfluenceFunctionAUCKMCensoringCVPart <- function(time, status, tau, GTiminus
     .Call(`_riskRegression_getInfluenceFunctionAUCKMCensoringCVPart`, time, status, tau, GTiminus, Gtau, aucMat, nu1tauPm)
 }
 
-getInfluenceFunctionBrierKMCensoringUseSquared <- function(tau, time, residuals, status) {
-    .Call(`_riskRegression_getInfluenceFunctionBrierKMCensoringUseSquared`, tau, time, residuals, status)
+getInfluenceFunctionBrierKMCensoringTerm <- function(tau, time, residuals, status) {
+    .Call(`_riskRegression_getInfluenceFunctionBrierKMCensoringTerm`, tau, time, residuals, status)
 }
 
 calcE_cpp <- function(eventtime, status, eXb, X, p, add0) {
@@ -395,5 +395,9 @@ sliceScale_cpp <- function(X, M) {
 #' @export
 sliceScalePointer_cpp <- function(X, M) {
     invisible(.Call(`_riskRegression_sliceScalePointer_cpp`, X, M))
+}
+
+weightedAverageIFCumhazard_cpp <- function(seqTau, cumhazard0, newX, neweXb, IFbeta, cumEhazard0, cumhazard_iS0, delta_iS0, sample_eXb, sample_time, indexJumpSample_time, jump_time, indexJumpTau, lastSampleTime, newdata_index, factor, nTau, nNewObs, nSample, nStrata, p, diag, debug, weights) {
+    .Call(`_riskRegression_weightedAverageIFCumhazard_cpp`, seqTau, cumhazard0, newX, neweXb, IFbeta, cumEhazard0, cumhazard_iS0, delta_iS0, sample_eXb, sample_time, indexJumpSample_time, jump_time, indexJumpTau, lastSampleTime, newdata_index, factor, nTau, nNewObs, nSample, nStrata, p, diag, debug, weights)
 }
 
