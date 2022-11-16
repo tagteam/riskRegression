@@ -323,7 +323,7 @@ crossvalPerf.loob.Brier <- function(times,mlevs,se.fit,response.type,NT,Response
         else {
           DT.B[,status0:=status*event]
         }
-        DT[,IF.Brier:=getInfluenceCurve.Brier(t=times[1],
+        DT.B[,IF.Brier:=getInfluenceCurve.Brier(t=times[1],
                                               time=time,
                                               IC0,
                                               residuals=residuals,
