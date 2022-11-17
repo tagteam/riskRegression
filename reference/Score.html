@@ -10,7 +10,7 @@
     
     <a class="navbar-brand me-2" href="../index.html">riskRegression</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2022.10.28</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2022.11.17</small>
 
     
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -91,6 +91,7 @@
 <span>  <span class="va">keep</span>,</span>
 <span>  <span class="va">predictRisk.args</span>,</span>
 <span>  debug <span class="op">=</span> <span class="fl">0L</span>,</span>
+<span>  saveCoxMemory <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  <span class="va">...</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
@@ -296,6 +297,10 @@ randomly splitting (bootstrapping) the data during cross-validation.</p></dd>
 
 <dt>debug</dt>
 <dd><p>Logical. If <code>TRUE</code> indicate landmarks in progress of the program.</p></dd>
+
+
+<dt>saveCoxMemory</dt>
+<dd><p>If <code>TRUE</code>, save memory by not storing the influence function of the cumulative hazard of the censoring as a matrix when calculating standard errors with Cox censoring. This can allow one to use <code>Score</code> on larger test data sets, but may be slower.</p></dd>
 
 </dl></div>
     <div class="section level2">
@@ -925,8 +930,8 @@ and Prognostic Research, 2(1):7, 2018.</p>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span>    <span class="co"># competing risks outcome</span></span></span>
 <span class="r-in"><span>    <span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">18</span><span class="op">)</span></span></span>
-<span class="r-in"><span>    <span class="va">trainCR</span> <span class="op">&lt;-</span> <span class="fu"><a href="sampleData.html">sampleData</a></span><span class="op">(</span><span class="fl">40</span>,outcome<span class="op">=</span><span class="st">"competing.risks"</span><span class="op">)</span></span></span>
-<span class="r-in"><span>    <span class="va">testCR</span> <span class="op">&lt;-</span> <span class="fu"><a href="sampleData.html">sampleData</a></span><span class="op">(</span><span class="fl">40</span>,outcome<span class="op">=</span><span class="st">"competing.risks"</span><span class="op">)</span></span></span>
+<span class="r-in"><span>    <span class="va">trainCR</span> <span class="op">&lt;-</span> <span class="fu"><a href="sampleData.html">sampleData</a></span><span class="op">(</span><span class="fl">400</span>,outcome<span class="op">=</span><span class="st">"competing.risks"</span><span class="op">)</span></span></span>
+<span class="r-in"><span>    <span class="va">testCR</span> <span class="op">&lt;-</span> <span class="fu"><a href="sampleData.html">sampleData</a></span><span class="op">(</span><span class="fl">400</span>,outcome<span class="op">=</span><span class="st">"competing.risks"</span><span class="op">)</span></span></span>
 <span class="r-in"><span>    <span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/tagteam/riskRegression" class="external-link">riskRegression</a></span><span class="op">)</span></span></span>
 <span class="r-in"><span>    <span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://www.R-project.org" class="external-link">cmprsk</a></span><span class="op">)</span></span></span>
 <span class="r-in"><span>    <span class="co"># Cause-specific Cox regression</span></span></span>
