@@ -217,6 +217,54 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// getFirstIndex
+int getFirstIndex(NumericVector time, double tau);
+RcppExport SEXP _riskRegression_getFirstIndex(SEXP timeSEXP, SEXP tauSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< NumericVector >::type time(timeSEXP);
+    Rcpp::traits::input_parameter< double >::type tau(tauSEXP);
+    rcpp_result_gen = Rcpp::wrap(getFirstIndex(time, tau));
+    return rcpp_result_gen;
+END_RCPP
+}
+// weightedAverageIFCumhazard_cpp2
+NumericVector weightedAverageIFCumhazard_cpp2(const arma::vec& seqTau, const std::vector< arma::vec >& cumhazard0, const arma::mat& newX, const arma::vec& neweXb, const arma::mat& IFbeta, const std::vector< arma::mat >& cumEhazard0, const std::vector< arma::vec >& cumhazard_iS0, const arma::mat& delta_iS0, const arma::mat& sample_eXb, const arma::vec& sample_time, const std::vector< arma::uvec>& indexJumpSample_time, const std::vector< arma::vec>& jump_time, const std::vector< arma::uvec >& indexJumpTau, const arma::vec& lastSampleTime, const std::vector< arma::uvec>& newdata_index, const std::vector<arma::mat>& factor, int nTau, int nNewObs, int nSample, int nStrata, int p, bool diag, int debug, const arma::vec& weights, bool isBeforeTau, int firsthit);
+RcppExport SEXP _riskRegression_weightedAverageIFCumhazard_cpp2(SEXP seqTauSEXP, SEXP cumhazard0SEXP, SEXP newXSEXP, SEXP neweXbSEXP, SEXP IFbetaSEXP, SEXP cumEhazard0SEXP, SEXP cumhazard_iS0SEXP, SEXP delta_iS0SEXP, SEXP sample_eXbSEXP, SEXP sample_timeSEXP, SEXP indexJumpSample_timeSEXP, SEXP jump_timeSEXP, SEXP indexJumpTauSEXP, SEXP lastSampleTimeSEXP, SEXP newdata_indexSEXP, SEXP factorSEXP, SEXP nTauSEXP, SEXP nNewObsSEXP, SEXP nSampleSEXP, SEXP nStrataSEXP, SEXP pSEXP, SEXP diagSEXP, SEXP debugSEXP, SEXP weightsSEXP, SEXP isBeforeTauSEXP, SEXP firsthitSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const arma::vec& >::type seqTau(seqTauSEXP);
+    Rcpp::traits::input_parameter< const std::vector< arma::vec >& >::type cumhazard0(cumhazard0SEXP);
+    Rcpp::traits::input_parameter< const arma::mat& >::type newX(newXSEXP);
+    Rcpp::traits::input_parameter< const arma::vec& >::type neweXb(neweXbSEXP);
+    Rcpp::traits::input_parameter< const arma::mat& >::type IFbeta(IFbetaSEXP);
+    Rcpp::traits::input_parameter< const std::vector< arma::mat >& >::type cumEhazard0(cumEhazard0SEXP);
+    Rcpp::traits::input_parameter< const std::vector< arma::vec >& >::type cumhazard_iS0(cumhazard_iS0SEXP);
+    Rcpp::traits::input_parameter< const arma::mat& >::type delta_iS0(delta_iS0SEXP);
+    Rcpp::traits::input_parameter< const arma::mat& >::type sample_eXb(sample_eXbSEXP);
+    Rcpp::traits::input_parameter< const arma::vec& >::type sample_time(sample_timeSEXP);
+    Rcpp::traits::input_parameter< const std::vector< arma::uvec>& >::type indexJumpSample_time(indexJumpSample_timeSEXP);
+    Rcpp::traits::input_parameter< const std::vector< arma::vec>& >::type jump_time(jump_timeSEXP);
+    Rcpp::traits::input_parameter< const std::vector< arma::uvec >& >::type indexJumpTau(indexJumpTauSEXP);
+    Rcpp::traits::input_parameter< const arma::vec& >::type lastSampleTime(lastSampleTimeSEXP);
+    Rcpp::traits::input_parameter< const std::vector< arma::uvec>& >::type newdata_index(newdata_indexSEXP);
+    Rcpp::traits::input_parameter< const std::vector<arma::mat>& >::type factor(factorSEXP);
+    Rcpp::traits::input_parameter< int >::type nTau(nTauSEXP);
+    Rcpp::traits::input_parameter< int >::type nNewObs(nNewObsSEXP);
+    Rcpp::traits::input_parameter< int >::type nSample(nSampleSEXP);
+    Rcpp::traits::input_parameter< int >::type nStrata(nStrataSEXP);
+    Rcpp::traits::input_parameter< int >::type p(pSEXP);
+    Rcpp::traits::input_parameter< bool >::type diag(diagSEXP);
+    Rcpp::traits::input_parameter< int >::type debug(debugSEXP);
+    Rcpp::traits::input_parameter< const arma::vec& >::type weights(weightsSEXP);
+    Rcpp::traits::input_parameter< bool >::type isBeforeTau(isBeforeTauSEXP);
+    Rcpp::traits::input_parameter< int >::type firsthit(firsthitSEXP);
+    rcpp_result_gen = Rcpp::wrap(weightedAverageIFCumhazard_cpp2(seqTau, cumhazard0, newX, neweXb, IFbeta, cumEhazard0, cumhazard_iS0, delta_iS0, sample_eXb, sample_time, indexJumpSample_time, jump_time, indexJumpTau, lastSampleTime, newdata_index, factor, nTau, nNewObs, nSample, nStrata, p, diag, debug, weights, isBeforeTau, firsthit));
+    return rcpp_result_gen;
+END_RCPP
+}
 // colCumSum
 NumericMatrix colCumSum(NumericMatrix x);
 RcppExport SEXP _riskRegression_colCumSum(SEXP xSEXP) {
@@ -613,8 +661,8 @@ BEGIN_RCPP
 END_RCPP
 }
 // weightedAverageIFCumhazard_cpp
-NumericVector weightedAverageIFCumhazard_cpp(const arma::vec& seqTau, const std::vector< arma::vec >& cumhazard0, const arma::mat& newX, const arma::vec& neweXb, const arma::mat& IFbeta, const std::vector< arma::mat >& cumEhazard0, const std::vector< arma::vec >& cumhazard_iS0, const arma::mat& delta_iS0, const arma::mat& sample_eXb, const arma::vec& sample_time, const std::vector< arma::uvec>& indexJumpSample_time, const std::vector< arma::vec>& jump_time, const std::vector< arma::uvec >& indexJumpTau, const arma::vec& lastSampleTime, const std::vector< arma::uvec>& newdata_index, const std::vector<arma::mat>& factor, int nTau, int nNewObs, int nSample, int nStrata, int p, bool diag, int debug, const arma::vec& weights);
-RcppExport SEXP _riskRegression_weightedAverageIFCumhazard_cpp(SEXP seqTauSEXP, SEXP cumhazard0SEXP, SEXP newXSEXP, SEXP neweXbSEXP, SEXP IFbetaSEXP, SEXP cumEhazard0SEXP, SEXP cumhazard_iS0SEXP, SEXP delta_iS0SEXP, SEXP sample_eXbSEXP, SEXP sample_timeSEXP, SEXP indexJumpSample_timeSEXP, SEXP jump_timeSEXP, SEXP indexJumpTauSEXP, SEXP lastSampleTimeSEXP, SEXP newdata_indexSEXP, SEXP factorSEXP, SEXP nTauSEXP, SEXP nNewObsSEXP, SEXP nSampleSEXP, SEXP nStrataSEXP, SEXP pSEXP, SEXP diagSEXP, SEXP debugSEXP, SEXP weightsSEXP) {
+NumericVector weightedAverageIFCumhazard_cpp(const arma::vec& seqTau, const std::vector< arma::vec >& cumhazard0, const arma::mat& newX, const arma::vec& neweXb, const arma::mat& IFbeta, const std::vector< arma::mat >& cumEhazard0, const std::vector< arma::vec >& cumhazard_iS0, const arma::mat& delta_iS0, const arma::mat& sample_eXb, const arma::vec& sample_time, const std::vector< arma::uvec>& indexJumpSample_time, const std::vector< arma::vec>& jump_time, const std::vector< arma::uvec >& indexJumpTau, const arma::vec& lastSampleTime, const std::vector< arma::uvec>& newdata_index, const std::vector<arma::mat>& factor, int nTau, int nNewObs, int nSample, int nStrata, int p, bool diag, int debug, const arma::vec& weights, bool isBeforeTau, double tau);
+RcppExport SEXP _riskRegression_weightedAverageIFCumhazard_cpp(SEXP seqTauSEXP, SEXP cumhazard0SEXP, SEXP newXSEXP, SEXP neweXbSEXP, SEXP IFbetaSEXP, SEXP cumEhazard0SEXP, SEXP cumhazard_iS0SEXP, SEXP delta_iS0SEXP, SEXP sample_eXbSEXP, SEXP sample_timeSEXP, SEXP indexJumpSample_timeSEXP, SEXP jump_timeSEXP, SEXP indexJumpTauSEXP, SEXP lastSampleTimeSEXP, SEXP newdata_indexSEXP, SEXP factorSEXP, SEXP nTauSEXP, SEXP nNewObsSEXP, SEXP nSampleSEXP, SEXP nStrataSEXP, SEXP pSEXP, SEXP diagSEXP, SEXP debugSEXP, SEXP weightsSEXP, SEXP isBeforeTauSEXP, SEXP tauSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -642,7 +690,9 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< bool >::type diag(diagSEXP);
     Rcpp::traits::input_parameter< int >::type debug(debugSEXP);
     Rcpp::traits::input_parameter< const arma::vec& >::type weights(weightsSEXP);
-    rcpp_result_gen = Rcpp::wrap(weightedAverageIFCumhazard_cpp(seqTau, cumhazard0, newX, neweXb, IFbeta, cumEhazard0, cumhazard_iS0, delta_iS0, sample_eXb, sample_time, indexJumpSample_time, jump_time, indexJumpTau, lastSampleTime, newdata_index, factor, nTau, nNewObs, nSample, nStrata, p, diag, debug, weights));
+    Rcpp::traits::input_parameter< bool >::type isBeforeTau(isBeforeTauSEXP);
+    Rcpp::traits::input_parameter< double >::type tau(tauSEXP);
+    rcpp_result_gen = Rcpp::wrap(weightedAverageIFCumhazard_cpp(seqTau, cumhazard0, newX, neweXb, IFbeta, cumEhazard0, cumhazard_iS0, delta_iS0, sample_eXb, sample_time, indexJumpSample_time, jump_time, indexJumpTau, lastSampleTime, newdata_index, factor, nTau, nNewObs, nSample, nStrata, p, diag, debug, weights, isBeforeTau, tau));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -656,6 +706,8 @@ static const R_CallMethodDef CallEntries[] = {
     {"_riskRegression_calcSeMinimalCox_cpp", (DL_FUNC) &_riskRegression_calcSeMinimalCox_cpp, 33},
     {"_riskRegression_calcAIFsurv_cpp", (DL_FUNC) &_riskRegression_calcAIFsurv_cpp, 16},
     {"_riskRegression_calculateDelongCovarianceFast", (DL_FUNC) &_riskRegression_calculateDelongCovarianceFast, 2},
+    {"_riskRegression_getFirstIndex", (DL_FUNC) &_riskRegression_getFirstIndex, 2},
+    {"_riskRegression_weightedAverageIFCumhazard_cpp2", (DL_FUNC) &_riskRegression_weightedAverageIFCumhazard_cpp2, 26},
     {"_riskRegression_colCumSum", (DL_FUNC) &_riskRegression_colCumSum, 1},
     {"_riskRegression_colCumProd", (DL_FUNC) &_riskRegression_colCumProd, 1},
     {"_riskRegression_colSumsCrossprod", (DL_FUNC) &_riskRegression_colSumsCrossprod, 3},
@@ -683,7 +735,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_riskRegression_sliceMultiplyPointer_cpp", (DL_FUNC) &_riskRegression_sliceMultiplyPointer_cpp, 2},
     {"_riskRegression_sliceScale_cpp", (DL_FUNC) &_riskRegression_sliceScale_cpp, 2},
     {"_riskRegression_sliceScalePointer_cpp", (DL_FUNC) &_riskRegression_sliceScalePointer_cpp, 2},
-    {"_riskRegression_weightedAverageIFCumhazard_cpp", (DL_FUNC) &_riskRegression_weightedAverageIFCumhazard_cpp, 24},
+    {"_riskRegression_weightedAverageIFCumhazard_cpp", (DL_FUNC) &_riskRegression_weightedAverageIFCumhazard_cpp, 26},
     {NULL, NULL, 0}
 };
 

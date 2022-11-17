@@ -110,10 +110,10 @@
 ##' @param cl An optional \code{parallel} or \code{snow} cluster for use if \code{parallel = "snow"}. If not supplied, a cluster on the local machine is created for the duration of the \code{Score} call.
 ##' @param progress.bar Style for \code{txtProgressBar}. Can be 1,2,3 see \code{help(txtProgressBar)} or NULL to avoid the progress bar.
 ##' @param keep list of characters (not case sensitive) which determines additional output.
-##' @param saveCoxMemory If \code{TRUE}, save memory by not storing the influence function of the cumulative hazard of the censoring as a matrix when calculating standard errors with Cox censoring. This can allow one to use \code{Score} on larger test data sets, but may be slower.
 ##' \code{"residuals"} provides Brier score residuals and
 ##' \code{"splitindex"} provides sampling index used to split the data into training and validation sets.
 ##' \code{"vcov"} provides the variance-covariance matrix of the estimated parameters.
+##' @param saveCoxMemory If \code{TRUE}, save memory by not storing the influence function of the cumulative hazard of the censoring as a matrix when calculating standard errors with Cox censoring. This can allow one to use \code{Score} on larger test data sets, but may be slower.
 ##' @param predictRisk.args
 ##'  A list of argument-lists to control how risks are predicted.
 ##'  The names of the lists should be the S3-classes of the \code{object}.
@@ -320,8 +320,8 @@
 ##'
 ##'     # competing risks outcome
 ##'     set.seed(18)
-##'     trainCR <- sampleData(40,outcome="competing.risks")
-##'     testCR <- sampleData(40,outcome="competing.risks")
+##'     trainCR <- sampleData(400,outcome="competing.risks")
+##'     testCR <- sampleData(400,outcome="competing.risks")
 ##'     library(riskRegression)
 ##'     library(cmprsk)
 ##'     # Cause-specific Cox regression

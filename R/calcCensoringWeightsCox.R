@@ -2,7 +2,9 @@ predictCoxWeights <- function(object,
                               times,
                               newdata,
                               diag = FALSE,
-                              weights){
+                              weights, 
+                              isBeforeTau = FALSE,
+                              tau = -1){
   call <- match.call()
   ## centering
   centered <- TRUE
@@ -237,5 +239,5 @@ predictCoxWeights <- function(object,
                                    factor = factor,
                                    nTau = nTimes, nNewObs = new.n, nSample = object.n, nStrata = nStrata, p = nVar.lp,
                                    diag = diag,
-                                   debug = 0, weights = weights))*new.n
+                                   debug = 0, weights = weights, isBeforeTau = isBeforeTau, tau = tau))*new.n
 }

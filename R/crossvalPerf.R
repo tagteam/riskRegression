@@ -31,7 +31,8 @@ crossvalPerf.loob.AUC <- function(times,mlevs,se.fit,response.type,NT,Response,c
         ## event of interest before times
         ## the following indices have to be logical!!!
         cases.index <- Response[,time<=t & status==1]
-        controls.index <- Response[,time>t]
+        controls.index = controls.index1 = Response[,time>t]
+        controls.index2 <- rep(FALSE, N)
         cc.status <- factor(rep("censored",N),levels=c("censored","case","control"))
         cc.status[cases.index] <- "case"
         cc.status[controls.index] <- "control"
@@ -122,7 +123,7 @@ crossvalPerf.loob.AUC <- function(times,mlevs,se.fit,response.type,NT,Response,c
         # following section should be cleaned up(!!!)
         auc.loob[times==t&model==mod,AUC:=aucLPO]
       }
-      if (se.fit==1L){
+      if (se.fit==1L){ ## should clean this up when cv has been fixed !
         if (!(cens.model %in% c("none", "KaplanMeier","cox")) && response.type != "binary" && !conservative[[1]]) stop("Censoring model not supported when conservative = TRUE")
         id.cases <- data[["ID"]][cc.status=="case"]
         id.controls <- data[["ID"]][cc.status=="control"]
@@ -148,30 +149,35 @@ crossvalPerf.loob.AUC <- function(times,mlevs,se.fit,response.type,NT,Response,c
           this.aucDT <- data.table(model=mod,times=t,ID = c(id.cases,id.controls,id.censored), IF.AUC0 = c(ic0, rep(0,length(id.censored))))
         }
         aucDT <- rbindlist(list(aucDT,this.aucDT),use.names=TRUE,fill=TRUE)
-        if (cens.model == "cox" && !conservative[[1]] && mod != 0){
+        if (cens.model == "cox" && !conservative[[1]] && mod != 0){ 
           if (Weights$IC$saveCoxMemory){
-            stop("saveCoxMemory option not implemented for cv yet.")
+            wdata <- Weights$IC[[3]]
+            fit <- Weights$IC[[2]]
+            TiMinus <- Weights$IC[[4]]
+            ic0CaseOld <- rep(0,N)
+            ic0ControlOld <- rep(0,N)
+            ic0CaseOld[cases.index] <- 1/w.cases * ic0Case#ic0CaseOld[cases.index]*w.cases
+            ic0ControlOld[controls.index] <- 1/w.controls * ic0Control
+            Wbeforet <- (1/(Phi*N^2))*(ic0CaseOld*weights.cases*cases.index+ic0ControlOld*weights.controls*controls.index2)-
+              (1/N)*(aucLPO/Phi)*((cases.index)*weights.cases*(1/N)*sum(w.controls)+ (controls.index2)*weights.controls*(1/N)*sum(w.cases))
+            Waftert <- (1/(Phi*N^2))*ic0ControlOld*weights.controls*controls.index1- 
+              (1/N)*(aucLPO/Phi)*(controls.index1)*weights.controls*(1/N)*sum(w.cases)
+            icPart <- predictCoxWeights(fit, diag=TRUE,newdata = wdata, times = TiMinus,weights=Wbeforet, isBeforeTau = TRUE, tau = t)+
+              predictCoxWeights(fit, diag=FALSE,newdata = wdata,times = t,weights=Waftert)
           }
-          ic.weights <- Weights$IC[[2]][[s]]
-          ## ## Part of influence function related to Weights
-          ic.weightsCase <- as.numeric(rowSumsCrossprod(as.matrix(ic0Case), ic.weights[cases.index,], 0))
-          ic.weightsControl <- as.numeric(rowSumsCrossprod(as.matrix(ic0Control), ic.weights[controls.index,], 0))
-          ic.weightsCC <- (1/(Phi*N^2))*(ic.weightsCase+ic.weightsControl)
-          ## ## Part of influence function related to Phi
-          ## icPhiCase <- colMeans(ic.weights[cases.index,])
-          icPhiCase <- as.numeric(rowSumsCrossprod(as.matrix(w.cases),ic.weights[cases.index,],0))
-          icPhiControl <- as.numeric(rowSumsCrossprod(as.matrix(w.controls),ic.weights[controls.index,],0))
+          else {
+            ic.weights <- Weights$IC[[2]][[s]]
+            icPart <- as.numeric(rowSumsCrossprod(as.matrix(1/(Phi*N^2)*ic0Case-(aucLPO/Phi)*(1/N^2)*sum(w.controls)*w.cases), ic.weights[cases.index,], 0)) +
+              as.numeric(rowSumsCrossprod(as.matrix(1/(Phi*N^2)*ic0Control-(aucLPO/Phi)*(1/N^2)*sum(w.cases)*w.controls),ic.weights[controls.index,],0))
+          }
         }
-        else {
-          icPhiCase <- icPhiControl <- ic.weightsCC <- 0
-        }
-        icPhi <- (aucLPO/Phi)*((weights.cases+(1/N)*icPhiCase)*(1/N)*sum(weights.controls)+(weights.controls+(1/N)*icPhiControl)*(1/N)*sum(weights.cases))
+        icPhi1 <- (aucLPO/Phi)*((weights.cases)*(1/N)*sum(weights.controls)+(weights.controls)*(1/N)*sum(weights.cases))
         data.table::setkey(aucDT,model,times,ID)
         if (cens.model == "KaplanMeier" || mod == 0){
           aucDT[model==mod&times==t, IF.AUC:=ic]
         }
         else {
-          aucDT[model==mod&times==t, IF.AUC:=IF.AUC0+ic.weightsCC-icPhi]
+          aucDT[model==mod&times==t, IF.AUC:=IF.AUC0+icPart-icPhi1]
         }
         auc.loob[model==mod&times==t,se:= sd(aucDT[model==mod&times==t,IF.AUC])/sqrt(N)]
       }

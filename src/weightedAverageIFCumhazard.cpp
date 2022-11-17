@@ -33,7 +33,9 @@ NumericVector weightedAverageIFCumhazard_cpp(const arma::vec& seqTau, // horizon
                                              int nTau, int nNewObs, int nSample, int nStrata, int p, 
                                              bool diag,
                                              int debug,
-                                             const arma::vec& weights){
+                                             const arma::vec& weights,
+                                             bool isBeforeTau,
+                                             double tau){
   
   // ** prepare
   if(debug>0){Rcpp::Rcout << "Prepare" << std::endl;}
@@ -88,9 +90,7 @@ NumericVector weightedAverageIFCumhazard_cpp(const arma::vec& seqTau, // horizon
     if(iStrata_tauMin > iStrata_tauMax){continue;}
     
     while((iStrata_tauMax >= 0) && seqTau(iStrata_tauMax)>lastSampleTime(iStrata)){ // end at the last event or before
-      for(int iNewObs=0; iNewObs<iStrata_nNewObs ; iNewObs++){
-        Rcpp::stop("Cannot compute average with NAs");
-      }
+      // we nay have a problem here due to NAs in Brices code
       iStrata_tauMax--;
     }
     if(iStrata_tauMax < 0){continue;}
@@ -105,6 +105,12 @@ NumericVector weightedAverageIFCumhazard_cpp(const arma::vec& seqTau, // horizon
         iTau = newdata_index[iStrata](iTime);
       }else{
         iTau = iTime;
+      }
+      
+      if (isBeforeTau){
+        if (sample_time[iTau] > tau){
+          break;
+        }
       }
       
       // jump

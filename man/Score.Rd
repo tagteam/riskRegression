@@ -166,7 +166,10 @@ randomly splitting (bootstrapping) the data during cross-validation.}
 
 \item{errorhandling}{Argument passed as \code{.errorhandling} to foreach. Default is \code{"pass"}.}
 
-\item{keep}{list of characters (not case sensitive) which determines additional output.}
+\item{keep}{list of characters (not case sensitive) which determines additional output.
+\code{"residuals"} provides Brier score residuals and
+\code{"splitindex"} provides sampling index used to split the data into training and validation sets.
+\code{"vcov"} provides the variance-covariance matrix of the estimated parameters.}
 
 \item{predictRisk.args}{A list of argument-lists to control how risks are predicted.
  The names of the lists should be the S3-classes of the \code{object}.
@@ -181,10 +184,7 @@ randomly splitting (bootstrapping) the data during cross-validation.}
 
 \item{debug}{Logical. If \code{TRUE} indicate landmarks in progress of the program.}
 
-\item{saveCoxMemory}{If \code{TRUE}, save memory by not storing the influence function of the cumulative hazard of the censoring as a matrix when calculating standard errors with Cox censoring. This can allow one to use \code{Score} on larger test data sets, but may be slower.
-\code{"residuals"} provides Brier score residuals and
-\code{"splitindex"} provides sampling index used to split the data into training and validation sets.
-\code{"vcov"} provides the variance-covariance matrix of the estimated parameters.}
+\item{saveCoxMemory}{If \code{TRUE}, save memory by not storing the influence function of the cumulative hazard of the censoring as a matrix when calculating standard errors with Cox censoring. This can allow one to use \code{Score} on larger test data sets, but may be slower.}
 }
 \value{
 List with scores and assessments of contrasts, i.e.,
@@ -400,8 +400,8 @@ Score(list("Cox(X1+X2+X7+X9)"=cox1,"Cox(X3+X5+X6)"=cox2),
 
     # competing risks outcome
     set.seed(18)
-    trainCR <- sampleData(40,outcome="competing.risks")
-    testCR <- sampleData(40,outcome="competing.risks")
+    trainCR <- sampleData(400,outcome="competing.risks")
+    testCR <- sampleData(400,outcome="competing.risks")
     library(riskRegression)
     library(cmprsk)
     # Cause-specific Cox regression
