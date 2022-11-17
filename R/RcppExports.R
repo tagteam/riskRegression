@@ -62,14 +62,6 @@ calculateDelongCovarianceFast <- function(Xs, Ys) {
     .Call(`_riskRegression_calculateDelongCovarianceFast`, Xs, Ys)
 }
 
-getFirstIndex <- function(time, tau) {
-    .Call(`_riskRegression_getFirstIndex`, time, tau)
-}
-
-weightedAverageIFCumhazard_cpp2 <- function(seqTau, cumhazard0, newX, neweXb, IFbeta, cumEhazard0, cumhazard_iS0, delta_iS0, sample_eXb, sample_time, indexJumpSample_time, jump_time, indexJumpTau, lastSampleTime, newdata_index, factor, nTau, nNewObs, nSample, nStrata, p, diag, debug, weights, isBeforeTau, firsthit) {
-    .Call(`_riskRegression_weightedAverageIFCumhazard_cpp2`, seqTau, cumhazard0, newX, neweXb, IFbeta, cumEhazard0, cumhazard_iS0, delta_iS0, sample_eXb, sample_time, indexJumpSample_time, jump_time, indexJumpTau, lastSampleTime, newdata_index, factor, nTau, nNewObs, nSample, nStrata, p, diag, debug, weights, isBeforeTau, firsthit)
-}
-
 #' Apply cumsum in each column 
 #'
 #' @description Fast computation of apply(x,2,cumsum)
