@@ -48,6 +48,7 @@ reference:
   - starts_with("model.matrix")
   - starts_with("summary")
   - reconstructData
+  - IC_Nelson_Aalen_cens_time
 - subtitle: Visualisation
   desc: Plotting methods for models and model diagnostics.
   contents:

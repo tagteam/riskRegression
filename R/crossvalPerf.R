@@ -171,6 +171,9 @@ crossvalPerf.loob.AUC <- function(times,mlevs,se.fit,response.type,NT,Response,c
               as.numeric(rowSumsCrossprod(as.matrix(1/(Phi*N^2)*ic0Control-(aucLPO/Phi)*(1/N^2)*sum(w.cases)*w.controls),ic.weights[controls.index,],0))
           }
         }
+        else {
+          icPart <- 0
+        }
         icPhi1 <- (aucLPO/Phi)*((weights.cases)*(1/N)*sum(weights.controls)+(weights.controls)*(1/N)*sum(weights.cases))
         data.table::setkey(aucDT,model,times,ID)
         if (cens.model == "KaplanMeier" || mod == 0){

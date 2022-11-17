@@ -5,6 +5,7 @@ predictCoxWeights <- function(object,
                               weights, 
                               isBeforeTau = FALSE,
                               tau = -1){
+  
   call <- match.call()
   ## centering
   centered <- TRUE
@@ -105,7 +106,7 @@ predictCoxWeights <- function(object,
     stop("One or several parameters of the regression model have no value, i.e., a value 'NA'.\n")
   }
   ## prediction 
-  if (missing(newdata) && (se || iid || average.iid)){
+  if (missing(newdata)){
     stop("Argument 'newdata' is missing. Cannot compute standard errors in this case.")
   }
   if(!is.null(newdata)){
