@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Jan 11 2022 (17:06)
 ## Version:
-## Last-Updated: May 31 2022 (11:44) 
+## Last-Updated: Nov 21 2022 (13:55) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 9
+##     Update #: 10
 #----------------------------------------------------------------------
 ##
 ### Commentary:
@@ -53,7 +53,17 @@ AUC.survival <- function(DT,MC,se.fit,conservative,cens.model,keep.vcov=FALSE,mu
         ## compute influence function
         ## data.table::setorder(aucDT,model,times,time,-status)
         data.table::setorder(aucDT,model,times,ID)
-        aucDT[,IF.AUC:=getInfluenceCurve.AUC(times[1],time,status, WTi, Wt, risk, MC, AUC[1], nth.times[1], conservative[[1]], cens.model), by=list(model,times)]
+        aucDT[,IF.AUC:=getInfluenceCurve.AUC(times[1],
+                                             time,
+                                             status,
+                                             WTi,
+                                             Wt,
+                                             risk,
+                                             MC,
+                                             AUC[1],
+                                             nth.times[1],
+                                             conservative[[1]],
+                                             cens.model), by=list(model,times)]
         se.score <- aucDT[,list(se=sd(IF.AUC)/sqrt(N)),by=list(model,times)]
 
         data.table::setkey(se.score,model,times)

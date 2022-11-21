@@ -197,7 +197,6 @@ getInfluenceCurve.AUC.covariates <- function(t,n,time,status,risk,GTiminus,Gtau,
         cum <- cumhazardCXi[i,]
         jumps <- diff(c(0,cum))
         
-        # if (any(fhat.Ti != 0) || any(fhat.tau != 0)) browser()
         # #calculate fhat(tau,X_i) for i = 1, ..., n
         term1nu <- 1*(time[i] <= tau & status[i] == 1)/GTiminus[i] * int1nu[i]
         if (!is.comprisk){

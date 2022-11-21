@@ -113,7 +113,6 @@ sampleDataTD <- function(n,n.intervals=5,outcome="competing.risks",formula= ~ f(
         d <- lava::sim(m,sum(is.censored))
         data.table::setDT(d)
         d[,start:=data[is.censored,time]]
-        ## if (any(is.na(d$start))) browser()
         d[,time:=time+data[is.censored,time]]
         d
     }

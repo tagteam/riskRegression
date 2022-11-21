@@ -5,7 +5,6 @@ using namespace Rcpp;
 using namespace arma;
 using namespace std;
 
-// * calcSeMinimalCox_cpp: compute IF/sumIF/se for the hazard / cumlative hazard / survival (method 1)
 // J: number of jump times
 // n: number of observations in the training set
 // N: number of observations in the prediction set
@@ -29,13 +28,12 @@ NumericVector weightedAverageIFCumhazard_cpp(const arma::vec& seqTau, // horizon
                                              const std::vector< arma::uvec >& indexJumpTau, // index of the jump time corresponding to the horizon times S:J
                                              const arma::vec& lastSampleTime, // time after which the prediction are NA (S)
                                              const std::vector< arma::uvec>& newdata_index, // index of the observations within strata
-                                             const std::vector<arma::mat>& factor,
-                                             int nTau, int nNewObs, int nSample, int nStrata, int p, 
+                                             int nTau, int nSample, int nStrata, int p, 
                                              bool diag,
                                              int debug,
                                              const arma::vec& weights,
                                              bool isBeforeTau,
-                                             double tau){
+                                             double tau){ 
   
   // ** prepare
   if(debug>0){Rcpp::Rcout << "Prepare" << std::endl;}

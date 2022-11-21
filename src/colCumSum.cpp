@@ -19,21 +19,3 @@ NumericMatrix colCumSum(NumericMatrix x){
   result=cumsum(m,0);
   return wrap(result);
 }
-
-//' Apply cumprod in each column 
-//'
-//' @description Fast computation of apply(x,2,cumprod)
-//' @param x A matrix.
-//' @return A matrix of same size as x.
-//' @author Thomas Alexander Gerds <tag@@biostat.ku.dk>
-//' @examples
-//' x <- matrix(1:8,ncol=2)
-//' colCumProd(x)
-//' @export
-// [[Rcpp::export]]
-NumericMatrix colCumProd(NumericMatrix x){
-  arma::mat m(x.begin(), x.nrow(), x.ncol(), false);
-  arma::mat result;
-  result=cumprod(m,0);
-  return wrap(result);
-}
