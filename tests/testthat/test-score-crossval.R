@@ -16,7 +16,7 @@ test.cross <- function(){
   types <- list(list(data = "binary", model = "glm", response = "Y",left.extra = "family", right.extra = "binomial", sample.size = sample.size),
                 list(data = "survival", model = "coxph", response = "Surv(time,event)",left.extra = "x", right.extra = TRUE, sample.size = sample.size), 
                 list(data = "competing.risks", model = "CSC", response = "Hist(time,event)", sample.size = sample.size.comp))
-  split.methods <- list(list(name = "cv5", B=B.cv5 ) ,list(name="loob", B=B), list(name= "bootcv", B=B))
+  split.methods <- list(list(name="loob", B=B), list(name= "bootcv", B=B)) # list(list(name = "cv5", B=B.cv5 ) ,list(name="loob", B=B), list(name= "bootcv", B=B))
   for (typ in types){
     for (split in split.methods){
       cat(paste0("Testing ", typ$data, " data with ", split$name, "\n"))

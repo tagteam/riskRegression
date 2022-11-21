@@ -14,16 +14,15 @@
 #----------------------------------------------------------------------
 ## 
 ### Code:
-##' .. content for \description{} (no empty lines) ..
+##' simulating data alike the pbc data
 ##'
-##' .. content for \details{} ..
-##' @title
-##' @param n
-##' @return 
-##' @seealso 
+##' using lava to synthesize data
+##' @title bla
+##' @param n Sample size
+##' @return bla 
+##' @seealso bla
+##' @export simPBC
 ##' @examples 
-##' @export
-##' @example
 ##' library(survival)
 ##' library(lava)
 ##' # simulate data alike pbc data

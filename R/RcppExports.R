@@ -5,22 +5,6 @@ AUCijFun <- function(riskCase, riskControl) {
     .Call(`_riskRegression_AUCijFun`, riskCase, riskControl)
 }
 
-#' @title Influence function for Nelson-Aalen estimator.
-#' 
-#' @description Fast computation of influence function for Nelson-Aalen estimator of the censoring times
-#' @param time sorted vector of event times. Sorted according to time and -status so that events come first a tied times.
-#' @param status sorted vector of 0 = censored or 1 = event (any cause). Sorted according to time and -status so that events come first a tied times.
-#' @return A square matrix where each column corresponds to a subject and each row to a time point. 
-#' @author Thomas Alexander Gerds <tag@@biostat.ku.dk>
-#' @examples
-#' time = c(1,3,3,4)
-#' status = c(1,0,1,1)
-#' IC_Nelson_Aalen_cens_time(time,status)
-#' @export
-IC_Nelson_Aalen_cens_time <- function(time, status) {
-    .Call(`_riskRegression_IC_Nelson_Aalen_cens_time`, time, status)
-}
-
 #' @title C++ Fast Baseline Hazard Estimation
 #' @description C++ function to estimate the baseline hazard from a Cox Model
 #'
@@ -74,41 +58,6 @@ calculateDelongCovarianceFast <- function(Xs, Ys) {
 #' @export
 colCumSum <- function(x) {
     .Call(`_riskRegression_colCumSum`, x)
-}
-
-#' Apply cumprod in each column 
-#'
-#' @description Fast computation of apply(x,2,cumprod)
-#' @param x A matrix.
-#' @return A matrix of same size as x.
-#' @author Thomas Alexander Gerds <tag@@biostat.ku.dk>
-#' @examples
-#' x <- matrix(1:8,ncol=2)
-#' colCumProd(x)
-#' @export
-colCumProd <- function(x) {
-    .Call(`_riskRegression_colCumProd`, x)
-}
-
-#' Apply crossprod and colSums 
-#'
-#' @description Fast computation of crossprod(colSums(X),Y) 
-#' @param X A matrix with dimensions k*n. Hence the result of \code{colSums(X)} has length n.
-#' @param Y A matrix with dimenions n*m. Can be a matrix with dimension m*n but then \code{transposeY} should be \code{TRUE}.
-#' @param transposeY Logical. If \code{TRUE} transpose Y before matrix multiplication.
-#' @return A vector of length m.
-#' @author Thomas Alexander Gerds <tag@@biostat.ku.dk>
-#' @examples
-#' x <- matrix(1:8,ncol=2)
-#' y <- matrix(1:16,ncol=8)
-#' colSumsCrossprod(x,y,0)
-#' 
-#' x <- matrix(1:8,ncol=2)
-#' y <- matrix(1:16,ncol=2)
-#' colSumsCrossprod(x,y,1)
-#' @export
-colSumsCrossprod <- function(X, Y, transposeY) {
-    .Call(`_riskRegression_colSumsCrossprod`, X, Y, transposeY)
 }
 
 quantileProcess_cpp <- function(nSample, nContrast, nSim, iid, alternative, global, confLevel) {
@@ -169,20 +118,6 @@ rowCumSum <- function(x) {
     .Call(`_riskRegression_rowCumSum`, x)
 }
 
-#' Apply cumprod in each row 
-#'
-#' @description Fast computation of t(apply(x,1,cumprod))
-#' @param x A matrix.
-#' @return A matrix of same size as x.
-#' @author Thomas Alexander Gerds <tag@@biostat.ku.dk>
-#' @examples
-#' x <- matrix(1:8,ncol=2)
-#' rowCumProd(x)
-#' @export
-rowCumProd <- function(x) {
-    .Call(`_riskRegression_rowCumProd`, x)
-}
-
 #' Apply crossprod and rowSums
 #'
 #' @description Fast computation of crossprod(rowSums(X),Y)
@@ -204,7 +139,200 @@ rowSumsCrossprod <- function(X, Y, transposeY) {
     .Call(`_riskRegression_rowSumsCrossprod`, X, Y, transposeY)
 }
 
-weightedAverageIFCumhazard_cpp <- function(seqTau, cumhazard0, newX, neweXb, IFbeta, cumEhazard0, cumhazard_iS0, delta_iS0, sample_eXb, sample_time, indexJumpSample_time, jump_time, indexJumpTau, lastSampleTime, newdata_index, factor, nTau, nNewObs, nSample, nStrata, p, diag, debug, weights, isBeforeTau, tau) {
-    .Call(`_riskRegression_weightedAverageIFCumhazard_cpp`, seqTau, cumhazard0, newX, neweXb, IFbeta, cumEhazard0, cumhazard_iS0, delta_iS0, sample_eXb, sample_time, indexJumpSample_time, jump_time, indexJumpTau, lastSampleTime, newdata_index, factor, nTau, nNewObs, nSample, nStrata, p, diag, debug, weights, isBeforeTau, tau)
+#' @title Apply - by column
+#' @description Fast computation of sweep(X, MARGIN = 1, FUN = "-", STATS = center)
+#' @name colCenter_cpp
+#' 
+#' 
+#' @param X A matrix.
+#' @param center a numeric vector of length equal to the number of rows of \code{x}
+#' 
+#' @return A matrix of same size as X.
+#' 
+#' @author Brice Ozenne <broz@@sund.ku.dk>
+#' @examples
+#' x <- matrix(1,6,5)
+#' sweep(x, MARGIN = 1, FUN = "-", STATS = 1:6)
+#' colCenter_cpp(x, 1:6 )
+NULL
+
+#' @title Apply - by row
+#' @description Fast computation of sweep(X, MARGIN = 2, FUN = "-", STATS = center)
+#' @name rowCenter_cpp
+#' 
+#' @param X A matrix.
+#' @param center a numeric vector of length equal to the number of rows of \code{x}
+#' 
+#' @return A matrix of same size as X.
+#' @author Brice Ozenne <broz@@sund.ku.dk>
+#' @examples
+#' x <- matrix(1,6,5)
+#' sweep(x, MARGIN = 2, FUN = "-", STATS = 1:5)
+#' rowCenter_cpp(x, 1:5 )
+#' 
+#' rowCenter_cpp(x, colMeans(x) )
+NULL
+
+#' @title Apply / by column
+#' @description Fast computation of sweep(X, MARGIN = 1, FUN = "/", STATS = scale)
+#' @name colScale_cpp
+#'
+#' @param X A matrix.
+#' @param scale a numeric vector of length equal to the number of rows of \code{x}
+#' 
+#' @return A matrix of same size as X.
+#' @author Brice Ozenne <broz@@sund.ku.dk>
+#' @examples
+#' x <- matrix(1,6,5)
+#' sweep(x, MARGIN = 1, FUN = "/", STATS = 1:6)
+#' colScale_cpp(x, 1:6 )
+NULL
+
+#' @title Apply / by row
+#' @description Fast computation of sweep(X, MARGIN = 2, FUN = "/", STATS = scale)
+#' @name rowScale_cpp
+#' 
+#' @param X A matrix.
+#' @param scale a numeric vector of length equal to the number of rows of \code{x}
+#' 
+#' @return A matrix of same size as X.
+#' @author Brice Ozenne <broz@@sund.ku.dk>
+#' @examples
+#' x <- matrix(1,6,5)
+#' sweep(x, MARGIN = 2, FUN = "/", STATS = 1:5)
+#' rowScale_cpp(x, 1:5 )
+#' 
+#' rowScale_cpp(x, colMeans(x) )
+NULL
+
+#' @title Apply * by column
+#' @description Fast computation of sweep(X, MARGIN = 1, FUN = "*", STATS = scale)
+#' @name colMultiply_cpp
+#' 
+#' @param X A matrix.
+#' @param scale a numeric vector of length equal to the number of rows of \code{x}
+#' 
+#' @return A matrix of same size as X.
+#' @author Brice Ozenne <broz@@sund.ku.dk>
+#' @examples
+#' x <- matrix(1,6,5)
+#' sweep(x, MARGIN = 1, FUN = "*", STATS = 1:6)
+#' colMultiply_cpp(x, 1:6 )
+NULL
+
+#' @title Apply * by row
+#' @description Fast computation of sweep(X, MARGIN = 2, FUN = "*", STATS = scale)
+#' @name rowMultiply_cpp
+#' 
+#' @param X A matrix.
+#' @param scale a numeric vector of length equal to the number of rows of \code{x}
+#' 
+#' @return A matrix of same size as X.
+#' @author Brice Ozenne <broz@@sund.ku.dk>
+#' @examples
+#' x <- matrix(1,6,5)
+#' sweep(x, MARGIN = 2, FUN = "*", STATS = 1:5)
+#' rowMultiply_cpp(x, 1:5 )
+#' 
+#' rowMultiply_cpp(x, 1/colMeans(x) )
+#' 
+NULL
+
+#' @title Apply * by slice
+#' @description Fast computation of sweep(X, MARGIN = 1:2, FUN = "*", STATS = scale)
+#' @name sliceMultiply_cpp
+#' 
+#' @param X An array.
+#' @param M A matrix with the same number of row and columns as X.
+#' 
+#' @return An array of same size as X.
+#' @author Brice Ozenne <broz@@sund.ku.dk>
+#' @examples
+#' x <- array(1, dim = c(2,6,5))
+#' M <- matrix(1:12,2,6)
+#' sweep(x, MARGIN = 1:2, FUN = "*", STATS = M)
+#' sliceMultiply_cpp(x, M) 
+#' 
+NULL
+
+#' @title Apply / by slice
+#' @description Fast computation of sweep(X, MARGIN = 1:2, FUN = "/", STATS = scale)
+#' @name sliceScale_cpp
+#' 
+#' @param X An array.
+#' @param M A matrix with the same number of row and columns as X.
+#' 
+#' @return An array of same size as X.
+#' @author Brice Ozenne <broz@@sund.ku.dk>
+#' @examples
+#' x <- array(1, dim = c(2,6,5))
+#' M <- matrix(1:12,2,6)
+#' sweep(x, MARGIN = 1:2, FUN = "/", STATS = M)
+#' sliceScale_cpp(x, M) 
+#' 
+NULL
+
+#' @rdname colCenter_cpp
+#' @export
+colCenter_cpp <- function(X, center) {
+    .Call(`_riskRegression_colCenter_cpp`, X, center)
+}
+
+#' @rdname rowCenter_cpp
+#' @export
+rowCenter_cpp <- function(X, center) {
+    .Call(`_riskRegression_rowCenter_cpp`, X, center)
+}
+
+#' @rdname colScale_cpp
+#' @export
+colScale_cpp <- function(X, scale) {
+    .Call(`_riskRegression_colScale_cpp`, X, scale)
+}
+
+#' @rdname rowScale_cpp
+#' @export
+rowScale_cpp <- function(X, scale) {
+    .Call(`_riskRegression_rowScale_cpp`, X, scale)
+}
+
+#' @name colMultiply_cpp
+#' @export
+colMultiply_cpp <- function(X, scale) {
+    .Call(`_riskRegression_colMultiply_cpp`, X, scale)
+}
+
+#' @name rowMultiply_cpp
+#' @export
+rowMultiply_cpp <- function(X, scale) {
+    .Call(`_riskRegression_rowMultiply_cpp`, X, scale)
+}
+
+#' @rdname sliceMultiply_cpp
+#' @export
+sliceMultiply_cpp <- function(X, M) {
+    .Call(`_riskRegression_sliceMultiply_cpp`, X, M)
+}
+
+#' @rdname sliceMultiply_cpp
+#' @export
+sliceMultiplyPointer_cpp <- function(X, M) {
+    invisible(.Call(`_riskRegression_sliceMultiplyPointer_cpp`, X, M))
+}
+
+#' @rdname sliceScale_cpp
+#' @export
+sliceScale_cpp <- function(X, M) {
+    .Call(`_riskRegression_sliceScale_cpp`, X, M)
+}
+
+#' @rdname sliceScale_cpp
+#' @export
+sliceScalePointer_cpp <- function(X, M) {
+    invisible(.Call(`_riskRegression_sliceScalePointer_cpp`, X, M))
+}
+
+weightedAverageIFCumhazard_cpp <- function(seqTau, cumhazard0, newX, neweXb, IFbeta, cumEhazard0, cumhazard_iS0, delta_iS0, sample_eXb, sample_time, indexJumpSample_time, jump_time, indexJumpTau, lastSampleTime, newdata_index, nTau, nSample, nStrata, p, diag, debug, weights, isBeforeTau, tau) {
+    .Call(`_riskRegression_weightedAverageIFCumhazard_cpp`, seqTau, cumhazard0, newX, neweXb, IFbeta, cumEhazard0, cumhazard_iS0, delta_iS0, sample_eXb, sample_time, indexJumpSample_time, jump_time, indexJumpTau, lastSampleTime, newdata_index, nTau, nSample, nStrata, p, diag, debug, weights, isBeforeTau, tau)
 }
 

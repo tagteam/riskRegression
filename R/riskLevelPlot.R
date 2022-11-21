@@ -105,7 +105,6 @@ riskLevelPlot <- function(object,
     })
                                         # }}}
                                         # {{{ Create newdata grid
-    ## browser()
     newData <- expand.grid(gridSides)  
     names(newData) <- riskfactors
                                         # }}}

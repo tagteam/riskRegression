@@ -210,14 +210,6 @@ predictCoxWeights <- function(object,
   Lambda0$strata <- as.numeric(Lambda0$strata)    
   Lambda0$cumhazard <- lapply(1:nStrata,function(s){Lambda0$cumhazard[Lambda0$strata==s][Lambda0$oorder.times]})
   
-  if(is.null(attr(export,"factor"))){
-    rm.list <- TRUE
-    factor <- list(matrix(1, nrow = new.n, ncol = nTimes))
-  }else{
-    rm.list <- FALSE                
-    factor <- attr(export, "factor")
-  }
-  
   ## ** hazard / cumulative hazard / survival
   c(weightedAverageIFCumhazard_cpp(seqTau = times,
                                    cumhazard0 = Lambda0$cumhazard,
@@ -237,8 +229,7 @@ predictCoxWeights <- function(object,
                                    lastSampleTime = iid.object$etime.max,
                                    newdata_index = lapply(1:nStrata,
                                                           function(iS){which(new.strata == iS)-1}),
-                                   factor = factor,
-                                   nTau = nTimes, nNewObs = new.n, nSample = object.n, nStrata = nStrata, p = nVar.lp,
+                                   nTau = nTimes, nSample = object.n, nStrata = nStrata, p = nVar.lp,
                                    diag = diag,
                                    debug = 0, weights = weights, isBeforeTau = isBeforeTau, tau = tau))*new.n
 }

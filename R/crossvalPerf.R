@@ -10,9 +10,7 @@ crossvalPerf.loob.AUC <- function(times,mlevs,se.fit,response.type,NT,Response,c
   auc.loob[,AUC:=as.numeric(NA)]
   ## for each pair of individuals sum the concordance of the bootstraps where *both* individuals are out-of-bag
   ## divide by number of times the pair is out-of-bag later
-  if (se.fit==TRUE){
-    aucDT <- NULL
-  }
+  aucDT <- NULL
   ## preparation of outcome status at time horizon(s)
   if (response.type=="binary"){
     NT <- 1
@@ -189,7 +187,9 @@ crossvalPerf.loob.AUC <- function(times,mlevs,se.fit,response.type,NT,Response,c
   if (response.type == "binary"){
     # remove times again
     auc.loob[,times:=NULL] 
-    aucDT[,times:=NULL]
+    if (se.fit){
+      aucDT[,times:=NULL]
+    }
   }
   if (se.fit==1L){
     auc.loob[,lower:=pmax(0,AUC-qnorm(1-alpha/2)*se)]
