@@ -83,11 +83,11 @@ crossvalPerf.loob.AUC <- function(times,mlevs,se.fit,response.type,NT,Response,c
         auc.loob[times==t&model==mod,AUC:=aucLPO]
       }
       else {
+        if (split.method$internal.name=="crossval"){
+          stop("Cannot yet calculate AUC in this case. Use split.method 'loob' or 'bootcv' instead.")
+        }
         Ib <- matrix(0, sum(cases.index), sum(controls.index))
         auc <- matrix(0, sum(cases.index), sum(controls.index))
-        # if (split.method$internal.name=="crossval"){
-        #   # stop("Cannot yet calculate AUC in this case. Use split.method 'loob' or 'bootcv' instead.")
-        # }
         for (u in 1:B){## cannot use b as running index because b==b does not work in data.table
           ## test <- DT.B[model==mod&times==t&b==u]
           # when B is too low it may happen that some subjects are never oob
