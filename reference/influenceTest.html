@@ -157,48 +157,16 @@ such that <code>confint</code> will be able to compute the confidence bands.</p>
 <span class="r-in"><span><span class="co"># one time point</span></span></span>
 <span class="r-in"><span><span class="va">outIF</span> <span class="op">&lt;-</span> <span class="fu">influenceTest</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="va">m.cox</span>, <span class="va">mStrata.cox</span><span class="op">)</span>, </span></span>
 <span class="r-in"><span>              type <span class="op">=</span> <span class="st">"survival"</span>, newdata <span class="op">=</span> <span class="va">newdata</span>, times <span class="op">=</span> <span class="fl">0.5</span><span class="op">)</span></span></span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error in rowMultiply_cpp(-iIFcumhazard, scale = new.survival[iObs, ]):</span> could not find function "rowMultiply_cpp"</span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/stats/confint.html" class="external-link">confint</a></span><span class="op">(</span><span class="va">outIF</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         Comparison of two estimates of the survival at time 0.5</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> model 1:</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> coxph(formula = Surv(eventtime, status) ~ X1, data = d, x = TRUE, </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     y = TRUE)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> model 2:</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> coxph(formula = Surv(eventtime, status) ~ strata(X1), data = d, </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     x = TRUE, y = TRUE)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    X1 time difference     se     conf.interval p.value quantileBand</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1:  0  0.5    -0.0608 0.0270 [-0.114 ; -0.008]  0.0243         1.98</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2:  1  0.5     0.0361 0.0241  [-0.011 ; 0.083]  0.1339         1.98</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>            conf.band</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1: [-0.114 ; -0.007]</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2:  [-0.012 ; 0.084]</span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error in h(simpleError(msg, call)):</span> error in evaluating the argument 'object' in selecting a method for function 'confint': object 'outIF' not found</span>
 <span class="r-in"><span>                                 </span></span>
 <span class="r-in"><span><span class="co"># several timepoints</span></span></span>
 <span class="r-in"><span><span class="va">outIF</span> <span class="op">&lt;-</span> <span class="fu">influenceTest</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="va">m.cox</span>, <span class="va">mStrata.cox</span><span class="op">)</span>, </span></span>
 <span class="r-in"><span>              type <span class="op">=</span> <span class="st">"survival"</span>, newdata <span class="op">=</span> <span class="va">newdata</span>, times <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.5</span>,<span class="fl">1</span>,<span class="fl">1.5</span><span class="op">)</span><span class="op">)</span></span></span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error in rowMultiply_cpp(-iIFcumhazard, scale = new.survival[iObs, ]):</span> could not find function "rowMultiply_cpp"</span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/stats/confint.html" class="external-link">confint</a></span><span class="op">(</span><span class="va">outIF</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         Comparison of two estimates of the survival at time 0.5 1 1.5</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> model 1:</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> coxph(formula = Surv(eventtime, status) ~ X1, data = d, x = TRUE, </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     y = TRUE)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> model 2:</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> coxph(formula = Surv(eventtime, status) ~ strata(X1), data = d, </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     x = TRUE, y = TRUE)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    X1 time difference     se     conf.interval p.value quantileBand</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1:  0  0.5    -0.0608 0.0270 [-0.114 ; -0.008] 0.02435         2.17</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2:  0  1.0     0.0539 0.0273       [0 ; 0.107] 0.04814         2.17</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3:  0  1.5     0.0539 0.0273       [0 ; 0.107] 0.04814         2.17</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 4:  1  0.5     0.0361 0.0241  [-0.011 ; 0.083] 0.13388         2.17</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 5:  1  1.0    -0.0626 0.0234 [-0.109 ; -0.017] 0.00758         2.17</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 6:  1  1.5    -0.0626 0.0234 [-0.109 ; -0.017] 0.00758         2.17</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>            conf.band</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1: [-0.119 ; -0.002]</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2:  [-0.005 ; 0.113]</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3:  [-0.005 ; 0.113]</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 4:  [-0.016 ; 0.088]</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 5: [-0.113 ; -0.012]</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 6: [-0.113 ; -0.012]</span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error in h(simpleError(msg, call)):</span> error in evaluating the argument 'object' in selecting a method for function 'confint': object 'outIF' not found</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co">#### Under H0 (Cox) ####</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span></span></span>
@@ -233,41 +201,9 @@ such that <code>confint</code> will be able to compute the confidence bands.</p>
 <span class="r-in"><span><span class="co">## compare models</span></span></span>
 <span class="r-in"><span><span class="va">outIF</span> <span class="op">&lt;-</span> <span class="fu">influenceTest</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="va">m.cox</span>, <span class="va">mStrata.cox</span><span class="op">)</span>, </span></span>
 <span class="r-in"><span>                       type <span class="op">=</span> <span class="st">"survival"</span>, newdata <span class="op">=</span> <span class="va">newdata</span>, times <span class="op">=</span> <span class="va">Utime</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">6</span><span class="op">]</span><span class="op">)</span></span></span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error in rowMultiply_cpp(-iIFcumhazard, scale = new.survival[iObs, ]):</span> could not find function "rowMultiply_cpp"</span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/stats/confint.html" class="external-link">confint</a></span><span class="op">(</span><span class="va">outIF</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         Comparison of two estimates of the survival at time 0.901 1.364 1.984 2.004 2.177 2.312</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> model 1:</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> coxph(formula = Surv(eventtime, status) ~ X1, data = d, x = TRUE, </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     y = TRUE)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> model 2:</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> coxph(formula = Surv(eventtime, status) ~ strata(X1), data = d, </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     x = TRUE, y = TRUE)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     X1  time difference     se    conf.interval p.value quantileBand</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  1:  0 0.901    0.00000 0.0000          [0 ; 0]   1.000         2.34</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  2:  0 1.364    0.01469 0.0140 [-0.013 ; 0.042]   0.295         2.34</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  3:  0 1.984    0.00739 0.0155 [-0.023 ; 0.038]   0.633         2.34</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  4:  0 2.004    0.00739 0.0155 [-0.023 ; 0.038]   0.633         2.34</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  5:  0 2.177    0.02195 0.0200 [-0.017 ; 0.061]   0.272         2.34</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  6:  0 2.312    0.03650 0.0232 [-0.009 ; 0.082]   0.115         2.34</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  7:  1 0.901    0.00000 0.0000          [0 ; 0]   1.000         2.34</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  8:  1 1.364   -0.01234 0.0120 [-0.036 ; 0.011]   0.303         2.34</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  9:  1 1.984   -0.00627 0.0130 [-0.032 ; 0.019]   0.630         2.34</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 10:  1 2.004   -0.00627 0.0130 [-0.032 ; 0.019]   0.630         2.34</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 11:  1 2.177   -0.01871 0.0171 [-0.052 ; 0.015]   0.273         2.34</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 12:  1 2.312   -0.03108 0.0200  [-0.07 ; 0.008]   0.120         2.34</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>            conf.band</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  1:          [0 ; 0]</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  2: [-0.018 ; 0.047]</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  3: [-0.029 ; 0.044]</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  4: [-0.029 ; 0.044]</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  5: [-0.025 ; 0.069]</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  6: [-0.018 ; 0.091]</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  7:          [0 ; 0]</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  8:  [-0.04 ; 0.016]</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  9: [-0.037 ; 0.024]</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 10: [-0.037 ; 0.024]</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 11: [-0.059 ; 0.021]</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 12: [-0.078 ; 0.016]</span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error in h(simpleError(msg, call)):</span> error in evaluating the argument 'object' in selecting a method for function 'confint': object 'outIF' not found</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co">#### Under H0 (CSC) ####</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span></span></span>
@@ -1311,87 +1247,9 @@ such that <code>confint</code> will be able to compute the confidence bands.</p>
 <span class="r-in"><span><span class="co">## compare models</span></span></span>
 <span class="r-in"><span><span class="va">outIF</span> <span class="op">&lt;-</span> <span class="fu">influenceTest</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="va">m.CSC</span>, <span class="va">mStrata.CSC</span><span class="op">)</span>, </span></span>
 <span class="r-in"><span>             cause <span class="op">=</span> <span class="fl">1</span>, newdata <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="va">d</span><span class="op">[</span>,<span class="fu">.</span><span class="op">(</span><span class="va">X1</span>,<span class="va">X2</span>,<span class="va">X3</span><span class="op">)</span><span class="op">]</span><span class="op">)</span>, times <span class="op">=</span> <span class="va">Utime</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">5</span><span class="op">]</span><span class="op">)</span></span></span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error in colMultiply_cpp(se, scale = quantile[, 1]):</span> could not find function "colMultiply_cpp"</span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/stats/confint.html" class="external-link">confint</a></span><span class="op">(</span><span class="va">outIF</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         Comparison of two estimates of the absRisk at time 0.391 0.726 0.857 0.901 0.905</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> model 1:</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> CSC(formula = Hist(time, event) ~ X1 + X2, data = d)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> model 2:</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> CSC(formula = Hist(time, event) ~ strata(X1) + X2 + X3, data = d)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     X1 X2  time difference      se    conf.interval p.value quantileBand</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  1:  0  0 0.391  -0.007397 0.00744 [-0.022 ; 0.007]   0.320         2.14</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  2:  0  0 0.726  -0.002655 0.00817 [-0.019 ; 0.013]   0.745         2.14</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  3:  0  0 0.857  -0.002655 0.00817 [-0.019 ; 0.013]   0.745         2.14</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  4:  0  0 0.901  -0.002655 0.00817 [-0.019 ; 0.013]   0.745         2.14</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  5:  0  0 0.905  -0.002655 0.00817 [-0.019 ; 0.013]   0.745         2.14</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  6:  1  0 0.391   0.050593 0.04990 [-0.047 ; 0.148]   0.311         2.20</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  7:  1  0 0.726   0.006225 0.06230 [-0.116 ; 0.128]   0.920         2.20</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  8:  1  0 0.857   0.006225 0.06230 [-0.116 ; 0.128]   0.920         2.20</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  9:  1  0 0.901   0.006225 0.06230 [-0.116 ; 0.128]   0.920         2.20</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 10:  1  0 0.905   0.006225 0.06230 [-0.116 ; 0.128]   0.920         2.20</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 11:  0  0 0.391  -0.005261 0.00553 [-0.016 ; 0.006]   0.342         2.15</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 12:  0  0 0.726  -0.000519 0.00702 [-0.014 ; 0.013]   0.941         2.15</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 13:  0  0 0.857  -0.000519 0.00702 [-0.014 ; 0.013]   0.941         2.15</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 14:  0  0 0.901  -0.000519 0.00702 [-0.014 ; 0.013]   0.941         2.15</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 15:  0  0 0.905  -0.000519 0.00702 [-0.014 ; 0.013]   0.941         2.15</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 16:  0  1 0.391  -0.007153 0.00745 [-0.022 ; 0.007]   0.337         2.14</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 17:  0  1 0.726  -0.002897 0.00794 [-0.018 ; 0.013]   0.715         2.14</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 18:  0  1 0.857  -0.002897 0.00794 [-0.018 ; 0.013]   0.715         2.14</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 19:  0  1 0.901  -0.002897 0.00794 [-0.018 ; 0.013]   0.715         2.14</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 20:  0  1 0.905  -0.002897 0.00794 [-0.018 ; 0.013]   0.715         2.14</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 21:  1  1 0.391   0.045388 0.04538 [-0.044 ; 0.134]   0.317         2.14</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 22:  1  1 0.726   0.017186 0.04965  [-0.08 ; 0.114]   0.729         2.14</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 23:  1  1 0.857   0.017186 0.04965  [-0.08 ; 0.114]   0.729         2.14</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 24:  1  1 0.901   0.017186 0.04965  [-0.08 ; 0.114]   0.729         2.14</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 25:  1  1 0.905   0.017186 0.04965  [-0.08 ; 0.114]   0.729         2.14</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 26:  0  1 0.391  -0.005146 0.00535 [-0.016 ; 0.005]   0.336         2.15</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 27:  0  1 0.726  -0.000890 0.00664 [-0.014 ; 0.012]   0.893         2.15</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 28:  0  1 0.857  -0.000890 0.00664 [-0.014 ; 0.012]   0.893         2.15</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 29:  0  1 0.901  -0.000890 0.00664 [-0.014 ; 0.012]   0.893         2.15</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 30:  0  1 0.905  -0.000890 0.00664 [-0.014 ; 0.012]   0.893         2.15</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 31:  1  0 0.391   0.050593 0.04990 [-0.047 ; 0.148]   0.311         2.14</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 32:  1  0 0.726   0.022522 0.05427 [-0.084 ; 0.129]   0.678         2.14</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 33:  1  0 0.857   0.022522 0.05427 [-0.084 ; 0.129]   0.678         2.14</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 34:  1  0 0.901   0.022522 0.05427 [-0.084 ; 0.129]   0.678         2.14</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 35:  1  0 0.905   0.022522 0.05427 [-0.084 ; 0.129]   0.678         2.14</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     X1 X2  time difference      se    conf.interval p.value quantileBand</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>            conf.band</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  1: [-0.023 ; 0.009]</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  2:  [-0.02 ; 0.015]</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  3:  [-0.02 ; 0.015]</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  4:  [-0.02 ; 0.015]</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  5:  [-0.02 ; 0.015]</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  6:  [-0.059 ; 0.16]</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  7: [-0.131 ; 0.143]</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  8: [-0.131 ; 0.143]</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  9: [-0.131 ; 0.143]</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 10: [-0.131 ; 0.143]</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 11: [-0.017 ; 0.007]</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 12: [-0.016 ; 0.015]</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 13: [-0.016 ; 0.015]</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 14: [-0.016 ; 0.015]</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 15: [-0.016 ; 0.015]</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 16: [-0.023 ; 0.009]</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 17:  [-0.02 ; 0.014]</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 18:  [-0.02 ; 0.014]</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 19:  [-0.02 ; 0.014]</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 20:  [-0.02 ; 0.014]</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 21: [-0.052 ; 0.142]</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 22: [-0.089 ; 0.123]</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 23: [-0.089 ; 0.123]</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 24: [-0.089 ; 0.123]</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 25: [-0.089 ; 0.123]</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 26: [-0.017 ; 0.006]</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 27: [-0.015 ; 0.013]</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 28: [-0.015 ; 0.013]</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 29: [-0.015 ; 0.013]</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 30: [-0.015 ; 0.013]</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 31: [-0.056 ; 0.158]</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 32: [-0.094 ; 0.139]</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 33: [-0.094 ; 0.139]</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 34: [-0.094 ; 0.139]</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 35: [-0.094 ; 0.139]</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>            conf.band</span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error in h(simpleError(msg, call)):</span> error in evaluating the argument 'object' in selecting a method for function 'confint': object 'outIF' not found</span>
 </code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc"><h2>On this page</h2>

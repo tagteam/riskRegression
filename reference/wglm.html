@@ -196,40 +196,7 @@ and where the outcome is the indicator of having experience the event of interes
 <span class="r-out co"><span class="r-pr">#&gt;</span> ----------------------------------------------------------------------------------</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="fu"><a href="ate.html">ate</a></span><span class="op">(</span><span class="va">e.wglm</span>, data <span class="op">=</span> <span class="va">dFull</span>, times <span class="op">=</span> <span class="va">tau</span>, treatment <span class="op">=</span> <span class="st">"X1"</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>      Average treatment effect for cause 1 </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  - Treatment            : X1 (2 levels: "0" "1")</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  - Event                : event (cause: 1, competing risk(s): 2)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  - Time  [min;max]      : time [0.136;13.9]</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  - Eval. time          :   1   2  3  4  5</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>       number at risk 0   151 126 98 74 52</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>       number at risk 1    10   9  7  4  2</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  Estimation procedure </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  - Estimator  : G-formula</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  - Uncertainty: Gaussian approximation </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>                 where the variance is estimated via the influence function </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  Testing procedure</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  - Null hypothesis     : given two treatments (A,B) and a specific timepoint, equal risks </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  - Confidence level    : 0.95</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  Results: </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  - Difference in standardized risk (B-A) between time zero and 'time' </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>                 reported on the scale [-1;1] (difference between two probabilities)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  (difference in average risks when treating all subjects with the experimental treatment (B),</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>                                 vs. treating all subjects with the reference treatment (A))</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  time X1=A risk(X1=A) X1=B risk(X1=B) difference           ci p.value</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     1    0     0.0809    1      0.231      0.150 [-0.08;0.38]  0.2067</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     2    0     0.2023    1      0.308      0.105 [-0.15;0.36]  0.4233</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     3    0     0.3006    1      0.462      0.161 [-0.12;0.44]  0.2590</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     4    0     0.3815    1      0.538      0.157 [-0.12;0.44]  0.2727</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     5    0     0.4624    1      0.692      0.230 [-0.03;0.49]  0.0851</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  difference      : estimated difference in standardized risks </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  ci              : pointwise confidence intervals </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  p.value         : (unadjusted) p-value </span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error in h(simpleError(msg, call)):</span> error in evaluating the argument 'object' in selecting a method for function 'summary': could not find function "colMultiply_cpp"</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co">#### right-censoring ####</span></span></span>
 <span class="r-in"><span><span class="co">## no covariante in the censoring model (independent censoring)</span></span></span>

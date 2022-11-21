@@ -178,11 +178,10 @@ Otherwise use <code>plot.type="1"</code>.</p></dd>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  Processing</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  - Prepare influence function: outcome done </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  - Point estimation: done </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  - Decomposition iid: done</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  - Confidence intervals / bands: done</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  - Point estimation:</span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error in rowMultiply_cpp(cbind(0, IF$calcIFhazard$Elambda0[[iStrata]])[,     indexJump, drop = FALSE], scale = isJump):</span> could not find function "rowMultiply_cpp"</span>
 <span class="r-in"><span><span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/autoplot.html" class="external-link">autoplot</a></span><span class="op">(</span><span class="va">ateFit</span><span class="op">)</span></span></span>
-<span class="r-plt img"><img src="autoplot.ate-1.png" alt="" width="700" height="433"></span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error in ggplot2::autoplot(ateFit):</span> object 'ateFit' not found</span>
 <span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="cn">FALSE</span><span class="op">)</span> <span class="op">{</span></span></span>
 <span class="r-in"><span><span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/autoplot.html" class="external-link">autoplot</a></span><span class="op">(</span><span class="va">ateFit</span>, band <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/autoplot.html" class="external-link">autoplot</a></span><span class="op">(</span><span class="va">ateFit</span>, type <span class="op">=</span> <span class="st">"diffRisk"</span><span class="op">)</span></span></span>

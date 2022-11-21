@@ -133,71 +133,29 @@ i.e. a confidence interval for the survival of [0.5;1.2] will become [0.5;1].</p
 <span class="r-in"><span><span class="co">#### compute individual specific survival probabilities  </span></span></span>
 <span class="r-in"><span><span class="va">fit.pred</span> <span class="op">&lt;-</span> <span class="fu"><a href="predictCox.html">predictCox</a></span><span class="op">(</span><span class="va">fit</span>, newdata<span class="op">=</span><span class="va">d</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">3</span><span class="op">]</span>, times<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">3</span>,<span class="fl">8</span><span class="op">)</span>, type <span class="op">=</span> <span class="st">"survival"</span>,</span></span>
 <span class="r-in"><span>                       se <span class="op">=</span> <span class="cn">TRUE</span>, iid <span class="op">=</span> <span class="cn">TRUE</span>, band <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error in rowMultiply_cpp(-iIFcumhazard, scale = new.survival[iObs, ]):</span> could not find function "rowMultiply_cpp"</span>
 <span class="r-in"><span><span class="va">fit.pred</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    observation strata times survival survival.se survival.lower survival.upper</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1:           1      0     3    0.830      0.0598          0.672          0.917</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2:           2      0     3    0.878      0.0510          0.732          0.947</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3:           3      0     3    0.975      0.0194          0.888          0.995</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 4:           1      0     8    0.441      0.1062          0.233          0.631</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 5:           2      0     8    0.564      0.1131          0.320          0.750</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 6:           3      0     8    0.894      0.0692          0.648          0.972</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    survival.quantileBand survival.lowerBand survival.upperBand</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1:                  2.24              0.642              0.925</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2:                  2.22              0.704              0.953</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3:                  2.13              0.873              0.995</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 4:                  2.24              0.205              0.654</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 5:                  2.22              0.287              0.769</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 6:                  2.13              0.613              0.975</span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error in eval(expr, envir, enclos):</span> object 'fit.pred' not found</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co">## check standard error</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">sqrt</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/colSums.html" class="external-link">rowSums</a></span><span class="op">(</span><span class="va">fit.pred</span><span class="op">$</span><span class="va">survival.iid</span><span class="op">[</span>,,<span class="fl">1</span><span class="op">]</span><span class="op">^</span><span class="fl">2</span><span class="op">)</span><span class="op">)</span> <span class="co">## se for individual 1</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [1] 0.018392578 0.016237776 0.007431816 0.012893439 0.025032667 0.005398069</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [7] 0.025666528 0.005026215 0.020439989 0.013954960 0.020245964 0.012961149</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [13] 0.010320665 0.022387257 0.003809652 0.037842644 0.013409129 0.010237400</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [19] 0.017079206 0.014556417 0.004868714 0.013372745 0.051035469 0.019664220</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [25] 0.023187719 0.013702212 0.001694092 0.020826096 0.002277766 0.060597775</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [31] 0.015962232 0.011798179 0.008106319 0.004469016 0.004496629 0.002184175</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [37] 0.007678302 0.000496456 0.002440726 0.008088248</span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error in is.data.frame(x):</span> object 'fit.pred' not found</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co">## check confidence interval</span></span></span>
 <span class="r-in"><span><span class="va">newse</span> <span class="op">&lt;-</span> <span class="va">fit.pred</span><span class="op">$</span><span class="va">survival.se</span><span class="op">/</span><span class="op">(</span><span class="op">-</span><span class="va">fit.pred</span><span class="op">$</span><span class="va">survival</span><span class="op">*</span><span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">log</a></span><span class="op">(</span><span class="va">fit.pred</span><span class="op">$</span><span class="va">survival</span><span class="op">)</span><span class="op">)</span></span></span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error in eval(expr, envir, enclos):</span> object 'fit.pred' not found</span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">cbind</a></span><span class="op">(</span>lower <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/double.html" class="external-link">as.double</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">exp</a></span><span class="op">(</span><span class="op">-</span><span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">exp</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">log</a></span><span class="op">(</span><span class="op">-</span><span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">log</a></span><span class="op">(</span><span class="va">fit.pred</span><span class="op">$</span><span class="va">survival</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span> <span class="fl">1.96</span> <span class="op">*</span> <span class="va">newse</span><span class="op">)</span><span class="op">)</span><span class="op">)</span>,</span></span>
 <span class="r-in"><span>      upper <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/double.html" class="external-link">as.double</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">exp</a></span><span class="op">(</span><span class="op">-</span><span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">exp</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">log</a></span><span class="op">(</span><span class="op">-</span><span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">log</a></span><span class="op">(</span><span class="va">fit.pred</span><span class="op">$</span><span class="va">survival</span><span class="op">)</span><span class="op">)</span> <span class="op">-</span> <span class="fl">1.96</span> <span class="op">*</span> <span class="va">newse</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>          lower     upper</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1,] 0.6720145 0.9166403</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [2,] 0.7317857 0.9473215</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [3,] 0.8882076 0.9945995</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [4,] 0.2325654 0.6310395</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [5,] 0.3204751 0.7495790</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [6,] 0.6477553 0.9717133</span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error in cbind(lower = as.double(exp(-exp(log(-log(fit.pred$survival)) +     1.96 * newse))), upper = as.double(exp(-exp(log(-log(fit.pred$survival)) -     1.96 * newse)))):</span> object 'fit.pred' not found</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co">#### compute confidence intervals without transformation</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/stats/confint.html" class="external-link">confint</a></span><span class="op">(</span><span class="va">fit.pred</span>, survival.transform <span class="op">=</span> <span class="st">"none"</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    observation strata times survival survival.se survival.lower survival.upper</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1:           1      0     3    0.830      0.0598          0.713          0.948</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2:           2      0     3    0.878      0.0510          0.778          0.978</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3:           3      0     3    0.975      0.0194          0.937          1.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 4:           1      0     8    0.441      0.1062          0.232          0.649</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 5:           2      0     8    0.564      0.1131          0.342          0.786</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 6:           3      0     8    0.894      0.0692          0.759          1.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    survival.quantileBand survival.lowerBand survival.upperBand</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1:                  2.24              0.697              0.964</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2:                  2.20              0.766              0.991</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3:                  2.10              0.934              1.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 4:                  2.24              0.203              0.678</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 5:                  2.20              0.315              0.813</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 6:                  2.10              0.749              1.000</span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error in h(simpleError(msg, call)):</span> error in evaluating the argument 'object' in selecting a method for function 'confint': object 'fit.pred' not found</span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">cbind</a></span><span class="op">(</span>lower <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/double.html" class="external-link">as.double</a></span><span class="op">(</span><span class="va">fit.pred</span><span class="op">$</span><span class="va">survival</span> <span class="op">-</span> <span class="fl">1.96</span> <span class="op">*</span> <span class="va">fit.pred</span><span class="op">$</span><span class="va">survival.se</span><span class="op">)</span>,</span></span>
 <span class="r-in"><span>      upper <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/double.html" class="external-link">as.double</a></span><span class="op">(</span><span class="va">fit.pred</span><span class="op">$</span><span class="va">survival</span> <span class="op">+</span> <span class="fl">1.96</span> <span class="op">*</span> <span class="va">fit.pred</span><span class="op">$</span><span class="va">survival.se</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>          lower     upper</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1,] 0.7130004 0.9475453</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [2,] 0.7780635 0.9781347</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [3,] 0.9368629 1.0130999</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [4,] 0.2324617 0.6488784</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [5,] 0.3422163 0.7857635</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [6,] 0.7587567 1.0300007</span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error in cbind(lower = as.double(fit.pred$survival - 1.96 * fit.pred$survival.se),     upper = as.double(fit.pred$survival + 1.96 * fit.pred$survival.se)):</span> object 'fit.pred' not found</span>
 <span class="r-in"><span></span></span>
 </code></pre></div>
     </div>

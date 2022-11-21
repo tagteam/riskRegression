@@ -163,48 +163,39 @@ while estimate and se must have dimensions [n.prediction,time].</p>
 <span class="r-in"><span>              type <span class="op">=</span> <span class="st">"none"</span>, ci <span class="op">=</span> <span class="cn">TRUE</span>, conf.level <span class="op">=</span> <span class="fl">0.95</span>, alternative <span class="op">=</span> <span class="st">"two.sided"</span>,</span></span>
 <span class="r-in"><span>              min.value <span class="op">=</span> <span class="cn">NULL</span>, max.value <span class="op">=</span> <span class="cn">NULL</span>, band <span class="op">=</span> <span class="cn">FALSE</span>,</span></span>
 <span class="r-in"><span>              p.value <span class="op">=</span> <span class="cn">TRUE</span>, seed <span class="op">=</span> <span class="fl">10</span>, df <span class="op">=</span> <span class="va">n</span><span class="op">-</span><span class="fl">1</span><span class="op">)</span></span></span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error in colMultiply_cpp(se, scale = quantile[, 1]):</span> could not find function "colMultiply_cpp"</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="va">resLess</span> <span class="op">&lt;-</span> <span class="fu">transformCIBP</span><span class="op">(</span>estimate <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="va">X</span><span class="op">)</span>, se <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">cbind</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/sd.html" class="external-link">sd</a></span><span class="op">(</span><span class="va">X</span><span class="op">)</span><span class="op">/</span><span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">sqrt</a></span><span class="op">(</span><span class="va">n</span><span class="op">)</span><span class="op">)</span>, null <span class="op">=</span> <span class="fl">0</span>,</span></span>
 <span class="r-in"><span>              type <span class="op">=</span> <span class="st">"none"</span>, ci <span class="op">=</span> <span class="cn">TRUE</span>, conf.level <span class="op">=</span> <span class="fl">0.95</span>, alternative <span class="op">=</span> <span class="st">"less"</span>,</span></span>
 <span class="r-in"><span>              min.value <span class="op">=</span> <span class="cn">NULL</span>, max.value <span class="op">=</span> <span class="cn">NULL</span>, band <span class="op">=</span> <span class="cn">FALSE</span>,</span></span>
 <span class="r-in"><span>              p.value <span class="op">=</span> <span class="cn">TRUE</span>, seed <span class="op">=</span> <span class="fl">10</span>, df <span class="op">=</span> <span class="va">n</span><span class="op">-</span><span class="fl">1</span><span class="op">)</span></span></span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error in colMultiply_cpp(se, scale = quantile[, 1]):</span> could not find function "colMultiply_cpp"</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="va">resGreater</span> <span class="op">&lt;-</span> <span class="fu">transformCIBP</span><span class="op">(</span>estimate <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="va">X</span><span class="op">)</span>, se <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">cbind</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/sd.html" class="external-link">sd</a></span><span class="op">(</span><span class="va">X</span><span class="op">)</span><span class="op">/</span><span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">sqrt</a></span><span class="op">(</span><span class="va">n</span><span class="op">)</span><span class="op">)</span>, null <span class="op">=</span> <span class="fl">0</span>,</span></span>
 <span class="r-in"><span>              type <span class="op">=</span> <span class="st">"none"</span>, ci <span class="op">=</span> <span class="cn">TRUE</span>, conf.level <span class="op">=</span> <span class="fl">0.95</span>, alternative <span class="op">=</span> <span class="st">"greater"</span>,</span></span>
 <span class="r-in"><span>              min.value <span class="op">=</span> <span class="cn">NULL</span>, max.value <span class="op">=</span> <span class="cn">NULL</span>, band <span class="op">=</span> <span class="cn">FALSE</span>,</span></span>
 <span class="r-in"><span>              p.value <span class="op">=</span> <span class="cn">TRUE</span>, seed <span class="op">=</span> <span class="fl">10</span>, df <span class="op">=</span> <span class="va">n</span><span class="op">-</span><span class="fl">1</span><span class="op">)</span></span></span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error in colMultiply_cpp(se, scale = quantile[, 1]):</span> could not find function "colMultiply_cpp"</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co">## comparison with t-test</span></span></span>
 <span class="r-in"><span><span class="va">GS</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/t.test.html" class="external-link">t.test</a></span><span class="op">(</span><span class="va">X</span>, alternative <span class="op">=</span> <span class="st">"two.sided"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">res2sided</span><span class="op">$</span><span class="va">p.value</span> <span class="op">-</span> <span class="va">GS</span><span class="op">$</span><span class="va">p.value</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>               [,1]</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1,] -5.551115e-17</span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error in eval(expr, envir, enclos):</span> object 'res2sided' not found</span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/unlist.html" class="external-link">unlist</a></span><span class="op">(</span><span class="va">res2sided</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"lower"</span>,<span class="st">"upper"</span><span class="op">)</span><span class="op">]</span><span class="op">)</span> <span class="op">-</span> <span class="va">GS</span><span class="op">$</span><span class="va">conf.int</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         lower         upper </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  0.000000e+00 -1.387779e-17 </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> attr(,"conf.level")</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 0.95</span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error in unlist(res2sided[c("lower", "upper")]):</span> object 'res2sided' not found</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="va">GS</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/t.test.html" class="external-link">t.test</a></span><span class="op">(</span><span class="va">X</span>, alternative <span class="op">=</span> <span class="st">"less"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">resLess</span><span class="op">$</span><span class="va">p.value</span> <span class="op">-</span> <span class="va">GS</span><span class="op">$</span><span class="va">p.value</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>      [,1]</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1,]    0</span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error in eval(expr, envir, enclos):</span> object 'resLess' not found</span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/unlist.html" class="external-link">unlist</a></span><span class="op">(</span><span class="va">resLess</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"lower"</span>,<span class="st">"upper"</span><span class="op">)</span><span class="op">]</span><span class="op">)</span> <span class="op">-</span> <span class="va">GS</span><span class="op">$</span><span class="va">conf.int</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         lower         upper </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>           NaN -6.938894e-18 </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> attr(,"conf.level")</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 0.95</span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error in unlist(resLess[c("lower", "upper")]):</span> object 'resLess' not found</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="va">GS</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/t.test.html" class="external-link">t.test</a></span><span class="op">(</span><span class="va">X</span>, alternative <span class="op">=</span> <span class="st">"greater"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">resGreater</span><span class="op">$</span><span class="va">p.value</span> <span class="op">-</span> <span class="va">GS</span><span class="op">$</span><span class="va">p.value</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>      [,1]</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1,]    0</span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error in eval(expr, envir, enclos):</span> object 'resGreater' not found</span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/unlist.html" class="external-link">unlist</a></span><span class="op">(</span><span class="va">resGreater</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"lower"</span>,<span class="st">"upper"</span><span class="op">)</span><span class="op">]</span><span class="op">)</span> <span class="op">-</span> <span class="va">GS</span><span class="op">$</span><span class="va">conf.int</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> lower upper </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     0   NaN </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> attr(,"conf.level")</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 0.95</span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error in unlist(resGreater[c("lower", "upper")]):</span> object 'resGreater' not found</span>
 <span class="r-in"><span></span></span>
 </code></pre></div>
     </div>

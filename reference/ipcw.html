@@ -197,8 +197,8 @@ choices of <code>method</code>.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Pattern:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                 Freq</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  event          17  </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  right.censored 13  </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  event          15  </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  right.censored 15  </span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># using the Cox model for the censoring times given X2</span></span></span>
 <span class="r-in"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/therneau/survival" class="external-link">survival</a></span><span class="op">)</span></span></span>
@@ -532,39 +532,39 @@ choices of <code>method</code>.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span>          f$residuals &lt;- NULL</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>      class(f) &lt;- c("cph", "rms", "coxph")</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>      f</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  })(formula = Surv(time, status) ~ X2, data = structure(list(time = c(0.485624671863262, </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  1.26409376042954, 1.33666658193828, 1.8876406134119, 2.31585909834859, </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  2.53142323120341, 2.67405539887999, 2.69682636249489, 3.04496515034811, </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  3.33099029359641, 3.45667132868933, 3.6604107498161, 3.9366262675404, </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  4.23594158088559, 4.34869495838047, 4.43144745795761, 4.4598771336945, </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  4.68239441160373, 5.06756240443228, 6.36681483353204, 6.46626318654265, </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  7.12297337435571, 7.30485475634867, 7.34387535566165, 7.56803748444143, </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  7.62294895297476, 8.4923916991555, 8.82720753717643, 11.9858149603988, </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  14.6952284599549), status = c(1, 1, 0, 1, 0, 0, 0, 1, 1, 0, 0, </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  0, 1, 0, 0, 0, 1, 1, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 1, 1), X2 = c(0.737784077209451, </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  0.208242935671302, -0.0857343344820172, -1.17625414199995, 0.134013692019997, </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  0.88812084100851, 0.761534674446218, -0.230798720053901, -0.551165311562187, </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  0.0203205955518868, 1.15478690980615, 2.06122996814056, -1.23681891186452, </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  1.50293414722451, 0.806509249150504, 0.670331809310477, -1.29286800723766, </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  0.441911199605587, -0.920611029980694, 0.427200660684708, 1.43374439008612, </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  -0.92076145785956, -2.09617436394711, -0.310693352821634, 0.310154484013825, </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  0.250866817041062, -0.0648836508035696, -0.145929333271849, -0.839686914881022, </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  -0.179535721967552)), row.names = c("27", "9", "11", "12", "26", </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  "21", "5", "28", "3", "4", "22", "7", "18", "6", "24", "14", </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  "17", "1", "8", "16", "23", "25", "13", "15", "30", "2", "19", </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  "29", "10", "20"), class = "data.frame"), x = TRUE, y = TRUE, </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  })(formula = Surv(time, status) ~ X2, data = structure(list(time = c(0.65245786209325, </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  0.839100663930781, 0.931311109677871, 1.10632004105829, 1.96514759106815, </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  2.2617124012775, 2.33812716289351, 2.51859982207051, 3.04907670424543, </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  3.44590614388565, 3.46712847001502, 3.51620309797429, 3.72479031018096, </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  4.33024749511996, 4.44142195018291, 4.67703032223471, 4.82949570065422, </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  5.29769997879963, 5.64862332625778, 5.9703222835834, 6.18312753642727, </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  6.4619226705833, 7.21914534818184, 7.24238780238967, 8.97921553206766, </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  10.2487091071577, 10.667830723541, 13.6846748597126, 16.1027239360578, </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  26.232212278933), status = c(0, 0, 0, 1, 0, 1, 0, 0, 1, 1, 0, </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  1, 1, 0, 0, 0, 1, 1, 0, 1, 1, 1, 0, 0, 1, 0, 1, 1, 0, 1), X2 = c(0.194321069901269, </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  0.659201499417982, 2.32133393302204, 0.650952956147074, 1.94353631225286, </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  -0.189474330103611, 0.34890934629397, -0.648070933515048, 0.264422549440984, </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  0.152686505521528, -1.46888215609457, 0.0953540096781045, 0.689243732977183, </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  0.737213733789873, -0.93848303919385, 0.237829399627714, -1.54140256690726, </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  -1.032900238582, -0.199817475668204, 1.77376261131718, 0.71527594710452, </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  0.421335267904323, -0.462819419956343, -1.11873516870975, 0.0361455098365949, </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  0.343909999577983, -1.00706236611934, -1.13391666127592, 0.9339167001786, </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  -0.924556256814186)), row.names = c("2", "7", "22", "5", "20", </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  "28", "23", "16", "3", "14", "13", "11", "18", "21", "10", "8", </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  "1", "6", "17", "15", "9", "25", "12", "4", "19", "30", "27", </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  "24", "29", "26"), class = "data.frame"), x = TRUE, y = TRUE, </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>      eps = 1e-06, surv = TRUE)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>                          Model Tests    Discrimination    </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>                                                Indexes    </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  Obs         30    LR chi2      3.41    R2       0.123    </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  Events      13    d.f.            1    R2(1,30) 0.077    </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  Center -0.0369    Pr(&gt; chi2) 0.0648    R2(1,13) 0.169    </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>                    Score chi2   3.52    Dxy      0.253    </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>                    Pr(&gt; chi2) 0.0606                      </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>                         Model Tests    Discrimination    </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>                                               Indexes    </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  Obs        30    LR chi2      0.75    R2       0.027    </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  Events     15    d.f.            1    R2(1,30) 0.000    </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  Center 0.0162    Pr(&gt; chi2) 0.3869    R2(1,15) 0.000    </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>                   Score chi2   0.77    Dxy      0.181    </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>                   Pr(&gt; chi2) 0.3811                      </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     Coef    S.E.   Wald Z Pr(&gt;|Z|)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  X2 -0.6300 0.3394 -1.86  0.0634  </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     Coef   S.E.   Wald Z Pr(&gt;|Z|)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  X2 0.2620 0.3006 0.87   0.3835  </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  </span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">WKM</span><span class="op">$</span><span class="va">fit</span><span class="op">)</span></span></span>
