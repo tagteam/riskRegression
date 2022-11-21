@@ -79,36 +79,54 @@ crossvalPerf.loob.AUC <- function(times,mlevs,se.fit,response.type,NT,Response,c
       if (mod == 0){
         aucLPO <- 0.5
         auc.loob[times==t&model==mod,AUC:=aucLPO]
+        DT.B <- DT.B[model != 0]
       }
       else {
-        if (split.method$internal.name=="crossval"){
-          stop("Cannot yet calculate AUC in this case. Use split.method 'loob' or 'bootcv' instead.")
-        }
+        # if (split.method$internal.name=="crossval"){
+        #   stop("Cannot yet calculate AUC in this case. Use split.method 'loob' or 'bootcv' instead.")
+        # }
         Ib <- matrix(0, sum(cases.index), sum(controls.index))
         auc <- matrix(0, sum(cases.index), sum(controls.index))
         for (u in 1:B){## cannot use b as running index because b==b does not work in data.table
           ## test <- DT.B[model==mod&times==t&b==u]
           # when B is too low it may happen that some subjects are never oob
-          oob <- match(1:N,unique(split.method$index[,u]),nomatch=0)==0
-          ## to use the cpp function AUCijFun we
-          ## need a vector of length equal to the number of cases (cases.index) for the current time point
-          ## which has arbitrary values in places where subjects are inbag and the predicted risks
-          ## for those out-of-bag. need another vector for controls.
-          riskset <- data.table::data.table(ID=1:N,casecontrol=cc.status,oob=oob)
-          data.table::setkey(riskset,ID)
-          if (response.type=="binary"){
-            oob.risk <- DT.B[model==mod&b==u,data.table::data.table(ID,risk)]
-          }else{
-            oob.risk <- DT.B[model==mod&times==t&b==u,data.table::data.table(ID,risk)]
+          if (split.method$internal.name == "crossval"){
+            folds <- split.method$index[,u] #indicates which observations were out of bag in each fold
+            folds.cases <- folds[cases.index]
+            folds.controls <- folds[controls.index]
+            Ib.ij <- outer(folds.cases,folds.controls,"==") #can only compare observations that were both out of bag
+            if (response.type=="binary"){
+              DT <- DT.B[model==mod&b==u]
+            }else{
+              DT <- DT.B[model==mod&times==t&b==u]
+            }
+            data.table::setkey(DT)
+            risk.cases <- DT[cases.index,]$risk
+            risk.controls <- DT[controls.index,]$risk
+            auc.ij <- AUCijFun(risk.cases,risk.controls)*Ib.ij 
           }
-          data.table::setkey(oob.risk,ID)
-          riskset <- oob.risk[riskset]
-          riskset[is.na(risk),risk:=-1]
-          Ib.ij <- outer((cases.index*oob)[cases.index],(controls.index*oob)[controls.index],"*")
-          auc.ij <- AUCijFun(riskset[casecontrol=="case",risk],riskset[casecontrol=="control",risk])*Ib.ij #case > control
-          ## Ib.ij is 1 when the pair out of bag
-          ## print(head(oob))
-          ## print(auc.ij[1:5,1:5])
+          else {
+            oob <- match(1:N,unique(split.method$index[,u]),nomatch=0)==0 ## split.method$index[,b] is the indexes used to train in the u'th bootstrap sample
+            ## to use the cpp function AUCijFun we
+            ## need a vector of length equal to the number of cases (cases.index) for the current time point
+            ## which has arbitrary values in places where subjects are inbag and the predicted risks
+            ## for those out-of-bag. need another vector for controls.
+            riskset <- data.table::data.table(ID=1:N,casecontrol=cc.status,oob=oob)
+            data.table::setkey(riskset,ID)
+            if (response.type=="binary"){
+              oob.risk <- DT.B[model==mod&b==u,data.table::data.table(ID,risk)]
+            }else{
+              oob.risk <- DT.B[model==mod&times==t&b==u,data.table::data.table(ID,risk)]
+            }
+            data.table::setkey(oob.risk,ID)
+            riskset <- oob.risk[riskset]
+            riskset[is.na(risk),risk:=-1]
+            Ib.ij <- outer((cases.index*oob)[cases.index],(controls.index*oob)[controls.index],"*")
+            auc.ij <- AUCijFun(riskset[casecontrol=="case",risk],riskset[casecontrol=="control",risk])*Ib.ij #case > control
+            ## Ib.ij is 1 when the pair out of bag
+            ## print(head(oob))
+            ## print(auc.ij[1:5,1:5])
+          }
           auc <- auc+auc.ij
           Ib <- Ib + Ib.ij
         }
@@ -183,6 +201,9 @@ crossvalPerf.loob.AUC <- function(times,mlevs,se.fit,response.type,NT,Response,c
         auc.loob[model==mod&times==t,se:= sd(aucDT[model==mod&times==t,IF.AUC])/sqrt(N)]
       }
     }
+  }
+  if (any(Ib==0)){
+    warning("Some pairs of subjects are never out of bag at the same time. \n You should increase the number of bootstrap replications (argument 'B') ")
   }
   if (response.type == "binary"){
     # remove times again
