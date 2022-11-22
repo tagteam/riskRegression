@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: sep  4 2017 (10:38) 
 ## Version: 
-## last-updated: Sep 17 2022 (06:57) 
+## last-updated: Nov 22 2022 (11:33) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 175
+##     Update #: 176
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -275,8 +275,11 @@ test_that("[confint.predictCox] compare to known values (1 fixed time, log log t
                      "survival.lowerBand" = c(0.05368, 0.00022), 
                      "survival.upperBand" = c(0.39115, 0.13183))
     ## butils::object2script(as.data.table(predRR1.loglog)[6:7,names(GS),with=FALSE], digit = 5)
-    expect_equal(ignore_attr=TRUE,as.data.table(predRR1.loglog)[6:7,names(GS),with=FALSE],
-                 GS, tolerance = 1e-4, scale = 1)
+    expect_equal(ignore_attr=TRUE,
+                 as.data.table(predRR1.loglog)[6:7,names(GS),with=FALSE],
+                 GS,
+                 tolerance = 1e-4,
+                 scale = 1)
 })
 
 ## ** At event times

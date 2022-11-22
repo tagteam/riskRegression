@@ -555,7 +555,10 @@ Score.list <- function(object,
         stop("Invalid specification of formula.\n Could be that you forgot the right hand side:\n ~covariate1 + covariate2 + ...?\nNote that any subsetting, ie data$var or data[,\"var\"], is not supported by this function.")
     }
     if (missing(data)){stop("Argument data is missing.")}
-    data <- data.table::setDT(data)
+    if (data.table::is.data.table(data))
+        data <- copy(data)
+    else
+        data <- data.table::setDT(data)
     responseFormula <- stats::update(formula,~1)
     ## if (missing(event)) event <- 1
     responsevars <- all.vars(responseFormula)
@@ -630,7 +633,7 @@ c.f., Chapter 7, Section 5 in Gerds & Kattan 2021. Medical risk prediction model
     if (is.null(cens.type)) cens.type <- "uncensored"
     rm(response)
     # }}}
-# {{{ SplitMethod & parallel stuff
+    # {{{ SplitMethod & parallel stuff
 
     if (!missing(seed)) {
         ## message("Random seed set to control split of data: seed=",seed)

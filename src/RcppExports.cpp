@@ -519,52 +519,6 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// sliceMultiply_cpp
-arma::cube sliceMultiply_cpp(arma::cube X, const arma::mat& M);
-RcppExport SEXP _riskRegression_sliceMultiply_cpp(SEXP XSEXP, SEXP MSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< arma::cube >::type X(XSEXP);
-    Rcpp::traits::input_parameter< const arma::mat& >::type M(MSEXP);
-    rcpp_result_gen = Rcpp::wrap(sliceMultiply_cpp(X, M));
-    return rcpp_result_gen;
-END_RCPP
-}
-// sliceMultiplyPointer_cpp
-void sliceMultiplyPointer_cpp(arma::cube X, const arma::mat& M);
-RcppExport SEXP _riskRegression_sliceMultiplyPointer_cpp(SEXP XSEXP, SEXP MSEXP) {
-BEGIN_RCPP
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< arma::cube >::type X(XSEXP);
-    Rcpp::traits::input_parameter< const arma::mat& >::type M(MSEXP);
-    sliceMultiplyPointer_cpp(X, M);
-    return R_NilValue;
-END_RCPP
-}
-// sliceScale_cpp
-arma::cube sliceScale_cpp(arma::cube X, const arma::mat& M);
-RcppExport SEXP _riskRegression_sliceScale_cpp(SEXP XSEXP, SEXP MSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< arma::cube >::type X(XSEXP);
-    Rcpp::traits::input_parameter< const arma::mat& >::type M(MSEXP);
-    rcpp_result_gen = Rcpp::wrap(sliceScale_cpp(X, M));
-    return rcpp_result_gen;
-END_RCPP
-}
-// sliceScalePointer_cpp
-void sliceScalePointer_cpp(arma::cube X, const arma::mat& M);
-RcppExport SEXP _riskRegression_sliceScalePointer_cpp(SEXP XSEXP, SEXP MSEXP) {
-BEGIN_RCPP
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< arma::cube >::type X(XSEXP);
-    Rcpp::traits::input_parameter< const arma::mat& >::type M(MSEXP);
-    sliceScalePointer_cpp(X, M);
-    return R_NilValue;
-END_RCPP
-}
 // weightedAverageIFCumhazard_cpp
 NumericVector weightedAverageIFCumhazard_cpp(const arma::vec& seqTau, const std::vector< arma::vec >& cumhazard0, const arma::mat& newX, const arma::vec& neweXb, const arma::mat& IFbeta, const std::vector< arma::mat >& cumEhazard0, const std::vector< arma::vec >& cumhazard_iS0, const arma::mat& delta_iS0, const arma::mat& sample_eXb, const arma::vec& sample_time, const std::vector< arma::uvec>& indexJumpSample_time, const std::vector< arma::vec>& jump_time, const std::vector< arma::uvec >& indexJumpTau, const arma::vec& lastSampleTime, const std::vector< arma::uvec>& newdata_index, int nTau, int nSample, int nStrata, int p, bool diag, int debug, const arma::vec& weights, bool isBeforeTau, double tau);
 RcppExport SEXP _riskRegression_weightedAverageIFCumhazard_cpp(SEXP seqTauSEXP, SEXP cumhazard0SEXP, SEXP newXSEXP, SEXP neweXbSEXP, SEXP IFbetaSEXP, SEXP cumEhazard0SEXP, SEXP cumhazard_iS0SEXP, SEXP delta_iS0SEXP, SEXP sample_eXbSEXP, SEXP sample_timeSEXP, SEXP indexJumpSample_timeSEXP, SEXP jump_timeSEXP, SEXP indexJumpTauSEXP, SEXP lastSampleTimeSEXP, SEXP newdata_indexSEXP, SEXP nTauSEXP, SEXP nSampleSEXP, SEXP nStrataSEXP, SEXP pSEXP, SEXP diagSEXP, SEXP debugSEXP, SEXP weightsSEXP, SEXP isBeforeTauSEXP, SEXP tauSEXP) {
@@ -628,10 +582,6 @@ static const R_CallMethodDef CallEntries[] = {
     {"_riskRegression_rowScale_cpp", (DL_FUNC) &_riskRegression_rowScale_cpp, 2},
     {"_riskRegression_colMultiply_cpp", (DL_FUNC) &_riskRegression_colMultiply_cpp, 2},
     {"_riskRegression_rowMultiply_cpp", (DL_FUNC) &_riskRegression_rowMultiply_cpp, 2},
-    {"_riskRegression_sliceMultiply_cpp", (DL_FUNC) &_riskRegression_sliceMultiply_cpp, 2},
-    {"_riskRegression_sliceMultiplyPointer_cpp", (DL_FUNC) &_riskRegression_sliceMultiplyPointer_cpp, 2},
-    {"_riskRegression_sliceScale_cpp", (DL_FUNC) &_riskRegression_sliceScale_cpp, 2},
-    {"_riskRegression_sliceScalePointer_cpp", (DL_FUNC) &_riskRegression_sliceScalePointer_cpp, 2},
     {"_riskRegression_weightedAverageIFCumhazard_cpp", (DL_FUNC) &_riskRegression_weightedAverageIFCumhazard_cpp, 24},
     {NULL, NULL, 0}
 };
