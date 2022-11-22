@@ -6,6 +6,7 @@ getCensoringWeights <- function(formula,
                                 response.type,
                                 influence.curve=FALSE,
                                 saveCoxMemory){
+    data <- copy(data)
     if((cens.model != "KaplanMeier")){
         if (length(attr(terms(formula),"factors"))==0){
             cens.model <- "marginal"

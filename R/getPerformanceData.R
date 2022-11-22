@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Feb 27 2022 (09:12) 
 ## Version: 
-## Last-Updated: Sep 16 2022 (19:44) 
+## Last-Updated: Nov 21 2022 (18:41) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 25
+##     Update #: 32
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -35,7 +35,7 @@ getPerformanceData <- function(testdata,
     ID=model = risk = NULL
     # inherit everything else from parent frame: object, nullobject, NF, NT, times, cause, response.type, etc.
     Brier=IPA=IBS=NULL
-    looping <- !is.null(traindata)
+    looping <- length(traindata)>0
     N <- as.numeric(NROW(testdata))
     # split data vertically into response and predictors X
     response <- testdata[,1:response.dim,with=FALSE]
