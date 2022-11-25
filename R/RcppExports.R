@@ -5,6 +5,10 @@ AUCijFun <- function(riskCase, riskControl) {
     .Call(`_riskRegression_AUCijFun`, riskCase, riskControl)
 }
 
+aucLoobFun <- function(IDCase, IDControl, riskMat, splitMat, weights) {
+    .Call(`_riskRegression_aucLoobFun`, IDCase, IDControl, riskMat, splitMat, weights)
+}
+
 #' @title C++ Fast Baseline Hazard Estimation
 #' @description C++ function to estimate the baseline hazard from a Cox Model
 #'
@@ -76,12 +80,12 @@ getIC0AUC <- function(time, status, tau, risk, GTiminus, Gtau, auc) {
     .Call(`_riskRegression_getIC0AUC`, time, status, tau, risk, GTiminus, Gtau, auc)
 }
 
-getInfluenceFunctionAUCKMCensoringTerm <- function(time, status, tau, ic0Case, ic0Controls, weights, firsthit, muCase, muControls, nu1, Gtau, auc) {
-    .Call(`_riskRegression_getInfluenceFunctionAUCKMCensoringTerm`, time, status, tau, ic0Case, ic0Controls, weights, firsthit, muCase, muControls, nu1, Gtau, auc)
+getInfluenceFunctionAUCKMCensoringTerm <- function(time, status, tau, ic0Case, ic0Controls, weights, firsthit, muCase, muControls, nu1, Gtau, auc, loob) {
+    .Call(`_riskRegression_getInfluenceFunctionAUCKMCensoringTerm`, time, status, tau, ic0Case, ic0Controls, weights, firsthit, muCase, muControls, nu1, Gtau, auc, loob)
 }
 
-getInfluenceFunctionAUCKMCensoringCVPart <- function(time, status, tau, GTiminus, Gtau, aucMat, nu1tauPm) {
-    .Call(`_riskRegression_getInfluenceFunctionAUCKMCensoringCVPart`, time, status, tau, GTiminus, Gtau, aucMat, nu1tauPm)
+getInfluenceFunctionAUCKMCensoringCVPart <- function(time, status, tau, GTiminus, Gtau, ic0Case, ic0Control, nu1tauPm) {
+    .Call(`_riskRegression_getInfluenceFunctionAUCKMCensoringCVPart`, time, status, tau, GTiminus, Gtau, ic0Case, ic0Control, nu1tauPm)
 }
 
 getInfluenceFunctionBrierKMCensoringTerm <- function(tau, time, residuals, status) {

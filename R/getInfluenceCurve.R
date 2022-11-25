@@ -8,7 +8,7 @@ getInfluenceCurve.AUC <- function(t,time,event, WTi, Wt, risk, MC, auc, nth.time
       conservativeIFcalculation[["ic0"]]+getInfluenceFunctionAUCKMCensoringTerm(time,event,t,conservativeIFcalculation[["ic0Case"]],
                                                                                 conservativeIFcalculation[["ic0Control"]], conservativeIFcalculation[["weights"]],
                                                                                 conservativeIFcalculation[["firsthit"]],conservativeIFcalculation[["muCase"]],
-                                                                                conservativeIFcalculation[["muControls"]], conservativeIFcalculation[["nu"]], Wt[1], auc)
+                                                                                conservativeIFcalculation[["muControls"]], conservativeIFcalculation[["nu"]], Wt[1], auc, FALSE)
     }
     else if (cens.model[[1]] == "cox"){
       n <- length(time)

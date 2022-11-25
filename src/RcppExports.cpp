@@ -23,6 +23,21 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// aucLoobFun
+List aucLoobFun(IntegerVector IDCase, IntegerVector IDControl, NumericMatrix riskMat, LogicalMatrix splitMat, NumericVector weights);
+RcppExport SEXP _riskRegression_aucLoobFun(SEXP IDCaseSEXP, SEXP IDControlSEXP, SEXP riskMatSEXP, SEXP splitMatSEXP, SEXP weightsSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< IntegerVector >::type IDCase(IDCaseSEXP);
+    Rcpp::traits::input_parameter< IntegerVector >::type IDControl(IDControlSEXP);
+    Rcpp::traits::input_parameter< NumericMatrix >::type riskMat(riskMatSEXP);
+    Rcpp::traits::input_parameter< LogicalMatrix >::type splitMat(splitMatSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type weights(weightsSEXP);
+    rcpp_result_gen = Rcpp::wrap(aucLoobFun(IDCase, IDControl, riskMat, splitMat, weights));
+    return rcpp_result_gen;
+END_RCPP
+}
 // baseHaz_cpp
 List baseHaz_cpp(const NumericVector& starttimes, const NumericVector& stoptimes, const IntegerVector& status, const NumericVector& eXb, const IntegerVector& strata, const std::vector<double>& predtimes, const NumericVector& emaxtimes, int nPatients, int nStrata, int cause, bool Efron);
 RcppExport SEXP _riskRegression_baseHaz_cpp(SEXP starttimesSEXP, SEXP stoptimesSEXP, SEXP statusSEXP, SEXP eXbSEXP, SEXP strataSEXP, SEXP predtimesSEXP, SEXP emaxtimesSEXP, SEXP nPatientsSEXP, SEXP nStrataSEXP, SEXP causeSEXP, SEXP EfronSEXP) {
@@ -286,8 +301,8 @@ BEGIN_RCPP
 END_RCPP
 }
 // getInfluenceFunctionAUCKMCensoringTerm
-NumericVector getInfluenceFunctionAUCKMCensoringTerm(NumericVector time, NumericVector status, double tau, NumericVector ic0Case, NumericVector ic0Controls, NumericVector weights, int firsthit, double muCase, double muControls, double nu1, double Gtau, double auc);
-RcppExport SEXP _riskRegression_getInfluenceFunctionAUCKMCensoringTerm(SEXP timeSEXP, SEXP statusSEXP, SEXP tauSEXP, SEXP ic0CaseSEXP, SEXP ic0ControlsSEXP, SEXP weightsSEXP, SEXP firsthitSEXP, SEXP muCaseSEXP, SEXP muControlsSEXP, SEXP nu1SEXP, SEXP GtauSEXP, SEXP aucSEXP) {
+NumericVector getInfluenceFunctionAUCKMCensoringTerm(NumericVector time, NumericVector status, double tau, NumericVector ic0Case, NumericVector ic0Controls, NumericVector weights, int firsthit, double muCase, double muControls, double nu1, double Gtau, double auc, bool loob);
+RcppExport SEXP _riskRegression_getInfluenceFunctionAUCKMCensoringTerm(SEXP timeSEXP, SEXP statusSEXP, SEXP tauSEXP, SEXP ic0CaseSEXP, SEXP ic0ControlsSEXP, SEXP weightsSEXP, SEXP firsthitSEXP, SEXP muCaseSEXP, SEXP muControlsSEXP, SEXP nu1SEXP, SEXP GtauSEXP, SEXP aucSEXP, SEXP loobSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::traits::input_parameter< NumericVector >::type time(timeSEXP);
@@ -302,13 +317,14 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< double >::type nu1(nu1SEXP);
     Rcpp::traits::input_parameter< double >::type Gtau(GtauSEXP);
     Rcpp::traits::input_parameter< double >::type auc(aucSEXP);
-    rcpp_result_gen = Rcpp::wrap(getInfluenceFunctionAUCKMCensoringTerm(time, status, tau, ic0Case, ic0Controls, weights, firsthit, muCase, muControls, nu1, Gtau, auc));
+    Rcpp::traits::input_parameter< bool >::type loob(loobSEXP);
+    rcpp_result_gen = Rcpp::wrap(getInfluenceFunctionAUCKMCensoringTerm(time, status, tau, ic0Case, ic0Controls, weights, firsthit, muCase, muControls, nu1, Gtau, auc, loob));
     return rcpp_result_gen;
 END_RCPP
 }
 // getInfluenceFunctionAUCKMCensoringCVPart
-NumericVector getInfluenceFunctionAUCKMCensoringCVPart(NumericVector time, NumericVector status, double tau, NumericVector GTiminus, double Gtau, NumericMatrix aucMat, double nu1tauPm);
-RcppExport SEXP _riskRegression_getInfluenceFunctionAUCKMCensoringCVPart(SEXP timeSEXP, SEXP statusSEXP, SEXP tauSEXP, SEXP GTiminusSEXP, SEXP GtauSEXP, SEXP aucMatSEXP, SEXP nu1tauPmSEXP) {
+NumericVector getInfluenceFunctionAUCKMCensoringCVPart(NumericVector time, NumericVector status, double tau, NumericVector GTiminus, double Gtau, NumericVector ic0Case, NumericVector ic0Control, double nu1tauPm);
+RcppExport SEXP _riskRegression_getInfluenceFunctionAUCKMCensoringCVPart(SEXP timeSEXP, SEXP statusSEXP, SEXP tauSEXP, SEXP GTiminusSEXP, SEXP GtauSEXP, SEXP ic0CaseSEXP, SEXP ic0ControlSEXP, SEXP nu1tauPmSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::traits::input_parameter< NumericVector >::type time(timeSEXP);
@@ -316,9 +332,10 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< double >::type tau(tauSEXP);
     Rcpp::traits::input_parameter< NumericVector >::type GTiminus(GTiminusSEXP);
     Rcpp::traits::input_parameter< double >::type Gtau(GtauSEXP);
-    Rcpp::traits::input_parameter< NumericMatrix >::type aucMat(aucMatSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type ic0Case(ic0CaseSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type ic0Control(ic0ControlSEXP);
     Rcpp::traits::input_parameter< double >::type nu1tauPm(nu1tauPmSEXP);
-    rcpp_result_gen = Rcpp::wrap(getInfluenceFunctionAUCKMCensoringCVPart(time, status, tau, GTiminus, Gtau, aucMat, nu1tauPm));
+    rcpp_result_gen = Rcpp::wrap(getInfluenceFunctionAUCKMCensoringCVPart(time, status, tau, GTiminus, Gtau, ic0Case, ic0Control, nu1tauPm));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -602,6 +619,7 @@ END_RCPP
 
 static const R_CallMethodDef CallEntries[] = {
     {"_riskRegression_AUCijFun", (DL_FUNC) &_riskRegression_AUCijFun, 2},
+    {"_riskRegression_aucLoobFun", (DL_FUNC) &_riskRegression_aucLoobFun, 5},
     {"_riskRegression_baseHaz_cpp", (DL_FUNC) &_riskRegression_baseHaz_cpp, 11},
     {"_riskRegression_calcSeMinimalCSC_cpp", (DL_FUNC) &_riskRegression_calcSeMinimalCSC_cpp, 36},
     {"_riskRegression_calcSeCif2_cpp", (DL_FUNC) &_riskRegression_calcSeCif2_cpp, 24},
@@ -613,8 +631,8 @@ static const R_CallMethodDef CallEntries[] = {
     {"_riskRegression_pProcess_cpp", (DL_FUNC) &_riskRegression_pProcess_cpp, 8},
     {"_riskRegression_sampleMaxProcess_cpp", (DL_FUNC) &_riskRegression_sampleMaxProcess_cpp, 8},
     {"_riskRegression_getIC0AUC", (DL_FUNC) &_riskRegression_getIC0AUC, 7},
-    {"_riskRegression_getInfluenceFunctionAUCKMCensoringTerm", (DL_FUNC) &_riskRegression_getInfluenceFunctionAUCKMCensoringTerm, 12},
-    {"_riskRegression_getInfluenceFunctionAUCKMCensoringCVPart", (DL_FUNC) &_riskRegression_getInfluenceFunctionAUCKMCensoringCVPart, 7},
+    {"_riskRegression_getInfluenceFunctionAUCKMCensoringTerm", (DL_FUNC) &_riskRegression_getInfluenceFunctionAUCKMCensoringTerm, 13},
+    {"_riskRegression_getInfluenceFunctionAUCKMCensoringCVPart", (DL_FUNC) &_riskRegression_getInfluenceFunctionAUCKMCensoringCVPart, 8},
     {"_riskRegression_getInfluenceFunctionBrierKMCensoringTerm", (DL_FUNC) &_riskRegression_getInfluenceFunctionBrierKMCensoringTerm, 4},
     {"_riskRegression_calcE_cpp", (DL_FUNC) &_riskRegression_calcE_cpp, 6},
     {"_riskRegression_IFbeta_cpp", (DL_FUNC) &_riskRegression_IFbeta_cpp, 10},

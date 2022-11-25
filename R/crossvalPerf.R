@@ -3,19 +3,41 @@
 crossvalPerf.loob.AUC <- function(times,mlevs,se.fit,response.type,NT,Response,cens.type,Weights,split.method,N,B,DT.B,data,dolist,alpha,byvars,mlabels,conservative,cens.model) {
   # initializing output
   AUC <- ReSpOnSe <- status <- ID <- model <- b <- risk <- casecontrol <- IF.AUC <- IF.AUC0 <- se <- IF.AUC.conservative <- se.conservative <- lower <- upper <- NF <- reference  <-  event <- status0 <- NULL
-  if (response.type=="binary")
+  if (response.type=="binary") {
     auc.loob <- data.table(expand.grid(times=0,model=mlevs)) #add times to auc.loob; now we can write less code for the same thing!
-  else
-    auc.loob <- data.table(expand.grid(times=times,model=mlevs))
+    times <- 0
+  }
+  auc.loob <- data.table(expand.grid(times=times,model=mlevs))
   auc.loob[,AUC:=as.numeric(NA)]
   ## for each pair of individuals sum the concordance of the bootstraps where *both* individuals are out-of-bag
   ## divide by number of times the pair is out-of-bag later
   aucDT <- NULL
-  ## preparation of outcome status at time horizon(s)
-  if (response.type=="binary"){
-    NT <- 1
-    cens.model <- "none"
+  warn<-FALSE
+  
+  redoSplitIndex <- function(x, N){
+    res <- rep(TRUE, N)
+    res[unique(x)] <- FALSE
+    res
   }
+  if (split.method$internal.name == "LeaveOneOutBoot"){
+    split.index <- apply(split.method$index,2,function(x) redoSplitIndex(x,N))
+  }
+  else {
+    setorder(DT.B, b, ID)
+    DT.B$fold <- rep(c(split.method$index), each=NT*length(mlevs))
+    DT.B[, bfold:=as.numeric(interaction(b,fold))] # construct new function
+    setorder(DT.B, bfold, time)
+    k <- split.method$k
+    split.index <- matrix(FALSE, nrow = N, ncol = B*k)
+    j <- 1
+    for (i in 1:k){
+      for (b in 1:B){
+        split.index[, j] <- split.method$index[,b] == i
+        j <- j + 1
+      }
+    }
+  }
+  noOob <- cumsum(colSums(split.index))
   for (s in 1:NT){
     if (response.type=="binary"){
       t <- 0
@@ -52,29 +74,25 @@ crossvalPerf.loob.AUC <- function(times,mlevs,se.fit,response.type,NT,Response,c
     if (cens.type=="rightCensored"){ #this maybe does not work with competing risks
       ## IPCW
       weights.cases <- cases.index/Weights$IPCW.subject.times
-      if (response.type == "survival"){
-        if (Weights$method=="marginal"){
-          weights.controls <- controls.index/Weights$IPCW.times[s]
-        }else{
-          weights.controls <- controls.index/Weights$IPCW.times[,s]
-        }
+      if (Weights$method=="marginal"){
+        weights.controls <- 1/Weights$IPCW.times[s] * controls.index1  + 1/Weights$IPCW.subject.times * controls.index2
+      }else{
+        weights.controls <- controls.index1*1/Weights$IPCW.times[,s] +  1/Weights$IPCW.subject.times * controls.index2
       }
-      else {
-        if (Weights$method=="marginal"){
-          weights.controls <- 1/Weights$IPCW.times[s] * controls.index1  + 1/Weights$IPCW.subject.times * controls.index2
-        }else{
-          weights.controls <- controls.index/Weights$IPCW.times[,s]*controls.index1 +  1/Weights$IPCW.subject.times * controls.index2
-        }
-      }
-      weightMatrix <- outer(weights.cases[cases.index], weights.controls[controls.index], "*")
     }else{ ## uncensored
       weights.cases <- cases.index/1
       weights.controls <- controls.index/1
-      weightMatrix <- outer(weights.cases[cases.index], weights.controls[controls.index], "*")
     }
+    weights <- weights.cases+weights.controls
     w.cases <- weights.cases[cases.index]
     w.controls <- weights.controls[controls.index]
-    Phi <- (1/N^2)*sum(w.cases)*sum(w.controls)
+    n.cases <- sum(cases.index)
+    n.controls <- sum(controls.index)
+    ID.case <- data[cases.index,]$ID
+    ID.controls <- data[controls.index,]$ID
+    muCase <- sum(w.cases)
+    muControls <- sum(w.controls)
+    Phi <- (1/N^2)*muCase*muControls
     for (mod in mlevs){
       if (mod == 0){
         aucLPO <- 0.5
@@ -85,55 +103,31 @@ crossvalPerf.loob.AUC <- function(times,mlevs,se.fit,response.type,NT,Response,c
         # if (split.method$internal.name=="crossval"){
         #   stop("Cannot yet calculate AUC in this case. Use split.method 'loob' or 'bootcv' instead.")
         # }
-        Ib <- matrix(0, sum(cases.index), sum(controls.index))
-        auc <- matrix(0, sum(cases.index), sum(controls.index))
-        for (u in 1:B){## cannot use b as running index because b==b does not work in data.table
-          ## test <- DT.B[model==mod&times==t&b==u]
-          # when B is too low it may happen that some subjects are never oob
-          if (split.method$internal.name == "crossval"){
-            folds <- split.method$index[,u] #indicates which observations were out of bag in each fold
-            folds.cases <- folds[cases.index]
-            folds.controls <- folds[controls.index]
-            Ib.ij <- outer(folds.cases,folds.controls,"==") #can only compare observations that were both out of bag
-            if (response.type=="binary"){
-              DT <- DT.B[model==mod&b==u]
-            }else{
-              DT <- DT.B[model==mod&times==t&b==u]
-            }
-            data.table::setkey(DT)
-            risk.cases <- DT[cases.index,]$risk
-            risk.controls <- DT[controls.index,]$risk
-            auc.ij <- AUCijFun(risk.cases,risk.controls)*Ib.ij 
-          }
-          else {
-            oob <- match(1:N,unique(split.method$index[,u]),nomatch=0)==0 ## split.method$index[,b] is the indexes used to train in the u'th bootstrap sample
-            ## to use the cpp function AUCijFun we
-            ## need a vector of length equal to the number of cases (cases.index) for the current time point
-            ## which has arbitrary values in places where subjects are inbag and the predicted risks
-            ## for those out-of-bag. need another vector for controls.
-            riskset <- data.table::data.table(ID=1:N,casecontrol=cc.status,oob=oob)
-            data.table::setkey(riskset,ID)
-            if (response.type=="binary"){
-              oob.risk <- DT.B[model==mod&b==u,data.table::data.table(ID,risk)]
-            }else{
-              oob.risk <- DT.B[model==mod&times==t&b==u,data.table::data.table(ID,risk)]
-            }
-            data.table::setkey(oob.risk,ID)
-            riskset <- oob.risk[riskset]
-            riskset[is.na(risk),risk:=-1]
-            Ib.ij <- outer((cases.index*oob)[cases.index],(controls.index*oob)[controls.index],"*")
-            auc.ij <- AUCijFun(riskset[casecontrol=="case",risk],riskset[casecontrol=="control",risk])*Ib.ij #case > control
-            ## Ib.ij is 1 when the pair out of bag
-            ## print(head(oob))
-            ## print(auc.ij[1:5,1:5])
-          }
-          auc <- auc+auc.ij
-          Ib <- Ib + Ib.ij
+        if (response.type == "binary"){ # no reason for the below trick with k fold, as level one data set is approximately N*B
+          DT <- DT.B[model == mod]
         }
-        auc <- (auc*weightMatrix)/Ib
-        # FIXME: why are there NA's?
-        auc[is.na(auc)] <- 0
-        nu1tauPm <- (1/N^2)*sum(auc)
+        else {
+          DT <- DT.B[model == mod & times == t]
+        }
+        if (split.method$internal.name == "crossval"){
+          risk.mat <- matrix(NA,nrow=N,ncol=k*B)
+          risk.mat[split.index[,1],1] <- DT[1:noOob[1]]$risk
+          for (u in 2:(k*B)){
+            risk.mat[split.index[,u],u] <- DT[(noOob[u-1]+1):noOob[u]]$risk
+          }
+        }
+        else {
+          risk.mat <- matrix(NA,nrow=N,ncol=B)
+          risk.mat[split.index[,1],1] <- DT[1:noOob[1]]$risk
+          for (u in 2:B){
+            risk.mat[split.index[,u],u] <- DT[(noOob[u-1]+1):noOob[u]]$risk
+          }
+        }
+        res <- aucLoobFun(ID.case,ID.controls,risk.mat,split.index,weights)
+        ic0Case <- res[["ic0Case"]]
+        ic0Control <- res[["ic0Control"]]
+        warn <- res[["warn"]]
+        nu1tauPm <- (1/N^2)*sum(ic0Case)
         ## Leave-one-pair-out bootstrap estimate of AUC
         aucLPO <- nu1tauPm*(1/Phi)
         # following section should be cleaned up(!!!)
@@ -146,63 +140,77 @@ crossvalPerf.loob.AUC <- function(times,mlevs,se.fit,response.type,NT,Response,c
         id.censored <- data[["ID"]][cc.status=="censored"]
         if (mod == 0){
           ic <- rep(0,N)
-          this.aucDT <- data.table(model=mod,times=t,ID = c(id.cases,id.controls,id.censored))
-        }
-        else if (cens.model == "KaplanMeier"){
-          if (response.type == "survival"){
-            data[,status0:=status]
-          }
-          else {
-            data[,status0:=status*event]
-          }
-          this.aucDT <- data.table(model=mod,times=t,ID = c(id.cases,id.controls,id.censored))
-          ic <- getInfluenceFunctionAUCKMCensoringCVPart(data[["time"]],data[["status0"]],t,Weights$IPCW.subject.times, Weights$IPCW.times[s], auc,nu1tauPm)
-        }
-        else {
-          ic0Case <- rowSums(auc)
-          ic0Control <- colSums(auc)
-          ic0 <- (1/(Phi*N))*c(ic0Case, ic0Control)
-          this.aucDT <- data.table(model=mod,times=t,ID = c(id.cases,id.controls,id.censored), IF.AUC0 = c(ic0, rep(0,length(id.censored))))
-        }
-        aucDT <- rbindlist(list(aucDT,this.aucDT),use.names=TRUE,fill=TRUE)
-        if (cens.model == "cox" && !conservative[[1]] && mod != 0){ 
-          if (Weights$IC$saveCoxMemory){
-            wdata <- Weights$IC[[3]]
-            fit <- Weights$IC[[2]]
-            TiMinus <- Weights$IC[[4]]
-            ic0CaseOld <- rep(0,N)
-            ic0ControlOld <- rep(0,N)
-            ic0CaseOld[cases.index] <- 1/w.cases * ic0Case#ic0CaseOld[cases.index]*w.cases
-            ic0ControlOld[controls.index] <- 1/w.controls * ic0Control
-            Wbeforet <- (1/(Phi*N^2))*(ic0CaseOld*weights.cases*cases.index+ic0ControlOld*weights.controls*controls.index2)-
-              (1/N)*(aucLPO/Phi)*((cases.index)*weights.cases*(1/N)*sum(w.controls)+ (controls.index2)*weights.controls*(1/N)*sum(w.cases))
-            Waftert <- (1/(Phi*N^2))*ic0ControlOld*weights.controls*controls.index1- 
-              (1/N)*(aucLPO/Phi)*(controls.index1)*weights.controls*(1/N)*sum(w.cases)
-            icPart <- predictCoxWeights(fit, diag=TRUE,newdata = wdata, times = TiMinus,weights=Wbeforet, isBeforeTau = TRUE, tau = t)+
-              predictCoxWeights(fit, diag=FALSE,newdata = wdata,times = t,weights=Waftert)
-          }
-          else {
-            ic.weights <- Weights$IC[[2]][[s]]
-            icPart <- as.numeric(rowSumsCrossprod(as.matrix(1/(Phi*N^2)*ic0Case-(aucLPO/Phi)*(1/N^2)*sum(w.controls)*w.cases), ic.weights[cases.index,], 0)) +
-              as.numeric(rowSumsCrossprod(as.matrix(1/(Phi*N^2)*ic0Control-(aucLPO/Phi)*(1/N^2)*sum(w.cases)*w.controls),ic.weights[controls.index,],0))
-          }
-        }
-        else {
-          icPart <- 0
-        }
-        icPhi1 <- (aucLPO/Phi)*((weights.cases)*(1/N)*sum(weights.controls)+(weights.controls)*(1/N)*sum(weights.cases))
-        data.table::setkey(aucDT,model,times,ID)
-        if (cens.model == "KaplanMeier" || mod == 0){
+          aucDT <- data.table(model=mod,times=t,ID = c(id.cases,id.controls,id.censored))
           aucDT[model==mod&times==t, IF.AUC:=ic]
         }
         else {
-          aucDT[model==mod&times==t, IF.AUC:=IF.AUC0+icPart-icPhi1]
+          ic0 <- (1/(Phi*N))*c(ic0Case, ic0Control)
+          this.aucDT <- data.table(model=mod,times=t,ID = c(id.cases,id.controls,id.censored), IF.AUC0 = c(ic0, rep(0,length(id.censored))))
+          if (!response.type == "binary" && !cens.type == "uncensored" && !conservative[[1]]){
+            if (cens.model == "cox"){ 
+              if (Weights$IC$saveCoxMemory){
+                wdata <- Weights$IC[[3]]
+                fit <- Weights$IC[[2]]
+                TiMinus <- Weights$IC[[4]]
+                ic0CaseOld <- rep(0,N)
+                ic0ControlOld <- rep(0,N)
+                ic0CaseOld[cases.index] <- 1/w.cases * ic0Case#ic0CaseOld[cases.index]*w.cases
+                ic0ControlOld[controls.index] <- 1/w.controls * ic0Control
+                Wbeforet <- (1/(Phi*N^2))*(ic0CaseOld*weights.cases*cases.index+ic0ControlOld*weights.controls*controls.index2)-
+                  (1/N)*(aucLPO/Phi)*((cases.index)*weights.cases*(1/N)*muControls+ (controls.index2)*weights.controls*(1/N)*muCase)
+                Waftert <- (1/(Phi*N^2))*ic0ControlOld*weights.controls*controls.index1- 
+                  (1/N)*(aucLPO/Phi)*(controls.index1)*weights.controls*(1/N)*muCase
+                icPart <- predictCoxWeights(fit, diag=TRUE,newdata = wdata, times = TiMinus,weights=Wbeforet, isBeforeTau = TRUE, tau = t)+
+                  predictCoxWeights(fit, diag=FALSE,newdata = wdata,times = t,weights=Waftert)
+              }
+              else {
+                ic.weights <- Weights$IC[[2]][[s]]
+                icPart <- as.numeric(rowSumsCrossprod(as.matrix(1/(Phi*N^2)*ic0Case-(aucLPO/Phi)*(1/N^2)*muControls*w.cases), ic.weights[cases.index,], 0)) +
+                  as.numeric(rowSumsCrossprod(as.matrix(1/(Phi*N^2)*ic0Control-(aucLPO/Phi)*(1/N^2)*muCase*w.controls),ic.weights[controls.index,],0))
+              }
+            }
+            else {
+              if (response.type == "survival"){
+                status0 <- data$status
+              }
+              else {
+                status0 <- data$status * data$event
+              }
+              ic <- getInfluenceFunctionAUCKMCensoringCVPart(data[["time"]],status0,t,Weights$IPCW.subject.times, Weights$IPCW.times[s], ic0Case,ic0Control,nu1tauPm)
+              # browser()
+              # ic0case2 <- rep(0,N)
+              # ic0control2 <- rep(0,N)
+              # ic0case2[ID.case] <- ic0Case
+              # ic0control2[ID.controls] <- ic0Control
+              # if (response.type == "survival"){
+              #   status0 <- data$status
+              # }
+              # else {
+              #   status0 <- data$status * data$event
+              # }
+              # browser()
+              # icPart <- getInfluenceFunctionAUCKMCensoringTerm(data[["time"]],status0,t,ic0case2,ic0control2, rep(1, N),
+              #                                                  sindex(data$time,t)-1,muCase,muControls, nu1tauPm, Weights$IPCW.times[s], aucLPO,TRUE)
+            }
+          }
+          else {
+            icPart <- 0
+          }
+          aucDT <- rbindlist(list(aucDT,this.aucDT),use.names=TRUE,fill=TRUE)
+          icPhi1 <- (aucLPO/Phi)*((weights.cases)*(1/N)*muCase+(weights.controls)*(1/N)*muControls)
+          data.table::setkey(aucDT,model,times,ID)
+          if (cens.model != "KaplanMeier"){
+            aucDT[model==mod&times==t, IF.AUC:=IF.AUC0+icPart-icPhi1]
+          }
+          else {
+            aucDT[model==mod&times==t, IF.AUC:=ic]
+          }
         }
         auc.loob[model==mod&times==t,se:= sd(aucDT[model==mod&times==t,IF.AUC])/sqrt(N)]
       }
     }
   }
-  if (any(Ib==0)){
+  if (warn){
     warning("Some pairs of subjects are never out of bag at the same time. \n You should increase the number of bootstrap replications (argument 'B') ")
   }
   if (response.type == "binary"){
@@ -354,16 +362,16 @@ crossvalPerf.loob.Brier <- function(times,mlevs,se.fit,response.type,NT,Response
           DT.B[,status0:=status*event]
         }
         DT.B[,IF.Brier:=getInfluenceCurve.Brier(t=times[1],
-                                              time=time,
-                                              IC0,
-                                              residuals=residuals,
-                                              WTi=WTi,
-                                              Wt=Wt,
-                                              IC.G=Weights$IC,
-                                              cens.model=cens.model,
-                                              conservative = conservative,
-                                              nth.times=nth.times[1],
-                                              event = status0),by=list(model,times)]
+                                                time=time,
+                                                IC0,
+                                                residuals=residuals,
+                                                WTi=WTi,
+                                                Wt=Wt,
+                                                IC.G=Weights$IC,
+                                                cens.model=cens.model,
+                                                conservative = conservative,
+                                                nth.times=nth.times[1],
+                                                event = status0),by=list(model,times)]
         score.loob <- DT.B[,data.table(Brier=sum(residuals)/N,
                                        se=sd(IF.Brier)/sqrt(N)),by=byvars]
       }

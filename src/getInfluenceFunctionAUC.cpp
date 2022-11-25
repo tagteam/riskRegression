@@ -134,7 +134,8 @@ NumericVector getInfluenceFunctionAUCKMCensoringTerm(NumericVector time,
                                                      double muControls,
                                                      double nu1,
                                                      double Gtau,
-                                                     double auc) {
+                                                     double auc, 
+                                                     bool loob) {
   // Thomas' code from IC of Nelson-Aalen estimator, i.e. calculate the influence function of the hazard
   // initialize first time point t=0 with data of subject i=0
   int n = time.size();
@@ -149,13 +150,20 @@ NumericVector getInfluenceFunctionAUCKMCensoringTerm(NumericVector time,
   double term2numpart2 = nu1 * (double (n*n)); //{}, term3num{}, term2denpart2{}, term3den{};
   double term2denpart2 = muCase;
   double term3numpart1{}, term3denpart1{};
+  double term3numpart2{};
   double sumPartNum{};
   for (int i = firsthit + 1; i < n; i++){ // control with time > t
     sumPartNum += ic0Controls[i];
   }
-  sumPartNum /= Gtau;
+  if (!loob){
+    sumPartNum /= Gtau;
+    term3numpart2 = nu1 * (double (n*n)) - sumPartNum; //{}, term3num{}, term2denpart2{}, term3den{};
+  }
+  else {
+    // fix!
+    term3numpart2 = 0;
+  }
   double sumPartDen = double ((n-(firsthit+1)))/Gtau;
-  double term3numpart2 = nu1 * (double (n*n)) - sumPartNum; //{}, term3num{}, term2denpart2{}, term3den{};
   double term3denpart2 = muControls - sumPartDen;
   double mu = muCase*muControls / (n*n);
   int tieIter = 0;
@@ -229,7 +237,8 @@ NumericVector getInfluenceFunctionAUCKMCensoringCVPart(NumericVector time,
                                                        double tau,
                                                        NumericVector GTiminus,
                                                        double Gtau,
-                                                       NumericMatrix aucMat,
+                                                       NumericVector ic0Case,
+                                                       NumericVector ic0Control,
                                                        double nu1tauPm) {
   // check for NAs and equal lengths of vectors
   checkNAs(time, GET_VARIABLE_NAME(time));
@@ -261,9 +270,9 @@ NumericVector getInfluenceFunctionAUCKMCensoringCVPart(NumericVector time,
   // P(tilde{T_i} > tau)
   double Probmu = double ((n-(firsthit+1))) / n;
   //this is the one theta_m(X_i,x), varies over cases
-  NumericVector int1 = rowSums(aucMat) / ((double) n); // this is \frac{1}{G(\tilde{T_i}- | Z_i)}\int  \Theta_m(X_i,x') \left(1_{\{t^{\prime}>\tau\}} \frac{1}{G(\tau | z')} + I(delta = 2)/ G(tilde(T_i)-) \right) P(dx')ordered according to cases
+  NumericVector int1 = ic0Case / ((double) n); // this is \frac{1}{G(\tilde{T_i}- | Z_i)}\int  \Theta_m(X_i,x') \left(1_{\{t^{\prime}>\tau\}} \frac{1}{G(\tau | z')} + I(delta = 2)/ G(tilde(T_i)-) \right) P(dx')ordered according to cases
   // this is the one with theta_m(x,X_i), varies over controls
-  NumericVector int2 = colSums(aucMat) / ((double) n); //  \int  \Theta_m(x,X_i)  1_{\{t \leqslant \tau\}}  \frac{P(dx) \I{\delta=1}}{G(t- | z)}\left( \frac{1_{\{T_i>\tau\}}}{G(\tau | Z_i)} + 1_{\{T_i leqslant \tau\}} \frac{\I{\Delta_i=2}}{G(T_i - | Z_i)} \right) ordered according to controls
+  NumericVector int2 = ic0Control/ ((double) n); //  \int  \Theta_m(x,X_i)  1_{\{t \leqslant \tau\}}  \frac{P(dx) \I{\delta=1}}{G(t- | z)}\left( \frac{1_{\{T_i>\tau\}}}{G(\tau | Z_i)} + 1_{\{T_i leqslant \tau\}} \frac{\I{\Delta_i=2}}{G(T_i - | Z_i)} \right) ordered according to controls
   // int1mu = int (1_{t \leq tau} 1(delta = 2)/ hat{G(t-)} + 1_{t > tau} / G(tau)) dP(z) = Q(T_i <= tau, Delta_i = 2 | T_i > tau), also int2mu
   // int2mu = int 1_{t \leq tau} 1/ hat{G(t-)} dP(t,1) = Q(T_i <= tau, Delta_i = 1)
   double int1mu = 0, int2mu = 0, eq32part2 = 0, eq33part2 = 0, eq33term1part = 0;
