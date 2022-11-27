@@ -2,7 +2,6 @@
 #include "arma-wrap.h"
 
 using namespace Rcpp;
-using namespace arma;
 using namespace std;
 
 // * calcE_cpp
@@ -148,8 +147,8 @@ List IFlambda0_cpp(const NumericVector& tau, const arma::mat& IFbeta,
   arma::mat IFlambda0;
   arma::mat IFLambda0;
 
-  arma::mat Elambda0(p, std::max(nTau,1), fill::zeros);
-  arma::mat cumElambda0(p, std::max(nTau,1), fill::zeros);
+  arma::mat Elambda0(p, std::max(nTau,1), arma::fill::zeros);
+  arma::mat cumElambda0(p, std::max(nTau,1), arma::fill::zeros);
   NumericVector lambda0_iS0(nTime1,0.0);
   NumericVector cumLambda0_iS0(nTime1,0.0);
   
@@ -195,7 +194,7 @@ List IFlambda0_cpp(const NumericVector& tau, const arma::mat& IFbeta,
   // Compute  Elambda0 and cumLamba0_iS0
   int iTau = iTau0;
   
-  colvec Elambda0_iter(p), cumElambda0_iter(p); 
+  arma::colvec Elambda0_iter(p), cumElambda0_iter(p); 
   cumElambda0_iter.fill(0);
 
   for(int iTime1 = 0; iTime1 < nTime1; iTime1++){
