@@ -2,7 +2,6 @@
 #include "arma-wrap.h"
 
 using namespace Rcpp;
-using namespace arma;
 using namespace std;
 
 // * colCenter (documentation)

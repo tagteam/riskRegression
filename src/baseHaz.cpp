@@ -2,7 +2,6 @@
 #include "arma-wrap.h"
 
 using namespace Rcpp;
-using namespace arma;
 using namespace std;
 
 struct structExport {
@@ -62,8 +61,8 @@ List baseHaz_cpp(const NumericVector& starttimes,
   vector< vector<double> > stoptimes_S(nStrata);
   vector< vector<int> > status_S(nStrata);
   vector< vector<double> > eXb_S(nStrata);
-  vector< uvec > index_S(nStrata);
-  uvec seqVar;
+  vector< arma::uvec > index_S(nStrata);
+  arma::uvec seqVar;
   int nPredtimes = predtimes.size();
   double maxtime, max_predtimes = 0; // factice intialisation to avoid warning from the compiler
   if(nPredtimes>0){

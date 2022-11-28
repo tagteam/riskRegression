@@ -217,7 +217,7 @@ BEGIN_RCPP
 END_RCPP
 }
 // quantileProcess_cpp
-NumericVector quantileProcess_cpp(int nSample, int nContrast, int nSim, const arma::cube& iid, int alternative, bool global, double confLevel);
+NumericVector quantileProcess_cpp(int nSample, int nContrast, int nSim, arma::cube& iid, int alternative, bool global, double confLevel);
 RcppExport SEXP _riskRegression_quantileProcess_cpp(SEXP nSampleSEXP, SEXP nContrastSEXP, SEXP nSimSEXP, SEXP iidSEXP, SEXP alternativeSEXP, SEXP globalSEXP, SEXP confLevelSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
@@ -225,7 +225,7 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< int >::type nSample(nSampleSEXP);
     Rcpp::traits::input_parameter< int >::type nContrast(nContrastSEXP);
     Rcpp::traits::input_parameter< int >::type nSim(nSimSEXP);
-    Rcpp::traits::input_parameter< const arma::cube& >::type iid(iidSEXP);
+    Rcpp::traits::input_parameter< arma::cube& >::type iid(iidSEXP);
     Rcpp::traits::input_parameter< int >::type alternative(alternativeSEXP);
     Rcpp::traits::input_parameter< bool >::type global(globalSEXP);
     Rcpp::traits::input_parameter< double >::type confLevel(confLevelSEXP);
@@ -234,7 +234,7 @@ BEGIN_RCPP
 END_RCPP
 }
 // pProcess_cpp
-arma::mat pProcess_cpp(int nSample, int nContrast, int nTime, int nSim, arma::mat value, const arma::cube& iid, int alternative, bool global);
+arma::mat pProcess_cpp(int nSample, int nContrast, int nTime, int nSim, arma::mat value, arma::cube& iid, int alternative, bool global);
 RcppExport SEXP _riskRegression_pProcess_cpp(SEXP nSampleSEXP, SEXP nContrastSEXP, SEXP nTimeSEXP, SEXP nSimSEXP, SEXP valueSEXP, SEXP iidSEXP, SEXP alternativeSEXP, SEXP globalSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
@@ -244,7 +244,7 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< int >::type nTime(nTimeSEXP);
     Rcpp::traits::input_parameter< int >::type nSim(nSimSEXP);
     Rcpp::traits::input_parameter< arma::mat >::type value(valueSEXP);
-    Rcpp::traits::input_parameter< const arma::cube& >::type iid(iidSEXP);
+    Rcpp::traits::input_parameter< arma::cube& >::type iid(iidSEXP);
     Rcpp::traits::input_parameter< int >::type alternative(alternativeSEXP);
     Rcpp::traits::input_parameter< bool >::type global(globalSEXP);
     rcpp_result_gen = Rcpp::wrap(pProcess_cpp(nSample, nContrast, nTime, nSim, value, iid, alternative, global));
@@ -252,7 +252,7 @@ BEGIN_RCPP
 END_RCPP
 }
 // sampleMaxProcess_cpp
-arma::mat sampleMaxProcess_cpp(int nSample, int nContrast, int nSim, const arma::mat& value, const arma::cube& iid, int alternative, int type, bool global);
+arma::mat sampleMaxProcess_cpp(int nSample, int nContrast, int nSim, const arma::mat& value, arma::cube& iid, int alternative, int type, bool global);
 RcppExport SEXP _riskRegression_sampleMaxProcess_cpp(SEXP nSampleSEXP, SEXP nContrastSEXP, SEXP nSimSEXP, SEXP valueSEXP, SEXP iidSEXP, SEXP alternativeSEXP, SEXP typeSEXP, SEXP globalSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
@@ -261,7 +261,7 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< int >::type nContrast(nContrastSEXP);
     Rcpp::traits::input_parameter< int >::type nSim(nSimSEXP);
     Rcpp::traits::input_parameter< const arma::mat& >::type value(valueSEXP);
-    Rcpp::traits::input_parameter< const arma::cube& >::type iid(iidSEXP);
+    Rcpp::traits::input_parameter< arma::cube& >::type iid(iidSEXP);
     Rcpp::traits::input_parameter< int >::type alternative(alternativeSEXP);
     Rcpp::traits::input_parameter< int >::type type(typeSEXP);
     Rcpp::traits::input_parameter< bool >::type global(globalSEXP);
