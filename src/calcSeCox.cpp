@@ -1,5 +1,5 @@
 // [[Rcpp::depends(RcppArmadillo)]]
-#include "arma-wrap.h"
+#include <RcppArmadillo.h>
 
 using namespace Rcpp;
 using namespace arma;
