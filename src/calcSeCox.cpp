@@ -1,8 +1,7 @@
 // [[Rcpp::depends(RcppArmadillo)]]
-#include "arma-wrap.h"
+#include <RcppArmadillo.h>
 
 using namespace Rcpp;
-using namespace arma;
 using namespace std;
 
 // * calcSeMinimalCox_cpp: compute IF/sumIF/se for the hazard / cumlative hazard / survival (method 1)

@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Aug  9 2017 (10:36) 
 ## Version: 
-## Last-Updated: Mar  9 2022 (08:32) 
+## Last-Updated: Nov 21 2022 (19:43) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 182
+##     Update #: 184
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -211,7 +211,7 @@ IPA.coxph <- function(object,formula,newdata,times,...){
     names(leaveOneOut) <- scope
     if (missing(newdata)) newdata=eval(object$call$data)
     if (missing(formula)) formula=object$formula
-    r2 <- Score(c("Full model"=list(object),leaveOneOut),
+    x <- Score(c("Full model"=list(object),leaveOneOut),
                 formula=formula,
                 data=newdata,
                 times=times,
@@ -220,7 +220,8 @@ IPA.coxph <- function(object,formula,newdata,times,...){
                 metrics="brier",
                 cens.model="km",
                 summary="IPA",
-                ...)$Brier$score
+                ...)
+    r2 = copy(x$Brier$score)
     ## r2[,IPA:=100*IPA]
     ## r2 <- r2[model!="Null model"]
     data.table::setnames(r2,"model","Variable")

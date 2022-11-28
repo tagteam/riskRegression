@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: maj 30 2018 (15:58) 
 ## Version: 
-## Last-Updated: Dec 21 2021 (12:30) 
-##           By: Brice Ozenne
-##     Update #: 524
+## Last-Updated: Nov 22 2022 (11:49) 
+##           By: Thomas Alexander Gerds
+##     Update #: 531
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -83,6 +83,8 @@ transformIID <- function(estimate, iid, type){
     ## Reference for the formula
     ## Beyersmann, Jan and Allignol, Arthur and Schumacher, Martin. Competing Risks and Multistate Models with R.
     ## Use R! Springer. 2012.
+    # estimate has different time points in columns
+    # and different covariate values in rows
     if(type == "none"){
         ## no change
         return(iid)
@@ -90,21 +92,26 @@ transformIID <- function(estimate, iid, type){
         newiid <- aperm(iid, c(3,2,1))
         if(type == "log"){
             ## formula 4.10 p 58 (Beyersmann et al. 2012)
-            newiid <- sliceScale_cpp(newiid, M = estimate)
+            ## newiid <- sliceScale_cpp(newiid, M = estimate)
+            newiid <- sweep(newiid,MARGIN = 1:2,FUN = "/",STATS = estimate)
         }else if(type == "loglog"){
             ## formula 4.16 p 59 (Beyersmann et al. 2012)
-            newiid <- sliceScale_cpp(newiid, M = - estimate * log(estimate) )
+            ## newiid <- sliceScale_cpp(newiid, M = - estimate * log(estimate) )
+            newiid <- sweep(newiid,MARGIN = 1:2,FUN = "/",STATS = - estimate * log(estimate))
         }else if(type == "cloglog"){
-            newiid <- sliceScale_cpp(newiid, M = - (1 - estimate) * log(1-estimate) )
+            ## newiid <- sliceScale_cpp(newiid, M = - (1 - estimate) * log(1-estimate) )
+            newiid <- sweep(newiid,MARGIN = 1:2,FUN = "/",STATS = - (1 - estimate) * log(1-estimate))
             ## formula 4.21 p 62 (Beyersmann et al. 2012)
         }else if(type == "atanh"){
             ## fisher transform: f(x) = 1/2 log(1+x) - 1/2 log(1-x)
             ##                   df(x) = dx/(2+2x) + dx/(2-2x) = dx(1/(1+x)+1/(1-x))/2
             ##                         = dx/(1-x^2)
             ##               Var(f(x)) = Var(x)/(1-x^2)
-            newiid <- sliceScale_cpp(newiid, M = 1 - estimate^2 )
+            ## newiid <- sliceScale_cpp(newiid, M = 1 - estimate^2 )
+            newiid <- sweep(newiid,MARGIN = 1:2,FUN = "/",STATS = 1 - estimate^2)
         }else if(type == "atanh2"){
-            newiid <- sliceScale_cpp(2*newiid, M = 1 - 4*(estimate-1/2)^2 )
+            ## newiid <- sliceScale_cpp(2*newiid, M = 1 - 4*(estimate-1/2)^2 )
+            newiid <- sweep(2*newiid,MARGIN = 1:2,FUN = "/",STATS = 1 - 4*(estimate-1/2)^2 )
         }
         newiid <- aperm(newiid, c(3,2,1))
     }

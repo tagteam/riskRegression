@@ -2,7 +2,6 @@
 #include <RcppArmadillo.h>
 
 using namespace Rcpp;
-using namespace arma;
 using namespace std;
 
 
@@ -451,10 +450,10 @@ List calcSeCif2_cpp(const std::vector<arma::mat>& ls_IFbeta, const std::vector<a
     // Rcout << "start: " << iiTau << " " << iNTau << endl;
 	
     if(diag){
-      iUvec_linspace = linspace<uvec>(0, iNJumpTime-1, iNJumpTime);
-      IFcumhazard = zeros<mat>(nObs,iNJumpTime);
+      iUvec_linspace = arma::linspace<arma::uvec>(0, iNJumpTime-1, iNJumpTime);
+      IFcumhazard = arma::zeros<arma::mat>(nObs,iNJumpTime);
     }else{
-      IFcumhazard = zeros<mat>(nObs,nJumpTime);
+      IFcumhazard = arma::zeros<arma::mat>(nObs,nJumpTime);
     }
     ieXb = NA_REAL;
    
@@ -511,7 +510,7 @@ List calcSeCif2_cpp(const std::vector<arma::mat>& ls_IFbeta, const std::vector<a
     }
      
     // ** loop over time
-    cumIF_tempo = zeros<colvec>(nObs);   
+    cumIF_tempo = arma::zeros<arma::colvec>(nObs);   
 
     for(int iJump=0; iJump<iNJumpTime; iJump++){
 

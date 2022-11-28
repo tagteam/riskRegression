@@ -555,7 +555,10 @@ Score.list <- function(object,
         stop("Invalid specification of formula.\n Could be that you forgot the right hand side:\n ~covariate1 + covariate2 + ...?\nNote that any subsetting, ie data$var or data[,\"var\"], is not supported by this function.")
     }
     if (missing(data)){stop("Argument data is missing.")}
-    data <- data.table(data)
+    if (data.table::is.data.table(data))
+        data <- copy(data)
+    else
+        data <- data.table::setDT(data)
     responseFormula <- stats::update(formula,~1)
     ## if (missing(event)) event <- 1
     responsevars <- all.vars(responseFormula)
@@ -630,7 +633,7 @@ c.f., Chapter 7, Section 5 in Gerds & Kattan 2021. Medical risk prediction model
     if (is.null(cens.type)) cens.type <- "uncensored"
     rm(response)
     # }}}
-# {{{ SplitMethod & parallel stuff
+    # {{{ SplitMethod & parallel stuff
 
     if (!missing(seed)) {
         ## message("Random seed set to control split of data: seed=",seed)
@@ -682,7 +685,7 @@ c.f., Chapter 7, Section 5 in Gerds & Kattan 2021. Medical risk prediction model
     }
 
     # }}}
-# {{{ Checking the ability of the elements of object to predict risks
+    # {{{ Checking the ability of the elements of object to predict risks
     # {{{ number of models and their labels
     NF <- length(object)
     # }}}
@@ -713,8 +716,8 @@ c.f., Chapter 7, Section 5 in Gerds & Kattan 2021. Medical risk prediction model
                        sep=""))
         }
     })
-# }}}
-# {{{ additional arguments for predictRisk methods
+    # }}}
+    # {{{ additional arguments for predictRisk methods
     if (!missing(predictRisk.args)){
         if (!(all(names(predictRisk.args) %in% unlist(object.classes))))
             stop(paste0("Argument predictRisk.args should be a list whose names match the S3-classes of the argument object.
@@ -727,7 +730,7 @@ c.f., Chapter 7, Section 5 in Gerds & Kattan 2021. Medical risk prediction model
         predictRisk.args <- NULL
     }
     # }}}
-# {{{ add null model and check resampling ability
+    # {{{ add null model and check resampling ability
     if (!is.null(nullobject)) {
         mlevs <- 0:NF
         mlabels <- c(names(nullobject),names(object))
@@ -743,7 +746,7 @@ c.f., Chapter 7, Section 5 in Gerds & Kattan 2021. Medical risk prediction model
         })
     }
     # }}}
-# {{{ resolve keep statements
+    # {{{ resolve keep statements
     if (!missing(keep) && is.character(keep)){
         if("residuals" %in% tolower(keep)) keep.residuals=TRUE else keep.residuals = FALSE
         if("vcov" %in% tolower(keep)) keep.vcov=TRUE else keep.vcov = FALSE
@@ -756,7 +759,7 @@ c.f., Chapter 7, Section 5 in Gerds & Kattan 2021. Medical risk prediction model
         keep.splitindex=FALSE
     }
     # }}}
-# {{{ resolve se.fit and contrasts
+    # {{{ resolve se.fit and contrasts
     if (missing(se.fit)){
         if (is.logical(conf.int)[[1]] && conf.int[[1]]==FALSE
             || conf.int[[1]]<=0
@@ -801,7 +804,7 @@ c.f., Chapter 7, Section 5 in Gerds & Kattan 2021. Medical risk prediction model
         }
     }
     # }}}
-# {{{ Evaluation landmarks and horizons (times)
+    # {{{ Evaluation landmarks and horizons (times)
     if (response.type %in% c("survival","competing.risks")){
         ## in case of a tie, events are earlier than right censored
         eventTimes <- unique(data[,time])
@@ -1056,6 +1059,8 @@ if (split.method$internal.name%in%c("BootCv","LeaveOneOutBoot","crossval")){
             } else {
                 testweights <- NULL
             }
+            ## print(class(traindata))
+            ## print(names(traindata))
             DT.b <- getPerformanceData(testdata=testdata,
                                        testweights=testweights,
                                        traindata=traindata,

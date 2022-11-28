@@ -2,7 +2,7 @@
 % Please edit documentation in R/simPBC.R
 \name{simPBC}
 \alias{simPBC}
-\title{bla}
+\title{simulating data alike the pbc data}
 \usage{
 simPBC(n)
 }
@@ -10,10 +10,10 @@ simPBC(n)
 \item{n}{Sample size}
 }
 \value{
-bla
+The simulated data.
 }
 \description{
-simulating data alike the pbc data
+This function can be used to simulate data alike the pbc data from the survival package.
 }
 \details{
 using lava to synthesize data
@@ -27,8 +27,10 @@ d=simPBC(847)
 d$protimegrp1 <- d$protimegrp=="10-11"
 d$protimegrp2 <- d$protimegrp==">11"
 d$sex <- factor(d$sex,levels=0:1,labels=c("m","f"))
-sF1 <- survreg(Surv(time,status==1)~sex+age+logbili+protimegrp1+protimegrp2+stage3+stage4,data=d)
-coxF1 <- coxph(Surv(time,status==1)~sex+age+logbili+protimegrp1+protimegrp2+stage3+stage4,data=d)
+sF1 <- survreg(Surv(time,status==1)~sex+age+logbili+protimegrp1+protimegrp2+stage3+stage4,
+data=d)
+coxF1 <- coxph(Surv(time,status==1)~sex+age+logbili+protimegrp1+protimegrp2+stage3+stage4,
+data=d)
 # load real pbc data
 data(pbc,package="survival")
 pbc <- na.omit(pbc[,c("time","status","age","sex","stage","bili","protime","trt")])
@@ -41,20 +43,23 @@ pbc$stage4 <- 1*(pbc$stage=="4")
 pbc$protimegrp <- cut(pbc$protime,c(-Inf,10,11,Inf),labels=c("<=10","10-11",">11"))
 pbc$protimegrp1 <- pbc$protimegrp=="10-11"
 pbc$protimegrp2 <- pbc$protimegrp==">11"
-F1 <- survival::survreg(Surv(time,status==1)~sex+age+logbili+protimegrp1+protimegrp2+stage3+stage4,data=pbc)
-F2 <- survival::survreg(Surv(time,status==2)~sex+age+logbili+protimegrp1+protimegrp2+stage3+stage4,data=pbc)
-sF2 <- survreg(Surv(time,status==2)~sex+age+logbili+protimegrp1+protimegrp2+stage3+stage4,data=d)
-G <- survreg(Surv(time,status==0)~sex+age+logbili+protimegrp1+protimegrp2+stage3+stage4,data=pbc)
-sG <- survreg(Surv(time,status==0)~sex+age+logbili+protimegrp1+protimegrp2+stage3+stage4,data=d)
+form1=Surv(time,status==1)~sex+age+logbili+protimegrp1+protimegrp2+stage3+stage4
+F1 <- survival::survreg(form1,data=pbc)
+form2=Surv(time,status==2)~sex+age+logbili+protimegrp1+protimegrp2+stage3+stage4
+F2 <- survival::survreg(form1,data=pbc)
+sF2 <- survreg(Surv(time,status==2)~sex+age+logbili+protimegrp1+protimegrp2+stage3+stage4,
+data=d)
+G <- survreg(Surv(time,status==0)~sex+age+logbili+protimegrp1+protimegrp2+stage3+stage4,
+data=pbc)
+sG <- survreg(Surv(time,status==0)~sex+age+logbili+protimegrp1+protimegrp2+stage3+stage4,
+data=d)
 # compare fits in real and simulated pbc data
 cbind(coef(F1),coef(sF1))
 cbind(coef(F2),coef(sF2))
 cbind(coef(G),coef(sG))
-cbind(coef(glm(protimegrp1~age+sex+logbili,data=pbc,family="binomial")),coef(glm(protimegrp1~age+sex+logbili,data=d,family="binomial")))
+cbind(coef(glm(protimegrp1~age+sex+logbili,data=pbc,family="binomial")),
+coef(glm(protimegrp1~age+sex+logbili,data=d,family="binomial")))
 cbind(coef(lm(logbili~age+sex,data=pbc)),coef(lm(logbili~age+sex,data=d)))
-}
-\seealso{
-bla
 }
 \author{
 Thomas A. Gerds <tag@biostat.ku.dk>
