@@ -2,7 +2,6 @@
 #include <RcppArmadillo.h>
 
 using namespace Rcpp;
-using namespace arma;
 using namespace std;
 
 // [[Rcpp::export]]
@@ -44,7 +43,7 @@ List predictCIF_cpp(const std::vector<arma::mat>& hazard,
   double CIF_it;// cumulative incidence at time t for individual i
   double survival_it0=1;// survival at time t0 for individual i
   int iterP; // index of the prediction time
-  rowvec strataI(nCause);
+  arma::rowvec strataI(nCause);
   
   int iNNewTimes;
   vector<double> iNewTimes;

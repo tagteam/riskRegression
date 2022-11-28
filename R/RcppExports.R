@@ -238,40 +238,6 @@ NULL
 #' 
 NULL
 
-#' @title Apply * by slice
-#' @description Fast computation of sweep(X, MARGIN = 1:2, FUN = "*", STATS = scale)
-#' @name sliceMultiply_cpp
-#' 
-#' @param X An array.
-#' @param M A matrix with the same number of row and columns as X.
-#' 
-#' @return An array of same size as X.
-#' @author Brice Ozenne <broz@@sund.ku.dk>
-#' @examples
-#' x <- array(1, dim = c(2,6,5))
-#' M <- matrix(1:12,2,6)
-#' sweep(x, MARGIN = 1:2, FUN = "*", STATS = M)
-#' sliceMultiply_cpp(x, M) 
-#' 
-NULL
-
-#' @title Apply / by slice
-#' @description Fast computation of sweep(X, MARGIN = 1:2, FUN = "/", STATS = scale)
-#' @name sliceScale_cpp
-#' 
-#' @param X An array.
-#' @param M A matrix with the same number of row and columns as X.
-#' 
-#' @return An array of same size as X.
-#' @author Brice Ozenne <broz@@sund.ku.dk>
-#' @examples
-#' x <- array(1, dim = c(2,6,5))
-#' M <- matrix(1:12,2,6)
-#' sweep(x, MARGIN = 1:2, FUN = "/", STATS = M)
-#' sliceScale_cpp(x, M) 
-#' 
-NULL
-
 #' @rdname colCenter_cpp
 #' @export
 colCenter_cpp <- function(X, center) {
@@ -306,30 +272,6 @@ colMultiply_cpp <- function(X, scale) {
 #' @export
 rowMultiply_cpp <- function(X, scale) {
     .Call(`_riskRegression_rowMultiply_cpp`, X, scale)
-}
-
-#' @rdname sliceMultiply_cpp
-#' @export
-sliceMultiply_cpp <- function(X, M) {
-    .Call(`_riskRegression_sliceMultiply_cpp`, X, M)
-}
-
-#' @rdname sliceMultiply_cpp
-#' @export
-sliceMultiplyPointer_cpp <- function(X, M) {
-    invisible(.Call(`_riskRegression_sliceMultiplyPointer_cpp`, X, M))
-}
-
-#' @rdname sliceScale_cpp
-#' @export
-sliceScale_cpp <- function(X, M) {
-    .Call(`_riskRegression_sliceScale_cpp`, X, M)
-}
-
-#' @rdname sliceScale_cpp
-#' @export
-sliceScalePointer_cpp <- function(X, M) {
-    invisible(.Call(`_riskRegression_sliceScalePointer_cpp`, X, M))
 }
 
 weightedAverageIFCumhazard_cpp <- function(seqTau, cumhazard0, newX, neweXb, IFbeta, cumEhazard0, cumhazard_iS0, delta_iS0, sample_eXb, sample_time, indexJumpSample_time, jump_time, indexJumpTau, lastSampleTime, newdata_index, nTau, nSample, nStrata, p, diag, debug, weights, isBeforeTau, tau) {

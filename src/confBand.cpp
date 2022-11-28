@@ -2,11 +2,10 @@
 #include <RcppArmadillo.h>
 
 using namespace Rcpp;
-using namespace arma;
 using namespace std;
 
 void sampleMaxProcess_cpp(int nSample, int nContrast, int nSim,
-						  const arma::mat& value, const arma::cube& iid, arma::mat& Msample, int alternative, int type, bool global);
+						  const arma::mat& value, arma::cube& iid, arma::mat& Msample, int alternative, int type, bool global);
 
 // * quantileProcess_cpp
 // Compute equicoordinate-quantile using simulations
@@ -18,7 +17,7 @@ void sampleMaxProcess_cpp(int nSample, int nContrast, int nSim,
 // global: [logical] should the max be taking over contrasts?
 // [[Rcpp::export]]
 NumericVector quantileProcess_cpp(int nSample, int nContrast, int nSim,
-								  const arma::cube& iid,
+								  arma::cube& iid,
 								  int alternative,
 								  bool global,
 								  double confLevel){
@@ -27,7 +26,7 @@ NumericVector quantileProcess_cpp(int nSample, int nContrast, int nSim,
   GetRNGstate();
 
   // ** perform simulation
-  colvec G; // individual weights
+  arma::colvec G; // individual weights
   arma::mat iidG; // temporary curve
   arma::mat Mstore(nSim, nContrast); // store simulation results
 
@@ -61,7 +60,7 @@ NumericVector quantileProcess_cpp(int nSample, int nContrast, int nSim,
   }else{
 	indexQuantile = round(nSim * confLevel);
   }
-  colvec tempo;
+  arma::colvec tempo;
   NumericVector Vquantile(nContrast);
     
   for (int iCol = 0; iCol < nContrast; iCol++){
@@ -86,7 +85,7 @@ NumericVector quantileProcess_cpp(int nSample, int nContrast, int nSim,
 // [[Rcpp::export]]
 arma::mat pProcess_cpp(int nSample, int nContrast, int nTime, int nSim,
 						   arma::mat value,
-						   const arma::cube& iid,
+						   arma::cube& iid,
 						   int alternative,
 						   bool global){
 
@@ -97,7 +96,7 @@ arma::mat pProcess_cpp(int nSample, int nContrast, int nTime, int nSim,
   arma::mat pmat(nContrast,nTime);
   pmat.fill(0.0);
 
-  colvec G(nSample); // individual weights
+  arma::colvec G(nSample); // individual weights
   arma::mat iidG(nTime,nContrast); // temporary curve
   if(alternative==3){
 	value = abs(value);
@@ -160,7 +159,7 @@ arma::mat pProcess_cpp(int nSample, int nContrast, int nTime, int nSim,
 // [[Rcpp::export]]
 arma::mat sampleMaxProcess_cpp(int nSample, int nContrast, int nSim,
 							   const arma::mat& value,
-							   const arma::cube& iid,
+							   arma::cube& iid,
 							   int alternative,
 							   int type,
 							   bool global){
@@ -177,10 +176,10 @@ arma::mat sampleMaxProcess_cpp(int nSample, int nContrast, int nSim,
   }
 
   // ** prepare
-  colvec G;
+  arma::colvec G;
   arma::mat iidG;
   arma::mat maxTime_sample(nSim,nContrast);
-  rowvec Svalue;
+  arma::rowvec Svalue;
   if(type==1){
 	if(alternative==1){
 	  Svalue = min(value,0);
