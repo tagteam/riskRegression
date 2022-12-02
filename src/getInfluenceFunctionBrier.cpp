@@ -1,5 +1,5 @@
 // [[Rcpp::depends(RcppArmadillo)]]
-#include "arma-wrap.h"
+#include <RcppArmadillo.h>
 #include "IC-Nelson-Aalen-cens-time.h"
 
 using namespace Rcpp;
@@ -13,11 +13,6 @@ NumericVector getInfluenceFunctionBrierKMCensoringTerm(double tau,
                                                              NumericVector time,
                                                              NumericVector residuals,
                                                              NumericVector status) {
-  checkNAs(tau, GET_VARIABLE_NAME(tau));
-  checkNAs(time, GET_VARIABLE_NAME(time));
-  checkNAs(residuals, GET_VARIABLE_NAME(residuals));
-  checkNAs(status, GET_VARIABLE_NAME(status));
-
   int n = time.size();
   NumericVector ictermvec(n);
   arma::uvec sindex(n,fill::zeros);

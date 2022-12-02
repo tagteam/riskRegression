@@ -1,5 +1,4 @@
 // [[Rcpp::depends(RcppArmadillo)]]
-#include "arma-wrap.h"
 #include "IC-Nelson-Aalen-cens-time.h"
 
 using namespace Rcpp;
@@ -240,17 +239,6 @@ NumericVector getInfluenceFunctionAUCKMCensoringCVPart(NumericVector time,
                                                        NumericVector ic0Case,
                                                        NumericVector ic0Control,
                                                        double nu1tauPm) {
-  // check for NAs and equal lengths of vectors
-  checkNAs(time, GET_VARIABLE_NAME(time));
-  checkNAs(status, GET_VARIABLE_NAME(status));
-  checkNAs(tau, GET_VARIABLE_NAME(tau));
-  checkNAs(GTiminus, GET_VARIABLE_NAME(GTiminus));
-  checkNAs(Gtau, GET_VARIABLE_NAME(Gtau));
-  
-  // should also check matrix for NAs and the IntegerVectors
-  compareLengths(time,status);
-  compareLengths(status,GTiminus);
-  
   int n = time.size();
   NumericVector ic(n);
   arma::uvec sindex(n,fill::zeros);

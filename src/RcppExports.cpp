@@ -11,18 +11,6 @@ Rcpp::Rostream<true>&  Rcpp::Rcout = Rcpp::Rcpp_cout_get();
 Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 #endif
 
-// AUCijFun
-NumericMatrix AUCijFun(NumericVector riskCase, NumericVector riskControl);
-RcppExport SEXP _riskRegression_AUCijFun(SEXP riskCaseSEXP, SEXP riskControlSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< NumericVector >::type riskCase(riskCaseSEXP);
-    Rcpp::traits::input_parameter< NumericVector >::type riskControl(riskControlSEXP);
-    rcpp_result_gen = Rcpp::wrap(AUCijFun(riskCase, riskControl));
-    return rcpp_result_gen;
-END_RCPP
-}
 // aucLoobFun
 List aucLoobFun(IntegerVector IDCase, IntegerVector IDControl, NumericMatrix riskMat, LogicalMatrix splitMat, NumericVector weights);
 RcppExport SEXP _riskRegression_aucLoobFun(SEXP IDCaseSEXP, SEXP IDControlSEXP, SEXP riskMatSEXP, SEXP splitMatSEXP, SEXP weightsSEXP) {
@@ -572,7 +560,6 @@ END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
-    {"_riskRegression_AUCijFun", (DL_FUNC) &_riskRegression_AUCijFun, 2},
     {"_riskRegression_aucLoobFun", (DL_FUNC) &_riskRegression_aucLoobFun, 5},
     {"_riskRegression_baseHaz_cpp", (DL_FUNC) &_riskRegression_baseHaz_cpp, 11},
     {"_riskRegression_calcSeMinimalCSC_cpp", (DL_FUNC) &_riskRegression_calcSeMinimalCSC_cpp, 36},

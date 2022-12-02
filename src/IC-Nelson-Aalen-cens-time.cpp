@@ -1,9 +1,6 @@
+// [[Rcpp::depends(RcppArmadillo)]]
 #include "IC-Nelson-Aalen-cens-time.h"
 
-using namespace arma;
-
-// [[Rcpp::depends(RcppArmadillo)]]
-#include <RcppArmadillo.h>
 using namespace Rcpp;
 using namespace arma;
 
