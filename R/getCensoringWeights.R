@@ -148,6 +148,6 @@ getCensoringWeights <- function(formula,
                IPCW.times <- 1-predictRisk(fit,wdata,times,1)
                out <- list(IPCW.times=IPCW.times,IPCW.subject.times=IPCW.subject.times,method=cens.model,IC.data=IC.data)
            })
-    out$dim <- ifelse(cens.model=="cox",1,0)
+    out$dim <- ifelse(cens.model=="KaplanMeier",0,1)
     out
 }

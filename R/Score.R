@@ -539,9 +539,6 @@ Score.list <- function(object,
         conservative[[1]] <- TRUE
       }
       passed.args <- names(as.list(match.call())[-1])
-      if ("split.method" %in% passed.args){
-        stop("Cross validation does not work with custom models for the censoring. ")
-      }
     }  
   
     
