@@ -199,7 +199,7 @@ crossvalPerf.loob.AUC <- function(times,mlevs,se.fit,response.type,NT,Response,c
           aucDT <- rbindlist(list(aucDT,this.aucDT),use.names=TRUE,fill=TRUE)
           icPhi1 <- (aucLPO/Phi)*((weights.cases)*(1/N)*muCase+(weights.controls)*(1/N)*muControls)
           data.table::setkey(aucDT,model,times,ID)
-          if ((response.type != "binary" && cens.model == "KaplanMeier") || mod == 0){
+          if ((response.type != "binary" && cens.model == "KaplanMeier" && !conservative) || mod == 0){
             aucDT[model==mod&times==t, IF.AUC:=ic]
           }
           else {

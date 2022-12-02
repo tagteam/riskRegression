@@ -7,7 +7,7 @@ library(data.table)
 context("riskRegression")
 
 test.cv <- function(){
-  type.cvs <- c("loob", "bootcv") #c("cv5", "loob", "bootcv")
+  type.cvs <- c("cv5","loob", "bootcv")
   B <- 100
   train.sample.size <- 400
   tau <- c(4,5)
