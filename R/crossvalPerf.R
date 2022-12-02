@@ -328,7 +328,7 @@ crossvalPerf.loob.Brier <- function(times,mlevs,se.fit,response.type,NT,Response
     DT.B[,IC0:=residuals-Brier]
     ## se.brier <- DT.B[,list(se=sd(IC0, na.rm=TRUE)/sqrt(N)),by=byvars]
     ## DT.B[,Brier:=NULL]
-    if (cens.type[1]=="rightCensored"){
+    if (cens.type[1]=="rightCensored" && !conservative){
       ## this is a new DT.B
       DT.B <- cbind(data[,1:response.dim,with=FALSE],DT.B)
       DT.B[,nth.times:=as.numeric(factor(times))]
