@@ -44,7 +44,6 @@ crossvalPerf.loob.AUC <- function(times,mlevs,se.fit,response.type,NT,Response,c
       ## the following indices have to be logical!!!
       cases.index <- Response[,ReSpOnSe==1]
       controls.index <- !cases.index
-      cc.status <- factor(cases.index,levels=c(TRUE,FALSE),labels=c("case","control"))
     }else{
       t <- times[s]
       if (response.type=="survival"){
@@ -53,9 +52,6 @@ crossvalPerf.loob.AUC <- function(times,mlevs,se.fit,response.type,NT,Response,c
         cases.index <- Response[,time<=t & status==1]
         controls.index = controls.index1 = Response[,time>t]
         controls.index2 <- rep(FALSE, N)
-        cc.status <- factor(rep("censored",N),levels=c("censored","case","control"))
-        cc.status[cases.index] <- "case"
-        cc.status[controls.index] <- "control"
       }
       else{ ## competing risks
         ## event of interest before times
@@ -65,9 +61,6 @@ crossvalPerf.loob.AUC <- function(times,mlevs,se.fit,response.type,NT,Response,c
         controls.index1 <- Response[,time>t]
         controls.index2 <-  Response[,event==2 & time <= t]
         controls.index <- controls.index1 | controls.index2
-        cc.status <- factor(rep("censored",N),levels=c("censored","case","control"))
-        cc.status[cases.index] <- "case"
-        cc.status[controls.index] <- "control"
       }
     }
     # censoring weights
