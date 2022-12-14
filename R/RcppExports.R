@@ -76,12 +76,8 @@ getIC0AUC <- function(time, status, tau, risk, GTiminus, Gtau, auc) {
     .Call(`_riskRegression_getIC0AUC`, time, status, tau, risk, GTiminus, Gtau, auc)
 }
 
-getInfluenceFunctionAUCKMCensoringTerm <- function(time, status, tau, ic0Case, ic0Controls, weights, firsthit, muCase, muControls, nu1, Gtau, auc, loob) {
-    .Call(`_riskRegression_getInfluenceFunctionAUCKMCensoringTerm`, time, status, tau, ic0Case, ic0Controls, weights, firsthit, muCase, muControls, nu1, Gtau, auc, loob)
-}
-
-getInfluenceFunctionAUCKMCensoringCVPart <- function(time, status, tau, GTiminus, Gtau, ic0Case, ic0Control, nu1tauPm) {
-    .Call(`_riskRegression_getInfluenceFunctionAUCKMCensoringCVPart`, time, status, tau, GTiminus, Gtau, ic0Case, ic0Control, nu1tauPm)
+getInfluenceFunctionAUCKMCensoringTerm <- function(time, status, tau, ic0Case, ic0Controls, weights, firsthit, muCase, muControls, nu1, Gtau, auc, startControls1) {
+    .Call(`_riskRegression_getInfluenceFunctionAUCKMCensoringTerm`, time, status, tau, ic0Case, ic0Controls, weights, firsthit, muCase, muControls, nu1, Gtau, auc, startControls1)
 }
 
 getInfluenceFunctionBrierKMCensoringTerm <- function(tau, time, residuals, status) {

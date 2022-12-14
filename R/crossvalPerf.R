@@ -139,9 +139,8 @@ crossvalPerf.loob.AUC <- function(times,mlevs,se.fit,response.type,NT,Response,c
         id.controls <- data[["ID"]][cc.status=="control"]
         id.censored <- data[["ID"]][cc.status=="censored"]
         if (mod == 0){
-          ic <- rep(0,N)
           aucDT <- data.table(model=mod,times=t,ID = c(id.cases,id.controls,id.censored))
-          aucDT[model==mod&times==t, IF.AUC:=ic]
+          aucDT[model==mod&times==t, IF.AUC:=rep(0,N)]
         }
         else {
           ic0 <- (1/(Phi*N))*c(ic0Case, ic0Control)
@@ -153,13 +152,13 @@ crossvalPerf.loob.AUC <- function(times,mlevs,se.fit,response.type,NT,Response,c
                 fit <- Weights$IC[[2]]
                 TiMinus <- Weights$IC[[4]]
                 ic0CaseOld <- rep(0,N)
+                ic0CaseOld[cases.index] <- ic0Case
                 ic0ControlOld <- rep(0,N)
-                ic0CaseOld[cases.index] <- 1/w.cases * ic0Case#ic0CaseOld[cases.index]*w.cases
-                ic0ControlOld[controls.index] <- 1/w.controls * ic0Control
-                Wbeforet <- (1/(Phi*N^2))*(ic0CaseOld*weights.cases*cases.index+ic0ControlOld*weights.controls*controls.index2)-
-                  (1/N)*(aucLPO/Phi)*((cases.index)*weights.cases*(1/N)*muControls+ (controls.index2)*weights.controls*(1/N)*muCase)
-                Waftert <- (1/(Phi*N^2))*ic0ControlOld*weights.controls*controls.index1- 
-                  (1/N)*(aucLPO/Phi)*(controls.index1)*weights.controls*(1/N)*muCase
+                ic0ControlOld[controls.index] <- ic0Control
+                Wbeforet <- (1/(Phi*N^2))*(ic0CaseOld*cases.index+ic0ControlOld*controls.index2)-
+                  (1/N)*(aucLPO/Phi)*((cases.index)*weights*(1/N)*sum(w.controls)+ (controls.index2)*weights*(1/N)*sum(w.cases))
+                Waftert <- (1/(Phi*N^2))*ic0ControlOld*controls.index1- 
+                  (1/N)*(aucLPO/Phi)*(controls.index1)*weights*(1/N)*sum(w.cases)
                 icPart <- predictCoxWeights(fit, diag=TRUE,newdata = wdata, times = TiMinus,weights=Wbeforet, isBeforeTau = TRUE, tau = t)+
                   predictCoxWeights(fit, diag=FALSE,newdata = wdata,times = t,weights=Waftert)
               }
@@ -176,21 +175,12 @@ crossvalPerf.loob.AUC <- function(times,mlevs,se.fit,response.type,NT,Response,c
               else {
                 status0 <- data$status * data$event
               }
-              ic <- getInfluenceFunctionAUCKMCensoringCVPart(data[["time"]],status0,t,Weights$IPCW.subject.times, Weights$IPCW.times[s], ic0Case,ic0Control,nu1tauPm)
-              # browser()
-              # ic0case2 <- rep(0,N)
-              # ic0control2 <- rep(0,N)
-              # ic0case2[ID.case] <- ic0Case
-              # ic0control2[ID.controls] <- ic0Control
-              # if (response.type == "survival"){
-              #   status0 <- data$status
-              # }
-              # else {
-              #   status0 <- data$status * data$event
-              # }
-              # browser()
-              # icPart <- getInfluenceFunctionAUCKMCensoringTerm(data[["time"]],status0,t,ic0case2,ic0control2, rep(1, N),
-              #                                                  sindex(data$time,t)-1,muCase,muControls, nu1tauPm, Weights$IPCW.times[s], aucLPO,TRUE)
+              ind.controls<-rep(NA,length(time))
+              ind.controls[controls.index1] <- 1
+              ind.controls[controls.index2] <- 0
+              start.controls1 <- sindex(ind.controls[controls.index1 | controls.index2],0)
+              icPart <- getInfluenceFunctionAUCKMCensoringTerm(data[["time"]],status0,t,ic0Case,ic0Control, weights,
+                                                               sindex(data$time,t)-1,muCase,muControls, nu1tauPm, Weights$IPCW.times[s], aucLPO,start.controls1)
             }
           }
           else {
@@ -199,12 +189,7 @@ crossvalPerf.loob.AUC <- function(times,mlevs,se.fit,response.type,NT,Response,c
           aucDT <- rbindlist(list(aucDT,this.aucDT),use.names=TRUE,fill=TRUE)
           icPhi1 <- (aucLPO/Phi)*(weights.cases*(1/N)*muControls+weights.controls*(1/N)*muCase)
           data.table::setkey(aucDT,model,times,ID)
-          if ((response.type != "binary" && cens.model == "KaplanMeier" && !conservative) || mod == 0){
-            aucDT[model==mod&times==t, IF.AUC:=ic]
-          }
-          else {
-            aucDT[model==mod&times==t, IF.AUC:=IF.AUC0+icPart-icPhi1]
-          }
+          aucDT[model==mod&times==t, IF.AUC:=IF.AUC0+icPart-icPhi1]
         }
         auc.loob[model==mod&times==t,se:= sd(aucDT[model==mod&times==t,IF.AUC])/sqrt(N)]
       }

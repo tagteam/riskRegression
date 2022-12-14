@@ -5,26 +5,28 @@ getInfluenceCurve.AUC <- function(t,time,event, WTi, Wt, risk, MC, auc, nth.time
   }
   else {
     if (cens.model[[1]] == "KaplanMeier"){
+      ind.controls<-rep(NA,length(time))
+      controls.index1 <- conservativeIFcalculation[["controls1"]]
+      controls.index2 <- conservativeIFcalculation[["controls2"]]
+      ind.controls[controls.index1] <- 1
+      ind.controls[controls.index2] <- 0
+      start.controls1 <- sindex(ind.controls[controls.index1 | controls.index2],0)
       conservativeIFcalculation[["ic0"]]+getInfluenceFunctionAUCKMCensoringTerm(time,event,t,conservativeIFcalculation[["ic0Case"]],
                                                                                 conservativeIFcalculation[["ic0Control"]], conservativeIFcalculation[["weights"]],
                                                                                 conservativeIFcalculation[["firsthit"]],conservativeIFcalculation[["muCase"]],
-                                                                                conservativeIFcalculation[["muControls"]], conservativeIFcalculation[["nu"]], Wt[1], auc, FALSE)
+                                                                                conservativeIFcalculation[["muControls"]], conservativeIFcalculation[["nu"]], Wt[1], auc, start.controls1)
     }
     else if (cens.model[[1]] == "cox"){
       n <- length(time)
-      ic0CaseOld <- conservativeIFcalculation[["ic0Case"]]
-      ic0ControlOld <- conservativeIFcalculation[["ic0Control"]]
+      ic0Case <- conservativeIFcalculation[["ic0Case"]]
+      ic0Control <- conservativeIFcalculation[["ic0Control"]]
       Phi <- conservativeIFcalculation[["muCase"]] * conservativeIFcalculation[["muControls"]] / (n*n)
       weights <- conservativeIFcalculation[["weights"]]
       aucLPO <- auc
-      cases.index <- time<=t & event==1
-      controls.index1 <- time>t
-      controls.index2 <-  event==2 & time <= t
-      controls.index <- controls.index1 | controls.index2
+      cases.index <- conservativeIFcalculation[["cases"]]
+      controls.index <- conservativeIFcalculation[["controls"]]
       w.cases <- weights[cases.index]
       w.controls <- weights[controls.index]
-      ic0Case <- ic0CaseOld[cases.index]*w.cases
-      ic0Control <- ic0ControlOld[controls.index]*w.controls
       if (!MC$saveCoxMemory){
         ic.weights <- MC[[2]][[nth.times]] ## load IF from Censoring weights
         icPart <- as.numeric(rowSumsCrossprod(as.matrix(1/(Phi*n^2)*ic0Case-(aucLPO/Phi)*(1/n^2)*sum(w.controls)*w.cases), ic.weights[cases.index,], 0)) +
@@ -34,9 +36,15 @@ getInfluenceCurve.AUC <- function(t,time,event, WTi, Wt, risk, MC, auc, nth.time
         wdata <- MC[[3]]
         fit <- MC[[2]]
         TiMinus <- MC[[4]]
-        Wbeforet <- (1/(Phi*n^2))*(ic0CaseOld*weights*cases.index+ic0ControlOld*weights*controls.index2)-
+        ic0CaseOld <- rep(0,n)
+        ic0CaseOld[cases.index] <- ic0Case
+        ic0ControlOld <- rep(0,n)
+        ic0ControlOld[controls.index] <- ic0Control
+        controls.index1 <- conservativeIFcalculation[["controls1"]]
+        controls.index2 <- conservativeIFcalculation[["controls2"]]
+        Wbeforet <- (1/(Phi*n^2))*(ic0CaseOld*cases.index+ic0ControlOld*controls.index2)-
           (1/n)*(aucLPO/Phi)*((cases.index)*weights*(1/n)*sum(w.controls)+ (controls.index2)*weights*(1/n)*sum(w.cases))
-        Waftert <- (1/(Phi*n^2))*ic0ControlOld*weights*controls.index1- 
+        Waftert <- (1/(Phi*n^2))*ic0ControlOld*controls.index1- 
           (1/n)*(aucLPO/Phi)*(controls.index1)*weights*(1/n)*sum(w.cases)
         icPart <- predictCoxWeights(fit, diag=TRUE,newdata = wdata, times = TiMinus,weights=Wbeforet, isBeforeTau = TRUE, tau = t)+
           predictCoxWeights(fit, diag=FALSE,newdata = wdata,times = t,weights=Waftert)
