@@ -16,6 +16,7 @@ List getIC0AUC(NumericVector time,
                         double auc) {
   int n = time.size();
   NumericVector ic0(n), ic0Case(n), ic0Control(n), weights(n);
+  LogicalVector cases(n), controls(n);
   double muCase{}, muControls{}, nu{};
   
   // find first index such that k such that tau[k] <= tau but tau[k+1] > tau
@@ -29,15 +30,18 @@ List getIC0AUC(NumericVector time,
   // also calculate muCase = sum_i W_t(G;Z_i) over cases and muControls = sum_i W_t(G;Z_i) over controls
   for (int i = 0; i <= firsthit; i++){
     if(status[i] == 1){ // case
+      cases[i] = true;
       weights[i] = 1.0/GTiminus[i];
       muCase += weights[i];
     }
     else if (status[i] == 2){ // control
+      controls[i] = true;
       weights[i] = 1.0/GTiminus[i];
       muControls += weights[i];
     }
   }
   for (int i = firsthit + 1; i < n; i++){ // control
+    controls[i] = true;
     weights[i] = 1.0/Gtau[i];
     muControls += weights[i];
   }
@@ -53,13 +57,13 @@ List getIC0AUC(NumericVector time,
   while (i >= 0){
     int tieIter = i;
     while (tieIter >= 0 && risk[ordering[tieIter]]==risk[ordering[i]]){
-      if (time[ordering[tieIter]] <= tau && status[ordering[tieIter]] == 1){
+      if (cases[ordering[tieIter]]){
         valCurr += weights[ordering[tieIter]]; // should set something with valPrev up here
       }
       tieIter--;
     } 
     for (int l = i; l > tieIter;l--){
-      if (time[ordering[l]] <= tau && status[ordering[l]] == 1){
+      if (cases[ordering[l]]){
         ic0Control[ordering[l]] = weights[ordering[l]]*0.5*(valPrev+valCurr - weights[ordering[l]]);   // valPrev+0.5*(valCurr - weight[ordering[l]] - valPrev); //valPrev
       }
       else {
@@ -75,13 +79,13 @@ List getIC0AUC(NumericVector time,
   while (i < n){
     int tieIter = i;
     while (tieIter < n && risk[ordering[tieIter]]==risk[ordering[i]]){
-      if ((time[ordering[tieIter]] <= tau && status[ordering[tieIter]] == 2) || time[ordering[tieIter]] > tau){
+      if (controls[ordering[tieIter]]){
         valCurr += weights[ordering[tieIter]];
       }
       tieIter++;
     } 
     for (int l = i; l < tieIter;l++){
-      if ((time[ordering[l]] <= tau && status[ordering[l]] == 2) || time[ordering[l]] > tau){
+      if (controls[ordering[l]]){
         ic0Case[ordering[l]] = weights[ordering[l]]*0.5*(valPrev+valCurr - weights[ordering[l]]);
       }
       else {
@@ -116,7 +120,9 @@ List getIC0AUC(NumericVector time,
                       Named("muCase") = muCase,
                       Named("muControls") = muControls,
                       Named("nu") = nu,
-                      Named("firsthit")=firsthit));
+                      Named("firsthit")=firsthit,
+                      Named("cases")=cases,
+                      Named("controls")=controls));
 }
 
 // calculate the term corresponding to KM censoring
