@@ -60,10 +60,10 @@ List getIC0AUC(NumericVector time,
     } 
     for (int l = i; l > tieIter;l--){
       if (time[ordering[l]] <= tau && status[ordering[l]] == 1){
-        ic0Control[ordering[l]] = 0.5*(valPrev+valCurr - weights[ordering[l]]);   // valPrev+0.5*(valCurr - weight[ordering[l]] - valPrev); //valPrev
+        ic0Control[ordering[l]] = weights[ordering[l]]*0.5*(valPrev+valCurr - weights[ordering[l]]);   // valPrev+0.5*(valCurr - weight[ordering[l]] - valPrev); //valPrev
       }
       else {
-        ic0Control[ordering[l]] = 0.5*(valPrev+valCurr); // valPrev+0.5*(valCurr-valPrev); //valPrev
+        ic0Control[ordering[l]] = weights[ordering[l]]*0.5*(valPrev+valCurr); // valPrev+0.5*(valCurr-valPrev); //valPrev
       }
     }
     i = tieIter;
@@ -82,10 +82,10 @@ List getIC0AUC(NumericVector time,
     } 
     for (int l = i; l < tieIter;l++){
       if ((time[ordering[l]] <= tau && status[ordering[l]] == 2) || time[ordering[l]] > tau){
-        ic0Case[ordering[l]] = 0.5*(valPrev+valCurr - weights[ordering[l]]);
+        ic0Case[ordering[l]] = weights[ordering[l]]*0.5*(valPrev+valCurr - weights[ordering[l]]);
       }
       else {
-        ic0Case[ordering[l]] = 0.5*(valPrev+valCurr);
+        ic0Case[ordering[l]] = weights[ordering[l]]*0.5*(valPrev+valCurr);
       }
     }
     i = tieIter;
@@ -97,11 +97,11 @@ List getIC0AUC(NumericVector time,
   double IF0num{}, IF0den{};
   for (int i = 0; i < n; i++){
     if (time[i] <= tau && status[i] == 1){ // case
-      IF0num = weights[i] / (double (n)) * ic0Case[i];
+      IF0num = ic0Case[i] / (double (n));
       IF0den = weights[i] / (double (n)) * muControls;
     }
     else if ((time[i] <= tau && status[i] == 2) || (time[i] > tau)){ // control
-      IF0num = weights[i] / (double (n)) * ic0Control[i];
+      IF0num = ic0Control[i] / (double (n));
       IF0den = weights[i] / (double (n)) * muCase;
     }
     else {
@@ -169,11 +169,11 @@ NumericVector getInfluenceFunctionAUCKMCensoringTerm(NumericVector time,
   // can do while loops together
   while ((tieIter < n) && (time[tieIter] == time[0])) {
     if ((time[tieIter] <= tau) && (status[tieIter]==1)){
-      term2numpart2 -= ic0Case[tieIter] * weights[tieIter]; 
+      term2numpart2 -= ic0Case[tieIter]; 
       term2denpart2 -= weights[tieIter]; 
     }
     else if  ((time[tieIter] <= tau) && (status[tieIter]==2)){
-      term3numpart2 -= ic0Controls[tieIter] * weights[tieIter]; 
+      term3numpart2 -= ic0Controls[tieIter]; 
       term3denpart2 -= weights[tieIter]; 
     }
     tieIter++;
@@ -202,15 +202,15 @@ NumericVector getInfluenceFunctionAUCKMCensoringTerm(NumericVector time,
       int tieIter = i+1;
       while ((tieIter < n) && (time[tieIter] == time[i+1])) {
         if ((time[tieIter] <= tau) && (status[tieIter]==1)){
-          term2numpart1 -= ic0Case[tieIter] * (MC_term2[sindex[i]]) * weights[tieIter]; 
+          term2numpart1 -= ic0Case[tieIter] * (MC_term2[sindex[i]]); 
           term2denpart1 -= (MC_term2[sindex[i]]) * weights[tieIter]; 
-          term2numpart2 -= ic0Case[tieIter] * weights[tieIter]; 
+          term2numpart2 -= ic0Case[tieIter]; 
           term2denpart2 -= weights[tieIter]; 
         }
         else if ((time[tieIter] <= tau) && (status[tieIter]==2)){
-          term3numpart1 -= ic0Controls[tieIter]* MC_term2[sindex[i]]*weights[tieIter]; 
+          term3numpart1 -= ic0Controls[tieIter]* MC_term2[sindex[i]]; 
           term3denpart1 -= weights[tieIter] * MC_term2[sindex[i]]; 
-          term3numpart2 -= ic0Controls[tieIter]*weights[tieIter]; 
+          term3numpart2 -= ic0Controls[tieIter]; 
           term3denpart2 -= weights[tieIter]; 
         }
         tieIter++;
