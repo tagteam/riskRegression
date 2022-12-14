@@ -178,7 +178,7 @@ crossvalPerf.loob.AUC <- function(times,mlevs,se.fit,response.type,NT,Response,c
           }
           icPhi1 <- (aucLPO/Phi)*(weights.cases*(1/N)*muControls+weights.controls*(1/N)*muCase)
           this.aucDT <- data.table(model=mod,times=t,IF.AUC=IF.AUC0+icPart-icPhi1)
-          aucDT <- rbind(aucDT,this.aucDT)
+          aucDT <- rbindlist(list(aucDT,this.aucDT),use.names=TRUE,fill=TRUE)
         }
         auc.loob[model==mod&times==t,se:= sd(aucDT[model==mod&times==t,IF.AUC])/sqrt(N)]
       }
