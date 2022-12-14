@@ -134,17 +134,14 @@ crossvalPerf.loob.AUC <- function(times,mlevs,se.fit,response.type,NT,Response,c
         auc.loob[times==t&model==mod,AUC:=aucLPO]
       }
       if (se.fit==1L){ ## should clean this up when cv has been fixed !
-        if (!(cens.model %in% c("none", "KaplanMeier","cox")) && response.type != "binary" && !conservative[[1]]) stop("Censoring model not supported when conservative = TRUE")
-        id.cases <- data[["ID"]][cc.status=="case"]
-        id.controls <- data[["ID"]][cc.status=="control"]
-        id.censored <- data[["ID"]][cc.status=="censored"]
+        if (!(cens.model %in% c("none", "KaplanMeier","cox")) && response.type != "binary" && !conservative[[1]]) stop("Censoring model not supported when conservative = FALSE")
         if (mod == 0){
-          aucDT <- data.table(model=mod,times=t,ID = c(id.cases,id.controls,id.censored))
-          aucDT[model==mod&times==t, IF.AUC:=rep(0,N)]
+          aucDT <- data.table(model=mod,times=t,IF.AUC=rep(0,N))
         }
         else {
-          ic0 <- (1/(Phi*N))*c(ic0Case, ic0Control)
-          this.aucDT <- data.table(model=mod,times=t,ID = c(id.cases,id.controls,id.censored), IF.AUC0 = c(ic0, rep(0,length(id.censored))))
+          IF.AUC0 <- rep(0,N)
+          IF.AUC0[cases.index] <- 1/(Phi*N)*ic0Case
+          IF.AUC0[controls.index] <- 1/(Phi*N)*ic0Control
           if (!response.type == "binary" && !cens.type == "uncensored" && !conservative[[1]]){
             if (cens.model == "cox"){ 
               if (Weights$IC$saveCoxMemory){
@@ -186,10 +183,9 @@ crossvalPerf.loob.AUC <- function(times,mlevs,se.fit,response.type,NT,Response,c
           else {
             icPart <- 0
           }
-          aucDT <- rbindlist(list(aucDT,this.aucDT),use.names=TRUE,fill=TRUE)
           icPhi1 <- (aucLPO/Phi)*(weights.cases*(1/N)*muControls+weights.controls*(1/N)*muCase)
-          data.table::setkey(aucDT,model,times,ID)
-          aucDT[model==mod&times==t, IF.AUC:=IF.AUC0+icPart-icPhi1]
+          this.aucDT <- data.table(model=mod,times=t,IF.AUC=IF.AUC0+icPart-icPhi1)
+          aucDT <- rbindlist(list(aucDT,this.aucDT),use.names=TRUE,fill=TRUE)
         }
         auc.loob[model==mod&times==t,se:= sd(aucDT[model==mod&times==t,IF.AUC])/sqrt(N)]
       }
