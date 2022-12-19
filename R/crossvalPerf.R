@@ -45,39 +45,30 @@ crossvalPerf.loob.AUC <- function(times,mlevs,se.fit,response.type,NT,Response,c
       controls.index <- !cases.index
     }else{
       t <- times[s]
-      if (response.type=="survival"){
-        ## event of interest before times
-        ## the following indices have to be logical!!!
-        cases.index <- Response[,time<=t & status==1]
-        controls.index = controls.index1 = Response[,time>t]
-        controls.index2 <- rep(FALSE, N)
+      if (response.type == "survival"){
+        Response$status0 <- Response$status
       }
-      else{ ## competing risks
-        ## event of interest before times
-        ## the following indices have to be logical!!!
-        # Response[,status0:=status*event]
-        cases.index <- Response[,time<=t & event==1]
-        controls.index1 <- Response[,time>t]
-        controls.index2 <-  Response[,event==2 & time <= t]
-        controls.index <- controls.index1 | controls.index2
+      else {
+        Response$status0 <- Response$status * Response$event
       }
+      cases.index <- Response[,time<=t & status0==1]
+      controls.index1 <- Response[,time>t]
+      controls.index2 <-  Response[,status0==2 & time <= t]
+      controls.index <- controls.index1 | controls.index2
     }
     # censoring weights
-    if (cens.type=="rightCensored"){ #this maybe does not work with competing risks
-      ## IPCW
-      weights.cases <- cases.index/Weights$IPCW.subject.times
+    if (cens.type=="rightCensored"){ 
       if (Weights$method=="marginal"){
-        weights.controls <- 1/Weights$IPCW.times[s] * controls.index1  + 1/Weights$IPCW.subject.times * controls.index2
+        Wt <- Weights$IPCW.times[s]
       }else{
-        weights.controls <- controls.index1*1/Weights$IPCW.times[,s] +  1/Weights$IPCW.subject.times * controls.index2
+        Wt <- Weights$IPCW.times[,s]
       }
+      weights <- as.numeric(1/Wt * controls.index1  + 1/Weights$IPCW.subject.times * (cases.index | controls.index2))
     }else{ ## uncensored
-      weights.cases <- cases.index/1
-      weights.controls <- controls.index/1
+      weights <- rep(1,N)
     }
-    weights <- weights.cases+weights.controls
-    w.cases <- weights.cases[cases.index]
-    w.controls <- weights.controls[controls.index]
+    w.cases <- weights[cases.index]
+    w.controls <- weights[controls.index]
     n.cases <- sum(cases.index)
     n.controls <- sum(controls.index)
     ID.case <- data[cases.index,]$ID
@@ -135,9 +126,9 @@ crossvalPerf.loob.AUC <- function(times,mlevs,se.fit,response.type,NT,Response,c
                 ic0ControlOld <- rep(0,N)
                 ic0ControlOld[controls.index] <- ic0Control
                 Wbeforet <- (1/(Phi*N^2))*(ic0CaseOld*cases.index+ic0ControlOld*controls.index2)-
-                  (1/N)*(aucLPO/Phi)*((cases.index)*weights*(1/N)*sum(w.controls)+ (controls.index2)*weights*(1/N)*sum(w.cases))
+                  (1/N)*(aucLPO/Phi)*((cases.index)*weights*(1/N)*muControls+ (controls.index2)*weights*(1/N)*muCase)
                 Waftert <- (1/(Phi*N^2))*ic0ControlOld*controls.index1- 
-                  (1/N)*(aucLPO/Phi)*(controls.index1)*weights*(1/N)*sum(w.cases)
+                  (1/N)*(aucLPO/Phi)*(controls.index1)*weights*(1/N)*muCase
                 icPart <- predictCoxWeights(fit, diag=TRUE,newdata = wdata, times = TiMinus,weights=Wbeforet, isBeforeTau = TRUE, tau = t)+
                   predictCoxWeights(fit, diag=FALSE,newdata = wdata,times = t,weights=Waftert)
               }
@@ -148,24 +139,18 @@ crossvalPerf.loob.AUC <- function(times,mlevs,se.fit,response.type,NT,Response,c
               }
             }
             else {
-              if (response.type == "survival"){
-                status0 <- data$status
-              }
-              else {
-                status0 <- data$status * data$event
-              }
               ind.controls<-rep(NA,length(time))
               ind.controls[controls.index1] <- 1
               ind.controls[controls.index2] <- 0
               start.controls1 <- sindex(ind.controls[controls.index1 | controls.index2],0)
-              icPart <- getInfluenceFunctionAUCKMCensoringTerm(data[["time"]],status0,t,ic0Case,ic0Control, weights,
+              icPart <- getInfluenceFunctionAUCKMCensoringTerm(data[["time"]],Response[["status0"]],t,ic0Case,ic0Control, weights,
                                                                sindex(data[["time"]],t)-1,muCase,muControls, nu1tauPm, Weights$IPCW.times[s], aucLPO,start.controls1)
             }
           }
           else {
             icPart <- 0
           }
-          icPhi1 <- (aucLPO/Phi)*(weights.cases*(1/N)*muControls+weights.controls*(1/N)*muCase)
+          icPhi1 <- weights*(aucLPO/Phi)*(cases.index*(1/N)*muControls+controls.index*(1/N)*muCase)
           this.aucDT <- data.table::data.table(model=mod,times=t,IF.AUC=IF.AUC0+icPart-icPhi1)
           aucDT <- rbindlist(list(aucDT,this.aucDT),use.names=TRUE,fill=TRUE)
         }
