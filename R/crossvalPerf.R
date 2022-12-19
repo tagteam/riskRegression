@@ -12,7 +12,7 @@ crossvalPerf.loob.AUC <- function(times,mlevs,se.fit,response.type,NT,Response,c
   ## for each pair of individuals sum the concordance of the bootstraps where *both* individuals are out-of-bag
   ## divide by number of times the pair is out-of-bag later
   aucDT <- NULL
-  warn<-FALSE
+  warn <- FALSE
   
   redoSplitIndex <- function(x, N){
     res <- rep(TRUE, N)
@@ -37,7 +37,6 @@ crossvalPerf.loob.AUC <- function(times,mlevs,se.fit,response.type,NT,Response,c
       }
     }
   }
-  noOob <- c(0,cumsum(colSums(split.index)))
   for (s in 1:NT){
     if (response.type=="binary"){
       t <- 0
