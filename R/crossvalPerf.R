@@ -37,7 +37,7 @@ crossvalPerf.loob.AUC <- function(times,mlevs,se.fit,response.type,NT,Response,c
       }
     }
   }
-  noOob <- cumsum(colSums(split.index))
+  noOob <- c(0,cumsum(colSums(split.index)))
   for (s in 1:NT){
     if (response.type=="binary"){
       t <- 0
@@ -94,25 +94,18 @@ crossvalPerf.loob.AUC <- function(times,mlevs,se.fit,response.type,NT,Response,c
       }
       else {
         if (response.type == "binary"){ # no reason for the below trick with k fold, as level one data set is approximately N*B
-          DT <- DT.B[model == mod]
+          DTrisk <- DT.B[model == mod][["risk"]]
         }
         else {
-          DT <- DT.B[model == mod & times == t]
+          DTrisk <- DT.B[model == mod & times == t][["risk"]]
         }
         if (split.method$internal.name == "crossval"){
-          risk.mat <- matrix(NA,nrow=N,ncol=k*B)
-          risk.mat[split.index[,1],1] <- DT[1:noOob[1]]$risk
-          for (u in 2:(k*B)){
-            risk.mat[split.index[,u],u] <- DT[(noOob[u-1]+1):noOob[u]]$risk
-          }
+          n.col <- k*B
+        } else {
+          n.col <- B
         }
-        else {
-          risk.mat <- matrix(NA,nrow=N,ncol=B)
-          risk.mat[split.index[,1],1] <- DT[1:noOob[1]]$risk
-          for (u in 2:B){
-            risk.mat[split.index[,u],u] <- DT[(noOob[u-1]+1):noOob[u]]$risk
-          }
-        }
+        risk.mat <- matrix(NA,nrow=N,ncol=n.col)
+        risk.mat[split.index] <- DTrisk
         res <- aucLoobFun(ID.case,ID.controls,risk.mat,split.index,weights)
         ic0Case <- res[["ic0Case"]]
         ic0Control <- res[["ic0Control"]]
