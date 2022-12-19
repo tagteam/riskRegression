@@ -7,7 +7,7 @@ crossvalPerf.loob.AUC <- function(times,mlevs,se.fit,response.type,NT,Response,c
     auc.loob <- data.table(expand.grid(times=0,model=mlevs)) #add times to auc.loob; now we can write less code for the same thing!
     times <- 0
   }
-  auc.loob <- data.table(expand.grid(times=times,model=mlevs))
+  auc.loob <- data.table::data.table(expand.grid(times=times,model=mlevs))
   auc.loob[,AUC:=as.numeric(NA)]
   ## for each pair of individuals sum the concordance of the bootstraps where *both* individuals are out-of-bag
   ## divide by number of times the pair is out-of-bag later
@@ -93,9 +93,6 @@ crossvalPerf.loob.AUC <- function(times,mlevs,se.fit,response.type,NT,Response,c
         DT.B <- DT.B[model != 0]
       }
       else {
-        # if (split.method$internal.name=="crossval"){
-        #   stop("Cannot yet calculate AUC in this case. Use split.method 'loob' or 'bootcv' instead.")
-        # }
         if (response.type == "binary"){ # no reason for the below trick with k fold, as level one data set is approximately N*B
           DT <- DT.B[model == mod]
         }
@@ -129,7 +126,7 @@ crossvalPerf.loob.AUC <- function(times,mlevs,se.fit,response.type,NT,Response,c
       if (se.fit==1L){ ## should clean this up when cv has been fixed !
         if (!(cens.model %in% c("none", "KaplanMeier","cox")) && response.type != "binary" && !conservative[[1]]) stop("Censoring model not supported when conservative = FALSE")
         if (mod == 0){
-          aucDT <- data.table(model=mod,times=t,IF.AUC=rep(0,N))
+          aucDT <- data.table::data.table(model=mod,times=t,IF.AUC=rep(0,N))
         }
         else {
           IF.AUC0 <- rep(0,N)
@@ -170,14 +167,14 @@ crossvalPerf.loob.AUC <- function(times,mlevs,se.fit,response.type,NT,Response,c
               ind.controls[controls.index2] <- 0
               start.controls1 <- sindex(ind.controls[controls.index1 | controls.index2],0)
               icPart <- getInfluenceFunctionAUCKMCensoringTerm(data[["time"]],status0,t,ic0Case,ic0Control, weights,
-                                                               sindex(data$time,t)-1,muCase,muControls, nu1tauPm, Weights$IPCW.times[s], aucLPO,start.controls1)
+                                                               sindex(data[["time"]],t)-1,muCase,muControls, nu1tauPm, Weights$IPCW.times[s], aucLPO,start.controls1)
             }
           }
           else {
             icPart <- 0
           }
           icPhi1 <- (aucLPO/Phi)*(weights.cases*(1/N)*muControls+weights.controls*(1/N)*muCase)
-          this.aucDT <- data.table(model=mod,times=t,IF.AUC=IF.AUC0+icPart-icPhi1)
+          this.aucDT <- data.table::data.table(model=mod,times=t,IF.AUC=IF.AUC0+icPart-icPhi1)
           aucDT <- rbindlist(list(aucDT,this.aucDT),use.names=TRUE,fill=TRUE)
         }
         auc.loob[model==mod&times==t,se:= sd(aucDT[model==mod&times==t,IF.AUC])/sqrt(N)]
