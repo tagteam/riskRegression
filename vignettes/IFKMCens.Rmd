@@ -1,0 +1,64 @@
+---
+title: "Computationally efficient estimation of the influence function for Kaplan-Meier
+  censoring"
+author: "Johan Sebastian Ohlendorff"
+date: "2022-12-20"
+output:
+  pdf_document: default
+  word_document: default
+header-includes: \usepackage{graphicx, verbatim, fancyvrb, setspace, xspace, colortbl,
+  longtable, amsmath, caption, xfrac, float, mathabx,bbm,algorithm2e}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+We assume that
+the event times are sorted and possibly tied such that
+$\tilde{T}_{1} < \ldots < \tilde{T}_{i} = \ldots = \tilde{T}_{i+k} < \tilde{T}_{i+k+1} < \ldots <
+\tilde{T}_n$. We use the following algorithm to preserve memory and the number
+of iterations for say $\mu^{(i)} = \int 1_{\{t \leqslant \tau, d=1\}} \frac{f_i(t-)}{G(t-)}P(dz)$. The
+idea is to split the sum into two terms:
+\begin{gather*}
+\frac{1}{n} \sum_{j=1}^n \frac{\hat{f_i}(\tilde{T}_j - )1_{ \{
+    \tilde{T}_j \leq \tau, \Delta_j =1 \}}}{\hat{G}(\tilde{T_j}-)} =\\
+\frac{1}{n} \left(\sum_{j=2}^{i+k} \frac{g(j) 1_{ \{ \tilde{T}_j \leq
+      \tau, \Delta_j =1 \}}}{\hat{G}(\tilde{T_j}-)} +
+  h(i)
+  \sum_{j=i+k+1}^n \frac{1_{ \{ \tilde{T}_j \leq \tau, \Delta_j =1
+      \}}}{\hat{G}(\tilde{T_j}-)} \right)
+\end{gather*}
+
+since $\hat{f_i}(\tilde{T}_j - )$ only depends on $i$ for $i+k > j$ and only depends on $j$ for $i+k\leq j$, so these values are calculated a priori. Also the first term will always be zero, since we are looking at the value of the integral before any observed event (hence the sum starts at $j=2$). One can check in the estimation of the Influence Curve for the censoring, which does not depend on the covariates that we need to calculate $2n$ values (i.e. $n$ values for $g(i)$ and $n$ for $h(j)$). This is how we can avoid memory issues. The algorithm is:
+\begin{algorithm}[H]
+\DontPrintSemicolon
+\BlankLine
+$t := 1$ \;
+$\hat{\mu}_{2}:= \sum_{j=1}^n \frac{1_{ \{ \tilde{T}_j \leq \tau, \Delta_j =1 \}}}{\hat{G}(\tilde{T_j}-)}$ \;
+\While{$\tilde{T}_1 = \tilde{T}_t $  and  $t \leq n$ } {
+\If{$\tilde{T}_t \leq \tau$ and $\Delta_t = 1$}{
+$\hat{\mu}_{2} = \hat{\mu}_{2} - \frac{1}{G(\tilde{T}_t-)}$ \;
+}
+$t = t + 1$ \;
+}
+$tieEnd := t-1$ \;
+$\hat{\mu}_{1}:=0$ \;
+\For{$i = 1$ to $n$}{
+    $\hat{\mu}^{(i)}=\frac{1}{n} \left(\hat{\mu}_{1}+ h(i)  \hat{\mu}_{2}  \right) $\;
+    \If{$tieEnd \leq i$}{
+        $t = i+1$ \;
+        \While{$\tilde{T}_1 = \tilde{T}_t $  and  $t \leq n$ } {
+                \If{$\tilde{T}_t \leq \tau$ and $\Delta_t = 1$}{
+                        $\hat{\mu}_{2} = \hat{\mu}_{2} - \frac{1}{G(\tilde{T}_t-)}$ \;
+                        $\hat{\mu}_{1} = \hat{\mu}_{1} + \frac{g(t) 1_{ \{ \tilde{T}_{t} \leq \tau, \Delta_{t} =1 \}}}{\hat{G}(\tilde{T}_{t}-)}$\;
+                }
+                Let $t = t + 1$ \;
+        }
+    }
+    Let $tieEnd = t-1$ \;
+}
+return $\hat{\mu}^{(i)}$ for each $i = 1, \ldots, n$ \;
+\end{algorithm}
+
+The idea is that but we keep on adding and subtracting the terms with tied values in the event times. Then we do not need to calculate a sum for each $i$.

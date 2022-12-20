@@ -100,7 +100,7 @@ $$
 Note that in the above definition that $D_m$ is fixed, so the Brier score above will depend on which data set that the model is trained on. To describe the situation with competing risks (and also survival) we introduce a random variable \(D\in\{1,2\}\) which indicates the cause (i.e., type
 of the event) observed at time \(T\) such that \(D=1\) means that the
 event of interest occurred, and \(D=2\) that a competing risk
-occurred. As in the survival setting we let \(Q\) denote the joint
+occurred. We let \(Q\) denote the joint
 probability measure of the uncensored data, \((T,D,X)\sim Q\), and $P$
 the joint probability measure of the right censored data
 $O=(\tilde{T},\Delta,X) \sim P$ now with $\Delta=D 1_{\{T \leq C\}}$
