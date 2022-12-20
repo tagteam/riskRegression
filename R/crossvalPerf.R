@@ -27,14 +27,7 @@ crossvalPerf.loob.AUC <- function(times,mlevs,se.fit,response.type,NT,Response,c
     DT.B[, bfold:=as.numeric(interaction(b,fold))] # construct new function
     setorder(DT.B, bfold, ID)
     k <- split.method$k
-    split.index <- matrix(FALSE, nrow = N, ncol = B*k)
-    j <- 1
-    for (i in 1:k){
-      for (b in 1:B){
-        split.index[, j] <- split.method$index[,b] == i
-        j <- j + 1
-      }
-    }
+    split.index <- do.call("cbind",lapply(1:k, function(i) split.method$index==i))
   }
   for (s in 1:NT){
     if (response.type=="binary"){
