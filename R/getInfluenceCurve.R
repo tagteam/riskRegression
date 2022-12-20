@@ -49,9 +49,9 @@ getInfluenceFunction.AUC.censoring.term <- function(time,event,t, IFcalculationL
       controls.index1 <- IFcalculationList[["controls1"]]
       controls.index2 <- IFcalculationList[["controls2"]]
       Wbeforet <- (1/(Phi*n^2))*(ic0CaseOld*cases.index+ic0ControlOld*controls.index2)-
-        (1/n)*(aucLPO/Phi)*((cases.index)*weights*(1/n)*sum(w.controls)+ (controls.index2)*weights*(1/n)*sum(w.cases))
+        (1/n)*(aucLPO/Phi)*((cases.index)*weights*(1/n)*muControls + (controls.index2)*weights*(1/n)*muCase)
       Waftert <- (1/(Phi*n^2))*ic0ControlOld*controls.index1- 
-        (1/n)*(aucLPO/Phi)*(controls.index1)*weights*(1/n)*sum(w.cases)
+        (1/n)*(aucLPO/Phi)*(controls.index1)*weights*(1/n)*muCase
       icPart <- predictCoxWeights(fit, diag=TRUE,newdata = wdata, times = TiMinus,weights=Wbeforet, isBeforeTau = TRUE, tau = t)+
         predictCoxWeights(fit, diag=FALSE,newdata = wdata,times = t,weights=Waftert)
     }
