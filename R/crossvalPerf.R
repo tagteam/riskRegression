@@ -106,7 +106,6 @@ crossvalPerf.loob.AUC <- function(times,mlevs,se.fit,response.type,NT,Response,c
         auc.loob[times==t&model==mod,AUC:=aucLPO]
       }
       if (se.fit==1L){ ## should clean this up when cv has been fixed !
-        if (!(cens.model %in% c("none", "KaplanMeier","cox")) && response.type != "binary" && !conservative[[1]]) stop("Censoring model not supported when conservative = FALSE")
         if (mod == 0){
           aucDT <- data.table::data.table(model=mod,times=t,IF.AUC=rep(0,N))
         }
@@ -126,7 +125,15 @@ crossvalPerf.loob.AUC <- function(times,mlevs,se.fit,response.type,NT,Response,c
                                       controls =controls.index,
                                       controls1 = controls.index1,
                                       controls2 = controls.index2)
-            icPart <- getInfluenceFunction.AUC.censoring.term(data[["time"]],Response[["status0"]],t, IFcalculationList, Weights$IC, cens.model, Weights$IPCW.times[s], aucLPO, s)
+            icPart <- getInfluenceFunction.AUC.censoring.term(time = data[["time"]],
+                                                              event = Response[["status0"]],
+                                                              t= t,
+                                                              IFcalculationList = IFcalculationList,
+                                                              MC = Weights$IC, 
+                                                              cens.model = cens.model, 
+                                                              Wt = Weights$IPCW.times[s], 
+                                                              auc = aucLPO, 
+                                                              nth.times = s)
           }
           else {
             icPart <- 0

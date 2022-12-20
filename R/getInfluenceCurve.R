@@ -6,10 +6,19 @@ getInfluenceFunction.AUC.censoring.term <- function(time,event,t, IFcalculationL
     ind.controls[controls.index1] <- 1
     ind.controls[controls.index2] <- 0
     start.controls1 <- sindex(ind.controls[controls.index1 | controls.index2],0)
-    getInfluenceFunctionAUCKMCensoringTerm(time,event,t,IFcalculationList[["ic0Case"]],
-                                           IFcalculationList[["ic0Control"]], IFcalculationList[["weights"]],
-                                           IFcalculationList[["firsthit"]],IFcalculationList[["muCase"]],
-                                           IFcalculationList[["muControls"]], IFcalculationList[["nu"]], Wt[1], auc, start.controls1)
+    getInfluenceFunctionAUCKMCensoringTerm(time,
+                                           event,
+                                           t,
+                                           IFcalculationList[["ic0Case"]],
+                                           IFcalculationList[["ic0Control"]],
+                                           IFcalculationList[["weights"]],
+                                           IFcalculationList[["firsthit"]],
+                                           IFcalculationList[["muCase"]],
+                                           IFcalculationList[["muControls"]], 
+                                           IFcalculationList[["nu"]],
+                                           Wt[1],
+                                           auc,
+                                           start.controls1)
   }
   else if (cens.model[[1]] == "cox"){
     n <- length(time)
@@ -60,7 +69,15 @@ getInfluenceCurve.AUC <- function(t,time,event, WTi, Wt, risk, MC, auc, nth.time
     conservativeIFcalculation[["ic0"]]
   }
   else {
-    conservativeIFcalculation[["ic0"]]+getInfluenceFunction.AUC.censoring.term(time,event,t, conservativeIFcalculation, MC, cens.model, Wt, auc, nth.times)
+    conservativeIFcalculation[["ic0"]]+getInfluenceFunction.AUC.censoring.term(time = time,
+                                                                               event = event,
+                                                                               t = t,
+                                                                               IFcalculationList = conservativeIFcalculation,
+                                                                               MC = MC,
+                                                                               cens.model = cens.model, 
+                                                                               Wt = Wt,
+                                                                               auc = auc, 
+                                                                               nth.times = nth.times)
   }
 }
 
