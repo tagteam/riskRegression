@@ -4,7 +4,6 @@
 using namespace Rcpp;
 using namespace std;
 
-
 // * calcSeMinimalCSC_cpp: compute IF/sumIF/se for the cif (method 1)
 // J: number of jump times
 // n: number of observations in the training set

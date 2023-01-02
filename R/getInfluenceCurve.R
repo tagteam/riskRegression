@@ -1,51 +1,83 @@
-getInfluenceCurve.AUC <- function(t,time,event, WTi, Wt, risk, MC, auc, nth.times, conservative, cens.model, one.step = FALSE, cv = FALSE){
+getInfluenceFunction.AUC.censoring.term <- function(time,event,t, IFcalculationList, MC, cens.model, Wt, auc,nth.times){
+  if (cens.model[[1]] == "KaplanMeier"){
+    ind.controls<-rep(NA,length(time))
+    controls.index1 <- IFcalculationList[["controls1"]]
+    controls.index2 <- IFcalculationList[["controls2"]]
+    ind.controls[controls.index1] <- 1
+    ind.controls[controls.index2] <- 0
+    start.controls1 <- sindex(ind.controls[controls.index1 | controls.index2],0)
+    getInfluenceFunctionAUCKMCensoringTerm(time,
+                                           event,
+                                           t,
+                                           IFcalculationList[["ic0Case"]],
+                                           IFcalculationList[["ic0Control"]],
+                                           IFcalculationList[["weights"]],
+                                           IFcalculationList[["firsthit"]],
+                                           IFcalculationList[["muCase"]],
+                                           IFcalculationList[["muControls"]], 
+                                           IFcalculationList[["nu"]],
+                                           Wt[1],
+                                           auc,
+                                           start.controls1)
+  }
+  else if (cens.model[[1]] == "cox"){
+    n <- length(time)
+    ic0Case <- IFcalculationList[["ic0Case"]]
+    ic0Control <- IFcalculationList[["ic0Control"]]
+    Phi <- IFcalculationList[["muCase"]] * IFcalculationList[["muControls"]] / (n*n)
+    weights <- IFcalculationList[["weights"]]
+    muCase <- IFcalculationList[["muCase"]]
+    muControls <- IFcalculationList[["muControls"]]
+    aucLPO <- auc
+    cases.index <- IFcalculationList[["cases"]]
+    controls.index <- IFcalculationList[["controls"]]
+    w.cases <- weights[cases.index]
+    w.controls <- weights[controls.index]
+    if (!MC$saveCoxMemory){
+      ic.weights <- MC[[2]][[nth.times]] ## load IF from Censoring weights
+      icPart <- as.numeric(rowSumsCrossprod(as.matrix(1/(Phi*n^2)*ic0Case-(aucLPO/Phi)*(1/n^2)*muControls*w.cases), ic.weights[cases.index,], 0)) +
+        as.numeric(rowSumsCrossprod(as.matrix(1/(Phi*n^2)*ic0Control-(aucLPO/Phi)*(1/n^2)*muCase*w.controls),ic.weights[controls.index,],0))
+    }
+    else {
+      wdata <- MC[[3]]
+      fit <- MC[[2]]
+      TiMinus <- MC[[4]]
+      ic0CaseOld <- rep(0,n)
+      ic0CaseOld[cases.index] <- ic0Case
+      ic0ControlOld <- rep(0,n)
+      ic0ControlOld[controls.index] <- ic0Control
+      controls.index1 <- IFcalculationList[["controls1"]]
+      controls.index2 <- IFcalculationList[["controls2"]]
+      Wbeforet <- (1/(Phi*n^2))*(ic0CaseOld*cases.index+ic0ControlOld*controls.index2)-
+        (1/n)*(aucLPO/Phi)*((cases.index)*weights*(1/n)*muControls + (controls.index2)*weights*(1/n)*muCase)
+      Waftert <- (1/(Phi*n^2))*ic0ControlOld*controls.index1- 
+        (1/n)*(aucLPO/Phi)*(controls.index1)*weights*(1/n)*muCase
+      icPart <- predictCoxWeights(fit, diag=TRUE,newdata = wdata, times = TiMinus,weights=Wbeforet, isBeforeTau = TRUE, tau = t)+
+        predictCoxWeights(fit, diag=FALSE,newdata = wdata,times = t,weights=Waftert)
+    }
+    icPart
+  }
+  else {
+    warning("Censoring model not yet implemented. Reverting to conservative = TRUE for AUC. ")
+    0
+  }
+}
+
+getInfluenceCurve.AUC <- function(t,time,event, WTi, Wt, risk, MC, auc, nth.times, conservative, cens.model){
   conservativeIFcalculation <- getIC0AUC(time,event,t,risk,WTi,Wt,auc)
   if (conservative[[1]] || cens.model[[1]] == "none"){
     conservativeIFcalculation[["ic0"]]
   }
   else {
-    if (cens.model[[1]] == "KaplanMeier"){
-      conservativeIFcalculation[["ic0"]]+getInfluenceFunctionAUCKMCensoringTerm(time,event,t,conservativeIFcalculation[["ic0Case"]],
-                                                                                conservativeIFcalculation[["ic0Control"]], conservativeIFcalculation[["weights"]],
-                                                                                conservativeIFcalculation[["firsthit"]],conservativeIFcalculation[["muCase"]],
-                                                                                conservativeIFcalculation[["muControls"]], conservativeIFcalculation[["nu"]], Wt[1], auc)
-    }
-    else if (cens.model[[1]] == "cox"){
-      n <- length(time)
-      ic0CaseOld <- conservativeIFcalculation[["ic0Case"]]
-      ic0ControlOld <- conservativeIFcalculation[["ic0Control"]]
-      Phi <- conservativeIFcalculation[["muCase"]] * conservativeIFcalculation[["muControls"]] / (n*n)
-      weights <- conservativeIFcalculation[["weights"]]
-      aucLPO <- auc
-      cases.index <- time<=t & event==1
-      controls.index1 <- time>t
-      controls.index2 <-  event==2 & time <= t
-      controls.index <- controls.index1 | controls.index2
-      w.cases <- weights[cases.index]
-      w.controls <- weights[controls.index]
-      ic0Case <- ic0CaseOld[cases.index]*w.cases
-      ic0Control <- ic0ControlOld[controls.index]*w.controls
-      if (!MC$saveCoxMemory){
-        ic.weights <- MC[[2]][[nth.times]] ## load IF from Censoring weights
-        icPart <- as.numeric(rowSumsCrossprod(as.matrix(1/(Phi*n^2)*ic0Case-(aucLPO/Phi)*(1/n^2)*sum(w.controls)*w.cases), ic.weights[cases.index,], 0)) +
-          as.numeric(rowSumsCrossprod(as.matrix(1/(Phi*n^2)*ic0Control-(aucLPO/Phi)*(1/n^2)*sum(w.cases)*w.controls),ic.weights[controls.index,],0))
-      }
-      else {
-        wdata <- MC[[3]]
-        fit <- MC[[2]]
-        TiMinus <- MC[[4]]
-        Wbeforet <- (1/(Phi*n^2))*(ic0CaseOld*weights*cases.index+ic0ControlOld*weights*controls.index2)-
-          (1/n)*(aucLPO/Phi)*((cases.index)*weights*(1/n)*sum(w.controls)+ (controls.index2)*weights*(1/n)*sum(w.cases))
-        Waftert <- (1/(Phi*n^2))*ic0ControlOld*weights*controls.index1- 
-          (1/n)*(aucLPO/Phi)*(controls.index1)*weights*(1/n)*sum(w.cases)
-        icPart <- predictCoxWeights(fit, diag=TRUE,newdata = wdata, times = TiMinus,weights=Wbeforet, isBeforeTau = TRUE, tau = t)+
-          predictCoxWeights(fit, diag=FALSE,newdata = wdata,times = t,weights=Waftert)
-      }
-      conservativeIFcalculation[["ic0"]]+icPart
-    }
-    else {
-      stop("Censoring model not yet implemented. ")
-    }
+    conservativeIFcalculation[["ic0"]]+getInfluenceFunction.AUC.censoring.term(time = time,
+                                                                               event = event,
+                                                                               t = t,
+                                                                               IFcalculationList = conservativeIFcalculation,
+                                                                               MC = MC,
+                                                                               cens.model = cens.model, 
+                                                                               Wt = Wt,
+                                                                               auc = auc, 
+                                                                               nth.times = nth.times)
   }
 }
 
@@ -103,131 +135,4 @@ getInfluenceCurve.Brier <- function(t,
     else {
       stop("Non conservative options with cens.model not being a Cox model or KaplanMeier are not implemented. ")
     }
-}
-
-getInfluenceCurve.Brier.covariates <- function(tau,time,residuals,risk,status,GTiminus,Gtau,IC.data) {
-  n <- length(time)
-  IC <- rep(NA,n)
-  fit.time <- IC.data$fit.time
-  fit.cens <- IC.data$fit.cens
-  wdata<-IC.data$wdata
-  Brier <- mean(residuals)
-  predCens <- predictCox(fit.cens, time,newdata = wdata)
-  Gtimes <- predCens$survival
-  cumhazardCXi <- predCens$cumhazard
-  Stimes <- predictCox(fit.time, time,newdata = wdata)$survival
-  is.comprisk <- !is.null(IC.data$fitCSC)
-  Stau <- rms::survest(fit.time,newdata=wdata,times=tau,se.fit=FALSE)$surv
-  Stau <- unname(Stau)
-  if (is.comprisk){
-    fitCSC <- IC.data$fitCSC
-    F1 <- predictRisk(fitCSC,newdata=wdata,times=time,cause=1)
-    F1tau <- c(predictRisk(fitCSC,newdata=wdata,times=tau,cause=1))
-  }
-  for (i in 1:n){
-    cum <- cumhazardCXi[i,]
-    jumps <- diff(c(0,cum))
-    IC.C.term.part <- risk[i]^2 * Stau[i] * (1*(status[i] == 0 & time[i] <= tau)/(Gtimes[i,i]*Stimes[i,i])-sum( 1*(time <= tau & time <= time[i])*jumps / (Gtimes[i,]*Stimes[i,])))
-    if (!is.comprisk){
-      IC.C.term <- IC.C.term.part+ (1-risk[i])^2*(1*(status[i] == 0 & time[i] <= tau)/(Gtimes[i,i]*Stimes[i,i])*(Stimes[i,i]-Stau[i])-sum( 1*(time <= tau & time <= time[i])*((Stimes[i,]-Stau[i])*jumps / (Gtimes[i,]*Stimes[i,]))))
-    }
-    else {
-      IC.C.term <- IC.C.term.part + (1-risk[i])^2*(1*(status[i] == 0 & time[i] <= tau)/(Gtimes[i,i]*Stimes[i,i])*(F1tau[i]-F1[i,i])-sum( 1*(time <= tau & time <= time[i])*((F1tau[i]-F1[i,])*jumps / (Gtimes[i,]*Stimes[i,]))))
-    }
-    # IC.C.term <- 0
-    IC[i] <- IC.C.term
-  }
-  IC
-}
-
-getInfluenceCurve.AUC.covariates <- function(t,n,time,status,risk,GTiminus,Gtau,AUC,IC.data){ ## needs to be fixed later
-    tau <- t
-    X <- risk
-    #estimate int 1{X_i > x, t' > tau} dP(t',x)/G(tau | x')
-    int1nu <- rep(NA,n)
-    #estimate int 1{t' > tau} dP(t',x)/G(tau | x')
-    int1mu <- mean(1*(time > tau)/(Gtau))
-    #estimate int 1{X_i < x, t <= tau} dP(t,1,x)/G(t | x)
-    int2nu <- rep(NA,n)
-    #estimate int 1{t <= tau} dP(t,1,x)/G(t | x)
-    int2mu <- mean(1*(time <= tau & status == 1)/(GTiminus))
-    #estimate int 1{X_i > x, t <= tau} dP(t,1,x)/G(t | x)
-    int3nu <- rep(NA,n)
-    #estimate int 1{t <= tau} dP(t,1,x)/G(t | x)
-    int3mu <-mean(1*(time <= tau & status == 2)/(GTiminus))
-
-    for (i in 1:n){
-        int1nu[i] <- mean(1*(X[i] > X & time > tau)/(Gtau))
-        int2nu[i] <- mean(1*(X[i] < X & time <= tau & status == 1)/(GTiminus))
-        int3nu[i] <- mean(1*(X[i] > X & time <= tau & status == 2)/(GTiminus))
-    }
-
-    ic <- rep(0,n)
-    if (any(Gtau == 0) || any(GTiminus == 0)) {
-        stop("Some censoring weights are 0. Pick another censoring model or retry with a larger data set.")
-    }
-    #main loop
-    fhat.tau <- rep(0,n)
-    fhat.Ti <- rep(0,n)
-    mu1 <- int2mu * int1mu + int2mu*int3mu
-    nu1 <- AUC*mu1
-    
-    fit.time <- IC.data$fit.time
-    fit.cens <- IC.data$fit.cens
-    wdata<-IC.data$wdata
-    ## term involving f_i(t,z) is 
-    ## $$
-    ## (1-2R(\tau |Z_i))\left(\frac{I(\tilde{T}_i \leq \tau, \Delta_i = 0)}{G(\tilde{T}_i|Z_i)S(\tilde{T}_i|Z_i)}(S(\tilde{T}_i|Z_i)-S(\tau|Z_i))-\int_0^{\tilde{T}_i \wedge \tau} \frac{(S(s|Z_i)-S(\tau|Z_i))}{G(s|Z_i)^2S(s|Z_i)^2}P(ds,0|Z_i)\right)
-    ## $$
-    predCens <- predictCox(fit.cens, time,newdata = wdata)
-    Gtimes <- predCens$survival
-    cumhazardCXi <- predCens$cumhazard
-    Stimes <- predictCox(fit.time, time,newdata = wdata)$survival
-    is.comprisk <- !is.null(IC.data$fitCSC)
-    Stau <- unname(rms::survest(fit.time,newdata=wdata,times=tau,se.fit=FALSE)$surv)
-    if (is.comprisk){
-      fitCSC <- IC.data$fitCSC
-      F1 <- predictRisk(fitCSC,newdata=wdata,times=time,cause=1)
-      F1tau <- c(predictRisk(fitCSC,newdata=wdata,times=tau,cause=1))
-      F2 <- predictRisk(fitCSC,newdata=wdata,times=time,cause=2)
-      F2tau <- c(predictRisk(fitCSC,newdata=wdata,times=tau,cause=2))
-    }
-
-    for (i in 1:n){
-        cum <- cumhazardCXi[i,]
-        jumps <- diff(c(0,cum))
-        
-        # #calculate fhat(tau,X_i) for i = 1, ..., n
-        term1nu <- 1*(time[i] <= tau & status[i] == 1)/GTiminus[i] * int1nu[i]
-        if (!is.comprisk){
-          term2nu <- int1nu[i] * (1*(status[i] == 0 & time[i] <= tau)/(Gtimes[i,i]*Stimes[i,i])*(Stimes[i,i]-Stau[i])-sum( 1*(time <= tau & time <= time[i])*((Stimes[i,]-Stau[i])*jumps / (Gtimes[i,]*Stimes[i,])))) -mean(int1nu * 1*(time <= tau & status == 1) * 1/GTiminus)
-          term6nu <- 0
-          term8nu <- int3nu[i] * (1*(status[i] == 0 & time[i] <= tau)/(Gtimes[i,i]*Stimes[i,i])*(Stimes[i,i]-Stau[i])-sum( 1*(time <= tau & time <= time[i])*((Stimes[i,]-Stau[i])*jumps / (Gtimes[i,]*Stimes[i,])))) -mean(int3nu * 1*(time <= tau & status == 1) * 1/GTiminus)
-          intmu <- 1*(status[i] == 0 & time[i] <= tau)/(Gtimes[i,i]*Stimes[i,i])*(Stimes[i,i]-Stau[i])-sum( 1*(time <= tau & time <= time[i])*((Stimes[i,]-Stau[i])*jumps / (Gtimes[i,]*Stimes[i,])))- mean(1*(time <= tau & status == 1) * 1/GTiminus)
-          term6mu <- 0
-        }
-        else {
-          term2nu <- int1nu[i] * (1*(status[i] == 0 & time[i] <= tau)/(Gtimes[i,i]*Stimes[i,i])*(F1tau[i]-F1[i,i])-sum( 1*(time <= tau & time <= time[i])*((F1tau[i]-F1[i,])*jumps / (Gtimes[i,]*Stimes[i,])))) -mean(int1nu * 1*(time <= tau & status == 1) * 1/GTiminus)
-          term6nu <- int2nu[i] * (1*(status[i] == 0 & time[i] <= tau)/(Gtimes[i,i]*Stimes[i,i])*(F2tau[i]-F2[i,i])-sum( 1*(time <= tau & time <= time[i])*((F2tau[i]-F2[i,])*jumps / (Gtimes[i,]*Stimes[i,])))) -mean(int2nu * 1*(time <= tau & status == 2) * 1/GTiminus)
-          term8nu <- int3nu[i] * (1*(status[i] == 0 & time[i] <= tau)/(Gtimes[i,i]*Stimes[i,i])*(F1tau[i]-F1[i,i])-sum( 1*(time <= tau & time <= time[i])*((F1tau[i]-F1[i,])*jumps / (Gtimes[i,]*Stimes[i,])))) -mean(int3nu * 1*(time <= tau & status == 1) * 1/GTiminus)
-          intmu <- 1*(status[i] == 0 & time[i] <= tau)/(Gtimes[i,i]*Stimes[i,i])*(F1tau[i]-F1[i,i])-sum( 1*(time <= tau & time <= time[i])*((F1tau[i]-F1[i,])*jumps / (Gtimes[i,]*Stimes[i,])))- mean(1*(time <= tau & status == 1) * 1/GTiminus)
-          term6mu <- int2mu * (1*(status[i] == 0 & time[i] <= tau)/(Gtimes[i,i]*Stimes[i,i])*(F2tau[i]-F2[i,i])-sum( 1*(time <= tau & time <= time[i])*((F2tau[i]-F2[i,])*jumps / (Gtimes[i,]*Stimes[i,])))- mean(1*(time <= tau & status == 2) * 1/GTiminus))
-        }
-        term3nu <- 1*(time[i] > tau)/Gtau[i] * int2nu[i]
-        term4nu <- int2nu[i] * Stau[i]*(1*(status[i] == 0 & time[i] <= tau)/(Gtimes[i,i]*Stimes[i,i])-sum( 1*(time <= tau & time <= time[i])*jumps / (Gtimes[i,]*Stimes[i,]))) - mean(int2nu * 1*(time > tau) * 1/Gtau)
-        term5nu <- 1*(time[i] <= tau & status[i] == 2)/GTiminus[i] * int2nu[i]
-        term7nu <- 1*(time[i] <= tau & status[i] == 1)/GTiminus[i] * int3nu[i]
-        IFnu <- term1nu+term2nu+term3nu+term4nu+term5nu+term6nu+term7nu+term8nu
-
-        term1mu <- 1*(time[i] <= tau & status[i] == 1)/GTiminus[i] * int1mu
-        term2mu <- int1mu * intmu
-        term3mu <- 1*(time[i] > tau)/Gtau[i] * int2mu
-        term4mu <- int2mu*(Stau[i]*(1*(status[i] == 0 & time[i] <= tau)/(Gtimes[i,i]*Stimes[i,i])-sum( 1*(time <= tau & time <= time[i])*jumps / (Gtimes[i,]*Stimes[i,]))) - mean(1*(time > tau) * 1/Gtau))
-        term5mu <- 1*(time[i] <= tau & status[i] == 2)/GTiminus[i] * int2mu
-        term7mu <- 1*(time[i] <= tau & status[i] == 1)/GTiminus[i] * int3mu
-        term8mu <- int3mu*intmu
-        IFmu <- term1mu+term2mu+term3mu+term4mu+term5mu+term6mu+term7mu+term8mu
-        ic[i] <- (IFnu * mu1 - nu1 * IFmu)/(mu1^2)
-    }
-    ic
 }

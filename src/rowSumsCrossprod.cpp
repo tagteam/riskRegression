@@ -1,6 +1,6 @@
 
 // [[Rcpp::depends(RcppArmadillo)]]
-#include "arma-wrap.h"
+#include <RcppArmadillo.h>
 using namespace Rcpp;
 //' Apply crossprod and rowSums
 //'

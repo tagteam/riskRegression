@@ -5,7 +5,7 @@ r:
  - release 
  - devel
 sudo: required
-r_check_args: "--as-cran"
+r_check_args: "--as-cran --no-build-vignettes --ignore-vignettes"
 cache: packages
 warnings_are_errors: true
 r_github_packages:

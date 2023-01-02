@@ -1,5 +1,6 @@
-PKG_LIBS = `$(R_HOME)/bin/Rscript -e "Rcpp:::LdFlags()"` $(LAPACK_LIBS) $(BLAS_LIBS) $(FLIBS) $(SHLIB_OPENMP_CXXFLAGS)
-PKG_CXXFLAGS = $(SHLIB_OPENMP_CXXFLAGS)
+#PKG_LIBS = `$(R_HOME)/bin/Rscript -e "Rcpp:::LdFlags()"` $(LAPACK_LIBS) $(BLAS_LIBS) $(FLIBS) $(SHLIB_OPENMP_CXXFLAGS)
+PKG_LIBS = `$(R_HOME)/bin/Rscript -e "Rcpp:::LdFlags()"` $(LAPACK_LIBS) $(BLAS_LIBS) $(FLIBS)
+#PKG_CXXFLAGS = $(SHLIB_OPENMP_CXXFLAGS)
 # PKG_CPPFLAGS = -fopenmp -fpic  -g -O2 -Wall -pedantic -mtune=native -Wno-ignored-attributes -Wno-parentheses -Werror=format-security -Wp,-D_FORTIFY_SOURCE=2 -fexceptions -fstack-protector-strong -fstack-clash-protection -fcf-protection -flto=10
 # CXX_STD = CXX11
 # AR = gcc-ar
@@ -11,3 +12,7 @@ PKG_CXXFLAGS = $(SHLIB_OPENMP_CXXFLAGS)
 # RANLIB=gcc-ranlib
 # LTO=-flto=10
 # LTO_OPT=-flto
+#PKG_LIBS = `$(R_HOME)/bin/Rscript -e "Rcpp:::LdFlags()"` $(LAPACK_LIBS) $(BLAS_LIBS) $(FLIBS) #$(SHLIB_OPENMP_CXXFLAGS)
+#PKG_CXXFLAGS = $(SHLIB_OPENMP_CXXFLAGS)
+#PKG_CPPFLAGS = -fopenmp -fpic  -g -O2 -Wall -pedantic -mtune=native -Wno-ignored-attributes -Wno-parentheses -Werror=format-security -Wp,-D_FORTIFY_SOURCE=2 -fexceptions -fstack-protector-strong -fstack-clash-protection -fcf-protection -flto=10
+CXX_STD = CXX11
