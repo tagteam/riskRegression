@@ -1016,7 +1016,7 @@ predictRisk.ARR <- function(object,newdata,times,cause,...){
 ##' @rdname predictRisk
 ##' @method predictRisk CauseSpecificCox
 predictRisk.CauseSpecificCox <- function (object, newdata, times, cause,
-                                          product.limit = TRUE, diag = FALSE, iid = FALSE, average.iid = FALSE, ...) {
+                                          product.limit = TRUE, diag = FALSE, iid = FALSE, average.iid = FALSE, truncate = FALSE, ...) {
     dots <- list(...)
     type <- dots$type
     if(is.null(type)){
@@ -1043,6 +1043,23 @@ predictRisk.CauseSpecificCox <- function (object, newdata, times, cause,
     }
     if(average.iid){
         attr(out,"average.iid") <- outPred[[paste0(type,".average.iid")]]
+    }
+    if (truncate){
+      truncate.fun <- function(x){
+        if (is.na(x)){
+          x
+        }
+        else if (x < 0){
+          0
+        }
+        else if (x > 1){
+          1
+        }
+        else {
+          x
+        }
+      }
+      out <- apply(out, c(1, 2), truncate.fun) 
     }
 
     return(out)
