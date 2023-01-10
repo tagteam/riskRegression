@@ -126,16 +126,6 @@ getPerformanceData <- function(testdata,
             print(pred[is.na(risk),data.table::data.table("sum(NA)" = .N),by = list(model,times)])
         stop("Missing values in predicted risk detected.")
     }
-    isOutside01 <- function(x){
-      x < 0 | x > 1
-    }
-    if (any(isOutside01(pred$risk))) {
-      pred[,model:=factor(model,levels=levs,labels)]
-      if (response.type[1] == "binary"){
-        warning("Predicted risk values are outside [0, 1]. Perhaps you should truncate the values in your predictRisk function. ")
-      } else
-        warning("Predicted risk values are outside [0, 1]. Perhaps you should truncate the values in your predictRisk function. ")
-    }
     if (debug) message("trained the model(s) and extracted the predictions")
     # }}}
     # {{{ merge with Weights (IPCW inner loop)

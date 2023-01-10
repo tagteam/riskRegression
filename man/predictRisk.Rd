@@ -131,6 +131,7 @@ predictRisk(object, newdata, ...)
   diag = FALSE,
   iid = FALSE,
   average.iid = FALSE,
+  truncate = TRUE,
   ...
 )
 
@@ -184,6 +185,8 @@ Otherwise the exponential approximation is used (i.e. exp(-cumulative hazard)).}
 otherwise it is only computed for the i-th observation at the i-th time.}
 
 \item{landmark}{The starting time for the computation of the cumulative risk.}
+
+\item{truncate}{If \code{TRUE} truncates the predicted risks to be in the range [0, 1]. For now only implemented for the Cause Specific Cox model.}
 }
 \value{
 For binary outcome a vector with predicted risks. For survival outcome with and without
