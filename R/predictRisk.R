@@ -1024,7 +1024,6 @@ predictRisk.CauseSpecificCox <- function (object, newdata, times, cause,
         type <- "absRisk"
     }
     store.iid <- dots$store.iid
-
     outPred <- predict(object=object,
                        newdata=newdata,
                        times=times,
@@ -1037,14 +1036,8 @@ predictRisk.CauseSpecificCox <- function (object, newdata, times, cause,
                        product.limit = product.limit,
                        store.iid = store.iid,
                        type = type)
-
+    
     out <- outPred[[type]]
-    if(iid){
-        attr(out,"iid") <- outPred[[paste0(type,".iid")]]
-    }
-    if(average.iid){
-        attr(out,"average.iid") <- outPred[[paste0(type,".average.iid")]]
-    }
     if (truncate){
       truncate.fun <- function(x){
         if (is.na(x)){
@@ -1062,7 +1055,12 @@ predictRisk.CauseSpecificCox <- function (object, newdata, times, cause,
       }
       out <- apply(out, c(1, 2), truncate.fun) 
     }
-
+    if(iid){
+        attr(out,"iid") <- outPred[[paste0(type,".iid")]]
+    }
+    if(average.iid){
+        attr(out,"average.iid") <- outPred[[paste0(type,".average.iid")]]
+    }
     return(out)
 }
 
