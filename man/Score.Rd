@@ -40,7 +40,7 @@ Score(object, ...)
   keep,
   predictRisk.args,
   debug = 0L,
-  saveCoxMemory = FALSE,
+  censoring.save.memory = FALSE,
   ...
 )
 }
@@ -184,7 +184,11 @@ randomly splitting (bootstrapping) the data during cross-validation.}
 
 \item{debug}{Logical. If \code{TRUE} indicate landmarks in progress of the program.}
 
-\item{saveCoxMemory}{If \code{TRUE}, save memory by not storing the influence function of the cumulative hazard of the censoring as a matrix when calculating standard errors with Cox censoring. This can allow one to use \code{Score} on larger test data sets, but may be slower.}
+\item{censoring.save.memory}{Only relevant in censored data where censoring weigths are obtained with
+Cox regression and argument \code{conservative} is set to \code{FALSE}. If \code{TRUE}, save memory by not storing the influence function
+of the cumulative hazard of the censoring as a matrix when calculating standard errors
+with Cox censoring. This can allow one to use \code{Score} on larger test data sets,
+but may be slower.}
 }
 \value{
 List with scores and assessments of contrasts, i.e.,

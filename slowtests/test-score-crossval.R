@@ -4,7 +4,19 @@ library(prodlim)
 library(survival)
 library(riskRegression)
 library(data.table)
+library(ranger)
 context("riskRegression")
+
+# 10-fold cross-validation
+set.seed(10)
+d <- sampleData(2070,outcome = "binary")
+d[,Y:=factor(Y,levels=c("0","1"),labels=c("0","1"))]
+f1 <- glm(Y~X1+X2+X8+X9,data = d,family = "binomial")
+f2 <- glm(Y~X3+X4+X5+X6+X10,data = d,family = "binomial")
+f3 <- ranger(Y~X3+X4+X5+X6+X10,data = d)
+x10 <- Score(list(f1,f2,f3),data = d,split.method = "cv10",formula = Y~1)
+x5 <- Score(list(f1,f2,f3),data = d,split.method = "cv5",formula = Y~1)
+loob <- Score(list(f1,f2,f3),data = d,split.method = "loob",B = 200,formula = Y~1)
 
 test.cv <- function(){
   type.cvs <- c("cv5","loob", "bootcv")
