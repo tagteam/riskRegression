@@ -51,6 +51,7 @@
 #' @param product.limit If \code{TRUE} the survival is computed using the product limit estimator.
 #' Otherwise the exponential approximation is used (i.e. exp(-cumulative hazard)).
 #' @param landmark The starting time for the computation of the cumulative risk.
+#' @param truncate If \code{TRUE} truncates the predicted risks to be in the range [0, 1]. For now only implemented for the Cause Specific Cox model. 
 #' @param \dots Additional arguments that are passed on to the current method.
 #'
 #' @return For binary outcome a vector with predicted risks. For survival outcome with and without
@@ -1017,14 +1018,13 @@ predictRisk.ARR <- function(object,newdata,times,cause,...){
 ##' @rdname predictRisk
 ##' @method predictRisk CauseSpecificCox
 predictRisk.CauseSpecificCox <- function (object, newdata, times, cause,
-                                          product.limit = TRUE, diag = FALSE, iid = FALSE, average.iid = FALSE, ...) {
+                                          product.limit = TRUE, diag = FALSE, iid = FALSE, average.iid = FALSE, truncate = FALSE, ...) {
     dots <- list(...)
     type <- dots$type
     if(is.null(type)){
         type <- "absRisk"
     }
     store.iid <- dots$store.iid
-
     outPred <- predict(object=object,
                        newdata=newdata,
                        times=times,
@@ -1037,15 +1037,17 @@ predictRisk.CauseSpecificCox <- function (object, newdata, times, cause,
                        product.limit = product.limit,
                        store.iid = store.iid,
                        type = type)
-
+    
     out <- outPred[[type]]
+    if (truncate){
+      out <- apply(out, c(1, 2), function(x) max(min(x,1),0))
+    }
     if(iid){
         attr(out,"iid") <- outPred[[paste0(type,".iid")]]
     }
     if(average.iid){
         attr(out,"average.iid") <- outPred[[paste0(type,".average.iid")]]
     }
-
     return(out)
 }
 
