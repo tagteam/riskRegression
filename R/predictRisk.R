@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun  6 2016 (09:02)
 ## Version:
-## last-updated: Oct  2 2022 (15:30) 
+## last-updated: Jan 16 2023 (08:55) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 457
+##     Update #: 458
 #----------------------------------------------------------------------
 ##
 ### Commentary:
@@ -903,6 +903,7 @@ predictRisk.psm <- function(object,newdata,times,...){
 ##' @rdname predictRisk
 ##' @method predictRisk ranger
 predictRisk.ranger <- function(object, newdata, times, cause, ...){
+    if (object$treetype == "Regression") stop("Don't know how to predict risks based on regression trees.")
     xvars <- object$forest$independent.variable.names
     newdata <- subset(newdata,select=xvars)
     if (missing(times)||is.null(times)){
