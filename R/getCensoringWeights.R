@@ -5,7 +5,7 @@ getCensoringWeights <- function(formula,
                                 cens.model,
                                 response.type,
                                 influence.curve=FALSE,
-                                saveCoxMemory){
+                                censoring.save.memory){
     data <- copy(data)
     if((cens.model != "KaplanMeier")){
         if (length(attr(terms(formula),"factors"))==0){
@@ -75,7 +75,7 @@ getCensoringWeights <- function(formula,
                out <- list(IPCW.times=IPCW.times,IPCW.subject.times=IPCW.subject.times,method=cens.model)
                if (influence.curve==TRUE){
                    TiMinus = Y-minimumIncrement/2
-                   if (!saveCoxMemory){
+                   if (!censoring.save.memory){
                      ## IC is an array with dimension (nlearn, times, newdata)
                      ##                           IC_G(t,z;x_k)
                      IC.subject=predictCox(fit, iid = TRUE,
@@ -103,10 +103,10 @@ getCensoringWeights <- function(formula,
                        }
                        IC.weights[[t.ind]] <- ic.weights
                      }
-                     IC <- list(saveCoxMemory = saveCoxMemory, IC.weights = IC.weights)
+                     IC <- list(censoring.save.memory = censoring.save.memory, IC.weights = IC.weights)
                    }
                    else {
-                     IC <- list(saveCoxMemory = saveCoxMemory,fit=fit,wdata=wdata, TiMinus = TiMinus)
+                     IC <- list(censoring.save.memory = censoring.save.memory,fit=fit,wdata=wdata, TiMinus = TiMinus)
                    }
                    out <- c(out,list(IC=IC))
                }

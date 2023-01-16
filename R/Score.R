@@ -113,7 +113,11 @@
 ##' \code{"residuals"} provides Brier score residuals and
 ##' \code{"splitindex"} provides sampling index used to split the data into training and validation sets.
 ##' \code{"vcov"} provides the variance-covariance matrix of the estimated parameters.
-##' @param saveCoxMemory If \code{TRUE}, save memory by not storing the influence function of the cumulative hazard of the censoring as a matrix when calculating standard errors with Cox censoring. This can allow one to use \code{Score} on larger test data sets, but may be slower.
+##' @param censoring.save.memory Only relevant in censored data where censoring weigths are obtained with
+##' Cox regression and argument \code{conservative} is set to \code{FALSE}. If \code{TRUE}, save memory by not storing the influence function
+##' of the cumulative hazard of the censoring as a matrix when calculating standard errors
+##' with Cox censoring. This can allow one to use \code{Score} on larger test data sets,
+##' but may be slower.
 ##' @param predictRisk.args
 ##'  A list of argument-lists to control how risks are predicted.
 ##'  The names of the lists should be the S3-classes of the \code{object}.
@@ -472,7 +476,7 @@ Score.list <- function(object,
                        keep,
                        predictRisk.args,
                        debug=0L,
-                       saveCoxMemory = FALSE,
+                       censoring.save.memory = FALSE,
                        ...){
     se.conservative=IPCW=IF.AUC.conservative=IF.AUC0=IF.AUC=IC0=Brier=AUC=casecontrol=se=nth.times=time=status=ID=WTi=risk=IF.Brier=lower=upper=crossval=b=time=status=model=reference=p=model=pseudovalue=ReSpOnSe=residuals=event=j=NULL
 
@@ -855,7 +859,7 @@ c.f., Chapter 7, Section 5 in Gerds & Kattan 2021. Medical risk prediction model
                                            cens.model=cens.model,
                                            response.type=response.type,
                                            influence.curve=getIC, 
-                                           saveCoxMemory = saveCoxMemory)
+                                           censoring.save.memory = censoring.save.memory)
             ##split.method$internal.name %in% c("noplan",".632+")
             ## if cens.model is marginal then IC is a matrix (ntimes,newdata)
             ## if cens.model is Cox then IC is an array (nlearn, ntimes, newdata)

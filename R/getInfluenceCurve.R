@@ -33,7 +33,7 @@ getInfluenceFunction.AUC.censoring.term <- function(time,event,t, IFcalculationL
     controls.index <- IFcalculationList[["controls"]]
     w.cases <- weights[cases.index]
     w.controls <- weights[controls.index]
-    if (!MC$saveCoxMemory){
+    if (!MC$censoring.save.memory){
       ic.weights <- MC[[2]][[nth.times]] ## load IF from Censoring weights
       icPart <- as.numeric(rowSumsCrossprod(as.matrix(1/(Phi*n^2)*ic0Case-(aucLPO/Phi)*(1/n^2)*muControls*w.cases), ic.weights[cases.index,], 0)) +
         as.numeric(rowSumsCrossprod(as.matrix(1/(Phi*n^2)*ic0Control-(aucLPO/Phi)*(1/n^2)*muCase*w.controls),ic.weights[controls.index,],0))
@@ -116,7 +116,7 @@ getInfluenceCurve.Brier <- function(t,
       IC0
     }
     else if (cens.model[[1]]=="cox") {## Cox regression
-        if (!IC.G$saveCoxMemory){
+        if (!IC.G$censoring.save.memory){
           ic.weights <- IC.G[[2]][[nth.times]]
           IF.Brier <- IC0+as.numeric(rowSumsCrossprod(as.matrix(residuals),ic.weights,0)) / N
         }
