@@ -1128,6 +1128,9 @@ if (split.method$internal.name%in%c("BootCv","LeaveOneOutBoot","crossval")){
     # }}}
     # {{{ Leave-one-out bootstrap
     ## start clause split.method$name=="LeaveOneOutBoot
+    if (B==1 && split.method$internal.name =="crossval" && "AUC" %in% metrics){
+      warning("The results for the AUC if B=1 are most likely nonsensical. ")
+    }
     if (split.method$name=="LeaveOneOutBoot" | split.method$internal.name =="crossval"){  ## Testing if the crossval works in this loop
         message(paste0("Calculating the performance metrics in long format\nlevel-1 data with ",
                        NROW(DT.B),
