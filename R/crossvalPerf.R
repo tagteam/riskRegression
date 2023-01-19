@@ -18,17 +18,19 @@ crossvalPerf.loob.AUC <- function(times,mlevs,se.fit,response.type,NT,Response,c
     res[unique(x)] <- FALSE
     res
   }
+  ind.mat <- do.call("cbind",(lapply(1:B,split.method$index)))
   if (split.method$internal.name == "LeaveOneOutBoot"){
-    split.index <- apply(split.method$index,2,function(x) redoSplitIndex(x,N))
+    split.index <- apply(ind.mat,2,function(x) redoSplitIndex(x,N))
   }
   else {
     setorder(DT.B, b, ID)
-    DT.B$fold <- rep(c(split.method$index), each=NT*length(mlevs))
+    DT.B$fold <- rep(c(ind.mat), each=NT*length(mlevs))
     DT.B[, bfold:=as.numeric(interaction(b,fold))] # construct new function
     setorder(DT.B, bfold, ID)
     k <- split.method$k
-    split.index <- do.call("cbind",lapply(1:k, function(i) split.method$index==i))
+    split.index <- do.call("cbind",lapply(1:k, function(i) ind.mat==i))
   }
+  rm(ind.mat)
   for (s in 1:NT){
     if (response.type=="binary"){
       t <- 0
@@ -230,7 +232,9 @@ crossvalPerf.loob.Brier <- function(times,mlevs,se.fit,response.type,NT,Response
   DT.B <- DT.B[,data.table::data.table(risk=mean(risk),residuals=sum(residuals)),by=c(byvars,"ID")]
   ## get denominator
   if (split.method$name=="LeaveOneOutBoot"){
-    Ib <- split.method$B-tabulate(unlist(apply(split.method$index,2,unique)))
+    ind.mat <- do.call("cbind",(lapply(1:B,split.method$index)))
+    Ib <- split.method$B-tabulate(unlist(apply(ind.mat,2,unique)))
+    rm(ind.mat)
     ## REMOVE ME
     ## Ib <- Ib[order(data$ID)]
     if (any(Ib==0)) {

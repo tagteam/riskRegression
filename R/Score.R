@@ -640,7 +640,7 @@ c.f., Chapter 7, Section 5 in Gerds & Kattan 2021. Medical risk prediction model
         ## message("Random seed set to control split of data: seed=",seed)
         set.seed(seed)
     }
-    split.method <- getSplitMethod(split.method=split.method,B=B,N=N,M=M)
+    split.method <- getSplitMethod(split.method=split.method,B=B,N=N,M=M,seed=seed)
     B <- split.method$B
     splitIndex <- split.method$index
     do.resample <- !(is.null(splitIndex))
@@ -997,7 +997,7 @@ if (split.method$internal.name%in%c("BootCv","LeaveOneOutBoot","crossval")){
     if (split.method$internal.name == "crossval"){
         DT.B <- foreach::foreach (b=1:B,.export=exports,.packages="data.table",.errorhandling=errorhandling) %dopar%{
             ## repetitions of k-fold to avoid Monte-Carlo error
-            index.b <- split.method$index[,b] ## contains a sample of the numbers 1:k with replacement
+            index.b <- split.method$index(b) ## contains a sample of the numbers 1:k with replacement
             if((B>1) && !is.null(progress.bar)){setTxtProgressBar(pb, b)}
             DT.b <- rbindlist(lapply(1:split.method$k,function(fold){
                 traindata=data[index.b!=fold]
@@ -1046,9 +1046,9 @@ if (split.method$internal.name%in%c("BootCv","LeaveOneOutBoot","crossval")){
         DT.B <- foreach::foreach (b=1:B,.export=exports,.packages="data.table",.errorhandling=errorhandling) %dopar%{
             if(!is.null(progress.bar)){setTxtProgressBar(pb, b)}
             ## DT.B <- rbindlist(lapply(1:B,function(b){
-            traindata=data[split.method$index[,b]]
+            traindata=data[split.method$index(b)]
             ## setkey(traindata,ID)
-            testids <- (match(1:N,unique(split.method$index[,b]),nomatch=0)==0)
+            testids <- (match(1:N,unique(split.method$index(b)),nomatch=0)==0)
             ## NOTE: subset.data.table preserves order
             testdata <- subset(data,testids)
             if (cens.type=="rightCensored"){
