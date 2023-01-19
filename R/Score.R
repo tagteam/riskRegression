@@ -1128,10 +1128,37 @@ if (split.method$internal.name%in%c("BootCv","LeaveOneOutBoot","crossval")){
     # }}}
     # {{{ Leave-one-out bootstrap
     ## start clause split.method$name=="LeaveOneOutBoot
-    if (B==1 && split.method$internal.name =="crossval" && "AUC" %in% metrics){
-      warning("The results for the AUC if B=1 are most likely nonsensical. ")
+    if (split.method$internal.name =="crossval" && B == 1){
+      crossvalPerf<-computePerformance(DT=DT.B,
+                                       N=N,
+                                       NT=NT,
+                                       NF=NF,
+                                       models=list(levels=mlevs,labels=mlabels),
+                                       response.type=response.type,
+                                       times=times,
+                                       jack=jack,
+                                       cens.type=cens.type,
+                                       cause=cause,
+                                       states=states,
+                                       alpha=alpha,
+                                       se.fit=se.fit,
+                                       conservative=conservative,
+                                       cens.model=cens.model,
+                                       multi.split.test=multi.split.test,
+                                       keep.residuals=FALSE,
+                                       keep.vcov=FALSE,
+                                       dolist=dolist,
+                                       probs=probs,
+                                       metrics=metrics,
+                                       plots=plots,
+                                       summary=summary,
+                                       ibs=ibs,
+                                       ipa=ipa,
+                                       ROC=FALSE,
+                                       MC=Weights$IC,
+                                       IC.data=Weights$IC.data)
     }
-    if (split.method$name=="LeaveOneOutBoot" | split.method$internal.name =="crossval"){  ## Testing if the crossval works in this loop
+    else if (split.method$name=="LeaveOneOutBoot" | split.method$internal.name =="crossval"){  ## Testing if the crossval works in this loop
         message(paste0("Calculating the performance metrics in long format\nlevel-1 data with ",
                        NROW(DT.B),
                        " rows.",
