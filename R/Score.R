@@ -640,7 +640,7 @@ c.f., Chapter 7, Section 5 in Gerds & Kattan 2021. Medical risk prediction model
         ## message("Random seed set to control split of data: seed=",seed)
         set.seed(seed)
     }
-    split.method <- getSplitMethod(split.method=split.method,B=B,N=N,M=M)
+    split.method <- getSplitMethod(split.method=split.method,B=B,N=N,M=M,seed=seed)
     B <- split.method$B
     splitIndex <- split.method$index
     do.resample <- !(is.null(splitIndex))
@@ -997,7 +997,7 @@ if (split.method$internal.name%in%c("BootCv","LeaveOneOutBoot","crossval")){
     if (split.method$internal.name == "crossval"){
         DT.B <- foreach::foreach (b=1:B,.export=exports,.packages="data.table",.errorhandling=errorhandling) %dopar%{
             ## repetitions of k-fold to avoid Monte-Carlo error
-            index.b <- split.method$index[,b] ## contains a sample of the numbers 1:k with replacement
+            index.b <- split.method$index(b) ## contains a sample of the numbers 1:k with replacement
             if((B>1) && !is.null(progress.bar)){setTxtProgressBar(pb, b)}
             DT.b <- rbindlist(lapply(1:split.method$k,function(fold){
                 traindata=data[index.b!=fold]
@@ -1046,9 +1046,9 @@ if (split.method$internal.name%in%c("BootCv","LeaveOneOutBoot","crossval")){
         DT.B <- foreach::foreach (b=1:B,.export=exports,.packages="data.table",.errorhandling=errorhandling) %dopar%{
             if(!is.null(progress.bar)){setTxtProgressBar(pb, b)}
             ## DT.B <- rbindlist(lapply(1:B,function(b){
-            traindata=data[split.method$index[,b]]
+            traindata=data[split.method$index(b)]
             ## setkey(traindata,ID)
-            testids <- (match(1:N,unique(split.method$index[,b]),nomatch=0)==0)
+            testids <- (match(1:N,unique(split.method$index(b)),nomatch=0)==0)
             ## NOTE: subset.data.table preserves order
             testdata <- subset(data,testids)
             if (cens.type=="rightCensored"){
@@ -1128,10 +1128,37 @@ if (split.method$internal.name%in%c("BootCv","LeaveOneOutBoot","crossval")){
     # }}}
     # {{{ Leave-one-out bootstrap
     ## start clause split.method$name=="LeaveOneOutBoot
-    if (B==1 && split.method$internal.name =="crossval" && "AUC" %in% metrics){
-      warning("The results for the AUC if B=1 are most likely nonsensical. ")
+    if (split.method$internal.name =="crossval" && B == 1){
+      crossvalPerf<-computePerformance(DT=DT.B,
+                                       N=N,
+                                       NT=NT,
+                                       NF=NF,
+                                       models=list(levels=mlevs,labels=mlabels),
+                                       response.type=response.type,
+                                       times=times,
+                                       jack=jack,
+                                       cens.type=cens.type,
+                                       cause=cause,
+                                       states=states,
+                                       alpha=alpha,
+                                       se.fit=se.fit,
+                                       conservative=conservative,
+                                       cens.model=cens.model,
+                                       multi.split.test=multi.split.test,
+                                       keep.residuals=FALSE,
+                                       keep.vcov=FALSE,
+                                       dolist=dolist,
+                                       probs=probs,
+                                       metrics=metrics,
+                                       plots=plots,
+                                       summary=summary,
+                                       ibs=ibs,
+                                       ipa=ipa,
+                                       ROC=FALSE,
+                                       MC=Weights$IC,
+                                       IC.data=Weights$IC.data)
     }
-    if (split.method$name=="LeaveOneOutBoot" | split.method$internal.name =="crossval"){  ## Testing if the crossval works in this loop
+    else if (split.method$name=="LeaveOneOutBoot" | split.method$internal.name =="crossval"){  ## Testing if the crossval works in this loop
         message(paste0("Calculating the performance metrics in long format\nlevel-1 data with ",
                        NROW(DT.B),
                        " rows.",
