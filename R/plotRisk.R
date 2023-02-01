@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Mar 13 2017 (16:53) 
 ## Version: 
-## Last-Updated: Sep 17 2022 (09:13) 
+## Last-Updated: Feb  1 2023 (09:59) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 230
+##     Update #: 233
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -205,7 +205,8 @@ plotRisk <- function(x,
         pred.m2 <- pred.m2[which]
         Rfactor <- Rfactor[which]
     }
-    nR <- length(unique(Rfactor))
+    ## nR <- length(unique(Rfactor))
+    nR <- length(levels(Rfactor))
     Rnum <- as.numeric(Rfactor)
     if (missing(col)){
         colcode <- switch(x$response.type,
@@ -229,8 +230,8 @@ plotRisk <- function(x,
         }
         pchcode <- pch
     }
-    pch=as.numeric(as.character(factor(Rfactor,labels=pchcode[1:nR])))
-    col=as.character(factor(Rfactor,labels=colcode[1:nR]))
+    pch=as.numeric(as.character(factor(Rfactor,levels = levels(Rfactor),labels=pchcode[1:nR])))
+    col=as.character(factor(Rfactor,levels = levels(Rfactor),labels=colcode[1:nR]))
     # {{{ smart argument control
     plot.DefaultArgs <- list(x=0,y=0,type = "n",ylim = ylim,xlim = xlim,ylab=ylab,xlab=xlab)
     axis1.DefaultArgs <- list(side=1,las=1,at=seq(xlim[1],xlim[2],(xlim[2]-xlim[1])/4))
