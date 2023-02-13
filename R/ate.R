@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Oct 23 2016 (08:53) 
 ## Version: 
-## last-updated: May 31 2022 (11:43) 
+## last-updated: Feb 10 2023 (09:19) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 2298
+##     Update #: 2299
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -136,13 +136,13 @@
 #' summary(ateFit1b, band = 2,
 #'        se = FALSE, type = "diffRisk", short = TRUE, quantile = TRUE)
 #' 
-#' ## confidence intervals / p-values computed using 1000 boostrap samples
+#' ## confidence intervals / p-values computed using 1000 bootstrap samples
 #' ## (argument se = TRUE and B = 1000) 
 #' ateFit1c <- ate(fit, data = dtS, treatment = "X1",
 #'                 times = 5:8, se = TRUE, B = 50, handler = "mclapply")
 #' ## NOTE: for real applications 50 bootstrap samples is not enough 
 #'
-#' ## same but using 2 cpus for generating and analyzing the boostrap samples
+#' ## same but using 2 cpus for generating and analyzing the bootstrap samples
 #' ## (parallel computation, argument mc.cores = 2) 
 #' ateFit1d <- ate(fit, data = dtS, treatment = "X1",
 #'                 times = 5:8, se = TRUE, B = 50, mc.cores = 2)
@@ -1280,7 +1280,7 @@ ate_checkArgs <- function(call,
             if (all(match(candidateMethods,options$method.predictRiskIID,nomatch=0)==0)){
                 stop(paste("Could not find predictRiskIID S3-method for ",class(object.event),collapse=" ,"),"\n",
                      "Functional delta method not implemented for this type of object \n",
-                     "Set argument \'B\' to a positive integer to use a boostrap instead \n",sep="")
+                     "Set argument \'B\' to a positive integer to use a bootstrap instead \n",sep="")
             }
         }
         if(!is.null(object.treatment) && stats::nobs(object.treatment)!=NROW(mydata)){ ## note: only check that the datasets have the same size

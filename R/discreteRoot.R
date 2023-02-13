@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: nov 22 2017 (13:39) 
 ## Version: 
-## Last-Updated: Jul 12 2019 (12:04) 
+## Last-Updated: Feb 10 2023 (09:19) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 249
+##     Update #: 250
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -252,7 +252,7 @@ boot2pvalue <- function(x, null, estimate = NULL, alternative = "two.sided",
     }
 
     if(p.value %in% c(0,1)){
-        message("Estimated p-value of ",p.value," - consider increasing the number of boostrap samples \n")
+        message("Estimated p-value of ",p.value," - consider increasing the number of bootstrap samples \n")
     }
     return(p.value)
 }
