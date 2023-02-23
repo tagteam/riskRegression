@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: Dec 21 2021 (11:04) 
 ## Version: 
-## Last-Updated: Sep 17 2022 (10:43) 
-##           By: Thomas Alexander Gerds
-##     Update #: 21
+## Last-Updated: feb 23 2023 (12:10) 
+##           By: Brice Ozenne
+##     Update #: 22
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -45,9 +45,12 @@ test_that("wglm - no censoring",{
     test.ate <- ate(test, data = dFull, times = tau, treatment = "X1", verbose = FALSE)
     GS.ate <- logitATE(formula = Event(time,event)~X1 + X8,
                        time = tau[5], data = dFull, treat.model = X1~1)
-    expect_equal(ignore_attr=TRUE,test.ate$diffRisk[5,estimate], GS.ate$difriskG, tolerance = 1e-5)
-    expect_equal(ignore_attr=TRUE,test.ate$diffRisk[5,estimate], GS.ate$difriskG, tolerance = 1e-5)
-    expect_equal(ignore_attr=TRUE,test.ate$diffRisk[5,se], GS.ate$se.difriskG, tolerance = 1e-5)
+    expect_equal(ignore_attr=TRUE,test.ate$diffRisk[5,estimate], unname(GS.ate$difriskG),
+                 tolerance = 1e-5)
+    expect_equal(ignore_attr=TRUE,test.ate$diffRisk[5,estimate], unname(GS.ate$difriskG),
+                 tolerance = 1e-5)
+    expect_equal(ignore_attr=TRUE,test.ate$diffRisk[5,se], unname(GS.ate$se.difriskG),
+                 tolerance = 1e-5)
 })
 
 ## * right censoring (but no competing risks)
@@ -69,8 +72,10 @@ test_that("wglm - censoring",{
     test.ate <- ate(test, data = dSurv, times = tau, treatment = "X1", verbose = FALSE)
     GS.ate <- suppressWarnings(logitATE(formula = Event(time,event)~X1 + X8, cens.model = ~1, cens.code = 0, cause = 1,
                                         time = tau[5], data = dSurv, treat.model = X1~1))
-    expect_equal(ignore_attr=TRUE,test.ate$diffRisk[5,estimate], GS.ate$difriskG, tolerance = 1e-5)
-    expect_equal(ignore_attr=TRUE,test.ate$diffRisk[5,se], GS.ate$se.difriskG, tolerance = 1e-5)
+    expect_equal(ignore_attr=TRUE,test.ate$diffRisk[5,estimate], unname(GS.ate$difriskG),
+                 tolerance = 1e-5)
+    expect_equal(ignore_attr=TRUE,test.ate$diffRisk[5,se], unname(GS.ate$se.difriskG),
+                 tolerance = 1e-5)
 
     #### stratified censoring model ####
     test <- wglm(regressor.event = ~ X1 + X8, formula.censor = Surv(time,event==0) ~ X1,
@@ -106,8 +111,10 @@ test_that("wglm - competing risks",{
     test.ate <- ate(test, data = d, times = tau, treatment = "X1", verbose = FALSE)
     GS.ate <- suppressWarnings(logitATE(formula = Event(time,event)~X1 + X8, cens.model = ~1, cens.code = 0, cause = 1,
                                         time = tau[5], data = d, treat.model = X1~1))
-    expect_equal(ignore_attr=TRUE,test.ate$diffRisk[5,estimate], GS.ate$difriskG, tolerance = 1e-5)
-    expect_equal(ignore_attr=TRUE,test.ate$diffRisk[5,se], GS.ate$se.difriskG, tolerance = 1e-5)
+    expect_equal(ignore_attr=TRUE,test.ate$diffRisk[5,estimate], unname(GS.ate$difriskG),
+                 tolerance = 1e-5)
+    expect_equal(ignore_attr=TRUE,test.ate$diffRisk[5,se], unname(GS.ate$se.difriskG),
+                 tolerance = 1e-5)
 
     #### stratified censoring model ####
     test <- wglm(regressor.event = ~ X1 + X8, formula.censor = Surv(time,event==0) ~ X1,
@@ -116,7 +123,8 @@ test_that("wglm - competing risks",{
                     cens.model = ~X1,
                     time = tau[5], data = d, cens.code = 0, cause = 1))
 
-    expect_equal(ignore_attr=TRUE,coef(test, time = tau[5]), summary(GS)$coef[,"Estimate"], tolerance = 1e-5)
+    expect_equal(ignore_attr=TRUE,coef(test, time = tau[5]), summary(GS)$coef[,"Estimate"],
+                 tolerance = 1e-5)
     ## expect_equal(summary(test, print = FALSE)[[5]][,"Std. Error"], summary(GS)$coef[,"Std.Err"], tolerance = 1e-5)
 
     #### censoring model with continuous covariate ####
@@ -126,7 +134,8 @@ test_that("wglm - competing risks",{
                     cens.model = ~X1+X8,
                     time = tau[5], data = d, cens.code = 0, cause = 1))
 
-    expect_equal(ignore_attr=TRUE,coef(test, time = tau[5]), summary(GS)$coef[,"Estimate"], tolerance = 1e-5)
+    expect_equal(ignore_attr=TRUE,coef(test, time = tau[5]), summary(GS)$coef[,"Estimate"],
+                 tolerance = 1e-5)
     ## expect_equal(summary(test, print = FALSE)[[5]][,"Std. Error"], summary(GS)$coef[,"Std.Err"], tolerance = 1e-5)
 })
 

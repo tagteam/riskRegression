@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: sep  1 2020 (14:58) 
 ## Version: 
-## Last-Updated: Dec 21 2021 (12:13) 
+## Last-Updated: feb 23 2023 (11:31) 
 ##           By: Brice Ozenne
-##     Update #: 370
+##     Update #: 380
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -118,7 +118,7 @@ wglm <- function(regressor.event, formula.censor, times, data, cause = NA,
     for(iTime in 1:n.times){
         iFormula.glm <- update(regressor.event, paste0(newname[iTime],"~."))
         data[[newname[iTime]]] <- (data[[varSurv$status]]==cause)*(recoverTime<=times[iTime])
-        data[[obs.newname[iTime]]] <- (1-(recoverCensor==1)*(recoverTime<=times[iTime])) ## equivalent to status>0 or eventtime>tau
+        data[[obs.newname[iTime]]] <- (1-(recoverCensor==1)*(recoverTime<times[iTime])) ## equivalent to status>0 or eventtime>=tau
 
         if(n.censor[iTime]>0){
             iPred <- predictRisk(object.censor, diag = TRUE, newdata = data, times = pmin(recoverTime, times[iTime]) - tol,
