@@ -6,14 +6,16 @@
 \usage{
 \method{as.data.table}{ate}(
   x,
+  keep.rownames = FALSE,
   estimator = x$estimator,
   type = c("meanRisk", "diffRisk", "ratioRisk"),
-  keep.rownames = FALSE,
   ...
 )
 }
 \arguments{
 \item{x}{object obtained with function \code{ate}}
+
+\item{keep.rownames}{Not used.}
 
 \item{estimator}{[character] The type of estimator relative to which the estimates should be output.}
 
@@ -21,8 +23,6 @@
 Can be \code{"meanRisk"} to export the risks specific to each treatment group,
 \code{"diffRisk"} to export the difference in risks between treatment groups,
 or \code{"ratioRisk"} to export the ratio of risks between treatment groups.}
-
-\item{keep.rownames}{Not used.}
 
 \item{...}{Not used.}
 }
