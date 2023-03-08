@@ -3,9 +3,9 @@
 ## Author: Thomas Alexander Gerds
 ## Created: Mar  3 2017 (09:28) 
 ## Version: 
-## Last-Updated: okt 24 2020 (18:11) 
+## Last-Updated: mar  8 2023 (09:58) 
 ##           By: Brice Ozenne
-##     Update #: 187
+##     Update #: 188
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -33,7 +33,7 @@
 ## * as.data.table.ate (code)
 #' @rdname as.data.table.ate
 #' @export
-as.data.table.ate <- function(x, estimator = x$estimator, type = c("meanRisk","diffRisk","ratioRisk"), keep.rownames = FALSE, ...){
+as.data.table.ate <- function(x, keep.rownames = FALSE, estimator = x$estimator, type = c("meanRisk","diffRisk","ratioRisk"), ...){
 
     estimator <- match.arg(estimator, choices =  x$estimator, several.ok = TRUE)
     type <- match.arg(type, choices =  c("meanRisk","diffRisk","ratioRisk"), several.ok = TRUE)
