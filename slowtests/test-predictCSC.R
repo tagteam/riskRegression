@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: maj 18 2017 (09:23) 
 ## Version: 
-## last-updated: Sep 17 2022 (10:00) 
-##           By: Thomas Alexander Gerds
-##     Update #: 338
+## last-updated: mar 10 2023 (14:27) 
+##           By: Brice Ozenne
+##     Update #: 340
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -825,7 +825,7 @@ test_that("[predictCSC] diag no strata", {
     e.CSC <- CSC(Hist(time, event) ~ X1*X6, data = dt)
 
     GS <- predict(e.CSC, newdata = dt, times = dt$time, se = TRUE, iid = TRUE, average.iid = TRUE, cause = 1)
-  test <- predict(e.CSC, newdata = dt, times = dt$time, se = TRUE, iid = TRUE, average.iid = TRUE, diag = TRUE,cause = 1)
+    test <- predict(e.CSC, newdata = dt, times = dt$time, se = TRUE, iid = TRUE, average.iid = TRUE, diag = TRUE, cause = 1)
     test2 <- predict(e.CSC, newdata = dt, times = dt$time,
                      se = FALSE, iid = FALSE, average.iid = TRUE, diag = TRUE, cause = 1)
     
@@ -882,9 +882,9 @@ test_that("[predictCSC] diag no strata", {
 
 
 test_that("[predictCSC] diag strata", {
-set.seed(10)
-dt <- sampleData(75, outcome = "competing.risks")[,.(time,event,X1,X2,X6)]
-eS.CSC <- CSC(Hist(time, event) ~ strata(X1) + X6, data = dt)
+    set.seed(10)
+    dt <- sampleData(75, outcome = "competing.risks")[,.(time,event,X1,X2,X6)]
+    eS.CSC <- CSC(Hist(time, event) ~ strata(X1) + X6, data = dt)
 
     GS <- predict(eS.CSC, newdata = dt, times = dt$time, se = TRUE, iid = TRUE, average.iid = TRUE, cause = 1)
     test <- predict(eS.CSC, newdata = dt, times = dt$time,

@@ -398,7 +398,6 @@ predict.CauseSpecificCox <- function(object,
         }else{  ## usual computation of the uncertainty even when CIF>1
             check.cif <- 0*outCpp$cif
         }
-
         out.seCSC <- calcSeCSC(object,
                                cif = check.cif,
                                hazard = ls.hazard,

@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: maj 27 2017 (21:23) 
 ## Version: 
-## last-updated: Sep 17 2022 (10:23) 
-##           By: Thomas Alexander Gerds
-##     Update #: 1087
+## last-updated: mar 10 2023 (14:27) 
+##           By: Brice Ozenne
+##     Update #: 1099
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -102,6 +102,10 @@ calcSeCSC <- function(object, cif, hazard, cumhazard, survival, object.time, obj
             rm.list <- FALSE
             factor <- attr(export, "factor")
         }
+        if(any(stats::na.omit(as.double(cif))>1)){
+            stop("Cannot use option \'store.iid\'=\"minimal\" with argument \'product.limit\' = -1. \n")
+        }
+
         grid.strata <- unique(new.strata)
         resCpp <- calcSeMinimalCSC_cpp(seqTau = times,
                                        newSurvival = survival, 
@@ -165,6 +169,7 @@ calcSeCSC <- function(object, cif, hazard, cumhazard, survival, object.time, obj
                                   ls_cumhazard = cumhazard,
                                   ls_hazard = hazard[[cause]],
                                   survival = survival,
+                                  cif = cif,
                                   ls_IFcumhazard = lapply(object$models, function(x){x$iid$IFcumhazard}),
                                   ls_IFhazard = object$models[[cause]]$iid$IFhazard,
                                   eXb = eXb,
@@ -354,7 +359,43 @@ calcSeCSC <- function(object, cif, hazard, cumhazard, survival, object.time, obj
                                              nCause = nCause, test_allCause = test_allCause, test_theCause = test_theCause,
                                              nVar = nVar.lp)
 
-             
+                        if(any(stats::na.omit(as.double(cif))>=1)){ ## average influence function only among datapoint with cif<1
+                            test.cif1 <- cif>=1
+                            vec.index1 <- apply(test.cif1, MARGIN = 1, FUN = function(iRow){which(iRow)[1]})
+                            index.pattern <- sort(unique(stats::na.omit(vec.index1)))
+                            n.pattern <- length(index.pattern)
+                            vec.index1[is.na(vec.index1)] <- Inf
+
+                            for(iP in 1:n.pattern){ ## iP <- 1
+
+                                iPattern <- index.pattern[iP]
+                                if(iP == n.pattern){
+                                    iIndex.rangePattern <- which(iTime.jump>=times[iPattern])
+                                }else{
+                                    iIndex.rangePattern <- seq(which(iTime.jump>=times[iPattern])[1],utils::tail(which(iTime.jump<times[index.pattern[iP+1]]),1), by = 1)
+                                }
+                                iIndex.keep <- which(vec.index1>iPattern)                                
+                                if(length(iIndex.keep)==0){
+                                    iAIF[,iIndex.rangePattern] <- 0
+                                }else{
+                                    iiIndex.jump2 <- 1:max(iIndex.rangePattern)
+                                    iAIF[,iIndex.rangePattern] <- calcAICcif_R(hazard0_cause = ihazard0_cause,
+                                                                               cumhazard0 = iCumhazard0,
+                                                                               IFhazard0_cause = iIFhazard0_cause,
+                                                                               IFcumhazard0 = iIFCumhazard0,
+                                                                               IFbeta = lapply(object$models,function(iM){iM$iid$IFbeta}),                                         
+                                                                               eXb1_S = eXb1_S[iIndex.keep,,drop=FALSE],
+                                                                               eXb1_S_eXbj = lapply(eXb1_S_eXbj,function(iM){iM[iIndex.keep,,drop=FALSE]}),
+                                                                               eXb1_S_X1 = lapply(eXb1_S_X1,function(iM){iM[iIndex.keep,,drop=FALSE]}),
+                                                                               eXb1_S_Xj_eXbj = lapply(eXb1_S_Xj_eXbj, function(iLs){lapply(iLs,function(iM){iM[iIndex.keep,,drop=FALSE]})}), 
+                                                                               weight = iVN_time[iiIndex.jump2], factor = iMfactor[iIndex.keep,iiIndex.jump2,drop=FALSE],
+                                                                               nJump = length(iiIndex.jump2), subsetJump = iiIndex.jump2,
+                                                                               nCause = nCause, test_allCause = test_allCause, test_theCause = test_theCause,
+                                                                               nVar = nVar.lp)[,iIndex.rangePattern,drop=FALSE]
+                                }
+                            }
+                        }
+
                         ## export
                         if(diag==TRUE){
                             out[[iFactor]][,1] <- out[[iFactor]][,1] + rowSums(iAIF[,iSindexV.times,drop=FALSE])/iN_obs * iPrevalence

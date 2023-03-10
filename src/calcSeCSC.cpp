@@ -348,15 +348,15 @@ List calcSeMinimalCSC_cpp(const arma::vec& seqTau, // horizon time for the predi
 // * calcSeCif2_cpp: compute IF for the absolute risk (method 2)
 // [[Rcpp::export]]
 List calcSeCif2_cpp(const std::vector<arma::mat>& ls_IFbeta, const std::vector<arma::mat>& ls_X,
-					const std::vector<arma::mat>& ls_cumhazard, const arma::mat& ls_hazard, const arma::mat& survival,
+					const std::vector<arma::mat>& ls_cumhazard, const arma::mat& ls_hazard, const arma::mat& survival, const arma::mat& cif,
 					const std::vector< std::vector<arma::mat> >& ls_IFcumhazard, const std::vector<arma::mat>& ls_IFhazard,
 					const NumericMatrix& eXb,
 					int nJumpTime, const NumericVector& JumpMax,
-					const NumericVector& tau, const arma::vec& tauIndex, int nTau,
-					int nObs,  
-					int theCause, int nCause, bool hazardType, arma::vec nVar,
-					int nNewObs, NumericMatrix strata,
-					bool exportSE, bool exportIF, bool exportIFsum, bool diag){
+		    const NumericVector& tau, const arma::vec& tauIndex, int nTau,
+		    int nObs,  
+		    int theCause, int nCause, bool hazardType, arma::vec nVar,
+		    int nNewObs, NumericMatrix strata,
+		    bool exportSE, bool exportIF, bool exportIFsum, bool diag){
 
   arma::mat X_IFbeta;
 
@@ -373,7 +373,7 @@ List calcSeCif2_cpp(const std::vector<arma::mat>& ls_IFbeta, const std::vector<a
   // ** initialize for export
   arma::mat outSE;
   if(exportSE){
-	if(diag){
+    if(diag){
       outSE.resize(nNewObs,1);
     }else{
       outSE.resize(nNewObs,nTau);
@@ -528,30 +528,30 @@ List calcSeCif2_cpp(const std::vector<arma::mat>& ls_IFbeta, const std::vector<a
 	
       // Rcout << "6";
       // store
-      // Rcout << "test: " << tauIndex[iiTau] << " " << iJump << "/ " << nJumpTime << " | " << tau[iiTau] << " " << JumpMax[iNewObs] << endl;
+      // Rcout << "test (" << iiTau << ") : " << tauIndex[iiTau] << " " << iJump << "/ " << nJumpTime << " | " << tau[iiTau] << " " << JumpMax[iNewObs] << endl;
       while((iiTau < iNTau) && (tauIndex[iiTau] == iJump) && (tau[iiTau] <= JumpMax[iNewObs])){
 
 		if(exportSE){
 		  // Rcout << "a";
-		  if(diag){
+		  if(diag && cif(iNewObs,0)<1){
 			outSE.row(iNewObs).col(0) = sqrt(accu(pow(cumIF_tempo,2)));
-		  }else{
+		  }else if(cif(iNewObs,iiTau)<1){
 			outSE.row(iNewObs).col(iiTau) = sqrt(accu(pow(cumIF_tempo,2)));
 		  }
 		}
 		if(exportIF){
 		  // Rcout << "b";
-		  if(diag){
+		  if(diag && cif(iNewObs,0)<1){
 			outIF.slice(0).row(iNewObs) = cumIF_tempo.t();
-		  }else{
+		  }else if(cif(iNewObs,iiTau)<1){
 			outIF.slice(iiTau).row(iNewObs) = cumIF_tempo.t();
 		  }
 		}
 		if(exportIFsum){
 		  // Rcout << "c";
-		  if(diag){
+		  if(diag && cif(iNewObs,0)<1){
 			outIFsum.col(0) += cumIF_tempo;
-		  }else{
+		  }else if(cif(iNewObs,iiTau)<1){
 			outIFsum.col(iiTau) += cumIF_tempo;
 		  }
 		}
