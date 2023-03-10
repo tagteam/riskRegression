@@ -241,6 +241,11 @@
 ##'              split.method="loob",
 ##'              B=100,plots="calibration")
 ##'     x2
+##'     ## 5-fold cross-validation
+##'     x3=Score(list("LR1"=lr1a,"LR2"=lr2a),formula=Y~1,data=learndat,
+##'              split.method="cv5",
+##'              B=1,plots="calibration")
+##'     x3
 ##' }
 ##' # survival outcome
 ##'

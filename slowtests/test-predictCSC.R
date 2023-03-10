@@ -1252,7 +1252,6 @@ if(FALSE){
     range(risk - e.predEXP$absRisk)
 }
 
-## BROKEN
 ## *** tentative fix
 test_that("product.limit=-1",{
     eFIX.riskEXP <- predict(e.CSC, newdata = dtPred, times = dt$time, cause = 1,
