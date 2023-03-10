@@ -111,7 +111,7 @@ at a usually very small expense of a slightly higher standard error.}
 
 \item{conf.int}{Either logical or a numeric value between 0 and 1. In right censored data,
 confidence intervals are based on Blanche et al (see references). Setting \code{FALSE} prevents the
-computation confidence intervals. \code{TRUE} means compute 95 percent confidence
+computation of confidence intervals. \code{TRUE} computes 95 percent confidence
 intervals and corresponding p-values for AUC and Brier score. If set to 0.87, the
 level of significance is 13 percent. So, do not set it to 0.87.}
 
@@ -138,15 +138,17 @@ Here IPCW refers to inverse probability of censoring weights and \code{pseudo} f
 Right now pseudo values  are only used for calibration curves.}
 
 \item{cens.model}{Model for estimating inverse probability of
-    censored weights. Implemented are the Kaplan-Meier method (\code{"km"}) and
+    censored weights (IPCW). Implemented are the Kaplan-Meier method (\code{"km"}) and
 Cox regression (\code{"cox"}) both applied to the censored times. If the right hand side of \code{formula} does not specify covariates,
-the Kaplan-Meier method is used even if this argument is set to \code{"cox"}.}
+the Kaplan-Meier method is used even if this argument is set to \code{"cox"}. Also implemented is a template for users specifying other models to estimate the IPCW. Here the user
+should be supply a function, taking as input a \code{"formula"} and \code{"data"}. This does come at the cost of only being able to calculate conservative confidence intervals.}
 
-\item{split.method}{Method for cross-validation. Right now the only choice is \code{bootcv} in which case bootstrap learning sets
+\item{split.method}{Method for cross-validation. Right now the only choices are \code{bootcv}, \code{cvk} and \code{loob}. In the first case, bootstrap learning sets
 are drawn with our without replacement (argument \code{M}) from \code{data}. The data not included in the current bootstrap learning
-set are used as validation set to compute the prediction performance.}
+set are used as validation set to compute the prediction performance. In the second case, k-fold cross-validation is performed. Note that k has to be an explicit number, e.g. 5 or 10,
+when passing this as an argument. In the third case, leave-one-out bootstrap cross-validation is performed for the Brier score and leave-pair-out bootstrap cross-validation is performed for the AUC.}
 
-\item{B}{Number of bootstrap sets for cross-validation.}
+\item{B}{Number of bootstrap sets for cross-validation. \code{B} should be set to 1, when k-fold cross-validation is used.}
 
 \item{M}{Size of subsamples for bootstrap cross-validation. If specified it
 has to be an integer smaller than the size of \code{data}.}
@@ -168,7 +170,7 @@ randomly splitting (bootstrapping) the data during cross-validation.}
 
 \item{keep}{list of characters (not case sensitive) which determines additional output.
 \code{"residuals"} provides Brier score residuals and
-\code{"splitindex"} provides sampling index used to split the data into training and validation sets.
+\code{"splitindex"} provides sampling index used to split the data into training and validation sets. It is a function, whose argument is the bootstrap sample, which one wishes to look at.
 \code{"vcov"} provides the variance-covariance matrix of the estimated parameters.}
 
 \item{predictRisk.args}{A list of argument-lists to control how risks are predicted.
