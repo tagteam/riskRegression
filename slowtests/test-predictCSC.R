@@ -713,6 +713,10 @@ test_that("[predictCSC]: Conditional CIF identical to CIF before first event", {
 })
 
 ## ** after the last observation
+## GIVES WARNING
+## ── Warning (Line 10): [predictCSC]: Conditional CIF is NA after the last observation ──
+## Estimated risk outside the range [0,1].
+## Consider setting the argument 'product.limit' to FALSE. 
 test_that("[predictCSC]: Conditional CIF is NA after the last observation", {
   predC <- predict(CSC.fit, newdata = d, cause = 2, times = ttt, landmark = max(d$time)+1)
   expect_equal(ignore_attr=TRUE,all(is.na(predC$absRisk)), TRUE)
@@ -975,6 +979,8 @@ test_that("iid average - non parametric (hazard)", {
 })
 
 ## ** semi parametric
+## GIVES WARNING
+## Estimated risk outside the range [0,1].
 test_that("iid average - semi parametric", {
     for(iType in c("hazard","survival")){ ## iType <- "hazard"
         m.CSC <- CSC(Hist(time, event) ~ X1*X6 + strata(X2), data = d, surv.type = iType)
@@ -1072,6 +1078,8 @@ test_that("predictSurv (type=survival,diag)", {
 
 
 ## ** survival CSC
+## GIVES WARNING 
+## Estimated survival outside the range [0,1]. 
 test_that("[predictCSC] vs. predictCox (no strata) - surv.type=\"survival\"",{
     e.CSC <- CSC(Hist(time, event)~ X6, data = d, surv.type = "survival")
     jumpTime <- e.CSC$eventTimes[e.CSC$eventTimes <= max(seqTime)]
@@ -1095,6 +1103,8 @@ test_that("[predictCSC] vs. predictCox (no strata) - surv.type=\"survival\"",{
     expect_equal(ignore_attr=TRUE,GS$survival.average.iid,test$survival.average.iid)
 })
 
+## GIVES WARNING
+## Estimated survival outside the range [0,1]. 
 test_that("[predictCSC] vs. predictCox (strata) - surv.type=\"survival\"",{
     e.CSC <- CSC(Hist(time, event)~ X6 + strata(X1), data = d, surv.type = "survival")
     jumpTime <- e.CSC$eventTimes[e.CSC$eventTimes <= max(seqTime)]
@@ -1242,6 +1252,7 @@ if(FALSE){
     range(risk - e.predEXP$absRisk)
 }
 
+## BROKEN
 ## *** tentative fix
 test_that("product.limit=-1",{
     eFIX.riskEXP <- predict(e.CSC, newdata = dtPred, times = dt$time, cause = 1,

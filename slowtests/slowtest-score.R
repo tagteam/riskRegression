@@ -130,13 +130,13 @@ test_that("Number of models and time points", {
         ## predictCox(fit1,newdata=GBSG2.test,times=1000)
         r1 <- Score(list(a=fit2),data=GBSG2.test,times=1000,formula=Surv(time,cens)~1,plots="cali")
         set.seed(11)
-        R1 <- Score(list(a=fit2),data=GBSG2.test,times=1000,B=50,split.method="loob",formula=Surv(time,cens)~1,plots="cali")
+        R1 <- Score(list(a=fit2),data=GBSG2.test,times=1000,B=100,split.method="loob",formula=Surv(time,cens)~1,plots="cali")
         setorder(GBSG2,time,cens)
         ## setorder(GBSG2.test,age)
         GBSG2 <- 7
         r2 <- Score(list(a=fit2,b=fit1),data=GBSG2.test,times=c(100,500,2000,1000),formula=Surv(time,cens)~1,plots="cali")
         set.seed(11)
-        R2 <- Score(list(a=fit2,b=fit1),data=GBSG2.test,times=c(1000),B=50,split.method="loob",formula=Surv(time,cens)~1,plots="cali")
+        R2 <- Score(list(a=fit2,b=fit1),data=GBSG2.test,times=c(1000),B=100,split.method="loob",formula=Surv(time,cens)~1,plots="cali")
         ## r1$Calibration$plotframe
         ## r2$Calibration$plotframe[times==1000&model=="a"]
         ## r3 <- pec(list(a=fit2,b=fit1),data=GBSG2.test,exact=FALSE,times=c(1000),formula=Surv(time,cens)~1)
@@ -249,7 +249,8 @@ test_that("vcov AUC",{
 })
 # }}}
 
-
+## GIVES WARNING 
+## already exporting variable(s): data, split.method, Weights, N, trainseeds
 test_that("loob binary",{
     learndat=sampleData(200,outcome="binary")
     lr1a = glm(Y~X6,data=learndat,family=binomial)

@@ -53,6 +53,7 @@ test_that("wglm - no censoring",{
                  tolerance = 1e-5)
 })
 
+## BROKEN
 ## * right censoring (but no competing risks)
 test_that("wglm - censoring",{
     #### no covariate in censoring model ####
@@ -96,6 +97,7 @@ test_that("wglm - censoring",{
     expect_equal(ignore_attr=TRUE,coef(test, time = tau[5]), summary(GS)$coef[,"Estimate"], tolerance = 1e-5)
 })
 
+## BROKEN
 ## * competing risks
 test_that("wglm - competing risks",{
     #### no covariate in censoring model ####

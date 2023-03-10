@@ -52,7 +52,7 @@ crossvalPerf.loob.AUC <- function(times,mlevs,se.fit,response.type,NT,Response,c
     }
     # censoring weights
     if (cens.type=="rightCensored"){ 
-      if (Weights$method=="marginal"){
+      if (Weights$method!="cox"){
         Wt <- Weights$IPCW.times[s]
       }else{
         Wt <- Weights$IPCW.times[,s]

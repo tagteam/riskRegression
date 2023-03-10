@@ -954,6 +954,9 @@ dtS$C <- (dtS$time<=tau)*(dtS$event!=0)
 dtS$X1f <- dtS$X1
 dtS$X1 <- as.numeric(as.character(dtS$X1))
 
+## GIVES WARNING
+## Estimated risk outside the range [0,1].
+## Possible cause: incorrect extrapolation, i.e., time and/or covariates used for the prediction differ from those used to fit the Cox models.
 test_that("[ate] Censoring, competing risks (surv.type=\"survival\") - check vs. manual calculations", {
     e.S <- CSC(Hist(time, event) ~ X1f + strata(X2) + X3*X6, data = dtS, surv.type = "survival")
     e.T <- glm(X1f ~ X2, data = dtS, family = binomial(link = "logit"))

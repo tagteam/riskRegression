@@ -2,7 +2,7 @@ library(riskRegression)
 library(survival)
 library(data.table)
 library(testthat)
-
+library(randomForestSRC)
 
 test_that("loob survival",{
     set.seed(8)
@@ -20,7 +20,8 @@ test_that("loob survival",{
     expect_equal(ignore_attr=TRUE,loob.se0$Brier$contrasts$delta,loob.se1$Brier$contrasts$delta)
 })
 
-if(FALSE){ ## [:failed test:]
+## GIVES WARNING
+## Cannot do multi-split test with AUC yet. Forced multi.split.test=FALSE
 test_that("bootcv survival (multi.state.test)",{
     set.seed(8)
     learndat=sampleData(200,outcome="survival")
@@ -28,17 +29,16 @@ test_that("bootcv survival (multi.state.test)",{
     learndat[,censtime:=NULL]
     cox1a = coxph(Surv(time,event)~X6,data=learndat,x=TRUE,y=TRUE)
     cox2a = coxph(Surv(time,event)~X7+X8+X9,data=learndat,x=TRUE,y=TRUE)
-    ## rf1 = rfsrc(Surv(time,event)~X1+X2+X3+X4+X5+X6+X7+X8+X9+X10,data=learndat,ntree=500)
-    ## rf1 = rfsrc(Surv(time,event)~.,data=learndat,ntree=500)
+    rf1 = rfsrc(Surv(time,event)~.,data=learndat,ntree=500)
     ## leave-one-out bootstrap
     set.seed(5)
-    bootcv.se0 <- Score(list("COX1"=cox1a,"COX2"=cox2a),formula=Surv(time,event)~1,data=learndat,times=5,split.method="bootcv",B=10,se.fit=FALSE,multi.split.test=FALSE)
+    bootcv.se0 <- Score(list("COX1"=cox1a,"COX2"=cox2a,"RF"=rf1),formula=Surv(time,event)~1,data=learndat,times=5,split.method="bootcv",B=10,se.fit=FALSE,multi.split.test=FALSE)
     set.seed(5)
     bootcv.se1 <- Score(list("COX1"=cox1a,"COX2"=cox2a,"RF"=rf1),formula=Surv(time,event)~1,data=learndat,times=5,split.method="bootcv",B=10,se.fit=TRUE,multi.split.test=FALSE)
     set.seed(5)
-    bootcv.se2 <- Score(list("COX1"=cox1a,"COX2"=cox2a),formula=Surv(time,event)~1,data=learndat,times=5,split.method="bootcv",B=10,se.fit=FALSE,multi.split.test=TRUE,conservative=TRUE)
+    bootcv.se2 <- Score(list("COX1"=cox1a,"COX2"=cox2a,"RF"=rf1),formula=Surv(time,event)~1,data=learndat,times=5,split.method="bootcv",B=10,se.fit=FALSE,multi.split.test=TRUE,conservative=TRUE)
     set.seed(5)
-    bootcv.se3 <- Score(list("COX1"=cox1a,"COX2"=cox2a),formula=Surv(time,event)~1,data=learndat,times=5,split.method="bootcv",B=10,se.fit=TRUE,multi.split.test=TRUE,conservative=TRUE)
+    bootcv.se3 <- Score(list("COX1"=cox1a,"COX2"=cox2a,"RF"=rf1),formula=Surv(time,event)~1,data=learndat,times=5,split.method="bootcv",B=10,se.fit=TRUE,multi.split.test=TRUE,conservative=TRUE)
     bootcv <- list(bootcv.se0,bootcv.se1,bootcv.se2,bootcv.se3)
     ## delta
     for (i in 1:4)
@@ -52,4 +52,3 @@ test_that("bootcv survival (multi.state.test)",{
     ## for (m in c("AUC","Brier"))
         ## expect_equal(ignore_attr=TRUE,bootcv[[3]][[m]]$contrasts[,.(p)],bootcv[[4]][[m]]$contrasts[,.(p)])
 })
-}
