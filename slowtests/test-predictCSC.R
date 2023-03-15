@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: maj 18 2017 (09:23) 
 ## Version: 
-## last-updated: mar 10 2023 (14:27) 
+## last-updated: mar 15 2023 (13:16) 
 ##           By: Brice Ozenne
-##     Update #: 340
+##     Update #: 341
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -1252,7 +1252,6 @@ if(FALSE){
     range(risk - e.predEXP$absRisk)
 }
 
-## BROKEN
 ## *** tentative fix
 test_that("product.limit=-1",{
     eFIX.riskEXP <- predict(e.CSC, newdata = dtPred, times = dt$time, cause = 1,
