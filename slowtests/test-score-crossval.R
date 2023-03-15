@@ -7,6 +7,7 @@ library(data.table)
 library(ranger)
 context("riskRegression")
 
+#does give some warnings probably, nothing to serious
 test.cv <- function(){
   type.cvs <- c("cv5","loob", "bootcv")
   B <- 100
