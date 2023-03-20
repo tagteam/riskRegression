@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: Dec 21 2021 (11:04) 
 ## Version: 
-## Last-Updated: feb 23 2023 (12:10) 
+## Last-Updated: mar 15 2023 (13:14) 
 ##           By: Brice Ozenne
-##     Update #: 22
+##     Update #: 25
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -53,7 +53,6 @@ test_that("wglm - no censoring",{
                  tolerance = 1e-5)
 })
 
-## BROKEN
 ## * right censoring (but no competing risks)
 test_that("wglm - censoring",{
     #### no covariate in censoring model ####
@@ -72,7 +71,7 @@ test_that("wglm - censoring",{
     ## ate
     test.ate <- ate(test, data = dSurv, times = tau, treatment = "X1", verbose = FALSE)
     GS.ate <- suppressWarnings(logitATE(formula = Event(time,event)~X1 + X8, cens.model = ~1, cens.code = 0, cause = 1,
-                                        time = tau[5], data = dSurv, treat.model = X1~1))
+                                        time = tau[5], data = dSurv, treat.model = X1~1, binreg = FALSE))
     expect_equal(ignore_attr=TRUE,test.ate$diffRisk[5,estimate], unname(GS.ate$difriskG),
                  tolerance = 1e-5)
     expect_equal(ignore_attr=TRUE,test.ate$diffRisk[5,se], unname(GS.ate$se.difriskG),
@@ -97,7 +96,6 @@ test_that("wglm - censoring",{
     expect_equal(ignore_attr=TRUE,coef(test, time = tau[5]), summary(GS)$coef[,"Estimate"], tolerance = 1e-5)
 })
 
-## BROKEN
 ## * competing risks
 test_that("wglm - competing risks",{
     #### no covariate in censoring model ####
@@ -112,7 +110,7 @@ test_that("wglm - competing risks",{
     ## ate
     test.ate <- ate(test, data = d, times = tau, treatment = "X1", verbose = FALSE)
     GS.ate <- suppressWarnings(logitATE(formula = Event(time,event)~X1 + X8, cens.model = ~1, cens.code = 0, cause = 1,
-                                        time = tau[5], data = d, treat.model = X1~1))
+                                        time = tau[5], data = d, treat.model = X1~1, binreg = FALSE))
     expect_equal(ignore_attr=TRUE,test.ate$diffRisk[5,estimate], unname(GS.ate$difriskG),
                  tolerance = 1e-5)
     expect_equal(ignore_attr=TRUE,test.ate$diffRisk[5,se], unname(GS.ate$se.difriskG),
