@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: sep  4 2017 (10:38) 
 ## Version: 
-## last-updated: Nov 22 2022 (11:33) 
-##           By: Thomas Alexander Gerds
-##     Update #: 176
+## last-updated: mar  7 2023 (18:31) 
+##           By: Brice Ozenne
+##     Update #: 177
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -1371,6 +1371,21 @@ test_that("iidCox - stopped early", {
     test2 <- predictCox(m3.cox, newdata = dt, times = seqJump[1:5], average.iid = TRUE)
     expect_equal(ignore_attr=TRUE,GS$survival.average.iid,test1$survival.average.iid)
     expect_equal(ignore_attr=TRUE,GS$survival.average.iid,test2$survival.average.iid)
+})
+
+## ** predictCox with interacitons
+test_that("predictCox - : operator", {
+    n <- 500
+    set.seed(10)
+    dt <- sampleData(n, outcome="survival")
+
+    m.cox <-  coxph(Surv(time,event)~ X1*X6+strata(X2),data=dt, x = TRUE, y = TRUE)
+    test <- predictCox(m.cox, newdata = dt[1], times = 5:8, average.iid = TRUE)
+
+    m2.cox <-  coxph(Surv(time,event)~ X1:X6+strata(X2),data=dt, x = TRUE, y = TRUE)
+    test2 <- predictCox(m2.cox, newdata = dt[1], times = 5:8, average.iid = TRUE) ## previously an error because of missing main term
+    expect_equal(as.double(test2$survival),c(0.5786438,0.5475801,0.4452037,0.3406072), tol = 1e-6)
+
 })
 
 #----------------------------------------------------------------------

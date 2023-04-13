@@ -3,9 +3,9 @@
 ## author: Brice Ozenne
 ## created: maj 18 2017 (09:23) 
 ## Version: 
-## last-updated: Sep 17 2022 (10:00) 
-##           By: Thomas Alexander Gerds
-##     Update #: 338
+## last-updated: mar 15 2023 (13:16) 
+##           By: Brice Ozenne
+##     Update #: 341
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -713,6 +713,10 @@ test_that("[predictCSC]: Conditional CIF identical to CIF before first event", {
 })
 
 ## ** after the last observation
+## GIVES WARNING
+## ── Warning (Line 10): [predictCSC]: Conditional CIF is NA after the last observation ──
+## Estimated risk outside the range [0,1].
+## Consider setting the argument 'product.limit' to FALSE. 
 test_that("[predictCSC]: Conditional CIF is NA after the last observation", {
   predC <- predict(CSC.fit, newdata = d, cause = 2, times = ttt, landmark = max(d$time)+1)
   expect_equal(ignore_attr=TRUE,all(is.na(predC$absRisk)), TRUE)
@@ -821,7 +825,7 @@ test_that("[predictCSC] diag no strata", {
     e.CSC <- CSC(Hist(time, event) ~ X1*X6, data = dt)
 
     GS <- predict(e.CSC, newdata = dt, times = dt$time, se = TRUE, iid = TRUE, average.iid = TRUE, cause = 1)
-  test <- predict(e.CSC, newdata = dt, times = dt$time, se = TRUE, iid = TRUE, average.iid = TRUE, diag = TRUE,cause = 1)
+    test <- predict(e.CSC, newdata = dt, times = dt$time, se = TRUE, iid = TRUE, average.iid = TRUE, diag = TRUE, cause = 1)
     test2 <- predict(e.CSC, newdata = dt, times = dt$time,
                      se = FALSE, iid = FALSE, average.iid = TRUE, diag = TRUE, cause = 1)
     
@@ -878,9 +882,9 @@ test_that("[predictCSC] diag no strata", {
 
 
 test_that("[predictCSC] diag strata", {
-set.seed(10)
-dt <- sampleData(75, outcome = "competing.risks")[,.(time,event,X1,X2,X6)]
-eS.CSC <- CSC(Hist(time, event) ~ strata(X1) + X6, data = dt)
+    set.seed(10)
+    dt <- sampleData(75, outcome = "competing.risks")[,.(time,event,X1,X2,X6)]
+    eS.CSC <- CSC(Hist(time, event) ~ strata(X1) + X6, data = dt)
 
     GS <- predict(eS.CSC, newdata = dt, times = dt$time, se = TRUE, iid = TRUE, average.iid = TRUE, cause = 1)
     test <- predict(eS.CSC, newdata = dt, times = dt$time,
@@ -975,6 +979,8 @@ test_that("iid average - non parametric (hazard)", {
 })
 
 ## ** semi parametric
+## GIVES WARNING
+## Estimated risk outside the range [0,1].
 test_that("iid average - semi parametric", {
     for(iType in c("hazard","survival")){ ## iType <- "hazard"
         m.CSC <- CSC(Hist(time, event) ~ X1*X6 + strata(X2), data = d, surv.type = iType)
@@ -1072,6 +1078,8 @@ test_that("predictSurv (type=survival,diag)", {
 
 
 ## ** survival CSC
+## GIVES WARNING 
+## Estimated survival outside the range [0,1]. 
 test_that("[predictCSC] vs. predictCox (no strata) - surv.type=\"survival\"",{
     e.CSC <- CSC(Hist(time, event)~ X6, data = d, surv.type = "survival")
     jumpTime <- e.CSC$eventTimes[e.CSC$eventTimes <= max(seqTime)]
@@ -1095,6 +1103,8 @@ test_that("[predictCSC] vs. predictCox (no strata) - surv.type=\"survival\"",{
     expect_equal(ignore_attr=TRUE,GS$survival.average.iid,test$survival.average.iid)
 })
 
+## GIVES WARNING
+## Estimated survival outside the range [0,1]. 
 test_that("[predictCSC] vs. predictCox (strata) - surv.type=\"survival\"",{
     e.CSC <- CSC(Hist(time, event)~ X6 + strata(X1), data = d, surv.type = "survival")
     jumpTime <- e.CSC$eventTimes[e.CSC$eventTimes <= max(seqTime)]

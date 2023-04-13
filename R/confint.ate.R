@@ -3,9 +3,9 @@
 ## Author: Brice Ozenne
 ## Created: maj 23 2018 (14:08) 
 ## Version: 
-## Last-Updated: Mar  7 2022 (08:28) 
+## Last-Updated: Feb 10 2023 (09:19) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 1005
+##     Update #: 1006
 ##----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -219,16 +219,16 @@ confint.ate <- function(object,
     ## ** compute CI
     if(bootstrap){
         if(band && !identical(method.band,"none")){
-            stop("Adjustment for multiple comparisons not implemented for the boostrap. \n")
+            stop("Adjustment for multiple comparisons not implemented for the bootstrap. \n")
         }
         if(!identical(alternative,"two.sided")){
-            stop("Only two sided tests are implemented for the boostrap. \n")
+            stop("Only two sided tests are implemented for the bootstrap. \n")
         }
         if(!identical(out$inference.contrasts,object$contrasts)){
-            stop("Argument \'contrast\' is not available when using boostrap. \n")
+            stop("Argument \'contrast\' is not available when using bootstrap. \n")
         }
         if(!identical(out$inference.allContrasts,object$allContrasts)){
-            stop("Argument \'allContrast\' is not available when using boostrap. \n")
+            stop("Argument \'allContrast\' is not available when using bootstrap. \n")
         }
         out <- confintBoot.ate(object, estimator = estimator, out = out, seed = seed)
     }else{

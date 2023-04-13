@@ -156,6 +156,7 @@ predictCox <- function(object,
                        store.iid = "full"){
 
     call <- match.call()
+    newdata <- copy(newdata)
     ## centering
     if(!is.null(newdata)){
         if(inherits(centered,"data.frame")){
@@ -403,7 +404,6 @@ predictCox <- function(object,
       out <- list()
       ## *** reformat newdata (compute linear predictor and strata)
       new.n <- NROW(newdata)
-      ## newdata <- copy(newdata)
       setDT(newdata)
 
         Xb <- coxLP(object, data = newdata, center = FALSE)

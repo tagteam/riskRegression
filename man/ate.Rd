@@ -154,13 +154,13 @@ summary(ateFit1b, band = 1,
 summary(ateFit1b, band = 2,
        se = FALSE, type = "diffRisk", short = TRUE, quantile = TRUE)
 
-## confidence intervals / p-values computed using 1000 boostrap samples
+## confidence intervals / p-values computed using 1000 bootstrap samples
 ## (argument se = TRUE and B = 1000) 
 ateFit1c <- ate(fit, data = dtS, treatment = "X1",
                 times = 5:8, se = TRUE, B = 50, handler = "mclapply")
 ## NOTE: for real applications 50 bootstrap samples is not enough 
 
-## same but using 2 cpus for generating and analyzing the boostrap samples
+## same but using 2 cpus for generating and analyzing the bootstrap samples
 ## (parallel computation, argument mc.cores = 2) 
 ateFit1d <- ate(fit, data = dtS, treatment = "X1",
                 times = 5:8, se = TRUE, B = 50, mc.cores = 2)

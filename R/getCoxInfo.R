@@ -32,6 +32,12 @@ coxVariableName <- function(object, model.frame){
                                     special = unlist(special.object),
                                     data = model.frame))    
     ls.specials <- attr(xterms,"specials")
+    if(any(attr(xterms,"order")>1) && length(ls.specials$strata)>0){
+        ## the presence of an interaction makes attr(xterms,"specials")$strata consider the 'main' effects
+        ## which may not automatically be there. This is a fix
+        term.strata <- names(which(attr(xterms,"factors")[attr(xterms,"specials")$strata,]==1))
+        ls.specials$strata <- which(attr(xterms,"term.labels") == term.strata)
+    }
     n.specials <- length(unlist(ls.specials))
     
     n.xterms <- length(attr(xterms,"term.labels"))
@@ -51,7 +57,7 @@ coxVariableName <- function(object, model.frame){
         out["lpvars.original"] <- list(NULL)
         out["lp.sterms"] <- list(NULL)
     }
-    
+
     ## ** strata variables
     out$strataspecials <- special.object$strata
     out$is.strata <- length(ls.specials[[special.object$strata]])>0
