@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun  6 2016 (09:02)
 ## Version:
-## last-updated: Jan 16 2023 (08:55) 
-##           By: Thomas Alexander Gerds
-##     Update #: 458
+## last-updated: May  1 2023 (11:47) 
+##           By: Anders Munch
+##     Update #: 509
 #----------------------------------------------------------------------
 ##
 ### Commentary:
@@ -1402,86 +1402,93 @@ predictRisk.Hal9001 <- function(object,
 ##' @method predictRisk GLMnet
 ##' @export
 predictRisk.GLMnet <- function(object,newdata,times,...) {
-  rest <- list(...)
-  lambda=cv=NULL
-  # library(glmnet)
-  # requireNamespace(c("prodlim","glmnet"))
-  # predict.cv.glmnet <- utils::getFromNamespace("predict.cv.glmnet","glmnet")
-  # predict.glmnet <- utils::getFromNamespace("predict.glmnet","glmnet")
-  rhs <- as.formula(delete.response(object$terms))
-  if (is.null(object$surv_info)){
-    xnew <- model.matrix(rhs,data=newdata)
-    if (is.null(rest$lambda) && object$cv){
-      p <- predict(object$fit,newx=xnew,type = "response", s="lambda.min")
-    }
-    else if (is.null(rest$lambda) && !object$cv){
-      if (length(object$lambda) == 1){
-        p <- predict(object$fit,newx=xnew,type = "response", s=object$lambda)
-      }
-      else {
-        stop("Object fitted with multiple lambdas. You must pick one lambda for predictRisk!")
-      }
-    }
-    else {
-      if (all(rest$lambda %in% object$lambda)){
-        p <- predict(object$fit,newx=xnew,type = "response", s=rest$lambda)
-      }
-      else {
-        stop("The fitted model was not fitted with one of the lambdas that was specified in predictRisk. ")
-      }
-    }
-  }
-  else {
-    # convert covariates to dummy variables
-    newdata$dummy.time=rep(1,NROW(newdata))
-    newdata$dummy.event=rep(1,NROW(newdata))
-    dummy.formula=stats::update.formula(rhs,"prodlim::Hist(dummy.time,dummy.event)~.")
-    EHF <- prodlim::EventHistory.frame(formula=dummy.formula,
-                                       data=newdata,
-                                       specials = NULL,
-                                       unspecialsDesign=TRUE)
-    newdata$dummy.time = NULL
-    newdata$dummy.event = NULL
-    # blank Cox object obtained with riskRegression:::coxModelFrame
-    info <- object$surv_info
-    if (is.null(rest$lambda) && object$cv){
-      coxnet_pred <- c(exp(predict(object$fit,newx=EHF$design,type = "link", s="lambda.min")))
-    }
-    else if (is.null(rest$lambda) && !object$cv){
-      if (length(object$lambda) == 1){
-        coxnet_pred <- c(exp(predict(object$fit,newx=EHF$design,type = "link", s=object$lambda)))
-      }
-      else {
-        stop("Object fitted with multiple lambdas. You must pick one lambda for predictRisk!")
-      }
+    rest <- list(...)
+    lambda=cv=NULL
+    # library(glmnet)
+    # requireNamespace(c("prodlim","glmnet"))
+    # predict.cv.glmnet <- utils::getFromNamespace("predict.cv.glmnet","glmnet")
+    # predict.glmnet <- utils::getFromNamespace("predict.glmnet","glmnet")
+    rhs <- as.formula(delete.response(object$terms))
+    if (is.null(object$surv_info)){
+        xnew <- model.matrix(rhs,data=newdata)
+        if (is.null(rest$lambda) && object$cv){
+            p <- predict(object$fit,newx=xnew,type = "response", s="lambda.min")
+        }
+        else if (is.null(rest$lambda) && !object$cv){
+            if (length(object$lambda) == 1){
+                p <- predict(object$fit,newx=xnew,type = "response", s=object$lambda)
+            }
+            else {
+                stop("Object fitted with multiple lambdas. You must pick one lambda for predictRisk!")
+            }
+        }
+        else {
+            if (all(rest$lambda %in% object$lambda)){
+                p <- predict(object$fit,newx=xnew,type = "response", s=rest$lambda)
+            }
+            else {
+                stop("The fitted model was not fitted with one of the lambdas that was specified in predictRisk. ")
+            }
+        }
     }
     else {
-      if (all(rest$lambda %in% object$lambda)){
-        coxnet_pred <- c(exp(predict(object$fit,newx=EHF$design,type = "link", s=rest$lambda)))
-      }
-      else {
-        stop("The fitted model was not fitted with one of the lambdas that was specified in predictRisk. ")
-      }
+        # convert covariates to dummy variables
+        newdata$dummy.time=rep(1,NROW(newdata))
+        newdata$dummy.event=rep(1,NROW(newdata))
+        dummy.formula=stats::update.formula(rhs,"prodlim::Hist(dummy.time,dummy.event)~.")
+        EHF <- prodlim::EventHistory.frame(formula=dummy.formula,
+                                           data=newdata,
+                                           specials = NULL,
+                                           unspecialsDesign=TRUE)
+        newdata$dummy.time = NULL
+        newdata$dummy.event = NULL
+        if (is.null(rest$lambda) && object$cv){
+            lambda = "lambda.min"
+        }
+        else if (is.null(rest$lambda) && !object$cv){
+            if (length(object$lambda) == 1){
+                lambda = object$lambda
+            }
+            else {
+                stop("Object fitted with multiple lambdas. You must pick one lambda for predictRisk!")
+            }
+        }
+        else {            
+            if(length(rest$lambda) != 1) stop("Predictions for multiple lambdas not implemented yet.")
+            lambda = rest$lambda
+            ## if (all(rest$lambda %in% object$lambda)){
+            ##     coxnet_pred <- c(exp(predict(object$fit,newx=EHF$design,type = "link", s=rest$lambda)))         
+            ## }
+            ## else {
+            ##     stop("The fitted model was not fitted with one of the lambdas that was specified in predictRisk. ")
+            ## }
+        }
+        ## Prediction on old data set used to calculate the Breslow estimator
+        ## (Make predict method explicit here?)
+        train_eXb <- c(exp(predict(object$fit,newx=object$sorted_x_train,type = "link", s=lambda)))
+        # blank Cox object obtained with riskRegression:::coxModelFrame
+        info <- object$surv_info
+        L0 <- riskRegression::baseHaz_cpp(starttimes = info$start,
+                                          stoptimes = info$stop,
+                                          status = info$status,
+                                          eXb = train_eXb,
+                                          strata = 1,
+                                          nPatients = NROW(info$stop),
+                                          nStrata = 1,
+                                          emaxtimes = max(info$stop),
+                                          predtimes = sort(unique(info$stop)),
+                                          cause = 1,
+                                          Efron = TRUE)
+        ## Prediction on new data set
+        coxnet_pred <- c(exp(predict(object$fit,newx=EHF$design,type = "link", s=lambda)))        
+        coxnetSurv <- exp(-coxnet_pred%o%L0$cumhazard)
+        where <- sindex(jump.times=unique(info$stop),eval.times=times)
+        p <- cbind(0,1-coxnetSurv)[,1+where]
+        if (NROW(p) != NROW(newdata) || NCOL(p) != length(times)) {
+            stop(paste("\nPrediction matrix has wrong dimensions:\nRequested newdata x times: ", NROW(newdata), " x ", length(times), "\nProvided prediction matrix: ", NROW(p), " x ", NCOL(p), "\n\n", sep = ""))
+        }
     }
-    L0 <- riskRegression::baseHaz_cpp(starttimes = info$start,
-                                      stoptimes = info$stop,
-                                      status = info$status,
-                                      eXb = coxnet_pred,
-                                      strata = 1,
-                                      nPatients = NROW(info$stop),
-                                      nStrata = 1,
-                                      emaxtimes = max(info$stop),
-                                      predtimes = sort(unique(info$stop)),
-                                      cause = 1,
-                                      Efron = TRUE)
-    coxnetSurv <- exp(-coxnet_pred%o%L0$cumhazard)
-    where <- sindex(jump.times=unique(info$stop),eval.times=times)
-    p <- cbind(0,1-coxnetSurv)[,1+where]
-    if (NROW(p) != NROW(newdata) || NCOL(p) != length(times)) {
-      stop(paste("\nPrediction matrix has wrong dimensions:\nRequested newdata x times: ", NROW(newdata), " x ", length(times), "\nProvided prediction matrix: ", NROW(p), " x ", NCOL(p), "\n\n", sep = ""))
-    }
-  }
-  p
+    p
 }
 
 ## * predictRisk.singleEventCB
