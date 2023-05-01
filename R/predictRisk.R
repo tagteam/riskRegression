@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Jun  6 2016 (09:02)
 ## Version:
-## last-updated: Apr 28 2023 (09:55) 
+## last-updated: May  1 2023 (09:05) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 481
+##     Update #: 486
 #----------------------------------------------------------------------
 ##
 ### Commentary:
@@ -1407,7 +1407,18 @@ predictRisk.Hal9001 <- function(object,
 ##' @export
 predictRisk.GLMnet <- function(object,newdata,times,...) {
     args <- list(...)
-    if (length(args$lambda)>0) stopifnot(all(is.numeric(args$lambda)))
+    if (length(args$lambda)>0){
+        stopifnot(all(is.numeric(args$lambda)))
+        if (length(args$lambda)>1)
+            stop("You must pick a single lambda value for predictRisk!")
+        else{
+            pos.lambda <- match(args$lambda,object$lambda,nomatch = 0)
+            if (pos.lambda == 0)
+                stop("The fitted model was not fitted with the specified penalty parameter (lambda)")
+        }
+    }else{
+        pos.lambda <- 0
+    }
     lambda=cv=NULL
     # library(glmnet)
     # requireNamespace(c("prodlim","glmnet"))
@@ -1419,7 +1430,7 @@ predictRisk.GLMnet <- function(object,newdata,times,...) {
         if (is.null(args$lambda) && object$cv){
             p <- predict(object$fit,newx=xnew,type = "response", s="lambda.min")
         }
-        else if (is.null(args$lambda) && !object$cv){
+        else if (pos.lambda == 0 && !object$cv){
             if (length(object$lambda) == 1){
                 p <- predict(object$fit,newx=xnew,type = "response", s=object$lambda)
             }
@@ -1428,50 +1439,41 @@ predictRisk.GLMnet <- function(object,newdata,times,...) {
             }
         }
         else {
-            if (all(args$lambda %in% object$lambda)){
-                p <- predict(object$fit,newx=xnew,type = "response", s=args$lambda)
-            }
-            else {
-                stop("The fitted model was not fitted with one of the lambdas that was specified in predictRisk. ")
-            }
+            p <- predict(object$fit,newx=xnew,type = "response", s=args$lambda)
         }
-    }
-    else {
+    } else {
         # convert covariates to dummy variables
         newdata$dummy.time=rep(1,NROW(newdata))
         newdata$dummy.event=rep(1,NROW(newdata))
         dummy.formula=stats::update.formula(rhs,"prodlim::Hist(dummy.time,dummy.event)~.")
-        EHF <- prodlim::EventHistory.frame(formula=dummy.formula,
-                                           data=newdata,
-                                           specials = NULL,
-                                           unspecialsDesign=TRUE)
+        EHF <- prodlim::EventHistory.frame(formula=dummy.formula,data=newdata,specials = NULL,unspecialsDesign=TRUE)
         newdata$dummy.time = NULL
         newdata$dummy.event = NULL
         # blank Cox object obtained with riskRegression:::coxModelFrame
-        if (is.null(args$lambda) && object$cv){
+        if (pos.lambda == 0 && object$cv){
             coxnet_pred <- c(exp(predict(object$fit,newx=EHF$design,type = "link", s="lambda.min")))
         }
-        else if (is.null(args$lambda) && !object$cv){
+        else if (pos.lambda == 0 && !object$cv){
             if (length(object$lambda) == 1){
                 coxnet_pred <- c(exp(predict(object$fit,newx=EHF$design,type = "link", s=object$lambda)))
             }
             else {
-                stop("Object fitted with multiple lambdas. You must pick one lambda for predictRisk!")
+                stop("Object fitted with multiple lambdas. You must pick a single value for lambda.")
             }
-        }
-        else {
-            if (all(args$lambda %in% object$lambda)){
+        } else {
+            if (all((pos.lambda)>0)){
                 coxnet_pred <- c(exp(predict(object$fit,newx=EHF$design,type = "link", s=args$lambda)))
             }
             else {
-                stop("The fitted model was not fitted with one of the lambdas that was specified in predictRisk. ")
+                stop(paste0("The fitted model was not fitted with the following penalty parameters (lambdas): ",
+                            paste0(args$lambda[pos.lambda == 0],collapse = ", ")))
             }
         }
         browser()
         L0 <- riskRegression::baseHaz_cpp(starttimes = info$start,
                                           stoptimes = info$stop,
                                           status = info$status,
-                                          eXb = coxnet_pred,
+                                          eXb = info$linear_predictor[,pos.lambda],
                                           strata = 1,
                                           nPatients = NROW(info$stop),
                                           nStrata = 1,
@@ -1483,9 +1485,9 @@ predictRisk.GLMnet <- function(object,newdata,times,...) {
         coxnetSurv <- exp(-coxnet_pred%o%L0)
         where <- sindex(jump.times=unique(info$stop),eval.times=times)
         p <- cbind(0,1-coxnetSurv)[,1+where]
-        if (NROW(p) != NROW(newdata) || NCOL(p) != length(times)) {
-            stop(paste("\nPrediction matrix has wrong dimensions:\nRequested newdata x times: ", NROW(newdata), " x ", length(times), "\nProvided prediction matrix: ", NROW(p), " x ", NCOL(p), "\n\n", sep = ""))
-        }
+    }
+    if (NROW(p) != NROW(newdata) || NCOL(p) != length(times)) {
+        stop(paste("\nPrediction matrix has wrong dimensions:\nRequested newdata x times: ", NROW(newdata), " x ", length(times), "\nProvided prediction matrix: ", NROW(p), " x ", NCOL(p), "\n\n", sep = ""))
     }
     p
 }
