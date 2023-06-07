@@ -15,7 +15,7 @@
 ##
 ### Code:
 
-AUC.competing.risks <- function(DT,MC,se.fit,conservative,cens.model,keep.vcov=FALSE,multi.split.test,alpha,N,NT,NF,dolist,cause,states,ROC,IC.data,...){
+AUC.competing.risks <- function(DT,breaks=NULL,MC,se.fit,conservative,cens.model,keep.vcov=FALSE,multi.split.test,alpha,N,NT,NF,dolist,cause,states,ROC,IC.data,...){
     ID=model=times=risk=Cases=time=status=event=Controls1=Controls2=TPR=FPR=WTi=Wt=ipcwControls1=ipcwControls2=ipcwCases=IF.AUC=lower=se=upper=AUC=nth.times=NULL
     aucDT <- DT[model>0]
     dolist <- dolist[sapply(dolist,function(do){match("0",do,nomatch=0L)})==0]

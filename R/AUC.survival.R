@@ -15,7 +15,7 @@
 ##
 ### Code:
 
-AUC.survival <- function(DT,MC,se.fit,conservative,cens.model,keep.vcov=FALSE,multi.split.test,alpha,N,NT,NF,dolist,ROC,IC.data,...){
+AUC.survival <- function(DT,breaks=NULL,MC,se.fit,conservative,cens.model,keep.vcov=FALSE,multi.split.test,alpha,N,NT,NF,dolist,ROC,IC.data,...){
     ID=model=times=risk=Cases=time=status=Controls=TPR=FPR=WTi=Wt=ipcwControls=ipcwCases=IF.AUC=lower=se=upper=AUC=nth.times=NULL
     cause <- 1
     aucDT <- DT[model>0]

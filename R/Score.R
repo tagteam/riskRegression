@@ -484,6 +484,11 @@ Score.list <- function(object,
                        predictRisk.args,
                        debug=0L,
                        censoring.save.memory = FALSE,
+                       breaks = seq(0,1,.01), 
+                       RocAverageMethod='vertical',
+                       RocAverageGrid=switch(RocAverageMethod,
+                                             "vertical"=seq(0,1,.01),
+                                             "horizontal"=seq(1,0,-.01)),
                        ...){
     se.conservative=IPCW=IF.AUC.conservative=IF.AUC0=IF.AUC=IC0=Brier=AUC=casecontrol=se=nth.times=time=status=ID=WTi=risk=IF.Brier=lower=upper=crossval=b=time=status=model=reference=p=model=pseudovalue=ReSpOnSe=residuals=event=j=NULL
 
@@ -688,7 +693,9 @@ c.f., Chapter 7, Section 5 in Gerds & Kattan 2021. Medical risk prediction model
             }
         }
         if ("ROC" %in% plots){
-            warning("Cannot (not yet) do ROC analysis in combination with internal validation\n. Check devtools::install_github('tagteam/riskRegression') for progress.")
+            if (split.method$name[1]!="BootCv" && response.type[1] != "binary"){
+              warning("Can only (yet) do ROC analysis in combination with internal validation for binary data and split.method=='bootcv'\n. Check devtools::install_github('tagteam/riskRegression') for progress.")
+            }
         }
     }
 
@@ -971,7 +978,8 @@ c.f., Chapter 7, Section 5 in Gerds & Kattan 2021. Medical risk prediction model
                                       ipa = ipa,
                                       ROC=FALSE,
                                       MC=Weights$IC,
-                                      IC.data=Weights$IC.data)
+                                      IC.data=Weights$IC.data,
+                                      breaks=NULL)
         if (debug) message("computed apparent performance")
     }
     # }}}
@@ -1163,7 +1171,8 @@ if (split.method$internal.name%in%c("BootCv","LeaveOneOutBoot","crossval")){
                                        ipa=ipa,
                                        ROC=FALSE,
                                        MC=Weights$IC,
-                                       IC.data=Weights$IC.data)
+                                       IC.data=Weights$IC.data,
+                                       breaks=NULL)
     }
     else if (split.method$name=="LeaveOneOutBoot" | split.method$internal.name =="crossval"){  ## Testing if the crossval works in this loop
         message(paste0("Calculating the performance metrics in long format\nlevel-1 data with ",
@@ -1201,11 +1210,15 @@ if (split.method$internal.name%in%c("BootCv","LeaveOneOutBoot","crossval")){
     }
     if (split.method$name=="BootCv"){
         # {{{ bootcv
+        ## implement ROC here
         if (parallel=="snow") exports <- c("DT.B","N.b","cens.model","multi.split.test") else exports <- NULL
         if (!is.null(progress.bar)){
             if (!(progress.bar %in% c(1,2,3))) progress.bar <- 3
             pb1 <- txtProgressBar(max = B, style = progress.bar,width=20)
             message(paste0("Calculating the performance metrics in ",B," validation data sets"))
+        }
+        if (!("ROC" %in% plots)){
+          breaks <- NULL
         }
         crossval <- foreach::foreach(j=1:B,.export=exports,.packages="data.table",.errorhandling=errorhandling) %dopar%{
             DT.b <- DT.B[b==j]
@@ -1238,15 +1251,55 @@ if (split.method$internal.name%in%c("BootCv","LeaveOneOutBoot","crossval")){
                                summary=summary,
                                ibs=ibs,
                                ipa=ipa,
-                               ROC=FALSE,
+                               ROC=ROC,
                                MC=Weights$IC,
-                               IC.data=Weights$IC.data)
+                               IC.data=Weights$IC.data, 
+                               breaks=breaks)
         }
         if (!is.null(progress.bar)){
             cat("\n")
         }
         crossvalPerf <- lapply(metrics,function(m) crossvalPerf.bootcv(m,crossval,se.fit,multi.split.test,keep.cv,byvars,alpha))
         names(crossvalPerf) <- metrics
+        
+        if ("ROC" %in% plots){
+          if (null.model){
+            models <- mlabels[-1]
+          }
+          else {
+            models <- mlabels
+          }
+          m.res <- list()
+          for (m in models){
+            if (RocAverageMethod == "vertical"){
+              temp <- lapply(crossval,function(xx){
+                approx(x=xx$ROC$plotframe[model==m]$FPR,
+                       y=xx$ROC$plotframe[model==m]$TPR,
+                       xout=RocAverageGrid,
+                       ties=median,
+                       yleft=0, #have to consider if yleft and yright have to be modified.
+                       yright=1)$y
+              })
+              m.res[[m]] <- data.table(model=m, risk = rep(NA,length(RocAverageGrid)),TPR=Reduce('+', temp) / B, FPR=RocAverageGrid)
+            }
+            else {
+              temp <- lapply(crossval,function(xx){
+                approx(x=xx$ROC$plotframe[model==m]$TPR,
+                       y=xx$ROC$plotframe[model==m]$FPR,
+                       xout=RocAverageGrid,
+                       ties=median,
+                       yleft=0, #have to consider if yleft and yright have to be modified.
+                       yright=1)$y
+              })
+              m.res[[m]] <- data.table(model=m, risk = rep(NA,length(RocAverageGrid)),TPR=RocAverageGrid, FPR=Reduce('+', temp) / B)
+            }
+          }
+          plotframe <- rbindlist(m.res)
+          setorder(plotframe, cols = "TPR")
+          ROC.res <- list(plotframe=plotframe,plotmethod="ROC")
+          class(ROC.res) <- "scoreROC"
+          crossvalPerf[["ROC"]] <- ROC.res
+        }
         if (ipa==TRUE){
             if (response.type=="binary")
                 crossvalPerf[["Brier"]][["score"]][,IPA:=1-Brier/Brier[model=="Null model"]]
