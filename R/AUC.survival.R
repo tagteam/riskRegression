@@ -33,19 +33,30 @@ AUC.survival <- function(DT,breaks=NULL,MC,se.fit,conservative,cens.model,keep.v
     aucDT[Cases==0,ipcwCases:=0]
     aucDT[Controls==0,ipcwControls:=0]
     ## compute denominator
-    aucDT[,TPR:=cumsum(ipcwCases)/sum(ipcwCases),by=list(model,times)]
+    aucDT[,TPR:=cumsum(ipcwCases)/sum(ipcwCases),by=list(model,times)] # technically sum_i I(M_i >= M_j) not M_i > M_j
     aucDT[,FPR:=(cumsum(ipcwControls))/(sum(ipcwControls)),by=list(model,times)]
     nodups <- aucDT[,c(!duplicated(risk)[-1],TRUE),by=list(model,times)]$V1
-    if (ROC==TRUE) {
-        output <- list(ROC=aucDT[nodups,c("model","times","risk","TPR","FPR"),with=FALSE])
-    }else{
-        output <- NULL
-    }
-    AireTrap <- function(FP,TP,N){
-        N <- length(FP)
-        sum((FP-c(0,FP[-N]))*((c(0,TP[-N])+TP)/2))
+    AireTrap <- function(FP,TP){
+      N <- length(FP)
+      sum((FP-c(0,FP[-N]))*((c(0,TP[-N])+TP)/2))
     }
     score <- aucDT[nodups,list(AUC=AireTrap(FPR,TPR)),by=list(model,times)]
+    if (ROC==TRUE) {
+      if (is.null(breaks)){
+        output <- list(ROC=aucDT[nodups,c("model","times","risk","TPR","FPR"),with=FALSE])
+      }
+      else {
+        breaks <- sort(breaks,decreasing = TRUE)
+        helper.fun <- function(FPR,TPR,risk, breaks){
+          indeces <- sindex(risk,breaks,comp = "greater",FALSE)
+          data.table(risk = breaks, TPR = c(rep(0,sum(indeces==0)),TPR[indeces[indeces!=0]]), FPR = c(rep(0,sum(indeces==0)),FPR[indeces[indeces!=0]]))
+        }
+        output <- list(ROC=aucDT[, helper.fun(FPR,TPR,risk,breaks=breaks),by=list(model,times)])
+      }
+    }else{
+      output <- NULL
+    }
+    
     data.table::setkey(score,model,times)
     aucDT <- merge(score,aucDT,all=TRUE)
     if (se.fit[[1]]==1L || multi.split.test[[1]]==TRUE){

@@ -41,6 +41,10 @@ Score(object, ...)
   predictRisk.args,
   debug = 0L,
   censoring.save.memory = FALSE,
+  breaks = seq(0, 1, 0.01),
+  RocAverageMethod = "vertical",
+  RocAverageGrid = switch(RocAverageMethod, vertical = seq(0, 1, 0.01), horizontal =
+    seq(1, 0, -0.01)),
   ...
 )
 }

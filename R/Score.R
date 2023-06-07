@@ -529,6 +529,7 @@ Score.list <- function(object,
     }
     ## Plots <- lapply(plots,grep,c("Roc","Cal"),ignore.case=TRUE,value=TRUE)
     if ("ROC" %in% plots) {
+        ROC <- TRUE
         ## add AUC if needed
         if (!("AUC" %in% metrics)) metrics <- c(metrics,"AUC")
     }
@@ -693,8 +694,8 @@ c.f., Chapter 7, Section 5 in Gerds & Kattan 2021. Medical risk prediction model
             }
         }
         if ("ROC" %in% plots){
-            if (split.method$name[1]!="BootCv" && response.type[1] != "binary"){
-              warning("Can only (yet) do ROC analysis in combination with internal validation for binary data and split.method=='bootcv'\n. Check devtools::install_github('tagteam/riskRegression') for progress.")
+            if (split.method$name[1]!="BootCv"){
+              warning("Can only (yet) do ROC analysis in combination with internal validation for split.method=='bootcv'\n. Check devtools::install_github('tagteam/riskRegression') for progress.")
             }
         }
     }
@@ -1263,40 +1264,48 @@ if (split.method$internal.name%in%c("BootCv","LeaveOneOutBoot","crossval")){
         names(crossvalPerf) <- metrics
         
         if ("ROC" %in% plots){
-          if (null.model){
-            models <- mlabels[-1]
-          }
-          else {
-            models <- mlabels
-          }
-          m.res <- list()
-          for (m in models){
+          cumROC <- lapply(crossval,function(x) x[["ROC"]][["plotframe"]])
+          TPR=FPR=NULL
+          fancy.fun <- function(risk,TPR,FPR,RocAverageMethod,RocAverageGrid){
             if (RocAverageMethod == "vertical"){
-              temp <- lapply(crossval,function(xx){
-                approx(x=xx$ROC$plotframe[model==m]$FPR,
-                       y=xx$ROC$plotframe[model==m]$TPR,
-                       xout=RocAverageGrid,
-                       ties=median,
-                       yleft=0, #have to consider if yleft and yright have to be modified.
-                       yright=1)$y
-              })
-              m.res[[m]] <- data.table(model=m, risk = rep(NA,length(RocAverageGrid)),TPR=Reduce('+', temp) / B, FPR=RocAverageGrid)
+              temp <- stats::approx(x=FPR,
+                                    y=TPR,
+                                    xout=RocAverageGrid,
+                                    ties=median,
+                                    yleft=0,
+                                    yright=1)$y
+              list(risk = rep(NA,length(RocAverageGrid)),TPR=temp, FPR=RocAverageGrid)
             }
             else {
-              temp <- lapply(crossval,function(xx){
-                approx(x=xx$ROC$plotframe[model==m]$TPR,
-                       y=xx$ROC$plotframe[model==m]$FPR,
-                       xout=RocAverageGrid,
-                       ties=median,
-                       yleft=0, #have to consider if yleft and yright have to be modified.
-                       yright=1)$y
-              })
-              m.res[[m]] <- data.table(model=m, risk = rep(NA,length(RocAverageGrid)),TPR=RocAverageGrid, FPR=Reduce('+', temp) / B)
+              temp <- stats::approx(x=TPR,
+                                    y=FPR,
+                                    xout=RocAverageGrid,
+                                    ties=median,
+                                    yleft=0, #have to consider if yleft and yright have to be modified.
+                                    yright=1)$y
+              data.table(risk = rep(NA,length(RocAverageGrid)),TPR=RocAverageGrid, FPR=temp)
             }
           }
-          plotframe <- rbindlist(m.res)
-          setorder(plotframe, cols = "TPR")
-          ROC.res <- list(plotframe=plotframe,plotmethod="ROC")
+          if (response.type == "binary"){
+            cumROC <- lapply(cumROC,function(x) x[,fancy.fun(risk,TPR,FPR,RocAverageMethod=RocAverageMethod,RocAverageGrid=RocAverageGrid),by=list(model)])
+            if (RocAverageMethod == "vertical"){
+              cumROC <- rbindlist(cumROC)[,lapply(.SD, mean),by=list(model,FPR)]
+            }
+            else {
+              cumROC <- rbindlist(cumROC)[,lapply(.SD, mean),by=list(model,TPR)]
+            }
+          }
+          else {
+            cumROC <- lapply(cumROC,function(x) x[,fancy.fun(risk,TPR,FPR,RocAverageMethod=RocAverageMethod,RocAverageGrid=RocAverageGrid),by=list(model,times)])
+            if (RocAverageMethod == "vertical"){
+              cumROC <- rbindlist(cumROC)[,lapply(.SD, mean),by=list(model,times,FPR)]
+            }
+            else {
+              cumROC <- rbindlist(cumROC)[,lapply(.SD, mean),by=list(model,times,TPR)]
+            }
+          }
+          setorder(cumROC, cols = "TPR")
+          ROC.res <- list(plotframe=cumROC,plotmethod="ROC")
           class(ROC.res) <- "scoreROC"
           crossvalPerf[["ROC"]] <- ROC.res
         }

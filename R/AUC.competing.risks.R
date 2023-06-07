@@ -41,7 +41,17 @@ AUC.competing.risks <- function(DT,breaks=NULL,MC,se.fit,conservative,cens.model
     aucDT[,FPR:=(cumsum(ipcwControls1)+cumsum(ipcwControls2))/(sum(ipcwControls2)+sum(ipcwControls1)),by=list(model,times)]
     nodups <- aucDT[,c(!duplicated(risk)[-1],TRUE),by=list(model,times)]$V1
     if (ROC==TRUE) {
+      if (is.null(breaks)){
         output <- list(ROC=aucDT[nodups,c("model","times","risk","TPR","FPR"),with=FALSE])
+      }
+      else {
+        breaks <- sort(breaks,decreasing = TRUE)
+        helper.fun <- function(FPR,TPR,risk, breaks){
+          indeces <- sindex(risk,breaks,comp = "greater",FALSE)
+          data.table(risk = breaks, TPR = c(rep(0,sum(indeces==0)),TPR[indeces[indeces!=0]]), FPR = c(rep(0,sum(indeces==0)),FPR[indeces[indeces!=0]]))
+        }
+        output <- list(ROC=aucDT[, helper.fun(FPR,TPR,risk,breaks=breaks),by=list(model,times)])
+      }
     }else{
         output <- NULL
     }
