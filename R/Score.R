@@ -111,6 +111,7 @@
 ##' @param ncpus integer: number of processes to be used in parallel operation.
 ##' @param cl An optional \code{parallel} or \code{snow} cluster for use if \code{parallel = "snow"}. If not supplied, a cluster on the local machine is created for the duration of the \code{Score} call.
 ##' @param progress.bar Style for \code{txtProgressBar}. Can be 1,2,3 see \code{help(txtProgressBar)} or NULL to avoid the progress bar.
+##' @param errorhandling Argument passed as \code{.errorhandling} to foreach. Default is \code{"pass"}.
 ##' @param keep list of characters (not case sensitive) which determines additional output.
 ##' \code{"residuals"} provides Brier score residuals and
 ##' \code{"splitindex"} provides sampling index used to split the data into training and validation sets. It is a function, whose argument is the bootstrap sample, which one wishes to look at.
@@ -138,11 +139,25 @@
 ##'  specify additional arguments for the function riskRegression::predictRisk.rfsrc which will pass
 ##'  these on to the function randomForestSRC::predict.rfsrc. A specific example in this case would be
 ##'  \code{list(rfsrc=list(na.action="na.impute"))}.
-##'  
-##'
+##' 
 ##'  A more flexible approach is to write a new predictRisk S3-method. See Details.
-##' @param errorhandling Argument passed as \code{.errorhandling} to foreach. Default is \code{"pass"}.
 ##' @param debug Logical. If \code{TRUE} indicate landmarks in progress of the program.
+##' @param censoring.save.memory Only relevant in censored data where censoring weigths are obtained with
+##' Cox regression and argument \code{conservative} is set to \code{FALSE}. If \code{TRUE}, save memory by not storing the influence function
+##' of the cumulative hazard of the censoring as a matrix when calculating standard errors
+##' with Cox censoring. This can allow one to use \code{Score} on larger test data sets,
+##' but may be slower.
+##' @param breaks Break points for computing the Roc curve. Defaults to
+#' \code{seq(0,1,.01)} when some form of crossvalidation is applied, otherwise
+#' to all unique values of the predictive marker.
+##' @param roc.method Method for averaging ROC curves across data splits.
+#' If \code{'horizontal'} average crossvalidated specificities for fixed sensitivity values,
+#' specified in \code{roc.grid}, otherwise, if  \code{'vertical'},
+#' average crossvalidated specificities for fixed sensitivity values.
+#' See Fawcett, T. (2006) for details.
+##' @param roc.grid Grid points for the averaging of Roc curves.
+#' A sequence of values at which to compute averages across the ROC curves
+#' obtained for different data splits during crossvalidation.
 ##' @param ... Named list containging additional arguments that are passed on to the \code{predictRisk} methods corresponding to object. See examples.
 ##' @return List with scores and assessments of contrasts, i.e.,
 ##'     tests and confidence limits for performance and difference in performance (AUC and Brier),
@@ -499,9 +514,7 @@ Score.list <- function(object,
                        censoring.save.memory = FALSE,
                        breaks = seq(0,1,.01), 
                        roc.method='vertical',
-                       roc.grid=switch(roc.method,
-                                       "vertical"=seq(0,1,.01),
-                                       "horizontal"=seq(1,0,-.01)),
+                       roc.grid=switch(roc.method,"vertical"=seq(0,1,.01),"horizontal"=seq(1,0,-.01)),
                        ...){
     se.conservative=IPCW=IF.AUC.conservative=IF.AUC0=IF.AUC=IC0=Brier=AUC=casecontrol=se=nth.times=time=status=ID=WTi=risk=IF.Brier=lower=upper=crossval=b=time=status=model=reference=p=model=pseudovalue=ReSpOnSe=residuals=event=j=NULL
 
