@@ -3,9 +3,9 @@
 ## author: Thomas Alexander Gerds
 ## created: Oct 23 2016 (08:53) 
 ## Version: 
-## last-updated: Jun  8 2023 (11:24) 
+## last-updated: Jun  8 2023 (14:00) 
 ##           By: Thomas Alexander Gerds
-##     Update #: 2305
+##     Update #: 2313
 #----------------------------------------------------------------------
 ## 
 ### Commentary: 
@@ -295,14 +295,14 @@ ate <- function(event,
                 censor = NULL,
                 data,
                 data.index = NULL,
-                formula,
+                formula = NULL,
                 estimator = NULL,
                 strata = NULL,
                 contrasts = NULL,
                 allContrasts = NULL,
                 times,
                 cause = NA,
-                landmark,
+                landmark = NULL,
                 se = TRUE,
                 iid = (B == 0) && (se || band),
                 known.nuisance = FALSE,
@@ -688,7 +688,7 @@ ate_initArgs <- function(object.event,
                          object.treatment,
                          object.censor,
                          landmark,
-                         formula,
+                         formula = NULL,
                          estimator,
                          mydata, ## instead of data to avoid confusion between the function data and the dataset when running the bootstrap
                          data.index,
@@ -896,7 +896,7 @@ ate_initArgs <- function(object.event,
     ## presence of time dependent covariates
     TD <- switch(class(object.event)[[1]],
                  "coxph"=(attr(object.event$y,"type")=="counting"),
-                 "CauseSpecificCox"=length(attr(object.event$models[[1]]$y,"type")=="counting")>0,
+                 "CauseSpecificCox"=(attr(object.event$models[[1]]$y,"type")[1]=="counting"),
                  FALSE)
     if(TD){
         fct.pointEstimate <- ATE_TD
