@@ -227,7 +227,7 @@ fit <- lrm(Y~X1+X8,data=d)
 predictRisk(fit,newdata=nd)
 
 # GLMnet example
-fit <- GLMnet(Y~X1+X8,data=d) ## Uses CV as default
+fit <- GLMnet(Y~X1+X8,data=d,family="binomial") ## Uses CV as default
 predictRisk(fit,newdata=nd)
 
 \dontrun{
