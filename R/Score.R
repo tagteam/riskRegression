@@ -112,6 +112,13 @@
 ##' @param cl An optional \code{parallel} or \code{snow} cluster for use if \code{parallel = "snow"}. If not supplied, a cluster on the local machine is created for the duration of the \code{Score} call.
 ##' @param progress.bar Style for \code{txtProgressBar}. Can be 1,2,3 see \code{help(txtProgressBar)} or NULL to avoid the progress bar.
 ##' @param keep list of characters (not case sensitive) which determines additional output.
+##' @param breaks Break points for computing the ROC curve when crossvalidation is applied. Defaults to
+##' \code{seq(0,1,.01)}, although it is not implmeneted for \code{split.method = "loob"} or \code{split.method = "cvk"} and \code{B} > 1 yet.
+##' @param roc.method Method for averaging ROC curves across data splits.
+##' If \code{'horizontal'} average crossvalidated specificities for fixed sensitivity values,
+##' specified in \code{roc.grid}, otherwise, if \code{'vertical'},
+##' average crossvalidated sensitivities for fixed specificity values.
+##' See Fawcett, T. (2006) for details.
 ##' \code{"residuals"} provides Brier score residuals and
 ##' \code{"splitindex"} provides sampling index used to split the data into training and validation sets. It is a function, whose argument is the bootstrap sample, which one wishes to look at.
 ##' \code{"vcov"} provides the variance-covariance matrix of the estimated parameters.
@@ -435,6 +442,9 @@
 #' Michael W Kattan and Thomas A Gerds. The index of prediction accuracy: an
 #' intuitive measure useful for evaluating risk prediction models. Diagnostic
 #' and Prognostic Research, 2(1):7, 2018.
+#' 
+#' Fawcett, T. (2006). An introduction to ROC analysis. Pattern
+#' Recognition Letters, 27, 861-874.
 ##'
 ##' @export Score.list
 ##' @export
@@ -532,6 +542,9 @@ Score.list <- function(object,
         ROC <- TRUE
         ## add AUC if needed
         if (!("AUC" %in% metrics)) metrics <- c(metrics,"AUC")
+    }
+    else {
+      ROC <- FALSE
     }
     if ("Calibration" %in% plots) {
         ## add pseudo if needed
@@ -694,8 +707,8 @@ c.f., Chapter 7, Section 5 in Gerds & Kattan 2021. Medical risk prediction model
             }
         }
         if ("ROC" %in% plots){
-            if (split.method$name[1]!="BootCv"){
-              warning("Can only (yet) do ROC analysis in combination with internal validation for split.method=='bootcv'\n. Check devtools::install_github('tagteam/riskRegression') for progress.")
+            if (split.method$name[1]=="loob" || split.method$internal.name[1] == "crossval" && B > 1){
+              warning("Can only (yet) do ROC analysis in combination with internal validation for split.method=='bootcv' or split.method=='cvk' \n. Check devtools::install_github('tagteam/riskRegression') for progress.")
             }
         }
     }
@@ -977,7 +990,7 @@ c.f., Chapter 7, Section 5 in Gerds & Kattan 2021. Medical risk prediction model
                                       summary=summary,
                                       ibs=ibs,
                                       ipa = ipa,
-                                      ROC=FALSE,
+                                      ROC=ROC,
                                       MC=Weights$IC,
                                       IC.data=Weights$IC.data,
                                       breaks=NULL)
@@ -1170,7 +1183,7 @@ if (split.method$internal.name%in%c("BootCv","LeaveOneOutBoot","crossval")){
                                        summary=summary,
                                        ibs=ibs,
                                        ipa=ipa,
-                                       ROC=FALSE,
+                                       ROC=ROC,
                                        MC=Weights$IC,
                                        IC.data=Weights$IC.data,
                                        breaks=NULL)

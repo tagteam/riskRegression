@@ -30,6 +30,7 @@ crossvalPerf.loob.AUC <- function(times,mlevs,se.fit,response.type,NT,Response,c
     k <- split.method$k
     split.index <- do.call("cbind",lapply(1:k, function(i) ind.mat==i))
   }
+  cause <- as.numeric(cause)
   rm(ind.mat)
   for (s in 1:NT){
     if (response.type=="binary"){
@@ -427,6 +428,7 @@ crossvalPerf.bootcv <- function(m,crossval,se.fit,multi.split.test,keep.cv,byvar
     cv.score <- NULL
     bootcv.score <- NULL
   }
+  
   ## contrasts and multi-split test
   if (length(crossval[[1]][[m]]$contrasts)>0){
     cv.contrasts <- data.table::rbindlist(lapply(crossval,function(x){x[[m]]$contrasts}))
